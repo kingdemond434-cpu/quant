@@ -1,0 +1,6591 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download Trader Workstation (TWS) | Interactive Brokers U.K. Limited",
+  "url": "https://www.interactivebrokers.co.uk/en/trading/download-tws.php",
+  "published": "2026-09-11T08:23:28+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.interactivebrokers.co.uk/en/trading/download-tws.php",
+   "https://download2.interactivebrokers.com/installers/tws/latest/tws-latest-macos-arm.dmg",
+   "https://download2.interactivebrokers.com/installers/tws/latest/tws-latest-macosx-x64.dmg",
+   "https://download2.interactivebrokers.com/installers/tws/latest/tws-latest-windows-x64.exe",
+   "https://download2.interactivebrokers.com/installers/tws/latest/tws-latest-linux-x64.sh",
+   "https://download2.interactivebrokers.com/installers/tws/stable/tws-stable-macos-arm.dmg",
+   "https://download2.interactivebrokers.com/installers/tws/stable/tws-stable-macosx-x64.dmg",
+   "https://download2.interactivebrokers.com/installers/tws/stable/tws-stable-windows-x64.exe",
+   "https://download2.interactivebrokers.com/installers/tws/stable/tws-stable-linux-x64.sh",
+   "https://download2.interactivebrokers.com/installers/tws/beta/tws-beta-macos-arm.dmg",
+   "https://download2.interactivebrokers.com/installers/tws/beta/tws-beta-macosx-x64.dmg",
+   "https://download2.interactivebrokers.com/installers/tws/beta/tws-beta-windows-x64.exe",
+   "https://download2.interactivebrokers.com/installers/tws/beta/tws-beta-linux-x64.sh",
+   "https://download2.interactivebrokers.com/installers/tws/latest-standalone/tws-latest-standalone-macos-arm.dmg",
+   "https://download2.interactivebrokers.com/installers/tws/latest-standalone/tws-latest-standalone-macosx-x64.dmg",
+   "https://download2.interactivebrokers.com/installers/tws/latest-standalone/tws-latest-standalone-windows-x64.exe",
+   "https://download2.interactivebrokers.com/installers/tws/latest-standalone/tws-latest-standalone-linux-x64.sh",
+   "https://download2.interactivebrokers.com/installers/tws/stable-standalone/tws-stable-standalone-macos-arm.dmg",
+   "https://download2.interactivebrokers.com/installers/tws/stable-standalone/tws-stable-standalone-macosx-x64.dmg",
+   "https://download2.interactivebrokers.com/installers/tws/stable-standalone/tws-stable-standalone-windows-x64.exe",
+   "https://download2.interactivebrokers.com/installers/tws/stable-standalone/tws-stable-standalone-linux-x64.sh"
+  ],
+  "n_endpoints": 21,
+  "vault_sha": "41fdcf7847990019956a",
+  "host": "www.interactivebrokers.co.uk",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "What Is Gamma Scalping & Why It Matters To Trade Forex Markets | Nasdaq",
+  "url": "https://www.nasdaq.com/articles/what-gamma-scalping-why-it-matters-trade-forex-markets-2019-01-04",
+  "published": "2026-09-11T08:23:39+00:00",
+  "symbols": [
+   "NAS100",
+   "EURUSD",
+   "USDCHF",
+   "EURJPY"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "breakout",
+   "orderflow",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "49cbf390d94898454c0e",
+  "host": "www.nasdaq.com",
+  "claims": [
+   {
+    "claim": "We refer this approach as \"Delta Neutral\" and in practicality, it encompasses a position built upon the concept of a straddle or a strangle with initial positive and negative deltas that offset one another to ultimately create a position that has a delta close to 0.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "positive",
+     "negative"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "EURUSD",
+      "USDCHF",
+      "EURJPY"
+     ],
+     "mentioned": [
+      "nasdaq",
+      "eur/usd",
+      "usd/chf",
+      "eur/jpy"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "57cdb99577ee"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Affiliate Program by Forex Tester Online: Recommend &amp; Get Rewarded",
+  "url": "https://www.forextester.com/affiliates",
+  "published": "2026-09-11T08:23:49+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "557db5c9231089730e2d",
+  "host": "www.forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Get your reward of being a Leading Trader [Forex Partner Program]",
+  "url": "https://www.forextester.com/forex-partner-program",
+  "published": "2026-09-11T08:23:52+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://www.forextester.com/download"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "30eb83c0d72e72ea11a4",
+  "host": "www.forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "How to Profit of being a Forex Influencer [Forex Resellers Program]",
+  "url": "https://www.forextester.com/forex-reseller-program",
+  "published": "2026-09-11T08:23:58+00:00",
+  "symbols": [
+   "USDTRY"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://www.forextester.com/download"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "c4caeef71db1fb958ae7",
+  "host": "www.forextester.com",
+  "claims": [
+   {
+    "claim": "We will ask you to pay your Balance once per month, or when its negative value is close to your \u201cCredit\u201d.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "negative"
+    ],
+    "horizon": [
+     "month",
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDTRY"
+     ],
+     "mentioned": [
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "aa2060ea72ba"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Hire a Forex Programmer - Custom Indicators & Trading Tools",
+  "url": "https://www.forextester.com/hire-a-forex-programmer",
+  "published": "2026-09-11T08:23:59+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://www.forextester.com/download"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "076fab577de42658f515",
+  "host": "www.forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "How to Make the Most Out of Our Trading Simulator [detailed video]",
+  "url": "https://www.forextester.com/video",
+  "published": "2026-09-11T08:24:19+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "flow"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.forextester.com/download"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "c0effc97c5d181fdf616",
+  "host": "www.forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "All you wanted to know about best trading simulator [Ultimate List]",
+  "url": "https://www.forextester.com/faq",
+  "published": "2026-09-11T08:24:31+00:00",
+  "symbols": [
+   "EURUSD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "momentum"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://www.forextester.com/download"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "ff353ebecf052f0db0e8",
+  "host": "www.forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download Historical Tick Data for Free - Forex Tester Desktop",
+  "url": "https://www.forextester.com/data/datasources",
+  "published": "2026-09-11T08:24:33+00:00",
+  "symbols": [
+   "AUDJPY",
+   "AUDUSD",
+   "CHFJPY",
+   "EURCAD",
+   "EURCHF",
+   "EURGBP",
+   "EURJPY",
+   "EURUSD",
+   "GBPCHF",
+   "GBPJPY",
+   "GBPUSD",
+   "NZDJPY",
+   "NZDUSD",
+   "USDCAD",
+   "USDCHF",
+   "USDJPY",
+   "XAGUSD",
+   "XAUUSD"
+  ],
+  "timeframes": [
+   "DAILY",
+   "M1"
+  ],
+  "patterns": [
+   "positioning"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://www.forextester.com/download"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "45824cf553d756d7571c",
+  "host": "www.forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Forex Tester Desktop: Buy Historical Tick Data for Backtesting",
+  "url": "https://www.forextester.com/historyservicedescription",
+  "published": "2026-09-11T08:24:43+00:00",
+  "symbols": [
+   "AUDCAD",
+   "AUDCHF",
+   "AUDHUF",
+   "AUDJPY",
+   "AUDNZD",
+   "AUDSGD",
+   "AUDUSD",
+   "CADCHF",
+   "CADJPY",
+   "CHFDKK",
+   "CHFHUF",
+   "CHFJPY",
+   "CHFNOK",
+   "CHFPLN",
+   "CHFSEK",
+   "CHFSGD",
+   "COTTON",
+   "EURAUD",
+   "EURCAD",
+   "EURCHF",
+   "EURCZK",
+   "EURDKK",
+   "EURGBP",
+   "EURHKD"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "breakout",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://www.forextester.com/download"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "09b17ff216c35b3c8861",
+  "host": "www.forextester.com",
+  "claims": [
+   {
+    "claim": "the Coin Accurate Trading Strategy The Hedging Strategy The Tsunami Method 10 simple manual strategies to start Martingale Grid & Hedging Martingale hedging with exponential lot increase Simple short-term strategy Engulfing bars GBP/USD simple breakout system Simple \u201cMake Pips\u201d Strategy The Trader vs.",
+    "lang": "en",
+    "quantities": [
+     "breakout"
+    ],
+    "direction": [
+     "increase",
+     "short"
+    ],
+    "horizon": [
+     "bars"
+    ],
+    "instruments": {
+     "analogues": [
+      "GBPUSD"
+     ],
+     "mentioned": [
+      "gbp/usd"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "b1531455c870"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Ultimate guide on the best materials to get the most of backtesting",
+  "url": "https://www.forextester.com/howtouse",
+  "published": "2026-09-11T08:24:45+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://www.forextester.com/download"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "e42a3ba4ec7f3f8cbba6",
+  "host": "www.forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Support Center - Forex Tester Online",
+  "url": "https://www.forextester.com/contacts",
+  "published": "2026-09-11T08:24:47+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "0d203f8e5e222f628078",
+  "host": "www.forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Forex Tester Online Features | FTO - Forex Tester Online",
+  "url": "https://www.forextester.com/features",
+  "published": "2026-09-11T08:24:51+00:00",
+  "symbols": [
+   "AUDUSD",
+   "EURUSD",
+   "GBPUSD",
+   "US30",
+   "USDJPY",
+   "XAUUSD"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "breakout",
+   "correlation",
+   "gap",
+   "momentum",
+   "orderflow"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "7fe84ebfc84e1159693e",
+  "host": "www.forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Top 23 Exclusive Benefits of the Forex Trading Simulator [Screenshots]",
+  "url": "https://www.forextester.com/screens",
+  "published": "2026-09-11T08:24:52+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.forextester.com/templates/pic/screens/export-to-excel.png",
+   "https://www.forextester.com/templates/pic/screens/download-new-data.png",
+   "https://www.forextester.com/download"
+  ],
+  "n_endpoints": 3,
+  "vault_sha": "c1b15d59c0fae212b30c",
+  "host": "www.forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "How to save time with Forex tools? Try Forex Speed Up software!",
+  "url": "https://www.forextester.com/forex-speed-up",
+  "published": "2026-09-11T08:24:55+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://www.forextester.com/download"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "26edc07748f64dec02d5",
+  "host": "www.forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "New Forex Tester - Free Upgrade from Previous Versions",
+  "url": "https://www.forextester.com/upgrade",
+  "published": "2026-09-11T08:24:57+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://www.forextester.com/download"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "13235e8f02e925dfe924",
+  "host": "www.forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Forex Tester: Buy Full Version. Low Prices, Great Discounts",
+  "url": "https://www.forextester.com/order",
+  "published": "2026-09-11T08:25:06+00:00",
+  "symbols": [
+   "AUDCAD",
+   "AUDCHF",
+   "AUDHUF",
+   "AUDJPY",
+   "AUDNZD",
+   "AUDSGD",
+   "AUDUSD",
+   "CADCHF",
+   "CADJPY",
+   "CHFDKK",
+   "CHFHUF",
+   "CHFJPY",
+   "CHFNOK",
+   "CHFPLN",
+   "CHFSEK",
+   "CHFSGD",
+   "COTTON",
+   "EURAUD",
+   "EURCAD",
+   "EURCHF",
+   "EURCZK",
+   "EURDKK",
+   "EURGBP",
+   "EURHKD"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "breakout",
+   "flow",
+   "gap",
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://www.forextester.com/download"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "99158f4164cef6928a57",
+  "host": "www.forextester.com",
+  "claims": [
+   {
+    "claim": "-40% Forex Tester and monthly Super Data Subscription $ 169 * / $ 286 Buy Forex Tester & Data Pricing formation: License Forex Tester (One-time payment, unlimited usage): $ 139 * / $ 230 Super Data (25 years of premium quality real historical data.",
+    "lang": "en",
+    "quantities": [
+     "premium"
+    ],
+    "direction": [
+     "buy"
+    ],
+    "horizon": [
+     "monthly"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XPTUSD",
+      "XPDUSD",
+      "XCUUSD",
+      "XALUSD",
+      "XTIUSD",
+      "HK50",
+      "NAS100",
+      "US500",
+      "US30",
+      "US2000",
+      "JPN225",
+      "UK100",
+      "FRA40",
+      "EUSTX50",
+      "AUS200",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "AUDUSD",
+      "USDCAD",
+      "USDCHF",
+      "NZDUSD",
+      "EURJPY",
+      "GBPJPY",
+      "AUDJPY",
+      "EURGBP",
+      "USDCNH",
+      "USDHKD",
+      "USDKRW",
+      "USDINR",
+      "USDTHB",
+      "USDSGD",
+      "USDBRL",
+      "USDMXN",
+      "USDTRY",
+      "USDZAR",
+      "USDILS",
+      "USDPLN",
+      "USDHUF",
+      "USDCZK",
+      "USDSEK",
+      "USDNOK",
+      "USDDKK",
+      "USDRUB",
+      "SOYBEAN",
+      "CORN",
+      "SUGAR",
+      "COTTON",
+      "COFARA",
+      "WHEAT",
+      "USCOCOA",
+      "UKGILT",
+      "AlibabaGroup",
+      "Tesla",
+      "NVIDIA"
+     ],
+     "mentioned": [
+      "xauusd",
+      "xagusd",
+      "xptusd",
+      "xpdusd",
+      "copper",
+      "aluminum",
+      "brent",
+      "hk50",
+      "nas100",
+      "sp500",
+      "us30",
+      "us2000",
+      "jpn225",
+      "uk100",
+      "fra40",
+      "eustx50",
+      "aus200",
+      "sensex",
+      "ta35",
+      "psx",
+      "eurusd",
+      "gbpusd",
+      "usdjpy",
+      "audusd",
+      "usdcad",
+      "usdchf",
+      "nzdusd",
+      "eurjpy",
+      "gbpjpy",
+      "audjpy",
+      "eurgbp",
+      "usdcnh",
+      "usdhkd",
+      "usdkrw",
+      "usdinr",
+      "usdthb",
+      "usdsgd",
+      "usdbrl",
+      "usdmxn",
+      "try",
+      "usdzar",
+      "usdils",
+      "usdpln",
+      "eurhuf",
+      "usdczk",
+      "eursek",
+      "eurnok",
+      "usddkk",
+      "usdrub",
+      "soybean",
+      "corn",
+      "sugar",
+      "cotton",
+      "coffee",
+      "wheat",
+      "cocoa",
+      "ukgilt",
+      "baba",
+      "tsla",
+      "nvda"
+     ],
+     "transfer_only": [
+      "sensex->indices (NSE/BSE)",
+      "ta35->indices (TASE)",
+      "psx->indices (South Asian exchanges)"
+     ],
+     "indirect": [],
+     "channels": [
+      "rbi: policy: RBI -> INR"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "cd2deb6adebc"
+   },
+   {
+    "claim": "the Coin Accurate Trading Strategy The Hedging Strategy The Tsunami Method 10 simple manual strategies to start Martingale Grid & Hedging Martingale hedging with exponential lot increase Simple short-term strategy Engulfing bars GBP/USD simple breakout system Simple \u201cMake Pips\u201d Strategy The Trader vs.",
+    "lang": "en",
+    "quantities": [
+     "breakout"
+    ],
+    "direction": [
+     "increase",
+     "short"
+    ],
+    "horizon": [
+     "bars"
+    ],
+    "instruments": {
+     "analogues": [
+      "GBPUSD"
+     ],
+     "mentioned": [
+      "gbp/usd"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "b1531455c870"
+   },
+   {
+    "claim": "Set any comfortable speed of time Test long-term strategies in a fast way Test short-term and even scalping strategies on tick data Advanced statistics features / Export statistics to Excel Use any of the most popular indicators Wide range of graphic tools.",
+    "lang": "en",
+    "quantities": [
+     "range"
+    ],
+    "direction": [
+     "long",
+     "short"
+    ],
+    "horizon": [
+     "tick"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XPTUSD",
+      "XPDUSD",
+      "XCUUSD",
+      "XALUSD",
+      "XTIUSD",
+      "HK50",
+      "NAS100",
+      "US500",
+      "US30",
+      "US2000",
+      "JPN225",
+      "UK100",
+      "FRA40",
+      "EUSTX50",
+      "AUS200",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "AUDUSD",
+      "USDCAD",
+      "USDCHF",
+      "NZDUSD",
+      "EURJPY",
+      "GBPJPY",
+      "AUDJPY",
+      "EURGBP",
+      "USDCNH",
+      "USDHKD",
+      "USDKRW",
+      "USDINR",
+      "USDTHB",
+      "USDSGD",
+      "USDBRL",
+      "USDMXN",
+      "USDTRY",
+      "USDZAR",
+      "USDILS",
+      "USDPLN",
+      "USDHUF",
+      "USDCZK",
+      "USDSEK",
+      "USDNOK",
+      "USDDKK",
+      "USDRUB",
+      "SOYBEAN",
+      "CORN",
+      "SUGAR",
+      "COTTON",
+      "COFARA",
+      "WHEAT",
+      "USCOCOA",
+      "UKGILT",
+      "AlibabaGroup",
+      "Tesla",
+      "NVIDIA"
+     ],
+     "mentioned": [
+      "xauusd",
+      "xagusd",
+      "xptusd",
+      "xpdusd",
+      "copper",
+      "aluminum",
+      "brent",
+      "hk50",
+      "nas100",
+      "sp500",
+      "us30",
+      "us2000",
+      "jpn225",
+      "uk100",
+      "fra40",
+      "eustx50",
+      "aus200",
+      "sensex",
+      "ta35",
+      "psx",
+      "eurusd",
+      "gbpusd",
+      "usdjpy",
+      "audusd",
+      "usdcad",
+      "usdchf",
+      "nzdusd",
+      "eurjpy",
+      "gbpjpy",
+      "audjpy",
+      "eurgbp",
+      "usdcnh",
+      "usdhkd",
+      "usdkrw",
+      "usdinr",
+      "usdthb",
+      "usdsgd",
+      "usdbrl",
+      "usdmxn",
+      "try",
+      "usdzar",
+      "usdils",
+      "usdpln",
+      "eurhuf",
+      "usdczk",
+      "eursek",
+      "eurnok",
+      "usddkk",
+      "usdrub",
+      "soybean",
+      "corn",
+      "sugar",
+      "cotton",
+      "coffee",
+      "wheat",
+      "cocoa",
+      "ukgilt",
+      "baba",
+      "tsla",
+      "nvda"
+     ],
+     "transfer_only": [
+      "sensex->indices (NSE/BSE)",
+      "ta35->indices (TASE)",
+      "psx->indices (South Asian exchanges)"
+     ],
+     "indirect": [],
+     "channels": [
+      "rbi: policy: RBI -> INR"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "44ef9d45486e"
+   }
+  ],
+  "n_claims": 3
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Educate Yourself with the Forex Tester Course",
+  "url": "https://www.forextester.com/education-course",
+  "published": "2026-09-11T08:25:09+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.forextester.com/download"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "a130e8e8991ad9d69d90",
+  "host": "www.forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Privacy Policy - Forex Tester Online",
+  "url": "https://www.forextester.com/privacy",
+  "published": "2026-09-11T08:25:13+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a62c779af746f7c20fde",
+  "host": "www.forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Traders on YouTube about Forex Tester Online",
+  "url": "https://www.forextester.com/reviews",
+  "published": "2026-09-11T08:25:15+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "6fb83aef502c02cfda68",
+  "host": "www.forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u9999\u6e2f\u91d1\u878d\u7ba1\u7406\u5c40 - \u6578\u64da\u8207\u7d71\u8a08\u8cc7\u6599",
+  "url": "https://www.hkma.gov.hk/chi/data-publications-and-research/data-and-statistics/",
+  "published": "2026-09-11T08:25:16+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "zh-hk",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3dcdd1fa9976fbed1b6d",
+  "host": "www.hkma.gov.hk",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u671f\u8d27\u9891\u9053 - \u4e1c\u65b9\u8d22\u5bcc\u7f51",
+  "url": "https://futures.eastmoney.com/",
+  "published": "2026-09-11T08:25:19+00:00",
+  "symbols": [
+   "SUGAR",
+   "XTIUSD",
+   "XAUUSD",
+   "XAGUSD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "flow",
+   "inventory",
+   "momentum",
+   "night_session",
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e7fadcd511bd41ace3e2",
+  "host": "futures.eastmoney.com",
+  "claims": [
+   {
+    "claim": "9\u670811\u65e5 11:13 \u7f8e\u56fd8\u6708CPI\u524d\u77bb\uff1a\u80fd\u6e90\u6da8\u4ef7\u6270\u52a8\u901a\u80c0 \u7f8e\u8054\u50a8\u52a0\u606f\u9884\u671f\u9762\u4e34\u5173\u952e 9\u670811\u65e5 14:48 \u4e09\u91cd\u538b\u529b\u6765\u88ad\uff01",
+    "lang": "zh",
+    "quantities": [
+     "\u901a\u80c0",
+     "\u52a0\u606f",
+     "cpi"
+    ],
+    "direction": [
+     "\u6da8"
+    ],
+    "horizon": [
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "US500"
+     ],
+     "channels": [
+      "\u7f8e\u8054\u50a8: policy: Fed -> dollar and US equities"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "dd00de49908a"
+   },
+   {
+    "claim": "\u4e00\u6587\u8bfb\u61c2\uff1a\u7279\u6717\u666e\u201c5000\u5206\u7ea2\u201d\u53c8\u6765\u7ed9\u901a\u80c0\u6d47\u6cb9 9\u670811\u65e5 08:06 \u5384\u5c14\u5c3c\u8bfa\u51b2\u51fb\u4e0b\uff1a\u56fd\u9645\u7cd6\u4ef7\u5927\u6da825% \u56fd\u5185\u767d\u7cd6\u4f1a\u6da8\u4ef7\u5417\uff1f",
+    "lang": "zh",
+    "quantities": [
+     "\u901a\u80c0"
+    ],
+    "direction": [
+     "\u6da8"
+    ],
+    "horizon": [
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [
+      "SUGAR"
+     ],
+     "mentioned": [
+      "\u767d\u7cd6"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "5b5f5dc7a7a0"
+   },
+   {
+    "claim": "\u671f\u5e02\u6536\u8bc4 | \u56fd\u5185\u5546\u54c1\u5927\u9762\u79ef\u98d8\u7eff \u80fd\u5316\u677f\u5757\u76d8\u4e2d\u8df3\u6c34 \u7f8e\u8054\u50a8\u4e0b\u5468\u662f\u5426\u52a0\u606f\uff1f",
+    "lang": "zh",
+    "quantities": [
+     "\u52a0\u606f"
+    ],
+    "direction": [
+     "\u8df3\u6c34"
+    ],
+    "horizon": [
+     "\u5468"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "US500"
+     ],
+     "channels": [
+      "\u7f8e\u8054\u50a8: policy: Fed -> dollar and US equities"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "576fa58d4d04"
+   },
+   {
+    "claim": "\u4e0a\u671f\u6240\u539f\u6cb9\u671f\u8d272610\u5408\u7ea6\u591c\u76d8\u6536\u6da81.",
+    "lang": "zh",
+    "quantities": [
+     "\u591c\u76d8",
+     "\u539f\u6cb9"
+    ],
+    "direction": [
+     "\u6da8"
+    ],
+    "horizon": [
+     "\u591c\u76d8"
+    ],
+    "instruments": {
+     "analogues": [
+      "XTIUSD"
+     ],
+     "mentioned": [
+      "\u539f\u6cb9"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "94b12efc73b0"
+   },
+   {
+    "claim": "\u73b0\u8d27\u9ec4\u91d1\u5468\u6da8\u8d857%\u7ad9\u4e0a4300\u7f8e\u5143 \u4e3a\u4f55\u7a81\u7136\u5927\u6da8\uff1f",
+    "lang": "zh",
+    "quantities": [
+     "\u9ec4\u91d1",
+     "\u7f8e\u5143"
+    ],
+    "direction": [
+     "\u6da8"
+    ],
+    "horizon": [
+     "\u5468"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "\u9ec4\u91d1"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "1116033ebd6f"
+   },
+   {
+    "claim": "\u9ec4\u91d1\u56db\u5b63\u5ea6\u4ef7\u683c\u91cd\u5fc3\u4e0a\u79fb\u8d8b\u52bf\u4e0d\u53d8 \u94a2\u6750\u677f\u5757 \u4ece\u201c\u8d4c\u5468\u671f\u201d\u5230\u201c\u7ec3\u5185\u529f\u201d \u7a81\u7136\u8df3\u6c34\uff01",
+    "lang": "zh",
+    "quantities": [
+     "\u8d8b\u52bf",
+     "\u9ec4\u91d1"
+    ],
+    "direction": [
+     "\u8df3\u6c34"
+    ],
+    "horizon": [
+     "\u5468",
+     "\u5b63\u5ea6"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "\u9ec4\u91d1"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "ba85998cf9a2"
+   },
+   {
+    "claim": "\u9ec4\u91d1\u591a\u5934\u7eb7\u7eb7\u201c\u6295\u964d\u201d \u4f9b\u7ed9\u589e\u91cf\u5b58\u5728\u53d8\u6570 \u4e0d\u5b9c\u8fc7\u5ea6\u770b\u7a7a\u201c\u53cc\u7845\u201d\u884c\u60c5 \u5de5\u4e1a\u54c1\u4ef7\u683c\u6307\u6570 \u66f4\u591a \u6ce2\u7f57\u7684\u6d77\u5e72\u6563\u8d27 \u539f\u6cb9 \u94a2\u94c1 \u7126\u70ad \u6b63\u5728\u52a0\u8f7d\u4e2d \u6700\u65b0\u6307\u6570\uff1a3521\u70b9 \u671f\u8d27\u5c0f\u52a9\u624b \u5fc5\u8bfb \u671f\u5e02\u76f4\u64ad \u4ea4\u6613\u63d0\u793a \u6536\u76d8\u89c2\u5bdf \u8d22\u7ecf\u65e5\u5386 \u6570\u636e \u6210\u4ea4\u6301\u4ed3 \u5e93\u5b58\u6570\u636e \u5dee\u4ef7\u77e9\u9635 \u57fa\u5dee\u6570\u636e \u5546\u54c1\u6307\u6570 \u4e13\u533a \u671f\u8d27\u5427 \u6362\u7b97\u5de5\u5177 \u8d35\u91d1\u5c5e \u8d35\u91d1\u5c5e \u9ec4\u91d1 \u767d\u94f6 \u9ec4\u91d1 \u767d\u94f6 \u66f4\u591a \u66f4\u591a \u671f\u5e02\u6536\u8bc4 | \u56fd\u5185\u5546\u54c1\u5927\u9762\u79ef\u98d8\u7eff \u80fd\u5316\u677f\u5757\u76d8\u4e2d\u8df3\u6c34 \u7cbe\u9009 | \u672c\u5468\u91cd\u5927\u8d44\u8baf\u56de\u987e (9/7-9/11) \u73b0\u8d27\u91d1\u94f6\u65e5\u5185\u5747\u6da8\u8d851% \u4e09\u91cd\u538b\u529b\u6765\u88ad\uff01",
+    "lang": "zh",
+    "quantities": [
+     "\u57fa\u5dee",
+     "\u6301\u4ed3",
+     "\u6536\u76d8",
+     "\u5e93\u5b58"
+    ],
+    "direction": [
+     "\u591a\u5934",
+     "\u770b\u7a7a"
+    ],
+    "horizon": [
+     "\u65e5\u5185",
+     "\u5468"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XTIUSD"
+     ],
+     "mentioned": [
+      "\u9ec4\u91d1",
+      "\u767d\u94f6",
+      "\u539f\u6cb9",
+      "\u7126\u70ad"
+     ],
+     "transfer_only": [
+      "\u7126\u70ad->metals/energy"
+     ],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "209a7074f45b"
+   },
+   {
+    "claim": "\u4ea4\u6613\u5458\u5df2\u5145\u5206\u6d88\u5316\u7f8e\u8054\u50a810\u6708\u4efd\u52a0\u606f\u7684\u9884\u671f \u671f\u5e02\u6536\u8bc4 | \u56fd\u5185\u5546\u54c1\u5927\u9762\u79ef\u98d8\u7eff \u80fd\u5316\u677f\u5757\u76d8\u4e2d\u8df3\u6c34 \u7cbe\u9009 | \u672c\u5468\u91cd\u5927\u8d44\u8baf\u56de\u987e (9/7-9/11) \u73b0\u8d27\u91d1\u94f6\u65e5\u5185\u5747\u6da8\u8d851% \u4e09\u91cd\u538b\u529b\u6765\u88ad\uff01",
+    "lang": "zh",
+    "quantities": [
+     "\u52a0\u606f",
+     "\u65e5\u5185"
+    ],
+    "direction": [
+     "\u8df3\u6c34",
+     "\u6da8"
+    ],
+    "horizon": [
+     "\u65e5\u5185",
+     "\u5468"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "US500"
+     ],
+     "channels": [
+      "\u7f8e\u8054\u50a8: policy: Fed -> dollar and US equities"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "18eca715db12"
+   }
+  ],
+  "n_claims": 8
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Challenge Validation",
+  "url": "https://www.balticexchange.com/en/data-services/market-information0/dry-services.html",
+  "published": "2026-09-11T08:25:19+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c4d748afb48c29ea5f45",
+  "host": "www.balticexchange.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "NuGet Gallery | Package Downloads for QuantLib",
+  "url": "https://www.nuget.org/stats/packages/QuantLib?groupby=Version",
+  "published": "2026-09-11T08:25:20+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://www.nuget.org/downloads"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "75464b18a1ed4de2ea56",
+  "host": "www.nuget.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "We\u2019re All Backtesters Now | The Capital Spectator",
+  "url": "http://www.capitalspectator.com/were-all-backtesters-now/",
+  "published": "2026-09-11T08:25:24+00:00",
+  "symbols": [
+   "XAGUSD",
+   "US500",
+   "US30",
+   "US2000"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "basis"
+  ],
+  "confidence": 0.95,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "8c3e211a18ff46b0865c",
+  "host": "www.capitalspectator.com",
+  "claims": [
+   {
+    "claim": "> Post navigation \u2190 Initial Guidance | 4 March 2015 ADP: US February Payrolls Continue To Grow, But At Slower Rate \u2192 3 thoughts on \u201c We\u2019re All Backtesters Now \u201d Pingback: We\u2019re All Backtesters Now | XLNtrading Pingback: The Whole Street\u2019s Daily Wrap for 3/4/2015 | The Whole Street Emlyn Flint March 9, 2015 at 7:58 am Normally don\u2019t leave comments but your post struck a chord.",
+    "lang": "en",
+    "quantities": [
+     "rate"
+    ],
+    "direction": [
+     "continue"
+    ],
+    "horizon": [
+     "daily"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAGUSD",
+      "US500",
+      "US30",
+      "US2000"
+     ],
+     "mentioned": [
+      "silver",
+      "s&p 500",
+      "dow jones",
+      "russell"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX"
+     ],
+     "channels": [
+      "federal reserve: policy: Fed -> dollar and US equities"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "4ae7ce4e797e"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Overbought-Oversold Indicator | The Capital Spectator",
+  "url": "https://www.capitalspectator.com/analytics/overbought-oversold-indicator/",
+  "published": "2026-09-11T08:25:26+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a5b9c1689d017bf4f901",
+  "host": "www.capitalspectator.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "We Combined 1.1 Million Strategy Pairs. Three in Four Diluted the Better One. \u2014 Rulyfi",
+  "url": "https://rulyfi.com/blog/how-to-combine-trading-strategies",
+  "published": "2026-09-11T08:25:31+00:00",
+  "symbols": [
+   "USDKRW",
+   "BTCUSD"
+  ],
+  "timeframes": [
+   "1H",
+   "M1"
+  ],
+  "patterns": [
+   "basis",
+   "carry",
+   "correlation",
+   "flow",
+   "gap"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "dac6a070b0a86be366e6",
+  "host": "rulyfi.com",
+  "claims": [
+   {
+    "claim": "We use it only to argue that a long and a short are structurally close to independent.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "long",
+     "short"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDKRW",
+      "BTCUSD"
+     ],
+     "mentioned": [
+      "won",
+      "bitcoin"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDTHB"
+     ],
+     "channels": [
+      "bot : policy: BoT -> THB"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b1cfadeabb0b"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Your Crypto Backtest Is Lying to You: 3 Reasons Why \u2014 Rulyfi",
+  "url": "https://rulyfi.com/blog/backtest-lies",
+  "published": "2026-09-11T08:25:32+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry",
+   "gap",
+   "orderflow"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "50d3ff46ae9a22fdc4fe",
+  "host": "rulyfi.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "How to Read Your Backtest Results: Sharpe, Profit Factor, Max Drawdown, Win Rate \u2014 Rulyfi",
+  "url": "https://rulyfi.com/blog/how-to-read-backtest-results",
+  "published": "2026-09-11T08:25:34+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry",
+   "mean_reversion",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "224e371ce784e84b0623",
+  "host": "rulyfi.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "The Hidden Tax Behind Free Trading - by Concretum Research",
+  "url": "https://concretumgroup.substack.com/p/the-hidden-tax-behind-free-trading",
+  "published": "2026-09-11T08:25:41+00:00",
+  "symbols": [
+   "XAUUSD",
+   "Tesla"
+  ],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "basis",
+   "night_session",
+   "orderflow"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "7d4b9bdc95132e3482a0",
+  "host": "concretumgroup.substack.com",
+  "claims": [
+   {
+    "claim": "The paper also finds that retail investors overwhelmingly preferred call options , cheap contracts, and especially ultra-short-dated maturities : the authors report that nearly half of retail option trading volume was concentrated in contracts with less than a week to expiration.",
+    "lang": "en",
+    "quantities": [
+     "options",
+     "volume"
+    ],
+    "direction": [
+     "contracts",
+     "short"
+    ],
+    "horizon": [
+     "week"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "Tesla"
+     ],
+     "mentioned": [
+      "gold",
+      "tesla"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "936522fb1bf1"
+   },
+   {
+    "claim": "The Rise of Lottery Finance In a sense, weekly options were the perfect product for this new smartphone-trading era : cheap, leveraged, fast-moving and emotionally stimulating.",
+    "lang": "en",
+    "quantities": [
+     "options"
+    ],
+    "direction": [
+     "rise"
+    ],
+    "horizon": [
+     "weekly"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "Tesla"
+     ],
+     "mentioned": [
+      "gold",
+      "tesla"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "651fa04bea53"
+   },
+   {
+    "claim": "\u201d From Weekly Options to 0DTE In hindsight, the paper may have actually understated the long-term trend behind this new way of interacting with financial markets: the studied sample mostly predates the full explosion of 0DTE options (i.",
+    "lang": "en",
+    "quantities": [
+     "options",
+     "trend"
+    ],
+    "direction": [
+     "long"
+    ],
+    "horizon": [
+     "weekly"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "Tesla"
+     ],
+     "mentioned": [
+      "gold",
+      "tesla"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "feaa6ef2a45e"
+   },
+   {
+    "claim": "The logic is identical to the weekly contracts cited in the paper, just accelerated : lower upfront cost, higher leverage, more frequent trading, stronger gambling dynamics, and even more flow for wholesalers.",
+    "lang": "en",
+    "quantities": [
+     "flow"
+    ],
+    "direction": [
+     "contracts",
+     "lower"
+    ],
+    "horizon": [
+     "weekly"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "Tesla"
+     ],
+     "mentioned": [
+      "gold",
+      "tesla"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "0b4af180c1c0"
+   }
+  ],
+  "n_claims": 4
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "How to Build a Reliable Algo Trading Infrastructure",
+  "url": "https://concretumgroup.substack.com/p/operational-pitfalls-of-algo-trading?utm_source=substack&utm_medium=email&utm_content=share&action=share",
+  "published": "2026-09-11T08:25:43+00:00",
+  "symbols": [
+   "US500",
+   "USDKRW"
+  ],
+  "timeframes": [
+   "INTRADAY"
+  ],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "581ca4c6c23500cd5f1a",
+  "host": "concretumgroup.substack.com",
+  "claims": [
+   {
+    "claim": "We\u2019ve also seen that some data providers continue emitting bars after the official close on half-day sessions, while others truncate the session correctly.",
+    "lang": "en",
+    "quantities": [
+     "close",
+     "session"
+    ],
+    "direction": [
+     "continue"
+    ],
+    "horizon": [
+     "bars",
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "USDKRW"
+     ],
+     "mentioned": [
+      "spy",
+      "won"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDTHB"
+     ],
+     "channels": [
+      "bot : policy: BoT -> THB"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "9277c64877b8"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Portfolio Analysis in R: Part II | Analyzing A 60/40 Strategy | The Capital Spectator",
+  "url": "https://www.capitalspectator.com/portfolio-analysis-in-r-part-ii-analyzing-a-6040-strategy/",
+  "published": "2026-09-11T08:25:49+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "correlation",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ffbb59dcc43a57041917",
+  "host": "www.capitalspectator.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "A Revelation For Small-Cap Investing Strategies | The Capital Spectator",
+  "url": "https://www.capitalspectator.com/a-revelation-for-small-cap-investing-strategies/",
+  "published": "2026-09-11T08:25:52+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "inventory",
+   "orderflow"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c2a4c36c77151a0d9535",
+  "host": "www.capitalspectator.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "A Momentum-Based Trading Signal With Strategic Value | The Capital Spectator",
+  "url": "https://www.capitalspectator.com/a-momentum-based-trading-signal-with-strategic-value/",
+  "published": "2026-09-11T08:25:57+00:00",
+  "symbols": [
+   "US500",
+   "US30",
+   "US2000"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d58303991b33f15ebb86",
+  "host": "www.capitalspectator.com",
+  "claims": [
+   {
+    "claim": "omit(Lag(ifelse(i >0,1,0))) # lag adjusted return signal by one day for trading analysis } [/code] Now let\u2019s create another function for comparing a portfolio strategy based on EAM\u2019s buy/sell signal vs.",
+    "lang": "en",
+    "quantities": [
+     "lag"
+    ],
+    "direction": [
+     "buy",
+     "sell"
+    ],
+    "horizon": [
+     "day"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "US30",
+      "US2000"
+     ],
+     "mentioned": [
+      "s&p 500",
+      "dow jones",
+      "russell"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX"
+     ],
+     "channels": [
+      "federal reserve: policy: Fed -> dollar and US equities"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "a201413d2d50"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Portfolio Analysis in R: Part III | Adding A Global Strategy | The Capital Spectator",
+  "url": "https://www.capitalspectator.com/portfolio-analysis-in-r-part-iii-adding-a-global-strategy/",
+  "published": "2026-09-11T08:26:04+00:00",
+  "symbols": [
+   "US500",
+   "US30",
+   "US2000"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "basis"
+  ],
+  "confidence": 0.95,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "71ed381584fcbac793f1",
+  "host": "www.capitalspectator.com",
+  "claims": [
+   {
+    "claim": "As a preview, the global strategy delivers a slightly higher return over the sample period (the close of 2003 through Feb.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "higher"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "US30",
+      "US2000"
+     ],
+     "mentioned": [
+      "spy",
+      "dow jones",
+      "russell"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX"
+     ],
+     "channels": [
+      "federal reserve: policy: Fed -> dollar and US equities"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "4c8c6425dfae"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Factor Dual Momentum status and plea for data | RRSP Strategy",
+  "url": "https://rrspstrategy.wordpress.com/2015/03/06/factor-dual-momentum-status-and-plea-for-data/",
+  "published": "2026-09-11T08:26:04+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "momentum",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "1d89291a03ae64cc0f32",
+  "host": "rrspstrategy.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "RRSP Strategy",
+  "url": "https://rrspstrategy.wordpress.com",
+  "published": "2026-09-11T08:26:09+00:00",
+  "symbols": [
+   "XAUUSD",
+   "US500",
+   "US30",
+   "UK100"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage",
+   "correlation",
+   "mean_reversion",
+   "momentum",
+   "policy",
+   "positioning",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://research.stlouisfed.org/fred2/series/RECPROUSM156N"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "46423b3a0100fbd03318",
+  "host": "rrspstrategy.wordpress.com",
+  "claims": [
+   {
+    "claim": "Using VBR and PDP for value and momentum, the current picture looks like this: The strategy should be invested in PDP as relative 12 month returns are higher and absolute returns are greater than zero.",
+    "lang": "en",
+    "quantities": [
+     "momentum"
+    ],
+    "direction": [
+     "higher"
+    ],
+    "horizon": [
+     "month"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "US500",
+      "US30",
+      "UK100"
+     ],
+     "mentioned": [
+      "gold",
+      "sp500",
+      "dow",
+      "ftse",
+      "topix"
+     ],
+     "transfer_only": [
+      "topix->indices (TSE)"
+     ],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "8da78d594ff4"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Does sector momentum outperform stock momentum? | RRSP Strategy",
+  "url": "https://rrspstrategy.wordpress.com/2015/11/12/does-sector-momentum-outperform-stock-momentum/",
+  "published": "2026-09-11T08:26:11+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "correlation",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "493e9113f69e0c56e0d0",
+  "host": "rrspstrategy.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "RRSP Strategy",
+  "url": "https://rrspstrategy.wordpress.com/",
+  "published": "2026-09-11T08:26:16+00:00",
+  "symbols": [
+   "XAUUSD",
+   "US500",
+   "US30",
+   "UK100"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage",
+   "correlation",
+   "mean_reversion",
+   "momentum",
+   "policy",
+   "positioning",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://research.stlouisfed.org/fred2/series/RECPROUSM156N"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "f0537e47b67b9fbe7731",
+  "host": "rrspstrategy.wordpress.com",
+  "claims": [
+   {
+    "claim": "Using VBR and PDP for value and momentum, the current picture looks like this: The strategy should be invested in PDP as relative 12 month returns are higher and absolute returns are greater than zero.",
+    "lang": "en",
+    "quantities": [
+     "momentum"
+    ],
+    "direction": [
+     "higher"
+    ],
+    "horizon": [
+     "month"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "US500",
+      "US30",
+      "UK100"
+     ],
+     "mentioned": [
+      "gold",
+      "sp500",
+      "dow",
+      "ftse",
+      "topix"
+     ],
+     "transfer_only": [
+      "topix->indices (TSE)"
+     ],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "8da78d594ff4"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "About | RRSP Strategy",
+  "url": "https://rrspstrategy.wordpress.com/about/",
+  "published": "2026-09-11T08:26:16+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c85d96e92b1a8efd3585",
+  "host": "rrspstrategy.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "j livermore | RRSP Strategy",
+  "url": "https://rrspstrategy.wordpress.com/author/koversby/",
+  "published": "2026-09-11T08:26:23+00:00",
+  "symbols": [
+   "XAUUSD",
+   "US500",
+   "US30",
+   "UK100"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage",
+   "correlation",
+   "mean_reversion",
+   "momentum",
+   "policy",
+   "positioning",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://research.stlouisfed.org/fred2/series/RECPROUSM156N"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "f0178e7f3cc508f953d5",
+  "host": "rrspstrategy.wordpress.com",
+  "claims": [
+   {
+    "claim": "Using VBR and PDP for value and momentum, the current picture looks like this: The strategy should be invested in PDP as relative 12 month returns are higher and absolute returns are greater than zero.",
+    "lang": "en",
+    "quantities": [
+     "momentum"
+    ],
+    "direction": [
+     "higher"
+    ],
+    "horizon": [
+     "month"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "US500",
+      "US30",
+      "UK100"
+     ],
+     "mentioned": [
+      "gold",
+      "sp500",
+      "dow",
+      "ftse",
+      "topix"
+     ],
+     "transfer_only": [
+      "topix->indices (TSE)"
+     ],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "8da78d594ff4"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "https://rrspstrategy.wordpress.com/2015/02/13/dual-momentum-lookback-parameter/?share=twitter",
+  "url": "https://rrspstrategy.wordpress.com/2015/02/13/dual-momentum-lookback-parameter/?share=twitter",
+  "published": "2026-09-11T08:26:24+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://rrspstrategy.wordpress.com/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "01e7508420ded739257d",
+  "host": "rrspstrategy.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Uncategorized | RRSP Strategy",
+  "url": "https://rrspstrategy.wordpress.com/category/uncategorized/",
+  "published": "2026-09-11T08:26:31+00:00",
+  "symbols": [
+   "XAUUSD",
+   "US500",
+   "US30",
+   "UK100"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage",
+   "correlation",
+   "mean_reversion",
+   "momentum",
+   "policy",
+   "positioning",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://research.stlouisfed.org/fred2/series/RECPROUSM156N"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "07da4cde7929394c8152",
+  "host": "rrspstrategy.wordpress.com",
+  "claims": [
+   {
+    "claim": "Using VBR and PDP for value and momentum, the current picture looks like this: The strategy should be invested in PDP as relative 12 month returns are higher and absolute returns are greater than zero.",
+    "lang": "en",
+    "quantities": [
+     "momentum"
+    ],
+    "direction": [
+     "higher"
+    ],
+    "horizon": [
+     "month"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "US500",
+      "US30",
+      "UK100"
+     ],
+     "mentioned": [
+      "gold",
+      "sp500",
+      "dow",
+      "ftse",
+      "topix"
+     ],
+     "transfer_only": [
+      "topix->indices (TSE)"
+     ],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "8da78d594ff4"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Dual momentum: lookback parameter | RRSP Strategy",
+  "url": "https://rrspstrategy.wordpress.com/2015/02/13/dual-momentum-lookback-parameter/?replytocom=954",
+  "published": "2026-09-11T08:26:32+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "correlation",
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "597052980a4943c8dee3",
+  "host": "rrspstrategy.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Dual momentum: lookback parameter | RRSP Strategy",
+  "url": "https://rrspstrategy.wordpress.com/2015/02/13/dual-momentum-lookback-parameter/?replytocom=956",
+  "published": "2026-09-11T08:26:34+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "correlation",
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "14f2c01209c44894adef",
+  "host": "rrspstrategy.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Dual momentum: lookback parameter | RRSP Strategy",
+  "url": "https://rrspstrategy.wordpress.com/2015/02/13/dual-momentum-lookback-parameter/?replytocom=955",
+  "published": "2026-09-11T08:26:37+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "correlation",
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "0a7825114218e153be25",
+  "host": "rrspstrategy.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Dual momentum: lookback parameter | RRSP Strategy",
+  "url": "https://rrspstrategy.wordpress.com/2015/02/13/dual-momentum-lookback-parameter/?replytocom=957",
+  "published": "2026-09-11T08:26:38+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "correlation",
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3555d4c74472a19b54be",
+  "host": "rrspstrategy.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Dual momentum: lookback parameter | RRSP Strategy",
+  "url": "https://rrspstrategy.wordpress.com/2015/02/13/dual-momentum-lookback-parameter/?replytocom=958",
+  "published": "2026-09-11T08:26:41+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "correlation",
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "216b3076a7bda9e5f370",
+  "host": "rrspstrategy.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Dual momentum: lookback parameter | RRSP Strategy",
+  "url": "https://rrspstrategy.wordpress.com/2015/02/13/dual-momentum-lookback-parameter/?replytocom=959",
+  "published": "2026-09-11T08:26:43+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "correlation",
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f2e101eb5c4aa15787fa",
+  "host": "rrspstrategy.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Dual momentum: lookback parameter | RRSP Strategy",
+  "url": "https://rrspstrategy.wordpress.com/2015/02/13/dual-momentum-lookback-parameter/?replytocom=1222",
+  "published": "2026-09-11T08:26:45+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "correlation",
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e95e3c57d83707174f88",
+  "host": "rrspstrategy.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Large Language Models in Trading: Models and Market Dynamics &#8211; Relative Value Arbitrage",
+  "url": "https://blog.harbourfronts.com/2026/04/06/large-language-models-in-trading-models-and-market-dynamics/",
+  "published": "2026-09-11T08:26:51+00:00",
+  "symbols": [
+   "USDTRY"
+  ],
+  "timeframes": [
+   "INTRADAY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "correlation",
+   "momentum",
+   "night_session",
+   "orderflow",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d1e678b6496694e37b6a",
+  "host": "blog.harbourfronts.com",
+  "claims": [
+   {
+    "claim": "Since last week, the same phenomenon has emerged again, with the spot/volatility correlation turning positive.",
+    "lang": "en",
+    "quantities": [
+     "spot",
+     "volatility",
+     "correlation"
+    ],
+    "direction": [
+     "positive"
+    ],
+    "horizon": [
+     "week"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDTRY"
+     ],
+     "mentioned": [
+      "lira"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "7e530a4fbd82"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Evaluating Option-Based Strategies and Dollar-Cost Averaging &#8211; Relative Value Arbitrage",
+  "url": "https://blog.harbourfronts.com/2026/03/28/evaluating-option-based-strategies-and-dollar-cost-averaging/",
+  "published": "2026-09-11T08:26:56+00:00",
+  "symbols": [
+   "US500",
+   "US30"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage",
+   "basis",
+   "correlation",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b6131d61a71155c8f831",
+  "host": "blog.harbourfronts.com",
+  "claims": [
+   {
+    "claim": "Since last week, the same phenomenon has emerged again, with the spot/volatility correlation turning positive.",
+    "lang": "en",
+    "quantities": [
+     "spot",
+     "volatility",
+     "correlation"
+    ],
+    "direction": [
+     "positive"
+    ],
+    "horizon": [
+     "week"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "US30"
+     ],
+     "mentioned": [
+      "s&p 500",
+      "dow jones"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "7e530a4fbd82"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "options trading strategies &#8211; Relative Value Arbitrage",
+  "url": "https://blog.harbourfronts.com/category/options-trading-strategies/",
+  "published": "2026-09-11T08:27:05+00:00",
+  "symbols": [
+   "NAS100",
+   "US500",
+   "US30",
+   "USDINR"
+  ],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "basis",
+   "correlation",
+   "inventory",
+   "momentum",
+   "night_session",
+   "orderflow",
+   "policy",
+   "positioning",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.algos.org/api/v1/file/8708a7e7-0d94-4297-9f54-d3dd3b233520.pdf"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "58fe4afc98b340eb2022",
+  "host": "blog.harbourfronts.com",
+  "claims": [
+   {
+    "claim": "In short, the paper introduces a momentum term based on recent price changes to dynamically adjust the drift, capturing short-term intraday effects.",
+    "lang": "en",
+    "quantities": [
+     "momentum"
+    ],
+    "direction": [
+     "short"
+    ],
+    "horizon": [
+     "intraday"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "US500",
+      "US30",
+      "USDINR"
+     ],
+     "mentioned": [
+      "nasdaq",
+      "s&p 500",
+      "dow jones",
+      "rupee",
+      "pp"
+     ],
+     "transfer_only": [
+      "pp->energy"
+     ],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "4b776f5f2b99"
+   },
+   {
+    "claim": "Sikorskaya, Retail Trading in Options and the Rise of the Big Three Wholesalers , SSRN 4065019 The Impact of Retail Options Trading on the Implied Volatility Surface Retail options trading is rising rapidly, driven by factors such as the growth of retail brokers, the popularity of social media, and more flexible working hours.",
+    "lang": "en",
+    "quantities": [
+     "options",
+     "volatility"
+    ],
+    "direction": [
+     "rise"
+    ],
+    "horizon": [
+     "hours"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "US500",
+      "US30",
+      "USDINR"
+     ],
+     "mentioned": [
+      "nasdaq",
+      "s&p 500",
+      "dow jones",
+      "rupee",
+      "pp"
+     ],
+     "transfer_only": [
+      "pp->energy"
+     ],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "8f6e23bf1129"
+   },
+   {
+    "claim": "VIX futures are traded in monthly contracts, and each contract represents a bet on the direction of the VIX index at the end of the contract month.",
+    "lang": "en",
+    "quantities": [
+     "vix",
+     "futures"
+    ],
+    "direction": [
+     "contracts",
+     "contract"
+    ],
+    "horizon": [
+     "monthly",
+     "month"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "US500",
+      "US30",
+      "USDINR"
+     ],
+     "mentioned": [
+      "nasdaq",
+      "s&p 500",
+      "dow jones",
+      "rupee",
+      "pp"
+     ],
+     "transfer_only": [
+      "pp->energy"
+     ],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "feb268e9bed2"
+   },
+   {
+    "claim": "-The results show that elasticity is lower near market close but higher during intraday trading, likely reflecting liquidity differences.",
+    "lang": "en",
+    "quantities": [
+     "close",
+     "liquidity"
+    ],
+    "direction": [
+     "lower",
+     "higher"
+    ],
+    "horizon": [
+     "close",
+     "intraday"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "US500",
+      "US30",
+      "USDINR"
+     ],
+     "mentioned": [
+      "nasdaq",
+      "s&p 500",
+      "dow jones",
+      "rupee",
+      "pp"
+     ],
+     "transfer_only": [
+      "pp->energy"
+     ],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "07b5c20752fb"
+   },
+   {
+    "claim": "Reference [1] continues this line of research, with its main contribution being the decomposition of the variance risk premium into overnight and intraday components using a variance swap approach.",
+    "lang": "en",
+    "quantities": [
+     "premium",
+     "swap"
+    ],
+    "direction": [
+     "continues"
+    ],
+    "horizon": [
+     "overnight",
+     "intraday"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "US500",
+      "US30",
+      "USDINR"
+     ],
+     "mentioned": [
+      "nasdaq",
+      "s&p 500",
+      "dow jones",
+      "rupee",
+      "pp"
+     ],
+     "transfer_only": [
+      "pp->energy"
+     ],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b607be2c6873"
+   },
+   {
+    "claim": "-It finds that the variance risk premium is significantly negative during the overnight non-trading period.",
+    "lang": "en",
+    "quantities": [
+     "premium"
+    ],
+    "direction": [
+     "negative"
+    ],
+    "horizon": [
+     "overnight"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "US500",
+      "US30",
+      "USDINR"
+     ],
+     "mentioned": [
+      "nasdaq",
+      "s&p 500",
+      "dow jones",
+      "rupee",
+      "pp"
+     ],
+     "transfer_only": [
+      "pp->energy"
+     ],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "845c6cb05a2f"
+   },
+   {
+    "claim": "-During the intraday trading period, the variance risk premium becomes positive and often insignificant.",
+    "lang": "en",
+    "quantities": [
+     "premium"
+    ],
+    "direction": [
+     "positive"
+    ],
+    "horizon": [
+     "intraday"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "US500",
+      "US30",
+      "USDINR"
+     ],
+     "mentioned": [
+      "nasdaq",
+      "s&p 500",
+      "dow jones",
+      "rupee",
+      "pp"
+     ],
+     "transfer_only": [
+      "pp->energy"
+     ],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "8ca2a9c373d2"
+   },
+   {
+    "claim": "-The intraday variance risk premium captures short-term risk and has predictive power over 1 to 3-month horizons.",
+    "lang": "en",
+    "quantities": [
+     "premium"
+    ],
+    "direction": [
+     "short"
+    ],
+    "horizon": [
+     "intraday",
+     "month"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "US500",
+      "US30",
+      "USDINR"
+     ],
+     "mentioned": [
+      "nasdaq",
+      "s&p 500",
+      "dow jones",
+      "rupee",
+      "pp"
+     ],
+     "transfer_only": [
+      "pp->energy"
+     ],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "6ddcb985033c"
+   }
+  ],
+  "n_claims": 12
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Charles Gave\u2019s Four Quadrants Framework | Portfolio Optimizer",
+  "url": "https://portfoliooptimizer.io/macro-indicators/four-quadrants/",
+  "published": "2026-09-11T08:27:06+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b1dcdd56182e73e9958a",
+  "host": "portfoliooptimizer.io",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Posts by Tag | Portfolio Optimizer",
+  "url": "https://portfoliooptimizer.io/blog/tags/",
+  "published": "2026-09-11T08:27:13+00:00",
+  "symbols": [
+   "BTCUSD",
+   "ETHUSD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "980fde35149d9426c146",
+  "host": "portfoliooptimizer.io",
+  "claims": [
+   {
+    "claim": "Correlation Matrices Denoising: Results from Random Matrix Theory 14 minute read The estimation of empirical correlation matrices in finance is known to be affected by noise, in the form of measurement error, due in part to the short leng.",
+    "lang": "en",
+    "quantities": [
+     "correlation"
+    ],
+    "direction": [
+     "short"
+    ],
+    "horizon": [
+     "minute"
+    ],
+    "instruments": {
+     "analogues": [
+      "BTCUSD",
+      "ETHUSD"
+     ],
+     "mentioned": [
+      "bitcoin",
+      "ethereum"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "52cdda6b4a0b"
+   },
+   {
+    "claim": "Correlation Matrix Stress Testing: Shrinkage Toward an Equicorrelation Matrix 10 minute read Financial research has consistently shown that correlations between assets tend to increase during crises and tend to decrease during recoveries1.",
+    "lang": "en",
+    "quantities": [
+     "correlation"
+    ],
+    "direction": [
+     "increase",
+     "decrease"
+    ],
+    "horizon": [
+     "minute"
+    ],
+    "instruments": {
+     "analogues": [
+      "BTCUSD",
+      "ETHUSD"
+     ],
+     "mentioned": [
+      "bitcoin",
+      "ethereum"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "6475fb64e14d"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "How a World Champion Trader Builds Winning Strategies \u2013 Kevin Davey How to Trade Stocks and Options Podcast with OVTLYR Live | iHeart",
+  "url": "https://www.iheart.com/podcast/256-how-to-trade-stocks-and-op-31080769/episode/how-a-world-champion-trader-builds-269541174/",
+  "published": "2026-09-11T08:27:18+00:00",
+  "symbols": [
+   "NVIDIA"
+  ],
+  "timeframes": [
+   "1M",
+   "DAILY"
+  ],
+  "patterns": [
+   "breakout",
+   "momentum",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b0ed2e0dd81f50a34030",
+  "host": "www.iheart.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Tales from a Trading Desk | Software Engineering Noise",
+  "url": "https://mdavey.wordpress.com/",
+  "published": "2026-09-11T08:27:20+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "positioning"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "2f0e890795cf318aa2c4",
+  "host": "mdavey.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Tales from a Trading Desk | Software Engineering Noise",
+  "url": "https://mdavey.wordpress.com",
+  "published": "2026-09-11T08:27:28+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "positioning"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "76281d890bf5193d893e",
+  "host": "mdavey.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Tour - Quantitative Finance Stack Exchange",
+  "url": "https://quant.meta.stackexchange.com/tour",
+  "published": "2026-09-11T08:27:30+00:00",
+  "symbols": [
+   "XAUUSD",
+   "XAGUSD",
+   "USDTRY"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "http://www.nd.edu/~zda/CBcalculator.xls"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "fc119871c3085fe70313",
+  "host": "quant.meta.stackexchange.com",
+  "claims": [
+   {
+    "claim": "Tour - Quantitative Finance Stack Exchange Skip to main content 184 communities for the curious Quantitative Finance is part of Stack Overflow\u2019s open communities: specialist spaces where curiosity is welcome, knowledge is shared freely, and the best answers rise to the top.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "rise"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "gold",
+      "silver",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "55b29337308f"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Help Center - Quantitative Finance Stack Exchange",
+  "url": "https://quant.meta.stackexchange.com/help",
+  "published": "2026-09-11T08:27:31+00:00",
+  "symbols": [
+   "USDTRY"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a7e163c1cdb0b7b2f6bf",
+  "host": "quant.meta.stackexchange.com",
+  "claims": [
+   {
+    "claim": "Help Center - Quantitative Finance Stack Exchange Skip to main content 184 communities for the curious Quantitative Finance is part of Stack Overflow\u2019s open communities: specialist spaces where curiosity is welcome, knowledge is shared freely, and the best answers rise to the top.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "rise"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDTRY"
+     ],
+     "mentioned": [
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "a8236eab21ce"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "What is &quot;meta&quot;? How does it work? - Help Center - Quantitative Finance Stack Exchange",
+  "url": "https://quant.meta.stackexchange.com/help/whats-meta",
+  "published": "2026-09-11T08:27:35+00:00",
+  "symbols": [
+   "USDTRY"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "905ed8d36f128891947d",
+  "host": "quant.meta.stackexchange.com",
+  "claims": [
+   {
+    "claim": "- Help Center - Quantitative Finance Stack Exchange Skip to main content 184 communities for the curious Quantitative Finance is part of Stack Overflow\u2019s open communities: specialist spaces where curiosity is welcome, knowledge is shared freely, and the best answers rise to the top.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "rise"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDTRY"
+     ],
+     "mentioned": [
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "05a7293aad75"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Quantitative Finance Meta Stack Exchange",
+  "url": "https://quant.meta.stackexchange.com/",
+  "published": "2026-09-11T08:27:37+00:00",
+  "symbols": [
+   "USDTRY",
+   "NVIDIA"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "inventory",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "0b5cc0cd5e73ee98ddab",
+  "host": "quant.meta.stackexchange.com",
+  "claims": [
+   {
+    "claim": "Quantitative Finance Meta Stack Exchange Skip to main content 184 communities for the curious Quantitative Finance Meta is part of Stack Overflow\u2019s open communities: specialist spaces where curiosity is welcome, knowledge is shared freely, and the best answers rise to the top.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "rise"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDTRY",
+      "NVIDIA"
+     ],
+     "mentioned": [
+      "try",
+      "nvda"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDTHB"
+     ],
+     "channels": [
+      "bot : policy: BoT -> THB"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "11fa7780f1f1"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Highly scored unanswered questions - Quantitative Finance Meta Stack Exchange",
+  "url": "https://quant.meta.stackexchange.com/unanswered",
+  "published": "2026-09-11T08:27:42+00:00",
+  "symbols": [
+   "USDTRY"
+  ],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "correlation"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "424032dfb6b87da8719b",
+  "host": "quant.meta.stackexchange.com",
+  "claims": [
+   {
+    "claim": "Highly scored unanswered questions - Quantitative Finance Meta Stack Exchange Skip to main content 184 communities for the curious Quantitative Finance Meta is part of Stack Overflow\u2019s open communities: specialist spaces where curiosity is welcome, knowledge is shared freely, and the best answers rise to the top.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "rise"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDTRY"
+     ],
+     "mentioned": [
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDTHB"
+     ],
+     "channels": [
+      "bot : policy: BoT -> THB"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "6c932691dd02"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Tags - Quantitative Finance Meta Stack Exchange",
+  "url": "https://quant.meta.stackexchange.com/tags",
+  "published": "2026-09-11T08:27:43+00:00",
+  "symbols": [
+   "USDTRY"
+  ],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "86d248c816913a019ac5",
+  "host": "quant.meta.stackexchange.com",
+  "claims": [
+   {
+    "claim": "Tags - Quantitative Finance Meta Stack Exchange Skip to main content 184 communities for the curious Quantitative Finance Meta is part of Stack Overflow\u2019s open communities: specialist spaces where curiosity is welcome, knowledge is shared freely, and the best answers rise to the top.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "rise"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDTRY"
+     ],
+     "mentioned": [
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "1c63cc796b39"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Users - Quantitative Finance Meta Stack Exchange",
+  "url": "https://quant.meta.stackexchange.com/users",
+  "published": "2026-09-11T08:27:45+00:00",
+  "symbols": [
+   "USDTRY"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "23c03e4f9ff93ba3bcd6",
+  "host": "quant.meta.stackexchange.com",
+  "claims": [
+   {
+    "claim": "Users - Quantitative Finance Meta Stack Exchange Skip to main content 184 communities for the curious Quantitative Finance Meta is part of Stack Overflow\u2019s open communities: specialist spaces where curiosity is welcome, knowledge is shared freely, and the best answers rise to the top.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "rise"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDTRY"
+     ],
+     "mentioned": [
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "6b41c5229d6a"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Quantitative Finance Meta Stack Exchange",
+  "url": "https://quant.meta.stackexchange.com?tab=active",
+  "published": "2026-09-11T08:27:52+00:00",
+  "symbols": [
+   "USDTRY"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ed47f62c1d50adaa406c",
+  "host": "quant.meta.stackexchange.com",
+  "claims": [
+   {
+    "claim": "Quantitative Finance Meta Stack Exchange Skip to main content 184 communities for the curious Quantitative Finance Meta is part of Stack Overflow\u2019s open communities: specialist spaces where curiosity is welcome, knowledge is shared freely, and the best answers rise to the top.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "rise"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDTRY"
+     ],
+     "mentioned": [
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDTHB"
+     ],
+     "channels": [
+      "bot : policy: BoT -> THB"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "11fa7780f1f1"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Hottest Questions Today - Quantitative Finance Meta Stack Exchange",
+  "url": "https://quant.meta.stackexchange.com?tab=hot",
+  "published": "2026-09-11T08:27:52+00:00",
+  "symbols": [
+   "USDTRY"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "6878e1f959eee320b323",
+  "host": "quant.meta.stackexchange.com",
+  "claims": [
+   {
+    "claim": "Hottest Questions Today - Quantitative Finance Meta Stack Exchange Skip to main content 184 communities for the curious Quantitative Finance Meta is part of Stack Overflow\u2019s open communities: specialist spaces where curiosity is welcome, knowledge is shared freely, and the best answers rise to the top.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "rise"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDTRY"
+     ],
+     "mentioned": [
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "d9c20edf73e2"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Hottest Questions This Week - Quantitative Finance Meta Stack Exchange",
+  "url": "https://quant.meta.stackexchange.com?tab=week",
+  "published": "2026-09-11T08:27:54+00:00",
+  "symbols": [
+   "USDTRY"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "inventory"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "81decf143f9190313a10",
+  "host": "quant.meta.stackexchange.com",
+  "claims": [
+   {
+    "claim": "Hottest Questions This Week - Quantitative Finance Meta Stack Exchange Skip to main content 184 communities for the curious Quantitative Finance Meta is part of Stack Overflow\u2019s open communities: specialist spaces where curiosity is welcome, knowledge is shared freely, and the best answers rise to the top.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "rise"
+    ],
+    "horizon": [
+     "week",
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDTRY"
+     ],
+     "mentioned": [
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "f4305cb1edc8"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Hottest Questions This Month - Quantitative Finance Meta Stack Exchange",
+  "url": "https://quant.meta.stackexchange.com?tab=month",
+  "published": "2026-09-11T08:27:57+00:00",
+  "symbols": [
+   "USDTRY"
+  ],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "fe4d20ac31ca23b5f972",
+  "host": "quant.meta.stackexchange.com",
+  "claims": [
+   {
+    "claim": "Hottest Questions This Month - Quantitative Finance Meta Stack Exchange Skip to main content 184 communities for the curious Quantitative Finance Meta is part of Stack Overflow\u2019s open communities: specialist spaces where curiosity is welcome, knowledge is shared freely, and the best answers rise to the top.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "rise"
+    ],
+    "horizon": [
+     "month",
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDTRY"
+     ],
+     "mentioned": [
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "e50f16ac26f2"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Proprietary Trading Group | Interactive Brokers U.K. Limited",
+  "url": "https://www.interactivebrokers.co.uk/en/accounts/proprietary-trading-group.php",
+  "published": "2026-09-11T08:28:09+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "carry",
+   "night_session",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.interactivebrokers.co.uk/en/trading/download-tws.php",
+   "https://www.interactivebrokers.co.uk/download/ptgPoolGetStarted.pdf",
+   "https://www.interactivebrokers.co.uk/download/ptgSTLGetStarted.pdf"
+  ],
+  "n_endpoints": 3,
+  "vault_sha": "49ec7204ab51f10e7a63",
+  "host": "www.interactivebrokers.co.uk",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Free Trial | Interactive Brokers U.K. Limited",
+  "url": "https://www.interactivebrokers.co.uk/en/trading/free-trial.php",
+  "published": "2026-09-11T08:28:12+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://www.interactivebrokers.co.uk/en/trading/download-tws.php"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "d196321a9d86a7a6998a",
+  "host": "www.interactivebrokers.co.uk",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Margin Rates and Financing | Interactive Brokers U.K. Limited",
+  "url": "https://www.interactivebrokers.co.uk/en/trading/margin-rates.php",
+  "published": "2026-09-11T08:28:19+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "carry",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.interactivebrokers.co.uk/en/trading/download-tws.php"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "fba20ee58e10578612c9",
+  "host": "www.interactivebrokers.co.uk",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "IBKR Trading Platforms | Interactive Brokers U.K. Limited",
+  "url": "https://www.interactivebrokers.co.uk/en/trading/trading-platforms.php",
+  "published": "2026-09-11T08:28:23+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://www.interactivebrokers.co.uk/en/trading/download-tws.php"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "c578fbbae6edfdaf8484",
+  "host": "www.interactivebrokers.co.uk",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "IB API | Interactive Brokers U.K. Limited",
+  "url": "https://www.interactivebrokers.co.uk/en/trading/ib-api.php",
+  "published": "2026-09-11T08:28:27+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry",
+   "night_session",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://www.interactivebrokers.co.uk/en/trading/download-tws.php",
+   "https://ibkrcampus.eu/traders-academy/api/",
+   "https://www.interactivebrokers.co.uk/download/WebAPI_Onboarding_Questionnaire.pdf"
+  ],
+  "n_endpoints": 3,
+  "vault_sha": "b16997e4bf34eca036d0",
+  "host": "www.interactivebrokers.co.uk",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Margin Trading | Interactive Brokers U.K. Limited",
+  "url": "https://www.interactivebrokers.co.uk/en/trading/margin.php",
+  "published": "2026-09-11T08:28:30+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://www.interactivebrokers.co.uk/en/trading/download-tws.php"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "0ed1d273fe2d7b44274d",
+  "host": "www.interactivebrokers.co.uk",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "AI-Powered Portfolio Analysis & Trading Tools | Interactive Brokers U.K. Limited",
+  "url": "https://www.interactivebrokers.co.uk/en/trading/ai-integrations.php",
+  "published": "2026-09-11T08:28:33+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry",
+   "flow",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.interactivebrokers.co.uk/en/trading/download-tws.php"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "069428232acfff479e4c",
+  "host": "www.interactivebrokers.co.uk",
+  "claims": [
+   {
+    "claim": "\" Execution \"Create sell instructions to reduce by 50% any holding with 30-day historical volatility above 60%.",
+    "lang": "en",
+    "quantities": [
+     "volatility"
+    ],
+    "direction": [
+     "sell"
+    ],
+    "horizon": [
+     "day"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [
+      "php"
+     ],
+     "transfer_only": [
+      "php->fx (PHP not quoted)"
+     ],
+     "indirect": [
+      "USDSGD"
+     ],
+     "channels": [
+      "monetary authority of singapore: policy: MAS band -> SGD"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "e618abb6deff"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Products, Exchanges and Contracts Search | Interactive Brokers U.K. Limited",
+  "url": "https://www.interactivebrokers.co.uk/en/trading/products-exchanges.php",
+  "published": "2026-09-11T08:28:39+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "carry",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.interactivebrokers.co.uk/en/trading/download-tws.php"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "961b4af245fc49678afe",
+  "host": "www.interactivebrokers.co.uk",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Stock Trading: Trade Stocks Online | Interactive Brokers U.K. Limited",
+  "url": "https://www.interactivebrokers.co.uk/en/trading/products-stocks.php",
+  "published": "2026-09-11T08:28:47+00:00",
+  "symbols": [
+   "NAS100",
+   "GBPUSD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "carry",
+   "inventory",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://www.interactivebrokers.co.uk/en/trading/download-tws.php"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "7fd535cb7a338b24da5d",
+  "host": "www.interactivebrokers.co.uk",
+  "claims": [
+   {
+    "claim": "Open Account Disclosures Lower investment costs will increase your overall return on investment, but lower costs do not guarantee that your investment will be profitable.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "lower",
+     "increase"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "GBPUSD"
+     ],
+     "mentioned": [
+      "nasdaq",
+      "gbp/usd",
+      "php"
+     ],
+     "transfer_only": [
+      "php->fx (PHP not quoted)"
+     ],
+     "indirect": [
+      "USDSGD"
+     ],
+     "channels": [
+      "monetary authority of singapore: policy: MAS band -> SGD"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "cb2bc63ee7ce"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "IBKR ATS Clients | Interactive Brokers U.K. Limited",
+  "url": "https://www.interactivebrokers.co.uk/en/trading/clients-ibkr-ats.php?menu=A",
+  "published": "2026-09-11T08:28:51+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://www.interactivebrokers.co.uk/en/trading/download-tws.php"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "b460862761f851016f92",
+  "host": "www.interactivebrokers.co.uk",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Order Types and Algos | Interactive Brokers U.K. Limited",
+  "url": "https://www.interactivebrokers.co.uk/en/trading/ordertypes.php",
+  "published": "2026-09-11T08:29:35+00:00",
+  "symbols": [
+   "NAS100",
+   "US500",
+   "USDTRY",
+   "Tesla"
+  ],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "auction",
+   "basis",
+   "carry",
+   "mean_reversion",
+   "night_session",
+   "orderflow",
+   "policy",
+   "positioning",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://www.interactivebrokers.co.uk/en/trading/download-tws.php"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "437c37b9d13f32d5226d",
+  "host": "www.interactivebrokers.co.uk",
+  "claims": [
+   {
+    "claim": "You want to buy 10 XYZ futures contracts as an auction order at the calculated opening price, which you think will be the best price of the day.",
+    "lang": "en",
+    "quantities": [
+     "futures",
+     "auction"
+    ],
+    "direction": [
+     "buy",
+     "contracts"
+    ],
+    "horizon": [
+     "day"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "US500",
+      "USDTRY",
+      "Tesla"
+     ],
+     "mentioned": [
+      "nasdaq",
+      "s&p 500",
+      "try",
+      "php",
+      "tsla"
+     ],
+     "transfer_only": [
+      "php->fx (PHP not quoted)"
+     ],
+     "indirect": [
+      "USDSGD"
+     ],
+     "channels": [
+      "monetary authority of singapore: policy: MAS band -> SGD"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "4ca01962e354"
+   },
+   {
+    "claim": "53 is significantly higher than the NBBO and above the daily trading range.",
+    "lang": "en",
+    "quantities": [
+     "range"
+    ],
+    "direction": [
+     "higher"
+    ],
+    "horizon": [
+     "daily"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "US500",
+      "USDTRY",
+      "Tesla"
+     ],
+     "mentioned": [
+      "nasdaq",
+      "s&p 500",
+      "try",
+      "php",
+      "tsla"
+     ],
+     "transfer_only": [
+      "php->fx (PHP not quoted)"
+     ],
+     "indirect": [
+      "USDSGD"
+     ],
+     "channels": [
+      "monetary authority of singapore: policy: MAS band -> SGD"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "5564ade07706"
+   },
+   {
+    "claim": "however under certain circumstances IBKR may not be able to cancel such orders on a timely basis, including but not limited to when IBKR receives information on a corporate action within 48 hours of the announced effective date, and such GTC orders may continue to remain in force and may be eligible for execution.",
+    "lang": "en",
+    "quantities": [
+     "basis"
+    ],
+    "direction": [
+     "continue"
+    ],
+    "horizon": [
+     "hours"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "US500",
+      "USDTRY",
+      "Tesla"
+     ],
+     "mentioned": [
+      "nasdaq",
+      "s&p 500",
+      "try",
+      "php",
+      "tsla"
+     ],
+     "transfer_only": [
+      "php->fx (PHP not quoted)"
+     ],
+     "indirect": [
+      "USDSGD"
+     ],
+     "channels": [
+      "monetary authority of singapore: policy: MAS band -> SGD"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "1eeca5ee5935"
+   },
+   {
+    "claim": "Directed liquidity-adding orders to IBKR ATS whose effective price would match or cross the opposite side NBBO are repriced to be 1 minimum tick increment away (less aggressive) from the opposite side, except for Pegged-to-Midpoint orders with positive offsets when the NBBO spread is one cent, in which case the order would be repriced to the NBBO midpoint.",
+    "lang": "en",
+    "quantities": [
+     "liquidity",
+     "spread"
+    ],
+    "direction": [
+     "positive"
+    ],
+    "horizon": [
+     "tick"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "US500",
+      "USDTRY",
+      "Tesla"
+     ],
+     "mentioned": [
+      "nasdaq",
+      "s&p 500",
+      "try",
+      "php",
+      "tsla"
+     ],
+     "transfer_only": [
+      "php->fx (PHP not quoted)"
+     ],
+     "indirect": [
+      "USDSGD"
+     ],
+     "channels": [
+      "monetary authority of singapore: policy: MAS band -> SGD"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "147d787fcb2f"
+   },
+   {
+    "claim": "Order Type In Depth - Limit-on-Open Buy Order Step 1 \u2013 Enter a Limit-on-Open Buy Order XYZ stock has a current Ask price of 38.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "buy"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "US500",
+      "USDTRY",
+      "Tesla"
+     ],
+     "mentioned": [
+      "nasdaq",
+      "s&p 500",
+      "try",
+      "php",
+      "tsla"
+     ],
+     "transfer_only": [
+      "php->fx (PHP not quoted)"
+     ],
+     "indirect": [
+      "USDSGD"
+     ],
+     "channels": [
+      "monetary authority of singapore: policy: MAS band -> SGD"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "d5461e48e725"
+   },
+   {
+    "claim": "Video Lesson Order Type Outside RTH Products: Stocks, ETFs, Options, Futures, FOPs, Currencies, Bonds, Funds, Warrants, EFPs Platforms: TWS, IBKR Desktop, IBKR Mobile, Client Portal Regions: US and Non-US Products Routing: Smart, Directed You can instruct an order to continue to work after normal trading hours have ended by enabling Outside RTH (outside regular trading hours).",
+    "lang": "en",
+    "quantities": [
+     "stocks",
+     "options",
+     "futures"
+    ],
+    "direction": [
+     "continue"
+    ],
+    "horizon": [
+     "hours"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "US500",
+      "USDTRY",
+      "Tesla"
+     ],
+     "mentioned": [
+      "nasdaq",
+      "s&p 500",
+      "try",
+      "php",
+      "tsla"
+     ],
+     "transfer_only": [
+      "php->fx (PHP not quoted)"
+     ],
+     "indirect": [
+      "USDSGD"
+     ],
+     "channels": [
+      "monetary authority of singapore: policy: MAS band -> SGD"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "27574d2406da"
+   }
+  ],
+  "n_claims": 6
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Securities Financing | Interactive Brokers U.K. Limited",
+  "url": "https://www.interactivebrokers.co.uk/en/trading/securities-financing.php",
+  "published": "2026-09-11T08:29:38+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "carry",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.interactivebrokers.co.uk/en/trading/download-tws.php"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "0f4e026493480cd0169e",
+  "host": "www.interactivebrokers.co.uk",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Features in Focus | Interactive Brokers U.K. Limited",
+  "url": "https://www.interactivebrokers.co.uk/en/trading/features-in-focus.php",
+  "published": "2026-09-11T08:29:42+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "carry",
+   "inventory",
+   "night_session",
+   "orderflow",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.interactivebrokers.co.uk/en/trading/download-tws.php"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "0fac78ea4160cf68de55",
+  "host": "www.interactivebrokers.co.uk",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Stock, Bond & Options Block Desk | Interactive Brokers U.K. Limited",
+  "url": "https://www.interactivebrokers.co.uk/en/trading/global-outsourced-trading-desk.php",
+  "published": "2026-09-11T08:29:44+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "carry",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://www.interactivebrokers.co.uk/en/trading/download-tws.php"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "a2f0589f7f83f0be14c9",
+  "host": "www.interactivebrokers.co.uk",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "IBKR GlobalAnalyst | Interactive Brokers U.K. Limited",
+  "url": "https://www.interactivebrokers.co.uk/en/trading/globalanalyst.php",
+  "published": "2026-09-11T08:29:46+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry",
+   "correlation",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://www.interactivebrokers.co.uk/en/trading/download-tws.php",
+   "https://www.interactivebrokers.co.uk/download/multisort_whitepaper_web.pdf"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "0dd670e4554abe2f22a2",
+  "host": "www.interactivebrokers.co.uk",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Bonds Marketplace | Interactive Brokers U.K. Limited",
+  "url": "https://www.interactivebrokers.co.uk/en/trading/products-bonds.php",
+  "published": "2026-09-11T08:29:49+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "carry",
+   "inventory",
+   "night_session",
+   "orderflow",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.interactivebrokers.co.uk/en/trading/download-tws.php"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "a34e70273b7c07f4b417",
+  "host": "www.interactivebrokers.co.uk",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Mutual Funds Marketplace | Interactive Brokers U.K. Limited",
+  "url": "https://www.interactivebrokers.co.uk/en/trading/products-mutual-funds.php",
+  "published": "2026-09-11T08:29:51+00:00",
+  "symbols": [
+   "US500",
+   "US30"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "carry",
+   "inventory",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://www.interactivebrokers.co.uk/en/trading/download-tws.php"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "04396005e33e45c11c45",
+  "host": "www.interactivebrokers.co.uk",
+  "claims": [
+   {
+    "claim": "Directly from Fund Companies Many mutual fund providers allow you to open an account on their website and buy their funds without a middleman.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "buy"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "US30"
+     ],
+     "mentioned": [
+      "s&p 500",
+      "dow jones",
+      "php"
+     ],
+     "transfer_only": [
+      "php->fx (PHP not quoted)"
+     ],
+     "indirect": [
+      "USDSGD"
+     ],
+     "channels": [
+      "monetary authority of singapore: policy: MAS band -> SGD"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "2d581c08d77c"
+   },
+   {
+    "claim": "Each fund has a cut off time, after which an instruction to buy or sell cannot go through until the next day.",
+    "lang": "en",
+    "quantities": [
+     "cut"
+    ],
+    "direction": [
+     "buy",
+     "sell"
+    ],
+    "horizon": [
+     "next day"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "US30"
+     ],
+     "mentioned": [
+      "s&p 500",
+      "dow jones",
+      "php"
+     ],
+     "transfer_only": [
+      "php->fx (PHP not quoted)"
+     ],
+     "indirect": [
+      "USDSGD"
+     ],
+     "channels": [
+      "monetary authority of singapore: policy: MAS band -> SGD"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "827bbb15e716"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "GitHub - christianpichichero-max/pit-fundamentals: Free point-in-time US fundamentals sample (40 large caps, 3,280 rows) \u2014 every value stamped with the date it became public. No lookahead bias. From S",
+  "url": "https://tradevodata.com/go/github-sample?cta_location=blog-lookahead-bias-fundamental-backtests",
+  "published": "2026-09-11T08:29:54+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "gap",
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://tradevodata.com/manifest.json",
+   "https://tradevodata.com/christianpichichero-max/pit-fundamentals/blob/main/data/pit_fundamentals_history.csv",
+   "https://tradevodata.com/topics/dataset"
+  ],
+  "n_endpoints": 3,
+  "vault_sha": "517e1ba3544bdef2f648",
+  "host": "tradevodata.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Free Point-in-Time Fundamentals Sample and Colab | Tradevo Data",
+  "url": "https://tradevodata.com/sample?cta_location=blog-lookahead-bias-fundamental-backtests",
+  "published": "2026-09-11T08:29:54+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "gap"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "fafe0d32a4afb8f6fad8",
+  "host": "tradevodata.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "GitHub - christianpichichero-max/pit-fundamentals: Free point-in-time US fundamentals sample (40 large caps, 3,280 rows) \u2014 every value stamped with the date it became public. No lookahead bias. From S",
+  "url": "https://tradevodata.com/go/github-sample?utm_source=website&utm_medium=owned&utm_content=blog-lookahead-bias-fundamental-backtests&cta_location=blog-lookahead-bias-fundamental-backtests",
+  "published": "2026-09-11T08:29:59+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "gap",
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://tradevodata.com/manifest.json",
+   "https://tradevodata.com/christianpichichero-max/pit-fundamentals/blob/main/data/pit_fundamentals_history.csv",
+   "https://tradevodata.com/topics/dataset"
+  ],
+  "n_endpoints": 3,
+  "vault_sha": "1f506a925c11fe39c2a6",
+  "host": "tradevodata.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "QuantConnect Fundamental Data Alternative: Tradevo Data",
+  "url": "https://tradevodata.com/alternatives/quantconnect-data",
+  "published": "2026-09-11T08:30:00+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "gap"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "2b76fca50abfcef213d5",
+  "host": "tradevodata.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "G\u00f6del's Market: Interviewing the Quants: Marco Simioni and Nightly Patterns",
+  "url": "http://godelsmarket.blogspot.com/2015/02/interviewing-quants-marco-simioni-and.html",
+  "published": "2026-09-11T08:30:02+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "correlation",
+   "momentum",
+   "night_session",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "175d66ce5423682ed84f",
+  "host": "godelsmarket.blogspot.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "G\u00f6del's Market: Simple Automated Trading System",
+  "url": "http://godelsmarket.blogspot.com/2012/12/simple-automated-trading-system.html",
+  "published": "2026-09-11T08:30:04+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "correlation",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "735e8cb817dfce31d596",
+  "host": "godelsmarket.blogspot.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "G\u00f6del's Market: backtest",
+  "url": "http://godelsmarket.blogspot.com/search/label/backtest",
+  "published": "2026-09-11T08:30:09+00:00",
+  "symbols": [
+   "US500",
+   "EURUSD"
+  ],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "basis",
+   "correlation",
+   "gap",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "",
+  "endpoints": [
+   "http://godelsmarket.blogspot.com/2015/08/downloading-stock-market-news-for.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "e7745022533bfe62a4f5",
+  "host": "godelsmarket.blogspot.com",
+  "claims": [
+   {
+    "claim": "Share to X Share to Facebook Share to Pinterest Labels: articles , backtest , fed days , papers , quantifiable edges , strategy Tuesday, August 14, 2012 Gap Trading If you were to fade each gap on AAPL that was .",
+    "lang": "en",
+    "quantities": [
+     "gap"
+    ],
+    "direction": [
+     "fade"
+    ],
+    "horizon": [
+     "days"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "EURUSD"
+     ],
+     "mentioned": [
+      "spy",
+      "eurusd"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "XAUUSD",
+      "USDJPY"
+     ],
+     "channels": [
+      "fomc: policy: Fed -> dollar and US equities",
+      "commitments of traders: positioning: CFTC -> FX and gold"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "f4c4abaf3107"
+   },
+   {
+    "claim": "max return: if a negative gap, then you would go long so the max gain would be daily high minus open;",
+    "lang": "en",
+    "quantities": [
+     "gap",
+     "open"
+    ],
+    "direction": [
+     "negative",
+     "long"
+    ],
+    "horizon": [
+     "daily",
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "EURUSD"
+     ],
+     "mentioned": [
+      "spy",
+      "eurusd"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "XAUUSD",
+      "USDJPY"
+     ],
+     "channels": [
+      "fomc: policy: Fed -> dollar and US equities",
+      "commitments of traders: positioning: CFTC -> FX and gold"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "815b7f9de3f5"
+   },
+   {
+    "claim": "Here's the test that I ran: - If the TICK-NYSE's high > 500, go long SPY on the close of the minute bar.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "long"
+    ],
+    "horizon": [
+     "tick",
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "spy"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "db4ca97e351a"
+   },
+   {
+    "claim": "-If the TICK-NYSE's low < -500, go short SPY on the close of the minute bar.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "short"
+    ],
+    "horizon": [
+     "tick",
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "spy"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "d3371b7b3cf3"
+   }
+  ],
+  "n_claims": 4
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "G\u00f6del's Market: strategy",
+  "url": "http://godelsmarket.blogspot.com/search/label/strategy",
+  "published": "2026-09-11T08:30:14+00:00",
+  "symbols": [
+   "US500",
+   "EURUSD",
+   "USDTRY",
+   "WHEAT"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "correlation",
+   "gap",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "",
+  "endpoints": [
+   "http://godelsmarket.blogspot.com/2015/08/downloading-stock-market-news-for.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "ad053fe9c3d578ec042c",
+  "host": "godelsmarket.blogspot.com",
+  "claims": [
+   {
+    "claim": "Share to X Share to Facebook Share to Pinterest Labels: articles , backtest , fed days , papers , quantifiable edges , strategy Tuesday, August 14, 2012 Gap Trading If you were to fade each gap on AAPL that was .",
+    "lang": "en",
+    "quantities": [
+     "gap"
+    ],
+    "direction": [
+     "fade"
+    ],
+    "horizon": [
+     "days"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "EURUSD",
+      "USDTRY",
+      "WHEAT"
+     ],
+     "mentioned": [
+      "spy",
+      "eurusd",
+      "try",
+      "wheat"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "XAUUSD",
+      "USDJPY"
+     ],
+     "channels": [
+      "fomc: policy: Fed -> dollar and US equities",
+      "commitments of traders: positioning: CFTC -> FX and gold"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "f4c4abaf3107"
+   },
+   {
+    "claim": "max return: if a negative gap, then you would go long so the max gain would be daily high minus open;",
+    "lang": "en",
+    "quantities": [
+     "gap",
+     "open"
+    ],
+    "direction": [
+     "negative",
+     "long"
+    ],
+    "horizon": [
+     "daily",
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "EURUSD",
+      "USDTRY",
+      "WHEAT"
+     ],
+     "mentioned": [
+      "spy",
+      "eurusd",
+      "try",
+      "wheat"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "XAUUSD",
+      "USDJPY"
+     ],
+     "channels": [
+      "fomc: policy: Fed -> dollar and US equities",
+      "commitments of traders: positioning: CFTC -> FX and gold"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "815b7f9de3f5"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "https://adaptivetrader.wordpress.com/2012/12/28/cumulative-ibs-indicator/?share=twitter",
+  "url": "https://adaptivetrader.wordpress.com/2012/12/28/cumulative-ibs-indicator/?share=twitter",
+  "published": "2026-09-11T08:30:16+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://adaptivetrader.wordpress.com/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "549ed335d5e514716558",
+  "host": "adaptivetrader.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "indicator | Adaptive Trader",
+  "url": "https://adaptivetrader.wordpress.com/tag/indicator/",
+  "published": "2026-09-11T08:30:20+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "7864efcd46d1d940ff5c",
+  "host": "adaptivetrader.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "indicators | Adaptive Trader",
+  "url": "https://adaptivetrader.wordpress.com/tag/indicators/",
+  "published": "2026-09-11T08:30:25+00:00",
+  "symbols": [
+   "US500"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f11072e2f48a2c3b973a",
+  "host": "adaptivetrader.wordpress.com",
+  "claims": [
+   {
+    "claim": "Drivers of MR Performance Roundup: DV(2) DV2 Performance in Review Best Short Term Indicators Long DV2 in different 30-day volatility regimes And after, I found the indicator coded for AmiBroker at this Quanting Dutchman post .",
+    "lang": "en",
+    "quantities": [
+     "volatility"
+    ],
+    "direction": [
+     "short",
+     "long"
+    ],
+    "horizon": [
+     "day"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "spy"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "e695c271fdeb"
+   },
+   {
+    "claim": "60-Day ADX The classification for Trend Vs MR with the ADX MR: ADX(60) > 10 Trending: ADX(60) < 10 I understand that traditionally, a higher ADX signifies a stronger trend, but for some reason when I looked at the chart of the ADX(60) it seemed that at high values, it signified a range-bound market, so I decided to use high values as a signal for a MR market.",
+    "lang": "en",
+    "quantities": [
+     "trend",
+     "range"
+    ],
+    "direction": [
+     "higher"
+    ],
+    "horizon": [
+     "day"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "spy"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "6d213c2de86e"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "strategies | Adaptive Trader",
+  "url": "https://adaptivetrader.wordpress.com/tag/strategies/",
+  "published": "2026-09-11T08:30:39+00:00",
+  "symbols": [
+   "US500",
+   "USDTRY"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "auction",
+   "basis",
+   "breakout",
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "dd97872ad3554637b8da",
+  "host": "adaptivetrader.wordpress.com",
+  "claims": [
+   {
+    "claim": "To create a trading system that would short bursts of high volatility and buy short periods of low volatility I took the 5-day RSI of the daily Close-Open Range.",
+    "lang": "en",
+    "quantities": [
+     "volatility",
+     "close",
+     "open",
+     "range"
+    ],
+    "direction": [
+     "short",
+     "buy"
+    ],
+    "horizon": [
+     "day",
+     "daily"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "spy",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "3b7398897cf5"
+   },
+   {
+    "claim": "The rules of the system are simple: Buy: The close of today is higher than yesterday\u2019s 50-day high of the close.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "buy",
+     "higher"
+    ],
+    "horizon": [
+     "close",
+     "day"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "spy",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "61a5c1ca198a"
+   },
+   {
+    "claim": "Sell: The close of today is lower than yesterday\u2019s 25-day high of the close.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "sell",
+     "lower"
+    ],
+    "horizon": [
+     "close",
+     "day"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "spy",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "e5ef1bde704e"
+   },
+   {
+    "claim": "The rules were: Buy/Cover: DV2 < 50 Sell/Short: DV2 > 50 The orders were taken at the day the signal was generated at the close price.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "buy",
+     "sell"
+    ],
+    "horizon": [
+     "day",
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "spy",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "d43f99dc25ed"
+   },
+   {
+    "claim": "Drivers of MR Performance Roundup: DV(2) DV2 Performance in Review Best Short Term Indicators Long DV2 in different 30-day volatility regimes And after, I found the indicator coded for AmiBroker at this Quanting Dutchman post .",
+    "lang": "en",
+    "quantities": [
+     "volatility"
+    ],
+    "direction": [
+     "short",
+     "long"
+    ],
+    "horizon": [
+     "day"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "spy",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "e695c271fdeb"
+   },
+   {
+    "claim": "60-Day ADX The classification for Trend Vs MR with the ADX MR: ADX(60) > 10 Trending: ADX(60) < 10 I understand that traditionally, a higher ADX signifies a stronger trend, but for some reason when I looked at the chart of the ADX(60) it seemed that at high values, it signified a range-bound market, so I decided to use high values as a signal for a MR market.",
+    "lang": "en",
+    "quantities": [
+     "trend",
+     "range"
+    ],
+    "direction": [
+     "higher"
+    ],
+    "horizon": [
+     "day"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "spy",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "6d213c2de86e"
+   }
+  ],
+  "n_claims": 6
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "trading | Adaptive Trader",
+  "url": "https://adaptivetrader.wordpress.com/tag/trading/",
+  "published": "2026-09-11T08:30:55+00:00",
+  "symbols": [
+   "NAS100",
+   "US500",
+   "USDKRW",
+   "USDTRY"
+  ],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "basis",
+   "correlation",
+   "mean_reversion",
+   "momentum",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f212ba543f7cd2c0205f",
+  "host": "adaptivetrader.wordpress.com",
+  "claims": [
+   {
+    "claim": "Rules: Buy if the 250-day DV2 is greater than a threshold AND if it is less than the threshold + 10 (this means I will only buy if the DV2 is within a certain 10 point range).",
+    "lang": "en",
+    "quantities": [
+     "range"
+    ],
+    "direction": [
+     "buy"
+    ],
+    "horizon": [
+     "day"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "US500",
+      "USDKRW",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "nasdaq",
+      "spy",
+      "won",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "38f9a31a1323"
+   },
+   {
+    "claim": "Sell if the 250-day DV2 is less than a threshold OR if it is more than the threshold + 10 Results for 1/1/2000 \u2013 1/1/2010: Results for the same test for 1/1/2010 \u2013 1/1/2013: This is only a preliminary test over SPY, but it does lead to avenues for further research.",
+    "lang": "en",
+    "quantities": [
+     "lead"
+    ],
+    "direction": [
+     "sell"
+    ],
+    "horizon": [
+     "day"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "spy"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "78051cc65d3f"
+   },
+   {
+    "claim": "To create a trading system that would short bursts of high volatility and buy short periods of low volatility I took the 5-day RSI of the daily Close-Open Range.",
+    "lang": "en",
+    "quantities": [
+     "volatility",
+     "close",
+     "open",
+     "range"
+    ],
+    "direction": [
+     "short",
+     "buy"
+    ],
+    "horizon": [
+     "day",
+     "daily"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "US500",
+      "USDKRW",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "nasdaq",
+      "spy",
+      "won",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "3b7398897cf5"
+   },
+   {
+    "claim": "For example, say System XYZ from above has the following rules Buy: X > 10 Sell: X <10 Short: Y > 10 Cover: Y <10 X and Y are random indicators with the same 15-Day crossover equity curve feedback rules as before.",
+    "lang": "en",
+    "quantities": [
+     "curve"
+    ],
+    "direction": [
+     "buy",
+     "sell"
+    ],
+    "horizon": [
+     "day"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "US500",
+      "USDKRW",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "nasdaq",
+      "spy",
+      "won",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "1094046c9818"
+   }
+  ],
+  "n_claims": 4
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Cumulative IBS Indicator | Adaptive Trader",
+  "url": "https://adaptivetrader.wordpress.com/2012/12/28/cumulative-ibs-indicator/",
+  "published": "2026-09-11T08:30:56+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "69ab8e2097e8cf2efda4",
+  "host": "adaptivetrader.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Cumulative DV2 Indicator | Adaptive Trader",
+  "url": "https://adaptivetrader.wordpress.com/2012/12/27/cumulative-dv2/",
+  "published": "2026-09-11T08:30:58+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "882252d0263c6c9fdd45",
+  "host": "adaptivetrader.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "RSI of Volatility Indicator | Adaptive Trader",
+  "url": "https://adaptivetrader.wordpress.com/2013/01/03/rsi-of-volatility-indicator/",
+  "published": "2026-09-11T08:31:02+00:00",
+  "symbols": [
+   "US500"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "8eec0f0d4faf34a58fed",
+  "host": "adaptivetrader.wordpress.com",
+  "claims": [
+   {
+    "claim": "To create a trading system that would short bursts of high volatility and buy short periods of low volatility I took the 5-day RSI of the daily Close-Open Range.",
+    "lang": "en",
+    "quantities": [
+     "volatility",
+     "close",
+     "open",
+     "range"
+    ],
+    "direction": [
+     "short",
+     "buy"
+    ],
+    "horizon": [
+     "day",
+     "daily"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "spy"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "3b7398897cf5"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Cumulative IBS Indicator | Adaptive Trader",
+  "url": "https://adaptivetrader.wordpress.com/2012/12/28/cumulative-ibs-indicator/?replytocom=98",
+  "published": "2026-09-11T08:31:04+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "09a74c1f4b2ba3a9e135",
+  "host": "adaptivetrader.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Cumulative IBS Indicator | Adaptive Trader",
+  "url": "https://adaptivetrader.wordpress.com/2012/12/28/cumulative-ibs-indicator/?replytocom=100",
+  "published": "2026-09-11T08:31:06+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3bb974bd897c0213aabf",
+  "host": "adaptivetrader.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Managed Futures Broker | Wisdom Trading",
+  "url": "https://wisdomtrading.com/",
+  "published": "2026-09-11T08:31:15+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "correlation",
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "6d27f3716d9a14b85e51",
+  "host": "wisdomtrading.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Managed Futures Programs | Wisdom Trading",
+  "url": "https://wisdomtrading.com/managed-futures/",
+  "published": "2026-09-11T08:31:31+00:00",
+  "symbols": [
+   "USDKRW"
+  ],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "carry",
+   "correlation",
+   "mean_reversion",
+   "momentum",
+   "orderflow",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "8e2ebdba89a4ff3da308",
+  "host": "wisdomtrading.com",
+  "claims": [
+   {
+    "claim": "A managed futures account is a separately managed account in your name \u2014 you own the cash and positions directly, you see them daily, and you can typically add or withdraw capital with short notice.",
+    "lang": "en",
+    "quantities": [
+     "futures"
+    ],
+    "direction": [
+     "short"
+    ],
+    "horizon": [
+     "daily"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDKRW"
+     ],
+     "mentioned": [
+      "won"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "21e48e47dbb1"
+   },
+   {
+    "claim": "In a separately managed account, positions are exchange-traded futures contracts that can be closed during normal market hours, and capital can typically be added or withdrawn with a few business days\u2019 notice depending on the CTA\u2019s notification requirements.",
+    "lang": "en",
+    "quantities": [
+     "futures"
+    ],
+    "direction": [
+     "contracts"
+    ],
+    "horizon": [
+     "hours",
+     "days"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDKRW"
+     ],
+     "mentioned": [
+      "won"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "9d20ddf218f9"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Futures Trading Systems | Wisdom Trading",
+  "url": "https://wisdomtrading.com/trading-systems/",
+  "published": "2026-09-11T08:31:41+00:00",
+  "symbols": [
+   "USDKRW"
+  ],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "correlation",
+   "mean_reversion",
+   "momentum",
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "91fb0ad043b4633bdf58",
+  "host": "wisdomtrading.com",
+  "claims": [
+   {
+    "claim": "We talk through the strategy\u2019s logic, the markets it\u2019s designed for, the risk model, and the constraints that aren\u2019t obvious until you\u2019ve executed live \u2014 slippage assumptions, partial fills, session boundaries, contract roll mechanics.",
+    "lang": "en",
+    "quantities": [
+     "session"
+    ],
+    "direction": [
+     "contract"
+    ],
+    "horizon": [
+     "session"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDKRW"
+     ],
+     "mentioned": [
+      "won"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "57c0e7a11da1"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Futures Broker - CME, ICE, Eurex | Wisdom Trading",
+  "url": "https://wisdomtrading.com/brokerage/",
+  "published": "2026-09-11T08:31:47+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "night_session",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "69298cf99fb161168956",
+  "host": "wisdomtrading.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Commodity Hedging &amp; Futures Advisory | Wisdom Trading",
+  "url": "https://wisdomtrading.com/advisory-hedging/",
+  "published": "2026-09-11T08:32:04+00:00",
+  "symbols": [
+   "XAUUSD",
+   "XAGUSD",
+   "XPTUSD",
+   "XPDUSD",
+   "XCUUSD",
+   "XTIUSD",
+   "XNGUSD",
+   "USDKRW",
+   "SOYBEAN",
+   "CORN",
+   "SUGAR",
+   "COTTON",
+   "COFARA",
+   "WHEAT",
+   "USCOCOA"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "carry",
+   "inventory",
+   "positioning",
+   "seasonality"
+  ],
+  "confidence": 0.95,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "dd14e2926ec9860cb9ed",
+  "host": "wisdomtrading.com",
+  "claims": [
+   {
+    "claim": "We produce quarterly written hedge reports that include: position summary by commodity and contract month, mark-to-market valuation, hedge effectiveness against the underlying exposure, basis analysis, and forward-looking risk metrics under stress scenarios.",
+    "lang": "en",
+    "quantities": [
+     "basis"
+    ],
+    "direction": [
+     "contract"
+    ],
+    "horizon": [
+     "quarterly",
+     "month"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XPTUSD",
+      "XPDUSD",
+      "XCUUSD",
+      "XTIUSD",
+      "XNGUSD",
+      "USDKRW",
+      "SOYBEAN",
+      "CORN",
+      "SUGAR",
+      "COTTON",
+      "COFARA",
+      "WHEAT",
+      "USCOCOA"
+     ],
+     "mentioned": [
+      "gold",
+      "silver",
+      "platinum",
+      "palladium",
+      "copper",
+      "crude",
+      "natural gas",
+      "won",
+      "soybeans",
+      "corn",
+      "sugar",
+      "cotton",
+      "coffee",
+      "wheat",
+      "cocoa"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "ee68e4fbc8a0"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Futures Trading Insights | Wisdom Trading",
+  "url": "https://wisdomtrading.com/insights/",
+  "published": "2026-09-11T08:32:32+00:00",
+  "symbols": [
+   "XAUUSD",
+   "COFARA",
+   "USCOCOA"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "breakout",
+   "carry",
+   "mean_reversion",
+   "momentum"
+  ],
+  "confidence": 0.75,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a7b3eb4077fb5d96b8b1",
+  "host": "wisdomtrading.com",
+  "claims": [
+   {
+    "claim": "The honest answer is that today, more than at any point in the market\u2019s history, $5,000 is genuinely enough to open an account and trade \u2014 but \u201cenough to trade\u201d and \u201cenough to\u2026 Continue reading Is $5,000 Enough to Trade Futures?",
+    "lang": "en",
+    "quantities": [
+     "open",
+     "futures"
+    ],
+    "direction": [
+     "continue"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "COFARA",
+      "USCOCOA"
+     ],
+     "mentioned": [
+      "gold",
+      "coffee",
+      "cocoa"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "SOYBEAN",
+      "CORN",
+      "WHEAT",
+      "USDBRL"
+     ],
+     "channels": [
+      "el ni\u00f1o: weather/agri report -> grains and BRL"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "e4ea5931ae78"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Independent Futures Broker | Wisdom Trading",
+  "url": "https://wisdomtrading.com/about/",
+  "published": "2026-09-11T08:33:13+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "correlation",
+   "inventory",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "15913832a233cd0de4ff",
+  "host": "wisdomtrading.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Futures Account | Wisdom Trading",
+  "url": "https://wisdomtrading.com/get-started/",
+  "published": "2026-09-11T08:33:14+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3ee44146c0f8f60e313d",
+  "host": "wisdomtrading.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "How We Use AI to Develop and Test Trading Systems in Trading Blox - Wisdom Trading",
+  "url": "https://wisdomtrading.com/insights/ai-trading-blox-systems-development/",
+  "published": "2026-09-11T08:33:18+00:00",
+  "symbols": [
+   "COFARA"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "breakout",
+   "correlation",
+   "gap",
+   "momentum",
+   "night_session",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "8019a0c302a071c7aed6",
+  "host": "wisdomtrading.com",
+  "claims": [
+   {
+    "claim": "It can write code that reflects a strategy idea, but it has no intuition for slippage in illiquid contract months, holiday roll calendars, or which markets routinely have outsized gap risk overnight.",
+    "lang": "en",
+    "quantities": [
+     "gap"
+    ],
+    "direction": [
+     "contract"
+    ],
+    "horizon": [
+     "overnight"
+    ],
+    "instruments": {
+     "analogues": [
+      "COFARA"
+     ],
+     "mentioned": [
+      "coffee"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "c0bff0d29661"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Wisdom Trading, Author at Wisdom Trading",
+  "url": "https://wisdomtrading.com/insights/author/admin/",
+  "published": "2026-09-11T08:33:20+00:00",
+  "symbols": [
+   "XAUUSD",
+   "COFARA",
+   "USCOCOA"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "breakout",
+   "carry",
+   "mean_reversion",
+   "momentum"
+  ],
+  "confidence": 0.75,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "70a365d92b27b24b9605",
+  "host": "wisdomtrading.com",
+  "claims": [
+   {
+    "claim": "The honest answer is that today, more than at any point in the market\u2019s history, $5,000 is genuinely enough to open an account and trade \u2014 but \u201cenough to trade\u201d and \u201cenough to\u2026 Continue reading Is $5,000 Enough to Trade Futures?",
+    "lang": "en",
+    "quantities": [
+     "open",
+     "futures"
+    ],
+    "direction": [
+     "continue"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "COFARA",
+      "USCOCOA"
+     ],
+     "mentioned": [
+      "gold",
+      "coffee",
+      "cocoa"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "SOYBEAN",
+      "CORN",
+      "WHEAT",
+      "USDBRL"
+     ],
+     "channels": [
+      "el ni\u00f1o: weather/agri report -> grains and BRL"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "e4ea5931ae78"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Trading Systems Archives - Wisdom Trading",
+  "url": "https://wisdomtrading.com/insights/category/trading-systems/",
+  "published": "2026-09-11T08:33:24+00:00",
+  "symbols": [
+   "XAUUSD",
+   "SUGAR",
+   "COFARA",
+   "USCOCOA"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "breakout",
+   "carry",
+   "correlation",
+   "mean_reversion",
+   "momentum"
+  ],
+  "confidence": 0.75,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "1bb7459e39facc4e43b4",
+  "host": "wisdomtrading.com",
+  "claims": [
+   {
+    "claim": "The honest answer is that today, more than at any point in the market\u2019s history, $5,000 is genuinely enough to open an account and trade \u2014 but \u201cenough to trade\u201d and \u201cenough to\u2026 Continue reading Is $5,000 Enough to Trade Futures?",
+    "lang": "en",
+    "quantities": [
+     "open",
+     "futures"
+    ],
+    "direction": [
+     "continue"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "SUGAR",
+      "COFARA",
+      "USCOCOA"
+     ],
+     "mentioned": [
+      "gold",
+      "sugar",
+      "coffee",
+      "cocoa",
+      "palm oil"
+     ],
+     "transfer_only": [
+      "palm oil->softs"
+     ],
+     "indirect": [
+      "SOYBEAN",
+      "CORN",
+      "WHEAT",
+      "USDBRL"
+     ],
+     "channels": [
+      "el ni\u00f1o: weather/agri report -> grains and BRL"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "e4ea5931ae78"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Managed Futures Performance May 2026: Trend Recap | Wisdom Trading",
+  "url": "https://wisdomtrading.com/insights/managed-futures-may-2026-trend-recap/",
+  "published": "2026-09-11T08:33:28+00:00",
+  "symbols": [
+   "XAUUSD",
+   "XTIUSD",
+   "USDX",
+   "UST10Y"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "momentum",
+   "positioning"
+  ],
+  "confidence": 0.95,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "4c57ace0fd03ab467854",
+  "host": "wisdomtrading.com",
+  "claims": [
+   {
+    "claim": "87% Trend holds, short-term lags Trend following held up best in a month that on the surface looked unfriendly to systematic positioning.",
+    "lang": "en",
+    "quantities": [
+     "trend",
+     "positioning"
+    ],
+    "direction": [
+     "short"
+    ],
+    "horizon": [
+     "month"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XTIUSD",
+      "USDX",
+      "UST10Y"
+     ],
+     "mentioned": [
+      "gold",
+      "crude",
+      "dxy",
+      "treasuries"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "US500",
+      "XBRUSD",
+      "USDCAD",
+      "USDNOK"
+     ],
+     "channels": [
+      "the fed: policy: Fed -> dollar and US equities",
+      "strait of hormuz: energy flow: OPEC / inventories / chokepoints -> oil, CAD, NOK"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "ddfacb3866db"
+   },
+   {
+    "claim": "For trend programs that had built long energy exposure on the early-month rally, that reversal cost.",
+    "lang": "en",
+    "quantities": [
+     "trend",
+     "reversal"
+    ],
+    "direction": [
+     "long",
+     "rally"
+    ],
+    "horizon": [
+     "month"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XTIUSD",
+      "USDX",
+      "UST10Y"
+     ],
+     "mentioned": [
+      "gold",
+      "crude",
+      "dxy",
+      "treasuries"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "US500",
+      "XBRUSD",
+      "USDCAD",
+      "USDNOK"
+     ],
+     "channels": [
+      "the fed: policy: Fed -> dollar and US equities",
+      "strait of hormuz: energy flow: OPEC / inventories / chokepoints -> oil, CAD, NOK"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "c11e69a29b18"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Managed Futures Recommendations | Wisdom Trading",
+  "url": "https://wisdomtrading.com/managed-futures-insider/",
+  "published": "2026-09-11T08:33:31+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "8641983297ec80e50946",
+  "host": "wisdomtrading.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Futures Markets We Trade - Wisdom Trading",
+  "url": "https://wisdomtrading.com/markets/",
+  "published": "2026-09-11T08:33:33+00:00",
+  "symbols": [
+   "XAUUSD",
+   "XAGUSD",
+   "XPTUSD",
+   "XPDUSD",
+   "XCUUSD",
+   "XTIUSD",
+   "XNGUSD",
+   "HK50",
+   "NAS100",
+   "US500",
+   "US30",
+   "US2000",
+   "GER40",
+   "JPN225",
+   "UK100",
+   "EUSTX50"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "22a87efba60a9c747518",
+  "host": "wisdomtrading.com",
+  "claims": [
+   {
+    "claim": "Contract Specifications & Margins A practical reference on contract sizes, tick values, trading hours, and how futures margin (initial, maintenance, and SPAN) actually works \u2014 so you can size positions and manage risk correctly.",
+    "lang": "en",
+    "quantities": [
+     "futures"
+    ],
+    "direction": [
+     "contract"
+    ],
+    "horizon": [
+     "tick",
+     "hours"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XPTUSD",
+      "XPDUSD",
+      "XCUUSD",
+      "XTIUSD",
+      "XNGUSD",
+      "HK50",
+      "NAS100",
+      "US500",
+      "US30",
+      "US2000",
+      "GER40",
+      "JPN225",
+      "UK100",
+      "EUSTX50"
+     ],
+     "mentioned": [
+      "gold",
+      "silver",
+      "platinum",
+      "palladium",
+      "copper",
+      "wti",
+      "natural gas",
+      "hang seng",
+      "nasdaq",
+      "s&p 500",
+      "dow",
+      "russell 2000",
+      "dax",
+      "nikkei 225",
+      "ftse 100",
+      "euro stoxx"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "58f14567ed48"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Most of the insider trading alpha is gone by the time you see the filing: poof!",
+  "url": "https://tommijohnsen.substack.com/p/most-of-the-insider-trading-alpha/comments",
+  "published": "2026-09-11T08:33:42+00:00",
+  "symbols": [
+   "US500",
+   "TSMC",
+   "XAUUSD"
+  ],
+  "timeframes": [
+   "1M",
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "carry",
+   "inventory"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e91ffe1ce7ef9eedeb3d",
+  "host": "tommijohnsen.substack.com",
+  "claims": [
+   {
+    "claim": "The cluster definition needs an extra filter The standard academic definition of a cluster buy \u2014 three or more distinct insiders making open-market purchases in a short window, with role and 10b5-1 filtering applied \u2014 flagged four tickers on May 19: TSM (Taiwan Semiconductor), ONON (On Holding), GEHC (GE HealthCare), and SPGI (S&P Global).",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "buy",
+     "short"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "TSMC"
+     ],
+     "mentioned": [
+      "s&p",
+      "taiwan semiconductor"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "5ba0f4e2373c"
+   },
+   {
+    "claim": "With twenty to fifty cluster observations, the per-buy and same-day-same-price thresholds become tunable against an actual false-positive rate.",
+    "lang": "en",
+    "quantities": [
+     "rate"
+    ],
+    "direction": [
+     "buy",
+     "positive"
+    ],
+    "horizon": [
+     "day"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "US500",
+      "TSMC"
+     ],
+     "mentioned": [
+      "gold",
+      "s&p",
+      "taiwan semiconductor"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "1a26a347de24"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Technical Indicators &amp; Trading Resources Archives - Tradinformed",
+  "url": "https://www.tradinformed.com/product-category/trading-resources/",
+  "published": "2026-09-11T08:33:47+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "en-GB",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a297e2375db22149bb46",
+  "host": "www.tradinformed.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "How to Use a Tradinformed Backtest Model - Tradinformed",
+  "url": "https://www.tradinformed.com/how-use-tradinformed-backtest-model",
+  "published": "2026-09-11T08:34:00+00:00",
+  "symbols": [
+   "XAUUSD",
+   "EURUSD"
+  ],
+  "timeframes": [
+   "INTRADAY"
+  ],
+  "patterns": [
+   "basis"
+  ],
+  "confidence": 0.95,
+  "lang": "en-GB",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "dc89af73322b821a65d5",
+  "host": "www.tradinformed.com",
+  "claims": [
+   {
+    "claim": "This is a Strength Close, which exits a long position if the price is greater than the upper band.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "long"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "EURUSD"
+     ],
+     "mentioned": [
+      "gold",
+      "eur/usd"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "1502966301d2"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Technical Indicators - Tradinformed",
+  "url": "https://www.tradinformed.com/technical-indicators-guide/",
+  "published": "2026-09-11T08:34:02+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-GB",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d609dc936e44ac70873a",
+  "host": "www.tradinformed.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Improve Your Trading By Calculating Technical Indicators - Tradinformed",
+  "url": "https://www.tradinformed.com/improve-trading-learning-calculate-technical-indicators/",
+  "published": "2026-09-11T08:34:07+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "en-GB",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3effb42c59617b387a94",
+  "host": "www.tradinformed.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Technical Indicators in Excel - Get Better Trading Results! - Tradinformed",
+  "url": "https://www.tradinformed.com/better-trading-results-technical-indicators-excel/",
+  "published": "2026-09-11T08:34:11+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-GB",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "4ea98dd1b429281eb699",
+  "host": "www.tradinformed.com",
+  "claims": [],
+  "n_claims": 0
+ }
+]

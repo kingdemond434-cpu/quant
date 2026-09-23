@@ -1,0 +1,428 @@
+{
+ "generated_utc": "2026-09-05T01:22:19.075928+00:00",
+ "nodes": 50,
+ "artifacts": 99,
+ "findings": [],
+ "fatal": [],
+ "ok": true,
+ "stale": [
+  {
+   "check": "STALE_DECISION",
+   "node": "gateway",
+   "artifact": "desks/mt5/reports/ALLOCATOR_PROOF.json",
+   "why": "input absent",
+   "age_s": null,
+   "sla_s": 93600
+  }
+ ],
+ "stages": {
+  "miner_candidate_compiler": {
+   "coded": true,
+   "wired": true,
+   "running": true,
+   "decision_affecting": true,
+   "measured": false,
+   "stage": "DECISION_AFFECTING"
+  },
+  "deepening_worker": {
+   "coded": true,
+   "wired": true,
+   "running": false,
+   "decision_affecting": true,
+   "measured": false,
+   "stage": "WIRED"
+  },
+  "factor_residual_engine": {
+   "coded": true,
+   "wired": true,
+   "running": true,
+   "decision_affecting": true,
+   "measured": false,
+   "stage": "DECISION_AFFECTING"
+  },
+  "plumbing_miner": {
+   "coded": true,
+   "wired": true,
+   "running": true,
+   "decision_affecting": true,
+   "measured": false,
+   "stage": "DECISION_AFFECTING"
+  },
+  "transition_alpha": {
+   "coded": true,
+   "wired": true,
+   "running": true,
+   "decision_affecting": true,
+   "measured": false,
+   "stage": "DECISION_AFFECTING"
+  },
+  "weak_signal_compiler": {
+   "coded": true,
+   "wired": true,
+   "running": true,
+   "decision_affecting": true,
+   "measured": false,
+   "stage": "DECISION_AFFECTING"
+  },
+  "fund_playbook": {
+   "coded": true,
+   "wired": true,
+   "running": true,
+   "decision_affecting": true,
+   "measured": false,
+   "stage": "DECISION_AFFECTING"
+  },
+  "external_gauntlet": {
+   "coded": true,
+   "wired": true,
+   "running": true,
+   "decision_affecting": true,
+   "measured": true,
+   "stage": "MEASURED"
+  },
+  "universal_gate": {
+   "coded": true,
+   "wired": true,
+   "running": true,
+   "decision_affecting": true,
+   "measured": true,
+   "stage": "MEASURED"
+  },
+  "shadow_forward": {
+   "coded": true,
+   "wired": true,
+   "running": true,
+   "decision_affecting": true,
+   "measured": false,
+   "stage": "DECISION_AFFECTING"
+  },
+  "promoter": {
+   "coded": true,
+   "wired": true,
+   "running": true,
+   "decision_affecting": true,
+   "measured": true,
+   "stage": "MEASURED"
+  },
+  "state_vector_build": {
+   "coded": true,
+   "wired": true,
+   "running": true,
+   "decision_affecting": true,
+   "measured": false,
+   "stage": "DECISION_AFFECTING"
+  },
+  "state_admission_run": {
+   "coded": true,
+   "wired": true,
+   "running": true,
+   "decision_affecting": true,
+   "measured": true,
+   "stage": "MEASURED"
+  },
+  "pf_allocator": {
+   "coded": true,
+   "wired": true,
+   "running": true,
+   "decision_affecting": true,
+   "measured": true,
+   "stage": "MEASURED"
+  },
+  "gateway": {
+   "coded": true,
+   "wired": true,
+   "running": true,
+   "decision_affecting": true,
+   "measured": true,
+   "stage": "MEASURED"
+  },
+  "missed_growth": {
+   "coded": true,
+   "wired": true,
+   "running": true,
+   "decision_affecting": true,
+   "measured": false,
+   "stage": "DECISION_AFFECTING"
+  },
+  "capital_modifier_score": {
+   "coded": true,
+   "wired": true,
+   "running": false,
+   "decision_affecting": false,
+   "measured": false,
+   "stage": "WIRED"
+  },
+  "fill_surface": {
+   "coded": true,
+   "wired": true,
+   "running": false,
+   "decision_affecting": true,
+   "measured": false,
+   "stage": "WIRED"
+  },
+  "netting": {
+   "coded": true,
+   "wired": true,
+   "running": false,
+   "decision_affecting": false,
+   "measured": false,
+   "stage": "WIRED"
+  },
+  "release": {
+   "coded": true,
+   "wired": true,
+   "running": true,
+   "decision_affecting": true,
+   "measured": false,
+   "stage": "DECISION_AFFECTING"
+  },
+  "counterfactual_markout": {
+   "coded": true,
+   "wired": true,
+   "running": false,
+   "decision_affecting": true,
+   "measured": false,
+   "stage": "WIRED"
+  },
+  "excursions": {
+   "coded": true,
+   "wired": true,
+   "running": true,
+   "decision_affecting": true,
+   "measured": false,
+   "stage": "DECISION_AFFECTING"
+  },
+  "alpha_genome": {
+   "coded": true,
+   "wired": true,
+   "running": false,
+   "decision_affecting": true,
+   "measured": false,
+   "stage": "WIRED"
+  },
+  "opportunity_curve": {
+   "coded": true,
+   "wired": true,
+   "running": true,
+   "decision_affecting": true,
+   "measured": false,
+   "stage": "DECISION_AFFECTING"
+  },
+  "microstructure_miner": {
+   "coded": true,
+   "wired": true,
+   "running": true,
+   "decision_affecting": true,
+   "measured": false,
+   "stage": "DECISION_AFFECTING"
+  },
+  "markout": {
+   "coded": true,
+   "wired": true,
+   "running": false,
+   "decision_affecting": true,
+   "measured": false,
+   "stage": "WIRED"
+  },
+  "allocator_attribution": {
+   "coded": true,
+   "wired": true,
+   "running": false,
+   "decision_affecting": false,
+   "measured": false,
+   "stage": "WIRED"
+  },
+  "regime_monitor": {
+   "coded": true,
+   "wired": true,
+   "running": true,
+   "decision_affecting": true,
+   "measured": true,
+   "stage": "MEASURED"
+  },
+  "regime_coverage": {
+   "coded": true,
+   "wired": true,
+   "running": true,
+   "decision_affecting": true,
+   "measured": false,
+   "stage": "DECISION_AFFECTING"
+  },
+  "resurrection": {
+   "coded": true,
+   "wired": true,
+   "running": false,
+   "decision_affecting": false,
+   "measured": false,
+   "stage": "WIRED"
+  },
+  "data_prospector": {
+   "coded": true,
+   "wired": true,
+   "running": true,
+   "decision_affecting": false,
+   "measured": false,
+   "stage": "RUNNING"
+  },
+  "research_productivity": {
+   "coded": true,
+   "wired": true,
+   "running": false,
+   "decision_affecting": false,
+   "measured": false,
+   "stage": "WIRED"
+  },
+  "live_manifest": {
+   "coded": true,
+   "wired": true,
+   "running": false,
+   "decision_affecting": false,
+   "measured": false,
+   "stage": "WIRED"
+  },
+  "alpha_evolution": {
+   "coded": true,
+   "wired": true,
+   "running": false,
+   "decision_affecting": true,
+   "measured": false,
+   "stage": "WIRED"
+  },
+  "style_premia_sweep": {
+   "coded": true,
+   "wired": true,
+   "running": false,
+   "decision_affecting": true,
+   "measured": false,
+   "stage": "WIRED"
+  },
+  "cross_asset_graph": {
+   "coded": true,
+   "wired": true,
+   "running": false,
+   "decision_affecting": true,
+   "measured": false,
+   "stage": "WIRED"
+  },
+  "tail_alpha_search": {
+   "coded": true,
+   "wired": true,
+   "running": false,
+   "decision_affecting": true,
+   "measured": false,
+   "stage": "WIRED"
+  },
+  "anomaly_factory": {
+   "coded": true,
+   "wired": true,
+   "running": true,
+   "decision_affecting": true,
+   "measured": false,
+   "stage": "DECISION_AFFECTING"
+  },
+  "survivor_distiller": {
+   "coded": true,
+   "wired": true,
+   "running": true,
+   "decision_affecting": true,
+   "measured": false,
+   "stage": "DECISION_AFFECTING"
+  },
+  "factor_model_coevolution": {
+   "coded": true,
+   "wired": true,
+   "running": true,
+   "decision_affecting": true,
+   "measured": false,
+   "stage": "DECISION_AFFECTING"
+  },
+  "repo_miner": {
+   "coded": true,
+   "wired": true,
+   "running": true,
+   "decision_affecting": true,
+   "measured": false,
+   "stage": "DECISION_AFFECTING"
+  },
+  "deep_forest_miner": {
+   "coded": true,
+   "wired": true,
+   "running": true,
+   "decision_affecting": true,
+   "measured": false,
+   "stage": "DECISION_AFFECTING"
+  },
+  "revival_engine": {
+   "coded": true,
+   "wired": true,
+   "running": true,
+   "decision_affecting": true,
+   "measured": false,
+   "stage": "DECISION_AFFECTING"
+  },
+  "drift_monitor": {
+   "coded": true,
+   "wired": true,
+   "running": false,
+   "decision_affecting": true,
+   "measured": false,
+   "stage": "WIRED"
+  },
+  "exit_accounts": {
+   "coded": true,
+   "wired": true,
+   "running": true,
+   "decision_affecting": true,
+   "measured": false,
+   "stage": "DECISION_AFFECTING"
+  },
+  "action_counterfactuals": {
+   "coded": true,
+   "wired": true,
+   "running": true,
+   "decision_affecting": true,
+   "measured": false,
+   "stage": "DECISION_AFFECTING"
+  },
+  "research_pnl": {
+   "coded": true,
+   "wired": true,
+   "running": false,
+   "decision_affecting": false,
+   "measured": false,
+   "stage": "WIRED"
+  },
+  "mutation_yield": {
+   "coded": true,
+   "wired": true,
+   "running": false,
+   "decision_affecting": true,
+   "measured": false,
+   "stage": "WIRED"
+  },
+  "research_memory": {
+   "coded": true,
+   "wired": true,
+   "running": false,
+   "decision_affecting": false,
+   "measured": false,
+   "stage": "WIRED"
+  },
+  "research_bandit": {
+   "coded": true,
+   "wired": true,
+   "running": true,
+   "decision_affecting": false,
+   "measured": false,
+   "stage": "RUNNING"
+  }
+ },
+ "stage_counts": {
+  "MISSING": 0,
+  "CODED": 0,
+  "WIRED": 19,
+  "RUNNING": 2,
+  "DECISION_AFFECTING": 22,
+  "MEASURED": 7
+ }
+}

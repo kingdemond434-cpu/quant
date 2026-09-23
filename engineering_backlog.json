@@ -1,7 +1,17 @@
 {
-  "generated": "2026-08-19T03:22:31.407581+00:00",
+  "generated": "2026-08-29T03:50:13.667048+00:00",
   "roi_formula": "impact * p_success / effort_hours",
   "open": [
+    {
+      "id": "archive_integrity_ok",
+      "title": "Verify OI/LS/liq archives append daily (protect the",
+      "impact": 0.6,
+      "p": 0.85,
+      "effort_h": 1.0,
+      "why": "The binding constraint is calendar-time data. A silent archive failure wastes 40 da",
+      "roi": 0.51,
+      "done": false
+    },
     {
       "id": "execution_tca_fill_log",
       "title": "Per-fill TCA log + funding-deadline-aware maker patience (execution edge P0)",
@@ -44,7 +54,6 @@
     }
   ],
   "completed": [
-    "archive_integrity_ok",
     "watchdog_run_logged_off",
     "honest_deployed_sharpe",
     "single_portfolio_object",
@@ -73,13 +82,13 @@
     "autodiscovery_crypto_throughput"
   ],
   "next_action": {
-    "id": "execution_tca_fill_log",
-    "title": "Per-fill TCA log + funding-deadline-aware maker patience (execution edge P0)",
-    "impact": 0.45,
+    "id": "archive_integrity_ok",
+    "title": "Verify OI/LS/liq archives append daily (protect the",
+    "impact": 0.6,
     "p": 0.85,
-    "effort_h": 3.0,
-    "why": "Log decision-px vs fill-px, time-to-fill, maker/taker outcome per order -> web/tca.json; tune maker patience so legs FILL before the 8h funding snapshot (missing a funding event costs more than patient quoting). Target: exec cost < 15% of gross funding. PLUS edge-weighted routing (round-3 growth review): when expected_edge_bps > 2.5x taker_cost_bps, TAKE liquidity immediately -- queue-sitting through a fat funding spike saves 4bps of fees and loses 40bps of alpha; maker-first is for thin edges with time to wait.",
-    "roi": 0.128,
+    "effort_h": 1.0,
+    "why": "The binding constraint is calendar-time data. A silent archive failure wastes 40 da",
+    "roi": 0.51,
     "done": false
   }
 }

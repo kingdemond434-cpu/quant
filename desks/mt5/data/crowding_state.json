@@ -1,0 +1,29 @@
+{
+ "updated": "2026-09-12T11:26:04.653394+00:00",
+ "latest": {
+  "ts": "2026-09-12T11:26:04.647429+00:00",
+  "query": "KAMA Kauffman adaptive moving average strategy",
+  "mechanism": "saleh_kama",
+  "github": {},
+  "reddit": {
+   "posts": 0,
+   "avg_score": 0.0,
+   "comments": 0
+  },
+  "github_stars_delta": 0,
+  "news_topics": {
+   "fed": 21,
+   "cpi": 1,
+   "nonfarm": 0,
+   "rates": 1,
+   "oil": 0,
+   "gold": 0,
+   "bonds": 0,
+   "inflation": 1,
+   "crypto": 0
+  },
+  "edge_publicity": "LOW",
+  "expected_decay": "NORMAL"
+ },
+ "history_len": 80
+}

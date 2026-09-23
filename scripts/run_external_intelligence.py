@@ -7,6 +7,7 @@ contract.  External claims enter as priors only; they cannot become survivors or
 
 from __future__ import annotations
 
+import ast
 import hashlib
 import json
 import sys
@@ -37,6 +38,9 @@ from libs.research.gap_contract import Gap, publish  # noqa: E402
 
 OUT = ROOT / "data" / "intelligence" / "external_frontier.json"
 QUEUE = ROOT / "data" / "hypothesis_queue.jsonl"
+MT5_QUEUE = ROOT / "desks" / "mt5" / "data" / "research_queue.json"
+MT5_INTAKE = ROOT / "data" / "intelligence" / "mt5_external_intake.json"
+MT5_FAMILY_SOURCE = ROOT / "desks" / "mt5" / "research" / "run_hunt17.py"
 
 
 def _read(rel: str, default: Any = None) -> Any:
@@ -116,6 +120,11 @@ def build() -> dict[str, Any]:
             "required_data": row.get("data"),
             "empirical_test": row.get("validation"),
             "falsifier": row.get("falsifier"),
+            "regime_hypothesis": row.get("regime_hypothesis"),
+            "activation_rule": row.get("activation_rule"),
+            "reduced_rule": row.get("reduced_rule"),
+            "hibernation_rule": row.get("hibernation_rule"),
+            "unconditional_control": row.get("unconditional_control"),
             "evidence_class": row.get("evidence_class"),
             "component_assets": row.get("component_assets", []),
         }
@@ -219,6 +228,153 @@ def inject_hypotheses(items: list[dict[str, Any]]) -> int:
     return len(candidates)
 
 
+def _mt5_family_parameters() -> dict[str, set[str]]:
+    """Read the live factory's family registry without importing its heavy research runtime."""
+    class _NormalizeDictCalls(ast.NodeTransformer):
+        def visit_Call(self, node: ast.Call) -> ast.AST:
+            if (
+                isinstance(node.func, ast.Name)
+                and node.func.id == "dict"
+                and not node.args
+                and all(keyword.arg is not None for keyword in node.keywords)
+            ):
+                return ast.Dict(
+                    keys=[ast.Constant(keyword.arg) for keyword in node.keywords],
+                    values=[self.visit(keyword.value) for keyword in node.keywords],
+                )
+            raise ValueError("MT5 PARAMS contains executable syntax; intake fails closed")
+
+    tree = ast.parse(MT5_FAMILY_SOURCE.read_text("utf-8"), filename=str(MT5_FAMILY_SOURCE))
+    for node in tree.body:
+        if isinstance(node, ast.Assign) and any(
+            isinstance(target, ast.Name) and target.id == "PARAMS" for target in node.targets
+        ):
+            raw = ast.literal_eval(ast.fix_missing_locations(_NormalizeDictCalls().visit(node.value)))
+            if not isinstance(raw, dict):
+                break
+            return {
+                str(family): {
+                    str(key)
+                    for variant in variants
+                    if isinstance(variant, dict)
+                    for key in variant
+                }
+                for family, variants in raw.items()
+                if isinstance(variants, list)
+            }
+    raise ValueError("MT5 PARAMS registry is absent or non-literal; external intake fails closed")
+
+
+def _external_identity(item: dict[str, Any]) -> str:
+    source = str(item.get("url", item.get("source", "")))
+    mechanism = str(item.get("mechanism", ""))
+    hypothesis = str(item.get("hypothesis", ""))
+    return hashlib.sha256(f"{source}|{mechanism}|{hypothesis}".encode()).hexdigest()[:20]
+
+
+def inject_mt5_experiments(items: list[dict[str, Any]]) -> dict[str, Any]:
+    """Bridge public extraction into the executable MT5 queue, never by fuzzy analogy.
+
+    A model may propose a recipe, but only a family and parameter vocabulary read directly from
+    the current MT5 runner can enter QUEUED. Novel mechanisms remain explicit conversion debt;
+    that is preferable to silently losing them or claiming a vaguely similar test covered them.
+    """
+    families = _mt5_family_parameters()
+    try:
+        queue = json.loads(MT5_QUEUE.read_text("utf-8")) if MT5_QUEUE.exists() else []
+    except json.JSONDecodeError as exc:
+        raise ValueError(f"MT5 research queue malformed; refusing overwrite: {exc}") from exc
+    if not isinstance(queue, list):
+        raise ValueError("MT5 research queue is not a list; refusing overwrite")
+    seen = {
+        str(row.get("external_candidate_id"))
+        for row in queue
+        if isinstance(row, dict) and row.get("external_candidate_id")
+    }
+    queued: list[str] = []
+    dispositions: list[dict[str, Any]] = []
+    now = datetime.now(tz=UTC).isoformat()
+    for item in items:
+        if str(item.get("status", "")) != "EXTRACTED" or not item.get("mechanism"):
+            continue
+        identity = _external_identity(item)
+        recipe = item.get("mt5_experiment")
+        base = {
+            "external_candidate_id": identity,
+            "source": item.get("url", item.get("source")),
+            "mechanism": item.get("mechanism"),
+        }
+        if identity in seen:
+            dispositions.append({**base, "disposition": "DEDUPLICATED"})
+            continue
+        if not isinstance(recipe, dict):
+            dispositions.append({
+                **base,
+                "disposition": "BLOCKED_IMPLEMENTATION",
+                "reason": item.get("measurable_gap") or (
+                    "no exact existing MT5 family; independent implementation and preregistration owed"
+                ),
+            })
+            continue
+        family = str(recipe.get("family", ""))
+        side = str(recipe.get("side", "")).upper()
+        overrides = recipe.get("param_overrides", {})
+        if family not in families or side not in {"LONG", "SHORT"} or not isinstance(overrides, dict):
+            dispositions.append({
+                **base,
+                "disposition": "REJECTED_INVALID_RECIPE",
+                "reason": "family/side/param_overrides do not match the executable MT5 contract",
+            })
+            continue
+        unknown = sorted(set(map(str, overrides)) - families[family])
+        if unknown or any(not isinstance(value, (int, float, bool)) for value in overrides.values()):
+            dispositions.append({
+                **base,
+                "disposition": "REJECTED_INVALID_RECIPE",
+                "reason": f"unsupported or nonnumeric parameters: {unknown}",
+            })
+            continue
+        exp_id = f"ext-{identity[:12]}"
+        queue.append({
+            "id": exp_id,
+            "geneology_id": f"public:{identity}",
+            "external_candidate_id": identity,
+            "hypothesis": str(item.get("hypothesis") or item.get("mechanism")),
+            "family": family,
+            "side": side,
+            "params": {},
+            "param_overrides": overrides,
+            "source": item.get("url", item.get("source")),
+            "evidence_class": item.get("evidence_class", "UNVERIFIED"),
+            "authority": "EXTERNAL_PRIOR_ONLY_ORIGINAL_TEN_GATES_REQUIRED",
+            "regime_hypothesis": item.get("regime_hypothesis"),
+            "activation_rule": item.get("activation_rule"),
+            "reduced_rule": item.get("reduced_rule"),
+            "hibernation_rule": item.get("hibernation_rule"),
+            "unconditional_control": item.get("unconditional_control"),
+            "created_at": now,
+            "status": "QUEUED",
+        })
+        seen.add(identity)
+        queued.append(exp_id)
+        dispositions.append({**base, "disposition": "QUEUED", "experiment_id": exp_id})
+    if queued:
+        MT5_QUEUE.parent.mkdir(parents=True, exist_ok=True)
+        temporary = MT5_QUEUE.with_suffix(".json.tmp")
+        temporary.write_text(json.dumps(queue, indent=2, default=str), "utf-8")
+        temporary.replace(MT5_QUEUE)
+    report = {
+        "generated": now,
+        "authority": "EXTERNAL_PRIOR_ONLY; executable queue still requires original ten gates",
+        "supported_families": sorted(families),
+        "queued": queued,
+        "dispositions": dispositions,
+    }
+    MT5_INTAKE.parent.mkdir(parents=True, exist_ok=True)
+    MT5_INTAKE.write_text(json.dumps(report, indent=1, default=str), "utf-8")
+    return report
+
+
 def publish_gaps(report: dict[str, Any], injected: int) -> None:
     graph = report["capability_graph"]
     routes = report["discovery_route_coverage"]
@@ -286,13 +442,17 @@ def main() -> int:
     items = _rows("data/intelligence/public_strategy_items.json", "items")
     deep_candidates = report["deep_forest_intelligence"].get("hypothesis_candidates", [])
     injected = inject_hypotheses(items + [row for row in deep_candidates if isinstance(row, dict)])
+    mt5_intake = inject_mt5_experiments(items)
     report["hypotheses_injected"] = injected
+    report["mt5_experiments_queued"] = len(mt5_intake["queued"])
+    report["mt5_external_intake"] = str(MT5_INTAKE.relative_to(ROOT))
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps(report, indent=1, default=str), "utf-8")
     publish_gaps(report, injected)
     print(
         f"external-intelligence: {len(report['capability_graph']['nodes'])} graph nodes; "
-        f"{injected} new candidates -> hypothesis queue; external claims remain priors"
+        f"{injected} new candidates -> hypothesis queue; "
+        f"{len(mt5_intake['queued'])} exact recipes -> MT5 queue; external claims remain priors"
     )
     return 0
 

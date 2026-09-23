@@ -1,0 +1,14 @@
+PF ALLOCATOR ARMED -- 2026-09-02, principal instruction.
+
+WHAT THIS AUTHORISES, precisely: gateway.allocator_heat() may return the total heat that
+research/pf_allocator.py solved for, instead of the derived heat_budget(). Nothing else. The
+gateway still trades only the sleeves sleeve_set() emits -- the armed gold book plus what the
+promoter has promoted -- so this cannot put capital into an unvalidated sleeve. It changes how
+much the validated book may hold, and the order cap_by_heat trims it in.
+
+IT STILL FAILS CLOSED ON EVERY DOUBT. A missing, stale (>1h), uncertified, or growth-less
+artifact, or a total outside (0, 30%], and the derived budget stands. Deleting this file returns
+the desk to the derived budget immediately.
+
+Basis at arming: 19 funded sleeves across 8 mechanisms, largest 40%, certified against the
+measured growth curve, P(annual loss) 2.3%.

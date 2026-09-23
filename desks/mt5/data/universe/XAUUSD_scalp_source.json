@@ -1,0 +1,13 @@
+{
+  "fetched_at": "2026-09-12T11:55:05+00:00",
+  "source_server": "FusionMarkets-Live",
+  "source_company": "Fusion Markets Pty Ltd",
+  "account_trade_allowed": true,
+  "symbol": "XAUUSD",
+  "rows": {
+    "M1": 20000,
+    "M5": 20000,
+    "M15": 20000
+  },
+  "promotion_authority": true
+}

@@ -78,6 +78,7 @@ from typing import Any
 
 __all__ = [
     "CAUSAL_CHAIN",
+    "DATA_AXIS_MANDATE",
     "OBJECTIVE",
     "OBJECTIVE_PREAMBLE",
     "PRINCIPLES",
@@ -1037,6 +1038,51 @@ RESIDUAL_MANDATE = (
     "-> the experiment that would settle it. An item with no path to an experiment is an opinion, "
     "and this desk already has enough of those.\n"
     "=== END RESIDUAL MANDATE ===\n"
+)
+
+
+#: THE DATA-AXIS MANDATE -- every seat hunts SOURCES, not only mechanisms.
+#:
+#: THE PRINCIPAL'S INSTRUCTION, 2026-09-12: deepseek, kimi, the OpenRouter panel and every other
+#: seat must mine data axes and deep forests worldwide, not only propose strategies.
+#:
+#: WHY IT IS A SEPARATE MANDATE AND NOT A LINE IN THE PREAMBLE. The preamble is 6,425 characters
+#: against a 6,500 bound that exists because a preamble nobody reads constrains nothing, so this
+#: is injected alongside `RESIDUAL_MANDATE` instead -- same seam, same organs, no crowding of the
+#: constitution.
+#:
+#: WHY SOURCES ARE WORTH MORE THAN MECHANISMS RIGHT NOW, measured on this desk. The corpus holds
+#: 204,581 mined rows and converts them to 125 exposures; adding 74 conversion aliases moved that
+#: by ONE. The corpus is saturated in mechanisms. Meanwhile n_eff sits near 7 against an
+#: asymptote of 1/rho ~ 14.4 at the measured rho ~ 0.070 -- so the binding constraint is the
+#: INDEPENDENCE of the bets, and a genuinely new data axis is the only input that lowers rho
+#: rather than adding another draw from the same distribution. One new axis is worth more than a
+#: hundred new mechanisms built on the axes already held.
+DATA_AXIS_MANDATE = (
+    "=== DATA-AXIS MANDATE (hunt SOURCES, not only mechanisms) ===\n"
+    "Alongside whatever else you are asked for, return DATA AXES: measurable, dated, free or "
+    "cheaply reachable series this desk could condition an MT5 instrument on and probably does "
+    "not hold. This is not a side task -- the desk's binding constraint is n_eff = "
+    "N/(1+(N-1)rho), currently ~7 independent bets against an asymptote of 1/rho ~ 14. Another "
+    "mechanism built on an axis already held adds a correlated draw; a genuinely NEW axis lowers "
+    "rho and raises the ceiling itself.\n"
+    "HUNT THE WHOLE WORLD, not the English-language finance web. The deep forests are explicitly "
+    "in scope and explicitly under-mined: Chinese (期货日报实盘大赛, 蓝海密剑, 七禾网, 私募排排网, "
+    "聚宽/优矿/米筐/BigQuant, 知乎, 雪球, Gitee, Bilibili, 微信 via 搜狗), Japanese, Korean, "
+    "Russian, Portuguese/Brazilian, Spanish/LatAm, Arabic, Turkish, Indian and African sources; "
+    "national statistics offices, central banks, port and customs authorities, grid and pipeline "
+    "operators, weather and agriculture agencies, exchange and regulator disclosures.\n"
+    "EVERY AXIS YOU RETURN MUST CARRY, or it is unusable:\n"
+    "  name | what it MEASURES | publisher | URL or exact endpoint | update cadence | history "
+    "depth | cost (free/paid) | the MT5 INSTRUMENTS it could condition | the MECHANISM linking "
+    "them | why it is likely UNCORRELATED with price-derived signals\n"
+    "A SOURCE YOU ONLY HALF-REMEMBER IS STILL WORTH RETURNING, clearly marked UNVERIFIED -- the "
+    "desk probes every candidate before it ingests anything, so a wrong URL costs one HTTP "
+    "request while an unmentioned source costs the axis permanently. Never withhold a candidate "
+    "for lack of certainty; withhold nothing and label honestly.\n"
+    "PREFER: forced flows, inventories, positioning, physical constraints, settlement and "
+    "auction mechanics, regulatory calendars, capacity and congestion. AVOID: anything derived "
+    "from the price series the desk already has -- that is not a new axis, it is a transform.\n"
 )
 
 

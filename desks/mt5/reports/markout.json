@@ -1,0 +1,11 @@
+{
+  "at": "2026-09-08T18:45:46+00:00",
+  "usable": false,
+  "n_matched": 0,
+  "n_unfilled_intents": 28,
+  "n_unmatched_deals": 13,
+  "mean_slip_quote": 0.0,
+  "mean_slip_r": 0.0,
+  "edge_share": null,
+  "why": "no matched intent/deal pairs yet. Nothing has filled, or the gateway predates intent recording. This is NOT a clean bill of health -- execution is UNMEASURED until a fill exists."
+}

@@ -1,0 +1,137 @@
+[
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/2375343",
+  "symbols": [
+   "AUDCAD",
+   "AUDJPY",
+   "AUDNZD",
+   "AUDUSD",
+   "CADCHF",
+   "CHFJPY",
+   "EURJPY",
+   "EURNZD",
+   "EURUSD",
+   "GBPAUD",
+   "GBPCAD",
+   "GBPJPY"
+  ],
+  "found_at": "2026-09-11T03:31:16+00:00",
+  "platform": "mt5",
+  "phenotypes": [
+   "max_growth",
+   "low_dd_high_return",
+   "algo_survivor",
+   "multi_fx"
+  ],
+  "ev_score": 35.201,
+  "growth_pct": 3198.04,
+  "weeks": 63.0,
+  "pf": 1.33,
+  "max_dd_pct": null,
+  "trades": 549.0,
+  "win_pct": 336.0,
+  "algo_pct": 92.0,
+  "subscribers": 14.0,
+  "author": "/en/users/x_alexander_x",
+  "author_other_signals": [
+   {
+    "sid": "2356441",
+    "title": "'FXtrading' by Alexander Pavlenko",
+    "growth": "1300%",
+    "curve_points": 20,
+    "curve_dd": -1.0
+   }
+  ],
+  "hour_histogram": {
+   "08": 2,
+   "13": 3,
+   "15": 2,
+   "14": 1,
+   "06": 1,
+   "02": 2,
+   "05": 1,
+   "01": 1,
+   "12": 2,
+   "07": 1
+  }
+ },
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/2280569",
+  "symbols": [
+   "AUDCAD",
+   "AUDUSD",
+   "NADCAD",
+   "NZDCAD"
+  ],
+  "found_at": "2026-09-11T03:31:16+00:00",
+  "platform": "mt5",
+  "phenotypes": [
+   "max_growth",
+   "low_dd_high_return",
+   "high_pf",
+   "algo_survivor",
+   "multi_fx"
+  ],
+  "ev_score": 44.757,
+  "growth_pct": 3402.04,
+  "weeks": 90.0,
+  "pf": 3.7,
+  "max_dd_pct": null,
+  "trades": 2167.0,
+  "win_pct": 1733.0,
+  "algo_pct": 92.0,
+  "subscribers": 18.0,
+  "author": "/en/users/gutiv",
+  "author_other_signals": [
+   {
+    "sid": "2315819",
+    "title": "'MagicGW 7M 8434' by Ihor Hut",
+    "growth": "237%",
+    "curve_points": 20,
+    "curve_dd": -10.0
+   },
+   {
+    "sid": "2385768",
+    "title": "'QQ med 3398' by Ihor Hut",
+    "growth": "112%",
+    "curve_points": 20,
+    "curve_dd": -21.0
+   },
+   {
+    "sid": "2354616",
+    "title": "'GridWise qq 4321' by Ihor Hut",
+    "growth": "238%",
+    "curve_points": 20,
+    "curve_dd": 0.0
+   }
+  ],
+  "hour_histogram": {
+   "22": 3,
+   "01": 2,
+   "00": 3,
+   "12": 2,
+   "09": 3,
+   "08": 2,
+   "18": 2,
+   "04": 1,
+   "17": 1,
+   "15": 3,
+   "10": 2,
+   "05": 4,
+   "21": 5,
+   "11": 1,
+   "13": 2,
+   "02": 1,
+   "03": 3,
+   "14": 1,
+   "19": 1,
+   "07": 1
+  }
+ }
+]

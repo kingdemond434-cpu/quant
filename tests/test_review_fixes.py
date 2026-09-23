@@ -132,9 +132,21 @@ def test_deadman_ignores_dust_accounts():
 
 # ---------------- panel dossier: secrets never leave the machine -------------------------
 def test_panel_mission_rotation_and_consensus():
-    from scripts.run_external_panel import _ROTATION, _consensus, _mission
+    from pathlib import Path
+
+    from scripts.run_external_panel import _MISSIONS, _ROTATION, _consensus, _mission
     name, prompt = _mission()
-    assert name in _ROTATION and len(prompt) > 200      # a real mission prompt loaded
+    # THE ROTATION IS NO LONGER THE ONLY DOOR. `69fd240c` made the verify pass repay its own debt
+    # at this choke point: while a triage-bearing run stands unaudited, the NEXT panel run is the
+    # verify mission -- and "verify" is deliberately kept OUT of _ROTATION so a clock cannot burn
+    # a paid run when there is nothing to audit. This assertion still read `name in _ROTATION`, so
+    # it failed for every run carrying verify debt and had the committed-code CI gate red on
+    # 2026-08-27, which makes every other CI verdict since then uninformative (L1.49). The
+    # property worth pinning is that a REAL mission with a REAL prompt was selected, by either
+    # door -- not that one of the two doors is the only one.
+    assert name in (*_ROTATION, "verify", "tier1"), f"{name} is not a known mission"
+    assert (Path(_MISSIONS) / f"{name}.txt").exists(), f"{name} has no prompt file"
+    assert len(prompt) > 200                            # a real mission prompt loaded
     resp = [{"response": "ADL liquidation squeeze risk"},
             {"response": "adl force-close and kelly overbet"},
             {"response": "nothing relevant here"}]

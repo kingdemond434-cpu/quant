@@ -1,0 +1,456 @@
+[
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Interpolation of term structure of implied volatility",
+  "url": "https://quant.stackexchange.com/questions/79045/interpolation-of-term-structure-of-implied-volatility",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-06T22:24:57+00:00",
+  "score": 0,
+  "tags": [
+   "implied-volatility",
+   "volatility-surface",
+   "interpolation"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Were internet related companies at the height of the dot-com bubble really overvalued from a long term persepective?",
+  "url": "https://quant.stackexchange.com/questions/85287/were-internet-related-companies-at-the-height-of-the-dot-com-bubble-really-overv",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-06T22:24:57+00:00",
+  "score": 2,
+  "tags": [
+   "equities",
+   "time-series",
+   "returns",
+   "market-data",
+   "historical-data"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Plotting Treasury Futures implied repo over time: what should the time series look like?",
+  "url": "https://quant.stackexchange.com/questions/85576/plotting-treasury-futures-implied-repo-over-time-what-should-the-time-series-lo",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-06T22:24:57+00:00",
+  "score": 0,
+  "tags": [
+   "fixed-income",
+   "bond-futures",
+   "treasuries",
+   "basis"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "what is the best academic dataset for returns of European stocks?",
+  "url": "https://quant.stackexchange.com/questions/81358/what-is-the-best-academic-dataset-for-returns-of-european-stocks",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-06T22:24:57+00:00",
+  "score": 0,
+  "tags": [
+   "data",
+   "historical-data",
+   "database"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Analytical formula for discounted exposure of a European Put on a stock in Real-World measure",
+  "url": "https://quant.stackexchange.com/questions/76175/analytical-formula-for-discounted-exposure-of-a-european-put-on-a-stock-in-real",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-06T22:24:57+00:00",
+  "score": 1,
+  "tags": [
+   "black-scholes",
+   "put",
+   "expected-value",
+   "european",
+   "real-world-measure"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Fedwire Security Service - where securities are stored?",
+  "url": "https://quant.stackexchange.com/questions/85829/fedwire-security-service-where-securities-are-stored",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-06T22:24:57+00:00",
+  "score": 1,
+  "tags": [
+   "banks",
+   "central-banking",
+   "settlement"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "QuantLib - Different accrual day count then coupon payments",
+  "url": "https://quant.stackexchange.com/questions/85822/quantlib-different-accrual-day-count-then-coupon-payments",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-06T22:24:57+00:00",
+  "score": 0,
+  "tags": [
+   "programming",
+   "fixed-income",
+   "quantlib"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "How to prove with put-call parity: return multiplier ratio of ILCD (index linked certificate deposit ) &lt; 1",
+  "url": "https://quant.stackexchange.com/questions/70664/how-to-prove-with-put-call-parity-return-multiplier-ratio-of-ilcd-index-linked",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-06T22:24:57+00:00",
+  "score": 0,
+  "tags": [
+   "put-call-parity"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Where to get historical intraday stock data?",
+  "url": "https://quant.stackexchange.com/questions/51043/where-to-get-historical-intraday-stock-data",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-06T22:24:57+00:00",
+  "score": 12,
+  "tags": [
+   "equities",
+   "data",
+   "intraday"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Where to download Earnings Conference Call transcripts?",
+  "url": "https://quant.stackexchange.com/questions/18918/where-to-download-earnings-conference-call-transcripts",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-06T22:24:57+00:00",
+  "score": 3,
+  "tags": [
+   "earnings"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "How to Determine Parameters in a Non-recombining Binomial Tree for Option Pricing",
+  "url": "https://quant.stackexchange.com/questions/76625/how-to-determine-parameters-in-a-non-recombining-binomial-tree-for-option-pricin",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-06T22:24:57+00:00",
+  "score": 0,
+  "tags": [
+   "option-pricing",
+   "binomial-tree"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Factors use during Portfolio Construction",
+  "url": "https://quant.stackexchange.com/questions/85826/factors-use-during-portfolio-construction",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-06T22:24:57+00:00",
+  "score": 0,
+  "tags": [
+   "factor-models",
+   "factor-investing"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Is realized volatility autocorrelation due to causal relationships between current realized volatility and future latent volatility?",
+  "url": "https://quant.stackexchange.com/questions/85288/is-realized-volatility-autocorrelation-due-to-causal-relationships-between-curre",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-06T22:24:57+00:00",
+  "score": 0,
+  "tags": [
+   "volatility"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Adjust a quality measure (Sortino Ratio) to account for Autocorrelation in Trade Returns",
+  "url": "https://quant.stackexchange.com/questions/85823/adjust-a-quality-measure-sortino-ratio-to-account-for-autocorrelation-in-trade",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-06T22:24:57+00:00",
+  "score": 0,
+  "tags": [
+   "trading",
+   "return",
+   "auto-correlation"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Computing Intraday Volatility using mid price",
+  "url": "https://quant.stackexchange.com/questions/83738/computing-intraday-volatility-using-mid-price",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-06T22:24:57+00:00",
+  "score": 0,
+  "tags": [
+   "volatility",
+   "intraday"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "How is anything bespoke priced and traded?",
+  "url": "https://quant.stackexchange.com/questions/85824/how-is-anything-bespoke-priced-and-traded",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-06T22:24:57+00:00",
+  "score": 0,
+  "tags": [
+   "options"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Predictive Forecast (Close, 14)",
+  "url": "https://quant.stackexchange.com/questions/79006/predictive-forecast-close-14",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-06T22:24:57+00:00",
+  "score": 0,
+  "tags": [
+   "regression",
+   "forecasting",
+   "variance",
+   "prediction",
+   "price"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Bitcoin Pi Cycle - top and bottom indicator - precise definition",
+  "url": "https://quant.stackexchange.com/questions/85821/bitcoin-pi-cycle-top-and-bottom-indicator-precise-definition",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-06T22:24:57+00:00",
+  "score": -2,
+  "tags": [
+   "technical-analysis",
+   "cryptocurrency",
+   "bitcoin"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "How should correlated, regime-dependent return-path forecasts be combined into a trading consensus?",
+  "url": "https://quant.stackexchange.com/questions/85792/how-should-correlated-regime-dependent-return-path-forecasts-be-combined-into-a",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-06T22:24:57+00:00",
+  "score": 2,
+  "tags": [
+   "time-series",
+   "risk-management",
+   "statistics",
+   "machine-learning",
+   "forecasting"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Hawkes process MLE calibration diverges (\u03b2 \u2192 bound) on tick data with millisecond-tied timestamps. Is timestamp jittering the standard fix?",
+  "url": "https://quant.stackexchange.com/questions/85703/hawkes-process-mle-calibration-diverges-%ce%b2-%e2%86%92-bound-on-tick-data-with-millisecon",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-06T22:24:57+00:00",
+  "score": 1,
+  "tags": [
+   "statistics",
+   "high-frequency",
+   "market-microstructure",
+   "statistical-finance"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Is there a way to derive a fair price from cryptocurrency trade (no quote) data that is free of bid-ask bounce?",
+  "url": "https://quant.stackexchange.com/questions/83961/is-there-a-way-to-derive-a-fair-price-from-cryptocurrency-trade-no-quote-data",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-06T22:24:57+00:00",
+  "score": 1,
+  "tags": [
+   "high-frequency",
+   "market-microstructure",
+   "tick-data",
+   "cryptocurrency",
+   "fair-value"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Replicating 2c-c &amp; 2p-p from Bjerksund Stensland (2002)",
+  "url": "https://quant.stackexchange.com/questions/83532/replicating-2c-c-2p-p-from-bjerksund-stensland-2002",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-06T22:24:57+00:00",
+  "score": 2,
+  "tags": [
+   "option-pricing",
+   "american-options"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Explaining the Risk Neutral Measure",
+  "url": "https://quant.stackexchange.com/questions/55239/explaining-the-risk-neutral-measure",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-06T22:24:57+00:00",
+  "score": 34,
+  "tags": [
+   "option-pricing",
+   "stochastic-processes",
+   "risk-neutral-measure",
+   "pricing",
+   "martingale"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "GBM with adjusted normal distribution",
+  "url": "https://quant.stackexchange.com/questions/85269/gbm-with-adjusted-normal-distribution",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-06T22:24:57+00:00",
+  "score": 0,
+  "tags": [
+   "monte-carlo",
+   "geometric-brownian",
+   "stochastic-drift"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "APIs to get first notice date for relevant commodities / futures?",
+  "url": "https://quant.stackexchange.com/questions/85816/apis-to-get-first-notice-date-for-relevant-commodities-futures",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-06T22:24:57+00:00",
+  "score": 0,
+  "tags": [
+   "programming",
+   "futures",
+   "commodities"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Market price of volatility risk",
+  "url": "https://quant.stackexchange.com/questions/16138/market-price-of-volatility-risk",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-06T22:24:57+00:00",
+  "score": 8,
+  "tags": [
+   "stochastic-volatility"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Caplet stripping in the bwd-looking RFR world with/without maturity adjustment",
+  "url": "https://quant.stackexchange.com/questions/69900/caplet-stripping-in-the-bwd-looking-rfr-world-with-without-maturity-adjustment",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-06T22:24:57+00:00",
+  "score": 8,
+  "tags": [
+   "interest-rates",
+   "implied-volatility",
+   "european-options",
+   "caplet",
+   "rfr"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Estimating Zero Coupon Curve using only Fixed-Coupon bonds available",
+  "url": "https://quant.stackexchange.com/questions/71590/estimating-zero-coupon-curve-using-only-fixed-coupon-bonds-available",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-06T22:24:57+00:00",
+  "score": 0,
+  "tags": [
+   "estimation",
+   "yield",
+   "fixed",
+   "income"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Looking for non-GAUSS Code for Thiery Roncalli&#39;s book on Risk Parity and Budgeting",
+  "url": "https://quant.stackexchange.com/questions/57737/looking-for-non-gauss-code-for-thiery-roncallis-book-on-risk-parity-and-budgeti",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-06T22:24:57+00:00",
+  "score": 3,
+  "tags": [
+   "programming",
+   "risk-management",
+   "risk-parity"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Framework for hypothesis testing and non-linear signal extraction in alternative data",
+  "url": "https://quant.stackexchange.com/questions/85737/framework-for-hypothesis-testing-and-non-linear-signal-extraction-in-alternative",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-06T22:24:57+00:00",
+  "score": 0,
+  "tags": [
+   "statistics",
+   "machine-learning",
+   "economics",
+   "data-mining"
+  ]
+ }
+]

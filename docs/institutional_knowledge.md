@@ -1,5 +1,13 @@
 # Institutional Knowledge — the desk's compounding encyclopedia
 
+> **UNIVERSE RETARGETED 2026-08-18, header added 2026-09-05.** Entries written before that date
+> were learned on the crypto-exchange desk, which is retired; the live desk is `desks/mt5/` on the
+> MT5/Fusion Markets universe. **Nothing here is deleted, and a reviewer should read all of it.**
+> Most of what this file holds is about METHOD, MEASUREMENT AND THIS DESK'S OWN FAILURE MODES --
+> how a gate was fooled, where a number came from, which monitoring gap read as clean -- and every
+> one of those transfers unchanged. Where an entry's evidence is a venue reading, treat the reading
+> as dated history and the lesson as live. No entry here authorises hunting a crypto exchange.
+
 The CRO loop APPENDS to this every cycle it learns something durable. It is the memory that makes
 research cheaper over time: read it before proposing an idea, and never re-learn a lesson already here.
 Companion: the code gate `libs/research/alpha_economics.py` (scores ideas by EV before effort) and

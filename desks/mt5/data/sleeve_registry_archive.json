@@ -1,0 +1,1799 @@
+{
+ "archived": [
+  {
+   "key": "CADJPY.asia",
+   "archived_at": "2026-08-26T11:17:39+00:00",
+   "reason": "frozen under the pre-venue schema, where data_venue held the ROUTE (MT5:/CACHE:) rather than the venue. Not a pre-registration of the current quantity; evidence retained here, clock restarts.",
+   "row": {
+    "identity": {
+     "family": "session_range_breakout",
+     "symbol": "CADJPY",
+     "direction": "LONG",
+     "timeframe": "H1",
+     "selector": "asia",
+     "condition": null,
+     "params": {
+      "range_start": 7,
+      "rr": 2.0,
+      "ttl_bars": 12,
+      "wait_bars": 12
+     },
+     "code_hash": "02f3e887f9a439bb",
+     "cost_hash": "a8f5251483f49824",
+     "data_venue": "MT5:FusionMarkets-Live",
+     "sleeve_id": "4766b89cf3e7ff8aeda9"
+    },
+    "frozen_at": "2026-08-26T01:44:47+00:00",
+    "forward_start": "2026-08-25T23:25:02.141407+00:00",
+    "status": "IDENTITY_BROKEN",
+    "status_why": "cost_hash changed after the clock froze",
+    "status_at": "2026-08-26T11:15:15+00:00"
+   }
+  },
+  {
+   "key": "CADJPY.asia#rr=2.5",
+   "archived_at": "2026-08-26T11:17:39+00:00",
+   "reason": "frozen under the pre-venue schema, where data_venue held the ROUTE (MT5:/CACHE:) rather than the venue. Not a pre-registration of the current quantity; evidence retained here, clock restarts.",
+   "row": {
+    "identity": {
+     "family": "session_range_breakout",
+     "symbol": "CADJPY",
+     "direction": "LONG",
+     "timeframe": "H1",
+     "selector": "asia",
+     "condition": null,
+     "params": {
+      "range_start": 7,
+      "rr": 2.5,
+      "ttl_bars": 12,
+      "wait_bars": 12
+     },
+     "code_hash": "02f3e887f9a439bb",
+     "cost_hash": "a8f5251483f49824",
+     "data_venue": "MT5:FusionMarkets-Live",
+     "sleeve_id": "e7ba9c6feba00c43ffcd"
+    },
+    "frozen_at": "2026-08-26T01:44:47+00:00",
+    "forward_start": "2026-08-26T01:16:27.604518+00:00",
+    "status": "IDENTITY_BROKEN",
+    "status_why": "cost_hash changed after the clock froze",
+    "status_at": "2026-08-26T11:15:15+00:00"
+   }
+  },
+  {
+   "key": "CADJPY.asia#rr=1.5",
+   "archived_at": "2026-08-26T11:17:39+00:00",
+   "reason": "frozen under the pre-venue schema, where data_venue held the ROUTE (MT5:/CACHE:) rather than the venue. Not a pre-registration of the current quantity; evidence retained here, clock restarts.",
+   "row": {
+    "identity": {
+     "family": "session_range_breakout",
+     "symbol": "CADJPY",
+     "direction": "LONG",
+     "timeframe": "H1",
+     "selector": "asia",
+     "condition": null,
+     "params": {
+      "range_start": 7,
+      "rr": 1.5,
+      "ttl_bars": 12,
+      "wait_bars": 12
+     },
+     "code_hash": "02f3e887f9a439bb",
+     "cost_hash": "a8f5251483f49824",
+     "data_venue": "MT5:FusionMarkets-Live",
+     "sleeve_id": "c44df42b7aaa1b5924dd"
+    },
+    "frozen_at": "2026-08-26T01:44:48+00:00",
+    "forward_start": "2026-08-26T01:16:27.647405+00:00",
+    "status": "IDENTITY_BROKEN",
+    "status_why": "cost_hash changed after the clock froze",
+    "status_at": "2026-08-26T11:15:15+00:00"
+   }
+  },
+  {
+   "key": "EURJPY.asia#rr=1.5",
+   "archived_at": "2026-08-26T11:17:39+00:00",
+   "reason": "frozen under the pre-venue schema, where data_venue held the ROUTE (MT5:/CACHE:) rather than the venue. Not a pre-registration of the current quantity; evidence retained here, clock restarts.",
+   "row": {
+    "identity": {
+     "family": "session_range_breakout",
+     "symbol": "EURJPY",
+     "direction": "LONG",
+     "timeframe": "H1",
+     "selector": "asia",
+     "condition": null,
+     "params": {
+      "range_start": 7,
+      "rr": 1.5,
+      "ttl_bars": 12,
+      "wait_bars": 12
+     },
+     "code_hash": "02f3e887f9a439bb",
+     "cost_hash": "bfaaed36b0e0215e",
+     "data_venue": "MT5:FusionMarkets-Live",
+     "sleeve_id": "fa52a7abcb0d0e1128f6"
+    },
+    "frozen_at": "2026-08-26T01:44:48+00:00",
+    "forward_start": "2026-08-26T01:16:27.697523+00:00",
+    "status": "IDENTITY_BROKEN",
+    "status_why": "cost_hash changed after the clock froze",
+    "status_at": "2026-08-26T11:15:15+00:00"
+   }
+  },
+  {
+   "key": "EURJPY.asia",
+   "archived_at": "2026-08-26T11:17:39+00:00",
+   "reason": "frozen under the pre-venue schema, where data_venue held the ROUTE (MT5:/CACHE:) rather than the venue. Not a pre-registration of the current quantity; evidence retained here, clock restarts.",
+   "row": {
+    "identity": {
+     "family": "session_range_breakout",
+     "symbol": "EURJPY",
+     "direction": "LONG",
+     "timeframe": "H1",
+     "selector": "asia",
+     "condition": null,
+     "params": {
+      "range_start": 7,
+      "rr": 2.0,
+      "ttl_bars": 12,
+      "wait_bars": 12
+     },
+     "code_hash": "02f3e887f9a439bb",
+     "cost_hash": "bfaaed36b0e0215e",
+     "data_venue": "MT5:FusionMarkets-Live",
+     "sleeve_id": "7d97535bf0069960805b"
+    },
+    "frozen_at": "2026-08-26T01:44:48+00:00",
+    "forward_start": "2026-08-25T23:25:02.184957+00:00",
+    "status": "IDENTITY_BROKEN",
+    "status_why": "cost_hash changed after the clock froze",
+    "status_at": "2026-08-26T11:15:16+00:00"
+   }
+  },
+  {
+   "key": "EURJPY.asia#rr=2.5",
+   "archived_at": "2026-08-26T11:17:39+00:00",
+   "reason": "frozen under the pre-venue schema, where data_venue held the ROUTE (MT5:/CACHE:) rather than the venue. Not a pre-registration of the current quantity; evidence retained here, clock restarts.",
+   "row": {
+    "identity": {
+     "family": "session_range_breakout",
+     "symbol": "EURJPY",
+     "direction": "LONG",
+     "timeframe": "H1",
+     "selector": "asia",
+     "condition": null,
+     "params": {
+      "range_start": 7,
+      "rr": 2.5,
+      "ttl_bars": 12,
+      "wait_bars": 12
+     },
+     "code_hash": "02f3e887f9a439bb",
+     "cost_hash": "bfaaed36b0e0215e",
+     "data_venue": "MT5:FusionMarkets-Live",
+     "sleeve_id": "0fb68730aa1dcd6c97c0"
+    },
+    "frozen_at": "2026-08-26T01:44:48+00:00",
+    "forward_start": "2026-08-26T01:16:27.779327+00:00",
+    "status": "IDENTITY_BROKEN",
+    "status_why": "cost_hash changed after the clock froze",
+    "status_at": "2026-08-26T11:15:16+00:00"
+   }
+  },
+  {
+   "key": "GBPJPY.asia#rr=1.5",
+   "archived_at": "2026-08-26T11:17:39+00:00",
+   "reason": "frozen under the pre-venue schema, where data_venue held the ROUTE (MT5:/CACHE:) rather than the venue. Not a pre-registration of the current quantity; evidence retained here, clock restarts.",
+   "row": {
+    "identity": {
+     "family": "session_range_breakout",
+     "symbol": "GBPJPY",
+     "direction": "LONG",
+     "timeframe": "H1",
+     "selector": "asia",
+     "condition": null,
+     "params": {
+      "range_start": 7,
+      "rr": 1.5,
+      "ttl_bars": 12,
+      "wait_bars": 12
+     },
+     "code_hash": "02f3e887f9a439bb",
+     "cost_hash": "bfaaed36b0e0215e",
+     "data_venue": "MT5:FusionMarkets-Live",
+     "sleeve_id": "fd92e08f4869b01741e1"
+    },
+    "frozen_at": "2026-08-26T01:44:48+00:00",
+    "forward_start": "2026-08-26T01:16:27.826206+00:00",
+    "status": "IDENTITY_BROKEN",
+    "status_why": "cost_hash changed after the clock froze",
+    "status_at": "2026-08-26T11:15:16+00:00"
+   }
+  },
+  {
+   "key": "GBPJPY.asia#rr=2.5",
+   "archived_at": "2026-08-26T11:17:39+00:00",
+   "reason": "frozen under the pre-venue schema, where data_venue held the ROUTE (MT5:/CACHE:) rather than the venue. Not a pre-registration of the current quantity; evidence retained here, clock restarts.",
+   "row": {
+    "identity": {
+     "family": "session_range_breakout",
+     "symbol": "GBPJPY",
+     "direction": "LONG",
+     "timeframe": "H1",
+     "selector": "asia",
+     "condition": null,
+     "params": {
+      "range_start": 7,
+      "rr": 2.5,
+      "ttl_bars": 12,
+      "wait_bars": 12
+     },
+     "code_hash": "02f3e887f9a439bb",
+     "cost_hash": "bfaaed36b0e0215e",
+     "data_venue": "MT5:FusionMarkets-Live",
+     "sleeve_id": "3f0a89873d8b1c73d472"
+    },
+    "frozen_at": "2026-08-26T01:44:48+00:00",
+    "forward_start": "2026-08-26T01:16:27.857736+00:00",
+    "status": "IDENTITY_BROKEN",
+    "status_why": "cost_hash changed after the clock froze",
+    "status_at": "2026-08-26T11:15:16+00:00"
+   }
+  },
+  {
+   "key": "USDJPY.asia#rr=1.5",
+   "archived_at": "2026-08-26T11:17:39+00:00",
+   "reason": "frozen under the pre-venue schema, where data_venue held the ROUTE (MT5:/CACHE:) rather than the venue. Not a pre-registration of the current quantity; evidence retained here, clock restarts.",
+   "row": {
+    "identity": {
+     "family": "session_range_breakout",
+     "symbol": "USDJPY",
+     "direction": "LONG",
+     "timeframe": "H1",
+     "selector": "asia",
+     "condition": null,
+     "params": {
+      "range_start": 7,
+      "rr": 1.5,
+      "ttl_bars": 12,
+      "wait_bars": 12
+     },
+     "code_hash": "02f3e887f9a439bb",
+     "cost_hash": "bfaaed36b0e0215e",
+     "data_venue": "MT5:FusionMarkets-Live",
+     "sleeve_id": "8957e340386e63670917"
+    },
+    "frozen_at": "2026-08-26T01:44:48+00:00",
+    "forward_start": "2026-08-26T01:16:27.907781+00:00",
+    "status": "IDENTITY_BROKEN",
+    "status_why": "cost_hash changed after the clock froze",
+    "status_at": "2026-08-26T11:15:16+00:00"
+   }
+  },
+  {
+   "key": "USDJPY.asia",
+   "archived_at": "2026-08-26T11:17:39+00:00",
+   "reason": "frozen under the pre-venue schema, where data_venue held the ROUTE (MT5:/CACHE:) rather than the venue. Not a pre-registration of the current quantity; evidence retained here, clock restarts.",
+   "row": {
+    "identity": {
+     "family": "session_range_breakout",
+     "symbol": "USDJPY",
+     "direction": "LONG",
+     "timeframe": "H1",
+     "selector": "asia",
+     "condition": null,
+     "params": {
+      "range_start": 7,
+      "rr": 2.0,
+      "ttl_bars": 12,
+      "wait_bars": 12
+     },
+     "code_hash": "02f3e887f9a439bb",
+     "cost_hash": "bfaaed36b0e0215e",
+     "data_venue": "MT5:FusionMarkets-Live",
+     "sleeve_id": "e1536a33dd30bf38c00d"
+    },
+    "frozen_at": "2026-08-26T01:44:48+00:00",
+    "forward_start": "2026-08-25T23:25:02.055030+00:00",
+    "status": "IDENTITY_BROKEN",
+    "status_why": "cost_hash changed after the clock froze",
+    "status_at": "2026-08-26T11:15:16+00:00"
+   }
+  },
+  {
+   "key": "USDJPY.asia#rr=2.5",
+   "archived_at": "2026-08-26T11:17:39+00:00",
+   "reason": "frozen under the pre-venue schema, where data_venue held the ROUTE (MT5:/CACHE:) rather than the venue. Not a pre-registration of the current quantity; evidence retained here, clock restarts.",
+   "row": {
+    "identity": {
+     "family": "session_range_breakout",
+     "symbol": "USDJPY",
+     "direction": "LONG",
+     "timeframe": "H1",
+     "selector": "asia",
+     "condition": null,
+     "params": {
+      "range_start": 7,
+      "rr": 2.5,
+      "ttl_bars": 12,
+      "wait_bars": 12
+     },
+     "code_hash": "02f3e887f9a439bb",
+     "cost_hash": "bfaaed36b0e0215e",
+     "data_venue": "MT5:FusionMarkets-Live",
+     "sleeve_id": "223d25374ddee1264bfa"
+    },
+    "frozen_at": "2026-08-26T01:44:48+00:00",
+    "forward_start": "2026-08-26T01:16:27.996746+00:00",
+    "status": "IDENTITY_BROKEN",
+    "status_why": "cost_hash changed after the clock froze",
+    "status_at": "2026-08-26T11:15:16+00:00"
+   }
+  },
+  {
+   "key": "XAUUSD.asia#rr=1.5",
+   "archived_at": "2026-08-26T11:17:39+00:00",
+   "reason": "frozen under the pre-venue schema, where data_venue held the ROUTE (MT5:/CACHE:) rather than the venue. Not a pre-registration of the current quantity; evidence retained here, clock restarts.",
+   "row": {
+    "identity": {
+     "family": "session_range_breakout",
+     "symbol": "XAUUSD",
+     "direction": "LONG",
+     "timeframe": "H1",
+     "selector": "asia",
+     "condition": null,
+     "params": {
+      "range_start": 7,
+      "rr": 1.5,
+      "ttl_bars": 12,
+      "wait_bars": 12
+     },
+     "code_hash": "02f3e887f9a439bb",
+     "cost_hash": "fdeef54d06f470bf",
+     "data_venue": "MT5:FusionMarkets-Live",
+     "sleeve_id": "28f53d362efad73ba3dc"
+    },
+    "frozen_at": "2026-08-26T01:44:48+00:00",
+    "forward_start": "2026-08-26T01:16:28.044299+00:00",
+    "status": "LIVE"
+   }
+  },
+  {
+   "key": "XAUUSD.asia",
+   "archived_at": "2026-08-26T11:17:39+00:00",
+   "reason": "frozen under the pre-venue schema, where data_venue held the ROUTE (MT5:/CACHE:) rather than the venue. Not a pre-registration of the current quantity; evidence retained here, clock restarts.",
+   "row": {
+    "identity": {
+     "family": "session_range_breakout",
+     "symbol": "XAUUSD",
+     "direction": "LONG",
+     "timeframe": "H1",
+     "selector": "asia",
+     "condition": null,
+     "params": {
+      "range_start": 7,
+      "rr": 2.0,
+      "ttl_bars": 12,
+      "wait_bars": 12
+     },
+     "code_hash": "02f3e887f9a439bb",
+     "cost_hash": "fdeef54d06f470bf",
+     "data_venue": "MT5:FusionMarkets-Live",
+     "sleeve_id": "a25c6841833616009898"
+    },
+    "frozen_at": "2026-08-26T01:44:48+00:00",
+    "forward_start": "2026-08-25T23:25:01.916932+00:00",
+    "status": "LIVE"
+   }
+  },
+  {
+   "key": "XAUUSD.asia#rr=2.5",
+   "archived_at": "2026-08-26T11:17:39+00:00",
+   "reason": "frozen under the pre-venue schema, where data_venue held the ROUTE (MT5:/CACHE:) rather than the venue. Not a pre-registration of the current quantity; evidence retained here, clock restarts.",
+   "row": {
+    "identity": {
+     "family": "session_range_breakout",
+     "symbol": "XAUUSD",
+     "direction": "LONG",
+     "timeframe": "H1",
+     "selector": "asia",
+     "condition": null,
+     "params": {
+      "range_start": 7,
+      "rr": 2.5,
+      "ttl_bars": 12,
+      "wait_bars": 12
+     },
+     "code_hash": "02f3e887f9a439bb",
+     "cost_hash": "fdeef54d06f470bf",
+     "data_venue": "MT5:FusionMarkets-Live",
+     "sleeve_id": "8c79d6b83a31fa37b0d1"
+    },
+    "frozen_at": "2026-08-26T01:44:48+00:00",
+    "forward_start": "2026-08-26T01:16:28.159135+00:00",
+    "status": "LIVE"
+   }
+  },
+  {
+   "key": "XAUUSD.asia#rr=1.5_wait_bars=8",
+   "archived_at": "2026-08-26T11:17:39+00:00",
+   "reason": "frozen under the pre-venue schema, where data_venue held the ROUTE (MT5:/CACHE:) rather than the venue. Not a pre-registration of the current quantity; evidence retained here, clock restarts.",
+   "row": {
+    "identity": {
+     "family": "session_range_breakout",
+     "symbol": "XAUUSD",
+     "direction": "LONG",
+     "timeframe": "H1",
+     "selector": "asia",
+     "condition": null,
+     "params": {
+      "range_start": 7,
+      "rr": 1.5,
+      "ttl_bars": 12,
+      "wait_bars": 8
+     },
+     "code_hash": "02f3e887f9a439bb",
+     "cost_hash": "fdeef54d06f470bf",
+     "data_venue": "MT5:FusionMarkets-Live",
+     "sleeve_id": "bfe48add97f9130d2e12"
+    },
+    "frozen_at": "2026-08-26T01:44:48+00:00",
+    "forward_start": "2026-08-26T01:16:28.196809+00:00",
+    "status": "LIVE"
+   }
+  },
+  {
+   "key": "CADJPY.asia",
+   "archived_at": "2026-08-26T11:19:14+00:00",
+   "reason": "frozen under the pre-venue schema, where data_venue held the ROUTE (MT5:/CACHE:) rather than the venue. Not a pre-registration of the current quantity; evidence retained here, clock restarts.",
+   "row": {
+    "identity": {
+     "family": "session_range_breakout",
+     "symbol": "CADJPY",
+     "direction": "LONG",
+     "timeframe": "H1",
+     "selector": "asia",
+     "condition": null,
+     "params": {
+      "range_start": 7,
+      "rr": 2.0,
+      "ttl_bars": 12,
+      "wait_bars": 12
+     },
+     "code_hash": "02f3e887f9a439bb",
+     "cost_hash": "a96aca9b593495e9",
+     "data_venue": "MT5:FusionMarkets-Live",
+     "sleeve_id": "00829520dd7cb98b0b54"
+    },
+    "frozen_at": "2026-08-26T11:17:41+00:00",
+    "forward_start": "2026-08-25T23:25:02.141407+00:00",
+    "status": "LIVE"
+   }
+  },
+  {
+   "key": "CADJPY.asia#rr=2.5",
+   "archived_at": "2026-08-26T11:19:14+00:00",
+   "reason": "frozen under the pre-venue schema, where data_venue held the ROUTE (MT5:/CACHE:) rather than the venue. Not a pre-registration of the current quantity; evidence retained here, clock restarts.",
+   "row": {
+    "identity": {
+     "family": "session_range_breakout",
+     "symbol": "CADJPY",
+     "direction": "LONG",
+     "timeframe": "H1",
+     "selector": "asia",
+     "condition": null,
+     "params": {
+      "range_start": 7,
+      "rr": 2.5,
+      "ttl_bars": 12,
+      "wait_bars": 12
+     },
+     "code_hash": "02f3e887f9a439bb",
+     "cost_hash": "a96aca9b593495e9",
+     "data_venue": "MT5:FusionMarkets-Live",
+     "sleeve_id": "5208729b67ed69ed9d94"
+    },
+    "frozen_at": "2026-08-26T11:17:41+00:00",
+    "forward_start": "2026-08-26T01:16:27.604518+00:00",
+    "status": "LIVE"
+   }
+  },
+  {
+   "key": "CADJPY.asia#rr=1.5",
+   "archived_at": "2026-08-26T11:19:14+00:00",
+   "reason": "frozen under the pre-venue schema, where data_venue held the ROUTE (MT5:/CACHE:) rather than the venue. Not a pre-registration of the current quantity; evidence retained here, clock restarts.",
+   "row": {
+    "identity": {
+     "family": "session_range_breakout",
+     "symbol": "CADJPY",
+     "direction": "LONG",
+     "timeframe": "H1",
+     "selector": "asia",
+     "condition": null,
+     "params": {
+      "range_start": 7,
+      "rr": 1.5,
+      "ttl_bars": 12,
+      "wait_bars": 12
+     },
+     "code_hash": "02f3e887f9a439bb",
+     "cost_hash": "a96aca9b593495e9",
+     "data_venue": "MT5:FusionMarkets-Live",
+     "sleeve_id": "f5cdbfa17b0f7f825d9e"
+    },
+    "frozen_at": "2026-08-26T11:17:41+00:00",
+    "forward_start": "2026-08-26T01:16:27.647405+00:00",
+    "status": "LIVE"
+   }
+  },
+  {
+   "key": "EURJPY.asia#rr=1.5",
+   "archived_at": "2026-08-26T11:19:14+00:00",
+   "reason": "frozen under the pre-venue schema, where data_venue held the ROUTE (MT5:/CACHE:) rather than the venue. Not a pre-registration of the current quantity; evidence retained here, clock restarts.",
+   "row": {
+    "identity": {
+     "family": "session_range_breakout",
+     "symbol": "EURJPY",
+     "direction": "LONG",
+     "timeframe": "H1",
+     "selector": "asia",
+     "condition": null,
+     "params": {
+      "range_start": 7,
+      "rr": 1.5,
+      "ttl_bars": 12,
+      "wait_bars": 12
+     },
+     "code_hash": "02f3e887f9a439bb",
+     "cost_hash": "f35c539ed95ee0da",
+     "data_venue": "MT5:FusionMarkets-Live",
+     "sleeve_id": "7cc369491070078efdf7"
+    },
+    "frozen_at": "2026-08-26T11:17:41+00:00",
+    "forward_start": "2026-08-26T01:16:27.697523+00:00",
+    "status": "LIVE"
+   }
+  },
+  {
+   "key": "EURJPY.asia",
+   "archived_at": "2026-08-26T11:19:14+00:00",
+   "reason": "frozen under the pre-venue schema, where data_venue held the ROUTE (MT5:/CACHE:) rather than the venue. Not a pre-registration of the current quantity; evidence retained here, clock restarts.",
+   "row": {
+    "identity": {
+     "family": "session_range_breakout",
+     "symbol": "EURJPY",
+     "direction": "LONG",
+     "timeframe": "H1",
+     "selector": "asia",
+     "condition": null,
+     "params": {
+      "range_start": 7,
+      "rr": 2.0,
+      "ttl_bars": 12,
+      "wait_bars": 12
+     },
+     "code_hash": "02f3e887f9a439bb",
+     "cost_hash": "f35c539ed95ee0da",
+     "data_venue": "MT5:FusionMarkets-Live",
+     "sleeve_id": "df53c948494a5144762c"
+    },
+    "frozen_at": "2026-08-26T11:17:42+00:00",
+    "forward_start": "2026-08-25T23:25:02.184957+00:00",
+    "status": "LIVE"
+   }
+  },
+  {
+   "key": "EURJPY.asia#rr=2.5",
+   "archived_at": "2026-08-26T11:19:14+00:00",
+   "reason": "frozen under the pre-venue schema, where data_venue held the ROUTE (MT5:/CACHE:) rather than the venue. Not a pre-registration of the current quantity; evidence retained here, clock restarts.",
+   "row": {
+    "identity": {
+     "family": "session_range_breakout",
+     "symbol": "EURJPY",
+     "direction": "LONG",
+     "timeframe": "H1",
+     "selector": "asia",
+     "condition": null,
+     "params": {
+      "range_start": 7,
+      "rr": 2.5,
+      "ttl_bars": 12,
+      "wait_bars": 12
+     },
+     "code_hash": "02f3e887f9a439bb",
+     "cost_hash": "f35c539ed95ee0da",
+     "data_venue": "MT5:FusionMarkets-Live",
+     "sleeve_id": "8f3155b977a0a58e7045"
+    },
+    "frozen_at": "2026-08-26T11:17:42+00:00",
+    "forward_start": "2026-08-26T01:16:27.779327+00:00",
+    "status": "LIVE"
+   }
+  },
+  {
+   "key": "GBPJPY.asia#rr=1.5",
+   "archived_at": "2026-08-26T11:19:14+00:00",
+   "reason": "frozen under the pre-venue schema, where data_venue held the ROUTE (MT5:/CACHE:) rather than the venue. Not a pre-registration of the current quantity; evidence retained here, clock restarts.",
+   "row": {
+    "identity": {
+     "family": "session_range_breakout",
+     "symbol": "GBPJPY",
+     "direction": "LONG",
+     "timeframe": "H1",
+     "selector": "asia",
+     "condition": null,
+     "params": {
+      "range_start": 7,
+      "rr": 1.5,
+      "ttl_bars": 12,
+      "wait_bars": 12
+     },
+     "code_hash": "02f3e887f9a439bb",
+     "cost_hash": "52700f9bd4b30774",
+     "data_venue": "MT5:FusionMarkets-Live",
+     "sleeve_id": "1266a7ef43486e0bd5f4"
+    },
+    "frozen_at": "2026-08-26T11:17:42+00:00",
+    "forward_start": "2026-08-26T01:16:27.826206+00:00",
+    "status": "LIVE"
+   }
+  },
+  {
+   "key": "GBPJPY.asia#rr=2.5",
+   "archived_at": "2026-08-26T11:19:14+00:00",
+   "reason": "frozen under the pre-venue schema, where data_venue held the ROUTE (MT5:/CACHE:) rather than the venue. Not a pre-registration of the current quantity; evidence retained here, clock restarts.",
+   "row": {
+    "identity": {
+     "family": "session_range_breakout",
+     "symbol": "GBPJPY",
+     "direction": "LONG",
+     "timeframe": "H1",
+     "selector": "asia",
+     "condition": null,
+     "params": {
+      "range_start": 7,
+      "rr": 2.5,
+      "ttl_bars": 12,
+      "wait_bars": 12
+     },
+     "code_hash": "02f3e887f9a439bb",
+     "cost_hash": "52700f9bd4b30774",
+     "data_venue": "MT5:FusionMarkets-Live",
+     "sleeve_id": "376753b59f40fef0483a"
+    },
+    "frozen_at": "2026-08-26T11:17:42+00:00",
+    "forward_start": "2026-08-26T01:16:27.857736+00:00",
+    "status": "LIVE"
+   }
+  },
+  {
+   "key": "USDJPY.asia#rr=1.5",
+   "archived_at": "2026-08-26T11:19:14+00:00",
+   "reason": "frozen under the pre-venue schema, where data_venue held the ROUTE (MT5:/CACHE:) rather than the venue. Not a pre-registration of the current quantity; evidence retained here, clock restarts.",
+   "row": {
+    "identity": {
+     "family": "session_range_breakout",
+     "symbol": "USDJPY",
+     "direction": "LONG",
+     "timeframe": "H1",
+     "selector": "asia",
+     "condition": null,
+     "params": {
+      "range_start": 7,
+      "rr": 1.5,
+      "ttl_bars": 12,
+      "wait_bars": 12
+     },
+     "code_hash": "02f3e887f9a439bb",
+     "cost_hash": "023649f14b7299da",
+     "data_venue": "MT5:FusionMarkets-Live",
+     "sleeve_id": "d3bf126a03d0f8b4951f"
+    },
+    "frozen_at": "2026-08-26T11:17:42+00:00",
+    "forward_start": "2026-08-26T01:16:27.907781+00:00",
+    "status": "LIVE"
+   }
+  },
+  {
+   "key": "USDJPY.asia",
+   "archived_at": "2026-08-26T11:19:14+00:00",
+   "reason": "frozen under the pre-venue schema, where data_venue held the ROUTE (MT5:/CACHE:) rather than the venue. Not a pre-registration of the current quantity; evidence retained here, clock restarts.",
+   "row": {
+    "identity": {
+     "family": "session_range_breakout",
+     "symbol": "USDJPY",
+     "direction": "LONG",
+     "timeframe": "H1",
+     "selector": "asia",
+     "condition": null,
+     "params": {
+      "range_start": 7,
+      "rr": 2.0,
+      "ttl_bars": 12,
+      "wait_bars": 12
+     },
+     "code_hash": "02f3e887f9a439bb",
+     "cost_hash": "023649f14b7299da",
+     "data_venue": "MT5:FusionMarkets-Live",
+     "sleeve_id": "d242871f27c5c40f45f0"
+    },
+    "frozen_at": "2026-08-26T11:17:42+00:00",
+    "forward_start": "2026-08-25T23:25:02.055030+00:00",
+    "status": "LIVE"
+   }
+  },
+  {
+   "key": "USDJPY.asia#rr=2.5",
+   "archived_at": "2026-08-26T11:19:14+00:00",
+   "reason": "frozen under the pre-venue schema, where data_venue held the ROUTE (MT5:/CACHE:) rather than the venue. Not a pre-registration of the current quantity; evidence retained here, clock restarts.",
+   "row": {
+    "identity": {
+     "family": "session_range_breakout",
+     "symbol": "USDJPY",
+     "direction": "LONG",
+     "timeframe": "H1",
+     "selector": "asia",
+     "condition": null,
+     "params": {
+      "range_start": 7,
+      "rr": 2.5,
+      "ttl_bars": 12,
+      "wait_bars": 12
+     },
+     "code_hash": "02f3e887f9a439bb",
+     "cost_hash": "023649f14b7299da",
+     "data_venue": "MT5:FusionMarkets-Live",
+     "sleeve_id": "00b33132da5213d41a7c"
+    },
+    "frozen_at": "2026-08-26T11:17:42+00:00",
+    "forward_start": "2026-08-26T01:16:27.996746+00:00",
+    "status": "LIVE"
+   }
+  },
+  {
+   "key": "XAUUSD.asia#rr=1.5",
+   "archived_at": "2026-08-26T11:19:14+00:00",
+   "reason": "frozen under the pre-venue schema, where data_venue held the ROUTE (MT5:/CACHE:) rather than the venue. Not a pre-registration of the current quantity; evidence retained here, clock restarts.",
+   "row": {
+    "identity": {
+     "family": "session_range_breakout",
+     "symbol": "XAUUSD",
+     "direction": "LONG",
+     "timeframe": "H1",
+     "selector": "asia",
+     "condition": null,
+     "params": {
+      "range_start": 7,
+      "rr": 1.5,
+      "ttl_bars": 12,
+      "wait_bars": 12
+     },
+     "code_hash": "02f3e887f9a439bb",
+     "cost_hash": "fdeef54d06f470bf",
+     "data_venue": "MT5:FusionMarkets-Live",
+     "sleeve_id": "28f53d362efad73ba3dc"
+    },
+    "frozen_at": "2026-08-26T11:17:42+00:00",
+    "forward_start": "2026-08-26T01:16:28.044299+00:00",
+    "status": "LIVE"
+   }
+  },
+  {
+   "key": "XAUUSD.asia",
+   "archived_at": "2026-08-26T11:19:14+00:00",
+   "reason": "frozen under the pre-venue schema, where data_venue held the ROUTE (MT5:/CACHE:) rather than the venue. Not a pre-registration of the current quantity; evidence retained here, clock restarts.",
+   "row": {
+    "identity": {
+     "family": "session_range_breakout",
+     "symbol": "XAUUSD",
+     "direction": "LONG",
+     "timeframe": "H1",
+     "selector": "asia",
+     "condition": null,
+     "params": {
+      "range_start": 7,
+      "rr": 2.0,
+      "ttl_bars": 12,
+      "wait_bars": 12
+     },
+     "code_hash": "02f3e887f9a439bb",
+     "cost_hash": "fdeef54d06f470bf",
+     "data_venue": "MT5:FusionMarkets-Live",
+     "sleeve_id": "a25c6841833616009898"
+    },
+    "frozen_at": "2026-08-26T11:17:42+00:00",
+    "forward_start": "2026-08-25T23:25:01.916932+00:00",
+    "status": "LIVE"
+   }
+  },
+  {
+   "key": "XAUUSD.asia#rr=2.5",
+   "archived_at": "2026-08-26T11:19:14+00:00",
+   "reason": "frozen under the pre-venue schema, where data_venue held the ROUTE (MT5:/CACHE:) rather than the venue. Not a pre-registration of the current quantity; evidence retained here, clock restarts.",
+   "row": {
+    "identity": {
+     "family": "session_range_breakout",
+     "symbol": "XAUUSD",
+     "direction": "LONG",
+     "timeframe": "H1",
+     "selector": "asia",
+     "condition": null,
+     "params": {
+      "range_start": 7,
+      "rr": 2.5,
+      "ttl_bars": 12,
+      "wait_bars": 12
+     },
+     "code_hash": "02f3e887f9a439bb",
+     "cost_hash": "fdeef54d06f470bf",
+     "data_venue": "MT5:FusionMarkets-Live",
+     "sleeve_id": "8c79d6b83a31fa37b0d1"
+    },
+    "frozen_at": "2026-08-26T11:17:42+00:00",
+    "forward_start": "2026-08-26T01:16:28.159135+00:00",
+    "status": "LIVE"
+   }
+  },
+  {
+   "key": "XAUUSD.asia#rr=1.5_wait_bars=8",
+   "archived_at": "2026-08-26T11:19:14+00:00",
+   "reason": "frozen under the pre-venue schema, where data_venue held the ROUTE (MT5:/CACHE:) rather than the venue. Not a pre-registration of the current quantity; evidence retained here, clock restarts.",
+   "row": {
+    "identity": {
+     "family": "session_range_breakout",
+     "symbol": "XAUUSD",
+     "direction": "LONG",
+     "timeframe": "H1",
+     "selector": "asia",
+     "condition": null,
+     "params": {
+      "range_start": 7,
+      "rr": 1.5,
+      "ttl_bars": 12,
+      "wait_bars": 8
+     },
+     "code_hash": "02f3e887f9a439bb",
+     "cost_hash": "fdeef54d06f470bf",
+     "data_venue": "MT5:FusionMarkets-Live",
+     "sleeve_id": "bfe48add97f9130d2e12"
+    },
+    "frozen_at": "2026-08-26T11:17:42+00:00",
+    "forward_start": "2026-08-26T01:16:28.196809+00:00",
+    "status": "LIVE"
+   }
+  }
+ ],
+ "updated_at": "2026-08-26T11:19:14+00:00",
+ "rows": {
+  "XAUUSD.asia@2026-08-26T11:19:16+00:00": {
+   "identity": {
+    "family": "session_range_breakout",
+    "symbol": "XAUUSD",
+    "direction": "LONG",
+    "timeframe": "H1",
+    "selector": "asia",
+    "condition": null,
+    "params": {
+     "range_start": 7,
+     "rr": 2.0,
+     "ttl_bars": 12,
+     "wait_bars": 12
+    },
+    "code_hash": "02f3e887f9a439bb",
+    "cost_hash": "fdeef54d06f470bf",
+    "data_venue": "MT5:FusionMarkets-Live",
+    "sleeve_id": "a25c6841833616009898"
+   },
+   "identity_schema": "venue-2026-08-26",
+   "frozen_at": "2026-08-26T11:19:16+00:00",
+   "forward_start": "2026-08-25T23:25:01.916932+00:00",
+   "status": "IDENTITY_BROKEN",
+   "status_why": "cost_hash changed after the clock froze",
+   "status_at": "2026-08-27T01:03:38+00:00",
+   "archived_at": "2026-08-27T01:12:45+00:00",
+   "archived_why": "cost model corrected (unit-bug fixes); new window under frozen cost basis"
+  },
+  "USDJPY.asia@2026-08-26T11:19:16+00:00": {
+   "identity": {
+    "family": "session_range_breakout",
+    "symbol": "USDJPY",
+    "direction": "LONG",
+    "timeframe": "H1",
+    "selector": "asia",
+    "condition": null,
+    "params": {
+     "range_start": 7,
+     "rr": 2.0,
+     "ttl_bars": 12,
+     "wait_bars": 12
+    },
+    "code_hash": "02f3e887f9a439bb",
+    "cost_hash": "023649f14b7299da",
+    "data_venue": "MT5:FusionMarkets-Live",
+    "sleeve_id": "d242871f27c5c40f45f0"
+   },
+   "identity_schema": "venue-2026-08-26",
+   "frozen_at": "2026-08-26T11:19:16+00:00",
+   "forward_start": "2026-08-26T11:18:25.945347+00:00",
+   "status": "IDENTITY_BROKEN",
+   "status_why": "cost_hash changed after the clock froze",
+   "status_at": "2026-08-27T01:03:37+00:00",
+   "archived_at": "2026-08-27T01:12:45+00:00",
+   "archived_why": "cost model corrected (unit-bug fixes); new window under frozen cost basis"
+  },
+  "CADJPY.asia@2026-08-26T11:19:15+00:00": {
+   "identity": {
+    "family": "session_range_breakout",
+    "symbol": "CADJPY",
+    "direction": "LONG",
+    "timeframe": "H1",
+    "selector": "asia",
+    "condition": null,
+    "params": {
+     "range_start": 7,
+     "rr": 2.0,
+     "ttl_bars": 12,
+     "wait_bars": 12
+    },
+    "code_hash": "02f3e887f9a439bb",
+    "cost_hash": "a96aca9b593495e9",
+    "data_venue": "MT5:FusionMarkets-Live",
+    "sleeve_id": "00829520dd7cb98b0b54"
+   },
+   "identity_schema": "venue-2026-08-26",
+   "frozen_at": "2026-08-26T11:19:15+00:00",
+   "forward_start": "2026-08-26T11:18:25.555189+00:00",
+   "status": "IDENTITY_BROKEN",
+   "status_why": "cost_hash changed after the clock froze",
+   "status_at": "2026-08-27T01:03:30+00:00",
+   "archived_at": "2026-08-27T01:12:45+00:00",
+   "archived_why": "cost model corrected (unit-bug fixes); new window under frozen cost basis"
+  },
+  "EURJPY.asia@2026-08-26T11:19:16+00:00": {
+   "identity": {
+    "family": "session_range_breakout",
+    "symbol": "EURJPY",
+    "direction": "LONG",
+    "timeframe": "H1",
+    "selector": "asia",
+    "condition": null,
+    "params": {
+     "range_start": 7,
+     "rr": 2.0,
+     "ttl_bars": 12,
+     "wait_bars": 12
+    },
+    "code_hash": "02f3e887f9a439bb",
+    "cost_hash": "f35c539ed95ee0da",
+    "data_venue": "MT5:FusionMarkets-Live",
+    "sleeve_id": "df53c948494a5144762c"
+   },
+   "identity_schema": "venue-2026-08-26",
+   "frozen_at": "2026-08-26T11:19:16+00:00",
+   "forward_start": "2026-08-26T11:18:25.732384+00:00",
+   "status": "IDENTITY_BROKEN",
+   "status_why": "cost_hash changed after the clock froze",
+   "status_at": "2026-08-27T01:03:32+00:00",
+   "archived_at": "2026-08-27T01:12:45+00:00",
+   "archived_why": "cost model corrected (unit-bug fixes); new window under frozen cost basis"
+  },
+  "CADJPY.asia#rr=2.5@2026-08-26T11:19:15+00:00": {
+   "identity": {
+    "family": "session_range_breakout",
+    "symbol": "CADJPY",
+    "direction": "LONG",
+    "timeframe": "H1",
+    "selector": "asia",
+    "condition": null,
+    "params": {
+     "range_start": 7,
+     "rr": 2.5,
+     "ttl_bars": 12,
+     "wait_bars": 12
+    },
+    "code_hash": "02f3e887f9a439bb",
+    "cost_hash": "a96aca9b593495e9",
+    "data_venue": "MT5:FusionMarkets-Live",
+    "sleeve_id": "5208729b67ed69ed9d94"
+   },
+   "identity_schema": "venue-2026-08-26",
+   "frozen_at": "2026-08-26T11:19:15+00:00",
+   "forward_start": "2026-08-26T11:18:25.596701+00:00",
+   "status": "IDENTITY_BROKEN",
+   "status_why": "cost_hash changed after the clock froze",
+   "status_at": "2026-08-27T01:03:31+00:00",
+   "archived_at": "2026-08-27T01:12:45+00:00",
+   "archived_why": "cost model corrected (unit-bug fixes); new window under frozen cost basis"
+  },
+  "CADJPY.asia#rr=1.5@2026-08-26T11:19:15+00:00": {
+   "identity": {
+    "family": "session_range_breakout",
+    "symbol": "CADJPY",
+    "direction": "LONG",
+    "timeframe": "H1",
+    "selector": "asia",
+    "condition": null,
+    "params": {
+     "range_start": 7,
+     "rr": 1.5,
+     "ttl_bars": 12,
+     "wait_bars": 12
+    },
+    "code_hash": "02f3e887f9a439bb",
+    "cost_hash": "a96aca9b593495e9",
+    "data_venue": "MT5:FusionMarkets-Live",
+    "sleeve_id": "f5cdbfa17b0f7f825d9e"
+   },
+   "identity_schema": "venue-2026-08-26",
+   "frozen_at": "2026-08-26T11:19:15+00:00",
+   "forward_start": "2026-08-26T11:18:25.637308+00:00",
+   "status": "IDENTITY_BROKEN",
+   "status_why": "cost_hash changed after the clock froze",
+   "status_at": "2026-08-27T01:03:31+00:00",
+   "archived_at": "2026-08-27T01:12:45+00:00",
+   "archived_why": "cost model corrected (unit-bug fixes); new window under frozen cost basis"
+  },
+  "EURJPY.asia#rr=1.5@2026-08-26T11:19:16+00:00": {
+   "identity": {
+    "family": "session_range_breakout",
+    "symbol": "EURJPY",
+    "direction": "LONG",
+    "timeframe": "H1",
+    "selector": "asia",
+    "condition": null,
+    "params": {
+     "range_start": 7,
+     "rr": 1.5,
+     "ttl_bars": 12,
+     "wait_bars": 12
+    },
+    "code_hash": "02f3e887f9a439bb",
+    "cost_hash": "f35c539ed95ee0da",
+    "data_venue": "MT5:FusionMarkets-Live",
+    "sleeve_id": "7cc369491070078efdf7"
+   },
+   "identity_schema": "venue-2026-08-26",
+   "frozen_at": "2026-08-26T11:19:16+00:00",
+   "forward_start": "2026-08-26T11:18:25.688039+00:00",
+   "status": "IDENTITY_BROKEN",
+   "status_why": "cost_hash changed after the clock froze",
+   "status_at": "2026-08-27T01:03:32+00:00",
+   "archived_at": "2026-08-27T01:12:45+00:00",
+   "archived_why": "cost model corrected (unit-bug fixes); new window under frozen cost basis"
+  },
+  "EURJPY.asia#rr=2.5@2026-08-26T11:19:16+00:00": {
+   "identity": {
+    "family": "session_range_breakout",
+    "symbol": "EURJPY",
+    "direction": "LONG",
+    "timeframe": "H1",
+    "selector": "asia",
+    "condition": null,
+    "params": {
+     "range_start": 7,
+     "rr": 2.5,
+     "ttl_bars": 12,
+     "wait_bars": 12
+    },
+    "code_hash": "02f3e887f9a439bb",
+    "cost_hash": "f35c539ed95ee0da",
+    "data_venue": "MT5:FusionMarkets-Live",
+    "sleeve_id": "8f3155b977a0a58e7045"
+   },
+   "identity_schema": "venue-2026-08-26",
+   "frozen_at": "2026-08-26T11:19:16+00:00",
+   "forward_start": "2026-08-26T11:18:25.774267+00:00",
+   "status": "IDENTITY_BROKEN",
+   "status_why": "cost_hash changed after the clock froze",
+   "status_at": "2026-08-27T01:03:33+00:00",
+   "archived_at": "2026-08-27T01:12:45+00:00",
+   "archived_why": "cost model corrected (unit-bug fixes); new window under frozen cost basis"
+  },
+  "GBPJPY.asia#rr=1.5@2026-08-26T11:19:16+00:00": {
+   "identity": {
+    "family": "session_range_breakout",
+    "symbol": "GBPJPY",
+    "direction": "LONG",
+    "timeframe": "H1",
+    "selector": "asia",
+    "condition": null,
+    "params": {
+     "range_start": 7,
+     "rr": 1.5,
+     "ttl_bars": 12,
+     "wait_bars": 12
+    },
+    "code_hash": "02f3e887f9a439bb",
+    "cost_hash": "52700f9bd4b30774",
+    "data_venue": "MT5:FusionMarkets-Live",
+    "sleeve_id": "1266a7ef43486e0bd5f4"
+   },
+   "identity_schema": "venue-2026-08-26",
+   "frozen_at": "2026-08-26T11:19:16+00:00",
+   "forward_start": "2026-08-26T11:18:25.820921+00:00",
+   "status": "IDENTITY_BROKEN",
+   "status_why": "cost_hash changed after the clock froze",
+   "status_at": "2026-08-27T01:03:35+00:00",
+   "archived_at": "2026-08-27T01:12:45+00:00",
+   "archived_why": "cost model corrected (unit-bug fixes); new window under frozen cost basis"
+  },
+  "GBPJPY.asia#rr=2.5@2026-08-26T11:19:16+00:00": {
+   "identity": {
+    "family": "session_range_breakout",
+    "symbol": "GBPJPY",
+    "direction": "LONG",
+    "timeframe": "H1",
+    "selector": "asia",
+    "condition": null,
+    "params": {
+     "range_start": 7,
+     "rr": 2.5,
+     "ttl_bars": 12,
+     "wait_bars": 12
+    },
+    "code_hash": "02f3e887f9a439bb",
+    "cost_hash": "52700f9bd4b30774",
+    "data_venue": "MT5:FusionMarkets-Live",
+    "sleeve_id": "376753b59f40fef0483a"
+   },
+   "identity_schema": "venue-2026-08-26",
+   "frozen_at": "2026-08-26T11:19:16+00:00",
+   "forward_start": "2026-08-26T11:18:25.860555+00:00",
+   "status": "IDENTITY_BROKEN",
+   "status_why": "cost_hash changed after the clock froze",
+   "status_at": "2026-08-27T01:03:35+00:00",
+   "archived_at": "2026-08-27T01:12:45+00:00",
+   "archived_why": "cost model corrected (unit-bug fixes); new window under frozen cost basis"
+  },
+  "USDJPY.asia#rr=1.5@2026-08-26T11:19:16+00:00": {
+   "identity": {
+    "family": "session_range_breakout",
+    "symbol": "USDJPY",
+    "direction": "LONG",
+    "timeframe": "H1",
+    "selector": "asia",
+    "condition": null,
+    "params": {
+     "range_start": 7,
+     "rr": 1.5,
+     "ttl_bars": 12,
+     "wait_bars": 12
+    },
+    "code_hash": "02f3e887f9a439bb",
+    "cost_hash": "023649f14b7299da",
+    "data_venue": "MT5:FusionMarkets-Live",
+    "sleeve_id": "d3bf126a03d0f8b4951f"
+   },
+   "identity_schema": "venue-2026-08-26",
+   "frozen_at": "2026-08-26T11:19:16+00:00",
+   "forward_start": "2026-08-26T11:18:25.904355+00:00",
+   "status": "IDENTITY_BROKEN",
+   "status_why": "cost_hash changed after the clock froze",
+   "status_at": "2026-08-27T01:03:37+00:00",
+   "archived_at": "2026-08-27T01:12:45+00:00",
+   "archived_why": "cost model corrected (unit-bug fixes); new window under frozen cost basis"
+  },
+  "USDJPY.asia#rr=2.5@2026-08-26T11:19:16+00:00": {
+   "identity": {
+    "family": "session_range_breakout",
+    "symbol": "USDJPY",
+    "direction": "LONG",
+    "timeframe": "H1",
+    "selector": "asia",
+    "condition": null,
+    "params": {
+     "range_start": 7,
+     "rr": 2.5,
+     "ttl_bars": 12,
+     "wait_bars": 12
+    },
+    "code_hash": "02f3e887f9a439bb",
+    "cost_hash": "023649f14b7299da",
+    "data_venue": "MT5:FusionMarkets-Live",
+    "sleeve_id": "00b33132da5213d41a7c"
+   },
+   "identity_schema": "venue-2026-08-26",
+   "frozen_at": "2026-08-26T11:19:16+00:00",
+   "forward_start": "2026-08-26T11:18:25.983475+00:00",
+   "status": "IDENTITY_BROKEN",
+   "status_why": "cost_hash changed after the clock froze",
+   "status_at": "2026-08-27T01:03:38+00:00",
+   "archived_at": "2026-08-27T01:12:45+00:00",
+   "archived_why": "cost model corrected (unit-bug fixes); new window under frozen cost basis"
+  },
+  "XAUUSD.asia#rr=1.5@2026-08-26T11:19:16+00:00": {
+   "identity": {
+    "family": "session_range_breakout",
+    "symbol": "XAUUSD",
+    "direction": "LONG",
+    "timeframe": "H1",
+    "selector": "asia",
+    "condition": null,
+    "params": {
+     "range_start": 7,
+     "rr": 1.5,
+     "ttl_bars": 12,
+     "wait_bars": 12
+    },
+    "code_hash": "02f3e887f9a439bb",
+    "cost_hash": "fdeef54d06f470bf",
+    "data_venue": "MT5:FusionMarkets-Live",
+    "sleeve_id": "28f53d362efad73ba3dc"
+   },
+   "identity_schema": "venue-2026-08-26",
+   "frozen_at": "2026-08-26T11:19:16+00:00",
+   "forward_start": "2026-08-26T01:16:28.044299+00:00",
+   "status": "IDENTITY_BROKEN",
+   "status_why": "cost_hash changed after the clock froze",
+   "status_at": "2026-08-27T01:03:38+00:00",
+   "archived_at": "2026-08-27T01:12:45+00:00",
+   "archived_why": "cost model corrected (unit-bug fixes); new window under frozen cost basis"
+  },
+  "XAUUSD.asia#rr=2.5@2026-08-26T11:19:16+00:00": {
+   "identity": {
+    "family": "session_range_breakout",
+    "symbol": "XAUUSD",
+    "direction": "LONG",
+    "timeframe": "H1",
+    "selector": "asia",
+    "condition": null,
+    "params": {
+     "range_start": 7,
+     "rr": 2.5,
+     "ttl_bars": 12,
+     "wait_bars": 12
+    },
+    "code_hash": "02f3e887f9a439bb",
+    "cost_hash": "fdeef54d06f470bf",
+    "data_venue": "MT5:FusionMarkets-Live",
+    "sleeve_id": "8c79d6b83a31fa37b0d1"
+   },
+   "identity_schema": "venue-2026-08-26",
+   "frozen_at": "2026-08-26T11:19:16+00:00",
+   "forward_start": "2026-08-26T01:16:28.159135+00:00",
+   "status": "IDENTITY_BROKEN",
+   "status_why": "cost_hash changed after the clock froze",
+   "status_at": "2026-08-27T01:03:38+00:00",
+   "archived_at": "2026-08-27T01:12:45+00:00",
+   "archived_why": "cost model corrected (unit-bug fixes); new window under frozen cost basis"
+  },
+  "XAUUSD.asia#rr=1.5_wait_bars=8@2026-08-26T11:19:16+00:00": {
+   "identity": {
+    "family": "session_range_breakout",
+    "symbol": "XAUUSD",
+    "direction": "LONG",
+    "timeframe": "H1",
+    "selector": "asia",
+    "condition": null,
+    "params": {
+     "range_start": 7,
+     "rr": 1.5,
+     "ttl_bars": 12,
+     "wait_bars": 8
+    },
+    "code_hash": "02f3e887f9a439bb",
+    "cost_hash": "fdeef54d06f470bf",
+    "data_venue": "MT5:FusionMarkets-Live",
+    "sleeve_id": "bfe48add97f9130d2e12"
+   },
+   "identity_schema": "venue-2026-08-26",
+   "frozen_at": "2026-08-26T11:19:16+00:00",
+   "forward_start": "2026-08-26T01:16:28.196809+00:00",
+   "status": "IDENTITY_BROKEN",
+   "status_why": "cost_hash changed after the clock froze",
+   "status_at": "2026-08-27T01:03:38+00:00",
+   "archived_at": "2026-08-27T01:12:45+00:00",
+   "archived_why": "cost model corrected (unit-bug fixes); new window under frozen cost basis"
+  },
+  "XAUUSD.asia@2026-08-27T01:13:29+00:00": {
+   "identity": {
+    "family": "session_range_breakout",
+    "symbol": "XAUUSD",
+    "direction": "LONG",
+    "timeframe": "H1",
+    "selector": "asia",
+    "condition": null,
+    "params": {
+     "range_start": 7,
+     "rr": 2.0,
+     "ttl_bars": 12,
+     "wait_bars": 12
+    },
+    "code_hash": "02f3e887f9a439bb",
+    "cost_hash": "9c1509653ffd1dab",
+    "data_venue": "MT5:FusionMarkets-Live",
+    "sleeve_id": "8363de46ace3fdee68a2"
+   },
+   "identity_schema": "venue-2026-08-26",
+   "frozen_at": "2026-08-27T01:13:29+00:00",
+   "forward_start": null,
+   "status": "IDENTITY_BROKEN",
+   "cost_fields": {
+    "spread_per_lot": 16.0,
+    "commission_per_lot": 3.5,
+    "contract_oz": 100.0,
+    "quote_per_account": 1.15844
+   },
+   "status_why": "code_hash changed after the clock froze",
+   "status_at": "2026-08-27T03:31:41+00:00",
+   "archived_at": "2026-08-27T03:34:46+00:00",
+   "archived_why": "cost model corrected (unit-bug fixes); new window under frozen cost basis"
+  },
+  "USDJPY.asia@2026-08-27T01:13:29+00:00": {
+   "identity": {
+    "family": "session_range_breakout",
+    "symbol": "USDJPY",
+    "direction": "LONG",
+    "timeframe": "H1",
+    "selector": "asia",
+    "condition": null,
+    "params": {
+     "range_start": 7,
+     "rr": 2.0,
+     "ttl_bars": 12,
+     "wait_bars": 12
+    },
+    "code_hash": "02f3e887f9a439bb",
+    "cost_hash": "ef749a3efa6c54d4",
+    "data_venue": "MT5:FusionMarkets-Live",
+    "sleeve_id": "cb292bf27d24935e7e21"
+   },
+   "identity_schema": "venue-2026-08-26",
+   "frozen_at": "2026-08-27T01:13:29+00:00",
+   "forward_start": null,
+   "status": "IDENTITY_BROKEN",
+   "cost_fields": {
+    "spread_per_lot": 1300.0,
+    "commission_per_lot": 3.5,
+    "contract_oz": 100000.0,
+    "quote_per_account": 184.573
+   },
+   "status_why": "code_hash changed after the clock froze",
+   "status_at": "2026-08-27T03:31:40+00:00",
+   "archived_at": "2026-08-27T03:34:46+00:00",
+   "archived_why": "cost model corrected (unit-bug fixes); new window under frozen cost basis"
+  },
+  "CADJPY.asia@2026-08-27T01:13:27+00:00": {
+   "identity": {
+    "family": "session_range_breakout",
+    "symbol": "CADJPY",
+    "direction": "LONG",
+    "timeframe": "H1",
+    "selector": "asia",
+    "condition": null,
+    "params": {
+     "range_start": 7,
+     "rr": 2.0,
+     "ttl_bars": 12,
+     "wait_bars": 12
+    },
+    "code_hash": "02f3e887f9a439bb",
+    "cost_hash": "3f42e7c4405da529",
+    "data_venue": "MT5:FusionMarkets-Live",
+    "sleeve_id": "f7207789b001d44045fe"
+   },
+   "identity_schema": "venue-2026-08-26",
+   "frozen_at": "2026-08-27T01:13:27+00:00",
+   "forward_start": null,
+   "status": "IDENTITY_BROKEN",
+   "cost_fields": {
+    "spread_per_lot": 1500.0,
+    "commission_per_lot": 3.5,
+    "contract_oz": 100000.0,
+    "quote_per_account": 184.575
+   },
+   "status_why": "code_hash changed after the clock froze",
+   "status_at": "2026-08-27T03:31:39+00:00",
+   "archived_at": "2026-08-27T03:34:46+00:00",
+   "archived_why": "cost model corrected (unit-bug fixes); new window under frozen cost basis"
+  },
+  "EURJPY.asia@2026-08-27T01:13:28+00:00": {
+   "identity": {
+    "family": "session_range_breakout",
+    "symbol": "EURJPY",
+    "direction": "LONG",
+    "timeframe": "H1",
+    "selector": "asia",
+    "condition": null,
+    "params": {
+     "range_start": 7,
+     "rr": 2.0,
+     "ttl_bars": 12,
+     "wait_bars": 12
+    },
+    "code_hash": "02f3e887f9a439bb",
+    "cost_hash": "ef749a3efa6c54d4",
+    "data_venue": "MT5:FusionMarkets-Live",
+    "sleeve_id": "347b6c1f54b73d9201a5"
+   },
+   "identity_schema": "venue-2026-08-26",
+   "frozen_at": "2026-08-27T01:13:28+00:00",
+   "forward_start": null,
+   "status": "IDENTITY_BROKEN",
+   "cost_fields": {
+    "spread_per_lot": 1300.0,
+    "commission_per_lot": 3.5,
+    "contract_oz": 100000.0,
+    "quote_per_account": 184.573
+   },
+   "status_why": "code_hash changed after the clock froze",
+   "status_at": "2026-08-27T03:31:39+00:00",
+   "archived_at": "2026-08-27T03:34:46+00:00",
+   "archived_why": "cost model corrected (unit-bug fixes); new window under frozen cost basis"
+  },
+  "CADJPY.asia#rr=2.5@2026-08-27T01:13:27+00:00": {
+   "identity": {
+    "family": "session_range_breakout",
+    "symbol": "CADJPY",
+    "direction": "LONG",
+    "timeframe": "H1",
+    "selector": "asia",
+    "condition": null,
+    "params": {
+     "range_start": 7,
+     "rr": 2.5,
+     "ttl_bars": 12,
+     "wait_bars": 12
+    },
+    "code_hash": "02f3e887f9a439bb",
+    "cost_hash": "3f42e7c4405da529",
+    "data_venue": "MT5:FusionMarkets-Live",
+    "sleeve_id": "9bca0c3baecdc06343c4"
+   },
+   "identity_schema": "venue-2026-08-26",
+   "frozen_at": "2026-08-27T01:13:27+00:00",
+   "forward_start": null,
+   "status": "IDENTITY_BROKEN",
+   "cost_fields": {
+    "spread_per_lot": 1500.0,
+    "commission_per_lot": 3.5,
+    "contract_oz": 100000.0,
+    "quote_per_account": 184.575
+   },
+   "status_why": "code_hash changed after the clock froze",
+   "status_at": "2026-08-27T03:31:39+00:00",
+   "archived_at": "2026-08-27T03:34:46+00:00",
+   "archived_why": "cost model corrected (unit-bug fixes); new window under frozen cost basis"
+  },
+  "CADJPY.asia#rr=1.5@2026-08-27T01:13:28+00:00": {
+   "identity": {
+    "family": "session_range_breakout",
+    "symbol": "CADJPY",
+    "direction": "LONG",
+    "timeframe": "H1",
+    "selector": "asia",
+    "condition": null,
+    "params": {
+     "range_start": 7,
+     "rr": 1.5,
+     "ttl_bars": 12,
+     "wait_bars": 12
+    },
+    "code_hash": "02f3e887f9a439bb",
+    "cost_hash": "3f42e7c4405da529",
+    "data_venue": "MT5:FusionMarkets-Live",
+    "sleeve_id": "d0b1a5bdbb440073c6d9"
+   },
+   "identity_schema": "venue-2026-08-26",
+   "frozen_at": "2026-08-27T01:13:28+00:00",
+   "forward_start": null,
+   "status": "IDENTITY_BROKEN",
+   "cost_fields": {
+    "spread_per_lot": 1500.0,
+    "commission_per_lot": 3.5,
+    "contract_oz": 100000.0,
+    "quote_per_account": 184.575
+   },
+   "status_why": "code_hash changed after the clock froze",
+   "status_at": "2026-08-27T03:31:39+00:00",
+   "archived_at": "2026-08-27T03:34:46+00:00",
+   "archived_why": "cost model corrected (unit-bug fixes); new window under frozen cost basis"
+  },
+  "EURJPY.asia#rr=1.5@2026-08-27T01:13:28+00:00": {
+   "identity": {
+    "family": "session_range_breakout",
+    "symbol": "EURJPY",
+    "direction": "LONG",
+    "timeframe": "H1",
+    "selector": "asia",
+    "condition": null,
+    "params": {
+     "range_start": 7,
+     "rr": 1.5,
+     "ttl_bars": 12,
+     "wait_bars": 12
+    },
+    "code_hash": "02f3e887f9a439bb",
+    "cost_hash": "ef749a3efa6c54d4",
+    "data_venue": "MT5:FusionMarkets-Live",
+    "sleeve_id": "d86cf05d24fd6af2774d"
+   },
+   "identity_schema": "venue-2026-08-26",
+   "frozen_at": "2026-08-27T01:13:28+00:00",
+   "forward_start": null,
+   "status": "IDENTITY_BROKEN",
+   "cost_fields": {
+    "spread_per_lot": 1300.0,
+    "commission_per_lot": 3.5,
+    "contract_oz": 100000.0,
+    "quote_per_account": 184.573
+   },
+   "status_why": "code_hash changed after the clock froze",
+   "status_at": "2026-08-27T03:31:39+00:00",
+   "archived_at": "2026-08-27T03:34:46+00:00",
+   "archived_why": "cost model corrected (unit-bug fixes); new window under frozen cost basis"
+  },
+  "EURJPY.asia#rr=2.5@2026-08-27T01:13:28+00:00": {
+   "identity": {
+    "family": "session_range_breakout",
+    "symbol": "EURJPY",
+    "direction": "LONG",
+    "timeframe": "H1",
+    "selector": "asia",
+    "condition": null,
+    "params": {
+     "range_start": 7,
+     "rr": 2.5,
+     "ttl_bars": 12,
+     "wait_bars": 12
+    },
+    "code_hash": "02f3e887f9a439bb",
+    "cost_hash": "ef749a3efa6c54d4",
+    "data_venue": "MT5:FusionMarkets-Live",
+    "sleeve_id": "a84d34aa79cf46bb0f7c"
+   },
+   "identity_schema": "venue-2026-08-26",
+   "frozen_at": "2026-08-27T01:13:28+00:00",
+   "forward_start": null,
+   "status": "IDENTITY_BROKEN",
+   "cost_fields": {
+    "spread_per_lot": 1300.0,
+    "commission_per_lot": 3.5,
+    "contract_oz": 100000.0,
+    "quote_per_account": 184.573
+   },
+   "status_why": "code_hash changed after the clock froze",
+   "status_at": "2026-08-27T03:31:39+00:00",
+   "archived_at": "2026-08-27T03:34:46+00:00",
+   "archived_why": "cost model corrected (unit-bug fixes); new window under frozen cost basis"
+  },
+  "GBPJPY.asia#rr=1.5@2026-08-27T01:13:28+00:00": {
+   "identity": {
+    "family": "session_range_breakout",
+    "symbol": "GBPJPY",
+    "direction": "LONG",
+    "timeframe": "H1",
+    "selector": "asia",
+    "condition": null,
+    "params": {
+     "range_start": 7,
+     "rr": 1.5,
+     "ttl_bars": 12,
+     "wait_bars": 12
+    },
+    "code_hash": "02f3e887f9a439bb",
+    "cost_hash": "ef749a3efa6c54d4",
+    "data_venue": "MT5:FusionMarkets-Live",
+    "sleeve_id": "1386ca1901cdd1468234"
+   },
+   "identity_schema": "venue-2026-08-26",
+   "frozen_at": "2026-08-27T01:13:28+00:00",
+   "forward_start": null,
+   "status": "IDENTITY_BROKEN",
+   "cost_fields": {
+    "spread_per_lot": 1300.0,
+    "commission_per_lot": 3.5,
+    "contract_oz": 100000.0,
+    "quote_per_account": 184.573
+   },
+   "status_why": "code_hash changed after the clock froze",
+   "status_at": "2026-08-27T03:31:40+00:00",
+   "archived_at": "2026-08-27T03:34:46+00:00",
+   "archived_why": "cost model corrected (unit-bug fixes); new window under frozen cost basis"
+  },
+  "GBPJPY.asia#rr=2.5@2026-08-27T01:13:29+00:00": {
+   "identity": {
+    "family": "session_range_breakout",
+    "symbol": "GBPJPY",
+    "direction": "LONG",
+    "timeframe": "H1",
+    "selector": "asia",
+    "condition": null,
+    "params": {
+     "range_start": 7,
+     "rr": 2.5,
+     "ttl_bars": 12,
+     "wait_bars": 12
+    },
+    "code_hash": "02f3e887f9a439bb",
+    "cost_hash": "ef749a3efa6c54d4",
+    "data_venue": "MT5:FusionMarkets-Live",
+    "sleeve_id": "ce7c5228e330c00ce72e"
+   },
+   "identity_schema": "venue-2026-08-26",
+   "frozen_at": "2026-08-27T01:13:29+00:00",
+   "forward_start": null,
+   "status": "IDENTITY_BROKEN",
+   "cost_fields": {
+    "spread_per_lot": 1300.0,
+    "commission_per_lot": 3.5,
+    "contract_oz": 100000.0,
+    "quote_per_account": 184.573
+   },
+   "status_why": "code_hash changed after the clock froze",
+   "status_at": "2026-08-27T03:31:40+00:00",
+   "archived_at": "2026-08-27T03:34:46+00:00",
+   "archived_why": "cost model corrected (unit-bug fixes); new window under frozen cost basis"
+  },
+  "USDJPY.asia#rr=1.5@2026-08-27T01:13:29+00:00": {
+   "identity": {
+    "family": "session_range_breakout",
+    "symbol": "USDJPY",
+    "direction": "LONG",
+    "timeframe": "H1",
+    "selector": "asia",
+    "condition": null,
+    "params": {
+     "range_start": 7,
+     "rr": 1.5,
+     "ttl_bars": 12,
+     "wait_bars": 12
+    },
+    "code_hash": "02f3e887f9a439bb",
+    "cost_hash": "ef749a3efa6c54d4",
+    "data_venue": "MT5:FusionMarkets-Live",
+    "sleeve_id": "27bfecf2e6271c75b793"
+   },
+   "identity_schema": "venue-2026-08-26",
+   "frozen_at": "2026-08-27T01:13:29+00:00",
+   "forward_start": null,
+   "status": "IDENTITY_BROKEN",
+   "cost_fields": {
+    "spread_per_lot": 1300.0,
+    "commission_per_lot": 3.5,
+    "contract_oz": 100000.0,
+    "quote_per_account": 184.573
+   },
+   "status_why": "code_hash changed after the clock froze",
+   "status_at": "2026-08-27T03:31:40+00:00",
+   "archived_at": "2026-08-27T03:34:46+00:00",
+   "archived_why": "cost model corrected (unit-bug fixes); new window under frozen cost basis"
+  },
+  "USDJPY.asia#rr=2.5@2026-08-27T01:13:29+00:00": {
+   "identity": {
+    "family": "session_range_breakout",
+    "symbol": "USDJPY",
+    "direction": "LONG",
+    "timeframe": "H1",
+    "selector": "asia",
+    "condition": null,
+    "params": {
+     "range_start": 7,
+     "rr": 2.5,
+     "ttl_bars": 12,
+     "wait_bars": 12
+    },
+    "code_hash": "02f3e887f9a439bb",
+    "cost_hash": "ef749a3efa6c54d4",
+    "data_venue": "MT5:FusionMarkets-Live",
+    "sleeve_id": "4081f5842a0354227910"
+   },
+   "identity_schema": "venue-2026-08-26",
+   "frozen_at": "2026-08-27T01:13:29+00:00",
+   "forward_start": null,
+   "status": "IDENTITY_BROKEN",
+   "cost_fields": {
+    "spread_per_lot": 1300.0,
+    "commission_per_lot": 3.5,
+    "contract_oz": 100000.0,
+    "quote_per_account": 184.573
+   },
+   "status_why": "code_hash changed after the clock froze",
+   "status_at": "2026-08-27T03:31:40+00:00",
+   "archived_at": "2026-08-27T03:34:46+00:00",
+   "archived_why": "cost model corrected (unit-bug fixes); new window under frozen cost basis"
+  },
+  "XAUUSD.asia#rr=1.5@2026-08-27T01:13:29+00:00": {
+   "identity": {
+    "family": "session_range_breakout",
+    "symbol": "XAUUSD",
+    "direction": "LONG",
+    "timeframe": "H1",
+    "selector": "asia",
+    "condition": null,
+    "params": {
+     "range_start": 7,
+     "rr": 1.5,
+     "ttl_bars": 12,
+     "wait_bars": 12
+    },
+    "code_hash": "02f3e887f9a439bb",
+    "cost_hash": "9c1509653ffd1dab",
+    "data_venue": "MT5:FusionMarkets-Live",
+    "sleeve_id": "55463f962b1020da210d"
+   },
+   "identity_schema": "venue-2026-08-26",
+   "frozen_at": "2026-08-27T01:13:29+00:00",
+   "forward_start": null,
+   "status": "IDENTITY_BROKEN",
+   "cost_fields": {
+    "spread_per_lot": 16.0,
+    "commission_per_lot": 3.5,
+    "contract_oz": 100.0,
+    "quote_per_account": 1.15844
+   },
+   "status_why": "code_hash changed after the clock froze",
+   "status_at": "2026-08-27T03:31:41+00:00",
+   "archived_at": "2026-08-27T03:34:46+00:00",
+   "archived_why": "cost model corrected (unit-bug fixes); new window under frozen cost basis"
+  },
+  "XAUUSD.asia#rr=2.5@2026-08-27T01:13:30+00:00": {
+   "identity": {
+    "family": "session_range_breakout",
+    "symbol": "XAUUSD",
+    "direction": "LONG",
+    "timeframe": "H1",
+    "selector": "asia",
+    "condition": null,
+    "params": {
+     "range_start": 7,
+     "rr": 2.5,
+     "ttl_bars": 12,
+     "wait_bars": 12
+    },
+    "code_hash": "02f3e887f9a439bb",
+    "cost_hash": "9c1509653ffd1dab",
+    "data_venue": "MT5:FusionMarkets-Live",
+    "sleeve_id": "c514f4bb70ba1e0bb97a"
+   },
+   "identity_schema": "venue-2026-08-26",
+   "frozen_at": "2026-08-27T01:13:30+00:00",
+   "forward_start": null,
+   "status": "IDENTITY_BROKEN",
+   "cost_fields": {
+    "spread_per_lot": 16.0,
+    "commission_per_lot": 3.5,
+    "contract_oz": 100.0,
+    "quote_per_account": 1.15844
+   },
+   "status_why": "code_hash changed after the clock froze",
+   "status_at": "2026-08-27T03:31:41+00:00",
+   "archived_at": "2026-08-27T03:34:46+00:00",
+   "archived_why": "cost model corrected (unit-bug fixes); new window under frozen cost basis"
+  },
+  "XAUUSD.asia#rr=1.5_wait_bars=8@2026-08-27T01:13:30+00:00": {
+   "identity": {
+    "family": "session_range_breakout",
+    "symbol": "XAUUSD",
+    "direction": "LONG",
+    "timeframe": "H1",
+    "selector": "asia",
+    "condition": null,
+    "params": {
+     "range_start": 7,
+     "rr": 1.5,
+     "ttl_bars": 12,
+     "wait_bars": 8
+    },
+    "code_hash": "02f3e887f9a439bb",
+    "cost_hash": "9c1509653ffd1dab",
+    "data_venue": "MT5:FusionMarkets-Live",
+    "sleeve_id": "f00b28794524f60cf977"
+   },
+   "identity_schema": "venue-2026-08-26",
+   "frozen_at": "2026-08-27T01:13:30+00:00",
+   "forward_start": null,
+   "status": "IDENTITY_BROKEN",
+   "cost_fields": {
+    "spread_per_lot": 16.0,
+    "commission_per_lot": 3.5,
+    "contract_oz": 100.0,
+    "quote_per_account": 1.15844
+   },
+   "status_why": "code_hash changed after the clock froze",
+   "status_at": "2026-08-27T03:31:41+00:00",
+   "archived_at": "2026-08-27T03:34:46+00:00",
+   "archived_why": "cost model corrected (unit-bug fixes); new window under frozen cost basis"
+  }
+ }
+}

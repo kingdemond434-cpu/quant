@@ -42,7 +42,7 @@ account for, which is a reconciliation problem and not a statistic.
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
@@ -86,10 +86,46 @@ class Markout:
     #: Which kind of account produced these fills. A markout is only meaningful against one.
     account_kind: str = UNKNOWN
     mixed: bool = False
+    #: Deals the desk can walk back to an intent, whether or not both prices survived. The
+    #: attribution number the review found at zero: target is every deal this magic placed.
+    attributed_deals: int = 0
+    #: One row per attributed deal: intent -> release/state -> entry order/deal -> close deal ->
+    #: realised R. The chain, materialised, so "which research made this euro" is a lookup.
+    chain: list[dict[str, Any]] = field(default_factory=list)
 
     @property
     def usable(self) -> bool:
         return self.n_matched > 0 and not self.mixed
+
+    @property
+    def attributed_share(self) -> float | None:
+        return (self.attributed_deals / self.n_deals) if self.n_deals else None
+
+
+#: The ledger fields that can carry the intent's ticket, in the order they are trusted. For a
+#: pending stop the entry order's ticket IS the position id; `order` on a CLOSING deal is the
+#: server's stop/target order and matches nothing, and is kept last only for rows written before
+#: the position id was recorded.
+_JOIN_KEYS = ("entry_order", "position_id", "order")
+
+
+def _join_ticket(deal: dict, by_ticket: dict) -> Any:
+    for key in _JOIN_KEYS:
+        value = deal.get(key)
+        if value is not None and value in by_ticket:
+            return value
+    return None
+
+
+def _entry_fill(deal: dict) -> Any:
+    """The price the ENTRY executed at. A closing deal's `fill_price` is the exit; slippage
+    against the intended entry must use the position's opening deal."""
+    try:
+        if float(deal.get("entry_price") or 0.0) > 0:
+            return deal["entry_price"]
+    except (TypeError, ValueError):
+        pass
+    return deal.get("fill_price")
 
 
 def load_jsonl(path: Path) -> list[dict]:
@@ -140,23 +176,39 @@ def compute(intents: list[dict], deals: list[dict],
         if t is not None:
             by_ticket[t] = i
 
-    rows, unmatched = [], 0
+    rows, chain, unmatched = [], [], 0
     matched_tickets = set()
     for d in deals:
-        t = d.get("order")
+        # THE JOIN (2026-09-08). It was `d["order"]` against the intent's ticket: a closing
+        # deal's order is the server's stop/target order, so nothing ever matched and the
+        # "fill" it would have compared was the exit price. The position id is the bridge MT5
+        # offers, and the gateway now writes it beside the entry order and entry deal.
+        t = _join_ticket(d, by_ticket)
         intent = by_ticket.get(t) if t is not None else None
         if intent is None:
             unmatched += 1
             continue
         matched_tickets.add(t)
         want = intent.get("intended")
-        got = d.get("fill_price")
+        got = _entry_fill(d)
+        link = {
+            "sleeve": d.get("sleeve") or intent.get("sleeve"),
+            "symbol": d.get("symbol") or intent.get("symbol"),
+            "intent_time": intent.get("time"), "release_id": intent.get("release_id"),
+            "state_vector_id": intent.get("state_vector_id"), "ticket": t,
+            "position_id": d.get("position_id"), "entry_deal": d.get("entry_deal"),
+            "close_deal": d.get("deal"), "closed_at": d.get("time"),
+            "intended": want, "entry": got, "realized_r": d.get("r_multiple"),
+            "pl_quote": d.get("pl_quote"),
+        }
+        chain.append(link)
         if want is None or got is None:
             continue
         dirn = _direction(d.get("side", intent.get("side")))
         if dirn == 0:
             continue
         slip_quote = (float(got) - float(want)) * dirn
+        link["slip_quote"] = slip_quote
         risk = float(d.get("risk_quote") or 0.0)
         rows.append({
             "sleeve": d.get("sleeve"), "symbol": d.get("symbol"),
@@ -175,7 +227,7 @@ def compute(intents: list[dict], deals: list[dict],
                        why=("no matched intent/deal pairs yet. Nothing has filled, or the gateway "
                             "predates intent recording. This is NOT a clean bill of health -- "
                             "execution is UNMEASURED until a fill exists."),
-                       account_kind=kind)
+                       account_kind=kind, attributed_deals=len(chain), chain=chain)
 
     sq = sorted(r["slip_quote"] for r in rows)
     srs = [r["slip_r"] for r in rows if r["slip_r"] is not None]
@@ -189,17 +241,26 @@ def compute(intents: list[dict], deals: list[dict],
         mean_slip_r=mean_r,
         edge_share=(mean_r / book_edge_r) if book_edge_r else None,
         rows=rows,
-        why="matched on order ticket; slip signed so a bad buy and a bad sell do not cancel",
-        account_kind=kind)
+        why=("matched on the position id (entry order == intent ticket); slip against the ENTRY "
+             "fill, signed so a bad buy and a bad sell do not cancel"),
+        account_kind=kind, attributed_deals=len(chain), chain=chain)
+
+
+def _attribution_line(m: Markout) -> str:
+    share = m.attributed_share
+    return (f"  attributed deals     {m.attributed_deals}/{m.n_deals}"
+            + (f"  ({share * 100:.0f}% -- target 100%)" if share is not None else ""))
 
 
 def render(m: Markout) -> str:
     L = ["EXECUTION MARKOUT -- intended versus filled", ""]
     if not m.usable:
         L += [f"  {m.why}", "",
-              f"  deals seen {m.n_deals} | intents awaiting a fill {m.n_unfilled_intents}"]
+              f"  deals seen {m.n_deals} | intents awaiting a fill {m.n_unfilled_intents}",
+              _attribution_line(m)]
         return "\n".join(L)
-    L += [f"  matched fills        {m.n_matched}",
+    L += [_attribution_line(m),
+          f"  matched fills        {m.n_matched}",
           f"  unfilled brackets    {m.n_unfilled_intents}   (cancelled or never triggered)",
           f"  unmatched deals      {m.n_unmatched_deals}   "
           f"{'<- RECONCILE: orders this desk cannot account for' if m.n_unmatched_deals else ''}",

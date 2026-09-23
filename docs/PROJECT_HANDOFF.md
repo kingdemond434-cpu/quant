@@ -1,3 +1,9 @@
+> **DECOMMISSIONED 2026-08-23.** The Hetzner VPS this file describes (95.216.191.70) is fully
+> torn down -- crypto cron/systemd AND the shadow-sync/dashboard role both. The desk migrated to
+> the MT5/Fusion universe (see `CLAUDE.md`'s MT5 UNIVERSAL MANDATE); the live execution box is
+> now Contabo (`desks/mt5/AGENTS.md`, CANONICAL LIVE BOX). This doc is kept as a historical record
+> of how the retired crypto desk was deployed -- do not follow it to bring anything back up.
+
 # PROJECT HANDOFF — Autonomous Solo Crypto Quant Desk
 
 **Purpose:** paste this whole file into a fresh Claude session on a NEW Anthropic account to

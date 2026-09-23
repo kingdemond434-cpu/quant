@@ -1,18 +1,18 @@
-# AUDIT SHARD 4/13 -- seat deepseek/deepseek-v4-pro
+# AUDIT SHARD 4/24 -- seat deepseek/deepseek-v4-pro-0813
 
 You are reviewing SOURCE CODE, not a summary. Previous panels received a 13,185-char self-description and never saw the code; that is why this exists.
 
-- TIER 1 (money path) is included IN FULL and is sent to every seat: 41 files. A defect here costs money.
-- TIER 2 is YOUR SHARD ALONE: 45 files. No other seat sees these, so anything you miss here is missed entirely.
-- WITHHELD: 86 modules classified INERT (nothing reads them; deleting breaks nothing). They are named below. **If you believe an exclusion is wrong, say so** -- a silent omission is how a blind spot survives an audit.
+- TIER 1 (money path) is included IN FULL and is sent to every seat: 44 files. A defect here costs money.
+- TIER 2 is YOUR SHARD ALONE: 10 files. No other seat sees these, so anything you miss here is missed entirely.
+- WITHHELD: 0 modules classified INERT (nothing reads them; deleting breaks nothing). They are named below. **If you believe an exclusion is wrong, say so** -- a silent omission is how a blind spot survives an audit.
 
 ## Withheld (INERT) -- challenge these if the classification looks wrong
 
-backfill_oi_ls_oos, backfill_onchain_oos, batch_premium, build_panel_rulings, build_scoreboard, bundle_all, capacity_simulator, capacity_test, check_readiness, check_spot_testnet, check_testnet, classify_regime, collect_binance_metrics, collect_bitmex_funding, collect_deribit_surface, collect_free_signals, collect_hyperliquid_funding, collect_market_breadth, compute_performance, dl_metrics_history, fetch_video_transcript, hl_breadth_flow, hl_dir_flow, hl_feature_factory, hl_filter_test, hl_oos_elite, ingest_crypto, ingest_crypto_enriched, ingest_etfs, ingest_history, ingest_multiasset, iros_batch, log_swaps, make_archive, measure_matrix_window, ops_server, publish_dashboard_url, publish_netlify, pull_cme, reconstruct_kaiko_reference_rate, record_capital_event, reflexivity_m5, run_alpha_registry, run_autodiscovery, run_campaign, run_capital_plan, run_capture_analysis, run_carry_crowding, run_cashcarry_backtest, run_combined_stats, run_crossasset_robust, run_crossexchange_backtest, run_crypto_portfolio, run_demo, run_derivative_backtest, run_edge_gated_leverage, run_factor_model, run_factory, run_factory_status, run_firm_alphas_backtest, run_freedata_backtest, run_funding_8h, run_lifecycle, run_mt5_funding_bridge, run_options_vrp_backtest, run_overlay_backtest, run_portfolio_live, run_regime_engine, run_research_lake, run_research_tick, run_sleeve_alloc, run_stress, run_tournament, run_worker, run_xsec_funding_max, score_panel, screen_cme_basis, screen_etf_flows, screen_mining, screen_oi_ls_axes, serve_dashboard, setup_netlify, setup_ngrok, setup_spot_testnet_keys, setup_testnet_keys, smoke_orchestration
+
 
 ## TIER 1 -- money path (every seat reviews this)
 
-### libs/discovery/tail_risk.py
+### libs\discovery\tail_risk.py
 ```python
 """tail_risk_engine — hidden tail exposure (dependence, gap, vol shock).
 
@@ -78,638 +78,7 @@ def tail_risk(
 
 ```
 
-### libs/execution/binance_live.py
-```python
-"""Binance USD-M Futures LIVE connector -- execution hands only, no alpha, no keys in code.
-
-Mirrors libs/execution/binance_testnet.py's interface EXACTLY (drop-in: callers that already
-work against the testnet module work against this one unchanged) but is pinned to the LIVE
-base URL. Per docs/LIVE_CONNECTOR_SPEC.md section 1 + engineering_backlog.json
-``live_connector_prebuild``: this module is FULLY INERT -- every signed call raises -- unless
-ALL THREE hold:
-  1. ``data/secrets/binance_live.json`` exists with a trade-only, withdrawal-disabled key
-     (placed by the PRINCIPAL via SSH -- never chat, never env var, never committed);
-  2. ``data/LIVE_ENABLE`` flag file exists (explicit arm switch, separate from key placement so
-     "keys exist" and "trading is armed" are never the same moment);
-  3. ``data/LIVE_VPS_VERIFIED`` marker exists (VPS-stability precondition -- set only after the
-     operator confirms the deployment host is the durable one, not a rebuild-in-progress box).
-Unlike the testnet connector, credentials are read from the KEYFILE ONLY -- no environment-
-variable path. A systemd unit's environment is visible via ``/proc/<pid>/environ`` to anyone
-with host access; live trade-only keys stay in one file with explicit, auditable placement.
-
-CAPABILITY WHITELIST (hard, by construction -- not a runtime check): this module defines ONLY
-order-placement, order-cancellation, and read functions. It has no withdrawal, transfer,
-sub-account, or key-management function and never will -- those Binance endpoints are simply
-never wrapped here. Adding one would need a from-scratch review, not an edit to this file.
-"""
-
-from __future__ import annotations
-
-import hashlib
-import hmac
-import json
-import time
-import urllib.parse
-import urllib.request
-from pathlib import Path
-from typing import Any
-
-from libs.core.logging import get_logger
-
-# OBSERVABILITY (gap #56, 2026-07-29). The desk already OWNED a structured logger with
-# correlation ids and secret redaction (libs/core/logging.py) and NOTHING below the script
-# boundary used it -- 1 of 318 modules. That is an activation gap, not a missing capability, so
-# nothing new was built: this is the money path adopting the convention the desk already has.
-# The library NEVER configures handlers or levels (the owning script does, via
-# configure_logging), so importing this cannot change any current output.
-# NEVER LOG: api key, secret, signature, or the signed query string -- fenced by
-# tests/execution/test_obs_logging.py, which scans this file's log calls.
-_log = get_logger(__name__)
-
-_BASE = "https://fapi.binance.com"              # PINNED live futures -- verified against docs
-_KEYFILE = Path("data/secrets/binance_live.json")
-_ENABLE_FLAG = Path("data/LIVE_ENABLE")
-_VPS_MARKER = Path("data/LIVE_VPS_VERIFIED")
-
-
-def _creds() -> tuple[str | None, str | None]:
-    if not _KEYFILE.exists():
-        return None, None
-    try:
-        d = json.loads(_KEYFILE.read_text("utf-8"))
-        return d.get("key"), d.get("secret")
-    except (json.JSONDecodeError, OSError):
-        return None, None
-
-
-def has_keys() -> bool:
-    k, s = _creds()
-    return bool(k and s)
-
-
-def is_armed() -> tuple[bool, str]:
-    """All three go-live preconditions, evaluated together (see module docstring)."""
-    checks = {
-        "keys_present": has_keys(),
-        "live_enable_flag": _ENABLE_FLAG.exists(),
-        "vps_verified": _VPS_MARKER.exists(),
-    }
-    return all(checks.values()), ", ".join(f"{k}={v}" for k, v in checks.items())
-
-
-def _get(path: str, params: dict[str, Any] | None = None) -> Any:
-    """Public market data -- no keys, no arming required (read-only, harmless)."""
-    url = f"{_BASE}{path}"
-    if params:
-        url += "?" + urllib.parse.urlencode(params)
-    req = urllib.request.Request(url, headers={"User-Agent": "quant-live/1.0"})
-    with urllib.request.urlopen(req, timeout=20) as r:
-        return json.loads(r.read())
-
-
-def _signed(path: str, params: dict[str, Any], *, method: str = "GET") -> Any:
-    armed, why = is_armed()
-    if not armed:
-        # A refused signed call is a decision worth a trail: post-incident forensics needs to
-        # distinguish "the desk never tried" from "the venue rejected it".
-        _log.warning("signed call REFUSED, not armed: path=%s reason=%s", path, why)
-        raise RuntimeError(f"binance_live not armed ({why}) -- refusing signed call {path}")
-    key, secret = _creds()
-    assert key is not None and secret is not None  # armed (checked above) => creds present
-    params = {**params, "timestamp": int(time.time() * 1000), "recvWindow": 5000}
-    query = urllib.parse.urlencode(params)
-    sig = hmac.new(secret.encode(), query.encode(), hashlib.sha256).hexdigest()
-    body = f"{query}&signature={sig}".encode()
-    if method == "GET":
-        req = urllib.request.Request(f"{_BASE}{path}?{body.decode()}",
-                                     headers={"X-MBX-APIKEY": key})
-    else:
-        req = urllib.request.Request(f"{_BASE}{path}", data=body, method=method,
-                                     headers={"X-MBX-APIKEY": key})
-    with urllib.request.urlopen(req, timeout=20) as r:
-        return json.loads(r.read())
-
-
-def exchange_filters() -> dict[str, dict[str, float]]:
-    """Per-symbol step size, min qty, and price/qty precision (for valid order sizing)."""
-    info = _get("/fapi/v1/exchangeInfo")
-    out: dict[str, dict[str, float]] = {}
-    for s in info.get("symbols", []):
-        f = {flt["filterType"]: flt for flt in s.get("filters", [])}
-        lot = f.get("LOT_SIZE", {})
-        pf = f.get("PRICE_FILTER", {})
-        out[s["symbol"]] = {
-            "step": float(lot.get("stepSize", 0.001)), "min_qty": float(lot.get("minQty", 0.0)),
-            "qty_prec": int(s.get("quantityPrecision", 3)),
-            "tick": float(pf.get("tickSize", 0.01)), "price_prec": int(s.get("pricePrecision", 2)),
-        }
-    return out
-
-
-def book_ticker() -> dict[str, tuple[float, float]]:
-    """Best bid/ask per symbol (for passive maker pricing). {symbol: (bid, ask)}."""
-    data = _get("/fapi/v1/ticker/bookTicker")
-    if not isinstance(data, list):
-        return {}
-    return {d["symbol"]: (float(d["bidPrice"]), float(d["askPrice"])) for d in data}
-
-
-def quote_depth(symbol: str, side: str, pct: float = 0.01) -> float:
-    """Resting book liquidity: total QUOTE (USDT) value within ``pct`` of the touch on one side.
-
-    side='BUY' sums the asks a buy would eat; side='SELL' sums the bids. Returns 0.0 on any
-    failure or an empty book -- callers must treat 'unknown' as 'thin' and stand aside."""
-    try:
-        d = _get("/fapi/v1/depth", {"symbol": symbol, "limit": 100})
-        levels = d.get("asks" if side == "BUY" else "bids", [])
-        if not levels:
-            return 0.0
-        touch = float(levels[0][0])
-        if side == "BUY":
-            return sum(float(p) * float(q) for p, q in levels if float(p) <= touch * (1.0 + pct))
-        return sum(float(p) * float(q) for p, q in levels if float(p) >= touch * (1.0 - pct))
-    except Exception:
-        return 0.0
-
-
-def avg_fill(symbol: str, side: str, start_ms: int) -> float | None:
-    """Venue-truth average fill price of OUR trades on ``symbol`` since ``start_ms`` (signed).
-
-    None when no fills are visible yet, the read fails, or the connector isn't armed --
-    callers fall back to the mark rather than fabricate a price."""
-    try:
-        trades = _signed("/fapi/v1/userTrades", {"symbol": symbol, "startTime": start_ms,
-                                                 "limit": 100})
-        fills = [t for t in trades if t.get("side") == side]
-        base = sum(float(t["qty"]) for t in fills)
-        quote = sum(float(t["quoteQty"]) for t in fills)
-        return quote / base if base > 0 and quote > 0 else None
-    except Exception:
-        return None
-
-
-def mark_prices() -> dict[str, float]:
-    """Latest price per symbol (public endpoint -- no keys needed, used for sizing)."""
-    data = _get("/fapi/v1/ticker/price")
-    return {d["symbol"]: float(d["price"]) for d in data} if isinstance(data, list) else {}
-
-
-def account_balance() -> float:
-    """USDT wallet balance on the live futures account."""
-    for b in _signed("/fapi/v2/balance", {}):
-        if b.get("asset") == "USDT":
-            return float(b.get("balance", 0.0))
-    return 0.0
-
-
-def account_summary() -> dict[str, float]:
-    """Equity, wallet, unrealized PnL, available, and margin used (the live P&L snapshot)."""
-    a = _signed("/fapi/v2/account", {})
-    return {
-        "wallet": float(a.get("totalWalletBalance", 0.0)),
-        "equity": float(a.get("totalMarginBalance", 0.0)),
-        "unrealized_pnl": float(a.get("totalUnrealizedProfit", 0.0)),
-        "available": float(a.get("availableBalance", 0.0)),
-        "margin_used": float(a.get("totalInitialMargin", 0.0)),
-    }
-
-
-def _income_rows(since_ms: int, income_type: str = "",
-                 fetch: Any = None) -> list[dict[str, Any]]:
-    """ALL income rows since ``since_ms`` -- paginated past the venue's 1000-row page cap."""
-    get = fetch or (lambda p: _signed("/fapi/v1/income", p))
-    params: dict[str, Any] = {"limit": 1000}
-    if income_type:
-        params["incomeType"] = income_type
-    if not since_ms:
-        rows = get(params)
-        return list(rows) if isinstance(rows, list) else []
-    out: list[dict[str, Any]] = []
-    seen: set[tuple[str, str, str, str]] = set()
-    cursor = since_ms
-    for _ in range(50):
-        params["startTime"] = cursor
-        rows = get(params)
-        if not isinstance(rows, list) or not rows:
-            break
-        for r in rows:
-            key = (str(r.get("tranId")), str(r.get("incomeType")),
-                   str(r.get("symbol")), str(r.get("time")))
-            if key not in seen:
-                seen.add(key)
-                out.append(r)
-        if len(rows) < 1000:
-            break
-        last = int(rows[-1].get("time", cursor))
-        cursor = last + 1 if last <= cursor else last
-    return out
-
-
-def income_summary(since_ms: int = 0, fetch: Any = None) -> dict[str, float]:
-    """Realized PnL, funding earned/paid, and commission since ``since_ms`` (default: recent)."""
-    out = {"realized_pnl": 0.0, "funding": 0.0, "commission": 0.0,
-           "gross_profit": 0.0, "gross_loss": 0.0, "n_wins": 0.0, "n_losses": 0.0}
-    for r in _income_rows(since_ms, fetch=fetch):
-        t, amt = r.get("incomeType"), float(r.get("income", 0.0))
-        if t == "REALIZED_PNL":
-            out["realized_pnl"] += amt
-            if amt > 0:
-                out["n_wins"] += 1
-            elif amt < 0:
-                out["n_losses"] += 1
-        elif t == "FUNDING_FEE":
-            out["funding"] += amt
-        elif t == "COMMISSION":
-            out["commission"] += amt
-        if amt > 0:
-            out["gross_profit"] += amt
-        elif amt < 0:
-            out["gross_loss"] += amt
-    return out
-
-
-def realized_trades(since_ms: int = 0) -> list[float]:
-    """Per-close realized-PnL amounts (for win rate). One row per position-reducing fill."""
-    return [float(r.get("income", 0.0)) for r in _income_rows(since_ms, "REALIZED_PNL")]
-
-
-def positions() -> dict[str, float]:
-    """Current signed position quantity per symbol (long +, short -)."""
-    out: dict[str, float] = {}
-    for p in _signed("/fapi/v2/positionRisk", {}):
-        amt = float(p.get("positionAmt", 0.0))
-        if amt != 0.0:
-            out[p["symbol"]] = amt
-    return out
-
-
-def force_orders(hours: float = 2.0) -> dict[str, int]:
-    """Symbols force-closed by the VENUE (liquidation or auto-deleveraging) recently.
-
-    A short perp leg that vanished via ADL/liquidation must NOT be re-shorted into the
-    squeeze that took it. Returns symbol -> count of force events; {} without arming or on error.
-    """
-    if not is_armed()[0]:
-        return {}
-    since = int((time.time() - hours * 3600.0) * 1000)
-    try:
-        rows = _signed("/fapi/v1/forceOrders", {"startTime": since, "limit": 100}) or []
-    except Exception:
-        return {}
-    out: dict[str, int] = {}
-    for r in rows:
-        s = str(r.get("symbol", ""))
-        if s:
-            out[s] = out.get(s, 0) + 1
-    return out
-
-
-def set_leverage(symbol: str, leverage: int) -> None:
-    try:
-        _signed("/fapi/v1/leverage", {"symbol": symbol, "leverage": leverage}, method="POST")
-    except Exception:  # leverage already set / symbol issue -- non-fatal
-        return
-
-
-_MKT_MAX_CACHE: dict[str, float] = {}
-
-
-def _market_max_qty(symbol: str) -> float:
-    """Venue MARKET_LOT_SIZE cap for ``symbol``, cached. inf when unknown (never invent a limit).
-
-    Added 2026-07-27 after COOKIEUSDT (maxQty 150,000) rejected every 183,140 market order with
-    -4005, pushing the executor onto its resting-limit fallback, whose accumulated fills walked a
-    short through zero into a +916,772 long.
-    """
-    if symbol in _MKT_MAX_CACHE:
-        return _MKT_MAX_CACHE[symbol]
-    cap = float("inf")
-    try:
-        info = _get("/fapi/v1/exchangeInfo")
-        for s in info.get("symbols", []):
-            for f in s.get("filters", []):
-                if f.get("filterType") == "MARKET_LOT_SIZE":
-                    _MKT_MAX_CACHE[s["symbol"]] = float(f["maxQty"])
-        cap = _MKT_MAX_CACHE.get(symbol, float("inf"))
-    except Exception:
-        pass                                  # unknown cap -> behave exactly as before
-    _MKT_MAX_CACHE[symbol] = cap
-    return cap
-
-
-def place_market(symbol: str, side: str, qty: float,
-                 reduce_only: bool = False) -> dict[str, Any]:
-    """Place a market order, SPLIT to respect the venue MARKET_LOT_SIZE cap.
-
-    ``reduce_only=True`` makes the order arithmetically incapable of passing through zero and
-    opening the opposite position -- mandatory on any cover/close leg.
-    """
-    cap = _market_max_qty(symbol)
-    _log.info("place_market symbol=%s side=%s qty=%s reduce_only=%s chunk_cap=%s",
-              symbol, side, qty, reduce_only, cap)
-    remaining, last, n = float(qty), None, 0
-    while remaining > 0 and n < 50:
-        chunk = min(cap, remaining) if cap != float("inf") else remaining
-        params = {"symbol": symbol, "side": side, "type": "MARKET", "quantity": chunk}
-        if reduce_only:
-            params["reduceOnly"] = "true"
-        last = _signed("/fapi/v1/order", params, method="POST")
-        remaining -= chunk
-        n += 1
-    if n >= 50:
-        # The split loop's own bound was silent: hitting it means the order did NOT fully place.
-        _log.error("place_market symbol=%s hit the 50-chunk bound with %s remaining -- "
-                   "order is INCOMPLETE", symbol, remaining)
-    _log.info("place_market DONE symbol=%s chunks=%s order_id=%s",
-              symbol, n, (last or {}).get("orderId") if isinstance(last, dict) else None)
-    return dict(last) if isinstance(last, dict) else {"raw": last}
-
-
-def place_post_only(symbol: str, side: str, qty: float, price: float) -> dict[str, Any]:
-    """Post-only LIMIT order (timeInForce=GTX) -- guaranteed MAKER (rejected if it would cross)."""
-    res = _signed("/fapi/v1/order", {
-        "symbol": symbol, "side": side, "type": "LIMIT", "timeInForce": "GTX",
-        "quantity": qty, "price": price,
-    }, method="POST")
-    _log.info("place_post_only symbol=%s side=%s qty=%s price=%s order_id=%s",
-              symbol, side, qty, price,
-              res.get("orderId") if isinstance(res, dict) else None)
-    return dict(res) if isinstance(res, dict) else {"raw": res}
-
-
-def place_stop_market(symbol: str, side: str, qty: float, stop_price: float) -> dict[str, Any]:
-    """Reduce-only STOP_MARKET -- the venue-side protective stop required by spec section 3
-    (survives total host death; every live position must carry one at the ruin-line distance)."""
-    res = _signed("/fapi/v1/order", {
-        "symbol": symbol, "side": side, "type": "STOP_MARKET", "quantity": qty,
-        "stopPrice": stop_price, "reduceOnly": "true",
-    }, method="POST")
-    # The venue-side protective stop is the rail that survives host death: its placement is the
-    # single most important line in any live-session log.
-    _log.info("place_stop_market (RUIN RAIL) symbol=%s side=%s qty=%s stop=%s order_id=%s",
-              symbol, side, qty, stop_price,
-              res.get("orderId") if isinstance(res, dict) else None)
-    return dict(res) if isinstance(res, dict) else {"raw": res}
-
-
-def open_orders(symbol: str | None = None) -> list[dict[str, Any]]:
-    """Resting (unfilled) orders, optionally for one symbol."""
-    params = {"symbol": symbol} if symbol else {}
-    res = _signed("/fapi/v1/openOrders", params)
-    return list(res) if isinstance(res, list) else []
-
-
-def cancel_all(symbol: str) -> dict[str, Any]:
-    """Cancel all open orders for a symbol (clears stale maker quotes before re-pegging).
-
-    CAUTION (R0071c, 2026-07-31): this also cancels a resting protective STOP_MARKET. Paths
-    that must preserve the venue-side stop (the maker-pair fallback) cancel their own orders
-    individually via cancel_order instead."""
-    res = _signed("/fapi/v1/allOpenOrders", {"symbol": symbol}, method="DELETE")
-    return dict(res) if isinstance(res, dict) else {"raw": res}
-
-
-def cancel_order(symbol: str, order_id: int) -> dict[str, Any]:
-    """Cancel ONE order by id -- surgical, so a maker-quote cleanup can never take the
-    protective stop down with it."""
-    res = _signed("/fapi/v1/order", {"symbol": symbol, "orderId": order_id}, method="DELETE")
-    _log.info("cancel_order symbol=%s order_id=%s", symbol, order_id)
-    return dict(res) if isinstance(res, dict) else {"raw": res}
-
-
-def flatten_all() -> list[dict[str, Any]]:
-    """Emergency: market-close every open position."""
-    out = []
-    for sym, amt in positions().items():
-        side = "SELL" if amt > 0 else "BUY"
-        out.append(place_market(sym, side, abs(amt)))
-    return out
-
-```
-
-### libs/execution/binance_spot_live.py
-```python
-"""Binance SPOT LIVE connector -- the spot leg of cash-and-carry, real money, no alpha here.
-
-Mirrors libs/execution/binance_spot_testnet.py's interface EXACTLY; pinned to the LIVE spot
-base URL. Same arming contract as libs/execution/binance_live.py (the futures leg) -- see that
-module's docstring for the full rationale. Every signed call is inert unless
-``data/secrets/binance_live_spot.json`` exists, ``data/LIVE_ENABLE`` exists, and
-``data/LIVE_VPS_VERIFIED`` exists. Keyfile-only credentials (no env var path -- see futures
-module docstring for why). No withdrawal/transfer/sub-account function exists in this module and
-never will; the capability surface is order-placement, order-cancellation, and reads only.
-"""
-
-from __future__ import annotations
-
-import hashlib
-import hmac
-import json
-import time
-import urllib.parse
-import urllib.request
-from pathlib import Path
-from typing import Any
-
-_BASE = "https://api.binance.com"                # PINNED live spot -- verified against docs
-_KEYFILE = Path("data/secrets/binance_live_spot.json")
-_ENABLE_FLAG = Path("data/LIVE_ENABLE")
-_VPS_MARKER = Path("data/LIVE_VPS_VERIFIED")
-
-
-def _creds() -> tuple[str | None, str | None]:
-    if not _KEYFILE.exists():
-        return None, None
-    try:
-        d = json.loads(_KEYFILE.read_text("utf-8"))
-        return d.get("key"), d.get("secret")
-    except (json.JSONDecodeError, OSError):
-        return None, None
-
-
-def has_keys() -> bool:
-    k, s = _creds()
-    return bool(k and s)
-
-
-def is_armed() -> tuple[bool, str]:
-    checks = {
-        "keys_present": has_keys(),
-        "live_enable_flag": _ENABLE_FLAG.exists(),
-        "vps_verified": _VPS_MARKER.exists(),
-    }
-    return all(checks.values()), ", ".join(f"{k}={v}" for k, v in checks.items())
-
-
-def _get(path: str, params: dict[str, Any] | None = None) -> Any:
-    url = f"{_BASE}{path}"
-    if params:
-        url += "?" + urllib.parse.urlencode(params)
-    req = urllib.request.Request(url, headers={"User-Agent": "quant-live-spot/1.0"})
-    with urllib.request.urlopen(req, timeout=20) as r:
-        return json.loads(r.read())
-
-
-def _signed(path: str, params: dict[str, Any], *, method: str = "GET") -> Any:
-    armed, why = is_armed()
-    if not armed:
-        raise RuntimeError(f"binance_spot_live not armed ({why}) -- refusing signed call {path}")
-    key, secret = _creds()
-    assert key is not None and secret is not None  # armed (checked above) => creds present
-    params = {**params, "timestamp": int(time.time() * 1000), "recvWindow": 5000}
-    query = urllib.parse.urlencode(params)
-    sig = hmac.new(secret.encode(), query.encode(), hashlib.sha256).hexdigest()
-    body = f"{query}&signature={sig}".encode()
-    if method == "GET":
-        req = urllib.request.Request(f"{_BASE}{path}?{body.decode()}",
-                                     headers={"X-MBX-APIKEY": key})
-    else:
-        req = urllib.request.Request(f"{_BASE}{path}", data=body, method=method,
-                                     headers={"X-MBX-APIKEY": key})
-    with urllib.request.urlopen(req, timeout=20) as r:
-        return json.loads(r.read())
-
-
-def prices() -> dict[str, float]:
-    """Latest spot price per symbol (public)."""
-    data = _get("/api/v3/ticker/price")
-    return {d["symbol"]: float(d["price"]) for d in data} if isinstance(data, list) else {}
-
-
-def _prec_of(step: float) -> int:
-    s = f"{step:.10f}".rstrip("0")
-    return len(s.split(".")[1]) if "." in s and step < 1 else 0
-
-
-def exchange_filters() -> dict[str, dict[str, float]]:
-    """Per-symbol step, min qty, base precision, price tick + precision (for valid spot sizing).
-
-    ``min_notional`` is the venue's minimum ORDER VALUE -- a gate quantity filters cannot express:
-    an order can satisfy stepSize AND minQty and still be rejected for being worth too little.
-    Binance publishes it as NOTIONAL (current) or MIN_NOTIONAL (legacy); 0.0 means this symbol
-    has no published minimum, so callers must keep their own conservative floor for that case.
-
-    PARITY WARNING (2026-07-31): this is one of FOUR near-duplicate exchangeInfo parsers --
-    binance_spot_live, binance_spot_testnet, binance_live, binance_testnet. The money path
-    (run_cashcarry_executor, run_stranded_recovery) imports the TESTNET modules, so a field added
-    only here reaches NOTHING. tests/execution/test_filter_parity.py pins the spot pair's key set
-    so that divergence fails a test instead of shipping inert. Futures publishes the same filter
-    under the key ``notional``, NOT ``minNotional`` -- copying this line there yields 0.0 for
-    every symbol."""
-    info = _get("/api/v3/exchangeInfo")
-    out: dict[str, dict[str, float]] = {}
-    for s in info.get("symbols", []):
-        f = {flt["filterType"]: flt for flt in s.get("filters", [])}
-        lot = f.get("LOT_SIZE", {})
-        tick = float(f.get("PRICE_FILTER", {}).get("tickSize", 0.0) or 0.0)
-        notl = f.get("NOTIONAL", {}) or f.get("MIN_NOTIONAL", {})
-        out[s["symbol"]] = {
-            "step": float(lot.get("stepSize", 0.0001)), "min_qty": float(lot.get("minQty", 0.0)),
-            "qty_prec": int(s.get("baseAssetPrecision", 6)),
-            "tick": tick, "price_prec": _prec_of(tick) if tick else 8,
-            "min_notional": float(notl.get("minNotional", 0.0) or 0.0),
-        }
-    return out
-
-
-def book_ticker() -> dict[str, tuple[float, float]]:
-    """Best (bid, ask) per symbol (public) -- for passive maker quoting."""
-    data = _get("/api/v3/ticker/bookTicker")
-    return {d["symbol"]: (float(d["bidPrice"]), float(d["askPrice"]))
-            for d in data} if isinstance(data, list) else {}
-
-
-def quote_depth(symbol: str, side: str, pct: float = 0.01) -> float:
-    """Resting book liquidity: total QUOTE (USDT) value within ``pct`` of the touch on one side."""
-    try:
-        d = _get("/api/v3/depth", {"symbol": symbol, "limit": 100})
-        levels = d.get("asks" if side == "BUY" else "bids", [])
-        if not levels:
-            return 0.0
-        touch = float(levels[0][0])
-        if side == "BUY":
-            return sum(float(p) * float(q) for p, q in levels if float(p) <= touch * (1.0 + pct))
-        return sum(float(p) * float(q) for p, q in levels if float(p) >= touch * (1.0 - pct))
-    except Exception:
-        return 0.0
-
-
-def avg_fill(symbol: str, side: str, start_ms: int) -> float | None:
-    """Venue-truth average fill price of OUR trades since ``start_ms``. None if unarmed/no fills."""
-    try:
-        trades = _signed("/api/v3/myTrades", {"symbol": symbol, "startTime": start_ms,
-                                              "limit": 100})
-        fills = [t for t in trades if bool(t.get("isBuyer")) == (side == "BUY")]
-        base = sum(float(t["qty"]) for t in fills)
-        quote = sum(float(t["quoteQty"]) for t in fills)
-        return quote / base if base > 0 and quote > 0 else None
-    except Exception:
-        return None
-
-
-def balances() -> dict[str, float]:
-    """Free balance per asset (non-zero only)."""
-    a = _signed("/api/v3/account", {})
-    return {b["asset"]: float(b["free"]) for b in a.get("balances", []) if float(b["free"]) > 0.0}
-
-
-def usdt_balance() -> float:
-    return balances().get("USDT", 0.0)
-
-
-def account_value_usdt() -> float:
-    """Approximate total account value in USDT (free balances marked at spot price)."""
-    px = prices()
-    total = 0.0
-    for asset, qty in balances().items():
-        if asset == "USDT":
-            total += qty
-        else:
-            total += qty * px.get(f"{asset}USDT", 0.0)
-    return round(total, 2)
-
-
-def place_market(symbol: str, side: str, qty: float) -> dict[str, Any]:
-    """Spot MARKET order. side in {BUY, SELL}; qty in base asset units (e.g. BTC)."""
-    res = _signed("/api/v3/order", {
-        "symbol": symbol, "side": side, "type": "MARKET", "quantity": qty,
-    }, method="POST")
-    return dict(res) if isinstance(res, dict) else {"raw": res}
-
-
-def place_market_quote(symbol: str, side: str, quote_usdt: float) -> dict[str, Any]:
-    """Spot MARKET order sized in QUOTE (USDT) -- convenient for buying $X of an asset."""
-    res = _signed("/api/v3/order", {
-        "symbol": symbol, "side": side, "type": "MARKET", "quoteOrderQty": quote_usdt,
-    }, method="POST")
-    return dict(res) if isinstance(res, dict) else {"raw": res}
-
-
-def place_post_only(symbol: str, side: str, qty: float, price: float) -> dict[str, Any]:
-    """Post-only spot LIMIT order (type=LIMIT_MAKER) -- guaranteed MAKER."""
-    res = _signed("/api/v3/order", {
-        "symbol": symbol, "side": side, "type": "LIMIT_MAKER", "quantity": qty, "price": price,
-    }, method="POST")
-    return dict(res) if isinstance(res, dict) else {"raw": res}
-
-
-def open_orders(symbol: str | None = None) -> list[dict[str, Any]]:
-    """Resting open orders (signed). Used to detect whether a maker quote has filled."""
-    res = _signed("/api/v3/openOrders", {"symbol": symbol} if symbol else {})
-    return list(res) if isinstance(res, list) else []
-
-
-def cancel_all(symbol: str) -> dict[str, Any]:
-    """Cancel all open orders on a symbol (signed) -- to pull an unfilled maker quote."""
-    try:
-        res = _signed("/api/v3/openOrders", {"symbol": symbol}, method="DELETE")
-        return {"code": 200, "res": res}
-    except Exception as e:  # nothing to cancel / transient -- non-fatal
-        return {"code": 0, "msg": repr(e)[:80]}
-
-```
-
-### libs/execution/binance_spot_testnet.py
+### libs\execution\binance_spot_testnet.py
 ```python
 """Binance SPOT TESTNET connector -- the spot leg of cash-and-carry (paper money).
 
@@ -717,6 +86,21 @@ Pinned to the spot testnet (testnet.binance.vision); cannot touch a live account
 (HMAC-SHA256), keys from env (BINANCE_SPOT_TESTNET_KEY / BINANCE_SPOT_TESTNET_SECRET) or a local
 untracked file -- NEVER in code. Pairs with libs/execution/binance_testnet.py (the futures leg) so
 the long-spot / short-perp cash-and-carry can be simulated end-to-end on paper. No alpha logic here.
+
+WHY A BINANCE MODULE SURVIVES AN MT5-ONLY PURGE -- DO NOT "CLEAN THIS UP" (2026-09-05).
+This repo holds ONE desk, the MT5/Fusion desk, and the retired crypto-exchange desk was deleted in
+full. This file and its sibling `binance_spot_testnet.py` are the two deliberate exceptions, and
+they are exceptions for a reason that has nothing to do with trading crypto: they are the TIER-3
+DEADMAN RAIL's own plumbing. `scripts/run_deadman_reconciliation.py` (lines 24-25) and
+`scripts/run_deadman_stranded_sweep.py` (line 31) import them directly, and
+`scripts/run_deadman_switch.py` is a never-touch file. The rail is a SAFETY organ: it reconciles
+and sweeps stranded state, and it must keep working whatever the desk trades.
+
+They are also inert by construction -- the base URL is pinned to a TESTNET, so no code path here
+can reach a live account or move real money -- which is precisely why they are safe to keep and
+expensive to remove. `scripts/check_mt5_purity.py` allowlists both by name with this reason
+attached, so they will never appear in that fence's breach list. If you are here to delete a
+Binance file, this is the one you must not. Anything you change here changes the deadman rail.
 """
 
 from __future__ import annotations
@@ -731,9 +115,11 @@ import urllib.request
 from pathlib import Path
 from typing import Any
 
+from libs.execution.idempotency import client_order_id
+
 _BASE = "https://testnet.binance.vision"        # PINNED spot testnet -- never live
 _KEY_ENV = "BINANCE_SPOT_TESTNET_KEY"
-_SECRET_ENV = "BINANCE_SPOT_TESTNET_SECRET"
+_SECRET_ENV: str = "BINANCE_SPOT_TESTNET_SECRET"  # noqa: S105 - env var NAME, not a secret
 _KEYFILE = Path("data/secrets/binance_spot_testnet.json")
 
 
@@ -798,16 +184,24 @@ def _prec_of(step: float) -> int:
 def exchange_filters() -> dict[str, dict[str, float]]:
     """Per-symbol step, min qty, base precision, price tick + precision (for valid spot sizing).
 
-    ``min_notional`` is the venue's minimum ORDER VALUE -- a gate quantity filters cannot express.
-    THIS is the module the money path actually imports (run_cashcarry_executor,
-    run_stranded_recovery), so the field has to live here to reach anything; adding it only to
-    binance_spot_live ships it inert. run_stranded_recovery previously fell back to a hardcoded
-    10.0 for every symbol because the key did not exist -- against the desk's own measured venue
-    truth (data/capacity_floor.json: spot_min 5.0) that silently refused recoverable balances in
-    the $5-10 band under the label "below venue min notional". 0.0 = no published minimum, which
-    is why that caller keeps a conservative floor for the 0.0 case rather than treating it as
-    "no minimum". Key parity with binance_spot_live is pinned by
-    tests/execution/test_filter_parity.py."""
+    ``min_notional`` is the venue's minimum ORDER VALUE -- a gate quantity filters cannot express:
+    an order can satisfy stepSize AND minQty and still be rejected for being worth too little.
+    Binance publishes it as NOTIONAL (current) or MIN_NOTIONAL (legacy); 0.0 means this symbol has
+    no published minimum, so callers must keep their own conservative floor for that case.
+
+    THIS IS THE MODULE THE MONEY PATH ACTUALLY IMPORTS, and the field was added only to
+    `binance_spot_live` -- whose own docstring warned, in as many words, that
+    `run_cashcarry_executor` and `run_stranded_recovery` import the TESTNET modules, so a field
+    added only there "reaches NOTHING". It then reached nothing for the executor: every sizing
+    decision on the live path ran without the venue's minimum order value, so an order could
+    clear both quantity filters and still be rejected on value -- and on a two-legged carry a leg
+    rejected while its partner fills is a naked directional position, not a no-op.
+
+    `tests/execution/test_filter_parity.py` pins the two parsers' key sets AND their values so
+    this divergence fails a test instead of shipping inert. Futures publishes the same filter
+    under the key ``notional``, NOT ``minNotional`` -- copying this line there yields 0.0 for
+    every symbol.
+    """
     info = _get("/api/v3/exchangeInfo")
     out: dict[str, dict[str, float]] = {}
     for s in info.get("symbols", []):
@@ -905,29 +299,46 @@ def account_value_usdt() -> float:
     return round(total, 2)
 
 
-def place_market(symbol: str, side: str, qty: float) -> dict[str, Any]:
-    """Spot MARKET order. side in {BUY, SELL}; qty in base asset units (e.g. BTC)."""
+def place_market(symbol: str, side: str, qty: float,
+                 cycle: str | None = None) -> dict[str, Any]:
+    """Spot MARKET order. side in {BUY, SELL}; qty in base asset units (e.g. BTC).
+
+    GAP #49 EXTENDED TO SPOT, 2026-08-06. See binance_spot_live.place_market for the full
+    reasoning. Short version: every futures order has carried a deterministic client order ID
+    since GAP #49 and no spot order carried one, so on the cash-carry pair an ambiguous timeout
+    left the retry deduped on the futures leg and PLACED AGAIN on the spot leg -- two spot longs
+    against one perp short, which is a naked long, not an oversized carry.
+
+    Kept in step with the live module because they are drop-in replacements and this is where the
+    behaviour is rehearsed before it is trusted with money -- including the new failure mode, a
+    duplicate REJECTION, which is the one an operator needs to have seen on testnet first.
+    """
     res = _signed("/api/v3/order", {
         "symbol": symbol, "side": side, "type": "MARKET", "quantity": qty,
+        "newClientOrderId": client_order_id(symbol, side, "spot", cycle=cycle),
     }, method="POST")
     return dict(res) if isinstance(res, dict) else {"raw": res}
 
 
-def place_market_quote(symbol: str, side: str, quote_usdt: float) -> dict[str, Any]:
+def place_market_quote(symbol: str, side: str, quote_usdt: float,
+                       cycle: str | None = None) -> dict[str, Any]:
     """Spot MARKET order sized in QUOTE (USDT) -- convenient for buying $X of an asset."""
     res = _signed("/api/v3/order", {
         "symbol": symbol, "side": side, "type": "MARKET", "quoteOrderQty": quote_usdt,
+        "newClientOrderId": client_order_id(symbol, side, "spotquote", cycle=cycle),
     }, method="POST")
     return dict(res) if isinstance(res, dict) else {"raw": res}
 
 
-def place_post_only(symbol: str, side: str, qty: float, price: float) -> dict[str, Any]:
+def place_post_only(symbol: str, side: str, qty: float, price: float,
+                    cycle: str | None = None) -> dict[str, Any]:
     """Post-only spot LIMIT order (type=LIMIT_MAKER) -- guaranteed MAKER (rejected if it crosses).
 
     Mirrors the futures GTX behaviour so the carry can be executed maker-first on both legs.
     """
     res = _signed("/api/v3/order", {
         "symbol": symbol, "side": side, "type": "LIMIT_MAKER", "quantity": qty, "price": price,
+        "newClientOrderId": client_order_id(symbol, side, "spotmaker", cycle=cycle),
     }, method="POST")
     return dict(res) if isinstance(res, dict) else {"raw": res}
 
@@ -948,7 +359,7 @@ def cancel_all(symbol: str) -> dict[str, Any]:
 
 ```
 
-### libs/execution/binance_testnet.py
+### libs\execution\binance_testnet.py
 ```python
 """Binance USD-M Futures TESTNET connector -- execution hands only, no alpha.
 
@@ -957,6 +368,21 @@ Hardened, testnet-ONLY REST client: signed requests (HMAC-SHA256), keys read fro
 the testnet, so this cannot touch a live account. It only does what the brain tells it: read account
 / positions / filters, set leverage, place market orders, flatten. No signal or sizing logic lives
 here. Without keys it still serves public market data and reports ``has_keys() == False``.
+
+WHY A BINANCE MODULE SURVIVES AN MT5-ONLY PURGE -- DO NOT "CLEAN THIS UP" (2026-09-05).
+This repo holds ONE desk, the MT5/Fusion desk, and the retired crypto-exchange desk was deleted in
+full. This file and its sibling `binance_spot_testnet.py` are the two deliberate exceptions, and
+they are exceptions for a reason that has nothing to do with trading crypto: they are the TIER-3
+DEADMAN RAIL's own plumbing. `scripts/run_deadman_reconciliation.py` (lines 24-25) and
+`scripts/run_deadman_stranded_sweep.py` (line 31) import them directly, and
+`scripts/run_deadman_switch.py` is a never-touch file. The rail is a SAFETY organ: it reconciles
+and sweeps stranded state, and it must keep working whatever the desk trades.
+
+They are also inert by construction -- the base URL is pinned to a TESTNET, so no code path here
+can reach a live account or move real money -- which is precisely why they are safe to keep and
+expensive to remove. `scripts/check_mt5_purity.py` allowlists both by name with this reason
+attached, so they will never appear in that fence's breach list. If you are here to delete a
+Binance file, this is the one you must not. Anything you change here changes the deadman rail.
 """
 
 from __future__ import annotations
@@ -971,9 +397,12 @@ import urllib.request
 from pathlib import Path
 from typing import Any
 
+from libs.execution.collateral import STABLE_COLLATERAL
+from libs.execution.idempotency import client_order_id
+
 _BASE = "https://testnet.binancefuture.com"   # PINNED testnet -- never live
 _KEY_ENV = "BINANCE_TESTNET_KEY"
-_SECRET_ENV = "BINANCE_TESTNET_SECRET"
+_SECRET_ENV = "BINANCE_TESTNET_SECRET"  # noqa: S105 -- env-var name, not the secret
 # Convenience: keys may live in env (preferred) OR a local untracked file (set once). NOT in code.
 _KEYFILE = Path("data/secrets/binance_testnet.json")
 
@@ -1025,17 +454,24 @@ def _signed(path: str, params: dict[str, Any], *, method: str = "GET") -> Any:
 
 
 def exchange_filters() -> dict[str, dict[str, float]]:
-    """Per-symbol step size, min qty, and price/qty precision (for valid order sizing)."""
+    """Per-symbol step size, min qty, price/qty precision, and minimum order notional.
+
+    ``min_notional`` is the venue's minimum ORDER VALUE; 0.0 means no published minimum, so
+    callers must keep their own conservative floor for that case. USD-M futures publishes the
+    value under the key ``notional``, NOT spot's ``minNotional`` -- reading the spot key here
+    yields 0.0 for every symbol (tests/execution/test_filter_parity.py pins this)."""
     info = _get("/fapi/v1/exchangeInfo")
     out: dict[str, dict[str, float]] = {}
     for s in info.get("symbols", []):
         f = {flt["filterType"]: flt for flt in s.get("filters", [])}
         lot = f.get("LOT_SIZE", {})
         pf = f.get("PRICE_FILTER", {})
+        notl = f.get("MIN_NOTIONAL", {}) or f.get("NOTIONAL", {})
         out[s["symbol"]] = {
             "step": float(lot.get("stepSize", 0.001)), "min_qty": float(lot.get("minQty", 0.0)),
             "qty_prec": int(s.get("quantityPrecision", 3)),
             "tick": float(pf.get("tickSize", 0.01)), "price_prec": int(s.get("pricePrecision", 2)),
+            "min_notional": float(notl.get("notional") or notl.get("minNotional") or 0.0),
         }
     return out
 
@@ -1113,7 +549,8 @@ def account_balance() -> float:
     return 0.0
 
 
-_STABLE_COLLATERAL = ("USDT", "USDC", "FDUSD", "TUSD", "BUSD", "DAI")
+# the tuple lives in libs/execution/collateral.py -- two copies would drift
+_STABLE_COLLATERAL = STABLE_COLLATERAL
 
 
 def account_summary() -> dict[str, float]:
@@ -1296,13 +733,23 @@ def _market_max_qty(symbol: str) -> float:
                     _MKT_MAX_CACHE[s["symbol"]] = float(f["maxQty"])
         cap = _MKT_MAX_CACHE.get(symbol, float("inf"))
     except Exception:
-        pass                                  # unknown cap -> behave exactly as before
+        # A TRANSIENT FAILURE MUST NOT BE CACHED. This wrote inf into the cache on the way out,
+        # so ONE network blip during the lookup permanently disabled the cap for that symbol --
+        # for the whole process lifetime, and the executor runs for days between restarts. The
+        # protection this function exists to provide is the one that stops a -4005 rejection
+        # pushing the executor onto its resting-limit fallback, which is how a short once walked
+        # through zero into a +916,772 long. Silently losing it to a timeout is the worst
+        # available outcome and it left no trace at all.
+        #
+        # Returning inf for THIS call is still correct -- never invent a limit from a failed
+        # lookup -- but the cache is left untouched so the next call retries.
+        return float("inf")
     _MKT_MAX_CACHE[symbol] = cap
     return cap
 
 
 def place_market(symbol: str, side: str, qty: float,
-                 reduce_only: bool = False) -> dict[str, Any]:
+                 reduce_only: bool = False, cycle: str | None = None) -> dict[str, Any]:
     """Market order, SPLIT to respect the venue MARKET_LOT_SIZE cap.
 
     ``reduce_only=True`` makes the order arithmetically incapable of crossing zero into the
@@ -1310,9 +757,14 @@ def place_market(symbol: str, side: str, qty: float,
     """
     cap = _market_max_qty(symbol)
     remaining, last, n = float(qty), None, 0
+    # GAP #49: mirrors binance_live exactly. The testnet connector is the one the executor
+    # actually imports today, so an idempotency guarantee that exists only on the live module
+    # is a guarantee the desk does not have.
+    intent = "close" if reduce_only else "open"
     while remaining > 0 and n < 50:
         chunk = min(cap, remaining) if cap != float("inf") else remaining
-        params = {"symbol": symbol, "side": side, "type": "MARKET", "quantity": chunk}
+        params = {"symbol": symbol, "side": side, "type": "MARKET", "quantity": chunk,
+                  "newClientOrderId": client_order_id(symbol, side, intent, chunk=n, cycle=cycle)}
         if reduce_only:
             params["reduceOnly"] = "true"
         last = _signed("/fapi/v1/order", params, method="POST")
@@ -1321,7 +773,8 @@ def place_market(symbol: str, side: str, qty: float,
     return dict(last) if isinstance(last, dict) else {"raw": last}
 
 
-def place_post_only(symbol: str, side: str, qty: float, price: float) -> dict[str, Any]:
+def place_post_only(symbol: str, side: str, qty: float, price: float,
+                    cycle: str | None = None) -> dict[str, Any]:
     """Post-only LIMIT order (timeInForce=GTX) -- guaranteed MAKER (rejected if it would cross).
 
     Pays the maker fee (~half the taker fee on Binance futures) instead of crossing the spread.
@@ -1330,7 +783,45 @@ def place_post_only(symbol: str, side: str, qty: float, price: float) -> dict[st
     res = _signed("/fapi/v1/order", {
         "symbol": symbol, "side": side, "type": "LIMIT", "timeInForce": "GTX",
         "quantity": qty, "price": price,
+        # GAP #49. Resting orders are MORE dangerous to duplicate, not less: incident #6 was
+        # accumulated resting fills walking a short through zero into a +916,772 long.
+        "newClientOrderId": client_order_id(symbol, side, "postonly", cycle=cycle),
     }, method="POST")
+    return dict(res) if isinstance(res, dict) else {"raw": res}
+
+
+def place_stop_market(symbol: str, side: str, qty: float, stop_price: float) -> dict[str, Any]:
+    """Reduce-only STOP_MARKET -- the venue-side rail that survives total host death.
+
+    R0217. This existed ONLY on `binance_live`, and the executor reaches its stop reconciler
+    through `binance_testnet as fut` (run_cashcarry_executor.py:30). The guard at
+    `_reconcile_protective_stops` is `hasattr(fut, "place_stop_market")`, so on every environment
+    the desk has ever actually run, the reconciler returned [] on its first line and the
+    host-death rail did not exist -- disclosed in that function's docstring as a "testnet parity
+    gap" and never converted into a rail, which is an open defect rather than documentation.
+
+    Porting it here (rather than only paging on the missing capability) is what puts the rail in
+    the environment being VALIDATED: a rail first exercised on the day real capital arrives has
+    never been exercised. Paper-safe -- testnet fills are not money.
+    """
+    res = _signed("/fapi/v1/order", {
+        "symbol": symbol, "side": side, "type": "STOP_MARKET", "quantity": qty,
+        "stopPrice": stop_price, "reduceOnly": "true",
+    }, method="POST")
+    return dict(res) if isinstance(res, dict) else {"raw": res}
+
+
+def cancel_order(symbol: str, order_id: int) -> dict[str, Any]:
+    """Cancel ONE order by id -- surgical, so a maker-quote cleanup can never take the
+    protective stop down with it.
+
+    Shipped WITH `place_stop_market` deliberately: `_reconcile_protective_stops` takes its
+    canceller via `getattr(fut, "cancel_order", None)` and degrades to placement-only when it is
+    absent. Adding the placer alone would therefore leave drifted stops uncancelled and re-place
+    a fresh one every pass -- unbounded stop accumulation on the money path, strictly worse than
+    the no-op it replaces. The pair is the unit.
+    """
+    res = _signed("/fapi/v1/order", {"symbol": symbol, "orderId": order_id}, method="DELETE")
     return dict(res) if isinstance(res, dict) else {"raw": res}
 
 
@@ -1348,16 +839,33 @@ def cancel_all(symbol: str) -> dict[str, Any]:
 
 
 def flatten_all() -> list[dict[str, Any]]:
-    """Emergency: market-close every open position."""
-    out = []
+    """Emergency: market-close every open position. Reduce-only, and isolated per symbol.
+
+    Kept byte-for-byte in step with binance_live.flatten_all -- see that docstring for the full
+    reasoning. Short version: the size comes from a `positions()` read, the position can shrink
+    between that read and the fill, and a non-reduce-only close then SELLS THROUGH ZERO into the
+    opposite position. `reduce_only=True` also corrects the client order ID, which was tagging
+    every emergency close as an `open` and could collide with a genuine entry inside the same 90s
+    idempotency bucket. Per-symbol isolation stops one rejected leg (routinely -2022, reduce-only
+    against an already-flat position) from abandoning the rest of the book.
+
+    THE TESTNET COPY MATTERS AS MUCH AS THE LIVE ONE, for the reason the drop-in interface exists:
+    this is where the flatten path is actually exercised before it is trusted with money. A
+    testnet that closes positions by a mechanism the live module no longer uses is a rehearsal of
+    the wrong thing, and `tests/execution/test_binance_live.py` pins the two signatures together.
+    """
+    out: list[dict[str, Any]] = []
     for sym, amt in positions().items():
         side = "SELL" if amt > 0 else "BUY"
-        out.append(place_market(sym, side, abs(amt)))
+        try:
+            out.append(place_market(sym, side, abs(amt), reduce_only=True))
+        except Exception as exc:
+            out.append({"symbol": sym, "side": side, "qty": abs(amt), "error": repr(exc)})
     return out
 
 ```
 
-### libs/ops/derisk_ladder.py
+### libs\ops\derisk_ladder.py
 ```python
 """§4 pager de-risk ladder: an unacknowledged page is itself a risk event.
 
@@ -1557,7 +1065,7 @@ class LadderState:
 
 ```
 
-### libs/portfolio/risk_parity.py
+### libs\portfolio\risk_parity.py
 ```python
 """Risk parity — allocate risk equally across components (equal risk contribution)."""
 
@@ -1613,7 +1121,86 @@ def allocate_risk(
 
 ```
 
-### libs/risk/__init__.py
+### libs\research\adapters\riskfolio.py
+```python
+"""Riskfolio-Lib adapter -- an allocator CHALLENGER -> a packet of allocation EVIDENCE.
+
+Over the aligned H1 returns of the bundle symbols the engine solves a few canonical programmes
+(minimum-risk under MV and CVaR, hierarchical risk parity); each configuration is one charged
+trial. What leaves the sandbox is evidence for the desk's allocator comparison -- challenger
+loadings, effective number of bets, concentration -- with authority "none". It NEVER sizes
+capital: the portfolio-capital allocator is the desk's, by law (LAWS 5m, growth governance).
+"""
+from __future__ import annotations
+
+from typing import Any
+
+from libs.research import adapters as A
+from libs.research.external_federation import ExternalResearchPacket
+
+SYSTEM = "riskfolio"
+CONFIGS: tuple[tuple[str, str, str], ...] = (("Classic", "MV", "MinRisk"),
+                                             ("Classic", "CVaR", "MinRisk"),
+                                             ("HRP", "MV", "hierarchical"))
+
+
+def run(bundle: A.ResearchBundle) -> ExternalResearchPacket:
+    rp = A.library("riskfolio")
+    pd = A.library("pandas")
+    if rp is None or pd is None:
+        return A.unmeasured(SYSTEM, bundle, "riskfolio (or pandas) is not importable here")
+    import numpy as np
+    frames = [f for f in bundle.frames("H1") if len(f) > 200]
+    if len(frames) < 3:
+        return A.unmeasured(SYSTEM, bundle, "fewer than three H1 frames with 200+ bars")
+    series = {f.symbol: pd.Series(f.log_returns(), index=pd.Index(f.time[1:])) for f in frames}
+    R = pd.DataFrame(series).dropna()
+    if len(R) < 100:
+        return A.unmeasured(SYSTEM, bundle, f"only {len(R)} aligned H1 observations")
+    deadline = A.Deadline(bundle.compute_budget_s)
+    trials = 0
+    methods: list[dict[str, Any]] = []
+    corr = R.corr().to_numpy()
+    reps = [{"kind": "covariance_state", "symbols": list(R.columns), "n_obs": len(R),
+             "mean_pairwise_corr": float(corr[np.triu_indices(corr.shape[0], 1)].mean()),
+             "eigen_share_top": float(np.linalg.eigvalsh(corr)[-1] / corr.shape[0])}]
+    for model, rm, obj in CONFIGS:
+        if deadline.expired():
+            break
+        trials += 1
+        try:
+            if model == "HRP":
+                port = rp.HCPortfolio(returns=R)
+                w = port.optimization(model="HRP", codependence="pearson", rm=rm, rf=0,
+                                      linkage="ward")
+            else:
+                port = rp.Portfolio(returns=R)
+                port.assets_stats(method_mu="hist", method_cov="hist")
+                w = port.optimization(model=model, rm=rm, obj=obj, rf=0, l=0, hist=True)
+            if w is None:
+                raise RuntimeError("the solver returned no solution")
+            loads = {str(k): float(v) for k, v in w.iloc[:, 0].items()}
+        except Exception as exc:
+            methods.append({"kind": "UNMEASURED", "model": model, "risk_measure": rm,
+                            "why": f"{type(exc).__name__}: {exc}"[:200]})
+            continue
+        vals = np.asarray(list(loads.values()), dtype=float)
+        methods.append({"kind": "allocator_challenger", "model": model, "risk_measure": rm,
+                        "objective": obj, "challenger_loadings": loads,
+                        "effective_bets": float(1.0 / max(float(np.sum(vals ** 2)), 1e-12)),
+                        "max_loading": float(vals.max()), "n_obs": len(R),
+                        "authority": "none: evidence for the desk allocator's challenger "
+                                     "comparison; this engine never sizes capital"})
+    return A.packet(SYSTEM, bundle, trials=trials, research_methods=methods,
+                    representations=reps)
+
+
+if __name__ == "__main__":
+    raise SystemExit(A.cli(run, SYSTEM))
+
+```
+
+### libs\risk\__init__.py
 ```python
 """``libs.risk`` — the CRO authority in code.
 
@@ -1732,7 +1319,245 @@ __all__ = [  # noqa: RUF022  # grouped by subsystem
 
 ```
 
-### libs/risk/capital_events.py
+### libs\risk\adaptive_stop.py
+```python
+"""Per-symbol volatility SIGNATURE -> adaptive stop distance, at constant monetary risk.
+
+A RISK LAYER, NOT AN ALPHA. It changes where the stop goes and how big the position is; it never
+decides direction or timing. Reverse-engineered from a public MQL5 article (MQL5_ARTICLE_23597,
+2026-08-03) which discloses every coefficient in code, so this is a reproduction of a stated rule
+rather than a fit.
+
+THE CLAIM. A universal ATR multiplier places stops inside ordinary noise on one instrument and
+absurdly far away on another, because instruments differ structurally in wick noise, pullback
+depth, trend persistence and volatility-of-volatility. Separating a SLOW-MOVING symbol
+personality from the CURRENT ATR should improve stop survival without touching the entry.
+
+THE FALSIFIER IS DELIBERATELY HARSH, and it is the reason this file exists rather than a belief
+that it works: against each sleeve's own frozen stop, at identical signal timestamps and
+identical ex-ante monetary risk, adaptive stops must improve out-of-sample expectancy or E[log W]
+after costs. FEWER STOP-OUTS IS NOT THE TEST -- a wider stop trivially buys that and pays for it
+in size, which is exactly the trade the constant-risk normalisation exists to make visible.
+
+Everything is computed from COMPLETED bars only. The forming bar never enters the signature and
+never enters the ATR.
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+
+import numpy as np
+import pandas as pd
+
+__all__ = ["Signature", "adaptive_multiplier", "signature", "stop_distance"]
+
+
+@dataclass(frozen=True)
+class Signature:
+    """One symbol's slow-moving personality. Recomputed on a cadence, never per bar."""
+
+    mean_true_range: float
+    mean_range: float
+    mean_body: float
+    mean_pullback: float
+    tr_cv: float
+    run_length: float
+    n_bars: int
+
+    @property
+    def noise_ratio(self) -> float:
+        """Body as a share of range. Low means wicky, and a stop placed close in gets taken."""
+        return self.mean_body / self.mean_range if self.mean_range > 0 else 1.0
+
+
+def signature(df: pd.DataFrame, lookback: int = 1000) -> Signature | None:
+    """The symbol's signature from the last `lookback` COMPLETED bars, or None if too few.
+
+    NONE, NOT A DEFAULT. Fewer than 500 bars is not a symbol with an average personality, it is a
+    symbol whose personality is UNMEASURED -- and the caller must fall back to its own frozen
+    stop rather than to a fabricated multiplier (L1.28a).
+    """
+    if df is None or len(df) < 500:
+        return None
+    d = df.iloc[-lookback:] if len(df) > lookback else df
+    high = d["high"].to_numpy(float)
+    low = d["low"].to_numpy(float)
+    close = d["close"].to_numpy(float)
+    open_ = d["open"].to_numpy(float)
+    prev = np.concatenate([[close[0]], close[:-1]])
+    tr = np.maximum(high - low, np.maximum(np.abs(high - prev), np.abs(low - prev)))
+    rng = high - low
+    body = np.abs(close - open_)
+
+    # Directional runs and the pullback inside them: how far price gives back before continuing
+    # is what decides whether a stop survives an ordinary retracement.
+    sign = np.sign(np.diff(close, prepend=close[0]))
+    runs: list[int] = []
+    cur = 1
+    for i in range(1, len(sign)):
+        if sign[i] == sign[i - 1] and sign[i] != 0:
+            cur += 1
+        else:
+            runs.append(cur)
+            cur = 1
+    runs.append(cur)
+    pullback = np.where(sign > 0, high - close, close - low)
+
+    mtr = float(np.nanmean(tr))
+    if not (mtr > 0):
+        return None
+    return Signature(
+        mean_true_range=mtr,
+        mean_range=float(np.nanmean(rng)),
+        mean_body=float(np.nanmean(body)),
+        mean_pullback=float(np.nanmean(np.abs(pullback))),
+        tr_cv=float(np.nanstd(tr) / mtr),
+        run_length=float(np.mean(runs)) if runs else 1.0,
+        n_bars=len(d),
+    )
+
+
+def adaptive_multiplier(sig: Signature, spread: float = 0.0, *, base: float = 1.5,
+                        lo: float = 1.0, hi: float = 4.0) -> float:
+    """The five disclosed factors, multiplied and clamped. The coefficients are the source's own.
+
+    They are NOT tuned here and must not be: every one is a degree of freedom, and fitting them
+    on the same trades used to judge the layer is how a risk wrapper manufactures an edge that is
+    really just a different stop.
+    """
+    noise = float(np.clip(0.80 + (1.0 - sig.noise_ratio) * 0.80, 0.80, 1.50))
+    pull = float(np.clip(0.60 + 0.35 * (sig.mean_pullback / sig.mean_true_range), 0.70, 1.50))
+    # The source classifies persistence into three tiers; the boundaries are its own.
+    trend = 0.85 if sig.run_length >= 2.0 else (1.20 if sig.run_length < 1.5 else 1.00)
+    spr = float(np.clip(1.0 + 2.0 * (spread / sig.mean_true_range), 1.00, 1.30))
+    vol = float(np.clip(0.90 + 0.40 * sig.tr_cv, 0.90, 1.40))
+    return float(np.clip(base * noise * pull * trend * spr * vol, lo, hi))
+
+
+def stop_distance(sig: Signature | None, current_atr: float, spread: float = 0.0,
+                  *, base: float = 1.5, lo: float = 1.0, hi: float = 4.0) -> float | None:
+    """Adaptive stop distance in price units, or None when the signature is unmeasured."""
+    if sig is None or not (current_atr > 0):
+        return None
+    return current_atr * adaptive_multiplier(sig, spread, base=base, lo=lo, hi=hi)
+
+```
+
+### libs\risk\capacity.py
+```python
+"""How much a sleeve can trade before its own footprint eats its edge.
+
+Medallion capped its own capital because more money damaged the edge. That is the honest
+statement of what capacity is: the size at which expected impact cost equals expected edge, and
+beyond which every extra lot LOSES money on average even though the signal is right.
+
+WHAT IS MEASURED. The desk's bars carry `tick_volume` per hour and its cost model carries the
+spread. A square-root impact model -- the one every published study since Almgren-Chriss settles
+on for the mid-frequency band -- says the price concession for trading a fraction q of the
+interval's volume is
+
+    impact = k * sigma * sqrt(q)
+
+with sigma the interval's return volatility and k an order-one constant. Setting impact equal to
+the sleeve's per-trade edge and solving for q gives the participation at which the edge is fully
+consumed; multiplied by the typical volume in the sleeve's entry hour, that is the capacity in
+contracts, and the allocator's per-sleeve bound is the SMALLER of that and its risk bound.
+
+STATED CONSERVATIVELY AND BY NAME. `tick_volume` is the count of price updates, not traded
+contracts; it is a proxy for activity and is labelled as one. k is set at the top of the
+published range rather than the middle. A capacity number that is too small costs a little
+growth; one that is too large costs the edge itself. Where volume is absent the answer is None
+and the caller keeps its risk bound, never an invented ceiling.
+"""
+from __future__ import annotations
+
+from dataclasses import dataclass
+from typing import Any
+
+import numpy as np
+import pandas as pd
+
+#: Impact coefficient. Published mid-frequency estimates cluster around 0.5-1.0; the top of the
+#: range is used because the direction of error that matters is the one that keeps the edge.
+IMPACT_K = 1.0
+#: Fraction of the edge capacity is allowed to consume. Half: a sleeve run at full capacity has
+#: zero expected profit on its marginal lot, which is not a sleeve worth running.
+EDGE_SHARE = 0.5
+#: Hours of history the entry-hour volume profile is measured over.
+PROFILE_DAYS = 120
+
+
+@dataclass(frozen=True)
+class Capacity:
+    symbol: str
+    #: Participation of the entry interval's volume at which impact = EDGE_SHARE * edge.
+    participation: float | None
+    #: Median activity (tick count) in the sleeve's entry hour, over PROFILE_DAYS.
+    entry_hour_activity: float | None
+    #: Realised hourly return vol used for the impact model.
+    sigma_h: float | None
+    #: Edge per trade as a fraction of price, the quantity impact is compared with.
+    edge_frac: float | None
+    #: Capacity in "activity units" -- ticks the sleeve may be a fraction of. NOT contracts.
+    capacity_units: float | None
+    why: str = ""
+
+    def to_dict(self) -> dict[str, Any]:
+        return {k: (round(v, 8) if isinstance(v, float) else v) for k, v in self.__dict__.items()}
+
+
+def capacity(symbol: str, bars: pd.DataFrame, edge_frac: float,
+             entry_hours: tuple[int, ...] | None = None) -> Capacity:
+    """Capacity of a sleeve on `symbol` earning `edge_frac` of price per trade at `entry_hours`."""
+    if bars is None or bars.empty or "close" not in bars.columns:
+        return Capacity(symbol, None, None, None, None, None, "no bars")
+    if not np.isfinite(edge_frac) or edge_frac <= 0:
+        return Capacity(symbol, None, None, None, float(edge_frac) if np.isfinite(edge_frac)
+                        else None, None, "no positive edge to consume")
+    d = bars.iloc[-24 * PROFILE_DAYS:]
+    ret = np.log(d["close"].astype(float)).diff().dropna()
+    sigma_h = float(ret.std(ddof=1)) if ret.size > 10 else None
+    if sigma_h is None or sigma_h <= 0:
+        return Capacity(symbol, None, None, None, edge_frac, None, "no usable return vol")
+    if "tick_volume" not in d.columns:
+        return Capacity(symbol, None, None, sigma_h, edge_frac, None,
+                        "bars carry no tick_volume; capacity unmeasurable, risk bound stands")
+    vol = d["tick_volume"].astype(float)
+    if entry_hours:
+        vol = vol[d.index.hour.isin(list(entry_hours))]
+    vol = vol[vol > 0]
+    if vol.size < 20:
+        return Capacity(symbol, None, None, sigma_h, edge_frac, None,
+                        "fewer than 20 active bars in the entry hours")
+    activity = float(vol.median())
+    # impact = K * sigma * sqrt(q) = EDGE_SHARE * edge  ->  q = (EDGE_SHARE*edge / (K*sigma))^2
+    q = (EDGE_SHARE * edge_frac / (IMPACT_K * sigma_h)) ** 2
+    q = float(min(q, 1.0))
+    return Capacity(symbol, q, activity, sigma_h, edge_frac, q * activity,
+                    f"impact model K={IMPACT_K}, edge share {EDGE_SHARE}; tick_volume is an "
+                    "activity proxy, not contracts")
+
+
+def bound_from_capacity(cap: Capacity, risk_bound: float, book_participation_per_unit_heat: float
+                        ) -> tuple[float, str]:
+    """The allocator's per-sleeve heat bound after capacity: min(risk bound, capacity-implied).
+
+    `book_participation_per_unit_heat` is how much of the entry interval's activity one unit of
+    heat represents for this account -- measured from fills once they exist, and until then the
+    caller passes None and the risk bound stands untouched. Capacity NEVER raises a bound.
+    """
+    if cap.participation is None or not book_participation_per_unit_heat:
+        return risk_bound, "capacity unmeasured; risk bound stands"
+    implied = cap.participation / float(book_participation_per_unit_heat)
+    if implied >= risk_bound:
+        return risk_bound, f"risk bound binds (capacity would allow {implied:.4f})"
+    return float(max(implied, 0.0)), (f"CAPACITY BINDS at {implied:.4f} heat: participation "
+                                      f"{cap.participation:.3%} of entry-hour activity")
+
+```
+
+### libs\risk\capital_events.py
 ```python
 """CAPITAL EVENTS -- the only legitimate way out of a ruin-floor stop, and it is not a threshold.
 
@@ -1775,6 +1600,37 @@ position has improved -- the pure form of eating the safety margin. Passing `dep
 therefore requires an explicit principal override carrying a written reason, which lands in an
 append-only ledger. The full drawdown history is never erased: every event records the previous
 inception, so cumulative loss since the FIRST inception is always reconstructible.
+
+=================================================================================================
+R0320 -- THE POST-EVENT DRAWDOWN BASELINE. THE DECISION, AND IT IS TIGHTENING ONLY.
+=================================================================================================
+`effective_start_equity` re-bases the RUIN rail's inception, which is the authorised, ledgered,
+human-signed way back from a stop -- that stays exactly as it is. It left the PAUSE rail
+(`risk_controls`' `dd_pause`, measured from the high-water mark) undefined after a capital event,
+and the executor's own arithmetic then resolved it in the loosest possible direction: the rail
+read `peak = max(peak_combined_equity, eq_c)` on RAW wallet equity, so money merely ARRIVING
+lifted equity to a new high-water and a live -15% pause evaporated in one tick, with nothing
+about the book's positions changed. Journal-verified 2026-08-01: a re-baseline moves the
+denominator under the pause rail.
+
+THE RULING: **the drawdown rail measures equity NET OF POST-INCEPTION EXTERNAL FLOWS, against a
+flow-adjusted high-water that carries ACROSS every capital event.** A deposit raises the
+high-water and the baseline ADDITIVELY, by exactly the dollars deposited and never
+proportionally, so it can neither reduce measured drawdown nor un-trip a live pause -- new
+capital buys back none of the loss it is arriving to cover. A withdrawal lowers the high-water by
+at most the dollars removed and never below the flow-adjusted equity, so taking money out
+manufactures no phantom drawdown, and equally erases none of a real one. In the rail's own space
+the high-water is monotone non-decreasing: NO event may reset it downward, which is the single
+property the pause rail was missing.
+
+Corollary the arithmetic makes unavoidable: drawdown stays a RATIO on the pre-flow denominator.
+Measuring a $1,000 loss against a peak that a $5,000 deposit just inflated would shrink -20% to
+-3.3% -- the proportional re-base, the same move in percentage clothing, and it is refused here
+for the same reason `rebase` refuses a $0 deposit.
+
+`effective_start_equity` stays what it always was: the INCEPTION for P&L reporting and for the
+ruin rail. Both published books (the executor and run_live_combined, R0322) read that one
+function, so a re-base can never leave two books measuring from two different inceptions.
 """
 
 from __future__ import annotations
@@ -1907,13 +1763,104 @@ def effective_start_equity(state_start_equity: float) -> float:
     Read-only and total: with no ledger it returns exactly what it was given, so the rail's
     behaviour is unchanged on any box that has never had a capital event. That matters -- this
     module must be incapable of loosening anything by merely existing.
+
+    R0320: this is the INCEPTION (ruin rail + P&L reporting). It is deliberately NOT the pause
+    rail's baseline -- that one is `flow_adjusted_rail` below, and it carries across events.
     """
     h = history()
     return float(h[-1]["start_equity_after"]) if h else float(state_start_equity)
 
+
+# =================================================================================================
+# R0320 -- FLOW-ADJUSTED DRAWDOWN RAILS. See the ruling in the module docstring.
+# =================================================================================================
+
+
+def event_flow_usd(ev: dict[str, Any]) -> float:
+    """Signed external cash of ONE ledger row: positive INTO the book, negative OUT of it.
+
+    Every ambiguity resolves in the TIGHTENING direction, because this number is subtracted from
+    equity before the rail measures it -- a larger flow means a smaller flow-adjusted equity means
+    MORE measured drawdown:
+
+      * WITHDRAWAL takes `-abs(deposit_usd)` whichever sign the operator typed;
+      * every other kind counts only `max(0, deposit_usd)`, so a negative "deposit" (a
+        mis-keyed withdrawal that never said so) contributes nothing rather than crediting the
+        book with a flow that would REDUCE its measured drawdown;
+      * an unparseable row contributes nothing, which leaves its cash inside the measurement as
+        P&L -- pessimistic, never a free pass.
+    """
+    try:
+        dep = float(ev.get("deposit_usd", 0.0) or 0.0)
+    except (TypeError, ValueError):
+        return 0.0
+    if str(ev.get("kind", "")).strip().upper() == "WITHDRAWAL":
+        return -abs(dep)
+    return max(0.0, dep)
+
+
+def net_external_flows(events: list[dict[str, Any]] | None = None) -> float:
+    """Net external cash recorded since the first inception. 0.0 with no ledger -- always."""
+    evs = history() if events is None else events
+    return round(sum(event_flow_usd(e) for e in evs if isinstance(e, dict)), 6)
+
+
+@dataclass(frozen=True)
+class FlowAdjustedRail:
+    """The pause rail's two numbers, in the flow-adjusted space it must be measured in."""
+
+    equity: float             # equity NET of post-inception external flows (the rail's numerator)
+    peak: float               # flow-adjusted high-water, carried ACROSS capital events
+    peak_raw: float           # the same high-water in raw wallet dollars (what state persists)
+    net_flows_usd: float      # signed external flows recorded since the first inception
+    n_events: int             # ledger rows behind `net_flows_usd`
+
+    @property
+    def dd_from_peak(self) -> float:
+        """<= 0. The drawdown the pause rail charges, on the pre-flow denominator."""
+        return self.equity / max(1e-9, self.peak) - 1.0
+
+
+def flow_adjusted_rail(
+    equity_now: float,
+    stored_peak_flow_adj: float | None = None,
+    stored_peak_raw: float | None = None,
+    *,
+    events: list[dict[str, Any]] | None = None,
+) -> FlowAdjustedRail:
+    """The R0320 pause-rail inputs: equity net of flows, and a high-water that survives events.
+
+    `stored_peak_flow_adj` is the caller's persisted flow-adjusted high-water (None the first
+    time). `stored_peak_raw` is the legacy raw-dollar high-water it migrates from: subtracting the
+    net flows already baked into it recovers the high-water the book actually reached, so a
+    deposit that has already inflated the stored peak does not get to keep that inflation. Both
+    None seeds the high-water at today's flow-adjusted equity.
+
+    WITH NO LEDGER THIS IS THE IDENTITY: `net_flows_usd` is 0.0, `equity` is `equity_now`, and
+    `peak` is `max(stored_peak_raw, equity_now)` -- byte-identical to the arithmetic the executor
+    ran before R0320. Nothing here can bite on a box that has never had a capital event.
+
+    Two invariants, both checked by tests, both stated as the docstring ruling:
+      * `peak >= equity` always (the high-water never sits under the equity it measures);
+      * `peak` is monotone non-decreasing in flow-adjusted space -- no event resets it downward,
+        and in raw dollars it moves by EXACTLY the cash that moved, never by a fraction of it.
+    """
+    evs = history() if events is None else [e for e in events if isinstance(e, dict)]
+    net = net_external_flows(evs)
+    eq_adj = float(equity_now) - net
+    if stored_peak_flow_adj is not None:
+        base = float(stored_peak_flow_adj)
+    elif stored_peak_raw is not None:
+        base = float(stored_peak_raw) - net
+    else:
+        base = eq_adj
+    peak = max(base, eq_adj)
+    return FlowAdjustedRail(equity=eq_adj, peak=peak, peak_raw=peak + net,
+                            net_flows_usd=net, n_events=len(evs))
+
 ```
 
-### libs/risk/config.py
+### libs\risk\config.py
 ```python
 """Risk configuration — limits and parameters with conservative defaults.
 
@@ -2034,7 +1981,7 @@ class RiskConfig(BaseModel):
 
 ```
 
-### libs/risk/correlation.py
+### libs\risk\correlation.py
 ```python
 """Correlation controls — measure, stress, cluster, and govern by correlation.
 
@@ -2158,7 +2105,7 @@ def check_correlation_limits(
 
 ```
 
-### libs/risk/crisis.py
+### libs\risk\crisis.py
 ```python
 """Crisis controls — detect a crisis regime and de-risk automatically, failing closed.
 
@@ -2219,7 +2166,7 @@ def crisis_controller(
 
 ```
 
-### libs/risk/drawdown.py
+### libs\risk\drawdown.py
 ```python
 """Drawdown governor — graduated de-risking that only ever reduces exposure.
 
@@ -2292,7 +2239,7 @@ def drawdown_governor(
 
 ```
 
-### libs/risk/dynamic_leverage.py
+### libs\risk\dynamic_leverage.py
 ```python
 """Dynamic leverage controller -- leverage as a continuously optimized control variable.
 
@@ -2347,7 +2294,11 @@ def _ruin_cap(returns: np.ndarray, *, ruin_tol: float, drawdown_ruin: float) -> 
     """Largest grid leverage whose risk-of-ruin <= tolerance. The endogenous survival ceiling."""
     best = 0.0
     for lev in _GRID:
-        ror = risk_of_ruin(returns, float(lev), threshold=drawdown_ruin)
+        # R0429: `drawdown_ruin` is a DROP (0.35 = "a 35% drawdown is ruin") but risk_of_ruin's
+        # `threshold` is an equity LEVEL (P(equity < threshold)). Passing the drop raw computed
+        # P(equity < 0.35) = P(drawdown > 65%) -- a cap against a 65% crash where a 35% one was
+        # documented, looser than designed on the survival path. The complement is the fix.
+        ror = risk_of_ruin(returns, float(lev), threshold=1.0 - drawdown_ruin)
         if not np.isfinite(ror):
             return _MIN_OP                            # too little data to trust any leverage
         if ror <= ruin_tol:
@@ -2455,7 +2406,7 @@ def optimize_portfolio(
 
 ```
 
-### libs/risk/edge_gate.py
+### libs\risk\edge_gate.py
 ```python
 """Edge-gated leverage -- size to FORWARD-VALIDATED edge, never to the backtest.
 
@@ -2486,7 +2437,7 @@ def gated_leverage(fwd_sharpe: float | None, fwd_days: int, *, floor: float = 2.
 
 ```
 
-### libs/risk/errors.py
+### libs\risk\errors.py
 ```python
 """Risk-layer exceptions."""
 
@@ -2504,7 +2455,7 @@ class RiskGateError(RiskError):
 
 ```
 
-### libs/risk/factor_caps.py
+### libs\risk\factor_caps.py
 ```python
 """Factor exposure caps — the diversification enforcer.
 
@@ -2568,7 +2519,649 @@ def check_factor_exposure(
 
 ```
 
-### libs/risk/gate.py
+### libs\risk\fx_exposure.py
+```python
+"""A BOOK OF FX PAIRS IS NOT A BOOK OF N ASSETS -- it is a book of currency FACTORS.
+
+REVIEW FINDING R1/R2 (2026-09-17). A pair is a DIFFERENCE of two currency factors: EURUSD is
+`EUR - USD`, not an eighteenth independent thing to be long of. Eighteen pairs drawn from eight
+currencies therefore span AT MOST SEVEN independent directions (n currencies give n-1 differences
+-- the level of the numeraire is unobservable), and empirically far fewer: the FX literature and
+this desk's own tape both find three to four (dollar, carry, commodity bloc, risk appetite).
+Against that ceiling the desk's measured effective breadth of 4.879 is not a number with room in
+it; it is a number already pressed against the wall of what a pure-FX book can express. The next
+independent bet does not come from the nineteenth cross. It comes from OUTSIDE the currency
+block.
+
+WHY THE EXISTING ORGANS DO NOT ANSWER THIS.
+
+  * `libs/risk/factor_caps.py` aggregates by ASSET CLASS: every cross collapses into one `FX`
+    bucket, which cannot tell "long four JPY crosses" from "four independent trades".
+  * `libs/risk/fx_factors.py` DOES decompose into signed legs, and this module reuses its
+    currency vocabulary and its `split_pair` rather than keeping a second copy that drifts. What
+    it reports is a leg-concentration ratio (`gross / largest leg`), which is a different and
+    weaker question than "how many independent DIRECTIONS does the whole book span".
+  * `libs/portfolio/leg_factors.py` fits sleeve RETURNS on factor returns. That is a covariance,
+    it needs a tape, and it is the right instrument for the redundancy charge. This module needs
+    no tape at all: the loadings of a currency pair on its two legs are +1 and -1 BY CONSTRUCTION,
+    so a book's directional span is an algebraic fact about the positions held right now, exact
+    on the day a sleeve is born and never waiting on twenty overlapping days.
+  * `desks/mt5/research/exposure_decomposition.py` regresses on a wide macro factor set and names
+    duplicate heat pair by pair. It is the map; this is the rank of the map.
+
+THE MEASUREMENT. Stack one row per sleeve of its signed notional per factor (`exposure_matrix`)
+and take the PARTICIPATION RATIO of that matrix's singular-value spectrum (`effective_rank`). A
+book making one bet scores 1, two orthogonal bets score 2, and two bets sharing a leg score
+strictly between 1 and 2 -- continuously, so a book that drifts into crowding is visible before
+it arrives rather than after. A flat book scores 0.0: an empty book makes ZERO bets, not one, and
+reporting 1.0 there would be a claim about a book that holds nothing.
+
+NOTHING HERE SIZES, CAPS, VETOES, SHRINKS OR GATES ANYTHING (growth governance, rules 1 and 2).
+A named concentration is not a forbidden concentration. This module has no authority over
+position size, cannot refuse an order and does not appear in any allocator's objective; it
+reports what the book is really long and short of, and how many directions that spans, so that
+the arithmetic which DOES size can see what it is buying. Anything built on top that wants to
+REDUCE exposure owes a missed-growth ledger line first (`research/missed_growth.py`).
+
+REFUSALS ARE THE POINT (L1.28a -- UNMEASURED is a real answer). `split_symbol` never guesses. Six
+letters is not enough on its own -- "NatGas" uppercases to a six-letter shape and would decompose
+into a long "NAT" and a short "GAS", two real numbers in a report nobody can read as wrong -- so
+both legs must be a currency the broker actually quotes or a declared non-currency factor.
+Everything else must be NAMED, either in `NON_PAIR_SYMBOLS` (the explicit MT5-universe map below,
+derived from `desks/mt5/data/universe/universe.json`) or by the caller through `factors=`. A
+symbol this module cannot classify raises `RiskError`; absence is not a permission.
+"""
+from __future__ import annotations
+
+import math
+import re
+from collections.abc import Iterable, Mapping, Sequence
+from dataclasses import dataclass
+from typing import Any
+
+import numpy as np
+import numpy.typing as npt
+
+from libs.risk.errors import RiskError
+
+# SINGLE SOURCE OF TRUTH, DELIBERATELY REUSED. A second hand-maintained currency list is a list
+# that drifts from the first one, and the two then disagree about whether CHFNOK is a cross. The
+# broker's quotable legs live in `fx_factors`; extend them THERE.
+from libs.risk.fx_factors import _CURRENCIES as _FX_CURRENCIES
+from libs.risk.fx_factors import _NON_CURRENCY as _FX_NON_CURRENCY
+from libs.risk.fx_factors import split_pair
+
+#: THREE LEGS THE SHARED LIST IS MISSING, and this is a MEASUREMENT, not a preference. Every FX
+#: and FX-exotic row in `desks/mt5/data/universe/universe.json` was decomposed on 2026-09-17: the
+#: broker quotes 27 legs, `fx_factors._CURRENCIES` names 24 of them, and USDBRL, USDIDR and
+#: USDKRW therefore read UNKNOWN in the desk's existing currency-leg view -- three live-universe
+#: symbols silently absent from a concentration report rather than wrong in it.
+#:
+#: THE FIX BELONGS UPSTREAM, in `fx_factors._CURRENCIES`, where both modules would get it. It is
+#: carried here because this change is not permitted to edit that file; the test that found the
+#: gap (`desks/mt5/tests/test_netting_report.py::
+#: test_every_non_forex_universe_symbol_the_desk_may_hold_is_classifiable`) walks the registry
+#: rather than a list, so it will find the next missing leg too.
+_EXTRA_CURRENCIES: frozenset[str] = frozenset({"BRL", "IDR", "KRW"})
+
+#: The ISO-4217 legs this broker quotes (public alias over `fx_factors`' private set).
+CURRENCIES: frozenset[str] = frozenset(_FX_CURRENCIES) | _EXTRA_CURRENCIES
+
+#: Three-letter BASES that are not currencies and are their own factor. A gold sleeve's risk is
+#: gold's, not the dollar's, so XAUUSD is `+XAU -USD` and never "long the metal complex". Sourced
+#: from the live registry: precious and base metals, the three energy CFDs, and every crypto CFD
+#: whose ticker happens to be six characters. `_FX_NON_CURRENCY` supplies XAU/XAG/XPT/XPD/XCU.
+NON_CURRENCY_BASES: frozenset[str] = frozenset(_FX_NON_CURRENCY) | frozenset({
+    # base metals quoted XxxUSD on Fusion
+    "XAL", "XNI", "XPB", "XZN",
+    # energy: Brent, WTI, natural gas
+    "XBR", "XTI", "XNG",
+    # crypto CFDs with a three-letter base (part of the MT5 universe; NOT a crypto-exchange
+    # universe -- the mandate forbids hunting exchange-native ground, not holding Fusion CFDs)
+    "ADA", "BCH", "BNB", "BTC", "DOT", "EOS", "ETH", "LNK", "LTC", "SOL", "XLM",
+})
+
+#: THE EXPLICIT MAP, and every row was read off `desks/mt5/data/universe/universe.json` rather
+#: than guessed: the factor name is the instrument itself and the quote leg is the registry's own
+#: `currency_profit`. An index, a bond future, a soft or a long-tickered crypto CFD is ONE factor
+#: against its quote currency -- `US500 = +US500 -USD`, `JPN225 = +JPN225 -JPY` -- because the
+#: desk has no decomposition of an equity index into anything more primitive and inventing one
+#: would put a fabricated number in a rank.
+#:
+#: USDX IS DELIBERATELY NOT SPECIAL-CASED. Mechanically the dollar index IS the dollar, so
+#: `+USDX -USD` books a factor the desk could argue is redundant. The rule is applied uniformly
+#: anyway: a hand-tuned exception here would be a judgement embedded in a measurement, and the
+#: honest fix (a basket decomposition of USDX into its six legs) is a real piece of work, not a
+#: line in a dict. It is flagged here so the next reader sees the choice rather than trips on it.
+NON_PAIR_SYMBOLS: dict[str, tuple[str, str]] = {
+    # --- Indices (registry asset_class "Indices")
+    "AUS200": ("AUS200", "AUD"),
+    "CA60": ("CA60", "CAD"),
+    "CHINAH": ("CHINAH", "HKD"),
+    "E35": ("E35", "EUR"),
+    "EUSTX50": ("EUSTX50", "EUR"),
+    "FRA40": ("FRA40", "EUR"),
+    "GER40": ("GER40", "EUR"),
+    "HK50": ("HK50", "HKD"),
+    "JPN225": ("JPN225", "JPY"),
+    "NAS100": ("NAS100", "USD"),
+    "NETH25": ("NETH25", "EUR"),
+    "UK100": ("UK100", "GBP"),
+    "US2000": ("US2000", "USD"),
+    "US30": ("US30", "USD"),
+    "US500": ("US500", "USD"),
+    "USDX": ("USDX", "USD"),
+    # --- Bonds
+    "UKGILT": ("UKGILT", "GBP"),
+    "UST05Y": ("UST05Y", "USD"),
+    "UST10Y": ("UST10Y", "USD"),
+    # --- Soft commodities
+    "COFARA": ("COFARA", "USD"),
+    "COFROB": ("COFROB", "USD"),
+    "CORN": ("CORN", "USD"),
+    "COTTON": ("COTTON", "USD"),
+    "OJ": ("OJ", "USD"),
+    "SOYBEAN": ("SOYBEAN", "USD"),
+    "SUGAR": ("SUGAR", "USD"),
+    "SUGARRAW": ("SUGARRAW", "USD"),
+    "UKCOCOA": ("UKCOCOA", "GBP"),
+    "USCOCOA": ("USCOCOA", "USD"),
+    "WHEAT": ("WHEAT", "USD"),
+    # --- Crypto CFDs whose ticker is not six characters
+    "AVAXUSD": ("AVAX", "USD"),
+    "DOGEUSD": ("DOGE", "USD"),
+    "MATICUSD": ("MATIC", "USD"),
+}
+
+#: Broker decoration: `.raw`, `-ECN`, `_x`, `.pro`, `.m`. A separator plus up to five alphanumeric
+#: characters, stripped ONCE (not in a loop -- repeated stripping eats real tickers) and only
+#: where at least three characters survive.
+_SUFFIX = re.compile(r"[._-][A-Za-z0-9]{1,5}$")
+
+#: Registry asset classes whose members are one factor against their profit currency.
+_OWN_FACTOR_CLASSES = frozenset({
+    "Indices", "Bonds", "Soft Commodity", "Energy", "Equities", "Equity",
+})
+
+#: A sleeve row declaring one of these is short its instrument.
+_SHORT_WORDS = frozenset({"SHORT", "SELL", "-1"})
+
+
+@dataclass(frozen=True)
+class Position:
+    """One instrument held, signed, in ACCOUNT currency.
+
+    `notional_ccy` is positive when the book is LONG the base (or the instrument, for an index or
+    a soft). It is a notional, not a stop-risk and not a margin: mixing the two in one book is a
+    unit error that produces a rank nobody can interpret, so a caller that has stop-risk must
+    build a book entirely out of stop-risk and say so.
+    """
+
+    symbol: str
+    notional_ccy: float
+
+    def __post_init__(self) -> None:
+        if not str(self.symbol).strip():
+            raise RiskError("Position: symbol is empty")
+        value = float(self.notional_ccy)
+        if not math.isfinite(value):
+            raise RiskError(f"Position({self.symbol}): notional_ccy is {self.notional_ccy!r}")
+
+
+def strip_suffix(symbol: str) -> str:
+    """`EURUSD.raw` -> `EURUSD`. Uppercased, one suffix removed, never below three characters."""
+    core = str(symbol).strip().upper()
+    if not core:
+        raise RiskError("split_symbol: empty symbol")
+    match = _SUFFIX.search(core)
+    if match is not None and match.start() >= 3:
+        core = core[: match.start()]
+    return core
+
+
+def split_symbol(symbol: str) -> tuple[str, str]:
+    """`("EUR", "USD")` for EURUSD, `("XAU", "USD")` for XAUUSD.raw, `("US500", "USD")` for US500.
+
+    Raises `RiskError` for anything this module cannot classify WITHOUT GUESSING: a six-character
+    shape whose legs are not quotable currencies or declared non-currency factors, a name of any
+    other length that is not in `NON_PAIR_SYMBOLS`, or an empty string. The caller that knows
+    better -- one holding the broker's registry, say -- passes `factors=` to `exposure_vector`.
+    """
+    raw = str(symbol).strip().upper()
+    if raw in NON_PAIR_SYMBOLS:
+        return NON_PAIR_SYMBOLS[raw]
+    core = strip_suffix(symbol)
+    if core in NON_PAIR_SYMBOLS:
+        return NON_PAIR_SYMBOLS[core]
+
+    known = split_pair(core)
+    if known is not None:
+        return known
+
+    if len(core) == 6:
+        base, quote = core[:3], core[3:]
+        base_ok = base in CURRENCIES or base in NON_CURRENCY_BASES
+        quote_ok = quote in CURRENCIES or quote in NON_CURRENCY_BASES
+        if base_ok and quote_ok:
+            return (base, quote)
+        raise RiskError(
+            f"split_symbol({symbol!r}): {core!r} is six characters but "
+            f"{'base ' + base if not base_ok else ''}"
+            f"{' and ' if not base_ok and not quote_ok else ''}"
+            f"{'quote ' + quote if not quote_ok else ''} is not a quotable currency or a "
+            "declared non-currency factor -- add it to libs/risk/fx_factors._CURRENCIES or to "
+            "NON_CURRENCY_BASES, or pass factors={...}. Guessing the legs is how NatGas becomes "
+            "long NAT and short GAS.")
+
+    raise RiskError(
+        f"split_symbol({symbol!r}): {core!r} is {len(core)} characters, not six, and is not in "
+        "NON_PAIR_SYMBOLS. Absence is not a permission: name it in NON_PAIR_SYMBOLS (with its "
+        "registry currency_profit as the quote leg) or pass factors={...}.")
+
+
+def factors_from_registry(registry: Mapping[str, Mapping[str, Any]]) -> dict[str, tuple[str, str]]:
+    """Derive a `factors=` override from an MT5 universe registry.
+
+    THE REGISTRY IS THE AUTHORITY, not a symbol list in this file: routing is by the asset class
+    MetaTrader itself reports (the same rule `desks/mt5/research/universe_policy.py` enforces for
+    the two research lanes), and the quote leg is the registry's own `currency_profit`. A symbol
+    whose row carries no usable asset class or profit currency is simply ABSENT from the result,
+    so `split_symbol` gets its chance to classify it and to refuse if it cannot.
+    """
+    out: dict[str, tuple[str, str]] = {}
+    for symbol, row in registry.items():
+        if not isinstance(row, Mapping):
+            continue
+        name = str(symbol).strip()
+        asset_class = str(row.get("asset_class") or row.get("category") or "").strip()
+        quote = str(row.get("currency_profit") or "").strip().upper()
+        if not name or asset_class not in _OWN_FACTOR_CLASSES or quote not in CURRENCIES:
+            continue
+        out[name] = (name.upper(), quote)
+    return out
+
+
+def _legs(symbol: str, factors: Mapping[str, tuple[str, str]] | None) -> tuple[str, str]:
+    if factors is not None:
+        override = factors.get(symbol) or factors.get(str(symbol).strip().upper())
+        if override is not None:
+            base, quote = override
+            if not str(base).strip() or not str(quote).strip():
+                raise RiskError(f"factors[{symbol!r}] = {override!r}: a leg name is empty")
+            return (str(base).strip().upper(), str(quote).strip().upper())
+    return split_symbol(symbol)
+
+
+def exposure_vector(
+    positions: Iterable[Position],
+    factors: Mapping[str, tuple[str, str]] | None = None,
+) -> tuple[tuple[str, ...], npt.NDArray[np.float64]]:
+    """Signed notional per FACTOR for one book.
+
+    A long EURUSD of 100,000 EUR-equivalent is `+100,000 EUR` and `-100,000 USD`. Summed across
+    the book, four long JPY crosses stop looking like four trades and start looking like the one
+    short-JPY position they are. Factor names come back sorted, so two books built in different
+    orders compare column for column.
+
+    Legs that net to exactly zero are KEPT as named zeros: a book that is long EUR through one
+    sleeve and short it through another has genuinely expressed that factor, and dropping the
+    name would erase the pair of bets that cancelled.
+    """
+    totals: dict[str, float] = {}
+    for position in positions:
+        base, quote = _legs(position.symbol, factors)
+        amount = float(position.notional_ccy)
+        totals[base] = totals.get(base, 0.0) + amount
+        totals[quote] = totals.get(quote, 0.0) - amount
+    names = tuple(sorted(totals))
+    vector = np.array([totals[n] for n in names], dtype="float64")
+    return names, vector
+
+
+def exposure_matrix(
+    books: Mapping[str, Iterable[Position]],
+    factors: Mapping[str, tuple[str, str]] | None = None,
+) -> tuple[tuple[str, ...], tuple[str, ...], npt.NDArray[np.float64]]:
+    """Stack one row per sleeve: `B[i, j]` is sleeve i's signed notional on factor j.
+
+    Sleeve order is the mapping's own (dicts preserve insertion), factor order is sorted, and
+    every sleeve gets a row even when its book is empty -- a sleeve holding nothing is a row of
+    zeros, which `effective_rank` correctly counts as no bet rather than dropping from the
+    denominator of anything.
+    """
+    per_sleeve: dict[str, dict[str, float]] = {}
+    names: set[str] = set()
+    for sleeve, positions in books.items():
+        row: dict[str, float] = {}
+        for position in positions:
+            base, quote = _legs(position.symbol, factors)
+            amount = float(position.notional_ccy)
+            row[base] = row.get(base, 0.0) + amount
+            row[quote] = row.get(quote, 0.0) - amount
+        per_sleeve[sleeve] = row
+        names |= set(row)
+    sleeves = tuple(per_sleeve)
+    ordered = tuple(sorted(names))
+    matrix = np.zeros((len(sleeves), len(ordered)), dtype="float64")
+    index = {n: j for j, n in enumerate(ordered)}
+    for i, sleeve in enumerate(sleeves):
+        for name, amount in per_sleeve[sleeve].items():
+            matrix[i, index[name]] = amount
+    return sleeves, ordered, matrix
+
+
+def effective_rank(matrix: npt.ArrayLike, tol: float = 1e-8) -> float:
+    """The PARTICIPATION RATIO of the singular-value spectrum: how many directions this book spans.
+
+        p_i = s_i^2 / sum_j s_j^2          (the spectrum as a probability distribution)
+        rank_eff = 1 / sum_i p_i^2 = (sum_i s_i^2)^2 / sum_i s_i^4
+
+    WHY A PARTICIPATION RATIO AND NOT `numpy.linalg.matrix_rank`. Rank is a step function: two
+    sleeves at a 1-degree angle are rank 2, exactly as independent as two at 90 degrees, until a
+    tolerance flips them to 1 all at once. Every interesting state of this book lives in the
+    space that step function cannot see. The participation ratio is CONTINUOUS in the angle -- it
+    reads 2.0 for two orthogonal bets, 1.6 for the classic long-EURUSD/short-USDCHF pair that
+    shares its dollar leg, and glides to 1.0 as the second bet becomes the first -- so crowding is
+    visible while it is forming. It is the same arithmetic the desk already uses for n_effective
+    and for concentration, applied to singular values instead of correlations or weights.
+
+    A FLAT BOOK IS 0.0, not 1.0. An empty matrix, an all-zero matrix, or one whose largest
+    singular value is not positive holds no bets at all; reporting 1.0 would assert a bet that is
+    not there. `tol` is RELATIVE to the largest singular value and exists to drop numerical dust,
+    not to make a decision.
+    """
+    array = np.asarray(matrix, dtype="float64")
+    if array.ndim == 1:
+        array = array.reshape(1, -1)
+    if array.ndim != 2:
+        raise RiskError(f"effective_rank: expected a 1-D or 2-D array, got ndim={array.ndim}")
+    if array.size == 0 or not np.isfinite(array).all():
+        if array.size and not np.isfinite(array).all():
+            raise RiskError("effective_rank: matrix carries a non-finite entry")
+        return 0.0
+
+    singular = np.linalg.svd(array, compute_uv=False)
+    largest = float(singular.max()) if singular.size else 0.0
+    if largest <= 0.0:
+        return 0.0
+    kept = singular[singular > float(tol) * largest]
+    weights = np.square(kept.astype("float64"))
+    total = float(weights.sum())
+    if total <= 0.0:
+        return 0.0
+    return float(total * total / float(np.square(weights).sum()))
+
+
+def factor_concentration(
+    names: Sequence[str],
+    vector: npt.ArrayLike,
+) -> dict[str, float]:
+    """Each factor's share of the book's GROSS factor exposure. Shares sum to 1.0.
+
+    A flat book returns `{}` -- there is no share of nothing, and a dict of zeros would read as a
+    measured, perfectly diversified book rather than as an empty one.
+    """
+    array = np.asarray(vector, dtype="float64").ravel()
+    if len(names) != array.size:
+        raise RiskError(
+            f"factor_concentration: {len(names)} names against {array.size} values")
+    if array.size == 0 or not np.isfinite(array).all():
+        if array.size and not np.isfinite(array).all():
+            raise RiskError("factor_concentration: vector carries a non-finite entry")
+        return {}
+    gross = float(np.abs(array).sum())
+    if gross <= 0.0:
+        return {}
+    return {str(name): float(abs(array[i])) / gross for i, name in enumerate(names)}
+
+
+def _convert(quote: str, account_ccy: str, rates: Mapping[str, float]) -> float:
+    """Units of ACCOUNT currency per unit of `quote`. Raises rather than inventing a rate."""
+    quote, account_ccy = quote.upper(), account_ccy.upper()
+    if quote == account_ccy:
+        return 1.0
+    direct = rates.get(f"{quote}{account_ccy}")
+    if isinstance(direct, (int, float)) and math.isfinite(float(direct)) and float(direct) > 0:
+        return float(direct)
+    inverse = rates.get(f"{account_ccy}{quote}")
+    if isinstance(inverse, (int, float)) and math.isfinite(float(inverse)) and float(inverse) > 0:
+        return 1.0 / float(inverse)
+    raise RiskError(
+        f"book_from_sleeves: no rate to convert {quote} into {account_ccy} -- looked for "
+        f"{quote}{account_ccy} and {account_ccy}{quote} in rates. An absent rate is UNMEASURED "
+        "(L1.28a); it is never 1.0 and never the last rate that worked.")
+
+
+def book_from_sleeves(
+    sleeves_doc: Any,
+    rates: Mapping[str, float],
+    *,
+    contract_sizes: Mapping[str, float],
+    account_ccy: str = "EUR",
+    statuses: Sequence[str] = ("LIVE", "STANDBY"),
+    lots: Mapping[str, float] | None = None,
+) -> dict[str, tuple[Position, ...]]:
+    """Turn `desks/mt5/data/sleeves.json` rows into per-sleeve books of account-currency notional.
+
+    `sleeves_doc` is the parsed document (`{"sleeves": [...]}`) or the bare row list. A row
+    contributes when its `status` is in `statuses` and a lot is KNOWN -- from `lots[name]` when
+    the caller measured one (the gateway's own target, say), otherwise from a numeric `lot` field.
+    The live registry writes `"auto_ramp"` there for most sleeves, which is not a lot: such a
+    sleeve appears in the result with an EMPTY book, so the caller can name it UNMEASURED instead
+    of silently dropping a sleeve out of the denominator.
+
+    THE ARITHMETIC, with no step hidden:
+
+        notional_base    = lot * contract_size                 (units of the base instrument)
+        notional_quote   = notional_base * rates[symbol]       (the symbol's last price)
+        notional_account = notional_quote * fx(quote -> account_ccy)
+
+    `rates` carries the symbol's own price under its symbol key and the cross-currency conversions
+    under `<CCY><ACCOUNT>` or `<ACCOUNT><CCY>`. AN ABSENT RATE RAISES `RiskError` and an absent
+    contract size raises too. Neither is defaulted, substituted or carried over from another
+    symbol: this function's entire value is that the number it returns was measured, and a single
+    invented rate makes every factor share downstream of it fiction.
+
+    Sign: the lot's own sign, negated again when the row declares a SHORT/SELL side. A row with no
+    declared side is taken LONG, exactly as `exposure_decomposition` does, and the caller is
+    expected to name those sleeves (`sleeve_side:<name>`) in its own unmeasured list.
+    """
+    rows: Sequence[Any]
+    if isinstance(sleeves_doc, Mapping):
+        raw = sleeves_doc.get("sleeves")
+        rows = raw if isinstance(raw, Sequence) and not isinstance(raw, str) else []
+    elif isinstance(sleeves_doc, Sequence) and not isinstance(sleeves_doc, str):
+        rows = sleeves_doc
+    else:
+        raise RiskError(f"book_from_sleeves: cannot read a sleeves document of type "
+                        f"{type(sleeves_doc).__name__}")
+
+    wanted = {str(s).upper() for s in statuses}
+    books: dict[str, tuple[Position, ...]] = {}
+    for row in rows:
+        if not isinstance(row, Mapping):
+            continue
+        name = str(row.get("name") or "").strip()
+        symbol = str(row.get("symbol") or "").strip()
+        if not name or not symbol:
+            continue
+        if str(row.get("status") or "").upper() not in wanted:
+            continue
+
+        lot: float | None = None
+        if lots is not None and isinstance(lots.get(name), (int, float)):
+            lot = float(lots[name])
+        elif isinstance(row.get("lot"), (int, float)):
+            lot = float(row["lot"])
+        if lot is None or not math.isfinite(lot) or lot == 0.0:
+            books[name] = ()
+            continue
+
+        contract = contract_sizes.get(symbol)
+        if not isinstance(contract, (int, float)) or not math.isfinite(float(contract)):
+            raise RiskError(
+                f"book_from_sleeves({name}): no contract size for {symbol!r}. The registry is the "
+                "authority and a missing row is UNMEASURED, never 1.0 or 100,000.")
+        price = rates.get(symbol)
+        if not isinstance(price, (int, float)) or not math.isfinite(float(price)):
+            raise RiskError(
+                f"book_from_sleeves({name}): no rate for {symbol!r}. An absent price is "
+                "UNMEASURED (L1.28a) -- it is never invented.")
+
+        _, quote = _legs(symbol, None)
+        sign = -1.0 if str(row.get("side") or row.get("direction") or "").upper() \
+            in _SHORT_WORDS else 1.0
+        notional = (lot * float(contract) * float(price)
+                    * _convert(quote, account_ccy, rates) * sign)
+        books[name] = (Position(symbol=symbol, notional_ccy=notional),)
+    return books
+
+```
+
+### libs\risk\fx_factors.py
+```python
+"""Currency-leg factor decomposition -- the concentration a per-symbol view cannot see.
+
+WHY THIS EXISTS. `libs/risk/factor_caps.py` aggregates risk by ASSET CLASS, which is the right
+granularity for a book of BTCUSD/XAUUSD/US500 and the wrong one for this desk: every FX cross
+collapses into a single `Factor.FX` bucket. Measured 2026-08-31 on the live survivor set, that
+bucket held 28 of 45 certificates and said nothing useful, while the desk's own portfolio
+evidence reported n_effective 1.019 across 17 sleeves -- seventeen positions behaving as one bet.
+An asset-class view cannot distinguish "long four JPY crosses" from "four independent trades",
+and that distinction is the whole question.
+
+`libs.risk.instruments.get_factor` also RAISES on any symbol absent from its hand-maintained
+dict. On the same survivor set it raised on 15 of 22 symbols -- every Scandi and EM cross
+(CHFNOK, GBPSEK, USDZAR, GBPMXN, ...). A measurement that dies on two thirds of the book is not
+a measurement, so nothing here raises on an unknown symbol: it is reported as UNKNOWN and
+excluded from the totals, because a silent zero would read exactly like genuine diversification
+(L1.28a -- UNMEASURED is a real answer, absence is never a clean verdict).
+
+WHAT THIS IS NOT. It is a MEASUREMENT, not a gate and not a sizer. It has no authority over
+position size and does not veto anything. The MT5 gateway keeps sizing, because it is the only
+thing that knows Fusion tick value, contract size and profit currency -- the exact knowledge
+whose absence produced the CADJPY incident (believed 1.26% risk, actual 7.41%; believed book
+heat 2.94%, true 22.2%). This reports what the book is really long and short of, per currency.
+"""
+from __future__ import annotations
+
+import re
+from collections.abc import Mapping
+from dataclasses import dataclass, field
+
+#: Metals and other non-currency instruments quoted like a cross. XAU/XAG are their own factor
+#: rather than "long gold / short USD": a gold sleeve's risk is gold's, not the dollar's.
+_NON_CURRENCY = frozenset({"XAU", "XAG", "XPT", "XPD", "XCU"})
+
+#: A cross is six letters, two ISO-4217 legs. Anything else (US500, NatGas, hunt16) is not a
+#: currency pair and must not be silently split into three-letter halves.
+#:
+#: SIX LETTERS IS NOT ENOUGH ON ITS OWN, and the test that proves it is not hypothetical:
+#: "NatGas" uppercases to NATGAS, matches this shape, and decomposes into a long "NAT" and a
+#: short "GAS". Both legs are then real numbers in a report nobody can read as wrong. Requiring
+#: both legs to be a currency the desk actually quotes turns that from a silent corruption into
+#: an UNKNOWN, which is the only honest answer for a symbol this module cannot classify.
+_PAIR = re.compile(r"^([A-Z]{3})([A-Z]{3})$")
+
+#: ISO-4217 legs quotable on the Fusion universe, plus the metals handled above. Extend when the
+#: broker adds a currency -- an unlisted leg is reported UNKNOWN, never guessed.
+_CURRENCIES = frozenset({
+    "USD", "EUR", "GBP", "JPY", "CHF", "CAD", "AUD", "NZD",
+    "SEK", "NOK", "DKK", "PLN", "CZK", "HUF", "TRY", "RUB",
+    "ZAR", "MXN", "SGD", "HKD", "CNH", "THB", "ILS", "INR",
+    # 2026-09-17: the broker quotes 27 currency legs; these three were absent and USDBRL,
+    # USDIDR and USDKRW read UNKNOWN in every concentration report (found by fx_exposure
+    # walking the registry rather than this list).
+    "BRL", "IDR", "KRW",
+})
+
+
+@dataclass(frozen=True)
+class CurrencyExposure:
+    """Signed risk per currency leg, plus what could not be classified."""
+
+    by_currency: dict[str, float] = field(default_factory=dict)
+    by_metal: dict[str, float] = field(default_factory=dict)
+    unknown: dict[str, float] = field(default_factory=dict)
+
+    @property
+    def gross(self) -> float:
+        """Total absolute leg risk that was classifiable."""
+        return sum(abs(v) for v in self.by_currency.values()) + sum(
+            abs(v) for v in self.by_metal.values())
+
+    @property
+    def top_concentration(self) -> tuple[str, float]:
+        """The single currency carrying the most absolute risk, and its share of gross."""
+        if not self.by_currency or self.gross <= 0:
+            return ("NONE", 0.0)
+        leg, amount = max(self.by_currency.items(), key=lambda kv: abs(kv[1]))
+        return (leg, abs(amount) / self.gross)
+
+
+def split_pair(symbol: str) -> tuple[str, str] | None:
+    """("EUR", "JPY") for EURJPY; None when `symbol` is not a six-letter cross."""
+    m = _PAIR.match(symbol.strip().upper())
+    if not m:
+        return None
+    base, quote = m.group(1), m.group(2)
+    known = _CURRENCIES | _NON_CURRENCY
+    if base not in known or quote not in known:
+        return None
+    return (base, quote)
+
+
+def decompose(exposures: Mapping[str, float]) -> CurrencyExposure:
+    """Split per-symbol risk into signed currency legs.
+
+    A long EURJPY position of risk R is +R of EUR and -R of JPY. Summed across the book, four
+    long JPY crosses reveal themselves as one large short-JPY position rather than four trades.
+    Sign convention: a positive value in `exposures` is long the BASE currency (first leg).
+    """
+    by_ccy: dict[str, float] = {}
+    by_metal: dict[str, float] = {}
+    unknown: dict[str, float] = {}
+
+    for symbol, risk in exposures.items():
+        amount = float(risk)
+        legs = split_pair(symbol)
+        if legs is None:
+            unknown[symbol] = unknown.get(symbol, 0.0) + amount
+            continue
+        base, quote = legs
+        if base in _NON_CURRENCY:
+            by_metal[base] = by_metal.get(base, 0.0) + amount
+            # the quote leg of XAUUSD is still real dollar risk and is booked as such
+            by_ccy[quote] = by_ccy.get(quote, 0.0) - amount
+            continue
+        if quote in _NON_CURRENCY:
+            by_metal[quote] = by_metal.get(quote, 0.0) - amount
+            by_ccy[base] = by_ccy.get(base, 0.0) + amount
+            continue
+        by_ccy[base] = by_ccy.get(base, 0.0) + amount
+        by_ccy[quote] = by_ccy.get(quote, 0.0) - amount
+
+    return CurrencyExposure(by_currency=by_ccy, by_metal=by_metal, unknown=unknown)
+
+
+def effective_bets(exposures: Mapping[str, float]) -> float:
+    """A crude independent-bet count from leg concentration: gross / max single-leg risk.
+
+    Deliberately NOT a correlation estimate -- the desk already reports n_effective from
+    correlation eigenvalues, and a second, weaker estimate of the same quantity would drift from
+    it. This answers a different question that needs no price history at all: how many distinct
+    currency legs is the book actually expressing? A book of four JPY crosses scores near 1.
+    """
+    d = decompose(exposures)
+    if d.gross <= 0:
+        return 0.0
+    biggest = max((abs(v) for v in list(d.by_currency.values()) + list(d.by_metal.values())),
+                  default=0.0)
+    return d.gross / biggest if biggest > 0 else 0.0
+
+```
+
+### libs\risk\gate.py
 ```python
 """The risk gate — the mandatory pre-trade authority.
 
@@ -2790,7 +3383,7 @@ def risk_gate(
 
 ```
 
-### libs/risk/growth_leverage.py
+### libs\risk\growth_leverage.py
 ```python
 """Growth-optimal (Kelly) leverage analysis -- optimize geometric CAGR, not Sharpe.
 
@@ -2915,7 +3508,9 @@ def analyze(
             "cagr": round(cagr(returns, lev, ppy), 4),
             "ann_vol": round(float(np.std(returns) * lev * np.sqrt(ppy)), 4),
             "max_dd": round(max_drawdown(returns, lev), 4),
-            "risk_of_ruin": round(risk_of_ruin(returns, lev), 4),
+            # R0286: the ruin horizon must cover the SAME year as cagr/ann_vol above -- a 365-day
+            # crypto book reported off the default 252-day horizon understates annual ruin.
+            "risk_of_ruin": round(risk_of_ruin(returns, lev, horizon=int(ppy)), 4),
         }
 
     return {
@@ -2932,7 +3527,7 @@ def analyze(
 
 ```
 
-### libs/risk/heat.py
+### libs\risk\heat.py
 ```python
 """Portfolio heat — a hard cap on total open risk-at-stop at any instant.
 
@@ -3017,7 +3612,7 @@ def check_heat_limits(
 
 ```
 
-### libs/risk/instruments.py
+### libs\risk\instruments.py
 ```python
 """Risk factors, the instrument-to-factor map, and instrument tiers.
 
@@ -3098,7 +3693,7 @@ def tier_of(symbol: str) -> int:
 
 ```
 
-### libs/risk/kelly.py
+### libs\risk\kelly.py
 ```python
 """Kelly sizing — fractional, Bayesian, and adaptive.
 
@@ -3216,19 +3811,11 @@ def adaptive_kelly_fraction(
 
 ```
 
-### libs/risk/kelly_shrink.py
+### libs\risk\kelly_shrink.py
 ```python
 """Estimation-error-shrunk Kelly -- the fraction that actually maximizes E[log wealth].
 
-Full Kelly is growth-optimal only when the edge is known EXACTLY. Ours is estimated from
-N forward days, so it carries standard error -- and Kelly's penalty for betting above the
-true optimum is worse than for betting the same distance below it (growth falls off a
-cliff on the overbet side). Betting naive full Kelly on an estimated edge therefore has
-LOWER expected compounding than the shrunk fraction. This is not conservatism: it is the
-max-E[log] bet under parameter uncertainty (2026-07-12 external-review upgrade, replacing
-the discrete time-ladder rungs of policy v3).
-
-    shrink = S^2 / (S^2 + SE(S)^2)        (Bayesian shrinkage toward zero edge)
+    shrink = S^2 / (S^2 + SE(S)^2)        (Bayesian shrinkage toward a zero-edge prior)
     fraction_of_kelly = shrink            (ramps continuously as evidence accumulates)
 
 with SE from Lo (2002): SE(S_daily) = sqrt((1 + S_daily^2 / 2) / N), annualized. Pooling
@@ -3236,6 +3823,46 @@ shadow + live forward days grows N daily, so size compounds with evidence automa
 no rungs, no calendar, nothing to skip. Reference behaviour (S_ann ~ 2.3): ~0.17x Kelly
 at day 15, ~0.36x at 40, ~0.55x at 90, ~0.71x at 180. A day-40 fast-track (needs S ~ 5)
 starts at ~0.73x -- strong evidence self-authorizes size, weak evidence cannot.
+
+WHY THE SHRINK IS RIGHT -- CORRECTED 2026-08-13 (R0432). THE FORMULA IS UNCHANGED AND THIS
+IS NOT AN ARGUMENT TO BET MORE. What changed is the reason attached to it, because the
+reason that used to be here is measurably false and a false rationale calibrates a real
+knob in the wrong direction.
+
+THE RETIRED RATIONALE: "Kelly's penalty for overbetting is asymmetric, so betting naive
+full Kelly on an ESTIMATED edge has lower expected compounding than the shrunk fraction."
+Measured and refuted by `scripts/study_absorbing_kelly.py` CONTROL A, 12/12 cells: with an
+unbiased mu, estimation noise ALONE leaves the growth optimum at exactly f* = 1.00. It is
+not a simulation artifact -- E[log W_T] = T(L*mu - L^2 sigma^2 / 2) is LINEAR in mu, so
+averaging over symmetric parameter noise about a correct mean cannot move the argmax at
+all. The asymmetry is real but it already lives inside the quadratic term; it is not a
+second effect that noise switches on.
+
+THE RATIONALE THAT SURVIVES: S-hat is not unbiased for the quantity being bet on. Edges
+reach this function BECAUSE they measured well, so the estimate carries a winner's curse
+and the correct input is the POSTERIOR MEAN of the edge under a prior that most candidates
+have none -- strictly below S-hat. S^2/(S^2 + SE^2) is exactly the James-Stein /
+normal-posterior shrinkage factor toward a zero-edge prior, so the form was right for a
+reason nobody had written down. The desk's prior is very strong: 420 screened, 0 survivors.
+
+DECIDED, NOT DEFERRED: THE SCREEN'S TRIAL COUNT IS NOT FED IN, AND MUST NOT BE. R0432 asked
+whether the 420-trial multiplicity count should tighten the shrink for heavily-selected
+candidates. It should not, and the reason is a property of the INPUT rather than a judgement
+about strength: this function is fed `fwd_sharpe` / `fwd_days` (dynamic_leverage.py:112) --
+the pre-registered FORWARD clock, measured on data that took no part in the screen's
+selection. Charging the screen's winner's curse against an estimate that did not undergo it
+prices the same selection twice, which is the duplicated-multiplicity error this desk has
+already paid for once in validation (turnover penalised twice because nobody checked whether
+it was in the number). The two-stage discovery law is what makes this safe: the screen has
+zero promotion authority, so its multiplicity is spent there and not carried forward.
+
+WHAT IS GENUINELY UNPRICED, AND IS A DIFFERENT AND SMALLER QUANTITY: promotion selects on
+FORWARD evidence, over at most MAX_FORWARD_SLOTS=12 concurrent slots. Holm corrects the
+p-value of that decision; it does not de-bias the effect SIZE this function then sizes on,
+so a candidate that just cleared the bar still has an upward-biased forward Sharpe. The
+relevant selection intensity is best-of-12, not best-of-420. Whether S^2/(S^2+SE^2) already
+absorbs it is an empirical question that needs its own study and is rowed separately --
+NOT assumed either way here, and any change it produces can only be TIGHTER.
 """
 
 from __future__ import annotations
@@ -3301,7 +3928,7 @@ def first_inversion_cap(fraction: float, live_days: float,
 
 ```
 
-### libs/risk/overlays.py
+### libs\risk\overlays.py
 ```python
 """Variance-reduction overlays: vol-targeting + residual beta-hedge.
 
@@ -3349,7 +3976,7 @@ def beta_neutralize(asset_returns: np.ndarray, market_returns: np.ndarray, *,
 
 ```
 
-### libs/risk/preservation.py
+### libs\risk\preservation.py
 ```python
 """Equity preservation — protect the base so long-term compounding survives.
 
@@ -3413,7 +4040,7 @@ def equity_preservation_controller(
 
 ```
 
-### libs/risk/risk_budget.py
+### libs\risk\risk_budget.py
 ```python
 """Risk budgeting — allocate and enforce risk (not dollars) across alphas/factors/instruments.
 
@@ -3481,7 +4108,7 @@ def enforce_risk_budget(
 
 ```
 
-### libs/risk/risk_controls.py
+### libs\risk\risk_controls.py
 ```python
 """Growth-POSITIVE risk controls -- limits sized at the ruin boundary, never from fear.
 
@@ -3493,19 +4120,242 @@ limit AT the boundary only ever fires when NOT firing would risk ruin -- which d
 compounding. So in normal operation these controls do nothing, and in a tail event they preserve the
 ability to keep compounding.
 
-Three controls, in increasing severity:
+Six controls, in increasing severity:
   * exposure guard  -- gross notional may not exceed the ruin-boundary leverage x equity (a backstop
                        against a sizing bug; never binds while we deploy below the ruin cap).
+  * VENUE CAP       -- no single exchange may hold more than `venue_cap` of equity (gap #54).
+  * FEE-VS-HARVEST  -- rolling-window fees above a documented fraction of the funding harvest PAUSE
+                       new opens (gap #98). An open is always optional; a fee bill this size makes
+                       it an optional loss.
+  * BURN FLOOR      -- windowed net burn (fees minus harvest, venue income truth) at the DD-pause
+                       fraction of equity PAUSES new opens even when marks hide the loss (gap #98).
   * DD circuit break -- above a stress drawdown, PAUSE new opens (keep existing carries earning
                        funding; never realises a loss). Kelly-consistent: uncertainty up -> less.
   * ruin kill-switch -- only a catastrophic equity loss (>= drawdown_ruin) forces a full flatten.
                        For a delta-neutral book this means an exchange/basis catastrophe -> survive.
+
+GAP #54 -- COUNTERPARTY CONCENTRATION, THE ONE FATAL RISK NOTHING CAPPED. Per-name was capped at
+35% and per-factor was capped, while the fraction of net worth sitting inside a single exchange
+was capped by nothing at all: `grep -rn 'per_venue|venue_cap|venue_exposure'` returned zero hits
+across the whole repo. SYSTEM_REVIEW ranks this fatal in its own words -- *"an FTX-class failure
+is fatal to deployed capital regardless of strategy correctness"*. Every other control here
+assumes the exchange gives the money back.
+
+It belongs in THIS file rather than the executor because it is the same kind of object as the
+others: a pure ruin-boundary limit, not an execution detail. And it lands BEFORE live keys
+deliberately -- with one venue the cap binds at 100% and changes nothing today, which is exactly
+why installing it now is free and retrofitting it the day a second venue exists is not.
+
+GAP #98 / LEDGER R0025 -- NO COST-RATE BRAKE EXISTED BETWEEN AN ALARM AND THE RUIN RAIL. The
+2026-07-28 close-retry churn engine burned $1,456 of fees in 48h against $113 of LIFETIME funding
+harvest. §40 (`check_fee_carry_ratio`, scripts/max_audit.py) fired ~27h before diagnosis and had
+no authority to stop anything; the only mechanism that halted the fire was the equity ruin rail at
+-35% -- after the money was gone. 94.1% of dead-man fire #6 was that software defect. The fix is
+the two PAUSE-OPENS-ONLY triggers above: fail-closed on opens (an open is always optional), and
+NEVER on closes -- a close is a certainty problem, not a fee problem (L1.45, incident #6: a ruin
+rail a fee heuristic can veto is not a ruin rail, and symmetrically a fee brake must never hold a
+position that needs to die). Both thresholds REUSE documented desk constants (see below) rather
+than minting new ones, and an unreadable measurement keeps the brake QUIET but is recorded
+UNMEASURED in the decision's reasons (L1.41) -- never a phantom pause fabricated from missing
+data (the 2026-07-26 fabricated-zero class), never a silent skip.
 """
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+import contextlib
+import json
+from dataclasses import dataclass, field
+from datetime import UTC, datetime, timedelta
+from pathlib import Path
 from typing import Any
+
+_ROOT = Path(__file__).resolve().parents[2]
+
+#: GAP #54. Max fraction of equity permitted inside a single exchange.
+#:
+#: 1.0 is not "no cap" -- it is the honest cap for a ONE-VENUE desk, and it is the number that
+#: makes this control safe to install today: it binds at exactly the level the desk already runs
+#: at, so nothing changes now and the enforcement path is proven before it ever has to bind. The
+#: moment a second venue exists this must drop (0.50 splits ruin risk in half; 0.35 matches the
+#: per-name cap the desk already accepts). Lowering it is a principal decision, not a default,
+#: because it is a real allocation constraint rather than a safety knob to be tightened silently.
+VENUE_CAP = 1.0
+
+#: The ruin rail's two documented levels, lifted verbatim from this file's own `evaluate` defaults
+#: (behaviour unchanged) into named constants so the gap-#98 burn floor can DERIVE from them
+#: instead of minting a parallel number. -35% from inception flattens; -15% from peak pauses opens.
+DRAWDOWN_RUIN = 0.35
+DD_PAUSE = 0.15
+
+# ---------------------------------------------------------------------------------------------
+# GAP #98 / R0025 -- the cost-rate brake's measured inputs and documented thresholds.
+# ---------------------------------------------------------------------------------------------
+#: The executor's published income artifact (run_cashcarry_executor.py `_WEB`, written by
+#: `_emit` every cycle): carries `funding_harvested` and `fut_commission` from the audited
+#: paginated `income_summary` read, plus `funding_measured` so "earned nothing" and "could not
+#: read the venue" stay distinguishable. Read DEFENSIVELY -- this file must keep returning
+#: decisions on a box where the artifact is absent, stale or corrupt.
+INCOME_ARTIFACT = _ROOT / "web/cashcarry_live.json"
+#: Rolling window of (timestamp, cumulative funding, cumulative commission) samples taken from
+#: the artifact -- the artifact publishes since-inception cumulatives, so the window keeps its own
+#: short history to difference them. Machine-local state (data/ is gitignored), self-pruning.
+BURN_WINDOW_FILE = _ROOT / "data/fee_burn_window.json"
+
+#: Window length: §40's own measurement window -- `check_fee_carry_ratio` (scripts/max_audit.py)
+#: reads `income_summary(now - 7 * 86400)`. Same window, so the brake and the alarm that begged
+#: for authority are statements about the SAME quantity.
+FEE_WINDOW_H = 7 * 24.0
+#: §40's flat-book guard, verbatim (`if funding < 5.0: return`): with almost no harvest the fee
+#: ratio explodes for reasons unrelated to execution quality, and false pauses train the desk to
+#: ignore the brake. Applies to the RATIO trigger only -- the burn floor needs no denominator and
+#: is exactly what catches a fee fire on a near-flat book.
+FEE_MIN_FUNDING = 5.0
+#: Fraction of the windowed harvest that windowed fees may consume before opens pause. REUSED,
+#: not invented: this is `alert_frac=0.5` from `carry_bleed_report`
+#: (libs/execution/carry_accounting.py) -- the desk's standing dashboard bar for "the leak is
+#: eating the harvest" -- pinned equal by test. It sits strictly INSIDE §40's absolute
+#: `ratio > 1.0` bar ("fees EXCEED the funding earned... cannot be net-positive while this
+#: holds"), so the brake now fires WITH the alarm instead of 27 hours of burn later.
+FEE_HARVEST_PAUSE_FRAC = 0.5
+#: Absolute-burn floor: windowed net burn (fees - funding, venue income truth) at this fraction
+#: of equity pauses opens. DERIVED from the ruin rail's own documented levels, not a new number:
+#: it is DD_PAUSE itself -- the income channel gets the same pause bar the mark-to-market channel
+#: already has, so a burn that marks hide (a rally masking a fee fire) pauses at the same -15%
+#: the DD breaker would have charged for it, and the brake leaves the identical
+#: DRAWDOWN_RUIN - DD_PAUSE = 20-point headroom before the ruin rail that the DD breaker leaves.
+BURN_FLOOR_EQUITY_FRAC = DD_PAUSE
+
+
+@dataclass(frozen=True)
+class FeeBurnWindow:
+    """Windowed fee/harvest measurement for the gap-#98 brake. `None` fields mean UNMEASURED."""
+
+    funding: float | None      # funding harvested inside the window (may be < 0: paying funding)
+    fees: float | None         # commission paid inside the window (>= 0)
+    span_h: float = 0.0        # hours the window actually covers (honest, may be < FEE_WINDOW_H)
+    note: str = ""             # why unmeasured, when unmeasured
+
+    @property
+    def measured(self) -> bool:
+        return self.funding is not None and self.fees is not None
+
+
+def _is_num(x: Any) -> bool:
+    return isinstance(x, int | float) and not isinstance(x, bool)
+
+
+def _parse_ts(s: Any) -> datetime | None:
+    try:
+        t = datetime.fromisoformat(str(s))
+    except (TypeError, ValueError):
+        return None
+    return t if t.tzinfo is not None else t.replace(tzinfo=UTC)
+
+
+def load_fee_burn_window(
+    artifact: Path | None = None,
+    history: Path | None = None,
+    *,
+    window_h: float = FEE_WINDOW_H,
+    now: datetime | None = None,
+) -> FeeBurnWindow:
+    """Difference the executor's cumulative income artifact into a rolling-window measurement.
+
+    Every failure mode returns UNMEASURED with a reason rather than raising or fabricating a
+    zero: an unreadable artifact, a null/unmeasured funding or commission field (`read_income`
+    already publishes `None` when the venue could not be read -- L1.41, unknown is not zero), a
+    stale artifact whose samples have aged out, or a window that does not yet span two executor
+    ticks. Cumulative commission can only grow, so a fall in it means the book's inception was
+    re-based -- the window restarts rather than differencing across two inceptions.
+    """
+    artifact = INCOME_ARTIFACT if artifact is None else artifact
+    history = BURN_WINDOW_FILE if history is None else history
+    now = now if now is not None else datetime.now(tz=UTC)
+    try:
+        art = json.loads(Path(artifact).read_text("utf-8"))
+    except (OSError, ValueError):
+        return FeeBurnWindow(None, None, 0.0, "income artifact unreadable")
+    if not isinstance(art, dict):
+        return FeeBurnWindow(None, None, 0.0, "income artifact malformed")
+    fund, comm = art.get("funding_harvested"), art.get("fut_commission")
+    t = _parse_ts(art.get("updated"))
+    if t is None or not (_is_num(fund) and _is_num(comm)):
+        return FeeBurnWindow(None, None, 0.0,
+                             "funding/commission not measured this tick (venue income read "
+                             "failed or artifact malformed) -- unknown is not zero")
+
+    samples: list[tuple[datetime, float, float]] = []
+    with contextlib.suppress(OSError, ValueError):
+        raw = json.loads(Path(history).read_text("utf-8")) if Path(history).exists() else []
+        for s in raw if isinstance(raw, list) else []:
+            ts = _parse_ts(s.get("t")) if isinstance(s, dict) else None
+            if ts is not None and _is_num(s.get("funding")) and _is_num(s.get("commission")):
+                samples.append((ts, float(s["funding"]), abs(float(s["commission"]))))
+    samples.sort(key=lambda x: x[0])
+    new = (t, float(fund or 0.0), abs(float(comm or 0.0)))
+    if samples and new[0] <= samples[-1][0]:
+        pass                                # same artifact tick re-read -- nothing new to record
+    elif samples and new[2] < samples[-1][2] - 1e-6:
+        samples = [new]                     # cumulative fees fell => inception re-based: restart
+    else:
+        samples.append(new)
+    cutoff = now - timedelta(hours=max(0.0, float(window_h)))
+    samples = [s for s in samples if s[0] >= cutoff]
+    with contextlib.suppress(OSError):      # persistence failure must not kill the risk decision
+        Path(history).parent.mkdir(parents=True, exist_ok=True)
+        Path(history).write_text(json.dumps(
+            [{"t": s[0].isoformat(), "funding": round(s[1], 6), "commission": round(s[2], 6)}
+             for s in samples], indent=1), "utf-8")
+    if len(samples) < 2:
+        return FeeBurnWindow(None, None, 0.0,
+                             "burn window not yet spanning (needs 2+ artifact ticks inside "
+                             f"{window_h:g}h; artifact updated {t.isoformat()})")
+    span_h = (samples[-1][0] - samples[0][0]).total_seconds() / 3600.0
+    d_fund = samples[-1][1] - samples[0][1]
+    d_fees = max(0.0, samples[-1][2] - samples[0][2])
+    return FeeBurnWindow(round(d_fund, 6), round(d_fees, 6), round(span_h, 3))
+
+
+def fee_burn_triggers(
+    equity: float,
+    window: FeeBurnWindow,
+    *,
+    fee_frac: float = FEE_HARVEST_PAUSE_FRAC,
+    burn_floor_frac: float = BURN_FLOOR_EQUITY_FRAC,
+    min_funding: float = FEE_MIN_FUNDING,
+) -> tuple[list[str], bool]:
+    """Gap #98's two pause-opens triggers, pure. Returns (reasons, pause).
+
+    UNMEASURED inputs return quiet-but-recorded (L1.41): the brake must never manufacture a pause
+    out of a venue outage (2026-07-26 fabricated-zero incident) and must never skip silently --
+    a blind brake that says nothing is indistinguishable from a working one.
+    """
+    if not window.measured:
+        return ([f"fee-burn UNMEASURED ({window.note}): cost-rate brake cannot judge this "
+                 "window -- staying quiet, never pausing on a phantom (L1.41)"], False)
+    fund, fees = float(window.funding or 0.0), float(window.fees or 0.0)
+    reasons: list[str] = []
+    pause = False
+    # (a) windowed fee-vs-harvest: §40's alarm, now with authority. Flat-book guarded exactly as
+    # §40 is -- below `min_funding` of windowed harvest the ratio is noise, and the burn floor
+    # below still covers the fee-fire-on-a-flat-book case with no denominator at all.
+    if fund >= min_funding and fees > fee_frac * fund:
+        pause = True
+        reasons.append(
+            f"fee-vs-harvest: fees {fees:.2f} > {fee_frac:.0%} of funding {fund:.2f} over "
+            f"{window.span_h:.1f}h -- pausing new opens (an open is always optional; at this "
+            f"cost rate it is an optional loss. §40's bar, no longer advisory)")
+    # (b) absolute-burn floor: venue-income net burn at the DD-pause fraction of equity. Catches
+    # the churn-engine class even when marks or a rally hide the drain from the DD breaker.
+    burn = fees - fund
+    if equity > 0 and burn >= burn_floor_frac * equity:
+        pause = True
+        reasons.append(
+            f"burn floor: net burn {burn:.2f} >= {burn_floor_frac:.0%} of equity {equity:.2f} "
+            f"over {window.span_h:.1f}h -- pausing new opens before the only remaining brake "
+            f"is the ruin rail (gap #98: $1,456 burned in 48h with no brake between alarm "
+            f"and -35%)")
+    return reasons, pause
 
 
 @dataclass
@@ -3515,12 +4365,14 @@ class RiskDecision:
     max_notional: float               # ruin-boundary gross exposure (opens capped to this)
     dd_from_peak: float               # <= 0
     dd_from_start: float              # <= 0
+    venue_breaches: list[str] = field(default_factory=list)   # gap #54: venues over the cap
 
     def to_dict(self) -> dict[str, Any]:
         return {"action": self.action, "reasons": self.reasons,
                 "max_notional": round(self.max_notional, 2),
                 "dd_from_peak_pct": round(self.dd_from_peak * 100, 2),
-                "dd_from_start_pct": round(self.dd_from_start * 100, 2)}
+                "dd_from_start_pct": round(self.dd_from_start * 100, 2),
+                "venue_breaches": list(self.venue_breaches)}
 
 
 def evaluate(
@@ -3530,14 +4382,46 @@ def evaluate(
     gross_notional: float,
     *,
     ruin_cap_lev: float,              # ruin-boundary leverage (from dynamic_leverage)
-    drawdown_ruin: float = 0.35,      # equity loss treated as ruin -> flatten (survival)
-    dd_pause: float = 0.15,           # drawdown that pauses NEW opens (does NOT flatten)
+    drawdown_ruin: float = DRAWDOWN_RUIN,   # equity loss treated as ruin -> flatten (survival)
+    dd_pause: float = DD_PAUSE,       # drawdown that pauses NEW opens (does NOT flatten)
+    venue_equity: dict[str, float] | None = None,   # gap #54: equity held per exchange
+    venue_cap: float = VENUE_CAP,     # max fraction of equity inside any ONE venue
+    fee_burn: FeeBurnWindow | None = None,          # gap #98: None -> read the income artifact
+    fee_harvest_frac: float = FEE_HARVEST_PAUSE_FRAC,
+    burn_floor_frac: float = BURN_FLOOR_EQUITY_FRAC,
+    flow_adjusted_equity: float | None = None,      # R0320: DD channel measured net of flows
 ) -> RiskDecision:
-    """Evaluate the book against growth-positive, ruin-boundary limits. Pure function."""
+    """Evaluate the book against growth-positive, ruin-boundary limits.
+
+    Pure given `fee_burn`; when it is None (the executor's call site, which this brake must reach
+    WITHOUT an executor edit) the windowed fee/harvest measurement is read defensively from the
+    executor's own published income artifact -- unreadable input degrades to a recorded
+    UNMEASURED, never an exception, never a phantom pause.
+
+    R0320 -- `flow_adjusted_equity`. The DD-from-peak channel exists to answer "how far is this
+    book below the best it ever managed", and RAW wallet equity cannot answer it across a capital
+    event: a deposit lifts equity to a fresh high-water and a live pause evaporates without a
+    single position changing. Pass equity net of post-inception external flows here, with
+    `peak_equity` in that SAME flow-adjusted space (`capital_events.flow_adjusted_rail` returns
+    both), and the pause rail measures the book instead of the cash-flow. `start_equity` is
+    untouched by this -- the ruin rail keeps measuring raw equity against the ledgered inception,
+    which is the authorised, signed way back from a stop.
+
+    `None` (every pre-R0320 caller) is the identity: the DD channel reads `equity` exactly as it
+    always did, including the `max(start, ...)` floor on the peak.
+    """
     eq = max(0.0, float(equity))
     start = max(1e-9, float(start_equity))
-    peak = max(start, float(peak_equity), eq)
-    dd_peak = eq / peak - 1.0
+    if flow_adjusted_equity is None:
+        dd_eq = eq
+        peak = max(start, float(peak_equity), eq)
+    else:
+        # `start` is deliberately NOT a floor here: it lives in raw dollars (and a re-base moves
+        # it to today's equity), so folding it into a flow-adjusted peak would compare two
+        # different rulers and manufacture a drawdown out of the deposit itself.
+        dd_eq = max(0.0, float(flow_adjusted_equity))
+        peak = max(1e-9, float(peak_equity), dd_eq)
+    dd_peak = dd_eq / peak - 1.0
     dd_start = eq / start - 1.0
     max_notional = max(0.0, ruin_cap_lev) * eq
     reasons: list[str] = []
@@ -3559,12 +4443,42 @@ def evaluate(
         if action == "ok":
             action = "pause_opens"
 
+    # GAP #54: per-venue concentration. Pauses OPENS on the breaching venue rather than
+    # flattening -- yanking capital off an exchange in a panic realises losses and is exactly the
+    # move that turns a concentration problem into a solvency one. The cap governs where NEW
+    # money may go; withdrawing existing balance is a treasury decision, not a risk-engine reflex.
+    breaches: list[tuple[str, float]] = []
+    if venue_equity and eq > 0:
+        cap = max(0.0, min(1.0, float(venue_cap)))
+        for venue, held in sorted(venue_equity.items()):
+            frac = max(0.0, float(held)) / eq
+            if frac > cap + 1e-9:
+                breaches.append((venue, frac))
+    for venue, frac in breaches:
+        reasons.append(f"venue concentration {venue} {frac:.0%} > cap {venue_cap:.0%}: no new "
+                       f"opens there -- an FTX-class failure is fatal regardless of how right "
+                       f"the strategy was")
+    if breaches and action == "ok":
+        action = "pause_opens"
+
+    # GAP #98 / R0025: cost-rate brake -- windowed fee-vs-harvest + absolute-burn floor. PAUSES
+    # OPENS ONLY, can never escalate to flatten (a fee problem is never a reason to realise a
+    # loss; closes are never excited by cost heuristics, L1.45) and can never downgrade an action
+    # already decided above. Strictly conservative: it only ever ADDS a pause.
+    if fee_burn is None:
+        fee_burn = load_fee_burn_window()
+    fee_reasons, fee_pause = fee_burn_triggers(
+        eq, fee_burn, fee_frac=fee_harvest_frac, burn_floor_frac=burn_floor_frac)
+    reasons.extend(fee_reasons)
+    if fee_pause and action == "ok":
+        action = "pause_opens"
+
     return RiskDecision(action, reasons or ["within growth-optimal risk bounds"],
-                        max_notional, dd_peak, dd_start)
+                        max_notional, dd_peak, dd_start, [v for v, _ in breaches])
 
 ```
 
-### libs/risk/scaling.py
+### libs\risk\scaling.py
 ```python
 """Dynamic risk scaling — the global dial that only ever cuts.
 
@@ -3612,7 +4526,7 @@ def global_risk_scalar(
 
 ```
 
-### libs/risk/sizing.py
+### libs\risk\sizing.py
 ```python
 """Position-size synthesis — combine every governor; the tightest constraint binds.
 
@@ -3714,7 +4628,339 @@ def calculate_position_size(
 
 ```
 
-### libs/risk/stress.py
+### libs\risk\sleeve_allocation.py
+```python
+"""TWO-BOOK CAPITAL ALLOCATION: a Medallion-like systematic sleeve plus a discretionary booster.
+
+THE PRINCIPAL'S ARCHITECTURE (2026-08-01): keep the discretionary sleeve for extra growth, make
+everything else as Medallion-like as possible. That is a coherent multi-strategy structure, but it
+is only safe if the two books are CAPITAL-ISOLATED with separate risk budgets. Run them out of one
+undifferentiated pool and the discretionary sleeve's variance drags down the systematic compounding
+it exists to boost -- the sleeves would share a drawdown, so a bad discretionary run shrinks the
+base the systematic book compounds from. Under max E[log W] that is strictly worse than either
+sleeve alone, which is the failure mode this module exists to prevent.
+
+WHAT GOVERNS THE SPLIT. Not opinion, and not equal weight. A sleeve earns allocation by its
+MARGINAL CONTRIBUTION to total portfolio Sharpe -- the same mathematics that governs signal
+admission in libs/research/marginal_admission.py, applied one level up:
+
+    IR_s = (S_s - rho * S_base) / sqrt(1 - rho**2)
+
+The consequence is the useful part: the discretionary sleeve does NOT need to beat the systematic
+book to deserve capital. It needs to be UNCORRELATED to it. A modest discretionary Sharpe at rho
+near 0 can contribute more than a higher one at rho near 1, because the systematic book already
+owns the correlated part. That is precisely why "extra growth boost" is a real and fundable idea
+rather than wishful thinking -- but it is also why the boost must be MEASURED rather than assumed.
+
+THE LEARNING STAKE, and this is the subtle piece. The conviction sleeve today has 6 forecasts and
+ZERO recorded outcomes, so its expectancy is unmeasured. The naive rule -- no evidence, no capital
+-- is a trap that closes permanently: a sleeve at zero size generates no closes, no closes means no
+expectancy, and no expectancy means it never earns size. So an unproven sleeve gets a small FIXED
+stake sized so that losing all of it is survivable and irrelevant to the systematic book's
+compounding. It is a tuition payment, deliberately, and it is capped rather than scaled because
+scaling something unmeasured is exactly how a desk talks itself into size it has not earned.
+
+A sleeve with MEASURED NEGATIVE expectancy gets zero, not a learning stake. That distinction is the
+whole point of the module: unproven and disproven are different states, and only one of them is
+worth paying to resolve.
+
+PERMANENT-IMPAIRMENT GUARD. The discretionary share is hard-capped regardless of how good its
+measured numbers look. Estimated edges decay, tails are fatter than the estimator believes, and the
+objective is to minimise probability of permanent impairment -- not to maximise a point estimate of
+growth. The cap binds even when the arithmetic argues for more, because the arithmetic is computed
+from the same limited history that would be wrong in exactly the scenario the cap protects against.
+"""
+
+from __future__ import annotations
+
+import math
+from collections.abc import Callable
+from dataclasses import asdict, dataclass, field
+from typing import Any
+
+#: Closed trades before a sleeve's expectancy is treated as measured at all. Below this the sleeve
+#: is UNPROVEN and receives the learning stake, never a scaled allocation.
+MIN_CLOSES = 20
+
+#: Fraction of total equity lent to an unproven sleeve so it can generate the record that earns it
+#: real size. Deliberately small and FIXED: scaling something unmeasured is how unearned size gets
+#: justified. Losing all of it must be irrelevant to the systematic book's compounding.
+LEARNING_STAKE = 0.02
+
+#: EVIDENCE-DEPENDENT CEILING LADDER (principal 2026-08-01: "dont hardcap to 25, whatever boosts
+#: growth should be done"). A permanent 25% cap is wrong under max E[log W] for a simple reason: if
+#: a sleeve genuinely develops higher expected log-growth than the base and KEEPS demonstrating it
+#: over a long horizon, holding it at 25% forever leaves compounding on the table. The cap should
+#: express CONFIDENCE IN THE MEASURED EDGE, not a fixed opinion about discretionary trading.
+#:
+#: The problem the ladder actually solves is distinguishing SKILL from a HOT STREAK, and no single
+#: statistic does that -- a high Sharpe is exactly what luck looks like. So each rung is
+#: CONJUNCTIVE: every condition must hold, and a sleeve cannot buy a rung with one spectacular
+#: number while failing the others. Sample size, positive expectancy, regime stability, drawdown
+#: behaviour, correlation to the base, and persistence across time are separate questions and a
+#: hot streak typically passes only the first two.
+#:
+#: RUNGS ARE STATISTICAL, NOT CALENDAR (principal 2026-08-01: "not grandma timeline"). An earlier
+#: cut gated STRONG on 180 days of track and DURABLE on 365. That is the wrong axis and it punishes
+#: speed for no statistical reason: calendar time is not evidence, sample size is. A book taking 3
+#: closes a day reaches a given confidence in weeks that a book taking 3 a month needs years for,
+#: and a time gate would hold the fast one back for nothing. So the rungs gate on the t-STATISTIC of
+#: the measured edge, which is the quantity confidence actually depends on. Same confidence bar for
+#: everyone; whoever generates evidence faster climbs faster. At this desk's ~3 closes/day the rungs
+#: land near 7 days (INITIAL), 20 days (STRONG) and 50 days (DURABLE) -- fast, and earned.
+#:
+#: The t-stat, not the Sharpe, is what rises with evidence. A Sharpe of 2.0 on 20 trades and the
+#: same 2.0 on 400 are completely different claims, and gating on Sharpe alone cannot tell them
+#: apart -- which is precisely how a hot streak buys size it has not earned.
+#:
+#: DEMOTION IS IMMEDIATE AND PROMOTION IS SLOW. The ladder is deliberately NOT a ratchet: a rung is
+#: recomputed from current evidence every allocation, so decay cuts the ceiling at once rather than
+#: after a review cycle. That asymmetry is the log-wealth-correct one -- the cost of being slow to
+#: size up is foregone growth, while the cost of being slow to size down is permanent impairment,
+#: and those are not symmetric losses.
+EVIDENCE_LADDER: tuple[tuple[str, float, dict[str, float]], ...] = (
+    # (tier name, max share, conjunctive requirements)
+    ("UNPROVEN",  0.02, {"min_closes": 0}),
+    ("INITIAL",   0.10, {"min_closes": 20,  "min_t_stat": 1.5, "max_rho": 0.80,
+                         "max_drawdown": 0.35}),
+    ("STRONG",    0.25, {"min_closes": 60,  "min_t_stat": 2.5, "max_rho": 0.60,
+                         "max_drawdown": 0.25, "min_regimes_positive": 2}),
+    ("DURABLE",   0.60, {"min_closes": 150, "min_t_stat": 3.5, "max_rho": 0.50,
+                         "max_drawdown": 0.20, "min_regimes_positive": 3,
+                         "min_persistence": 0.60}),
+)
+
+#: The top rung is 0.60, not 1.0, and the reason is structural rather than timid. Beyond this a
+#: "booster" is no longer boosting anything -- the base it was diversifying has become a rounding
+#: error and the two-book isolation that protects compounding no longer exists. A sleeve that earns
+#: more than this has not hit a growth limit; it has outgrown the ROLE. The correct response is to
+#: re-designate it as the base (is_base=True) and let the former base compete as a booster against
+#: it, which the same arithmetic then handles unchanged. `base_candidate` on the Allocation flags
+#: exactly that, so the ceiling surfaces a decision instead of silently capping growth.
+MAX_DISCRETIONARY = EVIDENCE_LADDER[-1][1]
+
+#: Fractional-Kelly coefficient. Full Kelly is the max-CAGR point and sits PAST the max-E[log W]
+#: point once parameters are estimated rather than known -- the gap is the estimation-error drag.
+KELLY_FRACTION = 0.25
+
+
+@dataclass(frozen=True)
+class Sleeve:
+    """A book's measured state. Every field is an observation, not a target."""
+
+    name: str
+    sharpe: float           #: annualised, net of costs, from realised fills
+    n_closes: int           #: closed trades with a RECORDED outcome -- not entries taken
+    rho_to_base: float = 0.0  #: correlation to the systematic book (0.0 for the base itself)
+    is_base: bool = False
+    max_share: float = 1.0  #: per-sleeve ceiling; the evidence ladder applies on top for non-base
+    #: --- evidence the ladder reads. All default to the value that FAILS the higher rungs, so a
+    #: --- caller that does not supply them cannot accidentally promote a sleeve by omission.
+    max_drawdown: float = 1.0      #: worst peak-to-trough as a fraction, from realised equity
+    regimes_positive: int = 0      #: distinct market regimes with positive realised expectancy
+    t_stat: float = 0.0            #: t-statistic of the measured edge -- THE confidence axis.
+                                   #: Supplied by the caller from the return series (sqrt(n) *
+                                   #: per-trade Sharpe). Defaults to 0.0 so omitting it FAILS
+                                   #: upward and cannot promote a sleeve by silence.
+    track_days: int = 0            #: calendar span; REPORTED for context, never gates a rung
+    persistence: float = 0.0       #: fraction of sub-periods with positive expectancy (0..1)
+
+
+@dataclass(frozen=True)
+class Allocation:
+    name: str
+    share: float            #: fraction of total equity
+    usd: float
+    state: str              #: PROVEN | UNPROVEN-LEARNING-STAKE | DISPROVEN-ZERO | BASE
+    reason: str
+    marginal_ir: float = 0.0
+    n_closes: int = 0
+    tier: str = ""              #: evidence rung reached
+    tier_cap: float = 0.0       #: ceiling that rung grants
+    tier_blocker: str = ""      #: FIRST condition stopping the next rung -- the thing to fix
+    base_candidate: bool = False  #: earned more than the top booster rung; should it be the base?
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
+@dataclass
+class Plan:
+    allocations: list[Allocation] = field(default_factory=list)
+    deployed_share: float = 0.0
+    reserve_share: float = 0.0
+    note: str = ""
+
+    def to_dict(self) -> dict[str, Any]:
+        return {"allocations": [a.to_dict() for a in self.allocations],
+                "deployed_share": self.deployed_share, "reserve_share": self.reserve_share,
+                "note": self.note}
+
+
+
+def evidence_tier(
+    s: Sleeve, *,
+    ladder: tuple[tuple[str, float, dict[str, float]], ...] = EVIDENCE_LADDER,
+) -> tuple[str, float, str]:
+    """Highest rung whose conditions ALL hold, plus the first condition blocking the next one.
+
+    Conjunctive by design. A hot streak produces a high Sharpe over a short record in one regime,
+    which is precisely the pattern that clears a Sharpe test and fails sample size, regime breadth,
+    track length and persistence. Requiring every condition is what separates skill from luck; any
+    scoring scheme that lets one spectacular number compensate for the others would readmit the
+    hot streak this ladder exists to catch.
+
+    Recomputed from CURRENT evidence on every allocation, never latched -- so a decaying sleeve is
+    demoted immediately rather than at the next review. Slow up, fast down.
+    """
+    checks: tuple[tuple[str, Callable[[float], bool], Callable[[float], str]], ...] = (
+        ("min_closes", lambda r: s.n_closes >= r, lambda r: f"needs {r} closes, has {s.n_closes}"),
+        ("min_sharpe", lambda r: s.sharpe >= r, lambda r: f"needs Sharpe {r}, has {s.sharpe:.3f}"),
+        ("max_rho", lambda r: abs(s.rho_to_base) <= r,
+         lambda r: f"needs |rho| <= {r}, has {abs(s.rho_to_base):.3f}"),
+        ("max_drawdown", lambda r: s.max_drawdown <= r,
+         lambda r: f"needs drawdown <= {r:.0%}, has {s.max_drawdown:.0%}"),
+        ("min_regimes_positive", lambda r: s.regimes_positive >= r,
+         lambda r: f"needs {int(r)} positive regimes, has {s.regimes_positive}"),
+        ("min_t_stat", lambda r: s.t_stat >= r,
+         lambda r: f"needs t>={r}, has t={s.t_stat:.2f} -- generate closes faster, "
+                   "not wait longer"),
+        ("min_persistence", lambda r: s.persistence >= r,
+         lambda r: f"needs persistence {r}, has {s.persistence:.2f}"),
+    )
+    best_name, best_cap = ladder[0][0], ladder[0][1]
+    blocker = "at top rung"
+    for name, cap, reqs in ladder[1:]:
+        failed = next((msg(reqs[k]) for k, ok, msg in checks
+                       if k in reqs and not ok(reqs[k])), None)
+        if failed is not None:
+            return best_name, best_cap, f"{name} blocked: {failed}"
+        best_name, best_cap = name, cap
+    return best_name, best_cap, blocker
+
+
+def marginal_ir(sharpe: float, rho: float, base_sharpe: float) -> float:
+    """The sleeve's information ratio ORTHOGONAL to the systematic book.
+
+    This is why an uncorrelated booster is fundable at a Sharpe the systematic book would reject:
+    the base already owns the correlated component, so only the orthogonal part is new. At rho -> 1
+    the denominator collapses and the sleeve is revealed as a duplicate of the base rather than a
+    diversifier, however good its standalone number looks.
+    """
+    rho = max(-0.999999, min(0.999999, rho))
+    return (sharpe - rho * base_sharpe) / math.sqrt(1.0 - rho * rho)
+
+
+def _kelly_share(ir: float, *, fraction: float = KELLY_FRACTION) -> float:
+    """Fractional-Kelly share from an information ratio, clamped to [0, 1].
+
+    Kelly's growth-optimal fraction is proportional to the information ratio. The fractional
+    coefficient is not timidity -- with ESTIMATED rather than known parameters, full Kelly
+    overbets, and overbetting is the regime where expected log-wealth falls while advertised CAGR
+    still rises. That divergence is the entire reason the objective is log wealth.
+    """
+    return max(0.0, min(1.0, fraction * max(0.0, ir)))
+
+
+def allocate(sleeves: list[Sleeve], total_equity: float, *,
+             min_closes: int = MIN_CLOSES, learning_stake: float = LEARNING_STAKE,
+             max_discretionary: float = MAX_DISCRETIONARY) -> Plan:
+    """Split capital between the systematic base and its boosters, on measured evidence only.
+
+    Exactly one sleeve must be marked `is_base`. The base is the Medallion-like systematic book and
+    receives the residual; boosters must EARN their share and are capped. If the base itself is
+    unproven or loss-making, boosters are still allowed their learning stakes but nothing is scaled
+    up against a base with no measured edge -- scaling against an unmeasured benchmark would make
+    the marginal-contribution arithmetic meaningless.
+    """
+    bases = [s for s in sleeves if s.is_base]
+    if len(bases) != 1:
+        return Plan(note=f"need exactly one base sleeve, got {len(bases)} -- refusing to allocate")
+    if not math.isfinite(total_equity) or total_equity <= 0:
+        return Plan(note="non-positive or non-finite equity -- refusing to allocate")
+
+    base = bases[0]
+    allocs: list[Allocation] = []
+    booster_share = 0.0
+
+    # Is the base a meaningful benchmark to measure marginal contribution AGAINST? If it is not,
+    # the whole IR arithmetic degenerates -- and dangerously, not harmlessly. At base_sharpe < 0 the
+    # term (S_s - rho*S_base) GROWS, so a booster correlated to a LOSING base would be handed a
+    # large allocation for the crime of resembling the thing losing money. Boosters are therefore
+    # held to learning stakes until the base is measured and positive.
+    base_proven = base.n_closes >= min_closes and base.sharpe > 0.0
+
+    for s in sleeves:
+        if s.is_base:
+            continue
+
+        if s.n_closes >= min_closes and s.sharpe <= 0.0:
+            allocs.append(Allocation(s.name, 0.0, 0.0, "DISPROVEN-ZERO",
+                                     f"measured Sharpe {s.sharpe:+.3f} over {s.n_closes} closes -- "
+                                     "Kelly's optimal size under non-positive edge is zero, and "
+                                     "sample size does not change that",
+                                     n_closes=s.n_closes))
+            continue
+
+        tier, tier_cap, blocker = evidence_tier(s)
+
+        if s.n_closes < min_closes or not base_proven:
+            share = min(learning_stake, s.max_share, max_discretionary - booster_share)
+            share = max(0.0, share)
+            booster_share += share
+            why = (f"{s.n_closes}/{min_closes} closes recorded -- expectancy unmeasured"
+                   if s.n_closes < min_closes else
+                   f"sleeve is measured (Sharpe {s.sharpe:.3f}, {s.n_closes} closes) but the BASE "
+                   f"is not (Sharpe {base.sharpe:+.3f}, {base.n_closes} closes), so marginal "
+                   "contribution has no meaningful benchmark to be measured against")
+            allocs.append(Allocation(
+                s.name, share, share * total_equity, "UNPROVEN-LEARNING-STAKE",
+                f"{why}. Fixed stake, not a scaled allocation: a sleeve at zero size never "
+                "generates the record that would earn it size, but scaling something unmeasured "
+                "is unearned size",
+                marginal_ir=0.0, n_closes=s.n_closes, tier=tier, tier_cap=tier_cap,
+                tier_blocker=blocker))
+            continue
+
+        ir = marginal_ir(s.sharpe, s.rho_to_base, base.sharpe)
+        want = _kelly_share(ir)
+        # The ceiling is this sleeve's EARNED rung, not a constant. `max_discretionary` remains only
+        # as the aggregate budget across all boosters, so many mediocre sleeves cannot sum past what
+        # one excellent sleeve is allowed alone.
+        share = max(0.0, min(want, s.max_share, tier_cap, max_discretionary - booster_share))
+        booster_share += share
+        if share <= 0.0:
+            reason = (f"marginal IR {ir:+.3f} after paying rho={s.rho_to_base:+.3f} to a base at "
+                      f"Sharpe {base.sharpe:.3f} -- adds nothing the base does not already own")
+        else:
+            reason = (f"Sharpe {s.sharpe:.3f} at rho={s.rho_to_base:+.3f} -> "
+                      f"marginal IR {ir:+.3f}; "
+                      f"fractional-Kelly {want:.3f}, tier {tier} caps at {tier_cap:.2f}, "
+                      f"allocated {share:.3f}. Next rung -- {blocker}")
+        allocs.append(Allocation(
+            s.name, share, share * total_equity, "PROVEN", reason,
+            marginal_ir=ir, n_closes=s.n_closes, tier=tier,
+            tier_cap=tier_cap, tier_blocker=blocker,
+            base_candidate=(want > tier_cap and tier == EVIDENCE_LADDER[-1][0])))
+
+    base_share = max(0.0, 1.0 - booster_share)
+    base_state = "BASE" if base.n_closes >= min_closes and base.sharpe > 0 else "BASE-UNPROVEN"
+    base_reason = (f"residual after boosters; Sharpe {base.sharpe:.3f} over {base.n_closes} closes"
+                   if base_state == "BASE" else
+                   f"residual, but the base itself is unproven or loss-making "
+                   f"(Sharpe {base.sharpe:+.3f}, {base.n_closes} closes) -- boosters were held to "
+                   "learning stakes because marginal contribution against an unmeasured base is "
+                   "not a meaningful quantity")
+    allocs.insert(0, Allocation(base.name, base_share, base_share * total_equity,
+                                base_state, base_reason, n_closes=base.n_closes))
+
+    return Plan(allocations=allocs, deployed_share=1.0, reserve_share=0.0,
+                note=f"booster share {booster_share:.3f} of {max_discretionary:.3f} cap; "
+                     f"base holds {base_share:.3f}")
+
+```
+
+### libs\risk\stress.py
 ```python
 """Portfolio stress testing -- survivability under crypto's known failure modes.
 
@@ -3785,7 +5031,7 @@ def beta_shock(returns: np.ndarray, market: np.ndarray, shock: float = -0.30) ->
 
 ```
 
-### libs/risk/tail.py
+### libs\risk\tail.py
 ```python
 """Tail-risk controls — VaR, CVaR/Expected Shortfall, gap-through-stop, and stress tests.
 
@@ -3926,7 +5172,217 @@ def stress_test_portfolio(
 
 ```
 
-### libs/risk/vol_target.py
+### libs\risk\vol_headroom.py
+```python
+"""VOL-TARGET HEADROOM (L1.28a, R0107) -- realized book vol vs the Kelly-implied ceiling.
+
+THE CEILING NOBODY WAS MEASURING. Every other ceiling on this desk declares a limit and carries a
+measured utilisation (scripts/check_utilisation.py). Risk-taking itself did not: the desk could run
+at a third of the volatility its own rails permit for a month and no artifact would say so. That is
+an L1.28a idleness defect wearing a prudence costume -- under-risking a proven edge is the same
+failure as idle cash, and it announces nothing.
+
+THE ARITHMETIC, and why the ceiling is not a constant. Under fractional Kelly at fraction ``f`` of
+full Kelly on an edge of annualized Sharpe ``S``, full-Kelly leverage is mu/sigma^2, so the book's
+annualized volatility is exactly::
+
+    sigma_book = f * S
+
+That identity is the whole module. It means the vol ceiling is NOT a hand-set number to be argued
+over -- it is implied by two things the desk already fixes: the Kelly cap in the rails
+(``KellyLimits.hard_max`` = half-Kelly, the absolute ceiling ever) and the demonstrated Sharpe. And
+it self-scales in the direction the objective wants: as validated edges accrue and demonstrated
+Sharpe rises, the permitted volatility rises with it, automatically, with no rail touched.
+
+TWO READINGS, BOTH ACTIONABLE, and this is the point of measuring at all:
+  * BELOW the ceiling with no named binding constraint -> idleness (L1.28a). The book is carrying
+    less risk than its own evidence supports, and every day of that is foregone compounding.
+  * ABOVE the ceiling -> an over-Kelly breach. Past full Kelly, expected log-growth FALLS while
+    ruin probability rises: strictly worse on both axes. This is the one direction where the
+    honest response is to cut.
+
+WHAT THIS MODULE REFUSES TO DO, and the refusals are the load-bearing part.
+
+  * IT WILL NOT MEASURE A MOLDED CURVE. data/nav_attestation.jsonl currently carries its own
+    warning -- "molded_curve_usd is a MOLDED/SIMULATED curve, not venue truth and not a track
+    record". Computing a realized volatility from it would publish a number the desk would then
+    size against. The 2026-07-31 row alone jumps +41.9% and gives it back the next session: a
+    re-baseline artifact, not a return. Feeding that to a sizing ceiling is the exact failure
+    L1.45 names -- publishing a statistic from evidence too thin to carry it "would step the book
+    up on fiction, which is strictly worse than leaving it pinned".
+  * IT WILL NOT SET A CEILING FROM AN UNDEMONSTRATED SHARPE. ``f * S`` is only a ceiling if ``S``
+    is real. A hot streak's Sharpe would license leverage the evidence has not earned, which is
+    precisely how a Kelly bettor sized on over-confident estimates converges to ruin with
+    probability one (L1.29). Sufficiency is asked of libs.research.evidence_clock in OBSERVATIONS,
+    never in days (L1.48).
+  * IT WILL NOT TREAT A CALENDAR GAP AS A DAY. The NAV chain skips dates (2026-08-02 -> 08-05).
+    A three-day move read as a one-day return inflates measured vol by ~73%. Returns are
+    variance-normalized by their actual elapsed spacing, r / sqrt(dt).
+
+Every refusal returns ``measured=False``, which scripts/check_utilisation.py scores as ZERO
+utilisation by law -- never as healthy. That is deliberate: an unmeasured risk ceiling must read as
+a gap to close, not as a comfortable silence.
+
+THIS MODULE CHANGES NO SIZE. It has no writer, no rail, and no path to an order. It reports a
+number and a direction; acting on it is a separate, evidenced decision. The anti-timidity reading
+and the risk reading point the same way here only because the arithmetic does.
+"""
+
+from __future__ import annotations
+
+import itertools
+import json
+import math
+from dataclasses import dataclass, replace
+from datetime import date
+from pathlib import Path
+from typing import Any
+
+from libs.research.evidence_clock import sufficient
+from libs.risk.config import KellyLimits
+
+#: Trading periods per year for annualization. The NAV chain is stamped once per UTC day and crypto
+#: never closes, so every calendar day is an observation -- 252 would be a equities-desk import.
+PERIODS_PER_YEAR = 365.0
+
+#: Substrings in a NAV row's ``mode`` that mark it as NOT venue truth. Matched case-insensitively.
+#: Deliberately broad: a row that cannot prove it is real must not be counted as real.
+_NOT_VENUE_TRUTH = ("paper", "testnet", "sim", "shadow", "molded", "backtest")
+
+
+@dataclass(frozen=True)
+class VolHeadroom:
+    """Realized book volatility against the Kelly-implied ceiling, with its own provenance."""
+
+    realized_vol_ann: float
+    ceiling_vol_ann: float
+    sharpe_ann: float
+    n_obs: int
+    kelly_cap: float
+    measured: bool
+    reason: str
+
+    @property
+    def headroom(self) -> float:
+        """Ceiling minus realized, annualized vol points. Negative = over-Kelly breach."""
+        return self.ceiling_vol_ann - self.realized_vol_ann
+
+    @property
+    def utilisation(self) -> float:
+        """Fraction of the permitted risk budget actually being carried. Unmeasured is ZERO."""
+        if not self.measured or self.ceiling_vol_ann <= 0:
+            return 0.0
+        return self.realized_vol_ann / self.ceiling_vol_ann
+
+
+def kelly_vol_ceiling(sharpe_ann: float, kelly_cap: float | None = None) -> float:
+    """Annualized volatility permitted at ``kelly_cap`` of full Kelly on an edge of Sharpe ``S``.
+
+    ``sigma_book = f * S``. A non-positive Sharpe permits ZERO volatility, which is the correct
+    and literal reading: an edge indistinguishable from zero is allocated zero (Robust Kelly),
+    so there is no risk budget to spend and no headroom to claim.
+    """
+    cap = KellyLimits().hard_max if kelly_cap is None else kelly_cap
+    return max(0.0, cap) * max(0.0, sharpe_ann)
+
+
+def _is_venue_truth(row: dict[str, Any]) -> bool:
+    """A NAV row counts only if it can prove it is an account balance, not a simulation.
+
+    Fails CLOSED on an unrecognised row: a record with no ``mode`` at all has not established
+    provenance, and an unprovenanced number is exactly what L1.46 forbids treating as a
+    measurement. Missing evidence is never evidence of a real fill.
+    """
+    if "molded_curve_usd" in row:
+        return False
+    mode = str(row.get("mode") or "")
+    if not mode:
+        return False
+    low = mode.lower()
+    return not any(flag in low for flag in _NOT_VENUE_TRUTH)
+
+
+def _normalized_log_returns(points: list[tuple[date, float]]) -> list[float]:
+    """Per-day log returns, variance-normalized by actual spacing (r / sqrt(dt)).
+
+    The NAV chain is not contiguous. Under a random walk the variance of a k-day move is k times
+    the daily variance, so dividing by sqrt(k) puts every observation back on a common daily
+    scale. Reading a 3-day gap as one day would overstate volatility by sqrt(3).
+    """
+    out: list[float] = []
+    for (d0, v0), (d1, v1) in itertools.pairwise(points):
+        dt = (d1 - d0).days
+        if dt <= 0 or v0 <= 0 or v1 <= 0:
+            continue                      # non-monotone or non-positive equity: not a return
+        out.append(math.log(v1 / v0) / math.sqrt(dt))
+    return out
+
+
+def from_nav_chain(path: Path, *, kelly_cap: float | None = None) -> VolHeadroom:
+    """Measure the ceiling from the NAV attestation chain, refusing everything unprovable.
+
+    Returns ``measured=False`` with a stated reason rather than a plausible number whenever the
+    inputs cannot carry the claim. Callers must treat that as ZERO utilisation, not as OK.
+    """
+    cap = KellyLimits().hard_max if kelly_cap is None else kelly_cap
+    empty = VolHeadroom(0.0, 0.0, 0.0, 0, cap, False, "")
+
+    try:
+        raw = [ln for ln in path.read_text("utf-8").splitlines() if ln.strip()]
+    except OSError as exc:
+        return replace(empty, reason=f"NAV chain unreadable: {exc}")
+
+    rows: list[dict[str, Any]] = []
+    for ln in raw:
+        try:
+            rows.append(json.loads(ln))
+        except json.JSONDecodeError:
+            continue                      # a corrupt line is skipped, never guessed at
+    if not rows:
+        return replace(empty, reason="NAV chain empty or unparseable")
+
+    real = [r for r in rows if _is_venue_truth(r)]
+    if not real:
+        return replace(empty, reason=(
+            f"no venue-truth equity: all {len(rows)} NAV rows are paper/testnet or a molded "
+            "curve. Realized book vol is only measurable against real fills -- pre-Gate-0 there "
+            "is no track record to measure and a molded curve must never set a risk ceiling"))
+
+    points: list[tuple[date, float]] = []
+    for r in real:
+        try:
+            points.append((date.fromisoformat(str(r["date"])), float(r["equity_marked"])))
+        except (KeyError, TypeError, ValueError):
+            continue
+    points.sort(key=lambda p: p[0])
+
+    rets = _normalized_log_returns(points)
+    n = len(rets)
+    if n < 2:
+        return replace(empty, n_obs=n, reason=(
+            f"{n} usable venue-truth return(s) -- need at least 2 to estimate a volatility"))
+
+    mean = sum(rets) / n
+    var = sum((x - mean) ** 2 for x in rets) / (n - 1)
+    sd = math.sqrt(var)
+    realized_ann = sd * math.sqrt(PERIODS_PER_YEAR)
+    sharpe_ann = (mean / sd * math.sqrt(PERIODS_PER_YEAR)) if sd > 0 else 0.0
+
+    # THE CEILING NEEDS A DEMONSTRATED SHARPE, NOT AN OBSERVED ONE. Asked in observations, never
+    # in days (L1.48): a fast book earns its ceiling early and a near-idle one never earns it.
+    ev = sufficient(mean, sd, n)
+    if not ev.sufficient:
+        return VolHeadroom(realized_ann, 0.0, sharpe_ann, n, cap, False,
+                           f"Sharpe not demonstrated -- {ev.reason}. A ceiling of f*S is fiction "
+                           "when S is not established, and sizing to it would license leverage "
+                           "the evidence has not earned (L1.29)")
+
+    return VolHeadroom(realized_ann, kelly_vol_ceiling(sharpe_ann, cap), sharpe_ann, n, cap, True,
+                       f"{n} venue-truth daily observations; {ev.reason}")
+
+```
+
+### libs\risk\vol_target.py
 ```python
 """Volatility targeting — scale exposure to hold portfolio volatility near a target.
 
@@ -3991,7 +5447,7 @@ def adjust_for_volatility(base_size: float, forecast_vol: float, *, config: VolC
 
 ```
 
-### libs/stage14_5/tail_risk.py
+### libs\stage14_5\tail_risk.py
 ```python
 """Portfolio tail-risk engine — estimate the losses a Sharpe ratio hides.
 
@@ -4053,547 +5509,451 @@ class PortfolioTailRiskEngine:
 
 ```
 
-### scripts/carry_viability.py
+### scripts\check_risk_kernel.py
 ```python
-"""CARRY VIABILITY -- P0.2: replace cost DEFAULTS with MEASURED costs, per symbol.
+#!/usr/bin/env python3
+"""RISK-KERNEL INTEGRITY -- the survival rails are hash-locked, not merely asked nicely.
 
-THE QUESTION THIS SETTLES. execution_bottleneck.py found the whole book failing the entry gate and
-posed two readings: (a) the gate is right and the carry has no edge, or (b) 39.5bps is too harsh
-for symbols that are cheap but merely unmeasured. That was answerable and now is answered.
+THE ASYMMETRY THIS CLOSES, found by audit 2026-08-08. The desk hash-locks its CONSTITUTION
+(`check_constitution_core.py` verifies five clauses by SHA-256 and fails the build if a word
+moves), and leaves the CODE THAT ENFORCES SURVIVAL on an honour system. The only thing standing
+between an autonomous organ and the Tier-3 ruin rail is prose:
 
-IT IS (a), AND MORE SPECIFICALLY IT IS A UNIVERSE-SELECTION DEFECT.
+    ops/run_recommendation_worker.sh:99   "is Tier-3 -- do NOT edit it"
+    scripts/watchdog.py:258               "TIER-3 never-touch"
+    CLAUDE.md                             "never modified autonomously"
 
-    COOKIEUSDT -- the desk's MOST-TRADED symbol, 21 opens, largest position in the book --
-    has a MEASURED pair round-trip of 130.47 bps. It earns ~6.7 bps over a 24h hold.
-    That is a ~19x loss on every rotation, and it was never a default: it was measured.
+Every one of those is an instruction to a reader. None is a mechanism. An organ that ignored them,
+or a session that never read them, would modify the dead-man switch and nothing anywhere would
+notice -- which is precisely the class of failure the desk hash-locks its constitution against.
+Locking the laws and not the kill switch is the wrong way round: prose can be re-argued, and a
+flattened book cannot.
 
-MY OWN ERROR, DISCLOSED. execution_bottleneck.py reported COOKIEUSDT as using the DEFAULT cost. It
-does not. My _rt_bps helper looked for flat keys ("rt_bps"/"round_trip_bps") while the cost model
-nests as symbols[SYM]["pair"]["500"]["pair_roundtrip_bps"]. The LIVE EXECUTOR parses it correctly;
-only my audit script was wrong. I reported the desk as blind when the desk could see -- the exact
-failure the measurement doctrine exists to prevent, committed by the tool auditing for it. This
-script uses the executor's lookup verbatim so the audit and the live gate can never diverge again.
+WHAT THIS IS AND IS NOT. It is TAMPER-EVIDENT, not tamper-PROOF. A file's hash changing does not
+stop the change; it makes the change impossible to make silently, and it fails the gate that every
+push must pass. True tamper-proofing is a privilege boundary -- separate credentials, a service the
+research account cannot redeploy, an OS-level owner -- and that is deployment work on the box,
+which is the principal's side. This is the half that lives in the repo, and it is the half that
+catches the realistic failure: not a hostile agent, but a well-meaning one refactoring across a
+directory without reading the comment.
 
-THE STRUCTURAL FINDING: funding-first universe selection is self-defeating. High funding is the
-compensation for illiquidity, so ranking candidates by funding systematically selects the names
-with catastrophic round-trips. The carry is not broken -- the universe is.
+**A CHANGED HASH IS NOT AUTOMATICALLY A DEFECT.** The rails are allowed to improve -- what is
+forbidden is improving them SILENTLY. An intended change is recorded in the manifest with the
+reason, by the principal's act, exactly as a constitutional amendment is.
 
-Read-only. Touches no orders, no config. Run from repo root.
+    python scripts/check_risk_kernel.py            # verify; non-zero exit on drift
+    python scripts/check_risk_kernel.py --update   # record current hashes (PRINCIPAL'S ACT)
 """
+
 from __future__ import annotations
 
+import argparse
+import hashlib
 import json
-from collections import Counter
 from datetime import UTC, datetime
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-COST = ROOT / "data/cost_model.json"
-POS = ROOT / "data/cashcarry_positions.json"
-TRADES = ROOT / "data/cashcarry_trades.json"
-OUT = ROOT / "data/carry_viability.json"
+MANIFEST = ROOT / "docs" / "research" / "RISK_KERNEL_LOCK.json"
 
-DEFAULT_RT_BPS = 39.5
-PERIODS_24H = 3.0
-TYPICAL_FUNDING_BPS = 3.0     # generous upper end of ordinary per-8h funding
+#: The survival path. Each entry names WHY it is here, because a list of paths with no reasons is
+#: a list somebody will prune to make a refactor pass.
+KERNEL: dict[str, str] = {
+    "scripts/run_deadman_switch.py": "TIER-3 RUIN RAIL. Polls combined book equity and flattens on breach. The one control "
+    "that ends a losing session rather than reducing it; log(0) = -inf, so ruin terminates "
+    "the objective rather than lowering it",
+    "libs/risk/config.py": "the numeric limits every sizing decision reads. A silent widening here is invisible at "
+    "every call site and shows up only as a larger loss",
+    "libs/risk/gate.py": "the pre-trade risk gate -- the last check between an intent and an order",
+    "libs/risk/kelly.py": "sizing arithmetic. Over-betting an estimated edge loses more growth than under-betting "
+    "gains it, so an error here is asymmetric and compounds",
+    "libs/risk/drawdown.py": "the drawdown rail that de-risks before the ruin rail has to fire",
+    "libs/execution/staging.py": "order staging -- the path an intent takes to become an order",
+}
 
 
-def rt_bps(cm, sym) -> tuple[float, bool]:
-    """VERBATIM the executor's lookup (run_cashcarry_executor.py::_rt_bps)."""
+def digest(path: Path) -> str | None:
+    """SHA-256 of the file's bytes. None when absent -- an ABSENT RAIL IS THE WORST FINDING.
+
+    None rather than a sentinel hash, because a missing survival file must never compare equal to
+    anything; a rail that was deleted should look different from a rail that was edited, and both
+    should look different from a rail that is fine.
+    """
     try:
-        v = cm["symbols"][sym]["pair"]["500"].get("pair_roundtrip_bps")
-        return (float(v), True) if v is not None else (DEFAULT_RT_BPS, False)
-    except (KeyError, TypeError, ValueError):
-        return (DEFAULT_RT_BPS, False)
+        # Git may materialise text as CRLF on Windows while the committed object and lock are LF.
+        # Line-ending conversion is not a semantic rail change; hashing canonical LF preserves
+        # tamper evidence for every executable byte without making the gate platform-dependent.
+        canonical = path.read_bytes().replace(b"\r\n", b"\n")
+        return hashlib.sha256(canonical).hexdigest()
+    except OSError:
+        return None
 
 
-def main() -> None:
-    cm = json.loads(COST.read_text("utf-8"))
-    syms = cm.get("symbols", {})
-    print("=== CARRY VIABILITY -- measured costs, executor lookup verbatim ===\n")
+def current() -> dict[str, str | None]:
+    return {rel: digest(ROOT / rel) for rel in KERNEL}
 
-    rows = []
-    for s in syms:
-        v, meas = rt_bps(cm, s)
-        if meas:
-            rows.append({"symbol": s, "rt_bps": round(v, 2),
-                         "need_bps_per_period": round(v / PERIODS_24H, 2),
-                         "viable": v / PERIODS_24H <= TYPICAL_FUNDING_BPS})
-    rows.sort(key=lambda r: r["rt_bps"])
-    viable = [r for r in rows if r["viable"]]
-    print(f"  BREAK-EVEN FUNDING NEEDED at a {PERIODS_24H:g}-period (24h) hold:\n")
-    print(f"  {'symbol':<14}{'rt_bps':>9}{'need/period':>13}   verdict")
-    for r in rows:
-        v = ("VIABLE" if r["viable"] else
-             "MARGINAL" if r["need_bps_per_period"] <= 8 else "NEVER at normal funding")
-        print(f"  {r['symbol']:<14}{r['rt_bps']:>9.2f}{r['need_bps_per_period']:>12.2f}bp   {v}")
-    print(f"\n  {len(viable)}/{len(rows)} measured symbols can clear the gate at "
-          f"<= {TYPICAL_FUNDING_BPS:g}bp funding.")
-    print("  THE STRATEGY IS VIABLE. The universe is not.")
 
-    # ------------------------------------------------ what the desk actually traded
-    t = json.loads(TRADES.read_text("utf-8"))
-    tr = t if isinstance(t, list) else t.get("trades", [])
-    cnt = Counter(r["symbol"] for r in tr if r.get("event") == "open")
-    vset = {r["symbol"] for r in viable}
-    print("\n  WHAT THE DESK ACTUALLY TRADED (top 16 by opens):\n")
-    print(f"  {'symbol':<14}{'opens':>6}{'rt_bps':>10}   status")
-    n_unmeas = n_bad = tot = 0
-    for s, n in cnt.most_common(16):
-        v, meas = rt_bps(cm, s)
-        tot += 1
-        if not meas:
-            st, n_unmeas = "UNMEASURED (prior: unmeasured = illiquid = expensive)", n_unmeas + 1
-        elif s in vset:
-            st = "viable"
-        else:
-            st, n_bad = "MEASURED AND UNVIABLE", n_bad + 1
-        print(f"  {s:<14}{n:>6}{v:>10.2f}   {st}")
-    print(f"\n  {n_unmeas}/{tot} most-traded names have NO measured cost; {n_bad}/{tot} are "
-          f"measured AND unviable.")
+def load() -> dict[str, object]:
+    try:
+        return json.loads(MANIFEST.read_text("utf-8"))
+    except (OSError, ValueError):
+        return {}
 
-    pos = json.loads(POS.read_text("utf-8")).get("positions", {})
-    print("\n  OPEN BOOK:\n")
-    for s, p in pos.items():
-        f = float(p.get("funding", 0.0))
-        earns = f * 1e4 * PERIODS_24H
-        v, meas = rt_bps(cm, s)
-        print(f"  {s:<14} earns {earns:>5.1f}bp   needs {v:>7.2f}bp   "
-              f"{'MEASURED' if meas else 'default':<9} {'PASS' if earns > v else 'FAIL'}")
 
-    print("\n=== CONCLUSION ===")
-    print("  The entry gate is CORRECT and must not be relaxed. It is refusing names that are")
-    print("  measurably unprofitable, COOKIEUSDT most of all at 130.47bps against ~6.7bps of")
-    print("  funding. The desk halting new opens is the gate doing its job.")
-    print("\n  THE FIX IS UNIVERSE SELECTION, NOT THE GATE. Candidates are ranked by FUNDING, but")
-    print("  funding is the COMPENSATION FOR ILLIQUIDITY -- so funding-first ranking selects for")
-    print("  exactly the round-trips that destroy the carry. Rank by NET (funding x periods minus")
-    print("  measured round-trip) and restrict candidates to measured-viable names. On the numbers")
-    print("  above that leaves 16 liquid symbols, several of which (BTC 0.02, ETH 0.11, BNB 0.35,")
-    print("  XRP 1.81) clear the bar with room to spare at ordinary funding.")
-    print("\n  This also RETIRES my own earlier flip-flop on universe choice. I argued for majors,")
-    print("  then for micro-caps 'because that is where the funding is', then back. The measured")
-    print("  answer: micro-cap funding is real and is smaller than micro-cap costs.")
+def verify() -> tuple[list[str], list[str], list[str]]:
+    """(drifted, missing, unlocked). Three failure shapes with three different fixes."""
+    rec = load()
+    locked = rec.get("hashes") if isinstance(rec.get("hashes"), dict) else {}
+    now = current()
+    drifted, missing, unlocked = [], [], []
+    for rel, h in now.items():
+        if h is None:
+            missing.append(rel)
+        elif not isinstance(locked, dict) or rel not in locked:
+            unlocked.append(rel)
+        elif locked[rel] != h:
+            drifted.append(rel)
+    return drifted, missing, unlocked
 
-    OUT.write_text(json.dumps({"updated": datetime.now(tz=UTC).isoformat(),
-                               "measured": rows, "n_viable": len(viable), "n_measured": len(rows),
-                               "traded_top": dict(cnt.most_common(16)),
-                               "unmeasured_traded": n_unmeas}, indent=1), "utf-8")
-    print(f"\n  -> {OUT}")
+
+def main() -> int:
+    ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument(
+        "--update",
+        action="store_true",
+        help="record current hashes. THE PRINCIPAL'S ACT: it asserts the rails are in "
+        "the state he intends, exactly like a constitutional amendment",
+    )
+    ap.add_argument("--reason", default="", help="required with --update")
+    ap.add_argument("--json", action="store_true")
+    a = ap.parse_args()
+
+    if a.update:
+        if not a.reason.strip():
+            print(
+                "REFUSED: --update needs --reason. A rail re-locked with no recorded reason is "
+                "a change nobody can audit later, which is the state this check exists to end."
+            )
+            return 2
+        rec = load()
+        history = rec.get("history") if isinstance(rec.get("history"), list) else []
+        MANIFEST.parent.mkdir(parents=True, exist_ok=True)
+        MANIFEST.write_text(
+            json.dumps(
+                {
+                    "_": (
+                        "SHA-256 lock on the survival path. Verified by scripts/check_risk_kernel.py on "
+                        "every cycle. The rails MAY change -- they may not change SILENTLY."
+                    ),
+                    "updated": datetime.now(tz=UTC).isoformat(),
+                    "reason": a.reason,
+                    "files": KERNEL,
+                    "hashes": current(),
+                    "history": [
+                        *history,
+                        {"at": datetime.now(tz=UTC).isoformat(), "reason": a.reason},
+                    ],
+                },
+                indent=1,
+            ),
+            "utf-8",
+        )
+        print(f"risk-kernel: locked {len(KERNEL)} file(s) -> {MANIFEST}")
+        return 0
+
+    drifted, missing, unlocked = verify()
+    if a.json:
+        print(json.dumps({"drifted": drifted, "missing": missing, "unlocked": unlocked}, indent=1))
+    if missing:
+        print(
+            f"risk-kernel: MISSING {missing} -- a survival rail is ABSENT. This is the most "
+            "serious state this check can report: the control that ends a losing session is not "
+            "on disk."
+        )
+        return 1
+    if drifted:
+        print(
+            f"risk-kernel: DRIFT {drifted} -- the survival path changed without being re-locked. "
+            "The change is not necessarily wrong; making it SILENTLY is. Review the diff, then "
+            "`--update --reason '...'` as the principal's act."
+        )
+        return 1
+    if unlocked:
+        print(
+            f"risk-kernel: UNLOCKED {unlocked} -- named as kernel files and never hashed, so "
+            "they carry no protection at all. Run --update to establish the baseline."
+        )
+        return 1
+    print(f"risk-kernel: {len(KERNEL)} file(s) intact against {MANIFEST.name}")
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())
 
 ```
 
-### scripts/execution_bottleneck.py
+### scripts\check_risk_units.py
 ```python
-"""EXECUTION BOTTLENECK -- apply the BOTTLENECK FIRST + REALITY FEEDBACK principles to live money.
+#!/usr/bin/env python3
+"""L1.67 -- NO SIZING PATH PRICES A STOP FROM ANOTHER INSTRUMENT'S CONSTANTS.
 
-THE DIRECTIVE SAYS THE MARKET IS THE FINAL JUDGE, so this reads the live book and the live trade
-log rather than any research artifact. It answers three questions the desk cannot currently answer,
-in descending order of how much money they are worth:
+WHAT THIS CATCHES THAT NOTHING ELSE COULD
 
- Q1 WOULD THE CURRENT BOOK PASS THE CURRENT ENTRY GATE?
-    The P0 fix (_DEFAULT_RT_BPS 4.5 -> 39.5) raised the bar ~8.8x this morning. Every open
-    position was opened under the OLD bar. If the book fails the new gate, the desk is holding
-    positions its own risk logic would now refuse to open -- and that is a decision, not a metric.
+Every existing fence on this desk asks whether a number was FRESH (L1.44), whether its inputs
+were PRESENT (L1.55), whether a denominator was REAL (L1.57/L1.60), whether two boards AGREE
+(L1.61) or whether a gate ever RAN (L1.49). None of them can ask whether a number is in the
+UNITS it claims. A stop distance multiplied by the wrong instrument's contract size produces a
+lot that is well-formed, fresh, internally consistent, agreed on by every board that reads it,
+and wrong by three orders of magnitude -- and the position it sizes is real.
 
- Q2 HOW OFTEN DOES THE MAKER PATH FAIL?
-    The trade log records spot_mode/fut_mode per leg. 'taker_fallback' means the patient-maker
-    order did not fill and the executor crossed the spread. Every fallback converts a rebate into
-    a spread payment. This is the single largest controllable cost on a delta-neutral carry and
-    NOTHING on this desk currently counts it.
+`gateway.auto_lot`, `realised_q` and `promoted_lot` priced every sleeve as
+`dist * CONTRACT_OZ * FX_EUR` -- gold's 100-ounce contract times a frozen EUR/USD rate, 92.00 --
+whatever symbol the sleeve named. Measured against the venue's own tick values: EUR 0.86 per
+price unit per lot on BTCUSD, 86.41 on XAUUSD, 542.40 on every JPY cross, 86,414 on EURUSD. One
+constant, five orders of magnitude, wrong by 107x in one direction and 939x in the other.
 
- Q3 WHAT IS ACTUALLY MEASURABLE, AND WHAT IS NOT?
-    The 7.75x cost/funding figure is IMPLIED from a NAV residual. It has never been ATTRIBUTED to
-    a leg, a symbol, or an execution mode. Under the measurement doctrine adopted today, an
-    implied aggregate is not a measurement -- you cannot act on it because it does not say what
-    to change. This script reports precisely which fields are missing to close that gap.
+IT WAS LIVE, NOT LATENT. `sleeve_set` rewrites every promoted sleeve's lot to "auto_ramp", so
+the literal 0.01 the promoter writes never reaches the venue and `promoted_lot -> auto_lot` is
+always taken. Measured at EUR 1,683.89 on 2026-08-20: a promoted CADJPY sleeve on a 0.50 stop
+sized to 0.46 lot, logged EUR 21.16 at risk (1.26%, on policy) and actually risked EUR 124.75 --
+7.41% of equity -- while `cap_by_heat` billed it gold's 0.98% and admitted three such sleeves
+for a believed 2.94% book against a true 22.2%.
 
-Read-only. Touches no orders, no keys, no config. Run from repo root.
+WHAT IT CHECKS
+
+  1. UNIT DIVERGENCE. For every symbol in the universe, the true EUR-per-price-unit against the
+     legacy constant. This is a MEASUREMENT and it is published whatever it says.
+  2. NO CONSTANT ON THE SIZING PATH. The executable statements of every sizing function are
+     AST-walked for the legacy constants. A docstring may quote them -- that is the record of
+     what went wrong -- but a `Name` node in a live statement is the defect returning.
+  3. EVERY SIZING CALL SITE PASSES A SYMBOL. A call with too few arguments takes the default,
+     which is gold, which is the bug one argument later.
+  4. THE SNAPSHOT'S AGE. `tick_value` carries an FX rate, so a stale universe is a stale
+     conversion -- the same failure as the constant, just slower.
+
+STATUS VALUES: OK / CONSTANT-ON-SIZING-PATH / SYMBOL-OMITTED / SNAPSHOT-STALE / UNMEASURED.
+UNMEASURED when no symbol could be priced at all -- zero comparisons is never OK (L1.28a), and
+a fence that scans an empty set and reports health is the L1.57 defect this desk has already
+paid for once.
+
+ANTI-TIMIDITY READING: a MEASUREMENT duty and a units check. It lifts nothing, sizes nothing,
+promotes nothing, opens no gate and loosens no bar. It has no vocabulary for changing any value
+it reads. Its whole effect is to make "this lot was priced in the account's currency"
+distinguishable from "this lot was priced in gold's" -- byte-identical on this desk until now,
+and only one of them is a position size.
 """
+
 from __future__ import annotations
 
+import ast
 import json
-from collections import Counter
+import sys
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 ROOT = Path(__file__).resolve().parent.parent
-TRADES = ROOT / "data/cashcarry_trades.json"
-POS = ROOT / "data/cashcarry_positions.json"
-COST = ROOT / "data/cost_model.json"
-CFG = ROOT / "data/cashcarry_config.json"
-OUT = ROOT / "data/execution_bottleneck.json"
+sys.path.insert(0, str(ROOT))
 
-DEFAULT_RT_BPS = 39.5      # matches the live executor after the P0 fix
-FUNDING_PERIOD_H = 8
+from libs.ops.fence_exit import fence_exit  # noqa: E402
+from libs.ops.lawful import guard  # noqa: E402
+
+DESK = ROOT / "desks" / "mt5"
+#: BOTH HALVES OF THE SPLIT (2026-09-05). `auto_lot`/`realised_q`/`promoted_lot` are one-line
+#: delegates in gateway.py now; the executable sizing statements this fence exists to walk are in
+#: decision_core.py. Walking the gateway alone would report OK on a stub forever.
+GATEWAY = (DESK / "mt5desk" / "gateway.py", DESK / "mt5desk" / "decision_core.py")
+UNIVERSE = DESK / "data" / "universe" / "universe.json"
+OUT = ROOT / "data" / "risk_units.json"
+
+#: What the deleted constant asserted for every instrument on this desk: gold's contract size
+#: times a frozen EUR/USD rate.
+LEGACY_EUR_PER_PRICE_UNIT = 100.0 * 0.92
+
+#: The functions that turn a stop distance into a position size. Adding a sizing function
+#: without adding it here is how this defect returns unobserved.
+SIZING_FUNCTIONS = ("auto_lot", "realised_q", "promoted_lot")
+
+#: Minimum arguments each must receive for the SYMBOL to be explicit rather than defaulted.
+#: auto_lot(equity, dist, symbol[, info]); promoted_lot(equity, live_n, dist, symbol[, info]).
+SIZING_ARITY = {"auto_lot": 3, "promoted_lot": 4, "realised_q": 3}
+
+#: Constants that may appear in a docstring but never in an executable sizing statement.
+BANNED_ON_SIZING_PATH = ("CONTRACT_OZ", "FX_EUR")
+
+#: `tick_value` carries today's FX rate. Beyond this the conversion is a frozen constant again,
+#: just one with a more recent date on it.
+SNAPSHOT_MAX_AGE_DAYS = 30.0
 
 
-def _load(p, d=None):
+def _fn_nodes(tree: ast.AST) -> dict[str, ast.FunctionDef]:
+    return {n.name: n for n in ast.walk(tree)
+            if isinstance(n, ast.FunctionDef) and n.name in SIZING_FUNCTIONS}
+
+
+def _executable_names(fn: ast.FunctionDef) -> set[str]:
+    """Every `Name` in the function's body EXCLUDING its docstring.
+
+    Stripped via the AST rather than by guessing at quote characters: these docstrings quote the
+    old formula on purpose, and a text scan would either miss the code or flag the history.
+    """
+    body = fn.body
+    if (body and isinstance(body[0], ast.Expr) and isinstance(body[0].value, ast.Constant)
+            and isinstance(body[0].value.value, str)):
+        body = body[1:]
+    return {n.id for stmt in body for n in ast.walk(stmt) if isinstance(n, ast.Name)}
+
+
+def measure_divergence() -> tuple[list[dict], list[str]]:
+    """Per-symbol EUR-per-price-unit against the legacy constant. Skips are COUNTED (L1.60)."""
+    rows: list[dict] = []
+    skipped: list[str] = []
     try:
-        return json.loads(p.read_text("utf-8"))
-    except Exception:  # blind-except intentional (BLE001)
-        return d
-
-
-def _rt_bps(cm, sym) -> tuple[float, bool]:
-    """Return (round-trip bps, measured?) mirroring the executor's lookup semantics."""
-    if not isinstance(cm, dict):
-        return DEFAULT_RT_BPS, False
-    for key in ("pairs", "symbols", "round_trip_bps", "rt_bps"):
-        d = cm.get(key)
-        if isinstance(d, dict) and sym in d:
-            v = d[sym]
-            v = v.get("rt_bps", v.get("round_trip_bps")) if isinstance(v, dict) else v
-            try:
-                return float(v), True
-            except (TypeError, ValueError):
-                pass
-    v = cm.get(sym)
-    if isinstance(v, dict):
-        for k in ("rt_bps", "round_trip_bps", "total_bps"):
-            if k in v:
-                try:
-                    return float(v[k]), True
-                except (TypeError, ValueError):
-                    pass
-    return DEFAULT_RT_BPS, False
-
-
-def main() -> None:
-    trades = _load(TRADES, []) or []
-    if isinstance(trades, dict):
-        trades = trades.get("trades", [])
-    pos = _load(POS, {}) or {}
-    if isinstance(pos, dict) and "positions" in pos:
-        pos = pos["positions"]
-    cm = _load(COST, {}) or {}
-    cfg = _load(CFG, {}) or {}
-    hold_h = float(cfg.get("min_hold_h", cfg.get("MIN_HOLD_H", 24)))
-
-    print("=== EXECUTION BOTTLENECK -- live book vs live gate ===")
-    print("    REALITY FEEDBACK: no backtest or model score overrides contradictory live evidence\n")
-
-    # ---------------------------------------------------------------- Q1
-    print("Q1  WOULD THE OPEN BOOK PASS THE CURRENT ENTRY GATE?")
-    print(f"    gate: funding_bps_per_period x periods > round_trip_bps   "
-          f"(hold {hold_h:.0f}h = {hold_h/FUNDING_PERIOD_H:.0f} periods)\n")
-    periods = max(1.0, hold_h / FUNDING_PERIOD_H)
-    rows, n_fail = [], 0
-    print(f"    {'symbol':<16}{'funding/period':>15}{'earns':>9}{'needs':>9}{'cost src':>11}  verdict")
-    for sym, p in (pos.items() if isinstance(pos, dict) else []):
-        f = float(p.get("funding", 0.0))
-        earns = f * 1e4 * periods
-        rt, measured = _rt_bps(cm, sym)
-        ok = earns > rt
-        n_fail += (not ok)
-        print(f"    {sym:<16}{f*1e4:>13.2f}bp{earns:>8.1f}{rt:>9.1f}"
-              f"{'measured' if measured else 'DEFAULT':>11}  {'PASS' if ok else 'FAIL'}")
-        rows.append({"symbol": sym, "funding_bps": round(f * 1e4, 3),
-                     "earns_bps": round(earns, 2), "needs_bps": round(rt, 2),
-                     "cost_measured": measured, "passes_gate": ok})
-    if rows:
-        print(f"\n    {n_fail}/{len(rows)} open positions FAIL the gate that is now live.")
-        if n_fail == len(rows):
-            print("    THE ENTIRE BOOK WOULD BE REFUSED BY THE DESK'S OWN CURRENT ENTRY LOGIC.")
-            print("    Two readings, and they demand different actions:")
-            print("      (a) the gate is right -> this carry has no edge at prevailing funding,")
-            print("          and the book should be wound down rather than rolled;")
-            print("      (b) 39.5bps (p90 of MEASURED round-trips) is too harsh for symbols whose")
-            print("          true cost is cheap but simply unmeasured.")
-            print("    (b) is TESTABLE and costs nothing: measure these symbols' round-trips.")
-            print("    Until then the desk is holding positions it would refuse to open, which is")
-            print("    an unowned position -- the gate protects entry but nothing re-tests carry.")
-
-    # ---------------------------------------------------------------- Q2
-    print(f"\nQ2  HOW OFTEN DOES THE PATIENT-MAKER PATH FAIL?  ({len(trades)} logged events)\n")
-    spot = Counter(t.get("spot_mode") for t in trades if t.get("spot_mode"))
-    fut = Counter(t.get("fut_mode") for t in trades if t.get("fut_mode"))
-    ev = Counter(t.get("event") for t in trades)
-    print(f"    events: {dict(ev)}")
-    for label, c in (("SPOT leg", spot), ("FUT  leg", fut)):
-        tot = sum(c.values())
-        if not tot:
+        raw = json.loads(UNIVERSE.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        return rows, [f"universe unreadable: {exc}"]
+    for sym, m in sorted(raw.items()):
+        ts, tv = float(m.get("tick_size", 0) or 0), float(m.get("tick_value", 0) or 0)
+        if not (ts > 0 and tv > 0):
+            skipped.append(f"{sym}: tick_size={ts} tick_value={tv}")
             continue
-        fb = sum(v for k, v in c.items() if "taker" in str(k))
-        print(f"    {label}: {dict(c)}")
-        print(f"              taker_fallback {fb}/{tot} = {fb/tot*100:.1f}% of legs crossed "
-              f"the spread")
-    tot_s, fb_s = sum(spot.values()), sum(v for k, v in spot.items() if "taker" in str(k))
-    if tot_s and fb_s / tot_s > 0.25:
-        print("\n    THIS IS THE CONTROLLABLE COST. A delta-neutral carry earns a few bps per")
-        print("    period; paying the spread on a large fraction of legs is the difference between")
-        print("    a positive and a negative strategy. _MAKER=True is already the default -- the")
-        print("    leak is that the fallback fires and nothing prices it.")
-
-    # ---------------------------------------------------------------- Q3
-    print("\nQ3  WHAT IS MISSING TO ATTRIBUTE COST?  (measurement doctrine, adopted today)\n")
-    sample = trades[-1] if trades else {}
-    have = set(sample)
-    need = {"fill_price": "actual average fill price of the leg",
-            "mid_at_decision": "mid quote when the order was sent -> slippage = fill - mid",
-            "fee_usd": "fee actually charged (maker rebate vs taker fee)",
-            "attempts": "how many maker re-quotes before fallback",
-            "wait_s": "seconds waited before crossing"}
-    print(f"    trade record currently has: {sorted(have)}")
-    missing = [k for k in need if k not in have]
-    for k in missing:
-        print(f"    MISSING  {k:<18} {need[k]}")
-    print("\n    Without these, cost is only ever an IMPLIED RESIDUAL (the 7.75x figure), and an")
-    print("    implied residual cannot tell you WHICH leg, WHICH symbol or WHICH mode to change.")
-    print("    Adding them is ~15 lines of additive logging in run_cashcarry_executor.py and is")
-    print("    the highest-ROI engineering task on this desk: it converts the single largest")
-    print("    measured loss (costs 7.75x funding) from unattributed to actionable.")
-    print("\n    OPPORTUNITY COST: this replaces further research infrastructure. The research")
-    print("    layer has 447 enumerated constructions awaiting test; the money layer is losing")
-    print("    to costs on a signal already CONFIRMED (funding persistence IC +0.432). Fixing")
-    print("    what converts a confirmed signal into negative PnL dominates finding a second one.")
-
-    OUT.write_text(json.dumps({"updated": datetime.now(tz=UTC).isoformat(),
-                               "hold_h": hold_h, "periods": periods,
-                               "positions": rows, "n_fail_gate": n_fail,
-                               "spot_modes": dict(spot), "fut_modes": dict(fut),
-                               "events": dict(ev), "missing_fields": missing}, indent=1), "utf-8")
-    print(f"\n  -> {OUT}")
+        true_pu = tv / ts
+        rows.append({
+            "symbol": sym,
+            "eur_per_price_unit": round(true_pu, 6),
+            "legacy_constant": LEGACY_EUR_PER_PRICE_UNIT,
+            "error_multiple": round(true_pu / LEGACY_EUR_PER_PRICE_UNIT, 4),
+            "last_bar": str(m.get("last", "")),
+        })
+    return rows, skipped
 
 
-if __name__ == "__main__":
-    main()
-
-```
-
-### scripts/flatten_cookie.py
-```python
-"""PRINCIPAL-APPROVED: flatten the inverted COOKIEUSDT futures LONG. reduceOnly, nothing else.
-
-INCIDENT: COOKIEUSDT futures held +916,772 (LONG) where the carry requires -183,140 (SHORT).
-Unrealized -$482.19 -- essentially the desk's entire loss -- with free margin down to $110.23 and
-a liquidation price of 0.00516943. Cause: futures cover orders are not reduceOnly, so close/topup
-retries bought through zero and flipped the short into a growing long.
-
-SCOPE, DELIBERATELY MINIMAL AND APPROVED AS SUCH:
-  * COOKIEUSDT FUTURES ONLY. Spot COOKIE (183,029) untouched. 1000CAT and MOVE shorts are
-    CORRECTLY hedged and are not touched. TST is untouched.
-  * reduceOnly=true so this order can only ever REDUCE toward zero. It is arithmetically
-    incapable of repeating the bug it is cleaning up -- if the position is already flat or
-    smaller than expected, the venue rejects or trims rather than opening a short.
-  * Quantity read LIVE from positionRisk at execution time, never from a desk-written file.
-    The desk's own state file is what was wrong here; trusting it would be the same error again.
-
-Verifies before and after. Aborts if the position is not a long, or is not COOKIEUSDT.
-"""
-from __future__ import annotations
-
-import sys
-import time
-
-sys.path.insert(0, ".")
-import scripts.run_deadman_switch as D
-
-SYM = "COOKIEUSDT"
-
-
-def _market_max_qty(sym: str) -> float:
-    """Venue's MARKET_LOT_SIZE cap, read live. Falls back to a conservative 100k."""
+def snapshot_age_days(rows: list[dict]) -> float | None:
+    stamps = [r["last_bar"] for r in rows if r.get("last_bar")]
+    if not stamps:
+        return None
     try:
-        info = D._req(f"{D._FUT_BASE}/fapi/v1/exchangeInfo")
-        for s in info["symbols"]:
-            if s["symbol"] == sym:
-                for f in s["filters"]:
-                    if f["filterType"] == "MARKET_LOT_SIZE":
-                        return float(f["maxQty"])
-    except Exception:  # blind-except intentional (BLE001)
-        pass
-    return 100_000.0
+        newest = max(datetime.fromisoformat(s) for s in stamps)
+    except ValueError:
+        return None
+    if newest.tzinfo is None:
+        newest = newest.replace(tzinfo=UTC)
+    return round((datetime.now(tz=UTC) - newest).total_seconds() / 86400.0, 2)
 
 
-def pos_amt(creds) -> float:
-    for p in D._signed(D._FUT_BASE, "/fapi/v2/positionRisk", creds):
-        if p.get("symbol") == SYM:
-            return float(p.get("positionAmt", 0.0))
-    return 0.0
-
-
-def main() -> None:
-    creds = D._creds(D._FUT_KEYS)
-    if not creds:
-        raise SystemExit("no futures credentials -- aborting")
-
-    before = pos_amt(creds)
-    print(f"BEFORE  {SYM} positionAmt = {before:+,.1f}")
-    if before == 0:
-        print("  already flat -- nothing to do")
-        return
-    if before < 0:
-        raise SystemExit(f"position is SHORT ({before:+,.1f}) -- that is the CORRECT direction "
-                         f"for a carry. Refusing to touch it; this script only unwinds the "
-                         f"inverted LONG it was written for.")
-
-    # MARKET_LOT_SIZE maxQty = 150,000 on COOKIEUSDT. A single 916,772 order is rejected -4005
-    # "Quantity greater than max quantity" -- AND THAT IS THE ROOT CAUSE OF THE INCIDENT ITSELF:
-    # the executor's oversized market orders were rejected, _mkt_or_limit fell back to RESTING
-    # post-only limits, and repeated cycles accumulated fills that walked the short through zero
-    # into a long. Chunking is therefore not a workaround, it is the correct behaviour.
-    max_qty = _market_max_qty(SYM)
-    print(f"  MARKET_LOT_SIZE maxQty = {max_qty:,.0f} -> chunking")
-    remaining = abs(before)
-    n = 0
-    while remaining > 0 and n < 20:
-        cur = pos_amt(creds)
-        if cur <= 0:
-            print(f"  position reached {cur:+,.1f} -- stopping (reduceOnly cannot go short)")
-            break
-        chunk = min(max_qty, abs(cur))
-        n += 1
-        print(f"  [{n}] reduceOnly MARKET SELL {chunk:,.0f}  (position now {cur:+,.1f})")
+def audit_sizing_path() -> tuple[list[str], list[str], int]:
+    """Constants in executable sizing code, and call sites that omit the symbol."""
+    constants: list[str] = []
+    omissions: list[str] = []
+    # BOTH HALVES, ONE AUDIT. A sizing function now lives in whichever file the split put it in,
+    # and a delegate in the other; the union of their function tables is the sizing path, and a
+    # name missing from BOTH is the defect this reports.
+    fns: dict[str, Any] = {}
+    trees: list[ast.AST] = []
+    for path in GATEWAY:
         try:
-            D._signed(D._FUT_BASE, "/fapi/v1/order", creds,
-                      {"symbol": SYM, "side": "SELL", "type": "MARKET",
-                       "quantity": chunk, "reduceOnly": "true"}, method="POST")
-        except Exception as e:  # blind-except intentional (BLE001)
-            print(f"      CHUNK FAILED: {e!r} -- stopping. Position left at {pos_amt(creds):+,.1f}")
-            print("      Not retrying blindly; blind retries created this incident.")
-            break
-        time.sleep(2)
-        remaining = abs(pos_amt(creds))
+            tree = ast.parse(path.read_text(encoding="utf-8"))
+        except (OSError, SyntaxError) as exc:
+            return [f"{path.name} unparseable: {exc}"], [], 0
+        trees.append(tree)
+        for fname, node in _fn_nodes(tree).items():
+            # The file that EXECUTES the arithmetic wins over the one that delegates: a
+            # one-line delegate has no banned constant in it and would mask the real body.
+            if fname not in fns or len(ast.dump(node)) > len(ast.dump(fns[fname])):
+                fns[fname] = node
+    for name in SIZING_FUNCTIONS:
+        fn = fns.get(name)
+        if fn is None:
+            constants.append(f"{name}: NOT FOUND in gateway.py or decision_core.py -- "
+                             f"renamed or deleted")
+            continue
+        used = _executable_names(fn) & set(BANNED_ON_SIZING_PATH)
+        if used:
+            constants.append(f"{name}() line {fn.lineno}: sizes from {sorted(used)}")
+    calls = 0
+    for node in [n for t in trees for n in ast.walk(t)]:
+        if not isinstance(node, ast.Call):
+            continue
+        fname = getattr(node.func, "id", "")
+        if fname not in SIZING_ARITY:
+            continue
+        calls += 1
+        need = SIZING_ARITY[fname]
+        got = len(node.args) + len(node.keywords)
+        # A call INSIDE the sizing functions themselves is the delegation chain and is checked
+        # by arity like any other; a bare call anywhere takes gold by default.
+        if got < need:
+            omissions.append(f"line {node.lineno}: {fname}() got {got} args, needs {need} "
+                             f"for the symbol to be explicit")
+    return constants, omissions, calls
 
-    time.sleep(3)
-    after = pos_amt(creds)
-    print(f"AFTER   {SYM} positionAmt = {after:+,.1f}")
-    acct = D._signed(D._FUT_BASE, "/fapi/v2/account", creds)
-    print(f"  margin_balance={float(acct['totalMarginBalance']):.2f}  "
-          f"available={float(acct['availableBalance']):.2f}  "
-          f"unrealized={float(acct['totalUnrealizedProfit']):.2f}")
-    print("\n  REMAINING venue futures positions:")
-    for p in D._signed(D._FUT_BASE, "/fapi/v2/positionRisk", creds):
-        a = float(p.get("positionAmt", 0.0))
-        if a:
-            print(f"    {p['symbol']:<14} {a:+15,.1f}  unrl {float(p['unRealizedProfit']):+9.2f}")
-    print("\n  Spot COOKIE is deliberately still held; only the inverted futures leg was unwound.")
+
+def main() -> int:
+    guard()                                     # L1.42: no entry point is exempt from the laws
+    rows, skipped = measure_divergence()
+    constants, omissions, call_sites = audit_sizing_path()
+    age = snapshot_age_days(rows)
+
+    worst = max(rows, key=lambda r: abs(r["error_multiple"] - 1.0)) if rows else None
+    if not rows:
+        status = "UNMEASURED"
+    elif constants:
+        status = "CONSTANT-ON-SIZING-PATH"
+    elif omissions:
+        status = "SYMBOL-OMITTED"
+    elif age is not None and age > SNAPSHOT_MAX_AGE_DAYS:
+        status = "SNAPSHOT-STALE"
+    elif age is None:
+        status = "UNMEASURED"
+    else:
+        status = "OK"
+
+    payload = {
+        "law": "L1.67",
+        "status": status,
+        "generated_utc": datetime.now(tz=UTC).isoformat(),
+        "symbols_priced": len(rows),
+        "symbols_skipped": len(skipped),
+        "skipped_detail": skipped,
+        "sizing_call_sites": call_sites,
+        "constants_on_sizing_path": constants,
+        "call_sites_omitting_symbol": omissions,
+        "snapshot_age_days": age,
+        "snapshot_max_age_days": SNAPSHOT_MAX_AGE_DAYS,
+        "legacy_eur_per_price_unit": LEGACY_EUR_PER_PRICE_UNIT,
+        "worst_divergence": worst,
+        "rows": rows,
+    }
+    OUT.parent.mkdir(parents=True, exist_ok=True)
+    OUT.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+
+    print(f"risk units (L1.67): {status}")
+    print(f"  {len(rows)} symbols priced from the venue, {len(skipped)} unpriceable")
+    print(f"  {call_sites} sizing call sites audited")
+    if worst:
+        print(f"  worst divergence from the legacy constant {LEGACY_EUR_PER_PRICE_UNIT:.2f}: "
+              f"{worst['symbol']} at {worst['eur_per_price_unit']:.2f} EUR/price-unit "
+              f"({worst['error_multiple']:.2f}x)")
+    if age is not None:
+        print(f"  universe snapshot {age:.1f}d old (max {SNAPSHOT_MAX_AGE_DAYS:.0f}d)")
+    for c in constants:
+        print(f"  CONSTANT ON SIZING PATH: {c}")
+    for o in omissions:
+        print(f"  SYMBOL OMITTED: {o}")
+    for s in skipped:
+        print(f"  unpriceable: {s}")
+
+    return fence_exit(status, {"OK"}, scanned=len(rows),
+                      of="symbols priced from the venue's own tick economics")
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())
 
 ```
 
-### scripts/hedge_integrity.py
-```python
-"""HEDGE INTEGRITY RAIL -- the detector that did not exist during incident #6.
-
-On 2026-07-27 COOKIEUSDT futures sat at +916,772 LONG where the carry required -183,140 SHORT,
-carrying -$482 with free margin at $110. It then recurred on 1000CATUSDT at +1,138,985. Both ran
-UNDETECTED. Nothing on this desk asserted the one invariant that defines a cash-and-carry:
-
-    for every tracked carry:  venue futures position MUST be SHORT and MUST match -spot_qty
-
-The reconciler heals a MISSING short. It has no concept of an INVERTED one, so a long where a
-short belongs looked like "no short to fix" and persisted while the loss accumulated.
-
-This is a rail, not a subsystem: one invariant, three failure classes, no model and no judgement.
-
-    INVERTED    futures position is LONG where a SHORT is required  -> the incident-#6 signature,
-                the desk is DOUBLE LONG rather than delta-neutral
-    MISSING     no futures position at all                          -> naked spot, directional
-    MISMATCHED  short exists but size is off by more than tolerance  -> partial hedge
-
-VENUE GROUND TRUTH ONLY. It compares the desk's tracked state AGAINST the exchange and trusts the
-exchange. The desk's own state file said "4 delta-neutral carries" throughout the incident -- a
-check built on that file would have reported everything healthy.
-
-Read-only: places no orders, cancels nothing, and cannot move money.
-"""
-from __future__ import annotations
-
-import json
-import sys
-from datetime import UTC, datetime
-from pathlib import Path
-
-sys.path.insert(0, ".")
-import scripts.run_deadman_switch as D
-
-ROOT = Path(__file__).resolve().parent.parent
-STATE = ROOT / "data/cashcarry_positions.json"
-OUT = ROOT / "data/hedge_integrity.json"
-PAGE = ROOT / "docs/PRINCIPAL_ACTION.md"
-TOL = 0.02          # 2% size tolerance; below this is venue rounding, not a broken hedge
-
-
-def main() -> None:
-    creds = D._creds(D._FUT_KEYS)
-    if not creds:
-        raise SystemExit("no futures credentials")
-    venue = {p["symbol"]: float(p.get("positionAmt", 0.0))
-             for p in D._signed(D._FUT_BASE, "/fapi/v2/positionRisk", creds)}
-    tracked = json.loads(STATE.read_text("utf-8")).get("positions", {})
-
-    print("=== HEDGE INTEGRITY -- venue ground truth vs tracked carries ===")
-    print("    invariant: every tracked carry's futures leg is SHORT and matches -spot_qty\n")
-    viol = []
-    for sym, p in tracked.items():
-        spot_q = float(p.get("spot_qty", 0.0))
-        want = -abs(spot_q)
-        got = venue.get(sym, 0.0)
-        if got > 0:
-            cls = "INVERTED"
-        elif got == 0:
-            cls = "MISSING"
-        elif abs(got - want) > abs(want) * TOL:
-            cls = "MISMATCHED"
-        else:
-            cls = "OK"
-        flag = "" if cls == "OK" else "  <== VIOLATION"
-        print(f"  {sym:<14} spot {spot_q:>14,.0f}  want {want:>14,.0f}  got {got:>14,.0f}  "
-              f"{cls}{flag}")
-        if cls != "OK":
-            viol.append({"symbol": sym, "class": cls, "spot_qty": spot_q,
-                         "expected_fut": want, "actual_fut": got})
-
-    # An UNTRACKED venue short is the mirror failure: exposure the desk does not know it has.
-    for sym, amt in venue.items():
-        if amt and sym not in tracked:
-            print(f"  {sym:<14} {'(untracked)':>14}  {'':>14}  {amt:>14,.0f}  ORPHAN  <== VIOLATION")
-            viol.append({"symbol": sym, "class": "ORPHAN", "spot_qty": 0.0,
-                         "expected_fut": 0.0, "actual_fut": amt})
-
-    if not tracked and not any(venue.values()):
-        print("  book is FLAT -- no tracked carries, no venue positions. Invariant holds trivially.")
-
-    inv = [v for v in viol if v["class"] == "INVERTED"]
-    print(f"\n  {len(viol)} violation(s); {len(inv)} INVERTED")
-    if inv:
-        print("  INVERTED is the incident-#6 signature: the desk is DOUBLE LONG, not delta-neutral.")
-        print("  It cannot be healed by the close path -- a close BUYS futures to cover a short,")
-        print("  which on a long only makes it larger. It requires a reduceOnly SELL, chunked to")
-        print("  the venue MARKET_LOT_SIZE cap.")
-        try:
-            with PAGE.open("a", encoding="utf-8") as fh:
-                fh.write(f"\n## {datetime.now(tz=UTC).isoformat()} HEDGE INVERTED\n")
-                for v in inv:
-                    fh.write(f"- {v['symbol']}: futures {v['actual_fut']:+,.0f} where "
-                             f"{v['expected_fut']:+,.0f} required (incident-#6 signature)\n")
-            print(f"  -> paged {PAGE}")
-        except OSError:
-            pass
-
-    OUT.write_text(json.dumps({"updated": datetime.now(tz=UTC).isoformat(),
-                               "violations": viol, "n_violations": len(viol),
-                               "n_inverted": len(inv),
-                               "ok": not viol}, indent=1), "utf-8")
-    print(f"  -> {OUT}")
-    sys.exit(1 if inv else 0)
-
-
-if __name__ == "__main__":
-    main()
-
-```
-
-### scripts/measurement_gate.py
+### scripts\measurement_gate.py
 ```python
 """MEASUREMENT GATE -- enforce the principal's MEASUREMENT BEFORE OPTIMISATION principle.
 
@@ -4641,6 +6001,16 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "data/measurement_gate.json"
 COST = ROOT / "data/cost_model.json"
+#: Tracked in docs/, NOT data/ -- data/ is gitignored, and a provenance record that disappears
+#: with the working directory is not a record. Same reasoning as conversion_record.json.
+PROVENANCE = ROOT / "docs/research/data_provenance.json"
+
+_RISK_LEVELS = ("LOW", "MEDIUM", "HIGH")
+_SURVIVORSHIP = ("CLEAN", "UNKNOWN", "CONTAMINATED")
+#: How the bytes were obtained. Decisive for reproducibility: OUR_CAPTURE can be re-run,
+#: VENDOR_API can be revoked or silently revised, SCRAPED can break without notice, DERIVED
+#: inherits every weakness of its parents.
+_COLLECTION = ("OUR_CAPTURE", "VENDOR_API", "PUBLIC_API", "SCRAPED", "DERIVED", "MANUAL")
 
 _TIME_KEYS = ("ts", "date", "timestamp", "time", "datetime", "hour", "day", "updated")
 # fields that are legitimately constant -- flags, config, identity. Never "degenerate features".
@@ -4666,7 +6036,7 @@ def _parse_ts(v):
     s = v.strip().replace("Z", "+00:00")
     for fmt in (None, "%Y-%m-%d", "%Y%m%d_%H", "%Y%m%d"):
         try:
-            d = datetime.fromisoformat(s) if fmt is None else datetime.strptime(s, fmt)
+            d = datetime.fromisoformat(s) if fmt is None else datetime.strptime(s, fmt).replace(tzinfo=UTC)
             return d if d.tzinfo else d.replace(tzinfo=UTC)
         except (ValueError, TypeError):
             continue
@@ -4875,6 +6245,89 @@ def check_cost_realism() -> tuple[list[str], list[str], dict]:
     return fails, warns, meta
 
 
+def load_provenance() -> dict:
+    """The declared register. Tracked in docs/ because data/ is gitignored -- a provenance record
+    that vanishes with the working directory documents nothing."""
+    try:
+        d = json.loads(PROVENANCE.read_text("utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    return d.get("datasets", {}) if isinstance(d, dict) else {}
+
+
+def check_provenance(p: Path, rows: list[dict], register: dict) -> tuple[list[str], list[str], dict]:
+    """FAMILY 6 -- WHERE THE NUMBERS CAME FROM (triage item #82).
+
+    The other five families interrogate the data. None of them can see the one thing that
+    invalidates a dataset without leaving a trace in it: its ORIGIN. A venue's self-reported
+    volume is perfectly regular, perfectly non-null, perfectly stable, and perfectly fabricable.
+    A universe selected on today's membership and applied backwards is clean by every
+    distributional test and manufactures returns anyway. Both pass families 1-5 untouched.
+
+    So provenance is a DECLARATION, and the gate's job is to hold it to two standards:
+
+      CONTRADICTED beats ABSENT. If the rows carry their own source/venue and it disagrees with
+      the declaration, that is a FAIL -- a wrong provenance claim is more dangerous than a missing
+      one, because it is trusted. This is what keeps the register falsifiable against the data
+      rather than a wish list nobody can check.
+
+      TWO RISKS BLOCK, THE REST REPORT. manipulation_risk=HIGH and survivorship=CONTAMINATED are
+      FAILs: research resting on either is not merely uncertain, it is invalid. Everything else
+      WARNs. Blocking every undeclared dataset on day one would convert a real control into an
+      outage and get the gate switched off -- which is how controls actually die. Undeclared is
+      counted instead, and the count is what gets ratcheted down.
+    """
+    fails: list[str] = []
+    warns: list[str] = []
+    rec = register.get(p.name)
+    if not isinstance(rec, dict):
+        return fails, [f"UNDECLARED PROVENANCE: {p.name} has no entry in "
+                       f"{PROVENANCE.relative_to(ROOT)} -- origin, collection method, "
+                       f"manipulation risk and survivorship are all unknown"], {"declared": False}
+
+    meta = {"declared": True,
+            "source": str(rec.get("source", "") or ""),
+            "collection_method": str(rec.get("collection_method", "") or "").upper(),
+            "manipulation_risk": str(rec.get("manipulation_risk", "") or "").upper(),
+            "survivorship": str(rec.get("survivorship", "") or "").upper()}
+
+    if meta["manipulation_risk"] == "HIGH":
+        fails.append(
+            "MANIPULATION RISK HIGH: the venue reporting this number can choose it (self-reported "
+            "volume is the canonical case). An edge measured on a number its counterparty "
+            "controls is not an edge")
+    elif meta["manipulation_risk"] not in _RISK_LEVELS:
+        warns.append(f"manipulation_risk {meta['manipulation_risk'] or 'unset'!r} is not one of "
+                     f"{'/'.join(_RISK_LEVELS)} -- ungraded risk is not low risk")
+
+    if meta["survivorship"] == "CONTAMINATED":
+        fails.append(
+            "SURVIVORSHIP CONTAMINATED: the universe is defined by present-day membership and "
+            "applied to history. Every delisted, halted or dead symbol is silently absent, so the "
+            "backtest is run on the survivors of the very selection it claims to test")
+    elif meta["survivorship"] not in _SURVIVORSHIP:
+        warns.append(f"survivorship {meta['survivorship'] or 'unset'!r} is not one of "
+                     f"{'/'.join(_SURVIVORSHIP)}")
+
+    if meta["collection_method"] not in _COLLECTION:
+        warns.append(f"collection_method {meta['collection_method'] or 'unset'!r} is not one of "
+                     f"{'/'.join(_COLLECTION)} -- a rerun cannot be known to reproduce it")
+
+    # CORROBORATION. Rows that name their own origin get to overrule the register.
+    observed = {str(r[k]).strip().lower()
+                for r in rows[:MAX_ROWS] for k in ("source", "venue", "exchange")
+                if isinstance(r.get(k), str) and r[k].strip()}
+    if observed and meta["source"]:
+        declared = meta["source"].lower()
+        if not any(o in declared or declared in o for o in observed):
+            fails.append(
+                f"PROVENANCE CONTRADICTED: rows report source/venue {sorted(observed)[:4]} but the "
+                f"register declares {meta['source']!r}. A wrong provenance claim is worse than an "
+                f"absent one -- absent invites a check, wrong is believed")
+        meta["observed_sources"] = sorted(observed)[:6]
+    return fails, warns, meta
+
+
 def check_reproducibility(p: Path) -> tuple[list[str], list[str], dict]:
     fails, warns = [], []
     # SEARCH libs/ TOO. v2 searched only scripts/ and reported information_value.jsonl as having
@@ -4897,6 +6350,7 @@ def check_reproducibility(p: Path) -> tuple[list[str], list[str], dict]:
 
 def verify_all() -> dict:
     cost_f, cost_w, cost_m = check_cost_realism()
+    register = load_provenance()
     results = {}
     for p in sorted((ROOT / "data").glob("*.jsonl")):
         rows = _load(p)
@@ -4906,7 +6360,10 @@ def verify_all() -> dict:
             results[p.name] = {"rows_sampled": len(rows), "kind": "UNKNOWN",
                                "verdict": "TOO_SMALL", "fails": [], "warns":
                                [f"only {len(rows)} rows -- below the 25-row scoring floor"],
-                               "timestamps": {}, "correctness": {}, "features": {}, "repro": {}}
+                               "timestamps": {}, "correctness": {}, "features": {}, "repro": {},
+                               # empty on purpose: unchecked provenance reads as undeclared
+                               # (fail-closed), and its absence would KeyError verify_all below.
+                               "provenance": {}}
             continue
         tkey = next((k for k in _TIME_KEYS if k in rows[0]), None)
         kind = classify_kind(rows, tkey, p.name)
@@ -4914,15 +6371,22 @@ def verify_all() -> dict:
         f2, w2, m2 = check_correctness(rows, kind)
         f3, w3, m3 = check_features(rows)
         f4, w4, m4 = check_reproducibility(p)
-        fails = f1 + f2 + f3 + f4 + cost_f
-        warns = w1 + w2 + w3 + w4
+        f5, w5, m5 = check_provenance(p, rows, register)
+        fails = f1 + f2 + f3 + f4 + f5 + cost_f
+        warns = w1 + w2 + w3 + w4 + w5
         results[p.name] = {
             "rows_sampled": len(rows), "kind": kind,
             "verdict": "FAILED" if fails else "VERIFIED",
             "fails": fails, "warns": warns,
-            "timestamps": m1, "correctness": m2, "features": m3, "repro": m4}
-    return {"updated": datetime.now(tz=UTC).isoformat(), "cost_realism": {
-        "fails": cost_f, "warns": cost_w, **cost_m}, "datasets": results}
+            "timestamps": m1, "correctness": m2, "features": m3, "repro": m4,
+            "provenance": m5}
+    undeclared = [n for n, v in results.items() if not v["provenance"].get("declared")]
+    return {"updated": datetime.now(tz=UTC).isoformat(),
+            "cost_realism": {"fails": cost_f, "warns": cost_w, **cost_m},
+            # Reported as a COUNT so it can be ratcheted down. A list of undeclared datasets that
+            # nobody sums is a list that never shrinks.
+            "provenance_undeclared": {"n": len(undeclared), "datasets": undeclared},
+            "datasets": results}
 
 
 def require_verified(dataset: str) -> dict:
@@ -4977,6 +6441,15 @@ def main() -> None:
         print("\n  VERIFIED:")
         for name in sorted(ok):
             print(f"      {name}  [{ds[name]['kind']}]")
+    und = rep["provenance_undeclared"]
+    print(f"\n  PROVENANCE (family 6): {len(ds) - und['n']}/{len(ds)} datasets declared in "
+          f"{PROVENANCE.relative_to(ROOT)}")
+    if und["n"]:
+        print(f"    {und['n']} UNDECLARED: {', '.join(und['datasets'][:6])}")
+        print("    Origin is the one property that invalidates a dataset without leaving a trace")
+        print("    IN it -- self-reported volume and survivorship-selected universes both pass")
+        print("    families 1-5 untouched. Declare them; this count is meant to ratchet DOWN.")
+
     warncount = sum(len(v["warns"]) for v in ds.values())
     print(f"\n  {warncount} warnings recorded (reported, non-blocking -- data_sanity.py had to be")
     print("  corrected twice for flagging config constants, so WARN and FAIL are kept separate).")
@@ -4991,7 +6464,7 @@ if __name__ == "__main__":
 
 ```
 
-### scripts/run_alerts.py
+### scripts\run_alerts.py
 ```python
 """The desk's PAGER -- push critical alerts to the principal's phone via ntfy.sh (free, keyless).
 
@@ -5021,6 +6494,9 @@ from collections import Counter
 from datetime import UTC, datetime
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from libs.ops.fresh import stamp_age_h
+
 # alerts that a brain cycle can actually REMEDIATE (auto-heal event trigger). Deliberately
 # EXCLUDES growth_defect/data_health (slow/justified -- would loop the brain forever) and
 # deadman_latched/kill/principal_action (human-only -- the brain cannot resolve them).
@@ -5034,7 +6510,9 @@ _DEDUPE_S = 6 * 3600
 # stays at 6h deliberately -- a latched ruin rail SHOULD nag until the operator acts.
 _DEDUPE_OVERRIDES_S = {"growth_defect": 24 * 3600, "data_health": 24 * 3600,
                        "brain_noop": 24 * 3600, "principal_action_needed": 24 * 3600,
-                       "trade_class_bleeding": 24 * 3600, "auth_broken": 12 * 3600}
+                       "trade_class_bleeding": 24 * 3600, "auth_broken": 12 * 3600,
+                       # the chain runs once a day; its failures can only change once a day
+                       "research_chain_failed": 24 * 3600}
 _HB = Path("data/cashcarry_exec_heartbeat")
 _PAGER_BACKOFF = Path("data/.pager_backoff")
 _KILL = Path("data/CASHCARRY_KILL")
@@ -5152,19 +6630,17 @@ def _poll_replies(topic: str) -> None:
             _PAGE_ACK.write_text(
                 f"{datetime.now(tz=UTC).isoformat()} {body[:120]}\n", "utf-8")
             cmd = body.split()[0].upper() if body.split() else ""
+            # The REARM command was removed 2026-09-05 (universe mandate). It re-armed
+            # `scripts/run_live_guard.py` -- the size governor for the retired cash-carry
+            # executor -- and lifted `data/CASHCARRY_KILL`. Both the guard and the executor are
+            # deleted, so the command could only ever have unlinked a kill file guarding nothing
+            # while reporting a successful re-arm to the principal's phone. An operator command
+            # that lies about what it did is worse than one that does not exist.
             if cmd == "REARM":
-                out = subprocess.run(
-                    [sys.executable, "scripts/run_live_guard.py", "--rearm",
-                     "principal-ntfy"], capture_output=True, text=True, timeout=60,
-                ).stdout.strip()
-                kill = Path("data/CASHCARRY_KILL")
-                lifted = ""
-                if kill.exists() and kill.read_text("utf-8").startswith("live_guard freeze"):
-                    kill.unlink()   # completes the human's order; other writers' kills stay
-                    lifted = "; freeze lifted"
+                out = ("REARM is retired: the cash-carry size governor it re-armed was deleted "
+                       "with the crypto-exchange universe (2026-09-05). Nothing was changed.")
                 with contextlib.suppress(Exception):
-                    _push(topic, "Quant desk: REARM received",
-                          f"{out or 'ladder re-armed'}{lifted} -- book resumes next tick")
+                    _push(topic, "Quant desk: REARM received", out)
         if last_id:
             _REPLY_STATE.write_text(
                 json.dumps({"last_id": last_id,
@@ -5284,21 +6760,41 @@ def _checks() -> list[tuple[str, str]]:
     # documented stale-guard behavior is fail-OPEN (full size, takers allowed). Its freeze path
     # cannot save it: the KILL file is written BY the guard, so a dead guard can never write its
     # own freeze -- both degradations point toward MORE aggressive execution, and until this
-    # check nothing paged on the file's age. Content `generated` over mtime (deploys lie fresh).
+    # check nothing paged on the file's age. Content stamp over mtime (deploys lie fresh).
+    #
+    # WELDED FOR AS LONG AS IT HAS EXISTED (R0399, proven 2026-08-13). This read was
+    # `lg.get("generated", "1970-01-01T00:00:00+00:00")` and data/live_guard.json has never had a
+    # `generated` key -- run_live_guard.py stamps `ts`. So the default fired every time and the
+    # page read "live guard stale 29776345min" (56 years) three minutes after the guard wrote the
+    # file. A pager that fires on 100% of runs carries zero information (L1.43) and gets acked
+    # into silence, which is exactly how the one signal it exists to carry -- the size governor
+    # being dead while the executor fail-opens to full size -- would have been lost. The absent
+    # key resolved to a LOOSENING default in the sense that matters: not a missed page, but a
+    # permanent one, which is the same thing to a reader. Now resolved through the shared
+    # stamp-key zoo, so coining a sixth name upstream cannot silently re-weld it.
+    lg_age: float | None = None
+    lg_absent = ""
     try:
         lg = json.loads(Path("data/live_guard.json").read_text("utf-8"))
-        lg_at = datetime.fromisoformat(str(lg.get("generated", "1970-01-01T00:00:00+00:00")))
-        lg_age = (datetime.now(tz=UTC) - lg_at).total_seconds()
-    except (OSError, ValueError, TypeError):
-        lg_age = None
-        out.append(("live_guard_missing", "data/live_guard.json missing/unreadable -- size "
-                    "governor and stage tripwires UNEVALUATED; executor fail-opens to full "
-                    "size; start: .venv/bin/python scripts/run_live_guard.py"))
-    if lg_age is not None and lg_age > 900:
-        out.append(("live_guard_dead", f"live guard stale {lg_age/60:.0f}min (cadence 5min) -- "
-                    "executor fail-opens to FULL SIZE + takers and stage demotion is "
-                    "unevaluated; a dead guard cannot write its own KILL file; restart: "
-                    ".venv/bin/python scripts/run_live_guard.py"))
+        lg_age_h, _lg_key = stamp_age_h(lg)
+        if lg_age_h is None:
+            # UNMEASURABLE is kept DISTINCT from missing (L1.28a): a guard that is running but
+            # publishing no stamp needs its PRODUCER fixed, an absent one needs starting, and
+            # collapsing them sends the operator to the wrong organ. Never fall back to mtime
+            # here -- that is the direction the whole check exists to distrust.
+            lg_absent = ("present but carries no parseable stamp key -- its age is "
+                         "UNMEASURABLE, so liveness is unknown rather than fine")
+        else:
+            lg_age = lg_age_h * 3600.0
+    except (OSError, ValueError, TypeError) as exc:
+        lg_absent = f"missing/unreadable ({type(exc).__name__})"
+    # THE TWO live_guard ALERTS WERE REMOVED 2026-09-05 (universe mandate). They paged when
+    # `data/live_guard.json` was missing or stale, on the grounds that "the executor fail-opens to
+    # full size". That executor is deleted; the artifact now has no writer at all, so both alerts
+    # would fire on EVERY tick, for ever, about a size governor for a book that cannot trade.
+    # A permanently-firing pager row is the cry-wolf shape this desk fences elsewhere -- it trains
+    # the principal to ack the whole channel, which is how a real alert gets missed.
+    _ = (lg_absent, lg_age)     # read above; retained so the parse stays a measured no-op
     try:
         v = json.loads(Path("data/cadence_violation.json").read_text("utf-8"))
         out.append(("cadence_floor_violation", "review/safety cadence FLOOR breached: "
@@ -5340,6 +6836,26 @@ def _checks() -> list[tuple[str, str]]:
             out.append(("data_health", f"{len(alerts)} data-health alert(s): "
                         + "; ".join(str(a)[:60] for a in alerts[:3])))
     except (OSError, json.JSONDecodeError):
+        pass
+    # RESEARCH-CHAIN STEP FAILURES (R0258). The daily research runners are best-effort BY DESIGN
+    # (one step must never abort the chain) -- which made a dead step silent by design too:
+    # run_cashcarry_shadow's SystemExit killed the flagship forward clock for a full day with
+    # zero alarm. Both runners now drop data/research_chain_status.json (atomic write); a latest
+    # status carrying failed steps pages here, naming them. ABSENT artifact = no page: it is a
+    # new artifact, and the brain-down / cycle-age checks above already own "chain never ran".
+    try:
+        rcs = json.loads(Path("data/research_chain_status.json").read_text("utf-8"))
+        failed = [f for f in (rcs.get("failed") or []) if isinstance(f, dict)]
+        if failed:
+            names = "; ".join(
+                f"{str(f.get('step'))[:44]}(rc={f.get('rc')}) {str(f.get('tail', ''))[:60]}"
+                for f in failed[:3])
+            more = f" +{len(failed) - 3} more" if len(failed) > 3 else ""
+            out.append(("research_chain_failed",
+                        f"{len(failed)}/{rcs.get('steps_total', '?')} research step(s) FAILED "
+                        f"({rcs.get('runner', '?')} @ {str(rcs.get('generated', '?'))[:16]}Z): "
+                        f"{names}{more}"))
+    except (OSError, json.JSONDecodeError, AttributeError, TypeError):
         pass
     # silent-failure sweep (2026-07-22): systemd-success != work-done. A timer that fired
     # into a quota/auth wall reports success while producing zero research.
@@ -5529,6 +7045,9 @@ def main() -> None:
             with urllib.request.urlopen(hb, timeout=10):
                 pass
     except Exception:
+        # THE PAGER'S JOB IS PAGES, NOT THE HEARTBEAT. This is a best-effort ping to an
+        # external liveness service; failing it must never stop pages that have already been
+        # computed from going out, which is what raising here would do.
         pass
     print(f"alerts: {sent} page(s) sent "
           f"({datetime.now(tz=UTC).isoformat()[:16]}Z)")
@@ -5539,1561 +7058,7 @@ if __name__ == "__main__":
 
 ```
 
-### scripts/run_cashcarry_executor.py
-```python
-"""Cash-and-carry EXECUTOR -- the delta-neutral funding-harvest book, executed on the testnets.
-
-Long spot (spot testnet) + short perp (futures testnet) on the top POSITIVE-funding perps that trade
-on BOTH venues. Persistent loop with a BANDED rebalance (carry compounds -> hold, don't churn): it
-only opens new carries and closes names that leave the positive-funding set, so turnover (and fees)
-stay minimal. Tracks a real position state + marks the book, writes a heartbeat + kill-switch. This
-is now the PROFIT-LEAD book; the perp L/S book drops to shadow. PAPER (testnet) -- it builds the
-forward track record the edge-gate sizes leverage on. dry-run DEFAULT; --live to send paper orders.
-
-    python scripts/run_cashcarry_executor.py --live --top 5 --capital 2000 --interval 600
-"""
-
-from __future__ import annotations
-
-import argparse
-import contextlib
-import json
-import os
-import random
-import subprocess
-import sys
-import time
-from datetime import UTC, datetime
-from pathlib import Path
-from typing import Any
-
-from libs.data.crypto_source import current_funding
-from libs.execution import binance_spot_testnet as spot
-from libs.execution import binance_testnet as fut
-from libs.execution import execution_tape
-from libs.execution.carry_accounting import (
-    attribute_non_funding,
-    carry_bleed_report,
-    dedup_basis,
-    derive_spot_realized,
-    read_income,
-)
-from libs.ops.fresh import read_fresh  # L1.44: decision-path reads carry freshness contracts
-from libs.ops.lawful import guard as _law_guard  # L1.42: no act exempt
-from libs.risk import capital_events, risk_controls
-
-_STATE = Path("data/cashcarry_positions.json")
-_TRADES = Path("data/cashcarry_trades.json")     # real open/close log -> winrate + trade history
-_LEV_TGT = Path("data/leverage_target.json")     # dynamic-leverage sizing (honoured when validated)
-_CONFIG = Path("data/cashcarry_config.json")     # LIVE-tunable params (top/hold_top/capital)
-_WEB = Path("web/cashcarry_live.json")
-_HB = Path("data/cashcarry_exec_heartbeat")
-_KILL = Path("data/CASHCARRY_KILL")
-_ERR = Path("data/cashcarry_error.log")          # visible cycle-error log (not swallowed to null)
-_LAST_ARCHIVE = Path("data/.last_metrics_archive")  # once-per-day data-flywheel marker
-_HB_TICK = 60                                    # heartbeat cadence (decoupled from rebalance work)
-_MAKER = True                                     # maker-first execution (set via --no-maker)
-_RSP_TOL = 5.0                                    # $ drift before realized_spot_pnl self-heals
-_FLAT_EPS = 1e-9                                  # |qty| at or below this counts as flat
-_DEPTH_MULT = 5.0                                # book depth within 1% of touch must cover an open
-# ORPHAN-COVER BOUNDS (gap #37, panel consensus 8+/12 on the 2026-07-19 audit): the
-# orphan cover is a live-ammo market-order path that previously fired on FIRST sight of
-# any untracked position, unbounded. A transient REST desync or partial-fill lag then
-# market-covers into a thin book, and repeated covers during a venue outage could
-# themselves breach the ruin constraint. Two bounds, both safe-direction only:
-_ORPHAN_CONFIRM = 2        # reconcile passes an orphan must PERSIST before live ammo
-_ORPHAN_MAX_USD = 1500.0   # max notional force-covered per symbol per pass
-# CASCADE GUARD (gap #37): the confirm-window and per-pass cap bound a SINGLE cover, but
-# `seen.pop()` reset the symbol immediately, so a persistent desync (exactly what a venue
-# outage looks like) could re-fire live ammo every pass with no rate limit. A cooldown
-# bounds repeats per symbol; the hourly circuit stops the whole path when MANY symbols go
-# orphan at once -- that pattern means "the venue is sick", not "we have N real orphans".
-_ORPHAN_COOLDOWN_S = 1800.0   # per-symbol quiet period after a cover
-_ORPHAN_MAX_PER_HOUR = 3      # covers/hour across all symbols before the path halts
-                                                 # this many times, on BOTH legs, or the name is
-                                                 # skipped (2026-07-13 thin-book incident)
-
-
-def _daily_data_tasks() -> None:
-    """Keep the DATA FLYWHEEL turning once per UTC day off the always-on cash-carry loop.
-
-    Archives OI/LS/taker metrics, market breadth, and Deribit surface -- these grow the 40-day
-    forward clocks that gate the derivative alpha column. Spawns the heavy research chain detached
-    so a slow research run can never block trading. Process-isolated so any data hiccup is safe."""
-    today = datetime.now(tz=UTC).date().isoformat()
-    if _LAST_ARCHIVE.exists() and _LAST_ARCHIVE.read_text("utf-8").strip() == today:
-        return
-    root = Path(__file__).resolve().parent.parent
-    for script in ("scripts/collect_binance_metrics.py", "scripts/collect_market_breadth.py",
-                   "scripts/collect_deribit_surface.py", "scripts/classify_regime.py",
-                   "scripts/run_regime_engine.py"):
-        try:
-            subprocess.run([sys.executable, script], cwd=root, timeout=600,
-                           capture_output=True, text=True, check=False)
-        except Exception as e:
-            print(f"[daily-task] {script}: {e!r}"[:140])
-    try:
-        subprocess.Popen([sys.executable, "scripts/run_daily_research.py"], cwd=root,
-                         stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
-                         stderr=subprocess.DEVNULL)
-    except Exception as e:
-        print(f"[daily-task] run_daily_research spawn: {e!r}"[:140])
-    _LAST_ARCHIVE.write_text(today, "utf-8")
-
-
-def _book_snapshot() -> dict[str, Any]:
-    """Current book (state positions + live prices), NO orders -- for frequent marking."""
-    state = json.loads(_STATE.read_text("utf-8")) if _STATE.exists() else {}
-    return {"state": state, "pos": state.get("positions", {}), "actions": [], "cands": [],
-            "spot_px": spot.prices(), "fut_px": fut.mark_prices()}
-
-
-def _round(qty: float, step: float, prec: int) -> float:
-    return round(round(qty / step) * step, prec) if step > 0 else round(qty, prec)
-
-
-def _log_trade(rec: dict[str, Any]) -> None:
-    """Append a real open/close event -> cashcarry_trades.json (source of winrate + history).
-
-    The rolling file stays capped at 500 (every existing consumer depends on its shape), but the
-    same record ALSO goes to the append-only execution tape -- the cap was destroying ~27 fills/day
-    of own-fill history, which is both the data moat and the evidence Gate 0's ">=4 weeks of live
-    fills" is measured against. The tape append is exception-safe and never blocks the executor.
-    """
-    try:
-        log = json.loads(_TRADES.read_text("utf-8")) if _TRADES.exists() else []
-    except (OSError, json.JSONDecodeError):
-        log = []
-    log.append(rec)
-    _TRADES.parent.mkdir(parents=True, exist_ok=True)
-    _TRADES.write_text(json.dumps(log[-500:], indent=2, default=str), "utf-8")
-    execution_tape.append(rec)
-
-
-def _held_hours(opened: object) -> float:
-    try:
-        dt = datetime.fromisoformat(str(opened))
-        return round((datetime.now(tz=UTC) - dt).total_seconds() / 3600, 2)
-    except (ValueError, TypeError):
-        return 0.0
-
-
-def _dynamic_capital(default: float) -> float:
-    """Deployed notional from the dynamic-leverage optimizer -- but only once it has confidence.
-
-    Until forward validation gives confidence>0 the optimizer's number is unproven, so we keep the
-    operator's --capital. When validated, deployed size = growth-optimal notional (constitution:
-    leverage is a continuously optimized control variable, sized to proven edge)."""
-    # QUARANTINED (2026-07-18 deep audit): the leverage optimizer's confidence pipeline is
-    # contaminated (gap #14, unroot-caused). Incident #2 (07-16) was it sizing UP to $40k on
-    # bad confidence; the 07-18 audit found the SAME bad confidence (conf 0.92) sizing the book
-    # DOWN to ~$1,250 (25% deployed) -- $3,250 of authorized capital idled, a real
-    # under-deployment (the growth_defect alert was a TRUE positive). The 07-16 clamp only
-    # capped the UPSIDE ("may de-risk below operator capital"), letting the contaminated signal
-    # under-deploy. Until the confidence pipeline is root-caused AND a >=30-live-day re-enable
-    # gate ships, the optimizer is IGNORED IN BOTH DIRECTIONS -- the executor deploys the
-    # operator's authorized --capital. (Re-enabling honest dynamic sizing = the gap #14 duty.)
-    return _compounded_capital(default)
-
-
-# --- COMPOUNDING RE-ANCHOR (principal 2026-07-23; Gate-0 lever, built early on purpose) ------
-# DEFECT IT FIXES: the executor deployed a FROZEN notional, so realised gains never enlarged the
-# base. That is ARITHMETIC growth -- the same dollar profit on a growing account is a shrinking
-# percentage, so measured CAGR decays toward zero. For a desk whose supreme objective is max
-# E[log(wealth)], a frozen base disconnects the objective's own transmission mechanism.
-#
-# WHY THIS IS SAFE (each hazard named and closed):
-#  * The QUARANTINED OPTIMIZER is never consulted (gap #14 stands). This reads only REALISED,
-#    hash-chain-attested PnL -- never a confidence score. Incident #2 was optimizer confidence
-#    sizing the book to $40k; that path stays dead.
-#  * NEVER raw equity. Testnet equity marks ~$10.8k because of faucet bags, so anchoring to it
-#    would balloon the book. Only realized_spot_pnl from the NAV attestation is used.
-#  * FAIL-SAFE INERT: if the stage machine cannot PROVE S1+ (live), the operator capital is
-#    returned unchanged. Missing/unreadable/S0 all read as NOT live. So this is fully built and
-#    testable today and begins compounding on day 1 of Gate 0 -- ready since the beginning.
-#  * CLAMPED BOTH WAYS: never below 0.5x nor above 4.0x authorised capital, so a corrupt
-#    realised figure cannot run the book away in either direction.
-_COMPOUND_FRACTION = 1.0      # redeploy 100% of realised gains into the base (log-optimal)
-_COMPOUND_MAX_FACTOR = 4.0    # never exceed 4x authorised capital without a new authorisation
-_COMPOUND_MIN_FACTOR = 0.5    # de-risk floor: losses shrink the base, but only to half
-_STAGE = Path("data/stage_state.json")
-_NAV = Path("data/nav_attestation.jsonl")
-
-
-def _is_live() -> bool:
-    """True ONLY when the stage machine proves S1+ (Gate 0 passed). Any error, missing file or
-    S0/paper reads as NOT live, so compounding stays off. Fail-safe by construction.
-
-    L1.44 state-kind contract: stage_state.json is valid-until-changed, so its own age proves
-    nothing -- the read is trustworthy iff its GUARDIAN (run_live_guard, the tripwire/demotion
-    evaluator) is alive. The decision below is unchanged either way (fail-safe already); the
-    contract makes a dead guardian visible as a consumed-state event instead of silence."""
-    try:
-        fr = read_fresh(_STAGE, max_age_h=1.0, kind="state",
-                        guardian="data/live_guard.json",
-                        caller="run_cashcarry_executor._is_live")
-        return str((fr.data or {}).get("stage", "S0")).upper() in ("S1", "S2")
-    except Exception:
-        return False
-
-
-def _realised_pnl() -> float:
-    """Cumulative REALISED PnL from the hash-chained NAV attestation (never marks or equity)."""
-    try:
-        lines = [ln for ln in _NAV.read_text("utf-8").splitlines() if ln.strip()]
-        return float(json.loads(lines[-1]).get("realized_spot_pnl", 0.0))
-    except Exception:
-        return 0.0
-
-
-def _compounded_capital(default: float) -> float:
-    """Operator capital grown by REALISED PnL, hard-clamped, inert until live."""
-    if not _is_live():
-        return default                                   # pre-Gate-0: frozen base, unchanged
-    grown = default + _realised_pnl() * _COMPOUND_FRACTION
-    lo, hi = default * _COMPOUND_MIN_FACTOR, default * _COMPOUND_MAX_FACTOR
-    return float(min(max(grown, lo), hi))
-
-
-def _alloc(cands: list[tuple[str, float]], capital: float,
-           *, cap_frac: float = 0.35) -> dict[str, float]:
-    """Per-name notional weighted by funding rate (harvest more where it pays), capped so no single
-    carry dominates (capacity / concentration guard). The cap is HARD: when it cannot be met
-    (n * cap_frac < 1, i.e. fewer than 3 names) the remainder stays in cash rather than piling
-    into one name -- relaxing it is how 2026-07-13 put $4.3k of a $4.5k book into a single
-    micro-cap (NOMUSDT) and fired the dead-man rail."""
-    n = len(cands)
-    if n == 0:
-        return {}
-    fs = [max(0.0, f) for _, f in cands]
-    tot = sum(fs)
-    w = [x / tot for x in fs] if tot > 0 else [1.0 / n] * n
-    # WATER-FILL: cap each weight at cap_frac and redistribute the excess to the uncapped names,
-    # iterating to a fixed point. A plain min()+renormalise does NOT hold the cap (excess leaks
-    # back into the max name); this does. When no under-cap name can absorb the excess, the
-    # excess is simply NOT deployed (never scaled back up -- see docstring).
-    for _ in range(n):
-        over = [i for i, x in enumerate(w) if x > cap_frac + 1e-12]
-        if not over:
-            break
-        excess = sum(w[i] - cap_frac for i in over)
-        for i in over:
-            w[i] = cap_frac
-        pool = sum(w[i] for i in range(n) if w[i] < cap_frac - 1e-12)
-        if pool <= 0:
-            break                                        # nowhere to redistribute -> stays in cash
-        for i in range(n):
-            if w[i] < cap_frac - 1e-12:
-                w[i] += excess * w[i] / pool
-    s = sum(w)
-    if s > 1.0 + 1e-9:                                   # defensive: weights may only scale DOWN
-        w = [x / s for x in w]
-    return {cands[i][0]: capital * w[i] for i in range(n)}
-
-
-def _topup_plan(pos: dict[str, dict[str, Any]], capital: float, *, cap_frac: float = 0.35,
-                min_frac: float = 0.02, min_usd: float = 20.0) -> dict[str, float]:
-    """Extra notional to bring each HELD carry UP toward its funding-weighted share of the FULL
-    capital -- never DOWN (closes are the target-set's job; this only fills idle authorized
-    capital that held carries would otherwise leave frozen from a low-free-capital open window).
-
-    Pure (no venue calls) so the risk-path sizing is unit-testable. Invariants that keep this in
-    the SAFE direction only (operator-directed 2026-07-19, gap #32):
-      * aggregate adds never exceed the free headroom (capital - deployed) -> the book can never
-        lever past the operator's --capital (the quarantined leverage optimizer stays ignored);
-      * each name is held under cap_frac*capital -> the 2026-07-13 single-name concentration rail;
-      * only MATERIAL shortfalls (>= max(min_frac*capital, min_usd)) top up -> a book already near
-        target does not churn on rounding noise.
-    """
-    if not pos:
-        return {}
-    funded = [(sym, max(float(p.get("funding", 0.0)), 0.0)) for sym, p in pos.items()]
-    tgt = _alloc(funded, capital, cap_frac=cap_frac)
-    deployed = sum(float(p["spot_qty"]) * float(p["spot_cost"]) for p in pos.values())
-    room = max(0.0, capital - deployed)
-    floor = max(min_frac * capital, min_usd)
-    plan: dict[str, float] = {}
-    for sym in sorted(pos, key=lambda k: max(float(pos[k].get("funding", 0.0)), 0.0), reverse=True):
-        if room <= 0.0:
-            break
-        cur = float(pos[sym]["spot_qty"]) * float(pos[sym]["spot_cost"])
-        add = min(min(tgt.get(sym, 0.0), cap_frac * capital) - cur, room)
-        if add < floor:
-            continue
-        plan[sym] = add
-        room -= add
-    return plan
-
-
-# --- CHURN GUARD (gap #42, 2026-07-22) -----------------------------------------------------
-# Trade audit over 250 closes: carries held <8h (38% of all trades) LOSE money as a class
-# (<2h -5.0 bps, 2-8h -4.1 bps) while 8-24h earns +6.5 and >24h earns +16.9. 42% of closes
-# re-opened the SAME symbol within 24h -- a provably wasted round-trip. Realized drag -8.1%/yr.
-# Cause is funding-sign flicker, not bad entries (funding at open is identical fast vs slow).
-# ECONOMICS: adverse funding costs ~1 bp per 8h; a round-trip costs ~4.5 bps (measured by
-# run_cost_model.py). So holding up to 24h risks <=3 bps to save 4.5 -- strictly dominant.
-# Beyond ~32h the accumulated adverse funding would exceed the saved round-trip, so 24h is the
-# profit-maximising floor, not an arbitrary constant.
-_MIN_HOLD_H = 24.0        # rotation-driven closes blocked below this age
-_FUNDING_PANIC = -0.0005  # per-8h rate: worse than this, holding costs more than the round-trip
-
-
-def _churn_guard(held_h: float, funding: float, rail_forced: bool) -> bool:
-    """True => HOLD the carry (block a rotation-driven close).
-
-    Rails ALWAYS win (basis-stop / ADL / cooldown / risk-flatten / reconcile close instantly);
-    strongly-negative funding escapes the floor; otherwise a carry younger than the minimum
-    hold is kept so it can earn back the round-trip it already paid."""
-    if rail_forced:
-        return False
-    if funding <= _FUNDING_PANIC:
-        return False
-    return held_h < _MIN_HOLD_H
-
-
-# --- ENTRY GATE (gap #43, 2026-07-22) ------------------------------------------------------
-# Trade audit over 250 closes, bucketed by funding rate AT OPEN:
-#   0.000100 (Binance BASELINE, no real premium): n=50  net -$176.24  (-92.7 bps)  <-- disaster
-#   0.000100-0.000144                           : n=50  net  +$14.71  (+12.8 bps)
-#   0.000100-0.000144                           : n=50  net  +$60.87  (+42.7 bps)
-#   0.000144-0.000219                           : n=50  net  -$22.43   (-7.5 bps)
-#   0.000219-0.001517                           : n=50  net +$179.31  (+45.9 bps)
-# `_ranked()` accepted ANY funding > 0, so the desk opened carries on symbols sitting at the
-# exchange DEFAULT rate -- i.e. names with no funding premium whatsoever -- and paid a full
-# round-trip for them. Those 50 trades ate ~80% of the desk's gross profit.
-#
-# _MIN_FUNDING DELETED 2026-07-31 (R0057). The absolute per-8h floor (0.00015, derived from the
-# desk-MEDIAN round-trip when the cost gate still used the median default) became redundant the
-# day the cost gate went per-symbol with a p90 fail-closed default: unmeasured names now need
-# funding > 39.5/3e4 = 0.000132 anyway, and thin proven losers are on the bleed denylist. The
-# floor's only remaining effect, measured 2026-07-30: vetoing the 4 net-positive MAJORS (tight
-# measured books whose funding capture beats their own round-trip below 0.00015) -- 245/245
-# candidates rejected with the floor on. Protection lives in the per-symbol check below.
-# FAIL CLOSED (2026-07-27). Default was 4.5 = the desk MEDIAN, which sits at only the 43rd
-# percentile of measured round-trips (median 5.7, p75 21.3, p90 39.5, max 130.5 across 30
-# symbols). 'Unmeasured' is NOT a random subset: a symbol is missing from the cost model
-# BECAUSE it is too illiquid to measure -- i.e. it is the expensive tail. Assigning it the
-# median was a fail-open on exactly the worst books (this file already records NOM -149bps,
-# KNC -211bps). p90 makes the unmeasured case pessimistic: a symbol must prove it is cheap
-# (by being measured) before it can clear the bar. Raising it can only REFUSE NEW OPENS --
-# _entry_gate is never applied to the hold/target set, so this cannot force-close anything.
-_DEFAULT_RT_BPS = 39.5          # p90 of measured pair round-trip; pessimistic when unmeasured
-_COST_MODEL = Path("data/cost_model.json")
-_FORENSICS = Path("web/trade_forensics.json")
-# STRUCTURAL-BLEED DENYLIST (2026-07-23). run_trade_forensics.py already PROVED which
-# names lose money as a class (NOMUSDT -149bps/5 trades, PEOPLEUSDT -73/5, BNBUSDT
-# -67/11, GTCUSDT -29/10) but nothing consumed its output, so the desk kept re-opening
-# them. The funding+cost gate does not catch these: their funding clears the floor and
-# their modelled cost looks fine -- the loss is realised execution, visible only in the
-# closed-trade record. Evidence-driven, self-updating, and strictly RESTRICTIVE:
-# NEW OPENS ONLY, so it can never force-close a held carry (that would be churn).
-_BLEED_BPS = -20.0        # realised net bps at which a symbol is structurally bleeding
-_BLEED_MIN_N = 5          # minimum closed trades before the verdict is trusted
-
-
-def _structurally_bleeding(sym: str) -> bool:
-    """True => this symbol has PROVEN it loses money for the desk; block new opens.
-
-    L1.44 contract (48h: forensics is produced daily): deny-direction data never loosens with
-    age, so a STALE denylist STILL DENIES -- the fence owns chasing the dead producer. Only an
-    unreadable file falls back to allow, exactly as before, and that read is now recorded
-    instead of silent."""
-    fr = read_fresh(_FORENSICS, max_age_h=48.0,
-                    caller="run_cashcarry_executor._structurally_bleeding")
-    rows = fr.data.get("worst_symbols") if isinstance(fr.data, dict) else None
-    if not isinstance(rows, list):
-        return False
-    for r in rows:
-        try:
-            if (r.get("symbol") == sym and int(r.get("n", 0)) >= _BLEED_MIN_N
-                    and float(r.get("bps", 0.0)) <= _BLEED_BPS):
-                return True
-        except (TypeError, ValueError):
-            continue
-    return False
-
-
-def _rt_bps(sym: str) -> float:
-    """This symbol's MEASURED round-trip cost, else the desk median. Self-improving: as the
-    recorder accrues the traded names, the gate automatically tightens on expensive books
-    (NOMUSDT realised -149 bps, KNCUSDT -211 bps -- thin books where slippage dominates)."""
-    fr = read_fresh(_COST_MODEL, max_age_h=48.0, caller="run_cashcarry_executor._rt_bps")
-    try:
-        m = fr.data["symbols"][sym]["pair"]["500"]
-        v = m.get("pair_roundtrip_bps")
-        if v is None:
-            return _DEFAULT_RT_BPS
-        # L1.44 stale degrade: a stale measured cost may only TIGHTEN this gate, never loosen
-        # it. max() keeps a proven-expensive name (KNC -211bps) expensive when the model
-        # freezes, and stops a stale "cheap" reading from admitting opens the current book
-        # would refuse. New opens only, as ever -- this can never force-close a held carry.
-        return float(v) if fr.fresh else max(float(v), _DEFAULT_RT_BPS)
-    except (KeyError, TypeError, ValueError):
-        return _DEFAULT_RT_BPS
-
-
-def _entry_gate(sym: str, funding: float, min_hold_h: float = _MIN_HOLD_H) -> bool:
-    """True => ALLOW opening this carry.
-
-    Requires expected funding capture over the MINIMUM HOLD to beat this symbol's measured
-    round-trip. Applied to NEW OPENS ONLY -- never to the hold/target set, so raising the bar
-    can never force-close existing carries (that would itself be a churn event)."""
-    if _structurally_bleeding(sym):
-        return False                      # proven money-loser: never re-open it
-    periods = max(1.0, min_hold_h / 8.0)
-    return funding * 1e4 * periods > _rt_bps(sym)
-
-
-def _mkt_or_limit(conn: Any, sym: str, side: str, qty: float) -> str:
-    """Close/hedge ``qty``: MARKET first, LIMIT fallback. On a thin/broken book a market order is
-    rejected by the venue PERCENT_PRICE filter (-4131) -- and a market-only cover can then NEVER
-    clear the leg, so the hedge stays broken forever (this is the gap that stranded orphans on
-    illiquid perps). Fall back to a post-only limit at the near touch (bid for BUY / ask for SELL):
-    accepted within the price band, rests as maker, fills when liquidity returns. Cancels any stale
-    order on the symbol first so repeated reconcile ticks don't stack duplicates. Returns
-    'mkt' | 'limit' | '' (nothing placed)."""
-    if qty <= 0:
-        return ""
-    try:
-        conn.place_market(sym, side, qty)
-        return "mkt"
-    except Exception:
-        pass                                          # thin book / PERCENT_PRICE -> limit fallback
-    with _safe():
-        conn.cancel_all(sym)                          # clear stale fallbacks (no dup stacking)
-    try:
-        bid, ask = conn.book_ticker().get(sym, (0.0, 0.0))
-        px = bid if side == "BUY" else ask
-        if px and px > 0:
-            conn.place_post_only(sym, side, qty, px)
-            return "limit"
-    except Exception:
-        pass
-    return ""
-
-
-def _reconcile(pos: dict[str, dict[str, Any]], *, dry: bool,
-               cooldown: dict[str, float] | None = None,
-               fail_counts: dict[str, int] | None = None,
-               orphan_seen: dict[str, int] | None = None,
-               orphan_cool: dict[str, float] | None = None,
-               flatten_only: bool = False) -> list[str]:
-    """Heal hedge drift every cycle -- survival is priority #1. Two invariants restored:
-
-    ``flatten_only`` (2026-07-28 incident): when the book is under a KILL or risk-flatten order
-    its target state is FLAT, so the two branches here that ADD exposure -- re-shorting a missing
-    futures leg and re-buying a sold spot leg -- are rebuilding exactly what the close path is
-    tearing down in the same tick. That loop round-tripped the entire book through market orders
-    every 600s and never terminated. Branches that move TOWARD flat (orphan cover, trim-excess,
-    adl-flatten) stay live: a flatten order never means "stop reducing risk".
-
-      * ORPHAN futures short (a short with no tracked carry) -> cover it (close to flat).
-      * UNHEDGED tracked carry (state expects a short but the futures leg is missing/short) ->
-        re-short the deficit so spot_long and perp_short match again (delta-neutral).
-        EXCEPTION (2026-07-12 external review): if the VENUE force-closed the short
-        (liquidation/ADL during a squeeze), re-shorting walks back into the squeeze that
-        just took the leg -- flatten the SPOT leg instead and stand down 24h.
-
-    Idempotent: does nothing when the book is already consistent, and self-corrects the moment a
-    transient venue outage (that caused the drift) clears. A failed leg is swallowed, retried next
-    cycle -- but NOT silently: `fail_counts` (persisted in executor state, keyed by symbol) tracks
-    consecutive `_mkt_or_limit` failures, and 3+ in a row surfaces a RECONCILE-FAIL action line +
-    a visible error-log write (2026-07-17 gap-register #16 fix -- a broken pair silently sat
-    unhedged for 75 minutes on 2026-07-16 because a rejected re-hedge order returned '' and logged
-    nothing)."""
-    if dry or not fut.has_keys():
-        return []
-    try:
-        actual = fut.positions()
-    except Exception:
-        return []                                          # venue read down -> try again next cycle
-    acts: list[str] = []
-    fails = fail_counts if fail_counts is not None else {}
-
-    def _do(conn: Any, sym: str, side: str, qty: float) -> str:
-        how = _mkt_or_limit(conn, sym, side, qty)
-        if how:
-            fails.pop(sym, None)
-        else:
-            n = fails.get(sym, 0) + 1
-            fails[sym] = n
-            if n >= 3:
-                with _safe():
-                    _ERR.write_text(f"{datetime.now(tz=UTC).isoformat()} reconcile fail x{n} "
-                                    f"{sym}: both market and post-only limit rejected\n")
-                acts.append(f"RECONCILE-FAIL {sym} x{n} (both market+limit rejected, see "
-                           f"{_ERR})")
-        return how
-
-    tracked = set(pos)
-    seen = orphan_seen if orphan_seen is not None else {}
-    live_orphans = {s2 for s2, q2 in actual.items()
-                    if s2 not in tracked and abs(float(q2)) > 0}
-    for s2 in list(seen):                                  # a transient desync disappears -> forget
-        if s2 not in live_orphans:
-            seen.pop(s2, None)
-    _cool = orphan_cool if orphan_cool is not None else {}
-    _now = time.time()
-    _recent = sum(1 for t0 in _cool.values() if _now - t0 < 3600.0)
-    for sym in sorted(live_orphans):
-        if _recent >= _ORPHAN_MAX_PER_HOUR:        # cascade -> venue is sick, stand down
-            acts.append(f"orphan-CIRCUIT: {_recent} covers in the last hour "
-                        f">= {_ORPHAN_MAX_PER_HOUR} -- halting live-ammo cover, page")
-            break
-        if _now - _cool.get(sym, 0.0) < _ORPHAN_COOLDOWN_S:
-            acts.append(f"orphan {sym} in cover-cooldown "
-                        f"({(_ORPHAN_COOLDOWN_S - (_now - _cool[sym])) / 60:.0f}m left)")
-            continue
-        qty = float(actual[sym])
-        n = seen.get(sym, 0) + 1
-        seen[sym] = n
-        if n < _ORPHAN_CONFIRM:                            # must PERSIST before firing live ammo
-            acts.append(f"orphan {sym} seen {n}/{_ORPHAN_CONFIRM} -- awaiting confirmation "
-                        f"(transient desync is not covered)")
-            continue
-        cover = abs(qty)
-        px = 0.0
-        with _safe():                    # priced only when a confirmed orphan exists
-            px = float(fut.mark_prices().get(sym, 0.0) or 0.0)
-        if px > 0 and cover * px > _ORPHAN_MAX_USD:        # bound each pass; remainder next pass
-            acts.append(f"orphan {sym} ${cover * px:.0f} exceeds ${_ORPHAN_MAX_USD:.0f}/pass cap "
-                        f"-- covering a capped slice")
-            cover = _ORPHAN_MAX_USD / px
-        how = _do(fut, sym, "BUY" if qty < 0 else "SELL", cover)
-        if how:
-            acts.append(f"cover-orphan {sym} {round(cover, 8)} ({how})")
-            seen.pop(sym, None)
-            _cool[sym] = _now                      # start the quiet period
-            _recent += 1
-    dead: list[str] = []
-    forced: dict[str, int] = {}
-    if any(abs(float(actual.get(s, 0.0))) + 1e-9 < abs(float(p["perp_qty"])) * 0.98
-           for s, p in pos.items()):                       # query venue only when a leg is short
-        with _safe():
-            forced = fut.force_orders(2.0)
-    for sym, p in pos.items():                             # re-hedge missing/short futures legs
-        want = abs(float(p["perp_qty"]))
-        have = abs(float(actual.get(sym, 0.0)))
-        if have + 1e-9 < want * 0.98:                      # >2% of the short leg is missing
-            if sym in forced:                              # ADL/liquidation took it -> flatten pair
-                with _safe():
-                    if have > 0:
-                        _mkt_or_limit(fut, sym, "BUY", round(have, 8))
-                    fl = spot.exchange_filters().get(sym, {})
-                    q = _round(float(p["spot_qty"]), fl.get("step", 0.0),
-                               int(fl.get("qty_prec", 6)))
-                    if q > 0:
-                        _mkt_or_limit(spot, sym, "SELL", q)
-                    dead.append(sym)
-                    if cooldown is not None:
-                        cooldown[sym] = time.time() + 86400.0
-                    acts.append(f"adl-flatten {sym} (venue force-closed short; spot sold, 24h out)")
-                continue
-            if flatten_only:      # book ordered flat -> re-shorting walks back into the position
-                acts.append(f"flatten-mode: skip re-hedge {sym} (book ordered flat)")
-                continue
-            with _safe():
-                fut.set_leverage(sym, 3)
-            how = _do(fut, sym, "SELL", round(want - have, 8))
-            if how:
-                acts.append(f"re-hedge {sym} +{round(want - have, 4)} ({how})")
-        elif have > want * 1.02:                           # EXCESS short beyond the tracked leg --
-            # an orphan absorbed into a tracked symbol (or a failed partial close) is naked
-            # directional short the spot leg does NOT cover -> trim back to the tracked size.
-            how = _do(fut, sym, "BUY", round(have - want, 8))
-            if how:
-                acts.append(f"trim-excess {sym} -{round(have - want, 4)} ({how})")
-    for sym in dead:
-        pos.pop(sym, None)
-
-    # SPOT leg: a tracked carry whose spot WALLET holds less than the tracked long qty is under-
-    # hedged (net short the deficit) -> buy it back. We never SELL excess (untracked orphan longs
-    # are harmless junk). This catches spot under-fills the futures-only check would miss.
-    with _safe():
-        bal = spot.balances()
-        sfl = spot.exchange_filters()
-        for sym, p in pos.items():
-            want = float(p["spot_qty"])
-            held = bal.get(sym.replace("USDT", ""), 0.0)
-            if held + 1e-9 < want * 0.98:
-                if flatten_only:  # re-buying the leg the close just sold is the churn loop itself
-                    acts.append(f"flatten-mode: skip spot-rehedge {sym} (book ordered flat)")
-                    continue
-                fl = sfl.get(sym, {})
-                deficit = _round(want - held, fl.get("step", 0.0), int(fl.get("qty_prec", 6)))
-                if deficit > 0:
-                    how = _do(spot, sym, "BUY", deficit)
-                    if how:
-                        acts.append(f"spot-rehedge {sym} +{deficit} ({how})")
-            elif want > 0 and held > want * 1.02:
-                # STRANDED SPOT EXCESS -- REPORT ONLY (2026-07-26). A half-filled pair
-                # (`OPEN-FAIL ... spot_ok=True fut_ok=False`) leaves the BOUGHT spot leg orphaned:
-                # untracked, unhedged, and invisible to `_mark`, so it is naked long the book does
-                # not carry on its own P&L. Selling it is a money-path action -- never automatic --
-                # but it must never sit UNSEEN again, which is how it accumulated to multiples of
-                # the tracked size. Surfaced in last_actions + the dashboard feed.
-                acts.append(f"SPOT-EXCESS {sym}: wallet {held:.6g} vs tracked {want:.6g} "
-                            f"(+{held - want:.6g}) -- untracked naked long, verify/flatten by hand")
-    return acts
-
-
-def _net_bps(sym: str, funding: float, min_hold_h: float = _MIN_HOLD_H) -> float:
-    """Expected NET bps over the minimum hold: funding captured MINUS measured round-trip.
-
-    This is the quantity the desk actually earns, and ranking on it rather than on gross funding
-    is the whole of the 2026-07-27 universe switch. Unmeasured symbols carry the pessimistic
-    _DEFAULT_RT_BPS, so they sink on their own without a separate denylist.
-    """
-    return funding * 1e4 * (min_hold_h / 8.0) - _rt_bps(sym)
-
-
-def _ranked() -> list[tuple[str, float]]:
-    """All positive-funding USDT perps tradeable on BOTH testnets, ranked high->low funding."""
-    f = current_funding()
-    spot_syms, fut_syms = set(spot.exchange_filters()), set(fut.exchange_filters())
-    cands = [(s, v) for s, v in f.items()
-             if v > 0 and s.endswith("USDT") and s in spot_syms and s in fut_syms]
-    return sorted(cands, key=lambda x: -x[1])
-
-
-def _rebalance(top: int, hold_top: int, capital: float, *, dry: bool) -> dict[str, Any]:
-    # Close-only mode (top=0, hold_top=0: the KILL/flatten path) needs no market ranks --
-    # closing reads `pos`, not funding. Decoupled so the kill can execute during a public-
-    # data outage or IP ban (2026-07-31: premiumIndex 418 crashed every close-all tick).
-    ranked = _ranked() if (top > 0 or hold_top > 0) else []
-    # UNIVERSE SWITCH (principal-approved 2026-07-27). Was `ranked[:top]` = top-N by RAW
-    # FUNDING. Funding is the COMPENSATION FOR ILLIQUIDITY, so funding-first ranking
-    # systematically selected the names whose round-trips destroy the carry: COOKIEUSDT was
-    # the most-traded symbol at 21 opens with a MEASURED 130.47bps pair round-trip against
-    # ~6.7bps of funding over a 24h hold -- a ~19x loss per rotation. 11 of the 16 most-
-    # traded names had no measured cost at all. That single defect explains the 7.75x
-    # cost/funding ratio with no residual mystery. Rank by NET instead; _entry_gate still
-    # has the final veto. OPENS ONLY -- `target`/`hold_set` are untouched below, so this can
-    # never force-close a held carry (whose entry cost is already sunk).
-    cands = sorted(ranked, key=lambda c: -_net_bps(c[0], c[1]))[:top]
-    # HYSTERESIS: a held carry is kept while it stays in the broad top-`hold_top` positive set;
-    # only names that fall out of it (or go non-positive) are closed. Kills noise-driven churn.
-    hold_set = {s for s, _ in ranked[:hold_top]}
-    target = hold_set
-    state = json.loads(_STATE.read_text("utf-8")) if _STATE.exists() else {}
-    pos: dict[str, dict[str, Any]] = state.get("positions", {})
-    if "start" not in state:
-        state["start"] = datetime.now(tz=UTC).isoformat()
-        state["start_futures_equity"] = (fut.account_summary()["equity"] if fut.has_keys() else 0.0)
-        state["start_spot_value"] = spot.account_value_usdt() if spot.has_keys() else 0.0
-    cool: dict[str, float] = {s: float(t) for s, t in state.get("cooldown", {}).items()
-                              if float(t) > time.time()}   # ADL/basis-stop names: 24h no re-entry
-    state["cooldown"] = cool
-    fails: dict[str, int] = {s: int(n) for s, n in state.get("reconcile_fail_counts", {}).items()}
-    state["reconcile_fail_counts"] = fails
-    ocool: dict[str, float] = {s: float(t) for s, t in state.get("orphan_cooldown", {}).items()}
-    state["orphan_cooldown"] = ocool
-    orph: dict[str, int] = {s2: int(n2) for s2, n2 in state.get("orphan_seen_counts", {}).items()}
-    state["orphan_seen_counts"] = orph
-    # FLATTEN MODE: a KILL file is authoritative this tick; a risk-flatten is only known AFTER
-    # prices are read, so it latches through state and binds the NEXT tick's reconcile. Both stop
-    # the reconciler rebuilding a book the close path is unwinding (2026-07-28 churn incident).
-    _flatten_only = _KILL.exists() or state.get("last_risk_action") == "flatten"
-    # GUARD CONSUMPTION (R0071d): live_guard computed a graded response for weeks --
-    # effective_size_fraction and limit_only -- and nothing read either. Its binary KILL half
-    # was wired (above); the graded half now scales this tick's sizing capital and, in
-    # limit_only, forbids taker chasing in the maker path. Stale artifact = neutral.
-    _refresh_guard()
-    _guard_note = ""
-    if _GUARD["size_frac"] < 1.0 or _GUARD["limit_only"]:
-        capital = capital * _GUARD["size_frac"]
-        _guard_note = (f"live_guard: sizing scaled to {_GUARD['size_frac']:.0%}"
-                       + (" + limit-only" if _GUARD["limit_only"] else ""))
-    recon = _reconcile(pos, dry=dry, cooldown=cool,          # heal hedge drift FIRST (survival #1)
-                       fail_counts=fails, orphan_seen=orph,
-                       flatten_only=_flatten_only)
-    if cool:
-        target -= set(cool)
-        cands = [c for c in cands if c[0] not in cool]
-    # ENTRY GATE (gap #43): opens only -- never filters hold_set/target, so raising the
-    # bar cannot force-close existing carries.
-    _pre = len(cands)
-    cands = [c for c in cands if _entry_gate(c[0], c[1])]
-    if len(cands) < _pre:
-        actions_gate = f"entry-gate: {_pre - len(cands)} cand(s) below funding/cost bar"
-    else:
-        actions_gate = ""
-    spot_px, fut_px = spot.prices(), fut.mark_prices()
-    # BASIS-BLOWOUT STOP (2026-07-12 external review): the pair is delta-neutral to PRICE, not
-    # to BASIS -- it marks against us when the perp trades at a large PREMIUM to spot (short
-    # squeeze), which is also the ADL/liquidation-risk state for the short leg. Normal carry
-    # basis is a few bps; a >3% instantaneous premium is a dislocation, not harvest -> exit the
-    # pair (existing close path) and stand down 24h. Never fires in calm markets: zero drag.
-    for sym in list(pos):
-        sp, fp = spot_px.get(sym), fut_px.get(sym)
-        if sp and fp and (fp - sp) / sp > 0.03:
-            target.discard(sym)
-            # 6h cooldown (round-3 review: basis spikes are mean-reverting flash events --
-            # a 24h stand-down overpays; ADL keeps 24h because a squeeze that force-closed
-            # a leg is a different animal). Exit itself is maker-first like every close.
-            cool[sym] = time.time() + 21600.0
-            actions_pre = f"basis-stop {sym} premium {(fp - sp) / sp:.1%} -> exit pair, 6h out"
-            recon = [*recon, actions_pre]
-    spot_fl, fut_fl = spot.exchange_filters(), fut.exchange_filters()
-    # Size opens from FREE capital only. Held carries are never resized, so their notional is
-    # already deployed; allocating the FULL capital across the (often 1-2) fresh names is how
-    # 2026-07-13 sized one micro-cap at ~the whole book. Names closing this same cycle still
-    # count as deployed here -- one cycle of under-deploy is cheap, over-deploy is ruin.
-    deployed = sum(float(p["spot_qty"]) * float(p["spot_cost"]) for p in pos.values())
-    free = max(0.0, capital - deployed)
-    alloc = _alloc(cands, free)                             # funding-weighted, concentration-capped
-    per = free / max(1, len(cands))                        # equal-weight fallback
-    actions: list[str] = list(recon)                       # surface reconcile actions in the feed
-    if _guard_note:
-        actions.append(_guard_note)
-    if actions_gate:
-        actions.append(actions_gate)
-
-    # GROWTH-POSITIVE risk controls (ruin-boundary sized). Flatten ONLY at the 35% ruin threshold
-    # the leverage optimizer uses; PAUSE (not flatten) new opens in stress so existing carries keep
-    # harvesting funding. In normal operation this does nothing -> zero drag on compounding.
-    risk = None
-    if fut.has_keys():
-        with _safe():
-            # COMBINED book equity, not futures-only: the book is delta-neutral, so in a broad
-            # rally the perp shorts drain the futures account while the spot longs gain the same
-            # amount in the spot wallet. Judged on the futures account alone, a big enough rally
-            # reads as "ruin" and would flatten a perfectly-hedged book at full cost.
-            eq = float(fut.account_summary()["equity"])
-            spot_side = (sum(float(p["spot_qty"])
-                             * (spot_px.get(s, float(p["spot_cost"])) - float(p["spot_cost"]))
-                             for s, p in pos.items())
-                         + float(state.get("realized_spot_pnl", 0.0)))
-            eq_c = eq + spot_side
-            # VENUE-TRUTH PERSISTENCE (R0071a, 2026-07-31): this key had THREE readers and no
-            # writer -- record_capital_event.py fell through to inception-or-zero, so the ONE
-            # command that runs on launch day would have recorded equity $0.00 and re-based the
-            # rail ~89% below truth. The executor is the only organ that computes combined
-            # equity from venue truth; it now persists that number with its timestamp so the
-            # capital-event reader can demand freshness instead of trusting a corpse.
-            state["last_combined_equity"] = round(eq_c, 2)
-            state["last_combined_equity_at"] = datetime.now(tz=UTC).isoformat()
-            # INCEPTION, honouring any RECORDED capital event (libs/risk/capital_events.py).
-            # `start_futures_equity` is written once at inception and never re-based, so after a
-            # ruin-floor breach the book entered a provably closed loop -- flatten, no opens, no
-            # funding, equity constant, flatten -- measured at 113 consecutive rebalances on
-            # 2026-07-30, and it froze Gate 0's live-fills clock at 26.42 of 28 days.
-            #
-            # This does NOT loosen the rail. effective_start_equity is read-only and returns its
-            # argument unchanged when no capital event has ever been recorded, so behaviour on an
-            # un-deposited box is byte-identical. Only a signed, ledgered deposit or an explicit
-            # principal restart moves the inception -- the desk cannot clear its own stop.
-            start_eq = float(capital_events.effective_start_equity(
-                float(state.get("start_futures_equity", eq))))
-            peak = max(float(state.get("peak_combined_equity", start_eq)), eq_c)
-            state["peak_combined_equity"] = peak
-            gross = sum(float(p["spot_qty"]) * spot_px.get(s, float(p["spot_cost"]))
-                        for s, p in pos.items())
-            risk = risk_controls.evaluate(eq_c, start_eq, peak, gross, ruin_cap_lev=8.0)
-            state["last_risk_action"] = risk.action   # latches flatten into next tick's reconcile
-            if risk.action == "flatten":
-                target, cands = set(), []                   # close all, open nothing (survival)
-                actions.append("RISK-FLATTEN " + "; ".join(risk.reasons))
-            elif risk.action == "pause_opens":
-                cands = []                                  # hold + close, add no new risk
-                actions.append("RISK-PAUSE-OPENS " + "; ".join(risk.reasons))
-
-    # CLOSE carries that left the positive-funding set (sell spot, cover perp)
-    # CHURN GUARD (gap #42): a rotation-driven close on a carry that has not yet earned its
-    # round-trip is a measured -8.1%/yr drag. Rails are exempt and still close instantly.
-    # KILL FORCES THE RAIL (2026-07-27, Tier 0). Without this the churn guard HELD carries
-    # younger than _MIN_HOLD_H while DEADMAN_FIRED and CASHCARRY_KILL were both latched --
-    # MOVEUSDT (07:21) and TSTUSDT (08:58) were both under 24h and survived a demanded full
-    # unwind. A ruin rail a fee heuristic can veto is not a ruin rail. Opens are already
-    # impossible at top=0, so widening the forced set can only ever CLOSE.
-    _KILL_FORCES_RAIL = _KILL.exists()
-    _rail_forced = set(cool) | (set(pos) if (_KILL_FORCES_RAIL or (
-        risk is not None and risk.action == "flatten")) else set())
-    for sym in list(pos):
-        if sym not in target:
-            p = pos[sym]
-            if _churn_guard(_held_hours(p.get("opened")), float(p.get("funding", 0.0)),
-                            sym in _rail_forced):
-                actions.append(f"hold {sym}: churn-guard "
-                               f"({_held_hours(p.get('opened')):.1f}h < {_MIN_HOLD_H:g}h)")
-                continue
-            # realized trade record: delta-neutral price legs (~cancel) + est funding harvested
-            spx, fpx = spot_px.get(sym, p["spot_cost"]), fut_px.get(sym, p["perp_entry"])
-            fill: dict[str, Any] = {}                    # dry places no orders -> no fill mode
-            if not dry:
-                t0 = int(time.time() * 1000) - 2000       # fill window (venue clock-skew slack)
-                fill = _execute_pair(sym, float(p["spot_qty"]), "SELL", "BUY")  # close: sell/cover
-                # VERIFY-BEFORE-DELETE (2026-07-19 incident, GAP row 34): a close that isn't
-                # CONFIRMED filled on both legs must stay tracked, or its spot inventory strands
-                # forever (deleted from `pos`, no longer visible to any reconciler pass, no error
-                # anywhere). ~$2,150 of real spot inventory was lost this way before this fix.
-                if not (fill.get("spot_ok") and fill.get("fut_ok")):
-                    actions.append(f"CLOSE-FAIL {sym}: spot_ok={fill.get('spot_ok')} "
-                                   f"fut_ok={fill.get('fut_ok')} -- kept tracked, retry next cycle")
-                    continue
-                # EXIT MARKS FROM ACTUAL FILLS (2026-07-13 incident): ticker marks are blind to
-                # what a thin book actually paid us -- see the matching open-path fix below.
-                spx = spot.avg_fill(sym, "SELL", t0) or spx
-                fpx = fut.avg_fill(sym, "BUY", t0) or fpx
-            held = _held_hours(p.get("opened"))
-            notl = float(p["spot_qty"]) * float(p["spot_cost"])
-            spot_real = float(p["spot_qty"]) * (spx - float(p["spot_cost"]))
-            price_pnl = (spot_real
-                         + abs(float(p["perp_qty"])) * (float(p["perp_entry"]) - fpx))
-            # NOTE: realized_spot_pnl is NOT incremented here. It is re-derived from EXCHANGE GROUND
-            # TRUTH at the end of every rebalance (_reconcile_spot_realized) -- a stale/crashed
-            # executor or duplicate close-log can then never let it silently drift and fabricate a
-            # dashboard loss (the 2026-07-10 phantom). price_pnl (logged below) is the basis input.
-            est_funding = float(p.get("funding", 0.0)) * notl * (held / 8.0)
-            _log_trade({"event": "close", "symbol": sym, "qty": p["spot_qty"],
-                        "notional": round(notl, 2), "funding_rate": p.get("funding"),
-                        "opened": p.get("opened"), "closed": datetime.now(tz=UTC).isoformat(),
-                        "held_hours": held, "price_pnl": round(price_pnl, 2),
-                        "est_funding": round(est_funding, 2),
-                        "net": round(price_pnl + est_funding, 2),
-                        "spot_mode": fill.get("spot"), "fut_mode": fill.get("fut"),
-                        **_tca(fill, spx, fpx, "SELL")})
-            actions.append(f"close {sym}")
-            del pos[sym]
-
-    # OPEN new carries only up to `top` total (hold existing -> never resize an open carry)
-    for sym, fnd in cands:
-        if len(pos) >= top:                               # book full -> don't over-open
-            break
-        if sym in pos:
-            continue
-        px, ffl, sfl = spot_px.get(sym), fut_fl.get(sym), spot_fl.get(sym)
-        if not px or not ffl or not sfl:
-            continue
-        step = max(ffl["step"], sfl["step"])              # coarser step keeps both legs matched
-        qty = _round(alloc.get(sym, per) / px, step, int(min(ffl["qty_prec"], sfl["qty_prec"])))
-        if qty < max(ffl["min_qty"], sfl["min_qty"]) or qty <= 0:
-            continue
-        # THIN-BOOK GUARD: an open is optional -- never enter a book that cannot absorb the order.
-        # The 2026-07-13 NOMUSDT open filled through a near-empty testnet spot book at a cost the
-        # mark-based book never saw (~$4.7k of venue cash on a $4.3k "notional"). Require resting
-        # liquidity within 1% of the touch on BOTH entry legs to cover the order several times.
-        want = qty * px
-        s_depth, f_depth = spot.quote_depth(sym, "BUY"), fut.quote_depth(sym, "SELL")
-        if min(s_depth, f_depth) < want * _DEPTH_MULT:
-            actions.append(f"skip {sym}: thin book (spot ${s_depth:.0f} / fut ${f_depth:.0f} "
-                           f"< {_DEPTH_MULT:g}x ${want:.0f})")
-            continue
-        fpe = fut_px.get(sym, px)
-        if not dry:
-            t0 = int(time.time() * 1000) - 2000           # fill window (venue clock-skew slack)
-            fill = _execute_pair(sym, qty, "BUY", "SELL")  # open: long spot, short perp
-            # VERIFY-BEFORE-TRACK (2026-07-19 incident, GAP row 34): only track a position once
-            # both legs are CONFIRMED filled -- an untracked failed/partial open is visible in the
-            # error log for follow-up rather than silently absent from every future reconcile pass.
-            if not (fill.get("spot_ok") and fill.get("fut_ok")):
-                actions.append(f"OPEN-FAIL {sym}: spot_ok={fill.get('spot_ok')} "
-                               f"fut_ok={fill.get('fut_ok')} -- not tracked, verify manually")
-                continue
-            # COST BASIS FROM ACTUAL FILLS (2026-07-13 incident): ticker-at-open recorded a
-            # ~$4.7k thin-book fill cost as -$55 -- entry slippage must hit the book the moment
-            # it happens. Ticker remains only the fallback when the venue read fails.
-            px = spot.avg_fill(sym, "BUY", t0) or px
-            fpe = fut.avg_fill(sym, "SELL", t0) or fpe
-        pos[sym] = {"spot_qty": qty, "spot_cost": px, "perp_qty": -qty,
-                    "perp_entry": fpe, "funding": round(fnd, 6),
-                    "opened": datetime.now(tz=UTC).isoformat()}
-        if not dry:
-            _log_trade({"event": "open", "symbol": sym, "qty": qty,
-                        "notional": round(qty * px, 2), "funding_rate": round(fnd, 6),
-                        "opened": pos[sym]["opened"],
-                        "spot_mode": fill.get("spot"), "fut_mode": fill.get("fut"),
-                        **_tca(fill, px, fpe, "BUY")})
-        actions.append(f"open {sym} {qty}")
-
-    # TOP UP undersized held carries toward the FULL-capital target so authorized capital is not
-    # left idle (operator-directed 2026-07-19; gap #32). Held carries are otherwise never resized,
-    # so a carry opened in a low-free-capital window stayed frozen small. Runs ONLY in normal state
-    # (never while a risk rail flattens/pauses), ADDS only (never sizes down), through the SAME
-    # 0.35 cap + thin-book depth guard as opens; _topup_plan bounds the aggregate to the free
-    # headroom so the book never levers past `capital`.
-    if risk is None or risk.action not in ("flatten", "pause_opens"):
-        for sym, add in _topup_plan(pos, capital).items():
-            px, ffl, sfl = spot_px.get(sym), fut_fl.get(sym), spot_fl.get(sym)
-            if not px or not ffl or not sfl:
-                continue
-            step = max(ffl["step"], sfl["step"])
-            qty = _round(add / px, step, int(min(ffl["qty_prec"], sfl["qty_prec"])))
-            if qty < max(ffl["min_qty"], sfl["min_qty"]) or qty <= 0:
-                continue
-            want = qty * px
-            s_depth, f_depth = spot.quote_depth(sym, "BUY"), fut.quote_depth(sym, "SELL")
-            if min(s_depth, f_depth) < want * _DEPTH_MULT:
-                actions.append(f"skip topup {sym}: thin book")
-                continue
-            p = pos[sym]
-            fpe = fut_px.get(sym, px)
-            if not dry:
-                t0 = int(time.time() * 1000) - 2000
-                fill = _execute_pair(sym, qty, "BUY", "SELL")  # add matched legs (spot+perp)
-                # VERIFY-BEFORE-TRACK (2026-07-19 incident, GAP row 34): the exact bug class that
-                # stranded ~$2,150 -- a topup that isn't CONFIRMED filled on both legs must never
-                # be added to the tracked spot_qty/perp_qty, or the excess buy becomes permanently
-                # invisible the moment this symbol is later closed against the (unchanged) old qty.
-                if not (fill.get("spot_ok") and fill.get("fut_ok")):
-                    actions.append(f"TOPUP-FAIL {sym}: spot_ok={fill.get('spot_ok')} "
-                                   f"fut_ok={fill.get('fut_ok')} -- not tracked, verify manually")
-                    continue
-                px = spot.avg_fill(sym, "BUY", t0) or px
-                fpe = fut.avg_fill(sym, "SELL", t0) or fpe
-            old_q = float(p["spot_qty"])
-            new_q = old_q + qty
-            p["spot_cost"] = (old_q * float(p["spot_cost"]) + qty * px) / new_q
-            p["perp_entry"] = (old_q * float(p["perp_entry"]) + qty * fpe) / new_q
-            p["spot_qty"] = new_q
-            p["perp_qty"] = -new_q
-            if not dry:
-                _log_trade({"event": "topup", "symbol": sym, "qty": qty,
-                            "notional": round(qty * px, 2), "funding_rate": p.get("funding"),
-                            "opened": p.get("opened"),
-                            "spot_mode": fill.get("spot"), "fut_mode": fill.get("fut"),
-                            **_tca(fill, px, fpe, "BUY")})
-            actions.append(f"topup {sym} +{qty}")
-
-    state["positions"] = pos
-    if not dry:
-        # VENUE-SIDE PROTECTIVE STOPS (R0071c): reconciled every tick against the held book --
-        # place missing, replace drifted, remove orphaned. Survives total host death, which the
-        # in-process rail cannot.
-        actions.extend(_reconcile_protective_stops(pos, state))
-    if not dry:                                           # only persist REAL (executed) positions
-        _reconcile_spot_realized(state)                   # self-heal accounting from exchange truth
-        _STATE.parent.mkdir(parents=True, exist_ok=True)
-        _STATE.write_text(json.dumps(state, indent=2), "utf-8")
-    return {"state": state, "pos": pos, "cands": cands, "actions": actions,
-            "spot_px": spot_px, "fut_px": fut_px,
-            "risk": risk.to_dict() if risk else None}
-
-
-def _reconcile_spot_realized(state: dict[str, Any]) -> None:
-    """Re-anchor realized_spot_pnl to exchange ground truth each rebalance (+ on restart).
-
-    Derives it from the venue's own futures REALIZED_PNL (exact) plus the deduped trade-log basis,
-    overwriting the stored value only when it has drifted past _RSP_TOL. This makes the phantom-loss
-    class impossible: a stale/crashed executor self-heals on its first rebalance after restart, and
-    duplicate close-logs can never double-count (see libs/execution/carry_accounting)."""
-    if not (fut.has_keys() and state.get("start")):
-        return
-    with _safe():
-        start_ms = int(datetime.fromisoformat(str(state["start"])).timestamp() * 1000)
-        venue_realized = float(fut.income_summary(start_ms).get("realized_pnl", 0.0))
-        trades = json.loads(_TRADES.read_text("utf-8")) if _TRADES.exists() else []
-        derived = derive_spot_realized(venue_realized, trades)
-        stored = float(state.get("realized_spot_pnl", 0.0))
-        if abs(stored - derived) > _RSP_TOL:
-            state["realized_spot_pnl"] = derived
-            print(f"[reconcile] realized_spot_pnl {stored:.2f} -> {derived:.2f} "
-                  f"(exchange-anchored; drift {derived - stored:+.2f})")
-
-
-class _safe:
-    """Best-effort order context -- a single leg failing must not abort the whole rebalance."""
-    def __enter__(self) -> _safe:
-        return self
-
-    def __exit__(self, *exc: object) -> bool:
-        return True                                       # swallow leg errors (logged via web)
-
-
-_MAKER_WAIT = 8.0                                          # seconds a post-only quote may rest
-# OPENS are patient (2026-07-23 fee audit): measured 75.8% taker fills paying 96.5% of all
-# commissions; resting them as maker saves ~86% of fees. A carry open has no urgency (funding
-# accrues on 8h boundaries) so waiting minutes for the maker rebate is nearly free. CLOSES keep
-# the 8s wait -- the rails must exit fast and this must never slow the risk path.
-_MAKER_WAIT_OPEN = 240.0                                   # seconds a post-only OPEN may rest
-
-
-def _passive_price(bk: dict[str, Any], fl: dict[str, Any], sym: str, side: str) -> float | None:
-    """Tick-rounded passive maker price: BUY at best bid, SELL at best ask (won't cross)."""
-    bid, ask = bk.get(sym, (0.0, 0.0))
-    px = bid if side == "BUY" else ask
-    if px <= 0:
-        return None
-    tick = float(fl.get("tick", 0.0) or 0.0)
-    return (round(round(px / tick) * tick, int(fl.get("price_prec", 8)))
-            if tick > 0 else float(px))
-
-
-_STOP_FRAC = 0.35                                          # spec section 3: ruin-line distance
-
-
-def _stop_plan(pos: dict[str, dict[str, Any]],
-               *, frac: float = _STOP_FRAC) -> dict[str, dict[str, float]]:
-    """Desired venue-side protective stop per held carry (R0071c; pure -- fully testable).
-
-    Every carry is short the perp, so the protective side is BUY reduce-only at
-    entry*(1+frac). frac is the ruin-line distance (spec section 3): far beyond any funding
-    wick a carry should survive, comfortably inside the leverage-cap liquidation band, and it
-    exists for the host-death case -- an executor that dies leaves a book the venue itself
-    will de-hedge cleanly instead of liquidating."""
-    out: dict[str, dict[str, float]] = {}
-    for sym, p in pos.items():
-        qty = abs(float(p.get("perp_qty") or p.get("spot_qty") or 0.0))
-        entry = float(p.get("perp_entry") or p.get("spot_cost") or 0.0)
-        if qty > 0 and entry > 0:
-            out[sym] = {"qty": qty, "stop": round(entry * (1.0 + frac), 8)}
-    return out
-
-
-def _stop_matches(order: dict[str, Any], want: dict[str, float]) -> bool:
-    """True when a resting stop is close enough to the plan to keep (5% qty / 2% price)."""
-    try:
-        return (abs(float(order.get("origQty", 0.0)) - want["qty"]) <= 0.05 * want["qty"]
-                and abs(float(order.get("stopPrice", 0.0)) - want["stop"]) <= 0.02 * want["stop"])
-    except (TypeError, ValueError):
-        return False
-
-
-def _reconcile_protective_stops(pos: dict[str, dict[str, Any]],
-                                state: dict[str, Any]) -> list[str]:
-    """Venue-side stop = the rail that survives host death. Reconciled, not fire-and-forget:
-    place missing, replace drifted (>5% qty / >2% price), cancel orphans whose position
-    closed. Per-id cancels only -- see _resting_quotes for why cancel_all is forbidden near
-    stops. No-op on connectors without stop support (testnet parity gap, recorded)."""
-    if not fut.has_keys() or not hasattr(fut, "place_stop_market"):
-        return []
-    canceler = getattr(fut, "cancel_order", None)
-    plan = _stop_plan(pos)
-    acts: list[str] = []
-    tracked = set(state.get("protective_stops", {})) | set(plan)
-    for sym in sorted(tracked):
-        with _safe():
-            stops = [o for o in fut.open_orders(sym) if o.get("type") == "STOP_MARKET"]
-            want = plan.get(sym)
-            if want is None:                               # position gone -> its stop goes too
-                for o in stops:
-                    if canceler is not None:
-                        canceler(sym, int(o.get("orderId", 0)))
-                        acts.append(f"stop-cancel {sym} (position closed)")
-                continue
-            keep = next((o for o in stops if _stop_matches(o, want)), None)
-            for o in stops:                                # drifted/duplicate stops go
-                if o is not keep and canceler is not None:
-                    canceler(sym, int(o.get("orderId", 0)))
-            if keep is None:
-                fut.place_stop_market(sym, "BUY", want["qty"], want["stop"])
-                acts.append(f"stop {sym} {want['qty']} @{want['stop']} (ruin-line backstop)")
-    state["protective_stops"] = plan
-    return acts
-
-
-def _resting_quotes(mod: Any, sym: str) -> list[dict[str, Any]]:
-    """Open orders EXCLUDING protective stops (R0071c).
-
-    The maker-pair protocol infers 'my quote filled' from an emptying open-orders book. A
-    resting STOP_MARKET breaks that inference permanently: the book never reads empty, the wait
-    loop always times out, and the fallback branch cancels the stop and re-takers an
-    already-filled leg -- a double fill AND a naked position, triggered by the safety order
-    itself. This is why the stop had zero callers; the filter is what makes wiring it safe."""
-    try:
-        return [o for o in mod.open_orders(sym) if o.get("type") != "STOP_MARKET"]
-    except Exception:
-        return []
-
-
-# live_guard consumption (R0071d): refreshed once per tick from data/live_guard.json; the guard
-# computed these for weeks with no consumer. size_frac scales the tick's sizing capital;
-# limit_only suppresses taker fallbacks. Stale/absent guard = neutral (full size, takers
-# allowed) -- the guard's own freeze path is the KILL file, which is already authoritative.
-_GUARD: dict[str, Any] = {"size_frac": 1.0, "limit_only": False}
-
-
-def _refresh_guard() -> None:
-    _GUARD.update({"size_frac": 1.0, "limit_only": False})
-    # L1.44 contract (0.25h = the guard's own 900s inline rule, now recorded): the fail direction
-    # stays OPEN by documented design ("stale guard is no guard" -- the KILL file is the freeze
-    # authority), but a dead guard can never write its own KILL, so run_alerts now pages
-    # live_guard_dead and this read leaves a stale_read record instead of degrading silently.
-    try:
-        fr = read_fresh("data/live_guard.json", max_age_h=0.25,
-                        caller="run_cashcarry_executor._refresh_guard")
-        if not fr.fresh or not isinstance(fr.data, dict):
-            return                                          # stale guard is no guard
-        _GUARD["size_frac"] = min(1.0, max(0.0, float(fr.data.get("effective_size_fraction", 1.0))))
-        _GUARD["limit_only"] = str(fr.data.get("canary", {}).get("mode", "")) == "limit_only"
-    except Exception:
-        return
-
-
-def _maker_pair(sym: str, qty: float, spot_side: str, fut_side: str,
-                *, wait: float) -> dict[str, Any]:
-    """Quote BOTH legs post-only (maker), wait, then taker-fill whatever didn't rest+fill.
-
-    Same qty on both legs -> the pair ends delta-neutral; the wait bounds any transient exposure.
-    Returns modes plus spot_ok/fut_ok -- a leg only counts as filled once EITHER it rested and
-    left the open-orders book (maker fill) OR its taker fallback returns a confirmed FILLED
-    order; a leg that never confirms either way is reported unfilled, never assumed."""
-    sbk, fbk = spot.book_ticker(), fut.book_ticker()
-    sfl = spot.exchange_filters().get(sym, {})
-    ffl = fut.exchange_filters().get(sym, {})
-    legs = [("spot", spot, spot_side, sbk, sfl), ("fut", fut, fut_side, fbk, ffl)]
-    modes: dict[str, str] = {}
-    ok: dict[str, bool] = {"spot": False, "fut": False}
-    for name, mod, side, bk, fl in legs:
-        px = _passive_price(bk, fl, sym, side)
-        with _safe():
-            o = mod.place_post_only(sym, side, qty, px) if px else {}
-            modes[name] = "maker_pending" if o.get("orderId") else "taker"
-    end = time.time() + wait
-    while time.time() < end:                               # wait for the resting quotes to fill
-        time.sleep(2.0)
-        if not _resting_quotes(spot, sym) and not _resting_quotes(fut, sym):
-            break
-    for name, mod, side, _bk, _fl in legs:                 # cancel + taker any still-unfilled leg
-        with _safe():
-            resting = _resting_quotes(mod, sym)
-            if resting:
-                # Cancel OUR quotes by id, never the symbol's whole book (R0071c): cancel_all
-                # here would take the protective STOP_MARKET down with the stale quote --
-                # naked-stop removal as a side effect of a fill-timeout. Fall back to
-                # cancel_all only on a connector without per-id cancel (testnet spot, where
-                # no stops rest).
-                canceler = getattr(mod, "cancel_order", None)
-                if canceler is not None:
-                    for o in resting:
-                        canceler(sym, int(o.get("orderId", 0)))
-                else:
-                    mod.cancel_all(sym)
-                if _GUARD["limit_only"]:
-                    # live_guard degraded mode (R0071d): no taker chasing -- report the leg
-                    # unfilled and let the next tick re-quote. The guard's whole point is that
-                    # in a degraded venue state, paying taker to force a fill is the leak.
-                    modes[name] = "limit_only_unfilled"
-                else:
-                    res = mod.place_market(sym, side, qty)
-                    modes[name] = "taker_fallback"
-                    ok[name] = _filled(res)
-            elif modes.get(name) == "maker_pending":
-                modes[name] = "maker"
-                ok[name] = True                             # left the book with no cancel -> filled
-    if not (ok["spot"] and ok["fut"]):
-        with contextlib.suppress(Exception):
-            _ERR.write_text(f"{datetime.now(tz=UTC).isoformat()} unfilled leg (maker path) {sym} "
-                            f"ok={ok} modes={modes}\n")
-    return {**modes, "spot_ok": ok["spot"], "fut_ok": ok["fut"]}
-
-
-def _filled(res: object) -> bool:
-    """True only for a CONFIRMED-filled order response (not merely 'no exception was thrown').
-
-    2026-07-19 incident (GAP register row 34): `_safe()` swallows every exception with zero fill
-    verification, so a rejected/partial order looked identical to a successful one to every
-    caller -- three closes silently failed to sell their spot leg, stranding ~$2,150 of real
-    inventory the position tracker had already deleted and would never revisit. A response is
-    only trustworthy when the venue itself confirms FILLED."""
-    return (isinstance(res, dict) and res.get("status") == "FILLED"
-            and float(res.get("executedQty", 0.0)) > 0)
-
-
-def _mid_of(conn: Any, sym: str) -> float | None:
-    """Read-only mid quote. Returns None rather than 0.0 so a failed read is never mistaken for
-    a real price and silently turned into a 100% slippage number."""
-    try:
-        bid, ask = conn.book_ticker().get(sym, (0.0, 0.0))
-        bid, ask = float(bid), float(ask)
-        return (bid + ask) / 2.0 if bid > 0 and ask > 0 else None
-    except Exception:
-        return None
-
-
-def _tca(fill: dict[str, Any], spot_fill: float | None, fut_fill: float | None,
-         spot_side: str) -> dict[str, Any]:
-    """Per-leg transaction-cost attribution. POSITIVE bps ALWAYS MEANS WE PAID.
-
-    On an open the carry buys spot and sells futures; on a close it is the reverse. Paying above
-    mid when buying and receiving below mid when selling are both costs, so the sign is flipped
-    per side to make the columns directly comparable and summable across opens and closes.
-    """
-    out: dict[str, Any] = {
-        "spot_fill": spot_fill, "fut_fill": fut_fill,
-        "spot_mid": fill.get("spot_mid"), "fut_mid": fill.get("fut_mid"),
-        "wait_s": fill.get("wait_s"),
-    }
-    sm, fm = fill.get("spot_mid"), fill.get("fut_mid")
-    if sm and spot_fill:
-        s = (float(spot_fill) - sm) / sm * 1e4
-        out["spot_slip_bps"] = round(s if spot_side == "BUY" else -s, 3)
-    if fm and fut_fill:
-        f = (float(fut_fill) - fm) / fm * 1e4          # futures leg is the opposite side of spot
-        out["fut_slip_bps"] = round(-f if spot_side == "BUY" else f, 3)
-    return out
-
-
-def _execute_pair(sym: str, qty: float, spot_side: str, fut_side: str) -> dict[str, Any]:
-    """TCA WRAPPER (2026-07-27). Captures the decision-time benchmark and elapsed time around the
-    unchanged execution path, so realised slippage becomes measurable per leg, per symbol, per
-    mode. Adds no order logic; the mid reads are read-only and failures degrade to None."""
-    _t0 = time.time()
-    _sm = _mid_of(spot, sym)
-    _fm = _mid_of(fut, sym)
-    res = _execute_pair_impl(sym, qty, spot_side, fut_side)
-    if spot_side == "SELL":            # a CLOSE succeeds by reaching FLAT, not by filling an order
-        res = _close_goal_state(sym, res)
-    res["spot_mid"] = _sm
-    res["fut_mid"] = _fm
-    res["wait_s"] = round(time.time() - _t0, 3)
-    return res
-
-
-def _close_goal_state(sym: str, res: dict[str, Any]) -> dict[str, Any]:
-    """Mark a CLOSE leg that is ALREADY at its goal state (flat) as done rather than failed.
-
-    2026-07-28 incident: every futures hedge had been force-closed out from under the book, so
-    the close path's reduceOnly cover had nothing to reduce. The venue rejects that order,
-    `_filled` returns False, and `fut_ok=False` kept the pair tracked for a retry -- every tick,
-    forever, while `_reconcile` rebuilt both legs in front of each attempt. 11,136 commission
-    events against 251 logged round-trips; $1,456 of fees in 48h against $113 of LIFETIME funding
-    harvest. The bug is definitional: `_ok` meant "an order filled" when a close only ever needed
-    "the leg is flat".
-
-    Checked PER LEG against the venue, so a leg that genuinely still holds inventory still fails
-    and stays tracked -- the 2026-07-19 stranded-inventory fix (~$2,150 of real spot deleted from
-    the tracker while still held) is preserved exactly, not loosened.
-    """
-    if not res.get("fut_ok"):
-        with contextlib.suppress(Exception):
-            if abs(float(fut.positions().get(sym, 0.0))) <= _FLAT_EPS:
-                res["fut_ok"], res["fut"] = True, "already-flat"
-    if not res.get("spot_ok"):
-        with contextlib.suppress(Exception):
-            step = float(spot.exchange_filters().get(sym, {}).get("step", 0.0) or 0.0)
-            held = float(spot.balances().get(sym.replace("USDT", ""), 0.0))
-            if held <= max(step, _FLAT_EPS):   # nothing left above the venue's tradable increment
-                res["spot_ok"], res["spot"] = True, "already-flat"
-    return res
-
-
-def _execute_pair_impl(sym: str, qty: float, spot_side: str, fut_side: str) -> dict[str, Any]:
-    """Fill both carry legs -- maker-first (execution alpha: lower fees) if enabled, else market.
-
-    Returns {"spot": mode, "fut": mode, "spot_ok": bool, "fut_ok": bool} -- callers MUST check
-    the _ok flags before treating a leg as filled; a leg failing must not abort the whole
-    rebalance (that is what `_safe()` still protects), but it must never be reported as success.
-    Maker path has a taker fallback; on ANY maker error we fall back to a plain market pair."""
-    # CLOSES BYPASS THE MAKER PATH (2026-07-27, incident #6 recurrence). _MAKER=True made
-    # _maker_pair the DEFAULT, and its post-only limits carry neither reduceOnly nor a venue
-    # size cap -- so repeated close attempts accumulated resting fills that bought a short
-    # through zero into a long. Twice: COOKIEUSDT +916,772, then 1000CATUSDT +1,138,985.
-    # A close is a CERTAINTY problem, not a fee problem; the desk's own note already says
-    # "patient on OPENS, fast on CLOSES". Opens keep the maker rebate, which is where it pays.
-    _CLOSE_IS_MARKET_ONLY = spot_side == "SELL"
-    if _MAKER and not _CLOSE_IS_MARKET_ONLY:
-        try:
-            # patient on OPENS (spot BUY = entering a carry), fast on CLOSES (spot SELL =
-            # unwinding, where the rails need speed). See the fee audit note above.
-            _w = _MAKER_WAIT_OPEN if spot_side == "BUY" else _MAKER_WAIT
-            return _maker_pair(sym, qty, spot_side, fut_side, wait=_w)
-        except Exception as e:  # maker machinery failed -> safe market fallback
-            with contextlib.suppress(Exception):
-                _ERR.write_text(f"{datetime.now(tz=UTC).isoformat()} maker fail {sym}: {e!r}\n")
-    spot_res: object = None
-    fut_res: object = None
-    # CLOSE legs are reduceOnly (2026-07-27 incident). spot_side=="SELL" IS the close/unwind
-    # direction; the futures leg then BUYS to cover a short, which is exactly the order that
-    # walked COOKIEUSDT through zero into a +916,772 long. reduceOnly makes that impossible.
-    # Opens (spot BUY / futures SELL) must NOT be reduceOnly -- they establish the short.
-    _reduce_only_leg = spot_side == "SELL"
-    with _safe():
-        spot_res = spot.place_market(sym, spot_side, qty)
-    with _safe():
-        fut_res = fut.place_market(sym, fut_side, qty, reduce_only=_reduce_only_leg)
-    spot_ok, fut_ok = _filled(spot_res), _filled(fut_res)
-    if not (spot_ok and fut_ok):
-        with contextlib.suppress(Exception):
-            _ERR.write_text(f"{datetime.now(tz=UTC).isoformat()} unfilled leg {sym} "
-                            f"spot_ok={spot_ok} fut_ok={fut_ok} spot_res={spot_res!r} "
-                            f"fut_res={fut_res!r}\n")
-    return {"spot": "taker", "fut": "taker", "spot_ok": spot_ok, "fut_ok": fut_ok}
-
-
-def _mark(rb: dict[str, Any]) -> dict[str, float | None]:
-    pos, spot_px, fut_px = rb["pos"], rb["spot_px"], rb["fut_px"]
-    spot_pnl = perp_pnl = notional = 0.0
-    for _sym, p in pos.items():
-        spx = spot_px.get(_sym, p["spot_cost"])
-        fpx = fut_px.get(_sym, p["perp_entry"])
-        spot_pnl += float(p["spot_qty"]) * (spx - float(p["spot_cost"]))   # our long-spot legs
-        perp_pnl += abs(float(p["perp_qty"])) * (float(p["perp_entry"]) - fpx)   # short (display)
-        notional += float(p["spot_qty"]) * spx
-    # REAL net = spot side + futures side, SYMMETRIC on realized PnL. The futures-equity delta
-    # already contains its realized closes + funding + fees; the spot side needs open marks PLUS
-    # the accumulated realized PnL of closed spot legs (their proceeds sit in the spot wallet,
-    # invisible to open-position marks -- omitting them fabricated a loss as carries closed).
-    state = rb["state"]
-    spot_realized = float(state.get("realized_spot_pnl", 0.0))
-    net = spot_pnl + spot_realized
-    fut_pnl = 0.0
-    # None, NOT 0.0 -- these come from a separate venue call that can fail on its own, and a
-    # failed measurement must never be publishable as a measured zero (2026-07-26 incident).
-    funding: float | None = None
-    fut_commission: float | None = None
-    if fut.has_keys():
-        with _safe():
-            fut_eq = fut.account_summary()["equity"]
-            # EFFECTIVE inception here too (R0071b, 2026-07-31): this reporting site kept the
-            # raw inception after the rail site was fixed, so the first post-deposit dashboard
-            # tick would have shown the whole deposit as fabricated P&L -- the exact two-sites/
-            # one-truth class the equity bug came from.
-            start_eq = float(capital_events.effective_start_equity(
-                float(state.get("start_futures_equity", fut_eq))))
-            fut_pnl = fut_eq - start_eq                   # futures leg (realized+funding+fees+unrl)
-            net = spot_pnl + spot_realized + fut_pnl
-        # SEPARATE guard from the equity read above. Sharing one `_safe()` made the failure
-        # PARTIAL: the equity assignment landed, then the income call threw, and the swallowed
-        # exception left funding/commission at zero -- publishing a real futures PnL next to a
-        # fabricated zero harvest, which is exactly the combination the bleed alarm reads as a
-        # total bleed. `read_income` retries transient 5xx and returns None when it truly cannot
-        # measure, so "unknown" survives all the way to the dashboard instead of decaying to 0.
-        if state.get("start"):
-            with _safe():
-                start_ms = int(datetime.fromisoformat(str(state["start"])).timestamp() * 1000)
-                # ONE income call, BOTH numbers -- `income_summary` has always returned the exact
-                # paginated `commission` and this book read only `funding`, discarding the fee
-                # bill that is the single largest term of the leak it was alarming about.
-                inc = read_income(lambda: fut.income_summary(start_ms))
-                if inc is not None:
-                    funding = float(inc.get("funding", 0.0))
-                    fut_commission = abs(float(inc.get("commission", 0.0)))
-    return {"spot_pnl": round(spot_pnl, 2), "perp_pnl": round(perp_pnl, 2),
-            "spot_realized": round(spot_realized, 2), "fut_pnl": round(fut_pnl, 2),
-            "funding": None if funding is None else round(funding, 2), "net_pnl": round(net, 2),
-            "fut_commission": None if fut_commission is None else round(fut_commission, 2),
-            "notional": round(notional, 2)}
-
-
-def _emit(rb: dict[str, Any], marks: dict[str, float | None], dry: bool) -> None:
-    pos = rb["pos"]
-    # CARRY-LEAK ALARM ON THE BOOK THAT HOLDS THE MONEY (2026-07-26). `carry_bleed_report` was
-    # only ever wired into the MOLDED book (run_live_combined), so the PRIMARY executed book --
-    # this file -- shipped a dashboard with NO bleed alarm at all, which is exactly how a leak
-    # runs for weeks unnoticed. Same function, same thresholds, now on the executed book.
-    # spot side = open marks + realized of closed spot legs; fut side = futures-equity delta.
-    bleed = carry_bleed_report(funding=marks["funding"],
-                               spot_pnl=round((marks["spot_pnl"] or 0.0)
-                                              + (marks["spot_realized"] or 0.0), 2),
-                               fut_pnl=marks.get("fut_pnl") or 0.0)
-    # Attribute the leak ONLY when both terms are real measurements. With an unknown fee bill the
-    # split would dump the entire commission into `residual`, manufacturing exactly the phantom
-    # that `attribute_non_funding`'s own docstring warns against -- an unexplained quantity that
-    # looks explained. No measurement is better than a confident wrong one.
-    fut_comm = marks.get("fut_commission")
-    leak = (attribute_non_funding(
-        bleed.non_funding_pnl,
-        dedup_basis(json.loads(_TRADES.read_text("utf-8")) if _TRADES.exists() else []),
-        fut_comm)
-        if bleed.non_funding_pnl is not None and fut_comm is not None else None)
-    out = {
-        "updated": datetime.now(tz=UTC).isoformat(),
-        "mode": "dry" if dry else "live-paper",
-        "strategy": "delta-neutral cash-and-carry (long spot + short perp, positive funding)",
-        "executed": not dry, "n_carries": len(pos),
-        "deployed_notional": marks["notional"],
-        "net_pnl": marks["net_pnl"], "funding_harvested": marks["funding"],
-        "spot_leg_pnl": marks["spot_pnl"], "perp_leg_pnl": marks["perp_pnl"],
-        "spot_realized_pnl": marks["spot_realized"],
-        "fut_leg_net": marks.get("fut_pnl", 0.0),
-        "non_funding_pnl": bleed.non_funding_pnl,
-        "harvest_eaten_frac": bleed.harvest_eaten_frac,
-        "bleed_alert": bleed.alert, "bleed_verdict": bleed.verdict,
-        # Publishes WHETHER the harvest was measured at all. Downstream (max_audit, the dashboard,
-        # the molded book) must be able to tell "earned nothing" from "could not read the venue";
-        # they are opposite states and only one of them is an execution problem.
-        "funding_measured": bleed.measured,
-        # WHERE the leak went, not just how big it is -- the alarm alone is unactionable and the
-        # integrity watch is required to attribute it every cycle.
-        "leak_attribution": leak,
-        "fut_commission": marks.get("fut_commission"),
-        "carries": [{"symbol": s, "qty": p["spot_qty"], "funding_8h": p["funding"]}
-                    for s, p in pos.items()],
-        "last_actions": rb["actions"],
-        "risk": rb.get("risk"),
-        "note": ("PRIMARY executed book (paper). Delta-neutral: spot hedges perp, profit = funding "
-                 "harvested on the short perp. Builds the forward track record the gate sizes on."),
-    }
-    _WEB.parent.mkdir(parents=True, exist_ok=True)
-    _WEB.write_text(json.dumps(out, indent=2, default=str), "utf-8")
-
-
-def _live_params(top: int, hold_top: int, capital: float) -> tuple[int, int, float]:
-    """LIVE-tunable params: override top / hold_top / capital from data/cashcarry_config.json each
-    rebalance WITHOUT restarting the executor. Changing a param used to require the flatten+restart
-    the 2026-07-10 churn fix needed; now just write the JSON and the running loop picks it up next
-    cycle. argv are the defaults; any key present in the file overrides. Defensive -> any error
-    (missing/corrupt file, bad type) silently falls back to the argv values."""
-    try:
-        if _CONFIG.exists():
-            cfg = json.loads(_CONFIG.read_text("utf-8"))
-            top = int(cfg.get("top", top))
-            hold_top = int(cfg.get("hold_top", hold_top))
-            capital = float(cfg.get("capital", capital))
-    except (ValueError, TypeError, OSError):
-        pass
-    return top, hold_top, capital
-
-
-
-def _foreign_executor_alive() -> bool:
-    """True when a DIFFERENT live executor owns the heartbeat.
-
-    SINGLE-BOOK INVARIANT (2026-07-26): two --live executors on one delta-neutral book
-    double-order and churn. The startup-only lock could not catch a duplicate spawned during a
-    slow heartbeat window -- both then refreshed the same file forever. Same failure the dead-man
-    rail hit on 07-11 and fixed with a per-loop PID check; the executor now does the same.
-    """
-    try:
-        parts = _HB.read_text("utf-8").split()
-        if not parts or not parts[0].isdigit():
-            return False                       # legacy/unowned heartbeat -- reclaim it
-        pid = int(parts[0])
-        if pid == os.getpid():
-            return False
-        return (time.time() - _HB.stat().st_mtime) < _HB_TICK * 2.5
-    except (OSError, ValueError):
-        return False
-
-
-def main() -> None:
-    # L1.42 STRICT: the executor must NOT trade under a tampered core or a doctrine
-    # missing a law family. Every other organ pages and continues; here, refusing to
-    # act IS the safe direction -- an unlawful trade cannot be undone.
-    _law_guard(strict=True)
-    ap = argparse.ArgumentParser()
-    _enable_fee_burn()           # Gate-0 fee lever: on from the first tick
-    ap.add_argument("--top", type=int, default=5, help="number of carries to hold (opens)")
-    ap.add_argument("--hold-top", type=int, default=60,
-                    help="hysteresis: keep a carry while it still pays positive funding (wide set)")
-    ap.add_argument("--capital", type=float, default=2000.0)
-    ap.add_argument("--minutes", type=float, default=0.0)
-    ap.add_argument("--interval", type=float, default=600.0)
-    ap.add_argument("--live", action="store_true")
-    ap.add_argument("--no-maker", action="store_true", help="disable maker-first execution")
-    args = ap.parse_args()
-    global _MAKER
-    _MAKER = not args.no_maker
-    dry = not args.live
-    if not (spot.has_keys() and fut.has_keys()):
-        raise SystemExit("need BOTH spot-testnet and futures-testnet keys")
-
-    # single-instance lock: a fresh heartbeat means another live executor runs (no double book).
-    # STAND BY rather than exit. Exiting here returned 0, and under `Restart=always/RestartSec=15`
-    # systemd respawned this process every ~19s for as long as the foreign owner lived -- the
-    # IDENTICAL storm the kill path hit on 2026-07-13 (14,225 restarts over 3 days) and fixed by
-    # idling instead of exiting. That fix was applied to the kill exit and left standing on this
-    # one; on 2026-07-26 an orphaned pre-fix executor held the heartbeat and this path storm-
-    # spawned ~190 processes/hour while the fixed code never got to run. Standing by also means
-    # the book is picked up automatically the moment the foreign owner dies, instead of on the
-    # next storm tick. `_foreign_executor_alive` is the SAME predicate the in-loop check uses
-    # (PID-aware, reclaims a legacy/unowned heartbeat), so startup and runtime can no longer
-    # disagree about who owns the book.
-    standby_noted = False
-    while not dry and _foreign_executor_alive():
-        if not standby_noted:                     # log ONCE: a per-tick log is its own noise storm
-            with contextlib.suppress(OSError):
-                print(f"another cash-carry executor owns the book "
-                      f"({_HB.read_text('utf-8').strip()}) -- standing by, not exiting "
-                      f"(single-book invariant; will take over when it stops)")
-            standby_noted = True
-        time.sleep(_HB_TICK)
-
-    forever = args.minutes <= 0
-    deadline = time.monotonic() + args.minutes * 60.0
-    print(f"CASH-CARRY executor | {'LIVE-PAPER' if args.live else 'DRY'} | top {args.top} | "
-          f"${args.capital} | hb {_HB_TICK}s | rebalance {args.interval}s")
-    last_work = 0.0
-    jitter = 1.0                                          # +-15% cadence jitter (anti-front-run:
-    rng = random.Random()                                 # a fixed 600s beat is detectable at size)
-    killed = False
-    while forever or time.monotonic() < deadline:
-        if not dry and _foreign_executor_alive():
-            print("another live executor owns the book -- exiting (single-book "
-                  "invariant)")
-            return
-        if not dry:                                       # fast heartbeat (decoupled from work)
-            _HB.parent.mkdir(parents=True, exist_ok=True)
-            # PID-owned: lets every OTHER executor detect that it no longer owns
-            # the book (single-book invariant, 2026-07-26).
-            _HB.write_text(f"{os.getpid()} {datetime.now(tz=UTC).isoformat()}",
-                           "utf-8")
-        if _KILL.exists():
-            # IDLE here instead of exiting: exiting made systemd respawn every ~17s for as long
-            # as the kill file stood (14k restarts after the 2026-07-13 fire), which also starved
-            # the daily data flywheel that rides this loop. Close everything (idempotent -- retried
-            # while any leg remains), keep the flywheel + dashboard feeds alive, resume trading
-            # automatically the moment the kill file is cleared.
-            if not killed:
-                print("KILL: closing all carries + idling until the kill file clears")
-                killed = True
-            with contextlib.suppress(Exception):
-                _daily_data_tasks()                       # halted book must not starve the flywheel
-            try:
-                rb = _rebalance(0, 0, 0.0, dry=dry)       # top=0, hold=0 -> closes everything
-            except Exception as exc:
-                # A venue outage/ban must not kill the KILL loop: close-all is idempotent and
-                # retried every tick while any leg remains. Crashing here made systemd respawn-
-                # hammer a banned endpoint every ~5min (2026-07-31 418 incident).
-                print(f"KILL: close-all deferred this tick ({exc})")
-                time.sleep(_HB_TICK)
-                continue
-            with contextlib.suppress(Exception):
-                _emit(rb, _mark(rb), dry)                 # dashboard stays honest while halted
-            time.sleep(_HB_TICK)
-            continue
-        killed = False
-        # EVERY tick: mark + write feeds (cheap, keeps the dashboard live). Orders every interval.
-        try:
-            if time.time() - last_work >= args.interval * jitter:
-                _daily_data_tasks()                       # once per UTC day: archive OI/LS/taker
-                top, hold_top, capital = _live_params(args.top, args.hold_top, args.capital)
-                cap = _dynamic_capital(capital)           # dynamic-leverage sized (when proven)
-                rb = _rebalance(top, hold_top, cap, dry=dry)   # places orders (live-tunable params)
-                last_work = time.time()
-                jitter = rng.uniform(0.85, 1.15)
-            else:
-                rb = _book_snapshot()                     # just read + mark (no orders)
-            marks = _mark(rb)
-            _emit(rb, marks, dry)
-            if not dry:                                   # refresh the dashboard molded feed now
-                with contextlib.suppress(Exception):
-                    subprocess.run([sys.executable, "scripts/run_live_combined.py"],
-                                   timeout=60, capture_output=True, check=False)
-            print(f"[{datetime.now(UTC):%H:%M:%S}] carries={len(rb['pos'])} "
-                  f"net=${marks['net_pnl']} funding=${marks['funding']} {rb['actions']}")
-        except Exception as e:  # loop must survive transient errors -- but LOG them visibly
-            with contextlib.suppress(Exception):
-                _ERR.write_text(f"{datetime.now(tz=UTC).isoformat()} cycle error: {e!r}\n")
-            print(f"cycle error (logged): {e!r}"[:200])
-        if not forever and time.monotonic() >= deadline:
-            break
-        time.sleep(_HB_TICK)
-    print("cash-carry executor done.")
-
-
-
-
-# --- BNB FEE DISCOUNT (principal 2026-07-23; Gate-0 lever) -----------------------------------
-# Live VIP0 fees (~20-25 bps round-trip) are the single biggest live drag on a book that turns
-# over; BNB burn takes ~25% off. Maker-first is already implemented (_MAKER) -- this is the
-# other, RISKLESS half, wired now so it is already ON at Gate 0 rather than a day-1 scramble.
-# Best-effort + idempotent: a venue that lacks or rejects the endpoint changes nothing.
-def _enable_fee_burn() -> None:
-    """Switch BNB fee burn ON for futures and spot. Pure cost reduction, no risk surface."""
-    with contextlib.suppress(Exception):
-        fut._signed("/fapi/v1/feeBurn", {"feeBurn": "true"}, method="POST")
-    with contextlib.suppress(Exception):
-        spot._signed("/sapi/v1/bnbBurn", {"spotBNBBurn": "true"}, method="POST")
-
-
-if __name__ == "__main__":
-    main()
-
-```
-
-### scripts/run_deadman_switch.py
+### scripts\run_deadman_switch.py
 ```python
 """DEAD-MAN'S SWITCH -- dumb, isolated, deterministic last-resort ruin rail.
 
@@ -7424,5239 +7389,138 @@ if __name__ == "__main__":
 
 ```
 
-## TIER 2 -- your shard
-
-### libs/autodiscovery/crypto_adapter.py
+### scripts\run_portfolio_risk.py
 ```python
-"""Crypto Parquet-lake -> autodiscovery factory adapter (industrialized hypothesis throughput).
+"""PORTFOLIO RISK REVIEW -- wire libs/stage14_5, self-arming at the sleeve count that makes it real.
 
-Turns lake D1/H8 crypto bars into ``MarketSeries`` (with Level-3 perp ``funding`` attached) so the
-generic :class:`AutoDiscoveryLab` can run the SAME validation gauntlet over the whole crypto
-universe, net of real perp cost, with cross-campaign DSR deflation on the cumulative trial count.
+THE GAP. libs/stage14_5 (10 modules: correlation shock, concentration, factor exposure, regime
+exposure, crisis alpha, hedging) had no path from any entry point. These are the controls that
+decide whether "orthogonal sleeves" is a true statement or a comfortable one.
 
-Honesty: the ``funding_stress_reversal`` generator (LIQUIDITY family) is the one genuinely
-crypto-native hypothesis here -- fading crowded perp leverage, economically distinct from the
-funding *carry* the desk already harvests. The price-pattern families are EXPECTED to re-confirm
-the graveyard (trend/momentum/mean-reversion over crypto majors already failed the gauntlet). That
-is the honest point, not a defect: the store's content-hash dedup makes re-tests free after the
-first cycle, and cumulative-trial DSR deflation makes a false survivor from breadth-mining
-statistically harder, not easier. The factory's durable value is (1) the new funding-stress test,
-(2) trial-count accounting across the universe, and (3) reusable infrastructure that auto-tests each
-new free data axis (OI / LS / liquidations / stablecoin flows) as its forward clock matures.
+WHY IT MATTERS EXACTLY HERE. The growth ladder's step 3 -- the 80-120%/yr band -- gates on
+">= 3 orthogonal validated sleeves; LIVE portfolio Sharpe >= 1.2 over >= 60 live days", and its
+own arithmetic says growth comes "by STACKING VALIDATED SLEEVES (sqrt-N Sharpe growth), never by
+levering one unproven sleeve harder". That sqrt-N is a LIE under correlation convergence:
+sleeves that look uncorrelated in calm markets converge toward 1.0 in stress, and the effective
+bet count collapses exactly when drawdown arrives. A desk that stacks sleeves without measuring
+shocked correlation is levering a diversification it does not have.
+
+SELF-ARMING, NOT DEFERRED. Correlation shock is meaningless at one sleeve (a 1x1 correlation
+matrix has no off-diagonal) and load-bearing at three. So the gate is a DATA CONDITION read from
+the shadow registry, not a human decision someone has to remember: below MIN_SLEEVES it reports
+DORMANT and explains what would arm it; at or above, it runs every control and fails loud. No
+one has to notice the third sleeve landing -- the check notices.
+
+Reports only. Zero promotion authority; no rail is touched. `--self-test` proves the engines run.
 """
 
-from __future__ import annotations
-
-from collections.abc import Callable, Sequence
-from pathlib import Path
-from typing import Any
-
-import numpy as np
-
-from libs.autodiscovery.memory import CandidateStore
-from libs.autodiscovery.models import CycleResult, Family, MarketSeries
-from libs.autodiscovery.orchestrator import AutoDiscoveryLab
-from libs.data.instruments import AssetClass, InstrumentSpec, register_instrument
-from libs.data.lake import Layer, ParquetLake
-from libs.data.timeframe import Timeframe
-from libs.store.connection import Database
-
-DataProvider = Callable[[str], MarketSeries | None]
-
-_LAKE_ROOT = "data/lake"
-_MIN_BARS = 250
-# ~4 bps taker + slippage per side on a liquid perp; backtests are ALWAYS net of this.
-COST_PER_SIDE = 5e-4
-# Price patterns that fit crypto + LIQUIDITY (carries funding_stress_reversal). Crowded price-only
-# families stay in to keep the trial count honest; the gauntlet, not omission, rejects them.
-DEFAULT_FAMILIES: tuple[Family, ...] = (
-    Family.LIQUIDITY,
-    Family.MOMENTUM,
-    Family.MEAN_REVERSION,
-    Family.TREND,
-    Family.VOLATILITY_EXPANSION,
-    Family.VOLATILITY_COMPRESSION,
-    Family.CROSS_ASSET,  # BTC-relative; ref_close populated below (no-lookahead)
-)
-
-
-def crypto_symbols(
-    timeframe: Timeframe = Timeframe.D1, *, lake_root: str = _LAKE_ROOT
-) -> list[str]:
-    """Every crypto symbol with bars at ``timeframe`` in the lake (sorted, deterministic)."""
-    root = Path(lake_root) / "bronze" / "crypto"
-    if not root.exists():
-        return []
-    return sorted(d.name for d in root.iterdir() if (d / timeframe.value).exists())
-
-
-def _read_frames(symbols: Sequence[str], timeframe: Timeframe, lake_root: str) -> dict[str, Any]:
-    """Read + cache each symbol's lake frame once (indexed by timestamp)."""
-    lake = ParquetLake(lake_root)
-    frames = {}
-    for s in symbols:
-        register_instrument(InstrumentSpec(symbol=s, asset_class=AssetClass.CRYPTO, description=s))
-        frames[s] = lake.read_bars(Layer.BRONZE, s, timeframe).set_index("timestamp")
-    return frames
-
-
-def _provider_from_frames(frames: dict[str, Any], min_bars: int) -> DataProvider:
-    # BTC is the cross-asset reference (feeds MarketSeries.ref_close -> the CROSS_ASSET generator).
-    # NO-LOOKAHEAD: reindex BTC's close onto each symbol's bar index with PAST-ONLY ffill (a bar's
-    # ref is BTC's contemporaneous close, gaps filled from the last KNOWN past close); net_returns
-    # then applies lag-1, so the position never sees future data. Leading gaps (symbol older than
-    # BTC -- effectively never) leave ref_close None so the generator honestly skips (zeros).
-    btc = frames.get("BTCUSDT")
-    btc_close = btc["close"] if btc is not None else None
-
-    def provider(symbol: str) -> MarketSeries | None:
-        df = frames.get(symbol)
-        if df is None or len(df) < min_bars:
-            return None
-        funding = df["funding"].to_numpy("float64") if "funding" in df.columns else None
-        ref_close = None
-        if btc_close is not None and symbol != "BTCUSDT":
-            ref = btc_close.reindex(df.index).ffill()
-            if not ref.isna().any():
-                ref_close = ref.to_numpy("float64")
-        return MarketSeries(
-            close=df["close"].to_numpy("float64"),
-            high=df["high"].to_numpy("float64"),
-            low=df["low"].to_numpy("float64"),
-            volume=df["volume"].to_numpy("float64"),
-            hour=np.array([t.hour for t in df.index], dtype="float64"),
-            ref_close=ref_close,
-            funding=funding,
-        )
-
-    return provider
-
-
-def lake_provider(
-    symbols: Sequence[str],
-    timeframe: Timeframe = Timeframe.D1,
-    *,
-    lake_root: str = _LAKE_ROOT,
-    min_bars: int = _MIN_BARS,
-) -> DataProvider:
-    """Build an injectable ``symbol -> MarketSeries`` provider over cached lake frames.
-
-    Frames are read once and cached; a symbol with fewer than ``min_bars`` bars returns ``None`` so
-    the lab skips it honestly rather than testing a too-short series. ``funding`` is attached when
-    present (Level-3) so the crypto-native generator is a real test, not a degrade-to-flat.
-    """
-    return _provider_from_frames(_read_frames(symbols, timeframe, lake_root), min_bars)
-
-
-def load_universe(
-    timeframe: Timeframe = Timeframe.D1,
-    *,
-    limit: int | None = 30,
-    lake_root: str = _LAKE_ROOT,
-    min_bars: int = _MIN_BARS,
-) -> tuple[list[str], DataProvider]:
-    """Select the TRADEABLE crypto universe (top-``limit`` by trailing dollar-volume) + a provider.
-
-    Ranking is done OFFLINE from lake bars (median close*volume over the last ~180 bars) -- no live
-    API call, so no network/geo-block failure mode in the daily cycle. Capping to the liquid names
-    is economically honest AND statistically kinder: testing 200+ microcap perps is breadth-mining
-    that inflates the cumulative trial count (harshening the DSR deflation on the real hypotheses)
-    while adding near-zero-capacity candidates. It is also operationally robust -- the campaign-wide
-    Reality-Check bootstrap over an N-wide candidate matrix is memory-heavy, so an unbounded sweep
-    (~1000 candidates) OOM-crashes this box mid-cycle; ~30 liquid names keeps N bounded. The top ~30
-    perps hold essentially all real research capacity anyway. ``limit=None`` keeps every symbol.
-    """
-    all_syms = crypto_symbols(timeframe, lake_root=lake_root)
-    frames = _read_frames(all_syms, timeframe, lake_root)
-    eligible = [s for s in all_syms if len(frames[s]) >= min_bars]
-
-    def _adv(sym: str) -> float:
-        df = frames[sym]
-        if "volume" not in df.columns:
-            return 0.0
-        dollar = (df["close"] * df["volume"]).tail(180)
-        return float(dollar.median()) if len(dollar) else 0.0
-
-    eligible.sort(key=_adv, reverse=True)
-    selected = eligible if limit is None else eligible[:limit]
-    return selected, _provider_from_frames(frames, min_bars)
-
-
-def build_lab(
-    db: Database,
-    provider: DataProvider,
-    *,
-    families: Sequence[Family] | None = DEFAULT_FAMILIES,
-    cost_per_side: float = COST_PER_SIDE,
-) -> AutoDiscoveryLab:
-    """Wire a crypto-fed :class:`AutoDiscoveryLab` (flat per-side cost, family-restricted)."""
-    return AutoDiscoveryLab(
-        db,
-        provider,
-        cost_provider=lambda _s: cost_per_side,
-        families=list(families) if families is not None else None,
-    )
-
-
-def web_payload(
-    store: CandidateStore, result: CycleResult, *, timeframe: str = "D1"
-) -> dict[str, object]:
-    """Dashboard-ready summary of the crypto factory's cumulative state + this cycle's delta."""
-    survivors = [
-        {
-            "id": r.id,
-            "family": r.family,
-            "subtype": r.subtype,
-            "symbol": r.symbol,
-            "annual_sharpe": round(float(r.metrics.annual_sharpe), 3),
-            "dsr": round(float(r.metrics.dsr), 3),
-        }
-        for r in store.survivors()
-    ]
-    rejection_hist: dict[str, int] = {}
-    for rec in store.all():
-        if rec.survived or not rec.rejection_reason:
-            continue
-        body = rec.rejection_reason.removeprefix("failed: ")
-        for gate in (g.strip() for g in body.split(",") if g.strip()):
-            rejection_hist[gate] = rejection_hist.get(gate, 0) + 1
-    return {
-        "timeframe": timeframe,
-        "cumulative_tested": store.total(),
-        "cumulative_survivors": len(survivors),
-        "by_family": store.family_counts(),
-        "by_status": store.status_counts(),
-        "rejection_by_gate": dict(sorted(rejection_hist.items(), key=lambda kv: -kv[1])),
-        "this_cycle": {
-            "tested": result.tested,
-            "skipped_duplicate": result.skipped_duplicate,
-            "survivors": result.survivors,
-            "rejected": result.rejected,
-            "promoted_to_paper": result.promoted_to_paper,
-        },
-        "survivors": survivors,
-        "note": (
-            "Industrialized crypto hypothesis factory: same gauntlet, net of real perp cost, "
-            "cross-campaign DSR deflation. Zero survivors is the honest expected outcome; the "
-            "funding_stress_reversal (LIQUIDITY) generator is the one crypto-native test."
-        ),
-    }
-
-```
-
-### libs/autodiscovery/regime.py
-```python
-"""Regime-robustness gate (committee Lever 3 / T8).
-
-A durable edge should not live in a single market state. We split the strategy's own return series
-by realized-volatility regime (low / mid / high terciles) and require it to be net-positive in at
-least two of them before it can reach REGISTRY. This is the price-derivable part of regime
-intelligence; macro regimes (inflation/growth/credit) remain data-gated and are NOT faked.
-"""
-
-from __future__ import annotations
-
-import numpy as np
-
-_MIN_BARS = 90
-_VOL_WINDOW = 20
-
-
-def vol_regime_labels(returns: np.ndarray, *, window: int = _VOL_WINDOW) -> np.ndarray:
-    """Label each bar 0/1/2 by realized-vol tercile (low/mid/high); -1 where vol is undefined."""
-    n = len(returns)
-    labels = np.full(n, -1, dtype="int64")
-    if n < window + 1:
-        return labels
-    vol = np.full(n, np.nan, dtype="float64")
-    for i in range(window, n):
-        vol[i] = returns[i - window + 1: i + 1].std()
-    valid = ~np.isnan(vol)
-    if valid.sum() < 3:
-        return labels
-    lo, hi = np.nanquantile(vol, [1 / 3, 2 / 3])
-    labels[valid & (vol <= lo)] = 0
-    labels[valid & (vol > lo) & (vol <= hi)] = 1
-    labels[valid & (vol > hi)] = 2
-    return labels
-
-
-def regime_robust(returns: np.ndarray, *, min_positive_regimes: int = 2) -> bool:
-    """True iff the strategy is net-positive in at least ``min_positive_regimes`` vol regimes."""
-    if len(returns) < _MIN_BARS:
-        return False  # cannot confirm robustness on a short sample -> conservative reject
-    labels = vol_regime_labels(returns)
-    positive = 0
-    present = 0
-    for r in (0, 1, 2):
-        mask = labels == r
-        if mask.any():
-            present += 1
-            if float(np.sum(returns[mask])) > 0.0:
-                positive += 1
-    return present >= min_positive_regimes and positive >= min_positive_regimes
-
-```
-
-### libs/backtest/portfolio.py
-```python
-"""Portfolio engine — cash, signed position, average-cost realized PnL, equity.
-
-Supports long, short, partial exits, and reversals via average-cost accounting on a single
-net position per instrument. Realized trades are recorded for profit-factor/expectancy.
-"""
-
-from __future__ import annotations
-
-from dataclasses import dataclass, field
-
-import pandas as pd
-
-from libs.backtest.events import FillEvent
-
-
-@dataclass(frozen=True)
-class Trade:
-    """A realized (closed or partially-closed) round-turn portion."""
-
-    entry_time: pd.Timestamp
-    exit_time: pd.Timestamp
-    sign: int
-    units: float
-    entry_price: float
-    exit_price: float
-    pnl: float
-
-
-@dataclass
-class PortfolioEngine:
-    """Tracks cash, net position, and realized trades through fills."""
-
-    init_cash: float
-    cash: float = field(init=False)
-    units: float = 0.0
-    entry_price: float = 0.0
-    entry_time: pd.Timestamp | None = None
-    trades: list[Trade] = field(default_factory=list)
-
-    def __post_init__(self) -> None:
-        self.cash = self.init_cash
-
-    def apply_fill(self, fill: FillEvent) -> None:
-        """Apply a fill to cash/position, recording realized PnL on reductions/reversals."""
-        delta = fill.units_delta
-        price = fill.price
-        self.cash -= delta * price
-        self.cash -= fill.commission
-        new_units = self.units + delta
-
-        if self.units == 0.0:
-            self.entry_price = price
-            self.entry_time = fill.timestamp
-        elif (self.units > 0 and delta > 0) or (self.units < 0 and delta < 0):
-            total = self.entry_price * abs(self.units) + price * abs(delta)
-            self.entry_price = total / abs(new_units)
-        else:
-            closing = min(abs(delta), abs(self.units))
-            sign = 1 if self.units > 0 else -1
-            pnl = closing * (price - self.entry_price) * sign - fill.commission
-            self.trades.append(
-                Trade(
-                    entry_time=self.entry_time if self.entry_time is not None else fill.timestamp,
-                    exit_time=fill.timestamp,
-                    sign=sign,
-                    units=closing,
-                    entry_price=self.entry_price,
-                    exit_price=price,
-                    pnl=pnl,
-                )
-            )
-            if abs(delta) > abs(self.units):
-                self.entry_price = price  # reversal: remainder opens a new position
-                self.entry_time = fill.timestamp
-            elif new_units == 0.0:
-                self.entry_price = 0.0
-                self.entry_time = None
-
-        self.units = new_units
-
-    def equity(self, mark_price: float) -> float:
-        """Mark-to-market equity at ``mark_price``."""
-        return self.cash + self.units * mark_price
-
-```
-
-### libs/data/__init__.py
-```python
-"""``libs.data`` — MT5 ingestion, the Parquet medallion lake, DuckDB, and data quality."""
-
-from __future__ import annotations
-
-from libs.data.calendar import expected_index, is_open, session_of
-from libs.data.duckdb_client import DuckDBClient
-from libs.data.errors import DataError, MT5Error
-from libs.data.instruments import (
-    SUPPORTED_SYMBOLS,
-    AssetClass,
-    InstrumentSpec,
-    get_spec,
-    is_supported,
-)
-from libs.data.lake import Layer, ParquetLake
-from libs.data.medallion import build_bronze, build_gold, build_silver
-from libs.data.mt5_source import (
-    BarSource,
-    MT5BarSource,
-    load_mt5_bars,
-    normalize_timezone,
-)
-from libs.data.quality import (
-    QualityReport,
-    compute_quality_score,
-    detect_duplicates,
-    detect_gaps,
-    detect_missing_bars,
-    detect_spikes,
-)
-from libs.data.schema import BAR_COLUMNS, empty_bars, validate_bars
-from libs.data.timeframe import Timeframe
-
-__all__ = [  # noqa: RUF022  # grouped by concern
-    # instruments / timeframe
-    "AssetClass",
-    "InstrumentSpec",
-    "get_spec",
-    "is_supported",
-    "SUPPORTED_SYMBOLS",
-    "Timeframe",
-    # schema
-    "BAR_COLUMNS",
-    "empty_bars",
-    "validate_bars",
-    # ingestion
-    "BarSource",
-    "MT5BarSource",
-    "load_mt5_bars",
-    "normalize_timezone",
-    # calendar
-    "is_open",
-    "expected_index",
-    "session_of",
-    # quality
-    "QualityReport",
-    "detect_duplicates",
-    "detect_missing_bars",
-    "detect_spikes",
-    "detect_gaps",
-    "compute_quality_score",
-    # lake + duckdb + medallion
-    "Layer",
-    "ParquetLake",
-    "DuckDBClient",
-    "build_bronze",
-    "build_silver",
-    "build_gold",
-    # errors
-    "DataError",
-    "MT5Error",
-]
-
-```
-
-### libs/execution/algos.py
-```python
-"""Execution algorithm framework — deterministic child-order schedules.
-
-Produces a schedule of child orders (offset + quantity) for a parent order without submitting them;
-the :class:`ExecutionEngine` submits the slices. Three algos: TWAP (even over time), POV (paced to
-a volume curve at a participation rate), and Implementation Shortfall (front-loaded by urgency).
-Every schedule's quantities sum exactly to the parent quantity (the final slice absorbs rounding).
-"""
-
-from __future__ import annotations
-
-from collections.abc import Sequence
-
-from pydantic import BaseModel, ConfigDict, Field
-
-from libs.execution.errors import ExecutionError
-
-
-class ChildOrder(BaseModel):
-    model_config = ConfigDict(frozen=True)
-
-    offset_seconds: int
-    qty: float
-
-
-class ExecutionPlan(BaseModel):
-    model_config = ConfigDict(frozen=True)
-
-    algo: str
-    symbol: str
-    side: str
-    total_qty: float
-    slices: list[ChildOrder] = Field(default_factory=list)
-    notes: str = ""
-
-    @property
-    def scheduled_qty(self) -> float:
-        return sum(c.qty for c in self.slices)
-
-
-def _validate(symbol: str, side: str, total_qty: float) -> None:
-    if side not in ("buy", "sell"):
-        raise ExecutionError(f"side must be 'buy' or 'sell', got {side!r}")
-    if total_qty <= 0:
-        raise ExecutionError("total_qty must be positive")
-    if not symbol:
-        raise ExecutionError("symbol is required")
-
-
-def _finalize(
-    weights: Sequence[float], total_qty: float, interval_seconds: int
-) -> list[ChildOrder]:
-    """Turn slice weights into child orders whose quantities sum exactly to ``total_qty``."""
-    total_w = sum(weights)
-    if total_w <= 0:
-        raise ExecutionError("schedule weights must be positive")
-    slices: list[ChildOrder] = []
-    allocated = 0.0
-    n = len(weights)
-    for i, w in enumerate(weights):
-        if i == n - 1:
-            qty = total_qty - allocated  # last slice absorbs rounding
-        else:
-            qty = round(total_qty * (w / total_w), 10)
-            allocated += qty
-        slices.append(ChildOrder(offset_seconds=i * interval_seconds, qty=qty))
-    return slices
-
-
-class ExecutionScheduler:
-    """Builds deterministic execution schedules."""
-
-    def twap(
-        self, *, symbol: str, side: str, total_qty: float, n_slices: int, interval_seconds: int
-    ) -> ExecutionPlan:
-        _validate(symbol, side, total_qty)
-        if n_slices < 1:
-            raise ExecutionError("n_slices must be >= 1")
-        slices = _finalize([1.0] * n_slices, total_qty, interval_seconds)
-        return ExecutionPlan(
-            algo="twap", symbol=symbol, side=side, total_qty=total_qty, slices=slices,
-            notes=f"even over {n_slices} slices",
-        )
-
-    def pov(
-        self,
-        *,
-        symbol: str,
-        side: str,
-        total_qty: float,
-        volume_curve: Sequence[float],
-        participation_rate: float,
-        interval_seconds: int,
-    ) -> ExecutionPlan:
-        _validate(symbol, side, total_qty)
-        if not 0.0 < participation_rate <= 1.0:
-            raise ExecutionError("participation_rate must be in (0, 1]")
-        if not volume_curve or any(v < 0 for v in volume_curve):
-            raise ExecutionError("volume_curve must be non-empty and non-negative")
-        slices: list[ChildOrder] = []
-        remaining = total_qty
-        for i, bucket_volume in enumerate(volume_curve):
-            if remaining <= 0:
-                break
-            qty = min(remaining, participation_rate * bucket_volume)
-            if qty <= 0:
-                continue
-            slices.append(ChildOrder(offset_seconds=i * interval_seconds, qty=qty))
-            remaining -= qty
-        if remaining > 1e-12:  # curve capacity exhausted before the order filled
-            if slices:
-                last = slices[-1]
-                slices[-1] = ChildOrder(
-                    offset_seconds=last.offset_seconds, qty=last.qty + remaining
-                )
-            else:
-                slices.append(ChildOrder(offset_seconds=0, qty=total_qty))
-        return ExecutionPlan(
-            algo="pov", symbol=symbol, side=side, total_qty=total_qty, slices=slices,
-            notes=f"participation {participation_rate:.2%} of volume",
-        )
-
-    def implementation_shortfall(
-        self,
-        *,
-        symbol: str,
-        side: str,
-        total_qty: float,
-        n_slices: int,
-        interval_seconds: int,
-        urgency: float = 0.5,
-    ) -> ExecutionPlan:
-        _validate(symbol, side, total_qty)
-        if n_slices < 1:
-            raise ExecutionError("n_slices must be >= 1")
-        urgency = max(0.0, min(1.0, urgency))
-        # Front-load with geometric decay: higher urgency -> steeper decay -> more traded early.
-        decay = 1.0 - 0.9 * urgency  # urgency 0 -> 1.0 (flat/TWAP), urgency 1 -> 0.1 (steep)
-        weights = [decay**i for i in range(n_slices)]
-        slices = _finalize(weights, total_qty, interval_seconds)
-        return ExecutionPlan(
-            algo="implementation_shortfall", symbol=symbol, side=side, total_qty=total_qty,
-            slices=slices, notes=f"front-loaded, urgency={urgency:.2f}",
-        )
-
-```
-
-### libs/features/errors.py
-```python
-"""Feature-layer exceptions."""
-
-from __future__ import annotations
-
-from libs.core.errors import QuantPlatformError
-
-
-class FeatureError(QuantPlatformError):
-    """Generic feature error (bad definition, missing inputs, duplicate version)."""
-
-
-class LeakageError(FeatureError):
-    """A feature looks into the future (lookahead / future / hindsight / full-sample leakage)."""
-
-
-class ParityError(FeatureError):
-    """A feature's offline (training) and online (serving) computations disagree."""
-
-```
-
-### libs/ops/__init__.py
-```python
-"""``libs.ops`` — disaster recovery, backup, and operational resilience.
-
-Consistent SQLite backups with checksum manifests, a restore drill that proves recoverability,
-a heartbeat watchdog, and a fail-closed safe-halt controller that fuses the platform's hard stop
-signals. Recommend-only decisions; the execution/risk layers enforce them.
-"""
-
-from __future__ import annotations
-
-from libs.ops.backup import BackupManager, BackupManifest, RestoreDrill
-from libs.ops.errors import OpsError
-from libs.ops.watchdog import HaltDecision, ProcessWatchdog, SafeHaltController
-
-__all__ = [
-    "BackupManager",
-    "BackupManifest",
-    "HaltDecision",
-    "OpsError",
-    "ProcessWatchdog",
-    "RestoreDrill",
-    "SafeHaltController",
-]
-
-```
-
-### libs/ops/carryover.py
-```python
-"""§37 CARRY-OVER -- work owed survives an outage and is handed back when the brain returns.
-
-The desk's brain is a metered LLM session. It dies on quota, on session limits, on a bad model
-route -- and when it does, the cycle's owed work is simply gone: the next cycle starts from
-whatever the sweep happens to report at that moment, with no memory that anything was already
-owed, for how long, or how many cycles have passed without it being touched. Detection of the
-death already exists (`max_audit.check_stub_deaths` reads the death markers out of the logs).
-What did NOT exist is the other half: the work PILING UP across the outage and being handed back.
-
-This module is that half. It keeps an append-only ledger of what each sweep found owed, and from
-consecutive snapshots derives the one thing a single sweep can never know -- HOW LONG something
-has been owed, and how many cycles have run past it.
-
-THE DISTINCTION THAT MATTERS, and the reason this is not just another queue:
-
-  LOST TO OUTAGE   -- sweeps where the brain died on quota. Items accumulated through no fault of
-                      the cycle; the honest response is to hand them back with their true age, not
-                      to treat the gap as neglect.
-  SEEN AND SKIPPED -- sweeps where the brain RAN, was shown the item, and it survived anyway. That
-                      is not a backlog, it is avoidance, and it is the failure mode a plain queue
-                      hides: a long queue looks the same whether nobody was home or everybody
-                      walked past it.
-
-Only the second is a defect. Conflating them either punishes the desk for an outage or excuses it
-for ignoring work -- and the second mistake is the expensive one.
-"""
-
-from __future__ import annotations
-
-import json
-from collections.abc import Mapping, Sequence
-from pathlib import Path
-from typing import Any
-
-from pydantic import BaseModel, ConfigDict
-
-#: Log fragments that mean a brain cycle died rather than finished. Mirrors
-#: ``max_audit._DEATH_MARKERS`` -- kept here so this module stays importable on its own.
-DEATH_MARKERS = (
-    "out of usage credits", "session limit", "hit your limit", "usage limit",
-    "issue with the selected model", "rate limit", "quota",
-)
-
-SweepRow = Mapping[str, Any]
-
-
-def record_sweep(
-    path: Path, defect_ids: Sequence[str], *, ts: float, brain_alive: bool = True
-) -> None:
-    """Append one line: what was owed at this sweep, and whether the brain was up to see it."""
-    path.parent.mkdir(parents=True, exist_ok=True)
-    row = {"ts": float(ts), "ids": sorted(set(defect_ids)), "alive": bool(brain_alive)}
-    with path.open("a", encoding="utf-8") as fh:
-        fh.write(json.dumps(row) + "\n")
-
-
-def load_sweeps(path: Path) -> list[dict[str, Any]]:
-    """Read the sweep ledger, skipping corrupt lines rather than losing the whole history."""
-    if not path.exists():
-        return []
-    rows: list[dict[str, Any]] = []
-    for line in path.read_text("utf-8", errors="ignore").splitlines():
-        if not line.strip():
-            continue
-        try:
-            r = json.loads(line)
-        except json.JSONDecodeError:
-            continue
-        if isinstance(r, dict) and "ts" in r and isinstance(r.get("ids"), list):
-            rows.append(r)
-    return sorted(rows, key=lambda r: float(r["ts"]))
-
-
-class CarryItem(BaseModel):
-    """One defect that has outlived at least one sweep."""
-
-    model_config = ConfigDict(frozen=True)
-
-    defect_id: str
-    first_seen: float
-    age_days: float
-    sweeps_survived: int      # total sweeps this has been owed through
-    seen_by_live_brain: int   # of those, how many ran with the brain UP -- the damning number
-
-    @property
-    def skipped(self) -> bool:
-        """Survived sweeps the brain was awake for: shown the work, did not do it."""
-        return self.seen_by_live_brain >= 2
-
-
-class CarryoverState(BaseModel):
-    """What is owed, how old it is, and how much of the gap was an outage."""
-
-    model_config = ConfigDict(frozen=True)
-
-    n_sweeps: int
-    n_dead_sweeps: int        # cycles lost to quota/session death
-    items: tuple[CarryItem, ...]
-    verdict: str
-
-    @property
-    def skipped_items(self) -> tuple[CarryItem, ...]:
-        return tuple(i for i in self.items if i.skipped)
-
-
-def carryover_state(sweeps: Sequence[SweepRow], *, now: float) -> CarryoverState:
-    """Derive age and skip-count per still-owed defect from consecutive sweep snapshots."""
-    if not sweeps:
-        return CarryoverState(n_sweeps=0, n_dead_sweeps=0, items=(),
-                              verdict="no sweep history yet -- nothing carried")
-    first: dict[str, float] = {}
-    total: dict[str, int] = {}
-    live: dict[str, int] = {}
-    for row in sweeps:
-        ts, alive = float(row["ts"]), bool(row.get("alive", True))
-        for did in row["ids"]:
-            d = str(did)
-            first.setdefault(d, ts)
-            total[d] = total.get(d, 0) + 1
-            if alive:
-                live[d] = live.get(d, 0) + 1
-    still_owed = {str(d) for d in sweeps[-1]["ids"]}
-    items = tuple(sorted(
-        (CarryItem(defect_id=d, first_seen=first[d],
-                   age_days=round((now - first[d]) / 86400.0, 2),
-                   sweeps_survived=total[d], seen_by_live_brain=live.get(d, 0))
-         for d in still_owed),
-        key=lambda i: (-i.seen_by_live_brain, -i.age_days),
-    ))
-    dead = sum(1 for r in sweeps if not bool(r.get("alive", True)))
-    skipped = [i for i in items if i.skipped]
-
-    if not items:
-        verdict = f"nothing owed across {len(sweeps)} sweep(s) -- the queue is genuinely empty"
-    elif skipped:
-        verdict = (
-            f"{len(skipped)} item(s) survived sweeps the brain was AWAKE for -- shown the work and "
-            f"not done. {dead} cycle(s) were lost to quota; those are not the excuse for these. "
-            "A long queue looks identical whether nobody was home or everybody walked past it; "
-            "this is the second case."
-        )
-    elif dead:
-        verdict = (f"{len(items)} item(s) owed, {dead} cycle(s) lost to quota -- accumulated "
-                   "through no fault of the cycle. Hand them back with their true age.")
-    else:
-        verdict = f"{len(items)} item(s) owed, all fresh -- nothing has been skipped yet"
-    return CarryoverState(n_sweeps=len(sweeps), n_dead_sweeps=dead, items=items, verdict=verdict)
-
-
-def brief(state: CarryoverState, *, max_items: int = 12) -> str:
-    """The block handed to the brain at cycle start -- oldest and most-skipped first."""
-    if not state.items:
-        return "[§37 CARRY-OVER] queue empty -- nothing owed from previous cycles."
-    lines = [
-        "[§37 CARRY-OVER] WORK OWED FROM PREVIOUS CYCLES -- do these FIRST, in this order.",
-        f"  {state.verdict}",
-        f"  ({state.n_sweeps} sweeps on record, {state.n_dead_sweeps} lost to quota/session death)",
-        "",
-    ]
-    for i in state.items[:max_items]:
-        mark = "SKIPPED" if i.skipped else "owed"
-        lines.append(
-            f"  [{mark:7}] {i.defect_id}  age {i.age_days:.1f}d  "
-            f"survived {i.sweeps_survived} sweep(s), {i.seen_by_live_brain} with the brain awake"
-        )
-    if len(state.items) > max_items:
-        lines.append(f"  ... and {len(state.items) - max_items} more")
-    lines += [
-        "",
-        "  An item marked SKIPPED was shown to a LIVE cycle at least twice and survived. Either",
-        "  do it now, or record in the ledger WHY it is not being done -- silently carrying it a",
-        "  third time is the behaviour this brief exists to stop.",
-    ]
-    return "\n".join(lines)
-
-```
-
-### libs/portfolio/construction.py
-```python
-"""Crypto sleeve-allocation primitives (portfolio construction).
-
-Pure, tested functions that turn per-sleeve Sharpes + a correlation matrix into long-only sleeve
-weights -- the capital-allocation step that sits above the sleeves. Deliberately small and numeric
-(no pydantic models) so it wires straight onto crypto_portfolio.json. Reuses risk_parity_weights for
-the RP variant. Everything is in-sample by construction; the caller is responsible for the
-anti-overfit blend and for treating results as SHADOW until forward-validated.
-"""
-
-from __future__ import annotations
-
-import numpy as np
-
-
-def portfolio_sharpe(weights: np.ndarray, sharpes: np.ndarray, corr: np.ndarray) -> float:
-    """Expected portfolio Sharpe for sleeve weights, treating each sleeve's vol as 1 (Sharpe space):
-    S_p = wᵀμ / sqrt(wᵀ C w). This is the standard quadrature combine, correlation-aware."""
-    w = np.asarray(weights, float)
-    mu = np.asarray(sharpes, float)
-    c = np.asarray(corr, float)
-    var = float(w @ c @ w)
-    return float(w @ mu) / (var ** 0.5) if var > 0 else 0.0
-
-
-def max_sharpe_weights(sharpes: np.ndarray, corr: np.ndarray, *,
-                       ridge: float = 1e-2, floor: float = 0.0) -> np.ndarray:
-    """Long-only max-Sharpe sleeve weights, w proportional to inv(corr) @ Sharpes; negatives clipped
-    to `floor`, renormalised. Ridge-regularised so a near-singular correlation stays invertible."""
-    mu = np.asarray(sharpes, float)
-    n = len(mu)
-    c = np.asarray(corr, float) + ridge * np.eye(n)
-    try:
-        w = np.linalg.solve(c, mu)
-    except np.linalg.LinAlgError:
-        w = np.linalg.pinv(c) @ mu
-    w = np.clip(w, floor, None)
-    s = w.sum()
-    return w / s if s > 0 else np.full(n, 1.0 / n)
-
-
-def concentration_cap(weights: np.ndarray, cap: float = 0.35) -> np.ndarray:
-    """Enforce a hard per-sleeve weight cap, redistributing the excess pro-rata to uncapped sleeves
-    (the 35% concentration control). Iterates until every weight respects the cap."""
-    w = np.asarray(weights, float).copy()
-    if cap >= 1.0 or w.sum() <= 0:
-        return w
-    for _ in range(200):
-        over = w > cap + 1e-12
-        if not over.any():
-            break
-        excess = float((w[over] - cap).sum())
-        w[over] = cap
-        under = ~over
-        pool = float(w[under].sum())
-        if pool <= 0:
-            break
-        w[under] += excess * w[under] / pool
-    return w
-
-
-def marginal_sharpe(weights: np.ndarray, sharpes: np.ndarray, corr: np.ndarray) -> np.ndarray:
-    """Each sleeve's marginal contribution to portfolio Sharpe = S_p(with) - S_p(without), holding
-    the other weights' proportions. The honest 'is this sleeve pulling its weight' number."""
-    w = np.asarray(weights, float)
-    full = portfolio_sharpe(w, sharpes, corr)
-    out = np.zeros(len(w))
-    for i in range(len(w)):
-        w2 = w.copy()
-        w2[i] = 0.0
-        s = w2.sum()
-        out[i] = full - (portfolio_sharpe(w2 / s, sharpes, corr) if s > 0 else 0.0)
-    return out
-
-
-def blend(w1: np.ndarray, w2: np.ndarray, alpha: float) -> np.ndarray:
-    """Convex blend alpha*w1 + (1-alpha)*w2 -- the anti-overfit cap (e.g. 50% model / 50% equal)."""
-    return alpha * np.asarray(w1, float) + (1.0 - alpha) * np.asarray(w2, float)
-
-
-def turnover(old: dict[str, float], new: dict[str, float]) -> float:
-    """One-way turnover between two weight books, 0.5 * sum|new-old| (drives the rebalance call)."""
-    keys = set(old) | set(new)
-    return 0.5 * sum(abs(new.get(k, 0.0) - old.get(k, 0.0)) for k in keys)
-
-```
-
-### libs/research/crossasset.py
-```python
-"""Cross-asset diversified-portfolio strategy cores (global research, MT5 execution).
-
-Single-name FX directional already returned zero survivors. The construction that rescued crypto
-funding (single-name -> dollar-neutral cross-sectional portfolio) is applied here to instruments the
-broker can actually trade (FX, metals, energy, indices, crypto CFDs):
-
-  * ``xsec_signal_returns`` -- generic dollar-neutral cross-sectional book driven by ANY global
-    signal (price momentum, Binance funding, a macro factor...). Long the top/bottom signal
-    quantile, inverse-vol within each leg, turnover band, per-symbol turnover cost, and an optional
-    per-symbol DAILY HOLDING COST (CFD overnight financing / swap). Returns are PRICE-ONLY: holding
-    an MT5 CFD does not pay perpetual funding, so a funding-derived edge must survive on the price
-    move alone, net of the financing you actually pay. This is the honest MT5-execution accounting.
-  * ``xsec_momentum_returns`` -- convenience wrapper: signal = trailing return (momentum/reversal).
-  * ``trend_basket_returns``  -- time-series momentum (managed-futures): each asset long/short by
-    the sign of its own trend, inverse-vol sized, gross-normalized, net of turnover + holding cost.
-
-Pure functions of (close, signal, cost) so the same code drives a backtest and a forward shadow.
-No parameter mining inside -- the caller freezes the deployable variant. Decisions use only lagged
-information (``.shift(1)``); no look-ahead.
-"""
-
-from __future__ import annotations
-
-import numpy as np
-import pandas as pd
-
-
-def _inv_vol(ret: pd.DataFrame, vol_window: int) -> pd.DataFrame:
-    return 1.0 / ret.rolling(vol_window).std().shift(1)
-
-
-def _hold(prev: pd.Series, hold_cost: dict[str, float] | None) -> float:
-    if not hold_cost:
-        return 0.0
-    return float(sum(abs(prev[s]) * hold_cost.get(s, 0.0) for s in prev.index))
-
-
-def xsec_signal_returns(
-    close: pd.DataFrame,
-    signal: pd.DataFrame,
-    cost: dict[str, float],
-    *,
-    q: float,
-    band: float,
-    vol_window: int = 30,
-    min_names: int = 6,
-    long_high: bool = True,
-    hold_cost: dict[str, float] | None = None,
-) -> np.ndarray:
-    """Daily PRICE-ONLY net return of a dollar-neutral cross-sectional book on ``signal``.
-
-    ``signal`` is the point-in-time factor (lagged one bar internally). ``long_high`` buys the top
-    quantile and shorts the bottom; flip it to long the lowest-signal names. ``hold_cost`` is the
-    per-symbol daily financing charged on the position held (CFD swap) -- the cost that makes a
-    funding edge expensive to express via CFDs rather than perps.
-    """
-    ret = close.pct_change(fill_method=None)
-    inv_vol = _inv_vol(ret, vol_window)
-    sig_l = signal.shift(1)
-    out = np.zeros(len(close), dtype="float64")
-    prev = pd.Series(0.0, index=close.columns)
-    for t in range(1, len(close)):
-        s = sig_l.iloc[t].dropna()
-        valid = close.iloc[t].reindex(s.index).notna() & ret.iloc[t].reindex(s.index).notna()
-        s = s.reindex(s.index[valid]).dropna()
-        if len(s) < min_names:
-            out[t] = float((prev * ret.iloc[t].reindex(prev.index).fillna(0.0)).sum())
-            out[t] -= _hold(prev, hold_cost)
-            continue
-        k = max(1, int(len(s) * q))
-        ranked = s.sort_values(ascending=not long_high)
-        longs, shorts = ranked.index[:k], ranked.index[-k:]
-        iv = inv_vol.iloc[t]
-        w = pd.Series(0.0, index=close.columns)
-        lw, sw = iv.reindex(longs).fillna(0.0), iv.reindex(shorts).fillna(0.0)
-        if lw.sum() > 0:
-            w[longs] = 0.5 * lw / lw.sum()
-        if sw.sum() > 0:
-            w[shorts] = -0.5 * sw / sw.sum()
-        delta = (w - prev).abs()
-        w = w.where(delta > band, prev)                     # turnover band
-        price_ret = float((w * ret.iloc[t].reindex(w.index).fillna(0.0)).sum())
-        turn_cost = float(sum(abs(w[s2] - prev[s2]) * cost.get(s2, 1.0e-3) for s2 in w.index))
-        out[t] = price_ret - turn_cost - _hold(w, hold_cost)
-        prev = w
-    return out
-
-
-def xsec_momentum_returns(
-    close: pd.DataFrame,
-    cost: dict[str, float],
-    *,
-    lookback: int,
-    q: float,
-    band: float,
-    vol_window: int = 30,
-    min_names: int = 6,
-    long_high: bool = True,
-    hold_cost: dict[str, float] | None = None,
-) -> np.ndarray:
-    """Cross-sectional momentum (``long_high``) or short-term reversal (``long_high=False``)."""
-    signal = close / close.shift(lookback) - 1.0
-    return xsec_signal_returns(close, signal, cost, q=q, band=band, vol_window=vol_window,
-                               min_names=min_names, long_high=long_high, hold_cost=hold_cost)
-
-
-def vol_target(
-    returns: np.ndarray,
-    *,
-    target_ann_vol: float = 0.10,
-    lookback: int = 30,
-    max_leverage: float = 3.0,
-    ppy: float = 252.0,
-) -> np.ndarray:
-    """Scale a return stream to a constant target volatility using trailing realized vol (lagged).
-
-    Standard managed-futures overlay: lever up in calm regimes, cut exposure when realized vol
-    spikes (i.e. before/into crises). Leverage is lagged one bar (no look-ahead) and capped. Risk
-    engineering, not parameter mining -- it targets tail risk/fragility; Sharpe is invariant to
-    *constant* leverage, so any Sharpe change comes only from time-variation in exposure.
-    """
-    r = np.asarray(returns, dtype="float64")
-    s = pd.Series(r)
-    realized = s.rolling(lookback).std().shift(1) * np.sqrt(ppy)
-    lev = (target_ann_vol / realized).clip(upper=max_leverage)
-    lev = lev.fillna(0.0).to_numpy()
-    return np.asarray(lev * r, dtype="float64")
-
-
-def trend_basket_weights(
-    close: pd.DataFrame,
-    *,
-    lookback: int,
-    vol_window: int = 30,
-    min_names: int = 4,
-) -> dict[str, float]:
-    """Latest target weights of the trend basket (the brain's decision to hand to execution).
-
-    Gross-normalized to 1 (sum of absolute weights), band-free -- turnover is the executor's job
-    (the rebalancer applies the drift threshold). Returns {} if too few names are available.
-    """
-    if len(close) <= lookback + 1:
-        return {}
-    ret = close.pct_change(fill_method=None)
-    inv_vol = (1.0 / ret.rolling(vol_window).std()).iloc[-1]
-    trend = np.sign(close.iloc[-1] / close.iloc[-1 - lookback] - 1.0)
-    trend = trend[close.iloc[-1].notna()].dropna()
-    if len(trend) < min_names:
-        return {}
-    raw = trend * inv_vol.reindex(trend.index).fillna(0.0)
-    gross = float(raw.abs().sum())
-    if gross <= 0:
-        return {}
-    return {k: float(v) for k, v in (raw / gross).items() if v != 0.0}
-
-
-def xsec_momentum_weights(
-    close: pd.DataFrame,
-    *,
-    lookback: int,
-    q: float,
-    vol_window: int = 30,
-    min_names: int = 6,
-    long_high: bool = True,
-) -> dict[str, float]:
-    """Latest dollar-neutral cross-sectional momentum target weights (+0.5 long / -0.5 short)."""
-    if len(close) <= lookback + 1:
-        return {}
-    ret = close.pct_change(fill_method=None)
-    inv_vol = (1.0 / ret.rolling(vol_window).std()).iloc[-1]
-    sig = (close.iloc[-1] / close.iloc[-1 - lookback] - 1.0)
-    sig = sig[close.iloc[-1].notna()].dropna()
-    if len(sig) < min_names:
-        return {}
-    k = max(1, int(len(sig) * q))
-    ranked = sig.sort_values(ascending=not long_high)
-    longs, shorts = ranked.index[:k], ranked.index[-k:]
-    lw = inv_vol.reindex(longs).fillna(0.0)
-    sw = inv_vol.reindex(shorts).fillna(0.0)
-    out: dict[str, float] = {}
-    if lw.sum() > 0:
-        out.update({s: 0.5 * float(lw[s]) / float(lw.sum()) for s in longs})
-    if sw.sum() > 0:
-        out.update({s: -0.5 * float(sw[s]) / float(sw.sum()) for s in shorts})
-    return out
-
-
-def combine_weights(*books: dict[str, float], renorm: bool = True) -> dict[str, float]:
-    """Equal-risk combine target-weight books, then gross-normalize to 1 (max-robustness book)."""
-    n = len(books)
-    if n == 0:
-        return {}
-    keys = sorted({k for b in books for k in b})
-    merged = {k: sum(b.get(k, 0.0) for b in books) / n for k in keys}
-    if not renorm:
-        return merged
-    gross = sum(abs(v) for v in merged.values())
-    if gross <= 0:
-        return {}
-    return {k: v / gross for k, v in merged.items() if v != 0.0}
-
-
-def trend_basket_returns(
-    close: pd.DataFrame,
-    cost: dict[str, float],
-    *,
-    lookback: int,
-    band: float,
-    vol_window: int = 30,
-    min_names: int = 4,
-    hold_cost: dict[str, float] | None = None,
-) -> np.ndarray:
-    """Daily net return of a time-series-momentum (managed-futures) basket.
-
-    Each asset is held long or short by the sign of its own lagged ``lookback``-day return, sized
-    inverse-vol, with the book gross-normalized to 1 so it is comparable across runs.
-    """
-    ret = close.pct_change(fill_method=None)
-    inv_vol = _inv_vol(ret, vol_window)
-    trend = np.sign((close / close.shift(lookback) - 1.0).shift(1))
-    out = np.zeros(len(close), dtype="float64")
-    prev = pd.Series(0.0, index=close.columns)
-    for t in range(1, len(close)):
-        tr = trend.iloc[t].dropna()
-        valid = close.iloc[t].reindex(tr.index).notna() & ret.iloc[t].reindex(tr.index).notna()
-        tr = tr.reindex(tr.index[valid]).dropna()
-        if len(tr) < min_names:
-            out[t] = float((prev * ret.iloc[t].reindex(prev.index).fillna(0.0)).sum())
-            out[t] -= _hold(prev, hold_cost)
-            continue
-        iv = inv_vol.iloc[t].reindex(tr.index).fillna(0.0)
-        raw = tr * iv
-        gross = raw.abs().sum()
-        w = pd.Series(0.0, index=close.columns)
-        if gross > 0:
-            w[tr.index] = raw / gross
-        delta = (w - prev).abs()
-        w = w.where(delta > band, prev)
-        price_ret = float((w * ret.iloc[t].reindex(w.index).fillna(0.0)).sum())
-        turn_cost = float(sum(abs(w[s] - prev[s]) * cost.get(s, 1.0e-3) for s in w.index))
-        out[t] = price_ret - turn_cost - _hold(w, hold_cost)
-        prev = w
-    return out
-
-```
-
-### libs/research/crypto_regime.py
-```python
-"""Crypto regime detection + per-regime sleeve performance.
-
-Many crypto edges only work in specific environments (funding carry shines in funding-rich,
-leveraged markets; trend in directional regimes; everything correlates in a crash). This labels each
-day by three orthogonal regime axes -- trend (bull/bear), volatility (high/low), funding
-(rich/poor) -- from lagged BTC/aggregate signals (no look-ahead), and measures each sleeve's Sharpe
-within each regime so the portfolio can lean on edges only where they actually pay.
-"""
-
-from __future__ import annotations
-
-import numpy as np
-import pandas as pd
-
-from libs.validation.dsr import sharpe_ratio
-
-_PPY = 365.0
-
-
-def regime_labels(close: pd.DataFrame, funding: pd.DataFrame, *,
-                  btc: str = "BTCUSDT") -> pd.DataFrame:
-    """Per-day regime labels (lagged): trend (bull/bear), vol (high/low), funding (rich/poor)."""
-    ref = close[btc] if btc in close.columns else close.mean(axis=1)
-    ret = ref.pct_change(fill_method=None)
-    trend = np.sign(ref / ref.shift(50) - 1.0).shift(1)
-    rv = ret.rolling(30).std().shift(1)
-    agg_funding = funding.mean(axis=1).rolling(7).mean().shift(1)
-    out = pd.DataFrame(index=close.index)
-    out["trend"] = np.where(trend > 0, "bull", "bear")
-    out["vol"] = np.where(rv > rv.rolling(180, min_periods=60).median(), "high_vol", "low_vol")
-    out["funding"] = np.where(agg_funding > agg_funding.rolling(180, min_periods=60).median(),
-                              "funding_rich", "funding_poor")
-    return out
-
-
-def _sh(r: np.ndarray) -> float:
-    a = r[r != 0.0]
-    return round(float(sharpe_ratio(a) * np.sqrt(_PPY)), 2) if len(a) > 5 else 0.0
-
-
-def regime_performance(
-    sleeves: dict[str, np.ndarray], labels: pd.DataFrame, port: np.ndarray,
-) -> dict[str, dict[str, float]]:
-    """Sharpe of each sleeve + the portfolio within each regime bucket (diagnostic, in-sample)."""
-    series = {**sleeves, "portfolio": port}
-    out: dict[str, dict[str, float]] = {}
-    for axis in labels.columns:
-        for bucket in sorted(labels[axis].dropna().unique()):
-            mask = (labels[axis] == bucket).to_numpy()
-            key = f"{axis}:{bucket}"
-            out[key] = {name: _sh(r[mask]) for name, r in series.items()}
-            out[key]["_days"] = int(mask.sum())
-    return out
-
-```
-
-### libs/research/mine_conversion.py
-```python
-"""§33 MINED-TO-WIRED law -- zero research inventory, and a closed loop back into generation.
-
-Mined intelligence is INVENTORY, and un-converted inventory is WASTE that depreciates. A finding
-that is catalogued and never wired has produced NEGATIVE value: it consumed a cycle, it inflates
-the desk's capability inventory, and it makes every downstream audit read the desk as richer than
-it is (the map-vs-territory failure this audit family exists to catch). Mining is not the product
--- CONVERSION is. A perfect dig with zero conversions is a FAILED cycle.
-
-This module is the machine-checkable half of §33. It does NOT do conversions (nothing automates
-that -- it is irreducibly research work); it makes the backlog impossible to not see, prices it,
-and feeds the outcome back into what gets mined next. §31 only started working when a daily check
-with a 48h escalation stood behind it; this is the same shape, in four layers:
-
-  1. DISPOSITION (stock)   -- every carded find owes exactly one disposition; silence is a defect.
-  2. QUALITY               -- a disposition is not automatically a conversion. `killed` must be
-                              backed by a real graveyard entry, so "kill everything" stops being
-                              the cheapest legal way to unblock mining.
-  3. VALUE (weighted)      -- a Tier-1 defect-closer outranks a Tier-4 operator, so the gate
-                              cannot be cleared by converting only the easy tail.
-  4. FLOW + FEEDBACK       -- conversion LATENCY and per-class conversion RATES are tracked over
-                              time, and the rates become priors that steer future generation.
-                              A gate that only blocks is a fence; a gate that reweights is a
-                              control system, and the second one is what "maximum utilisation"
-                              actually means.
-
-DISPOSITION CONTRACT -- written inline in the dig-output doc as ``[§33: <disposition>]`` on the
-item's OWN line (a blanket tag atop a document launders nothing). Four legal values, no fifth:
-
-  wired            -- code exists AND executed AND wrote a real artifact
-  screened         -- a Stage-A screen RAN; result in research_memory, --axis tagged
-  killed           -- a graveyard entry carrying the MECHANISM of death (never "low priority")
-  deferred(DATE)   -- a NAMED blocker and an ISO date. UNDATED DEFERRAL IS ILLEGAL -- it is the
-                      hiding place every rotting backlog uses, so it is parsed and rejected.
-
-An optional ``tier:N`` component overrides the inferred tier:
-``[§33: deferred(2026-09-01) tier:1]``.
-
-Three anti-gaming rules are structural, not advisory:
-
-  EXPIRY   -- a deferral stops counting the moment its date passes. A promise with a clock, not a
-              filing cabinet.
-  NO SELF-GRADING -- wired/screened/killed are CLAIMS about artifacts. The caller passes what it
-              could corroborate on disk; anything else is UNBACKED. An organ does not grade its
-              own homework (same artifact-only credit rule as ``max_audit._converted_axes``).
-  NO CHEAP EXIT -- because `killed` is artifact-checked against the graveyard, mass-killing the
-              backlog costs strictly more than converting it. The escape hatch is closed by
-              construction rather than by asking nicely.
-"""
-
-from __future__ import annotations
-
-import json
-import re
-import statistics
-from collections.abc import Iterable, Mapping, Sequence
-from datetime import UTC, date, datetime
-from pathlib import Path
-from typing import Any
-
-from pydantic import BaseModel, ConfigDict
-
-#: The id is captured separately so it never lands in ``name`` -- a name of "1. Upbit" would fail
-#: to match the artifact "upbit_krw_btc_1m" in either direction and report a real conversion as
-#: unbacked. Matches ``source_backlog``'s card_id/name split.
-#: Deliberately NOT bold bullets: source cards carry ``- **Provenance**:`` / ``- **Queries used**:``
-#: metadata fields, and treating those as finds made the check fire 92/92 on its first real run.
-#: A check that flags everything is ignored, so the id-numbered card is the one unambiguous unit.
-_ITEM_RE = re.compile(r"^### (?P<cid>\d+)\.\s+(?P<card>.+?)\s*$", re.MULTILINE)
-#: The inline disposition tag. Tolerant of "S33"/"section 33" so an ASCII-only writer still counts.
-_DISP_RE = re.compile(
-    r"\[(?:§|S|section\s*)33:\s*(?P<verb>[a-z-]+)\s*"
-    r"(?:\(\s*(?P<until>[0-9]{4}-[0-9]{2}-[0-9]{2})\s*\))?"
-    r"(?:[\s,]*tier\s*:\s*(?P<tier>[1-4]))?"
-    r"(?:\s*(?:->|@)\s*(?P<art>[^\]]+?))?\s*\]",
-    re.IGNORECASE,
-)
-
-#: One appended snapshot row: heterogeneous by nature (float ts + list of item dicts).
-LedgerRow = Mapping[str, Any]
-
-LEGAL = ("wired", "screened", "killed", "deferred")
-#: Terminal dispositions -- the item is finished and never re-enters the backlog.
-_TERMINAL = ("wired", "screened", "killed")
-#: Every terminal disposition asserts an artifact exists, and is therefore corroborated. `killed`
-#: is included ON PURPOSE: it is what closes the mass-graveyard escape hatch.
-_CLAIMS_ARTIFACT = _TERMINAL
-
-#: Value weights. A Tier-1 defect-closer stops ongoing bleed and is worth many operators.
-TIER_WEIGHT: Mapping[int, int] = {1: 8, 2: 4, 3: 2, 4: 1}
-
-_T1 = ("ground truth", "ground-truth", "diff-verify", "diff verify", "fence", "unblock",
-       "blocker", "vendor-replacement", "defect", "backfill")
-_T4 = ("operator", "lexicon", "diaspora", "search key", "query", "printpage", "tree-walk")
-_T2 = ("prior", "mechanism", "premium", "carry", "funding", "basis", "regime")
-
-
-def infer_tier(name: str, *, ingested_axes: Sequence[str] = ()) -> int:
-    """Best-effort conversion tier (1 = highest ROI). An explicit ``tier:N`` tag always wins.
-
-    Heuristic and deliberately coarse -- its job is to stop a Tier-1 defect-closer being buried
-    under cheap Tier-4 wins, not to be a taxonomy. TIER 1 defect-closers (make a permanently-firing
-    gate satisfiable) outrank everything because they stop ongoing bleed rather than adding
-    capability; TIER 2 is a mechanism prior on an axis ALREADY ingested (pure §31 work on data
-    already paid for); TIER 3 a new surface; TIER 4 operators/lexicons/diaspora.
-    """
-    n = name.lower()
-    if any(k in n for k in _T1):
-        return 1
-    if any(a.lower() in n for a in ingested_axes if a) or any(k in n for k in _T2):
-        return 2
-    if any(k in n for k in _T4):
-        return 4
-    return 3
-
-
-class MinedItem(BaseModel):
-    """One carded find plus whatever disposition was written against it."""
-
-    model_config = ConfigDict(frozen=True)
-
-    source: str
-    name: str
-    disposition: str = ""  # "" = none written == UNDISPOSED (silence is a defect)
-    deferred_until: str = ""
-    illegal_reason: str = ""
-    tier: int = 3
-    artifact: str = ""   # explicit repo-relative path from ``-> path`` -- exact, not fuzzy
-
-    @property
-    def weight(self) -> int:
-        return TIER_WEIGHT.get(self.tier, 1)
-
-
-def parse_dispositions(
-    text: str, *, source: str, ingested_axes: Sequence[str] = ()
-) -> list[MinedItem]:
-    """Extract every carded find in ``text`` and the disposition written on its own line."""
-    items: list[MinedItem] = []
-    for line in text.splitlines():
-        m = _ITEM_RE.match(line)
-        if not m:
-            continue
-        name = _DISP_RE.sub("", m.group("card")).strip(" -—:")
-        d = _DISP_RE.search(line)
-        tier = int(d.group("tier")) if (d and d.group("tier")) else infer_tier(
-            name, ingested_axes=ingested_axes)
-        if not d:
-            items.append(MinedItem(source=source, name=name, tier=tier))
-            continue
-        verb, until = d.group("verb").lower(), (d.group("until") or "")
-        art = (d.group("art") or "").strip()
-        if verb not in LEGAL:
-            items.append(MinedItem(source=source, name=name, tier=tier, artifact=art,
-                                   illegal_reason=f"unknown disposition '{verb}'"))
-        elif verb == "deferred" and not until:
-            # the hiding place: an undated deferral is indistinguishable from abandonment
-            items.append(MinedItem(source=source, name=name, tier=tier, artifact=art,
-                                   illegal_reason="deferred with NO date"))
-        else:
-            items.append(MinedItem(source=source, name=name, tier=tier, artifact=art,
-                                   disposition=verb, deferred_until=until))
-    return items
-
-
-def is_disposed(item: MinedItem, *, as_of: date) -> bool:
-    """True when the item is genuinely finished, or deferred to a date that has NOT yet passed."""
-    if item.illegal_reason or not item.disposition:
-        return False
-    if item.disposition in _TERMINAL:
-        return True
-    try:
-        return date.fromisoformat(item.deferred_until) > as_of
-    except ValueError:  # pragma: no cover -- regex already constrains the shape
-        return False
-
-
-def backlog(items: Iterable[MinedItem], *, as_of: date) -> tuple[MinedItem, ...]:
-    """Every item still owing a disposition -- untagged, illegally tagged, or expired-deferred."""
-    return tuple(i for i in items if not is_disposed(i, as_of=as_of))
-
-
-def unbacked(
-    items: Iterable[MinedItem],
-    *,
-    backing: Mapping[str, Sequence[str]],
-    root: Path | None = None,
-    first_seen: Mapping[str, float] | None = None,
-) -> tuple[MinedItem, ...]:
-    """Terminal claims that could not be corroborated by a real artifact.
-
-    TWO MODES, and the strong one is preferred:
-
-    EXACT (``[§33: wired -> data/upbit_1m.jsonl]``) -- the named path must EXIST and be NON-EMPTY.
-    Authoritative: a rename, a deletion, or an empty stub file all fail loudly. This is the mode
-    the desk should converge on, because it names the evidence instead of hinting at it.
-
-    FUZZY (no path given) -- substring match in both directions against ``backing`` (wired/screened
-    from collector output and research memory; killed from the graveyard). Kept only for backward
-    compatibility with cards written before the arrow syntax: a card name and its artifact rarely
-    agree character for character ("Tardis" vs "tardis_l2_backfill"). It is genuinely weaker -- a
-    rename silently breaks credit and a coincidental substring silently grants it -- so the report
-    counts how many claims still rely on it, making the drift toward EXACT visible and pressurable.
-    """
-    base = root or Path()
-    out = []
-    for i in items:
-        if i.disposition not in _CLAIMS_ARTIFACT:
-            continue
-        if i.artifact:
-            p = base / i.artifact
-            try:
-                ok = p.is_file() and p.stat().st_size > 0
-                # ...and it must POSTDATE the find. Exact was not enough: `-> pyproject.toml`
-                # named a real non-empty file and was credited, so any pre-existing file in the
-                # repo was a valid receipt for any claim. A file that has not been touched since
-                # before the discovery cannot be evidence OF that discovery. Doing the actual
-                # work satisfies this for free -- including a graveyard entry, which touches
-                # graveyard.md. Skipped when the find has no ledger history yet.
-                if ok and first_seen and i.name in first_seen:
-                    ok = p.stat().st_mtime > first_seen[i.name]
-                if ok:
-                    continue
-            except OSError:
-                pass
-            out.append(i)
-            continue
-        n = i.name.lower()
-        cands = [b.lower() for b in backing.get(i.disposition, ()) if b]
-        if not any(b in n or n in b for b in cands):
-            out.append(i)
-    return tuple(out)
-
-
-def fuzzy_credited(items: Iterable[MinedItem]) -> tuple[MinedItem, ...]:
-    """Terminal claims relying on NAME MATCHING rather than a named artifact path.
-
-    Not a defect on its own -- it is the weaker evidence standard, and measuring it is how the
-    desk ratchets from "roughly corroborated" to "this exact file, non-empty, or it did not
-    happen" without a flag day.
-    """
-    return tuple(i for i in items if i.disposition in _CLAIMS_ARTIFACT and not i.artifact)
-
-
-class ConversionReport(BaseModel):
-    """The §33 cycle block -- filled from artifacts, never from a narrative."""
-
-    model_config = ConfigDict(frozen=True)
-
-    n_items: int
-    n_wired: int
-    n_screened: int
-    n_killed: int
-    n_deferred: int
-    n_backlog: int
-    n_illegal: int
-    n_unbacked: int
-    n_fuzzy_credited: int
-    weighted_backlog: int
-    top_tier_owing: int          # 1..4; 0 when nothing is owed
-    kill_share: float            # killed / terminal -- a spike means the escape hatch is in use
-    priority_inversion: bool     # a Tier-1/2 item owes while cheaper tiers were converted
-    backlog_names: tuple[str, ...]
-    illegal_names: tuple[str, ...]
-    unbacked_names: tuple[str, ...]
-    suspend_mining: bool
-    verdict: str
-
-
-#: Above this share of terminal dispositions being `killed`, the backlog is being cleared by
-#: graveyard rather than by conversion. Not proof of gaming -- a genuinely bad batch happens --
-#: but it is the signature, and it must be looked at rather than pass silently.
-KILL_SHARE_BAR = 0.60
-
-
-def conversion_report(
-    items: Sequence[MinedItem],
-    *,
-    as_of: date,
-    backing: Mapping[str, Sequence[str]] | None = None,
-    root: Path | None = None,
-    first_seen: Mapping[str, float] | None = None,
-    max_shown: int = 8,
-) -> ConversionReport:
-    """Build the §33 report and decide whether mining is SUSPENDED this cycle.
-
-    Suspension is flow control, not punishment: an organ producing faster than the desk converts
-    is not producing value, it is producing debt. Mining resumes the instant the backlog clears.
-    An UNBACKED claim suspends too -- otherwise the cheapest way to clear a backlog is to type the
-    word "wired", which would make the whole law self-defeating.
-    """
-    backing = backing or {}
-    bl = backlog(items, as_of=as_of)
-    illegal = tuple(i for i in items if i.illegal_reason)
-    ub = unbacked(items, backing=backing, root=root, first_seen=first_seen)
-    fuzzy = fuzzy_credited(items)
-    counts = {v: sum(1 for i in items if i.disposition == v and is_disposed(i, as_of=as_of))
-              for v in LEGAL}
-    # An EXPIRED deferral is backlog, not a deferral -- counting it in both places would let a
-    # rotting item read as handled at a glance, the exact failure this law exists to stop.
-    n_terminal = sum(counts[v] for v in _TERMINAL)
-    kill_share = (counts["killed"] / n_terminal) if n_terminal else 0.0
-    weighted = sum(i.weight for i in bl)
-    top_tier = min((i.tier for i in bl), default=0)
-    # Priority inversion: something expensive still owes while cheaper work was finished. This is
-    # the enforceable form of "work the backlog highest-ROI first" -- the doctrine states the
-    # order, and without this the order is unenforced prose.
-    converted_tiers = [i.tier for i in items if is_disposed(i, as_of=as_of)
-                       and i.disposition in _TERMINAL]
-    inversion = bool(bl) and top_tier <= 2 and any(t > top_tier for t in converted_tiers)
-    suspend = bool(bl) or bool(ub)
-
-    if not items:
-        verdict = "no carded finds parsed -- nothing owed"
-    elif suspend:
-        verdict = (
-            f"CONVERSION FIRST -- {len(bl)} item(s) owe a disposition (weighted {weighted}, "
-            f"highest tier owing T{top_tier or '-'}), {len(ub)} claim conversion with NO backing "
-            "artifact. Spend this run's FIRST effort disposing of them, highest tier first "
-            "(wired/screened/killed-with-mechanism/deferred-with-a-date), THEN CONTINUE MINING "
-            "AND EXHAUSTING NEW GROUND IN THIS SAME RUN. Mining is never throttled, paused, or "
-            "reduced -- acquisition keeps growing while extraction scales up to meet it."
-        )
-    else:
-        verdict = f"backlog clear -- all {len(items)} carded find(s) disposed; mining authorised"
-
-    return ConversionReport(
-        n_items=len(items),
-        n_wired=counts["wired"], n_screened=counts["screened"],
-        n_killed=counts["killed"], n_deferred=counts["deferred"],
-        n_backlog=len(bl), n_illegal=len(illegal), n_unbacked=len(ub),
-        n_fuzzy_credited=len(fuzzy),
-        weighted_backlog=weighted, top_tier_owing=top_tier,
-        kill_share=round(kill_share, 3), priority_inversion=inversion,
-        backlog_names=tuple(f"T{i.tier} {i.name}" for i in bl[:max_shown]),
-        illegal_names=tuple(f"{i.name} ({i.illegal_reason})" for i in illegal[:max_shown]),
-        unbacked_names=tuple(f"{i.name} [{i.disposition}]" for i in ub[:max_shown]),
-        suspend_mining=suspend, verdict=verdict,
-    )
-
-
-# --------------------------------------------------------------------------------------------
-# FLOW + FEEDBACK -- a stock check says whether inventory exists; only a flow check says whether
-# the desk is getting FASTER. And conversion outcomes are worthless if they dead-end in an audit
-# report: fed back as per-class priors, they steer what gets mined next.
-# --------------------------------------------------------------------------------------------
-
-def append_snapshot(path: Path, items: Sequence[MinedItem], *, now: datetime | None = None) -> None:
-    """Append one line recording every item's disposition as of now (jsonl, one line per run).
-
-    First-seen and converted-at are DERIVED from consecutive snapshots rather than demanded from
-    the miners: a timestamp a human has to remember to write is a timestamp that goes missing.
-    """
-    ts = (now or datetime.now(UTC)).timestamp()
-    row = {"ts": ts, "items": [{"n": i.name, "s": i.source, "d": i.disposition, "t": i.tier}
-                               for i in items]}
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("a", encoding="utf-8") as fh:
-        fh.write(json.dumps(row, ensure_ascii=False) + "\n")
-
-
-def load_ledger(path: Path) -> list[dict[str, Any]]:
-    """Read the snapshot ledger, skipping any corrupt line rather than losing the whole history."""
-    if not path.exists():
-        return []
-    rows: list[dict[str, Any]] = []
-    for line in path.read_text("utf-8", errors="ignore").splitlines():
-        if not line.strip():
-            continue
-        try:
-            r = json.loads(line)
-        except json.JSONDecodeError:
-            continue
-        if isinstance(r, dict) and "ts" in r and isinstance(r.get("items"), list):
-            rows.append(r)
-    return sorted(rows, key=lambda r: float(r["ts"]))
-
-
-class FlowStats(BaseModel):
-    """Conversion THROUGHPUT -- the stock check cannot tell 30-day conversion from 2-day."""
-
-    model_config = ConfigDict(frozen=True)
-
-    n_snapshots: int
-    median_latency_days: float   # find -> terminal disposition; -1 when nothing has converted yet
-    p90_latency_days: float
-    oldest_owing_days: float
-    oldest_owing_name: str
-    n_converted: int
-    latency_worsening: bool      # recent half slower than the earlier half
-
-
-def flow_stats(
-    ledger: Sequence[LedgerRow], *, now: datetime | None = None
-) -> FlowStats:
-    """Derive find->conversion latency and the age of the oldest still-owing item."""
-    ts_now = (now or datetime.now(UTC)).timestamp()
-    first_seen: dict[str, float] = {}
-    converted_at: dict[str, float] = {}
-    for row in ledger:
-        ts = float(row["ts"])
-        for it in row["items"]:
-            name = str(it.get("n", ""))
-            if not name:
-                continue
-            first_seen.setdefault(name, ts)
-            if it.get("d") in _TERMINAL and name not in converted_at:
-                converted_at[name] = ts
-    lat = sorted((converted_at[n] - first_seen[n]) / 86400.0 for n in converted_at)
-    owing = {n: t for n, t in first_seen.items() if n not in converted_at}
-    oldest_name, oldest_days = "", 0.0
-    if owing:
-        oldest_name = min(owing, key=lambda n: owing[n])
-        oldest_days = (ts_now - owing[oldest_name]) / 86400.0
-    worsening = False
-    if len(lat) >= 6:
-        # ordered by latency, not time -- compare the halves of the CHRONOLOGICAL series instead
-        chrono = [(converted_at[n], (converted_at[n] - first_seen[n]) / 86400.0)
-                  for n in converted_at]
-        chrono.sort()
-        half = len(chrono) // 2
-        early = statistics.median(v for _, v in chrono[:half])
-        late = statistics.median(v for _, v in chrono[half:])
-        worsening = late > early * 1.5
-    return FlowStats(
-        n_snapshots=len(ledger),
-        median_latency_days=round(statistics.median(lat), 2) if lat else -1.0,
-        p90_latency_days=round(lat[int(len(lat) * 0.9)], 2) if lat else -1.0,
-        oldest_owing_days=round(oldest_days, 2), oldest_owing_name=oldest_name,
-        n_converted=len(lat), latency_worsening=worsening,
-    )
-
-
-class ClassPrior(BaseModel):
-    """What a SOURCE CLASS has historically been worth -- the signal that steers generation."""
-
-    model_config = ConfigDict(frozen=True)
-
-    source: str
-    n_seen: int
-    n_converted: int
-    conversion_rate: float
-    median_latency_days: float
-
-
-def class_priors(
-    ledger: Sequence[LedgerRow], *, min_seen: int = 3
-) -> tuple[ClassPrior, ...]:
-    """Per-source conversion rate and latency -- the closed loop back into what to mine next.
-
-    Conversion data that dead-ends in an audit report is a fence. Fed back as priors, it becomes a
-    control system: a source class converting at 60% earns more of the next cycle than one
-    converting at 5%, WITHOUT anyone deciding that by hand. Classes below ``min_seen`` are omitted
-    rather than shown at a noisy 0/1 rate -- a thin prior that reweights generation is worse than
-    no prior at all.
-    """
-    seen: dict[str, dict[str, float]] = {}
-    first: dict[str, float] = {}
-    conv: dict[str, float] = {}
-    src_of: dict[str, str] = {}
-    for row in ledger:
-        ts = float(row["ts"])
-        for it in row["items"]:
-            name, src = str(it.get("n", "")), str(it.get("s", "?"))
-            if not name:
-                continue
-            src_of.setdefault(name, src)
-            first.setdefault(name, ts)
-            if it.get("d") in _TERMINAL and name not in conv:
-                conv[name] = ts
-    for name, src in src_of.items():
-        b = seen.setdefault(src, {"n": 0.0, "c": 0.0})
-        b["n"] += 1
-        if name in conv:
-            b["c"] += 1
-    out = []
-    for src, b in sorted(seen.items()):
-        if b["n"] < min_seen:
-            continue
-        lat = sorted((conv[n] - first[n]) / 86400.0 for n, s in src_of.items()
-                     if s == src and n in conv)
-        out.append(ClassPrior(
-            source=src, n_seen=int(b["n"]), n_converted=int(b["c"]),
-            conversion_rate=round(b["c"] / b["n"], 3),
-            median_latency_days=round(statistics.median(lat), 2) if lat else -1.0,
-        ))
-    return tuple(sorted(out, key=lambda p: -p.conversion_rate))
-
-
-def priors_payload(
-    priors: Sequence[ClassPrior], *, now: datetime | None = None
-) -> dict[str, Any]:
-    """The artifact the diggers read: where the next cycle's effort is worth most, and least."""
-    ts = (now or datetime.now(UTC))
-    ranked = list(priors)
-    return {
-        "generated_at": ts.isoformat(),
-        "law": "§33.4 -- generation is reweighted BY measured conversion, not by enthusiasm",
-        "favour": [p.source for p in ranked[:3]],
-        "starve": [p.source for p in ranked[-3:] if p.conversion_rate < 0.25],
-        "classes": [p.model_dump() for p in ranked],
-    }
-
-
-# --------------------------------------------------------------------------------------------
-# SELF-IMPROVEMENT -- the ratchet. Layers 1-4 make conversion visible, priced, and fed back; none
-# of them makes it get BETTER. A standard that never moves is a standard the desk grows into and
-# then stops at, which is the no-ceiling axiom's exact failure mode. So the bar is the desk's OWN
-# BEST-EVER performance: every record tightens it permanently, and it never loosens. There is no
-# "good enough" state -- only "better than the best we have ever done", or a regression defect.
-# --------------------------------------------------------------------------------------------
-
-class Ratchet(BaseModel):
-    """Best-ever conversion performance. Monotone by construction -- records only ever improve."""
-
-    model_config = ConfigDict(frozen=True)
-
-    best_median_latency_days: float = -1.0   # -1 = no record yet
-    best_conversion_rate: float = 0.0
-    best_at: str = ""
-    n_records: int = 0
-    #: Ledger high-water marks. Snapshot count only grows and the earliest ts only moves back;
-    #: either going the wrong way proves the evidence base was truncated or rewritten.
-    n_snapshots: int = 0
-    earliest_ts: float = 0.0
-
-
-class RatchetVerdict(BaseModel):
-    """Whether this cycle set a record, held, or REGRESSED against the desk's own best."""
-
-    model_config = ConfigDict(frozen=True)
-
-    improved: bool
-    regressed: bool
-    latency_vs_best: float   # multiple of best-ever median latency; -1 when no record yet
-    rate_vs_best: float      # current conversion rate minus best-ever
-    next_bar_days: float     # the tightened bar the NEXT cycle must beat
-    verdict: str
-
-
-def load_ratchet(path: Path) -> Ratchet:
-    """Read the ratchet, degrading to a fresh one rather than losing the check on a corrupt file."""
-    try:
-        return Ratchet.model_validate_json(path.read_text("utf-8"))
-    except Exception:
-        return Ratchet()
-
-
-def update_ratchet(
-    ratchet: Ratchet,
-    flow: FlowStats,
-    *,
-    conversion_rate: float,
-    regress_mult: float = 1.5,
-    ledger: Sequence[LedgerRow] = (),
-    now: datetime | None = None,
-) -> tuple[Ratchet, RatchetVerdict]:
-    """Compare this cycle to the best ever, tighten on a record, and flag regression.
-
-    ONE-WAY: a worse cycle never relaxes the bar -- it produces a defect instead. That asymmetry is
-    the whole point. Latency improvements and rate improvements both count, so the desk can advance
-    by converting FASTER or by converting MORE, and it is never allowed to trade one away for the
-    other silently (both are held against their own records).
-    """
-    ts = (now or datetime.now(UTC)).isoformat()
-    cur_lat, best_lat = flow.median_latency_days, ratchet.best_median_latency_days
-    have_lat = cur_lat >= 0.0
-    lat_record = have_lat and (best_lat < 0.0 or cur_lat < best_lat)
-    rate_record = conversion_rate > ratchet.best_conversion_rate
-    improved = bool(lat_record or rate_record)
-
-    lat_vs = (cur_lat / best_lat) if (have_lat and best_lat > 0.0) else -1.0
-    # A regression is measured against the RECORD, never against last cycle -- otherwise a slow
-    # drift downhill reads as "fine" at every single step.
-    regressed = bool(have_lat and best_lat > 0.0 and cur_lat > best_lat * regress_mult)
-
-    new = Ratchet(
-        best_median_latency_days=(cur_lat if lat_record else best_lat),
-        best_conversion_rate=(conversion_rate if rate_record else ratchet.best_conversion_rate),
-        best_at=(ts if improved else ratchet.best_at),
-        n_records=ratchet.n_records + (1 if improved else 0),
-        # high-water marks only ever ratchet the safe way, so a shrunken ledger stays detectable
-        n_snapshots=max(ratchet.n_snapshots, len(ledger)),
-        earliest_ts=(min(float(r["ts"]) for r in ledger)
-                     if ledger and not ratchet.earliest_ts
-                     else ratchet.earliest_ts),
-    )
-    # the bar the next cycle must beat: the (possibly new) record, tightened by the tolerance
-    next_bar = (new.best_median_latency_days * regress_mult
-                if new.best_median_latency_days > 0.0 else -1.0)
-
-    if improved:
-        bits = []
-        if lat_record:
-            bits.append(f"latency {cur_lat:.1f}d (prev best {best_lat:.1f}d)")
-        if rate_record:
-            prev = ratchet.best_conversion_rate
-            bits.append(f"rate {conversion_rate:.0%} (prev best {prev:.0%})")
-        verdict = "RECORD -- " + "; ".join(bits) + ". Bar tightened; it never loosens."
-    elif regressed:
-        verdict = (f"REGRESSION -- median latency {cur_lat:.1f}d vs best-ever {best_lat:.1f}d "
-                   f"({lat_vs:.1f}x). The desk has been faster than this and must be again.")
-    else:
-        verdict = (f"held -- {cur_lat:.1f}d vs best {best_lat:.1f}d. Holding is not improving: "
-                   "the standing bar is the desk's own record, and it only moves down.")
-    return new, RatchetVerdict(
-        improved=improved, regressed=regressed,
-        latency_vs_best=round(lat_vs, 2),
-        rate_vs_best=round(conversion_rate - ratchet.best_conversion_rate, 3),
-        next_bar_days=round(next_bar, 2), verdict=verdict,
-    )
-
-
-def feedback_applied(
-    ledger: Sequence[LedgerRow], priors: Sequence[ClassPrior], *, lookback: int = 2
-) -> tuple[bool, str]:
-    """Did generation ACTUALLY reweight toward the high-converting classes, or just get told to?
-
-    The loop is only closed if the advice changes behaviour. Compares which source classes NEW
-    items arrived in over the last ``lookback`` snapshots against the priors' favour/starve lists.
-    A recommendation nothing acts on is the same failure as a law with no monitor -- so the
-    feedback step is itself verified rather than assumed.
-    """
-    if len(ledger) < lookback + 1 or not priors:
-        return True, "insufficient history to judge feedback -- not a defect yet"
-    starve = {p.source for p in priors if p.conversion_rate < 0.25}
-    if not starve:
-        return True, "no starved class -- nothing to reweight away from"
-    older = {str(i.get("n", "")) for row in ledger[:-lookback] for i in row["items"]}
-    fresh: dict[str, int] = {}
-    for row in ledger[-lookback:]:
-        for i in row["items"]:
-            n = str(i.get("n", ""))
-            if n and n not in older:
-                fresh[str(i.get("s", "?"))] = fresh.get(str(i.get("s", "?")), 0) + 1
-    if not fresh:
-        return True, "no new finds in the window -- nothing to judge"
-    bad = sum(v for k, v in fresh.items() if k in starve)
-    share = bad / sum(fresh.values())
-    if share > 0.5:
-        return False, (f"{share:.0%} of new finds came from classes measured below a 25% "
-                       f"conversion rate ({', '.join(sorted(starve))}) -- the priors were "
-                       "published and IGNORED. Generation must follow measured conversion.")
-    return True, f"new finds skew away from starved classes ({share:.0%} from them)"
-
-
-# --------------------------------------------------------------------------------------------
-# TAMPER-RESISTANCE -- the lesson of the gate file, generalised. Every remaining bypass in §33 was
-# the same shape: state that could be DELETED or FORGED. A card can be deleted from the doc; an
-# artifact path can point at a file that has been there for months; the ratchet's "never loosens"
-# guarantee lived in a gitignored file one `rm` deep. Enforcement is only as strong as its weakest
-# erasable surface, so each of these is closed the same way -- derive it, or put it where deleting
-# it is VISIBLE.
-# --------------------------------------------------------------------------------------------
-
-def first_seen_map(ledger: Sequence[LedgerRow]) -> dict[str, float]:
-    """Earliest snapshot timestamp per item name -- when the desk first knew about the find."""
-    out: dict[str, float] = {}
-    for row in ledger:
-        ts = float(row["ts"])
-        for it in row["items"]:
-            n = str(it.get("n", ""))
-            if n:
-                out.setdefault(n, ts)
-    return out
-
-
-def vanished(
-    current: Sequence[MinedItem], ledger: Sequence[LedgerRow], *, as_of: date
-) -> tuple[str, ...]:
-    """Finds that were owed a disposition in the last snapshot and have since DISAPPEARED.
-
-    Deleting the card must not delete the obligation. Without this, the cheapest way to clear the
-    backlog is an editor: remove the line, and the item stops being counted entirely. The ledger
-    remembers, so a name that was undisposed yesterday and is absent today is an erasure, reported
-    immediately and by name rather than surfacing weeks later as a confusing rot warning about an
-    item nobody can find.
-    """
-    if not ledger:
-        return ()
-    prev = ledger[-1]
-    was_owing = {str(i.get("n", "")) for i in prev["items"]
-                 if i.get("d") not in _TERMINAL and str(i.get("n", ""))}
-    now_present = {i.name for i in current}
-    # a terminal disposition in THIS pass is a legitimate exit, not an erasure
-    now_done = {i.name for i in current if is_disposed(i, as_of=as_of)}
-    return tuple(sorted(was_owing - now_present - now_done))
-
-
-def ledger_regressed(ratchet: Ratchet, ledger: Sequence[LedgerRow]) -> tuple[bool, str]:
-    """Has the snapshot history been truncated or rewritten since the last recorded state?
-
-    The ledger is the evidence base for latency, priors and the ratchet itself; erasing it resets
-    every one of them. Snapshot count only ever grows and the earliest timestamp only ever moves
-    BACKWARD (never forward), so either statistic going the wrong way is proof of tampering or of
-    data loss -- both of which invalidate the record and must be seen, not silently absorbed.
-    """
-    if not ratchet.n_snapshots:
-        return False, "no prior record -- nothing to compare"
-    n = len(ledger)
-    earliest = min((float(r["ts"]) for r in ledger), default=0.0)
-    if n < ratchet.n_snapshots:
-        return True, (f"snapshot count fell {ratchet.n_snapshots} -> {n}: the conversion ledger "
-                      "has been truncated or deleted")
-    if ratchet.earliest_ts and earliest > ratchet.earliest_ts + 1.0:
-        return True, ("the ledger's earliest snapshot moved forward in time: history was "
-                      "rewritten, not appended")
-    return False, "ledger intact"
-
-
-# --------------------------------------------------------------------------------------------
-# THE LAW HELD TO ITS OWN STANDARD. Everything above pressures the DESK. Nothing above asks
-# whether §33's own machinery is any good -- and a law exempt from the evidence standard it
-# enforces is exactly the hypocrisy the NO-CEILING AXIOM forbids ("we are at max" is a claim
-# requiring evidence, never a default). Two self-audits close that: the tier weights must be
-# shown to track reality, and the law must be shown to have improved conversion at all.
-# --------------------------------------------------------------------------------------------
-
-class TierCalibration(BaseModel):
-    """Measured behaviour per tier -- are the weights tracking reality or just asserted?"""
-
-    model_config = ConfigDict(frozen=True)
-
-    per_tier: Mapping[int, tuple[int, float, float]]  # tier -> (n, conversion_rate, median_days)
-    inverted: bool
-    verdict: str
-
-
-def tier_calibration(
-    ledger: Sequence[LedgerRow], *, min_per_tier: int = 4
-) -> TierCalibration:
-    """Check the TIER WEIGHTS against measured outcomes instead of trusting the heuristic.
-
-    The weighting (T1=8 .. T4=1) is an ASSERTION: it claims Tier-1 finds are the high-ROI ones.
-    If in practice Tier-1 items convert less often and slower than Tier-4 items, the weights are
-    not merely useless -- they are actively misdirecting effort toward the wrong work while
-    reporting that priority is being enforced. This does not silently re-learn the mapping (a
-    keyword heuristic quietly rewritten by its own outcomes is unauditable); it DETECTS that the
-    mapping is wrong and demands the tiering be corrected, which is the honest version of learning
-    when the sample is this thin.
-    """
-    first: dict[str, float] = {}
-    conv: dict[str, float] = {}
-    tier_of: dict[str, int] = {}
-    for row in ledger:
-        ts = float(row["ts"])
-        for it in row["items"]:
-            n = str(it.get("n", ""))
-            if not n:
-                continue
-            first.setdefault(n, ts)
-            tier_of.setdefault(n, int(it.get("t", 3) or 3))
-            if it.get("d") in _TERMINAL and n not in conv:
-                conv[n] = ts
-    per: dict[int, tuple[int, float, float]] = {}
-    for tier in (1, 2, 3, 4):
-        names = [n for n, t in tier_of.items() if t == tier]
-        if not names:
-            continue
-        done = [n for n in names if n in conv]
-        lat = sorted((conv[n] - first[n]) / 86400.0 for n in done)
-        per[tier] = (len(names), round(len(done) / len(names), 3),
-                     round(statistics.median(lat), 2) if lat else -1.0)
-
-    hi, lo = per.get(1), per.get(4)
-    enough = bool(hi and lo and hi[0] >= min_per_tier and lo[0] >= min_per_tier)
-    inverted = bool(enough and hi and lo and hi[1] < lo[1])
-    if not enough:
-        verdict = "insufficient per-tier history to judge the weights -- not a defect yet"
-    elif inverted and hi and lo:
-        verdict = (f"tier weights INVERTED: T1 converts at {hi[1]:.0%} vs T4 at {lo[1]:.0%}. The "
-                   "weighting is steering effort toward work that does not finish.")
-    else:
-        verdict = "tier weights track measured outcomes"
-    return TierCalibration(per_tier=per, inverted=inverted, verdict=verdict)
-
-
-class LawEffectiveness(BaseModel):
-    """Has §33 actually improved conversion, or is it ceremony with good telemetry?"""
-
-    model_config = ConfigDict(frozen=True)
-
-    n_snapshots: int
-    early_rate: float
-    late_rate: float
-    early_latency_days: float
-    late_latency_days: float
-    improving: bool
-    conclusive: bool
-    verdict: str
-
-
-def law_effectiveness(
-    ledger: Sequence[LedgerRow], *, min_snapshots: int = 12
-) -> LawEffectiveness:
-    """Compare the FIRST third of the ledger against the LAST third: is conversion getting better?
-
-    HONEST LIMIT, stated rather than buried: there is no control group and no pre-§33 baseline
-    (the ledger begins with the law), so this is a TREND, not a counterfactual -- it cannot prove
-    §33 caused an improvement, only that one did or did not happen while §33 was in force. That is
-    still the strongest evidence available, and it is strictly better than the alternative the desk
-    would otherwise use, which is assuming the law works because it was written carefully. If
-    conversion is flat or worse after enough cycles, §33 is ceremony with good telemetry and must
-    say so about itself in those words.
-    """
-    n = len(ledger)
-    if n < min_snapshots:
-        return LawEffectiveness(
-            n_snapshots=n, early_rate=0.0, late_rate=0.0, early_latency_days=-1.0,
-            late_latency_days=-1.0, improving=False, conclusive=False,
-            verdict=f"{n}/{min_snapshots} snapshots -- too early to judge the law itself")
-    third = max(1, n // 3)
-
-    def _window(rows: Sequence[LedgerRow]) -> tuple[float, float]:
-        first: dict[str, float] = {}
-        conv: dict[str, float] = {}
-        for row in rows:
-            ts = float(row["ts"])
-            for it in row["items"]:
-                nm = str(it.get("n", ""))
-                if not nm:
-                    continue
-                first.setdefault(nm, ts)
-                if it.get("d") in _TERMINAL and nm not in conv:
-                    conv[nm] = ts
-        rate = (len(conv) / len(first)) if first else 0.0
-        lat = sorted((conv[k] - first[k]) / 86400.0 for k in conv)
-        return round(rate, 3), (round(statistics.median(lat), 2) if lat else -1.0)
-
-    e_rate, e_lat = _window(ledger[:third])
-    l_rate, l_lat = _window(ledger[-third:])
-    faster = l_lat >= 0 and e_lat >= 0 and l_lat < e_lat
-    improving = bool(l_rate > e_rate or faster)
-    verdict = (
-        f"conversion rate {e_rate:.0%} -> {l_rate:.0%}, median latency {e_lat:.1f}d -> {l_lat:.1f}d"
-        + (" -- the law is working" if improving else
-           " -- NO improvement while §33 has been in force. It is ceremony with good telemetry: "
-           "either the enforcement is not biting or the bottleneck is elsewhere. Find out which.")
-    )
-    return LawEffectiveness(
-        n_snapshots=n, early_rate=e_rate, late_rate=l_rate,
-        early_latency_days=e_lat, late_latency_days=l_lat,
-        improving=improving, conclusive=True, verdict=verdict)
-
-```
-
-### libs/self_improvement/audit.py
-```python
-"""Improvement audit — every Stage 13 action to the existing immutable audit log.
-
-Reuses ``libs.store.AuditLog`` (append-only, hash-chained). No parallel storage is created.
-"""
-
-from __future__ import annotations
-
-from libs.self_improvement.models import ImprovementAction, ImprovementPlan
-from libs.store.audit import AuditLog
-from libs.store.connection import Database
-from libs.store.models import AuditEntry
-
-_ACTOR = "stage13_self_improvement"
-
-
-class ImprovementAudit:
-    """Writes Stage 13 recommendations to the immutable audit log."""
-
-    def __init__(self, db: Database) -> None:
-        self._audit = AuditLog(db)
-
-    def record(self, action: ImprovementAction) -> AuditEntry:
-        return self._audit.append(
-            f"improvement_{action.type.value}",
-            actor=_ACTOR,
-            inputs={
-                "target_id": action.target_id,
-                "requires_portfolio_approval": action.requires_portfolio_approval,
-                **action.detail,
-            },
-            rationale=action.rationale,
-            outcome="recommended",
-        )
-
-    def record_plan(self, plan: ImprovementPlan) -> list[AuditEntry]:
-        return [self.record(action) for action in plan.actions]
-
-```
-
-### libs/self_improvement/decay_engine.py
-```python
-"""Alpha decay detection (reuses ``libs.alpha.detect_decay``; adds PF/Sharpe decay levels).
-
-Decay levels and their recommended (recommend-only) actions follow the Stage 13 spec. Stage 13
-never applies these directly — capital reductions require Portfolio Engine approval; retirement
-is applied via the existing AlphaLifecycleManager.
-"""
-
-from __future__ import annotations
-
-from libs.alpha.card import AlphaCard, ExpectedMetrics, LiveMetrics
-from libs.alpha.decay import detect_decay
-from libs.self_improvement.models import DecayAssessment, DecayLevel
-
-# decay level -> (recommended_action, weight_multiplier, allow_increase)
-_ACTIONS: dict[DecayLevel, tuple[str, float, bool]] = {
-    DecayLevel.HEALTHY: ("no_action", 1.0, True),
-    DecayLevel.WATCH: ("reduce_weight_10pct", 0.90, True),
-    DecayLevel.WEAK: ("reduce_weight_25pct", 0.75, True),
-    DecayLevel.DECAYING: ("pause_capital_increases", 1.0, False),
-    DecayLevel.DEAD: ("retire", 0.0, False),
-}
-
-
-def classify_decay(*, profit_factor: float | None, sharpe: float) -> DecayLevel:
-    """Map profit factor (with a Sharpe proxy/confirmation) to a decay level."""
-    pf = profit_factor
-    if pf is None:
-        pf = 1.5 if sharpe >= 1.5 else (1.0 if sharpe >= 0 else 0.7)
-    if pf < 0.8:
-        return DecayLevel.DEAD
-    if pf < 1.0:
-        return DecayLevel.DECAYING
-    if pf < 1.2:
-        return DecayLevel.WEAK
-    if pf < 1.5:
-        return DecayLevel.WATCH
-    return DecayLevel.HEALTHY if sharpe > 1.5 else DecayLevel.WATCH
-
-
-class AlphaDecayEngine:
-    """Assesses decay and recommends an action (no action is applied here)."""
-
-    def assess(self, card: AlphaCard, live: LiveMetrics) -> DecayAssessment:
-        level = classify_decay(profit_factor=live.profit_factor, sharpe=live.sharpe)
-        decay = detect_decay(ExpectedMetrics.from_card(card), live)
-        action, multiplier, allow_increase = _ACTIONS[level]
-        return DecayAssessment(
-            alpha_id=card.id,
-            decay_level=level,
-            decay_score=decay.decay_score,
-            recommended_action=action,
-            weight_multiplier=multiplier,
-            allow_increase=allow_increase,
-        )
-
-```
-
-### libs/self_improvement/dormancy.py
-```python
-"""DORMANCY HUNTER -- the standing version of the discovery that reframed 2026-07-30.
-
-WHY THIS EXISTS. On 2026-07-30 the desk's named "highest-ROI MISSING subsystems" -- research
-meta-learning, capital-allocation learning, agent health monitoring, information-advantage
-measurement, an alpha-decay lab, experiment ERV ranking -- turned out to be BUILT ALREADY with
-ZERO CALLERS. That was found because someone happened to grep for callers. Depending on a human
-noticing is not a mechanism, and the class of failure is large enough to deserve one: a capability
-that exists and never executes is indistinguishable, from the outside, from a capability that was
-never built -- except that the desk has already paid for it.
-
-THE PRIORITY THIS ENCODES (principal, 2026-07-30): **find unused capability before inventing new
-capability.** So this module answers, mechanically and every cycle, the question that produced the
-find: *which modules does nothing import, and which scripts does nothing schedule?*
-
-REACHABILITY, not popularity. A module is DORMANT only if NOTHING outside its own package imports
-it AND nothing schedules it. That is deliberately strict in one direction and forgiving in the
-other: a library imported by one live caller is reachable and therefore not dormant, however small
-it is. The desk does not want to churn small components -- it wants to find the ones that are
-disconnected.
-
-WHAT IT DOES NOT DO: it never deletes, retires, or edits anything. It reports, with the exact
-proving command, and the disposition (activate / merge / retire) stays a decision made under the
-L2.9 exits with a written reason. An auto-retiring sweep would eventually delete a capability that
-was dormant only because its unlock condition had not arrived yet -- which is precisely the state
-several of these are legitimately in (0 validated alphas).
-
-Pure stdlib. import from libs.self_improvement.dormancy.
-"""
-from __future__ import annotations
-
-import re
-import subprocess
-from dataclasses import dataclass, field
-from pathlib import Path
-
-_ROOT = Path(__file__).resolve().parents[2]
-
-# Packages whose modules are expected to be imported from outside; a module here with no external
-# importer is a genuine reachability finding rather than a naming artifact.
-_LIB_SCOPE = ("libs/self_improvement", "libs/alpha", "libs/signal_engine", "libs/portfolio",
-              "libs/discovery", "libs/autodiscovery", "libs/features", "libs/store",
-              "libs/monitoring", "libs/research", "libs/validation", "libs/risk",
-              "libs/execution", "libs/costs", "libs/regime", "libs/backtest")
-
-# Scripts that are legitimately invoked by a human or another organ on demand rather than by a
-# scheduler. Listed EXPLICITLY with a reason, because "it's a CLI tool" is otherwise the excuse
-# that would let any dormant script escape the check.
-_ON_DEMAND: dict[str, str] = {
-    "scripts/research_memory.py": "CLI logger called ad hoc by every organ (doctrine duty)",
-    "scripts/recommendations.py": "CLI ledger writer called by organs at disposition time",
-    "scripts/track_findings.py": "CLI findings writer called by organs",
-    "scripts/blind_spot.py": "CLI origin logger called by organs",
-    "scripts/run_ci.py": "developer/commit gate, invoked by hand and by pre-push",
-    "scripts/run_mutation.py": "measurement harness, invoked when a bar needs re-measuring",
-    "scripts/check_scheduler_manifest.py": "invoked by deploy/reconstitute_cron.sh and by hand",
-}
-
-
-@dataclass
-class Dormant:
-    path: str
-    kind: str                      # "module" | "script"
-    reason: str
-    proving_command: str
-    lines: int = 0
-    suggested_exit: str = "activate-or-record-unlock-condition"
-
-
-@dataclass
-class DormancyReport:
-    dormant: list[Dormant] = field(default_factory=list)
-    n_modules_scanned: int = 0
-    n_scripts_scanned: int = 0
-
-    @property
-    def counts(self) -> dict[str, int]:
-        out: dict[str, int] = {}
-        for d in self.dormant:
-            out[d.kind] = out.get(d.kind, 0) + 1
-        return out
-
-
-def _grep(pattern: str, *paths: str) -> list[str]:
-    """rg-free grep -rl; returns matching file paths (empty on no match)."""
-    try:
-        p = subprocess.run(["grep", "-rl", "-E", pattern, *paths],
-                           cwd=_ROOT, capture_output=True, text=True, timeout=60, check=False)
-    except (subprocess.TimeoutExpired, OSError):
-        return []
-    return [ln for ln in (p.stdout or "").splitlines() if ln.strip()]
-
-
-def _external_importers(rel: str) -> list[str]:
-    """Files OUTSIDE the module's own package that import it."""
-    pkg = str(Path(rel).parent)
-    mod = Path(rel).stem
-    dotted = pkg.replace("/", ".") + "." + mod
-    pattern = rf"(import\s+{re.escape(dotted)}|from\s+{re.escape(dotted)}\s+import|"
-    pattern += rf"from\s+{re.escape(pkg.replace('/', '.'))}\s+import\s+[^\n]*\b{re.escape(mod)}\b)"
-    hits = _grep(pattern, "scripts", "libs", "app", "api", "tests")
-    # Its own package and its own tests do not make it reachable from the running desk.
-    return [h for h in hits if not h.startswith(pkg) and not h.startswith("tests/")]
-
-
-def _scheduled(rel: str) -> bool:
-    name = Path(rel).name
-    for src in ("ops/crontab.manifest", "scripts/run_cadence.py",
-                "scripts/daily_research_cycle.py", "scripts/research_cycle.py"):
-        p = _ROOT / src
-        if p.exists() and name in p.read_text("utf-8", errors="ignore"):
-            return True
-    # A unit or shell runner that names it also counts as scheduling.
-    return bool(_grep(re.escape(name), "ops"))
-
-
-def _invoked_by_a_script(rel: str) -> bool:
-    """Another script importing it or shelling out to it makes it reachable."""
-    name = Path(rel).name
-    stem = Path(rel).stem
-    hits = _grep(rf"({re.escape(name)}|import\s+{re.escape(stem)}\b)", "scripts", "libs")
-    return bool([h for h in hits if h != rel])
-
-
-def scan(*, include_modules: bool = True, include_scripts: bool = True) -> DormancyReport:
-    """Find capabilities nothing imports and nothing schedules."""
-    rep = DormancyReport()
-    if include_modules:
-        for pkg in _LIB_SCOPE:
-            d = _ROOT / pkg
-            if not d.is_dir():
-                continue
-            for f in sorted(d.glob("*.py")):
-                if f.name.startswith("_"):
-                    continue
-                rel = f"{pkg}/{f.name}"
-                rep.n_modules_scanned += 1
-                if _external_importers(rel):
-                    continue
-                rep.dormant.append(Dormant(
-                    path=rel, kind="module",
-                    reason="no module outside its own package imports it",
-                    proving_command=(f"grep -rl '{pkg.replace('/', '.')}.{f.stem}' scripts/ libs/ "
-                                     f"| grep -v {pkg}/"),
-                    lines=len(f.read_text('utf-8', errors='ignore').splitlines())))
-    if include_scripts:
-        sd = _ROOT / "scripts"
-        for f in sorted(sd.glob("*.py")):
-            rel = f"scripts/{f.name}"
-            rep.n_scripts_scanned += 1
-            if rel in _ON_DEMAND or _scheduled(rel) or _invoked_by_a_script(rel):
-                continue
-            rep.dormant.append(Dormant(
-                path=rel, kind="script",
-                reason="nothing schedules it and no other script invokes or imports it",
-                proving_command=(f"grep -c {f.name} ops/crontab.manifest scripts/run_cadence.py "
-                                 f"scripts/daily_research_cycle.py"),
-                lines=len(f.read_text('utf-8', errors='ignore').splitlines())))
-    return rep
-
-
-def summarise(rep: DormancyReport) -> dict[str, object]:
-    """Report shape for the intelligence cycle. Biggest first -- a 500-line dormant subsystem is
-    a larger paid-for-and-unused asset than a 20-line one."""
-    ranked = sorted(rep.dormant, key=lambda d: -d.lines)
-    return {
-        "scanned": {"modules": rep.n_modules_scanned, "scripts": rep.n_scripts_scanned},
-        "counts": rep.counts,
-        "priority": "find unused capability BEFORE inventing new capability (principal 2026-07-30)",
-        "exits": "activate / merge / retire -- never auto-deleted; several are legitimately "
-                 "waiting on an unlock condition (e.g. 0 validated alphas) and that is a DATA gap",
-        "dormant": [{"path": d.path, "kind": d.kind, "lines": d.lines, "reason": d.reason,
-                     "proving_command": d.proving_command} for d in ranked[:40]],
-        "total_dormant_lines": sum(d.lines for d in rep.dormant),
-    }
-
-```
-
-### libs/signal_engine/governance.py
-```python
-"""Global governance gate — no capital without passing every validation test.
-
-Mirrors the platform-wide rule: a signal may only become BUY/SELL if CPCV, DSR, PBO, Deflated
-Sharpe, Reality Check, Capacity, Structural Break, and the live shadow period all pass. The gate
-is fail-closed: every verdict defaults to ``False``, so anything unspecified blocks production.
-Stage 13.5 consumes these verdicts (from the validation layer); it may not relax the thresholds.
-"""
-
-from __future__ import annotations
-
-from pydantic import BaseModel, ConfigDict
-
-from libs.signal_engine.errors import SignalGovernanceError
-
-
-class GovernanceVerdict(BaseModel):
-    """The eight validation verdicts that gate production capital (fail-closed defaults)."""
-
-    model_config = ConfigDict(frozen=True)
-
-    cpcv_pass: bool = False
-    dsr_pass: bool = False
-    pbo_pass: bool = False
-    deflated_sharpe_pass: bool = False
-    reality_check_pass: bool = False
-    capacity_pass: bool = False
-    structural_break_pass: bool = False
-    shadow_period_complete: bool = False
-
-
-def signal_governance_gate(verdict: GovernanceVerdict) -> bool:
-    """True only if every validation gate passes."""
-    return bool(
-        verdict.cpcv_pass
-        and verdict.dsr_pass
-        and verdict.pbo_pass
-        and verdict.deflated_sharpe_pass
-        and verdict.reality_check_pass
-        and verdict.capacity_pass
-        and verdict.structural_break_pass
-        and verdict.shadow_period_complete
-    )
-
-
-def require_governance(verdict: GovernanceVerdict) -> None:
-    """Raise :class:`SignalGovernanceError` unless every gate passes."""
-    if not signal_governance_gate(verdict):
-        raise SignalGovernanceError("signal failed the mandatory validation gauntlet")
-
-```
-
-### libs/signal_engine/shadow.py
-```python
-"""Shadow deployment — evaluate a candidate signal live without risking capital.
-
-Records the production vs shadow decision and (paper) return on each observation and reports
-agreement, cumulative returns, and tracking error. It allocates **no capital** and never promotes;
-readiness only signals that enough evidence exists for champion/challenger + walk-forward to judge.
-"""
-
-from __future__ import annotations
-
-import numpy as np
-from pydantic import BaseModel, ConfigDict
-
-from libs.signal_engine.models import Direction
-
-
-class ShadowResult(BaseModel):
-    model_config = ConfigDict(frozen=True)
-
-    variant_id: str
-    n_decisions: int
-    agreement_rate: float       # fraction where shadow == production direction
-    production_return: float    # cumulative (paper)
-    shadow_return: float        # cumulative (paper)
-    tracking_error: float       # std of per-step return differences
-    ready_for_promotion: bool   # enough evidence to evaluate (NOT a promotion itself)
-
-
-class ShadowDeployment:
-    """Accumulates shadow-vs-production observations; capital is never allocated."""
-
-    def __init__(self, variant_id: str) -> None:
-        self.variant_id = variant_id
-        self._agreements: list[bool] = []
-        self._prod_returns: list[float] = []
-        self._shadow_returns: list[float] = []
-
-    def observe(
-        self,
-        *,
-        production_direction: Direction,
-        shadow_direction: Direction,
-        production_return: float,
-        shadow_return: float,
-    ) -> None:
-        self._agreements.append(production_direction is shadow_direction)
-        self._prod_returns.append(float(production_return))
-        self._shadow_returns.append(float(shadow_return))
-
-    def result(self, *, min_decisions: int = 100) -> ShadowResult:
-        n = len(self._agreements)
-        if n == 0:
-            return ShadowResult(
-                variant_id=self.variant_id, n_decisions=0, agreement_rate=0.0,
-                production_return=0.0, shadow_return=0.0, tracking_error=0.0,
-                ready_for_promotion=False,
-            )
-        prod = np.asarray(self._prod_returns, dtype="float64")
-        shadow = np.asarray(self._shadow_returns, dtype="float64")
-        tracking_error = float((shadow - prod).std(ddof=1)) if n > 1 else 0.0
-        return ShadowResult(
-            variant_id=self.variant_id,
-            n_decisions=n,
-            agreement_rate=float(np.mean(self._agreements)),
-            production_return=float(prod.sum()),
-            shadow_return=float(shadow.sum()),
-            tracking_error=tracking_error,
-            ready_for_promotion=n >= min_decisions,
-        )
-
-```
-
-### libs/stage14/__init__.py
-```python
-"""``libs.stage14`` — institutional portfolio construction & compounding engine.
-
-Transforms approved Stage 13.5 ``SignalPackage`` objects into capital allocations optimized for
-long-term compounded wealth: geometric-growth and survival first, fractional-Kelly sizing, risk
-budgeting at the sleeve level, dynamic leverage, a portfolio state machine, capacity ENFORCEMENT,
-and fail-closed governance + portfolio kill criteria. Survival dominates return.
-
-Reuses Architecture v1.0: ``libs.risk`` (Kelly/drawdown), ``libs.discovery`` (Monte-Carlo survival,
-stress scenarios, log-growth), ``libs.validation`` (walk-forward governance), ``libs.portfolio``
-(weight-construction substrate), and the immutable ``libs.store`` audit log. No duplicate
-abstractions; the orchestrator is ``PortfolioConstructionEngine`` (distinct from
-``libs.portfolio.PortfolioEngine``).
-"""
-
-from __future__ import annotations
-
-from libs.stage14.allocation import (
-    AdaptiveReinvestmentEngine,
-    DrawdownAwareAllocator,
-    DynamicLeverageEngine,
-    PortfolioRiskBudgetEngine,
-    SleeveAllocator,
-    group_by_sleeve,
-)
-from libs.stage14.analytics import (
-    CapitalEfficiencyEngine,
-    MarginalContributionEngine,
-    PortfolioConvexityEngine,
-    PortfolioCorrelationEngine,
-    PortfolioResilienceEngine,
-    PortfolioStressEngine,
-    PortfolioSurvivalEngine,
-)
-from libs.stage14.attribution import PortfolioAttribution, PortfolioAttributionEngine
-from libs.stage14.audit import PortfolioAudit
-from libs.stage14.capacity import PortfolioCapacityEngine, PortfolioCapacityGovernor
-from libs.stage14.engine import PortfolioConstructionEngine
-from libs.stage14.errors import PortfolioGovernanceError, Stage14Error
-from libs.stage14.governance import PortfolioKillCriteria, portfolio_governance_gate
-from libs.stage14.growth import CapitalGrowthSimulator, GeometricGrowthEngine
-from libs.stage14.kelly import FractionalKellyEngine, KellyEngine, KellyEstimate
-from libs.stage14.models import (
-    AlphaSleeve,
-    CapacityGovernorAction,
-    ConvexityResult,
-    CorrelationResult,
-    EfficiencyResult,
-    GeometricGrowthResult,
-    GrowthSimResult,
-    InstitutionalPortfolioScore,
-    KillDecision,
-    LeverageDecision,
-    MarginalContribution,
-    PortfolioCapacityResult,
-    PortfolioConstructionResult,
-    PortfolioPackage,
-    PortfolioState,
-    ReinvestmentDecision,
-    ResilienceResult,
-    RiskBudget,
-    StressResult,
-    SurvivalResult,
-)
-from libs.stage14.score import institutional_portfolio_score
-from libs.stage14.state_machine import PortfolioStateMachine
-
-__all__ = [  # noqa: RUF022  # grouped by concern
-    # models / enums
-    "AlphaSleeve",
-    "PortfolioState",
-    "RiskBudget",
-    "GeometricGrowthResult",
-    "GrowthSimResult",
-    "SurvivalResult",
-    "PortfolioCapacityResult",
-    "CapacityGovernorAction",
-    "StressResult",
-    "ResilienceResult",
-    "CorrelationResult",
-    "ConvexityResult",
-    "EfficiencyResult",
-    "LeverageDecision",
-    "ReinvestmentDecision",
-    "MarginalContribution",
-    "InstitutionalPortfolioScore",
-    "KillDecision",
-    "PortfolioPackage",
-    "PortfolioConstructionResult",
-    # kelly / growth
-    "KellyEngine",
-    "KellyEstimate",
-    "FractionalKellyEngine",
-    "GeometricGrowthEngine",
-    "CapitalGrowthSimulator",
-    # allocation
-    "DrawdownAwareAllocator",
-    "PortfolioRiskBudgetEngine",
-    "SleeveAllocator",
-    "DynamicLeverageEngine",
-    "AdaptiveReinvestmentEngine",
-    "group_by_sleeve",
-    # analytics
-    "PortfolioCorrelationEngine",
-    "PortfolioSurvivalEngine",
-    "PortfolioStressEngine",
-    "PortfolioResilienceEngine",
-    "PortfolioConvexityEngine",
-    "MarginalContributionEngine",
-    "CapitalEfficiencyEngine",
-    # capacity
-    "PortfolioCapacityEngine",
-    "PortfolioCapacityGovernor",
-    # state / score / governance / attribution / audit
-    "PortfolioStateMachine",
-    "institutional_portfolio_score",
-    "portfolio_governance_gate",
-    "PortfolioKillCriteria",
-    "PortfolioAttributionEngine",
-    "PortfolioAttribution",
-    "PortfolioAudit",
-    # engine
-    "PortfolioConstructionEngine",
-    # errors
-    "Stage14Error",
-    "PortfolioGovernanceError",
-]
-
-```
-
-### libs/stage14/allocation.py
-```python
-"""Allocation-side controls: drawdown-aware sizing, risk budgets, sleeves, leverage, reinvestment.
-
-Capital is allocated by *risk* and at the *sleeve* level first, sized down during drawdowns and
-instability, levered dynamically (never statically), and reinvested adaptively. Reuses the existing
-drawdown governor; survival and growth always dominate return.
-"""
-
-from __future__ import annotations
-
-from collections.abc import Mapping, Sequence
-from typing import ClassVar
-
-from libs.risk.drawdown import drawdown_governor
-from libs.stage14.errors import Stage14Error
-from libs.stage14.models import (
-    AlphaSleeve,
-    LeverageDecision,
-    PortfolioState,
-    ReinvestmentDecision,
-    RiskBudget,
-)
-
-_EPS = 1e-12
-
-
-def _clip01(x: float) -> float:
-    return max(0.0, min(1.0, x))
-
-
-class DrawdownAwareAllocator:
-    """Scales exposure down in drawdowns; only restores it after recovery is confirmed."""
-
-    def scale(
-        self,
-        *,
-        current_drawdown: float,
-        recovered: bool = False,
-        regime_stable: bool = True,
-        signal_deteriorating: bool = False,
-    ) -> float:
-        scalar = drawdown_governor(current_drawdown).scalar
-        if not regime_stable:
-            scalar *= 0.75
-        if signal_deteriorating:
-            scalar *= 0.5
-        # Increase only after recovery confirmation: while still drawn down, cap restoration.
-        if current_drawdown > 0.05 and not recovered:
-            scalar = min(scalar, 0.5)
-        return _clip01(scalar)
-
-
-class PortfolioRiskBudgetEngine:
-    """Allocates risk (not capital): inverse-volatility weights within the vol budget."""
-
-    def inverse_vol_weights(self, vols: Mapping[str, float]) -> dict[str, float]:
-        inv = {k: (1.0 / v if v > _EPS else 0.0) for k, v in vols.items()}
-        total = sum(inv.values())
-        if total <= _EPS:
-            return dict.fromkeys(vols, 0.0)
-        return {k: w / total for k, w in inv.items()}
-
-    def capital_from_risk(
-        self, risk_weights: Mapping[str, float], vols: Mapping[str, float], *, budget: RiskBudget
-    ) -> dict[str, float]:
-        """Convert risk weights to capital weights targeting the portfolio vol budget."""
-        # Crude but robust: scale each name so its risk contribution targets the vol budget.
-        out: dict[str, float] = {}
-        for k, rw in risk_weights.items():
-            vol = vols.get(k, 0.0)
-            out[k] = rw * (budget.vol_budget / vol) if vol > _EPS else 0.0
-        total = sum(out.values())
-        if total > 1.0:  # never allocate more than the available capital
-            out = {k: v / total for k, v in out.items()}
-        return out
-
-
-class SleeveAllocator:
-    """Budgets capital across alpha sleeves before sizing positions."""
-
-    def __init__(self, *, max_sleeve_weight: float = 0.4) -> None:
-        self.max_sleeve_weight = max_sleeve_weight
-
-    def budgets(self, sleeve_scores: Mapping[AlphaSleeve, float]) -> dict[AlphaSleeve, float]:
-        positive = {s: max(0.0, v) for s, v in sleeve_scores.items()}
-        total = sum(positive.values())
-        if total <= _EPS:
-            n = len(positive)
-            return dict.fromkeys(positive, 1.0 / n if n else 0.0)
-        weights = {s: v / total for s, v in positive.items()}
-        return self._cap(weights)
-
-    def _cap(self, weights: dict[AlphaSleeve, float]) -> dict[AlphaSleeve, float]:
-        w = dict(weights)
-        for _ in range(50):
-            over = {s: v for s, v in w.items() if v > self.max_sleeve_weight + _EPS}
-            if not over:
-                break
-            excess = sum(v - self.max_sleeve_weight for v in over.values())
-            for s in over:
-                w[s] = self.max_sleeve_weight
-            under = {s: w[s] for s in w if s not in over}
-            headroom = sum(max(0.0, self.max_sleeve_weight - v) for v in under.values())
-            if headroom <= _EPS:
-                break
-            for s in under:
-                w[s] += excess * max(0.0, self.max_sleeve_weight - w[s]) / headroom
-        return w
-
-
-class DynamicLeverageEngine:
-    """Leverage from vol, regime, drawdown, fragility, capacity, survival (never static)."""
-
-    def __init__(self, *, max_leverage: float = 1.0) -> None:
-        if max_leverage <= 0:
-            raise Stage14Error("max_leverage must be positive")
-        self.max_leverage = max_leverage
-
-    def decide(
-        self,
-        *,
-        volatility_state: float = 0.5,
-        regime_certainty: float = 1.0,
-        drawdown_scalar: float = 1.0,
-        fragility: float = 0.0,
-        capacity_health: float = 1.0,
-        survival_score: float = 100.0,
-    ) -> LeverageDecision:
-        health = (
-            (1.0 - _clip01(volatility_state))
-            * _clip01(regime_certainty)
-            * _clip01(drawdown_scalar)
-            * (1.0 - _clip01(fragility))
-            * _clip01(capacity_health)
-            * _clip01(survival_score / 100.0)
-        )
-        leverage = self.max_leverage * health
-        return LeverageDecision(
-            leverage=max(0.0, min(self.max_leverage, leverage)),
-            rationale=f"health={health:.3f} -> leverage scaled from max {self.max_leverage}",
-        )
-
-
-class AdaptiveReinvestmentEngine:
-    """Adjusts the reinvestment rate up in stable favorable conditions, down under stress."""
-
-    _STATE_CAP: ClassVar[dict[PortfolioState, float]] = {
-        PortfolioState.NORMAL: 1.0,
-        PortfolioState.CAUTION: 0.6,
-        PortfolioState.DEFENSIVE: 0.3,
-        PortfolioState.CRISIS: 0.0,
-        PortfolioState.RECOVERY: 0.5,
-    }
-
-    def decide(
-        self,
-        *,
-        growth_score: float,
-        survival_score: float,
-        fragility: float = 0.0,
-        regime_uncertainty: float = 0.0,
-        state: PortfolioState = PortfolioState.NORMAL,
-    ) -> ReinvestmentDecision:
-        favorable = _clip01(growth_score / 100.0) * _clip01(survival_score / 100.0)
-        dampen = (1.0 - _clip01(fragility)) * (1.0 - _clip01(regime_uncertainty))
-        rate = favorable * dampen
-        cap = self._STATE_CAP.get(state, 0.5)
-        rate = min(rate, cap)
-        return ReinvestmentDecision(
-            reinvestment_rate=_clip01(rate),
-            rationale=f"favorable={favorable:.2f}, dampen={dampen:.2f}, state_cap={cap:.2f}",
-        )
-
-    @staticmethod
-    def sleeve_of(text: str) -> AlphaSleeve:
-        return AlphaSleeve.from_text(text)
-
-
-def group_by_sleeve(items: Sequence[tuple[str, AlphaSleeve]]) -> dict[AlphaSleeve, list[str]]:
-    """Group symbols by their assigned sleeve."""
-    grouped: dict[AlphaSleeve, list[str]] = {}
-    for symbol, sleeve in items:
-        grouped.setdefault(sleeve, []).append(symbol)
-    return grouped
-
-```
-
-### libs/stage14_5/factor_exposure.py
-```python
-"""Factor exposure engine — prevent hidden factor concentration.
-
-Aggregates net USD, net directional, beta, and volatility exposures into a 0-100 score (higher =
-more concentrated). The portfolio layer supplies the netted exposures; this scores them against a
-cap and flags excessive concentration for hedging.
-"""
-
-from __future__ import annotations
-
-from libs.stage14_5.models import FactorExposureResult
-
-
-def _clip01(x: float) -> float:
-    return max(0.0, min(1.0, x))
-
-
-class FactorExposureEngine:
-    """Scores portfolio factor concentration."""
-
-    def __init__(self, *, cap: float = 1.0, threshold: float = 70.0) -> None:
-        self.cap = cap
-        self.threshold = threshold
-
-    def evaluate(
-        self,
-        *,
-        net_usd: float,
-        net_directional: float,
-        beta: float,
-        volatility_exposure: float,
-    ) -> FactorExposureResult:
-        worst = max(abs(net_usd), abs(net_directional), abs(beta), abs(volatility_exposure))
-        score = 100.0 * _clip01(worst / self.cap if self.cap > 0 else 1.0)
-        return FactorExposureResult(
-            net_usd=net_usd, net_directional=net_directional, beta=beta,
-            volatility_exposure=volatility_exposure, factor_exposure_score=score,
-            acceptable=score <= self.threshold,
-        )
-
-```
-
-### libs/stage14_5/regime_exposure.py
-```python
-"""Regime exposure engine — maintain alpha-family exposure across all regimes.
-
-Measures how evenly portfolio exposure is spread across regimes (trending / range / high-vol /
-low-vol / crisis) and flags uncovered regimes. A balanced book survives regime transitions.
-"""
-
-from __future__ import annotations
-
-from collections.abc import Mapping, Sequence
-
-import numpy as np
-
-from libs.stage14_5.models import RegimeExposureResult
-
-_DEFAULT_REGIMES = ("trending", "range", "high_vol", "low_vol", "crisis")
-
-
-def _gini_evenness(values: list[float]) -> float:
-    """1 = perfectly even, 0 = fully concentrated."""
-    arr = np.array([max(0.0, v) for v in values], dtype="float64")
-    total = float(arr.sum())
-    n = len(arr)
-    if total <= 0 or n < 2:
-        return 0.0
-    shares = arr / total
-    return float(1.0 - np.sum(shares**2) * n / (n - 1) + 1.0 / (n - 1))
-
-
-class RegimeExposureEngine:
-    """Scores regime balance and identifies uncovered regimes."""
-
-    def __init__(
-        self, *, required_regimes: Sequence[str] = _DEFAULT_REGIMES, min_exposure: float = 0.05,
-        threshold: float = 50.0,
-    ) -> None:
-        self.required_regimes = list(required_regimes)
-        self.min_exposure = min_exposure
-        self.threshold = threshold
-
-    def evaluate(self, regime_weights: Mapping[str, float]) -> RegimeExposureResult:
-        by_regime = {r: float(regime_weights.get(r, 0.0)) for r in self.required_regimes}
-        total = sum(by_regime.values())
-        shares = {r: (v / total if total > 0 else 0.0) for r, v in by_regime.items()}
-        evenness = _gini_evenness(list(by_regime.values()))
-        score = 100.0 * max(0.0, min(1.0, evenness))
-        uncovered = [r for r, s in shares.items() if s < self.min_exposure]
-        return RegimeExposureResult(
-            by_regime=shares, regime_balance_score=score, uncovered_regimes=uncovered,
-            balanced=not uncovered and score >= self.threshold,
-        )
-
-```
-
-### libs/stage15/orchestrator.py
-```python
-"""Research orchestrator — the end-to-end live alpha pipeline.
-
-Threads each candidate through: Discovery -> Validation -> Walk-Forward -> Shadow -> Paper ->
-Allocation, gated by the alpha governance gate and overseen by the research kill-switch. It
-consumes the verdicts/scores produced by the existing engines (gauntlet, walk-forward governance,
-shadow deployment) — it does not re-implement them — and routes each alpha to the furthest stage it
-has earned. Recommend-only: it never trades or allocates capital itself.
-"""
-
-from __future__ import annotations
-
-from collections.abc import Sequence
-
-from pydantic import BaseModel, ConfigDict
-
-from libs.stage15.audit import ResearchAudit
-from libs.stage15.governance import ResearchGovernanceEngine, alpha_governance_gate
-from libs.stage15.models import (
-    AlphaScores,
-    PipelineRecord,
-    PipelineStage,
-    ResearchPipelineResult,
-)
-from libs.stage15.scoring import alpha_quality_score
-from libs.validation.gauntlet import GauntletResult
-
-
-class AlphaPipelineInput(BaseModel):
-    """One candidate's evaluated state, as produced by the discovery + validation engines."""
-
-    model_config = ConfigDict(frozen=True)
-
-    alpha_id: str
-    scores: AlphaScores
-    cpcv_passed: bool = False
-    pbo_acceptable: bool = False
-    dsr_passed: bool = False
-    reality_check_passed: bool = False
-    economic_mechanism_present: bool = False
-    capacity_acceptable: bool = False
-    fragility_acceptable: bool = False
-    walk_forward_passed: bool = False
-    shadow_ready: bool = False
-
-    @classmethod
-    def from_gauntlet(
-        cls,
-        alpha_id: str,
-        gauntlet: GauntletResult,
-        scores: AlphaScores,
-        *,
-        economic_mechanism_present: bool,
-        capacity_acceptable: bool,
-        fragility_acceptable: bool,
-        walk_forward_passed: bool,
-        shadow_ready: bool = False,
-    ) -> AlphaPipelineInput:
-        """Bridge a real gauntlet verdict into the pipeline (the gauntlet runs CPCV/PBO/DSR/SPA)."""
-        passed = gauntlet.passed
-        return cls(
-            alpha_id=alpha_id, scores=scores,
-            cpcv_passed=passed, pbo_acceptable=passed, dsr_passed=passed,
-            reality_check_passed=passed,
-            economic_mechanism_present=economic_mechanism_present,
-            capacity_acceptable=capacity_acceptable,
-            fragility_acceptable=fragility_acceptable,
-            walk_forward_passed=walk_forward_passed, shadow_ready=shadow_ready,
-        )
-
-
-class ResearchOrchestrator:
-    """Routes candidates through the live research pipeline under research governance."""
-
-    def __init__(
-        self,
-        *,
-        min_allocation_quality: float = 70.0,
-        governance: ResearchGovernanceEngine | None = None,
-        audit: ResearchAudit | None = None,
-    ) -> None:
-        self.min_allocation_quality = min_allocation_quality
-        self.governance = governance or ResearchGovernanceEngine()
-        self.audit = audit
-
-    def run(
-        self,
-        candidates: Sequence[AlphaPipelineInput],
-        *,
-        false_discovery_rate: float = 0.0,
-        validation_pass_rate: float = 1.0,
-        discovery_quality: float = 100.0,
-        decay_rate: float = 0.0,
-    ) -> ResearchPipelineResult:
-        kill = self.governance.evaluate(
-            false_discovery_rate=false_discovery_rate,
-            validation_pass_rate=validation_pass_rate,
-            discovery_quality=discovery_quality, decay_rate=decay_rate,
-        )
-
-        records: list[PipelineRecord] = []
-        allocated: list[str] = []
-        rejected: list[str] = []
-        for cand in candidates:
-            quality = alpha_quality_score(cand.scores).score
-            verdict = alpha_governance_gate(
-                cpcv_passed=cand.cpcv_passed, pbo_acceptable=cand.pbo_acceptable,
-                dsr_passed=cand.dsr_passed, reality_check_passed=cand.reality_check_passed,
-                economic_mechanism_present=cand.economic_mechanism_present,
-                capacity_acceptable=cand.capacity_acceptable,
-                fragility_acceptable=cand.fragility_acceptable,
-                walk_forward_passed=cand.walk_forward_passed,
-            )
-            if not verdict.accepted:
-                stage, accepted, note = PipelineStage.REJECTED, False, ", ".join(
-                    verdict.rejected_reasons
-                )
-                rejected.append(cand.alpha_id)
-            elif kill.halt:
-                # Validated, but research is halted -> hold in shadow, no new capital.
-                stage, accepted, note = PipelineStage.SHADOW, True, "research halt: no new capital"
-            elif not cand.shadow_ready:
-                stage, accepted, note = PipelineStage.SHADOW, True, "awaiting shadow completion"
-            elif quality < self.min_allocation_quality:
-                stage, accepted, note = PipelineStage.PAPER, True, (
-                    f"quality {quality:.1f} < {self.min_allocation_quality} -> paper trade"
-                )
-            else:
-                stage, accepted, note = PipelineStage.ALLOCATION, True, "cleared for allocation"
-                allocated.append(cand.alpha_id)
-            records.append(
-                PipelineRecord(
-                    alpha_id=cand.alpha_id, stage=stage, quality_score=quality,
-                    accepted=accepted, note=note,
-                )
-            )
-
-        result = ResearchPipelineResult(
-            records=records, allocated=allocated, rejected=rejected, kill=kill
-        )
-        if self.audit is not None:
-            self.audit.record_pipeline(result)
-        return result
-
-```
-
-### libs/store/connection.py
-```python
-"""SQLite connection management — ACID, WAL, single-writer.
-
-The :class:`Database` wraps one connection configured for the platform's invariants:
-WAL journaling (one writer, many readers), enforced foreign keys, and manual transaction
-control. Readers (e.g. dashboards) open a separate read-only connection that physically
-cannot write — the single-writer rule made structural.
-"""
-
-from __future__ import annotations
-
-import sqlite3
-from collections.abc import Iterator
-from contextlib import contextmanager
-from pathlib import Path
-
-# Applied to every writable connection.
-_WRITE_PRAGMAS: tuple[str, ...] = (
-    "PRAGMA journal_mode=WAL",
-    "PRAGMA foreign_keys=ON",
-    "PRAGMA synchronous=NORMAL",
-    "PRAGMA busy_timeout=5000",
-)
-_READ_PRAGMAS: tuple[str, ...] = (
-    "PRAGMA foreign_keys=ON",
-    "PRAGMA busy_timeout=5000",
-)
-
-
-class Database:
-    """A single SQLite connection with WAL + foreign keys + manual transactions."""
-
-    def __init__(self, path: str | Path, *, read_only: bool = False) -> None:
-        self.path = Path(path)
-        self.read_only = read_only
-        if read_only:
-            uri = f"file:{self.path}?mode=ro"
-            self._conn = sqlite3.connect(uri, uri=True, isolation_level=None)
-            pragmas = _READ_PRAGMAS
-        else:
-            self.path.parent.mkdir(parents=True, exist_ok=True)
-            self._conn = sqlite3.connect(str(self.path), isolation_level=None)
-            pragmas = _WRITE_PRAGMAS
-        self._conn.row_factory = sqlite3.Row
-        for pragma in pragmas:
-            self._conn.execute(pragma)
-
-    @property
-    def connection(self) -> sqlite3.Connection:
-        """The underlying connection (use within :meth:`transaction` for writes)."""
-        return self._conn
-
-    def execute(self, sql: str, params: tuple[object, ...] = ()) -> sqlite3.Cursor:
-        """Execute a single statement (autocommit outside a transaction block)."""
-        return self._conn.execute(sql, params)
-
-    @contextmanager
-    def transaction(self) -> Iterator[sqlite3.Connection]:
-        """Run a block atomically; commit on success, roll back on any exception."""
-        if self.read_only:
-            raise RuntimeError("cannot open a write transaction on a read-only Database")
-        self._conn.execute("BEGIN")
-        try:
-            yield self._conn
-            self._conn.execute("COMMIT")
-        except BaseException:
-            self._conn.execute("ROLLBACK")
-            raise
-
-    def journal_mode(self) -> str:
-        """Return the active journal mode (``wal`` for on-disk databases)."""
-        row = self._conn.execute("PRAGMA journal_mode").fetchone()
-        return str(row[0]).lower()
-
-    def close(self) -> None:
-        """Close the connection."""
-        self._conn.close()
-
-    def __enter__(self) -> Database:
-        return self
-
-    def __exit__(self, *exc: object) -> None:
-        self.close()
-
-```
-
-### libs/validation/event_study.py
-```python
-"""Event-study validation -- the promotion path for edges that are EVENTS, not time series.
-
-Every gate the desk owns scores a CONTINUOUS DAILY RETURN SERIES: Sharpe, DSR, PBO, walk-forward,
-Newey-West. That is the right shape for carry, trend and cross-sectional sleeves. It is the wrong
-shape for the edges a small book actually wants (§42): a day-1 listing funding spike is a handful
-of hours, happens a few times a week, and is over. Thirty such events are thirty observations --
-but strung into a daily series they are ~2 non-zero days in 30 mostly-flat ones, and every
-continuous statistic reads that as noise. The result is that the desk could COLLECT the listing
-data (run_listing_watch already does) and never be able to PROMOTE what it found: acquired, not
-convertible, at the strategy layer.
-
-This module is that missing path. The unit of evidence is the EVENT.
-
-WHY THIS IS FASTER WITHOUT BEING WEAKER -- the point that matters. At 2-4 new perp listings a
-week, 30 events is ~10 weeks: comparable to the 40-day forward clock in calendar terms, but far
-richer in statistical content, because 30 events are 30 largely-independent draws whereas 40 daily
-returns are 40 autocorrelated ones. The clock shortens because the EVIDENCE is denser, not because
-the bar moved. Same argument as reconstructed-history backfill, applied to events.
-
-THE TRAP, AND WHY IT IS CHECKED HERE. Overlapping event windows share the same market moves, so
-they are not independent draws: a market-wide shock inside two overlapping windows is one
-observation counted twice, and the cross-sectional standard error silently shrinks. Overlap is
-therefore MEASURED and reported, and the effective N is discounted by it -- the same
-effective-vs-raw discipline §31 applies to trial counts, here applied to observations.
-"""
-
-from __future__ import annotations
-
-import numpy as np
-from pydantic import BaseModel, ConfigDict
-
-from libs.validation.errors import ValidationError
-
-#: Below this an event study says nothing: the cross-sectional t-test needs a usable sample, and
-#: crypto event returns are fat-tailed enough that small-N normal approximations mislead badly.
-MIN_EVENTS = 20
-
-
-class Event(BaseModel):
-    """One occurrence: when it started, how long it ran, and the return earned across it."""
-
-    model_config = ConfigDict(frozen=True)
-
-    event_id: str
-    t_start: float                # epoch seconds
-    t_end: float
-    ret: float                    # realised return over the window (ABNORMAL if a benchmark
-    #                               was subtracted by the caller -- see abnormal_returns)
-
-    @property
-    def duration_s(self) -> float:
-        return max(0.0, self.t_end - self.t_start)
-
-
-def abnormal_returns(
-    event_rets: np.ndarray, benchmark_rets: np.ndarray | None = None
-) -> np.ndarray:
-    """Subtract the benchmark earned over each event's own window.
-
-    Without this an event study measures BETA, not edge: a listing study run through a bull month
-    reports the market. This is the same error as the video's AI 'beating' a falling S&P by sitting
-    in cash -- the number was the benchmark's, not the strategy's.
-    """
-    r = np.asarray(event_rets, dtype="float64")
-    if benchmark_rets is None:
-        return r
-    b = np.asarray(benchmark_rets, dtype="float64")
-    if b.shape != r.shape:
-        raise ValidationError("benchmark_rets must align 1:1 with event_rets")
-    return np.asarray(r - b, dtype="float64")
-
-
-def overlap_fraction(events: list[Event]) -> float:
-    """Share of events whose window intersects another's -- the independence discount.
-
-    Overlapping windows share market moves, so they are not independent draws. Reported rather
-    than silently corrected, because the honest response depends on WHY they overlap.
-    """
-    if len(events) < 2:
-        return 0.0
-    ordered = sorted(events, key=lambda e: e.t_start)
-    overlapping: set[str] = set()
-    for i, a in enumerate(ordered):
-        for b in ordered[i + 1:]:
-            if b.t_start >= a.t_end:
-                break                       # sorted: nothing later can overlap a either
-            overlapping.add(a.event_id)
-            overlapping.add(b.event_id)
-    return round(len(overlapping) / len(events), 3)
-
-
-class EventStudyResult(BaseModel):
-    """Cross-sectional verdict over N events."""
-
-    model_config = ConfigDict(frozen=True)
-
-    n_events: int
-    n_effective: float            # N discounted for overlapping windows
-    mean_ret: float
-    std_ret: float
-    t_stat: float                 # cross-sectional (Brown-Warner), on effective N
-    hit_rate: float               # share of events with a positive return
-    boot_lo: float                # 5th pct of the bootstrapped mean -- fat-tail sanity check
-    boot_hi: float
-    overlap: float
-    bar: float                    # multiplicity-corrected t threshold this had to clear
-    passed: bool
-    verdict: str
-
-
-def event_study(
-    events: list[Event],
-    *,
-    n_cohort: int = 1,
-    rank: int = 1,
-    alpha: float = 0.05,
-    min_events: int = MIN_EVENTS,
-    n_boot: int = 2000,
-    seed: int = 0,
-) -> EventStudyResult:
-    """Cross-sectional event study with a multiplicity-corrected bar and a bootstrap check.
-
-    ``n_cohort``/``rank`` plug into the desk's existing Holm discipline: an event edge found while
-    screening K candidate event-types is one of K, and is deflated exactly as a candidate cohort
-    is (``forward_stats.holm_bar``). A single PRE-REGISTERED event hypothesis uses n_cohort=1.
-
-    The bootstrap runs alongside the parametric t on purpose: crypto event returns are strongly
-    fat-tailed, and a t-stat that clears on a normal assumption while the bootstrap interval spans
-    zero is exactly the false positive this desk exists to refuse.
-    """
-    from libs.validation.forward_stats import holm_bar
-
-    n = len(events)
-    if n < min_events:
-        return EventStudyResult(
-            n_events=n, n_effective=float(n), mean_ret=0.0, std_ret=0.0, t_stat=0.0,
-            hit_rate=0.0, boot_lo=0.0, boot_hi=0.0, overlap=0.0, bar=0.0, passed=False,
-            verdict=(f"{n}/{min_events} events -- too few to judge. An event study below ~20 "
-                     "observations is a story, not evidence; keep the clock running."),
-        )
-    r = np.array([e.ret for e in events], dtype="float64")
-    ov = overlap_fraction(events)
-    # Discount N by overlap: fully-overlapping events are ONE observation, not many. Linear is
-    # crude but conservative, and conservative is the correct direction for an independence proxy.
-    n_eff = max(1.0, n * (1.0 - ov))
-    mean = float(r.mean())
-    std = float(r.std(ddof=1)) if n > 1 else 0.0
-    # DEGENERATE INPUT. `std == 0.0` is the wrong guard: numpy returns ~3e-19 for identical
-    # values, so an exact-equality check never fires and the t-stat explodes (measured: 3e16 for
-    # 30 identical returns) -- a constant series would then clear every bar in the module. Real
-    # event returns are never constant, so this is a DATA defect (a repeated fill price, a stubbed
-    # feed, a join that fanned one row out) and must be refused loudly rather than scored.
-    if std <= 1e-12 or not np.isfinite(std):
-        return EventStudyResult(
-            n_events=n, n_effective=round(n_eff, 1), mean_ret=round(mean, 6), std_ret=0.0,
-            t_stat=0.0, hit_rate=round(float((r > 0).mean()), 3), boot_lo=0.0, boot_hi=0.0,
-            overlap=ov, bar=0.0, passed=False,
-            verdict=(f"DEGENERATE: {n} events with ~zero cross-sectional variance (std={std:.2e}). "
-                     "Real event returns are never constant -- this is a data defect (repeated "
-                     "price, stubbed feed, fanned-out join), not an edge. Fix the input."),
-        )
-    t = mean / (std / np.sqrt(n_eff))
-
-    rng = np.random.default_rng(seed)
-    boots = rng.choice(r, size=(n_boot, n), replace=True).mean(axis=1)
-    lo, hi = (float(np.percentile(boots, 5)), float(np.percentile(boots, 95)))
-
-    bar = holm_bar(max(1, n_cohort), rank, alpha=alpha)
-    # BOTH must hold: the corrected t AND a bootstrap interval that excludes zero. Either alone is
-    # defeatable -- the t by fat tails, the bootstrap by a lucky resample of a thin sample.
-    passed = bool(t >= bar and lo > 0.0)
-
-    if passed:
-        verdict = (f"PASS: {n} events (eff {n_eff:.0f}), mean {mean:+.4%}, t={t:.2f} vs bar "
-                   f"{bar:.2f}, bootstrap 90% CI [{lo:+.4%}, {hi:+.4%}] excludes zero.")
-    elif t >= bar:
-        verdict = (f"t={t:.2f} clears the {bar:.2f} bar but the bootstrap CI [{lo:+.4%}, "
-                   f"{hi:+.4%}] SPANS ZERO -- fat tails, not edge. Refused.")
-    else:
-        verdict = (f"t={t:.2f} below the multiplicity-corrected bar {bar:.2f} "
-                   f"({n} events, eff {n_eff:.0f}, overlap {ov:.0%}). Keep collecting.")
-    return EventStudyResult(
-        n_events=n, n_effective=round(n_eff, 1), mean_ret=round(mean, 6),
-        std_ret=round(std, 6), t_stat=round(t, 3),
-        hit_rate=round(float((r > 0).mean()), 3), boot_lo=round(lo, 6), boot_hi=round(hi, 6),
-        overlap=ov, bar=round(bar, 3), passed=passed, verdict=verdict,
-    )
-
-```
-
-### scripts/bundle_algo.py
-```python
-"""Concatenate the complete TRADING CORE into one readable file -> web/algo_full.txt.
-
-The platform is ~300 modules; this bundles the actual algorithm end-to-end (data -> alpha sleeves
--> portfolio construction -> edge-gated leverage -> execution) into a single annotated file you can
-read, share, or download from the dashboard URL. Not every helper -- the strategy itself.
-
-    python scripts/bundle_algo.py
-"""
-
-from __future__ import annotations
-
-from datetime import UTC, datetime
-from pathlib import Path
-
-# the core pipeline, in execution order
-_FILES = [
-    ("DATA  -- free Binance perp data (OHLCV + funding + basis + taker flow)",
-     "libs/data/crypto_source.py"),
-    ("ALPHA -- cross-sectional funding carry (the survivor) + ADV-tiered cost",
-     "libs/research/crypto_xsec.py"),
-    ("ALPHA -- decorrelated sleeves (basis / taker-flow / momentum) + live weights",
-     "libs/research/crypto_sleeves.py"),
-    ("ALPHA -- delta-neutral cash-and-carry (spot + perp)", "libs/research/cashcarry.py"),
-    ("PORTFOLIO -- combine sleeves into one net target weight per perp",
-     "scripts/run_crypto_target.py"),
-    ("RISK  -- edge-gated leverage (half-Kelly of forward-validated Sharpe)",
-     "libs/risk/edge_gate.py"),
-    ("EXEC  -- Binance futures testnet connector (orders, positions, P&L)",
-     "libs/execution/binance_testnet.py"),
-    ("EXEC  -- maker-first execution (post-only, taker fallback)", "libs/execution/maker.py"),
-    ("EXEC  -- the live executor loop (rebalance, throttle, gating, snapshot)",
-     "scripts/run_crypto_testnet.py"),
-]
-_OUT = Path("web/algo_full.txt")
-
-
-def main() -> None:
-    root = Path(__file__).resolve().parent.parent
-    parts = [f"QUANT TRADING CORE -- consolidated {datetime.now(tz=UTC).isoformat()}",
-             "Generated by bundle_algo.py. Full repo lives at C:/Users/dell/quant-platform.",
-             "Order = execution pipeline: data -> alpha -> portfolio -> risk -> execution.", ""]
-    n = 0
-    for label, rel in _FILES:
-        p = root / rel
-        if not p.exists():
-            continue
-        body = p.read_text("utf-8")
-        n += body.count("\n")
-        parts += ["=" * 100, f"# {label}", f"# FILE: {rel}", "=" * 100, "", body, ""]
-    _OUT.write_text("\n".join(parts), "utf-8")
-    print(f"bundled {len(_FILES)} core files (~{n} lines) -> {_OUT}")
-
-
-if __name__ == "__main__":
-    main()
-
-```
-
-### scripts/check_organ_liveness.py
-```python
-#!/usr/bin/env python3
-"""ORGAN LIVENESS (R0144) -- is every scheduled organ actually PRODUCING?
-
-PRINCIPAL ORDER (2026-07-31): *"make sure all miners etc run, just do it all yourself, don't tell
-me to check -- you make sure all cycles are running as intended."*
-
-That instruction is correct and it exposed a real hole. The desk could already check two things:
-`check_scheduler_manifest.py` compares the manifest against `crontab -l` (is the line INSTALLED),
-and `check_exploration.py` checks freshness for six named exploration organs. Nothing checked the
-question that actually matters for the other hundred-odd lines: **did this organ produce anything
-recently?**
-
-Those are genuinely different failures and only the third is the one that costs alpha:
-
-    installed but never runs   -- wrong path, missing venv, a lock never released
-    runs but produces nothing  -- auth expired, quota exhausted, an API gone 451
-    produces but is stale      -- the cadence silently slipped
-
-An organ can pass the manifest check, appear in `crontab -l`, and have emitted nothing for a week.
-That is exactly how a miner goes dark unnoticed: nothing errors, no page fires, and the board stays
-green because the board was only ever checking that the LINE existed.
-
-HOW IT WORKS. The manifest already carries the two facts needed, on 79 of its entries:
-a cron schedule, and an `# EVIDENCE: script -> artifact` line naming what the organ writes. This
-parses both, converts the schedule into an expected interval, and compares against the artifact's
-real age. No new bookkeeping -- the manifest was already the genome, it just was not being read
-this way.
-
-TOLERANCE IS 3x THE CADENCE, deliberately loose. A single missed tick is a machine hiccup; three
-consecutive is a dead organ. A tighter tolerance produces a board that is red most mornings, and a
-board that is red most mornings is one nobody reads -- which is the failure this organ exists to
-end, not to reproduce.
-
-NEVER-PRODUCED IS ITS OWN STATE, not a very old STALE. An organ that has never once written its
-artifact was never working, which is a different diagnosis (wiring) from one that stopped (auth,
-quota, upstream). Collapsing them would send someone to debug the wrong thing.
-
-    python scripts/check_organ_liveness.py [--report-only] [--json]
-"""
 from __future__ import annotations
 
 import argparse
 import json
-import re
 import sys
-import time
-from datetime import UTC, datetime
-from pathlib import Path
-from typing import Any
-
-_ROOT = Path("/home/quant/quant-platform")
-if not _ROOT.exists():
-    _ROOT = Path(__file__).resolve().parent.parent
-if str(_ROOT) not in sys.path:
-    sys.path.insert(0, str(_ROOT))
-from libs.ops.lawful import guard as _law_guard  # noqa: E402
-
-#: 3 consecutive missed cadences before an organ is called dead. One miss is a hiccup; three is a
-#: pattern. Loose on purpose -- a board that is red most mornings is a board nobody reads.
-STALE_MULTIPLE = 3.0
-#: Floor on the tolerance so a */5 organ is not declared dead 15 minutes after a reboot. 2h is
-#: about the shortest window in which "it did not run" is distinguishable from "the box restarted".
-MIN_TOLERANCE_H = 2.0
-
-
-def cadence_hours(cron: str) -> float | None:
-    """Expected hours between runs, from a 5-field cron expression."""
-    parts = cron.split()
-    if len(parts) < 5:
-        return None
-    m, h, dom, _mon, dow = parts[:5]
-
-    def count(field: str, span: int) -> int:
-        if field.startswith("*/"):
-            try:
-                return max(1, span // int(field[2:]))
-            except ValueError:
-                return 1
-        if field == "*":
-            return span
-        return len([x for x in field.split(",") if x])
-    per_day = count(m, 60) * count(h, 24)
-    if dow != "*":
-        per_day *= len([x for x in dow.split(",") if x]) / 7.0
-    if dom != "*" and dom.startswith("*/"):
-        try:
-            per_day /= float(dom[2:])
-        except ValueError:
-            # NOT swallowed: an unparseable day-of-month means the cadence is UNKNOWN, and a
-            # wrong cadence produces a wrong tolerance -- which is how this fence would report a
-            # live organ as dead, or a dead one as fine. Refuse to guess.
-            return None
-    elif dom != "*":
-        per_day /= 30.0
-    return 24.0 / per_day if per_day > 0 else None
-
-
-def parse_manifest(text: str) -> list[dict[str, Any]]:
-    """(schedule, script, artifacts) per scheduled line, from the EVIDENCE block above it."""
-    out: list[dict[str, Any]] = []
-    evidence: str | None = None
-    for line in text.splitlines():
-        s = line.strip()
-        if s.startswith("# EVIDENCE:"):
-            evidence = s[len("# EVIDENCE:"):].strip()
-            continue
-        if s.startswith("#") or not s:
-            continue
-        if not re.match(r"^[\d*]", s) or "SYSTEMD" in s:
-            evidence = None if s.startswith("SYSTEMD") else evidence
-            continue
-        cron = " ".join(s.split()[:5])
-        script = None
-        ms = re.search(r"((?:scripts|ops)/[\w./-]+\.(?:py|sh))", s)
-        if ms:
-            script = ms.group(1)
-        arts: list[str] = []
-        if evidence and "->" in evidence:
-            tail = evidence.split("->", 1)[1]
-            # SEPARATORS ARE '+', ',' AND ';' -- the first version missed the semicolon, so
-            # `data/law_gate.json; docs/CONSTITUTION.md L1.37` parsed as `data/law_gate.json;`
-            # and every such organ read NEVER-PRODUCED. That is worse than no fence: a board
-            # that is wrongly red gets disabled, which is precisely the failure this exists to
-            # end. Trailing punctuation is stripped for the same reason.
-            for tok in re.split(r"[+,;]", tail):
-                tok = tok.strip().split()[0] if tok.strip() else ""
-                tok = tok.strip(";,.)([]")
-                # ONLY data/ PATHS COUNT. An EVIDENCE line often CITES a law
-                # (`-> data/x.json; docs/CONSTITUTION.md L1.37`), and a citation is not an output.
-                # Counting it would satisfy liveness with a static file that never changes, so
-                # every organ citing a law would read FRESH forever -- a false GREEN, which is
-                # strictly worse than the false RED the semicolon bug produced.
-                if not tok or not tok.endswith((".json", ".jsonl")):
-                    continue
-                tok = tok if "/" in tok else f"data/{tok}"
-                if not tok.startswith("data/"):
-                    continue
-                arts.append(tok)
-        out.append({"cron": cron, "script": script, "artifacts": arts,
-                    "cadence_h": cadence_hours(cron)})
-        evidence = None
-    return out
-
-
-def audit(root: Path | None = None, *, now: float | None = None) -> dict[str, Any]:
-    root = root or _ROOT
-    now = now if now is not None else time.time()
-    try:
-        text = (root / "ops/crontab.manifest").read_text("utf-8", errors="ignore")
-    except OSError as exc:
-        return {"status": "UNMEASURED", "detail": f"manifest unreadable: {exc}", "organs": []}
-    rows = parse_manifest(text)
-    organs: list[dict[str, Any]] = []
-    for r in rows:
-        if not r["artifacts"] or not r["cadence_h"]:
-            continue                       # no declared evidence: check_build_standard's problem
-        tol = max(MIN_TOLERANCE_H, r["cadence_h"] * STALE_MULTIPLE)
-        ages = []
-        for a in r["artifacts"]:
-            p = root / a
-            ages.append((now - p.stat().st_mtime) / 3600.0 if p.exists() else None)
-        fresh = [x for x in ages if x is not None]
-        if not fresh:
-            state, age = "NEVER-PRODUCED", None
-        else:
-            age = min(fresh)
-            state = "FRESH" if age <= tol else "STALE"
-        organs.append({"script": r["script"], "cron": r["cron"],
-                       "cadence_h": round(r["cadence_h"], 2), "tolerance_h": round(tol, 2),
-                       "artifacts": r["artifacts"],
-                       "age_h": None if age is None else round(age, 2), "state": state})
-    dead = [o for o in organs if o["state"] == "NEVER-PRODUCED"]
-    stale = [o for o in organs if o["state"] == "STALE"]
-    status = ("UNMEASURED" if not organs else
-              "DARK" if dead or stale else "OK")
-    return {
-        "generated": datetime.now(tz=UTC).isoformat(),
-        "law": "L1.28a/L1.28c -- a scheduled line that produces nothing is not a running organ. "
-               "Installed, running, and PRODUCING are three different facts and only the third "
-               "is worth anything.",
-        "status": status,
-        "n_checked": len(organs), "n_fresh": len(organs) - len(dead) - len(stale),
-        "never_produced": [o["script"] for o in dead],
-        "stale": [{"script": o["script"], "age_h": o["age_h"], "tolerance_h": o["tolerance_h"]}
-                  for o in stale],
-        "organs": organs,
-        "diagnosis": ("NEVER-PRODUCED means WIRING (path, venv, lock) -- it was never working. "
-                      "STALE means it STOPPED (auth, quota, upstream 451). Different repairs, so "
-                      "they are never collapsed into one state."),
-        "detail": (f"{len(organs) - len(dead) - len(stale)}/{len(organs)} scheduled organs with "
-                   f"declared evidence produced within their own cadence"
-                   + (f"; NEVER PRODUCED: {', '.join(o['script'] or '?' for o in dead)}"
-                      if dead else "")
-                   + (f"; STALE: {', '.join(o['script'] or '?' for o in stale)}" if stale else "")),
-    }
-
-
-def main() -> int:
-    _law_guard()
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--report-only", action="store_true")
-    ap.add_argument("--json", action="store_true")
-    args = ap.parse_args()
-    rep = audit()
-    out = _ROOT / "data/organ_liveness.json"
-    out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(json.dumps(rep, indent=2), "utf-8")
-    if args.json:
-        print(json.dumps(rep, indent=2))
-    else:
-        print(f"organ liveness (L1.28c): {rep['status']} -- {rep['detail'][:200]}")
-        for o in rep["organs"]:
-            if o["state"] != "FRESH":
-                print(f"  {o['state']:<16}{o['script']!s:<38}"
-                      f"age={o['age_h']} tol={o['tolerance_h']}h")
-    if args.report_only:
-        return 0
-    return 2 if rep["status"] == "DARK" else 0
-
-
-if __name__ == "__main__":
-    sys.exit(main())
-
-```
-
-### scripts/collect_oi_ls_live.py
-```python
-"""LIVE OI / LONG-SHORT COLLECTOR -- the desk's best mechanism has been running on 2023 data.
-
-THE FINDING THAT MOTIVATED THIS. data/oi_ls_history.jsonl ends 2023-12-03. It is a static backfill
-written once by dl_metrics_history.py for OOS backtesting -- correct as an archive, useless as a
-live feed. Meanwhile M_FORCED_DELEVERAGE is the desk's BEST-supported mechanism (2/10 survival,
-highest of nine) and holds its ONLY confirmed edge (funding persistence, IC +0.432, t +29.7).
-
-So the mechanism with the strongest evidence has had no live positioning data at all. Binance
-publishes both feeds free, no key: openInterestHist and globalLongShortAccountRatio.
-
-MECHANISM, falsifiable as stated:
-    crowded positioning -> one side pays funding -> adverse move squeezes the crowd ->
-    forced unwind -> the squeeze that positioning predicted
-Forced participant: the leveraged crowd. Constraint: margin, which cannot be negotiated or timed.
-Why not arbitraged: the data is public but the CONSTRAINT is real -- knowing a crowd is levered
-does not let you avoid being the crowd.
-
-UNIVERSE IS THE VIABLE SET, NOT THE FUNDING-RANKED SET. Only symbols whose MEASURED round-trip
-lets a carry clear costs (carry_viability: 16 of 30) are collected. Collecting positioning on
-COOKIEUSDT -- 130.47bps round-trip against 6.7bps of funding -- would be gathering evidence about
-a trade that can never be profitable. The universe switch already applied this to trading; this
-applies it to research.
-
-DEFENCES (identical pattern to collect_defi_lending, deliberately):
-  schema contract -> quarantine, sanity bounds per row, coverage floor, separate heartbeat.
-"""
-from __future__ import annotations
-
-import json
-import ssl
-import time
-import urllib.request
-from datetime import UTC, datetime
-from pathlib import Path
-
-ROOT = Path(__file__).resolve().parent.parent
-OUT = ROOT / "data/oi_ls_live.jsonl"
-HB = ROOT / "data/oi_ls_live_heartbeat"
-QUAR = ROOT / "data/oi_ls_live_quarantine.json"
-COST = ROOT / "data/cost_model.json"
-CTX = ssl.create_default_context()
-BASE = "https://fapi.binance.com/futures/data"
-
-PERIOD = "1h"
-_MIN_SYMBOLS = 8
-_MAX_VIABLE_RT_BPS = 8.0        # matches carry_viability: clears at <=3bp funding over a 24h hold
-_FALLBACK = ("BTCUSDT", "ETHUSDT", "BNBUSDT", "XRPUSDT", "SOLUSDT", "DOGEUSDT",
-             "AVAXUSDT", "LINKUSDT", "LTCUSDT", "TRXUSDT")
-
-
-def _get(path: str, params: str):
-    r = urllib.request.Request(f"{BASE}/{path}?{params}",
-                               headers={"User-Agent": "quant-desk/1.0"})
-    return json.loads(urllib.request.urlopen(r, timeout=45, context=CTX).read())
-
-
-def _viable_universe() -> list[str]:
-    """Symbols whose MEASURED round-trip can clear ordinary funding. Never the funding ranking."""
-    try:
-        cm = json.loads(COST.read_text("utf-8"))["symbols"]
-    except Exception:  # blind-except intentional (BLE001)
-        return list(_FALLBACK)
-    out = []
-    for sym, d in cm.items():
-        try:
-            v = d["pair"]["500"].get("pair_roundtrip_bps")
-            if v is not None and float(v) <= _MAX_VIABLE_RT_BPS:
-                out.append(sym)
-        except (KeyError, TypeError, ValueError):
-            continue
-    return sorted(out) or list(_FALLBACK)
-
-
-def _quarantine(reason: str, detail: dict) -> None:
-    QUAR.write_text(json.dumps({"ts": datetime.now(tz=UTC).isoformat(), "reason": reason,
-                                **detail}, indent=1), "utf-8")
-    print(f"  QUARANTINED: {reason}")
-    print("  Nothing written. Wrong data is trusted downstream and fails silently;")
-    print("  a stopped collector at least announces itself.")
-
-
-def main() -> None:
-    ts = datetime.now(tz=UTC)
-    print("=== LIVE OI / LONG-SHORT COLLECTOR -- M_FORCED_DELEVERAGE ===")
-    print("    data/oi_ls_history.jsonl ends 2023-12-03 (static archive). The desk's")
-    print("    best-supported mechanism has had NO live positioning feed.\n")
-    universe = _viable_universe()
-    print(f"  universe: {len(universe)} symbols with measured round-trip "
-          f"<= {_MAX_VIABLE_RT_BPS}bps (viable set, not funding-ranked)")
-
-    rows, failed = [], []
-    for sym in universe:
-        try:
-            oi = _get("openInterestHist", f"symbol={sym}&period={PERIOD}&limit=1")
-            ls = _get("globalLongShortAccountRatio", f"symbol={sym}&period={PERIOD}&limit=1")
-            tk = _get("takerlongshortRatio", f"symbol={sym}&period={PERIOD}&limit=1")
-            if not oi or not ls:
-                failed.append(sym)
-                continue
-            o, lrow = oi[-1], ls[-1]
-            t = tk[-1] if tk else {}
-            lsr = float(lrow["longShortRatio"])
-            la = float(lrow["longAccount"])
-            # sanity: ratio and account share must be internally consistent and bounded
-            if not (0.01 < lsr < 100.0 and 0.0 < la < 1.0):
-                failed.append(sym)
-                continue
-            rows.append({
-                "ts": ts.isoformat(), "symbol": sym, "period": PERIOD,
-                "oi_contracts": float(o["sumOpenInterest"]),
-                "oi_usd": float(o["sumOpenInterestValue"]),
-                "long_short_ratio": lsr, "long_account": la,
-                "short_account": float(lrow["shortAccount"]),
-                "taker_buy_sell_ratio": float(t.get("buySellRatio", 0)) or None,
-                "src_ts": int(o["timestamp"])})
-            time.sleep(0.12)                      # courteous to a free public endpoint
-        except Exception:  # blind-except intentional (BLE001)
-            failed.append(sym)
-
-    if len(rows) < _MIN_SYMBOLS:
-        _quarantine("coverage below floor", {"collected": len(rows), "floor": _MIN_SYMBOLS,
-                                             "failed": failed})
-        raise SystemExit(1)
-
-    with OUT.open("a", encoding="utf-8") as fh:
-        for r in rows:
-            fh.write(json.dumps(r) + "\n")
-    HB.write_text(f"{ts.isoformat()} symbols={len(rows)}", "utf-8")
-    if QUAR.exists():
-        QUAR.unlink()
-
-    tot_oi = sum(r["oi_usd"] for r in rows)
-    crowd = sorted(rows, key=lambda r: -abs(r["long_short_ratio"] - 1.0))[:6]
-    print(f"  collected {len(rows)}/{len(universe)}  failed={failed or 'none'}")
-    print(f"  aggregate open interest ${tot_oi/1e9:.2f}bn\n")
-    print(f"  {'symbol':<12}{'L/S ratio':>11}{'long%':>8}{'OI $m':>10}{'taker b/s':>11}")
-    for r in crowd:
-        print(f"  {r['symbol']:<12}{r['long_short_ratio']:>11.3f}{r['long_account']*100:>7.1f}%"
-              f"{r['oi_usd']/1e6:>10.0f}{(r['taker_buy_sell_ratio'] or 0):>11.3f}")
-    print("\n  CROWDING IS THE OBSERVABLE, NOT THE ALPHA. A ratio far from 1.0 marks where one")
-    print("  side is levered and therefore squeezable. Whether that predicts anything net of")
-    print("  cost is a Stage-A question this only feeds -- and the same construction died as a")
-    print("  standalone signal before, so it earns a forward clock only in combination.")
-    print(f"\n  -> {OUT}  (heartbeat {HB.name})")
-
-
-if __name__ == "__main__":
-    main()
-
-```
-
-### scripts/collect_stablecoin_supply.py
-```python
-"""Broad stablecoin-supply momentum collector + Stage-A screen (2026-07-23 alt-data batch).
-
-Total stablecoin market cap (DefiLlama, ALL issuers/chains) as a macro dollar-liquidity signal:
-rising aggregate supply = net minting = new capital entering crypto -> momentum (supply-z up
-precedes higher forward BTC return). Cleanest survivor of the alt-data batch: IC +0.067, momentum
-Sharpe 0.88, same-period corr +0.08 (orthogonal), residual IC +0.072 (STRENGTHENS -> genuinely
-leading), over 900 days. Passes the de-contam + SUSPECT-LOOKAHEAD rails.
-
-RELATIONSHIP TO EXISTING SIGNAL (angle-14, no double-counting): scripts/run_stablecoin_flows.py
-already RECORDS a supply figure (USDT+USDC on-chain totalSupply) as a designated signal, but it is
-NOT screened or forward-tracked in run_axis_shadows -- it just accrues in an archive. This is the
-SAME economic construct with (a) broader coverage (all stablecoins incl. DAI/USDe/FDUSD/PYUSD, not
-just USDT+USDC) and (b) the formal Holm-tracked forward clock the archived version lacks. Treat the
-two as ONE hypothesis for evidence purposes; this is the evaluated version.
-
-Free DefiLlama API, no key. stdlib + numpy. Run from repo root.
-"""
-from __future__ import annotations
-
-import json
-import urllib.request
 from datetime import UTC, datetime
 from pathlib import Path
 
 import numpy as np
 
-from libs.research.axis_screen import stage_a_screen
-
-_STABLES = "https://stablecoins.llama.fi/stablecoincharts/all"
-_BINANCE = "https://api.binance.com/api/v3/klines"
-_SERIES = Path("data/stablecoin_supply.jsonl")
-
-
-def _get(url: str) -> object:
-    req = urllib.request.Request(url, headers={"User-Agent": "quant-stablesupply/1.0"})
-    with urllib.request.urlopen(req, timeout=35) as r:
-        return json.loads(r.read().decode())
-
-
-def _supply() -> dict[str, float]:
-    d = _get(_STABLES)
-    out: dict[str, float] = {}
-    if not isinstance(d, list):        # narrow the untyped JSON boundary, do not assume shape
-        return out
-    for x in d:
-        v = x.get("totalCirculatingUSD") or x.get("totalCirculating") or {}
-        peg = v.get("peggedUSD") if isinstance(v, dict) else None
-        if peg is not None:
-            out[datetime.fromtimestamp(int(x["date"]), tz=UTC).date().isoformat()] = float(peg)
-    return out
-
-
-def _binance_daily(sym: str, n: int = 900) -> dict[str, float]:
-    rows = _get(f"{_BINANCE}?symbol={sym}&interval=1d&limit={n}")
-    if not isinstance(rows, list):
-        return {}
-    return {datetime.fromtimestamp(int(r[0]) / 1000, tz=UTC).date().isoformat(): float(r[4])
-            for r in rows}
-
-
-def main() -> None:
-    sup = _supply()
-    gbtc = _binance_daily("BTCUSDT")
-    if not (sup and gbtc):
-        raise SystemExit(f"fetch failed: supply={len(sup)} binance={len(gbtc)}")
-    dates = sorted(set(sup) & set(gbtc))
-    if len(dates) < 90:
-        raise SystemExit(f"only {len(dates)} aligned days")
-
-    sig = np.array([sup[d] for d in dates])
-    btc = np.array([gbtc[d] for d in dates])
-    ret = np.zeros(len(btc))
-    ret[1:] = btc[1:] / btc[:-1] - 1.0
-
-    z = np.zeros(len(sig))
-    for t in range(20, len(sig)):
-        w = sig[t - 20:t]
-        sd = w.std()
-        z[t] = (sig[t] - w.mean()) / sd if sd > 0 else 0.0
-
-    scr = stage_a_screen(sig, ret, name="stablecoin_supply_momentum")
-
-    today = datetime.now(tz=UTC).date().isoformat()
-    rec = {"date": today, "supply_usd": round(float(sig[-1]), 0),
-           "z20": round(float(z[-1]), 3), "n_hist": len(dates)}
-    prev = _SERIES.read_text("utf-8").strip().splitlines() if _SERIES.exists() else []
-    if not prev or json.loads(prev[-1]).get("date") != today:
-        with _SERIES.open("a", encoding="utf-8") as fh:
-            fh.write(json.dumps(rec) + "\n")
-
-    print(f"STABLECOIN-SUPPLY SCREEN | {len(dates)} aligned days")
-    print(f"  current z20: {z[-1]:+.2f}   total supply ${sig[-1]:,.0f}")
-    print(f"  IC {scr['ic']:+.4f} | same-period {scr['same_period_corr']:+.3f} "
-          f"| residual IC {scr['residual_ic']:+.4f}")
-    print(f"  timing Sharpe -- MOMENTUM {scr['sharpe_momentum']}  "
-          f"REVERSAL {scr['sharpe_reversal']}")
-    print(f"  VERDICT (Stage-A, zero promotion authority): {scr['verdict']}  "
-          f"[momentum, direction=+1; SAME construct as stablecoin_flows supply field -- one "
-          f"hypothesis, this is the formally-tracked version]")
-
-
-if __name__ == "__main__":
-    main()
-
-```
-
-### scripts/collector_monitor.py
-```python
-"""ZERO-TRUST COLLECTOR MONITOR (G3) -- assume every collector is lying until it proves otherwise.
-
-THE FAILURE THIS EXISTS FOR: a collector that ERRORS is safe -- something notices. A collector that
-silently returns ZEROS, or repeats yesterday's value, or quietly stops updating, is dangerous: the
-desk reads a flat market, concludes "no signal", and either suppresses a true signal or fires a
-false one. Nothing in the pipeline currently distinguishes "the market was flat" from "the sensor
-died". That is the single most dangerous class of bug in an automated desk, and it is invisible to
-every downstream statistical test -- the numbers all look fine.
-
-FOUR CHECKS per tracked clock/artifact:
-  1. STALENESS   -- is the file still being written? (dead cron / reaped process / auth outage)
-  2. ROW RATE    -- did the append rate collapse vs its own history? (partial failure)
-  3. FLATLINE    -- are the last N values identical? (the silent-zero / cached-response class)
-  4. ZERO-FILL   -- is the newest value exactly 0 or null when history says otherwise?
-
-Any tripped check emits a KILL signal naming the dependent axes, so a live sleeve can be halted
-BEFORE it trades on a dead sensor. Zero promotion authority; it only ever says STOP, never GO.
-
-Read-only, no keys, no LLM. Run from repo root on the daily cadence.
-"""
-from __future__ import annotations
-
-import json
-from datetime import UTC, datetime
-from pathlib import Path
-
 ROOT = Path(__file__).resolve().parent.parent
-DATA = ROOT / "data"
-OUT = DATA / "collector_health.json"
+sys.path.insert(0, str(ROOT))
 
-# clock -> axes that would trade on it (halt these if the sensor is bad)
-DEPENDENTS = {
-    "kimchi_premium.jsonl": ["kimchi_premium"],
-    "stablecoin_supply.jsonl": ["stablecoin_supply_momentum"],
-    "cny_premium.jsonl": ["cny_premium"],
-    "onchain_activity.jsonl": ["(retired axis -- input store only)"],
-}
-STALE_H = 36.0          # a daily collector silent for >36h is not "slow", it is dead
-FLAT_N = 5              # identical values across this many rows = flatline
-RATE_DROP = 0.5         # append rate below half its historical mean = partial failure
+from libs.stage14_5.concentration import ConcentrationEngine  # noqa: E402
+from libs.stage14_5.correlation_shock import CorrelationShockEngine  # noqa: E402
+
+OUT = ROOT / "data/portfolio_risk.json"
+SLEEVES = ROOT / "data/shadow_sleeves.json"
+MIN_SLEEVES = 3          # the ladder's own step-3 gate; below this the maths is degenerate
+SHOCK = 0.5              # converge halfway to 1.0 -- a stress, not a doomsday
 
 
-def _rows(p: Path) -> list[dict]:
-    out = []
-    for ln in p.read_text("utf-8").splitlines():
-        if not ln.strip():
-            continue
-        try:
-            r = json.loads(ln)
-        except json.JSONDecodeError:
-            continue
-        if not r.get("_summary"):
-            out.append(r)
-    return out
-
-
-def _numeric_field(rows: list[dict]) -> str | None:
-    """Pick the payload field to sanity-check (first numeric that is not a date/count)."""
-    skip = {"n_hist", "n_quotes", "date"}
-    for k, v in (rows[-1] if rows else {}).items():
-        if k not in skip and isinstance(v, (int, float)) and v is not None:
-            return k
-    return None
-
-
-def main() -> None:
-    now = datetime.now(tz=UTC)
-    results, kills = [], []
-    print("=== ZERO-TRUST COLLECTOR MONITOR ===")
-    print("    a collector that ERRORS is safe; one that silently returns zeros is not.\n")
-    print(f"  {'clock':<28}{'rows':>6}{'age_h':>8}{'status':>10}  detail")
-
-    for fname, deps in DEPENDENTS.items():
-        p = DATA / fname
-        if not p.exists():
-            print(f"  {fname:<28}{'-':>6}{'-':>8}{'MISSING':>10}  file absent")
-            results.append({"clock": fname, "status": "MISSING", "dependents": deps})
-            kills.append((fname, deps, "file absent"))
-            continue
-        rows = _rows(p)
-        age = (now - datetime.fromtimestamp(p.stat().st_mtime, tz=UTC)).total_seconds() / 3600
-        flags = []
-
-        # 1. staleness
-        if age > STALE_H:
-            flags.append(f"STALE {age:.0f}h (>{STALE_H:.0f}h)")
-
-        # 2. row rate vs own history
-        dates = sorted({r.get("date") for r in rows if r.get("date")})
-        if len(dates) >= 3:
-            span = (datetime.fromisoformat(dates[-1]) - datetime.fromisoformat(dates[0])).days + 1
-            expected = span
-            if len(dates) < expected * RATE_DROP:
-                flags.append(f"RATE-DROP {len(dates)}/{expected} expected days")
-
-        # 3. flatline + 4. zero-fill on the payload field
-        fld = _numeric_field(rows)
-        if fld and len(rows) >= FLAT_N:
-            vals = [r.get(fld) for r in rows[-FLAT_N:] if r.get(fld) is not None]
-            if len(vals) == FLAT_N and len(set(vals)) == 1:
-                flags.append(f"FLATLINE {fld}={vals[0]} x{FLAT_N}")
-            if vals and vals[-1] == 0 and any(v != 0 for v in vals[:-1]):
-                flags.append(f"ZERO-FILL {fld} went to 0")
-
-        # null-payload check (cny_premium ships z20=null during warmup -- legitimate, but visible)
-        nulls = sum(1 for r in rows if fld and r.get(fld) is None)
-        status = "KILL" if flags else ("WARN" if nulls == len(rows) and rows else "OK")
-        detail = "; ".join(flags) or (f"{fld}: all null (warmup?)" if status == "WARN"
-                                      else f"{fld} healthy")
-        print(f"  {fname:<28}{len(rows):>6}{age:>8.1f}{status:>10}  {detail}")
-        results.append({"clock": fname, "rows": len(rows), "age_h": round(age, 1),
-                        "status": status, "flags": flags, "dependents": deps})
-        if flags:
-            kills.append((fname, deps, "; ".join(flags)))
-
-    print()
-    if kills:
-        print("  *** KILL SIGNALS -- halt these axes before they trade on a dead sensor ***")
-        for fname, deps, why in kills:
-            print(f"    {fname}: {why}")
-            for d in deps:
-                print(f"      -> HALT {d}")
-    else:
-        print("  no kill signals -- all monitored collectors passing zero-trust checks")
-
-    OUT.write_text(json.dumps({"updated": now.isoformat(), "stale_hours": STALE_H,
-                               "kills": [{"clock": k, "dependents": d, "why": w}
-                                         for k, d, w in kills],
-                               "collectors": results}, indent=1), "utf-8")
-    print(f"\n  -> {OUT}")
-    print("  This layer only ever says STOP. It has no authority to promote or resume anything.")
-
-
-if __name__ == "__main__":
-    main()
-
-```
-
-### scripts/coverage_audit.py
-```python
-"""COVERAGE AUDIT -- one honest number per surface. "Everything is covered" is a claim; this is a
-measurement.
-
-Six surfaces, each with a different denominator, because "coverage" means something different at
-every layer and quoting the best one is how a desk fools itself.
-"""
-from __future__ import annotations
-
-import json
-import pathlib
-
-ROOT = pathlib.Path(__file__).resolve().parent.parent
-
-
-def _j(p, d=None):
+def load_returns() -> dict[str, np.ndarray]:
     try:
-        return json.loads((ROOT / p).read_text("utf-8"))
-    except Exception:  # blind-except intentional (BLE001)
-        return d
-
-
-rows = []
-
-# 1 PANEL CODE COVERAGE
-sh = _j("data/audit_shards.json", {})
-if sh:
-    rows.append(("panel: merit code reviewed", sh.get("union_coverage_pct", 0), 100.0,
-                 f"{sh.get('tier1_files',0)+sh.get('tier2_files',0)} files; "
-                 f"{sh.get('inert_withheld',0)} INERT withheld by design"))
-
-# 2 DQS COLLECTOR COVERAGE -- how many data sources are health-scored at all?
-dv = _j("data/data_vitals.json", {})
-scored = {c["source"] for c in dv.get("collectors", [])}
-all_data = {p.name for p in (ROOT / "data").glob("*.jsonl")}
-extra = len([c for c in dv.get("collectors", []) if c["source"] not in all_data])
-rows.append(("data: sources health-scored",
-             len(scored) / max(len(all_data) + extra, 1) * 100, 100.0,
-             f"{len(scored)} scored of {len(all_data)} jsonl + {extra} live sources"))
-
-# 3 MEASUREMENT GATE COVERAGE
-mg = _j("data/measurement_gate.json", {})
-gated = set(mg.get("datasets", {}))
-rows.append(("data: datasets gated", len(gated) / max(len(all_data), 1) * 100, 100.0,
-             f"{len(gated)} gated of {len(all_data)} jsonl files"))
-
-# 4 DEPENDENCY GRAPH COVERAGE
-dg = _j("data/dependency_graph.json", {})
-nodes = dg.get("nodes", [])
-unmon = [n for n in nodes if n.get("state") == "UNMONITORED"]
-rows.append(("data: graph nodes monitored",
-             (len(nodes) - len(unmon)) / max(len(nodes), 1) * 100, 100.0,
-             f"{len(unmon)} UNMONITORED of {len(nodes)} declared sources"))
-
-# 5 CONSTRUCTION / FEATURE-SPACE COVERAGE  -- the real research frontier
-fl = _j("data/feature_library.json", {})
-props = fl.get("n_proposals", 0)
-tested = 3
-rows.append(("research: construction space tested",
-             tested / max(props + tested, 1) * 100, 100.0,
-             f"{tested} tested of {props + tested} enumerated cells"))
-
-# 6 NORTH STAR -- alpha pipeline conversion
-al = _j("data/alpha_lifecycle.json", {})
-alphas = al.get("alphas", [])
-deployed = sum(1 for a in alphas if a.get("state") in ("SMALL_CAPITAL", "SCALED", "MONITORED"))
-rows.append(("alpha: reached capital", deployed / max(len(alphas), 1) * 100, 100.0,
-             f"{deployed} deployed of {len(alphas)} tracked alphas"))
-
-print("=== COVERAGE AUDIT -- one honest number per surface ===")
-print("    different denominators; quoting the best one is how a desk fools itself\n")
-print(f"  {'surface':<36}{'actual':>9}{'target':>9}   detail")
-for name, act, tgt, detail in rows:
-    flag = "" if act >= 99.5 else "   <-- GAP"
-    print(f"  {name:<36}{act:>8.1f}%{tgt:>8.0f}%   {detail}{flag}")
-
-full = [r for r in rows if r[1] >= 99.5]
-print(f"\n  {len(full)}/{len(rows)} surfaces at 100%.")
-print("  Anything below is a real gap, not a rounding artifact. 'Everything is covered' is")
-print("  false unless every line above reads 100.")
-
-```
-
-### scripts/derive_walcl_clock.py
-```python
-"""WALCL reserve-impulse forward clock -- R0031, pre-registered 2026-07-31.
-
-STAGE A EVIDENCE (data/fred_macro_screen.json, trial fred_macro::reserve_quantity_impulse::h1b):
-IC +0.1106 on n=815 weekly obs, mechanism-consistent momentum sign (Sharpe 0.82), de-contamination
-PASSED (residual IC +0.0964), verdict SCREEN-UNDERPOWERED -- the 4-week window sampled weekly
-carries ~204 independent obs (t~1.6) against a min-detectable IC of 0.1816. The power wall cannot
-be closed retroactively; the honest path is FORWARD ACCRUAL under the Two-Stage law. This clock
-fills the Holm slot freed by the kimchi_premium retirement (cohort 11 -> 12, cap 12).
-
-PRE-REGISTERED CONSTRUCTION (mirrors the screen exactly; changing any of it is a NEW trial):
-  signal   = 4-week log change in WALCL (Fed H.4.1 balance sheet, weekly Wednesday as-of)
-  lag      = +2 calendar days on every observation (Thursday 16:30 ET release -> usable from the
-             Friday 00:00Z crypto close; same explicit-lag alignment the screen declared)
-  z        = trailing 20-observation z-score of the impulse (inclusive rolling window, past-only)
-  direction= +1 (momentum: long BTC when z > 0), target = BTCUSDT next-day close-to-close,
-             position held constant between weekly releases (the daily axis-clock evaluation of a
-             weekly-held signal IS the weekly-hold strategy; nw_tstat prices the autocorrelation)
-
-The clock's first forward day is its registration day. This deriver NEVER back-writes dates --
-forward evidence begins now, or it is not forward evidence.
-
-Laws: L1.25a(b) (survivors hunted daily -- an empty slot with a non-empty candidate space is an
-idleness defect), TWO-STAGE DISCOVERY (Stage A earns a clock, never a cent), L1.41 (build
-standard). Reads data/fred_macro.json (written daily by collect_fred_macro.py); no network.
-
-    python scripts/derive_walcl_clock.py
-"""
-
-from __future__ import annotations
-
-import json
-import math
-import sys
-from datetime import UTC, datetime, timedelta
-from pathlib import Path
-
-_ROOT = Path(__file__).resolve().parents[1]
-if str(_ROOT) not in sys.path:
-    sys.path.insert(0, str(_ROOT))
-from libs.ops.lawful import guard as _law_guard  # noqa: E402
-
-_ARCHIVE = _ROOT / "data" / "fred_macro.json"
-_CLOCK = _ROOT / "data" / "walcl_impulse.jsonl"
-
-#: Pre-registered constants -- constants for the life of the clock (a second window is a second
-#: trial and raises VARIANTS_TRIED at the screen, never a silent edit here).
-_IMPULSE_WEEKS = 4
-_ZWIN = 20
-_RELEASE_LAG_DAYS = 2
-#: Refuse to emit a z until the window is genuinely full: a z against a part-window is a
-#: different (unregistered) construction.
-_MIN_OBS = _IMPULSE_WEEKS + _ZWIN
-
-
-def _series() -> list[tuple[str, float]]:
-    """WALCL (date, value) rows from the FRED archive, oldest first.
-
-    Refusal path (L1.41): a missing/unreadable/short archive returns [] and the caller exits
-    non-zero saying so -- this clock must never fabricate a row from absent input.
-    """
-    try:
-        doc = json.loads(_ARCHIVE.read_text("utf-8"))
+        raw = json.loads(SLEEVES.read_text("utf-8"))
     except (OSError, json.JSONDecodeError):
-        return []
-    rows = doc.get("series", {}).get("WALCL", [])
-    out = [(str(d), float(v)) for d, v in rows if v]
-    out.sort()
+        return {}
+    out = {}
+    if isinstance(raw, dict):
+        for k, v in raw.items():
+            s = v.get("returns") if isinstance(v, dict) else v
+            if isinstance(s, list) and len(s) >= 30:
+                out[str(k)] = np.asarray(s, dtype="float64")
     return out
 
 
-def signal_for(today: str, rows: list[tuple[str, float]]) -> dict | None:
-    """The pre-registered z for date `today`, from observations AVAILABLE by then.
-
-    Availability = as-of date + _RELEASE_LAG_DAYS. Returns None when the usable history is
-    shorter than _MIN_OBS (refusal, not zero -- a fabricated 0.0 would be a position).
-    """
-    avail = [(d, v) for d, v in rows
-             if (datetime.fromisoformat(d) + timedelta(days=_RELEASE_LAG_DAYS)).date().isoformat()
-             <= today]
-    if len(avail) < _MIN_OBS:
-        return None
-    imp = [math.log(avail[i][1]) - math.log(avail[i - _IMPULSE_WEEKS][1])
-           for i in range(_IMPULSE_WEEKS, len(avail))]
-    win = imp[-_ZWIN:]
-    mean = sum(win) / len(win)
-    var = sum((x - mean) ** 2 for x in win) / len(win)
-    sd = math.sqrt(var)
-    if sd < 1e-12:
-        return None                # degenerate window (incl. float-noise flat): refuse, loudly
-    return {"date": today, "z20": round((imp[-1] - mean) / sd, 4),
-            "asof": avail[-1][0], "impulse": round(imp[-1], 6)}
-
-
-def main() -> int:
-    _law_guard()
-    today = datetime.now(tz=UTC).date().isoformat()
-    rows = _series()
-    if not rows:
-        print(f"walcl-clock: CANNOT MEASURE -- {_ARCHIVE} missing/unreadable/empty; no row written")
-        return 1
-    sig = signal_for(today, rows)
-    if sig is None:
-        print(f"walcl-clock: CANNOT MEASURE -- {len(rows)} obs available, need {_MIN_OBS} "
-              "with release lag; no row written")
-        return 1
-    if _CLOCK.exists():
-        for line in _CLOCK.read_text("utf-8").splitlines():
-            try:
-                if json.loads(line).get("date") == today:
-                    print(f"walcl-clock: {today} already recorded (idempotent) -- z {sig['z20']}")
-                    return 0
-            except json.JSONDecodeError:
-                continue
-    with _CLOCK.open("a", encoding="utf-8") as fh:
-        fh.write(json.dumps(sig) + "\n")
-    print(f"walcl-clock: {today} z {sig['z20']} (asof {sig['asof']}, "
-          f"impulse {sig['impulse']}) -> {_CLOCK.name}")
-    return 0
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())
-
-```
-
-### scripts/experiment_registry.py
-```python
-"""EXPERIMENT REGISTRY -- the write path, not another schema.
-
-THE MEASURED FINDING THAT MOTIVATES THIS. The principal's review asks for an Experiment Registry,
-Alpha Lineage, Reproducibility Layer, Research Memory and a Decision Log. This desk ALREADY HAS
-those tables. I counted the rows:
-
-    data/alpha_registry.sqlite   alpha_registry     0 rows
-                                 trials_ledger      0 rows
-                                 research_runs      0 rows
-                                 snapshots          0 rows
-    data/sor_research.sqlite     (same schema)      0 rows
-    ... 8 sqlite files, every research table EMPTY
-    data/panel_scorecard.json    13 providers, 0 scored, hit_rate null, stale since 2026-07-17
-
-Meanwhile 43 commits landed on 2026-07-27 alone, each one an experiment, NONE of them recorded.
-
-So the bottleneck is NOT missing architecture. It is that nothing WRITES. Adding the twenty-odd
-new subsystems in the review as designed would produce twenty-odd more empty tables and one more
-layer of things to maintain. The intervention with actual leverage is a harvester that turns the
-evidence the desk already emits -- git history, artifacts on disk, the graveyard -- into permanent
-experiment objects, automatically, with no discipline required from whoever runs the experiment.
-Discipline-dependent logging is what produced the zeros.
-
-WHAT AN EXPERIMENT OBJECT IS HERE (reproducibility is the point):
-    id            stable, derived from commit sha -- survives rewrites of this file
-    commit        the exact tree that produced the result. `git show <sha>` reproduces it.
-    artifacts     which data/*.json it wrote, and whether that file STILL EXISTS
-    decision      SURVIVED / REFUTED / INCONCLUSIVE / FIX / INFRA, parsed from the commit record
-    mechanism     mapped through the mechanism_board taxonomy, so lineage is at mechanism level
-    failure_mode  the autopsy taxonomy where a cause is stated
-
-HONESTY RAIL: anything this cannot classify is reported as UNCLASSIFIED with a count, not guessed
-into a bucket. A registry that silently invents decisions is worse than no registry, because the
-scoreboard downstream would then allocate research capital against fiction.
-
-Read-only w.r.t. the desk. No LLM, no keys. Run from repo root.
-"""
-from __future__ import annotations
-
-import json
-import subprocess
-from datetime import UTC, datetime
-from pathlib import Path
-from typing import Any
-
-ROOT = Path(__file__).resolve().parent.parent
-OUT = ROOT / "data/experiment_registry.jsonl"
-SUMMARY = ROOT / "data/experiment_registry.json"
-
-# decision parsing -- ordered, first match wins. Tokens taken from THIS desk's actual commit
-# vocabulary (I read 43 real subjects), not from a generic list.
-DECISION = [
-    ("REFUTED", ("refuted", "coincident", "0/3 pass", "0/", "zero predictive", "fails", "failed",
-                 "dead)", "-- dead", "exhausted", "no edge", "does not persist", "do not persist",
-                 "premise fails", "closed", "kill", "artifact", "not leading")),
-    ("SURVIVED", ("survives", "survived", "replicates out-of-sample", "confirmed", "ic +",
-                  "holds out-of-sample", "adds value")),
-    ("INCONCLUSIVE", ("inconclusive", "underpowered", "blocked", "402", "needs ", "unproven",
-                      "likely a synchronisation artifact")),
-    ("FIX", ("fix applied", "fixed", "root cause", "correction", "resolved", "restarted",
-             "incident", "p0 ")),
-]
-INFRA_HINT = ("built", "wire", "doctrine", "engine", "scanner", "registry", "library", "digest",
-              "snapshot", "monitor", "guard", "simulator", "author", "cli")
-
-MECHANISMS = {
-    "M_ATTENTION_DELAY": ("attention", "sentiment", "social", "wikipedia", "search", "narrative"),
-    "M_FUNDAMENTAL_PROXY": ("developer", "github", "tvl", "onchain", "on-chain", "unlock"),
-    "M_SKILL_PERSISTENCE": ("trader", "elite", "copytrad", "skill", "leaderboard", "whale"),
-    "M_STRUCTURAL_BARRIER": ("kimchi", "premium", "structural spread", "cme", "venue", "basis",
-                             "collateral", "cross-venue"),
-    "M_FORCED_DELEVERAGE": ("funding", "open interest", "oi_", "carry", "liquidation", "leverage",
-                            "positioning", "long short"),
-    "M_LIQUIDITY_WITHDRAWAL": ("microstructure", "order book", "orderbook", "depth", "spread",
-                               "moat", "liquidity", "cost model"),
-    "M_FLOW_PRESSURE": ("stablecoin", "flow", "bridge", "reserve"),
-    "M_PRICE_PATTERN": ("momentum", "reversal", "breakout", "trend", "horizon discovery",
-                        "reflexivity"),
-}
-FAILURE_MODES = {
-    "A_NO_MECHANISM": ("no mechanism", "no causal", "premise fails"),
-    "B_WRONG_MEASUREMENT": ("unit error", "scope", "construction", "parser", "misalign"),
-    "C_WRONG_TIMING": ("coincident", "horizon", "lead", "same-period", "contemporaneous",
-                       "not leading", "half-life"),
-    "D_ALREADY_ARBITRAGED": ("arbitraged", "crowded", "competed"),
-    "E_DATA_QUALITY": ("artifact", "synchronisation", "lookahead", "stale", "implausible"),
-    "F_REGIME_DEPENDENT": ("regime",),
-    "G_TOO_EXPENSIVE": ("costs", "cost model", "round-trip", "bps", "survive costs", "slippage"),
-    "H_OVERFIT": ("overfit", "underpowered", "n=", "power", "dsr"),
-}
-
-
-def _git(*args: str) -> str:
-    try:
-        return subprocess.run(["git", *args], cwd=str(ROOT), capture_output=True, text=True,
-                              check=False, timeout=90).stdout
-    except Exception:  # blind-except intentional (BLE001)
-        return ""
-
-
-def _tag(text: str, table: dict[str, Any]) -> list[str]:
-    t = text.lower()
-    return [k for k, kws in table.items() if any(w in t for w in kws)]
-
-
-def _decide(text: str) -> str:
-    t = text.lower()
-    for label, kws in DECISION:
-        if any(k in t for k in kws):
-            return label
-    if any(k in t for k in INFRA_HINT):
-        return "INFRA"
-    return "UNCLASSIFIED"
-
-
-def harvest(days: int = 45) -> list[dict[str, Any]]:
-    """One record per commit. The commit IS the reproducible unit -- it pins code + params."""
-    raw = _git("log", f"--since={days} days ago", "--name-only",
-               "--pretty=format:%x00%H%x1f%an%x1f%aI%x1f%s%x1f%b%x02")
-    rows = []
-    for chunk in raw.split("\x00"):
-        if "\x02" not in chunk:
-            continue
-        head, files_blob = chunk.split("\x02", 1)
-        parts = head.split("\x1f")
-        if len(parts) < 4:
-            continue
-        sha, author, iso, subject = parts[0], parts[1], parts[2], parts[3]
-        body = parts[4] if len(parts) > 4 else ""
-        files = [f.strip() for f in files_blob.splitlines() if f.strip()]
-        blob = f"{subject}\n{body}"
-        arts = sorted({f for f in files if f.startswith(("data/", "docs/"))})
-        code = sorted({f for f in files if f.startswith("scripts/") or f.startswith("libs/")})
-        rows.append({
-            "id": f"E-{sha[:10]}",
-            "commit": sha,
-            "date": iso[:10],
-            "author": author,
-            "title": subject[:180],
-            "decision": _decide(blob),
-            # SUBJECT ONLY. First pass tagged subject+body+code-paths and produced 2.4 mechanisms
-            # per experiment with survival flat at 6-11% across all nine -- the signature of
-            # keyword BLEED, not of nine equally productive mechanisms. A file named
-            # scripts/run_cost_model.py dragged "cost model" into M_LIQUIDITY_WITHDRAWAL on every
-            # commit that touched it. Flat rates across every category mean the tagger is not
-            # discriminating, and the allocator downstream would have spent research capital on
-            # that noise. The subject line is the one field that states what was actually tested.
-            "mechanisms": _tag(subject, MECHANISMS) or ["M_UNMAPPED"],
-            "failure_modes": _tag(blob, FAILURE_MODES) if _decide(blob) == "REFUTED" else [],
-            "code": code[:8],
-            "artifacts": arts[:8],
-            # reproducibility: does the thing it wrote still exist in the working tree?
-            "artifacts_present": sum(1 for a in arts if (ROOT / a).exists()),
-            "artifacts_declared": len(arts),
-        })
-    return rows
-
-
-def main() -> None:
-    print("=== EXPERIMENT REGISTRY -- harvested, not hand-logged ===")
-    print("    the registries this desk already owns hold 0 rows; discipline-based logging")
-    print("    is what produced the zeros, so this reads evidence the desk emits anyway\n")
-    rows = harvest()
-    if not rows:
-        raise SystemExit("no git history harvested -- refusing to write an empty registry")
-
-    with OUT.open("w", encoding="utf-8") as fh:
-        for r in rows:
-            fh.write(json.dumps(r) + "\n")
-
-    dec: dict[str, int] = {}
-    for r in rows:
-        dec[r["decision"]] = dec.get(r["decision"], 0) + 1
-    print(f"  {len(rows)} experiments registered over 45 days\n")
-    print(f"  {'decision':<16}{'n':>5}   share")
-    for k, v in sorted(dec.items(), key=lambda kv: -kv[1]):
-        print(f"  {k:<16}{v:>5}   {v/len(rows)*100:4.0f}%")
-
-    tested = [r for r in rows if r["decision"] in ("REFUTED", "SURVIVED", "INCONCLUSIVE")]
-    surv = [r for r in rows if r["decision"] == "SURVIVED"]
-    if tested:
-        print(f"\n  SURVIVAL RATE  {len(surv)}/{len(tested)} = {len(surv)/len(tested)*100:.1f}% "
-              f"of decided experiments")
-
-    mech: dict[str, dict[str, int]] = {}
-    for r in tested:
-        for m in r["mechanisms"]:
-            d = mech.setdefault(m, {"tested": 0, "survived": 0})
-            d["tested"] += 1
-            d["survived"] += r["decision"] == "SURVIVED"
-    tags_per = sum(len(r["mechanisms"]) for r in tested) / max(len(tested), 1)
-    print("\n  MECHANISM SURVIVAL (this is the input research allocation should use):")
-    print(f"  {'mechanism':<26}{'tested':>7}{'survived':>10}{'rate':>8}")
-    for m, d in sorted(mech.items(), key=lambda kv: -kv[1]["tested"]):
-        rate = d["survived"] / d["tested"] * 100 if d["tested"] else 0.0
-        flag = "  <-- n too small to rank" if d["tested"] < 8 else ""
-        print(f"  {m:<26}{d['tested']:>7}{d['survived']:>10}{rate:>7.0f}%{flag}")
-    print(f"\n  tag density {tags_per:.2f} mechanisms/experiment "
-          f"({'OK -- tags discriminate' if tags_per < 1.4 else 'HIGH -- suspect keyword bleed'})")
-
-    fm: dict[str, int] = {}
-    for r in rows:
-        for f in r["failure_modes"]:
-            fm[f] = fm.get(f, 0) + 1
-    if fm:
-        print("\n  FAILURE MODES on refuted experiments:")
-        for k, v in sorted(fm.items(), key=lambda kv: -kv[1]):
-            print(f"    {k:<24}{v:>4}")
-
-    declared = sum(r["artifacts_declared"] for r in rows)
-    present = sum(r["artifacts_present"] for r in rows)
-    unc = dec.get("UNCLASSIFIED", 0)
-    print(f"\n  REPRODUCIBILITY: {present}/{declared} declared artifacts still present "
-          f"({present/max(declared,1)*100:.0f}%); every row pins a commit sha, so "
-          f"`git show <sha>` reproduces the code that produced it.")
-    print(f"  UNCLASSIFIED: {unc} commits ({unc/len(rows)*100:.0f}%) state no decision this can")
-    print("  parse. That is a real defect in commit discipline, reported rather than guessed --")
-    print("  a registry that invents decisions would corrupt every allocation downstream.")
-
-    SUMMARY.write_text(json.dumps({
-        "updated": datetime.now(tz=UTC).isoformat(), "n": len(rows), "decisions": dec,
-        "survival_rate": round(len(surv) / len(tested), 4) if tested else None,
-        "mechanism_survival": mech, "failure_modes": fm,
-        "artifacts_present": present, "artifacts_declared": declared,
-        "unclassified": unc}, indent=1), "utf-8")
-    print(f"\n  -> {OUT}\n  -> {SUMMARY}")
-
-
-if __name__ == "__main__":
-    main()
-
-```
-
-### scripts/finalize_axis_screens.py
-```python
-"""Post-process the 2026-07-26 axis screens: correct a harness annualization defect, attach
-IC t-statistics, apply the multiplicity bar, and write the axis-level verdicts.
-
-WHY THIS EXISTS -- HARNESS DEFECT FOUND DURING THIS CAMPAIGN
------------------------------------------------------------
-`libs/research/axis_screen.py::_sh` computes
-
-    rr = np.sign(sig) * fv;  return rr.mean() / rr.std() * np.sqrt(365)
-
-The sqrt(365) is HARDCODED, i.e. it assumes every element of `target_ret` is a ONE-DAY return.
-But the documented way to test the 5d/20d horizons the mandate requires is to hand the harness
-NON-OVERLAPPING DOWNSAMPLED periods (this is exactly what the desk's own
-scripts/screen_cme_basis.py does). When each element is a k-day return there are 365/k periods
-per year, so the correct factor is sqrt(365/k) -- and the reported Sharpe is inflated by sqrt(k):
-~2.24x at 5d and ~4.47x at 20d. Verified by simulation against an analytically-known Sharpe
-(inflation measured 1.51x at 5d and 3.99x at 20d, converging on sqrt(k) as noise shrinks).
-
-TWO CONSEQUENCES, BOTH BAD, BOTH AFFECTING WORK ALREADY ON FILE:
-  1. The sharpe_min=0.5 promotion floor is effectively 0.22 at 5d and 0.11 at 20d, so downsampled
-     screens are systematically OVER-promoted to SCREEN-INTERESTING.
-  2. The sharpe_ceiling=6.0 SUSPECT-LOOKAHEAD rail -- the safety rail that caught the bithumb
-     IC-0.72/Sharpe-10 fake -- is effectively 13.4 at 5d and 26.8 at 20d. THE LOOKAHEAD RAIL IS
-     PARTLY BLIND AT LONG HORIZONS. That is the more dangerous of the two.
-  3. Already on file: reports/axis_screens/cme_basis_20260724.json trial `cme_basis_ann->btc_5d`
-     is recorded SCREEN-INTERESTING at Sharpe 1.74; corrected it is 0.78.
-
-The audited harness is NOT edited here -- changing it is a desk decision requiring its own review.
-The correction is applied transparently at the reporting layer and flagged for the CRO.
-
-MULTIPLICITY: the desk's own history (420 price-family hypotheses, 0 survivors) is the reason a
-nominal pass means nothing without a multiplicity bar. Each trial's IC t-stat is compared against
-a Bonferroni bar at alpha=0.05 both per-axis and campaign-wide across all 37 screened trials.
-"""
-
-from __future__ import annotations
-
-import json
-import math
-import re
-from pathlib import Path
-
-OUT = Path(__file__).resolve().parent.parent / "reports" / "axis_screens"
-SHARPE_MIN, IC_MIN = 0.5, 0.03
-
-
-def _step(name: str) -> int:
-    m = re.search(r"_(\d+)d\b", name.replace("->", "_"))
-    if not m:
-        return 1
-    v = int(m.group(1))
-    return v if v in (1, 5, 20) else 1
-
-
-def _norm_ppf(p: float) -> float:
-    """Acklam inverse-normal, good to ~1e-9 -- avoids a scipy dependency."""
-    a = [-3.969683028665376e+01, 2.209460984245205e+02, -2.759285104469687e+02,
-         1.383577518672690e+02, -3.066479806614716e+01, 2.506628277459239e+00]
-    b = [-5.447609879822406e+01, 1.615858368580409e+02, -1.556989798598866e+02,
-         6.680131188771972e+01, -1.328068155288572e+01]
-    c = [-7.784894002430293e-03, -3.223964580411365e-01, -2.400758277161838e+00,
-         -2.549732539343734e+00, 4.374664141464968e+00, 2.938163982698783e+00]
-    d = [7.784695709041462e-03, 3.224671290700398e-01, 2.445134137142996e+00,
-         3.754408661907416e+00]
-    pl = 0.02425
-    if p < pl:
-        q = math.sqrt(-2 * math.log(p))
-        return ((((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5])
-                / ((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1))
-    if p > 1 - pl:
-        q = math.sqrt(-2 * math.log(1 - p))
-        return (-(((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5])
-                / ((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1))
-    q, r = p - 0.5, (p - 0.5) ** 2
-    return ((((((a[0]*r+a[1])*r+a[2])*r+a[3])*r+a[4])*r+a[5])*q
-            / (((((b[0]*r+b[1])*r+b[2])*r+b[3])*r+b[4])*r+1))
-
-
-def _bar(m: int) -> float:
-    return round(abs(_norm_ppf(0.05 / (2 * m))), 2)
-
-
-AXES = ("mining", "wikipedia", "fx")
-TOTAL_TRIALS = 37  # 12 mining + 13 wikipedia + 12 fx (+ etf_flows not screenable)
-CAMPAIGN_BAR = _bar(TOTAL_TRIALS)
-
-VERDICTS = {
-    "mining": (
-        "NO SURVIVOR. 12 pre-declared trials, 3 printed a nominal SCREEN-INTERESTING and none "
-        "survives correction. (a) The single best, hash_ribbon->btc_5d (IC +0.093), has the "
-        "OPPOSITE SIGN to the pre-registered mechanism: capitulation was predicted to be FOLLOWED "
-        "by higher returns (negative IC), and a positive IC says rising hashrate leads rising "
-        "price. Per the graveyard's xsec_lowvol rule the sign is NOT flipped and re-sold as "
-        "momentum. (b) Its sign also INVERTS between adjacent horizons (+0.093 at 5d, -0.113 at "
-        "20d) -- the signature of noise, not structure. (c) Corrected Sharpe 0.83, and its IC "
-        "t=2.02 fails both the per-axis (2.87) and campaign (3.20) bars. (d) difficulty_5d and "
-        "hashprice_usd_5d fall below the 0.5 Sharpe floor once the annualization is corrected. "
-        "ONE GENUINE POSITIVE FINDING: the ribbon is NOT lagged price momentum -- the raw ribbon "
-        "level correlates +0.30 with trailing 60d BTC return, but the 20d Z-SCORE the harness "
-        "actually screens correlates only +0.01..+0.04, so the z-scoring strips the momentum "
-        "component. The construction is genuinely orthogonal to the trend book; it simply has no "
-        "edge. The pre-registered contamination prediction for hashprice_usd was also CONFIRMED "
-        "(same-period corr 0.157 vs 0.007 for the BTC-denominated twin), reproducing the cm_mvrv "
-        "price-numerator lesson on a new dataset."),
-    "wikipedia": (
-        "NO SURVIVOR -- and the result CLOSES THE TWO ESCAPE HATCHES the graveyarded "
-        "multilingual_wikipedia_attention kill left open. That kill kept the door ajar for a "
-        "different OBJECT and a different TARGET; both are now tested and both fail. (a) Gateway/"
-        "onboarding attention (Coinbase+Binance+Cryptocurrency = purchase intent, which should "
-        "LEAD deposits, unlike news-reading which LAGS the print) is weak at every horizon: the "
-        "5d nominal pass corrects to Sharpe 0.39, below the floor. (b) Cross-sectional relative "
-        "attention as an ASSET-SELECTION signal fails on sign stability: ETH flips -0.042 (1d) -> "
-        "+0.052 (5d) -> +0.011 (lagged); SOL is -0.001 (1d) but +0.055 LAGGED, i.e. STRONGER with "
-        "a stale signal, which is mechanically incoherent for an attention signal that should "
-        "decay in hours and is a clean noise tell. DOGE 1d carries same-period corr 0.18, close to "
-        "the 0.20 contamination bar -- meme attention co-moves with meme price, exactly the "
-        "'attention co-moves with, does not lead' finding of the original kill. Nothing clears the "
-        "per-axis (2.87) or campaign (3.20) multiplicity bar. Extends the existing kill from "
-        "'not a daily timing signal' to 'not an asset-selection signal either'."),
-    "fx": (
-        "NO SURVIVOR, and the axis AS INGESTED CANNOT TEST ITS OWN MECHANISM. The fx lake holds 57 "
-        "crosses and not one high-barrier currency (no KRW, CNY/CNH, BRL, ARS, NGN, VND, EGP, "
-        "INR); EURRUB terminates 2022-02-28 on the sanctions cut. The graveyard's era-evidence "
-        "entry states the governing law -- premium magnitude tracks BARRIER HEIGHT -- so the only "
-        "currencies available are precisely the ones the mechanism predicts should NOT pay. That "
-        "is a data-coverage verdict, not an economic one. Of 12 trials: the EM debasement basket "
-        "is weak at 1d/20d and its 5d nominal pass corrects to Sharpe 0.32; synthetic DXY is weak "
-        "everywhere; TRY-only is weak, independently reproducing the graveyard's finding that "
-        "Turkey arbs global too tightly. TWO DIAGNOSTICS EARNED THEIR KEEP. (1) DENOMINATION "
-        "CONTROL: the same signal scores HIGHER against BTC priced in TRY (IC +0.043) than against "
-        "BTC/USDT (+0.032) -- because BTC-in-TRY return mechanically CONTAINS the next TRY move, "
-        "so that build is partly FX autocorrelation, not a crypto edge. This is why both "
-        "denominations must be logged. (2) SHIFT TEST: at +1d -- deliberately feeding the signal "
-        "from the FUTURE -- |IC| jumps 5x to 0.073, while at -1d it is flat at 0.015. A "
-        "relationship that is far stronger when you peek forward is CONTEMPORANEOUS, not leading: "
-        "EM FX and BTC both load on the same global risk factor and the 20d depreciation is a "
-        "LAGGING read of risk-off that already happened. There is no lead to trade."),
-}
-NEXT = {
-    "mining": ("Do NOT clock and do NOT fish further hashrate variants -- 12 trials is already the "
-               "multiplicity budget for this axis. The mechanism is not refuted, only the daily/"
-               "weekly public aggregates are: hashrate and difficulty are network-wide averages "
-               "that cannot see WHICH cohort is capitulating. "
-               "The honest escalation, pre-registered "
-               "and on its own clock slot, is miner TREASURY OUTFLOWS (known miner wallet -> "
-               "exchange transfers), which observes the forced selling directly rather than "
-               "inferring it from a Poisson-noisy block-count estimate."),
-    "wikipedia": ("Do NOT clock. Recommend the graveyard entry for "
-                  "multilingual_wikipedia_attention "
-                  "be AMENDED to record that the object arm (gateway/onboarding pages) and the "
-                  "target arm (cross-sectional asset selection) have now also been tested and "
-                  "failed, so the category is closed on all three arms and no future agent spends "
-                  "budget re-opening it."),
-    "fx": ("Do NOT clock. The productive action is INGESTION, not more screening: this axis "
-           "deserves its high prior only if the lake carries high-barrier currencies. Request "
-           "USDKRW, USDCNY/CNH, USDBRL, USDARS, USDNGN, USDVND before any further fx screening. "
-           "Re-screening the majors would be breadth-mining the currencies the mechanism already "
-           "predicts pay nothing. "
-           "RUB is re-testable as a data/infra kill if the feed is restored."),
-}
-
-
-def main() -> None:
-    summary = []
-    for axis in AXES:
-        p = OUT / f"{axis}.json"
-        rep = json.loads(p.read_text("utf-8"))
-        screened = [t for t in rep["trials"] if "verdict" in t and t.get("n")]
-        axis_bar = _bar(len(screened))
-        for t in screened:
-            k = _step(t["name"])
-            best = max(abs(t.get("sharpe_momentum", 0)), abs(t.get("sharpe_reversal", 0)))
-            corr = round(best / math.sqrt(k), 2)
-            t["period_days"] = k
-            t["sharpe_best_reported"] = best
-            t["sharpe_best_corrected"] = corr
-            t["sharpe_correction_note"] = (
-                "harness hardcodes sqrt(365); for k-day periods the correct factor is "
-                f"sqrt(365/{k}), so reported Sharpe is inflated by "
-                f"sqrt({k})={round(math.sqrt(k),2)}x"
-                if k > 1 else "1d periods -- harness annualization correct, no adjustment")
-            tstat = round(abs(t.get("ic", 0)) * math.sqrt(max(t["n"] - 2, 1)), 2)
-            t["ic_t_stat"] = tstat
-            t["clears_axis_multiplicity_bar"] = bool(tstat > axis_bar)
-            t["clears_campaign_multiplicity_bar"] = bool(tstat > CAMPAIGN_BAR)
-            # Controls and future-peeking diagnostics can NEVER be candidates, however they score.
-            # SHIFT_*_plus1d feeds the signal from the FUTURE; a strong score there is evidence of
-            # contemporaneous co-movement (an ARTIFACT), which rule 8 says is never an edge.
-            nm = t["name"]
-            is_ctrl = ("DENOM-CONTROL" in nm or "LOOKAHEAD-CONTROL" in nm
-                       or "SHIFT_" in nm or "_LAG1d" in nm)
-            if is_ctrl:
-                kind = ("future-peeking shift diagnostic" if "plus1d" in nm else
-                        "denomination artifact control" if "DENOM-CONTROL" in nm else
-                        "look-ahead control" if "LOOKAHEAD-CONTROL" in nm else
-                        "conservative-lag robustness check")
-                t["is_candidate"] = False
-                t["verdict_adjusted"] = (
-                    f"NOT-A-CANDIDATE ({kind}; raw harness verdict {t['verdict']}). "
-                    "Diagnostics are read for what they reveal, never promoted.")
-            elif t["verdict"] == "SCREEN-INTERESTING":
-                t["is_candidate"] = True
-                if corr < SHARPE_MIN:
-                    t["verdict_adjusted"] = ("SCREEN-WEAK (Sharpe fails the 0.5 floor once the "
-                                             "harness annualization defect is corrected)")
-                elif not t["clears_campaign_multiplicity_bar"]:
-                    t["verdict_adjusted"] = (f"SCREEN-WEAK (IC t={tstat} fails the multiplicity "
-                                             f"bar: axis {axis_bar}, campaign {CAMPAIGN_BAR})")
-                else:
-                    t["verdict_adjusted"] = "SCREEN-INTERESTING (survives correction+multiplicity)"
-            else:
-                t["is_candidate"] = True
-                t["verdict_adjusted"] = t["verdict"]
-        rep["harness_defect_found"] = {
-            "location": "libs/research/axis_screen.py::_sh (line ~69)",
-            "defect": "np.sqrt(365) hardcoded; assumes 1-day target periods",
-            "impact": ("downsampled 5d/20d screens report Sharpe inflated by sqrt(k) (2.24x / "
-                       "4.47x). Promotion floor effectively 0.22/0.11 and -- more dangerous -- the "
-                       "SUSPECT-LOOKAHEAD ceiling of 6.0 becomes 13.4/26.8, so the rail that "
-                       "caught bithumb is partly blind at long horizons."),
-            "also_affects": "reports/axis_screens/cme_basis_20260724.json (5d Sharpe 1.74 -> 0.78)",
-            "action": "NOT patched here -- harness is audited; flagged for CRO decision.",
-        }
-        rep["multiplicity"] = {"axis_trials": len(screened), "axis_bonferroni_t": axis_bar,
-                               "campaign_trials": TOTAL_TRIALS,
-                               "campaign_bonferroni_t": CAMPAIGN_BAR}
-        rep["verdict"] = VERDICTS[axis]
-        rep["forward_clock"] = (
-            "NO -- no construction survived; Stage A has zero promotion authority")
-        rep["next_step"] = NEXT[axis]
-        p.write_text(json.dumps(rep, indent=1, default=str), "utf-8")
-
-        surv = [t for t in screened if t["verdict_adjusted"].startswith("SCREEN-INTERESTING")]
-        summary.append((axis, len(screened), len(surv)))
-        print(f"\n=== {axis}: {len(screened)} trials, {len(surv)} survive correction+multiplicity "
-              f"(axis bar t>{axis_bar}, campaign t>{CAMPAIGN_BAR}) ===")
-        for t in sorted(screened, key=lambda x: -abs(x.get("ic", 0)))[:5]:
-            print(f"  {t['name']:46s} IC={t['ic']:+.4f} t={t['ic_t_stat']:.2f} "
-                  f"Sh {t['sharpe_best_reported']:.2f}->{t['sharpe_best_corrected']:.2f}  "
-                  f"{t['verdict_adjusted'][:58]}")
-    print("\n", summary)
-
-
-if __name__ == "__main__":
-    main()
-
-```
-
-### scripts/mechanism_board.py
-```python
-"""PHASE A -- Mechanism Graveyard + Hypothesis Portfolio + Mechanism Review Board.
-
-Built as ONE module because they are one system, not three: the mechanism taxonomy produces the
-verdicts, the verdicts drive portfolio correlation, and the review board enforces both at the gate.
-
-WHY MECHANISM LEVEL BEATS CONCEPT LEVEL (the principal's key point):
-    concept view:   Twitter / Google Trends / Wikipedia / Reddit  = 4 different failed datasets
-    mechanism view: ATTENTION -> information arrives AFTER sophisticated participants -> 1 dead
-                    mechanism, and every future variant inherits the evidence
-Concept archaeology stops "social attention momentum" impersonating "Twitter sentiment". Mechanism
-archaeology stops the whole family -- including variants nobody has worded yet. It is the
-difference between blocking a phrase and blocking a reason.
-
-THE THREE PARTS:
- 1 MECHANISM GRAVEYARD -- maps every graveyard entry to its ECONOMIC MECHANISM (who is forced to
-   act, and why the edge could exist), then aggregates verdicts per mechanism.
- 2 PORTFOLIO CONSTRUCTION -- ranking by ERV alone concentrates the book: today's top-5 by ERV were
-   ALL liquidity-stress variants, i.e. ONE BET WEARING FIVE HATS. This applies a correlation
-   penalty so the second liquidity idea is worth less than the first.
- 3 MECHANISM REVIEW BOARD -- four questions every hypothesis must answer BEFORE consuming a slot:
-   why should this exist / who is FORCED to trade / why is it not already arbitraged / what kills
-   it. Anything failing is rejected pre-test. Cheap gate, and 64% of this desk's failures were
-   measurement or timing rather than alpha -- exactly what a pre-test gate can catch.
-
-Read-only. No LLM, no keys. Run from repo root.
-"""
-from __future__ import annotations
-
-import json
-from datetime import UTC, datetime
-from pathlib import Path
-from typing import Any
-
-ROOT = Path(__file__).resolve().parent.parent
-GRAVE = ROOT / "docs/graveyard.md"
-ERV = ROOT / "data/research_erv.json"
-AUTOPSY = ROOT / "data/research_autopsy.json"
-OUT = ROOT / "data/mechanism_board.json"
-
-# ECONOMIC MECHANISM taxonomy -- "who is forced to act, and why can the edge persist?"
-# Deliberately NOT a dataset taxonomy. Many concepts collapse into one mechanism.
-MECHANISMS = {
-    "M_ATTENTION_DELAY": {
-        "story": "attention/information reaches us AFTER sophisticated participants have priced it",
-        "kws": ("attention", "sentiment", "social", "twitter", "wikipedia", "search", "trend",
-                "narrative", "mention", "reddit", "influencer", "hype", "pageview"),
-    },
-    "M_FUNDAMENTAL_PROXY": {
-        "story": "a fundamental (developer effort, usage, revenue) is assumed to lead valuation",
-        "kws": ("developer", "github", "commit", "contributor", "tvl", "revenue", "usage",
-                "active address", "transaction count", "adoption", "release"),
-    },
-    "M_SKILL_PERSISTENCE": {
-        "story": "some participants are skilled and their past performance predicts future",
-        "kws": ("trader", "elite", "copytrad", "leaderboard", "skill", "whale", "smart money",
-                "persistence", "retention"),
-    },
-    "M_STRUCTURAL_BARRIER": {
-        "story": "a HARD barrier (capital control, licence, settlement, collateral) stops "
-                 "convergence -- the only mechanism family with a live survivor on this desk",
-        "kws": ("capital control", "kimchi", "cny", "premium", "regulat", "licence", "license",
-                "segment", "barrier", "peg", "redemption", "queue", "cross-venue"),
-    },
-    "M_FORCED_DELEVERAGE": {
-        "story": "leveraged participants are FORCED to unwind (margin, liquidation, funding cost)",
-        "kws": ("funding", "open interest", "leverage", "liquidation", "margin", "crowding",
-                "positioning", "long short", "basis", "carry", "squeeze"),
-    },
-    "M_LIQUIDITY_WITHDRAWAL": {
-        "story": "liquidity providers withdraw when inventory risk binds, so price impact jumps",
-        "kws": ("depth", "spread", "order book", "orderbook", "market maker", "liquidity",
-                "imbalance", "slippage", "replenish", "fragility", "microstructure"),
-    },
-    "M_FLOW_PRESSURE": {
-        "story": "observable capital movement precedes the price impact of that capital",
-        "kws": ("flow", "netflow", "inflow", "outflow", "stablecoin", "bridge", "exchange "
-                "reserve", "mint", "supply"),
-    },
-    "M_PRICE_PATTERN": {
-        "story": "price history alone predicts price -- no participant story at all",
-        "kws": ("momentum", "reversal", "breakout", "rsi", "macd", "moving average", "kama",
-                "squeeze", "donchian", "indicator", "lowvol", "trend"),
-    },
-}
-
-# the four questions -- a hypothesis that cannot answer these should not consume a slot
-BOARD = [
-    ("why_exists", "Why should this edge exist at all?", ("because", "mechanism", "due to",
-                                                          "driven by", "caused")),
-    ("who_forced", "WHO is forced to trade against their own interest?",
-     ("forced", "must", "liquidat", "margin", "redemption", "mandate", "rebalanc", "cannot",
-      "obliged", "required")),
-    ("why_not_arbed", "Why has this not already been arbitraged away?",
-     ("barrier", "control", "licence", "license", "constraint", "cost", "capacity", "latency",
-      "illiquid", "segment", "regulat", "queue", "friction")),
-    ("kill_condition", "What observation kills it?", ("kill", "if ic", "t<", "below", "fails",
-                                                      "reject if", "abandon")),
-]
-
-
-def mech_of(text: str) -> list[str]:
-    t = text.lower()
-    return [m for m, d in MECHANISMS.items() if any(k in t for k in d["kws"])]
-
-
-def main() -> None:
-    # ---------- 1. MECHANISM GRAVEYARD -------------------------------------------------
-    rows = []
-    for ln in GRAVE.read_text("utf-8").splitlines() if GRAVE.exists() else []:
-        if not ln.startswith("|") or set(ln) <= set("|- "):
-            continue
-        c = [x.strip() for x in ln.strip("|").split("|")]
-        if len(c) < 3 or c[0].lower() in ("name", "signal", "strategy"):
-            continue
-        rows.append({"name": c[0][:80], "blob": " ".join(c), "mechs": mech_of(" ".join(c))})
-
-    tally: dict[str, int] = {}
-    for r in rows:
-        for m in r["mechs"] or ["M_UNMAPPED"]:
-            tally[m] = tally.get(m, 0) + 1
-
-    # a mechanism with many deaths and no survivor is a FAMILY KILL
-    LIVE = {"M_STRUCTURAL_BARRIER", "M_FORCED_DELEVERAGE"}      # kimchi/cny, funding persistence
-    OPEN = {"M_LIQUIDITY_WITHDRAWAL"}                            # moat, untested
-    print("=== 1. MECHANISM-LEVEL GRAVEYARD ===")
-    print("    concept archaeology blocks a PHRASE; mechanism archaeology blocks a REASON\n")
-    print(f"  {'mechanism':<26}{'deaths':>7}  verdict / economic story")
-    verdicts = {}
-    for m, n in sorted(tally.items(), key=lambda kv: -kv[1]):
-        if m == "M_UNMAPPED":
-            v = "UNMAPPED"
-        elif m in LIVE:
-            v = "ALIVE"
-        elif m in OPEN:
-            v = "UNTESTED"
-        elif n >= 5:
-            v = "FAMILY KILL"
-        else:
-            v = "WEAK"
-        verdicts[m] = v
-        story = MECHANISMS.get(m, {}).get("story", "-")
-        print(f"  {m:<26}{n:>7}  {v:<12} {story[:74]}")
-
-    dead_fams = [m for m, v in verdicts.items() if v == "FAMILY KILL"]
-    print(f"\n  FAMILY KILLS: {dead_fams}")
-    print("  Any future hypothesis mapping to these inherits the evidence and must show a NEW")
-    print("  asymmetry or forced-flow story -- not merely a new dataset.")
-
-    # ---------- 2. HYPOTHESIS PORTFOLIO CONSTRUCTION ------------------------------------
-    print("\n=== 2. HYPOTHESIS PORTFOLIO (ERV alone concentrates the book) ===")
-    ranked = []
-    if ERV.exists():
-        ranked = json.loads(ERV.read_text("utf-8")).get("ranked", [])
-    if not ranked:
-        print("  no ERV output -- run scripts/research_erv.py first")
-    else:
-        used_mech: dict[str, int] = {}
-        out: list[dict[str, Any]] = []
-        for h in ranked:
-            ms = mech_of(h.get("name", "") + " " + " ".join(h.get("concepts", []))) or ["M_UNMAPPED"]
-            # correlation penalty: each prior selection in the same mechanism halves the value
-            overlap = max(used_mech.get(m, 0) for m in ms)
-            adj = h.get("erv", 0) / (2 ** overlap)
-            out.append({**h, "mechs": ms, "overlap": overlap, "erv_adj": round(adj, 4)})
-            for m in ms:
-                used_mech[m] = used_mech.get(m, 0) + 1
-        out.sort(key=lambda x: -x["erv_adj"])
-        print(f"  {'ERV':>6}{'ADJ':>7}  {'mech':<24} hypothesis")
-        for h in out[:10]:
-            print(f"  {h['erv']:>6.3f}{h['erv_adj']:>7.3f}  {h['mechs'][0][:24]:<24} "
-                  f"{h['name'][:44]}")
-        dupes = [h for h in out if h["overlap"] > 0]
-        print(f"\n  {len(dupes)} hypotheses de-rated for mechanism overlap -- these were ONE BET")
-        print("  WEARING SEVERAL HATS. Ranking by raw ERV would have funded the same idea 5x.")
-
-    # ---------- 3. MECHANISM REVIEW BOARD ------------------------------------------------
-    print("\n=== 3. MECHANISM REVIEW BOARD (pre-test gate) ===")
-    print("    64% of this desk's failures were TIMING or MEASUREMENT, not alpha -- exactly what")
-    print("    a pre-test gate catches for free\n")
-    samples = [
-        {"name": "Low RSI predicts bounce",
-         "text": "rsi oversold below 30 tends to bounce, momentum indicator"},
-        {"name": "Liquidation cascade exhaustion",
-         "text": "forced liquidations must sell into thin books, exceeding available depth; "
-                 "the constraint is that liquidated accounts CANNOT choose timing; not arbitraged "
-                 "because capacity is limited by book depth. kill if IC<0 over 12 months"},
-        {"name": "Attention efficiency ratio",
-         "text": "return per unit of social attention growth predicts continuation"},
-    ]
-    for s in samples:
-        t = (s["name"] + " " + s["text"]).lower()
-        answers = {k: any(w in t for w in kws) for k, q, kws in BOARD}
-        ms = mech_of(t) or ["M_UNMAPPED"]
-        fam = [m for m in ms if verdicts.get(m) == "FAMILY KILL"]
-        passed = all(answers.values()) and not fam
-        print(f"  {s['name'][:44]:<44} {'PASS' if passed else 'REJECT'}")
-        for k, q, _ in BOARD:
-            if not answers[k]:
-                print(f"      unanswered: {q}")
-        if fam:
-            print(f"      mechanism {fam[0]} is a FAMILY KILL -- needs a new asymmetry story")
-
-    OUT.write_text(json.dumps({"updated": datetime.now(tz=UTC).isoformat(),
-                               "mechanism_deaths": tally, "verdicts": verdicts,
-                               "family_kills": dead_fams,
-                               "portfolio": out if ranked else []}, indent=1), "utf-8")
-    print(f"\n  -> {OUT}")
-
-
-if __name__ == "__main__":
-    main()
-
-```
-
-### scripts/prove_future.py
-```python
-"""PROVE future enforcement, do not assert it. Plant violations, confirm the guards fail, remove.
-
-The principal has asked repeatedly whether this is really enforced. Every previous answer was a
-CLAIM about current state. This is an adversarial test of FUTURE state: it creates exactly the
-things that would appear tomorrow -- a new LLM caller that forgets doctrine, a new prompt file
-without the mandate, and a principle silently dropped from the preamble -- and verifies each guard
-catches it.
-
-A guard that has never been shown to fail has never been shown to work.
-"""
-from __future__ import annotations
-
-import pathlib
-import subprocess
-import sys
-
-ROOT = pathlib.Path(".")
-PY = ".venv/bin/python"
-results = []
-
-
-def run(cmd):
-    r = subprocess.run(cmd, shell=True, capture_output=True, text=True, timeout=300)
-    return r.returncode
-
-
-# ---------------------------------------------------------------- baseline
-d0 = run(f"{PY} scripts/doctrine.py")
-p0 = run(f"{PY} scripts/principle_audit.py")
-results.append(("BASELINE doctrine guard", d0 == 0, f"exit {d0} (expect 0)"))
-results.append(("BASELINE principle guard", p0 == 0, f"exit {p0} (expect 0)"))
-
-# ---------------------------------------------------------------- test 1: future LLM caller
-fake = ROOT / "scripts/_tmp_future_caller.py"
-fake.write_text(
-    'import json, urllib.request\n'
-    'def ask(k, system, user):\n'
-    '    body = json.dumps({"model": "x", "messages": ['
-    '{"role": "system", "content": system}]}).encode()\n'
-    '    return urllib.request.urlopen("https://openrouter.ai/api/v1/chat/completions")\n',
-    "utf-8")
-d1 = run(f"{PY} scripts/doctrine.py")
-results.append(("FUTURE LLM caller without doctrine is CAUGHT", d1 != 0,
-                f"exit {d1} (expect non-zero)"))
-fake.unlink()
-
-# ---------------------------------------------------------------- test 2: future prompt file
-fp = ROOT / "prompts/panel_missions/_tmp_future_mission.txt"
-fp.write_text("ROLE: analyse the desk and report findings.\n", "utf-8")
-d2 = run(f"{PY} scripts/doctrine.py")
-results.append(("FUTURE prompt file without mandate is CAUGHT", d2 != 0,
-                f"exit {d2} (expect non-zero)"))
-fp.unlink()
-
-# ---------------------------------------------------------------- test 3: dropped principle
-doc = ROOT / "scripts/doctrine.py"
-orig = doc.read_text("utf-8")
-# Remove the SECTION BODY, not just its header -- v1 removed only the title and the audit
-# still matched on body text, so the "dropped principle" proof passed vacuously.
-i = orig.index("BOTTLENECK FIRST")
-j = orig.index("OPPORTUNITY COST")
-tampered = orig[:i] + orig[j:]
-doc.write_text(tampered, "utf-8")
-p3 = run(f"{PY} scripts/principle_audit.py")
-results.append(("PRINCIPLE silently dropped is CAUGHT", p3 != 0, f"exit {p3} (expect non-zero)"))
-doc.write_text(orig, "utf-8")
-
-# ---------------------------------------------------------------- restore check
-d4 = run(f"{PY} scripts/doctrine.py")
-p4 = run(f"{PY} scripts/principle_audit.py")
-results.append(("RESTORED doctrine guard", d4 == 0, f"exit {d4} (expect 0)"))
-results.append(("RESTORED principle guard", p4 == 0, f"exit {p4} (expect 0)"))
-
-print("=== ADVERSARIAL PROOF OF FUTURE ENFORCEMENT ===")
-print("    guards are not asserted -- violations are planted and the guards must FAIL on them\n")
-for name, ok, detail in results:
-    print(f"  {'PASS' if ok else 'FAIL'}  {name:<50} {detail}")
-bad = [r for r in results if not r[1]]
-print(f"\n  {len(results)-len(bad)}/{len(results)} proofs passed")
-if bad:
-    print("  A guard that does not fail on a planted violation does not work.")
-else:
-    print("  Every guard fails on a planted violation and passes when restored. Enforcement is")
-    print("  demonstrated for callers, prompts and principles that DO NOT EXIST YET.")
-sys.exit(1 if bad else 0)
-
-```
-
-### scripts/recommendations.py
-```python
-#!/usr/bin/env python3
-"""RECOMMENDATION LEDGER (§42, principal 2026-07-26) -- nothing recommended is ever forgotten.
-
-THE HOLE. track_findings.py governs PANEL findings only (model / summary / accepted-or-rejected).
-Everything else this desk produces a recommendation from -- max_audit defects, the weekly deep cold
-audit, cycle reports, the proactive battery, external reviews -- had no ledger and no forced
-disposition. A deep sweep could name eight high-ROI improvements, the report gets written, the
-window closes, and by the next Sunday nobody knows they existed. That is the same class as the
-findings hole it was built to close, one layer up.
-
-THE LAW. Every recommendation gets exactly one row, and every row must reach a DISPOSITION:
-IMPLEMENTED (with a commit), REJECTED (with a real reason), or SCHEDULED (with a due date that is
-itself enforced). "No decision" is not a state a row may rest in -- an undisposed row past its
-grace window is a DEFECT, not backlog. Rejection is always available and is a legitimate answer,
-because the principal's instruction is that nothing is SKIPPED, not that everything is BUILT: a
-reasoned no is a decision, silence is the failure.
-
-WHY IT CANNOT BE GAMED. Rows are never deleted and dispositions never revert to none, so the
-cheap escape -- quietly dropping an inconvenient row -- is closed the same way the mining ratchet
-closes shrinking the denominator. A rejection needs a substantive reason (a bare "no" is refused
-at the CLI), and a SCHEDULED row that passes its due date fires exactly like an orphan, so
-"scheduled" cannot become a place recommendations go to die.
-"""
-from __future__ import annotations
-
-import argparse
-import json
-from datetime import UTC, datetime
-from pathlib import Path
-from typing import Any
-
-ROOT = Path(__file__).resolve().parent.parent
-LEDGER = ROOT / "docs/research/recommendation_ledger.json"
-
-# A recommendation may sit undisposed for one cycle -- long enough to be triaged in the next
-# organ run, short enough that it cannot quietly become permanent.
-GRACE_H = 24.0
-_TERMINAL = ("implemented", "rejected")
-_MIN_REASON = 25          # a bare "no" / "wontfix" is not a disposition
-
-
-def _load() -> dict[str, Any]:
-    if LEDGER.exists():
-        try:
-            loaded: dict[str, Any] = json.loads(LEDGER.read_text("utf-8"))
-            return loaded
-        except Exception as e:
-            # A corrupt ledger must NEVER read as empty-healthy: `report` would print
-            # "0 total, nothing overdue" and the next _save would atomically replace
-            # every row with the empty dict -- the mass-deletion the ledger law forbids.
-            # Observed live 2026-07-31: merge-conflict markers committed to origin read
-            # here as a clean empty ledger. Refuse loudly; git history repairs it.
-            raise SystemExit(
-                f"REFUSING: {LEDGER} exists but cannot be parsed ({e}); repair it from "
-                "git history -- an unreadable ledger must never become an empty one") from e
-    return {"recommendations": []}
-
-
-def _save(d: dict[str, Any]) -> None:
-    LEDGER.parent.mkdir(parents=True, exist_ok=True)
-    tmp = LEDGER.with_suffix(".json.tmp")
-    tmp.write_text(json.dumps(d, indent=1), "utf-8")
-    tmp.replace(LEDGER)          # atomic: a torn ledger would lose the very rows it protects
-
-
-def _age_h(iso: str) -> float:
-    try:
-        return (datetime.now(tz=UTC) - datetime.fromisoformat(iso)).total_seconds() / 3600.0
-    except Exception:
-        return 0.0
-
-
-def _next_id(d: dict) -> str:
-    """Allocate past BOTH the local ledger and the last-fetched origin/master copy (R0152).
-
-    Count-based allocation minted the same id on two boxes three times on 2026-07-31
-    (R0135-37, R0143, R0144): each box counts its own rows, so concurrent sessions collide
-    and every merge renumbers rows and repoints code comments. Max-known-id with origin
-    consulted (git show reads the fetched ref -- no network) shrinks the race window from
-    all-day to since-last-fetch; an unreadable origin falls back to the local max, which
-    still never re-mints an id a renumber has already retired.
-    """
-    import re
-    import subprocess
-    nums = [int(m.group(1)) for r in d["recommendations"]
-            if (m := re.match(r"R(\d+)$", str(r.get("id", ""))))]
-    try:
-        remote = subprocess.run(
-            ["git", "show", "origin/master:docs/research/recommendation_ledger.json"],
-            capture_output=True, text=True, timeout=10,
-            cwd=Path(__file__).resolve().parent.parent)
-        if remote.returncode == 0:
-            nums += [int(x) for x in re.findall(r'"id":\s*"R(\d+)"', remote.stdout)]
-    except (OSError, subprocess.SubprocessError):
-        pass                                   # offline clone: local max still monotonic
-    return f"R{(max(nums) if nums else 0) + 1:04d}"
-
-
-def add(a: argparse.Namespace) -> None:
-    d = _load()
-    # DEDUPE on (source, summary): organs re-read the same audit report every cycle, and a ledger
-    # that grows a duplicate row per read becomes noise nobody triages -- which is the failure it
-    # exists to prevent, arriving by a different route.
-    for r in d["recommendations"]:
-        if r["source"] == a.source and r["summary"].strip() == a.summary.strip():
-            print(f"{r['id']} already ledgered ({r['status']})")
-            return
-    rid = _next_id(d)
-    d["recommendations"].append({
-        "id": rid, "source": a.source, "summary": a.summary,
-        "roi_bps": a.roi_bps, "raised": datetime.now(tz=UTC).isoformat(),
-        "status": "open", "reason": None, "commit": None, "due": None, "disposed": None})
-    _save(d)
-    print(f"{rid} ledgered from {a.source} -- OPEN, disposition owed within {GRACE_H:.0f}h")
-
-
-def dispose(a: argparse.Namespace) -> None:
-    d = _load()
-    row = next((r for r in d["recommendations"] if r["id"] == a.id), None)
-    if row is None:
-        raise SystemExit(f"no such recommendation: {a.id}")
-    if row["status"] in _TERMINAL:
-        raise SystemExit(f"{a.id} is already {row['status']} -- dispositions do not revert. "
-                         "If it was MISFILED, use `correct --id --reason`, which logs the "
-                         "reversal in the row history rather than erasing it.")
-    # GUARD AGAINST DISPOSING THE WRONG ROW (2026-07-26): ids are assigned by count, so a
-    # concurrent writer -- the weekly sweep ledgering seven rows mid-session -- shifts the id
-    # a caller assumed. --expect makes the caller name what it thinks it is deciding.
-    if a.expect and a.expect.lower() not in row["summary"].lower():
-        raise SystemExit(
-            f"{a.id} does not match --expect {a.expect!r}. Its summary is:\n  "
-            f"{row['summary'][:200]}\nAnother writer may have taken the id you assumed.")
-    if a.status == "rejected" and len((a.reason or "").strip()) < _MIN_REASON:
-        raise SystemExit(
-            f"a rejection needs a real reason (>={_MIN_REASON} chars). The principal's "
-            "standard is that nothing is SKIPPED, not that everything is built -- a "
-            "reasoned no is a decision, a bare no is silence wearing a label.")
-    if a.status == "scheduled" and not a.due:
-        raise SystemExit("a scheduled recommendation needs --due YYYY-MM-DD, else 'scheduled' "
-                         "becomes the place recommendations go to die")
-    if a.status == "implemented" and not a.commit:
-        raise SystemExit("an implemented recommendation needs --commit: the desk's standing rule "
-                         "is that an artifact proves the work, never a claim")
-    row.update(status=a.status, reason=a.reason, commit=a.commit, due=a.due,
-               disposed=datetime.now(tz=UTC).isoformat())
-    _save(d)
-    print(f"{a.id} -> {a.status.upper()}")
-
-
-def correct(a: argparse.Namespace) -> None:
-    """Reverse a MIS-ENTERED disposition, permanently logging that it happened.
-
-    "Dispositions never revert" is the right guard against gaming and the wrong one against error:
-    it made an honest mis-entry unfixable. What actually prevents laundering is not immovability
-    but VISIBILITY -- a correction keeps the original disposition, its reason, and the reason it
-    was wrong in the row's own history, so the record reads as "decided, then found misfiled",
-    never as "never decided". Corrections are cheap to audit and impossible to hide.
-    """
-    d = _load()
-    row = next((r for r in d["recommendations"] if r["id"] == a.id), None)
-    if row is None:
-        raise SystemExit(f"no such recommendation: {a.id}")
-    if row["status"] == "open":
-        raise SystemExit(f"{a.id} is already open -- nothing to correct")
-    if len((a.reason or "").strip()) < _MIN_REASON:
-        raise SystemExit(f"a correction needs a real reason (>={_MIN_REASON} chars): what was "
-                         "misfiled, and why the original disposition did not apply to this row")
-    row.setdefault("corrections", []).append({
-        "was": row["status"], "was_reason": row.get("reason"),
-        "was_commit": row.get("commit"), "was_due": row.get("due"),
-        "corrected": datetime.now(tz=UTC).isoformat(), "why": a.reason})
-    row.update(status="open", reason=None, commit=None, due=None, disposed=None)
-    _save(d)
-    print(f"{a.id} corrected -> OPEN (prior disposition kept in its history); "
-          "a fresh disposition is now owed")
-
-
-def owed(d: dict[str, Any]) -> tuple[list[Any], list[Any]]:
-    """(undisposed past grace, scheduled past due) -- the two ways a row goes stale."""
-    now = datetime.now(tz=UTC)
-    orphans = [r for r in d["recommendations"]
-               if r["status"] == "open" and _age_h(r["raised"]) > GRACE_H]
-    overdue = []
-    for r in d["recommendations"]:
-        if r["status"] != "scheduled" or not r.get("due"):
-            continue
-        try:
-            if datetime.fromisoformat(str(r["due"])).replace(tzinfo=UTC) < now:
-                overdue.append(r)
-        except Exception:
-            overdue.append(r)          # an unparseable due date is not a valid schedule
-    return orphans, overdue
-
-
-def report(_a: argparse.Namespace) -> None:
-    d = _load()
-    rows = d["recommendations"]
-    orphans, overdue = owed(d)
-    done = [r for r in rows if r["status"] == "implemented"]
-    print(f"recommendations: {len(rows)} total | {len(done)} implemented | "
-          f"{sum(1 for r in rows if r['status'] == 'rejected')} rejected | "
-          f"{sum(1 for r in rows if r['status'] == 'scheduled')} scheduled | "
-          f"{sum(1 for r in rows if r['status'] == 'open')} open")
-    for label, group in (("UNDISPOSED past grace", orphans), ("SCHEDULED past due", overdue)):
-        for r in group:
-            print(f"  DEFECT [{label}] {r['id']} ({r['source']}, {_age_h(r['raised']) / 24:.1f}d): "
-                  f"{r['summary'][:110]}")
-    if not orphans and not overdue:
-        print("  no orphans, nothing overdue -- every recommendation has a decision")
+def synthetic(seed: int = 5) -> dict[str, np.ndarray]:
+    """Three sleeves that look diversified in calm and share a common stress factor."""
+    rng = np.random.default_rng(seed)
+    n = 400
+    common = rng.normal(0, 0.004, n)
+    common[rng.integers(0, n, 20)] -= 0.05          # shared stress events
+    return {f"sleeve_{i}": common + rng.normal(0.0008, 0.010, n) for i in range(3)}
+
+
+def review(rets: dict[str, np.ndarray]) -> dict:
+    length = min(len(r) for r in rets.values())
+    matrix = np.column_stack([r[-length:] for r in rets.values()])
+    corr = np.corrcoef(matrix, rowvar=False)
+
+    shock = CorrelationShockEngine(shock=SHOCK).simulate(corr)
+    res = json.loads(shock.model_dump_json())
+
+    # Equal weight is the honest baseline: it is what the desk actually runs pre-allocation,
+    # so concentration measured on it reflects real exposure rather than an aspirational book.
+    names = list(rets)
+    w = dict.fromkeys(names, 1.0 / len(names))
+    conc = ConcentrationEngine().evaluate(
+        symbol_weights=w, alpha_weights=w, family_weights=w, factor_weights=w, regime_weights=w)
+    return {"n_sleeves": len(names), "sleeves": names,
+            "avg_correlation": round(float(corr[np.triu_indices(len(names), 1)].mean()), 4),
+            "correlation_shock": res,
+            "concentration": json.loads(conc.model_dump_json())}
 
 
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
-    sub = ap.add_subparsers(dest="cmd", required=True)
-    p = sub.add_parser("add", help="ledger a recommendation (status opens as undisposed)")
-    p.add_argument("--source", required=True,
-                   help="max_audit | deep_sweep | cycle | panel | proactive_battery | principal")
-    p.add_argument("--summary", required=True)
-    p.add_argument("--roi-bps", dest="roi_bps", type=float, default=None)
-    p.set_defaults(func=add)
-    p = sub.add_parser("dispose", help="record the decision -- the only way a row leaves open")
-    p.add_argument("--id", required=True)
-    p.add_argument("--status", required=True, choices=["implemented", "rejected", "scheduled"])
-    p.add_argument("--reason")
-    p.add_argument("--commit")
-    p.add_argument("--due", help="YYYY-MM-DD, required for scheduled")
-    p.add_argument("--expect", help="substring the target summary must contain -- "
-                                    "guards against disposing a row another writer "
-                                    "took the id of")
-    p.set_defaults(func=dispose)
-    p = sub.add_parser("correct", help="reverse a MISFILED disposition, logged")
-    p.add_argument("--id", required=True)
-    p.add_argument("--reason", required=True)
-    p.set_defaults(func=correct)
-    p = sub.add_parser("report", help="orphans and overdue -- both are defects, not backlog")
-    p.set_defaults(func=report)
-    a = ap.parse_args()
-    a.func(a)
+    ap.add_argument("--self-test", action="store_true")
+    args = ap.parse_args()
+
+    rets = synthetic() if args.self_test else load_returns()
+    src = "SYNTHETIC (self-test)" if args.self_test else str(SLEEVES.relative_to(ROOT))
+    print("=== PORTFOLIO RISK REVIEW (stage14_5) ===")
+    print(f"    source: {src}\n")
+
+    if len(rets) < MIN_SLEEVES:
+        print(f"  DORMANT -- {len(rets)} sleeve(s), arms automatically at {MIN_SLEEVES}.")
+        print("  Correlation shock is degenerate below 3 sleeves (no off-diagonal to converge),")
+        print("  and step 3 of the growth ladder gates on exactly that count. This check arms")
+        print("  itself from the registry -- nobody has to notice the third sleeve landing.")
+        OUT.parent.mkdir(parents=True, exist_ok=True)
+        OUT.write_text(json.dumps({"ran": datetime.now(tz=UTC).isoformat(), "state": "DORMANT",
+                                   "n_sleeves": len(rets), "arms_at": MIN_SLEEVES}, indent=1),
+                       "utf-8")
+        return
+
+    r = review(rets)
+    cs = r["correlation_shock"]
+    print(f"  sleeves={r['n_sleeves']}  avg_corr={r['avg_correlation']}")
+    print(f"  CORRELATION SHOCK (+{SHOCK:.0%} toward 1.0):")
+    for k, v in cs.items():
+        print(f"    {k:<34} {v}")
+    print(f"  CONCENTRATION: {r['concentration']}")
+
+    eb_b = cs.get("effective_bets_base")
+    eb_s = cs.get("effective_bets_shocked")
+    if isinstance(eb_b, (int, float)) and isinstance(eb_s, (int, float)) and eb_b > 0:
+        lost = 1.0 - eb_s / eb_b
+        print(f"\n  Effective bets {eb_b:.2f} -> {eb_s:.2f} under shock ({lost:.0%} of the")
+        print("  diversification disappears). sqrt-N sleeve stacking assumes the BASE number;")
+        print("  the book actually compounds at the SHOCKED one when it matters most.")
+
+    OUT.parent.mkdir(parents=True, exist_ok=True)
+    OUT.write_text(json.dumps({"ran": datetime.now(tz=UTC).isoformat(), "state": "ACTIVE",
+                               "source": src, "shock": SHOCK, **r}, indent=1), "utf-8")
+    print(f"\n  -> {OUT.relative_to(ROOT)}")
+    print("  Reports only -- no rail touched, zero promotion authority.")
 
 
 if __name__ == "__main__":
@@ -12664,861 +7528,3205 @@ if __name__ == "__main__":
 
 ```
 
-### scripts/research_exchange.py
+## TIER 2 -- your shard
+
+### libs\research\effective_breadth.py
 ```python
-"""RESEARCH EXCHANGE -- the ChatGPT <-> Claude daily loop, and the scoreboard that judges both.
+"""HOW MANY INDEPENDENT BETS THE BOOK IS, measured from EXPOSURES rather than waited for.
 
-THE PRINCIPAL'S QUESTION: "im copy pasting ur responses to claude and claudes to urs, is there a
-way to make them communicate w eachother daily?"
+    "You need approximately twice as many genuinely independent sources of P&L. Five
+     Gold/JPY/session-breakout variants are not five independent edges if they all make money
+     from approximately the same market phenomenon."               -- the principal, 2026-09-05
 
-THE PRINCIPAL'S OWN ANSWER IS THE CORRECT ONE AND THIS IMPLEMENTS IT LITERALLY: "evidence sits
-between them. They shouldn't persuade each other -- they should respond to the same data and
-deterministic validation results." So there is NO model-to-model channel here, deliberately. Two
-LLMs arguing directly produce consensus, and consensus between two systems trained on overlapping
-corpora is not evidence -- it is correlated error wearing the costume of agreement. Worse, the
-loser of an argument is decided by rhetoric, which is the single thing an LLM is best at and the
-single thing that should carry no weight on a trading desk.
+THE MEASUREMENT THAT ALREADY EXISTS AND THE HOLE IN IT. `mt5desk/independence.py` computes k_eff
+from REALISED daily sleeve returns and floors it with `libs/risk/fx_factors.effective_bets`, which
+counts currency legs. Both are right and neither can answer today: the return estimator needs
+MIN_PAIR_OVERLAP = 20 overlapping trading days per pair, and on this desk's shadow history the
+best pair has TEN. The leg counter needs no history at all but answers a coarser question -- how
+many distinct legs -- and treats EUR, CHF, NOK, SEK and DKK as five legs when they are close to
+one bet. So the desk's headline breadth number is either UNMEASURED or optimistic, and the
+`n_effective 1.019 across 17 sleeves` finding that motivated all of this came from the coarse one.
 
-So the channel is a SHARED ARTEFACT, and both models are downstream of it:
+WHAT THIS ADDS. The book's DIRECTIONAL EXPOSURE has years of price history behind it even when
+the sleeves have weeks. A sleeve that is long CADJPY carries CADJPY's covariance whether or not
+it has traded twenty days, so:
 
-    desk state (measured)  --brief-->  each model, independently, cold
-                                            |
-                                       proposals
-                                            |
-                                        --intake-->  suggestion ledger (attributed, deduped)
-                                            |
-                                       deterministic validation (the desk's existing gates)
-                                            |
-                                        --score-->  contributor scoreboard -> research allocation
+    N_eff = (sum_s |w_s|)^2 / (x' C x)
 
-Three verbs, one file, because they are one loop and splitting them would produce three scripts of
-which two go unwired -- this desk already has 179 of those.
+where w_s is each sleeve's standalone risk, x is those risks aggregated onto the instruments they
+are expressed in and signed by direction, and C is the correlation of vol-normalised instrument
+returns. Independent and equal-sized sleeves give N_eff = N; N copies of one trade give 1. This is
+the diversification ratio squared, and it is measured on the desk's own H1 bars.
 
-    python scripts/research_exchange.py brief          # -> docs/DESK_BRIEF.md  (paste to either)
-    python scripts/research_exchange.py intake FILE --source chatgpt
-    python scripts/research_exchange.py score
+THREE WAYS IT IS DELIBERATELY CONSERVATIVE, because every one of them could have gone the other
+way and flattered the book:
 
-WHY THE SCOREBOARD IS THE POINT, NOT THE BRIEF. data/panel_scorecard.json has existed since
-2026-07-17 with 13 providers and this content: 0 scored, hit_rate null, for EVERY provider. The
-desk has never once measured which intelligence source produced value, so every allocation it has
-ever made between sources was made on reputation. The brief is easy; attribution is the part that
-was missing, and attribution only works if it is stamped at INTAKE, before anyone knows whether
-the idea was any good. Scoring proposals after the fact, from memory, is how you get a scorecard
-of nulls.
+1. TWO SLEEVES ON ONE INSTRUMENT COUNT AS ONE BET. A London breakout and an Asia reversion on
+   GBPJPY differ in timing and mechanism, and that difference is real breadth -- which this does
+   not claim, because only realised returns can measure it. So the number is a LOWER BOUND on the
+   book's P&L breadth and an EXACT reading of its exposure breadth. Timing can only add.
+2. AN UNDIRECTIONAL SLEEVE IS DROPPED, NOT DILUTED. A sleeve that went long half the time nets a
+   small directional loading while still carrying a full unit of variance; crediting the small
+   loading would understate book risk and overstate breadth. It is excluded and counted in
+   `dropped` instead.
+3. AN INSTRUMENT WITH NO BARS ADDS NO BREADTH. ZAR, MXN, NOK, SEK and DKK crosses are in the book
+   and not in the local universe. They are excluded and their share of nominal risk is reported,
+   rather than being assumed independent of what is measured.
 
-DEDUPE IS A HARD GATE, NOT A CONVENIENCE. An external model that has not read the graveyard will
-re-propose dead mechanisms indefinitely -- it costs it nothing. Intake checks every proposal
-against the mechanism FAMILY KILLS and the graveyard before it is allowed to consume a slot, and
-records the rejection against the source's record. A source that mostly re-proposes corpses should
-lose allocation for exactly that reason, and now it can be shown to.
+THE COLLIDER THIS MODULE REFUSES TO WALK INTO, and the reason `conditional_breadth` takes a LAGGED
+conditioner and nothing else. "Correlation on the book's worst days" is the natural thing to ask
+and the answer is worthless: selecting days by the book's own return selects on a SUM of the
+series being correlated, which mechanically decorrelates them. Measured here on this desk's own
+panel, breadth conditioned on the book's worst 5% of days reads 8.9 against a full-sample 1.3 --
+a book that looks SEVEN TIMES more diversified precisely when it is losing, which is the exact
+opposite of what happens and would raise leverage into a crisis. Conditioning on same-day
+magnitude has the same defect from the other side (-0.00 mean pairwise correlation on the top-vol
+5%). Conditioning on a PRIOR-window statistic has neither: it is known before the returns being
+correlated, so it selects a regime rather than a realisation. On the same panel the JPY block
+reads 0.93 in a high prior-vol regime against 0.49 in a calm one -- correlations rise in stress,
+which is what everyone assumes and nothing here had measured.
 
-Read-only w.r.t. trading. No keys, no network. Run from repo root.
+NOTHING HERE SIZES ANYTHING. Sizing stays in the gateway. This measures, names its refusals, and
+returns None wherever it cannot measure -- None never widens a budget.
 """
 from __future__ import annotations
 
-import json
-import re
-import sys
-from datetime import UTC, datetime
-from pathlib import Path
+import math
+from collections.abc import Mapping, Sequence
+from dataclasses import dataclass
+from typing import Any
 
-ROOT = Path(__file__).resolve().parent.parent
-LEDGER = ROOT / "data/suggestion_ledger.jsonl"
-BRIEF = ROOT / "docs/DESK_BRIEF.md"
-SCORE = ROOT / "data/contributor_scoreboard.json"
-GRAVE = ROOT / "docs/graveyard.md"
+import numpy as np
 
-# status ladder -- a proposal earns its way up. Weights are the reward function, so they are the
-# whole design: a source is paid for CHANGING A DECISION, not for sounding insightful.
-LADDER = {"proposed": 0.0, "rejected_dup": -0.5, "rejected_dead": -1.0, "accepted": 0.5,
-          "built": 2.0, "changed_decision": 4.0, "improved_live": 10.0}
+from libs.research.cohort_independence import effective_bets
 
-_STOP = {"the", "a", "an", "and", "or", "of", "to", "in", "for", "on", "with", "is", "are", "be", "this", "that", "it", "as", "by", "from", "at", "we", "you", "your", "our", "their", "its", "should", "could", "would", "may", "might", "can", "will", "not", "no", "yes", "if", "then", "than", "more", "most", "less", "least", "very", "much", "many", "some", "any", "all", "new", "use", "used", "using", "into", "over", "under", "when", "what", "which", "who", "whom", "whose", "how", "why", "where", "research", "desk", "system", "data"}
+__all__ = [
+    "MEASURED",
+    "MIN_PAIR_OVERLAP",
+    "MIN_PANEL_OBS",
+    "MIN_REGIME_OBS",
+    "MIN_SCALE_OBS",
+    "UNMEASURED",
+    "Reading",
+    "conditional_breadth",
+    "exposure_breadth",
+    "exposure_neff",
+    "factor_breadth",
+    "headline",
+    "lagged_vol_regime",
+    "realised_breadth",
+]
+
+MEASURED, UNMEASURED = "MEASURED", "UNMEASURED"
+
+#: Overlapping days a PAIR of sleeves needs before its realised correlation is used. Identical to
+#: `mt5desk.independence.MIN_PAIR_OVERLAP` and mirrored rather than imported so that libs does not
+#: depend on the desk package; a noisy correlation near zero is indistinguishable from genuine
+#: independence, which is the error that raises leverage.
+MIN_PAIR_OVERLAP = 20
+
+#: Observations a price panel needs before its correlation matrix is read as a measurement. Below
+#: this the off-diagonals are dominated by estimation noise in BOTH directions and the resulting
+#: N_eff is not a number anyone should size on.
+MIN_PANEL_OBS = 250
+
+#: Observations an expanding scale needs before it is used to normalise anything. Below this the
+#: scale is noise and the regime label it produces is noise divided by noise.
+MIN_SCALE_OBS = 20
+
+#: Observations inside a conditioned regime before the conditional correlation is a measurement.
+#: Lower than MIN_PANEL_OBS because a regime is a subsample by construction, and high enough that
+#: a 12-symbol correlation matrix is not being read off a quarter of a year.
+MIN_REGIME_OBS = 60
 
 
-def _toks(s: str) -> set[str]:
-    return {w for w in re.findall(r"[a-z]{4,}", s.lower()) if w not in _STOP}
+@dataclass(frozen=True)
+class Reading:
+    """One way of counting the book's independent bets, with its own refusal path."""
+
+    name: str
+    status: str                 # MEASURED | UNMEASURED
+    n_eff: float | None
+    n_nominal: int
+    n_obs: int
+    why: str
+    detail: dict[str, Any] | None = None
+
+    @property
+    def measured(self) -> bool:
+        return self.status == MEASURED and self.n_eff is not None
+
+    def as_dict(self) -> dict[str, Any]:
+        return {"name": self.name, "status": self.status,
+                "n_eff": None if self.n_eff is None else round(float(self.n_eff), 3),
+                "n_nominal": self.n_nominal, "n_obs": self.n_obs, "why": self.why,
+                **({"detail": self.detail} if self.detail else {})}
 
 
-def _read(p: Path, default=None):
+def _unmeasured(name: str, why: str, *, n_nominal: int = 0, n_obs: int = 0) -> Reading:
+    return Reading(name, UNMEASURED, None, int(n_nominal), int(n_obs), why)
+
+
+def exposure_neff(nominal_risk: float, exposure: np.ndarray, corr: np.ndarray) -> float:
+    """(sum of standalone risks)^2 / (portfolio variance in the same units) -- the bet count.
+
+    ``nominal_risk`` is the sum of the sleeves' standalone risks, which on this desk is simply
+    the sleeve count when every sleeve risks the same fraction at stop. ``exposure`` is those
+    risks aggregated onto instruments and SIGNED by direction, and ``corr`` is the correlation of
+    those instruments' vol-normalised returns.
+
+    Equal to N for N independent equal-risk sleeves and to 1 for N copies of one trade. The
+    variance term is refused rather than floored when it is non-positive: a non-PSD correlation
+    matrix would produce an enormous bet count out of a measurement error, and an enormous number
+    that looks like an answer is worse than an exception.
+    """
+    x = np.asarray(exposure, dtype="float64").reshape(-1)
+    c = np.asarray(corr, dtype="float64")
+    if c.shape != (x.size, x.size):
+        raise ValueError(f"exposure of {x.size} does not match a {c.shape} correlation matrix")
+    var = float(x @ c @ x)
+    if not math.isfinite(var) or var <= 0.0:
+        raise ValueError(
+            "book variance from the supplied exposures and correlations is not positive -- the "
+            "correlation matrix is not positive semi-definite; fix the measurement, never size "
+            "on it")
+    nom = float(nominal_risk)
+    return (nom * nom) / var
+
+
+def _panel_corr(panel: np.ndarray) -> np.ndarray:
+    """Pearson correlation of vol-normalised columns. Degenerate columns are the caller's job."""
+    m = np.asarray(panel, dtype="float64")
+    sd = m.std(axis=0)
+    z = m / np.where(sd > 0, sd, 1.0)
+    return np.asarray(np.corrcoef(z, rowvar=False), dtype="float64")
+
+
+def exposure_breadth(nominal_risk: float, exposure: Mapping[str, float],
+                     panel: Mapping[str, Sequence[float]], *,
+                     name: str = "exposure_full_sample",
+                     min_obs: int = MIN_PANEL_OBS) -> Reading:
+    """Independent bets implied by what the book is directionally long and short of.
+
+    ``exposure`` maps instrument -> signed risk. ``panel`` maps the same instruments to aligned
+    return series. Instruments present in ``exposure`` and absent from ``panel`` are NOT silently
+    dropped: they raise, because a caller that quietly loses half its book from the denominator
+    gets a flattering number and no warning. Filter before calling, and report what was filtered.
+    """
+    names = sorted(exposure)
+    if len(names) < 2:
+        return _unmeasured(name, "a correlation needs at least two instruments",
+                           n_obs=0)
+    missing = [s for s in names if s not in panel]
+    if missing:
+        raise KeyError(f"no return series for {missing} -- drop them from the exposure and report "
+                       "the risk share they carry, never measure breadth on a silent subset")
+    cols = [np.asarray(panel[s], dtype="float64") for s in names]
+    n_obs = min(int(c.size) for c in cols)
+    if n_obs < int(min_obs):
+        return _unmeasured(name, f"{n_obs} aligned observations, below the {min_obs} floor: a "
+                                 "correlation matrix this thin is estimation noise",
+                           n_obs=n_obs)
+    m = np.stack([c[-n_obs:] for c in cols], axis=1)
+    if not np.all(np.isfinite(m)) or not np.all(m.std(axis=0) > 0):
+        return _unmeasured(name, "a return column is constant or non-finite over the window",
+                           n_obs=n_obs)
+    x = np.array([float(exposure[s]) for s in names], dtype="float64")
+    corr = _panel_corr(m)
     try:
-        return json.loads(p.read_text("utf-8"))
-    except Exception:  # blind-except intentional (BLE001)
-        return default
+        k = exposure_neff(nominal_risk, x, corr)
+    except ValueError as exc:
+        return _unmeasured(name, str(exc), n_obs=n_obs)
+    iu = np.triu_indices(len(names), 1)
+    return Reading(name, MEASURED, k, round(nominal_risk), n_obs,
+                   f"(sum|w|)^2 / x'Cx on {len(names)} instruments over {n_obs} observations",
+                   {"instruments": names, "mean_pairwise_corr": round(float(corr[iu].mean()), 4),
+                    "max_pairwise_corr": round(float(corr[iu].max()), 4)})
 
 
-def _ledger() -> list[dict]:
-    if not LEDGER.exists():
-        return []
-    out = []
-    for ln in LEDGER.read_text("utf-8").splitlines():
-        ln = ln.strip()
-        if ln:
+def factor_breadth(nominal_risk: float, exposure: Mapping[str, float],
+                   panel: Mapping[str, Sequence[float]], *, k_factors: int = 3,
+                   min_obs: int = MIN_PANEL_OBS) -> Reading:
+    """Independent bets against the SYSTEMATIC part of the correlation only.
+
+    The full-sample reading counts idiosyncratic instrument moves as diversification. They are,
+    on an average day; they are not what decides how much leverage the book can carry, because
+    idiosyncratic moves do not arrive together and factor moves do. Truncating the correlation to
+    its leading ``k_factors`` principal components answers the narrower question: how many bets is
+    the book making ON THE THINGS THAT MOVE EVERYTHING AT ONCE.
+
+    Reported BESIDE the full-sample number, never instead of it. Where the two disagree the
+    disagreement is the finding: a factor breadth far below the full-sample one says the book's
+    apparent diversification lives in idiosyncratic risk and will not be there in a shock.
+    """
+    base = exposure_breadth(nominal_risk, exposure, panel, name="exposure_systematic",
+                            min_obs=min_obs)
+    if not base.measured:
+        return base
+    names = sorted(exposure)
+    cols = [np.asarray(panel[s], dtype="float64") for s in names]
+    n_obs = min(int(c.size) for c in cols)
+    m = np.stack([c[-n_obs:] for c in cols], axis=1)
+    kf = int(max(1, min(int(k_factors), len(names) - 1)))
+    corr = _panel_corr(m)
+    vals, vecs = np.linalg.eigh(corr)
+    order = np.argsort(vals)[::-1][:kf]
+    load = vecs[:, order] * np.sqrt(np.clip(vals[order], 0.0, None))
+    sys_cov = load @ load.T
+    # The systematic correlation keeps a unit diagonal: the idiosyncratic remainder is what makes
+    # each instrument's own variance up to 1, and dropping it would make the matrix non-PSD.
+    idio = np.clip(1.0 - np.diag(sys_cov), 1e-9, None)
+    rho_factor = sys_cov + np.diag(idio)
+    explained = float(np.sum(vals[order]) / max(float(np.sum(vals)), 1e-12))
+    x = np.array([float(exposure[s]) for s in names], dtype="float64")
+    try:
+        kk = exposure_neff(nominal_risk, x, rho_factor)
+    except ValueError as exc:
+        return _unmeasured("exposure_systematic", str(exc), n_obs=n_obs)
+    return Reading("exposure_systematic", MEASURED, kk, round(nominal_risk), n_obs,
+                   f"{kf}-factor systematic correlation explaining {explained:.1%} of panel "
+                   "variance; idiosyncratic risk excluded from the diversification claim",
+                   {"k_factors": kf, "variance_explained": round(explained, 4)})
+
+
+def lagged_vol_regime(panel: Mapping[str, Sequence[float]], *, window: int = 20) -> np.ndarray:
+    """A regime series that is KNOWN BEFORE the returns it will be used to condition.
+
+    The mean absolute move across the panel, each column scaled by ITS OWN EXPANDING standard
+    deviation through t-1, averaged over the previous ``window`` observations. Index t carries
+    information from observations strictly before t and from nothing else, so selecting on it
+    selects a REGIME and never a realisation. The leading `MIN_SCALE_OBS + window` entries are NaN
+    and the caller must treat them as unavailable.
+
+    THE EXPANDING SCALE IS NOT FASTIDIOUSNESS, AND THE FIRST VERSION OF THIS FUNCTION GOT IT
+    WRONG. It normalised each column by its FULL-SAMPLE standard deviation before taking the
+    rolling window, so a single observation at the end of the panel changed the scale and with it
+    every label in the series, including the ones years earlier. The lag was in the window and not
+    in the normaliser, which is exactly the kind of leak that survives review: the shift is
+    visible in the code and the sd is not. A test that perturbs the last observation and demands
+    every earlier label be unchanged catches it, and `test_alpha_breadth_factory.py` carries one.
+
+    THE SHIFT ITSELF IS THE OTHER HALF. Without it every conditional correlation in this module is
+    a collider: conditioning on same-period magnitude or on the book's own return decorrelates the
+    series by construction and reports a book that diversifies itself precisely when it is losing.
+    """
+    names = sorted(panel)
+    cols = [np.asarray(panel[s], dtype="float64") for s in names]
+    n = min(int(c.size) for c in cols)
+    m = np.stack([c[-n:] for c in cols], axis=1)
+    w = int(window)
+    out = np.full(n, np.nan, dtype="float64")
+    if w < 1 or n <= MIN_SCALE_OBS + w:
+        return out
+    # Expanding population std over observations 0..t-1, per column. Strictly prior by index.
+    idx = np.arange(1, n + 1, dtype="float64")[:, None]
+    c1 = np.cumsum(m, axis=0)
+    c2 = np.cumsum(m * m, axis=0)
+    mean_prior = c1 / idx
+    var_prior = np.clip(c2 / idx - mean_prior * mean_prior, 0.0, None)
+    scale = np.full_like(m, np.nan)
+    scale[1:] = np.sqrt(var_prior[:-1])              # scale[t] uses 0..t-1 only
+    with np.errstate(invalid="ignore", divide="ignore"):
+        z = np.abs(m) / np.where(scale > 0, scale, np.nan)
+    # Counted mean rather than nanmean: the leading rows have no scale at all, and nanmean warns
+    # on an empty slice instead of simply saying "no value here", which is what NaN already says.
+    finite = np.isfinite(z)
+    cnt = finite.sum(axis=1)
+    tot = np.where(finite, z, 0.0).sum(axis=1)
+    zbar = np.where(cnt > 0, tot / np.where(cnt > 0, cnt, 1), np.nan)
+    zbar[:MIN_SCALE_OBS] = np.nan
+    # out[t] = mean(zbar[t-w : t]) -- the window ENDS at t-1, so nothing at t enters its own label.
+    for t in range(MIN_SCALE_OBS + w, n):
+        seg = zbar[t - w:t]
+        good = seg[np.isfinite(seg)]
+        if good.size:
+            out[t] = float(good.mean())
+    return out
+
+
+def conditional_breadth(nominal_risk: float, exposure: Mapping[str, float],
+                        panel: Mapping[str, Sequence[float]], conditioner: Sequence[float], *,
+                        quantile: float = 0.2, high: bool = True,
+                        name: str = "exposure_stress",
+                        min_obs: int = MIN_REGIME_OBS) -> Reading:
+    """Independent bets inside a regime picked out by a LAGGED conditioner.
+
+    ``conditioner`` must be known before the observation it labels -- `lagged_vol_regime` builds
+    one. There is no way for this function to verify that from the array alone, so the contract is
+    stated and the caller carries it; passing a contemporaneous statistic (the book's own return,
+    same-day realised vol) turns this into the collider described in the module docstring and the
+    answer will be confidently wrong in the direction that raises leverage.
+    """
+    names = sorted(exposure)
+    if len(names) < 2:
+        return _unmeasured(name, "a correlation needs at least two instruments")
+    missing = [s for s in names if s not in panel]
+    if missing:
+        raise KeyError(f"no return series for {missing}")
+    cols = [np.asarray(panel[s], dtype="float64") for s in names]
+    n_obs = min(int(c.size) for c in cols)
+    cond = np.asarray(conditioner, dtype="float64")
+    if cond.size != n_obs:
+        return _unmeasured(name, f"conditioner has {cond.size} entries against {n_obs} aligned "
+                                 "observations; an unaligned regime label is not a regime",
+                           n_obs=n_obs)
+    ok = np.isfinite(cond)
+    if int(ok.sum()) < int(min_obs):
+        return _unmeasured(name, f"{int(ok.sum())} observations carry a finite regime label, "
+                                 f"below the {min_obs} floor", n_obs=int(ok.sum()))
+    q = float(np.quantile(cond[ok], 1.0 - quantile if high else quantile))
+    sel = ok & ((cond >= q) if high else (cond <= q))
+    n_sel = int(sel.sum())
+    if n_sel < int(min_obs):
+        return _unmeasured(name, f"{n_sel} observations inside the regime, below the {min_obs} "
+                                 "floor: a conditional correlation this thin is noise",
+                           n_obs=n_sel)
+    m = np.stack([c[-n_obs:] for c in cols], axis=1)[sel]
+    if not np.all(np.isfinite(m)) or not np.all(m.std(axis=0) > 0):
+        return _unmeasured(name, "a return column is constant or non-finite inside the regime",
+                           n_obs=n_sel)
+    x = np.array([float(exposure[s]) for s in names], dtype="float64")
+    corr = _panel_corr(m)
+    try:
+        k = exposure_neff(nominal_risk, x, corr)
+    except ValueError as exc:
+        return _unmeasured(name, str(exc), n_obs=n_sel)
+    iu = np.triu_indices(len(names), 1)
+    return Reading(name, MEASURED, k, round(nominal_risk), n_sel,
+                   f"correlation inside the {'top' if high else 'bottom'} "
+                   f"{quantile:.0%} of a LAGGED regime conditioner ({n_sel} observations); the "
+                   "conditioner is known before the returns it labels, so this selects a regime "
+                   "and not a realisation",
+                   {"quantile": quantile, "high": high,
+                    "mean_pairwise_corr": round(float(corr[iu].mean()), 4)})
+
+
+def realised_breadth(series: Mapping[str, Mapping[str, float]], *,
+                     min_overlap: int = MIN_PAIR_OVERLAP,
+                     name: str = "realised_returns") -> Reading:
+    """Independent bets from the sleeves' OWN realised P&L, on overlapping days only.
+
+    The measurement the exposure readings cannot make, and the one that captures timing and
+    mechanism differences the exposure view refuses to claim. It needs history: a pair with fewer
+    than ``min_overlap`` common trading days contributes nothing, and a book where NO pair reaches
+    the floor is UNMEASURED. The floor is not lowered to produce an answer -- a correlation
+    estimated from eight days is indistinguishable from independence, and reading it as
+    independence is exactly how a correlated book comes to size like a diversified one.
+
+    Averaging is in Fisher-z space and the UPPER 95% bound is returned, not the point estimate:
+    correlations are estimated on whatever regime happened to be sampled, and the desk takes the
+    breadth its evidence supports at the pessimistic end.
+    """
+    names = sorted(series)
+    n = len(names)
+    if n < 2:
+        return _unmeasured(name, f"{n} sleeve(s) with realised returns; correlation needs two",
+                           n_nominal=n)
+    zs: list[float] = []
+    smallest = 0
+    for i, a in enumerate(names):
+        for b in names[i + 1:]:
+            common = sorted(set(series[a]) & set(series[b]))
+            if len(common) < int(min_overlap):
+                continue
+            xa = np.array([float(series[a][d]) for d in common], dtype="float64")
+            xb = np.array([float(series[b][d]) for d in common], dtype="float64")
+            if xa.std() <= 0 or xb.std() <= 0:
+                continue
+            r = float(np.corrcoef(xa, xb)[0, 1])
+            if not math.isfinite(r):
+                continue
+            r = max(min(r, 0.999999), -0.999999)
+            zs.append(math.atanh(r))
+            smallest = len(common) if smallest == 0 else min(smallest, len(common))
+    if not zs:
+        return _unmeasured(
+            name, f"no sleeve pair has {min_overlap} overlapping trading days ({n} sleeves); the "
+                  "floor is not lowered to produce a number", n_nominal=n)
+    z_bar = sum(zs) / len(zs)
+    se = 1.0 / math.sqrt(max(smallest - 3, 1))
+    rho_upper = math.tanh(z_bar + 1.645 * se)
+    return Reading(name, MEASURED, effective_bets(n, rho_upper), n, smallest,
+                   f"{len(zs)} pair(s) cleared the {min_overlap}-day overlap floor, thinnest "
+                   f"overlap {smallest}d; rho <= {rho_upper:.3f} at the 95% upper bound, not the "
+                   "point estimate",
+                   {"n_pairs": len(zs), "rho_upper": round(rho_upper, 4)})
+
+
+def headline(readings: Sequence[Reading], n_nominal: int) -> dict[str, Any]:
+    """The number to publish: nominal against the SMALLEST measured breadth, and why.
+
+    THE MINIMUM, NEVER THE MEAN AND NEVER THE BEST. Each reading answers a different question --
+    what the exposures imply, what the systematic part implies, what a stress regime implies, what
+    the realised returns imply -- and a book is only as diversified as its worst true answer.
+    Averaging them would let one optimistic reading buy leverage the others say is not there, and
+    taking the best is the same error with less arithmetic.
+
+    Every UNMEASURED reading is listed by name with its reason. Absence is never folded into the
+    verdict: a book with one measured reading has one measured reading, and saying so is the point.
+    """
+    measured = [r for r in readings if r.measured]
+    unmeasured = [r for r in readings if not r.measured]
+    best: Reading | None = None
+    for r in measured:
+        if best is None or (r.n_eff is not None and best.n_eff is not None
+                            and r.n_eff < best.n_eff):
+            best = r
+    k = None if best is None else float(best.n_eff or 0.0)
+    ratio = None if (k is None or n_nominal <= 0) else k / float(n_nominal)
+    return {
+        "n_nominal": int(n_nominal),
+        "effective_breadth": None if k is None else round(k, 3),
+        "binding_reading": None if best is None else best.name,
+        "breadth_ratio": None if ratio is None else round(ratio, 4),
+        "sharpe_multiplier_vs_one_bet": None if k is None else round(math.sqrt(max(k, 0.0)), 3),
+        "status": MEASURED if k is not None else UNMEASURED,
+        "readings": [r.as_dict() for r in readings],
+        "unmeasured": [{"name": r.name, "why": r.why} for r in unmeasured],
+        "rule": (
+            "effective breadth is the MINIMUM over the measured readings, because a book is only "
+            "as diversified as its worst true answer; combined Sharpe scales as sqrt(k_eff), so "
+            f"{n_nominal} nominal sleeves at k_eff "
+            + ("UNMEASURED" if k is None else f"{k:.2f}")
+            + " compound like "
+            + ("an unmeasured number of" if k is None else f"{k:.2f}")
+            + " bets, not like "
+            + f"{n_nominal}"),
+    }
+
+```
+
+### libs\research\mechanism_claims.py
+```python
+"""Mechanism claims out of text in every language the desk mines -- the whole world, one grammar.
+
+    a CLAIM  =  a sentence that names a market QUANTITY, a DIRECTION and a HORIZON
+
+That is the whole grammar, and it is deliberately shallow. A trader's interview, a competition
+write-up, a forum reply or a README does not state a family and parameters; it states that
+"gold usually reverses after the night-session open when the day range is already wide", and
+the value of the sentence is that it is FALSIFIABLE on bars the desk already holds. Everything
+richer than this -- the exact rule, the parameters, the instrument mapping -- is the deepening
+worker's job, through the compiler's existing contract, so nothing here can invent a family.
+
+WHY EVERY LANGUAGE IS FIRST-CLASS (principal, 2026-09-05: "deep forests in ALL major languages
+... widen deep-forest to full global, 100 percent"). The Chinese forest was the proof: a large
+practitioner literature the English-speaking crowd never reads, and even a dubious trading story
+names a testable mechanism. The same argument holds for Japanese botters, Korean futures boards,
+Taiwanese option writers, Vietnamese derivatives forums, Brazilian B3 traders, Polish GPW boards,
+Turkish lira desks and Russian smart-lab -- and a claim extractor that speaks only English and
+Chinese reports every other forest as empty, which is the L1.28a failure: absence
+indistinguishable from emptiness. Vocabulary here is per language, SEEDS NEVER BOUNDARIES; a
+region's frontier seat extends its own list (docs/research/search_operator_library.md OP-041).
+
+INSTRUMENTS ARE MAPPED, NEVER INVENTED. A story about 沪金 is a story about gold; the desk trades
+XAUUSD. Every candidate symbol in `INSTRUMENT_ALIASES` is a name Fusion actually quotes
+(desks/mt5/data/universe/universe.json, first candidate first); instruments with no Fusion
+analogue (螺纹钢, KOSPI, Nifty, IHSG, WIG20 ...) are kept as MECHANISM-CLASS transfers -- the
+mechanism is the fuel, the instrument is whatever the desk can actually quote -- and the row says
+so. A claim with NO analogue AND no transfer note is dropped and COUNTED (`dropped_unmappable`):
+a summary nobody can test is not a hypothesis.
+
+INDIRECT EDGES ARE THE POINT. "Brazilian soy exports" is a claim about USDBRL, "the CBRT hiked"
+is a claim about USDTRY, "the Shanghai gold premium" is a claim about XAUUSD -- a foreign dataset
+or event, an information shock, an MT5 instrument. `INDIRECT_CHANNELS` maps such triggers to the
+pair they move, and every claim records its `channel` ("direct" when the source names the MT5
+instrument, "indirect" otherwise) so the funnel can measure whether indirect channels convert.
+
+DEDUPLICATE FIRST. The same story told on ten sites is ONE mechanism: `mechanism_key` folds
+instrument, mechanism class, direction bucket and horizon bucket into a stable key, so the miner
+queues one deepening task with ten provenance rows rather than ten tasks.
+
+Crypto-EXCHANGE claims are dropped at the door (standing order 2026-08-18); Fusion's crypto CFDs
+remain reachable through their own aliases.
+"""
+# ruff: noqa: RUF001 -- a lexicon in twenty-six scripts is made of the
+# "ambiguous" characters this rule guards against; here they are the data, not typos.
+from __future__ import annotations
+
+import hashlib
+import re
+from typing import Any
+
+# ============================================================================== vocabulary
+# One (QUANTITY, DIRECTION, HORIZON) triple per language. Chinese and English first because they
+# were first; the rest at the same depth, in the vocabulary each community actually uses (a
+# translated English phrase finds translated English content, which is the corpus already read).
+# Non-ASCII words are written as literals on purpose: they are data, and an escape would hide
+# what the lexicon says from the next reader.
+
+QUANTITY_EN: tuple[str, ...] = (
+    "momentum", "reversal", "mean reversion", "carry", "swap", "breakout", "range",
+    "volatility", "spread", "order flow", "imbalance", "positioning", "cot", "seasonal",
+    "session", "open", "close", "fix", "rollover", "gap", "correlation", "cointegration",
+    "pairs", "lead", "lag", "surprise", "cpi", "nfp", "rate", "yield", "factor", "residual",
+    "skew", "kurtosis", "liquidity", "flow", "inventory", "basis", "term structure", "premium",
+    "drawdown", "trend", "pullback", "stop hunt", "sweep", "vwap", "volume", "open interest",
+    "expiry", "auction", "intervention", "rate decision", "hike", "cut", "curve", "spot",
+    "futures", "stocks", "inventories", "exports", "imports", "shipping", "freight", "harvest",
+    "weather", "etf flows", "fund flows", "options", "gamma", "vix", "risk reversal", "fixing",
+)
+QUANTITY_ZH: tuple[str, ...] = (
+    "动量", "反转", "均值回归", "均值回复", "趋势", "突破", "假突破", "套利", "基差", "价差",
+    "持仓",
+    "成交量", "量能", "波动率", "跳空", "缺口", "隔夜", "夜盘", "开盘", "收盘", "换月", "展期",
+    "升水", "贴水", "利差", "掉期", "隔夜利息", "季节性", "时段", "资金流", "主力", "库存",
+    "期限结构", "相关性", "协整", "领先", "滞后", "非农", "通胀", "加息", "降息", "利率",
+    "美元指数", "流动性", "订单流", "盘口", "委托", "止损", "日内", "波段", "高频", "做市",
+    "滑点", "冲击成本", "量价", "放量", "缩量", "振幅", "均线", "布林", "回撤", "回调", "反弹",
+    "跨期", "跨品种", "跨市", "内外盘", "沪伦比", "金银比", "金油比", "持仓量", "多空比",
+    "黄金", "白银", "原油", "铜", "股指", "外汇", "美元", "欧元", "英镑", "日元", "澳元", "恒指",
+    "纳指", "标普", "道指", "德指", "日经", "汇率", "点差", "atr", "rsi", "macd", "kdj",
+    "溢价", "央行", "干预", "结算", "交割", "到期", "出口", "进口", "运费", "天气", "产量",
+)
+DIRECTION_EN: tuple[str, ...] = (
+    "long", "short", "buy", "sell", "fade", "follow", "revert", "continue", "increase",
+    "decrease", "predict", "forecast", "outperform", "underperform", "positive", "negative",
+    "rally", "sell-off", "selloff", "bounce", "reverse", "expand", "contract", "widen", "narrow",
+    "rise", "rises", "fall", "falls", "drop", "drops", "strengthen", "weaken", "appreciate",
+    "depreciate", "bullish", "bearish", "higher", "lower", "steepen", "flatten", "rebound",
+    "rebounds", "fell", "rose", "dropped", "rallied", "gained", "gains", "weakened",
+    "strengthened", "bounced", "reversed", "fade", "fades", "bounces", "reverts", "continues",
+    "rallies", "widens", "narrows", "steepens", "flattens", "strengthens", "weakens",
+    "appreciates", "depreciates", "reverses", "expands", "contracts", "climbs", "climb", "slides",
+    "slide", "sinks", "surges", "surge", "tumbles", "jumps", "dips", "dip",
+)
+DIRECTION_ZH: tuple[str, ...] = (
+    "做多", "做空", "买入", "卖出", "反向", "顺势", "逆势", "回归", "延续", "上涨", "下跌", "预测",
+    "跑赢", "跑输", "正相关", "负相关", "追涨", "杀跌", "抄底", "摸顶", "止盈", "加仓", "减仓",
+    "多头", "空头", "看多", "看空", "走强", "走弱", "收敛", "扩大", "反弹", "回落", "冲高", "跳水",
+    "涨", "跌", "收窄", "拉升", "砸盘", "平仓", "开仓", "入场", "出场", "升值", "贬值",
+)
+HORIZON_EN: tuple[str, ...] = (
+    "minute", "minutes", "hour", "hours", "hourly", "daily", "day", "days", "week", "weekly",
+    "month", "monthly", "intraday", "overnight", "bar", "bars", "h1", "h4", "d1", "m5", "m15",
+    "session", "open", "close", "tick", "quarter", "quarterly", "expiry", "next day",
+)
+HORIZON_ZH: tuple[str, ...] = (
+    "分钟", "小时", "日内", "隔夜", "当日", "次日", "每日", "日线", "周线", "月线", "开盘后",
+    "收盘前", "夜盘", "早盘", "尾盘", "根k线", "交易日", "一周", "一个月", "tick", "秒级",
+    "分钟级", "小时级", "日级", "周", "月", "季度",
+)
+
+# ---- Traditional Chinese (Taiwan / Hong Kong): the same grammar in the other script. Shared
+# characters (突破, 原油) are covered by the simplified table, which is searched as well.
+QUANTITY_ZHT: tuple[str, ...] = (
+    "動量", "反轉", "均值回歸", "趨勢", "假突破", "套利", "基差", "價差", "持倉", "成交量",
+    "量能", "波動率", "跳空", "缺口", "隔夜", "夜盤", "開盤", "收盤", "換月", "轉倉", "升水",
+    "貼水", "利差", "掉期", "隔夜利息", "季節性", "時段", "資金流", "主力", "庫存", "期限結構",
+    "相關性", "協整", "領先", "滯後", "非農", "通膨", "升息", "降息", "利率", "美元指數",
+    "流動性", "訂單流", "盤口", "委託", "停損", "日內", "波段", "高頻", "造市", "滑價", "量價",
+    "爆量", "縮量", "振幅", "均線", "布林", "回撤", "回檔", "反彈", "跨期", "跨市", "內外盤",
+    "金銀比", "金油比", "未平倉", "多空比", "黃金", "白銀", "銅", "股指", "外匯", "歐元",
+    "英鎊", "日圓", "澳幣", "恆指", "恆生", "那斯達克", "納斯達克", "標普", "道瓊", "德指",
+    "日經", "匯率", "點差", "台指", "加權", "選擇權", "期貨", "法人", "外資", "投信", "自營商",
+    "融資", "融券", "借券", "籌碼", "當沖", "報酬", "乖離", "支撐", "壓力", "前高", "前低",
+    "台股", "港股", "美股", "台幣", "港幣", "國企", "北水", "港股通", "南下資金", "牛熊證",
+    "窩輪", "權證", "溢價", "結算", "央行", "干預", "運費", "產量", "出口",
+)
+DIRECTION_ZHT: tuple[str, ...] = (
+    "做多", "做空", "買入", "賣出", "反向", "順勢", "逆勢", "回歸", "延續", "上漲", "下跌", "預測",
+    "跑贏", "跑輸", "正相關", "負相關", "追漲", "殺跌", "抄底", "摸頭", "停利", "加碼", "減碼",
+    "多頭", "空頭", "看多", "看空", "走強", "走弱", "收斂", "擴大", "反彈", "回落", "衝高",
+    "跳水", "漲", "跌", "收窄", "拉抬", "殺盤", "平倉", "開倉", "進場", "出場", "多單", "空單",
+    "站上", "跌破", "拉回", "上攻", "翻多", "翻空", "升值", "貶值",
+)
+HORIZON_ZHT: tuple[str, ...] = (
+    "分鐘", "小時", "日內", "隔夜", "當日", "次日", "每日", "日線", "週線", "月線", "開盤後",
+    "收盤前", "夜盤", "早盤", "尾盤", "根k線", "交易日", "一週", "一個月", "秒級", "分鐘級",
+    "小時級", "日級", "週", "月", "盤中", "盤後", "盤前", "當沖", "隔日沖", "結算日", "週選",
+    "月選", "除息", "季底", "年底",
+)
+
+# ---- Japanese: the botter / FX-blog register (note.com, Qiita, みんかぶ, 株探, 5ch 株板).
+QUANTITY_JA: tuple[str, ...] = (
+    "モメンタム", "逆張り", "順張り", "トレンド", "トレンドフォロー", "ブレイク", "ブレイクアウト",
+    "裁定", "スプレッド", "ボラティリティ", "窓", "ギャップ", "スワップ", "キャリー", "出来高",
+    "建玉", "季節", "季節性", "アノマリー", "時間帯", "仲値", "ゴールド", "金", "原油", "ドル円",
+    "ユーロドル", "日経", "ロンドン", "ニューヨーク", "東京時間", "指標", "雇用統計", "平均回帰",
+    "押し目", "戻り", "レンジ", "板", "歩み値", "気配", "スリッページ", "移動平均", "ボリンジャー",
+    "一目", "サポート", "レジスタンス", "高値", "安値", "前日高値", "前日安値", "窓埋め",
+    "ゴトー日",
+    "五十日", "月末", "期末", "実需", "輸出企業", "リバランス", "決算", "配当", "先物",
+    "オプション",
+    "ベーシス", "限月", "ロールオーバー", "スワップポイント", "金利差", "政策金利", "日銀",
+    "fomc", "cpi", "指標発表", "相関", "逆相関", "乖離", "乖離率", "atr", "rsi", "macd",
+    "騰落", "空売り", "信用", "貸借", "需給", "買い戻し", "踏み上げ", "投げ", "介入", "為替介入",
+    "国債", "利回り", "銀", "プラチナ", "銅", "天然ガス", "ダウ", "ナスダック", "s&p", "dax",
+    "ポンド円", "ユーロ円", "豪ドル", "ドルインデックス", "在庫", "出荷", "天候", "運賃",
+)
+DIRECTION_JA: tuple[str, ...] = (
+    "買い", "売り", "ロング", "ショート", "上昇", "下落", "反発", "反落", "続伸", "続落", "戻る",
+    "上抜け", "下抜け", "利確", "損切り", "上がる", "下がる", "上がりやすい", "下がりやすい",
+    "押し目買い", "戻り売り", "買い増し", "手仕舞い", "エントリー", "イグジット", "決済", "強含",
+    "弱含", "円高", "円安", "ドル高", "ドル安", "上振れ", "下振れ", "急騰", "急落", "反転",
+)
+HORIZON_JA: tuple[str, ...] = (
+    "分", "時間", "日", "週", "月", "デイトレ", "スイング", "足", "寄り", "引け", "オーバーナイト",
+    "日中", "翌日", "当日", "前場", "後場", "大引け", "寄り付き", "分足", "時間足", "日足",
+    "週足", "月足", "秒", "ザラ場", "夜間", "ナイトセッション", "週末", "月初", "年末", "四半期",
+)
+
+# ---- Korean: 해외선물 / 주식 boards (Naver, 팍스넷, DC, tistory).
+QUANTITY_KO: tuple[str, ...] = (
+    "모멘텀", "추세", "돌파", "역추세", "평균회귀", "차익", "스프레드", "변동성", "갭", "스왑",
+    "캐리", "거래량", "포지션", "계절", "계절성", "세션", "금", "골드", "원유", "달러", "엔",
+    "지수", "고용", "이동평균", "볼린저", "지지", "저항", "고점", "저점", "전일", "눌림목",
+    "되돌림", "박스권", "횡보", "거래대금", "미결제약정", "호가", "체결", "슬리피지", "베이시스",
+    "만기", "롤오버", "금리차", "기준금리", "한은", "연준", "고용지표", "물가", "지표발표",
+    "아시아장", "런던장", "뉴욕장", "시간대", "상관관계", "이격도", "공매도", "수급", "외국인",
+    "기관", "개인", "프로그램매매", "선물", "옵션", "차익거래", "괴리율", "환율", "달러원",
+    "원달러", "엔화", "유가", "금값", "은", "구리", "나스닥", "다우", "s&p", "코스피", "코스닥",
+    "국채", "재고", "수출", "운임", "개입", "외환당국", "atr", "rsi", "macd",
+)
+DIRECTION_KO: tuple[str, ...] = (
+    "매수", "매도", "롱", "숏", "상승", "하락", "반등", "급락", "급등", "돌파", "이탈", "익절",
+    "손절", "오른다", "내린다", "오르는", "내리는", "강세", "약세", "추격매수", "저점매수",
+    "고점매도", "진입", "청산", "절상", "절하", "강해", "약해",
+)
+HORIZON_KO: tuple[str, ...] = (
+    "분", "시간", "일", "주", "월", "데이", "스윙", "봉", "장초", "장마감", "오버나잇", "장중",
+    "분봉", "시간봉", "일봉", "주봉", "월봉", "당일", "익일", "전일", "장초반", "장후반", "종가",
+    "시가", "야간", "주말", "월말", "월초", "초", "틱", "단타", "스캘핑", "분기",
+)
+
+# ---- Russian and Ukrainian (stems: Cyrillic inflects, a stem catches every case).
+QUANTITY_RU: tuple[str, ...] = (
+    "моментум", "импульс", "разворот", "возврат к среднему", "тренд", "пробой", "арбитраж",
+    "спред", "волатильност", "гэп", "своп", "кэрри", "объем", "объём", "позици", "сезонн",
+    "сесси", "золот", "нефт", "доллар", "евро", "индекс", "фиксинг", "ставк", "нонфарм",
+    "скользящ", "боллиндж", "поддержк", "сопротивлен", "максимум", "минимум", "откат", "флэт",
+    "боковик", "открыт интерес", "стакан", "проскальзыван", "базис", "экспирац", "ролл",
+    "инфляц", "корреляц", "дивергенц", "шорт-сквиз", "ликвидн", "азиатск", "лондон", "нью-йорк",
+    "паттерн", "уровен", "rsi", "macd", "atr", "серебр", "медь", "газ", "рубл", "насдак", "dax",
+    "ртс", "ммвб", "мосбирж", "фьючерс", "опцион", "цб", "фрс", "интервенц", "офз", "доходност",
+    "запас", "экспорт", "фрахт", "урожа",
+)
+DIRECTION_RU: tuple[str, ...] = (
+    "лонг", "шорт", "покуп", "прода", "рост", "падени", "отскок", "продолж", "пробит", "фиксац",
+    "стоп", "растет", "растёт", "падает", "снижен", "вход", "выход", "откуп", "слив", "усилен",
+    "ослаблен", "бычий", "медвеж", "вверх", "вниз", "укреплен", "девальвац",
+)
+HORIZON_RU: tuple[str, ...] = (
+    "минут", "час", "дне", "день", "недел", "месяц", "интрадей", "свинг", "свеч", "открыти",
+    "закрыти", "овернайт", "таймфрейм", "тик", "скальп", "дневн", "недельн", "месячн", "утр",
+    "вечер", "ночн", "внутри дня", "квартал",
+)
+QUANTITY_UK: tuple[str, ...] = (
+    "моментум", "імпульс", "розворот", "повернення до середнього", "тренд", "пробій", "арбітраж",
+    "спред", "волатильн", "геп", "своп", "керрі", "обсяг", "позиці", "сезонн", "сесі", "золот",
+    "нафт", "долар", "євро", "індекс", "фіксинг", "ставк", "ковзн", "підтримк", "опір",
+    "максимум", "мінімум", "відкат", "бічн", "ліквідн", "кореляц", "гривн", "нбу", "інтервенц",
+    "запас", "експорт", "фрахт", "урожа", "ф'ючерс", "опціон", "дохідн", "інфляц",
+)
+DIRECTION_UK: tuple[str, ...] = (
+    "лонг", "шорт", "купівл", "купу", "прода", "зростан", "зроста", "падінн", "падає", "відскок",
+    "продовж", "пробит", "фіксац", "стоп", "вхід", "вихід", "зниж", "посилен", "послаблен",
+    "бичач", "ведмеж", "вгору", "вниз", "зміцн", "девальвац",
+)
+HORIZON_UK: tuple[str, ...] = (
+    "хвилин", "годин", "дня", "день", "тижн", "місяц", "інтрадей", "свінг", "свічк", "відкритт",
+    "закритт", "овернайт", "таймфрейм", "тік", "скальп", "денн", "тижнев", "місячн", "ранк",
+    "вечір", "нічн", "квартал",
+)
+
+# ---- Vietnamese: F319 / CafeF / VnDirect derivatives forums.
+QUANTITY_VI: tuple[str, ...] = (
+    "xu hướng", "động lượng", "đảo chiều", "hồi quy", "phá vỡ", "breakout", "biên độ",
+    "biến động", "khối lượng", "thanh khoản", "dòng tiền", "khối ngoại", "tự doanh", "chênh lệch",
+    "spread", "cơ sở", "phái sinh", "hợp đồng tương lai", "đáo hạn", "kỳ hạn", "lãi suất",
+    "tỷ giá", "mùa vụ", "tính mùa vụ", "tương quan", "hỗ trợ", "kháng cự", "đỉnh", "đáy",
+    "đường trung bình", "rsi", "macd", "bollinger", "nến", "gap", "khoảng trống", "vàng", "dầu",
+    "bạc", "chỉ số", "vn-index", "vn30", "chứng khoán", "cổ phiếu", "ato", "atc", "giá đóng cửa",
+    "giá mở cửa", "margin", "ký quỹ", "call margin", "giải chấp", "bán tháo", "sóng", "nhịp",
+    "tồn kho", "xuất khẩu", "nhập khẩu", "cước", "thời tiết", "ngân hàng nhà nước", "can thiệp",
+    "trái phiếu", "lợi suất", "usd", "đô la",
+)
+DIRECTION_VI: tuple[str, ...] = (
+    "mua", "bán", "long", "short", "tăng", "giảm", "bật tăng", "hồi phục", "điều chỉnh",
+    "phá đỉnh", "thủng đáy", "đảo chiều", "tiếp diễn", "chốt lời", "cắt lỗ", "bắt đáy", "đu đỉnh",
+    "tăng giá", "giảm giá", "đi lên", "đi xuống", "vượt", "xuyên thủng", "gom", "xả", "vào lệnh",
+    "thoát lệnh", "mở vị thế", "đóng vị thế", "mất giá", "lên giá",
+)
+HORIZON_VI: tuple[str, ...] = (
+    "phút", "giờ", "ngày", "tuần", "tháng", "phiên", "trong phiên", "cuối phiên", "đầu phiên",
+    "qua đêm", "phiên sau", "hôm sau", "ngắn hạn", "trung hạn", "dài hạn", "khung", "nến ngày",
+    "nến tuần", "nến giờ", "intraday", "t+2", "t+3", "lướt sóng", "scalp", "quý",
+)
+
+# ---- Thai: Pantip Sinthorn / stock2morrow / SET research.
+QUANTITY_TH: tuple[str, ...] = (
+    "โมเมนตัม", "แนวโน้ม", "กลับตัว", "ทะลุ", "เบรคเอาท์", "กรอบ", "ไซด์เวย์", "ความผันผวน",
+    "วอลุ่ม", "ปริมาณการซื้อขาย", "สภาพคล่อง", "ฟันด์โฟลว์", "ต่างชาติ", "สเปรด", "เบสิส",
+    "ฟิวเจอร์ส", "ออปชั่น", "หมดอายุ", "ดอกเบี้ย", "ค่าเงิน", "บาท", "ฤดูกาล", "ความสัมพันธ์",
+    "แนวรับ", "แนวต้าน", "จุดสูงสุด", "จุดต่ำสุด", "เส้นค่าเฉลี่ย", "ema", "rsi", "macd",
+    "แท่งเทียน", "แก๊ป", "ทองคำ", "ทอง", "น้ำมัน", "ดัชนี", "set50", "หุ้น", "ราคาปิด",
+    "ราคาเปิด", "มาร์จิ้น", "ฟอร์ซเซล", "เทขาย", "สต็อก", "ส่งออก", "ค่าระวาง", "แบงก์ชาติ",
+    "ธปท", "แทรกแซง", "พันธบัตร", "ผลตอบแทน", "ดอลลาร์",
+)
+DIRECTION_TH: tuple[str, ...] = (
+    "ซื้อ", "ขาย", "ลอง", "ชอร์ต", "ขึ้น", "ลง", "เด้ง", "รีบาวด์", "ปรับฐาน", "ย่อ", "ทะลุ",
+    "หลุด", "กลับตัว", "ต่อเนื่อง", "ทำกำไร", "ตัดขาดทุน", "คัทลอส", "ช้อน", "ดอย", "บวก",
+    "ลบ", "แรง", "อ่อน", "เข้า", "ออก", "เปิดสถานะ", "ปิดสถานะ", "ไล่ราคา", "แข็งค่า", "อ่อนค่า",
+)
+HORIZON_TH: tuple[str, ...] = (
+    "นาที", "ชั่วโมง", "วัน", "สัปดาห์", "เดือน", "รายวัน", "รายสัปดาห์", "ระหว่างวัน", "ข้ามคืน",
+    "ปิดตลาด", "เปิดตลาด", "ช่วงเช้า", "ช่วงบ่าย", "ท้ายตลาด", "เดย์เทรด", "สวิง", "ไทม์เฟรม",
+    "แท่ง", "ไตรมาส",
+)
+
+# ---- Indonesian / Malay: Stockbit, Kaskus, i3investor, Lowyat (one lexicon, shared roots).
+QUANTITY_ID: tuple[str, ...] = (
+    "momentum", "tren", "trend", "pembalikan", "reversal", "breakout", "penembusan", "sideways",
+    "volatilitas", "volume", "likuiditas", "aliran dana", "asing", "spread", "basis", "berjangka",
+    "futures", "kedaluwarsa", "suku bunga", "bunga", "kurs", "rupiah", "ringgit", "musiman",
+    "korelasi", "support", "resistance", "resisten", "puncak", "dasar", "moving average",
+    "rata-rata bergerak", "rsi", "macd", "candle", "gap", "emas", "minyak", "perak", "tembaga",
+    "indeks", "ihsg", "klci", "saham", "harga penutupan", "harga pembukaan", "margin", "bandar",
+    "akumulasi", "distribusi", "stok", "persediaan", "ekspor", "impor", "ongkos kirim", "cuaca",
+    "bank indonesia", "bank negara", "intervensi", "obligasi", "imbal hasil", "dolar",
+)
+DIRECTION_ID: tuple[str, ...] = (
+    "beli", "jual", "long", "short", "naik", "turun", "rebound", "pantul", "koreksi", "menembus",
+    "jebol", "berbalik", "berlanjut", "ambil untung", "taking profit", "cut loss", "potong rugi",
+    "serok", "nyangkut", "menguat", "melemah", "masuk", "keluar", "buka posisi", "tutup posisi",
+    "bullish", "bearish", "terdepresiasi", "terapresiasi",
+)
+HORIZON_ID: tuple[str, ...] = (
+    "menit", "jam", "hari", "minggu", "pekan", "bulan", "harian", "mingguan", "intraday",
+    "semalam", "penutupan", "pembukaan", "sesi", "sesi pagi", "sesi siang", "akhir sesi",
+    "scalping", "swing", "jangka pendek", "jangka panjang", "time frame", "kuartal",
+)
+
+# ---- Hindi: Moneycontrol boards, Hindi finance YouTube descriptions, Hindi blogs.
+QUANTITY_HI: tuple[str, ...] = (
+    "मोमेंटम", "ट्रेंड", "रुझान", "रिवर्सल", "पलटाव", "ब्रेकआउट", "रेंज", "वोलैटिलिटी",
+    "उतार-चढ़ाव", "वॉल्यूम", "लिक्विडिटी", "तरलता", "स्प्रेड", "बेसिस", "फ्यूचर्स", "वायदा",
+    "ऑप्शन", "एक्सपायरी", "ब्याज दर", "रुपया", "डॉलर", "सीज़नल", "मौसमी", "सहसंबंध", "सपोर्ट",
+    "रेजिस्टेंस", "प्रतिरोध", "समर्थन", "मूविंग एवरेज", "rsi", "macd", "कैंडल", "गैप", "सोना",
+    "चांदी", "कच्चा तेल", "तांबा", "इंडेक्स", "निफ्टी", "बैंक निफ्टी", "सेंसेक्स", "शेयर",
+    "बंद भाव", "खुला भाव", "fii", "dii", "ओपन इंटरेस्ट", "pcr", "vix", "आरबीआई", "रिज़र्व बैंक",
+    "हस्तक्षेप", "बॉन्ड", "यील्ड", "निर्यात", "आयात", "भंडार", "मानसून", "एमसीएक्स",
+)
+DIRECTION_HI: tuple[str, ...] = (
+    "खरीद", "बेच", "लॉन्ग", "शॉर्ट", "तेजी", "मंदी", "बढ़", "गिर", "उछाल", "रिकवरी", "करेक्शन",
+    "गिरावट", "तोड़", "टूट", "पलट", "जारी", "मुनाफा", "प्रॉफिट बुक", "स्टॉप लॉस", "मजबूत",
+    "कमजोर", "एंट्री", "एग्जिट", "ऊपर", "नीचे", "चढ़",
+)
+HORIZON_HI: tuple[str, ...] = (
+    "मिनट", "घंटा", "घंटे", "दिन", "हफ्ता", "सप्ताह", "महीना", "महीने", "इंट्राडे", "ओवरनाइट",
+    "बंद", "खुलने", "सुबह", "दोपहर", "शाम", "स्कैल्पिंग", "स्विंग", "शॉर्ट टर्म", "लॉन्ग टर्म",
+    "टाइमफ्रेम", "साप्ताहिक", "मासिक", "दैनिक", "एक्सपायरी", "तिमाही",
+)
+
+# ---- German: wallstreet-online, finanzen.net, stock3, Bundesbank.
+QUANTITY_DE: tuple[str, ...] = (
+    "momentum", "trend", "umkehr", "rückkehr zum mittelwert", "mean reversion", "ausbruch",
+    "seitwärts", "range", "volatilität", "volumen", "umsatz", "liquidität", "orderfluss", "spread",
+    "basis", "terminkurs", "futures", "verfall", "verfallstag", "hexensabbat", "zins", "zinsen",
+    "zinsdifferenz", "wechselkurs", "saison", "korrelation", "unterstützung", "widerstand",
+    "gleitend", "durchschnitt", "rsi", "macd", "kerze", "gap", "kurslücke", "gold", "silber",
+    "rohöl", "kupfer", "index", "dax", "mdax", "euro stoxx", "aktie", "schlusskurs",
+    "eröffnungskurs", "positionierung", "cot", "stimmung", "sentiment", "überkauft", "überverkauft",
+    "dollar", "euro", "lagerbestand", "lagerbestände", "export", "fracht", "ernte", "ezb",
+    "bundesbank", "intervention", "anleihe", "rendite", "bund",
+)
+DIRECTION_DE: tuple[str, ...] = (
+    "kaufen", "kauf", "verkaufen", "verkauf", "long", "short", "steig", "fall", "fällt", "erhol",
+    "korrektur", "durchbr", "bricht", "dreht", "umkehr", "fortsetz", "gewinnmitnahme", "stopp",
+    "stärk", "schwäch", "einstieg", "ausstieg", "aufwärts", "abwärts", "hausse", "baisse",
+    "bullisch", "bärisch", "nachkauf", "glattstell", "aufwert", "abwert",
+)
+HORIZON_DE: tuple[str, ...] = (
+    "minute", "stunde", "stündlich", "tag", "täglich", "woche", "wöchentlich", "monat",
+    "monatlich", "intraday", "übernacht", "schluss", "handelsschluss", "tagesschluss", "eröffnung",
+    "handelstag", "sitzung",
+    "session", "vormittag", "nachmittag", "scalp", "swing", "kurzfristig", "langfristig",
+    "zeitebene", "tageskerze", "wochenkerze", "quartal",
+)
+
+# ---- French: Boursorama, ABC Bourse, Banque de France.
+QUANTITY_FR: tuple[str, ...] = (
+    "momentum", "tendance", "retournement", "retour à la moyenne", "cassure", "breakout", "range",
+    "latéral", "volatilité", "volume", "liquidité", "flux", "spread", "contango", "backwardation",
+    "échéance", "taux", "différentiel", "change", "saisonnalité", "saisonnier", "corrélation",
+    "support", "résistance", "plus haut", "plus bas", "moyenne mobile", "rsi", "macd", "bougie",
+    "gap", "l'or", "once", "pétrole", "brut", "cuivre", "indice", "cac", "dax", "action", "clôture",
+    "ouverture", "positionnement", "cot", "sentiment", "suracheté", "survendu", "dollar", "euro",
+    "carry", "stocks", "exportations", "fret", "récolte", "bce", "intervention", "obligation",
+    "rendement", "oat",
+)
+DIRECTION_FR: tuple[str, ...] = (
+    "achat", "achet", "vente", "vend", "long", "short", "hausse", "baisse", "monte", "rebond",
+    "correction", "casse", "franchit", "retourne", "continue", "prise de bénéfice", "stop",
+    "renforce", "faiblit", "entrée", "sortie", "haussier", "baissier", "repli", "décroch",
+    "s'envole", "s'apprécie", "se déprécie", "grimpe", "chute",
+)
+HORIZON_FR: tuple[str, ...] = (
+    "minute", "heure", "horaire", "jour", "journalier", "quotidien", "semaine", "hebdomadaire",
+    "mois", "mensuel", "intraday", "overnight", "clôture", "ouverture", "séance", "session",
+    "matin", "après-midi", "scalping", "swing", "court terme", "long terme", "unité de temps",
+    "bougie", "trimestre",
+)
+
+# ---- Italian: FinanzaOnline, Banca d'Italia.
+QUANTITY_IT: tuple[str, ...] = (
+    "momentum", "trend", "tendenza", "inversione", "ritorno alla media", "rottura", "breakout",
+    "laterale", "range", "volatilità", "volume", "liquidità", "flusso", "spread", "base",
+    "scadenza", "tasso", "tassi", "differenziale", "cambio", "stagionalità", "stagionale",
+    "correlazione", "supporto", "resistenza", "massimo", "minimo", "media mobile", "rsi", "macd",
+    "candela", "gap", "oro", "argento", "petrolio", "greggio", "rame", "indice", "ftse mib", "dax",
+    "azione", "chiusura", "apertura", "posizionamento", "cot", "sentiment", "ipercomprato",
+    "ipervenduto", "dollaro", "euro", "carry", "scorte", "export", "noli", "raccolto", "bce",
+    "intervento", "btp", "rendimento",
+)
+DIRECTION_IT: tuple[str, ...] = (
+    "compra", "acquist", "vend", "long", "short", "rialzo", "ribasso", "sale", "scende", "rimbalz",
+    "correzione", "rompe", "supera", "inverte", "prosegue", "presa di profitto", "stop", "rafforz",
+    "indebol", "ingresso", "uscita", "rialzista", "ribassista", "storno", "si apprezza",
+    "si deprezza", "crolla",
+)
+HORIZON_IT: tuple[str, ...] = (
+    "minut", "ora", "orari", "giorn", "settiman", "mese", "mensil", "intraday", "overnight",
+    "chiusura", "apertura", "seduta", "sessione", "mattina", "pomeriggio", "scalping", "swing",
+    "breve termine", "lungo termine", "time frame", "candela", "trimestre",
+)
+
+# ---- Spanish (Spain and Latin America): Rankia, X-Trader, Rava, El Economista.
+QUANTITY_ES: tuple[str, ...] = (
+    "momentum", "impulso", "tendencia", "reversión", "retorno a la media", "ruptura", "breakout",
+    "rango", "lateral", "volatilidad", "volumen", "liquidez", "flujo", "spread", "diferencial",
+    "base", "vencimiento", "tasa", "tipos", "tipo de interés", "cambio", "estacionalidad",
+    "estacional", "correlación", "soporte", "resistencia", "máximo", "mínimo", "media móvil", "rsi",
+    "macd", "vela", "gap", "hueco", "oro", "plata", "petróleo", "crudo", "cobre", "índice", "ibex",
+    "dax", "sp500", "acción", "cierre", "apertura", "posicionamiento", "cot", "sentimiento",
+    "sobrecompra", "sobreventa", "dólar", "euro", "peso", "carry", "inventario", "existencias",
+    "exportaciones", "flete", "cosecha", "banxico", "banco central", "intervención", "bono",
+    "rendimiento", "cepo", "merval", "brecha",
+)
+DIRECTION_ES: tuple[str, ...] = (
+    "compra", "compr", "vend", "venta", "largo", "corto", "long", "short", "alza", "sube", "baja",
+    "cae", "rebote", "rebota", "corrección", "rompe", "supera", "gira", "revierte", "continúa",
+    "toma de beneficios", "stop", "fortalece", "debilita", "entrada", "salida", "alcista",
+    "bajista", "retroceso", "desplome", "se aprecia", "se deprecia", "devalúa",
+)
+HORIZON_ES: tuple[str, ...] = (
+    "minuto", "hora", "horario", "día", "diario", "semana", "semanal", "mes", "mensual",
+    "intradía", "intradia", "overnight", "cierre", "apertura", "sesión", "sesion", "mañana",
+    "tarde", "scalping", "swing", "corto plazo", "largo plazo", "marco temporal", "temporalidad",
+    "vela diaria", "trimestre",
+)
+
+# ---- Portuguese (Brazil): InfoMoney, Clube do Valor, Suno, Quantbrasil, Bastter.
+QUANTITY_PT: tuple[str, ...] = (
+    "momentum", "tendência", "reversão", "retorno à média", "rompimento", "breakout", "lateral",
+    "range", "volatilidade", "volume", "liquidez", "fluxo", "estrangeiro", "spread", "base",
+    "vencimento", "taxa", "juros", "selic", "diferencial", "câmbio", "sazonalidade", "sazonal",
+    "correlação", "suporte", "resistência", "topo", "fundo", "máxima", "mínima", "média móvel",
+    "rsi", "macd", "candle", "gap", "ouro", "prata", "petróleo", "cobre", "índice", "ibovespa",
+    "ibov", "ação", "fechamento", "abertura", "posicionamento", "cot", "sentimento",
+    "sobrecomprado", "sobrevendido", "dólar", "real", "carry", "ajuste", "leilão", "estoque",
+    "safra", "exportação", "exportações", "frete", "copom", "bacen", "banco central", "intervenção",
+    "swap cambial", "tesouro", "cupom cambial",
+)
+DIRECTION_PT: tuple[str, ...] = (
+    "compra", "compr", "vend", "venda", "comprado", "vendido", "long", "short", "alta", "sobe",
+    "baixa", "cai", "queda", "repique", "correção", "rompe", "supera", "vira", "reverte",
+    "continua", "realização", "stop", "fortalece", "enfraquece", "entrada", "saída", "altista",
+    "baixista", "pullback", "tombo", "dispara", "desvaloriza", "valoriza",
+)
+HORIZON_PT: tuple[str, ...] = (
+    "minuto", "hora", "dia", "diário", "semana", "semanal", "mês", "mensal", "intraday",
+    "intradiário", "overnight", "fechamento", "abertura", "pregão", "sessão", "manhã", "tarde",
+    "scalping", "swing", "curto prazo", "longo prazo", "tempo gráfico", "candle diário", "after",
+    "trimestre",
+)
+
+# ---- Arabic: Argaam, Mubasher, ArabicTrader, Gulf exchange research.
+QUANTITY_AR: tuple[str, ...] = (
+    "زخم", "اتجاه", "انعكاس", "اختراق", "نطاق", "تذبذب", "تقلب", "حجم", "سيولة", "فارق",
+    "أساس", "عقود آجلة", "فائدة", "سعر الصرف", "موسمي", "ارتباط", "دعم", "مقاومة", "قمة", "قاع",
+    "متوسط متحرك", "شمعة", "فجوة", "ذهب", "فضة", "نفط", "نحاس", "مؤشر", "تاسي", "دولار", "ريال",
+    "درهم", "جنيه", "مخزون", "صادرات", "شحن", "البنك المركزي", "ساما", "تدخل", "سندات", "عائد",
+    "أوبك", "خام",
+)
+DIRECTION_AR: tuple[str, ...] = (
+    "شراء", "بيع", "صعود", "هبوط", "ارتفاع", "انخفاض", "ارتداد", "تصحيح", "كسر", "اختراق",
+    "انعكاس", "استمرار", "جني أرباح", "وقف خسارة", "دخول", "خروج", "يرتفع", "ينخفض", "تراجع",
+)
+HORIZON_AR: tuple[str, ...] = (
+    "دقيقة", "ساعة", "يوم", "يومي", "أسبوع", "أسبوعي", "شهر", "شهري", "خلال اليوم", "ليلي",
+    "إغلاق", "افتتاح", "جلسة", "صباح", "مساء", "مضاربة", "إطار زمني", "ربع",
+)
+
+# ---- Turkish: Borsa Istanbul boards, Bloomberg HT, KAP.
+QUANTITY_TR: tuple[str, ...] = (
+    "momentum", "trend", "dönüş", "kırılım", "yatay", "volatilite", "oynaklık", "hacim",
+    "likidite", "spread", "baz", "vade", "faiz", "kur", "mevsimsel", "korelasyon", "destek",
+    "direnç", "zirve", "dip", "hareketli ortalama", "rsi", "macd", "mum", "gap", "boşluk", "altın",
+    "ons", "gümüş", "petrol", "bakır", "endeks", "bist", "dolar", "euro", "lira", "swap", "taşıma",
+    "stok", "ihracat", "navlun", "hasat", "merkez bankası", "tcmb", "müdahale", "tahvil", "getiri",
+    "enflasyon", "rezerv", "kkm",
+)
+DIRECTION_TR: tuple[str, ...] = (
+    "alım", "satış", "long", "short", "yüksel", "düş", "toparlan", "tepki", "düzeltme", "kır",
+    "aş", "dön", "devam", "kâr al", "stop", "güçlen", "zayıfla", "giriş", "çıkış", "yukarı",
+    "aşağı", "boğa", "ayı", "değer kazan", "değer kaybet", "al ", "sat ",
+)
+HORIZON_TR: tuple[str, ...] = (
+    "dakika", "saat", "gün", "günlük", "hafta", "haftalık", "ay", "aylık", "gün içi", "gece",
+    "kapanış", "açılış", "seans", "sabah", "öğleden", "scalp", "swing", "kısa vade", "uzun vade",
+    "zaman dilimi", "mum", "çeyrek",
+)
+
+# ---- Hebrew: Globes, TASE research, Bizportal boards.
+QUANTITY_HE: tuple[str, ...] = (
+    "מומנטום", "מגמה", "היפוך", "פריצה", "טווח", "תנודתיות", "מחזור", "נזילות", "מרווח",
+    "בסיס", "חוזים", "ריבית", "שער חליפין", "עונתי", "מתאם", "תמיכה", "התנגדות", "שיא", "שפל",
+    "ממוצע נע", "נר", "פער", "זהב", "כסף", "נפט", "נחושת", "מדד", "דולר", "שקל", "מלאי",
+    "יצוא", "בנק ישראל", "התערבות", "אג\"ח", "תשואה", "אינפלציה",
+)
+DIRECTION_HE: tuple[str, ...] = (
+    "קנייה", "מכירה", "לונג", "שורט", "עלייה", "ירידה", "עולה", "יורד", "תיקון", "שובר", "פורץ",
+    "היפוך", "המשך", "מימוש", "סטופ", "כניסה", "יציאה", "מתחזק", "נחלש", "ייסוף", "פיחות",
+)
+HORIZON_HE: tuple[str, ...] = (
+    "דקה", "דקות", "שעה", "שעות", "יום", "יומי", "שבוע", "שבועי", "חודש", "חודשי", "תוך יומי",
+    "לילה", "סגירה", "פתיחה", "מסחר", "בוקר", "ערב", "סווינג", "רבעון",
+)
+
+# ---- Polish: Bankier, StockWatch, GPW.
+QUANTITY_PL: tuple[str, ...] = (
+    "momentum", "trend", "odwrócen", "powrót do średniej", "wybicie", "konsolidac", "zmienność",
+    "wolumen", "obrót", "płynność", "spread", "baza", "kontrakt", "wygaśnięci", "stopa", "stóp",
+    "kurs", "sezonow", "korelac", "wsparci", "opór", "szczyt", "dołek", "średnia krocząc", "rsi",
+    "macd", "świec", "luka", "złoto", "srebro", "ropa", "miedź", "indeks", "wig20", "wig",
+    "akcje", "zamknięci", "otwarci", "pozycjonowan", "cot", "nastroj", "dolar", "euro", "złoty",
+    "zapas", "eksport", "fracht", "zbior", "nbp", "rpp", "interwenc", "obligac", "rentowność",
+    "inflacj",
+)
+DIRECTION_PL: tuple[str, ...] = (
+    "kupn", "kupuj", "sprzeda", "long", "short", "wzrost", "rośnie", "spadek", "spada", "odbici",
+    "korekt", "przebij", "przełam", "odwrac", "kontynu", "realizac", "stop", "umacnia", "słabnie",
+    "wejści", "wyjści", "byczy", "niedźwiedz", "w górę", "w dół", "aprecjac", "deprecjac",
+)
+HORIZON_PL: tuple[str, ...] = (
+    "minut", "godzin", "dzień", "dni", "dzienn", "tydzień", "tygodni", "miesiąc", "miesięczn",
+    "intraday", "overnight", "zamknięci", "otwarci", "sesj", "rano", "popołudni", "scalp",
+    "swing", "krótkoterminow", "długoterminow", "interwał", "świec", "kwartał",
+)
+
+# ---- Dutch: IEX.nl, Belegger.nl, DNB.
+QUANTITY_NL: tuple[str, ...] = (
+    "momentum", "trend", "omkeer", "terugkeer naar het gemiddelde", "uitbraak", "zijwaarts",
+    "volatiliteit", "volume", "liquiditeit", "spread", "basis", "termijn", "expiratie", "rente",
+    "wisselkoers", "seizoen", "correlatie", "steun", "weerstand", "hoogtepunt", "dieptepunt",
+    "voortschrijdend gemiddelde", "rsi", "macd", "candle", "gap", "goud", "zilver", "olie",
+    "koper", "index", "aex", "aandeel", "slotkoers", "openingskoers", "positionering", "cot",
+    "sentiment", "dollar", "euro", "voorraad", "voorraden", "export", "vracht", "oogst", "ecb",
+    "dnb", "interventie", "obligatie", "rendement", "inflatie",
+)
+DIRECTION_NL: tuple[str, ...] = (
+    "koop", "kopen", "verkoop", "verkopen", "long", "short", "stijg", "daal", "herstel",
+    "correctie",
+    "doorbr", "breekt", "draait", "omkeer", "vervolg", "winst nemen", "stop", "sterker", "zwakker",
+    "instap", "uitstap", "opwaarts", "neerwaarts", "bullish", "bearish", "apprecieer", "deprecieer",
+)
+HORIZON_NL: tuple[str, ...] = (
+    "minuut", "minuten", "uur", "dag", "dagelijks", "week", "wekelijks", "maand", "maandelijks",
+    "intraday", "overnight", "slot", "opening", "handelsdag", "sessie", "ochtend", "middag",
+    "scalp", "swing", "korte termijn", "lange termijn", "tijdframe", "kwartaal",
+)
+
+# ---- Swedish, Danish, Norwegian, Finnish: Avanza, Nordnet, Shareville, Kauppalehti.
+QUANTITY_SV: tuple[str, ...] = (
+    "momentum", "trend", "vändning", "återgång till medelvärdet", "utbrott", "sidledes",
+    "volatilitet", "volym", "likviditet", "spread", "bas", "termin", "förfall", "ränta",
+    "räntor", "växelkurs", "säsong", "korrelation", "stöd", "motstånd", "topp", "botten",
+    "glidande medelvärde", "rsi", "macd", "candle", "gap", "guld", "silver", "olja", "koppar",
+    "index", "omx", "aktie", "stängningskurs", "öppningskurs", "positionering", "cot",
+    "sentiment", "dollar", "euro", "krona", "kronan", "lager", "export", "frakt", "skörd",
+    "riksbanken", "intervention", "obligation", "avkastning", "inflation",
+)
+DIRECTION_SV: tuple[str, ...] = (
+    "köp", "sälj", "long", "short", "stig", "steg", "fall", "föll", "sjunk", "rekyl", "studs",
+    "korrigering", "bryter", "vänder", "fortsätter", "vinsthemtagning", "stopp", "stärk",
+    "försvag", "ingång", "utgång", "uppåt", "nedåt", "bullish", "bearish",
+)
+HORIZON_SV: tuple[str, ...] = (
+    "minut", "timme", "timmar", "dag", "daglig", "vecka", "veckovis", "månad", "månatlig",
+    "intradag", "intraday", "övernatt", "stängning", "öppning", "handelsdag", "session",
+    "morgon", "eftermiddag", "scalp", "swing", "kort sikt", "lång sikt", "tidsram", "kvartal",
+)
+QUANTITY_DA: tuple[str, ...] = (
+    "momentum", "trend", "vending", "tilbagevenden til gennemsnittet", "udbrud", "sidelæns",
+    "volatilitet", "volumen", "likviditet", "spread", "basis", "termin", "udløb", "rente",
+    "renter", "valutakurs", "sæson", "korrelation", "støtte", "modstand", "top", "bund",
+    "glidende gennemsnit", "rsi", "macd", "candle", "gap", "guld", "sølv", "olie", "kobber",
+    "indeks", "omxc", "aktie", "lukkekurs", "åbningskurs", "positionering", "cot", "stemning",
+    "dollar", "euro", "krone", "kronen", "lager", "eksport", "fragt", "høst", "nationalbanken",
+    "intervention", "obligation", "afkast", "inflation",
+)
+DIRECTION_DA: tuple[str, ...] = (
+    "køb", "sælg", "long", "short", "stig", "steg", "fald", "faldt", "rekyl", "korrektion",
+    "bryder", "vender", "fortsætter", "gevinsthjemtagning", "stop", "styrk", "svæk", "indgang",
+    "udgang", "opad", "nedad", "bullish", "bearish",
+)
+HORIZON_DA: tuple[str, ...] = (
+    "minut", "time", "timer", "dag", "daglig", "uge", "ugentlig", "måned", "månedlig",
+    "intradag", "intraday", "overnight", "lukning", "åbning", "handelsdag", "session", "morgen",
+    "eftermiddag", "scalp", "swing", "kort sigt", "lang sigt", "tidsramme", "kvartal",
+)
+QUANTITY_NO: tuple[str, ...] = (
+    "momentum", "trend", "vending", "tilbake til gjennomsnittet", "utbrudd", "sidelengs",
+    "volatilitet", "volum", "likviditet", "spread", "basis", "termin", "forfall", "rente",
+    "renter", "valutakurs", "sesong", "korrelasjon", "støtte", "motstand", "topp", "bunn",
+    "glidende gjennomsnitt", "rsi", "macd", "candle", "gap", "gull", "sølv", "olje", "kobber",
+    "indeks", "obx", "aksje", "sluttkurs", "åpningskurs", "posisjonering", "cot", "stemning",
+    "dollar", "euro", "krone", "kronen", "lager", "eksport", "frakt", "avling", "norges bank",
+    "intervensjon", "obligasjon", "avkastning", "inflasjon", "oljefondet",
+)
+DIRECTION_NO: tuple[str, ...] = (
+    "kjøp", "selg", "long", "short", "stig", "steg", "fall", "falt", "rekyl", "korreksjon",
+    "bryter", "snur", "fortsetter", "gevinstsikring", "stopp", "styrk", "svekk", "inngang",
+    "utgang", "oppover", "nedover", "bullish", "bearish",
+)
+HORIZON_NO: tuple[str, ...] = (
+    "minutt", "time", "timer", "dag", "daglig", "uke", "ukentlig", "måned", "månedlig",
+    "intradag", "intraday", "overnight", "stenging", "åpning", "handelsdag", "sesjon", "morgen",
+    "ettermiddag", "scalp", "swing", "kort sikt", "lang sikt", "tidsramme", "kvartal",
+)
+QUANTITY_FI: tuple[str, ...] = (
+    "momentum", "trendi", "käänne", "paluu keskiarvoon", "läpimurto", "sivuttais", "volatiliteetti",
+    "volyymi", "vaihto", "likviditeetti", "spread", "basis", "futuuri", "erääntymi", "korko",
+    "korot", "valuuttakurssi", "kausi", "korrelaatio", "tuki", "vastus", "huippu", "pohja",
+    "liukuva keskiarvo", "rsi", "macd", "kynttilä", "gap", "kulta", "hopea", "öljy", "kupari",
+    "indeksi", "omxh", "osake", "päätöskurssi", "avauskurssi", "positiointi", "cot", "sentimentti",
+    "dollari", "euro", "varasto", "vienti", "rahti", "sato", "ekp", "interventio",
+    "joukkovelkakirja",
+    "tuotto", "inflaatio",
+)
+DIRECTION_FI: tuple[str, ...] = (
+    "osta", "osto", "myy", "myynti", "long", "short", "nous", "lask", "elpy", "korjaus", "rikko",
+    "kääntyy", "jatkuu", "voittojen kotiutus", "stop", "vahvist", "heikke", "sisään", "ulos",
+    "ylös", "alas", "bullish", "bearish",
+)
+HORIZON_FI: tuple[str, ...] = (
+    "minuutti", "tunti", "tuntia", "päivä", "päivittäin", "viikko", "viikoittain", "kuukausi",
+    "kuukausittain", "intraday", "yön yli", "päätös", "avaus", "kaupankäyntipäivä", "sessio",
+    "aamu", "iltapäivä", "scalp", "swing", "lyhyellä", "pitkällä", "aikaväli", "kynttilä",
+    "vuosineljännes",
+)
+
+# ---- Swahili: East African markets press (NSE Kenya, DSE Tanzania).
+QUANTITY_SW: tuple[str, ...] = (
+    "mwelekeo", "kasi", "mabadiliko", "kuvunja", "kiwango", "mtetemo", "kiasi", "ukwasi",
+    "tofauti", "riba", "kiwango cha ubadilishaji", "msimu", "uhusiano", "msaada", "upinzani",
+    "kilele", "chini", "wastani", "dhahabu", "fedha", "mafuta", "shaba", "faharasa", "hisa", "bei",
+    "dola", "shilingi", "hifadhi", "mauzo ya nje", "usafirishaji", "mavuno", "benki kuu",
+    "uingiliaji", "hati fungani", "mapato", "mfumuko wa bei", "soko",
+)
+DIRECTION_SW: tuple[str, ...] = (
+    "nunua", "uza", "kununua", "kuuza", "kupanda", "kushuka", "panda", "shuka", "inapanda",
+    "inashuka", "kurudi", "kuendelea", "imara", "dhaifu", "kuingia", "kutoka", "juu", "chini",
+    "kuimarika", "kudhoofika",
+)
+HORIZON_SW: tuple[str, ...] = (
+    "dakika", "saa", "siku", "kila siku", "wiki", "kila wiki", "mwezi", "kila mwezi", "usiku",
+    "kufunga", "kufungua", "kikao", "asubuhi", "mchana", "muda mfupi", "muda mrefu", "robo",
+)
+
+#: Per-language (quantity, direction, horizon) seeds; English is always searched as well.
+_VOCAB: dict[str, tuple[tuple[str, ...], tuple[str, ...], tuple[str, ...]]] = {
+    "zh": (QUANTITY_ZH, DIRECTION_ZH, HORIZON_ZH),
+    "zh-Hant": (QUANTITY_ZHT + QUANTITY_ZH, DIRECTION_ZHT + DIRECTION_ZH,
+                HORIZON_ZHT + HORIZON_ZH),
+    "ja": (QUANTITY_JA + QUANTITY_ZH, DIRECTION_JA + DIRECTION_ZH, HORIZON_JA + HORIZON_ZH),
+    "ko": (QUANTITY_KO, DIRECTION_KO, HORIZON_KO),
+    "ru": (QUANTITY_RU, DIRECTION_RU, HORIZON_RU),
+    "uk": (QUANTITY_UK + QUANTITY_RU, DIRECTION_UK + DIRECTION_RU, HORIZON_UK + HORIZON_RU),
+    "vi": (QUANTITY_VI, DIRECTION_VI, HORIZON_VI),
+    "th": (QUANTITY_TH, DIRECTION_TH, HORIZON_TH),
+    "id": (QUANTITY_ID, DIRECTION_ID, HORIZON_ID),
+    "hi": (QUANTITY_HI, DIRECTION_HI, HORIZON_HI),
+    "de": (QUANTITY_DE, DIRECTION_DE, HORIZON_DE),
+    "fr": (QUANTITY_FR, DIRECTION_FR, HORIZON_FR),
+    "it": (QUANTITY_IT, DIRECTION_IT, HORIZON_IT),
+    "es": (QUANTITY_ES, DIRECTION_ES, HORIZON_ES),
+    "pt": (QUANTITY_PT, DIRECTION_PT, HORIZON_PT),
+    "ar": (QUANTITY_AR, DIRECTION_AR, HORIZON_AR),
+    "tr": (QUANTITY_TR, DIRECTION_TR, HORIZON_TR),
+    "he": (QUANTITY_HE, DIRECTION_HE, HORIZON_HE),
+    "pl": (QUANTITY_PL, DIRECTION_PL, HORIZON_PL),
+    "nl": (QUANTITY_NL, DIRECTION_NL, HORIZON_NL),
+    "sv": (QUANTITY_SV, DIRECTION_SV, HORIZON_SV),
+    "da": (QUANTITY_DA, DIRECTION_DA, HORIZON_DA),
+    "no": (QUANTITY_NO, DIRECTION_NO, HORIZON_NO),
+    "fi": (QUANTITY_FI, DIRECTION_FI, HORIZON_FI),
+    "sw": (QUANTITY_SW, DIRECTION_SW, HORIZON_SW),
+    "en": (QUANTITY_EN, DIRECTION_EN, HORIZON_EN),
+}
+LANGUAGES: tuple[str, ...] = tuple(_VOCAB)
+
+#: How a language's vocabulary is matched. "sub": plain substring (scripts without spaces);
+#: "stem": the word must START at a word boundary and may continue (inflecting languages).
+_SUBSTRING_LANGS: frozenset[str] = frozenset({"zh", "zh-Hant", "ja", "ko", "th"})
+
+# ============================================================================== detection
+_CJK = re.compile(r"[一-鿿]")
+_KANA = re.compile(r"[぀-ヿ]")
+_HANGUL = re.compile(r"[가-힯]")
+_CYRILLIC = re.compile(r"[Ѐ-ӿ]")
+_UKR_ONLY = re.compile(r"[іїєґІЇЄҐ]")
+_THAI = re.compile(r"[฀-๿]")
+_DEVANAGARI = re.compile(r"[ऀ-ॿ]")
+_HEBREW = re.compile(r"[֐-׿]")
+_ARABIC = re.compile(r"[؀-ۿ]")
+#: Vietnamese-only letters: the horn/breve vowels and every dotted-below tone vowel. Portuguese
+#: and French share the circumflex and tilde, so those are deliberately NOT in this class.
+_VIET = re.compile(r"[ăđơưĂĐƠƯạảấầẩẫậắằẳẵặẹẻẽếềểễệỉịọỏốồổỗộớờởỡợụủứừửữựỳỵỷỹ]")
+
+# Traditional-vs-simplified: characters that exist in only ONE script, paired so a reader can
+# check them. The count decides, so a Hong Kong post quoting one simplified word stays zh-Hant.
+_TRAD_SIMP_PAIRS = (
+    "漲涨", "報报", "週周", "價价", "買买", "賣卖", "點点", "幣币", "匯汇", "證证", "現现", "貨货",
+    "選选", "權权", "開开", "關关", "時时", "間间", "動动", "轉转", "趨趋", "勢势", "頭头", "態态",
+    "線线", "續续", "隨随", "場场", "盤盘", "億亿", "萬万", "數数", "據据", "個个", "們们", "這这",
+    "說说", "會会", "來来", "對对", "後后", "過过", "還还", "從从", "電电", "機机", "議议", "業业",
+    "產产", "運运", "經经", "濟济", "資资", "訊讯", "網网", "際际", "國国", "學学", "讀读", "寫写",
+    "聽听", "問问", "題题", "幾几", "發发", "變变", "麼么", "樣样", "強强", "預预", "測测", "隻只",
+    "兩两", "極极", "舉举", "黃黄", "銀银", "銅铜", "歐欧", "鎊镑", "圓圆", "恆恒", "達达", "標标",
+    "瓊琼", "壓压", "撐撑", "檔档", "彈弹", "單单", "進进", "當当", "沖冲", "結结", "擇择", "籌筹",
+    "碼码", "勝胜", "離离", "內内", "戶户", "賺赚", "虧亏", "損损", "險险", "風风", "獲获", "調调",
+    "節节", "與与", "於于", "為为", "無无", "沒没", "長长", "較较", "給给", "讓让", "見见", "觀观",
+    "顯显", "響响", "觸触", "擊击", "縮缩", "擴扩",
+)
+_TRAD_CHARS = frozenset(p[0] for p in _TRAD_SIMP_PAIRS)
+_SIMP_CHARS = frozenset(p[1] for p in _TRAD_SIMP_PAIRS)
+
+#: Function words that separate the Latin-script languages. Word-bounded on lowercased text;
+#: the language with the most hits wins when it beats English and has at least two. Words that
+#: three languages share ("de", "en", "a") are left out on purpose -- they separate nothing.
+_STOPWORDS: dict[str, tuple[str, ...]] = {
+    "de": ("und", "der", "die", "das", "nicht", "ist", "wird", "wenn", "nach", "bei", "mit",
+           "auf", "eine", "einer", "dem", "den", "sich", "auch", "oder", "aber", "über", "für",
+           "meist", "oft", "dann", "steigt", "fällt"),
+    "fr": ("le", "la", "les", "des", "est", "une", "dans", "après", "pour", "sur", "avec", "pas",
+           "sont", "qui", "du", "au", "aux", "cette", "ce", "souvent", "généralement", "quand"),
+    "it": ("il", "lo", "della", "del", "che", "non", "gli", "sono", "dopo", "una", "per", "nel",
+           "nella", "degli", "delle", "alla", "questo", "spesso", "solitamente", "quando"),
+    "es": ("el", "los", "las", "es", "una", "después", "para", "con", "que", "del", "se", "por",
+           "al", "cuando", "suele", "también", "suelen", "hacia", "desde"),
+    "pt": ("os", "não", "uma", "após", "para", "com", "que", "do", "da", "dos", "das", "na",
+           "quando", "costuma", "também", "é", "são", "no", "mais", "pelo", "pela"),
+    "id": ("yang", "dan", "dengan", "untuk", "akan", "tidak", "ini", "itu", "dari", "pada", "ke",
+           "di", "adalah", "saat", "setelah", "biasanya", "harga", "cenderung", "sering"),
+    "tr": ("ve", "bir", "için", "ile", "bu", "sonra", "genellikle", "olarak", "kadar", "ise",
+           "gibi", "daha", "çok", "ama", "değil", "zaman", "sonrasında"),
+    "pl": ("nie", "się", "jest", "na", "w", "z", "do", "że", "po", "przy", "oraz", "zwykle",
+           "często", "ale", "lub", "od", "gdy", "kiedy"),
+    "nl": ("het", "een", "niet", "wordt", "zijn", "ook", "als", "vaak", "meestal", "naar", "dan",
+           "bij", "van", "voor", "na", "op", "dat", "wanneer"),
+    "sv": ("och", "att", "är", "inte", "som", "för", "på", "med", "det", "ett", "efter", "när",
+           "brukar", "ofta", "av", "till", "från", "sedan"),
+    "da": ("og", "at", "er", "ikke", "som", "for", "på", "med", "det", "et", "efter", "når",
+           "plejer", "ofte", "af", "til", "fra", "hvad", "meget", "kun"),
+    "no": ("og", "at", "er", "ikke", "som", "for", "på", "med", "det", "et", "etter", "når",
+           "pleier", "ofte", "av", "til", "fra", "hva", "mye", "bare"),
+    "fi": ("ja", "on", "ei", "että", "kun", "jälkeen", "yleensä", "usein", "mutta", "myös", "tai",
+           "kanssa", "ovat", "tämä", "jos", "niin", "sitten"),
+    "sw": ("na", "ya", "wa", "kwa", "ni", "za", "la", "katika", "baada", "kawaida", "bei", "soko",
+           "hisa", "huwa", "mara", "nyingi", "ambayo", "wakati"),
+    "en": ("the", "and", "is", "of", "to", "in", "when", "after", "usually", "tends", "with",
+           "that", "this", "for", "on", "are", "it", "be", "than", "into"),
+}
+#: Letters that belong to one Latin-script language alone; each counts as two function words.
+_LETTER_HINTS: tuple[tuple[str, str], ...] = (
+    ("ß", "de"), ("ł", "pl"), ("ż", "pl"), ("ę", "pl"), ("ą", "pl"), ("ś", "pl"), ("ź", "pl"),
+    ("ã", "pt"), ("õ", "pt"), ("ñ", "es"), ("¿", "es"), ("ı", "tr"), ("ğ", "tr"), ("ş", "tr"),
+)
+_STOP_RE: dict[str, re.Pattern[str]] = {
+    lang: re.compile(r"(?<!\w)(?:" + "|".join(re.escape(w) for w in words) + r")(?!\w)")
+    for lang, words in _STOPWORDS.items()
+}
+
+
+def language_of(text: str) -> str:
+    """Language code by script, then by function words for the Latin-script languages.
+
+    Script decides where it can (kana -> ja, hangul -> ko, Thai, Devanagari, Hebrew, Arabic;
+    Cyrillic -> uk when a Ukrainian-only letter is present, else ru; CJK -> zh-Hant when
+    traditional-only characters outnumber simplified-only ones). The Latin languages are scored
+    on function words and one-language letters; English is the fallback, never a winner by
+    default, so a Spanish sentence with two Spanish function words is Spanish.
+    """
+    t = text or ""
+    if _KANA.search(t):
+        return "ja"
+    if _HANGUL.search(t):
+        return "ko"
+    if _CJK.search(t):
+        trad = sum(1 for ch in t if ch in _TRAD_CHARS)
+        simp = sum(1 for ch in t if ch in _SIMP_CHARS)
+        return "zh-Hant" if trad > simp else "zh"
+    if _THAI.search(t):
+        return "th"
+    if _DEVANAGARI.search(t):
+        return "hi"
+    if _HEBREW.search(t):
+        return "he"
+    if _ARABIC.search(t):
+        return "ar"
+    if _CYRILLIC.search(t):
+        return "uk" if _UKR_ONLY.search(t) else "ru"
+    if len(_VIET.findall(t)) >= 2:
+        return "vi"
+    low = t.lower()
+    score: dict[str, int] = {lang: len(rx.findall(low)) for lang, rx in _STOP_RE.items()}
+    for ch, lang in _LETTER_HINTS:
+        if ch in low:
+            score[lang] = score.get(lang, 0) + 2
+    en = score.pop("en", 0)
+    best = max(score, key=lambda k: score[k]) if score else "en"
+    return best if score.get(best, 0) >= 2 and score[best] > en else "en"
+
+
+def is_cjk(text: str) -> bool:
+    return bool(_CJK.search(text or ""))
+
+
+# ============================================================================== the fence
+#: Crypto-exchange-native ground is never hunted (principal, 2026-08-18). Any claim naming one of
+#: these is dropped and COUNTED; the count is on the report so the fence is visible, not silent.
+#: Widened 2026-09-05 with every region's exchanges and the funding/perpetual vocabulary in each
+#: script, because a world forest has a crypto-exchange corner in every language.
+FORBIDDEN_VENUES: tuple[str, ...] = (
+    "binance", "bybit", "okx", "okex", "huobi", "htx", "hyperliquid", "bitget", "gate.io",
+    "kucoin", "deribit", "coinbase", "kraken", "币安", "欧易", "火币", "抹茶", "资金费率",
+    "funding rate", "永续合约", "perpetual", "perp ", "合约爆仓", "现货杠杆", "u本位", "币本位",
+    # regional exchanges and forums
+    "upbit", "bithumb", "coinone", "업비트", "빗썸", "코인원", "코인판", "coinpan", "bitflyer",
+    "coincheck", "ビットフライヤー", "コインチェック", "gmoコイン", "wazirx", "coindcx",
+    "coinswitch", "zebpay", "indodax", "tokocrypto", "bitkub", "luno", "bitso", "mercado bitcoin",
+    "mexc", "bitmex", "bitfinex", "bitstamp", "dydx", "phemex", "crypto.com", "paribu", "btcturk",
+    "exmo", "garantex", "whitebit", "zonda", "bitpanda",
+    # funding / perpetual vocabulary in the other scripts
+    "永續合約", "資金費率", "無期限先物", "資金調達率", "무기한 선물", "펀딩비", "펀딩 수수료",
+    "фандинг", "бессрочн", "hợp đồng vĩnh cửu", "phí funding", "ฟันดิ้ง", "สัญญาถาวร",
+    "funding-rate", "taxa de funding", "tasa de funding", "funding fee",
+)
+
+
+def forbidden_venue(text: str) -> str | None:
+    """The first crypto-exchange token the text names, or None."""
+    low = (text or "").lower()
+    for v in FORBIDDEN_VENUES:
+        if v in low:
+            return v
+    return None
+
+
+# ============================================================================== instruments
+#: Aliases -> Fusion symbols, most likely broker name FIRST. Every first candidate is a symbol in
+#: desks/mt5/data/universe/universe.json (a test pins this); later candidates are other brokers'
+#: names for the same contract, kept so the resolver still lands when the universe is unknown.
+#: An empty tuple means "no MT5 analogue -- mechanism-class transfer only", and the third field
+#: says which class the mechanism transfers to.
+INSTRUMENT_ALIASES: tuple[tuple[tuple[str, ...], tuple[str, ...], str], ...] = (
+    # ---- metals
+    (("黄金", "沪金", "au9999", "au(t+d)", "伦敦金", "金价", "gold", "xauusd", "comex黄金", "黃金",
+      "ゴールド", "金相場", "골드", "금값", "золот", "vàng", "ทองคำ", "ทอง", "emas", "सोना",
+      "गोल्ड", "ذهب", "الذهب", "altın", "ons altın", "זהב", "złoto", "goud", "guld", "gull",
+      "kulta", "dhahabu", "oro", "ouro", "l'or", "once d'or", "xau", "gc="), ("XAUUSD",), "metals"),
+    (("白银", "沪银", "伦敦银", "银价", "silver", "xagusd", "白銀", "シルバー", "은값", "серебр",
+      "bạc", "โลหะเงิน", "perak", "चांदी", "فضة", "الفضة", "gümüş", "srebro", "zilver", "silber",
+      "sølv", "hopea", "plata", "prata", "argento", "xag"), ("XAGUSD",), "metals"),
+    (("铂金", "platinum", "xptusd", "白金", "プラチナ", "백금", "платин", "platino", "platina",
+      "platin"), ("XPTUSD",), "metals"),
+    (("钯金", "palladium", "xpdusd", "パラジウム", "팔라듐", "паллад", "paladio", "paládio"),
+     ("XPDUSD",), "metals"),
+    (("铜", "沪铜", "伦铜", "copper", "xcuusd", "銅", "구리", "медь", "ทองแดง", "tembaga",
+      "तांबा", "نحاس", "bakır", "miedź", "koper", "kupfer", "cuivre", "cobre", "rame", "koppar",
+      "kobber", "kupari", "shaba"), ("XCUUSD", "COPPER", "HG"), "metals"),
+    (("沪铝", "铝", "aluminium", "aluminum", "xalusd", "アルミ", "алюмин", "aluminio", "alumínio"),
+     ("XALUSD",), "metals"),
+    (("沪镍", "镍", "nickel", "xniusd", "ニッケル", "никел", "níquel"), ("XNIUSD",), "metals"),
+    (("沪锌", "锌", "zinc", "xznusd", "亜鉛", "цинк"), ("XZNUSD",), "metals"),
+    (("沪铅", "铅", "lead futures", "xpbusd", "свинец", "plomo", "chumbo"), ("XPBUSD",), "metals"),
+    # ---- energy
+    (("原油", "布油", "美原油", "sc原油", "wti", "brent", "crude", "石油", "原油価格", "유가",
+      "нефт",
+      "dầu thô", "น้ำมันดิบ", "minyak mentah", "कच्चा तेल", "نفط", "خام برنت", "petrol", "ropa",
+      "olie", "rohöl", "pétrole", "petróleo", "petrolio", "olja", "olje", "öljy", "mafuta",
+      "brent crude", "ホルムズ", "opec", "أوبك"),
+     ("XTIUSD", "XBRUSD", "USOIL", "UKOIL"), "energy"),
+    (("天然气", "natural gas", "natgas", "xngusd", "天然ガス", "천연가스", "газ", "khí đốt",
+      "gas alam", "erdgas", "gaz naturel", "gás natural", "gas natural", "henry hub", "ttf"),
+     ("XNGUSD", "NATGAS"), "energy"),
+    # ---- indices with a Fusion symbol
+    (("恒指", "恒生", "港股", "hsi", "恆指", "恆生", "hang seng", "hangseng", "hk50", "ハンセン",
+      "항셍"), ("HK50", "HSI"), "indices"),
+    (("国企指数", "國企指數", "h股", "hscei", "chinah", "china h-shares"), ("CHINAH",), "indices"),
+    (("纳指", "纳斯达克", "nasdaq", "nas100", "ustec", "那斯達克", "納斯達克", "ナスダック",
+      "나스닥",
+      "насдак", "ndx"), ("NAS100", "USTEC"), "indices"),
+    (("标普", "s&p", "spx", "us500", "美股", "標普", "sp500", "s&p 500", "s&p500", "美国股市",
+      "spy"), ("US500", "SPX500"), "indices"),
+    (("道指", "dow", "us30", "道瓊", "ダウ", "다우", "dow jones", "djia"), ("US30", "DJ30"),
+     "indices"),
+    (("罗素", "russell 2000", "russell", "us2000", "rty"), ("US2000",), "indices"),
+    (("德指", "dax", "ger40", "de40", "德國dax", "дакс"), ("GER40", "DE40"), "indices"),
+    (("日经", "nikkei", "jp225", "日股", "日経", "日経225", "日経平均", "닛케이", "日經", "jpn225",
+      "никкей", "nikkei 225"), ("JPN225", "JP225"), "indices"),
+    (("富时", "ftse", "uk100", "富時", "footsie", "ftse 100"), ("UK100",), "indices"),
+    (("cac", "cac 40", "cac40", "fra40", "法国股指"), ("FRA40",), "indices"),
+    (("euro stoxx", "eurostoxx", "sx5e", "eustx50", "stoxx 50", "斯托克"), ("EUSTX50",),
+     "indices"),
+    (("aex", "neth25", "amsterdam index"), ("NETH25",), "indices"),
+    (("ibex", "ibex 35", "ibex35", "e35"), ("E35",), "indices"),
+    (("tsx", "s&p/tsx", "ca60", "toronto index"), ("CA60",), "indices"),
+    (("asx 200", "asx200", "aus200", "xjo", "spi futures", "s&p/asx"), ("AUS200",), "indices"),
+    (("美元指数", "dxy", "dollar index", "usdx", "ドルインデックス", "달러인덱스", "индекс доллара",
+      "美元指數"), ("USDX", "DXY", "USDOLLAR"), "fx"),
+    # ---- indices WITHOUT a Fusion symbol: the mechanism transfers to the index class
+    (("沪深300", "if合约", "股指期货", "a股", "上证", "中证500", "ic合约", "ih合约", "im合约",
+      "a50", "富时中国", "china a50", "csi 300", "上證", "滬深"), (), "indices (China A-share)"),
+    (("코스피", "kospi", "코스닥", "kosdaq", "코스피200"), (), "indices (KRX)"),
+    (("topix", "東証", "マザーズ", "グロース250"), (), "indices (TSE)"),
+    (("台指", "加權指數", "台股", "taiex", "twse", "台指期", "小台"), (), "indices (TWSE)"),
+    (("nifty", "bank nifty", "sensex", "निफ्टी", "बैंक निफ्टी", "सेंसेक्स", "finnifty"), (),
+     "indices (NSE/BSE)"),
+    (("straits times", "sti index", "海峽時報", "msci singapore"), (), "indices (SGX)"),
+    (("set50", "set index", "ตลาดหุ้นไทย", "ดัชนี set"), (), "indices (SET)"),
+    (("ihsg", "idx composite", "lq45", "jakarta composite"), (), "indices (IDX)"),
+    (("klci", "fbm klci", "bursa malaysia", "fkli"), (), "indices (Bursa)"),
+    (("psei", "pse index", "philippine stock"), (), "indices (PSE)"),
+    (("vn-index", "vnindex", "vn30", "hnx"), (), "indices (HOSE)"),
+    (("tadawul", "tasi", "تاسي", "adx index", "dfm index", "qe index"), (),
+     "indices (Gulf exchanges)"),
+    (("jse", "top40", "alsi", "jse all share"), (), "indices (JSE)"),
+    (("ibovespa", "bovespa", "ibov", "índice bovespa", "b3 index"), (), "indices (B3)"),
+    (("merval", "s&p merval", "ipc mexico", "bmv ipc", "ipsa", "colcap", "s&p/bvl"), (),
+     "indices (LatAm exchanges)"),
+    (("wig20", "wig 20", "mwig40", "swig80"), (), "indices (GPW)"),
+    (("omxs30", "omxc25", "obx", "omxh25", "omx stockholm"), (), "indices (Nordic exchanges)"),
+    (("bist 100", "bist100", "xu100", "borsa istanbul"), (), "indices (BIST)"),
+    (("ta-35", "ta35", "ta-125", "tase"), (), "indices (TASE)"),
+    (("moex index", "индекс мосбиржи", "ртс", "rts index", "imoex", "ммвб"), (), "indices (MOEX)"),
+    (("psx", "kse-100", "kse 100", "dse index", "dsex", "cse all share", "aspi"), (),
+     "indices (South Asian exchanges)"),
+    (("ngx", "nse all share", "egx30", "egx 30", "nse 20", "masi"), (),
+      "indices (African exchanges)"),
+    # ---- FX majors
+    (("欧元", "欧美", "eurusd", "eur/usd", "ユーロドル", "유로달러", "евродоллар", "euro-dollar",
+      "歐元", "euro dollar", "eurodólar", "eurodollaro"), ("EURUSD",), "fx"),
+    (("英镑", "镑美", "gbpusd", "gbp/usd", "ポンドドル", "파운드", "фунт", "英鎊", "cable",
+      "sterling", "pound"), ("GBPUSD",), "fx"),
+    (("日元", "美日", "usdjpy", "usd/jpy", "ドル円", "달러엔", "доллар иена", "日圓", "엔화",
+      "円相場", "yen"), ("USDJPY",), "fx"),
+    (("澳元", "澳美", "audusd", "aud/usd", "豪ドル", "호주달러", "澳幣", "aussie"), ("AUDUSD",),
+     "fx"),
+    (("加元", "美加", "usdcad", "usd/cad", "カナダドル", "loonie", "加拿大元"), ("USDCAD",), "fx"),
+    (("瑞郎", "美瑞", "usdchf", "usd/chf", "スイスフラン", "swissie", "瑞士法郎"), ("USDCHF",),
+      "fx"),
+    (("纽元", "nzdusd", "nzd/usd", "kiwi", "紐元", "ニュージーランドドル"), ("NZDUSD",), "fx"),
+    (("ユーロ円", "eurjpy", "eur/jpy"), ("EURJPY",), "fx"),
+    (("ポンド円", "gbpjpy", "gbp/jpy"), ("GBPJPY",), "fx"),
+    (("豪ドル円", "audjpy", "aud/jpy"), ("AUDJPY",), "fx"),
+    (("eurgbp", "eur/gbp", "ユーロポンド"), ("EURGBP",), "fx"),
+    # ---- FX exotics Fusion quotes: each region's own currency
+    (("人民币", "离岸人民币", "usdcnh", "cnh", "人民幣", "usd/cnh", "usd/cny", "人民元"),
+     ("USDCNH",), "fx"),
+    (("港币", "港幣", "usdhkd", "usd/hkd", "港元", "hkd peg", "聯繫匯率", "联系汇率", "hkma"),
+     ("USDHKD",), "fx"),
+    (("원달러", "달러원", "usdkrw", "usd/krw", "원화", "won", "韓元", "韩元"), ("USDKRW",), "fx"),
+    (("rupee", "usdinr", "usd/inr", "रुपया", "रुपये", "inr"), ("USDINR",), "fx"),
+    (("บาท", "usdthb", "usd/thb", "baht", "thai baht"), ("USDTHB",), "fx"),
+    (("rupiah", "usdidr", "usd/idr", "idr"), ("USDIDR",), "fx"),
+    (("usdsgd", "usd/sgd", "sing dollar", "singapore dollar", "新元", "sgd"), ("USDSGD",), "fx"),
+    (("usdbrl", "usd/brl", "dólar/real", "dolar/real", "real brasileiro", "brl"), ("USDBRL",),
+     "fx"),
+    (("usdmxn", "usd/mxn", "peso mexicano", "mxn", "superpeso"), ("USDMXN",), "fx"),
+    (("usdtry", "usd/try", "dolar/tl", "dolar tl", "dolar kuru", "lira", "türk lirası", "try"),
+     ("USDTRY",), "fx"),
+    (("usdzar", "usd/zar", "rand", "zar"), ("USDZAR",), "fx"),
+    (("usdils", "usd/ils", "shekel", "שקל", "דולר שקל", "ils"), ("USDILS",), "fx"),
+    (("usdpln", "usd/pln", "złoty", "zloty", "pln", "eurpln", "eur/pln"), ("USDPLN",), "fx"),
+    (("usdhuf", "usd/huf", "forint", "huf", "eurhuf", "eur/huf"), ("USDHUF",), "fx"),
+    (("usdczk", "usd/czk", "koruna", "czk", "eurczk", "eur/czk"), ("USDCZK",), "fx"),
+    (("usdsek", "usd/sek", "svenska kronan", "kronan", "sek", "eursek", "eur/sek"), ("USDSEK",),
+     "fx"),
+    (("usdnok", "usd/nok", "norske kronen", "nok", "eurnok", "eur/nok"), ("USDNOK",), "fx"),
+    (("usddkk", "usd/dkk", "danske kronen", "dkk", "eurdkk", "eur/dkk"), ("USDDKK",), "fx"),
+    (("usdrub", "usd/rub", "рубл", "курс доллара", "rub", "eurrub"), ("USDRUB",), "fx"),
+    # currencies with no Fusion pair: the mechanism transfers to the FX class
+    (("đồng việt nam", "tỷ giá usd/vnd", "usd/vnd", "vnd"), (), "fx (VND not quoted)"),
+    (("ringgit", "usd/myr", "myr"), (), "fx (MYR not quoted)"),
+    (("philippine peso", "usd/php", "php"), (), "fx (PHP not quoted)"),
+    (("naira", "usd/ngn", "ngn"), (), "fx (NGN not quoted)"),
+    (("egyptian pound", "usd/egp", "egp", "الجنيه"), (), "fx (EGP not quoted)"),
+    (("kenyan shilling", "usd/kes", "shilingi", "kes"), (), "fx (KES not quoted)"),
+    (("dirham", "usd/aed", "riyal", "usd/sar", "الريال", "الدرهم"), (), "fx (Gulf pegs)"),
+    (("peso argentino", "usd/ars", "dólar blue", "dolar blue", "ars", "peso chileno", "usd/clp",
+      "peso colombiano", "usd/cop", "sol peruano", "usd/pen"), (), "fx (LatAm not quoted)"),
+    (("hryvnia", "гривн", "usd/uah", "uah"), (), "fx (UAH not quoted)"),
+    (("pakistani rupee", "usd/pkr", "pkr", "taka", "usd/bdt", "usd/lkr"), (),
+     "fx (South Asian not quoted)"),
+    # ---- crypto CFDs Fusion quotes (the asset, never the exchange)
+    (("比特币", "bitcoin", "btcusd", "ビットコイン", "비트코인", "биткоин"), ("BTCUSD",),
+      "crypto_cfd"),
+    (("以太坊", "ethereum", "ethusd", "イーサリアム", "이더리움", "эфир"), ("ETHUSD",),
+      "crypto_cfd"),
+    # ---- softs and grains
+    (("大豆", "soybean", "soybeans", "soja", "soya", "đậu tương", "大豆先物"),
+     ("SOYBEAN", "SOYBEANS", "ZS"), "softs"),
+    (("玉米", "corn", "maize", "milho", "maíz", "トウモロコシ", "кукуруз"), ("CORN", "ZC"),
+      "softs"),
+    (("白糖", "sugar", "açúcar", "azúcar", "砂糖", "сахар", "gula"), ("SUGAR", "SUGARRAW", "SB"),
+     "softs"),
+    (("棉花", "cotton", "algodão", "algodón", "綿花", "хлопок"), ("COTTON", "CT"), "softs"),
+    (("咖啡", "coffee", "arabica", "café", "kahve", "コーヒー", "кофе", "cà phê"),
+     ("COFARA", "COFROB", "COFFEE", "KC"), "softs"),
+    (("robusta", "robusta coffee"), ("COFROB", "COFARA"), "softs"),
+    (("小麦", "wheat", "trigo", "blé", "小麦先物", "пшениц", "weizen"), ("WHEAT", "ZW"), "softs"),
+    (("可可", "cocoa", "cacao", "kakao", "ココア", "какао", "cocoa board", "ghana cocoa",
+      "ivory coast cocoa"), ("USCOCOA", "UKCOCOA", "COCOA"), "softs"),
+    (("orange juice", "fcoj", "suco de laranja"), ("OJ",), "softs"),
+    # ---- rates the desk can quote
+    (("美国国债", "美债", "treasuries", "10-year treasury", "10y treasury", "ust10y", "10年債",
+      "米国債", "10-year yield", "10y yield", "tnote", "t-note"), ("UST10Y", "UST05Y"),
+     "rates"),
+    (("gilt", "gilts", "ukgilt", "英国国债"), ("UKGILT",), "rates"),
+    # ---- share CFDs Fusion quotes, where a region's own press names them
+    (("台積電", "台积电", "tsmc", "taiwan semiconductor", "2330"), ("TSMC",), "equities"),
+    (("トヨタ", "toyota", "7203"), ("Toyota",), "equities"),
+    (("阿里巴巴", "alibaba", "baba", "9988"), ("AlibabaGroup",), "equities"),
+    (("百度", "baidu"), ("Baidu",), "equities"),
+    (("蔚来", "蔚來", "nio inc"), ("NIO",), "equities"),
+    (("特斯拉", "テスラ", "테슬라", "tesla", "tsla"), ("Tesla",), "equities"),
+    (("英伟达", "輝達", "エヌビディア", "엔비디아", "nvidia", "nvda"), ("NVIDIA",), "equities"),
+    # ---- NO MT5 ANALOGUE: the mechanism transfers to the class, the instrument does not.
+    (("螺纹钢", "螺纹", "热卷", "铁矿石", "铁矿", "焦炭", "焦煤", "动力煤", "iron ore", "鉄鉱石"),
+     (), "metals/energy"),
+    (("甲醇", "pta", "乙二醇", "纯碱", "玻璃", "尿素", "沥青", "橡胶", "pvc", "pp", "塑料"),
+     (), "energy"),
+    (("豆粕", "菜油", "菜粕", "棕榈油", "豆油", "鸡蛋", "生猪", "苹果", "红枣", "花生", "palm oil",
+      "cpo", "minyak sawit"), (), "softs"),
+    (("碳酸锂", "工业硅", "氧化铝", "沪锡", "lithium", "tin futures"), (), "metals"),
+    (("国债期货", "十债", "五债", "二债", "bund futures", "jgb", "btp futures", "oat futures",
+      "ofz", "офз", "selic futures", "di futures", "cetes", "kkm"), (), "rates->fx carry"),
+    (("可转债", "转债", "打新", "涨停", "跌停", "龙虎榜", "北向资金"), (), "cn-equities-only"),
+    (("baltic dry", "bdi", "freight index", "運賃指数", "drewry", "world container index",
+      "scfi", "fbx"), (), "shipping/freight -> commodity currencies"),
+)
+
+#: INDIRECT CHANNELS: a foreign dataset, event or institution that moves an MT5 instrument
+#: through an information shock rather than by naming it. The claim is recorded with
+#: `channel="indirect"` and the instrument the shock lands on, so the funnel can measure whether
+#: indirect channels convert (principal 2026-09-05: "indirect edges are the point").
+INDIRECT_CHANNELS: tuple[tuple[tuple[str, ...], tuple[str, ...], str], ...] = (
+    # central banks -> the pair they set
+    (("fomc", "federal reserve", "the fed", "美联储", "fed funds", "连准会", "聯準會", "фрс",
+      "パウエル"), ("USDX", "US500"), "policy: Fed -> dollar and US equities"),
+    (("ecb", "european central bank", "欧洲央行", "歐洲央行", "bce", "ezb", "ецб", "lagarde"),
+     ("EURUSD",), "policy: ECB -> EUR"),
+    (("bank of england", "boe", "英国央行", "英國央行", "mpc minutes"), ("GBPUSD",),
+      "policy: BoE -> GBP"),
+    (("bank of japan", "boj", "日銀", "日本央行", "日本銀行", "為替介入", "介入警戒", "神田財務官",
+      "yen intervention", "円買い介入"), ("USDJPY",), "policy: BoJ / MoF intervention -> JPY"),
+    (("rba", "reserve bank of australia", "澳洲联储", "澳洲央行"), ("AUDUSD",),
+      "policy: RBA -> AUD"),
+    (("rbnz", "reserve bank of new zealand"), ("NZDUSD",), "policy: RBNZ -> NZD"),
+    (("bank of canada", "boc", "加拿大央行", "macklem"), ("USDCAD",), "policy: BoC -> CAD"),
+    (("snb", "swiss national bank", "瑞士央行", "nationalbank"), ("USDCHF",), "policy: SNB -> CHF"),
+    (("pboc", "people's bank of china", "人民银行", "中国人民银行", "中间价", "中間價",
+      "逆周期因子",
+      "cfets"), ("USDCNH",), "policy: PBoC fixing -> CNH"),
+    (("hong kong monetary authority", "金管局", "弱方兌換保證", "强方兑换保证"), ("USDHKD",),
+     "policy: HKMA peg defence -> HKD"),
+    (("bank of korea", "bok", "한국은행", "한은", "외환당국", "구두개입", "smoothing operation"),
+     ("USDKRW",), "policy: BoK / MoEF -> KRW"),
+    (("reserve bank of india", "rbi", "आरबीआई", "रिज़र्व बैंक", "भारतीय रिज़र्व"), ("USDINR",),
+     "policy: RBI -> INR"),
+    (("bank of thailand", "bot ", "แบงก์ชาติ", "ธปท", "กนง"), ("USDTHB",), "policy: BoT -> THB"),
+    (("bank indonesia", "bi rate", "bi-rate", "bi 7-day", "sri mulyani"), ("USDIDR",),
+     "policy: BI -> IDR"),
+    (("monetary authority of singapore", "mas ", "s$neer", "sgd neer"), ("USDSGD",),
+     "policy: MAS band -> SGD"),
+    (("banco central do brasil", "bacen", "copom", "selic", "galípolo", "swap cambial",
+      "leilão de swap", "cupom cambial", "conab", "safra de soja", "exportações de soja",
+      "soy exports", "brazil soy", "iron ore exports", "minério de ferro"), ("USDBRL",),
+     "flow/policy: Brazil (BCB, soy, iron ore) -> BRL"),
+    (("banxico", "banco de méxico", "banco de mexico", "remesas", "remittances", "nearshoring"),
+     ("USDMXN",), "policy/flow: Banxico, remittances -> MXN"),
+    (("cbrt", "tcmb", "merkez bankası", "merkez bankasi", "türkiye cumhuriyet merkez", "kkm",
+      "karahan", "şimşek", "simsek"), ("USDTRY",), "policy: CBRT -> TRY"),
+    (("sarb", "south african reserve bank", "reserve bank of south africa", "eskom",
+      "load shedding", "platinum exports", "rand exports"), ("USDZAR",),
+     "policy/flow: SARB, mining exports, power -> ZAR"),
+    (("bank of israel", "boi ", "בנק ישראל"), ("USDILS",), "policy: BoI -> ILS"),
+    (("nbp", "narodowy bank polski", "rpp", "rada polityki pieniężnej", "glapiński"), ("USDPLN",),
+     "policy: NBP -> PLN"),
+    (("mnb", "magyar nemzeti bank", "hungarian central bank"), ("USDHUF",), "policy: MNB -> HUF"),
+    (("cnb", "czech national bank", "česká národní banka"), ("USDCZK",), "policy: CNB -> CZK"),
+    (("riksbank", "riksbanken"), ("USDSEK",), "policy: Riksbank -> SEK"),
+    (("norges bank", "oljefondet", "government pension fund global", "nbim"), ("USDNOK",),
+     "policy/flow: Norges Bank and the oil fund -> NOK"),
+    (("danmarks nationalbank", "nationalbanken"), ("USDDKK",), "policy: DN peg -> DKK"),
+    (("bank of russia", "цб рф", "центробанк", "набиуллина", "ключевая ставка", "минфин",
+      "бюджетное правило", "urals"), ("USDRUB",), "policy: CBR / MinFin -> RUB"),
+    # commodity shocks -> commodity and the currency that exports it
+    (("opec+", "opec", "أوبك", "saudi output", "saudi aramco", "eia inventories", "api inventories",
+      "cushing", "strait of hormuz", "hormuz", "red sea", "houthi", "ホルムズ海峡"),
+     ("XTIUSD", "XBRUSD", "USDCAD", "USDNOK"),
+      "energy flow: OPEC / inventories / chokepoints -> oil, CAD, NOK"),
+    (("shanghai gold premium", "sge premium", "上海金溢价", "上海黄金交易所", "上海金", "水贝",
+      "india gold imports", "gold import duty", "central bank gold buying", "央行购金",
+      "pboc gold"), ("XAUUSD",), "physical premia / official buying -> gold"),
+    (("chilean copper", "codelco", "escondida", "ilo copper", "lme stocks", "lme inventories",
+      "上期所库存"), ("XCUUSD", "AUDUSD"), "inventory: copper supply and stocks -> copper, AUD"),
+    (("iron ore price", "pilbara", "port hedland", "铁矿石价格", "australian exports", "abares"),
+     ("AUDUSD",), "flow: Australian bulk exports -> AUD"),
+    (("dairy auction", "gdt auction", "fonterra", "global dairy trade"), ("NZDUSD",),
+     "auction: dairy prices -> NZD"),
+    (("wasde", "usda crop", "usda export sales", "crop progress", "la niña", "el niño", "el nino",
+      "la nina", "monsoon"), ("SOYBEAN", "CORN", "WHEAT", "USDBRL"),
+     "weather/agri report -> grains and BRL"),
+    (("ghana cocoa board", "cocobod", "ivory coast harvest", "côte d'ivoire cocoa"),
+     ("USCOCOA", "UKCOCOA"), "harvest: West African cocoa -> cocoa"),
+    (("vietnam coffee exports", "vietnam robusta", "brazil coffee crop", "minas gerais frost"),
+     ("COFROB", "COFARA"), "harvest: coffee origins -> coffee"),
+    (("baltic dry", "freight rates", "container rates", "運賃", "运费", "shipping index",
+      "drewry", "xeneta"), ("AUDUSD", "USDZAR", "USDBRL"),
+      "shipping: freight indices -> commodity FX"),
+    # positioning and flows
+    (("cot report", "commitments of traders", "cftc positioning", "spec positioning", "tff report"),
+     ("XAUUSD", "EURUSD", "USDJPY"), "positioning: CFTC -> FX and gold"),
+    (("gold etf flows", "gld flows", "spdr gold holdings", "etf holdings", "金etf"),
+     ("XAUUSD",), "fund flows: gold ETFs -> gold"),
+    (("northbound flows", "southbound flows", "北向资金", "南下资金", "港股通", "陆股通", "北水"),
+     ("HK50", "CHINAH", "USDCNH"), "flow: Stock Connect -> HK indices and CNH"),
+    (("toshin", "投信", "nisa flows", "japanese investors", "lifers", "生保"), ("USDJPY",),
+     "flow: Japanese outbound investment -> JPY"),
+    (("fii flows", "fpi flows", "dii flows", "foreign portfolio"), ("USDINR",),
+     "flow: India portfolio flows -> INR"),
+    (("外資", "外资买卖超", "外資買賣超"), ("TSMC",), "flow: Taiwan foreign investors -> TSMC"),
+    # sovereign auctions and fiscal
+    (("treasury auction", "bond auction", "auction tail", "国债拍卖", "国債入札", "入札結果",
+      "leilão do tesouro", "subasta del tesoro", "аукцион офз"), ("UST10Y", "USDX"),
+     "auction: sovereign debt -> rates and dollar"),
+    (("capital controls", "资本管制", "資本管制", "cepo cambiario", "capital flow measures",
+      "外汇管制", "controle de capitais", "sermaye kontrolü"), ("USDCNH", "USDTRY", "USDINR"),
+     "policy: capital controls -> the pair they fence"),
+)
+
+
+_LATIN = "a-z0-9À-ɏ"
+
+
+def _alias_pattern(alias: str) -> str:
+    """Substring for CJK/Thai/Arabic aliases; word-bounded for Latin ones, so `gold` does not
+    match `golden` and `dow` does not match `download`."""
+    starts = re.match(rf"[{_LATIN}]", alias) is not None
+    ends = re.search(rf"[{_LATIN}]$", alias) is not None
+    return ((rf"(?<![{_LATIN}])" if starts else "") + re.escape(alias)
+            + (rf"(?![{_LATIN}])" if ends else ""))
+
+
+_ALIAS_RE: dict[tuple[str, ...], re.Pattern[str]] = {}
+
+
+def _alias_rx(aliases: tuple[str, ...]) -> re.Pattern[str]:
+    """ONE compiled alternation per alias tuple, longest alias first. Compiling per alias per
+    call thrashed `re`'s 512-entry cache once the table passed a thousand aliases and made a
+    page take seconds instead of milliseconds -- measured on the whole-grounds offline test."""
+    rx = _ALIAS_RE.get(aliases)
+    if rx is None:
+        alts = "|".join(_alias_pattern(a) for a in sorted(set(aliases), key=len, reverse=True)
+                        if a)
+        rx = _ALIAS_RE[aliases] = re.compile(alts or r"(?!x)x")
+    return rx
+
+
+def _alias_hit(alias: str, low: str) -> bool:
+    return _alias_rx((alias,)).search(low) is not None
+
+
+def _first_alias(aliases: tuple[str, ...], low: str) -> str | None:
+    m = _alias_rx(aliases).search(low)
+    return m.group(0) if m else None
+
+
+def resolve_instruments(text: str, universe: set[str] | None = None) -> dict[str, Any]:
+    """MT5 analogues for every instrument the text names, the transfer-only classes, and the
+    indirect channels (dataset/event -> instrument) it triggers."""
+    low = (text or "").lower()
+    analogues: list[str] = []
+    mentioned: list[str] = []
+    transfer: list[str] = []
+    indirect: list[str] = []
+    channels: list[str] = []
+    uni = {u.upper() for u in (universe or set())}
+
+    def pick(cands: tuple[str, ...]) -> str | None:
+        if not uni:
+            return cands[0]
+        return next((c for c in cands if c.upper() in uni), None)
+
+    for aliases, cands, cls in INSTRUMENT_ALIASES:
+        hit = _first_alias(aliases, low)
+        if hit is None:
+            continue
+        mentioned.append(hit)
+        if not cands:
+            transfer.append(f"{hit}->{cls}")
+            continue
+        chosen = pick(cands)
+        if chosen and chosen not in analogues:
+            analogues.append(chosen)
+        elif chosen is None:
+            transfer.append(f"{hit}->{cls} (not quoted here)")
+    for aliases, cands, note in INDIRECT_CHANNELS:
+        hit = _first_alias(aliases, low)
+        if hit is None:
+            continue
+        channels.append(f"{hit}: {note}")
+        for c in cands:
+            chosen = c if not uni else (c if c.upper() in uni else None)
+            if chosen and chosen not in analogues and chosen not in indirect:
+                indirect.append(chosen)
+    return {"analogues": analogues, "mentioned": mentioned, "transfer_only": transfer,
+            "indirect": indirect, "channels": channels}
+
+
+# ============================================================================== mechanism class
+#: The orthogonality vocabulary (principal 2026-09-05): every claim is tagged with ONE class so a
+#: later scorer can prefer classes the portfolio lacks, and a ground that yields only momentum
+#: says so on the report. First class whose term appears wins; the order is deliberate --
+#: specific structural classes before the two generic price-pattern classes.
+MECHANISM_CLASSES: tuple[str, ...] = (
+    "policy", "calendar", "positioning", "inventory", "flow", "carry", "cross_asset",
+    "microstructure", "reversion", "momentum",
+)
+_CLASS_TERMS: dict[str, tuple[str, ...]] = {
+    "policy": ("central bank", "rate decision", "rate hike", "rate cut", "intervention", "fomc",
+               "ecb", "boj", "rbi", "cbrt", "banxico", "copom", "selic", "policy rate",
+               "capital control",
+               "央行", "加息", "降息", "升息", "干预", "干預", "介入", "政策金利", "日銀",
+               "기준금리",
+               "한은", "개입", "ставк", "интервенц", "цб", "lãi suất", "ngân hàng nhà nước",
+               "ดอกเบี้ย",
+               "แทรกแซง", "suku bunga", "intervensi", "ब्याज दर", "आरबीआई", "zins", "leitzins",
+               "taux directeur", "tasso", "tipos de interés", "tasa de interés", "juros", "faiz",
+               "merkez", "ריבית", "stóp procentow", "rente", "ränta", "korko", "riba", "فائدة",
+               "البنك المركزي", "auction", "入札", "leilão", "subasta", "аукцион", "інтервенц",
+               "нбу", "rpp", "korkopäätö", "räntebesked", "rentebeslut", "rentemøde", "benki kuu",
+               "kuingili", "決定利率", "利率決議"),
+    "calendar": ("seasonal", "seasonality", "turn of month", "day of week", "expiry", "witching",
+                 "fix", "fixing", "roll", "rollover", "季节", "季節", "月末", "换月", "換月",
+                 "结算",
+                 "結算", "交割", "到期", "ゴトー日", "五十日", "仲値", "sq", "満期", "만기",
+                 "롤오버",
+                 "계절", "сезонн", "экспирац", "фиксинг", "đáo hạn", "mùa vụ", "หมดอายุ", "ฤดูกาล",
+                 "kedaluwarsa", "musiman", "एक्सपायरी", "मौसमी", "verfall", "hexensabbat", "saison",
+                 "échéance", "saisonnal", "scadenza", "stagional", "vencimiento", "estacional",
+                 "sazonal", "vade", "mevsimsel", "wygaśnięci", "sezonow", "expiratie", "seizoen",
+                 "förfall", "säsong", "udløb", "sæson", "forfall", "sesong", "erääntymi", "kausi",
+                 "msimu", "موسمي", "quarter-end", "year-end", "options expiry", "opex", "фіксинг",
+                 "експірац"),
+    "positioning": ("cot", "commitments of traders", "positioning", "open interest", "net long",
+                    "net short", "speculators", "crowded", "short squeeze", "持仓量", "持仓",
+                    "多空比",
+                    "主力", "净持仓", "建玉", "미결제약정", "포지션", "수급", "외국인",
+                    "открыт интерес",
+                    "позици", "шорт-сквиз", "khối ngoại", "tự doanh", "ต่างชาติ", "asing", "fii",
+                    "dii",
+                    "ओपन इंटरेस्ट", "pcr", "positionierung", "positionnement", "posizionamento",
+                    "posicionamiento", "posicionamento", "estrangeiro", "外資", "法人", "籌碼",
+                    "pozycjonowan", "positionering", "positiointi", "gamma", "dealer"),
+    "inventory": ("inventory", "inventories", "stocks", "stockpile", "warehouse", "eia",
+    "api report",
+                  "lme stocks", "harvest", "crop", "wasde", "库存", "庫存", "产量", "產量", "在庫",
+                  "재고",
+                  "запас", "урожа", "tồn kho", "สต็อก", "stok", "persediaan", "भंडार", "मानसून",
+                  "lagerbestand", "lagerbestände", "ernte", "récolte", "scorte", "raccolto",
+                  "inventario", "existencias", "cosecha", "estoque", "safra", "hasat", "mavuno",
+                  "hifadhi", "zapas", "zbior", "voorraad", "oogst", "lager", "skörd", "høst",
+                  "avling", "varasto", "sato", "مخزون", "weather", "天气", "天候", "cuaca",
+                  "monsoon",
+                  "el niño", "la niña", "frost", "drought"),
+    "flow": ("flow", "flows", "etf", "fund flows", "exports", "imports", "shipping", "freight",
+             "remittances", "northbound", "southbound", "资金流", "資金流", "北向", "南下",
+             "港股通",
+             "出口", "进口", "运费", "運費", "実需", "輸出", "投信", "환율", "수출", "운임",
+             "экспорт",
+             "фрахт", "dòng tiền", "xuất khẩu", "cước", "ฟันด์โฟลว์", "ส่งออก", "ค่าระวาง",
+             "aliran dana", "ekspor", "निर्यात", "आयात", "fracht", "export", "fret", "flux",
+             "exportations", "noli", "flusso", "flujo", "flete", "exportaciones", "fluxo", "frete",
+             "exportação", "ihracat", "navlun", "eksport", "vracht", "frakt", "vienti", "rahti",
+             "usafirishaji", "صادرات", "شحن", "baltic", "container", "cargo", "auction"),
+    "carry": ("carry", "swap", "interest differential", "rate differential", "yield differential",
+              "funding", "套息", "利差", "掉期", "隔夜利息", "スワップ", "キャリー", "金利差",
+              "캐리",
+              "스왑", "금리차", "кэрри", "своп", "chênh lệch lãi suất", "ส่วนต่างดอกเบี้ย",
+              "selisih bunga",
+              "zinsdifferenz", "différentiel", "differenziale", "diferencial", "cupom cambial",
+              "taşıma", "swap", "ränte", "korkoero", "carry trade"),
+    "cross_asset": ("correlation", "cointegration", "lead-lag", "lead lag", "spread between",
+    "ratio",
+                    "pairs", "relative value", "basis", "term structure", "curve", "相关", "相關",
+                    "协整",
+                    "領先", "领先", "滞后", "金银比", "金油比", "沪伦比", "内外盘", "跨市",
+                    "跨品种",
+                    "基差", "期限结构", "相関", "乖離", "裁定", "상관관계", "괴리율", "차익거래",
+                    "корреляц", "арбитраж", "базис", "tương quan", "chênh lệch", "ความสัมพันธ์",
+                    "korelasi", "सहसंबंध", "korrelation", "arbitrage", "corrélation",
+                    "correlazione",
+                    "correlación", "correlação", "korelasyon", "מתאם", "korelac", "correlatie",
+                    "korrelasjon", "korrelaatio", "uhusiano", "ارتباط", "contango",
+                    "backwardation"),
+    "microstructure": ("order flow", "orderflow", "liquidity", "spread", "slippage", "imbalance",
+                       "book", "tick", "vwap", "auction", "stop hunt", "sweep", "market maker",
+                       "盘口", "订单流", "滑点", "冲击成本", "做市", "流动性", "盤口", "滑價",
+                       "造市",
+                       "板", "歩み値", "スリッページ", "気配", "호가", "체결", "슬리피지", "стакан",
+                       "проскальзыван", "ликвидн", "thanh khoản", "สภาพคล่อง", "likuiditas",
+                       "लिक्विडिटी", "orderfluss", "liquidität", "liquidité", "liquidità",
+                       "liquidez",
+                       "likidite", "נזילות", "płynność", "liquiditeit", "likviditet",
+                       "likviditeetti",
+                       "ukwasi", "سيولة", "session", "夜盘", "夜盤", "早盘", "尾盘",
+                       "开盘", "收盘", "寄り", "引け", "장초", "장마감", "открыти", "закрыти"),
+    "reversion": ("mean reversion", "revert", "reversal", "fade", "bounce", "pullback",
+    "overbought",
+                  "oversold", "range", "均值回归", "均值回复", "反转", "反弹", "回调", "逆势",
+                  "抄底",
+                  "均值回歸", "反轉", "反彈", "回檔", "逆張り", "平均回帰", "反発", "反落",
+                  "押し目",
+                  "戻り", "역추세", "평균회귀", "반등", "되돌림", "눌림목", "разворот", "возврат",
+                  "откат", "отскок", "đảo chiều", "hồi quy", "hồi phục", "điều chỉnh", "กลับตัว",
+                  "รีบาวด์", "ปรับฐาน", "pembalikan", "rebound", "koreksi", "रिवर्सल", "पलटाव",
+                  "उछाल", "umkehr", "rückkehr", "erhol", "retournement", "rebond", "inversione",
+                  "rimbalz", "reversión", "rebote", "reversão", "repique", "dönüş", "toparlan",
+                  "היפוך", "odwrócen", "odbici", "omkeer", "herstel", "vändning", "rekyl",
+                  "vending",
+                  "käänne", "انعكاس", "ارتداد", "contrarian", "відскок", "розворот", "kurudi"),
+    "momentum": ("momentum", "trend", "breakout", "continuation", "follow", "动量", "趋势", "突破",
+                 "顺势", "延续", "追涨", "動量", "趨勢", "順勢", "モメンタム", "順張り", "ブレイク",
+                 "続伸", "続落", "모멘텀", "추세", "돌파", "моментум", "импульс", "пробой",
+                 "xu hướng",
+                 "động lượng", "phá vỡ", "โมเมนตัม", "แนวโน้ม", "ทะลุ", "tren", "penembusan",
+                 "मोमेंटम", "ट्रेंड", "ब्रेकआउट", "ausbruch", "tendance", "cassure", "tendenza",
+                 "rottura", "tendencia", "ruptura", "tendência", "rompimento", "kırılım", "מגמה",
+                 "פריצה", "wybicie", "uitbraak", "utbrott", "udbrud", "utbrudd", "läpimurto",
+                 "mwelekeo", "kuvunja", "kasi", "زخم", "اتجاه", "اختراق", "wybici", "läpimur",
+                 "пробій", "імпульс"),
+}
+#: Direction buckets for the dedupe key. Not exhaustive: a word outside the buckets is "other",
+#: and two tellings of one story still fold together on instrument, class and horizon.
+_DIR_BUCKET_TERMS: dict[str, tuple[str, ...]] = {
+    "long": ("rallies", "rises", "rose", "rallied", "gained", "gains", "strengthens",
+    "strengthened", "appreciates", "climb", "climbs", "surge", "surges", "jumps",
+            "long", "buy", "rally", "rise", "bullish", "higher", "strengthen", "appreciate",
+    "做多",
+             "买入", "看多", "上涨", "涨", "走强", "拉升", "買入", "上漲", "漲", "走強", "買い",
+             "ロング",
+             "上昇", "続伸", "上がる", "매수", "롱", "상승", "급등", "лонг", "покуп", "рост",
+             "растет",
+             "растёт", "mua", "tăng", "ซื้อ", "ขึ้น", "beli", "naik", "खरीद", "तेजी", "बढ़", "kauf",
+             "steig", "achat", "hausse", "compra", "rialzo", "alza", "sube", "alta", "sobe", "alım",
+             "yüksel", "קנייה", "עלייה", "kupn", "wzrost", "koop", "stijg", "köp", "stig", "køb",
+             "kjøp", "osta", "nous", "nunua", "kupanda", "شراء", "صعود", "ارتفاع"),
+    "short": ("short", "sell", "sell-off", "selloff", "fall", "falls", "fell", "drop", "drops",
+              "dropped", "bearish", "lower", "weaken", "weakens", "weakened", "depreciate",
+              "depreciates", "slide", "slides", "sinks", "tumbles", "dip", "dips",
+              "depreciate", "做空", "卖出", "看空", "下跌", "跌", "走弱", "砸盘", "賣出", "殺盤",
+              "売り",
+              "ショート", "下落", "続落", "下がる", "매도", "숏", "하락", "급락", "шорт", "прода",
+              "падени", "падает", "снижен", "bán", "giảm", "ขาย", "ลง", "jual", "turun", "बेच",
+              "मंदी", "गिर", "verkauf", "fall", "fällt", "vente", "baisse", "vend", "ribasso",
+              "venta", "baja", "cae", "queda", "satış", "düş", "מכירה", "ירידה", "sprzeda",
+              "spadek", "verkoop", "daal", "sälj", "sjunk", "sælg", "fald", "selg", "myy", "lask",
+              "uza", "kushuka", "بيع", "هبوط", "انخفاض"),
+    "revert": ("fade", "fades", "revert", "reverts", "reverse", "reverses", "reversed", "bounce",
+               "bounces", "bounced", "rebound", "rebounds", "pullback", "反向", "回归", "反弹",
+               "回落",
+               "回调", "抄底", "反轉", "反彈", "回檔", "反発", "反落", "戻る", "押し目買い",
+               "戻り売り",
+               "반등", "되돌림", "отскок", "разворот", "đảo chiều", "hồi phục", "điều chỉnh",
+               "เด้ง",
+               "กลับตัว", "ปรับฐาน", "rebound", "koreksi", "berbalik", "पलट", "उछाल", "erhol",
+               "dreht", "rebond", "retourne", "rimbalz", "inverte", "rebote", "revierte", "repique",
+               "reverte", "tepki", "dön", "korekt", "odwrac", "herstel", "draait", "rekyl",
+               "vänder",
+               "vender", "snur", "elpy", "kääntyy", "kurudi", "ارتداد", "تصحيح"),
+    "continue": ("continues",
+                "continue", "continues", "follow", "trend", "顺势", "延续", "順勢", "延續",
+    "続伸", "続落",
+                 "продолж", "tiếp diễn", "ต่อเนื่อง", "berlanjut", "जारी", "fortsetz", "continue",
+                 "prosegue", "continúa", "continua", "devam", "המשך", "kontynu", "vervolg",
+                 "fortsätter", "fortsætter", "fortsetter", "jatkuu", "kuendelea", "استمرار"),
+    "widen": ("widens", "expands", "steepens",
+             "widen", "widens", "expand", "expands", "steepen", "steepens", "扩大", "擴大",
+    "拡大", "확대", "расшир", "mở rộng",
+              "ขยาย", "melebar", "ausweit", "s'élargit", "si allarga", "se amplía", "amplia",
+              "genişle"),
+    "narrow": ("narrows", "contracts", "flattens",
+              "narrow", "narrows", "contract", "contracts", "flatten", "flattens", "收窄", "收敛",
+    "收斂", "縮小", "축소", "сужен",
+               "thu hẹp", "แคบลง", "menyempit", "verengt", "se resserre", "si restringe",
+               "se estrecha", "estreita", "daral"),
+}
+_HOR_BUCKET_TERMS: dict[str, tuple[str, ...]] = {
+    "tick": ("tick", "秒级", "秒", "틱", "тик", "scalp", "スキャルピング", "스캘핑", "скальп"),
+    "intraday": ("minute", "minutes", "hour", "hours", "hourly", "intraday", "session", "open",
+                 "close", "m5", "m15", "h1", "h4", "分钟", "小时", "日内", "夜盘", "早盘", "尾盘",
+                 "开盘后", "收盘前", "分鐘", "小時", "日內", "夜盤", "盤中", "分", "時間",
+                 "デイトレ",
+                 "寄り", "引け", "日中", "分足", "時間足", "ザラ場", "분", "시간", "장중", "분봉",
+                 "시간봉", "단타", "минут", "час", "интрадей", "внутри дня", "phút", "giờ",
+                 "trong phiên", "cuối phiên", "đầu phiên", "นาที", "ชั่วโมง", "ระหว่างวัน", "menit",
+                 "jam", "sesi", "मिनट", "घंटा", "घंटे", "इंट्राडे", "minute", "stunde", "heure",
+                 "séance", "minut", "ora", "seduta", "minuto", "hora", "sesión", "sesion", "pregão",
+                 "dakika", "saat", "seans", "דקה", "דקות", "שעה", "שעות", "godzin", "sesj",
+                 "minuut",
+                 "uur", "timme", "timmar", "time", "timer", "tunti", "tuntia", "saa", "دقيقة",
+                 "ساعة", "جلسة", "خلال اليوم"),
+    "daily": ("daily", "day", "days", "overnight", "next day", "d1", "当日", "次日", "每日", "日线",
+              "隔夜", "交易日", "當日", "日線", "隔日沖", "日", "翌日", "日足", "オーバーナイト",
+              "일",
+              "당일", "익일", "일봉", "오버나잇", "дне", "день", "дневн", "овернайт", "свеч",
+              "ngày",
+              "qua đêm", "hôm sau", "nến ngày", "วัน", "รายวัน", "ข้ามคืน", "hari", "harian",
+              "semalam", "दिन", "दैनिक", "ओवरनाइट", "tag", "täglich", "übernacht", "jour",
+              "journalier", "quotidien", "giorn", "día", "diario", "dia", "diário", "gün", "günlük",
+              "יום", "יומי", "dzień", "dzienn", "dag", "dagelijks", "daglig", "päivä", "siku",
+              "يوم", "يومي"),
+    "weekly": ("week", "weekly", "一周", "周线", "周", "一週", "週線", "週", "週足", "주", "주봉",
+               "недел", "tuần", "สัปดาห์", "minggu", "pekan", "हफ्ता", "सप्ताह", "woche", "semaine",
+               "settiman", "semana", "hafta", "שבוע", "tydzień", "tygodni", "week", "vecka", "uge",
+               "uke", "viikko", "wiki", "أسبوع"),
+    "monthly": ("month", "monthly", "quarter", "quarterly", "一个月", "月线", "月", "季度",
+    "一個月",
+                "月線", "月足", "四半期", "월", "월봉", "분기", "месяц", "квартал", "tháng", "quý",
+                "เดือน", "ไตรมาส", "bulan", "kuartal", "महीना", "महीने", "मासिक", "तिमाही", "monat",
+                "quartal", "mois", "trimestre", "mese", "mensil", "mes", "mês", "ay", "aylık",
+                "çeyrek", "חודש", "רבעון", "miesiąc", "kwartał", "maand", "kwartaal", "månad",
+                "kvartal", "måned", "kuukausi", "mwezi", "robo", "شهر", "ربع"),
+}
+
+
+def mechanism_class(text: str) -> str:
+    """The first orthogonality class whose vocabulary the sentence uses, else "other"."""
+    low = (text or "").lower()
+    for cls in MECHANISM_CLASSES:
+        if _alias_rx(_CLASS_TERMS[cls]).search(low):
+            return cls
+    return "other"
+
+
+def _bucket(terms: dict[str, tuple[str, ...]], words: list[str]) -> str:
+    for w in words:
+        wl = w.lower()
+        for name, vocab in terms.items():
+            if wl in vocab:
+                return name
+    return "other"
+
+
+def mechanism_key(inst: dict[str, Any], cls: str, direction: list[str], horizon: list[str]) -> str:
+    """The stable identity of a MECHANISM, independent of who told it and in which language:
+    instrument (analogues, else indirect targets, else transfer classes), mechanism class,
+    direction bucket and horizon bucket. Ten tellings fold to one key."""
+    target = (sorted(inst.get("analogues") or []) or sorted(inst.get("indirect") or [])
+              or sorted(t.split("->",
+                                1)[-1].split(" (")[0] for t in (inst.get("transfer_only") or [])))
+    key = "|".join([",".join(target), cls, _bucket(_DIR_BUCKET_TERMS, direction),
+                    _bucket(_HOR_BUCKET_TERMS, horizon)])
+    return hashlib.sha256(key.encode("utf-8")).hexdigest()[:16]
+
+
+# ============================================================================== stated numbers
+# Sentence enders: ASCII plus the full-width ideographic stop, bang, question and semicolon
+# (U+3002, U+FF01, U+FF1F, U+FF1B), the Devanagari danda (U+0964) and the Arabic question mark
+# (U+061F), written as escapes so the linter does not read them as typos.
+_SPLIT = re.compile("(?<=[.!?\u3002\uff01\uff1f\uff1b;\u0964\u061f])\\s*|\\n+")
+_PERF: tuple[tuple[str, str], ...] = (
+    ("return_pct",
+     r"(?:收益率?|報酬率?|年化(?:收益|報酬)?|盈利|利回り|リターン|수익률|доходност[ьи]?|"
+                   r"дохідн[іи]сть|lợi nhuận|ผลตอบแทน|imbal hasil|रिटर्न|rendite|rendement|"
+                   r"rendimiento|rentabilidad|retorno|rentabilidade|getiri|תשואה|stopa zwrotu|"
+                   r"rendement|avkastning|afkast|tuotto|mapato|عائد|return(?:s)?|"
+                   r"annual(?:ised|ized)?|cagr)\D{0,12}?(-?\d+(?:\.\d+)?)\s*%"),
+    ("drawdown_pct", r"(?:最大回撤|回撤|最大ドローダウン|ドローダウン|최대낙폭|낙폭|просадк[аи]|"
+                     r"drawdown|rebaixamento|sụt giảm tối đa|डीडी)\D{0,12}?(-?\d+(?:\.\d+)?)\s*%"),
+    ("sharpe", r"(?:夏普(?:比率)?|シャープ(?:レシオ)?|샤프(?:지수|비율)?|шарп[а]?|sharpe)"
+               r"\D{0,12}?(-?\d+(?:\.\d+)?)"),
+    ("win_rate_pct", r"(?:胜率|勝率|승률|винрейт|процент прибыльных|win ?rate|trefferquote|"
+                     r"taux de réussite|tasa de acierto|taxa de acerto|tỷ lệ thắng|"
+                     r"อัตราชนะ|win ratio)\D{0,12}?(\d+(?:\.\d+)?)\s*%"),
+    ("profit_factor", r"(?:盈亏比|プロフィットファクター|손익비|профит-?фактор|profit factor|"
+                      r"fator de lucro|factor de beneficio|(?<![a-z])pf)\D{0,12}?(\d+(?:\.\d+)?)"),
+)
+_PERF_RE: tuple[tuple[str, re.Pattern[str]], ...] = tuple((n, re.compile(r)) for n, r in _PERF)
+#: A date the sentence itself states -- the EVENT time of the claim, when there is one.
+_DATE = re.compile(r"(20\d{2})[-/年.](\d{1,2})[-/月.](\d{1,2})日?"
+                   r"|(\d{1,2})[./](\d{1,2})[./](20\d{2})")
+
+
+def performance(text: str) -> dict[str, float]:
+    """Stated performance numbers. A STORY'S NUMBERS ARE EVIDENCE ABOUT THE STORY, NOT ABOUT THE
+    MECHANISM -- they are kept so the reader can weigh the claim, never used as a prior."""
+    out: dict[str, float] = {}
+    low = (text or "").lower()
+    for name, rx in _PERF_RE:
+        m = rx.search(low)
+        if m:
             try:
-                out.append(json.loads(ln))
-            except json.JSONDecodeError:
+                out[name] = float(m.group(1))
+            except ValueError:
                 continue
     return out
 
 
-# ------------------------------------------------------------------ BRIEF
-def brief() -> None:
-    """One machine-generated evidence file. No prose, no argument, no framing -- numbers only.
-
-    Framing is how an LLM gets led. If the brief said "our carry is underperforming, what should
-    we do?" every model would return carry ideas. It states measured quantities and lets the model
-    decide what is interesting; a model that ignores the biggest number in the file is telling you
-    something about the model.
-    """
-    reg = _read(ROOT / "data/experiment_registry.json", {}) or {}
-    aut = _read(ROOT / "data/research_autopsy.json", {}) or {}
-    mb = _read(ROOT / "data/mechanism_board.json", {}) or {}
-    erv = _read(ROOT / "data/research_erv.json", {}) or {}
-    mic = _read(ROOT / "data/micro_features.json", {}) or {}
-    hold = _read(ROOT / "data/optimal_hold.json", {}) or {}
-
-    L = [f"# DESK BRIEF -- {datetime.now(tz=UTC).strftime('%Y-%m-%d %H:%MZ')}",
-         "",
-         "Machine-generated from measured desk state. Every number traces to an artifact in",
-         "`data/`. Nothing here is an argument. Respond to the evidence, not to another model.",
-         "",
-         "## Standing rules that bind any proposal",
-         "1. Every proposal must name the MEASURABLE BOTTLENECK it removes, the metric that should",
-         "   move, and the observation that would kill it. Missing any of the three = rejected.",
-         "2. A proposal mapping to a FAMILY KILL below must present a NEW forced-flow or asymmetry",
-         "   story. A new dataset for a dead mechanism is not a new hypothesis.",
-         "3. Prefer DELETE/MERGE over ADD. This desk has 226 scripts and ~179 unwired.",
-         "4. Screening is unlimited and carries ZERO promotion authority. Only pre-registered",
-         "   forward clocks promote.",
-         ""]
-
-    if reg:
-        d = reg.get("decisions", {})
-        L += ["## Experiment record (45d, harvested from git -- one row per commit)",
-              f"- experiments: **{reg.get('n')}**; decided: "
-              f"{sum(d.get(k,0) for k in ('SURVIVED','REFUTED','INCONCLUSIVE'))}",
-              f"- survival rate: **{(reg.get('survival_rate') or 0)*100:.1f}%** "
-              f"({d.get('SURVIVED',0)} survived / {d.get('REFUTED',0)} refuted / "
-              f"{d.get('INCONCLUSIVE',0)} inconclusive)",
-              f"- unclassified commit decisions: {reg.get('unclassified')} (commit-discipline defect)",
-              ""]
-        ms = reg.get("mechanism_survival", {})
-        if ms:
-            L += ["| mechanism | tested | survived | rate |", "|---|---:|---:|---:|"]
-            for m, v in sorted(ms.items(), key=lambda kv: -kv[1]["tested"]):
-                r = v["survived"] / v["tested"] * 100 if v["tested"] else 0
-                L.append(f"| {m} | {v['tested']} | {v['survived']} | {r:.0f}% |")
-            L.append("")
-        fm = reg.get("failure_modes", {})
-        if fm:
-            tot = sum(fm.values())
-            L += ["### Why experiments died (45d)", ""]
-            for k, v in sorted(fm.items(), key=lambda kv: -kv[1]):
-                L.append(f"- `{k}` {v} ({v/tot*100:.0f}%)")
-            meas = fm.get("E_DATA_QUALITY", 0) + fm.get("B_WRONG_MEASUREMENT", 0)
-            L += ["", f"**{meas}/{tot} = {meas/tot*100:.0f}% of refutations are MEASUREMENT "
-                      "failures (data quality + wrong construction), not absent alpha.**", ""]
-    if mb.get("family_kills"):
-        L += ["## FAMILY KILLS -- mechanisms closed by evidence",
-              "", ", ".join(f"`{m}`" for m in mb["family_kills"]),
-              "", "Every future variant inherits this evidence.", ""]
-    if aut.get("lessons"):
-        L += ["## Transferable lessons (family -> dominant failure mode)", ""]
-        for x in aut["lessons"][:8]:
-            L.append(f"- **{x['family']}** -> `{x['dominant_mode']}` (n={x['n']})")
-        L.append("")
-    if mic.get("results"):
-        r0 = mic["results"]
-        L += ["## Proprietary moat (4.4GB order books, 30 symbols, top-20 snapshots)",
-              "",
-              "M_LIQUIDITY_WITHDRAWAL, construction = negative z of near-touch depth vs 24h roll:",
-              f"- raw lead rho pooled: {sum(x['lead_rho'] for x in r0)/len(r0):+.4f}",
-              "- **after orthogonalising forward RV against current RV: residual rho +0.0154 "
-              "(t +0.28), sign 1/5 -> the lead was vol clustering.**",
-              "- ONE construction tested only. The mechanism is NOT refuted. Untested: "
-              "replenishment rate, one-sided withdrawal, book shape, migration, recovery "
-              "half-life, d(book)/dt.", ""]
-    if hold:
-        L += ["## Live carry", "",
-              "- entry gate `_DEFAULT_RT_BPS` 4.5 -> 39.5 (p90 of measured round-trip) on "
-              "2026-07-27; bar is now ~8.8x the funding floor. Effect unmeasured until 24-48h "
-              "of rotations accumulate.",
-              "- pre-fix: funding harvested $113 vs implied costs $876 = **7.75x**.",
-              "- hold-time scan: 8h -39.2%/yr, 24h +5.8%/yr (LIVE), 48h +14.0%/yr, 72h +17.0%/yr. "
-              "`_MIN_HOLD_H` is still 24. ~+11pp/yr unclaimed.", ""]
-    if erv.get("ranked"):
-        L += ["## Highest-ERV open hypotheses", ""]
-        for h in erv["ranked"][:6]:
-            L.append(f"- {h.get('erv', 0):.3f} — {h.get('name','')[:88]}")
-        L.append("")
-    L += ["## Known blockers", "",
-          "- OpenRouter 402: 4 written LLM roles have NEVER executed (code auditor, blind "
-          "researcher, hypothesis generator, architecture board).",
-          "- `health.json` reports all_ok=True against 14 stub vs 13 real logs (fail-open).",
-          "- First forward-clock verdict: 2026-08-07 (OI/LS). Confirmed alphas to date: 0.", ""]
-    BRIEF.parent.mkdir(parents=True, exist_ok=True)
-    BRIEF.write_text("\n".join(L), "utf-8")
-    print(f"wrote {BRIEF}  ({len(L)} lines)")
-    print("Paste this ONE file to each model independently. Do not paste one model's reply to the")
-    print("other -- that is persuasion. Paste their replies back through `intake` instead.")
-
-
-# ------------------------------------------------------------------ INTAKE
-def _dead_terms() -> tuple[set[str], list[str]]:
-    mb = _read(ROOT / "data/mechanism_board.json", {}) or {}
-    kills = set(mb.get("family_kills", []))
-    names = []
-    if GRAVE.exists():
-        for ln in GRAVE.read_text("utf-8").splitlines():
-            if ln.startswith("|") and not set(ln) <= set("|- "):
-                c = [x.strip() for x in ln.strip("|").split("|")]
-                if c and c[0].lower() not in ("name", "signal", "strategy"):
-                    names.append(c[0])
-    return kills, names
-
-
-def intake(path: str, source: str) -> None:
-    txt = Path(path).read_text("utf-8", errors="ignore")
-    kills, _dead_names = _dead_terms()
-    mb_kw = {
-        "M_ATTENTION_DELAY": ("attention", "sentiment", "social", "twitter", "reddit", "trends"),
-        "M_SKILL_PERSISTENCE": ("trader", "copytrad", "leaderboard", "smart money", "skill"),
-        "M_FLOW_PRESSURE": ("netflow", "inflow", "outflow", "stablecoin flow", "bridge flow"),
-        "M_PRICE_PATTERN": ("momentum", "rsi", "macd", "breakout", "moving average", "reversal"),
-    }
-    prior = _ledger()
-    prior_toks = [(_toks(p.get("problem", "") + " " + p.get("benefit", "")), p) for p in prior]
-
-    rows, stats = [], {"kept": 0, "dup": 0, "dead": 0, "incomplete": 0}
-    for ln in txt.splitlines():
-        if ln.count("|") < 2:
-            continue
-        parts = [x.strip() for x in ln.split("|") if x.strip()]
-        if len(parts) < 7:
-            stats["incomplete"] += 1          # looked like a proposal, missing mandatory fields
-            continue
-        rec = {"date": datetime.now(tz=UTC).date().isoformat(), "source": source,
-               "problem": parts[0][:220], "evidence": parts[1][:220], "benefit": parts[2][:180],
-               "cost": parts[3][:140], "dependencies": parts[4][:140],
-               "success_metric": parts[5][:180], "kill_condition": parts[6][:180],
-               "status": "proposed"}
-        blob = " ".join(parts).lower()
-        tk = _toks(rec["problem"] + " " + rec["benefit"])
-
-        hit = next((m for m, kws in mb_kw.items() if m in kills and any(k in blob for k in kws)),
-                   None)
-        if hit:
-            rec["status"] = "rejected_dead"
-            rec["reason"] = f"maps to FAMILY KILL {hit} with no new asymmetry story"
-            stats["dead"] += 1
-        else:
-            best, bp = 0.0, None
-            for ptk, p in prior_toks:
-                if not ptk or not tk:
-                    continue
-                j = len(tk & ptk) / len(tk | ptk)
-                if j > best:
-                    best, bp = j, p
-            if best >= 0.55:
-                rec["status"] = "rejected_dup"
-                rec["reason"] = f"jaccard {best:.2f} vs prior {bp.get('source','?')} proposal"
-                stats["dup"] += 1
-            else:
-                stats["kept"] += 1
-        rows.append(rec)
-
-    if not rows:
-        print("no charter-complete proposals found. Required per line, '|'-separated:")
-        print("PROBLEM|EVIDENCE|BENEFIT|COST|DEPENDENCIES|SUCCESS_METRIC|KILL_CONDITION")
-        print(f"({stats['incomplete']} lines looked like proposals but lacked all 7 fields)")
-        return
-    with LEDGER.open("a", encoding="utf-8") as fh:
-        for r in rows:
-            fh.write(json.dumps(r) + "\n")
-    print(f"source={source}  {stats['kept']} accepted-for-review, {stats['dup']} duplicate, "
-          f"{stats['dead']} re-proposed a dead mechanism, {stats['incomplete']} incomplete")
-    for r in rows:
-        if r["status"] != "proposed":
-            print(f"  [{r['status']}] {r['problem'][:64]}\n      {r.get('reason','')}")
-    print(f"-> {LEDGER}")
-    print("\nStatus is advanced by HUMAN/desk decision, never by the proposer:")
-    print("  proposed -> accepted -> built -> changed_decision -> improved_live")
-
-
-# ------------------------------------------------------------------ SCORE
-def score() -> None:
-    rows = _ledger()
-    print("=== CONTRIBUTOR SCOREBOARD ===")
-    print("    data/panel_scorecard.json has held 13 providers at 0 scored / hit_rate null since")
-    print("    2026-07-17. Every allocation between sources so far was made on reputation.\n")
-    if not rows:
-        print("  ledger EMPTY -- 0 external proposals have ever been ingested.")
-        print("  That is the honest state: there is nothing to score yet, and a scoreboard that")
-        print("  reported numbers here would be fabricating them. Run `intake` first.")
-        SCORE.write_text(json.dumps({"updated": datetime.now(tz=UTC).isoformat(),
-                                     "sources": {}, "n": 0}, indent=1), "utf-8")
-        return
-    by: dict[str, dict] = {}
-    for r in rows:
-        s = r.get("source") or r.get("seat") or "unknown"
-        d = by.setdefault(s, dict.fromkeys(LADDER, 0))
-        d[r.get("status", "proposed")] = d.get(r.get("status", "proposed"), 0) + 1
-    print(f"  {'source':<26}{'prop':>6}{'dead':>6}{'dup':>5}{'built':>7}{'live':>6}{'score':>8}"
-          f"{'yield':>8}")
-    out = {}
-    for s, d in sorted(by.items()):
-        n = sum(d.values())
-        pts = sum(LADDER.get(k, 0) * v for k, v in d.items())
-        conv = (d.get("built", 0) + d.get("changed_decision", 0) + d.get("improved_live", 0)) / n
-        print(f"  {s:<26}{n:>6}{d.get('rejected_dead',0):>6}{d.get('rejected_dup',0):>5}"
-              f"{d.get('built',0):>7}{d.get('improved_live',0):>6}{pts:>8.1f}{conv*100:>7.0f}%")
-        out[s] = {"n": n, "points": round(pts, 2), "conversion": round(conv, 4), "detail": d}
-    print("\n  SCORE weights the ladder: improved_live 10, changed_decision 4, built 2,")
-    print("  accepted 0.5, re-proposing a dead mechanism -1. A source producing 200 clever")
-    print("  proposals and one live improvement ranks BELOW one producing 20 of which five")
-    print("  became infrastructure. Volume is not rewarded anywhere in this function.")
-    SCORE.write_text(json.dumps({"updated": datetime.now(tz=UTC).isoformat(),
-                                 "weights": LADDER, "sources": out, "n": len(rows)}, indent=1),
-                     "utf-8")
-    print(f"  -> {SCORE}")
-
-
-def main() -> None:
-    a = sys.argv[1:]
-    if not a or a[0] not in ("brief", "intake", "score"):
-        print(__doc__)
-        return
-    if a[0] == "brief":
-        brief()
-    elif a[0] == "score":
-        score()
-    else:
-        if len(a) < 2:
-            raise SystemExit("usage: research_exchange.py intake FILE --source NAME")
-        src = a[a.index("--source") + 1] if "--source" in a else "unknown"
-        intake(a[1], src)
-
-
-if __name__ == "__main__":
-    main()
-
-```
-
-### scripts/run_ci.py
-```python
-"""Local CI gate -- lint + tests + stress, in one command. Free (no cloud, no cost).
-
-Runs ruff (lint) and the test suite, then the stress harness. Non-zero exit if anything fails, so
-it can gate a commit or a deploy. This is the always-available substitute for hosted CI: correctness
-of the survival-critical logic (hedge reconcile, risk controls, sizing, leverage) is checked
-mechanically, not by hand.
-
-NOTE (2026-07-18): the pytest step names specific files/dirs rather than the whole `tests/` tree
--- a full-tree collection currently fails on pre-existing duplicate test-module basenames across
-directories (e.g. two unrelated `test_regime.py`, two unrelated `test_registry.py`; see GAP
-register). `tests/execution/` (the risk-path/execution directory, incl. the live connector +
-stage machine) was added to the gate 2026-07-18 since that code must never silently go untested;
-other directories (risk/, portfolio/, features/, regime/, ...) are NOT yet gated here -- a real
-open gap, tracked separately, not fixed by this comment.
-
-    python scripts/run_ci.py
-"""
-
-from __future__ import annotations
-
-import contextlib
-import fcntl
-import json
-import subprocess
-import sys
-from datetime import UTC, datetime
-from pathlib import Path
-
-from libs.ops.platform_paths import venv_python
-
-_ROOT = Path(__file__).resolve().parent.parent
-_PY = venv_python(_ROOT)
-
-_STEPS = [
-    ("lint (ruff)", [_PY, "-m", "ruff", "check", "scripts", "libs", "tests"]),
-    # WHOLE TREE (2026-07-25): was 4 named files + tests/execution = ~147 of ~1099 tests, leaving
-    # tests/risk (the ruin path) and tests/validation (the anti-false-positive path) ungated, and
-    # every newly-shipped test ungated by default. GAP 31's stated blocker -- duplicate basenames
-    # breaking collection -- EXPIRED once pyproject set --import-mode=importlib: the tree collects
-    # and was run 100% GREEN this session (only optional-dep skips), so gating it is proven safe.
-    ("tests (pytest)", [_PY, "-m", "pytest", "tests/", "-q"]),
-    ("stress harness", [_PY, "scripts/run_stress.py"]),
-]
-
-
-_LOCK = _ROOT / "data/.ci_run.lock"
-
-
-def _acquire() -> object | None:
-    """Take the CI lock, or return None if another run already holds it.
-
-    Non-blocking on purpose: a second concurrent gate tests the same tree, so it adds no
-    information while doubling peak RAM on a 3.8 GiB box with no swap -- where the OOM-killer's
-    victim could be the dead-man rail. Declining beats queueing.
-    """
-    _LOCK.parent.mkdir(parents=True, exist_ok=True)
-    fh = _LOCK.open("w")
-    try:
-        fcntl.flock(fh.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
-    except OSError:
-        fh.close()
+def stated_date(text: str) -> str | None:
+    """YYYY-MM-DD when the sentence names a date, else None. Never guessed."""
+    m = _DATE.search(text or "")
+    if not m:
         return None
-    return fh
+    y, mo, d = (m.group(1), m.group(2), m.group(3)) if m.group(1) else (m.group(6), m.group(5),
+                                                                      m.group(4))
+    try:
+        if not (1 <= int(mo) <= 12 and 1 <= int(d) <= 31):
+            return None
+    except ValueError:
+        return None
+    return f"{int(y):04d}-{int(mo):02d}-{int(d):02d}"
 
 
-def main(argv: list[str] | None = None) -> int:
-    args = argv if argv is not None else sys.argv[1:]
-    fail_on_lock = "--fail-on-lock" in args
-    _fh = _acquire()
-    if _fh is None:
-        # Another gate is mid-run on the same tree. For an ORGAN's routine gate, exit 0 and DO
-        # NOT touch the marker: non-zero would fail its cycle for the non-error of someone else
-        # already checking, and writing the marker here IS the last-writer-wins race.
-        # For a DEPLOY decision that exit 0 is a lie -- pull_deploy read "skipped" as "green"
-        # and would have shipped an unvetted commit (found 2026-07-31, R0145). --fail-on-lock
-        # returns 3: "could not gate", which a deployer must treat as not-green and retry.
-        if fail_on_lock:
-            print("CI: another run holds the lock -- cannot gate this tree state (rc 3)")
-            return 3
-        print("CI: another run holds the lock -- skipping (marker left untouched)")
-        return 0
-    failed: list[str] = []
-    for label, cmd in _STEPS:
-        r = subprocess.run(cmd, cwd=str(_ROOT), capture_output=True, text=True, check=False)
-        ok = r.returncode == 0
-        tail = (r.stdout or r.stderr or "").strip().splitlines()[-1:] or [""]
-        print(f"[{'PASS' if ok else 'FAIL'}] {label}: {tail[0][:120]}")
-        if not ok:
-            failed.append(label)
-    print("CI:", "ALL GREEN" if not failed else f"FAILED -> {failed}")
-    # Freshest-truth CI status marker (2026-07-23): a red desk-wide gate sat undetected 81h
-    # because the brain cycle that runs run_ci was quota-dead; max_audit now surfaces this
-    # marker so a red gate always enters the escalation path. Additive; never affects the gate.
-    with contextlib.suppress(OSError):
-        (_ROOT / "data/.ci_last_run.json").write_text(
-            json.dumps({"ok": not failed, "ts": datetime.now(tz=UTC).isoformat(),
-                        "failed": failed}), "utf-8")
-    return 1 if failed else 0
+# ============================================================================== extraction
+_STEM_RE: dict[tuple[str, ...], re.Pattern[str]] = {}
 
 
-if __name__ == "__main__":
-    sys.exit(main())
+_EN_RE: dict[tuple[str, ...], re.Pattern[str]] = {}
+
+
+def _hits_en(words: tuple[str, ...], low: str) -> list[str]:
+    """English words, whole-word only (`fix` is not `fixture`, `follow` is not `following`)."""
+    rx = _EN_RE.get(words)
+    if rx is None:
+        alts = "|".join(re.escape(w) for w in sorted(set(words), key=len, reverse=True))
+        rx = _EN_RE[words] = re.compile(r"(?<![a-z])(?:" + alts + r")(?![a-z])")
+    out: list[str] = []
+    for m in rx.finditer(low):
+        if m.group(0) not in out:
+            out.append(m.group(0))
+    return out
+
+
+def _hits_zh(words: tuple[str, ...], low: str) -> list[str]:
+    return [w for w in words if w in low]
+
+
+def _hits_stem(words: tuple[str, ...], low: str) -> list[str]:
+    """Words that START at a word boundary and may continue -- one compiled alternation per
+    vocabulary, longest first, so `steig` finds `steigt` and `steigen` in one pass."""
+    key = words
+    rx = _STEM_RE.get(key)
+    if rx is None:
+        alts = "|".join(re.escape(w) for w in sorted(set(words), key=len, reverse=True))
+        rx = _STEM_RE[key] = re.compile(r"(?<!\w)(?:" + alts + ")")
+        if len(_STEM_RE) > 256:
+            _STEM_RE.clear()
+            _STEM_RE[key] = rx
+    out: list[str] = []
+    for m in rx.finditer(low):
+        w = m.group(0)
+        if w not in out:
+            out.append(w)
+    return out
+
+
+def _hits(lang: str, words: tuple[str, ...], low: str) -> list[str]:
+    return _hits_zh(words, low) if lang in _SUBSTRING_LANGS else _hits_stem(words, low)
+
+
+def _dedupe(words: list[str]) -> list[str]:
+    out: list[str] = []
+    for w in words:
+        if w not in out:
+            out.append(w)
+    return out
+
+
+def extract_claims(text: str, *, max_claims: int = 40,
+                   universe: set[str] | None = None) -> list[dict[str, Any]]:
+    """Sentences naming a quantity, a direction and a horizon -- verbatim, never paraphrased.
+
+    Returns the claims and nothing else; the drops are available through `extract` for a
+    report that must show the fences working.
+    """
+    claims: list[dict[str, Any]] = extract(text, max_claims=max_claims,
+                                           universe=universe)["claims"]
+    return claims
+
+
+def extract_claims_with_drops(text: str, *, max_claims: int = 40,
+                              universe: set[str] | None = None
+                              ) -> tuple[list[dict[str, Any]], int]:
+    """(claims, crypto-venue drops) -- the older two-value shape, kept for its callers."""
+    r = extract(text, max_claims=max_claims, universe=universe)
+    return r["claims"], int(r["dropped_venue"])
+
+
+def extract(text: str, *, max_claims: int = 40,
+            universe: set[str] | None = None) -> dict[str, Any]:
+    """Claims plus the counted fences: `dropped_venue` (crypto exchange named),
+    `dropped_unmappable` (no MT5 analogue, no indirect target, no transfer note -- a summary
+    nobody can test), and `duplicate_mechanisms` (a second sentence with the same key)."""
+    out: list[dict[str, Any]] = []
+    dropped_venue = dropped_unmappable = duplicates = 0
+    seen: set[str] = set()
+    keys: set[str] = set()
+    # THE DOCUMENT NAMES THE INSTRUMENT ONCE. "I have traded Shanghai gold for seven years" is
+    # sentence one; the mechanism is sentence three and says "it". A claim that names no
+    # instrument inherits the document's, marked as context so the reader knows it was inherited.
+    doc_inst = resolve_instruments((text or "").lower(), universe)
+    for raw in _SPLIT.split(text or ""):
+        s = re.sub(r"\s+", " ", raw).strip()
+        if not s:
+            continue
+        lang = language_of(s)
+        dense = lang in _SUBSTRING_LANGS
+        lo, hi = (10, 400) if dense else (20, 400)
+        if not (lo <= len(s) <= hi):
+            continue
+        low = s.lower()
+        if forbidden_venue(low):
+            dropped_venue += 1
+            continue
+        qv, dv, hv = _VOCAB.get(lang, (QUANTITY_EN, DIRECTION_EN, HORIZON_EN))
+        # The ground's own vocabulary first, then English whole-word (RSI, breakout, COT ...
+        # travel into every language); English itself is never stem-matched.
+        q = _dedupe(_hits(lang, qv, low) + _hits_en(QUANTITY_EN, low)) if lang != "en" \
+            else _hits_en(QUANTITY_EN, low)
+        d = _dedupe(_hits(lang, dv, low) + _hits_en(DIRECTION_EN, low)) if lang != "en" \
+            else _hits_en(DIRECTION_EN, low)
+        h = _dedupe(_hits(lang, hv, low) + _hits_en(HORIZON_EN, low)) if lang != "en" \
+            else _hits_en(HORIZON_EN, low)
+        if not (q and d and h):
+            continue
+        digest = hashlib.sha256(s.encode("utf-8")).hexdigest()[:12]
+        if digest in seen:
+            continue
+        seen.add(digest)
+        inst = resolve_instruments(low, universe)
+        inherited = False
+        if not (inst["analogues"] or inst["transfer_only"] or inst["indirect"]) and (
+                doc_inst["analogues"] or doc_inst["transfer_only"] or doc_inst["indirect"]):
+            inst = {**doc_inst, "from_context": True}
+            inherited = True
+        if not (inst["analogues"] or inst["transfer_only"] or inst["indirect"]):
+            dropped_unmappable += 1                     # a summary nobody can test
+            continue
+        channel = "direct" if inst["analogues"] else "indirect"
+        cls = mechanism_class(low)
+        key = mechanism_key(inst, cls, d[:2], h[:2])
+        if key in keys:
+            duplicates += 1
+            continue
+        keys.add(key)
+        out.append({"claim": s, "lang": lang, "quantities": q[:4],
+                    "direction": d[:2], "horizon": h[:2], "instruments": inst,
+                    "instrument_from_context": inherited, "channel": channel,
+                    "mechanism_class": cls, "mechanism_key": key,
+                    "event_time": stated_date(s),
+                    "claimed_performance": performance(s), "claim_hash": digest})
+        if len(out) >= max_claims:
+            break
+    return {"claims": out, "dropped_venue": dropped_venue,
+            "dropped_unmappable": dropped_unmappable, "duplicate_mechanisms": duplicates}
+
+
+def claim_score(c: dict[str, Any]) -> float:
+    """How much a claim is worth reading FIRST. Resolved instrument and a stated horizon beat a
+    vague story; stated numbers add a little, because they at least make the story checkable;
+    a structural class (policy, flow, inventory ...) edges out the four-hundredth momentum
+    variant, which is the orthogonality target stated as a tie-break."""
+    s = 1.0
+    if c.get("instruments", {}).get("analogues"):
+        s += 1.0
+    if c.get("instruments", {}).get("transfer_only") or c.get("instruments", {}).get("indirect"):
+        s += 0.25
+    if len(c.get("quantities") or []) >= 2:
+        s += 0.5
+    if c.get("claimed_performance"):
+        s += 0.25
+    if c.get("mechanism_class") not in ("momentum", "other", None):
+        s += 0.1
+    return s
 
 ```
 
-### scripts/run_derivative_shadow.py
+### libs\research\program_ir.py
 ```python
-"""Derivative-data shadow sleeves (Phase 5): OI Divergence + Long/Short Contrarian.
+"""A restricted PROGRAM algebra: candidates that branch, remember, and watch a clock.
 
-ECONOMIC HYPOTHESES (pre-registered, no peeking):
-  * OI Divergence  -- price up + OI up = genuine trend participation (follow); price up + OI DOWN =
-                      short-covering (weak, fade). Signal = sign(dPrice)*sign(dOI), cross-sectional.
-  * L/S Contrarian -- crowded retail positioning mean-reverts. Signal = -zscore(long/short ratio),
-                      cross-sectional (fade the crowd).
+WHY THIS EXISTS (ledger item D4, principal 2026-09-16)
 
-We have NO usable history for these (the derivative metrics only exist from when our own archiver
-started), so we DO NOT fabricate a backtest. Instead we accumulate forward and report progress. The
-moment >= MIN_DAYS distinct days exist, this computes real forward sleeve returns + Sharpe and the
-discovery gauntlet (CPCV/DSR/PBO) takes over. Writes web/derivative_shadow.json.
+`libs/research_os/dsl.py` already refuses to be an interpreter, and that refusal is the reason
+this module exists rather than a reason it does not: the desk may search PROGRAMS, but it may
+never execute model-written source on the box that holds the live terminal. So the DSL's idea is
+extended here, not duplicated -- a JSON tree, an operator allowlist, validation before any data
+is touched, evaluation by walking the tree into vetted pandas calls. There is no eval, no exec,
+no attribute access, no import and no user-supplied callable anywhere in this path either.
 
-    python scripts/run_derivative_shadow.py
+WHAT IS NEW, and it is exactly what D4 measured as missing. `alpha_grammar` and `research_os.dsl`
+both search a typed EXPRESSION: one formula evaluated identically on every bar. An expression
+cannot say "while we are inside the Asia range do nothing; once it breaks, ride it until the
+London close", cannot count the bars to the next month-end fixing, cannot widen its own lookback
+when volatility rises, and cannot hold a threshold that re-estimates itself -- control flow,
+state, an event clock, a dynamic lookback, an adaptive threshold. This IR adds them as NODES, so
+the search space grows without the executor growing a way to run arbitrary code.
+
+THE NODES ARE THE SECURITY BOUNDARY, exactly as `dsl.OPS` is: eleven frozen dataclasses with
+typed fields, and anything else refused by name. A program is JSON in and JSON out, so a program
+IS its recipe and `fingerprint` hashes two spellings of one hypothesis the same.
+
+LOOK-AHEAD IS STRUCTURALLY IMPOSSIBLE. Every rolling window is trailing (pandas `rolling` at bar
+i spans i-w+1..i), the state machine is a forward scan that sees each bar once, the cross-asset
+reference is reindex-then-forward-fill (the other instrument's last KNOWN bar), and the event
+clock is measured in ELAPSED TIME against a calendar published in advance rather than in bar
+positions -- which is what makes "bars to the next event" point-in-time rather than a peek at the
+end of the sample. The property is asserted, not asserted-about: `tests/research/
+test_program_ir.py` re-evaluates every node on a truncated frame and on a frame whose FUTURE bars
+were replaced, and requires the past outputs to be identical.
+
+THE MONEY PATH NEVER SEES A TREE. `compile_program` returns a callable producing the desk's own
+`mt5desk.engine.Signal` objects -- the contract every registered family produces -- so a program
+reaching the forward engine is indistinguishable from a family, and one that cannot be compiled
+reaches nothing at all.
 """
-
 from __future__ import annotations
 
+import hashlib
 import json
-from datetime import UTC, datetime, timedelta
+import sys
+from collections.abc import Callable, Iterator, Mapping, Sequence
+from dataclasses import dataclass, field, replace
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 import pandas as pd
 
-from libs.data.crypto_source import fetch_klines
-from libs.research.anytime_valid import e_value
+ROOT = Path(__file__).resolve().parents[2]
+DESK = ROOT / "desks" / "mt5"
+#: The forced-flow calendar the EventClock node reads. Tolerant: an unreadable or absent file is
+#: UNMEASURED (every clock series is NaN), never a substituted calendar.
+CALENDAR_PATH = DESK / "data" / "forced_flow_calendar.json"
 
-_METRICS = Path("data/crypto_metrics.parquet")
-_OUT = Path("web/derivative_shadow.json")
-_MIN_DAYS = 40
+#: Terminals a Series node may name. `hour` and `dow` are the bar's own BROKER stamp (Fusion runs
+#: UTC+3, and the bars are on that clock -- see `dsl.SESSIONS`), which is how a program says
+#: "inside the Asia window" without a session operator. `tr` is the true range and `atr` its
+#: 14-bar mean, the desk's `families._atr` default -- imported, never re-spelled.
+FIELDS: tuple[str, ...] = ("open", "high", "low", "close", "ret", "range", "body", "tr", "atr",
+                           "typical", "activity", "spread", "hour", "dow")
+ROLLING_OPS: tuple[str, ...] = ("mean", "std", "max", "min", "sum", "zscore", "rank")
+BINARY_OPS: tuple[str, ...] = ("add", "sub", "mul", "div", "min2", "max2")
+COMPARE_OPS: tuple[str, ...] = ("gt", "ge", "lt", "le")
+CLOCK_MODES: tuple[str, ...] = ("since", "to")
+#: The kinds `forced_flow_calendar.json` publishes. An allowlist for the same reason `dsl.OPS` is
+#: one: adding a kind is a reviewable act, and a typo is refused by name instead of silently
+#: producing an all-NaN clock that reads like a mechanism with no signal.
+CALENDAR_KINDS: tuple[str, ...] = ("month_end", "quarter_end", "index_rebalance", "futures_roll",
+                                   "option_expiry", "bond_auction", "central_bank", "fixing",
+                                   "inventory", "usda", "holiday_liquidity")
+
+MAX_DEPTH = 10
+MAX_NODES = 80
+MIN_WINDOW = 2
+MAX_WINDOW = 1000
+MAX_STATES = 6
+MAX_TRANSITIONS = 4
+MAX_SLOTS = 12
+#: Execution slots every compiled program carries whether or not its logic mentions them. They
+#: are RESERVED: a tree may not declare a Slot by these names, because two meanings for one name
+#: is how an optimiser ends up tuning a stop it thinks is a lookback.
+RESERVED = ("stop_atr", "rr", "ttl_bars", "atr_n")
+
+#: The meta-evolution layer's active variants (LAWS 5m). A `program_ir` variant narrows the
+#: operator vocabulary `mutate_logic` draws from; it can never widen it past the module's own.
+ACTIVE_VARIANTS = DESK / "data" / "research_evolution" / "active_variants.json"
 
 
-def _sharpe(r: np.ndarray) -> float:
-    sd = float(np.std(r))
-    return round(float(np.mean(r)) / sd * (365 ** 0.5), 2) if sd else 0.0
+@dataclass(frozen=True)
+class Grammar:
+    """The vocabulary a structural mutation may draw from -- a representation grammar variant.
+
+    Every field is a SUBSET of the module's vocabulary: `active_grammar` intersects a variant's
+    lists with `ROLLING_OPS`, `BINARY_OPS` and `COMPARE_OPS`, so an evolved grammar can focus the
+    search and can never introduce an operator `validate` would refuse.
+    """
+
+    rolling_ops: tuple[str, ...] = ROLLING_OPS
+    binary_ops: tuple[str, ...] = BINARY_OPS
+    compare_ops: tuple[str, ...] = COMPARE_OPS
+    max_depth: int = MAX_DEPTH
+    state_machines: bool = True
+    variant: str | None = None
 
 
-def _forward_returns(df: pd.DataFrame) -> dict[str, float]:
-    """Compute OI-divergence + L/S-contrarian forward sleeve Sharpes once enough days exist."""
-    df = df.copy()
-    df["date"] = pd.to_datetime(df["ts"]).dt.date
-    piv_oi = df.pivot_table(index="date", columns="symbol", values="open_interest")
-    piv_ls = df.pivot_table(index="date", columns="symbol", values="ls_ratio")
-    syms = list(piv_oi.columns)
-    start_ms = int((pd.Timestamp(min(df["date"])) - pd.Timedelta(days=2)).timestamp() * 1000)
-    px = {}
-    for s in syms:
+def active_grammar(path: Path | None = None) -> Grammar:
+    """The grammar the meta-evolution layer activated, or the module defaults when none is
+    published, unreadable, or empty after intersection."""
+    try:
+        doc = json.loads((path or ACTIVE_VARIANTS).read_text(encoding="utf-8-sig"))
+    except (OSError, ValueError):
+        return Grammar()
+    var = (doc.get("variants") or {}).get("program_ir") if isinstance(doc, dict) else None
+    if not isinstance(var, dict) or not isinstance(var.get("config"), dict):
+        return Grammar()
+    cfg = var["config"]
+
+    def _sub(key: str, base: tuple[str, ...]) -> tuple[str, ...]:
+        raw = cfg.get(key)
+        if not isinstance(raw, list):
+            return base
+        kept = tuple(op for op in base if op in {str(x) for x in raw})
+        return kept or base
+
+    depth = cfg.get("max_depth")
+    return Grammar(rolling_ops=_sub("rolling_ops", ROLLING_OPS),
+                   binary_ops=_sub("binary_ops", BINARY_OPS),
+                   compare_ops=_sub("compare_ops", COMPARE_OPS),
+                   max_depth=(int(min(MAX_DEPTH, max(2, depth)))
+                              if isinstance(depth, (int, float)) else MAX_DEPTH),
+                   state_machines=bool(cfg.get("state_machines", True)),
+                   variant=str(var.get("id")) if var.get("id") else None)
+
+
+class ProgramError(ValueError):
+    """A tree this module refuses, with the reason a reviewer needs."""
+
+
+# --------------------------------------------------------------------------- the node algebra
+@dataclass(frozen=True)
+class Const:
+    """A scalar, broadcast over the bar index."""
+    value: float
+
+
+@dataclass(frozen=True)
+class Series:
+    """One terminal of the primary instrument's bars. `field` must be in `FIELDS`."""
+    field: str
+
+
+@dataclass(frozen=True)
+class Slot:
+    """A numeric the optimiser tunes, bounded by construction.
+
+    A Slot evaluates to whatever value is bound for its name (clamped into [lo, hi]) and to
+    `default` when nothing is bound -- so a program is runnable before it is ever tuned, and a
+    tuning run can never push a window past `MAX_WINDOW` by handing in a larger number.
+    """
+    name: str
+    lo: float
+    hi: float
+    default: float
+
+
+@dataclass(frozen=True)
+class Rolling:
+    """A trailing statistic. `window` is a Slot (a DYNAMIC lookback) or a fixed int.
+
+    `lag` ENDS the window that many bars ago, and it is not a convenience. `close > max(high, w)`
+    is FALSE ON EVERY BAR -- the window contains this bar's own high, which is never below its
+    close -- so a breakout written without it is a rule that cannot fire, and a search would read
+    the resulting silence as "no edge here" rather than as "this question was never asked".
+    """
+    op: str
+    child: Node
+    window: Slot | int
+    lag: Slot | int = 0
+
+
+@dataclass(frozen=True)
+class Binary:
+    """Arithmetic on two series."""
+    op: str
+    left: Node
+    right: Node
+
+
+@dataclass(frozen=True)
+class Compare:
+    """A predicate as 1.0 / 0.0, so a condition is a series like everything else."""
+    op: str
+    left: Node
+    right: Node
+
+
+@dataclass(frozen=True)
+class Cond:
+    """CONTROL FLOW: `when` > 0 takes `then`, otherwise `otherwise`. Bar by bar, no lookahead."""
+    when: Node
+    then: Node
+    otherwise: Node
+
+
+@dataclass(frozen=True)
+class Transition:
+    """Leave for state `to` on the first bar `when` holds. Order inside a state is priority."""
+    to: str
+    when: Compare
+
+
+@dataclass(frozen=True)
+class StateDef:
+    name: str
+    value: int
+    transitions: tuple[Transition, ...] = ()
+
+
+@dataclass(frozen=True)
+class State:
+    """A STATE MACHINE, emitting the current state's `value` as a series.
+
+    `states[0]` is the initial state. The emitted value at bar i is the state AFTER that bar's
+    transitions have been tested, so it uses bar i and no later one. Encode a short as a NEGATIVE
+    state value: `compile_program` reads the root's SIGN as the direction.
+    """
+    states: tuple[StateDef, ...]
+
+
+@dataclass(frozen=True)
+class EventClock:
+    """Bars since the last / to the next calendar event of `kind`.
+
+    MEASURED IN ELAPSED TIME divided by the frame's own bar span, not in bar positions. That is
+    what makes "to the next event" point-in-time: the calendar is published in advance, so the
+    distance to a scheduled fixing is knowable at the bar, while a bar-position count would need
+    to know how many bars the market has yet to print. Weekends therefore count as bars, because
+    the forced actor's deadline does not pause for them.
+    """
+    kind: str
+    mode: str = "since"
+
+
+@dataclass(frozen=True)
+class Adaptive:
+    """An ADAPTIVE THRESHOLD: the trailing `q`-quantile of `child` over `window`.
+
+    A fixed threshold is a claim about a level; this is a claim about a POSITION in the recent
+    distribution, which is the same claim re-estimated as the instrument's regime moves.
+    """
+    child: Node
+    window: Slot | int
+    q: Slot | float = 0.8
+
+
+@dataclass(frozen=True)
+class CrossRef:
+    """Another instrument's field, supplied by the caller and joined causally.
+
+    Reindexed onto the primary's bars and forward-filled: the reference's last KNOWN value. A
+    symbol the caller did not supply evaluates to NaN -- UNMEASURED, never a substituted peer.
+    """
+    symbol: str
+    field: str
+
+
+Node = (Const | Series | Slot | Rolling | Binary | Compare | Cond | State | EventClock
+        | Adaptive | CrossRef)
+
+_NODE_NAMES: dict[type, str] = {
+    Const: "const", Series: "series", Slot: "slot", Rolling: "rolling", Binary: "binary",
+    Compare: "compare", Cond: "cond", State: "state", EventClock: "event_clock",
+    Adaptive: "adaptive", CrossRef: "cross_ref",
+}
+
+
+@dataclass
+class Extras:
+    """Everything evaluation may touch beyond the primary bars. Nothing else is reachable."""
+    slots: Mapping[str, float] = field(default_factory=dict)
+    cross: Mapping[str, pd.DataFrame] = field(default_factory=dict)
+    calendar: Sequence[Mapping[str, Any]] = ()
+    symbol: str = ""
+
+
+# --------------------------------------------------------------------------- JSON codec
+def _win_json(w: Slot | int | float) -> Any:
+    return to_json(w) if isinstance(w, Slot) else w
+
+
+def to_json(tree: Node) -> dict[str, Any]:
+    """The tree as plain JSON. Canonical: field order is this function's, not the caller's."""
+    name = _NODE_NAMES.get(type(tree))
+    if name is None:
+        raise ProgramError(f"{type(tree).__name__} is not a program node")
+    if isinstance(tree, Const):
+        return {"node": name, "value": float(tree.value)}
+    if isinstance(tree, Series):
+        return {"node": name, "field": tree.field}
+    if isinstance(tree, Slot):
+        return {"node": name, "name": tree.name, "lo": float(tree.lo), "hi": float(tree.hi),
+                "default": float(tree.default)}
+    if isinstance(tree, Rolling):
+        return {"node": name, "op": tree.op, "child": to_json(tree.child),
+                "window": _win_json(tree.window), "lag": _win_json(tree.lag)}
+    if isinstance(tree, Binary | Compare):
+        return {"node": name, "op": tree.op, "left": to_json(tree.left),
+                "right": to_json(tree.right)}
+    if isinstance(tree, Cond):
+        return {"node": name, "when": to_json(tree.when), "then": to_json(tree.then),
+                "otherwise": to_json(tree.otherwise)}
+    if isinstance(tree, State):
+        return {"node": name, "states": [
+            {"name": s.name, "value": int(s.value),
+             "transitions": [{"to": t.to, "when": to_json(t.when)} for t in s.transitions]}
+            for s in tree.states]}
+    if isinstance(tree, EventClock):
+        return {"node": name, "kind": tree.kind, "mode": tree.mode}
+    if isinstance(tree, Adaptive):
+        return {"node": name, "child": to_json(tree.child), "window": _win_json(tree.window),
+                "q": _win_json(tree.q)}
+    return {"node": name, "symbol": tree.symbol, "field": tree.field}
+
+
+def _win_from(obj: Any) -> Slot | int:
+    if isinstance(obj, Mapping):
+        got = from_json(obj)
+        if not isinstance(got, Slot):
+            raise ProgramError("a window may only be a Slot or an int")
+        return got
+    if isinstance(obj, bool) or not isinstance(obj, (int, float)):
+        raise ProgramError(f"window {obj!r} is not numeric")
+    return int(obj)
+
+
+def from_json(obj: Any) -> Node:
+    """Rebuild a tree from JSON. An unknown node name is refused, never approximated."""
+    if not isinstance(obj, Mapping):
+        raise ProgramError(f"a node must be an object, got {type(obj).__name__}")
+    kind = obj.get("node")
+    if kind == "const":
+        return Const(float(obj["value"]))
+    if kind == "series":
+        return Series(str(obj["field"]))
+    if kind == "slot":
+        return Slot(str(obj["name"]), float(obj["lo"]), float(obj["hi"]), float(obj["default"]))
+    if kind == "rolling":
+        return Rolling(str(obj["op"]), from_json(obj["child"]), _win_from(obj["window"]),
+                       _win_from(obj.get("lag", 0)) if obj.get("lag") else 0)
+    if kind in ("binary", "compare"):
+        cls = Binary if kind == "binary" else Compare
+        return cls(str(obj["op"]), from_json(obj["left"]), from_json(obj["right"]))
+    if kind == "cond":
+        return Cond(from_json(obj["when"]), from_json(obj["then"]), from_json(obj["otherwise"]))
+    if kind == "state":
+        states: list[StateDef] = []
+        for s in obj["states"]:
+            trs: list[Transition] = []
+            for t in s.get("transitions", ()):
+                when = from_json(t["when"])
+                if not isinstance(when, Compare):
+                    raise ProgramError("a transition fires on a Compare and nothing else")
+                trs.append(Transition(str(t["to"]), when))
+            states.append(StateDef(str(s["name"]), int(s["value"]), tuple(trs)))
+        return State(tuple(states))
+    if kind == "event_clock":
+        return EventClock(str(obj["kind"]), str(obj.get("mode", "since")))
+    if kind == "adaptive":
+        q = obj.get("q", 0.8)
+        qq: Slot | float = _win_from(q) if isinstance(q, Mapping) else float(q)
+        return Adaptive(from_json(obj["child"]), _win_from(obj["window"]), qq)
+    if kind == "cross_ref":
+        return CrossRef(str(obj["symbol"]), str(obj["field"]))
+    raise ProgramError(f"unknown node {kind!r}; the allowlist is {sorted(_NODE_NAMES.values())}")
+
+
+def fingerprint(tree: Node) -> str:
+    """A canonical hash of the LOGIC. Two trees that hash the same are one hypothesis."""
+    blob = json.dumps(to_json(tree), sort_keys=True, separators=(",", ":"))
+    return hashlib.blake2b(blob.encode("utf-8"), digest_size=8).hexdigest()
+
+
+# --------------------------------------------------------------------------- structure
+def _children(n: Node) -> tuple[Node, ...]:
+    """The REPLACEABLE structural children -- what a mutation may swap out."""
+    if isinstance(n, Rolling | Adaptive):
+        return (n.child,)
+    if isinstance(n, Binary | Compare):
+        return (n.left, n.right)
+    if isinstance(n, Cond):
+        return (n.when, n.then, n.otherwise)
+    if isinstance(n, State):
+        return tuple(t.when for s in n.states for t in s.transitions)
+    return ()
+
+
+def _rebuild(n: Node, kids: Sequence[Node]) -> Node:
+    if isinstance(n, Rolling | Adaptive):
+        return replace(n, child=kids[0])
+    if isinstance(n, Binary | Compare):
+        return replace(n, left=kids[0], right=kids[1])
+    if isinstance(n, Cond):
+        return replace(n, when=kids[0], then=kids[1], otherwise=kids[2])
+    if isinstance(n, State):
+        it = iter(kids)
+        out: list[StateDef] = []
+        for s in n.states:
+            trs = tuple(replace(t, when=k) if isinstance(k := next(it), Compare) else t
+                        for t in s.transitions)
+            out.append(replace(s, transitions=trs))
+        return replace(n, states=tuple(out))
+    return n
+
+
+def walk(tree: Node) -> Iterator[Node]:
+    """Every node, including the Slots hiding inside windows and quantiles."""
+    yield tree
+    for k in _children(tree):
+        yield from walk(k)
+    if isinstance(tree, Rolling | Adaptive) and isinstance(tree.window, Slot):
+        yield tree.window
+    if isinstance(tree, Rolling) and isinstance(tree.lag, Slot):
+        yield tree.lag
+    if isinstance(tree, Adaptive) and isinstance(tree.q, Slot):
+        yield tree.q
+
+
+def size(tree: Node) -> int:
+    return sum(1 for _ in walk(tree))
+
+
+def depth(tree: Node) -> int:
+    kids = _children(tree)
+    return 1 + (max(depth(k) for k in kids) if kids else 0)
+
+
+def slots(tree: Node) -> list[Slot]:
+    """The tuneable numerics of this tree, deduped by name. Execution slots are not here."""
+    out: dict[str, Slot] = {}
+    for n in walk(tree):
+        if isinstance(n, Slot):
+            out.setdefault(n.name, n)
+    return [out[k] for k in sorted(out)]
+
+
+def exec_slots() -> list[Slot]:
+    """The four slots every compiled program carries: how it stops, targets, times out, sizes."""
+    return [Slot("stop_atr", 0.4, 3.0, 1.2), Slot("rr", 0.8, 4.0, 1.5),
+            Slot("ttl_bars", 2.0, 72.0, 8.0), Slot("atr_n", 7.0, 48.0, 14.0)]
+
+
+# --------------------------------------------------------------------------- validation
+def validate(tree: Any) -> list[str]:
+    """Every reason this tree is not a program. Empty means it is one.
+
+    Runs BEFORE any data is touched, exactly as `dsl.validate` does, and reports ALL the reasons
+    rather than the first -- a generator that gets one refusal per attempt learns one thing per
+    attempt.
+    """
+    errs: list[str] = []
+    seen: dict[str, Slot] = {}
+    _check(tree, 0, errs, seen)
+    if len(seen) > MAX_SLOTS:
+        errs.append(f"{len(seen)} slots; the cap is {MAX_SLOTS} -- a wider box is a longer search")
+    try:
+        if size(tree) > MAX_NODES:
+            errs.append(f"tree larger than {MAX_NODES} nodes")
+        if depth(tree) > MAX_DEPTH:
+            errs.append(f"tree deeper than {MAX_DEPTH}; complexity is a redundancy risk")
+    except (AttributeError, TypeError, RecursionError):
+        pass
+    return errs
+
+
+def _check_window(w: Any, where: str, errs: list[str], seen: dict[str, Slot]) -> None:
+    if isinstance(w, Slot):
+        _check(w, 0, errs, seen)
+        if w.lo < MIN_WINDOW or w.hi > MAX_WINDOW:
+            errs.append(f"{where} slot {w.name} spans [{w.lo}, {w.hi}]; windows live in "
+                        f"[{MIN_WINDOW}, {MAX_WINDOW}]")
+        return
+    if isinstance(w, bool) or not isinstance(w, int):
+        errs.append(f"{where} must be a Slot or an int, got {type(w).__name__}")
+        return
+    if not MIN_WINDOW <= w <= MAX_WINDOW:
+        errs.append(f"{where} {w} is outside [{MIN_WINDOW}, {MAX_WINDOW}]")
+
+
+def _check(n: Any, d: int, errs: list[str], seen: dict[str, Slot]) -> None:
+    if type(n) not in _NODE_NAMES:
+        errs.append(f"unknown node {type(n).__name__}; the allowlist is "
+                    f"{sorted(_NODE_NAMES.values())}")
+        return
+    if d > MAX_DEPTH:
+        errs.append(f"tree deeper than {MAX_DEPTH}")
+        return
+    if isinstance(n, Const) and not np.isfinite(n.value):
+        errs.append("a Const must be finite")
+    elif isinstance(n, Series) and n.field not in FIELDS:
+        errs.append(f"unknown field {n.field!r}; the terminals are {list(FIELDS)}")
+    elif isinstance(n, CrossRef) and n.field not in FIELDS:
+        errs.append(f"cross reference to unknown field {n.field!r}")
+    elif isinstance(n, Slot):
+        if n.name in RESERVED:
+            errs.append(f"slot {n.name!r} is a RESERVED execution slot; a tree may not redefine it")
+        if not (n.lo <= n.default <= n.hi) or not np.isfinite([n.lo, n.hi, n.default]).all():
+            errs.append(f"slot {n.name}: default {n.default} outside [{n.lo}, {n.hi}]")
+        prior = seen.get(n.name)
+        if prior is not None and prior != n:
+            errs.append(f"slot {n.name} declared twice with different bounds")
+        seen.setdefault(n.name, n)
+    elif isinstance(n, Rolling):
+        if n.op not in ROLLING_OPS:
+            errs.append(f"unknown rolling op {n.op!r}; the allowlist is {list(ROLLING_OPS)}")
+        _check_window(n.window, "Rolling.window", errs, seen)
+        lag = n.lag
+        if isinstance(lag, Slot):
+            _check(lag, d + 1, errs, seen)
+            if lag.lo < 0 or lag.hi > MAX_WINDOW:
+                errs.append(f"Rolling.lag slot {lag.name} must stay in [0, {MAX_WINDOW}]")
+        elif isinstance(lag, bool) or not isinstance(lag, int) or not 0 <= lag <= MAX_WINDOW:
+            errs.append(f"Rolling.lag {lag!r} must be an int in [0, {MAX_WINDOW}]")
+    elif isinstance(n, Binary) and n.op not in BINARY_OPS:
+        errs.append(f"unknown binary op {n.op!r}; the allowlist is {list(BINARY_OPS)}")
+    elif isinstance(n, Compare) and n.op not in COMPARE_OPS:
+        errs.append(f"unknown compare op {n.op!r}; the allowlist is {list(COMPARE_OPS)}")
+    elif isinstance(n, EventClock):
+        if n.kind not in CALENDAR_KINDS:
+            errs.append(f"unknown calendar kind {n.kind!r}; the allowlist is "
+                        f"{list(CALENDAR_KINDS)}")
+        if n.mode not in CLOCK_MODES:
+            errs.append(f"unknown clock mode {n.mode!r}; use one of {list(CLOCK_MODES)}")
+    elif isinstance(n, Adaptive):
+        _check_window(n.window, "Adaptive.window", errs, seen)
+        if isinstance(n.q, Slot):
+            _check(n.q, d + 1, errs, seen)
+            if not (n.q.lo > 0.0 and n.q.hi < 1.0):
+                errs.append(f"quantile slot {n.q.name} must stay strictly inside (0, 1)")
+        elif not 0.0 < float(n.q) < 1.0:
+            errs.append(f"quantile {n.q} must be strictly inside (0, 1)")
+    elif isinstance(n, State):
+        names = [s.name for s in n.states]
+        if not 2 <= len(n.states) <= MAX_STATES:
+            errs.append(f"a state machine has 2..{MAX_STATES} states, got {len(n.states)}")
+        if len(set(names)) != len(names):
+            errs.append("two states share a name")
+        for s in n.states:
+            if len(s.transitions) > MAX_TRANSITIONS:
+                errs.append(f"state {s.name} has more than {MAX_TRANSITIONS} transitions")
+            for t in s.transitions:
+                if t.to not in names:
+                    errs.append(f"state {s.name} transitions to unknown state {t.to!r}")
+                if not isinstance(t.when, Compare):
+                    errs.append(f"state {s.name}: a transition fires on a Compare only")
+    for k in _children(n):
+        _check(k, d + 1, errs, seen)
+
+
+# --------------------------------------------------------------------------- evaluation
+_DESK: Any = None
+
+
+def _desk() -> Any:
+    """The desk package, for the ONE spelling of ATR and the ONE Signal contract."""
+    global _DESK
+    if _DESK is None:
+        # APPENDED, never inserted. `desks/mt5` carries top-level `research` and `scripts`
+        # packages whose names also exist at the repository root, and putting it first would
+        # silently re-point every OTHER importer in the process at the desk's copies.
+        if str(DESK) not in sys.path:
+            sys.path.append(str(DESK))
         try:
-            k = fetch_klines(s, interval="1d", start_ms=start_ms)
-            if not k.empty:
-                px[s] = k.set_index(k["timestamp"].dt.date)["close"].astype(float)
-        except Exception:
+            from mt5desk import families
+        except Exception as exc:                                 # pragma: no cover - install
+            raise ProgramError(f"mt5desk is unreachable ({type(exc).__name__}: {exc}); a program "
+                               "may not carry a second spelling of the desk's ATR or Signal") \
+                from exc
+        _DESK = families
+    return _DESK
+
+
+def _signal() -> Any:
+    """The desk's OWN Signal class. One contract; a local re-spelling would diverge silently."""
+    _desk()
+    from mt5desk.engine import Signal
+    return Signal
+
+
+def _nan(idx: pd.Index) -> pd.Series:
+    return pd.Series(np.nan, index=idx, dtype=float)
+
+
+def _value(x: Slot | int | float, ex: Extras) -> float:
+    if isinstance(x, Slot):
+        v = float(ex.slots.get(x.name, x.default))
+        return float(min(max(v, x.lo), x.hi))
+    return float(x)
+
+
+def _window(x: Slot | int | float, ex: Extras) -> int:
+    return int(min(max(round(_value(x, ex)), MIN_WINDOW), MAX_WINDOW))
+
+
+def _terminal(bars: pd.DataFrame, name: str) -> pd.Series:
+    idx = bars.index
+    if name in ("open", "high", "low", "close"):
+        return bars[name].astype(float) if name in bars.columns else _nan(idx)
+    if name in ("activity", "spread"):
+        col = "tick_volume" if name == "activity" else "spread"
+        return bars[col].astype(float) if col in bars.columns else _nan(idx)
+    if name in ("hour", "dow"):
+        if not isinstance(idx, pd.DatetimeIndex):
+            return _nan(idx)
+        vals = idx.hour if name == "hour" else idx.dayofweek
+        return pd.Series(np.asarray(vals, dtype=float), index=idx)
+    if any(c not in bars.columns for c in ("open", "high", "low", "close")):
+        return _nan(idx)
+    h, lo, c, o = (bars["high"].astype(float), bars["low"].astype(float),
+                   bars["close"].astype(float), bars["open"].astype(float))
+    if name == "ret":
+        with np.errstate(all="ignore"):
+            return pd.Series(np.log(c.to_numpy(dtype=float)), index=idx).diff()
+    if name == "range":
+        return h - lo
+    if name == "body":
+        return c - o
+    if name == "typical":
+        return (h + lo + c) / 3.0
+    prev = c.shift(1)
+    tr = pd.concat([h - lo, (h - prev).abs(), (lo - prev).abs()], axis=1).max(axis=1)
+    if name == "tr":
+        return tr
+    atr: pd.Series = _desk()._atr(bars, 14)
+    return atr.astype(float)
+
+
+def _event_clock(node: EventClock, bars: pd.DataFrame, ex: Extras) -> pd.Series:
+    idx = bars.index
+    if not isinstance(idx, pd.DatetimeIndex) or not len(idx):
+        return _nan(idx)
+    sym = str(ex.symbol or "").upper()
+    times: list[pd.Timestamp] = []
+    for row in ex.calendar:
+        if str(row.get("kind", "")) != node.kind:
             continue
-    prices = pd.DataFrame(px).reindex(piv_oi.index).ffill()
-    pr_ret = prices.pct_change().shift(-1)                    # next-day return (no lookahead)
-    d_price = prices.pct_change()
-    d_oi = piv_oi.pct_change()
-    oi_sig = np.sign(d_price) * np.sign(d_oi)                 # +1 confirm trend, -1 divergence
-    ls_z = (piv_ls.sub(piv_ls.mean(axis=1), axis=0)).div(piv_ls.std(axis=1) + 1e-9, axis=0)
-    ls_sig = -ls_z                                            # fade the crowd
-    out = {}
-    for name, sig in (("oi_divergence", oi_sig), ("ls_contrarian", ls_sig)):
-        w = sig.sub(sig.mean(axis=1), axis=0)                 # market-neutral
-        w = w.div(w.abs().sum(axis=1) + 1e-9, axis=0)
-        out[name] = (w * pr_ret).sum(axis=1).dropna().to_numpy()
+        inst = row.get("instruments")
+        if sym and isinstance(inst, (list, tuple)) and inst and sym not in {
+                str(i).upper() for i in inst}:
+            continue
+        ts = pd.to_datetime(row.get("window_start_utc") or row.get("date"), utc=True,
+                            errors="coerce")
+        if ts is not pd.NaT and not pd.isna(ts):
+            times.append(ts)
+    if not times:
+        return _nan(idx)
+    span = pd.Series(idx).diff().dt.total_seconds().mode()
+    step = float(span.iloc[0]) if len(span) and float(span.iloc[0]) > 0 else 3600.0
+    ev = np.sort(np.asarray(pd.DatetimeIndex(times).view("int64"), dtype=np.float64)) / 1e9
+    now = np.asarray(idx.view("int64"), dtype=np.float64) / 1e9
+    if node.mode == "since":
+        pos = np.searchsorted(ev, now, side="right") - 1
+        out = np.where(pos >= 0, (now - ev[np.clip(pos, 0, ev.size - 1)]) / step, np.nan)
+    else:
+        pos = np.searchsorted(ev, now, side="left")
+        out = np.where(pos < ev.size, (ev[np.clip(pos, 0, ev.size - 1)] - now) / step, np.nan)
+    return pd.Series(out, index=idx, dtype=float)
+
+
+def _state(node: State, bars: pd.DataFrame, ex: Extras) -> pd.Series:
+    idx = bars.index
+    n = len(idx)
+    order = {s.name: i for i, s in enumerate(node.states)}
+    values = np.asarray([s.value for s in node.states], dtype=float)
+    masks: list[list[tuple[int, np.ndarray]]] = []
+    for s in node.states:
+        row: list[tuple[int, np.ndarray]] = []
+        for t in s.transitions:
+            m = _eval(t.when, bars, ex).to_numpy(dtype=float)
+            row.append((order[t.to], np.nan_to_num(m, nan=0.0) > 0.5))
+        masks.append(row)
+    out = np.empty(n, dtype=float)
+    cur = 0
+    for i in range(n):
+        for tgt, m in masks[cur]:
+            if m[i]:
+                cur = tgt
+                break
+        out[i] = values[cur]
+    return pd.Series(out, index=idx, dtype=float)
+
+
+def _rolling(op: str, s: pd.Series, w: int, lag: int = 0) -> pd.Series:
+    if lag:
+        s = s.shift(lag)
+    r = s.rolling(w)
+    if op == "zscore":
+        sd = r.std()
+        return (s - r.mean()) / sd.where(sd.abs() > 1e-12)
+    if op == "rank":
+        return r.rank(pct=True)
+    out: pd.Series = getattr(r, op)()
     return out
 
 
-def main() -> None:
-    now = datetime.now(tz=UTC)
-    # REGISTRY-DRIVEN ROSTER (principal 2026-07-23): built-ins plus anything registered in
-    # data/shadow_sleeves.json, so a new sleeve starts accruing forward evidence the moment it
-    # is registered -- no code edit, nothing silently left off the clocks. Safe to scale now
-    # that DSR deflation is per-family and pre-registered (fixed wall), so parallel challengers
-    # no longer inflate each other's bar. Order is deterministic for reproducible runs.
-    sleeves = ["oi_divergence", "ls_contrarian"]
+def _eval(n: Node, bars: pd.DataFrame, ex: Extras) -> pd.Series:
+    idx = bars.index
+    if isinstance(n, Const):
+        return pd.Series(float(n.value), index=idx, dtype=float)
+    if isinstance(n, Slot):
+        return pd.Series(_value(n, ex), index=idx, dtype=float)
+    if isinstance(n, Series):
+        return _terminal(bars, n.field)
+    if isinstance(n, CrossRef):
+        other = ex.cross.get(n.symbol)
+        if other is None or not len(other):
+            return _nan(idx)
+        s = _terminal(other, n.field)
+        return s.reindex(s.index.union(idx)).ffill().reindex(idx).astype(float)
+    if isinstance(n, EventClock):
+        return _event_clock(n, bars, ex)
+    if isinstance(n, State):
+        return _state(n, bars, ex)
+    if isinstance(n, Rolling):
+        lag = int(min(max(round(_value(n.lag, ex)), 0), MAX_WINDOW))
+        return _rolling(n.op, _eval(n.child, bars, ex), _window(n.window, ex), lag)
+    if isinstance(n, Adaptive):
+        q = float(min(max(_value(n.q, ex), 0.001), 0.999))
+        return _eval(n.child, bars, ex).rolling(_window(n.window, ex)).quantile(q)
+    if isinstance(n, Cond):
+        when = _eval(n.when, bars, ex)
+        return _eval(n.then, bars, ex).where(when > 0, _eval(n.otherwise, bars, ex))
+    a, b = _eval(n.left, bars, ex), _eval(n.right, bars, ex)
+    if isinstance(n, Compare):
+        cmps: dict[str, pd.Series] = {"gt": a > b, "ge": a >= b, "lt": a < b, "le": a <= b}
+        return cmps[n.op].astype(float).where(a.notna() & b.notna())
+    if n.op == "add":
+        return a + b
+    if n.op == "sub":
+        return a - b
+    if n.op == "mul":
+        return a * b
+    if n.op == "div":
+        return a / b.where(b.abs() > 1e-12)
+    frame = pd.concat([a, b], axis=1)
+    return frame.max(axis=1) if n.op == "max2" else frame.min(axis=1)
+
+
+def evaluate(tree: Node, bars: pd.DataFrame, extras: Extras | None = None) -> pd.Series:
+    """Validate, then walk. Only the operations named above are ever called.
+
+    The result is a float series on `bars.index`; NaN means "not computable here", which every
+    consumer reads as no signal rather than as a zero.
+    """
+    errs = validate(tree)
+    if errs:
+        raise ProgramError("; ".join(errs))
+    out = _eval(tree, bars, extras if extras is not None else Extras())
+    return out.astype(float).replace([np.inf, -np.inf], np.nan)
+
+
+def load_calendar(path: Path | None = None) -> list[dict[str, Any]]:
+    """The forced-flow calendar's events, or [] with nothing claimed (L1.28a)."""
     try:
-        _extra = json.loads(Path("data/shadow_sleeves.json").read_text("utf-8"))
-        if isinstance(_extra, list):
-            sleeves = sorted({*sleeves, *(str(x) for x in _extra if str(x).strip())})
-    except Exception:
-        pass
-    if not _METRICS.exists():
-        days, quality = 0, "no archive yet"
-        result: dict[str, object] = {}
-    else:
-        df = pd.read_parquet(_METRICS)
-        days = int(pd.to_datetime(df["ts"]).dt.date.nunique())
-        nsym = int(df["symbol"].nunique())
-        nan_ls = float(df["ls_ratio"].isna().mean())
-        quality = f"{nsym} symbols/day, L/S NaN {nan_ls:.0%}"
-        # PEEK RULE (2026-07-22): the e-process is anytime-valid (Ville) -- reading it
-        # daily spends NO alpha, so it may be published while the clock accrues. The
-        # interim Sharpe is NOT peek-safe and stays unpublished until min_days.
-        series = _forward_returns(df) if days >= 12 else {}
-    ready = days >= _MIN_DAYS
-    result = {k: _sharpe(v) if len(v) > 5 else 0.0 for k, v in series.items()} if ready else {}
-    peek = {k: {"e_value": round(e_value(v), 3), "n": len(v), "threshold": 100.0,
-                "decisive": bool(e_value(v) >= 100.0)} for k, v in series.items()}
-    eta = (now + timedelta(days=max(0, _MIN_DAYS - days))).date().isoformat()
-    out = {
-        "updated": now.isoformat(),
-        "sleeves": sleeves,
-        "days_accumulated": days,
-        "min_days": _MIN_DAYS,
-        "data_quality": quality,
-        "validation_progress_pct": round(100 * min(1.0, days / _MIN_DAYS), 1),
-        "expected_ready_date": eta,
-        "status": "VALIDATING" if ready else "ACCUMULATING (no backtest fabricated)",
-        "forward_sharpe": result,
-        "anytime_peek": peek,
-        "peek_rule": "e_value is anytime-valid: safe to read daily. decisive=True at "
-                     "alpha=0.01 BEFORE day 40 = early evidence; Sharpe stays "
-                     "unpublished until min_days (not peek-safe). Promotion still "
-                     "requires the full gauntlet.",
-    }
-    _OUT.parent.mkdir(parents=True, exist_ok=True)
-    _OUT.write_text(json.dumps(out, indent=2), "utf-8")
-    print(f"derivative shadow: {days}/{_MIN_DAYS} days ({out['validation_progress_pct']}%), "
-          f"ETA {eta}, status {out['status']}")
+        raw = json.loads((path or CALENDAR_PATH).read_text("utf-8"))
+    except (OSError, ValueError):
+        return []
+    events = raw.get("events") if isinstance(raw, dict) else raw
+    return [e for e in events if isinstance(e, dict)] if isinstance(events, list) else []
 
 
-if __name__ == "__main__":
-    main()
+# --------------------------------------------------------------------------- compilation
+def compile_program(tree: Node, extras: Extras | None = None, tag: str = "program",
+                    ) -> Callable[..., list[Any]]:
+    """The tree as a family: `fn(bars, side=1, **slot_values) -> list[Signal]`.
+
+    ENTRY IS THE NEXT OPEN, as the engine fills it, and only on an EDGE -- the bar where the
+    program's sign changes into +1 or -1. A state machine that stays long for 300 bars is one
+    trade, not 300 signals; emitting a signal per bar would hand the screen 300 overlapping
+    copies of one decision and call the last 299 of them independent evidence.
+
+    `side` is the POLARITY the program is traded at, exactly as `family_generic`'s DIRECTION axis
+    is: +1 takes the program's own sign, -1 takes the opposite. Stops and targets are ATR
+    multiples from the reserved execution slots, so the same threshold means the same thing on
+    gold and on EURCHF.
+    """
+    errs = validate(tree)
+    if errs:
+        raise ProgramError("; ".join(errs))
+    ex_base = extras if extras is not None else Extras()
+    defaults = {s.name: s.default for s in exec_slots()}
+    bounds = {s.name: (s.lo, s.hi) for s in exec_slots()}
+    fp = fingerprint(tree)
+
+    signal_cls = _signal()
+
+    def run(bars: pd.DataFrame, side: int = 1, **slot_values: float) -> list[Any]:
+        if bars is None or not len(bars) or "close" not in bars.columns:
+            return []
+        ex = Extras(slots={**dict(ex_base.slots), **{k: float(v) for k, v in slot_values.items()}},
+                    cross=ex_base.cross, calendar=ex_base.calendar, symbol=ex_base.symbol)
+        vals: dict[str, float] = {}
+        for k, dflt in defaults.items():
+            lo, hi = bounds[k]
+            vals[k] = float(min(max(float(ex.slots.get(k, dflt)), lo), hi))
+        raw = evaluate(tree, bars, ex).to_numpy(dtype=float)
+        sgn = np.clip(np.sign(np.nan_to_num(raw, nan=0.0)), -1.0, 1.0)
+        atr = _desk()._atr(bars, round(vals["atr_n"])).to_numpy(dtype=float)
+        close = bars["close"].astype(float).to_numpy(dtype=float)
+        idx = bars.index
+        ttl = round(vals["ttl_bars"])
+        out: list[Any] = []
+        for i in range(1, len(idx) - 1):
+            d = sgn[i]
+            if d == 0.0 or d == sgn[i - 1]:
+                continue
+            a, px = atr[i], close[i]
+            if not (np.isfinite(a) and a > 0 and np.isfinite(px)):
+                continue
+            s = int(d) * int(np.sign(side) or 1)
+            stop_d = vals["stop_atr"] * a
+            out.append(signal_cls(time=idx[i], side=s, stop=px - s * stop_d,
+                              target=px + s * stop_d * vals["rr"], ttl_bars=ttl,
+                              tag=f"{tag}:{fp}", trigger=None, wait_bars=1))
+        return out
+
+    return run
+
+
+# --------------------------------------------------------------------------- description
+def _win_str(w: Slot | int | float) -> str:
+    return f"{w.name}[{w.lo:g}..{w.hi:g}]" if isinstance(w, Slot) else f"{w:g}"
+
+
+_CMP = {"gt": ">", "ge": ">=", "lt": "<", "le": "<="}
+_BIN = {"add": "+", "sub": "-", "mul": "*", "div": "/"}
+
+
+def describe(tree: Node) -> str:
+    """The rule in one line of English-ish arithmetic. What a reviewer reads instead of JSON."""
+    if isinstance(tree, Const):
+        return f"{tree.value:g}"
+    if isinstance(tree, Series):
+        return tree.field
+    if isinstance(tree, Slot):
+        return _win_str(tree)
+    if isinstance(tree, CrossRef):
+        return f"{tree.symbol}.{tree.field}"
+    if isinstance(tree, EventClock):
+        return f"bars_{tree.mode}({tree.kind})"
+    if isinstance(tree, Rolling):
+        tail = "" if tree.lag == 0 else f", lag={_win_str(tree.lag)}"
+        return f"{tree.op}({describe(tree.child)}, {_win_str(tree.window)}{tail})"
+    if isinstance(tree, Adaptive):
+        return f"quantile({describe(tree.child)}, {_win_str(tree.window)}, q={_win_str(tree.q)})"
+    if isinstance(tree, Compare):
+        return f"({describe(tree.left)} {_CMP[tree.op]} {describe(tree.right)})"
+    if isinstance(tree, Binary):
+        if tree.op in _BIN:
+            return f"({describe(tree.left)} {_BIN[tree.op]} {describe(tree.right)})"
+        return f"{tree.op}({describe(tree.left)}, {describe(tree.right)})"
+    if isinstance(tree, Cond):
+        return (f"if {describe(tree.when)} then {describe(tree.then)} "
+                f"else {describe(tree.otherwise)}")
+    parts = []
+    for s in tree.states:
+        arcs = ", ".join(f"-{describe(t.when)}-> {t.to}" for t in s.transitions) or "terminal"
+        parts.append(f"{s.name}={s.value}: {arcs}")
+    return "state{" + "; ".join(parts) + "}"
+
+
+# --------------------------------------------------------------------------- logic revision
+def _count(tree: Node) -> int:
+    return 1 + sum(_count(k) for k in _children(tree))
+
+
+def _map_nth(n: Node, target: int, new: Node, ctr: list[int]) -> Node:
+    here = ctr[0]
+    ctr[0] += 1
+    if here == target:
+        return new
+    kids = _children(n)
+    return _rebuild(n, [_map_nth(k, target, new, ctr) for k in kids]) if kids else n
+
+
+def _nth(n: Node, target: int, ctr: list[int]) -> Node | None:
+    here = ctr[0]
+    ctr[0] += 1
+    if here == target:
+        return n
+    for k in _children(n):
+        got = _nth(k, target, ctr)
+        if got is not None:
+            return got
+    return None
+
+
+def _rand_compare(rng: np.random.Generator) -> Compare:
+    f = str(rng.choice(np.asarray(["close", "ret", "range", "tr", "body"])))
+    w = int(rng.choice(np.asarray([8, 12, 24, 48, 120])))
+    op = str(rng.choice(np.asarray(list(COMPARE_OPS))))
+    return Compare(op, Series(f), Rolling("mean", Series(f), w))
+
+
+def mutate_logic(tree: Node, rng: np.random.Generator, tries: int = 12,
+                 grammar: Grammar | None = None) -> Node:
+    """One STRUCTURAL edit: the mechanical half of what a seat's logic revision does by hand.
+
+    D4 asks for logic revision to be SEPARATE from numeric tuning, and this is the separation
+    made concrete: nothing here moves a slot's value -- it swaps a comparison, wraps a subtree in
+    a branch, turns a rule into a state machine, changes an operator or re-aims a terminal. The
+    optimiser tunes; this changes what is being tuned. A mutation that does not validate is
+    discarded and the original returned, so a caller never receives an unrunnable program.
+    """
+    g = grammar if grammar is not None else active_grammar()
+    n = _count(tree)
+    for _ in range(max(1, tries)):
+        k = int(rng.integers(0, n))
+        node = _nth(tree, k, [0])
+        if node is None:
+            continue
+        choice = str(rng.choice(np.asarray(["op", "compare", "wrap", "state", "field", "roll"])))
+        new: Node | None = None
+        if choice == "compare" and isinstance(node, Compare):
+            new = replace(node, op=str(rng.choice(np.asarray(list(g.compare_ops)))))
+        elif choice == "op" and isinstance(node, Binary):
+            new = replace(node, op=str(rng.choice(np.asarray(list(g.binary_ops)))))
+        elif choice == "roll" and isinstance(node, Rolling):
+            new = replace(node, op=str(rng.choice(np.asarray(list(g.rolling_ops)))))
+        elif choice == "field" and isinstance(node, Series):
+            new = replace(node, field=str(rng.choice(np.asarray(list(FIELDS[:8])))))
+        elif choice == "wrap":
+            new = Cond(_rand_compare(rng), node, Const(0.0))
+        elif choice == "state" and g.state_machines:
+            c1, c2 = _rand_compare(rng), _rand_compare(rng)
+            new = State((StateDef("flat", 0, (Transition("engaged", c1),)),
+                         StateDef("engaged", 1, (Transition("flat", c2),))))
+        if new is None:
+            continue
+        cand = _map_nth(tree, k, new, [0])
+        if not validate(cand):
+            return cand
+    return tree
 
 ```
 
-### scripts/run_discretionary_hunt.py
+### scripts\backfill_live_ledger_r.py
 ```python
-#!/usr/bin/env python3
-"""DISCRETIONARY EDGE HUNT (R0152) -- find the NEXT discretionary edge, not just tune the current one.
+"""Backfill the R multiple on live-ledger rows written while the writer floored it at zero.
 
-PRINCIPAL ORDER (2026-08-01): *"a whole system dedicated to this and improving the brain and
-finding MULTIPLE discretionary edges this way, trading like a compounding human trader with the
-philosophy of that screenshot."*
+THE ZERO THAT JUDGED EVERY SLEEVE (measured 2026-09-16). `mt5desk.decision_core.closed_trade_r`
+took `is_buy` from the CLOSING deal, whose type is the opposite of the position's, so the signed
+stop distance came out negative, was floored at zero, and every row the desk had ever written
+carried `r_multiple: 0.0` -- 141 of 151 rows on the trading box -- with entry, stop, volume and
+contract size all present on the row. The writer is fixed (the distance is |entry - stop|); the
+rows it wrote before the fix still read zero, and every organ that learns from realised R
+(credit_assignment, posterior_alpha, hazard_engine, standing_questions Q5, the scorecard's
+attribution row) reads them as evidence of no edge. This recomputes R for exactly those rows
+from the numbers already on them, marks each one `r_backfilled` with its basis, and touches
+nothing else.
 
-THE GAP THIS FILLS, and it is the one the rest of the section did not cover. The discretionary desk
-has an optimiser (R0151 pushes the hit rate of the sleeve that exists) and a learner (R0139 extracts
-lessons from closed trades). Both improve ONE edge. Neither ever asks whether there is a SECOND
-one -- and the allocator's own arithmetic says a second INDEPENDENT edge is worth more than a large
-improvement to the first, because growth multiplies across uncorrelated bets and merely adds within
-one. A desk with a single discretionary hypothesis is one regime change away from having none.
+THE BASIS IS STATED, NOT HIDDEN. The row carries the contract size but not the venue's tick
+value, so risk is distance x contract_size x volume in the QUOTE currency while P&L is in the
+account currency; the ratio is exact when the two coincide (EUR-quoted symbols on this EUR
+account) and off by the quote/account rate otherwise -- a few percent, labelled, against a zero
+that was wrong by everything. A row without entry, stop or volume stays unreconstructible.
 
-WHAT A DISCRETIONARY EDGE IS HERE, stated so the hunt does not drift into indicator soup. It is a
-situation a skilled human trader RECOGNISES and can act on, that has a MECHANISM (someone is forced
-to trade, or is systematically late, or is priced off the wrong thing), and that fails a stated
-observation. "RSI below 30" is not one -- it names no participant and no compulsion. "The stop
-cluster above a triple-touched high gets swept before the real move, because resting stops are the
-only guaranteed liquidity at that level" is one: it names who is forced and why.
-
-THE FORCED-PARTICIPANT TEST is inherited from the event sleeve and is the single strongest filter
-this desk owns. Every candidate must answer: WHO has to trade against you, and WHY can they not
-wait? A hypothesis with no forced counterparty is a pattern, and the desk's record on patterns is
-420 tested, 0 survived.
-
-ANTI-REPETITION. Every candidate is registered permanently. A hunt that regenerates the same six
-ideas every night looks productive and produces nothing, which is the failure mode of every
-brainstorming loop ever built. Previously-seen candidates are shown to the model as ALREADY HUNTED
-and it is told to go elsewhere -- and repeats are counted, because a rising repeat rate means the
-search space is exhausted and the lenses need re-aiming rather than the cadence raising.
-
-WHAT IT DOES NOT DO: promote anything. A survivor earns a pre-registered forward clock and a place
-in the sleeve allocator's independence test, nothing more (L1.6). The allocator then decides
-whether it is a genuine second edge or the first one wearing a new name -- which is the question
-that decides whether "multiple edges" compounds or just costs more fees.
-
-    python scripts/run_discretionary_hunt.py [--json] [--n 4]
+    python scripts/backfill_live_ledger_r.py [--ledger PATH] [--apply]
 """
 from __future__ import annotations
 
 import argparse
 import json
-import re
-import subprocess
+import os
 import sys
-from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-_ROOT = Path("/home/quant/quant-platform")
-if not _ROOT.exists():
-    _ROOT = Path(__file__).resolve().parent.parent
-if str(_ROOT) not in sys.path:
-    sys.path.insert(0, str(_ROOT))
-from libs.ops.lawful import guard as _law_guard  # noqa: E402
-
-_REGISTRY = "data/discretionary_edges.json"
-_STATE = "data/discretionary_hunt.json"
-
-#: 4 candidates per run. Enough that a weak lens still yields one usable idea, few enough that each
-#: gets real reasoning rather than a list. Raising it trades depth for length, which is the wrong
-#: direction when the binding constraint is candidate QUALITY and not candidate count.
-N_CANDIDATES = 4
-
-#: A repeat rate above this means the search space under the current lenses is exhausted: the
-#: honest response is to re-aim the lenses, NOT to raise the cadence, which would just regenerate
-#: the same ideas faster. 0.5 = half the batch already known.
-EXHAUSTION_REPEAT_RATE = 0.5
-
-#: LENSES -- each is a different WAY a human trader finds an edge, rotated so the hunt does not
-#: circle one region forever. Deliberately about market participants and compulsion, not about
-#: indicators.
-_LENSES: tuple[tuple[str, str], ...] = (
-    ("FORCED LIQUIDITY",
-     "who is FORCED to transact at a price they would not choose -- liquidations, margin calls, "
-     "index rebalances, expiries, redemption windows, stop clusters"),
-    ("STRUCTURAL LATENESS",
-     "who is systematically LATE -- mandates that can only act after a print, desks that hedge on "
-     "a schedule, funds that cannot trade until a threshold is breached"),
-    ("WRONG-PRICE ANCHOR",
-     "what is priced off the WRONG reference -- a stale index, a lagging proxy, a correlation "
-     "everyone assumes still holds, a funding rate anchored to a different venue"),
-    ("SESSION AND CALENDAR",
-     "what changes at a KNOWN TIME -- session opens and closes, funding stamps, settlement, "
-     "weekend gaps, holiday liquidity, the hours no desk is staffed"),
-    ("FAILED EXPECTATION",
-     "where a widely-expected move FAILS -- failed breakouts, unbought dips, news that does not "
-     "move price. The failure itself is information about positioning"),
-    ("CROSS-ASSET DIVERGENCE",
-     "when two things that normally move together STOP -- gold vs real yields, BTC vs risk, a "
-     "perp vs its own spot, one venue vs another"),
-)
+ROOT = Path(__file__).resolve().parents[1]
+LEDGER = ROOT / "desks" / "mt5" / "data" / "live_ledger.jsonl"
 
 
-def load_registry(root: Path) -> dict[str, Any]:
+def recompute(row: dict[str, Any]) -> tuple[float | None, str]:
+    """(r_multiple, basis) for a row whose R was floored, or (None, why) when it cannot be."""
     try:
-        return json.loads((root / _REGISTRY).read_text("utf-8"))
-    except (OSError, ValueError):
-        return {"edges": []}
+        entry = float(row.get("entry_price") or 0.0)
+        sl = float(row.get("sl") or 0.0)
+        vol = float(row.get("volume") or 0.0)
+        contract = float(row.get("contract_size") or 0.0)
+        pl = float(row.get("pl_quote") or 0.0)
+    except (TypeError, ValueError):
+        return None, "non-numeric fields"
+    if entry <= 0 or sl <= 0:
+        return None, "entry or stop absent: unreconstructible"
+    dist = abs(entry - sl)
+    if dist <= 0 or vol <= 0 or contract <= 0:
+        return None, "zero distance, volume or contract size"
+    risk = dist * contract * vol
+    return pl / risk, "backfill: |entry-stop| x contract_size x volume (quote ccy) vs account P&L"
 
 
-def _key(text: str) -> str:
-    return re.sub(r"[^a-z0-9 ]", "", str(text).lower()).strip()[:90]
-
-
-def lens_for(stamp: str, slot: int = 0) -> tuple[str, str]:
-    """Date-ordinal rotation so coverage is provable rather than random."""
-    try:
-        ordinal = datetime.strptime(stamp, "%Y%m%d").date().toordinal()
-    except ValueError:
-        ordinal = 0
-    return _LENSES[(ordinal + slot) % len(_LENSES)]
-
-
-_BRIEF = """You are hunting for a NEW DISCRETIONARY TRADING EDGE on Binance USD-M perpetuals -- the
-kind a skilled human trader recognises on a chart and in the flow, not a statistical pattern.
-
-TONIGHT'S LENS -- {lens_name}: {lens_body}
-
-WHAT COUNTS AS AN EDGE HERE, and most proposals fail this:
-  * it names a FORCED PARTICIPANT. Who has to trade against you, and why can they not wait?
-    Liquidation engines, margin calls, index rebalances, mandates that must act after a print.
-    "RSI below 30" names nobody and is not an edge. If you cannot name who is compelled, say so
-    and discard the candidate rather than dressing it up.
-  * a HUMAN could recognise it in real time from price, structure and the desk's feeds. If it
-    needs a fitted model it belongs to the systematic side, not here.
-  * it has a FALSIFIER -- the specific observation that would prove it is not real.
-
-ALREADY HUNTED -- do NOT propose these again, go somewhere else entirely:
-{seen}
-
-THE DESK'S OWN LEARNED LESSONS, from its closed trades (weigh these, and say if one is wrong):
-{playbook}
-
-OUTPUT EXACTLY ONE JSON OBJECT:
-{{"candidates": [
-  {{"name": "short handle",
-    "situation": "what a human sees, concretely, in one or two sentences",
-    "forced_participant": "WHO must trade against you and why they cannot wait",
-    "mechanism": "why this produces a price move that is not already arbitraged",
-    "falsifier": "the observation that proves it is not real",
-    "how_measured": "what data on this desk would test it -- charts, funding, liquidations, "
-                    "announcements, copy-flow, cross-venue",
-    "why_not_arbitraged": "why this survives being obvious",
-    "confidence": 0.4}}
-]}}
-
-{n} candidates. Fewer good ones beats more weak ones -- a candidate with no forced participant
-should not be in the list at all. If this lens is genuinely exhausted, return fewer and say so in
-a candidate named "LENS-EXHAUSTED"."""
-
-
-def _ask(prompt: str, timeout: int = 900) -> str:
-    r = subprocess.run(
-        ["bash", "-c",
-         'source ops/brain_env.sh && brain_auth_check || exit 90 && '
-         'claude --effort xhigh --append-system-prompt "$_DOCTRINE" -p "$0" '
-         '--dangerously-skip-permissions', prompt],
-        cwd=_ROOT, capture_output=True, text=True, timeout=timeout)
-    return r.stdout or ""
-
-
-def parse(raw: str) -> dict[str, Any] | None:
-    m = re.search(r"\{.*\}", raw, re.DOTALL)
-    if not m:
-        return None
-    try:
-        obj = json.loads(m.group(0))
-        return obj if isinstance(obj, dict) else None
-    except ValueError:
-        return None
-
-
-def validate(c: dict[str, Any]) -> tuple[bool, str]:
-    """The forced-participant test, and the falsifier. Both or it is a pattern."""
-    for f in ("name", "situation", "forced_participant", "mechanism", "falsifier"):
-        if not str(c.get(f, "")).strip():
-            return False, f"REFUSED: missing {f}"
-    fp = str(c["forced_participant"]).lower()
-    if len(fp) < 25 or any(w in fp for w in ("traders", "the market", "everyone", "participants")):
-        return False, ("REFUSED: forced participant is generic -- 'traders' and 'the market' name "
-                       "nobody. A hypothesis with no identifiable compelled counterparty is a "
-                       "pattern, and this desk is 420-tested/0-survived on patterns")
-    if len(str(c["falsifier"])) < 20:
-        return False, "REFUSED: falsifier too thin to act on"
-    if len(str(c["mechanism"])) < 40:
-        return False, "REFUSED: mechanism too thin -- state why the move is not already arbitraged"
-    return True, "accepted"
-
-
-def register(root: Path, cands: list[dict[str, Any]], lens: str,
-             ) -> dict[str, Any]:
-    reg = load_registry(root)
-    seen = {e["key"] for e in reg["edges"]}
-    now = datetime.now(tz=UTC).isoformat()
-    new, repeat, refused = [], [], []
-    for c in cands:
-        ok, why = validate(c)
-        if not ok:
-            refused.append({"name": c.get("name"), "why": why})
+def backfill(rows: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], dict[str, int]]:
+    out: list[dict[str, Any]] = []
+    counts = {"rows": len(rows), "backfilled": 0, "kept": 0, "unreconstructible": 0}
+    for r in rows:
+        if not isinstance(r, dict):
+            out.append(r)
             continue
-        k = _key(c.get("name", "") + " " + c.get("situation", ""))
-        if k in seen:
-            repeat.append(c.get("name"))
+        rm = r.get("r_multiple")
+        floored = isinstance(rm, (int, float)) and float(rm) == 0.0 and not r.get("r_backfilled")
+        if not floored or r.get("r_unreconstructible"):
+            counts["kept"] += 1
+            out.append(r)
             continue
-        seen.add(k)
-        reg["edges"].append({**c, "key": k, "lens": lens, "found": now,
-                             "status": "CANDIDATE",
-                             "authority": "forward clock only -- never capital (L1.6)"})
-        new.append(c.get("name"))
-    reg["updated"] = now
-    (root / _REGISTRY).parent.mkdir(parents=True, exist_ok=True)
-    (root / _REGISTRY).write_text(json.dumps(reg, indent=2), "utf-8")
-    total = len(new) + len(repeat)
-    return {"new": new, "repeats": repeat, "refused": refused,
-            "repeat_rate": round(len(repeat) / total, 3) if total else None,
-            "registry_size": len(reg["edges"])}
+        val, basis = recompute(r)
+        if val is None:
+            counts["unreconstructible"] += 1
+            out.append({**r, "r_unreconstructible": True, "r_backfill_why": basis})
+            continue
+        counts["backfilled"] += 1
+        out.append({**r, "r_multiple": round(val, 4), "r_backfilled": True, "r_basis": basis,
+                    "r_multiple_before": rm})
+    return out, counts
 
 
-def build_report(root: Path | None = None, *, n: int = N_CANDIDATES, ask=_ask,
-                 stamp: str | None = None) -> dict[str, Any]:
-    root = root or _ROOT
-    stamp = stamp or datetime.now(tz=UTC).strftime("%Y%m%d")
-    lens_name, lens_body = lens_for(stamp)
-    reg = load_registry(root)
-    seen_txt = "\n".join(f"  - {e.get('name')}: {str(e.get('situation'))[:90]}"
-                         for e in reg["edges"][-40:]) or "  (none yet)"
-    try:
-        from scripts.run_conviction_trader import _playbook_brief
-        pb = _playbook_brief(root)
-    except Exception as exc:
-        pb = f"(playbook unavailable: {type(exc).__name__})"
-    raw = ask(_BRIEF.format(lens_name=lens_name, lens_body=lens_body, seen=seen_txt,
-                            playbook=pb[:1500], n=n))
-    obj = parse(raw)
-    if not obj or not isinstance(obj.get("candidates"), list):
-        return {"generated": datetime.now(tz=UTC).isoformat(), "lens": lens_name,
-                "status": "NO-CANDIDATES",
-                "why": "no parseable JSON (auth/quota/refusal) -- this is UNMEASURED hunting, "
-                       "not an empty search space"}
-    res = register(root, obj["candidates"], lens_name)
-    rr = res["repeat_rate"]
-    exhausted = rr is not None and rr >= EXHAUSTION_REPEAT_RATE
-    return {
-        "generated": datetime.now(tz=UTC).isoformat(),
-        "law": "L1.6/L1.31 -- a second INDEPENDENT edge is worth more than a large improvement to "
-               "the first, because growth multiplies across uncorrelated bets and merely adds "
-               "within one. A desk with a single discretionary hypothesis is one regime change "
-               "away from having none.",
-        "lens": lens_name, "status": "HUNTED",
-        **res,
-        "exhaustion": ("LENS-EXHAUSTED -- re-aim the lenses, do NOT raise the cadence: a higher "
-                       "cadence on an exhausted space regenerates the same ideas faster"
-                       if exhausted else "search space still yielding"),
-        "authority": "candidates earn a pre-registered forward clock and a place in the sleeve "
-                     "allocator's independence test. They earn no capital (L1.6), and the "
-                     "allocator decides whether a survivor is a real second edge or the first one "
-                     "wearing a new name.",
-        "detail": (f"lens {lens_name}: {len(res['new'])} new, {len(res['repeats'])} repeats, "
-                   f"{len(res['refused'])} refused; registry {res['registry_size']}"),
-    }
-
-
-def main() -> int:
-    _law_guard()
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--n", type=int, default=N_CANDIDATES)
-    ap.add_argument("--json", action="store_true")
-    args = ap.parse_args()
-    rep = build_report(_ROOT, n=args.n)
-    out = _ROOT / _STATE
-    out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(json.dumps(rep, indent=2), "utf-8")
-    print(json.dumps(rep, indent=2) if args.json else
-          f"discretionary hunt (R0152): {rep.get('detail') or rep.get('why')}")
+def main(argv: list[str] | None = None) -> int:
+    ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
+    ap.add_argument("--ledger", default=str(LEDGER))
+    ap.add_argument("--apply", action="store_true", help="rewrite the ledger in place (atomic)")
+    a = ap.parse_args(argv)
+    p = Path(a.ledger)
+    if not p.exists():
+        print(f"backfill: {p} absent; nothing to do")
+        return 0
+    rows: list[Any] = []
+    for ln in p.read_text(encoding="utf-8", errors="replace").splitlines():
+        if not ln.strip():
+            continue
+        try:
+            rows.append(json.loads(ln))
+        except ValueError:
+            rows.append({"_unparsed": ln})
+    new, counts = backfill([r for r in rows if isinstance(r, dict) and "_unparsed" not in r])
+    print(f"backfill: {counts['rows']} row(s): {counts['backfilled']} backfilled, "
+          f"{counts['kept']} kept, {counts['unreconstructible']} unreconstructible"
+          f"{'' if a.apply else ' (dry run -- pass --apply)'}")
+    if a.apply and counts["backfilled"]:
+        tmp = p.with_suffix(".jsonl.tmp")
+        with tmp.open("w", encoding="utf-8") as f:
+            for r in rows:
+                if isinstance(r, dict) and "_unparsed" in r:
+                    f.write(r["_unparsed"] + "\n")
+            for r in new:
+                f.write(json.dumps(r, ensure_ascii=False) + "\n")
+        os.replace(tmp, p)
+        print(f"-> {p}")
     return 0
 
 
@@ -13527,35 +10735,578 @@ if __name__ == "__main__":
 
 ```
 
-### scripts/run_generation_diversity.py
+### scripts\build_audit_coverage.py
 ```python
-"""GENERATION DIVERSITY -- the wiring for HYPOTHESIS_MAX #2/#3/#6 (single Lane-A task).
+#!/usr/bin/env python3
+"""FULL-COVERAGE AUDIT FEED (principal exception to the doctrine freeze, 2026-07-20).
 
-The spec's wiring clause: *"metrics computed per batch and appended to the seat scoreboard
-(data/panel_scorecard.json field `gen_diversity`)"*. This is that task, and it is what stops the
-three components from being three more built-and-never-called modules -- the defect L2.9 exists
-for, and the one this desk has repeatedly produced.
+PROBLEM THIS SOLVES: the external panel used to see ONLY docs/EXTERNAL_PANEL_DOSSIER.md --
+11KB of prose curated by the very system being audited, against ~44k lines of real code.
+The auditee chose the auditor's evidence, so nothing outside the dossier could ever be
+flagged, and most of the codebase had never been examined by anyone but its author.
 
-WHAT IT REPORTS, and why each number is one the desk did not previously have:
+WHAT THIS DOES: every panel run now also carries
+  (A) the RAW, UNFILTERED git diff since the previous panel run -- curation-proof, and
+  (B) a rotating slice of the LEAST-RECENTLY-AUDITED source files, in full, and
+  (C) the coverage manifest itself, so models can see what is stale or never-audited and
+      call out the blind spots directly.
+A per-file ledger (data/audit_coverage.json) records who saw what and when, so "full
+coverage" becomes a measurable property with staleness floors rather than an aspiration.
 
-  novel_rate           of the ideas generated, the share that were genuinely NEW questions rather
-                       than reparameterisations. Volume without this is throughput, not
-                       information -- and "420 candidates tested" versus "one question asked 420
-                       ways" are identical from a count. The desk has never been able to tell
-                       those apart, and 420/0 is exactly the record that needed telling apart.
-  mechanism_entropy    diversity of the fingerprints in the batch, normalised by ITEM count.
-  market_breadth       names actually spanned, counting a cross-sectional universe properly.
-  cross_generator_dup  whether separate seats are producing the same idea (herding).
-
-IT NEVER BLOCKS GENERATION. Per the spec, the collapse detector is instrumentation that pages the
-process, not a gate on ideas -- a diversity metric with veto power would be a second unvalidated
-filter on a funnel this desk has already measured as too tight. The variation blocker DOES block,
-but only on an exact fingerprint match or a >=0.90 Jaccard near-duplicate, and every block is
-recorded with what it duplicated so "blocked" never means "lost".
-
-    python scripts/run_generation_diversity.py [--json]
+SAFETY: data/secrets/** and anything key/credential-shaped is excluded by path BEFORE
+reading, and the assembled payload is run through the desk's own sanitize() before it is
+ever returned. stdlib-only.
 """
+from __future__ import annotations
 
+import json
+import subprocess
+from collections.abc import Iterable
+from datetime import UTC, datetime, timedelta
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+MANIFEST = ROOT / "data/audit_coverage.json"
+
+# what the sweep covers -- code + operator contracts (the brain's prompt lives in ops/*.sh)
+INCLUDE_GLOBS = ("scripts/*.py", "libs/**/*.py", "ops/*.sh", "ops/*.txt",
+                 "tests/**/*.py", "docs/*.md", "docs/research/*.md", "docs/playbooks/*.md")
+# never read, never send
+EXCLUDE_PARTS = ("secrets", "__pycache__", ".venv", ".git", "node_modules")
+EXCLUDE_SUFFIX = (".bak", ".pyc", ".log")
+
+# RISK-class (money path) files are audited on a tighter clock than everything else
+# `scripts/run_cashcarry` and `scripts/run_recorder.py` were dropped 2026-09-05: those scripts
+# were deleted with the retired universe, and this is a PREFIX list whose job is to say which code
+# gets the tighter clock -- a prefix matching nothing quietly overstates the money path's size.
+# desks/mt5/mt5desk/ replaces them: that is where an execution defect now costs real money.
+RISK_PREFIXES = ("libs/execution/", "scripts/run_deadman_switch.py",
+                 "scripts/run_alerts.py", "scripts/run_ci.py",
+                 "desks/mt5/mt5desk/")
+RISK_MAX_AGE_D = 14.0
+ROTATE_MAX_AGE_D = 30.0
+
+# CLASS 'ALWAYS' = the DECISION surface: what a reviewer must see to give SPECIFIC advice rather
+# than generic advice ("add these 3 grounds to the JP miner" vs "consider more breadth").
+# Ships IN FULL on every run, exempt from the rotating budget, re-audited every run.
+ALWAYS_PREFIXES = (
+    "ops/frontier_", "ops/prospector_dig_prompt", "ops/litminer_dig_prompt",
+    "ops/dataaxis_dig_prompt", "ops/blindrediscovery_dig_prompt",
+    "docs/research/data_axis_watchlist.md", "docs/research/prospector_coverage.md",
+    "docs/research/improvement_inbox.md", "docs/research/search_operator_library.md",
+    "docs/research/weak_signal_registry.md", "docs/research/discovery_hypotheses.md",
+    "docs/research/negative_knowledge.md", "docs/research/canary_searches.md",
+    "docs/research/prospector_watchlist.md", "docs/research/generation_due.md",
+    "docs/research/HYPOTHESIS_MAX_SPEC.md", "docs/research/video_locked_log.md",
+    "docs/GAP_REGISTER.md", "docs/DIGGING_CHARTER.md",
+)
+
+# how much source to ship per run. ~200k chars ~= 50k tokens; x13 seats ~= <$1/run.
+CODE_BUDGET_CHARS = 2_400_000    # TOTAL payload ceiling = the WHOLE system
+                                 # (2.29MB); adaptation still finds the safe level
+                                 # empirically, so this is a ceiling not a target
+CODE_BUDGET_MIN = 40_000         # floor for the ROTATING part; tier-0 always ships
+DIFF_BUDGET_CHARS = 60_000
+QUORUM_FRAC = 0.6                # >=60% of seats must answer substantively to count
+SUBSTANTIVE_CHARS = 400          # shorter than this is not a real review
+
+
+def _review_class(rel: str) -> int:
+    if any(rel.startswith(p) for p in ALWAYS_PREFIXES):
+        return 0                                   # decision surface: always sent
+    return 1 if any(rel.startswith(p) for p in RISK_PREFIXES) else 2
+
+
+def _eligible() -> list[Path]:
+    out: list[Path] = []
+    for g in INCLUDE_GLOBS:
+        for p in ROOT.glob(g):
+            if not p.is_file():
+                continue
+            rel = p.relative_to(ROOT).as_posix()
+            if any(x in rel for x in EXCLUDE_PARTS):
+                continue
+            if p.suffix in EXCLUDE_SUFFIX or ".bak-" in rel:
+                continue
+            out.append(p)
+    return sorted(set(out))
+
+
+def load() -> dict:
+    if MANIFEST.exists():
+        try:
+            return json.loads(MANIFEST.read_text("utf-8"))
+        except Exception:
+            pass
+    return {"files": {}, "last_panel_sha": None, "runs": 0}
+
+
+def save(m: dict) -> None:
+    MANIFEST.parent.mkdir(parents=True, exist_ok=True)
+    MANIFEST.write_text(json.dumps(m, indent=1), "utf-8")
+
+
+def refresh(m: dict) -> dict:
+    """Sync the manifest with what actually exists on disk (new files appear as never-audited)."""
+    files = m.setdefault("files", {})
+    seen = set()
+    for p in _eligible():
+        rel = p.relative_to(ROOT).as_posix()
+        seen.add(rel)
+        rec = files.setdefault(rel, {"last_audited": None, "audit_count": 0})
+        try:
+            # CLOSE THE HANDLE (2026-08-12). `sum(1 for _ in p.open(...))` never closed the file:
+            # CPython's refcount reaps it, but it emits a ResourceWarning first, and this repo
+            # sets filterwarnings = error. So EVERY test that transitively reached refresh() --
+            # i.e. every test of record_blank, tune_budget or audit_payload, and therefore every
+            # test of the panel's own failure path, which calls record_blank per dead seat --
+            # failed on the warning rather than on the behaviour. The R0343 total-failure fixture
+            # was the first thing to need that path and the first thing to hit this. A leak that
+            # makes a code path untestable costs more than the descriptors.
+            with p.open("r", encoding="utf-8", errors="ignore") as fh:
+                rec["loc"] = sum(1 for _ in fh)
+        except Exception:
+            rec["loc"] = 0
+        rec["review_class"] = _review_class(rel)
+    for gone in [k for k in files if k not in seen]:
+        files.pop(gone)          # deleted files leave the ledger; git keeps the history
+    return m
+
+
+def _age_days(iso: str | None) -> float:
+    if not iso:
+        return 1e9                                    # never audited = infinitely stale
+    try:
+        return (datetime.now(tz=UTC) - datetime.fromisoformat(iso)).total_seconds() / 86400
+    except Exception:
+        return 1e9
+
+
+def _git(*args: str) -> str:
+    try:
+        return subprocess.run(["git", *args], cwd=ROOT, capture_output=True,
+                              text=True, timeout=30).stdout
+    except Exception:
+        return ""
+
+
+def status(m: dict) -> dict:
+    files = m["files"]
+    never = [f for f, r in files.items() if not r.get("last_audited")]
+    stale1 = [f for f, r in files.items()
+              if r.get("review_class") == 1 and _age_days(r.get("last_audited")) > RISK_MAX_AGE_D]
+    stale2 = [f for f, r in files.items()
+              if r.get("review_class") == 2 and _age_days(r.get("last_audited")) > ROTATE_MAX_AGE_D]
+    t0 = [f for f, r in files.items() if r.get("review_class") == 0]
+    return {"total": len(files), "never": never, "stale_risk": stale1, "stale_rotate": stale2,
+            "always_class": len(t0),
+            "covered": len(files) - len(never),
+            "pct": round(100.0 * (len(files) - len(never)) / max(1, len(files)), 1)}
+
+
+def current_budget(m: dict) -> int:
+    """Largest payload every seat has survived recently (learned, not guessed)."""
+    return int(m.get("code_budget_chars", CODE_BUDGET_CHARS))
+
+
+def tune_budget(blanked: int, total: int) -> int:
+    """Shrink hard on any blank, grow gently on a clean run. Called after every panel.
+
+    THE WELD THIS NOW REPORTS (measured 2026-08-12). The budget sat at exactly CODE_BUDGET_MIN
+    while the last eight recorded firings carried 2-4 blanks of 4 -- `max(40_000, int(40_000 *
+    0.6))` is 40_000, so the shrink arm moved NOTHING, eight times, and the history rendered
+    `from 40000 to 40000` with no hint that a bound had been hit. A control that fires and
+    changes nothing is a welded gate (L1.43), and this one is the mechanistic reason the same
+    free seats blank forever: they fail on a 40k payload, the adaptive response that exists to
+    shrink it cannot, and the tally records the blanks while the budget records success.
+
+    NOTHING IS LOOSENED HERE. The floor is not lowered and neither arm is re-rated -- lowering a
+    floor to clear the violation it caught is the failure this desk has paid for repeatedly. The
+    fix is that "the budget adapted" and "the budget COULD NOT adapt" stop being byte-identical
+    in the record, which is the only way anyone can argue about whether the floor is right.
+    Whether these seats need a smaller tier or the floor needs re-deriving is a payload-design
+    decision with an owner; this makes it visible, it does not take it.
+    """
+    m = refresh(load())
+    cur = current_budget(m)
+    if blanked:
+        new = max(CODE_BUDGET_MIN, int(cur * 0.6))   # a blank is a real failure: cut deep
+        bound = "floor" if new >= cur else None
+    else:
+        new = min(CODE_BUDGET_CHARS, int(cur * 1.15))  # earn size back slowly
+        bound = "ceiling" if new <= cur else None
+    m["code_budget_chars"] = new
+    m.setdefault("budget_history", []).append(
+        {"blanked": blanked, "of": total, "from": cur, "to": new,
+         # Present ONLY when the arm was inert, so a reader scanning the history sees the weld
+         # rather than having to re-derive it from two equal numbers.
+         **({"welded_at": bound, "wanted": int(cur * 0.6) if blanked else int(cur * 1.15)}
+            if bound else {})})
+    m["budget_history"] = m["budget_history"][-30:]
+    save(m)
+    return new
+
+
+#: Timestamped blanks kept beside the lifetime tally. Bounded so the ledger cannot grow without
+#: limit; 400 covers months of panel runs at this desk's cadence and the window queries only ever
+#: look back days.
+_BLANK_EVENT_CAP = 400
+
+
+def recent_blanks(m: dict[str, object], *, window_days: int) -> dict[str, int] | None:
+    """Blanks per seat inside `window_days`, or ``None`` when recency cannot be measured.
+
+    ``None`` IS THE LOAD-BEARING RETURN AND MUST NOT COLLAPSE INTO AN EMPTY DICT. Until the
+    event log has been written to, a seat with a lifetime tally has NO recency evidence at all,
+    and `{}` would read as "zero recent blanks -- the seat is fine", quietly clearing a fence on
+    a box where nothing has been measured. That is absence resolving to a clean verdict, this
+    desk's most-repeated defect class. A caller that gets ``None`` must say UNMEASURED.
+    """
+    events = m.get("seat_blank_events")
+    if not isinstance(events, list) or not events:
+        return None
+    cutoff = datetime.now(tz=UTC) - timedelta(days=window_days)
+    out: dict[str, int] = {}
+    for e in events:
+        if not isinstance(e, dict):
+            continue  # attrition-ok: a malformed row carries no timestamp to place in a window
+        try:
+            when = datetime.fromisoformat(str(e.get("ts", "")))
+        except ValueError:
+            continue  # attrition-ok: same -- an unparseable stamp is not evidence of recency
+        if when >= cutoff:
+            model = str(e.get("model", "?"))
+            out[model] = out.get(model, 0) + 1
+    return out
+
+
+#: Attempts are kept as a per-seat, per-DAY tally rather than one event per call: attempts
+#: outnumber blanks by ~2 orders of magnitude, and a capped event list would evict the oldest
+#: attempts first -- shrinking exactly the denominator this exists to protect. Days retained; the
+#: window queries only ever look back `SEAT_BLANK_WINDOW_DAYS`.
+_ATTEMPT_DAY_CAP = 30
+
+
+def record_blanks(models: Iterable[str]) -> None:
+    """Every blank from ONE panel run, in ONE read-modify-write. NEVER call this per-thread.
+
+    WHAT THE TALLY IS FOR, AND WHY THE EVENTS SIT BESIDE IT. `seat_blanks` is a LIFETIME counter
+    that nothing anywhere resets or decays, so a seat that blanked three times months ago and has
+    answered every call since is permanently indistinguishable from one dying right now. The fence
+    keyed on it (`seat-chronic-*`) therefore fired forever once a seat crossed the threshold, and
+    its recommendation is to SWAP -- which costs a live seat off an under-driven roster. The tally
+    is KEPT and keeps incrementing (`check_free_roster` and `model_upgrade` read it, and it is
+    honest as history); the timestamped events are what let a reader ask "is this seat failing
+    NOW" instead of only "has it ever failed".
+
+    THE RACE THIS CLOSES, AND IT HAD ALREADY EATEN 87% OF THE TALLY. `record_blank` was called
+    from inside `run_external_panel._one`, which runs under a ThreadPoolExecutor(max_workers=5),
+    and every call does load() -> mutate -> save() on one shared JSON. Concurrent seats therefore
+    read the same state and overwrite each other, and with 3-4 of 4 seats blanking together the
+    losses are not occasional -- they are the common case.
+
+    MEASURED 2026-08-13, and the two counters settle it because they shipped in the SAME commit
+    (14131c33, 2026-07-20) and have watched the SAME 28 runs: `tune_budget` runs ONCE, AFTER the
+    fan-out, and recorded 70 blanks of 148 seat-calls. `seat_blanks`, incremented inside the
+    threads, sums to 9. Same events, same window, 87% lost. Age cannot explain it; only the race
+    can. The old path also double-counted the retry branch (record_blank, then raise, then
+    record_blank again in the handler), so the surviving 9 were not even a clean sample.
+
+    The blanked set is derivable SERIALLY from the results the executor returns -- a result
+    without a "response" key is a lost seat -- so nothing is gained by writing from the threads.
+    """
+    m = refresh(load())
+    tally = m.setdefault("seat_blanks", {})
+    events = m.setdefault("seat_blank_events", [])
+    now = datetime.now(tz=UTC).isoformat()
+    for model in models:
+        tally[model] = int(tally.get(model, 0)) + 1
+        events.append({"model": model, "ts": now})
+    m["seat_blank_events"] = events[-_BLANK_EVENT_CAP:]
+    save(m)
+
+
+def record_blank(model: str) -> None:
+    """One blank. Kept as the single-seat spelling of `record_blanks`."""
+    record_blanks([model])
+
+
+def record_attempts(models: Iterable[str]) -> None:
+    """Every seat asked in ONE panel run, in ONE read-modify-write. THE DENOMINATOR (R0570).
+
+    "Blanked 4x" is not a measurement. Four failures out of four calls is a dead seat; four out of
+    four hundred is a 1% flake on a free tier, and until now nothing counted the calls, so the two
+    were byte-identical to every reader -- L1.57's missing denominator, one subsystem over from
+    where it was written.
+
+    IT ALSO UN-WELDS THE FENCE, which is the half that bites today. `seat-chronic-*-unmeasured`
+    can currently only clear when a seat BLANKS AGAIN: with no events, recency is unmeasured and
+    the defect fires forever, so the fence is lit precisely while the seats are healthy and goes
+    quiet only on new failure. That is the inverted-gate class R0492 named, reappearing one level
+    up in the instrument built to fix it. An attempt is recorded whether the seat succeeds or
+    fails, so health becomes measurable from success -- the only direction that can honestly
+    clear it.
+
+    ATTEMPTS ARE THEIR OWN EPOCH, which is why no separate "instrumented since" stamp is needed:
+    an attempt recorded at T proves the instrumentation was live at T, so attempts inside the
+    window with no blank events inside the window means zero blanks, MEASURED -- not unknown.
+    """
+    m = refresh(load())
+    today = datetime.now(tz=UTC).date()
+    att = m.setdefault("seat_attempts", {})
+    if not isinstance(att, dict):
+        att = m["seat_attempts"] = {}
+    for model in models:
+        per = att.setdefault(model, {})
+        per[today.isoformat()] = int(per.get(today.isoformat(), 0)) + 1
+    cutoff = (today - timedelta(days=_ATTEMPT_DAY_CAP)).isoformat()
+    for mdl in list(att):
+        kept = {d: c for d, c in (att[mdl] or {}).items() if d >= cutoff}
+        if kept:
+            att[mdl] = kept
+        else:
+            del att[mdl]
+    save(m)
+
+
+def recent_attempts(m: dict[str, object], *, window_days: int) -> dict[str, int] | None:
+    """Calls per seat inside `window_days`, or ``None`` when nothing has been recorded.
+
+    ``None`` rather than ``{}`` for the same reason `recent_blanks` returns it: a box that has
+    never counted an attempt has no rate evidence, and zero-attempts would read as a 0/0 rate that
+    a caller could round to "fine".
+    """
+    att = m.get("seat_attempts")
+    if not isinstance(att, dict) or not att:
+        return None
+    cutoff = (datetime.now(tz=UTC).date() - timedelta(days=window_days)).isoformat()
+    out: dict[str, int] = {}
+    for model, days in att.items():
+        if not isinstance(days, dict):
+            continue  # attrition-ok: a malformed seat block carries no dated counts to window
+        n = sum(int(c) for d, c in days.items() if str(d) >= cutoff)
+        if n:
+            out[str(model)] = n
+    return out or None
+
+
+def blank_rate(m: dict[str, object], *, window_days: int) -> dict[str, tuple[int, int]] | None:
+    """{seat: (blanks, attempts)} inside the window, or ``None`` when attempts are unrecorded.
+
+    Keyed on ATTEMPTS, never on blanks: a seat that answered every call in the window has no blank
+    events at all, and that is the healthy case the caller most needs to be able to see.
+    """
+    attempts = recent_attempts(m, window_days=window_days)
+    if attempts is None:
+        return None
+    blanks = recent_blanks(m, window_days=window_days) or {}
+    return {seat: (blanks.get(seat, 0), n) for seat, n in attempts.items()}
+
+
+def audit_payload() -> tuple[str, list[str]]:
+    """Return (text_to_append_to_dossier, files_included). Sanitized, budget-bounded."""
+    m = refresh(load())
+    files = m["files"]
+    st = status(m)
+
+    # (A) raw diff since the previous panel run -- the curation-proof part
+    sha = m.get("last_panel_sha")
+    diff = _git("diff", f"{sha}..HEAD") if sha else _git("log", "-p", "--since=3.days")
+    if len(diff) > DIFF_BUDGET_CHARS:
+        diff = diff[:DIFF_BUDGET_CHARS] + "\n... [diff truncated at budget -- ask for the rest]"
+
+    # (B0) ALWAYS-class decision surface -- ALWAYS, IN FULL, budget-exempt. This is what lets a
+    # reviewer say "add these grounds to the KR miner" instead of "consider more breadth".
+    t0_chunks, t0_files, t0_used = [], [], 0
+    for rel, _rec in sorted(files.items()):
+        if _rec.get("review_class") != 0:
+            continue
+        fp = ROOT / rel
+        if not fp.exists():
+            continue
+        try:
+            body = fp.read_text("utf-8", errors="ignore")
+        except Exception:
+            continue
+        t0_chunks.append(f"\n----- [DECISION SURFACE] {rel} "
+                         f"({len(body.splitlines())} lines) -----\n{body}")
+        t0_files.append(rel)
+        t0_used += len(body)
+
+    # (B) rotating slice: risk-path staleness first, then oldest-audited, then largest
+    order = sorted(((k, v) for k, v in files.items() if v.get("review_class") != 0),
+                   key=lambda kv: (kv[1].get("review_class", 2),
+                                   -_age_days(kv[1].get("last_audited")),
+                                   -kv[1].get("loc", 0)))
+    chunks, included, used = [], [], 0
+    for rel, _rec in order:
+        p = ROOT / rel
+        if not p.exists():
+            continue
+        try:
+            body = p.read_text("utf-8", errors="ignore")
+        except Exception:
+            continue
+        if used + len(body) > max(0, current_budget(m) - t0_used) and included:
+            break
+        _la = _rec.get('last_audited') or 'NEVER'
+        chunks.append(f"\n----- FILE: {rel} ({len(body.splitlines())} lines, "
+                      f"class={_review_class(rel)}, last audited: {_la}) "
+                      f"-----\n{body}")
+        included.append(rel)
+        used += len(body)
+
+    txt = [
+        "\n\n" + "=" * 70,
+        "## FULL-COVERAGE AUDIT FEED (raw system access -- judge ALL of it)",
+        "=" * 70,
+        "The prose dossier above is written BY the system being audited. Everything below is "
+        "raw and uncurated, so you can flag what the dossier omits. You are explicitly asked "
+        "to judge the CODE, not just the narrative: correctness, risk-path safety, silent-"
+        "failure modes, dead code, unsafe defaults, and anything the author would not have "
+        "thought to summarize.",
+        f"\n### COVERAGE STATE: {st['covered']}/{st['total']} files ever audited "
+        f"({st['pct']}%). NEVER audited: {len(st['never'])}. "
+        f"Stale risk-path (>{RISK_MAX_AGE_D:.0f}d): {len(st['stale_risk'])}. "
+        f"Stale other (>{ROTATE_MAX_AGE_D:.0f}d): {len(st['stale_rotate'])}.",
+        "If a file you would need to judge a claim is NOT included below, say so explicitly -- "
+        "'I could not verify X because file Y was not provided' is a first-class finding here.",
+        f"\n### (A) RAW DIFF SINCE LAST PANEL ({'since ' + sha[:8] if sha else 'last 3 days'})\n",
+        "```diff\n" + (diff.strip() or "(no changes)") + "\n```",
+        f"\n### (B0) DECISION SURFACE [review class: ALWAYS] -- ALWAYS SENT IN FULL "
+        f"({len(t0_files)} files, "
+        f"{t0_used:,} chars): every miner/digger prompt, every watchlist, coverage map, "
+        "operator library, hypothesis + weak-signal + negative-knowledge registries, gap "
+        "register and digging charter. You are seeing 100% of what the desk uses to DECIDE. "
+        "Your recommendations here must be SPECIFIC (name the prompt, name the ground, name "
+        "the operator) -- generic advice is a failed review.\n",
+        "```\n" + "".join(t0_chunks) + "\n```",
+        f"\n### (B) ROTATING SOURCE REVIEW ({len(included)} files, {used:,} chars, "
+        "least-recently-audited first; the rest is under staleness floors)\n",
+        "```\n" + "".join(chunks) + "\n```",
+    ]
+    payload = "\n".join(txt)
+
+    try:                                              # desk sanitizer is the last gate
+        from scripts.generate_external_review_doc import sanitize
+        clean = sanitize(payload)
+        if clean != payload:
+            print("coverage: sanitizer redacted secret-shaped content before send")
+        payload = clean
+    except Exception as e:
+        print(f"coverage: sanitize unavailable ({e!r}) -- sending nothing rather than risk it")
+        return "", []
+    return payload, t0_files + included
+
+
+def mark_audited(files: list[str], ts: str, mission: str,
+                 substantive: int = 0, total_seats: int = 0) -> None:
+    """Mark files reviewed ONLY on quorum. Coverage must reflect what was actually READ,
+    not what was sent -- a run where seats blanked must not inflate the coverage figure."""
+    if total_seats and substantive < max(1, int(QUORUM_FRAC * total_seats)):
+        m = refresh(load())
+        m.setdefault("failed_runs", []).append(
+            {"ts": ts, "mission": mission, "substantive": substantive,
+             "of": total_seats, "files_not_credited": len(files)})
+        m["failed_runs"] = m["failed_runs"][-20:]
+        save(m)
+        print(f"coverage: QUORUM FAILED ({substantive}/{total_seats} substantive) -- "
+              f"{len(files)} files NOT credited as audited")
+        return
+    m = refresh(load())
+    for rel in files:
+        rec = m["files"].get(rel)
+        if rec is not None:
+            rec["last_audited"] = ts
+            rec["audit_count"] = int(rec.get("audit_count", 0)) + 1
+            rec["last_mission"] = mission
+    m["last_panel_sha"] = (_git("rev-parse", "HEAD").strip() or m.get("last_panel_sha"))
+    m["runs"] = int(m.get("runs", 0)) + 1
+    save(m)
+
+
+def main() -> None:
+    import sys
+    m = refresh(load())
+    save(m)
+    st = status(m)
+    if len(sys.argv) > 1 and sys.argv[1] == "verify":
+        print(f"adaptive payload budget : {current_budget(m):,} chars "
+              f"(ceiling {CODE_BUDGET_CHARS:,}, floor {CODE_BUDGET_MIN:,})")
+        print(f"seat blanks recorded    : {m.get('seat_blanks', {}) or 'none'}")
+        print(f"quorum-failed runs      : {len(m.get('failed_runs', []))}")
+        for h in m.get("budget_history", [])[-5:]:
+            print(f"  budget {h['from']:,} -> {h['to']:,} (blanked {h['blanked']}/{h['of']})")
+
+    print(f"AUDIT COVERAGE: {st['covered']}/{st['total']} files ever audited ({st['pct']}%)")
+    print(f"  never audited      : {len(st['never'])}")
+    print(f"  stale RISK (money path): {len(st['stale_risk'])} (floor {RISK_MAX_AGE_D:.0f}d)")
+    print(f"  stale ROTATE (long tail): {len(st['stale_rotate'])} (floor {ROTATE_MAX_AGE_D:.0f}d)")
+    print(f"  TIER-0 always-sent : {st['always_class']} decision-surface files (100% every run)")
+    total_loc = sum(r.get("loc", 0) for r in m["files"].values())
+    runs_needed = max(1, round(total_loc * 40 / CODE_BUDGET_CHARS))
+    print(f"  total LOC in sweep : {total_loc:,}  (~{runs_needed} panel runs per full sweep)")
+    for f in sorted(st["never"])[:10]:
+        print(f"    NEVER: {f}")
+
+
+if __name__ == "__main__":
+    main()
+
+```
+
+### scripts\check_campaign_retention.py
+```python
+#!/usr/bin/env python3
+"""CAMPAIGN RETENTION FENCE (R0270; L1.0 ratchet, L2.0 fence, L1.28a unmeasured-is-not-OK).
+
+THE GAP THIS CLOSES. `libs/autodiscovery/orchestrator.py` writes a `campaign_strata` audit row
+every campaign carrying how much of the desk's data the campaign actually tested on. Until now the
+sole repo reference to `campaign_strata` was that writer: NOTHING READ IT. History length is the
+binding constraint on discovery power here, so a silent return to min-length truncation would
+restore an 82.9% discard of the observations on disk with no alarm anywhere.
+
+WHAT IT FIRES ON, and the second one is the sharp one:
+  * REGRESSED  -- retained observation share fell below its recorded floor (L1.0: floors only rise)
+  * FALLBACK   -- `plan_strata` truncated to min-length because nothing cleared its floors. It is
+                  CORRECT behaviour that must never become the steady state, and it degrades
+                  QUIETLY by design. Note the direction: the fallback drives n_untested DOWN to
+                  zero, so a fence watching only for untested RISING would read this regression as
+                  the campaign becoming more inclusive.
+  * STALE      -- the newest row is older than two campaign cadences (the factory is daily)
+  * ABSENT     -- no campaign has ever recorded a plan. NOT the same defect as STALE or REGRESSED
+                  (L1.55): they send you to different organs.
+  * UNMEASURED -- no audit store could be discovered at all. Never a pass (L1.28a).
+
+TWO CAMPAIGN POPULATIONS WRITE `campaign_strata`, AND THIS FENCE WAS READING THE WRONG ONE (R0435).
+It judged the newest row across EVERY audit store. The daily crypto factory writes to
+`sor_crypto` (k=32, 85.8% retention, 36.7% untested); the research lake writes ~90 rows a day to
+`sor_research` (k=1, 100% retention, 0% untested by construction). The lake therefore won every
+`ORDER BY created_at DESC LIMIT 1`, so the quantity R0270 built this fence to floor became
+structurally unreadable, and the factory's SEVEN-DAY silence was reported as a 23h-old healthy
+plan at 100% retention. Every individual read was honest; the SUBJECT changed underneath them
+(L1.61). The subject is now named in code (`SUBJECT_DB`) and each population is reported
+separately.
+
+UNTESTED SHARE IS MEASURED AND PUBLISHED BUT STILL NOT FENCED, and the reason got sharper rather
+than weaker. R0270 asked for a fire on "n_untested rises materially". First the direction: the
+fallback drives untested to ZERO, so a rising-only check would miss the sharp failure entirely and
+read it as the campaign becoming more inclusive. Second the band, where R0435 recorded "one
+campaign shape on record" and the count has since gone to 95 -- which looks like the blocker
+clearing and is not. 92 of those 95 are lake plans whose untested share is 0.0 BY CONSTRUCTION, so
+a POOLED standard deviation measures the mix of two campaign types and not the drift of either: a
+constant wearing a measurement's clothes (L1.55), welded in both directions at once (L1.43). The
+stats are therefore computed PER POPULATION and published every run with an explicit
+CALIBRATABLE / UNMEASURED-BAND / DEGENERATE verdict, so the band gets wired from evidence the day
+the evidence exists. Measured 2026-08-13: subject 3/10 campaigns, lake degenerate at 92.
+
+WHAT IT DOES NOT DO. It judges no candidate, promotes nothing, sizes nothing and touches no
+statistical bar. Retention is a MEASUREMENT of how much data the campaign used; this fence only
+asserts that the number never falls and is never fabricated. Anti-timidity reading (L1.28): it can
+only ever push the desk to test on MORE of its own data, never less.
+
+    python scripts/check_campaign_retention.py [--report-only] [--json]
+"""
 from __future__ import annotations
 
 import argparse
@@ -13568,104 +11319,710 @@ from typing import Any
 _ROOT = Path(__file__).resolve().parent.parent
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
+from libs.ops.fence_exit import fence_exit  # noqa: E402
+from libs.ops.lawful import guard as _law_guard  # noqa: E402
+from libs.research.campaign_retention import (  # noqa: E402
+    MIN_CAMPAIGNS_FOR_BAND,
+    SUBJECT_DB,
+    Reading,
+    audit_dbs,
+    series_by_db,
+    untested_stats,
+)
 
-from libs.research import collapse_detector as CD  # noqa: E402
-from libs.research import variation_blocker as VB  # noqa: E402
+_OUT = _ROOT / "data" / "campaign_retention.json"
+_FLOORS = _ROOT / "data" / "ratchet_floors.json"
+#: The crypto factory runs daily (01:30). Two cadences of grace, so one missed night is not a
+#: page and two consecutive misses are -- the same convention the other daily ratchets use.
+MAX_AGE_H = 48.0
+_METRIC = "campaign_obs_retained"
+_PASSING = frozenset({"OK", "NO-FLOOR"})
 
-_OUT = _ROOT / "data/gen_diversity.json"
-_SCORECARD = _ROOT / "data/panel_scorecard.json"
-_DB = _ROOT / "data/research_memory.db"
 
+def _floor(root: Path | None = None) -> float | None:
+    """The recorded retention floor, or None if this metric has never been floored.
 
-def _batch() -> tuple[list[Any], list[str]]:
-    """The most recent generation batch, with the seat that produced each idea.
-
-    Reads the candidate store. Returns ([], []) when the lab db is absent -- this box may not be
-    the research box, and an empty batch is a fact worth reporting rather than an error.
+    Read from the committed ratchet artifact rather than kept here, so there is ONE floor with one
+    provenance and `check_ratchets --ratchet` remains the only thing that can move it -- upward.
     """
-    if not _DB.exists():
-        return [], []
+    path = (root or _ROOT) / "data" / "ratchet_floors.json"
     try:
-        from libs.autodiscovery.memory import CandidateStore
-        from libs.store.connection import Database
-        rows = CandidateStore(Database(_DB, read_only=True)).all()
-    except (ImportError, OSError, ValueError, AttributeError, TypeError):
-        return [], []
-    rows = sorted(rows, key=lambda c: str(getattr(c, "created_at", "")))[-200:]
-    gens = [str(getattr(c, "campaign_id", "") or "unknown") for c in rows]
-    return list(rows), gens
+        doc = json.loads(path.read_text("utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    entry = doc.get(_METRIC) if isinstance(doc, dict) else None
+    if isinstance(entry, dict) and isinstance(entry.get("value"), (int, float)):
+        return float(entry["value"])
+    return None
 
 
-def build() -> dict[str, Any]:
-    batch, gens = _batch()
-    div = CD.measure(batch, generators=gens)
-    assessment = CD.assess(div)
-    tel = VB.telemetry()
+def _age_h(created_at: str) -> float | None:
+    try:
+        t = datetime.fromisoformat(created_at.replace("Z", "+00:00"))
+    except (ValueError, AttributeError):
+        return None
+    if t.tzinfo is None:
+        t = t.replace(tzinfo=UTC)
+    return (datetime.now(tz=UTC) - t).total_seconds() / 3600.0
+
+
+def _verdict(rd: Reading | None, n_dbs: int, n_rows: int, floor: float | None,
+             *, subject_best: float | None = None, n_malformed: int = 0) -> tuple[str, str, str]:
+    """(status, why, next_action) -- the whole judgement, in one place, from arguments in hand.
+
+    `rd` IS THE SUBJECT'S NEWEST PLAN, NOT THE DESK'S (R0435). It used to be whatever store wrote
+    last, and the desk runs two campaign populations under one event name, so the research lake's
+    ~90 rows a day permanently outbid the daily crypto factory this fence was built to floor.
+    `subject_best` is the highest retention the subject population has EVER recorded; a floor above
+    it cannot have been measured on this subject and therefore cannot judge it.
+    """
+    if n_dbs == 0:
+        return ("UNMEASURED",
+                "no sqlite store carrying an audit_log table was found under data/ -- this fence "
+                "examined NOTHING, which is not evidence that campaigns are healthy",
+                "repair scope discovery in libs.research.campaign_retention.audit_dbs")
+    if rd is None:
+        # THREE DIFFERENT CAUSES, KEPT APART (L1.55) -- they send you to three different organs:
+        # the subject wrote rows this fence cannot parse; the subject wrote nothing while another
+        # population did; nobody wrote anything at all. Collapsing them is how a reader debugs a
+        # schema change when the real event is that a cron stopped.
+        if n_malformed:
+            detail = (f"{n_malformed} of {n_rows} campaign_strata row(s) carried none of the "
+                      "fields this fence judges -- a malformed row is never read past to a "
+                      "greener one underneath")
+        elif n_rows:
+            detail = (f"{n_rows} campaign_strata row(s) found across {n_dbs} store(s) but none in "
+                      f"{SUBJECT_DB}, the store this fence floors. Another population's campaigns "
+                      "are not evidence about this one -- the subject's plan is unrecorded, so "
+                      "its retention is unknowable, which is not healthy")
+        else:
+            detail = (f"no campaign has ever written a campaign_strata row across {n_dbs} audit "
+                      "store(s). The plan is unrecorded, so retention is unknowable -- not "
+                      "healthy")
+        return ("ABSENT", detail,
+                "run the campaign (ops/run_crypto_factory.sh) and confirm the orchestrator's "
+                "audit append fires")
+
+    frac = rd.retained_fraction
+    untested = rd.untested_fraction
+    age = _age_h(rd.created_at)
+    head = (f"campaign {rd.campaign_id[:16]} in {rd.db}: {rd.obs_retained:,}/"
+            f"{rd.obs_available:,} observations "
+            f"({'n/a' if frac is None else f'{frac:.1%}'}) across k={rd.k_strata} strata, "
+            f"{rd.n_tested}/{rd.n_candidates} candidates tested")
+
+    # FALLBACK FIRST. It is a statement about the planner's own state, so it outranks the numeric
+    # comparisons -- and its retention collapse would otherwise be reported as a plain regression,
+    # sending the reader to look for a data problem instead of a floors problem.
+    if rd.is_fallback:
+        return ("FALLBACK",
+                f"{head} -- plan_strata TRUNCATED TO MIN-LENGTH: nothing cleared its floors, so "
+                "the campaign is a single underpowered stratum over every candidate. Correct "
+                "behaviour, never a steady state; a null result from this campaign is not "
+                "evidence about the space. Note n_untested went to 0, which reads as inclusive",
+                "find why no stratum cleared MIN_COHORT=12/MIN_OBS=250 -- generation shape or a "
+                "collapsed length distribution upstream")
+    if frac is None:
+        return ("ABSENT",
+                f"{head} -- obs_available is 0, so retention has no denominator and any "
+                "percentage computed from it would be an opinion (L1.57)",
+                "check the campaign's series preparation: zero available observations means the "
+                "data provider returned nothing")
+    # STALE MOVED AHEAD OF THE NUMERIC COMPARISONS (R0435). A subject that has not run cannot have
+    # regressed, and reporting its last plan's number as the finding sends the reader to audit a
+    # length distribution when the actual event is that no campaign happened. Measured 2026-08-13:
+    # the crypto factory's newest plan was 7.1 DAYS old while this fence read a 23h-old research
+    # lake row and reported OK -- the one condition STALE exists to catch, invisible to it.
+    if age is not None and age > MAX_AGE_H:
+        return ("STALE",
+                f"{head} -- newest plan for {SUBJECT_DB} is {age:.1f}h old, past {MAX_AGE_H:.0f}h "
+                "(two daily cadences). A frozen artifact steers decisions exactly as a live one "
+                "does, and no campaign means no discovery, not a healthy campaign",
+                "check the crypto factory cron (01:30 daily) and its lock file")
+    if rd.structurally_single_stratum and floor is not None and frac + 1e-9 < floor:
+        return ("FALLBACK",
+                f"{head} -- one stratum holding every candidate AND retention {frac:.1%} below "
+                f"the {floor:.1%} floor. The planner did not label it, but that is the shape and "
+                "the cost of the min-length fallback",
+                "confirm against plan_strata's floors; if this is a legitimate single stratum, "
+                "the retention regression still stands on its own")
+    if floor is None:
+        return ("NO-FLOOR",
+                f"{head} -- measured, but no floor is recorded for {_METRIC}. A number without a "
+                "floor cannot regress, so it is not yet fenced",
+                "python scripts/check_ratchets.py --ratchet   (records the floor; never lowers)")
+    # A FLOOR THE SUBJECT HAS NEVER REACHED WAS NOT MEASURED ON THE SUBJECT (R0435, L1.55). This is
+    # a MEASUREMENT, not an opinion: the floor is compared against the best retention this
+    # population has EVER recorded, so it fires only when the recorded value is unreachable here.
+    # Measured 2026-08-13: floor 100.0% recorded 2026-08-06T07:07Z from a research-lake k=1 plan
+    # that retains everything by construction, against a subject whose best run is 99.96%. Without
+    # this, re-pointing the fence at its real subject would publish REGRESSED -- a true-sounding
+    # verdict with the wrong cause, sending the reader to audit a length distribution that is fine.
+    # THE REPAIR IS UPWARD AND IS NOT TAKEN HERE: the floor is not lowered, it is re-recorded
+    # against a declared subject by the one command allowed to move it.
+    if subject_best is not None and floor > subject_best + 1e-9:
+        return ("FLOOR-MIS-SUBJECTED",
+                f"{head} -- the recorded {_METRIC} floor {floor:.1%} is above the BEST retention "
+                f"{SUBJECT_DB} has ever recorded ({subject_best:.1%}), so it cannot have been "
+                "measured on this subject and cannot judge it. Two campaign populations write "
+                "campaign_strata; the floor came from the other one",
+                "re-record the floor against the declared subject: "
+                "python scripts/check_ratchets.py --ratchet   (never lower it by hand)")
+    if frac + 1e-9 < floor:
+        return ("REGRESSED",
+                f"{head} -- retention {frac:.1%} is BELOW the recorded floor {floor:.1%}. "
+                "Observations on disk that no test ran on are edge already paid for and declined",
+                "compare this campaign's length distribution against the floored run; floors only "
+                "rise, so this is repaired upstream and never by lowering the floor")
+    unt = "" if untested is None else f", {untested:.1%} of candidates untested (measured, "
+    unt += "" if untested is None else "not fenced -- see the module docstring and R0435)"
+    return ("OK",
+            f"{head}; retention {frac:.1%} at or above the {floor:.1%} floor"
+            + (f", plan {age:.1f}h old" if age is not None else "") + unt,
+            "none")
+
+
+def _population(name: str, readings: list[Reading]) -> dict[str, Any]:
+    """One campaign population, with the untested-share calibration inputs R0435 asked for."""
+    st = untested_stats(readings)
+    newest = readings[-1] if readings else None
+    return {
+        "db": name,
+        "is_subject": name == SUBJECT_DB,
+        "n_campaigns": len(readings),
+        "newest_at": None if newest is None else newest.created_at,
+        "newest_retained_fraction": None if newest is None else newest.retained_fraction,
+        "newest_k_strata": None if newest is None else newest.k_strata,
+        "best_retained_fraction": max(
+            (r.retained_fraction for r in readings if r.retained_fraction is not None),
+            default=None),
+        "untested_n": st.n,
+        "untested_mean": None if st.mean is None else round(st.mean, 6),
+        "untested_sd": None if st.sd is None else round(st.sd, 6),
+        "untested_band_verdict": st.verdict,
+        "untested_band_wired": False,
+    }
+
+
+def build(root: Path | None = None) -> dict[str, Any]:
+    by_db, n_dbs, n_rows, n_malformed = series_by_db(root)
+    pops = [_population(name, by_db[name]) for name in sorted(by_db)]
+    subject = by_db.get(SUBJECT_DB, [])
+    rd = subject[-1] if subject else None
+    subject_best = max((r.retained_fraction for r in subject
+                        if r.retained_fraction is not None), default=None)
+    floor = _floor(root)
+    status, why, nxt = _verdict(rd, n_dbs, n_rows, floor, subject_best=subject_best,
+                                n_malformed=n_malformed)
+    calibratable = [p for p in pops if p["untested_band_verdict"].startswith("CALIBRATABLE")]
     return {
         "generated": datetime.now(tz=UTC).isoformat(),
-        "n_in_batch": len(batch),
-        "gen_diversity": div.as_dict(),
-        "assessment": assessment,
-        "variation_telemetry": tel,
-        "law": "HYPOTHESIS_MAX #2/#3/#6. The detector NEVER blocks generation; the blocker blocks "
-               "only exact-fingerprint or >=0.90-Jaccard duplicates, and records what each block "
-               "duplicated so the ledger stays a map of the searched space.",
+        "law": "L1.0 universal ratchet / L2.0 fence -- campaign observation-retention is a "
+               "measured metric whose floor only rises; R0270. Judged per POPULATION (R0435).",
+        "status": status,
+        "subject_db": SUBJECT_DB,
+        "subject_best_retained_fraction": subject_best,
+        # PUBLISHED INDEPENDENTLY OF THE STATUS LADDER, because a ladder reports the FIRST true
+        # thing and this fence now has two at once (L1.60): the subject is 7 days silent AND its
+        # floor was recorded from the other population. STALE outranks -- a subject that has not
+        # run cannot have regressed -- and if that were the only place the mis-subjecting appeared,
+        # resolving the staleness would surface it as a surprise REGRESSED on a healthy campaign.
+        "floor_mis_subjected": bool(
+            floor is not None and subject_best is not None and floor > subject_best + 1e-9),
+        # R0435: the band is NOT wired, and the artifact says why in the same breath it publishes
+        # the inputs. Pooling the two populations would set a tolerance from a mix of campaign
+        # TYPES rather than the drift of either -- a fabricated constant (L1.55) welded in both
+        # directions (L1.43). Per population, the bar is R0435's own: >=10 campaigns AND real
+        # variance. Stated in OBSERVATIONS, never in days (L1.48).
+        "untested_band": {
+            "wired": False,
+            "min_campaigns": MIN_CAMPAIGNS_FOR_BAND,
+            "pooling_refused": "92 of 95 recorded campaigns are research-lake plans whose "
+                               "untested share is 0.0 BY CONSTRUCTION (k=1 over everyone); a "
+                               "pooled sd measures the population mix, not campaign drift",
+            "n_populations_calibratable": len(calibratable),
+            "next_action": "when a population reads CALIBRATABLE, set a TWO-SIDED band at a "
+                           "multiple of its own sd and wire it as a status in _verdict. Two-sided "
+                           "because the min-length fallback drives untested DOWN to zero, so a "
+                           "rising-only check reads the sharp regression as inclusiveness",
+        },
+        "n_malformed_rows": n_malformed,
+        "populations": pops,
+        "n_audit_dbs": n_dbs,
+        "n_rows_seen": n_rows,
+        "floor": floor,
+        "max_age_h": MAX_AGE_H,
+        "retained_fraction": None if rd is None else rd.retained_fraction,
+        "untested_fraction": None if rd is None else rd.untested_fraction,
+        "k_strata": None if rd is None else rd.k_strata,
+        "campaign": None if rd is None else {
+            "db": rd.db, "campaign_id": rd.campaign_id, "created_at": rd.created_at,
+            "age_h": None if _age_h(rd.created_at) is None else round(_age_h(rd.created_at), 1),
+            "n_candidates": rd.n_candidates, "n_tested": rd.n_tested,
+            "n_untested": rd.n_untested, "obs_retained": rd.obs_retained,
+            "obs_available": rd.obs_available, "strata_alpha": rd.strata_alpha,
+            "outcome": rd.outcome,
+        },
+        "detail": why,
+        "next_action": nxt,
+        "proving_command": "python scripts/check_campaign_retention.py",
     }
-
-
-def _append_scorecard(rep: dict[str, Any]) -> bool:
-    """Append `gen_diversity` to the seat scoreboard, per the spec's wiring clause."""
-    try:
-        card = json.loads(_SCORECARD.read_text("utf-8")) if _SCORECARD.exists() else {}
-    except (OSError, ValueError):
-        card = {}
-    if not isinstance(card, dict):
-        return False
-    card["gen_diversity"] = {
-        "at": rep["generated"], "n": rep["n_in_batch"],
-        **{k: rep["gen_diversity"][k] for k in
-           ("mechanism_entropy", "feature_breadth", "market_breadth",
-            "semantic_distinctness", "cross_generator_dup_rate")},
-        "verdict": rep["assessment"]["verdict"],
-        "novel_rate": rep["variation_telemetry"].get("novel_rate"),
-    }
-    _SCORECARD.parent.mkdir(parents=True, exist_ok=True)
-    _SCORECARD.write_text(json.dumps(card, indent=2), "utf-8")
-    return True
 
 
 def main() -> int:
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--json", action="store_true")
+    _law_guard()
+    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap.add_argument("--report-only", action="store_true",
+                    help="write the artifact and always exit 0")
+    ap.add_argument("--json", action="store_true", help="print the artifact")
     args = ap.parse_args()
+
     rep = build()
-    rep["scorecard_updated"] = _append_scorecard(rep)
     _OUT.parent.mkdir(parents=True, exist_ok=True)
     _OUT.write_text(json.dumps(rep, indent=2), "utf-8")
+
     if args.json:
         print(json.dumps(rep, indent=2))
-        return 0
-    d, a, t = rep["gen_diversity"], rep["assessment"], rep["variation_telemetry"]
-    print(f"generation diversity [{a['verdict']}] over {rep['n_in_batch']} candidates")
-    if rep["n_in_batch"] == 0:
-        print("  NO BATCH -- no research db on this box. That is a supply fact, not a health "
-              "reading; the metrics below would be fabricated if reported as measured.")
     else:
-        print(f"  mechanism entropy   {d['mechanism_entropy']:.3f}  "
-              f"({d['n_fingerprints']} distinct fingerprints)")
-        print(f"  feature breadth     {d['feature_breadth']:.3f}")
-        print(f"  market breadth      {d['market_breadth']} names")
-        print(f"  semantic distinct.  {d['semantic_distinctness']:.3f}")
-        print(f"  cross-gen duplicate {d['cross_generator_dup_rate']:.1%}")
-        for fp, n in d["top_fingerprints"][:3]:
-            print(f"      most attempted: {fp}  x{n}")
-    for f in a["flags"]:
-        print(f"  FLAG {f[:110]}")
-    if t.get("n"):
-        print(f"  variation blocker: {t['n_novel']}/{t['n']} genuinely new "
-              f"(novel_rate {t['novel_rate']:.1%}), {t['n_blocked']} blocked")
-    print(f"-> {_OUT.relative_to(_ROOT)}"
-          + ("  + panel_scorecard.gen_diversity" if rep["scorecard_updated"] else ""))
+        frac = rep["retained_fraction"]
+        flr = rep["floor"]
+        print(f"campaign retention (R0270): {rep['status']} -- "
+              f"{'n/a' if frac is None else f'{frac:.1%}'} retained "
+              f"(floor {'none' if flr is None else f'{flr:.1%}'}), "
+              f"{rep['n_rows_seen']} row(s) across {rep['n_audit_dbs']} audit store(s)")
+        print(f"  {rep['detail']}")
+        print(f"  next: {rep['next_action']}")
+
+    if args.report_only:
+        return 0
+    # Subject to L1.57: the denominator is how many audit stores this run actually discovered, so
+    # a scope discovery that finds nothing refuses its own pass instead of reporting a clean board.
+    return fence_exit(rep["status"], _PASSING, scanned=len(audit_dbs()),
+                      of="data/*.sqlite audit stores", fence="check_campaign_retention.py")
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
+
+```
+
+### scripts\check_coverage_floors.py
+```python
+#!/usr/bin/env python3
+"""COVERAGE FLOORS, RATCHETED -- and the money path carries its own.
+
+WHY THIS EXISTS. `pytest-cov` has been a declared dev dependency and `[tool.coverage.run]` has
+carried `branch = true` for as long as either has existed, and NOTHING EVER RAN THEM. CI invoked
+bare `pytest`. The only `.coverage` file on disk was from a single hand-run six days earlier. So
+the desk had coverage tooling installed, configured, and unmeasured -- the same built-but-never-
+runs class as an order book recorded for weeks and never screened.
+
+Measured for the first time on 2026-08-04: 88.1% repo-wide. That number is not the finding.
+
+THE SHAPE IS THE FINDING, AND IT INVERTS THE RISK. The least-covered substantial code in the
+repository is the code that can place orders and move funds:
+
+    binance_live.py          29.9%   <- the LIVE order path, worst in the repo
+    binance_spot_testnet.py  22.1%
+    binance_spot_live.py     40.9%
+    binance_testnet.py       40.5%
+    ------------------------------
+    money path combined      41.6%   against 88.1% everywhere else
+
+That is backwards from where the care should be. A bug in a research script costs a wasted cycle;
+a bug on the order path walks a short through zero into a +916,772 long, which is not hypothetical
+-- it is in `_market_max_qty`'s docstring, and a defect in that exact function was found on
+2026-08-04 sitting in the seventy percent nobody tests.
+
+TWO FLOORS, NOT ONE. A single repo-wide number lets money-path coverage fall while a wave of
+research tests keeps the aggregate up -- the average hides precisely the thing worth watching. So
+the money path is measured separately and ratcheted separately.
+
+RATCHET, NEVER A TARGET. Floors only rise. `--update` raises them to what was just measured;
+nothing lowers them but a human editing the record with a reason, which is the same discipline
+docs/research/LAW_COVERAGE.json applies to constitutional enforcement.
+
+Reads a coverage JSON report. Writes the ratchet record. Exits 1 if a floor is breached.
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import sys
+from datetime import UTC, datetime
+from pathlib import Path
+from typing import Any
+
+ROOT = Path(__file__).resolve().parent.parent
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+RECORD = ROOT / "docs/research/COVERAGE_RATCHET.json"
+
+#: The files that can PLACE ORDERS or MOVE FUNDS. Kept explicit rather than globbed: a new venue
+#: adapter must be added here deliberately, because the alternative is a money-path file that
+#: silently escapes the floor by not matching a pattern.
+#:
+#: POINTED AT THE LIVE UNIVERSE 2026-08-29 (gap-fixer). Until this edit all five entries were
+#: `libs/execution/binance_*` -- the RETIRED crypto adapters, which LAWS §1 forbids ever running
+#: again. So the number every session read at the top of its context, "money path 89.44%", was
+#: measured entirely over code that can never execute, while `desks/mt5/mt5desk/gateway.py`
+#: (1510 lines, FOUR `mt5.order_send` call sites, `close_positions`, `manage_open_positions`)
+#: and `libs/execution/broker.py` (`place_order`/`cancel_order`) were in no floor at all.
+#: The explicit-not-globbed reasoning above was right and still is; what nobody did was update
+#: the list when the principal changed the universe on 2026-08-18. A guard aimed at retired
+#: ground reads healthy forever -- the WS-005 class, on the money path.
+MONEY_PATH = (
+    "libs/execution/broker.py",
+    "libs/execution/staging.py",
+)
+
+#: LIVE money path that CANNOT BE EXECUTED ON THIS HOST, path -> the structural reason.
+#:
+#: These are reported as UNMEASURABLE by name every run and are NEVER folded into the
+#: percentage (L1.28a: unmeasured is a real answer, and it must not render as either a pass or
+#: a zero). They are also not a breach: a fence that is red from day one with no action that
+#: could ever clear it gets ignored and then deleted (L1.43), and an unclosable red is how a
+#: real one stops being read. The verdict is "unmeasurable HERE", which names the host where it
+#: could be measured -- that is a build request, not a failure.
+MONEY_PATH_UNMEASURABLE_HERE = {
+    "desks/mt5/mt5desk/gateway.py": (
+        "imports MetaTrader5 at module scope and that package is Windows-only, so no line of it "
+        "executes on this Linux box. The desk's own tests know: desks/mt5/tests/test_risk_units.py "
+        "does `_SRC = (_DESK / 'mt5desk' / 'gateway.py').read_text()` and AST-extracts the pure "
+        "helpers, commenting 'gateway.py imports MetaTrader5'. That is a sound adaptation and the "
+        "tests are real, but it means STATEMENT coverage of the live order path is 0% here and "
+        "structurally so. Measurable only on the Windows terminal host."
+    ),
+}
+
+#: RETIRED universe (LAWS §1, principal 2026-08-18/2026-08-25). Kept, never deleted: its
+#: high-water mark is a real ratchet the desk earned and deleting the population would be the
+#: denominator trick. Measured and reported SEPARATELY so a healthy retired number can never
+#: stand in for the live one again -- which is exactly what it had been doing.
+MONEY_PATH_RETIRED = (
+    "libs/execution/binance_live.py",
+    "libs/execution/binance_testnet.py",
+    "libs/execution/binance_spot_live.py",
+    "libs/execution/binance_spot_testnet.py",
+)
+
+#: Slack below the measured high-water mark, in percentage points. Coverage moves a little with
+#: test ordering and optional-dependency skips, and a floor that fires on noise gets deleted --
+#: which is worse than a floor set one point low.
+SLACK = 1.0
+
+#: L1.50. Past this many days with no floor RAISED, the ratchet is reported as STALLED.
+#:
+#: Not an evidence gate, so L1.48 does not apply: this measures ELAPSED NEGLECT, not accumulated
+#: proof, and there is no observation whose arrival would make a stalled ratchet acceptable. 14 days
+#: is two full weekly cycles -- long enough that one busy week reads as normal, short enough that a
+#: quarter cannot pass unremarked.
+STALL_DAYS = 14.0
+
+
+def days_since(iso: str | None) -> float | None:
+    """Days since an ISO timestamp, or None if absent/unparseable.
+
+    None means NOT MEASURED and must never be rendered as 0.0 (L1.28a). A record written before
+    L1.50 has no `last_raised`, and a missing timestamp that read as "raised today" would give the
+    oldest, most-stalled records the healthiest possible reading -- the exact inversion GAP #83
+    found in `register_health`, where a register never driven once scored perfect.
+    """
+    if not iso:
+        return None
+    try:
+        then = datetime.fromisoformat(str(iso))
+    except (TypeError, ValueError):
+        return None
+    if then.tzinfo is None:  # naive compares wrong against every aware stamp
+        return None
+    return max(0.0, (datetime.now(tz=UTC) - then).total_seconds() / 86400.0)
+
+
+def stall_report(rec: dict[str, Any]) -> str:
+    """L1.50: a floor that has not risen is a ratchet that has stopped.
+
+    REPORTS, NEVER FAILS. A check that exits non-zero on a quiet day gets deleted, and a deleted
+    check enforces nothing -- the same reasoning behind SLACK. Regression is CI's business;
+    stagnation is the auditor's. A desk that cannot tell "you regressed" from "you stopped
+    improving" ends up told neither.
+    """
+    age = days_since(rec.get("last_raised"))
+    if age is None:
+        return (
+            "  L1.50 STALL: this record has never recorded a raise. That is not a clean "
+            "reading -- it is an absent one, and the two must not look alike."
+        )
+    if age >= STALL_DAYS:
+        return (
+            f"  L1.50 STALL: no floor has RISEN in {age:.0f} days. The floors are holding, "
+            "which is the minimum, not the target. 100% is the target; the gap below is the "
+            "distance to it."
+        )
+    return f"  L1.50: last raise {age:.1f}d ago -- ratchet moving."
+
+
+def gap_to_target(now: dict[str, Any]) -> str:
+    """Distance to 100%, printed every run. A floor is a MINIMUM; the target is the ceiling, and
+    reporting only the floor lets a permanently-green desk read as a finished one."""
+    # NEVER CLAIM COMPLETENESS OVER A PARTIAL POPULATION (gap-fixer 2026-08-29). At 100% of the
+    # measurable files this printed "~0 uncovered statements on the code that can move funds"
+    # while `desks/mt5/mt5desk/gateway.py` -- 1510 lines and four `mt5.order_send` call sites --
+    # sat in MONEY_PATH_UNMEASURABLE_HERE, executed by nothing. A gap-to-target that silently
+    # omits the biggest order-placing file in the repo is the same false green this whole
+    # module was just repointed to stop telling.
+    unmeasurable = sorted(MONEY_PATH_UNMEASURABLE_HERE)
+    tail = (
+        f" -- and {len(unmeasurable)} live money-path file(s) are NOT in that count at all "
+        f"({', '.join(unmeasurable)}): unmeasurable on this host, so the true remaining gap is "
+        "strictly larger than the number above and is UNKNOWN, not zero"
+        if unmeasurable
+        else ""
+    )
+    return (
+        f"  to 100%: repo needs +{100.0 - now['repo_pct']:.2f}pp, "
+        f"money path +{100.0 - now['money_path_pct']:.2f}pp "
+        f"(~{round((100.0 - now['money_path_pct']) / 100.0 * now['money_path_statements'])} "
+        f"uncovered statements on the measurable part of the code that can move funds){tail}"
+    )
+
+
+def measure(report: dict[str, Any]) -> dict[str, Any]:
+    """(repo %, money-path %) from a coverage.py JSON report."""
+    raw_files = report.get("files", {})
+    files = (
+        {str(path).replace("\\", "/"): details for path, details in raw_files.items()}
+        if isinstance(raw_files, dict)
+        else {}
+    )
+    stmts = covered = 0
+    attempted = 0
+    missing: list[str] = []
+    for rel in MONEY_PATH:
+        # EVERY DISCARD IS COUNTED (L2.4/L1.60). `attempted` is incremented BEFORE the guard, and
+        # an absent module is NAMED rather than skipped. The bug this closes: a money-path file
+        # that stops appearing in the report -- renamed, its test file deleted, or the run dying
+        # before it imports -- used to leave the numerator AND the denominator, so money_path_pct
+        # ROSE while a fifth of the order path went dark, and the L1.50 ratchet then locked that
+        # inflated floor in permanently. The denominator has to say how many it lost.
+        attempted += 1
+        s = files.get(rel, {}).get("summary")
+        if not s:
+            missing.append(rel)
+            continue
+        stmts += int(s["num_statements"])
+        covered += int(s["covered_lines"])
+    # The RETIRED population, measured on its own so its (earned, real) number can never be
+    # printed as though it described the live order path.
+    r_stmts = r_covered = 0
+    r_missing: list[str] = []
+    for rel in MONEY_PATH_RETIRED:
+        s = files.get(rel, {}).get("summary")
+        if not s:
+            r_missing.append(rel)
+            continue
+        r_stmts += int(s["num_statements"])
+        r_covered += int(s["covered_lines"])
+
+    return {
+        "repo_pct": round(float(report["totals"]["percent_covered"]), 2),
+        "money_path_pct": round(100.0 * covered / stmts, 2) if stmts else 0.0,
+        "money_path_statements": stmts,
+        "money_path_attempted": attempted,
+        "money_path_measured": attempted - len(missing),
+        "money_path_missing": missing,
+        "money_path_unmeasurable_here": sorted(MONEY_PATH_UNMEASURABLE_HERE),
+        "money_path_retired_pct": (
+            round(100.0 * r_covered / r_stmts, 2) if r_stmts else None
+        ),
+        "money_path_retired_statements": r_stmts,
+        "money_path_retired_missing": r_missing,
+    }
+
+
+def load_record() -> dict[str, Any]:
+    try:
+        return dict(json.loads(RECORD.read_text("utf-8")))
+    except (OSError, json.JSONDecodeError):
+        return {}
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument("--report", default="coverage.json", help="coverage.py JSON report")
+    ap.add_argument(
+        "--update",
+        action="store_true",
+        help="RAISE the floors to what was just measured (never lowers)",
+    )
+    a = ap.parse_args()
+
+    p = Path(a.report)
+    if not p.is_absolute():
+        p = ROOT / p
+    try:
+        report = json.loads(p.read_text("utf-8"))
+    except (OSError, json.JSONDecodeError) as e:
+        print(
+            f"coverage-floors: cannot read {a.report} ({type(e).__name__}). Run pytest with "
+            "--cov=libs --cov-branch --cov-report=json:coverage.json first."
+        )
+        return 1
+
+    now = measure(report)
+    rec = load_record()
+    floors = dict(rec.get("high_water", {}))
+    repo_floor = float(floors.get("repo_pct", 0.0))
+    money_floor = float(floors.get("money_path_pct", 0.0))
+
+    print(
+        f"coverage-floors: repo {now['repo_pct']}% (floor {repo_floor}%) | "
+        f"money path {now['money_path_pct']}% over {now['money_path_statements']} stmts "
+        f"(floor {money_floor}%)"
+    )
+    # SAID EVERY RUN, NEVER FOLDED INTO THE PERCENTAGE. A live money-path file the host cannot
+    # execute is UNMEASURED, and unmeasured must not render as a pass or as a zero (L1.28a).
+    for rel in now["money_path_unmeasurable_here"]:
+        print(f"  UNMEASURABLE HERE: {rel} -- {MONEY_PATH_UNMEASURABLE_HERE[rel]}")
+    if now["money_path_retired_pct"] is not None:
+        print(
+            f"  retired (LAWS §1, cannot execute): {now['money_path_retired_pct']}% over "
+            f"{now['money_path_retired_statements']} stmts -- reported apart from the live "
+            "figure on purpose; until 2026-08-29 this WAS the figure"
+        )
+    print(gap_to_target(now))
+    print(stall_report(rec))
+
+    # A FLOOR IS ONLY COMPARABLE AGAINST THE POPULATION THAT EARNED IT (gap-fixer 2026-08-29).
+    # This is the general form of the bug found today: MONEY_PATH was changed by the principal's
+    # universe order on 2026-08-18 in every sense except the list, and nothing anywhere compared
+    # the list the floor was earned over against the list being measured. Silently comparing a
+    # NEW population to an OLD floor is meaningless in both directions -- it invents a breach if
+    # the new set is younger, and it certifies a pass if the new set is easier. Neither is a
+    # measurement. So: detect the change, refuse to treat the inherited floor as binding, and
+    # make the migration an explicit act with the old population recorded beside its number.
+    recorded_pop = list(rec.get("money_path_files", []))
+    population_changed = bool(recorded_pop) and recorded_pop != list(MONEY_PATH)
+    if population_changed:
+        gone = [f for f in recorded_pop if f not in MONEY_PATH]
+        added = [f for f in MONEY_PATH if f not in recorded_pop]
+        print(
+            f"  POPULATION CHANGED: the {money_floor}% floor was earned over "
+            f"{len(recorded_pop)} file(s), this run measured {len(MONEY_PATH)}. "
+            f"Left: {', '.join(gone) or 'none'}. Joined: {', '.join(added) or 'none'}. "
+            "The inherited floor is NOT binding on a different population and is not being "
+            "compared; --update migrates it, preserving the old number with the files that "
+            "earned it. Nothing is lowered -- the old floor keeps its own key."
+        )
+
+    breaches = []
+    if now["money_path_missing"]:
+        # A SHRINKING DENOMINATOR IS NOT AN IMPROVEMENT (L1.60). Absent modules leave both sides
+        # of the ratio, so the percentage RISES as the money path goes dark. Refuse the reading
+        # outright rather than compare a subset against a floor earned by the whole set.
+        breaches.append(
+            f"MONEY PATH UNMEASURED: {len(now['money_path_missing'])} of "
+            f"{now['money_path_attempted']} module(s) absent from the coverage report "
+            f"({', '.join(now['money_path_missing'])}). The {now['money_path_pct']}% above is "
+            "over the SURVIVORS only -- an absent module leaves numerator and denominator "
+            "together, so this number rises as the order path goes dark. Run pytest over the "
+            "whole tree, or fix the path in MONEY_PATH if a module moved."
+        )
+    if now["repo_pct"] < repo_floor - SLACK:
+        breaches.append(f"repo coverage {now['repo_pct']}% fell below its {repo_floor}% mark")
+    if not population_changed and now["money_path_pct"] < money_floor - SLACK:
+        breaches.append(
+            f"MONEY PATH coverage {now['money_path_pct']}% fell below its {money_floor}% mark -- "
+            "this is the code that places orders, and it is the one number a repo-wide average "
+            "would have hidden"
+        )
+
+    if a.update and now["money_path_missing"]:
+        # The ratchet is permanent, so a floor raised from a partial measurement is a permanent
+        # error. Refuse to write rather than lock in a number earned by a smaller money path.
+        print("  REFUSING --update: the money-path measurement is missing "
+              f"{len(now['money_path_missing'])} module(s); a floor raised from a shrinking "
+              "denominator can never be lowered again (L1.50/L1.60)")
+        return 1
+
+    if a.update:
+        floors["repo_pct"] = max(repo_floor, now["repo_pct"])
+        if population_changed:
+            # PRESERVE, THEN ESTABLISH. The old number is archived beside the exact files that
+            # earned it -- deleting it would be the denominator trick -- and the new population
+            # is floored on its FIRST measurement (L2.0), which is what a first measurement is
+            # for. `max()` across populations is the one thing that must not happen: it would
+            # pin an unrelated set to a bar it never ran against.
+            floors["superseded_money_path"] = {
+                "pct": money_floor,
+                "files": recorded_pop,
+                "retired_on": datetime.now(tz=UTC).isoformat(),
+                "why": (
+                    "LAWS §1 (principal 2026-08-18/25) retired this universe; these files cannot "
+                    "execute again, so their coverage cannot describe the live order path."
+                ),
+            }
+            floors["money_path_pct"] = now["money_path_pct"]
+        else:
+            floors["money_path_pct"] = max(money_floor, now["money_path_pct"])
+        # L1.50: `last_raised` moves ONLY when a floor actually rose. Stamping it on every
+        # --update would make running the updater look identical to improving coverage, which is
+        # GAP #85's error exactly -- an `n` that counts READINGS OF THE WORLD rather than events
+        # in it, so diligence in running the audit becomes the mechanism by which it goes wrong.
+        # A MIGRATION IS NOT A RAISE. Stamping `last_raised` because a new population happened
+        # to measure higher than the old one would restart the L1.50 stall clock on an
+        # accounting change -- the ratchet would read as "moving" while nothing improved.
+        rose = (floors["repo_pct"] > repo_floor) or (
+            not population_changed and floors["money_path_pct"] > money_floor
+        )
+        last_raised = datetime.now(tz=UTC).isoformat() if rose else rec.get("last_raised")
+        RECORD.write_text(
+            json.dumps(
+                {
+                    "_": (
+                        "HIGH-WATER MARKS for test coverage. Raised by --update, NEVER lowered by code. "
+                        "The money path is tracked separately because a repo-wide average lets order-"
+                        "path coverage fall while research tests keep the aggregate up -- the average "
+                        "hides exactly the number worth watching."
+                    ),
+                    "updated": datetime.now(tz=UTC).isoformat(),
+                    "last_raised": last_raised,
+                    "high_water": floors,
+                    "measured": now,
+                    "money_path_files": list(MONEY_PATH),
+                    "slack_pp": SLACK,
+                    "next_ceiling": (
+                        "STILL money-path parity, and the gap is still the point. 41.6% -> 70.45% "
+                        "(2026-08-06) against 92.46% repo-wide: the direction is right and the inversion "
+                        "is not fixed. ~221 uncovered statements remain on the code that can place orders "
+                        "and move funds, and the three defects found writing those tests -- a flatten leg "
+                        "that could sell through zero, and GAP #49 wired into only one leg of a two-leg "
+                        "trade -- were all in the untested part, which is the whole argument. Parity is "
+                        "not the end either: the ceiling after it is the FAILURE branches specifically, "
+                        "since every incident this desk has had came from an error path, not a happy one. "
+                        "Per L1.50 the floor is the minimum and 100% is the target; the residue above is "
+                        "named so it cannot be mistaken for work already done."
+                    ),
+                },
+                indent=1,
+            ),
+            "utf-8",
+        )
+        print(
+            f"  floors updated -> repo {floors['repo_pct']}% | "
+            f"money path {floors['money_path_pct']}%"
+            + ("  (RAISED)" if rose else "  (no raise -- last_raised unchanged)")
+        )
+        return 0
+
+    if breaches:
+        for b in breaches:
+            print(f"  BREACH: {b}")
+        print("  Floors ratchet. Restore the coverage, or edit the record by hand with a reason.")
+        return 1
+    print("  both floors held")
     return 0
 
 
@@ -13674,244 +12031,953 @@ if __name__ == "__main__":
 
 ```
 
-### scripts/run_generation_roi_test.py
+### scripts\check_utilisation.py
 ```python
-#!/usr/bin/env python3
-"""Monte-Carlo falsification: does batch hypothesis generation over a FIXED data set pay?
+"""UTILISATION FENCE (L1.28a) -- every ceiling this desk owns, measured against its limit.
 
-Runs synthetic candidate batches of growing size through the REAL novelty gate + DSR gauntlet
-(libs/autodiscovery/generation_roi) and prints the survivor rate, the deflated DSR bar, and the cost
-per survivor as the batch grows. A few candidates carry a true edge; the rest are noise.
+THE LAW: unused headroom is not safety, it is an unbooked loss. Capital, forward-confirmation
+slots, model quota, data already paid for, built capability, scheduler cadence -- each is utilised
+to its limit at all times, and idle headroom anywhere is a defect of the same class as a missed
+edge.
 
-    python scripts/run_generation_roi_test.py
+WHY IDLENESS IS THE MOST EXPENSIVE FAILURE AVAILABLE, and why it needs a fence rather than an
+intention: a wrong trade costs a bounded amount and announces itself. Idle capacity costs its
+ENTIRE forward output stream and announces nothing. An unfilled forward slot is evidence that will
+never be accrued. An unread dataset is a hypothesis never tested. A dormant module is engineering
+already paid for returning zero forever. An idle dollar is compounding that never starts. None of
+it appears in any P&L, and none of it generates an error -- which is exactly why it persists.
 
-Demonstrates the economics behind the Discovery-Factory deferral: as the batch (and thus the trial
-count) grows, the DSR bar rises and the survivor rate collapses — mass generation over the same data
-is self-defeating. A SECOND discovery method here shares the same trial ledger, so it deflates both
-rather than diversifying. Positive ROI needs a NEW data axis (unexhausted space, low trial count).
+THE RULE THIS ENFORCES: every ceiling declares a LIMIT, carries a MEASURED utilisation, and where
+utilisation is short of the limit, names the BINDING CONSTRAINT with a resolution path. Two design
+choices follow from the law and both are deliberate:
+
+  * UNMEASURED COUNTS AS ZERO. A ceiling nobody measures is idle by default and nobody would know.
+    Treating "no measurement" as "probably fine" is how every one of these gaps survived.
+  * A BINDING CONSTRAINT MUST BE NAMED, not implied. "Running at 60% and that seems fine" is a
+    defect; "60%, bound by an unfunded OpenRouter key, re-test on funding" is a decision. The
+    difference is whether anyone can act on it.
+
+THE ONLY LEGITIMATE IDLE HEADROOM is a survival rail (L1.23 -- drawdown buffer, ruin margin,
+Tier-3 reserve) or a named external blocker on the register with a re-test date.
+
+    python scripts/check_utilisation.py [--json] [--report-only]
 """
 
 from __future__ import annotations
 
-import numpy as np
-
-from libs.autodiscovery.generation_roi import Candidate, generation_roi
-from libs.validation.dsr import sharpe_ratio
-
-
-def _candidate(
-    cid: str, rng: np.random.Generator, *, edge_sharpe: float,
-    n_periods: int = 500, sigma: float = 0.01,
-) -> Candidate:
-    mu = edge_sharpe * sigma
-    r = rng.normal(mu, sigma, n_periods)
-    return Candidate(
-        id=cid, statement=f"hypothesis {cid}", features=(f"feat_{cid}",),
-        returns=tuple(float(x) for x in r),
-    )
-
-
-def _batch(
-    n: int, rng: np.random.Generator, *, edge_frac: float, edge_sharpe: float
-) -> list[Candidate]:
-    out: list[Candidate] = []
-    for i in range(n):
-        s = edge_sharpe if rng.random() < edge_frac else 0.0
-        out.append(_candidate(f"n{n}_{i}", rng, edge_sharpe=s))
-    return out
-
-
-def main() -> None:
-    rng = np.random.default_rng(20260723)
-    edge_frac, edge_sharpe = 0.03, 0.15
-    print("Generation-ROI Monte-Carlo -- batch generation over a FIXED data set")
-    print(f"({edge_frac:.0%} carry a true ~{edge_sharpe}/period Sharpe edge; the rest are null)\n")
-
-    cols = ("batch N", "tested", "survivors", "surv_rate", "DSR_bar", "cost/surv")
-    widths = (8, 8, 10, 10, 9, 10)
-    print("".join(f"{c:>{w}}" for c, w in zip(cols, widths, strict=True)))
-    print("-" * sum(widths))
-    for n in (10, 50, 200, 1000):
-        batch = _batch(n, rng, edge_frac=edge_frac, edge_sharpe=edge_sharpe)
-        sharpes = [sharpe_ratio(np.asarray(c.returns, dtype="float64")) for c in batch]
-        rep = generation_roi(batch, variance_of_sharpes=float(np.var(sharpes, ddof=1)))
-        cps = "inf" if rep.cost_per_survivor == float("inf") else f"{rep.cost_per_survivor:.1f}"
-        vals = (n, rep.backtested, rep.survivors, f"{rep.survivor_rate:.3f}",
-                f"{rep.deflated_bar_sr0:.3f}", cps)
-        print("".join(f"{v:>{w}}" for v, w in zip(vals, widths, strict=True)))
-
-    print("\nRead: as N grows the DSR bar rises and the survivor rate collapses.")
-    print("Mass generation over the SAME data is self-defeating under multiplicity correction.")
-    print("A second method shares this SAME trial ledger -- it deflates both, not diversifies.")
-    print("Positive ROI needs a NEW data axis (unexhausted space, low trial count).")
-
-
-if __name__ == "__main__":
-    main()
-
-```
-
-### scripts/screen_exchange_netflow.py
-```python
-"""STAGE-A SCREEN: exchange netflow as a supply-pressure timing signal (BTC + ETH, 16y).
-
-MECHANISM (stated BEFORE any compute, per SCREEN-ON-DISCOVERY point 2 -- screening a catalogued
-axis without a mechanism prior is breadth-mining with extra steps, which the 420/0 result already
-refuted): coins moving ONTO exchanges are supply arriving at the only venue where it can be sold,
-so positive netflow is revealed selling intent and should precede WEAKER returns; coins moving OFF
-exchanges are custody/accumulation and should precede STRONGER returns. Expected IC sign is
-NEGATIVE. This is a genuine TIMING signal for the asset itself, so absolute forward return is the
-mechanism-appropriate target (only 2 assets exist here, so a cross-sectional build would be a
-2-wide panel -- reported as unavailable rather than faked).
-
-TIMESTAMP ALIGNMENT (declared, per SCREEN-ON-DISCOVERY point 4 -- unstated alignment VOIDS the
-screen): signal and target come from the SAME Coin Metrics daily rows, keyed by the same `date`
-field, ingested from one source. `netflow_ntv` is a UTC-day aggregate and `price_usd` is that same
-UTC day's reference price, so signal[t] (flow during UTC day t) predicts the return realised over
-the FOLLOWING period, which is exactly the t -> t+1 shift stage_a_screen performs. There is no
-cross-source timezone join here, which is the defect class that turned the kimchi and Turkey
-premia into pure timing artifacts (a KST-day close sits ~1.6d ahead of a UTC-day close). LOOK-AHEAD
-RISK: LOW for that reason; the residual risk is Coin Metrics revising a day's flow after
-publication, which this local archive cannot detect.
-
-EVERY CONSTRUCTION TRIED IS LOGGED (point 3 -- reporting only the build that printed is
-garden-of-forking-paths p-hacking). Two builds x three horizons x two assets = 12 cells, and ALL
-12 are reported and counted as trials regardless of which one looks best:
-  raw    -- netflow_ntv as-is
-  scaled -- netflow_ntv / sply_ex_ntv, a flow/stock ratio. Economically the right normalisation
-            over a 16-year window where native-unit volumes grew ~1000x; the raw build's z-score
-            has to absorb that drift through a 20-day window alone.
-
-ZERO PROMOTION AUTHORITY (point 5): Stage A earns a pre-registered forward clock at most, never
-capital. Negative screens are first-class deliverables (point 6) and are graveyarded with reason.
-"""
-
-from __future__ import annotations
-
-import collections
+import argparse
 import json
 import sys
+from dataclasses import asdict, dataclass
+from datetime import UTC, datetime, timedelta
+from pathlib import Path
+from typing import Any
 
-import numpy as np
+_ROOT = Path(__file__).resolve().parent.parent
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
+from libs.ops.fence_exit import fence_exit  # noqa: E402
 
-from libs.alpha_factory.hypothesis_novelty import PriorIdea, hypothesis_novelty
-from libs.research.axis_screen import stage_a_screen
+_OUT = _ROOT / "data/utilisation.json"
+_LOGS = _ROOT / "data/cro_ai_logs"
 
-_SRC = "data/coinmetrics_flows.jsonl"
-_HORIZONS = (1, 5, 20)
-
-
-def _log(m: str) -> None:
-    print(m, flush=True)
-
-
-def _load() -> dict[str, tuple[np.ndarray, np.ndarray, np.ndarray]]:
-    """asset -> (netflow, exchange_supply, price) as date-sorted daily arrays."""
-    rows: dict[str, dict[str, tuple[float, float, float]]] = collections.defaultdict(dict)
-    with open(_SRC) as fh:
-        for line in fh:
-            try:
-                d = json.loads(line)
-            except Exception:
-                continue
-            a, day = d.get("asset"), str(d.get("date", ""))[:10]
-            nf, sx, px = d.get("netflow_ntv"), d.get("sply_ex_ntv"), d.get("price_usd")
-            if not a or not day or nf is None or px is None:
-                continue
-            try:
-                rows[a][day] = (float(nf), float(sx) if sx is not None else float("nan"),
-                                float(px))
-            except (TypeError, ValueError):
-                continue
-    out = {}
-    for a, byday in rows.items():
-        days = sorted(byday)
-        arr = np.array([byday[d] for d in days], dtype="float64")
-        out[a] = (arr[:, 0], arr[:, 1], arr[:, 2])
-        _log(f"  {a}: {len(days)} daily rows {days[0]} -> {days[-1]}")
-    return out
+#: Below this fraction of the limit, idle headroom must be explained by a named binding constraint.
+_EXPECT = 0.90
 
 
-def _forward_returns(price: np.ndarray, h: int) -> np.ndarray:
-    """target_ret[t] = simple return realised OVER period t, where a period is h days.
+@dataclass
+class Ceiling:
+    name: str
+    limit: float
+    used: float
+    unit: str
+    measured: bool
+    binding_constraint: str      # "" = none named; required when utilisation < _EXPECT
+    why_it_matters: str
+    #: Live composition of the reading -- the numbers behind `used`, not a static explanation.
+    #: Separate from `binding_constraint` ON PURPOSE: writing the diagnosis there would name a
+    #: constraint, which flips IDLE-UNEXPLAINED to IDLE-EXPLAINED and silences the fence. A
+    #: shortfall the desk caused itself is exactly what must stay UNEXPLAINED (L1.28a: the only
+    #: legitimate idle headroom is a survival rail or an EXTERNAL blocker on the register).
+    detail: str = ""
 
-    stage_a_screen applies the t -> t+1 shift itself, so this must be the CONTEMPORANEOUS
-    h-day return, never a shifted one -- shifting here too would double-count the lead and
-    manufacture a look-ahead.
+    @property
+    def utilisation(self) -> float:
+        if not self.measured:
+            return 0.0           # unmeasured counts as zero -- see module docstring
+        return 0.0 if self.limit <= 0 else min(self.used / self.limit, 1.0)
+
+    @property
+    def status(self) -> str:
+        if not self.measured:
+            return "UNMEASURED"
+        # OVER-LIMIT IS A MEASUREMENT DEFECT, NOT SATURATION, and clamping it to 100% is how it
+        # hides. First run of this fence read deployed capital at $13,155 against $4,500 equity
+        # and displayed a comfortable "SATURATED 100%". Either the two numbers come from different
+        # sources, or the book is levered and the ceiling is wrong. Both need a human, and neither
+        # is the healthy state the clamp implied. A ceiling you cannot trust is worse than one you
+        # know is idle: it reports success while measuring nothing.
+        if self.limit > 0 and self.used > self.limit * 1.02:
+            return "OVER-LIMIT"
+        if self.utilisation >= _EXPECT:
+            return "SATURATED"
+        return "IDLE-EXPLAINED" if self.binding_constraint else "IDLE-UNEXPLAINED"
+
+
+def _forward_slots() -> Ceiling:
+    """The single most load-bearing ceiling on the desk's only path from research to capital.
+
+    OCCUPANCY IS NOT UTILISATION, and this counted the wrong thing. `used` was
+    `len(snap["slots"])` -- a head-count of slots that are TAKEN. But a forward slot exists to
+    accrue evidence, and `derive_slots()` already publishes which of them actually are:
+    `accruing` against `not_accruing`, the latter documented in the registry's own note as "the
+    slots paying multiplicity while returning no evidence". A dormant clock is the worst reading
+    available -- it consumes cohort capacity, charges every other candidate's Holm bar, and
+    returns nothing -- and counting it as utilised capacity made it indistinguishable from a
+    healthy one. Measured when this was fixed: 12 slots occupied, 11 accruing, `cny_premium` at
+    NO-EVIDENCE, and the fence read a clean 100% SATURATED.
+
+    The head-count remains the fallback for snapshots written before `accruing` existed; it is
+    never the preferred numerator.
     """
-    r = np.full(len(price), np.nan)
-    r[h:] = price[h:] / price[:-h] - 1.0
-    return r
+    dormant: list[str] = []
+    try:
+        from libs.research.slot_registry import MAX_FORWARD_SLOTS, derive_slots
+        snap = derive_slots()
+        occupied = len(snap.get("slots", []) or [])
+        accruing = snap.get("accruing")
+        used = float(accruing if isinstance(accruing, int) else occupied)
+        dormant = [str(d.get("name", "?")) for d in (snap.get("not_accruing") or [])
+                   if isinstance(d, dict)]
+        cap, measured = float(MAX_FORWARD_SLOTS), True
+        detail = f"{occupied}/{int(cap)} slots occupied, {used:.0f} accruing evidence" + (
+            f"; dormant: {', '.join(dormant[:4])}" if dormant else "")
+    except (ImportError, OSError, ValueError, KeyError, TypeError) as exc:
+        used, cap, measured = 0.0, 12.0, False
+        detail = f"cohort unreadable: {type(exc).__name__}"
+    # THE CONSTRAINT MUST MATCH THE SHORTFALL. "Candidate supply" is the right diagnosis for an
+    # EMPTY slot and the wrong one for an occupied slot that has gone quiet -- those are fixed at
+    # opposite ends of the pipeline, and naming the wrong one sends the next reader upstream to
+    # generate candidates for a cohort that has no room.
+    if used >= cap * _EXPECT:
+        binding = ""
+    elif dormant:
+        binding = (f"{len(dormant)} occupied slot(s) accruing NO evidence ({', '.join(dormant[:4])})"
+                   " -- retire or repair the clock; the slot is held either way")
+    else:
+        binding = "candidate supply into the forward queue -- see scripts/run_promotion_queue.py"
+    return Ceiling(
+        "forward_confirmation_slots", cap, float(used), "accruing clocks", measured, binding,
+        "An empty slot accrues NO evidence while every candidate's capacity decays against a "
+        "growing book. Idle slots are the direct mechanism by which an edge arrives already "
+        "outgrown (L1.18a runway).", detail)
+
+
+def _forward_queue_depth() -> Ceiling:
+    """WHAT IS STAGED BEHIND THE COHORT -- the ceiling nothing on this desk was measuring (R0205).
+
+    THE BLIND SPOT, EXACTLY. Slot OCCUPANCY and pipeline DEPTH are two different ceilings, and
+    the desk owned a fence for one and nothing for the other. At 12/12 occupied with ZERO
+    candidates staged, `_forward_slots` above returned SATURATED with no binding constraint, and
+    `capability_ratchet._alpha_output` scored the same state 10/10 "AT CEILING ... the work is
+    now HOLDING it". Both are true statements about occupancy and both are the wrong question:
+    the desk's throughput through this pipeline is slots x (1 / clock duration), and when nothing
+    is staged, a slot that frees idles for a FULL pipeline latency before it can restart --
+    measured on the live artifact at 181 days (90 clock + 90 queue + 1 decision).
+
+    So the healthiest-looking reading on the artifact was the one describing a pipeline with zero
+    throughput staged. That is the L1.28a failure in its purest form: idle capacity costs its
+    entire forward output stream and announces nothing, and here it announced SATURATED.
+
+    THE LIMIT IS ONE FULL COHORT, and it is not a hand-set number: a queue stocked to
+    MAX_FORWARD_SLOTS can refill every slot the moment it frees, which is the only depth at which
+    queue wait contributes zero to promotion latency. It self-scales with the cap.
+
+    NO BINDING CONSTRAINT IS NAMED WHEN THE QUEUE IS EMPTY, and that is deliberate rather than an
+    omission. An empty queue is not an external blocker and not a survival rail -- the two things
+    L1.28a admits as legitimate idle headroom. It is the desk's own screening throughput, so it
+    reads IDLE-UNEXPLAINED and this fence exits non-zero, which is what L1.25a means by a null
+    streak triggering escalation rather than rest. The live composition goes in `detail` instead,
+    so the reading is diagnostic without being self-excused.
+    """
+    n_promo, n_paper, sources, why = 0, 0, [], ""
+    try:
+        from libs.research.slot_registry import MAX_FORWARD_SLOTS
+        cap = float(MAX_FORWARD_SLOTS)
+    except (ImportError, ValueError):
+        cap = 12.0
+    # Two independent staging registers feed the cohort and BOTH count. run_promotion_queue reads
+    # gauntlet survivors out of the candidate store; run_paper_sleeve_spawner queues corrected
+    # Stage-A verdicts behind a full cohort. Reading only one would understate the depth.
+    try:
+        q = json.loads((_ROOT / "data/promotion_queue.json").read_text("utf-8"))
+        n_promo = int(q.get("n_candidates") or 0)
+        sources.append("promotion_queue")
+    except (OSError, ValueError, TypeError):
+        pass
+    try:
+        p = json.loads((_ROOT / "data/paper_sleeve_queue.json").read_text("utf-8"))
+        n_paper = len(p.get("queued") or [])
+        why = str(p.get("why") or "")
+        sources.append("paper_sleeve_queue")
+    except (OSError, ValueError, TypeError):
+        pass
+    measured = bool(sources)
+    used = float(n_promo + n_paper)
+    detail = (f"{n_promo} gauntlet survivor(s) + {n_paper} paper-sleeve candidate(s) staged "
+              f"[{', '.join(sources)}]" + (f"; upstream says: {why[:120]}" if why else "")
+              ) if measured else "neither queue artifact is readable"
+    return Ceiling(
+        "forward_queue_depth", cap, used, "candidates staged", measured, "",
+        "A full cohort with an empty queue is not saturation, it is a stall waiting to happen: "
+        "when a slot frees, the desk waits a FULL pipeline latency (measured 181d) before "
+        "evidence can start accruing in it again. Occupancy measures what is running; this "
+        "measures whether anything can replace it (L1.28a idleness, L1.30 replacement rate).",
+        detail)
+
+
+def _capital() -> Ceiling:
+    """Capital ACTUALLY deployed against capital available -- and they must be two sources.
+
+    THE WELD, found and fixed 2026-08-05. This read `live_book_usd()` as the numerator and
+    `_desk_equity_usd()` as the denominator. `live_book_usd()` IS THE FIRST RUNG INSIDE
+    `_desk_equity_usd()` (validation.py:129), so on any box where the NAV chain is readable the
+    two calls return the same float and the ratio is IDENTICALLY 1.0 -- not usually, not by
+    coincidence, but by construction. Measured on the day it was found: both returned 13151.52
+    and this ceiling printed `utilisation 1.0, SATURATED` while `web/cashcarry_live.json` held
+    `n_carries: 0, deployed_notional: 0.0`. A book with ZERO POSITIONS reported as fully deployed,
+    on the one fence the desk's only idleness law has.
+
+    The comment above in `status` records the previous repair going the WRONG WAY: the two sources
+    disagreed ($13,155 vs $4,500), and unifying them removed the disagreement by removing the
+    measurement. A ceiling and its own numerator must never share a source -- that is not a
+    tightened definition, it is the deletion of the ratio.
+
+    NOW: deployment comes from the executed book, equity from the attestation chain, and a PAPER
+    attestation reports UNMEASURED rather than a number -- `molded_curve_usd` is a MOLDED/SIMULATED
+    curve by its own `_note`, and utilisation computed from a simulated denominator is exactly the
+    "could not measure, counted as satisfied" failure this file exists to refuse. One definition,
+    owned by `libs/research/idle_yield.py`; no private copy here (the capacity_policy pattern).
+    `check_idle_cost.py` prices the same gap in dollars per day (L1.51).
+    """
+    try:
+        from libs.research.idle_yield import book_state
+        bs = book_state()
+        eq, book, measured, why = bs.equity_usd, bs.deployed_usd, bs.measurable, bs.why
+    except (ImportError, OSError, ValueError, AttributeError, TypeError):
+        eq, book, measured, why = 0.0, 0.0, False, "libs.research.idle_yield unavailable"
+    return Ceiling(
+        "deployed_capital", eq, book, "USD", measured,
+        "" if (measured and eq > 0 and book >= eq * _EXPECT) else
+        f"{why} -- priced per day by scripts/check_idle_cost.py (L1.51)",
+        "An idle dollar is compounding that never starts. Under-deployment is a REAL cost "
+        "reported as loudly as a risk breach (L1.20, doctrine).")
+
+
+def _organs() -> Ceiling:
+    """Scheduler saturation: manifest entries that actually produced a log in the last 48h."""
+    if not _LOGS.exists():
+        return Ceiling("scheduler_cadence", 1.0, 0.0, "organs fresh", False,
+                       "log directory absent", "A scheduled organ that never runs is a cadence "
+                       "declared and not kept -- the capability is paid for and returns zero.")
+    manifest = _ROOT / "ops/crontab.manifest"
+    scripts = set()
+    if manifest.exists():
+        for line in manifest.read_text("utf-8").splitlines():
+            if line.strip().startswith("#") or "python" not in line:
+                continue
+            for tok in line.split():
+                if tok.endswith(".py"):
+                    scripts.add(Path(tok).stem)
+    cutoff = (datetime.now(tz=UTC) - timedelta(hours=48)).timestamp()
+    fresh = {p.stem.split("_20")[0] for p in _LOGS.glob("*.log") if p.stat().st_mtime >= cutoff}
+    hit = sum(1 for s in scripts if any(s in f or f in s for f in fresh))
+    return Ceiling(
+        "scheduler_cadence", float(len(scripts)), float(hit), "organs run in 48h",
+        bool(scripts),
+        "" if scripts and hit >= len(scripts) * _EXPECT else
+        "organs silent in 48h -- check_organs/check_stale_daemons name which; a fresh container "
+        "shows zero because no cron has fired yet",
+        "A scheduled organ that never runs is a cadence declared and not kept -- capability "
+        "already paid for, returning zero.")
+
+
+def _capability() -> Ceiling:
+    """Built code that nothing imports and nothing schedules: engineering paid for, unused."""
+    try:
+        from libs.self_improvement.dormancy import scan
+        rep = scan()
+        total = float(rep.n_scripts_scanned + getattr(rep, "n_modules_scanned", 0))
+        dormant = float(len(rep.dormant))
+        measured = total > 0
+    except (ImportError, OSError, ValueError, AttributeError, TypeError):
+        total, dormant, measured = 0.0, 0.0, False
+    return Ceiling(
+        "capability_wired", total, max(total - dormant, 0.0), "reachable units", measured,
+        "" if measured and total > 0 and (total - dormant) >= total * _EXPECT else
+        "wiring backlog -- scripts/run_wiring_agent.py --apply auto-wires the provably-inert "
+        "ones daily; the remainder are money-path/spend-capable and need a human cadence call",
+        "A dormant capability is engineering already paid for that returns zero forever, and it "
+        "compounds: nobody maintains it, so it rots into a liability (L2.9).")
+
+
+def _data_assets() -> Ceiling:
+    """Datasets acquired vs datasets actually READ by something. Paid-for and unread is the
+    purest form of the defect: the cost is already sunk and the return is exactly zero."""
+    reg = _ROOT / "data/data_assets.json"
+    try:
+        rows = json.loads(reg.read_text("utf-8"))
+        rows = rows.get("assets", rows) if isinstance(rows, dict) else rows
+        # PRESENT assets only. An asset absent from this box is a COLLECTION question ("is the
+        # collector scheduled, is this even the collecting box"), not an idle-capacity one --
+        # scoring the two together would blame the desk for not reading a file it never had, and
+        # the number would stop meaning anything actionable.
+        present = [r for r in rows if (r.get("rows") or r.get("bytes") or r.get("span"))]
+        total = float(len(present))
+        # THE COLLECTOR IS NOT A CONSUMER. Counting it read 97.8% -- a comfortable number meaning
+        # "almost every dataset is used" -- when many of those sole "consumers" were the very
+        # script that WRITES the file. A dataset read only by its own collector is precisely the
+        # idle asset L1.28a is about: paid for, collected on a cadence, and feeding no research.
+        used = float(sum(1 for r in present
+                         if [c for c in (r.get("consumers") or [])
+                             if Path(str(c)).name != Path(str(r.get("collector") or "")).name]))
+        measured = total > 0
+    except (OSError, ValueError, AttributeError, TypeError):
+        total, used, measured = 0.0, 0.0, False
+    return Ceiling(
+        "data_assets_read", total, used, "present datasets with a consumer", measured,
+        "" if measured and total > 0 and used >= total * _EXPECT else
+        "assets present on this box with no consumer -- run scripts/build_data_registry.py and "
+        "read the `consumers` column; an absent asset is a collection gap, not an idle one",
+        "An unread dataset is a hypothesis never tested against evidence already bought. The "
+        "26-year CFTC COT panel sat unread for weeks -- that is the proving instance (L1.3).")
+
+
+def _mutation() -> Ceiling:
+    """Test STRENGTH, not coverage: the fraction of injected faults the suite actually kills."""
+    f = _ROOT / "data/mutation_score.json"
+    try:
+        d = json.loads(f.read_text("utf-8"))
+        # The artifact is PER-TARGET (run_mutation.py writes a `targets` list), so a top-level
+        # `kill_rate` lookup silently returned 0.0 and this ceiling read UNMEASURED while a real
+        # measurement sat in the file. The aggregate is mutants-weighted, not a mean of rates:
+        # a 10-mutant file at 100% must not cancel a 200-mutant file at 80%.
+        # AN UNRUN SITE COUNTS AS SURVIVED (2026-08-05). run_mutation.py walks mutation sites in
+        # SOURCE ORDER, so a budget-truncated target has tested a PREFIX of a file, not a sample
+        # of it. Summing `killed` and `total` across targets therefore let truncation SHRINK the
+        # denominator: running less of a hard file raised this score. The harness had recorded
+        # `budget_truncated` and `n_sites` per target all along; this consumer read neither. That
+        # is L1.53's denominator trap sitting inside the desk's own test-strength gauge -- and the
+        # same mistake as reading a 14-of-137 prefix as a 35.7% result: a prefix is not a sample.
+        #
+        # DROPPING truncated targets was the obvious repair and it is WRONG -- it merely moves the
+        # exploit. Truncate a hard file entirely and it leaves the denominator altogether, so the
+        # score rises even faster. (A test asserts exactly this, because the fix looked right.)
+        #
+        # The honest treatment is fail-closed and uses the site count the harness already writes:
+        # every site that was NOT run is charged to the denominator as un-killed. Truncation can
+        # then only ever LOWER the score, which is the only incentive gradient that cannot be
+        # gamed -- you buy points by killing mutants, never by declining to inject them.
+        targets = [t for t in (d.get("targets") or []) if isinstance(t, dict)]
+        killed = float(sum(float(t.get("killed", 0)) for t in targets))
+        total = 0.0
+        skipped = 0
+        for t in targets:
+            run = float(t.get("total", 0))
+            sites = float(t.get("n_sites", 0) or 0)
+            if t.get("budget_truncated"):
+                skipped += 1
+                # n_sites is the honest denominator; fall back to what ran only if the harness
+                # did not record it, which under-counts rather than inventing a number.
+                total += max(run, sites)
+            else:
+                total += run
+        # No fallback to a top-level `kill_rate`: that key IS NEVER WRITTEN (the artifact is
+        # per-target, which the comment above already records as the original bug), so the old
+        # `else float(d.get("kill_rate", 0.0))` was a dead branch that turned "nothing ran" into
+        # a confident 0.0 -- and then `measured = score > 0` relabelled that 0.0 as UNMEASURED,
+        # so a run of zero mutants and a suite that kills nothing produced identical output.
+        score = killed / total if total > 0 else 0.0
+        score = score / 100.0 if score > 1.0 else score
+        # MEASURED means the measurement HAPPENED, never that it came out well. `score > 0` made
+        # the single worst real result -- a suite that kills no mutants at all -- unreportable,
+        # because it read as "we did not look". Those are opposite facts and the desk acts on
+        # them differently: one is a catastrophe, the other is a chore.
+        measured = total > 0
+    except (OSError, ValueError, TypeError, AttributeError):
+        score, measured, skipped, total = 0.0, False, 0, 0.0
+    return Ceiling(
+        "test_kill_rate", 1.0, score,
+        f"mutants killed (fraction of {total:.0f} scored"
+        + (f"; {skipped} truncated target(s) EXCLUDED -- a prefix is not a sample)"
+           if skipped else ")"),
+        measured,
+        "" if score >= _EXPECT else
+        (f"{skipped} target(s) were budget-truncated and are unscored: raise the budget or "
+         "narrow the target, because running less must never read as killing more. "
+         if skipped else "") +
+        "surviving mutants in libs/execution/staging.py and libs/risk/gate.py -- the survivor "
+        "list IS the work queue (L1.0c)",
+        "An unkilled mutant is a real code change the suite cannot see. On the money path that "
+        "is a silent correctness ceiling under every other guarantee.")
+
+
+def _test_suites_runnable() -> Ceiling:
+    """Test modules that can actually EXECUTE here, vs modules that skip on a missing dependency.
+
+    A `pytest.importorskip` skip prints one grey line and exits 0, so a suite covering the
+    backtest cross-engine, GARCH stationarity, or any other optional-dep path reads as GREEN while
+    testing nothing. Measured 2026-07-30: arch, backtrader and vectorbt are all DECLARED in
+    pyproject and all absent, so five test modules have been silently inert.
+
+    That is L1.28a exactly -- capability paid for (the tests are written, the deps are chosen) and
+    returning zero, with no error to notice. Unmeasured counts as zero, so it belongs on this
+    board rather than in a skip line nobody reads.
+    """
+    import importlib.util
+    declared = ("arch", "backtrader", "vectorbt")
+    have = [m for m in declared if importlib.util.find_spec(m) is not None]
+    return Ceiling(
+        "optional_test_deps", float(len(declared)), float(len(have)), "declared deps importable",
+        True,
+        "" if len(have) >= len(declared) * _EXPECT else
+        f"missing {sorted(set(declared) - set(have))} -- their test modules skip silently and "
+        "read as green; `pip install -e '.[research]'` on the box that runs CI",
+        "A test that skips on a missing dependency prints one grey line and exits 0. The suite "
+        "reports green while those paths are untested -- the same 'could not measure counted as "
+        "satisfied' failure the Gate 0 board refuses.")
+
+
+def _brain_seat() -> Ceiling:
+    """THE SEAT: how much of the day the desk's ONE serial brain is actually working.
+
+    THE UNMEASURED CEILING (found 2026-07-31 answering "is anything still below max
+    frequency"): every claude-invoking organ takes /tmp/quant_brain.lock, and every LOSER
+    appends a DEFERRED line to brain_mutex.log -- a complete, free record of contention that
+    NOTHING had ever read. So the desk raised and lowered LLM cadences for weeks with no
+    measurement of the resource they all compete for: the exact "we are running at 60% and
+    that seems fine" defect L1.28a exists to kill, sitting on the desk's scarcest input.
+
+    THE METRIC, and why it is deferrals rather than wall-clock: a deferral is a run the desk
+    WANTED and did not get, which is precisely the thing extra cadence is supposed to buy. Two
+    readings, both actionable:
+      deferral rate LOW  -> the seat has idle windows: RAISE cadences (headroom exists).
+      deferral rate HIGH -> the seat is the binding constraint: raising cron changes nothing;
+                            only a second seat (the research twin) or shorter runs do.
+    Utilisation is reported as attempts-that-ran / attempts-made over the trailing 24h, so
+    100% means nothing was ever turned away and lower means real contention. UNMEASURED (no
+    log yet, e.g. this container) counts as ZERO by law -- never as healthy."""
+    log = _LOGS / "brain_mutex.log"
+    since = datetime.now(tz=UTC) - timedelta(hours=24)
+    deferred = 0
+    try:
+        for line in log.read_text("utf-8", errors="ignore").splitlines():
+            stamp = line.split(" ", 1)[0]
+            try:
+                if datetime.fromisoformat(stamp.replace("Z", "+00:00")) >= since:
+                    deferred += 1
+            except ValueError:
+                continue
+        measured = True
+    except OSError:
+        measured = False
+    # Attempts = organ fires that reached the mutex. Runs = attempts - deferrals. The daily
+    # scheduled claude-organ fire count is the denominator's floor; deferrals add the rest.
+    scheduled_fires = 34.0                                  # claude-invoking cron lines/day
+    attempts = scheduled_fires + deferred
+    ran = attempts - deferred
+    return Ceiling(
+        "brain_seat_throughput", attempts if measured else scheduled_fires,
+        ran if measured else 0.0, "organ runs/24h (vs attempted)", measured,
+        "" if (measured and deferred == 0) else
+        ("ONE serial brain seat: every deferred organ is a run the desk wanted and did not "
+         "get. The resolution path is a SECOND SEAT (research twin, ops/role=research) -- "
+         "raising cron cadence cannot add throughput to a saturated mutex"
+         if measured else
+         "brain_mutex.log absent on this host -- measurable only where organs actually run"),
+        "This is the resource EVERY llm cadence competes for. Unmeasured, the desk cannot tell "
+        "'raise the cadence' (headroom) from 'buy a second seat' (contention) -- and it has "
+        "been raising cadences blind. Deferrals are the only honest signal of which is true.")
+
+
+def _book_vol() -> Ceiling:
+    """RISK-TAKING ITSELF: realized book volatility against the Kelly-implied ceiling (R0107).
+
+    THE CEILING THAT WAS MISSING, and it is the one closest to the objective. Every other
+    ceiling here measures an INPUT -- slots, capital, organs, data. None measured the thing
+    those inputs exist to produce: risk actually carried. The desk could run at a third of the
+    volatility its own rails permit for a month and no artifact would have said so.
+
+    The limit is not a hand-set number. At fraction ``f`` of full Kelly on an edge of annualized
+    Sharpe ``S``, book volatility is exactly ``f * S`` -- so the ceiling falls out of the rails
+    (KellyLimits.hard_max, half-Kelly, the absolute maximum ever) and the demonstrated Sharpe.
+    It self-scales in the direction the objective wants: the permitted volatility RISES as
+    validated edges accrue, automatically, with no rail touched and no bar loosened.
+
+    BOTH DIRECTIONS ARE DEFECTS, which is why this is a ceiling and not a limit. Below it with
+    no named constraint is L1.28a idleness -- risk the evidence supports and the desk declined.
+    Above it is an over-Kelly breach, where expected log-growth FALLS while ruin rises: worse on
+    both axes at once, and the only reading here whose honest answer is to cut.
+
+    UNMEASURED TODAY, AND CORRECTLY SO. Every row in the NAV chain is paper/testnet and the
+    recent ones are an explicitly MOLDED curve. Deriving a risk ceiling from a simulated
+    equity series would publish a number the desk then sizes against -- the L1.45 failure of
+    stepping the book up on fiction, which is strictly worse than leaving it pinned. It reads
+    ZERO with the blocker named, and it starts measuring the moment real fills exist.
+    """
+    try:
+        from libs.risk.vol_headroom import from_nav_chain
+        h = from_nav_chain(_ROOT / "data/nav_attestation.jsonl")
+        used, limit, measured, why = (h.realized_vol_ann, h.ceiling_vol_ann, h.measured, h.reason)
+    except (ImportError, OSError, ValueError) as exc:
+        used, limit, measured, why = 0.0, 0.0, False, f"vol headroom unavailable: {exc}"
+    return Ceiling(
+        "book_vol_vs_kelly_ceiling", limit, used, "annualized vol", measured,
+        "" if (measured and limit > 0 and used >= limit * _EXPECT) else why,
+        "The risk budget is the ceiling nearest the objective: under-risking a demonstrated "
+        "edge forfeits compounding exactly as idle capital does, and over-risking it lowers "
+        "E[log W] while raising ruin. Unmeasured, the desk cannot tell the two apart.")
+
+
+def collect() -> list[Ceiling]:
+    return [_capital(), _forward_slots(), _forward_queue_depth(), _capability(), _data_assets(),
+            _organs(), _mutation(), _test_suites_runnable(), _brain_seat(), _book_vol()]
+
+
+def build() -> dict[str, Any]:
+    ceilings = collect()
+    rows = [{**asdict(c), "utilisation": round(c.utilisation, 3), "status": c.status}
+            for c in ceilings]
+    unexplained = [r["name"] for r in rows if r["status"] == "IDLE-UNEXPLAINED"]
+    unmeasured = [r["name"] for r in rows if r["status"] == "UNMEASURED"]
+    return {
+        "generated": datetime.now(tz=UTC).isoformat(),
+        "law": "L1.28a -- unused headroom is not safety, it is an unbooked loss. Unmeasured "
+               "utilisation counts as ZERO: a ceiling nobody measures is idle by default.",
+        "expect_fraction": _EXPECT,
+        "mean_utilisation": round(sum(c.utilisation for c in ceilings) / max(len(ceilings), 1), 3),
+        "idle_unexplained": unexplained, "unmeasured": unmeasured, "ceilings": rows,
+    }
 
 
 def main() -> int:
-    nov = hypothesis_novelty(
-        "Exchange netflow (coins moving onto exchanges) is revealed selling intent and precedes "
-        "weaker forward returns; outflow to custody precedes stronger returns.",
-        features=["netflow_ntv", "sply_ex_ntv", "exchange_supply", "supply_pressure"],
-        priors=[
-            PriorIdea(id="onchain-reversal", statement="On-chain activity mean-reverts price over "
-                      "multi-day horizons", category="onchain",
-                      features=["active_addresses", "tx_count", "throughput_usd"],
-                      lesson="Killed on 11y held-out OOS (backfill_onchain_oos)."),
-            PriorIdea(id="kimchi-premium", statement="Korean exchange price premium predicts BTC "
-                      "returns", category="cross-venue", features=["kimchi_premium", "prem_btc"],
-                      lesson="Retracted: ~73% timestamp artifact, KST vs UTC candle labels."),
-        ],
-    )
-    _log(f"NOVELTY GATE: novelty={nov.novelty_score:.3f} redundant={nov.is_redundant} "
-         f"nearest={nov.nearest_id!r} sim={nov.nearest_similarity:.3f}")
-    if nov.is_redundant:
-        _log("REDUNDANT -> refusing to spend compute (novelty gate).")
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--json", action="store_true")
+    ap.add_argument("--report-only", action="store_true")
+    args = ap.parse_args()
+    rep = build()
+    _OUT.parent.mkdir(parents=True, exist_ok=True)
+    _OUT.write_text(json.dumps(rep, indent=2), "utf-8")
+    if args.json:
+        print(json.dumps(rep, indent=2))
+    else:
+        print(f"utilisation (L1.28a): mean {rep['mean_utilisation']:.0%} across "
+              f"{len(rep['ceilings'])} ceilings")
+        for r in rep["ceilings"]:
+            bar = f"{r['used']:,.0f}/{r['limit']:,.0f} {r['unit']}"
+            print(f"  {r['status']:17} {r['name']:26} {r['utilisation']:6.1%}  {bar}")
+            if r.get("detail"):
+                print(f"  {'':17} └─ {r['detail'][:140]}")
+            if r["binding_constraint"]:
+                print(f"  {'':17} └─ bound by: {r['binding_constraint'][:100]}")
+        print(f"-> {_OUT.relative_to(_ROOT)}")
+
+    # THE DENOMINATOR IS THE *MEASURED* CEILINGS, NEVER `len(rows)` (L1.57, R0417). This fence's
+    # verdict is "no ceiling is idle without a named constraint", and an UNMEASURED ceiling
+    # cannot contribute to `idle_unexplained` -- `status` returns UNMEASURED before any of the
+    # idle branches are reached. So a board on which EVERY reading failed publishes an empty
+    # `idle_unexplained` and exits 0: a fully dark board renders as a clean one, which is the
+    # exact arithmetic L1.57 exists to refuse and the exact inversion of this fence's own law
+    # (L1.28a: unmeasured utilisation counts as ZERO, so a dark board is maximally idle).
+    #
+    # `len(rows)` would be the OTHER half of the same defect -- `collect()` is a hardcoded list
+    # of ten builder calls, so it counts what the author wrote down and can never fall when a
+    # reading dies. It must count what the RUN found, and what the run found is the readings
+    # that came back live.
+    if args.report_only:          # the explicit "do not gate" switch -- no verdict to refuse
         return 0
+    n_measured = sum(1 for r in rep["ceilings"] if r["status"] != "UNMEASURED")
+    status = "OK" if not rep["idle_unexplained"] else "IDLE-UNEXPLAINED"
+    # `fence=` explicitly: caller_name() reads `__main__.__file__`, which is correct for the cron
+    # invocation and WRONG for any in-process call (under pytest it resolves to pytest's own
+    # __main__.py). A misattributed row is not counted against the L1.57 coverage ratchet at all,
+    # so the declaration would silently not exist for exactly the callers that are easiest to add.
+    return fence_exit(status, {"OK"}, scanned=n_measured, of="ceilings with a live reading",
+                      fence="check_utilisation.py")
 
-    _log(f"loading {_SRC}")
-    data = _load()
 
-    results = []
-    for asset, (netflow, exsupply, price) in sorted(data.items()):
-        builds = {"raw": netflow}
-        with np.errstate(divide="ignore", invalid="ignore"):
-            scaled = np.where(exsupply > 0, netflow / exsupply, np.nan)
-        if np.isfinite(scaled).sum() > 400:
-            builds["scaled"] = scaled
-        else:
-            _log(f"  {asset}: 'scaled' build UNAVAILABLE (sply_ex_ntv too sparse) -- reported, "
-                 "not silently dropped")
-        for build, sig in builds.items():
-            for h in _HORIZONS:
-                tgt = _forward_returns(price, h)
-                ok = np.isfinite(sig) & np.isfinite(tgt)
-                if ok.sum() < 300:
-                    _log(f"  SKIP {asset}/{build}/h={h}: only {ok.sum()} aligned obs")
-                    continue
-                res = stage_a_screen(
-                    sig[ok], tgt[ok], name=f"exchange_netflow_{asset}_{build}_h{h}",
-                    horizon_days=float(h),
-                )
-                res.update({"asset": asset, "build": build, "horizon_d": h, "n_obs": int(ok.sum())})
-                results.append(res)
-                # INSUFFICIENT-DATA returns only name/verdict/n, so never assume 'ic' is present.
-                _ic = res.get("ic")
-                _log(f"  {asset}/{build}/h={h:2d}  n={ok.sum():5d}  "
-                     f"IC={f'{_ic:+.4f}' if _ic is not None else '   n/a'}  "
-                     f"resid_IC={res.get('residual_ic')}  verdict={res.get('verdict')}")
+if __name__ == "__main__":
+    raise SystemExit(main())
 
-    _log(f"\n=== ALL {len(results)} CELLS ARE DSR-COUNTED TRIALS (target/horizon sweep duty) ===")
-    for r in sorted(results, key=lambda x: -abs(x.get("ic") or 0.0)):
-        _ic = r.get("ic")
-        _log(f"  {r['asset']:4s} {r['build']:7s} h={r['horizon_d']:2d}  "
-             f"IC={f'{_ic:+.4f}' if _ic is not None else '   n/a'}  verdict={r.get('verdict')}")
-    interesting = [r for r in results if "INTERESTING" in str(r.get("verdict", ""))]
-    _log(f"\nSCREEN-INTERESTING cells: {len(interesting)} of {len(results)}")
+```
 
-    out = "reports/screen_exchange_netflow.json"
-    with open(out, "w") as fh:
-        json.dump({"novelty": {"score": nov.novelty_score, "nearest": nov.nearest_id,
-                               "similarity": nov.nearest_similarity},
-                   "n_trials": len(results), "cells": results}, fh, indent=2, default=str)
-    _log(f"wrote {out}")
-    return 0
+### scripts\fit_print_impact.py
+```python
+"""Fit an execution-cost curve from OTHER TRADERS' PRINTS -- the third cost basis (L1.11b).
+
+WHAT WAS MISSING. `data/cost_model.json` decides which names the book may hold, and it is
+produced by walking DISPLAYED DEPTH only (`scripts/run_cost_model.py` reads no trade row at all).
+L1.45 states why that cannot be the whole answer -- "a book-walk measures DISPLAYED depth in a
+book that existed WITHOUT OUR ORDER IN IT" -- and the desk's answer was excitation, bounded to its
+own 531 fills because L1.11(b) says an Execution Reality Model comes from "our own fills". That
+scope word was written to stop the desk trusting a vendor's coefficient. It was read as "only our
+own fills count", and it left unread the largest execution dataset on the box: every print on the
+tape is a completed execution experiment at a known size with a published aggressor side, against
+the same book we snapshot, paid for by somebody else.
+
+This script fits that third basis and publishes it ALONGSIDE the book walk, labelled by basis.
+
+WHAT IT DOES NOT DO, AND WHY THAT IS NOT TIMIDITY. It does not feed `_rt_bps`, size anything, or
+admit anything. The print basis reads CHEAPER than the book walk on thin books (it sees liquidity
+the snapshot does not), so wiring it into `_entry_gate` today would LOOSEN the gate on exactly the
+books that produced COOKIEUSDT's 130bps round-trip -- on an estimator whose out-of-sample check
+currently has 12 usable rows. That is EVIDENCE restraint, the kind L1.28 protects, not scope
+restraint: the build is complete and the consumer is blocked on a falsifier reaching power, which
+is rowed rather than left implicit. The executor's tighten-only `max(modelled, realised)` rule is
+untouched by this file.
+
+STATUS (rollup, and per (venue,symbol)):
+    MEASURED      lambda separated from zero on n_eff independent intervals
+    UNDERPOWERED  too few independent intervals, or |t| below the bar
+    UNIDENTIFIED  net flow carries no usable variance, or the fitted slope is non-positive
+    NO-DATA       no usable depth/print pairing
+    UNMEASURED    rollup only: nothing measured anywhere -- never reads as OK (L1.28a)
+
+    python scripts/fit_print_impact.py [--json] [--hours N] [--venue fut] [--symbol SYM]
+"""
+from __future__ import annotations
+
+import argparse
+import itertools
+import json
+import statistics
+import sys
+from datetime import UTC, datetime
+from pathlib import Path
+from typing import Any
+
+_ROOT = Path(__file__).resolve().parent.parent
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
+
+# L1.42 LAWFUL ENTRY: pages, does not block -- a governance fault must never silently stop an
+# organ that only reads the tape and writes one advisory artifact.
+from libs.ops.input_provenance import Inputs  # noqa: E402
+from libs.ops.lawful import guard as _law_guard  # noqa: E402
+from libs.research import moat_microstructure as mm  # noqa: E402
+from libs.research import print_impact as pi  # noqa: E402
+
+_MOAT = _ROOT / "data/moat"
+_OUT = _ROOT / "data/print_impact.json"
+_COST_MODEL = "data/cost_model.json"
+
+#: Hours of tape per (venue, symbol). One partition is one hour. 24 keeps a full pass near a
+#: minute of I/O while giving every liquid name several thousand intervals; --hours raises it.
+_DEFAULT_HOURS = 24
+#: The size the book actually trades. run_cost_model.py prices the pair at $500/leg for the same
+#: reason; keeping the two comparable is the entire point of publishing a second basis.
+_DESK_NOTIONAL = 450.0
+#: Venues carrying both a depth and a print stream. Bybit is included: its prints additionally
+#: carry isBlockTrade/isRPITrade, which no feature code on this desk reads yet.
+_VENUES = ("fut", "spot", "bybit")
+
+
+def _symbols(venue: str) -> list[str]:
+    d = _MOAT / venue
+    return sorted(p.name for p in d.iterdir() if p.is_dir()) if d.is_dir() else []
+
+
+def _fit_one(venue: str, symbol: str, hours: int) -> pi.ImpactFit:
+    parts = sorted((_MOAT / venue / symbol).glob("*.jsonl.gz"))[-hours:]
+    if not parts:
+        return pi.fit([], symbol=symbol, venue=venue)
+    recs = itertools.chain.from_iterable(mm.read_partition(p) for p in parts)
+    return pi.fit(pi.intervals(recs, venue), symbol=symbol, venue=venue)
+
+
+def _as_row(f: pi.ImpactFit, notional: float) -> dict[str, Any]:
+    return {
+        "status": f.status,
+        "n_intervals": f.n,
+        "n_eff": f.n_eff,
+        "lambda_bps_per_1k": f.lam_controlled_bps_per_1k,
+        "lambda_raw_bps_per_1k": f.lam_bps_per_1k,
+        "momentum_share": f.momentum_share,
+        "t_stat": f.t_stat,
+        "r2": f.r2,
+        "half_spread_bps": f.half_spread_bps,
+        "median_print_usd": f.median_print_usd,
+        "prints_in_desk_range": f.prints_in_desk_range,
+        "flow_p50_usd": f.flow_p50_usd,
+        "identified_to_usd": f.identified_to_usd,
+        f"cost_bps_at_{int(notional)}": f.cost_bps(notional),
+        "detail": f.detail,
+    }
+
+
+def _pair_compare(fits: dict[tuple[str, str], pi.ImpactFit], cost_model: Any,
+                  notional: float) -> list[dict[str, Any]]:
+    """Print-basis pair cost vs the book-walk pair cost, per symbol.
+
+    Both bases price the same thing -- spot BUY + perp SELL for one open -- so they are directly
+    comparable, and the DISAGREEMENT is the deliverable. Agreement corroborates the desk's
+    most-consumed derivative from an independent direction; divergence names a book where one of
+    the two is wrong and research has somewhere to go.
+    """
+    out: list[dict[str, Any]] = []
+    symbols = {s for (v, s) in fits if v in ("fut", "spot")}
+    cm_syms = cost_model.get("symbols", {}) if isinstance(cost_model, dict) else {}
+    for sym in sorted(symbols):
+        spot, fut = fits.get(("spot", sym)), fits.get(("fut", sym))
+        if spot is None or fut is None:
+            continue
+        s_cost = spot.cost_bps(notional)
+        f_cost = fut.cost_bps(notional)
+        if s_cost is None or f_cost is None:
+            # One leg unmeasured means the PAIR is unmeasured. Substituting the measured leg and
+            # calling it a pair would publish half a cost as a whole one.
+            out.append({"symbol": sym, "print_pair_open_bps": None,
+                        "spot_status": spot.status, "fut_status": fut.status,
+                        "book_walk_pair_open_bps": None, "ratio": None,
+                        "detail": "one or both legs unmeasured"})
+            continue
+        pair = s_cost + f_cost
+        bw = None
+        entry = cm_syms.get(sym, {}).get("pair", {}) if isinstance(cm_syms, dict) else {}
+        for key in ("500", "250"):
+            v = entry.get(key, {}).get("pair_open_bps") if isinstance(entry, dict) else None
+            if v is not None:
+                bw = float(v)
+                break
+        out.append({
+            "symbol": sym,
+            "print_pair_open_bps": round(pair, 4),
+            "spot_status": spot.status, "fut_status": fut.status,
+            "spot_half_spread_bps": spot.half_spread_bps,
+            "fut_half_spread_bps": fut.half_spread_bps,
+            # Impact's share of the print-basis cost. Near zero means the desk is a SPREAD taker
+            # at this size and trading smaller buys nothing -- an operational answer the blended
+            # book-walk number cannot give.
+            "impact_share_of_cost": round(
+                1.0 - ((spot.half_spread_bps or 0.0) + (fut.half_spread_bps or 0.0)) / pair, 4)
+            if pair > 0 else None,
+            "book_walk_pair_open_bps": bw,
+            "ratio": round(pair / bw, 3) if bw else None,
+        })
+    return out
+
+
+def _falsifier(pairs: list[dict[str, Any]]) -> dict[str, Any]:
+    """Does the print basis rank OUR OWN realised slippage? The estimator's own kill criterion.
+
+    Pre-registered before the fit was run: if predicted cost has ~zero rank correlation with
+    realised slippage across the symbols where both exist, the estimator is confounded (large
+    prints arrive BECAUSE the book is already moving) and adds nothing over the book walk.
+
+    The honest answer today is UNDERPOWERED and it is reported as such rather than skipped: only
+    12 of 531 execution_tape rows carry spot_slip_bps/fut_slip_bps at all -- the proposal that
+    motivated this build asserted all 531 did. A rank correlation on a handful of symbols is not
+    evidence either way, and calling it one would be the phantom-validation this desk kills.
+    """
+    tape = _ROOT / "data/moat/execution_tape/cashcarry_trades.jsonl"
+    realised: dict[str, list[float]] = {}
+    n_rows = 0
+    try:
+        for line in tape.read_text("utf-8").splitlines():
+            if not line.strip():
+                continue
+            try:
+                r = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            n_rows += 1
+            sp, ft = r.get("spot_slip_bps"), r.get("fut_slip_bps")
+            if sp is None:
+                continue
+            try:
+                realised.setdefault(str(r.get("symbol")), []).append(
+                    abs(float(sp)) + abs(float(ft or 0.0)))
+            except (TypeError, ValueError):
+                continue
+    except OSError:
+        return {"status": "NO-DATA", "detail": "execution_tape unreadable",
+                "n_tape_rows": 0, "n_with_slippage": 0, "n_paired": 0, "spearman": None}
+
+    pred = {p["symbol"]: p["print_pair_open_bps"] for p in pairs
+            if p.get("print_pair_open_bps") is not None}
+    paired = [(pred[s], statistics.median(v)) for s, v in realised.items() if s in pred]
+    n_slip = sum(len(v) for v in realised.values())
+
+    if len(paired) < 8:
+        return {
+            "status": "UNDERPOWERED",
+            "detail": (f"{len(paired)} symbols carry both a print-basis prediction and a realised "
+                       f"slippage reading ({n_slip} slipped rows of {n_rows} tape rows). A rank "
+                       "correlation here would be noise reported as validation."),
+            "n_tape_rows": n_rows, "n_with_slippage": n_slip, "n_paired": len(paired),
+            "spearman": None,
+            "unblock": ("instrument every close with spot_slip_bps/fut_slip_bps -- the executor "
+                        "already computes both and writes them on only 12 of 531 rows"),
+        }
+    import numpy as np
+    a = np.array([p for p, _ in paired], dtype=float)
+    b = np.array([r for _, r in paired], dtype=float)
+    ra, rb = np.argsort(np.argsort(a)), np.argsort(np.argsort(b))
+    rho = float(np.corrcoef(ra, rb)[0, 1])
+    return {
+        "status": "MEASURED" if abs(rho) >= 0.3 else "REFUTED",
+        "detail": f"Spearman {rho:.3f} over {len(paired)} symbols",
+        "n_tape_rows": n_rows, "n_with_slippage": n_slip, "n_paired": len(paired),
+        "spearman": round(rho, 4),
+    }
+
+
+def build_report(hours: int, venues: tuple[str, ...], only: str | None,
+                 notional: float) -> dict[str, Any]:
+    inp = Inputs("fit_print_impact.build_report")
+    # required=False is the honest declaration: the FIT depends only on the tape, so an absent
+    # cost_model costs the desk the comparison, not the measurement. Marking it required would
+    # publish `measured: false` over numbers that were in fact measured -- an honest-gap flag
+    # pointed at the wrong organ (L1.55).
+    cost_model = inp.read_json(_COST_MODEL, default={}, max_age_h=72.0, required=False)
+
+    fits: dict[tuple[str, str], pi.ImpactFit] = {}
+    per_venue: dict[str, dict[str, Any]] = {}
+    for venue in venues:
+        syms = [s for s in _symbols(venue) if (only is None or s == only)]
+        rows: dict[str, Any] = {}
+        for sym in syms:
+            f = _fit_one(venue, sym, hours)
+            fits[(venue, sym)] = f
+            rows[sym] = _as_row(f, notional)
+        per_venue[venue] = rows
+
+    all_fits = list(fits.values())
+    n_scanned = len(all_fits)
+    by_status: dict[str, int] = {}
+    for f in all_fits:
+        by_status[f.status] = by_status.get(f.status, 0) + 1
+    n_measured = by_status.get(pi.MEASURED, 0)
+
+    pairs = _pair_compare(fits, cost_model, notional)
+    priced = [p for p in pairs if p.get("print_pair_open_bps") is not None]
+    ratios = [p["ratio"] for p in priced if p.get("ratio") is not None]
+    shares = [p["impact_share_of_cost"] for p in priced
+              if p.get("impact_share_of_cost") is not None]
+
+    # ROLLUP. An empty measurement set must never read as OK (L1.28a), and the denominator here is
+    # a COUNT OF WHAT THIS RUN FOUND rather than of a hardcoded symbol list (L1.57) -- if the
+    # recorder universe shrinks to nothing, n_scanned goes to 0 and the status goes UNMEASURED
+    # rather than reporting a clean pass over an empty set.
+    if n_scanned == 0:
+        status, detail = "UNMEASURED", "no (venue, symbol) pairs scanned -- is data/moat present?"
+    elif n_measured == 0:
+        status = "UNMEASURED"
+        detail = f"0 of {n_scanned} (venue,symbol) fits measured: {by_status}"
+    else:
+        status = "MEASURED"
+        detail = (f"{n_measured} of {n_scanned} fits measured; {len(priced)} symbols priced on "
+                  f"both legs at ${int(notional)}")
+
+    return {
+        "generated": datetime.now(UTC).isoformat(),
+        "law": "L1.11b third basis -- execution cost from third-party prints",
+        "status": status,
+        "detail": detail,
+        "basis": "third_party_prints",
+        "promotion_authority": "NONE -- advisory second basis, published alongside the book walk",
+        "hours_per_symbol": hours,
+        "desk_notional_usd": notional,
+        "n_scanned": n_scanned,
+        "n_measured": n_measured,
+        "by_status": by_status,
+        "convention": ("cost_bps(N) = half_spread_bps + 0.5 * lambda * N; lambda is the CONTROLLED "
+                       "slope of mid return (bps) on net signed interval flow, per $1,000. Pair = "
+                       "spot BUY + perp SELL, matching run_cost_model.py so the two are "
+                       "comparable. Intervals are assigned by FILE ORDER (receipt), never by "
+                       "mixing the venue-stamped trade clock with the receipt-stamped depth "
+                       "clock (L1.46)."),
+        "agreement_with_book_walk": {
+            "n_compared": len(ratios),
+            "median_ratio_print_over_bookwalk": round(statistics.median(ratios), 3)
+            if ratios else None,
+            "median_impact_share_of_cost": round(statistics.median(shares), 4) if shares else None,
+            # THE RATIO IS NOT THE HEADLINE AND MUST NOT BE READ AS ONE. Measured 2026-08-12:
+            # impact is 0.25%-8.6% of the print-basis cost at $450, so 91-99.75% of BOTH bases is
+            # the same quoted half-spread, read off the same depth snapshots. A ratio near 1 is
+            # therefore very largely TAUTOLOGICAL rather than independent corroboration, and
+            # publishing it without this line would manufacture a validation the data does not
+            # support. The bases are only genuinely independent where impact_share_of_cost is
+            # large -- which is where they diverge.
+            "independence": ("LIMITED -- both bases read the same quoted spread, which is "
+                             "91-99.75% of the number at this size. Agreement is mostly shared "
+                             "input, not confirmation. Weight the DIVERGENCES, not the median."),
+            "note": ("ratio << 1 names a book whose DISPLAYED depth is thin relative to the "
+                     "liquidity that actually trades -- the book walk charges a full level walk "
+                     "the print tape does not see paid."),
+        },
+        # The operationally useful answer, and the one the blended book-walk number cannot give:
+        # at the desk's size, is execution cost a SPREAD problem or a SIZE problem?
+        "spread_vs_impact": {
+            "median_impact_share_of_cost": round(statistics.median(shares), 4) if shares else None,
+            "reading": ("At $450 the desk is a SPREAD TAKER, not an impact maker: trading in "
+                        "smaller clips cannot recover a cost that is ~97% half-spread. Cost "
+                        "reduction on this book comes from PASSIVE placement and from symbol "
+                        "selection, never from slicing.") if shares and
+            statistics.median(shares) < 0.2 else
+                       ("Impact is a material share of cost -- order slicing and size discipline "
+                        "are live levers here."),
+        },
+        "falsifier": _falsifier(pairs),
+        "pairs": sorted(priced, key=lambda p: -(p.get("ratio") or 0.0)),
+        "per_venue": per_venue,
+        "inputs": inp.block(),
+        "measured": inp.measured() and status == "MEASURED",
+    }
+
+
+def main() -> int:
+    _law_guard()
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--json", action="store_true")
+    ap.add_argument("--hours", type=int, default=_DEFAULT_HOURS,
+                    help="partitions (hours) of tape per symbol")
+    ap.add_argument("--venue", action="append", choices=_VENUES,
+                    help="restrict to one venue (repeatable)")
+    ap.add_argument("--symbol", help="restrict to one symbol")
+    ap.add_argument("--notional", type=float, default=_DESK_NOTIONAL)
+    args = ap.parse_args()
+
+    rep = build_report(args.hours, tuple(args.venue) if args.venue else _VENUES,
+                       args.symbol, args.notional)
+    _OUT.parent.mkdir(parents=True, exist_ok=True)
+    _OUT.write_text(json.dumps(rep, indent=1, default=str) + "\n", "utf-8")
+
+    if args.json:
+        print(json.dumps(rep, indent=1, default=str))
+    else:
+        print(f"print impact (L1.11b third basis): {rep['status']} -- {rep['detail']}")
+        agr = rep["agreement_with_book_walk"]
+        sv = rep["spread_vs_impact"]
+        print(f"  spread vs impact: impact is {sv['median_impact_share_of_cost']} of cost at "
+              f"${int(rep['desk_notional_usd'])} -- {sv['reading'].split('.')[0]}.")
+        print(f"  vs book walk: n={agr['n_compared']} median ratio "
+              f"{agr['median_ratio_print_over_bookwalk']} "
+              f"(independence: {agr['independence'].split('--')[0].strip()})")
+        fal = rep["falsifier"]
+        print(f"  falsifier: {fal['status']} -- {fal['detail']}")
+        # The DIVERGENCES are the deliverable, so print both tails rather than one.
+        rated = [p for p in rep["pairs"] if p.get("ratio") is not None]
+        for label, rows in (("book-walk DEARER", rated[-4:][::-1]), ("book-walk cheaper",
+                                                                     rated[:2])):
+            for p in rows:
+                print(f"    [{label:17s}] {p['symbol']:12s} print "
+                      f"{p['print_pair_open_bps']:8.3f}  book-walk "
+                      f"{p['book_walk_pair_open_bps']:8.3f}  ratio {p['ratio']}")
+        print(f"  wrote {_OUT.relative_to(_ROOT)}")
+    # A starved fit is a REPORT, not a gate failure -- this organ cannot conjure prints that were
+    # never recorded. Exit 1 only when NOTHING measured, so a silent total failure cannot pass.
+    return 0 if rep["status"] == "MEASURED" else 1
 
 
 if __name__ == "__main__":
@@ -13919,545 +12985,609 @@ if __name__ == "__main__":
 
 ```
 
-### scripts/screen_fred_macro_axis.py
+### scripts\run_desk_integrity.py
 ```python
-"""SCOPED GENERATE RUN -- fred_macro family (owed item, docs/research/generation_due.md line 5).
+"""Hunt the wiring regressions that cost this desk more than any research question.
 
-WHAT WAS ACTUALLY OWED, AND WHAT WAS ALREADY PAID
--------------------------------------------------
-`generation_due.md` is a 2026-07-16 SNAPSHOT and was never regenerated. The cadence engine's own
-condition (scripts/run_cadence.py:202) is
+WHY THIS EXISTS (principal, 2026-09-04: "the machinery doesn't execute, and the desk spends its
+time repairing regressions")
 
-    Path("data/fred_macro.json").exists() and not state.get("gen_done_fred_macro_family")
+In ONE session the desk lost hours to eight separate infrastructure failures, none of them
+research:
 
-and `data/cadence_state.json` has carried `gen_done_fred_macro_family = 2026-07-17T08:55:24Z`
-since the day after the snapshot. So the PAPER duty (author + EV-gate pre-registrations) is
-closed and the flag is stale. What was never done is the part the flag's own justification
-promised -- "deep history available ... immediately backtestable against the crypto lake": not one
-fred_macro series has ever been put through the audited Stage-A harness. This run does that.
+    1. the certificate canon rolled back to a 12-day-old sweep holding ONE survivor, which
+       unenrolled the forward book -- 48 clocks orphaned, 207 trades frozen
+    2. universe.json replaced by a 23-symbol stump, so the gauntlet swept a tenth of the universe
+    3. currency_profit lost on 248 of 251 symbols, blinding gate 8 (stress_costs) entirely
+    4. four code fixes silently reverted by the ssh-context pre-commit guard
+    5. the gauntlet -- the job that MINTS certificates -- running daily, not hourly
+    6. the VPS bar cache eight days stale while the box held current bars
+    7. NOTHING scheduled the forward engine on either machine
+    8. sleeve_registry.py stale on the trading box, so every clock broke terminally
 
-THE HONEST PRIOR, STATED UP FRONT (this run does not get to pretend it is exploring virgin ground)
---------------------------------------------------------------------------------------------------
-The macro->crypto class has been EV-rejected SIX times by this desk: 3 FRED-family overlays on
-2026-07-17 (EV 0.004-0.013), then `dxy_shock_beta_rotation` (fx, 0.0052), `risk_regime_rotation`
-(index, 0.0027) and `net_liquidity_impulse` (fed, 0.0026) on 2026-07-22 -- the last carrying the
-note "if it also rejects, the fed axis is ledgered exhausted". It rejected. Those are ECONOMIC
-priors, not measurements: nobody ever looked. Screening is the empirical complement, run at the
-SAME bar, and it cannot reopen the EV verdict -- Stage A has zero promotion authority and no cell
-here is passed a `clock=`, so nothing on this axis can start a forward clock no matter how it
-prints. A "good" IC here would be a finding to report, never a decision.
+EVERY ONE WAS INVISIBLE TO THE DESK'S OWN CHECKS, and each was invisible for the same reason: the
+check that would have caught it read a DIFFERENT record than the one that broke. Freshness checks
+read mtime, and a rollback writes ancient content with a current mtime. Healers read the registry,
+and the state file was the stale one. The parity checker read the manifest, and the installer read
+a committed timer that disagreed with it.
 
-PRE-DECLARED POWER VERDICT (computed from sample LENGTH alone, before any IC is seen)
--------------------------------------------------------------------------------------
-stage_a_screen calls a cell powered only when 1.96/sqrt(n_eff) <= ic_min=0.03, i.e. it needs
-n_eff >= 4268 independent observations. The deepest fred_macro series aligned to BTC gives ~4030
-US business days (DTWEXBGS from 2006-01, VIXCLS from 1990-01, both clipped by BTC history starting
-2010-07), and n_eff is then divided again by the mean calendar spacing. EVERY cell in this run is
-therefore expected to return SCREEN-UNDERPOWERED, at every horizon, before a single number is
-computed. They are run anyway -- the ICs are recorded evidence a later meta-analysis can pool, and
-"we never looked" is the exact defect the data-utilization law exists to kill -- but they are
-counted as trials and NOT reported as if the null were a refutation.
-
-Deliberately NOT screened, with reasons (declared, not silently dropped):
-  * M2SL -- monthly (~192 obs once aligned to BTC), ~25-day publication lag, AND FRED serves the
-    CURRENT VINTAGE of a series that is revised. A backtest on current-vintage M2 uses numbers
-    that were not knowable at the time: look-ahead THROUGH REVISION, which no timestamp alignment
-    can fix. Untestable honestly from this archive.
-
-TIMESTAMP ALIGNMENT (declared per series; every one is a BACKWARD/stale offset except WALCL,
-whose forward release lag is handled by an explicit lag)
---------------------------------------------------------------------------------------------------
-  crypto leg  Coin Metrics community daily BTC close, PriceUSD dated d == fixed close at 00:00 UTC
-              on d+1. VERIFIED against the Binance D1 lake on the 2515 overlapping days: same-date
-              log-return corr +0.994, and shifting either leg one day collapses it to
-              -0.047 / -0.066. Same date label = same instant.
-  DGS10,
-  T10Y2Y      Treasury H.15 constant-maturity yields struck ~15:30 ET on business day d, published
-              ~16:15 ET the same day => 3.5-4.5h STALE vs the 00:00Z d+1 crypto close. BACKWARD.
-  VIXCLS      CBOE VIX official close 16:15 ET day d, published same day => ~3h STALE. BACKWARD.
-  DTWEXBGS    Fed H.10 broad dollar index, NOON ET buying rates on day d, published ~16:15 ET day
-              d => ~7h STALE. BACKWARD.
-  WALCL       H.4.1 balance sheet AS OF Wednesday d but RELEASED Thursday 16:30 ET. The value
-              dated d is NOT knowable at the day-d close. LOOK-AHEAD RISK: REAL, and it is the
-              only one in this run. Handled by shifting the series +2 calendar days before any
-              alignment, so the signal is first used at the d+2 close -- strictly after the
-              release. WALCL is an accounting statement and is not materially revised.
-
-SAMPLING: FRED observation dates INTERSECT BTC dates; the target is the BTC return between
-CONSECUTIVE SAMPLED dates, so a Friday->Monday step is a 3-calendar-day return. `horizon_days`
-passed to the harness is the MEAN realised calendar spacing of the sampled blocks, so the Sharpe
-annualisation sqrt(365/h) matches the actual period and n_eff is if anything under-credited
-(non-overlapping blocks need no overlap correction at all). Blocks are non-overlapping, so
-signal[k] is observed strictly inside period k and predicts period k+1.
-
-    .venv/bin/python scripts/screen_fred_macro_axis.py
+SO THIS READS THE PAIRS. Not "is X fresh" but "do X and Y still agree", which is the question that
+actually catches a rollback. It repairs what is mechanical and refuses to touch what is a
+judgement, and it never reports health it did not measure: an unreadable input is UNKNOWN, never a
+pass.
 """
 from __future__ import annotations
 
+import argparse
 import json
-import re
-import sys
-import urllib.parse
-import urllib.request
+import subprocess
 from datetime import UTC, datetime
 from pathlib import Path
-
-import numpy as np
-import pandas as pd
+from typing import Any
 
 ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(ROOT))
+DESK = ROOT / "desks" / "mt5"
+OUT = ROOT / "data" / "desk_integrity.json"
 
-from scripts.screen_idle_axes import _graveyard_priors, block_idx  # noqa: E402
-
-from libs.alpha_factory.hypothesis_novelty import PriorIdea, hypothesis_novelty  # noqa: E402
-from libs.research.alpha_economics import Idea, ev_score  # noqa: E402
-from libs.research.axis_screen import stage_a_screen  # noqa: E402
-
-OUT = ROOT / "data/fred_macro_screen.json"
-DEEP = ROOT / "data/fred_macro_deep.json"
-FRED = "https://api.stlouisfed.org/fred/series/observations"
-ZWIN = {1: 20, 5: 12, 20: 6}
-TRIALS: list[dict] = []
+#: Sub-checks that can repair themselves, run before the read-only audit so the audit sees the
+#: repaired state rather than reporting a defect this pass already fixed.
+_REPAIRERS: tuple[tuple[str, list[str]], ...] = (
+    ("universe floor", ["scripts/check_universe_floor.py"]),
+    ("artifact rollback", ["scripts/check_artifact_monotonic.py"]),
+    ("schedule parity", ["scripts/check_scheduler_manifest.py", "--fix-schedules"]),
+)
 
 
-# ------------------------------------------------------------------- candidate pre-registrations
-# (series, name, mechanism, construction, horizons, novelty features, EV Idea)
-CANDIDATES = [
-    ("DTWEXBGS", "dollar_funding_squeeze",
-     "The broad trade-weighted dollar is the numeraire of global dollar FUNDING, not just a "
-     "relative price. A sharp broad-dollar appreciation raises the cost of the offshore dollar "
-     "borrowing that levered carry runs on, and levered carry unwinds are forced, not "
-     "discretionary -- so a dollar squeeze should push a marginal, highly levered dollar-funded "
-     "asset class down with a short lag.",
-     "signal = 5-business-day log change in DTWEXBGS (a squeeze is a MOVE, not a level), "
-     "z-scored by the harness; target = absolute BTC return over the next block. Absolute, not "
-     "cross-sectional, because a funding shock is market-wide and has no asset-selection content.",
-     (1, 5, 20), ("broad_dollar_shock", "dollar_funding", "btc_timing", "macro_overlay"),
-     Idea(name="dollar_funding_squeeze", est_sharpe=0.3, breadth=1, capacity_usd=2e6,
-          orthogonality=0.6, effort_h=6.0, tags=["new_orthogonal_data", "crowded_known"])),
-
-    ("WALCL", "reserve_quantity_impulse",
-     "The Fed's balance sheet is the QUANTITY of system reserves. Reserve creation/destruction is "
-     "an inelastic quantity constraint on the marginal dollar available to bid risk assets -- a "
-     "structural mechanism, not a sentiment read -- and the highest-beta sink for that marginal "
-     "dollar should respond over weeks, the speed at which reserves actually settle through.",
-     "signal = 4-week log change in WALCL, series LAGGED +2 calendar days for the Thursday "
-     "16:30 ET H.4.1 release; target = absolute BTC return between consecutive weekly samples.",
-     (1, 5), ("fed_balance_sheet", "reserve_quantity", "btc_timing", "liquidity_impulse"),
-     Idea(name="reserve_quantity_impulse", est_sharpe=0.3, breadth=1, capacity_usd=2e6,
-          orthogonality=0.5, effort_h=6.0, tags=["crowded_known"])),
-
-    ("VIXCLS", "equity_vol_deleveraging",
-     "VIX is the price of equity tail insurance and the input that mechanical vol-target and "
-     "risk-parity books size on. A VIX spike mechanically shrinks their risk budget, and the "
-     "highest-beta sleeve is cut first -- so the deleveraging is a forced flow, not a mood.",
-     "signal = VIXCLS level, z-scored by the harness; target = absolute BTC return over the next "
-     "block.",
-     (1, 5, 20), ("equity_implied_vol", "risk_appetite", "btc_timing", "vol_target_deleveraging"),
-     Idea(name="equity_vol_deleveraging", est_sharpe=0.3, breadth=1, capacity_usd=2e6,
-          orthogonality=0.4, effort_h=6.0, tags=["crowded_known"])),
-
-    ("T10Y2Y", "curve_slope_policy_path",
-     "The 2s10s slope is the market's forward read of the policy path; a steepening driven by the "
-     "front end prices expected easing, i.e. future reserve creation, ahead of the fact. A "
-     "liquidity-sensitive asset should discount that path before the reserves arrive.",
-     "signal = T10Y2Y level, z-scored by the harness; target = absolute BTC return over the next "
-     "block.",
-     (5, 20), ("yield_curve_slope", "policy_path", "btc_timing", "macro_overlay"),
-     Idea(name="curve_slope_policy_path", est_sharpe=0.25, breadth=1, capacity_usd=2e6,
-          orthogonality=0.5, effort_h=6.0, tags=["crowded_known"])),
-
-    ("DGS10", "nominal_yield_opportunity_cost",
-     "The 10y nominal yield is the opportunity cost of parking capital in a zero-cashflow "
-     "store-of-value. When the risk-free alternative pays more, the hurdle for holding a "
-     "non-yielding asset rises and the marginal allocator rotates out.",
-     "signal = DGS10 level, z-scored by the harness; target = absolute BTC return over the next "
-     "block.",
-     (5, 20), ("nominal_yield", "opportunity_cost", "btc_timing", "macro_overlay"),
-     Idea(name="nominal_yield_opportunity_cost", est_sharpe=0.25, breadth=1, capacity_usd=2e6,
-          orthogonality=0.5, effort_h=6.0, tags=["crowded_known"])),
-]
-
-NOT_SCREENED = {
-    "M2SL": "monthly (~192 obs once aligned to BTC), ~25-day publication lag, and FRED serves the "
-            "CURRENT VINTAGE of a REVISED series -- a backtest would use numbers that were not "
-            "knowable at the time (look-ahead through revision, which no alignment can fix). "
-            "Untestable honestly from this archive; NOT a null result.",
-}
+def _run(args: list[str], timeout: int = 600) -> tuple[int, str]:
+    try:
+        p = subprocess.run([str(ROOT / ".venv/bin/python"), *args], cwd=ROOT, timeout=timeout,
+                           capture_output=True, text=True)
+        return p.returncode, (p.stdout or "") + (p.stderr or "")
+    except subprocess.TimeoutExpired:
+        return 124, "TIMEOUT"
+    except OSError as exc:
+        return 125, f"{type(exc).__name__}: {exc}"
 
 
-# ------------------------------------------------------------------------------------- priors ---
-def _prereg_priors() -> list[PriorIdea]:
-    """The EV-rejected pre-registration cards -- the NEAREST priors to anything macro->crypto.
+def _json(p: Path) -> Any:
+    try:
+        return json.loads(p.read_text("utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
 
-    The graveyard alone does not contain them (they died at the EV gate, before compute), so a
-    novelty gate that only reads the graveyard would call a sixth macro overlay 'novel'.
+
+def check_uncommitted_code() -> dict[str, Any]:
+    """Code edits sitting uncommitted are one revert away from gone.
+
+    Measured 2026-09-04: four separate fixes to shadow_forward.py, run_deep_audit.py and
+    desk_modules.py were reverted before they were ever committed -- the last of them AFTER being
+    shipped to the trading box and "hash-verified", because both copies had been reverted and
+    matched each other. On this tree, uncommitted code is not work in progress; it is work about
+    to be lost.
     """
-    txt = (ROOT / "docs/research/AXIS_PREREGISTRATIONS.md").read_text("utf-8")
-    out: list[PriorIdea] = []
-    for block in txt.split("\n### ")[1:]:
-        head, _, body = block.partition("\n")
-        m = re.match(r"(\S+)\s*\(([^)]+)\)", head.strip())
-        if not m:
-            continue
-        out.append(PriorIdea(id=f"prereg:{m.group(1)}", category=m.group(2),
-                             statement=body.replace("\n", " ")[:1500],
-                             lesson="EV-gate REJECT before compute; the class is ledgered"))
-    return out
-
-
-def novelty(name: str, statement: str, features: tuple[str, ...]) -> dict:
-    priors = _graveyard_priors() + _prereg_priors()
-    r = hypothesis_novelty(statement, features=features, priors=priors)
-    out = {"candidate": name, "novelty_score": round(r.novelty_score, 3),
-           "nearest_id": r.nearest_id, "nearest_similarity": round(r.nearest_similarity, 3),
-           "is_redundant": r.is_redundant, "nearest_lesson": (r.nearest_lesson or "")[:160],
-           "n_priors": len(priors)}
-    print(f"  NOVELTY {name:34s} score {out['novelty_score']:<6} "
-          f"nearest={out['nearest_id']} sim={out['nearest_similarity']} "
-          f"redundant={out['is_redundant']}")
-    return out
-
-
-# --------------------------------------------------------------------------------------- data ---
-def fred_deep(sid: str, key: str) -> pd.Series:
-    q = urllib.parse.urlencode({"series_id": sid, "api_key": key, "file_type": "json",
-                                "observation_start": "1900-01-01"})
-    req = urllib.request.Request(f"{FRED}?{q}", headers={"User-Agent": "quant-fred-screen/1.0"})
-    with urllib.request.urlopen(req, timeout=45) as r:
-        obs = json.loads(r.read()).get("observations", [])
-    d = {pd.Timestamp(o["date"], tz="UTC"): float(o["value"])
-         for o in obs if o.get("value") not in (".", "", None)}
-    return pd.Series(d).sort_index()
-
-
-def coinmetrics_btc() -> pd.Series:
-    out: dict = {}
-    with (ROOT / "data/coinmetrics_flows.jsonl").open(encoding="utf-8") as fh:
-        for ln in fh:
-            ln = ln.strip()
-            if not ln:
-                continue
-            try:
-                r = json.loads(ln)
-            except json.JSONDecodeError:
-                continue
-            if r.get("asset") == "btc" and r.get("price_usd") and r.get("date"):
-                out[pd.Timestamp(str(r["date"])[:10], tz="UTC")] = float(r["price_usd"])
-    return pd.Series(out).sort_index()
-
-
-# -------------------------------------------------------------------------------------- screen ---
-def cell(name: str, sid: str, sig: np.ndarray, ret: np.ndarray, h: int, span_days: np.ndarray,
-         extra: dict) -> dict:
-    """One DSR-counted trial. Recorded whatever it prints -- including the certain-underpowered."""
-    hd = float(np.mean(span_days)) * h
-    r = stage_a_screen(sig, ret, name=f"fred_macro::{name}::h{h}b", zwin=ZWIN[h], horizon_days=hd)
-    r.update({"axis": "fred_macro", "series": sid, "construction": name,
-              "blocks_of_business_days": h, "mean_calendar_days_per_block": round(hd, 3),
-              "zwin": ZWIN[h], "target_kind": "absolute BTC timing return", **extra})
-    TRIALS.append(r)
-    print(f"  {name:32s} h={h:2d}b({hd:5.1f}d) n={r.get('n'):5d} IC={r.get('ic'):+.4f} "
-          f"same={r.get('same_period_corr'):+.3f} resid={r.get('residual_ic'):+.4f} "
-          f"momSh={r.get('sharpe_momentum'):+.2f} n_eff={r.get('n_eff')} "
-          f"mdi={r.get('min_detectable_ic')} pw={r.get('powered')} -> {r['verdict']}")
-    return r
-
-
-def transform(sid: str, s: pd.Series) -> pd.Series:
-    """The pre-declared construction per series (see CANDIDATES)."""
-    if sid == "DTWEXBGS":
-        return np.log(s).diff(5).dropna()                    # 5-business-day dollar move
-    if sid == "WALCL":
-        lagged = pd.Series(s.to_numpy(), index=s.index + pd.Timedelta(days=2))   # release lag
-        return np.log(lagged).diff(4).dropna()               # 4-week reserve impulse
-    return s.dropna()                                        # levels: VIXCLS / T10Y2Y / DGS10
-
-
-def main() -> None:
-    key = json.loads((ROOT / "data/secrets/fred.json").read_text("utf-8"))["key"]
-    btc = coinmetrics_btc()
-    print(f"BTC leg (coinmetrics daily close): n={len(btc)} "
-          f"{btc.index.min().date()} -> {btc.index.max().date()}\n")
-
-    print("=" * 100)
-    print("NOVELTY GATE (before compute) -- graveyard + live sleeves + EV-rejected prereg cards")
-    print("=" * 100)
-    nov = {c[1]: novelty(c[1], f"{c[2]} {c[3]}", c[5]) for c in CANDIDATES}
-
-    print("\n" + "=" * 100)
-    print("EV GATE (pre-registered, honest inputs, no tuning-to-pass)")
-    print("=" * 100)
-    ev = {}
-    for c in CANDIDATES:
-        e = ev_score(c[6])
-        ev[c[1]] = e
-        print(f"  EV {c[1]:34s} {e['ev']:<8} p_survive={e['p_survive']:<7} -> {e['verdict']}")
-
-    deep: dict[str, list] = {}
-    print("\n" + "=" * 100)
-    print("STAGE-A SCREENS (audited harness, artifact gate baked in, NO clock passed on any cell)")
-    print("=" * 100)
-    for sid, name, mech, _constr, horizons, _feat, _idea in CANDIDATES:
-        raw = fred_deep(sid, key)
-        deep[sid] = [[d.strftime("%Y-%m-%d"), v] for d, v in raw.items()]
-        s = transform(sid, raw)
-        common = s.index.intersection(btc.index)
-        if len(common) < 60:
-            TRIALS.append({"axis": "fred_macro", "series": sid, "construction": name,
-                           "verdict": "INSUFFICIENT-DATA", "n": len(common),
-                           "note": f"{len(common)} aligned obs < 60"})
-            print(f"  {name}: only {len(common)} aligned obs -- INSUFFICIENT-DATA")
-            continue
-        sv = s.reindex(common).to_numpy()
-        bv = btc.reindex(common).to_numpy()
-        gap = np.diff(common.to_numpy().astype("datetime64[D]").astype(int))
-        print(f"\n  {sid} raw n={len(raw)} {raw.index.min().date()}->{raw.index.max().date()} | "
-              f"aligned {len(common)} obs {common.min().date()}->{common.max().date()} | "
-              f"mean spacing {gap.mean():.2f}d")
-        print(f"    mechanism: {mech[:150]}")
-        for h in horizons:
-            idx = block_idx(len(common), h)
-            b_h = bv[idx]
-            ret_h = np.zeros(len(idx))
-            ret_h[1:] = b_h[1:] / b_h[:-1] - 1.0
-            cell(name, sid, sv[idx], ret_h, h, gap,
-                 {"aligned_obs": len(common), "n_blocks": len(idx),
-                  "mdi_block": round(float(1.96 / np.sqrt(max(len(idx), 1))), 4),
-                  "span": f"{common.min().date()}..{common.max().date()}",
-                  "novelty": nov[name], "ev": ev[name]})
-
-    DEEP.write_text(json.dumps({"updated": datetime.now(tz=UTC).isoformat(),
-                                "note": "deep FRED history fetched for RESEARCH only -- the daily "
-                                        "collector (scripts/collect_fred_macro.py, 1200d window) "
-                                        "and web/fred_macro.json are untouched",
-                                "series": deep}, indent=1), "utf-8")
-    payload = {
-        "updated": datetime.now(tz=UTC).isoformat(),
-        "stage": "A (zero promotion authority) -- no cell was passed a clock; none can start one",
-        "duty": "generation_due.md line 5 -- fred_macro family scoped generate run",
-        "cadence_note": "gen_done_fred_macro_family has been set since 2026-07-17T08:55:24Z; the "
-                        "generation_due.md snapshot (2026-07-16) is stale. The PAPER duty was "
-                        "closed then; this run adds the empirical screens that were never done.",
-        "prior_ev_rejections": "macro->crypto EV-rejected 6x: 3 FRED overlays 2026-07-17 "
-                               "(0.004-0.013); dxy_shock_beta_rotation 0.0052, "
-                               "risk_regime_rotation 0.0027, net_liquidity_impulse 0.0026 "
-                               "(2026-07-22, 'fed axis ledgered exhausted').",
-        "timestamp_alignment": __doc__.split("TIMESTAMP ALIGNMENT")[1].split("SAMPLING")[0].strip(),
-        "sampling": __doc__.split("\nSAMPLING:")[1].split("\n\n")[0].strip(),
-        "not_screened": NOT_SCREENED,
-        "novelty_gate": list(nov.values()),
-        "ev_gate": list(ev.values()),
-        "trials": TRIALS,
-    }
-    OUT.write_text(json.dumps(payload, indent=1), "utf-8")
-    print(f"\n{len(TRIALS)} DSR-counted trials -> {OUT}")
-    for v in sorted({t["verdict"] for t in TRIALS}):
-        print(f"  {v}: {sum(1 for t in TRIALS if t['verdict'] == v)}")
-    print(f"  deep FRED history archived -> {DEEP}")
-
-
-if __name__ == "__main__":
-    main()
-
-```
-
-### scripts/stage_a_executor.py
-```python
-"""STAGE-A EXECUTOR -- actually RUN the ranked queue. Ranking is not utilisation.
-
-THE GAP THIS CLOSES. blindspot_max finds 214 unknown-unknowns; conversion_engine ranks them and
-injects 40 into the schedule; and then nothing happens. Only stageb_capacity reads that schedule,
-and only to COUNT it. I had moved the problem one link down the chain -- from a list nobody reads
-to a ranked queue nobody executes -- and called it utilisation.
-
-This runs a genuine screen on the top unscreened candidates every cycle: aligns the field to a
-forward return, computes rank IC, and puts the result through the leakage contract that already
-exists (reverse-causality, orthogonalisation to the same-period confound, suspect magnitude,
-shift test). Verdicts persist so a candidate is never re-screened by accident, and the queue
-drains instead of accumulating.
-
-STAGE-A LAW, UNCHANGED AND ENFORCED IN CODE: this has ZERO promotion authority. It can mark a
-candidate SCREEN-PASS. It cannot start a forward clock, size a position, or touch capital. A pass
-here means "worth one of five scarce Stage-B slots", nothing more.
-
-HONESTY RAILS:
-  * a candidate with fewer than _MIN_N aligned observations returns UNDERPOWERED, never a verdict
-  * any leakage flag downgrades the result regardless of how good the IC looks
-  * verdicts record n, IC, t, residual IC and every flag, so a pass can be audited later
-"""
-from __future__ import annotations
-
-import json
-import math
-import pathlib
-import sys
-from datetime import UTC, datetime
-
-ROOT = pathlib.Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(ROOT))
-sys.path.insert(0, str(ROOT / "scripts"))
-
-CIO = ROOT / "data/research_cio.json"
-LEDGER = ROOT / "data/stage_a_verdicts.jsonl"
-PRICE_SRC = ROOT / "data/coinmetrics_flows.jsonl"
-_MIN_N = 60
-_BATCH = 6                    # screened per cycle; unbounded queue, bounded compute per run
-
-
-def _rows(p: pathlib.Path, cap: int = 20000):
-    out = []
     try:
-        with p.open("r", encoding="utf-8", errors="ignore") as fh:
-            for i, ln in enumerate(fh):
-                if i >= cap:
-                    break
-                ln = ln.strip()
-                if ln:
-                    try:
-                        d = json.loads(ln)
-                        if isinstance(d, dict):
-                            out.append(d)
-                    except json.JSONDecodeError:
-                        continue
-    except OSError:
-        pass
-    return out
+        out = subprocess.run(["git", "status", "--porcelain"], cwd=ROOT,
+                             capture_output=True, text=True, timeout=60).stdout
+    except (subprocess.SubprocessError, OSError) as exc:
+        return {"status": "UNKNOWN", "why": f"{type(exc).__name__}"}
+    py = [ln[3:] for ln in out.splitlines()
+          if ln[3:].endswith(".py") and not ln.startswith("??")]
+    return {"status": "DEFECT" if py else "OK",
+            "uncommitted_py": py[:12], "count": len(py),
+            "why": ("uncommitted .py changes are reverted by the ssh-context guard; commit with "
+                    "QUANT_ALLOW_SSH_PY=1" if py else "no uncommitted code")}
 
 
-def _price_series() -> dict[str, float]:
-    """Daily BTC close from the coinmetrics archive -- the desk's longest clean price history."""
-    out = {}
-    for r in _rows(PRICE_SRC):
-        if r.get("asset") == "btc" and r.get("price_usd") and r.get("date"):
-            out[str(r["date"])[:10]] = float(r["price_usd"])
-    return out
-
-
-def _spearman(a, b):
-    n = len(a)
-    if n < 8:
-        return 0.0, 0.0
-    ra = sorted(range(n), key=lambda i: a[i])
-    rb = sorted(range(n), key=lambda i: b[i])
-    A, B = [0.0] * n, [0.0] * n
-    for rank, i in enumerate(ra):
-        A[i] = rank
-    for rank, i in enumerate(rb):
-        B[i] = rank
-    ma, mb = sum(A) / n, sum(B) / n
-    va = math.sqrt(sum((x - ma) ** 2 for x in A))
-    vb = math.sqrt(sum((x - mb) ** 2 for x in B))
-    if va == 0 or vb == 0:
-        return 0.0, 0.0
-    r = sum((A[i] - ma) * (B[i] - mb) for i in range(n)) / (va * vb)
-    t = r * math.sqrt((n - 2) / max(1e-12, 1 - r * r))
-    return r, t
-
-
-def screen(file_name: str, field: str, px: dict) -> dict:
-    """One genuine screen: field(t) vs forward return(t+1), with the leakage contract applied."""
-    rows = _rows(ROOT / "data" / file_name)
-    series = {}
-    for r in rows:
-        d = r.get("date") or r.get("ts")
-        v = r.get(field)
-        if d and isinstance(v, (int, float)) and not isinstance(v, bool):
-            series[str(d)[:10]] = float(v)
-    dates = sorted(set(series) & set(px))
-    if len(dates) < _MIN_N:
-        return {"verdict": "UNDERPOWERED", "n": len(dates),
-                "note": f"{len(dates)} aligned days < {_MIN_N} required"}
-
-    xs, fwd, same = [], [], []
-    for i in range(len(dates) - 1):
-        d0, d1 = dates[i], dates[i + 1]
-        p0, p1 = px[d0], px[d1]
-        if p0 <= 0:
-            continue
-        xs.append(series[d0])
-        fwd.append((p1 - p0) / p0)
-        prev = px[dates[i - 1]] if i > 0 else p0
-        same.append((p0 - prev) / prev if prev > 0 else 0.0)
-    if len(xs) < _MIN_N:
-        return {"verdict": "UNDERPOWERED", "n": len(xs), "note": "insufficient aligned pairs"}
-
-    ic, t = _spearman(xs, fwd)
-    flags = []
-    try:
-        from leakage_detector import audit
-        a = audit(xs, fwd, same, name=f"{file_name}:{field}")
-        flags = a.get("flags", [])
-        resid = a.get("notes", {}).get("residual_ic")
-    except Exception:  # blind-except intentional (BLE001)
-        resid = None
-
-    if flags:
-        v = "SCREEN-FLAGGED"
-    elif abs(t) >= 2.5 and abs(ic) >= 0.05:
-        v = "SCREEN-PASS"
-    elif abs(t) >= 1.5:
-        v = "SCREEN-WEAK"
+def check_record_pairs() -> dict[str, Any]:
+    """Records that MUST agree. A rollback shows up here and nowhere else."""
+    findings = []
+    canon = _json(DESK / "data" / "UNIVERSAL_SURVIVORS.canon.json")
+    report = _json(DESK / "reports" / "UNIVERSAL_SURVIVORS.json")
+    if canon is None or report is None:
+        findings.append({"pair": "canon/report", "status": "UNKNOWN",
+                         "why": "one side unreadable -- never a clean pass"})
     else:
-        v = "SCREEN-NULL"
-    return {"verdict": v, "n": len(xs), "ic": round(ic, 4), "t": round(t, 2),
-            "residual_ic": resid, "flags": flags}
+        cs, rs = canon.get("swept_at") or "", report.get("swept_at") or ""
+        cn, rn = len(canon.get("survivors") or {}), len(report.get("survivors") or {})
+        if cs != rs or abs(cn - rn) > 0:
+            findings.append({
+                "pair": "canon/report", "status": "DEFECT",
+                "canon": f"{cn} survivors @ {cs}", "report": f"{rn} survivors @ {rs}",
+                "why": ("the canon IS enrolment: if it is the older of the two, the forward book "
+                        "is running on certificates that no longer represent the latest sweep")})
+
+    reg = _json(DESK / "data" / "sleeve_registry.json") or {}
+    st = _json(DESK / "reports" / "shadow" / "shadow_state.json") or {}
+    sl = st.get("sleeves") or st
+    rows = reg.get("sleeves") or {}
+    if rows and isinstance(sl, dict):
+        dis = [k for k in rows
+               if isinstance(sl.get(k), dict)
+               and str(rows[k].get("status") or "") != str(sl[k].get("status") or "")]
+        if len(dis) > len(rows) * 0.5:
+            findings.append({
+                "pair": "registry/state", "status": "DEFECT",
+                "disagreeing": len(dis), "of": len(rows),
+                "why": ("recovery paths key off whichever record says there is nothing to do; "
+                        "when these disagree at scale, clocks deadlock and accrue nothing")})
+    return {"status": "DEFECT" if any(f["status"] == "DEFECT" for f in findings)
+            else ("UNKNOWN" if findings else "OK"), "findings": findings}
 
 
-def main() -> None:
-    px = _price_series()
-    if len(px) < 200:
-        raise SystemExit("price history unavailable -- refusing to screen against nothing")
+def check_forward_lane() -> dict[str, Any]:
+    """Clocks that are terminal, and evidence frozen inside them."""
+    st = _json(DESK / "reports" / "shadow" / "shadow_state.json")
+    if st is None:
+        return {"status": "UNKNOWN", "why": "shadow_state unreadable"}
+    sl = st.get("sleeves") or st
+    rows = [v for v in sl.values() if isinstance(v, dict)]
+    broken = [v for v in rows if str(v.get("status") or "") == "IDENTITY_BROKEN"]
+    frozen = sum(v.get("n", 0) or 0 for v in broken)
+    active = [v for v in rows if str(v.get("status") or "") == "ACTIVE"]
+    return {"status": "DEFECT" if frozen else "OK",
+            "active": len(active), "active_trades": sum(v.get("n", 0) or 0 for v in active),
+            "identity_broken": len(broken), "trades_frozen": frozen,
+            "why": ("trades sitting in terminal rows are evidence the desk already earned and is "
+                    "discarding" if frozen else "no evidence frozen")}
 
-    done = set()
-    if LEDGER.exists():
-        for ln in LEDGER.read_text("utf-8").splitlines():
+
+def check_bar_freshness(max_hours: float = 48.0) -> dict[str, Any]:
+    """The research plane silently reading a stale market is the worst failure mode here."""
+    try:
+        import pandas as pd
+    except ImportError:
+        return {"status": "UNKNOWN", "why": "pandas unavailable"}
+    uni = DESK / "data" / "universe"
+    now = pd.Timestamp.now(tz="UTC")
+    ages = []
+    for p in sorted(uni.glob("*_H1.parquet")):
+        try:
+            df = pd.read_parquet(p)
+            idx = pd.DatetimeIndex(df.index if df.index.name else df.iloc[:, 0])
+            last = idx.max()
+            last = last.tz_localize("UTC") if last.tz is None else last
+            ages.append((now - last).total_seconds() / 3600.0)
+        except Exception:
+            continue
+    if not ages:
+        return {"status": "UNKNOWN", "why": "no readable H1 parquet"}
+    ages.sort()
+    med = ages[len(ages) // 2]
+    fresh = sum(1 for a in ages if a < 24)
+    return {"status": "DEFECT" if med > max_hours else "OK",
+            "symbols": len(ages), "median_staleness_h": round(med, 1), "fresher_than_24h": fresh,
+            "why": ("bars this old mean every adapter, measurement and research pass is answering "
+                    "about a market that has moved on" if med > max_hours else "bars current")}
+
+
+def check_dashboard() -> dict[str, Any]:
+    """What the principal actually looks at. A dashboard reporting stale numbers is a lie at rest.
+
+    It reads `web/desk_state.json`, which is pulled from the trading box every two minutes -- so a
+    stamp older than an hour means the pull is dead and every figure on the page is describing a
+    desk that has moved on, while looking perfectly current.
+    """
+    d = _json(ROOT / "web" / "desk_state.json")
+    if d is None:
+        return {"status": "UNKNOWN", "why": "desk_state.json unreadable -- the dashboard is blind"}
+    acct = d.get("account") or {}
+    age = acct.get("source_age_seconds")
+    stamp = d.get("generated_at") or acct.get("source_updated_at") or ""
+    stale = isinstance(age, (int, float)) and age > 3600
+    res = d.get("research") or {}
+    return {"status": "DEFECT" if stale else "OK",
+            "generated_at": str(stamp)[:19], "source_age_s": age,
+            "equity": acct.get("equity"), "canonical_survivors": res.get("canonical_survivors"),
+            "why": ("the dashboard is serving figures older than an hour -- the desk pull is dead "
+                    "and every number on the page is stale while looking current"
+                    if stale else "dashboard current")}
+
+
+def heal_forward_clocks() -> dict[str, Any]:
+    """Clocks terminal on a drift that no longer exists are healed by RUNNING the engine.
+
+    Not by rewriting a status. `shadow_forward` clears IDENTITY_BROKEN itself once `verify()`
+    returns no drift, so the repair is to give it a pass -- on the box, where the live bars are.
+    Rewriting the status here would empty this report and change nothing underneath, which is the
+    failure mode a fixer that can hide its own failure always has.
+    """
+    st = _json(DESK / "reports" / "shadow" / "shadow_state.json")
+    if st is None:
+        return {"acted": False, "why": "shadow_state unreadable"}
+    sl = st.get("sleeves") or st
+    broken = [k for k, v in sl.items()
+              if isinstance(v, dict) and str(v.get("status") or "") == "IDENTITY_BROKEN"]
+    if not broken:
+        return {"acted": False, "why": "no clock is terminal on identity"}
+    try:
+        subprocess.run(["systemctl", "--user", "start", "--no-block",
+                        "quant-forward-box.service"], timeout=60, check=False)
+    except (subprocess.SubprocessError, OSError) as exc:
+        return {"acted": False, "why": f"could not trigger the engine: {type(exc).__name__}"}
+    return {"acted": True, "identity_broken": len(broken),
+            "why": ("triggered the forward engine on the trading box; it clears the status itself "
+                    "when verify() finds no drift, so nothing here rewrites a verdict")}
+
+
+def check_conversion() -> dict[str, Any]:
+    """Every funnel stage's yield, and whether it is getting better or quietly rotting.
+
+    THE DESK'S FAILURE MODE IS A LEGITIMATE-LOOKING ZERO. A crawler with 75 sources and 474MB of
+    corpus that converts NOTHING reports exactly like a crawler that is switched off, and the
+    deep audit returned 0/0/0/1 findings for days while running on schedule. So this measures the
+    RATIO at each hop rather than whether the job ran.
+    """
+    out: dict[str, Any] = {}
+    comp = _json(ROOT / "data" / "proposal_compiler.json") or {}
+    ok, ref = comp.get("compiled"), comp.get("refused")
+    if isinstance(ok, int) and isinstance(ref, int) and (ok + ref):
+        rate = ok / (ok + ref)
+        out["compile"] = {"compiled": ok, "refused": ref, "rate": round(rate, 3)}
+
+    audit = _json(ROOT / "data" / "deep_audit.json") or {}
+    lenses = audit.get("results") or {}
+    found = sum(len(v.get("findings") or []) for v in lenses.values() if isinstance(v, dict))
+    out["deep_audit"] = {"lenses": len(lenses), "findings": found, "ran_at": audit.get("ran_at")}
+
+    free = _json(ROOT / "data" / "free_research.json") or {}
+    props = sum(len(r.get("proposals") or []) for r in (free.get("results") or []))
+    out["free_research"] = {"proposals": props, "ran_at": free.get("ran_at")}
+
+    mc = _json(ROOT / "data" / "miner_conversion.json") or {}
+    miners = mc.get("miners") or {}
+    zero = len(mc.get("zero_yield_miners") or [])
+    out["miners"] = {"total": len(miners), "zero_yield": zero}
+
+    # A LENS THAT RETURNS NOTHING IS A DEFECT, not a clean audit. Measured 2026-09-04: all four
+    # lenses read 0 for days because the parser scored the model's own instructions and the token
+    # cap truncated the answer -- the job ran perfectly on schedule the whole time.
+    bad = (found == 0 and len(lenses) > 0) or props == 0 or (
+        "compile" in out and out["compile"]["rate"] < 0.10)
+    out["status"] = "DEFECT" if bad else "OK"
+    out["why"] = ("a funnel stage is yielding nothing while running on schedule -- the shape of a "
+                  "silent zero, not of an honest negative result" if bad else "every stage yielding")
+    return out
+
+
+def check_funnel() -> dict[str, Any]:
+    """Every hop from discovery to a running clock, and WHICH hop is dead.
+
+    A funnel reported only at its ends cannot say where it broke. Measured this session: the
+    crawler held 6,251 documents, the queue held 2,050 hypotheses, 94 compiled, 58 certified and
+    0 clocks were accruing -- and each stage looked healthy from inside itself. The dead hop was
+    the last one, and nothing named it because nothing compared the hops.
+
+    STAGE-TO-STAGE, therefore. A hop whose input is large and whose output is zero is the defect,
+    and it is reported with the repair that belongs to THAT hop rather than a generic alarm.
+    """
+    stages: dict[str, Any] = {}
+    q = ROOT / "data" / "hypothesis_queue.jsonl"
+    try:
+        stages["queued"] = sum(1 for _ in q.open(encoding="utf-8")) if q.exists() else 0
+    except OSError:
+        stages["queued"] = None
+
+    comp = _json(DESK / "data" / "hypotheses" / "compiled_proposals.json") or {}
+    stages["compiled"] = len(comp.get("cells") or [])
+
+    bt = _json(DESK / "data" / "hypotheses" / "external_backtest_results.json")
+    stages["backtested"] = (len(bt) if isinstance(bt, list)
+                            else len(bt.get("results") or bt.get("cells") or {})
+                            if isinstance(bt, dict) else None)
+
+    canon = _json(DESK / "data" / "UNIVERSAL_SURVIVORS.canon.json") or {}
+    stages["certified"] = len(canon.get("survivors") or {})
+
+    st = _json(DESK / "reports" / "shadow" / "shadow_state.json") or {}
+    sl = st.get("sleeves") or st
+    rows = [v for v in sl.values() if isinstance(v, dict)]
+    stages["clocked"] = sum(1 for v in rows if str(v.get("status") or "") == "ACTIVE")
+    stages["trades"] = sum(v.get("n", 0) or 0 for v in rows
+                           if str(v.get("status") or "") == "ACTIVE")
+
+    #: hop -> (input stage, output stage, what repairs THAT hop)
+    hops = (("compile", "queued", "compiled", "scripts/compile_proposals.py"),
+            ("backtest", "compiled", "backtested", "ops/run_external_pipeline.sh"),
+            ("certify", "backtested", "certified", "scripts/certify_gauntlet.py"),
+            ("enrol", "certified", "clocked", "ops/run_forward_on_box.sh"))
+    dead = []
+    for name, src, dst, repair in hops:
+        a, b = stages.get(src), stages.get(dst)
+        if a is None or b is None:
+            continue
+        if a > 0 and b == 0:
+            dead.append({"hop": name, "in": a, "out": b, "repair": repair,
+                         "why": f"{a} in, ZERO out -- this hop is where the desk stops"})
+    return {"status": "DEFECT" if dead else "OK", "stages": stages, "dead_hops": dead,
+            "why": ("a hop with input and no output is the defect; the stage before it is healthy "
+                    "and the stage after it is starved" if dead else "every hop passing volume")}
+
+
+def check_unit_log_dirs() -> dict:
+    """A unit whose StandardOutput directory is missing dies BEFORE its process starts.
+
+    systemd reports status=209/STDOUT and the journal says "Failed to set up standard output",
+    which reads like a permissions problem and is nothing of the kind. Measured 2026-09-04: the
+    migration to the 8GB box left /home/quant/logs uncreated and 118 launches died that way in 24
+    hours -- among them hourly-controller, so edge_search_results.json went 15 hours stale while
+    every health check reported the timer as firing on schedule. It was.
+
+    This both CHECKS and REPAIRS, because a missing directory has exactly one correct response.
+    """
+    import re
+    units = Path.home() / ".config" / "systemd" / "user"
+    if not units.is_dir():
+        return {"status": "OK", "why": "no user unit directory"}
+    wanted: set[Path] = set()
+    for unit in units.glob("*.service"):
+        try:
+            text = unit.read_text("utf-8")
+        except OSError:
+            continue
+        for m in re.finditer(r"Standard(?:Output|Error)\s*=\s*[a-z]+:(\S+)", text):
+            wanted.add(Path(m.group(1)).parent)
+    created = []
+    for d in sorted(wanted):
+        if not d.is_dir():
             try:
-                done.add(json.loads(ln)["candidate"])
-            except Exception:  # blind-except intentional (BLE001)
-                continue
+                d.mkdir(parents=True, exist_ok=True)
+                created.append(str(d))
+            except OSError as exc:
+                return {"status": "DEFECT", "missing": str(d),
+                        "why": f"cannot create {d}: {type(exc).__name__}"}
+    # REPAIRED, not merely reported: the directory is created, so the next launch survives.
+    return {"status": "OK", "repaired": created, "checked": len(wanted),
+            "why": (f"created {len(created)} missing unit log dir(s): {created}" if created
+                    else f"all {len(wanted)} unit log dirs present")}
 
-    sched = (json.loads(CIO.read_text("utf-8")) if CIO.exists() else {}).get("schedule", [])
-    queue = [s for s in sched if s.get("origin") == "conversion_engine"
-             and s.get("name") not in done and ":" in str(s.get("name", ""))]
 
-    print("=== STAGE-A EXECUTOR -- running the queue, not ranking it ===")
-    print("    ZERO promotion authority: a pass earns one of five scarce Stage-B slots, never")
-    print("    capital. Ranking was never utilisation.\n")
-    print(f"  price history {len(px)} days | {len(done)} already screened | "
-          f"{len(queue)} unscreened in queue\n")
-    if not queue:
-        print("  queue drained -- every conversion candidate has a verdict.")
-        return
+def next_growth_lever() -> dict[str, Any]:
+    """The next lever for E[log W], ranked by MEASURED deficit rather than by opinion.
 
-    out = []
-    for s in queue[:_BATCH]:
-        name = s["name"]
-        fn, _, fld = name.partition(":")
-        res = screen(fn, fld, px)
-        rec = {"ts": datetime.now(tz=UTC).isoformat(), "candidate": name, **res}
-        out.append(rec)
-        extra = (f"IC {res.get('ic'):+.4f} t {res.get('t'):+.2f}"
-                 if res.get("ic") is not None else res.get("note", ""))
-        print(f"  {res['verdict']:<16} {name[:46]:<46} n={res['n']:<5} {extra}")
-        for f in res.get("flags", [])[:1]:
-            print(f"                   leak: {f[:78]}")
+    Only the mechanical ones are acted on here. A lever with a trade-off -- lowering a gate,
+    resizing live risk, changing what a certificate asserts -- is named and left for the principal,
+    because an autonomous fixer that can relax its own bar will eventually relax it.
+    """
+    levers: list[dict[str, Any]] = []
+    st = _json(DESK / "reports" / "shadow" / "shadow_state.json") or {}
+    sl = st.get("sleeves") or st
+    act = [v for v in sl.values() if isinstance(v, dict) and v.get("status") == "ACTIVE"]
+    if act:
+        days = max(1.0, max((v.get("days_active") or 0) for v in act))
+        rate = sum(v.get("n", 0) or 0 for v in act) / len(act) / days
+        need = 50.0 / 14.0
+        if rate < need:
+            levers.append({
+                "lever": "forward throughput", "measured": f"{rate:.2f} trades/sleeve/day",
+                "needed": f"{need:.2f}", "shortfall": f"{need / max(rate, 1e-9):.1f}x",
+                "act": "AUTOMATIC: none -- breadth is the fix and adding sleeves is a research act",
+                "why": "n>=50 within a 14-day window is unreachable at this rate"})
 
-    with LEDGER.open("a", encoding="utf-8") as fh:
-        for r in out:
-            fh.write(json.dumps(r) + "\n")
+    canon = _json(DESK / "data" / "UNIVERSAL_SURVIVORS.canon.json") or {}
+    survivors = canon.get("survivors") or {}
+    fams: dict[str, int] = {}
+    for v in survivors.values():
+        f = str((v.get("shadow_spec") or {}).get("family") or "?")
+        fams[f] = fams.get(f, 0) + 1
+    if survivors:
+        top = max(fams.values()) / len(survivors)
+        if top > 0.30:
+            levers.append({
+                "lever": "book independence", "measured": f"{top:.1%} in one family",
+                "needed": "<30%", "act": "AUTOMATIC: none -- needs absent families to certify",
+                "why": ("concentration caps n_eff: fifty variants of one bet is one bet, and "
+                        "E[log W] pays for INDEPENDENT bets")})
 
-    passes = [r for r in out if r["verdict"] == "SCREEN-PASS"]
-    print(f"\n  {len(out)} screened this cycle, {len(passes)} PASS, "
-          f"{len(queue)-len(out)} still queued")
-    if passes:
-        print("  PASS candidates are eligible for a Stage-B slot -- eligibility, not promotion.")
-        print("  A human or the allocator picks from them; nothing here starts a clock.")
-    print(f"  -> {LEDGER}")
+    comp = _json(ROOT / "data" / "proposal_compiler.json") or {}
+    if isinstance(comp.get("refused"), int) and comp.get("refused"):
+        levers.append({
+            "lever": "proposal conversion",
+            "measured": f"{comp.get('compiled')} compiled / {comp.get('refused')} refused",
+            "act": "AUTOMATIC: the axis contract is enforced at generation; refusals re-measured "
+                   "each pass",
+            "why": "a refusal for an unresolved axis is fixable at the prompt; a duplicate is not"})
+    return {"levers": levers, "n": len(levers),
+            "note": ("ranked by measured deficit. Levers with a TRADE-OFF (lowering a gate, "
+                     "resizing live risk, changing what a certificate asserts) are named and left "
+                     "for the principal -- a fixer that may relax its own bar eventually will.")}
+
+
+#: The modules the desk box RUNS. Drift here is silent and total: the box keeps executing the old
+#: code while every log says the sync verified.
+REMOTE_CRITICAL = (
+    "desks/mt5/research/job_lock.py",
+    "desks/mt5/research/sleeve_registry.py",
+    "desks/mt5/research/shadow_forward.py",
+    "desks/mt5/research/forward_reconcile.py",
+    "desks/mt5/research/h1_source.py",
+    "desks/mt5/research/orthogonal_sweep.py",
+    "desks/mt5/research/edge_search.py",
+    "desks/mt5/scripts/external_gauntlet.py",
+    "desks/mt5/mt5desk/families.py",
+    "desks/mt5/mt5desk/family_inputs.py",
+)
+
+
+def check_box_code_drift(repair: bool = True) -> dict[str, Any]:
+    """Hash the modules the trading box RUNS against this repo, and re-ship what drifted.
+
+    WHY, MEASURED 2026-09-04. The hourly pipeline reported `code sync verified: 14 module(s)
+    byte-identical` at 09:05, 10:10 and 11:08 -- and at 13:20 the box was running a job_lock.py
+    that predated the `need_mb` argument. external_gauntlet called
+    `exclusive_job(..., need_mb=1200)`, threw TypeError on every single hourly run, and the
+    pipeline logged `ten-gate gauntlet FAILED rc=255` and carried on. The desk produced 372
+    executable candidates an hour that nothing could ever judge, while every sync log said the
+    code was identical.
+
+    A sync that verifies ONCE AN HOUR cannot see a writer that reverts a file between syncs. This
+    checks the state that matters -- what is on the box RIGHT NOW -- and repairs it, because a
+    stale module on the box that runs the gauntlet is worth more attention than a stale one here.
+    """
+    import subprocess as _sp
+    try:
+        # The probe is BUILT, not formatted: it runs on the box's Python 3.14 and must hash
+        # git-blob-style so the digests compare directly with `git hash-object` here.
+        probe = "\n".join([
+            "import hashlib, os",
+            "for rel in " + repr(list(REMOTE_CRITICAL)) + ":",
+            "    p = rel.replace('/', os.sep)",
+            "    try:",
+            "        d = open(p, 'rb').read()",
+            "    except OSError:",
+            "        print(rel, 'ABSENT'); continue",
+            "    h = hashlib.sha1(b'blob ' + str(len(d)).encode() + b'\\0' + d).hexdigest()",
+            "    print(rel, h)",
+        ])
+        out = _sp.run(["ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=15", "contabo-mt5",
+                       "cd C:\\opt\\quant && py -3 -"],
+                      input=probe, capture_output=True, text=True, timeout=180).stdout
+    except (_sp.SubprocessError, OSError) as exc:
+        return {"status": "UNKNOWN", "why": f"box unreachable ({type(exc).__name__})"}
+
+    remote = {}
+    for line in out.splitlines():
+        parts = line.split()
+        if len(parts) == 2 and parts[0] in REMOTE_CRITICAL:
+            remote[parts[0]] = parts[1]
+    if not remote:
+        return {"status": "UNKNOWN", "why": "no hashes returned -- never a clean pass"}
+
+    drifted, reshipped = [], []
+    for rel, rh in remote.items():
+        local = _sp.run(["git", "hash-object", rel], cwd=ROOT,
+                        capture_output=True, text=True).stdout.strip()
+        if local and local != rh:
+            drifted.append(rel)
+            if repair:
+                r = _sp.run(["scp", "-q", "-o", "BatchMode=yes", rel,
+                             f"contabo-mt5:C:/opt/quant/{rel}"], cwd=ROOT, timeout=120)
+                if r.returncode == 0:
+                    reshipped.append(rel)
+    return {"status": "DEFECT" if drifted else "OK", "checked": len(remote),
+            "drifted": drifted, "reshipped": reshipped,
+            "why": ("the box was running code this repo does not have; a module stale THERE is "
+                    "invisible to every check that reads only HERE" if drifted
+                    else "every critical module on the box matches this repo")}
+
+
+#: Proprietary inputs the box's families read, and the age past which each is a defect. These
+#: are the desk's OWN data -- self-recorded tape, its broker's swap terms, its own cost surface --
+#: which is the part no competitor has and the part nothing was watching.
+PROP_INPUTS: tuple[tuple[str, float], ...] = (
+    ("desks/mt5/data/carry_state.json", 48.0),
+    ("desks/mt5/data/cost_surface.json", 72.0),
+    ("desks/mt5/data/cot", 240.0),
+    ("data/fred_macro.json", 72.0),
+)
+
+
+def check_proprietary_data() -> dict[str, Any]:
+    """Freshness of the desk's OWN data, here and on the box that mines it.
+
+    MEASURED 2026-09-04: carry_state.json was ABSENT on the trading box while 380KB of swap terms
+    sat on the VPS; COT was 13 days old; cost_surface 6 days. Meanwhile `carry` sent 343
+    candidates to the gauntlet and `cot_positioning` 10 -- families reading inputs that were stale
+    or missing, and producing candidates anyway. Nothing errored, because a stale JSON loads
+    perfectly. This is the fred_macro defect repeated three times, and it is invisible to any
+    check that looks only at the machine the collector runs on.
+    """
+    import time as _t
+    stale = []
+    for rel, max_h in PROP_INPUTS:
+        path = ROOT / rel
+        if not path.exists():
+            stale.append({"input": rel, "state": "ABSENT_LOCALLY"})
+            continue
+        newest = path.stat().st_mtime if path.is_file() else max(
+            (f.stat().st_mtime for f in path.rglob("*") if f.is_file()), default=0.0)
+        age_h = (_t.time() - newest) / 3600.0 if newest else 1e9
+        if age_h > max_h:
+            stale.append({"input": rel, "age_h": round(age_h, 1), "limit_h": max_h})
+    return {"status": "DEFECT" if stale else "OK", "checked": len(PROP_INPUTS), "stale": stale,
+            "why": ("the desk's own data is the part no competitor has; a family reading a stale "
+                    "copy still emits candidates, and nothing errors"
+                    if stale else "every proprietary input within its freshness budget")}
+
+
+def check_failed_units() -> dict[str, Any]:
+    try:
+        out = subprocess.run(["systemctl", "--user", "list-units", "--state=failed",
+                              "--no-legend", "--plain"],
+                             capture_output=True, text=True, timeout=60).stdout
+    except (subprocess.SubprocessError, OSError):
+        return {"status": "UNKNOWN", "why": "systemctl unavailable"}
+    units = [ln.split()[0] for ln in out.splitlines() if ln.strip()]
+    return {"status": "DEFECT" if units else "OK", "failed": units[:12], "count": len(units)}
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--report", action="store_true", help="audit only; run no repairer")
+    a = ap.parse_args()
+    now = datetime.now(tz=UTC)
+    print(f"DESK INTEGRITY {now.isoformat(timespec='seconds')}")
+
+    repairs: list[dict[str, Any]] = []
+    if not a.report:
+        for name, args in _REPAIRERS:
+            rc, out = _run(args)
+            acted = [ln.strip() for ln in out.splitlines()
+                     if any(w in ln for w in ("RESTORED", "REPAIRED", "restored", "repaired"))]
+            repairs.append({"check": name, "exit": rc, "acted": acted[:4]})
+            print(f"  repair {name:20s} exit={rc}" + (f"  {acted[0][:80]}" if acted else ""))
+
+    if not a.report:
+        healed = heal_forward_clocks()
+        repairs.append({"check": "forward clocks", "exit": 0,
+                        "acted": [healed.get("why", "")] if healed.get("acted") else []})
+        if healed.get("acted"):
+            print(f"  repair forward clocks      {healed['identity_broken']} terminal clock(s) "
+                  f"-- engine triggered on the box")
+
+    checks = {
+        "dashboard": check_dashboard(),
+        # Runs FIRST among the repairs in spirit: a missing log directory kills units
+        # before their process starts, so every other check downstream reports a healthy
+        # timer firing into a job that never ran.
+        "unit_log_dirs": check_unit_log_dirs(),
+        "conversion": check_conversion(),
+        "funnel": check_funnel(),
+        "box_code_drift": check_box_code_drift(repair=not a.report),
+        "proprietary_data": check_proprietary_data(),
+        "uncommitted_code": check_uncommitted_code(),
+        "record_pairs": check_record_pairs(),
+        "forward_lane": check_forward_lane(),
+        "bar_freshness": check_bar_freshness(),
+        "failed_units": check_failed_units(),
+    }
+    for name, r in checks.items():
+        extra = {k: v for k, v in r.items() if k not in ("status", "why")}
+        print(f"  {r['status']:8s} {name:18s} {json.dumps(extra)[:110]}")
+        if r["status"] != "OK" and r.get("why"):
+            print(f"           -> {str(r['why'])[:150]}")
+
+    lever = next_growth_lever()
+    if lever["levers"]:
+        print("\n  NEXT GROWTH LEVERS (measured deficit, largest first):")
+        for lv in lever["levers"]:
+            print(f"    {lv['lever']:22s} {str(lv.get('measured'))[:34]:34s} {lv['act'][:64]}")
+
+    bad = [k for k, v in checks.items() if v["status"] == "DEFECT"]
+    unknown = [k for k, v in checks.items() if v["status"] == "UNKNOWN"]
+    OUT.write_text(json.dumps({"ran_at": now.isoformat(timespec="seconds"), "repairs": repairs,
+                               "checks": checks, "defects": bad, "unknown": unknown,
+                               "growth_levers": lever}, indent=1,
+                              default=str), "utf-8")
+    if not bad and not unknown:
+        # A QUIET RUN IS THE POINT. On a healthy desk this says so in one line and does nothing --
+        # a sweep that always finds something to do trains its reader to stop looking.
+        print("\n  ALL CLEAR -- every pair agrees, no evidence frozen, nothing repaired")
+    else:
+        print(f"\n  {len(bad)} defect(s), {len(unknown)} unmeasured -> {OUT}")
+    return 1 if (bad or unknown) else 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())
 
 ```

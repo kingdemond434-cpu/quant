@@ -1,0 +1,9 @@
+[Unit]
+Description=Timer for restored organ: alert-canary
+
+[Timer]
+OnCalendar=*-*-* *:17:00
+Unit=quant-alert-canary.service
+
+[Install]
+WantedBy=timers.target

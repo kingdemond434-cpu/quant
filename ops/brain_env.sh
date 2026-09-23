@@ -75,6 +75,89 @@ brain_mutex() {
     return 0
 }
 
+# --- MEMORY GATE (2026-08-31) ---
+# A seat that dies between its attempt header and its first claude line is a SILENT death --
+# 21 stubs in 7 days, cgroup oom_kill counter at 912, 0 swap on 3.8GB. The launcher writes the
+# header, then brain_mutex, then brain_auth_check; the probes there spawn claude, and an OOM
+# kill of the whole group leaves only the 58-byte header. Hunting harder cannot fix a box that
+# cannot hold the launch, so a launcher must DEFER cleanly first instead of dying silently.
+# THE FLOOR MUST COVER WHAT THE SEAT NEEDS TO RUN, NOT WHAT IT NEEDS TO START (2026-09-05).
+# 500MB was chosen as "enough that the launch does not immediately die", and the measured
+# outcome was that it died anyway: six gap-wirer launches OOM-killed on 2026-08-28 (recorded in
+# check_seat_launch_yield.classify), three more in the 24h to 2026-09-05, and gap-wirer and
+# video-hunter both at ZERO produced in seven days. A seat admitted at 500MB starts a
+# `claude --effort max` process whose own working set is larger than that, so the gate was
+# waving through launches the box could not hold and the kernel finished the decision.
+#
+# Being admitted and then killed is the worst of the three outcomes: it spends the launch, it
+# produces nothing, it destabilises every neighbour on the way down, and it reports as a crash
+# rather than as a resource condition -- so seven days of "the seat is broken" were really
+# "the box was full". Standing down is cheap by comparison: organ_catchup re-fires within five
+# minutes and the seat resumes the moment memory frees.
+#
+# 1500MB is the seat's own working set plus the headroom to survive a neighbour growing. It is
+# satisfiable now in a way it was not this morning: `external_gauntlet` is capped at the 1200MB
+# it declares (job_lock + MEMORY_BUDGET_MB), so an 8GB box has room for a seat and a sweep at
+# the same time instead of one process taking 4.9GB and the kernel choosing among the rest.
+# Raise or lower it from a MEASUREMENT of what a seat actually uses, never from a guess.
+_BRAIN_MEM_FLOOR_MB="${_BRAIN_MEM_FLOOR_MB:-1500}"
+
+# THE FLOOR IS LEARNED FROM DEATHS, NOT TYPED (2026-09-06). 1500MB was itself the second guess:
+# 500MB was chosen as "enough that the launch does not immediately die" and the measured outcome
+# was that seats died anyway -- six gap-wirer launches OOM-killed on 2026-08-28, three more in
+# the 24h to 2026-09-05, gap-wirer and video-hunter both at ZERO produced in seven days. Raising
+# a guess to a bigger guess is the same move that failed, so this reads what actually happened.
+#
+# `data/seat_memory_floor.json` is written by scripts/check_seat_launch_yield.py, which already
+# classifies every launch and already knows which ones were DIED_AFTER_START -- the OOM shape.
+# When a seat dies at an admitted level, the floor for THAT seat rises above the level it died
+# at. It only ever rises, exactly like job_lock.measured_need_mb, so a box cannot talk its way
+# into admitting a seat it has already been observed to kill.
+_brain_learned_floor() {
+    local organ="${BRAIN_ORGAN:-}" f="/home/quant/quant-platform/data/seat_memory_floor.json"
+    [ -n "$organ" ] && [ -r "$f" ] || { printf '%s' "$_BRAIN_MEM_FLOOR_MB"; return 0; }
+    python3 - "$f" "$organ" "$_BRAIN_MEM_FLOOR_MB" <<'PYEOF' 2>/dev/null || printf '%s' "$_BRAIN_MEM_FLOOR_MB"
+import json, sys
+path, organ, declared = sys.argv[1], sys.argv[2], int(sys.argv[3])
+try:
+    rows = json.load(open(path))
+    learned = int((rows.get("floors") or {}).get(organ) or 0)
+except Exception:
+    learned = 0
+# THE DECLARATION IS THE FLOOR OF THE FLOOR. A learned value may only raise it: a seat that
+# happened to survive on a quiet box must not lower the bar for a busy one.
+print(max(declared, learned))
+PYEOF
+}
+
+brain_mem_gate() {
+    local avail_mb floor_mb a b c
+    # MEDIAN OF THREE, NOT ONE SAMPLE. Free memory on this box is a sawtooth -- a searcher builds
+    # primitives for a symbol, peaks, emits, releases. job_lock measured a single reading of 55MB
+    # seconds away from readings of 1,605MB, and a job whose start depends on a coin flip is not
+    # scheduled, it is gambled. This gate took exactly one sample, so it both DEFERRED seats that
+    # would have fit and ADMITTED seats onto a transient peak that closed under them -- and the
+    # second of those is the OOM death the seat yield keeps reporting.
+    a="$(awk '/MemAvailable/ {printf "%d", $2/1024}' /proc/meminfo 2>/dev/null)"
+    [ -n "$a" ] || return 0                 # cannot read -> do not block, never block the desk
+    sleep 2; b="$(awk '/MemAvailable/ {printf "%d", $2/1024}' /proc/meminfo 2>/dev/null)"
+    sleep 2; c="$(awk '/MemAvailable/ {printf "%d", $2/1024}' /proc/meminfo 2>/dev/null)"
+    avail_mb="$(printf '%s\n%s\n%s\n' "$a" "${b:-$a}" "${c:-$a}" | sort -n | sed -n 2p)"
+    floor_mb="$(_brain_learned_floor)"
+    _BRAIN_MEM_FLOOR_MB="$floor_mb"
+    if [ "$avail_mb" -lt "$floor_mb" ]; then
+        [ -n "${BRAIN_MUTEX_LOGFILE:-}" ] && \
+            echo "=== ${BRAIN_ORGAN:-brain} MEMORY-STARVED only ${avail_mb}MB available DEFERRED -- box at ${_BRAIN_MEM_FLOOR_MB}MB floor; organ_catchup re-fires ===" \
+            >> "$BRAIN_MUTEX_LOGFILE" 2>/dev/null || true
+        printf 'brain_mem_gate: %d MB available < %s MB floor -- deferring\n' \
+            "$avail_mb" "$_BRAIN_MEM_FLOOR_MB" >&2
+        return 1
+    fi
+    printf 'brain_mem_gate: %d MB available >= %s MB floor -- go\n' \
+        "$avail_mb" "$_BRAIN_MEM_FLOOR_MB" >&2
+    return 0
+}
+
 # --- D3 self-healing (founders directive, principal 2026-07-19) ---
 _brain_page() {
     # page the principal via the desk pager topic (ntfy.sh); never fails the caller
@@ -146,6 +229,144 @@ brain_reset_wait_s() {
     printf '%s' "$wait"
 }
 
+# --- BRAIN QUOTA MEMO (2026-08-26) -----------------------------------------------------------
+# THE WALL IS RE-DISCOVERED BY EVERY ORGAN, ONE PROBE AT A TIME, AND NEVER WRITTEN DOWN.
+#
+# MEASURED, not theorised (scripts/check_seat_launch_yield.py --days 7, run 2026-08-26T07:20Z):
+# 108 seat launches, 94 billable, 26 produced -- 27.7% yield -- and AUTH_UNAVAILABLE alone
+# accounts for 55 of the 94. Every one of those 55 walked the FULL model chain first: a PING per
+# model in $_BRAIN_MODEL_CHAIN, then the keyfile branch, then (once) a sleep-to-reset and a
+# recursive re-walk. The organ that hit the wall at 15:00 learned the exact reset time, used it
+# for one sleep, and threw it away; the organ that fired at 15:10 started from zero and paid for
+# the same discovery again. The desk therefore has no answer at all to "when is the brain
+# available" -- that is UNMEASURED, which under L1.28a is a real answer and a defect, not a
+# clean bill of health.
+#
+# WHAT THIS ADDS, and deliberately nothing more: the reset stamp brain_reset_wait_s already
+# computes is PERSISTED, and brain_auth_check consults it BEFORE spending a probe. It is a memo,
+# never a rail:
+#   - it can only ever SKIP A PROBE, never skip a dig that would have run (a skipped organ
+#     leaves its attempt stub, stays below organ_catchup's success_bytes, and is re-fired by the
+#     catchup loop exactly as an auth death is today -- the retry path is unchanged);
+#   - it expires by wall clock, is capped at _BRAIN_QUOTA_MEMO_CAP_S so a bad parse cannot
+#     silence the desk for a day, and is CLEARED by any successful PING;
+#   - BRAIN_IGNORE_QUOTA_MEMO=1 overrides it entirely, so a human or a probe organ is never
+#     locked out by the desk's own bookkeeping.
+# It is recorded ONLY for genuine limit/credit failures. A missing token or a bad key is not a
+# quota event and must keep failing loudly and immediately (that distinction is the whole reason
+# the seat-yield fence separates AUTH_UNAVAILABLE from DIED_AT_ATTEMPT).
+#
+# The jsonl is the point as much as the memo: data/brain_quota_windows.jsonl accrues one row per
+# observed open/blocked transition, so a later cycle can schedule seats against a MEASURED quota
+# rhythm instead of the current guess. Today the productive hours (05-09 UTC) and the dead ones
+# (14, 15, 18, 19) are known only from log forensics done by hand.
+# FALSIFIER: if brain_quota_windows.jsonl shows `open` rows recorded inside a window this memo
+# was simultaneously reporting blocked, the memo is over-blocking and its cap must shrink.
+_BRAIN_QUOTA_MEMO="${_BRAIN_QUOTA_MEMO:-/home/quant/quant-platform/data/brain_quota_state.json}"
+_BRAIN_QUOTA_LOG="${_BRAIN_QUOTA_LOG:-/home/quant/quant-platform/data/brain_quota_windows.jsonl}"
+_BRAIN_QUOTA_MEMO_CAP_S="${_BRAIN_QUOTA_MEMO_CAP_S:-21600}"   # 6h -- longer than any real window
+_BRAIN_QUOTA_SOFT_S="${_BRAIN_QUOTA_SOFT_S:-1200}"            # limit hit, reset time unparseable
+
+# brain_quota_record <open|blocked> <blocked_until_epoch|0> <organ> <reason-text>
+brain_quota_record() {
+    [ "${BRAIN_DRY_RUN:-0}" = "1" ] && return 0
+    BQ_STATE="$1" BQ_UNTIL="${2:-0}" BQ_ORGAN="${3:-brain}" BQ_REASON="${4:-}" \
+    BQ_MEMO="$_BRAIN_QUOTA_MEMO" BQ_LOG="$_BRAIN_QUOTA_LOG" \
+    python3 - <<'PY' 2>/dev/null || true
+import json, os, time
+state = os.environ["BQ_STATE"]
+until = int(os.environ.get("BQ_UNTIL") or 0)
+row = {
+    "observed_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+    "observed_at_epoch": int(time.time()),
+    "state": state,
+    "blocked_until_epoch": until if state == "blocked" else 0,
+    "organ": os.environ.get("BQ_ORGAN", "brain"),
+    "reason": (os.environ.get("BQ_REASON") or "")[:200],
+    "model": os.environ.get("ANTHROPIC_MODEL", ""),
+}
+memo = os.environ["BQ_MEMO"]
+os.makedirs(os.path.dirname(memo), exist_ok=True)
+tmp = memo + ".tmp"
+with open(tmp, "w", encoding="utf-8") as fh:
+    json.dump(row, fh, indent=1)
+os.replace(tmp, memo)
+# APPEND ONLY ON A TRANSITION. A row per probe would bury the signal under the desk's own
+# polling: what a later scheduler needs is when the wall went up and when it came down.
+prev = None
+try:
+    with open(os.environ["BQ_LOG"], encoding="utf-8") as fh:
+        for line in fh:
+            line = line.strip()
+            if line:
+                prev = line
+except OSError:
+    pass
+prev_state = None
+if prev:
+    try:
+        prev_state = json.loads(prev).get("state")
+    except ValueError:
+        prev_state = None
+if prev_state != state:
+    with open(os.environ["BQ_LOG"], "a", encoding="utf-8") as fh:
+        fh.write(json.dumps(row) + "\n")
+PY
+}
+
+# brain_quota_blocked -> 0 (blocked: do not spend a probe), 1 (go)
+brain_quota_blocked() {
+    [ "${BRAIN_IGNORE_QUOTA_MEMO:-0}" = "1" ] && return 1
+    [ "${BRAIN_DRY_RUN:-0}" = "1" ] && return 1
+    [ -r "$_BRAIN_QUOTA_MEMO" ] || return 1
+    local until now
+    until="$(sed -n 's/.*"blocked_until_epoch"[[:space:]]*:[[:space:]]*\([0-9]\{1,\}\).*/\1/p' \
+        "$_BRAIN_QUOTA_MEMO" 2>/dev/null | head -1)"
+    [ -n "$until" ] || return 1
+    case "$until" in (*[!0-9]*) return 1 ;; esac
+    now="$(date -u +%s)" || return 1
+    [ "$until" -gt "$now" ] || return 1
+    # A memo pointing further ahead than any real window is a PARSE FAULT, not a long outage.
+    # Distrust it and probe: over-blocking costs digs, and digs are the desk's primary output.
+    [ $((until - now)) -le "$_BRAIN_QUOTA_MEMO_CAP_S" ] || return 1
+    return 0
+}
+
+# How long a successful PING is believed before another organ pays for a fresh one.
+# Deliberately short: a quota that closed inside this window costs one organ a wasted attempt,
+# which is self-correcting on its next cycle. Longer would risk organs marching into a wall.
+_BRAIN_QUOTA_OPEN_TTL_S="${_BRAIN_QUOTA_OPEN_TTL_S:-600}"
+
+# True when another organ measured the quota OPEN recently enough to believe.
+#
+# THE MEMO WAS ONE-SIDED, AND THE EXPENSIVE HALF WAS MISSING. `brain_quota_blocked` already stops
+# an organ probing into a wall someone else measured -- correct, and it saves quota. But the OPEN
+# case, which is the normal one, was never cached: every organ spawned its own
+# `claude -p 'Reply with exactly: PING-OK'` to re-learn what the previous organ learned minutes
+# earlier. That probe is a FULL CLAUDE PROCESS, measured at ~175MB, and brain_env.sh is sourced by
+# eight-plus organ scripts on their own timers.
+#
+# MEASURED 2026-09-04: the box sat at 62MB available, below its own 300MB OOM floor; the research
+# gauntlet needs 1,200MB and had not started for 15.3 hours, so no certificate was minted and the
+# AFG purge -- which lives in the gauntlet's writer -- never fired for the seventh time. A 175MB
+# process to re-answer a question already answered is not a rounding error at that margin.
+#
+# Same file, same self-healing contract: a blocked observation still clears this instantly,
+# because `brain_quota_blocked` is checked first and a wall always wins over a stale open memo.
+brain_quota_open_recent() {
+    local state epoch now age
+    [ -f "$_BRAIN_QUOTA_MEMO" ] || return 1
+    state="$(sed -n 's/.*"state"[[:space:]]*:[[:space:]]*"\([a-z]*\)".*/\1/p' \
+        "$_BRAIN_QUOTA_MEMO" | tail -1)"
+    [ "$state" = "open" ] || return 1
+    epoch="$(sed -n 's/.*"observed_at_epoch"[[:space:]]*:[[:space:]]*\([0-9]*\).*/\1/p' \
+        "$_BRAIN_QUOTA_MEMO" | tail -1)"
+    case "$epoch" in ("" | *[!0-9]*) return 1 ;; esac
+    now="$(date -u +%s)" || return 1
+    age=$((now - epoch))
+    [ "$age" -ge 0 ] && [ "$age" -le "$_BRAIN_QUOTA_OPEN_TTL_S" ]
+}
+
 brain_auth_check() {
     # Cheap auth self-test at cycle start: fail LOUD (page), never silently no-op.
     # MODEL FALLBACK CHAIN (principal 2026-07-24): a STARVED MODEL must never kill the organ.
@@ -153,16 +374,52 @@ brain_auth_check() {
     # model (opus-5, then opus-4-8 -- both on the Max subscription seat) and only then try the
     # metered API key. Tonight every organ died out-of-credits because no model fallback existed.
     local out m
-    for m in ${_BRAIN_MODEL_CHAIN:-claude-fable-5 claude-opus-5 claude-opus-4-8}; do
+    # QUOTA MEMO FIRST -- a probe into a wall another organ already measured buys nothing and
+    # costs quota that a dig could have spent. Never a page: this is the EXPECTED state inside a
+    # closed window, and paging on it is how a pager gets ignored.
+    if brain_quota_blocked; then
+        printf '%s brain_auth_check SKIPPED -- quota memo says blocked (see %s)\n' \
+            "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$_BRAIN_QUOTA_MEMO" >&2
+        return 1
+    fi
+    # A FRESH OPEN OBSERVATION IS AN ANSWER. Checked AFTER the blocked memo, never before, so a
+    # measured wall always beats a stale open note.
+    if brain_quota_open_recent; then
+        printf '%s brain_auth_check: quota measured OPEN within %ss by another organ -- '\
+'skipping a duplicate ~175MB probe\n' \
+            "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$_BRAIN_QUOTA_OPEN_TTL_S" >&2
+        return 0
+    fi
+    for m in ${_BRAIN_MODEL_CHAIN:-claude-opus-5 claude-opus-4-8}; do
         export ANTHROPIC_MODEL="$m"
         out="$(claude -p 'Reply with exactly: PING-OK' --dangerously-skip-permissions 2>&1 | tail -3)"
         if printf '%s' "$out" | grep -q "PING-OK"; then
+            # An OPEN observation CLEARS the memo -- the wall is only ever believed until the
+            # next successful ping, so a stale or wrong memo self-heals on first contact.
+            brain_quota_record open 0 "${_BRAIN_ORGAN:-brain}" "PING-OK on $m"
             if [ "$m" != "${_BRAIN_MODEL_CHAIN%% *}" ]; then
                 _brain_page "model fallback ACTIVE: primary starved, organs running on $m"
             fi
             return 0
         fi
     done
+    # RECORD THE WALL. Only for genuine limit/credit exhaustion: a missing token or a rejected
+    # key is an auth defect that must keep failing loudly and immediately, and blocking probes on
+    # it would hide the one failure a human has to fix.
+    if printf '%s' "$out" | grep -qiE "limit|usage credits"; then
+        local _until _w
+        _w="$(brain_reset_wait_s "$out" "$_BRAIN_QUOTA_MEMO_CAP_S")"
+        if [ -n "$_w" ]; then
+            _until=$(( $(date -u +%s) + _w ))
+        else
+            # The message names a limit but not a reset. A short soft backoff is still strictly
+            # better than every later organ re-walking the chain blind; organ_catchup re-fires on
+            # a much shorter cycle than this, so nothing is stranded.
+            _until=$(( $(date -u +%s) + _BRAIN_QUOTA_SOFT_S ))
+        fi
+        brain_quota_record blocked "$_until" "${_BRAIN_ORGAN:-brain}" \
+            "$(printf '%s' "$out" | head -1 | cut -c1-140)"
+    fi
     if printf '%s' "$out" | grep -qiE "limit|usage credits" && [ -f "$_BRAIN_KEYFILE" ]; then
         unset CLAUDE_CODE_OAUTH_TOKEN
         ANTHROPIC_API_KEY="$(cat "$_BRAIN_KEYFILE")"
@@ -222,7 +479,7 @@ anthropic_api_key at data/secrets/; organs are down until the subscription reset
 if [ -f /home/quant/quant-platform/ops/model_chain.env ]; then
     . /home/quant/quant-platform/ops/model_chain.env
 fi
-export ANTHROPIC_MODEL="${ANTHROPIC_MODEL:-claude-fable-5}"  # primary = FABLE 5 (principal 2026-07-30); _BRAIN_MODEL_CHAIN below walks to opus-5 on exhaustion and PAGES when it does. Fable draws a pool that CAN exhaust; opus-5/opus-4-8 sit on the Max subscription seat and carry the rest of the week.
+export ANTHROPIC_MODEL="${ANTHROPIC_MODEL:-claude-opus-5}"  # primary = OPUS 5 (principal 2026-08-26: Fable removed -- it draws a METERED pool the fleet exhausted; opus sits on the subscription seat). Was: FABLE 5 (principal 2026-07-30); _BRAIN_MODEL_CHAIN below walks to opus-5 on exhaustion and PAGES when it does. Fable draws a pool that CAN exhaust; opus-5/opus-4-8 sit on the Max subscription seat and carry the rest of the week.
 # MODEL ROUTING POLICY (principal 2026-07-30, supersedes the 2026-07-24 ordering):
 # "every claude cycle, mining, audit, everything uses FABLE 5 MAXIMUM always initially until the
 # full week's sessions of it end, then only OPUS 5 after that in the week."
@@ -240,7 +497,12 @@ export ANTHROPIC_MODEL="${ANTHROPIC_MODEL:-claude-fable-5}"  # primary = FABLE 5
 # it explains the failure this chain now absorbs.
 # NOTE the frontier miners already ran fable-first via their own export; this makes the global
 # default agree with them instead of contradicting them (the miners were right).
-export _BRAIN_MODEL_CHAIN="${_BRAIN_MODEL_CHAIN:-claude-fable-5 claude-opus-5 claude-opus-4-8}"
+export _BRAIN_MODEL_CHAIN="${_BRAIN_MODEL_CHAIN:-claude-opus-5 claude-opus-4-8}"
+# DEEPSEEK SECOND FLYWHEEL (docs/policy/DEEPSEEK_SECOND_FLYWHEEL_MANDATE.md): the BULK/DEEP model
+# split is NOT exported here. Both DEEPSEEK_BULK_MODEL and DEEPSEEK_DEEP_MODEL live in the single
+# free-tier policy file ops/free_tier.env (both on the :free id per the 2026-08-26 free-first order),
+# which ops/run_deepseek_factory.sh sources BEFORE this file. Reconcile note 2026-09-08: the
+# wonderful-darwin branch carried a paid DEEP default in this file; it was deliberately not taken.
 
 # LAW GATE AT ORGAN SPAWN (L1.37, principal order 2026-07-31 "enforced 24/7 with every
 # interaction"). Every organ sources this file, so this is the one place that runs before ALL of
@@ -277,9 +539,13 @@ _law_gate_fast
 #
 # `_BRAIN_ROOT` defaults to the same absolute path, so the VPS behaviour is byte-identical; what
 # changes is that the failure is now LOUD and the file is findable from a relocated checkout.
-_DOCTRINE="$(cat "$_BRAIN_ROOT/ops/principal_doctrine.txt" 2>/dev/null)"
+# CONSOLIDATION 2026-08-25: the doctrine file is now the slim order channel (sealed core + MT5
+# universe mandate); the operative constitution lives in docs/LAWS.md. Both are injected together
+# so every organ carries the sealed core AND the full compact law set -- one source, no drift.
+# (Total injection SHRANK: the old 227-line doctrine outweighed doctrine+LAWS combined.)
+_DOCTRINE="$(cat "$_BRAIN_ROOT/ops/principal_doctrine.txt" "$_BRAIN_ROOT/docs/LAWS.md" 2>/dev/null)"
 if [ -z "$_DOCTRINE" ]; then
-    printf 'brain_env: DOCTRINE EMPTY (%s) -- every organ sourcing this would run undirected\n' \
+    printf 'brain_env: DOCTRINE EMPTY (%s + docs/LAWS.md) -- every organ sourcing this would run undirected\n' \
         "$_BRAIN_ROOT/ops/principal_doctrine.txt" >&2
 fi
 _CONVERSION_CONTROL="$(cat "$_BRAIN_ROOT/ops/shared_conversion_controller.txt" 2>/dev/null)"
@@ -334,13 +600,27 @@ artifact before mining new ground. (last error: ${out:-no interpreter found})"
 # Prompt actually handed to an organ: the conversion duty FIRST, then the organ's own brief.
 # Order is the point -- the gate's instruction is to spend this run's first effort converting.
 dig_prompt() {
-    local brief prio
+    # RESEARCH-MANDATE LEAD (2026-08-25): every dig opens with the one research mandate, so no
+    # organ can run on a stale per-prompt copy of the rules -- docs/RESEARCH.md is the single
+    # source and the brief that follows is the dig's SCOPE, never its law.
+    local brief prio lead
+    lead="STANDING ORDER: read docs/RESEARCH.md before the brief below -- it is the one \
+research mandate (MT5/Fusion universe ONLY) and governs this entire dig. \
+TOKEN DISCIPLINE (principal 2026-08-25, supersedes max-everything FOR CYCLES): you run at \
+reduced reasoning -- be implementation-focused, act, convert, commit; deliberate only where a \
+verdict demands it. CORPORA FIRST: consume the pre-fetched collector output under \
+data/intelligence/ before any live browsing -- the python miners gather for free; your tokens \
+are for JUDGMENT (mechanism extraction, dispositions, verdicts), not for HTML. Route bulk \
+extraction/normalization to the free-tier/DeepSeek path or to a python script you write, never \
+through your own context. TOOL HYGIENE: targeted reads only; tail logs <=50 lines; grep, never \
+cat, a file you can grep."
     brief="$(cat "$1")"
     prio="$(mine_priority)"
     if [ -n "$prio" ]; then
-        printf '%s\n\n%s' "$prio" "$brief"
+        # §33 keeps the lead position -- dig_dry_run and the readiness probe verify it there.
+        printf '%s\n\n%s\n\n%s' "$prio" "$lead" "$brief"
     else
-        printf '%s' "$brief"
+        printf '%s\n\n%s' "$lead" "$brief"
     fi
 }
 
@@ -387,10 +667,24 @@ dig_dry_run() {                       # $1 = organ label, $2 = prompt file
 # no. Adding lessons past the budget DISPLACES weaker ones rather than growing the context, so
 # organs get smarter over time without getting slower. Overflow goes to stderr, never silently.
 #
+# ROUTED PER ORGAN (2026-09-05), and the budget did NOT move. One global ranking meant every organ
+# received the same top-of-ledger lessons, so the ledger saturated: at 228 lessons exactly 25 were
+# reaching anybody and 106 that the desk had paid for were read by nothing. The 12,000-char ceiling
+# was never the problem -- the assumption that the gateway and the free-data miner need the same
+# lessons was. Selecting by the reading organ's own subject spends the identical budget on what
+# applies HERE, and took reach from 25 lessons to 141 with no organ getting one character more.
+#
+# THE ORGAN IS DERIVED, NEVER DECLARED. `$0` is the run_<organ>.sh script that sourced this file,
+# so a new organ is routed the day it is written and nobody has to remember to register it. An
+# unrecognised name renders the old global ranking, so the failure mode is the previous behaviour
+# rather than an empty corpus.
+#
 # `|| true` is load-bearing: a broken memory layer must never stop an organ from running. The
 # corpus is an improvement to a working organ, not a precondition for one.
+_ORGAN="${QUANT_ORGAN:-$(basename "${BASH_SOURCE[1]:-$0}" .sh)}"
+_ORGAN="${_ORGAN#run_}"
 _MEMORY="$(cd /home/quant/quant-platform 2>/dev/null && \
-    .venv/bin/python scripts/learn.py render 2>/dev/null || true)"
+    .venv/bin/python scripts/learn.py render --organ "$_ORGAN" 2>/dev/null || true)"
 _DOCTRINE="${_DOCTRINE}
 ${_MEMORY}"
 

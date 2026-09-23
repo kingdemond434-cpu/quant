@@ -1,0 +1,3370 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Archives | Forex Blog",
+  "url": "http://www.forexblog.org/archives",
+  "published": "2026-09-06T18:31:51+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "eae53025b3fdfdd893f6",
+  "host": "www.forexblog.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u5957\u5229\u80a1 \u8981\u7ea6\u6536\u8d2d \u73b0\u91d1\u9009\u62e9 \u6362\u80a1\u4ef7 \u5438\u6536\u5408\u5e76 - \u96c6\u601d\u5f55",
+  "url": "https://www.jisilu.cn/data/taoligu/",
+  "published": "2026-09-06T18:31:52+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "df38408a7069fe7a7335",
+  "host": "www.jisilu.cn",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u671f\u8d27\u9891\u9053 - \u4e1c\u65b9\u8d22\u5bcc\u7f51",
+  "url": "https://futures.eastmoney.com/",
+  "published": "2026-09-06T18:31:59+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "flow",
+   "inventory",
+   "momentum",
+   "night_session",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "4ddbd20a5f6319136b6e",
+  "host": "futures.eastmoney.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Challenge Validation",
+  "url": "https://www.balticexchange.com/en/data-services/market-information0/dry-services.html",
+  "published": "2026-09-06T18:31:59+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "bbe7329bfb7d70629788",
+  "host": "www.balticexchange.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Share Trading Books Archives - The Chartist",
+  "url": "https://www.thechartist.com.au/product-category/share-trading-ebooks/?add-to-cart=4671",
+  "published": "2026-09-06T18:32:03+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "4b499be6ef5fa4602e4d",
+  "host": "www.thechartist.com.au",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Share Trading Books Archives - The Chartist",
+  "url": "https://www.thechartist.com.au/product-category/share-trading-ebooks/?add-to-cart=4683",
+  "published": "2026-09-06T18:32:06+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "009ada1ea7aad90fe25d",
+  "host": "www.thechartist.com.au",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Share Trading Books Archives - The Chartist",
+  "url": "https://www.thechartist.com.au/product-category/share-trading-ebooks/?add-to-cart=4675",
+  "published": "2026-09-06T18:32:09+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b6317ae1c17d95eb2ec4",
+  "host": "www.thechartist.com.au",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Share Trading Books Archives - The Chartist",
+  "url": "https://www.thechartist.com.au/product-category/share-trading-ebooks/?add-to-cart=4615",
+  "published": "2026-09-06T18:32:12+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "22caeaae8f98b85acd76",
+  "host": "www.thechartist.com.au",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Share Trading Books Archives - The Chartist",
+  "url": "https://www.thechartist.com.au/product-category/share-trading-ebooks/?add-to-cart=4677",
+  "published": "2026-09-06T18:32:15+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "567891f9eb10202ffc78",
+  "host": "www.thechartist.com.au",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Home",
+  "url": "https://www.cbe.org.eg/en/",
+  "published": "2026-09-06T18:32:15+00:00",
+  "symbols": [],
+  "timeframes": [
+   "MN"
+  ],
+  "patterns": [
+   "auction",
+   "flow",
+   "inventory",
+   "night_session",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.cbe.org.eg/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "f97985f318861bf3b4e7",
+  "host": "www.cbe.org.eg",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u0627\u0644\u062a\u062d\u0644\u064a\u0644 \u0627\u0644\u0643\u0645\u064a \u0648\u0627\u0644\u0645\u062e\u0627\u0637\u0631",
+  "url": "https://www.cbe.org.eg/ar/markets/quantitative-modeling-and-risk-analytics",
+  "published": "2026-09-06T18:32:17+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "ar",
+  "endpoints": [
+   "https://www.cbe.org.eg/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "6487d43a7cd3cec1c560",
+  "host": "www.cbe.org.eg",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u0625\u0633\u062a\u0631\u0627\u062a\u064a\u062c\u064a\u0629 \u0627\u0644\u0634\u0645\u0648\u0644 \u0627\u0644\u0645\u0627\u0644\u064a",
+  "url": "https://www.cbe.org.eg/ar/financial-inclusion/financial-inclusion-strategy",
+  "published": "2026-09-06T18:32:19+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "ar",
+  "endpoints": [
+   "https://www.cbe.org.eg/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "956d033d856652398091",
+  "host": "www.cbe.org.eg",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u0627\u0644\u0625\u0633\u062a\u0631\u0627\u062a\u064a\u062c\u064a\u0629",
+  "url": "https://www.cbe.org.eg/ar/about-cbe/strategy",
+  "published": "2026-09-06T18:32:23+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "ar",
+  "endpoints": [
+   "https://www.cbe.org.eg/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "e59918818d7c32c962de",
+  "host": "www.cbe.org.eg",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u5085\u6d77\u68e0\u65b0\u4e66\u300a\u4ea4\u6613\u4e4b\u9053\u300b-\u7b26\u5408\u5b87\u5b99\u89c4\u5f8b\u7684\u4ea4\u6613\u65b9\u6cd5\uff0c\u6052\u4e45\u6709\u6548\uff01",
+  "url": "https://www.7hcn.com/page/show-jyzd.html",
+  "published": "2026-09-06T18:32:25+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "breakout",
+   "inventory",
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e3cd842314197929a4c0",
+  "host": "www.7hcn.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u300a\u671f\u8d27\u672c\u8d28\u300b\u4e13\u9898",
+  "url": "https://www.7hcn.com/article/67200-1.html",
+  "published": "2026-09-06T18:32:27+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage",
+   "breakout",
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "be0d3a4f67e0a54030f2",
+  "host": "www.7hcn.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u671f\u8d27\u7b56\u7565-\u65b9\u5fd7",
+  "url": "https://www.7hcn.com/article/44476-1.html",
+  "published": "2026-09-06T18:32:29+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage",
+   "basis",
+   "breakout",
+   "gap",
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "61762c0eddb274d1bbf3",
+  "host": "www.7hcn.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u91cf\u5316\u4ea4\u6613\u4e0d\u8fdd\u6cd5\uff0c\u4f46\u672a\u5fc5\u9053\u5fb7\uff01",
+  "url": "https://www.7hcn.com/article/484727-1.html",
+  "published": "2026-09-06T18:32:33+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage",
+   "breakout",
+   "inventory",
+   "momentum",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "zh-CN",
+  "endpoints": [
+   "https://www.7hcn.com/api/bill/jump/go?id=33&url=https%3A%2F%2Fwww.7hai7.com%2Findex%2Fhome%2Fmain",
+   "https://www.7hcn.com/api/bill/jump/go?id=149&url=https%3A%2F%2Fwww.7hcn.com%2F%2Fcultivate%2F148-1.html",
+   "https://www.7hcn.com/api/bill/jump/go?id=34&url=https%3A%2F%2Fwww.7hcn.com%2F%2Fcultivate%2F77-1.html",
+   "https://www.7hcn.com/api/bill/jump/go?id=29&url=https%3A%2F%2Fyxlm.7hcn.com%2F",
+   "https://www.7hcn.com/api/bill/jump/go?id=30&url=https%3A%2F%2Fwww.7hcn.com%2F%2Fcultivate%2F179-1.html"
+  ],
+  "n_endpoints": 5,
+  "vault_sha": "ce6d69ac0023177854d1",
+  "host": "www.7hcn.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u517c\u804c\u671f\u8d27\u4ea4\u6613\uff0c15\u5e740\u7206\u4ed3\uff0c5\u4e07\u5230\u4e0a\u5343\u4e07\uff01",
+  "url": "https://www.7hcn.com/article/484610-1.html",
+  "published": "2026-09-06T18:32:36+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "breakout",
+   "inventory",
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "zh-CN",
+  "endpoints": [
+   "https://www.7hcn.com/api/bill/jump/go?id=33&url=https%3A%2F%2Fwww.7hai7.com%2Findex%2Fhome%2Fmain",
+   "https://www.7hcn.com/api/bill/jump/go?id=149&url=https%3A%2F%2Fwww.7hcn.com%2F%2Fcultivate%2F148-1.html",
+   "https://www.7hcn.com/api/bill/jump/go?id=34&url=https%3A%2F%2Fwww.7hcn.com%2F%2Fcultivate%2F77-1.html",
+   "https://www.7hcn.com/api/bill/jump/go?id=29&url=https%3A%2F%2Fyxlm.7hcn.com%2F",
+   "https://www.7hcn.com/api/bill/jump/go?id=30&url=https%3A%2F%2Fwww.7hcn.com%2F%2Fcultivate%2F179-1.html"
+  ],
+  "n_endpoints": 5,
+  "vault_sha": "a59cd568d50663b09f22",
+  "host": "www.7hcn.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u671f\u8d27\u4e2d\u56fd\u4e13\u8bbf\u8a00\u7a0b\u5e8f\u4ea4\u6613\u56e2\u961f:\u5b81\u8d70\u5341\u6b65\u9065 \u4e0d\u884c\u4e00\u6b65\u9669",
+  "url": "http://www.7hcn.com/article/139553-1.html",
+  "published": "2026-09-06T18:32:37+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "breakout",
+   "inventory",
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "zh-CN",
+  "endpoints": [
+   "http://www.7hcn.com/api/bill/jump/go?id=33&url=https%3A%2F%2Fwww.7hai7.com%2Findex%2Fhome%2Fmain",
+   "http://www.7hcn.com/api/bill/jump/go?id=149&url=https%3A%2F%2Fwww.7hcn.com%2F%2Fcultivate%2F148-1.html",
+   "http://www.7hcn.com/api/bill/jump/go?id=34&url=https%3A%2F%2Fwww.7hcn.com%2F%2Fcultivate%2F77-1.html",
+   "http://www.7hcn.com/api/bill/jump/go?id=29&url=https%3A%2F%2Fyxlm.7hcn.com%2F",
+   "http://www.7hcn.com/api/bill/jump/go?id=30&url=https%3A%2F%2Fwww.7hcn.com%2F%2Fcultivate%2F179-1.html"
+  ],
+  "n_endpoints": 5,
+  "vault_sha": "6b8709cf57438a8e35fa",
+  "host": "www.7hcn.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u6587\u7ae0\u4e0d\u5b58\u5728",
+  "url": "http://www.7hcn.com/article/145553-1.html",
+  "published": "2026-09-06T18:32:39+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "breakout"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "76cbce90e0a765dc55a5",
+  "host": "www.7hcn.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "The Algorithmic Advantage - Podcast - Apple Podcasts",
+  "url": "https://podcasts.apple.com/us/podcast/the-algorithmic-advantage/id1703013320",
+  "published": "2026-09-06T18:32:40+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1H",
+   "DAILY",
+   "INTRADAY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "breakout",
+   "correlation",
+   "mean_reversion",
+   "momentum",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://podcasts.apple.com/manifest.json",
+   "https://podcasts.apple.com/api/oembed?url=https%3A%2F%2Fpodcasts.apple.com%2Fus%2Fpodcast%2Fthe-algorithmic-advantage%2Fid1703013320"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "bb243af1a27e5598689c",
+  "host": "podcasts.apple.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "The Algorithmic Advantage - Podcast - Apple Podcasts",
+  "url": "https://podcasts.apple.com/us/podcast/024-trading-think-tank-02-battle-of-the-back-testers/id1703013320?l=es",
+  "published": "2026-09-06T18:32:42+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "breakout",
+   "correlation",
+   "mean_reversion",
+   "momentum",
+   "policy",
+   "positioning",
+   "session",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "es-MX",
+  "endpoints": [
+   "https://podcasts.apple.com/manifest.json",
+   "https://podcasts.apple.com/api/oembed?url=https%3A%2F%2Fpodcasts.apple.com%2Fus%2Fpodcast%2Fthe-algorithmic-advantage%2Fid1703013320%3Fl%3Des-MX"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "cb957d30c4c87f853e70",
+  "host": "podcasts.apple.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "The Algorithmic Advantage - \u0628\u0648\u062f\u0643\u0627\u0633\u062a - Apple Podcasts",
+  "url": "https://podcasts.apple.com/us/podcast/024-trading-think-tank-02-battle-of-the-back-testers/id1703013320?l=ar",
+  "published": "2026-09-06T18:32:44+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "breakout",
+   "correlation",
+   "mean_reversion",
+   "momentum",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "ar",
+  "endpoints": [
+   "https://podcasts.apple.com/manifest.json",
+   "https://podcasts.apple.com/api/oembed?url=https%3A%2F%2Fpodcasts.apple.com%2Fus%2Fpodcast%2Fthe-algorithmic-advantage%2Fid1703013320%3Fl%3Dar"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "d252642992ab96684cc7",
+  "host": "podcasts.apple.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "The Algorithmic Advantage \u2014 \u041f\u043e\u0434\u043a\u0430\u0441\u0442 \u2014 \u041f\u043e\u0434\u043a\u0430\u0441\u0442\u044b Apple",
+  "url": "https://podcasts.apple.com/us/podcast/024-trading-think-tank-02-battle-of-the-back-testers/id1703013320?l=ru",
+  "published": "2026-09-06T18:32:47+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "breakout",
+   "correlation",
+   "mean_reversion",
+   "momentum",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "ru",
+  "endpoints": [
+   "https://podcasts.apple.com/manifest.json",
+   "https://podcasts.apple.com/api/oembed?url=https%3A%2F%2Fpodcasts.apple.com%2Fus%2Fpodcast%2Fthe-algorithmic-advantage%2Fid1703013320%3Fl%3Dru"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "3dff97394261796357c6",
+  "host": "podcasts.apple.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "The Algorithmic Advantage - \u64ad\u5ba2 - Apple \u64ad\u5ba2",
+  "url": "https://podcasts.apple.com/us/podcast/024-trading-think-tank-02-battle-of-the-back-testers/id1703013320?l=zh-Hans-CN",
+  "published": "2026-09-06T18:32:48+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY",
+   "\u5206\u949f",
+   "\u5c0f\u65f6"
+  ],
+  "patterns": [
+   "breakout",
+   "correlation",
+   "mean_reversion",
+   "momentum",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "zh-Hans-",
+  "endpoints": [
+   "https://podcasts.apple.com/manifest.json",
+   "https://podcasts.apple.com/api/oembed?url=https%3A%2F%2Fpodcasts.apple.com%2Fus%2Fpodcast%2Fthe-algorithmic-advantage%2Fid1703013320%3Fl%3Dzh-Hans-CN"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "97347615e1073b4efe25",
+  "host": "podcasts.apple.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "The Algorithmic Advantage - \u00c9mission - Apple Podcasts",
+  "url": "https://podcasts.apple.com/us/podcast/024-trading-think-tank-02-battle-of-the-back-testers/id1703013320?l=fr",
+  "published": "2026-09-06T18:32:50+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "breakout",
+   "correlation",
+   "mean_reversion",
+   "momentum",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "fr-FR",
+  "endpoints": [
+   "https://podcasts.apple.com/manifest.json",
+   "https://podcasts.apple.com/api/oembed?url=https%3A%2F%2Fpodcasts.apple.com%2Fus%2Fpodcast%2Fthe-algorithmic-advantage%2Fid1703013320%3Fl%3Dfr-FR"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "ce8c01cf4d9bd9829664",
+  "host": "podcasts.apple.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "The Algorithmic Advantage - \ud31f\uce90\uc2a4\ud2b8 - Apple \ud31f\uce90\uc2a4\ud2b8",
+  "url": "https://podcasts.apple.com/us/podcast/024-trading-think-tank-02-battle-of-the-back-testers/id1703013320?l=ko",
+  "published": "2026-09-06T18:32:52+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "breakout",
+   "correlation",
+   "mean_reversion",
+   "momentum",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "ko",
+  "endpoints": [
+   "https://podcasts.apple.com/manifest.json",
+   "https://podcasts.apple.com/api/oembed?url=https%3A%2F%2Fpodcasts.apple.com%2Fus%2Fpodcast%2Fthe-algorithmic-advantage%2Fid1703013320%3Fl%3Dko"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "b11f74a84b72875c07a6",
+  "host": "podcasts.apple.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "The Algorithmic Advantage \u2014 Podcast \u2014 Apple Podcasts",
+  "url": "https://podcasts.apple.com/us/podcast/024-trading-think-tank-02-battle-of-the-back-testers/id1703013320?l=pt",
+  "published": "2026-09-06T18:32:54+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1H",
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "breakout",
+   "correlation",
+   "mean_reversion",
+   "momentum",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "pt-BR",
+  "endpoints": [
+   "https://podcasts.apple.com/manifest.json",
+   "https://podcasts.apple.com/api/oembed?url=https%3A%2F%2Fpodcasts.apple.com%2Fus%2Fpodcast%2Fthe-algorithmic-advantage%2Fid1703013320%3Fl%3Dpt-BR"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "9ee2f1fae4985f4b5784",
+  "host": "podcasts.apple.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "The Algorithmic Advantage - Podcast - Apple Podcasts",
+  "url": "https://podcasts.apple.com/us/podcast/024-trading-think-tank-02-battle-of-the-back-testers/id1703013320?l=vi",
+  "published": "2026-09-06T18:32:56+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "breakout",
+   "correlation",
+   "mean_reversion",
+   "momentum",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "vi",
+  "endpoints": [
+   "https://podcasts.apple.com/manifest.json",
+   "https://podcasts.apple.com/api/oembed?url=https%3A%2F%2Fpodcasts.apple.com%2Fus%2Fpodcast%2Fthe-algorithmic-advantage%2Fid1703013320%3Fl%3Dvi"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "743a3f65c6e6911405db",
+  "host": "podcasts.apple.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "The Algorithmic Advantage - Podcast - Apple Podcast",
+  "url": "https://podcasts.apple.com/us/podcast/024-trading-think-tank-02-battle-of-the-back-testers/id1703013320?l=zh-Hant-TW",
+  "published": "2026-09-06T18:32:58+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY",
+   "\u5206\u9418"
+  ],
+  "patterns": [
+   "breakout",
+   "correlation",
+   "mean_reversion",
+   "momentum",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "zh-Hant-",
+  "endpoints": [
+   "https://podcasts.apple.com/manifest.json",
+   "https://podcasts.apple.com/api/oembed?url=https%3A%2F%2Fpodcasts.apple.com%2Fus%2Fpodcast%2Fthe-algorithmic-advantage%2Fid1703013320%3Fl%3Dzh-Hant-TW"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "cf966abd751991dcc691",
+  "host": "podcasts.apple.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Better System Trader - Balado - Apple Podcasts",
+  "url": "https://podcasts.apple.com/ca/podcast/183-overcoming-broken-strategies-marsten-parker/id985870258?l=fr",
+  "published": "2026-09-06T18:33:00+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "mean_reversion",
+   "momentum",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "fr-CA",
+  "endpoints": [
+   "https://podcasts.apple.com/manifest.json",
+   "https://podcasts.apple.com/api/oembed?url=https%3A%2F%2Fpodcasts.apple.com%2Fca%2Fpodcast%2Fbetter-system-trader%2Fid985870258%3Fl%3Dfr-CA"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "e3fac67506ef91d42c8e",
+  "host": "podcasts.apple.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Tracking the Performance of Tactical Strategies | CSSA",
+  "url": "https://cssanalytics.wordpress.com/2016/09/08/tracking-the-performance-of-tactical-strategies/",
+  "published": "2026-09-06T18:33:00+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "correlation",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://cssanalytics.files.wordpress.com/2012/10/minimum-correlation-mincorr-spreadsheet.xlsx"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "0226b368c8a663a66315",
+  "host": "cssanalytics.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "The Volatility Edge: A Dual Approach For VIX ETNs Trading - Concretum Group",
+  "url": "https://concretumgroup.com/the-volatility-edge-a-dual-approach-for-vix-etns-trading/",
+  "published": "2026-09-06T18:33:03+00:00",
+  "symbols": [],
+  "timeframes": [
+   "INTRADAY"
+  ],
+  "patterns": [
+   "basis",
+   "correlation",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-GB",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e2e4f2e7df8ce6d48841",
+  "host": "concretumgroup.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Empowering Trading Courses from Enlightened Stock Trading",
+  "url": "https://enlightenedstocktrading.com/products-programs/",
+  "published": "2026-09-06T18:33:07+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "basis",
+   "mean_reversion",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "44807e52132547cbc767",
+  "host": "enlightenedstocktrading.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Free RealTest Course | Learn Backtesting &amp; System Trading Basics",
+  "url": "https://enlightenedstocktrading.com/realtest-course/",
+  "published": "2026-09-06T18:33:09+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c761d9176f26cf36a568",
+  "host": "enlightenedstocktrading.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "US Edge System Portfolio \u2013 7 Proven US Trading Systems",
+  "url": "https://enlightenedstocktrading.com/us-trading-system-portfolio/",
+  "published": "2026-09-06T18:33:11+00:00",
+  "symbols": [],
+  "timeframes": [
+   "INTRADAY"
+  ],
+  "patterns": [
+   "breakout",
+   "correlation",
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "1f36eb9dcceef1e3e80b",
+  "host": "enlightenedstocktrading.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Advanced Stock Trading Course - Enlightened Stock Trading",
+  "url": "https://enlightenedstocktrading.com/learn-stock-trading-with-the-trader-success-system/",
+  "published": "2026-09-06T18:33:16+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "carry",
+   "inventory",
+   "mean_reversion",
+   "momentum",
+   "night_session",
+   "orderflow",
+   "positioning",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "813fe601768234759725",
+  "host": "enlightenedstocktrading.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "The Smart Stock Automation Engine",
+  "url": "https://enlightenedstocktrading.com/smart-stock-automation-engine/",
+  "published": "2026-09-06T18:33:17+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "basis",
+   "mean_reversion",
+   "momentum",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "28fc77dbe2626b3cbe15",
+  "host": "enlightenedstocktrading.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Crypto Success with Adrian Reid: Premier Crypto Trading Course",
+  "url": "https://enlightenedstocktrading.com/online-cryptocurrency-course-the-crypto-success-system/",
+  "published": "2026-09-06T18:33:19+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "basis",
+   "inventory",
+   "momentum",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c68e1b182fff5d98f428",
+  "host": "enlightenedstocktrading.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "TraderMind Mastery Session",
+  "url": "https://enlightenedstocktrading.com/tradermind-mastery-session/",
+  "published": "2026-09-06T18:33:21+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e1f687812b7c828292b7",
+  "host": "enlightenedstocktrading.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Free Online Stock Trading Courses - Enlightened Stock Trading",
+  "url": "https://enlightenedstocktrading.com/free-online-stock-trading-courses-training/",
+  "published": "2026-09-06T18:33:25+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "gap",
+   "positioning"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f88a9229ee42eb7529ff",
+  "host": "enlightenedstocktrading.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Trading Skills Quiz",
+  "url": "https://enlightenedstocktrading.com/quiz/",
+  "published": "2026-09-06T18:33:27+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "breakout",
+   "gap",
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "1dc9154033560c9bde59",
+  "host": "enlightenedstocktrading.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Take the Trader Personality Test To Unlock Your Trading Edge",
+  "url": "https://enlightenedstocktrading.com/trader-personality-test/",
+  "published": "2026-09-06T18:33:30+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c223f39753656f443ff6",
+  "host": "enlightenedstocktrading.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "The Ultimate Collection of Trading Calculators",
+  "url": "https://enlightenedstocktrading.com/trading-calculators/",
+  "published": "2026-09-06T18:33:31+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a386367d6a4cd22fb895",
+  "host": "enlightenedstocktrading.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Stock Trading Definitions - Complete Glossary",
+  "url": "https://enlightenedstocktrading.com/stock-trading-definitions/",
+  "published": "2026-09-06T18:33:33+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "mean_reversion",
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "127da0c1f0fbb27e48fe",
+  "host": "enlightenedstocktrading.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Trading Podcast Interviews | Adrian on Systematic Trading",
+  "url": "https://enlightenedstocktrading.com/trading-podcast-interviews-with-adrian-reid/",
+  "published": "2026-09-06T18:33:35+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3100e2e281deb1fa52c2",
+  "host": "enlightenedstocktrading.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Our Partners",
+  "url": "https://enlightenedstocktrading.com/about/our-partners/",
+  "published": "2026-09-06T18:33:37+00:00",
+  "symbols": [],
+  "timeframes": [
+   "INTRADAY"
+  ],
+  "patterns": [
+   "gap"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a52471776675ee4928fb",
+  "host": "enlightenedstocktrading.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Enlightened Stock Trading Privacy Policy",
+  "url": "https://www.enlightenedstocktrading.com/about/privacy-policy/",
+  "published": "2026-09-06T18:33:38+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "mean_reversion",
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "7050461cec60a380b1db",
+  "host": "www.enlightenedstocktrading.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Enlightened Stock Trading Complaints Policy",
+  "url": "https://www.enlightenedstocktrading.com/about/complaints-policy/",
+  "published": "2026-09-06T18:33:41+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "mean_reversion",
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3a896db7bef713859e79",
+  "host": "www.enlightenedstocktrading.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "EnlightenedStockTrading.com\u2019s Legal Terms And Conditions",
+  "url": "https://www.enlightenedstocktrading.com/about/legal-terms-and-conditions/",
+  "published": "2026-09-06T18:33:44+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "mean_reversion",
+   "momentum",
+   "orderflow"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "77fbe41c595f1e1a4156",
+  "host": "www.enlightenedstocktrading.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Enlightened Stock Trading Financial Services Guide",
+  "url": "https://www.enlightenedstocktrading.com/about/financial-services-guide/",
+  "published": "2026-09-06T18:33:46+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "mean_reversion",
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d02a829a4c65e0adaaa8",
+  "host": "www.enlightenedstocktrading.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Enlightened Stock Trading: Master Proven Trading Systems",
+  "url": "https://www.enlightenedstocktrading.com?currency=AUD",
+  "published": "2026-09-06T18:33:50+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "basis",
+   "mean_reversion",
+   "momentum",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "bc4f585a5b8d6454b2a4",
+  "host": "www.enlightenedstocktrading.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Quant Traders - Academy, Courses, Software, Research + Podcast!",
+  "url": "https://www.algoadvantage.io/",
+  "published": "2026-09-06T18:33:52+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f261c918169b13fac2f4",
+  "host": "www.algoadvantage.io",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Academy - Algo Advantage",
+  "url": "https://www.algoadvantage.io/academy/",
+  "published": "2026-09-06T18:33:54+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1M",
+   "4H",
+   "DAILY"
+  ],
+  "patterns": [
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "30f3930c50e8635db79b",
+  "host": "www.algoadvantage.io",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Collective - Algo Advantage",
+  "url": "https://www.algoadvantage.io/collective-algo-advantage/",
+  "published": "2026-09-06T18:33:56+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "night_session",
+   "positioning"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d8cfaed2a50c5d84f450",
+  "host": "www.algoadvantage.io",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Toolbox - Algo Advantage",
+  "url": "https://www.algoadvantage.io/toolbox/",
+  "published": "2026-09-06T18:33:58+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "correlation",
+   "gap",
+   "orderflow"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "61502ab21390ce72f40b",
+  "host": "www.algoadvantage.io",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Podcast - Algo Advantage",
+  "url": "https://www.algoadvantage.io/podcast/",
+  "published": "2026-09-06T18:33:59+00:00",
+  "symbols": [],
+  "timeframes": [
+   "INTRADAY"
+  ],
+  "patterns": [
+   "breakout",
+   "correlation",
+   "gap",
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a84732efeeed27fda80b",
+  "host": "www.algoadvantage.io",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Architect - Algo Advantage",
+  "url": "https://www.algoadvantage.io/architect/",
+  "published": "2026-09-06T18:34:01+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "0566488d28f26ef4e6c0",
+  "host": "www.algoadvantage.io",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Tom Basso - Algo Advantage",
+  "url": "https://www.algoadvantage.io/mentor/tom-basso/",
+  "published": "2026-09-06T18:34:05+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "0a1a8b37c846d758a76a",
+  "host": "www.algoadvantage.io",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Perry Kaufman - Algo Advantage",
+  "url": "https://www.algoadvantage.io/mentor/perry-kaufman/",
+  "published": "2026-09-06T18:34:07+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "5d05996a2da379d6b97f",
+  "host": "www.algoadvantage.io",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Laurens Bensdorp - Algo Advantage",
+  "url": "https://www.algoadvantage.io/mentor/laurens-bensdorp/",
+  "published": "2026-09-06T18:34:09+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "mean_reversion"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "4f2f44db5a652b85c15e",
+  "host": "www.algoadvantage.io",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Bob Pardo - Algo Advantage",
+  "url": "https://www.algoadvantage.io/mentor/bob-pardo/",
+  "published": "2026-09-06T18:34:13+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f03769dd756396feea1a",
+  "host": "www.algoadvantage.io",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "PJ Sutherland - Algo Advantage",
+  "url": "https://www.algoadvantage.io/mentor/pj-sutherland/",
+  "published": "2026-09-06T18:34:17+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "mean_reversion"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a278b1e8d4fbeaf9d937",
+  "host": "www.algoadvantage.io",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Simon M - Algo Advantage",
+  "url": "https://www.algoadvantage.io/mentor/simon-mansell/",
+  "published": "2026-09-06T18:34:19+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "754c156b36dbd872a71a",
+  "host": "www.algoadvantage.io",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Dr Tom Starke - Algo Advantage",
+  "url": "https://www.algoadvantage.io/mentor/tom-starke/",
+  "published": "2026-09-06T18:34:23+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "763612af83e3cd406344",
+  "host": "www.algoadvantage.io",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Contact | Join Our Trading Community Today &mdash; Stats Edge Trading",
+  "url": "https://statsedgetrading.com/contact",
+  "published": "2026-09-06T18:34:27+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry",
+   "orderflow"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ab028c87cb8c3f382de5",
+  "host": "statsedgetrading.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Free Intro Course | Start Trading Today &mdash; Enroll Now &mdash; Stats Edge Trading",
+  "url": "https://statsedgetrading.com/free-trading-crouse",
+  "published": "2026-09-06T18:34:29+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry",
+   "orderflow"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "bff6e967c6c025e1be61",
+  "host": "statsedgetrading.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "The Daily Book &mdash; Stats Edge Trading",
+  "url": "https://statsedgetrading.com/the-daily-book",
+  "published": "2026-09-06T18:34:33+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "breakout",
+   "carry",
+   "mean_reversion",
+   "orderflow",
+   "seasonality"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "155198c467febb1a341f",
+  "host": "statsedgetrading.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Forex Blog Advertising Program | Forex Blog",
+  "url": "http://www.forexblog.org/forex-blog-advertising-program",
+  "published": "2026-09-06T18:34:34+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "bb64c91c1da77c78329d",
+  "host": "www.forexblog.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Australian Dollar | Forex Blog",
+  "url": "http://www.forexblog.org/category/australian-dollar/",
+  "published": "2026-09-06T18:34:36+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "auction",
+   "basis",
+   "carry",
+   "correlation",
+   "flow",
+   "gap",
+   "momentum",
+   "orderflow",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [
+   "http://www.heraldsun.com.au/business/strong-aussie-dollar-undermining-exporters/story-fn7j19iv-1226059973706",
+   "http://www.forexblog.org/2009/07/japanese-yen-exports-versus-carry.html"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "68780c15cc6bb9336577",
+  "host": "www.forexblog.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "British Pound | Forex Blog",
+  "url": "http://www.forexblog.org/category/british-pound/",
+  "published": "2026-09-06T18:34:39+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "auction",
+   "basis",
+   "breakout",
+   "carry",
+   "correlation",
+   "flow",
+   "gap",
+   "inventory",
+   "momentum",
+   "orderflow",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d177fbd6e67164c7be03",
+  "host": "www.forexblog.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Canadian Dollar | Forex Blog",
+  "url": "http://www.forexblog.org/category/canadian-dollar/",
+  "published": "2026-09-06T18:34:41+00:00",
+  "symbols": [
+   "AUDUSD"
+  ],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "auction",
+   "basis",
+   "carry",
+   "correlation",
+   "flow",
+   "gap",
+   "inventory",
+   "momentum",
+   "night_session",
+   "orderflow",
+   "policy",
+   "positioning",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "",
+  "endpoints": [
+   "http://www.forexblog.org/category/wp-content/uploads/2011/04/Canadas-Exports-2001-2010.jpg",
+   "http://www.forexblog.org/wp-content/uploads/2011/04/Canadas-Exports-2001-2010.png",
+   "http://www.forexblog.org/wp-content/uploads/2011/04/Canadas-Exports-2001-2010.jpg"
+  ],
+  "n_endpoints": 3,
+  "vault_sha": "6a0fb6e4d5a3566f6600",
+  "host": "www.forexblog.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Central Banks | Forex Blog",
+  "url": "http://www.forexblog.org/category/central-banks/",
+  "published": "2026-09-06T18:34:43+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY",
+   "M1",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "auction",
+   "basis",
+   "carry",
+   "correlation",
+   "flow",
+   "gap",
+   "inventory",
+   "momentum",
+   "night_session",
+   "orderflow",
+   "policy",
+   "positioning",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [
+   "http://www.safe.gov.cn/model_safe/news/pic/20100419102502649.xls",
+   "http://www.forexblog.org/2009/07/japanese-yen-exports-versus-carry.html",
+   "http://www.forexblog.org/2009/07/japanese-yen-exports-versus-carry.html#comments"
+  ],
+  "n_endpoints": 3,
+  "vault_sha": "4d6173b2f47bf90661ca",
+  "host": "www.forexblog.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Chinese Yuan (RMB) | Forex Blog",
+  "url": "http://www.forexblog.org/category/chinese-yuan-rmb/",
+  "published": "2026-09-06T18:34:46+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "basis",
+   "carry",
+   "correlation",
+   "flow",
+   "gap",
+   "inventory",
+   "momentum",
+   "orderflow",
+   "policy",
+   "positioning",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [
+   "http://www.safe.gov.cn/model_safe/news/pic/20100419102502649.xls",
+   "http://blogs.wsj.com/chinarealtime/2010/08/09/sharp-slowdown-in-china%E2%80%99s-exports-seen/",
+   "http://blogs.wsj.com/chinarealtime/2010/02/08/survey-sees-rise-in-china-january-export-growth/?mod=rss_WSJBlog",
+   "http://www.forexblog.org/2008/05/chinese-exporters-dump-dollar.html",
+   "http://www.forexblog.org/2008/05/chinese-exporters-dump-dollar.html#respond",
+   "http://www.forexblog.org/2007/01/declining-yuan-hurts-chinese-exporters.html",
+   "http://www.forexblog.org/2007/01/declining-yuan-hurts-chinese-exporters.html#respond"
+  ],
+  "n_endpoints": 7,
+  "vault_sha": "08b0d04d1e768135b73e",
+  "host": "www.forexblog.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Commentary | Forex Blog",
+  "url": "http://www.forexblog.org/category/commentary/",
+  "published": "2026-09-06T18:34:47+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "auction",
+   "basis",
+   "carry",
+   "correlation",
+   "flow",
+   "gap",
+   "inventory",
+   "momentum",
+   "night_session",
+   "orderflow",
+   "policy",
+   "positioning",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "533c7b1f9247a18d3edf",
+  "host": "www.forexblog.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Commodities | Forex Blog",
+  "url": "http://www.forexblog.org/category/commodities/",
+  "published": "2026-09-06T18:34:49+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "correlation",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "43eb99a77ec256929a5b",
+  "host": "www.forexblog.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Economic Indicators | Forex Blog",
+  "url": "http://www.forexblog.org/category/economic-indicators/",
+  "published": "2026-09-06T18:34:52+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "auction",
+   "basis",
+   "breakout",
+   "carry",
+   "correlation",
+   "flow",
+   "gap",
+   "inventory",
+   "momentum",
+   "night_session",
+   "orderflow",
+   "policy",
+   "positioning",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [
+   "http://www.jacksonholestartrib.com/articles/2006/07/28/news/business/2320d7569b10ef8c872571b80076ed50.txt",
+   "http://www.nytimes.com/2009/03/26/business/worldbusiness/26exports.html?scp=3&amp;sq=japan%20exports%20small%20business&amp;st=cse",
+   "http://www.nytimes.com/2009/04/01/business/global/01trade.html?scp=1&amp;sq=japan%20exports%20small%20business&amp;st=cse",
+   "http://www.forexblog.org/2007/12/yen-buoyed-by-exporters.html",
+   "http://www.forexblog.org/2007/12/yen-buoyed-by-exporters.html#respond",
+   "http://www.forexblog.org/2007/01/declining-yuan-hurts-chinese-exporters.html",
+   "http://www.forexblog.org/2007/01/declining-yuan-hurts-chinese-exporters.html#respond"
+  ],
+  "n_endpoints": 7,
+  "vault_sha": "c09102416e4e2682a127",
+  "host": "www.forexblog.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Emerging Currencies | Forex Blog",
+  "url": "http://www.forexblog.org/category/emerging-currencies/",
+  "published": "2026-09-06T18:34:54+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "auction",
+   "basis",
+   "carry",
+   "correlation",
+   "flow",
+   "gap",
+   "inventory",
+   "momentum",
+   "night_session",
+   "orderflow",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [
+   "http://www.forexblog.org/wp-content/uploads/2011/04/south-korean-exports-1975-2010.png"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "8b70fe295cce6d26a7b1",
+  "host": "www.forexblog.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Euro | Forex Blog",
+  "url": "http://www.forexblog.org/category/euro/",
+  "published": "2026-09-06T18:34:56+00:00",
+  "symbols": [
+   "EURUSD"
+  ],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "auction",
+   "basis",
+   "breakout",
+   "carry",
+   "correlation",
+   "flow",
+   "gap",
+   "inventory",
+   "momentum",
+   "night_session",
+   "orderflow",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "",
+  "endpoints": [
+   "http://blogs.wsj.com/chinarealtime/2010/08/09/sharp-slowdown-in-china%E2%80%99s-exports-seen/",
+   "http://www.forexblog.org/2008/05/chinese-exporters-dump-dollar.html",
+   "http://www.forexblog.org/2008/05/chinese-exporters-dump-dollar.html#respond"
+  ],
+  "n_endpoints": 3,
+  "vault_sha": "0e88e406406be3e4dae2",
+  "host": "www.forexblog.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Exotic Currencies | Forex Blog",
+  "url": "http://www.forexblog.org/category/exotic-currencies/",
+  "published": "2026-09-06T18:34:58+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "auction",
+   "basis",
+   "carry",
+   "correlation",
+   "flow",
+   "momentum",
+   "night_session",
+   "orderflow",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "94f7856db9be8f772191",
+  "host": "www.forexblog.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Features | Forex Blog",
+  "url": "http://www.forexblog.org/category/features/",
+  "published": "2026-09-06T18:35:00+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "auction",
+   "carry",
+   "correlation",
+   "momentum",
+   "orderflow",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a26272b177a9643331ae",
+  "host": "www.forexblog.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Futures | Forex Blog",
+  "url": "http://www.forexblog.org/category/futures/",
+  "published": "2026-09-06T18:35:01+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "flow",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c91ca39f590997944ec0",
+  "host": "www.forexblog.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Gold | Forex Blog",
+  "url": "http://www.forexblog.org/category/gold/",
+  "published": "2026-09-06T18:35:03+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "correlation",
+   "flow",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b481864173cfdaf02036",
+  "host": "www.forexblog.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Interviews | Forex Blog",
+  "url": "http://www.forexblog.org/category/interviews/",
+  "published": "2026-09-06T18:35:06+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "carry",
+   "flow",
+   "gap",
+   "momentum",
+   "orderflow",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "4832d33b7a7a82f33252",
+  "host": "www.forexblog.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Investing &amp; Trading | Forex Blog",
+  "url": "http://www.forexblog.org/category/investing-trading/",
+  "published": "2026-09-06T18:35:09+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "auction",
+   "basis",
+   "carry",
+   "correlation",
+   "flow",
+   "gap",
+   "inventory",
+   "momentum",
+   "night_session",
+   "orderflow",
+   "policy",
+   "positioning",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [
+   "http://archive.nyu.edu/bitstream/2451/26336/4/07-23.pdf.txt",
+   "http://www.forexblog.org/2009/07/japanese-yen-exports-versus-carry.html",
+   "http://www.forexblog.org/2009/07/japanese-yen-exports-versus-carry.html#comments",
+   "http://www.stats.govt.nz/economy/exports-and-imports/default.htm",
+   "http://www.freedownloadmanager.org/downloads/backtesting_software/"
+  ],
+  "n_endpoints": 5,
+  "vault_sha": "2735afe6f32c060ef20c",
+  "host": "www.forexblog.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algo Trading Archives - Concretum Group",
+  "url": "https://concretumgroup.com/tag/algo-trading/",
+  "published": "2026-09-06T18:35:19+00:00",
+  "symbols": [],
+  "timeframes": [
+   "INTRADAY"
+  ],
+  "patterns": [
+   "breakout",
+   "correlation",
+   "momentum",
+   "night_session",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-GB",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "dd2e75f9b6b5ae2afcfa",
+  "host": "concretumgroup.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Day Trading Archives - Concretum Group",
+  "url": "https://concretumgroup.com/tag/day-trading/",
+  "published": "2026-09-06T18:35:25+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "breakout",
+   "gap",
+   "momentum",
+   "night_session",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-GB",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "5a3545225b29031ddbc9",
+  "host": "concretumgroup.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Day Trading Systems Archives - Concretum Group",
+  "url": "https://concretumgroup.com/tag/day-trading-systems/",
+  "published": "2026-09-06T18:35:25+00:00",
+  "symbols": [],
+  "timeframes": [
+   "INTRADAY"
+  ],
+  "patterns": [
+   "breakout",
+   "momentum",
+   "night_session",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-GB",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b988e897244e78c875dc",
+  "host": "concretumgroup.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Free Quantitative Trading Tools &amp; Research Apps - Concretum Group",
+  "url": "https://concretumgroup.com/quantitative-trading-tools/",
+  "published": "2026-09-06T18:35:28+00:00",
+  "symbols": [],
+  "timeframes": [
+   "INTRADAY"
+  ],
+  "patterns": [
+   "breakout",
+   "flow",
+   "mean_reversion",
+   "momentum",
+   "policy",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-GB",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "939ee37b1c44772550c3",
+  "host": "concretumgroup.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Estimating the Capacity of a Trading Strategy - Concretum Group",
+  "url": "https://concretumgroup.com/estimating-the-capacity-of-a-trading-strategy/",
+  "published": "2026-09-06T18:35:34+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1M",
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "mean_reversion",
+   "momentum",
+   "orderflow",
+   "policy",
+   "positioning",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-GB",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e17f4112c1853d6e0ee7",
+  "host": "concretumgroup.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Building Reliable Trading Systems: 10 Lessons From Real Production Experience - Concretum Group",
+  "url": "https://concretumgroup.com/building-reliable-trading-systems-algorithmic-trading-automation/",
+  "published": "2026-09-06T18:35:34+00:00",
+  "symbols": [],
+  "timeframes": [
+   "INTRADAY"
+  ],
+  "patterns": [
+   "mean_reversion",
+   "momentum",
+   "policy",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-GB",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "0d94d3b924faccb22973",
+  "host": "concretumgroup.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Backtesting Data Quality: How Data Providers Impact Results - Concretum Group",
+  "url": "https://concretumgroup.com/backtesting-data-quality-can-your-data-provider-be-trusted/",
+  "published": "2026-09-06T18:35:36+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "breakout",
+   "mean_reversion",
+   "momentum",
+   "orderflow",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-GB",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "bb504a4520883f348d82",
+  "host": "concretumgroup.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Seasonality in Bitcoin Intraday Trend Trading - Concretum Group",
+  "url": "https://concretumgroup.com/seasonality-in-bitcoin-intraday-trend-trading/",
+  "published": "2026-09-06T18:35:38+00:00",
+  "symbols": [],
+  "timeframes": [
+   "INTRADAY"
+  ],
+  "patterns": [
+   "correlation",
+   "mean_reversion",
+   "momentum",
+   "orderflow",
+   "positioning",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-GB",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "fe0aea085cd5b1700768",
+  "host": "concretumgroup.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Opportunity-Set Bias in Mean-Reversion Trading Systems - Concretum Group",
+  "url": "https://concretumgroup.com/opportunity-set-bias-in-mean-reversion-trading-systems/",
+  "published": "2026-09-06T18:35:40+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "flow",
+   "gap",
+   "mean_reversion",
+   "momentum",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-GB",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "83368802b0f0af4b7d18",
+  "host": "concretumgroup.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Automating Intraday Strategies: From Manual Complexity to Algorithmic Precision - Concretum Group",
+  "url": "https://concretumgroup.com/automating-intraday-strategies-from-manual-complexity-to-algorithmic-precision/",
+  "published": "2026-09-06T18:35:42+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "breakout",
+   "mean_reversion",
+   "momentum",
+   "policy",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-GB",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "89ce50d5c8f511aa7004",
+  "host": "concretumgroup.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Exclusive Interview with Carlo Zarattini: Combining Quantitative and Discretionary Trading - Concretum Group",
+  "url": "https://concretumgroup.com/exclusive-interview-with-carlo-zarattini-combining-quantitative-and-discretionary-trading/",
+  "published": "2026-09-06T18:35:44+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "breakout",
+   "mean_reversion",
+   "momentum",
+   "policy",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-GB",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a04e0c9362e13caf6548",
+  "host": "concretumgroup.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Trading Strategy Evaluation Using p-Values and Bootstrapping - Concretum Group",
+  "url": "https://concretumgroup.com/how-to-evaluate-the-effectiveness-of-a-trading-strategy-p-values-and-bootstrapping-methods/",
+  "published": "2026-09-06T18:35:46+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "H1",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "mean_reversion",
+   "momentum",
+   "positioning",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-GB",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f6822d401a8329975336",
+  "host": "concretumgroup.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Beat the Market: An Effective Intraday Momentum Strategy for S&amp;P500 ETF (SPY) - Concretum Group",
+  "url": "https://concretumgroup.com/beat-the-market-an-effective-intraday-momentum-strategy-for-sp500-etf-spy/",
+  "published": "2026-09-06T18:35:48+00:00",
+  "symbols": [],
+  "timeframes": [
+   "INTRADAY"
+  ],
+  "patterns": [
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-GB",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d7e70313329fe594d840",
+  "host": "concretumgroup.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "A Profitable Day Trading Strategy For The U.S. Equity Market - Concretum Group",
+  "url": "https://concretumgroup.com/a-profitable-day-trading-strategy-for-the-u-s-equity-market/",
+  "published": "2026-09-06T18:35:50+00:00",
+  "symbols": [],
+  "timeframes": [
+   "INTRADAY"
+  ],
+  "patterns": [
+   "breakout",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-GB",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e4ab10c37fa695923976",
+  "host": "concretumgroup.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Volume Weighted Average Price (VWAP) The Holy Grail for Day Trading Systems",
+  "url": "https://concretumgroup.com/volume-weighted-average-price-vwap-the-holy-grail-for-day-trading-systems/",
+  "published": "2026-09-06T18:35:52+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-GB",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ace1e90f99504bfe3111",
+  "host": "concretumgroup.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Can Day Trading Really Be Profitable? ORB Strategy Research",
+  "url": "https://concretumgroup.com/can-day-trading-really-be-profitable/",
+  "published": "2026-09-06T18:35:54+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "breakout",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-GB",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "06e3fd3dacc60cd2e287",
+  "host": "concretumgroup.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "AI Will Create Millions of Quants - by Kris Longmore",
+  "url": "https://edgealchemy.robotwealth.com/p/ai-will-create-millions-of-quants",
+  "published": "2026-09-06T18:35:55+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "orderflow"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "cf93a3cca77a822714f1",
+  "host": "edgealchemy.robotwealth.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Comments - Brave New Backtest - by Kris Longmore",
+  "url": "https://edgealchemy.robotwealth.com/p/brave-new-backtest/comment/229001451",
+  "published": "2026-09-06T18:35:57+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "7bd8ead1ac487b72bdd9",
+  "host": "edgealchemy.robotwealth.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Comments - Brave New Backtest - by Kris Longmore",
+  "url": "https://edgealchemy.robotwealth.com/p/brave-new-backtest/comments",
+  "published": "2026-09-06T18:36:01+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "8b7d88252efd26769795",
+  "host": "edgealchemy.robotwealth.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Free Demo | Quant Investing",
+  "url": "http://www.quant-investing.com/products/screener/free-demo/",
+  "published": "2026-09-06T18:36:01+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "20fc7378f247629f4a2d",
+  "host": "www.quant-investing.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "About | Quant Investing",
+  "url": "http://www.quant-investing.com/about/",
+  "published": "2026-09-06T18:36:03+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "momentum",
+   "orderflow"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f597881de38af25c7ff3",
+  "host": "www.quant-investing.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Products | Quant Investing",
+  "url": "http://www.quant-investing.com/products/",
+  "published": "2026-09-06T18:36:05+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "7689eaf955b40ea7ac2b",
+  "host": "www.quant-investing.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Screener | Quant Investing",
+  "url": "http://www.quant-investing.com/products/screener/",
+  "published": "2026-09-06T18:36:07+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1M",
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "flow",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "854de06ab78af5429750",
+  "host": "www.quant-investing.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Quant Value Newsletter | Quant Investing",
+  "url": "http://www.quant-investing.com/products/quant-value-newsletter/",
+  "published": "2026-09-06T18:36:09+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "inventory",
+   "momentum",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "008bd1ab2720e6476e5d",
+  "host": "www.quant-investing.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Shareholder Yield Letter | Quant Investing",
+  "url": "http://www.quant-investing.com/products/shareholder-yield-letter/",
+  "published": "2026-09-06T18:36:11+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "carry",
+   "gap",
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "40c5c83317fe40477f04",
+  "host": "www.quant-investing.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Strategies | Quant Investing",
+  "url": "http://www.quant-investing.com/strategies/",
+  "published": "2026-09-06T18:36:13+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "orderflow"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "100b4e0fea9d3314edc2",
+  "host": "www.quant-investing.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Blog | Quant Investing",
+  "url": "http://www.quant-investing.com/blog/",
+  "published": "2026-09-06T18:36:15+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "inventory",
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "acbcb594732c35e97e76",
+  "host": "www.quant-investing.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Pricing | Quant Investing",
+  "url": "http://www.quant-investing.com/pricing/",
+  "published": "2026-09-06T18:36:17+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "flow",
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "8c98e267baf0761e1e45",
+  "host": "www.quant-investing.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "About | Quant Investing",
+  "url": "https://www.quant-investing.com/about",
+  "published": "2026-09-06T18:36:19+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "momentum",
+   "orderflow"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "150b5f125c6413028b29",
+  "host": "www.quant-investing.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Tag search results | Quant Investing",
+  "url": "http://www.quant-investing.com/tag-search-results?tag=OShaughnessy",
+  "published": "2026-09-06T18:36:21+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b5190df6da3a80399b2d",
+  "host": "www.quant-investing.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Tag search results | Quant Investing",
+  "url": "http://www.quant-investing.com/tag-search-results?tag=Value-Investing",
+  "published": "2026-09-06T18:36:23+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "80823f70342821d511d1",
+  "host": "www.quant-investing.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Tag search results | Quant Investing",
+  "url": "http://www.quant-investing.com/tag-search-results?tag=benjamin-graham",
+  "published": "2026-09-06T18:36:25+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "orderflow"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e8921e97116eb5e1763a",
+  "host": "www.quant-investing.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Tag search results | Quant Investing",
+  "url": "http://www.quant-investing.com/tag-search-results?tag=Back-test",
+  "published": "2026-09-06T18:36:27+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "momentum",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a4bb26ca0d27919c684e",
+  "host": "www.quant-investing.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Glossary | Quant Investing",
+  "url": "http://www.quant-investing.com/glossary/",
+  "published": "2026-09-06T18:36:29+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1M",
+   "5M",
+   "DAILY"
+  ],
+  "patterns": [
+   "momentum",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "fcec527803f1c2da4f67",
+  "host": "www.quant-investing.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Be careful of this time tested value ratio | Quant Investing",
+  "url": "https://www.quant-investing.com/blogs/general/2015/01/29/be-careful-of-this-time-tested-value-ratio",
+  "published": "2026-09-06T18:36:31+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "momentum",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "98edbc364db2db153bfa",
+  "host": "www.quant-investing.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "This simple ratio beats the world&#x2019;s best value funds | Quant Investing",
+  "url": "https://www.quant-investing.com/blogs/general/2014/05/12/a-simple-ration-beats-the-world-s-best-value-funds",
+  "published": "2026-09-06T18:36:33+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "176ac2984467dfdeea18",
+  "host": "www.quant-investing.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "How and why to implement a Value Composite One investment strategy world-wide | Quant Investing",
+  "url": "https://www.quant-investing.com/blogs/general/2018/08/03/how-and-why-to-implement-a-value-composite-one-investment-strategy-world-wide",
+  "published": "2026-09-06T18:36:35+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "95b41162fe7fe251cfa4",
+  "host": "www.quant-investing.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "The MVCI (Whatever That Means) Indicator | Jay On The Markets",
+  "url": "https://jayonthemarkets.com/2015/02/26/the-mvci-whatever-that-means-indicator/",
+  "published": "2026-09-06T18:36:36+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "policy",
+   "seasonality"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b62fba65402586a163b8",
+  "host": "jayonthemarkets.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Applying VIX(like) Indicators to Stocks | Jay On The Markets",
+  "url": "http://jayonthemarkets.com/2015/01/30/applying-vixlike-indicators-to-stocks/",
+  "published": "2026-09-06T18:36:38+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "67d78cbcd3afcaf9ca52",
+  "host": "jayonthemarkets.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Another VIX(Like) Oversold Indicator | Jay On The Markets",
+  "url": "https://jayonthemarkets.com/2015/03/04/another-vixlike-oversold-indicator/",
+  "published": "2026-09-06T18:36:40+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "policy",
+   "seasonality"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ce993357f290dcfa05fb",
+  "host": "jayonthemarkets.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Kid Dynamite's World: Big Bank Perfect Trading Quarters - The Real Story",
+  "url": "http://fridayinvegas.blogspot.com/2010/05/big-bank-perfect-trading-quarters-real.html",
+  "published": "2026-09-06T18:36:41+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "breakout",
+   "carry",
+   "gap",
+   "inventory",
+   "mean_reversion",
+   "momentum",
+   "orderflow",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "14dd2f7c1ded2e6c7505",
+  "host": "fridayinvegas.blogspot.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Kid Dynamite's World: Two More Economic Indicators: Bacon and Breasts",
+  "url": "http://fridayinvegas.blogspot.com/2010/05/two-more-economic-indicators-bacon-and.html",
+  "published": "2026-09-06T18:36:42+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "inventory",
+   "mean_reversion",
+   "momentum",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "6db48459edb440b2cf77",
+  "host": "fridayinvegas.blogspot.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Kid Dynamite's World: Beer as Economic Indicator",
+  "url": "http://fridayinvegas.blogspot.com/2010/05/beer-as-economic-indicator.html",
+  "published": "2026-09-06T18:36:45+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "basis",
+   "correlation",
+   "flow",
+   "inventory",
+   "mean_reversion",
+   "momentum",
+   "policy",
+   "positioning",
+   "seasonality"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c29837705616515d8e4a",
+  "host": "fridayinvegas.blogspot.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Kid Dynamite's World: More on High Frequency Trading",
+  "url": "http://fridayinvegas.blogspot.com/2009/12/more-on-high-frequency-trading.html",
+  "published": "2026-09-06T18:36:47+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage",
+   "mean_reversion",
+   "momentum",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "5ccb45ea829d257b44fa",
+  "host": "fridayinvegas.blogspot.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Kid Dynamite's World: You Really Shouldn't Care So Much About Flash Trading",
+  "url": "http://fridayinvegas.blogspot.com/2009/09/you-really-shouldnt-care-so-much-about.html",
+  "published": "2026-09-06T18:36:49+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "mean_reversion",
+   "momentum",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "54822cd3bb6a5759056f",
+  "host": "fridayinvegas.blogspot.com",
+  "claims": [],
+  "n_claims": 0
+ }
+]

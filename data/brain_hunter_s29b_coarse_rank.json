@@ -1,0 +1,300 @@
+{
+  "session": "brain_hunter_s29b",
+  "date": "2026-08-29",
+  "source": "efJerryYang/worldquant-brain-simulator src/alpha_pool/expression.py:154 (GPL-3.0, mined as TEXT; nothing installed, executed or vendored)",
+  "claim": "coarsening the cross-sectional rank cuts turnover faster than gross return, so break-even bp per unit turnover rises monotonically as buckets fall",
+  "falsifier": "refuted if break-even does not rise at any coarsening, or is non-monotone",
+  "buckets_tried": [
+    0,
+    50,
+    20,
+    10,
+    5,
+    3
+  ],
+  "trials_run": 18,
+  "eval_years": [
+    2019,
+    2026
+  ],
+  "min_names": 8,
+  "multiplicity_note": "every bucket tried is reported; no bar applied here (L1.60) -- the trial count is handed to the gauntlet",
+  "cells": {
+    "reversal_1|ward_k24": [
+      {
+        "buckets": "precise",
+        "days": 2380,
+        "mean_names": 129.2,
+        "sharpe_gross": 0.759,
+        "t_stat": 2.332,
+        "ann_return": 0.05902,
+        "daily_turnover": 1.467,
+        "bp_per_unit_turnover_to_zero": 1.596
+      },
+      {
+        "buckets": 50,
+        "days": 2380,
+        "mean_names": 129.2,
+        "sharpe_gross": 0.756,
+        "t_stat": 2.324,
+        "ann_return": 0.05865,
+        "daily_turnover": 1.464,
+        "bp_per_unit_turnover_to_zero": 1.59
+      },
+      {
+        "buckets": 20,
+        "days": 2380,
+        "mean_names": 129.2,
+        "sharpe_gross": 0.764,
+        "t_stat": 2.348,
+        "ann_return": 0.05921,
+        "daily_turnover": 1.46,
+        "bp_per_unit_turnover_to_zero": 1.609
+      },
+      {
+        "buckets": 10,
+        "days": 2380,
+        "mean_names": 129.2,
+        "sharpe_gross": 0.734,
+        "t_stat": 2.256,
+        "ann_return": 0.0571,
+        "daily_turnover": 1.455,
+        "bp_per_unit_turnover_to_zero": 1.558
+      },
+      {
+        "buckets": 5,
+        "days": 2380,
+        "mean_names": 129.2,
+        "sharpe_gross": 0.722,
+        "t_stat": 2.22,
+        "ann_return": 0.05533,
+        "daily_turnover": 1.45,
+        "bp_per_unit_turnover_to_zero": 1.514
+      },
+      {
+        "buckets": 3,
+        "days": 2380,
+        "mean_names": 129.2,
+        "sharpe_gross": 0.742,
+        "t_stat": 2.28,
+        "ann_return": 0.05674,
+        "daily_turnover": 1.452,
+        "bp_per_unit_turnover_to_zero": 1.551
+      }
+    ],
+    "reversal_1|ward_k24|__verdict": {
+      "break_even_bp_by_bucket": [
+        [
+          "precise",
+          1.596
+        ],
+        [
+          50,
+          1.59
+        ],
+        [
+          20,
+          1.609
+        ],
+        [
+          10,
+          1.558
+        ],
+        [
+          5,
+          1.514
+        ],
+        [
+          3,
+          1.551
+        ]
+      ],
+      "rises_from_precise": true,
+      "monotone_rising": false
+    },
+    "reversal_1|universe": [
+      {
+        "buckets": "precise",
+        "days": 2380,
+        "mean_names": 140.6,
+        "sharpe_gross": 0.51,
+        "t_stat": 1.566,
+        "ann_return": 0.05419,
+        "daily_turnover": 1.449,
+        "bp_per_unit_turnover_to_zero": 1.484
+      },
+      {
+        "buckets": 50,
+        "days": 2380,
+        "mean_names": 140.6,
+        "sharpe_gross": 0.5,
+        "t_stat": 1.536,
+        "ann_return": 0.05301,
+        "daily_turnover": 1.448,
+        "bp_per_unit_turnover_to_zero": 1.453
+      },
+      {
+        "buckets": 20,
+        "days": 2380,
+        "mean_names": 140.6,
+        "sharpe_gross": 0.509,
+        "t_stat": 1.564,
+        "ann_return": 0.05387,
+        "daily_turnover": 1.447,
+        "bp_per_unit_turnover_to_zero": 1.478
+      },
+      {
+        "buckets": 10,
+        "days": 2380,
+        "mean_names": 140.6,
+        "sharpe_gross": 0.495,
+        "t_stat": 1.521,
+        "ann_return": 0.05213,
+        "daily_turnover": 1.44,
+        "bp_per_unit_turnover_to_zero": 1.436
+      },
+      {
+        "buckets": 5,
+        "days": 2380,
+        "mean_names": 140.6,
+        "sharpe_gross": 0.504,
+        "t_stat": 1.549,
+        "ann_return": 0.05282,
+        "daily_turnover": 1.451,
+        "bp_per_unit_turnover_to_zero": 1.444
+      },
+      {
+        "buckets": 3,
+        "days": 2380,
+        "mean_names": 140.6,
+        "sharpe_gross": 0.593,
+        "t_stat": 1.823,
+        "ann_return": 0.0608,
+        "daily_turnover": 1.462,
+        "bp_per_unit_turnover_to_zero": 1.65
+      }
+    ],
+    "reversal_1|universe|__verdict": {
+      "break_even_bp_by_bucket": [
+        [
+          "precise",
+          1.484
+        ],
+        [
+          50,
+          1.453
+        ],
+        [
+          20,
+          1.478
+        ],
+        [
+          10,
+          1.436
+        ],
+        [
+          5,
+          1.444
+        ],
+        [
+          3,
+          1.65
+        ]
+      ],
+      "rises_from_precise": true,
+      "monotone_rising": false
+    },
+    "lowvol_20|ward_k24": [
+      {
+        "buckets": "precise",
+        "days": 2380,
+        "mean_names": 129.2,
+        "sharpe_gross": 0.301,
+        "t_stat": 0.925,
+        "ann_return": 0.02576,
+        "daily_turnover": 0.586,
+        "bp_per_unit_turnover_to_zero": 1.745
+      },
+      {
+        "buckets": 50,
+        "days": 2380,
+        "mean_names": 129.2,
+        "sharpe_gross": 0.296,
+        "t_stat": 0.91,
+        "ann_return": 0.02523,
+        "daily_turnover": 0.585,
+        "bp_per_unit_turnover_to_zero": 1.711
+      },
+      {
+        "buckets": 20,
+        "days": 2380,
+        "mean_names": 129.2,
+        "sharpe_gross": 0.299,
+        "t_stat": 0.92,
+        "ann_return": 0.02557,
+        "daily_turnover": 0.585,
+        "bp_per_unit_turnover_to_zero": 1.735
+      },
+      {
+        "buckets": 10,
+        "days": 2380,
+        "mean_names": 129.2,
+        "sharpe_gross": 0.287,
+        "t_stat": 0.882,
+        "ann_return": 0.02448,
+        "daily_turnover": 0.584,
+        "bp_per_unit_turnover_to_zero": 1.664
+      },
+      {
+        "buckets": 5,
+        "days": 2380,
+        "mean_names": 129.2,
+        "sharpe_gross": 0.279,
+        "t_stat": 0.857,
+        "ann_return": 0.02343,
+        "daily_turnover": 0.584,
+        "bp_per_unit_turnover_to_zero": 1.593
+      },
+      {
+        "buckets": 3,
+        "days": 2380,
+        "mean_names": 129.2,
+        "sharpe_gross": 0.301,
+        "t_stat": 0.926,
+        "ann_return": 0.02578,
+        "daily_turnover": 0.584,
+        "bp_per_unit_turnover_to_zero": 1.752
+      }
+    ],
+    "lowvol_20|ward_k24|__verdict": {
+      "break_even_bp_by_bucket": [
+        [
+          "precise",
+          1.745
+        ],
+        [
+          50,
+          1.711
+        ],
+        [
+          20,
+          1.735
+        ],
+        [
+          10,
+          1.664
+        ],
+        [
+          5,
+          1.593
+        ],
+        [
+          3,
+          1.752
+        ]
+      ],
+      "rises_from_precise": true,
+      "monotone_rising": false
+    }
+  }
+}

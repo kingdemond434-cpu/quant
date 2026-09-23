@@ -1,0 +1,10 @@
+[Unit]
+Description=Run sleeve shadow forward daily at 05:00 UTC
+
+[Timer]
+OnCalendar=*-*-* 05:00:00
+Persistent=true
+Unit=shadow-forward.service
+
+[Install]
+WantedBy=timers.target

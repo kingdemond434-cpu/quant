@@ -1,0 +1,108 @@
+{
+  "schema_version": 1,
+  "session": "BRAIN_HUNTER_s43",
+  "observed_at": "2026-08-31T13:12:00Z",
+  "source": {
+    "repository": "https://github.com/Liu-Ming-Yu/alpha-forge",
+    "commit": "922d8d3443afb1518428ed9360318efd934e3c33",
+    "license": "Apache-2.0",
+    "access": "public GitHub metadata and raw source, read as text only",
+    "derives_from": "Qlib is named at repository level; no external implementation lineage is declared in the inspected formulaic-mining files"
+  },
+  "scope": {
+    "question": "Does the formulaic search preserve every attempted trial and bind evidence to a complete experiment identity?",
+    "files_read": [
+      "scripts/mine_alphas.py",
+      "src/quant_platform/research/features/formulaic/mining/__init__.py",
+      "src/quant_platform/research/features/formulaic/mining/search.py",
+      "src/quant_platform/research/features/formulaic/mining/provenance.py",
+      "src/quant_platform/research/features/formulaic/mining/admission.py",
+      "src/quant_platform/research/features/formulaic/mining/evidence.py",
+      "src/quant_platform/research/features/formulaic/mining/walk_forward.py",
+      "src/quant_platform/research/features/formulaic/mining/policy_search.py",
+      "src/quant_platform/research/features/formulaic/auto_library.py",
+      "src/quant_platform/research/features/formulaic/serialization.py"
+    ],
+    "source_lines_read": 2499,
+    "desk_constructions": 0,
+    "desk_target_horizon_cells": 0,
+    "tradeable_cards": 0,
+    "survivors": 0
+  },
+  "findings": [
+    {
+      "id": "S43-F1",
+      "verdict": "FAILURE_MEMORY_ERASED_ON_EXCEPTION_OR_CRASH",
+      "evidence": [
+        "mining/__init__.py accumulates admitted and history only in process memory and returns them after the entire search iterator finishes",
+        "scripts/mine_alphas.py calls mine_alphas before write_jsonl; there is no per-candidate durable write or exception-finally row",
+        "write_jsonl opens the destination with mode w only after a successful run"
+      ],
+      "implication": "Any evaluation exception, OOM, interruption or iterator failure erases every attempted candidate since run start. The surviving JSONL is therefore not a conserved trial population and cannot support honest multiplicity or failure-cohort inference.",
+      "repair_test": "Prewrite one immutable PLANNED row per candidate identity, transition it through RUNNING to COMPLETE or typed FAILED in finally/transactional code, kill the worker after candidate k, and prove planned = complete + failed + explicitly_unattempted after restart."
+    },
+    {
+      "id": "S43-F2",
+      "verdict": "EXPERIMENT_IDENTITY_INCOMPLETE",
+      "evidence": [
+        "AutoAlphaProvenance stores expression, generation, seed, parent, mutation kind, operator-set string, feature-set string, evidence, timestamp and admission decision",
+        "it stores no code commit, data hash/vintage, terminal-universe snapshot, panel date range, label horizon, search configuration, gate configuration or cost specification",
+        "the CLI output rows likewise omit the command/run manifest containing those fields"
+      ],
+      "implication": "The same apparent candidate identity can carry evidence produced by different data, horizons, universes, costs or gate semantics. Reproduction from seed is claimed more strongly than the persisted identity supports.",
+      "repair_test": "Changing only one Fusion symbol contract, one cost field, the horizon, the date window, code commit or gate-policy version must change the run/cell identity and forbid cached-evidence reuse."
+    },
+    {
+      "id": "S43-F3",
+      "verdict": "SILENT_UNIVERSE_CONTRACTION",
+      "evidence": [
+        "load_panel_frame silently skips any contract whose bar directory is missing, empty, or yields no rows",
+        "the run proceeds when at least one instrument remains and reports only loaded row/instrument counts",
+        "the output carries neither the requested roster nor missing-symbol dispositions"
+      ],
+      "implication": "A nominal full-universe experiment can become a convenient survivor subset without changing its persisted identity; absence is read as clean ground.",
+      "repair_test": "Persist requested terminal roster, loaded roster and one typed reason per missing symbol; reject any unreconciled roster before publishing evidence."
+    },
+    {
+      "id": "S43-F4",
+      "verdict": "INNER_FOLDS_ARE_NOT_UNTOUCHED_OOS",
+      "evidence": [
+        "EvolutionarySearch selects parents by the same cached rank_ic computed from the fold aggregate",
+        "AdmissionGate then admits on that same aggregate",
+        "there is no outer untouched selection holdout in the inspected mining path"
+      ],
+      "implication": "The walk-forward label describes temporal folding, not untouched post-selection evidence. It may rank candidates for research but cannot confer promotion authority.",
+      "repair_test": "Freeze the generated population and search decisions before evaluating a separately sealed holdout, then send only canonical ten-gate certificates to the desk's universal forward engine."
+    },
+    {
+      "id": "S43-F5",
+      "verdict": "INDEPENDENCE_STATE_RESETS_BETWEEN_RUNS",
+      "evidence": [
+        "scripts/mine_alphas.py defines _build_initial_baseline as unused and returns None",
+        "mine_alphas starts running_baseline from baseline_features or an empty mapping",
+        "AdmissionGate explicitly treats NaN correlation from no baseline as acceptable"
+      ],
+      "implication": "Correlation pruning is only within one invocation. Re-running with a new seed can admit a near-copy of a prior run while both rows individually say admitted.",
+      "repair_test": "Load the active and historical accepted feature population point-in-time before search; an identical candidate in a later run must receive the same identity or a typed redundancy disposition, never a fresh admission."
+    }
+  ],
+  "economic_disposition": {
+    "source_alpha_claims": "REJECT_AS_EVIDENCE",
+    "process_shape": "KEEP_ONLY_AS_FALSIFIER_FOR_EXISTING_S33_S41_S42_IDENTITY_AND_CONSERVATION_REPAIR",
+    "mt5_translation": "The process findings map to every terminal-enumerated Fusion candidate cell. No source factor, direction, symbol or horizon survived, so none was invented.",
+    "costs": "No market construction was tested. Any later Fusion cell must bind point-in-time bid/ask, spread, commission, realised slippage/partial-fill markout, swap and contract terms before the canonical ten gates.",
+    "expected_log_wealth_effect": "Positive through false-evidence withdrawal and through preventing missing, duplicate or semantically-reused trials from corrupting multiplicity, independence and capital admission; magnitude unmeasured until the repair is instrumented."
+  },
+  "venue_discovery": {
+    "url": "https://catdograbbits.com/",
+    "how_found": "public GitHub author profile blog field",
+    "what_lives_there": "the author's EN/ZH hub for transformer mechanics, LLM agents, trajectory evaluation, AI coding systems and governed quant infrastructure",
+    "first_pass_verdict": "RICH_FOR_RESEARCH_PROCESS_BUT_CURRENT_ALPHA_FORGE_CONTENT_IS_DUPLICATIVE",
+    "robots": "Content-Signal search=yes, ai-train=no, use=reference; reference-only access observed"
+  },
+  "video": {
+    "fetched": 0,
+    "locked": 0,
+    "reason": "no video route attempted"
+  }
+}

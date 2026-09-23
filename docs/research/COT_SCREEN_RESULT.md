@@ -127,3 +127,10 @@ here, that the commercial series is not identically zero and that one date holds
   licence-clean commodity/metals price leg (blocked on the register #80 ruling) or a longer equity
   index series.
 - Nothing here promotes anything. No forward clock was started.
+
+
+## KRT position-CHANGE screen (2026-08-25, card #40 conversion)
+
+Prereg: AXIS_PREREGISTRATIONS.md C. Primary pooled dx1: beta=-6.6e-05, NW t=-0.41, n=12356; recent24m dx1 t=0.24; XS dx1 mean IC=-0.0108 (t=-0.92). 26 trials charged; dropped: none.
+
+**SCREEN-KILL: pooled dx1 fails the preregistered bar (beta >= 0 or t > -1.96)**

@@ -1,0 +1,11 @@
+[Unit]
+Description=Timer: weekly coverage measurement (L1.50 ratchet input)
+
+[Timer]
+OnCalendar=Sun *-*-* 01:00:00 UTC
+Persistent=true
+RandomizedDelaySec=600
+Unit=quant-coverage-ratchet.service
+
+[Install]
+WantedBy=timers.target

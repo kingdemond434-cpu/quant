@@ -98,16 +98,27 @@ def test_underpowered_is_not_recorded_as_refuted(desk) -> None:
     assert "recording it as negative knowledge the desk did not earn" in rep["note"]
 
 
-def test_a_missing_perp_column_is_reported_not_imputed(desk) -> None:
-    """The crypto-native detectors need open_interest. Filling a plausible value would make the
-    most informative detector on the desk into the least trustworthy one."""
-    p = _panel(desk)
-    df = pd.read_csv(p / "b.csv").drop(columns=["open_interest"])
-    df.to_csv(p / "b.csv", index=False)
-    S.main()
-    rep = json.loads((desk / "r.json").read_text("utf-8"))
-    verdicts = {r["detector"]: r["verdict"] for r in rep["results"]}
-    assert verdicts["ict_oi_flush"] in ("INPUT-MISSING", "DEGENERATE"), verdicts["ict_oi_flush"]
+def test_a_missing_column_is_reported_not_imputed(desk) -> None:
+    """A detector that asks for a column these bars do not carry must say so.
+
+    REWRITTEN 2026-09-05. This used to drop `open_interest` and assert on `ict_oi_flush`, one of
+    the six venue-native detectors that came from `libs/ict/crypto.py` and were removed with the
+    crypto-exchange universe. The DETECTOR was incidental; the property is not, and it is the
+    reason this test exists: filling a plausible value for an absent column turns the most
+    informative detector on the desk into the least trustworthy one. Asserted at `screen_one`,
+    which is where the refusal is actually implemented, so it holds for any future detector that
+    reaches for a column the panel does not have.
+    """
+    _panel(desk)
+    bars = pd.read_csv(desk / "bars/b.csv")
+
+    def _wants_a_column_that_is_not_here(df):
+        return df["a_column_no_bar_carries"]
+
+    r = S.screen_one("needs_missing_column", _wants_a_column_that_is_not_here, bars, 1.0)
+    assert r["verdict"] == "INPUT-MISSING", r
+    assert "a_column_no_bar_carries" in r["why"]
+    assert "imputed" in r["note"]
 
 
 def test_one_broken_detector_does_not_kill_the_run(desk) -> None:

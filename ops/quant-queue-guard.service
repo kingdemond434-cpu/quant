@@ -1,0 +1,19 @@
+[Unit]
+Description=Research queue guard: unfinished queued intent may not vanish to a stale file copy
+
+[Service]
+Type=oneshot
+# 2026-08-31: was 200M and the unit peaked at EXACTLY 200M on every run -- 18 of the 24
+# oom-kills on this box in 90 minutes were this one unit hitting its own cgroup ceiling,
+# not the box running out. It reads a 23,300-row research queue; 200M was never enough.
+# A unit killed mid-read cannot report the unfinished queued intent it exists to protect,
+# so the guard was silently absent 284 times a day while looking scheduled.
+# 2026-09-01: MemoryMax alone HARD-KILLS at the ceiling -- that was the normal failure
+# mode here, not a runaway backstop. MemoryHigh throttles (reclaim + slow) below it, so
+# a heavy run finishes slowly instead of dying and being retried forever. Ceiling is
+# UNCHANGED at 600M, so nothing that fits today is newly constrained.
+MemoryHigh=480M
+MemoryMax=600M
+WorkingDirectory=/home/quant/quant-platform
+ExecStart=/home/quant/quant-platform/.venv/bin/python scripts/check_research_queue.py
+SuccessExitStatus=0 1

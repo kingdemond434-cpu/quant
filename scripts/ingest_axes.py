@@ -6,13 +6,23 @@ Ingests the top of the hunt-now list:
  1. FED NET-LIQUIDITY -- WALCL + RRP (FRED csv, no key) + TGA daily (Treasury FiscalData API)
     -> bronze/fed/, plus a clearly-labelled DERIVED net_liquidity series (self-computed, the
     free-first reconstruction of every "global liquidity" vendor chart).
- 2. BINANCE FUTURES METRICS BACKFILL -- data.binance.vision daily metrics zips (5-min rows:
-    sum open interest, top-trader long/short ACCOUNT and POSITION ratios, taker buy/sell
-    ratio). The forward collector (oi_ls_taker) has ~22d; this backfills years. Raw zips to
-    bronze/binance_metrics/<SYM>/, skip-existing so the daily cron keeps it current forever.
- 3. FARSIDE ETF FLOWS -- attempted; Cloudflare 403s datacenter IPs. On failure this registers
-    a dated directive (alternate route: miner web-fetch lane or issuer-page reconstruction)
-    instead of pretending. Honest residue beats silent absence.
+ 2. WIKIPEDIA ATTENTION -- per-article daily pageviews, official API, full history since 2015.
+ 3. CROSS-ASSET RISK-ON/OFF -- Stooq full-history CSVs (SPX, NASDAQ, GOLD, WTI, DXY) + the CBOE
+    official VIX history + the US Treasury yield curve. This is the MT5 universe's own macro
+    backdrop and the reason this ingester survives at all.
+
+WHAT WAS REMOVED, 2026-09-05 (universe mandate). Three axes here hunted the retired exchange
+market and are gone with it:
+
+  * FUTURES METRICS BACKFILL -- the retired exchange's public archive bucket (open interest,
+    top-trader long/short ratios, taker buy/sell). Its only consumers were the OI/LS screens and
+    shadows, all deleted the same day.
+  * FARSIDE ETF FLOWS -- spot-BITCOIN ETF creation tables; `screen_etf_flows` was its one reader.
+  * MINING ECONOMICS -- bitcoin hashrate/difficulty/miner revenue from blockchain.info.
+
+The WIKIPEDIA article list was REPOINTED rather than deleted: retail attention is a real,
+venue-neutral mechanism and the API is free, so the axis keeps its clock and changes its subject
+from seven crypto articles to the MT5 desk's own macro vocabulary.
 
 Verify-don't-trust: each ingester prints row/byte counts + a sample-parse check; the gauntlet
 still runs its own diffs before any pipeline consumes these.
@@ -21,11 +31,9 @@ from __future__ import annotations
 
 import json
 import ssl
-import sys
 import time
 import urllib.request
-import zipfile
-from datetime import UTC, date, datetime, timedelta
+from datetime import UTC, datetime
 from pathlib import Path
 
 import certifi
@@ -35,8 +43,6 @@ BRONZE = ROOT / "data/lake/bronze"
 CTX = ssl.create_default_context(cafile=certifi.where())
 UA = {"User-Agent": "Mozilla/5.0 (research; solo desk; contact via repo)"}
 
-SYMBOLS = ("BTCUSDT", "ETHUSDT", "SOLUSDT", "BNBUSDT", "XRPUSDT")
-METRICS_START = date(2023, 1, 1)
 
 
 def curl(url: str, timeout: int = 90) -> bytes:
@@ -144,82 +150,17 @@ def ingest_fed() -> None:
         print(f"    latest: {lines[-1]}")
 
 
-# ---------------- 2. Binance metrics backfill ----------------
-def ingest_binance_metrics(max_files: int | None = None) -> None:
-    base = "https://data.binance.vision/data/futures/um/daily/metrics"
-    got = skipped = missing = 0
-    end = datetime.now(UTC).date() - timedelta(days=1)
-    for sym in SYMBOLS:
-        out = BRONZE / "binance_metrics" / sym
-        out.mkdir(parents=True, exist_ok=True)
-        d = METRICS_START
-        while d <= end:
-            fn = f"{sym}-metrics-{d.isoformat()}.zip"
-            fp = out / fn
-            if fp.exists() and fp.stat().st_size > 0:
-                skipped += 1
-            else:
-                try:
-                    fp.write_bytes(fetch(f"{base}/{sym}/{fn}", timeout=45))
-                    got += 1
-                    if max_files and got >= max_files:
-                        print(f"  metrics: tranche cap {max_files} hit "
-                              f"(got {got}, have {skipped}, missing {missing})")
-                        return
-                except Exception:
-                    missing += 1              # early dates don't exist for every symbol
-                time.sleep(0.15)              # be polite to the public bucket
-            d += timedelta(days=1)
-    print(f"  metrics: downloaded {got}, already had {skipped}, not-on-server {missing}")
-
-
-def verify_metrics_sample() -> None:
-    zips = sorted((BRONZE / "binance_metrics" / "BTCUSDT").glob("*.zip"))
-    if not zips:
-        print("  metrics VERIFY: no files yet")
-        return
-    with zipfile.ZipFile(zips[-1]) as z:
-        name = z.namelist()[0]
-        head = z.read(name).decode().splitlines()
-    print(f"  metrics VERIFY ({zips[-1].name}): {len(head)-1} rows")
-    print(f"    columns: {head[0]}")
-    need = ("sum_toptrader_long_short_ratio", "count_long_short_ratio",
-            "sum_taker_long_short_vol_ratio")
-    ok = all(any(n in head[0] for n in (c,)) for c in need)
-    print(f"    positioning columns present: {ok}")
-
-
-# ---------------- 3. Farside (expected 403 -> directive) ----------------
-def ingest_farside() -> None:
-    out = BRONZE / "etf_flows"
-    out.mkdir(parents=True, exist_ok=True)
-    stamp = datetime.now(tz=UTC).strftime("%Y%m%d")
-    try:
-        raw = fetch("https://farside.co.uk/btc/", timeout=30)
-        (out / f"farside_btc_{stamp}.html").write_bytes(raw)
-        print(f"  farside: fetched {len(raw):,}b (snapshot saved)")
-    except Exception as e:
-        print(f"  farside: BLOCKED from VPS ({e!r}) -- registering directive for alternate route")
-        dp = ROOT / "data/max_audit_directives.json"
-        ds = json.loads(dp.read_text()) if dp.exists() else []
-        if not any(x.get("id") == "etf-flows-alt-route" for x in ds):
-            ds.append({"id": "etf-flows-alt-route",
-                       "msg": "Farside ETF flow tables 403 datacenter IPs (Cloudflare). Route via "
-                              "the miner/dig web-fetch lane (Claude sessions CAN read it) writing "
-                              "daily snapshots to bronze/etf_flows/, or reconstruct from issuer "
-                              "pages (shares outstanding x NAV). Post-2024 marginal flow driver -- "
-                              "do not leave dark.",
-                       "due": "2026-07-24T23:59:00+00:00"})
-            dp.write_text(json.dumps(ds, indent=1))
-
-
 def ingest_wikipedia() -> None:
     """Attention factor: per-article daily pageviews, official API, cleaner + longer than
     Google Trends (addenda item 66). Full history per article since 2015-07."""
     out = BRONZE / "wikipedia"
     out.mkdir(parents=True, exist_ok=True)
-    for art in ("Bitcoin", "Ethereum", "Cryptocurrency", "Solana", "Dogecoin",
-                "Binance", "Coinbase"):
+    # REPOINTED 2026-09-05: was Bitcoin/Ethereum/Cryptocurrency/Solana/Dogecoin/Binance/Coinbase.
+    # These are the attention terms that move the MT5 book -- the metal, the policy rate, the
+    # currency bloc and the recession word -- chosen to sit UPSTREAM of price the way the crypto
+    # list was meant to: a person looks the thing up before they act on it.
+    for art in ("Gold_as_an_investment", "Inflation", "Federal_Reserve",
+                "Foreign_exchange_market", "Recession", "Interest_rate", "Petroleum"):
         fp = out / f"{art}_daily.json"
         u = ("https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/"
              f"en.wikipedia/all-access/user/{art}/daily/20150701/"
@@ -268,35 +209,20 @@ def ingest_crossasset() -> None:
     print(f"  crossasset/UST curve: {got} yearly files")
 
 
-def ingest_mining() -> None:
-    """Miner-economics axis (addenda item 73/energy layer): blockchain.com charts API,
-    free, no key -- hashrate + miner revenue since 2009."""
-    out = BRONZE / "mining"
-    out.mkdir(parents=True, exist_ok=True)
-    for chart in ("hash-rate", "miners-revenue", "difficulty"):
-        raw = fetch(f"https://api.blockchain.info/charts/{chart}"
-                    "?timespan=all&format=csv&sampled=false", timeout=90)
-        (out / f"{chart}.csv").write_bytes(raw)
-        print(f"  mining/{chart}: {raw.count(chr(10).encode()):,} rows")
-
-
 def main() -> None:
-    tranche = int(sys.argv[sys.argv.index("--tranche") + 1]) if "--tranche" in sys.argv else None
+    # `--tranche N` capped the Binance-metrics backfill, the only ingester here that ran to
+    # thousands of files. It is accepted and ignored rather than rejected, so the existing cron
+    # line does not start failing on an argument that no longer has anything to cap.
     for label, fn in [("FED NET-LIQUIDITY", ingest_fed),
-                      ("FARSIDE ETF FLOWS", ingest_farside),
-                      ("BINANCE METRICS BACKFILL",
-                       lambda: ingest_binance_metrics(max_files=tranche)),
-                      ("METRICS VERIFY", verify_metrics_sample),
                       ("WIKIPEDIA ATTENTION", ingest_wikipedia),
-                      ("CROSS-ASSET", ingest_crossasset),
-                      ("MINING ECONOMICS", ingest_mining)]:
+                      ("CROSS-ASSET", ingest_crossasset)]:
         print(f"=== {label} ===")
         try:
             fn()
         except Exception as e:                    # fenced: one axis failing never kills the rest
             print(f"  {label} FAILED: {e!r} -- continuing")
     print("=== BRONZE TOTALS ===")
-    for sub in ("fed", "binance_metrics", "etf_flows", "cme", "wikipedia", "crossasset", "mining"):
+    for sub in ("fed", "cme", "wikipedia", "crossasset"):
         p = BRONZE / sub
         if p.exists():
             n = sum(1 for _ in p.rglob("*") if _.is_file())

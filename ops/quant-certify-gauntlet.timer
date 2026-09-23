@@ -1,0 +1,11 @@
+[Unit]
+Description=Timer for restored organ: certify-gauntlet
+
+[Timer]
+OnCalendar=*:10
+RandomizedDelaySec=120
+Persistent=true
+Unit=quant-certify-gauntlet.service
+
+[Install]
+WantedBy=timers.target

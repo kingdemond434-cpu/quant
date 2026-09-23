@@ -1,0 +1,16 @@
+[Unit]
+Description=DeepSeek second flywheel (free tier): independent cold-phase findings, donated
+
+[Service]
+# 2026-09-01: MemoryMax alone HARD-KILLS at the ceiling -- that was the normal failure
+# mode here, not a runaway backstop. MemoryHigh throttles (reclaim + slow) below it, so
+# a heavy run finishes slowly instead of dying and being retried forever. Ceiling is
+# UNCHANGED at 2500M, so nothing that fits today is newly constrained.
+MemoryHigh=2000M
+MemoryMax=2500M
+MemorySwapMax=0
+CPUWeight=50
+Type=oneshot
+WorkingDirectory=/home/quant/quant-platform
+ExecStart=/bin/bash /home/quant/quant-platform/ops/run_deepseek_factory.sh
+TimeoutStartSec=2h

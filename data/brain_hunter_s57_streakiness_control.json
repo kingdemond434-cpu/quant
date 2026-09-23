@@ -1,0 +1,27 @@
+{
+ "raw_vr_first_vs_sharpe_second": [
+  0.1669,
+  0.0
+ ],
+ "sharpe_first_vs_sharpe_second": [
+  0.0904,
+  0.0042
+ ],
+ "vr_first_vs_sharpe_first": [
+  0.0249,
+  0.432
+ ],
+ "partial_vr_controlling_sharpe_first": [
+  0.1654,
+  1.4401022865995154e-07
+ ],
+ "vr_first_vs_lag1_autocorr": [
+  0.2902,
+  0.0
+ ],
+ "partial_vr_controlling_lag1_ac": [
+  0.0924,
+  0.0034370232194784
+ ],
+ "n": 1000
+}

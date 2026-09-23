@@ -1,0 +1,23 @@
+[Unit]
+Description=Pull the box's published state from git and rebuild the dashboard
+# THE LAST LINK IN THE PUBLISHING CHAIN. The box publishes to git every 15 minutes; nothing on
+# this host ever pulled it, so the page served a build from 17:12 and called the box SILENT for
+# 266 hours while its state sat in GitHub ten minutes old. See ops/refresh_desk_state.sh.
+After=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/home/quant/quant-platform
+ExecStart=/bin/bash /home/quant/quant-platform/ops/refresh_desk_state.sh
+# Small and frequent: a git fetch and one JSON build. It is deliberately NOT in quant-heavy.slice
+# -- the research organs there throttle each other under memory pressure, and the one job that
+# makes the desk VISIBLE must not be slowed down by a sweep. Being able to see the desk is what
+# tells you a sweep is misbehaving in the first place.
+MemoryHigh=220M
+MemoryMax=300M
+# Never let a wedged git or a hung build hold the timer open until the next tick.
+TimeoutStartSec=180
+Nice=5
+
+[Install]
+WantedBy=default.target

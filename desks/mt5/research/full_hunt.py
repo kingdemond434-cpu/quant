@@ -1,45 +1,9 @@
-"""Every family, every symbol, a real parameter grid — and the trial count that
-makes the answer honest.
+"""Every MT5 family and symbol under one immutable original screen.
 
-WHY THE LAST SWEEP FOUND NOTHING, AND WHY THAT WAS PARTLY ITS OWN FAULT
-
-recover.py ran 9 families x 22 symbols at each family's DEFAULT parameters. The
-pool came back with a median Sharpe of -1.909 and six admission passers against
-the ~81 that pure chance predicts. Reading that as "the families are worthless"
-would be wrong in one specific way: nothing was tuned. A family evaluated at one
-arbitrary parameter point is not a family, it is a single guess about a family,
-and rr=1.8 on a session breakout is a guess.
-
-So this file gives every family a real grid. That is the fix, and it comes with
-a bill.
-
-THE BILL IS THE TRIAL COUNT AND IT IS PAID IN FULL HERE
-
-Every parameter point evaluated is a trial. Sweeping 8 families x 22 symbols x
-several parameter points each puts N in the thousands, and the deflated Sharpe
-threshold SR0 grows with E[max of N] -- roughly sqrt(2 ln N) in standardised
-units. Widening the search RAISES the bar it must clear, which is exactly right
-and is the thing every naive backtest sweep gets wrong.
-
-This is not a technicality. At N=194 the bar was already high enough that six
-survivors read as noise. At N in the thousands it is higher still, and any
-survivor that clears it has cleared something real. A sweep that reports its
-winners without reporting its N is reporting nothing at all.
-
-WHAT COUNTS AS A TRIAL, INCLUDING THE ONES THAT DIED
-
-Cells that produced too few trades, or errored, or were dropped for short
-history, are STILL TRIALS. They were looked at. Excluding them because they
-disappointed is how a search launders its own multiplicity, so the count below
-includes every cell attempted and says so.
-
-THE ORDER OF OPERATIONS MATTERS
-
-Deflate FIRST, on the whole pool. Only then run the admission test against the
-armed book, and only then tune exits and size on whatever survived both. Doing
-it the other way -- picking the best-looking cells and deflating the shortlist --
-deflates against the size of the shortlist rather than the size of the search,
-which is the same error wearing a lab coat.
+The tested trial count remains provenance, but later experimental or harsher
+bars never alter a candidate's admission.  The original PSR>=0.95 against
+SR0=0 screen decides zero-capital shadow admission.  Only untouched forward
+shadow evidence can subsequently grant capital authority.
 """
 from __future__ import annotations
 
@@ -60,12 +24,13 @@ sys.path.insert(0, str(BASE / "research"))
 
 warnings.filterwarnings("ignore")
 
-from mt5desk import families                                    # noqa: E402
-from mt5desk.engine import Costs, run_backtest                  # noqa: E402
-from qquant_gates import (DSR_THRESHOLD, deflated_sharpe_ratio,  # noqa: E402
-                          sharpe_ratio)
-from run_hunt11 import WINDOWS                                  # noqa: E402
-from book_sizing import FIVE, compound                          # noqa: E402
+from book_sizing import FIVE, compound  # noqa: E402
+from hunt_deflate import write_candidates  # noqa: E402
+from mt5desk import families  # noqa: E402
+from mt5desk.engine import Costs, run_backtest  # noqa: E402
+from run_hunt11 import WINDOWS  # noqa: E402
+
+from libs.validation.dsr import probabilistic_sharpe_ratio  # noqa: E402
 
 HUNT_VERSION = "fullhunt-2026-08-18-a"
 
@@ -79,6 +44,15 @@ SYMBOLS = [p.stem.replace("_H1", "")
 _h1: dict = {}
 
 
+def candidate_key(symbol: str, family: str, params: dict) -> str:
+    """Stable identity containing every tested parameter, without collisions."""
+    encoded = ",".join(
+        f"{key}={json.dumps(value, sort_keys=True, separators=(',', ':'))}"
+        for key, value in sorted(params.items())
+    )
+    return f"{symbol}|{family}|{encoded}"
+
+
 def h1(sym: str) -> pd.DataFrame:
     if sym not in _h1:
         _h1[sym] = families._h1(pd.read_parquet(
@@ -89,7 +63,8 @@ def h1(sym: str) -> pd.DataFrame:
 def grid(**kw):
     """Cartesian product of keyword lists -> list of kwarg dicts."""
     keys = list(kw)
-    return [dict(zip(keys, vals)) for vals in itertools.product(*kw.values())]
+    return [dict(zip(keys, vals, strict=True))
+            for vals in itertools.product(*kw.values())]
 
 
 #: THE GRID. Every family gets rr varied, because reward:risk is the parameter
@@ -168,7 +143,7 @@ def q_for_dd(port: pd.Series, yrs: float, target: float, shift: float) -> tuple:
             hi = mid
         else:
             lo = mid
-    return (lo,) + compound(port, lo, yrs, shift=shift)
+    return (lo, *compound(port, lo, yrs, shift=shift))
 
 
 def main() -> int:
@@ -183,15 +158,11 @@ def main() -> int:
             attempted += 1
             try:
                 s = daily(sym, fn(h1(sym), **kw))
-            except Exception:                                   # noqa: BLE001
+            except Exception:
                 continue
             if s is None or len(s) < 200:
                 continue
-            key = f"{sym}|{name}|" + ",".join(f"{k}={v}" for k, v in
-                                              sorted(kw.items())
-                                              if k in ("rr", "level", "mode",
-                                                       "signal_hour", "mom_n",
-                                                       "dow_long", "lookback"))
+            key = candidate_key(sym, name, kw)
             results[key] = s
 
     n_trials = attempted
@@ -201,107 +172,48 @@ def main() -> int:
     print(f"Sharpe across the pool: median {np.median(srs):+.3f}, "
           f"mean {srs.mean():+.3f}, best {srs.max():+.3f}, var {svar:.4f}\n")
 
-    # ------------------------------------------------- EFFECTIVE trials, not raw
-    #
-    # N=3,168 TREATS rr=1.5 AND rr=2.0 ON THE SAME SYMBOL AS TWO INDEPENDENT
-    # SEARCHES, AND THEY ARE NOT. The deflated Sharpe's E[max of N] assumes N
-    # independent draws; a parameter grid produces draws that are near-copies of
-    # each other, so the raw count overstates how many genuinely separate looks
-    # were taken and the bar comes out too high.
-    #
-    # The principled correction is the participation ratio of the return
-    # matrix's correlation spectrum: (sum of eigenvalues)^2 / sum of squares,
-    # which counts a block of near-identical columns once. This is not a
-    # discount applied because the answer was disliked -- it is what N was
-    # supposed to be all along, and it FAILS CLOSED, staying at N_raw whenever
-    # the structure cannot be measured.
-    common = sorted(set.intersection(*[set(v.index) for v in results.values()])) \
-        if results else []
-    n_eff = float(n_trials)
-    why_eff = "not computed"
-    if len(common) >= 200 and len(results) >= 2:
-        mat = np.column_stack([results[k].reindex(common).to_numpy(dtype=float)
-                               for k in results])
-        keep = mat.std(axis=0) > 0
-        mat = mat[:, keep]
-        if mat.shape[1] >= 2:
-            c = np.corrcoef(mat, rowvar=False)
-            c = np.nan_to_num(c, nan=0.0)
-            ev = np.clip(np.linalg.eigvalsh(c), 0.0, None)
-            if (ev ** 2).sum() > 0:
-                pr = float(ev.sum() ** 2 / (ev ** 2).sum())
-                # scale the measured structure up to the full attempted count:
-                # the dead cells were looks too, and they are as duplicated as
-                # the live ones.
-                n_eff = max(2.0, pr * n_trials / mat.shape[1])
-                why_eff = (f"participation ratio {pr:.1f} over {mat.shape[1]} "
-                           f"usable columns on {len(common)} shared days, "
-                           f"scaled to the {n_trials} attempted")
-
     print("=" * 96)
-    print("THE TRIAL COUNT — raw, effective, and none")
+    print("IMMUTABLE ORIGINAL DISCOVERY BAR")
     print("=" * 96)
-    print(f"  N_raw       {n_trials:>8}   every cell attempted, including the "
-          f"{attempted - len(results)} that died")
-    print(f"  N_effective {n_eff:>8.0f}   {why_eff}")
-    print(f"  N=1         {1:>8}   no correction at all — in-sample, "
-          f"what the numbers look like raw\n")
-
-    survivors: dict = {}
-    bars: dict = {}
-    for label, n in (("N_raw", n_trials), ("N_effective", n_eff), ("N=1", 1)):
-        rows, passed = [], {}
-        for k, s in results.items():
-            arr = s.sort_index().to_numpy(dtype=float)
-            try:
-                d = deflated_sharpe_ratio(arr, n_trials=max(int(n), 1),
-                                          variance_of_sharpes=svar,
-                                          threshold=DSR_THRESHOLD)
-            except Exception:                                   # noqa: BLE001
-                continue
-            rows.append((k, ann_sharpe(arr), d.sr0_threshold, d.dsr, d.passed))
-            if d.passed:
-                passed[k] = s
-        rows.sort(key=lambda r: -r[3])
-        bars[label] = (rows, passed)
-        sr0 = rows[0][2] if rows else float("nan")
-        print(f"  {label:<12} SR0 bar {sr0:>6.3f}   ->  {len(passed):>4} of "
-              f"{len(results)} pass")
-
-    # THE EFFECTIVE COUNT IS THE ONE THAT DECIDES. N_raw is over-conservative
-    # because the grid is correlated; N=1 is not a standard, it is the absence
-    # of one, and is printed only so the size of the correction is visible.
-    survivors = bars["N_effective"][1]
-    print(f"\n  Using N_effective = {n_eff:.0f}. N_raw is over-conservative on a "
-          f"correlated grid;\n  N=1 is not a looser standard, it is no standard "
-          f"— every cell 'passes' by\n  construction, which is why that column "
-          f"is a diagnostic and not a verdict.\n")
-
-    rows = bars["N_effective"][0]
-    print(f"{'cell':<52}{'SR':>8}{'SR0':>8}{'DSR':>8}  verdict")
+    print(f"  attempted {n_trials}; usable {len(results)}; "
+          "PSR >= 0.95 against SR0=0.0")
+    survivors = {}
+    screen_rows = []
+    for key, series in results.items():
+        arr = series.sort_index().to_numpy(dtype=float)
+        psr = float(probabilistic_sharpe_ratio(arr, sr_benchmark=0.0))
+        passed = psr >= 0.95
+        screen_rows.append((key, ann_sharpe(arr), psr, passed))
+        if passed:
+            survivors[key] = series
+    screen_rows.sort(key=lambda row: -row[2])
+    print(f"  {len(survivors)} of {len(results)} pass the original bar")
+    print(f"{'cell':<60}{'SR':>8}{'PSR':>9}  verdict")
     print("-" * 88)
-    for k, sr, sr0, dsr, ok in rows[:15]:
-        print(f"{k[:52]:<52}{sr:>8.3f}{sr0:>8.3f}{dsr:>8.4f}  "
-              f"{'PASS' if ok else 'fail'}")
+    for key, sr, psr, passed in screen_rows[:15]:
+        print(f"{key[:60]:<60}{sr:>8.3f}{psr:>9.4f}  "
+              f"{'PASS' if passed else 'fail'}")
 
     _cache = BASE / "data" / "full_hunt_series.parquet"
     if results:
         _com = sorted(set.union(*[set(v.index) for v in results.values()]))
-        pd.DataFrame({k: v.reindex(_com) for k, v in results.items()},
-                     index=pd.to_datetime(_com)).to_parquet(_cache)
+        cache_frame = pd.DataFrame(
+            {k: v.reindex(_com) for k, v in results.items()},
+            index=pd.to_datetime(_com),
+        )
+        cache_frame.attrs["n_trials_attempted"] = n_trials
+        cache_frame.attrs["candidate_identity_version"] = "all-params-v1"
+        cache_frame.to_parquet(_cache)
+        candidate_out, candidate_rows = write_candidates(cache_frame, n_trials)
         print(f"\n  series cached to {_cache.name} — re-analysis needs no re-run")
+        print(f"  {len(candidate_rows)} discovery-screen candidates written to "
+              f"{candidate_out.name}; universal ten-gate certification is required for shadow")
     if not survivors:
         print("""
-  NOTHING SURVIVED, AND THAT IS THE RESULT.
+  NOTHING PASSED THE ORIGINAL SCREEN, AND THAT IS THE MEASURED RESULT.
 
-  Not a failed run: a measured answer. Widening the search from 194 cells to
-  several thousand raised the bar faster than it turned up better cells, which
-  is precisely what the deflated Sharpe exists to enforce. The families this
-  desk owns, at every parameter point tried, do not contain an edge that
-  survives its own multiplicity.
-
-  The armed five were selected under a much smaller search and remain the only
-  thing standing. Levers 1 and 3 below operate on them alone.""")
+  No later or harsher discovery bar was consulted. The armed five remain the
+  only thing standing; levers 1 and 3 below operate on them alone.""")
 
     # ---------------------------------------- admission + exits + size, on what is left
     cols5 = {k: daily(k.split(".")[0],
@@ -323,7 +235,7 @@ def main() -> int:
         if ann_sharpe(s.to_numpy(dtype=float)) > sr5 * rho:
             admitted[k] = s
     if survivors:
-        print(f"\n  of {len(survivors)} deflation survivors, {len(admitted)} "
+        print(f"\n  of {len(survivors)} original-screen candidates, {len(admitted)} "
               f"also clear admission against the armed book.")
 
     print()
@@ -370,7 +282,7 @@ def main() -> int:
     print("-" * 64)
     prev = None
     for dd in (0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.60):
-        q, c, d = q_for_dd(port, yrs, dd, shift)
+        q, c, _d = q_for_dd(port, yrs, dd, shift)
         m = "" if prev is None else f"{(c - prev[0]) / (dd - prev[1]) / 100:>11.2f}"
         prev = (c, dd)
         print(f"{dd:<20.0%}{q:>9.3%}{c * 100:>9.1f}%{m:>12}"

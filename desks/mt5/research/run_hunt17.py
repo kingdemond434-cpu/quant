@@ -26,6 +26,11 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from mt5desk import families  # noqa: E402
 from mt5desk.engine import Costs, Signal, run_backtest  # noqa: E402
 
+#: Fusion Zero's published contract, USD per lot PER SIDE ($4.50 round turn). Mirrors
+#: `libs.portfolio.fusion_cost.COMMISSION_PER_LOT_PER_SIDE`. The 3.50 this replaced was a
+#: ROUND-TURN figure sitting in a PER-SIDE field, billing $7.00 a round trip against $4.50.
+FUSION_COMMISSION_PER_SIDE = 2.25
+
 BASE = Path(__file__).resolve().parent.parent
 UNI = BASE / "data" / "universe"
 E_MAX = 1.5
@@ -207,12 +212,188 @@ def fam_d1_inside(h4: pd.DataFrame, d1: pd.DataFrame, side: int,
     return out
 
 
+_ANC: pd.DataFrame | None = None
+
+
+def _anchors_df() -> pd.DataFrame:
+    global _ANC
+    if _ANC is None:
+        try:
+            _ANC = pd.read_pickle(BASE / "data" / "cross_asset_anchors.pkl")
+        except Exception:
+            _ANC = pd.DataFrame()
+        if not _ANC.empty and "T10YIE" not in _ANC.columns:
+            print("WARNING: cross_asset_anchors.pkl has no T10YIE "
+                  "(macro families emit NO signals -> gauntlet fails closed)",
+                  flush=True)
+    return _ANC
+
+
+def fam_macro_gold_yield(h4: pd.DataFrame, d1: pd.DataFrame, side: int,
+                         n: int = 34, rr: float = 2.0, ttl: int = 12,
+                         yield_z: float = 0.0) -> list[Signal]:
+    """H4 momentum on gold gated by the REAL-YIELD state (T10YIE from the
+    macro anchors desk): LONG only when the 2y rolling z of 10y breakevens is
+    <= yield_z, SHORT only when z >= -yield_z. Mechanism: real-yield regime is
+    the dominant gold driver; momentum taken with the regime, not against it.
+    Non-XAU symbols / missing anchors -> no signals (battery filters by n>60)."""
+    anc = _anchors_df()
+    if anc.empty or "T10YIE" not in anc.columns:
+        return []
+    t10 = anc["T10YIE"].dropna()
+    roll = t10.rolling(504, min_periods=120)
+    z = (t10 - roll.mean()) / roll.std()
+    if z.index.tz is not None:
+        z = z.tz_localize(None)
+    sm = _sma(h4["close"], n)
+    a = _atr(h4, ATR_N)
+    cl = h4["close"].to_numpy(float)
+    smv = sm.to_numpy(float)
+    out = []
+    for i in range(2, len(h4)):
+        zv = z.get(pd.Timestamp(h4.index[i].date()), float("nan"))
+        if zv != zv:
+            continue
+        if side > 0 and zv <= yield_z and cl[i] > smv[i] \
+                and cl[i - 1] > smv[i - 1] and cl[i - 2] > smv[i - 2]:
+            try:
+                out.append(_sig(h4.index[i], 1, float(cl[i]), float(a.iloc[i]),
+                                rr, ttl, "macro_gold_yield"))
+            except ValueError:
+                pass
+        if side < 0 and zv >= -yield_z and cl[i] < smv[i] \
+                and cl[i - 1] < smv[i - 1] and cl[i - 2] < smv[i - 2]:
+            try:
+                out.append(_sig(h4.index[i], -1, float(cl[i]), float(a.iloc[i]),
+                                rr, ttl, "macro_gold_yield"))
+            except ValueError:
+                pass
+    return out
+
+
+def fam_gold_dxy_shock(h4: pd.DataFrame, d1: pd.DataFrame, side: int,
+                       n: int = 34, rr: float = 2.0, ttl: int = 12,
+                       dxy_z: float = 0.5) -> list[Signal]:
+    """H4 momentum gated by the DOLLAR state (DXY 2y rolling z from the macro
+    anchors desk): LONG only when z <= -dxy_z (weak dollar), SHORT only when
+    z >= dxy_z. Mechanism: gold and DXY are strongly inverse; take momentum
+    with the dollar regime, never against it. Missing anchors -> no signals."""
+    anc = _anchors_df()
+    if anc.empty or "DXY" not in anc.columns:
+        return []
+    dx = anc["DXY"].dropna()
+    roll = dx.rolling(504, min_periods=120)
+    z = (dx - roll.mean()) / roll.std()
+    if z.index.tz is not None:
+        z = z.tz_localize(None)
+    sm = _sma(h4["close"], n)
+    a = _atr(h4, ATR_N)
+    cl = h4["close"].to_numpy(float)
+    smv = sm.to_numpy(float)
+    out = []
+    for i in range(2, len(h4)):
+        zv = z.get(pd.Timestamp(h4.index[i].date()), float("nan"))
+        if zv != zv:
+            continue
+        if side > 0 and zv <= -dxy_z and cl[i] > smv[i] \
+                and cl[i - 1] > smv[i - 1] and cl[i - 2] > smv[i - 2]:
+            try:
+                out.append(_sig(h4.index[i], 1, float(cl[i]), float(a.iloc[i]),
+                                rr, ttl, "gold_dxy_shock"))
+            except ValueError:
+                pass
+        if side < 0 and zv >= dxy_z and cl[i] < smv[i] \
+                and cl[i - 1] < smv[i - 1] and cl[i - 2] < smv[i - 2]:
+            try:
+                out.append(_sig(h4.index[i], -1, float(cl[i]), float(a.iloc[i]),
+                                rr, ttl, "gold_dxy_shock"))
+            except ValueError:
+                pass
+    return out
+
+
+def fam_asia_meanrev(h4: pd.DataFrame, d1: pd.DataFrame, side: int,
+                     n: int = 20, rr: float = 1.5, ttl: int = 6,
+                     z_thr: float = 2.0) -> list[Signal]:
+    """Asia-session (00:00-08:00 UTC) mean reversion: distance of close from
+    the n-H4 SMA in ATR units >= z_thr -> fade the spike (LONG after a
+    down-spike, SHORT after an up-spike). Mechanism: thin Asian liquidity
+    over-extends prices that revert when London/NY liquidity returns."""
+    sm = _sma(h4["close"], n)
+    a = _atr(h4, ATR_N)
+    cl = h4["close"].to_numpy(float)
+    smv = sm.to_numpy(float)
+    av = a.to_numpy(float)
+    out = []
+    for i in range(2, len(h4)):
+        t = h4.index[i]
+        if t.hour < 0 or t.hour >= 8:
+            continue
+        if av[i] <= 0 or av[i] != av[i]:
+            continue
+        z = (cl[i] - smv[i]) / av[i]
+        if side > 0 and z <= -z_thr:
+            try:
+                out.append(_sig(t, 1, float(cl[i]), float(av[i]), rr, ttl,
+                                "asia_meanrev"))
+            except ValueError:
+                pass
+        if side < 0 and z >= z_thr:
+            try:
+                out.append(_sig(t, -1, float(cl[i]), float(av[i]), rr, ttl,
+                                "asia_meanrev"))
+            except ValueError:
+                pass
+    return out
+
+
+def fam_london_ny_breakout(h4: pd.DataFrame, d1: pd.DataFrame, side: int,
+                           win: int = 5, rr: float = 2.0,
+                           ttl: int = 12) -> list[Signal]:
+    """London-NY (12:00-20:00 UTC) breakout of the prior `win` days' range
+    (high/low). Mechanism: concentrated liquidity during the overlap makes
+    breaks of the multi-day range persist into the NY close."""
+    dhi = d1["high"].shift(1).rolling(win, min_periods=win).max()
+    dlo = d1["low"].shift(1).rolling(win, min_periods=win).min()
+    dmap = {pd.Timestamp(d).date(): i for i, d in enumerate(d1.index)}
+    a = _atr(h4, ATR_N)
+    cl = h4["close"].to_numpy(float)
+    out = []
+    for i in range(2, len(h4)):
+        t = h4.index[i]
+        if not (12 <= t.hour < 20):
+            continue
+        j = dmap.get(t.date())
+        if j is None or j < win:
+            continue
+        hi_p, lo_p = float(dhi.iloc[j]), float(dlo.iloc[j])
+        if hi_p != hi_p or lo_p != lo_p:
+            continue
+        if side > 0 and cl[i] > hi_p:
+            try:
+                out.append(_sig(t, 1, float(cl[i]), float(a.iloc[i]), rr, ttl,
+                                "london_ny_breakout"))
+            except ValueError:
+                pass
+        if side < 0 and cl[i] < lo_p:
+            try:
+                out.append(_sig(t, -1, float(cl[i]), float(a.iloc[i]), rr, ttl,
+                                "london_ny_breakout"))
+            except ValueError:
+                pass
+    return out
+
+
 FAMILIES = {
     "d1_trend_pullback": fam_d1_trend_pullback,
     "d1_swing_break": fam_d1_swing_break,
     "h4_momentum": fam_h4_momentum,
     "h4_vol_break": fam_h4_vol_break,
     "d1_inside": fam_d1_inside,
+    "macro_gold_yield": fam_macro_gold_yield,
+    "gold_dxy_shock": fam_gold_dxy_shock,
+    "asia_meanrev": fam_asia_meanrev,
+    "london_ny_breakout": fam_london_ny_breakout,
 }
 PARAMS = {
     "d1_trend_pullback": [dict(d1_n=50, h4_n=20, rr=2.0, ttl=12),
@@ -225,6 +406,14 @@ PARAMS = {
                      dict(n1=10, n2=40, k=1.3, rr=2.5, ttl=24)],
     "d1_inside": [dict(rr=2.0, ttl=12),
                   dict(rr=2.5, ttl=24)],
+    "macro_gold_yield": [dict(n=34, rr=2.0, ttl=12, yield_z=0.0),
+                         dict(n=55, rr=2.5, ttl=24, yield_z=-0.25)],
+    "gold_dxy_shock": [dict(n=34, rr=2.0, ttl=12, dxy_z=0.5),
+                       dict(n=55, rr=2.5, ttl=24, dxy_z=0.75)],
+    "asia_meanrev": [dict(n=20, rr=1.5, ttl=6, z_thr=2.0),
+                     dict(n=30, rr=2.0, ttl=12, z_thr=2.5)],
+    "london_ny_breakout": [dict(win=5, rr=2.0, ttl=12),
+                           dict(win=10, rr=2.5, ttl=24)],
 }
 
 
@@ -245,9 +434,10 @@ def wf_oos(h4: pd.DataFrame, sigs: list, costs: Costs) -> list[float]:
 
 def battery(h4: pd.DataFrame, sigs: list, costs: Costs) -> dict:
     r = run_backtest(h4, sigs, costs).stats()
-    r2 = run_backtest(h4, sigs, Costs(costs.spread_per_lot * 2,
-                                      costs.commission_per_lot * 2,
-                                      costs.contract_oz)).stats()
+    # DERIVE, NEVER REBUILD: a positional rebuild drops `quote_per_account` back to 1.0 and
+    # un-does the account-currency conversion, so the 2x stress landed BELOW the baseline on
+    # every JPY cross (measured 2026-08-27). Commission is contractual and does not widen.
+    r2 = run_backtest(h4, sigs, costs.stressed(2.0)).stats()
     wf = wf_oos(h4, sigs, costs)
     defl = r["t_stat"] - E_MAX
     gate = (r["n"] > 60 and defl > 2 and r["profit_factor"] > 1.05
@@ -262,7 +452,9 @@ def battery(h4: pd.DataFrame, sigs: list, costs: Costs) -> dict:
 def resample(h1: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
     agg = {"open": "first", "high": "max", "low": "min", "close": "last"}
     h4 = h1.resample("4h").agg(agg).dropna()
-    d1 = h1.resample("D").agg(agg).dropna()
+    # L1.68 (GAP 132): the Sunday H1 stub bars are genuine market time at H1/H4 but resample
+    # into a fake sixth "D1" bar; declared-and-excluded at consumption, never from disk.
+    d1 = families.d1_session_filtered(h1.resample("D").agg(agg).dropna())
     return h4, d1
 
 
@@ -294,9 +486,7 @@ def main() -> None:
         h1 = families._h1(h1)
         h4, d1 = resample(h1)
         m = meta[sym]
-        costs = Costs(spread_per_lot=0.48 if sym == "XAUUSD" else max(
-            m["median_spread_pts"] * m["tick_size"] * m["contract_size"], 0.05),
-            commission_per_lot=3.50, contract_oz=m["contract_size"])
+        costs = Costs.from_symbol(m, commission_per_lot=FUSION_COMMISSION_PER_SIDE)
         for fname, fn in FAMILIES.items():
             for pi, params in enumerate(PARAMS[fname]):
                 for side in (1, -1):

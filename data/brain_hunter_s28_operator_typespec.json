@@ -1,0 +1,1570 @@
+{
+  "session": "brain_hunter_s28",
+  "date": "2026-08-29",
+  "source": {
+    "repo": "AshSwing/FastPlus",
+    "path": "src/operator.rs",
+    "branch": "dev",
+    "licence": "MIT",
+    "access": "public raw.githubusercontent",
+    "handling": "mined as TEXT; nothing installed or executed (supply-chain rule)"
+  },
+  "derives_from": "docs/research/prospector_coverage.md s27 next-ground item 3",
+  "operators_parsed": 108,
+  "readme_claim": "108 operators in Expert scope",
+  "signatures": {
+    "(Matrix)->Matrix": [
+      "abs",
+      "add",
+      "arc_tan",
+      "clamp",
+      "days_from_last_change",
+      "filter",
+      "hump",
+      "inverse",
+      "is_nan",
+      "is_not_finite",
+      "log",
+      "max",
+      "min",
+      "multiply",
+      "normalize",
+      "not",
+      "pasteurize",
+      "purify",
+      "quantile",
+      "rank",
+      "reverse",
+      "round",
+      "round_down",
+      "scale",
+      "scale_down",
+      "sign",
+      "sqrt",
+      "tail",
+      "to_nan",
+      "ts_rank_gmean_amean_diff",
+      "ts_target_tvr_decay",
+      "ts_target_tvr_hump",
+      "winsorize",
+      "zscore"
+    ],
+    "(Matrix,PositiveInt)->Matrix": [
+      "jump_decay",
+      "kth_element",
+      "last_diff_value",
+      "ts_arg_max",
+      "ts_arg_min",
+      "ts_av_diff",
+      "ts_backfill",
+      "ts_count_nans",
+      "ts_decay_linear",
+      "ts_delay",
+      "ts_delta",
+      "ts_ir",
+      "ts_kurtosis",
+      "ts_max",
+      "ts_max_diff",
+      "ts_mean",
+      "ts_min",
+      "ts_product",
+      "ts_quantile",
+      "ts_rank",
+      "ts_returns",
+      "ts_scale",
+      "ts_std_dev",
+      "ts_sum",
+      "ts_zscore"
+    ],
+    "(Matrix,Matrix)->Matrix": [
+      "and",
+      "divide",
+      "equal",
+      "greater",
+      "greater_equal",
+      "keep",
+      "less",
+      "less_equal",
+      "nan_mask",
+      "not_equal",
+      "or",
+      "power",
+      "signed_power",
+      "subtract",
+      "ts_target_tvr_delta_limit",
+      "vector_neut"
+    ],
+    "(Matrix,Group)->Matrix": [
+      "group_count",
+      "group_max",
+      "group_min",
+      "group_neutralize",
+      "group_rank",
+      "group_scale",
+      "group_std_dev",
+      "group_sum",
+      "group_zscore"
+    ],
+    "(Vector)->Matrix": [
+      "vec_avg",
+      "vec_count",
+      "vec_max",
+      "vec_min",
+      "vec_norm",
+      "vec_range",
+      "vec_stddev",
+      "vec_sum"
+    ],
+    "(Matrix,Matrix,PositiveInt)->Matrix": [
+      "ts_co_skewness",
+      "ts_corr",
+      "ts_covariance",
+      "ts_regression",
+      "ts_vector_neut",
+      "ts_vector_proj"
+    ],
+    "(Matrix,Matrix,Matrix)->Matrix": [
+      "if_else",
+      "trade_when"
+    ],
+    "(Matrix,Matrix,Group)->Matrix": [
+      "group_mean",
+      "group_vector_neut"
+    ],
+    "(Group)->Group": [
+      "densify"
+    ],
+    "(Int)->Matrix": [
+      "ts_step"
+    ],
+    "(Matrix,Matrix,Matrix,PositiveInt)->Matrix": [
+      "ts_triple_corr"
+    ],
+    "(Matrix)->Group": [
+      "bucket"
+    ],
+    "(Matrix,Group,PositiveInt)->Matrix": [
+      "group_backfill"
+    ],
+    "(Group,Group)->Group": [
+      "group_cartesian_product"
+    ]
+  },
+  "group_consuming_operators": [
+    "densify",
+    "group_backfill",
+    "group_cartesian_product",
+    "group_count",
+    "group_max",
+    "group_mean",
+    "group_min",
+    "group_neutralize",
+    "group_rank",
+    "group_scale",
+    "group_std_dev",
+    "group_sum",
+    "group_vector_neut",
+    "group_zscore"
+  ],
+  "already_named_in_desk_catalogue": [
+    "abs",
+    "add",
+    "and",
+    "bucket",
+    "days_from_last_change",
+    "densify",
+    "divide",
+    "equal",
+    "greater",
+    "greater_equal",
+    "group_backfill",
+    "group_cartesian_product",
+    "group_max",
+    "group_mean",
+    "group_min",
+    "group_neutralize",
+    "group_rank",
+    "group_scale",
+    "group_zscore",
+    "hump",
+    "if_else",
+    "inverse",
+    "is_nan",
+    "jump_decay",
+    "kth_element",
+    "last_diff_value",
+    "less",
+    "less_equal",
+    "log",
+    "max",
+    "min",
+    "multiply",
+    "normalize",
+    "not",
+    "not_equal",
+    "or",
+    "power",
+    "quantile",
+    "rank",
+    "reverse",
+    "scale",
+    "scale_down",
+    "sign",
+    "signed_power",
+    "sqrt",
+    "subtract",
+    "to_nan",
+    "trade_when",
+    "ts_arg_max",
+    "ts_arg_min",
+    "ts_av_diff",
+    "ts_backfill",
+    "ts_corr",
+    "ts_count_nans",
+    "ts_covariance",
+    "ts_decay_linear",
+    "ts_delay",
+    "ts_delta",
+    "ts_max",
+    "ts_mean",
+    "ts_min",
+    "ts_product",
+    "ts_quantile",
+    "ts_rank",
+    "ts_regression",
+    "ts_scale",
+    "ts_std_dev",
+    "ts_step",
+    "ts_sum",
+    "ts_target_tvr_decay",
+    "ts_target_tvr_delta_limit",
+    "ts_zscore",
+    "vec_avg",
+    "vec_max",
+    "vec_min",
+    "vec_sum",
+    "vector_neut",
+    "winsorize",
+    "zscore"
+  ],
+  "not_named_in_desk_catalogue": [
+    "arc_tan",
+    "clamp",
+    "filter",
+    "group_count",
+    "group_std_dev",
+    "group_sum",
+    "group_vector_neut",
+    "is_not_finite",
+    "keep",
+    "nan_mask",
+    "pasteurize",
+    "purify",
+    "round",
+    "round_down",
+    "tail",
+    "ts_co_skewness",
+    "ts_ir",
+    "ts_kurtosis",
+    "ts_max_diff",
+    "ts_rank_gmean_amean_diff",
+    "ts_returns",
+    "ts_target_tvr_hump",
+    "ts_triple_corr",
+    "ts_vector_neut",
+    "ts_vector_proj",
+    "vec_count",
+    "vec_norm",
+    "vec_range",
+    "vec_stddev"
+  ],
+  "operators": {
+    "abs": {
+      "pos_arg_types": [
+        "Matrix"
+      ],
+      "kwargs": {},
+      "arity": 1,
+      "return_type": "Matrix",
+      "description": "Returns the absolute value of a number, removing any negative sign."
+    },
+    "add": {
+      "pos_arg_types": [
+        "Matrix"
+      ],
+      "kwargs": {
+        "filter": {
+          "type": "Boolean",
+          "default": "Some(Constant::Boolean(false"
+        }
+      },
+      "arity": -1,
+      "return_type": "Matrix",
+      "description": "Add all inputs (at least 2 inputs required). If filter = true, filter all input NaN to 0 before adding"
+    },
+    "arc_tan": {
+      "pos_arg_types": [
+        "Matrix"
+      ],
+      "kwargs": {},
+      "arity": 1,
+      "return_type": "Matrix",
+      "description": "This operator does inverse tangent of input. Hence, constraints input within –pi/2 to pi/2 where ends. For very small values of x, arc_tan(x) = x. This is an odd and one-to-one function."
+    },
+    "densify": {
+      "pos_arg_types": [
+        "Group"
+      ],
+      "kwargs": {},
+      "arity": 1,
+      "return_type": "Group",
+      "description": "Converts a grouping field of many buckets into lesser number of only available buckets so as to make working with grouping fields computationally efficient"
+    },
+    "divide": {
+      "pos_arg_types": [
+        "Matrix",
+        "Matrix"
+      ],
+      "kwargs": {},
+      "arity": 2,
+      "return_type": "Matrix",
+      "description": "x / y"
+    },
+    "inverse": {
+      "pos_arg_types": [
+        "Matrix"
+      ],
+      "kwargs": {},
+      "arity": 1,
+      "return_type": "Matrix",
+      "description": "1 / x"
+    },
+    "log": {
+      "pos_arg_types": [
+        "Matrix"
+      ],
+      "kwargs": {},
+      "arity": 1,
+      "return_type": "Matrix",
+      "description": "Calculates the natural logarithm of the input value. Commonly used to transform data that has positive values."
+    },
+    "max": {
+      "pos_arg_types": [
+        "Matrix"
+      ],
+      "kwargs": {},
+      "arity": -1,
+      "return_type": "Matrix",
+      "description": "Maximum value of all inputs. At least 2 inputs are required"
+    },
+    "min": {
+      "pos_arg_types": [
+        "Matrix"
+      ],
+      "kwargs": {},
+      "arity": -1,
+      "return_type": "Matrix",
+      "description": "Minimum value of all inputs. At least 2 inputs are required"
+    },
+    "multiply": {
+      "pos_arg_types": [
+        "Matrix"
+      ],
+      "kwargs": {
+        "filter": {
+          "type": "Boolean",
+          "default": "Some(Constant::Boolean(false"
+        }
+      },
+      "arity": -1,
+      "return_type": "Matrix",
+      "description": "Multiplies two or more inputs element wise. Set filter=true to treat NaNs as 0 before multiplication"
+    },
+    "nan_mask": {
+      "pos_arg_types": [
+        "Matrix",
+        "Matrix"
+      ],
+      "kwargs": {},
+      "arity": 2,
+      "return_type": "Matrix",
+      "description": "replace input with NAN if input's corresponding mask value or the second input here, is negative"
+    },
+    "pasteurize": {
+      "pos_arg_types": [
+        "Matrix"
+      ],
+      "kwargs": {},
+      "arity": 1,
+      "return_type": "Matrix",
+      "description": "Set to NaN if x is INF or if the underlying instrument is not in the Alpha universe. This operator may help reduce outliers."
+    },
+    "power": {
+      "pos_arg_types": [
+        "Matrix",
+        "Matrix"
+      ],
+      "kwargs": {},
+      "arity": 2,
+      "return_type": "Matrix",
+      "description": "x ^ y"
+    },
+    "purify": {
+      "pos_arg_types": [
+        "Matrix"
+      ],
+      "kwargs": {},
+      "arity": 1,
+      "return_type": "Matrix",
+      "description": "Clear infinities (+inf, -inf) by replacing with NaN"
+    },
+    "reverse": {
+      "pos_arg_types": [
+        "Matrix"
+      ],
+      "kwargs": {},
+      "arity": 1,
+      "return_type": "Matrix",
+      "description": "-x"
+    },
+    "round": {
+      "pos_arg_types": [
+        "Matrix"
+      ],
+      "kwargs": {},
+      "arity": 1,
+      "return_type": "Matrix",
+      "description": "Round input to closest integer."
+    },
+    "round_down": {
+      "pos_arg_types": [
+        "Matrix"
+      ],
+      "kwargs": {
+        "f": {
+          "type": "Number",
+          "default": "Some(Constant::Integer(1"
+        }
+      },
+      "arity": 1,
+      "return_type": "Matrix",
+      "description": "Round input to greatest multiple of f less than input; Input: Value of 3 instruments at day t: (2.5, 3.2, 5.4), f: 1 Output: (2, 3, 5)"
+    },
+    "sign": {
+      "pos_arg_types": [
+        "Matrix"
+      ],
+      "kwargs": {},
+      "arity": 1,
+      "return_type": "Matrix",
+      "description": "Returns the sign of a number: +1 for positive, -1 for negative, and 0 for zero. If the input is NaN, returns NaN."
+    },
+    "signed_power": {
+      "pos_arg_types": [
+        "Matrix",
+        "Matrix"
+      ],
+      "kwargs": {},
+      "arity": 2,
+      "return_type": "Matrix",
+      "description": "x raised to the power of y such that final result preserves sign of x"
+    },
+    "sqrt": {
+      "pos_arg_types": [
+        "Matrix"
+      ],
+      "kwargs": {},
+      "arity": 1,
+      "return_type": "Matrix",
+      "description": "Returns the non negative square root of x. Equivalent to power(x, 0.5); for signed roots use signed_power(x, 0.5)."
+    },
+    "subtract": {
+      "pos_arg_types": [
+        "Matrix",
+        "Matrix"
+      ],
+      "kwargs": {
+        "filter": {
+          "type": "Boolean",
+          "default": "Some(Constant::Boolean(false"
+        }
+      },
+      "arity": 2,
+      "return_type": "Matrix",
+      "description": "Subtracts inputs left to right. Supports only two inputs. Set filter=true to treat NaNs as 0 before subtraction."
+    },
+    "to_nan": {
+      "pos_arg_types": [
+        "Matrix"
+      ],
+      "kwargs": {
+        "value": {
+          "type": "Number",
+          "default": "Some(Constant::Integer(0"
+        },
+        "reverse": {
+          "type": "Boolean",
+          "default": "Some(Constant::Boolean(false"
+        }
+      },
+      "arity": 1,
+      "return_type": "Matrix",
+      "description": "Convert value to NaN or NaN to value if reverse=true"
+    },
+    "and": {
+      "pos_arg_types": [
+        "Matrix",
+        "Matrix"
+      ],
+      "kwargs": {},
+      "arity": 2,
+      "return_type": "Matrix",
+      "description": "Returns 1 ('true') if both inputs are 1 ('true'). Otherwise, returns 0 ('false')."
+    },
+    "if_else": {
+      "pos_arg_types": [
+        "Matrix",
+        "Matrix",
+        "Matrix"
+      ],
+      "kwargs": {},
+      "arity": 3,
+      "return_type": "Matrix",
+      "description": "The if_else operator returns one of two values based on a condition. If the condition is true, it returns the first value; if false, it returns the second value."
+    },
+    "less": {
+      "pos_arg_types": [
+        "Matrix",
+        "Matrix"
+      ],
+      "kwargs": {},
+      "arity": 2,
+      "return_type": "Matrix",
+      "description": "Returns 1 ('true') if input1 is a smaller than input2. Otherwise, returns 0 ('false')."
+    },
+    "less_equal": {
+      "pos_arg_types": [
+        "Matrix",
+        "Matrix"
+      ],
+      "kwargs": {},
+      "arity": 2,
+      "return_type": "Matrix",
+      "description": "Returns 1 ('true') if input1 is a smaller or the same as input2. Otherwise, returns 0 ('false')."
+    },
+    "equal": {
+      "pos_arg_types": [
+        "Matrix",
+        "Matrix"
+      ],
+      "kwargs": {},
+      "arity": 2,
+      "return_type": "Matrix",
+      "description": "Returns 1 ('true') if input1 and input2 are the same. Otherwise, returns 0 ('false')."
+    },
+    "greater": {
+      "pos_arg_types": [
+        "Matrix",
+        "Matrix"
+      ],
+      "kwargs": {},
+      "arity": 2,
+      "return_type": "Matrix",
+      "description": "Returns 1 ('true') if input1 is a larger than input2. Otherwise, returns 0 ('false')."
+    },
+    "greater_equal": {
+      "pos_arg_types": [
+        "Matrix",
+        "Matrix"
+      ],
+      "kwargs": {},
+      "arity": 2,
+      "return_type": "Matrix",
+      "description": "Returns 1 ('true') if input1 is a larger than input2 or equal to input2. Otherwise, returns 0 ('false')."
+    },
+    "not_equal": {
+      "pos_arg_types": [
+        "Matrix",
+        "Matrix"
+      ],
+      "kwargs": {},
+      "arity": 2,
+      "return_type": "Matrix",
+      "description": "Returns 1 ('true') if input1 and input2 are different numbers. Otherwise, returns 0 ('false')."
+    },
+    "is_nan": {
+      "pos_arg_types": [
+        "Matrix"
+      ],
+      "kwargs": {},
+      "arity": 1,
+      "return_type": "Matrix",
+      "description": "If (input == NaN) return 1 else return 0"
+    },
+    "is_not_finite": {
+      "pos_arg_types": [
+        "Matrix"
+      ],
+      "kwargs": {},
+      "arity": 1,
+      "return_type": "Matrix",
+      "description": "If (input NAN or input == INF) return 1 else return 0"
+    },
+    "not": {
+      "pos_arg_types": [
+        "Matrix"
+      ],
+      "kwargs": {},
+      "arity": 1,
+      "return_type": "Matrix",
+      "description": "Returns the logical negation of x. Returns 0 when x is 1 ('true') and 1 when x is 0 ('false')."
+    },
+    "or": {
+      "pos_arg_types": [
+        "Matrix",
+        "Matrix"
+      ],
+      "kwargs": {},
+      "arity": 2,
+      "return_type": "Matrix",
+      "description": "Returns 1 if either input is true (either input1 or input2 has a value of 1), otherwise it returns 0."
+    },
+    "days_from_last_change": {
+      "pos_arg_types": [
+        "Matrix"
+      ],
+      "kwargs": {},
+      "arity": 1,
+      "return_type": "Matrix",
+      "description": "Calculates the number of days since the last change in the value of a given variable."
+    },
+    "hump": {
+      "pos_arg_types": [
+        "Matrix"
+      ],
+      "kwargs": {
+        "hump": {
+          "type": "PositiveFloat",
+          "default": "Some(Constant::PositiveFloat(0.01"
+        }
+      },
+      "arity": 1,
+      "return_type": "Matrix",
+      "description": "Limits amount and magnitude of changes in input (thus reducing turnover)"
+    },
+    "jump_decay": {
+      "pos_arg_types": [
+        "Matrix",
+        "PositiveInt"
+      ],
+      "kwargs": {
+        "stddev": {
+          "type": "Boolean",
+          "default": "Some(Constant::Boolean(false"
+        },
+        "sensitivity": {
+          "type": "PositiveFloat",
+          "default": "None"
+        },
+        "force": {
+          "type": "PositiveFloat",
+          "default": "None"
+        }
+      },
+      "arity": 2,
+      "return_type": "Matrix",
+      "description": "If there is a huge jump in current data compare to previous one, apply force: jump_decay(x) = abs(x-ts_delay(x, 1)) > sensitivity * ts_stddev(x,d) ? ts_delay(x,1) + ts_delta(x, 1) * force: x. If stddev enabled, jump threshold will be calculated as sensitivity * stddev otherwise it is sensitivity"
+    },
+    "kth_element": {
+      "pos_arg_types": [
+        "Matrix",
+        "PositiveInt"
+      ],
+      "kwargs": {
+        "k": {
+          "type": "PositiveInt",
+          "default": "None"
+        },
+        "ignore": {
+          "type": "Set",
+          "default": "Some(Constant::Set(vec![f64::NAN]"
+        }
+      },
+      "arity": 2,
+      "return_type": "Matrix",
+      "description": "Returns the K-th value from a time series by looking back over a specified number of ('d') days, with the option to ignore certain values. Commonly used for backfilling missing data."
+    },
+    "last_diff_value": {
+      "pos_arg_types": [
+        "Matrix",
+        "PositiveInt"
+      ],
+      "kwargs": {},
+      "arity": 2,
+      "return_type": "Matrix",
+      "description": "Returns the most recent value of x from the past d days that is different from the current value of x."
+    },
+    "ts_arg_max": {
+      "pos_arg_types": [
+        "Matrix",
+        "PositiveInt"
+      ],
+      "kwargs": {},
+      "arity": 2,
+      "return_type": "Matrix",
+      "description": "Returns the number of days since the maximum value occurred in the last d days of a time series. If today's value is the maximum, returns 0; if it was yesterday, returns 1, and so on."
+    },
+    "ts_arg_min": {
+      "pos_arg_types": [
+        "Matrix",
+        "PositiveInt"
+      ],
+      "kwargs": {},
+      "arity": 2,
+      "return_type": "Matrix",
+      "description": "Returns the number of days since the minimum value occurred in a time series over the past d days. If today's value is the minimum, returns 0; if it was yesterday, returns 1, and so on."
+    },
+    "ts_av_diff": {
+      "pos_arg_types": [
+        "Matrix",
+        "PositiveInt"
+      ],
+      "kwargs": {},
+      "arity": 2,
+      "return_type": "Matrix",
+      "description": "Calculates the difference between a value and its mean over a specified period, ignoring NaN values in the mean calculation. In short, it returns x – ts_mean(x, d) with NaNs ignored."
+    },
+    "ts_backfill": {
+      "pos_arg_types": [
+        "Matrix",
+        "PositiveInt"
+      ],
+      "kwargs": {
+        "k": {
+          "type": "PositiveInt",
+          "default": "Some(Constant::Integer(1"
+        }
+      },
+      "arity": 2,
+      "return_type": "Matrix",
+      "description": "Replaces missing (NaN) values in a time series with the most recent valid value from a specified lookback window, improving data coverage and reducing risk from missing data."
+    },
+    "ts_co_skewness": {
+      "pos_arg_types": [
+        "Matrix",
+        "Matrix",
+        "PositiveInt"
+      ],
+      "kwargs": {},
+      "arity": 3,
+      "return_type": "Matrix",
+      "description": "Returns coskewness of y and x for the past d days"
+    },
+    "ts_corr": {
+      "pos_arg_types": [
+        "Matrix",
+        "Matrix",
+        "PositiveInt"
+      ],
+      "kwargs": {},
+      "arity": 3,
+      "return_type": "Matrix",
+      "description": "Calculates the Pearson correlation between two variables, x and y, over the past d days, showing how closely they move together."
+    },
+    "ts_count_nans": {
+      "pos_arg_types": [
+        "Matrix",
+        "PositiveInt"
+      ],
+      "kwargs": {},
+      "arity": 2,
+      "return_type": "Matrix",
+      "description": "Counts the number of missing (NaN) values in a data series over a specified number of days."
+    },
+    "ts_covariance": {
+      "pos_arg_types": [
+        "Matrix",
+        "Matrix",
+        "PositiveInt"
+      ],
+      "kwargs": {},
+      "arity": 3,
+      "return_type": "Matrix",
+      "description": "Calculates the covariance between two time-series variables, y and x, over the past d days. Useful for measuring how two variables move together within a specified historical window."
+    },
+    "ts_decay_linear": {
+      "pos_arg_types": [
+        "Matrix",
+        "PositiveInt"
+      ],
+      "kwargs": {
+        "dense": {
+          "type": "Boolean",
+          "default": "Some(Constant::Boolean(false"
+        }
+      },
+      "arity": 2,
+      "return_type": "Matrix",
+      "description": "Applies a linear decay to time-series data over a set number of days, smoothing the data by averaging recent values and reducing the impact of older or missing data."
+    },
+    "ts_delay": {
+      "pos_arg_types": [
+        "Matrix",
+        "PositiveInt"
+      ],
+      "kwargs": {},
+      "arity": 2,
+      "return_type": "Matrix",
+      "description": "Returns the value of a variable x from d days ago. Use this operator to access historical data points by specifying the desired time lag in days."
+    },
+    "ts_delta": {
+      "pos_arg_types": [
+        "Matrix",
+        "PositiveInt"
+      ],
+      "kwargs": {},
+      "arity": 2,
+      "return_type": "Matrix",
+      "description": "Calculates the difference between a value and its delayed version over a specified period. Useful for measuring changes or momentum in time-series data."
+    },
+    "ts_ir": {
+      "pos_arg_types": [
+        "Matrix",
+        "PositiveInt"
+      ],
+      "kwargs": {},
+      "arity": 2,
+      "return_type": "Matrix",
+      "description": "Return information ratio ts_mean(x, d) / ts_std_dev(x, d)"
+    },
+    "ts_kurtosis": {
+      "pos_arg_types": [
+        "Matrix",
+        "PositiveInt"
+      ],
+      "kwargs": {},
+      "arity": 2,
+      "return_type": "Matrix",
+      "description": "Returns kurtosis of x for the last d days"
+    },
+    "ts_max": {
+      "pos_arg_types": [
+        "Matrix",
+        "PositiveInt"
+      ],
+      "kwargs": {},
+      "arity": 2,
+      "return_type": "Matrix",
+      "description": "Returns max value of x for the past d days"
+    },
+    "ts_max_diff": {
+      "pos_arg_types": [
+        "Matrix",
+        "PositiveInt"
+      ],
+      "kwargs": {},
+      "arity": 2,
+      "return_type": "Matrix",
+      "description": "Returns x - ts_max(x, d)"
+    },
+    "ts_mean": {
+      "pos_arg_types": [
+        "Matrix",
+        "PositiveInt"
+      ],
+      "kwargs": {},
+      "arity": 2,
+      "return_type": "Matrix",
+      "description": "Calculates the simple average (mean) value of a variable x over the past d days."
+    },
+    "ts_min": {
+      "pos_arg_types": [
+        "Matrix",
+        "PositiveInt"
+      ],
+      "kwargs": {},
+      "arity": 2,
+      "return_type": "Matrix",
+      "description": "Returns min value of x for the past d days"
+    },
+    "ts_product": {
+      "pos_arg_types": [
+        "Matrix",
+        "PositiveInt"
+      ],
+      "kwargs": {},
+      "arity": 2,
+      "return_type": "Matrix",
+      "description": "Returns the product of the values of x over the past d days. Useful for calculating geometric means and compounding returns or growth rates."
+    },
+    "ts_quantile": {
+      "pos_arg_types": [
+        "Matrix",
+        "PositiveInt"
+      ],
+      "kwargs": {
+        "driver": {
+          "type": "Driver",
+          "default": "Some(Constant::Driver(Driver::Gaussian"
+        }
+      },
+      "arity": 2,
+      "return_type": "Matrix",
+      "description": "Calculates the ts_rank of the input and transforms it using the inverse cumulative distribution function (quantile function) of a specified probability distribution (default: Gaussian/normal)."
+    },
+    "ts_rank": {
+      "pos_arg_types": [
+        "Matrix",
+        "PositiveInt"
+      ],
+      "kwargs": {
+        "constant": {
+          "type": "Number",
+          "default": "Some(Constant::Float(0.0"
+        }
+      },
+      "arity": 2,
+      "return_type": "Matrix",
+      "description": "Ranks the value of a variable for each instrument over a specified number of past days, returning the rank of the current value (optionally adjusted by a constant)."
+    },
+    "ts_rank_gmean_amean_diff": {
+      "pos_arg_types": [
+        "Matrix"
+      ],
+      "kwargs": {
+        "lookback": {
+          "type": "PositiveInt",
+          "default": "None"
+        }
+      },
+      "arity": -1,
+      "return_type": "Matrix",
+      "description": "Returns Geometric Mean of ts_rank(input,d) of all input - Arithmetic Mean of ts_rank(input,d) of all input. This is similar to rank_gmean_amean_diff operator but in time-series space"
+    },
+    "ts_regression": {
+      "pos_arg_types": [
+        "Matrix",
+        "Matrix",
+        "PositiveInt"
+      ],
+      "kwargs": {
+        "lag": {
+          "type": "NonNegativeInt",
+          "default": "Some(Constant::Zero"
+        },
+        "rettype": {
+          "type": "RetType",
+          "default": "Some(Constant::Integer(0"
+        }
+      },
+      "arity": 3,
+      "return_type": "Matrix",
+      "description": "Returns various parameters related to regression function, rettype can be 0~9: (0 Error Term), (1 y-intercept (α)), (2 slope (β)), (3 y-estimate), (4 Sum of Squares of Error (SSE)), (5 Sum of Squares of Total (SST)), (6 R-Square), (7 Mean Square Error (MSE)), (8 Standard Error of β), (9 Standard Error of α)"
+    },
+    "ts_returns": {
+      "pos_arg_types": [
+        "Matrix",
+        "PositiveInt"
+      ],
+      "kwargs": {
+        "mode": {
+          "type": "ReturnMode",
+          "default": "Some(Constant::Integer(1"
+        }
+      },
+      "arity": 2,
+      "return_type": "Matrix",
+      "description": "Returns the relative change in the x value, mode can be 1 or 2, If mode = 1, it returns (x – ts_delay(x, d )) / ts_delay(x, d), If mode = 2, it returns mode == 2: (x – ts_delay(x, d )) / ((x + ts_delay(x, d))/2)"
+    },
+    "ts_scale": {
+      "pos_arg_types": [
+        "Matrix",
+        "PositiveInt"
+      ],
+      "kwargs": {
+        "constant": {
+          "type": "Number",
+          "default": "Some(Constant::Float(0.0"
+        }
+      },
+      "arity": 2,
+      "return_type": "Matrix",
+      "description": "Scales a time series to a 0–1 range based on its minimum and maximum values over a specified period, with an optional constant shift."
+    },
+    "ts_std_dev": {
+      "pos_arg_types": [
+        "Matrix",
+        "PositiveInt"
+      ],
+      "kwargs": {},
+      "arity": 2,
+      "return_type": "Matrix",
+      "description": "Calculates the standard deviation of a data series x over the past d days, measuring how much the values deviate from their mean during that period."
+    },
+    "ts_step": {
+      "pos_arg_types": [
+        "Int"
+      ],
+      "kwargs": {},
+      "arity": 1,
+      "return_type": "Matrix",
+      "description": "Returns a counter of days, incrementing by one each day."
+    },
+    "ts_sum": {
+      "pos_arg_types": [
+        "Matrix",
+        "PositiveInt"
+      ],
+      "kwargs": {},
+      "arity": 2,
+      "return_type": "Matrix",
+      "description": "Sum values of x for the past d days."
+    },
+    "ts_target_tvr_decay": {
+      "pos_arg_types": [
+        "Matrix"
+      ],
+      "kwargs": {
+        "lambda_min": {
+          "type": "NonNegativeFloat",
+          "default": "Some(Constant::Zero"
+        },
+        "lambda_max": {
+          "type": "NonNegativeFloat",
+          "default": "Some(Constant::One"
+        },
+        "target_tvr": {
+          "type": "Ratio",
+          "default": "None"
+        }
+      },
+      "arity": 1,
+      "return_type": "Matrix",
+      "description": "Tune ts_decay to have a turnover equal to a certain target, with optimization weight range between lambda_min, lambda_max"
+    },
+    "ts_target_tvr_delta_limit": {
+      "pos_arg_types": [
+        "Matrix",
+        "Matrix"
+      ],
+      "kwargs": {
+        "lambda_min": {
+          "type": "NonNegativeFloat",
+          "default": "Some(Constant::Zero"
+        },
+        "lambda_max": {
+          "type": "NonNegativeFloat",
+          "default": "Some(Constant::One"
+        },
+        "target_tvr": {
+          "type": "Ratio",
+          "default": "None"
+        }
+      },
+      "arity": 2,
+      "return_type": "Matrix",
+      "description": "Tune ts_delta_limit to have a turnover equal to a certain target with optimization weight range between lambda_min, lambda_max. Also, please be aware of the scaling for x and y. Besides setting y as adv20 or volume related data, you can also set y as a constant."
+    },
+    "ts_target_tvr_hump": {
+      "pos_arg_types": [
+        "Matrix"
+      ],
+      "kwargs": {
+        "lambda_min": {
+          "type": "NonNegativeFloat",
+          "default": "Some(Constant::Zero"
+        },
+        "lambda_max": {
+          "type": "NonNegativeFloat",
+          "default": "Some(Constant::One"
+        },
+        "target_tvr": {
+          "type": "Ratio",
+          "default": "None"
+        }
+      },
+      "arity": 1,
+      "return_type": "Matrix",
+      "description": "Tune hump to have a turnover equal to a certain target with optimization weight range between lambda_min, lambda_max."
+    },
+    "ts_triple_corr": {
+      "pos_arg_types": [
+        "Matrix",
+        "Matrix",
+        "Matrix",
+        "PositiveInt"
+      ],
+      "kwargs": {},
+      "arity": 4,
+      "return_type": "Matrix",
+      "description": "Returns triple correlation of x, y, z for the past d days"
+    },
+    "ts_vector_proj": {
+      "pos_arg_types": [
+        "Matrix",
+        "Matrix",
+        "PositiveInt"
+      ],
+      "kwargs": {},
+      "arity": 3,
+      "return_type": "Matrix",
+      "description": "Returns vector projection of x onto y in time-series space."
+    },
+    "ts_vector_neut": {
+      "pos_arg_types": [
+        "Matrix",
+        "Matrix",
+        "PositiveInt"
+      ],
+      "kwargs": {},
+      "arity": 3,
+      "return_type": "Matrix",
+      "description": "Returns x- ts_vector_proj(x,y,d)"
+    },
+    "ts_zscore": {
+      "pos_arg_types": [
+        "Matrix",
+        "PositiveInt"
+      ],
+      "kwargs": {},
+      "arity": 2,
+      "return_type": "Matrix",
+      "description": "Calculates the Z-score of a time series, showing how far today's value is from the recent average, measured in standard deviations."
+    },
+    "normalize": {
+      "pos_arg_types": [
+        "Matrix"
+      ],
+      "kwargs": {
+        "limit": {
+          "type": "Number",
+          "default": "Some(Constant::Float(0.0"
+        }
+      },
+      "arity": 1,
+      "return_type": "Matrix",
+      "description": "Calculates the mean value of all valid alpha values for a certain date, then subtracts that mean from each element"
+    },
+    "quantile": {
+      "pos_arg_types": [
+        "Matrix"
+      ],
+      "kwargs": {
+        "driver": {
+          "type": "Driver",
+          "default": "Some(Constant::Driver(Driver::Gaussian"
+        },
+        "sigma": {
+          "type": "PositiveFloat",
+          "default": "Some(Constant::PositiveFloat(1.0"
+        }
+      },
+      "arity": 1,
+      "return_type": "Matrix",
+      "description": "Rank the raw vector, shift the ranked Alpha vector, apply distribution (gaussian, cauchy, uniform). If driver is uniform, it simply subtract each Alpha value with the mean of all Alpha values in the Alpha vector"
+    },
+    "rank": {
+      "pos_arg_types": [
+        "Matrix"
+      ],
+      "kwargs": {
+        "rate": {
+          "type": "RankRate",
+          "default": "Some(Constant::Integer(2"
+        }
+      },
+      "arity": 1,
+      "return_type": "Matrix",
+      "description": "Ranks the input among all the instruments and returns an equally distributed number between 0.0 and 1.0. For precise sort, use the rate as 0"
+    },
+    "scale": {
+      "pos_arg_types": [
+        "Matrix"
+      ],
+      "kwargs": {
+        "scale": {
+          "type": "PositiveFloat",
+          "default": "Some(Constant::Integer(1"
+        },
+        "longscale": {
+          "type": "PositiveFloat",
+          "default": "Some(Constant::Integer(1"
+        },
+        "shortscale": {
+          "type": "PositiveFloat",
+          "default": "Some(Constant::Integer(1"
+        }
+      },
+      "arity": 1,
+      "return_type": "Matrix",
+      "description": "Scales input to booksize. We can also scale the long positions and short positions to separate scales by mentioning additional parameters to the operator, The scale(x, scale=1, longscale=1, shortscale=1) operator adjusts the input values so that their total absolute value matches a target book size. By default, it scales so that the sum of absolute values is 1, but you can set a different scale. You can also use longscale and shortscale to apply different scaling to long and short positions, respectively. This operator is useful for normalizing your alpha signals and reducing the impact of outliers."
+    },
+    "scale_down": {
+      "pos_arg_types": [
+        "Matrix"
+      ],
+      "kwargs": {
+        "constant": {
+          "type": "Number",
+          "default": "Some(Constant::Integer(0"
+        }
+      },
+      "arity": 1,
+      "return_type": "Matrix",
+      "description": "Scales all values in each day proportionately between 0 and 1 such that minimum value maps to 0 and maximum value maps to 1. Constant is the offset by which final result is subtracted"
+    },
+    "vector_neut": {
+      "pos_arg_types": [
+        "Matrix",
+        "Matrix"
+      ],
+      "kwargs": {},
+      "arity": 2,
+      "return_type": "Matrix",
+      "description": "For given vectors x and y, it finds a new vector x* (output) such that x* is orthogonal to y"
+    },
+    "winsorize": {
+      "pos_arg_types": [
+        "Matrix"
+      ],
+      "kwargs": {
+        "std": {
+          "type": "PositiveFloat",
+          "default": "Some(Constant::PositiveFloat(4.0"
+        }
+      },
+      "arity": 1,
+      "return_type": "Matrix",
+      "description": "Winsorizes x to make sure that all values in x are between the lower and upper limits, which are specified as multiple of std."
+    },
+    "zscore": {
+      "pos_arg_types": [
+        "Matrix"
+      ],
+      "kwargs": {},
+      "arity": 1,
+      "return_type": "Matrix",
+      "description": "Z-score is a numerical measurement that describes a value's relationship to the mean of a group of values. Z-score is measured in terms of standard deviations from the mean"
+    },
+    "vec_avg": {
+      "pos_arg_types": [
+        "Vector"
+      ],
+      "kwargs": {},
+      "arity": 1,
+      "return_type": "Matrix",
+      "description": "Taking mean of the vector field x"
+    },
+    "vec_count": {
+      "pos_arg_types": [
+        "Vector"
+      ],
+      "kwargs": {},
+      "arity": 1,
+      "return_type": "Matrix",
+      "description": "Number of elements in vector field x"
+    },
+    "vec_max": {
+      "pos_arg_types": [
+        "Vector"
+      ],
+      "kwargs": {},
+      "arity": 1,
+      "return_type": "Matrix",
+      "description": "Maximum value from vector field x"
+    },
+    "vec_min": {
+      "pos_arg_types": [
+        "Vector"
+      ],
+      "kwargs": {},
+      "arity": 1,
+      "return_type": "Matrix",
+      "description": "Minimum value from vector field x"
+    },
+    "vec_norm": {
+      "pos_arg_types": [
+        "Vector"
+      ],
+      "kwargs": {},
+      "arity": 1,
+      "return_type": "Matrix",
+      "description": "Sum of all absolute values of vector field x"
+    },
+    "vec_range": {
+      "pos_arg_types": [
+        "Vector"
+      ],
+      "kwargs": {},
+      "arity": 1,
+      "return_type": "Matrix",
+      "description": "Difference between maximum and minimum element in vector field x"
+    },
+    "vec_stddev": {
+      "pos_arg_types": [
+        "Vector"
+      ],
+      "kwargs": {},
+      "arity": 1,
+      "return_type": "Matrix",
+      "description": "Standard Deviation of vector field x"
+    },
+    "vec_sum": {
+      "pos_arg_types": [
+        "Vector"
+      ],
+      "kwargs": {},
+      "arity": 1,
+      "return_type": "Matrix",
+      "description": "Sum of vector field x"
+    },
+    "bucket": {
+      "pos_arg_types": [
+        "Matrix"
+      ],
+      "kwargs": {
+        "range": {
+          "type": "Range",
+          "default": "Some(Constant::NaN"
+        },
+        "buckets": {
+          "type": "Array",
+          "default": "Some(Constant::NaN"
+        }
+      },
+      "arity": 1,
+      "return_type": "Group",
+      "description": "Convert float values into indexes for user-specified buckets. Bucket is useful for creating group values, which can be passed to GROUP as input. rank(x) transforms the input into a uniform distribution between 0 and 1. bucket(...) splits these ranked values into discrete groups (buckets) based on your chosen method: 1. Range: range=“start, end, step” divides the interval [start, end] into equal-width buckets. 2. Buckets: buckets=“num_1,num_2,...,num_N” creates buckets with custom boundaries. Two hidden buckets corresponding to (-inf, start] and [end, +inf) are added by default are added by default. The optional parameter “skipBoth”, “skipBegin” and “skipEnd” can be set to “True” to remove these buckets and give NAN for the values that are out of range. By setting NANGroup = True, all NAN input values will be in the new bucket which will be index as the last bucket. use range or buckets, **DO NOT** use both. most common usage is bucket(rank(x), range='0,1,0.1')"
+    },
+    "clamp": {
+      "pos_arg_types": [
+        "Matrix"
+      ],
+      "kwargs": {
+        "lower": {
+          "type": "Number",
+          "default": "None"
+        },
+        "upper": {
+          "type": "Number",
+          "default": "None"
+        },
+        "inverse": {
+          "type": "Boolean",
+          "default": "Some(Constant::Boolean(false"
+        },
+        "mask": {
+          "type": "Mask",
+          "default": "Some(Constant::NaN"
+        }
+      },
+      "arity": 1,
+      "return_type": "Matrix",
+      "description": "Limits input value between lower and upper bound in inverse = false mode (which is default). Alternatively, when inverse = true, values between bounds are replaced with mask, while values outside bounds are left as is"
+    },
+    "filter": {
+      "pos_arg_types": [
+        "Matrix"
+      ],
+      "kwargs": {
+        "h": {
+          "type": "Array",
+          "default": "None"
+        },
+        "t": {
+          "type": "Array",
+          "default": "None"
+        }
+      },
+      "arity": 1,
+      "return_type": "Matrix",
+      "description": "Scales all values in each day proportionately between 0 and 1 such that minimum value maps to 0 and maximum value maps to 1. Constant is the offset by which final result is subtracted. This operator is used to filter the value. It is calculated as follows:  output[t] = h[0] * input[t-1] + h[1] * input[t-2] + ... + t[0] * output[t-1] + t[1] * output[t-2] + ...  Where h and t are vectors of floats separated by comma.  Thus it can be divided into two parts: one that acts like weighted moving average (h) and recursive part (t). This allows to create different kinds of filters like decay linear or exponential decay."
+    },
+    "keep": {
+      "pos_arg_types": [
+        "Matrix",
+        "Matrix"
+      ],
+      "kwargs": {
+        "period": {
+          "type": "PositiveInt",
+          "default": "Some(Constant::Integer(5"
+        }
+      },
+      "arity": 2,
+      "return_type": "Matrix",
+      "description": "This operator outputs value x when f changes and continues to do that for \\\"period\\\" days after f stopped changing. After \\\"period\\\" days since last change of f, NaN is output. This can be expressed as the below code: D = days_from_last_change(f); u = trade_when(D < period, x, D > period); u"
+    },
+    "tail": {
+      "pos_arg_types": [
+        "Matrix"
+      ],
+      "kwargs": {
+        "lower": {
+          "type": "Number",
+          "default": "None"
+        },
+        "upper": {
+          "type": "Number",
+          "default": "None"
+        },
+        "newval": {
+          "type": "Number",
+          "default": "None"
+        }
+      },
+      "arity": 1,
+      "return_type": "Matrix",
+      "description": "If (x > lower AND x < upper) return newval, else return x. Lower, upper, newval should be constants"
+    },
+    "trade_when": {
+      "pos_arg_types": [
+        "Matrix",
+        "Matrix",
+        "Matrix"
+      ],
+      "kwargs": {},
+      "arity": 3,
+      "return_type": "Matrix",
+      "description": "Used in order to change Alpha values only under a specified condition and to hold Alpha values in other cases. It also allows to close Alpha positions (assign NaN values) under a specified condition"
+    },
+    "group_backfill": {
+      "pos_arg_types": [
+        "Matrix",
+        "Group",
+        "PositiveInt"
+      ],
+      "kwargs": {
+        "std": {
+          "type": "PositiveFloat",
+          "default": "Some(Constant::Float(4.0"
+        }
+      },
+      "arity": 3,
+      "return_type": "Matrix",
+      "description": "If a certain value for a certain date and instrument is NaN, from the set of same group instruments, calculate winsorized mean of all non-NaN values over last d days"
+    },
+    "group_cartesian_product": {
+      "pos_arg_types": [
+        "Group",
+        "Group"
+      ],
+      "kwargs": {},
+      "arity": 2,
+      "return_type": "Group",
+      "description": "Merge two groups into one group. If originally there are len_1 and len_2 group indices in g1 and g2, there will be len_1 * len_2 indices in the new group."
+    },
+    "group_count": {
+      "pos_arg_types": [
+        "Matrix",
+        "Group"
+      ],
+      "kwargs": {},
+      "arity": 2,
+      "return_type": "Matrix",
+      "description": "Gives the number of instruments in the same group (e.g. sector) which have valid values of x. This operator improves weight coverage and may help to reduce drawdown risk."
+    },
+    "group_max": {
+      "pos_arg_types": [
+        "Matrix",
+        "Group"
+      ],
+      "kwargs": {},
+      "arity": 2,
+      "return_type": "Matrix",
+      "description": "Maximum of x for all instruments in the same group."
+    },
+    "group_mean": {
+      "pos_arg_types": [
+        "Matrix",
+        "Matrix",
+        "Group"
+      ],
+      "kwargs": {},
+      "arity": 3,
+      "return_type": "Matrix",
+      "description": "All elements in group equals to the mean"
+    },
+    "group_min": {
+      "pos_arg_types": [
+        "Matrix",
+        "Group"
+      ],
+      "kwargs": {},
+      "arity": 2,
+      "return_type": "Matrix",
+      "description": "All elements in group equals to the min value of the group."
+    },
+    "group_neutralize": {
+      "pos_arg_types": [
+        "Matrix",
+        "Group"
+      ],
+      "kwargs": {},
+      "arity": 2,
+      "return_type": "Matrix",
+      "description": "Neutralizes Alpha against groups. These groups can be subindustry, industry, sector, country or a constant"
+    },
+    "group_rank": {
+      "pos_arg_types": [
+        "Matrix",
+        "Group"
+      ],
+      "kwargs": {},
+      "arity": 2,
+      "return_type": "Matrix",
+      "description": "Each elements in a group is assigned the corresponding rank in this group"
+    },
+    "group_scale": {
+      "pos_arg_types": [
+        "Matrix",
+        "Group"
+      ],
+      "kwargs": {},
+      "arity": 2,
+      "return_type": "Matrix",
+      "description": "Normalizes the values in a group to be between 0 and 1. (x - groupmin) / (groupmax - groupmin)"
+    },
+    "group_std_dev": {
+      "pos_arg_types": [
+        "Matrix",
+        "Group"
+      ],
+      "kwargs": {},
+      "arity": 2,
+      "return_type": "Matrix",
+      "description": "All elements in group equals to the standard deviation of the group."
+    },
+    "group_sum": {
+      "pos_arg_types": [
+        "Matrix",
+        "Group"
+      ],
+      "kwargs": {},
+      "arity": 2,
+      "return_type": "Matrix",
+      "description": "Sum of x for all instruments in the same group."
+    },
+    "group_vector_neut": {
+      "pos_arg_types": [
+        "Matrix",
+        "Matrix",
+        "Group"
+      ],
+      "kwargs": {},
+      "arity": 3,
+      "return_type": "Matrix",
+      "description": "Similar to vector_neut(x, y) but x neutralize to y for each group g which can be any classifier such as subindustry, industry, sector, etc."
+    },
+    "group_zscore": {
+      "pos_arg_types": [
+        "Matrix",
+        "Group"
+      ],
+      "kwargs": {},
+      "arity": 2,
+      "return_type": "Matrix",
+      "description": "Calculates group Z-score - numerical measurement that describes a value's relationship to the mean of a group of values. Z-score is measured in terms of standard deviations from the mean."
+    }
+  }
+}

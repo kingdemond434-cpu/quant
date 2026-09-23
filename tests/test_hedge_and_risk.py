@@ -53,37 +53,24 @@ def test_risk_small_gain_is_ok():
     assert d.action == "ok"                       # winners never trip a control
 
 
-# ---------------- funding-weighted sizing (capacity) ----------------
-def test_alloc_weights_sum_to_capital_and_cap():
-    from scripts.run_cashcarry_executor import _alloc
-    cands = [("A", 0.010), ("B", 0.005), ("C", 0.001)]
-    alloc = _alloc(cands, 3000.0, cap_frac=0.35)
-    assert abs(sum(alloc.values()) - 3000.0) < 1e-6          # conserves total capital
-    assert all(v <= 3000.0 * 0.35 + 1e-6 for v in alloc.values())  # concentration cap holds
-    assert alloc["A"] >= alloc["B"] >= alloc["C"]            # higher funding -> more notional
-
-
-def test_alloc_zero_funding_is_equal_weight():
-    from scripts.run_cashcarry_executor import _alloc
-    alloc = _alloc([("A", 0.0), ("B", 0.0)], 2000.0)
-    assert abs(alloc["A"] - alloc["B"]) < 1e-6
-
-
-# ---------------- funding notional: MARK basis, not entry cost (R0308) ----------------
-def test_funding_notional_is_mark_based_not_entry_cost():
-    from scripts.run_cashcarry_executor import _funding_notional
-    # Price doubled over the hold: entry-basis books funding on 100, the venue charged it on
-    # the mark path. The trapezoid (150) removes the first-order drift bias.
-    p = {"perp_qty": -1.0, "perp_entry": 100.0, "spot_cost": 100.0}
-    assert abs(_funding_notional(p, fpx=200.0) - 150.0) < 1e-9
-    # No drift -> identical to entry notional: the fix changes nothing when nothing moved.
-    assert abs(_funding_notional(p, fpx=100.0) - 100.0) < 1e-9
-
-
-def test_funding_notional_falls_back_to_spot_cost_for_legacy_positions():
-    from scripts.run_cashcarry_executor import _funding_notional
-    p = {"perp_qty": -2.0, "spot_cost": 50.0}       # legacy: no perp_entry recorded
-    assert abs(_funding_notional(p, fpx=60.0) - 2.0 * 55.0) < 1e-9
+# ---------------- funding-weighted sizing: RETIRED WITH THE CRYPTO DESK ----------------
+#
+# Four tests stood here for `run_cashcarry_executor._alloc` and `._funding_notional`, and three
+# more below for its `_mkt_or_limit` order-cover path. That executor was a cash-and-carry basket
+# on a crypto exchange -- perp funding against spot -- and it was deleted under the MT5 universe
+# mandate (2026-08-18): "no crypto-exchange universe may EVER be hunted again".
+#
+# THE TESTS OUTLIVED THE CODE BY WEEKS and failed on ModuleNotFoundError the entire time, which is
+# how they were finally found: the repo-wide suite has been red at 139 failures, hidden behind a
+# mypy plugin error and a 20-minute CI job timeout that killed the run before pytest could report.
+# Deleted rather than skipped, because a skipped test for deleted code is a permanent piece of
+# scar tissue that every future reader has to re-investigate.
+#
+# WHAT IS NOT DELETED, and the distinction matters: the funding-notional MARK-BASIS lesson (R0308)
+# is about a real defect class -- booking a financing charge on entry cost when the venue charges
+# it on the mark path -- and it applies to any carry sleeve on any venue. It lives on in
+# `desks/mt5/mt5desk/family_carry.py`, which is the MT5 desk's own carry mechanism, and in the
+# swap-terms reconstruction in `family_inputs`. The mechanism survived the venue.
 
 
 # ---------------- dynamic leverage: never over-lever an unproven edge ----------------
@@ -184,52 +171,3 @@ def test_deployed_sharpe_none_before_min_days():
 
 
 # ---------------- reconcile: market-first, limit-fallback on thin books ----------------
-class _StubConn:
-    """Fake venue: place_market raises when the book is 'thin' (PERCENT_PRICE reject)."""
-    def __init__(self, mkt_ok: bool) -> None:
-        self.mkt_ok, self.calls = mkt_ok, []
-
-    def place_market(self, s, side, q):
-        self.calls.append(("mkt", s, side, q))
-        if not self.mkt_ok:
-            raise RuntimeError("HTTP 400 -4131 PERCENT_PRICE")
-        return {"status": "FILLED"}
-
-    def cancel_all(self, s):
-        self.calls.append(("cancel", s))
-
-    def book_ticker(self):
-        return {"X": (0.035, 0.061)}
-
-    def place_post_only(self, s, side, q, px):
-        self.calls.append(("limit", s, side, q, px))
-        return {"status": "NEW"}
-
-
-def _cover():
-    import sys
-    sys.path.insert(0, "scripts")
-    from run_cashcarry_executor import _mkt_or_limit
-    return _mkt_or_limit
-
-
-def test_reconcile_uses_market_on_healthy_book():
-    c = _StubConn(True)
-    assert _cover()(c, "X", "BUY", 100) == "mkt"
-    assert c.calls == [("mkt", "X", "BUY", 100)]           # no needless limit churn
-
-
-def test_reconcile_falls_back_to_limit_on_thin_book():
-    # market rejected (thin book) -> the OLD guard would strand the orphan forever; now it limits
-    c = _StubConn(False)
-    assert _cover()(c, "X", "BUY", 100) == "limit"
-    assert ("cancel", "X") in c.calls                      # no duplicate stacking across ticks
-    assert ("limit", "X", "BUY", 100, 0.035) in c.calls    # BUY rests at the bid (near touch)
-
-
-def test_reconcile_limit_side_correct_and_zero_guard():
-    c = _StubConn(False)
-    _cover()(c, "X", "SELL", 50)
-    assert ("limit", "X", "SELL", 50, 0.061) in c.calls    # SELL rests at the ask
-    z = _StubConn(True)
-    assert _cover()(z, "X", "BUY", 0) == "" and z.calls == []   # nothing to do -> no order

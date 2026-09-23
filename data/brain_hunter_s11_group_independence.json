@@ -1,0 +1,47 @@
+{
+ "asset_class": {
+  "n": 194,
+  "groups": 7,
+  "mean_abs_corr": 0.819,
+  "median_abs_corr": 0.87,
+  "median_group_size": 15,
+  "max_group_size": 64
+ },
+ "currency_base": {
+  "n": 80,
+  "groups": 8,
+  "mean_abs_corr": 0.716,
+  "median_abs_corr": 0.778,
+  "median_group_size": 7,
+  "max_group_size": 21
+ },
+ "currency_quote": {
+  "n": 79,
+  "groups": 19,
+  "mean_abs_corr": 0.493,
+  "median_abs_corr": 0.562,
+  "median_group_size": 4,
+  "max_group_size": 13
+ },
+ "corr_cluster_k8_2025": {
+  "n": 192,
+  "groups": 6,
+  "mean_abs_corr": 0.852,
+  "median_abs_corr": 0.92,
+  "median_group_size": 9,
+  "max_group_size": 125
+ },
+ "corr_cluster_k24_2025": {
+  "n": 183,
+  "groups": 13,
+  "mean_abs_corr": 0.716,
+  "median_abs_corr": 0.768,
+  "median_group_size": 5,
+  "max_group_size": 67
+ },
+ "_meta": {
+  "window": "2024-01-01..2025-12-31 daily log returns",
+  "baseline": "universe-wide rank over the same members",
+  "built_by": "BRAIN HUNTER s11"
+ }
+}

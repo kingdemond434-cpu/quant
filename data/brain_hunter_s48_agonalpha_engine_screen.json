@@ -1,0 +1,33 @@
+{
+  "session": "brain_hunter_s48",
+  "date": "2026-09-03",
+  "ground": "public WorldQuant BRAIN corpus + reachable chain",
+  "source_class": "AI-quant structure (arXiv paper) + video",
+  "artifacts_reviewed": [
+    {
+      "id": "AgonAlpha",
+      "url": "https://arxiv.org/pdf/2608.11250v1",
+      "source": "arXiv Portfolio Management",
+      "type": "autonomous alpha-mining architecture on WorldQuant BRAIN",
+      "claimed_results": {"fitness_max": 9.50, "sharpe_max": 3.48, "grade": "SPECTACULAR", "users": 5, "backends": 6},
+      "disposition": "external in-sample BRAIN submission ore; recorded as a FACT ABOUT THEIR PROCESS, never a gate (L1.6 hard-refusal). No formula, threshold, grade or ratchet imported.",
+      "transferable_mechanisms": [
+        "artifact search over FROZEN research artifacts (hypotheses, executable expressions, platform evidence, rationales, review status) rather than formulas alone",
+        "fresh-context adversarial reviewer with RE-EXECUTION + veto authority (reviewer recomputes in a context that has not seen the producer's cached numbers)",
+        "pending-aware parallel budget allocation (evaluation budget weighted by in-flight pending candidates, not only completed ones)"
+      ],
+      "falsifier": "None of the three changes a gauntlet VERDICT; each is a CONVERSION-THROUGHPUT claim. Determining test: measure duplicate-hypothesis rate and survivor-per-cost before/after wiring artifact retrieval into the dig loop and fresh-context recompute into the verify stage. If neither the re-derivation rate nor survivors-per-compute-unit moves, the mechanism is refuted for this desk."
+    },
+    {
+      "id": "great_goat_wq_gold_4alpha",
+      "url": "https://www.youtube.com/watch?v=g-Iwbrw0MXg",
+      "type": "video (4 gold-level alpha formulas claimed)",
+      "disposition": "video_locked — 18 routes attempted (invidious/nadeko/chocolatemoo/tiekoetter), all 403/500/timeout/interstitial; formulas gated behind a bit.ly PDF lead-magnet. Equities in-sample alphas, crowded, no MT5 formula transfer expected; not chased.",
+      "route_evidence": "scripts/fetch_video_transcript.py g-Iwbrw0MXg -> ACCESS_LIMIT, no route served text"
+    }
+  ],
+  "survivors": 0,
+  "constructions": 0,
+  "mt5_translate": "translate_to_mt5() N/A — these are engine/methodology ideas routed to improvement_inbox, not feature mappings",
+  "boundary": "s13 clean: public arXiv + public YouTube metadata only. No account wall, no private BRAIN API, no third-party agent tool installed/imported/run (supply-chain rule)."
+}

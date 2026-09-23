@@ -55,6 +55,8 @@ import re
 from pathlib import Path
 from typing import Any
 
+from libs.ops.reference_freshness import require_live_rows, stand_down
+
 __all__ = [
     "CONVERTED_PREFIX",
     "canonical_row",
@@ -503,13 +505,27 @@ def write_converted(root: Path | None = None) -> dict[str, Any]:
         path.write_text(json.dumps(payload, indent=1, ensure_ascii=False) + "\n", "utf-8")
         written.append(path.name)
     # A conversion that used to produce a file and no longer does leaves a STALE artifact behind,
-    # and a stale screen keeps admitting a hypothesis whose source was deleted. Sweep them.
+    # and a stale screen keeps admitting a hypothesis whose source was deleted. Sweep them --
+    # BUT ONLY AGAINST A LIVE REFERENCE (LAWS 7: NOTHING IS RETIRED ON AN ABSENCE). `convert_all`
+    # skips any source it cannot read (`if not usable: continue`), so an upstream outage returns
+    # zero payloads, and "not in the live set" then becomes true of EVERY converted screen on
+    # disk. That is the certificate_truth incident wearing a different hat: one silent producer
+    # failure deleting the whole canonical axis directory.
+    result["written"] = written
     live = {f"{p['axis']}.json" for p in result["payloads"]}
+    ref = require_live_rows(
+        "screen_conversion.convert_all payloads", result["payloads"],
+        actor="screen_conversion.write_converted",
+        action="unlink converted screens absent from this pass's payloads", min_rows=1)
+    if not ref.live:
+        result["removed_stale"] = []
+        result["stood_down"] = stand_down(ref, actor="screen_conversion.write_converted",
+                                          action="unlink stale converted screens")
+        return result
     removed = []
     for path in sorted(out_dir.glob(f"{CONVERTED_PREFIX}*.json")):
         if path.name not in live:
             path.unlink()
             removed.append(path.name)
-    result["written"] = written
     result["removed_stale"] = removed
     return result

@@ -1,0 +1,26 @@
+{
+  "_doc": "BRAIN HUNTER s14. In-document anchors for MFKCTU+CambriaMath in arXiv:1601.00991. The font subset stripped every Unicode channel (/Differences carries raw GIDs, post=3.0, cmap is a synthetic PUA identity), so no font-level recovery is possible. These anchors are recovered from the PAPER'S OWN prose, which names each symbol immediately before showing it -- e.g. 'the annualized Sharpe ratio <g1845>'. Each is evidence, not assumption, and each carries the sentence it came from.",
+  "font": "MFKCTU+CambriaMath",
+  "anchors": [
+    {"gid": 1845, "char": "S", "evidence": "Table 1 caption: 'the annualized Sharpe ratio <g1845>'"},
+    {"gid": 1844, "char": "R", "evidence": "Table 1 caption: 'annualized average daily return <g1844>'"},
+    {"gid": 1829, "char": "C", "evidence": "Table 1 caption: 'cents-per-share <g1829>'"},
+    {"gid": 1846, "char": "T", "evidence": "Table 1 caption: 'daily turnover, <g1846>'"},
+    {"gid": 1840, "char": "N", "evidence": "Table 1 caption: '<g1840>(<g1840> - 1)/2 pair-wise correlations'"},
+    {"gid": 1861, "char": "i", "evidence": "Table 1 caption: 'correlations <g2006><g3036><g3037> with <g1861> > <g1862>'"},
+    {"gid": 1862, "char": "j", "evidence": "same sentence; the index pair i>j"},
+    {"gid": 3036, "char": "i", "evidence": "the ubiquitous alpha-index subscript on S/T/C/R"},
+    {"gid": 3037, "char": "j", "evidence": "second subscript of the correlation matrix"}
+  ],
+  "derived_blocks": [
+    {"base_gid": 1827, "alphabet": "ABCDEFGHIJKLMNOPQRSTUVWXYZ", "supporting_anchors": 5, "note": "italic Latin uppercase; five mutually consistent anchors (C,N,R,S,T)"},
+    {"base_gid": 1853, "alphabet": "abcdefghijklmnopqrstuvwxyz", "supporting_anchors": 2, "note": "italic Latin lowercase, contiguous with the uppercase block (1827+26); anchors i,j"}
+  ],
+  "not_recoverable": {
+    "greek": "Italic Greek is NOT block-recoverable: rho=g2006 implies base 1990, sigma=g2026 implies base 2008. Cambria Math interleaves variant forms (epsilon/theta/phi/pi/rho/sigma), so Greek must be anchored per symbol. Named as a residual, not silently guessed.",
+    "individually_anchored_greek": [
+      {"gid": 2026, "char": "σ", "evidence": "Table 1 caption: 'daily return volatility <g2026>'"},
+      {"gid": 2006, "char": "ρ", "evidence": "Table 1 caption: 'pair-wise correlations <g2006>'"}
+    ]
+  }
+}

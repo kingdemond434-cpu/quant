@@ -1,0 +1,818 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Data Manipulation and Visualization Techniques in Julia",
+  "url": "https://blog.quantinsti.com/data-manipulation-visualization-using-julia/",
+  "published": "2026-09-03T08:13:28+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "vault_sha": "e3e61c0e26fc7576ed02",
+  "host": "blog.quantinsti.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Navigating the Algo Trading Landscape | Ishaan\u2019s Placement Journey with EPAT",
+  "url": "https://blog.quantinsti.com/software-developer-algorithmic-trading-epat-success-story-ishaan-ballal/",
+  "published": "2026-09-03T08:13:31+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "vault_sha": "ba442245d0471db19c26",
+  "host": "blog.quantinsti.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Finding Balance: Jesmer Wong&#x27;s Path as a Data Scientist into Algorithmic Trading",
+  "url": "https://blog.quantinsti.com/data-scientist-algorithmic-trading-epat-success-story-jesmer-wong/",
+  "published": "2026-09-03T08:13:32+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "vault_sha": "01118955d4d797a7c56c",
+  "host": "blog.quantinsti.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download Futures Data from Yahoo Finance using Python: A Complete Guide",
+  "url": "https://blog.quantinsti.com/download-futures-data-yahoo-finance-library-python/",
+  "published": "2026-09-03T08:13:34+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "vault_sha": "b392ff64056337b9b3f4",
+  "host": "blog.quantinsti.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "yfinance Library | Download Forex Price Data | Python",
+  "url": "https://blog.quantinsti.com/download-forex-price-data-yfinance-library-python/",
+  "published": "2026-09-03T08:13:36+00:00",
+  "symbols": [
+   "EURUSD",
+   "GBPUSD"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "vault_sha": "f018e899aee882f019a9",
+  "host": "blog.quantinsti.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download Cryptocurrency Data in Python by Using Crypto Compare API",
+  "url": "https://blog.quantinsti.com/download-cryptocurrency-data-python-cryptocompare-api/",
+  "published": "2026-09-03T08:13:38+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "vault_sha": "6a7f852214d4f495b36e",
+  "host": "blog.quantinsti.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "How to Get Historical Market Data Through Python Stock API",
+  "url": "https://blog.quantinsti.com/historical-market-data-python-api/",
+  "published": "2026-09-03T08:13:40+00:00",
+  "symbols": [
+   "EURUSD"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "vault_sha": "9b3b51814f1a9e0dd1da",
+  "host": "blog.quantinsti.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "DTR Trading: Data Model",
+  "url": "https://dtr-trading.blogspot.com/search/label/Data%20Model",
+  "published": "2026-09-03T08:13:41+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "",
+  "vault_sha": "1eea2e3a518fa19bcaa6",
+  "host": "dtr-trading.blogspot.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "DTR Trading: Data Model",
+  "url": "http://dtr-trading.blogspot.com/search/label/Data%20Model",
+  "published": "2026-09-03T08:13:43+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "",
+  "vault_sha": "c50666812eb44f7f5476",
+  "host": "dtr-trading.blogspot.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Data &#8211; Alvarez Quant Trading",
+  "url": "https://alvarezquanttrading.com/blog/category/data/",
+  "published": "2026-09-03T08:13:45+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "breakout",
+   "correlation",
+   "mean_reversion",
+   "momentum"
+  ],
+  "confidence": 0.75,
+  "lang": "en-US",
+  "vault_sha": "613f81ac0e1c6644bb4f",
+  "host": "alvarezquanttrading.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Quantra by QuantInsti | Courses on Algorithmic and Quantitative Trading",
+  "url": "https://quantra.quantinsti.com/course/data-and-feature-engineering-for-trading/",
+  "published": "2026-09-03T08:13:47+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en-GB",
+  "vault_sha": "3d0781e9bd51089129d5",
+  "host": "quantra.quantinsti.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Quantra by QuantInsti | Courses on Algorithmic and Quantitative Trading",
+  "url": "https://quantra.quantinsti.com/course/data-and-feature-engineering-for-trading",
+  "published": "2026-09-03T08:13:48+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en-GB",
+  "vault_sha": "3d0781e9bd51089129d5",
+  "host": "quantra.quantinsti.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Data Mining: Theories, Algorithms, and Examples - 1st Edition - Nong Y",
+  "url": "https://www.crcpress.com/Data-Mining-Theories-Algorithms-and-Examples/Ye/p/book/9781439808382",
+  "published": "2026-09-03T08:13:50+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "vault_sha": "fe650ab43047c9c89e18",
+  "host": "www.crcpress.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Historical Compressed | CFTC",
+  "url": "https://www.cftc.gov/MarketReports/CommitmentsofTraders/HistoricalCompressed/index.htm",
+  "published": "2026-09-03T08:13:51+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "vault_sha": "773d550147299f7b1c6c",
+  "host": "www.cftc.gov"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Markets Data Dashboard - FEDERAL RESERVE BANK of NEW YORK",
+  "url": "https://www.newyorkfed.org/markets/data-hub",
+  "published": "2026-09-03T08:14:03+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "vault_sha": "2c5b2b488551f117a9e6",
+  "host": "www.newyorkfed.org"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Overview of ECB statistics",
+  "url": "https://www.ecb.europa.eu/stats/html/index.en.html",
+  "published": "2026-09-03T08:14:04+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "gap",
+   "orderflow"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "vault_sha": "22291f659c54fd449049",
+  "host": "www.ecb.europa.eu"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "LBMA Precious Metal Prices | LBMA",
+  "url": "https://www.lbma.org.uk/prices-and-data",
+  "published": "2026-09-03T08:14:05+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1M",
+   "DAILY"
+  ],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.75,
+  "lang": "en-GB",
+  "vault_sha": "0e1482d0cba6c30fd494",
+  "host": "www.lbma.org.uk"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Indicators | Data",
+  "url": "https://data.worldbank.org/indicator",
+  "published": "2026-09-03T08:14:06+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "gap"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "vault_sha": "9a1098b6552ddec8af10",
+  "host": "data.worldbank.org"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Opendata - U.S. Energy Information Administration (EIA)",
+  "url": "https://www.eia.gov/opendata/",
+  "published": "2026-09-03T08:14:16+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "",
+  "vault_sha": "981bfbf198089d206715",
+  "host": "www.eia.gov"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Tushare\u6570\u636e",
+  "url": "https://tushare.pro/document/2",
+  "published": "2026-09-03T08:14:20+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "breakout"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "vault_sha": "4e23f03f8175982b40cb",
+  "host": "tushare.pro"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "AKShare \u6570\u636e\u5b57\u5178 &mdash; AKShare 1.18.94 \u6587\u6863",
+  "url": "https://akshare.akfamily.xyz/data/index.html",
+  "published": "2026-09-03T08:14:21+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "breakout",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "zh-CN",
+  "vault_sha": "0120a344e2b9d5b8d293",
+  "host": "akshare.akfamily.xyz"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u884c\u60c5\u8d70\u52bf-\u4e0a\u6d77\u9ec4\u91d1\u4ea4\u6613\u6240",
+  "url": "https://www.sge.com.cn/sjzx/mrhq",
+  "published": "2026-09-03T08:14:25+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "vault_sha": "21f0dca23b0022093f36",
+  "host": "www.sge.com.cn"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u8c03\u67e5\u7edf\u8ba1\u53f8",
+  "url": "https://www.pbc.gov.cn/diaochatongjisi/116219/index.html",
+  "published": "2026-09-03T08:14:27+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "vault_sha": "23ed395c8d3a6541507e",
+  "host": "www.pbc.gov.cn"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u6570\u636e - \u56fd\u5bb6\u7edf\u8ba1\u5c40",
+  "url": "https://www.stats.gov.cn/sj/",
+  "published": "2026-09-03T08:14:37+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "zh-CN",
+  "vault_sha": "935dac8eb9468cde086a",
+  "host": "www.stats.gov.cn"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u8d22\u7ecf\u6570\u636e _ \u5c45\u6c11\u6d88\u8d39\u4ef7\u683c\u6307\u6570(CPI) _ \u6570\u636e\u4e2d\u5fc3 _ \u4e1c\u65b9\u8d22\u5bcc\u7f51",
+  "url": "https://data.eastmoney.com/cjsj/",
+  "published": "2026-09-03T08:14:40+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "zh_CN",
+  "vault_sha": "db41a7b57f47fc12af71",
+  "host": "data.eastmoney.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Statistics : \u65e5\u672c\u9280\u884c Bank of Japan",
+  "url": "https://www.boj.or.jp/en/statistics/index.htm",
+  "published": "2026-09-03T08:14:46+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "vault_sha": "13c3ceabc7dd6faad2ca",
+  "host": "www.boj.or.jp"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u7d71\u8a08\u60c5\u5831\uff08\u682a\u5f0f\u95a2\u9023\uff09 | \u65e5\u672c\u53d6\u5f15\u6240\u30b0\u30eb\u30fc\u30d7",
+  "url": "https://www.jpx.co.jp/markets/statistics-equities/index.html",
+  "published": "2026-09-03T08:14:47+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "ja",
+  "vault_sha": "74d2f76674870d886102",
+  "host": "www.jpx.co.jp"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "https://ecos.bok.or.kr/",
+  "url": "https://ecos.bok.or.kr/",
+  "published": "2026-09-03T08:14:48+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "ko",
+  "vault_sha": "abeedee29d92b2f69a97",
+  "host": "ecos.bok.or.kr"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "SC001STCB Grid Search",
+  "url": "https://quanterlab.com/static/landing/exports/sc001_NFLX_kalman_trend_grid_50x50.py",
+  "published": "2026-09-03T08:14:49+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [
+   "15M",
+   "1H",
+   "1M",
+   "30M",
+   "4H",
+   "5M",
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en",
+  "vault_sha": "68de3bbf8cf555dc0cc7",
+  "host": "quanterlab.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Algorithmic Trading Platform - QuantConnect.com",
+  "url": "https://www.quantconnect.com/datasets/",
+  "published": "2026-09-03T08:14:50+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "vault_sha": "54e17662fcea05ee83a4",
+  "host": "www.quantconnect.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Algorithmic Trading Platform - QuantConnect.com",
+  "url": "https://www.quantconnect.com/datasets",
+  "published": "2026-09-03T08:14:52+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "vault_sha": "869ff224d8e85968d126",
+  "host": "www.quantconnect.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Algorithmic Trading Platform - QuantConnect.com",
+  "url": "https://www.quantconnect.com/datasets/issues",
+  "published": "2026-09-03T08:14:54+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "vault_sha": "5dd375f24e24ef8522ec",
+  "host": "www.quantconnect.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Navigating the Market - QuantConnect.com",
+  "url": "https://www.quantconnect.com/docs/v2/our-platform/datasets/navigating-the-market",
+  "published": "2026-09-03T08:14:56+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "vault_sha": "c53b8dcd3ebcccc19560",
+  "host": "www.quantconnect.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "QSTrader: Documentation Released | QuantStart",
+  "url": "https://www.quantstart.com/articles/qstrader-documentation-released/",
+  "published": "2026-09-03T08:14:57+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "vault_sha": "af614caad244b930f459",
+  "host": "www.quantstart.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Hiring a Software Developer to Code Up a Trading Strategy | QuantStart",
+  "url": "https://www.quantstart.com/articles/hiring-a-software-developer-to-code-up-a-trading-strategy/",
+  "published": "2026-09-03T08:14:59+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "carry"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "vault_sha": "f5ac43017fcfe31eac95",
+  "host": "www.quantstart.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Mailbag: How Do You Move From Quant Developer To Quant Trader? | QuantStart",
+  "url": "https://www.quantstart.com/articles/Mailbag-How-Do-You-Move-From-Quant-Developer-To-Quant-Trader/",
+  "published": "2026-09-03T08:15:01+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "vault_sha": "576da1b3bc7c41441b5d",
+  "host": "www.quantstart.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "A Day in the Life of a Quantitative Developer | QuantStart",
+  "url": "https://www.quantstart.com/articles/A-Day-in-the-Life-of-a-Quantitative-Developer/",
+  "published": "2026-09-03T08:15:03+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "vault_sha": "07e9484582ba9b55b852",
+  "host": "www.quantstart.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Downloading Historical Intraday US Equities From DTN IQFeed with Python | QuantStart",
+  "url": "https://www.quantstart.com/articles/Downloading-Historical-Intraday-US-Equities-From-DTN-IQFeed-with-Python/",
+  "published": "2026-09-03T08:15:05+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "vault_sha": "18678e8aa11122dee78e",
+  "host": "www.quantstart.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Downloading Historical Futures Data From Quandl | QuantStart",
+  "url": "https://www.quantstart.com/articles/Downloading-Historical-Futures-Data-From-Quandl/",
+  "published": "2026-09-03T08:15:07+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "carry"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "vault_sha": "945b4c2323cc1961ea7d",
+  "host": "www.quantstart.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Self-Study Plan for Becoming a Quantitative Developer | QuantStart",
+  "url": "https://www.quantstart.com/articles/Self-Study-Plan-for-Becoming-a-Quantitative-Developer/",
+  "published": "2026-09-03T08:15:09+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "vault_sha": "775c9f34a806c4f495cc",
+  "host": "www.quantstart.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "T\u00e9l\u00e9chargez gratuitement la plateforme de trading MetaTrader 5",
+  "url": "https://www.metatrader5.com/fr/download",
+  "published": "2026-09-03T08:15:10+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "fr",
+  "vault_sha": "7b2e97620a1525866cf1",
+  "host": "www.metatrader5.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u4e0b\u8f7dMetaTrader 5\u5e73\u53f0\u5728\u5168\u7403\u91d1\u878d\u5e02\u573a\u8fdb\u884c\u4ea4\u6613",
+  "url": "https://www.metatrader5.com/zh/download",
+  "published": "2026-09-03T08:15:11+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "zh",
+  "vault_sha": "0e7f7a798da731e4aad1",
+  "host": "www.metatrader5.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Kostenloses herunterladen der Handelsplattform MetaTrader 5",
+  "url": "https://www.metatrader5.com/de/download",
+  "published": "2026-09-03T08:15:13+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "de",
+  "vault_sha": "fd2306e82cfa4f8c25de",
+  "host": "www.metatrader5.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Descargar la plataforma comercial MetaTrader 5 gratuitamente",
+  "url": "https://www.metatrader5.com/es/download",
+  "published": "2026-09-03T08:15:15+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "es",
+  "vault_sha": "e253690f3f72214e61e8",
+  "host": "www.metatrader5.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "MetaTrader 5\u53d6\u5f15\u30d7\u30e9\u30c3\u30c8\u30d5\u30a9\u30fc\u30e0\u306e\u7121\u511f\u30c0\u30a6\u30f3\u30ed\u30fc\u30c9",
+  "url": "https://www.metatrader5.com/ja/download",
+  "published": "2026-09-03T08:15:17+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "ja",
+  "vault_sha": "186f39db8a77004cba4f",
+  "host": "www.metatrader5.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Baixar a plataforma de negocia\u00e7\u00e3o MetaTrader 5 de gra\u00e7a",
+  "url": "https://www.metatrader5.com/pt/download",
+  "published": "2026-09-03T08:15:19+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "pt",
+  "vault_sha": "301dbfabbdd2b52cb9fc",
+  "host": "www.metatrader5.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "API - FOSS Trading",
+  "url": "https://blog.fosstrading.com/search/label/api/",
+  "published": "2026-09-03T08:15:20+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "vault_sha": "e23cb2e558bab960b6c0",
+  "host": "blog.fosstrading.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Data - FOSS Trading",
+  "url": "https://blog.fosstrading.com/search/label/data/",
+  "published": "2026-09-03T08:15:22+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "vault_sha": "8a296c523d159afb1d56",
+  "host": "blog.fosstrading.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Historical Data - FOSS Trading",
+  "url": "https://blog.fosstrading.com/search/label/historical-data/",
+  "published": "2026-09-03T08:15:24+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "vault_sha": "bd3c5b8e9eaa2b3d4020",
+  "host": "blog.fosstrading.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Data Science Quiz \u2014 Win up to 25% off Quantt | Quantt",
+  "url": "https://www.quantt.co.uk/quiz/data-science",
+  "published": "2026-09-03T08:15:25+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "vault_sha": "9e4a746ee34739e485c8",
+  "host": "www.quantt.co.uk"
+ }
+]

@@ -25,13 +25,19 @@ from libs.store.trading import OrderStore
 
 
 class FakeEA:
-    """A faithful in-process stand-in for QuantPlatformExecutor.mq5's file protocol."""
+    """A faithful in-process stand-in for QuantPlatformExecutor.mq5's file protocol (v1.10)."""
+
+    MAGIC = 990001
 
     def __init__(self, comm_dir: Path, *, fill_price: float = 1.10) -> None:
         self.root = comm_dir
         self.fill_price = fill_price
         self._ticket = 1000
         self._pos: dict[str, float] = {}
+        self._journal_path = comm_dir / "state" / "processed_ids.log"
+        self._journal: set[str] = set()
+        if self._journal_path.exists():  # v1.10: journal survives EA restarts
+            self._journal = set(self._journal_path.read_text("utf-8").split())
 
     def step(self) -> None:
         cmd_dir = self.root / "commands"
@@ -49,15 +55,32 @@ class FakeEA:
 
     def _handle(self, rec: dict[str, str], resp: Path) -> None:
         kind = rec.get("type", "")
-        out: dict[str, object] = {"id": rec.get("id", ""), "ticket": 0, "fill_price": 0.0,
+        cid = rec.get("id", "")
+        out: dict[str, object] = {"id": cid, "ticket": 0, "fill_price": 0.0,
                                   "fill_volume": 0.0, "message": ""}
-        if kind == "MARKET":
-            self._ticket += 1
-            qty = float(rec.get("volume", "0"))
-            signed = qty if rec.get("side") == "buy" else -qty
-            self._pos[rec["symbol"]] = self._pos.get(rec["symbol"], 0.0) + signed
-            out |= {"status": "filled", "ticket": self._ticket, "fill_price": self.fill_price,
-                    "fill_volume": qty, "message": "market filled"}
+        kill_flag = (self.root / "EMERGENCY_STOP").exists()
+        # v1.10: malformed-command sentinel
+        if cid == "" or kind == "" or rec.get("id") != cid:
+            out["status"] = "error"
+            out["message"] = "malformed command file"
+        # v1.10: journal-based idempotency (restart-safe, comment-independent)
+        elif cid in self._journal:
+            out["status"] = "duplicate"
+            out["message"] = "command already executed"
+        elif kind == "MARKET":
+            if kill_flag:
+                out |= {"status": "blocked", "message": "safety stop active"}
+            else:
+                self._ticket += 1
+                qty = float(rec.get("volume", "0"))
+                signed = qty if rec.get("side") == "buy" else -qty
+                self._pos[rec["symbol"]] = self._pos.get(rec["symbol"], 0.0) + signed
+                self._journal.add(cid)
+                self._journal_path.parent.mkdir(parents=True, exist_ok=True)
+                with self._journal_path.open("a", encoding="utf-8") as f:
+                    f.write(cid + "\n")
+                out |= {"status": "filled", "ticket": self._ticket, "fill_price": self.fill_price,
+                        "fill_volume": qty, "message": "market filled"}
         elif kind == "PING":
             out["status"] = "ack"
         elif kind == "FLATTEN_ALL":
@@ -66,14 +89,15 @@ class FakeEA:
         elif kind == "CLOSE":
             out["status"] = "closed"
         elif kind == "MODIFY":
-            out["status"] = "modified"
+            out["status"] = "modified"  # v1.10: de-risk always allowed, even under kill flag
         else:
             out["status"] = "error"
         resp.write_text(dump_record(out), "utf-8")
 
     def _write_state(self) -> None:
         state = self.root / "state"
-        lines = [f"{s}|{q}|{self.fill_price}" for s, q in self._pos.items() if q != 0.0]
+        lines = [f"{s}|{q}|{self.fill_price}|{self.MAGIC}"
+                 for s, q in self._pos.items() if q != 0.0]
         (state / "positions.state").write_text("\n".join(lines), "utf-8")
         beat = datetime.now(UTC).strftime("%Y.%m.%d %H:%M:%S")
         (state / "ea_heartbeat").write_text(beat, "utf-8")
@@ -147,6 +171,36 @@ def test_cancel_and_modify(comm: Path) -> None:
     bridge = EABridge(comm, on_poll=FakeEA(comm).step)
     assert bridge.cancel_order(12345) is True
     assert bridge.modify_sltp(12345, sl=1.0, tp=1.2) is True
+
+
+def test_kill_flag_blocks_new_risk_but_allows_modify_and_flatten(comm: Path) -> None:
+    ea = FakeEA(comm)
+    bridge = EABridge(comm, on_poll=ea.step)
+    (comm / "EMERGENCY_STOP").write_text("now", "utf-8")  # EA-side kill flag
+    blocked = bridge.place_order(_req("blk"))
+    assert blocked.status == "rejected"  # 'blocked' normalizes to dead/rejected
+    assert bridge.modify_sltp(777, sl=1.0, tp=1.2) is True  # de-risk passes
+    assert bridge.flatten_all() is True
+    (comm / "EMERGENCY_STOP").unlink()
+    ok = bridge.place_order(_req("after-flag"))
+    assert ok.status == "filled"  # v1.10: kill state recovers on flag removal
+
+
+def test_duplicate_after_journal_restart_no_double_fill(comm: Path) -> None:
+    ea = FakeEA(comm)
+    bridge = EABridge(comm, on_poll=ea.step)
+    bridge.place_order(_req("j1"))
+    ticket = bridge.get_order("j1").broker_order_id
+    assert bridge.get_positions()[0].qty == 0.1  # position before restart
+    # Simulate a lost response + EA restart: fresh FakeEA object (journal reloads
+    # from disk), response file gone; the retry must hit the journal, not the book.
+    (comm / "responses" / "j1.resp").unlink()
+    fresh = FakeEA(comm)
+    bridge2 = EABridge(comm, on_poll=fresh.step)
+    second = bridge2.place_order(_req("j1"))
+    assert second.status == "duplicate"
+    assert second.broker_order_id == 0  # no new fill
+    assert ticket > 0
 
 
 def test_execution_engine_drives_ea_bridge(comm: Path) -> None:

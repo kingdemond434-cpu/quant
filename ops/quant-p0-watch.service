@@ -1,0 +1,8 @@
+[Unit]
+Description=P0 liveness watch: critical failures invoke the gap-wirer immediately (6h cooldown)
+
+[Service]
+Type=oneshot
+WorkingDirectory=/home/quant/quant-platform
+ExecStart=/home/quant/quant-platform/.venv/bin/python scripts/check_p0_liveness.py
+SuccessExitStatus=0 1

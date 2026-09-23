@@ -1,0 +1,864 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Corporate Patents API | Quiver API | Quiver Quantitative",
+  "url": "https://api.quiverquant.com/datasets/corporate-patents",
+  "published": "2026-09-04T00:14:12+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://api.quiverquant.com/static/css/datasetInfo.css?v=1.2",
+   "https://api.quiverquant.com/datasets/congress-trades",
+   "https://api.quiverquant.com/datasets/congress-stock-holdings",
+   "https://api.quiverquant.com/datasets/insider-trades",
+   "https://api.quiverquant.com/datasets/politician-net-worth",
+   "https://api.quiverquant.com/datasets/government-contracts",
+   "https://api.quiverquant.com/datasets/corporate-lobbying",
+   "https://api.quiverquant.com/datasets/corporate-donors",
+   "https://api.quiverquant.com/datasets/corporate-patents",
+   "https://api.quiverquant.com/datasets/hedge-fund-activity",
+   "https://api.quiverquant.com/datasets/executive-compensation",
+   "https://api.quiverquant.com/datasets/etf-holdings",
+   "https://api.quiverquant.com/datasets/top-shareholders",
+   "https://api.quiverquant.com/datasets/off-exchange-trading",
+   "https://api.quiverquant.com/datasets/trump-stock-trades",
+   "https://api.quiverquant.com/datasets/app-ratings",
+   "https://api.quiverquant.com/datasets/quiver-news"
+  ],
+  "n_endpoints": 17,
+  "vault_sha": "83cc714560a914d4b301",
+  "host": "api.quiverquant.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Hedge Fund Activity API | Quiver API | Quiver Quantitative",
+  "url": "https://api.quiverquant.com/datasets/hedge-fund-activity",
+  "published": "2026-09-04T00:14:14+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://api.quiverquant.com/static/css/datasetInfo.css?v=1.2",
+   "https://api.quiverquant.com/datasets/congress-trades",
+   "https://api.quiverquant.com/datasets/congress-stock-holdings",
+   "https://api.quiverquant.com/datasets/insider-trades",
+   "https://api.quiverquant.com/datasets/politician-net-worth",
+   "https://api.quiverquant.com/datasets/government-contracts",
+   "https://api.quiverquant.com/datasets/corporate-lobbying",
+   "https://api.quiverquant.com/datasets/corporate-donors",
+   "https://api.quiverquant.com/datasets/corporate-patents",
+   "https://api.quiverquant.com/datasets/hedge-fund-activity",
+   "https://api.quiverquant.com/datasets/executive-compensation",
+   "https://api.quiverquant.com/datasets/etf-holdings",
+   "https://api.quiverquant.com/datasets/top-shareholders",
+   "https://api.quiverquant.com/datasets/off-exchange-trading",
+   "https://api.quiverquant.com/datasets/trump-stock-trades",
+   "https://api.quiverquant.com/datasets/app-ratings",
+   "https://api.quiverquant.com/datasets/quiver-news"
+  ],
+  "n_endpoints": 17,
+  "vault_sha": "3a333bb84a75d07652f1",
+  "host": "api.quiverquant.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Executive Compensation API | Quiver API | Quiver Quantitative",
+  "url": "https://api.quiverquant.com/datasets/executive-compensation",
+  "published": "2026-09-04T00:14:16+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://api.quiverquant.com/static/css/datasetInfo.css?v=1.2",
+   "https://api.quiverquant.com/datasets/congress-trades",
+   "https://api.quiverquant.com/datasets/congress-stock-holdings",
+   "https://api.quiverquant.com/datasets/insider-trades",
+   "https://api.quiverquant.com/datasets/politician-net-worth",
+   "https://api.quiverquant.com/datasets/government-contracts",
+   "https://api.quiverquant.com/datasets/corporate-lobbying",
+   "https://api.quiverquant.com/datasets/corporate-donors",
+   "https://api.quiverquant.com/datasets/corporate-patents",
+   "https://api.quiverquant.com/datasets/hedge-fund-activity",
+   "https://api.quiverquant.com/datasets/executive-compensation",
+   "https://api.quiverquant.com/datasets/etf-holdings",
+   "https://api.quiverquant.com/datasets/top-shareholders",
+   "https://api.quiverquant.com/datasets/off-exchange-trading",
+   "https://api.quiverquant.com/datasets/trump-stock-trades",
+   "https://api.quiverquant.com/datasets/app-ratings",
+   "https://api.quiverquant.com/datasets/quiver-news"
+  ],
+  "n_endpoints": 17,
+  "vault_sha": "ea0eac22b1956d0bf0c4",
+  "host": "api.quiverquant.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Top Shareholders API | Quiver API | Quiver Quantitative",
+  "url": "https://api.quiverquant.com/datasets/top-shareholders",
+  "published": "2026-09-04T00:14:18+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://api.quiverquant.com/static/css/datasetInfo.css?v=1.2",
+   "https://api.quiverquant.com/datasets/congress-trades",
+   "https://api.quiverquant.com/datasets/congress-stock-holdings",
+   "https://api.quiverquant.com/datasets/insider-trades",
+   "https://api.quiverquant.com/datasets/politician-net-worth",
+   "https://api.quiverquant.com/datasets/government-contracts",
+   "https://api.quiverquant.com/datasets/corporate-lobbying",
+   "https://api.quiverquant.com/datasets/corporate-donors",
+   "https://api.quiverquant.com/datasets/corporate-patents",
+   "https://api.quiverquant.com/datasets/hedge-fund-activity",
+   "https://api.quiverquant.com/datasets/executive-compensation",
+   "https://api.quiverquant.com/datasets/etf-holdings",
+   "https://api.quiverquant.com/datasets/top-shareholders",
+   "https://api.quiverquant.com/datasets/off-exchange-trading",
+   "https://api.quiverquant.com/datasets/trump-stock-trades",
+   "https://api.quiverquant.com/datasets/app-ratings",
+   "https://api.quiverquant.com/datasets/quiver-news"
+  ],
+  "n_endpoints": 17,
+  "vault_sha": "8ddd348e1d834bcb28ad",
+  "host": "api.quiverquant.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Off-Exchange Trading API | Quiver API | Quiver Quantitative",
+  "url": "https://api.quiverquant.com/datasets/off-exchange-trading",
+  "published": "2026-09-04T00:14:20+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://api.quiverquant.com/static/css/datasetInfo.css?v=1.2",
+   "https://api.quiverquant.com/datasets/congress-trades",
+   "https://api.quiverquant.com/datasets/congress-stock-holdings",
+   "https://api.quiverquant.com/datasets/insider-trades",
+   "https://api.quiverquant.com/datasets/politician-net-worth",
+   "https://api.quiverquant.com/datasets/government-contracts",
+   "https://api.quiverquant.com/datasets/corporate-lobbying",
+   "https://api.quiverquant.com/datasets/corporate-donors",
+   "https://api.quiverquant.com/datasets/corporate-patents",
+   "https://api.quiverquant.com/datasets/hedge-fund-activity",
+   "https://api.quiverquant.com/datasets/executive-compensation",
+   "https://api.quiverquant.com/datasets/etf-holdings",
+   "https://api.quiverquant.com/datasets/top-shareholders",
+   "https://api.quiverquant.com/datasets/off-exchange-trading",
+   "https://api.quiverquant.com/datasets/trump-stock-trades",
+   "https://api.quiverquant.com/datasets/app-ratings",
+   "https://api.quiverquant.com/datasets/quiver-news"
+  ],
+  "n_endpoints": 17,
+  "vault_sha": "59faf44474e6abac4327",
+  "host": "api.quiverquant.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Donald Trump Stock Trades API | Quiver API | Quiver Quantitative",
+  "url": "https://api.quiverquant.com/datasets/trump-stock-trades",
+  "published": "2026-09-04T00:14:22+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://api.quiverquant.com/static/css/datasetInfo.css?v=1.2",
+   "https://api.quiverquant.com/datasets/congress-trades",
+   "https://api.quiverquant.com/datasets/congress-stock-holdings",
+   "https://api.quiverquant.com/datasets/insider-trades",
+   "https://api.quiverquant.com/datasets/politician-net-worth",
+   "https://api.quiverquant.com/datasets/government-contracts",
+   "https://api.quiverquant.com/datasets/corporate-lobbying",
+   "https://api.quiverquant.com/datasets/corporate-donors",
+   "https://api.quiverquant.com/datasets/corporate-patents",
+   "https://api.quiverquant.com/datasets/hedge-fund-activity",
+   "https://api.quiverquant.com/datasets/executive-compensation",
+   "https://api.quiverquant.com/datasets/etf-holdings",
+   "https://api.quiverquant.com/datasets/top-shareholders",
+   "https://api.quiverquant.com/datasets/off-exchange-trading",
+   "https://api.quiverquant.com/datasets/trump-stock-trades",
+   "https://api.quiverquant.com/datasets/app-ratings",
+   "https://api.quiverquant.com/datasets/quiver-news"
+  ],
+  "n_endpoints": 17,
+  "vault_sha": "c10326b568b68df99339",
+  "host": "api.quiverquant.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "App Ratings API | Quiver API | Quiver Quantitative",
+  "url": "https://api.quiverquant.com/datasets/app-ratings",
+  "published": "2026-09-04T00:14:24+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://api.quiverquant.com/static/css/datasetInfo.css?v=1.2",
+   "https://api.quiverquant.com/datasets/congress-trades",
+   "https://api.quiverquant.com/datasets/congress-stock-holdings",
+   "https://api.quiverquant.com/datasets/insider-trades",
+   "https://api.quiverquant.com/datasets/politician-net-worth",
+   "https://api.quiverquant.com/datasets/government-contracts",
+   "https://api.quiverquant.com/datasets/corporate-lobbying",
+   "https://api.quiverquant.com/datasets/corporate-donors",
+   "https://api.quiverquant.com/datasets/corporate-patents",
+   "https://api.quiverquant.com/datasets/hedge-fund-activity",
+   "https://api.quiverquant.com/datasets/executive-compensation",
+   "https://api.quiverquant.com/datasets/etf-holdings",
+   "https://api.quiverquant.com/datasets/top-shareholders",
+   "https://api.quiverquant.com/datasets/off-exchange-trading",
+   "https://api.quiverquant.com/datasets/trump-stock-trades",
+   "https://api.quiverquant.com/datasets/app-ratings",
+   "https://api.quiverquant.com/datasets/quiver-news"
+  ],
+  "n_endpoints": 17,
+  "vault_sha": "87c8381bf692df188c8e",
+  "host": "api.quiverquant.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "QuantAnalyzer Download - StrategyQuant",
+  "url": "https://strategyquant.com/quantanalyzer/download/",
+  "published": "2026-09-04T00:14:24+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [
+   "https://strategyquant.com/quantanalyzer/download/",
+   "https://api.strategyquant.com/downloads?code=qa_494_64"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "4644e19aba9862bb29d5",
+  "host": "strategyquant.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "QuantDataManager Download - StrategyQuant",
+  "url": "https://strategyquant.com/quantdatamanager/download/",
+  "published": "2026-09-04T00:14:27+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [
+   "https://strategyquant.com/quantdatamanager/download/",
+   "https://api.strategyquant.com/downloads?code=qdmsetup",
+   "https://api.strategyquant.com/downloads?code=qdmwin125",
+   "https://api.strategyquant.com/downloads?code=qdmmac125",
+   "https://api.strategyquant.com/downloads?code=qdmlinux125"
+  ],
+  "n_endpoints": 5,
+  "vault_sha": "c95212c82e4047d1d85d",
+  "host": "strategyquant.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Quotes | Forex REST API - Massive",
+  "url": "https://polygon.io/docs/rest/forex/quotes/quotes",
+  "published": "2026-09-04T00:14:54+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "dccdc15eb645eba2fedd",
+  "host": "polygon.io"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Last Quote | Forex REST API - Massive",
+  "url": "https://polygon.io/docs/rest/forex/quotes/last-quote",
+  "published": "2026-09-04T00:14:56+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f3b61f3d9f967de58928",
+  "host": "polygon.io"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Data Mining: Theories, Algorithms, and Examples - 1st Edition - Nong Y",
+  "url": "https://www.crcpress.com/Data-Mining-Theories-Algorithms-and-Examples/Ye/p/book/9781439808382",
+  "published": "2026-09-04T00:14:59+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "52ce9ceb98312b5e4e42",
+  "host": "www.crcpress.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "LBMA Precious Metal Prices | LBMA",
+  "url": "https://www.lbma.org.uk/prices-and-data",
+  "published": "2026-09-04T00:15:01+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1M",
+   "DAILY"
+  ],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.75,
+  "lang": "en-GB",
+  "endpoints": [
+   "https://www.lbma.org.uk/humans.txt"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "80ce62306b07c1f3183e",
+  "host": "www.lbma.org.uk"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u5168\u7403\u8d22\u7ecf\u5feb\u8baf_\u4e1c\u65b9\u8d22\u5bcc\u7f51",
+  "url": "https://kuaixun.eastmoney.com/wh.html",
+  "published": "2026-09-04T00:15:02+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b6a4b6917092939bc304",
+  "host": "kuaixun.eastmoney.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Cabinet",
+  "url": "https://eu-live.dukascopy.com/cabinet/trader/auth/forgot",
+  "published": "2026-09-04T00:15:02+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://eu-live.dukascopy.com/cabinet/trader/auth/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "45f5064bde1eeaca238a",
+  "host": "eu-live.dukascopy.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Options Trading - Lightspeed Financial",
+  "url": "https://lightspeed.com/trading/options",
+  "published": "2026-09-04T00:15:03+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f3bc7393cc9f82175d70",
+  "host": "lightspeed.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Futures Trading - Lightspeed Financial",
+  "url": "https://lightspeed.com/trading/futures",
+  "published": "2026-09-04T00:15:05+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "5cec7ccdb961ae466d21",
+  "host": "lightspeed.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "FX Backtesting Tool for Macro Strategies | FXMacroData",
+  "url": "https://fxmacrodata.com/tools/backtesting",
+  "published": "2026-09-04T00:15:05+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry",
+   "mean_reversion",
+   "momentum",
+   "orderflow"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [
+   "https://fxmacrodata.com/llms.txt",
+   "https://fxmacrodata.com/googlebot-data-index.json",
+   "https://fxmacrodata.com/ai-surface-index.json",
+   "https://fxmacrodata.com/.well-known/agent-card.json",
+   "https://api.fxmacrodata.com/openapi.json",
+   "https://fxmacrodata.com/data-export"
+  ],
+  "n_endpoints": 6,
+  "vault_sha": "8e1758910b909ba21a10",
+  "host": "fxmacrodata.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Macroeconomic Indicators by Country | FXMacroData",
+  "url": "https://fxmacrodata.com/indicators",
+  "published": "2026-09-04T00:15:07+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "M1",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://fxmacrodata.com/llms.txt",
+   "https://fxmacrodata.com/googlebot-data-index.json",
+   "https://fxmacrodata.com/ai-surface-index.json",
+   "https://fxmacrodata.com/.well-known/agent-card.json",
+   "https://api.fxmacrodata.com/openapi.json",
+   "https://fxmacrodata.com/data-export",
+   "https://fxmacrodata.com/indicators/exports",
+   "https://fxmacrodata.com/indicators/dairy_exports"
+  ],
+  "n_endpoints": 8,
+  "vault_sha": "6d878cb3e16b8a8a78f4",
+  "host": "fxmacrodata.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Strategy research tools | FXMacroData Feature",
+  "url": "https://fxmacrodata.com/features/strategy-tools",
+  "published": "2026-09-04T00:15:15+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry",
+   "correlation"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [
+   "https://fxmacrodata.com/llms.txt",
+   "https://fxmacrodata.com/googlebot-data-index.json",
+   "https://fxmacrodata.com/ai-surface-index.json",
+   "https://fxmacrodata.com/.well-known/agent-card.json",
+   "https://api.fxmacrodata.com/openapi.json",
+   "https://fxmacrodata.com/data-export",
+   "https://fxmacrodata.com/features/data-export"
+  ],
+  "n_endpoints": 7,
+  "vault_sha": "119d6af40a8c85123fd7",
+  "host": "fxmacrodata.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Lightspeed Trader - Trading Platform",
+  "url": "https://lightspeed.com/trading-platforms/lightspeed-trader",
+  "published": "2026-09-04T00:15:16+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b54616f870bc5a18c089",
+  "host": "lightspeed.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Trade Stocks, Options and Futures | Lightspeed Financial",
+  "url": "https://lightspeed.com/trading",
+  "published": "2026-09-04T00:15:18+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "0acf2c644897001c623e",
+  "host": "lightspeed.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Margin",
+  "url": "https://lightspeed.com/trading/margin",
+  "published": "2026-09-04T00:15:20+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1M",
+   "DAILY"
+  ],
+  "patterns": [
+   "carry"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "03a1b5d2cd0ffd0b0ec0",
+  "host": "lightspeed.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Active &amp; Professional Trading Platform - Lightspeed",
+  "url": "https://lightspeed.com/trading-platforms/overview",
+  "published": "2026-09-04T00:15:22+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry",
+   "orderflow"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f2a393db681ce6dc80a8",
+  "host": "lightspeed.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Web &amp; Mobile Trading Platform - Lightspeed Financial",
+  "url": "https://lightspeed.com/trading-platforms/web-mobile",
+  "published": "2026-09-04T00:15:24+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "486bc97f3e564ff543e4",
+  "host": "lightspeed.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Will AI-Powered Signals Predict the Next Market Downturn?",
+  "url": "https://quantmatix.com/ai-stock-market-signals-september-2025/",
+  "published": "2026-09-04T00:15:28+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d6038338aec72b62faf1",
+  "host": "quantmatix.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Intraday Options Backtester - 0DTE backtesting on 1-minute data",
+  "url": "https://orats.com/intraday-backtester",
+  "published": "2026-09-04T00:15:35+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://orats.com/openapi.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "ba88f8109dd97fc5646e",
+  "host": "orats.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Strategy Optimizer - Enhance your trading strategies with AI-powered optimization",
+  "url": "https://orats.com/strategy-optimizer",
+  "published": "2026-09-04T00:15:37+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://orats.com/openapi.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "8f8ccf326b33757cd80e",
+  "host": "orats.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Options Backtester - Test your strategies",
+  "url": "https://orats.com/backtester",
+  "published": "2026-09-04T00:15:39+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://orats.com/openapi.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "27360811f8fbf6769741",
+  "host": "orats.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Trading - Send orders and manage positions",
+  "url": "https://orats.com/trading",
+  "published": "2026-09-04T00:15:41+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://orats.com/openapi.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "d08286c5c7fd5a6745d9",
+  "host": "orats.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "India\u2019s Social Stock Exchange and the problem of demand - ET Edge Insights",
+  "url": "https://etedge-insights.com/c-suite-corner/business-strategy/indias-social-stock-exchange-and-the-problem-of-demand/",
+  "published": "2026-09-04T00:15:42+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry",
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d6d61babb79c269f9ad3",
+  "host": "etedge-insights.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Navigating cost pressures with discipline and design thinking - ET Edge Insights",
+  "url": "https://etedge-insights.com/c-suite-corner/business-strategy/navigating-cost-pressures-with-discipline-and-design-thinking/",
+  "published": "2026-09-04T00:15:46+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "1ce50ba8ef6b3501e384",
+  "host": "etedge-insights.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "The CFO as co-architect: Building resilient, scalable growth with technology - ET Edge Insights",
+  "url": "https://etedge-insights.com/c-suite-corner/business-strategy/the-cfo-as-co-architect-building-resilient-scalable-growth-with-technology/",
+  "published": "2026-09-04T00:15:48+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "8105c1381f5e7c6789b1",
+  "host": "etedge-insights.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Where will global investment flow next? - ET Edge Insights",
+  "url": "https://etedge-insights.com/c-suite-corner/business-strategy/where-will-global-investment-flow-next/",
+  "published": "2026-09-04T00:15:52+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "gap",
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "80428e64eb766da0b217",
+  "host": "etedge-insights.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Margaret Franklin, CFA Institute CEO on why judgment matters in an algorithmic market - ET Edge Insights",
+  "url": "https://etedge-insights.com/c-suite-corner/business-strategy/margaret-franklin-cfa-institute-ceo-on-why-judgment-matters-in-an-algorithmic-market/",
+  "published": "2026-09-04T00:15:54+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "orderflow"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ce2fd4073b417996bbdd",
+  "host": "etedge-insights.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "The Spreadsheet &#8211; Tranquility Trading",
+  "url": "https://www.tranquilitytrading.com/the-spreadsheet-v3/",
+  "published": "2026-09-04T00:15:55+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "correlation",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.tranquilitytrading.com/wp-content/uploads/corr-matrix/TranquilityTrading_Data.zip"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "46fc9e9c2062e83b647b",
+  "host": "www.tranquilitytrading.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "The Crew &#8211; Tranquility Trading",
+  "url": "https://www.tranquilitytrading.com/crew-lp/",
+  "published": "2026-09-04T00:15:58+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "correlation",
+   "mean_reversion",
+   "momentum",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "8c0e2ca99c42b7d073ed",
+  "host": "www.tranquilitytrading.com"
+ }
+]

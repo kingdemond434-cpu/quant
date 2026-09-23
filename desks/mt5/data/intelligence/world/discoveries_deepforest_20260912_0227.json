@@ -1,0 +1,29 @@
+[
+ {
+  "source": "deep_forest",
+  "kind": "dataset",
+  "title": "Research",
+  "url": "https://www.aqr.com/Insights/Research",
+  "published": "2026-09-12T02:27:34+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.4,
+  "lang": "en",
+  "endpoints": [
+   "https://www.aqr.com/Insights/Datasets"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "199a4a9ce65f38cdc608",
+  "host": "www.aqr.com",
+  "ground": "AQR insights",
+  "region": "us",
+  "cluster": "west",
+  "dataset_class": null,
+  "available_time": "2026-09-12T02:27:34+00:00",
+  "ingested_time": "2026-09-12T02:27:34+00:00",
+  "source_hash": "199a4a9ce65f38cdc608",
+  "claims": [],
+  "n_claims": 0
+ }
+]

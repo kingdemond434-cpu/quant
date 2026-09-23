@@ -1,54 +1,65 @@
-"""A DASHBOARD SECTION NOBODY CAN NAVIGATE TO IS AN ARTIFACT NOBODY WRITES, ONE LAYER UP.
+"""ONE CANONICAL DASHBOARD, AND EVERY OTHER PAGE LEADS TO IT.
 
-Measured 2026-08-13, reported by the principal as "none of shadow candidates etc update here":
-`web/index.html` is the page dash.quanttt.xyz lands on, and every link in its nav was a
-`#fragment` inside itself. `web/research.html` -- which carries the Stage-B shadow clocks, the
-axis verdicts and the loss forensics -- was reachable ONLY by typing the URL.
+WHAT THIS TEST USED TO GUARD, and why the guard changed rather than went away. `web/index.html`
+was the landing page and every link in its nav was a `#fragment` inside itself, so
+`web/research.html` -- which carried the Stage-B shadow clocks -- was reachable only by typing
+its filename. A page nobody can navigate to is a page nobody reads.
 
-The artifacts were never stale. `serve_dashboard` sends `Cache-Control: no-store` and the cycle
-rewrites `web/axis_shadows.json` every run. The page showing them simply had no door, so the data
-looked frozen while being perfectly fresh -- which is the worst version of this failure, because
-it reads as a broken pipeline and sends you looking in the wrong place.
+The desk had THREE dashboards by 2026-09-06: index.html (the retired Zenith build, 55KB),
+research.html (22KB), and desk.html. Three views of one desk is worse than one: they disagree,
+each is stale in a different way, and "which one is right" becomes a question the operator has to
+answer before reading any number. So the answer to the navigation problem is no longer "link them
+together" -- it is that there is only one page to be on.
+
+index.html and research.html are now REDIRECTS rather than deletions. dash.quanttt.xyz and every
+bookmark, tunnel and nginx root that already points at them keeps working and lands on the real
+dashboard; deleting them would have turned a live URL into a 404 for no gain.
 """
 from __future__ import annotations
 
-import re
 from pathlib import Path
 
-import pytest
-
-WEB = Path(__file__).resolve().parents[2] / "web"
-
-
-def _pages() -> list[Path]:
-    return sorted(WEB.glob("*.html"))
+WEB = Path(__file__).resolve().parent.parent.parent / "web"
+CANONICAL = "desk.html"
 
 
-def test_every_page_is_reachable_from_the_landing_page() -> None:
-    """THE ONE THAT MATTERS. Any page not linked from index.html is invisible to a human who
-    does not already know it exists."""
-    index = (WEB / "index.html").read_text("utf-8")
-    linked = set(re.findall(r'href="([A-Za-z0-9_\-]+\.html)"', index))
-    orphans = [p.name for p in _pages()
-               if p.name != "index.html" and p.name not in linked]
-    assert orphans == [], (
-        f"{orphans} exist under web/ and nothing on the landing page links to them. Their data "
-        "updates every cycle and no reader can get to it")
+def test_the_canonical_dashboard_exists() -> None:
+    page = WEB / CANONICAL
+    assert page.is_file(), "the one canonical dashboard is gone"
+    assert len(page.read_text("utf-8")) > 5_000, "desk.html is a stub, not a dashboard"
 
 
-def test_the_shadow_clocks_are_actually_rendered_somewhere() -> None:
-    """Guard the guard: a link to a page that does not read the artifact proves nothing."""
-    assert any("axis_shadows" in p.read_text("utf-8") for p in _pages()), (
-        "no dashboard page reads web/axis_shadows.json -- the forward clocks are unrendered")
+def test_every_other_page_redirects_to_it() -> None:
+    """THE ONE THAT MATTERS. No page may present a second, disagreeing view of the desk."""
+    others = [p for p in WEB.glob("*.html") if p.name != CANONICAL]
+    assert others, "nothing to check -- the glob is wrong and this test proves nothing"
+    for p in others:
+        src = p.read_text("utf-8")
+        assert CANONICAL in src, f"{p.name} does not point at {CANONICAL}"
+        assert 'http-equiv="refresh"' in src and "location.replace" in src, (
+            f"{p.name} mentions {CANONICAL} but does not actually redirect to it -- a second "
+            "dashboard that merely links to the first is still a second dashboard, and the "
+            "operator still has to decide which number to believe")
+        assert len(src) < 4_000, (
+            f"{p.name} is {len(src)} bytes; a redirect is a redirect, and anything this large "
+            "is a dashboard wearing one as a hat")
 
 
-def test_research_links_back_so_the_nav_is_not_a_dead_end() -> None:
-    assert 'index.html' in (WEB / "research.html").read_text("utf-8")
+def test_the_canonical_page_reads_the_published_state() -> None:
+    """A dashboard that cannot reach desk_state.json shows nothing, however good it looks."""
+    src = (WEB / CANONICAL).read_text("utf-8")
+    assert "desk_state.json" in src
+    assert "build_zentech_state.py" in src, (
+        "the page no longer names its producer; when it goes stale the reader has no thread to "
+        "pull, which is exactly how a ten-day-old board went unnoticed")
 
 
-@pytest.mark.parametrize("page", _pages(), ids=lambda p: p.name)
-def test_no_page_links_to_a_file_that_does_not_exist(page: Path) -> None:
-    """A nav entry pointing at a missing page is worse than no entry: it reads as a broken
-    dashboard rather than an absent one."""
-    for target in re.findall(r'href="([A-Za-z0-9_\-]+\.html)"', page.read_text("utf-8")):
-        assert (WEB / target).exists(), f"{page.name} links to missing {target}"
+def test_the_canonical_page_says_when_the_box_last_reported() -> None:
+    """The single most important line on a dashboard for a desk holding live capital.
+
+    A board showing ten-day-old numbers and one showing live numbers are pixel-identical; only
+    the age distinguishes them, and for ten days the age was the one thing not on screen.
+    """
+    src = (WEB / CANONICAL).read_text("utf-8")
+    for token in ("SILENT", "REPORTING", "box"):
+        assert token in src, f"the dashboard never renders {token!r}; box liveness is invisible"

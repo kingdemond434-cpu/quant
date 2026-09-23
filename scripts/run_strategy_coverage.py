@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
-"""STRATEGY-FAMILY COVERAGE (R0200) -- what KINDS of crypto edge has the desk hunted, and what
-has it never looked at once.
+"""STRATEGY-FAMILY COVERAGE (R0200) -- what KINDS of edge has the desk hunted, and what has it
+never looked at once.
 
-PRINCIPAL ORDER (2026-07-31): *"miners n explorers kimi etc all should find every crypto strat
+PRINCIPAL ORDER (2026-07-31): *"miners n explorers kimi etc all should find every ... strat
 even discretionary n all n never limit to just one thing"* + *"discretionary section can copy
-discretionary findings to self improve"*.
+discretionary findings to self improve"*. The order's SUBJECT was narrowed by the universe
+mandate (2026-08-18) from crypto to the MT5/Fusion book; its INSTRUCTION -- never limit to just
+one thing -- is unchanged and is what this organ enforces. See the FAMILIES map for what that
+narrowing removed and what it repointed.
 
 THE GAP THIS CLOSES, and it is a whole axis the desk was blind on. Every existing coverage organ
 maps WHERE the miners look -- source families, regions, languages (prospector_coverage.md tracks
@@ -63,16 +66,45 @@ THIN_BELOW = 3
 #: THE FAMILY MAP. Each: (matcher patterns against graveyard/ledger names, discretionary-adjacent,
 #: what the family actually claims). Adjacency marks families whose mechanism the CONVICTION
 #: sleeve could act on -- those are the ones whose findings route to its playbook.
+#
+# REPOINTED ONTO THE MT5 UNIVERSE, 2026-09-05 (principal's standing order 2026-08-18). This map is
+# a SCORING VOCABULARY, and the mandate names scoring vocabulary explicitly: no vocabulary may
+# target crypto-exchange-native opportunities. Three families were deleted outright because they
+# have no MT5 instrument behind them at all --
+#
+#   CROSS-VENUE-PREMIUM  kimchi / bithumb / coinone / coinbase cross-exchange premium. The desk
+#                        trades ONE broker; there is no second venue to lead the first.
+#   COPY-TRADER-SKILL    Hyperliquid leaderboards and elite-account mirroring. A crypto-exchange
+#                        product, not an instrument.
+#   ONCHAIN-FLOW         exchange netflow, stablecoin supply, mint/burn, TVL. Settlement-layer
+#                        data for a settlement layer no MT5 symbol sits on.
+#
+# and four were repointed at their real MT5 analogue rather than deleted, because the MECHANISM is
+# venue-neutral and only the instrument was crypto: CARRY-FUNDING (perp funding -> broker swap /
+# rollover / futures term structure), ORDER-FLOW-POSITIONING (exchange OI-and-long/short ratios ->
+# COT/CFTC reported positioning), EVENT-AND-CALENDAR (token unlocks and exchange listings ->
+# releases, NFP/CPI/FOMC, earnings), LEAD-LAG (BTC leading alts -> DXY/yields/gold leading FX).
+#
+# WHAT THIS DOES TO THE BREADTH FENCE, said out loud rather than discovered later. Three of the
+# eight families that read HUNTED were hunted ONLY on the retired universe, and the repointed rows
+# lose the crypto-native candidates that used to match them, so measured coverage falls from 8/14
+# to 4/11 and check_strategy_breadth.py now reports NARROW where it reported OK. It still EXITS 0
+# -- NARROW is a finding about where to dig next, not a breach -- and the finding it prints is the
+# right one: the next dig belongs in ORDER-FLOW-POSITIONING, i.e. the COT positioning this desk
+# can actually read. That is the correct reading, not a regression: an MT5 desk claiming breadth on
+# the strength of kimchi premium, copy-trading leaderboards and on-chain netflow is claiming
+# coverage of a map it no longer trades. The floor (MIN_HUNTED_FRACTION) is NOT moved to absorb
+# this, and no family is invented to pad the denominator back.
 FAMILIES: dict[str, dict[str, Any]] = {
     "CARRY-FUNDING": {
-        "patterns": ("funding", "carry", "basis", "premium_arb"),
+        # "funding" stays as a matcher: it is how the desk's own record NAMES this family, and the
+        # MT5 financing leg (swap, rollover, term structure) is the same mechanism priced by a
+        # different counterparty. "premium_arb" went with CROSS-VENUE-PREMIUM.
+        "patterns": ("funding", "carry", "basis", "swap_rate", "rollover", "term_structure",
+                     "rate_differential"),
         "discretionary": False,
-        "claim": "perp funding / spot-futures basis is harvestable after costs"},
-    "CROSS-VENUE-PREMIUM": {
-        "patterns": ("premium", "kimchi", "kr_", "jp", "try_", "coinbase_premium", "bitbank",
-                     "bithumb", "coinone", "cross-exchange", "crossvenue"),
-        "discretionary": False,
-        "claim": "one venue leads another in price and the gap mean-reverts"},
+        "claim": "the financing leg -- broker swap/rollover, futures term structure -- is "
+                 "harvestable after costs"},
     "CROSS-SECTIONAL-FACTOR": {
         "patterns": ("xsec", "lowvol", "size_and_volume", "illiquidity", "reversal", "breadth"),
         "discretionary": False,
@@ -83,19 +115,15 @@ FAMILIES: dict[str, dict[str, Any]] = {
         "discretionary": True,
         "claim": "price structure persists -- the conviction sleeve's OWN family"},
     "ORDER-FLOW-POSITIONING": {
-        "patterns": ("order_flow", "oi_divergence", "ls_contrarian", "elite_account",
-                     "long_short", "liquidation", "smart_dumb"),
+        # The venue-neutral half of the old row is kept ("order_flow", "positioning"); the
+        # exchange-native half (OI/long-short ratios, elite accounts, liquidation cascades,
+        # smart-vs-dumb money feeds) is replaced by the reported positioning this desk can
+        # actually read -- CFTC Commitments of Traders, which scripts/fetch_cot.py already
+        # collects and scripts/screen_cot_positioning.py already screens.
+        "patterns": ("order_flow", "positioning", "cot", "commitments", "net_long", "net_short",
+                     "managed_money", "swap_dealer", "dealer_net", "commercial"),
         "discretionary": True,
-        "claim": "crowded or forced positioning predicts the next move"},
-    "COPY-TRADER-SKILL": {
-        "patterns": ("hyperliquid_trader", "hl_elite", "hl_longterm", "trader_skill", "copytrad"),
-        "discretionary": False,
-        "claim": "identifiable traders have persistent skill worth mirroring"},
-    "ONCHAIN-FLOW": {
-        "patterns": ("netflow", "mint_burn", "mvrv", "defi", "tvl", "dex_cex", "stablecoin",
-                     "exchange_netflow", "reserve"),
-        "discretionary": False,
-        "claim": "settlement-layer flows lead price"},
+        "claim": "crowded or extreme REPORTED positioning predicts the next move"},
     "ATTENTION-SENTIMENT": {
         "patterns": ("wikipedia", "attention", "sentiment", "social", "commit_velocity"),
         "discretionary": False,
@@ -109,8 +137,11 @@ FAMILIES: dict[str, dict[str, Any]] = {
         "discretionary": False,
         "claim": "implied-vs-realised volatility and its surface are tradeable"},
     "EVENT-AND-CALENDAR": {
-        "patterns": ("event", "announce", "listing", "unlock", "calendar", "regime_rotation",
-                     "inout_regime"),
+        # "listing" (exchange listing watch) and "unlock" (token unlock schedules) are gone; the
+        # scheduled events an MT5 book actually trades are macro releases and earnings, which
+        # scripts/build_event_calendar.py already enumerates.
+        "patterns": ("event", "announce", "calendar", "release", "nfp", "cpi", "fomc",
+                     "earnings", "regime_rotation", "inout_regime"),
         "discretionary": True,
         "claim": "scheduled or announced events move price predictably"},
     "LEVEL-REACTION": {
@@ -129,7 +160,10 @@ FAMILIES: dict[str, dict[str, Any]] = {
                        "band, not a disqualifier; slippage+colocation is the binding constraint "
                        "named by every source")},
     "LEAD-LAG": {
-        "patterns": ("leadlag", "lead_lag", "btc_leadlag", "correlation_regime"),
+        # "btc_leadlag" (BTC leading the alt complex) replaced by the leaders an MT5 book has:
+        # the dollar index, the rates curve, and gold against the FX crosses that carry it.
+        "patterns": ("leadlag", "lead_lag", "dxy", "yield_lead", "gold_lead", "index_lead",
+                     "correlation_regime"),
         "discretionary": False,
         "claim": "one instrument's move predicts another's with a lag"},
 }
@@ -246,9 +280,9 @@ def coverage(root: Path | None = None) -> dict[str, Any]:
 def discretionary_candidates(root: Path | None = None) -> list[dict[str, Any]]:
     """Families the CONVICTION sleeve could act on, as playbook candidates.
 
-    Only families flagged discretionary_adjacent -- a carry or on-chain finding is real research
-    but the sleeve cannot express it, so routing it there would be noise in the one brief that
-    has to stay sharp."""
+    Only families flagged discretionary_adjacent -- a carry or vol-surface finding is real
+    research but the sleeve cannot express it, so routing it there would be noise in the one brief
+    that has to stay sharp."""
     root = root or _ROOT
     cov = coverage(root)
     out = []

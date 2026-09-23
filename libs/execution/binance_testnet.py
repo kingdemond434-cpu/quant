@@ -5,6 +5,21 @@ Hardened, testnet-ONLY REST client: signed requests (HMAC-SHA256), keys read fro
 the testnet, so this cannot touch a live account. It only does what the brain tells it: read account
 / positions / filters, set leverage, place market orders, flatten. No signal or sizing logic lives
 here. Without keys it still serves public market data and reports ``has_keys() == False``.
+
+WHY A BINANCE MODULE SURVIVES AN MT5-ONLY PURGE -- DO NOT "CLEAN THIS UP" (2026-09-05).
+This repo holds ONE desk, the MT5/Fusion desk, and the retired crypto-exchange desk was deleted in
+full. This file and its sibling `binance_spot_testnet.py` are the two deliberate exceptions, and
+they are exceptions for a reason that has nothing to do with trading crypto: they are the TIER-3
+DEADMAN RAIL's own plumbing. `scripts/run_deadman_reconciliation.py` (lines 24-25) and
+`scripts/run_deadman_stranded_sweep.py` (line 31) import them directly, and
+`scripts/run_deadman_switch.py` is a never-touch file. The rail is a SAFETY organ: it reconciles
+and sweeps stranded state, and it must keep working whatever the desk trades.
+
+They are also inert by construction -- the base URL is pinned to a TESTNET, so no code path here
+can reach a live account or move real money -- which is precisely why they are safe to keep and
+expensive to remove. `scripts/check_mt5_purity.py` allowlists both by name with this reason
+attached, so they will never appear in that fence's breach list. If you are here to delete a
+Binance file, this is the one you must not. Anything you change here changes the deadman rail.
 """
 
 from __future__ import annotations

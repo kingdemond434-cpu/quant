@@ -1,0 +1,1022 @@
+{
+ "measured_at": "2026-08-28",
+ "seat": "brain_hunter_s7",
+ "method": "public GitHub search API, 10 query vocabularies, unauthenticated",
+ "caveat": "FLOOR not census: rate-limited 403 on query 8/10; raw total_count 133 and 160 on the two broadest queries exceeds the 97 distinct returned",
+ "population_distinct": 97,
+ "catalogued_before_this_session": 9,
+ "repos": {
+  "yli188/WorldQuant_alpha101_code": {
+   "stars": 862,
+   "lang": "Python",
+   "lic": null,
+   "push": "2019-03-07",
+   "desc": "Code implementation of the Quantigic 101 Formulaic Alphas",
+   "q": [
+    "worldquant alpha",
+    "alpha101 worldquant"
+   ]
+  },
+  "zhutoutoutousan/worldquant-miner": {
+   "stars": 728,
+   "lang": "TypeScript",
+   "lic": "Apache-2.0",
+   "push": "2026-02-22",
+   "desc": "Leverage WorldQuant API to generate alpha signals, and mine promising alpha expressions.",
+   "q": [
+    "worldquant alpha"
+   ]
+  },
+  "Miasyster/QuantGPT": {
+   "stars": 456,
+   "lang": "Python",
+   "lic": "MIT",
+   "push": "2026-05-20",
+   "desc": "Agent-driven alpha factory \u2014 LLM autonomously designs, backtests, and submits factors to WorldQuant BRAIN",
+   "q": [
+    "worldquant brain",
+    "worldquant alpha"
+   ]
+  },
+  "QuantML-Research/wq-alpha-research": {
+   "stars": 369,
+   "lang": "Python",
+   "lic": null,
+   "push": "2026-06-29",
+   "desc": "A self-evolving WorldQuant BRAIN alpha research skill.",
+   "q": [
+    "worldquant brain",
+    "worldquant alpha"
+   ]
+  },
+  "YHYYDS666/WorldQuant-Brain-Alpha": {
+   "stars": 338,
+   "lang": "Python",
+   "lic": null,
+   "push": "2025-01-18",
+   "desc": "\u8dd1Alpah\u7684\u5de5\u5177",
+   "q": [
+    "worldquant brain",
+    "worldquant alpha"
+   ]
+  },
+  "chrisneagu/FTC-Skystone-Dark-Angels-Romania-2020": {
+   "stars": 307,
+   "lang": "Java",
+   "lic": null,
+   "push": "2024-04-12",
+   "desc": "NOTICE This repository contains the public FTC SDK for the SKYSTONE (2019-2020) competition season. If you are",
+   "q": [
+    "fast expression alpha"
+   ]
+  },
+  "RussellDash332/WQ-Brain": {
+   "stars": 230,
+   "lang": "Python",
+   "lic": null,
+   "push": "2023-07-13",
+   "desc": "Simple API automation for submitting WorldQuant BRAIN alphas",
+   "q": [
+    "worldquant brain",
+    "worldquant alpha",
+    "worldquantbrain"
+   ]
+  },
+  "lavender1203/worldquant-alpha-aiac": {
+   "stars": 124,
+   "lang": "Python",
+   "lic": null,
+   "push": "2026-06-01",
+   "desc": "worldquant brain alpha\u56e0\u5b50\u6316\u6398\uff0c\u5168\u7a0b\u4f7f\u7528AI\u6316\u6398\u7684\u65b9\u5f0f",
+   "q": [
+    "worldquant brain",
+    "worldquant alpha"
+   ]
+  },
+  "gyx09212214-prog/worldquant-harness": {
+   "stars": 108,
+   "lang": "Python",
+   "lic": "MIT",
+   "push": "2026-08-05",
+   "desc": "Agent research harness for WorldQuant-oriented alpha workflows",
+   "q": [
+    "worldquant alpha"
+   ]
+  },
+  "singlebridge/WorldQuant-miner": {
+   "stars": 88,
+   "lang": null,
+   "lic": null,
+   "push": "2025-08-25",
+   "desc": "\u4e00\u4e2a\u57fa\u4e8e\u672c\u5730Ollama\u5927\u8bed\u8a00\u6a21\u578b\u7684\u667a\u80fdAlpha\u56e0\u5b50\u751f\u6210\u7cfb\u7edf\uff0c\u80fd\u591f\u81ea\u52a8\u751f\u6210\u3001\u6d4b\u8bd5\u5e76\u63d0\u4ea4Alpha\u56e0\u5b50\u5230WorldQuant Brain\u5e73\u53f0\u3002\u8be5\u7cfb\u7edf\u5b8c\u5168\u57fa\u4e8e\u672c\u5730\u90e8\u7f72\uff0c\u65e0\u9700\u4f9d\u8d56\u4e91\u670d\u52a1\uff0c\u63d0\u4f9b\u66f4\u597d\u7684\u6027\u80fd\u548c\u9690\u79c1\u4fdd\u62a4\u3002",
+   "q": [
+    "worldquant brain",
+    "worldquant alpha",
+    "brain alpha miner"
+   ]
+  },
+  "CrisperX/50_WorldQuant_Alpha_Examples_for_Alphathon": {
+   "stars": 85,
+   "lang": null,
+   "lic": null,
+   "push": "2023-10-30",
+   "desc": "This is an example of 50 alphas that can pass the correlation test if they are submitted together. ",
+   "q": [
+    "worldquant alpha"
+   ]
+  },
+  "laox1ao/Alpha101-WorldQuant": {
+   "stars": 62,
+   "lang": "Python",
+   "lic": null,
+   "push": "2018-08-08",
+   "desc": "python implement for WorldQuant-Alpha101",
+   "q": [
+    "worldquant alpha",
+    "alpha101 worldquant"
+   ]
+  },
+  "alexisdpc/WorldQuant-alpha-trading": {
+   "stars": 47,
+   "lang": null,
+   "lic": null,
+   "push": "2026-06-29",
+   "desc": "\ud83c\udf10 Documentation on the WorldQuant BRAIN market simulator and explicit examples of alpha signals.",
+   "q": [
+    "worldquant brain",
+    "worldquant alpha"
+   ]
+  },
+  "MiracleInvoker/AlphaGen": {
+   "stars": 43,
+   "lang": "Python",
+   "lic": null,
+   "push": "2026-01-10",
+   "desc": "Feedback Driven Alpha Generation Pipeline combining Gemini API with the WorldQuant BRAIN API to automatically ",
+   "q": [
+    "worldquant brain",
+    "worldquant alpha",
+    "worldquantbrain"
+   ]
+  },
+  "shu476891497-hash/worldquant-miner": {
+   "stars": 41,
+   "lang": "Python",
+   "lic": null,
+   "push": "2026-07-13",
+   "desc": "WorldQuant Brain IQC factor mining engine - D0/D1/BlueOcean 3-leg async pipeline",
+   "q": [
+    "worldquant brain"
+   ]
+  },
+  "Liu-Qianyun/worldquantbrain-alphas": {
+   "stars": 39,
+   "lang": null,
+   "lic": null,
+   "push": "2025-07-28",
+   "desc": "A collection of alpha signals and settings submitted to WorldQuant BRAIN.",
+   "q": [
+    "worldquant brain",
+    "worldquant alpha",
+    "worldquantbrain"
+   ]
+  },
+  "VinayakChola/WorldQuant_Alphas": {
+   "stars": 36,
+   "lang": null,
+   "lic": null,
+   "push": "2023-06-30",
+   "desc": "Investment alphas, a concept from finance, measure an investment's risk-adjusted performance relative to a ben",
+   "q": [
+    "worldquant alpha"
+   ]
+  },
+  "efJerryYang/worldquant-brain-simulator": {
+   "stars": 32,
+   "lang": "Python",
+   "lic": "GPL-3.0",
+   "push": "2026-05-02",
+   "desc": "This is a simulator to help with backtesting your alphas offline for platform WorldQuant BRAIN",
+   "q": [
+    "worldquant brain",
+    "worldquant alpha"
+   ]
+  },
+  "yyl-ayit/WQB-agent": {
+   "stars": 30,
+   "lang": "Python",
+   "lic": null,
+   "push": "2025-10-15",
+   "desc": "\u4e00\u4e2a\u57fa\u4e8eworldquantbrain\u5e73\u53f0\u7684\u91cf\u5316\u5206\u6790\u4ee5\u53ca\u901a\u8fc7\u667a\u80fd\u4f53\u81ea\u52a8\u7684\u5206\u6790\u548c\u63d0\u4ea4\u7cfb\u7edf\u3002\u6b22\u8fce\u5927\u5bb6\u7684\u4f7f\u7528\u548c\u4e8c\u6b21\u5f00\u53d1\uff0c\u652f\u6301\u7528\u6237\u6743\u9650\uff0c\u987e\u95ee\u6743\u9650\u4e5f\u9002\u7528,\u540c\u65f6\u4e5f\u53ef\u4ee5\u4f5c\u4e3a\u5176\u4ed6\u7f51\u7ad9\u7684\u5f00\u53d1\u6a21\u677f\u3002\u8fd8\u5728\u5f00\u53d1\u4e2d\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7",
+   "q": [
+    "worldquantbrain"
+   ]
+  },
+  "hr-23/Worldquant-Brain-Alpha-": {
+   "stars": 28,
+   "lang": null,
+   "lic": null,
+   "push": "2024-05-28",
+   "desc": "Creating Alphas - World Quant Brain ",
+   "q": [
+    "worldquant brain",
+    "worldquant alpha"
+   ]
+  },
+  "bjeong991212/BJ46158_WQBrain_API": {
+   "stars": 26,
+   "lang": "Jupyter Notebook",
+   "lic": null,
+   "push": "2025-05-18",
+   "desc": "WorldQuant Brain 2024 Bootcamp API",
+   "q": [
+    "worldquant brain"
+   ]
+  },
+  "Yiyang-Xu/WorldQuant_alpha_creation_engine": {
+   "stars": 24,
+   "lang": "Jupyter Notebook",
+   "lic": null,
+   "push": "2024-08-06",
+   "desc": "",
+   "q": [
+    "worldquant alpha"
+   ]
+  },
+  "xiao634zhang/worldquant-alpha-crew": {
+   "stars": 19,
+   "lang": "Python",
+   "lic": null,
+   "push": "2026-01-31",
+   "desc": "\u57fa\u4e8e CrewAI \u7684 WorldQuant Alpha \u56e0\u5b50\u81ea\u52a8\u7814\u7a76\u4e0e\u56de\u6d4b\u7cfb\u7edf 6\u4e2a\u4e13\u4e1a AI \u667a\u80fd\u4f53\u534f\u4f5c \u4ece\u7814\u62a5\u5230\u53ef\u9a8c\u8bc1\u516c\u5f0f\u7684\u5168\u81ea\u52a8\u6d41\u6c34\u7ebf \u652f\u6301\u7f51\u683c\u641c\u7d22\u548c\u667a\u80fd\u4f18\u5316",
+   "q": [
+    "worldquant alpha"
+   ]
+  },
+  "AxiomOfChoice-sys/WorldQuantAlpha101": {
+   "stars": 17,
+   "lang": "Python",
+   "lic": null,
+   "push": "2021-03-16",
+   "desc": "",
+   "q": [
+    "worldquant alpha"
+   ]
+  },
+  "nickhuangxinyu/WQ101Alpha": {
+   "stars": 17,
+   "lang": "Jupyter Notebook",
+   "lic": null,
+   "push": "2020-08-04",
+   "desc": "implement worldquant 101 alpha for stock alpha strategy",
+   "q": [
+    "worldquant alpha"
+   ]
+  },
+  "blacksnowmartin/Worldquant-Brain": {
+   "stars": 16,
+   "lang": "Jupyter Notebook",
+   "lic": null,
+   "push": "2026-02-16",
+   "desc": "",
+   "q": [
+    "worldquant brain"
+   ]
+  },
+  "justinhuang0208/brain_viewer": {
+   "stars": 16,
+   "lang": "Python",
+   "lic": null,
+   "push": "2026-05-13",
+   "desc": "Desktop GUI and CLI toolkit for WorldQuant Brain API workflows, including datasets, operators, alpha generatio",
+   "q": [
+    "worldquant brain",
+    "worldquant alpha",
+    "worldquantbrain"
+   ]
+  },
+  "Pony-Li/WQ-Brain": {
+   "stars": 15,
+   "lang": "Python",
+   "lic": null,
+   "push": "2025-08-29",
+   "desc": "Alpha minning for WorldQuant Brain",
+   "q": [
+    "worldquant brain",
+    "worldquant alpha"
+   ]
+  },
+  "MiracleInvoker/WolfAlpha": {
+   "stars": 15,
+   "lang": "Python",
+   "lic": null,
+   "push": "2025-06-14",
+   "desc": "An autonomous agent that generates and refines quantitative trading strategies using Google's Gemini API and t",
+   "q": [
+    "worldquant brain",
+    "worldquant alpha"
+   ]
+  },
+  "ChenNachuan/WorldQuant": {
+   "stars": 15,
+   "lang": "Python",
+   "lic": null,
+   "push": "2026-06-26",
+   "desc": "WorldQuant Alpha Mining Framework - LLM-driven factor discovery and backtesting",
+   "q": [
+    "worldquant alpha"
+   ]
+  },
+  "aznikline/alpha-mining-system": {
+   "stars": 15,
+   "lang": "Python",
+   "lic": "MIT",
+   "push": "2026-06-25",
+   "desc": "Alpha \u56e0\u5b50\u6316\u6398\u7cfb\u7edf v3.0 \u2014 \u6a21\u5757\u5316\u81ea\u52a8\u5316\u56e0\u5b50\u6316\u6398\u5e73\u53f0 (\u8868\u8fbe\u5f0f/\u9057\u4f20\u7f16\u7a0b/\u6df1\u5ea6\u5b66\u4e60\u4e09\u6a21\u5f0f, A\u80a1+\u7f8e\u80a1, CLI+Streamlit+Notebook)",
+   "q": [
+    "worldquant alpha"
+   ]
+  },
+  "Parsnip77/Multi-factor-Model-for-Stock-Selection": {
+   "stars": 15,
+   "lang": "Python",
+   "lic": null,
+   "push": "2026-03-19",
+   "desc": "\u7528 Python \u5b9e\u73b0A\u80a1\u5386\u53f2\u65e5\u7ebf\u6570\u636e\u83b7\u53d6\u4e0e\u6e05\u6d17\uff0c\u590d\u73b0 WorldQuant Alpha101 \u7ecf\u5178\u56e0\u5b50\uff0c\u5b9e\u73b0\u56e0\u5b50\u8bc4\u4f30\u3001\u5408\u6210\u3001\u56de\u6d4b\u5168\u6d41\u7a0b Pipeline",
+   "q": [
+    "alpha101 worldquant"
+   ]
+  },
+  "neelabh2710/An-Evolutionary-Algorithmic-Approach-for-Auto-Alpha-generation-": {
+   "stars": 14,
+   "lang": "Jupyter Notebook",
+   "lic": null,
+   "push": "2025-02-03",
+   "desc": "Developed a genetic algorithm framework for Automated Alpha generation using the WorldQuant platform API.",
+   "q": [
+    "worldquant alpha"
+   ]
+  },
+  "Stemmaker/worldquant-autocommit-alpha": {
+   "stars": 13,
+   "lang": "Python",
+   "lic": null,
+   "push": "2025-12-14",
+   "desc": "WorldQuant Brain Alpha auto-submit system - Automatically filter and submit qualified alphas",
+   "q": [
+    "worldquant brain",
+    "worldquant alpha"
+   ]
+  },
+  "Tanay2109/WorldQuant-Alpha-Strategies": {
+   "stars": 13,
+   "lang": null,
+   "lic": null,
+   "push": "2025-05-01",
+   "desc": "My Alpha strategies from WorldQuant's International Quant Championship '24",
+   "q": [
+    "worldquant alpha"
+   ]
+  },
+  "qq547820639/WorldQuant-BRAIN-Alpha": {
+   "stars": 12,
+   "lang": "Python",
+   "lic": "MIT",
+   "push": "2026-08-15",
+   "desc": "BRAIN Alpha Ops \u662f\u8dd1\u5728\u4f60\u81ea\u5df1\u7535\u8111\u4e0a\u7684 alpha \u7814\u7a76\u5de5\u4f5c\u53f0\u3002\u5b83\u4f1a 7\u00d724 \u5c0f\u65f6\u81ea\u52a8\u5728 WorldQuant BRAIN \u5e73\u53f0\u4e0a\u751f\u6210 \u2192 \u6d4b\u8bd5 \u2192 \u6253\u5206 \u2192 \u7b5b\u9009\u91cf\u5316\u7b56\u7565\uff0c\u6700\u540e\u628a\u5019\u9009\u6e05\u5355\u4ea4\u5230\u4f60\u624b\u4e0a\uff0c\u7531\u4f60",
+   "q": [
+    "worldquant brain",
+    "worldquant alpha"
+   ]
+  },
+  "q3yi/worldquant": {
+   "stars": 12,
+   "lang": "Python",
+   "lic": "MIT",
+   "push": "2025-06-24",
+   "desc": "World Quant Brain API",
+   "q": [
+    "worldquant brain",
+    "worldquantbrain"
+   ]
+  },
+  "MiracleInvoker/AlphaTune": {
+   "stars": 12,
+   "lang": "Python",
+   "lic": null,
+   "push": "2026-01-04",
+   "desc": "Automated Hyperparameter Optimization framework for WorldQuant BRAIN Alphas using Optuna.",
+   "q": [
+    "worldquant brain",
+    "worldquant alpha"
+   ]
+  },
+  "aircrushin/wq-alpha-agent": {
+   "stars": 12,
+   "lang": "Python",
+   "lic": "MIT",
+   "push": "2026-08-03",
+   "desc": "Automated WorldQuant BRAIN alpha factor research agent \u2014 generate, simulate, diversity-check, submit, and evol",
+   "q": [
+    "worldquant brain",
+    "worldquant alpha"
+   ]
+  },
+  "KIRANBADAKURAVA/fastmcp-alpha-tools": {
+   "stars": 9,
+   "lang": "Python",
+   "lic": null,
+   "push": "2025-05-05",
+   "desc": "A streamlined toolkit built with FastMCP for automating alpha simulation, dataset retrieval, and performance a",
+   "q": [
+    "worldquant brain",
+    "worldquant alpha"
+   ]
+  },
+  "krocellx/WorldQuant-Alpha-Research": {
+   "stars": 9,
+   "lang": "Python",
+   "lic": null,
+   "push": "2025-06-23",
+   "desc": "",
+   "q": [
+    "worldquant alpha"
+   ]
+  },
+  "seuzxh/quant-factor-skill": {
+   "stars": 9,
+   "lang": null,
+   "lic": "MIT",
+   "push": "2026-05-10",
+   "desc": "\u91cf\u5316\u56e0\u5b50Agent Skill - \u6574\u5408Qlib Alpha158/360 + WorldQuant Alpha101\u5171619\u4e2a\u56e0\u5b50",
+   "q": [
+    "alpha101 worldquant"
+   ]
+  },
+  "LuyuZhang00/WQAlphas": {
+   "stars": 8,
+   "lang": "Python",
+   "lic": null,
+   "push": "2025-10-07",
+   "desc": "Auto Backtest of WorldQuant Brain Platform",
+   "q": [
+    "worldquant brain"
+   ]
+  },
+  "AshRiddle2023/worldquant-brain-factors": {
+   "stars": 8,
+   "lang": "Python",
+   "lic": null,
+   "push": "2025-10-14",
+   "desc": "Quantitative factor research and alpha development on the WorldQuant Brain platform \u2014 including starter course",
+   "q": [
+    "worldquant brain",
+    "worldquant alpha",
+    "brain platform alpha factor"
+   ]
+  },
+  "KIRANBADAKURAVA/Alpha-Automation": {
+   "stars": 8,
+   "lang": "Jupyter Notebook",
+   "lic": null,
+   "push": "2025-01-31",
+   "desc": "This project uses python to automate the process of alpha simulation in WorldQuant Brain platform.",
+   "q": [
+    "worldquant brain",
+    "worldquant alpha"
+   ]
+  },
+  "slydg/Lightweight-Alpha-Miner": {
+   "stars": 8,
+   "lang": "Python",
+   "lic": "MIT",
+   "push": "2026-04-15",
+   "desc": "\u8fd9\u662f\u4e00\u4e2a\u57fa\u4e8e\u5927\u8bed\u8a00\u6a21\u578b\uff08LLM\uff09\u548c WorldQuant Brain API \u7684\u8f7b\u91cf\u7ea7\u91cf\u5316\u56e0\u5b50\u81ea\u52a8\u6316\u6398\u5de5\u5177\u3002\u901a\u8fc7\u96c6\u6210 Ollama \u672c\u5730\u6a21\u578b\uff0c\u5b9e\u73b0\u56e0\u5b50\u751f\u6210\u3001\u56de\u6d4b\u3001\u903b\u8f91\u53cd\u9988\u53ca\u81ea\u52a8\u4f18\u5316\u7684\u95ed\u73af\u6d41\u7a0b\u3002",
+   "q": [
+    "worldquant brain",
+    "worldquant alpha",
+    "brain alpha miner"
+   ]
+  },
+  "anweat/worldquantAlpha-dev": {
+   "stars": 8,
+   "lang": "Python",
+   "lic": null,
+   "push": "2026-04-28",
+   "desc": "",
+   "q": [
+    "worldquant alpha"
+   ]
+  },
+  "phyphy-quant/WorldQuant-Genetic-Algorithm": {
+   "stars": 8,
+   "lang": "Python",
+   "lic": null,
+   "push": "2025-03-18",
+   "desc": "This is the genetic algorithm of doing alpha research at WorldQuant.",
+   "q": [
+    "worldquant alpha"
+   ]
+  },
+  "angel4angelov-glitch/wq-alpha-pipeline": {
+   "stars": 7,
+   "lang": "Python",
+   "lic": "MIT",
+   "push": "2026-05-10",
+   "desc": "Automated alpha research pipeline for WorldQuant BRAIN \u2014 built for the IQC 2026",
+   "q": [
+    "worldquant brain",
+    "worldquant alpha"
+   ]
+  },
+  "guoshiqi0830/worldquant-alpha-miner": {
+   "stars": 7,
+   "lang": "Python",
+   "lic": null,
+   "push": "2025-08-28",
+   "desc": "world quant alpha miner",
+   "q": [
+    "worldquant alpha"
+   ]
+  },
+  "myacgl/ProdMemo": {
+   "stars": 6,
+   "lang": "JavaScript",
+   "lic": "MIT",
+   "push": "2026-07-18",
+   "desc": "Chrome extension for caching and displaying Production Correlation data in WorldQuant Brain",
+   "q": [
+    "worldquant brain"
+   ]
+  },
+  "zeron-G/worldquant-alpha-research-agent": {
+   "stars": 6,
+   "lang": "Python",
+   "lic": "MIT",
+   "push": "2026-05-11",
+   "desc": "WorldQuant BRAIN alpha research, simulation, and submission pipeline in pure Python.",
+   "q": [
+    "worldquant brain",
+    "worldquant alpha"
+   ]
+  },
+  "0xceb1/brain-learn": {
+   "stars": 6,
+   "lang": "Python",
+   "lic": "MIT",
+   "push": "2026-03-29",
+   "desc": "GP learn framework for automatic alpha mining on WorldQuant BRAIN platform",
+   "q": [
+    "worldquant brain",
+    "worldquant alpha"
+   ]
+  },
+  "OddMiss/WorldQuantBrain-Agent": {
+   "stars": 6,
+   "lang": "Jupyter Notebook",
+   "lic": null,
+   "push": "2026-06-04",
+   "desc": "A local multi-agent research pipeline for generating WorldQuant Brain alpha ideas from consultant forum PDFs.",
+   "q": [
+    "worldquant brain",
+    "worldquant alpha",
+    "worldquantbrain"
+   ]
+  },
+  "NewAmorend/AlphaGen-Agent": {
+   "stars": 6,
+   "lang": "Python",
+   "lic": "MIT",
+   "push": "2026-07-23",
+   "desc": "AlphaGen Agent \u2014 WorldQuant alpha generation and backtesting harness",
+   "q": [
+    "worldquant alpha"
+   ]
+  },
+  "guangxiangdebizi/FinanceMCP-Alpha": {
+   "stars": 6,
+   "lang": "TypeScript",
+   "lic": "NOASSERTION",
+   "push": "2025-10-11",
+   "desc": "A powerful Model Context Protocol (MCP) server for calculating WorldQuant 101 Alpha factors using real-time Ch",
+   "q": [
+    "worldquant alpha"
+   ]
+  },
+  "lansetaowa/alpha101-crypto": {
+   "stars": 5,
+   "lang": "Jupyter Notebook",
+   "lic": null,
+   "push": "2025-07-08",
+   "desc": "This repo examines the WorldQuant 101 Fomulaic alphas' effect on crypto data",
+   "q": [
+    "worldquant alpha",
+    "alpha101 worldquant"
+   ]
+  },
+  "parthjn2709/worldquant-iqc-2026-alphas": {
+   "stars": 5,
+   "lang": "Python",
+   "lic": null,
+   "push": "2026-05-12",
+   "desc": "Alpha research repository for WorldQuant IQC 2026. Each alpha includes its hypothesis, expression, simulation ",
+   "q": [
+    "worldquant alpha"
+   ]
+  },
+  "KusuLeung/WQ": {
+   "stars": 4,
+   "lang": null,
+   "lic": "MIT",
+   "push": "2025-01-24",
+   "desc": "About WorldQuant Brain",
+   "q": [
+    "worldquant brain"
+   ]
+  },
+  "zxx264547/worldquant-brain-research": {
+   "stars": 4,
+   "lang": "Python",
+   "lic": null,
+   "push": "2026-08-15",
+   "desc": "",
+   "q": [
+    "worldquant brain"
+   ]
+  },
+  "YuGu0358/QuantBrain": {
+   "stars": 4,
+   "lang": "Python",
+   "lic": null,
+   "push": "2026-04-22",
+   "desc": "WorldQuant BRAIN automated alpha mining with multi-LLM routing",
+   "q": [
+    "worldquant brain"
+   ]
+  },
+  "i9880612/alpha-garden": {
+   "stars": 4,
+   "lang": "Python",
+   "lic": "MIT",
+   "push": "2026-07-17",
+   "desc": "A closed-loop alpha research system for WorldQuant Brain.",
+   "q": [
+    "worldquant brain"
+   ]
+  },
+  "YongHui-X/Quant": {
+   "stars": 4,
+   "lang": "Jupyter Notebook",
+   "lic": null,
+   "push": "2026-04-17",
+   "desc": "2026 WorldQuant BRAIN International Quant Championship (IQC). The project focuses on systematic alpha experime",
+   "q": [
+    "worldquant brain",
+    "worldquantbrain"
+   ]
+  },
+  "Khdeng/WorldQuant-Alpha-Autosubmission": {
+   "stars": 4,
+   "lang": "Python",
+   "lic": null,
+   "push": "2026-04-01",
+   "desc": "",
+   "q": [
+    "worldquant alpha"
+   ]
+  },
+  "OctopusTakopi/toraniko-alpha101": {
+   "stars": 4,
+   "lang": "Python",
+   "lic": "MIT",
+   "push": "2026-07-17",
+   "desc": "Audited WorldQuant Alpha101 implementation in Toraniko with PnL and paper-figure reports.",
+   "q": [
+    "worldquant alpha",
+    "alpha101 worldquant"
+   ]
+  },
+  "AshSwing/FastPlus": {
+   "stars": 4,
+   "lang": "Rust",
+   "lic": "MIT",
+   "push": "2026-08-13",
+   "desc": "Alpha Expression Language, based on WorldQuant's Fast Expression.",
+   "q": [
+    "fast expression alpha"
+   ]
+  },
+  "hitendras510/OpenAlpha-Brain": {
+   "stars": 3,
+   "lang": "Python",
+   "lic": null,
+   "push": "2026-05-16",
+   "desc": "An autonomous, closed-loop alpha mining platform for the **WorldQuant BRAIN IQC 2026** competition.",
+   "q": [
+    "worldquant brain"
+   ]
+  },
+  "coke5151/wqb-python-workshop": {
+   "stars": 3,
+   "lang": "Python",
+   "lic": null,
+   "push": "2026-04-18",
+   "desc": "WorldQuant Brain \u5de5\u4f5c\u574a\uff1aPython \u56de\u6e2c\u5de5\u5177",
+   "q": [
+    "worldquant brain"
+   ]
+  },
+  "nutdnuy/wq-alpha-agent": {
+   "stars": 3,
+   "lang": "Python",
+   "lic": null,
+   "push": "2026-04-15",
+   "desc": "WorldQuant BRAIN Alpha expression generator \u2014 Streamlit + LangChain + OpenAI \u2192 autobrain-sim simulation",
+   "q": [
+    "worldquant brain"
+   ]
+  },
+  "hsrxr/wq-brain-mcp": {
+   "stars": 3,
+   "lang": "Python",
+   "lic": null,
+   "push": "2026-05-19",
+   "desc": "MCP Server for WorldQuant Brain alpha factor mining \u2014 \u4e16\u5764 Brain \u56de\u6d4b\u56e0\u5b50 MCP \u670d\u52a1",
+   "q": [
+    "worldquant brain"
+   ]
+  },
+  "Animesh-Parashar/WolfAlpha": {
+   "stars": 3,
+   "lang": "Python",
+   "lic": null,
+   "push": "2025-06-14",
+   "desc": "An autonomous agent that generates and refines quantitative trading strategies using Google's Gemini API and t",
+   "q": [
+    "worldquant brain"
+   ]
+  },
+  "ljb189/wq-alpha-skill": {
+   "stars": 3,
+   "lang": null,
+   "lic": "MIT",
+   "push": "2026-07-27",
+   "desc": "WorldQuant BRAIN Alpha \u6316\u6398 Skill v2.0 (\u878d\u5408\u4f18\u5316\u7248) - \u542b\u7a33\u5065\u6027\u68c0\u9a8c/WARNING\u5206\u7ea7/\u7ed3\u6784\u5316\u7ecf\u9a8c\u6c89\u6dc0",
+   "q": [
+    "worldquant brain"
+   ]
+  },
+  "lvlh2/alpha101": {
+   "stars": 3,
+   "lang": "Python",
+   "lic": "MIT",
+   "push": "2026-08-04",
+   "desc": "A Python implementation of the 101 Formulaic Alphas by WorldQuant.",
+   "q": [
+    "alpha101 worldquant"
+   ]
+  },
+  "xiao634zhang/wq-factor-miner": {
+   "stars": 2,
+   "lang": "Python",
+   "lic": "MIT",
+   "push": "2026-03-15",
+   "desc": "WorldQuant Brain Factor Mining System",
+   "q": [
+    "worldquant brain"
+   ]
+  },
+  "divyanshutiwari09/WorldQuant-Brain-Quantitative-Analysis-Challenge": {
+   "stars": 2,
+   "lang": "Jupyter Notebook",
+   "lic": null,
+   "push": "2024-01-10",
+   "desc": "",
+   "q": [
+    "worldquant brain"
+   ]
+  },
+  "adanx-ong/worldquant-factor-builder": {
+   "stars": 2,
+   "lang": null,
+   "lic": null,
+   "push": "2026-06-08",
+   "desc": "High-Sharpe alpha factor templates and operator reference for WorldQuant BRAIN platform. Includes verified exp",
+   "q": [
+    "worldquant brain",
+    "brain platform alpha factor"
+   ]
+  },
+  "nutdnuy/brain-paper-to-alpha-plugin": {
+   "stars": 2,
+   "lang": "Python",
+   "lic": "MIT",
+   "push": "2026-06-26",
+   "desc": "Claude Code/Codex Agent-native plugin for WorldQuant BRAIN paper-to-alpha research workflows.",
+   "q": [
+    "worldquant brain"
+   ]
+  },
+  "song1357/wq-alpha-miner": {
+   "stars": 2,
+   "lang": "Python",
+   "lic": null,
+   "push": "2026-04-07",
+   "desc": "Automated alpha discovery engine for WorldQuant BRAIN platform with signal light navigation system",
+   "q": [
+    "worldquant brain",
+    "brain alpha miner"
+   ]
+  },
+  "Cgodking/Alpha-agent": {
+   "stars": 2,
+   "lang": "Python",
+   "lic": null,
+   "push": "2026-07-21",
+   "desc": "WorldQuant BRAIN Alpha \u81ea\u52a8\u63a2\u7d22\u3001\u56de\u6d4b\u3001\u7b5b\u9009\u4e0e\u63d0\u4ea4\u4ee3\u7406",
+   "q": [
+    "worldquant brain"
+   ]
+  },
+  "Arterialblood/wq-alpha-research": {
+   "stars": 2,
+   "lang": "Python",
+   "lic": null,
+   "push": "2026-07-11",
+   "desc": "WorldQuant BRAIN Alpha Research Skill for WorkBuddy \u2014 field lookup, expression templates, IS checks, self-corr",
+   "q": [
+    "worldquant brain"
+   ]
+  },
+  "lanzhiwang/worldquantbrain": {
+   "stars": 2,
+   "lang": "Python",
+   "lic": null,
+   "push": "2025-06-20",
+   "desc": "",
+   "q": [
+    "worldquantbrain"
+   ]
+  },
+  "6531076392/nuevo": {
+   "stars": 2,
+   "lang": null,
+   "lic": null,
+   "push": "2019-02-23",
+   "desc": "/*! jQuery v1.9.1 | (c) 2005, 2012 jQuery Foundation, Inc. | jquery.org/license //@ sourceMappingURL=jquery.mi",
+   "q": [
+    "fast expression alpha"
+   ]
+  },
+  "QZYWQ/Worldquantbrain": {
+   "stars": 1,
+   "lang": "HTML",
+   "lic": null,
+   "push": "2026-05-27",
+   "desc": "WorldQuant BRAIN \u91cf\u5316\u7b56\u7565\u7814\u7a76",
+   "q": [
+    "worldquantbrain"
+   ]
+  },
+  "BRV-2728/WorldQuantBrain-auto-tool": {
+   "stars": 1,
+   "lang": null,
+   "lic": null,
+   "push": "2026-03-27",
+   "desc": "A Python script for batch automatic backtesting and automatic submission of alphas",
+   "q": [
+    "worldquantbrain"
+   ]
+  },
+  "calculatekxlong/WorldQuantBRAINAPI": {
+   "stars": 1,
+   "lang": "Python",
+   "lic": null,
+   "push": "2025-04-11",
+   "desc": "RetrieveDatafields is to retrieve datafields. SubmitSimulation is to submit and retrieve results.",
+   "q": [
+    "worldquantbrain"
+   ]
+  },
+  "mohitprashant/Quant-Alpha-Hypotheses": {
+   "stars": 1,
+   "lang": null,
+   "lic": "GPL-3.0",
+   "push": "2025-03-22",
+   "desc": "Repository of quantitative research alpha generation ideas for use in the international quant competition. Imp",
+   "q": [
+    "fast expression alpha"
+   ]
+  },
+  "alinama79/ali12": {
+   "stars": 1,
+   "lang": null,
+   "lic": null,
+   "push": "2017-10-10",
+   "desc": "/*! jQuery v1.10.2 | (c) 2005, 2013 jQuery Foundation, Inc. | jquery.org/license //@ sourceMappingURL=jquery-1",
+   "q": [
+    "fast expression alpha"
+   ]
+  },
+  "wangyuaqi/Alpha101": {
+   "stars": 0,
+   "lang": null,
+   "lic": null,
+   "push": "2023-03-01",
+   "desc": "My implementation of WorldQuant Alpha101",
+   "q": [
+    "alpha101 worldquant"
+   ]
+  },
+  "Hack-Yan/-worldquantbrain-": {
+   "stars": 0,
+   "lang": "Python",
+   "lic": null,
+   "push": "2025-10-29",
+   "desc": "\u6b63\u5982\u6807\u9898\u6240\u8bf4\uff0c\u672c\u4ee3\u7801\u53ef\u4ee5\u5728\u4e16\u5764\u5e73\u53f0\u4e0a\u81ea\u52a8\u63d0\u4ea4alpha\uff0c\u5e76\u4e14\u53ef\u4ee5\u9009\u62e9\u76f8\u5e94\u9875\u7801\u8fdb\u884c\u63d0\u4ea4\uff0c\u8282\u7701\u4f7f\u7528\u8005\u7684\u65f6\u95f4\u4e0e\u7cbe\u529b",
+   "q": [
+    "worldquantbrain"
+   ]
+  },
+  "wisdomgu/worldquantbrain": {
+   "stars": 0,
+   "lang": null,
+   "lic": null,
+   "push": "2026-06-20",
+   "desc": "",
+   "q": [
+    "worldquantbrain"
+   ]
+  },
+  "hoangnghiaviet/WorldQuantBrain": {
+   "stars": 0,
+   "lang": "Python",
+   "lic": null,
+   "push": "2023-04-02",
+   "desc": "",
+   "q": [
+    "worldquantbrain"
+   ]
+  },
+  "lihanghang404/alphaDemo": {
+   "stars": 0,
+   "lang": "Jupyter Notebook",
+   "lic": null,
+   "push": "2025-08-22",
+   "desc": "a worldquantbrain simulation example",
+   "q": [
+    "worldquantbrain"
+   ]
+  },
+  "Quant-Researches/WorldQuantBrain": {
+   "stars": 0,
+   "lang": null,
+   "lic": null,
+   "push": "2026-05-12",
+   "desc": "",
+   "q": [
+    "worldquantbrain"
+   ]
+  },
+  "Gonkerino/WorldQuantBrain": {
+   "stars": 0,
+   "lang": null,
+   "lic": null,
+   "push": "2026-03-26",
+   "desc": "",
+   "q": [
+    "worldquantbrain"
+   ]
+  },
+  "mingu0822/WorldQuantBrain---tools": {
+   "stars": 0,
+   "lang": "Python",
+   "lic": null,
+   "push": "2026-04-08",
+   "desc": "useful tools for brain",
+   "q": [
+    "worldquantbrain"
+   ]
+  },
+  "ChangjiangXu/FLASHMM-alpha": {
+   "stars": 0,
+   "lang": "R",
+   "lic": "GPL-3.0",
+   "push": "2025-01-03",
+   "desc": "Fast and Scalable Single Cell Differential Expression Analysis using Mixed-effects Models",
+   "q": [
+    "fast expression alpha"
+   ]
+  },
+  "sioodmy/mathtosvg": {
+   "stars": 0,
+   "lang": "Rust",
+   "lic": null,
+   "push": "2026-08-18",
+   "desc": "fast Wolfram Alpha math expression syntax to svg converter. (spaghetti code copied over from my quickshell)",
+   "q": [
+    "fast expression alpha"
+   ]
+  }
+ }
+}

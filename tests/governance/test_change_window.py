@@ -14,6 +14,13 @@ from scripts.check_change_window import (
     touches_money_path,
 )
 
+# 2026-08-28: read the INJECTED PAYLOAD, not one file. The 08-25 consolidation moved the
+# law text from ops/principal_doctrine.txt into docs/LAWS.md and changed brain_env.sh to
+# cat BOTH into every organ's prompt in the same breath -- no organ lost a line, and five
+# fences went red about text one file away. libs.doctrine.corpus derives the file list
+# from brain_env.sh itself, so a future relocation moves the fences with it.
+from libs.doctrine.corpus import doctrine_text
+
 NOW = datetime(2026, 8, 1, 12, 0, tzinfo=UTC)
 
 
@@ -58,10 +65,14 @@ def test_first_fills_window_blocks(tmp_path):
 
 
 def test_rail_breach_window_blocks(tmp_path):
+    """REPOINTED 2026-09-05: the changed path was `scripts/run_cashcarry_executor.py`, the retired
+    crypto-exchange desk's executor. It was deleted with that desk and dropped out of MONEY_PATH,
+    so the test stopped exercising a money-path change and the window it was written to prove
+    reported ALLOW. The gateway is the money path now; the assertion is otherwise unchanged."""
     _launch(tmp_path, days_ago=30, fills=100)
     (tmp_path / "data/cashcarry_positions.json").write_text(
         '{"last_risk_action": "flatten", "positions": {}}', "utf-8")
-    rep = build_report(tmp_path, NOW, paths=["scripts/run_cashcarry_executor.py"])
+    rep = build_report(tmp_path, NOW, paths=["desks/mt5/mt5desk/gateway.py"])
     assert rep["verdict"] == "BLOCK"
     assert any("RAIL_BREACH" in w for w in rep["windows_active"])
 
@@ -76,7 +87,7 @@ def test_settled_book_opens_the_window(tmp_path):
 def test_freeze_is_improvements_not_repairs_in_the_law_text():
     src = Path("scripts/check_change_window.py").read_text("utf-8")
     assert "freezes IMPROVEMENTS, never REPAIRS" in src
-    doc = Path("ops/principal_doctrine.txt").read_text("utf-8")
+    doc = doctrine_text()
     assert "IMPROVEMENTS, NEVER REPAIRS" in doc
 
 

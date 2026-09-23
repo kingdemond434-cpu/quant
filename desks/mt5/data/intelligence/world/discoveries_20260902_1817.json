@@ -1,0 +1,115 @@
+[
+ {
+  "source": "world_crawler",
+  "title": "Download forex robots for free for MetaTrader 5 in MQL5 Code Base",
+  "url": "https://www.mql5.com/en/code/mt5/experts",
+  "published": "2026-09-02T18:17:17+00:00",
+  "symbols": [
+   "XAUUSD"
+  ],
+  "timeframes": [
+   "DAILY",
+   "M1",
+   "M15"
+  ],
+  "patterns": [
+   "breakout",
+   "gap",
+   "momentum",
+   "orderflow",
+   "session",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "vault_sha": "5ff90728c6c91dbc65d6",
+  "host": "www.mql5.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "\u514d\u8d39\u4e0b\u8f7dMetaTrader 4\u548cMetaTrader 5\u7684\u81ea\u52a8\u4ea4\u6613\u548c\u6307\u6807 - MQL5\u4ee3\u7801\u5e93",
+  "url": "https://www.mql5.com/zh/code",
+  "published": "2026-09-02T18:17:19+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "breakout",
+   "correlation",
+   "gap",
+   "momentum",
+   "orderflow",
+   "session",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "zh",
+  "vault_sha": "994c3b0da875f6d90518",
+  "host": "www.mql5.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Forums | Forex Factory",
+  "url": "https://www.forexfactory.com/forums",
+  "published": "2026-09-02T18:17:19+00:00",
+  "symbols": [
+   "EURJPY",
+   "EURUSD"
+  ],
+  "timeframes": [
+   "H4",
+   "M15"
+  ],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "vault_sha": "5562fa0d895bf7a354fa",
+  "host": "www.forexfactory.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Quant Mashup - Quantocracy",
+  "url": "https://quantocracy.com/",
+  "published": "2026-09-02T18:17:20+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1H",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "breakout",
+   "carry",
+   "correlation",
+   "gap",
+   "mean_reversion",
+   "momentum",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "vault_sha": "c88f80dff33619d1f349",
+  "host": "quantocracy.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Articles | QuantStart",
+  "url": "https://www.quantstart.com/articles/",
+  "published": "2026-09-02T18:17:21+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "correlation",
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "vault_sha": "5f56ddf13813240c26dd",
+  "host": "www.quantstart.com"
+ }
+]

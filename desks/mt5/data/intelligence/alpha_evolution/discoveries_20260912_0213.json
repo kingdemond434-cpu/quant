@@ -1,0 +1,148 @@
+{
+ "source": "alpha_evolution",
+ "generated_at": "2026-09-12T02:13:12.253847+00:00",
+ "tests_run": 40,
+ "discoveries": [
+  {
+   "source": "alpha_evolution",
+   "kind": "alpha_evolution",
+   "symbol": "AUDCAD",
+   "family": "formula",
+   "params": {
+    "norm": 240,
+    "entry_z": 1.5,
+    "hold_bars": 8,
+    "atr_n": 20,
+    "stop_atr": 2.0,
+    "rr": 1.5,
+    "expr": [
+     "neg",
+     [
+      "delta",
+      "spread",
+      5
+     ]
+    ],
+    "side_mode": "fade"
+   },
+   "mechanism": "neg(delta(spread, 5)): a momentum-type measure of spread, z-scored on its own history and faded against its direction when it is extreme",
+   "title": "AUDCAD.formula.fade neg(delta(spread, 5))",
+   "url": "",
+   "evidence": {
+    "n_independent": 1753,
+    "gross_per_trade": 0.0005345,
+    "net_per_trade": 0.00046131,
+    "cost_frac": 7.319e-05,
+    "t_gross": 8.615,
+    "t_deflated_sweep": 6.605,
+    "n_tests_sweep": 40,
+    "stability": 0.533,
+    "corr_survivors": 0.0,
+    "novelty": 0.696,
+    "fitness": 3.4359,
+    "fitness_legacy": 6.862,
+    "terms": {
+     "delta_elog": 0.0,
+     "oos": 5.15116,
+     "novelty": 0.61134,
+     "tail": 0.14339,
+     "state_breadth": 0.5,
+     "capacity": 0.84532,
+     "cost": 0.13694,
+     "fragility": 0.04434,
+     "complexity": 3.0,
+     "multiplicity": 0.26693
+    },
+    "unmeasured": [
+     "delta_elog"
+    ],
+    "tail": {
+     "q": 0.1,
+     "tail_days": 2235,
+     "tail_contribution": 0.13903311,
+     "tail_novelty": 0.9972
+    },
+    "generator": "gp",
+    "screen": "family signals, forward return at own TTL, net of round trip, non-overlapping, self-deflated"
+   },
+   "event_time": null,
+   "available_time": "2026-09-12T02:13:12.242667+00:00",
+   "ingested_time": "2026-09-12T02:13:12.242667+00:00",
+   "source_version": "a34bf3f8e",
+   "payload_hash": "4a52b5dc2fd7eaabfdfbd2ad",
+   "prereg_hash": "febc32f200e15f41"
+  },
+  {
+   "source": "alpha_evolution",
+   "kind": "alpha_evolution",
+   "symbol": "AUDCAD",
+   "family": "formula",
+   "params": {
+    "norm": 240,
+    "entry_z": 1.5,
+    "hold_bars": 8,
+    "atr_n": 20,
+    "stop_atr": 2.0,
+    "rr": 1.5,
+    "expr": [
+     "ts_rank",
+     "spread",
+     240
+    ],
+    "side_mode": "follow"
+   },
+   "mechanism": "ts_rank(spread, 240): a normalised extremeness measure of spread, z-scored on its own history and followed in its own direction when it is extreme",
+   "title": "AUDCAD.formula.follow ts_rank(spread, 240)",
+   "url": "",
+   "evidence": {
+    "n_independent": 1718,
+    "gross_per_trade": 0.00040547,
+    "net_per_trade": 0.00033227,
+    "cost_frac": 7.319e-05,
+    "t_gross": 6.002,
+    "t_deflated_sweep": 3.992,
+    "n_tests_sweep": 40,
+    "stability": 0.555,
+    "corr_survivors": 0.0,
+    "novelty": 0.0,
+    "fitness": 1.9557,
+    "fitness_legacy": 4.607,
+    "terms": {
+     "delta_elog": 0.0,
+     "oos": 3.06172,
+     "novelty": 0.0,
+     "tail": 0.1328,
+     "state_breadth": 0.4,
+     "capacity": 0.84532,
+     "cost": 0.18052,
+     "fragility": 0.08948,
+     "complexity": 2.0,
+     "multiplicity": 0.26693
+    },
+    "unmeasured": [
+     "delta_elog"
+    ],
+    "tail": {
+     "q": 0.1,
+     "tail_days": 2235,
+     "tail_contribution": 0.12833519,
+     "tail_novelty": 0.972
+    },
+    "generator": "random",
+    "screen": "family signals, forward return at own TTL, net of round trip, non-overlapping, self-deflated"
+   },
+   "event_time": null,
+   "available_time": "2026-09-12T02:13:12.250550+00:00",
+   "ingested_time": "2026-09-12T02:13:12.250550+00:00",
+   "source_version": "a34bf3f8e",
+   "payload_hash": "49d15ae9755ccfaec8dff082",
+   "prereg_hash": "071d29c9ee02016d"
+  }
+ ],
+ "counts": {
+  "donated": 2,
+  "refused_unstamped": 0
+ },
+ "refusals": [],
+ "rule": "a candidate without a point-in-time stamp is refused here and counted, never written: absence of an available_time is not permission to use the row"
+}

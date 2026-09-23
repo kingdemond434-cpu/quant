@@ -1,0 +1,22 @@
+[Unit]
+Description=Catch-up sweep every three hours, anchored on midnight UTC
+
+[Timer]
+# EVERY THREE HOURS, NOT ONLY MIDNIGHT, and the measurement is what licensed that. The whole
+# report takes 2s to compute; only the steps it then RUNS cost anything, and each of those does
+# strictly the outstanding work -- a sweep with nothing outstanding exits in seconds. So the
+# frequent firing is nearly free when the desk is caught up and does real work when it is not,
+# which is the opposite of a fixed nightly batch that is either too late or wasted.
+#
+# 00:00 is included deliberately: it is the canonical daily boundary the principal asked for,
+# and the other seven firings keep the residue from accumulating a full day before anyone sees
+# it. Anchored on the hour rather than on boot so two hosts agree about when "the 03:00 run" was.
+OnCalendar=*-*-* 00,03,06,09,12,15,18,21:00:00
+# A missed firing (host asleep, container restarted) runs on the next boot rather than being
+# skipped -- the residue does not clear itself while nothing is watching.
+Persistent=true
+# Spread the start so this never begins in the same second as the hourly cycle.
+RandomizedDelaySec=120
+
+[Install]
+WantedBy=timers.target

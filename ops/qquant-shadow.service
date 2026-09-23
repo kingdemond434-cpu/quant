@@ -1,0 +1,26 @@
+[Unit]
+Description=Read-only watchdog for Contabo's authoritative Fusion MT5 shadow cycle
+After=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/home/quant/quant-platform
+Environment="SHADOW_SYNC_MAX_AGE_SECONDS=2700"
+ExecStart=/home/quant/quant-platform/.venv/bin/python /home/quant/quant-platform/scripts/monitor_mt5_shadow_sync.py
+StandardOutput=append:/home/quant/logs/shadow_user.log
+StandardError=append:/home/quant/logs/shadow_user.log
+# 2026-09-01: MemoryMax alone HARD-KILLS at the ceiling -- that was the normal failure
+# mode here, not a runaway backstop. MemoryHigh throttles (reclaim + slow) below it, so
+# a heavy run finishes slowly instead of dying and being retried forever. Ceiling is
+# UNCHANGED at 128M, so nothing that fits today is newly constrained.
+MemoryHigh=102M
+MemoryMax=128M
+CPUQuota=25%
+TimeoutStartSec=120
+
+# A DEFECT REPORT IS NOT A PROCESS DEATH (gap-wirer 2026-08-27). Without this, every honest
+# nonzero verdict from the checker below was recorded by the global death-visibility drop-in as
+# an "abnormal unit stop" -- and on 2026-08-27 max_audit read `64 abnormal user-unit stop(s)`,
+# a line in which a 41-hour forward-book outage was indistinguishable from noise. The artifact
+# carries the verdict; the exit code must be reserved for the organ actually dying.
+SuccessExitStatus=0 1 2

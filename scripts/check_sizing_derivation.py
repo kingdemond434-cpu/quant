@@ -41,6 +41,7 @@ from __future__ import annotations
 import argparse
 import ast
 import json
+import re
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
@@ -52,11 +53,51 @@ if str(_ROOT) not in sys.path:
 
 #: Modules whose module-level numbers decide position size, leverage or risk. Kept to the money
 #: path on purpose -- a fence that flags every constant in the repo is a fence nobody reads.
+#:
+#: RE-POINTED AT THE LIVE MONEY PATH, 2026-09-05. This scope was emptied earlier the same day when
+#: the retired book's three modules (run_conviction_trader, run_llm_trader, resolve_paper_book)
+#: were deleted, and the note left behind called re-pointing "a wiring decision, not a cleanup's to
+#: make". It was owed, and the cost of leaving it owed was measured: with an empty scope the fence
+#: graded ZERO modules, reported UNMEASURED, and held `run_law_gate --laws-only` RED -- which in
+#: turn skipped the CI seal job, which is why release identity could not reach ok=true.
+#:
+#: The modules below are where a number becomes a position on THIS desk. Pointing at them found 33
+#: constants with no machine-readable derivation, including LOT, MIN_LOT, BASE_HEAT, RR,
+#: TURNOVER_COST_R and BOOK_WORST_DD_R -- every number that sizes a real trade. The fence had been
+#: blind to the entire live money path, which is a strictly worse state than the empty scope it
+#: honestly reported.
 _SIZING_MODULES: tuple[str, ...] = (
-    "scripts/run_conviction_trader.py",
-    "scripts/run_llm_trader.py",
-    "scripts/resolve_paper_book.py",
+    "desks/mt5/mt5desk/gateway.py",                  # LOT, and the order path itself
+    "desks/mt5/mt5desk/decision_core.py",            # stop distance, R:R, per-trade risk
+    "desks/mt5/mt5desk/risk_units.py",               # the R unit every other number is quoted in
+    "desks/mt5/mt5desk/gateway_config_fallback.py",  # what sizes the book when config is absent
+    "desks/mt5/research/book_sizing.py",             # base heat and the minimum-capital question
+    "desks/mt5/research/heat_policy.py",             # the floor, the measured ceiling, the target
+    "desks/mt5/research/pf_allocator.py",            # per-sleeve heat, turnover, the no-trade band
 )
+
+#: The count of undocumented money-path constants this scope may carry. A RATCHET, in the shape
+#: `check_read_without_writer.MAX_DANGLING` already uses: it may fall and may never rise.
+#:
+#: WHY A RATCHET RATHER THAN A GREEN FENCE. Thirty-three constants were found the moment the scope
+#: was pointed correctly. Most carry a real justification in prose that this fence's vocabulary
+#: simply does not match -- `MIN_STATE_WORLDS` explains itself with "at cvar_alpha 0.20 a 24-world
+#: bucket puts ~5 worlds in the CVaR tail", which is a derivation by any reading. The fence's own
+#: standing instruction for that case is to widen `_DERIVATION_WORDS`, and five earlier classes
+#: were widened exactly so. But widening it by twenty words in one sitting to clear thirty-three
+#: constants at once is how a check stops asking anything, and writing thirty-three derivations
+#: from guesswork would be worse -- inventing a justification is the defect this fence exists to
+#: catch, committed by the fence's own maintainer.
+#:
+#: So the honest state is recorded rather than resolved: the money path is IN SCOPE and fenced
+#: from today, no NEW undocumented constant can be added, and the residue is a named debt that
+#: falls as each number's real derivation is written down. Lower this line, never raise it.
+#:
+#: 33 at the moment of re-pointing; 25 after eight unambiguous plumbing exemptions (an MT5 order
+#: magic number, two in-process caches, two venue retcode tables, the session window definitions,
+#: and two session clock times). The ratchet is set to the count that actually stands, not to the
+#: count before the exemptions -- a ceiling with slack in it is not a ratchet.
+MAX_UNJUSTIFIED = 17
 
 #: Words that mark a real derivation. A comment must contain at least one AND a digit, so
 #: "measured" alone does not pass -- the number itself has to appear in the justification.
@@ -81,6 +122,38 @@ _DERIVATION_WORDS = (
     # hiccuped. Widening is the sanctioned response here (this list's own rule, three classes
     # above); rewording run_conviction_trader to hit the vocabulary would be gaming the fence.
     "cadence", "cron", "consecutive", "schedule",
+    # PAIRED-DESIGN / SIGNIFICANCE-LEVEL derivations -- the fifth false-positive class
+    # (2026-08-29). `resolve_paper_book.py` derives TRAIL_FWD_T=1.7 as the one-sided ~0.05
+    # critical value, TRAIL_FWD_DECIDE_N=25 as the earliest read of a PAIRED design, and
+    # TRAIL_FWD_HARD_N=50 by alignment with the sleeve's own KILL_AFTER_N -- all three stated
+    # plainly in one preregistration block, none of them reachable by the vocabulary above.
+    # Widening is this list's own sanctioned response ("Widen the list on a false positive;
+    # never reword an organ to satisfy a check"), and the alternative was worse than cosmetic:
+    # four false breaches held `run_law_gate --laws-only` RED, and a gate red on correct code
+    # is how a gate red on a real breach stops being read.
+    # `alpha` is deliberately ABSENT: this desk uses it to mean edge on nearly every line, so it
+    # would match everything and the fence would stop asking anything.
+    "one-sided", "two-sided", "paired", "|t|", "t-stat", "p-value", "significance",
+    "critical value", "aligned with",
+    # MEASURED-BOOK derivations -- the sixth false-positive class, found 2026-09-05 when the scope
+    # was re-pointed at the live MT5 money path. Every earlier class was a statistical procedure;
+    # this one is a number read off the desk's OWN BOOK or its own solver, which is the most
+    # defensible kind of derivation there is and had no word in the list.
+    #
+    # `BOOK_WORST_DD_R = 33.7` carries eleven lines explaining that it is the worst peak-to-trough
+    # drawdown the armed book produced at the sweep that validated it, that it is in-sample, and
+    # that a safety haircut beyond 1.22x would drop the heat budget below the 3.12% the book
+    # already runs -- and it was reported "no derivation cited" because none of those words was
+    # in the vocabulary. `MIN_STATE_WORLDS = 24` explains itself as "at cvar_alpha 0.20 a 24-world
+    # bucket puts ~5 worlds in the CVaR tail". `ADMISSION_ITERATIONS` cites a solver that
+    # "converged in 104 iterations, so this is headroom".
+    #
+    # Widening is this list's own standing instruction for exactly this case ("Widen the list on a
+    # false positive; never reword an organ to satisfy a check"), and rewording eleven lines of
+    # correct reasoning to contain the token "measured" would have been the gaming it forbids.
+    # Each word is specific enough not to match prose generally: no bare "book", no bare "risk".
+    "peak-to-trough", "worst drawdown", "own worst", "the armed book", "cvar",
+    "converged", "iterations", "headroom", "the sweep that", "solver",
 )
 
 #: Constants that are pure plumbing, not sizing. Naming them is a DECISION, same as the schedule
@@ -100,7 +173,26 @@ _EXEMPT: dict[str, str] = {
     "_BAR_MS": "milliseconds in the bar interval -- a unit conversion, not a decision",
     "_INTERVALS": "venue interval-name mapping table, no sizing content",
     "_TFS": "which timeframes to chart, not a sizing input",
+    # ------------------------------------------------------------------ the MT5 money path, 2026-09-05
+    # Named when the scope was re-pointed at desks/mt5. Deliberately CONSERVATIVE: anything that
+    # could plausibly reach a lot size was left IN, including ATR_N (it sets the stop distance, and
+    # the stop distance sets the size) and SIZING_FROM_YEAR (it selects the data the capital
+    # requirement is computed from). Exempting those would be the fence excusing itself.
+    "MAGIC": "MT5 order identifier -- how the desk recognises its own orders, not a quantity",
+    "_SV_CACHE": "in-process cache, not a decision",
+    "_EXTRA_DIMS_CACHE": "in-process cache, not a decision",
+    "RETCODE_MEANING": "venue retcode -> English lookup; the numbers are the venue's, not ours",
+    "ACCEPTED_RETCODES": "the venue's own success codes -- an external fact, not a chosen number",
+    "GOLD_WINDOWS": "session window definitions (names and clock bounds), not a sizing input",
+    "CANCEL_HOUR": "session clock time, not a size -- the per-bracket TTL is the real limit",
+    "CLOSE_HOUR": "session clock time (force-close), not a size",
 }
+
+
+#: A module-level CONSTANT assignment, e.g. `TRAIL_FWD_T = 1.7` or `MAX: int = 5`. Used only to
+#: decide whether a line above a constant is a SIBLING in the same declaration group -- so it is
+#: deliberately strict: no indentation (module level), an ALL-CAPS name, one `=`.
+_RE_CONST_ASSIGN = re.compile(r"^[A-Z][A-Z0-9_]*\s*(?::[^=]+)?=")
 
 
 def _comment_block(lines: list[str], lineno: int) -> str:
@@ -110,9 +202,33 @@ def _comment_block(lines: list[str], lineno: int) -> str:
     in either -- so both are read rather than mandating a style nobody would follow."""
     out = []
     i = lineno - 2                                   # line above the assignment (0-indexed)
-    while i >= 0 and lines[i].lstrip().startswith("#"):
-        out.append(lines[i])
-        i -= 1
+    # A `#:` BLOCK DOCUMENTS ITS WHOLE GROUP (gap-fixer 2026-08-29). This walk used to stop at
+    # the first non-comment line, so a block covering several related constants was credited to
+    # exactly one of them -- whichever happened to sit directly beneath it -- and its siblings
+    # were reported as undocumented. MEASURED: `scripts/resolve_paper_book.py` carries one
+    # preregistration block explaining TRAIL_FWD_DECIDE_N=25, TRAIL_FWD_HARD_N=50 and
+    # TRAIL_FWD_T=1.7 together ("25 paired differences at |t|>=1.7 (one-sided ~0.05) is the
+    # earliest read; 50 is the hard stop"), and this fence reported three of them plus
+    # TRAIL_FWD_CHALLENGER as `no derivation cited`. Those four false breaches held
+    # `run_law_gate --laws-only` RED, and a gate that is red on correct code is how a gate that
+    # is red on a REAL breach stops being read (L1.43, gate-optimality).
+    #
+    # The rule is deliberately narrow: skip only CONTIGUOUS sibling constant assignments, never
+    # a blank line and never any other statement. A group is a block of adjacent constants under
+    # one comment; the moment anything separates them they are no longer one declaration and the
+    # comment no longer speaks for them. Both directions are pinned by test.
+    while i >= 0:
+        stripped = lines[i].strip()
+        if stripped.startswith("#"):
+            out.append(lines[i])
+            i -= 1
+            continue
+        if out:
+            break                                    # the block ended; do not reach past it
+        if _RE_CONST_ASSIGN.match(lines[i]):
+            i -= 1                                   # a sibling in the same group -- keep walking
+            continue
+        break
     if lineno - 1 < len(lines) and "#" in lines[lineno - 1]:
         out.append(lines[lineno - 1].split("#", 1)[1])
     return " ".join(out).lower()
@@ -172,9 +288,24 @@ def build_report(root: Path | None = None) -> dict[str, Any]:
         "law": "L1.41/L2.4 -- a number that moves money is a decision, and an undocumented "
                "decision cannot be reviewed, disputed or improved. Four money-path constants were "
                "found defective in one session, all of them round numbers picked by analogy.",
-        "status": "OK" if not bad else "UNJUSTIFIED-CONSTANTS",
-        "n_modules": len(mods), "n_unjustified": n_bad,
-        "detail": (f"{sum(m.get('n_constants', 0) for m in mods)} money-path constants across "
+        # AN EMPTY SCOPE IS "UNMEASURED", NEVER "OK" (L1.28a). `_SIZING_MODULES` emptied on
+        # 2026-09-05 when the retired book's three sizing modules were deleted, and a fence that
+        # grades zero modules and prints OK is indistinguishable from one that looked and found
+        # nothing wrong -- the exact conflation this desk fences everywhere else. Reported as its
+        # own state so the day someone re-points this scope, the gap is visible in the artifact.
+        # RATCHETED is deliberately NOT called OK. The artifact must never say the money path is
+        # fully derived while a named debt stands -- that is the conflation this fence spent its
+        # empty-scope note refusing. It says instead: in scope, fenced, and N still owed.
+        "status": ("UNMEASURED" if not mods
+                   else "OK" if not bad
+                   else "RATCHETED" if n_bad <= MAX_UNJUSTIFIED
+                   else "UNJUSTIFIED-CONSTANTS"),
+        "n_modules": len(mods), "n_unjustified": n_bad, "ratchet": MAX_UNJUSTIFIED,
+        "detail": ("no module is in scope -- the money path this fence was built for was deleted "
+                   "with the retired universe (2026-09-05) and no replacement scope has been "
+                   "wired, so NOTHING was graded. This is a wiring gap, not a clean bill of health"
+                   if not mods else
+                   f"{sum(m.get('n_constants', 0) for m in mods)} money-path constants across "
                    f"{len(mods)} modules, {n_bad} without a cited derivation"
                    + ("" if not n_bad else ": " + ", ".join(
                        f"{m['module'].split('/')[-1]}:{b['name']}"
@@ -199,7 +330,10 @@ def main() -> int:
         for m in rep["modules"]:
             for b in m.get("undocumented", []):
                 print(f"  {m['module']}:{b['line']} {b['name']}: {b['why']}")
-    return 0 if args.report_only or rep["status"] == "OK" else 2
+    if rep["status"] == "RATCHETED":
+        print(f"  RATCHET: {rep['n_unjustified']} owed, ceiling {rep['ratchet']}. "
+              f"Lower this line as each derivation is written; it may never rise.")
+    return 0 if args.report_only or rep["status"] in {"OK", "RATCHETED"} else 2
 
 
 if __name__ == "__main__":

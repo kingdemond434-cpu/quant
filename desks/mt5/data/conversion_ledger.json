@@ -1,0 +1,470 @@
+{
+ "generated_utc": "2026-09-05T14:36:50+00:00",
+ "authority": "max_h E[log W | entire current world information set]",
+ "binding_rule": "among stages on the critical path AND measured, the lowest conversion rate; ties broken by work destroyed. A tributary cannot be binding: unblocking it adds nothing downstream this week",
+ "binding_stage": "gauntlet_verdict -> ten_gate_certificate",
+ "binding_rate": 0.001046,
+ "binding_reason": "TRIAL MISALLOCATION: discovered x equity took 55.2% of every trial ever spent and certifies at 0.031% (8/25876), while overnight_gap_decay x fx_exotic certifies at 14.75% (18/122) on 0.26% of it -- 477x the certificates per unit of compute, on ground the search barely visits",
+ "stages": [
+  {
+   "name": "world_source -> mined_item",
+   "count_in": 14,
+   "count_out": 4,
+   "critical": false,
+   "measured": true,
+   "loss_reason": "error:HTTPError",
+   "loss_breakdown": {
+    "js_app_needs_api": 2,
+    "unknown_shape": 2,
+    "error:HTTPError": 4,
+    "server_rendered_wrong_selector": 1,
+    "error:SSLError": 1
+   },
+   "window": "",
+   "source": "data/intelligence/coverage_registry.json",
+   "note": "a ground that has never yielded a row is not a dead ground; the registry keeps it OPEN and the canary searches stand",
+   "rate": 0.285714,
+   "destroyed": 10
+  },
+  {
+   "name": "mined_item -> falsifiable_rule",
+   "count_in": 888,
+   "count_out": 0,
+   "critical": false,
+   "measured": true,
+   "loss_reason": "NEEDS_SYMBOL_EXTRACTION",
+   "loss_breakdown": {
+    "NEEDS_SYMBOL_EXTRACTION": 679,
+    "NEEDS_EXACT_RULE_EXTRACTION": 203,
+    "UNKNOWN": 6
+   },
+   "window": "",
+   "source": "data/hypotheses/miner_deepening_queue.json + deepening_worked.jsonl",
+   "note": "TRIBUTARY, not the critical path: the family sweeps reach the gauntlet without passing through here, so a 0% rate costs the desk the ideas in the queue and not this week's certificates",
+   "rate": 0.0,
+   "destroyed": 888
+  },
+  {
+   "name": "stage_A_survivor -> queue_card",
+   "count_in": 23465,
+   "count_out": 47150,
+   "critical": true,
+   "measured": true,
+   "loss_reason": "NONE: this stage expands rather than loses -- one Stage-A survivor becomes several exactly-parameterised cards",
+   "loss_breakdown": {},
+   "window": "",
+   "source": "data/hypotheses/external_survivors.json + data/research_queue.json",
+   "note": "46835 of the cards carry a canonical verdict",
+   "rate": 2.009376,
+   "destroyed": 0
+  },
+  {
+   "name": "queue_card -> gauntlet_verdict",
+   "count_in": 47150,
+   "count_out": 46835,
+   "critical": true,
+   "measured": true,
+   "loss_reason": "exact external Stage-A card absent from external_survivors docket",
+   "loss_breakdown": {
+    "exact external Stage-A card absent from external_survivors docket": 287,
+    "PENDING": 17,
+    "DONE": 10,
+    "QUEUED_CANONICAL_GAUNTLET": 1
+   },
+   "window": "2026-08-17T12:30:00 .. 2026-09-04T04:50:03",
+   "source": "data/research_queue.json",
+   "note": "an unjudged card is work not yet done, never a failure -- it is counted out of the numerator AND the denominator of the gate below",
+   "rate": 0.993319,
+   "destroyed": 315
+  },
+  {
+   "name": "gauntlet_verdict -> ten_gate_certificate",
+   "count_in": 46835,
+   "count_out": 49,
+   "critical": true,
+   "measured": true,
+   "loss_reason": "TRIAL MISALLOCATION: discovered x equity took 55.2% of every trial ever spent and certifies at 0.031% (8/25876), while overnight_gap_decay x fx_exotic certifies at 14.75% (18/122) on 0.26% of it -- 477x the certificates per unit of compute, on ground the search barely visits",
+   "loss_breakdown": {
+    "discovered x equity": 25876,
+    "discovered x fx_cross": 6543,
+    "discovered x fx_major": 4444,
+    "discovered x index": 962,
+    "discovered x soft": 908,
+    "discovered x crypto": 792,
+    "cross_asset_residual x equity": 761,
+    "discovered x metal": 652
+   },
+   "window": "2026-08-28T00:41:32 .. 2026-09-04T00:53:05",
+   "source": "data/research_queue.json canonical_verdict",
+   "note": "the ten gates are untouched and must stay untouched: this rate rises by proposing where the bar is cleared, never by moving the bar",
+   "rate": 0.001046,
+   "destroyed": 46786
+  },
+  {
+   "name": "ten_gate_certificate -> enrollable",
+   "count_in": 66,
+   "count_out": 46,
+   "critical": true,
+   "measured": true,
+   "loss_reason": "LOCKBOX_FAILED",
+   "loss_breakdown": {
+    "UNIVERSAL": 1,
+    "ALIVE": 45,
+    "LOCKBOX_FAILED": 12,
+    "UNTRADEABLE": 8
+   },
+   "window": "",
+   "source": "data/UNIVERSAL_SURVIVORS.canon.json",
+   "note": "LOCKBOX_FAILED is a certificate that failed a REAL held-out test once gate 9 stopped reading gate 7's numbers; UNTRADEABLE is a certificate on an instrument the desk cannot trade. Neither is a gate to loosen",
+   "rate": 0.69697,
+   "destroyed": 20
+  },
+  {
+   "name": "enrollable -> forward_clock",
+   "count_in": 46,
+   "count_out": 45,
+   "critical": true,
+   "measured": true,
+   "loss_reason": "short_constructor_unresolved_here: a SHORT certificate whose family this engine's resolver cannot see. Check the OTHER lane before calling it a resolver gap: qquant_shadow owns hunt16's families and may already hold the clock, in which case resolving it here mints a SECOND clock for one certificate -- two states, two verdicts, both feeding promotion",
+   "loss_breakdown": {
+    "short_constructor_unresolved_here": 1
+   },
+   "window": "",
+   "source": "data/UNIVERSAL_SURVIVORS.canon.json + research/shadow_forward.py",
+   "note": "a certificate this engine cannot resolve may still hold a clock in ANOTHER lane (qquant_shadow owns hunt16's families); resolving it here would mint a SECOND clock for the same certificate, which is why the engine calls that a routing question and not a resolver gap",
+   "rate": 0.978261,
+   "destroyed": 1
+  },
+  {
+   "name": "forward_clock -> live_sleeve",
+   "count_in": null,
+   "count_out": null,
+   "critical": true,
+   "measured": false,
+   "loss_reason": "the shadow state is written on the live box and `reports/` is git-ignored, so no host that has only the repository can measure this stage; read it on Contabo or from the MT5-ShadowSync commit",
+   "loss_breakdown": {},
+   "window": "",
+   "source": "reports/shadow/shadow_health.json",
+   "note": "",
+   "rate": null,
+   "destroyed": null
+  },
+  {
+   "name": "live_sleeve -> allocated_capital",
+   "count_in": null,
+   "count_out": 0,
+   "critical": true,
+   "measured": false,
+   "loss_reason": "UNMEASURED: the attribution reports UNMEASURED rather than zero when the realised evidence is absent",
+   "loss_breakdown": {},
+   "window": "",
+   "source": "reports/allocator_attribution.json",
+   "note": "",
+   "rate": null,
+   "destroyed": null
+  },
+  {
+   "name": "measured_phase -> targetable_session",
+   "count_in": 5,
+   "count_out": 2,
+   "critical": false,
+   "measured": true,
+   "loss_reason": "SEARCH SPACE CANNOT EXPRESS THE STATE: ASIA_CLOSE, ASIA_MID, ASIA_OPEN measure ALIVE, and no session the scalp sweep can target (london, new_york, overlap) covers those hours",
+   "loss_breakdown": {
+    "sessions_swept": 4,
+    "sessions_conditioned": 3,
+    "sessions_implemented_not_swept": 1,
+    "phases_measured_alive": 5,
+    "phases_unreachable": 3
+   },
+   "window": "",
+   "source": "research/scalp_family_expansion.py + reports/OPPORTUNITY_CURVE.json",
+   "note": "a generator that cannot express a state has a conversion rate of zero on it, and no funnel measurement that starts at 'candidate' can see that",
+   "rate": 0.4,
+   "destroyed": 3
+  }
+ ],
+ "unmeasured_stages": [
+  {
+   "stage": "forward_clock -> live_sleeve",
+   "why": "the shadow state is written on the live box and `reports/` is git-ignored, so no host that has only the repository can measure this stage; read it on Contabo or from the MT5-ShadowSync commit"
+  },
+  {
+   "stage": "live_sleeve -> allocated_capital",
+   "why": "UNMEASURED: the attribution reports UNMEASURED rather than zero when the realised evidence is absent"
+  }
+ ],
+ "cell_type_yield": [
+  {
+   "family": "discovered",
+   "asset_class": "equity",
+   "tried": 25876,
+   "certified": 8,
+   "rate": 0.000309,
+   "wilson_lower": 0.000157,
+   "shrunk_lower": 0.000159
+  },
+  {
+   "family": "discovered",
+   "asset_class": "fx_cross",
+   "tried": 6543,
+   "certified": 12,
+   "rate": 0.001834,
+   "wilson_lower": 0.001049,
+   "shrunk_lower": 0.001045
+  },
+  {
+   "family": "discovered",
+   "asset_class": "fx_major",
+   "tried": 4444,
+   "certified": 6,
+   "rate": 0.00135,
+   "wilson_lower": 0.000619,
+   "shrunk_lower": 0.00062
+  },
+  {
+   "family": "discovered",
+   "asset_class": "index",
+   "tried": 962,
+   "certified": 0,
+   "rate": 0.0,
+   "wilson_lower": 0.0,
+   "shrunk_lower": 3e-06
+  },
+  {
+   "family": "discovered",
+   "asset_class": "soft",
+   "tried": 908,
+   "certified": 0,
+   "rate": 0.0,
+   "wilson_lower": 0.0,
+   "shrunk_lower": 3e-06
+  },
+  {
+   "family": "discovered",
+   "asset_class": "crypto",
+   "tried": 792,
+   "certified": 0,
+   "rate": 0.0,
+   "wilson_lower": 0.0,
+   "shrunk_lower": 3e-06
+  },
+  {
+   "family": "cross_asset_residual",
+   "asset_class": "equity",
+   "tried": 761,
+   "certified": 0,
+   "rate": 0.0,
+   "wilson_lower": 0.0,
+   "shrunk_lower": 3e-06
+  },
+  {
+   "family": "discovered",
+   "asset_class": "metal",
+   "tried": 652,
+   "certified": 0,
+   "rate": 0.0,
+   "wilson_lower": 0.0,
+   "shrunk_lower": 4e-06
+  },
+  {
+   "family": "relative_value",
+   "asset_class": "equity",
+   "tried": 442,
+   "certified": 0,
+   "rate": 0.0,
+   "wilson_lower": 0.0,
+   "shrunk_lower": 5e-06
+  },
+  {
+   "family": "discovered",
+   "asset_class": "bond",
+   "tried": 428,
+   "certified": 0,
+   "rate": 0.0,
+   "wilson_lower": 0.0,
+   "shrunk_lower": 5e-06
+  },
+  {
+   "family": "carry",
+   "asset_class": "equity",
+   "tried": 344,
+   "certified": 0,
+   "rate": 0.0,
+   "wilson_lower": 0.0,
+   "shrunk_lower": 6e-06
+  },
+  {
+   "family": "cross_asset_residual",
+   "asset_class": "fx_exotic",
+   "tried": 344,
+   "certified": 0,
+   "rate": 0.0,
+   "wilson_lower": 0.0,
+   "shrunk_lower": 6e-06
+  },
+  {
+   "family": "correlation_regime",
+   "asset_class": "equity",
+   "tried": 320,
+   "certified": 0,
+   "rate": 0.0,
+   "wilson_lower": 0.0,
+   "shrunk_lower": 6e-06
+  },
+  {
+   "family": "overnight_gap_decay",
+   "asset_class": "equity",
+   "tried": 246,
+   "certified": 0,
+   "rate": 0.0,
+   "wilson_lower": 0.0,
+   "shrunk_lower": 8e-06
+  },
+  {
+   "family": "pca_residual",
+   "asset_class": "equity",
+   "tried": 224,
+   "certified": 0,
+   "rate": 0.0,
+   "wilson_lower": 0.0,
+   "shrunk_lower": 8e-06
+  },
+  {
+   "family": "turn_of_month",
+   "asset_class": "equity",
+   "tried": 214,
+   "certified": 0,
+   "rate": 0.0,
+   "wilson_lower": 0.0,
+   "shrunk_lower": 9e-06
+  },
+  {
+   "family": "vol_mean_reversion",
+   "asset_class": "equity",
+   "tried": 196,
+   "certified": 0,
+   "rate": 0.0,
+   "wilson_lower": 0.0,
+   "shrunk_lower": 9e-06
+  },
+  {
+   "family": "pca_residual",
+   "asset_class": "fx_exotic",
+   "tried": 176,
+   "certified": 0,
+   "rate": 0.0,
+   "wilson_lower": 0.0,
+   "shrunk_lower": 1e-05
+  },
+  {
+   "family": "relative_value",
+   "asset_class": "fx_exotic",
+   "tried": 171,
+   "certified": 0,
+   "rate": 0.0,
+   "wilson_lower": 0.0,
+   "shrunk_lower": 1e-05
+  },
+  {
+   "family": "carry",
+   "asset_class": "fx_exotic",
+   "tried": 138,
+   "certified": 2,
+   "rate": 0.014493,
+   "wilson_lower": 0.003983,
+   "shrunk_lower": 0.002499
+  }
+ ],
+ "graveyard_causes": {
+  "measured": true,
+  "dead_rows": 30208,
+  "cause_named": 0,
+  "cause_named_rate": 0.0,
+  "reports_named": {
+   "desks/mt5/reports/universal_gates_external.json": 30208
+  },
+  "reports_missing_on_this_host": {
+   "desks/mt5/reports/universal_gates_external.json": 30208
+  },
+  "why": "the cause lives in the canonical gauntlet report a row points at, and `reports/` is git-ignored -- so on any host that has only the repository the gate that said no is UNRECOVERABLE, and scripts/backfill_hypothesis_graph.py can only repair rows on a host where that report exists"
+ },
+ "crypto_fence": {
+  "measured": true,
+  "crypto_cfd_symbols": 18,
+  "cells": 1029,
+  "not_in_fusion_registry": [
+   "ADAJPY"
+  ],
+  "not_in_fusion_registry_cells": 22,
+  "verdict": "REVIEW: 1 crypto symbol(s) carrying 22 cell(s) are absent from TODAY's Fusion registry. That reads as a delisted or renamed CFD far more often than as an exchange-native leak -- but 'reads as' is not measured, so it is named here and confirmed on the box against the live symbol list, never assumed either way",
+  "registry_readable": true
+ },
+ "gate_notes": [
+  {
+   "gate": "deflated_sharpe",
+   "finding": "the multiplicity charge does not grow with the search",
+   "evidence": "fixed_campaign_trials(597) + fixed_variance_of_sharpes(0.014863): BOTH inputs to the deflated-Sharpe hurdle are constants, so the bar is identical for every cell regardless of how many others share its sweep or how dispe",
+   "direction": "TOO LOOSE, not too strict",
+   "action": "NONE TAKEN. Reported, not moved. Raising this charge would LOWER the certificate count, so it can never be mistaken for a conversion fix -- which is exactly why it is safe to name and unsafe to quietly leave unnamed. It also means the reallocation this ledger recommends cannot game the gate: the charge is identical whatever the trials are spent on."
+  }
+ ],
+ "law": "no rate in this ledger may be raised by loosening a gate, a threshold, a floor or a law; a conversion that does not raise robust forward E[log W] is a leak",
+ "capability_nodes": [
+  {
+   "name": "conversion_ledger",
+   "module": "desks/mt5/research/conversion_ledger.py",
+   "writes": [
+    "desks/mt5/data/conversion_ledger.json"
+   ],
+   "reads": [
+    "desks/mt5/data/research_queue.json",
+    "desks/mt5/data/UNIVERSAL_SURVIVORS.canon.json",
+    "desks/mt5/data/hypothesis_graph.jsonl",
+    "desks/mt5/data/hypotheses/miner_deepening_queue.json",
+    "desks/mt5/data/intelligence/coverage_registry.json",
+    "desks/mt5/reports/OPPORTUNITY_CURVE.json",
+    "desks/mt5/reports/allocator_attribution.json",
+    "desks/mt5/reports/shadow/shadow_health.json"
+   ],
+   "authority": []
+  },
+  {
+   "name": "trial_allocator",
+   "module": "desks/mt5/research/trial_allocator.py",
+   "writes": [
+    "desks/mt5/reports/TRIAL_ALLOCATION.json"
+   ],
+   "reads": [
+    "desks/mt5/data/research_queue.json",
+    "desks/mt5/data/conversion_ledger.json"
+   ],
+   "authority": []
+  }
+ ],
+ "rent": {
+  "module": "trial_allocator",
+  "kind": "proposer",
+  "ledger": "desks/mt5/data/conversion_ledger.json",
+  "rule": "certificates per 1,000 gauntlet trials under the measured allocation minus the same statistic under the allocation the docket actually received; both priced at the Wilson lower bound of each class's own certified/tried",
+  "unit": "certificates per 1000 gauntlet trials",
+  "rent": 3.572,
+  "with": 4.1721,
+  "without": 0.6001,
+  "rent_logw_per_day": null,
+  "rent_logw_why": "no exchange rate exists from a certificate to log-wealth at this stage; the certificate's forward expectancy is measured by its own clock and inventing it here would fabricate the desk's objective",
+  "basis": "EX_ANTE_COUNTERFACTUAL_ON_JUDGED_DOCKET",
+  "n_trials": 46835,
+  "n_certificates": 49,
+  "forward_basis": "certificates per 1,000 judged cells whose created_at is after this allocation landed, against the same statistic on the cells before it",
+  "forward_verdict": "UNMEASURED",
+  "target": {
+   "binding_stage": "gauntlet_verdict -> ten_gate_certificate",
+   "binding_rate_when_measured": 0.001046,
+   "measured_at": "2026-09-05T14:28:21+00:00",
+   "aimed_correctly": true,
+   "why": "this allocation moves the trial mix INTO the gauntlet, so it is aimed at the stage above only while that stage is the one the ledger names binding"
+  },
+  "verdict": "EARNS"
+ }
+}

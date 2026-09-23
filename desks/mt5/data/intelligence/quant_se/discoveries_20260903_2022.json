@@ -1,0 +1,12 @@
+[
+ {
+  "source": "quant_se",
+  "kind": "fetch_error",
+  "title": "HTTPSConnectionPool(host='api.stackexchange.com', port=443): Max retries exceeded with url: /2.3/questions?order=desc&sort=activity&site=quant&pagesize=30 (Caused by SSLError(SSLEOFError(8, '[SSL: UNE",
+  "url": "",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-03T20:25:33+00:00",
+  "needs_selector_work": true
+ }
+]

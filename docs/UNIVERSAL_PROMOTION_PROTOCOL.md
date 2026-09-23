@@ -1,3 +1,9 @@
+> **SUPERSEDED 2026-08-25 (principal consolidation order).** Operative law now lives in
+> [docs/LAWS.md](/docs/LAWS.md) and [docs/RESEARCH.md](/docs/RESEARCH.md); dispositions in
+> [docs/MANDATE_COVERAGE.md](/docs/MANDATE_COVERAGE.md). This file is the unabridged ANNEX —
+> consult it for detail, never for standing orders; on conflict the compact documents govern.
+> The MT5 UNIVERSE MANDATE (LAWS §1) voids every crypto-universe clause herein.
+
 # The Universal Validation & Promotion Protocol
 
 **BINDING ON EVERY BRAIN.** Claude, Codex/opencode, and any LLM, agent or human that proposes an

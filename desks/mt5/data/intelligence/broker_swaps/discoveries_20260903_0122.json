@@ -1,0 +1,18 @@
+[
+ {
+  "source": "broker_swaps",
+  "kind": "swap_table",
+  "title": "fusion Walmart swap long=-7.31 short=2.81 diff=-10.1200",
+  "url": "mt5://symbol_info",
+  "text": "",
+  "symbols": [
+   "Walmart"
+  ],
+  "found_at": "2026-09-03T01:24:45+00:00",
+  "swap_long": -7.31,
+  "swap_short": 2.81,
+  "swap_diff": -10.12,
+  "broker": "fusionmarkets",
+  "source_kind": "venue_terminal"
+ }
+]

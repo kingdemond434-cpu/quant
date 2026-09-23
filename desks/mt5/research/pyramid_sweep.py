@@ -44,6 +44,7 @@ for _p in (str(_DESK), str(_DESK / "research")):
 
 from mt5desk import families                                   # noqa: E402
 from mt5desk.engine import Costs, run_backtest                 # noqa: E402
+from mt5desk.sizing import q_for_drawdown  # noqa: E402
 from run_hunt11 import WINDOWS                                 # noqa: E402
 
 UNI = _DESK / "data" / "universe"
@@ -76,24 +77,16 @@ def daily(trades) -> pd.Series:
                      ).groupby(level=0).sum()
 
 
-def q_for_drawdown(r: pd.Series, target: float, shift: float) -> float:
-    """Largest per-day risk fraction whose worst compounded drawdown <= target.
-
-    Half-edge: the mean is shifted down by half itself before compounding,
-    because a backtest mean is an estimate and betting the estimate is how
-    accounts die.
-    """
-    x = r.to_numpy(float) - shift
-    lo, hi = 1e-5, 0.5
-    for _ in range(60):
-        q = (lo + hi) / 2
-        eq = np.cumprod(1.0 + q * x)
-        dd = float((1.0 - eq / np.maximum.accumulate(eq)).max())
-        if dd > target:
-            hi = q
-        else:
-            lo = q
-    return lo
+# THE LOCAL q_for_drawdown THAT LIVED HERE SIZED **UP** PAST RUIN, and the half-edge docstring
+# on it made it read as the careful path. At a large enough q some day has `1 + q*x <= 0` -- the
+# account is GONE, not drawn down -- cumprod goes negative, the drawdown expression yields NaN,
+# and `NaN > target` is False, so the search concluded the budget held and raised q. Its `hi = 0.5`
+# bound was unrelated to the data: it did not fall when the worst observed day got worse.
+#
+# `mt5desk/sizing.py` is the single implementation (2026-08-19): ruin returns a drawdown of 1.0 so
+# it compares as a violation, and the search is bounded at `1/|min(x)|`, the q at which one
+# observed day can wipe the account out. The half-edge shift stays at the CALL SITE, where it is
+# visible, rather than inside a helper whose name says nothing about it.
 
 
 def growth(r: pd.Series) -> tuple[float, float]:
@@ -101,7 +94,7 @@ def growth(r: pd.Series) -> tuple[float, float]:
     if len(r) < 100:
         return 0.0, 0.0
     shift = 0.5 * float(r.mean())
-    q = q_for_drawdown(r, DD_TARGET, shift)
+    q = q_for_drawdown(r.to_numpy(float) - shift, DD_TARGET)
     x = r.to_numpy(float) - shift
     yrs = max((max(r.index) - min(r.index)).days / 365.25, 0.5)
     eq = float(np.prod(1.0 + q * x))

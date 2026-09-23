@@ -1,0 +1,79 @@
+{
+  "lag_days": 2,
+  "horizon_days": 5,
+  "per_currency": [
+    {
+      "currency": "AUD",
+      "status": "MEASURED",
+      "n_hawk": 111,
+      "n_dove": 346,
+      "mean_hawk_bp": -3.62,
+      "mean_dove_bp": 5.87,
+      "spread_bp": -9.49,
+      "t": -0.55
+    },
+    {
+      "currency": "CAD",
+      "status": "MEASURED",
+      "n_hawk": 88,
+      "n_dove": 414,
+      "mean_hawk_bp": 2.46,
+      "mean_dove_bp": -2.33,
+      "spread_bp": 4.78,
+      "t": 0.371
+    },
+    {
+      "currency": "CHF",
+      "status": "MEASURED",
+      "n_hawk": 55,
+      "n_dove": 169,
+      "mean_hawk_bp": -6.24,
+      "mean_dove_bp": 26.58,
+      "spread_bp": -32.82,
+      "t": -1.694
+    },
+    {
+      "currency": "EUR",
+      "status": "MEASURED",
+      "n_hawk": 259,
+      "n_dove": 1348,
+      "mean_hawk_bp": -10.37,
+      "mean_dove_bp": 2.23,
+      "spread_bp": -12.6,
+      "t": -1.372
+    },
+    {
+      "currency": "GBP",
+      "status": "MEASURED",
+      "n_hawk": 131,
+      "n_dove": 450,
+      "mean_hawk_bp": 3.76,
+      "mean_dove_bp": -0.55,
+      "spread_bp": 4.31,
+      "t": 0.363
+    },
+    {
+      "currency": "JPY",
+      "status": "INSUFFICIENT",
+      "n_hawk": 16,
+      "n_dove": 635
+    },
+    {
+      "currency": "NZD",
+      "status": "MEASURED",
+      "n_hawk": 28,
+      "n_dove": 146,
+      "mean_hawk_bp": -0.56,
+      "mean_dove_bp": -8.83,
+      "spread_bp": 8.28,
+      "t": 0.285
+    }
+  ],
+  "pooled": {
+    "n_hawk": 688,
+    "n_dove": 3508,
+    "spread_bp": -4.27,
+    "t": -0.777,
+    "note": "currency-days are NOT independent -- overlapping horizons and correlated USD legs. This t is a sorting number, never an admission statistic."
+  }
+}

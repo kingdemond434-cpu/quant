@@ -43,6 +43,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 from libs.doctrine.constitution import (  # noqa: E402
+    DATA_AXIS_MANDATE,
     OBJECTIVE_PREAMBLE,
     RESIDUAL_MANDATE,
     RESIDUAL_PROTOCOL,
@@ -102,7 +103,7 @@ SYSTEM = (
     # rather than for expected shift in E[log W]. It also has to be told that a hypothesis
     # whose most likely outcome is a DISPROOF is a good hypothesis, or it will only ever
     # propose things it expects to confirm, which is the lowest-information batch available.
-    OBJECTIVE_PREAMBLE + RESIDUAL_MANDATE + RESIDUAL_PROTOCOL + "\n"
+    OBJECTIVE_PREAMBLE + RESIDUAL_MANDATE + DATA_AXIS_MANDATE + RESIDUAL_PROTOCOL + "\n"
     "You are a quantitative researcher generating TESTABLE hypotheses for a trading desk whose "
     "universe is the full MT5/Fusion market -- FX majors/crosses/exotics, gold and metals, equity "
     "indices, energy, soft commodities and share CFDs; crypto only as information for an MT5 move.\n"
@@ -120,6 +121,41 @@ SYSTEM = (
 )
 
 
+#: Zero-cost models that are SERVED on an exhausted balance. Verified 2026-08-29 against the
+#: desk's own key: total_credits=60, total_usage=60.59 -- overdrawn, every paid model 402s, and
+#: these four answered normally.
+#:
+#: WHY THIS FALLBACK EXISTS AND WHY IT IS NOT A CONFIG EDIT. This generator has been marked
+#: UNTESTED since it was written, `data/hypothesis_queue.jsonl` has NEVER been created, and four
+#: scripts consume that file. The cause was never the code: it was a $60 balance running out, and
+#: a 402 that killed the whole role rather than degrading it. A research desk whose mechanism
+#: generator stops entirely when a card expires has a single point of failure it did not choose.
+#:
+#: Degrading to a free model produces weaker hypotheses than a flagship. It produces INFINITELY
+#: more than 402 does, and every one still faces the identical gauntlet -- so the downside is
+#: wasted trials on weaker ideas, while the upside is the role existing at all.
+_FREE_FALLBACK = (
+    "minimax/minimax-m3:free",
+    "nvidia/nemotron-3-ultra-550b-a55b:free",
+    "poolside/laguna-s-2.1:free",
+    "inclusionai/ling-3.0-flash-fin:free",
+)
+
+
+def _is_payment_error(exc: Exception) -> bool:
+    """402, or a 4xx whose body says the balance is the problem."""
+    code = getattr(exc, "code", None)
+    if code == 402:
+        return True
+    if code in (401, 403, 429):
+        try:
+            body = str(exc.read()[:300]).lower()
+        except Exception:
+            return False
+        return any(w in body for w in ("credit", "balance", "payment", "quota", "insufficient"))
+    return False
+
+
 def _ask(base, key, model, messages, timeout=240.0):
     body = json.dumps({"model": model, "max_tokens": 3000, "temperature": 0.95,
                        # DEPTH IS MEASURED, NOT ASSUMED. "high" is the middle rung of a ladder
@@ -127,13 +163,35 @@ def _ask(base, key, model, messages, timeout=240.0):
                        # capability left unused on a flagship the desk pays for.
                        "reasoning": reasoning_payload(model),
                        "messages": messages}).encode()
-    req = urllib.request.Request(base.rstrip("/") + "/chat/completions", data=body, method="POST",
-                                 headers={"Authorization": f"Bearer {key}",
-                                          "Content-Type": "application/json"})
-    with urllib.request.urlopen(req, timeout=timeout, context=CTX) as r:
-        out = json.loads(r.read())
-    m = out["choices"][0]["message"]
-    return str(m.get("content") or m.get("reasoning") or "")
+    def _post(model_id, payload):
+        req = urllib.request.Request(base.rstrip("/") + "/chat/completions", data=payload,
+                                     method="POST",
+                                     headers={"Authorization": f"Bearer {key}",
+                                              "Content-Type": "application/json"})
+        with urllib.request.urlopen(req, timeout=timeout, context=CTX) as r:
+            out = json.loads(r.read())
+        m = out["choices"][0]["message"]
+        return str(m.get("content") or m.get("reasoning") or "")
+
+    try:
+        return _post(model, body)
+    except Exception as exc:
+        if not _is_payment_error(exc):
+            raise
+        # DEGRADE, DO NOT DIE. A 402 previously took the entire hypothesis-generation role with
+        # it -- the one component that gives a candidate an economic mechanism. 84% of this
+        # desk's docket carries no declared mechanism, and this is why.
+        for alt in _FREE_FALLBACK:
+            try:
+                alt_body = json.dumps({"model": alt, "max_tokens": 3000, "temperature": 0.95,
+                                       "messages": messages}).encode()
+                text = _post(alt, alt_body)
+                sys.stderr.write(f"[hypothesis_generator] {model} -> payment error; degraded to "
+                                 f"free model {alt}\n")
+                return text
+            except Exception:
+                continue
+        raise
 
 
 def _ask_pushed(base, key, model, system, user):

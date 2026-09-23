@@ -193,9 +193,24 @@ class TestTheSuiteItselfIsBounded:
         assert re.search(r"^timeout\s*=\s*\d+", src, re.M), (
             "the suite-wide per-test timeout was removed -- one hanging test again stalls the "
             "whole gate instead of failing it")
-        assert 'timeout_method = "signal"' in src, (
-            "the thread method cannot interrupt a blocking syscall and cannot report WHERE the "
-            "hang was, which is most of the diagnostic value")
+        # THREAD, NOT SIGNAL -- corrected 2026-08-26 against the platform, not against the
+        # preference. This assertion demanded `signal` and pyproject has said `thread` since the
+        # same commit that added both, so it has been red ever since and was one of the failures
+        # keeping the desk-wide gate down. signal (SIGALRM) IS the better method where it exists
+        # -- it interrupts a blocking syscall and yields the offending test's own traceback --
+        # but SIGALRM DOES NOT EXIST ON WINDOWS and the MT5 execution box is Windows, where it
+        # raises AttributeError and takes the whole run down as an INTERNALERROR before a single
+        # test reports. A suite that cannot execute on the box that TRADES is worth less than a
+        # slightly worse hang traceback on the box that does not.
+        #
+        # NOTHING IS LOOSENED: the property this class exists to protect -- a hang becomes a
+        # NAMED failing test instead of a stalled suite -- is carried entirely by `timeout = N`
+        # above, which is still asserted. What is pinned here is only that a method is set
+        # EXPLICITLY, so nobody silently reverts to a platform-fatal one.
+        assert 'timeout_method = "thread"' in src, (
+            "timeout_method must stay explicitly `thread`: SIGALRM does not exist on Windows and "
+            "the MT5 execution box is Windows, so `signal` INTERNALERRORs the entire suite on "
+            "the box that trades. Set it per-platform rather than flipping it globally.")
 
     def test_the_plugin_is_a_hard_dependency(self) -> None:
         """Without it, `timeout` is an unrecognised ini key -- a warning, not an error -- so the
@@ -231,3 +246,103 @@ def test_a_marker_written_by_the_real_run_ci_is_parseable_by_the_real_max_audit(
     assert parsed.tzinfo is not None, (
         "a naive timestamp makes the age computation wrong by the box's UTC offset -- and wrong "
         "in the direction that makes a stale marker look fresher than it is")
+
+
+class TestTheCompilePassIsGated:
+    """L0177. Every AST-level tool in this repo is blind to the symbol-table class of syntax
+    error -- `await` outside `async` is the one that bit -- so ruff, mypy AND `pytest --co` all
+    reported GREEN on scripts/liquidation_listener.py while `import` raised SyntaxError and the
+    desk-wide gate sat RED for 21h. `ast.parse` shares the blindness, so reaching for it as a
+    hand-check confirms the wrong answer. Only `compile()` runs the pass that catches it.
+
+    Pinned in BOTH gate definitions because they are separate files that nothing else relates,
+    and the local gate is the one a session actually runs before pushing.
+    """
+
+    def test_run_ci_has_a_compile_step(self) -> None:
+        from scripts.run_ci import _STEPS
+        labels = [label for label, _cmd, _budget in _STEPS]
+        assert any("compile" in label for label in labels), (
+            "the compileall step was removed from run_ci._STEPS -- a file that cannot be "
+            f"imported can once again pass every other gate. Steps: {labels}")
+        cmd = next(c for label, c, _ in _STEPS if "compile" in label)
+        assert "compileall" in cmd, f"the compile step no longer runs compileall: {cmd}"
+
+    def test_local_gates_have_a_compile_step(self) -> None:
+        src = (_ROOT / "ops" / "gates.sh").read_text("utf-8")
+        assert "compileall" in src, (
+            "ops/gates.sh lost its compileall run. This is the gate a session actually executes "
+            "before pushing, so losing it here is worse than losing it in CI.")
+
+    def test_compile_runs_before_the_expensive_test_step(self) -> None:
+        """~1s versus a 2h budget: the cheapest failure in the repo must not be detected last.
+        The original defect was found only after a full-suite run, which on a 3.8GB swapless box
+        competes with the live organs -- which is precisely why the red sat instead of being
+        fixed."""
+        from scripts.run_ci import _STEPS
+        labels = [label for label, _c, _b in _STEPS]
+        compile_at = next(i for i, label in enumerate(labels) if "compile" in label)
+        tests_at = next(i for i, label in enumerate(labels) if label.startswith("tests"))
+        assert compile_at < tests_at, f"compile must precede the suite: {labels}"
+
+
+# =============================================================================================
+# A TIMEOUT AND A TEST FAILURE ARE DIFFERENT VERDICTS (gap-fixer 2026-08-29).
+#
+# The block above bounds the step and marks a hang FAILED, which is right. What it does not do
+# is say WHICH KIND of red the marker holds -- and the detail harvester only reads `FAILED `
+# and `ERROR ` lines, which a pytest-timeout kill never produces.
+#
+# MEASURED, both directions, on consecutive real runs:
+#   * 2026-08-29 01:20 -- the marker held `failed: ['tests (pytest)']` with `failed_tests: []`,
+#     so max_audit escalated `ci-gate-red` naming NOTHING. A red nobody can act on gets read as
+#     noise, which is how a red gate sits for 34 hours.
+#   * 2026-08-28 08:54 -- the same timeout landed differently and the marker named 25 node IDs.
+#     Every one of them PASSES in isolation: they were timeout casualties, not defects. So the
+#     marker sent the desk hunting bugs that never existed.
+#
+# Absence in one run, misattribution in the next, from one cause. The fix does not suppress the
+# node IDs -- they are real evidence of where the clock ran out -- it labels what they are.
+# =============================================================================================
+
+
+def test_a_timeout_is_recorded_as_a_timeout_not_as_a_failing_test(monkeypatch, tmp_path) -> None:  # type: ignore[no-untyped-def]
+    """The run did not finish, so the marker must not imply a verdict about any test."""
+    import scripts.run_ci as R
+
+    timeout_output = (
+        "tests/slow/test_thing.py .....\n"
+        "+++++++++++++++++++++++++++++++++++ Timeout +++++++++++++++++++++++++++++++++++\n"
+        "~~~~~~~~~~~~~~~~ Stack of MainThread ~~~~~~~~~~~~~~~~\n"
+        '  File "/home/quant/quant-platform/tests/slow/test_thing.py", line 12, in test_hang\n'
+        "FAILED tests/slow/test_thing.py::test_hang - Failed: Timeout >300.0s\n"
+    )
+    detail = R._timeout_detail(timeout_output) if hasattr(R, "_timeout_detail") else None
+    if detail is None:
+        # The logic lives inline in main(); assert on the shipped source so this cannot pass
+        # against a version that dropped it.
+        src = Path(R.__file__).read_text("utf-8")
+        assert "+++ Timeout" in src, (
+            "run_ci no longer distinguishes a timeout from a test failure; the marker will "
+            "again record a red with either nothing named or innocent tests named"
+        )
+        assert "the run did NOT finish" in src, (
+            "the timeout branch exists but no longer says what it means -- a reader seeing node "
+            "IDs will treat them as defects, which is the 2026-08-28 misattribution"
+        )
+        assert "re-run them in isolation before believing them" in src, (
+            "the marker must tell the reader the node IDs are where the clock ran out, not "
+            "necessarily where a bug is"
+        )
+
+
+def test_the_detail_harvester_still_records_real_failures() -> None:
+    """The other direction: the timeout branch must not swallow genuine node IDs."""
+    import scripts.run_ci as R
+
+    src = Path(R.__file__).read_text("utf-8")
+    # The timeout note is PREPENDED to the existing list, never a replacement for it.
+    assert "*details[label]," in src, (
+        "the timeout branch replaced the node IDs instead of prefixing them -- on a run that "
+        "both timed out AND had real failures, the real ones would vanish"
+    )

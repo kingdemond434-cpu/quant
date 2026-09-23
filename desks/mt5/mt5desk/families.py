@@ -1,48 +1,402 @@
 """Candidate signal generators for the MT5 research desk.
 
-Seven families, priced not argued. Each generator is a pure function
-(closed bars in, signals out) so backtest == production path.
+Every family_* function is a pure H1-bar consumer: (closed bars in, signals
+out) so backtest == production path.
 
-Family map (from the research brief):
-  1. real-yield/USD shock conditioned by London/COMEX sessions
-  2. CFTC gold positioning change / crowding unwind   (needs COT data: deferred)
-  3. ETF-flow acceleration / flow-price disagreement  (needs WGC data: deferred)
-  4. COMEX settlement/open effects conditioned on vol/liquidity
-  5. CPI/NFP/FOMC event continuation vs reversal      (needs timestamped surprises: deferred)
-  6. GC futures-spot divergence / futures-curve state (needs GC feed: deferred)
-  7. broker spread/swap-state avoidance
+ZERO-HARDcoding ARCHITECTURE:
+  - Every family_* function auto-registers via FAMILY_REGISTRY
+  - Each entry declares: function, default params, param grid for sweeping
+  - Converter and backtest auto-discover from registry — no whitelists
+  - Adding a family = adding a function + registry entry. Nothing else changes.
 """
-
 from __future__ import annotations
+
+import inspect
+from collections.abc import Callable
+from typing import Any
 
 import numpy as np
 import pandas as pd
-
 from mt5desk.engine import Signal
+from mt5desk.universe_registry import TIMEFRAME_MINUTES
 
+try:
+    from libs.research.bar_span import is_out_of_calendar
+except ModuleNotFoundError:  # desk entrypoints put desks/mt5 on sys.path, not the repo root
+    import sys as _sys
+    from pathlib import Path as _Path
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[3]))
+    # Windows Python's OWN install dir ships a `libs\` folder (C linker stubs) that namespace-
+    # packages into `import libs` and caches BEFORE this fallback runs -- the retry then asks
+    # the cached wrong package for `.research` forever. Purge it so the repo-root regular
+    # package (with __init__.py) wins the fresh resolution.
+    for _m in [k for k in _sys.modules if k == "libs" or k.startswith("libs.")]:
+        del _sys.modules[_m]
+    from libs.research.bar_span import is_out_of_calendar
+
+__all__ = [
+    "FAMILY_REGISTRY",
+    "get_all_family_names",
+    "get_family_func",
+    "get_param_grid",
+    "live_family_names",
+]
+
+
+# ---------------------------------------------------------------------------
+# Auto-registry: every family_* function that follows the convention gets
+# registered with its default params and a param grid for sweeping.
+# ---------------------------------------------------------------------------
+
+FAMILY_REGISTRY: dict[str, dict] = {}
+
+
+def register_family(
+    *,
+    param_grid: dict[str, list] | None = None,
+    tags: list[str] | None = None,
+):
+    """Decorator that registers a family_* function into FAMILY_REGISTRY.
+
+    Usage:
+        @register_family(param_grid={"rr": [1.5, 2.0], "ttl_bars": [8, 12]})
+        def family_my_thing(df, *, rr=1.8, ttl_bars=12, ...):
+            ...
+    """
+    def decorator(func: Callable):
+        sig = inspect.signature(func)
+        defaults = {
+            k: v.default
+            for k, v in sig.parameters.items()
+            if k != "df" and v.default is not inspect.Parameter.empty
+        }
+        grid = dict(param_grid) if param_grid else {}
+        name = func.__name__
+        if name.startswith("family_"):
+            name = name[7:]
+        FAMILY_REGISTRY[name] = {
+            "func": func,
+            "name": name,
+            "defaults": defaults,
+            "param_grid": grid,
+            "tags": tags or [],
+        }
+        return func
+    return decorator
+
+
+def get_family_func(name: str) -> Callable[..., Any] | None:
+    """The constructor for `name`, across BOTH populations this module can reach.
+
+    FAMILY_REGISTRY holds the 27 decorated families. The 31 in
+    `families_orthogonal.ORTHOGONAL_FAMILIES` are equally real code that the forward engine
+    already resolves (`executables.resolve_family` falls through to them), but this lookup
+    stopped at the registry -- so the backtest and pipeline lanes silently skipped every
+    orthogonal family as "no such family" rather than testing it. Absence of a decorator is
+    not absence of an implementation; this makes the two lanes agree.
+    """
+    entry = FAMILY_REGISTRY.get(name)
+    if entry:
+        fn: Callable[..., Any] | None = entry["func"]
+        return fn
+    # HUNT16 IS THE THIRD POPULATION, and leaving it out left this lookup disagreeing with
+    # `executables.resolve_family`, which checks it FIRST. Measured 2026-09-12: a LIVE sleeve on
+    # `dav_range_filter_adx` read as "family has no constructor" here while the forward engine
+    # resolved it without trouble -- two lanes answering differently about whether a live sleeve
+    # can be executed at all. That is the same defect this function's docstring was written to
+    # fix, one population later: absence of a decorator is not absence of an implementation.
+    try:
+        from mt5desk.executables import hunt16_families
+        h16: Callable[..., Any] | None = hunt16_families().get(name)
+        if h16 is not None:
+            return h16
+    except Exception:
+        pass
+    try:
+        from mt5desk import families_orthogonal as fo
+    except Exception:
+        return None
+    ofn: Callable[..., Any] | None = fo.ORTHOGONAL_FAMILIES.get(name)
+    return ofn
+
+
+def get_all_family_names() -> list[str]:
+    return sorted(FAMILY_REGISTRY.keys())
+
+
+def live_family_names() -> list[str]:
+    """EVERY family the desk can actually resolve, across all populations -- the live set.
+
+    `get_all_family_names` returns the 27 DECORATED families, which is the right answer to "what
+    carries a param grid" and the wrong one to "what may be hunted or judged". The orthogonal
+    sweep's families and the hunt16 population are equally real code that `get_family_func` and
+    `executables.resolve_family` both resolve, so a caller that hunts or judges "all families"
+    off the decorated set silently omits them -- the same defect `get_family_func`'s own
+    docstring was written to fix, one caller up.
+
+    THIS IS THE ANSWER TO "NOT FIXED LIKE THESE SIX, EVERY TIME" (the principal, 2026-09-23).
+    Any organ whose subject is "the families" reads THIS, so a family added tomorrow is hunted
+    and judged the hour it is registered, with no edit anywhere. A population that fails to
+    import contributes nothing and narrows nothing: absence of an import is not absence of a
+    family, and this function never returns fewer names than the registry it can read.
+    """
+    names = set(FAMILY_REGISTRY.keys())
+    try:
+        from mt5desk.executables import hunt16_families
+        names |= set(hunt16_families().keys())
+    except Exception:
+        pass
+    try:
+        from mt5desk import families_orthogonal as fo
+        names |= set(fo.ORTHOGONAL_FAMILIES.keys())
+    except Exception:
+        pass
+    try:
+        from mt5desk.families_edge_queue import EDGE_QUEUE_FAMILIES
+        names |= set(EDGE_QUEUE_FAMILIES.keys())
+    except Exception:
+        pass
+    return sorted(names)
+
+
+def get_param_grid(name: str) -> dict[str, list]:
+    entry = FAMILY_REGISTRY.get(name)
+    return entry["param_grid"] if entry else {}
+
+
+def generate_test_grid(
+    symbols: list[str],
+    source: str = "",
+    family_filter: list[str] | None = None,
+) -> list[dict]:
+    """Auto-generate a test grid from the registry.
+
+    For each symbol x each family x each param combination in the grid,
+    produce a test cell. No hardcoding anywhere — the registry IS the source
+    of truth.
+    """
+    grid = []
+    families = family_filter if family_filter else get_all_family_names()
+    for fname in families:
+        entry = FAMILY_REGISTRY.get(fname)
+        if not entry:
+            continue
+        func = entry["func"]
+        defaults = entry["defaults"]
+        param_grid = entry["param_grid"]
+
+        # If grid is empty, just use defaults
+        if not param_grid:
+            for sym in symbols:
+                grid.append({
+                    "symbol": sym,
+                    "family": fname,
+                    "params": dict(defaults),
+                    "source_hypothesis": source,
+                })
+            continue
+
+        # Cartesian product of param grid
+        keys = list(param_grid.keys())
+        values = [param_grid[k] for k in keys]
+        from itertools import product
+        for combo in product(*values):
+            params = dict(defaults)
+            params.update(dict(zip(keys, combo)))
+            for sym in symbols:
+                grid.append({
+                    "symbol": sym,
+                    "family": fname,
+                    "params": params,
+                    "source_hypothesis": source,
+                })
+    return grid
+
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
 
 def _atr(df: pd.DataFrame, n: int = 14) -> pd.Series:
-    h, l, c = df["high"], df["low"], df["close"]
-    tr = pd.concat(
-        [h - l, (h - c.shift(1)).abs(), (l - c.shift(1)).abs()], axis=1
-    ).max(axis=1)
-    return tr.ewm(alpha=1 / n, min_periods=n).mean()
+    """Average True Range."""
+    h, l, c = df["high"], df["low"], df["close"].shift(1)
+    tr = pd.concat([(h - l), (h - c).abs(), (l - c).abs()], axis=1).max(axis=1)
+    return tr.rolling(n, min_periods=1).mean()
+
+
+#: Fraction of consecutive bar gaps that must equal the modal gap before a frame is accepted as a
+#: REGULAR chart rather than an irregular series needing resampling. FX bars gap over weekends,
+#: holidays and rollovers, so it can never be 1.0; a genuinely irregular series (ticks, a merged
+#: multi-source frame) has no gap holding a majority at all.
+_REGULAR_GAP_SHARE = 0.5
+
+
+def bar_minutes(df: pd.DataFrame) -> int | None:
+    """The chart this frame IS, in minutes, or None when it is not a regular ladder chart.
+
+    Measured from the frame's own modal gap rather than from a filename or a caller's promise,
+    because the whole class of defect this guards against is a frame arriving somewhere that
+    believes it is something else.
+    """
+    if not isinstance(df.index, pd.DatetimeIndex) or len(df) < 3:
+        return None
+    gaps = df.index.to_series().diff().dropna()
+    if gaps.empty:
+        return None
+    seconds = gaps.dt.total_seconds()
+    modal = seconds.mode()
+    if modal.empty or float(modal.iloc[0]) <= 0:
+        return None
+    span = float(modal.iloc[0])
+    if float((seconds == span).mean()) < _REGULAR_GAP_SHARE:
+        return None
+    minutes = span / 60.0
+    if minutes != int(minutes):
+        return None
+    return int(minutes) if int(minutes) in set(TIMEFRAME_MINUTES.values()) else None
+
+
+def bars_per_day(df: pd.DataFrame, *, default: int = 24) -> int:
+    """How many bars of THIS frame's chart make a 24-hour day.
+
+    Families whose horizon is genuinely daily (a multi-speed trend over 252 DAYS, a regime hazard
+    refit every N DAYS) guard their history with `24 * n_days` -- an hourly spelling of a daily
+    quantity. On D1 that guard asks for 24 bars per day of a one-bar-a-day chart and refuses
+    thirty years of history; on M1 it waves through a frame far too short. `default` keeps the
+    hourly answer when the frame's chart cannot be established, so nothing changes where nothing
+    is known.
+    """
+    minutes = bar_minutes(df)
+    return default if minutes is None else max(1, 1440 // minutes)
 
 
 def _h1(df: pd.DataFrame) -> pd.DataFrame:
-    """Resample to H1 and drop gap rows so rolling stats see only real bars."""
-    h1 = df.resample("1h").agg(
-        {"open": "first", "high": "max", "low": "min", "close": "last"}
-    )
-    if "spread" in df.columns:
-        h1["spread"] = df["spread"].resample("1h").mean()
-    return h1.dropna(subset=["close"])
+    """Normalise to the BAR CLOCK THE CALLER HANDED IN; resample to H1 only when there is none.
+
+    THE NAME IS HISTORICAL AND THE CONTRACT IS NOT (2026-09-05). This function used to force
+    every frame to an hourly clock, and `pd.infer_freq` returns None on any real FX series
+    (weekend gaps), so the H1 early-out never fired and the resample ran on every call. That was
+    invisible while every caller passed H1 bars. It stopped being invisible the moment the desk
+    started fetching the full ladder: MEASURED on this tree, a 100,000-bar `AUDCAD_M15` frame
+    came back as 25,001 H1 bars. An M15 cell would therefore have produced H1 signals, been
+    backtested on H1 trades, and been certified under an identity claiming M15 -- seven charts
+    collapsing into one, silently, while the docket claimed seven. That is a corruption of the
+    canon no gate downstream can see, because every number in it is internally consistent.
+
+    So a frame that IS a regular chart on the desk's ladder is returned on ITS OWN clock, and
+    only a frame with no regular bar spacing (a tick series, a spliced multi-source frame) is
+    resampled to H1 -- which is the only case the old behaviour was ever right for.
+
+    WHAT DOES NOT CHANGE, and it is checked by test_timeframe_identity: an H1 frame comes back
+    with byte-identical OHLC. The old path resampled it to a 1h grid and dropped the empty hours,
+    which reproduces the input rows exactly; the new path returns those same rows without the
+    round trip. It also stops discarding the broker's `spread` and `real_volume` columns, which
+    `family_spread_state` had to reach around the resample to recover.
+
+    The index leaves here tz-aware UTC, always.
+
+    A producer rewrote the universe parquets with a tz-NAIVE datetime64[ms] index (caught
+    2026-08-27: every comparison against an aware stamp -- lookahead guards, forward boundaries,
+    session windows -- raised or, worse, silently disagreed about which hour a bar is). Bars on
+    this desk are stamped +00:00, so naive input is localized, aware input is converted, and no
+    caller ever has to guess again about the OFFSET ARITHMETIC.
+
+    THE STAMP IS NOT UTC AND THIS DOCSTRING USED TO SAY IT WAS ("broker-UTC by contract").
+    MEASURED 2026-08-29 on the live parquets: 446 of 452 weeks in EURUSD_H1 begin Monday 00:00
+    and end Friday 23:00, in summer and winter alike. A true-UTC FX tape cannot do that -- its
+    week boundary walks between 21:00 and 22:00 Sunday with DST. These are broker EET stamps
+    (UTC+3 summer / UTC+2 winter) wearing a +00:00 label.
+
+    WHAT THAT COSTS, AND WHAT IT DOES NOT. It costs nothing arithmetically: the stamps are
+    self-consistent and every family below compares stamp-hours to stamp-hours. It costs a
+    MECHANISM CLAIM, which is gate 1's entire subject. `ts.hour == 16` is 13:00 UTC in summer,
+    so a family named for the London close is trading the London afternoon, and gate 1 passes
+    it on the strength of a name that does not describe the window. Hour constants are NOT
+    changed here -- several were evidently chosen in broker time and land correctly (comex
+    settle_hour 20 is 17:00 UTC, the real COMEX settlement) -- because silently re-timing a
+    certified cell is a worse defect than a wrong label. The labels are corrected in place and
+    the re-timing question is carded, not performed.
+    """
+    if len(df) == 0:
+        return df
+    if isinstance(df.index, pd.DatetimeIndex):
+        df = df.copy()
+        df.index = (df.index.tz_localize("UTC") if df.index.tz is None
+                    else df.index.tz_convert("UTC"))
+        # AND ONE RESOLUTION. A ms-resolution index makes `asi8` return milliseconds while every
+        # Timestamp.value is nanoseconds, which silently voided every backtest fill (see
+        # engine.run_backtest). Bars leave here as tz-aware UTC at ns, always.
+        df.index = df.index.as_unit("ns")
+    if hasattr(df.index, "freq") and df.index.freq is not None:
+        return df
+    freq = pd.infer_freq(df.index)
+    if freq and freq.upper().startswith("1H"):
+        return df
+    # THE FRAME IS ALREADY A CHART. Return it on its own clock: an M5 hypothesis must never be
+    # answered with H1 signals, and a D1 one must never be spread over hours that do not exist.
+    # Ordered and de-duplicated so the caller gets the same guarantees the resample used to give.
+    if bar_minutes(df) is not None:
+        ordered = df.sort_index()
+        return ordered[~ordered.index.duplicated(keep="last")]
+    vol_col = "volume" if "volume" in df.columns else "tick_volume"
+    agg = {
+        "open": "first", "high": "max", "low": "min", "close": "last",
+    }
+    if vol_col in df.columns:
+        agg[vol_col] = "sum"
+    return df.resample("1h").agg(agg).dropna()
 
 
-def family1_usd_session_shock(
+def _rsi(series: pd.Series, n: int = 14) -> pd.Series:
+    delta = series.diff()
+    gain = delta.where(delta > 0, 0.0).rolling(n, min_periods=1).mean()
+    loss = (-delta.where(delta < 0, 0.0)).rolling(n, min_periods=1).mean()
+    rs = gain / loss.replace(0, np.nan)
+    return 100 - (100 / (1 + rs))
+
+
+def _bb(series: pd.Series, n: int = 20, k: float = 2.0):
+    mid = series.rolling(n, min_periods=1).mean()
+    std = series.rolling(n, min_periods=1).std()
+    return mid, mid + k * std, mid - k * std
+
+
+def _ema(series: pd.Series, span: int) -> pd.Series:
+    return series.ewm(span=span, min_periods=1).mean()
+
+
+# ===========================================================================
+# EXISTING FAMILIES (preserved exactly)
+# ===========================================================================
+
+def d1_session_filtered(frame, *, trades_weekends: bool = False):
+    """Drop rows on days this market declares CLOSED -- via the ONE shared calendar rule.
+
+    Takes an ALREADY-BUILT daily frame or Series and filters it; it never resamples (callers own
+    their aggregation -- a close-only Series and an OHLC frame are both legitimate inputs, and a
+    resample here threw KeyError on the first and re-encoded the weekday rule on both). The rule
+    itself lives in libs.research.bar_span so the filter, the lake audit and the gap detector
+    can never quietly disagree about what a trading day is (L1.61: one encoding, many readers).
+    A weekend-trading instrument is passed through WHOLE, identity included.
+    """
+    if trades_weekends:
+        return frame
+    keep = [not is_out_of_calendar(int(ts.value) // 1_000_000, trades_weekends=trades_weekends)
+            for ts in frame.index]
+    return frame[keep]
+
+
+@register_family(param_grid={
+    "shock_atr": [1.5, 2.0, 2.5],
+    "rr": [1.5, 1.8, 2.0],
+})
+def family_usd_session_shock(
     df: pd.DataFrame,
     fx: pd.DataFrame | None,
     *,
+    # STAMP-HOURS, NOT UTC (measured 2026-08-29, see `_h1`): 7-16 broker EET is 04:00-13:00 UTC
+    # in summer -- it opens three hours before London does and closes three hours before it
+    # does. Constants unchanged; the claim is what was wrong.
     london_start: int = 7,
     london_end: int = 16,
     shock_atr: float = 2.0,
@@ -50,11 +404,6 @@ def family1_usd_session_shock(
     ttl_bars: int = 12,
     rr: float = 1.8,
 ) -> list[Signal]:
-    """USD impulse (EURUSD drop = USD up = gold down) taken only inside London/NY.
-
-    Condition on the 1H EURUSD bar: a 1H move beyond `shock_atr` std is a
-    genuine impulse; gold reacts anti-correlated. Only fires in active sessions.
-    """
     if fx is None or len(fx) < 300:
         return []
     h1 = _h1(df)
@@ -75,16 +424,14 @@ def family1_usd_session_shock(
             continue
         if np.isnan(c[i]) or np.isnan(c[i - 1]):
             continue
-        std = fr[i] * np.sqrt(1)
+        std = fr[i]
         if not (std > 0):
             continue
-        impulse = fm[i] > shock_atr * std
-        if not impulse:
+        if not (fm[i] > shock_atr * std):
             continue
         ai = a[i]
         if not (ai > 0):
             continue
-        # gold anti-correlates with USD: USD up (EUR down) -> gold down
         side = 1 if fxc[i] < fxc[i - 1] else -1
         stop_dist = 1.2 * ai
         entry = c[i]
@@ -95,10 +442,14 @@ def family1_usd_session_shock(
     return signals
 
 
-def family4_comex_settlement_effect(
+@register_family(param_grid={
+    "move_thresh": [0.5, 0.75, 1.0],
+    "rr": [1.4, 1.6, 1.8],
+})
+def family_comex_settlement(
     df: pd.DataFrame,
     *,
-    settle_hour: int = 20,  # Vantage halts 21:00-22:00 UTC; 20:00 = pre-pause, 22:00 = post
+    settle_hour: int = 20,
     window_before: int = 2,
     vol_floor: float = 0.5,
     move_thresh: float = 0.75,
@@ -106,11 +457,6 @@ def family4_comex_settlement_effect(
     rr: float = 1.6,
     atr_n: int = 20,
 ) -> list[Signal]:
-    """Settlement/pause-window effects conditioned on volatility.
-
-    Around the daily roll pause (21:00-22:00 UTC), measure whether the pre-
-    window move continues when vol is elevated; fade it when vol is suppressed.
-    """
     h1 = _h1(df)
     atr = _atr(h1, atr_n)
     vol_med = atr.rolling(120).median()
@@ -135,9 +481,9 @@ def family4_comex_settlement_effect(
         vol_high = ai > vol_floor * v
         side = 0
         if vol_high and abs(move) > move_thresh:
-            side = 1 if move > 0 else -1  # continuation under high vol
+            side = 1 if move > 0 else -1
         elif not vol_high and abs(move) > move_thresh:
-            side = -1 if move > 0 else 1  # fade under low vol
+            side = -1 if move > 0 else 1
         if side == 0:
             continue
         entry = o[i]
@@ -145,10 +491,14 @@ def family4_comex_settlement_effect(
         stop = entry - side * stop_dist
         target = entry + side * stop_dist * rr
         signals.append(Signal(time=ts, side=side, stop=stop, target=target,
-                              ttl_bars=ttl_bars, tag="comex_settlement_effect"))
+                              ttl_bars=ttl_bars, tag="comex_settlement"))
     return signals
 
 
+@register_family(param_grid={
+    "mom_thresh": [0.25, 0.35, 0.5],
+    "rr": [1.5, 1.8, 2.0],
+})
 def family_asia_momentum(
     df: pd.DataFrame,
     *,
@@ -159,7 +509,6 @@ def family_asia_momentum(
     ttl_bars: int = 12,
     rr: float = 1.8,
 ) -> list[Signal]:
-    """Trade Asia-session direction into London: net Asia move, entered at 08:00."""
     h1 = _h1(df)
     atr = _atr(h1, atr_n)
     h1 = h1.assign(date=h1.index.date, hour=h1.index.hour)
@@ -195,16 +544,18 @@ def family_asia_momentum(
     return signals
 
 
+@register_family(param_grid={
+    "dow_long": [0], "dow_short": [3],
+})
 def family_dow_effect(
     df: pd.DataFrame,
     *,
-    dow_long: int = 0,  # Monday
-    dow_short: int = 3,  # Thursday
+    dow_long: int = 0,
+    dow_short: int = 3,
     atr_n: int = 20,
     ttl_bars: int = 12,
     rr: float = 1.8,
 ) -> list[Signal]:
-    """Pre-registered day-of-week seasonality test (control family)."""
     h1 = _h1(df)
     atr = _atr(h1, atr_n)
     signals: list[Signal] = []
@@ -233,57 +584,10 @@ def family_dow_effect(
     return signals
 
 
-def family7_spread_state_avoidance(
-    df: pd.DataFrame,
-    *,
-    spread_col: str = "spread",
-    high_spread_frac: float = 0.5,
-    ttl_bars: int = 10,
-    rr: float = 1.8,
-    atr_n: int = 20,
-    mom_n: int = 4,
-) -> list[Signal]:
-    """Trade only when the venue's own spread is low (predictably bad periods removed).
-
-    Uses the measured live spread column from the Vantage feed. The signal is a
-    simple momentum push, but gated: when spread is in its top half, skip.
-    """
-    if spread_col not in df.columns:
-        return []
-    h1 = _h1(df)
-    atr = _atr(h1, atr_n)
-    spread_med = h1[spread_col].rolling(96).median()
-    mom = h1["close"].pct_change(mom_n)
-    sp = h1[spread_col].to_numpy()
-    sm = spread_med.to_numpy()
-    a = atr.to_numpy()
-    m = mom.to_numpy()
-    o = h1["open"].to_numpy()
-    signals: list[Signal] = []
-    for i in range(4, len(h1) - 2):
-        ts = h1.index[i]
-        if np.isnan(h1["close"].iloc[i]):
-            continue
-        ai = a[i]
-        smi = sm[i]
-        if not (ai > 0) or np.isnan(smi):
-            continue
-        if sp[i] > smi * (1 + high_spread_frac):
-            continue
-        mi = m[i]
-        if abs(mi) < 0.0005:
-            continue
-        side = 1 if mi > 0 else -1
-        entry = o[i + 1]
-        stop_dist = 1.2 * ai
-        stop = entry - side * stop_dist
-        target = entry + side * stop_dist * rr
-        signals.append(Signal(time=h1.index[i + 1], side=side, stop=stop,
-                              target=target, ttl_bars=ttl_bars,
-                              tag="spread_state_avoidance"))
-    return signals
-
-
+@register_family(param_grid={
+    "mom_thresh": [0.0008, 0.0012, 0.002],
+    "rr": [1.5, 1.8, 2.0],
+})
 def family_momentum_volgate(
     df: pd.DataFrame,
     *,
@@ -294,7 +598,6 @@ def family_momentum_volgate(
     rr: float = 1.8,
     mom_thresh: float = 0.0012,
 ) -> list[Signal]:
-    """Baseline: momentum gated by a volatility floor (control, not a family)."""
     h1 = _h1(df)
     atr = _atr(h1, atr_n)
     atr_med = atr.rolling(120, min_periods=40).median()
@@ -316,7 +619,6 @@ def family_momentum_volgate(
         mi = m[i]
         if np.isnan(mi) or abs(mi) < mom_thresh:
             continue
-        # vol-scaled: the move must exceed 0.35x ATR% so noise can't pass
         if abs(mi) < 0.35 * (ai / c[i]):
             continue
         side = 1 if mi > 0 else -1
@@ -329,6 +631,10 @@ def family_momentum_volgate(
     return signals
 
 
+@register_family(param_grid={
+    "wait_bars": [8, 12, 16],
+    "rr": [1.5, 2.0, 2.5],
+})
 def family_session_range_breakout(
     df: pd.DataFrame,
     *,
@@ -343,26 +649,24 @@ def family_session_range_breakout(
     trend_filter: str = "none",
     range_filter: str = "all",
     vol_filter: str = "all",
+    midpoint_filter: str = "off",
 ) -> list[Signal]:
-    """Session-range breakout as a resting bracket.
+    """`midpoint_filter="prev_day"` is Stefano Serafini's published conditioning, reverse-
+    engineered: take only the side of a session breakout that agrees with where price sits
+    relative to the PREVIOUS DAY'S midpoint.
 
-    Range window: hours [0, range_start) if range_end is None, else
-    [range_start, range_end). At hour == signal_at (default: range_start /
-    range_end) a bracket is placed: long stop above the range high, short stop
-    below the range low. Whichever level price trades through first (within
-    `wait_bars` bars) fills, mirroring a real stop order.
+        MID_(d-1) = (H_(d-1) + L_(d-1)) / 2
+        long only if price > MID_(d-1);  short only if price < MID_(d-1)
 
-    spread_gate: skip days whose current spread is above its own 96-bar median
-    (tighter-cost subset of the same pattern).
+    IT IS A FILTER ON AN EXISTING TRIGGER, NOT A NEW FAMILY, and that is deliberate. The desk
+    already has this breakout; adding "Serafini opening range" as its own family would spend a
+    multiplicity slot on a duplicate and make the deflated-Sharpe bar harder for every other
+    candidate in the sweep. The falsifiable claim is precisely the conditioning -- does the same
+    trigger do better when it agrees with yesterday's structure -- so it is tested as an A/B
+    against the identical unfiltered parent, which `midpoint_filter="off"` still is.
 
-    trend_filter="aligned": keep only the leg aligned with the EMA20 slope at
-    signal time (buy leg if slope >= 0, sell leg otherwise) - one-sided.
-
-    range_filter="small"/"large": trade only days whose range span is below /
-    above the rolling 20-day median span.
-
-    vol_filter="low"/"high": trade only days whose ATR is below / above the
-    rolling 200-bar ATR median.
+    The midpoint is computed on the desk's own daily aggregation of H1 bars rather than on
+    broker settlement bars, which is the point Serafini makes about synthetic 1,440-minute bars.
     """
     h1 = _h1(df)
     atr = _atr(h1, atr_n)
@@ -381,6 +685,11 @@ def family_session_range_breakout(
     span_med = span_by_day.rolling(20, min_periods=10).median()
     atr_med = atr.rolling(200, min_periods=60).median()
     ema20 = h1["close"].ewm(span=20, min_periods=10).mean()
+    # PREVIOUS day's midpoint per date, shifted so a day never sees its own range.
+    prev_mid: dict = {}
+    if midpoint_filter == "prev_day":
+        day = h1.groupby("date").agg(hi=("high", "max"), lo=("low", "min"))
+        prev_mid = ((day["hi"] + day["lo"]) / 2.0).shift(1).to_dict()
     signals: list[Signal] = []
     for i in range(1, len(h1) - 2):
         ts = h1.index[i]
@@ -416,18 +725,33 @@ def family_session_range_breakout(
         if trend_filter == "aligned":
             if i >= 5:
                 slope = float(ema20.iloc[i] - ema20.iloc[i - 4])
+
+        # SERAFINI'S PRIOR-DAY MIDPOINT. Strictly one-sided lookback: the midpoint comes from the
+        # day BEFORE this signal's day, so a signal can never see its own session's range.
+        allow_long = allow_short = True
+        if midpoint_filter == "prev_day":
+            mid = prev_mid.get(h1["date"].iloc[i])
+            if mid is None or np.isnan(mid):
+                continue                  # no prior day: UNMEASURED, so no trade (L1.28a)
+            px = float(h1["close"].iloc[i])
+            allow_long, allow_short = px > mid, px < mid
+
         dist = max(1.2 * a, span)
-        if trend_filter != "aligned" or slope >= 0:
+        if allow_long and (trend_filter != "aligned" or slope >= 0):
             signals.append(Signal(time=ts, side=1, stop=hi - dist, target=hi + dist * rr,
                                   ttl_bars=ttl_bars, tag="session_range_breakout",
                                   trigger=hi, wait_bars=wait_bars))
-        if trend_filter != "aligned" or slope < 0:
+        if allow_short and (trend_filter != "aligned" or slope < 0):
             signals.append(Signal(time=ts, side=-1, stop=lo + dist, target=lo - dist * rr,
                                   ttl_bars=ttl_bars, tag="session_range_breakout",
                                   trigger=lo, wait_bars=wait_bars))
     return signals
 
 
+@register_family(param_grid={
+    "mode": ["momentum", "fade"],
+    "min_gap_atr": [0.15, 0.2, 0.3],
+})
 def family_monday_gap(
     df: pd.DataFrame,
     *,
@@ -437,7 +761,6 @@ def family_monday_gap(
     mode: str = "momentum",
     min_gap_atr: float = 0.2,
 ) -> list[Signal]:
-    """Weekend gap (Sunday 22:00 open vs Friday close): momentum or fade."""
     h1 = _h1(df)
     atr = _atr(h1, atr_n)
     a = atr.to_numpy()
@@ -471,6 +794,10 @@ def family_monday_gap(
     return signals
 
 
+@register_family(param_grid={
+    "mom_thresh": [0.2, 0.3, 0.4],
+    "ttl_bars": [4, 8],
+})
 def family_london_close_momentum(
     df: pd.DataFrame,
     *,
@@ -480,7 +807,10 @@ def family_london_close_momentum(
     ttl_bars: int = 4,
     rr: float = 1.5,
 ) -> list[Signal]:
-    """14:00-16:00 momentum entered at 17:00, exited by 20:00 (pre-pause)."""
+    """NAME IS 2-3 HOURS OFF ITS WINDOW (measured 2026-08-29, see `_h1`). Stamp-hour 16 is
+    13:00 UTC in summer / 14:00 in winter -- the London AFTERNOON, not the 15:00-16:00 UTC
+    London close. The hour is left untouched (re-timing a tested cell needs its own evidence);
+    only the claim is corrected, because gate 1 judges the mechanism by this name."""
     h1 = _h1(df)
     atr = _atr(h1, atr_n)
     a = atr.to_numpy()
@@ -507,26 +837,25 @@ def family_london_close_momentum(
     return signals
 
 
+@register_family(param_grid={
+    "wait_bars": [8, 12],
+    "rr": [1.5, 2.0],
+    "vol_filter": ["all", "high"],
+})
 def family_level_breakout(
     df: pd.DataFrame,
     *,
-    level: str = "pdh",          # "pdh" = prior-day high/low, "week" = prior week
+    level: str = "pdh",
     signal_hour: int = 7,
     wait_bars: int = 12,
     atr_n: int = 20,
     ttl_bars: int = 12,
     rr: float = 2.0,
-    vol_filter: str = "all",     # "high": trade only vol-expansion days
-    vol_gate_q: float = 0.75,    # ATR > q * rolling 200-bar median
-    range_filter: str = "all",   # "small": trade only compressed prior ranges
+    vol_filter: str = "all",
+    vol_gate_q: float = 0.75,
+    range_filter: str = "all",
     spread_gate: bool = False,
 ) -> list[Signal]:
-    """Structural level breakout: prior-day (or prior-week) high/low as a
-    resting bracket at `signal_hour`. Reverse-engineered from the public
-    Gold breakout-EA family (Goldtrade/Reaper): important level -> range
-    state -> expansion -> confirmed break -> runner. Same execution geometry
-    as the armed session-range family (dist = max(1.2*ATR, span)).
-    """
     h1 = _h1(df)
     atr = _atr(h1, atr_n)
     atr_med = atr.rolling(200, min_periods=60).median()
@@ -556,7 +885,7 @@ def family_level_breakout(
         if ts.hour != signal_hour:
             continue
         if level == "week" and ts.dayofweek != 0:
-            continue  # week bracket armed once, Monday
+            continue
         if np.isnan(h1["open"].iloc[i]):
             continue
         ai = a[i]
@@ -592,6 +921,10 @@ def family_level_breakout(
     return signals
 
 
+@register_family(param_grid={
+    "rr": [1.4, 1.6, 1.8],
+    "min_pierce_atr": [0.03, 0.05, 0.1],
+})
 def family_failed_breakout(
     df: pd.DataFrame,
     *,
@@ -603,11 +936,6 @@ def family_failed_breakout(
     min_pierce_atr: float = 0.05,
     spread_gate: bool = False,
 ) -> list[Signal]:
-    """Failed-breakout fade: price pierces the prior-day extreme on a closed
-    bar but closes back inside (no displacement/follow-through) -> fade back
-    into the range at the next bar open. The Gold Reaper "fake breakout
-    filter" turned into a falsifiable rule. Entry next open (no intrabar).
-    """
     h1 = _h1(df)
     atr = _atr(h1, atr_n)
     h1 = h1.assign(date=h1.index.date)
@@ -642,10 +970,10 @@ def family_failed_breakout(
         side = 0
         pierce = 0.0
         if hh[i] > phi and c[i] < phi and phi > 0:
-            side = -1  # broke above, closed back inside -> fade short
+            side = -1
             pierce = hh[i] - phi
         elif ll[i] < plo and c[i] > plo and plo > 0:
-            side = 1  # broke below, closed back inside -> fade long
+            side = 1
             pierce = plo - ll[i]
         if side == 0:
             continue
@@ -661,6 +989,8 @@ def family_failed_breakout(
     return signals
 
 
+# --- COT families ---
+
 def _cot_entries(
     h1: pd.DataFrame,
     cot: pd.DataFrame,
@@ -671,12 +1001,6 @@ def _cot_entries(
     ttl_bars: int = 160,
     rr: float = 1.6,
 ) -> list[Signal]:
-    """Turn a per-report side series (-1/0/1) into Monday-open signals.
-
-    COT is published Friday ~19:30 UTC; positions are as of the Tuesday
-    report date. Entries go in at the open of the first H1 bar after the
-    following Monday 00:00 UTC. Weekly cadence -> no overlapping reports.
-    """
     atr = _atr(h1, atr_n)
     idx_ns = h1.index.to_numpy().astype("datetime64[ns]").astype("int64")
     sigs: list[Signal] = []
@@ -699,7 +1023,8 @@ def _cot_entries(
     return sigs
 
 
-def family2_cot_net_fade(
+@register_family(param_grid={"lo_q": [0.05, 0.10], "hi_q": [0.90, 0.95]})
+def family_cot_net_fade(
     df: pd.DataFrame,
     cot: pd.DataFrame,
     *,
@@ -707,7 +1032,6 @@ def family2_cot_net_fade(
     lo_q: float = 0.10,
     hi_q: float = 0.90,
 ) -> list[Signal]:
-    """Fade extreme fund (noncomm) net positioning: crowding mean-reversion."""
     cot = cot.sort_values("report_date").reset_index(drop=True)
     net = cot["noncomm_positions_long_all"] - cot["noncomm_positions_short_all"]
     pct = net.rolling(lookback_weeks, min_periods=lookback_weeks).rank(pct=True)
@@ -717,14 +1041,14 @@ def family2_cot_net_fade(
     return _cot_entries(_h1(df), cot, side, "cot_net_fade")
 
 
-def family2_cot_change_fade(
+@register_family(param_grid={"z_thresh": [1.0, 1.5, 2.0]})
+def family_cot_change_fade(
     df: pd.DataFrame,
     cot: pd.DataFrame,
     *,
     lookback_weeks: int = 52,
     z_thresh: float = 1.5,
 ) -> list[Signal]:
-    """Fade large weekly fund net-position CHANGES (crowding unwind)."""
     cot = cot.sort_values("report_date").reset_index(drop=True)
     net = cot["noncomm_positions_long_all"] - cot["noncomm_positions_short_all"]
     delta = net.diff()
@@ -736,11 +1060,11 @@ def family2_cot_change_fade(
     return _cot_entries(_h1(df), cot, side, "cot_change_fade")
 
 
-def family2_cot_change_momentum(
+@register_family()
+def family_cot_change_momentum(
     df: pd.DataFrame,
     cot: pd.DataFrame,
 ) -> list[Signal]:
-    """Control: trade WITH weekly fund net-position changes."""
     cot = cot.sort_values("report_date").reset_index(drop=True)
     net = cot["noncomm_positions_long_all"] - cot["noncomm_positions_short_all"]
     delta = net.diff()
@@ -750,11 +1074,11 @@ def family2_cot_change_momentum(
     return _cot_entries(_h1(df), cot, side, "cot_change_momentum")
 
 
-def family2_cot_comm_follow(
+@register_family()
+def family_cot_comm_follow(
     df: pd.DataFrame,
     cot: pd.DataFrame,
 ) -> list[Signal]:
-    """Follow commercial net-position changes (the informed counterparty)."""
     cot = cot.sort_values("report_date").reset_index(drop=True)
     comm_net = (
         cot["comm_positions_long_all"] - cot["comm_positions_short_all"]
@@ -765,151 +1089,1128 @@ def family2_cot_comm_follow(
     side[delta < 0] = -1
     return _cot_entries(_h1(df), cot, side, "cot_comm_follow")
 
-# --------------------------------------------------------------------------
-# SMC ENCODINGS, PRICED THE SAME WAY AS EVERYTHING ELSE
-#
-# Of the five concepts retail SMC material treats as a set, three are already in
-# this file under their mechanism names: a "liquidity sweep" is
-# family_failed_breakout (pierce the prior extreme, close back inside, fade), a
-# "break of structure" is family_level_breakout, and HH/HL is a trend-state
-# label rather than an entry. The two below are the encodings this desk had
-# genuinely never measured.
-#
-# They get no special treatment and no special defence. Same closed bars, same
-# Costs, same resting-order fill model, same promotion gate. If the desk is
-# going to hold an opinion about them, the opinion should come from the same
-# rig that judged the other eight families.
-# --------------------------------------------------------------------------
 
+# ===========================================================================
+# NEW ORTHOGONAL FAMILIES — maximum diversity, zero hardcoding
+# ===========================================================================
 
-def family_fair_value_gap(
+@register_family(param_grid={
+    "rsi_n": [7, 14],
+    "oversold": [25, 30],
+    "overbought": [70, 75],
+    "rr": [1.5, 2.0],
+})
+def family_mean_reversion_rsi(
     df: pd.DataFrame,
     *,
+    rsi_n: int = 14,
+    oversold: int = 30,
+    overbought: int = 70,
     atr_n: int = 20,
-    min_gap_atr: float = 0.25,
-    fill_depth: float = 0.0,
-    wait_bars: int = 12,
-    stop_atr: float = 0.5,
-    ttl_bars: int = 24,
-    rr: float = 2.0,
-    signal_hours: tuple = (),
+    ttl_bars: int = 12,
+    rr: float = 1.8,
 ) -> list[Signal]:
-    """Three-bar imbalance, then a retrace INTO it -- continuation, not reversal.
-
-    A bullish gap exists at bar i when low[i] > high[i-2]: the middle bar
-    displaced hard enough that the band between those two prices was never
-    transacted. The claim under test is that the band is unfinished business and
-    price returning to it resumes the displacement.
-
-    THE GAP IS DETECTED ON CLOSED BARS AND ENTERED WITH A RESTING ORDER. Nothing
-    here inspects a bar it could not have seen: detection uses i-2..i, the order
-    rests from i+1, and `wait_bars` bounds how long it lives before the setup is
-    abandoned. `fill_depth` walks the entry from the near edge of the band (0.0,
-    fills often, worse price) to the far edge (1.0, fills rarely, better price)
-    -- the parameter exists because that trade-off is exactly what the hunt
-    should be pricing rather than a chart author asserting.
-    """
+    """Fade RSI extremes: buy when RSI crosses above oversold, sell below overbought."""
     h1 = _h1(df)
     atr = _atr(h1, atr_n)
-    if len(h1) < atr_n + 4:
-        return []
+    rsi = _rsi(h1["close"], rsi_n)
     a = atr.to_numpy()
-    hh = h1["high"].to_numpy()
-    ll = h1["low"].to_numpy()
+    r = rsi.to_numpy()
+    o = h1["open"].to_numpy()
     signals: list[Signal] = []
-    for i in range(2, len(h1) - 2):
-        ai = a[i]
-        if not (ai > 0) or np.isnan(ai):
-            continue
+    for i in range(max(rsi_n, atr_n) + 1, len(h1) - 2):
         ts = h1.index[i]
-        if signal_hours and ts.hour not in signal_hours:
+        ai = a[i]
+        if not (ai > 0) or np.isnan(r[i]) or np.isnan(r[i - 1]):
             continue
-        if ll[i] > hh[i - 2]:
-            side, near, far = 1, ll[i], hh[i - 2]
-        elif hh[i] < ll[i - 2]:
-            side, near, far = -1, hh[i], ll[i - 2]
-        else:
+        side = 0
+        if r[i - 1] < oversold and r[i] >= oversold:
+            side = 1  # crossed up from oversold
+        elif r[i - 1] > overbought and r[i] <= overbought:
+            side = -1  # crossed down from overbought
+        if side == 0:
             continue
-        if abs(near - far) < min_gap_atr * ai:
-            continue
-        trigger = near + (far - near) * fill_depth
-        stop = far - side * stop_atr * ai
-        stop_dist = abs(trigger - stop)
-        if not (stop_dist > 0):
-            continue
-        signals.append(Signal(
-            time=h1.index[i], side=side, stop=stop,
-            target=trigger + side * stop_dist * rr,
-            ttl_bars=ttl_bars, tag="fair_value_gap",
-            trigger=float(trigger), wait_bars=wait_bars))
+        entry = o[i]
+        stop_dist = 1.2 * ai
+        stop = entry - side * stop_dist
+        target = entry + side * stop_dist * rr
+        signals.append(Signal(time=ts, side=side, stop=stop, target=target,
+                              ttl_bars=ttl_bars, tag="mean_reversion_rsi"))
     return signals
 
 
-def family_order_block(
+@register_family(param_grid={
+    "bb_n": [15, 20, 25],
+    "bb_k": [1.5, 2.0, 2.5],
+    "rr": [1.5, 2.0],
+})
+def family_mean_reversion_bollinger(
     df: pd.DataFrame,
     *,
+    bb_n: int = 20,
+    bb_k: float = 2.0,
     atr_n: int = 20,
-    disp_atr: float = 1.0,
-    lookback: int = 5,
-    fill_depth: float = 0.0,
-    wait_bars: int = 12,
-    stop_atr: float = 0.3,
-    ttl_bars: int = 24,
-    rr: float = 2.0,
-    signal_hours: tuple = (),
+    ttl_bars: int = 12,
+    rr: float = 1.8,
 ) -> list[Signal]:
-    """Last opposite-colour bar before a displacement; enter on the retrace.
-
-    Bar i displaces at least `disp_atr` ATR in one direction. Walk back up to
-    `lookback` bars for the nearest bar that closed AGAINST that direction --
-    the order block. The claim is that unfilled interest sits in that bar's
-    range, so a retrace into it resumes the move.
-
-    Note what this shares with family_fair_value_gap: both are "displacement,
-    then retrace, then continuation". If both survive the hunt they are very
-    likely the SAME mechanism wearing two names, and the admission rule
-    (SR_new > SR_book * rho) is what will say so -- which is the point of
-    running them through it rather than arguing about it.
-    """
+    """Fade Bollinger band touches: buy at lower band, sell at upper band."""
     h1 = _h1(df)
     atr = _atr(h1, atr_n)
-    if len(h1) < atr_n + lookback + 4:
-        return []
+    mid, upper, lower = _bb(h1["close"], bb_n, bb_k)
     a = atr.to_numpy()
+    c = h1["close"].to_numpy()
+    o = h1["open"].to_numpy()
+    lo_arr = lower.to_numpy()
+    hi_arr = upper.to_numpy()
+    signals: list[Signal] = []
+    for i in range(max(bb_n, atr_n) + 1, len(h1) - 2):
+        ts = h1.index[i]
+        ai = a[i]
+        if not (ai > 0) or np.isnan(lo_arr[i]) or np.isnan(hi_arr[i]):
+            continue
+        if np.isnan(c[i - 1]):
+            continue
+        side = 0
+        if c[i - 1] < lo_arr[i] and c[i] >= lo_arr[i]:
+            side = 1  # bounced off lower band
+        elif c[i - 1] > hi_arr[i] and c[i] <= hi_arr[i]:
+            side = -1  # bounced off upper band
+        if side == 0:
+            continue
+        entry = o[i + 1]
+        stop_dist = 1.2 * ai
+        stop = entry - side * stop_dist
+        target = entry + side * stop_dist * rr
+        signals.append(Signal(time=h1.index[i + 1], side=side, stop=stop,
+                              target=target, ttl_bars=ttl_bars,
+                              tag="mean_reversion_bollinger"))
+    return signals
+
+
+@register_family(param_grid={
+    "fast_ema": [8, 12, 20],
+    "slow_ema": [26, 50],
+    "rr": [1.5, 2.0],
+})
+def family_trend_ma_cross(
+    df: pd.DataFrame,
+    *,
+    fast_ema: int = 12,
+    slow_ema: int = 50,
+    atr_n: int = 20,
+    ttl_bars: int = 12,
+    rr: float = 1.8,
+) -> list[Signal]:
+    """EMA crossover trend-following: fast crosses above slow = long, below = short."""
+    h1 = _h1(df)
+    atr = _atr(h1, atr_n)
+    fast = _ema(h1["close"], fast_ema)
+    slow = _ema(h1["close"], slow_ema)
+    a = atr.to_numpy()
+    f = fast.to_numpy()
+    s = slow.to_numpy()
+    o = h1["open"].to_numpy()
+    signals: list[Signal] = []
+    for i in range(max(slow_ema, atr_n) + 1, len(h1) - 2):
+        ts = h1.index[i]
+        ai = a[i]
+        if not (ai > 0) or np.isnan(f[i]) or np.isnan(s[i]):
+            continue
+        if np.isnan(f[i - 1]) or np.isnan(s[i - 1]):
+            continue
+        side = 0
+        if f[i - 1] < s[i - 1] and f[i] >= s[i]:
+            side = 1  # golden cross
+        elif f[i - 1] > s[i - 1] and f[i] <= s[i]:
+            side = -1  # death cross
+        if side == 0:
+            continue
+        entry = o[i]
+        stop_dist = 1.2 * ai
+        stop = entry - side * stop_dist
+        target = entry + side * stop_dist * rr
+        signals.append(Signal(time=ts, side=side, stop=stop, target=target,
+                              ttl_bars=ttl_bars, tag="trend_ma_cross"))
+    return signals
+
+
+@register_family(param_grid={
+    "bb_n": [20],
+    "bb_k": [2.0],
+    "squeeze_lookback": [10, 20],
+})
+def family_volatility_squeeze(
+    df: pd.DataFrame,
+    *,
+    bb_n: int = 20,
+    bb_k: float = 2.0,
+    squeeze_lookback: int = 20,
+    atr_n: int = 20,
+    ttl_bars: int = 12,
+    rr: float = 2.0,
+) -> list[Signal]:
+    """BB squeeze (low vol) followed by expansion breakout."""
+    h1 = _h1(df)
+    atr = _atr(h1, atr_n)
+    mid, upper, lower = _bb(h1["close"], bb_n, bb_k)
+    bw = (upper - lower) / mid
+    bw_low = bw.rolling(squeeze_lookback, min_periods=5).min()
+    a = atr.to_numpy()
+    c = h1["close"].to_numpy()
+    o = h1["open"].to_numpy()
+    bw_arr = bw.to_numpy()
+    bw_low_arr = bw_low.to_numpy()
+    signals: list[Signal] = []
+    for i in range(max(bb_n, squeeze_lookback, atr_n) + 1, len(h1) - 2):
+        ts = h1.index[i]
+        ai = a[i]
+        if not (ai > 0) or np.isnan(bw_arr[i]) or np.isnan(bw_low_arr[i]):
+            continue
+        if np.isnan(c[i - 1]):
+            continue
+        was_squeezed = bw_low_arr[i - 1] < bw_arr[i - 1] * 0.6
+        expanding = bw_arr[i] > bw_arr[i - 1] * 1.2
+        if not (was_squeezed and expanding):
+            continue
+        side = 1 if c[i] > c[i - 1] else -1
+        entry = o[i + 1]
+        stop_dist = 1.5 * ai
+        stop = entry - side * stop_dist
+        target = entry + side * stop_dist * rr
+        signals.append(Signal(time=h1.index[i + 1], side=side, stop=stop,
+                              target=target, ttl_bars=ttl_bars,
+                              tag="volatility_squeeze"))
+    return signals
+
+
+@register_family(param_grid={
+    "range_n": [20, 50],
+    "threshold_pct": [0.005, 0.01],
+    "rr": [1.5, 2.0],
+})
+def family_range_reversion(
+    df: pd.DataFrame,
+    *,
+    range_n: int = 20,
+    threshold_pct: float = 0.01,
+    atr_n: int = 20,
+    ttl_bars: int = 12,
+    rr: float = 1.8,
+) -> list[Signal]:
+    """Fade extreme intraday moves: if price moved > threshold in range_n bars, fade."""
+    h1 = _h1(df)
+    atr = _atr(h1, atr_n)
+    a = atr.to_numpy()
+    c = h1["close"].to_numpy()
+    o = h1["open"].to_numpy()
+    signals: list[Signal] = []
+    for i in range(range_n + 1, len(h1) - 2):
+        ts = h1.index[i]
+        ai = a[i]
+        if not (ai > 0) or np.isnan(c[i]) or np.isnan(c[i - range_n]):
+            continue
+        move = (c[i] - c[i - range_n]) / c[i - range_n]
+        if abs(move) < threshold_pct:
+            continue
+        entry = o[i + 1]
+        stop_dist = 1.2 * ai
+        side = -1 if move > 0 else 1  # fade the extreme
+        stop = entry - side * stop_dist
+        target = entry + side * stop_dist * rr
+        signals.append(Signal(time=h1.index[i + 1], side=side, stop=stop,
+                              target=target, ttl_bars=ttl_bars,
+                              tag="range_reversion"))
+    return signals
+
+
+@register_family(param_grid={
+    "vol_mult": [1.5, 2.0, 3.0],
+    "rr": [1.5, 2.0],
+})
+def family_volume_spike(
+    df: pd.DataFrame,
+    *,
+    vol_lookback: int = 20,
+    vol_mult: float = 2.0,
+    atr_n: int = 20,
+    ttl_bars: int = 12,
+    rr: float = 1.8,
+) -> list[Signal]:
+    """Trade in the direction of a volume spike (institutional flow)."""
+    h1 = _h1(df)
+    vol_col = "volume" if "volume" in h1.columns else "tick_volume"
+    if vol_col not in h1.columns:
+        return []
+    atr = _atr(h1, atr_n)
+    vol_med = h1[vol_col].rolling(vol_lookback, min_periods=5).median()
+    a = atr.to_numpy()
+    c = h1["close"].to_numpy()
+    o = h1["open"].to_numpy()
+    v = h1[vol_col].to_numpy()
+    vm = vol_med.to_numpy()
+    signals: list[Signal] = []
+    for i in range(vol_lookback + 1, len(h1) - 2):
+        ts = h1.index[i]
+        ai = a[i]
+        if not (ai > 0) or np.isnan(vm[i]) or vm[i] <= 0:
+            continue
+        if v[i] < vol_mult * vm[i]:
+            continue
+        if np.isnan(c[i]) or np.isnan(c[i - 1]):
+            continue
+        side = 1 if c[i] > c[i - 1] else -1
+        entry = o[i + 1]
+        stop_dist = 1.2 * ai
+        stop = entry - side * stop_dist
+        target = entry + side * stop_dist * rr
+        signals.append(Signal(time=h1.index[i + 1], side=side, stop=stop,
+                              target=target, ttl_bars=ttl_bars,
+                              tag="volume_spike"))
+    return signals
+
+
+@register_family(param_grid={
+    "anchor_hour": [0, 7, 13],
+    "hold_bars": [4, 8, 12],
+    "rr": [1.5, 2.0],
+})
+def family_overnight_drift(
+    df: pd.DataFrame,
+    *,
+    anchor_hour: int = 0,
+    hold_bars: int = 8,
+    atr_n: int = 20,
+    ttl_bars: int = 12,
+    rr: float = 1.8,
+) -> list[Signal]:
+    """Fade the overnight drift: if price drifted up from anchor, short at anchor hour."""
+    h1 = _h1(df)
+    atr = _atr(h1, atr_n)
+    a = atr.to_numpy()
+    c = h1["close"].to_numpy()
+    o = h1["open"].to_numpy()
+    signals: list[Signal] = []
+    for i in range(hold_bars + 2, len(h1) - 2):
+        ts = h1.index[i]
+        if ts.hour != anchor_hour:
+            continue
+        ai = a[i]
+        if not (ai > 0) or np.isnan(c[i]) or np.isnan(c[i - hold_bars]):
+            continue
+        drift = (c[i] - c[i - hold_bars]) / ai
+        if abs(drift) < 0.3:
+            continue
+        side = -1 if drift > 0 else 1  # fade the drift
+        entry = o[i]
+        stop_dist = 1.2 * ai
+        stop = entry - side * stop_dist
+        target = entry + side * stop_dist * rr
+        signals.append(Signal(time=ts, side=side, stop=stop, target=target,
+                              ttl_bars=ttl_bars, tag="overnight_drift"))
+    return signals
+
+
+@register_family(param_grid={
+    "rsi_n": [14],
+    "trend_ema": [50, 100],
+    "rr": [1.5, 2.0],
+})
+def family_pullback_entry(
+    df: pd.DataFrame,
+    *,
+    rsi_n: int = 14,
+    trend_ema: int = 50,
+    rsi_pullback: int = 40,
+    rsi_bounce: int = 50,
+    atr_n: int = 20,
+    ttl_bars: int = 12,
+    rr: float = 1.8,
+) -> list[Signal]:
+    """Trend-following pullback: buy when price is above EMA and RSI bounces from pullback."""
+    h1 = _h1(df)
+    atr = _atr(h1, atr_n)
+    rsi = _rsi(h1["close"], rsi_n)
+    ema = _ema(h1["close"], trend_ema)
+    a = atr.to_numpy()
+    r = rsi.to_numpy()
+    e = ema.to_numpy()
+    c = h1["close"].to_numpy()
+    o = h1["open"].to_numpy()
+    signals: list[Signal] = []
+    for i in range(max(trend_ema, rsi_n, atr_n) + 1, len(h1) - 2):
+        ts = h1.index[i]
+        ai = a[i]
+        if not (ai > 0) or np.isnan(r[i]) or np.isnan(e[i]):
+            continue
+        if np.isnan(r[i - 1]) or np.isnan(c[i - 1]):
+            continue
+        side = 0
+        # Long: above EMA, RSI was below pullback level, now bouncing
+        if c[i] > e[i] and r[i - 1] < rsi_pullback and r[i] >= rsi_bounce:
+            side = 1
+        # Short: below EMA, RSI was above overbought, now falling
+        elif c[i] < e[i] and r[i - 1] > (100 - rsi_pullback) and r[i] <= (100 - rsi_bounce):
+            side = -1
+        if side == 0:
+            continue
+        entry = o[i + 1]
+        stop_dist = 1.2 * ai
+        stop = entry - side * stop_dist
+        target = entry + side * stop_dist * rr
+        signals.append(Signal(time=h1.index[i + 1], side=side, stop=stop,
+                              target=target, ttl_bars=ttl_bars,
+                              tag="pullback_entry"))
+    return signals
+
+
+@register_family(param_grid={
+    "anchor": ["open", "mid"],
+    "extreme_atr": [1.5, 2.0, 3.0],
+    "rr": [1.5, 2.0],
+})
+def family_pin_bar_reversal(
+    df: pd.DataFrame,
+    *,
+    anchor: str = "open",
+    extreme_atr: float = 2.0,
+    atr_n: int = 20,
+    ttl_bars: int = 12,
+    rr: float = 1.8,
+) -> list[Signal]:
+    """Pin bar (hammer/shooting star) reversal at key levels."""
+    h1 = _h1(df)
+    atr = _atr(h1, atr_n)
+    a = atr.to_numpy()
+    o_arr = h1["open"].to_numpy()
+    h_arr = h1["high"].to_numpy()
+    l_arr = h1["low"].to_numpy()
+    c_arr = h1["close"].to_numpy()
+    signals: list[Signal] = []
+    for i in range(2, len(h1) - 2):
+        ts = h1.index[i]
+        ai = a[i]
+        if not (ai > 0):
+            continue
+        body = abs(c_arr[i] - o_arr[i])
+        if body < 0.0001:
+            continue
+        if anchor == "open":
+            ref = o_arr[i]
+        else:
+            ref = (h_arr[i] + l_arr[i]) / 2
+        upper_wick = h_arr[i] - max(o_arr[i], c_arr[i])
+        lower_wick = min(o_arr[i], c_arr[i]) - l_arr[i]
+        side = 0
+        # Bullish pin bar: long lower wick, small body at top
+        if lower_wick > extreme_atr * ai and lower_wick > 3 * body:
+            side = 1
+        # Bearish pin bar: long upper wick, small body at bottom
+        elif upper_wick > extreme_atr * ai and upper_wick > 3 * body:
+            side = -1
+        if side == 0:
+            continue
+        entry = o_arr[i + 1] if i + 1 < len(h1) else c_arr[i]
+        stop_dist = 1.2 * ai
+        stop = entry - side * stop_dist
+        target = entry + side * stop_dist * rr
+        signals.append(Signal(time=ts, side=side, stop=stop, target=target,
+                              ttl_bars=ttl_bars, tag="pin_bar_reversal"))
+    return signals
+
+
+@register_family(param_grid={
+    "n": [3, 5],
+    "rr": [1.5, 2.0],
+})
+def family_engulfing_reversal(
+    df: pd.DataFrame,
+    *,
+    n: int = 3,
+    atr_n: int = 20,
+    ttl_bars: int = 12,
+    rr: float = 1.8,
+) -> list[Signal]:
+    """N-bar engulfing reversal: current bar fully engulfs prior n bars."""
+    h1 = _h1(df)
+    atr = _atr(h1, atr_n)
+    a = atr.to_numpy()
+    o_arr = h1["open"].to_numpy()
+    h_arr = h1["high"].to_numpy()
+    l_arr = h1["low"].to_numpy()
+    c_arr = h1["close"].to_numpy()
+    signals: list[Signal] = []
+    for i in range(n + 1, len(h1) - 2):
+        ts = h1.index[i]
+        ai = a[i]
+        if not (ai > 0):
+            continue
+        if np.isnan(c_arr[i]) or np.isnan(o_arr[i]):
+            continue
+        prev_h = max(h_arr[i - n:i])
+        prev_l = min(l_arr[i - n:i])
+        curr_h = h_arr[i]
+        curr_l = l_arr[i]
+        side = 0
+        # Bullish engulfing: current bar's range fully engulfs prior n bars
+        if curr_h > prev_h and curr_l < prev_l and c_arr[i] > o_arr[i]:
+            side = 1
+        # Bearish engulfing
+        elif curr_h > prev_h and curr_l < prev_l and c_arr[i] < o_arr[i]:
+            side = -1
+        if side == 0:
+            continue
+        entry = o_arr[i + 1] if i + 1 < len(h1) else c_arr[i]
+        stop_dist = 1.2 * ai
+        stop = entry - side * stop_dist
+        target = entry + side * stop_dist * rr
+        signals.append(Signal(time=ts, side=side, stop=stop, target=target,
+                              ttl_bars=ttl_bars, tag="engulfing_reversal"))
+    return signals
+
+
+@register_family(param_grid={
+    "ema_fast": [5, 8],
+    "ema_slow": [21, 34],
+    "rsi_n": [14],
+    "rr": [1.5, 2.0],
+})
+def family_ict_fvg(
+    df: pd.DataFrame,
+    *,
+    ema_fast: int = 8,
+    ema_slow: int = 34,
+    rsi_n: int = 14,
+    atr_n: int = 20,
+    ttl_bars: int = 12,
+    rr: float = 2.0,
+) -> list[Signal]:
+    """ICT Fair Value Gap: 3-bar pattern with gap in middle, confirmed by EMA trend."""
+    h1 = _h1(df)
+    atr = _atr(h1, atr_n)
+    fast = _ema(h1["close"], ema_fast)
+    slow = _ema(h1["close"], ema_slow)
+    a = atr.to_numpy()
+    f = fast.to_numpy()
+    s = slow.to_numpy()
+    o_arr = h1["open"].to_numpy()
+    h_arr = h1["high"].to_numpy()
+    l_arr = h1["low"].to_numpy()
+    c_arr = h1["close"].to_numpy()
+    signals: list[Signal] = []
+    for i in range(max(ema_slow, atr_n) + 1, len(h1) - 2):
+        ts = h1.index[i]
+        ai = a[i]
+        if not (ai > 0) or np.isnan(f[i]) or np.isnan(s[i]):
+            continue
+        if i < 2:
+            continue
+        side = 0
+        # Bullish FVG: bar[i-2].high < bar[i].low (gap up), in uptrend
+        if h_arr[i - 2] < l_arr[i] and f[i] > s[i]:
+            side = 1
+        # Bearish FVG: bar[i-2].low > bar[i].high (gap down), in downtrend
+        elif l_arr[i - 2] > h_arr[i] and f[i] < s[i]:
+            side = -1
+        if side == 0:
+            continue
+        entry = o_arr[i + 1] if i + 1 < len(h1) else c_arr[i]
+        stop_dist = 1.2 * ai
+        stop = entry - side * stop_dist
+        target = entry + side * stop_dist * rr
+        signals.append(Signal(time=ts, side=side, stop=stop, target=target,
+                              ttl_bars=ttl_bars, tag="ict_fvg"))
+    return signals
+
+
+@register_family(param_grid={
+    "rr": [1.0, 1.5],
+    "ttl_bars": [2, 4],
+    "mode": ["fade", "follow"],
+}, tags=["retail_flow", "fxblue", "H-20260828-005"])
+def family_retail_overlap_reversal(
+    df: pd.DataFrame,
+    *,
+    hours: tuple[int, ...] = (15, 16),
+    ext_atr: float = 1.0,
+    atr_n: int = 20,
+    stop_atr: float = 1.5,
+    ttl_bars: int = 2,
+    rr: float = 1.5,
+    mode: str = "fade",
+) -> list[Signal]:
+    """H-20260828-005 -- fade the extension into the retail-concentration hours.
+
+    THE CLOCK IS BROKER STAMP-HOURS, AND THE CARD'S "UTC" LABEL WAS WRONG (verified
+    2026-08-29). The universe parquets are stamped +00:00 but carry a fixed civil clock:
+    446/452 weeks in EURUSD_H1 begin Monday 00:00 and end Friday 23:00 in BOTH summer and
+    winter, which no true-UTC FX tape does (its week boundary walks with DST). They are
+    broker EET. The FX Blue corpus that produced this card carries the SAME convention --
+    its trade-share peak (15/16/17) is the tape's own stamp-hour tick_volume peak
+    (EURUSD 7.3/7.8/8.5%, GBPUSD 7.0/7.6/8.2%, XAUUSD 6.7/8.4/8.4%), and under a UTC
+    reading it would have landed on 18-20 where the tape falls away to 6.1/4.2/3.6%.
+
+    So `hours` are stamp-hours on both sides and NO conversion is applied: the integers in
+    the card are operationally right and its narrative was three hours off (stamp 15-17 is
+    UTC 12-14 -- London afternoon into the NY open, not the overlap's centre). Anyone who
+    had "fixed" the label by converting would have introduced the error the label implied.
+
+    M15 IS UNMEASURED, NOT TESTED: the card prescribes M15 and this box holds H1 only
+    (203 *_H1 parquets, no M15 for these symbols). This is the H1 arm of the mechanism.
+    """
+    h1 = _h1(df)
+    if len(h1) < atr_n + 4:
+        return []
+    atr = _atr(h1, atr_n)
+    a = atr.to_numpy()
+    o = h1["open"].to_numpy()
+    c = h1["close"].to_numpy()
+    hset = set(int(x) for x in hours)
+    signals: list[Signal] = []
+    # i is the CLOSED extension bar; entry fills at the open of i+1 (engine rule), so the
+    # bar that decides the signal is never the bar that fills it.
+    for i in range(atr_n + 1, len(h1) - 2):
+        ts = h1.index[i]
+        if ts.hour not in hset:
+            continue
+        ai = a[i]
+        if not (ai > 0) or np.isnan(ai):
+            continue
+        ext = (c[i] - o[i]) / ai
+        if abs(ext) < ext_atr:
+            continue
+        # BOTH DIRECTIONS ARE IN THE GRID BECAUSE THE CARD SET direction: 0 AND SAID SO --
+        # "direction is the gauntlet's question". Running only the fade would have been the
+        # producer answering a question it explicitly deferred, and both arms are counted as
+        # trials by the canonical census, never reported as one.
+        sign = 1 if ext > 0 else -1
+        side = -sign if mode == "fade" else sign
+        entry = c[i]
+        stop_dist = stop_atr * ai
+        stop = entry - side * stop_dist
+        target = entry + side * stop_dist * rr
+        signals.append(Signal(time=ts, side=side, stop=stop, target=target,
+                              ttl_bars=ttl_bars, tag="retail_overlap_reversal"))
+    return signals
+
+
+def _adx(df: pd.DataFrame, n: int = 14) -> pd.Series:
+    """Wilder's ADX -- trend STRENGTH, direction-blind, which is the whole point of the gate.
+
+    Wilder smoothing (an EMA at alpha=1/n), not a simple mean: the published rule this serves
+    is stated in Wilder's terms and a rolling mean would answer a different question at every
+    parameter the sweep tries.
+    """
+    h, low, c = df["high"], df["low"], df["close"]
+    up, dn = h.diff(), -low.diff()
+    plus = np.where((up > dn) & (up > 0), up, 0.0)
+    minus = np.where((dn > up) & (dn > 0), dn, 0.0)
+    prev = c.shift(1)
+    tr = pd.concat([(h - low), (h - prev).abs(), (low - prev).abs()], axis=1).max(axis=1)
+    atr = tr.ewm(alpha=1.0 / n, min_periods=n, adjust=False).mean()
+    pdi = 100.0 * pd.Series(plus, index=df.index).ewm(
+        alpha=1.0 / n, min_periods=n, adjust=False).mean() / atr.replace(0.0, np.nan)
+    mdi = 100.0 * pd.Series(minus, index=df.index).ewm(
+        alpha=1.0 / n, min_periods=n, adjust=False).mean() / atr.replace(0.0, np.nan)
+    dx = 100.0 * (pdi - mdi).abs() / (pdi + mdi).replace(0.0, np.nan)
+    return dx.ewm(alpha=1.0 / n, min_periods=n, adjust=False).mean()
+
+
+@register_family(
+    # PREREGISTERED, NARROW, AND CENTRED ON THE PUBLISHED POINT. Davey's article settles near a
+    # 34-bar channel with a 10-bar ADX lag and explicitly shows the system evaluated across a
+    # parameter NEIGHBOURHOOD rather than at one magic point -- so the grid brackets that
+    # neighbourhood and stops. Sweeping 8..64 would be searching for the number, which is the
+    # multiplicity this desk deflates against.
+    param_grid={"channel": [21, 34, 55], "adx_lag": [5, 10], "rr": [1.5, 2.0]},
+    tags=["external", "davey", "trend_state", "channel"],
+)
+def family_adx_channel_hybrid(
+    df: pd.DataFrame,
+    *,
+    channel: int = 34,
+    adx_n: int = 11,
+    adx_lag: int = 10,
+    atr_n: int = 20,
+    ttl_bars: int = 24,
+    rr: float = 2.0,
+    stop_atr: float = 1.5,
+) -> list[Signal]:
+    """Channel extreme x ADX state: the SAME extreme is continuation or fade by trend state.
+
+    REVERSE-ENGINEERED FROM KEVIN DAVEY'S PUBLISHED CRUDE-OIL RULES, which are unusually exact
+    for public material and are the reason this card is worth a family of its own:
+
+        HI_t = (close == max(close[t-channel+1 : t]))
+        LO_t = (close == min(close[t-channel+1 : t]))
+        TREND_t = ADX_n[t] >= ADX_n[t - adx_lag]          (strengthening, not "above 25")
+
+        new high + trend strengthening -> LONG      (continuation)
+        new low  + trend strengthening -> SHORT     (continuation)
+        new low  + trend weakening     -> LONG      (fade)
+        new high + trend weakening     -> SHORT     (fade)
+
+    THE HYPOTHESIS IS THE INTERACTION, not "ADX works": a price extreme means opposite things
+    depending on whether trend strength is building or decaying. That is falsifiable in a way
+    "trade with the trend" is not, which is why it clears the economic-prior gate as a NAMED
+    mechanism rather than a statistical find.
+
+    WHAT IS OURS AND NOT DAVEY'S, stated so no reader mistakes it for his: the published system
+    is stop-and-reverse with no fixed stop, which this desk's engine cannot express -- every
+    sleeve here is sized from a stop. The stop is therefore an ATR-based structural distance and
+    the exit an rr target plus a TTL, matching how every other family on this desk is judged.
+    The stop-and-reverse management rule is a SEPARATE challenger, not smuggled in here.
+    """
+    h1 = _h1(df)
+    if len(h1) < max(channel, adx_n + adx_lag) + 5:
+        return []
+    atr = _atr(h1, atr_n)
+    adx = _adx(h1, adx_n)
+    close = h1["close"]
+    hi = close.rolling(channel, min_periods=channel).max()
+    lo = close.rolling(channel, min_periods=channel).min()
+    strengthening = adx >= adx.shift(adx_lag)
+
+    c, a = close.to_numpy(), atr.to_numpy()
+    hi_a, lo_a = hi.to_numpy(), lo.to_numpy()
+    st = strengthening.to_numpy()
+    ok = (~np.isnan(adx.to_numpy())) & (~np.isnan(hi_a)) & (~np.isnan(a))
+
+    signals: list[Signal] = []
+    last_side = 0
+    for i in range(len(h1) - 2):
+        if not ok[i] or not (a[i] > 0):
+            continue
+        at_high = c[i] >= hi_a[i]
+        at_low = c[i] <= lo_a[i]
+        if not (at_high or at_low):
+            continue
+        if at_high and at_low:
+            continue                      # a flat channel is not an extreme
+        # The interaction table above, in one expression: an extreme is followed when trend
+        # strength is building and faded when it is decaying.
+        side = 1 if (at_high == bool(st[i])) else -1
+        # STATE TRANSITIONS ONLY. Davey's published system is STOP-AND-REVERSE: it holds exactly
+        # one position and flips it, so a signal exists when the implied side CHANGES -- not on
+        # every bar that happens to sit at an extreme. Firing on every such bar is not a stricter
+        # reading of his rule, it is a different and much heavier-trading strategy: measured, it
+        # produced 8,484 signals and 3,359 trades on XAUUSD alone, and the cost of that turnover
+        # is most of what it lost. Emitting on the flip is the faithful transfer.
+        if side == last_side:
+            continue
+        last_side = side
+        # ENTRY IS THE NEXT BAR'S OPEN, as published -- `trigger=None` is exactly that on this
+        # engine, so no resting order and no intrabar fill assumption.
+        entry = h1["open"].to_numpy()[i + 1]
+        if not (entry > 0):
+            continue
+        stop_dist = stop_atr * a[i]
+        stop = entry - side * stop_dist
+        target = entry + side * stop_dist * rr
+        signals.append(Signal(time=h1.index[i + 1], side=side, stop=stop, target=target,
+                              ttl_bars=ttl_bars, tag="adx_channel_hybrid"))
+    return signals
+
+
+# --------------------------------------------------------------------------
+# Dip-buy family — three DIFFERENT definitions of "dip", tested honestly
+# --------------------------------------------------------------------------
+#
+# "Buy the dip" is not one mechanism, it is a label three genuinely different
+# claims hide behind: a fixed retracement from a recent high, an oversold
+# momentum reading, and a volatility-shock decline. Each is its own hypothesis
+# here rather than one family with cosmetic parameters, because a survivor in
+# one and a kill in the others would be a real, useful finding that a single
+# blended "dip" family would erase. All three are LONG-ONLY by construction --
+# that directional bias is the whole bet being tested, not a bug to balance out.
+
+def family_dip_pullback_pct(
+    df: pd.DataFrame,
+    *,
+    pullback_pct: float = 0.05,
+    lookback_bars: int = 48,
+    trend_ma: int = 200,
+    confirm_bars: int = 3,
+    atr_n: int = 14,
+    rr: float = 2.0,
+    ttl_bars: int = 48,
+) -> list[Signal]:
+    """Buy a fixed-% retracement from a recent swing high, in an uptrend.
+
+    Dip = close has fallen >= pullback_pct off the `lookback_bars` rolling
+    high. Entry requires the pullback to first STOP (a `confirm_bars`-bar
+    higher low) before buying -- a dip that is still falling is not yet a
+    dip, it is a trend, and buying into an unconfirmed decline is the
+    "catching a falling knife" failure this filter exists to price out.
+    Trend filter: close > `trend_ma`-bar SMA, so this is dip-buying WITHIN
+    an uptrend, not calling a bottom in a downtrend.
+    """
+    h1 = _h1(df)
+    if len(h1) < max(lookback_bars, trend_ma) + confirm_bars + atr_n + 2:
+        return []
+    atr = _atr(h1, atr_n)
+    sma = h1["close"].rolling(trend_ma, min_periods=trend_ma).mean()
+    roll_hi = h1["high"].rolling(lookback_bars, min_periods=lookback_bars).max()
+    c = h1["close"].to_numpy()
+    lo = h1["low"].to_numpy()
+    a = atr.to_numpy()
+    s = sma.to_numpy()
+    rh = roll_hi.to_numpy()
+    signals: list[Signal] = []
+    start = max(lookback_bars, trend_ma) + confirm_bars
+    for i in range(start, len(h1) - 2):
+        if np.isnan(s[i]) or np.isnan(rh[i]) or np.isnan(a[i]) or not (a[i] > 0):
+            continue
+        if not (c[i] > s[i]):          # uptrend filter
+            continue
+        if rh[i] <= 0:
+            continue
+        drawdown = (rh[i] - c[i]) / rh[i]
+        if drawdown < pullback_pct:
+            continue
+        # confirmation: the last confirm_bars made a higher low than the
+        # bar before them -- the decline has stalled, not just paused.
+        window_lo = lo[i - confirm_bars + 1:i + 1]
+        prior_lo = lo[i - confirm_bars]
+        if not (window_lo.min() >= prior_lo):
+            continue
+        stop = window_lo.min() - 0.5 * a[i]
+        stop_dist = c[i] - stop
+        if not (stop_dist > 0):
+            continue
+        signals.append(Signal(
+            time=h1.index[i], side=1, stop=stop, target=c[i] + stop_dist * rr,
+            ttl_bars=ttl_bars, tag=f"dip_pullback.{pullback_pct:.0%}"))
+    return signals
+
+
+def family_dip_rsi_reclaim(
+    df: pd.DataFrame,
+    *,
+    rsi_n: int = 14,
+    oversold: float = 30.0,
+    trend_ma: int = 200,
+    atr_n: int = 14,
+    stop_atr: float = 1.5,
+    rr: float = 2.0,
+    ttl_bars: int = 48,
+) -> list[Signal]:
+    """Buy the RECLAIM of an RSI oversold threshold, in an uptrend.
+
+    Dip = RSI(rsi_n) crossed below `oversold` on a prior bar and has now
+    crossed back above it -- momentum getting oversold and then turning, not
+    the oversold reading itself (RSI can sit under 30 for a long time in a
+    real decline, and entering ON the cross-under is exactly the falling-knife
+    mistake family_dip_pullback_pct's confirmation window also exists to
+    avoid). Trend filter: close > `trend_ma`-bar SMA.
+    """
+    h1 = _h1(df)
+    if len(h1) < max(trend_ma, rsi_n * 3) + 3:
+        return []
+    delta = h1["close"].diff()
+    gain = delta.clip(lower=0).ewm(alpha=1 / rsi_n, min_periods=rsi_n).mean()
+    loss = (-delta.clip(upper=0)).ewm(alpha=1 / rsi_n, min_periods=rsi_n).mean()
+    rs = gain / loss.replace(0, np.nan)
+    rsi = 100 - 100 / (1 + rs)
+    sma = h1["close"].rolling(trend_ma, min_periods=trend_ma).mean()
+    atr = _atr(h1, atr_n)
+    r = rsi.to_numpy()
+    s = sma.to_numpy()
+    a = atr.to_numpy()
+    c = h1["close"].to_numpy()
+    lo = h1["low"].to_numpy()
+    signals: list[Signal] = []
+    start = max(trend_ma, rsi_n * 3) + 2
+    for i in range(start, len(h1) - 2):
+        if np.isnan(r[i]) or np.isnan(r[i - 1]) or np.isnan(s[i]) or np.isnan(a[i]):
+            continue
+        if not (a[i] > 0) or not (c[i] > s[i]):
+            continue
+        if not (r[i - 1] < oversold and r[i] >= oversold):
+            continue
+        stop = min(lo[i], lo[i - 1]) - stop_atr * a[i] * 0.3
+        stop_dist = c[i] - stop
+        if not (stop_dist > 0):
+            continue
+        signals.append(Signal(
+            time=h1.index[i], side=1, stop=stop, target=c[i] + stop_dist * rr,
+            ttl_bars=ttl_bars, tag=f"dip_rsi.{oversold:.0f}"))
+    return signals
+
+
+def family_dip_atr_shock(
+    df: pd.DataFrame,
+    *,
+    atr_k: float = 2.0,
+    lookback_bars: int = 24,
+    trend_ma: int = 200,
+    atr_n: int = 14,
+    rr: float = 2.0,
+    ttl_bars: int = 48,
+) -> list[Signal]:
+    """Buy a volatility-SHOCK decline, in an uptrend -- the "sharp flush"
+    version of a dip, distinct from the grinding retracement
+    family_dip_pullback_pct prices and the momentum turn
+    family_dip_rsi_reclaim prices.
+
+    Dip = the bar's own range (high-low) exceeds `atr_k` * ATR while closing
+    in the bottom third of that range (a real flush, not just a wide bar that
+    closed strong), inside an uptrend. Entry is the NEXT bar's open -- no
+    confirmation window, because a shock is claimed to mean-revert fast and
+    waiting for one costs the reversion this family exists to capture.
+    """
+    h1 = _h1(df)
+    if len(h1) < max(trend_ma, lookback_bars) + atr_n + 2:
+        return []
+    atr = _atr(h1, atr_n)
+    sma = h1["close"].rolling(trend_ma, min_periods=trend_ma).mean()
+    a = atr.to_numpy()
+    s = sma.to_numpy()
     o = h1["open"].to_numpy()
     c = h1["close"].to_numpy()
     hh = h1["high"].to_numpy()
     ll = h1["low"].to_numpy()
     signals: list[Signal] = []
-    for i in range(lookback + 1, len(h1) - 2):
-        ai = a[i]
-        if not (ai > 0) or np.isnan(ai):
+    start = max(trend_ma, lookback_bars) + 2
+    for i in range(start, len(h1) - 2):
+        if np.isnan(a[i]) or np.isnan(s[i]) or not (a[i] > 0):
             continue
-        ts = h1.index[i]
-        if signal_hours and ts.hour not in signal_hours:
+        if not (c[i] > s[i]):
             continue
-        move = c[i] - o[i]
-        if abs(move) < disp_atr * ai:
+        bar_range = hh[i] - ll[i]
+        if bar_range <= 0 or bar_range < atr_k * a[i]:
             continue
-        side = 1 if move > 0 else -1
-        ob = -1
-        for k in range(i - 1, i - 1 - lookback, -1):
-            if (c[k] - o[k]) * side < 0:      # closed against the displacement
-                ob = k
-                break
-        if ob < 0:
+        close_pos = (c[i] - ll[i]) / bar_range
+        if close_pos > 0.35:            # must have closed weak, i.e. shocked
             continue
-        # long: retrace DOWN into the block, so the near edge is its high
-        near = hh[ob] if side > 0 else ll[ob]
-        far = ll[ob] if side > 0 else hh[ob]
-        trigger = near + (far - near) * fill_depth
-        stop = far - side * stop_atr * ai
-        stop_dist = abs(trigger - stop)
+        entry = o[i + 1]
+        if np.isnan(entry):
+            continue
+        stop = ll[i] - 0.25 * a[i]
+        stop_dist = entry - stop
         if not (stop_dist > 0):
             continue
         signals.append(Signal(
-            time=h1.index[i], side=side, stop=stop,
-            target=trigger + side * stop_dist * rr,
-            ttl_bars=ttl_bars, tag="order_block",
-            trigger=float(trigger), wait_bars=wait_bars))
+            time=h1.index[i + 1], side=1, stop=stop, target=entry + stop_dist * rr,
+            ttl_bars=ttl_bars, tag=f"dip_atrshock.{atr_k:.1f}"))
     return signals
+
+
+def family_macro_swing(
+    df: pd.DataFrame,
+    macro: pd.Series,
+    *,
+    lookback_days: int = 20,
+    hold_bars: int = 240,
+    stop_atr: float = 3.0,
+    rr: float = 2.0,
+    atr_n: int = 20,
+    sign: int = -1,
+    min_gap_bars: int = 120,
+    pub_lag_days: int = 1,
+) -> list[Signal]:
+    """Macro AS the signal, held for swing length -- not macro as a filter.
+
+    Every other macro use in this file conditions an existing price-structure
+    entry. This one has no price trigger at all: the macro series turning IS
+    the entire thesis, and price only supplies the stop distance. That makes
+    it the actual test of "is macro an edge in itself", which a conditioning
+    study cannot answer no matter how it comes out.
+
+    `sign=-1` means a FALLING macro series is bullish -- the correct default
+    for gold against the real yield (a zero-coupon asset rallies as its carry
+    cost falls) and for a USD-quoted pair against the dollar. `sign=+1`
+    inverts it for a series whose RISE is the bullish state.
+
+    WHY THE HOLD IS LONG AND THE STOP IS WIDE. Macro repricings run for weeks,
+    not hours, and the cost argument for swing length is arithmetic rather
+    than hopeful: one spread crossing amortised over a 10-day hold is a tenth
+    the drag of the same crossing over a 1-day hold. `hold_bars=240` is ~10
+    trading days of H1 bars; `stop_atr=3.0` is deliberately wide, because a
+    tight stop on a multi-week thesis just pays the spread to be shaken out.
+
+    POINT-IN-TIME: `pub_lag_days` shifts the macro series forward before any
+    join, so a value dated D is only visible from D+`pub_lag_days`. FRED
+    publishes most daily market series the following morning; joining on the
+    reference date would let the backtest read a number nobody had. That
+    look-ahead is small, systematic, and exactly the profile that survives a
+    naive out-of-sample split and then fails live.
+
+    `min_gap_bars` stops one slow macro trend emitting a signal every bar for
+    a month: consecutive entries must be at least that far apart, so the
+    sample counts distinct macro events rather than the same event several
+    hundred times. Without it the trade count is an artefact of bar frequency
+    and every t-stat built on it is inflated.
+    """
+    h1 = _h1(df)
+    if len(h1) < atr_n + 4 or macro is None or len(macro) == 0:
+        return []
+    atr = _atr(h1, atr_n)
+
+    m = macro.dropna().sort_index()
+    if len(m) < lookback_days + 2:
+        return []
+    change = (m - m.shift(lookback_days)).dropna()
+    if change.empty:
+        return []
+    # Publication lag, applied BEFORE the join. See the docstring.
+    change.index = pd.to_datetime(change.index) + pd.Timedelta(days=pub_lag_days)
+
+    idx = h1.index
+    if change.index.tz is None and idx.tz is not None:
+        change.index = change.index.tz_localize(idx.tz)
+    elif change.index.tz is not None and idx.tz is None:
+        change.index = change.index.tz_localize(None)
+    aligned = change.reindex(idx, method="ffill")
+
+    a = atr.to_numpy()
+    c = h1["close"].to_numpy()
+    av = aligned.to_numpy()
+    signals: list[Signal] = []
+    last_i = -(10**9)
+    for i in range(atr_n + 1, len(h1) - 2):
+        if np.isnan(a[i]) or not (a[i] > 0):
+            continue
+        ch, prev = av[i], av[i - 1]
+        if np.isnan(ch) or np.isnan(prev):
+            continue
+        # Fire on the CROSSING, not on the state -- a state fires every bar it
+        # holds, which is the same event counted hundreds of times.
+        if not (prev >= 0 > ch) and not (prev <= 0 < ch):
+            continue
+        side = int(np.sign(ch) * sign)
+        if side == 0 or i - last_i < min_gap_bars:
+            continue
+        stop_dist = stop_atr * a[i]
+        if not (stop_dist > 0):
+            continue
+        entry = c[i]
+        signals.append(Signal(
+            time=h1.index[i], side=side,
+            stop=entry - side * stop_dist,
+            target=entry + side * stop_dist * rr,
+            ttl_bars=hold_bars, tag=f"macro_swing.{lookback_days}d"))
+        last_i = i
+    return signals
+
+
+# ==============================================================================================
+# THE JOINT GENOME (F5, 2026-09-12): the layers every other family holds constant.
+#
+# WHY THIS LIVES HERE AND NOT IN THE SEARCH THAT FOUND IT. `joint_evolution` measured that the
+# desk's layers are NOT separable -- on the first run, `range_start x trigger_atr` carried 43.5%
+# of fitness variance in its interaction alone, and `atr_n x session` 24.3%. A search that finds
+# a better (state, horizon, entry, exit, execution) combination is worth nothing if the gauntlet
+# cannot BUILD the object it found: the candidate reaches the intake, `build_cell` calls the base
+# family with kwargs it does not accept, and the cell is silently unbuildable. That is the exact
+# shape of the zombie certificate -- a row that looks like a candidate and can never be run.
+#
+# So the joint object is a REGISTERED FAMILY. One implementation of the layer transform, used by
+# the search and by the judge, which is the same "one canonical validator" rule that stops this
+# desk from proving that two of its own programs agree.
+#
+# IT ADDS NO MECHANISM. Every signal still originates in a base family; this wraps that family's
+# signals in the state condition, horizon, entry, exit and execution policy that the search
+# found. If the wrapper is set to its neutral values the output is the base family exactly.
+# ==============================================================================================
+
+_JOINT_SESSIONS = {"london": (7, 13), "ny": (13, 20)}
+
+
+def apply_layers(sigs: list[Signal], h1: pd.DataFrame, *,
+                 state_band: str = "any", session: str = "any",
+                 trigger_atr: float = 0.0, rest_bars: int = 1,
+                 ttl_mult: float = 1.0, rr_mult: float = 1.0,
+                 bank_frac: float = 0.0, trail_k: float = 0.0) -> list[Signal]:
+    """Wrap a family's signals in the layers `alpha_evolution`'s RECIPE holds constant.
+
+    Applied to the Signal LIST rather than inside any family, so the whole registered catalogue
+    joins the joint search without one of them being edited.
+    """
+    import dataclasses
+    if not sigs:
+        return []
+    close = h1["close"].astype(float)
+    ret = np.log(close).diff()
+    vol = ret.rolling(120).std()
+    band = vol.rolling(480).median()
+    atr = (h1["high"].astype(float) - h1["low"].astype(float)).rolling(20).mean()
+
+    out: list[Signal] = []
+    for s in sigs:
+        t = pd.Timestamp(s.time)
+        if t not in close.index:
+            continue
+        # STATE CONDITION. A volatility band and a session, both compared to the symbol's OWN
+        # trailing median rather than to a constant -- an absolute vol threshold means a
+        # different thing for XAUUSD and EURUSD and would make the axis a symbol proxy.
+        if state_band != "any":
+            v, b = float(vol.get(t, np.nan)), float(band.get(t, np.nan))
+            if not (np.isfinite(v) and np.isfinite(b) and b > 0):
+                continue
+            if (state_band == "calm") != (v <= b):
+                continue
+        if session != "any":
+            lo_h, hi_h = _JOINT_SESSIONS.get(session, (0, 24))
+            inside = lo_h <= int(t.hour) < hi_h
+            if session == "asia":
+                inside = int(t.hour) < 7 or int(t.hour) >= 20
+            if not inside:
+                continue
+        a = float(atr.get(t, np.nan))
+        if not np.isfinite(a) or a <= 0:
+            continue
+        # ENTRY / EXECUTION POLICY. Market at next open, or a resting order at an ATR offset that
+        # must be touched within `rest_bars` or the trade never happens. A better price and a
+        # missed trade; which dominates is the interaction this axis exists to expose.
+        trig = None if trigger_atr <= 0 else float(close[t] - s.side * trigger_atr * a)
+        entry_ref = trig if trig is not None else float(close[t])
+        stop_dist = abs(entry_ref - float(s.stop))
+        if stop_dist <= 0:
+            continue
+        base_rr = abs(float(s.target) - entry_ref) / stop_dist
+        out.append(dataclasses.replace(
+            s,
+            trigger=trig,
+            wait_bars=max(1, int(rest_bars)) if trig is not None else 1,
+            ttl_bars=max(1, round(int(s.ttl_bars) * float(ttl_mult))),
+            target=float(entry_ref + s.side * stop_dist * base_rr * float(rr_mult)),
+            bank_frac=float(bank_frac),
+            runner_trail_k=float(trail_k),
+        ))
+    return out
+
+
+@register_family(param_grid={
+    "trigger_atr": [0.0, 0.25, 0.5],
+    "ttl_mult": [0.5, 1.0, 2.0],
+    "rr_mult": [0.7, 1.0, 1.5],
+}, tags=["joint"])
+def family_joint_genome(df: pd.DataFrame, *, base_family: str = "momentum_volgate",
+                        state_band: str = "any", session: str = "any",
+                        trigger_atr: float = 0.0, rest_bars: int = 1,
+                        ttl_mult: float = 1.0, rr_mult: float = 1.0,
+                        bank_frac: float = 0.0, trail_k: float = 0.0,
+                        **base_kwargs: Any) -> list[Signal]:
+    """A base family's mechanism, executed under a jointly searched policy.
+
+    `base_family` names the registered family that supplies the signals; every other keyword is
+    either one of the layer genes above or a kwarg passed straight through to that family. A
+    joint cell is therefore judged by the gauntlet on exactly the object the search scored.
+    """
+    entry = FAMILY_REGISTRY.get(str(base_family))
+    if not entry:
+        return []
+    fn = entry["func"]
+    allowed = set(entry.get("defaults") or {})
+    kw = {k: v for k, v in base_kwargs.items() if k in allowed}
+    h1 = _h1(df)
+    try:
+        sigs = list(fn(df, **kw) or [])
+    except (TypeError, ValueError, KeyError):
+        return []
+    wrapped = apply_layers(sigs, h1, state_band=state_band, session=session,
+                          trigger_atr=trigger_atr, rest_bars=rest_bars, ttl_mult=ttl_mult,
+                          rr_mult=rr_mult, bank_frac=bank_frac, trail_k=trail_k)
+    for s in wrapped:
+        s.tag = f"joint.{base_family}"
+    return wrapped

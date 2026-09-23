@@ -10,6 +10,15 @@
 set -uo pipefail
 cd /home/quant/quant-platform
 source ops/brain_env.sh
+# SEALED AGAINST MID-RUN REWRITE (2026-08-26). bash reads a script INCREMENTALLY by byte
+# offset; this desk commits ~200x/day into the tree these launchers execute from, and a dig
+# holds its slot up to 3h, so a commit that changes this file's LENGTH mid-run makes bash
+# resume from the middle of a line. Measured on 63680c05: comment text executed as a command,
+# then a dangling `fi`, then the script RE-RAN ITSELF FROM THE TOP. A `{ ... }` alone protects
+# the body but bash still reads past the closing brace; only the exit INSIDE the group ends the
+# process before another byte is read. See ops/run_frontier_rotation.sh for the full account.
+# DO NOT UNWRAP THE BRACE AND DO NOT ADD A LINE AFTER THE CLOSING `}`.
+{
 mkdir -p data/cro_ai_logs
 LOG="data/cro_ai_logs/brain_hunter_$(date -u +%Y%m%dT%H%M).log"
 # Same dual-pool routing as the regional rotation: fable's metered pool first, then the Max seat.
@@ -27,7 +36,36 @@ dig_dry_run "brain-hunter" "ops/brain_hunter_prompt.txt" && exit 0
 echo "=== brain-hunter attempt $(date -u) ===" >> "$LOG"
 export BRAIN_MUTEX_LOGFILE="$LOG"
 brain_mutex "brain-hunter"
-brain_auth_check || { echo "auth unavailable -- next run resumes ($(date -u))" >> "$LOG"; exit 1; }
+brain_mem_gate || exit 0
+CONTROLLER="claude"
+if ! brain_auth_check; then
+    # Claude subscription/auth outages previously erased the whole daily WorldQuant/competition
+    # ground. Use the already-authenticated Codex seat against the SAME prompt, ledger and mutex;
+    # this is controller failover, not a second miner. The VPS cannot use workspace-write/bwrap,
+    # so the repository gates and research-only prompt remain the mutation fence.
+    CODEX_BIN="${CODEX_BIN:-/home/quant/.local/bin/codex}"
+    if [ -x "$CODEX_BIN" ] && "$CODEX_BIN" login status 2>&1 | grep -q "Logged in"; then
+        CONTROLLER="codex"
+        echo "claude auth unavailable -- using authenticated Codex fallback" >> "$LOG"
+    else
+        echo "all controller auth unavailable -- next run resumes ($(date -u))" >> "$LOG"
+        exit 1
+    fi
+fi
 echo "=== brain-hunter start $(date -u) ===" >> "$LOG"
-claude --effort max --append-system-prompt "$_DOCTRINE" -p "$(dig_prompt ops/brain_hunter_prompt.txt)" --dangerously-skip-permissions >> "$LOG" 2>&1
-echo "=== brain-hunter exit $? at $(date -u) ===" >> "$LOG"
+if [ "$CONTROLLER" = "claude" ]; then
+    claude --effort "${BRAIN_EFFORT:-low}" --append-system-prompt "$_DOCTRINE" \
+        -p "$(dig_prompt ops/brain_hunter_prompt.txt)" --dangerously-skip-permissions \
+        >> "$LOG" 2>&1
+    RC=$?
+else
+    { printf '%s\n\n' "$_DOCTRINE"; dig_prompt ops/brain_hunter_prompt.txt; } \
+        | "$CODEX_BIN" --ask-for-approval never exec -C "$PWD" --sandbox danger-full-access \
+            --model gpt-5.6-sol --config model_reasoning_effort=medium - >> "$LOG" 2>&1
+    RC=$?
+fi
+echo "=== brain-hunter controller=$CONTROLLER exit $RC at $(date -u) ===" >> "$LOG"
+exit "$RC"
+
+exit $?
+}

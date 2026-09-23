@@ -28,6 +28,7 @@ public sources only -- no paid data APIs, no institutional terminals.
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import re
 import ssl
@@ -41,15 +42,31 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 KEYS = ROOT / "data/secrets/llm_panel.json"
 
-from libs.doctrine.constitution import OBJECTIVE_PREAMBLE  # noqa: E402
+from libs.doctrine.constitution import (  # noqa: E402
+    DATA_AXIS_MANDATE,
+    OBJECTIVE_PREAMBLE,
+)
 from libs.ops.llm_route import build_chain  # noqa: E402
 from libs.research import hunt_frontier as hf  # noqa: E402
+from libs.research.free_panel import HEAVY as _FREE_PANEL_HEAVY  # noqa: E402
 
 BUDGET = ROOT / "data/panel_budget.json"
 BSTATE = ROOT / "data/panel_budget_state.json"
 LEDGER = ROOT / "data/suggestion_ledger.jsonl"
 MECHB = ROOT / "data/mechanism_board.json"
 OUT = ROOT / "data/kimi_hunt.json"
+#: WHERE A FINDING HAS TO GO TO BE READ (2026-09-08). `LEDGER` and `OUT` live under `data/`,
+#: which `.gitignore:11` ignores, and the ledger's only readers -- scripts/research_exchange.py
+#: and scripts/meta_architect.py -- are on no timer and in no manifest row. So every finding this
+#: hunter ever admitted stayed on the VPS in a file no scheduled organ opens: the protocol ran,
+#: the gate ran, and the candidate compiler (desks/mt5/research/miner_candidate_compiler.py)
+#: never saw a row, because it walks `data/intelligence/**` and nothing else. The ledger is KEPT
+#: as the audit trail; each finding is ALSO written here in the miner discovery contract -- the
+#: same door libs/ops/deepseek_cycle.py opened for the second brain: allowlisted in git, read by
+#: the compiler on its next pass, judged by the same ten gates as every other miner's row. No
+#: new admission path: a seat's finding is a hypothesis with the family defaults, exactly as a
+#: crawler's prose is, and "ZERO PROMOTION AUTHORITY" never meant zero path to the gauntlet.
+DONATE_DIR = ROOT / "data/intelligence/kimi"
 CTX = ssl.create_default_context()
 
 MODEL = "moonshotai/kimi-k3"          # seated model; swarm-max reserved for quarterly deep dives
@@ -72,7 +89,13 @@ MODEL = "moonshotai/kimi-k3"          # seated model; swarm-max reserved for qua
 #: NOT A QUALITY COMPROMISE HIDDEN AS RESILIENCE: every finding carries the model that produced
 #: it into the ledger, so a fallback hunt is attributable and can be re-run on the seated model
 #: later. The gate it must pass is identical either way -- fallback buys ATTEMPTS, never leniency.
-MODEL_CHAIN: tuple[str, ...] = (
+#: FREE TIER ONLY (2026-09-12, principal: "all the paid run things js run on free tiers
+#: instead"). The DEEP run used to walk the paid flagships first; it now walks the same free
+#: chain the routine run uses. This file already argued the trade and measured it -- "a free-tier
+#: hunt is worth immeasurably more than no hunt", and the gate every finding faces is identical
+#: either way, so the chain buys ATTEMPTS and never leniency. What changes is that the deep run
+#: now costs nothing, which is what makes an hourly cadence affordable at all.
+PAID_MODEL_CHAIN: tuple[str, ...] = (
     "moonshotai/kimi-k3",            # seated: the deep-forest hunter proper
     "moonshotai/kimi-k2",            # same family, previous generation
     "deepseek/deepseek-r1",          # different family: a genuinely different prior on what is
@@ -81,6 +104,43 @@ MODEL_CHAIN: tuple[str, ...] = (
     "deepseek/deepseek-r1:free",
     "qwen/qwen3-235b-a22b:free",
 )
+
+#: ROUTINE vs DEEP (2026-08-20, principal: keep the benefit, cut the cost by an order of
+#: magnitude). --deep was a DEAD FLAG until today -- passed by cron, never read by this file, so
+#: the "2x/week deep run" and the 8x/day routine run were byte-identical: every firing paid the
+#: same paid-flagship price. That is the actual cost driver, not the hunt's design.
+#:
+#: THE SPLIT. Routine (8x/day) runs the SAME Wave 1->2->3 protocol on the SAME free-tier models
+#: already in MODEL_CHAIN -- this is not a worse hunt, it is the identical code path this file's
+#: own resilience design already treats as a real hunt ("a free-tier hunt is worth immeasurably
+#: more than no hunt"). Deep (--deep, cadence held at 2x/week) is the ONLY path that spends paid
+#: credit, on the full flagship chain, for the runs where a sharper prior is worth paying for.
+#: Every finding still carries which model produced it, so nothing here is a quality compromise
+#: hidden as economy -- it is the same fallback logic MODEL_CHAIN already uses, just made the
+#: FIRST choice instead of the last resort for the ten routine runs a week.
+#: Both the routine and the deep run use this. PAID_MODEL_CHAIN is retained,
+#: unreferenced by the default path, so re-enabling spend is one line and not a
+#: rewrite -- a policy that deletes its own alternative cannot be reversed.
+ROUTINE_MODEL_CHAIN: tuple[str, ...] = (
+    "moonshotai/kimi-k2:free",
+    "deepseek/deepseek-r1:free",
+    "qwen/qwen3-235b-a22b:free",
+    #: HOURLY TAIL (2026-09-08, the routine run went from daily to hourly on
+    #: quant-kimi-hunter.timer). The three ids above are the mandate's preferred free seats but
+    #: none is on the free panel's 2026-08-29 verified-answering list (libs/research/free_panel
+    #: HEAVY); an hourly run whose whole chain is refused would write BLOCKED 24x/day. The HEAVY
+    #: tier is appended as the walk-down tail -- every id is :free, so the routine path still
+    #: spends nothing -- and it is imported rather than copied so the verified list stays single-
+    #: sourced. The chain's order IS the policy: the mandate's seats are tried first.
+    *_FREE_PANEL_HEAVY,
+)
+
+#: THE ACTIVE CHAIN. Kept under its original name because five call sites, the blocked
+#: artifact and three tests all refer to "the chain this hunter walks" by it -- renaming
+#: that would have made a POLICY change look like a refactor, and the policy is the only
+#: thing that changed: the chain is now the free one on every run.
+MODEL_CHAIN: tuple[str, ...] = ROUTINE_MODEL_CHAIN
+
 
 _COVERAGE = ROOT / "data/hunt_coverage.json"
 _VECTOR_COOLDOWN_D = 45      # a forest may be re-entered only after this long
@@ -273,15 +333,19 @@ def _budget_ok() -> tuple[bool, str]:
         return (True, "budget state unreadable -- proceeding, guard is advisory")
 
 
-def _providers() -> list[tuple[str, str, str]]:
+def _providers(*, deep: bool = False) -> list[tuple[str, str, str]]:
     """Every (model, base_url, key) worth trying, in preference order.
 
-    Built by crossing MODEL_CHAIN with the seated roster: a roster entry naming a chain model is
+    Built by crossing a chain with the seated roster: a roster entry naming a chain model is
     used directly, and any other roster entry sharing that entry's base_url can also SERVE the
     chain model, because OpenRouter routes by the `model` field rather than by the credential.
     That second rule is what turns one dead string into a working hunt -- previously a roster
     holding four OpenRouter seats none of which was literally `moonshotai/kimi-k3` produced
     "not in the seated roster", exit 2, no hunt, no artifact, no complaint.
+
+    `deep=False` (the routine, 8x/day cadence) uses ROUTINE_MODEL_CHAIN -- free-tier only, so the
+    ten routine runs a week spend nothing. `deep=True` (the 2x/week --deep cadence) uses the full
+    paid-first MODEL_CHAIN, so the sharper flagship prior is bought only where it was budgeted.
 
     Returns [] when there is genuinely no credential anywhere. That is a BLOCKER to record, and
     main() records it -- it is not a reason for this function to invent one.
@@ -290,13 +354,59 @@ def _providers() -> list[tuple[str, str, str]]:
     # model and stop; copying this logic into each would guarantee eleven slightly different
     # versions and eleven separate regressions, so the routing lives in a library they can all
     # adopt and check_llm_routing names the ones that have not.
-    return [(r.model, r.base_url, r.key) for r in build_chain(MODEL_CHAIN, KEYS)]
+    # BOTH LANES ARE FREE NOW. `deep` still selects the DEPTH of the protocol (the
+    # wave sequence and its budget); it no longer selects a paid chain.
+    #
+    # THE CATALOGUE IS ASKED BEFORE THE CHAIN IS WALKED (2026-09-12), and the reason is measured.
+    # ROUTINE_MODEL_CHAIN leads with moonshotai/kimi-k2, deepseek/deepseek-r1 and
+    # qwen/qwen3-235b -- the mandate's preferred seats -- and NONE of them exists on this
+    # account's free catalogue. Every run walked them and took HTTP 404, three doors at a time,
+    # and `data/intelligence/kimi` has never been created since the hunter was written.
+    #
+    # A hardcoded model id is a time bomb the desk already has a law about: llm_seat's own
+    # docstring says a pinned preference list "keeps choosing the older model forever while every
+    # status line still reads healthy". The same bomb here reads as an outage instead.
+    #
+    # So the declared chain is FILTERED against what the provider actually serves, and anything
+    # the catalogue offers that the chain does not name is APPENDED as a tail. The declared order
+    # is still the policy -- the mandate's seats are tried first WHEN THEY EXIST -- and a
+    # catalogue that cannot be read leaves the chain exactly as it was, because an unreachable
+    # catalogue is not evidence that a model is missing.
+    chain = _served_first(ROUTINE_MODEL_CHAIN)
+    return [(r.model, r.base_url, r.key) for r in build_chain(chain, KEYS)]
+
+
+def _served_first(declared: tuple[str, ...]) -> tuple[str, ...]:
+    """Declared ids the provider actually serves, then everything free it serves that we did not.
+
+    Returns `declared` unchanged when the catalogue cannot be read. An unreachable catalogue is
+    not evidence that a model is missing, and dropping the whole chain on a network blip would
+    turn a transient into an outage.
+    """
+    try:
+        from libs.ops import llm_seat
+        seat = llm_seat.primary_seat()
+        if seat is None:
+            return declared
+        body, err = llm_seat._get(f"{seat.base_url}/models", seat.key, timeout=20.0)
+        if err:
+            return declared
+        served = {str(m.get("id") or "") for m in (body.get("data") or [])}
+    except Exception:
+        return declared
+    if not served:
+        return declared
+    keep = tuple(m for m in declared if m in served)
+    free_tail = tuple(sorted(i for i in served
+                             if i.endswith((":free", "-free")) and i not in keep))
+    merged = keep + free_tail
+    return merged or declared
 
 
 def _ask(base, key, system, user, timeout=240.0, model: str = MODEL) -> str:
     body = json.dumps({"model": model, "max_tokens": 16000, "temperature": 1.0,
                        "messages": [{"role": "system",
-                                     "content": (OBJECTIVE_PREAMBLE + "\n"
+                                     "content": (OBJECTIVE_PREAMBLE + DATA_AXIS_MANDATE + "\n"
                                                  + _doctrine("kimi_hunter") + system)},
                                     {"role": "user", "content": user}]}).encode()
     req = urllib.request.Request(base.rstrip("/") + "/chat/completions", data=body, method="POST",
@@ -304,6 +414,38 @@ def _ask(base, key, system, user, timeout=240.0, model: str = MODEL) -> str:
                                           "Content-Type": "application/json"})
     with urllib.request.urlopen(req, timeout=timeout, context=CTX) as r:
         out = json.loads(r.read())
+    # A 200 WITH AN ERROR BODY IS THE PROVIDER TALKING, NOT A BUG IN THIS FILE.
+    #
+    # OpenRouter answers some refusals -- a free-tier daily limit above all -- with HTTP 200 and
+    # a body carrying `error` and no `choices`. `out["choices"]` then raised a bare KeyError with
+    # an EMPTY message, the caller printed "FAILED (KeyError )", and the hunter walked its entire
+    # model chain printing that fourteen times per wave. Measured 2026-09-12: 567 such lines in
+    # MT5-AuditLane.log, and data/intelligence/kimi has never been created, so nothing this
+    # hunter found has ever reached the compiler.
+    #
+    # The provider's own message said what was wrong the whole time. Turning it into a KeyError
+    # threw away the one actionable fact in the response -- the same defect llm_seat had when it
+    # believed a published ceiling over a measured refusal.
+    err = out.get("error") if isinstance(out, dict) else None
+    if err or "choices" not in (out or {}):
+        msg = ""
+        code = ""
+        if isinstance(err, dict):
+            msg = str(err.get("message") or "")
+            code = str(err.get("code") or "")
+        detail = msg or f"no `choices` in the response: {json.dumps(out)[:200]}"
+        # TEACH THE WHOLE DESK, not just this run. A daily free-tier refusal is the one error
+        # every other organ on this box is about to hit, and llm_seat already knows how to
+        # remember it so the rest of the day is spent on something else.
+        low = f"{msg} {code}".lower()
+        if any(k in low for k in ("free-models-per-day", "per-day", "daily limit",
+                                  "requests per day", "quota exceeded", "rate limit")):
+            try:
+                from libs.ops import llm_seat as _seat
+                _seat.note_free_limit_hit(f"kimi_hunter {model}: {detail}")
+            except Exception:
+                pass
+        raise RuntimeError(f"provider refused ({code or 'no code'}): {detail}")
     m = out["choices"][0]["message"]
     return str(m.get("content") or m.get("reasoning") or "")
 
@@ -468,6 +610,48 @@ def _mock() -> int:
     return 0
 
 
+def _donate(findings: list[dict]) -> Path | None:
+    """Publish this run's admitted findings where the compiler reads. Returns the file, or None.
+
+    Mock rows (`mock: true`) never leave the ledger: a synthetic finding in the intelligence
+    tree would be compiled, deepened and billed like evidence about the world. The row shape is
+    the compiler's own contract -- `title`/`text` prose it extracts instruments and families
+    from, `kind: hypothesis`, an empty `symbols` list (the charter names mechanisms, not
+    tickers; the compiler's alias table turns "gold" into XAUUSD) and a deterministic `url` so
+    the same finding donated twice is one docket row.
+    """
+    rows = [f for f in findings if isinstance(f, dict) and not f.get("mock")]
+    if not rows:
+        return None
+    DONATE_DIR.mkdir(parents=True, exist_ok=True)
+    now = datetime.now(tz=UTC)
+    path = DONATE_DIR / f"discoveries_{now.strftime('%Y%m%d_%H%M%S')}.json"
+    discoveries = []
+    for f in rows:
+        problem = str(f.get("problem") or "").strip()
+        digest = hashlib.sha256(problem.encode("utf-8")).hexdigest()[:12]
+        prose = " | ".join(str(f[k]) for k in ("evidence", "benefit", "dependencies",
+                                              "success_metric", "kill_condition") if f.get(k))
+        discoveries.append({
+            "source": "kimi_k3_deep_forest",
+            "kind": "hypothesis",
+            "title": problem[:300],
+            "text": prose,
+            "claim_class": f.get("claim_class"),
+            "wave": f.get("wave"),
+            "model": f.get("model"),
+            "date": f.get("date"),
+            "symbols": [],
+            "url": f"kimi://{f.get('date')}/wave{f.get('wave')}/{digest}",
+        })
+    path.write_text(json.dumps({
+        "source": "kimi_k3_deep_forest",
+        "generated_at": now.isoformat(),
+        "discoveries": discoveries,
+    }, indent=1), "utf-8")
+    return path
+
+
 def _blocked(reason: str, attempts: list[dict] | None = None) -> None:
     """Record a hunt that could not run, as an ARTIFACT rather than as a log line and an exit code.
 
@@ -482,7 +666,7 @@ def _blocked(reason: str, attempts: list[dict] | None = None) -> None:
         "status": "BLOCKED",
         "blocker": reason,
         "attempts": attempts or [],
-        "model_chain": list(MODEL_CHAIN),
+        "model_chain": list(ROUTINE_MODEL_CHAIN),
         "waves": {}, "findings": [], "dropped": [],
         "note": ("the Deep Forest protocol and its intake gates are INTACT. This records that the "
                  "hunt could not be ATTEMPTED, which is a different fact from a hunt that found "
@@ -494,8 +678,9 @@ def _blocked(reason: str, attempts: list[dict] | None = None) -> None:
 def main() -> None:
     attempts: list[dict] = []
     models_used: list[str] = []
+    deep = "--deep" in sys.argv
     ok, why = _budget_ok()
-    print("=== KIMI HUNTER -- Deep Forest Protocol (Wave 1 -> 2 -> 3) ===")
+    print(f"=== KIMI HUNTER -- Deep Forest Protocol (Wave 1 -> 2 -> 3) [{'deep' if deep else 'routine'}] ===")
     print(f"    budget: {why}\n")
     if not ok:
         raise SystemExit("envelope exhausted -- refusing to start (guard, not a failure)")
@@ -505,7 +690,7 @@ def main() -> None:
     # is absent looks exactly like an organ nobody scheduled. The desk could not tell "the hunter
     # is unfunded" from "the hunter was never built", which is the difference between a bill to
     # pay and a thing to build.
-    chain = _providers()
+    chain = _providers(deep=deep)
     if not chain:
         _blocked("no usable credential: data/secrets/llm_panel.json is absent or holds no seat "
                  "with both a base_url and a key. The Deep Forest protocol is INTACT and unrun -- "
@@ -542,13 +727,40 @@ def main() -> None:
         # ATTEMPT, never the hunt. Failures accumulate into the artifact so a run that ends
         # blocked says which doors it tried and what each one answered.
         txt, used = "", ""
+        # THE BUDGET IS CHECKED ONCE, BEFORE THE WALK, NOT NINETEEN TIMES DURING IT.
+        #
+        # Measured 2026-09-12: with the day's free allowance spent, this hunter walked all
+        # nineteen served models and took nineteen 429s -- per wave, three waves, every hour. The
+        # allowance is per ACCOUNT, so the second refusal was already certain when the first
+        # arrived, and every request after it spent the retry budget of an account that is
+        # rate-limited into darkness. llm_seat learns the real ceiling from the provider's own
+        # 429; asking it first costs nothing and turns an hour of noise into one honest line.
+        _left = None
+        try:
+            from libs.ops import llm_seat as _seat
+            _left = _seat.free_budget_left()
+        except Exception:
+            _left = None
+        if _left is not None and _left <= 0:
+            print(f"    SKIPPING wave {w}: the provider's daily free allowance is spent "
+                  f"({_seat.calls_today()} call(s) against a learned ceiling of "
+                  f"{_seat.observed_free_ceiling()}). This is a SKIP, not an outage -- the "
+                  f"budget resets at 00:00 UTC and the next cadence picks it up.")
+            attempts.append({"wave": w, "model": "(none tried)",
+                             "error": "free daily allowance spent before the walk"})
+            break
         for model, base, key in chain:
             try:
                 txt = _ask(base, key, CHARTER, user, model=model)
             except Exception as e:  # blind-except intentional (BLE001)
                 code = getattr(e, "code", "")
-                attempts.append({"wave": w, "model": model, "error": f"{type(e).__name__} {code}"})
-                print(f"    {model}: FAILED ({type(e).__name__} {code})"
+                # THE MESSAGE, NOT JUST THE TYPE. "FAILED (KeyError )" told an operator nothing;
+                # the provider's own sentence tells them whether to wait, switch model or fix a
+                # key, and it was being discarded at the one place it mattered.
+                why = str(e)[:160] or f"{type(e).__name__} {code}"
+                attempts.append({"wave": w, "model": model,
+                                 "error": f"{type(e).__name__} {code}", "why": why})
+                print(f"    {model}: FAILED ({type(e).__name__} {code}) {why}"
                       + ("  [out of credit]" if code == 402 else ""))
                 continue
             if txt.strip():
@@ -591,8 +803,11 @@ def main() -> None:
                 dropped.append({"wave": w, "reason": reason, "line": ln[:120]})
             if not keep:
                 continue
+            # `model` is the attribution this file's own chain doctrine promises ("every finding
+            # carries the model that produced it") and, until 2026-09-08, never wrote.
             findings.append({"date": datetime.now(tz=UTC).date().isoformat(),
-                             "source": "kimi_k3_deep_forest", "wave": w, "claim_class": cls,
+                             "source": "kimi_k3_deep_forest", "wave": w, "model": used,
+                             "claim_class": cls,
                              "problem": parts[0][:220], "evidence": parts[1][:220],
                              "benefit": parts[2][:180], "cost": parts[3][:140],
                              "dependencies": parts[4][:140], "success_metric": parts[5][:180],
@@ -601,11 +816,15 @@ def main() -> None:
     print(f"\n  {len(findings)} charter-complete findings, {len(dropped)} dropped")
     for d in dropped:
         print(f"    dropped (wave {d['wave']}): {d['reason']}")
+    donated = None
     if findings:
         with LEDGER.open("a", encoding="utf-8") as fh:
             for f in findings:
                 fh.write(json.dumps(f) + "\n")
-        print(f"  -> {LEDGER}  (enters the SAME gate as every other contributor)")
+        print(f"  -> {LEDGER}  (audit trail)")
+        donated = _donate(findings)
+        print(f"  -> {donated}  (the compiler's tree: a docket row or a deepening task on its "
+              "next pass, through the same gate as every other contributor)")
     print("\n  ZERO PROMOTION AUTHORITY. These are raw ore. Next stops: mechanism board "
           "(family-kill rejection), measurement gate, Stage-A screening, forward clock.")
     # OUTCOME ATTRIBUTION. A territory hunted in wave 2/3 is YIELDED if this run produced any
@@ -635,10 +854,11 @@ def main() -> None:
     OUT.write_text(json.dumps({"updated": datetime.now(tz=UTC).isoformat(),
                                "status": status,
                                "models_used": models_used,
-                               "model_chain": list(MODEL_CHAIN),
+                               "model_chain": list(ROUTINE_MODEL_CHAIN),
                                "waves_completed": sorted(transcript),
                                "attempts": attempts,
                                "territories_hunted": n_terr,
+                               "donated_to": str(donated) if donated else None,
                                "waves": {str(k): v[:4000] for k, v in transcript.items()},
                                "findings": findings, "dropped": dropped}, indent=1), "utf-8")
     print(f"  status {status} | waves {sorted(transcript)} | models {models_used}")

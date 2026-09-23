@@ -1,0 +1,312 @@
+{
+  "session": "brain_hunter_s28",
+  "date": "2026-08-29",
+  "what": "first consumption of mt5_grouping_map by a SIGNAL rather than a ruler",
+  "eval_years": [
+    2019,
+    2026
+  ],
+  "min_names": 8,
+  "trials_run": 72,
+  "multiplicity_note": "every cell tried is reported, winners and losers; no bar applied here (L1.60) -- trial count is handed to the gauntlet, never screened on locally",
+  "costs_note": "sharpe_gross is BEFORE costs. bp_per_unit_turnover_to_zero is the round-trip cost in bp that takes the cell to zero; compare against the symbol's real spread.",
+  "cells": {
+    "reversal_1|universe": {
+      "days": 2380,
+      "mean_names": 140.6,
+      "sharpe_gross": 0.51,
+      "t_stat": 1.566,
+      "ann_return": 0.05419,
+      "daily_turnover": 1.449,
+      "bp_per_unit_turnover_to_zero": 1.484
+    },
+    "reversal_1|ward_k24": {
+      "days": 2380,
+      "mean_names": 129.2,
+      "sharpe_gross": 0.759,
+      "t_stat": 2.332,
+      "ann_return": 0.05902,
+      "daily_turnover": 1.467,
+      "bp_per_unit_turnover_to_zero": 1.596
+    },
+    "reversal_1|asset_class": {
+      "days": 2380,
+      "mean_names": 139.2,
+      "sharpe_gross": 0.694,
+      "t_stat": 2.133,
+      "ann_return": 0.05697,
+      "daily_turnover": 1.474,
+      "bp_per_unit_turnover_to_zero": 1.534
+    },
+    "reversal_1|currency_quote": {
+      "days": 1616,
+      "mean_names": 72.8,
+      "sharpe_gross": 0.465,
+      "t_stat": 1.177,
+      "ann_return": 0.01186,
+      "daily_turnover": 1.28,
+      "bp_per_unit_turnover_to_zero": 0.368
+    },
+    "reversal_1|random_k24": {
+      "draws": 8,
+      "sharpe_mean": 0.504,
+      "sharpe_sd": 0.043
+    },
+    "mom_5|universe": {
+      "days": 2380,
+      "mean_names": 140.5,
+      "sharpe_gross": -0.02,
+      "t_stat": -0.062,
+      "ann_return": -0.00229,
+      "daily_turnover": 0.905,
+      "bp_per_unit_turnover_to_zero": 0.101
+    },
+    "mom_5|ward_k24": {
+      "days": 2380,
+      "mean_names": 129.2,
+      "sharpe_gross": -0.194,
+      "t_stat": -0.596,
+      "ann_return": -0.01589,
+      "daily_turnover": 0.942,
+      "bp_per_unit_turnover_to_zero": 0.67
+    },
+    "mom_5|asset_class": {
+      "days": 2380,
+      "mean_names": 139.0,
+      "sharpe_gross": -0.226,
+      "t_stat": -0.694,
+      "ann_return": -0.01993,
+      "daily_turnover": 0.929,
+      "bp_per_unit_turnover_to_zero": 0.851
+    },
+    "mom_5|currency_quote": {
+      "days": 1616,
+      "mean_names": 72.7,
+      "sharpe_gross": -0.518,
+      "t_stat": -1.313,
+      "ann_return": -0.01375,
+      "daily_turnover": 0.687,
+      "bp_per_unit_turnover_to_zero": 0.794
+    },
+    "mom_5|random_k24": {
+      "draws": 8,
+      "sharpe_mean": -0.003,
+      "sharpe_sd": 0.044
+    },
+    "mom_20|universe": {
+      "days": 2380,
+      "mean_names": 139.8,
+      "sharpe_gross": 0.235,
+      "t_stat": 0.723,
+      "ann_return": 0.02722,
+      "daily_turnover": 0.693,
+      "bp_per_unit_turnover_to_zero": 1.559
+    },
+    "mom_20|ward_k24": {
+      "days": 2380,
+      "mean_names": 129.2,
+      "sharpe_gross": -0.008,
+      "t_stat": -0.024,
+      "ann_return": -0.00063,
+      "daily_turnover": 0.724,
+      "bp_per_unit_turnover_to_zero": 0.035
+    },
+    "mom_20|asset_class": {
+      "days": 2380,
+      "mean_names": 138.4,
+      "sharpe_gross": 0.006,
+      "t_stat": 0.019,
+      "ann_return": 0.00054,
+      "daily_turnover": 0.711,
+      "bp_per_unit_turnover_to_zero": 0.03
+    },
+    "mom_20|currency_quote": {
+      "days": 1616,
+      "mean_names": 72.7,
+      "sharpe_gross": -0.333,
+      "t_stat": -0.844,
+      "ann_return": -0.00897,
+      "daily_turnover": 0.388,
+      "bp_per_unit_turnover_to_zero": 0.917
+    },
+    "mom_20|random_k24": {
+      "draws": 8,
+      "sharpe_mean": 0.166,
+      "sharpe_sd": 0.038
+    },
+    "mom_60|universe": {
+      "days": 2380,
+      "mean_names": 138.1,
+      "sharpe_gross": -0.093,
+      "t_stat": -0.287,
+      "ann_return": -0.01058,
+      "daily_turnover": 0.605,
+      "bp_per_unit_turnover_to_zero": 0.693
+    },
+    "mom_60|ward_k24": {
+      "days": 2380,
+      "mean_names": 129.2,
+      "sharpe_gross": -0.277,
+      "t_stat": -0.851,
+      "ann_return": -0.02153,
+      "daily_turnover": 0.63,
+      "bp_per_unit_turnover_to_zero": 1.356
+    },
+    "mom_60|asset_class": {
+      "days": 2380,
+      "mean_names": 136.7,
+      "sharpe_gross": -0.114,
+      "t_stat": -0.35,
+      "ann_return": -0.00963,
+      "daily_turnover": 0.618,
+      "bp_per_unit_turnover_to_zero": 0.618
+    },
+    "mom_60|currency_quote": {
+      "days": 1616,
+      "mean_names": 72.7,
+      "sharpe_gross": -0.675,
+      "t_stat": -1.708,
+      "ann_return": -0.01869,
+      "daily_turnover": 0.275,
+      "bp_per_unit_turnover_to_zero": 2.696
+    },
+    "mom_60|random_k24": {
+      "draws": 8,
+      "sharpe_mean": -0.058,
+      "sharpe_sd": 0.028
+    },
+    "accel|universe": {
+      "days": 2380,
+      "mean_names": 139.8,
+      "sharpe_gross": -0.21,
+      "t_stat": -0.646,
+      "ann_return": -0.02304,
+      "daily_turnover": 0.73,
+      "bp_per_unit_turnover_to_zero": 1.253
+    },
+    "accel|ward_k24": {
+      "days": 2380,
+      "mean_names": 129.2,
+      "sharpe_gross": 0.079,
+      "t_stat": 0.243,
+      "ann_return": 0.00626,
+      "daily_turnover": 0.767,
+      "bp_per_unit_turnover_to_zero": 0.324
+    },
+    "accel|asset_class": {
+      "days": 2380,
+      "mean_names": 138.4,
+      "sharpe_gross": -0.018,
+      "t_stat": -0.054,
+      "ann_return": -0.00147,
+      "daily_turnover": 0.751,
+      "bp_per_unit_turnover_to_zero": 0.078
+    },
+    "accel|currency_quote": {
+      "days": 1616,
+      "mean_names": 72.7,
+      "sharpe_gross": 0.352,
+      "t_stat": 0.892,
+      "ann_return": 0.00905,
+      "daily_turnover": 0.448,
+      "bp_per_unit_turnover_to_zero": 0.802
+    },
+    "accel|random_k24": {
+      "draws": 8,
+      "sharpe_mean": -0.1,
+      "sharpe_sd": 0.04
+    },
+    "lowvol_20|universe": {
+      "days": 2380,
+      "mean_names": 139.8,
+      "sharpe_gross": 0.112,
+      "t_stat": 0.343,
+      "ann_return": 0.01552,
+      "daily_turnover": 0.536,
+      "bp_per_unit_turnover_to_zero": 1.149
+    },
+    "lowvol_20|ward_k24": {
+      "days": 2380,
+      "mean_names": 129.2,
+      "sharpe_gross": 0.301,
+      "t_stat": 0.925,
+      "ann_return": 0.02576,
+      "daily_turnover": 0.586,
+      "bp_per_unit_turnover_to_zero": 1.745
+    },
+    "lowvol_20|asset_class": {
+      "days": 2380,
+      "mean_names": 138.4,
+      "sharpe_gross": 0.485,
+      "t_stat": 1.492,
+      "ann_return": 0.0464,
+      "daily_turnover": 0.573,
+      "bp_per_unit_turnover_to_zero": 3.213
+    },
+    "lowvol_20|currency_quote": {
+      "days": 1616,
+      "mean_names": 72.7,
+      "sharpe_gross": 0.045,
+      "t_stat": 0.113,
+      "ann_return": 0.00067,
+      "daily_turnover": 0.211,
+      "bp_per_unit_turnover_to_zero": 0.127
+    },
+    "lowvol_20|random_k24": {
+      "draws": 8,
+      "sharpe_mean": 0.115,
+      "sharpe_sd": 0.027
+    }
+  },
+  "ward_vs_exact_control": {
+    "reversal_1": {
+      "ward_sharpe": 0.759,
+      "control_mean": 0.504,
+      "control_sd": 0.043,
+      "z": 5.93,
+      "ward_helps": true,
+      "universe_sharpe": 0.51
+    },
+    "mom_5": {
+      "ward_sharpe": -0.194,
+      "control_mean": -0.003,
+      "control_sd": 0.044,
+      "z": -4.34,
+      "ward_helps": false,
+      "universe_sharpe": -0.02
+    },
+    "mom_20": {
+      "ward_sharpe": -0.008,
+      "control_mean": 0.166,
+      "control_sd": 0.038,
+      "z": -4.58,
+      "ward_helps": false,
+      "universe_sharpe": 0.235
+    },
+    "mom_60": {
+      "ward_sharpe": -0.277,
+      "control_mean": -0.058,
+      "control_sd": 0.028,
+      "z": -7.82,
+      "ward_helps": false,
+      "universe_sharpe": -0.093
+    },
+    "accel": {
+      "ward_sharpe": 0.079,
+      "control_mean": -0.1,
+      "control_sd": 0.04,
+      "z": 4.47,
+      "ward_helps": true,
+      "universe_sharpe": -0.21
+    },
+    "lowvol_20": {
+      "ward_sharpe": 0.301,
+      "control_mean": 0.115,
+      "control_sd": 0.027,
+      "z": 6.89,
+      "ward_helps": true,
+      "universe_sharpe": 0.112
+    }
+  },
+  "verdict": "ward k24 differs from its exact size-matched control at |z|>=4.3 in 6/6 features -- the PIT cluster labels carry real information a shuffle does not. But the SIGN is feature-dependent: ward helps 3 (reversal_1 +5.9, lowvol_20 +6.9, accel +4.5) and HURTS 3 (mom_5 -4.3, mom_20 -4.6, mom_60 -7.8). 'Use group_rank instead of rank' is therefore REFUTED as a blanket rule; the neutraliser is a per-feature choice with a real cost when chosen wrong. NO CELL IS A SURVIVOR: best is reversal_1|ward_k24 at gross t=2.33 over 2380 days, break-even 1.60 bp per unit turnover at 147% daily turnover -- it dies to any realistic MT5 cost. 24 cells tried, all reported; no bar applied here (L1.60)."
+}

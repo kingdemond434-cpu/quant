@@ -1,0 +1,2377 @@
+AQ
+R 
+C
+a
+p
+i
+ta
+l
+ 
+M
+a
+
+n
+a
+geme
+n
+t
+,
+ 
+LL
+C
+ 
+FO
+R 
+I
+
+N
+VEST
+M
+E
+N
+T
+ 
+PROFES
+S
+IONA
+L
+ 
+US
+
+E
+ 
+ON
+L
+Y
+ 
+1
+ 
+Unde
+r
+s
+t
+
+a
+n
+din
+g
+ 
+Def
+e
+nsi
+v
+e
+ 
+
+Novem
+ber 2012 
+An Old Friend:
+ 
+ 
+Shiller P/E
+ 
+Clifford S. Asness, Ph.D.
+ 
+
+Please read important disclosures a
+t th
+e 
+en
+d o
+f this paper.
+ 
+AQR Capital 
+Management, LLC 
+ 
+I   Greenwich Plaza, Third Floor 
+ I 
+ Greenwich, 
+CT 06830 
+ I  T : 203.742.3600 
+ I 
+ F : 
+203.742.3100 
+ I 
+ www.a
+qr.com 
+FO
+R 
+INVESTMENT PROFESSIONAL 
+US
+E 
+ON
+LY 
+
+'
+ 
+AQ
+R 
+Capita
+l
+ 
+Management
+,
+ 
+LLC
+ 
+FO
+R 
+INVESTMEN
+T
+ 
+PROFESSIONA
+L
+ 
+US
+E
+ 
+ON
+L
+Y
+ 
+ 
+-
+controversy,
+1
+ now seems like a 
+good time to re-examine the valuation of the entire U.S. stock market, and particularly the relevance and meaning of the 
+Shiller P/E, a measure we have favored in the past.
+2
+ 
+Recall that researchers have found that valuation measures have some power to forecast long-horizon (say 10-year) stock 
+market returns. Of course, there is not one unique valuation measure known to be perfect, and most possible choices have 
+their pros and cons. In particular, for many years, researchers and practitioners have made use of the price-
+to
+- earnings ratio. 
+For every dollar you invest in the S&P 500, how many dollars of earnings do you get (not that an investor actually receives 
+-
+to
+-earnings is well specified, there is generally no agreement on what to 
+use for earnings. One can use operating or total earnings. One can use forecasted or trailing earnings. One can use last 
+quarter, last year, or even longer to measure earnings. Many other adjustments and methods are possible. 
+In particular, though we will touch on some of the other possibilities, we will focus primarily on two measures at the 
+-year trailing total earnings vs. what has come to 
+3
+ The idea of the Shiller P/E arose from the observation that one-year earnings are highly volatile 
+and probably mean-reverting. Thus, at times of very high earnings, the one-
+too cheap) 
+and when earnings are very low, the opposite can occur and the one-
+At extremes, like very bad recessions, earnings can get so low as to approach or pass zero, making the one- year P/E 
+obviously silly (this almost happened in 2008/09). 
+What the Shiller P/E does to adjust for this problem is simple and effective, if obviously imperfect. Instead of using one- 
+year trailing earnings, it uses the average of the prior 10 years of trailing earnings (inflation adjusted).
+4
+ Ten years is, of 
+course, arbitrary. You would be hard-pressed to find a theoretical argument favoring it over, say, nine or 12 years. However, 
+it struck its creators and many of us as reasonable and intuitive. It extends over one or two typical business cycles without 
+going too deeply into the very distant past. Put simply, one-
+worth of S&P 500 earnings, again a very volatile number. In contrast, the Shiller P/E represents what an investor pays for th
+e 
+P 500 earnings. The hope is that this is a more stable measure that is more relevant to long-
+term future stock returns and earnings. 
+ 
+Source: Robert Shiller
+ website, through September 
+2012.
+ 
+1
+ 
+Two good defenses of the Shiller 
+3, 2011. These 
+two articles effectively dispatch a few of the attacks on the Shiller P/E that I do not address at length. Readers who want more can do a simple internet search and find quite the 
+raging battle. 
+2
+ In early 2000 our quarterly letter called this the scariest chart ever. 
+3
+ This method was used by Campbell and Shiller in the mid- to late-1990s and was originally motivated by the methods of Graham and Dodd. It has also come to be called the 
+CAPE (cyclically adjusted price-
+to
+-earnings) ratio. 
+4
+ Of course, since earnings tend to grow over time the prior ten year average is generally a slightly lower number than last year, and 
+than one-
+illy off-the-bat as any of these measures only 
+makes sense compared to their own history. 
+
+ 
+AQ
+R 
+Capita
+l
+ 
+Management
+,
+ 
+LLC
+ 
+FO
+R 
+INVESTMEN
+T
+ 
+PROFESSIONA
+L
+ 
+US
+E
+ 
+ON
+L
+Y
+ 
+ 
+ 
+ 
+At 22.2 on September 30, 2012, the S&P 500 Shiller P/E is at almost exactly half its peak value during the 1999
+-
+2000 stock 
+market bubble. It is about two
+-
+ 
+P/E is 
+examined 1926
+-
+present for our analytics, showing the earlier values graphically back to 1880 for interest 
+ 
+including that 
+data wou
+ld not change our conclusions). Why do we care about it being higher than 80% of the time? The next table looks at 
+2012, we are in the 
+9th
+ 
+decile shaded blue):
+ 
+ 
+Re
+s
+u
+l
+t
+s
+ 
+F
+o
+r
+ 
+S
+&
+P
+ 
+50
+0
+ 
+F
+r
+o
+m 
+Diffe
+r
+e
+n
+t
+ 
+S
+t
+a
+r
+t
+i
+n
+g
+ 
+Sh
+i
+l
+l
+e
+r
+ 
+P
+/
+E
+s
+ 
+1926
+2
+012
+ 
+ 
+St
+a
+r
+ 
+L
+o
+w
+ 
+t
+i
+n
+g
+ 
+P/E 
+H
+i
+g
+h
+ 
+Av
+g
+.
+ 
+R
+e
+al
+ 
+10
+ 
+Yr
+ 
+R
+e
+tu
+r
+n
+ 
+W
+o
+r
+s
+t
+ 
+R
+e
+al
+ 
+10
+ 
+Yr
+ 
+R
+e
+tu
+r
+n
+ 
+B
+e
+s
+t
+ 
+R
+e
+al
+ 
+10
+ 
+Yr
+ 
+R
+e
+tu
+r
+n
+ 
+St
+a
+nd
+a
+r
+d
+ 
+D
+e
+v
+ia
+t
+i
+o
+n
+ 
+5
+.2
+ 
+9
+.6
+ 
+10.3%
+ 
+4
+.
+8%
+ 
+17.
+5%
+ 
+2
+.
+5%
+ 
+9
+.6
+ 
+10.8
+ 
+10.4%
+ 
+3
+.
+8%
+ 
+17.
+0%
+ 
+3
+.
+5%
+ 
+10.8
+ 
+11.9
+ 
+10.4%
+ 
+2
+.
+8%
+ 
+15.
+1%
+ 
+3
+.
+3%
+ 
+11.9
+ 
+13.8
+ 
+9
+.
+1
+%
+ 
+1
+.
+2
+%
+ 
+14.
+3%
+ 
+3
+.
+8%
+ 
+13.8
+ 
+15.7
+ 
+8
+.
+0
+%
+ 
+0
+.
+9%
+ 
+15.
+1%
+ 
+4
+.
+6%
+ 
+15.7
+ 
+17.3
+ 
+5
+.
+6
+%
+ 
+2
+.
+3%
+ 
+15.
+1%
+ 
+5
+.
+0%
+ 
+17.3
+ 
+18.9
+ 
+5
+.
+3
+%
+ 
+3
+.
+9%
+ 
+13.
+8%
+ 
+5
+.
+1%
+ 
+18.9
+ 
+21.1
+ 
+3
+.
+9
+%
+ 
+3
+.
+2%
+ 
+9
+.
+9%
+ 
+3
+.
+9%
+ 
+21
+.
+1
+ 
+25
+.
+1
+ 
+0
+.
+9
+%
+ 
+4
+.
+4%
+ 
+8
+.
+3%
+ 
+3
+.
+8%
+ 
+25.1
+ 
+46.1
+ 
+0
+.
+5
+%
+ 
+6
+.
+1%
+ 
+6
+.
+3%
+ 
+3
+.
+6%
+ 
+ 
+Source
+s
+: Robert Shiller
+ 
+website
+ 
+and AQR analysis, through 
+September
+ 
+2012
+.
+ 
+Real return 
+columns show the actual after inflation average, worst
+-
+case and best
+-
+case annualized 
+start of each year from 
+1926 to 2002.
+ 
+ 
+Ten
+-
+year
+ 
+forward
+ 
+av
+e
+r
+age
+ 
+returns
+ 
+fall
+ 
+nearly
+ 
+monot
+o
+nic
+a
+lly
+ 
+as
+ 
+st
+ar
+ting
+ 
+S
+hill
+e
+r
+ 
+P
+/
+ 
+increase. Also,
+ 
+as
+ 
+sta
+r
+t
+i
+ng
+ 
+S
+h
+i
+l
+ler
+ 
+go
+ 
+up,
+ 
+worst
+ 
+cases
+ 
+get worse and
+ 
+best
+ 
+c
+ases
+ 
+get wea
+k
+er (best
+ 
+ca
+s
+es
+ 
+remain
+ 
+OK
+ 
+f
+r
+om
+ 
+any
+ 
+decile,
+ 
+so
+ 
+there
+ 
+is
+ 
+gener
+a
+lly
+ 
+h
+o
+pe 
+even
+ 
+if
+ 
+it
+ 
+s
+hould
+ 
+not
+ 
+triu
+m
+ph
+ 
+over
+ 
+experience!
+)
+.
+ 
+In
+ 
+p
+a
+rti
+c
+ul
+a
+r
+,
+ 
+in
+ 
+the
+ 
+ninth
+ 
+buck
+e
+t
+ 
+(where
+ 
+we
+ 
+a
+r
+e
+ 
+today
+ 
+at
+ 
+2
+2
+.2)
+ 
+the
+ 
+av
+e
+r
+a
+g
+e 
+real
+ 
+stock
+ 
+m
+a
+rket
+ 
+return
+ 
+over
+ 
+the
+ 
+ne
+x
+t
+ 
+decade
+ 
+does
+ 
+not
+ 
+bre
+a
+k
+ 
+1
+%
+.
+ 
+The
+ 
+worst
+ 
+c
+ase
+ 
+is
+ 
+a
+ 
+horr
+e
+ndous
+ 
+-
+4
+.4%
+ 
+real
+ 
+return
+ 
+p
+e
+r 
+annum
+ 
+(
+t
+hose
+ 
+who
+ 
+think
+ 
+the
+ 
+dis
+a
+ppointing
+ 
+post
+-
+2
+0
+00
+ 
+decade
+-
+long
+ 
+results
+ 
+can
+ 
+only
+ 
+happ
+e
+n
+ 
+from
+ 
+super
+ 
+high
+ 
+ 
+are 
+mistaken),
+ 
+and
+ 
+the
+ 
+best
+ 
+case
+ 
+is
+ 
+very
+ 
+g
+o
+od,
+ 
+th
+o
+ugh
+ 
+less
+ 
+wonder
+f
+ul
+ 
+th
+a
+n
+ 
+the
+ 
+m
+uch
+ 
+b
+e
+tt
+e
+r
+ 
+b
+e
+st
+ 
+cases
+ 
+from
+ 
+lower
+ 
+st
+a
+r
+ting 
+Sh
+i
+ll
+e
+r
+ 
+ 
+ 
+Obviously
+ 
+b
+ucket
+ 
+nine
+ 
+is
+ 
+pretty
+ 
+u
+g
+ly!
+ 
+There
+ 
+are
+ 
+important caveats,
+ 
+of
+ 
+course.
+ 
+Academi
+c
+s
+ 
+are
+ 
+still
+ 
+fi
+g
+hting
+ 
+about
+ 
+how 
+seriously
+ 
+to
+ 
+take
+ 
+the
+ 
+above
+ 
+chart.
+ 
+Some
+ 
+think
+ 
+ 
+per
+f
+ectly
+ 
+val
+i
+d,
+ 
+o
+t
+hers
+ 
+t
+h
+ink
+ 
+ 
+the
+ 
+result
+ 
+of
+ 
+small
+-
+sam
+p
+le
+ 
+bias
+ 
+and
+ 
+oth
+e
+r 
+statistical
+ 
+pr
+o
+blems
+.
+5
+ 
+Fur
+th
+ermore,
+ 
+you
+ 
+would
+ 
+p
+r
+ob
+a
+bly
+ 
+not
+ 
+want
+ 
+to
+ 
+take
+ 
+a
+ 
+lar
+g
+e
+ 
+tactic
+a
+l
+ 
+position
+ 
+based
+ 
+only
+ 
+on
+ 
+the
+ 
+ab
+o
+ve. 
+As
+ 
+we
+ 
+show,
+ 
+sometimes
+ 
+the
+ 
+Shill
+e
+r
+ 
+P/E
+ 
+is
+ 
+wrong for
+ 
+a
+ 
+whole
+ 
+d
+ec
+a
+de,
+ 
+let
+ 
+a
+l
+one
+ 
+shorter
+ 
+periods.
+ 
+To
+ 
+examine
+ 
+its decade
+-
+long 
+occasional
+ 
+inaccurac
+y
+,
+ 
+we
+ 
+include
+ 
+the
+ 
+st
+a
+nd
+a
+rd
+ 
+deviation
+ 
+of
+ 
+the
+ 
+realized
+ 
+returns
+ 
+in
+ 
+ea
+c
+h
+ 
+b
+ucket
+ 
+a
+r
+ound each
+ 
+buck
+e
+t
+s 
+mean.
+ 
+They
+ 
+a
+r
+e
+ 
+somewhat
+ 
+high
+ 
+relative
+ 
+to
+ 
+the
+ 
+differ
+e
+nces
+ 
+in
+ 
+a
+v
+erage
+ 
+return
+ 
+and
+ 
+usually
+ 
+r
+e
+lative
+ 
+to
+ 
+warring
+ 
+forecast
+e
+ 
+best 
+long
+-
+term
+ 
+guesses
+.
+6
+,
+7
+ 
+ 
+ 
+ 
+ 
+ 
+                                        
+                  
+ 
+5
+ 
+ically the same question but framed differently in a way I find 
+more intuitive. Though I admit given data limitations
+ 
+ 
+6
+ 
+In a rare departure for me I have tried to broker peace at several conferences by pointing out to these warring forecasters t
+hat they differ by, say, only ½ a standard deviation in 
+their outlook, meaning rand
+omness swamps their differences. I have been unsuccessful. Only I have been surprised at this.
+ 
+7
+ 
+You might also note that the standard deviations get smaller at extremes. That could be because at extreme cheapness or expen
+siveness our forecasts are truly s
+harper, or 
+again it could be small sample bias where we simply have not seen the case where a Shiller P/E of 44 went way higher in the n
+ext decade but that possibility is out there.
+ 
+
+ 
+AQ
+R 
+Capita
+l
+ 
+Management
+,
+ 
+LLC
+ 
+FO
+R 
+INVESTMEN
+T
+ 
+PROFESSIONA
+L
+ 
+US
+E
+ 
+ON
+L
+Y
+ 
+ 
+ 
+ 
+I
+nd
+e
+x
+ed
+ 
+L
+e
+v
+el
+ 
+o
+f
+ 
+1
+Y
+e
+a
+r
+ 
+R
+e
+a
+l
+ 
+E
+a
+r
+n
+i
+n
+g
+s
+,
+ 
+l
+o
+g
+ 
+s
+c
+a
+l
+e
+ 
+Even with the caveat above, I would, if trading on a tactical outlook, give the Shiller P/E some small weight, particularly 
+10.
+8
+ 
+But I think this type of analysis is most useful not for a trading strategy but to set 
+-
+inflation about 7
+%
+-
+8% real) return on the stock
+ 
+market, you are basically rooting for the absolute best case in history to play
+ 
+out again, and rooting for something drastically above the average case from these valuations. This could happen. For 
+instance, it could happen if total real earnings growth s
+urprises to the upside by a lot for a very long time. But unless you are 
+comfortable with forecasting that, or some other giant positive surprise, we believe one should give credence to the lower 
+forecasted average returns from history. While market timing
+ 
+might not be the answer, changing your plans 
+ 
+assuming a 
+lower expected market return, perhaps saving more or spending less, or making changes in your portfolio structure 
+ 
+are all 
+worth serious consideration. I think the Shiller P/E is quite meaningful 
+for planning.
+ 
+ 
+-
+term real stock returns than implied by the Shiller P/E? Well, there are many different critiques, but one stands out. S
+ome 
+think the Shiller P/E is a generally reasonable concept, 
+just not right at this moment
+. In particular, they point to the history 
+of one
+-
+year earnings that we now graph along with a trend lin
+e
+9
+:
+ 
+ 
+ 
+1
+Y
+e
+a
+r
+ 
+R
+e
+a
+l 
+S
+&
+P
+ 
+50
+0
+ 
+E
+a
+r
+nin
+g
+s
+ 
+ 
+10
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+1
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+0
+ 
+1
+9
+2
+6
+ 
+ 
+19
+3
+6
+ 
+ 
+1
+9
+4
+6
+ 
+ 
+19
+5
+6
+ 
+ 
+1
+9
+6
+6
+ 
+ 
+19
+7
+6
+ 
+ 
+1
+9
+8
+6
+ 
+ 
+19
+9
+6
+ 
+ 
+20
+0
+6
+ 
+Source
+s
+: Robert Shiller
+ 
+website
+ 
+and AQR analysis, through 
+September 
+2012
+.
+ 
+ 
+They point out that we had two serious earnings recessions recently (though only the tail end of the 2000
+-
+2002 event makes 
+he 
+right
+ 
+end of the graph) strong earnings number is more relevant than that of the prior 10 years. In principle, we must grant 
+that there are times that 10
+-
+year earnings may be misleading. They are by no means a panacea. If the last 10 years is much 
+better or muc
+-
+year earnings could give a more accurate picture at such times
+10
+. 
+The question is, 
+of course, are we in 
+such a time right now?
+ 
+ 
+ 
+ 
+ 
+                                        
+                  
+ 
+8
+ 
+l Samuelson who near the top of the tech bubble, when he thought stocks should be underweighted, said 
+-
+ 
+9
+ 
+Ignore the actual scale on the y
+-
+ 
+10
+ 
+Of course, to one who believes earnings are mean reverting, we can already challenge them. If earnings revert to trend then o
+ne
+-
+year earnings are too high.
+ 
+
+ 
+AQ
+R 
+Capita
+l
+ 
+Management
+,
+ 
+LLC
+ 
+FO
+R 
+INVESTMEN
+T
+ 
+PROFESSIONA
+L
+ 
+US
+E
+ 
+ON
+L
+Y
+ 
+ 
+ 
+ 
+I
+nd
+exed
+ 
+Le
+v
+el
+ 
+o
+f
+ 
+10
+Y
+e
+a
+r
+ 
+R
+e
+a
+l
+ 
+E
+a
+r
+n
+i
+n
+g
+s
+,
+ 
+l
+o
+g
+ 
+s
+c
+a
+l
+e
+ 
+Not surprisingly, if one compares one
+-
+year earnings to history, things look much rosier, though the stock market is still not 
+cheap
+.
+11
+ 
+In
+stead of a Shiller P/E that is in the 80th
+ 
+percentile versus history right now (expensive), 
+the one
+-
+year P/E is in the 
+54th
+ 
+percentile since 1926 (trivially expensive). So we have to ask ourselves, is the argument against using the Shiller P/E 
+today right? Are the past 10 years of real earnings too low to be meaningful going forward (meaning the 
+current Shiller P/E 
+is biased too high)?
+ 
+ 
+Quite simply put, not even close. First, just like we did for one
+-
+ 
+10
+-
+year real S&P 500 earnings (a backwards looking 10
+-
+year average)
+ 
+along with a long
+-
+term trend line
+:
+ 
+ 
+ 
+10
+Y
+e
+a
+r
+ 
+R
+e
+a
+l
+ 
+S
+&
+P
+ 
+50
+0
+ 
+E
+a
+r
+nin
+g
+s
+ 
+ 
+10
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+1
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+0
+ 
+1
+9
+2
+6
+ 
+ 
+19
+3
+6
+ 
+ 
+1
+9
+4
+6
+ 
+ 
+19
+5
+6
+ 
+ 
+1
+9
+6
+6
+ 
+ 
+19
+7
+6
+ 
+ 
+1
+9
+8
+6
+ 
+ 
+19
+9
+6
+ 
+ 
+20
+0
+6
+ 
+Source
+s
+: Robert Shiller
+ 
+website
+ 
+and AQR analysis, through November 2012
+.
+ 
+ 
+Though not as extreme as one
+-
+year earnings, 10
+-
+year real earnings used in the Shiller P/E are also currently slightly above 
+their long
+-
+term trend. At their low after the financial crisis, they fell back to approxi
+mately long
+-
+term trend. 
+It has not, in 
+fact, been a bad prior decade for real earnings! 
+ 
+ 
+While the graph speaks for itself, there is some logic to go with the picture. Critics of the Shiller P
+/E point to the earnings 
+destruction right after 2008 and ask how we can average in that period and think we have a meaningful number? After all, 
+-
+in
+-
+a
+-
+hundred
+-
+year event? But they usually do not object at all to the very high 
+earnings, for 
+o be 
+bor
+ 
+Rather than invalidate the Shiller method, the 2008 earnings destruction following the prior earnings boom is precisely why 
+the CA
+PE was created! Not surprisingly I fall into this latter camp
+.
+12
+ 
+ 
+ 
+ 
+                                        
+                  
+ 
+11
+ 
+Some get 
+this wrong too comparing over way too short a period and declaring the one
+-
+year P/E cheap versus history.
+ 
+12
+ 
+At some point in the future the pre
+-
+2007 earnings boom and 2008 bust will in order roll out of the Shiller P/E period. We may indeed want to adjust 
+for this, not by using the very 
+volatile one
+-
+-
+term periods so changes are not as abrupt as earnings exit the 
+moving average. Again, there is no magic to 
+ten years.
+ 
+
+ 
+AQ
+R 
+Capita
+l
+ 
+Management
+,
+ 
+LLC
+ 
+FO
+R 
+INVESTMEN
+T
+ 
+PROFESSIONA
+L
+ 
+US
+E
+ 
+ON
+L
+Y
+ 
+ 
+ 
+ 
+ 
+gs measures that attempt (1) to not allow the 2008 
+earnings destruction to drive results as per the Shiller critics, but (2) are longer
+-
+term than one
+-
+year earnings as per Shiller 
+fans.
+ 
+ 
+I will use the following three measures to attempt this (and include the one
+-
+ 
+ 
+a)
+ 
+A version of the Shiller P/E that simply uses the median one
+-
+year real earnings level over the prior decade instead of 
+the mean
+ 
+. This is just like the Shiller P/E but it is not unduly influenced by 
+then this method may be
+ 
+wors
+e than using the mean as in the Shiller P/E (as the boom extended across more years it 
+ 
+b)
+ 
+A P/E that uses the maximum one
+-
+year earnings over the last de
+ 
+. This might sound unduly bullish, but again, as with the Shiller P/E and our other P/E
+ 
+measures
+, we are 
+comparing it to itself through time.
+13
+ 
+It is relevant if the maximum represents achievable earnings 
+going forward if 
+ 
+c)
+ 
+Finally a P/E that uses an in
+-
+ 
+. This 
+uses both the prior one
+-
+year and
+ 
+10
+-
+year real earnings in a regression to fit the next 10
+-
+year 
+real earnings over the 
+whole 1926
+-
+ 
+14
+ 
+ 
+The following table shows 
+the mean for 
+each 
+of 
+our 
+four 
+P/E 
+measures 
+from 1926
+-
+present, the current value (September 30, 
+2012) of each, and where this 
+current value stacks up percentile
+-
+wise versus the past.
+ 
+ 
+C
+h
+a
+r
+a
+c
+t
+e
+r
+i
+s
+t
+i
+c
+s
+ 
+o
+f
+ 
+D
+i
+ffe
+r
+e
+n
+t
+ 
+P
+/E
+s
+ 
+1926
+2012
+ 
+ 
+ 
+1
+r
+ 
+P/E
+ 
+S
+h
+il
+l
+er
+ 
+P
+/
+E
+ 
+S
+h
+ill
+e
+r
+ 
+M
+e
+d
+ia
+n
+ 
+M
+a
+x
+ 
+"
+E
+"
+ 
+P
+/
+E
+ 
+B
+e
+s
+t
+ 
+"
+E
+"
+ 
+P/E
+ 
+M
+e
+a
+n
+ 
+17.0
+ 
+17.6
+ 
+17.5
+ 
+12
+.
+5
+ 
+17.0
+ 
+9/30
+/
+2
+012
+ 
+16.4
+ 
+22.2
+ 
+20.3
+ 
+15
+.
+2
+ 
+20.4
+ 
+E
+nd
+i
+n
+g
+ 
+P
+e
+r
+c
+e
+n
+t
+il
+e
+ 
+54%
+ 
+8
+0%
+ 
+70%
+ 
+7
+3
+%
+ 
+73%
+ 
+Source: Robert Shiller
+ 
+website
+ 
+and AQR analysis, through September 2012
+.
+ 
+ 
+The Shiller P/E is indeed the highest versus its own history (80th
+ 
+percentile). However, all of the others are much closer (in 
+percentile) to the Shiller
+ 
+P/E than to the one
+-
+year P/E. I have not done an exhaustive search of these measures, but the simple 
+ones I have tried support the Shiller method far more than using the one
+-
+year P/E.
+ 
+ 
+There are many other critiques and defenses of the Shiller P/E and the
+ 
+exercise of using valuation metrics in general. I
+ 
+ 
+ 
+stock 
+l
+15
+.
+ 
+Others say that now, because companies pay out less in 
+dividends than in the past, growth will be forever higher (Rob Arnott and I find empirically the exact opposite result). Some
+ 
+outright huckster
+ 
+ 
+                                        
+                  
+ 
+13
+ 
+I first saw this method in the work of John Hussman.
+ 
+14
+ 
+For those interested, in
+-
+sample from 1926
+-
+s and 
+25% the log of 
+ 
+100%) plus an intercept. Thus there 
+is indeed some role for more recent earnings, in the presence of ten year real earnings, but i
+(ignoring some convexity issues) 75% the Shiller P/E and 25% the one
+-
+year P/E.
+ 
+15
+ 
+The Fed Model is based on money illusion. It actually may have some use for market timers 
+as even a misspecified model can be useful if investors return to it consistently. 
+Also, the Fed Model also may have use and theoretical consistency in only a relative value sense if its usual nominal interes
+t rate is replaced with a real one. Though again
+ 
+caution is urged as even if stocks are expensive on their own, but cheap relative to bonds, the outcome is not clear. Due to 
+-
+term 
+average value it may not be pleasant for those long stocks versus bonds.
+ 
+
+ 
+AQ
+R 
+Capita
+l
+ 
+Management
+,
+ 
+LLC
+ 
+FO
+R 
+INVESTMEN
+T
+ 
+PROFESSIONA
+L
+ 
+US
+E
+ 
+ON
+L
+Y
+ 
+ 
+ 
+ 
+hanged, and the long
+-
+t
+16
+, 
+this argument applies equally to the one
+-
+heir big gun 
+that I address exhaustively above, is that the last 10 years are just too disastrous to be meaningful (recall they are actual
+ly 
+mildly above average). Does it seem to anyone else but me that the critics have a reason to exclude everything that
+ 
+might 
+make one say stocks are expensive, and instead pick time periods for comparisons and methods of measurement that will 
+always (adapting on the fly) say stocks are fair or cheap?
+ 
+ 
+ 
+always work.
+17
+ 
+remember that no valuation measure is near perfect (I stress that in my initial table), I do believe that the Shiller P/E is 
+a 
+ 
+nobody cherry picked it to fit the current 
+(certainly on its own) and there is still great variability around its predictions over even
+ 
+ 
+and in my view the critics have not provided a good 
+reason this time around 
+ 
+I think you are making a mistake.
+ 
+In Case You Were Not Depressed Enough by
+ 
+the Above
+ 
+Closely paralleling the work in Asness and Ilmanen (Institutional Investor May 15, 2012; please see that publication for 
+more specifics though we use a slightly simpler formation here) below we calculate our proxy for the expected long
+-
+term 
+return on not just stocks, but the traditional 60/40 portfolio of U.S. stocks and government bonds (shown again back to
+ 
+1880 
+but the average line in red is calculated only over 1926
+-
+2012):
+ 
+ 
+Source
+s
+: Robert Shiller
+ 
+website
+ 
+and AQR analysis, through Septe
+mber 2012
+.
+ 
+ 
+To get the expected real return on stocks you invert the Shiller P/E to get an earnings yield
+.
+18
+ 
+F
+or bonds we compare 10
+-
+ 
+year nominal yields on Treasury Bonds to forecasted long
+-
+term inflation (here we use nothi
+ng fancier than trailing three
+-
+year 
+inflation). Take 60% of the stock market number and 40% of the bond market number and you get the above graph, an 
+estimate of the expected long
+-
+low versus his
+tory (2.2% real as of September 30, 2012). This is coming as expected real returns to stocks are low (as 
+                                        
+                  
+ 
+16
+ 
+I
+ 
+do believe there were World Wars and Depressions.
+ 
+17
+ 
+ 
+forecasting lower than normal stock returns based 
+on higher than normal 
+ls. That was and is true as the 
+R
+-
+e he pointed to was the 1990s. One great way to have this method fail is to 
+ilar things to professor Craig Asness at the time, and 
+ing this writer meant me.
+ 
+18
+ 
+This expected real return on stocks is not as bad as the earlier table we showed as the table incorpora
+-
+present 
+res
+earchers believe.
+ 
+
+ 
+AQ
+R 
+Capita
+l
+ 
+Management
+,
+ 
+LLC
+ 
+FO
+R 
+INVESTMEN
+T
+ 
+PROFESSIONA
+L
+ 
+US
+E
+ 
+ON
+L
+Y
+ 
+ 
+ 
+ 
+discussed at length above) and bond real yields are 
+very 
+low. Both have been low or very low before, but less often at the 
+same time (e.g., in early 20
+00 when the total was similar, stocks were considerably worse looking, but bonds very attractive 
+versus history).
+ 
+ 
+Asness and Ilmanen discuss this all in much greater depth, including what we think investors can do about it
+.
+19
+ 
+ 
+                                        
+                  
+ 
+19
+ 
+canonical 60/40 is close to this).
+ 
+
+ 
+AQ
+R 
+Capita
+l
+ 
+Management
+,
+ 
+LLC
+ 
+FO
+R 
+INVESTMEN
+T
+ 
+PROFESSIONA
+L
+ 
+US
+E
+ 
+ON
+L
+Y
+ 
+ 
+Disclosures 
+T
+
++#77''3773#'Ô!'j!b!!b!j'é.5
+:Ly%#%'2#2'E#E'¥'@U	¸ÿô´U	¸ÿô´U	¸ÿà´U	¸ÿØ@U	U
+U¸ÿþ´U¸ÿì´U¸ÿÜ´U¸ÿØ@	U 

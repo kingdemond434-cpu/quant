@@ -1,0 +1,26 @@
+[Unit]
+Description=Restored organ: organ-catchup (cron manifest line re-homed to a user timer; root cron daemon dead since 2026-08-20)
+
+[Service]
+# Shares one memory budget with the other heavy organs (see ops/quant-heavy.slice): the
+# per-unit caps stop a unit killing itself, the slice stops them collectively exhausting
+# the box and getting an innocent neighbour killed by the global OOM killer.
+Slice=quant-heavy.slice
+# 2026-09-01 (corrected): sized from the TRUE 24h maximum (594M), not the most recent
+# reading. An earlier pass sized off the last peak and left the throttle BELOW the real
+# working set on nine units -- permanent reclaim, which is a slow kill, not a margin.
+MemoryHigh=742M
+MemoryMax=1009M
+Type=oneshot
+# KillMode=process IS LOAD-BEARING (measured 2026-08-26, same class as the manifest
+# dispatcher). This organ SPAWNS the organs it re-fires and then exits; systemd's default
+# KillMode=control-group tears down the whole cgroup on that exit, and `start_new_session=True`
+# escapes the SESSION, not the CGROUP. Evidence in its own log: "re-fired brain
+# (ops/run_cro_ai.sh)" at 04:55, 05:05, 05:10, 05:15 and 05:20 -- five re-fires in 25 minutes
+# with NO cro_ai log produced by any of them. A successful re-fire makes the next tick report
+# "field busy"; instead it re-fired forever, logging success and starting nothing.
+# This is the loop the whole quota/mutex recovery design rests on: a miner deferred behind the
+# brain mutex is supposed to resume here within 5 minutes. It could not.
+KillMode=process
+WorkingDirectory=/home/quant/quant-platform
+ExecStart=/bin/sh -c 'flock -n data/.cron_organ_catchup.lock .venv/bin/python scripts/organ_catchup.py >> data/cro_ai_logs/organ_catchup.log 2>&1'

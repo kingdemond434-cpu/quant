@@ -1,0 +1,6 @@
+{
+ "at": "2026-09-12T12:20:17.237835+00:00",
+ "cells": {},
+ "distinct_cells": 1,
+ "note": "Never shrinks. Re-running the estimator widens every admission interval; an edge cannot be admitted by being tested again."
+}

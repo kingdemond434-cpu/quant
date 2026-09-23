@@ -1,0 +1,12 @@
+[
+ {
+  "source": "darwinex",
+  "kind": "fetch_error",
+  "title": "503 Server Error: Service Unavailable for url: http://web.archive.org/cdx/search/cdx?url=darwinex.com/darwin/*&output=json&limit=300&offset=300&collapse=urlkey",
+  "url": "",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-04T11:25:40+00:00",
+  "needs_selector_work": true
+ }
+]

@@ -471,9 +471,13 @@ def main() -> int:
         _subprocess_cap("strategic_director", "scripts/run_strategic_director.py",
                         args=["--dry-run"]),
         _subprocess_cap("backtest_verify", "scripts/verify_backtest_engine.py"),
-        _subprocess_cap("moat_audit", "scripts/moat_audit.py"),
-        _subprocess_cap("revalidate_clocks", "scripts/revalidate_clocks.py"),
-        _subprocess_cap("fusion_engine", "scripts/fusion_engine.py"),
+        # moat_audit, revalidate_clocks and fusion_engine were removed 2026-09-05 (universe
+        # mandate): the first validated the retired crypto-exchange order-book mine, and the other
+        # two ran on axes -- kimchi, Upbit, stablecoin supply, DeFi TVL -- that no longer exist.
+        # A `_subprocess_cap` on a missing script records a nonzero exit every cycle, which this
+        # organ's own honesty tests (`test_intelligence_cycle_honesty`) correctly classify as an
+        # ERROR rather than "no input" -- so leaving them would have manufactured three permanent
+        # errors a reader has to learn to ignore.
     ]
     counts: dict[str, int] = {}
     for c in caps:

@@ -274,9 +274,24 @@ class TestWiring:
         text = (_ROOT / "docs/CONSTITUTION.md").read_text("utf-8")
         assert "## L1.51" in text
 
-    def test_law_reaches_the_organs_via_the_doctrine(self) -> None:
-        # A law that never reaches an organ cannot change behaviour however well fenced (L1.36).
-        assert "L1.51" in (_ROOT / "ops/principal_doctrine.txt").read_text("utf-8")
+    def test_law_reaches_the_organs_through_the_laws_document(self) -> None:
+        """A law that never reaches an organ cannot change behaviour however well fenced (L1.36).
+
+        THE ADDRESS MOVED ON 2026-08-25 AND THIS FENCE FOLLOWED IT (2026-09-05).
+        `ops/principal_doctrine.txt` was COMPACTED by principal order that day and says so in its
+        own second paragraph -- "the sprawling duty text that used to live here is compacted
+        there", meaning docs/LAWS.md and docs/RESEARCH.md, "with zero law regression". The law
+        still reaches every organ; the document it reaches them through is LAWS.md now, and the
+        doctrine routes to it by name. A fence pinning the old address goes red on a deliberate
+        consolidation, and gets satisfied by pasting the law back into the file it was moved out
+        of. Both ends are still asserted: the law must be in LAWS.md, and the doctrine must still
+        route organs there.
+        """
+        assert "L1.51" in (_ROOT / "docs/LAWS.md").read_text("utf-8")
+        doctrine = (_ROOT / "ops/principal_doctrine.txt").read_text("utf-8")
+        assert "docs/LAWS.md" in doctrine, (
+            "the doctrine no longer routes organs to docs/LAWS.md, so the compaction that moved "
+            "the law there has cut it off from every organ that must read it")
 
     def test_scheduled_in_the_crontab_manifest(self) -> None:
         text = (_ROOT / "ops/crontab.manifest").read_text("utf-8")

@@ -1,0 +1,952 @@
+{
+ "source": "plumbing",
+ "generated_at": "2026-09-04T19:44:11.609622+00:00",
+ "tests_run": 1950,
+ "discoveries": [
+  {
+   "source": "plumbing",
+   "kind": "plumbing",
+   "symbol": "EURUSD",
+   "family": "clock_transition",
+   "params": {
+    "label": "cme_fx_close",
+    "stamp_hour": 0,
+    "mode": "into",
+    "side": 1,
+    "lead_bars": 1,
+    "hold_bars": 4
+   },
+   "mechanism": "cme_fx_close (CME currency futures settle; basis trades and spot hedges rebalance): into at stamp hour 0, side +1",
+   "title": "EURUSD.cme_fx_close@0.into side=+1",
+   "url": "",
+   "evidence": {
+    "n_independent": 2243,
+    "gross_per_trade": 0.00026516,
+    "net_per_trade": 0.00021968,
+    "cost_frac": 4.549e-05,
+    "t_gross": 16.946,
+    "t_deflated_sweep": 13.639,
+    "n_tests_sweep": 1950,
+    "screen": "family signals, forward return at own TTL, net of round trip, non-overlapping, self-deflated"
+   }
+  },
+  {
+   "source": "plumbing",
+   "kind": "plumbing",
+   "symbol": "EURUSD",
+   "family": "clock_transition",
+   "params": {
+    "label": "cash_equity_close",
+    "stamp_hour": 0,
+    "mode": "into",
+    "side": 1,
+    "lead_bars": 1,
+    "hold_bars": 4
+   },
+   "mechanism": "cash_equity_close (US cash close: index rebalancing, closing auctions, CFD marks): into at stamp hour 0, side +1",
+   "title": "EURUSD.cash_equity_close@0.into side=+1",
+   "url": "",
+   "evidence": {
+    "n_independent": 2243,
+    "gross_per_trade": 0.00026516,
+    "net_per_trade": 0.00021968,
+    "cost_frac": 4.549e-05,
+    "t_gross": 16.946,
+    "t_deflated_sweep": 13.639,
+    "n_tests_sweep": 1950,
+    "screen": "family signals, forward return at own TTL, net of round trip, non-overlapping, self-deflated"
+   }
+  },
+  {
+   "source": "plumbing",
+   "kind": "plumbing",
+   "symbol": "EURUSD",
+   "family": "clock_transition",
+   "params": {
+    "label": "broker_rollover",
+    "stamp_hour": 0,
+    "mode": "into",
+    "side": 1,
+    "lead_bars": 1,
+    "hold_bars": 4
+   },
+   "mechanism": "broker_rollover (the broker's daily swap and mark; spreads widen by contract rather than sentiment): into at stamp hour 0, side +1",
+   "title": "EURUSD.broker_rollover@0.into side=+1",
+   "url": "",
+   "evidence": {
+    "n_independent": 2243,
+    "gross_per_trade": 0.00026516,
+    "net_per_trade": 0.00021968,
+    "cost_frac": 4.549e-05,
+    "t_gross": 16.946,
+    "t_deflated_sweep": 13.639,
+    "n_tests_sweep": 1950,
+    "screen": "family signals, forward return at own TTL, net of round trip, non-overlapping, self-deflated"
+   }
+  },
+  {
+   "source": "plumbing",
+   "kind": "plumbing",
+   "symbol": "GBPUSD",
+   "family": "clock_transition",
+   "params": {
+    "label": "cme_fx_close",
+    "stamp_hour": 0,
+    "mode": "into",
+    "side": 1,
+    "lead_bars": 1,
+    "hold_bars": 4
+   },
+   "mechanism": "cme_fx_close (CME currency futures settle; basis trades and spot hedges rebalance): into at stamp hour 0, side +1",
+   "title": "GBPUSD.cme_fx_close@0.into side=+1",
+   "url": "",
+   "evidence": {
+    "n_independent": 2243,
+    "gross_per_trade": 0.0003506,
+    "net_per_trade": 0.00031167,
+    "cost_frac": 3.893e-05,
+    "t_gross": 16.3,
+    "t_deflated_sweep": 12.993,
+    "n_tests_sweep": 1950,
+    "screen": "family signals, forward return at own TTL, net of round trip, non-overlapping, self-deflated"
+   }
+  },
+  {
+   "source": "plumbing",
+   "kind": "plumbing",
+   "symbol": "GBPUSD",
+   "family": "clock_transition",
+   "params": {
+    "label": "cash_equity_close",
+    "stamp_hour": 0,
+    "mode": "into",
+    "side": 1,
+    "lead_bars": 1,
+    "hold_bars": 4
+   },
+   "mechanism": "cash_equity_close (US cash close: index rebalancing, closing auctions, CFD marks): into at stamp hour 0, side +1",
+   "title": "GBPUSD.cash_equity_close@0.into side=+1",
+   "url": "",
+   "evidence": {
+    "n_independent": 2243,
+    "gross_per_trade": 0.0003506,
+    "net_per_trade": 0.00031167,
+    "cost_frac": 3.893e-05,
+    "t_gross": 16.3,
+    "t_deflated_sweep": 12.993,
+    "n_tests_sweep": 1950,
+    "screen": "family signals, forward return at own TTL, net of round trip, non-overlapping, self-deflated"
+   }
+  },
+  {
+   "source": "plumbing",
+   "kind": "plumbing",
+   "symbol": "GBPUSD",
+   "family": "clock_transition",
+   "params": {
+    "label": "broker_rollover",
+    "stamp_hour": 0,
+    "mode": "into",
+    "side": 1,
+    "lead_bars": 1,
+    "hold_bars": 4
+   },
+   "mechanism": "broker_rollover (the broker's daily swap and mark; spreads widen by contract rather than sentiment): into at stamp hour 0, side +1",
+   "title": "GBPUSD.broker_rollover@0.into side=+1",
+   "url": "",
+   "evidence": {
+    "n_independent": 2243,
+    "gross_per_trade": 0.0003506,
+    "net_per_trade": 0.00031167,
+    "cost_frac": 3.893e-05,
+    "t_gross": 16.3,
+    "t_deflated_sweep": 12.993,
+    "n_tests_sweep": 1950,
+    "screen": "family signals, forward return at own TTL, net of round trip, non-overlapping, self-deflated"
+   }
+  },
+  {
+   "source": "plumbing",
+   "kind": "plumbing",
+   "symbol": "GBPUSD",
+   "family": "clock_transition",
+   "params": {
+    "label": "cash_equity_close",
+    "stamp_hour": 23,
+    "mode": "out_of",
+    "side": 1,
+    "lead_bars": 2,
+    "hold_bars": 2
+   },
+   "mechanism": "cash_equity_close (US cash close: index rebalancing, closing auctions, CFD marks): out_of at stamp hour 23, side +1",
+   "title": "GBPUSD.cash_equity_close@23.out_of side=+1",
+   "url": "",
+   "evidence": {
+    "n_independent": 2244,
+    "gross_per_trade": 0.00035404,
+    "net_per_trade": 0.00031511,
+    "cost_frac": 3.893e-05,
+    "t_gross": 14.685,
+    "t_deflated_sweep": 11.378,
+    "n_tests_sweep": 1950,
+    "screen": "family signals, forward return at own TTL, net of round trip, non-overlapping, self-deflated"
+   }
+  },
+  {
+   "source": "plumbing",
+   "kind": "plumbing",
+   "symbol": "GBPUSD",
+   "family": "clock_transition",
+   "params": {
+    "label": "broker_rollover",
+    "stamp_hour": 23,
+    "mode": "out_of",
+    "side": 1,
+    "lead_bars": 2,
+    "hold_bars": 2
+   },
+   "mechanism": "broker_rollover (the broker's daily swap and mark; spreads widen by contract rather than sentiment): out_of at stamp hour 23, side +1",
+   "title": "GBPUSD.broker_rollover@23.out_of side=+1",
+   "url": "",
+   "evidence": {
+    "n_independent": 2244,
+    "gross_per_trade": 0.00035404,
+    "net_per_trade": 0.00031511,
+    "cost_frac": 3.893e-05,
+    "t_gross": 14.685,
+    "t_deflated_sweep": 11.378,
+    "n_tests_sweep": 1950,
+    "screen": "family signals, forward return at own TTL, net of round trip, non-overlapping, self-deflated"
+   }
+  },
+  {
+   "source": "plumbing",
+   "kind": "plumbing",
+   "symbol": "GBPUSD",
+   "family": "clock_transition",
+   "params": {
+    "label": "cme_fx_close",
+    "stamp_hour": 1,
+    "mode": "into",
+    "side": 1,
+    "lead_bars": 2,
+    "hold_bars": 4
+   },
+   "mechanism": "cme_fx_close (CME currency futures settle; basis trades and spot hedges rebalance): into at stamp hour 1, side +1",
+   "title": "GBPUSD.cme_fx_close@1.into side=+1",
+   "url": "",
+   "evidence": {
+    "n_independent": 2245,
+    "gross_per_trade": 0.00035372,
+    "net_per_trade": 0.00031479,
+    "cost_frac": 3.893e-05,
+    "t_gross": 14.678,
+    "t_deflated_sweep": 11.371,
+    "n_tests_sweep": 1950,
+    "screen": "family signals, forward return at own TTL, net of round trip, non-overlapping, self-deflated"
+   }
+  },
+  {
+   "source": "plumbing",
+   "kind": "plumbing",
+   "symbol": "EURUSD",
+   "family": "clock_transition",
+   "params": {
+    "label": "cash_equity_close",
+    "stamp_hour": 23,
+    "mode": "out_of",
+    "side": 1,
+    "lead_bars": 2,
+    "hold_bars": 2
+   },
+   "mechanism": "cash_equity_close (US cash close: index rebalancing, closing auctions, CFD marks): out_of at stamp hour 23, side +1",
+   "title": "EURUSD.cash_equity_close@23.out_of side=+1",
+   "url": "",
+   "evidence": {
+    "n_independent": 2243,
+    "gross_per_trade": 0.00026402,
+    "net_per_trade": 0.00021854,
+    "cost_frac": 4.549e-05,
+    "t_gross": 13.404,
+    "t_deflated_sweep": 10.097,
+    "n_tests_sweep": 1950,
+    "screen": "family signals, forward return at own TTL, net of round trip, non-overlapping, self-deflated"
+   }
+  },
+  {
+   "source": "plumbing",
+   "kind": "plumbing",
+   "symbol": "EURUSD",
+   "family": "clock_transition",
+   "params": {
+    "label": "broker_rollover",
+    "stamp_hour": 23,
+    "mode": "out_of",
+    "side": 1,
+    "lead_bars": 2,
+    "hold_bars": 2
+   },
+   "mechanism": "broker_rollover (the broker's daily swap and mark; spreads widen by contract rather than sentiment): out_of at stamp hour 23, side +1",
+   "title": "EURUSD.broker_rollover@23.out_of side=+1",
+   "url": "",
+   "evidence": {
+    "n_independent": 2243,
+    "gross_per_trade": 0.00026402,
+    "net_per_trade": 0.00021854,
+    "cost_frac": 4.549e-05,
+    "t_gross": 13.404,
+    "t_deflated_sweep": 10.097,
+    "n_tests_sweep": 1950,
+    "screen": "family signals, forward return at own TTL, net of round trip, non-overlapping, self-deflated"
+   }
+  },
+  {
+   "source": "plumbing",
+   "kind": "plumbing",
+   "symbol": "EURUSD",
+   "family": "clock_transition",
+   "params": {
+    "label": "cme_fx_close",
+    "stamp_hour": 1,
+    "mode": "into",
+    "side": 1,
+    "lead_bars": 2,
+    "hold_bars": 4
+   },
+   "mechanism": "cme_fx_close (CME currency futures settle; basis trades and spot hedges rebalance): into at stamp hour 1, side +1",
+   "title": "EURUSD.cme_fx_close@1.into side=+1",
+   "url": "",
+   "evidence": {
+    "n_independent": 2245,
+    "gross_per_trade": 0.00026304,
+    "net_per_trade": 0.00021755,
+    "cost_frac": 4.549e-05,
+    "t_gross": 13.358,
+    "t_deflated_sweep": 10.051,
+    "n_tests_sweep": 1950,
+    "screen": "family signals, forward return at own TTL, net of round trip, non-overlapping, self-deflated"
+   }
+  },
+  {
+   "source": "plumbing",
+   "kind": "plumbing",
+   "symbol": "GBPUSD",
+   "family": "clock_transition",
+   "params": {
+    "label": "tokyo_open",
+    "stamp_hour": 3,
+    "mode": "into",
+    "side": 1,
+    "lead_bars": 4,
+    "hold_bars": 4
+   },
+   "mechanism": "tokyo_open (Tokyo 09:00: the first liquid Asian bid after the New York close): into at stamp hour 3, side +1",
+   "title": "GBPUSD.tokyo_open@3.into side=+1",
+   "url": "",
+   "evidence": {
+    "n_independent": 2245,
+    "gross_per_trade": 0.00034745,
+    "net_per_trade": 0.00030853,
+    "cost_frac": 3.893e-05,
+    "t_gross": 10.259,
+    "t_deflated_sweep": 6.952,
+    "n_tests_sweep": 1950,
+    "screen": "family signals, forward return at own TTL, net of round trip, non-overlapping, self-deflated"
+   }
+  },
+  {
+   "source": "plumbing",
+   "kind": "plumbing",
+   "symbol": "EURUSD",
+   "family": "clock_transition",
+   "params": {
+    "label": "tokyo_open",
+    "stamp_hour": 3,
+    "mode": "into",
+    "side": 1,
+    "lead_bars": 4,
+    "hold_bars": 4
+   },
+   "mechanism": "tokyo_open (Tokyo 09:00: the first liquid Asian bid after the New York close): into at stamp hour 3, side +1",
+   "title": "EURUSD.tokyo_open@3.into side=+1",
+   "url": "",
+   "evidence": {
+    "n_independent": 2245,
+    "gross_per_trade": 0.00028246,
+    "net_per_trade": 0.00023698,
+    "cost_frac": 4.549e-05,
+    "t_gross": 10.151,
+    "t_deflated_sweep": 6.844,
+    "n_tests_sweep": 1950,
+    "screen": "family signals, forward return at own TTL, net of round trip, non-overlapping, self-deflated"
+   }
+  },
+  {
+   "source": "plumbing",
+   "kind": "plumbing",
+   "symbol": "GBPUSD",
+   "family": "clock_transition",
+   "params": {
+    "label": "cash_equity_close",
+    "stamp_hour": 23,
+    "mode": "into",
+    "side": -1,
+    "lead_bars": 1,
+    "hold_bars": 4
+   },
+   "mechanism": "cash_equity_close (US cash close: index rebalancing, closing auctions, CFD marks): into at stamp hour 23, side -1",
+   "title": "GBPUSD.cash_equity_close@23.into side=-1",
+   "url": "",
+   "evidence": {
+    "n_independent": 2244,
+    "gross_per_trade": 0.00021301,
+    "net_per_trade": 0.00017408,
+    "cost_frac": 3.893e-05,
+    "t_gross": 9.438,
+    "t_deflated_sweep": 6.131,
+    "n_tests_sweep": 1950,
+    "screen": "family signals, forward return at own TTL, net of round trip, non-overlapping, self-deflated"
+   }
+  },
+  {
+   "source": "plumbing",
+   "kind": "plumbing",
+   "symbol": "GBPUSD",
+   "family": "clock_transition",
+   "params": {
+    "label": "broker_rollover",
+    "stamp_hour": 23,
+    "mode": "into",
+    "side": -1,
+    "lead_bars": 1,
+    "hold_bars": 4
+   },
+   "mechanism": "broker_rollover (the broker's daily swap and mark; spreads widen by contract rather than sentiment): into at stamp hour 23, side -1",
+   "title": "GBPUSD.broker_rollover@23.into side=-1",
+   "url": "",
+   "evidence": {
+    "n_independent": 2244,
+    "gross_per_trade": 0.00021301,
+    "net_per_trade": 0.00017408,
+    "cost_frac": 3.893e-05,
+    "t_gross": 9.438,
+    "t_deflated_sweep": 6.131,
+    "n_tests_sweep": 1950,
+    "screen": "family signals, forward return at own TTL, net of round trip, non-overlapping, self-deflated"
+   }
+  },
+  {
+   "source": "plumbing",
+   "kind": "plumbing",
+   "symbol": "USDJPY",
+   "family": "clock_transition",
+   "params": {
+    "label": "cash_equity_close",
+    "stamp_hour": 23,
+    "mode": "into",
+    "side": -1,
+    "lead_bars": 1,
+    "hold_bars": 4
+   },
+   "mechanism": "cash_equity_close (US cash close: index rebalancing, closing auctions, CFD marks): into at stamp hour 23, side -1",
+   "title": "USDJPY.cash_equity_close@23.into side=-1",
+   "url": "",
+   "evidence": {
+    "n_independent": 2243,
+    "gross_per_trade": 0.00020658,
+    "net_per_trade": 0.00015519,
+    "cost_frac": 5.139e-05,
+    "t_gross": 8.041,
+    "t_deflated_sweep": 4.734,
+    "n_tests_sweep": 1950,
+    "screen": "family signals, forward return at own TTL, net of round trip, non-overlapping, self-deflated"
+   }
+  },
+  {
+   "source": "plumbing",
+   "kind": "plumbing",
+   "symbol": "USDJPY",
+   "family": "clock_transition",
+   "params": {
+    "label": "broker_rollover",
+    "stamp_hour": 23,
+    "mode": "into",
+    "side": -1,
+    "lead_bars": 1,
+    "hold_bars": 4
+   },
+   "mechanism": "broker_rollover (the broker's daily swap and mark; spreads widen by contract rather than sentiment): into at stamp hour 23, side -1",
+   "title": "USDJPY.broker_rollover@23.into side=-1",
+   "url": "",
+   "evidence": {
+    "n_independent": 2243,
+    "gross_per_trade": 0.00020658,
+    "net_per_trade": 0.00015519,
+    "cost_frac": 5.139e-05,
+    "t_gross": 8.041,
+    "t_deflated_sweep": 4.734,
+    "n_tests_sweep": 1950,
+    "screen": "family signals, forward return at own TTL, net of round trip, non-overlapping, self-deflated"
+   }
+  },
+  {
+   "source": "plumbing",
+   "kind": "plumbing",
+   "symbol": "GBPUSD",
+   "family": "clock_transition",
+   "params": {
+    "label": "comex_settle",
+    "stamp_hour": 21,
+    "mode": "out_of",
+    "side": -1,
+    "lead_bars": 2,
+    "hold_bars": 2
+   },
+   "mechanism": "comex_settle (COMEX metals settlement window): out_of at stamp hour 21, side -1",
+   "title": "GBPUSD.comex_settle@21.out_of side=-1",
+   "url": "",
+   "evidence": {
+    "n_independent": 2246,
+    "gross_per_trade": 0.00020287,
+    "net_per_trade": 0.00016394,
+    "cost_frac": 3.893e-05,
+    "t_gross": 7.407,
+    "t_deflated_sweep": 4.1,
+    "n_tests_sweep": 1950,
+    "screen": "family signals, forward return at own TTL, net of round trip, non-overlapping, self-deflated"
+   }
+  },
+  {
+   "source": "plumbing",
+   "kind": "plumbing",
+   "symbol": "GBPUSD",
+   "family": "clock_transition",
+   "params": {
+    "label": "cme_fx_close",
+    "stamp_hour": 0,
+    "mode": "out_of",
+    "side": 1,
+    "lead_bars": 2,
+    "hold_bars": 2
+   },
+   "mechanism": "cme_fx_close (CME currency futures settle; basis trades and spot hedges rebalance): out_of at stamp hour 0, side +1",
+   "title": "GBPUSD.cme_fx_close@0.out_of side=+1",
+   "url": "",
+   "evidence": {
+    "n_independent": 2244,
+    "gross_per_trade": 0.00022267,
+    "net_per_trade": 0.00018374,
+    "cost_frac": 3.893e-05,
+    "t_gross": 7.29,
+    "t_deflated_sweep": 3.983,
+    "n_tests_sweep": 1950,
+    "screen": "family signals, forward return at own TTL, net of round trip, non-overlapping, self-deflated"
+   }
+  },
+  {
+   "source": "plumbing",
+   "kind": "plumbing",
+   "symbol": "GBPUSD",
+   "family": "clock_transition",
+   "params": {
+    "label": "cash_equity_close",
+    "stamp_hour": 0,
+    "mode": "out_of",
+    "side": 1,
+    "lead_bars": 2,
+    "hold_bars": 2
+   },
+   "mechanism": "cash_equity_close (US cash close: index rebalancing, closing auctions, CFD marks): out_of at stamp hour 0, side +1",
+   "title": "GBPUSD.cash_equity_close@0.out_of side=+1",
+   "url": "",
+   "evidence": {
+    "n_independent": 2244,
+    "gross_per_trade": 0.00022267,
+    "net_per_trade": 0.00018374,
+    "cost_frac": 3.893e-05,
+    "t_gross": 7.29,
+    "t_deflated_sweep": 3.983,
+    "n_tests_sweep": 1950,
+    "screen": "family signals, forward return at own TTL, net of round trip, non-overlapping, self-deflated"
+   }
+  },
+  {
+   "source": "plumbing",
+   "kind": "plumbing",
+   "symbol": "GBPUSD",
+   "family": "clock_transition",
+   "params": {
+    "label": "broker_rollover",
+    "stamp_hour": 0,
+    "mode": "out_of",
+    "side": 1,
+    "lead_bars": 2,
+    "hold_bars": 2
+   },
+   "mechanism": "broker_rollover (the broker's daily swap and mark; spreads widen by contract rather than sentiment): out_of at stamp hour 0, side +1",
+   "title": "GBPUSD.broker_rollover@0.out_of side=+1",
+   "url": "",
+   "evidence": {
+    "n_independent": 2244,
+    "gross_per_trade": 0.00022267,
+    "net_per_trade": 0.00018374,
+    "cost_frac": 3.893e-05,
+    "t_gross": 7.29,
+    "t_deflated_sweep": 3.983,
+    "n_tests_sweep": 1950,
+    "screen": "family signals, forward return at own TTL, net of round trip, non-overlapping, self-deflated"
+   }
+  },
+  {
+   "source": "plumbing",
+   "kind": "plumbing",
+   "symbol": "USDJPY",
+   "family": "clock_transition",
+   "params": {
+    "label": "cme_fx_close",
+    "stamp_hour": 0,
+    "mode": "into",
+    "side": 1,
+    "lead_bars": 1,
+    "hold_bars": 4
+   },
+   "mechanism": "cme_fx_close (CME currency futures settle; basis trades and spot hedges rebalance): into at stamp hour 0, side +1",
+   "title": "USDJPY.cme_fx_close@0.into side=+1",
+   "url": "",
+   "evidence": {
+    "n_independent": 2243,
+    "gross_per_trade": 0.00017054,
+    "net_per_trade": 0.00011915,
+    "cost_frac": 5.139e-05,
+    "t_gross": 7.246,
+    "t_deflated_sweep": 3.939,
+    "n_tests_sweep": 1950,
+    "screen": "family signals, forward return at own TTL, net of round trip, non-overlapping, self-deflated"
+   }
+  },
+  {
+   "source": "plumbing",
+   "kind": "plumbing",
+   "symbol": "USDJPY",
+   "family": "clock_transition",
+   "params": {
+    "label": "cash_equity_close",
+    "stamp_hour": 0,
+    "mode": "into",
+    "side": 1,
+    "lead_bars": 1,
+    "hold_bars": 4
+   },
+   "mechanism": "cash_equity_close (US cash close: index rebalancing, closing auctions, CFD marks): into at stamp hour 0, side +1",
+   "title": "USDJPY.cash_equity_close@0.into side=+1",
+   "url": "",
+   "evidence": {
+    "n_independent": 2243,
+    "gross_per_trade": 0.00017054,
+    "net_per_trade": 0.00011915,
+    "cost_frac": 5.139e-05,
+    "t_gross": 7.246,
+    "t_deflated_sweep": 3.939,
+    "n_tests_sweep": 1950,
+    "screen": "family signals, forward return at own TTL, net of round trip, non-overlapping, self-deflated"
+   }
+  },
+  {
+   "source": "plumbing",
+   "kind": "plumbing",
+   "symbol": "USDJPY",
+   "family": "clock_transition",
+   "params": {
+    "label": "broker_rollover",
+    "stamp_hour": 0,
+    "mode": "into",
+    "side": 1,
+    "lead_bars": 1,
+    "hold_bars": 4
+   },
+   "mechanism": "broker_rollover (the broker's daily swap and mark; spreads widen by contract rather than sentiment): into at stamp hour 0, side +1",
+   "title": "USDJPY.broker_rollover@0.into side=+1",
+   "url": "",
+   "evidence": {
+    "n_independent": 2243,
+    "gross_per_trade": 0.00017054,
+    "net_per_trade": 0.00011915,
+    "cost_frac": 5.139e-05,
+    "t_gross": 7.246,
+    "t_deflated_sweep": 3.939,
+    "n_tests_sweep": 1950,
+    "screen": "family signals, forward return at own TTL, net of round trip, non-overlapping, self-deflated"
+   }
+  },
+  {
+   "source": "plumbing",
+   "kind": "plumbing",
+   "symbol": "XAUUSD",
+   "family": "clock_transition",
+   "params": {
+    "label": "cme_fx_close",
+    "stamp_hour": 1,
+    "mode": "into",
+    "side": 1,
+    "lead_bars": 1,
+    "hold_bars": 4
+   },
+   "mechanism": "cme_fx_close (CME currency futures settle; basis trades and spot hedges rebalance): into at stamp hour 1, side +1",
+   "title": "XAUUSD.cme_fx_close@1.into side=+1",
+   "url": "",
+   "evidence": {
+    "n_independent": 2180,
+    "gross_per_trade": 0.00035781,
+    "net_per_trade": 0.00028106,
+    "cost_frac": 7.675e-05,
+    "t_gross": 6.933,
+    "t_deflated_sweep": 3.626,
+    "n_tests_sweep": 1950,
+    "screen": "family signals, forward return at own TTL, net of round trip, non-overlapping, self-deflated"
+   }
+  },
+  {
+   "source": "plumbing",
+   "kind": "plumbing",
+   "symbol": "GBPUSD",
+   "family": "clock_transition",
+   "params": {
+    "label": "cme_fx_close",
+    "stamp_hour": 0,
+    "mode": "fade",
+    "side": 1,
+    "lead_bars": 2,
+    "hold_bars": 4
+   },
+   "mechanism": "cme_fx_close (CME currency futures settle; basis trades and spot hedges rebalance): fade at stamp hour 0, side +1",
+   "title": "GBPUSD.cme_fx_close@0.fade side=+1",
+   "url": "",
+   "evidence": {
+    "n_independent": 2224,
+    "gross_per_trade": 0.00023512,
+    "net_per_trade": 0.00019619,
+    "cost_frac": 3.893e-05,
+    "t_gross": 6.8,
+    "t_deflated_sweep": 3.493,
+    "n_tests_sweep": 1950,
+    "screen": "family signals, forward return at own TTL, net of round trip, non-overlapping, self-deflated"
+   }
+  },
+  {
+   "source": "plumbing",
+   "kind": "plumbing",
+   "symbol": "GBPUSD",
+   "family": "clock_transition",
+   "params": {
+    "label": "cash_equity_close",
+    "stamp_hour": 0,
+    "mode": "fade",
+    "side": 1,
+    "lead_bars": 2,
+    "hold_bars": 4
+   },
+   "mechanism": "cash_equity_close (US cash close: index rebalancing, closing auctions, CFD marks): fade at stamp hour 0, side +1",
+   "title": "GBPUSD.cash_equity_close@0.fade side=+1",
+   "url": "",
+   "evidence": {
+    "n_independent": 2224,
+    "gross_per_trade": 0.00023512,
+    "net_per_trade": 0.00019619,
+    "cost_frac": 3.893e-05,
+    "t_gross": 6.8,
+    "t_deflated_sweep": 3.493,
+    "n_tests_sweep": 1950,
+    "screen": "family signals, forward return at own TTL, net of round trip, non-overlapping, self-deflated"
+   }
+  },
+  {
+   "source": "plumbing",
+   "kind": "plumbing",
+   "symbol": "GBPUSD",
+   "family": "clock_transition",
+   "params": {
+    "label": "broker_rollover",
+    "stamp_hour": 0,
+    "mode": "fade",
+    "side": 1,
+    "lead_bars": 2,
+    "hold_bars": 4
+   },
+   "mechanism": "broker_rollover (the broker's daily swap and mark; spreads widen by contract rather than sentiment): fade at stamp hour 0, side +1",
+   "title": "GBPUSD.broker_rollover@0.fade side=+1",
+   "url": "",
+   "evidence": {
+    "n_independent": 2224,
+    "gross_per_trade": 0.00023512,
+    "net_per_trade": 0.00019619,
+    "cost_frac": 3.893e-05,
+    "t_gross": 6.8,
+    "t_deflated_sweep": 3.493,
+    "n_tests_sweep": 1950,
+    "screen": "family signals, forward return at own TTL, net of round trip, non-overlapping, self-deflated"
+   }
+  },
+  {
+   "source": "plumbing",
+   "kind": "plumbing",
+   "symbol": "EURUSD",
+   "family": "clock_transition",
+   "params": {
+    "label": "cme_fx_close",
+    "stamp_hour": 0,
+    "mode": "out_of",
+    "side": 1,
+    "lead_bars": 2,
+    "hold_bars": 2
+   },
+   "mechanism": "cme_fx_close (CME currency futures settle; basis trades and spot hedges rebalance): out_of at stamp hour 0, side +1",
+   "title": "EURUSD.cme_fx_close@0.out_of side=+1",
+   "url": "",
+   "evidence": {
+    "n_independent": 2244,
+    "gross_per_trade": 0.00015651,
+    "net_per_trade": 0.00011103,
+    "cost_frac": 4.549e-05,
+    "t_gross": 6.671,
+    "t_deflated_sweep": 3.364,
+    "n_tests_sweep": 1950,
+    "screen": "family signals, forward return at own TTL, net of round trip, non-overlapping, self-deflated"
+   }
+  },
+  {
+   "source": "plumbing",
+   "kind": "plumbing",
+   "symbol": "EURUSD",
+   "family": "clock_transition",
+   "params": {
+    "label": "cash_equity_close",
+    "stamp_hour": 0,
+    "mode": "out_of",
+    "side": 1,
+    "lead_bars": 2,
+    "hold_bars": 2
+   },
+   "mechanism": "cash_equity_close (US cash close: index rebalancing, closing auctions, CFD marks): out_of at stamp hour 0, side +1",
+   "title": "EURUSD.cash_equity_close@0.out_of side=+1",
+   "url": "",
+   "evidence": {
+    "n_independent": 2244,
+    "gross_per_trade": 0.00015651,
+    "net_per_trade": 0.00011103,
+    "cost_frac": 4.549e-05,
+    "t_gross": 6.671,
+    "t_deflated_sweep": 3.364,
+    "n_tests_sweep": 1950,
+    "screen": "family signals, forward return at own TTL, net of round trip, non-overlapping, self-deflated"
+   }
+  },
+  {
+   "source": "plumbing",
+   "kind": "plumbing",
+   "symbol": "EURUSD",
+   "family": "clock_transition",
+   "params": {
+    "label": "broker_rollover",
+    "stamp_hour": 0,
+    "mode": "out_of",
+    "side": 1,
+    "lead_bars": 2,
+    "hold_bars": 2
+   },
+   "mechanism": "broker_rollover (the broker's daily swap and mark; spreads widen by contract rather than sentiment): out_of at stamp hour 0, side +1",
+   "title": "EURUSD.broker_rollover@0.out_of side=+1",
+   "url": "",
+   "evidence": {
+    "n_independent": 2244,
+    "gross_per_trade": 0.00015651,
+    "net_per_trade": 0.00011103,
+    "cost_frac": 4.549e-05,
+    "t_gross": 6.671,
+    "t_deflated_sweep": 3.364,
+    "n_tests_sweep": 1950,
+    "screen": "family signals, forward return at own TTL, net of round trip, non-overlapping, self-deflated"
+   }
+  },
+  {
+   "source": "plumbing",
+   "kind": "plumbing",
+   "symbol": "XAUUSD",
+   "family": "clock_transition",
+   "params": {
+    "label": "cash_equity_close",
+    "stamp_hour": 23,
+    "mode": "out_of",
+    "side": 1,
+    "lead_bars": 2,
+    "hold_bars": 2
+   },
+   "mechanism": "cash_equity_close (US cash close: index rebalancing, closing auctions, CFD marks): out_of at stamp hour 23, side +1",
+   "title": "XAUUSD.cash_equity_close@23.out_of side=+1",
+   "url": "",
+   "evidence": {
+    "n_independent": 2112,
+    "gross_per_trade": 0.00040398,
+    "net_per_trade": 0.00032723,
+    "cost_frac": 7.675e-05,
+    "t_gross": 5.911,
+    "t_deflated_sweep": 2.604,
+    "n_tests_sweep": 1950,
+    "screen": "family signals, forward return at own TTL, net of round trip, non-overlapping, self-deflated"
+   }
+  },
+  {
+   "source": "plumbing",
+   "kind": "plumbing",
+   "symbol": "XAUUSD",
+   "family": "clock_transition",
+   "params": {
+    "label": "broker_rollover",
+    "stamp_hour": 23,
+    "mode": "out_of",
+    "side": 1,
+    "lead_bars": 2,
+    "hold_bars": 2
+   },
+   "mechanism": "broker_rollover (the broker's daily swap and mark; spreads widen by contract rather than sentiment): out_of at stamp hour 23, side +1",
+   "title": "XAUUSD.broker_rollover@23.out_of side=+1",
+   "url": "",
+   "evidence": {
+    "n_independent": 2112,
+    "gross_per_trade": 0.00040398,
+    "net_per_trade": 0.00032723,
+    "cost_frac": 7.675e-05,
+    "t_gross": 5.911,
+    "t_deflated_sweep": 2.604,
+    "n_tests_sweep": 1950,
+    "screen": "family signals, forward return at own TTL, net of round trip, non-overlapping, self-deflated"
+   }
+  },
+  {
+   "source": "plumbing",
+   "kind": "plumbing",
+   "symbol": "XAUUSD",
+   "family": "clock_transition",
+   "params": {
+    "label": "tokyo_open",
+    "stamp_hour": 3,
+    "mode": "into",
+    "side": 1,
+    "lead_bars": 4,
+    "hold_bars": 4
+   },
+   "mechanism": "tokyo_open (Tokyo 09:00: the first liquid Asian bid after the New York close): into at stamp hour 3, side +1",
+   "title": "XAUUSD.tokyo_open@3.into side=+1",
+   "url": "",
+   "evidence": {
+    "n_independent": 2180,
+    "gross_per_trade": 0.00048698,
+    "net_per_trade": 0.00041022,
+    "cost_frac": 7.675e-05,
+    "t_gross": 5.368,
+    "t_deflated_sweep": 2.061,
+    "n_tests_sweep": 1950,
+    "screen": "family signals, forward return at own TTL, net of round trip, non-overlapping, self-deflated"
+   }
+  }
+ ]
+}

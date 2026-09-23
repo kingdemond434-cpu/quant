@@ -1,0 +1,1455 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Historical Data - Pakistan Stock Exchange (PSX)",
+  "url": "https://dps.psx.com.pk/historical",
+  "published": "2026-09-07T04:07:18+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "auction",
+   "basis",
+   "carry",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "",
+  "endpoints": [
+   "https://dps.psx.com.pk/downloads"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "d722ac50738b299a842d",
+  "host": "dps.psx.com.pk",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "SBP STRATEGIC PLAN FY 2024-28",
+  "url": "https://archive.sbp.org.pk/SBPVision/Index.html",
+  "published": "2026-09-07T04:07:19+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "507deafaf6ba4d0b2e9f",
+  "host": "archive.sbp.org.pk",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Google News",
+  "url": "http://news.google.com/archivesearch?&as_src=-newswire+-wire+-presswire+-PR+-release+-wikipedia&q=%22Algoritms%22",
+  "published": "2026-09-07T04:07:20+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [
+   "http://news.google.com/_/DotsSplashUi/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "193964e5d9e5f6a6f082",
+  "host": "news.google.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "IBKR API Development | IBKR Campus",
+  "url": "https://interactivebrokers.eu/campus/category/ibkr-quant-news/api-development/",
+  "published": "2026-09-07T04:07:21+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.interactivebrokers.eu/campus/traders-academy/api/"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "e31b12bc936a703b06ac",
+  "host": "interactivebrokers.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "IBKR Quant Home | IBKR Campus",
+  "url": "https://www.interactivebrokers.eu/campus/category/ibkr-quant-news/ibkr-quant-home/",
+  "published": "2026-09-07T04:07:22+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.interactivebrokers.eu/campus/traders-academy/api/",
+   "https://ibkrcampus.eu/campus/traders-academy/api/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "a1c5d74ebf22cc0497e9",
+  "host": "www.interactivebrokers.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "How to Access Interactive Brokers\u2019 Alternative Trading System (IBKRATS)",
+  "url": "https://www.interactivebrokers.eu/campus/trading-lessons/how-to-access-interactive-brokers-automated-trading-system-ibkrats/",
+  "published": "2026-09-07T04:07:25+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.interactivebrokers.eu/campus/traders-academy/api/"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "5d0172052eb1dff402c3",
+  "host": "www.interactivebrokers.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "IBKR ATS Pegged-to-Best | Trading Lesson | Traders&#039; Academy",
+  "url": "https://www.interactivebrokers.eu/campus/trading-lessons/ibkr-ats-pegged-to-best/",
+  "published": "2026-09-07T04:07:27+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.interactivebrokers.eu/campus/traders-academy/api/"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "2b6821dd0d6cf0fba9b3",
+  "host": "www.interactivebrokers.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "IBKR ATS Pegged-to-Midpoint | Trading Lesson",
+  "url": "https://www.interactivebrokers.eu/campus/trading-lessons/ibkr-ats-pegged-to-midpoint/",
+  "published": "2026-09-07T04:07:29+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.interactivebrokers.eu/campus/traders-academy/api/"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "e7c172004a717c95cfbd",
+  "host": "www.interactivebrokers.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Accumulate/Distribute &#8211; Basic | Trading Lesson",
+  "url": "https://www.interactivebrokers.eu/campus/trading-lessons/accumulate-distribute-basic/",
+  "published": "2026-09-07T04:07:32+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.interactivebrokers.eu/campus/traders-academy/api/"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "aad26c54668f066e87de",
+  "host": "www.interactivebrokers.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Accumulate/Distribute &#8211; Intermediate | Trading Lesson",
+  "url": "https://www.interactivebrokers.eu/campus/trading-lessons/accumulate-distribute-medium/",
+  "published": "2026-09-07T04:07:33+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.interactivebrokers.eu/campus/traders-academy/api/"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "99953fad66ca0aaf6880",
+  "host": "www.interactivebrokers.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Accumulate/Distribute &#8211; Advanced | Trading Lesson",
+  "url": "https://www.interactivebrokers.eu/campus/trading-lessons/accumulate-distribute-2/",
+  "published": "2026-09-07T04:07:35+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.interactivebrokers.eu/campus/traders-academy/api/"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "f5463fd4c87dedb86de4",
+  "host": "www.interactivebrokers.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Adaptive | Trading Lesson | Traders&#039; Academy | IBKR Campus",
+  "url": "https://www.interactivebrokers.eu/campus/trading-lessons/adaptive/",
+  "published": "2026-09-07T04:07:37+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.interactivebrokers.eu/campus/traders-academy/api/"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "097537193de28fbc7d24",
+  "host": "www.interactivebrokers.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Adaptive Order Type in Desktop | Trading Lesson",
+  "url": "https://www.interactivebrokers.eu/campus/trading-lessons/adaptive-order-type-in-desktop/",
+  "published": "2026-09-07T04:07:40+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.interactivebrokers.eu/campus/traders-academy/api/"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "dd21ffabf282412da0d8",
+  "host": "www.interactivebrokers.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "All or None (AON) | Trading Lesson | Traders&#039; Academy",
+  "url": "https://www.interactivebrokers.eu/campus/trading-lessons/all-or-none-aon/",
+  "published": "2026-09-07T04:07:42+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.interactivebrokers.eu/campus/traders-academy/api/"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "4901862f9258cd566172",
+  "host": "www.interactivebrokers.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Arrival Price | Trading Lesson | Traders&#039; Academy",
+  "url": "https://www.interactivebrokers.eu/campus/trading-lessons/arrival-price/",
+  "published": "2026-09-07T04:07:44+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "night_session",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.interactivebrokers.eu/campus/traders-academy/api/"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "fc153c141f81d9aac5e6",
+  "host": "www.interactivebrokers.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Arrival Price Orders in Desktop | Trading Lesson",
+  "url": "https://www.interactivebrokers.eu/campus/trading-lessons/arrival-price-orders-in-desktop/",
+  "published": "2026-09-07T04:07:46+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "night_session",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.interactivebrokers.eu/campus/traders-academy/api/"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "bfce8c1c5a077610bf0f",
+  "host": "www.interactivebrokers.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "TWS BasketTrader Part 1 \u2013 Create a Basket | Trading Lesson",
+  "url": "https://www.interactivebrokers.eu/campus/trading-lessons/tws-baskettrader-create-a-basket/",
+  "published": "2026-09-07T04:07:48+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "flow",
+   "inventory",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.interactivebrokers.eu/campus/traders-academy/api/"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "b4974ba2f1732813460d",
+  "host": "www.interactivebrokers.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Bracket Orders for TWS Mosaic | Trading Lesson",
+  "url": "https://www.interactivebrokers.eu/campus/trading-lessons/bracket-orders-for-tws-mosaic-2/",
+  "published": "2026-09-07T04:07:50+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.interactivebrokers.eu/campus/traders-academy/api/"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "f10ee0b72833039c26b2",
+  "host": "www.interactivebrokers.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Bracket Orders for IBKR Desktop | Trading Lesson",
+  "url": "https://www.interactivebrokers.eu/campus/trading-lessons/bracket-orders-for-ibkr-desktop/",
+  "published": "2026-09-07T04:07:52+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.interactivebrokers.eu/campus/traders-academy/api/"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "e8a45410fee273b1f6e3",
+  "host": "www.interactivebrokers.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Close Price | Trading Lesson | Traders&#039; Academy",
+  "url": "https://www.interactivebrokers.eu/campus/trading-lessons/close-price/",
+  "published": "2026-09-07T04:07:54+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "auction",
+   "night_session",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.interactivebrokers.eu/campus/traders-academy/api/"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "f3442fc47629aa629b75",
+  "host": "www.interactivebrokers.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Close Price Orders in Desktop | Trading Lesson",
+  "url": "https://www.interactivebrokers.eu/campus/trading-lessons/close-price-orders-in-desktop/",
+  "published": "2026-09-07T04:07:56+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "auction",
+   "night_session",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.interactivebrokers.eu/campus/traders-academy/api/"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "145dbff12d9be58db83b",
+  "host": "www.interactivebrokers.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Conditional Orders | Trading Lesson | Traders&#039; Academy",
+  "url": "https://www.interactivebrokers.eu/campus/trading-lessons/conditional-orders/",
+  "published": "2026-09-07T04:07:59+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.interactivebrokers.eu/campus/traders-academy/api/"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "668d04cc1b229db251a3",
+  "host": "www.interactivebrokers.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "The probability of backtest overfitting - Journal of Computational Finance",
+  "url": "https://www.risk.net/journal-of-computational-finance/2471206/the-probability-of-backtest-overfitting",
+  "published": "2026-09-07T04:08:00+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "orderflow"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f78ec2e44298308676e8",
+  "host": "www.risk.net",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Trading the Odds | A statistical approach to profit in the US equity markets, trading the markets like professional card counters are playing Blackjack or expert poker players are playing Poker.",
+  "url": "http://tradingtheodds.wordpress.com/",
+  "published": "2026-09-07T04:08:01+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "gap",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3129a6dd9e24d0d006a0",
+  "host": "tradingtheodds.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "HPC-QuantLib",
+  "url": "http://hpcquantlib.wordpress.com/",
+  "published": "2026-09-07T04:08:01+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage",
+   "basis",
+   "correlation",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "6a48bb44d5fbb60c7ec9",
+  "host": "hpcquantlib.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Cumulative IBS Indicator | European Edges",
+  "url": "http://europeanedges.wordpress.com/2013/01/13/cumulative-ibs-indicator/",
+  "published": "2026-09-07T04:08:02+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "gap",
+   "mean_reversion",
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "db893ebebc0fe3d2bd2e",
+  "host": "europeanedges.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Using IBS and RSI for Short-Term Mean Reversion Trading | Journeys of a Bumbling Trader",
+  "url": "http://whatheheckaboom.wordpress.com/2014/01/02/using-ibs-and-rsi-for-short-term-mean-reversion-trading/",
+  "published": "2026-09-07T04:08:02+00:00",
+  "symbols": [],
+  "timeframes": [
+   "INTRADAY"
+  ],
+  "patterns": [
+   "mean_reversion"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "eb7446ce3353853a7aa9",
+  "host": "whatheheckaboom.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Intelligent Trading",
+  "url": "http://intelligenttradingtech.blogspot.ca/",
+  "published": "2026-09-07T04:08:03+00:00",
+  "symbols": [],
+  "timeframes": [
+   "D1",
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "gap",
+   "momentum",
+   "night_session",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [
+   "http://inside-r.org/r-doc/utils/read.csv",
+   "http://inside-r.org/r-doc/utils/write.csv"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "6956315c3b6da0409892",
+  "host": "intelligenttradingtech.blogspot.ca",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Quantifiable Edges",
+  "url": "http://quantifiableedges.blogspot.ca/",
+  "published": "2026-09-07T04:08:03+00:00",
+  "symbols": [],
+  "timeframes": [
+   "INTRADAY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "gap",
+   "policy",
+   "seasonality"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "0e2b12d8eea65fa8cf47",
+  "host": "quantifiableedges.blogspot.ca",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "SZ",
+  "url": "http://sanzprophet.com/?blogger=http://sanzprophet.blogspot.com/2015/02/the-end-of-eom-strategy-and-rebalancing.html",
+  "published": "2026-09-07T04:08:05+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "momentum",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en-gb",
+  "endpoints": [
+   "https://sanzprophet.netlify.app/feed.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "78847899ec7b6e65716b",
+  "host": "sanzprophet.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Backtesting Limitations: Slippage and Liquidity Explained | LuxAlgo Blog",
+  "url": "https://www.luxalgo.com/blog/backtesting-limitations-slippage-and-liquidity-explained/",
+  "published": "2026-09-07T04:08:07+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "correlation",
+   "flow",
+   "gap",
+   "night_session",
+   "orderflow",
+   "session",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "225f631e8bfe615ef074",
+  "host": "www.luxalgo.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Top 7 Metrics for Backtesting Results | LuxAlgo Blog",
+  "url": "https://www.luxalgo.com/blog/top-7-metrics-for-backtesting-results/",
+  "published": "2026-09-07T04:08:09+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "mean_reversion",
+   "orderflow",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "5ac813f38a415634455b",
+  "host": "www.luxalgo.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Documentation | Portfolio Optimizer",
+  "url": "https://docs.portfoliooptimizer.io/",
+  "published": "2026-09-07T04:08:14+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "correlation",
+   "gap",
+   "momentum",
+   "night_session",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "34013f68fa2698fe6089",
+  "host": "docs.portfoliooptimizer.io",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Volatility Risk Premium: The Growing Importance of Overnight and Intraday Dynamics",
+  "url": "https://quant.harbourfrontweekly.com/p/volatility-risk-premium-the-growing-importance-of-overnight-and-intraday-dynamics",
+  "published": "2026-09-07T04:08:15+00:00",
+  "symbols": [],
+  "timeframes": [
+   "INTRADAY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "basis",
+   "gap",
+   "inventory",
+   "momentum",
+   "night_session",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://quant.harbourfrontweekly.com/assets/exports-CsgSliUa.js"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "04206961f338f7e16260",
+  "host": "quant.harbourfrontweekly.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Introduction to Margin | Trading Course | Traders&#039; Academy",
+  "url": "https://ibkrcampus.eu/trading-course/introduction-to-margin/",
+  "published": "2026-09-07T04:08:19+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.interactivebrokers.eu/campus/traders-academy/api/"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "ee4363e680def392a4a4",
+  "host": "ibkrcampus.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "QuantPedia | The Encyclopedia of Algorithmic and Quantitative Trading Strategies",
+  "url": "http://www.quantpedia.com/",
+  "published": "2026-09-07T04:08:21+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "correlation",
+   "momentum",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "560120e227b1b9e6e6d5",
+  "host": "www.quantpedia.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algorithmic trading systems and strategy testing forum \u2013 Forex Forum MQL5 community",
+  "url": "http://www.forex-tsd.com/tradestation/2997-tradestation-39.html",
+  "published": "2026-09-07T04:08:22+00:00",
+  "symbols": [
+   "AUDNZD",
+   "EURUSD",
+   "XAUUSD"
+  ],
+  "timeframes": [
+   "DAILY",
+   "H1",
+   "M1",
+   "M15",
+   "M30",
+   "M5"
+  ],
+  "patterns": [
+   "arbitrage",
+   "basis",
+   "breakout",
+   "carry",
+   "correlation",
+   "flow",
+   "mean_reversion",
+   "momentum",
+   "orderflow",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://www.mql5.com/manifest.json",
+   "https://download.terminal.free/cdn/web/metaquotes.ltd/mt5/MetaTrader5.pkg.zip?utm_source=www.mql5.com&amp;utm_campaign=download",
+   "https://download.terminal.free/cdn/web/metaquotes.ltd/mt5/mt5setup.exe?utm_source=www.mql5.com&amp;utm_campaign=download",
+   "https://download.terminal.free/cdn/mobile/mt5/ios?utm_source=www.mql5.com&amp;utm_campaign=install.metaquotes&amp;hl=en",
+   "https://download.terminal.free/cdn/mobile/mt5/android?utm_source=www.mql5.com&amp;utm_campaign=install.metaquotes&amp;hl=en",
+   "https://download.terminal.free/cdn/mobile/mt5/android/app-gallery?utm_source=www.mql5.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/web/metaquotes.software.corp/mt5/metatrader5.apk?utm_source=www.mql5.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/mobile/mql5.channels/ios?utm_source=www.mql5.com&amp;utm_campaign=download&amp;hl=en",
+   "https://download.terminal.free/cdn/mobile/mql5.channels/android?utm_source=www.mql5.com&amp;utm_campaign=download&amp;hl=en",
+   "https://download.terminal.free/cdn/mobile/mql5.channels/android/app-gallery?utm_source=www.mql5.com&amp;utm_campaign=download",
+   "https://download.terminal.free/cdn/web/metaquotes.software.corp/mql5channels/mql5channels.apk?utm_source=www.mql5.com&amp;utm_campaign=download",
+   "https://www.tradays.com/en/download?utm_source=www.mql5.com&amp;utm_campaign=download",
+   "https://download.terminal.free/cdn/mobile/tradays/ios?utm_source=www.mql5.com&amp;utm_campaign=download&amp;hl=en",
+   "https://download.terminal.free/cdn/mobile/tradays/android?utm_source=www.mql5.com&amp;utm_campaign=download&amp;hl=en",
+   "https://download.terminal.free/cdn/mobile/tradays/android/app-gallery?utm_source=www.mql5.com&amp;utm_campaign=download",
+   "https://download.terminal.free/cdn/web/metaquotes.software.corp/tradays/tradays.apk?utm_source=www.mql5.com&amp;utm_campaign=download"
+  ],
+  "n_endpoints": 16,
+  "vault_sha": "92b8d0224c460e25bc5e",
+  "host": "www.forex-tsd.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Trading Blox \u2014 Portfolio Back Testing &amp; Order Generation",
+  "url": "https://www.tradingblox.com/",
+  "published": "2026-09-07T04:08:23+00:00",
+  "symbols": [
+   "AUDCAD",
+   "AUDJPY",
+   "AUDUSD",
+   "EURAUD",
+   "EURCAD",
+   "EURCHF",
+   "EURGBP",
+   "EURJPY",
+   "EURUSD",
+   "GBPCHF",
+   "GBPJPY",
+   "GBPUSD",
+   "NVIDIA",
+   "USDCAD",
+   "USDCHF",
+   "USDJPY",
+   "USDKRW"
+  ],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "breakout",
+   "inventory",
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "41c1fbd4a5eba54bf5b6",
+  "host": "www.tradingblox.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "MoonlightQuant",
+  "url": "https://moonlightquant.com",
+  "published": "2026-09-07T04:08:25+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "night_session"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f5e323705b5f311cf55d",
+  "host": "moonlightquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "IMHO BEST LINKS FROM QUANTOCRACY FOR THE WEEK 9 NOV 15 \u2014 15 NOV 15 | Quantitative Investor Blog",
+  "url": "https://quantinvestblog.wordpress.com/2015/11/18/imho-best-links-from-quantocracy-for-the-week-9-nov-15-15-nov-15/",
+  "published": "2026-09-07T04:08:28+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "ru-RU",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "2ae3649430ce4f2ed376",
+  "host": "quantinvestblog.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "ATS - Theft Identification and Prevention",
+  "url": "https://adityatrading.in/identifytheft",
+  "published": "2026-09-07T04:08:30+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-IN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c8e6b705bc490239b38e",
+  "host": "adityatrading.in",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Could This Strategy Be The Holy Grail Of Investing? | Seeking Alpha",
+  "url": "https://seekingalpha.com/article/1486221-could-this-strategy-be-the-holy-grail-of-investing",
+  "published": "2026-09-07T04:08:34+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "correlation",
+   "orderflow"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://seekingalpha.com/samw/manifest.21e1a41eec7430f48197357dbb41445d.json",
+   "https://seekingalpha.com/api/v3/breaking_news",
+   "https://seekingalpha.com/api/v3/market_open",
+   "https://seekingalpha.com/api/v3/visitor_tag_for_url_params",
+   "https://seekingalpha.com/api/v3/ab_tests"
+  ],
+  "n_endpoints": 5,
+  "vault_sha": "5b629356704547cdb679",
+  "host": "seekingalpha.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Mentor Program Preparation Course 2022",
+  "url": "https://store.tradinggame.com.au/webpages/2963_mppc3paysl2020.php",
+  "published": "2026-09-07T04:08:39+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f8396c22ba8d307c0268",
+  "host": "store.tradinggame.com.au",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Mentor Program Preparation Course 2022",
+  "url": "https://store.tradinggame.com.au/webpages/2925_mentor-program-book-in-now-2020.php?",
+  "published": "2026-09-07T04:08:44+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f8396c22ba8d307c0268",
+  "host": "store.tradinggame.com.au",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "The 5 Mindset Shifts Every Trader Must Make To Win Consistently - Talking Trading",
+  "url": "https://talkingtrading.com.au/5-mindset-shifts/",
+  "published": "2026-09-07T04:09:00+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "momentum",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b2c0f7fd9c7544452e95",
+  "host": "talkingtrading.com.au",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u6570\u636e\u66f2\u7ebf",
+  "url": "http://spds.qhrb.com.cn:8888/SP9/SHold.aspx",
+  "published": "2026-09-07T04:09:11+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "639b635c2bd38f34b5de",
+  "host": "spds.qhrb.com.cn:8888",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "pricing - quantpylib",
+  "url": "https://quantpylib.hangukquant.com/pricing/pricing/",
+  "published": "2026-09-07T04:09:43+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "7d9f3f9a3f29d9b766f4",
+  "host": "quantpylib.hangukquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "quantpylib",
+  "url": "https://quantpylib.hangukquant.com/",
+  "published": "2026-09-07T04:09:45+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "16d5254d21e95e0c96c1",
+  "host": "quantpylib.hangukquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Blog | Options Trading IQ",
+  "url": "https://optionstradingiq.com/blog/",
+  "published": "2026-09-07T04:09:47+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "9c88af478f7b8e173c10",
+  "host": "optionstradingiq.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "DIY Trading - The Chartist",
+  "url": "https://thechartist.com.au/diy-trading/",
+  "published": "2026-09-07T04:09:53+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "406c9f891b6b9f32d8ce",
+  "host": "thechartist.com.au",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Beginner&#039;s Guide To Building Trading Systems - The Chartist",
+  "url": "https://thechartist.com.au/beginners-guide-to-building-trading-systems/",
+  "published": "2026-09-07T04:09:58+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "momentum",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3f6764a06554e95ae397",
+  "host": "thechartist.com.au",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Trading System Mentor Course - The Chartist",
+  "url": "https://thechartist.com.au/trading-system-mentor-course/",
+  "published": "2026-09-07T04:10:04+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "mean_reversion",
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "8071e0ba59f0c0da24be",
+  "host": "thechartist.com.au",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Share Trading Books Archives - The Chartist",
+  "url": "https://thechartist.com.au/product-category/share-trading-ebooks/",
+  "published": "2026-09-07T04:10:09+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "52d6dd34e6b07bb6c5a0",
+  "host": "thechartist.com.au",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "DIY Trading - The Chartist",
+  "url": "http://thechartist.com.au/diy-trading/",
+  "published": "2026-09-07T04:10:12+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a53ce3634b0685cd21a5",
+  "host": "thechartist.com.au",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Set Up A Payment Plan For QuantTurk.com | HugeDomains",
+  "url": "https://www.hugeDomains.com/payment-plan-setup.cfm?d=QuantTurk.com",
+  "published": "2026-09-07T04:10:28+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "positioning"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "304d04d7be682831694b",
+  "host": "www.hugeDomains.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u4e03\u79be\u7f51\u4ea4\u6613\u5b66\u4e60",
+  "url": "https://education.7hcn.com/",
+  "published": "2026-09-07T04:10:55+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "breakout",
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "9419dde719d800816170",
+  "host": "education.7hcn.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u91cf\u5316\u6392\u884c\u699c",
+  "url": "https://cx.7hcn.com",
+  "published": "2026-09-07T04:10:56+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "positioning"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "446a3dc6ecae501478e3",
+  "host": "cx.7hcn.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u6d77\u5916\u8d2d\u6539\u7248\u901a\u77e5",
+  "url": "http://www.amazon.cn/mn/searchApp?source=7hcn-23&searchType=1&keywords=\u671f\u8d27\u7b56\u7565",
+  "published": "2026-09-07T04:11:23+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "9135d16ee9c63d622a5f",
+  "host": "www.amazon.cn",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Smart Stock Trading Automation Engine &#8211; Smart Systematic Trading",
+  "url": "https://smartsystematictrading.com/product/smart-stock-trading-automation-engine/",
+  "published": "2026-09-07T04:11:24+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "bc289494d19a004049c3",
+  "host": "smartsystematictrading.com",
+  "claims": [],
+  "n_claims": 0
+ }
+]

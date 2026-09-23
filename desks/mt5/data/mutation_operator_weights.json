@@ -1,0 +1,11 @@
+{
+ "step_band_up": 1.0,
+ "step_horizon_down": 1.0,
+ "_generated_at": "2026-09-08T18:46:27.341083+00:00",
+ "_reason": "2 groups seen but none judged yet: 1.0 each",
+ "_pooled_mean": null,
+ "_clip": [
+  0.25,
+  4.0
+ ]
+}

@@ -1,0 +1,34 @@
+{
+ "generated": "2026-08-28T00:05:00+00:00",
+ "source_thread": "6a86cd6f-06f8-83eb-8381-68eabfc8a430",
+ "source_turn": "50e81907-fb8c-492e-8eff-98d563239608",
+ "source_agent_message": "15bc9648-af87-4695-9c6e-d918c3625e5b",
+ "authority": "SOURCE_ATTRIBUTION_CORRECTION_ONLY; no promotion authority and no new gate",
+ "corrections": [
+  {
+   "card_id": "MT5_DEFECT_PRECISE_PAIR_TRADING_PRO_SPEC_v1",
+   "canonical_source": "https://www.mql5.com/en/market/product/148319",
+   "stable_source_id": "MQL5_MARKET_PRODUCT_148319",
+   "decision": "DOWNGRADE_TO_PARTIAL_SPECIFICATION",
+   "source_grounded_mechanism": "A two-symbol short-horizon imbalance detector enters beyond a configured threshold and exits as the imbalance contracts, subject to beta-smoothing, minimum-correlation and trading-time inputs.",
+   "source_grounded_inputs": [
+    "main and secondary symbols",
+    "analytical timeframe and historical depth",
+    "entry, exit and close-target thresholds",
+    "beta smoothing",
+    "minimum correlation",
+    "trading-time filter"
+   ],
+   "unsupported_source_attributions": [
+    "Kalman beta",
+    "exact rolling beta estimator",
+    "exact residual equation or normalization",
+    "exact hedge-ratio update rule"
+   ],
+   "execution_topology_warning": "Either leg may be disabled with a zero lot size. That mode is directional exposure informed by cross-symbol divergence, not market-neutral pair execution.",
+   "canonical_route": "Keep rolling-OLS, EWLS and Kalman residual variants only as independently preregistered quant-generated ablations. Never label them reconstructions of the proprietary EA.",
+   "dedupe_result": "No source-attributed Precise Pair Trading Pro card exists in the repository. The existing generic residual-pair machinery remains valid and unchanged.",
+   "promotion_allowed": false
+  }
+ ]
+}

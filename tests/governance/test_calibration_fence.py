@@ -6,6 +6,12 @@ from pathlib import Path
 
 import pytest
 
+# 2026-08-28: read the INJECTED PAYLOAD, not one file. The 08-25 consolidation moved the
+# law text from ops/principal_doctrine.txt into docs/LAWS.md and changed brain_env.sh to
+# cat BOTH into every organ's prompt in the same breath -- no organ lost a line, and five
+# fences went red about text one file away. libs.doctrine.corpus derives the file list
+# from brain_env.sh itself, so a future relocation moves the fences with it.
+from libs.doctrine.corpus import doctrine_text
 from libs.self_improvement import forecast_calibration as fc
 
 
@@ -255,7 +261,7 @@ def test_resolved_rows_are_never_unowned(store):
 def test_law_and_wiring_present():
     const = " ".join(Path("docs/CONSTITUTION.md").read_text("utf-8").replace("**", "").split())
     assert "L1.29 THE DESK SCORES ITS OWN CONFIDENCE" in const
-    assert "L1.29" in Path("ops/principal_doctrine.txt").read_text("utf-8")
+    assert "L1.29" in doctrine_text()
     assert '"L1.29"' in Path("scripts/build_enforcement_matrix.py").read_text("utf-8")
     assert "check_calibration.py" in Path("ops/crontab.manifest").read_text("utf-8")
     assert "calibration_debt" in Path("scripts/run_max_push.py").read_text("utf-8")

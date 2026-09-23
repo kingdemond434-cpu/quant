@@ -1,0 +1,12 @@
+[
+ {
+  "source": "forextsd_cdx",
+  "kind": "fetch_error",
+  "title": "HTTPConnectionPool(host='web.archive.org', port=80): Read timed out. (read timeout=40)",
+  "url": "",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-04T06:29:16+00:00",
+  "needs_selector_work": true
+ }
+]

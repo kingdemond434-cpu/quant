@@ -1,0 +1,179 @@
+{
+ "built_at": "2026-08-29",
+ "built_by": "BRAIN HUNTER s25",
+ "eval_years": [
+  2024,
+  2025
+ ],
+ "random_draws": 12,
+ "seed": 20260829,
+ "estimation": "clusters for year Y from Y-1 daily log-return correlations only (point-in-time)",
+ "linkage": "average, distance = 1 - corr",
+ "rows": [
+  {
+   "k_requested": 8,
+   "k_effective": 8,
+   "n_symbols": 248,
+   "median_group_size": 6.2,
+   "mean_abs_corr": 0.8717,
+   "random_ceiling": 0.9649,
+   "random_sd": 0.0019,
+   "content": 0.0932,
+   "z": -48.6
+  },
+  {
+   "k_requested": 12,
+   "k_effective": 12,
+   "n_symbols": 248,
+   "median_group_size": 3.8,
+   "mean_abs_corr": 0.816,
+   "random_ceiling": 0.9431,
+   "random_sd": 0.0027,
+   "content": 0.1271,
+   "z": -47.1
+  },
+  {
+   "k_requested": 16,
+   "k_effective": 16,
+   "n_symbols": 245,
+   "median_group_size": 3.5,
+   "mean_abs_corr": 0.8064,
+   "random_ceiling": 0.9376,
+   "random_sd": 0.0023,
+   "content": 0.1312,
+   "z": -57.1
+  },
+  {
+   "k_requested": 24,
+   "k_effective": 24,
+   "n_symbols": 244,
+   "median_group_size": 3.0,
+   "mean_abs_corr": 0.7406,
+   "random_ceiling": 0.9138,
+   "random_sd": 0.0025,
+   "content": 0.1732,
+   "z": -68.3
+  },
+  {
+   "k_requested": 32,
+   "k_effective": 32,
+   "n_symbols": 240,
+   "median_group_size": 3.8,
+   "mean_abs_corr": 0.6961,
+   "random_ceiling": 0.8942,
+   "random_sd": 0.0023,
+   "content": 0.1981,
+   "z": -85.2
+  },
+  {
+   "k_requested": 40,
+   "k_effective": 40,
+   "n_symbols": 239,
+   "median_group_size": 3.2,
+   "mean_abs_corr": 0.6523,
+   "random_ceiling": 0.8671,
+   "random_sd": 0.0039,
+   "content": 0.2148,
+   "z": -54.4
+  },
+  {
+   "k_requested": 48,
+   "k_effective": 48,
+   "n_symbols": 238,
+   "median_group_size": 3.5,
+   "mean_abs_corr": 0.621,
+   "random_ceiling": 0.8465,
+   "random_sd": 0.0042,
+   "content": 0.2255,
+   "z": -53.4
+  },
+  {
+   "k_requested": 56,
+   "k_effective": 56,
+   "n_symbols": 235,
+   "median_group_size": 3.2,
+   "mean_abs_corr": 0.592,
+   "random_ceiling": 0.8254,
+   "random_sd": 0.0051,
+   "content": 0.2334,
+   "z": -45.4
+  },
+  {
+   "k_requested": 64,
+   "k_effective": 64,
+   "n_symbols": 235,
+   "median_group_size": 3.0,
+   "mean_abs_corr": 0.5568,
+   "random_ceiling": 0.7968,
+   "random_sd": 0.0032,
+   "content": 0.24,
+   "z": -75.0
+  },
+  {
+   "k_requested": 80,
+   "k_effective": 80,
+   "n_symbols": 226,
+   "median_group_size": 3.0,
+   "mean_abs_corr": 0.5197,
+   "random_ceiling": 0.78,
+   "random_sd": 0.0064,
+   "content": 0.2603,
+   "z": -40.4
+  },
+  {
+   "k_requested": 96,
+   "k_effective": 96,
+   "n_symbols": 214,
+   "median_group_size": 3.0,
+   "mean_abs_corr": 0.4765,
+   "random_ceiling": 0.7563,
+   "random_sd": 0.004,
+   "content": 0.2798,
+   "z": -70.4
+  },
+  {
+   "k_requested": 112,
+   "k_effective": 112,
+   "n_symbols": 198,
+   "median_group_size": 2.5,
+   "mean_abs_corr": 0.4465,
+   "random_ceiling": 0.7357,
+   "random_sd": 0.0091,
+   "content": 0.2892,
+   "z": -31.7
+  },
+  {
+   "k_requested": 128,
+   "k_effective": 128,
+   "n_symbols": 178,
+   "median_group_size": 2.5,
+   "mean_abs_corr": 0.4126,
+   "random_ceiling": 0.7302,
+   "random_sd": 0.0066,
+   "content": 0.3176,
+   "z": -47.8
+  },
+  {
+   "k_requested": 144,
+   "k_effective": 144,
+   "n_symbols": 160,
+   "median_group_size": 2.5,
+   "mean_abs_corr": 0.3887,
+   "random_ceiling": 0.7057,
+   "random_sd": 0.008,
+   "content": 0.317,
+   "z": -39.5
+  },
+  {
+   "k_requested": 160,
+   "k_effective": 160,
+   "n_symbols": 145,
+   "median_group_size": 2.0,
+   "mean_abs_corr": 0.3641,
+   "random_ceiling": 0.6768,
+   "random_sd": 0.0038,
+   "content": 0.3127,
+   "z": -83.0
+  }
+ ]
+}

@@ -1,0 +1,14 @@
+[Unit]
+Description=COT z-score cache refresh (migrated from crontab 2026-08-28: cron.service has been OOM-dead since 2026-08-20)
+
+[Service]
+Type=oneshot
+# 2026-09-01: MemoryMax alone HARD-KILLS at the ceiling -- that was the normal failure
+# mode here, not a runaway backstop. MemoryHigh throttles (reclaim + slow) below it, so
+# a heavy run finishes slowly instead of dying and being retried forever. Ceiling is
+# UNCHANGED at 600M, so nothing that fits today is newly constrained.
+MemoryHigh=480M
+MemoryMax=600M
+WorkingDirectory=/home/quant/quant-platform
+ExecStart=/bin/sh -c '.venv/bin/python scripts/refresh_cot_zcache.py >> data/cro_ai_logs/cot_zcache.log 2>&1'
+SuccessExitStatus=0 1 2

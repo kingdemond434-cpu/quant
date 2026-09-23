@@ -1,0 +1,9 @@
+[
+  {
+    "source": "earnings",
+    "kind": "stub",
+    "needs_selector_work": true,
+    "host": "finance.yahoo.com/quote/<ticker>/",
+    "why": "fetched OK, content is client-side rendered"
+  }
+]

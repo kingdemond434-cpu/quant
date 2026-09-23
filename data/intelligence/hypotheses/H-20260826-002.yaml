@@ -1,0 +1,76 @@
+id: H-20260826-002
+version: 1
+parent_id: null
+origin:
+  region: global
+  language: en
+  source_type: youtube
+  source_id: channel_123
+  source_url: null
+  evidence_tier: practitioner_claim
+  collected_at: '2026-08-26T04:01:54.938097+00:00'
+  collector_version: '1.0'
+  metadata: {}
+mechanism:
+  mechanism_class: information_shock
+  participant: retail
+  constraint: technical_pattern
+  information_source: youtube_technical_analysis
+  why_edge_should_exist: Pattern exploits retail behavior at session open
+  information_propagation: null
+  persistence: null
+  kill_conditions: []
+market:
+  symbols:
+  - XAUUSD
+  primary_symbol: XAUUSD
+  timeframe: H1
+  session: london_am
+  regime_required: []
+  regime_excluded: []
+rule:
+  inputs:
+  - XAUUSD_H1
+  trigger: breakout_above_asia_high
+  direction: 1
+  holding_horizon: 4h
+  exit: tp_2r_or_sl_1r
+  stop: atr_1.5
+  trail: null
+  re_entry: null
+  position_scaling: null
+  max_positions: 1
+  filters: {}
+economics:
+  expected_edge_bps_per_trade: 5.0
+  expected_trades_per_month: 20
+  expected_capacity_lots: 10
+  expected_capacity_category: small
+  correlation_with_existing: {}
+  orthogonality_score: 1.0
+  execution_risk: normal
+  leakage_risk: low
+falsifier:
+  condition: exp_r < 0.05R over 100 forward trades
+  horizon: 100_trades
+  threshold: 0.05
+  data_source: shadow_forward
+novelty:
+  nearest_existing_family: null
+  similarity: 1.0
+  translation_gap: false
+  translation_gap_details: null
+  unknown_unknown: false
+costs:
+  research_cost_usd: 0.0
+  research_cost_hours: 0.0
+  data_cost_usd_monthly: 0.0
+  execution_cost_bps_per_trade: 0.0
+status: discovered
+created_at: '2026-08-26T04:01:54.938140+00:00'
+updated_at: '2026-08-26T04:01:54.938144+00:00'
+source_attribution: {}
+miner_attribution: {}
+validation_history: []
+tags: []
+notes: ''

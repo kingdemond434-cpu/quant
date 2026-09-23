@@ -21,8 +21,8 @@ import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from mt5desk import families  # noqa: E402
-from mt5desk.engine import Costs, run_backtest  # noqa: E402
+from mt5desk import families
+from mt5desk.engine import Costs, run_backtest
 
 BASE = Path(__file__).resolve().parent.parent
 UNI = BASE / "data" / "universe"
@@ -49,9 +49,126 @@ def cell_trades(sym: str, win: str, state: str | None, h1: pd.DataFrame,
 def load_h12_survivors() -> list[dict]:
     p = BASE / "reports" / "hunt12_partial.json"
     if not p.exists():
-        return []
-    saved = json.loads(p.read_text(encoding="utf-8"))
+        # AN ABSENT REPORT IS A REFUSAL, NOT A SMALLER BOOK. This returned [] on every fresh
+        # clone (the report is gitignored), main() then built a GOLD-ONLY four-sleeve book and
+        # overwrote the committed nine-sleeve artifact -- recomputing mean_corr, n_eff and
+        # port_sharpe consistently on the truncated book, so nothing downstream could tell.
+        raise SystemExit(
+            f"REFUSING to project a portfolio without {p}: hunt12_partial.json is absent, and "
+            f"an empty survivor list would silently produce a GOLD-ONLY book presented as the "
+            f"whole desk. Run research/run_hunt12.py on the desk box to produce the report."
+        )
+    try:
+        saved = json.loads(p.read_text(encoding="utf-8"))
+    except ValueError as exc:
+        # A HALF-WRITTEN REPORT IS THE SAME REFUSAL AS AN ABSENT ONE. `run_hunt12` is stopped by
+        # a deadline between symbols now, so an interrupted write is routine; unhandled it
+        # arrives here as a bare JSONDecodeError from inside a portfolio builder, which is the
+        # one shape the careful refusal above was written to prevent.
+        raise SystemExit(
+            f"REFUSING to project a portfolio from {p}: the report is unreadable ({exc}). "
+            f"Delete it and re-run research/run_hunt12.py."
+        ) from exc
+    # AN INCOMPLETE SWEEP IS A TRUNCATED BOOK WEARING A NEW HAT. The sweep is resumable and holds
+    # an hourly clock, so it is legitimately part-done for the first pass or two of a re-sweep --
+    # and 85 symbols of 145, loaded as if they were the whole hypothesis lane, is exactly the
+    # GOLD-ONLY failure above with a different number of sleeves in it.
+    #
+    # ONLY AN EXPLICIT False REFUSES. A report written before `complete` existed carries no such
+    # key and WAS complete when it was written; treating its absence as incomplete would refuse
+    # every artifact already on the box, which is a regression dressed as a safety check.
+    if saved.get("complete") is False:
+        done, routed = len(saved.get("done") or []), int(saved.get("n_routed") or 0)
+        raise SystemExit(
+            f"REFUSING to project a portfolio from an unfinished sweep: {p} has covered "
+            f"{done} of {routed} hypothesis-lane symbols ({saved.get('resume') or ''}"
+            f"{'; ' + str(saved['stopped']) if saved.get('stopped') else ''}). A part-swept "
+            f"universe loaded as the whole book is the same silent truncation as an empty one. "
+            f"It resumes on the next hourly pass; nothing needs to be done by hand."
+        )
     return [c for c in saved.get("all", []) if c.get("gate")]
+
+
+def load_universal_survivors() -> list[dict]:
+    """UNIVERSAL_SURVIVORS.json -> survivor records. Fail-closed: missing or
+    unreadable -> [] (never assume survivors)."""
+    p = BASE / "reports" / "UNIVERSAL_SURVIVORS.json"
+    if not p.exists():
+        return []
+    try:
+        return list(json.loads(p.read_text(encoding="utf-8")).get("survivors", {}).values())
+    except Exception:
+        return []
+
+
+def h18_survivor_sleeves() -> tuple[list[dict], list[dict]]:
+    """h18 UNIVERSAL survivors -> sleeves, each REQUIRED to pass the
+    signal-information gate (reports/signal_gate_<stem>.json, verdict
+    INFORMED on the exact cell). Fail-closed: missing report, NULL or SPARSE
+    verdict, or any rebuild error -> survivor EXCLUDED with a reason."""
+    survivors = load_universal_survivors()
+    meta = json.loads((UNI / "universe.json").read_text(encoding="utf-8"))
+    from research.run_hunt17 import FAMILIES as F17
+    from research.run_hunt17 import PARAMS as F17_PARAMS
+    from research.run_hunt17 import resample as r17resample
+    sleeves: list[dict] = []
+    excluded: list[dict] = []
+    for rec in survivors:
+        hunt = rec.get("hunt", "")
+        if not hunt.startswith("hunt18_"):
+            continue
+        stem = Path(hunt).stem
+        cell = rec.get("cell", "")
+        parts = cell.split(".")
+        sym = parts[0] if parts else ""
+        fam = parts[1] if len(parts) > 1 else ""
+        side = 1 if len(parts) < 3 or parts[2] == "1" else -1
+        fn = F17.get(fam)
+        if not fn:
+            excluded.append({**rec, "why": "family no longer registered"})
+            continue
+        try:
+            report = json.loads((BASE / "reports" / hunt).read_text("utf-8"))
+        except Exception:
+            excluded.append({**rec, "why": "experiment report unreadable"})
+            continue
+        params = dict(report.get("params") or {})
+        if not params and report.get("param") is not None:
+            pl = F17_PARAMS.get(fam)
+            if pl:
+                params = dict(pl[int(report["param"])])
+        sg = BASE / "reports" / f"signal_gate_{stem}.json"
+        if not sg.exists():
+            excluded.append({**rec, "why": "no signal gate report"})
+            continue
+        try:
+            sgdata = json.loads(sg.read_text("utf-8"))
+        except Exception:
+            excluded.append({**rec, "why": "signal gate report unreadable"})
+            continue
+        vd = next((c for c in sgdata.get("cells", []) if c.get("cell") == cell), None)
+        if not vd:
+            excluded.append({**rec, "why": "signal gate cell absent"})
+            continue
+        if vd.get("verdict") != "INFORMED":
+            excluded.append({**rec, "why": f"signal gate {vd.get('verdict')}"})
+            continue
+        try:
+            h1 = families._h1(pd.read_parquet(UNI / f"{sym}_H1.parquet"))
+            h4, d1 = r17resample(h1)
+            sigs = fn(h4, d1, side, **params)
+            # GAP 114 (re-applied 2026-08-26 after the unification reverted it): 0.48 is
+            # dollars-per-OUNCE and this field is dollars-per-LOT; the direct constructor is
+            # how that unit error stayed for months. from_symbol prices from universe.json.
+            costs = Costs.from_symbol(meta[sym], mult=2.0)
+            r = run_backtest(h4, sigs, costs)
+        except Exception as e:
+            excluded.append({**rec, "why": f"rebuild error {e!r}"})
+            continue
+        sleeves.append(dict(name=f"{stem}.{cell}", sym=sym, win=stem, state=cell,
+                            r=[t.r_multiple for t in r.trades],
+                            dates=[pd.Timestamp(t.entry_time).date() for t in r.trades]))
+    return sleeves, excluded
 
 
 def build_sleeves() -> list[dict]:
@@ -60,7 +177,10 @@ def build_sleeves() -> list[dict]:
     meta = json.loads((UNI / "universe.json").read_text(encoding="utf-8"))
     sleeves = []
     h1g = families._h1(pd.read_parquet(UNI / "XAUUSD_H1.parquet"))
-    gold_costs = Costs(spread_per_lot=0.48, commission_per_lot=3.50, contract_oz=100)
+    # GAP 114: `Costs(spread_per_lot=0.48, ...)` charged gold 0.0048/oz against a measured
+    # 0.16/oz median -- 3% of its real spread, on every projected trade. from_symbol recovers
+    # the real number; mult=2.0 is the honest baseline, not a stress.
+    gold_costs = Costs.from_symbol(meta["XAUUSD"], mult=2.0)
     for wname, wp in GOLD_WINDOWS.items():
         tr = cell_trades("XAUUSD", wname, None, h1g, gold_costs, None)
         sleeves.append(dict(name=f"gold_{wname}", sym="XAUUSD", win=wname,
@@ -68,19 +188,45 @@ def build_sleeves() -> list[dict]:
                             r=[t.r_multiple for t in tr],
                             dates=[t.entry_time.date() for t in tr]))
     from research.run_hunt12 import day_states  # noqa: PLC0415
+    unpriceable: list[str] = []
     for cell in load_h12_survivors():
         sym, win, state = cell["sym"], cell["win"], cell["state"]
-        h1 = families._h1(pd.read_parquet(UNI / f"{sym}_H1.parquet"))
+        # A SURVIVOR CAN NAME AN INSTRUMENT THE VENUE NO LONGER LISTS, AND THAT IS NOT A CRASH.
+        #
+        # AUDCAD was dropped from the venue snapshot at the 2026-08-20 refresh while hunt12's five
+        # AUDCAD survivors stayed in `hunt12_partial.json`. `meta[sym]` then raised KeyError
+        # halfway through the loop, so the projection died with a traceback instead of publishing
+        # a book -- and a run that dies is indistinguishable from a run nobody started.
+        #
+        # Skipping quietly is the other failure and the worse one: it would publish a SMALLER book
+        # and call it the book (row 115's defect class, and WS-005). So the sleeve is named,
+        # counted, and reported as UNPRICEABLE -- a real answer under L1.28a, distinct both from
+        # "this sleeve failed" and from "this sleeve does not exist".
+        parquet = UNI / f"{sym}_H1.parquet"
+        if sym not in meta or not parquet.exists():
+            why = "absent from universe.json" if sym not in meta else "no H1 parquet on disk"
+            unpriceable.append(f"{sym}_{win}_{state} ({why})")
+            continue
+        h1 = families._h1(pd.read_parquet(parquet))
         m = meta[sym]
-        costs = Costs(spread_per_lot=0.48 if sym == "XAUUSD" else max(
-            m["median_spread_pts"] * m["tick_size"] * m["contract_size"], 0.05),
-            commission_per_lot=3.50, contract_oz=m["contract_size"])
+        # Same fix. The non-gold branch was under-charged too: it built the spread at mult=1.0,
+        # crossing it once where a round trip crosses it twice.
+        costs = Costs.from_symbol(m, mult=2.0)
         states = day_states(h1)
         tr = cell_trades(sym, win, state, h1, costs, states)
         sleeves.append(dict(name=f"{sym}_{win}_{state}", sym=sym, win=win,
                             state=state,
                             r=[t.r_multiple for t in tr],
                             dates=[t.entry_time.date() for t in tr]))
+    if unpriceable:
+        # Printed on every run, not written to a report nobody opens. The book below is missing
+        # these sleeves and the reader has to know that before ranking anything in it.
+        print(f"UNPRICEABLE: {len(unpriceable)} gated survivor(s) excluded from this book -- "
+              f"the venue no longer prices them:", flush=True)
+        for name in unpriceable:
+            print(f"  - {name}", flush=True)
+        print("  These are NOT failures and NOT absences. Re-admit through the universal gate if "
+              "the venue relists them; do not carry the old result forward.", flush=True)
     return sleeves
 
 
@@ -92,7 +238,7 @@ def build_daily(sleeves: list[dict]) -> pd.DataFrame:
                          dtype=float)
     for s in sleeves:
         d = pd.Series(s["r"], index=pd.Index(s["dates"]))
-        daily[s["name"]] = d.groupby(level=0).sum().reindex(alldays).fillna(0.0)
+        daily[s["name"]] = d.groupby(level=0).sum().reindex(alldays)
     return daily
 
 

@@ -6,6 +6,7 @@ tomorrow unless it is written somewhere an organ READS AT RUNTIME. This is that 
 `render` is what ops/brain_env.sh injects into every organ.
 
     python scripts/learn.py render                 # the injected corpus (stdout) + overflow (stderr)
+    python scripts/learn.py render --organ cro_ai  # the same budget, routed to one organ's subject
     python scripts/learn.py add --cost blind \
         --lesson "..." --evidence "..." [--tag x --source session]
     python scripts/learn.py recur L0005            # this lesson was re-learned -- promote it
@@ -62,15 +63,26 @@ _INJECTION_SITES = ("ops/brain_env.sh",)
 _MARK = "scripts/learn.py render"
 
 
-def cmd_render() -> int:
-    text, dropped = corpus()
+def cmd_render(organ: str = "") -> int:
+    """The corpus this organ should read.
+
+    `--organ` IS WHAT MAKES THE LEDGER SCALE. Without it every organ gets the same top-of-ranking
+    lessons and the ledger saturates at whatever fits in 12,000 chars -- 25 lessons out of 228,
+    measured 2026-09-05. With it the same 12,000 chars are spent on the lessons that apply to THIS
+    organ, and 141 of the 228 reach somebody. No organ reads one character more than before.
+
+    An unknown or empty organ renders the global ranking, which is exactly the old behaviour, so a
+    caller that has not been taught to pass one is degraded rather than broken.
+    """
+    text, dropped = corpus(organ=organ)
     sys.stdout.write(text)
     if dropped:
         # NEVER silent. A memory layer that quietly truncated would recreate the exact defect it
         # exists to fix -- the desk believing it carries knowledge it does not carry.
+        who = f" for organ {organ!r}" if organ else ""
         sys.stderr.write(
-            f"desk_memory: {len(dropped)} lesson(s) did not fit the {BUDGET_CHARS}-char budget "
-            f"and are NOT injected: {', '.join(item.id for item in dropped)}\n")
+            f"desk_memory: {len(dropped)} lesson(s) did not fit the {BUDGET_CHARS}-char budget"
+            f"{who} and are NOT injected: {', '.join(item.id for item in dropped)}\n")
     return 0
 
 
@@ -262,7 +274,9 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = ap.add_subparsers(dest="cmd", required=True)
-    sub.add_parser("render", help="print the injected corpus")
+    ren = sub.add_parser("render", help="print the injected corpus")
+    ren.add_argument("--organ", default="", help="route the corpus to this organ's subject "
+                                                 "(ops/run_<organ>.sh); empty = global ranking")
     add = sub.add_parser("add", help="record a durable lesson (evidence is mandatory)")
     add.add_argument("--cost", required=True, choices=sorted(COST_WEIGHT),
                      help="what it cost the desk NOT to know this")
@@ -287,7 +301,7 @@ def main() -> int:
     aud.add_argument("--json", action="store_true")
     a = ap.parse_args()
     if a.cmd == "render":
-        return cmd_render()
+        return cmd_render(getattr(a, "organ", "") or "")
     if a.cmd == "add":
         return cmd_add(a)
     if a.cmd == "recur":

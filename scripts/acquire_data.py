@@ -33,7 +33,25 @@ applied at construction: the least-known source must not become the most attract
 of nobody having checked it.
 
 NO ACQUISITION AUTHORITY. This ranks and explains. It spends nothing, signs nothing and starts no
-collector; a human or a later organ acts on the ordering. Read-only. No keys, no order paths.
+collector; a human or a later organ acts on the ordering. No keys, no order paths.
+
+THE MAP'S FIRST MACHINE WRITER (2026-09-08). `data/data_universe_map.json` holds 190 sources with
+real licence and PIT verdicts, and until this date it had NO PRODUCER: grepping for a writer
+returned readers only (acquire_data, max_audit, run_cadence, blind_trigger, orphan_scan), so the
+six dig seats that would write it are the only path -- and they report `last=never` on missing
+credentials. A map nothing can produce is a schedule pointing at a file.
+
+So this registers what the desk's own miners have already PROBED: dataset pages the deep-forest
+miner and the world crawler fetched, with the endpoints they found. Three fences, and they are
+what make a machine writer safe on a file humans curate:
+
+    REGISTRATION IS NOT A GRADE. Every appended row is `grade: UNVERIFIED` -- the map's own
+    vocabulary for "found this session, not opened/confirmed first-party, DO NOT feed a live
+    signal" -- and carries the probe result that justifies exactly that much.
+    A HUMAN OR LLM GRADE IS NEVER OVERWRITTEN. A source already in the map by url or by name is
+    skipped whole: not re-graded, not re-described, not touched. The writer only APPENDS.
+    THE MANDATE IS ENFORCED AT THE WRITE. A probe naming a crypto-exchange venue is refused by
+    `mechanism_claims.forbidden_venue` before it can reach the map.
 """
 from __future__ import annotations
 
@@ -60,6 +78,14 @@ ONTOLOGY_STATE = ROOT / "data/ontology_state.json"
 MOAT = ROOT / "data/moat_mine.json"
 REPORT = ROOT / "data/acquisition_plan.json"
 HISTORY = ROOT / "data/acquisition_history.jsonl"
+#: Where the miners write what they PROBED. Dataset-kind discovery rows carry the url, the host,
+#: the endpoints found and when the desk could first have read them -- a probe result, not a
+#: claim about quality.
+PROBE_DIR = ROOT / "desks/mt5/data/intelligence/world"
+PROBE_GLOB = "discoveries_*.json"
+#: The grade every machine-registered row carries, in the map's own vocabulary.
+MACHINE_GRADE = "UNVERIFIED"
+MACHINE_ORIGIN = "machine:acquire_data (miner probe, never opened by a human)"
 
 #: Source grade -> (P(the data is usable as claimed), why). Grades are the digger's own vocabulary
 #: and already carry a verification level, so this maps VERIFICATION to a probability rather than
@@ -192,6 +218,159 @@ def score_candidate(name: str, entry: dict, state: dict) -> dict:
     }
 
 
+# ------------------------------------------------------------------ the machine writer
+
+def _norm(s: object) -> str:
+    """A url or name reduced to what makes two entries the same source."""
+    t = str(s or "").strip().lower().rstrip("/")
+    for p in ("https://", "http://", "www."):
+        if t.startswith(p):
+            t = t[len(p):]
+    return t
+
+
+def _entries(universe: dict) -> list[dict]:
+    """Every source entry in the map, whatever shape its class holds."""
+    out: list[dict] = []
+    for v in (universe.get("sources") or {}).values():
+        for e in (v if isinstance(v, list) else [v]):
+            if isinstance(e, dict):
+                out.append(e)
+    return out
+
+
+def _known(universe: dict) -> set[str]:
+    """Everything the map already names, by url and by name. Membership here is a REFUSAL to
+    write: the entry may carry a human licence verdict this script must never touch."""
+    keys: set[str] = set()
+    for e in _entries(universe):
+        for field in ("url", "name", "host"):
+            if e.get(field):
+                keys.add(_norm(e[field]))
+    return keys
+
+
+def _forbidden(text: str) -> str | None:
+    """The crypto-exchange fence, from the same table the miners use. A failure to import it is
+    a REFUSAL to write, never a silent pass: an unenforceable mandate must stop the writer."""
+    from libs.research.mechanism_claims import forbidden_venue
+    return forbidden_venue(text)
+
+
+def probe_rows(probe_dir: Path | None = None) -> list[dict]:
+    """Dataset-kind discovery rows the miners have written, newest file last.
+
+    THE PATH IS RESOLVED AT CALL TIME, NOT BOUND AS A DEFAULT. A `Path = PROBE_DIR` default
+    captures the real directory when this module is imported, so repointing the constant --
+    which is how every caller and every test aims this script at another tree -- silently does
+    nothing and the run reads the live desk instead. Measured here the first time it ran.
+    """
+    probe_dir = PROBE_DIR if probe_dir is None else probe_dir
+    rows: list[dict] = []
+    try:
+        files = sorted(probe_dir.glob(PROBE_GLOB))
+    except OSError:
+        return rows
+    for f in files:
+        doc = _read(f)
+        for r in (doc if isinstance(doc, list) else []):
+            if isinstance(r, dict) and str(r.get("kind") or "") == "dataset" and r.get("url"):
+                rows.append(r)
+    return rows
+
+
+def _candidate_entry(r: dict, now: str) -> dict:
+    """One probe as a map entry. The probe RESULT is the whole justification, and it is written
+    down beside the grade so a human re-grading this row can see what was actually observed."""
+    eps = int(r.get("n_endpoints") or 0)
+    return {
+        "name": str(r.get("title") or r.get("host") or r.get("url"))[:160],
+        "url": str(r.get("url")),
+        "host": str(r.get("host") or ""),
+        "grade": MACHINE_GRADE,
+        "origin": MACHINE_ORIGIN,
+        "cost": "free",
+        "verification": ("NOT opened or confirmed first-party; registered from a miner fetch. "
+                         "DO NOT feed a live signal until a human or a dig seat grades it"),
+        "probe": {"probed_at": str(r.get("available_time") or r.get("published") or now),
+                  "registered_at": now, "n_endpoints": eps,
+                  "endpoints": [str(e) for e in (r.get("endpoints") or [])[:12]],
+                  "ground": r.get("ground"), "region": r.get("region"),
+                  "language": r.get("language") or r.get("lang"),
+                  "source": r.get("source"), "source_hash": r.get("source_hash")},
+        "class": str(r.get("dataset_class") or "unclassified"),
+        "note": (f"machine-registered: the miner fetched this page and found {eps} data "
+                 f"endpoint(s). Registration is not adoption and not a licence verdict"),
+    }
+
+
+def merge_probes(universe: dict, rows: list[dict], *, now: str | None = None) -> dict:
+    """Append every probed source the map does not already name. Returns the report.
+
+    `universe` is mutated in place. Nothing that already exists is read, re-graded or rewritten:
+    the only operation this function performs on the document is appending new entries and
+    stamping `machine_updated` / `machine_writer`. The human `updated` date is left alone, so a
+    reader can still see when a person last curated the file.
+    """
+    now = now or datetime.now(tz=UTC).isoformat()
+    known = _known(universe)
+    added: list[dict] = []
+    skipped_known = 0
+    refused: list[dict] = []
+    for r in rows:
+        key = _norm(r.get("url"))
+        if not key:
+            continue
+        if key in known or _norm(r.get("title")) in known:
+            skipped_known += 1
+            continue
+        blob = " ".join(str(r.get(k) or "") for k in ("title", "url", "host", "ground",
+                                                      "dataset_class"))
+        venue = _forbidden(blob)
+        if venue:
+            refused.append({"url": str(r.get("url")), "venue": venue})
+            continue
+        entry = _candidate_entry(r, now)
+        cls = entry["class"]
+        # `sources` is created only when there is something to put in it. A `setdefault` here
+        # added an empty `sources` key to a map that had none, and since every reader resolves
+        # the document as `universe.get("sources", universe)`, that empty key HID the whole
+        # flat-shaped universe: a writer that adds nothing must leave no trace at all.
+        sources = universe.setdefault("sources", {})
+        bucket = sources.get(cls)
+        if bucket is None:
+            sources[cls] = [entry]
+        elif isinstance(bucket, list):
+            bucket.append(entry)
+        else:
+            # A human wrote this class as something other than a list. Its shape is not this
+            # writer's to change, so the machine rows go beside it under their own key.
+            sources.setdefault(f"{cls}__machine_probed", []).append(entry)
+        known.add(key)
+        added.append(entry)
+    if added:
+        universe["machine_updated"] = now
+        universe["machine_writer"] = (
+            "scripts/acquire_data.py registers miner-probed sources at grade "
+            f"{MACHINE_GRADE} and never edits an existing entry: a human or LLM grade is "
+            "final until a person changes it. Registration is not adoption.")
+    return {"probes_read": len(rows), "added": len(added),
+            "skipped_already_known": skipped_known, "refused_forbidden_venue": refused,
+            "added_names": [e["name"] for e in added[:12]]}
+
+
+def write_universe(universe: dict, path: Path | None = None) -> bool:
+    """Resolved at call time for the reason `probe_rows` states: a bound default would write the
+    live map however the constant was repointed."""
+    path = UNIVERSE if path is None else path
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(universe, indent=1, ensure_ascii=False), "utf-8")
+        return True
+    except OSError:
+        return False
+
+
 def main() -> int:
     t0 = time.time()
     universe = _read(UNIVERSE)
@@ -215,6 +394,16 @@ def main() -> int:
               "Ranking refused rather than faked.")
         return 0
 
+    # REGISTER WHAT THE MINERS PROBED, BEFORE RANKING, so a source found this cycle is ranked
+    # this cycle rather than a day later. A write failure is reported and never fatal: the
+    # ranking is the job, and losing it because the map is read-only would be the worse trade.
+    try:
+        merged = merge_probes(universe, probe_rows())
+        merged["written"] = bool(merged["added"]) and write_universe(universe)
+    except Exception as exc:
+        merged = {"probes_read": 0, "added": 0, "written": False,
+                  "why": f"{type(exc).__name__}: {exc}"}
+
     entries = universe.get("sources", universe)
     rows = [score_candidate(str(k), v if isinstance(v, dict) else {"description": str(v)}, state)
             for k, v in entries.items()]
@@ -228,6 +417,7 @@ def main() -> int:
         "seconds": round(time.time() - t0, 2),
         "candidates": len(rows),
         "measured": len(measured),
+        "registered": merged,
         "moat_coverage_pct": (moat.get("cumulative_coverage", {}) or {}).get("coverage_pct"),
         "plan": rows[:25],
         "top": rows[0]["source"] if rows else None,
@@ -239,8 +429,10 @@ def main() -> int:
             "from an author's opinion in a table. An ungraded source ranks below every graded "
             "one including the rejected ones, because a ranking that rewards not looking is "
             "worse than no ranking."),
-        "authority": ("NONE. This ranks and explains; it spends nothing, signs nothing and starts "
-                      "no collector."),
+        "authority": ("RANK AND REGISTER. It spends nothing, signs nothing and starts no "
+                      f"collector. It appends miner-probed sources to {_rel(UNIVERSE)} at grade "
+                      f"{MACHINE_GRADE} and never edits an existing entry -- a human or LLM "
+                      "grade is final until a person changes it."),
     }
     REPORT.parent.mkdir(parents=True, exist_ok=True)
     REPORT.write_text(json.dumps(out, indent=1), "utf-8")
@@ -250,6 +442,11 @@ def main() -> int:
                              "top": out["top"]}, separators=(",", ":")) + "\n")
 
     print(f"acquire: {len(rows)} candidate(s), {len(measured)} measured | {out['seconds']}s")
+    print(f"  registered: {merged['added']} new source(s) at {MACHINE_GRADE} from "
+          f"{merged.get('probes_read', 0)} probe(s), "
+          f"{merged.get('skipped_already_known', 0)} already known, "
+          f"{len(merged.get('refused_forbidden_venue') or [])} refused (forbidden venue)"
+          + ("" if merged.get("written") or not merged["added"] else "  [MAP NOT WRITTEN]"))
     for r in rows[:8]:
         flag = "    " if not r["unmeasured"] else "UNM "
         print(f"  [{flag}] #{r['rank']:<2} {r['source'][:38]:<38} {r['score']:.5f}  "

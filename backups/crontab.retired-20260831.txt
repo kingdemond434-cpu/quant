@@ -1,0 +1,14 @@
+# quant platform automation
+SHELL=/bin/bash
+PATH=/usr/local/bin:/usr/bin:/bin
+0 * * * * flock -n /tmp/hourly.lock sh -c 'cd /home/quant/quant-platform && .venv/bin/python -u hourly_controller.py >> /home/quant/logs/hourly_controller.log 2>&1'
+53 6 * * * cd "/home/quant/quant-platform" && .venv/bin/python scripts/check_bar_span.py >> data/cro_ai_logs/bar_span.log 2>&1
+*/5 * * * * cd /home/quant/quant-platform && .venv/bin/python scripts/check_research_health.py >> data/cro_ai_logs/research_health.log 2>&1
+15 6 * * 0 cd /home/quant/quant-platform && .venv/bin/python scripts/check_research_health.py --weekly >> data/cro_ai_logs/research_health.log 2>&1
+*/10 * * * * cd /home/quant/quant-platform && bash scripts/auto_push.sh >> data/cro_ai_logs/auto_push.log 2>&1
+*/10 * * * * cd /home/quant/quant-platform && .venv/bin/python scripts/check_unit_health.py >> data/cro_ai_logs/unit_health.log 2>&1
+3,18,33,48 * * * * cd /home/quant/quant-platform && .venv/bin/python scripts/check_governance_pulse.py >> data/cro_ai_logs/governance.log 2>&1
+25 6 * * 0 cd /home/quant/quant-platform && .venv/bin/python scripts/run_restore_drill.py >> data/cro_ai_logs/restore_drill.log 2>&1
+35 7 * * 2,3,6 cd /home/quant/quant-platform && .venv/bin/python scripts/refresh_cot_zcache.py >> data/cro_ai_logs/cot_zcache.log 2>&1
+8,38 * * * * cd /home/quant/quant-platform && .venv/bin/python scripts/check_dig_roi.py >> data/cro_ai_logs/dig_roi.log 2>&1
+12,42 * * * * cd /home/quant/quant-platform && .venv/bin/python scripts/check_cert_yield.py >> data/cro_ai_logs/cert_yield.log 2>&1

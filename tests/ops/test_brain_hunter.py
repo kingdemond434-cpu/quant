@@ -40,10 +40,20 @@ def test_THE_ORGAN_EXISTS_AND_IS_WIRED_INTO_THE_DAILY_ROTATION() -> None:
 
 
 def test_THE_RUNNER_FOLLOWS_THE_RESUMABLE_PATTERN_THE_OTHER_MINERS_USE() -> None:
-    """A dig that dies mid-run must cost a log, not a day. The rotation skips only on a REAL log
-    (>1500b), so a stub does not count as a completed dig."""
+    """A dig that dies mid-run must cost a log, not a day. The rotation skips only on a log that
+    carries the hunter's own EXIT MARKER, so neither a stub nor a cut-off dig counts as completed.
+
+    This pinned the earlier `-size +1500c` rule. 5c8db433 (2026-08-28) replaced it after the
+    unified dig was cut off at 10,667 bytes and the size gate called it done: size measures how
+    much was written, the marker proves the run REACHED ITS END, and only the latter is a
+    completion. The mechanism the test guards -- resume, never re-dig, never skip a dead run --
+    is unchanged; the literal it read was the weaker of the two.
+    """
     rot = ROTATION.read_text("utf-8")
-    assert "-size +1500c" in rot
+    assert 'grep -lq "brain-hunter exit" data/cro_ai_logs/brain_hunter_${TODAY}T*.log' in rot, (
+        "the hunter's resume check no longer keys on its own exit marker")
+    assert "-size +" not in rot.split("BRAIN HUNTER")[-1], (
+        "a byte-count gate is back -- a cut-off dig would read as complete again")
     src = RUNNER.read_text("utf-8")
     assert "brain_auth_check" in src and "dig_dry_run" in src
     # THE ROUTING IS INHERITED, AND ASSERTING THE LITERAL DEMANDED THE OPPOSITE. This required
@@ -59,6 +69,16 @@ def test_THE_RUNNER_FOLLOWS_THE_RESUMABLE_PATTERN_THE_OTHER_MINERS_USE() -> None
         "run_model_upgrade.py adopts a newer flagship, and nothing would report it")
 
 
+def test_CLAUDE_AUTH_FAILURE_FAILS_OVER_TO_THE_SAME_CODEX_MINER() -> None:
+    src = RUNNER.read_text("utf-8")
+    assert 'CONTROLLER="codex"' in src
+    assert "Codex fallback" in src
+    assert "--ask-for-approval never" in src
+    assert "--sandbox danger-full-access" in src
+    assert "dig_prompt ops/brain_hunter_prompt.txt" in src
+    assert "all controller auth unavailable" in src
+
+
 def test_IT_HUNTS_RECURSIVELY_RATHER_THAN_SEARCHING_ONE_LABEL() -> None:
     """Searching the platform's own label traps the organ inside what the platform CALLS an alpha.
     The alternative-implementation node is usually the highest-yield one: someone who reimplemented
@@ -69,17 +89,40 @@ def test_IT_HUNTS_RECURSIVELY_RATHER_THAN_SEARCHING_ONE_LABEL() -> None:
     assert "do NOT search only for" in src
 
 
-def test_IT_EXTRACTS_MECHANISMS_AND_DEMANDS_A_CRYPTO_ANALOGUE() -> None:
+def test_PUBLIC_COMPETITIONS_ARE_MINED_AS_MT5_ORE_NOT_EVIDENCE() -> None:
+    src = _prompt()
+    for source in ("MQL5", "Myfxbook", "Darwinex/DarwinIA", "broker contests"):
+        assert source in src
+    assert "complete histories and failure cohorts" in src
+    assert "selection-biased ore" in src
+    assert "Fusion-native point-in-time data" in src
+
+
+def test_IT_EXTRACTS_MECHANISMS_AND_DEMANDS_AN_MT5_ANALOGUE() -> None:
     """A copied formula is a crowded expression over a universe the desk does not trade. The
     platform is primarily an EQUITIES venue, so a factor rarely transfers while its transformation,
-    neutralization idea or methodology often does."""
+    neutralization idea or methodology often does.
+
+    THE PIN MOVED OFF `CURRENT VENUE OVERRIDE` ON 2026-09-05, and the wording is the reason. An
+    "override" is a temporary redirection of something still underneath it, and this brief's
+    header used it while adding that "older passages below naming crypto/Binance describe
+    historically valuable SOURCE surfaces" -- passages that no longer exist. A reader arriving
+    cold was told the default universe is a crypto exchange and that crypto instructions are
+    somewhere further down. Neither is true: the MT5/Fusion book is the universe by standing
+    principal order (2026-08-18), not an override of one. The fence now pins the standing
+    declaration, which is a stronger claim than the one it replaced.
+    """
     src = _prompt()
     assert "EXTRACT MECHANISMS, NOT FORMULAS" in src
-    assert "CRYPTO ANALOGUE" in src and "translate_to_crypto" in src
+    assert "MT5 ANALOGUE" in src and "translate_to_mt5" in src
+    assert "UNIVERSE — MT5/FUSION, AND NOTHING ELSE" in src, (
+        "the brain hunter no longer declares its universe in its opening lines")
+    assert "CURRENT VENUE OVERRIDE" not in src, (
+        "the universe is a standing mandate, not an override of a crypto default")
     assert "PRIMARILY AN EQUITIES VENUE" in src.upper()
 
 
-def test_AN_OPERATOR_WITH_NO_CRYPTO_ANALOGUE_IS_STILL_LOGGED() -> None:
+def test_AN_OPERATOR_WITH_NO_MT5_ANALOGUE_IS_STILL_LOGGED() -> None:
     """It names data the desk does not have, which is the information-frontier axis. Discarding it
     would silently narrow the search to what the desk can already measure."""
     src = _prompt()

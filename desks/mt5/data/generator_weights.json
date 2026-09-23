@@ -1,0 +1,14 @@
+{
+ "random": 1.0,
+ "gflow": 1.0,
+ "symreg": 1.0,
+ "gp": 1.0,
+ "mutate": 1.0,
+ "_generated_at": "2026-09-08T18:46:27.341083+00:00",
+ "_reason": "3 groups seen but none judged yet: 1.0 each",
+ "_pooled_mean": null,
+ "_clip": [
+  0.25,
+  4.0
+ ]
+}

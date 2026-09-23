@@ -2,13 +2,65 @@
 
 Runs daily at 22:00 UTC inside the gateway loop (after shadow_forward.main()).
 
-PROMOTE (fully automatic):
-  - shadow verdict == PROMOTION CANDIDATE and not yet promoted:
-    * XAUUSD challengers: promote only if their forward exp >= the armed gold
-      sleeve's forward exp (live ledger, same window) - 0.02 margin; else KILL.
-    * JPY-cross sleeves: promote directly at PROMOTED_LOT.
-  - promoted sleeves are written to data/sleeves.json (status LIVE) and the
-    gateway picks them up on the next pass (< 1 min).
+CAPITAL IS EARNED BY dE[log W], AND THE ASYMMETRY IS THE POINT (principal, 2026-09-05):
+
+    "Don't rank candidates primarily by Sharpe. Rank by dE[log W] after adding the candidate to
+     the existing portfolio ... Now make that principle the actual automatic admission criterion."
+
+    "Never have 'this strategy is allocated 3% forever'. Have 'this strategy currently earns 7.4%
+     portfolio risk because its posterior edge, uncertainty, conditional state and covariance make
+     that the current robust log-optimal allocation.' Five minutes/hour/session later, it can
+     be 0%."
+
+    "promotion slow / demotion immediate, evidence-based allocation, and fractional Kelly."
+
+WHAT THAT CHANGES HERE, AND WHAT IT SUPERSEDES. The 2026-09-04 order ("all promotion candidates
+get into the live account immediately, no waiting, no permission, always") is about the ROSTER and
+it still stands: a matured candidate is written to `data/sleeves.json` on the run its clock
+matures, and nothing holds it in a queue. What it never said, and what the 2026-09-05 order now
+settles, is how much CAPITAL that row carries. Three rules, all of them stricter than what stood:
+
+  ADDING RISK IS SLOW. A row goes to `status: LIVE` only when the accumulated evidence is in --
+  the forward clock matured, the certificate stands, the cost re-grade is not failing -- AND
+  `pf_allocator`'s fresh admission scan says adding it to the book the desk is actually holding
+  RAISES robust E[log W] at the same total heat. A candidate that does not is written
+  `status: STANDBY` with the number that refused it. Standby is not retirement: the row, its
+  clock and its certificate all stand, and it is re-judged every run. Every LATER move out of
+  standby needs `PROMOTE_ADMIT_STREAK` consecutive positive readings, counted on the row itself,
+  so a marginal sitting on zero cannot flap the book in and out on sampling noise.
+
+  REMOVING RISK IS IMMEDIATE. One current reading is enough. A LIVE sleeve the latest solve gives
+  no heat goes to STANDBY on that reading alone -- no trade count, no drawdown bar, no waiting.
+  It is NOT retired and NOT killed in its shadow clock: the moment the solve wants it again it
+  comes back. That is the "0%, and five minutes later it can be 7.4%" the principal asked for.
+
+  SIZE IS AN OUTPUT, NOT A CONSTANT. `PROMOTED_RISK_FRAC` used to be written onto every promoted
+  row -- literally "this strategy is allocated 3% forever". The row now carries the heat the
+  allocator's own solve gave that sleeve, with `risk_frac_source` naming where it came from, and
+  the old constant survives only as a CEILING on what this module may write, so nothing here can
+  raise size by fiat.
+
+RETIREMENT IS UNCHANGED and stays the one-way door: its thresholds are untouched, and it still
+writes KILL into the shadow clock. Standby is the reversible one; retirement is not.
+
+PROMOTE (automatic, on the run the clock matures -- principal 2026-09-04):
+  - every lane's forward clock (shadow_forward, qquant_shadow, scalp_shadow) says
+    PROMOTION CANDIDATE and the sleeve is not yet promoted: it is written to
+    data/sleeves.json on THIS run, and the gateway trades it on its next pass (< 1 min)
+    IF the allocator's fresh dE[log W] scan admits it -- otherwise the row is written
+    STANDBY and re-judged every run (see ADDING RISK IS SLOW above). The refusals are the
+    certificate (a candidate whose exact spec is not in the ten-gate authority set is
+    BLOCKED_UNIVERSAL_GATES, because a candidate without a certificate is not a candidate)
+    and the marginal (a candidate that does not raise the book's robust growth gets no
+    capital, however good its standalone Sharpe).
+  - XAUUSD window challengers no longer wait for, or die to, the armed gold book. The
+    comparison against the armed window's forward expectancy is still MEASURED and written
+    on the sleeve row (`vs_armed`) for the allocator and the attribution to read; capital
+    is then the allocator's decision by dElogW, never a promoter's heuristic (growth
+    governance rule 1: a risk reduction that has not proved it raises E[log W] does not
+    gate).
+  - scalp sleeves carry their exact recipe (timeframe, family, session, ATR geometry) and
+    exec="scalp_market"; the gateway executes them through mt5desk/scalp_exec.py.
 
 RETIRE (fully automatic):
   - for each LIVE promoted sleeve: forward stats from the live ledger:
@@ -21,22 +73,74 @@ RETIRE (fully automatic):
 The armed gold book is NOT managed here (hunt5 authority, armed by human).
 """
 
+import hashlib
 import json
+import math
+import re
 import sys
-from datetime import UTC, datetime
+import time
+from contextlib import suppress
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from mt5desk import provenance  # noqa: E402
+from mt5desk import provenance
+from shadow_admission import authorized_specs
 
 BASE = Path(__file__).resolve().parent.parent
 SHADOW_DIR = BASE / "reports" / "shadow"
 SLEEVES_FILE = BASE / "data" / "sleeves.json"
 LEDGER = BASE / "data" / "live_ledger.jsonl"
 LOG = BASE / "logs" / "promoter.log"
+#: The recertification audit (scripts/recertify_canon.py, daily before this runs): every
+#: standing certificate re-judged under the CURRENT cost model. A certificate that no longer
+#: passes its own ten gates at today's costs is not promoted, whatever its forward clock says.
+RECERT_AUDIT = BASE / "reports" / "recertification_audit.json"
+#: An audit older than this is a report, not a gate: costs may have moved since, and the daily
+#: step that refreshes it is the cure -- blocking forever on a stale re-judge would be a veto
+#: nobody re-measures (rule 1).
+RECERT_FRESH_H = 72.0
 
-PROMOTED_LOT = 0.01
+#: A cross-process append collision on Windows clears in milliseconds. Six tries over ~0.5s
+#: outlasts it; longer would be a promoter that waits on a log file, the wrong priority.
+_LOG_RETRIES = 6
+_LOG_RETRY_SLEEP_S = 0.03
+
+# SIZING (principal 2026-08-25): the gateway sizes promoted sleeves at order time -- 3% of
+# equity base risk off the bracket's own stop distance (mt5desk/sizing.py), authority-ramped
+# 0.75%/1.5%/3% by live trade count. Raising a sleeve's risk_frac above the base requires
+# recorded economic justification and is capped at MAX_RISK_FRAC there.
+#
+# NO LONGER THE ALLOCATION -- ONLY THE CEILING ON ONE (principal 2026-09-05). This constant was
+# written verbatim onto every promoted row, which is exactly the "allocated 3% forever" the
+# principal ordered removed. `promoted_risk_frac()` now derives the number from the allocator's
+# own solve for that sleeve and clamps it HERE, so this change can only ever reduce what the
+# promoter writes, never raise it.
+PROMOTED_RISK_FRAC = 0.03
+
+#: The allocation artifact whose `admission` block is the criterion, and whose `book` is the
+#: current reading. Module-level so a test can point the promoter at a fixture tree.
+ALLOCATION = BASE / "reports" / "pf_allocation.json"
+#: How old the allocator's scan may be and still price capital. `pf_allocator` re-measures on its
+#: hourly heavy clock and the short clocks carry the last one forward stamped with its age, so a
+#: scan older than this means the allocator has not run for a day -- the same 26h
+#: `libs.portfolio.allocator_proof.MAX_AGE_S` allows the sizing certificate, one freshness rule.
+#: Taken from the allocator's own published expiry when it is readable (`admission.max_age_s`),
+#: so the rule cannot drift apart between the writer and this reader.
+ADMISSION_MAX_AGE_H = 26.0
+#: Consecutive passes a STANDBY sleeve's dE[log W] must be positive before it takes capital AGAIN.
+#: One reading removes risk; two consecutive readings restore it. That asymmetry is the whole
+#: instruction, and it is what stops a sleeve whose marginal sits on zero from flapping the book
+#: in and out on sampling noise. First promotion does not use it: a candidate has already spent
+#: the forward clock's 50 trades / 14 days earning the right to be judged at all.
+PROMOTE_ADMIT_STREAK = 2
+#: What each direction costs in evidence, said out loud so the asymmetry cannot be edited away by
+#: accident. Read by `desks/mt5/tests/test_marginal_admission.py`.
+EVIDENCE_TO_ADD_RISK = ("matured forward clock", "standing certificate", "no fresh cost regrade",
+                        "a fresh, positive dE[log W] against the held book")
+EVIDENCE_TO_REMOVE_RISK = ("the current dE[log W] reading",)
+PROMOTED_LOT = 0.01     # legacy display value; sleeve_set() overrides lot to "auto_ramp"
 CHAMPION_MARGIN = 0.02   # challenger must beat armed forward exp by this much
 RETIRE_MIN_N = 10
 RETIRE_MAX_DD = -25.0
@@ -45,12 +149,57 @@ RETIRE_MIN_EXP = 0.05
 GOLD_WINDOWS = ["asia", "london_am", "ny_open", "afternoon"]
 
 
+def _sleeve_timeframe(params: dict | None) -> str:
+    """The chart a certificate was hunted on. Absent means H1 -- the desk-wide spelling, see
+    `research/frontier_identity`: every certificate written before the M1..D1 ladder is an H1
+    one, and naming H1 explicitly would rename all of them at once."""
+    return str((params or {}).get("timeframe") or "H1").upper()
+
+
 def plog(msg: str) -> None:
+    """Append one line to the promoter log. A locked log NEVER fails the promoter.
+
+    WINDOWS LOCKS FILES EXCLUSIVELY AND THIS RUNS ON WINDOWS. Two processes appending collide, and
+    the loser raised PermissionError out of `plog` -- called from inside the promotion pass, so a
+    LOGGING collision aborted the PROMOTION. Measured 2026-09-03 on the desk box, every shadow
+    cycle reported status FAILED with errors.promoter = PermissionError on promoter.log, a file
+    that was writable, appendable and last modified a week earlier. The cycle had 43 sleeves with
+    forward trades and zero evidence-blocked sleeves; the only thing that failed was note-taking.
+
+    `print` happens first and unconditionally, so the line still reaches the cycle's captured
+    output and nothing is lost -- a log the desk could not write is worth strictly less than a
+    promotion it did not run.
+    """
     line = f"{datetime.now(tz=UTC).isoformat(timespec='seconds')} {msg}"
-    LOG.parent.mkdir(parents=True, exist_ok=True)
-    with LOG.open("a", encoding="utf-8") as f:
-        f.write(line + "\n")
     print(line)
+    try:
+        LOG.parent.mkdir(parents=True, exist_ok=True)
+    except OSError:
+        return
+    for attempt in range(_LOG_RETRIES):
+        try:
+            with LOG.open("a", encoding="utf-8") as f:
+                f.write(line + "\n")
+            return
+        except (PermissionError, OSError):
+            if attempt == _LOG_RETRIES - 1:
+                return
+            time.sleep(_LOG_RETRY_SLEEP_S * (attempt + 1))
+
+
+def _ack(consumer: str, path) -> None:
+    """LINEAGE IS ACKNOWLEDGED, NEVER INFERRED (LAWS.md 7). The promoter reading the forward
+    ledger is the edge `enrol_clocks -> promoter`; without this call the control plane can only
+    see that two files have nearby timestamps, which is not evidence that one was read."""
+    try:
+        import sys as _sys
+        root = str(BASE.parents[1])
+        if root not in _sys.path:
+            _sys.path.insert(0, root)
+        from libs.ops.control_plane.lease import ack_artifact
+        ack_artifact(consumer, path)
+    except Exception:
+        pass
 
 
 def load_shadow() -> dict:
@@ -58,14 +207,99 @@ def load_shadow() -> dict:
     if not p.exists():
         return {}
     try:
-        return json.loads(p.read_text(encoding="utf-8"))
+        doc = json.loads(p.read_text(encoding="utf-8"))
     except Exception:
         return {}
+    _ack("leg:promoter", p)
+    return doc
+
+
+def artifact_of(row: dict) -> dict:
+    """The StrategyArtifact behind a sleeve row: its version hash and what the validator says.
+
+    libs/research/strategy_artifact.py was "the only object that may reach the allocator" and
+    had no importer on this tree (found 2026-09-05). It is RECORDED on every LIVE row here, so
+    what trades is named by a hash of its mechanism, recipe, instruments and certificates, and
+    a reader can tell two rows with the same name apart across a code change. It does not add
+    a refusal: the universal rule (promotion is the forward clock's) stands, and a row the
+    validator dislikes carries `artifact.problems` for the health report to show -- a row with
+    no family or no symbol is untradeable by construction and is the one case dropped.
+    """
+    try:
+        from libs.research.strategy_artifact import StrategyArtifact, validate
+        fam = str(row.get("family") or ("session_range_breakout" if row.get("window") else ""))
+        sym = str(row.get("symbol") or "").upper()
+        recipe = {k: row[k] for k in ("selector", "state", "params", "timeframe", "session",
+                                      "stop_atr", "target_atr", "max_hold", "window")
+                  if k in row}
+        a = StrategyArtifact(
+            strategy_id=str(row.get("name") or ""), mechanism=fam,
+            source=str(row.get("certificate") or ""), family=fam, params=dict(recipe),
+            symbols=[sym] if sym else [], timeframes=[str(row.get("timeframe") or "H1")],
+            entry={"family": fam, "selector": row.get("selector"), "side": row.get("side")},
+            exit={"ttl_bars": row.get("max_hold"), "stop_atr": row.get("stop_atr"),
+                  "target_atr": row.get("target_atr")},
+            execution={"policy": str(row.get("exec") or "family_market")},
+            state_conditioning={"state": row.get("state")},
+            data_requirements=[f"bars.{row.get('timeframe') or 'H1'}:{sym}"] if sym else [],
+            feature_ids=[], cost_assumptions={"cost_hash": row.get("cost_hash"),
+                                              "cost_r": row.get("cost_r")},
+            validation_certificate={"status": "PASS" if row.get("certificate") else "",
+                                    "certificate": row.get("certificate")},
+            lockbox_certificate={}, shadow_evidence={"n": row.get("shadow_n"),
+                                                     "exp": row.get("shadow_exp")})
+        v = validate(a)
+        return {"version_hash": v["version_hash"], "ok": bool(v["ok"]),
+                "problems": list(v["problems"])}
+    except Exception as exc:
+        return {"version_hash": None, "ok": False,
+                "problems": [f"artifact unavailable: {type(exc).__name__}: {exc}"]}
+
+
+def _apply_live_policy(rows: list[dict]) -> int:
+    """RETIRE every row the live policy refuses, in place, with the reason on the row.
+
+    The principal stopped the forex sleeves and the XAUUSD M15 sleeve on 2026-09-17 and they had
+    come back twice before, because automatic promotion re-writes a matured clock's row the same
+    hour. The policy is applied HERE, in the only writer of sleeves.json, so the next wave cannot
+    restore them; the gateway checks the same policy again at its own door.
+    """
+    try:
+        from mt5desk.live_policy import policy, refuse
+    except ImportError:                                    # pragma: no cover - box path only
+        return 0
+    pol = policy()
+    stamp = datetime.now(tz=UTC).isoformat(timespec="seconds")
+    n = 0
+    for row in rows:
+        if str(row.get("status") or "").upper() not in ("LIVE", "STANDBY"):
+            continue
+        why = refuse(row, pol)
+        if not why:
+            continue
+        was = str(row.get("status") or "")
+        row.update({"status": "RETIRED", "risk_frac": 0.0, "risk_frac_source": "none",
+                    "retired_at": stamp, "retire_reason": why,
+                    "retired_by": "live_policy"})
+        plog(f"LIVE POLICY retired {row.get('name')} (was {was}): {why}")
+        n += 1
+    return n
 
 
 def save_sleeves(sleeves: list[dict]) -> None:
     SLEEVES_FILE.parent.mkdir(parents=True, exist_ok=True)
-    SLEEVES_FILE.write_text(json.dumps({"sleeves": sleeves}, indent=2),
+    _apply_live_policy(sleeves)
+    kept: list[dict] = []
+    for row in sleeves:
+        if str(row.get("status") or "").upper() == "LIVE":
+            art = artifact_of(row)
+            row["artifact"] = art
+            if "no family" in art["problems"] or "no symbol" in art["problems"]:
+                plog(f"{row.get('name')}: LIVE row dropped -- untradeable by construction "
+                     f"({', '.join(art['problems'])})")
+                continue
+        kept.append(row)
+    SLEEVES_FILE.write_text(json.dumps({"sleeves": kept}, indent=2),
                             encoding="utf-8")
 
 
@@ -78,7 +312,438 @@ def load_sleeves() -> list[dict]:
         return []
 
 
-def load_ledger() -> list[dict]:
+# --------------------------------------------- IDENTITY ON THE ROW, AND THE ALPHA-STATE LEDGER
+#
+# THE HOP FROM A FUNDED SLEEVE TO THE CERTIFICATE THAT JUSTIFIED IT WAS AN INFERENCE (audit E9/E1,
+# 2026-09-08): the sleeve row carried `name`, `certificate_drift` and `admission`, and a reader
+# who wanted the certificate had to guess that the name was its key. `forward_reconcile.py:308`
+# already reads `row.get("certificate") or key`, so the key IS the certificate id on this desk;
+# every row now carries it as `certificate`, and the registry's `sleeve_id` (the frozen identity
+# hash of code, cost and behaviour) beside it. Additive fields: no door reads them.
+#
+# THE ALPHA-STATE LEDGER WAS NEVER DRIVEN (audit P10/A15): two rows, nine milliseconds apart, for
+# one alpha. Every door this module opens or closes is now written through
+# `libs.research.alpha_state.AlphaStateLedger` -- and when the door is not a legal rung step (it
+# almost never is: a matured clock arrives at DISCOVERED on the ledger, and LIVE is nine rungs up
+# with a principal token this organ may not synthesise) the attempt is recorded as an OBSERVATION
+# row in a sibling file, with the ledger's own refusal quoted. The state machine is never forced:
+# the sibling exists because `AlphaStateLedger._load` raises on any row that is not a legal
+# transition, so an observation written into the ledger itself would make every later read fail.
+SLEEVE_REGISTRY = BASE / "data" / "sleeve_registry.json"
+ROOT = BASE.parent.parent
+#: The canonical ledger `scripts/run_conversion_control.py:113` and `run_live_ladder.py:282`
+#: read -- repository `data/`, not the desk's, so the promoter's rows join theirs.
+ALPHA_STATE_LEDGER = ROOT / "data" / "alpha_state_ledger.jsonl"
+ALPHA_STATE_OBSERVATIONS = ROOT / "data" / "alpha_state_observations.jsonl"
+
+#: Door -> the rung the door claims. A door with no rung (STANDBY is reversible and sits on no
+#: rung; DEGRADED would make it terminal) is an observation by construction.
+_RUNG_BY_DOOR: dict[tuple[str, str], str | None] = {
+    ("PROMOTED", "LIVE"): "LIVE",
+    ("PROMOTED", "STANDBY"): "CAPITAL_ELIGIBLE",
+    ("RESTORED", "LIVE"): "LIVE",
+    ("DEMOTED", "STANDBY"): None,
+    ("RETIRED", "RETIRED"): "RETIRED",
+}
+
+
+def _alpha_state_paths() -> tuple[Path, Path]:
+    """(ledger, observations), ALWAYS beside whatever SLEEVES_FILE currently points at when a
+    test has moved the roster -- the same rule `_gold_voided_file` follows, and for the same
+    reason: five promoter test files redirect the roster to tmp_path and call `main()`, and a
+    ledger resolved through the module constant would append their fixture sleeves to the
+    repository's real data/alpha_state_ledger.jsonl. The constants stay for callers that set
+    them explicitly."""
+    ledger, obs = ALPHA_STATE_LEDGER, ALPHA_STATE_OBSERVATIONS
+    if SLEEVES_FILE != BASE / "data" / "sleeves.json":
+        if ledger == ROOT / "data" / "alpha_state_ledger.jsonl":
+            ledger = SLEEVES_FILE.with_name("alpha_state_ledger.jsonl")
+        if obs == ROOT / "data" / "alpha_state_observations.jsonl":
+            obs = SLEEVES_FILE.with_name("alpha_state_observations.jsonl")
+    return ledger, obs
+
+
+def registry_row(name: str) -> dict:
+    """The sleeve registry's row for a clock key, or {} when the registry or the key is absent.
+    The registry is keyed exactly as the forward engine keys its clocks, which is the name every
+    promoted row carries."""
+    try:
+        doc = json.loads(SLEEVE_REGISTRY.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    rows = doc.get("sleeves") if isinstance(doc, dict) else None
+    row = rows.get(name) if isinstance(rows, dict) else None
+    return row if isinstance(row, dict) else {}
+
+
+def registry_sleeve_id(name: str) -> str | None:
+    """`sleeves.<key>.identity.sleeve_id` from data/sleeve_registry.json, else None -- absent is
+    reported as None on the row, never as an empty string a reader could mistake for an id."""
+    ident = registry_row(name).get("identity")
+    v = ident.get("sleeve_id") if isinstance(ident, dict) else None
+    return str(v) if v else None
+
+
+def door_evidence(name: str, cap: dict | None = None, *, n=None, exp_r=None, days=None,
+                  certificate: str | None = None, **extra) -> dict[str, str]:
+    """What the promoter MEASURED at a door, as the string-valued evidence the ledger takes.
+    Empty values are dropped rather than written blank: an empty string is how a checkbox gets
+    ticked by a script with nothing to say (alpha_state's own rule)."""
+    reg = registry_row(name)
+    cap = cap if isinstance(cap, dict) else {}
+    ev: dict = {
+        "certificate": certificate or name, "sleeve_id": registry_sleeve_id(name),
+        "forward_observations": n,
+        "forward_result": (f"{float(exp_r):.4f}R" if isinstance(exp_r, (int, float)) else None),
+        "forward_days": days, "shadow_started_at": reg.get("forward_start"),
+        "delta_elogw_per_day": cap.get("delta_elogw_per_day"),
+        "heat_earned": cap.get("heat_earned"), "admission": cap.get("status"),
+    }
+    ev.update(extra)
+    return {str(k): str(v) for k, v in ev.items() if v is not None and str(v).strip()}
+
+
+def record_door_transition(name: str, *, door: str, from_status: str, to_status: str,
+                           evidence: dict | None = None, reason: str = "") -> dict:
+    """Write one door of this pass onto the alpha-state ledger, or record why it could not be.
+
+    ONE ATTEMPT, NEVER A WALK. The ledger is asked for exactly the rung the door claims; it
+    refuses a skipped rung and missing evidence by design, and this function does not then step
+    through the lower rungs asserting evidence it did not measure -- that would be the machine
+    being forced from below, which is the bypass the ledger exists to prevent. A refusal is a
+    real answer and is quoted verbatim on the observation row.
+
+    EVERY DOOR LEAVES A TIMESTAMPED ROW in the observations file, whether or not the ledger took
+    it, so a per-rung timeline exists for every promoted sleeve from the day this landed (the
+    per-rung latency the audit could not measure). Retirement is the one door the ledger always
+    accepts: RETIRED is reachable from every state and needs only its reason.
+
+    Returns `{outcome, rung, why, ledger, observations}`; NEVER raises. A ledger that cannot be
+    read (a malformed line) is reported on the row and the pass continues -- a note-taking
+    failure must not abort a promotion (the `plog` lesson, 2026-09-03).
+    """
+    ledger_path, obs_path = _alpha_state_paths()
+    at = datetime.now(tz=UTC).isoformat(timespec="seconds")
+    rung = _RUNG_BY_DOOR.get((door, to_status))
+    ev = {str(k): str(v) for k, v in (evidence or {}).items()
+          if v is not None and str(v).strip()}
+    out = {"outcome": "OBSERVATION", "rung": rung, "why": "", "state_before": None,
+           "state_after": None, "ledger": str(ledger_path), "observations": str(obs_path)}
+    try:
+        if rung is None:
+            out["why"] = (f"{door} ({from_status or 'new'} -> {to_status}) is not a rung of the "
+                          f"alpha-state ladder: STANDBY is the reversible door and sits on no "
+                          f"rung; recorded as an observation, the machine is not forced")
+        else:
+            from libs.research.alpha_state import AlphaStateLedger
+            try:
+                ledger = AlphaStateLedger(ledger_path)
+            except ValueError as exc:
+                ledger = None
+                out["why"] = (f"alpha-state ledger unreadable ({exc}); the door is recorded as "
+                              f"an observation only")
+            if ledger is not None:
+                out["state_before"] = ledger.get(name).state
+                if rung == "RETIRED":
+                    rec, why = ledger.retreat(name, "RETIRED",
+                                              reason=reason or f"{door}: {to_status}", now=at)
+                else:
+                    rec, why = ledger.advance(name, rung, ev, now=at)
+                out["state_after"] = rec.state
+                moved = (rec.state == rung
+                         and (rec.history and rec.history[-1][1] == at))
+                out["outcome"] = "LEDGERED" if moved else "OBSERVATION"
+                out["why"] = why
+        row = {"schema_version": 1, "kind": "OBSERVATION", "alpha_id": name, "at": at,
+               "door": door, "from": from_status or None, "to": to_status,
+               "rung_attempted": rung, "outcome": out["outcome"],
+               "ledger_state_before": out["state_before"],
+               "ledger_state_after": out["state_after"],
+               "why": out["why"], "reason": reason or None, "evidence": ev}
+        obs_path.parent.mkdir(parents=True, exist_ok=True)
+        with obs_path.open("a", encoding="utf-8") as fh:
+            fh.write(json.dumps(row, sort_keys=True, default=str) + "\n")
+        plog(f"alpha_state: {name} {door} -> {to_status}: {out['outcome']}"
+             + (f" at rung {rung}" if rung else "")
+             + (f" ({out['why'][:120]})" if out["outcome"] != "LEDGERED" else ""))
+    except Exception as exc:
+        out["why"] = f"alpha-state recording failed: {type(exc).__name__}: {exc}"
+        plog(f"alpha_state: {name} {door} -> {to_status}: NOT RECORDED -- {out['why']}")
+    return out
+
+
+#: Doors opened or closed during THIS pass, recorded by `main` once the roster is written.
+#: Buffered rather than written at the door because the lane functions are called directly by
+#: seven test files that redirect none of the ledger paths; a write at the door sent their
+#: fixture sleeves to the repository's real data/ (measured on the first run of this change).
+#: `main` is the only caller that has a roster to write and the only one that flushes.
+_DOOR_EVENTS: list[dict] = []
+
+
+#: Where `certificate_hygiene` moves survivors whose parameterisation was never recorded.
+EVICTED_CERTIFICATES = BASE / "reports" / "UNIVERSAL_SURVIVORS_UNRUNNABLE.json"
+
+
+def evicted_certificate_keys(path: Path | None = None) -> set[str]:
+    """Certificate keys `certificate_hygiene` evicted from the survivors as UNRUNNABLE."""
+    p = path or EVICTED_CERTIFICATES
+    try:
+        doc = json.loads(p.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return set()
+    surv = doc.get("survivors") if isinstance(doc, dict) else None
+    return {str(k) for k in (surv or {})}
+
+
+def _certificate_key(row: dict) -> str:
+    cert = row.get("certificate")
+    if isinstance(cert, dict):
+        return str(cert.get("cell") or "")
+    return str(cert or "")
+
+
+def _queue_close(names: list[str]) -> None:
+    """Hand retired names to the gateway's close queue (`gateway.close_retired_positions`)."""
+    p = SLEEVES_FILE.parent / "RETIRED_CLOSE_QUEUE.json"
+    have: list[str] = []
+    try:
+        have = [str(x) for x in (json.loads(p.read_text("utf-8")).get("names") or [])]
+    except (OSError, ValueError):
+        have = []
+    merged = list(dict.fromkeys(have + [str(n) for n in names if n]))
+    try:
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_text(json.dumps({"names": merged,
+                                 "at": datetime.now(tz=UTC).isoformat(timespec="seconds")},
+                                indent=1), "utf-8")
+    except OSError:
+        pass
+
+
+#: THE EVIDENCE DOOR OUT OF A BAN (principal 2026-09-16: "what if existing discovery sleeves
+#: actually pass?"). A banned family's existing clocks keep running in shadow for free; pooled
+#: across all of them, this many forward trades in the decay monitor's trailing window at this
+#: t -- twice the trades the desk retires on and the same t -- parole the family: its candidates
+#: may be promoted again and its rows are not retired. Research stays closed to it regardless.
+PAROLE_N = 40
+PAROLE_T = 2.5
+
+
+def family_parole(family: str, identities: dict[str, dict] | None = None
+                  ) -> tuple[bool, str]:
+    """(paroled, why) from the family's pooled FORWARD record across every enrolled clock.
+
+    Reads the main lane's shadow ledgers (`reports/shadow/ledger_<clock>.json`, one row per
+    forward trade with `r_multiple`) through the decay monitor's own readers, so the bar is
+    judged on the same rows the decay monitor judges a sleeve on. Unreadable reads as not
+    paroled: a ban is lifted by evidence, never by an absence of it.
+    """
+    try:
+        import decay_monitor as dm
+    except ImportError:                                    # pragma: no cover
+        from research import decay_monitor as dm
+    fam = str(family or "").lower()
+    ids = identities if identities is not None else clock_identities()
+    keys = [k for k, ident in ids.items()
+            if isinstance(ident, dict) and str(ident.get("family") or "").lower() == fam]
+    cutoff = datetime.now(tz=UTC) - timedelta(days=dm.TRAIL_DAYS)
+    rs: list[float] = []
+    for k in keys:
+        for row in dm._shadow_ledger_rows(k):
+            r = dm._row_r(row)
+            if r is None:
+                continue
+            t = dm._row_time(row)
+            if t is not None and t < cutoff:
+                continue
+            rs.append(float(r))
+    s = dm.stats(rs)
+    record = (f"pooled forward n={s['n']}, exp={s['exp_r']}R, t={s['t']} across "
+              f"{len(keys)} clock(s) in the trailing {dm.TRAIL_DAYS} days "
+              f"(parole bar: n>={PAROLE_N}, t>={PAROLE_T}, exp>0)")
+    if s["n"] >= PAROLE_N and s["t"] >= PAROLE_T and s["exp_r"] > 0.0:
+        return True, f"PAROLED by its forward clocks: {record}"
+    return False, f"not paroled: {record}"
+
+
+def retire_banned(sleeves: list[dict], identities: dict[str, dict] | None = None) -> bool:
+    """RETIRE every LIVE or STANDBY row of a family the principal has banned
+    (research/family_policy.py, data/banned_families.json) -- unless the family has been
+    paroled by its forward clocks (`family_parole`, judged over `identities`). Returns changed.
+
+    2026-09-16: the `discovered` family. The decay monitor had already retired its live forex
+    sleeves on the pooled bar; this is the standing order that keeps them out -- a candidate of
+    a banned family is never promoted (see `promote_generic` and `main`), and any row that is
+    still on the roster leaves it here with the ban's own reason on it. Open positions go to
+    the gateway's close queue.
+    """
+    try:
+        from family_policy import ban_reason, family_banned
+    except ImportError:                                    # pragma: no cover
+        from research.family_policy import ban_reason, family_banned
+    changed = False
+    stamp = datetime.now(tz=UTC).isoformat(timespec="seconds")
+    gone: list[str] = []
+    parole: dict[str, tuple[bool, str]] = {}
+    for s in sleeves:
+        status = str(s.get("status") or "")
+        if status not in ("LIVE", "STANDBY"):
+            continue
+        fam = str(s.get("family") or "")
+        if not family_banned(fam):
+            continue
+        if fam not in parole:
+            try:
+                parole[fam] = family_parole(fam, identities)
+            except Exception as exc:                       # unreadable: not paroled
+                parole[fam] = (False, f"parole unreadable ({type(exc).__name__}: {exc})")
+            if parole[fam][0]:
+                plog(f"banned family {fam!r} keeps its rows -- {parole[fam][1]}")
+        if parole[fam][0]:
+            continue
+        reason = ban_reason(fam)
+        s.update({"status": "RETIRED", "risk_frac": 0.0, "risk_frac_source": "none",
+                  "retired_at": stamp, "retire_reason": reason})
+        plog(f"AUTO-RETIRED {s['name']} ({reason})")
+        note_door(str(s.get("name") or ""), door="RETIRED", from_status=status,
+                  to_status="RETIRED", reason=reason,
+                  evidence={"certificate": s.get("certificate"), "banned_family": fam})
+        gone.append(str(s.get("name") or ""))
+        changed = True
+    if gone:
+        _queue_close(gone)
+    return changed
+
+
+def retire_unrunnable(sleeves: list[dict], evicted: set[str] | None = None) -> bool:
+    """RETIRE roster rows whose certificate hygiene has evicted as UNRUNNABLE. Returns changed.
+
+    FIVE ROWS SAT ON THE ROSTER THAT COULD NEVER PLACE (measured 2026-09-16). Their certificates
+    name a bare cell (`external.CADJPY.session_range_breakout`) and the parameterisation that
+    earned them was never recorded, so `_params_from_certificate` refuses them on every pass:
+    "names no parameterisation and the docket holds 403 distinct ones". `certificate_hygiene`
+    had already moved those certificates out of the survivors as UNRUNNABLE, and the mechanism
+    had been RE-EARNED as parameterised cells (`...rr=1.5_wb=12`) with their own roster rows --
+    but nothing read the eviction back into the roster, so one bare row stayed LIVE with heat
+    assigned to a sleeve that refuses every bar, and four stayed STANDBY waiting for a restore
+    that could only ever restore a refusal. The rows are retired with the reason on them; the
+    parameterised twins carry the mechanism. A row that carries explicit `params` is runnable on
+    its own and is never touched here.
+    """
+    keys = evicted_certificate_keys() if evicted is None else set(evicted)
+    if not keys:
+        return False
+    changed = False
+    stamp = datetime.now(tz=UTC).isoformat(timespec="seconds")
+    for s in sleeves:
+        status = str(s.get("status") or "")
+        if status not in ("LIVE", "STANDBY"):
+            continue
+        if isinstance(s.get("params"), dict) and s.get("params"):
+            continue
+        key = _certificate_key(s)
+        if not key or key not in keys:
+            continue
+        reason = (f"certificate {key!r} is UNRUNNABLE: the parameterisation that earned it was "
+                  f"never recorded (certificate_hygiene evicted it); the re-earned parameterised "
+                  f"cells carry the mechanism")
+        s.update({"status": "RETIRED", "risk_frac": 0.0, "risk_frac_source": "none",
+                  "retired_at": stamp, "retire_reason": reason})
+        plog(f"AUTO-RETIRED {s['name']} ({reason})")
+        note_door(str(s.get("name") or ""), door="RETIRED", from_status=status,
+                  to_status="RETIRED", reason=reason,
+                  evidence={"certificate": s.get("certificate"),
+                            "evicted_by": "certificate_hygiene"})
+        changed = True
+    return changed
+
+
+def note_door(name: str, *, door: str, from_status: str, to_status: str,
+              evidence: dict | None = None, reason: str = "") -> None:
+    """Remember a door for `flush_door_events`; never writes."""
+    _DOOR_EVENTS.append({"name": name, "door": door, "from_status": from_status,
+                         "to_status": to_status, "evidence": evidence, "reason": reason})
+
+
+def flush_door_events() -> list[dict]:
+    """Write every buffered door through `record_door_transition`, in the order it happened."""
+    events, _DOOR_EVENTS[:] = list(_DOOR_EVENTS), []
+    return [record_door_transition(e.pop("name"), **e) for e in events]
+
+
+def account_in_hand() -> dict:
+    """The account this promoter is judging -- MEASURED from the terminal, or UNKNOWN.
+
+    THE PROMOTER NEVER HAD ONE ON THE BOX. `load_ledger` asked `mt5.account_info()` in a process
+    that held no terminal connection: `run_gateway_loop` runs this module after `gateway.main()`
+    has already called `mt5.shutdown()` at the end of its pass (the last line of gateway.main),
+    and `daily_cycle._promote` never opens one at all. `account_info()` on a process with no
+    connection returns None, `provenance.current_account(None)` is UNKNOWN, and
+    `provenance.same_account` matches NOTHING to UNKNOWN -- so every promoter pass on the box read
+    an EMPTY ledger. The retire walk judged nothing, the provenance filter excluded the very rows
+    it exists to admit, and `load_ledger`'s own log line said "0/N rows are from the account in
+    hand" on every pass without that line being read as the defect it was.
+
+    So the promoter now measures the account the way the gateway does: `connect()` there is
+    `terminal_info()`, else `initialize(path=TERMINAL)` from the same `data/terminal_path.txt`.
+    A connection this call opened is closed again before returning, so a caller that already
+    holds one (the gateway loop mid-pass) is left exactly as it was. A terminal that cannot be
+    reached, or a host without the MetaTrader5 module, is UNKNOWN -- reported, never guessed,
+    and every reader below treats UNKNOWN as "cannot judge", not as "nothing to judge".
+    """
+    try:
+        import MetaTrader5 as mt5
+    except ImportError:
+        return provenance.current_account(None)
+    opened = False
+    try:
+        if mt5.terminal_info() is None:
+            try:
+                from mt5desk.config import terminal_path
+                path = terminal_path()
+            except Exception:
+                path = ""
+            opened = bool(mt5.initialize(path=path) if path else mt5.initialize())
+            if not opened:
+                plog(f"account in hand: terminal unreachable ({mt5.last_error()}); UNKNOWN")
+                return provenance.current_account(None)
+        return provenance.current_account(mt5.account_info())
+    except Exception as exc:
+        plog(f"account in hand: {type(exc).__name__}: {exc}; UNKNOWN")
+        return provenance.current_account(None)
+    finally:
+        if opened:
+            with suppress(Exception):
+                mt5.shutdown()
+
+
+def _all_ledger_rows() -> list[dict] | None:
+    """Every row in the ledger file regardless of account, or None when the file is absent or
+    cannot be read at all. A torn final line is skipped, never fatal (the same tolerance
+    `decision_core.ledger_rows` has): a ledger that parsed all-or-nothing read as EMPTY on one
+    torn byte, and an empty ledger is exactly the reading the void rule below must never act on.
+    None and [] are different answers -- "could not read" and "read, nothing there"."""
+    if not LEDGER.exists():
+        return None
+    try:
+        text = LEDGER.read_text(encoding="utf-8")
+    except OSError:
+        return None
+    out: list[dict] = []
+    for line in text.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            row = json.loads(line)
+        except ValueError:
+            continue
+        if isinstance(row, dict):
+            out.append(row)
+    return out
+
+
+def load_ledger(acc: dict | None = None) -> list[dict]:
     """Closed trades from the account THIS DESK IS CURRENTLY TRADING, and no others.
 
     THE FILE IS NOT ONE ACCOUNT'S HISTORY. The broker is switched by editing one line of
@@ -92,19 +757,15 @@ def load_ledger() -> list[dict]:
     Rows predating provenance match nothing and are excluded. That is a deliberate loss of
     history: the alternative is silently treating pre-switch trades as belonging to whatever
     account happens to be connected today, which is the defect itself.
+
+    `acc` is the account in hand (`account_in_hand()`), passed by `main` so the ledger and the
+    gold retirement re-derivation below are judged against ONE measurement of it.
     """
-    if not LEDGER.exists():
+    rows = _all_ledger_rows()
+    if rows is None:
         return []
-    try:
-        rows = [json.loads(line) for line in LEDGER.read_text(encoding="utf-8").splitlines()
-                if line.strip()]
-    except Exception:
-        return []
-    try:
-        import MetaTrader5 as mt5  # noqa: PLC0415
-        acc = provenance.current_account(mt5.account_info())
-    except Exception:
-        acc = provenance.current_account(None)
+    if acc is None:
+        acc = account_in_hand()
     kept = [r for r in rows if provenance.same_account(r, acc)]
     if len(kept) != len(rows):
         plog(f"ledger: {len(kept)}/{len(rows)} rows are from the account in hand "
@@ -137,55 +798,1235 @@ def sleeve_forward_stats(ledger: list[dict], name: str) -> dict:
             "roll20_exp": sum(roll) / len(roll)}
 
 
+#: The hardcoded live book, by the names gateway.sleeve_set() emits. Kept here rather than
+#: imported because promoter runs on the research side and gateway imports MetaTrader5, which is
+#: Windows-only; a wrong name here retires nothing rather than the wrong thing, and the names are
+#: asserted against the gateway by tests/test_gold_retire_names.py.
+GOLD_SLEEVE_NAMES = ("gold_asia", "gold_london_am", "gold_afternoon")
+
+#: Windows the gateway must stop emitting. Absent file = nothing retired, which is the state the
+#: desk has been in until now, so behaviour is unchanged until a rule actually fires.
+GOLD_RETIRED_FILE = BASE / "data" / "GOLD_RETIRED.json"
+
+
+def _load_gold_retired() -> dict:
+    try:
+        v = json.loads(GOLD_RETIRED_FILE.read_text(encoding="utf-8"))
+        return v if isinstance(v, dict) else {}
+    except (OSError, ValueError):
+        return {}
+
+
+def _save_gold_retired(rows: dict) -> None:
+    GOLD_RETIRED_FILE.parent.mkdir(parents=True, exist_ok=True)
+    GOLD_RETIRED_FILE.write_text(json.dumps(rows, indent=2), encoding="utf-8")
+
+
+#: The audit of every gold retirement this module VOIDED, with the record as it stood and why.
+#: A SIBLING file, deliberately: `decision_core.roster`, `sleeve_registry.gateway_retired_keys`
+#: and `scripts/check_gold_live.py` all read EVERY key of GOLD_RETIRED.json as a retired window,
+#: so a voided entry kept inside that file under another key would still stop the window.
+GOLD_RETIRED_VOIDED_FILE = BASE / "data" / "GOLD_RETIRED_VOIDED.json"
+
+
+def _gold_voided_file() -> Path:
+    """The audit file, ALWAYS beside whatever GOLD_RETIRED_FILE currently points at.
+
+    MEASURED 2026-09-08, the first suite run after the void path landed: five older promoter
+    tests redirect GOLD_RETIRED_FILE (or nothing at all) to tmp_path and call `main()`; the void
+    path wrote its audit through the module constant, so a test's fake account voided and
+    re-stamped the REPOSITORY's real GOLD_RETIRED.json and left a real GOLD_RETIRED_VOIDED.json
+    behind. Deriving the sibling from the retired file's own location means a test that moves
+    one moves both; the constant stays for callers that set it explicitly."""
+    if GOLD_RETIRED_VOIDED_FILE != BASE / "data" / "GOLD_RETIRED_VOIDED.json":
+        return GOLD_RETIRED_VOIDED_FILE
+    return GOLD_RETIRED_FILE.with_name("GOLD_RETIRED_VOIDED.json")
+
+
+def _load_gold_voided() -> dict:
+    try:
+        v = json.loads(_gold_voided_file().read_text(encoding="utf-8"))
+        return v if isinstance(v, dict) else {}
+    except (OSError, ValueError):
+        return {}
+
+
+def _stamped_to_another_account(row: dict, acc: dict) -> bool:
+    """Is this row POSITIVELY about some other account: a known login/server/kind that is not
+    the account in hand? A row with no provenance, or an UNKNOWN kind, is evidence about nothing
+    the desk can name -- it is not proof the retirement came from elsewhere."""
+    login, _server, kind = provenance.row_account(row)
+    if kind == provenance.UNKNOWN or login is None:
+        return False
+    return not provenance.same_account(row, acc)
+
+
+def retirement_void_reason(rec: dict, ledger: list[dict], name: str, acc: dict,
+                           all_rows: list[dict] | None = None) -> str:
+    """Why a STANDING gold retirement is void on today's admissible evidence, or "" if it stands.
+
+    A RETIREMENT IS A CLAIM ABOUT EVIDENCE, AND THE CLAIM IS RE-DERIVED, NOT TRUSTED. Measured
+    2026-09-08 on this tree: data/GOLD_RETIRED.json holds gold_asia, retired 2026-09-02T23:38Z on
+    `roll20 exp -0.834R <= 0`, n=30, exp -0.842, max_dd -24.26. Two facts about that record:
+
+      * `degenerate_evidence` -- the near-constant rule written AFTER the entry -- names this very
+        retirement as the defect it exists to refuse ("about twenty-five identical -1.000s and a
+        few other values"). The 09-01 twin (thirty exact -1.000s) was undone by hand in bdbb712c;
+        the 09-02 one was never re-judged, and the live account it stops has recorded no fill
+        (gateway_state.execution.matched_fills 0).
+      * `load_ledger` admits only rows `provenance.same_account` accepts for the account in hand.
+        A retirement whose rows are all stamped to SOME OTHER account (a demo login, another
+        server) was computed from history `load_ledger` refuses to judge a live sleeve on.
+        Refusing it for retirement while honouring a retirement already made from it is the
+        same defect with a date on it.
+
+    THE RULE VOIDS ON POSITIVE EVIDENCE ONLY (corrected 2026-09-08, the same evening, after a
+    verifier refuted the first version). The first version also voided when the admissible row
+    count was merely BELOW the recorded n -- which is true of an empty ledger, a missing file, a
+    file that failed to parse, and a live account that simply has not traded yet. That re-opened
+    the one-way door on the ABSENCE of evidence: a loosened risk law, whatever the intent. Now an
+    entry is void only when (a) the admissible series for the sleeve is one `degenerate_evidence`
+    refuses -- proof the number was a computation defect -- or (b) the file holds at least the
+    recorded n rows for the sleeve and EVERY one of them is stamped to a different, known account
+    -- proof the number was another account's. A short, empty, unreadable or unstamped ledger
+    proves nothing and the entry STANDS. It cannot void a retirement the thresholds would make
+    again: `main` falls through to the UNCHANGED retire rules on the same pass, so a genuinely
+    losing sleeve on admissible, dispersed evidence is re-retired before the gateway's next read.
+    No threshold, floor or size moves.
+
+    UNKNOWN IS NOT EMPTY. With no account in hand nothing is admissible, and the entry stands.
+
+    `all_rows` is the whole file (`_all_ledger_rows()`), account-agnostic, for rule (b); None
+    means the file could not be read, and rule (b) is then not consulted.
+    """
+    if acc.get("kind") == provenance.UNKNOWN or acc.get("login") is None:
+        return ""
+    why = degenerate_evidence(ledger, name)
+    if why:
+        return why
+    if all_rows is None:
+        return ""
+    try:
+        rec_n = int(rec.get("n") or 0)
+    except (TypeError, ValueError, AttributeError):
+        rec_n = 0
+    if rec_n <= 0:
+        return ""
+    rows_for = [r for r in all_rows if r.get("sleeve") == name]
+    if len(rows_for) >= rec_n and all(_stamped_to_another_account(r, acc) for r in rows_for):
+        others = sorted({f"{r.get('account')}@{r.get('server')}/{r.get('account_kind')}"
+                        for r in rows_for})
+        return (f"the {len(rows_for)} row(s) that retired it are all stamped to another account "
+                f"({', '.join(others[:3])}), none admissible for the account in hand "
+                f"(login={acc.get('login')} server={acc.get('server')} kind={acc.get('kind')}): "
+                f"the evidence that retired it is not evidence about this account")
+    return ""
+
+
+def degenerate_evidence(ledger: list[dict], name: str) -> str:
+    """Why this sleeve's r-series cannot support a retirement, or "" when it can.
+
+    RETIRING IS AS CONSEQUENTIAL AS PROMOTING AND HAD NONE OF THE GUARDS. Measured 2026-09-01:
+    gold_asia was auto-retired on n=30 with exp EXACTLY -1.000R, roll20 EXACTLY -1.000R and
+    max_dd -29.0 -- thirty consecutive losses of precisely one R -- while the account those
+    sleeves trade went 500.00 -> 603.84 on the same day, +103.84. Real trading does not produce
+    thirty identical outcomes; a constant series is the signature of a broken r_multiple
+    computation, and the ledger it was read from is not on either box now.
+
+    A series with NO DISPERSION carries no information about performance. Acting on it is not
+    conservative -- it stops a book on a bug, and the stop looks exactly like a verdict
+    afterwards. So dispersion is required before any retire rule may fire. This does not soften
+    a single threshold: a genuinely losing sleeve has losing trades of DIFFERENT sizes and still
+    trips every rule below.
+    """
+    rs = [r.get("r_multiple") for r in ledger if r.get("sleeve") == name]
+    rs = [float(x) for x in rs if isinstance(x, (int, float))]
+    if len(rs) < 2:
+        return ""
+    if len({round(x, 9) for x in rs}) == 1:
+        return (f"every one of {len(rs)} r_multiples is exactly {rs[0]:+.3f} -- a constant series "
+                f"is a computation defect, not performance; refusing to retire on it")
+    if all(x == 0.0 for x in rs):
+        return f"all {len(rs)} r_multiples are 0.0 -- risk_per_lot was unmeasurable on every fill"
+    # NEAR-CONSTANT IS THE SAME DEFECT, AND THE EXACT TEST ABOVE MISSED IT BY A HAIR. The 09-01
+    # retirement was caught because all thirty r_multiples were EXACTLY -1.000. The 09-02 one was
+    # not: exp -0.842 over n=30, which is about twenty-five identical -1.000s and a few other
+    # values -- enough dispersion to pass a test for perfect constancy, and none of the dispersion
+    # a real book has. It retired gold_asia while the account those sleeves trade went 500 -> 743.
+    #
+    # A GENUINELY LOSING SLEEVE LOSES DIFFERENT AMOUNTS. Stops slip, spreads vary, partial fills
+    # land differently; thirty trades do not settle on one number. A series dominated by a single
+    # repeated value is the signature of a stop-distance or risk_per_lot computation returning a
+    # constant, and the losses being reported are arithmetic rather than money.
+    #
+    # This softens no threshold. A real loser trips every rule below on a dispersed series; what
+    # it refuses is retiring a LIVE BOOK on a number that cannot be what it claims to be.
+    counts: dict[float, int] = {}
+    for x in rs:
+        key = round(x, 9)
+        counts[key] = counts.get(key, 0) + 1
+    value, hits = max(counts.items(), key=lambda kv: kv[1])
+    if hits / len(rs) >= 0.80:
+        return (f"{hits} of {len(rs)} r_multiples are exactly {value:+.3f} ({100*hits/len(rs):.0f}%)"
+                f" -- a near-constant series is a computation defect, not performance; a real "
+                f"sleeve's losses differ in size. Refusing to retire on it")
+    return ""
+
+
+# ------------------------------------------------------------------- dE[log W] AS THE CRITERION
+
+def _join_keys(name: str, symbol: str = "", family: str = "", selector: str = "") -> list[str]:
+    """Every key a sleeve can be recognised by, most specific first.
+
+    THE TWO SIDES NAME THE SAME SLEEVE DIFFERENTLY, and pretending otherwise is how a join
+    silently matches nothing. `pf_allocator` prices `SYM_family_window`; the forward clocks key
+    `SYM.window[.STATE]` or the certificate's own key. So the join is on the PARTS -- symbol,
+    mechanism, selector -- with the raw name first for the case where they already agree, and
+    every key is lowercased because neither side promises a case convention.
+    """
+    out = [str(name).strip().lower()] if name else []
+    sym, fam, sel = (str(symbol).strip().lower(), str(family).strip().lower(),
+                     str(selector).strip().lower())
+    if sym and fam and sel:
+        out.append(f"{sym}|{fam}|{sel}")
+    if sym and sel:
+        out.append(f"{sym}|{sel}")
+    return out
+
+
+def _index(rows: dict[str, dict]) -> dict[str, dict]:
+    """Join key -> candidate row. AMBIGUOUS KEYS ARE DROPPED, never resolved by guessing.
+
+    Two sleeves on the same symbol and selector but different mechanisms would both answer to
+    `sym|selector`; funding one on the other's measurement is worse than not funding either, so a
+    key that two rows claim is removed and those rows stay reachable only by their exact names.
+    """
+    idx: dict[str, dict] = {}
+    clash: set[str] = set()
+    for name, row in rows.items():
+        if not isinstance(row, dict):
+            continue
+        for k in _join_keys(name, str(row.get("symbol") or ""), str(row.get("family") or ""),
+                            str(row.get("selector") or "")):
+            if k in idx and idx[k] is not row:
+                clash.add(k)
+            idx[k] = row
+    for k in clash:
+        idx.pop(k, None)
+    return idx
+
+
+def allocation_view(now: datetime | None = None) -> dict:
+    """What the allocator currently says about every sleeve, or a named refusal to say anything.
+
+    Returns `{fresh, why, age_h, at, candidates, book, zeroed, total_heat}` where `candidates` and
+    `book` are indexed by every key `_join_keys` can produce. `fresh` is False -- and every
+    capital decision below then refuses to ADD risk -- when the artifact is absent, unreadable,
+    stale, or carries no measured admission scan. Absence is never permission (L1.28a): a desk
+    that cannot price a candidate's marginal has not measured that the candidate raises growth.
+    """
+    try:
+        doc = json.loads(ALLOCATION.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        return {"fresh": False, "why": f"{ALLOCATION.name} unreadable ({type(exc).__name__})",
+                "candidates": {}, "book": {}, "zeroed": {}, "total_heat": 0.0, "age_h": None}
+    stamp = str(doc.get("generated_utc") or "")
+    try:
+        age_h = ((now or datetime.now(tz=UTC)) - datetime.fromisoformat(stamp)
+                 ).total_seconds() / 3600.0
+    except ValueError:
+        age_h = float("inf")
+    adm = doc.get("admission") if isinstance(doc.get("admission"), dict) else {}
+    # THE PARTS OF EVERY PRICED SLEEVE, so a FUNDED sleeve joins on the same terms a candidate
+    # does. `book` is name -> heat and carries no symbol or mechanism; without this the funded
+    # half of the join would only ever match on an exact name.
+    universe = adm.get("universe") if isinstance(adm.get("universe"), dict) else {}
+    book_rows = {str(k): {"heat": float(v), **{f: str((universe.get(str(k)) or {}).get(f) or "")
+                                               for f in ("symbol", "family", "selector")}}
+                 for k, v in (doc.get("book") or {}).items()
+                 if isinstance(v, (int, float))}
+    view = {
+        "at": stamp, "age_h": (None if not math.isfinite(age_h) else round(age_h, 2)),
+        "total_heat": float((doc.get("heat") or {}).get("total") or 0.0),
+        "candidates": _index(adm.get("candidates") or {}),
+        "book": _index(book_rows),
+        # ROSTERED AND GIVEN NOTHING BY THIS SOLVE. A real reading, and the one a demotion may act
+        # on when the admission scan's own budget did not reach the sleeve.
+        "zeroed": _index({str(k): {"why": str(v),
+                                   **{f: str((universe.get(str(k)) or {}).get(f) or "")
+                                      for f in ("symbol", "family", "selector")}}
+                          for k, v in (doc.get("book_zeroed") or {}).items()}),
+        "admission_status": str(adm.get("status") or "ABSENT"),
+        "admission_at": str(adm.get("measured_utc") or ""),
+        "carried_from": str(adm.get("carried_from") or ""),
+    }
+    # THE SCAN HAS ITS OWN AGE, AND IT IS NOT THE ARTIFACT'S. The allocator measures the admission
+    # scan on its HEAVY clock and the short clocks carry the answer forward into a freshly
+    # timestamped artifact. So a scan taken a day ago can sit inside a file written a minute ago,
+    # and reading the file's timestamp alone would be reading a stale measurement as fresh --
+    # exactly the defect the carry-forward stamp exists to make visible. Both must be inside the
+    # window; the older of the two is the one that decides.
+    scan_age_h = age_h
+    try:
+        scan_age_h = max(age_h, ((now or datetime.now(tz=UTC))
+                                 - datetime.fromisoformat(view["admission_at"])
+                                 ).total_seconds() / 3600.0)
+    except (TypeError, ValueError):
+        pass
+    view["scan_age_h"] = None if not math.isfinite(scan_age_h) else round(scan_age_h, 2)
+    # THE WRITER'S OWN EXPIRY WHEN IT PUBLISHES ONE. Two copies of a freshness rule is how one of
+    # them is silently edited; the local constant is the fallback for an artifact that carries
+    # none, and a longer published expiry is never accepted -- stricter, never looser.
+    max_age_h = ADMISSION_MAX_AGE_H
+    published = adm.get("max_age_s")
+    if isinstance(published, (int, float)) and 0 < float(published) / 3600.0 <= max_age_h:
+        max_age_h = float(published) / 3600.0
+    view["max_age_h"] = round(max_age_h, 2)
+    if scan_age_h > max_age_h:
+        view["fresh"] = False
+        view["why"] = (f"the allocation is {age_h:.1f}h old and its admission scan "
+                       f"{scan_age_h:.1f}h old (max {max_age_h:.0f}h): it describes a "
+                       f"book that no longer exists, so it may not price capital")
+        return view
+    if view["admission_status"] != "MEASURED":
+        view["fresh"] = False
+        view["why"] = (f"the allocator published no measured admission scan "
+                       f"(status {view['admission_status']!r}); no candidate has a dE[log W]")
+        return view
+    view["fresh"] = True
+    view["why"] = (f"allocation {age_h:.1f}h old, admission scan {scan_age_h:.1f}h old over "
+                   f"{len(adm.get('candidates') or {})} candidate(s) taken "
+                   f"{view['admission_at']}" + (" (carried forward)" if view["carried_from"]
+                                                else ""))
+    return view
+
+
+def admission_of(view: dict, name: str, symbol: str = "", family: str = "",
+                 selector: str = "") -> tuple[dict | None, str]:
+    """The sleeve's current reading and the key it joined on, or (None, why there is none).
+
+    THREE PLACES A READING CAN COME FROM, most specific first, and each is a different sentence:
+
+        the admission scan   this candidate was re-solved INTO the book and here is its dE[log W]
+        the funded book      the allocator is already holding it, and its heat IS the reading
+        the zeroed list      it is rostered and this solve gave it nothing -- a real refusal
+
+    None means NONE OF THE THREE, which is not a refusal: it is a sleeve the allocator has never
+    priced, or one the admission budget did not reach. That distinction matters, because a
+    demotion may act on a refusal and must never act on a compute limit.
+    """
+    keys = _join_keys(name, symbol, family, selector)
+    for k in keys:
+        row = (view.get("candidates") or {}).get(k)
+        if isinstance(row, dict):
+            return row, f"joined on {k!r}"
+    for k in keys:
+        row = (view.get("book") or {}).get(k)
+        if isinstance(row, dict):
+            # Already funded by the allocator: its marginal was measured when it entered and its
+            # heat IS the current reading. There is no candidate row for something already held.
+            return ({"delta_elogw_per_day": None, "heat_earned": float(row.get("heat") or 0.0),
+                     "admit": float(row.get("heat") or 0.0) > 0.0,
+                     "why": f"already funded by the allocator at {float(row['heat']):.2%} heat"},
+                    f"joined on {k!r} (funded book)")
+    for k in keys:
+        row = (view.get("zeroed") or {}).get(k)
+        if isinstance(row, dict):
+            return ({"delta_elogw_per_day": None, "heat_earned": 0.0, "admit": False,
+                     "why": str(row.get("why") or "this solve gave the sleeve no heat")},
+                    f"joined on {k!r} (zeroed by this solve)")
+    return None, (f"no allocator row answers to any of {keys!r}: this sleeve is not in the priced "
+                  f"universe, or the admission scan's budget did not reach it, so its marginal "
+                  f"contribution has not been measured on this pass")
+
+
+def promoted_risk_frac(row: dict | None, *, cap: float = PROMOTED_RISK_FRAC) -> tuple[float, str]:
+    """The risk fraction to WRITE on a row: the allocator's own heat for it, clamped by `cap`.
+
+    THE CLAMP IS ONE-SIDED ON PURPOSE. The allocator may want more than the old constant, and on
+    the money path it gets it -- `gateway` sizes a funded sleeve from the book directly
+    (`from_book`), not from this field. What this field does is bound what the promoter writes for
+    the case where the book cannot be read, and raising THAT by fiat is exactly what the rules
+    forbid. So the number moves down freely with the evidence and never up past what stood.
+    """
+    h = None
+    if isinstance(row, dict):
+        try:
+            h = float(row.get("heat_earned"))
+        except (TypeError, ValueError):
+            h = None
+    if h is None or not (h > 0.0):
+        return 0.0, ("the allocator's solve gives this sleeve no heat; the row carries zero and "
+                     "the sleeve holds no capital until a solve wants it")
+    frac = min(h, float(cap))
+
+    # ESTIMATION ERROR IS PRICED, AND THIS IS THE MISSING HALF OF PROMOTION.
+    #
+    # `libs/risk/kelly_shrink.py` has existed on this tree with a full derivation and was imported
+    # by NOTHING (measured 2026-09-12). Without it promotion is a BINARY door doing a job that
+    # wants a continuous answer: a sleeve that cleared the bar on 14 days of evidence and one with
+    # 180 days at the same Sharpe are sized identically, because the allocator prices dE[log W]
+    # but not the UNCERTAINTY of the Sharpe it was handed.
+    #
+    #     shrink = S^2 / (S^2 + SE(S)^2),  SE from Lo (2002)
+    #
+    # which is the James-Stein / normal-posterior shrinkage toward a zero-edge prior. It ramps
+    # continuously with evidence -- roughly 0.17x Kelly at day 15, 0.36x at 40, 0.55x at 90,
+    # 0.71x at 180 -- so strong evidence self-authorises size and weak evidence cannot.
+    #
+    # THIS RAISES E[log W], IT DOES NOT REDUCE AGGRESSIVENESS, and the distinction matters because
+    # the standing order forbids the second. The module's own docstring records the measurement:
+    # estimation noise alone does NOT move the growth optimum (E[log W] is linear in mu, so
+    # symmetric noise about a correct mean cannot shift the argmax). What justifies the shrink is
+    # that S-hat is BIASED for the quantity being bet on -- an edge reaches this function BECAUSE
+    # it measured well, so it carries a winner's curse, and the growth-optimal input is the
+    # posterior mean under a prior that most candidates have none. Betting the raw S-hat is
+    # betting an over-estimate, which is below-optimal growth, not above it.
+    #
+    # UNMEASURED EVIDENCE LEAVES THE NUMBER ALONE. If the row carries no Sharpe or no day count
+    # the shrink is not applied and the reason says so. Shrinking on ABSENCE would be reducing
+    # size by fiat on a sleeve nobody measured, which is the one thing the standing order rules
+    # out -- and it is also just wrong: an unmeasured SE is not a large SE.
+    shrink, shrink_why = _evidence_shrink(row)
+    if shrink is None:
+        return round(frac, 6), (
+            f"the allocator's current solve gives this sleeve {h:.2%} heat"
+            + (f", written at the {cap:.0%} promoter ceiling" if h > cap else "")
+            + f"; estimation shrink UNMEASURED ({shrink_why}), so the allocator's number stands")
+    shrunk = frac * shrink
+    return round(shrunk, 6), (
+        f"the allocator's current solve gives this sleeve {h:.2%} heat"
+        + (f", written at the {cap:.0%} promoter ceiling" if h > cap else "")
+        + f"; x{shrink:.3f} estimation shrink ({shrink_why}) -> {shrunk:.2%}")
+
+
+def _evidence_shrink(row: dict | None) -> tuple[float | None, str]:
+    """(shrink factor, why) from the row's own forward evidence, or (None, why) if unmeasured.
+
+    The Sharpe is annualised from the row's expectancy and its dispersion where both are present;
+    where the row already carries an annualised Sharpe that is used directly. `days_active` is the
+    forward day count -- NOT the trade count, because the standard error is over TIME, and a
+    sleeve that fired forty times in two days has two days of independent information.
+    """
+    if not isinstance(row, dict):
+        return None, "no row"
+    try:
+        from libs.risk.kelly_shrink import shrink_fraction
+    except Exception as exc:
+        return None, f"kelly_shrink unimportable: {type(exc).__name__}"
+
+    s = row.get("sharpe_ann") or row.get("sharpe_annual") or row.get("sharpe")
+    try:
+        s = float(s)
+    except (TypeError, ValueError):
+        return None, "the row carries no annualised Sharpe"
+    days = row.get("days_active") or row.get("days") or row.get("forward_days")
+    try:
+        days = float(days)
+    except (TypeError, ValueError):
+        return None, "the row carries no forward day count"
+    if days < 5:
+        return None, f"only {days:.0f} forward day(s); below the 5 the estimator needs"
+    f = shrink_fraction(s, days)
+    if not (f > 0.0):
+        return None, f"shrink returned {f} at S={s:.2f} over {days:.0f}d -- unproven edge"
+    return f, f"S={s:.2f} over {days:.0f} forward day(s)"
+
+
+#: How many LIVE sleeves may share one parameter signature.
+#:
+#: ORTHOGONALITY WAS MEASURED AND NOT BINDING, which is the difference between knowing a book is
+#: concentrated and having a book that is not. Measured 2026-09-14: parameter hash
+#: `44136fa355b3678a` held FOUR live sleeves -- chfdkk, eurnok, gbpmxn, gbpnok -- the identical
+#: overnight_gap_decay parameter set on four exotics in the same session. Earlier in the campaign
+#: it held twelve. That is ONE hypothesis promoted four times, and every consumer counted it as
+#: four bets.
+#:
+#: IT IS THE MOST DANGEROUS NUMBER ON THE DESK. `n_effective` is 5.592 against a ceiling of
+#: 1/rho = 6.1 -- the book is already AT its ceiling, so each replication adds gross exposure and
+#: no diversification whatever. A drawdown in that parameter set arrives on four sleeves at once,
+#: on four wide-spread high-swap crosses, at the thinnest liquidity hour of the day.
+#:
+#: TWO, NOT ONE. A second instrument is a genuine out-of-sample test of the same parameters and
+#: the desk should be allowed to hold it; a third and fourth are replication dressed as breadth.
+#: The refusal is STANDBY, never RETIRED -- the sleeve keeps its clock and its evidence, and
+#: becomes promotable the moment a sibling retires. Nothing is destroyed, only un-funded.
+PARAM_HASH_MAX_LIVE = 2
+
+
+def _live_param_hashes() -> dict[str, list[str]]:
+    """param signature -> the LIVE sleeve names already holding it."""
+    out: dict[str, list[str]] = {}
+    try:
+        doc = json.loads((BASE / "data" / "sleeves.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return out
+    rows = doc.get("sleeves") if isinstance(doc, dict) else doc
+    for r in (rows or []):
+        if not isinstance(r, dict) or str(r.get("status") or "").upper() != "LIVE":
+            continue
+        name = str(r.get("name") or "")
+        m = re.search(r"_p_([0-9a-f]{8,})$", name)
+        h = m.group(1) if m else ""
+        if not h:
+            params = r.get("params")
+            if isinstance(params, dict) and params:
+                h = hashlib.sha256(json.dumps(params, sort_keys=True, default=str)
+                                   .encode("utf-8")).hexdigest()[:16]
+        if h:
+            out.setdefault(h, []).append(name)
+    return out
+
+
+def param_hash_saturated(name: str, params: object = None) -> tuple[bool, str]:
+    """Does this sleeve's parameter signature already hold its share of the live book?
+
+    Returns (refuse, why). A sleeve ALREADY LIVE under this signature does not count against
+    itself -- re-affirming an existing row must never be read as a new replication.
+    """
+    m = re.search(r"_p_([0-9a-f]{8,})$", str(name))
+    h = m.group(1) if m else ""
+    if not h and isinstance(params, dict) and params:
+        h = hashlib.sha256(json.dumps(params, sort_keys=True, default=str)
+                           .encode("utf-8")).hexdigest()[:16]
+    if not h:
+        return False, ""
+    siblings = [n for n in _live_param_hashes().get(h, []) if n != str(name)]
+    if len(siblings) < PARAM_HASH_MAX_LIVE:
+        return False, ""
+    return True, (f"parameter signature {h} already holds {len(siblings)} live sleeve(s) "
+                  f"({', '.join(siblings[:3])}): same hypothesis, not a new bet. n_eff is at "
+                  f"its 1/rho ceiling, so a replication adds exposure and no diversification. "
+                  f"STANDBY not retired -- promotable when a sibling goes")
+
+
+def capital_verdict(view: dict, name: str, *, symbol: str = "", family: str = "",
+                    selector: str = "", streak: int = 0,
+                    first_promotion: bool = True) -> dict:
+    """May this sleeve hold capital right now, and why. The single door both lanes use.
+
+    Returns `{status, risk_frac, why, delta_elogw_per_day, heat_earned, streak, joined}` with
+    `status` in {LIVE, STANDBY, UNMEASURED}. Never returns RETIRED: retirement is a different,
+    one-way decision with its own thresholds, and conflating "the book does not want you today"
+    with "you are finished" is precisely the conflation the principal's demotion rule removes.
+
+    UNMEASURED IS NOT STANDBY, and the difference decides what may act on it. STANDBY is a
+    REFUSAL -- the allocator looked and said no -- and a demotion may act on it. UNMEASURED means
+    nobody looked: the sleeve is not in the priced universe, the artifact is stale, or the scan's
+    budget ran out. A row that has never held capital gets none either way (capital requires a
+    measured marginal); a row that HOLDS capital keeps it, because removing risk on a compute
+    limit is not a risk decision, it is an outage wearing one.
+    """
+    out: dict = {"status": "UNMEASURED", "risk_frac": 0.0, "streak": int(streak),
+                 "delta_elogw_per_day": None, "heat_earned": None, "joined": ""}
+    if not view.get("fresh"):
+        out["why"] = (f"no fresh dE[log W] measurement: {view.get('why', 'unavailable')}. "
+                      f"Nothing is added and nothing is removed -- the row and its clock stand "
+                      f"and the next allocator pass decides.")
+        return out
+    row, joined = admission_of(view, name, symbol, family, selector)
+    out["joined"] = joined
+    if row is None:
+        out["why"] = (f"{joined}. Capital requires a measured marginal, and an unmeasured one is "
+                      f"not a positive one -- but it is not a refusal either, so risk already "
+                      f"held is not removed on it.")
+        return out
+    out["delta_elogw_per_day"] = row.get("delta_elogw_per_day")
+    out["heat_earned"] = row.get("heat_earned")
+    if not row.get("admit"):
+        out["status"] = "STANDBY"
+        out["streak"] = 0
+        out["why"] = f"standby on the current reading -- {row.get('why', 'not admitted')}"
+        return out
+    # CAPPED, because the number's only job is to answer "has it been positive often enough".
+    # An uncapped counter on a long-lived LIVE row grows into the hundreds and then reads, after
+    # a demotion, as if the sleeve had already earned its way back.
+    out["streak"] = min(int(streak) + 1, PROMOTE_ADMIT_STREAK)
+    if not first_promotion and out["streak"] < PROMOTE_ADMIT_STREAK:
+        out["status"] = "STANDBY"
+        out["why"] = (f"admitted on this reading ({out['streak']}/{PROMOTE_ADMIT_STREAK} "
+                      f"consecutive) -- risk was removed from this sleeve once, and restoring it "
+                      f"takes consecutive readings where removing it took one. "
+                      f"{row.get('why', '')}")
+        return out
+    frac, why_frac = promoted_risk_frac(row)
+    if not (frac > 0.0):
+        out["status"] = "STANDBY"
+        out["why"] = f"admitted but sized at zero: {why_frac}"
+        return out
+    # ORTHOGONALITY, BINDING. Measured everywhere on this desk and enforced nowhere until now.
+    saturated, why_sat = param_hash_saturated(name)
+    if saturated:
+        out["status"] = "STANDBY"
+        out["param_hash_saturated"] = True
+        out["why"] = why_sat
+        return out
+    out.update({"status": "LIVE", "risk_frac": frac,
+                # BOTH NUMBERS, because they can legitimately differ: the gateway sizes a funded
+                # sleeve straight from the book (`from_book`), and this field is only what the
+                # promoter is permitted to WRITE. A row showing 3% beside an allocator that solved
+                # 7.4% would otherwise read as the constant coming back.
+                "allocator_heat": out["heat_earned"],
+                "written_at_promoter_ceiling": bool(
+                    isinstance(out["heat_earned"], (int, float))
+                    and float(out["heat_earned"]) > PROMOTED_RISK_FRAC),
+                "why": f"{row.get('why', 'admitted')}; {why_frac} ({joined})"})
+    return out
+
+
+def _door_status(cap: dict) -> str:
+    """What a NEWLY promoted row's status is: LIVE only on a measured admission, else STANDBY.
+
+    UNMEASURED and STANDBY differ for a row that already HOLDS capital -- one may remove it, the
+    other may not. For a row being written for the first time there is nothing to preserve, so
+    both mean the same thing: it joins the roster and holds no capital until a solve wants it.
+    """
+    return "LIVE" if str(cap.get("status") or "") == "LIVE" else "STANDBY"
+
+
+def load_qquant_shadow() -> dict:
+    """The qquant (hunt-certified) forward clock, kept in its own state file."""
+    p = SHADOW_DIR / "qquant_shadow_state.json"
+    try:
+        v = json.loads(p.read_text(encoding="utf-8"))
+        return v if isinstance(v, dict) else {}
+    except (OSError, json.JSONDecodeError):
+        return {}
+
+
+def load_scalp_shadow() -> dict:
+    """The scalp lane's forward clock (research/scalp_shadow.py), rows under `sleeves`."""
+    p = SHADOW_DIR / "scalp_shadow_state.json"
+    try:
+        v = json.loads(p.read_text(encoding="utf-8"))
+        return v if isinstance(v, dict) else {}
+    except (OSError, json.JSONDecodeError):
+        return {}
+
+
+def promote_scalp(sleeves: list[dict], sshadow: dict, existing: set,
+                  gate_authority: set | None = None, view: dict | None = None) -> bool:
+    """The scalp lane's automatic door (principal 2026-09-04).
+
+    A scalp sleeve promotes when its own Fusion-native forward clock says PROMOTION_CANDIDATE
+    (the canon 50-trade / day-14-with-20 schedule, positive expectancy and the drawdown bound,
+    judged after the frozen pre-registration boundary in scalp_shadow.py). THE FORWARD CLOCK IS
+    THIS LANE'S CERTIFICATE: the ten-gate gauntlet has no path that certifies an M5/M15 scalp
+    spec, so demanding one here made the lane a dead end -- a matured candidate nothing could
+    ever promote. The bar itself is the main lane's own forward bar, not a weaker one. A clock
+    fed by a proxy (non-Fusion) source carries no capital authority and is skipped with the
+    reason logged, exactly as the lane itself states.
+
+    The row carries the lane's EXACT recipe from its own state (timeframe, family, session,
+    stop/target ATR multiples, max hold) so the gateway executes what was replayed and nothing
+    else. No champion comparison: a scalp is an additive mechanism, not a challenger to a gold
+    window, and capital is the allocator's decision.
+    """
+    changed = False
+    rows = sshadow.get("sleeves") if isinstance(sshadow.get("sleeves"), dict) else {}
+    for name, row in rows.items():
+        if not isinstance(row, dict) or row.get("status") != "PROMOTION_CANDIDATE":
+            continue
+        if name in existing:
+            continue
+        if not row.get("promotion_authority"):
+            plog(f"{name}: scalp PROMOTION_CANDIDATE on a proxy feed; no capital authority")
+            continue
+        if not row.get("matured", True):
+            plog(f"{name}: scalp status says candidate but the clock is not matured; refused")
+            continue
+        choice = row.get("choice") if isinstance(row.get("choice"), dict) else {}
+        tf = str(row.get("timeframe") or "")
+        try:
+            recipe = {"timeframe": tf, "family": str(choice["family"]),
+                      "session": str(choice.get("session") or "all"),
+                      "stop_atr": float(choice["stop_atr"]),
+                      "target_atr": float(choice["target_atr"]),
+                      "max_hold": int(choice["max_hold"])}
+        except (KeyError, TypeError, ValueError) as exc:
+            plog(f"{name}: scalp candidate refused -- exact recipe missing from its clock "
+                 f"({type(exc).__name__}: {exc})")
+            continue
+        if not tf:
+            plog(f"{name}: scalp candidate refused -- no timeframe on its clock")
+            continue
+        # The ten-gate certificate, when scripts/scalp_gauntlet.py has minted one for this
+        # exact cell, is NAMED on the row; it changes nothing about the door (the forward clock
+        # promotes either way), it tells the reader which kind of evidence stands behind it.
+        spec = ("XAUUSD", str(name), None, "gold_scalp", False)
+        cert = (f"ten_gate:scalp.{name}" if spec in (gate_authority or set())
+                else "forward_clock")
+        # THE CAPITAL DOOR IS dE[log W] (principal 2026-09-05). The clock decides that the sleeve
+        # is real; the allocator decides whether adding it to the book the desk holds raises
+        # robust growth. A refusal writes STANDBY, not a rejection: the row and its clock stand.
+        cap = capital_verdict(view or {}, name, symbol="XAUUSD",
+                              family=str(recipe.get("family") or "gold_scalp"),
+                              selector=str(name))
+        sleeves.append({"name": name, "symbol": "XAUUSD", **recipe,
+                        "exec": "scalp_market", "lot": "auto_ramp",
+                        "risk_frac": cap["risk_frac"], "status": _door_status(cap),
+                        "risk_frac_source": "allocator_marginal" if cap["risk_frac"] else "none",
+                        "admission": cap,
+                        "certificate": cert,
+                        "sleeve_id": registry_sleeve_id(name),
+                        "forward_verdict": row.get("forward_verdict"),
+                        "promoted_at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
+                        "shadow_exp": row.get("expectancy_r", 0.0),
+                        "shadow_n": row.get("n", 0), "shadow_days": row.get("days", 0)})
+        plog(f"PROMOTED (scalp) {name} -> {_door_status(cap)} at {cap['risk_frac']:.2%} risk "
+             f"(exec=scalp_market {tf} {recipe['family']}/{recipe['session']}; shadow "
+             f"exp={float(row.get('expectancy_r') or 0.0):.3f}R n={row.get('n', 0)}) -- "
+             f"{cap['why']}")
+        note_door(
+            name, door="PROMOTED", from_status="", to_status=_door_status(cap),
+            evidence=door_evidence(name, cap, n=row.get("n"), exp_r=row.get("expectancy_r"),
+                                   days=row.get("days"), certificate=cert, lane="scalp"))
+        changed = True
+    return changed
+
+
+def clock_identities() -> dict[str, dict]:
+    """clock key -> {symbol, selector, family, params, side} for every certificate the forward
+    engine enrols, keyed exactly as the engine keys its rows.
+
+    UNIVERSAL PROMOTION (principal 2026-09-05: "nothing should ever be blocked"). The main lane
+    used to parse a clock key as `SYM.window[.STATE]`, assume the session-range-breakout family,
+    and skip every other key with a bare `continue` -- so 65 of the 66 certificates in canon
+    (orthogonal families on exotic crosses) could mature a forward clock and never be looked at.
+    The identity now comes from the same enrolment the engine used, so a matured clock of ANY
+    family has a symbol, selector, family, params and side the promoter can write to a sleeve row.
+    """
+    try:
+        import shadow_forward as sf
+        out: dict[str, dict] = {}
+        for row in sf.certified_sleeves():
+            r = list(row) + ["LONG"]
+            sym, win, params, fam, side = r[0], r[1], r[2], r[3], r[4]
+            key = sf.sleeve_key(sym, win, params, fam, side)
+            out[key] = {"symbol": str(sym), "selector": str(win), "family": str(fam),
+                        "params": dict(params or {}), "side": str(side).upper()}
+        return out
+    except Exception as exc:
+        plog(f"clock identities unavailable ({type(exc).__name__}: {exc}); keys parsed by shape")
+        return {}
+
+
+def regrade_failures(now: datetime | None = None) -> dict[str, dict]:
+    """certificate -> audit row for every certificate the latest recertification re-judged as
+    COST_REGRADE_FAIL, when that audit is fresh enough to act on.
+
+    WHY THIS GATES PROMOTION. A ten-gate pass is a claim about net-of-cost economics. The
+    gauntlet's cost model was corrected three times in the survivor-manufacturing direction
+    (gold per-ounce spread in a per-lot field, no account-currency conversion on commission, a
+    contractual fee scaled by stress), and every certificate graded before a correction was
+    tested against costs that flattered it. `recertify_canon` re-judges each one at today's
+    costs and writes this audit; canon itself never shrinks from a script, so the promoter is
+    where the corrected measurement has to bind -- a matured forward clock on a certificate
+    that fails its own gates at real costs is evidence for a strategy whose economics were
+    mis-stated, not a sleeve to fund. Stricter, never looser: thresholds are untouched.
+    """
+    try:
+        doc = json.loads(RECERT_AUDIT.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    stamp = str(doc.get("audited_at") or "")
+    try:
+        age_h = ((now or datetime.now(tz=UTC)) - datetime.fromisoformat(stamp)
+                 ).total_seconds() / 3600.0
+    except ValueError:
+        age_h = float("inf")
+    if age_h > RECERT_FRESH_H:
+        plog(f"recertification audit is {age_h:.0f}h old (> {RECERT_FRESH_H:.0f}h) -- reported, "
+             f"not binding; the daily recertify step refreshes it")
+        return {}
+    return {str(r.get("certificate")): r for r in (doc.get("rows") or [])
+            if isinstance(r, dict) and r.get("status") == "COST_REGRADE_FAIL"}
+
+
+def blind_review_veto(name: str, verdicts: dict[str, str] | None = None) -> str | None:
+    """The certificate the blind reviewer VETOED that names this clock, or None.
+
+    THE REVIEWER RE-EXECUTES; THE PROMOTER OBEYS (AgonAlpha, principal 2026-09-16). A
+    certificate is a claim; `research/blind_reviewer` reloads the data, re-runs the family and
+    reproduces the statistics with fresh eyes, and writes PASS / VETO to its ledger. A VETO here
+    withholds the LIVE row -- it sizes nothing and touches no open position -- until a later
+    review reproduces the claim. Matching follows `regrade_block`'s prefixing convention.
+    """
+    if verdicts is None:
+        try:
+            import blind_reviewer
+            verdicts = blind_reviewer.latest_verdicts()
+        except Exception:
+            return None
+    for cert, v in (verdicts or {}).items():
+        if str(v).upper() != "VETO":
+            continue
+        if cert == name or cert.endswith("." + name) or name.endswith("." + cert):
+            return cert
+    return None
+
+
+def regrade_block(name: str, fails: dict[str, dict]) -> dict | None:
+    """The failing audit row for `name`, matched exactly or across the canon's prefixing
+    convention (`external.<cell>`, `<hunt>.<cell>` on one side, the bare cell on the other)."""
+    if name in fails:
+        return fails[name]
+    for cert, row in fails.items():
+        if cert.endswith("." + name) or name.endswith("." + cert):
+            return row
+    return None
+
+
+def _after(a: str, b: str) -> bool:
+    """Is timestamp `a` strictly later than `b`? False whenever either cannot be parsed.
+
+    COMPARED AS INSTANTS, NOT AS STRINGS. The two sides are written by different writers at
+    different precisions ("...:00+00:00" against "...:00.123456+00:00"), and lexicographic order
+    on those disagrees with time order -- which would silently invert the "do not judge a sleeve
+    on a measurement that predates it" guard.
+    """
+    try:
+        return datetime.fromisoformat(a) > datetime.fromisoformat(b)
+    except (TypeError, ValueError):
+        return False
+
+
+def reconcile_capital(sleeves: list[dict], view: dict, *, now: datetime | None = None,
+                      only: set[str] | None = None) -> bool:
+    """Move every standing row toward what the CURRENT solve says, in both directions.
+
+    THE ASYMMETRY, EXPLICIT AND IN ONE PLACE (principal, 2026-09-05: "promotion slow / demotion
+    immediate"):
+
+        LIVE -> STANDBY needs ONE reading. The latest solve gives this sleeve no heat, so it
+        holds none. No trade count, no drawdown bar, no waiting. `demoted_at` and `demote_reason`
+        say why. It is NOT retired: the row stands, the shadow clock is untouched, `retired_at`
+        is not set, and the sleeve is judged again on the next pass.
+
+        STANDBY -> LIVE needs PROMOTE_ADMIT_STREAK consecutive positive readings, counted on the
+        row itself. A sleeve whose marginal sits on zero would otherwise be admitted and demoted
+        alternately forever, and every one of those flips is turnover the desk pays for.
+
+        RETIRED never moves. Retirement is the one-way door with its own thresholds; standby is
+        the reversible one. Conflating them is what this function exists to stop.
+
+    A sleeve promoted since the allocation was taken is left alone: the solve has not had a
+    chance to see it, and demoting on a measurement that predates the sleeve would be reading
+    absence as evidence. `only`, when given, limits this to rows that already existed before this
+    pass's promotion doors ran -- a row written moments ago has just been judged by
+    `capital_verdict` and re-judging it here would demote it on its own promotion.
+
+    Returns True when any row changed. Pure over `sleeves` (mutated in place) and `view`.
+    """
+    if not view.get("fresh"):
+        plog(f"capital reconciliation SKIPPED: {view.get('why', 'no fresh allocation')}. "
+             f"Rows stand as they are -- an unmeasured reading removes nothing and adds nothing.")
+        return False
+    changed = False
+    at = str(view.get("at") or "")
+    stamp = (now or datetime.now(tz=UTC)).isoformat(timespec="seconds")
+    for s in sleeves:
+        status = str(s.get("status") or "").upper()
+        if status not in ("LIVE", "STANDBY"):
+            continue                                    # RETIRED is a one-way door
+        if only is not None and str(s.get("name") or "") not in only:
+            continue
+        # EVERY READING IS RECORDED, not only the ones that move a row. The streak that governs
+        # restoration lives ON the row, so a pass whose verdict changed nothing but whose count
+        # advanced still has to be written -- otherwise "two consecutive readings" silently
+        # becomes "two readings in the same second".
+        before = json.dumps(s, sort_keys=True, default=str)
+        promoted_at = str(s.get("promoted_at") or "")
+        if status == "LIVE" and _after(promoted_at, at):
+            s.setdefault("admission", {})["why"] = (
+                f"promoted {promoted_at}, after the {at} allocation: not judged on a measurement "
+                f"that predates the sleeve")
+            changed = changed or json.dumps(s, sort_keys=True, default=str) != before
+            continue
+        # A READING IS A SCAN, NOT A PASS (2026-09-08). The promoter now runs hourly and at
+        # 22:00 UTC once a minute, while `--mode normal`/`fast` allocator passes carry the last
+        # heavy scan forward unchanged. Two passes over ONE scan are one measurement read twice,
+        # and counting them as "two consecutive admitting readings" let a STANDBY row take
+        # capital on a single scan -- the asymmetry the streak exists to enforce, collapsed by a
+        # clock. The scan's own stamp travels on the row; a reading on the same stamp cannot
+        # advance the streak. The demotion direction is untouched: one non-admitting scan still
+        # removes risk on its first reading.
+        scan = str(view.get("admission_at") or "")
+        streak_in = int(s.get("admit_streak") or 0)
+        same_scan = bool(scan) and status != "LIVE" and str(s.get("admit_scan") or "") == scan
+        held = same_scan and streak_in > 0
+        if held:
+            streak_in -= 1
+        cap = capital_verdict(view, str(s.get("name") or ""),
+                              symbol=str(s.get("symbol") or ""),
+                              family=str(s.get("family") or ""),
+                              selector=str(s.get("selector") or s.get("window") or ""),
+                              streak=streak_in,
+                              # A LIVE row is not ADDING risk, it is keeping what it holds, so the
+                              # streak does not apply to it -- only to a STANDBY row taking
+                              # capital, which is the direction the principal ordered made slow.
+                              first_promotion=(status == "LIVE"))
+        if held and cap.get("status") == "STANDBY":
+            cap["why"] = (f"same admission scan ({scan}) as the last reading -- a second reading "
+                          f"needs a new scan. {cap.get('why', '')}")
+        s["admission"] = cap
+        s["admit_streak"] = cap["streak"]
+        if scan:
+            s["admit_scan"] = scan
+        if cap["status"] == "UNMEASURED":
+            # NOBODY LOOKED. Not in the priced universe, or the scan's budget ran out. Removing
+            # risk on that is removing it on a compute limit, which is an outage wearing a risk
+            # decision; adding it would be adding on nothing at all. The row stands, and the
+            # reason stands on it so the gap is visible rather than silent.
+            changed = changed or json.dumps(s, sort_keys=True, default=str) != before
+            continue
+        if cap["status"] == "LIVE" and status == "STANDBY":
+            s.update({"status": "LIVE", "risk_frac": cap["risk_frac"],
+                      "risk_frac_source": "allocator_marginal",
+                      "restored_at": stamp, "restore_reason": cap["why"]})
+            s.pop("demoted_at", None)
+            s.pop("demote_reason", None)
+            plog(f"RESTORED {s['name']} -> LIVE at {cap['risk_frac']:.2%} risk after "
+                 f"{cap['streak']} consecutive positive reading(s) -- {cap['why']}")
+            note_door(
+                str(s.get("name") or ""), door="RESTORED", from_status="STANDBY",
+                to_status="LIVE",
+                evidence=door_evidence(str(s.get("name") or ""), cap, n=s.get("shadow_n"),
+                                       exp_r=s.get("shadow_exp"), days=s.get("shadow_days"),
+                                       certificate=s.get("certificate"),
+                                       admit_streak=cap.get("streak")))
+            changed = True
+        elif cap["status"] == "STANDBY" and status == "LIVE":
+            s.update({"status": "STANDBY", "risk_frac": 0.0, "risk_frac_source": "none",
+                      "demoted_at": stamp, "demote_reason": cap["why"]})
+            plog(f"DEMOTED {s['name']} -> STANDBY (0% risk, NOT retired) on the current "
+                 f"reading -- {cap['why']}")
+            note_door(
+                str(s.get("name") or ""), door="DEMOTED", from_status="LIVE",
+                to_status="STANDBY", reason=str(cap.get("why") or ""),
+                evidence=door_evidence(str(s.get("name") or ""), cap, n=s.get("shadow_n"),
+                                       exp_r=s.get("shadow_exp"), days=s.get("shadow_days"),
+                                       certificate=s.get("certificate")))
+            changed = True
+        elif status == "LIVE" and abs(float(s.get("risk_frac") or 0.0) - cap["risk_frac"]) > 1e-9:
+            # SIZE IS AN OUTPUT OF THE CURRENT SOLVE, not a constant carried from promotion day.
+            old = float(s.get("risk_frac") or 0.0)
+            s.update({"risk_frac": cap["risk_frac"], "risk_frac_source": "allocator_marginal"})
+            plog(f"RESIZED {s['name']}: {old:.2%} -> {cap['risk_frac']:.2%} -- {cap['why']}")
+        changed = changed or json.dumps(s, sort_keys=True, default=str) != before
+    return changed
+
+
+def load_cert_specs() -> dict[str, dict]:
+    """Certificate key -> published shadow_spec, exact policy only (fail closed)."""
+    from gate_policy import all_ten_pass, is_exact_policy
+    p = BASE / "reports" / "UNIVERSAL_SURVIVORS.json"
+    try:
+        certs = json.loads(p.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    if not is_exact_policy(certs.get("gate_policy")):
+        return {}
+    out = {}
+    for key, cert in (certs.get("survivors") or {}).items():
+        if isinstance(cert, dict) and all_ten_pass(cert.get("gates")) \
+                and isinstance(cert.get("shadow_spec"), dict):
+            out[key] = cert["shadow_spec"]
+    return out
+
+
+def promote_generic(sleeves: list[dict], qshadow: dict, existing: set,
+                    gate_authority: set, regrade: dict[str, dict] | None = None,
+                    view: dict | None = None) -> bool:
+    """GAP 124: hunt-certified (qquant) candidates gain the same automatic door.
+
+    A qquant sleeve promotes when its OWN Fusion-native forward clock says
+    PROMOTION_CANDIDATE (the canon 50-trade / day-14-with-20 schedule lives in
+    qquant_shadow.py, not re-derived here) AND its certificate's published
+    shadow_spec is in the exact-policy authority set. The sleeve row carries
+    exec="family_market": the gateway executes it through the family-executor
+    path, which stays LOG-ONLY until data/GENERIC_EXEC_ENABLED exists -- wired
+    end to end, armed by one explicit human act (LAWS §4).
+    """
+    changed = False
+    cert_specs = load_cert_specs()
+    fails = regrade_failures() if regrade is None else regrade
+    for key, row in qshadow.items():
+        if not isinstance(row, dict) or row.get("status") != "PROMOTION_CANDIDATE":
+            continue
+        if key in existing:
+            continue
+        spec = cert_specs.get(key)
+        # A CANDIDATE OF A BANNED FAMILY IS NEVER PROMOTED (2026-09-16). Its clock may keep
+        # running in shadow; the roster is closed to it while the ban stands.
+        try:
+            from family_policy import ban_reason, family_banned
+        except ImportError:                                # pragma: no cover
+            from research.family_policy import ban_reason, family_banned
+        _fam = str((spec or {}).get("family") or row.get("family") or "")
+        if family_banned(_fam):
+            _ok, _pwhy = family_parole(_fam)
+            if _ok:
+                plog(f"{key}: banned family {_fam!r} -- {_pwhy}; promotion proceeds on the "
+                     f"clock's own record")
+            else:
+                row["status"] = "BANNED_FAMILY"
+                row["gate_reason"] = f"{ban_reason(_fam)}; {_pwhy}"
+                plog(f"{key}: live promotion refused -- {row['gate_reason']}")
+                changed = True
+                continue
+        if not spec:
+            plog(f"{key}: qquant PROMOTION_CANDIDATE but no exact-policy shadow_spec; refused")
+            continue
+        bad = regrade_block(key, fails)
+        if bad:
+            row["status"] = "BLOCKED_COST_REGRADE"
+            row["gate_reason"] = ("fails its own ten gates at the current cost model: "
+                                  + ", ".join(bad.get("gates_failing_now") or ["unspecified"]))
+            plog(f"{key}: candidate refused -- {row['gate_reason']} "
+                 f"(cost/lot now {bad.get('cost_per_lot_now')})")
+            changed = True
+            continue
+        _veto = blind_review_veto(key)
+        if _veto:
+            row["status"] = "BLOCKED_BLIND_REVIEW"
+            row["gate_reason"] = (f"the blind reviewer could not reproduce certificate {_veto} "
+                                  f"from the data (VETO)")
+            plog(f"{key}: candidate refused -- {row['gate_reason']}")
+            changed = True
+            continue
+        tup = (str(spec["symbol"]), str(spec["selector"]), spec.get("condition") or None,
+               str(spec["family"]), spec.get("is_universe") is True)
+        row["certificate_drift"] = bool(gate_authority) and tup not in gate_authority
+        if row["certificate_drift"]:
+            # The ten gates gated this clock's enrolment; a spec missing from TODAY's authority
+            # set is registry drift, recorded here and blocking nothing (principal 2026-09-05).
+            plog(f"{key}: spec not in the current authority set -- recorded as drift, "
+                 f"promotion proceeds on the clock's own certificate")
+        cap = capital_verdict(view or {}, key, symbol=tup[0], family=tup[3], selector=tup[1])
+        sleeves.append({"name": key, "symbol": tup[0], "selector": tup[1],
+                        "state": tup[2], "family": tup[3],
+                        "side": str(spec.get("side", "LONG")).upper(),
+                        "exec": "family_market",
+                        "lot": "auto_ramp", "risk_frac": cap["risk_frac"],
+                        "risk_frac_source": "allocator_marginal" if cap["risk_frac"] else "none",
+                        "admission": cap,
+                        "status": _door_status(cap),
+                        # THE CERTIFICATE KEY AND THE REGISTRY IDENTITY, on the row (audit E9).
+                        "certificate": key, "sleeve_id": registry_sleeve_id(key),
+                        "promoted_at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
+                        "shadow_exp": row.get("exp_r", 0.0)})
+        plog(f"PROMOTED (generic) {key} -> {_door_status(cap)} at {cap['risk_frac']:.2%} risk, "
+             f"exec=family_market (shadow exp={row.get('exp_r', 0.0):.3f}R "
+             f"n={row.get('n', 0)}) -- {cap['why']}"
+             + ("; orders LOG-ONLY until data/GENERIC_EXEC_ENABLED"
+                if _door_status(cap) == "LIVE" else ""))
+        note_door(
+            key, door="PROMOTED", from_status="", to_status=_door_status(cap),
+            evidence=door_evidence(key, cap, n=row.get("n"), exp_r=row.get("exp_r"),
+                                   days=row.get("days"), lane="qquant"))
+        changed = True
+    return changed
+
+
 def main() -> None:
+    _DOOR_EVENTS.clear()          # a lane function called outside a pass leaves nothing behind
     shadow = load_shadow()
     sleeves = load_sleeves()
-    ledger = load_ledger()
+    # ONE MEASUREMENT OF THE ACCOUNT for the whole pass: the ledger is filtered on it and the
+    # gold retirements are re-derived on it, so the two cannot disagree about whose evidence
+    # is being read.
+    acc = account_in_hand()
+    ledger = load_ledger(acc)
+    all_rows = _all_ledger_rows()          # account-agnostic, for the void rule's rule (b)
     existing = {s["name"] for s in sleeves}
+    gate_authority = authorized_specs(BASE)
+    regrade_fails = regrade_failures()
+    identities = clock_identities()
     changed = False
+    # Certificates hygiene has evicted as UNRUNNABLE leave the roster before anything is judged
+    # or restored on them (2026-09-16).
+    changed = retire_unrunnable(sleeves) or changed
+    # And rows of a family the principal has banned (data/banned_families.json).
+    changed = retire_banned(sleeves, identities) or changed
+
+    # WHAT THE ALLOCATOR CURRENTLY SAYS. Read ONCE per pass: the three promotion doors and the
+    # reconciliation below must all decide from the same solve, or two rows written in the same
+    # run could carry two different answers to "what does the book want".
+    view = allocation_view()
+    plog(f"allocation view: {'FRESH' if view.get('fresh') else 'NOT USABLE'} -- "
+         f"{view.get('why', '')}")
+
+    qshadow = load_qquant_shadow()
+    qchanged = promote_generic(sleeves, qshadow, existing, gate_authority,
+                               regrade=regrade_fails, view=view)
+    sshadow = load_scalp_shadow()
+    schanged = promote_scalp(sleeves, sshadow, existing, gate_authority, view=view)
+    changed = changed or qchanged or schanged
 
     for key, st in shadow.items():
-        if key == "last_run":
+        if not isinstance(st, dict):
             continue
         if st.get("status") != "PROMOTION CANDIDATE":
             continue
         if key in existing:
             continue
-        # KEYS NOW CARRY AN OPTIONAL THIRD FIELD: "SYM.window" or "SYM.window.STATE".
-        # `split(".", 1)` would have put "asia.FAILED_BREAK" into `win`, which then fails the
-        # gateway's window whitelist and silently drops the sleeve -- a conditioned candidate
-        # would sit in shadow forever, meeting every promotion criterion and never promoting,
-        # with no error anywhere. Parsed explicitly instead.
+        # THE CLOCK'S IDENTITY, from the enrolment that started it. Keys carry an optional
+        # third field ("SYM.window" or "SYM.window.STATE") for breakouts and the family name for
+        # everything else; the identity map resolves both, and the parse below is only the
+        # fallback for a key the enrolment no longer lists.
+        ident = identities.get(key)
         parts = key.split(".")
-        sym, win = parts[0], parts[1]
-        cond = parts[2] if len(parts) > 2 else None
-        if win not in GOLD_WINDOWS:
-            continue
-        if sym == "XAUUSD":
-            armed_exp = armed_forward_exp(ledger, win)
-            if armed_exp is None:
-                plog(f"{key}: PROMOTION CANDIDATE, armed book has no forward data yet; wait")
-                continue
-            if st["exp_r"] < armed_exp - CHAMPION_MARGIN:
-                st["status"] = "KILL"
-                plog(f"{key}: challenger LOST to armed book "
-                     f"({st['exp_r']:.3f}R vs {armed_exp:.3f}R); KILL")
+        if ident:
+            sym, win, family = ident["symbol"], ident["selector"], ident["family"]
+            side_txt = ident.get("side", "LONG")
+            params = ident.get("params") or {}
+            cond = parts[2] if (family == "session_range_breakout" and len(parts) > 2) else None
+        else:
+            sym, win = parts[0], parts[1]
+            family, side_txt, params = "session_range_breakout", "LONG", {}
+            cond = parts[2] if len(parts) > 2 else None
+        try:
+            from family_policy import ban_reason as _ban_reason
+            from family_policy import family_banned as _family_banned
+        except ImportError:                                # pragma: no cover
+            from research.family_policy import ban_reason as _ban_reason
+            from research.family_policy import family_banned as _family_banned
+        if _family_banned(family):
+            _ok, _pwhy = family_parole(family, identities)
+            if _ok:
+                plog(f"{key}: banned family {family!r} -- {_pwhy}; promotion proceeds on the "
+                     f"clock's own record")
+            else:
+                st["status"] = "BANNED_FAMILY"
+                st["promotion_authority"] = False
+                st["gate_reason"] = f"{_ban_reason(family)}; {_pwhy}"
+                plog(f"{key}: live promotion refused -- {st['gate_reason']}")
                 changed = True
                 continue
-        sleeves.append({"name": key, "symbol": sym, "window": win,
-                        # Carried through to the gateway, which refuses to trade a conditioned
-                        # sleeve whose state it cannot confirm. Without this field the gateway
-                        # would trade the UNCONDITIONED strategy under this sleeve's name.
-                        "state": cond,
-                        "lot": PROMOTED_LOT, "status": "LIVE",
-                        "promoted_at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
-                        "shadow_exp": st.get("exp_r", 0.0)})
-        plog(f"AUTO-PROMOTED {key} -> LIVE at {PROMOTED_LOT} lot "
-             f"(shadow exp={st.get('exp_r', 0.0):.3f}R n={st.get('n', 0)})")
+        gate_spec = (sym, win, cond, family, False)
+        # THE TEN GATES GATE ENROLMENT, NOT PROMOTION. A clock exists only because a certificate
+        # enrolled it (grandfathering ended 2026-08-26), so re-checking the authority set here
+        # could only refuse on registry DRIFT -- a renamed or re-keyed certificate -- and that is
+        # how matured clocks were held out of the book. Drift is recorded on the row; it blocks
+        # nothing. The one measured refusal is a fresh cost re-grade failure (rule 1: stricter).
+        st["certificate_drift"] = gate_spec not in gate_authority if gate_authority else False
+        if st["certificate_drift"]:
+            plog(f"{key}: certificate not in the current authority set -- recorded as drift, "
+                 f"promotion proceeds on the clock's own enrolment")
+        bad = regrade_block(key, regrade_fails)
+        if bad:
+            st["status"] = "BLOCKED_COST_REGRADE"
+            st["promotion_authority"] = False
+            st["gate_reason"] = ("fails its own ten gates at the current cost model: "
+                                 + ", ".join(bad.get("gates_failing_now") or ["unspecified"]))
+            plog(f"{key}: live promotion refused -- {st['gate_reason']}")
+            changed = True
+            continue
+        _veto = blind_review_veto(key)
+        if _veto:
+            st["status"] = "BLOCKED_BLIND_REVIEW"
+            st["promotion_authority"] = False
+            st["gate_reason"] = (f"the blind reviewer could not reproduce certificate {_veto} "
+                                 f"from the data (VETO)")
+            plog(f"{key}: live promotion refused -- {st['gate_reason']}")
+            changed = True
+            continue
+        cap = capital_verdict(view, key, symbol=sym, family=family, selector=win)
+        row = {"name": key, "symbol": sym, "lot": PROMOTED_LOT, "risk_frac": cap["risk_frac"],
+               "risk_frac_source": "allocator_marginal" if cap["risk_frac"] else "none",
+               "admission": cap,
+               "status": _door_status(cap),
+               "promoted_at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
+               "shadow_exp": st.get("exp_r", 0.0), "family": family,
+               "side": side_txt, "certificate_drift": st["certificate_drift"],
+               # THE CERTIFICATE KEY (already `key`; forward_reconcile.py:308 reads the same
+               # convention) AND THE REGISTRY IDENTITY, so the hop from a funded sleeve to the
+               # certificate that justified it is a field, not a name-shaped inference (E9/E1).
+               "certificate": key, "sleeve_id": registry_sleeve_id(key)}
+        if family == "session_range_breakout":
+            if win not in GOLD_WINDOWS:
+                st["executor_gap"] = f"bracket window {win!r} is not one the gateway runs"
+                plog(f"{key}: PROMOTION CANDIDATE with no executor -- {st['executor_gap']}")
+                continue
+            # THE ARMED-BOOK COMPARISON IS MEASURED, NOT A GATE (principal 2026-09-04). Until
+            # then a gold challenger WAITED while the armed window had no forward rows and was
+            # KILLED when its expectancy trailed the window's by CHAMPION_MARGIN. Neither had
+            # proved it raised E[log W]; both held a certified, matured sleeve out of the book.
+            # The number is kept on the row so the allocator's dElogW and attribution read it.
+            vs_armed = None
+            if sym == "XAUUSD":
+                armed_exp = armed_forward_exp(ledger, win)
+                if armed_exp is not None:
+                    vs_armed = {"armed_exp_r": round(float(armed_exp), 4),
+                                "margin_r": round(float(st.get("exp_r", 0.0))
+                                                  - float(armed_exp), 4),
+                                "trails_by_more_than": bool(
+                                    float(st.get("exp_r", 0.0)) < armed_exp - CHAMPION_MARGIN)}
+                    plog(f"{key}: challenger vs armed {win}: {float(st.get('exp_r', 0.0)):.3f}R "
+                         f"vs {armed_exp:.3f}R -- recorded, promotion proceeds")
+            # Carried through to the gateway, which refuses to trade a conditioned sleeve whose
+            # state it cannot confirm; without it the gateway would trade the UNCONDITIONED
+            # strategy under this sleeve's name.
+            row.update({"window": win, "vs_armed": vs_armed, "state": cond})
+        else:
+            # A MISSING MODULE MUST NOT KILL THE PROMOTION PASS. This import is the one thing
+            # standing between a matured candidate and capital, and on 2026-09-05 the healer
+            # shipped this file's caller to the box a minute before the callee was on its list.
+            # An ImportError here would have taken every non-gold promotion with it, silently,
+            # for as long as the two files disagreed. Absent module -> the gap is UNKNOWN and
+            # named on the row, which refuses the row rather than the pass.
+            try:
+                from mt5desk import executables
+                # THE CHART IS PART OF THE QUESTION (2026-09-05). `gateway.run_family_sleeves`
+                # reads TIMEFRAME_H1 unconditionally, so promoting a certificate hunted on
+                # another chart would put real capital into signals computed from bars it was
+                # never certified on. Asked ONLY when the chart is not H1, so an hourly row makes
+                # byte-identical the call it has always made -- including against a box whose
+                # `executables` predates the argument, where a non-H1 row instead raises here and
+                # is refused by the handler below. Fail-closed on the one path that spends money.
+                gap = (executables.executor_gap(family) if _sleeve_timeframe(params) == "H1"
+                       else executables.executor_gap(family, _sleeve_timeframe(params)))
+            except Exception as exc:
+                gap = (f"executor registry unavailable on this box "
+                       f"({type(exc).__name__}: {exc}) -- refusing the row, not the pass")
+            if gap:
+                # NAMED, NEVER SILENT, NEVER A ROW THE BOOK CANNOT TRADE. A LIVE row for a family
+                # the gateway cannot execute would be funded by the allocator and held as air.
+                st["executor_gap"] = gap
+                plog(f"{key}: PROMOTION CANDIDATE with no executor -- {gap}")
+                changed = True
+                continue
+            st.pop("executor_gap", None)
+            row.update({"selector": win, "state": cond, "params": params,
+                        "exec": "family_market", "lot": "auto_ramp"})
+        sleeves.append(row)
+        plog(f"PROMOTED {key} -> {_door_status(cap)} at {cap['risk_frac']:.2%} risk "
+             f"({family} {side_txt}, exec={row.get('exec', 'bracket')}; shadow "
+             f"exp={st.get('exp_r', 0.0):.3f}R n={st.get('n', 0)}) -- {cap['why']}")
+        note_door(
+            key, door="PROMOTED", from_status="", to_status=_door_status(cap),
+            evidence=door_evidence(key, cap, n=st.get("n"), exp_r=st.get("exp_r"),
+                                   days=st.get("days"), lane="shadow_forward"))
+        changed = True
+
+    # ---------------------------------------------------- CAPITAL, ON THE CURRENT READING
+    # Demotion needs one reading and restoration needs several: `reconcile_capital` is where that
+    # asymmetry lives. It runs BEFORE retirement so a sleeve the solve no longer wants is at 0%
+    # risk on this pass whatever the retirement thresholds later decide, and it never retires
+    # anything itself.
+    if reconcile_capital(sleeves, view, only=existing):
         changed = True
 
     for s in sleeves:
-        if s.get("status") != "LIVE":
+        # RETIREMENT JUDGES STANDBY ROWS TOO. A sleeve demoted to 0% keeps its live record, and a
+        # record that trips the retirement bar must still retire it -- otherwise a demotion would
+        # be a way to escape the one-way door and be restored months later on a stale certificate.
+        if str(s.get("status") or "").upper() not in ("LIVE", "STANDBY"):
+            continue
+        why_not = degenerate_evidence(ledger, s["name"])
+        if why_not:
+            plog(f"RETIRE-REFUSED {s['name']}: {why_not}")
             continue
         fs = sleeve_forward_stats(ledger, s["name"])
         retire = False
@@ -197,6 +2038,7 @@ def main() -> None:
         elif fs["n"] >= 50 and fs["exp"] < RETIRE_MIN_EXP:
             retire, reason = True, f"n={fs['n']} exp {fs['exp']:.3f}R < {RETIRE_MIN_EXP}R"
         if retire:
+            status_before_retire = str(s.get("status") or "")
             s["status"] = "RETIRED"
             s["retired_at"] = datetime.now(tz=UTC).isoformat(timespec="seconds")
             s["retire_reason"] = reason
@@ -209,19 +2051,109 @@ def main() -> None:
             skey = s["name"]
             if skey in shadow:
                 shadow[skey]["status"] = "KILL"
+            if isinstance(qshadow.get(skey), dict):
+                qshadow[skey]["status"] = "KILL"
+                qchanged = True
+            srows = sshadow.get("sleeves") if isinstance(sshadow.get("sleeves"), dict) else {}
+            if isinstance(srows.get(skey), dict):
+                srows[skey]["status"] = "KILL"
+                schanged = True
             plog(f"AUTO-RETIRED {s['name']} ({reason})")
+            # THE ONE DOOR THE LEDGER ALWAYS TAKES: RETIRED is reachable from every state and
+            # owes only its reason -- the promoter's own, verbatim, never the generic note.
+            note_door(
+                skey, door="RETIRED", from_status=status_before_retire,
+                to_status="RETIRED", reason=reason,
+                evidence=door_evidence(skey, s.get("admission"), n=fs["n"], exp_r=fs["exp"],
+                                       certificate=s.get("certificate"),
+                                       roll20_exp=f"{fs['roll20_exp']:.4f}R",
+                                       max_dd=f"{fs['max_dd']:.3f}R"))
             changed = True
 
+    # ---------------------------------------------------------------- the gold book
+    # THE ARMED GOLD BOOK NOW DECAYS LIKE EVERYTHING ELSE (principal, 2026-09-01). It used to be
+    # exempt -- "The armed gold book is NOT managed here" -- because it predates the gauntlet and
+    # is armed by a person. The consequence was that the desk's ONLY live sleeves were the only
+    # ones with no automatic decay protection: the three retire rules below walked sleeves.json,
+    # which is empty, so they applied to nothing that could actually lose money. A gold book whose
+    # edge died would have degraded indefinitely with no organ able to notice.
+    #
+    # RETIREMENT HERE DOES NOT DELETE ANYTHING. It writes the window into data/GOLD_RETIRED.json
+    # with its reason; gateway.sleeve_set() reads that file and stops emitting the window.
+    #
+    # A STANDING RETIREMENT IS RE-DERIVED, NOT TRUSTED (2026-09-08). Undo used to be "deleting
+    # the entry by hand", and the 09-02 gold_asia entry -- the one `degenerate_evidence` names as
+    # the near-constant defect -- sat for six days under a standing order that no human decision
+    # is needed, stopping the only armed window on the live account. `retirement_void_reason`
+    # states the rule and its limits; a voided entry moves to GOLD_RETIRED_VOIDED.json with why,
+    # and the name then FALLS THROUGH to the unchanged retire rules on this same pass, so a real
+    # loser on admissible evidence is retired again before the gateway reads the file.
+    #
+    # SAFE BEFORE THE LEDGER FILLS: sleeve_forward_stats returns n=0/max_dd=0.0 for a sleeve with
+    # no rows, and every rule below requires either n >= 10 or a drawdown worse than -25R, so an
+    # empty or missing ledger retires nothing. It arms itself only once real fills are recorded.
+    gold_retired = _load_gold_retired()
+    for gname in GOLD_SLEEVE_NAMES:
+        if gname in gold_retired:
+            why_void = retirement_void_reason(gold_retired[gname], ledger, gname, acc,
+                                              all_rows=all_rows)
+            if not why_void:
+                if acc.get("kind") == provenance.UNKNOWN:
+                    plog(f"RETIREMENT STANDS UNJUDGED {gname}: no account in hand, so no row is "
+                         f"admissible and nothing can be re-derived this pass")
+                continue
+            voided = _load_gold_voided()
+            voided[gname] = {**gold_retired[gname],
+                             "voided_at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
+                             "voided_why": why_void}
+            _gold_voided_file().parent.mkdir(parents=True, exist_ok=True)
+            _gold_voided_file().write_text(json.dumps(voided, indent=2), encoding="utf-8")
+            del gold_retired[gname]
+            _save_gold_retired(gold_retired)
+            plog(f"RETIREMENT VOID {gname}: {why_void} -- re-judged on this pass under the "
+                 f"unchanged retire rules")
+            changed = True
+        why_not = degenerate_evidence(ledger, gname)
+        if why_not:
+            plog(f"RETIRE-REFUSED {gname}: {why_not}")
+            continue
+        fs = sleeve_forward_stats(ledger, gname)
+        retire = False
+        reason = ""
+        if fs["n"] >= RETIRE_MIN_N and fs["roll20_exp"] <= 0.0:
+            retire, reason = True, f"roll20 exp {fs['roll20_exp']:.3f}R <= 0"
+        elif fs["max_dd"] < RETIRE_MAX_DD:
+            retire, reason = True, f"forward maxDD {fs['max_dd']:.1f}R < {RETIRE_MAX_DD}R"
+        elif fs["n"] >= 50 and fs["exp"] < RETIRE_MIN_EXP:
+            retire, reason = True, f"n={fs['n']} exp {fs['exp']:.3f}R < {RETIRE_MIN_EXP}R"
+        if retire:
+            gold_retired[gname] = {
+                "retired_at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
+                "reason": reason, "n": fs["n"], "exp": fs["exp"],
+                "roll20_exp": fs["roll20_exp"], "max_dd": fs["max_dd"]}
+            _save_gold_retired(gold_retired)
+            plog(f"AUTO-RETIRED {gname} ({reason}) -- gateway stops emitting this window")
+            changed = True
+
+    if qchanged:
+        (SHADOW_DIR / "qquant_shadow_state.json").write_text(
+            json.dumps(qshadow, indent=2), encoding="utf-8")
+    if schanged:
+        (SHADOW_DIR / "scalp_shadow_state.json").write_text(
+            json.dumps(sshadow, indent=2), encoding="utf-8")
     if changed:
         save_sleeves(sleeves)
         (SHADOW_DIR / "shadow_state.json").write_text(
             json.dumps(shadow, indent=2), encoding="utf-8")
         plog(f"sleeves.json updated: {[s['name'] for s in sleeves if s['status']=='LIVE']}")
+    # THE DOORS OF THIS PASS, onto the alpha-state ledger or its observation file -- after the
+    # roster is written, so a note-taking failure can never precede a promotion it describes.
+    flush_door_events()
 
 
 if __name__ == "__main__":
     try:
         main()
-    except Exception as e:
+    except Exception:
         import traceback
         plog("promoter error: " + traceback.format_exc())

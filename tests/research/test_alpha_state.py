@@ -275,3 +275,25 @@ def test_A_CANARY_CAN_BE_RETREATED_WITHOUT_RETIRING_THE_ALPHA() -> None:
     rec = AlphaRecord(alpha_id="a1", state="LIVE_CANARY")
     out, _ = retreat(rec, "SHADOW", reason="fills 3x worse than modelled")
     assert out.state == "SHADOW"
+
+
+def test_LEDGER_RETREAT_PERSISTS_THE_STATED_REASON_AND_ONLY_TERMINAL_TARGETS(tmp_path) -> None:
+    """The promoter retires with its own reason; `advance()` to a terminal state stamps a generic
+    note instead. A persisted retreat to a LOWER RUNG would be replayed through `advance` on the
+    next load and refused, so the ledger refuses to write one."""
+    path = tmp_path / "alpha_state.jsonl"
+    ledger = AlphaStateLedger(path)
+    rec, why = ledger.advance("a1", "IMPLEMENTED", _FULL, now="2026-01-01T00:00:00Z")
+    assert rec.state == "IMPLEMENTED"
+    rec, why = ledger.retreat("a1", "TESTED", reason="down a rung")
+    assert rec.state == "IMPLEMENTED" and "REFUSED" in why and "observation" in why
+    assert len(path.read_text("utf-8").splitlines()) == 1
+    rec, why = ledger.retreat("a1", "RETIRED", reason="roll20 exp -0.850R <= 0",
+                              now="2026-01-02T00:00:00Z")
+    assert rec.state == "RETIRED" and rec.note == "roll20 exp -0.850R <= 0"
+    resumed = AlphaStateLedger(path)
+    assert resumed.get("a1").state == "RETIRED"
+    assert resumed.get("a1").note == "roll20 exp -0.850R <= 0"
+    assert resumed.get("a1").history[-1] == ("RETIRED", "2026-01-02T00:00:00Z")
+    rec, why = ledger.retreat("a1", "RETIRED", reason="")
+    assert "REFUSED" in why, "a retreat still needs a stated reason"

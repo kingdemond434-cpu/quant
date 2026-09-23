@@ -1,0 +1,19 @@
+[Unit]
+Description=Weekly gap-fixer/wirer/weakness hunter (repair organ; principal-ordered 2026-08-25)
+
+[Service]
+# Shares one memory budget with the other heavy organs (see ops/quant-heavy.slice): the
+# per-unit caps stop a unit killing itself, the slice stops them collectively exhausting
+# the box and getting an innocent neighbour killed by the global OOM killer.
+Slice=quant-heavy.slice
+# 866M measured peak. The ceiling sits just above it so the CGROUP stops this unit if it
+# runs away, instead of the KERNEL OOM killer choosing a victim box-wide -- which is what
+# happened 2026-08-27 09:01 and left every fence's repair call unanswered. A repair organ
+# that can take down the organs it exists to serve is a liability, not a rail.
+MemoryMax=1200M
+MemoryHigh=1000M
+OOMPolicy=stop
+Type=oneshot
+WorkingDirectory=/home/quant/quant-platform
+ExecStart=/bin/bash /home/quant/quant-platform/ops/run_gap_wirer.sh
+TimeoutStartSec=6h

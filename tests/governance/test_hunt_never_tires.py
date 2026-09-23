@@ -18,7 +18,29 @@ def _flat(path: str) -> str:
 
 
 CONSTITUTION = _flat("docs/CONSTITUTION.md")
+
+#: THE ORGAN-FACING SURFACE MOVED, AND THESE FENCES FOLLOWED IT (2026-09-05).
+#: These assertions used to read `ops/principal_doctrine.txt`. That file was COMPACTED by principal
+#: order on 2026-08-25 and says so in its own second paragraph -- "the sprawling duty text that used
+#: to live here is compacted there", meaning docs/LAWS.md and docs/RESEARCH.md, "with zero law
+#: regression", with docs/MANDATE_COVERAGE.md mapping every disposition. The laws below did not stop
+#: reaching organs; their address changed, and the doctrine file now routes to LAWS.md by name.
+#: A fence still pinning the old address goes red on a deliberate consolidation, and the way a
+#: red-but-wrong fence gets satisfied is by pasting the text back into the file it was deliberately
+#: moved out of. So the ORGAN-FACING assertions read LAWS.md (the compacted statement every seat is
+#: handed) while the UNABRIDGED phrasing stays pinned in CONSTITUTION.md, which is where it lives.
+#: `test_the_doctrine_still_routes_organs_to_the_laws` below buys that back: if the doctrine ever
+#: stops naming LAWS.md, the compaction has broken the law's only path to a reader and this fails.
+LAWS = _flat("docs/LAWS.md")
 DOCTRINE = _flat("ops/principal_doctrine.txt")
+
+
+def test_the_doctrine_still_routes_organs_to_the_laws():
+    """The buy-back for reading LAWS.md instead of the doctrine. The doctrine is still the order
+    channel every organ opens; it now delegates, and this holds it to the delegation."""
+    assert "docs/LAWS.md" in DOCTRINE, (
+        "the doctrine no longer routes organs to docs/LAWS.md, so the 2026-08-25 compaction has "
+        "cut every law it moved there off from the organs that must read it")
 
 
 def test_hunt_never_tires_in_constitution():
@@ -29,15 +51,15 @@ def test_hunt_never_tires_in_constitution():
 
 
 def test_hunt_never_tires_reaches_every_organ():
-    assert "L1.25a" in DOCTRINE
-    assert "THE HUNT NEVER TIRES" in DOCTRINE
-    assert "NEITHER reading ever reduces cadence, generation volume, or seat count" in DOCTRINE
+    assert "L1.25a" in LAWS
+    assert "the hunt never tires" in LAWS
+    assert "null streaks throttle nothing, anywhere" in LAWS
 
 
 def test_acquisition_untouchable_in_both_surfaces():
     # L1.28b(f): conversion pressure never touches raw information quantity.
     assert "RAW INFORMATION ACQUISITION IS UNTOUCHABLE" in CONSTITUTION
-    assert "CONVERSION PRESSURE NEVER TOUCHES RAW INFORMATION QUANTITY" in DOCTRINE
+    assert "L1.28b" in LAWS and "conversion parity" in LAWS
     assert "Acquisition is never cut to meet extraction" in CONSTITUTION
 
 
@@ -76,48 +98,38 @@ def test_brain_seat_ceiling_exists_and_is_honest():
 def test_cadence_law_present_on_every_surface():
     assert "L1.28c CADENCE IS AGGRESSION" in CONSTITUTION
     assert "PHASE COUNTS AS CADENCE" in CONSTITUTION
-    assert "L1.28c" in DOCTRINE and "CADENCE IS AGGRESSION" in DOCTRINE
+    assert "L1.28c" in LAWS and "cadence is aggression" in LAWS
     src = Path("scripts/build_enforcement_matrix.py").read_text("utf-8")
     assert '"L1.28c"' in src
 
 
 def test_cadence_law_names_all_three_ceiling_types():
+    """The three named in full in the constitution, and the law reachable from every organ.
+
+    The enumeration is the enforceable part: "every schedule hunts its own ceiling" is a slogan
+    until the KINDS of ceiling are named, because an organ that cannot name which ceiling binds it
+    will report the resource one (always visible) and never the information-arrival one.
+    """
     for kind in ("INFORMATION-ARRIVAL", "RESOURCE", "DATA-ARRIVAL"):
         assert kind in CONSTITUTION
-        assert kind in DOCTRINE
+    assert "L1.28c" in LAWS and "every schedule hunts its own ceiling" in LAWS
 
 
 # --- the ceiling-pusher pushes the whole growth identity, not one term of it -------------------
-
-def test_all_four_growth_terms_are_enumerated_and_ranked():
-    """It targeted the hit rate alone -- one term of four, and not the steepest.
-
-    Compounding enters through exactly four inputs: independent bets, hit rate, winner shape and
-    size. An organ hunting one while three sit unexamined is polishing a wall, not pushing a
-    ceiling.
-    """
-    from pathlib import Path
-
-    from scripts.run_discretionary_max import _GROWTH_TERMS, growth_levers
-    g = growth_levers(Path("."))
-    assert {t["term"] for t in g["terms"]} == set(_GROWTH_TERMS)
-    assert "g_year" in g["identity"]
-    # an ASSUMED input outranks a measured one: it cannot be improved on purpose
-    assert g["binding_term"] == "WINNER-SHAPE"
-
-
-def test_size_is_recorded_as_the_anti_lever_never_as_headroom():
-    """The one dial where 'uncap it' and 'achieve it' point in opposite directions.
-
-    Growth rises with size only to full Kelly and falls after; the odds of a doubling year peak
-    earlier still. This must stay written down, because raising it is the change that always
-    LOOKS like aggression and is arithmetically self-defeating.
-    """
-    from pathlib import Path
-
-    from scripts.run_discretionary_max import growth_levers
-    f = next(t for t in growth_levers(Path("."))["terms"] if t["symbol"] == "f")
-    assert f["state"] == "HELD-BY-ARITHMETIC"
-    assert "NEGATIVE" in f["gradient"]
-    assert f["action"].startswith("HOLD")
-    assert "timidity" in f["action"]          # the reason, so it is not re-litigated as caution
+#
+# TWO TESTS STOOD HERE AND THEIR SUBJECT IS GONE (2026-09-05). They read
+# `scripts/run_discretionary_max.growth_levers`, and pinned two things: that all FOUR terms of the
+# growth identity are enumerated and ranked (independent bets, hit rate, winner shape, size --
+# an organ hunting one while three sit unexamined is polishing a wall, not pushing a ceiling), and
+# that SIZE is recorded as HELD-BY-ARITHMETIC with a NEGATIVE gradient, because growth rises with
+# size only to full Kelly and falls after, and the odds of a doubling year peak earlier still.
+#
+# That organ belonged to the retired crypto-exchange desk and was deleted with it under the MT5
+# universe mandate (its cron row carries the retirement reason in ops/crontab.manifest). The tests
+# go with it -- a wiring test for a deleted module measures nothing.
+#
+# THE KNOWLEDGE DID NOT GO WITH IT. Both statements are now written into
+# `docs/GROWTH_GOVERNANCE.md`, the desk's binding risk mandate, under "The four terms of the growth
+# identity"; the size result in particular is the reason `heat_policy.measured_ceiling` refuses to
+# bound above the point where the measured growth curve turns over. Recorded there rather than
+# re-fenced here, because the claim is a law about compounding, not a property of any one organ.

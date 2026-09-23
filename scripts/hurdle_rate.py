@@ -10,14 +10,23 @@ A strategy is not "working" because it is positive. It is working when it beats 
 have had for free, net of everything. Three benchmarks, hardest first:
 
   1. RISK-FREE   -- US 3-month T-bill (^IRX). Capital has a price; ignoring it flatters everything.
-  2. BUY-AND-HOLD BTC -- the zero-effort crypto alternative.
-  3. 50/50 BTC+cash   -- the honest risk-matched comparison for a market-neutral book, since a
-                        delta-neutral carry should NOT be compared to full BTC beta.
+  2. BUY-AND-HOLD GOLD -- the zero-effort alternative on the desk's flagship MT5 instrument.
+  3. 50/50 gold+cash   -- the honest risk-matched comparison for a market-neutral book, since a
+                        hedged or netted book should NOT be compared to full XAUUSD beta.
 
-Also computes the CARRY-SPECIFIC hurdle: funding harvested must exceed fee drag, or the sleeve is
-structurally unprofitable regardless of direction.
+REPOINTED AT THE MT5 UNIVERSE, 2026-09-05. Benchmark 2 was buy-and-hold BTC priced off a retired
+exchange's public API, and the file also carried a CARRY DECOMPOSITION over
+`web/cashcarry_live.json` -- funding harvested vs fee drag on the old hedged sleeve. Both belonged
+to the retired book: that state file has no writer any more, so the block could only ever print
+zeros dressed as a decomposition, which is the flattery this organ exists to prevent. The hurdle
+question itself is venue-neutral and unchanged, and the benchmark is now the instrument the desk
+actually trades -- a HARDER comparison than the old one, not a weaker one.
 
-Free (Yahoo + Binance + the desk's own state). Read-only. Run from repo root, daily.
+Benchmark 2 reads the MT5 bar store on disk rather than any venue API. If gold bars are absent it
+is reported ABSENT and excluded from the verdict, never defaulted to zero: a benchmark that
+silently becomes 0% is one the desk beats by standing still.
+
+Free (Yahoo + the MT5 bar store + the desk's own state). Read-only. Run from repo root, daily.
 """
 
 from __future__ import annotations
@@ -48,9 +57,45 @@ def load(p: Path):
         return None
 
 
+def _gold_hold(days: float) -> float:
+    """Buy-and-hold XAUUSD over the desk's own live window, or NaN when it cannot be priced.
+
+    NaN is the refusal, and the caller reports it as ABSENT rather than folding it into the
+    verdict. Returning 0.0 on a missing bar store would hand the desk a benchmark it beats by
+    doing nothing at all, which is the precise failure this whole organ was built to catch.
+
+    Reads `desks/mt5/**/universe/XAUUSD_*.parquet` -- the same bars the gateway trades against --
+    rather than any venue API. That is deliberate: the comparison should be against a return the
+    desk could actually have captured, at prices it could actually have filled.
+    """
+    if days <= 0:
+        return float("nan")
+    try:
+        import pandas as pd
+    except ImportError:
+        return float("nan")
+    for tf in ("H1", "M15", "D1", "H4"):
+        for root in (ROOT / "desks/mt5/data/universe", ROOT / "desks/mt5/universe"):
+            p = root / f"XAUUSD_{tf}.parquet"
+            if not p.exists():
+                continue
+            try:
+                frame = pd.read_parquet(p)
+            except (OSError, ValueError):
+                continue
+            if frame.empty or "close" not in frame.columns:
+                continue
+            idx = pd.to_datetime(frame.index, utc=True)
+            frame = frame.set_index(idx).sort_index()
+            window = frame.loc[frame.index[-1] - pd.Timedelta(days=days):]
+            if len(window) < 2:
+                continue
+            return float(window["close"].iloc[-1]) / float(window["close"].iloc[0]) - 1.0
+    return float("nan")
+
+
 def main() -> None:
     port = (load(ROOT / "web/portfolio.json") or {}).get("deployed") or {}
-    cc = load(ROOT / "web/cashcarry_live.json") or {}
     days = float(port.get("days_live") or 0)
     ret = float(port.get("return_pct") or 0) / 100.0
     if days <= 0:
@@ -67,24 +112,23 @@ def main() -> None:
         rf_annual = 0.045
     rf = rf_annual * (days / 365.0)
 
-    try:
-        kl = _get("https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1d&limit=400")
-        n = min(int(days) + 1, len(kl))
-        btc = float(kl[-1][4]) / float(kl[-n][1]) - 1.0
-    except Exception:
-        btc = float("nan")
-    half = btc / 2 + rf / 2
+    gold = _gold_hold(days)
+    half = gold / 2 + rf / 2
 
     ann = (1 + ret) ** (365 / days) - 1 if days > 0 else 0.0
     print("=== HURDLE RATE -- is this better than doing nothing? ===")
     print(f"    window: {days:.1f} days live\n")
     print(f"  {'DESK':<26} {ret * 100:+8.2f}%   ({ann * 100:+.1f}%/yr annualised)")
     print(f"  {'risk-free (T-bill)':<26} {rf * 100:+8.2f}%   ({rf_annual * 100:.2f}%/yr)")
-    print(f"  {'buy-and-hold BTC':<26} {btc * 100:+8.2f}%")
-    print(f"  {'50/50 BTC + cash':<26} {half * 100:+8.2f}%   <- risk-matched for a neutral book")
+    print(f"  {'buy-and-hold XAUUSD':<26} {gold * 100:+8.2f}%")
+    print(f"  {'50/50 XAUUSD + cash':<26} {half * 100:+8.2f}%   <- risk-matched for a neutral book")
 
-    hurdles = {"risk_free": rf, "btc_hold": btc, "half_btc": half}
-    beats = {k: ret > h for k, h in hurdles.items()}
+    # A NaN benchmark is ABSENT, not beaten. `ret > nan` is False in Python, so an unreadable bar
+    # store used to read as "the desk fails this hurdle" -- wrong in the safe direction, but still
+    # a measurement failure wearing a verdict. Excluded and named instead.
+    hurdles = {"risk_free": rf, "gold_hold": gold, "half_gold": half}
+    absent = sorted(k for k, v in hurdles.items() if v != v)
+    beats = {k: ret > h for k, h in hurdles.items() if h == h}
     print()
     for k, v in beats.items():
         print(
@@ -92,29 +136,13 @@ def main() -> None:
             f"(excess {(ret - hurdles[k]) * 100:+.2f}%)"
         )
 
-    # --- carry-specific hurdle: does funding actually exceed fee drag? ----------------------
-    fund = float(cc.get("funding_harvested") or 0)
-    net = float(cc.get("net_pnl") or 0)
-    legs = float(cc.get("spot_leg_pnl") or 0) + float(cc.get("perp_leg_pnl") or 0)
-    costs = fund + legs - net  # residual = what neither funding nor legs explain
-    print("\n  === CARRY DECOMPOSITION (the structural question) ===")
-    print(f"    funding harvested  {fund:+10.2f}")
-    print(f"    legs (spot+perp)   {legs:+10.2f}   <- ~0 confirms delta-neutrality holds")
-    print(f"    net P&L            {net:+10.2f}")
-    print(f"    implied costs      {costs:+10.2f}   <- residual")
-    if fund > 0:
-        ratio = abs(costs) / fund
-        print(
-            f"    cost / funding     {ratio:8.2f}x   "
-            + ("STRUCTURALLY UNPROFITABLE -- costs exceed the harvest" if ratio > 1
-               else "harvest covers costs")
-        )
-
     verdict = (
-        "PASSES"
-        if all(beats.values())
+        "UNMEASURED -- no benchmark could be priced" if not beats
+        else "PASSES" if all(beats.values())
         else "FAILS -- does not beat " + ", ".join(k for k, v in beats.items() if not v)
     )
+    if absent:
+        print(f"\n  ABSENT (excluded from the verdict, NOT scored as beaten): {', '.join(absent)}")
     print(f"\n  HURDLE VERDICT: {verdict}")
     print("  A strategy is not 'working' because it is positive. It works when it beats what you")
     print("  could have had for free, net of everything. Nothing should get capital until it does.")
@@ -127,12 +155,10 @@ def main() -> None:
                 "desk_return": ret,
                 "annualised": ann,
                 "risk_free": rf,
-                "btc_hold": btc,
-                "half_btc": half,
+                "gold_hold": gold,
+                "half_gold": half,
                 "beats": beats,
-                "funding": fund,
-                "legs": legs,
-                "implied_costs": costs,
+                "absent_benchmarks": absent,
                 "verdict": verdict,
             },
             indent=1,

@@ -1,0 +1,3314 @@
+Political 
+Risk 
+in 
+Emerging 
+and Developed Markets Robin 
+L. 
+Diamonte, John M. 
+Liew, 
+and 
+Ross 
+L. 
+Stevens Political 
+risk 
+represents a 
+more 
+important 
+determinant 
+of 
+stock 
+returns 
+in 
+emerging 
+than 
+in 
+developed markets. 
+Using 
+analyst 
+estimates 
+of 
+political risk, 
+we 
+show 
+that 
+average 
+returns 
+in 
+emerging 
+markets 
+experiencing 
+decreased political 
+risk 
+exceed 
+those 
+of 
+emerging 
+markets 
+experiencing 
+increased political 
+risk 
+by 
+approximately 
+11 
+percent 
+a quarter. 
+In 
+contrast, 
+the 
+difference 
+is 
+only 
+2.5 percent 
+a 
+quarter 
+for 
+developed 
+markets. Furthermore, 
+the 
+difference 
+between 
+the 
+impact 
+off 
+political 
+risk in 
+emerging 
+and 
+developed 
+markets 
+is 
+statistically 
+significant. 
+We 
+also 
+document 
+a global 
+convergence 
+in 
+political risk. 
+During 
+the 
+past 
+10 
+years, political 
+risk 
+has decreased 
+in 
+emerging 
+markets 
+and 
+increased 
+in 
+developed markets. 
+If 
+this 
+trend continues, 
+the 
+differential 
+impact 
+of 
+political 
+risk 
+on 
+returns 
+in emerging 
+and 
+developed 
+markets 
+may 
+narrow. D oes 
+political 
+risk affect 
+stock 
+returns? 
+The 
+
+often-observed 
+link 
+between 
+dramatic 
+political 
+events 
+and 
+large 
+market 
+moves 
+clearly 
+suggests 
+that 
+it 
+can. 
+Because 
+quantifying 
+political 
+risk 
+is 
+difficult, 
+however, 
+the 
+evidence 
+of 
+its 
+systematic 
+impact 
+on 
+stock 
+returns 
+is 
+largely 
+anecdotal. 
+In 
+this 
+article, 
+we 
+provide 
+direct 
+evidence 
+on 
+this 
+issue 
+by 
+exploiting 
+analyst 
+estimates 
+of 
+political 
+risk. 
+First, 
+we 
+show 
+that 
+changes 
+in 
+political 
+risk 
+have 
+a 
+larger 
+impact 
+on 
+returns 
+in 
+emerging 
+mar- 
+kets 
+than 
+
+in 
+developed 
+markets. 
+In 
+emerging 
+mar- 
+kets, 
+political 
+risk 
+changes 
+represent 
+an 
+economically 
+and 
+statistically 
+significant 
+determi- 
+nant 
+of 
+stock 
+returns. 
+Average 
+returns 
+in 
+emerging 
+markets 
+experiencing 
+political 
+risk 
+upgrades 
+ex- 
+ceed 
+those of 
+emerging 
+markets 
+experiencing 
+in- 
+creased 
+political 
+risk 
+downgrades 
+by 
+approximately 
+11 
+percent 
+a 
+quarter. 
+Changes 
+in 
+political 
+risk 
+are 
+a 
+less 
+important 
+determinant 
+of 
+stock 
+returns 
+in 
+developed 
+markets. 
+There 
+is 
+no 
+statistically 
+significant 
+difference 
+
+between 
+average 
+returns 
+in 
+developed 
+markets 
+experiencing 
+politi- 
+cal 
+risk 
+upgrades 
+and 
+developed 
+markets 
+experi- 
+encing 
+political 
+risk 
+downgrades. 
+Second, 
+we 
+document 
+a 
+global 
+convergence 
+in 
+political 
+risk. 
+During 
+the 
+past 
+10 
+years, 
+emerging Robin 
+L. 
+Diamonte 
+is 
+a senior 
+research 
+manager with 
+GTE 
+Investment 
+Management. 
+John 
+M. 
+Liew 
+and 
+Ross 
+L. 
+Stevens 
+are 
+members 
+of 
+the 
+quantitative 
+research 
+group 
+at 
+Goldman 
+Sachs 
+Asset 
+Management. markets 
+have become 
+politically 
+safer 
+
+and 
+devel- 
+oped 
+markets 
+have 
+become 
+riskier. If 
+this 
+trend 
+continues, 
+the 
+differential 
+impact 
+of 
+political 
+risk 
+in 
+emerging 
+versus 
+developed 
+markets 
+may 
+nar- 
+row. DATA Several 
+institutions 
+offer 
+country-by-country 
+risk 
+analysis. 
+Most 
+services, 
+however, 
+provide 
+non- 
+quantifiable 
+written 
+reports, 
+which 
+are 
+unsuitable 
+for 
+empirical 
+analysis. 
+Of 
+the 
+few 
+services 
+that 
+offer 
+quantitative 
+analyses, 
+most 
+offer 
+their 
+estimates 
+only 
+on 
+a 
+semiannual 
+or 
+irregular 
+basis. 
+One 
+serv- 
+ice, 
+Political 
+Risk 
+Services, 
+publishes 
+the Interna- 
+tional 
+Country Risk Guide (ICRG), 
+which 
+provides 
+an 
+explicit 
+monthly 
+measure 
+of 
+political 
+risk. 
+ICRGs 
+analysts 
+produce 
+risk 
+estimates 
+in 
+more 
+than 
+130 
+countries. 
+Their 
+overall 
+country 
+risk rat- 
+ings 
+consist 
+of 
+economic, 
+financial, 
+and 
+political 
+components. 
+Because 
+we 
+sought 
+to 
+quantify 
+the 
+importance 
+of 
+political 
+risk in 
+stock 
+returns, 
+we 
+used 
+ICRG's 
+political 
+component 
+as 
+our 
+proxy 
+for 
+political 
+risk. 
+Our 
+sample 
+period 
+starts in 
+January 
+1985 
+and 
+goes 
+through 
+June 
+1995. 
+Analyst 
+ratings 
+of 
+13 
+political 
+risk 
+attributes 
+combine 
+to 
+form 
+one 
+overall 
+political 
+risk 
+score 
+for 
+each country. 
+The 
+maximum 
+score 
+assigned 
+to 
+each 
+attribute 
+is 
+set 
+so 
+that each 
+country's 
+overall 
+score 
+falls 
+between 
+zero 
+(highest 
+risk) 
+and 
+100 
+(lowest 
+risk). 
+The 
+13 
+political 
+risk 
+attributes 
+and Financial 
+Analysts Joumal: May/June 
+1996 71 
+© 1996, AIMR
+®
+
+their 
+maximum 
+scores 
+are 
+described 
+in 
+the 
+appen- 
+dix. 
+To 
+illustrate 
+the 
+behavior 
+of 
+ICRG's 
+political 
+risk 
+measure, 
+we 
+studied 
+its 
+reaction 
+to 
+a 
+recent 
+dramatic 
+political 
+event: 
+the 
+Persian 
+Gulf 
+War. 
+Iraq 
+invaded 
+Kuwait on 
+August 
+2, 
+1990, 
+and 
+Desert 
+Storm 
+pulled 
+out 
+of 
+Kuwait on February 
+27, 1991. 
+Figure 
+I 
+presents 
+the 
+time-series 
+of 
+the 
+political 
+risk 
+measure 
+for 
+Kuwait 
+and 
+Iraq. 
+For 
+both 
+countries, 
+the 
+level 
+of 
+political risk 
+sharply 
+increased 
+just 
+prior 
+to 
+the 
+invasion 
+and 
+remained 
+high 
+for 
+the 
+duration 
+of 
+the 
+war. Following 
+the 
+war, 
+Kuwait's 
+political 
+risk 
+decreased 
+sharply; 
+Iraq's 
+political risk 
+decreased 
+more 
+slowly. 
+In 
+fact, 
+the 
+level 
+of 
+political 
+ris 
+k 
+in 
+Iraq 
+has 
+yet 
+to 
+return 
+to 
+its 
+preinvasion 
+level 
+Table 
+I 
+shows 
+summary 
+statistics 
+of 
+the 
+politi- 
+cal 
+risk 
+measure 
+for 
+the 
+21 
+developed 
+and 
+24 
+emerging 
+markets 
+for 
+which 
+both 
+stock 
+return 
+and 
+political 
+risk 
+data 
+are 
+available 
+The 
+table 
+presen.ts 
+the average 
+risk, 
+average 
+quarterly 
+risk 
+change, 
+and 
+standard 
+deviation 
+of 
+the 
+quarterly 
+risk 
+change. 
+1 
+Within 
+each 
+region, 
+the 
+countries 
+are 
+sorted 
+by 
+their 
+average 
+risk 
+during 
+the 
+sample 
+period, 
+1985 
+to 
+mid-1995. 
+Emerging 
+markets 
+have 
+been 
+politically 
+riskier 
+than developed 
+markets. 
+In 
+fact, 
+the 
+riskiest 
+developed 
+market, 
+Hong 
+Kong, 
+has 
+been 
+politically 
+safer 
+than 
+all 
+but 
+five 
+emerging 
+markets 
+ICRG's 
+political 
+subcomponent 
+data 
+(de- 
+scribed 
+in 
+the 
+appendix) 
+indicate 
+that 
+relative 
+to 
+the 
+other 
+developed 
+markets, 
+Hong 
+Kong 
+has 
+suf- 
+fered 
+from 
+weak 
+political 
+leadership 
+and 
+high 
+ex- 
+ternal 
+conflict 
+risk. 
+Within 
+the 
+emerging 
+markets, 
+the 
+two 
+riskiest 
+countries, 
+Pakistan 
+and 
+Sri 
+Lanka, 
+help 
+make 
+Asia 
+the 
+riskiest 
+region. 
+Pakistan 
+has 
+been 
+plagued 
+by 
+corruption 
+in 
+governm.ent, 
+and 
+Sri 
+Lanka 
+has 
+suffered 
+political 
+terrorism 
+and 
+sub- 
+stantial 
+civil 
+war 
+risk. 
+Table 
+1 
+also 
+documents 
+a 
+global 
+convergence 
+in 
+political 
+risk 
+during 
+the 
+sample 
+period. 
+Emerg- 
+ing 
+markets have 
+become 
+politically 
+safer, 
+and 
+de- 
+veloped 
+markets 
+have 
+become 
+riskier. 
+The 
+average 
+change 
+in political 
+risk 
+is 
+negative 
+(riskier) 
+for 
+19 
+out 
+of 
+21 
+developed 
+markets 
+and 
+positive 
+(safer) 
+for 
+21 
+out 
+of 
+24 
+emerging 
+markets. 
+Among 
+the 
+emerging 
+markets, 
+Chile 
+has 
+experienced 
+the 
+larg- 
+est 
+average 
+decrease 
+in 
+political 
+risk, 
+primarily 
+because 
+of 
+its 
+strong 
+political 
+leadership 
+and 
+con- 
+sistency 
+of 
+free 
+market 
+reforms 
+Despite 
+Chile's 
+gains, 
+however, 
+the 
+Latin 
+America 
+region 
+has 
+be- 
+come 
+safer 
+at 
+a 
+slower 
+rate 
+than 
+either 
+the 
+Asian 
+or 
+the 
+European/Mideastern/African 
+regions. 
+The 
+Philippines 
+(Asia) 
+and 
+Zimbabwe 
+(Africa) 
+have 
+been 
+the 
+largest 
+contributors 
+to 
+their 
+respective 
+regions' 
+decreasing 
+political 
+risk. 
+The Philippines 
+has 
+benefited 
+most from 
+strengthening 
+political 
+leade.rship 
+while 
+Zimbabwe 
+has 
+enjoyed 
+a 
+sharp 
+drop 
+in 
+external 
+conflict 
+risk. 
+Although 
+Table 
+1 
+documents 
+large 
+and 
+vola- 
+tile 
+political risk 
+changes 
+in 
+emerging 
+markets, 
+this 
+information 
+makes 
+no statement 
+about 
+the 
+ability 
+of 
+these 
+changes 
+to 
+explain 
+stock 
+returns. 
+In 
+addi- 
+tio.n, 
+the 
+fact 
+that 
+the 
+changes 
+are 
+larger 
+and 
+more 
+volatile in 
+emerging 
+markets 
+than 
+in 
+developed 
+markets 
+does 
+not 
+imply 
+that 
+they 
+represent 
+a 
+more 
+important 
+determinant 
+of 
+stock 
+returns 
+in 
+those 
+markets. 
+In 
+order 
+to 
+examine 
+the 
+relation 
+between 
+changes 
+in 
+political 
+risk 
+and 
+stock 
+returns, 
+we 
+used 
+monthly 
+total 
+return 
+s 
+(inclusive 
+of 
+dividends) 
+in 
+U.S. 
+dollars 
+on 
+stock 
+indexes 
+from 
+Morgan 
+Stanley 
+Capital 
+International 
+(MSCI) 
+and 
+the 
+International 
+Financial 
+Corporation 
+(IFC). 
+These 
+indexes 
+repre- 
+sent 
+the behavior 
+of 
+stock 
+returns 
+in 
+developed 
+and 
+emerging 
+markets. In 
+most 
+countries, 
+these 
+in- 
+dexes 
+represent 
+a 
+very 
+large 
+percentage 
+of 
+total 
+market 
+capitalization 
+To 
+match 
+the 
+time 
+period 
+of 
+our 
+political risk 
+data, 
+the 
+sample 
+period 
+starts 
+in 
+January 
+1985 
+for 
+each 
+country 
+except 
+Portugal 
+(2/86), 
+Turkey 
+(1/87), 
+Finland 
+(1/88), 
+Ireland 
+(1/88), 
+New 
+Zealand 
+(1/88), 
+India 
+(2/90), 
+Sri 
+Lanka 
+(10/93), 
+peru 
+(10/93), 
+Hungary 
+(1/94), 
+and 
+Poland 
+(1/94). Figure 
+1. Po!~cal 
+Risk 
+in 
+Kuwaitand Iraq, Period 
+Surrounding 
+the Gulf 
+War Low 
+75 
+Risk 
+65 55 .~ 45 ~ 
+35 25 
+High 
+Risk 
+15 . 
+ 
+..° 
+ 
+..... 
+   
+-* 
+...... 
+-- 
+. 
+   
+" 
+* 
+.. 
+ Kuwait . 
+." 
+ 
+,.,o,, . .,," 
+, 
+....... 
+, 
+.~.. 
+, 
+, . 
+Desert Storm Pulls 
+_____~-, 
+~ ~ ~ 
+Out 
+of 
+Kuwait 
+~/~ 
+/ 
+Iraq 
+~" 
+~-~I 
+J" 
+t 
+Invasion 
+of 
+Kuwait ~  | I I I I I /" I I 85 86 
+87 
+88 89 90 
+91 
+92 93 94 95 Source: ICRG. 72 
+Financial 
+Analysts 
+Joumal: 
+May/June 
+1996 
+
+Table 
+1. 
+Summary 
+Statistics: 
+Political 
+Risk 
+and 
+Stock 
+Retums, 
+Quarterly, 
+January 
+1985-June 
+1995 
+
+Politicai 
+Risk 
+
+Monthly 
+Returns 
+(%) 
+
+Standard Average 
+Deviation 
+of 
+Standard Country 
+Average 
+Change 
+the 
+Change 
+Average 
+Deviation 
+Minimum 
+
+Maximum 
+
+Developed Hong 
+Kong 
+67.1 
+0.17 
+2.20 
+2.4 
+8.4 
+-43.4 
+27.5 Spain 
+7i 
+.3 
+0.07 
+1.69 
+1.8 
+7.5 
+-20.6 
+26.7 Italy 
+73.6 
+-0.17 
+1.51 
+1.6 
+8.1 
+-18.6 
+31.0 Singapore 
+78.7 
+-0.15 
+1.37 
+1.5 
+7.4 
+--41.3 
+22.3 Ireland 
+78.8 
+-0.02 
+1.74 
+1.2 
+6.4 
+-17.7 
+18.4 France 
+79.3 
+0.00 
+1.22 
+1.8 
+6.7 
+-18.4 
+21.0 Belgium 
+79.5 
+-0.12 
+1.54 
+2.1 
+6.0 
+-18.9 
+26.8 United 
+Kingdom 
+80.1 
+-0.17 
+2.05 
+1.6 
+6.2 
+-21.5 
+16.0 Australia 
+80.3 
+-0.34 
+1.96 
+1.5 
+7.6 
+-44.5 
+18.0 United 
+States 
+81.8 
+-0.22 
+1.46 
+!.3 
+4.3 
+-21.2 
+13.3 Canada 
+82.5 
+-0.05 
+1.18 
+0.8 
+4.6 
+-22.0 
+14.1 Germany 
+82.9 
+-0.05 
+1.48 
+1.7 
+6.8 
+-17.6 
+20.2 Japan 
+84.4 
+-0.22 
+1.89 
+1.5 
+7.8 
+-19.4 
+24.3 New 
+Zealand 
+84.4 
+-0.15 
+1.22 
+0.8 
+7.3 
+-15.8 
+27.7 Sweden 
+84.6 
+-0.20 
+1.14 
+1+9 
+6.9 
+-21.4 
+17.2 Norway 
+84.8 
+-0.27 
+1.40 
+1.5 
+7.6 
+-27.8 
+15.9 Denmark 
+85.3 
+-0.20 
+0.93 
+1.5 
+5.9 
+-11.8 
+21.3 Netherlands 
+86.3 
+-0.15 
+0.76 
+1.8 
+4.5 
+-17.4 
+12.2 Austria 
+86.4 
+-0.20 
+1.49 
+2.1 
+8.2 
+-23.3 
+28.1 Finland 
+87.5 
+-0.20 
+0.95 
+1.0 
+7.8 
+-18.8 
+24.6 Switzerland 
+91.5 
+-0.29 
+0.93 
+1.9 
+5.5 
+-17.6 
+16.7 MSCI 
+index 
+82.4 
+-0.07 
+0.60 
+i.3 
+4.3 
+-17.0 
+11.8 
+
+Emerging: 
+Latin 
+America Peru 
+42.7 
+0.29 
+2.91 
+4.0 
+13.5 
+-18.6 
+32.6 Colombia 
+57.9 
+-0.02 
+1.29 
+3.2 
+9.0 
+-17.5 
+37.3 Chile 
+59.6 
+0.73 
+1.64 
+3.8 
+8.1 
+-19.1 
+21.8 Argentina 
+62.8 
+0.44 
+1.80 
+5.4 
+29.1 
+-65.0 
+178.1 Brazil 
+65.4 
+0.00 
+2.09 
+3.2 
+20.1 
+-56.9 
+57.5 Venezuela 
+66.1 
+-0.02 
+2.71 
+1.8 
+13.2 
+---49.8 
+48.5 Mexico 
+67.4 
+-0.10 
+2.05 
+3.2 
+13.5 
+-59.3 
+39.6 Latin 
+index 
+65.5 
+0.02 
+0.66 
+2.3 
+10.7 
+-29.6 
+37.3 
+
+Emerging: 
+Asia Pakistan 
+40.0 
+0.41 
+2.42 
+1.5 
+7.0 
+-15.8 
+35.3 Sri 
+Lanka 
+40.2 
+0.37 
+2.37 
+0.1 
+10.9 
+-16.3 
+21.6 Philippines 
+46.3 
+0.68 
+2.80 
+3.6 
+10.8 
+-29.3 
+42.4 India 
+48.6 
+0.41 
+2.99 
+1.6 
+9.8 
+-24.4 
+35.3 Indonesia 
+50.3 
+0.34 
+1.77 
+0.3 
+9.3 
+-20.9 
+19.6 Thailand 
+59.8 
+0.15 
+1.74 
+2.7 
+9.0 
+-33.8 
+33.0 Korea 
+67.0 
+0.28 
+2.37 
+1.9 
+8.4 
+-19.2 
+26.6 Malaysia 
+67.2 
+0.12 
+1.79 
+1.9 
+7.2 
+-15.6 
+20.9 Taiwan 
+76.3 
+0.00 
+1.53 
+2.8 
+14.7 
+-35.5 
+53.3 Asia 
+index 
+66.2 
+0.10 
+1.00 
+1.9 
+7.5 
+-23.4 
+24.5 
+
+Emerging: 
+Europe/Mideast/Africa 
+(EMA) 
+
+Nigeria 
+47.5 
+0.27 
+1.55 
+1.1 
+15.7 
+-70.2 
+99.5 Jordan 
+51.7 
+0.51 
+3.37 
+0.8 
+5.0 
+-12.8 
+16.2 Zimbabwe 
+53.8 
+0.63 
+2.26 
+2.5 
+9.6 
+-23.0 
+45.0 Turkey 
+55.3 
+0.05 
+3.25 
+3.7 
+20.9 
+-31.5 
+69.3 Poland 
+60.4 
+0.63 
+1.61 
+-1.2 
+21.6 
+-31.7 
+39.2 Greece 
+63.5 
+0.27 
+1.69 
+2.3 
+12.3 
+-30.8 
+58.6 Porl~ugal 
+71.6 
+0.17 
+1.88 
+2.7 
+12.8 
+-29.3 
+70.8 Hungary 
+73.1 
+0.02 
+1.59 
+-1.0 
+14.2 
+-23.3 
+44.1 EMA 
+index 
+59.3 
+0.16 
+1.20 
+1.3 
+8.8 
+-16.6 
+33.2 
+
+IFC 
+index 
+65.5 
+0.12 
+0.88 
+1.3 
+6.7 
+-25.2 
+19.4 
+
+Notes: 
+The 
+index 
+returns 
+for 
+the 
+emerging 
+market 
+regions 
+are 
+capitalization 
+weighted. 
+The 
+MSCI 
+and 
+IFC 
+index 
+returns 
+are 
+based 
+on their 
+published 
+indexes. 
+The 
+index 
+political 
+risk 
+data 
+are 
+capitalization 
+weighted. Sources: 
+Developing 
+market 
+returns--MSCI; 
+emerging 
+market 
+returns--IFC; 
+political 
+risk--ICRG. 
+
+Finandal 
+Ana/ysl:s 
+Joumal: 
+May/June 
+1996 
+
+73 
+
+Table 
+I 
+shows 
+the 
+average, 
+standard 
+deviation, minimum, 
+and 
+maximum 
+for 
+each 
+country's monthly 
+return. 
+These 
+data 
+confirm 
+the 
+common knowledge 
+that 
+emerging 
+market 
+returns 
+are 
+more volatile 
+and 
+produce 
+more 
+extreme 
+observations than 
+returns 
+in 
+developed 
+markets. 
+Most 
+emerging stock 
+markets 
+have 
+standard 
+deviations 
+greater than 
+10 
+percent 
+a 
+month, 
+at 
+least 
+one 
+monthly 
+loss greater 
+than 
+20 
+percent, 
+and 
+at 
+least 
+one 
+monthly gain 
+that 
+exceeds 
+35 
+percent. 
+Among 
+the 
+emerging market 
+regions, 
+Latin 
+America 
+has 
+produced 
+the highest 
+standard 
+deviation 
+(10.7 
+percent), 
+largest monthly 
+loss 
+(-29.6 
+percent), 
+and 
+largest 
+monthly gain 
+(37.3 
+percent). 
+The 
+region's 
+impressive 
+vola- tilities 
+are 
+driven 
+largely 
+by 
+Argentina 
+and 
+Brazil, which 
+even 
+by 
+emerging 
+market 
+standards, 
+stand out 
+as 
+remarkably 
+volatile. The 
+information 
+in 
+Table 
+I 
+hints 
+at 
+a 
+risk-based story 
+for 
+the 
+high 
+positive 
+and 
+volatile 
+returns 
+in many 
+emerging 
+markets. 
+The 
+overall 
+decrease 
+in emerging 
+market 
+political 
+risk 
+may 
+explain 
+the magnitude 
+and 
+sign 
+of 
+average 
+returns, 
+and 
+the large 
+risk 
+changes 
+may 
+explain 
+the 
+high 
+volatility. The 
+overall 
+increase 
+in 
+developed 
+market 
+political risk, 
+however, 
+coupled 
+with 
+the 
+positive 
+average returns 
+in 
+these 
+markets, 
+implies 
+that 
+factors 
+be- sides 
+changes 
+in 
+political 
+risk 
+explain 
+developed market 
+stock 
+returns. 
+The 
+central 
+question 
+is: 
+Are cross-sectional 
+differences 
+in 
+stock 
+returns 
+driven by 
+changes 
+in 
+political 
+risk? 
+
+CHANGES 
+IN 
+POLITICAL 
+RISK 
+AND EMERGING 
+MARKET 
+RETURNS We 
+divided 
+our 
+sample 
+of 
+countries 
+into 
+two 
+cate- gories 
+(emerging 
+markets 
+and 
+developed 
+markets) based 
+on 
+their 
+classification 
+by 
+IFC 
+and 
+MSCI. 
+For each 
+category 
+and 
+each 
+calendar 
+quarter, 
+we formed 
+two 
+portfolios. 
+The 
+first 
+portfolio 
+contains the 
+countries 
+that 
+experienced 
+downgrades 
+(in- creases 
+in 
+political 
+risk), 
+and 
+the 
+second 
+portfolio contains 
+those 
+that 
+experienced 
+upgrades 
+(de- 
+
+creases 
+in 
+risk). 
+We 
+then 
+calculated 
+portfolio 
+re- turns 
+by 
+weighting 
+each 
+country's 
+return 
+by 
+the absolute 
+value 
+of 
+its 
+contemporaneous 
+percentage risk 
+change. 
+Thus, 
+countries 
+experiencing 
+large risk 
+changes 
+receive 
+more 
+weight 
+than 
+those 
+expe- riencing 
+small 
+risk 
+changes. 
+2 
+We 
+repeated 
+this 
+pro- cedure 
+for 
+each 
+quarter 
+to 
+obtain 
+a 
+time 
+series 
+of returns 
+to 
+each 
+portfolio. For 
+both 
+emerging 
+and 
+developed 
+markets, Table 
+2 
+shows 
+the 
+average 
+return, 
+t-statistic, 
+and the 
+average 
+political 
+risk 
+change 
+for 
+the 
+following four 
+portfolios:  
+Portfolio 
+1: 
+upgrade  
+Portfolio 
+2: 
+benchmark 
+index  
+Portfolio 
+3: 
+downgrade  
+Portfolio 
+4: 
+upgrade 
+minus 
+downgrade 
+(Port- folio 
+I 
+minus 
+Portfolio 
+3) The 
+average 
+return 
+on 
+the 
+upgrade 
+portfolio exceeds 
+that 
+of 
+the 
+benchmark 
+and 
+the 
+downgrade portfolio 
+both 
+for 
+developed 
+and 
+for 
+emerging markets. 
+In 
+emerging 
+markets, 
+returns 
+on 
+the 
+up- grade 
+portfolio 
+exceed 
+those 
+of 
+the 
+benchmark 
+by more 
+than 
+8 
+percent 
+a 
+quarter 
+and 
+those 
+of 
+the downgrade 
+portfolio 
+by 
+more 
+than 
+11 
+percent 
+a quarter. 
+These 
+differences 
+are 
+far 
+less 
+dramatic 
+in developed 
+markets, 
+where 
+returns 
+on 
+the 
+upgrade portfolio 
+exceed 
+those 
+of 
+both 
+the 
+benchmark 
+and the 
+downgrade 
+portfolio 
+by 
+less 
+than 
+3 
+percent 
+a quarter. The 
+upgrade 
+minus 
+downgrade 
+portfolio (Portfolio 
+4) 
+returns 
+are 
+strongly 
+statistically 
+sig- nificant 
+in 
+emerging 
+markets 
+(t 
+= 
+3.90) 
+but 
+are 
+only marginally 
+significant 
+in 
+developed 
+markets 
+(t 
+= 1.84). 
+This 
+evidence 
+suggests 
+that 
+changes 
+in 
+politi- cal 
+risk 
+clearly 
+help 
+explain 
+the 
+cross-section 
+of country 
+returns 
+in 
+emerging 
+markets 
+but 
+only 
+mar- ginally 
+help 
+explain 
+them 
+in 
+developed 
+markets. Table 
+2 
+also 
+shows 
+that 
+emerging 
+markets 
+pro- duce 
+larger 
+average 
+political 
+risk 
+changes 
+than developed 
+markets. 
+This 
+difference, 
+however, (4.02 
+emerging 
+versus 
+3.34 
+developed) 
+does 
+not fully 
+explain 
+the 
+larger 
+average 
+quarterly 
+return 
+to 
+
+Table 
+2. 
+
+Portfolio 
+
+Changing 
+Political 
+Risk 
+and 
+Stock 
+Retums, 
+Quarterly, 
+January 
+1985-June 
+1995 Emerging 
+Markets 
+Developed 
+Markets Average Average 
+Return 
+Change 
+in 
+Average 
+Return (% 
+/ 
+quarter) 
+t-Statistic 
+Risk 
+(%/quarter) 
+t-Statistic 
+
+Average Change 
+in Risk 
+
+1. 
+Upgrade 
+12.42 
+4.54 
+2.23 
+6.44 
+4.64 
+1.62 2. 
+Benchmark 
+3.92 
+1.65 
+0.30 
+3.94 
+3.12 
+-0.14 3. 
+Downgrade 
+1.14 
+0.51 
+-1.79 
+3.90 
+3.24 
+-1.72 4. 
+Upgrade 
+minus downgrade 
+11.28 
+3.90 
+4.02 
+2.46 
+1.84 
+3.34 Notes: 
+The 
+upgrade 
+(downgrade) 
+risk 
+portfolio 
+consists 
+of 
+countries 
+whose 
+political 
+risk 
+decreased 
+(increased) 
+over 
+the 
+period. 
+The average 
+change 
+in 
+risk 
+is 
+the 
+equal-weight 
+average 
+quarterly 
+change 
+in 
+political 
+risk 
+for 
+each 
+country 
+in 
+the 
+portfolio 
+over 
+the 
+full sample 
+period. 
+Within 
+each 
+portfolio, 
+returns 
+are 
+weighted 
+by 
+their 
+percent 
+change 
+in 
+political 
+risk. Sources: 
+Developed 
+market 
+benchrnark--MSCI 
+World 
+Index; 
+emerging 
+market 
+benchmark--IFC 
+Index; 
+risk--ICRG. 
+
+74 
+
+Financial 
+Analysts 
+Joumal: 
+May/June 
+1996 
+
+Portfolio 
+4 
+in 
+emerging 
+versus 
+developed 
+markets (11.28 
+percent 
+versus 
+2.46 
+percent). 
+Emerging 
+mar- ket 
+returns 
+are 
+also 
+more 
+sensitive 
+than 
+developed market 
+returns 
+to 
+a 
+given 
+change 
+in 
+political 
+risk. In 
+Portfolio 
+4, 
+the 
+average 
+quarterly 
+return 
+per 
+unit of 
+political 
+risk 
+change 
+in 
+emerging 
+markets 
+(11.28 percent/4.02 
+= 
+2.81 
+percent) 
+exceeds 
+that 
+in 
+devel- oped 
+markets 
+(2.46 
+percent/3.34 
+= 
+0.74 
+percent). Thus, 
+the 
+magnitude 
+of 
+political 
+risk 
+changes 
+and the 
+sensitivity 
+of 
+stock 
+returns 
+to 
+a 
+given 
+change 
+in political 
+risk 
+are 
+both 
+larger 
+in 
+emerging 
+than 
+in developed 
+markets. Table 
+3 
+shows 
+the 
+results 
+of 
+testing 
+the 
+dif- ferential 
+impact 
+of 
+changes 
+in 
+political 
+risk 
+be- tween 
+emerging 
+and 
+developed 
+markets 
+for statistical 
+significance. 
+We 
+subtracted 
+the 
+devel- oped 
+market 
+portfolio 
+return 
+from 
+the 
+emerging market 
+portfolio 
+return 
+for 
+each 
+set 
+of 
+portfolios in 
+Table 
+2. 
+For 
+the 
+set 
+of 
+upgrade 
+portfolios, emerging 
+market 
+average 
+returns 
+exceed 
+those in 
+developed 
+markets 
+by 
+almost 
+6 
+percent 
+a 
+quar- ter 
+(t 
+= 
+2.36). 
+For 
+the 
+set 
+of 
+increasing-risk 
+portfo- lios, 
+emerging 
+market 
+average 
+returns 
+fall 
+below those 
+in 
+developed 
+markets 
+by 
+almost 
+3 
+percent 
+a quarter, 
+although 
+the 
+difference 
+is 
+not 
+statistically significant 
+(t 
+= 
+-1.37). 
+The 
+bottom-line 
+result 
+from Table 
+3 
+shows 
+that 
+the 
+differential 
+impact 
+of 
+politi- cal 
+risk 
+changes 
+between 
+emerging 
+and 
+developed markets 
+is 
+economically 
+and 
+statistically 
+signifi- cant. 
+The 
+average 
+return 
+difference 
+between 
+Port- folio 
+4 
+for 
+emerging 
+markets 
+and 
+Portfolio 
+4 
+for developed 
+markets 
+is 
+almost 
+9 
+percent 
+a 
+quarter, with 
+a 
+t-statistic 
+of 
+2.72. Taken 
+together, 
+Tables 
+2 
+and 
+3 
+support 
+the hypotheses 
+that 
+political 
+risk 
+is 
+an 
+important 
+deter- minant 
+of 
+stock 
+returns 
+in 
+emerging 
+markets 
+and that 
+political 
+risk 
+affects 
+stock 
+returns 
+more 
+in emerging 
+than 
+in 
+developed 
+markets. 
+
+CONCLUSION This 
+paper 
+quantifies 
+the 
+importance 
+of 
+political risk 
+in 
+emerging 
+and 
+developed 
+markets. 
+Our 
+two main 
+results 
+are 
+easily 
+summarized. 
+
+Table 
+3. 
+
+Comparal~ve 
+Effects 
+of 
+Changing 
+Political Risk 
+on 
+Emerging 
+and 
+Developed 
+Stock Returns, 
+Quarterly, 
+January 
+1985-June 1995 
+
+Difference 
+in 
+Average Returns 
+(Emerging- Portfolio 
+Developed, 
+%/quarter) 
+t-Statistic 
+
+1. 
+Upgrade 
+5.98 
+2.36 2. 
+Benchmark 
+--0.02 
+--0.01 3. 
+Downgrade 
+-2.84 
+-1.37 4. 
+Upgrade 
+minus downgrade 
+8.82 
+2.72 
+
+Note: 
+See 
+Table 
+2. 
+
+ 
+Changes 
+in 
+political 
+risk 
+have 
+a 
+bigger 
+impact on 
+emerging 
+market 
+returns 
+than 
+on 
+devel- oped 
+market 
+returns. 
+The 
+average 
+difference 
+in returns 
+between 
+emerging 
+markets 
+experienc- ing 
+political 
+risk 
+upgrades 
+and 
+those 
+experi- encing 
+political 
+risk 
+downgrades 
+is 
+approxi- mately 
+11 
+percent 
+a 
+quarter. 
+In 
+developed 
+mar- kets, 
+the 
+difference 
+is 
+only 
+2.5 
+percent.  
+During 
+the 
+past 
+10 
+years, 
+we 
+have 
+seen 
+a 
+global convergence 
+in 
+political 
+risk. 
+Emerging 
+mar- kets 
+have 
+become 
+politically 
+safer, 
+and 
+devel- oped 
+markets 
+have 
+become 
+politically 
+riskier. These 
+results 
+suggest 
+several 
+prescriptions. 
+In emerging 
+markets, 
+if 
+one 
+can 
+forecast 
+changes 
+in political 
+risk, 
+one 
+can 
+forecast 
+stock 
+returns. 
+There- fore, 
+emerging 
+market 
+analysts 
+are 
+well 
+advised 
+to devote 
+considerable 
+resources 
+to 
+forecasting 
+politi- cal 
+risk 
+changes. 
+In 
+developed 
+markets, 
+political risk 
+is 
+less 
+important. 
+Developed 
+market 
+analysts are 
+better 
+off 
+devoting 
+resources 
+to 
+forecasting other 
+sources 
+of 
+return 
+such 
+as 
+changes 
+in 
+expected future 
+economic 
+conditions. 
+If 
+global 
+political 
+risks continue 
+to 
+converge, 
+however, 
+the 
+large 
+differen- tial 
+impact 
+of 
+political 
+risk 
+changes 
+between emerging 
+and 
+developed 
+markets 
+may 
+fade. 
+3 
+
+APPENDIX The 
+International 
+Country 
+Risk 
+Guide 
+model 
+for 
+fore- casting 
+financial, 
+economic, 
+and 
+political 
+risk 
+was created 
+in 
+1980 
+by 
+the 
+editors 
+of 
+International 
+Re- ports. 
+It 
+provides 
+survey 
+measures 
+of 
+current 
+politi- cal, 
+financial, 
+and 
+economic 
+risk. 
+Banks, 
+multina- tional 
+corporations, 
+importers, 
+and 
+exporters, among 
+others, 
+use 
+the 
+ICRG 
+model 
+to 
+determine the 
+risks 
+of 
+operating 
+in, 
+investing 
+in, 
+or 
+lending 
+to particular 
+countries. The 
+combined 
+political 
+risk 
+score 
+rates 
+coun- tries 
+on 
+a 
+scale 
+from 
+1 
+to 
+100 
+and 
+consists 
+of 
+the following 
+13 
+components, 
+each 
+assigned 
+a 
+maxi- mum 
+numerical 
+weighting.  
+Economic 
+Expectations 
+versus 
+Reality 
+(12 
+per- cent) 
+measures 
+the 
+perceived 
+gap 
+between popular 
+aspirations 
+for 
+higher 
+standards 
+of living 
+and 
+the 
+ability 
+or 
+willingness 
+of 
+the government 
+to 
+deliver 
+improvements 
+in 
+in- come 
+and 
+welfare.  
+Economic 
+Planning 
+Failures 
+(12 
+percent) 
+meas- ures 
+business 
+support 
+for 
+the 
+current 
+govern- ment 
+and 
+the 
+ability 
+of 
+the 
+government 
+to adopt 
+a 
+suitable 
+and 
+successful 
+economic 
+strat- egy.  
+Political 
+Leadership 
+(12 
+percent) 
+assesses 
+the 
+vi- ability 
+of 
+the 
+current 
+government 
+based 
+on 
+the degree 
+of 
+stability 
+of 
+the 
+regime 
+and 
+its 
+leader, the 
+probability 
+of 
+the 
+effective 
+survival 
+of 
+the government, 
+and 
+the 
+continuation 
+of 
+its 
+poli- cies 
+if 
+the 
+current 
+leader 
+dies 
+or 
+is 
+replaced. 
+
+Financial 
+Analysts 
+Joumal: 
+May/June 
+1996 
+
+75 
+
+ 
+External 
+Conjqict 
+(10 
+percent) 
+measures 
+conflict based 
+on 
+the 
+probability 
+of 
+external 
+invasion, border 
+threats, 
+geopolitical 
+disputes, 
+and 
+full- scale 
+war.  
+Corruption 
+in 
+Government 
+(10 
+percent) 
+assesses corruption 
+risk 
+by 
+looking 
+at 
+how 
+long 
+a 
+gov- ernment 
+has 
+been 
+in 
+continuous 
+power, whether 
+a 
+large 
+number 
+of 
+the 
+officials 
+are appointed 
+or 
+elected, 
+and 
+the 
+frequency 
+of bribe 
+demands.  
+Military 
+in 
+Politics 
+(6 
+percent) 
+reflects 
+the 
+like- lihood 
+of 
+military 
+takeover 
+and 
+the 
+degree 
+of military 
+control 
+over 
+government 
+and 
+govern- mental 
+policies.  
+Law 
+and 
+Order 
+Tradition 
+(6 
+percent) 
+reflects 
+the degree 
+to 
+which 
+citizens 
+of 
+a 
+country 
+are 
+will- ing 
+to 
+accept 
+the 
+established 
+institutions 
+to make 
+and 
+implement 
+laws, 
+the 
+strength 
+of 
+the court 
+system, 
+and 
+provisions 
+for 
+an 
+orderly succession 
+of 
+power.  
+Racial 
+and 
+Nationality 
+Tensions 
+(6 
+percent) measures 
+the 
+degree 
+of 
+tension 
+within 
+a 
+coun- try 
+that 
+is 
+attributable 
+to 
+racial, 
+nationality, 
+or language 
+divisions 
+and 
+the 
+extent 
+that 
+oppos- 
+
+ing 
+groups 
+are 
+intolerant 
+or 
+unwilling 
+to 
+com- promise.  
+Organized 
+Religion 
+in 
+Politics 
+(6 
+percent) 
+meas- ures 
+the 
+degree 
+to 
+which 
+religious 
+groups 
+con- trol 
+the 
+government 
+and 
+governmental 
+poli- cies.  
+Political 
+Terrorism 
+(6 
+percent) 
+measures 
+the 
+ex- tent 
+to 
+which 
+dissidence 
+is 
+expressed 
+through political 
+terrorism, 
+such 
+as 
+armed 
+attacks, guerrilla 
+activity, 
+or 
+attempted 
+assassinations.  
+Civil 
+War 
+Risks 
+(6 
+percent) 
+measures 
+the 
+prob- ability 
+that 
+terrorist 
+opposition 
+to 
+a 
+govern- ment 
+or 
+to 
+its 
+policies 
+will 
+turn 
+into 
+a 
+violent internal 
+political 
+conflict.  
+Political 
+Party 
+Development 
+(6 
+percent) 
+meas- ures 
+broad-based 
+political 
+participation 
+in 
+the determination 
+of 
+changes 
+in 
+governments 
+and in 
+the 
+formulation 
+of 
+government 
+policies.  
+Quality 
+of 
+Bureaucracy 
+(6 
+percent) 
+measures 
+in- stitutional 
+strength, 
+the 
+quality 
+of 
+the 
+bureauc- racy, 
+and 
+the 
+expertise 
+to 
+govern 
+without 
+dras- tic 
+changes 
+and 
+policy 
+interruptions 
+in 
+govern- ment 
+services. 
+
+NOTES 
+
+We 
+used 
+quarterly, 
+as 
+opposed 
+to 
+monthly, 
+changes 
+for 
+two reasons. 
+First, 
+ICRG's 
+political 
+risk 
+measure 
+changes 
+slowly over 
+time. 
+In 
+many 
+cases, 
+a 
+country 
+may 
+not 
+experience 
+a political 
+risk 
+change 
+during 
+a 
+single 
+month, 
+but 
+during 
+any quarter, 
+virtually 
+all 
+countries 
+experience 
+changes. 
+Second, the 
+substantial 
+first-order 
+autocorrelation 
+observed 
+in monthly 
+stock 
+returns 
+for 
+many 
+emerging 
+markets 
+suggests that 
+nonsynchronous 
+trading 
+contaminates 
+the 
+monthly 
+re- 
+
+turn 
+data. 
+The 
+use 
+of 
+quarterly 
+return 
+data 
+mitigates 
+this problem. We 
+obtained 
+similar 
+results 
+with 
+equal-weight 
+portfolios. The 
+con~nents 
+of 
+Cliff 
+Asness, 
+Rick 
+Buckholtz, 
+Kent 
+Clark, Britt 
+Harris, 
+Brian 
+Hurst, 
+Antti 
+Ilmanen, 
+Bob 
+Krail, 
+Burt Porter, 
+Rebecca 
+Runkle, 
+and 
+Ingrid 
+Tierens 
+are 
+gratefully acknowledged. 
+We 
+also 
+thank 
+Laurel 
+Fraser 
+and 
+Taro 
+Ha- rano 
+for 
+research 
+assistance. 
+
+76 
+
+Financial 
+Analysts 
+Joumal: 
+May/June 
+1996 
+
+Political Risk in Emergi
+ng and Developed Markets 
+Copyright 1996, CFA Institute. Reproduced and republished from 
+Financial Analysts Journal
+ with permission from CFA 
+Institute. All rights reserved. 

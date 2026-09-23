@@ -1,0 +1,16 @@
+#!/bin/bash
+# Pre-commit guards. Both are exec'd in sequence; the first non-zero stops the commit.
+#
+# 1. Money-path guard (GAP 134): refuses ssh-context .py tramples and marker-stripping staged
+#    changes. See scripts/moneypath_precommit_guard.py. The content fence's own repair commits
+#    use --no-verify and skip this by design.
+# 2. Protected-record guard (2026-08-29): refuses a staged change that DELETES records from a
+#    ledger listed in libs/ops/protected_artifacts.py. That list existed, named
+#    docs/GAP_REGISTER.md, and predicted this failure in its own docstring -- and its only
+#    enforcer was the pytest conftest, which an automated snapshot commit from another box never
+#    runs. On 2026-08-29 such a commit deleted 87 gap rows. Override with
+#    ALLOW_PROTECTED_RECORD_LOSS=1 when a retirement is deliberate.
+PY=.venv/bin/python
+[ -x "$PY" ] || PY=python3
+"$PY" scripts/moneypath_precommit_guard.py || exit $?
+exec "$PY" scripts/check_protected_records.py

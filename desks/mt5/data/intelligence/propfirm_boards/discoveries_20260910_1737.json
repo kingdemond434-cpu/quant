@@ -1,0 +1,12 @@
+[
+ {
+  "source": "propfirm_boards",
+  "kind": "fetch_error",
+  "title": "('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))",
+  "url": "",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-10T17:43:20+00:00",
+  "needs_selector_work": true
+ }
+]

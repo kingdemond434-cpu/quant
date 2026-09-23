@@ -1,0 +1,865 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Statistics &#8211; Quant Fiction",
+  "url": "https://quantfiction.com/tag/statistics/",
+  "published": "2026-09-03T18:13:18+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "seasonality"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "041a5c142c7d4fe0c748",
+  "host": "quantfiction.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "How do I access World Development Indicators (WDI) online tables? \u2013 World Bank Data Help Desk",
+  "url": "https://datahelpdesk.worldbank.org/knowledgebase/articles/191128-how-do-i-access-world-development-indicators-wdi",
+  "published": "2026-09-03T18:13:19+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "55690e027e579ba2bdba",
+  "host": "datahelpdesk.worldbank.org"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u5927\u5b97\u4ea4\u6613\u9996\u9875 _ \u4e1c\u65b9\u8d22\u5bcc\u7f51_ \u6570\u636e\u9891\u9053",
+  "url": "http://js1.eastmoney.com/tg.aspx?ID=731",
+  "published": "2026-09-03T18:13:23+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "zh_CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "9b471c868c1a9e3e9f19",
+  "host": "js1.eastmoney.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "World Development Indicators (WDI) \u2013 World Bank Data Help Desk",
+  "url": "https://datahelpdesk.worldbank.org/knowledgebase/topics/19286-world-development-indicators-wdi",
+  "published": "2026-09-03T18:13:24+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "952fcfa7b1ceaa51a074",
+  "host": "datahelpdesk.worldbank.org"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u5916\u6c47(waihui)\u80a1\u5427_\u5916\u6c47\u600e\u4e48\u6837_\u5206\u6790\u8ba8\u8bba\u793e\u533a\u2014\u4e1c\u65b9\u8d22\u5bcc\u7f51",
+  "url": "http://guba.eastmoney.com/list,waihui.html",
+  "published": "2026-09-03T18:13:26+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "4e85b741d5b26defb69c",
+  "host": "guba.eastmoney.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "How does the World Bank code its indicators? \u2013 World Bank Data Help Desk",
+  "url": "https://datahelpdesk.worldbank.org/knowledgebase/articles/201175-how-does-the-world-bank-code-its-indicators",
+  "published": "2026-09-03T18:13:27+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "http://databank.worldbank.org/data/download/site-content/WDI_CETS.xls"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "a1162803acc1b5078d38",
+  "host": "datahelpdesk.worldbank.org"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "_\u5916\u6c47(waihui)\u80a1\u5427_\u4e1c\u65b9\u8d22\u5bcc\u7f51\u80a1\u5427",
+  "url": "http://guba.eastmoney.com/news,waihui,1768527825.html",
+  "published": "2026-09-03T18:13:28+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "87bda580bb103a381906",
+  "host": "guba.eastmoney.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Data Mining: Theories, Algorithms, and Examples - 1st Edition - Nong Y",
+  "url": "https://www.crcpress.com/Data-Mining-Theories-Algorithms-and-Examples/Ye/p/book/9781439808382",
+  "published": "2026-09-03T18:13:29+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "6c831e4209c71e03eece",
+  "host": "www.crcpress.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "LBMA Precious Metal Prices | LBMA",
+  "url": "https://www.lbma.org.uk/prices-and-data",
+  "published": "2026-09-03T18:13:31+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1M",
+   "DAILY"
+  ],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.75,
+  "lang": "en-GB",
+  "endpoints": [
+   "https://www.lbma.org.uk/humans.txt"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "d0d91c2b7b582076e9c3",
+  "host": "www.lbma.org.uk"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "TrueFX Downloads &#8211; TrueFX",
+  "url": "https://www.truefx.com/truefx-historical-downloads/",
+  "published": "2026-09-03T18:13:32+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "224b0fdd52addb8b5da3",
+  "host": "www.truefx.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u5168\u7403\u8d22\u7ecf\u5feb\u8baf_\u4e1c\u65b9\u8d22\u5bcc\u7f51",
+  "url": "https://kuaixun.eastmoney.com/wh.html",
+  "published": "2026-09-03T18:13:34+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "efb0f05be99425afd7f6",
+  "host": "kuaixun.eastmoney.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Cabinet",
+  "url": "https://eu-live.dukascopy.com/cabinet/trader/auth/forgot",
+  "published": "2026-09-03T18:13:34+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://eu-live.dukascopy.com/cabinet/trader/auth/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "8d82b186094b9a0c641e",
+  "host": "eu-live.dukascopy.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u884c\u60c5\u4e2d\u5fc3\uff1a\u56fd\u5185\u5feb\u6377\u5168\u9762\u7684\u80a1\u7968\u3001\u57fa\u91d1\u3001\u671f\u8d27\u3001\u7f8e\u80a1\u3001\u6e2f\u80a1\u3001\u5916\u6c47\u3001\u9ec4\u91d1\u3001\u503a\u5238\u884c\u60c5\u7cfb\u7edf_\u4e1c\u65b9\u8d22\u5bcc\u7f51",
+  "url": "https://js1.eastmoney.com/tg.aspx?ID=667",
+  "published": "2026-09-03T18:13:36+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "fbbb934a2d5fd23f099f",
+  "host": "js1.eastmoney.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u884c\u60c5\u4e2d\u5fc3\uff1a\u56fd\u5185\u5feb\u6377\u5168\u9762\u7684\u80a1\u7968\u3001\u57fa\u91d1\u3001\u671f\u8d27\u3001\u7f8e\u80a1\u3001\u6e2f\u80a1\u3001\u5916\u6c47\u3001\u9ec4\u91d1\u3001\u503a\u5238\u884c\u60c5\u7cfb\u7edf_\u4e1c\u65b9\u8d22\u5bcc\u7f51",
+  "url": "http://js1.eastmoney.com/tg.aspx?ID=667",
+  "published": "2026-09-03T18:13:37+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "fbbb934a2d5fd23f099f",
+  "host": "js1.eastmoney.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u5927\u5b97\u4ea4\u6613\u9996\u9875 _ \u4e1c\u65b9\u8d22\u5bcc\u7f51_ \u6570\u636e\u9891\u9053",
+  "url": "https://acttg.eastmoney.com/pub/web_dfcfsy_wzl_dhl_03_01_14_0",
+  "published": "2026-09-03T18:13:40+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "zh_CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "dd9cc1570e42fd7094c0",
+  "host": "acttg.eastmoney.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Cabinet",
+  "url": "https://live-login.dukascopy.com/cabinet/trader/?lang=en",
+  "published": "2026-09-03T18:13:40+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://live-login.dukascopy.com/cabinet/trader/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "933f362eda721a2aac4e",
+  "host": "live-login.dukascopy.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Cabinet",
+  "url": "https://live-login.dukascopy.com/cabinet/trader/auth/forgot",
+  "published": "2026-09-03T18:13:42+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://live-login.dukascopy.com/cabinet/trader/auth/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "c2443c1fd0babe8c8adf",
+  "host": "live-login.dukascopy.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Country Engagement",
+  "url": "http://www.worldbank.org/en/projects-operations/country-strategies",
+  "published": "2026-09-03T18:13:43+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "1054646e166ff3a644e7",
+  "host": "www.worldbank.org"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u884c\u60c5\u4e2d\u5fc3\uff1a\u56fd\u5185\u5feb\u6377\u5168\u9762\u7684\u80a1\u7968\u3001\u57fa\u91d1\u3001\u671f\u8d27\u3001\u7f8e\u80a1\u3001\u6e2f\u80a1\u3001\u5916\u6c47\u3001\u9ec4\u91d1\u3001\u503a\u5238\u884c\u60c5\u7cfb\u7edf_\u4e1c\u65b9\u8d22\u5bcc\u7f51",
+  "url": "http://acttg.eastmoney.com/pub/web_dfcfsy_wzl_dhl_02_01_19_0",
+  "published": "2026-09-03T18:13:44+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "7ae91319266fc398029f",
+  "host": "acttg.eastmoney.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Opendata - U.S. Energy Information Administration (EIA)",
+  "url": "https://www.eia.gov/opendata/",
+  "published": "2026-09-03T18:13:52+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [
+   "https://www.eia.gov/opendata/bulk/AEO2026.zip",
+   "https://www.eia.gov/opendata/bulk/AEO2025.zip",
+   "https://www.eia.gov/opendata/bulk/AEO2023.zip",
+   "https://www.eia.gov/opendata/bulk/AEO2022.zip",
+   "https://www.eia.gov/opendata/bulk/AEO2021.zip",
+   "https://www.eia.gov/opendata/bulk/AEO2020.zip",
+   "https://www.eia.gov/opendata/bulk/AEO2019.zip",
+   "https://www.eia.gov/opendata/bulk/AEO2018.zip",
+   "https://www.eia.gov/opendata/bulk/AEO2017.zip",
+   "https://www.eia.gov/opendata/bulk/AEO2016.zip",
+   "https://www.eia.gov/opendata/bulk/AEO2015.zip",
+   "https://www.eia.gov/opendata/bulk/AEO2014.zip",
+   "https://www.eia.gov/opendata/bulk/COAL.zip",
+   "https://www.eia.gov/opendata/bulk/PET_IMPORTS.zip",
+   "https://www.eia.gov/opendata/bulk/EBA.zip",
+   "https://www.eia.gov/opendata/bulk/EBA-pre2019.zip",
+   "https://www.eia.gov/opendata/bulk/ELEC.zip",
+   "https://www.eia.gov/opendata/bulk/EMISS.zip",
+   "https://www.eia.gov/opendata/bulk/EMISS-old.zip",
+   "https://www.eia.gov/opendata/bulk/IEO.zip",
+   "https://www.eia.gov/opendata/bulk/IEO2023.zip",
+   "https://www.eia.gov/opendata/bulk/IEO2021.zip",
+   "https://www.eia.gov/opendata/bulk/IEO2019.zip",
+   "https://www.eia.gov/opendata/bulk/IEO2017.zip",
+   "https://www.eia.gov/opendata/bulk/INTL.zip",
+   "https://www.eia.gov/opendata/bulk/NG.zip",
+   "https://www.eia.gov/opendata/bulk/NUC_STATUS.zip",
+   "https://www.eia.gov/opendata/bulk/PET.zip",
+   "https://www.eia.gov/opendata/bulk/SEDS.zip",
+   "https://www.eia.gov/opendata/bulk/STEO.zip",
+   "https://www.eia.gov/opendata/bulk/TOTAL.zip",
+   "https://www.eia.gov/opendata/bulk/manifest.txt",
+   "https://www.eia.gov/opendata/browser/coal/exports-imports-quantity-price",
+   "https://www.eia.gov/opendata/browser/densified-biomass/export-sales-and-price",
+   "https://www.eia.gov/beta/api/"
+  ],
+  "n_endpoints": 35,
+  "vault_sha": "8a5a7743d8e965add40b",
+  "host": "www.eia.gov"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Excess VIX: A Predictive Volatility Model &#8211; Quant Fiction",
+  "url": "https://quantfiction.com/2018/02/28/excess-vol/",
+  "published": "2026-09-03T18:13:54+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "correlation",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3d76f426e287a5c7054d",
+  "host": "quantfiction.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "September 2019 &#8211; Quant Fiction",
+  "url": "https://quantfiction.com/2019/09/",
+  "published": "2026-09-03T18:13:55+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "seasonality"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e2308e233a78590d4bf8",
+  "host": "quantfiction.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "August 2019 &#8211; Quant Fiction",
+  "url": "https://quantfiction.com/2019/08/",
+  "published": "2026-09-03T18:13:57+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "seasonality"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "6f04cc2490ddcc281145",
+  "host": "quantfiction.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "December 2018 &#8211; Quant Fiction",
+  "url": "https://quantfiction.com/2018/12/",
+  "published": "2026-09-03T18:13:59+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "seasonality"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "7730888a8f8848368843",
+  "host": "quantfiction.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "September 2018 &#8211; Quant Fiction",
+  "url": "https://quantfiction.com/2018/09/",
+  "published": "2026-09-03T18:14:01+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "seasonality"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a723598aac124e8d9379",
+  "host": "quantfiction.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "August 2018 &#8211; Quant Fiction",
+  "url": "https://quantfiction.com/2018/08/",
+  "published": "2026-09-03T18:14:03+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "seasonality"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3a89469b3ef88ca5246d",
+  "host": "quantfiction.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "API Dashboard - U.S. Energy Information Administration (EIA)",
+  "url": "https://www.eia.gov/opendata/browser/crude-oil-imports",
+  "published": "2026-09-03T18:14:15+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://www.eia.gov/beta/api/"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "800d1294d7e83739a456",
+  "host": "www.eia.gov"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "API Dashboard - U.S. Energy Information Administration (EIA)",
+  "url": "https://www.eia.gov/opendata/browser/coal/exports-imports-quantity-price",
+  "published": "2026-09-03T18:14:27+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://www.eia.gov/beta/api/"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "800d1294d7e83739a456",
+  "host": "www.eia.gov"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Home - Quant For Hire",
+  "url": "https://quantforhire.com/",
+  "published": "2026-09-03T18:14:32+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "89d6f2cdba9c1250c113",
+  "host": "quantforhire.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Quant Trader&#39;s Journey",
+  "url": "https://quantsjourney.blogspot.com/",
+  "published": "2026-09-03T18:14:34+00:00",
+  "symbols": [
+   "EURUSD"
+  ],
+  "timeframes": [
+   "M15"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3890fc03b703ea02cc8a",
+  "host": "quantsjourney.blogspot.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Blog - Quantifiable Edges",
+  "url": "https://quantifiableedges.com/blog/",
+  "published": "2026-09-03T18:14:36+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "correlation",
+   "momentum",
+   "orderflow",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c2ff3f927c1f5eb9184d",
+  "host": "quantifiableedges.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Articles - Quantish",
+  "url": "https://blog.quantish.io/",
+  "published": "2026-09-03T18:14:41+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "breakout",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f09ac5579cfebb10efe8",
+  "host": "blog.quantish.io"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "QuantStrat TradeR | Trading, QuantStrat, R, and more.",
+  "url": "https://quantstrattrader.wordpress.com/",
+  "published": "2026-09-03T18:14:41+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "correlation",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "67fb00b3052a98d05d2d",
+  "host": "quantstrattrader.wordpress.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Quantum Financier &#8211; On algorithmic trading",
+  "url": "https://quantumfinancier.wordpress.com/",
+  "published": "2026-09-03T18:14:41+00:00",
+  "symbols": [
+   "USDCAD",
+   "USDJPY"
+  ],
+  "timeframes": [
+   "1M",
+   "DAILY"
+  ],
+  "patterns": [
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d31c4cf93167158df30f",
+  "host": "quantumfinancier.wordpress.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "The Sober Quant &#8211; Quantitative Research, Analysis and Trading",
+  "url": "https://www.thesoberquant.com/",
+  "published": "2026-09-03T18:14:44+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "mean_reversion"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "49522705fe63e76059fe",
+  "host": "www.thesoberquant.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Trading with Python",
+  "url": "https://tradingwithpython.blogspot.com/",
+  "published": "2026-09-03T18:14:44+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "W1"
+  ],
+  "patterns": [
+   "correlation",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [
+   "http://code.google.com/p/pythonxy/wiki/Downloads",
+   "http://tortoisesvn.net/downloads.html"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "4f890b4e04512aa6564e",
+  "host": "tradingwithpython.blogspot.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "MetaTrader | World Financial Markets for Smarter Trading",
+  "url": "https://www.metatrader.com",
+  "published": "2026-09-03T18:15:00+00:00",
+  "symbols": [
+   "BTCUSD",
+   "ETHUSD",
+   "EURCHF",
+   "EURUSD",
+   "NVIDIA",
+   "XAUUSD"
+  ],
+  "timeframes": [
+   "1M",
+   "4H",
+   "H4",
+   "M30"
+  ],
+  "patterns": [
+   "breakout",
+   "momentum"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://www.metatrader.com/manifest.json",
+   "https://download.terminal.free/cdn/web/metaquotes.ltd/mt5/MetaTrader5.pkg.zip?utm_source=www.metatrader.com&amp;utm_campaign=download.mt5.macos",
+   "https://www.metatrader.com/en/download",
+   "https://download.terminal.free/cdn/web/metaquotes.ltd/mt5/mt5setup.exe?utm_source=www.metatrader.com&amp;utm_campaign=download",
+   "https://download.terminal.free/cdn/mobile/mt5/ios?hl=en&amp;utm_source=www.metatrader.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/mobile/mt5/android?hl=en&amp;utm_source=www.metatrader.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/mobile/mt5/android/app-gallery?hl=en&amp;utm_source=www.metatrader.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/web/metaquotes.software.corp/mt5/metatrader5.apk?utm_source=www.metatrader.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/mobile/mql5.channels/ios",
+   "https://download.terminal.free/cdn/mobile/mql5.channels/android",
+   "https://download.terminal.free/cdn/mobile/mql5.channels/android/app-gallery",
+   "https://download.terminal.free/cdn/web/metaquotes.software.corp/mql5channels/mql5channels.apk",
+   "https://www.tradays.com/en/download",
+   "https://download.terminal.free/cdn/mobile/tradays/ios",
+   "https://download.terminal.free/cdn/mobile/tradays/android",
+   "https://download.terminal.free/cdn/mobile/tradays/android/app-gallery",
+   "https://download.terminal.free/cdn/web/metaquotes.software.corp/tradays/tradays.apk"
+  ],
+  "n_endpoints": 17,
+  "vault_sha": "02e178bb0ddf619398f1",
+  "host": "www.metatrader.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Trading Ideas, Strategies &amp; Technical Analysis from Top Traders | MetaTrader",
+  "url": "https://www.metatrader.com/en/ideas",
+  "published": "2026-09-03T18:15:01+00:00",
+  "symbols": [
+   "BTCUSD",
+   "ETHUSD",
+   "EURCHF",
+   "EURUSD",
+   "GBPUSD",
+   "XAGUSD",
+   "XAUUSD"
+  ],
+  "timeframes": [
+   "4H",
+   "H4",
+   "M30"
+  ],
+  "patterns": [
+   "breakout",
+   "momentum"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://www.metatrader.com/manifest.json",
+   "https://download.terminal.free/cdn/web/metaquotes.ltd/mt5/MetaTrader5.pkg.zip?utm_source=www.metatrader.com&amp;utm_campaign=download.mt5.macos",
+   "https://www.metatrader.com/en/download",
+   "https://download.terminal.free/cdn/web/metaquotes.ltd/mt5/mt5setup.exe?utm_source=www.metatrader.com&amp;utm_campaign=download",
+   "https://download.terminal.free/cdn/mobile/mt5/ios?hl=en&amp;utm_source=www.metatrader.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/mobile/mt5/android?hl=en&amp;utm_source=www.metatrader.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/mobile/mt5/android/app-gallery?hl=en&amp;utm_source=www.metatrader.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/web/metaquotes.software.corp/mt5/metatrader5.apk?utm_source=www.metatrader.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/mobile/mql5.channels/ios",
+   "https://download.terminal.free/cdn/mobile/mql5.channels/android",
+   "https://download.terminal.free/cdn/mobile/mql5.channels/android/app-gallery",
+   "https://download.terminal.free/cdn/web/metaquotes.software.corp/mql5channels/mql5channels.apk",
+   "https://www.tradays.com/en/download",
+   "https://download.terminal.free/cdn/mobile/tradays/ios",
+   "https://download.terminal.free/cdn/mobile/tradays/android",
+   "https://download.terminal.free/cdn/mobile/tradays/android/app-gallery",
+   "https://download.terminal.free/cdn/web/metaquotes.software.corp/tradays/tradays.apk"
+  ],
+  "n_endpoints": 17,
+  "vault_sha": "4d881b54adcd35b97469",
+  "host": "www.metatrader.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Home - Hispatrading Magazine",
+  "url": "https://hispatrading.es/",
+  "published": "2026-09-03T18:15:06+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a974a17a1836dc452a02",
+  "host": "hispatrading.es"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Quantivity | Uncommon Returns through Quantitative and Algorithmic Trading",
+  "url": "https://quantivity.wordpress.com/",
+  "published": "2026-09-03T18:15:06+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "226d50d2d307901de118",
+  "host": "quantivity.wordpress.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Quant Trading Blog - Quant Savvy",
+  "url": "https://quantsavvy.com/quant-trading-blog/",
+  "published": "2026-09-03T18:15:06+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "gap",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "8281af22e2b5b0694d7d",
+  "host": "quantsavvy.com"
+ }
+]

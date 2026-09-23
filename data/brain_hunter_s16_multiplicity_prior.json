@@ -1,0 +1,285 @@
+{
+ "measured_at": "2026-08-29",
+ "seat": "brain_hunter_s16",
+ "what": "Corpus-level multiplicity prior over the 14 permissively-licensed WorldQuant-BRAIN alpha-generation repos, plus a power control on the only refutation stage the class ships.",
+ "part_1_multiplicity_census": {
+  "population": "14/14 permissive repos from data/brain_hunter_s15_generator_class.json, shallow-cloned 2026-08-29",
+  "vocabulary_searched": [
+   "bonferroni",
+   "holm",
+   "benjamini-hochberg",
+   "FDR",
+   "false discovery",
+   "multiple testing/comparison",
+   "deflated sharpe",
+   "DSR",
+   "probability of backtest overfitting",
+   "PBO",
+   "family-wise",
+   "FWER",
+   "p-hacking",
+   "data snooping",
+   "White reality check",
+   "SPA test",
+   "Harvey-Liu",
+   "effective number of trials",
+   "num_trials"
+  ],
+  "repos_with_any_multiplicity_control": 0,
+  "positive_control_sharpe_mentions": 23619,
+  "only_n_trials_hits": [
+   "gyx09212214-prog/worldquant-harness: autopilot_branch_min_trials (a pruning minimum, not a correction)",
+   "Miasyster/QuantGPT: n_trials in a bootstrap resample count, not a correction"
+  ],
+  "per_repo": {
+   "0xceb1_brain-learn": {
+    "files": 14,
+    "multiplicity_hits": 0,
+    "oos_hits": 0,
+    "gen_scale_hits": 252,
+    "selection_bar_hits": 2
+   },
+   "Miasyster_QuantGPT": {
+    "files": 115,
+    "multiplicity_hits": 0,
+    "oos_hits": 36,
+    "gen_scale_hits": 301,
+    "selection_bar_hits": 161
+   },
+   "NewAmorend_AlphaGen-Agent": {
+    "files": 103,
+    "multiplicity_hits": 0,
+    "oos_hits": 4,
+    "gen_scale_hits": 77,
+    "selection_bar_hits": 172
+   },
+   "aircrushin_wq-alpha-agent": {
+    "files": 21,
+    "multiplicity_hits": 0,
+    "oos_hits": 0,
+    "gen_scale_hits": 76,
+    "selection_bar_hits": 74
+   },
+   "angel4angelov-glitch_wq-alpha-pipeline": {
+    "files": 16,
+    "multiplicity_hits": 0,
+    "oos_hits": 0,
+    "gen_scale_hits": 3,
+    "selection_bar_hits": 49
+   },
+   "aznikline_alpha-mining-system": {
+    "files": 22,
+    "multiplicity_hits": 0,
+    "oos_hits": 0,
+    "gen_scale_hits": 16,
+    "selection_bar_hits": 0
+   },
+   "gyx09212214-prog_worldquant-harness": {
+    "files": 368,
+    "multiplicity_hits": 0,
+    "oos_hits": 28,
+    "gen_scale_hits": 445,
+    "selection_bar_hits": 559
+   },
+   "mohitprashant_Quant-Alpha-Hypotheses": {
+    "files": 1,
+    "multiplicity_hits": 0,
+    "oos_hits": 0,
+    "gen_scale_hits": 0,
+    "selection_bar_hits": 0
+   },
+   "nutdnuy_brain-paper-to-alpha-plugin": {
+    "files": 15,
+    "multiplicity_hits": 0,
+    "oos_hits": 0,
+    "gen_scale_hits": 12,
+    "selection_bar_hits": 1
+   },
+   "seuzxh_quant-factor-skill": {
+    "files": 6,
+    "multiplicity_hits": 0,
+    "oos_hits": 0,
+    "gen_scale_hits": 0,
+    "selection_bar_hits": 0
+   },
+   "slydg_Lightweight-Alpha-Miner": {
+    "files": 7,
+    "multiplicity_hits": 0,
+    "oos_hits": 0,
+    "gen_scale_hits": 11,
+    "selection_bar_hits": 17
+   },
+   "xiao634zhang_wq-factor-miner": {
+    "files": 23,
+    "multiplicity_hits": 0,
+    "oos_hits": 0,
+    "gen_scale_hits": 101,
+    "selection_bar_hits": 14
+   },
+   "zeron-G_worldquant-alpha-research-agent": {
+    "files": 23,
+    "multiplicity_hits": 0,
+    "oos_hits": 0,
+    "gen_scale_hits": 118,
+    "selection_bar_hits": 49
+   },
+   "zhutoutoutousan_worldquant-miner": {
+    "files": 1718,
+    "multiplicity_hits": 0,
+    "oos_hits": 8,
+    "gen_scale_hits": 2997,
+    "selection_bar_hits": 598
+   }
+  }
+ },
+ "part_2_power_control": {
+  "target": "Miasyster/QuantGPT quantgpt/adversarial_validator.py::test_temporal_shuffle (MIT, 457 stars)",
+  "their_defaults": {
+   "block_size": 20,
+   "holding_period": 5,
+   "pass_bar": "real|IC| / mean(shuffled|IC|) > 1.5"
+  },
+  "method": "synthetic panel, 60 names x 500 days, factor loads on the next HP-day cumulative return at a controlled strength; their block-order shuffle logic replicated in matrix form, 20 shuffles per cell",
+  "result": "the ratio is pinned at 1.16-1.19 at block_size=20 for EVERY injected strength from 0.1 to 3.0 (real |IC| 0.044 to 0.473) and never reaches their 1.5 bar; at block_size=5 (= holding_period) it is pinned at 2.19-2.44 and always clears it",
+  "verdict": "ZERO POWER at shipped defaults. The verdict is a function of block_size/holding_period alone and is independent of whether the factor is real. At the defaults it REJECTS genuine signal (false-negative machine); the sign of the error is the opposite of what an adversarial test is for.",
+  "mechanism": "block-ORDER shuffling preserves within-block temporal alignment, so only windows straddling a block boundary are disturbed; at bs=20, HP=5 the shuffled null retains ~86% of the real IC",
+  "second_defect": "the shuffled baseline averages abs(mean IC) ACROSS shuffles, so E|X| not |E X| -- a positive noise floor (0.0053 here) that inflates the denominator further. Real |IC| at strength 0 is 0.0001, i.e. BELOW the shuffled floor, giving ratio 0.07.",
+  "design_rule_extracted": "a block-permutation null has power only when block_size <= the forecast horizon; and the null must be a PERCENTILE of the permuted distribution (as their sibling test_label_permutation correctly does at the 95th percentile of abs), never a ratio of means against an uncalibrated constant bar.",
+  "table": [
+   {
+    "injected_strength": 0.0,
+    "real_abs_ic": 0.00011,
+    "shuffled_abs_ic_bs20": 0.00149,
+    "ratio_bs20": 0.071,
+    "their_verdict_bs20": "FAIL",
+    "shuffled_abs_ic_bs10": 0.00296,
+    "ratio_bs10": 0.036,
+    "their_verdict_bs10": "FAIL",
+    "shuffled_abs_ic_bs5": 0.00454,
+    "ratio_bs5": 0.023,
+    "their_verdict_bs5": "FAIL",
+    "shuffled_abs_ic_bs2": 0.00501,
+    "ratio_bs2": 0.021,
+    "their_verdict_bs2": "FAIL",
+    "shuffled_abs_ic_bs1": 0.00603,
+    "ratio_bs1": 0.018,
+    "their_verdict_bs1": "FAIL"
+   },
+   {
+    "injected_strength": 0.1,
+    "real_abs_ic": 0.04386,
+    "shuffled_abs_ic_bs20": 0.03952,
+    "ratio_bs20": 1.11,
+    "their_verdict_bs20": "FAIL",
+    "shuffled_abs_ic_bs10": 0.03077,
+    "ratio_bs10": 1.426,
+    "their_verdict_bs10": "FAIL",
+    "shuffled_abs_ic_bs5": 0.02008,
+    "ratio_bs5": 2.184,
+    "their_verdict_bs5": "PASS",
+    "shuffled_abs_ic_bs2": 0.00598,
+    "ratio_bs2": 7.341,
+    "their_verdict_bs2": "PASS",
+    "shuffled_abs_ic_bs1": 0.0047,
+    "ratio_bs1": 9.332,
+    "their_verdict_bs1": "PASS"
+   },
+   {
+    "injected_strength": 0.2,
+    "real_abs_ic": 0.07619,
+    "shuffled_abs_ic_bs20": 0.06581,
+    "ratio_bs20": 1.158,
+    "their_verdict_bs20": "FAIL",
+    "shuffled_abs_ic_bs10": 0.05402,
+    "ratio_bs10": 1.411,
+    "their_verdict_bs10": "FAIL",
+    "shuffled_abs_ic_bs5": 0.03124,
+    "ratio_bs5": 2.439,
+    "their_verdict_bs5": "PASS",
+    "shuffled_abs_ic_bs2": 0.00826,
+    "ratio_bs2": 9.23,
+    "their_verdict_bs2": "PASS",
+    "shuffled_abs_ic_bs1": 0.00352,
+    "ratio_bs1": 21.65,
+    "their_verdict_bs1": "PASS"
+   },
+   {
+    "injected_strength": 0.4,
+    "real_abs_ic": 0.15878,
+    "shuffled_abs_ic_bs20": 0.13296,
+    "ratio_bs20": 1.194,
+    "their_verdict_bs20": "FAIL",
+    "shuffled_abs_ic_bs10": 0.11001,
+    "ratio_bs10": 1.443,
+    "their_verdict_bs10": "FAIL",
+    "shuffled_abs_ic_bs5": 0.06674,
+    "ratio_bs5": 2.379,
+    "their_verdict_bs5": "PASS",
+    "shuffled_abs_ic_bs2": 0.01732,
+    "ratio_bs2": 9.169,
+    "their_verdict_bs2": "PASS",
+    "shuffled_abs_ic_bs1": 0.00546,
+    "ratio_bs1": 29.079,
+    "their_verdict_bs1": "PASS"
+   },
+   {
+    "injected_strength": 0.8,
+    "real_abs_ic": 0.28543,
+    "shuffled_abs_ic_bs20": 0.24496,
+    "ratio_bs20": 1.165,
+    "their_verdict_bs20": "FAIL",
+    "shuffled_abs_ic_bs10": 0.20563,
+    "ratio_bs10": 1.388,
+    "their_verdict_bs10": "FAIL",
+    "shuffled_abs_ic_bs5": 0.11989,
+    "ratio_bs5": 2.381,
+    "their_verdict_bs5": "PASS",
+    "shuffled_abs_ic_bs2": 0.03392,
+    "ratio_bs2": 8.414,
+    "their_verdict_bs2": "PASS",
+    "shuffled_abs_ic_bs1": 0.00702,
+    "ratio_bs1": 40.652,
+    "their_verdict_bs1": "PASS"
+   },
+   {
+    "injected_strength": 1.5,
+    "real_abs_ic": 0.39993,
+    "shuffled_abs_ic_bs20": 0.34265,
+    "ratio_bs20": 1.167,
+    "their_verdict_bs20": "FAIL",
+    "shuffled_abs_ic_bs10": 0.29098,
+    "ratio_bs10": 1.374,
+    "their_verdict_bs10": "FAIL",
+    "shuffled_abs_ic_bs5": 0.17788,
+    "ratio_bs5": 2.248,
+    "their_verdict_bs5": "PASS",
+    "shuffled_abs_ic_bs2": 0.05414,
+    "ratio_bs2": 7.387,
+    "their_verdict_bs2": "PASS",
+    "shuffled_abs_ic_bs1": 0.00501,
+    "ratio_bs1": 79.881,
+    "their_verdict_bs1": "PASS"
+   },
+   {
+    "injected_strength": 3.0,
+    "real_abs_ic": 0.47323,
+    "shuffled_abs_ic_bs20": 0.40837,
+    "ratio_bs20": 1.159,
+    "their_verdict_bs20": "FAIL",
+    "shuffled_abs_ic_bs10": 0.34783,
+    "ratio_bs10": 1.361,
+    "their_verdict_bs10": "FAIL",
+    "shuffled_abs_ic_bs5": 0.21605,
+    "ratio_bs5": 2.19,
+    "their_verdict_bs5": "PASS",
+    "shuffled_abs_ic_bs2": 0.07025,
+    "ratio_bs2": 6.737,
+    "their_verdict_bs2": "PASS",
+    "shuffled_abs_ic_bs1": 0.00814,
+    "ratio_bs1": 58.17,
+    "their_verdict_bs1": "PASS"
+   }
+  ]
+ },
+ "boundary": "All 14 repos are public and permissively licensed (LICENSE files verified by s15). No BRAIN account, no gated content, no third-party tooling installed or executed -- the repos were read as text and the control is the desk own synthetic panel."
+}

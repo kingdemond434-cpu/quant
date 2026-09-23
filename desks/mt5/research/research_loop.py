@@ -20,6 +20,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 BASE = Path(__file__).resolve().parent.parent
+#: The legacy whole-file queue. `queue_store` prefers the streamed JSONL beside it and
+#: falls back here, so this constant stays as the fallback target rather than a reader.
 QUEUE = BASE / "data" / "research_queue.json"
 REPORTS = BASE / "reports"
 PY = Path(sys.executable)
@@ -35,10 +37,33 @@ def load_queue() -> list[dict]:
 
 
 def next_pending() -> dict | None:
-    for it in load_queue():
+    q = load_queue()
+    alive = runner_alive()
+    for it in q:
         if it.get("status") == "QUEUED" and not (REPORTS / f"DONE_loop_{it['id']}").exists():
             return it
+        if it.get("status") == "RUNNING" and not alive \
+                and not (REPORTS / f"DONE_loop_{it['id']}").exists():
+            it["status"] = "QUEUED"
+            try:
+                QUEUE.write_text(json.dumps(q, indent=2), encoding="utf-8")
+            except Exception:
+                pass
+            log(f"stale RUNNING reset to QUEUED: {it['id']} (no live runner)")
+            return it
     return None
+
+
+def runner_alive() -> bool:
+    import psutil
+    for p in psutil.process_iter(["name", "cmdline"]):
+        try:
+            if (p.info["name"] or "").lower().startswith("python") \
+                    and any("run_hunt18" in (c or "") for c in (p.info["cmdline"] or [])):
+                return True
+        except Exception:
+            continue
+    return False
 
 
 def log(msg: str) -> None:
@@ -83,9 +108,17 @@ def run_experiment(item: dict) -> int:
     exp_id = item["id"]
     log(f"starting {exp_id}: {item.get('family')} {item.get('side')} "
         f"{item.get('params')} [{item.get('hypothesis', '')[:80]}]")
-    r = subprocess.run([str(PY), "-u", "-W", "ignore",
-                        "research/run_hunt18.py", exp_id],
-                       cwd=str(BASE), capture_output=True, text=True, timeout=7200)
+    # A TIMED-OUT EXPERIMENT IS A FAILED EXPERIMENT, NOT A CRASHED LOOP: a hung
+    # run_hunt18 must never kill the loop and strand the queue behind it (same
+    # lesson as scripts/run_cadence.py's timed-out panel).
+    try:
+        r = subprocess.run([str(PY), "-u", "-W", "ignore",
+                            "research/run_hunt18.py", exp_id],
+                           cwd=str(BASE), capture_output=True, text=True, timeout=7200)
+    except subprocess.TimeoutExpired as e:
+        tail = "\n".join((e.stdout or "").splitlines()[-6:]) if e.stdout else ""
+        log(f"{exp_id} TIMEOUT after 7200s (cell untested; queue continues){chr(10)}{tail}")
+        return 124
     tail = "\n".join(r.stdout.splitlines()[-6:])
     log(f"{exp_id} rc={r.returncode}\n{tail}")
     if r.returncode != 0:

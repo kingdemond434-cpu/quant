@@ -1,0 +1,9 @@
+[Unit]
+Description=Governance pulse fence schedule
+
+[Timer]
+OnCalendar=*:03,18,33,48
+Persistent=true
+
+[Install]
+WantedBy=timers.target

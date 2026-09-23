@@ -1,0 +1,27 @@
+[
+ {
+  "source": "deep_forest",
+  "kind": "dataset",
+  "title": "Data & Statistics | Central Bank of Nigeria",
+  "url": "https://www.cbn.gov.ng/rates/",
+  "published": "2026-09-10T09:33:42+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "8b5fab4726db78c65783",
+  "host": "www.cbn.gov.ng",
+  "ground": "Central Bank of Nigeria statistics",
+  "region": "ng",
+  "cluster": "africa",
+  "dataset_class": "central_bank_data",
+  "available_time": "2026-09-10T09:33:42+00:00",
+  "ingested_time": "2026-09-10T09:33:42+00:00",
+  "source_hash": "8b5fab4726db78c65783",
+  "claims": [],
+  "n_claims": 0
+ }
+]

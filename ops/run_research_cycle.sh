@@ -74,7 +74,11 @@ export BARS_FILE_BUDGET="${BARS_FILE_BUDGET:-20000}"
     record_failure "stamp_desk_host.py" "$_rc"
     echo "DESK-HOST STAMP FAILED -- the cohort will floor at the cap (safe, but tighter than reality)"
   }
-  OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 nice -n 15 "$PY" scripts/build_bars.py
+  # RETIRED 2026-09-05 under the MT5 universe mandate (2026-08-18): scripts/build_bars.py was deleted
+  # with the crypto-exchange desk -- it was built bars from the crypto recorder tape, which is no longer written. Left as a commented invocation, not
+  # deleted, so the shape of the retired cycle stays readable; the MT5 equivalent runs in
+  # the desk chain under desks/mt5/, not from this script.
+  # OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 nice -n 15 "$PY" scripts/build_bars.py
   bash ops/run_study_on_vps.sh
   nice -n 15 "$PY" scripts/study_status.py
   # The ladder runs even when the sweep found nothing: it also reports what is ALREADY live, and a
@@ -112,8 +116,16 @@ export BARS_FILE_BUDGET="${BARS_FILE_BUDGET:-20000}"
   nice -n 15 "$PY" scripts/check_unwired_capability.py || true
   # L2 DATA IS AN INPUT, NOT AN ACCOMPLISHMENT. Refresh the denominator and publish every broken
   # tape -> utilisation -> hypothesis -> test -> survivor -> shadow conversion link.
-  nice -n 15 "$PY" scripts/run_moat_utilisation.py
-  nice -n 15 "$PY" scripts/check_l2_daily_conversion.py
+  # RETIRED 2026-09-05 under the MT5 universe mandate (2026-08-18): scripts/run_moat_utilisation.py was deleted
+  # with the crypto-exchange desk -- it was utilisation of the crypto L2 moat tape. Left as a commented invocation, not
+  # deleted, so the shape of the retired cycle stays readable; the MT5 equivalent runs in
+  # the desk chain under desks/mt5/, not from this script.
+  # nice -n 15 "$PY" scripts/run_moat_utilisation.py
+  # RETIRED 2026-09-05 under the MT5 universe mandate (2026-08-18): scripts/check_l2_daily_conversion.py was deleted
+  # with the crypto-exchange desk -- it was the crypto L2 tape->hypothesis conversion check. Left as a commented invocation, not
+  # deleted, so the shape of the retired cycle stays readable; the MT5 equivalent runs in
+  # the desk chain under desks/mt5/, not from this script.
+  # nice -n 15 "$PY" scripts/check_l2_daily_conversion.py
   # THE TWO SLEEVES A SPOT-ONLY ACCOUNT CAN ACTUALLY HOLD. The principal is Irish retail: EEA
   # derivatives are unavailable under MiCA, so cash-and-carry is untradeable (two legs, and the
   # short cannot be opened) and xsec_price_mom is untradeable for the same reason -- it is a
@@ -121,8 +133,12 @@ export BARS_FILE_BUDGET="${BARS_FILE_BUDGET:-20000}"
   # spot_momentum leads with the EXCESS over equal-weight buy-and-hold, never the raw Sharpe: a
   # long-only crypto book earns in a rising tape with or without selection skill, and quoting the
   # raw number would report the market's return as the strategy's alpha.
-  nice -n 15 "$PY" scripts/run_spot_momentum.py --equity "${GOLIVE_CAPITAL:-200}" \
-      --min-notional "${VENUE_MIN_NOTIONAL:-10}"
+  # RETIRED 2026-09-05 under the MT5 universe mandate (2026-08-18): scripts/run_spot_momentum.py was deleted
+  # with the crypto-exchange desk -- it was the long-only crypto spot momentum sleeve. Left as a commented invocation, not
+  # deleted, so the shape of the retired cycle stays readable; the MT5 equivalent runs in
+  # the desk chain under desks/mt5/, not from this script.
+  # nice -n 15 "$PY" scripts/run_spot_momentum.py --equity "${GOLIVE_CAPITAL:-200}" \
+  # --min-notional "${VENUE_MIN_NOTIONAL:-10}"
   # THE ORDER PATH, DAILY AND UNATTENDED. Everything above computes what the book SHOULD be; this
   # is the only line that makes the account match it. Left manual, the desk publishes a correct
   # target book every night and holds yesterday's positions forever -- which is III.16 on the one
@@ -140,13 +156,21 @@ export BARS_FILE_BUDGET="${BARS_FILE_BUDGET:-20000}"
   # It trades the DELTA against live holdings, the 5% turnover band suppresses churn on unchanged
   # ranks, MAX_RUN_FRAC bounds how wrong one bad targets file can be, and every ruin rail is
   # consulted before a single order goes out.
-  nice -n 15 "$PY" scripts/run_spot_executor.py --equity auto \
-      --quote "${SPOT_QUOTE:-USDC}" --place --reserve-frac "${SPOT_RESERVE_FRAC:-0.3}" \
-      --wallet "${SPOT_WALLET:-spot}"
+  # RETIRED 2026-09-05 under the MT5 universe mandate (2026-08-18): scripts/run_spot_executor.py was deleted
+  # with the crypto-exchange desk -- it was the Binance SPOT order path (`--place`). The venue is retired; there is no spot account and no key. Left as a commented invocation, not
+  # deleted, so the shape of the retired cycle stays readable; the MT5 equivalent runs in
+  # the desk chain under desks/mt5/, not from this script.
+  # nice -n 15 "$PY" scripts/run_spot_executor.py --equity auto \
+  # --quote "${SPOT_QUOTE:-USDC}" --place --reserve-frac "${SPOT_RESERVE_FRAC:-0.3}" \
+  # --wallet "${SPOT_WALLET:-spot}"
   # THE LEVERED PATH, inert until the principal writes data/MARGIN_ENABLE and moves capital into
   # the margin wallet. The leverage is computed from measured Sharpe and vol every run, so this
   # line is correct whether the edge supports 0.8x or 6x -- there is no number here to go stale.
-  nice -n 15 "$PY" scripts/run_margin_executor.py --quote "${SPOT_QUOTE:-USDC}" --place
+  # RETIRED 2026-09-05 under the MT5 universe mandate (2026-08-18): scripts/run_margin_executor.py was deleted
+  # with the crypto-exchange desk -- it was the Binance MARGIN order path (`--place`). Same venue, same retirement -- and a levered one. Left as a commented invocation, not
+  # deleted, so the shape of the retired cycle stays readable; the MT5 equivalent runs in
+  # the desk chain under desks/mt5/, not from this script.
+  # nice -n 15 "$PY" scripts/run_margin_executor.py --quote "${SPOT_QUOTE:-USDC}" --place
   # ---- PRODUCER ECONOMICS: the input _producer_margin_stress was starved of --
   #
   # THE SAME SILENT SHAPE AS THE RHO TRACKER, ONE LAYER DOWN. The generator was registered, the
@@ -161,7 +185,11 @@ export BARS_FILE_BUDGET="${BARS_FILE_BUDGET:-20000}"
   # days, blockchain.info serves history, so the first run backfills and every run after keeps it
   # current. `|| true` -- a producer-data outage must not take down the trading cycle, and the
   # generator degrades to flat on absent days by design rather than guessing through them.
-  nice -n 15 "$PY" scripts/fetch_producer_economics.py || true
+  # RETIRED 2026-09-05 under the MT5 universe mandate (2026-08-18): scripts/fetch_producer_economics.py was deleted
+  # with the crypto-exchange desk -- it was fetched on-chain producer (miner) economics for a crypto generator. Left as a commented invocation, not
+  # deleted, so the shape of the retired cycle stays readable; the MT5 equivalent runs in
+  # the desk chain under desks/mt5/, not from this script.
+  # nice -n 15 "$PY" scripts/fetch_producer_economics.py || true
   # ---- THE MECHANISM SLEEVES, AND THE RHO CHAIN THEY FEED -------------------
   #
   # NONE OF THIS WAS SCHEDULED. run_mechanism_sleeves.py published the sleeve targets only when
@@ -172,23 +200,39 @@ export BARS_FILE_BUDGET="${BARS_FILE_BUDGET:-20000}"
   #
   # It fails closed on its own if the exception ledger is inactive, so scheduling it grants no
   # authority the principal did not already write down.
-  nice -n 15 "$PY" scripts/run_mechanism_sleeves.py
-  nice -n 15 "$PY" scripts/run_margin_executor.py --quote "${SPOT_QUOTE:-USDC}" --place \
-      --targets data/mechanism_sleeve_targets.json
+  # RETIRED 2026-09-05 under the MT5 universe mandate (2026-08-18): scripts/run_mechanism_sleeves.py was deleted
+  # with the crypto-exchange desk -- it was published crypto mechanism-sleeve targets for the executors above. Left as a commented invocation, not
+  # deleted, so the shape of the retired cycle stays readable; the MT5 equivalent runs in
+  # the desk chain under desks/mt5/, not from this script.
+  # nice -n 15 "$PY" scripts/run_mechanism_sleeves.py
+  # RETIRED 2026-09-05 under the MT5 universe mandate (2026-08-18): scripts/run_margin_executor.py was deleted
+  # with the crypto-exchange desk -- it was the Binance MARGIN order path (`--place`). Same venue, same retirement -- and a levered one. Left as a commented invocation, not
+  # deleted, so the shape of the retired cycle stays readable; the MT5 equivalent runs in
+  # the desk chain under desks/mt5/, not from this script.
+  # nice -n 15 "$PY" scripts/run_margin_executor.py --quote "${SPOT_QUOTE:-USDC}" --place \
+  # --targets data/mechanism_sleeve_targets.json
   # THE WRITER THE RHO TRACKER WAS WAITING FOR. track_sleeve_correlation.py reads
   # data/sleeve_returns.json and NOTHING WROTE IT -- the tracker would have printed "nothing to
   # measure yet" forever, looking patient while starving. Correlation is the one number that
   # decides whether the desk's return target is reachable at all, and it only accumulates with
   # elapsed time, so the recorder has to run every cycle from now rather than from when someone
   # remembers.
-  nice -n 15 "$PY" scripts/record_sleeve_returns.py
+  # RETIRED 2026-09-05 under the MT5 universe mandate (2026-08-18): scripts/record_sleeve_returns.py was deleted
+  # with the crypto-exchange desk -- it was recorded returns for those crypto sleeves. Left as a commented invocation, not
+  # deleted, so the shape of the retired cycle stays readable; the MT5 equivalent runs in
+  # the desk chain under desks/mt5/, not from this script.
+  # nice -n 15 "$PY" scripts/record_sleeve_returns.py
   nice -n 15 "$PY" scripts/track_sleeve_correlation.py
   # --spot-only REFUSES every short H3 calls and journals the refusal, rather than inverting it
   # (which would score H3's hit rate against trades it never called for) or dropping it silently
   # (which would hide that half its signals were unplaceable rather than absent).
-  nice -n 15 "$PY" scripts/run_discretionary_live.py --equity "${GOLIVE_CAPITAL:-200}" \
-      --min-notional "${VENUE_MIN_NOTIONAL:-10}" --spot-only \
-      --wallet "${SPOT_WALLET:-spot}"
+  # RETIRED 2026-09-05 under the MT5 universe mandate (2026-08-18): scripts/run_discretionary_live.py was deleted
+  # with the crypto-exchange desk -- it was the discretionary live order path on the crypto spot book. Left as a commented invocation, not
+  # deleted, so the shape of the retired cycle stays readable; the MT5 equivalent runs in
+  # the desk chain under desks/mt5/, not from this script.
+  # nice -n 15 "$PY" scripts/run_discretionary_live.py --equity "${GOLIVE_CAPITAL:-200}" \
+  # --min-notional "${VENUE_MIN_NOTIONAL:-10}" --spot-only \
+  # --wallet "${SPOT_WALLET:-spot}"
   # THE GO-LIVE STATE, PUBLISHED DAILY RATHER THAN REMEMBERED. Advisory by design: every
   # precondition it reports is already ENFORCED independently on the money path (no keys means no
   # authentication, CASHCARRY_KILL forces flatten-only in the executor's own order loop, the ruin
@@ -198,7 +242,11 @@ export BARS_FILE_BUDGET="${BARS_FILE_BUDGET:-20000}"
   # nothing else reports: whether lcurve has started capturing basis variance, and the closed-trade
   # count that is currently the desk's largest unmeasured risk. `|| true` because a BLOCKED verdict
   # is information, not a cycle failure.
-  nice -n 15 "$PY" scripts/run_golive_preflight.py --capital "${GOLIVE_CAPITAL:-200}" || true
+  # RETIRED 2026-09-05 under the MT5 universe mandate (2026-08-18): scripts/run_golive_preflight.py was deleted
+  # with the crypto-exchange desk -- it was the Gate-0 go-live report for the crypto book. Left as a commented invocation, not
+  # deleted, so the shape of the retired cycle stays readable; the MT5 equivalent runs in
+  # the desk chain under desks/mt5/, not from this script.
+  # nice -n 15 "$PY" scripts/run_golive_preflight.py --capital "${GOLIVE_CAPITAL:-200}" || true
   # EXECUTION HEALTH runs every cycle, including days the research half found nothing. The money
   # path is where the desk is currently LOSING (27 closes, all three hold buckets negative net of
   # fees), so a cycle that reported only research would go quiet on the one number costing money.
@@ -255,7 +303,11 @@ export BARS_FILE_BUDGET="${BARS_FILE_BUDGET:-20000}"
   # rather than about copy traders (III.16, and L1.28a: absence must not resolve to a verdict).
   # It exits 0 even when the venue is unreachable and records the failure in its own report, so a
   # rate-limited fetch does not redden the whole cycle -- an unreachable venue is not a desk defect.
-  nice -n 15 "$PY" scripts/screen_copytrading.py
+  # RETIRED 2026-09-05 under the MT5 universe mandate (2026-08-18): scripts/screen_copytrading.py was deleted
+  # with the crypto-exchange desk -- it was screened an exchange copytrading leaderboard. Left as a commented invocation, not
+  # deleted, so the shape of the retired cycle stays readable; the MT5 equivalent runs in
+  # the desk chain under desks/mt5/, not from this script.
+  # nice -n 15 "$PY" scripts/screen_copytrading.py
   # THE OTHER TWO VENUES III.15 NAMES. screen_copytrading covers OKX only; Binance's futures
   # leaderboard and Hyperliquid's per-account feed (the most complete free positioning dataset in
   # crypto, public by design -- FREE_DATA_ADDENDA C3 #54) were in scope and collected by nothing.
@@ -263,7 +315,11 @@ export BARS_FILE_BUDGET="${BARS_FILE_BUDGET:-20000}"
   # statistic published twice so the survivorship effect is the difference between them rather
   # than an argument. `|| true` is NOT used: an unreachable venue is recorded inside the report
   # and the script still exits 0, so a real crash here is a real cycle failure.
-  nice -n 15 "$PY" scripts/collect_leaderboards.py
+  # RETIRED 2026-09-05 under the MT5 universe mandate (2026-08-18): scripts/collect_leaderboards.py was deleted
+  # with the crypto-exchange desk -- it was collected exchange trader leaderboards. Left as a commented invocation, not
+  # deleted, so the shape of the retired cycle stays readable; the MT5 equivalent runs in
+  # the desk chain under desks/mt5/, not from this script.
+  # nice -n 15 "$PY" scripts/collect_leaderboards.py
   # THE RETURN ENGINES. Everything above measures whether the RESEARCH is healthy; these decide
   # where capital would go if there were any. ELEVEN books; nine correctly report UNMEASURED on a
   # clone with no positions and each names the artifact it needs -- they exist now so that nothing

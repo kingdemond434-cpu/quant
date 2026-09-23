@@ -1,0 +1,9 @@
+[Unit]
+Description=Weekly whole-suite verdict banked into the suite record (R0555/R0564)
+
+[Service]
+Type=oneshot
+WorkingDirectory=/home/quant/quant-platform
+ExecStart=/bin/sh /home/quant/quant-platform/ops/run_suite_verdict.sh
+TimeoutStartSec=7200
+Nice=10

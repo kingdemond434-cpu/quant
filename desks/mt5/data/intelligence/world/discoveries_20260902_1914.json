@@ -1,0 +1,789 @@
+[
+ {
+  "source": "world_crawler",
+  "title": "Advanced Algorithmic Trading | QuantStart",
+  "url": "https://www.quantstart.com/advanced-algorithmic-trading-ebook/",
+  "published": "2026-09-02T19:12:44+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry",
+   "correlation",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "vault_sha": "c1903f7f71dd0d913ccb",
+  "host": "www.quantstart.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "C++ For Quantitative Finance | QuantStart",
+  "url": "https://www.quantstart.com/cpp-for-quantitative-finance-ebook/",
+  "published": "2026-09-02T19:12:46+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "vault_sha": "7880359511988c0b131d",
+  "host": "www.quantstart.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "QSTrader",
+  "url": "https://www.quantstart.com/qstrader/",
+  "published": "2026-09-02T19:12:48+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "vault_sha": "248c44d2ce6a18dec1b8",
+  "host": "www.quantstart.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Systematic Trading Articles | QuantStart",
+  "url": "https://www.quantstart.com/articles/topic/systematic-trading/",
+  "published": "2026-09-02T19:12:51+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "mean_reversion"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "vault_sha": "467ac50c0cf7ac0ea2e1",
+  "host": "www.quantstart.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Download forex indicators for free for MetaTrader 4 in MQL5 Code Base",
+  "url": "https://www.mql5.com/en/code/mt4/indicators",
+  "published": "2026-09-02T19:12:57+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "breakout",
+   "gap",
+   "mean_reversion",
+   "momentum",
+   "orderflow",
+   "session",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "vault_sha": "a5ca776b66150ecd62a3",
+  "host": "www.mql5.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Free download of the &#x27;AAPL cfd - ORB strategy&#x27; expert by &#x27;andrewmagar&#x27; for MetaTrader 5 in the MQL5 Code Base, 2026.08.19",
+  "url": "https://www.mql5.com/en/code/76333",
+  "published": "2026-09-02T19:13:01+00:00",
+  "symbols": [
+   "XAUUSD"
+  ],
+  "timeframes": [
+   "M1"
+  ],
+  "patterns": [
+   "breakout",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "vault_sha": "de19caf4ef351a7bdf67",
+  "host": "www.mql5.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Free download of the &#x27;Session Opening Range Breakout EA&#x27; expert by &#x27;Stridz_z&#x27; for MetaTrader 5 in the MQL5 Code Base, 2026.08.15",
+  "url": "https://www.mql5.com/en/code/76153",
+  "published": "2026-09-02T19:13:03+00:00",
+  "symbols": [],
+  "timeframes": [
+   "H1",
+   "M1",
+   "M15"
+  ],
+  "patterns": [
+   "breakout",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "vault_sha": "2e5c37601d25282bc1f8",
+  "host": "www.mql5.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "EUR/USD | Forex Factory",
+  "url": "https://www.forexfactory.com/market",
+  "published": "2026-09-02T19:13:11+00:00",
+  "symbols": [
+   "EURUSD",
+   "FUTURE"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "gap"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "vault_sha": "99f8392c195f50576193",
+  "host": "www.forexfactory.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Finland Forex Brokers | Forex Factory",
+  "url": "https://www.forexfactory.com/brokers",
+  "published": "2026-09-02T19:13:14+00:00",
+  "symbols": [
+   "CONSOB"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "vault_sha": "b099e929a99ff3d14c09",
+  "host": "www.forexfactory.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Interactive Trading | Forex Factory",
+  "url": "https://www.forexfactory.com/forum/137-interactive-trading",
+  "published": "2026-09-02T19:13:23+00:00",
+  "symbols": [
+   "AUDJPY",
+   "AUDUSD",
+   "BTCUSD",
+   "EURAUD",
+   "EURCAD",
+   "EURJPY",
+   "EURUSD",
+   "FAKING",
+   "GBPUSD",
+   "SILVER",
+   "US30",
+   "XAUUSD"
+  ],
+  "timeframes": [
+   "DAILY",
+   "M1",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "carry",
+   "orderflow"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "vault_sha": "b228b36699d37b690eb3",
+  "host": "www.forexfactory.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Trading con Futuros - Rankia",
+  "url": "https://www.rankia.com/categorias/trading-futuros",
+  "published": "2026-09-02T19:13:24+00:00",
+  "symbols": [
+   "ONLINE"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "es-es",
+  "vault_sha": "603819d5b76d2208c675",
+  "host": "www.rankia.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Trading con Opciones - Rankia",
+  "url": "https://www.rankia.com/categorias/trading-opciones",
+  "published": "2026-09-02T19:13:26+00:00",
+  "symbols": [
+   "ONLINE"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "es-es",
+  "vault_sha": "5b0f92db7917cf1fab32",
+  "host": "www.rankia.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Cotizaci\u00f3n de divisas Forex en tiempo real | Rankia",
+  "url": "https://www.rankia.com/cotizaciones/forex",
+  "published": "2026-09-02T19:13:28+00:00",
+  "symbols": [
+   "ONLINE"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "es-es",
+  "vault_sha": "2e451d3df13c1a465972",
+  "host": "www.rankia.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Pulso de Mercado: Intrad\u00eda - Rankia",
+  "url": "https://www.rankia.com/foros/bolsa/temas/2629169-pulso-mercado-intradia",
+  "published": "2026-09-02T19:13:30+00:00",
+  "symbols": [
+   "AVISOS",
+   "ONLINE"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "es-es",
+  "vault_sha": "fb4eba4b07b545053ca9",
+  "host": "www.rankia.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Swing trading IBEX35 (1/132) - Rankia",
+  "url": "https://www.rankia.com/foros/bolsa/temas/6464187-swing-trading-ibex35?page=1",
+  "published": "2026-09-02T19:13:32+00:00",
+  "symbols": [
+   "AVISOS",
+   "ONLINE"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "es-es",
+  "vault_sha": "e272cd5b1d0ab8f35106",
+  "host": "www.rankia.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Swing trading IBEX35 (2/132) - Rankia",
+  "url": "https://www.rankia.com/foros/bolsa/temas/6464187-swing-trading-ibex35?page=2",
+  "published": "2026-09-02T19:13:34+00:00",
+  "symbols": [
+   "AVISOS",
+   "ONLINE"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "es-es",
+  "vault_sha": "82212c4ed26ef4b2bd70",
+  "host": "www.rankia.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Swing trading IBEX35 (129/132) - Rankia",
+  "url": "https://www.rankia.com/foros/bolsa/temas/6464187-swing-trading-ibex35?page=129",
+  "published": "2026-09-02T19:13:36+00:00",
+  "symbols": [
+   "AVISOS",
+   "ONLINE"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "es-es",
+  "vault_sha": "d2278ea7c3baced33444",
+  "host": "www.rankia.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Online Forex and exchange trading with MetaTrader 5",
+  "url": "https://www.metatrader5.com/en/trading-platform",
+  "published": "2026-09-02T19:13:37+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "vault_sha": "eae937b2561de2aa1fa3",
+  "host": "www.metatrader5.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "MetaTrader 5 for Forex, stocks and futures",
+  "url": "https://www.metatrader5.com/en/trading-platform/forex-stock-markets",
+  "published": "2026-09-02T19:13:39+00:00",
+  "symbols": [
+   "GLOBEX",
+   "NASDAQ"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "vault_sha": "c99dc112c12e2e0773ac",
+  "host": "www.metatrader5.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Flexible MetaTrader 5 trading system with all order types",
+  "url": "https://www.metatrader5.com/en/trading-platform/trading",
+  "published": "2026-09-02T19:13:41+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "vault_sha": "3970977188b91be0bcf9",
+  "host": "www.metatrader5.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Charts in MetaTrader 5 trading platform for Forex and stocks",
+  "url": "https://www.metatrader5.com/en/trading-platform/charts",
+  "published": "2026-09-02T19:13:43+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "vault_sha": "95f23fda7b4767a84972",
+  "host": "www.metatrader5.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Technical analysis tools in MetaTrader 5",
+  "url": "https://www.metatrader5.com/en/trading-platform/technical-analysis",
+  "published": "2026-09-02T19:13:45+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "vault_sha": "7b825f5d7cb6c8ccccf0",
+  "host": "www.metatrader5.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Fundamental analysis tools in MetaTrader 5",
+  "url": "https://www.metatrader5.com/en/trading-platform/fundamental-analysis",
+  "published": "2026-09-02T19:13:47+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "vault_sha": "764cd2de07b4ed906728",
+  "host": "www.metatrader5.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Instant notifications and alerts in MetaTrader 5",
+  "url": "https://www.metatrader5.com/en/trading-platform/alerts",
+  "published": "2026-09-02T19:13:49+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "vault_sha": "ddeddc156a5d0d0f3f74",
+  "host": "www.metatrader5.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Trading Systems | Metals Mine",
+  "url": "https://www.metalsmine.com/forum/71-trading-systems?order=asc&sort=lastpost",
+  "published": "2026-09-02T19:14:02+00:00",
+  "symbols": [
+   "GBPJPY",
+   "HAPPYY",
+   "MAPBAM",
+   "RAPTOR",
+   "USDJPY",
+   "XAUUSD"
+  ],
+  "timeframes": [
+   "1H",
+   "4H",
+   "DAILY",
+   "H1",
+   "H4",
+   "M15",
+   "M5",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "breakout",
+   "correlation",
+   "momentum"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "vault_sha": "8a056e0257d32fbdfb3d",
+  "host": "www.metalsmine.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Interactive Trading | Crypto Craft",
+  "url": "https://www.cryptocraft.com/forum/137-interactive-trading",
+  "published": "2026-09-02T19:14:03+00:00",
+  "symbols": [
+   "BTCUSD",
+   "CRYPTO",
+   "METHOD",
+   "TARGET",
+   "VOLUME"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "breakout",
+   "correlation",
+   "momentum"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "vault_sha": "ee9f7e97bd53f52e08bd",
+  "host": "www.cryptocraft.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Does Trading TAA Strategies More Often Improve Performance? - Allocate Smartly",
+  "url": "https://allocatesmartly.com/does-trading-taa-strategies-more-often-improve-performance/?aff=634",
+  "published": "2026-09-02T19:14:05+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "carry",
+   "gap",
+   "seasonality"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "vault_sha": "4ec758ee781b92d1f40c",
+  "host": "allocatesmartly.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Boundaries of Time Series Momentum | QuantPedia",
+  "url": "https://quantpedia.com/boundaries-of-time-series-momentum/?a=6080",
+  "published": "2026-09-02T19:14:07+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "momentum",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "vault_sha": "88cf08f7e9c7f7dfff8d",
+  "host": "quantpedia.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Magic Formula tested against each half: quality alone beat the combination by 2.2 points a year over twenty years",
+  "url": "https://quanterlab.com/research/one-half-of-the-magic-formula-beat-the-whole-thing-greenblatt-s-two-ranks-tested",
+  "published": "2026-09-02T19:14:09+00:00",
+  "symbols": [
+   "EBITDA",
+   "INCOME",
+   "LOOKED",
+   "NAMING",
+   "NASDAQ",
+   "PAIRED",
+   "STRONG"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "carry",
+   "correlation",
+   "gap",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "vault_sha": "8ab9b811439a0426cd00",
+  "host": "quanterlab.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Form 4 Insider Trading in Python: A Filing-Date Event Study",
+  "url": "https://blog.quantinsti.com/sec-form-4-insider-trading-python-event-study/",
+  "published": "2026-09-02T19:14:11+00:00",
+  "symbols": [
+   "README"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "carry",
+   "mean_reversion",
+   "momentum",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "vault_sha": "9fca44e98e26302b172b",
+  "host": "blog.quantinsti.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "The Crash Switch Worked and the Strategy Starved Anyway: Keller&#39;s Menu Tested \u2014 QuanterLab Research",
+  "url": "https://quanterlab.com/research/the-crash-switch-worked-and-the-strategy-starved-anyway-keller-s-menu-tested",
+  "published": "2026-09-02T19:14:13+00:00",
+  "symbols": [
+   "NASDAQ",
+   "PAIRED"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "carry",
+   "gap",
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "vault_sha": "74c33c3b94b70dd81200",
+  "host": "quanterlab.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Regime-Based Sector Rotation Beats the Index at Full Deployment: 19-Year Walk-Forward Study",
+  "url": "https://quanterlab.com/research/steering-wheel-not-brake-nineteen-years-of-regime-investing",
+  "published": "2026-09-02T19:14:15+00:00",
+  "symbols": [
+   "NASDAQ",
+   "PAIRED"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "correlation",
+   "gap",
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "vault_sha": "47b94dfd3f68cb4042b4",
+  "host": "quanterlab.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Momentum Mini-Portfolio Development - Part 2: USA Pullback Momentum",
+  "url": "https://www.tradequantixnewsletter.com/p/momentum-mini-portfolio-development-302",
+  "published": "2026-09-02T19:14:16+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "carry",
+   "correlation",
+   "mean_reversion",
+   "momentum",
+   "orderflow"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "vault_sha": "da3ebc96a5bb2dd5eb7b",
+  "host": "www.tradequantixnewsletter.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "I Ran Two Strategies Past 80 Meaningless Versions of Themselves. The Control Group Told Them Apart.",
+  "url": "https://yizon.substack.com/p/i-ran-two-strategies-past-80-meaningless",
+  "published": "2026-09-02T19:14:17+00:00",
+  "symbols": [
+   "BETTER"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "carry"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "vault_sha": "ab75222b86d37648a0b2",
+  "host": "yizon.substack.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Sectoral Intramonth Momentum Cycle: Exploiting Turn-of-the-Month Patterns in Sector ETF Strategies | QuantPedia",
+  "url": "https://quantpedia.com/sectoral-intramonth-momentum-cycle/?a=6080",
+  "published": "2026-09-02T19:14:18+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "momentum",
+   "orderflow",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "vault_sha": "48c50d2931b7c336e9eb",
+  "host": "quantpedia.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "1.27 How to Spot a Fake ML Trading Paper",
+  "url": "https://aligrithm.com/how-to-spot-a-fake-ml-trading-paper/",
+  "published": "2026-09-02T19:14:19+00:00",
+  "symbols": [
+   "POINTS"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "correlation",
+   "gap",
+   "momentum"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "vault_sha": "ea574e224a59dd477c48",
+  "host": "aligrithm.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Autopsy \u2116005: The congressional-trading ETF that beats the market \u2014 Morgue Labs",
+  "url": "https://morguelabs.com/autopsies/congress-etf",
+  "published": "2026-09-02T19:14:19+00:00",
+  "symbols": [
+   "MORGUE",
+   "NVIDIA",
+   "SAMPLE"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "carry",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "vault_sha": "c1e5873fd7590a738e88",
+  "host": "morguelabs.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Trading Strategy Comparison: Is B Really Better Than A? | Dr Krzysztof Ozimek",
+  "url": "https://www.drkrzysztofozimek.com/gamlss-zaga-trading-strategy-comparison/",
+  "published": "2026-09-02T19:14:20+00:00",
+  "symbols": [
+   "GAMLSS"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "carry"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "vault_sha": "2e6c49be48436efc0bb6",
+  "host": "www.drkrzysztofozimek.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Testing for Mean Reversion: ADF, Hurst Exponent and Half-Life | Quantt",
+  "url": "https://www.quantt.co.uk/resources/mean-reversion-testing?ref=quantocracy",
+  "published": "2026-09-02T19:14:21+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "correlation",
+   "mean_reversion",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "vault_sha": "7f182749e56424d46006",
+  "host": "www.quantt.co.uk"
+ },
+ {
+  "source": "world_crawler",
+  "title": "The Ornstein-Uhlenbeck Process in Finance: Theory, Simulation and Calibration | Quantt",
+  "url": "https://www.quantt.co.uk/resources/ornstein-uhlenbeck-process?ref=quantocracy",
+  "published": "2026-09-02T19:14:23+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "carry",
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "vault_sha": "b89d0843f7fae3d6c355",
+  "host": "www.quantt.co.uk"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Quick 5 ETF Rotational Strategy Returns the Upside of Stocks with Half the Risk",
+  "url": "https://papertoprofit.substack.com/p/quick-5-etf-rotational-strategy-returns",
+  "published": "2026-09-02T19:14:23+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "vault_sha": "fbf06393971fb01d4c74",
+  "host": "papertoprofit.substack.com"
+ }
+]

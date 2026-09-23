@@ -8,14 +8,16 @@ NO survivor claim is made without the universal 10-gate pass.
 Gate order (original, verbatim from quant-platform libs/validation):
   1 economic_prior     - mechanism documented
   2 in_sample_screen   - Sharpe > 0
-  3 deflated_sharpe    - DSR >= 0.95, n_trials = max(2, ceil(cells_tested * 7.0))
+  3 deflated_sharpe    - DSR >= 0.95, null-calibrated effective trial census
   4 pbo                - CSCV PBO <= 0.5 (program-level, full trial matrix)
   5 reality_check_spa  - Hansen SPA p < 0.05 (program-level)
   6 cpcv               - CPCV mean OOS Sharpe > 0 (purge + embargo)
   7 walk_forward       - WalkForwardEngine 4 splits, test_size = len//6,
                          min_oos_sharpe 0, min_stability 0.5
   8 stress_costs       - X3 cost scenario expected R > 0
-  9 lockbox            - wf OOS Sharpe >= 0
+  9 lockbox            - Sharpe >= 0 on the reserved final 20% of the campaign
+                         calendar, carved BEFORE the program matrix and read by
+                         no other gate (was: a second reading of gate 7's wf OOS)
  10 expected_value     - mean daily R > 0
 
 Covers hunt17/19/20/21/22 + hunt18_* loop-experiment reports. Waits for
@@ -23,17 +25,19 @@ reports/DONE_qquant_gates (the hunt12/16 REAL3 path) before starting so the
 critical 182 gauntlet finishes first. Run under the quant-platform venv python.
 
 Usage: python research/universal_gate.py
-Output: reports/universal_gates_<hunt>.json + reports/UNIVERSAL_SURVIVORS.json
-        + DONE markers reports/DONE_universal_<hunt>.
+Output: reports/universal_gates_<hunt>.json + reports/UNIVERSAL_GATE_CANDIDATES.json
+        + DONE markers reports/DONE_universal_<hunt>. The external gauntlet remains the sole
+        certificate authority; this legacy lane reports passes but cannot mint.
 """
 
 from __future__ import annotations
 
+# ruff: noqa: E402 -- repository and desk roots must be inserted before local imports.
 import json
-import math
+import os
 import sys
 import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import numpy as np
@@ -44,28 +48,44 @@ REPORTS = BASE / "reports"
 UNI = BASE / "data" / "universe"
 sys.path.insert(0, str(BASE))
 sys.path.insert(0, str(BASE / "research"))
-sys.path.insert(0, str(Path(r"C:\Users\dell\quant-platform")))
+# REPO ROOT, DERIVED -- not a hardcoded "C:\Users\dell\quant-platform". That path is both the
+# retired laptop's user account AND a folder name ("quant-platform") this repo does not even
+# have on Contabo (it is checked out as "quant"). libs/validation/* -- everything this gate
+# imports next -- lives two levels above desks/mt5, wherever the checkout actually sits, so QP
+# is derived from BASE the same way every other path in this repo was fixed to be tonight.
+QP = BASE.parent.parent
+sys.path.insert(0, str(QP))
 
-from libs.validation.cpcv import CPCV  # noqa: E402
-from libs.validation.dsr import deflated_sharpe_ratio, sharpe_ratio  # noqa: E402
-from libs.validation.pbo import probability_backtest_overfitting  # noqa: E402
-from libs.validation.reality_check import hansen_spa  # noqa: E402
-from libs.validation.revalidation import WalkForwardEngine, WalkForwardStatus  # noqa: E402
+from gate_policy import (
+    ATTESTATION as GATE_POLICY,
+)
+from gate_policy import (
+    COST_SCENARIO,
+    DONE_MARKER,
+    DSR_THRESHOLD,
+    PBO_THRESHOLD,
+    SPA_ALPHA,
+    WF_MIN_STABILITY,
+    WF_SPLITS,
+    all_ten_pass,
+    charged_trial_count,
+    is_exact_policy,
+)
+from gate_policy import (
+    GATES as GATE_NAMES,
+)
+from mt5desk import families
+from mt5desk.canonical import calibrated_census_report
+from mt5desk.engine import Costs, run_backtest
 
-from mt5desk import families  # noqa: E402
-from mt5desk.engine import Costs, run_backtest  # noqa: E402
+from libs.validation.cpcv import CPCV
+from libs.validation.dsr import deflated_sharpe_ratio, sharpe_ratio
+from libs.validation.pbo import probability_backtest_overfitting
+from libs.validation.reality_check import hansen_spa
+from libs.validation.revalidation import WalkForwardEngine, WalkForwardStatus
 
-TRIALS_MULTIPLIER = 7.0
-DSR_THRESHOLD = 0.95
-PBO_THRESHOLD = 0.5
-SPA_ALPHA = 0.05
-WF_SPLITS = 4
-WF_MIN_STABILITY = 0.5
-COST_SCENARIO = 3.0
-GATES = ["economic_prior", "in_sample_screen", "deflated_sharpe", "pbo",
-         "reality_check_spa", "cpcv", "walk_forward", "stress_costs",
-         "lockbox", "expected_value"]
-HUNTS = ["hunt17", "hunt19", "hunt20", "hunt21", "hunt22", "hunt23"]
+GATES = list(GATE_NAMES)
+HUNTS = ["hunt17", "hunt19", "hunt20", "hunt21", "hunt22", "hunt23", "curve_compendium"]
 GATE_MODULES = {  # hunt -> module + report file
     "hunt17": ("run_hunt17", "hunt17.json"),
     "hunt19": ("run_hunt19", "hunt19.json"),
@@ -73,35 +93,110 @@ GATE_MODULES = {  # hunt -> module + report file
     "hunt21": ("run_hunt21", "hunt21.json"),
     "hunt22": ("run_hunt22", "hunt22.json"),
     "hunt23": ("run_hunt23", "hunt23.json"),
+    "curve_compendium": ("curve_strategy_screen", "curve_strategy_screen.json"),
 }
 
 
+def retained_exact_survivors(path: Path) -> dict[str, dict]:
+    """Retain only already-attested exact passes during an incremental sweep.
+
+    Universal sweeps are incremental because DONE markers skip prior hunts. Starting the output
+    from an empty dict therefore deletes every prior survivor, and omitting the policy attestation
+    makes the shadow fail closed even when the individual certificate remains present.
+    (Grafted back after the 2026-08-25 desk sync trampled this file; the certifier-erase fix
+    predates the sync's base and must survive every future restore of it.)
+    """
+    try:
+        current = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    if not is_exact_policy(current.get("gate_policy")):
+        # NEVER AN EMPTY DICT. This branch returned {} -- and the docstring above says in its own
+        # words what an empty starting dict does: it deletes every prior survivor. A mismatched
+        # file-level attestation is a fact about the FILE's header, not about the rows, and the
+        # write that follows re-stamps the header with the current ATTESTATION. Returning {}
+        # here therefore turned a header mismatch into the loss of the entire certificate
+        # library on the next write. The rows are kept; the recertify step re-judges them under
+        # the current policy, and `authorized_specs` still fails closed on any row that does not
+        # carry a full gates record. Reported, so the re-stamp is visible rather than silent.
+        print("universal_gate: survivors file attestation is not the current policy; keeping "
+              "its rows for recertification rather than starting from empty", flush=True)
+    survivors = current.get("survivors")
+    if not isinstance(survivors, dict):
+        return {}
+    return {
+        str(key): row for key, row in survivors.items()
+        if isinstance(row, dict) and all_ten_pass(row.get("gates"))
+    }
+
+
 def costs_for(sym: str, meta: dict, mult: float = 1.0) -> Costs:
-    m = meta.get(sym, {})
-    return Costs(
-        spread_per_lot=0.48 * mult if sym == "XAUUSD" else max(
-            m.get("median_spread_pts", 1) * m.get("tick_size", 1e-5) * m.get("contract_size", 1e5),
-            0.05) * mult,
-        commission_per_lot=3.50 * mult, contract_oz=m.get("contract_size", 1e5))
+    """Fusion Zero costs: `mult=2` baseline round-trip, `mult=3` stress."""
+    return Costs.from_symbol(meta.get(sym, {}), mult=mult)
+
+
+#: Fraction of the campaign calendar reserved as lockbox -- untouched by every other gate, read
+#: exactly once, at the end. 20% of a multi-year daily series is enough rows to measure a Sharpe
+#: while leaving the development window long enough for CPCV's six groups and walk-forward's
+#: splits to remain meaningful.
+LOCKBOX_FRAC = 0.20
+#: Below this many held-out rows a lockbox Sharpe is noise, and the gate FAILS rather than passes.
+#: Absence of evidence is not permission: a campaign too short to hold anything back has not
+#: earned the tenth hurdle, and saying so is the honest answer.
+LOCKBOX_MIN_DAYS = 40
+
+
+def _lockbox_cut(series: list[pd.Series], frac: float = LOCKBOX_FRAC) -> pd.Timestamp | None:
+    """The single calendar date at which every cell's lockbox begins, or None when too short.
+
+    Derived from the UNION of every cell's dates so one cut serves the whole campaign. Returning
+    None leaves the caller with no lockbox at all, which the verdict then fails closed on -- it
+    must never silently degrade into 'no held-out data, therefore fine'.
+    """
+    if not series:
+        return None
+    cal = pd.DatetimeIndex(sorted({d for s in series for d in s.index}))
+    if len(cal) < LOCKBOX_MIN_DAYS * 2:
+        return None
+    idx = int(len(cal) * (1.0 - frac))
+    if len(cal) - idx < LOCKBOX_MIN_DAYS:
+        return None
+    return cal[idx]
 
 
 def daily_series(df: pd.DataFrame, sigs: list, costs: Costs) -> pd.Series:
     res = run_backtest(df, sigs, costs)
-    s = pd.Series({pd.Timestamp(t.entry_time).date(): t.r_multiple for t in res.trades},
-                  dtype=float)
-    return s.groupby(level=0).sum()
+    # A dict silently retained only the final trade on multi-trade days. Preserve every trade.
+    return pd.Series(
+        [t.r_multiple for t in res.trades],
+        index=[pd.Timestamp(t.entry_time).normalize() for t in res.trades], dtype=float,
+    ).groupby(level=0).sum()
 
 
 class Cell:
-    __slots__ = ("id", "sym", "df", "sigs", "costs")
+    __slots__ = ("costs", "df", "id", "series", "series_x3", "sigs", "sym")
 
-    def __init__(self, cid: str, sym: str, df: pd.DataFrame, sigs: list, costs: Costs):
+    def __init__(self, cid: str, sym: str, df: pd.DataFrame | None, sigs: list,
+                 costs: Costs | None, *, series: pd.Series | None = None,
+                 series_x3: pd.Series | None = None):
         self.id, self.sym, self.df, self.sigs, self.costs = cid, sym, df, sigs, costs
+        self.series, self.series_x3 = series, series_x3
 
 
 def iter_hunt_cells(modname: str, meta: dict) -> list[Cell]:
     """Enumerate every tested cell of a hunt (report-all structure rebuilt from
     the hunt's own family code + params)."""
+    if modname == "curve_strategy_screen":
+        out = []
+        series_dir = BASE / "data" / "cell_series" / "curve_compendium"
+        for path in sorted(series_dir.glob("*.parquet")):
+            frame = pd.read_parquet(path)
+            if {"net_return", "stress_x3_return"} <= set(frame):
+                symbol = "XAUUSD" if path.stem.startswith("GC_") else "XTIUSD"
+                out.append(Cell(path.stem, symbol, None, [], None,
+                                series=frame["net_return"].dropna(),
+                                series_x3=frame["stress_x3_return"].dropna()))
+        return out
     mod = __import__(modname)
     if hasattr(mod, "UNIVERSAL_CELLS"):  # hunt supplies its own cell iterator
         return list(mod.UNIVERSAL_CELLS(meta))
@@ -109,7 +204,6 @@ def iter_hunt_cells(modname: str, meta: dict) -> list[Cell]:
     all_cells = report.get("all", [])
     if not all_cells:
         return []
-    h1_cache: dict[str, pd.DataFrame] = {}
     h4_cache: dict[str, tuple[pd.DataFrame, pd.DataFrame]] = {}
     fams = getattr(mod, "FAMILIES", {})
     out: list[Cell] = []
@@ -135,17 +229,24 @@ def iter_hunt_cells(modname: str, meta: dict) -> list[Cell]:
             print(f"  rebuild fail {sym}.{fam}: {e!r}", flush=True)
             continue
         out.append(Cell(f"{sym}.{fam}.{c.get('param', 0)}.{'L' if side > 0 else 'S'}",
-                        sym, h4, sigs, costs_for(sym, meta)))
+                        sym, h4, sigs, costs_for(sym, meta, mult=2.0)))
     return out
 
 
-def _ug_daily(args) -> pd.Series:
+def _ug_daily(args) -> pd.Series | None:
     df, sigs, costs = args
-    return daily_series(df, sigs, costs)
+    try:
+        if isinstance(df, pd.Series):
+            return df
+        return daily_series(df, sigs, costs)
+    except Exception as e:
+        print(f"  daily series error: {e!r}", flush=True)
+        return None
 
 
 def _ug_verdict(args) -> dict:
-    cid, sym, arr, arr_x3, pbo_ok, pbo_val, spa_ok, spa_p, n_trials, sh_var = args
+    (cid, sym, arr, arr_x3, arr_lock, pbo_ok, pbo_val, spa_ok, spa_p,
+     n_trials, sh_var) = args
     arr = np.asarray(arr, dtype=float)
     if len(arr) < 60:
         return {"cell": cid, "error": "series too short"}
@@ -183,8 +284,19 @@ def _ug_verdict(args) -> dict:
                               "stability": round(wf_stab, 4)}
     exp3 = float(np.asarray(arr_x3, dtype=float).mean()) if len(arr_x3) else 0.0
     stages["stress_costs"] = {"passed": bool(exp3 > 0.0), "exp_x3": round(exp3, 4)}
-    stages["lockbox"] = {"passed": bool(wf_oos >= 0.0),
-                         "lockbox_sharpe": round(wf_oos, 4)}
+    # THE TENTH HURDLE, ON DATA NO OTHER GATE HAS SEEN. `arr` above is the development window
+    # only; `arr_lock` is the reserved tail, carved in run_hunt before the program matrix was
+    # built. Fails closed when the campaign was too short to reserve anything -- a certificate
+    # claiming ten gates must have paid for ten.
+    lock = np.asarray(arr_lock, dtype=float)
+    if len(lock) < LOCKBOX_MIN_DAYS:
+        stages["lockbox"] = {"passed": False, "lockbox_sharpe": None, "n_days": int(len(lock)),
+                             "why": f"held-out window is {len(lock)} days, under the "
+                                    f"{LOCKBOX_MIN_DAYS}-day floor; no lockbox evidence exists"}
+    else:
+        lock_sr = float(sharpe_ratio(lock))
+        stages["lockbox"] = {"passed": bool(lock_sr >= 0.0),
+                             "lockbox_sharpe": round(lock_sr, 4), "n_days": int(len(lock))}
     ev = float(arr.mean())
     stages["expected_value"] = {"passed": bool(ev > 0.0), "ev": round(ev, 4)}
     return {"cell": cid, "sym": sym, "days": len(arr),
@@ -193,43 +305,118 @@ def _ug_verdict(args) -> dict:
 
 
 def gauntlet(cells: list[Cell], hunt: str) -> dict:
+    import psutil as _ps
+    avail_mb = _ps.virtual_memory().available / 1048576
+    cap = 1 if os.name != "nt" and avail_mb < 1024 else (2 if os.name != "nt" else 8)
+    workers = min(cap, len(cells) or 1)
+    if workers <= 1:
+        print(f"  {hunt}: sequential mode (free={avail_mb:.0f}MB)", flush=True)
+    for attempt in range(3):
+        try:
+            return _gauntlet_once(cells, hunt, workers)
+        except (BrokenPipeError, OSError) as e:
+            print(f"  {hunt}: pool died (attempt {attempt + 1}/3, {e!r}); "
+                  f"free={avail_mb:.0f}MB, retrying in 60s", flush=True)
+            time.sleep(60)
+    raise RuntimeError(f"{hunt}: pool kept dying (3 attempts)")
+
+
+def _gauntlet_once(cells: list[Cell], hunt: str, workers: int) -> dict:
     import multiprocessing as mp
-    workers = min(8, len(cells) or 1)
-    with mp.Pool(workers) as pool:
-        daily = list(pool.map(_ug_daily, [
-            (c.df, c.sigs, c.costs) for c in cells]))
-        daily_x3 = list(pool.map(_ug_daily, [
-            (c.df, c.sigs, Costs(c.costs.spread_per_lot * COST_SCENARIO,
-                                 c.costs.commission_per_lot * COST_SCENARIO,
-                                 c.costs.contract_oz)) for c in cells]))
-    cols = [s.to_numpy(float) for s in daily]
-    cols = [a for a in cols if len(a) >= 60]
+    daily_args = [((c.series, None, None) if c.series is not None
+                   else (c.df, c.sigs, c.costs)) for c in cells]
+    # Baseline already crosses 2x the measured spread. X3 means three crossings, not baseline*3;
+    # contractual commission does not widen with market stress.
+    x3_args = []
+    for c in cells:
+        if c.series_x3 is not None:
+            x3_args.append((c.series_x3, None, None))
+        else:
+            # DERIVE, NEVER REBUILD. This constructed a fresh `Costs` from three of the four
+            # fields, so `quote_per_account` reverted to its 1.0 default and un-did the account-
+            # currency conversion the baseline had already applied. Measured 2026-08-27 on
+            # CADJPY: baseline round trip 1699.29, this line 607.00, correct 1899.29 -- the x3
+            # cost-stress gate was testing at 0.36x, weaker than the baseline it stresses, on the
+            # JPY crosses that carry this desk's live family. `stressed()` carries every field
+            # by construction, so a field added later cannot be dropped here again.
+            x3_args.append((c.df, c.sigs, c.costs.stressed(COST_SCENARIO / 2.0)))
+    if workers <= 1:
+        daily = [_ug_daily(a) for a in daily_args]
+        daily_x3 = [_ug_daily(a) for a in x3_args]
+    else:
+        with mp.Pool(workers) as pool:
+            daily = list(pool.map(_ug_daily, daily_args))
+            daily_x3 = list(pool.map(_ug_daily, x3_args))
+    # ------------------------------------------------------------------ THE LOCKBOX, CARVED FIRST
+    # GATE 9 WAS GATE 7 READ TWICE. `lockbox` passed on `wf_oos >= 0` -- the walk-forward gate's
+    # own out-of-sample Sharpe -- so a certified survivor printed WF OOS 0.3708 and "lockbox"
+    # 0.3708, the same number, and the desk counted ten independent hurdles where it had nine.
+    #
+    # A lockbox that is not carved BEFORE everything else is not a lockbox. The cut happens here,
+    # above the matrix, because PBO and SPA are program-level and would otherwise read the held-out
+    # rows -- a slice the multiplicity gates have already seen cannot then be evidence about them.
+    #
+    # ONE GLOBAL DATE, never a per-series fraction: every cell must hold out the SAME calendar
+    # period or the matrix rows stop being comparable observations, which is the same-ruler law
+    # the alignment below exists to keep.
+    lock_cut = _lockbox_cut([s for s in daily if s is not None])
+    lock_daily: list[pd.Series | None] = [None] * len(daily)
+    if lock_cut is not None:
+        lock_daily = [None if s is None else s[s.index >= lock_cut] for s in daily]
+        daily = [None if s is None else s[s.index < lock_cut] for s in daily]
+        daily_x3 = [None if s is None else s[s.index < lock_cut] for s in daily_x3]
+
+    cols: dict[str, pd.Series] = {}
+    for idx, s in enumerate(daily):
+        if s is None:
+            continue
+        if len(s) >= 60:
+            cols[f"c{idx}"] = s
     if not cols:
         return {"hunt": hunt, "error": "no cells with >=60 days", "verdicts": []}
-    min_len = min(len(a) for a in cols)
-    matrix = np.column_stack([a[-min_len:] for a in cols])
+    # Joint gates require the same calendar row across trials. Non-trading calendar days are true
+    # zero P&L for the program matrix, while each cell's own gates below retain active observations.
+    matrix_frame = pd.DataFrame(cols).sort_index().fillna(0.0)
+    matrix = matrix_frame.to_numpy(float)
     sharpes = np.array([sharpe_ratio(matrix[:, k]) for k in range(matrix.shape[1])])
-    n_trials = max(2, math.ceil(len(cols) * TRIALS_MULTIPLIER))
+    census = calibrated_census_report(
+        [matrix[:, k] for k in range(matrix.shape[1])],
+        sd_sharpe=float(sharpes.std(ddof=1)) if len(sharpes) > 1 else 0.0,
+    )
+    n_trials, trial_basis = charged_trial_count(
+        len(cols), census.get("n_effective"), census.get("method"))
     pbo = probability_backtest_overfitting(matrix)
     spa = hansen_spa(matrix)
     pbo_ok = float(pbo.pbo) <= PBO_THRESHOLD
     spa_ok = float(spa.p_value) < SPA_ALPHA
     print(f"  {hunt}: matrix {matrix.shape} PBO={float(pbo.pbo):.3f} "
-          f"SPA p={float(spa.p_value):.4f} n_trials={n_trials}", flush=True)
+          f"SPA p={float(spa.p_value):.4f} n_trials={n_trials} ({trial_basis})", flush=True)
 
     args = []
     for k, c in enumerate(cells):
-        arr = daily[k].to_numpy(float)
-        if len(arr) < 60:
-            args.append((c.id, c.sym, np.array([]), np.array([]),
+        if daily[k] is None:
+            args.append((c.id, c.sym, np.array([]), np.array([]), np.array([]),
                          pbo_ok, float(pbo.pbo), spa_ok, float(spa.p_value),
                          n_trials, float(sharpes.var(ddof=1))))
             continue
-        args.append((c.id, c.sym, arr, daily_x3[k].to_numpy(float),
+        arr = daily[k].to_numpy(float)
+        if len(arr) < 60:
+            args.append((c.id, c.sym, np.array([]), np.array([]), np.array([]),
+                         pbo_ok, float(pbo.pbo), spa_ok, float(spa.p_value),
+                         n_trials, float(sharpes.var(ddof=1))))
+            continue
+        x3 = daily_x3[k]
+        lk = lock_daily[k]
+        args.append((c.id, c.sym, arr, x3.to_numpy(float) if x3 is not None
+                     else np.array([]),
+                     lk.to_numpy(float) if lk is not None else np.array([]),
                      pbo_ok, float(pbo.pbo), spa_ok, float(spa.p_value),
                      n_trials, float(sharpes.var(ddof=1))))
-    with mp.Pool(workers) as pool:
-        verdicts = list(pool.map(_ug_verdict, args))
+    if workers <= 1:
+        verdicts = [_ug_verdict(a) for a in args]
+    else:
+        with mp.Pool(workers) as pool:
+            verdicts = list(pool.map(_ug_verdict, args))
     gate_fails: dict[str, int] = {}
     for v in verdicts:
         for name, s in v.get("stages", {}).items():
@@ -239,20 +426,23 @@ def gauntlet(cells: list[Cell], hunt: str) -> dict:
     print(f"  {hunt}: {n_pass}/{len(verdicts)} cells pass all 10 gates", flush=True)
     return {
         "hunt": hunt, "n_cells": len(cells), "n_trials": n_trials,
+        "trial_count_basis": trial_basis, "trial_census": census,
         "program_level": {"pbo": round(float(pbo.pbo), 4), "spa_p": round(float(spa.p_value), 4)},
         "survivors_passing_all": n_pass, "gate_fails": gate_fails, "verdicts": verdicts,
-        "swept_at": datetime.now(timezone.utc).isoformat(),
+        "swept_at": datetime.now(UTC).isoformat(),
     }
 
 
 def main() -> int:
-    done_flag = REPORTS / "DONE_qquant_gates"
-    if not done_flag.exists():
-        print("waiting for DONE_qquant_gates (hunt12/16 REAL3 path) ...", flush=True)
+    done_flag = REPORTS / DONE_MARKER
+    held_flag = BASE / "data" / "HOLD_qquant_gates"
+    if not done_flag.exists() and not held_flag.exists():
+        print(f"waiting for {DONE_MARKER} (current original ten-gate run) ...", flush=True)
         while not done_flag.exists():
             time.sleep(60)
         print("qquant gates done, starting universal gauntlet", flush=True)
     meta = json.loads((UNI / "universe.json").read_text("utf-8"))
+    survivor_path = REPORTS / "UNIVERSAL_GATE_CANDIDATES.json"
     survivors_all: dict[str, dict] = {}
     for hunt in HUNTS:
         marker = REPORTS / f"DONE_universal_{hunt}"
@@ -276,20 +466,28 @@ def main() -> int:
                 survivors_all[f"{hunt}.{v['cell']}"] = {
                     "hunt": f"{hunt}.json", "cell": v["cell"], "sym": v["sym"],
                     "days": v["days"], "gates": v["stages"],
-                    "gated_at": datetime.now(timezone.utc).isoformat()}
+                    "gated_at": datetime.now(UTC).isoformat()}
         (REPORTS / f"DONE_universal_{hunt}").write_text(
-            datetime.now(timezone.utc).isoformat(), encoding="utf-8")
+            datetime.now(UTC).isoformat(), encoding="utf-8")
     # hunt18 loop-experiment reports
+    # Clear run_hunt17 anchor cache so it reloads fresh T10YIE
+    import run_hunt17 as _rh17
+    if hasattr(_rh17, "_ANC"):
+        _rh17._ANC = None
+    import mt5desk.families as _mt5fam
+    if hasattr(_mt5fam, "_ANC"):
+        _mt5fam._ANC = None
     for rp in sorted(REPORTS.glob("hunt18_*.json")):
         marker = REPORTS / f"DONE_universal_{rp.stem}"
         if marker.exists():
             continue
         report = json.loads(rp.read_text("utf-8"))
         fam = report.get("family")
-        if not fam or not (REPORTS / "hunt18_placeholder").exists():
+        if not fam:
             print(f"{rp.stem}: no family key, skipping", flush=True)
             continue
-        from run_hunt17 import FAMILIES as F17, resample as r17resample
+        from run_hunt17 import FAMILIES as F17
+        from run_hunt17 import resample as r17resample
         fn = F17.get(fam)
         if not fn:
             continue
@@ -306,7 +504,8 @@ def main() -> int:
                 sigs = fn(h4, d1, side, **params)
             except Exception:
                 continue
-            cells.append(Cell(f"{sym}.{fam}.{side}", sym, h4, sigs, costs_for(sym, meta)))
+            cells.append(Cell(f"{sym}.{fam}.{side}", sym, h4, sigs,
+                              costs_for(sym, meta, mult=2.0)))
         if not cells:
             continue
         res = gauntlet(cells, rp.stem)
@@ -317,17 +516,23 @@ def main() -> int:
                 survivors_all[f"{rp.stem}.{v['cell']}"] = {
                     "hunt": rp.name, "cell": v["cell"], "sym": v["sym"],
                     "days": v["days"], "gates": v["stages"],
-                    "gated_at": datetime.now(timezone.utc).isoformat()}
+                    "gated_at": datetime.now(UTC).isoformat()}
         (REPORTS / f"DONE_universal_{rp.stem}").write_text(
-            datetime.now(timezone.utc).isoformat(), encoding="utf-8")
+            datetime.now(UTC).isoformat(), encoding="utf-8")
 
-    (REPORTS / "UNIVERSAL_SURVIVORS.json").write_text(
+    # REPORT, NEVER MINT. This module used to write the same authority file as the external
+    # gauntlet. A zero-pass legacy run then erased the live certificate library and its policy
+    # attestation. The per-hunt findings remain useful inputs; only the authority side effect is
+    # removed. The canonical external gauntlet is the one certificate pen.
+    survivor_path.write_text(
         json.dumps({"n": len(survivors_all), "survivors": survivors_all,
+                    "gate_policy": GATE_POLICY,
                     "note": "UNIVERSAL 10-GATE PASS ONLY. Placebo null + fragility "
                             "apply before portfolio entry.",
-                    "swept_at": datetime.now(timezone.utc).isoformat()},
+                    "swept_at": datetime.now(UTC).isoformat()},
                    indent=2, default=str), encoding="utf-8")
-    print(f"\nUNIVERSAL SURVIVORS: {len(survivors_all)}", flush=True)
+    print(f"\nLEGACY GATE CANDIDATES: {len(survivors_all)} (no certificate authority)",
+          flush=True)
     return 0
 
 

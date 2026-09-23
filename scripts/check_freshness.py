@@ -75,11 +75,14 @@ from libs.ops.lawful import guard as _law_guard  # noqa: E402
 #: the lending-haircut base rates -- both of which steer money -- could have their contracts
 #: deleted with the fence still green. The tokens name the CONTRACT, not just the helper, so
 #: re-pointing a read at a different artifact is a regression too.
+#: NARROWED 2026-09-05 (universe mandate): the cash-carry executor and the conviction trader were
+#: deleted with the retired book, and `libs/research/lending_haircut.py` went with the DeFi
+#: lending axis it priced. Their rows are removed rather than left dangling -- a wiring contract
+#: naming a file that does not exist can never regress, so it would sit green forever while
+#: asserting nothing, which is precisely the R0398 defect that widened this tuple in the first
+#: place. What remains is every non-test decision-path `read_fresh` caller that still exists.
 _WIRED: tuple[tuple[str, str], ...] = (
-    ("scripts/run_cashcarry_executor.py", "read_fresh"),
-    ("scripts/run_alerts.py", "live_guard_dead"),
-    ("scripts/run_conviction_trader.py", 'read_fresh("data/cost_hunt.json"'),
-    ("libs/research/lending_haircut.py", "read_fresh(BASE_RATES_PATH"),
+    ("scripts/run_growth_audit.py", 'read_fresh("web/cashcarry_shadow.json"'),
 )
 
 _CONSUMED_WINDOW_H = 26.0     # a stale read within this window counts as "consumed while stale"

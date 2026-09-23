@@ -1,0 +1,604 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Quantitative Futures, stocks and Options Trading (AVAILABLE FOR MATLAB FREELANCING): Database",
+  "url": "http://tradingwithmatlab.blogspot.com/search/label/Database",
+  "published": "2026-09-04T11:12:13+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "http://tradingwithmatlab.blogspot.com/2009/01/download-and-analyse-option-chains-data.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "0261ded473220aad2248",
+  "host": "tradingwithmatlab.blogspot.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Quantitative Futures, stocks and Options Trading (AVAILABLE FOR MATLAB FREELANCING): Historical Volatility",
+  "url": "http://tradingwithmatlab.blogspot.com/search/label/Historical%20Volatility",
+  "published": "2026-09-04T11:12:17+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "http://tradingwithmatlab.blogspot.com/2009/01/download-and-analyse-option-chains-data.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "149220a9d6ad34b84616",
+  "host": "tradingwithmatlab.blogspot.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "World Development Indicators | The World Bank",
+  "url": "http://wdi.worldbank.org/table/1.3",
+  "published": "2026-09-04T11:12:24+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "0d0d6bf5d1e7030ddf45",
+  "host": "wdi.worldbank.org"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u4e1c\u65b9\u8d22\u5bcc\u8bc1\u5238\uff1a\u8bc1\u5238\u4ea4\u6613|\u7092\u80a1|\u76ef\u76d8\u5b98\u65b9\u8f6f\u4ef6\u4e0b\u8f7d",
+  "url": "http://www.18.cn/download.html",
+  "published": "2026-09-04T11:12:35+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [
+   "https://zqcdn.eastmoneysec.com.cn/secuweb-ssr-18/static/builds/meta/e34adc18-c94e-4053-8c31-83d65f277dc7.json",
+   "http://www.18.cn/download"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "146b2b522eeb8321a38a",
+  "host": "www.18.cn"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Quant Mashup - Quantocracy",
+  "url": "http://www.quantocracy.com?pg=5",
+  "published": "2026-09-04T11:12:37+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "correlation",
+   "gap",
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "714e0ffb277eff90a61f",
+  "host": "www.quantocracy.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Quant Mashup - Quantocracy",
+  "url": "http://www.quantocracy.com?pg=150",
+  "published": "2026-09-04T11:12:39+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "correlation",
+   "momentum",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "7730e7b92dbe0df9c904",
+  "host": "www.quantocracy.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Quantitative Trading: Trading with Estimize and I/B/E/S earnings estimates data",
+  "url": "http://epchan.blogspot.com/2015/01/trading-with-estimize-and-ibes-earnings.html",
+  "published": "2026-09-04T11:12:39+00:00",
+  "symbols": [
+   "EURCHF",
+   "EURGBP",
+   "USDMXN"
+  ],
+  "timeframes": [
+   "1M",
+   "DAILY"
+  ],
+  "patterns": [
+   "mean_reversion",
+   "momentum",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "4194c6bcff9d06dfbe94",
+  "host": "epchan.blogspot.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Quantitative Trading: Book and Workshop Introduction: Generative AI for Trading & Asset Management",
+  "url": "http://epchan.blogspot.com/2025/10/book-and-workshop-introduction.html",
+  "published": "2026-09-04T11:12:42+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry",
+   "mean_reversion"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "aa402024c26ea738af82",
+  "host": "epchan.blogspot.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Quantitative Trading: Automated trading platforms",
+  "url": "http://epchan.blogspot.com/search/label/Automated%20trading%20platforms",
+  "published": "2026-09-04T11:12:44+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "mean_reversion",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e8d7c5e93d5ed5c8aa7e",
+  "host": "epchan.blogspot.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Quantitative Trading: Strategies",
+  "url": "http://epchan.blogspot.com/search/label/Strategies",
+  "published": "2026-09-04T11:12:46+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "mean_reversion",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "8ef76817a5b3917b8004",
+  "host": "epchan.blogspot.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Quantitative Futures, stocks and Options Trading (AVAILABLE FOR MATLAB FREELANCING): Stock Symbol Change History Nasdaq",
+  "url": "http://tradingwithmatlab.blogspot.com/2014/09/stock-symbol-change-history-nasdaq.html",
+  "published": "2026-09-04T11:12:47+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://sites.google.com/site/tradewithmatlab/matlab-files/nasdaq_symbol_change.xlsx?attredirects=0&amp;d=1",
+   "http://tradingwithmatlab.blogspot.com/2009/01/download-and-analyse-option-chains-data.html"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "02f6266686a556117713",
+  "host": "tradingwithmatlab.blogspot.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Quantitative Futures, stocks and Options Trading (AVAILABLE FOR MATLAB FREELANCING): MATLAB scraper",
+  "url": "http://tradingwithmatlab.blogspot.com/search/label/MATLAB%20scraper",
+  "published": "2026-09-04T11:12:48+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://sites.google.com/site/tradewithmatlab/matlab-files/nasdaq_symbol_change.xlsx?attredirects=0&amp;d=1",
+   "http://tradingwithmatlab.blogspot.com/2009/01/download-and-analyse-option-chains-data.html"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "311c254f3f7ec507d37b",
+  "host": "tradingwithmatlab.blogspot.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Quantitative Futures, stocks and Options Trading (AVAILABLE FOR MATLAB FREELANCING): nasdaq",
+  "url": "http://tradingwithmatlab.blogspot.com/search/label/nasdaq",
+  "published": "2026-09-04T11:12:50+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://sites.google.com/site/tradewithmatlab/matlab-files/nasdaq_symbol_change.xlsx?attredirects=0&amp;d=1",
+   "http://tradingwithmatlab.blogspot.com/2009/01/download-and-analyse-option-chains-data.html"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "77bbd144c84b3d4519bd",
+  "host": "tradingwithmatlab.blogspot.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Quantitative Futures, stocks and Options Trading (AVAILABLE FOR MATLAB FREELANCING): Symbol change history",
+  "url": "http://tradingwithmatlab.blogspot.com/search/label/Symbol%20change%20history",
+  "published": "2026-09-04T11:12:52+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://sites.google.com/site/tradewithmatlab/matlab-files/nasdaq_symbol_change.xlsx?attredirects=0&amp;d=1",
+   "http://tradingwithmatlab.blogspot.com/2009/01/download-and-analyse-option-chains-data.html"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "0434c8f01c123d697c61",
+  "host": "tradingwithmatlab.blogspot.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "RealTest - Multi-Strategy Portfolio-Level Backtesting Software",
+  "url": "https://mhptrading.com/index.html",
+  "published": "2026-09-04T11:12:53+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "correlation",
+   "mean_reversion"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b7175a6661a97ee69ffd",
+  "host": "mhptrading.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "About RealTest - Marsten Parker",
+  "url": "https://mhptrading.com/about.html",
+  "published": "2026-09-04T11:13:01+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "514f7b9e543f1689524d",
+  "host": "mhptrading.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Broker Centre - Comparisons, Reviews &amp; Rankings",
+  "url": "https://thetradingbible.com/brokers",
+  "published": "2026-09-04T11:13:05+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry",
+   "orderflow"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f30107059d7814e7f08c",
+  "host": "thetradingbible.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "5 Best UK Stock Brokers List for 2023",
+  "url": "https://thetradingbible.com/best-uk-stock-brokers-list",
+  "published": "2026-09-04T11:13:13+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "gap"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ad96aa83e84046149863",
+  "host": "thetradingbible.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Episode &#8211; Inside Out Trading",
+  "url": "https://insideouttrading.com/podcast/",
+  "published": "2026-09-04T11:13:23+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "breakout"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "8fb12a4ff64907ce4358",
+  "host": "insideouttrading.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "About Trader Brian &#8211; Inside Out Trading",
+  "url": "https://insideouttrading.com/about-trader-brian/",
+  "published": "2026-09-04T11:13:27+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "gap"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f33b31aab7c6bf711018",
+  "host": "insideouttrading.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Alphalens &mdash; Alphalens 0.2.1+48.gad0be10 documentation",
+  "url": "http://quantopian.github.io/alphalens/alphalens.html",
+  "published": "2026-09-04T11:13:33+00:00",
+  "symbols": [],
+  "timeframes": [
+   "30M",
+   "4H",
+   "DAILY"
+  ],
+  "patterns": [
+   "correlation"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "http://quantopian.github.io/alphalens/_sources/alphalens.rst.txt"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "6b045f9f685a27ad5dee",
+  "host": "quantopian.github.io"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Quantitative trading in a Macro world | Math Trading",
+  "url": "http://mathtrading.wordpress.com/2012/09/02/quantitative-trading-and-macroeconomics/",
+  "published": "2026-09-04T11:13:34+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "dabee6257bf5168c075e",
+  "host": "mathtrading.wordpress.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Quant Savvy Reviews - Read Reviews on Quantsavvy.com Before You Buy | www.quantsavvy.com",
+  "url": "https://www.reviews.co.uk/company-reviews/store/quant-savvy",
+  "published": "2026-09-04T11:13:35+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "mean_reversion"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.reviews.co.uk/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "8c295dbb358f09b0e0d3",
+  "host": "www.reviews.co.uk"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "AlgoCloud \u2013 Cloud Algo Trading Platform for US Stocks &amp; ETFs",
+  "url": "https://algocloud.com/",
+  "published": "2026-09-04T11:13:37+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "carry",
+   "momentum",
+   "seasonality"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "8fad93bef29d0f12524c",
+  "host": "algocloud.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "AlgoCloud \u2013 Cloud Algo Trading Platform for US Stocks &amp; ETFs",
+  "url": "https://algocloud.com",
+  "published": "2026-09-04T11:13:39+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "carry",
+   "momentum",
+   "seasonality"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "6fe99529a43fa2f825dd",
+  "host": "algocloud.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "http://autoupdate.strategyquant.com/historydata/SQ_data_equities.txt",
+  "url": "http://autoupdate.strategyquant.com/historydata/SQ_data_equities.txt",
+  "published": "2026-09-04T11:13:42+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "MN",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "breakout",
+   "carry",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "0d59676c5fa9b70f5894",
+  "host": "autoupdate.strategyquant.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Finanzas 101: Proxy Hedging | Quantitative Finance Club",
+  "url": "http://qfclub.wordpress.com/2011/10/11/finanzas-101-proxy-hedging/",
+  "published": "2026-09-04T11:13:46+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "306feaed4db879851bb4",
+  "host": "qfclub.wordpress.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "EODHD Financial Data API",
+  "url": "https://eodhistoricaldata.github.io/EODHD-openapi/redoc.html",
+  "published": "2026-09-04T11:13:47+00:00",
+  "symbols": [
+   "COTTON",
+   "NVIDIA"
+  ],
+  "timeframes": [
+   "15M",
+   "1H",
+   "1M",
+   "30M",
+   "5M",
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "gap",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "",
+  "endpoints": [
+   "https://eodhd.com/api/calendar/dividends?filter%5Bsymbol%5D=AAPL.US",
+   "https://eodhd.com/api/mp/unicornbay/options/contracts?sort=-exp_date&filter%5Bunderlying_symbol%5D=AAPL&page%5Boffset%5D=5&page%5Blimit%5D=5",
+   "https://eodhd.com/api/mp/unicornbay/options/eod?sort=-exp_date&filter%5Bcontract%5D=AAPL270115P00450000&page%5Boffset%5D=5&page%5Blimit%5D=5"
+  ],
+  "n_endpoints": 3,
+  "vault_sha": "53f077274975caf6092a",
+  "host": "eodhistoricaldata.github.io"
+ }
+]

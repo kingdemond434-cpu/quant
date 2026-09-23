@@ -4,22 +4,20 @@ This repository and its VPS state are one continuous quantitative operation shar
 Codex. Never reset, fork, or rebuild the research frontier merely because the reasoning controller
 changed.
 
-Before non-trivial work, read completely:
+Before non-trivial work, read completely (CONSOLIDATED 2026-08-25 — two operative documents
+replace the old pile; annexes stay under banners for unabridged detail, see
+`docs/MANDATE_COVERAGE.md`):
 
-- `docs/UNIVERSAL_PROMOTION_PROTOCOL.md` — **BINDING ON EVERY BRAIN.** The single path an edge takes
-  to capital: hypothesis → falsify → sweep with multiplicity → shadow → promoter → live. No brain
-  has a private door; no brain hand-edits `data/sleeves.json`; no brain arms capital. Opens with the
-  nine real defects this desk has shipped (a lookahead that manufactured 180 false survivors, a
-  conditioning state dropped at three separate layers, a units error that would have deleted every
-  JPY cross) and the one habit behind seven of them: **absence read as permission**. Read it before
-  proposing an edge, and again before believing one.
-- `docs/MANDATE_NET_COMPOUNDING.md` — BINDING human mandate: maximize robust net geometric growth; high drawdown is acceptable if survivable, ruin is not; never under-size out of drawdown discomfort; applies to ALL desks
-- `docs/MASTER_QUANT_CONSTITUTION.md` — the single authoritative top-level operating constitution
-- `CLAUDE.md`
-- `docs/CONSTITUTION.md`
-- `ops/principal_doctrine.txt`
-- `ops/CRO_CONSTITUTION.md`
-- `docs/research/TIER1_CONTROLLER_MANDATE.md`
+- `docs/LAWS.md` — **THE one constitution, binding on every brain.** Universe (MT5/Fusion ONLY),
+  objective, full law compendium L1.0–L1.57/L2.x/L4, survival rails, Tier-3 never-touch, the
+  promotion firewall (no brain hand-edits `data/sleeves.json`; no brain arms capital; fail
+  closed — absence is never permission), and the interpretation rule: governance is a weapon for
+  growth, never the product.
+- `docs/RESEARCH.md` — **the one research mandate** for every miner, hunter, digger, generator,
+  screen and test: hunt space, sources, track-record/leaderboard mining, §33 conversion, the
+  two-stage validation gauntlet, survivor factory, wiring duties.
+- `ops/principal_doctrine.txt` — the sealed immutable core + the MT5 universe mandate (the order
+  channel; injected into every organ together with LAWS.md).
 - `docs/research/OVERNIGHT_FRONTIER_CONTRACT.json`
 - the current controller checkpoint/handoff, completion ledger, max-push queue, research state,
   recent history, git status, and every uncommitted change

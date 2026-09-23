@@ -1,14 +1,26 @@
 [Unit]
 Description=Midnight Codex frontier -- continue, sweep, reason, verify and hand off
 After=network-online.target
+StartLimitIntervalSec=0
 
 [Service]
+# Shares one memory budget with the other heavy organs (see ops/quant-heavy.slice): the
+# per-unit caps stop a unit killing itself, the slice stops them collectively exhausting
+# the box and getting an innocent neighbour killed by the global OOM killer.
+Slice=quant-heavy.slice
+# 2026-09-01 (corrected): sized from the TRUE 24h maximum (629M), not the most recent
+# reading. An earlier pass sized off the last peak and left the throttle BELOW the real
+# working set on nine units -- permanent reclaim, which is a slow kill, not a margin.
+MemoryHigh=786M
+MemoryMax=1069M
 Type=oneshot
+Restart=on-failure
+RestartSec=5min
+Environment="CODEX_NIGHTLY_FALLBACK=0"
 TimeoutStartSec=18h
 KillMode=control-group
-User=quant
 Environment="PATH=/home/quant/quant-platform/.venv/bin:/home/quant/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
-Environment="CODEX_NIGHTLY_MODEL=gpt-5.6-sol"
-Environment="CODEX_NIGHTLY_REASONING_EFFORT=max"
+Environment="CODEX_NIGHTLY_MODEL=gpt-5.6-terra"
+Environment="CODEX_NIGHTLY_REASONING_EFFORT=medium"
 WorkingDirectory=/home/quant/quant-platform
-ExecStart=/bin/bash /home/quant/quant-platform/ops/run_midnight_frontier.sh
+ExecStart=/bin/bash /home/quant/quant-platform/ops/run_midnight_codex_controller.sh

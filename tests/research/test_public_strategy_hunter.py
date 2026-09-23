@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import urllib.error
+from pathlib import Path
 
 import pytest
 
@@ -33,6 +34,8 @@ def test_youtube_discovery_resolves_handle_and_feed() -> None:
 
     rows = discover(Source("channel", "https://www.youtube.com/@channel", "youtube"), getter)
     assert rows[0]["url"] == "https://www.youtube.com/watch?v=abc"
+    assert rows[0]["video_id"] == "abc"
+    assert rows[0]["channel_id"] == "UC123"
     assert "EXTREME_RETURN" in missions(rows[0])
     assert youtube_channel_id(b"nothing") is None
     with pytest.raises(ValueError):
@@ -50,6 +53,8 @@ def test_feed_and_caption_states_never_upgrade_missing_text() -> None:
         caption, lambda _: b"<transcript><text>" + b"word " * 300 + b"</text></transcript>"
     )
     assert got["transcript_state"] == "FULL"
+    assert got["caption_language"] == "en"
+    assert got["caption_provenance"] == "youtube_public_caption_track"
 
 
 def test_extraction_parser_accepts_json_fence_and_rejects_prose() -> None:
@@ -79,6 +84,8 @@ def test_one_hunter_runs_three_missions_and_deduplicates_state() -> None:
         "EXTREME_RETURN",
     }
     assert first["items"][0]["transcript_state"] == "UNAVAILABLE"
+    assert first["items"][0]["canonical_item_id"] == "youtube-video:abc"
+    assert first["venue_scope"] == "MT5_FUSION_ONLY"
     assert first["k_miner_replaced"] is False
     second = run([source], first["state"], ask, getter=getter)
     assert second["items"] == []
@@ -97,6 +104,56 @@ def test_source_failure_is_recorded_and_does_not_abort_other_sources() -> None:
         getter=getter,
     )
     assert report["failures"][0]["source"] == "bad"
+
+
+def test_blocked_transcript_is_not_seen_and_retries_with_backoff() -> None:
+    source = Source("channel", "https://www.youtube.com/@channel", "youtube")
+
+    def getter(url: str) -> bytes:
+        if "@channel" in url:
+            return b'{"channelId":"UC123"}'
+        if "feeds" in url:
+            return FEED
+        raise urllib.error.HTTPError(url, 429, "paced", {}, None)  # type: ignore[arg-type]
+
+    first = run([source], {}, lambda _: "{}", getter=getter)
+    assert first["items"][0]["status"] == "TRANSCRIPT_RETRY_PENDING"
+    assert "youtube-video:abc" not in first["state"]["seen"]
+    retry = first["state"]["transcript_retry"]["youtube-video:abc"]
+    assert retry["attempts"] == 1
+    assert retry["http_status"] == 429
+    second = run([source], first["state"], lambda _: "{}", getter=getter)
+    assert second["items"] == []
+
+
+def test_mandatory_video_sources_and_midnight_scope_are_mt5_only() -> None:
+    root = Path(__file__).resolve().parents[2]
+    registry = json.loads((root / "docs/research/GPT_HUNTER_SOURCES.json").read_text("utf-8"))
+    urls = {str(row["url"]).casefold() for row in registry["sources"]}
+    for handle in (
+        "algotradingspace",
+        "criticaltrading",
+        "neurotrader888",
+        "daviddtech",
+        "saleh.m",
+        "lewiswjackson",
+    ):
+        assert f"https://www.youtube.com/@{handle}" in urls
+    prompt = " ".join(
+        (root / "ops/midnight_codex_prompt.txt").read_text("utf-8").split()
+    )
+    assert "MT5/Fusion queue" in prompt
+    assert (
+        "never direct this miner or any midnight cycle toward a crypto-exchange-only universe"
+        in prompt
+    )
+    required_public = {
+        "https://www.reddit.com/user/alert_attention_5905/submitted/",
+        "https://www.reddit.com/r/forven/",
+        "https://www.reddit.com/r/ai_trading/comments/1ucu4og/i_spent_the_past_8_months_working_on_my_own/",
+        "https://github.com/judder659/forven",
+    }
+    assert required_public <= urls
 
 
 def test_evidence_tiers_and_discovered_sources_become_next_sweep_inputs(tmp_path) -> None:
@@ -129,6 +186,18 @@ def test_evidence_tiers_and_discovered_sources_become_next_sweep_inputs(tmp_path
     assert sources[1].surface == "discovered"
     assert evidence_tier("audited") == 6
     assert evidence_tier("5000% screenshot") == -1
+
+
+def test_public_code_extraction_requires_license_and_clean_room_replication() -> None:
+    prompt = extraction_prompt(
+        {"url": "https://github.com/example/research", "title": "research system"},
+        "public source",
+        ["PUBLIC_STRATEGY", "ELITE_EXTERNAL_INTELLIGENCE"],
+    )
+    assert "source_license" in prompt
+    assert "mt5_experiment" in prompt
+    assert "must not be copied into this repository" in prompt
+    assert "Do not force a novel mechanism" in prompt
 
 
 def test_reputation_and_emergence_use_independent_sources_not_follower_count() -> None:

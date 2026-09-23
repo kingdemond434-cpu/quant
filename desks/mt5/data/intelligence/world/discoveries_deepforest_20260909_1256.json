@@ -1,0 +1,29 @@
+[
+ {
+  "source": "deep_forest",
+  "kind": "dataset",
+  "title": "What Are We Buying When We Buy Gold? | Man Group",
+  "url": "https://www.man.com/insights/what-are-we-buying-when-we-buy-gold",
+  "published": "2026-09-09T12:56:13+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.4,
+  "lang": "en",
+  "endpoints": [
+   "https://www.man.com/documents/download/5b171-628db-ae48e-38280/Man_Group_Insights_What_Are_We_Buying_When_We_Buy_Gold%3F_English_24-10-2025.pdf"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "336f44b426478f1ba3d5",
+  "host": "www.man.com",
+  "ground": "Man Institute",
+  "region": "us",
+  "cluster": "west",
+  "dataset_class": null,
+  "available_time": "2026-09-09T12:56:13+00:00",
+  "ingested_time": "2026-09-09T12:56:13+00:00",
+  "source_hash": "336f44b426478f1ba3d5",
+  "claims": [],
+  "n_claims": 0
+ }
+]

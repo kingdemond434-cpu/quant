@@ -10,9 +10,8 @@ from pathlib import Path
 
 import pandas as pd
 import requests
-from mt5desk.config import DATA, REPORTS, desk_root  # noqa: E402
 
-OUT = DATA / "lake"
+OUT = Path(r"C:\Users\dell\mt5-research\data\lake")
 OUT.mkdir(parents=True, exist_ok=True)
 
 GLD_XLSX = "https://www.spdrgoldshares.com/usa/assets/uploads/GLD_US_holdings.xlsx"

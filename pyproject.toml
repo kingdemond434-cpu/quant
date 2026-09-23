@@ -40,6 +40,14 @@ dependencies = [
     # Same class as certifi, found by the same new test: pinned for the VPS, declared nowhere.
     "psutil>=7.2.2,<8",        # scripts/watchdog.py -- process reaping on the live box
     "websockets>=16.0,<17",    # scripts/liquidation_listener.py -- TOP-LEVEL import, no guard
+    # Same class again, and this one took the MT5 money-path gate down (2026-09-04, CI run
+    # 33930005488): every desks/mt5/side_channels miner and the four research fetchers
+    # (fetch_sge_premium, fetch_fred, fetch_alfred, fetch_gld) import requests at MODULE SCOPE,
+    # tests/test_sge_premium.py imports the fetcher, and pytest aborts the whole desk suite on
+    # the first collection error -- so the floor, the capability graph and the PIT census never
+    # ran. Pinned in requirements-vps.txt only; a clean `pip install -e .` had no such module.
+    # Floor is production's exact pin, cap is the next major, per the doctrine above.
+    "requests>=2.34.2,<3",
 ]
 
 [project.optional-dependencies]
@@ -90,7 +98,35 @@ src = ["libs", "app", "tests"]
 # refuses to deploy on a red gate, so scratch at the root silently disables auto-deploy for the
 # whole desk. Moved rather than deleted -- nothing here is mine to throw away -- and excluded so
 # the gate measures the codebase instead of the debris.
-exclude = ["scratch", "desks/mt5"]
+# hourly_controller.py at repo root is the hourly survivor controller's LIVE working copy -- the
+# user timer and crontab invoke it by that path, and its tracked home is
+# desks/mt5/side_channels/hourly_controller.py (already excluded with the rest of desks/mt5).
+# On 2026-08-25 ten such root working copies turned the shared gate red (779 errors) and blocked
+# pushes whose contents were green; nine were duplicates of their tracked side_channels twins and
+# were deleted (newest code synced home first). Only the live entry point remains, excluded by
+# basename (measured collision-free: no other lintable file shares it -- unlike
+# gate_calibration.py, whose libs/validation twin must STAY linted). Any new root debris still
+# reds the gate and gets triaged; a broad "/*.py" glob was measured to exclude the whole tree --
+# a vacuous green, the denominator trick the laws forbid.
+# hourly_controller_with_discovery.py and youtube_miner.py joined the exclude 2026-08-25 for the
+# same reason with fresh evidence: the controller REGENERATES its root working files dirty every
+# hour, so a one-time cleanup re-reds the shared gate within the hour, forever. youtube_miner's
+# only tracked twin lives under desks/mt5 (already excluded); hourly_controller_with_discovery
+# has none, so basename exclusion is collision-free for both.
+exclude = ["scratch", "desks/mt5", "hourly_controller.py",
+           "hourly_controller_with_discovery.py", "youtube_miner.py",
+           # `tmp_*.py` is the SAME class as `scratch/` above, one directory up: throwaway
+           # measurement one-liners a session writes to answer a question and never deletes.
+           # Measured on the trading box 2026-09-12: 32 such files carrying ALL 270 of its ruff
+           # errors -- 71 printf-format, 60 statements-on-one-line, 33 multiple-imports -- which
+           # is exactly the shape of code written to be read once and thrown away.
+           #
+           # THE COST WAS NOT COSMETIC. `ruff check` is a PUSH GATE, so the trading box could
+           # not reach origin at all while somebody's leftover scratch sat in the root, and the
+           # only routes past it were to bypass the hook or to stop pushing. A gate that goes RED
+           # because of a file nobody ships is a gate that gets bypassed, and then it protects
+           # nothing. Excluded here and gitignored, so the next session's scratch is harmless.
+           "tmp_*.py"]
 # `desks/mt5` is the mirror copy of the MT5 research desk (executes on the local Windows host;
 # this copy is for visibility/coordination only). External code with its own host conventions
 # (MetaTrader5 import, Windows paths, legacy style) -- same treatment as scratch: the gate should
@@ -172,7 +208,17 @@ ignore = ["B008"]
 known-first-party = ["libs", "app"]
 
 [tool.mypy]
-python_version = "3.11"
+# THE VERSION THE DESK ACTUALLY RUNS (2026-09-12). Both boxes are on CPython 3.14; pinning the
+# checker to 3.11 meant type-checking a Python this desk never executes, and it BLOCKED EVERY
+# PUSH from the trading box: numpy 2.5.3 ships stubs written with `type` statements (3.12+), so
+# mypy 2.3.1 under python_version 3.11 rejected numpy's own stub file and the gates went RED --
+# "Type statement is only supported in Python 3.12 and greater", in a dependency, with nothing
+# wrong in this repository at all.
+#
+# A gate that fails on the toolchain rather than on the code is worse than a missing gate: it
+# reads as a real defect, it cannot be fixed by fixing anything, and the only ways past it are
+# to bypass the hook or to stop pushing. The desk did the second one for a day.
+python_version = "3.14"
 strict = true
 warn_unused_ignores = true
 warn_redundant_casts = true
@@ -193,19 +239,36 @@ mypy_path = "."
 # libs/-coupling detector -- widening it to admit the import would be editing the guard to fit
 # the violation. Listing the rail here once already took CI red (2026-07-26); the rail's
 # protection is isolation, not type coverage.
+# 2026-09-05: commit dadac868 (an hourly sync commit, not a decision) deleted the Tier-3 rail
+# scripts/run_deadman_switch.py together with run_deadman_reconciliation.py,
+# run_deadman_stranded_sweep.py and run_trade_forensics.py while purging the Binance executors.
+# All four are restored byte-for-byte from dadac868^ and the three checkable ones are listed
+# again below. Only scripts/run_cashcarry_executor.py stays out: its retirement IS the MT5
+# mandate (2026-08-18), and listing an absent file makes mypy exit before checking anything.
+# 2026-09-05: scripts/reconcile_venue.py is dropped from this list for the same reason
+# run_cashcarry_executor.py never joined it -- the MT5 mandate retired the crypto-exchange venue
+# it reconciled, so the file is gone and mypy exits on the missing path before checking anything.
 files = ["libs", "app", "migrations",
-         "scripts/run_cashcarry_executor.py",
          "scripts/run_deadman_reconciliation.py",
          "scripts/run_deadman_stranded_sweep.py",
-         "scripts/reconcile_venue.py", "scripts/run_trade_forensics.py"]
+         "scripts/run_trade_forensics.py"]
 
 # PYARROW VERSION STRADDLE (2026-08-05). libs/data/lake.py carries two
 # `type: ignore[no-untyped-call]`s that are REQUIRED on the pinned pyarrow (>=24,<25) and read
 # as unused on 25.x. Without this override the two environments disagree about whether the file
 # is clean, and the disagreement surfaced as a deploy-gate failure rather than as a type error.
-# Scoped to the one module: warn_unused_ignores stays on everywhere else.
+# Scoped to these modules: warn_unused_ignores stays on everywhere else.
+#
+# 2026-09-05: bar_span.py:446 (pads.dataset) and perishability.py:239 (pq.read_schema) call the
+# same untyped pyarrow surface and carry the same ignore -- both comments SAY so and one even
+# cites this override by line ("pyproject:219") -- but neither module was ever added to the list,
+# so on 25.x mypy reported exactly two `unused-ignore` errors and the gate was red for the very
+# condition this override exists to absorb. The two candidate "fixes" are both wrong: deleting
+# the ignores reds the pinned (<25) box, and turning warn_unused_ignores off globally would hide
+# every genuinely stale ignore in the repo. Registering the modules that make the straddling
+# call is the only change that keeps both environments honest.
 [[tool.mypy.overrides]]
-module = ["libs.data.lake"]
+module = ["libs.data.lake", "libs.research.bar_span", "libs.research.perishability"]
 warn_unused_ignores = false
 
 [[tool.mypy.overrides]]
@@ -215,6 +278,13 @@ module = [
     "pyarrow.*",
     "duckdb.*",
     "scipy.*",
+    # SCIKIT-LEARN SHIPS NO STUBS AND IS A LIVE ENTRYPOINT DEPENDENCY (added 2026-09-12).
+    # It was carried as four inline `type: ignore[import-untyped]`s, which mypy now rejects
+    # twice over: the real error is `import-not-found`, which that code does not cover, and the
+    # ignore is therefore also unused. Four inline comments arguing with the checker in two
+    # directions is the shape this override block already exists to end -- the same reasoning
+    # scipy and statsmodels are here for.
+    "sklearn.*",
     "statsmodels.*",
     "arch.*",
     "MetaTrader5.*",
@@ -223,6 +293,15 @@ module = [
     "streamlit.*",
     "fastapi.*",
     "uvicorn.*",
+    # THE DESK PACKAGE IS NOT ON MYPY'S PATH AND IS ON PYTHON'S. `mt5desk` lives under
+    # desks/mt5/ and every importer reaches it through a runtime `sys.path.insert`, so the
+    # module resolves when the code runs and cannot be found when the type checker looks.
+    # It was carried as four inline `type: ignore[import-not-found]`s, which ruff's isort then
+    # wrapped onto their own lines -- moving the comment off the import and breaking the ignore,
+    # so ruff and mypy each demanded the shape the other rejected. One override ends that: the
+    # imports read as written, and nothing about the real module's types is silenced anywhere
+    # else, because these are its ONLY callers from outside the desk tree.
+    "mt5desk.*",
 ]
 ignore_missing_imports = true
 
@@ -232,7 +311,25 @@ testpaths = ["tests"]
 # importlib mode lets same-named test files coexist across dirs (tests/features/test_registry.py
 # vs tests/factory/test_registry.py) without __init__.py churn or basename collisions.
 addopts = "-ra -q --strict-markers --import-mode=importlib"
-filterwarnings = ["error"]
+filterwarnings = [
+    "error",
+    # ONE NARROW EXEMPTION, AND IT IS NOT OUR CODE (2026-09-12). pandas 2.3.3 constructs
+    # NumPy timedeltas with the generic unit internally; numpy 2.5.3 deprecated that. The
+    # trading box runs numpy 2.5.3 and this mirror runs 2.4.6, so the SAME tree collected
+    # cleanly here and failed there with eight collection errors -- and because collection is
+    # a push gate, an upstream deprecation we did not write and cannot fix was blocking every
+    # push from the box.
+    #
+    # SCOPED TO THE EXACT MESSAGE, deliberately. Widening this to DeprecationWarning, or to a
+    # module glob, would silence the next real deprecation in our own code -- which is the
+    # whole reason `error` is the default and must stay it. The fix proper is pandas shipping
+    # a numpy-2.5-clean release; this expires the day it does, and the narrow matcher means it
+    # expires LOUDLY (an unmatched filter is itself an error) rather than lingering.
+    #
+    # Not silenced on the money path: nothing here changes runtime behaviour, only whether a
+    # third party's deprecation aborts test COLLECTION.
+    "ignore:The 'generic' unit for NumPy timedelta is deprecated:DeprecationWarning",
+]
 # A HANG MUST BE A FAILURE, NOT A WAIT.
 #
 # Until 2026-08-05 nothing in this repository bounded a test's runtime, and the consequence was

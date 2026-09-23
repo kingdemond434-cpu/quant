@@ -1,0 +1,10 @@
+[Unit]
+Description=Timer for worktree reap
+
+[Timer]
+OnCalendar=*-*-* 04:20:00
+Persistent=true
+Unit=quant-worktree-reap.service
+
+[Install]
+WantedBy=timers.target

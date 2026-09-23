@@ -3790,6 +3790,30 @@
    ],
    "review_due": "2026-09-12",
    "review_due_source": "default"
+  },
+  {
+   "id": "2026-08-26-registered-but-uncallable-check-and-tmpfs-worktree",
+   "date": "2026-08-26",
+   "hypothesis": "Two defects made real capability inert. (1) check_route_shaped_identity was REGISTERED in max_audit's CHECKS but written () -> list[str] against a fn(defects) runner, so it raised TypeError on every sweep and the dimension it enforces read clean while enforcing nothing. (2) The desk-wide CI gate was RED from resource exhaustion, not code: /tmp/lit10-wt, an abandoned git worktree on tmpfs, held 322MB of a 4GB no-swap box.",
+   "expected_benefit": "Restores one max_audit dimension to actually running (it now judges a non-empty population: 15/15 sleeves carry identities, data_venue='MT5:FusionMarkets-Live', honestly green). Restores the desk-wide safety gate by returning 322MB of RAM (MemAvailable 1131MB -> 1348MB). Closes the CLASS in both cases rather than the instance: check_registry_complete now verifies SHAPE as well as registration, and check_worktree_on_tmpfs makes the RAM-cost angle mechanical and permanent.",
+   "expected_cost": "~90 lines across scripts/max_audit.py plus one test module. Maintenance is near-zero: both guards read only, and the tmpfs check derives its mounts from /proc/mounts rather than hardcoding paths, so it needs no upkeep as mounts change.",
+   "confidence": 0.9,
+   "assumptions": [
+    "max_audit's runner convention stays fn(defects) -> None; if it ever changes, the new signature guard is the thing that must change with it (it encodes the convention).",
+    "The sleeve registry keeps carrying identity fields -- if it empties, route-shaped-identity's silence means UNMEASURED, not clean. A test asserts the population is non-empty (L1.57).",
+    "CI's 08:02 red was genuinely environmental. The marker's own text says KILLED sig9 / MemAvailable 827MB, and gates.sh is green on the same tree, but the full-suite re-run is still in flight and is the only thing that PROVES it."
+   ],
+   "success_metric": "max_audit no longer emits sweep-broken-route-shaped-identity, and data/.ci_last_run.json goes tracked_ok=true on the re-run. Class-level: no future check-wrong-signature or worktree-on-tmpfs defect survives a cycle undetected.",
+   "reversal_condition": "If check-wrong-signature or worktree-on-tmpfs proves to be a chronic false-positive generator (fires repeatedly on states that are correct by design), narrow or retire it -- a guard that only says no is a tax. Neither has fired a false positive yet; both passed a positive control that reproduces the real bug.",
+   "neighbours": "max_audit's _fenced dispatch (unchanged -- its sweep-broken-* rescue still works, it simply now has one less thing to rescue); the escalation/ack path (gains two defect ids, no existing verdict changes meaning); the git worktree set (one abandoned tmpfs tree removed AFTER tagging; no live sibling tree touched, R0423 respected); CI (unblocked, not modified).",
+   "outcome": "IMPLEMENTED",
+   "commits": [
+    "ecf671f7",
+    "9b510056"
+   ],
+   "notes": "The near-miss is the more valuable half: /tmp/lit10-wt's HEAD 16a68718 -- a complete litminer run 10 -- was reachable from NO branch, and tmpfs does not survive a reboot. It was tagged rescued/litminer-run10-20260825 and verified reachable BEFORE the worktree was removed. A reflexive cleanup would have destroyed a full research session and left no trace that it had. R0666 ledgered to sweep the desk's other registries-of-callables for the same shape-vs-dispatcher class.",
+   "review_due": "2026-09-25",
+   "review_due_source": "default"
   }
  ]
 }

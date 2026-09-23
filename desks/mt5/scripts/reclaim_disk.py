@@ -1,0 +1,484 @@
+"""Free disk on the trading box without ever touching what cannot be rebuilt.
+
+MEASURED 2026-09-07: 0.8 GB free. At that level neither Windows nor git says "disk full" -- a
+push dies as "the remote end hung up unexpectedly" mid-pack, a parquet write truncates, and a
+tick-tape append silently loses the bytes it could not flush. So a full disk does not present as
+a disk problem; it presents as three unrelated subsystem failures, and that is how a day gets
+spent chasing a network fault that was never there.
+
+THE ONE RULE. `data/tape` is the desk's own moat: broker-native ticks nobody else has, and a tick
+that was not recorded cannot be re-downloaded. It is never touched, at any threshold, by any mode
+of this script. Everything else here is either derived (caches, bytecode) or refetchable (bars,
+in minutes, from the terminal that is already running).
+
+WHERE THE SPACE ACTUALLY IS. The miners wrote 326,224 discovery rows in fourteen days across
+`data/intelligence/**/discoveries_*.json`, and the conversion audit shows the duplication is
+enormous -- anomalies alone: 97,405 rows carrying 64 distinct economic exposures. Those files are
+append-only by construction: every pass writes a new timestamped file with no idea what earlier
+passes already wrote. Deduplicating them by CONTENT recovers the space and fixes the cause at the
+same time, which is why this is one script and not two.
+
+    python desks/mt5/scripts/reclaim_disk.py             # measure only, change nothing
+    python desks/mt5/scripts/reclaim_disk.py --apply     # reclaim
+"""
+from __future__ import annotations
+
+import hashlib
+import json
+import os
+import shutil
+import sys
+from collections import defaultdict
+from datetime import UTC, datetime
+from pathlib import Path
+
+BASE = Path(__file__).resolve().parent.parent
+INTEL = BASE / "data" / "intelligence"
+TAPE = BASE / "data" / "tape"
+REPORT = BASE / "reports" / "DISK_RECLAIM.json"
+
+#: Derived directories that regenerate on demand. Removing one costs a rebuild, never a fact.
+DERIVED_DIRS = ("__pycache__", ".pytest_cache", ".mypy_cache", ".ruff_cache", ".hypothesis")
+
+
+def _size(path: Path) -> int:
+    try:
+        if path.is_file():
+            return path.stat().st_size
+        return sum(f.stat().st_size for f in path.rglob("*") if f.is_file())
+    except OSError:
+        return 0
+
+
+def _gb(n: int) -> float:
+    return round(n / (1024 ** 3), 3)
+
+
+def _is_protected(path: Path) -> bool:
+    """True for anything under the tick tape. Checked by RESOLVED PATH, not by name.
+
+    A name test (`"tape" in str(path)`) would be defeated by a junction, a relative path or a
+    directory that merely contains the word. This walks the resolved parents, so nothing under
+    the tape can be reached however the caller spelled it.
+    """
+    try:
+        resolved = path.resolve()
+    except OSError:
+        return True                     # unresolvable: refuse rather than risk it
+    tape = TAPE.resolve()
+    return resolved == tape or tape in resolved.parents
+
+
+def derived_bytes() -> list[tuple[Path, int]]:
+    out = []
+    for name in DERIVED_DIRS:
+        for path in BASE.parent.parent.rglob(name):
+            if path.is_dir() and not _is_protected(path):
+                out.append((path, _size(path)))
+    return out
+
+
+def duplicate_discoveries() -> tuple[list[tuple[Path, int]], dict]:
+    """Discovery files whose every row already appears in an earlier file.
+
+    KEYED ON CONTENT, NOT ON THE ECONOMIC KEY. `check_miner_conversion._mechanism_key` is
+    family|symbol|session, which a RAW miner row does not carry -- that is why broker_swaps'
+    36,982 rows collapsed to one "distinct mechanism". Deduplicating on that key here would
+    delete 36,981 rows that may every one be different. A hash of the row's own JSON is the only
+    safe identity for a row whose meaning has not been extracted yet: it removes exact repeats
+    and nothing else.
+
+    EARLIEST WINS. Files are processed oldest-first so the first sighting of a row survives, and
+    its discovery timestamp -- which the 14-day conversion window reads -- stays truthful.
+    """
+    if not INTEL.exists():
+        return [], {"note": "no data/intelligence on this host"}
+    seen: set[str] = set()
+    removable: list[tuple[Path, int]] = []
+    per_miner: dict[str, dict] = defaultdict(lambda: {"files": 0, "rows": 0, "dup_rows": 0})
+    files = sorted((p for p in INTEL.rglob("discoveries_*.json") if p.is_file()),
+                   key=lambda p: (p.stat().st_mtime, p.name))
+    for path in files:
+        miner = path.parent.name
+        try:
+            payload = json.loads(path.read_text("utf-8"))
+        except (OSError, ValueError):
+            continue                    # unreadable: leave it alone and say nothing about it
+        rows = payload if isinstance(payload, list) else payload.get("rows") or payload.get("discoveries") or []
+        if not isinstance(rows, list) or not rows:
+            continue
+        digests = [hashlib.sha256(json.dumps(r, sort_keys=True, default=str).encode()).hexdigest()
+                   for r in rows]
+        fresh = [d for d in digests if d not in seen]
+        stat = per_miner[miner]
+        stat["files"] += 1
+        stat["rows"] += len(rows)
+        stat["dup_rows"] += len(digests) - len(fresh)
+        seen.update(digests)
+        # A file is removable only when EVERY row in it was already seen. A partially-duplicated
+        # file is left whole: rewriting it would change a discovery artifact, and this script's
+        # remit is space, not editing the record.
+        if not fresh:
+            removable.append((path, _size(path)))
+    return removable, {k: dict(v) for k, v in sorted(per_miner.items())}
+
+
+#: Charts in the order `download_remaining.TIMEFRAMES` fetches them: most value per byte first.
+#: Shedding walks this list BACKWARDS, so MN1 and the odd minute charts go before H1 ever does.
+_TF_VALUE_ORDER = ("H1", "M15", "M5", "M30", "H4", "D1", "M1", "W1", "MN1",
+                   "H2", "H3", "H6", "H8", "H12", "M2", "M3", "M4", "M6", "M10", "M12", "M20")
+
+#: Free space below which the hourly sweep sheds charts on its own, no flag required. Set under
+#: `download_remaining`'s 8 GB floor so the two do not fight: the downloader fills to 8, this only
+#: acts if something else (the tape, a pull, a cache) has eaten into 4.
+AUTO_SHED_BELOW_GB = 4.0
+#: What an automatic shed aims to leave free. Above AUTO_SHED_BELOW_GB so one sweep ends the
+#: emergency rather than trimming to the trigger and firing again an hour later.
+AUTO_SHED_TARGET_GB = 6.0
+
+
+def _tf_of(path: Path) -> str:
+    """The chart in a `<SYMBOL>_<TF>.parquet` name, or "" when the name does not carry one."""
+    stem = path.stem
+    return stem.rsplit("_", 1)[1].upper() if "_" in stem else ""
+
+
+def shed_bars_to_target(target_bytes: int, apply: bool) -> tuple[int, int, list[str]]:
+    """Remove the LEAST valuable charts until `target_bytes` are free. Returns (files, bytes, tfs).
+
+    ALL-OR-NOTHING WAS THE WRONG SHAPE. `--shed-bars` deleted the entire lake, so relieving a
+    disk cost every chart on every symbol and the next hourly download re-fetched all of them --
+    a full rebuild to recover a couple of gigabytes, on a box whose downloads are the reason it
+    filled up. Worse, it threw away H1 (which every family reads) to save the same bytes as
+    M20 (which almost nothing does).
+
+    So this sheds in reverse of the order `download_remaining` FETCHES in -- that list is already
+    ordered by value per byte, and reusing it is what keeps the two halves from disagreeing about
+    which chart matters. MN1, M20, M12 and the other marginal periods go first; H1 is last and in
+    practice never reached. Charts whose name carries no timeframe are shed before any known one:
+    nothing on this desk reads a bar file it cannot name.
+    """
+    files, _total = bar_lake()
+    if not files:
+        return 0, 0, []
+    # An UNNAMEABLE chart ranks past the least valuable named one, so it is shed first: nothing
+    # on this desk reads a bar file whose timeframe it cannot parse, and keeping one in
+    # preference to M20 would be preferring a file with no known reader to a file with a rare
+    # one. (Verified: the shed order begins WEIRD, MN1, M20, M12 ... and reaches H1 last.)
+    unknown_rank = len(_TF_VALUE_ORDER) + 1
+    rank = {tf: i for i, tf in enumerate(_TF_VALUE_ORDER)}
+    files.sort(key=lambda fs: -rank.get(_tf_of(fs[0]), unknown_rank))
+    freed, shed, tfs = 0, 0, []
+    for path, size in files:
+        if _is_protected(path):
+            continue
+        try:
+            if shutil.disk_usage(BASE).free + freed >= target_bytes:
+                break
+        except OSError:
+            pass
+        if apply:
+            try:
+                path.unlink()
+            except OSError:
+                continue
+        freed += size
+        shed += 1
+        tf = _tf_of(path) or "?"
+        if tf not in tfs:
+            tfs.append(tf)
+    return shed, freed, tfs
+
+
+def mt5_history_cache() -> tuple[list[Path], int]:
+    """MetaTrader's OWN downloaded history cache, and its size. REFETCHABLE, like the bar lake.
+
+    THE THING THAT ACTUALLY FILLED THE DISK, and nothing on this desk had ever looked at it.
+    MEASURED FROM RESCUE 2026-09-07, on a 100 GB volume with 20 MB free:
+
+        30 GB   pagefile.sys                       (Windows rebuilds it at boot)
+        21 GB   AppData/Roaming/MetaQuotes/.../bases
+        17 GB   opt/quant/.git
+        4.3 GB  data/tape                          (irreplaceable, never touched)
+        0.22 GB data/universe                      <- the bar lake
+
+    The bar lake -- the only thing this script and `stall_watch` could shed, the thing a whole
+    day was spent deleting -- was TWO HUNDRED AND TWENTY MEGABYTES. Every sweep the desk owned
+    could have run to completion, hourly, forever, and the disk would still have filled, because
+    none of them could see the two files holding fifty gigabytes between them.
+
+    `bases` is where the terminal caches every chart it downloads. `refresh_bars` asks it for 21
+    timeframes across 250 symbols every hour, so it grows monotonically with exactly the thing
+    this desk does most. It is a CACHE: deleting it costs a re-download and no information, which
+    is the same trade as the bar lake at a hundred times the size.
+
+    Only `bases` is removed -- never the MetaQuotes folder itself, which holds the terminal's
+    login, profiles and settings. Losing those would mean an unattended box that cannot reconnect
+    to the broker, which is a far worse outcome than a full disk.
+    """
+    roots: list[Path] = []
+    for env in ("APPDATA", "USERPROFILE"):
+        v = os.environ.get(env)
+        if not v:
+            continue
+        base = Path(v)
+        if env == "USERPROFILE":
+            base = base / "AppData" / "Roaming"
+        roots.append(base / "MetaQuotes" / "Terminal")
+    found: list[Path] = []
+    total = 0
+    for r in roots:
+        if not r.exists():
+            continue
+        for term in r.iterdir():
+            cache = term / "bases"
+            if cache.is_dir() and not _is_protected(cache):
+                found.append(cache)
+                total += _size(cache)
+    return found, total
+
+
+def bar_lake() -> tuple[list[tuple[Path, int]], int]:
+    """Every bar parquet, with its total size. REFETCHABLE, and that is the whole point.
+
+    Measured on the box 2026-09-07: 0.964 GB free with a 5.664 GB tick tape. Caches and duplicate
+    discovery rows came to 0.007 GB between them -- nothing there is the problem. The two large
+    things on that disk are the tape and the bars, and they are opposites:
+
+      the tape   broker-native ticks nobody else holds. A tick that was not recorded is GONE.
+                 It must be MOVED off the box, never deleted, and this script never touches it.
+      the bars   downloaded from the terminal that is already running, 250 symbols x 7 charts
+                 in minutes, by desks/mt5/scripts/download_remaining.py.
+
+    So the bars are the only large thing on the box that can be shed and simply re-obtained, and
+    shedding them is how a full disk gets un-stuck without losing anything at all.
+    """
+    lake = BASE / "data" / "universe"
+    if not lake.exists():
+        return [], 0
+    files = [(p, _size(p)) for p in lake.glob("*.parquet") if p.is_file()]
+    return files, sum(n for _, n in files)
+
+
+def compact_tape(apply: bool) -> dict:
+    """Recompress the tick tape to zstd IN PLACE, losslessly, verifying before replacing.
+
+    THE TAPE WAS THE ONLY PARQUET THIS DESK WRITES WITHOUT A CODEC. `tape.py` passed
+    compression="zstd" for contract terms and nothing at all for the ticks, so they took
+    pyarrow's default of snappy -- on the one file that grows every hour forever and was 5.664 GB
+    against 0.964 GB free. Measured on a 300k-row frame with these exact columns: 3.48 MB snappy,
+    1.69 MB zstd, x2.06. Roughly 2.9 GB back for a codec argument.
+
+    NOTHING IS EVER LOST. Each file is rewritten to a temporary path, reopened, and its ROW COUNT
+    and COLUMN SET compared against the original before the original is replaced. A mismatch, a
+    read failure or a write failure leaves the original untouched and the file is reported, not
+    skipped silently -- a tick that was not recorded cannot be re-downloaded, and neither can one
+    this script loses. Parquet carries its codec in its own metadata, so every reader downstream
+    keeps working with no change: they pass no codec and get whatever the file declares.
+    """
+    ticks = TAPE / "ticks"
+    if not ticks.exists():
+        return {"note": "no tick tape on this host", "files": 0}
+    try:
+        import pyarrow.parquet as pq
+    except ImportError:
+        return {"note": "pyarrow unavailable -- tape left exactly as it is", "files": 0}
+
+    before = after = files = converted = 0
+    failed: list[str] = []
+    for path in sorted(ticks.rglob("*.parquet")):
+        size = path.stat().st_size
+        files += 1
+        before += size
+        try:
+            table = pq.read_table(path)
+            codecs = {path.suffix}  # placeholder; real check below
+            md = pq.ParquetFile(path).metadata
+            existing = {md.row_group(i).column(j).compression
+                        for i in range(md.num_row_groups) for j in range(md.num_columns)}
+        except Exception:                                               # noqa: BLE001
+            failed.append(f"{path.name}: unreadable, left untouched")
+            after += size
+            continue
+        if existing == {"ZSTD"}:
+            after += size
+            continue                    # already done; re-writing would cost time for nothing
+        if not apply:
+            after += int(size / 2.06)   # the measured ratio, for the dry-run estimate only
+            converted += 1
+            continue
+        tmp = path.with_suffix(".zstd.tmp")
+        try:
+            pq.write_table(table, tmp, compression="zstd")
+            check = pq.ParquetFile(tmp).metadata
+            if check.num_rows != md.num_rows:
+                raise ValueError(f"row count {check.num_rows} != {md.num_rows}")
+            if pq.read_schema(tmp).names != table.schema.names:
+                raise ValueError("column set changed")
+        except Exception as exc:                                        # noqa: BLE001
+            tmp.unlink(missing_ok=True)
+            failed.append(f"{path.name}: {type(exc).__name__}: {exc} -- ORIGINAL KEPT")
+            after += size
+            continue
+        tmp.replace(path)
+        after += path.stat().st_size
+        converted += 1
+    return {"files": files, "converted": converted,
+            "gb_before": _gb(before), "gb_after": _gb(after),
+            "gb_saved": _gb(before - after), "failures": failed[:10],
+            "verified": "row count and column set compared before every replacement"}
+
+
+def main(argv: list[str] | None = None) -> int:
+    args = argv if argv is not None else sys.argv[1:]
+    apply = "--apply" in args
+    shed_bars = "--shed-bars" in args
+    do_tape = "--compact-tape" in args
+
+    free_before = shutil.disk_usage(BASE).free
+    bars, bars_bytes = bar_lake()
+
+    # SHED THE BARS FIRST, BEFORE ANYTHING SLOW. Measured on the box 2026-09-07: `git pull` died
+    # with "No space left on device" and `git stash` could not even save the worktree, so the fix
+    # could not be pulled onto the machine that needed it. In that state the ONE thing that
+    # matters is bytes back, now -- and `duplicate_discoveries()` reads and SHA-256s every one of
+    # 326,224 discovery rows before it frees a single byte. It is the right sweep for a routine
+    # pass and exactly the wrong one for a full disk, which is how it came to be interrupted
+    # rather than finished. The bar lake is the largest refetchable thing on the box (the tape is
+    # larger and is never touched), so it goes first and its result is printed immediately.
+    bars_shed = 0
+    # THE HOURLY SWEEP NOW RELIEVES A LOW DISK ON ITS OWN. `hourly_cycle` runs this with --apply
+    # and no --shed-bars, so for as long as the flag was the only route the box could sit at its
+    # download floor indefinitely and no scheduled thing would ever take a byte back. A cleanup
+    # that requires a human to notice is not a cleanup on a desk nobody is watching.
+    #
+    # Only the least valuable charts go, and only far enough to clear the emergency -- see
+    # `shed_bars_to_target`. The tape is untouched at every threshold, as everywhere in this file.
+    if apply and not shed_bars:
+        try:
+            free_now = shutil.disk_usage(BASE).free
+        except OSError:
+            free_now = None
+        if free_now is not None and free_now < AUTO_SHED_BELOW_GB * (1024 ** 3):
+            # THE TERMINAL'S CACHE GOES FIRST, because it is the larger refetchable thing by two
+            # orders of magnitude (21 GB against 0.22 GB, measured 2026-09-07) and because
+            # shedding it costs the same as shedding bars: a re-download, no information.
+            caches, cache_bytes = mt5_history_cache()
+            if caches:
+                for c in caches:
+                    shutil.rmtree(c, ignore_errors=True)
+                plan["mt5_cache_shed_gb"] = _gb(cache_bytes)
+                print(f"AUTO-SHED        : MetaTrader history cache {_gb(cache_bytes)} GB in "
+                      f"{len(caches)} terminal(s) -- the terminal refills what it needs",
+                      flush=True)
+                try:
+                    free_now = shutil.disk_usage(BASE).free
+                except OSError:
+                    pass
+            n, freed, tfs = shed_bars_to_target(int(AUTO_SHED_TARGET_GB * (1024 ** 3)), True)
+            bars_shed += n
+            plan["auto_shed"] = {"files": n, "gb": _gb(freed), "charts": tfs,
+                                 "trigger_gb": AUTO_SHED_BELOW_GB,
+                                 "target_gb": AUTO_SHED_TARGET_GB}
+            print(f"AUTO-SHED        : {_gb(free_now)} GB free (below {AUTO_SHED_BELOW_GB} GB) "
+                  f"-- shed {n:,} file(s), {_gb(freed)} GB, least valuable charts first "
+                  f"{tfs[:8]}; free now {_gb(shutil.disk_usage(BASE).free)} GB", flush=True)
+    if apply and shed_bars:
+        # ONLY ON AN EXPLICIT FLAG. Shedding bars costs a re-download, which is minutes and no
+        # information -- but it is still a deliberate act, not something a routine hourly sweep
+        # should do behind the operator's back.
+        for path, _ in bars:
+            if _is_protected(path):
+                continue
+            try:
+                path.unlink()
+                bars_shed += 1
+            except OSError:
+                pass
+        free_now = shutil.disk_usage(BASE).free
+        print(f"bars shed        : {bars_shed:,} file(s), {_gb(bars_bytes)} GB -- free now "
+              f"{_gb(free_now)} GB (was {_gb(free_before)} GB)", flush=True)
+        print("refetch with     : python desks/mt5/scripts/download_remaining.py", flush=True)
+
+    derived = derived_bytes()
+    dup_files, per_miner = duplicate_discoveries()
+
+    tape_plan = compact_tape(apply and do_tape) if do_tape else None
+    plan = {
+        "at": datetime.now(UTC).isoformat(timespec="seconds"),
+        "tape_compaction": tape_plan,
+        "free_gb_before": _gb(free_before),
+        "derived_dirs": len(derived),
+        "derived_gb": _gb(sum(n for _, n in derived)),
+        "fully_duplicate_discovery_files": len(dup_files),
+        "duplicate_discovery_gb": _gb(sum(n for _, n in dup_files)),
+        "tape_gb_PROTECTED": _gb(_size(TAPE)),
+        "bar_lake_gb_REFETCHABLE": _gb(bars_bytes),
+        "bar_files": len(bars),
+        "per_miner": per_miner,
+        "applied": apply,
+    }
+
+    if apply:
+        removed = 0
+        for path, _ in derived:
+            if _is_protected(path):
+                continue
+            shutil.rmtree(path, ignore_errors=True)
+            removed += 1
+        for path, _ in dup_files:
+            if _is_protected(path):
+                continue
+            try:
+                path.unlink()
+                removed += 1
+            except OSError:
+                pass
+        if shed_bars:
+            # Already done above, before the expensive scans, so a full disk is relieved first.
+            removed += bars_shed
+            plan["bars_shed"] = bars_shed
+            plan["refetch_with"] = "python desks/mt5/scripts/download_remaining.py"
+        plan["paths_removed"] = removed
+        plan["free_gb_after"] = _gb(shutil.disk_usage(BASE).free)
+        plan["reclaimed_gb"] = round(plan["free_gb_after"] - plan["free_gb_before"], 3)
+
+    REPORT.parent.mkdir(parents=True, exist_ok=True)
+    REPORT.write_text(json.dumps(plan, indent=2), encoding="utf-8")
+
+    print(f"free before      : {plan['free_gb_before']} GB")
+    print(f"derived caches   : {plan['derived_gb']} GB in {plan['derived_dirs']} dir(s)")
+    print(f"duplicate rows   : {plan['duplicate_discovery_gb']} GB in "
+          f"{plan['fully_duplicate_discovery_files']} fully-duplicate discovery file(s)")
+    print(f"tick tape        : {plan['tape_gb_PROTECTED']} GB -- PROTECTED, never touched (a tick nobody recorded is gone)")
+    _caches, _cache_bytes = mt5_history_cache()
+    plan["mt5_history_cache_gb_REFETCHABLE"] = _gb(_cache_bytes)
+    print(f"MT5 history cache: {_gb(_cache_bytes)} GB in {len(_caches)} terminal(s) -- REFETCHABLE "
+          f"(this was 21 GB and invisible to every sweep until 2026-09-07)")
+    print(f"bar lake         : {plan['bar_lake_gb_REFETCHABLE']} GB in {plan['bar_files']:,} file(s) -- REFETCHABLE in minutes"
+          + ("" if shed_bars else "  [--shed-bars to reclaim]"))
+    if tape_plan and tape_plan.get("files"):
+        verb = "recompressed" if (apply and do_tape) else "would recompress"
+        print(f"tape zstd        : {verb} {tape_plan['converted']} of {tape_plan['files']} file(s), "
+              f"{tape_plan['gb_before']} GB -> {tape_plan['gb_after']} GB "
+              f"(saves {tape_plan['gb_saved']} GB, lossless)")
+        for f in tape_plan.get("failures") or []:
+            print(f"   TAPE FAILURE (original kept): {f}")
+    if apply:
+        print(f"reclaimed        : {plan['reclaimed_gb']} GB  (free now {plan['free_gb_after']} GB)")
+    else:
+        print("(measure only -- pass --apply to reclaim)")
+    # `duplicate_discoveries` returns a per-miner mapping OR, on a host with no
+    # data/intelligence, `{"note": "..."}` -- a string value. This loop called `.get` on it and
+    # crashed AFTER the reclaim had already succeeded, so a run that freed the disk exited with a
+    # traceback and read as a failure. Filter to the mapping rows rather than trusting the shape.
+    stats = {k: v for k, v in per_miner.items() if isinstance(v, dict)}
+    top = sorted(stats.items(), key=lambda kv: -kv[1].get("dup_rows", 0))[:8]
+    for miner, s in top:
+        if s.get("dup_rows"):
+            print(f"   {miner:24} {s['rows']:>8,} rows, {s['dup_rows']:>8,} exact duplicates")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

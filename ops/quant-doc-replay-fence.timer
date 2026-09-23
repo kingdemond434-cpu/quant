@@ -1,0 +1,10 @@
+[Unit]
+Description=Doc replay fence every minute (measured: the replayer fires about every 40s)
+
+[Timer]
+OnCalendar=*:*:00
+AccuracySec=2s
+Persistent=true
+
+[Install]
+WantedBy=timers.target

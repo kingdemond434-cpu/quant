@@ -1,0 +1,1470 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Gold Trading Volume | Gold Daily Volume | World Gold Council",
+  "url": "https://www.gold.org/goldhub/data/gold-trading-volumes",
+  "published": "2026-09-12T05:12:13+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "orderflow",
+   "positioning"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://www.gold.org/download/file/19819/Trading_volumes_methodology_2025.pdf"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "d3cba0968cf3f1ac76cf",
+  "host": "www.gold.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Leitbild und Strategie der Bundesbank | Deutsche Bundesbank",
+  "url": "https://www.bundesbank.de/de/bundesbank/organisation/leitbild-und-strategie",
+  "published": "2026-09-12T05:12:14+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "basis",
+   "inventory",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "de-DE",
+  "endpoints": [
+   "https://www.bundesbank.de/de/aufgaben/geldpolitik/notenbankfaehige-sicherheiten/downloads-602058",
+   "https://www.bundesbank.de/de/aufgaben/bargeld/cashedi/downloads-und-videoanleitungen"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "7ce3658be4809c71366a",
+  "host": "www.bundesbank.de",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Bargeldstrategie des Eurosystems und Rolle des Bargelds | Deutsche Bundesbank",
+  "url": "https://www.bundesbank.de/de/aufgaben/bargeld/bargeldstrategie-des-eurosystems",
+  "published": "2026-09-12T05:12:16+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "inventory",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "de-DE",
+  "endpoints": [
+   "https://www.bundesbank.de/de/aufgaben/geldpolitik/notenbankfaehige-sicherheiten/downloads-602058",
+   "https://www.bundesbank.de/de/aufgaben/bargeld/cashedi/downloads-und-videoanleitungen"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "74aa7d930c60d820b9be",
+  "host": "www.bundesbank.de",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Macro indicators and forecasts | Sveriges Riksbank",
+  "url": "https://www.riksbank.se/en-gb/statistics/macro-indicators/",
+  "published": "2026-09-12T05:12:18+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "auction",
+   "orderflow",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.75,
+  "lang": "en-GB",
+  "endpoints": [
+   "https://www.riksbank.se/en-gb/statistics/interest-rates-and-exchange-rates/retrieving-interest-rates-and-exchange-rates-via-api/series-for-the-api/"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "ee7593623cc475372bfe",
+  "host": "www.riksbank.se",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Forecasts and outcomes | Sveriges Riksbank",
+  "url": "https://www.riksbank.se/en-gb/statistics/macro-indicators/forecasts-and-outcomes/",
+  "published": "2026-09-12T05:12:20+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "auction",
+   "basis",
+   "orderflow",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.75,
+  "lang": "en-GB",
+  "endpoints": [
+   "https://www.riksbank.se/globalassets/media/statistik/makro/eng/outcome-and-forecasts.xlsx",
+   "https://www.riksbank.se/globalassets/media/statistik/makro/eng/forecasts-and-outcomes-2007-2014.xlsx",
+   "https://www.riksbank.se/en-gb/statistics/interest-rates-and-exchange-rates/retrieving-interest-rates-and-exchange-rates-via-api/series-for-the-api/"
+  ],
+  "n_endpoints": 3,
+  "vault_sha": "56609ec14ccbae6a163d",
+  "host": "www.riksbank.se",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Retrieving forecasts and outcomes via API | Sveriges Riksbank",
+  "url": "https://www.riksbank.se/en-gb/statistics/macro-indicators/forecasts-and-outcomes/retrieving-forecasts-and-outcomes-via-api/",
+  "published": "2026-09-12T05:12:22+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "auction",
+   "orderflow",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.75,
+  "lang": "en-GB",
+  "endpoints": [
+   "https://www.riksbank.se/en-gb/statistics/interest-rates-and-exchange-rates/retrieving-interest-rates-and-exchange-rates-via-api/series-for-the-api/"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "465dbd0df66a6ff594e3",
+  "host": "www.riksbank.se",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Underlying inflation | Sveriges Riksbank",
+  "url": "https://www.riksbank.se/en-gb/statistics/macro-indicators/underlying-inflation/",
+  "published": "2026-09-12T05:12:24+00:00",
+  "symbols": [
+   "XAUUSD",
+   "USDTRY",
+   "USDSEK"
+  ],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "auction",
+   "orderflow",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.95,
+  "lang": "en-GB",
+  "endpoints": [
+   "https://www.riksbank.se/globalassets/media/statistik/makro/eng/underlying-inflation.xlsx",
+   "https://www.riksbank.se/en-gb/statistics/interest-rates-and-exchange-rates/retrieving-interest-rates-and-exchange-rates-via-api/series-for-the-api/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "0e4ac61cace34aea6a54",
+  "host": "www.riksbank.se",
+  "claims": [
+   {
+    "claim": "These are often shown as a band in which the measure showing the highest and lowest rate of increase respectively for each month constitutes the band's upper and lower limit.",
+    "lang": "en",
+    "quantities": [
+     "rate"
+    ],
+    "direction": [
+     "increase",
+     "lower"
+    ],
+    "horizon": [
+     "month"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "USDTRY",
+      "USDSEK"
+     ],
+     "mentioned": [
+      "gold",
+      "try",
+      "sek"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [
+      "riksbank: policy: Riksbank -> SEK"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "85b8567c454d"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Resource utilisation indicator | Sveriges Riksbank",
+  "url": "https://www.riksbank.se/en-gb/statistics/macro-indicators/resource-utilisation-indicator/",
+  "published": "2026-09-12T05:12:26+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "auction",
+   "orderflow",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.75,
+  "lang": "en-GB",
+  "endpoints": [
+   "https://www.riksbank.se/en-gb/statistics/interest-rates-and-exchange-rates/retrieving-interest-rates-and-exchange-rates-via-api/series-for-the-api/"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "41177b69386b00e03781",
+  "host": "www.riksbank.se",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "CPIF sub-groups | Sveriges Riksbank",
+  "url": "https://www.riksbank.se/en-gb/statistics/macro-indicators/cpif-sub-groups/",
+  "published": "2026-09-12T05:12:28+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "auction",
+   "basis",
+   "orderflow",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.75,
+  "lang": "en-GB",
+  "endpoints": [
+   "https://www.riksbank.se/globalassets/media/statistik/makro/eng/cpif-sub-groups.xlsx",
+   "https://www.riksbank.se/en-gb/statistics/interest-rates-and-exchange-rates/retrieving-interest-rates-and-exchange-rates-via-api/series-for-the-api/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "2567bfdacdc7fb26dd8d",
+  "host": "www.riksbank.se",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Inflation indicators",
+  "url": "https://www.norges-bank.no/en/topics/statistics/Inflation-indicators/",
+  "published": "2026-09-12T05:12:28+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.norges-bank.no/globalassets/marketdata/ppo/kpi/kpi_tab_en.xlsx?v=11092026140057",
+   "https://www.norges-bank.no/globalassets/marketdata/ppo/kpi/kpi_tab_en.csv?v=11092026140057"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "5b49bfbe19cf4d0f4ec1",
+  "host": "www.norges-bank.no",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u0421\u0442\u0430\u0442\u0438\u0441\u0442\u0438\u043a\u0430 \u0432\u043d\u0435\u0448\u043d\u0435\u0433\u043e \u0441\u0435\u043a\u0442\u043e\u0440\u0430 | \u0411\u0430\u043d\u043a \u0420\u043e\u0441\u0441\u0438\u0438",
+  "url": "https://www.cbr.ru/statistics/macro_itm/external_sector/etg/",
+  "published": "2026-09-12T05:12:31+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "policy",
+   "seasonality"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [
+   "https://www.cbr.ru/vfs/statistics/credit_statistics/trade/trade.xls",
+   "https://www.cbr.ru/vfs/statistics/credit_statistics/cur_str_new.xlsx",
+   "https://www.cbr.ru/vfs/statistics/credit_statistics/trade/26-Ft_dc_2021.xls",
+   "https://www.cbr.ru/vfs/statistics/credit_statistics/trade/26-Ft_dc_2020.xls",
+   "https://www.cbr.ru/vfs/statistics/credit_statistics/trade/26-Ft_dc_2019.xls",
+   "https://www.cbr.ru/vfs/statistics/credit_statistics/trade/26-Ft_dc_2018.xls",
+   "https://www.cbr.ru/vfs/statistics/credit_statistics/trade/26-Ft_dc_2017.xls",
+   "https://www.cbr.ru/vfs/statistics/credit_statistics/trade/26-Ft_dc_2016.xls",
+   "https://www.cbr.ru/vfs/statistics/credit_statistics/trade/26-Ft_dc_2015.xls",
+   "https://www.cbr.ru/vfs/statistics/credit_statistics/trade/26-Ft_dc_2014.xls",
+   "https://www.cbr.ru/vfs/statistics/credit_statistics/trade/26-Ft_dc_2013.xls",
+   "https://www.cbr.ru/vfs/statistics/credit_statistics/trade/26-Ft_dc_2012.xls",
+   "https://www.cbr.ru/vfs/statistics/credit_statistics/trade/26-Ft_dc_2011.xls",
+   "https://www.cbr.ru/vfs/statistics/credit_statistics/trade/26-Ft_dc_2010.xls",
+   "https://www.cbr.ru/vfs/statistics/credit_statistics/trade/26-Ft_dc_2009.xls",
+   "https://www.cbr.ru/vfs/statistics/credit_statistics/trade/26-Ft_dc_2008.xls",
+   "https://www.cbr.ru/vfs/statistics/credit_statistics/trade/26-Ft_dc_2007.xls",
+   "https://www.cbr.ru/vfs/statistics/credit_statistics/trade/26-Ft_dc_2006.xls",
+   "https://www.cbr.ru/vfs/statistics/credit_statistics/trade/26-Ft_dc_2005.xls",
+   "https://www.cbr.ru/vfs/statistics/credit_statistics/trade/26-Ft_dc_2004.xls",
+   "https://www.cbr.ru/vfs/statistics/credit_statistics/trade/26-Ft_dc_2003.xls",
+   "https://www.cbr.ru/vfs/statistics/credit_statistics/trade/26-Ft_dc_2002.xls",
+   "https://www.cbr.ru/vfs/statistics/credit_statistics/trade/26-Ft_dc_2001.xls",
+   "https://www.cbr.ru/vfs/statistics/credit_statistics/trade/26-Ft_dc_2000.xls",
+   "https://www.cbr.ru/vfs/statistics/credit_statistics/cur_str.xlsx",
+   "https://www.cbr.ru/vfs/statistics/credit_statistics/trade/crude_oil.xls",
+   "https://www.cbr.ru/vfs/statistics/credit_statistics/trade/oil_products.xls",
+   "https://www.cbr.ru/vfs/statistics/credit_statistics/trade/gas.xls",
+   "https://www.cbr.ru/vfs/statistics/credit_statistics/trade/Liquefied-Gas.xls",
+   "https://www.cbr.ru/Content/Document/File/164748/mirror_exp.xlsx",
+   "https://www.cbr.ru/Content/Document/File/164749/mirror_imp.xlsx",
+   "https://www.cbr.ru/statistics/macro_itm/external_sector/etg/export_energy/"
+  ],
+  "n_endpoints": 32,
+  "vault_sha": "c2c6075912e8ec2573b9",
+  "host": "www.cbr.ru",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Data mining | Math Trading",
+  "url": "https://mathtrading.wordpress.com/tag/data-mining/",
+  "published": "2026-09-12T05:12:31+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "97dabff5255b13556f1e",
+  "host": "mathtrading.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u671f\u8d27\u9891\u9053 - \u4e1c\u65b9\u8d22\u5bcc\u7f51",
+  "url": "https://futures.eastmoney.com/",
+  "published": "2026-09-12T05:12:33+00:00",
+  "symbols": [
+   "UST10Y",
+   "XTIUSD",
+   "XAUUSD",
+   "XAGUSD",
+   "XPTUSD",
+   "XPDUSD",
+   "XCUUSD",
+   "XALUSD",
+   "XNIUSD",
+   "XZNUSD",
+   "XPBUSD",
+   "HK50",
+   "US500",
+   "USDX",
+   "USDCNH",
+   "SOYBEAN",
+   "CORN",
+   "SUGAR",
+   "COTTON",
+   "WHEAT"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "flow",
+   "inventory",
+   "momentum",
+   "night_session",
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "25fc2c01db510949cf0b",
+  "host": "futures.eastmoney.com",
+  "claims": [
+   {
+    "claim": "\u591a\u56fd\u51cf\u6301\u7f8e\u503a \u4f20\u7edf\u201c\u5b89\u5168\u8d44\u4ea7\u201d\u9762 9\u670812\u65e5 09:44 \u671f\u8d27\u516c\u53f8\u76d1\u7763\u7ba1\u7406\u529e\u6cd5\u4e03\u5927\u770b\u70b9\uff1a\u65b0\u589e\u4e13\u8282\u89c4\u8303\u505a\u5e02\u4e1a\u52a1 \u8d44\u7ba1\u63d0\u9ad8 9\u670812\u65e5 07:51 \u78b3\u9178\u9502\u671f\u8d27\u76d8\u4e2d\u8dcc\u8fd110% \u9502\u76d0\u4f01\u4e1a\u76f4\u8a00\u201c\u6ca1\u770b\u61c2\u201d\uff01",
+    "lang": "zh",
+    "quantities": [
+     "\u505a\u5e02"
+    ],
+    "direction": [
+     "\u8dcc"
+    ],
+    "horizon": [
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [
+      "UST10Y"
+     ],
+     "mentioned": [
+      "\u7f8e\u503a",
+      "\u78b3\u9178\u9502"
+     ],
+     "transfer_only": [
+      "\u78b3\u9178\u9502->metals"
+     ],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "09a654831681"
+   },
+   {
+    "claim": "\u767d\u5bab\u636e\u62a5\u8003\u8651\u52a8\u7528\u300a\u56fd\u9632\u751f\u4ea7\u6cd5\u300b\u6269\u5927\u7f8e\u56fd\u70bc\u6cb9\u80fd\u529b \u7cbe\u9009 | \u591c\u76d8\u76d8\u524d\u8981\u95fb\u6c47\u603b 9\u670811\u65e5 \u5468\u4e94 \u6bcf\u65e5\u9f99\u864e\u699c | \u5546\u54c1\u671f\u8d27\u7efc\u5408\u6307\u6570\u4e0b\u8dcc2.",
+    "lang": "zh",
+    "quantities": [
+     "\u591c\u76d8"
+    ],
+    "direction": [
+     "\u4e0b\u8dcc",
+     "\u6269\u5927"
+    ],
+    "horizon": [
+     "\u6bcf\u65e5",
+     "\u591c\u76d8"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [
+      "\u9f99\u864e\u699c"
+     ],
+     "transfer_only": [
+      "\u9f99\u864e\u699c->cn-equities-only"
+     ],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "23a0e03e71a3"
+   },
+   {
+    "claim": "\u671f\u5e02\u6536\u8bc4 | \u56fd\u5185\u5546\u54c1\u5927\u9762\u79ef\u98d8\u7eff \u80fd\u5316\u677f\u5757\u76d8\u4e2d\u8df3\u6c34 \u7f8e\u8054\u50a8\u4e0b\u5468\u662f\u5426\u52a0\u606f\uff1f",
+    "lang": "zh",
+    "quantities": [
+     "\u52a0\u606f"
+    ],
+    "direction": [
+     "\u8df3\u6c34"
+    ],
+    "horizon": [
+     "\u5468"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "US500"
+     ],
+     "channels": [
+      "\u7f8e\u8054\u50a8: policy: Fed -> dollar and US equities"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "576fa58d4d04"
+   },
+   {
+    "claim": "\u7f8e\u56fd8\u6708CPI\u524d\u77bb\uff1a\u80fd\u6e90\u6da8\u4ef7\u6270\u52a8\u901a\u80c0 \u7f8e\u8054\u50a8\u52a0\u606f\u9884.",
+    "lang": "zh",
+    "quantities": [
+     "\u901a\u80c0",
+     "\u52a0\u606f",
+     "cpi"
+    ],
+    "direction": [
+     "\u6da8"
+    ],
+    "horizon": [
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "US500"
+     ],
+     "channels": [
+      "\u7f8e\u8054\u50a8: policy: Fed -> dollar and US equities"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "06442ef40a4a"
+   },
+   {
+    "claim": "\u4e0a\u671f\u6240\u539f\u6cb9\u671f\u8d272610\u5408\u7ea6\u591c\u76d8\u6536\u6da81.",
+    "lang": "zh",
+    "quantities": [
+     "\u591c\u76d8",
+     "\u539f\u6cb9"
+    ],
+    "direction": [
+     "\u6da8"
+    ],
+    "horizon": [
+     "\u591c\u76d8"
+    ],
+    "instruments": {
+     "analogues": [
+      "XTIUSD"
+     ],
+     "mentioned": [
+      "\u539f\u6cb9"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "94b12efc73b0"
+   },
+   {
+    "claim": "\u73b0\u8d27\u9ec4\u91d1\u5468\u6da8\u8d857%\u7ad9\u4e0a4300\u7f8e\u5143 \u4e3a\u4f55\u7a81\u7136\u5927\u6da8\uff1f",
+    "lang": "zh",
+    "quantities": [
+     "\u9ec4\u91d1",
+     "\u7f8e\u5143"
+    ],
+    "direction": [
+     "\u6da8"
+    ],
+    "horizon": [
+     "\u5468"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "\u9ec4\u91d1"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "1116033ebd6f"
+   },
+   {
+    "claim": "\u9ec4\u91d1\u56db\u5b63\u5ea6\u4ef7\u683c\u91cd\u5fc3\u4e0a\u79fb\u8d8b\u52bf\u4e0d\u53d8 \u94a2\u6750\u677f\u5757 \u4ece\u201c\u8d4c\u5468\u671f\u201d\u5230\u201c\u7ec3\u5185\u529f\u201d \u7a81\u7136\u8df3\u6c34\uff01",
+    "lang": "zh",
+    "quantities": [
+     "\u8d8b\u52bf",
+     "\u9ec4\u91d1"
+    ],
+    "direction": [
+     "\u8df3\u6c34"
+    ],
+    "horizon": [
+     "\u5468",
+     "\u5b63\u5ea6"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "\u9ec4\u91d1"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "ba85998cf9a2"
+   },
+   {
+    "claim": "34% \u5237\u65e5\u5185\u65b0\u9ad8 \u73b0\u8d27\u9ec4\u91d1\u4e00\u5ea6\u8dcc\u78344300\u7f8e\u5143/\u76ce\u53f8\u5173\u53e3 \u6bcf\u65e5\u9f99\u864e\u699c | \u5546\u54c1\u671f\u8d27\u7efc\u5408\u6307\u6570\u4e0b\u8dcc2.",
+    "lang": "zh",
+    "quantities": [
+     "\u65e5\u5185",
+     "\u9ec4\u91d1",
+     "\u7f8e\u5143"
+    ],
+    "direction": [
+     "\u4e0b\u8dcc",
+     "\u8dcc"
+    ],
+    "horizon": [
+     "\u65e5\u5185",
+     "\u6bcf\u65e5"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "\u9ec4\u91d1",
+      "\u9f99\u864e\u699c"
+     ],
+     "transfer_only": [
+      "\u9f99\u864e\u699c->cn-equities-only"
+     ],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "6c9faeb5bd6f"
+   }
+  ],
+  "n_claims": 10
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Gold Price Performance &amp; Data | World Gold Council",
+  "url": "https://www.gold.org/goldhub/data",
+  "published": "2026-09-12T05:12:35+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "correlation",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "351fe9b3f728ebb2d6e4",
+  "host": "www.gold.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Challenge Validation",
+  "url": "https://www.balticexchange.com/en/data-services/market-information0/dry-services.html",
+  "published": "2026-09-12T05:12:35+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "182c6a0ef6a4c2f95066",
+  "host": "www.balticexchange.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Statistics",
+  "url": "https://www.norges-bank.no/en/topics/Statistics/",
+  "published": "2026-09-12T05:12:37+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "8211052c5f241c5e63aa",
+  "host": "www.norges-bank.no",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u4e1c\u65b9\u8d22\u5bcc\u8bc1\u5238\uff1a\u8bc1\u5238\u4ea4\u6613|\u7092\u80a1|\u76ef\u76d8\u5b98\u65b9\u8f6f\u4ef6\u4e0b\u8f7d",
+  "url": "http://www.18.cn/download.html",
+  "published": "2026-09-12T05:12:41+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [
+   "https://zqcdn.eastmoneysec.com.cn/secuweb-ssr-18/static/builds/meta/479cc2dd-b5be-4a00-8375-0b47b2f70400.json",
+   "http://www.18.cn/download"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "fb6c92f36d25f83a1901",
+  "host": "www.18.cn",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "https://mathtrading.wordpress.com/2012/09/02/quantitative-trading-and-macroeconomics/?share=twitter",
+  "url": "https://mathtrading.wordpress.com/2012/09/02/quantitative-trading-and-macroeconomics/?share=twitter",
+  "published": "2026-09-12T05:12:42+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://mathtrading.wordpress.com/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "9da6aa6239790a10713e",
+  "host": "mathtrading.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "High Frequency Trading | Quantitative Finance Club",
+  "url": "https://qfclub.wordpress.com/category/trading/high-frequency-trading-trading/",
+  "published": "2026-09-12T05:12:52+00:00",
+  "symbols": [
+   "XAGUSD",
+   "NAS100",
+   "US500",
+   "US30",
+   "USDKRW"
+  ],
+  "timeframes": [
+   "INTRADAY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "basis",
+   "correlation",
+   "momentum",
+   "orderflow",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "1cb0e52b761c2b046aa9",
+  "host": "qfclub.wordpress.com",
+  "claims": [
+   {
+    "claim": ") The volume participation algorithm calculated the number of index futures contracts that had been traded over the previous minute, sold 9 per cent of that volume, and kept going until the full 75,000 had been sold.",
+    "lang": "en",
+    "quantities": [
+     "volume",
+     "futures"
+    ],
+    "direction": [
+     "contracts"
+    ],
+    "horizon": [
+     "minute"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAGUSD",
+      "NAS100",
+      "US500",
+      "US30",
+      "USDKRW"
+     ],
+     "mentioned": [
+      "plata",
+      "nasdaq",
+      "s&p500",
+      "dow jones",
+      "won"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "554fe8f52652"
+   },
+   {
+    "claim": "1 billion, was unusually large, though not unprecedented: the SEC/CFTC investigators found two efforts in the previous year to sell the same or larger quantities of futures in a single day.",
+    "lang": "en",
+    "quantities": [
+     "futures"
+    ],
+    "direction": [
+     "sell"
+    ],
+    "horizon": [
+     "day"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAGUSD",
+      "NAS100",
+      "US500",
+      "US30",
+      "USDKRW"
+     ],
+     "mentioned": [
+      "plata",
+      "nasdaq",
+      "s&p500",
+      "dow jones",
+      "won"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "2a491c47460d"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Trading | Quantitative Finance Club | Page 2",
+  "url": "https://qfclub.wordpress.com/tag/trading/page/2/",
+  "published": "2026-09-12T05:12:54+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "correlation",
+   "momentum",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "4ebbed872d1626b2e5d4",
+  "host": "qfclub.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Trading | Quantitative Finance Club",
+  "url": "https://qfclub.wordpress.com/category/trading/",
+  "published": "2026-09-12T05:12:56+00:00",
+  "symbols": [],
+  "timeframes": [
+   "INTRADAY"
+  ],
+  "patterns": [
+   "basis",
+   "correlation",
+   "momentum",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e5ea366f9c329f60f117",
+  "host": "qfclub.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "estrategias | Quantitative Finance Club | Page 2",
+  "url": "https://qfclub.wordpress.com/tag/estrategias/page/2/",
+  "published": "2026-09-12T05:12:58+00:00",
+  "symbols": [
+   "US500"
+  ],
+  "timeframes": [
+   "INTRADAY"
+  ],
+  "patterns": [
+   "carry",
+   "correlation",
+   "mean_reversion",
+   "momentum",
+   "orderflow",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "1310706fac06d8e2b730",
+  "host": "qfclub.wordpress.com",
+  "claims": [
+   {
+    "claim": "First, there is a \u201cU-shaped\u201d trend in return correlation, characterized by higher correlation at open and close and lower correlation during mid-day hours.",
+    "lang": "en",
+    "quantities": [
+     "trend",
+     "correlation",
+     "open",
+     "close"
+    ],
+    "direction": [
+     "higher",
+     "lower"
+    ],
+    "horizon": [
+     "open",
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "spy"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "1b6070794dbc"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Electronic Trading | Quantitative Finance Club",
+  "url": "https://qfclub.wordpress.com/tag/electronic-trading/",
+  "published": "2026-09-12T05:13:00+00:00",
+  "symbols": [
+   "XAGUSD",
+   "US500"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage",
+   "correlation",
+   "momentum",
+   "orderflow",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "037d8d6d943ef1f6e04a",
+  "host": "qfclub.wordpress.com",
+  "claims": [
+   {
+    "claim": ") The volume participation algorithm calculated the number of index futures contracts that had been traded over the previous minute, sold 9 per cent of that volume, and kept going until the full 75,000 had been sold.",
+    "lang": "en",
+    "quantities": [
+     "volume",
+     "futures"
+    ],
+    "direction": [
+     "contracts"
+    ],
+    "horizon": [
+     "minute"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAGUSD",
+      "US500"
+     ],
+     "mentioned": [
+      "plata",
+      "s&p 500"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "554fe8f52652"
+   },
+   {
+    "claim": "1 billion, was unusually large, though not unprecedented: the SEC/CFTC investigators found two efforts in the previous year to sell the same or larger quantities of futures in a single day.",
+    "lang": "en",
+    "quantities": [
+     "futures"
+    ],
+    "direction": [
+     "sell"
+    ],
+    "horizon": [
+     "day"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAGUSD",
+      "US500"
+     ],
+     "mentioned": [
+      "plata",
+      "s&p 500"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "2a491c47460d"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "fun &amp; finance: cap\u00edtulo 6, Trading Electronico | Quantitative Finance Club",
+  "url": "https://qfclub.wordpress.com/2011/04/04/fun-finance-capitulo-6-trading-electronico/",
+  "published": "2026-09-12T05:13:02+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "momentum",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "8e7bfc1208fad330aef1",
+  "host": "qfclub.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Gr\u00e1fico du Jour: Algo FX | Quantitative Finance Club",
+  "url": "https://qfclub.wordpress.com/2011/01/10/grafico-du-jour-algo-fx/",
+  "published": "2026-09-12T05:13:04+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "momentum",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "4f03cf538563e2e31844",
+  "host": "qfclub.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Cash Smart Strategy",
+  "url": "https://www.resbank.co.za/en/home/what-we-do/banknotes-and-coin/cash-smart",
+  "published": "2026-09-12T05:13:06+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "inventory",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://www.resbank.co.za/en/home/publications/quarterly-bulletin1/download-information-from-zipped-data-files",
+   "https://www.resbank.co.za/en/home/publications/quarterly-bulletin1/download-information-from-xlsx-data-files",
+   "https://www.resbank.co.za/en/home/publications/quarterly-bulletin1/download-zipped-eviews-files"
+  ],
+  "n_endpoints": 3,
+  "vault_sha": "ac75fdd355780e5e23f2",
+  "host": "www.resbank.co.za",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Composite Business Cycle Indicators",
+  "url": "https://www.resbank.co.za/en/home/publications/composite-business-cycle-indicators",
+  "published": "2026-09-12T05:13:08+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "inventory",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://www.resbank.co.za/en/home/publications/quarterly-bulletin1/download-information-from-zipped-data-files",
+   "https://www.resbank.co.za/en/home/publications/quarterly-bulletin1/download-information-from-xlsx-data-files",
+   "https://www.resbank.co.za/en/home/publications/quarterly-bulletin1/download-zipped-eviews-files"
+  ],
+  "n_endpoints": 3,
+  "vault_sha": "de2ffab122400b343442",
+  "host": "www.resbank.co.za",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Trading &amp; Shipping - International Cocoa Organization",
+  "url": "https://www.icco.org/trading-shipping/",
+  "published": "2026-09-12T05:13:10+00:00",
+  "symbols": [
+   "GBPUSD",
+   "USDTRY",
+   "USCOCOA"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "flow",
+   "inventory"
+  ],
+  "confidence": 0.95,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.icco.org/pwa-manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "ba7edf6397786fd1e2c6",
+  "host": "www.icco.org",
+  "claims": [
+   {
+    "claim": "Once a contract is open, the position is \u201cmarked to the market\u201d daily.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "contract"
+    ],
+    "horizon": [
+     "open",
+     "daily"
+    ],
+    "instruments": {
+     "analogues": [
+      "GBPUSD",
+      "USDTRY",
+      "USCOCOA"
+     ],
+     "mentioned": [
+      "sterling",
+      "try",
+      "cocoa"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "cab3c0b3e2d3"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "The Supervisory Strategy of the Czech National Bank - Czech National Bank",
+  "url": "https://www.cnb.cz/en/supervision-financial-market/supervisory-strategy/",
+  "published": "2026-09-12T05:13:11+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "inventory"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://www.cnb.cz/export/system/modules/org.opencms.apollo/resources/img/favicon_120.png",
+   "https://www.cnb.cz/export/system/modules/cz.nelasoft.opencms.cnb/resources/css/styles.min.css?v=1787248198699",
+   "https://www.cnb.cz/export/sites/cnb/en/supervision-financial-market/.galleries/long-term_supervisory_strategy/long-term_supervisory_strategy_2024.pdf",
+   "https://www.cnb.cz/export/sites/cnb/en/supervision-financial-market/.galleries/long-term_supervisory_strategy/AML_supervisory_strategy_2023-2026.pdf"
+  ],
+  "n_endpoints": 4,
+  "vault_sha": "a205968fb37eca9d916d",
+  "host": "www.cnb.cz",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Trading venues, settlement, registration of securities and regulated market protection - Czech National Bank",
+  "url": "https://www.cnb.cz/en/supervision-financial-market/legislation/regulated-markets-settlement-and-regulated-market-protection/",
+  "published": "2026-09-12T05:13:12+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "inventory"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://www.cnb.cz/export/system/modules/org.opencms.apollo/resources/img/favicon_120.png",
+   "https://www.cnb.cz/export/system/modules/cz.nelasoft.opencms.cnb/resources/css/styles.min.css?v=1787248198699"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "fb96f0dea38a8612b53b",
+  "host": "www.cnb.cz",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Basic indicators of the financial market sectors - Czech National Bank",
+  "url": "https://www.cnb.cz/en/supervision-financial-market/aggregate-information-financial-sector/basic-indicators-of-the-financial-market/",
+  "published": "2026-09-12T05:13:14+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "inventory"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://www.cnb.cz/export/system/modules/org.opencms.apollo/resources/img/favicon_120.png",
+   "https://www.cnb.cz/export/system/modules/cz.nelasoft.opencms.cnb/resources/css/styles.min.css?v=1787248198699"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "e4b1776da17b15bdd6a4",
+  "host": "www.cnb.cz",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Financial Soundness Indicators (FSIs IMF) - Czech National Bank",
+  "url": "https://www.cnb.cz/en/supervision-financial-market/aggregate-information-financial-sector/financial-soundness-indicators/",
+  "published": "2026-09-12T05:13:16+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "inventory",
+   "orderflow"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://www.cnb.cz/export/system/modules/org.opencms.apollo/resources/img/favicon_120.png",
+   "https://www.cnb.cz/export/system/modules/cz.nelasoft.opencms.cnb/resources/css/styles.min.css?v=1787248198699"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "3919853475da6d410580",
+  "host": "www.cnb.cz",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u6570\u636e - \u56fd\u5bb6\u7edf\u8ba1\u5c40",
+  "url": "https://www.stats.gov.cn/sj/",
+  "published": "2026-09-12T05:13:20+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "inventory",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "64e7bb48d53bd435988d",
+  "host": "www.stats.gov.cn",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Statistics for Financial Markets Course | Risk Management and Trading Strategies with Excel",
+  "url": "https://www.quantinsti.com/epat/statistics-financial-markets",
+  "published": "2026-09-12T05:13:22+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "momentum",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.quantinsti.com/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "5ab40bdcb3abc06fc473",
+  "host": "www.quantinsti.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "TradingHours.com - Market Holidays & Trading Hours Calendars",
+  "url": "https://tradinghours.com",
+  "published": "2026-09-12T05:13:25+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "night_session",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [
+   "https://tradinghours.com/manifest.json",
+   "https://tradinghours.com/llms.txt"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "85c3fdc06a6888c88374",
+  "host": "tradinghours.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Quiver API Setup | Quiver Quantitative",
+  "url": "https://www.quiverquant.com/api-setup/",
+  "published": "2026-09-12T05:13:32+00:00",
+  "symbols": [
+   "NVIDIA"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.quiverquant.com/export/",
+   "https://www.quiverquant.com/api/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "ffcc76905c7b36383984",
+  "host": "www.quiverquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Quiver Quantitative Privacy Notice",
+  "url": "https://www.quiverquant.com/privacypolicy/",
+  "published": "2026-09-12T05:13:34+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f45623cbf896350a1bb3",
+  "host": "www.quiverquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Website Terms of Use",
+  "url": "https://www.quiverquant.com/termsofservice/",
+  "published": "2026-09-12T05:13:36+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "flow",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "9f59811d39066f35bd48",
+  "host": "www.quiverquant.com",
+  "claims": [],
+  "n_claims": 0
+ }
+]

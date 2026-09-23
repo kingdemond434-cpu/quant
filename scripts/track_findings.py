@@ -30,6 +30,20 @@ from pathlib import Path
 LEDGER = Path(__file__).resolve().parent.parent / "data/findings_ledger.json"
 UNFIXED_DEFECT_D = 14.0          # accepted+unfixed beyond this is a reported defect
 
+#: How long an escalation silences `findings-rotting` before it must be renewed or resolved.
+#: THE HOLD IS THE WHOLE POINT. An escalation stops a fence firing, so it is exactly the exit an
+#: inconvenient finding would hide behind; with no clock it is an amnesty, not a routing decision.
+#: Same number as UNFIXED_DEFECT_D on purpose -- one bar for "this has been owed too long",
+#: whether the debtor is a seat or a person.
+ESCALATION_HOLD_D = 14.0
+#: Ceiling on a hand-set hold. A caller may shorten the clock (a fast decision is owed sooner);
+#: lengthening it past a month is the amnesty arriving by way of a flag, so it is refused.
+ESCALATION_MAX_HOLD_D = 30.0
+#: An escalation must NAME a person and say why the repair is theirs. Measured against the
+#: thin forms actually seen in review ("not mine", "tier 3"), which say nothing a reader can act
+#: on and would let the exit become a shrug.
+ESCALATION_MIN_REASON = 40
+
 
 def _load() -> dict:
     if LEDGER.exists():
@@ -113,6 +127,74 @@ def supersede(a) -> None:
     _set(a, "superseded", {"superseded_by": a.by, "supersede_reason": a.reason[:400]})
 
 
+def escalation_lapsed(f: dict) -> bool:
+    """Has this row's escalation hold expired? False when it was never escalated.
+
+    THE DIRECTION OF EVERY DOUBT IS "LAPSED". A row with no `escalated` stamp is not covered by
+    this exit at all, so it returns False and the ordinary rot clock keeps running on it -- the
+    absence resolves to the COUNTED side (L1.28a), never to a silent exemption. But a stamp that
+    is PRESENT and unreadable, or a hold that is present and not a sane number of days, returns
+    True: an escalation that cannot prove its clock is still running has stopped running. That
+    asymmetry is the whole guard. A corrupt value reading as an indefinite hold is how an amnesty
+    arrives by way of a typo, and it would be invisible precisely because nothing fires.
+    """
+    stamp = f.get("escalated")
+    if not stamp or not isinstance(stamp, str):
+        return False                       # never escalated -- not covered, not exempt
+    try:
+        age_d = (datetime.now(tz=UTC) - datetime.fromisoformat(stamp)).total_seconds() / 86400.0
+    except (TypeError, ValueError):
+        return True                        # unreadable stamp: cannot prove the hold is live
+    hold = f.get("escalation_hold_d", ESCALATION_HOLD_D)
+    if isinstance(hold, bool) or not isinstance(hold, int | float):
+        return True                        # corrupt hold: never an indefinite exemption
+    if not (0 < float(hold) <= ESCALATION_MAX_HOLD_D):
+        return True
+    return age_d > float(hold)
+
+
+def escalate(a) -> None:
+    """A finding proved RIGHT whose repair is legally reserved to a HUMAN, routed to that human.
+
+    THE MISSING EXIT, one state over from `supersede`. F0025 asks for a change to
+    `scripts/run_deadman_switch.py` -- the Tier-3 ruin rail, which every worker prompt on this
+    desk forbids editing, principal sign-off only. Both available moves were bad in exactly
+    supersede's way: leave it accepted-and-unfixed, where `findings-rotting` fires forever
+    demanding work nobody is permitted to do, or `fix` it, a false claim that removes it from
+    view permanently AND credits the seat with a hit it did not earn.
+
+    ESCALATION IS NOT A FIX AND IS SCORED AS NEITHER. It never sets `fixed`, so the scorecard --
+    the desk's per-seat calibration -- stays honest; it deletes no row, so the history stays
+    auditable; and it carries a CLOCK, because an exit that stops a fence firing and never
+    expires is an amnesty. When the hold lapses the fence fires a DIFFERENT, louder defect
+    naming the person it is owed by, rather than folding back into generic rot: those two states
+    want different responses from whoever reads them.
+    """
+    to = str(getattr(a, "to", "") or "").strip()
+    if not to:
+        raise SystemExit("escalation must NAME the person it is owed by -- an escalation to "
+                         "nobody is an accepted finding with a nicer label")
+    reason = str(getattr(a, "reason", "") or "").strip()
+    if len(reason) < ESCALATION_MIN_REASON:
+        raise SystemExit(
+            f"escalation reason is {len(reason)} chars, under the {ESCALATION_MIN_REASON} "
+            "minimum. Say WHY the repair is reserved to a human and what they must decide -- "
+            "'not mine' stops a fence firing while telling the next reader nothing")
+    hold = a.hold_days if getattr(a, "hold_days", None) is not None else ESCALATION_HOLD_D
+    try:
+        hold = float(hold)
+    except (TypeError, ValueError):
+        raise SystemExit(f"--hold-days {a.hold_days!r} is not a number of days") from None
+    if not (0 < hold <= ESCALATION_MAX_HOLD_D):
+        raise SystemExit(
+            f"--hold-days must be >0 and <={ESCALATION_MAX_HOLD_D:.0f}; got {hold:g}. A hold "
+            "past a month is not a routing decision, it is an amnesty with a flag on it")
+    # Validated BEFORE any write: a refused escalation must leave the row exactly as it was,
+    # or a rejected attempt would still have silenced the fence.
+    _set(a, "escalated", {"escalated_to": to, "escalation_reason": reason[:400],
+                          "escalation_hold_d": hold})
+
+
 def report(_a) -> None:
     d = _load()
     acc = [f for f in d["findings"] if f["ruling"] == "accepted"]
@@ -126,7 +208,12 @@ def report(_a) -> None:
         print(f"\n!! {len(overdue)} ACCEPTED FINDINGS UNFIXED >{UNFIXED_DEFECT_D:.0f}d "
               "-- these are DEFECTS, name them in the cycle report:")
     for f in unfixed:
-        flag = "DEFECT" if _age_d(f["raised"]) > UNFIXED_DEFECT_D else "open"
+        # An escalated row is LISTED, never hidden -- it is still owed, just owed by a named
+        # person on their own clock. LAPSED is the loud state and reads as one.
+        if f.get("escalated"):
+            flag = "LAPSED" if escalation_lapsed(f) else " esc"
+        else:
+            flag = "DEFECT" if _age_d(f["raised"]) > UNFIXED_DEFECT_D else "open"
         print(f"  [{flag:>6}] {f['id']} {_age_d(f['raised']):>5.1f}d {f['severity']:<6} "
               f"{f['model'][:22]:<22} {f['summary'][:70]}")
     # Listed, never silently dropped: a closed-as-wrong finding leaving no trace in the report is
@@ -175,6 +262,15 @@ def main() -> None:
     sp.add_argument("--by", required=True, help="the finding that replaced this one")
     sp.add_argument("--reason", required=True, help="what was refuted, and by what evidence")
     sp.set_defaults(fn=supersede)
+    es = sub.add_parser("escalate")
+    es.add_argument("--id", required=True)
+    es.add_argument("--to", required=True, help="the person the repair is reserved to")
+    es.add_argument("--reason", required=True,
+                    help="why a human must decide, and what they must decide")
+    es.add_argument("--hold-days", type=float, default=None,
+                    help=f"shorten the hold (default {ESCALATION_HOLD_D:g}d, "
+                         f"max {ESCALATION_MAX_HOLD_D:g}d)")
+    es.set_defaults(fn=escalate)
     sub.add_parser("report").set_defaults(fn=report)
     sub.add_parser("scorecard").set_defaults(fn=scorecard)
     args = p.parse_args()

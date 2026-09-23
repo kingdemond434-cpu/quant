@@ -1,0 +1,88 @@
+{
+ "source": "plumbing",
+ "generated_at": "2026-09-04T20:18:34.927085+00:00",
+ "tests_run": 1198,
+ "discoveries": [
+  {
+   "source": "plumbing",
+   "kind": "plumbing",
+   "symbol": "XAUUSD",
+   "family": "clock_transition",
+   "params": {
+    "label": "cme_fx_close",
+    "stamp_hour": 1,
+    "mode": "into",
+    "side": 1,
+    "lead_bars": 1,
+    "hold_bars": 4
+   },
+   "mechanism": "cme_fx_close (CME currency futures settle; basis trades and spot hedges rebalance): into at stamp hour 1, side +1",
+   "title": "XAUUSD.cme_fx_close@1.into side=+1",
+   "url": "",
+   "evidence": {
+    "n_independent": 2180,
+    "gross_per_trade": 0.00035781,
+    "net_per_trade": 0.00028106,
+    "cost_frac": 7.675e-05,
+    "t_gross": 6.933,
+    "t_deflated_sweep": 3.764,
+    "n_tests_sweep": 1198,
+    "screen": "family signals, forward return at own TTL, net of round trip, non-overlapping, self-deflated"
+   }
+  },
+  {
+   "source": "plumbing",
+   "kind": "plumbing",
+   "symbol": "XAUUSD",
+   "family": "clock_transition",
+   "params": {
+    "label": "cash_equity_close",
+    "stamp_hour": 23,
+    "mode": "out_of",
+    "side": 1,
+    "lead_bars": 2,
+    "hold_bars": 2
+   },
+   "mechanism": "cash_equity_close (US cash close: index rebalancing, closing auctions, CFD marks): out_of at stamp hour 23, side +1",
+   "title": "XAUUSD.cash_equity_close@23.out_of side=+1",
+   "url": "",
+   "evidence": {
+    "n_independent": 2112,
+    "gross_per_trade": 0.00040398,
+    "net_per_trade": 0.00032723,
+    "cost_frac": 7.675e-05,
+    "t_gross": 5.911,
+    "t_deflated_sweep": 2.742,
+    "n_tests_sweep": 1198,
+    "screen": "family signals, forward return at own TTL, net of round trip, non-overlapping, self-deflated"
+   }
+  },
+  {
+   "source": "plumbing",
+   "kind": "plumbing",
+   "symbol": "XAUUSD",
+   "family": "clock_transition",
+   "params": {
+    "label": "broker_rollover",
+    "stamp_hour": 23,
+    "mode": "out_of",
+    "side": 1,
+    "lead_bars": 2,
+    "hold_bars": 2
+   },
+   "mechanism": "broker_rollover (the broker's daily swap and mark; spreads widen by contract rather than sentiment): out_of at stamp hour 23, side +1",
+   "title": "XAUUSD.broker_rollover@23.out_of side=+1",
+   "url": "",
+   "evidence": {
+    "n_independent": 2112,
+    "gross_per_trade": 0.00040398,
+    "net_per_trade": 0.00032723,
+    "cost_frac": 7.675e-05,
+    "t_gross": 5.911,
+    "t_deflated_sweep": 2.742,
+    "n_tests_sweep": 1198,
+    "screen": "family signals, forward return at own TTL, net of round trip, non-overlapping, self-deflated"
+   }
+  }
+ ]
+}

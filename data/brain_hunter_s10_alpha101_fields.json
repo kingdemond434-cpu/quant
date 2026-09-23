@@ -1,0 +1,411 @@
+{
+ "per_alpha": {
+  "alpha001": [
+   "close",
+   "returns"
+  ],
+  "alpha002": [
+   "close",
+   "open",
+   "volume"
+  ],
+  "alpha003": [
+   "open",
+   "volume"
+  ],
+  "alpha004": [
+   "low"
+  ],
+  "alpha005": [
+   "close",
+   "open",
+   "vwap"
+  ],
+  "alpha006": [
+   "open",
+   "volume"
+  ],
+  "alpha007": [
+   "close",
+   "volume"
+  ],
+  "alpha008": [
+   "open",
+   "returns"
+  ],
+  "alpha009": [
+   "close"
+  ],
+  "alpha010": [
+   "close"
+  ],
+  "alpha011": [
+   "close",
+   "volume",
+   "vwap"
+  ],
+  "alpha012": [
+   "close",
+   "volume"
+  ],
+  "alpha013": [
+   "close",
+   "volume"
+  ],
+  "alpha014": [
+   "open",
+   "returns",
+   "volume"
+  ],
+  "alpha015": [
+   "high",
+   "volume"
+  ],
+  "alpha016": [
+   "high",
+   "volume"
+  ],
+  "alpha017": [
+   "close",
+   "volume"
+  ],
+  "alpha018": [
+   "close",
+   "open"
+  ],
+  "alpha019": [
+   "close",
+   "returns"
+  ],
+  "alpha020": [
+   "close",
+   "high",
+   "low",
+   "open"
+  ],
+  "alpha021": [
+   "close",
+   "volume"
+  ],
+  "alpha022": [
+   "close",
+   "high",
+   "volume"
+  ],
+  "alpha023": [
+   "close",
+   "high"
+  ],
+  "alpha024": [
+   "close"
+  ],
+  "alpha025": [
+   "close",
+   "high",
+   "returns",
+   "volume",
+   "vwap"
+  ],
+  "alpha026": [
+   "high",
+   "volume"
+  ],
+  "alpha027": [
+   "volume",
+   "vwap"
+  ],
+  "alpha028": [
+   "close",
+   "high",
+   "low",
+   "volume"
+  ],
+  "alpha029": [
+   "close",
+   "returns"
+  ],
+  "alpha030": [
+   "close",
+   "volume"
+  ],
+  "alpha031": [
+   "close",
+   "low",
+   "volume"
+  ],
+  "alpha032": [
+   "close",
+   "vwap"
+  ],
+  "alpha033": [
+   "close",
+   "open"
+  ],
+  "alpha034": [
+   "close",
+   "returns"
+  ],
+  "alpha035": [
+   "close",
+   "high",
+   "low",
+   "returns",
+   "volume"
+  ],
+  "alpha036": [
+   "close",
+   "open",
+   "returns",
+   "volume",
+   "vwap"
+  ],
+  "alpha037": [
+   "close",
+   "open"
+  ],
+  "alpha038": [
+   "close",
+   "open"
+  ],
+  "alpha039": [
+   "close",
+   "returns",
+   "volume"
+  ],
+  "alpha040": [
+   "high",
+   "volume"
+  ],
+  "alpha041": [
+   "high",
+   "low",
+   "vwap"
+  ],
+  "alpha042": [
+   "close",
+   "vwap"
+  ],
+  "alpha043": [
+   "close",
+   "volume"
+  ],
+  "alpha044": [
+   "high",
+   "volume"
+  ],
+  "alpha045": [
+   "close",
+   "volume"
+  ],
+  "alpha046": [
+   "close"
+  ],
+  "alpha047": [
+   "close",
+   "high",
+   "volume",
+   "vwap"
+  ],
+  "alpha049": [
+   "close"
+  ],
+  "alpha050": [
+   "volume",
+   "vwap"
+  ],
+  "alpha051": [
+   "close"
+  ],
+  "alpha052": [
+   "low",
+   "returns",
+   "volume"
+  ],
+  "alpha053": [
+   "close",
+   "high",
+   "low"
+  ],
+  "alpha054": [
+   "close",
+   "high",
+   "low",
+   "open"
+  ],
+  "alpha055": [
+   "cap",
+   "close",
+   "high",
+   "low",
+   "returns",
+   "volume"
+  ],
+  "alpha057": [
+   "close",
+   "vwap"
+  ],
+  "alpha060": [
+   "close",
+   "high",
+   "low",
+   "volume"
+  ],
+  "alpha061": [
+   "volume",
+   "vwap"
+  ],
+  "alpha062": [
+   "high",
+   "low",
+   "open",
+   "volume",
+   "vwap"
+  ],
+  "alpha064": [
+   "high",
+   "low",
+   "open",
+   "volume",
+   "vwap"
+  ],
+  "alpha065": [
+   "open",
+   "volume",
+   "vwap"
+  ],
+  "alpha066": [
+   "high",
+   "low",
+   "open",
+   "vwap"
+  ],
+  "alpha068": [
+   "close",
+   "high",
+   "low",
+   "volume"
+  ],
+  "alpha071": [
+   "close",
+   "low",
+   "open",
+   "volume",
+   "vwap"
+  ],
+  "alpha072": [
+   "high",
+   "low",
+   "volume",
+   "vwap"
+  ],
+  "alpha073": [
+   "low",
+   "open",
+   "vwap"
+  ],
+  "alpha074": [
+   "close",
+   "high",
+   "volume",
+   "vwap"
+  ],
+  "alpha075": [
+   "low",
+   "volume",
+   "vwap"
+  ],
+  "alpha077": [
+   "high",
+   "low",
+   "volume",
+   "vwap"
+  ],
+  "alpha078": [
+   "low",
+   "volume",
+   "vwap"
+  ],
+  "alpha081": [
+   "volume",
+   "vwap"
+  ],
+  "alpha083": [
+   "close",
+   "high",
+   "low",
+   "volume",
+   "vwap"
+  ],
+  "alpha084": [
+   "close",
+   "vwap"
+  ],
+  "alpha085": [
+   "close",
+   "high",
+   "low",
+   "volume"
+  ],
+  "alpha086": [
+   "close",
+   "open",
+   "volume",
+   "vwap"
+  ],
+  "alpha088": [
+   "close",
+   "high",
+   "low",
+   "open",
+   "volume"
+  ],
+  "alpha092": [
+   "close",
+   "high",
+   "low",
+   "open",
+   "volume"
+  ],
+  "alpha094": [
+   "volume",
+   "vwap"
+  ],
+  "alpha095": [
+   "high",
+   "low",
+   "open",
+   "volume"
+  ],
+  "alpha096": [
+   "close",
+   "volume",
+   "vwap"
+  ],
+  "alpha098": [
+   "open",
+   "volume",
+   "vwap"
+  ],
+  "alpha099": [
+   "high",
+   "low",
+   "volume"
+  ],
+  "alpha101": [
+   "close",
+   "high",
+   "low",
+   "open"
+  ]
+ },
+ "counts": {
+  "returns": 12,
+  "close": 53,
+  "open": 25,
+  "volume": 53,
+  "low": 28,
+  "vwap": 30,
+  "high": 31,
+  "cap": 1
+ }
+}

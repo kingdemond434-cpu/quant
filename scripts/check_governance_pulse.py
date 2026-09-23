@@ -1,0 +1,225 @@
+"""GOVERNANCE AS A WEAPON -- the two governing documents enforced in the GROWTH direction.
+
+WHY (principal 2026-08-27: "governance principles enforcing watchdogs so our two big ones always
+get followed for maximum growth and survivors -- not strict conservative idle watching; the
+enforcement must never flip into the opposite"). LAWS.md and RESEARCH.md are not brake pads.
+Their operative clauses are THROUGHPUT clauses: unwired-or-idle is a DEFECT (III.16), a gate
+that never ran is an uncashed claim (L1.49), coverage RATCHETS UP (L1.50), "exhausted" needs
+per-axis evidence (L1.51), and every survivor claim must MOVE (desks/mt5 CLAUDE.md: "never let
+a survivor sit un-actioned"). This fence measures whether the machine is hunting, testing, and
+promoting AT CAPACITY -- and its breaches trigger the machinery, never a slowdown. The gates'
+thresholds themselves are sealed and are NOT touched here: rigour stays; idleness dies.
+
+Floors are a RATCHET (data/governance_ratchet.json): once the desk demonstrates a throughput,
+falling durably below it is a breach. Floors only rise.
+"""
+from __future__ import annotations
+
+import json
+from datetime import UTC, datetime
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+DESK = ROOT / "desks" / "mt5"
+RATCHET = ROOT / "data" / "governance_ratchet.json"
+OUT = ROOT / "web" / "governance_pulse.json"
+
+
+def _read(p: Path):
+    try:
+        return json.loads(p.read_text("utf-8"))
+    except (OSError, ValueError):
+        return None
+
+
+def main() -> int:
+    now = datetime.now(tz=UTC)
+    breaches: list[str] = []
+    m: dict = {"at": now.isoformat(timespec="seconds")}
+    ratchet = _read(RATCHET) or {"floors": {}}
+    floors = ratchet.setdefault("floors", {})
+
+    # --- L1.49/III.16: the gauntlet must JUDGE at demonstrated capacity, every hour
+    gates = _read(DESK / "reports" / "universal_gates_external.json") or {}
+    judged = int(gates.get("n_judged") or 0)
+    m["judged_last_sweep"] = judged
+    floor_j = int(floors.get("judged_per_sweep") or 0)
+    if judged > floor_j:
+        floors["judged_per_sweep"] = judged        # the ratchet only rises
+    elif floor_j and judged < max(50, floor_j // 4):
+        breaches.append(f"GAUNTLET: judged {judged} cells against a demonstrated capacity of "
+                        f"{floor_j} -- the machine is idling far below what it has proven; "
+                        f"idleness is the defect, not the cure")
+
+    # --- the docket must offer the gauntlet real work
+    docket = _read(DESK / "data" / "hypotheses" / "external_survivors.json")
+    n_docket = len(docket) if isinstance(docket, list) else 0
+    m["docket"] = n_docket
+    floor_d = int(floors.get("docket") or 0)
+    if n_docket > floor_d:
+        floors["docket"] = n_docket
+    elif floor_d and n_docket < max(100, floor_d // 10):
+        breaches.append(f"DOCKET: {n_docket} candidates against a demonstrated {floor_d} -- "
+                        f"the search is under-feeding the gates")
+
+    # --- CONVERSION MUST KEEP PACE WITH DISCOVERY (principal 2026-08-27: "test as many
+    # candidates as possible every hour to avoid candidates growing bigger than conversion").
+    # The docket outgrowing judgment is the waiting-room defect one stage later: candidates
+    # exist, the gate exists, and the queue between them quietly becomes the product. Cold
+    # cells cost real compute, so the floor is a RATIO with hysteresis, and the fixer is more
+    # gauntlet runs (per-cell cache makes every attempt cumulative), never fewer candidates.
+    hist = ratchet.setdefault("backlog_history", [])
+    ratio = (judged / n_docket) if n_docket else 1.0
+    hist.append({"at": m["at"], "docket": n_docket, "judged": judged,
+                 "ratio": round(ratio, 4)})
+    ratchet["backlog_history"] = hist[-24:]
+    m["conversion_ratio"] = round(ratio, 4)
+    lagging = [h for h in hist[-6:] if h["docket"] > 500 and h["ratio"] < 0.33]
+    if len(lagging) >= 6:
+        breaches.append(f"BACKLOG: docket {n_docket} vs {judged} judged "
+                        f"(ratio {ratio:.0%}) for 6+ consecutive checks -- conversion is "
+                        f"falling behind discovery; run the gauntlet harder, never the "
+                        f"miners softer")
+
+    # --- EVERY ASSET CLASS MUST BE HUNTED (principal 2026-08-28: "all miners always hunt all
+    # MT5 universe classes"). Classes fail in different regimes by construction, so a class the
+    # search never touches is diversification the desk structurally cannot earn. Measured the
+    # same day: BOND at zero docket coverage and 16 of 99 equities, because a flat rotation
+    # spends its budget wherever the alphabet clusters. Coverage per class only ratchets UP.
+    try:
+        import sys as _s
+        _s.path.insert(0, str(DESK))
+        from mt5desk.universe import classify_all
+        inst = classify_all(json.loads((DESK / "data" / "universe" / "universe.json")
+                                       .read_text("utf-8")))
+        usable = {i.symbol: i.asset_class for i in inst if i.usable}
+        hunted = {r.get("symbol") or r.get("sym") for r in (docket or [])}
+        per_class: dict[str, int] = {}
+        for sym in hunted:
+            cls = usable.get(str(sym))
+            if cls:
+                per_class[cls] = per_class.get(cls, 0) + 1
+        m["classes_hunted"] = per_class
+        missing = sorted(c for c in set(usable.values()) if c not in per_class)
+        m["classes_unhunted"] = missing
+        if missing:
+            breaches.append(f"BREADTH: asset class(es) with ZERO docket coverage: "
+                            f"{', '.join(missing)} -- ground the desk owns and never hunts is "
+                            f"diversification it cannot earn any other way")
+        thin = sorted(c for c, n in per_class.items()
+                      if n < max(3, sum(1 for v in usable.values() if v == c) // 10))
+        if thin:
+            breaches.append(f"BREADTH: {', '.join(thin)} hunted below a tenth of their usable "
+                            f"symbols -- the rotation is not reaching them")
+    except Exception as exc:
+        m["classes_hunted"] = f"UNMEASURED ({type(exc).__name__})"
+
+    # --- NO FAMILY MAY BE UNREACHABLE (principal 2026-08-28: "no hardcoded exclusion stuck to
+    # certain families or trading types"). Every door a candidate passes through must be able
+    # to EXECUTE every registered family; a frozen whitelist silently voids whole mechanism
+    # classes while the stage still reports cells tested. Measured the same day: stage-A knew 8
+    # families while the registry held 43 -- carry, cot, residual, gap decay all unreachable.
+    try:
+        import sys as _s2
+        _s2.path.insert(0, str(DESK))
+        _s2.path.insert(0, str(DESK / "side_channels"))
+        from mt5desk import families as _fam
+        from mt5desk import families_orthogonal as _fo
+        registered = {n[len("family_"):] for n in dir(_fam) if n.startswith("family_")}
+        registered |= set(_fo.ORTHOGONAL_FAMILIES)
+        import run_external_backtest as _stage_a
+        reachable = set(_stage_a.FAMILY_FUNCS)
+        m["families_registered"] = len(registered)
+        m["families_reachable"] = len(reachable)
+        unreachable = sorted(registered - reachable)
+        if unreachable:
+            breaches.append(f"FAMILIES: {len(unreachable)} registered family(ies) UNREACHABLE "
+                            f"from the backtest door -- a hardcoded whitelist is voiding "
+                            f"mechanism classes: {', '.join(unreachable[:6])}")
+    except Exception as exc:
+        m["families_reachable"] = f"UNMEASURED ({type(exc).__name__})"
+
+    # --- DIG ROI, RATCHETED (principal 2026-08-28: "big doesn't mean token wastage -- max ROI
+    # testable candidates mined is success, and certificates"). The seat scorecard counts a log
+    # over 1,500 bytes as PRODUCED, which rewards writing rather than mining. These floors are
+    # the real objective: judgeable candidates, the CLASSES and FAMILIES they span (orthogonality
+    # is the binding constraint at n_eff ~5.5), and runnable certificates. All ratchet UP.
+    roi = _read(ROOT / "data" / "dig_roi.json") or {}
+    for key, label, floor_min in (("docket_named_testable", "testable candidates", 200),
+                                  ("classes_touched", "asset classes", 4),
+                                  ("families_touched", "families", 5),
+                                  ("certificates_runnable", "runnable certificates", 1)):
+        val = roi.get(key)
+        if not isinstance(val, int):
+            continue
+        m[key] = val
+        prev = int(floors.get(key) or 0)
+        if val > prev:
+            floors[key] = val
+        elif prev and val < max(floor_min, prev // 2):
+            breaches.append(f"ROI: {label} fell {prev} -> {val} -- the cycle is producing less "
+                            f"of the only thing that counts; widen the hunt, never the bar")
+
+    # --- survivors must MOVE: a claim sitting un-actioned is a violation, not a wait
+    ledger = _read(DESK / "reports" / "SURVIVORS_LEDGER.json") or {}
+    rows = ledger.get("claims") if isinstance(ledger, dict) else None
+    rows = rows if isinstance(rows, list) else (ledger if isinstance(ledger, list) else [])
+    stuck = []
+    for r in rows:
+        if not isinstance(r, dict):
+            continue
+        status = str(r.get("status") or "").upper()
+        ts = str(r.get("updated_at") or r.get("claimed_at") or "")
+        if status in ("CLAIMED", "UNIVERSAL", "SIGNAL_GATE") and ts:
+            try:
+                age_h = (now - datetime.fromisoformat(ts.replace("Z", "+00:00"))
+                         .astimezone(UTC)).total_seconds() / 3600
+                if age_h > 24:
+                    stuck.append(f"{r.get('claim') or r.get('cell')}({status} {age_h:.0f}h)")
+            except ValueError:
+                continue
+    m["ledger_claims"] = len(rows)
+    m["ledger_stuck"] = len(stuck)
+    if stuck:
+        breaches.append(f"LEDGER: {len(stuck)} survivor claim(s) sitting un-actioned >24h -- "
+                        f"'never let a survivor sit un-actioned across a session': "
+                        f"{', '.join(stuck[:4])}")
+
+    # --- L1.50 breadth: certified families and hunted classes only ratchet up
+    surv = _read(DESK / "reports" / "UNIVERSAL_SURVIVORS.json") or {}
+    fams = {str(v.get("shadow_spec", {}).get("family") or "?")
+            for v in (surv.get("survivors") or {}).values() if isinstance(v, dict)}
+    m["certified_families"] = len(fams)
+    floor_f = int(floors.get("certified_families") or 0)
+    if len(fams) > floor_f:
+        floors["certified_families"] = len(fams)
+    elif floor_f and len(fams) < floor_f:
+        breaches.append(f"BREADTH: certified families fell {floor_f} -> {len(fams)} -- "
+                        f"coverage ratchets UP (L1.50); a lost family is a lost mechanism")
+
+    RATCHET.parent.mkdir(parents=True, exist_ok=True)
+    ratchet["updated_at"] = m["at"]
+    RATCHET.write_text(json.dumps(ratchet, indent=1), "utf-8")
+    OUT.write_text(json.dumps({"at": m["at"],
+                               "verdict": "AT CAPACITY" if not breaches else "IDLING",
+                               "breaches": breaches, "measurements": m,
+                               "floors": floors}, indent=1), "utf-8")
+    if not breaches:
+        print(f"governance: AT CAPACITY (judged={judged} docket={n_docket} "
+              f"families={len(fams)} floors={floors})")
+        return 0
+    print(f"GOVERNANCE IDLING {m['at']}")
+    for b in breaches:
+        print(f"  - {b}")
+    try:
+        import sys
+        sys.path.insert(0, str(ROOT / "scripts"))
+        from auto_fixers import apply
+        apply(list(breaches))
+    except Exception as exc:
+        print(f"  fixers unavailable: {exc}")
+    return 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

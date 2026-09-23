@@ -1,0 +1,70 @@
+{
+ "generated_utc": "2026-09-04T20:18:38.619803+00:00",
+ "targets": [
+  {
+   "query": "economic calendar with ACTUAL prints (e.g. FF/Investing/TE history)",
+   "why": "calendar vintages carry forecast and previous but no `actual`, so (actual - forecast) cannot be computed; only the EXPECTED change is available and it is report",
+   "unlocks": [
+    "event_reaction",
+    "macro_surprise_residual"
+   ],
+   "score": 5.0
+  },
+  {
+   "query": "UST10Y/UST05Y/UKGILT H1 bars",
+   "why": "none of ('UST10Y', 'UST05Y', 'UKGILT') has H1 bars here",
+   "unlocks": [
+    "dollar_real_rates",
+    "rates_repricing_residual"
+   ],
+   "score": 3.0
+  },
+  {
+   "query": "US500/NAS100 H1 bars",
+   "why": "none of ('US500', 'NAS100', 'AUS200') has H1 bars here",
+   "unlocks": [
+    "risk_appetite",
+    "global_beta"
+   ],
+   "score": 3.0
+  },
+  {
+   "query": "XBRUSD/XTIUSD H1 bars",
+   "why": "none of ('XBRUSD', 'XTIUSD') has H1 bars here",
+   "unlocks": [
+    "commodity_cad",
+    "energy_complex"
+   ],
+   "score": 3.0
+  },
+  {
+   "query": "XCUUSD/CHINAH H1 bars",
+   "why": "none of ('XCUUSD', 'CHINAH', 'HK50') has H1 bars here",
+   "unlocks": [
+    "commodity_aud",
+    "growth_dollar"
+   ],
+   "score": 3.0
+  },
+  {
+   "query": "broker_clock.json (record the terminal's UTC offset once)",
+   "why": "session: broker UTC offset unknown -- refusing to assume UTC",
+   "unlocks": [
+    "session conditioning",
+    "plumbing_miner",
+    "clock_transition"
+   ],
+   "score": 3.0
+  },
+  {
+   "query": "tick tape for every book symbol (data/tape/ticks/<SYM>)",
+   "why": "0 spread observations, needs 200 before percentiles of this instrument's own history mean anything",
+   "unlocks": [
+    "liquidity_regime",
+    "orderflow_imbalance",
+    "execution_cost"
+   ],
+   "score": 3.0
+  }
+ ]
+}

@@ -136,6 +136,12 @@ def _executor_wired(root: Path) -> bool | None:
     the failure this run hit once already on the TCA epoch. The tape alone cannot tell them
     apart, because both look like zero rows.
     """
+    # The executor was DELETED 2026-09-05 (universe mandate), so this now returns None on every
+    # run -- and None is the right answer, not a degraded one. It means "this desk has no wired
+    # cash-carry excitation path to measure", which is true, and it stays distinct from False
+    # ("there is one and it is unwired"), which is the distinction the docstring above is about.
+    # If this fence is ever repointed at the MT5 order path, replace the filename here rather than
+    # letting the None quietly become the permanent answer to a question nobody re-asks.
     try:
         return _WIRING_MARKER in (root / "scripts/run_cashcarry_executor.py").read_text("utf-8")
     except OSError:

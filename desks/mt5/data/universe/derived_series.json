@@ -1,0 +1,124 @@
+{
+ "scope": "book (UNIVERSAL_SURVIVORS.canon.json)",
+ "n_symbols": 29,
+ "series": {
+  "AFG_D1": {
+   "derived_from": "AFG_H1",
+   "status": "1065 bars (last 2026-08-14) from AFG_H1.parquet"
+  },
+  "AFL_D1": {
+   "derived_from": "AFL_H1",
+   "status": "1065 bars (last 2026-08-14) from AFL_H1.parquet"
+  },
+  "AUDCAD_D1": {
+   "derived_from": "AUDCAD_H1",
+   "status": "1556 bars (last 2026-09-10) from AUDCAD_H1.parquet"
+  },
+  "AUDCHF_D1": {
+   "derived_from": "AUDCHF_H1",
+   "status": "1556 bars (last 2026-09-10) from AUDCHF_H1.parquet"
+  },
+  "AUDNZD_D1": {
+   "derived_from": "AUDNZD_H1",
+   "status": "1556 bars (last 2026-09-10) from AUDNZD_H1.parquet"
+  },
+  "AUDUSD_D1": {
+   "derived_from": "AUDUSD_H1",
+   "status": "1556 bars (last 2026-09-10) from AUDUSD_H1.parquet"
+  },
+  "CADCHF_D1": {
+   "derived_from": "CADCHF_H1",
+   "status": "1556 bars (last 2026-09-10) from CADCHF_H1.parquet"
+  },
+  "CADJPY_D1": {
+   "derived_from": "CADJPY_H1",
+   "status": "1557 bars (last 2026-09-10) from CADJPY_H1.parquet"
+  },
+  "CHFDKK_D1": {
+   "derived_from": "CHFDKK_H1",
+   "status": "1556 bars (last 2026-09-10) from CHFDKK_H1.parquet"
+  },
+  "CHFNOK_D1": {
+   "derived_from": "CHFNOK_H1",
+   "status": "1556 bars (last 2026-09-10) from CHFNOK_H1.parquet"
+  },
+  "EURCHF_D1": {
+   "derived_from": "EURCHF_H1",
+   "status": "1556 bars (last 2026-09-10) from EURCHF_H1.parquet"
+  },
+  "EURGBP_D1": {
+   "derived_from": "EURGBP_H1",
+   "status": "1559 bars (last 2026-09-10) from EURGBP_H1.parquet"
+  },
+  "EURJPY_D1": {
+   "derived_from": "EURJPY_H1",
+   "status": "1556 bars (last 2026-09-10) from EURJPY_H1.parquet"
+  },
+  "EURNOK_D1": {
+   "derived_from": "EURNOK_H1",
+   "status": "1557 bars (last 2026-09-10) from EURNOK_H1.parquet"
+  },
+  "EURUSD_D1": {
+   "derived_from": "EURUSD_H1",
+   "status": "1559 bars (last 2026-09-10) from EURUSD_H1.parquet"
+  },
+  "EURZAR_D1": {
+   "derived_from": "EURZAR_H1",
+   "status": "1556 bars (last 2026-09-10) from EURZAR_H1.parquet"
+  },
+  "GBPCHF_D1": {
+   "derived_from": "GBPCHF_H1",
+   "status": "1557 bars (last 2026-09-10) from GBPCHF_H1.parquet"
+  },
+  "GBPJPY_D1": {
+   "derived_from": "GBPJPY_H1",
+   "status": "1557 bars (last 2026-09-10) from GBPJPY_H1.parquet"
+  },
+  "GBPMXN_D1": {
+   "derived_from": "GBPMXN_H1",
+   "status": "1556 bars (last 2026-09-10) from GBPMXN_H1.parquet"
+  },
+  "GBPNOK_D1": {
+   "derived_from": "GBPNOK_H1",
+   "status": "1556 bars (last 2026-09-10) from GBPNOK_H1.parquet"
+  },
+  "GBPSEK_D1": {
+   "derived_from": "GBPSEK_H1",
+   "status": "1555 bars (last 2026-09-10) from GBPSEK_H1.parquet"
+  },
+  "GBPZAR_D1": {
+   "derived_from": "GBPZAR_H1",
+   "status": "1556 bars (last 2026-09-10) from GBPZAR_H1.parquet"
+  },
+  "NZDCAD_D1": {
+   "derived_from": "NZDCAD_H1",
+   "status": "1557 bars (last 2026-09-10) from NZDCAD_H1.parquet"
+  },
+  "USDCAD_D1": {
+   "derived_from": "USDCAD_H1",
+   "status": "1557 bars (last 2026-09-10) from USDCAD_H1.parquet"
+  },
+  "USDCHF_D1": {
+   "derived_from": "USDCHF_H1",
+   "status": "1556 bars (last 2026-09-10) from USDCHF_H1.parquet"
+  },
+  "USDJPY_D1": {
+   "derived_from": "USDJPY_H1",
+   "status": "1557 bars (last 2026-09-10) from USDJPY_H1.parquet"
+  },
+  "USDMXN_D1": {
+   "derived_from": "USDMXN_H1",
+   "status": "1558 bars (last 2026-09-10) from USDMXN_H1.parquet"
+  },
+  "USDZAR_D1": {
+   "derived_from": "USDZAR_H1",
+   "status": "1558 bars (last 2026-09-10) from USDZAR_H1.parquet"
+  },
+  "XAUUSD_D1": {
+   "derived_from": "XAUUSD_H1",
+   "status": "1547 bars (last 2026-09-10) from XAUUSD_H1.parquet"
+  }
+ },
+ "skipped": {},
+ "why_not_fetched": "A derived daily bar is stamped at 00:00 UTC; the broker's own D1 bar is stamped at ITS day start. Concatenating the two would put two bars in every day at two different instants, so a series listed here is rebuilt from its source and never fetched."
+}

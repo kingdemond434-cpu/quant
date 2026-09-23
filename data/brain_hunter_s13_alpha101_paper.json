@@ -1,0 +1,1965 @@
+{
+ "session": "brain_hunter_s13",
+ "date": "2026-08-29",
+ "source": {
+  "paper": "Kakushadze, Z. '101 Formulaic Alphas' (arXiv:1601.00991)",
+  "route": "https://arxiv.org/pdf/1601.00991 -- /pdf is ALLOWED by arxiv robots; /e-print and /src are DISALLOWED so the LaTeX-source route is barred",
+  "reimplementation": "raw.githubusercontent.com/yli188/WorldQuant_alpha101_code/master/101Alpha_code_2.py",
+  "copyright_note": "Appendix B of the paper asserts WorldQuant LLC copyright over the Appendix A formulae. Verbatim formula text is therefore NOT stored in this repo; only derived structure, counts and the short factual operator definitions are."
+ },
+ "extraction": {
+  "tool": "data/brain_hunter_s13_pdf_cmap_extract.py",
+  "wall_removed": "s12's merged-CMap collision -- each /ToUnicode CMap is now bound to its own font resource name and switched on the Tf operator",
+  "second_bug_found": "a `\\r?\\n`-anchored endstream regex silently dropped 21 of 22 pages; Flate payloads abut `endstream` with no EOL. Index-based slicing recovers all 22.",
+  "pages": 22,
+  "alphas_recovered": 101,
+  "chars": 46084,
+  "known_loss": "glyphs from the math subset fonts carry no ToUnicode entry and extract as empty; Tables 1-5 lose their symbol labels. Body text and all 101 Appendix-A formulas are complete."
+ },
+ "canonical_operator_semantics": {
+  "correlation(x,y,d)": "time-serial correlation of x and y for the past d days",
+  "covariance(x,y,d)": "time-serial covariance of x and y for the past d days",
+  "rank(x)": "cross-sectional rank",
+  "scale(x,a)": "rescaled x such that sum(abs(x)) = a; default a = 1",
+  "decay_linear(x,d)": "weighted moving average over the past d days with linearly decaying weights d, d-1, ..., 1, rescaled to sum to 1",
+  "indneutralize(x,g)": "x cross-sectionally DEMEANED within each group g -- demeaning only, NOT a regression residual and NOT a z-score",
+  "min(x,d)": "= ts_min(x,d)",
+  "max(x,d)": "= ts_max(x,d)",
+  "non_integer_d": "'non-integer number of days d is converted to floor(d)' -- FLOOR, stated explicitly in Appendix A.1"
+ },
+ "findings": {
+  "F1_corr_cov_inversion_CONFIRMED_at_primary_source": {
+   "paper_correlation_calls": 70,
+   "paper_covariance_calls": 2,
+   "paper_covariance_alphas": [
+    13,
+    16
+   ],
+   "verdict": "s12's R0729 stands. The paper uses covariance in exactly 2 of 101 alphas (13 and 16); code_2 emits covariance at 47 call sites."
+  },
+  "F2_floor_vs_round": {
+   "canonical_rule": "floor(d)",
+   "discriminating_cases": 14,
+   "code_2_floor": 0,
+   "code_2_round": 14,
+   "cases": [
+    [
+     62,
+     9.91009,
+     "ROUND",
+     10
+    ],
+    [
+     64,
+     12.7054,
+     "ROUND",
+     13
+    ],
+    [
+     65,
+     8.6911,
+     "ROUND",
+     9
+    ],
+    [
+     68,
+     8.91644,
+     "ROUND",
+     9
+    ],
+    [
+     78,
+     5.77492,
+     "ROUND",
+     6
+    ],
+    [
+     81,
+     14.9655,
+     "ROUND",
+     15
+    ],
+    [
+     85,
+     3.70596,
+     "ROUND",
+     4
+    ],
+    [
+     85,
+     9.61331,
+     "ROUND",
+     10
+    ],
+    [
+     86,
+     14.7444,
+     "ROUND",
+     15
+    ],
+    [
+     94,
+     11.5783,
+     "ROUND",
+     12
+    ],
+    [
+     95,
+     11.7584,
+     "ROUND",
+     12
+    ],
+    [
+     98,
+     4.58418,
+     "ROUND",
+     5
+    ],
+    [
+     98,
+     20.8187,
+     "ROUND",
+     21
+    ],
+    [
+     99,
+     8.8136,
+     "ROUND",
+     9
+    ]
+   ],
+   "verdict": "code_2 ROUNDS on 14 of 14 windows where floor and round differ. Worst case alpha98 d=4.58418 -> 5 instead of 4, a 25% window error."
+  },
+  "F3_binary_minmax_blocks_9_not_6": {
+   "alphas_with_binary_minmax": [
+    71,
+    73,
+    76,
+    77,
+    82,
+    87,
+    88,
+    92,
+    96
+   ],
+   "s12_claimed": [
+    71,
+    73,
+    77,
+    88,
+    92,
+    96
+   ],
+   "also_binary_and_also_IndClass": [
+    76,
+    82,
+    87
+   ],
+   "verdict": "The binary min/max shape appears in 9 alphas, not 6. 76/82/87 carry BOTH IndClass and binary min/max, and s12 attributed them to IndClass alone. Consequence: s11's MT5 grouping map unblocks 15 of the 18 IndClass alphas, not 18 -- the other 3 stay blocked on a missing operator."
+  },
+  "F4_the_paper_never_defines_binary_minmax": {
+   "verdict": "Appendix A.1's operator table defines min(x,d)=ts_min(x,d) and max(x,d)=ts_max(x,d) -- window forms only. 9 of the 101 published alphas call max(expr,expr)/min(expr,expr), which under the paper's own definitions parses as a time-series window whose length is an expression. The canonical source is internally inconsistent here, which is why reimplementations diverge at exactly these 9."
+  },
+  "F5_the_101_alphas_are_TWO_CORPORA": {
+   "block_A_1_to_57": {
+    "n": 57,
+    "with_fractional_windows": 0,
+    "with_decay_linear": 3,
+    "with_IndClass": 1,
+    "mean_chars": 98
+   },
+   "block_B_58_to_99": {
+    "n": 42,
+    "with_fractional_windows": 40,
+    "with_decay_linear": 19,
+    "with_IndClass": 16,
+    "mean_chars": 167
+   },
+   "block_C_100_101": {
+    "n": 2,
+    "with_fractional_windows": 0,
+    "with_decay_linear": 0,
+    "with_IndClass": 1,
+    "mean_chars": 171
+   },
+   "fractional_part_mean": 0.517,
+   "fractional_part_n": 174,
+   "verdict": "Alphas 1-57 carry ZERO fractional windows; 40 of 42 alphas in 58-99 carry them, with fractional parts ~uniform on [0,1) (mean 0.517, n=174). Block B is also 1.7x longer, 9x more decay_linear and 16x more IndClass. The published library is a hand-built corpus and a machine-generated corpus fused into one flat list of 101; the paper never says so."
+  },
+  "F6_indneutralize_is_not_group_zscore_MT5_measured": {
+   "spec": "Canonical indneutralize(x,g) = cross-sectional DEMEAN within group. The desk's libs/alpha_factory/wq_operators.py exposes group_rank and group_zscore only; group_zscore demeans THEN divides by the within-group cross-sectional sd. There is no demean-only operator, so the desk cannot express indneutralize -- the operator that 18 of the 101 canonical alphas call, and the exact 18 that s11's grouping map was built to unblock.",
+   "measurement": {
+    "panel": "52 Fusion symbols with >=70% daily coverage, D1 from the desk's own _H1 parquets, 2021-01-04..2026-08-26, 1454 bars, 1449 days measured",
+    "groups": {
+     "Forex": 21,
+     "Crypto": 14,
+     "Forex Exotics": 9,
+     "Commodities": 5,
+     "Indices": 3
+    },
+    "grouping_map": "data/mt5_grouping_map.json asset_class arm (s11)",
+    "signal_neutralized": "5-day mean of daily log return",
+    "daily_cross_sectional_spearman_demean_vs_group_zscore": {
+     "mean": 0.914,
+     "p05": 0.857,
+     "p25": 0.895,
+     "frac_below_0.90": 0.293
+    },
+    "median_within_group_cross_sectional_sd": {
+     "Forex": 0.00172,
+     "Forex Exotics": 0.00193,
+     "Indices": 0.00237,
+     "Commodities": 0.0025,
+     "Crypto": 0.01063
+    },
+    "max_min_group_sd_ratio": 6.2
+   },
+   "mechanism": "Dividing by within-group sd rescales each group by a DIFFERENT constant, so the interleaving of groups in the pooled cross-section changes. Because within-group dispersion spans 6.2x on this book (Forex 0.00172 -> Crypto 0.01063), group_zscore systematically amplifies the lowest-dispersion group and suppresses the highest. On the paper's own venue (US equities) within-sector dispersion is broadly comparable across sectors, so the substitution is nearly harmless THERE and is not on a multi-asset CFD book. This is a venue-specific failure of an equity-venue operator assumption.",
+   "verdict": "Two distinct operators, ~29% of days disagree materially, and the desk has only the wrong one. Same class and comparable magnitude to s12's corr/cov find (0.920).",
+   "population_stated": "52 of 251 registry symbols. The known partial parquet sync limits the panel; an earlier attempt over the full 1970-2026 span produced a spurious Spearman of exactly 1.000 because only ONE group (Crypto, 14 symbols) populated any given day. That artifact is recorded here so it is not re-derived."
+  }
+ },
+ "per_alpha": {
+  "1": {
+   "n_chars": 90,
+   "fractional_windows": [],
+   "integer_windows": [
+    5,
+    20
+   ],
+   "binary_minmax": [],
+   "has_IndClass": false,
+   "op_counts": {
+    "Ts_ArgMax": 1,
+    "stddev": 1,
+    "rank": 1,
+    "SignedPower": 1
+   },
+   "implemented_by_code_2": true
+  },
+  "2": {
+   "n_chars": 81,
+   "fractional_windows": [],
+   "integer_windows": [
+    2,
+    6
+   ],
+   "binary_minmax": [],
+   "has_IndClass": false,
+   "op_counts": {
+    "correlation": 1,
+    "rank": 2,
+    "delta": 1,
+    "log": 1
+   },
+   "implemented_by_code_2": true
+  },
+  "3": {
+   "n_chars": 48,
+   "fractional_windows": [],
+   "integer_windows": [
+    10
+   ],
+   "binary_minmax": [],
+   "has_IndClass": false,
+   "op_counts": {
+    "correlation": 1,
+    "rank": 2
+   },
+   "implemented_by_code_2": true
+  },
+  "4": {
+   "n_chars": 28,
+   "fractional_windows": [],
+   "integer_windows": [
+    9
+   ],
+   "binary_minmax": [],
+   "has_IndClass": false,
+   "op_counts": {
+    "Ts_Rank": 1,
+    "rank": 1
+   },
+   "implemented_by_code_2": true
+  },
+  "5": {
+   "n_chars": 72,
+   "fractional_windows": [],
+   "integer_windows": [
+    10
+   ],
+   "binary_minmax": [],
+   "has_IndClass": false,
+   "op_counts": {
+    "rank": 2,
+    "sum": 1,
+    "abs": 1
+   },
+   "implemented_by_code_2": true
+  },
+  "6": {
+   "n_chars": 36,
+   "fractional_windows": [],
+   "integer_windows": [
+    10
+   ],
+   "binary_minmax": [],
+   "has_IndClass": false,
+   "op_counts": {
+    "correlation": 1
+   },
+   "implemented_by_code_2": true
+  },
+  "7": {
+   "n_chars": 100,
+   "fractional_windows": [],
+   "integer_windows": [
+    7,
+    60
+   ],
+   "binary_minmax": [],
+   "has_IndClass": false,
+   "op_counts": {
+    "ts_rank": 1,
+    "rank": 1,
+    "delta": 2,
+    "sign": 1,
+    "abs": 1
+   },
+   "implemented_by_code_2": true
+  },
+  "8": {
+   "n_chars": 93,
+   "fractional_windows": [],
+   "integer_windows": [
+    5,
+    10
+   ],
+   "binary_minmax": [],
+   "has_IndClass": false,
+   "op_counts": {
+    "rank": 1,
+    "delay": 1,
+    "sum": 4
+   },
+   "implemented_by_code_2": true
+  },
+  "9": {
+   "n_chars": 132,
+   "fractional_windows": [],
+   "integer_windows": [
+    1,
+    5
+   ],
+   "binary_minmax": [],
+   "has_IndClass": false,
+   "op_counts": {
+    "ts_min": 1,
+    "ts_max": 1,
+    "delta": 5
+   },
+   "implemented_by_code_2": true
+  },
+  "10": {
+   "n_chars": 138,
+   "fractional_windows": [],
+   "integer_windows": [
+    1,
+    4
+   ],
+   "binary_minmax": [],
+   "has_IndClass": false,
+   "op_counts": {
+    "ts_min": 1,
+    "ts_max": 1,
+    "rank": 1,
+    "delta": 5
+   },
+   "implemented_by_code_2": true
+  },
+  "11": {
+   "n_chars": 94,
+   "fractional_windows": [],
+   "integer_windows": [
+    3
+   ],
+   "binary_minmax": [],
+   "has_IndClass": false,
+   "op_counts": {
+    "ts_min": 1,
+    "ts_max": 1,
+    "rank": 3,
+    "delta": 1
+   },
+   "implemented_by_code_2": true
+  },
+  "12": {
+   "n_chars": 49,
+   "fractional_windows": [],
+   "integer_windows": [
+    1
+   ],
+   "binary_minmax": [],
+   "has_IndClass": false,
+   "op_counts": {
+    "delta": 2,
+    "sign": 1
+   },
+   "implemented_by_code_2": true
+  },
+  "13": {
+   "n_chars": 53,
+   "fractional_windows": [],
+   "integer_windows": [
+    5
+   ],
+   "binary_minmax": [],
+   "has_IndClass": false,
+   "op_counts": {
+    "covariance": 1,
+    "rank": 3
+   },
+   "implemented_by_code_2": true
+  },
+  "14": {
+   "n_chars": 64,
+   "fractional_windows": [],
+   "integer_windows": [
+    3,
+    10
+   ],
+   "binary_minmax": [],
+   "has_IndClass": false,
+   "op_counts": {
+    "correlation": 1,
+    "rank": 1,
+    "delta": 1
+   },
+   "implemented_by_code_2": true
+  },
+  "15": {
+   "n_chars": 61,
+   "fractional_windows": [],
+   "integer_windows": [
+    3
+   ],
+   "binary_minmax": [],
+   "has_IndClass": false,
+   "op_counts": {
+    "correlation": 1,
+    "rank": 3,
+    "sum": 1
+   },
+   "implemented_by_code_2": true
+  },
+  "16": {
+   "n_chars": 52,
+   "fractional_windows": [],
+   "integer_windows": [
+    5
+   ],
+   "binary_minmax": [],
+   "has_IndClass": false,
+   "op_counts": {
+    "covariance": 1,
+    "rank": 3
+   },
+   "implemented_by_code_2": true
+  },
+  "17": {
+   "n_chars": 106,
+   "fractional_windows": [],
+   "integer_windows": [
+    1,
+    5,
+    10
+   ],
+   "binary_minmax": [],
+   "has_IndClass": false,
+   "op_counts": {
+    "ts_rank": 2,
+    "rank": 5,
+    "delta": 2
+   },
+   "implemented_by_code_2": true
+  },
+  "18": {
+   "n_chars": 95,
+   "fractional_windows": [],
+   "integer_windows": [
+    5,
+    10
+   ],
+   "binary_minmax": [],
+   "has_IndClass": false,
+   "op_counts": {
+    "correlation": 1,
+    "stddev": 1,
+    "rank": 1,
+    "abs": 1
+   },
+   "implemented_by_code_2": true
+  },
+  "19": {
+   "n_chars": 98,
+   "fractional_windows": [],
+   "integer_windows": [
+    7,
+    250
+   ],
+   "binary_minmax": [],
+   "has_IndClass": false,
+   "op_counts": {
+    "rank": 1,
+    "delta": 1,
+    "delay": 1,
+    "sum": 1,
+    "sign": 1
+   },
+   "implemented_by_code_2": true
+  },
+  "20": {
+   "n_chars": 104,
+   "fractional_windows": [],
+   "integer_windows": [
+    1
+   ],
+   "binary_minmax": [],
+   "has_IndClass": false,
+   "op_counts": {
+    "rank": 3,
+    "delay": 3
+   },
+   "implemented_by_code_2": true
+  },
+  "21": {
+   "n_chars": 221,
+   "fractional_windows": [],
+   "integer_windows": [
+    2,
+    8
+   ],
+   "binary_minmax": [],
+   "has_IndClass": false,
+   "op_counts": {
+    "stddev": 2,
+    "sum": 4
+   },
+   "implemented_by_code_2": true
+  },
+  "22": {
+   "n_chars": 73,
+   "fractional_windows": [],
+   "integer_windows": [
+    5,
+    20
+   ],
+   "binary_minmax": [],
+   "has_IndClass": false,
+   "op_counts": {
+    "correlation": 1,
+    "stddev": 1,
+    "rank": 1,
+    "delta": 1
+   },
+   "implemented_by_code_2": true
+  },
+  "23": {
+   "n_chars": 59,
+   "fractional_windows": [],
+   "integer_windows": [
+    2,
+    20
+   ],
+   "binary_minmax": [],
+   "has_IndClass": false,
+   "op_counts": {
+    "delta": 1,
+    "sum": 1
+   },
+   "implemented_by_code_2": true
+  },
+  "24": {
+   "n_chars": 207,
+   "fractional_windows": [],
+   "integer_windows": [
+    3,
+    100
+   ],
+   "binary_minmax": [],
+   "has_IndClass": false,
+   "op_counts": {
+    "ts_min": 1,
+    "delta": 3,
+    "delay": 2,
+    "sum": 2
+   },
+   "implemented_by_code_2": true
+  },
+  "25": {
+   "n_chars": 58,
+   "fractional_windows": [],
+   "integer_windows": [],
+   "binary_minmax": [],
+   "has_IndClass": false,
+   "op_counts": {
+    "rank": 1
+   },
+   "implemented_by_code_2": true
+  },
+  "26": {
+   "n_chars": 70,
+   "fractional_windows": [],
+   "integer_windows": [
+    3,
+    5
+   ],
+   "binary_minmax": [],
+   "has_IndClass": false,
+   "op_counts": {
+    "correlation": 1,
+    "ts_rank": 2,
+    "ts_max": 1,
+    "rank": 2
+   },
+   "implemented_by_code_2": true
+  },
+  "27": {
+   "n_chars": 87,
+   "fractional_windows": [],
+   "integer_windows": [
+    2,
+    6
+   ],
+   "binary_minmax": [],
+   "has_IndClass": false,
+   "op_counts": {
+    "correlation": 1,
+    "rank": 3,
+    "sum": 1
+   },
+   "implemented_by_code_2": true
+  },
+  "28": {
+   "n_chars": 66,
+   "fractional_windows": [],
+   "integer_windows": [
+    5
+   ],
+   "binary_minmax": [],
+   "has_IndClass": false,
+   "op_counts": {
+    "correlation": 1,
+    "scale": 1
+   },
+   "implemented_by_code_2": true
+  },
+  "29": {
+   "n_chars": 150,
+   "fractional_windows": [],
+   "integer_windows": [
+    1,
+    2,
+    5,
+    6
+   ],
+   "binary_minmax": [],
+   "has_IndClass": false,
+   "op_counts": {
+    "ts_rank": 1,
+    "ts_min": 1,
+    "scale": 1,
+    "rank": 6,
+    "delta": 1,
+    "delay": 1,
+    "sum": 1,
+    "product": 1,
+    "log": 1
+   },
+   "implemented_by_code_2": true
+  },
+  "30": {
+   "n_chars": 176,
+   "fractional_windows": [],
+   "integer_windows": [
+    1,
+    2,
+    3,
+    5,
+    20
+   ],
+   "binary_minmax": [],
+   "has_IndClass": false,
+   "op_counts": {
+    "rank": 1,
+    "delay": 5,
+    "sum": 2,
+    "sign": 3
+   },
+   "implemented_by_code_2": true
+  },
+  "31": {
+   "n_chars": 149,
+   "fractional_windows": [],
+   "integer_windows": [
+    3,
+    10,
+    12
+   ],
+   "binary_minmax": [],
+   "has_IndClass": false,
+   "op_counts": {
+    "correlation": 1,
+    "decay_linear": 1,
+    "scale": 1,
+    "rank": 6,
+    "delta": 2,
+    "sign": 1
+   },
+   "implemented_by_code_2": true
+  },
+  "32": {
+   "n_chars": 94,
+   "fractional_windows": [],
+   "integer_windows": [
+    5,
+    7,
+    230
+   ],
+   "binary_minmax": [],
+   "has_IndClass": false,
+   "op_counts": {
+    "correlation": 1,
+    "scale": 2,
+    "delay": 1,
+    "sum": 1
+   },
+   "implemented_by_code_2": true
+  },
+  "33": {
+   "n_chars": 37,
+   "fractional_windows": [],
+   "integer_windows": [],
+   "binary_minmax": [],
+   "has_IndClass": false,
+   "op_counts": {
+    "rank": 1
+   },
+   "implemented_by_code_2": true
+  },
+  "34": {
+   "n_chars": 91,
+   "fractional_windows": [],
+   "integer_windows": [
+    1,
+    2,
+    5
+   ],
+   "binary_minmax": [],
+   "has_IndClass": false,
+   "op_counts": {
+    "stddev": 2,
+    "rank": 3,
+    "delta": 1
+   },
+   "implemented_by_code_2": true
+  },
+  "35": {
+   "n_chars": 96,
+   "fractional_windows": [],
+   "integer_windows": [
+    16,
+    32
+   ],
+   "binary_minmax": [],
+   "has_IndClass": false,
+   "op_counts": {
+    "Ts_Rank": 3
+   },
+   "implemented_by_code_2": true
+  },
+  "36": {
+   "n_chars": 266,
+   "fractional_windows": [],
+   "integer_windows": [
+    1,
+    5,
+    6,
+    15,
+    200
+   ],
+   "binary_minmax": [],
+   "has_IndClass": false,
+   "op_counts": {
+    "correlation": 2,
+    "Ts_Rank": 1,
+    "rank": 5,
+    "delay": 2,
+    "sum": 1,
+    "abs": 1
+   },
+   "implemented_by_code_2": true
+  },
+  "37": {
+   "n_chars": 80,
+   "fractional_windows": [],
+   "integer_windows": [
+    1,
+    200
+   ],
+   "binary_minmax": [],
+   "has_IndClass": false,
+   "op_counts": {
+    "correlation": 1,
+    "rank": 2,
+    "delay": 1
+   },
+   "implemented_by_code_2": true
+  },
+  "38": {
+   "n_chars": 56,
+   "fractional_windows": [],
+   "integer_windows": [
+    10
+   ],
+   "binary_minmax": [],
+   "has_IndClass": false,
+   "op_counts": {
+    "Ts_Rank": 1,
+    "rank": 2
+   },
+   "implemented_by_code_2": true
+  },
+  "39": {
+   "n_chars": 112,
+   "fractional_windows": [],
+   "integer_windows": [
+    7,
+    9,
+    250
+   ],
+   "binary_minmax": [],
+   "has_IndClass": false,
+   "op_counts": {
+    "decay_linear": 1,
+    "rank": 3,
+    "delta": 1,
+    "sum": 1
+   },
+   "implemented_by_code_2": true
+  },
+  "40": {
+   "n_chars": 63,
+   "fractional_windows": [],
+   "integer_windows": [
+    10
+   ],
+   "binary_minmax": [],
+   "has_IndClass": false,
+   "op_counts": {
+    "correlation": 1,
+    "stddev": 1,
+    "rank": 1
+   },
+   "implemented_by_code_2": true
+  },
+  "41": {
+   "n_chars": 27,
+   "fractional_windows": [],
+   "integer_windows": [],
+   "binary_minmax": [],
+   "has_IndClass": false,
+   "op_counts": {},
+   "implemented_by_code_2": true
+  },
+  "42": {
+   "n_chars": 45,
+   "fractional_windows": [],
+   "integer_windows": [],
+   "binary_minmax": [],
+   "has_IndClass": false,
+   "op_counts": {
+    "rank": 2
+   },
+   "implemented_by_code_2": true
+  },
+  "43": {
+   "n_chars": 71,
+   "fractional_windows": [],
+   "integer_windows": [
+    7,
+    8,
+    20
+   ],
+   "binary_minmax": [],
+   "has_IndClass": false,
+   "op_counts": {
+    "ts_rank": 2,
+    "rank": 2,
+    "delta": 1
+   },
+   "implemented_by_code_2": true
+  },
+  "44": {
+   "n_chars": 41,
+   "fractional_windows": [],
+   "integer_windows": [
+    5
+   ],
+   "binary_minmax": [],
+   "has_IndClass": false,
+   "op_counts": {
+    "correlation": 1,
+    "rank": 1
+   },
+   "implemented_by_code_2": true
+  },
+  "45": {
+   "n_chars": 134,
+   "fractional_windows": [],
+   "integer_windows": [
+    2,
+    5,
+    20
+   ],
+   "binary_minmax": [],
+   "has_IndClass": false,
+   "op_counts": {
+    "correlation": 2,
+    "rank": 2,
+    "delay": 1,
+    "sum": 3
+   },
+   "implemented_by_code_2": true
+  },
+  "46": {
+   "n_chars": 242,
+   "fractional_windows": [],
+   "integer_windows": [
+    1,
+    10,
+    20
+   ],
+   "binary_minmax": [],
+   "has_IndClass": false,
+   "op_counts": {
+    "delay": 7
+   },
+   "implemented_by_code_2": true
+  },
+  "47": {
+   "n_chars": 129,
+   "fractional_windows": [],
+   "integer_windows": [
+    5
+   ],
+   "binary_minmax": [],
+   "has_IndClass": false,
+   "op_counts": {
+    "rank": 3,
+    "delay": 1,
+    "sum": 1
+   },
+   "implemented_by_code_2": true
+  },
+  "48": {
+   "n_chars": 181,
+   "fractional_windows": [],
+   "integer_windows": [
+    1,
+    250
+   ],
+   "binary_minmax": [],
+   "has_IndClass": true,
+   "op_counts": {
+    "correlation": 1,
+    "indneutralize": 1,
+    "delta": 4,
+    "delay": 2,
+    "sum": 1
+   },
+   "implemented_by_code_2": false
+  },
+  "49": {
+   "n_chars": 144,
+   "fractional_windows": [],
+   "integer_windows": [
+    1,
+    10,
+    20
+   ],
+   "binary_minmax": [],
+   "has_IndClass": false,
+   "op_counts": {
+    "delay": 4
+   },
+   "implemented_by_code_2": true
+  },
+  "50": {
+   "n_chars": 64,
+   "fractional_windows": [],
+   "integer_windows": [
+    5
+   ],
+   "binary_minmax": [],
+   "has_IndClass": false,
+   "op_counts": {
+    "correlation": 1,
+    "ts_max": 1,
+    "rank": 3
+   },
+   "implemented_by_code_2": true
+  },
+  "51": {
+   "n_chars": 145,
+   "fractional_windows": [],
+   "integer_windows": [
+    1,
+    10,
+    20
+   ],
+   "binary_minmax": [],
+   "has_IndClass": false,
+   "op_counts": {
+    "delay": 4
+   },
+   "implemented_by_code_2": true
+  },
+  "52": {
+   "n_chars": 130,
+   "fractional_windows": [],
+   "integer_windows": [
+    5,
+    20,
+    240
+   ],
+   "binary_minmax": [],
+   "has_IndClass": false,
+   "op_counts": {
+    "ts_rank": 1,
+    "ts_min": 2,
+    "rank": 2,
+    "delay": 1,
+    "sum": 2
+   },
+   "implemented_by_code_2": true
+  },
+  "53": {
+   "n_chars": 67,
+   "fractional_windows": [],
+   "integer_windows": [
+    9
+   ],
+   "binary_minmax": [],
+   "has_IndClass": false,
+   "op_counts": {
+    "delta": 1
+   },
+   "implemented_by_code_2": true
+  },
+  "54": {
+   "n_chars": 64,
+   "fractional_windows": [],
+   "integer_windows": [],
+   "binary_minmax": [],
+   "has_IndClass": false,
+   "op_counts": {},
+   "implemented_by_code_2": true
+  },
+  "55": {
+   "n_chars": 109,
+   "fractional_windows": [],
+   "integer_windows": [
+    6,
+    12
+   ],
+   "binary_minmax": [],
+   "has_IndClass": false,
+   "op_counts": {
+    "correlation": 1,
+    "ts_min": 2,
+    "ts_max": 1,
+    "rank": 2
+   },
+   "implemented_by_code_2": true
+  },
+  "56": {
+   "n_chars": 88,
+   "fractional_windows": [],
+   "integer_windows": [
+    2,
+    3,
+    10
+   ],
+   "binary_minmax": [],
+   "has_IndClass": false,
+   "op_counts": {
+    "rank": 2,
+    "sum": 3
+   },
+   "implemented_by_code_2": true
+  },
+  "57": {
+   "n_chars": 74,
+   "fractional_windows": [],
+   "integer_windows": [
+    2,
+    30
+   ],
+   "binary_minmax": [],
+   "has_IndClass": false,
+   "op_counts": {
+    "decay_linear": 1,
+    "ts_argmax": 1,
+    "rank": 1
+   },
+   "implemented_by_code_2": true
+  },
+  "58": {
+   "n_chars": 114,
+   "fractional_windows": [
+    3.92795,
+    5.50322,
+    7.89291
+   ],
+   "integer_windows": [],
+   "binary_minmax": [],
+   "has_IndClass": true,
+   "op_counts": {
+    "correlation": 1,
+    "decay_linear": 1,
+    "Ts_Rank": 1
+   },
+   "implemented_by_code_2": false
+  },
+  "59": {
+   "n_chars": 157,
+   "fractional_windows": [
+    4.25197,
+    8.19648,
+    16.2289
+   ],
+   "integer_windows": [],
+   "binary_minmax": [],
+   "has_IndClass": true,
+   "op_counts": {
+    "correlation": 1,
+    "decay_linear": 1,
+    "Ts_Rank": 1
+   },
+   "implemented_by_code_2": false
+  },
+  "60": {
+   "n_chars": 132,
+   "fractional_windows": [],
+   "integer_windows": [
+    10
+   ],
+   "binary_minmax": [],
+   "has_IndClass": false,
+   "op_counts": {
+    "ts_argmax": 1,
+    "scale": 2,
+    "rank": 2
+   },
+   "implemented_by_code_2": true
+  },
+  "61": {
+   "n_chars": 81,
+   "fractional_windows": [
+    16.1219,
+    17.9282
+   ],
+   "integer_windows": [],
+   "binary_minmax": [],
+   "has_IndClass": false,
+   "op_counts": {
+    "correlation": 1,
+    "ts_min": 1,
+    "rank": 2
+   },
+   "implemented_by_code_2": true
+  },
+  "62": {
+   "n_chars": 140,
+   "fractional_windows": [
+    9.91009,
+    22.4101
+   ],
+   "integer_windows": [],
+   "binary_minmax": [],
+   "has_IndClass": false,
+   "op_counts": {
+    "correlation": 1,
+    "rank": 6,
+    "sum": 1
+   },
+   "implemented_by_code_2": true
+  },
+  "63": {
+   "n_chars": 213,
+   "fractional_windows": [
+    2.25164,
+    8.22237,
+    12.2883,
+    13.557,
+    37.2467
+   ],
+   "integer_windows": [],
+   "binary_minmax": [],
+   "has_IndClass": true,
+   "op_counts": {
+    "correlation": 1,
+    "decay_linear": 2,
+    "rank": 2,
+    "delta": 1,
+    "sum": 1
+   },
+   "implemented_by_code_2": false
+  },
+  "64": {
+   "n_chars": 201,
+   "fractional_windows": [
+    3.69741,
+    12.7054,
+    16.6208
+   ],
+   "integer_windows": [],
+   "binary_minmax": [],
+   "has_IndClass": false,
+   "op_counts": {
+    "correlation": 1,
+    "rank": 2,
+    "delta": 1,
+    "sum": 2
+   },
+   "implemented_by_code_2": true
+  },
+  "65": {
+   "n_chars": 144,
+   "fractional_windows": [
+    6.40374,
+    8.6911,
+    13.635
+   ],
+   "integer_windows": [],
+   "binary_minmax": [],
+   "has_IndClass": false,
+   "op_counts": {
+    "correlation": 1,
+    "ts_min": 1,
+    "rank": 2,
+    "sum": 1
+   },
+   "implemented_by_code_2": true
+  },
+  "66": {
+   "n_chars": 184,
+   "fractional_windows": [
+    3.51013,
+    6.72611,
+    7.23052,
+    11.4157
+   ],
+   "integer_windows": [],
+   "binary_minmax": [],
+   "has_IndClass": false,
+   "op_counts": {
+    "decay_linear": 2,
+    "Ts_Rank": 1,
+    "rank": 1,
+    "delta": 1
+   },
+   "implemented_by_code_2": true
+  },
+  "67": {
+   "n_chars": 154,
+   "fractional_windows": [
+    2.14593,
+    6.02936
+   ],
+   "integer_windows": [],
+   "binary_minmax": [],
+   "has_IndClass": true,
+   "op_counts": {
+    "correlation": 1,
+    "ts_min": 1,
+    "rank": 2
+   },
+   "implemented_by_code_2": false
+  },
+  "68": {
+   "n_chars": 142,
+   "fractional_windows": [
+    1.06157,
+    8.91644,
+    13.9333
+   ],
+   "integer_windows": [],
+   "binary_minmax": [],
+   "has_IndClass": false,
+   "op_counts": {
+    "correlation": 1,
+    "Ts_Rank": 1,
+    "rank": 3,
+    "delta": 1
+   },
+   "implemented_by_code_2": true
+  },
+  "69": {
+   "n_chars": 179,
+   "fractional_windows": [
+    2.72412,
+    4.79344,
+    4.92416,
+    9.0615
+   ],
+   "integer_windows": [],
+   "binary_minmax": [],
+   "has_IndClass": true,
+   "op_counts": {
+    "correlation": 1,
+    "Ts_Rank": 1,
+    "ts_max": 1,
+    "rank": 1,
+    "delta": 1
+   },
+   "implemented_by_code_2": false
+  },
+  "70": {
+   "n_chars": 122,
+   "fractional_windows": [
+    1.29456,
+    17.8256,
+    17.9171
+   ],
+   "integer_windows": [],
+   "binary_minmax": [],
+   "has_IndClass": true,
+   "op_counts": {
+    "correlation": 1,
+    "Ts_Rank": 1,
+    "rank": 1,
+    "delta": 1
+   },
+   "implemented_by_code_2": false
+  },
+  "71": {
+   "n_chars": 199,
+   "fractional_windows": [
+    3.43976,
+    4.20501,
+    4.4388,
+    12.0647,
+    15.6948,
+    16.4662,
+    18.0175
+   ],
+   "integer_windows": [],
+   "binary_minmax": [
+    "max"
+   ],
+   "has_IndClass": false,
+   "op_counts": {
+    "correlation": 1,
+    "decay_linear": 2,
+    "Ts_Rank": 4,
+    "rank": 1
+   },
+   "implemented_by_code_2": false
+  },
+  "72": {
+   "n_chars": 180,
+   "fractional_windows": [
+    2.95011,
+    3.72469,
+    6.86671,
+    8.93345,
+    10.1519,
+    18.5188
+   ],
+   "integer_windows": [],
+   "binary_minmax": [],
+   "has_IndClass": false,
+   "op_counts": {
+    "correlation": 2,
+    "decay_linear": 2,
+    "Ts_Rank": 2,
+    "rank": 2
+   },
+   "implemented_by_code_2": true
+  },
+  "73": {
+   "n_chars": 223,
+   "fractional_windows": [
+    2.03608,
+    2.91864,
+    3.33829,
+    4.72775,
+    16.7411
+   ],
+   "integer_windows": [],
+   "binary_minmax": [
+    "max"
+   ],
+   "has_IndClass": false,
+   "op_counts": {
+    "decay_linear": 2,
+    "Ts_Rank": 1,
+    "rank": 1,
+    "delta": 2
+   },
+   "implemented_by_code_2": false
+  },
+  "74": {
+   "n_chars": 161,
+   "fractional_windows": [
+    11.4791,
+    15.1365,
+    37.4843
+   ],
+   "integer_windows": [],
+   "binary_minmax": [],
+   "has_IndClass": false,
+   "op_counts": {
+    "correlation": 2,
+    "rank": 4,
+    "sum": 1
+   },
+   "implemented_by_code_2": true
+  },
+  "75": {
+   "n_chars": 95,
+   "fractional_windows": [
+    4.24304,
+    12.4413
+   ],
+   "integer_windows": [],
+   "binary_minmax": [],
+   "has_IndClass": false,
+   "op_counts": {
+    "correlation": 2,
+    "rank": 4
+   },
+   "implemented_by_code_2": true
+  },
+  "76": {
+   "n_chars": 184,
+   "fractional_windows": [
+    1.24383,
+    8.14941,
+    11.8259,
+    17.1543,
+    19.383,
+    19.569
+   ],
+   "integer_windows": [],
+   "binary_minmax": [
+    "max"
+   ],
+   "has_IndClass": true,
+   "op_counts": {
+    "correlation": 1,
+    "decay_linear": 2,
+    "Ts_Rank": 2,
+    "rank": 1,
+    "delta": 1
+   },
+   "implemented_by_code_2": false
+  },
+  "77": {
+   "n_chars": 156,
+   "fractional_windows": [
+    3.1614,
+    5.64125,
+    20.0451
+   ],
+   "integer_windows": [],
+   "binary_minmax": [
+    "min"
+   ],
+   "has_IndClass": false,
+   "op_counts": {
+    "correlation": 1,
+    "decay_linear": 2,
+    "rank": 2
+   },
+   "implemented_by_code_2": false
+  },
+  "78": {
+   "n_chars": 162,
+   "fractional_windows": [
+    5.77492,
+    6.83313,
+    19.7428
+   ],
+   "integer_windows": [],
+   "binary_minmax": [],
+   "has_IndClass": false,
+   "op_counts": {
+    "correlation": 2,
+    "rank": 4,
+    "sum": 2
+   },
+   "implemented_by_code_2": true
+  },
+  "79": {
+   "n_chars": 179,
+   "fractional_windows": [
+    1.23438,
+    3.60973,
+    9.18637,
+    14.6644
+   ],
+   "integer_windows": [],
+   "binary_minmax": [],
+   "has_IndClass": true,
+   "op_counts": {
+    "correlation": 1,
+    "Ts_Rank": 2,
+    "rank": 2,
+    "delta": 1
+   },
+   "implemented_by_code_2": false
+  },
+  "80": {
+   "n_chars": 168,
+   "fractional_windows": [
+    4.04545,
+    5.11456,
+    5.53756
+   ],
+   "integer_windows": [],
+   "binary_minmax": [],
+   "has_IndClass": true,
+   "op_counts": {
+    "correlation": 1,
+    "Ts_Rank": 1,
+    "rank": 1,
+    "delta": 1
+   },
+   "implemented_by_code_2": false
+  },
+  "81": {
+   "n_chars": 156,
+   "fractional_windows": [
+    5.07914,
+    8.47743,
+    14.9655,
+    49.6054
+   ],
+   "integer_windows": [],
+   "binary_minmax": [],
+   "has_IndClass": false,
+   "op_counts": {
+    "correlation": 2,
+    "rank": 6,
+    "sum": 1,
+    "product": 1
+   },
+   "implemented_by_code_2": true
+  },
+  "82": {
+   "n_chars": 211,
+   "fractional_windows": [
+    1.46063,
+    6.92131,
+    13.4283,
+    14.8717,
+    17.4842
+   ],
+   "integer_windows": [],
+   "binary_minmax": [
+    "min"
+   ],
+   "has_IndClass": true,
+   "op_counts": {
+    "correlation": 1,
+    "decay_linear": 2,
+    "Ts_Rank": 1,
+    "rank": 1,
+    "delta": 1
+   },
+   "implemented_by_code_2": false
+  },
+  "83": {
+   "n_chars": 135,
+   "fractional_windows": [],
+   "integer_windows": [
+    2,
+    5
+   ],
+   "binary_minmax": [],
+   "has_IndClass": false,
+   "op_counts": {
+    "rank": 3,
+    "delay": 1,
+    "sum": 2
+   },
+   "implemented_by_code_2": true
+  },
+  "84": {
+   "n_chars": 84,
+   "fractional_windows": [
+    4.96796,
+    15.3217,
+    20.7127
+   ],
+   "integer_windows": [],
+   "binary_minmax": [],
+   "has_IndClass": false,
+   "op_counts": {
+    "Ts_Rank": 1,
+    "ts_max": 1,
+    "delta": 1,
+    "SignedPower": 1
+   },
+   "implemented_by_code_2": true
+  },
+  "85": {
+   "n_chars": 174,
+   "fractional_windows": [
+    3.70596,
+    7.11408,
+    9.61331,
+    10.1595
+   ],
+   "integer_windows": [],
+   "binary_minmax": [],
+   "has_IndClass": false,
+   "op_counts": {
+    "correlation": 2,
+    "Ts_Rank": 2,
+    "rank": 2
+   },
+   "implemented_by_code_2": true
+  },
+  "86": {
+   "n_chars": 119,
+   "fractional_windows": [
+    6.00049,
+    14.7444,
+    20.4195
+   ],
+   "integer_windows": [],
+   "binary_minmax": [],
+   "has_IndClass": false,
+   "op_counts": {
+    "correlation": 1,
+    "Ts_Rank": 1,
+    "rank": 1,
+    "sum": 1
+   },
+   "implemented_by_code_2": true
+  },
+  "87": {
+   "n_chars": 219,
+   "fractional_windows": [
+    1.91233,
+    2.65461,
+    4.89768,
+    13.4132,
+    14.4535
+   ],
+   "integer_windows": [],
+   "binary_minmax": [
+    "max"
+   ],
+   "has_IndClass": true,
+   "op_counts": {
+    "correlation": 1,
+    "decay_linear": 2,
+    "Ts_Rank": 1,
+    "rank": 1,
+    "delta": 1,
+    "abs": 1
+   },
+   "implemented_by_code_2": false
+  },
+  "88": {
+   "n_chars": 202,
+   "fractional_windows": [
+    2.61957,
+    6.65053,
+    8.01266,
+    8.06882,
+    8.44728,
+    20.6966
+   ],
+   "integer_windows": [],
+   "binary_minmax": [
+    "min"
+   ],
+   "has_IndClass": false,
+   "op_counts": {
+    "correlation": 1,
+    "decay_linear": 2,
+    "Ts_Rank": 3,
+    "rank": 5
+   },
+   "implemented_by_code_2": false
+  },
+  "89": {
+   "n_chars": 213,
+   "fractional_windows": [
+    3.48158,
+    3.79744,
+    5.51607,
+    6.94279,
+    10.1466,
+    15.3012
+   ],
+   "integer_windows": [],
+   "binary_minmax": [],
+   "has_IndClass": true,
+   "op_counts": {
+    "correlation": 1,
+    "decay_linear": 2,
+    "Ts_Rank": 2,
+    "delta": 1
+   },
+   "implemented_by_code_2": false
+  },
+  "90": {
+   "n_chars": 135,
+   "fractional_windows": [
+    3.21856,
+    4.66719,
+    5.38375
+   ],
+   "integer_windows": [],
+   "binary_minmax": [],
+   "has_IndClass": true,
+   "op_counts": {
+    "correlation": 1,
+    "Ts_Rank": 1,
+    "ts_max": 1,
+    "rank": 1
+   },
+   "implemented_by_code_2": false
+  },
+  "91": {
+   "n_chars": 204,
+   "fractional_windows": [
+    2.6809,
+    3.83219,
+    4.01303,
+    4.8667,
+    9.74928,
+    16.398
+   ],
+   "integer_windows": [],
+   "binary_minmax": [],
+   "has_IndClass": true,
+   "op_counts": {
+    "correlation": 2,
+    "decay_linear": 3,
+    "Ts_Rank": 1,
+    "rank": 1
+   },
+   "implemented_by_code_2": false
+  },
+  "92": {
+   "n_chars": 178,
+   "fractional_windows": [
+    6.80584,
+    6.94024,
+    7.58555,
+    14.7221,
+    18.8683
+   ],
+   "integer_windows": [],
+   "binary_minmax": [
+    "min"
+   ],
+   "has_IndClass": false,
+   "op_counts": {
+    "correlation": 1,
+    "decay_linear": 2,
+    "Ts_Rank": 2,
+    "rank": 2
+   },
+   "implemented_by_code_2": false
+  },
+  "93": {
+   "n_chars": 203,
+   "fractional_windows": [
+    2.77377,
+    7.54455,
+    16.2664,
+    17.4193,
+    19.848
+   ],
+   "integer_windows": [],
+   "binary_minmax": [],
+   "has_IndClass": true,
+   "op_counts": {
+    "correlation": 1,
+    "decay_linear": 2,
+    "Ts_Rank": 1,
+    "rank": 1,
+    "delta": 1
+   },
+   "implemented_by_code_2": false
+  },
+  "94": {
+   "n_chars": 133,
+   "fractional_windows": [
+    2.70756,
+    4.02992,
+    11.5783,
+    18.0926,
+    19.6462
+   ],
+   "integer_windows": [],
+   "binary_minmax": [],
+   "has_IndClass": false,
+   "op_counts": {
+    "correlation": 1,
+    "Ts_Rank": 3,
+    "ts_min": 1,
+    "rank": 1
+   },
+   "implemented_by_code_2": true
+  },
+  "95": {
+   "n_chars": 144,
+   "fractional_windows": [
+    11.7584,
+    12.4105,
+    12.8742,
+    19.1351
+   ],
+   "integer_windows": [],
+   "binary_minmax": [],
+   "has_IndClass": false,
+   "op_counts": {
+    "correlation": 1,
+    "Ts_Rank": 1,
+    "ts_min": 1,
+    "rank": 2,
+    "sum": 2
+   },
+   "implemented_by_code_2": true
+  },
+  "96": {
+   "n_chars": 232,
+   "fractional_windows": [
+    3.65459,
+    3.83878,
+    4.13242,
+    4.16783,
+    7.45404,
+    8.38151,
+    12.6556,
+    13.4143,
+    14.0365
+   ],
+   "integer_windows": [],
+   "binary_minmax": [
+    "max"
+   ],
+   "has_IndClass": false,
+   "op_counts": {
+    "correlation": 2,
+    "decay_linear": 2,
+    "Ts_Rank": 4,
+    "Ts_ArgMax": 1,
+    "rank": 2
+   },
+   "implemented_by_code_2": false
+  },
+  "97": {
+   "n_chars": 263,
+   "fractional_windows": [
+    3.3705,
+    4.97547,
+    6.71659,
+    7.87871,
+    15.7152,
+    17.255,
+    18.5925,
+    20.4523
+   ],
+   "integer_windows": [],
+   "binary_minmax": [],
+   "has_IndClass": true,
+   "op_counts": {
+    "correlation": 1,
+    "decay_linear": 2,
+    "Ts_Rank": 4,
+    "rank": 1,
+    "delta": 1
+   },
+   "implemented_by_code_2": false
+  },
+  "98": {
+   "n_chars": 192,
+   "fractional_windows": [
+    4.58418,
+    6.95668,
+    7.18088,
+    8.07206,
+    8.62571,
+    20.8187,
+    26.4719
+   ],
+   "integer_windows": [],
+   "binary_minmax": [],
+   "has_IndClass": false,
+   "op_counts": {
+    "correlation": 2,
+    "decay_linear": 2,
+    "Ts_Rank": 1,
+    "Ts_ArgMin": 1,
+    "rank": 4,
+    "sum": 1
+   },
+   "implemented_by_code_2": true
+  },
+  "99": {
+   "n_chars": 131,
+   "fractional_windows": [
+    6.28259,
+    8.8136,
+    19.8975
+   ],
+   "integer_windows": [],
+   "binary_minmax": [],
+   "has_IndClass": false,
+   "op_counts": {
+    "correlation": 2,
+    "rank": 2,
+    "sum": 2
+   },
+   "implemented_by_code_2": true
+  },
+  "100": {
+   "n_chars": 302,
+   "fractional_windows": [],
+   "integer_windows": [
+    5,
+    30
+   ],
+   "binary_minmax": [],
+   "has_IndClass": true,
+   "op_counts": {
+    "correlation": 1,
+    "indneutralize": 3,
+    "ts_argmin": 1,
+    "scale": 2,
+    "rank": 3
+   },
+   "implemented_by_code_2": false
+  },
+  "101": {
+   "n_chars": 40,
+   "fractional_windows": [],
+   "integer_windows": [],
+   "binary_minmax": [],
+   "has_IndClass": false,
+   "op_counts": {},
+   "implemented_by_code_2": true
+  }
+ }
+}

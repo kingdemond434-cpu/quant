@@ -1,0 +1,12 @@
+[
+ {
+  "source": "mql5_signals",
+  "kind": "fetch_error",
+  "title": "HTTPSConnectionPool(host='www.mql5.com', port=443): Max retries exceeded with url: /en/signals/mt5 (Caused by SSLError(SSLEOFError(8, '[SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of ",
+  "url": "",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-08T20:34:49+00:00",
+  "needs_selector_work": true
+ }
+]

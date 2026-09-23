@@ -13,6 +13,14 @@ from pathlib import Path
 
 from scripts.check_conversion import REPAIR_MODE_BACKLOG, build_report
 
+# 2026-08-28: read the INJECTED PAYLOAD, not one file. The 08-25 consolidation moved the
+# law text from ops/principal_doctrine.txt into docs/LAWS.md and changed brain_env.sh to
+# cat BOTH into every organ's prompt in the same breath -- no organ lost a line, and five
+# fences went red about text one file away. libs.doctrine.corpus derives the file list
+# from brain_env.sh itself, so a future relocation moves the fences with it.
+from libs.doctrine.corpus import doctrine_text
+from libs.ops.repair_mode import DIRECTION_FOR_STATUS
+
 NOW = datetime(2026, 7, 31, 12, 0, tzinfo=UTC)
 
 
@@ -165,9 +173,13 @@ def test_manifest_schedules_the_fence():
 
 def test_doctrine_carries_the_law():
     # Every organ inherits doctrine at spawn; the law must reach them, not just the constitution.
-    doctrine = Path("ops/principal_doctrine.txt").read_text("utf-8")
+    doctrine = doctrine_text()
     assert "L1.28b" in doctrine
-    assert "CONVERSION PARITY" in doctrine
+    # PIN THE RULE, NOT THE PROSE. The consolidation restates this law in sentence case
+    # ("conversion parity -- finding without fixing is half a deliverable"); a fence that
+    # demanded the old shouting would have blocked a legitimate rewrite while a real deletion
+    # slipped past under different words. That is prompt_ratchet.py's stated trade, applied here.
+    assert "conversion parity" in doctrine.lower()
 
 
 def test_real_repo_ledger_produces_valid_report():
@@ -179,7 +191,16 @@ def test_real_repo_ledger_produces_valid_report():
     # waiting on data rather than on anyone's edit.
     assert rep["status"] in ("OK", "REPAIR-MODE", "FLATLINE",
                              "DEBT-GROWING", "ARRIVALS-COLLAPSED")
-    if rep["backlog"] is not None and rep["backlog"] > REPAIR_MODE_BACKLOG:
+    # THE SAME BOMB THIS TEST'S OWN COMMENT WARNS ABOUT, ONE LEVEL UP (found 2026-08-28).
+    # The enum was widened and this implication was not. `repair_mode` stopped meaning "the pile
+    # is big" when check_conversion:327 made it `direction == "DRAIN"`: under ARRIVALS-COLLAPSED
+    # the desk must HUNT, and draining a backlog by finding less is the denominator trick
+    # L1.28b(f) forbids. Measured live: status ARRIVALS-COLLAPSED, backlog 282 over the line,
+    # repair_mode correctly False -- the code is right and the assertion was stale.
+    # Read the direction from the one mapping the producer reads, never from a second copy.
+    assert rep["repair_mode"] is (DIRECTION_FOR_STATUS.get(rep["status"]) == "DRAIN")
+    if (rep["backlog"] is not None and rep["backlog"] > REPAIR_MODE_BACKLOG
+            and DIRECTION_FOR_STATUS.get(rep["status"]) == "DRAIN"):
         assert rep["repair_mode"] is True
 
 

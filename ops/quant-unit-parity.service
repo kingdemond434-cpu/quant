@@ -1,0 +1,14 @@
+[Unit]
+Description=Unit parity: a live timer with no committed unit is one rebuild from silence
+
+[Service]
+Type=oneshot
+# 2026-09-01: MemoryMax alone HARD-KILLS at the ceiling -- that was the normal failure
+# mode here, not a runaway backstop. MemoryHigh throttles (reclaim + slow) below it, so
+# a heavy run finishes slowly instead of dying and being retried forever. Ceiling is
+# UNCHANGED at 200M, so nothing that fits today is newly constrained.
+MemoryHigh=160M
+MemoryMax=200M
+WorkingDirectory=/home/quant/quant-platform
+ExecStart=/home/quant/quant-platform/.venv/bin/python scripts/check_unit_parity.py
+SuccessExitStatus=0 1 2

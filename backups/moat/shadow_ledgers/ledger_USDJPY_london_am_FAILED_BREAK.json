@@ -1,0 +1,47 @@
+[
+  {
+    "entry_time": "2026-08-17 14:00:00+00:00",
+    "exit_time": "2026-08-18 02:00:00+00:00",
+    "side": 1,
+    "entry": 159.184,
+    "exit": 159.415,
+    "r_multiple": 0.6063757396449653,
+    "reason": "ttl",
+    "bar_source": "MT5:FusionMarkets-Live",
+    "bars_fetched_utc": "2026-08-27T00:01:47+00:00",
+    "bars_freshest": "2026-08-27T00:00:00+00:00",
+    "bars_stale": false,
+    "promotion_authority": true,
+    "h1_source_version": "h1src-2026-08-18-a"
+  },
+  {
+    "entry_time": "2026-08-25 15:00:00+00:00",
+    "exit_time": "2026-08-26 03:00:00+00:00",
+    "side": -1,
+    "entry": 159.226,
+    "exit": 159.216,
+    "r_multiple": -0.060776515151547326,
+    "reason": "ttl",
+    "bar_source": "MT5:FusionMarkets-Live",
+    "bars_fetched_utc": "2026-08-27T00:01:47+00:00",
+    "bars_freshest": "2026-08-27T00:00:00+00:00",
+    "bars_stale": false,
+    "promotion_authority": true,
+    "h1_source_version": "h1src-2026-08-18-a"
+  },
+  {
+    "entry_time": "2026-08-26 14:00:00+00:00",
+    "exit_time": "2026-08-26 16:00:00+00:00",
+    "side": 1,
+    "entry": 159.062,
+    "exit": 159.3512115156578,
+    "r_multiple": 1.819889606118983,
+    "reason": "target",
+    "bar_source": "MT5:FusionMarkets-Live",
+    "bars_fetched_utc": "2026-08-27T00:01:47+00:00",
+    "bars_freshest": "2026-08-27T00:00:00+00:00",
+    "bars_stale": false,
+    "promotion_authority": true,
+    "h1_source_version": "h1src-2026-08-18-a"
+  }
+]

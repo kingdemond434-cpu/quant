@@ -204,7 +204,12 @@ def resolve_due(root: Path, *, now: datetime | None = None, fetch=None) -> dict[
     """Score every question whose horizon has passed, from real bars. Unresolvable stays open."""
     now = now or datetime.now(tz=UTC)
     if fetch is None:
-        from scripts.resolve_paper_book import fetch_bars as fetch
+        # Was `resolve_paper_book.fetch_bars` (Binance/OKX perps), deleted 2026-09-05 with the
+        # crypto-exchange desk. `score_forecasts.fetch_bars` is the MT5 replacement and keeps the
+        # identical ([], reason) refusal contract, so the unresolvable path below is unchanged --
+        # a question with no MT5 bars is still counted as an ATTEMPT and voided only after
+        # VOID_AFTER_ATTEMPTS, never silently graded.
+        from scripts.score_forecasts import fetch_bars as fetch
     try:
         lines = (root / _OPEN).read_text("utf-8", errors="ignore").splitlines()
     except OSError:

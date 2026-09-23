@@ -1,8 +1,10 @@
-"""CROSS-SECTIONAL ICT -- the only breadth lever that survives crypto's correlation.
+"""CROSS-SECTIONAL ICT -- the only breadth lever that survives a highly correlated universe.
 
 THE ARITHMETIC THAT FORCED THIS, AND THE CORRECTION IT NEEDED. Information ratio scales as
-IC x sqrt(N) for INDEPENDENT bets. Directional crypto alts run about 0.8 correlated with BTC, and
-N_eff = N / (1 + (N-1) * rho) puts 25 symbols at 1.24 effective bets -- an IR multiple of 1.11x.
+IC x sqrt(N) for INDEPENDENT bets. A directional book run across one factor complex -- the USD
+majors, or an equity-index basket, where members routinely sit 0.8 correlated with the common
+factor -- has far less breadth than its symbol count claims: N_eff = N / (1 + (N-1) * rho) puts
+25 symbols at 1.24 effective bets, an IR multiple of 1.11x.
 
 THAT ARITHMETIC WAS APPLIED TO THE WRONG OBJECT, and this module is what caught it. 0.8 is the
 correlation of the ASSETS. The book is long some names and short others and holds sparsely, so its
@@ -26,11 +28,12 @@ TWO COSTS THE BREADTH GAIN HAS TO CLEAR, both modelled rather than waved through
   THE HEDGE IS A SECOND TRADE. Every position now pays fees on two legs, so transaction costs
   roughly double. A 2x IR multiple bought with 2x costs is not obviously a gain, and on a
   strategy already losing ~19%/yr to fees it may be a loss. This is measured, not assumed.
-  PERP FUNDING, which is the one line item where the hedge PAYS FOR ITSELF. Funding accrues per
-  leg every 8h -- a long pays when the rate is positive, a short receives -- so it is charged on
-  NET exposure. A market-neutral book nets close to zero and is largely immune; a directional one
-  pays full notional. Charging it on gross would have erased the hedge's real advantage. Measured:
-  raising the rate from 0 to 5bp/8h moves the hedged book's total cost 276.0% -> 276.8%.
+  OVERNIGHT FINANCING, which is the one line item where the hedge PAYS FOR ITSELF. On MT5/Fusion
+  this is the SWAP charged at the broker's daily rollover: it accrues per leg -- a long pays when
+  the rate is against it, a short receives -- so it is charged on NET exposure. A market-neutral
+  book nets close to zero and is largely immune; a directional one pays full notional. Charging it
+  on gross would have erased the hedge's real advantage. Measured: raising the rate from 0 to
+  5bp/day moves the hedged book's total cost by well under a percent of itself.
 
 BETA IS ESTIMATED CAUSALLY, on a trailing window, and that is not a detail. A full-sample beta is
 lookahead of the most flattering kind available here -- it would hedge each position using the
@@ -67,11 +70,14 @@ BETA_WINDOW = 200
 #: Below this many overlapping observations a correlation is not a measurement.
 MIN_OVERLAP = 30
 
-#: Perp funding, basis points per 8h settlement, applied to NET exposure. Crypto's long-run
-#: average sits near 1bp/8h (~11%/yr on a fully-long book) but it is regime-dependent and
-#: occasionally an order of magnitude larger. It is a PARAMETER, not a constant, because assuming
-#: a rate and reporting the result as measured is the error this module was built to avoid.
-FUNDING_BPS_PER_8H = 1.0
+#: Overnight financing, basis points per DAILY ROLLOVER, applied to NET exposure. On the MT5
+#: universe this is the broker's swap: one stamp per trading day at server midnight, triple-charged
+#: on the day that carries the weekend. A ~1bp/day default is the right order of magnitude for a
+#: liquid FX cross, but it is per-symbol, signed, asymmetric between long and short, and revised by
+#: the broker without notice. It is a PARAMETER, not a constant, because assuming a rate and then
+#: reporting the result as measured is the error this module was built to avoid; the realised
+#: per-symbol series belongs here as soon as the MT5 lake carries it.
+FINANCING_BPS_PER_DAY = 1.0
 
 #: Hedge is left alone until its required notional drifts this far (in units of position size).
 #: A continuously-rebalanced hedge cost 490% of capital a year in fees on the control panel --
@@ -82,9 +88,10 @@ HEDGE_BAND = 0.25
 def equal_weight_index(returns: pd.DataFrame) -> pd.Series:
     """The 'market' as an equal-weight mean of the panel's own returns.
 
-    Deliberately built FROM the panel rather than taken as BTC. A hedge against an instrument the
-    desk does not hold is a second bet; the equal-weight mean is the factor these names actually
-    share, and it is what a market-neutral book would be short.
+    Deliberately built FROM the panel rather than taken as a named index instrument (a dollar
+    index, a benchmark future). A hedge against an instrument the desk does not hold is a second
+    bet; the equal-weight mean is the factor these names actually share, and it is what a
+    market-neutral book would be short.
     """
     return returns.mean(axis=1)
 
@@ -187,7 +194,7 @@ def run_cross_sectional(bars_by_symbol: dict[str, pd.DataFrame],
                         params: ICTParams | None = None, *,
                         taker_bps: float = 7.5, maker_bps: float = 1.0,
                         beta_window: int = BETA_WINDOW, hedge_band: float = HEDGE_BAND,
-                        funding_bps_per_8h: float = FUNDING_BPS_PER_8H,
+                        financing_bps_per_day: float = FINANCING_BPS_PER_DAY,
                         gross_cap: float = 1.0) -> CrossSectionalResult:
     """Run the ICT setup across a panel and hedge each position back to the equal-weight index.
 
@@ -242,17 +249,17 @@ def run_cross_sectional(bars_by_symbol: dict[str, pd.DataFrame],
     one_way = (taker_bps if p.entry_mode == "market" else maker_bps) / 10_000.0
     cost = (turn_sym + turn_hedge) * one_way
 
-    # PERP FUNDING, AND IT IS THE ONE PLACE THE HEDGE PAYS FOR ITSELF. Funding accrues on each
-    # leg separately: a long pays when the rate is positive, a short receives. So it is charged on
-    # NET exposure, and a market-neutral book -- long the symbol, short the index -- nets close to
-    # zero and is largely immune, while a directional book pays the full notional every 8h.
-    # Charging it on gross would have erased exactly the advantage the hedge actually has.
+    # OVERNIGHT FINANCING, AND IT IS THE ONE PLACE THE HEDGE PAYS FOR ITSELF. The swap accrues on
+    # each leg separately: a long pays when the rate is against it, a short receives. So it is
+    # charged on NET exposure, and a market-neutral book -- long the symbol, short the index --
+    # nets close to zero and is largely immune, while a directional book pays the full notional at
+    # every rollover. Charging it on gross would have erased exactly the advantage the hedge has.
     net_exposure = (held.sum(axis=1) - hedge_held.sum(axis=1)).abs()
-    bars_per_8h = 32                                   # 15-minute bars
-    funding = net_exposure * (funding_bps_per_8h / 10_000.0) / bars_per_8h
+    bars_per_day = 96                                  # 15-minute bars
+    financing = net_exposure * (financing_bps_per_day / 10_000.0) / bars_per_day
 
     gross = resid.sum(axis=1)
-    cost = cost + funding
+    cost = cost + financing
     net = gross - cost
     bars_per_year = 365 * 24 * 4                      # 15-minute bars
     drag = float(cost.mean() * bars_per_year)
@@ -266,10 +273,11 @@ def run_cross_sectional(bars_by_symbol: dict[str, pd.DataFrame],
                                  else float("nan")),
         net_return=net, gross_return=gross, cost_drag_annual=drag,
         note=("Effective breadth is MEASURED from the realised streams, never assumed from a rho. "
-              "The hedge is charged as a second trade because it is one. Perp funding IS now "
-              "modelled, on NET exposure -- a long pays and a short receives, so a market-neutral "
-              "book nets near zero while a directional one pays full notional every 8h; that is "
-              "the one place the hedge pays for itself. The funding RATE is a parameter at a "
-              "long-run-average default, not a measurement, so the total remains a LOWER BOUND "
-              "until the recorder's meta rows supply the realised series. Market impact is not "
-              "modelled at all and needs book depth the desk has not recorded."))
+              "The hedge is charged as a second trade because it is one. Overnight financing IS "
+              "now modelled, on NET exposure -- a long pays and a short receives, so a "
+              "market-neutral book nets near zero while a directional one pays full notional at "
+              "every rollover; that is the one place the hedge pays for itself. The financing RATE "
+              "is a parameter at a plausible default, not a measurement, so the total remains a "
+              "LOWER BOUND until the MT5 lake supplies the realised per-symbol swap series. Market "
+              "impact is not modelled at all and needs the book depth the desk has yet to "
+              "record."))

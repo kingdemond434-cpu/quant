@@ -65,28 +65,20 @@ _FORBIDDEN_VERBS = (
 REMEDIATIONS: dict[str, tuple[list[str], str]] = {
     "coverage-missing": (["python3", "scripts/build_audit_coverage.py"],
                          "build the audit coverage artifact"),
+    # scripts/run_trade_forensics.py was deleted by sync commit dadac868 and restored from
+    # dadac868^ on 2026-09-05; the entry stands as it always did.
     "production-missing: forensics": (["python3", "scripts/run_trade_forensics.py"],
                                       "run trade forensics to produce its artifact"),
-    "exploration-blocked-upstream": (["python3", "scripts/build_bars.py"],
-                                     "resample the recorder tape into bars"),
     "asymmetry": (["python3", "scripts/asymmetry_ledger.py"],
                   "refresh the asymmetry ledger"),
     "decay": (["python3", "scripts/monitor_data_decay.py"],
               "refresh the data decay monitor"),
-    "moat-never-screened": (["python3", "scripts/screen_moat.py"],
-                            "hunt survivors in the self-recorded L2 tape"),
-    # A HUNT WHOSE FINDINGS NOTHING READS IS A DIARY. The registry accumulates survivors with
-    # their misses; this is the only thing that adjudicates whether any of them beats the sweep's
-    # own false-positive rate. It buys a forward clock and nothing else -- no capital, no weight --
-    # which is exactly why it is safe to run unattended.
-    "moat-survivors-unexploited": (["python3", "scripts/promote_moat_survivors.py"],
-                                   "adjudicate persistent survivors into forward clocks"),
-    # The frontier standing still is a SCHEDULER problem, and one more pass is how the desk finds
-    # out whether it is stuck or merely between cells.
-    "moat-screen-not-converging": (["python3", "scripts/screen_moat.py"],
-                                   "advance the moat screening frontier one more pass"),
-    "moat-clocks-unread": (["python3", "scripts/review_moat_clocks.py"],
-                           "check whether pre-registered candidates held out of sample"),
+    # FIVE MOAT/BARS FIXERS REMOVED 2026-09-05 (universe mandate): build_bars, screen_moat (x2),
+    # promote_moat_survivors and review_moat_clocks. Every one of them read or wrote the
+    # self-recorded crypto-exchange L2 tape and was deleted with it. A fixer whose command cannot
+    # execute turns its defect class into one this loop retries for ever and never closes --
+    # exactly the state the `_UNFIXABLE` register below exists to prevent, except invisible,
+    # because the class would look actionable right up until the subprocess failed.
 }
 
 #: Defect classes no command can close. Naming them stops the loop retrying forever and stops the
@@ -159,10 +151,28 @@ def _validate_allowlist() -> None:
 _validate_allowlist()
 
 
-def _run_audit() -> list[dict]:
-    """Run the sweep and return its live defects, each already scoped REPO/RUNTIME."""
-    subprocess.run([sys.executable, str(ROOT / "scripts/max_audit.py")],
-                   cwd=ROOT, capture_output=True, text=True, timeout=1800, check=False)
+def _run_audit(regenerate: bool = True) -> list[dict]:
+    """The sweep's live defects, each already scoped REPO/RUNTIME. Re-running it is OPTIONAL.
+
+    A DRY RUN MUST NOT LAUNCH A THIRTY-MINUTE SUBPROCESS, and it did. `main` called this before
+    it looked at `--dry-run`, so `daily_max.py --dry-run` -- documented as "show what would be
+    attempted; run no remediation" -- spawned a full `max_audit.py` sweep with `timeout=1800`.
+
+    WHAT THAT COST WAS THE COVERAGE RATCHET, measured 2026-09-14. `tests/scripts/test_daily_max.py
+    ::test_dry_run_attempts_nothing` asserts exactly the property this violated; it calls
+    `D.main()` with `--dry-run`, the sweep starts, and pytest-timeout kills the SESSION at that
+    test. The suite therefore never reaches the end, `coverage.json` is never written, and
+    `./ops/gates.sh --full` reports "coverage-floors: cannot read coverage.json" -- so L1.50, a
+    ratchet the desk calls a law, has been uncashable behind one unguarded subprocess. The test
+    named the defect in its own title and could not fail on it, because it hung instead.
+
+    Reading the LAST report keeps the dry run useful: it answers "what would this attempt against
+    what the desk currently knows", which is the question a dry run is for. An absent report is an
+    empty defect list, which is what it already degraded to.
+    """
+    if regenerate:
+        subprocess.run([sys.executable, str(ROOT / "scripts/max_audit.py")],
+                       cwd=ROOT, capture_output=True, text=True, timeout=1800, check=False)
     try:
         return json.loads(AUDIT_REPORT.read_text("utf-8")).get("live", [])
     except (OSError, json.JSONDecodeError):
@@ -188,7 +198,8 @@ def main() -> int:
     a = ap.parse_args()
 
     ledger = AlertLedger(LEDGER)
-    defects = _run_audit()
+    # A DRY RUN READS THE LAST SWEEP; it does not start one. See `_run_audit`.
+    defects = _run_audit(regenerate=not a.dry_run)
     seen: set[str] = set()
 
     for d in defects:

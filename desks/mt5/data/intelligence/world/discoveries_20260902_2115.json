@@ -1,0 +1,912 @@
+[
+ {
+  "source": "world_crawler",
+  "title": "When MetaTrader 5 Web Terminal is indispensable",
+  "url": "https://www.metatrader5.com/en/trading-platform/web-trading/examples-of-use",
+  "published": "2026-09-02T21:13:18+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "vault_sha": "4722eb8c6758a8987ae4",
+  "host": "www.metatrader5.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "How to connect to the web platform - MetaTrader 5",
+  "url": "https://www.metatrader5.com/en/trading-platform/web-trading/how-to-connect",
+  "published": "2026-09-02T21:13:19+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "vault_sha": "9b31a99b51477511770e",
+  "host": "www.metatrader5.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Algorithmic (automated) trading in MetaTrader 5",
+  "url": "https://www.metatrader5.com/en/automated-trading",
+  "published": "2026-09-02T21:13:22+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "vault_sha": "4145abd3359ae2b4ac47",
+  "host": "www.metatrader5.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Trading Robots and Technical Indicators in MetaTrader 5",
+  "url": "https://www.metatrader5.com/en/automated-trading/robots-indicators",
+  "published": "2026-09-02T21:13:23+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "vault_sha": "0ed541cecb1fb8a64c7e",
+  "host": "www.metatrader5.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Development of applications in MetaQuotes Language 5 (MQL5)",
+  "url": "https://www.metatrader5.com/en/automated-trading/mql5",
+  "published": "2026-09-02T21:13:25+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "vault_sha": "3f22e98e1316245211d2",
+  "host": "www.metatrader5.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "MQL5 Wizard: Development of trading robots for MetaTrader 5",
+  "url": "https://www.metatrader5.com/en/automated-trading/mql5wizard",
+  "published": "2026-09-02T21:13:27+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "vault_sha": "0f13cbdada98ef8659e8",
+  "host": "www.metatrader5.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "MetaEditor - Professional editor of trading applications",
+  "url": "https://www.metatrader5.com/en/automated-trading/metaeditor",
+  "published": "2026-09-02T21:13:29+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "vault_sha": "b708dec1d463ad16a286",
+  "host": "www.metatrader5.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Futuros m\u00e1s negociados en CME Group: ranking actualizado 2025-2026",
+  "url": "https://www.rankia.com/blog/operativa-con-futuros/4806127-cuales-son-contratos-futuros-mas-negociados-cme",
+  "published": "2026-09-02T21:13:30+00:00",
+  "symbols": [
+   "FOGAIN",
+   "ONLINE"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "gap"
+  ],
+  "confidence": 0.75,
+  "lang": "es-es",
+  "vault_sha": "8598df23bd79475a1a81",
+  "host": "www.rankia.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Futuros sobre madera (LB, CME): caracter\u00edsticas, precio y c\u00f3mo invertir",
+  "url": "https://www.rankia.com/blog/operativa-con-futuros/5019495-futuros-madera-caracteristicas-garantias-fundamentales-como-invertir",
+  "published": "2026-09-02T21:13:32+00:00",
+  "symbols": [
+   "ONLINE"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "mean_reversion"
+  ],
+  "confidence": 0.55,
+  "lang": "es-es",
+  "vault_sha": "25bd61c30009282bf6e2",
+  "host": "www.rankia.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Multiplicadores en contratos de futuros: tablas actualizadas con micros 2026",
+  "url": "https://www.rankia.com/blog/operativa-con-futuros/3848181-importancia-multiplicadores-contratos-futuro",
+  "published": "2026-09-02T21:13:34+00:00",
+  "symbols": [
+   "ONLINE"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "es-es",
+  "vault_sha": "706004e34c37fe2f4368",
+  "host": "www.rankia.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Diferencias entre futuros y forwards: gu\u00eda completa con tabla comparativa",
+  "url": "https://www.rankia.com/blog/operativa-con-futuros/3911179-diferencias-futuros-forwards",
+  "published": "2026-09-02T21:13:36+00:00",
+  "symbols": [
+   "ONLINE"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "es-es",
+  "vault_sha": "25a2262e49337180a4e6",
+  "host": "www.rankia.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Futuros vs ETFs para operar \u00edndices: ventajas y diferencias clave 2026",
+  "url": "https://www.rankia.com/blog/operativa-con-futuros/3732854-operar-indices-futuros-vs-etfs",
+  "published": "2026-09-02T21:13:38+00:00",
+  "symbols": [
+   "ONLINE"
+  ],
+  "timeframes": [
+   "1H"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "es-es",
+  "vault_sha": "bd43dc1d5eede7c5ac3e",
+  "host": "www.rankia.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Futuros Micro E-mini Dow Jones (MYM): caracter\u00edsticas y c\u00f3mo invertir 2026",
+  "url": "https://www.rankia.com/blog/operativa-con-futuros/5064568-futuros-micro-mini-dow-jones-caracteristicas-garantias-fundamentales-como-invertir",
+  "published": "2026-09-02T21:13:40+00:00",
+  "symbols": [
+   "ONLINE"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "es-es",
+  "vault_sha": "977dc92e9a5374bb4fa5",
+  "host": "www.rankia.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "\u00bfPuedo perder m\u00e1s del capital con futuros? Garant\u00edas, margin calls y casos reales",
+  "url": "https://www.rankia.com/blog/operativa-con-futuros/2477091-puedo-perder-mas-dinero-que-tengo-cuenta-futuros",
+  "published": "2026-09-02T21:13:42+00:00",
+  "symbols": [
+   "FOGAIN",
+   "ONLINE"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "gap"
+  ],
+  "confidence": 0.55,
+  "lang": "es-es",
+  "vault_sha": "e20965757da265ef604f",
+  "host": "www.rankia.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Quantpedia Awards 2026 | QuantPedia",
+  "url": "https://quantpedia.com/quantpedia-awards-2026/",
+  "published": "2026-09-02T21:13:48+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry",
+   "momentum",
+   "orderflow",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "vault_sha": "1a3233b261f5751aedab",
+  "host": "quantpedia.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "CAPE | QuantPedia",
+  "url": "https://quantpedia.com/tag/cape/",
+  "published": "2026-09-02T21:13:49+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "vault_sha": "331af86e9b8d68088fed",
+  "host": "quantpedia.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "index valuation | QuantPedia",
+  "url": "https://quantpedia.com/tag/index-valuation/",
+  "published": "2026-09-02T21:13:51+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "vault_sha": "4feac2061d07164d796a",
+  "host": "quantpedia.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "managed futures | QuantPedia",
+  "url": "https://quantpedia.com/tag/managed-futures/",
+  "published": "2026-09-02T21:13:53+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "vault_sha": "2a5504c5e619c27c621a",
+  "host": "quantpedia.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "momentum | QuantPedia",
+  "url": "https://quantpedia.com/tag/momentum/",
+  "published": "2026-09-02T21:13:55+00:00",
+  "symbols": [
+   "NASDAQ"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "breakout",
+   "carry",
+   "momentum",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en-US",
+  "vault_sha": "259984bc9e1ec57170db",
+  "host": "quantpedia.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "EPAT Trading Projects - Quantitative Finance &amp; Algo Trading Blog by QuantInsti",
+  "url": "https://blog.quantinsti.com/tag/epat-trading-projects",
+  "published": "2026-09-02T21:13:59+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "gap",
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "vault_sha": "41f8adac0e285ac6cfaa",
+  "host": "blog.quantinsti.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Automated Trading - Quantitative Finance &amp; Algo Trading Blog by QuantInsti",
+  "url": "https://blog.quantinsti.com/tag/automated-trading",
+  "published": "2026-09-02T21:14:00+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "vault_sha": "bd4f9e43d7ee22f8db82",
+  "host": "blog.quantinsti.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Forex &amp; Crypto Trading - Quantitative Finance &amp; Algo Trading Blog by QuantInsti",
+  "url": "https://blog.quantinsti.com/tag/forex-crypto-trading",
+  "published": "2026-09-02T21:14:02+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "vault_sha": "51596ed7683116cfaf78",
+  "host": "blog.quantinsti.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Machine Learning - Quantitative Finance &amp; Algo Trading Blog by QuantInsti",
+  "url": "https://blog.quantinsti.com/tag/machine-learning",
+  "published": "2026-09-02T21:14:04+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "vault_sha": "1b9e97bde31e55d86034",
+  "host": "blog.quantinsti.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Mathematics and Econometrics",
+  "url": "https://blog.quantinsti.com/tag/mathematics-econometrics",
+  "published": "2026-09-02T21:14:06+00:00",
+  "symbols": [
+   "REALLY"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "vault_sha": "36b3cd6fda1333206a74",
+  "host": "blog.quantinsti.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Mean Reversion &amp; Statistical Arbitrage - Quantitative Finance &amp; Algo Trading Blog by QuantInsti",
+  "url": "https://blog.quantinsti.com/tag/mean-reversion-statistical-arbitrage",
+  "published": "2026-09-02T21:14:08+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "vault_sha": "8ba143ec82e540295929",
+  "host": "blog.quantinsti.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Momentum Trading - Quantitative Finance &amp; Algo Trading Blog by QuantInsti",
+  "url": "https://blog.quantinsti.com/tag/momentum-trading",
+  "published": "2026-09-02T21:14:10+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "vault_sha": "c6675d3bfae8f92b5086",
+  "host": "blog.quantinsti.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Taming Excessive &quot;Timing Luck&quot; in TAA by Tranching Strategies - Allocate Smartly",
+  "url": "https://allocatesmartly.com/taming-excessive-timing-luck-in-taa-by-tranching-strategies/",
+  "published": "2026-09-02T21:14:15+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "mean_reversion",
+   "seasonality"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "vault_sha": "fcb17e66aae60ef0a590",
+  "host": "allocatesmartly.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Is Month-End Still the Best Time to Trade Tactical Strategies? - Allocate Smartly",
+  "url": "https://allocatesmartly.com/is-month-end-still-the-best-time-to-trade-tactical-strategies/",
+  "published": "2026-09-02T21:14:17+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "seasonality"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "vault_sha": "048c7276074608afca43",
+  "host": "allocatesmartly.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Member Analysis: The Effect of Combining Strategies on Timing Luck - Allocate Smartly",
+  "url": "https://allocatesmartly.com/member-analysis-the-effect-of-combining-strategies-on-timing-luck/",
+  "published": "2026-09-02T21:14:19+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "momentum",
+   "seasonality"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "vault_sha": "e7756b40e9a8310a5e6e",
+  "host": "allocatesmartly.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Alternate Trading Days: An Important Analytical Tool - Allocate Smartly",
+  "url": "https://allocatesmartly.com/alternate-trading-days-important-analytical-tool/",
+  "published": "2026-09-02T21:14:21+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "seasonality"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "vault_sha": "1bb7eb9a0162c01817dd",
+  "host": "allocatesmartly.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Selecting TAA Strategies Based on Recent Performance (Part 1) - Allocate Smartly",
+  "url": "https://allocatesmartly.com/selecting-taa-strategies-based-on-recent-performance-part-1/",
+  "published": "2026-09-02T21:14:23+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "vault_sha": "55e248fa4112d1bd769a",
+  "host": "allocatesmartly.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Mean Reversion: What It Is &amp; How to Trade It in 2026 | Quantt",
+  "url": "https://www.quantt.co.uk/resources/mean-reversion-trading-guide",
+  "published": "2026-09-02T21:14:24+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "breakout",
+   "carry",
+   "correlation",
+   "mean_reversion",
+   "momentum",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "vault_sha": "00f514b059c0bca56504",
+  "host": "www.quantt.co.uk"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Pairs Trading: Complete Strategy Guide with Python 2026 | Quantt",
+  "url": "https://www.quantt.co.uk/resources/pairs-trading-guide",
+  "published": "2026-09-02T21:14:26+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "correlation",
+   "gap",
+   "mean_reversion",
+   "momentum",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "vault_sha": "696db0008bb47bee5918",
+  "host": "www.quantt.co.uk"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Cointegration: What It Is, How to Test | Quantt",
+  "url": "https://www.quantt.co.uk/resources/cointegration-explained",
+  "published": "2026-09-02T21:14:28+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "carry",
+   "correlation",
+   "gap",
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "vault_sha": "f702fbb04716f324a4c1",
+  "host": "www.quantt.co.uk"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Hurst Exponent: Measuring Trend and Mean Reversion 2026 | Quantt",
+  "url": "https://www.quantt.co.uk/resources/hurst-exponent-explained",
+  "published": "2026-09-02T21:14:29+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "correlation",
+   "mean_reversion",
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "vault_sha": "696702c2cbb965aad97e",
+  "host": "www.quantt.co.uk"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Autocorrelation: What It Is &amp; How to Test for It 2026 | Quantt",
+  "url": "https://www.quantt.co.uk/resources/autocorrelation-explained",
+  "published": "2026-09-02T21:14:32+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "correlation",
+   "mean_reversion",
+   "momentum",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "vault_sha": "face28c8ab4f6f3fd80d",
+  "host": "www.quantt.co.uk"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Primitives: a video editor for quantitative research - QuanterLab",
+  "url": "https://quanterlab.com/articles/qlway-primitives-video-editor",
+  "published": "2026-09-02T21:14:36+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "gap",
+   "mean_reversion"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "vault_sha": "d2d650ea9a77a0df812d",
+  "host": "quanterlab.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "The timeline is a leakage detector - QuanterLab",
+  "url": "https://quanterlab.com/articles/qlway-primitives-timeline-leakage",
+  "published": "2026-09-02T21:14:38+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "vault_sha": "51080407dc65d3bac631",
+  "host": "quanterlab.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "About \u2014 QuanterLab",
+  "url": "https://quanterlab.com/about",
+  "published": "2026-09-02T21:14:42+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "vault_sha": "84300da336839f3097e2",
+  "host": "quanterlab.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Pricing - QuanterLab",
+  "url": "https://quanterlab.com/pricing",
+  "published": "2026-09-02T21:14:44+00:00",
+  "symbols": [
+   "NASDAQ"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "breakout",
+   "mean_reversion",
+   "momentum",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "vault_sha": "157fb785e173189e2eac",
+  "host": "quanterlab.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Privacy Policy - QuanterLab",
+  "url": "https://quanterlab.com/privacy-policy",
+  "published": "2026-09-02T21:14:48+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "carry"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "vault_sha": "571592219f48201361be",
+  "host": "quanterlab.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Correlated Time Series Generation using Object Oriented Python | QuantStart",
+  "url": "https://www.quantstart.com/articles/correlated-time-series-generation-using-object-oriented-python/",
+  "published": "2026-09-02T21:14:48+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "carry",
+   "correlation",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "vault_sha": "207acac774bbdecd1be1",
+  "host": "www.quantstart.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Time Series Models using Object Oriented Python | QuantStart",
+  "url": "https://www.quantstart.com/articles/time-series-models-using-object-oriented-python/",
+  "published": "2026-09-02T21:14:50+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "correlation",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "vault_sha": "77533dcb75ad812fe55c",
+  "host": "www.quantstart.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Correlation Matrix Generation using Object Oriented Python | QuantStart",
+  "url": "https://www.quantstart.com/articles/correlation-matrix-generationg-using-object-oriented-python/",
+  "published": "2026-09-02T21:14:53+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "vault_sha": "19f44356c63072f85b8e",
+  "host": "www.quantstart.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Generating Synthetic Equity Data with Realistic Correlation Structure | QuantStart",
+  "url": "https://www.quantstart.com/articles/generating-synthetic-equity-data-with-realistic-correlation-structure/",
+  "published": "2026-09-02T21:14:55+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "correlation",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "vault_sha": "dc56210ae35b5ab3fe3d",
+  "host": "www.quantstart.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Linear Regression: An Introduction | QuantStart",
+  "url": "https://www.quantstart.com/articles/linear-regression-an-introduction/",
+  "published": "2026-09-02T21:14:56+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry",
+   "correlation",
+   "gap"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "vault_sha": "f96b9e418c46b12df9a2",
+  "host": "www.quantstart.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Batch Linear Regression via Bayesian Estimation | QuantStart",
+  "url": "https://www.quantstart.com/articles/batch-linear-regression-via-bayesian-estimation/",
+  "published": "2026-09-02T21:14:58+00:00",
+  "symbols": [
+   "MATLAB"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "carry"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "vault_sha": "eecc931ad51f3e250236",
+  "host": "www.quantstart.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Linear Congruential Generators in Python | QuantStart",
+  "url": "https://www.quantstart.com/articles/linear-congruential-generators-in-python/",
+  "published": "2026-09-02T21:15:00+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "vault_sha": "2638c1eab04f0f5d6cb3",
+  "host": "www.quantstart.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Aligrithm",
+  "url": "https://aligrithm.com",
+  "published": "2026-09-02T21:15:01+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "carry",
+   "correlation",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "vault_sha": "6a495dc9ad6da5d8e282",
+  "host": "aligrithm.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "2. Indicator Engineering - Aligrithm",
+  "url": "https://aligrithm.com/tag/indicator-engineering/",
+  "published": "2026-09-02T21:15:04+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1H",
+   "DAILY"
+  ],
+  "patterns": [
+   "carry",
+   "correlation",
+   "gap",
+   "mean_reversion",
+   "momentum",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "vault_sha": "1153d9a43e9a810f5a72",
+  "host": "aligrithm.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Algorithmic Trading Models: Conceptual Foundations And Methodological Frameworks",
+  "url": "https://www.drkrzysztofozimek.com/algorithmic-trading-models-free-guide/",
+  "published": "2026-09-02T21:15:06+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "vault_sha": "00480019b04f0ed4e7dc",
+  "host": "www.drkrzysztofozimek.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "QuantFin Services | Deliverable-Based Education &amp; Research",
+  "url": "https://www.drkrzysztofozimek.com/services/",
+  "published": "2026-09-02T21:15:06+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "vault_sha": "efe18e485f0e76e3da8e",
+  "host": "www.drkrzysztofozimek.com"
+ }
+]

@@ -1,0 +1,207 @@
+[
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/2356441",
+  "symbols": [
+   "AUDCAD",
+   "AUDJPY",
+   "AUDNZD",
+   "AUDUSD",
+   "CADCHF",
+   "CADJPY",
+   "CHFJPY",
+   "EURJPY",
+   "EURNZD",
+   "EURUSD",
+   "GBPAUD",
+   "GBPCAD"
+  ],
+  "found_at": "2026-09-11T19:32:05+00:00",
+  "platform": "mt5",
+  "phenotypes": [
+   "max_growth",
+   "low_dd_high_return",
+   "high_pf",
+   "algo_survivor",
+   "multi_fx"
+  ],
+  "ev_score": 15.019,
+  "growth_pct": 1303.78,
+  "weeks": 69.0,
+  "pf": 2.6,
+  "max_dd_pct": null,
+  "trades": 345.0,
+  "win_pct": 256.0,
+  "algo_pct": 88.0,
+  "subscribers": 10.0,
+  "author": "/en/users/x_alexander_x",
+  "author_other_signals": [
+   {
+    "sid": "2375343",
+    "title": "'Multi EA Trading' by Alexander Pavlenko",
+    "growth": "3228%",
+    "curve_points": 20,
+    "curve_dd": -8.0
+   }
+  ],
+  "hour_histogram": {
+   "07": 4,
+   "14": 1,
+   "02": 1,
+   "09": 1,
+   "15": 1,
+   "11": 1,
+   "16": 3,
+   "20": 1,
+   "13": 1,
+   "12": 1
+  }
+ },
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/1988269",
+  "symbols": [
+   "AUDCAD",
+   "XAUUSD"
+  ],
+  "found_at": "2026-09-11T19:32:05+00:00",
+  "platform": "mt5",
+  "phenotypes": [
+   "max_growth",
+   "low_dd_high_return",
+   "long_lived",
+   "gold"
+  ],
+  "ev_score": 18.851,
+  "growth_pct": 1045.66,
+  "weeks": 169.0,
+  "pf": 1.78,
+  "max_dd_pct": null,
+  "trades": 1671.0,
+  "win_pct": 1330.0,
+  "algo_pct": 74.0,
+  "subscribers": 8.0,
+  "author": "/en/users/datbh",
+  "author_other_signals": [
+   {
+    "sid": "2304847",
+    "title": "'MSC SuperGold Pro' by Bui Huy Dat",
+    "growth": "22082%",
+    "curve_points": 20,
+    "curve_dd": -1.0
+   },
+   {
+    "sid": "2231030",
+    "title": "'MSC Gold Stable Pro' by Bui Huy Dat",
+    "growth": "1435%",
+    "curve_points": 20,
+    "curve_dd": 0.0
+   },
+   {
+    "sid": "2381088",
+    "title": "'MSC SuperGold IC Pro' by Bui Huy Dat",
+    "growth": "133%",
+    "curve_points": 20,
+    "curve_dd": -14.0
+   }
+  ],
+  "hour_histogram": {
+   "09": 1,
+   "14": 3,
+   "05": 3,
+   "10": 1,
+   "22": 1,
+   "15": 1,
+   "13": 1,
+   "06": 1,
+   "21": 1,
+   "12": 1,
+   "20": 3,
+   "08": 3,
+   "11": 1,
+   "16": 4,
+   "03": 1,
+   "01": 1,
+   "00": 3,
+   "19": 5,
+   "17": 1,
+   "07": 2
+  }
+ },
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/2204998",
+  "symbols": [
+   "AUDCAD",
+   "AUDJPY",
+   "AUDNZD",
+   "AUDUSD",
+   "BTCUSD",
+   "CADCHF",
+   "CHFJPY",
+   "EURAUD",
+   "EURCAD",
+   "EURJPY",
+   "EURNZD",
+   "EURUSD"
+  ],
+  "found_at": "2026-09-11T19:32:05+00:00",
+  "platform": "mt5",
+  "phenotypes": [
+   "max_growth",
+   "low_dd_high_return",
+   "long_lived",
+   "algo_survivor",
+   "multi_fx"
+  ],
+  "ev_score": 19.391,
+  "growth_pct": 962.65,
+  "weeks": 211.0,
+  "pf": 1.19,
+  "max_dd_pct": null,
+  "trades": 7966.0,
+  "win_pct": 4955.0,
+  "algo_pct": 95.0,
+  "subscribers": 0.0,
+  "author": "/en/users/strueli",
+  "author_other_signals": [
+   {
+    "sid": "2265877",
+    "title": "'Gold Reaper New V2 2' by Profalgo Limited",
+    "growth": "304%",
+    "curve_points": 20,
+    "curve_dd": -1.0
+   },
+   {
+    "sid": "2084890",
+    "title": "'Goldtrade Pro ICM' by Profalgo Limited",
+    "growth": "643%",
+    "curve_points": 20,
+    "curve_dd": -9.0
+   },
+   {
+    "sid": "2376950",
+    "title": "'Multi EA combo' by Profalgo Limited",
+    "growth": "378%",
+    "curve_points": 20,
+    "curve_dd": -5.0
+   }
+  ],
+  "hour_histogram": {
+   "14": 2,
+   "23": 1,
+   "20": 2,
+   "16": 1,
+   "04": 1,
+   "06": 6,
+   "08": 2,
+   "12": 1
+  }
+ }
+]

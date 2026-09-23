@@ -1,0 +1,362 @@
+[
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user fxtimerobot",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=fxtimerobot&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-01T02:23:54+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user fxtrackpro-allpairs",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=fxtrackpro-allpairs&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-01T02:23:54+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user fxtrackpro-eur-demo",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=fxtrackpro-eur-demo&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-01T02:23:54+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user fxtrackpro-eurusd",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=fxtrackpro-eurusd&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-01T02:23:54+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user fxtrackpro-usdcad",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=fxtrackpro-usdcad&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-01T02:23:54+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user fxtrackprosuper-demo",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=fxtrackprosuper-demo&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-01T02:23:54+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user fxtrade100k",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=fxtrade100k&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-01T02:23:54+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user fxturbine2",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=fxturbine2&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-01T02:23:54+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user fxvoodoo-alpariuk",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=fxvoodoo-alpariuk&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-01T02:23:54+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user fxvoodoo-live",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=fxvoodoo-live&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-01T02:23:54+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user fxvoodoo-modified",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=fxvoodoo-modified&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-01T02:23:54+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user fxvoodoo_gallant",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=fxvoodoo_gallant&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-01T02:23:54+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user fxwinningsolution01",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=fxwinningsolution01&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-01T02:23:54+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user fxwitcher",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=fxwitcher&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-01T02:23:54+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user fxzipper",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=fxzipper&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-01T02:23:54+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user fxzipper-demo",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=fxzipper-demo&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-01T02:23:54+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user fxzipper_demo",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=fxzipper_demo&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-01T02:23:54+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user g-trader-ea",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=g-trader-ea&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-01T02:23:54+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user gaaam-manual",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=gaaam-manual&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-01T02:23:54+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user gabor_alpari_demo",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=gabor_alpari_demo&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-01T02:23:54+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user gaebolg",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=gaebolg&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-01T02:23:54+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user gaininflow_a",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=gaininflow_a&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-01T02:23:54+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user gaininflow_acc2",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=gaininflow_acc2&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-01T02:23:54+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user gaininflow_d",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=gaininflow_d&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-01T02:23:54+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user gaininflow_e",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=gaininflow_e&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-01T02:23:54+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user gaininflow_knmyrq",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=gaininflow_knmyrq&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-01T02:23:54+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user gangstabot",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=gangstabot&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-01T02:23:54+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user gap-robot-bfr",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=gap-robot-bfr&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-01T02:23:54+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user garyk122",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=garyk122&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-01T02:23:54+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user gatherpips",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=gatherpips&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-01T02:23:54+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user gaurang84",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=gaurang84&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-01T02:23:54+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user gbotfx2211",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=gbotfx2211&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-01T02:23:54+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user gbp_usd",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=gbp_usd&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-01T02:23:54+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user gbpusd_fxprodragon",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=gbpusd_fxprodragon&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-01T02:23:54+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user gcg4874",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=gcg4874&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-01T02:23:54+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user gdayfx_demo",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=gdayfx_demo&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-01T02:23:54+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user gdr29",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=gdr29&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-01T02:23:54+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user gearbox-kraitos",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=gearbox-kraitos&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-01T02:23:54+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user geek-bfr",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=geek-bfr&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-01T02:23:54+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user geekadv-bfr",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=geekadv-bfr&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-01T02:23:54+00:00"
+ }
+]

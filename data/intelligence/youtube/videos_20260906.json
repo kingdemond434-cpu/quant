@@ -1,0 +1,36 @@
+[
+ {
+  "channel_id": "UCIZpqvFv_B9ktXvEzhaeELQ",
+  "channel": "Ryan Brown (ResponsibleForexTrading)",
+  "video_id": "vd0sbVeA_KA",
+  "published": "2026-09-06T15:08:56Z",
+  "title": "87% Win Rate AI Trading Bot \u2014 My Exact MT5 Setup & Installation",
+  "description": "This is my exact AI trading bot setup on MT5 using the Leksi strategy inside the Architect Algo.\n\nAt the time of recording, the live Leksi account had completed 933 trades with an 87.8% win rate and no losing months during the observed period.\n\nIn this walkthrough, I show how to download the free 10-day demo, install Architect in MT5, select the Leksi strategy, configure the settings and verify the final charts.\n\nLeksi is a strategy inside Architect, not a separate standalone bot. I also briefly explain how AI provides additional technical confirmation and trade filtering around the underlying strategy rules.\n\nLIVE TRACKED ACCOUNT\n\nhttps://showmytrades.com/dashboard/account/mt5-494137-27dcfffbcd864fd095434aadc4bde62e\n\nFREE 10-DAY ARCHITECT DEMO\n\nhttps://sowl.co/p/V4Vbh\n\nLEARN MORE\n\nhttps://responsibleforextrading.com/\n\nCHAPTERS\n\n0:00 Live Leksi Results\n0:24 How the AI Filters Work\n1:06 Strategy Installation\n\nFull disclosure: I developed and sell the Architect Algo used in this video. This is not an independent product review.\n\nAutomated and leveraged forex trading carries substantial risk. Past performance, 945 trades, an 87.8% win rate and no losing months during the observed period do not guarantee future results. Test on a demo account before considering live trading.\n\n#AITradingBot #MT5 #ForexTrading",
+  "links": [
+   "https://showmytrades.com/dashboard/account/mt5-494137-27dcfffbcd864fd095434aadc4bde62e",
+   "https://sowl.co/p/V4Vbh",
+   "https://responsibleforextrading.com/"
+  ],
+  "transcript": null,
+  "transcript_status": "UNAVAILABLE",
+  "start_verified": false,
+  "end_verified": false,
+  "unresolved_reason": "ACCESS_LIMIT"
+ },
+ {
+  "channel_id": "UCBc1EqknL4xzwJsUP9w7asg",
+  "channel": "Unbiased Trading",
+  "video_id": "9QDTYbmOgB0",
+  "published": "2026-09-06T15:03:22Z",
+  "title": "Jane Street Built a Market to Allocate Its Own 4,032 GPUs",
+  "description": "Build your first live trading algorithm \ud83d\udc49https://cryptomomentumgroup.com/\n\nJane Street allocates its 4,032 GPU cluster with a live internal auction. Researchers bid against each other, everything is visible to everyone, and no manager decides whose model matters more. A firm built on markets trusts a market to run its own machines, and that thinking applies to any system you build.\n\n\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\n\nThis channel shares educational content about systematic and algorithmic trading. Nothing here is financial advice, and I am not a registered investment adviser. Trading involves risk of loss. Always do your own research and consult a licensed financial professional before making investment decisions.",
+  "links": [
+   "https://cryptomomentumgroup.com/"
+  ],
+  "transcript": null,
+  "transcript_status": "UNAVAILABLE",
+  "start_verified": false,
+  "end_verified": false,
+  "unresolved_reason": "ACCESS_LIMIT"
+ }
+]

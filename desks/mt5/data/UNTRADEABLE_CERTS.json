@@ -1,0 +1,613 @@
+{
+ "retired": {
+  "external.AFG.discovered.p=fff3ce17a104b37b": {
+   "hunt": "external_discoveries",
+   "cell": "AFG.discovered.p=fff3ce17a104b37b",
+   "sym": "AFG",
+   "days": 589,
+   "gates": {
+    "economic_prior": {
+     "passed": true,
+     "message": "information diffuses from a leading Fusion instrument into a slower target",
+     "mechanism_status": "NAMED"
+    },
+    "in_sample_screen": {
+     "passed": true,
+     "sharpe": 0.7148
+    },
+    "deflated_sharpe": {
+     "passed": true,
+     "dsr": 1.0,
+     "sr0": 0.3786,
+     "n_trials": 597,
+     "variance_of_sharpes": 0.014863,
+     "variance_basis": "fixed_variance_of_sharpes(0.014863)",
+     "variance_measured_this_sweep": 1.502514
+    },
+    "pbo": {
+     "passed": true,
+     "pbo": 0.0004
+    },
+    "reality_check_spa": {
+     "passed": true,
+     "p_value": 0.0
+    },
+    "cpcv": {
+     "passed": true,
+     "mean_oos_sharpe": 0.7189,
+     "folds": 15
+    },
+    "walk_forward": {
+     "passed": true,
+     "oos_sharpe": 0.7735,
+     "stability": 1.0
+    },
+    "stress_costs": {
+     "passed": true,
+     "exp_x3": 0.3576
+    },
+    "lockbox": {
+     "passed": true,
+     "lockbox_sharpe": 0.7735
+    },
+    "expected_value": {
+     "passed": true,
+     "ev": 0.3576
+    }
+   },
+   "gated_at": "2026-09-02T13:07:21.412516+00:00",
+   "shadow_spec": {
+    "symbol": "AFG",
+    "selector": "asia",
+    "family": "discovered",
+    "is_universe": true,
+    "hunt": "external_discoveries",
+    "condition": null,
+    "params": {
+     "feature": "ext_lead_USDTRY_12",
+     "band": [
+      0.9,
+      1.0
+     ],
+     "horizon": 1,
+     "side": -1
+    }
+   },
+   "retired_at": "2026-09-04T02:17:48+00:00",
+   "retired_why": "symbol 'AFG' is not in the Fusion universe (251 symbols); a forward clock can never be enrolled, so this certificate cannot become money and is not weak evidence -- it is no evidence"
+  },
+  "external.AFG.discovered.p=fb2786aabb7c21de": {
+   "hunt": "external_discoveries",
+   "cell": "AFG.discovered.p=fb2786aabb7c21de",
+   "sym": "AFG",
+   "days": 519,
+   "gates": {
+    "economic_prior": {
+     "passed": true,
+     "message": "information diffuses from a leading Fusion instrument into a slower target",
+     "mechanism_status": "NAMED"
+    },
+    "in_sample_screen": {
+     "passed": true,
+     "sharpe": 0.5194
+    },
+    "deflated_sharpe": {
+     "passed": true,
+     "dsr": 0.9984,
+     "sr0": 0.3786,
+     "n_trials": 597,
+     "variance_of_sharpes": 0.014863,
+     "variance_basis": "fixed_variance_of_sharpes(0.014863)",
+     "variance_measured_this_sweep": 1.502514
+    },
+    "pbo": {
+     "passed": true,
+     "pbo": 0.0004
+    },
+    "reality_check_spa": {
+     "passed": true,
+     "p_value": 0.0
+    },
+    "cpcv": {
+     "passed": true,
+     "mean_oos_sharpe": 0.5287,
+     "folds": 15
+    },
+    "walk_forward": {
+     "passed": true,
+     "oos_sharpe": 0.5945,
+     "stability": 1.0
+    },
+    "stress_costs": {
+     "passed": true,
+     "exp_x3": 0.2859
+    },
+    "lockbox": {
+     "passed": true,
+     "lockbox_sharpe": 0.5945
+    },
+    "expected_value": {
+     "passed": true,
+     "ev": 0.2859
+    }
+   },
+   "gated_at": "2026-09-02T13:07:21.412601+00:00",
+   "shadow_spec": {
+    "symbol": "AFG",
+    "selector": "asia",
+    "family": "discovered",
+    "is_universe": true,
+    "hunt": "external_discoveries",
+    "condition": null,
+    "params": {
+     "feature": "ext_lead_NETH25_12",
+     "band": [
+      0.9,
+      1.0
+     ],
+     "horizon": 1,
+     "side": -1
+    }
+   },
+   "retired_at": "2026-09-04T02:17:48+00:00",
+   "retired_why": "symbol 'AFG' is not in the Fusion universe (251 symbols); a forward clock can never be enrolled, so this certificate cannot become money and is not weak evidence -- it is no evidence"
+  },
+  "external.AFG.discovered.p=ef2e258721b52ea3": {
+   "hunt": "external_discoveries",
+   "cell": "AFG.discovered.p=ef2e258721b52ea3",
+   "sym": "AFG",
+   "days": 523,
+   "gates": {
+    "economic_prior": {
+     "passed": true,
+     "message": "information diffuses from a leading Fusion instrument into a slower target",
+     "mechanism_status": "NAMED"
+    },
+    "in_sample_screen": {
+     "passed": true,
+     "sharpe": 0.4795
+    },
+    "deflated_sharpe": {
+     "passed": true,
+     "dsr": 0.9638,
+     "sr0": 0.3786,
+     "n_trials": 597,
+     "variance_of_sharpes": 0.014863,
+     "variance_basis": "fixed_variance_of_sharpes(0.014863)",
+     "variance_measured_this_sweep": 1.502514
+    },
+    "pbo": {
+     "passed": true,
+     "pbo": 0.0004
+    },
+    "reality_check_spa": {
+     "passed": true,
+     "p_value": 0.0
+    },
+    "cpcv": {
+     "passed": true,
+     "mean_oos_sharpe": 0.4851,
+     "folds": 15
+    },
+    "walk_forward": {
+     "passed": true,
+     "oos_sharpe": 0.532,
+     "stability": 1.0
+    },
+    "stress_costs": {
+     "passed": true,
+     "exp_x3": 0.2595
+    },
+    "lockbox": {
+     "passed": true,
+     "lockbox_sharpe": 0.532
+    },
+    "expected_value": {
+     "passed": true,
+     "ev": 0.2595
+    }
+   },
+   "gated_at": "2026-09-02T13:07:21.412625+00:00",
+   "shadow_spec": {
+    "symbol": "AFG",
+    "selector": "asia",
+    "family": "discovered",
+    "is_universe": true,
+    "hunt": "external_discoveries",
+    "condition": null,
+    "params": {
+     "feature": "ext_lead_USDKRW_12",
+     "band": [
+      0.0,
+      0.1
+     ],
+     "horizon": 1,
+     "side": -1
+    }
+   },
+   "retired_at": "2026-09-04T02:17:48+00:00",
+   "retired_why": "symbol 'AFG' is not in the Fusion universe (251 symbols); a forward clock can never be enrolled, so this certificate cannot become money and is not weak evidence -- it is no evidence"
+  },
+  "external.AFG.discovered.p=c76420808dcb4657": {
+   "hunt": "external_discoveries",
+   "cell": "AFG.discovered.p=c76420808dcb4657",
+   "sym": "AFG",
+   "days": 195,
+   "gates": {
+    "economic_prior": {
+     "passed": true,
+     "message": "cross-instrument pricing residuals can converge when common risk is re-arbitraged",
+     "mechanism_status": "NAMED"
+    },
+    "in_sample_screen": {
+     "passed": true,
+     "sharpe": 0.5296
+    },
+    "deflated_sharpe": {
+     "passed": true,
+     "dsr": 0.9895,
+     "sr0": 0.3786,
+     "n_trials": 597,
+     "variance_of_sharpes": 0.014863,
+     "variance_basis": "fixed_variance_of_sharpes(0.014863)",
+     "variance_measured_this_sweep": 1.502514
+    },
+    "pbo": {
+     "passed": true,
+     "pbo": 0.0004
+    },
+    "reality_check_spa": {
+     "passed": true,
+     "p_value": 0.0
+    },
+    "cpcv": {
+     "passed": true,
+     "mean_oos_sharpe": 0.531,
+     "folds": 15
+    },
+    "walk_forward": {
+     "passed": true,
+     "oos_sharpe": 0.543,
+     "stability": 1.0
+    },
+    "stress_costs": {
+     "passed": true,
+     "exp_x3": 0.2065
+    },
+    "lockbox": {
+     "passed": true,
+     "lockbox_sharpe": 0.543
+    },
+    "expected_value": {
+     "passed": true,
+     "ev": 0.2065
+    }
+   },
+   "gated_at": "2026-09-02T13:07:21.412641+00:00",
+   "shadow_spec": {
+    "symbol": "AFG",
+    "selector": "asia",
+    "family": "discovered",
+    "is_universe": true,
+    "hunt": "external_discoveries",
+    "condition": null,
+    "params": {
+     "feature": "ext_resid_USDMXN_z",
+     "band": [
+      0.9,
+      1.0
+     ],
+     "horizon": 1,
+     "side": -1
+    }
+   },
+   "retired_at": "2026-09-04T02:17:48+00:00",
+   "retired_why": "symbol 'AFG' is not in the Fusion universe (251 symbols); a forward clock can never be enrolled, so this certificate cannot become money and is not weak evidence -- it is no evidence"
+  },
+  "external.AFG.discovered.p=3d2353cfa7f07a5e": {
+   "hunt": "external_discoveries",
+   "cell": "AFG.discovered.p=3d2353cfa7f07a5e",
+   "sym": "AFG",
+   "days": 534,
+   "gates": {
+    "economic_prior": {
+     "passed": true,
+     "message": "information diffuses from a leading Fusion instrument into a slower target",
+     "mechanism_status": "NAMED"
+    },
+    "in_sample_screen": {
+     "passed": true,
+     "sharpe": 0.4749
+    },
+    "deflated_sharpe": {
+     "passed": true,
+     "dsr": 0.962,
+     "sr0": 0.3786,
+     "n_trials": 597,
+     "variance_of_sharpes": 0.014863,
+     "variance_basis": "fixed_variance_of_sharpes(0.014863)",
+     "variance_measured_this_sweep": 1.502514
+    },
+    "pbo": {
+     "passed": true,
+     "pbo": 0.0004
+    },
+    "reality_check_spa": {
+     "passed": true,
+     "p_value": 0.0
+    },
+    "cpcv": {
+     "passed": true,
+     "mean_oos_sharpe": 0.4802,
+     "folds": 15
+    },
+    "walk_forward": {
+     "passed": true,
+     "oos_sharpe": 0.4449,
+     "stability": 1.0
+    },
+    "stress_costs": {
+     "passed": true,
+     "exp_x3": 0.2673
+    },
+    "lockbox": {
+     "passed": true,
+     "lockbox_sharpe": 0.4449
+    },
+    "expected_value": {
+     "passed": true,
+     "ev": 0.2673
+    }
+   },
+   "gated_at": "2026-09-02T13:07:21.412661+00:00",
+   "shadow_spec": {
+    "symbol": "AFG",
+    "selector": "asia",
+    "family": "discovered",
+    "is_universe": true,
+    "hunt": "external_discoveries",
+    "condition": null,
+    "params": {
+     "feature": "ext_lead_USDPLN_12_z",
+     "band": [
+      0.0,
+      0.1
+     ],
+     "horizon": 1,
+     "side": -1
+    }
+   },
+   "retired_at": "2026-09-04T02:17:48+00:00",
+   "retired_why": "symbol 'AFG' is not in the Fusion universe (251 symbols); a forward clock can never be enrolled, so this certificate cannot become money and is not weak evidence -- it is no evidence"
+  },
+  "external.AFG.discovered.p=62c7a7478424a92f": {
+   "hunt": "external_discoveries",
+   "cell": "AFG.discovered.p=62c7a7478424a92f",
+   "sym": "AFG",
+   "days": 534,
+   "gates": {
+    "economic_prior": {
+     "passed": true,
+     "message": "information diffuses from a leading Fusion instrument into a slower target",
+     "mechanism_status": "NAMED"
+    },
+    "in_sample_screen": {
+     "passed": true,
+     "sharpe": 0.4995
+    },
+    "deflated_sharpe": {
+     "passed": true,
+     "dsr": 0.9974,
+     "sr0": 0.3786,
+     "n_trials": 597,
+     "variance_of_sharpes": 0.014863,
+     "variance_basis": "fixed_variance_of_sharpes(0.014863)",
+     "variance_measured_this_sweep": 1.502514
+    },
+    "pbo": {
+     "passed": true,
+     "pbo": 0.0004
+    },
+    "reality_check_spa": {
+     "passed": true,
+     "p_value": 0.0
+    },
+    "cpcv": {
+     "passed": true,
+     "mean_oos_sharpe": 0.5003,
+     "folds": 15
+    },
+    "walk_forward": {
+     "passed": true,
+     "oos_sharpe": 0.5143,
+     "stability": 1.0
+    },
+    "stress_costs": {
+     "passed": true,
+     "exp_x3": 0.2625
+    },
+    "lockbox": {
+     "passed": true,
+     "lockbox_sharpe": 0.5143
+    },
+    "expected_value": {
+     "passed": true,
+     "ev": 0.2625
+    }
+   },
+   "gated_at": "2026-09-02T13:07:21.412695+00:00",
+   "shadow_spec": {
+    "symbol": "AFG",
+    "selector": "asia",
+    "family": "discovered",
+    "is_universe": true,
+    "hunt": "external_discoveries",
+    "condition": null,
+    "params": {
+     "feature": "ext_lead_NZDCAD_12_z",
+     "band": [
+      0.9,
+      1.0
+     ],
+     "horizon": 1,
+     "side": -1
+    }
+   },
+   "retired_at": "2026-09-04T02:17:48+00:00",
+   "retired_why": "symbol 'AFG' is not in the Fusion universe (251 symbols); a forward clock can never be enrolled, so this certificate cannot become money and is not weak evidence -- it is no evidence"
+  },
+  "external.AFL.discovered.p=8b760805b40b5e55": {
+   "hunt": "external_discoveries",
+   "cell": "AFL.discovered.p=8b760805b40b5e55",
+   "sym": "AFL",
+   "days": 177,
+   "gates": {
+    "economic_prior": {
+     "passed": true,
+     "message": "cross-instrument pricing residuals can converge when common risk is re-arbitraged",
+     "mechanism_status": "NAMED"
+    },
+    "in_sample_screen": {
+     "passed": true,
+     "sharpe": 0.5223
+    },
+    "deflated_sharpe": {
+     "passed": true,
+     "dsr": 0.9909,
+     "sr0": 0.3786,
+     "n_trials": 597,
+     "variance_of_sharpes": 0.014863,
+     "variance_basis": "fixed_variance_of_sharpes(0.014863)",
+     "variance_measured_this_sweep": 1.502514
+    },
+    "pbo": {
+     "passed": true,
+     "pbo": 0.0004
+    },
+    "reality_check_spa": {
+     "passed": true,
+     "p_value": 0.0
+    },
+    "cpcv": {
+     "passed": true,
+     "mean_oos_sharpe": 0.5239,
+     "folds": 15
+    },
+    "walk_forward": {
+     "passed": true,
+     "oos_sharpe": 0.535,
+     "stability": 1.0
+    },
+    "stress_costs": {
+     "passed": true,
+     "exp_x3": 0.2056
+    },
+    "lockbox": {
+     "passed": true,
+     "lockbox_sharpe": 0.535
+    },
+    "expected_value": {
+     "passed": true,
+     "ev": 0.2056
+    }
+   },
+   "gated_at": "2026-09-02T13:07:21.412745+00:00",
+   "shadow_spec": {
+    "symbol": "AFL",
+    "selector": "asia",
+    "family": "discovered",
+    "is_universe": true,
+    "hunt": "external_discoveries",
+    "condition": null,
+    "params": {
+     "feature": "ext_resid_USDPLN_z",
+     "band": [
+      0.9,
+      1.0
+     ],
+     "horizon": 1,
+     "side": -1
+    }
+   },
+   "retired_at": "2026-09-04T02:17:48+00:00",
+   "retired_why": "symbol 'AFL' is not in the Fusion universe (251 symbols); a forward clock can never be enrolled, so this certificate cannot become money and is not weak evidence -- it is no evidence"
+  },
+  "external.AFL.discovered.p=f75a215dda6b2030": {
+   "hunt": "external_discoveries",
+   "cell": "AFL.discovered.p=f75a215dda6b2030",
+   "sym": "AFL",
+   "days": 628,
+   "gates": {
+    "economic_prior": {
+     "passed": true,
+     "message": "information diffuses from a leading Fusion instrument into a slower target",
+     "mechanism_status": "NAMED"
+    },
+    "in_sample_screen": {
+     "passed": true,
+     "sharpe": 0.6576
+    },
+    "deflated_sharpe": {
+     "passed": true,
+     "dsr": 1.0,
+     "sr0": 0.3786,
+     "n_trials": 597,
+     "variance_of_sharpes": 0.014863,
+     "variance_basis": "fixed_variance_of_sharpes(0.014863)",
+     "variance_measured_this_sweep": 1.502514
+    },
+    "pbo": {
+     "passed": true,
+     "pbo": 0.0004
+    },
+    "reality_check_spa": {
+     "passed": true,
+     "p_value": 0.0
+    },
+    "cpcv": {
+     "passed": true,
+     "mean_oos_sharpe": 0.6636,
+     "folds": 15
+    },
+    "walk_forward": {
+     "passed": true,
+     "oos_sharpe": 0.7198,
+     "stability": 1.0
+    },
+    "stress_costs": {
+     "passed": true,
+     "exp_x3": 0.3076
+    },
+    "lockbox": {
+     "passed": true,
+     "lockbox_sharpe": 0.7198
+    },
+    "expected_value": {
+     "passed": true,
+     "ev": 0.3076
+    }
+   },
+   "gated_at": "2026-09-02T13:07:21.412762+00:00",
+   "shadow_spec": {
+    "symbol": "AFL",
+    "selector": "asia",
+    "family": "discovered",
+    "is_universe": true,
+    "hunt": "external_discoveries",
+    "condition": null,
+    "params": {
+     "feature": "ext_lead_USDTRY_12_z",
+     "band": [
+      0.9,
+      1.0
+     ],
+     "horizon": 1,
+     "side": -1
+    }
+   },
+   "retired_at": "2026-09-04T02:17:48+00:00",
+   "retired_why": "symbol 'AFL' is not in the Fusion universe (251 symbols); a forward clock can never be enrolled, so this certificate cannot become money and is not weak evidence -- it is no evidence"
+  }
+ },
+ "updated_at": "2026-09-04T02:17:48+00:00"
+}

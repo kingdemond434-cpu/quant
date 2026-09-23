@@ -1,0 +1,15 @@
+[Unit]
+Description=Refresh the dashboard from the box's published state, every 3 minutes
+
+[Timer]
+# THREE MINUTES, against a publisher that runs every 15. Faster than the producer so the page is
+# never more than a few minutes behind what the box has said, and slow enough that a git fetch
+# every tick is free. OnBootSec matters as much as the interval: after a reboot the page must
+# become current on its own, without anybody logging in.
+OnBootSec=90
+OnUnitActiveSec=180
+AccuracySec=20s
+Persistent=true
+
+[Install]
+WantedBy=timers.target

@@ -27,9 +27,12 @@ prints. A "good" IC here would be a finding to report, never a decision.
 PRE-DECLARED POWER VERDICT (computed from sample LENGTH alone, before any IC is seen)
 -------------------------------------------------------------------------------------
 stage_a_screen calls a cell powered only when 1.96/sqrt(n_eff) <= ic_min=0.03, i.e. it needs
-n_eff >= 4268 independent observations. The deepest fred_macro series aligned to BTC gives ~4030
-US business days (DTWEXBGS from 2006-01, VIXCLS from 1990-01, both clipped by BTC history starting
-2010-07), and n_eff is then divided again by the mean calendar spacing. EVERY cell in this run is
+n_eff >= 4268 independent observations. The deepest fred_macro series aligned to the target gives
+~2750 US business days (DTWEXBGS from 2006-01, VIXCLS from 1990-01, both clipped by the MT5
+BTCUSD history starting 2018-01; it was ~4030 while the target leg came from the Coin Metrics
+archive back to 2010-07 -- see `target_close` for why that leg moved and why a SHORTER sample only
+strengthens the verdict below). n_eff is then divided again by the mean calendar spacing. EVERY
+cell in this run is
 therefore expected to return SCREEN-UNDERPOWERED, at every horizon, before a single number is
 computed. They are run anyway -- the ICs are recorded evidence a later meta-analysis can pool, and
 "we never looked" is the exact defect the data-utilization law exists to kill -- but they are
@@ -44,10 +47,15 @@ Deliberately NOT screened, with reasons (declared, not silently dropped):
 TIMESTAMP ALIGNMENT (declared per series; every one is a BACKWARD/stale offset except WALCL,
 whose forward release lag is handled by an explicit lag)
 --------------------------------------------------------------------------------------------------
-  crypto leg  Coin Metrics community daily BTC close, PriceUSD dated d == fixed close at 00:00 UTC
-              on d+1. VERIFIED against the Binance D1 lake on the 2515 overlapping days: same-date
-              log-return corr +0.994, and shifting either leg one day collapses it to
-              -0.047 / -0.066. Same date label = same instant.
+  target leg  MT5 BTCUSD H1 bars aggregated to a daily close, stamped in true UTC by
+              `libs/data/mt5_source.normalize_timezone` at ingest. The bar labelled d closes at
+              23:00-24:00 UTC on d, so the value dated d is knowable at the end of d -- the same
+              date-label-equals-instant property the old Coin Metrics leg was verified to have
+              (PriceUSD dated d == 00:00 UTC close on d+1, corr +0.994 against the D1 lake over
+              2515 overlapping days, collapsing to -0.047/-0.066 under a one-day shift either
+              way). The offsets below are stated against a 00:00Z d+1 reference and are unchanged
+              in SIGN by the move: every FRED leg is still struck before the target's close, so
+              each remains BACKWARD/stale rather than look-ahead.
   DGS10,
   T10Y2Y      Treasury H.15 constant-maturity yields struck ~15:30 ET on business day d, published
               ~16:15 ET the same day => 3.5-4.5h STALE vs the 00:00Z d+1 crypto close. BACKWARD.
@@ -84,8 +92,6 @@ import pandas as pd
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
-
-from scripts.screen_idle_axes import _graveyard_priors, block_idx  # noqa: E402
 
 from libs.alpha_factory.hypothesis_novelty import PriorIdea, hypothesis_novelty  # noqa: E402
 from libs.research.alpha_economics import Idea, ev_score  # noqa: E402
@@ -174,6 +180,51 @@ NOT_SCREENED = {
 
 
 # ------------------------------------------------------------------------------------- priors ---
+def block_idx(n: int, h: int) -> np.ndarray:
+    """Right-aligned non-overlapping sample points so the LAST observation is always included.
+
+    Inlined from `screen_idle_axes.py`, deleted 2026-09-05 with the crypto-exchange desk. The
+    function is arithmetic over an index and carried nothing venue-specific, so it moved rather
+    than died -- the alternative was a wrapper module existing only to hold three tokens.
+    """
+    return np.arange(n - 1, -1, -h)[::-1]
+
+
+def _graveyard_priors() -> list[PriorIdea]:
+    """Every graveyard table row, as priors for the novelty gate.
+
+    ALSO INLINED FROM THE DELETED `screen_idle_axes.py`, AND DELIBERATELY SHORTER THAN THE
+    ORIGINAL. That version appended four hardcoded "live sleeve" priors -- taker-flow, basis
+    carry, funding carry, on-chain throughput -- so a candidate would be called REDUNDANT for
+    resembling a book this desk was still trading. Those sleeves were retired with the
+    crypto-exchange universe, so keeping them would fail candidates for duplicating something
+    that no longer exists, which is a novelty gate rejecting on a fiction.
+
+    The graveyard TABLE stays and is the valuable half: it is the desk's record of what was tried
+    and what it cost, and a macro axis is still novel-or-not against that record whichever market
+    the desk trades. `docs/graveyard.md` is memory, not a live mandate (see check_mt5_purity).
+    """
+    priors: list[PriorIdea] = []
+    try:
+        txt = (ROOT / "docs/graveyard.md").read_text("utf-8")
+    except OSError:
+        # NOT a silent pass: an unreadable graveyard means the novelty gate is running on a
+        # smaller prior set than it claims, and a candidate can only look MORE novel for it.
+        # Returning [] surfaces as n_priors in the report the caller writes.
+        return priors
+    for line in txt.splitlines():
+        if not line.startswith("|") or line.startswith("|---") or "Hypothesis |" in line:
+            continue
+        cells = [c.strip() for c in line.strip().strip("|").split("|")]
+        if len(cells) < 3:
+            continue
+        name, verdict, tag = cells[0], cells[1], cells[2]
+        lesson = cells[3] if len(cells) > 3 else ""
+        priors.append(PriorIdea(id=name[:60], category=tag,
+                                statement=f"{name} {verdict} {lesson}"[:1500], lesson=lesson[:300]))
+    return priors
+
+
 def _prereg_priors() -> list[PriorIdea]:
     """The EV-rejected pre-registration cards -- the NEAREST priors to anything macro->crypto.
 
@@ -218,20 +269,41 @@ def fred_deep(sid: str, key: str) -> pd.Series:
     return pd.Series(d).sort_index()
 
 
-def coinmetrics_btc() -> pd.Series:
-    out: dict = {}
-    with (ROOT / "data/coinmetrics_flows.jsonl").open(encoding="utf-8") as fh:
-        for ln in fh:
-            ln = ln.strip()
-            if not ln:
-                continue
-            try:
-                r = json.loads(ln)
-            except json.JSONDecodeError:
-                continue
-            if r.get("asset") == "btc" and r.get("price_usd") and r.get("date"):
-                out[pd.Timestamp(str(r["date"])[:10], tz="UTC")] = float(r["price_usd"])
-    return pd.Series(out).sort_index()
+#: The MT5 desk's own H1 bar store. Read-only from here.
+_MT5_UNIVERSE = ROOT / "desks" / "mt5" / "data" / "universe"
+#: The target instrument. BTCUSD on Fusion is a CFD the desk can actually trade, which is what
+#: makes it a legal target under the universe mandate (2026-08-18) -- crypto reference data may
+#: inform an MT5 instrument, and here the instrument IS the MT5 one.
+_TARGET = "BTCUSD"
+
+
+def target_close() -> pd.Series:
+    """Daily close of the target MT5 instrument, from the desk's own H1 parquet.
+
+    REPOINTED 2026-09-05 (universe mandate). This used to read
+    ``data/coinmetrics_flows.jsonl`` -- a Coin Metrics community feed of exchange-native BTC
+    prices, whose collector was deleted with the crypto-exchange desk, so the file has no writer
+    and is not on disk: the screen could not run at all. The FRED macro axis itself is a KEEP
+    (it is the desk's free macro axis), so the TARGET LEG was moved rather than the organ retired.
+
+    WHAT CHANGED IN THE NUMBERS, said plainly because it moves a pre-declared quantity. The MT5
+    BTCUSD series begins 2018-01-02 rather than 2010-07, so the deepest aligned sample falls from
+    ~4030 US business days to ~2750. That makes every cell MORE certainly SCREEN-UNDERPOWERED,
+    never less -- the pre-declared verdict above is unchanged in kind and strengthened in degree,
+    and no threshold, ic_min or power floor is touched to accommodate it.
+
+    The last calendar day is dropped for the same reason it is dropped elsewhere: aggregating a
+    still-forming session puts a partial bar at the panel edge.
+    """
+    path = _MT5_UNIVERSE / f"{_TARGET}_H1.parquet"
+    if not path.exists():
+        raise SystemExit(f"no H1 parquet for {_TARGET} at {path.relative_to(ROOT)} -- the target "
+                         "leg is UNREADABLE, which is not the same as a screen that found "
+                         "nothing. Sync the universe bars and re-run.")
+    df = pd.read_parquet(path)
+    daily = (df.set_index(pd.to_datetime(df.index, utc=True))
+               .resample("1D").agg({"close": "last"}).dropna())
+    return daily["close"].iloc[:-1].sort_index()
 
 
 # -------------------------------------------------------------------------------------- screen ---
@@ -263,8 +335,8 @@ def transform(sid: str, s: pd.Series) -> pd.Series:
 
 def main() -> None:
     key = json.loads((ROOT / "data/secrets/fred.json").read_text("utf-8"))["key"]
-    btc = coinmetrics_btc()
-    print(f"BTC leg (coinmetrics daily close): n={len(btc)} "
+    btc = target_close()
+    print(f"{_TARGET} leg (MT5 H1 -> daily close): n={len(btc)} "
           f"{btc.index.min().date()} -> {btc.index.max().date()}\n")
 
     print("=" * 100)

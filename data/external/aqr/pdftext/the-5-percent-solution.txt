@@ -1,0 +1,1242 @@
+The figure on page 77 (Riding the 
+Wave), gives an admittedly self-serving 
+example of the simulated three-year returns 
+of a simple quant long-short strategy since 
+the mid-1950s. Despite a very appealing 
+long-run performance  the dotted line 
+about 5 percent in excess of cash  three-
+year returns exhibit waxing and waning 
+fortunes. (Note that recent results are well 
+within the historical range.) Few inves-
+tors have the resolve to stay with a strategy 
+through its waning periods. 
+Of course, we do not counsel ignoring 
+investment performance forever, nor do 
+we counsel never switching asset classes or 
+managers. All we counsel is that if three- to 
+five-year returns are major criteria, and they 
+often are, they are frequently being used in a 
+statistically backward manner that should be 
+acknowledged and perhaps changed.
+BEFORE 
+C
+ON
+C
+LUD
+I
+NG, LETS ASK
+ 
+the obvious question: If were right, why 
+dont more people listen to us?
+First, we dismiss the highly unlikely 
+answers that we may be wrong, unconvinc-
+ing or simply not well liked.
+Consider why more people dont lever-
+age a diversified portfolio rather than 
+focus on equities. In theory, it might be 
+optimal for investors to let equities be 90 
+percent of portfolio risk. If the equity pre-
+mium offered a uniquely high Sharpe ratio 
+(reward for risk) among return sources, 
+proportionate to its dominant risk, it would 
+be reasonable to depend so heavily on one 
+return source. In practice, however, other 
+asset classes and many long-short invest-
+ment strategies have historically offered 
+comparable or higher Sharpe ratios. Also, 
+looking ahead, prospective real equity 
+returns are below the long-run average, 
+and it is hard to make a case for a uniquely 
+high reward for this single risk. If investors 
+let equity market direction dominate their 
+portfolio performance, they are doomed 
+to follow the roller-coaster ride of market 
+gyrations with little recourse and a smaller 
+reward than usual.
+Yet most investors still choose concen-
+trated equity market risk, despite the better 
+rewards of leveraged diversified portfolios. 
+Investors dislike leverage for both bad rea-
+sons (the appearance of speculation) and 
+good ones (any levered portfolio is vulner-
+able to the danger of having to deleverage at 
+fire-sale prices). This risk is real but can be 
+managed (Institutional Investor,
+ 
+May 2010). 
+Concentration risk cannot be managed in 
+any analogous way and, unlike leverage risk, 
+brings a lower risk-adjusted return, not a 
+higher one. 
+Another main reason for equity domi-
+nation is familiarity  everyone does it 
+ and the resulting lack of peer risk (recall 
+Keyness safety in failing conventionally). 
+Underlying this familiarity are some fair 
+reasons, such as a strong theoretical basis, 
+as well as extensive empirical evidence over 
+100 years in numerous countries. These 
+reasons together enable investors to sustain 
+their long equity bias through several years, 
+or even a decade or more, of disappoint-
+ing performance. Any other return source 
+may lead to more time inconsistency (a 
+nicer way to say throwing in the towel at 
+the worst time).
+So, while still dismissing the unlikely 
+answers initially mentioned above, we think 
+the difficulty in implementing these sugges-
+tions comes down to lack of familiarity, the 
+agency problem of failing conventionally 
+being the superior way to underperform 
+and some real, but in our view overdone, 
+concerns about leverage. The bottom line 
+is that without these barriers we think our 
+recommendations, even given their large 
+capacity, would, like all forms of alpha, be 
+largely arbitraged away, so these barriers may 
+be things to lament, but for those with more 
+freedom to act than the average investor, they 
+are also reason to celebrate.
+In conclusion, traditional, simple asset-
+class allocations  say, 60-40 stocks and 
+bonds  are likely not going to make 5 
+percent real returns from here given that 
+forward-looking real returns are at half this 
+level. The standard universe of alternative 
+asset classes is not likely to fill the gap, as it 
+tends to repeat the problem of concentration 
+in equity risk, just at a higher fee. Neverthe-
+less, we believe that some investors can still 
+achieve the stated 5 percent goal, or at least 
+far closer to that, if they embrace a modest 
+amount of innovation, as we detail in this 
+article, and thoroughly prepare themselves 
+to see it through. No single idea will do the 
+trick, but investors should consider a well-
+balanced combination of market premia 
+and alternative risk premia, pursue alpha 
+through portfolio construction and employ 
+thoughtful risk controls. Each of these can 
+help investors get closer to the 5 percent 
+real return target. Together they may even 
+make the target realistic for some, and the 
+diversity of ideas should give investors a less 
+rocky ride.
+Clifford Asness is managing and founding 
+principal of AQR Capital Management, a 
+Greenwich, Connecticutbased investment 
+management firm employing a disciplined 
+multiasset research process. Previously, he 
+was a managing director at Goldman, Sachs 
+& Co., where he was director of quantitative 
+research for the asset management division. 
+Antti Ilmanen is managing director at AQR 
+Capital Management (Europe), the author of 
+Expected Returns (Wiley, 2011) and adviser 
+to some large sovereign wealth funds. The views 
+and opinions expressed herein are those of the 
+authors and do not necessarily reflect the views 
+of AQR Capital Management, its affiliates or 
+its employees.If investors let equity market direction 
+dominate their portfolio performance, 
+they are doomed to follow the roller-coaster 
+ride of market gyrations.ASSET MANAGEMENT
+	
+
+	
+		
+		 ­
+
+RI
+SK 
+C
+ONTROL 
+I
+S ULT
+I
+MATEL
+Y 
+about surviving to the long term and not 
+sabotaging it along the way. Although diver-
+sification is central to our investment phi-
+losophy, investors may want to supplement 
+it with other means of risk control that help 
+them stick to their game plan when faced 
+with unexpected losses. These means can 
+be quantitative: concentration limits, draw-
+down control rules, rebalancing to target a 
+stable level of portfolio risk over time, tail 
+hedges (though rarely the explicit purchase 
+of insurance). They can also be psychologi-
+cal: education, preparation and precommit-
+ment. What follows is some hard-learned, 
+and occasionally hard-earned, risk control 
+advice for those tough investment environ-
+ments when spine is truly needed to sustain 
+supposedly long-run allocations.
+In the wake of the financial crisis of 
+200809, when many supposedly super-
+long-term investors acted as liquidity tak-
+ers, not liquidity providers, we have asked 
+ourselves the obvious question: Why? One 
+simple answer gets to the heart of what it 
+means to be a long-term investor. Long-term 
+investors are often painted as having above-
+average risk tolerance and a natural edge in 
+being liquidity providers (contrarian buy-
+ers of risky assets) in bad times. Both ideas 
+contain a seed of truth, but they may not be 
+right for a single investor.
+An investor who chooses to accept above-
+average risk will sustain above-average losses 
+in bad times and will not be well positioned 
+to buy more when bargains appear. A con-
+trarian investor has to begin a plan in good 
+times and retain some dry powder to have 
+any chance of acting as a contrarian liquidity 
+provider in bad times. Choose which one you 
+want to be  or, at least, what combination 
+you want to be. But dont assume you can 
+be both to the full extent of your endurance 
+without realizing that they will tax you at 
+precisely the same moment. As simple and 
+obvious as it sounds, we think many very 
+long-term institutions double-counted 
+their resolve and thought they could be 
+higher long-term risk-takers and liquidity 
+providers in a crisis, and both to the limit 
+of their endurance. But both draw on the 
+same budget for pain, and this must be 
+recognized up front. 
+At worst, the result of institutions trying 
+to be both is procyclic capitulation  losing 
+faith and selling risky holdings near the mar-
+ket bottom. We can never truly banish this, as 
+we do not know ex ante the possible depths 
+of a crisis. But by not double-counting how 
+long-term you are, essentially thinking you 
+can have a very aggressive strategic asset 
+allocation and be the one to provide liquidity 
+near the nadir, we think you greatly increase 
+the chance it does not happen to you!
+Our next concrete recommendation, after 
+not double-counting what it means to be 
+long term, is to consider your own self-
+imposed drawdown control methodology on 
+the overall portfolio. Investors generally face 
+three choices in tough times: Never reduce 
+risk because of losses; reduce risk to control 
+losses subjectively, using judgment on the fly; 
+or reduce risk because of losses in a system-
+atic fashion (what we call having a drawdown 
+control methodology) and add risk back 
+using a similarly systematic methodology.
+Frankly, we started out our careers with 
+a lot of sympathy for the first approach, par-
+ticularly for strategies in which value invest-
+ing is a big part, as value positions often get 
+more attractive after suffering. Although we 
+are still theoretical fans of that method, we 
+have seen too many instances where a resolve 
+never to cut (or even to add to) risk becomes 
+a mad dash to control losses on the fly at the 
+worst possible time. It does seem clear that 
+no matter what their stated plans to hold the 
+line, all investors have some breaking point, 
+and we believe our collective biases can lead 
+this subjective break to happen at the worst 
+times. This is all magnified when leverage or 
+a high-volatility portfolio is chosen. 
+Lets delve further into the second 
+approach. We are all subject to many of the 
+same investment biases we describe through-
+out this article, biases that will feel most 
+acute during the toughest times. Although 
+this subjective method may seem somewhat 
+useful for reducing risk when in pain, we have 
+found it to be completely useless or even a 
+detriment when adding back risk after the 
+pain has started to abate. Choosing when 
+to add back risk is at least as hard to manage 
+well as cutting risk in the first place. 
+All considered, in most practical instances 
+ again, particularly in the presence of lever-
+age or an aggressive portfolio posture  we 
+prefer the third approach, a systematic draw
+-
+down control methodology of early interven-
+tion and modest risk cuts, in a hope never to 
+have to cut draconically near a bottom, to 
+either plan one or plan two. Note again that 
+this is a form of zero-sum alpha, as the 
+world as a whole cannot cut risk.
+Last, this might be a stretch to call risk 
+control, but while were talking about throw-
+ing in the towel at the worst time, an addi
+-
+tional high-level recommendation would be 
+to alter or at least soften the focus on three- to 
+five-year evaluation periods for managers and 
+styles. These evaluation periods are death to 
+returns, and nobody ever notices. 
+Financial market data abounds showing 
+short-run (within a year) momentum pat-
+terns and multiyear reversal (value) patterns. 
+Yet investors often make asset-class alloca-
+tion decisions and manager fire-hire deci-
+sions using a three- to five-year evaluation 
+period. In short, they act like momentum 
+investors at reversal (value) frequencies. 
+Return-chasing  allocating toward win-
+ners or away from losers  at multiyear 
+horizons and procyclic capitulation after 
+disappointing performance are among the 
+most common ways investors can sabotage 
+their own long-run performance. 
+
+				
+
+		
+
+¢
+					
+
+	
+
+¢
+
+¢
+
+¢
+¢
+
+
+£
+£
+
+
+
+
+
+
+	
+
+¤
+
+
+
+
+		
+
+		
+
+
+		
+ 	
+	
+
+
+		 			
+	
+
+
+
+
+
+
+
+As opposed to these typical alternatives, 
+we prefer truly diversifying alternative risk 
+premia. Terminology varies, as alternative 
+betas are sometimes called dynamic betas, 
+hedge fund betas, smart betas or exotic 
+betas. These are long-short strategies that 
+seek to capture the good systematic 
+return sources that many hedge funds har-
+vest (as opposed to the equity premium, 
+which is bad if it is delivered at 2 per-
+cent management and 20 percent perfor-
+mance fees). Certain style strategies  for 
+example, the value tilt, momentum tilt or 
+low-beta tilt  have historically delivered 
+attractive long-run returns in and across 
+virtually all asset classes studied. Other 
+approaches  such as merger arbitrage 
+and convertible arbitrage  are inherently 
+asset-class-specific, but straightforward, 
+diversified versions have delivered strong 
+historical results. Unlike most hedge funds 
+and private equity funds, these dynamic 
+strategies tend to have low correlations with 
+equity market direction. 
+Seeking alternative risk premia at non-
+alpha prices is one of the most important 
+ways to help investor performance. These are 
+potentially rewarding and highly diversifying 
+return sources. They are often called alpha, 
+but they really arent alpha in the sense of 
+unique insight or genius. However, to the 
+extent an investor has little exposure to these 
+return sources, they can be considered alpha 
+in that they are value added to a portfolio 
+and when implemented correctly are uncor-
+related to traditional markets. The key is that 
+they should not be bought for alpha prices. 
+Alternative risk premia are high-capacity 
+and liquid. They do require some use of what 
+we call the dirty words of finance: leverage, 
+short-selling and derivatives. They do come 
+with their own set of risks. Yet they are time-
+tested, and we think they should be a big 
+part of long-horizon portfolios trying to 
+achieve 5 percent real returns, as long as 
+they are not accessed through long-biased, 
+high-fee hedge funds or through traditional 
+active management, where they are usually 
+packaged as long-only investments at an 
+implicitly very high fee.
+The top layer is alpha. Of course, you 
+should take it if you can find it, but some 
+cynicism is warranted. The overall assump-
+tions about alpha are too heroic for the real 
+world, and, again, it cant save the pie (alpha 
+adds to zero across everyone). Admittedly, 
+our recommendations cannot save the pie 
+either. For everyone who does risk parity, 
+someone else must overweight equities 
+more than the market. For everyone who 
+adds a long-short value strategy, someone 
+must take on more growth risk, and so on. 
+But our recommendations are available 
+in far higher capacity to the investors who 
+would follow them than literal alpha in the 
+conventional sense. 
+True alpha can still help or even save 
+individual plans, so pursue it based on your 
+own honest assessment of your ability to 
+find it (net of high fees and with open eyes as 
+to whether it really comes from alternative 
+beta premia) and of your possession of the 
+resources required to do so. 
+O
+NE THEME 
+W
+E 
+W
+ANT TO EM
+P
+HA
+-
+size a
+t the risk of forcing double, maybe 
+triple, duty on the word is a very different 
+idea of alpha: that is, alpha in portfolio con-
+struction (and risk control to follow). This 
+does not involve the rare skill of traditional 
+alpha at the top of our pyramid but rather 
+represents the skillful combination and 
+management, including cost control, of the 
+various components of the portfolio. Long-
+run investment success requires identifying 
+attractive return sources, harvesting them 
+cost-effectively, diversifying among them 
+aggressively and overlaying smart risk con-
+trols. Many investors focus too much on 
+the first activity at the expense of the oth-
+ers. We believe that portfolio construction, 
+risk management and cost control are the 
+low-hanging fruit of managing a long-term 
+portfolio. Its far easier and more plausible 
+to add impactful value to the whole portfolio 
+net of fees through these concepts than the 
+more typical pursuit of alpha.
+Here are some specific suggestions for 
+improving a portfolio (alpha in construction 
+and control): 
+-
+ment underscores the importance of cost-
+effectiveness, whatever returns investors 
+are harvesting. When it comes to external 
+management, it is essential to not pay alpha 
+prices when its not really alpha. Fair fees 
+depend on the return source. 
+effe
+ctive diversification, it helps to use 
+meaningful measurement units. Measur-
+ing portfolio shares by dollar allocations 
+can be highly misleading. The 60-40 dollar 
+split between stocks and bonds may sound 
+balanced but is actually roughly a 90-10 risk 
+allocation given the greater risk of equities. 
+Risk parity investors have taken this mes-
+sage to heart, but it really applies to every 
+investor. Even if at the end of the day you 
+decide you are comfortable with a 90-10 risk 
+allocation into equities, it is better to invest 
+so with open eyes.
+div
+ersified portfolio across investments. 
+Investing in alternative products that are 
+highly market-directional, because many 
+such investments are highly correlated with 
+the equity market, only provides the illusion 
+of diversification. 
+-
+edly requires some amount of leverage,
+ 
+short-selling and derivatives. All should be 
+used in a prudent manner. They involve 
+risks, but we think these risks have proven to 
+be manageable even through some vicious 
+downturns. Return-seeking investors who 
+cannot or will not use these tools are resigned 
+to letting equity market direction drive their 
+portfolio performance.  
+One of our important messages is that you 
+get to choose your risks  for instance, two 
+paths to high expected returns are concentra-
+tion in aggressive assets (generally equities) 
+or prudent use of leverage applied to a more 
+diversified portfolio. Both concentration and 
+leverage are risky, and nobody should tell 
+you different. Sadly, you dont get to choose 
+high expected strategic returns without one 
+of these risks. But choosing to concentrate in 
+equities simply because it is the more com-
+mon choice does not make it any less scary 
+(in the absolute; it may be less scary relative 
+to your peers making a similar poor choice).
+A
+n investor who chooses to accept above-
+av
+erage risk will sustain above-average 
+losses in bad times and will not be well 
+positioned to buy when bargains appear.ASSET MANAGEMENT
+
+as in all forms of alpha, they are zero-sum. 
+We do not claim, nor could anyone claim, to 
+fix the problem of low expected real returns 
+for everyone. But on the other hand, we are 
+not just pointing to the magical, expensive 
+alpha of outperformance and saying, Solve 
+the problem by adding 2 to 3 percent a year. 
+That is not a recommendation; its a hope, 
+and typically a very elusive and expensive 
+one. We believe our recommendations are 
+concrete  clearly not doable for all inves-
+tors at once but certainly doable for a large 
+subset and at low cost.
+WE NO
+W
+ DELVE DEE
+P
+ER 
+I
+NTO OUR
+ 
+first recommendation: identifying diverse 
+return sources and harvesting them cost-
+effectively. Later sections will discuss the 
+value added from portfolio construction and 
+risk control. It is useful to think of the return 
+sources of any portfolio as a pyramid with 
+three layers, starting from the base, with the 
+highest-capacity and lowest-cost sources, 
+and moving up to the top, with the lowest 
+capacity and highest costs. 
+are the rewards for stable long-only holdings 
+in major asset classes
+. The equity premium 
+is the best known and most important, while 
+other examples include the term premium 
+(what long-term bonds earn over cash), 
+credit premium and commodity premium. 
+These premia have high capacity and low 
+fees when accessed, say, through index funds. 
+attention as inv
+estors have learned to appreci-
+ate that much of what is marketed as alpha can 
+be better understood as systematic alterna-
+tive risk premia. Some of the many examples 
+include the value premium, the premium 
+to basic convertible or merger arbitrage, the 
+premium to carry strategies and the extra 
+expected return from accepting illiquidity.
+the top of the pyramid. It has inherently low
+ 
+capacity and is a zero-sum game, so it must 
+be earned at the expense of other investors. If 
+true alpha is found, it should justify higher fees. 
+The average CIO faces myriad choices 
+when constructing a truly diverse portfolio, 
+but it is really simpler than its often made out 
+to be. We have recommendations for each of 
+the three layers. 
+At the base layer of market risk premia, we 
+believe risk-balanced allocations should be 
+favored. Instead of depending mostly on the 
+equity premium, as a 60-40 portfolio does, 
+investors should consider putting together 
+what has come to be called a risk parity port-
+folio, in which the importance of several 
+market risk premia are balanced. One liquid 
+version of a risk parity portfolio includes 
+one third of the risk budget in global equi-
+ties for growth, one third in global govern-
+ment bonds for deflation protection and one 
+third in real assets (commodity futures and 
+inflation-linked bonds) for inflation protec-
+tion. Such a portfolio can offer more robust 
+performance across macroeconomic sce-
+narios than a 60-40 portfolio, which excels in 
+a strong growth/stable inflation scenario and 
+tends to suffer amid weak growth and either 
+high inflation or deflation. More generally, 
+the risk parity portfolio tends to offer a higher 
+risk-adjusted return over the long term. 
+Importantly, the goal of risk parity port-
+folios is balanced risk allocation, not bal-
+anced dollar allocation. This results in more 
+effective diversification than found in risk-
+concentrated portfolios (such as the equity-
+dominated 60-40) and can lead to lower 
+volatility and higher risk-adjusted returns. 
+This volatility reduction may be capitalized 
+ converted into higher returns  by mod-
+erate use of leverage.
+In addition to very thorough global diver-
+sification, many risk parity portfolios are 
+also more effective at managing risk through 
+time, applying the same risk not dollars 
+approach by leveraging less when market 
+risk is higher. In the extreme, a risk parity 
+portfolio might employ no leverage in times 
+of exceptional market risk.
+Investors can, of course, overlay tactical 
+asset-class views on top of their risk parity 
+portfolio. We do not argue that the parity 
+portfolio is always conditionally optimal, but 
+we believe strongly in risk parity as a better 
+strategic base for such tactical views than a 
+portfolio, such as 60-40, that is quite strongly 
+tilted to benefit only in one type of economic 
+scenario (growth, for example). Long-run 
+success relies more on getting the long-run 
+allocations right than on large timing bets.
+We recognize that it may seem contradic-
+tory to recommend risk parity when bonds 
+are historically even more expensive than 
+stocks. Again, we stress that we recommend 
+risk parity as a better strategic allocation for 
+the long term. We understand the tactical 
+case for a bond underweight, but any such 
+underweight should start from the superior 
+strategic allocation of risk parity as described 
+above, and we recognize that when starting 
+from superior diversification, market timing 
+is not easy. Moreover, risk parity critics often 
+miss that bonds offer liability and tail hedg-
+ing services, besides enabling better risk-
+balancing. Real-world risk parity portfolios 
+are also better diversified and more robust 
+than narrow stock-bond portfolios. Last, 
+risk parity portfolios that target constant 
+volatility over time will cut the sizing of bond 
+positions if bond volatility rises.
+In the second layer of the pyramid, alter-
+native risk premia should be preferred to 
+traditional sources of alternative exposure. 
+When most investors think about alter-
+natives, hedge funds, private equity and 
+various other illiquid investments come first 
+to mind. However, these investments tend 
+to offer more equity market exposure than 
+desired in truly alternative returns. The cor-
+relation of both major hedge fund indexes 
+and private equity indexes with global equity 
+markets exceeded 0.8 in the past decade. 
+Although hedge fund marketing is all 
+about alpha, a drill-down into the indus
+-
+try track record suggests that hedge funds 
+deliver a combination of an embarrassing 
+amount of market risk premia (simply being 
+long stock market risk), alternative risk pre-
+mia and some alpha  not so much, but by 
+many measures at least positive.
+As for private equity, academic research 
+suggests that most funds are even weaker 
+on the key dimensions of performance, risk, 
+liquidity and costs. To clearly outperform 
+public markets, investors need to identify 
+top-quartile managers in advance. Otherwise 
+they are purchasing very expensive, leveraged 
+and illiquid forms of plain market beta.We believe strongly in risk parity as a 
+better strategic base for tactical views than 
+a portfolio that is quite strongly tilted 
+to 
+only benefit in one type of scenario.ASSET MANAGEMENT
+
+over time; until the 1960s stocks were considered 
+speculative investments.)
+Unfortunately, that favorable environ-
+ment belongs to the previous century. Since 
+1998 the ex-ante real yield of 60-40 has been 
+below 3 percent most of the time, making the 
+task of investors that much harder. At first 
+ say, during the period of 1998 to 2000  
+most investors took no notice because stock 
+markets boomed and return prospects were 
+wrongly judged on past performance, extrap-
+olating the future long-run equity premium 
+from what it had been in the past, rather than 
+on prospective yields, which at the same time 
+were falling as a result of excessive valuations. 
+In addition, while equities were getting very 
+expensive (low yields), bond yields were rela-
+tively high. After the tech boom turned into a bust and bond yields 
+fell, investors began to pay attention to forward-looking returns, 
+but hardly enough. 
+Currently, the prospective real yield on the 60-40 portfolio is 2.4 
+percent, its lowest level in 112 years. Roughly speaking, the ex-ante 
+real yield on stocks is 4 percent and bonds is zero percent  both 
+below their long-run average levels, with bonds well below. 
+There are really only three possibilities going forward. First, that 
+there has been a permanent change in fundamentals, such that real 
+equity earnings growth will be sustainably stronger than in the past, 
+making expected real returns from here much higher than the equity 
+yields imply. In the second scenario these yields will remain near their 
+current levels, and the expected real return of the 60-40 portfolio 
+will be permanently much lower than it was in the past. In the third 
+scenario these yields revert toward their historical averages, deliver-
+ing higher prospective returns after the reversion, but as this occurs 
+investors will experience a period of even worse realized returns as 
+rising asset yields cause capital losses. Both the second and third 
+scenarios strike us as plausible, but we are skeptics of the first, while 
+recognizing that dreams die hard.
+Of course, there will be market rallies, some quite substantial, 
+along any of these paths, but that does not change the fact that these 
+three are the only possible long-term future scenarios.
+It may surprise some that the prospective real return on 60-40 
+is now at a record low. After all, werent things worse, for instance, 
+near the peak of the tech bubble, when equities were so expensive? 
+Though equities are expensive today, they were far more expensive in 
+early 2000 (in the sense of high prices versus fundamentals, yielding 
+a low expected real return). Yet in early 2000 bonds were quite cheap 
+on a historical basis. Today is relatively unique in that both stocks and 
+bonds are expensive at the same time.
+Notice that throughout our history, while sometimes low and 
+sometimes high, the prospective real return on 60-40 has never 
+gotten seriously close to negative. However, there is another asset 
+whose near-term outlook is even worse and in fact negative. The 
+lower thin line in the figure above shows the ex-ante expected real 
+yield on cash (defined as Treasury bills less a short-term measure of 
+inflation). This cash yield is currently near record lows, 2.1 percent, 
+reflecting the central banks attempts to stimulate the economy by 
+pushing investors into riskier assets or providing cheap financing 
+for direct investments. This effort sustains the low prospective 
+return environment for all kinds of assets, but it can also offer direct 
+benefits for those who can borrow (finance their positions) at such 
+low rates. A key distinction, at least for the short term, is that one 
+could borrow at a real rate of 2.1 percent and buy a 60-40 portfolio 
+with a real yield of 2.4 percent, raising the prospective return on this 
+levered portfolio to 4.5 percent. This positive carry on risky assets 
+may balance some of the valuation concerns, for the time being. 
+Investors have two broad choices in how to respond to the stark news 
+delivered above. They could take a very long-term view and accept that 
+the 5 percent real return target is unlikely to be achieved in the next five 
+to ten years but perhaps is still a reasonable very long-term goal, making 
+plans according to these lower expectations. Or they could take action. 
+This article is about a set of actions, based specifically on our recom-
+mendations, of course! In particular, we recommend: 
+typical set that relies heavily on the equity r
+isk premium;
+label alpha in portfolio constr
+uction;
+approach, through the tough times.
+W
+e freely admit that all our recommendations fall into a strange 
+category. They are all alpha in the sense of a deviation from the 
+market portfolio of wealth that we expect will add to performance, 
+stability or both. But one should not pay alpha prices for the things 
+we propose. Some are strategic allocation recommendations, or bets 
+on a broad set of systematic strategies, while others are techniques for 
+combining these allocations and managing their risks. In addition, We are not just pointing to 
+the magical, expensive alpha 
+of outperformance and saying, 
+
+S
+olv
+e the problem by adding 
+2 to 3 percent a year.
+
+ 
+ASSET MANAGEMENT
+
+
+
+­
+
+
+
+­­
+
+­
+
+­
+
+¡­
+¡
+­­
+­
+¢­
+¢
+­
+
+£­
+£
+­
+
+­
+
+­
+ ­	 			
+
+	
+
+
+	 			
+
+ 
+		 ­	 			
+
+
+
+
+
+			 ­
+
+		
+
+		
+
+	
+
+¤
+
+
+
+
+		
+
+
+INST
+I
+TUT
+I
+ON
+AL 
+I
+NVEST
+ORS ARE 
+I
+N A 
+QUANDAR
+Y. 
+They commonly target 5 percent real annual returns, or 7 to 8 
+percent nominal returns. Starting from todays prices for stocks 
+and bonds, the likelihood of actually achieving those returns is low.
+When economist John Maynard Keynes was criticized for his 
+shifting policy views, he is believed to have responded: When the 
+facts change, I change my mind. What do you do? Unfortunately, 
+institutional investors have been reluctant to publicly accept the new 
+fact of those inconveniently low market yields. Instead of facing the 
+grave reality of past promises being unaffordable in a low-return 
+environment, these investors  or their sponsors  use overly 
+optimistic return expectations as a convenient way to keep kicking 
+the can further into the future.
+In recent years some investors have gingerly lowered their long-
+run return targets, but few institutions outwardly expect less than a 
+4 percent real return or 6 to 7 percent nominal return on their overall 
+portfolios. Over the past decade and a half, such expectations have 
+generally not been fulfilled, and most investors will likely be disap-
+pointed yet again over the coming decade. In fact, those with simple, 
+traditional portfolios like 60-40 U.S. stocks and bonds are even more 
+likely to be disappointed going forward. 
+Sadly, we cannot change these facts. In the following pages we 
+document the challenge (record-low forward-looking yields), review 
+common institutional responses 
+(highly equity-centric portfolios) 
+and give our recommendations 
+(more effective diversification). Specifically, we propose balanced 
+risk allocations across traditional market premia, truly diversifying 
+return sources from liquid alternative risk premia, and improvements 
+in portfolio construction and risk control. Admittedly, some of these 
+suggestions entail the use of direct leverage, which is an obvious risk, 
+although one that needs to be compared with the near-complete con-
+centration in equity market risk found in most institutional portfolios. 
+We believe that prudent use of leverage is a manageable and rewarding 
+risk to take. We think the ideas presented above can give the investors 
+who adopt them their best chance of getting close to 5 percent long-run 
+real returns.
+Current market yields and valuations make it very unlikely that 
+traditional allocations will achieve 5 percent real return in the next 
+five to ten years. These forward-looking measures have been correctly 
+sending the same message since the late 1990s. They are sending an 
+even stronger message today.
+As a proxy for expected long-term real returns, we compute the 
+prospective real yield of the traditional 60-40 U.S. stock and bond 
+portfolio. Our estimate of the real equity yield is a simple average of 
+(i) the smoothed earnings yield (the so-called Shiller price-earnings 
+ratio, inverted to become a yield) and (ii) the sum of the current 
+dividend yield and 1.5 percent, an assumed real rate of growth for 
+dividends per share. The real bond yield is the difference between the 
+long-term Treasury bond yield and a measure of long-term expected 
+inflation. The figure to the right (Time to Get Real) presents the 
+60-40 weighted average of the two real yields since 1900.
+Until the 1990s it was relatively easy to achieve 5 percent long-run 
+real returns. The long-run average real yield since 1900 is 5 percent, 
+and realized returns matched the promise of this prospective return 
+as the 60-40 portfolio delivered, on average, close to a 5 percent real 
+annual return. Indeed, this historical experience may have contributed 
+to the 5 percent real return becoming such a widely used target for 
+institutional investors with 60-40-like portfolios. (Skeptics might note 
+that trading costs and fees, not included here, were higher in the past 
+and would have reduced realized returns in past decades even more 
+than now. Moreover, 60-40 only evolved into an institutional standard 
+
+
+				
+	
+		
+
+	
+	 ­
+
+
+
+
+
+	
+ 	
+		
+	
+
+	
+	
+	
+
+		
+
+
+	
+		
+
+	
+
+	
+
+	
+
+
+				
+		
+	 
+
+		
+
+	
+
+	
+
+			
+		 
+			
+
+
+
+
+	
+	
+			
+	
+			 
+	
+
+
+
+	
+
+
+
+	
+
+
+	
+
+
+	
+
+	
+	
+		
+
+
+		
+				 
+			
+	
+
+
+
+
+	
+
+
+
+	
+
+
+	
+ 
+	
+					
+	
+	
+	
+
+	
+
+		
+	
+	
+
+
+		
+	
+ 
+
+		
+
+
+		
+		 
+
+				 
+ ­ 	
+
+
+
+			
+
+
+	
+	
+		
+
+	
+
+	
+
+		
+	
+
+	
+				
+
+
+	
+		
+ 
+
+			
+	
+			 ­
+	
+			
+		
+
+	
+
+
+
+	
+
+
+		
+
+
+		 
+ ­
+
+		
+ 
+	
+		
+	
+			
+
+		
+	
+	
+			
+	
+
+
+
+
+				 
+				
+		
+
+					
+
+				
+		
+ 
+
+	
+	
+
+		
+
+
+
+					
+			
+	
+ 
+
+			 
+					
+
+		
+	
+	
+
+	
+
+	 
+		
+					
+	
+
+		
+
+
+
+	
+	
+				
+ 
+	
+
+		
+		
+
+
+	
+	
+
+
+	
+		
+			
+			
+
+
+
+
+
+	
+	 
+	
+
+		
+						
+					
+						
+
+	
+		
+			
+
+				
+	
+ 
+				
+
+
+
+
+
+
+
+
+
+M
+odel Citizens
+A
+lternative 
+po
+rtfolios 
+share one 
+common risk
+I
+
+ASSET MANAGEMENT
+T
+he m
+u
+ch-c
+o
+v
+eted
+5 perce
+n
+t real rate 
+ 
+o
+f
+ return is d
+i
+fficult 
+to ac
+h
+iev
+e
+, but 
+f
+or 
+investors w
+i
+lling 
+to use 
+d
+erivativ
+es and 
+leve
+r
+age t
+h
+ere is a  
+potent
+i
+al way to 
+d
+o it. By Clifford 
+A
+sne
+ss and 
+A
+ntt
+i Ilmanen
+
+T
+he 5 Percent 
+S
+olut
+ion
+
+

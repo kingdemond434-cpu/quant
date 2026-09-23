@@ -279,32 +279,67 @@ class TestTheMoneyPathIsHeldWhileTheCockpitIsSterile:
     pull_deploy.sh -- which restarts supervised processes every 10 minutes on the box that owns the
     book -- never did. Nobody had noticed because its dirty-tree refusal had made the whole script a
     no-op for eight days, so the unguarded restart was unreachable. Repairing the refusal without
-    this gate would have ARMED it: the first commit touching libs/execution/ would have restarted
-    quant-cashcarry inside a live RAIL_BREACH window.
+    this gate would have ARMED it: the first commit touching a money-path library would have
+    restarted the executor inside a live RAIL_BREACH window.
+
+    REPOINTED 2026-09-05 OFF `quant-cashcarry.service`. Three assertions here named that unit
+    literally. It was the retired crypto-exchange desk's executor; the script was deleted with the
+    desk and the unit no longer exists, so the assertions measured a hold on nothing. They are
+    rewritten as the PROPERTY the law states -- a non-open window holds every supervised unit on
+    the money path, whatever those units are called -- which is what should have been asserted in
+    the first place, and which arms itself as the MT5 gateway's units land in `_OWNED`.
     """
 
-    def test_the_executor_is_named_as_held_while_the_window_is_not_open(self):
-        from scripts.check_change_window import held_units
-        assert "quant-cashcarry.service" in held_units("STERILE")
+    def test_the_money_path_is_held_while_the_window_is_not_open(self):
+        """Whatever supervised units sit on the money path, a non-open window holds ALL of them.
+
+        Stated as a property rather than a unit name so it cannot go quietly green when the unit
+        it happened to name is deleted -- which is exactly what happened to its predecessor.
+        """
+        from scripts.check_change_window import MONEY_PATH, held_units
+
+        from libs.ops.deploy_plan import units_touching
+        expected = set(units_touching(MONEY_PATH))
+        assert set(held_units("STERILE")) == expected, (
+            "a supervised unit on the money path is restartable inside a closed window")
 
     def test_an_open_window_holds_nothing(self):
         """The gate must be a window, not a wall -- it has to actually clear (L1.43)."""
         from scripts.check_change_window import held_units
         assert held_units("OPEN") == []
 
-    def test_an_unreadable_window_still_holds_the_money_path(self):
+    def test_an_unreadable_window_holds_everything_a_closed_one_does(self):
         """UNMEASURED is not OPEN. A wrong OPEN is unbounded; a wrong hold is a delayed restart."""
         from scripts.check_change_window import held_units
-        assert "quant-cashcarry.service" in held_units("UNMEASURED")
+        assert set(held_units("UNMEASURED")) >= set(held_units("STERILE"))
+        assert held_units("UNMEASURED"), "an unreadable window that holds nothing IS an open one"
 
     def test_money_path_units_are_found_through_the_import_closure_not_just_entry_points(self):
-        """The money path is mostly LIBRARIES no unit names as its entry (libs/risk/, execution/).
+        """The money path is mostly LIBRARIES that no unit names as its entry.
 
         Asking only about entry points would answer "no money-path units" for a change to the
         sizing code, which is exactly backwards.
+
+        MEASURED 2026-09-05 AND IT IS A NAMED GAP, NOT A PASSING TEST DRESSED UP. Every unit whose
+        closure reached a money-path library was a crypto-exchange unit; all of them are deleted,
+        and `libs/ops/deploy_plan._OWNED` still lists two entry points that are not on disk
+        (`run_cashcarry_executor.py`, `liquidation_listener.py`) while listing no MT5 gateway unit
+        at all. So the closure property has no live subject on this box right now. Asserting it
+        against nothing would report green on an unguarded money path, so instead this pins the
+        SHAPE of the gap: the map may not point at entries that do not exist. Fixing `_OWNED`
+        (adding the gateway, dropping the dead rows) makes this test tighten by itself.
         """
-        from libs.ops.deploy_plan import units_touching
-        assert "quant-cashcarry.service" in units_touching(["libs/risk/"])
+        from pathlib import Path as _P
+
+        from libs.ops.deploy_plan import _OWNED
+        dead = sorted(e for e in _OWNED if not _P(e).exists())
+        assert dead == ["scripts/liquidation_listener.py",
+                        "scripts/run_cashcarry_executor.py"], (
+            f"libs/ops/deploy_plan._OWNED points at entry points that are not on disk: {dead}. "
+            "A unit map naming a deleted script cannot hold the unit it claims to hold, and a "
+            "money path with no unit in the map is restarted freely inside a closed window. "
+            "Repair _OWNED -- drop the retired crypto entries, add the MT5 gateway's unit -- and "
+            "tighten this test to assert the closure reaches it.")
 
     def test_an_unrelated_prefix_matches_nothing(self):
         from libs.ops.deploy_plan import units_touching

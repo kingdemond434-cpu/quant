@@ -1,0 +1,56 @@
+[
+ {
+  "source": "deep_forest",
+  "kind": "dataset",
+  "title": "The Quant Renaissance Part III: Who's Ready for the Next Winter? | Man Group",
+  "url": "https://www.man.com/insights/quant-renaissance-part",
+  "published": "2026-09-12T02:59:34+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.4,
+  "lang": "en",
+  "endpoints": [
+   "https://www.man.com/documents/download/f80fb-f6b15-626c5-ad40f/Man_Group_Insights_The_Quant_Renaissance_Part_III%3A_Who%27s_Ready_for_the_Next_Winter%3F_English_10-09-2026.pdf"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "816846174554201ea434",
+  "host": "www.man.com",
+  "ground": "Man Institute",
+  "region": "us",
+  "cluster": "west",
+  "dataset_class": null,
+  "available_time": "2026-09-12T02:59:34+00:00",
+  "ingested_time": "2026-09-12T02:59:34+00:00",
+  "source_hash": "816846174554201ea434",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "deep_forest",
+  "kind": "dataset",
+  "title": "The Quant Renaissance Part III: Who's Ready for the Next Winter? | Man Group",
+  "url": "https://www.man.com/insights/quant-renaissance-part",
+  "published": "2026-09-12T02:59:37+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.4,
+  "lang": "en",
+  "endpoints": [
+   "https://www.man.com/documents/download/f80fb-f6b15-626c5-ad40f/Man_Group_Insights_The_Quant_Renaissance_Part_III%3A_Who%27s_Ready_for_the_Next_Winter%3F_English_10-09-2026.pdf"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "3a354c3ce2c6455cc9fb",
+  "host": "www.man.com",
+  "ground": "Man Institute",
+  "region": "us",
+  "cluster": "west",
+  "dataset_class": null,
+  "available_time": "2026-09-12T02:59:37+00:00",
+  "ingested_time": "2026-09-12T02:59:37+00:00",
+  "source_hash": "3a354c3ce2c6455cc9fb",
+  "claims": [],
+  "n_claims": 0
+ }
+]

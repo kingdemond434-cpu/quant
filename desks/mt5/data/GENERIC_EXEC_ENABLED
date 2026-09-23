@@ -1,0 +1,17 @@
+GENERIC EXECUTION ARMED -- 2026-09-03, principal instruction ("do 1 and 2 and 3").
+
+WHAT THIS AUTHORISES, precisely: gateway.run_family_sleeves() may place real orders for sleeves
+the promoter admitted with exec="family_market". Nothing else. It does not promote anything, it
+does not size anything, and it does not touch the gold book or any window sleeve.
+
+WHY IT IS A FILE. Wiring reached the family-executor path long before anyone decided the lane
+should trade; keeping arming as a separate artifact means the code can be finished, tested and
+reviewed while orders stay LOG-ONLY. Deleting this file disarms the lane immediately -- the
+gateway reads it on every pass, so disarming does not wait for a restart.
+
+WHAT NOW HAPPENS THAT DID NOT BEFORE: a generic-family sleeve that reaches PROMOTION_CANDIDATE on
+its own forward clock, and whose spec is in the exact-gate authority set, goes live at
+PROMOTED_RISK_FRAC base risk without a further human act. That is the intended effect -- 36 of
+the desk's 57 certified survivors route through this lane -- and it is also the whole risk:
+promotion is now unattended for this class. The promoter's retire rules (n>=10 with rolling-20
+exp <= 0, maxDD < -25R, n>=50 with exp < 0.05R) are what stands under it.

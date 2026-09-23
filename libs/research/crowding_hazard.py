@@ -27,6 +27,20 @@ strategy the desk is ALREADY RUNNING is being competed away, which is a question
 keep paying for it. Different input, different consumer, no overlap.
 
 Measures and warns. Retires nothing -- `strategy_pool` and the allocator own that.
+
+**WHO CALLS IT (2026-09-05).** This module was correct and had NO IMPORTER on the desk for as
+long as it existed: a leading decay indicator nothing read, which is the same as not having one.
+`desks/mt5/research/drift_monitor.crowding` now builds a `CrowdingState` per instrument from the
+desk's own book evidence -- the spread rank this pass already forecasts against its long-run
+baseline, and the execution twin's realised fill rate and slip against what the simulator
+charged -- and `hazard()` becomes the CROWDING channel of the per-sleeve edge hazard written into
+reports/DRIFT.json. The 60-observation floor is respected there rather than worked around: below
+it this module returns None with its reason and the channel reads UNMEASURED.
+
+The horizon conversion is the caller's, not this module's: `libs.research.perishability` inverts
+the probability returned here back through the SAME `rate = pressure / 120` scale declared below,
+so the crowding channel weighs exactly what the other eight monitored channels do and does not
+silently change weight when the horizon moves.
 """
 
 from __future__ import annotations

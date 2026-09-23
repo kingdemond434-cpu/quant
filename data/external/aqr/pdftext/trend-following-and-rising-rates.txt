@@ -1,0 +1,1499 @@
+Trend Following and Rising Rates 
+1
+ 
+Introduction 
+Trend followers, formally known as Commodity 
+Trading Advisors, or CTAs, have benefited from a 
+sustained decline in global interest rates over the 
+past few decades. Over this period, CTAs have 
+generally been positioned long in fixed income 
+markets and generated substantial profits from 
+the persistent positive performance of these 
+markets. Additionally, fixed income markets have 
+tended to do well in large equity drawdowns 
+during this time, helping CTAs generate 
+diversifying returns during equity bear markets. 
+Given the current low yields in global bond 
+markets and the possibility of a rising rate 
+environment going forward, two questions 
+regarding trend-following strategies are often 
+asked. First, can trend followers benefit from the 
+uncertain impacts of rising yields on asset class 
+returns? Second, if trend followers get short fixed 
+income, will the strategy maintain its 
+diversification properties? 
+We attempt to address these questions by 
+examining the performance of a hypothetical 
+simple trend-following strategy
+1
+ during a 
+historical period of secularly rising rates. History 
+demonstrates that trend followers would not have 
+required declining rates to generate meaningful 
+ portfolio 
+diversification properties would not be 
+diminished during rising rate regimes. We value 
+the insights we glean from the historical data as 
+they provide an enhanced understanding of the 
+strategy and its attributes. 
+ soon see, 
+rising interest rates can create exploitable trends 
+in fixed income assets and benefit the strategy. 
+Similarly, the ability of a trend follower to go both 
+long and short helps the strategy maintain its 
+diversification properties with respect to 
+drawdowns in the asset class
+es
+ it trades, (e.g., 
+equities).
+  
+ 
+1
+ Our simple trend-following strategy is an equal weighted combination of 1-
+month, 3-month and 12-month time series momentum strategies for 67 
+markets across commodities, equity indices, bond markets and currency pairs.  
+Prior to the availability of futures data, we rely on cash index returns financed 
+at local short rates.  The positions across the three strategies are aggregated 
+each month, and scaled such that the combined portfolio has an annualized ex-
+ante volatility target of 10%.  The returns are net of estimated transactions 
+-
+Following Investing
+on this analysis. 
+Exhibit 1
+ 
+ 
+History of U.S. 10 Year Government Bond Yields 
+Source: AQR
+. 
+Analysis is for the time period November 1945
+April 2013.  The above analysis is using the U.S. 10
+-
+Year Treasury Yields as a proxy for 
+performance is not a guarantee of future performance.
+ 
+0%
+2%
+4%
+6%
+8%
+10%
+12%
+14%
+16%
+18%
+1945
+1950
+1956
+1962
+1967
+1973
+1979
+1984
+1990
+1996
+2001
+2007
+2013
+Rising Rates
+ 
+Falling Rates
+ 
+
+2 
+Trend Following and Rising Rates 
+Trend Following in a Rising Rate Regime 
+We start by looking at the long-term history of 
+U.S.
+2
+ 
+10
+-year government bond yields from 1945 
+through 2013 in Exhibit 1.  
+We chose this time period because it represents a 
+full round trip on U.S. 10-year Treasury yields, 
+starting at a secular low of 1.6% in 1945, peaking 
+at 15.8% in 1981 and declining roughly back to 
+2013. 
+In 
+Exhibit 2, we further divide this time 
+period to understand the performance and 
+diversification benefits of the simple trend-
+following strategy during the periods of rising 
+rates, falling rates and in each decade over the 
+entire period.  
+The results show that the simulated simple trend-
+following strategy realized a higher average 
+2
+ The Appendix analyzes the interest rate regimes of other countries, 
+such as Australia, Canada, Germany, Japan and the U.K., as well. 
+annualized return and Sharpe ratio over the 
+period of secularly rising rates than during the 
+period of declining rates, which might seem 
+surprising. Importantly, the strategy also 
+maintained attractive portfolio diversification 
+properties as measured by the correlations to 
+broader U.S. equity and bond markets in both 
+periods. The strategy exhibited negative 
+correlation to U.S. bond markets during the 
+period of rising rates, while importantly 
+maintaining a low (slightly negative) correlation 
+to equity markets over the same period. 
+Digging deeper, we examine the performance of a 
+hypothetical trend-following strategy in each 
+asset class separately during the rising and falling 
+rate periods to compare return characteristics. 
+The standalone asset class portfolios each target 
+a 
+10% annualized volatility and are net of 
+estimated transactions costs and gross of fees. We 
+split the rising rate period into pre- and post-
+1975
+, 
+Exhibit 2
+ 
+ 
+Hypothetical Performance of Time Series Momentum: Rising Rates vs. Falling Rates 
+Source: AQR
+. 
+T
+he 
+Full sa
+mple 
+time period 
+is 
+from 
+November 1945
+April 2013.  The above analysis is using the U.S. 10
+-
+Year Treasury Yields. The Hypothetical Trend
+-
+Following Strategy performance is a backtest net of 2/20 fees and estimated transaction costs. Markets considered only where 
+data existed during
+ 
+the time period. 
+Please read performance disclosures 
+at the end of this document
+ 
+for a description of the investment universe and the allocation methodology used to construct the 
+Trend
+-
+Following Strategy and for details on the construction of the U.S. Equ
+ity series. Hypothetical performance results have inherent limitations, some of which are 
+disclosed 
+at the end of this document
+. Past performance is not a guarantee of future performance.  
+ 
+
+Time Period
+Change in 10-
+Year Bond Yields 
+(bps)
+Net of 2/20 Fee 
+Returns 
+(Annualized)
+Realized 
+Volatility 
+(Annualized) 
+Sharpe 
+Ratio
+U.S. Equity 
+Market 
+Correlation
+U.S. 10-Year 
+Bond 
+Correlation
+By Subperiod
+Rising Rates:
+1945-1981
++1429 bps
+15.4%
+10.2%1.12
+-0.02
+-0.29
+Falling Rates:
+1981-2013
+-1414 bps
+11.7%
+9.2%0.79
+-0.07
+0.18
+Full Sample
++15 bps
+13.7%
+9.7%0.97
+-0.04
+-0.06
+By Decade:
++25 bps
+9.0%
+12.4%0.66
+0.18
+0.14
++289 bps
+15.1%
+9.0%1.45
+0.23
+-0.19
++319 bps
+10.0%
+10.9%0.56
+-0.09
+-0.37
++245 bps
+21.3%
+9.0%1.70
+-0.24
+-0.24
+-240 bps
+17.8%
+9.5%0.96
+0.18
+-0.15
+-148 bps
+13.2%
+8.5%0.98
+0.01
+0.20
+-260 bps
+9.0%
+10.4%0.61
+-0.34
+0.27
+-215 bps
+6.2%
+7.7%0.80
+-0.18
+0.16
+
+Trend Following and Rising Rates 
+3
+ 
+as this is when we begin to have comprehensive 
+currency market returns.  
+During the rising rate period, fixed income trend 
+following performed positively, as seen in Exhibit 
+3.The strong positive performance in the 1975 to
+1981 period is particularly noteworthy as yields 
+rose over 800 basis points in a six-year period. 
+Most of this rise came between 1979 and 1981, 
+when Paul Volcker served as Chairman of the 
+Federal Reserve and aggressively hiked interest 
+rates to lower the rate of inflation. Over the 
+rising-rate period, trend following was positioned 
+short fixed income approximately 50% of the 
+time, and was short almost entirely from 1979 to 
+1981. We also note, as seen in Exhibit 4, that 
+during the 1979 to 1981 period, the U.S. yield 
+curve was inverted for a meaningful amount of 
+time. Hence, shorting bond futures during this 
+period may have generated positive carry and roll 
+yield relative to other periods when carry and roll 
+yield could have been a headwind to shorting.  
+In the falling-rate period, we see trend following 
+in fixed income outperforming other asset 
+classes. During this period, the hypothetical 
+simple trend-following strategy was generally 
+long fixed income approximately 72% of the time, 
+capturing the broad secular decline in global 
+interest rates. The general conclusion we glean 
+from this data is that trend following in fixed 
+income has the ability to generate strong 
+outcomes in both rising- and falling-rate periods. 
+Diversification Properties in Rising Rate 
+Environments 
+What about the diversification benefits of trend 
+following during a rising rate period? We 
+specifically look at how the hypothetical simple 
+trend following strategy performed during the 
+five largest equity market drawdowns over the 
+1945 to 1981 period to determine whether trend 
+following had the ability to protect equity 
+sensitive portfolios. As Exhibit 5 shows, the 
+strategy performed well during these equity 
+market drawdowns, and would have likely 
+. 
+Exhibit 3
+ 
+ 
+Hypothetical 
+Trend Following 
+Average Annualized
+ 
+Excess Returns 
+b
+y Asset 
+Class
+ 
+Exhibit 
+4 
+ 
+U.S. Government Yield Curves
+ 
+1979 to 1981
+ 
+Source: AQR. Data above is from November 1945 through 
+April
+  
+2013. 
+ 
+ 
+Hypothetical annual 
+gross
+ 
+of fees,
+ 
+excess of cash 
+performance for each of the 
+four primary asset classes in the 
+H
+ypothetical Trend
+-
+Following 
+Strategy. 
+Hypothetical performance results have inherent limitations, some of which are 
+disclosed 
+at the 
+end of this document
+. Past performance is not a guarantee of 
+future performance.
+ 
+Source: AQR. The above analysis is using the U.S. 10
+-
+Year Treasury Yields as a 
+ 
+11%
+ 
+7%
+ 
+6%
+ 
+12%
+ 
+1%
+ 
+4%
+ 
+9%
+ 
+20%
+ 
+8%
+ 
+15%
+ 
+6%
+ 
+0%
+5%
+10%
+15%
+20%
+25%
+1945-1975
+(Rising Rates)
+1975-1981
+(Rising Rates)
+1981-2013
+(Falling Rates)
+Commodity
+Equity
+Fixed Income
+Currencies
+10%
+11%
+12%
+13%
+14%
+15%
+3M
+1Y
+2Y
+5Y
+10Y
+12/31/1979
+12/31/1980
+6/30/1981
+
+4 
+Trend Following and Rising Rates 
+Exhibit 5
+ 
+ 
+Rising Rates and Equity Drawdowns: 
+Hypothetical 
+Trend Following 
+Total 
+Excess 
+Returns During Equity Market Drawdowns 
+ 
+ 
+Source: AQR
+.
+ 
+Analysis is for the time period November 1945
+September 
+1981. The Hypothetical Trend
+-
+Following Strategy performance is a 
+backtest 
+net of 2/20 fees and estimated transaction costs. Please read performance 
+disclosures 
+at the end of this document 
+for a description of the investment 
+universe and the allocation methodology used to construct the Trend
+-
+Following 
+Strategy
+ 
+and U.S. Equity series
+. 
+Markets considered only where data existed 
+during the time period. 
+Hypothetical performance results have inherent 
+limitations, some of which are disclosed 
+at the end of this document
+. Index 
+performance does not include fees and exp
+enses. Past performance is not a 
+guarantee of future performance. 
+ 
+Exhibit 6 analyzes each drawdown to better 
+understand how trend following in different asset 
+classes performed. Importantly, equity trend 
+following saw positive returns in each, indicating 
+that the diversification properties of trend 
+following has the ability to 
+co
+me from short 
+positions in equity markets, and not only from 
+long positions in fixed income. In fact, during 
+these historical equity market drawdowns, the 
+average excess return of the U.S. 10 year 
+government bond was also negative 
+(approximately -3.2%), with trend following in 
+fixed income generally benefiting as well.  
+Exhibit 6
+ 
+ 
+Rising Rates and Equity Drawdowns: 
+Asset Class 
+Hypothetical 
+Trend Following 
+Excess Returns
+ 
+Source: AQR
+. Analysis is for the time period 
+November 1945 
+September 
+1981. Hypothetical annual 
+gross excess of cash 
+performance for each of the 
+four primary asset classes in the 
+hypothetical Trend
+-
+Following
+ 
+Strategy. 
+Markets considered only where data existed during the time period. 
+Hypothetical performance resul
+ts have inherent limitations, some of which are 
+disclosed 
+at the end of this document
+. Past performance is not a guarantee of 
+future performance. 
+ 
+One key reason for the preceding results is related 
+to the way trend-following strategies are 
+designed. Historically, the majority of large bull 
+and bear markets have tended to occur gradually, 
+over a period of months or years, rather than 
+overnight. As a result, the performance of trend 
+following strategies has tended to be stronger 
+during large market moves, regardless of whether 
+markets have risen or fallen. This tendency can 
+usually shown relative to equity market returns, 
+portfolios. 
+ 
+across other asset classes. In Exhibit 7
+, 
+we show 
+the annual returns of the hypothetical trend-
+following strategy relative to the annual excess 
+returns of the U.S. 10 Year government bond, and 
+highlight the 1979 to 1981 years (in green). 
+-
+22%
+ 
+-
+22%
+ 
+-
+17%
+ 
+-
+30%
+ 
+-
+47%
+ 
+7%
+ 
+11%
+ 
+28%
+ 
+65%
+ 
+124%
+ 
+-60%
+-40%
+-20%
+0%
+20%
+40%
+60%
+80%
+100%
+120%
+140%
+May 1946 -
+Nov 1946
+Dec 1961 -
+Jun 1962
+Jan 1966 -
+Aug 1966
+Nov 1968 -
+Jun 1970
+Dec 1972 -
+Sep 1974
+U.S. Equity
+Trend-Following Excess Returns
+6%
+ 
+7%
+ 
+16%
+ 
+33%
+ 
+79%
+ 
+9%
+ 
+16%
+ 
+1%
+ 
+25%
+ 
+25%
+ 
+-
+3%
+ 
+0%
+ 
+33%
+ 
+42%
+ 
+44%
+ 
+-20%
+0%
+20%
+40%
+60%
+80%
+100%
+May 1946 -
+Nov 1946
+Dec 1961 -
+Jun 1962
+Jan 1966 -
+Aug 1966
+Nov 1968 -
+Jun 1970
+Dec 1972 -
+Sep 1974
+Commodity
+Equity
+Fixed Income
+
+Trend Following and Rising Rates 
+5
+ 
+Exhibit 7
+ 
+ 
+Hypothetical Trend Following 
+Excess 
+Returns (1880 to 201
+4
+)
+ 
+Source: AQR.
+ 
+The Hypothetical Trend
+-
+Following Strategy performance is a 
+backtest, net of 2/20 fees
+,
+ 
+estimated transaction costs
+ 
+and cash
+. Please read 
+performance disclosures 
+at the end 
+of this document
+ 
+for a description of the 
+investment universe and the allocation methodology used to construct the 
+Trend
+-
+Following
+ 
+Strategy. Markets considered only where data existed during 
+the time period.  Hypothetical data has inherent limitations, som
+e of which are 
+disclosed 
+at the end of this document
+. Past performance is not a guarantee of 
+future performance.  The 
+green
+ 
+line represents the statistical best
+-
+fit line for 
+the scatterplot shown. Labeled points represent years with extreme positive or 
+neg
+ative performance.
+ 
+When the Fed Hikes Rates 
+1979 through 1981 provide one clear example of 
+how trend following may be able to benefit in an 
+environment where yields rise dramatically. We 
+also take a look at other historical rising policy 
+rate scenarios to understand how trend following 
+performed during those episodes. Exhibit 8 shows 
+the next 
+10
+ largest U.S. policy rate increases
+3
+, and 
+the performance of the hypothetical simple trend-
+following strategy in the initial month of the rate 
+increase and during the six months before and 
+after the initial rate increase.  
+The study indicates that trend-following tended 
+to produce positive excess returns before and 
+after the initial policy rate increases in this 
+sample. We do see weaker performance in the six 
+months leading to the commencement of rate 
+hikes, and modestly negative excess returns in 
+the month of the initial rate increase. To the 
+extent existing trends reversed around initial rate 
+3
+We include discount rates from the Federal Reserve Bank of New York 
+from November 1914 to June 1954 when we use the effective federal 
+funds rate. 
+-30%
+-20%
+-10%
+0%
+10%
+20%
+30%
+40%
+50%
+60%
+70%
+-15%
+-10%
+-5%
+0%
+5%
+10%
+15%
+Simple Trend
+-
+Following Strategy  
+Annual Excess Returns
+ 
+U.S. 10 Yr Bond Annual Excess Returns
+ 
+1981
+ 
+1980
+ 
+Exhibit 8
+ 
+ 
+Hypothetical Trend Following Excess Returns During U.S. Policy Rate Increases
+ 
+Source: AQR. The Hypothetical Trend
+-
+Following Strategy performance is a backtest
+, net of 2/20 fees and estimated transaction costs. Please read performance 
+disclosures 
+at the end of this document
+ 
+for a description of the investment universe and the allocation methodology used to construct the Trend
+-
+Following Strategy. 
+Markets consider
+ed only where data existed during the time period. Hypothetical data has inherent limitations, some of which are disclosed 
+at the end of this document
+. 
+Past performance is not a guarantee of future performance. 
+ 
+1979
+ 
+
+Start
+EndMonthsChange
+March 1972August 1973
+17
+600bps
+December 1976December 1978
+24
+525bps
+June 2004June 2006
+24
+425bps
+March 1974July 19744
+400bps
+October 1968August 1969
+10
+338bps
+July 1958October 1959
+15
+325bps
+March 1988March 1989
+12
+325bps
+February 1994February 1995
+12
+300bps
+January 1982April 19823
+300bps
+October 1919June 1920
+8250bps
+13
+379bps
+-1.5%
+-1.6%
+-0.3%
+-1.9%
+0.8%
+3.4%
+2.7%
+-3.3%
+7.7%
+-0.9%
+Excess Return
+6m Prior to and 
+Including Initial Rate 
+Increase
+8.1%
+8.8%
+-4.4%
+Policy Rate Changes
+Initial Month of 
+Rate Increase
+Excess Return
+0.4%
+9.8%
+3.6%
+-5.6%
+-0.6%
+-1.2%
+-0.8%
+Average
+-1.9%
+4.7%
+2.5%
+6m After Initial Rate 
+Increase
+Excess Return
+2.8%
+7.3%
+5.5%
+17.1%
+12.8%
+4.3%
+19.6%
+3.2%
+5.8%
+19.8%
+
+6 
+Trend Following and Rising Rates 
+increases, we might expect losses for the strategy 
+as markets digested the change 
+in
+ course.  
+However, weaker average performance leading 
+up to and negative average performance in the 
+initial month of the rate increase appear short-
+lived. There tended to be a period of stronger 
+positive excess returns in the months that 
+fo
+llowed, when policy rates continued to rise. 
+A 
+possible reason for this is that the new course in 
+policy rates became part of market 
+expectations, meaning fewer reversals around 
+subsequent rate increases. Initial increases could 
+also have been possible catalysts for new trends, 
+causing an initial under-reaction that 
+subsequently led to trending behavior.
+4
+  
+Starting Point Nominal Bond Yields 
+Given our long-term data, we can also extend our 
+analysis to understand how trend following might 
+perform at different historical starting points for 
+4
+ 
+ 
+bond yields
+ levels. 
+We know low starting yields may portend 
+relatively anemic returns for fixed income going 
+forward, but what do they mean for the 
+performance of trend following? Exhibit 9 shows 
+the long-term excess returns of trend following 
+associated with initial bond yields from 1880 to 
+2014, as well as the long-term excess returns of 
+passively holding a U.S. 10 year bond. 
+Across the range of starting point yields for 
+bonds, trend following subsequently generated 
+positive long-term excess returns on average. The 
+strategy tended to have better long-term 
+performance near the extremes, and weaker 
+performance metrics in the middle-range of this 
+sample. The data demonstrates it is possible for 
+trend following to generate strong long-term 
+excess returns starting with the low bond yields 
+we have today. We caveat this with the 
+understanding that the level of yields alone 
+Exhibit 9
+ 
+ 
+Starting Bond Yields
+ 
+and Hypothetical Long
+-
+Term Trend Following Excess Returns
+ 
+Source: AQR.  The Hypothetical Trend
+-
+Following Strategy performance is a backtest, net of 2/20 fees and estimated transaction costs. Please read performance 
+disclosures 
+at the end of this document
+ 
+for a description of the investment universe and the alloca
+tion methodology used to construct the Trend
+-
+Following Strategy. 
+Markets considered only where data existed during the time period. Hypothetical data has inherent limitations, some of which 
+are disclosed in 
+at the end of this 
+document
+.  We use U.S. 10 Year
+ 
+Government Bond returns. Past performance is not a guarantee of future performance
+.  
+ 
+
+DecileLowHigh
+Average
+Average Worst Best 
+11.6%2.4%
+0.1%
+11.1%7.5%13.4%
+22.4%3.0%
+0.1%
+7.8%1.0%13.6%
+33.0%3.2%
+-0.6%
+4.9%0.0%11.6%
+43.2%3.4%
+0.1%
+4.5%-1.0%10.0%
+53.4%3.6%
+0.2%
+4.3%-1.2%9.9%
+63.6%3.9%
+0.6%
+7.1%2.3%9.9%
+73.9%4.7%
+0.6%
+9.1%4.4%15.2%
+84.8%6.3%
+1.3%
+10.2%5.1%17.6%
+96.4%8.0%
+0.8%
+11.0%6.0%17.2%
+10
+8.0%15.8%
+2.2%
+8.3%6.2%12.0%
+Starting 10Yr Govt 
+Bond Yield
+Subsequent 10 Year 
+Annualized Excess 
+Return of 10 Yr Bond
+Subsequent 10 Year Trend 
+Following Annualized Excess 
+Returns
+
+Trend Following and Rising Rates 
+7
+ 
+fixed income and other asset classes took from 
+the time of these starting points. 
+Conclusion 
+To conclude, the preceding analysis provides a 
+foundation on which we can consider how rising 
+yields could impact the performance of a trend 
+following strategy. Our data indicates that while 
+trend followers may have generated a significant 
+portion of their returns from bullish trends in 
+fixed income markets during the past few 
+diversification properties will necessarily worsen 
+when rates begin to rise.  History provides us with 
+one particular path for interest rates, and that 
+path shows the possibility for very strong trend-
+following excess returns in a period of rising 
+interest rates over multiple decades and asset 
+classes.  
+Looking ahead, we make two concluding point
+s 
+with respect to returns when interest rates begin 
+to rise.  First, as much of our analysis examines 
+excess returns, we note that total returns can 
+benefit from increases in short-term interest 
+rates. Trend-following strategies hold 
+a 
+large 
+percentage of cash given their use of derivatives 
+to build positions. Should short-term interest 
+rates rise, investors should be able to achieve 
+better returns from this component of total return 
+relative to recent history.
+  
+Second, while we 
+cannot forecast the future path of interest rates, 
+a 
+trend-following strategy is designed to benefit 
+when markets experience gradual and persistent 
+changes in either direction.  
+ability to go both long and short in fixed income 
+and other asset classes will potentially deliver an 
+attractive and diversifying return stream 
+regardless of the direction of interest rates. 
+
+8 
+Trend Following and Rising Rates 
+Appendix 
+We acknowledge that our analysis is U.S. centric, so below, we show a summary of trend-following 
+returns for Australia, Canada, Germany, Japan and the U.K. during their respective risi
+ng
+-rate and 
+falling-rate periods using their 10-year (or longer maturity if unavailable) bond yields. The trend-
+being the start and end dates for the rising and falling rate periods, as well as the cash rates used to 
+calculate total net-
+of
+-fee returns.  One important point is that we see peak yields happening at different 
+times in North America, Europe and Japan, underscoring the importance of asset diversification when 
+constructing a trend-following portfolio, even within an asset class.  Despite some differences, the 
+conclusion of the main analysis, that trend following strategies can achieve attractive returns and 
+diversification properties in both rising and falling rate regimes, remains intact. 
+Exhibit 
+10
+ 
+ 
+Hypothetical Performance of Time Series Momentum: Rising Rates vs. Falling Rates 
+Across Countries
+ 
+Source: AQR
+.
+ 
+The Hypothetical Trend
+-
+Following Strategy performance is a backtest
+, net of 2/20 fees and estimated transaction costs. Please read 
+performance disclosures 
+at the end of this document
+ 
+for a description of the investment universe and the allocation methodology used to construct the 
+Trend
+-
+Following Strategy. Markets considered only where data existed during the time period. Hypothetical data has inherent limitat
+ions, some of which 
+are di
+sclosed 
+at the end of this document
+. Past performance is not a guarantee of future performance.
+ 
+The table shows correlations to global stocks and 
+bonds.  We created global market proxies based on equal weighted historical asset returns for equity indices a
+nd bond markets in our dataset, and 
+assumed monthly rebalancing. 
+ 
+ 
+
+Time Period
+Change in Bond 
+Yields (bps)
+Net of 2/20 
+Fee Returns 
+(Annualized)
+Realized 
+Volatility 
+(Annualized) 
+Sharpe 
+Ratio
+Global Stock 
+Correlation
+Global Bond 
+Correlation
+Australia 
+By Subperiod
+Rising Rates:1941-1982
++1351 bps
+15.7%
+9.9%1.19
+0.05
+-0.24
+Falling Rates:1982-2012
+-1337 bps
+15.2%
+9.4%0.78
+-0.03
+0.23
+Full Sample
++14 bps
+15.4%
+9.7%1.02
+0.01
+-0.03
+Canada
+By Subperiod
+Rising Rates:1947-1981
++1511 bps
+15.4%
+10.2%1.05
+-0.01
+-0.32
+Falling Rates:1981-2011
+-1517 bps
+13.4%
+9.3%0.80
+-0.01
+0.19
+Full Sample
+-6 bps
+14.4%
+9.8%0.94
+-0.01
+-0.05
+Germany
+By Subperiod
+Rising Rates:1948-1974
++648 bps
+14.0%
+10.0%1.05
+0.04
+-0.31
+Falling Rates:1974-2003
+-688 bps
+14.9%
+8.9%1.08
+0.01
+-0.02
+Full Sample
+-40 bps
+14.4%
+9.4%1.06
+0.02
+-0.10
+Japan
+By Subperiod
+Rising Rates:1948-1961
++1113 bps
+18.0%
+9.5%1.10
+0.22
+-0.16
+Falling Rates:1961-1995
+-1119 bps
+15.2%
+9.4%1.07
+0.01
+-0.20
+Full Sample
+-6 bps
+16.0%
+9.5%1.08
+0.06
+-0.19
+United Kingdom
+By Subperiod
+Rising Rates:1946-1974
++1490 bps
+14.4%
+10.4%0.98
+0.01
+-0.27
+Falling Rates:1974-2012
+-1465 bps
+15.9%
+9.3%0.91
+-0.03
+0.05
+Full Sample
++25 bps
+15.2%
+9.8%0.93
+-0.01
+-0.04
+
+Trend Following and Rising Rates 
+9
+ 
+Trend-Following Strategy
+ 
+The Trend-Following Strategy 
+-released paper 
+Trend-
+ (2014).  That strategy was constructed with an equal-weighted combination of 1-month, 3-
+month, and 12-month Trend-Following strategies for 67 markets across 4 major asset classes 
+29 commodities, 11 equity 
+indices, 15 bond markets, and 12 currency pairs 
+ from January 1880 to December 2014. Since not all markets have return 
+data going back to 1880, we construct the strategies using the largest number of assets for which return data exist at each 
+point in time. We use futures returns when they are available. Prior to the availability of futures data, we rely on cash index 
+returns financed at local short rates for each country. 
+In order to calculate net-
+of
+-fee returns for the Trend-Following Strategy, we subtracted a 2% annual management fee and a 
+20% performance fee from the gross-
+of
+-fee returns to the strategy. The performance fee is calculated and accrued on a 
+monthly basis, but is subject to an annual high-water mark. In other words, a performance fee is subtracted from the gross 
+returns in a given year only if the retur
+current estimates of average transaction costs for each of the four asset classes, including market impact and commissions. 
+The transaction costs are assumed to be twice as high from 1993 to 2002 and six times as high from 1880-1992, based on 
+Jones (2002). The transaction costs used are as follows: 
+Asset Cla
+ss
+ 
+Time Period
+ 
+One
+-
+Way Transaction Costs 
+ 
+(as a % of notional traded)
+ 
+1880
+-
+1992
+ 
+0.3
+4
+%
+ 
+Equities
+ 
+1993
+-
+2002
+ 
+0.1
+1
+%
+ 
+2003
+-
+2013
+ 
+0.06%
+ 
+1880
+-
+1992
+ 
+0.06%
+ 
+Bonds
+ 
+1993
+-
+2002
+ 
+0.02%
+ 
+2003
+-
+2013
+ 
+0.01%
+ 
+1880
+-
+1992
+ 
+0.
+58
+%
+ 
+Commodities
+ 
+1993
+-
+2002
+ 
+0.
+19
+%
+ 
+2003
+-
+2013
+ 
+0.10%
+ 
+1880
+-
+1992
+ 
+0.18%
+ 
+Currencies
+ 
+1993
+-
+2002
+ 
+0.06%
+ 
+2003
+-
+2013
+ 
+0.03%
+ 
+The current estimate of assets under management in the BarclayHedge Systematic Traders index is $280 billion. We 
+looked at the average monthly holdings in each asset class (calculated by summing up the absolute values of holdings in 
+each market within an asset class) for our time series momentum strategy since 2000, run at a NAV of $280 billion, and 
+compared them to the size of the underlying cash or derivative markets. For equities, we use the total global equity market 
+capitalization estimate from the October 2014 World Federation of Exchanges (WFE) monthly statistics tables. For bonds, 
+we add up the total government debt for the 15 developed countries with the largest debt using Bloomberg data. For 
+currencies, we use the total notional outstanding amount of foreign exchange derivatives, excluding options, which are 
+U.S. dollar denominated in the first half of 2014 from the Bank for International Settlements (BIS) November 2014 report. 
+For commodities, we use the total notional of outstanding OTC commodities derivatives, excluding options, in the first 
+half of 2014 from the BIS November 2014 report and add the aggregate exchange futures open interest for 31 of the most 
+liquid commodities. 
+Average Position size in $2
+8
+0B 
+Time Series Momentum 
+Portfolio (bn)
+ 
+Total Market Size 
+ 
+(bn)
+ 
+Percentage of Total Market
+ 
+Commodities
+ 
+134
+ 
+2,300
+ 
+5.8
+%
+ 
+Equities
+ 
+99
+ 
+63
+,000
+ 
+0.2%
+ 
+Bonds
+ 
+758
+ 
+3
+3,000
+ 
+2.3
+%
+ 
+Currencies
+ 
+226
+ 
+62
+,000
+ 
+0.4
+%
+ 
+
+10
+ 
+Trend Following and Rising Rates 
+Markets and Data Sources 
+The following chart shows the length and source of data for each individual market 
+-
+: 
+
+Trend Following and Rising Rates
+11
+ 
+Disclosures 
+The investment strategy and themes discussed herein may be unsuitable for investors depending on their specific investment 
+objectives and financial situation. Please note that changes in the rate of exchange of a currency may 
+affect the value, price or 
+income of 
+an investment adversely.  
+Neither AQR nor the author assumes any duty to, nor undertakes to update forward looking statements. No representation or 
+warranty, express 
+or implied, is made or given by or on behalf of AQR, the 
+author or any other person as to the accuracy and 
+completeness or fairness of the information contained in this document, and no responsibility or liability is accepted for any such 
+information. By accepting this document in its entirety, the 
+recipient acknowledges its understanding and acceptance of 
+the 
+foregoing statement.  
+U.S. Equity 
+Prior to 1926, the U.S. Equity series is constructed by adding price-weighted capital appreciation 
+returns of NYSE stocks collected 
+by Goetzmann, Ibbotson, and Peng to U.S. equity dividend returns recorded by the Cowles commission. The series consists of returns 
+of the S&P 90 from 1926 to 
+1957 and 
+returns of the S&P 500 from 1957 onwards. 
+The data and analysis contained herein are based on theoretical and model portfolios and are not representative of the performance 
+of funds or portfolios that AQR currently manages. There is no guarantee, express or implied, that long-term volatility 
+targets will be 
+achieved.   
+Realized volatility may come in higher or lower than expected.
+Diversification does not eliminate the risk of 
+experiencing 
+investment loss. 
+
+12
+ 
+Trend Following and Rising Rates
+There is a risk of substantial loss associated with trading commodities, futures, options, derivatives and other 
+financial instruments. Before trading, investors should carefully consider their financial position and risk tolerance to 
+determine if the proposed trading style is appropriate. Investors should realize that when trading futures, commodities, 
+options, derivatives and other financial instruments one could lose the full balance of their account. It is also possible to lose 
+more than the initial 
+deposit when trading derivatives or using leverage. All funds committed to such a trading strategy should be purely risk capital.  
+
+AQR Capital Management, LLC
+ 
+Two Greenwich Plaza, Greenwich, CT 06830
+ 
+p: +1.203.742.3600
+  
+I  f: +1.203.742.3100  I  w: 
+aqr.com
+ 
+
+ 
+ 
+AQR Capital Management, LLC
+ 
+Two Greenwich Plaza
+ 
+Greenwich, CT 06830
+ 
+
+ 
+p:
+ 
++1.203.742.3600
+ 
+f: 
+ 
++1.203.742.3
+1
+00
+ 
+
+w:
+ 
+aqr.com
+ 
+ 
+We thank Lasse H. Pedersen and Ari Levine for their insights in 
+formulating 
+this analysis.
+
+ 
+Trend Following and Rising Rates
+ 
+ 
+Brian Hurst
+ 
+Principal
+ 
+Yao Hua Ooi
+ 
+Principal
+ 
+Erik Stamelos
+ 
+
+ 
+ 
+May
+ 
+2015
+ 
+We examine the performance
+ 
+of a 
+hypothetical 
+trend following strategy 
+over the 
+past 70 years, 
+paying particular attention to periods where 
+short
+-
+term policy rates or long
+-
+term interest rates 
+characteristics
+ 
+and attractive diversification 
+
+well in protracted equity drawdowns, are not 
+diminished during historical rising rate 
+environments, and that the result is consistent 
+across geographies.  We also show that th
+e 
+
+dependence on the level of starting nominal 
+bond yields, as it has the potential to perform 
+well in both high and low interest rate regimes.
+ 
+ 
+ 
+ 
+
++#77''3773#'Ô!'j!b!!b!j'é.5

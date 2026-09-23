@@ -38,6 +38,10 @@ from pathlib import Path
 from typing import Any
 
 _ROOT = Path(__file__).resolve().parent.parent
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
+
+from libs.doctrine.corpus import doctrine_text  # noqa: E402
 
 #: family -> (member law ids, family-level fence, what the family exists to prevent)
 FAMILIES: dict[str, tuple[tuple[str, ...], str, str]] = {
@@ -59,7 +63,12 @@ FAMILIES: dict[str, tuple[tuple[str, ...], str, str]] = {
         "hobbyist rate, with the spread invisible"),
     "survival": (
         ("L1.23", "L1.20", "L2.8a", "L1.38", "L1.42"),
-        "scripts/run_drills.py",
+        # Was scripts/run_drills.py, deleted 2026-09-05 with the retired book (its drills fired
+        # against the crypto testnet order path). run_deadman_switch.py is the correct exemplar
+        # and always was the stronger one: it is the Tier-3 rail that actually closes a position
+        # when the desk stops breathing, and it is never-touch precisely because this family is
+        # about guarantees that must hold when everything else has failed.
+        "scripts/run_deadman_switch.py",
         "a rail that reads healthy while being terminal, or a survival guarantee that was "
         "never actually wired to the money path"),
     "validation_honesty": (
@@ -78,7 +87,15 @@ FAMILIES: dict[str, tuple[tuple[str, ...], str, str]] = {
 def build_report(root: Path | None = None) -> dict[str, Any]:
     root = root or _ROOT
     const = (root / "docs/CONSTITUTION.md").read_text("utf-8", errors="ignore")
-    doctrine = (root / "ops/principal_doctrine.txt").read_text("utf-8", errors="ignore")
+    # REACH IS MEASURED ON THE PAYLOAD, NOT ON ONE FILE. The 2026-08-25 consolidation moved the
+    # law text out of ops/principal_doctrine.txt into docs/LAWS.md and changed brain_env.sh to
+    # cat BOTH into every organ in the same breath, so no organ lost a line -- but this fence
+    # kept reading the one file and reported all six families UNREACHED (0/6, CI red on every
+    # push) about text sitting in the sibling document injected alongside it. libs.doctrine
+    # .corpus derives the file list from the injector itself, which is what run_law_gate's fast
+    # gate and the other five doctrine fences already read; a law deleted from EVERY injected
+    # file still fails here by name, so nothing is loosened -- only relocation stops firing.
+    doctrine = doctrine_text(root)
     # A MISSING MATRIX IS NOT A VERDICT ABOUT THE LAWS. This read used to swallow OSError into
     # `enforced = {}`, which made "the matrix has not been built on this machine" arrive at the
     # comparison below as "the matrix says not one of these 65 laws has a fence" -- so every

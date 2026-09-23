@@ -1,0 +1,435 @@
+ANTTI ILMANEN, DAVID G. KABILLER, 
+ 
+LAURENCE B. SIEGEL, 
+AND
+ RODNEY N. SULLIVAN  
+Dened Contribution 
+Retirement Plans 
+Should Look and Feel 
+More Like Dened 
+Benet Plans
+Volume 5
+Volume 5
+
+ 2
+www.practicalapplications.com
+The Voices 
+of
+ Inuence  |  iijournals.com
+
+1 
+//   Practical Applications
+Practical Applications of
+Dened Contribution 
+Retirement Plans Should 
+Look and Feel More Like 
+Dened Benet Plans
+Authors:
+ 
+Antti Ilmanen
+, 
+David G. Kabiller
+, 
+Laurence B. Siegel
+, and 
+Rodney N. Sullivan
+Source:
+
+ 
+The Journal of Portfolio Management
+, Vol. 43, No. 2
+Report Written By:
+ Courtney Adams
+Keywords:
+ 
+AQR Capital Management
+, 
+CFA Institute Research Foundation
+, 
+Dened Benet 
+Retirement Plans
+, 
+Dened Contribution Retirement Plans
+Overview
+In 
+
+, published in the Winter 2017 issue of 
+The Journal of 
+Portfolio Management
+, 
+, 
+, and 
+ 
+ of 
+ and 
+ of the 
+
+ show that 
+DC retirement plans, as they currently stand, are inadequate to meet the challenges of 
+our looming retirement crisis. 
+They describe how the addition of features borrowed from DB plans can help DC 
+plans improve retirement outcomes through better risk management and improved 
+ spoke with Laurence 
+Siegel and Rodney Sullivan about how policymakers and DC plan designers can 
+Practical Applications
+
+Add new sources of risk premia and 
+alternative investment strategies across asset classes and rely less on equity 
+ 
+market risk.
+ Create better investment vehicles for sharing longevity risk.
+Longer working lives increase savings and potential 
+Practical Applications Report
+
+pensions, arent currently positioned to solve the looming retirement crisis in the 
+United States.
+Antti Ilmanen
+antti.ilmanen@aqr.com
+Antti manages 
+AQR
+s Portfolio Solutions 
+Group, which advises institutional investors 
+and sovereign wealth funds, and develops 
+the rms broad investment ideas. Before 
+AQR, Antti spent seven years as a senior 
+portfolio manager at Brevan Howard, 
+a macro hedge fund, and a decade in 
+a variety of roles at Salomon Brothers/
+
+Citigroup. He began his career as a central 
+bank portfolio manager in Finland. 
+Over the years, he has advised many 
+institutional investors, including Norways 
+Government Pension Fund Global and 
+the Government of Singapore Investment 
+Corporation. Antti has published 
+extensively in nance and investment 
+journals and has received a 
+Graham and 
+Dodd award
+ and 
+Bernstein Fabozzi/
+Jacobs Levy awards
+ for his articles. 
+His book
+Expected Returns 
+(Wiley, 2011) 
+is a broad synthesis of the central issues 
+
+in investing. Antti recently scored a rare 
+double in winning the best-paper and 
+runner-up award for best articles published 
+in 2012 inThe
+Journal of Portfolio 
+Management
+(co-authored articles 
+The 
+Death of Diversication Has Been 
+Greatly Exaggerated
+ and 
+The Norway 
+Model
+).
+Antti earned MSc degrees in economics 
+and law from the University of Helsinki and 
+a PhD in nance from the University of 
+Chicago.
+
+2
+ 
+//   Practical Applications
+In 
+ Antti Ilmanen, David Kabiller, and Rodney Sullivan of 
+AQR, 
+and Laurence Siegel of the CFA Institute Research Foundation, show how DC plans 
+can be improved by adding features borrowed from DB plans. However, even the 
+best-designed DC plans cannot provide Americans with a secure retirement unless 
+they are better funded.
+WHAT WENT WRONG?
+DB plans, the gold standard for retirement plans, have begun to fade away, a victim 
+of macroeconomic forces. Declining interest rates and increased lifespans sent 
+shortfalls forced many DB plans to close or be dramatically scaled back. 
+vehicle. A rapid transition from DB to DC plans followed. However, DC plans, as 
+Success will require some combination of increased savings rates, working 
+longer, spending less, and investing more wisely
+. The poor savings level in the 
+US is particularly acute, showing that Americans are either unwilling or unable 
+to put aside enough of their income to securely fund retirement. As one sobering 
+statistic illustrates, 41% of households have no retirement savings at all, and 61% 
+have less than $1,000 saved.
+ These data are for people 55 to 65 years old. Thats 
+unambiguously not a good situation, says Sullivan. 
+Even those who carefully nurture a nest egg can get burned when they dont have 
+adequate resources for unexpected expenses. You can save very diligently year after 
+year, and then you lose your job or get sick, and you invade the principal. Thats how 
+a lot of DC plans get ruined, explains Siegel. 
+DB SOLUTIONS FOR DC PLANS
+the best features of DB plans. Its not easy to do, but it can be done, says Sullivan. 
+We think that tar
+get-date funds have been a dramatic improvement in terms of 
+way that DC plans can be more like DB plans is to invest more wisely, he notes. 
+as a way to enhance returns but to better balance portfolio risk. 
+The typical glide path of a target-date fund reduces allocations into equities from 
+90% at younger ages to 50% when people are nearing retirement, but Sullivan 
+explains that those lower allocations still result in more volatility than people expect. 
+In drawdown periods, that can be very painful for investors, he says.
+We make the case for further diversifying beyond that typical 50/50 portfolio. 
+portfolio, Sullivan explains. This approach means investing in different types of 
+Key DenitionsAlternative risk premiaThe rewards for bearing alternative risk 
+exposure, or the rewards for assuming 
+active, systematic risks (risks that in the 
+context of modern portfolio theory cannot 
+be diversied away) other than overall 
+market risk. Alternative risk premium 
+exposures are well known, empirically 
+tested sources of return that can be 
+systematically harvested through dynamic 
+long/short strategies. They can be thought 
+of either as returns that underlie classic 
+hedge fund strategies (hedge fund risk 
+premia) or the returns from classic styles 
+(style premia), such as value, momentum, 
+carry, and defensive. AQR Capital 
+ManagementDened benet retirement planA pension plan in which payments are 
+calculated according to length of service 
+and amount of salary earned at the time of 
+retirement.Dened contribution retirement planA retirementplanin which a certain 
+amount of money or percentage of salary 
+is set aside each year by the employee, 
+sometimes with company matching, in 
+investments meant to fund retirement.Longevity riskThe potential for an individual or group 
+of individuals to outlive assets or income 
+set aside for retirement, and refers 
+institutionally to the potential risk of a 
+dened contribution or a dened benet 
+plan being subject to higher-than-
+expectedpayouts.
+
+ 
+One way that DC
+plans can be more like 
+DB plans is to invest 
+more wisely.
+ 
+
+
+'
+
+3
+ 
+//   Practical Applications
+alternative liquid strategies, or styles, rather than just index funds, adds Siegel. Its 
+investing in all the asset classes and strategies that generate wealth over the long 
+term, rather than just US equities and US bonds, he notes.
+Here at AQR, we call it the better investing triangle, explains Sullivan. The 
+base of the triangle is made up of inexpensive, market risk premia. These are 
+mostly traditionaland sometimes nontraditional assets: stocks, bonds, and 
+commoditiesbut long only
+. These are things th
+at investors have access to cheaply, 
+he observes. 
+The second layer of the triangle is made up of alternative risk premia: style premia, 
+or smart beta, as well as alternative investment strategies. These alternative 
+risk premia have been shown to exist, historically and empirically and theres an 
+economically intuitive reason as to why each of them may persist and enhance 
+portfolios in the future, says Sullivan.
+Sullivan explains that the third layer of the triangle is to add alpha, a topic the 
+authors plan to explore more in future research. However, we differentiate alpha 
+from those alternative risk premia, notes Sullivan. Alternative risk premia can be a 
+bit more expensive than market risk premia, but still can be accessed by a wide array 
+of people, and can be done in a cost-effective way,
+ he advises.
+Because people are living longer, the need to pool longevity risks is more acute 
+then ever, but DC plans dont provide much access to pooling. The only thing an 
+individual can do to pool longevity risk is purchase an annuity, says Siegel, and 
+most DC plans dont offer them, so you have to go out on your own. And very often 
+theyre not well priced or explained, and the fees are high its just not a great 
+market.
+WORKING LONGER, SA
+VING MORE
+what they can do to increase their capacity to save more and how to manage the 
+decumulation phase of retirement.
+Choosing to work longer is one of the best ways to increase your standard of living 
+also gives you more income to save and invest, more time for you to grow your 
+investment returns, and fewer years of retirement to fund. 
+Sullivan emphasizes that lower expected market returns will put even more 
+pressure on the need to save more. Another article based on AQR research, 
+in
+The Journal of 
+Retirement
+think as a result of lower expected returns, he warns. We hate to be the bearer of 
+bad news, but thats the reality of where we are. Its important that we face these 
+challenges head-on, and then have an honest conversation about what to do about it, 
+he recommends.
+
+ 
+The only thing an
+individual can do [to 
+purchase an annuity, 
+and most DC plans 
+dont offer them.
+ 
+
+
+ 
+People have to
+save more than they 
+typically think as a 
+result of lower expected 
+returns Its important 
+that we face these 
+challenges head-on, 
+and then have an 
+honest conversation 
+about what to do about 
+it.
+ 
+
+
+4
+ 
+//   Practical Applications
+LIFE OUTSIDE OF RETIREMENT PLANS
+Siegel, who describes himself as semiretired, sp
+lits his time between Chicago and 
+California, where he likes to play music and walk on the beach. He still does plenty 
+of research, though, both on his own and in his capacity as head of the CFA Institute 
+Research Foundation. Sullivan lives in Connecticut and enjoys playing tennis with 
+his kids. He is the frequent photographer for his daughters fashion blog. He also 
+golfs and occasionally participates in spring triathlons.
+To order reprints of this report, please contact Dewey Palmieri 
+at dpalmieri@iijournals.com or 212-224-3675.
+instruments, and may not be construed as such.
+
+5 
+//   Practical Applications
+David G. Kabiller
+david.kabiller@aqr.com
+David Kabiller is co-founder and the head of 
+business development at 
+AQR
+, overseeing 
+client relationships, business development and 
+strategic initiatives. In this role, he has helped 
+foster AQRs tradition of innovation by initiating 
+AQRs international expansion into Europe 
+and Asia and spearheading its introduction of 
+mutual funds. In addition to these corporate 
+milestones, David is dedicated to investor 
+education and fostering young research talent. 
+To that end, he was instrumental in creating the 
+AQR University symposia series for nancial 
+advisors and the Master Class program for 
+institutional investors. 
+For the academic community, David helped 
+create the 
+AQR Insight Award
+ for outstanding 
+innovation in applied academic research and 
+was a founding member of the 
+LBS AQR 
+Asset Management Institute
+. David has co-
+authored papers on topics including derivatives, 
+enhanced indexation, securities lending, 
+insurance-linked securities, hedge funds, and 
+the secret of Warren Buffetts investing acumen. 
+He is a member of Northwestern Universitys 
+Board of Trustees and chairman of the Executive 
+Council of the universitys International Institute 
+for Nanotechnology (IIN). He is also a member 
+of the Advisory Council of the 
+AQR Asset 
+Management Institute at London Business 
+School
+ and has served on the Board of Trustees 
+for the 
+Terra Foundation for American Art
+.
+Prior to AQR, David was a vice president at 
+Goldman, Sachs & Co., where he established 
+and maintained relationships with the chief 
+investment ofcers of many of the largest 
+pension and endowment funds in North 
+America. He earned a BA in economics 
+and an MBA from Northwestern, where he 
+received an athletic scholarship to play tennis 
+and was named to the Big Tens Academic 
+All-Conference team. At Northwestern, David 
+founded the 
+Kabiller Prize
+ and the 
+Kabiller 
+Young Investigator Award
+ for researchers 
+in nanoscience and nanomedicine, and 
+established 
+NU for Life
+, a program dedicated to 
+the professional development of Northwestern 
+student-athletes. He is a CFA charterholder.
+Laurence B. Siegel
+lbsiegel@uchicago.edu
+Larry
+ 
+is the Gary P. Brinson director of 
+research at the 
+CFA Institute Research 
+Foundation
+ and an independent 
+consultant. Before 2009, he was director 
+of research in the investment division of 
+the Ford Foundation and prior to that he 
+was one of the founding employees of 
+Ibbotson Associates. Larry is on the board 
+and program committee of the Q Group 
+and the editorial boards of 
+The Journal of 
+Portfolio Management
+ and 
+The Journal 
+of Investing
+. He has won numerous 
+writing awards including the 
+Graham 
+and Dodd
+ top award. He attended the 
+University of Chicago (BA 1975, MBA 
+1977). Larry works and lives in Wilmette, 
+Illinois and Del Mar, California.
+Rodney N. Sullivan
+rodney.sullivan@aqr.com 
+Rodney serves as vice president at 
+AQR Capital Management
+, where he is 
+responsible for the rms global outreach 
+programs that update and educate clients 
+and investors about the rms research, 
+strategies and ideas. Formerly, Rodney 
+was head of publications and editor of 
+the 
+Financial Analysts Journal
+ at CFA 
+Institute.  He is the editor of numerous 
+books for investment professionals and 
+has published widely in various scholarly 
+journals, newspapers, and magazines. 
+Rodney is a former member of the 
+Board of Directors at 
+The Institute for 
+Quantitative Research in Finance
+ 
+and a practitioner director at 
+Financial 
+Management Association International
+.
+He is a CFA charterholder and has a 
+BS and MA in economics from Virginia 
+Commonwealth University.
+
+'''
+
+*b 1-b .-:Ly%#%'2#2'E#E'¥'@U	¸ÿô´U	¸ÿô´U	¸ÿà´U	¸ÿØ@U	U
+U¸ÿþ´U¸ÿì´U¸ÿÜ´U¸ÿØ@	U 
+
+'

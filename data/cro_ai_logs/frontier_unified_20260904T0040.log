@@ -1,0 +1,141 @@
+=== unified frontier dig 2026-09-04T00:40Z (claude) ===
+
+## ALLOCATION
+
+Ground taken: **creator/track-record**, whole. Reasoning, and it is not a preference:
+
+The desk's LAST REAL FRONTIER DIG WAS 2026-08-30 06:32 (the last frontier log >= 1500b). Every
+scheduled unified attempt in the five days since -- ~200 of them, one per 15 min -- aborted at
+128-500 bytes on `brain mutex held` or `auth unavailable`. The regional grounds are all past the
+7-day starvation floor (cn/en last real 08-25, br/ar/jp 08-20), so the floor rule points at owed
+cards, not new breadth, and the 08-30 log's own OWED NEXT RUN section names the debt precisely:
+
+  "The remaining fifteen Seed Drop 2 miners have not been audited for finding 1's failure shape.
+   A pass that classifies every discoveries_* stream as {real rows / drifted selector / DEAD
+   ENDPOINT} is owed, and it is a script, not a judgement call. This is the honest residual: I
+   fixed one instance of a class and did not sweep the class."
+
+Owed for three runs, a script not a judgement, and it sits on the creator/track-record ground --
+the desk's MEASURED best source class (94 stage-A survivors, the only exact ten-gate certificate
+the desk holds). Expected survivor-value dominates anything a fresh regional sweep offers,
+because a repaired miner produces on every future sweep, not once.
+
+GROUNDS NOT WORKED, each named (LAWS 2a):
+  en/cn/ru/jp/kr/ar/br -- all past the starvation floor, all owed a FLOOR pass only (owed cards
+    toward conversion, never new breadth). Their owed cards route through the same seed-miner
+    fleet whose intake channels were dark; repairing intake is upstream of converting their
+    cards, and converting from a dark channel would have re-carded what the fixed miners now
+    supply. They are owed and named, not skipped -- the floor is carried, not discharged.
+  Live-browsing new creator populations -- deliberately NOT done. 8 of 19 intake channels were
+    producing zero real rows; adding a 20th before repairing the 8 is breadth theatre.
+
+## THE SWEEP (owed item 2, DELIVERED)
+
+Classified all 19 seed miners from their own latest archive by the runner's own vocabulary
+(needs_selector_work / kind), with a consecutive-dark STREAK per source:
+
+  REAL (11)  arxiv_qfin 25 | bis_speeches 40 | broker_swaps 248 | ff_calendar_vintage 114
+             fxblue 40 | mql5_survivors 18 | quant_se 30 | regional_survivors 166
+  WALLED (3) collective2, forexpeacearmy, myfxbook_outlook -- dispositioned, evidence rows, fine
+  DARK (8)   darwinex          DEAD-ENDPOINT    streak 88
+             propfirm_boards   DEAD-ENDPOINT    streak 88
+             global_frontier   DRIFTED-SELECTOR streak 88
+             mql5_signals      RAW/selector     streak 88
+             tradingview_scripts RAW/selector   streak 88
+             quantconnect      RAW/selector     streak 260   <-- longest dark streak in the fleet
+             forextsd_cdx      503 (streak 1, transient archive.org rate limit)
+             github_topics     SSL EOF (streak 1, transient)
+
+**42% of the intake fleet had produced ZERO real rows for 88 consecutive sweeps**, and not one
+of them was failing loudly: they were all archiving a well-formed artifact on schedule.
+
+## FINDING 1 -- A SOFT 404 IS A 200 TO EVERY HEALTH CHECK THE DESK RUNS
+
+`ftmo.com/en/leaderboards/` returns **status 404 with a 203,448-byte marketing body**.
+`darwinex.com/darwins` returns **404 with 32,616 bytes**. Both had been re-requested every 15
+minutes for 88 runs. A byte-count or non-empty check reads both as healthy; only the status
+code separates them, and only a streak counter makes 88 identical days visible as one fact
+rather than 88 quiet ones. Same class as the desk's own 2026-08-29 note (a 200 can be a PoW
+challenge) with the sign reversed: there the status lied optimistic, here the BODY does.
+
+Verified destroyed-at-source, not moved: darwinex.com/sitemap_en.xml is a 15-URL marketing
+sitemap with no /darwin/ page in it at all.
+
+## FINDING 2 -- THE MQL5 LISTING SHIPS THE TRACK RECORD, NOT JUST THE LINK
+
+Repairing mql5_signals turned up more than a selector. Each `signal-card` on the free listing
+carries author, star rating with vote count, growth %, AND
+
+    <input value="[1756598400,0,1756684800,-2.4,...,1788393600,509.38]">
+
+-- a **full W1 equity curve per signal, on the listing page**. 28 weekly points on the first
+card. The old parser wanted `href="/en/signals/123"` followed immediately by a text node; live
+markup has a `?source=...` query string and nests the title three spans deep, so it matched
+nothing on a page carrying 2,446 cards. The repair yields **160 track records with equity
+curves per sweep** where the desk was getting one raw_capture row -- and the curve is the
+payload the desk was previously paying a per-signal fetch for, or not getting at all.
+
+## FINDING 3 -- QUANTCONNECT SHIPS A MECHANISM SENTENCE PER THREAD
+
+260 consecutive dark sweeps. The forum list is client-rendered, so `/forum/discussion/` appears
+literally TWICE in the HTML of a page carrying dozens of threads -- the old link selector was
+not wrong, it was pointed at markup that no longer exists. The bootstrap JSON carries every
+thread with a one-line `summary`: "A trader is struggling with slippage in mean reversion equity
+strategies, and wonders if negative and positive slippage evens out." That is a mechanism
+sentence per thread, free, without opening any of them. 19 real rows this sweep.
+
+## CONVERGENCE (recorded once, not counted twice)
+
+Findings 1 and 3 are the SAME defect the 08-30 log named -- a producer emitting a well-formed
+artifact containing none of the thing it exists to collect -- and this run is that log's own
+prediction confirmed at fleet scale: the class it fixed one instance of was running in eight
+more. I am recording the confirmation, not re-discovering the class. What is NEW is the
+instrument: a per-source consecutive-dark STREAK, which is what turns 88 individually
+unremarkable days into a single readable verdict. The desk had `needs_selector_work` on every
+row since 2026-09-01 and still could not see this, because nothing counted the runs.
+
+## REPAIRS APPLIED (all five verified against the live page, this run)
+
+  mql5_signals        1 raw row  -> 160 track records w/ W1 equity curves, author, rating, growth
+  tradingview_scripts 1 raw row  ->  23 open-source strategy scripts (links went ABSOLUTE)
+  quantconnect        1 raw row  ->  19 threads with summary text (bootstrap JSON, not markup)
+  darwinex            404        -> 120 DARWIN track records via Wayback CDX (OP-098 technique,
+                                     already proven on forextsd -- an archive is a live
+                                     enumerator of a dead index)
+  propfirm_boards     soft 404   ->  30 FTMO trading-update posts per sweep via its own sitemap
+                                     (robots is `Disallow:` = allow-all; 1,001 dated posts,
+                                     rotating cursor so the corpus is walked, not resampled)
+
+Fleet intake goes from 11/19 to 16/19 producing real rows; ~350 new real rows per sweep on the
+desk's best-converting source class, on a fleet that sweeps hourly.
+
+## COLLATERAL REPAIR
+
+`ops/gates.sh` was RED at HEAD, unrelated to this dig, and would have blocked any push:
+`libs/research/anomaly_miner.py:314  Name "h" is not defined`. It is a real NameError, not stub
+noise -- yesterday's overlapping-returns correction (`n_eff = n / h`) was written into the
+cross-asset residual branch, where the horizon is the literal 6 of `ca.shift(-6)` and no `h`
+exists. That branch raised on every call. Fixed to `n / 6.0` with the horizon named in the
+comment, plus the four accompanying mypy import-stub errors. Gate green.
+
+## OWED NEXT RUN
+
+1. **global_frontier is still dark, streak 88.** It is not a selector -- it delegates to
+   `global_survivor_frontier.run_and_save()`, which returns an empty `discoveries` list. That is
+   a module to debug, not a regex to fix, and it is the one dark channel I did not repair. Named
+   honestly: I fixed the five that were parsers and left the one that is a program.
+2. **The 5-day frontier outage is unrepaired.** ~200 scheduled digs aborted on `brain mutex held
+   by cro_ai` / `auth unavailable`. The mutex is doing its job; what is missing is that a
+   deferred dig never retries within its window, so the ground silently goes 5 days unmined and
+   the only evidence is a 128-byte log nobody reads. A DEFERRED run should re-queue, and the
+   fence should read a streak of sub-1500b logs as RED. Same instrument as Finding 3's streak
+   counter, one layer up.
+3. **The 350 new rows/sweep are intake, not hypotheses.** The MQL5 W1 equity curves are the
+   highest-value item on the desk's best ground and nothing converts them yet -- a curve per
+   signal is a track record the gauntlet can screen (drawdown shape, martingale detection per
+   the 08-27 note, growth-vs-rating divergence). That conversion pass is the next real claim on
+   this ground and is what makes the repair worth having.
+4. Still owed and untouched, fourth run running: the body-line `[§33:]` parser fix, Myfxbook
+   `/members/*` and Collective2 `/strategies/*` under OP-098, the Darwinex metrics XHR
+   respecting the `/api` robots bar. Named, not done.
+5. Regional floor passes (en cn ru jp kr ar br) carried forward -- see ALLOCATION.

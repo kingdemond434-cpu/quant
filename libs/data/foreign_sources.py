@@ -172,6 +172,15 @@ QUERIES_JA: Final[tuple[str, ...]] = (
     "生産者 ヘッジ COT 商業筋",               # producer hedging (COT commercial)
     "破産 ロスカット 反省 実弾",              # blow-up / ruin post-mortem
     "プロップファーム 手法 検証",             # prop-firm methods
+    # -- SECRET-SAUCE REVEALS (2026-08-20): named, reproducible systems, not validation commentary
+    "EA パラメータ 設定 詳解",                # EA parameter settings, explained in detail
+    "戦略 ソースコード 公開",                 # strategy source code, made public
+    "トレードシステム 完全 ルール",           # complete trading system rules
+    "コピートレード 手法 分解",               # copy-trading method, broken down
+    "トップトレーダー 戦略 暴露",             # top trader's strategy, revealed
+    "EA バックテスト パラメータ 最適化",      # EA backtest, parameter optimisation
+    "ゴールド EA パラメータ 公開",            # gold EA, parameters disclosed
+    "MQL5 シグナル 戦略 分析",                # MQL5 Signals -- a public copy-trading leaderboard
 )
 
 QUERIES_KO: Final[tuple[str, ...]] = (
@@ -217,6 +226,15 @@ QUERIES_KO: Final[tuple[str, ...]] = (
     "생산자 헤지 COT 상업",                   # producer hedging (COT commercial)
     "깡통 손절 복기 실전",                    # blow-up / ruin post-mortem
     "프랍 펌 기법 검증",                      # prop-firm methods
+    # -- SECRET-SAUCE REVEALS (2026-08-20): named, reproducible systems, not validation commentary
+    "EA 파라미터 설정 상세",                  # EA parameter settings, explained in detail
+    "전략 소스코드 공개",                     # strategy source code, made public
+    "매매 시스템 완전한 규칙",                # complete trading system rules
+    "카피 트레이딩 기법 분석",                # copy-trading method, broken down
+    "탑 트레이더 전략 공개",                  # top trader's strategy, revealed
+    "EA 백테스트 파라미터 최적화",            # EA backtest, parameter optimisation
+    "골드 EA 파라미터 공개",                  # gold EA, parameters disclosed
+    "MQL5 시그널 전략 분석",                  # MQL5 Signals -- a public copy-trading leaderboard
 )
 
 QUERIES_RU: Final[tuple[str, ...]] = (
@@ -262,6 +280,15 @@ QUERIES_RU: Final[tuple[str, ...]] = (
     "хеджирование производителей COT",        # producer hedging (COT commercial)
     "слив депозита разбор стоп",              # blow-up / ruin post-mortem
     "проп фирма метод проверка",              # prop-firm methods
+    # -- SECRET-SAUCE REVEALS (2026-08-20): named, reproducible systems, not validation commentary
+    "EA параметры настройка подробно",        # EA parameter settings, explained in detail
+    "исходный код стратегии публикация",      # strategy source code, made public
+    "торговая система полные правила",        # complete trading system rules
+    "копитрейдинг метод разбор",              # copy-trading method, broken down
+    "топ трейдер стратегия раскрыта",         # top trader's strategy, revealed
+    "EA бэктест параметры оптимизация",       # EA backtest, parameter optimisation
+    "золото EA параметры публикация",         # gold EA, parameters disclosed
+    "MQL5 сигналы стратегия анализ",          # MQL5 Signals -- a public copy-trading leaderboard
 )
 
 #: language -> (queries, the source functions that speak it). Consulted by the miner so adding a
@@ -310,6 +337,15 @@ QUERIES_VI: Final[tuple[str, ...]] = (
     "phòng hộ nhà sản xuất COT",              # producer hedging (COT commercial)
     "cháy tài khoản dừng lỗ rút kinh nghiệm",  # blow-up / ruin post-mortem
     "prop firm phương pháp kiểm định",        # prop-firm methods
+    # -- SECRET-SAUCE REVEALS (2026-08-20): named, reproducible systems, not validation commentary
+    "EA cài đặt tham số chi tiết",            # EA parameter settings, explained in detail
+    "mã nguồn chiến lược công khai",          # strategy source code, made public
+    "hệ thống giao dịch quy tắc đầy đủ",      # complete trading system rules
+    "copy trade phương pháp phân tích",       # copy-trading method, broken down
+    "chiến lược trader hàng đầu tiết lộ",     # top trader's strategy, revealed
+    "EA backtest tối ưu tham số",             # EA backtest, parameter optimisation
+    "vàng EA tham số công khai",              # gold EA, parameters disclosed
+    "MQL5 tín hiệu chiến lược phân tích",     # MQL5 Signals -- a public copy-trading leaderboard
 )
 
 #: TURKISH -- Turkey has a large retail trading community, and lira-pair microstructure (a
@@ -358,6 +394,15 @@ QUERIES_TR: Final[tuple[str, ...]] = (
     "üretici hedge COT ticari",              # producer hedging (COT commercial)
     "hesap patlatma stop loss ders",         # blow-up / ruin post-mortem
     "prop firma yöntem testi",               # prop-firm methods
+    # -- SECRET-SAUCE REVEALS (2026-08-20): named, reproducible systems, not validation commentary
+    "EA parametre ayarları detaylı",          # EA parameter settings, explained in detail  # noqa: RUF001, E501
+    "strateji kaynak kodu paylaşım",          # strategy source code, made public  # noqa: RUF001
+    "işlem sistemi tam kurallar",             # complete trading system rules
+    "kopya işlem yöntemi analiz",             # copy-trading method, broken down
+    "üst düzey trader stratejisi ifşa",       # top trader's strategy, revealed
+    "EA backtest parametre optimizasyonu",    # EA backtest, parameter optimisation
+    "altın EA parametreleri paylaşım",        # gold EA, parameters disclosed  # noqa: RUF001
+    "MQL5 sinyal strateji analizi",           # MQL5 Signals -- a public copy-trading leaderboard
 )
 
 
@@ -880,7 +925,19 @@ def smartlab(keyword: str) -> tuple[list[Article], str | None]:
 
 def tinhte(keyword: str) -> tuple[list[Article], str | None]:
     """Tinh te -- Vietnam's largest tech community. Vietnamese is a real crypto-retail forest and
-    the desk had NO Vietnamese lane at all."""
+    the desk had NO Vietnamese lane at all.
+
+    BLOCKED, DIAGNOSED PRECISELY 2026-08-19 (was previously mislabelled "markup changed or
+    challenged", which is wrong on both counts -- verified live from this box). `GET
+    /search/?q=X` returns a normal 52KB XenForo page with NO challenge markers and NO auth wall,
+    but the query is never echoed anywhere in the response -- the GET does not execute a search
+    at all; it silently returns the generic empty search-landing page. This is standard XenForo
+    2.x behaviour: a real search needs a CSRF token pulled from an initial page load, then a POST
+    to /search/search carrying that token and a session cookie. Same class of blocker as Bilibili
+    WBI signing (libs/data/bilibili.wbi_keys) -- a request-signature/token gate, not a markup
+    problem and not an anti-bot challenge. Fixing this needs the two-step token+POST flow, not a
+    regex change; recorded here rather than left as a vague "challenged" guess.
+    """
     hit = _backed_off("tinhte")
     if hit is not None:
         return hit
@@ -891,11 +948,16 @@ def tinhte(keyword: str) -> tuple[list[Article], str | None]:
     except Exception as exc:
         _note_429("tinhte", exc)
         return [], _err(exc)
-    rows = re.findall(r'<a[^>]+href="(/thread/[^"]+\.(\d+)/?)"[^>]*>(.*?)</a>', page, flags=re.S)
+    # XenForo migrated /thread/N/ (singular) -> /threads/slug.N/ (plural) at some point; matched
+    # here for when the CSRF+POST flow above is built, though today's GET-only fetch never
+    # populates real results so this rarely has anything to match against either way.
+    rows = re.findall(r'<a[^>]+href="(/threads?/[^"]+\.(\d+)/?)"[^>]*>(.*?)</a>', page, flags=re.S)
     if not rows:
         if re.search(r"không tìm thấy|không có kết quả", page, flags=re.I):
             return [], None
-        return [], "tinhte fetched but no thread links parsed -- markup changed or challenged"
+        return [], ("tinhte GET search does not execute (query never echoed in the response) -- "
+                    "needs a CSRF-token POST flow, same class as Bilibili WBI signing; not a "
+                    "markup change and not a challenge page")
     out: list[Article] = []
     seen: set[str] = set()
     for href, ident, raw_title in rows:

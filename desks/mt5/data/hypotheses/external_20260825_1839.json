@@ -1,0 +1,59 @@
+[
+  {
+    "id": "ext_github_XAUUSD_momentum_basic",
+    "source": "external_github",
+    "symbol": "XAUUSD",
+    "family": "momentum_basic",
+    "description": "Forex Prime TRX Strategy for MetaTrader 4 (MT4)** \u2014 A professional, non-repainting trend and momentum trading system with dynamic ATR risk management for Forex, Gold (XAUUSD), and Crypto. Includes ste",
+    "url": "https://github.com/Clementinemaster/forex-prime-trx-mt4-strategy",
+    "confidence": 0.40399999999999997,
+    "patterns": [
+      "momentum"
+    ],
+    "created": "2026-08-25T18:39:43.507831+00:00"
+  },
+  {
+    "id": "ext_github_XAUUSD_ema_crossover",
+    "source": "external_github",
+    "symbol": "XAUUSD",
+    "family": "ema_crossover",
+    "description": "High Risk-to-Reward Forex & Gold (XAUUSD) trading strategy for MetaTrader 4 (MT4). Built on 100% non-repainting signals, multi-timeframe volatility filtering, and systematic risk management. Includes ",
+    "url": "https://github.com/Clementinemaster/forex-stgfx-advanced-strategy-mt4",
+    "confidence": 0.40399999999999997,
+    "patterns": [
+      "EMA"
+    ],
+    "created": "2026-08-25T18:39:43.507871+00:00"
+  },
+  {
+    "id": "ext_github_XAUUSD_sma_crossover",
+    "source": "external_github",
+    "symbol": "XAUUSD",
+    "family": "sma_crossover",
+    "description": "Smart Money Concepts (SMC) trading strategy project for analyzing Gold (XAUUSD) using market structure, liquidity, order blocks, and fair value gaps.",
+    "url": "https://github.com/itsmustafa119/structure-scope",
+    "confidence": 0.957,
+    "patterns": [
+      "SMA",
+      "order block",
+      "fair value gap",
+      "liquidity",
+      "smart money"
+    ],
+    "created": "2026-08-25T18:39:43.507881+00:00"
+  },
+  {
+    "id": "ext_github_XAUUSD_session_range_breakout",
+    "source": "external_github",
+    "symbol": "XAUUSD",
+    "family": "session_range_breakout",
+    "description": "MetaTrader 5 gold (XAUUSD) M1 mean-reversion scalpers \u2014 Z-Score entries, cost-aware TickRobust variant, and dual MR + breakout EA",
+    "url": "https://github.com/n30dyn4m1c/gold-pro-scalper",
+    "confidence": 0.514,
+    "patterns": [
+      "breakout",
+      "RSI"
+    ],
+    "created": "2026-08-25T18:39:43.507901+00:00"
+  }
+]

@@ -1,5 +1,16 @@
 # DIGGER TARGET ROADMAP — the 500-source dump, triaged for the digger (principal 2026-07-23)
 
+> **UNIVERSE RETARGETED 2026-08-18, header added 2026-09-05.** The ~500-source dump this triages is a CRYPTO source list, supplied 2026-07-23 for the desk that was retired on 2026-08-18. It is kept for its TRIAGE METHOD -- how to cut 500 sources to the few worth a dig -- and as the record of which sources were graded. It is not a target list. The live source seeds are `docs/research/mt5_source_seeds.md`.
+>
+> Nothing below is deleted: a row recording what was tried, graded or exhausted on the retired
+> desk is exactly the knowledge that stops a future session paying for the same thing twice. But
+> it is a RECORD, not a queue. Every new row runs against the MT5/Fusion Markets universe -- FX
+> majors/crosses/exotics, metals, equity indices, energy, softs, US share CFDs and the crypto CFDs
+> Fusion itself lists. **No crypto-exchange venue may be hunted, screened or scored again**
+> (`docs/LAWS.md` S1); crypto reference data is admissible only where a specific reading informs a
+> Fusion-executable instrument, never as a universe of its own.
+
+
 **Purpose:** the principal supplied ~500 multilingual crypto sources. Cataloging all 500 as
 "sources we have" would be false and would bury the map in untested noise (source COUNT is not
 edge — testable-signal-per-source is). Instead this triages the dump into PRIORITY TIERS for the

@@ -486,9 +486,11 @@ def main() -> None:
     except Exception as _e:                          # coverage must never kill the panel
         print(f"panel: coverage feed unavailable ({_e!r}) -- dossier-only this run")
 
-    from scripts.generate_external_review_doc import sanitize
+    from scripts.generate_external_review_doc import sanitize, sanitize_findings
     if sanitize(dossier) != dossier:                 # anything secret-shaped -> hard refuse
-        raise SystemExit("dossier failed sanitization -- refusing to send")
+        # Same silence the micro-audit sat in for six days: name the control, never the match.
+        raise SystemExit("dossier failed sanitization -- refusing to send. "
+                         + "; ".join(sanitize_findings(dossier)))
     print(f"panel: mission this week = {mission.upper()}")
     ts = datetime.now(tz=UTC).isoformat()
 

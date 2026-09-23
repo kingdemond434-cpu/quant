@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import numpy as np
 
+from libs.research import regime_coverage as rc
 from libs.research.regime_coverage import (
     TREND_LOOKBACK,
     lag1_autocorr,
@@ -108,6 +109,12 @@ def test_THE_DEFINITION_IS_PUBLISHED_WITH_THE_COUNT() -> None:
     """A regime count whose definition is not carried with it is uncheckable six months later,
     and this desk already has one regime definition it must not silently fork."""
     _, detail = regime_coverage(_series())
-    assert "crypto_regime.regime_labels" in detail["definition"]
+    d = detail["definition"]
+    # The DEFINITION ITSELF must be carried, in numbers, not by citing a module the reader would
+    # have to go and open -- the citation this used to assert pointed at a module that has since
+    # been deleted, which is exactly how a published definition rots into an unresolvable name.
+    for n in (rc.TREND_LOOKBACK, rc.VOL_WINDOW, rc.VOL_MEDIAN_WINDOW):
+        assert str(n) in d, f"the published definition must carry its own window {n}"
+    assert "realised vol" in d and "median" in d
     assert "L1.63" in detail["why"], (
         "a reader must be told this is a COVERAGE COUNT and not a robustness certificate")

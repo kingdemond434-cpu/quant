@@ -1,0 +1,892 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Land under cereal production (hectares) | Data",
+  "url": "https://data.worldbank.org/indicator/AG.LND.CREL.HA",
+  "published": "2026-09-03T11:12:48+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "vault_sha": "452768858199b295d87b",
+  "host": "data.worldbank.org"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Livestock production index (2014-2016 = 100) | Data",
+  "url": "https://data.worldbank.org/indicator/AG.PRD.LVSK.XD",
+  "published": "2026-09-03T11:12:50+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "vault_sha": "c46cf786465157bf67e8",
+  "host": "data.worldbank.org"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Permanent cropland (% of land area) | Data",
+  "url": "https://data.worldbank.org/indicator/AG.LND.CROP.ZS",
+  "published": "2026-09-03T11:12:52+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "vault_sha": "ea6dacf2794a1af00fed",
+  "host": "data.worldbank.org"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Rural population | Data",
+  "url": "https://data.worldbank.org/indicator/SP.RUR.TOTL",
+  "published": "2026-09-03T11:12:54+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "vault_sha": "78c619d46a62982b91ea",
+  "host": "data.worldbank.org"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Surface area (sq. km) | Data",
+  "url": "https://data.worldbank.org/indicator/AG.SRF.TOTL.K2",
+  "published": "2026-09-03T11:13:08+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "vault_sha": "c44eacb17c977d79c1bf",
+  "host": "data.worldbank.org"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Grants, excluding technical cooperation (BoP, current US$) | Data",
+  "url": "https://data.worldbank.org/indicator/BX.GRT.EXTA.CD.WD",
+  "published": "2026-09-03T11:13:09+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "vault_sha": "4ef990937e8738e467a0",
+  "host": "data.worldbank.org"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Tushare\u6570\u636e",
+  "url": "https://tushare.pro/document/2?doc_id=128",
+  "published": "2026-09-03T11:13:11+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "vault_sha": "55c112a3e1d830b8eeea",
+  "host": "tushare.pro"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Tushare\u6570\u636e",
+  "url": "https://tushare.pro/document/2?doc_id=215",
+  "published": "2026-09-03T11:13:13+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "vault_sha": "66b40fab09ddcd74061f",
+  "host": "tushare.pro"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Tushare\u6570\u636e",
+  "url": "https://tushare.pro/document/2?doc_id=268",
+  "published": "2026-09-03T11:13:15+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "vault_sha": "2c5699957d3fde4ba7e3",
+  "host": "tushare.pro"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Tushare\u6570\u636e",
+  "url": "https://tushare.pro/document/2?doc_id=467",
+  "published": "2026-09-03T11:13:29+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "vault_sha": "a57207b67932f04c325b",
+  "host": "tushare.pro"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Tushare\u6570\u636e",
+  "url": "https://tushare.pro/document/2?doc_id=216",
+  "published": "2026-09-03T11:13:32+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "vault_sha": "48912c73818d3e7af694",
+  "host": "tushare.pro"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Tushare\u6570\u636e",
+  "url": "https://tushare.pro/document/2?doc_id=271",
+  "published": "2026-09-03T11:13:46+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "vault_sha": "d22937df1ed9db4286f1",
+  "host": "tushare.pro"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Tushare\u6570\u636e",
+  "url": "https://tushare.pro/document/2?doc_id=272",
+  "published": "2026-09-03T11:13:59+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "vault_sha": "99c110f07784278cb6e9",
+  "host": "tushare.pro"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Evaluating our strategy",
+  "url": "https://www.ecb.europa.eu/mopo/strategy/strategy-review/html/index.da.html",
+  "published": "2026-09-03T11:13:59+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.55,
+  "lang": "da",
+  "vault_sha": "1e63f6cc65d0119b2991",
+  "host": "www.ecb.europa.eu"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Evaluating our strategy",
+  "url": "https://www.ecb.europa.eu/mopo/strategy/strategy-review/html/index.de.html",
+  "published": "2026-09-03T11:14:02+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "gap",
+   "orderflow"
+  ],
+  "confidence": 0.75,
+  "lang": "de",
+  "vault_sha": "cd76d6960aff611317bf",
+  "host": "www.ecb.europa.eu"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Evaluating our strategy",
+  "url": "https://www.ecb.europa.eu/mopo/strategy/strategy-review/html/index.el.html",
+  "published": "2026-09-03T11:14:03+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.75,
+  "lang": "el",
+  "vault_sha": "028d5ebc8332c83e0995",
+  "host": "www.ecb.europa.eu"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Evaluating our strategy",
+  "url": "https://www.ecb.europa.eu/mopo/strategy/strategy-review/html/index.es.html",
+  "published": "2026-09-03T11:14:05+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "gap",
+   "orderflow"
+  ],
+  "confidence": 0.75,
+  "lang": "es",
+  "vault_sha": "2b887165937921e2930b",
+  "host": "www.ecb.europa.eu"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Evaluating our strategy",
+  "url": "https://www.ecb.europa.eu/mopo/strategy/strategy-review/html/index.et.html",
+  "published": "2026-09-03T11:14:07+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.55,
+  "lang": "et",
+  "vault_sha": "13fc739ddbf28bd906c6",
+  "host": "www.ecb.europa.eu"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Evaluating our strategy",
+  "url": "https://www.ecb.europa.eu/mopo/strategy/strategy-review/html/index.fi.html",
+  "published": "2026-09-03T11:14:09+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.75,
+  "lang": "fi",
+  "vault_sha": "1b5692073082c5c1bf77",
+  "host": "www.ecb.europa.eu"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Evaluating our strategy",
+  "url": "https://www.ecb.europa.eu/mopo/strategy/strategy-review/html/index.fr.html",
+  "published": "2026-09-03T11:14:11+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "gap",
+   "orderflow"
+  ],
+  "confidence": 0.75,
+  "lang": "fr",
+  "vault_sha": "8850344224a4cc578edc",
+  "host": "www.ecb.europa.eu"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u7b56\u7565\u62a5\u544a",
+  "url": "http://data.eastmoney.com/report/strategyreport.jshtml",
+  "published": "2026-09-03T11:14:14+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "zh_CN",
+  "vault_sha": "1d84fc29fc5073795d4c",
+  "host": "data.eastmoney.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u5168\u56fd\u80a1\u7968\u4ea4\u6613\u7edf\u8ba1\u8868 _ \u6570\u636e\u4e2d\u5fc3 _ \u4e1c\u65b9\u8d22\u5bcc\u7f51",
+  "url": "http://data.eastmoney.com/cjsj/gpjytj.html",
+  "published": "2026-09-03T11:14:15+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "zh_CN",
+  "vault_sha": "35650ec2b6b66d83bb7d",
+  "host": "data.eastmoney.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u8d22\u7ecf\u6570\u636e _ \u5916\u6c47\u548c\u9ec4\u91d1\u50a8\u5907 _ \u6570\u636e\u4e2d\u5fc3 _ \u4e1c\u65b9\u8d22\u5bcc\u7f51",
+  "url": "http://data.eastmoney.com/cjsj/hjwh.html",
+  "published": "2026-09-03T11:14:17+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "zh_CN",
+  "vault_sha": "1d5f2b31df1074c7a521",
+  "host": "data.eastmoney.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u8d22\u7ecf\u6570\u636e _ \u4ea4\u6613\u7ed3\u7b97\u8d44\u91d1(\u94f6\u8bc1\u8f6c\u8d26) _ \u6570\u636e\u4e2d\u5fc3 _ \u4e1c\u65b9\u8d22\u5bcc\u7f51",
+  "url": "http://data.eastmoney.com/cjsj/banktransfer.html",
+  "published": "2026-09-03T11:14:20+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "zh_CN",
+  "vault_sha": "0b80bef2e6e879ae149f",
+  "host": "data.eastmoney.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u8d22\u7ecf\u6570\u636e _ \u5916\u6c47\u8d37\u6b3e\u6570\u636e _ \u6570\u636e\u4e2d\u5fc3 _ \u4e1c\u65b9\u8d22\u5bcc\u7f51",
+  "url": "http://data.eastmoney.com/cjsj/whxd.html",
+  "published": "2026-09-03T11:14:21+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "zh_CN",
+  "vault_sha": "df3139e6ec9c1411fc0c",
+  "host": "data.eastmoney.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u8d22\u7ecf\u6570\u636e _ \u9886\u5148\u6307\u6807\u7ec8\u503c _ \u6570\u636e\u4e2d\u5fc3 _ \u4e1c\u65b9\u8d22\u5bcc\u7f51",
+  "url": "http://data.eastmoney.com/cjsj/foreign_3_4.html",
+  "published": "2026-09-03T11:14:23+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "zh_CN",
+  "vault_sha": "9af3fbbb6431dd69fe63",
+  "host": "data.eastmoney.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u8d22\u7ecf\u6570\u636e _ \u6c38\u5eb7\u4e94\u91d1\u4ea4\u6613\u4ef7\u683c\u6307\u6570:\u603b\u6307\u6570 _ \u6570\u636e\u4e2d\u5fc3 _ \u4e1c\u65b9\u8d22\u5bcc\u7f51",
+  "url": "http://data.eastmoney.com/cjsj/hyzs_list_EMI00316914.html",
+  "published": "2026-09-03T11:14:25+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "zh_CN",
+  "vault_sha": "a9e0eb9cc41d21208eb9",
+  "host": "data.eastmoney.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u4ea4\u6613\u6240\u65b0\u95fb",
+  "url": "https://www.sge.com.cn/xwzx/NewsCenter_sge/10006909",
+  "published": "2026-09-03T11:14:29+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "vault_sha": "548627ee87ba08798dee",
+  "host": "www.sge.com.cn"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u4ea4\u6613\u6240\u65b0\u95fb",
+  "url": "https://www.sge.com.cn/xwzx/NewsCenter_sge/10006868",
+  "published": "2026-09-03T11:14:31+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "breakout",
+   "orderflow"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "vault_sha": "49acdd002d08e391cab7",
+  "host": "www.sge.com.cn"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u4ea4\u6613\u6240\u65b0\u95fb",
+  "url": "https://www.sge.com.cn/xwzx/NewsCenter_sge/10006822",
+  "published": "2026-09-03T11:14:32+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "vault_sha": "63ea51a2213a61b1f645",
+  "host": "www.sge.com.cn"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u4ea4\u6613\u6240\u516c\u544a-\u4e0a\u6d77\u9ec4\u91d1\u4ea4\u6613\u6240",
+  "url": "https://www.sge.com.cn/jjsnotice/10007452",
+  "published": "2026-09-03T11:14:36+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "vault_sha": "a4975e0580ccde60cde3",
+  "host": "www.sge.com.cn"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Designated Contract Markets (DCMs) | CFTC",
+  "url": "https://www.cftc.gov/IndustryOversight/TradingOrganizations/DCMs/dcmhowto.html",
+  "published": "2026-09-03T11:14:36+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "vault_sha": "5e72a1b9512534018dfa",
+  "host": "www.cftc.gov"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Designated Contract Markets (DCMs) | CFTC",
+  "url": "https://www.cftc.gov/IndustryOversight/TradingOrganizations/DCMs/secnoticeregistered.html",
+  "published": "2026-09-03T11:14:38+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "vault_sha": "1d52b4dd7fb760fd1c3f",
+  "host": "www.cftc.gov"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Trading Organizations | CFTC",
+  "url": "https://www.cftc.gov/IndustryOversight/TradingOrganizations/dcminfo.html",
+  "published": "2026-09-03T11:14:40+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "vault_sha": "5a9e88e4da34515a69b0",
+  "host": "www.cftc.gov"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Industry Filings: Designated Contract Markets (DCM) | CFTC",
+  "url": "https://www.cftc.gov/IndustryOversight/IndustryFilings/TradingOrganizations?Status=Dormant&Date_From=&Date_To=&Show_All=0",
+  "published": "2026-09-03T11:14:42+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "vault_sha": "9c9d8ebfb91987ebc14d",
+  "host": "www.cftc.gov"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Industry Filings: Designated Contract Markets (DCM) | CFTC",
+  "url": "https://www.cftc.gov/IndustryOversight/IndustryFilings/TradingOrganizations?Status=Vacated&Date_From=&Date_To=&Show_All=0",
+  "published": "2026-09-03T11:14:44+00:00",
+  "symbols": [],
+  "timeframes": [
+   "MN",
+   "WEEKLY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "vault_sha": "4cd334460b936a15c857",
+  "host": "www.cftc.gov"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Swaps Execution Facilities (SEFs) | CFTC",
+  "url": "https://www.cftc.gov/IndustryOversight/TradingOrganizations/SEF2/sefhowto.html",
+  "published": "2026-09-03T11:14:46+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "vault_sha": "fcd3a3d4742030f822db",
+  "host": "www.cftc.gov"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Report on Gold Options Trading on September 28, 1999",
+  "url": "https://www.cftc.gov/tm/tmgold_options_report031000.htm",
+  "published": "2026-09-03T11:14:49+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en-US",
+  "vault_sha": "8cb1c18ad78ea138f214",
+  "host": "www.cftc.gov"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "US Index Options - QuantConnect.com",
+  "url": "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/us-index-options",
+  "published": "2026-09-03T11:14:50+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "vault_sha": "538ba924a14b41526f56",
+  "host": "www.quantconnect.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "CFD - QuantConnect.com",
+  "url": "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/cfd",
+  "published": "2026-09-03T11:14:52+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "vault_sha": "ed261944d1e8367c4793",
+  "host": "www.quantconnect.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Alternative Data - QuantConnect.com",
+  "url": "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/alternative-data",
+  "published": "2026-09-03T11:14:54+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "vault_sha": "97ce2c1c5a14b6d23c18",
+  "host": "www.quantconnect.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Auxiliary Data - QuantConnect.com",
+  "url": "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/auxiliary-data",
+  "published": "2026-09-03T11:14:56+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "vault_sha": "f3b769b14ed88d481d86",
+  "host": "www.quantconnect.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Interactive Brokers - QuantConnect.com",
+  "url": "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/interactive-brokers",
+  "published": "2026-09-03T11:14:58+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "vault_sha": "0d71022094efb261fe5c",
+  "host": "www.quantconnect.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "TradeStation - QuantConnect.com",
+  "url": "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/tradestation",
+  "published": "2026-09-03T11:15:00+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "vault_sha": "6aaabde2b00b8fd2ddae",
+  "host": "www.quantconnect.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Tastytrade - QuantConnect.com",
+  "url": "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/tastytrade",
+  "published": "2026-09-03T11:15:02+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "vault_sha": "2fce934fbb67993fccc1",
+  "host": "www.quantconnect.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u88c1\u5b9a\u53d6\u5f15 | \u30d7\u30ed\u30b0\u30e9\u30e0\u58f2\u8cb7\u30fb\u88c1\u5b9a\u53d6\u5f15 | \u65e5\u672c\u53d6\u5f15\u6240\u30b0\u30eb\u30fc\u30d7",
+  "url": "https://www.jpx.co.jp/markets/statistics-equities/program/index.html",
+  "published": "2026-09-03T11:15:03+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "ja",
+  "vault_sha": "6db7d451c0e0e81bbb8c",
+  "host": "www.jpx.co.jp"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u4fe1\u7528\u53d6\u5f15\u58f2\u8cb7\u6bd4\u7387 | \u4fe1\u7528\u53d6\u5f15\u6b8b\u9ad8\u7b49 | \u65e5\u672c\u53d6\u5f15\u6240\u30b0\u30eb\u30fc\u30d7",
+  "url": "https://www.jpx.co.jp/markets/statistics-equities/margin/02.html",
+  "published": "2026-09-03T11:15:05+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "ja",
+  "vault_sha": "88ad5601b337a747508d",
+  "host": "www.jpx.co.jp"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u4fe1\u7528\u53d6\u5f15\u73fe\u5728\u9ad8(\u4e00\u822c\u4fe1\u7528\u53d6\u5f15\u30fb\u5236\u5ea6\u4fe1\u7528\u53d6\u5f15\u5225) | \u4fe1\u7528\u53d6\u5f15\u6b8b\u9ad8\u7b49 | \u65e5\u672c\u53d6\u5f15\u6240\u30b0\u30eb\u30fc\u30d7",
+  "url": "https://www.jpx.co.jp/markets/statistics-equities/margin/03.html",
+  "published": "2026-09-03T11:15:06+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "seasonality"
+  ],
+  "confidence": 0.55,
+  "lang": "ja",
+  "vault_sha": "6d89f3d5731d062a6779",
+  "host": "www.jpx.co.jp"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u4fe1\u7528\u53d6\u5f15\u73fe\u5728\u9ad8 | \u4fe1\u7528\u53d6\u5f15\u6b8b\u9ad8\u7b49 | \u65e5\u672c\u53d6\u5f15\u6240\u30b0\u30eb\u30fc\u30d7",
+  "url": "https://www.jpx.co.jp/markets/statistics-equities/margin/04.html",
+  "published": "2026-09-03T11:15:09+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "seasonality"
+  ],
+  "confidence": 0.55,
+  "lang": "ja",
+  "vault_sha": "4a1d7f6badccf94da194",
+  "host": "www.jpx.co.jp"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u9298\u67c4\u5225\u4fe1\u7528\u53d6\u5f15\u9031\u672b\u6b8b\u9ad8 | \u4fe1\u7528\u53d6\u5f15\u6b8b\u9ad8\u7b49 | \u65e5\u672c\u53d6\u5f15\u6240\u30b0\u30eb\u30fc\u30d7",
+  "url": "https://www.jpx.co.jp/markets/statistics-equities/margin/05.html",
+  "published": "2026-09-03T11:15:10+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "seasonality"
+  ],
+  "confidence": 0.55,
+  "lang": "ja",
+  "vault_sha": "778e82c5eb71eeaf7ab9",
+  "host": "www.jpx.co.jp"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u4fe1\u7528\u53d6\u5f15\u73fe\u5728\u9ad8 \u904e\u53bb\u63a8\u79fb\u8868 | \u4fe1\u7528\u53d6\u5f15\u6b8b\u9ad8\u7b49 | \u65e5\u672c\u53d6\u5f15\u6240\u30b0\u30eb\u30fc\u30d7",
+  "url": "https://www.jpx.co.jp/markets/statistics-equities/margin/06.html",
+  "published": "2026-09-03T11:15:12+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "ja",
+  "vault_sha": "68f17a806a61cbc541e5",
+  "host": "www.jpx.co.jp"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u53d6\u5f15\u53c2\u52a0\u8005 | \u65e5\u672c\u53d6\u5f15\u6240\u30b0\u30eb\u30fc\u30d7",
+  "url": "https://www.jpx.co.jp/rules-participants/participants/index.html",
+  "published": "2026-09-03T11:15:15+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "ja",
+  "vault_sha": "f6233aa23144988a4778",
+  "host": "www.jpx.co.jp"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u4e2d\u671f\u7d4c\u55b6\u8a08\u753b : \u65e5\u672c\u9280\u884c Bank of Japan",
+  "url": "https://www.boj.or.jp/about/activities/strategy/index.htm",
+  "published": "2026-09-03T11:15:15+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "ja",
+  "vault_sha": "f2a85a5b9ddd57cb00f3",
+  "host": "www.boj.or.jp"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Release of Medium-Term Strategic Plan (Fiscal 2024-2028) : \u65e5\u672c\u9280\u884c Bank of Japan",
+  "url": "https://www.boj.or.jp/en/about/activities/strategy/hoshin24.htm",
+  "published": "2026-09-03T11:15:17+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "carry"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "vault_sha": "692fa16af91f73c3808c",
+  "host": "www.boj.or.jp"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Release of Medium-Term Strategic Plan (Fiscal 2019-2023) : \u65e5\u672c\u9280\u884c Bank of Japan",
+  "url": "https://www.boj.or.jp/en/about/activities/strategy/hoshin19.htm",
+  "published": "2026-09-03T11:15:19+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "vault_sha": "75ebd7621b2a8c6fe885",
+  "host": "www.boj.or.jp"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Related Releases : \u65e5\u672c\u9280\u884c Bank of Japan",
+  "url": "https://www.boj.or.jp/en/about/activities/strategy/yosan/index.htm",
+  "published": "2026-09-03T11:15:21+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "vault_sha": "1c9c2b05ad3c0e690f4d",
+  "host": "www.boj.or.jp"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Federal Reserve Board - Review of Monetary Policy Strategy, Tools, and Communications",
+  "url": "https://www.federalreserve.gov/monetarypolicy/review-of-monetary-policy-strategy-tools-and-communications-fed-listens-events.htm",
+  "published": "2026-09-03T11:15:22+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "vault_sha": "aa12f1e4a8d7d9960fd2",
+  "host": "www.federalreserve.gov"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "WDI - Home",
+  "url": "http://datatopics.worldbank.org/world-development-indicators",
+  "published": "2026-09-03T11:15:22+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "gap"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "vault_sha": "c33e52063aff7cf21ecf",
+  "host": "datatopics.worldbank.org"
+ }
+]

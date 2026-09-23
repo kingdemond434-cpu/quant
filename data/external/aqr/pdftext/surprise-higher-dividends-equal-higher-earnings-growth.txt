@@ -1,0 +1,2296 @@
+Surprise! Higher Dividends = Higher Earnings Growth 
+Copyright 2003, CFA Institute. Reproduced and republished from 
+Financial Analysts Journal
+ with permission from CFA 
+Institute. All rights reserved. 
+
+Surprise! Higher Dividends = Higher Earnings Growth
+January/February 2003
+87
+Macaulay, Frederick R. 1938. 
+Some Theoretical Problems Suggested
+by the Movements of Interest Rates, Bond Yields and Stock Prices in
+the United States since 1856.
+ Washington, DC: National Bureau of
+Economic Research.
+McGrattan, Ellen R., and Edward 
+C. Prescott. 2000. Is the Stock
+Market Overvalued? 
+Quarterly Review
+. Federal Reserve Bank of
+Minneapolis (Fall).
+Mehra, Rajnish. 2003. The 
+Equity Premium: Why Is It a
+Puzzle? 
+Financial Analysts Journal
+, vol. 59, no. 1 (January/
+February):0000.
+Merton, R.C. 1980. On Estimatin
+g the Expected Return on the
+Market. 
+Journal of Financial Economics
+, vol. 8, no. 4 (June):323
+361.
+Miller, Merton, and Franco Modigliani. 1961. Dividend Policy,
+Growth and the Valuation of Shares. 
+Journal of Business
+, vol. 34,
+no. 4 (October):411433.
+Miller, Merton, and Kevin Rock. 1985. Dividend Policy under
+Asymmetric Information. 
+Journal of Finance
+, vol. 40, no. 4
+(September):103151.
+Modigliani, F., and R. Cohn. 1979. Inflation, Rational Valuation,
+and the Market. 
+Financial Analysts Journal
+, vol. 35, no. 2 (March/
+April):2444.
+Modigliani, Franco, and Merton 
+H. Miller. 1958. The Cost of
+Capital, Corporation Finance, 
+and the Theory of Investment.
+American Economic Review
+, vol. 48, no. 3 (June):261297.
+Newey, W., and K. West. 1987. A Simple Positive-Definite
+Heteroscedasticity and Autocorrelation Covariance Matrix.
+Econometrica
+, vol. 55, no. 3:703708.
+Nissim, Doron, and Amir Ziv. 2001. Dividend Changes and
+Future Profitability. 
+Journal of Finance
+, vol. 56, no. 6
+(December):201965.
+Schwert, G. William. 1990. Indexes
+ of United States Stock Prices
+from 1802 to 1987. 
+Journal of Business
+, vol. 63, no. 3 (July):399
+426.
+Shiller, Robert J. 1981. Do Stock Prices Move Too Much to Be
+Justified by Subsequent Changes in Dividends? 
+American
+Economic Review
+, vol. 73, no. 3 (June):421436.
+. 2000. 
+Irrational Exuberance
+. Princeton, NJ: Princeton
+University Press.
+Siegel, Jeremy J. 1998. 
+Stocks for the Long Run
+. 2nd ed. New York:
+McGraw Hill.
+Sorensen, Eric H., and Robert
+ D. Arnott. 1988. The Risk
+Premium and Stock Market Performance. 
+Journal of Portfolio
+Management
+, vol. 14, no. 4 (Summer):5055.
+Titman, S., Wei, K.C. John, 
+and Feixue Xie. 2001. Capital
+Investments and Stock Returns. Working paper.
+Welch, Ivo. 2000. Views of Fina
+ncial Economists on the Equity
+Premium and on Financial Controversies. 
+Journal of Business
+,
+vol. 73, no. 4 (October):501537.
+
+Financial Analysts Journal
+86
+©2003, AIMR®
+ReferencesAmbachtsheer, Keith P. 2001. Investing without an Equity Risk
+Premium: A Brave New World? 
+Ambachtsheer Letter
+, #180
+(January).
+Arnott, Robert D., and Peter L. Bernstein. 2002. What Risk
+Premium Is Normal? 
+Financial Analysts Journal
+, vol. 58. no. 2
+(March/April):6485.
+Arnott, Robert D., and Willia
+m J. Bernstein. Forthcoming.
+Earnings Growth: The 2% Dilution. 
+Financial Analysts Journal
+.
+Arnott, Robert D., and Ronald 
+Ryan. 2001. The Death of the
+Risk Premium: Consequences of the 1990s. 
+Journal of Portfolio
+Management
+, vol. 27, no. 3 (Spring):6174.
+Arnott, Robert D., and Jame
+s N. von Germeten. 1983.
+Systematic Asset Allocation. 
+Financial Analysts Journal
+, vol. 39,
+no. 6 (November/December):3138.
+Asness, Clifford. 2000a. Bubble Logic or How to Learn to Stop
+Worrying and Love the Bull. Unpublished manuscript, AQR
+Capital Management (June).
+. 2000b. Stocks versus Bond
+s: Explaining the Equity Risk
+Premium. 
+Financial Analysts Journal
+, vol. 56, no. 2 (March/
+April):96113.
+Bagwell, Laurie Simon, and John B. Shoven. 1989. Cash
+Distributions to Shareholders. 
+Journal of Economic Perspectives
+,
+vol. 3, no. 3 (Summer):129140.
+Benartzi, Shlomo, Roni Michaely, and Richard Thaler. 1997. Do
+Changes in Dividends Signal the Future or the Past? 
+Journal of
+Finance
+, vol. 52, no. 3
+ 
+(July):100734.
+Bernstein, Peter L. 1996. Wha
+t Prompts Paradigm Shifts?
+Financial Analysts Journal
+, vol. 52, no. 6 (November/
+December):713.
+. 1997a. How Long Can You RunAnd Where Are You
+Running? 
+Economics & Portfolio Strategy
+. New York: Peter L.
+Bernstein, Inc. (February 15).
+. 1997b. What Rate of Return Can You Reasonably
+Expect . . . or What Can the Lo
+ng Run Tell Us about the Short
+Run? 
+Financial Analysts Journal
+, vol. 53, no. 2 (March/April):20
+28.
+. 1997c. Payouts and Payoffs and an Interesting
+Erratum. 
+Economics and Portfolio Strategy
+ (March 15).
+. 1998. A Further Look at the Matter of Dividends.
+Economics and Portfolio Strategy
+ (April 1).
+. 2001a. Ending Endism. 
+Economics and Portfolio Strategy
+(April 15).
+. 2001b. The Real Economy and the Unreal Economy.
+Economics and Portfolio Strategy
+ (May 1).
+Boudoukh, Jacob, and Matthew Richardson. 1994. The
+Statistics of Long-Horizon Regressions Revisited. 
+Mathematical
+Finance
+, vol. 4, no. 2 (April):103119.
+Brealey, Richard A., and Stewart C. Myers. 2000. 
+Principles of
+Corporate Finance
+, 6th ed. New York: McGraw Hill.
+Campbell, John Y., and Robert J. Shiller. 1988. Stock Prices,
+Earnings, and Expected Dividends. 
+Journal of Finance
+, vol. 43,
+no. 3 (July):661676. 
+. 1998. Valuation Ratios 
+and the Long-Run Stock Market
+Outlook. 
+Journal of Portfolio Management
+, vol. 24, no. 2
+(Winter):1126. 
+. 2001. Valuation Ratios 
+and the Long-Run Stock Market
+Outlook: An Update. NBER 
+Working Paper 8221 (April). 
+Chancellor, Edward. 1999. 
+Devil Take the Hindmost
+.
+ 
+New York:
+Farrar, Straus, and Giroux.
+Cole, Kevin, Jean Helwege, and David Laster. 1996. Stock
+Market Valuation Indicators: Is This Time Different? 
+Financial
+Analysts Journal
+, vol. 52, no. 3 (May/June):5664.
+Cornell, Bradford. 1999. 
+The Equity Risk Premium
+. New York:
+John Wiley & Sons.
+Cowles, Alfred. 1939. 
+Common Stock Indexes: 18711937
+.
+Bloomington, IN: Principia Press.
+Fama, Eugene F., and Kenneth R.
+ French. 1988. Dividend Yields
+and Expected Stock Returns. 
+Journal of Financial Economics
+, vol.
+22, no. 1 (October):326.
+. 1989. Business Conditions and Expected Returns on
+Stocks and Bonds. 
+Journal of Financial Economics
+, vol. 25, no. 1
+(July):2350.
+. 1999. Disappearing Dividends: Changing Firm
+Characteristics or Increased Relu
+ctance to Pay? Working paper.
+. 2002. The Equity Premium. 
+Journal of Finance
+, vol. 57,
+no. 2 (April):637659.
+French, Kenneth R., and James M. Poterba. 1991. Were Japanese
+Stock Prices Too High? 
+Journal of Financial Economics
+, vol. 29,
+no. 2 (October):337363.
+Glassman, James K., and Kevin A. Hassett. 1999. 
+Dow 36,000.
+New York: Random House.
+Goetzmann, William N., and Philippe Jorion. 1993. Testing the
+Predictive Power of Dividend Yields. 
+Journal of Finance
+, vol. 48,
+no. 2 (June):663679.
+Gordon, Myron J. 1962. 
+The Investment Financing and Valuation of
+the Corporation
+. Homewood, IL: Richard D. Irwin.
+Goyal, Amit, and Ivo Welch. 1999. Predicting the Equity
+Premium. Working paper.
+Harvey, Campbell. 1991. The
+ Term Structure and World
+Economic Growth. 
+Journal of Fixed Income
+, vol. 1, no. 1 (June):4
+17.
+Ibbotson Associates. 2001. 
+Stocks, Bonds, Bills 
+and Inflation: 2000
+Yearbook. 
+Chicago, IL: Ibbotson Associates.
+Ibbotson, Roger G., and Peng Chen. 2003. Long-Run Stock
+Returns: Participating in the Real Economy. 
+Financial Analysts
+Journal
+, vol. 59, no. 1 (January/February):0000.
+ 
+Ibbotson, Roger, and Rex A. Sin
+quefield. 1976. Stocks, Bonds,
+Bills and Inflation: Year-by-Year Historical Returns (1926
+1974). 
+Journal of Business
+, vol.
+ 
+49, no. 1 (January):1147.
+Jagannathan, Ravi, Ellen R. McGrattan, and Anna Scherbina.
+2000. The Declining U.S. Equity Premium. 
+Quarterly Review
+.
+Federal Reserve Bank of Minneapolis (Fall).
+Jensen, M.C. 1986. Agency Costs of Free Cash Flow, Corporate
+Finance and Takeovers. 
+American Economic Review
+, vol. 76, no.
+2 (May):323329.
+Jensen, M.C., and William H. Meckling. 1976. Theory of the
+Firm: Managerial Behavior, Agency Costs and Ownership
+Structure. 
+Journal of Financial Economics
+, vol. 3, no. 4
+(October):305360.
+Lamont, Owen. 1998. Earning
+s and Expected Returns. 
+Journal
+of Finance
+, vol.
+ 
+53, no. 5 (October):156387.
+Lintner, John. 1956. Distribution of Incomes of Corporations
+among Dividends, Retained Earnings, and Taxes. 
+American
+Economic Review
+, vol. 46, no. 2 (May):97113.
+
+Surprise! Higher Dividends = Higher Earnings Growth
+January/February 2003
+85
+are consistent with Miller and Modigliani (1961) theory, in
+that dividend-payout ratios do not affect P/Es and high
+earnings-retention rates (usu
+ally associated with low
+yields) imply higher per share future growth. (p. 00)
+3.For more discussion of current approaches to estimating
+future returns, see the presentations and discussions at
+www.aimrpubs.org/ap/home.html from AIMRs 
+Equity
+Risk Premium Forum
+.
+4.The Schwert data are for January 1802 through December
+1925; the Shiller data are for February 1871 through March
+2001; and the Ibbotson data are for January 1926 through
+December 2000. Each source provides broad capitalization-
+weighted stock market yields and total returns; Shillers
+data also include earnings. With regard to Shillers data,
+monthly dividend and earnings data were computed from
+the S&P 500 Index four-quarter totals
+ 
+for the quarters since
+1926, with linear interpolation to monthly figures. Dividend
+and earnings data before 19
+26 are from Cowles (1939) and
+interpolated from annual data.
+5.These data came from Standa
+rd and Poors for 1926 to date
+and from Cowles for periods before 1926.
+6.Yields on 10-year governme
+nt bonds came from the NBER
+for January 1800 through
+ 
+May 2001. Note: data were annual
+until 1843; we interpolated the data for monthly estimates.
+Long-term government bond yi
+elds and returns for January
+1926 through December 2000 came from Ibbotson Associ-
+ates.
+7.NBER data spanned January 1801 through
+ 
+May 2001. Note:
+data were annual until 1950; we interpolated the data for
+monthly estimates. Ibbotson Associates data spanned 1926
+through December 2000. We gave Ibbotson data primary
+(two-thirds) weighting for 19261950 because the NBER
+data are annual through 1950.
+8.We used NBER data for January 1800 through
+ 
+March 2001.
+The NBER data are annual GNP figures through 1920
+(which we interpolated July to July for our monthly data)
+and quarterly GDP figures for 19212001.
+9.All 
+t
+-statistics in this article have been adjusted for overlap-
+ping observations (the NeweyWest 1987 correction).
+10.Benartzi, Michaely, and Thaler (1997) found a different but
+related result for the cross-section of companies, namely,
+that dividend changes across stocks are not strong forecast-
+ers of cross-sectional difference
+s in future earnings growth.
+In contrast and with results more similar to our findings,
+Nissim and Ziv (2001) found that dividend changes do
+contain information about future profitability. Although
+similar in spirit to our approa
+ch, these papers differ in two
+important ways from our tests. First, our tests are on the
+level of payout ratio policy, not dividend changes. Second,
+our results are for the aggregate market, not the cross-
+section of differential company growth.
+11.Brealey and Myers (2000)
+ 
+described empire building as
+follows: Other things equal, managers prefer to run large
+businesses rather than sma
+ll ones. Getting from small to
+large may not be a positive-NPV undertaking (p. 321).
+They went on to quote Jensen with, The problem is how to
+motivate managers to disgorge the cash rather than invest-
+ing it below the cost of capital or wasting it in organizational
+inefficiencies (p. 323). In addition to the 1986 Jensen paper,
+see also Jensen and Meckling (1976).
+12.Note, however, that the third and fourth explanations can
+be tested.
+13.The start was 1901 because the 30-year window goes back
+to our data beginning in 1871. The first sample period is
+18711901, and the most recent
+ is 19712001. Thus, we had
+100 years of rolling 30-year sp
+ans and at least four com-
+pletely nonoverlapping periods.
+14.Dividing by 10 years of real ea
+rnings led to similar inferences.
+15.Both the payout ratio and 
+MA20 are scaled versions of
+current earnings. One scales on dividends, and the other
+scales on past average real
+ earnings. So, our test was
+whether scaling by average historical earnings or scaling by
+dividends is the more effective forecaster.
+16.We ran three more tests of whether simple mean reversion
+(unrelated to dividends) is
+ driving the strong 19462001
+results. First, instead of using last years earnings as the 
+E
+ to
+calculate the payout ratio, we
+ used a three-year average of
+real earnings. If transitory components of 
+E
+ are driving the
+payout ratios predictive powe
+r, then using a longer, more
+stable version of 
+E
+ might drive out this power. Second, in a
+draconian test, we simply la
+gged the payout ratio by one
+full year, greatly reducing th
+e chance of highly transitory
+components of 
+E
+ driving our results. Third, we tried real
+earnings divided by real GDP 
+as another proxy for whether
+earnings were high or low and likely to reverse. In each case,
+the payout ratios power surv
+ived. Of course, averaging in
+older earnings data or arbitr
+arily skipping a year reduced
+the statistical significance of
+ our tests somewhat, but the
+t-
+statistics on payout defined in these ways were still quite
+striking (always greater than 3.0). The results for 
+E
+/
+GDP
+were similar to the results reported in the text. The variable
+had the hypothesized negative 
+sign but did not work nearly
+as well as the payout ratio 
+and did not significantly reduce
+the payout ratios powe
+r in bivariate tests.
+17.Also recall from Figure 2 that our 10-year results held up
+well for 18711945.
+18.Harvey found that the term structure of interest rates can
+account for more than half of the variation in GNP growth
+in many G7 countries. He noted that this explanatory
+power is a great deal higher than the explanatory power
+offered by a model based on past GNP growth rates. He also
+found the term structure forecasts to compare favorably
+with alternative forecasts.
+19.Because the earnings yield, 
+E/P
+, is the reciprocal of P/E, if
+the P/E is 25, stocks are delivering $1 of earnings for each
+$25 of stock valuation, or a 4 percent earnings yield. We
+prefer using earnings yield to using P/E because it is more
+directly comparable with bond or cash yields, is more stable
+over time, and behaves more sensibly during times of
+deeply depressed earnings. If the earnings of a $100 stock
+fall from $5 a share to $1 a share, the P/E is a relatively
+meaningless 100
+×
+; if earnings fall farther to a $1 loss per
+share, the P/E is completely meaningless. In contrast, in
+these hypothetical cases, the earnings yield falls from 5
+percent to 1 percent to 1 perc
+ent, all of which have a simple
+economic meaning: The earnings yield tells how much in
+earnings an investor can ex
+pect on each $100 invested.
+20.Campbell and Shiller (1998, 200
+1) found, similarly, that
+valuation ratios do a poorer job than fans of efficient mar-
+kets might have expected of forecasting earnings growth,
+dividend growth, and productivity growth.
+21.These results are also consistent with the company-by-
+company results of Titman, Wei, and Xie (2001) that com-
+panies that invest more tend to produce lower risk-adjusted
+returns. Like us, these authors also tested for and favored
+the empire-building story as an explanation for their
+counterintuitive results.
+22.Some market observers have 
+suggested that investors are
+more tolerant of equity market risk today
+ 
+and, therefore,
+valuation levels can easily be higher than in the past. Figure
+5 also shows an exponential line
+ of best fit (regression line)
+that may suggest that the normal P/E has risen by at least
+25 percent over the past 130 ye
+ars. This rise is a material
+change in fair value, which we
+ think is entirely plausible,
+although it could also be a function of end points, notably
+the 2000 bubble. But in both panels, such a change would
+still place the normal P/E at ju
+st over half the recent levels.
+23.The controversy covers both the efficacy of such options (do
+the positive incentives outweigh the negative ones?) and
+whether such options should be expensed (clearly, they
+should be).
+
+Financial Analysts Journal
+84
+©2003, AIMR®
+The recent condition of very high P/Es and
+very low payout ratios combines expensive valua-
+tion and a low forecast of earnings growth. History
+suggests that this combination is clearly a recipe for
+low expected returns. The current condition, now
+that earnings have tumbled and payout ratios have
+returned closer to normal, suggests more reason-
+able forecasts of earnings growth but from a now-
+reduced earnings base. With a historically off-the-
+charts P/E, this change provides little solace.
+Finally, what do our findings mean for the
+ongoing controversy over executive stock op-
+tions?23 One nuance of the issuance of executive
+stock options is that they may provide an incentive
+to managers not to pay dividends, because divi-
+dends reduce the stock price on which their options
+are valued. Recall that one leading explanation for
+the perverse predictive power we found for the
+payout ratio is that some executives probably
+engage in unproductive empire building when
+they do not pay out sufficient dividends. The
+potential danger of such behavior when combined
+with the disincentive to pay dividends that might
+accompany executive stock options is as obvious as
+it is worrisome.ConclusionWe did not start out trying to forecast gloom and
+doom. We started out by looking at the optimists
+assertion that todays low payout ratios are a strong
+positive signal for future growth. Unfortunately,
+this view is emphatically inconsistent with the his-
+torical evidence.
+Unlike optimistic new-paradigm advocates,
+we found that low payout ratios (high retention
+rates) historically precede low earnings growth.
+This relationship is statistically strong and robust.
+We found that the empirical facts conform to a
+world in which managers possess private informa-
+tion that causes them to pay out a large share of
+earnings when they are optimistic that dividend
+cuts will not be necessary and to pay out a small
+share when they are pessimistic, perhaps so that
+they can be confident of maintaining the dividend
+payouts. Alternatively, the facts also fit a world in
+which low payout ratios lead to, or come with,
+inefficient empire building and the funding of less-
+than-ideal projects and investments, leading to
+poor subsequent growth, whereas high payout
+ratios lead to more carefully chosen projects. The
+empire-building story also fits the initial macro-
+economic evidence quite we
+ll. At this point, these
+explanations are conjectures; more work on dis-
+criminating among competing stories is appropri-
+ate.
+Sometimes the world really does change. For
+instance, the recent low market payout ratios may
+indeed be the result of a new sensitivity to share-
+holder tax optimization, not a result of more nega-
+tive forces (e.g., empire building, manager
+pessimism). In such a case, expected growth from
+recent low payout ratios might be much better than
+history would suggest, perhaps even strong
+enough to offset high pr
+ices and/or low payouts
+and deliver historically normal returns. But those
+forecasting this optimistic result are running into a
+headwind of 130 years of history; thus, the burden
+of proof should fall on 
+them. They must show why
+high cash retention is no longer a negative for
+future growth (or even a neutral event for future
+growth) but is now, rather, a significant positive
+omen. In effect, they must show that
+ 
+change has
+created a truly new paradigm. With P/Es still
+extraordinarily high by any measure, this burden
+is not a light one.
+We would like to thank Peter Bernstein, John Bogle, Sr.,
+Michael Brennan, Christopher Brightman, Edward
+Chancellor, Peng Chen, Roger Clarke, Brad Cornell,
+Max Darnell, Russell Fogler, Kenneth French, Roger
+Ibbotson, Wayne Kozun, Robe
+rt Krail, Owen Lamont,
+John Liew, Tom Philips, Bill Reichenstein, and Rex Sin-
+quefield for very helpful comments and suggestions.
+Notes1.Miller and Modigliani posited and proved that in an ideal
+world, and in the absence of 
+tax arbitrage considerations,
+dividend policy should not ma
+tter. Why? Because capital is
+fungible: A company has no reason to care whether it
+garners capital for projects from bond issuance, from stock
+issuance, or from retained earnings; therefore, the company
+should go wherever the risk-adjusted cost of capital is
+lowest. Reciprocally, an investor has no reason to care
+whether an investment pays a dividend that the investor
+can reinvest or whether the company reinvests earnings
+itself to fuel earnings growth equivalent to the forgone
+dividend yield. Thus, changes in dividend policy should
+not affect firm value. Similarly, investment policy and div-
+idend policy should be independent.
+2.Miller and Modigliani focused neither on intertemporal
+comparisons nor on dividend policy at an aggregate market
+level. The oft-cited intertemporal argument we examine is
+an extrapolation of Miller an
+d Modigliani theory suggested
+by many analysts and strategists to justify rapid future
+earnings growth for the broa
+d stock market. Ibbotson and
+Chen (2003)
+ 
+sum up this viewpoint well when they state
+that for the market as a whole, Furthermore, our forecasts
+
+Surprise! Higher Dividends = Higher Earnings Growth
+January/February 2003
+83
+valuation level or payout, thereby providing a con-
+stant expected return!
+This reasoning, this set of assumptions, and
+this forecast for high growth, which are sound in
+theory, are clearly rejected by our empirical work.
+We find no historical empirical support for the
+rationale. Ibbotson and Chen, via their intertempo-
+ral interpretation of Miller and Modigliani, would
+forecast higher-than-normal real earnings growth
+as a direct result of lower-than-normal dividend
+payouts. Our empirical results show the opposite.
+Similarly, a high P/E, contrary to the assumptions
+of Ibbotson and Chen, has almost no power to
+forecast future earnings growth in the presence of
+the payout ratio.
+Essentially, prior to the plunge in earnings in
+late 2001, investors faced a situation of very high
+P/Es and very low payout ratios. History says such
+a period is a time of poor expected long-term future
+earnings growth. By the very end of 2001, the situ-
+ation had changed; one-year earnings had plunged,
+sending payout ratios somewhat upward but send-
+ing P/Es into the stratosphere. In either situation,
+our results imply that forward-looking forecasts of
+the equity premium are very low compared with
+history.
+Figure 5.Price to Earnings, 18712001
+P/E
+A. Market Price/Trailing 1 -Year Earnings
+0
+5
+10
+15
+20
+25
+30
+35
+40
+1/1871
+1/81
+1/91
+1/1901
+1/11
+1/21
+1/31
+1/41
+1/51
+1/61
+1/71
+1/81
+1/91
+1/2001
+P/E
+B. Real Market Price/Trailing 10-Year Real Earnings
+0
+5
+10
+15
+20
+25
+30
+35
+40
+45
+50
+1/1871
+1/81
+1/91
+1/1901
+1/11
+1/21
+1/31
+1/41
+1/51
+1/61
+1/71
+1/81
+1/91
+1/2001
+
+Financial Analysts Journal
+82
+©2003, AIMR®
+This investment/GDP result is also a signifi-
+cant robustness check on
+ our earlier work. Our
+main results are for forecasting a version of index
+fund EPS. Regardless of our other robustness
+checks, EPS changes still could, because of index
+changes or corporate actions, be contaminating our
+data. Similarly, although the results are seemingly
+robust through time, the possibility that tax
+changes or changing sensitivity to, or awareness of,
+tax optimization could skew the decision to retain
+versus pay out earnings. Importantly, although
+perhaps bringing its own baggage, the ratio of
+investment to starting GDP as a forecast of real
+GDP growth suffers from none of these potential
+problems. The fact that the results indicate a phe-
+nomenon occurring that is 
+very similar to the pay-
+out-ratio forecasting earnings growth
+ 
+is quite
+reassuring for fans of the empire-building story.
+Similarly, the fact that investment/GDP is highly
+correlated with the payout ratio but not with other
+measures, such as lagged earnings growth or cur-
+rent earnings versus a moving average, is a blow to
+those who might otherwise believe that our results
+for the payout ratio are driven by simple mean
+reversion in earnings.Implications What are the implications of our findings for inves-
+tors and for the equity markets? After a painful
+two-year bear market dating from March 2000,
+some might now, as of the writing of this article in
+early 2002, judge equities to be cheap by comparing
+todays prices with the unprecedented levels of late
+1999 and early 2000. Noting the dramatic fall, one
+might now favor the purchase of equities as a con-
+trarian recommendation. Compared with history,
+however, stocks are anything but cheap, as is evi-
+dent by the history of P/Es in Panel A of 
+Figure 5
+.
+Panel A shows that P/Es based on one-year
+trailing earnings are at their highest level ever;
+despite falling prices, the plunge in recent earnings
+has driven the S&P 500s P/E to an extreme. Some
+might argue that this picture overstates the case,
+because recent earnings are perhaps abnormally
+low (or, if we may be provocative, the 1999/2000
+earnings were abnormally high). The P/E based on
+10 years of trailing real earnings shown in Panel B,
+however, shows valuations comparable to right
+before the crash of 1929 an
+d higher than at all times
+in history except during the bubble preceding
+1929or the bubble of 19992000. Arguing that
+todays 10-year P/E value is overstated would be
+hard. Other metrics are similar. Basically, com-
+pared with history, stocks remain expensive.22 
+Will the premium price be rewarded? Many
+authors and observers (e.g., Shiller 2000; Arnott and
+Ryan 2001; Arnott and Bernstein 2002; Asness
+2000a) have noted that the 
+high prices of equities
+today, coupled with a hist
+orically reasonable esti-
+mate of future earnings growth, have led to low
+estimates of future real returns and of the future
+equity risk premium. Some, taking a stance based
+on efficient markets (notably, Ibbotson and Chen
+2003), disagree. In effect, they combine (1) the
+assumption of market efficiency, (2) the assumption
+that the Miller and Modigliani propositions hold
+intertemporally (that is, that high retention rates
+imply high future growth rates), and (3) the
+assumption that expected market returns do not
+vary through time. Based on these three assump-
+tions, they contend that recent high P/Es do not
+alter the likely future rates of return. Low payout
+ratios will lead to faster earnings growth and recent
+high P/Es also mean that future earnings growth
+will make up for the low earnings yield. In other
+words, the omniscient invisible hand of an efficient
+market will adjust growth to compensate for any
+Table 8.Ten-Year GDP Growth as a Function of Investment/GDP and Payout 
+Ratio: Regression Coefficients, 19472001 Data
+(t-statistics in parentheses)Earnings Growth
+a
+b1b2Adjusted 
+R2A. GDP10 = a + b1(
+INVEST/GDP
+)
+GDP108.9% 0.36(
+INVEST/GDP
+) 22.0%
+(5.3)(3.9)
+B. GDP10 = a + b1(PR)
+GDP10 0.1% +0.08
+PR
+ 22.0%
+(1.2)(4.3)
+C. GDP10 = a + b1(PR) + b2(INVEST/GDP
+)
+GDP104.4%0.05
+PR
+ 0.22(
+INVEST/GDP
+) 26.2%
+(1.5)(1.8)(2.0)
+
+Surprise! Higher Dividends = Higher Earnings Growth
+January/February 2003
+81
+high investment are not necessarily times of
+depressed earnings. Note, in particular, that in late
+1999 and early 2000 (prior to the technology bubble
+bursting), both series were very high, indicating
+that the high retention rates at corporations were
+not simply the result of tax optimization (i.e., sub-
+stituting capital gains for dividend income) but did,
+in fact, coincide with higher-than-normal invest-
+ment. On this measure, dividend policy and invest-
+ment policy (at least at the macroeconomic level)
+are not even close to independent. 
+An interesting aspect is that, as 
+Table 7
+ and
+Table 8
+ show, the payout ratio and investment/
+GDP (
+INVEST
+/
+GDP
+) both forecast 10-year real
+earnings growth 
+and
+ 10-year real GDP growth with
+signs consistent with our story (that is, more reten-
+tion is a forecast of lower earnings and more invest-
+ment is a forecast of lower GDP growth).21 And, as
+for the payout ratio, the sign for 
+INVEST
+/
+GDP 
+is
+again wrong! 
+As with earnings growth, our findings for GDP
+are not being driven by simple mean reversion.
+Forecasts of the next 10 years real GDP growth
+based on the previous 10 years growth shows a
+modest continuation effect rather than mean rever-
+sion; also, errors in GDP that were later reversed
+would lead to a high 
+INVEST
+/
+GDP
+, forecasting
+positive, not negative, future growth. Instead, as
+with earnings and dividends, we found the coun-
+terintuitive result that when investment is high as
+a percentage of GDP, future GDP growth is low.
+Although we are reporting only an initial investi-
+gation, we consider it interesting corroborating evi-
+dence for the empire-building explanation of the
+payout ratios power. 
+Figure 4.S&P 500 Earnings-Retention Ratio and Aggregate Investment/GDP, 
+19472001
+Earnings-Retention Ratio (%)
+Retention Ratio
+Investment/GDP
+15
+30
+45
+60
+75
+Investment/GDP (%)
+12
+14
+16
+18
+20
+10/47
+10/01
+10/52
+10/57
+10/62
+10/67
+10/72
+10/77
+10/82
+10/87
+10/92
+10/97
+Table 7.Ten-Year Earnings Growth as a Function of Investment/GDP and 
+Payout Ratio: Regression Coefficients, 19472001 Data
+(t-statistics in parentheses)Earnings Growth
+a
+b1b2Adjusted 
+R2A. EG10 = a + b1(INVEST/GDP)
+EG10 12.9%0.70(
+INVEST/GDP
+) 18.3%
+(6.4)(5.3)
+B. EG10 = a + b1(PR) + b2(INVEST/GDP)
+EG109.8%0.22
+PR 0.02(
+INVEST/GDP
+) 41.5%
+(1.0)(2.9)(0.1)
+
+Financial Analysts Journal
+80
+©2003, AIMR®
+lower-than-normal earnings yield (high P/E). Now
+suppose that, at this same time, many companies
+are unwilling to pay out high dividendspossibly
+in an effort to optimize the tax treatment of their
+shareholders but perhaps because the managers
+know the good times will not last or are, conversely,
+caught up in the irrational exuberance of the
+good times and are spending those retained earn-
+ings on inefficient empire building. In this case, the
+P/E is optimistic about the future but the payout
+ratio is not. Which should one believe? 
+The regression results in Table 6 suggest that
+for forecasting future real earnings growth, look at
+managers dividend policies rather than what the
+market will pay for each dollar of earnings. More
+often than not, it is the 
+payout ratio, not the valua-
+tion level, that gets it right.
+Link to the Macro Economy.  
+Recall that the
+empire-building hypothesis says that when payout
+ratios are low, the reason may be that companies
+are retaining cash to invest in unwise, low-return
+projects, perhaps building up a large organization
+to benefit the managers rather than shareholders.
+In addition, perhaps building an empire with
+retained cash is easier than paying dividends and
+issuing stock to finance expansion (which would
+subject the managers to the added scrutiny of the
+capital markets).
+In what must be viewed as preliminary tests of
+this conjecture, we examined whether the payout
+ratio is correlated through time with a measure of
+economy-wide investment. For each quarter since
+1947 (when our data source begins), using the St.
+Louis Federal Reserve Banks FRED database, we
+formed the ratio of gross private domestic invest-
+ment (GPDI) to GDP. We summed the last four
+quarterly observations to form annual investment
+and GDP figures, and we now focus on this ratio:
+The idea was to form a simple measure of whether
+current investment is running high or low. If the
+empire-building hypothesis is true, we should see
+a positive correlation between investment/GDP
+and the retention ratio (1.0 minus the payout ratio).
+In other words, the more earnings companies are
+retaining, the more investment we should see. But
+this is not necessarily true. For instance, if tax opti-
+mization is driving recent low payouts, not the
+desire to invest more than usual, low payouts could
+simply be being offset by other forms of distribu-
+tion (e.g., buybacks, less issuance of new shares,
+etc.).
+Figure 4
+, which is a plot of aggregate invest-
+ment to GDP and the retention ratio on separate
+axes, indicates that the correlation between these
+two variables, at +0.66, is strong. Interestingly, such
+a correlation with payout largely vanished when
+we compared investment/GDP with our proxies
+for mean reversion in S&P 500 earnings. The corre-
+lation of investment/GDP with lagged 10-year
+earnings growth, current earnings divided by their
+long-term moving average, and
+ 
+current earnings
+divided by current GDP were all found to be less
+than half the 0.66 correlation of investment/GDP
+with the payout ratio. Cl
+early, times of high cash
+retention (low dividends) are also times of high
+investment for the economy at large, but times of
+Table 6.Ten-Year Earnings Growth as a Function of Earnings Yield and 
+Payout Ratio, Regression Coefficients
+(t-statistics in parentheses)Regression Span
+a
+b1b2Adjusted 
+R2A. Ten-year earnings growth as 
+a function of earnings yield: EG10 = a + b1(E/P)
+194620015.1%0.38(
+E
+/
+P
+)17.5%
+(3.2)(2.5)
+187120015.50.50(
+E
+/
+P
+)10.2
+(3.3)(3.0)
+187119456.30.65(
+E
+/
+P
+)10.5
+(2.3)(2.2)
+B.
+ 
+Ten-year earnings growth as a function 
+of earnings yield and payout ratio: EG10 = a + b1(E/P) + b2(PR)
+19462001 11.8%0.01(
+E
+/
+P
+)0.25
+PR
+54.5%
+(2.9)(0.1)(5.2)
+187120010.20.28(
+E
+/
+P
+)0.05
+PR
+16.6
+(0.1)(1.9)(3.1)
+187119452.50.22(
+E
+/
+P
+)0.07
+PR
+20.2
+(0.6)(0.7)(4.5)
+Investment
+GDP
+-----------------------------
+Last four quarters of GPDI
+Last four quarters of GDP
+--------------------------------------
+--------------------------------
+.
+=
+
+Surprise! Higher Dividends = Higher Earnings Growth
+January/February 2003
+79
+in an efficient market with constant expected equity
+returns, a low earnings yield may be a good predic-
+tor of higher future real earnings growth. 
+Table 6
+shows the results from a regression of 10-year earn-
+ings growth on the payout ratio and the earnings
+yield, 
+E/P
+, for various periods. The relationship is as
+expected: For the modern period, a low earnings
+yield (high P/E) signals high future 10-year real
+earnings growth, with a 
+t
+-statistic of 2.5. This find-
+ing supports the view that the market correctly
+anticipates faster future earnings growth and pays
+up for it. Results for the other time periods offer
+additional support for this finding. 
+This relationship is far weaker, however, than
+the link we found between the starting payout ratio
+and future earnings growth, and the relationship
+suffers greatly in multiple regression tests, as Panel
+B shows. In the tests for forecasting 10-year earn-
+ings growth using both the starting payout ratio
+and the earnings yield, the payout ratio completely
+drives out the earnings yield for the 19462001
+period. The sign for 
+E
+/
+P
+ actually reverses, so con-
+ditional on payout ratio, a lower 
+E
+/
+P
+ (higher P/E)
+presages slightly lower earnings growth. The suc-
+cess of 
+E
+/
+P
+ is greater when older data are included,
+as shown especially for the full period. On balance,
+however, the verdict is clear: The power of market
+valuation levels to forecast future returns is weaker
+than the power of the payout ratioparticularly in
+the modern period. For the post-WWII period, the
+difference is startling.20We found this result extremely interesting.
+Suppose real earnings growth is strong and the
+market expects this trait to continue. Investors
+might then be willing to pay a premium multiple
+of these strong earnings, which would result in a
+Table 5.Earnings Growth as a Function of the Yield-Curve Slope and Payout 
+Ratio: Regression Coefficients
+(t-statistics in parentheses)Time Span
+a
+b1b2Adjusted 
+R2A.
+ 
+Earnings growth as a function of yield-curve slope
+Ten-year earnings growth: 
+EG10 = 
+a
+ + 
+b1(
+YCS
+)
+19462001 1.56%0.38
+YCS
+2.0%
+(2.8)(1.2)
+187120011.30.44
+YCS
+2.2
+(2.0)(1.4)
+187119451.20.43
+YCS
+1.8
+(1.3)(1.0)
+Five-year earnings growth: 
+EG5 = 
+a
+ + 
+b1(
+YCS
+)
+194620010.6%1.70
+YCS
+14.0%
+(0.7)(2.5)
+187120010.32.09
+YCS
+11.3
+(0.3)(3.6)
+187119450.32.20
+YCS
+10.5
+(0.2)(2.9)
+B.
+ 
+Earnings growth as a function of 
+yield-curve slope and payout ratio 
+Ten-year earnings growth: 
+EG10 = 
+a
+ + 
+b1(
+YCS
+) +
+ 
+b2(
+PR
+)
+19462001 11.6%0.14
+YCS
+0.25
+PR
+54.8%
+(7.0)(0.5)(7.8)
+187120013.00.17
+YCS
+0.07
+PR
+14.5
+(3.0)(0.7)(4.1)
+187119455.50.24
+YCS
+0.09
+PR
+19.9
+(3.8)(0.7)(6.9)
+Five-year earnings growth: 
+EG5 = 
+a
+ + 
+b1(
+YCS
+) + 
+b2(
+PR
+)
+19462001 20.8%0.99
+YCS
+0.41
+PR
+58.2%
+(6.3)(2.2)(6.9)
+1871200110.81.46
+YCS
+0.17
+PR
+29.2
+(5.1)(2.8)(5.2)
+1871194517.00.53
+YCS
+0.24
+PR
+34.5
+(3.9)(0.7)(4.4)
+
+Financial Analysts Journal
+78
+©2003, AIMR®
+results as a refutation of mean reversion and an
+affirmation of the payout ratio as a predictor, the
+finding can be viewed as the discovery that scaling
+earnings by dividends (the
+ payout ratio) produces
+an effective and consistent measure of mean rever-
+sion in earningsmore effective and consistent
+than several other reasonable candidates, particu-
+larly in the modern era. Earnings do indeed seem
+to revert to the mean but may revert most strongly
+in terms of their ratio to dividends.
+Stock Repurchases.  
+Share buybacks were a
+far smaller part of the market prior to 1980 (see, for
+instance, Bagwell and Shoven 1989 and Fama and
+French 2002). The increase in share buybacks in
+recent years is one potential pitfall for our study. If
+buybacks substitute for regular dividends, then our
+measure of the payout ratio may be effectively
+understated when buyback activity is high. Buy-
+backs can also raise EPS growth. If stock buybacks
+are substituting for dividends, then changes in buy-
+back activity should weaken our results: Falling
+payout ratios in the 1980
+2001 span, if attributable
+to share buybacks, could correspond to increases in
+subsequent earnings growth.
+We were able to test for the influence of a
+changing buyback atmosphere only indirectly. If
+the relationship between payout ratio and future
+earnings growth is similar in the pre- and post-1980
+periods, we could feel comfortable that the rela-
+tively new phenomenon of large-scale share buy-
+backs was not unduly influencing our results (in
+either direction). Therefore, we recomputed the
+results for the regression of five-year earnings
+growth as a function of the payout ratio for only the
+19461979 period and 18711979 (we used five-year
+data because we had even fewer data for this test).
+The results are shown in
+ 
+the fourth and fifth rows
+of Table 3. In these earlier periods, which experi-
+enced far fewer share buybacks than the 19802001
+period, the link between payout ratios and real
+earnings growth worked almost exactly as well as
+over the longer span.17 Table 3 also presents, in the
+last row, evidence for the relatively short period
+associated with a large amount of buybacks, 1980
+2001. Here again, despite the paucity of data, we
+found strong results of a link.
+To be fair, one cannot know the impact of the
+increase in buybacks, assuming the increase is per-
+manent, until far more data are available than this
+brief 20-year history. From the initial evidence,
+however, stock buybacks have apparently not
+made the importance of the dividend payout ratio
+different this time.
+The Payout Ratio against the Yield-Curve
+Slope.  
+Other research (e.g., Harvey 1991) has
+shown that the slope of the U.S. Treasury
+ 
+yield
+curve is a strong positive forecaster of economic
+growth.18 This finding invites two questions relat-
+ing to our research. If the yield-curve slope fore-
+casts economic growth, does it also forecast
+earnings growth? If so, does the yield-curve slope
+augment or subsume the power of payout ratios for
+forecasting earnings growth? Either could happen
+if, for example, the curve is very steep during reces-
+sions, precisely when the payout ratio is larger than
+average (because of depressed earnings and sticky
+dividends).
+To answer these two questions, we began by
+defining the yield-curve slope as the difference
+between the 10-year T-bond yield and the 3-month
+T-bill yield at the start of any period. We tested the
+forecasting power of the yield-curve slope (
+YCS
+)
+for both 10-year and 5-year real earnings growth.
+Table 5 
+presents the results. 
+This discussion will focus on the 19462001
+period because interest rates were not always freely
+floating before this period, but Table 5 also presents
+results for the earlier 18711945 period and the full
+18712001 period. Panel A shows that the yield-
+curve slope, when used alone to forecast earnings
+growth, generally has the anticipated sign. Not
+only does a steeper yield curve suggest a stronger
+future economy, as found by other authors, but it
+also suggests faster real earnings growth, although
+the yield curve has
+ 
+much more power for forecast-
+ing 5-year growth than 10
+-year growth. This find-
+ing conforms with the work of Fama and French
+(1989), who noted that the yield-curve slope seems
+to be correlated with relatively high-frequency ele-
+ments of the business cycle. As Panel B of Table 5
+makes clear, however, the yield curves power does
+not come close to driving out the much stronger
+power present in the payout ratio. 
+The bottom line is that yield-curve slope has
+the right sign from 19462001
+ (and most other peri-
+ods) but is a relatively weak predictor of earnings
+growth. The yield-curve slope does not approach
+the univariate forecasting power of the payout
+ratio, nor does it erode the efficacy of the payout
+ratio when included in bivariate forecasting regres-
+sions.
+The Payout Ratio against Stock Market
+Valuation Levels. 
+Should the markets earnings
+yield, instead of the payout ratio, predict earnings
+growth? If future real earnings growth is going to be
+faster than normal, investors should perhaps pay a
+higher P/E multiple than normal and, hence, accept
+a lower earnings yield on their investments.19 Thus,
+
+Surprise! Higher Dividends = Higher Earnings Growth
+January/February 2003
+77
+significance with the remaining significance of the
+payout ratio.
+First, we added prior-10-year real earnings
+growth to the regression as lagged earnings growth
+(
+LEG10). If the mean-reversion hypothesis is true,
+then adding prior earnings growth as an additional
+right-hand-side variable could explicitly show the
+mean reversion we are looking for (through a neg-
+ative coefficient as poor prior 10-year real growth
+forecasts superior subsequent growth and vice
+versa) and might cause the payout ratio to lose
+much of its importance in bivariate tests. Panel A
+of 
+Table 4 
+shows that simple mean reversion in 10-
+year earnings growth has the expected negative
+sign but is a weak predictive variable. Specifically,
+this measure
+ 
+neither approaches the efficacy of the
+payout ratio over any time period nor materially
+crowds out the efficacy of the payout ratio, partic-
+ularly for the 19462001 period.
+We constructed a second proxy for mean rever-
+sion in earnings by dividing the prior-1-year real
+earnings (also used to construct our payout-ratio
+variable) by the average of real earnings over the
+past 20 years (
+MA20).14 We hypothesized that when
+this variable is high, the temporary component of
+earnings will be high, and we expected this variable
+to forecast lower subsequent real earnings
+growth.15 Panel B of Table 4 shows the results: For
+the most recent and most relevant period, 1946
+2001, the payout ratio is the clear victor. The ratio
+MA20 has the expected negative sign (meaning that
+when earnings are below their long-term average,
+better growth over the next 10 years is forecasted),
+but the relationship is weak and does not at all
+ameliorate the power of the payout ratio. Including
+periods prior to 1946 produces more-competitive
+results; the two variables enter with similar power
+and the right signs (positive for payout, negative
+for 
+MA20), although the payout ratio is still the clear
+victor. Multicolinearity makes the 
+t
+-statistics and
+the relative contribution of each variable difficult
+to determine, particularly for the earlier period (the
+correlations between payout and 
+MA20 are 0.44 for
+19462001, 0.63 for 187120
+01, and 0.69 for 1871
+1945).
+The payout ratios predictive power admirably
+survives head-to-head competition against two
+reasonable proxies for simple mean reversion in
+earnings (although 
+MA20, in particular, shows
+some competitive forecasting power when a very
+old sample period is included). Although the pay-
+out ratio is (and, intuitively, should be) highly cor-
+related with measures of simple mean reversion in
+real earnings, the data show important marginal
+information contained in dividend policy, indeed
+more information (and much more in the modern
+time period) than provided by other measures of
+mean reversion.16Note that, in some sense, these tests should not
+be viewed as payout ratio versus mean reversion.
+Clearly, the payout ratio can be interpreted as one
+measure of how depressed or how strong earnings
+are (in this case, dividend
+s are used as a yardstick)
+and thus how much we might expect them to revert
+to the mean. In other words, rather than view these
+Table 4.Ten-Year Earnings Growth as a Function of Payout Ratios and Direct 
+Measure of Mean Reversion: Regression Coefficients
+(t-statistics in parentheses)Regression Span
+a
+b1b2Adjusted 
+R2A. Reversion as prior-10-year earnings growth: EG10 = a + b1(PR) +
+ 
+b2(LEG10)
+19462001 11.0%0.25
+PR
+ 0.09
+LEG1055.3%
+(5.7)(7.9)(0.6)
+187120012.00.06
+PR
+ 0.09
+LEG1015.3 (1.9)(3.9)(0.9)
+187119454.50.08
+PR
+ 0.06
+LEG1019.4
+(2.6)(6.1)(0.4)
+B. Reversion as current ea
+rnings/20-year average: EG10 = a + b1(PR)
+ 
++
+ 
+b2(MA20)
+194620019.0%0.24
+PR
+ 0.02
+MA2056.6%
+(2.8)(7.0)(1.3)
+187120012.30.05
+PR
+ 0.03
+MA2022.8
+(0.7)(2.6)(1.7)
+187119452.00.05
+PR
+ 0.04
+MA2026.2
+(0.4)(2.1)(1.4)
+
+Financial Analysts Journal
+76
+©2003, AIMR®
+political environment. Nevertheless, the basic mes-
+sage exhibits considerab
+le stability: When payout
+ratios are low, future earnings growth tends to be
+slow, and high payout ratios go hand in hand with
+rapid subsequent earnings growth. The lowest 
+t
+-
+statistic is still a respectable (certainly for an order
+statistic) 1.6; similarly, the 
+R2, although variable, is
+always economically meaningful. The lowest 
+R2and highest 
+R2 are, respectively, 13 percent and 74
+percent. Most importantly, the sign never changes.
+Proxy for Mean Reversion?  
+Mean rever-
+sion in earnings might be caused by true mean
+reversion or by transient errors in reported earn-
+ings that would induce apparent mean reversion in
+the contiguously measured changes. A temporary
+drop in earnings could raise expected future com-
+pound earnings growth fr
+om this lower base. The
+temporary earnings drop would simultaneously
+raise the current payout ratio, 
+D/E
+, because sticky
+dividends do not fall as much as earnings. Finding
+this kind of mean reversion might still be interest-
+ing, but dividend policy would have no special
+standing as a predictor. We tested for this case by
+adding direct measures of mean reversion in earn-
+ings to our regressions and comparing their
+Figure 3.Consistency of 30-Year Regressions: EG5 = a + b(PR), 18712001
+R
+2
+A. Adjusted R
+2
+0
+0.1
+0.2
+0.3
+0.4
+0.5
+0.6
+0.7
+0.8
+1/07
+1/17
+1/27
+1/37
+1/47
+1/57
+1/67
+1/77
+1/87
+1/9712/01
+12/01
+t
+-Statistic
+B. t-Statistic
+0
+2
+4
+6
+8
+10
+12
+14
+16
+1/07
+1/17
+1/27
+1/37
+1/47
+1/57
+1/67
+1/77
+1/87
+1/97
+
+Surprise! Higher Dividends = Higher Earnings Growth
+January/February 2003
+75
+investigations but leave more precise tests, or the
+introduction of new explanations, to future work.Robustness TestsReaders might and should be skeptical of a relation-
+ship that consists of forecasting overlapping 10-
+year earnings growth over a 55-year span when
+strongly serially correlated payout ratios are used.
+Arguably, we have only slightly more than five
+truly independent observations. Although statisti-
+cal tools can adjust regression 
+t
+-statistics for this
+phenomenon and 
+R2 measures remain legitimate,
+relationships of this type may seem statistically sig-
+nificant even when they 
+are not. A diligent mining
+of the available data without economic intuition or
+finding results that spuriously proxy for some other
+more basic relationship could deliver our findings
+without the causality that we infer. Because this
+possibility can never be completely dismissed and
+because we know our results are the opposite of
+what so many would intuitively expect, we carried
+out extensive robustness checks. The checks
+included methodologically motivated tests (e.g.,
+tests in out-of-sample periods, tests for small spec-
+ification changes that might change results, etc.)
+and economically motivated tests (tests of whether
+the power of the payout ratio is coming from the
+reasons we hypothesized or from other sources). 
+Methodological Tests. 
+The simplest robust-
+ness check is an out-of-sample test. We favored the
+post-WWII period in the discussion so far because
+of our confidence in the data quality and its rele-
+vance to todays world, but we do have data back
+to 1871. Accordingly, Table 1 shows in the last row
+the same regression for the 
+prior, entirely separate,
+18711945 period. The coefficients and the 
+R2 value
+are smaller, which might make sense in light of the
+more volatile earnings and noisier data before 1946.
+But the 
+t
+-statistics are still quite strong, and the
+relationship still explains 19.5 percent of the vari-
+ance of earnings. Most importantly, the coefficient
+has the same counterintuitive positive sign.
+Also, as is evident in the scatterplot of Figure
+2, eliminating the most ex
+treme (highest and lowest
+10 percent) of payout ratios from the 19462001
+data (i.e., dropping those observations) would have
+little effect on the regressions.
+Sensitivity to 10-Year Forecasting Horizon.
+We focused on 10-year periods because we were
+ultimately interested in the impact of real growth
+on fair valuation. Transient short-term peak-and-
+trough earnings should have little impact on the
+proper price to pay for stocks; only long-term earn-
+ings prospects should matter. We arbitrarily chose
+10-year spans to balance two conflicting goalsa
+span long enough to be of economic significance
+(the long term) but short enough to have a reason-
+able number of independent periods and to have
+some relevance to an investors career
+ 
+horizon.
+For a robustness check, we repeated our tests on
+5-year real earnings growth. In so doing, we proba-
+bly sacrificed some economic relevance; strong
+statements about 10-year earnings growth are more
+important to fair value than statements about 5-year
+growth. But we doubled the number of nonoverlap-
+ping periods. The first two rows of 
+Table 3
+, which
+contain results for 19462001 and 18712001, dem-
+onstrate that the link we identified holds up nicely
+for shorter earnings-growth periods. 
+Predictive Consistency. 
+For testing the con-
+sistency of our 
+R2 and 
+t
+-statistic results, we again
+used five-year results so that we could consider
+more independent data points. We performed the
+monthly regression of five-year real S&P 500 earn-
+ings growth on the starting payout ratio on a rolling
+30-year basis for every 30-year span from 1871
+through 2001.13 Panel A of 
+Figure 3
+ traces the 
+R2and Panel B traces the 
+t
+-statistics on the coefficient
+for the payout ratio from each of these rolling
+regressions. Results indicate substantial variation
+over time, as one would expect: The statistical noise
+in the relationship should cause such variability,
+and the fundamental relationship may strengthen
+or weaken with changes in the economic, tax, or
+Table 3.Five-Year Earnings Growth as a 
+Function of Payout Ratios: Regression 
+Coefficients
+(t-statistics in parentheses)Regression Span
+ab
+Adjusted 
+R21946200121.3% 0.44
+PR
+53.8%
+(6.0)(7.3)
+1871200111.30.19
+PR
+24.0
+(5.2)(6.7)
+1871194518.00.26
+PR
+34.1
+(4.7)(5.8)
+1946197922.20.45
+PR
+61.1
+(5.6)(6.8)
+1871197912.90.21
+PR
+26.8
+(5.1)(6.6)
+1980200121.10.46
+PR
+49.6
+(3.5)(4.4)
+Note
+: Regression equation is 
+EG5 = 
+a
+ + 
+b
+(
+PR
+).
+
+Financial Analysts Journal
+74
+©2003, AIMR®
+real earnings growth over the next decade; growth
+has actually fallen 0.4 percent a year on average
+ranging from a worst case of truly terrible 3.4
+percent compounded annual real earnings for the
+next 10 years to a best case of only 3.2 percent real
+growth a year over the next decade. From a starting
+point of very high payout ratios, the opposite has
+occurred: strong average real growth (4.2 percent),
+a worst case of positive 0.6 percent, and a maximum
+that is a spectacular 11.0 
+percent real growth a year
+for 10 years. Indeed, the very early evidence from
+the last few quarters (late 2001) would suggest that
+the recent record low payout ratio and earnings
+growth are falling into the classic pattern. Contrary
+to the arguments of the new paradigm advocates,
+earnings have been tumbling, not soaring, since
+earnings retention reached record levels. Of course,
+the most recent 10-year observations from these
+payout-ratio lows remain to be seen.Potential ExplanationsMany hypotheses might explain the (perhaps sur-
+prising) positive relationship between current pay-
+out ratio and future real earnings growth. The
+following list, although clearly incomplete, repre-
+sents a beginning effort to explain this phenomenon:
+Corporate managers are loath to cut dividends
+(Lintner 1956). Perhaps a high payout ratio
+indicates managerial confidence in the stability
+and growth of future earnings and a low pay-
+out ratio suggests the opposite. This confidence
+(or lack of it) might be based on public infor-
+mation but also private information (see, for
+example, Miller and Rock 1985).
+Another hypothesis consistent with the rela-
+tionship we empirically observed is that com-
+panies sometimes retain too much of their
+earnings as a result of the managers desires to
+build empires (Jensen 1986).11 There need not
+be anything nefarious in this behavior: An
+otherwise benign coincidental policy of earn-
+ings retention may end up encouraging empire
+building by creating an irresistible cash hoard
+burning a hole in the corporate pocket. Con-
+versely, financing through share issuance and
+paying substantial dividends, although per-
+haps less tax efficient, may subject manage-
+ment to more scrutiny, reduce conflicts of
+interest, and thus curtail empire building. (The
+assumption is, of course, that inefficient empire
+building lays the foundation for poor earnings
+growth in the future whereas discipline and a
+minimization of conflict
+s has the opposite, sal-
+utary effect.)
+Perhaps the positive relationship is driven by
+sticky dividends (see Lintner) combined with
+mean reversion in more volatile earnings. Tem-
+porary peaks and troughs in earnings, subse-
+quently reversed, could cause the payout ratio
+to be positively correlated with future earnings
+growth (i.e., temporarily low earnings today
+cause a high payout ratio, thus forecasting the
+earnings snapback tomorrow). The testable dif-
+ference between this hypothesis and the first
+two is that dividend policy has no special
+standing, so any reasonable measure of mean
+reversion in earnings should work to forecast
+future earnings growth.
+Perhaps our data or experimental design are in
+error. For instance, perhaps our results are
+time-period specific (either as to the years cov-
+ered by our study or the length of our forecast-
+ing period). Or maybe our results merely proxy
+for other, more fundamental variables that
+forecast economic activity. Or perhaps our
+results are just random noise.
+Clearly, distinguishing the first two hypothe-
+ses from each other, or confirming or rejecting
+either, is beyond the scope of this article.12 We
+simply note that each of these stories fits the data.
+Next, we carry out some very preliminary
+Table 1.Subsequent 10-Year Earnings Growth 
+as a Function of Payout Ratio: 
+Regression Coefficients
+(t-statistics in parentheses)Regression 
+Span
+ab
+Adjusted 
+R21946200111.6% 0.25
+PR
+54.6%
+(7.2)(8.6)
+187120013.10.07
+PR
+14.2
+(3.1)(4.5)
+187119455.10.09
+PR
+19.5
+(4.4)(7.5)
+Note
+: The regression equation is 
+10-Year earnings growth
+=
+Constant term 
++
+ (
+b
+)
+×
+ Preceding payout ratio, or
+EG10 
+=
+a
+ 
++
+ 
+b
+(
+PR
+).
+Table 2.Payout Ratios and Subsequent 
+10-Year Earnings Growth: Quartile 
+Comparisons, 19461991Starting Payout 
+QuartileAverageWorstBest
+1 (low) 0.4% 3.4% +3.2%
+2+1.32.4+5.7
+3+2.71.1+6.6
+4 (high)+4.2+0.6+11.0
+
+Surprise! Higher Dividends = Higher Earnings Growth
+January/February 2003
+73
+falls to the lowest levels ever seen near the end of
+our sample period, before a recovery in late 2001,
+because of plunging current earnings. 
+This discussion will focus on 19462001 (the
+post-World War II period) as the modern period,
+for which our confidence in
+ data quality and appli-
+cability to current times are highest. The period
+before 1946 was one of two world wars, the Great
+Depression, unregulated markets, and a host of
+other differences from the post-1945 era. Where
+possible, however, we will also show results for
+earlier and longer periods.
+Figure 1 shows empirically that forecasts of a
+natural inverse relationship between dividend
+payout and future earnings
+ growth are not correct.
+Figure 2
+, which plots subsequent 10-year real earn-
+ings growth against starting payout ratios as a
+scatterplot, rejects this elegant thesis even more
+vividly. Obviously, rather than inverse, the rela-
+tionship of current payout to future earnings
+growth is strongly positive. 
+Table 1
+ contains the
+monthly regression corresponding to Figure 1 of
+the rolling 10-year real earnings growth of the S&P
+500 on the starting payout ratio, 
+PR
+, for the past 50
+130 years.9 The link seen in the plots and regres-
+sions is compelling, particularly because it has the
+wrong sign.10 
+Examining our main 19462001 period another
+way, we divided all rolling 10-year periods starting
+in January 1946 and ending in December 1991 into
+four quartiles by starting payout ratio (Quartile 1
+being the low payout ratio and Quartile 4, the high).
+Table 2 
+reports the average 10-year earnings
+growth and the worst and best 10-year earnings
+growth achieved when starting in each respective
+payout-ratio quartile. The average earnings growth
+obviously increases with a rising starting payout
+ratio, which corresponds to the regression in Table
+1 and scatterplot in Figure 2. We suspect that many
+readers will be surprised that starting in the bottom
+quartile of payout ratios, the average subsequent
+real earnings growth is actually negative. Needless
+to say, negative real earnings growth for a 10-year
+span falls far below what most investors would
+find acceptable, let alone expect 
+ex ante
+ one quarter
+of the time. 
+The worst and best 10-year spans also show the
+same monotonic relationship with the starting pay-
+out ratio: The higher the payout ratio, the better the
+average subsequent 10-year earnings growth and
+the better the best and the worse the worst out-
+comes. A striking example is that the worst 10-year
+growth when starting in the highest-payout-ratio
+quartile is better than the average earnings growth
+when starting in the lowest-payout-ratio quartile.
+Conversely, the best 10-year growth starting in the
+lowest-payout quartile is not as good as the average
+growth when starting in the highest-payout quar-
+tile. 
+In general, when starting from very low pay-
+out ratios, the equity market has delivered dismal
+Figure 2.Scattergram of Payout Ratio vs. Subsequent 10-Year Real Earnings 
+Growth, 19462001 Data 
+Real Earnings Growth (%)
+
+4
+
+2
+0
+2
+4
+6
+8
+10
+12
+30
+40
+50
+60
+70
+8090
+Payout Ratio (%)
+
+Financial Analysts Journal
+72
+©2003, AIMR®
+replace). Similarly, the p
+er share earnings and
+dividends of an index fund portfolio (per share
+of the unitized index fund) will not keep pace with
+the growth in the aggregate dollar earnings and
+dividends of the companies that constitute the mar-
+ket. Why? Because when one stock is dropped and
+another added, the added stock is typically larger
+and more profitable than the deletion, which
+increases the divisor for constructing the index.
+Precisely the same thing happens in the man-
+agement of an actual index fund. When a stock is
+replaced, the proceeds from the deleted stock rarely
+suffice to fund the purchase of the added stock.
+Accordingly, all stocks are trimmed slightly to fund
+the new purchasethe implied consequence of the
+change in the divisor for an index. This mechanism
+drives a persistent wedge between, on the one
+hand, the growth of the aggregate dollar earnings
+and dividends for the market portfolio (which will
+keep pace with GDP growth over time) and, on the
+other hand, the per share growth of earnings and
+dividends for the market index (which will not
+keep pace with GDP growthsee Arnott and Bern-
+stein 2002).
+Entrepreneurial capitalism created the compa-
+nies that we had to add to the market portfolio (or
+brought down those that had to be removed),
+thereby changing our divisor. Thus, a persistent
+difference exists between our measure of EPS and
+aggregate dollar earnings or GDP, with our EPS
+growing slower than aggregate dollar earnings or
+GDP growth over long periods. Differences in
+ 
+lev-
+els of growth
+ 
+ended up in the unexamined inter-
+cepts of our regressions, however, and only
+covariance of this differential with our 
+ex ante
+ pre-
+dictive measures affected our tests (the robustness
+checks to follow provide some comfort that this
+issue is not important).
+For some of our tests, we used both bond yields
+and the CPI. Our two sources of bond yields were
+the National Bureau of Economic Research (NBER)
+and Ibbotson Associates.6 In cases of differences,
+we averaged the yield data. We used the same two
+sources for CPI data. 7 GDP data were drawn from
+the NBER.8The Payout Ratio for Forecasting 
+Earnings GrowthWe defined the payout ratio in this study as last
+years trailing dividends divided by last years
+trailing earnings. Dividends are sticky; they tend
+not to fall in notional terms, although they can fall
+during severe earnings downturns and can fall in
+real terms during periods of high inflation. Because
+earnings are more volatile than dividends, payout
+ratios are relatively volatile, although they have
+been far less volatile since 1946 than before. 
+Figure
+1
+ shows the payout ratio 
+of the S&P 500 from 1946
+through year-end 2001 and subsequent 10-year
+growth in real earnings. Note that the payout ratio
+Figure 1.Payout Ratio and Subsequent 10-Year Earnings Growth, 19462001
+Payout Ratio (%)
+Subsequent 10-Year
+Earnings Growth
+Payout Ratio
+30
+40
+50
+60
+70
+80
+90
+Earnings Growth (%)
+
+6
+
+3
+0
+3
+6
+9
+12
+1/46
+1/51
+1/56
+1/61
+1/66
+1/71
+1/76
+1/81
+1/86
+1/91
+1/96
+1/01
+
+Surprise! Higher Dividends = Higher Earnings Growth
+January/February 2003
+71
+that permanently alters the market 
+D/E
+ from pay-
+ing out 50 percent of earnings to paying out 25
+percent of earnings. Because current earnings do
+not change (and, according to Miller and
+Modigliani, price should not change), the task of
+keeping expected return constant is again left to
+growth. For instance, suppose the market was sell-
+ing for a P/E of 15 at the time of this change (about
+the historical average). Thus, 
+E
+/
+P
+ was 6.7 percent
+(1/15); 25 percent of 6.7 percent is 1.7 percent. In
+other words, in a market 
+with a P/E of 15, for the
+markets expected return to be unaltered and cur-
+rent prices and earnings to remain unchanged, a
+permanent change in payout policy from 50 per-
+cent to 25 percent would have to be offset by a
+permanent increase in expected growth of 1.7 per-
+cent.
+For a single company, this increase in growth
+is clearly possibleif the business is easily scalable
+or if offsetting transactions (e.g., share buybacks)
+are undertakenand investment policy is unaf-
+fected. By similar reasoning, many observers
+would accordingly expect a strong and reliably
+negative relationship between payout ratios and
+future earnings growth for the market as a whole.
+Looking at the recent policy of low payouts, this
+view, if true, would offer grounds for optimism
+regarding future earnings growth.
+Implicit in this view is a world of perfect capital
+markets. For instance, this reasoning assumes that
+investment policy is unaltered by the amount of
+dividends paid, that information is equal and
+shared (meaning the dividend does not convey
+managers private information), that tax treatment
+is the same for retained or distributed earnings, that
+managers act in the best interests of the sharehold-
+ers, that markets are priced
+ efficiently, and so forth.
+When the assumption of perfection is relaxed, a
+host of behavioral or information-based hypothe-
+ses arise as potential explanations for how the mar-
+kets payout ratio might relate to expected future
+earnings growth. Thus, we turned to the historical
+data to answer the question of how marketwide
+payout ratios have related to future earnings
+growth.3DataWe used three sources of dividend yield and stock
+total-return dataSchwert (1990), Shiller (2000;
+updated data from aida.econ.yale.edu/~shiller/
+data.htm), and Ibbotson Associates (2001).4 In cal-
+culating real earnings growth, we began with a
+calculation of real earnings for an index portfolio.
+We did so in the following steps:
+1.constructing a total return index for stocks,
+2.subtracting out the monthly dividend income
+on stocks, based on the data from Schwert,
+Shiller, and Ibbotson, which gave us a stock
+price index from 1871 to date,
+3.dividing through by the U.S. Consumer Price
+Index (CPI) to impute a real stock price series,
+and
+4.multiplying the real price series by the
+earnings-yield data from Shiller.5 
+This process generated a history of the EPS of the
+S&P 500 Index.
+Because earnings and the forecasting of earn-
+ings growth is the crux of our article, more discus-
+sion of our definition of EPS is in order. We conduct
+tests of whether certain variables, notably the pay-
+out ratio, can be used to forecast the growth in the
+aggregate EPS number derived in Step 4. This
+aggregate EPS series is not the same as the earnings
+growth on a static portfolio of stocks. The economy
+at large is dynamic; a market portfolio must
+adjust to acknowledge this fact. By focusing on a
+portfolio that an investor might choose as a market
+portfolio, we were tacitly selling the companies that
+were no longer an important factor in the market
+or economy to make room for those that had
+become an important factor. Standard and Poors
+does exactly the same by adding new-economy
+stocks (whatever the new economy is at each point
+in time), dropping old-economy stocks, and
+changing the divisor for the index. Changing the
+divisor each time the index composition is changed
+is equivalent to a pro rata sale of existing holdings
+to rebalance into new holdings. So, when we were
+examining 10-year real earnings growth (the fore-
+casting horizon we primarily focused on), we were
+not looking at the growth of earnings on a fixed set
+of stocks bought at the outset. Growth in our
+approach is analogous to the growth an investor
+might have seen on the EPS of an index fund port-
+folio that held the assets selected by Standard and
+Poors since 1926 (and by Cowles, retrospectively,
+from 1871 to 1925). It is 
+the rate of growth in this
+index funds EPS that we attempted to forecast in
+this study (and generally what we refer to as earn-
+ings growth).
+Another way to think about what we did is to
+recognize the distinction between the market and a
+specific index portfolio. The market, in aggregate,
+shows earnings and dividend growth wholly con-
+sistent with growth in the overall economy (Bern-
+stein 2001a). If that same market portfolio were
+unitized, however, the unit values would not grow
+as fast as the total capitalization because of the
+dilution associated with new assets in the market
+portfolio (new companies in an index are almost
+always larger than the companies that they
+
+70
+©2003, AIMR®
+Surprise! Higher Dividends 
+= Higher Earnings GrowthRobert D. Arnott and Clifford S. AsnessWe investigate whether dividend policy, as observed in the payout ratio of
+the U.S. equity
+ 
+market portfolio, forecasts future aggregate earnings
+growth. The historical evidence strongly suggests that expected future
+earnings growth is fastest when current payout ratios are high and slowest
+when payout ratios are low. This relationship is not subsumed by other
+
+factors, such as simple mean reversion in earnings. Our evidence thus
+contradicts the views of many who believe that substantial reinvestment of
+retained earnings will fuel faster future earnings growth. Rather, it is
+consistent with anecdotal tales abou
+t managers signaling their earnings
+expectations through dividends or enga
+ging, at times, in inefficient empire
+building. Our findings offer a challenge to market observers who see the
+low dividend payouts of recent times as a sign of strong future earnings to
+
+come.ince 1995, and until a recent uptick arising
+from plunging earnings, marketwide divi-
+dend-payout ratios in the United States have
+been in the lowest historical decile, reaching
+
+unprecedented low levels from late 1999 to mid-
+2001. Alternatively stated, earnings-retention rates
+have recently been at or near all-time highs. Mean-
+while, price-to-earnings ratios and price-to-
+dividend ratios are high by historical standards,
+despite the sharp fall in stock prices since early 2000.
+With recent valuation ratios at such high levels and
+dividend payouts so low, the only way future long-
+term equity returns are likely to rival historical
+norms is if future earnings growth is considerably
+faster than normal. Some market observers, includ-
+ing some leading Wall Street strategists, do indeed
+forecast exceptional long-term growth. As a cause
+for this optimism, they point to, among other
+
+ratios. 
+Consider the well-known constant-growth
+valuation model of Gordon (1962): (1)Expected return, 
+R
+, equals the dividend yield, 
+D
+/
+P
+, plus an assumed constant expected growth term,
+G
+. Now, the dividend yield itself can be thought of
+as the product of the dividend-payout ratio, 
+D
+/
+E
+(the ratio of dividends to earnings), and the earn-
+ings yield, 
+E
+/
+P
+ (the inverse of P/E):
+(2)Equation 1 and Equation 2 can be applied to a
+given company or to the market portfolio itself. We
+focus on the latter application. Assuming dividend
+policy does not affect the expected return on the
+market portfolio (and assuming the payout ratio is
+constant through time, so earnings and dividend
+growth are equal), a low payout (
+D/E
+) must be
+offset either by a high 
+E
+/
+P
+ (low P/E) or by high
+expected growth. 
+As we will show, in the past 130 years, U.S.
+equity market P/Es have not offset variation in
+payout ratios. For instance, recent P/Es have been
+
+they would have to be quite low. Thus, the task of
+offsetting the low payout is left to 
+G
+, growth. 
+Some interpret this forecasted marketwide
+inverse relationship of current dividend-payout
+policy to future growth as an intertemporal exten-
+sion of the Modigliani and Miller (1961) dividend
+irrelevance theorem.1,2 For example, imagine an
+instantaneous pervasive change in dividend policy
+Robert D. Arnott is chairman of First Quadrant, LP, and
+of Research Affiliates, LLC, Pasadena, California. Clif-
+ford S. Asness is managing principal at AQR Capital
+
+Note:
+ This article was accepted for publication prior to
+Mr. Arnotts appointment as editor of the 
+Financial
+Analysts Journal.
+ SR
+D
+P
+----
+G
+.
++
+=
+R
+D
+E
+-----
+
+
+E
+P
+----
+
+
+G
+.
++
+=

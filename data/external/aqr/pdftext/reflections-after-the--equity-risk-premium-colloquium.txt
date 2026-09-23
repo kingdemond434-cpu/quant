@@ -1,0 +1,290 @@
+©2011 The Research Founda
+tion of CFA Institute27
+Reflections After the 2011 Equity 
+Risk Premium ColloquiumClifford AsnessFounding and Managing Principal
+AQR Capital Management, LLCIn 2001, and again in 2011, I participat
+ed in a forum about the equity risk
+premium. Presented here are some informal thoughts about the equity premium
+that I composed after the second forum. These thoughts are an eclectic
+collection inspired by, but not limit
+ed to, what we discussed together.Sequels Are Rarely as Good as OriginalsThe 2011 forum reprised the earlier gathering with many of the same presenters
+from 2001. When we met in 2001, it was not long after the peak of the
+technology bubble (I call it a bubble, alth
+ough that label is still in some dispute).
+At that time, equity prices were still we
+ll above historical norms, although they
+were lower than in March 2000. In 2011, many of us would say that equity
+prices are still high versus historical prices, but the divergence is nowhere near
+as dramatic as in 2001.We Still Do Not All Agree about Long-Term 
+PredictabilityIt is clear from the 2011 forum that a division remains among the participants
+that was clearly present in 2001. Some believe in long-term predictability;
+others do not. Thus, when equity pric
+es are high versus fundamentals (I am
+assuming that we agree on how to measure this comparison), some believe
+conditional long-term expected real equity returns are low, and vice versa.
+I am in this camp, but I have to admit the relationship is not as obvious as
+it may seem. Point estimatesthe actual
+ observed historyshow that long-
+term (say, 10-year) historical rolling 
+returns are indeed negatively related to
+starting prices. And the markets perfor
+mance since the first forum, when high
+prices indeed led to very low realized equity returns, might make it seem that
+the case is closed. 
+It is incredibly hard, however, to say anything with precision and confi-
+dence about the relationship between long-term return and price because not
+that much independent data are available and in-sample regressions often
+contain biases. As was mentioned in the 
+forum, it really comes down to what
+ERP.book  Page 27 
+ Wednesday, December
+ 21, 2011  9:06 AM
+
+'
+
+Rethinking the Equity Risk Premium28©2011 The Research Foundation of CFA Institute
+an investment manager believes about long-term returns beforehand. If a
+manager believes that expected returns are constant, then when prices are high,
+expected growth will be higher than
+ normal (making expected returns come
+out the same despite the higher prices). The data in fact point in the other
+direction, but only weakly after account
+ing for all the problems. In other words,
+the data barely help to resolve this debate.
+It has to be one way or the other; it 
+is a mathematical identity. High prices
+forecast either low expected returns or
+ high expected growth. For me, despite
+its low statistical power, the point estima
+te is still a reasonable guess. Rather
+than looking for a definitive relationship between high prices and subsequent
+low returns, I find it more useful to focus on the absolute lack of evidence that
+high prices forecast high future growth. 
+The relationship is equivalent, but it is
+how I like to frame the problem.
+This point estimate is only a small pa
+rt of why I believe in predictability. It
+is more important to me that return pr
+edictability agrees with my intuition and
+prior experience, largely formed from other time-series and cross-sectional
+experiments. A vast body of literature shows that when prices of anything are
+high versus fundamentals, expected returns are low, and vice versa. For instance,
+in the cross-section, when a given set of 
+stocks has high prices versus fundamen-
+tals (such as book value, earnings, or ca
+sh flow), the expected returns on these
+stocks are low relative to other (cheaper) 
+stocks. This finding is nearly ubiquitous.
+Thus, although I find the point estimate for the equity risk premium (ERP)
+versus the price relationship comforting, I find it far more compelling in the
+context of the literature. I think the way 
+finance works is that when prices are
+high, as measured against any reasonable 
+form of fundamentals, expected returns
+are lower than normal, and vice versa. Admi
+ttedly, that is hard to prove, especially
+if the focus is only on ERP data, and clearly some are still not convinced.
+I posed the following question to the 
+2011 group, particularly to those who
+were skeptical about the possibility of long-term predictability: When prices are
+at true extremes (e.g., the high in March 
+2000 or the other direction, the low in
+the early 1980s), would forecasters project any difference in forward-looking
+expected real returns? If the answer is 
+yes, the issue then is a variation in the
+degree of our beliefs, not a difference in dogma. (I never quite got an answer!)Some Still Believe Silly Id
+eas, but They Also Have 
+Learned Important TruthsTen years after the technology bubble, 
+some unsubstantiated beliefs remain.
+The so-called Fed model, which is the idea
+ that high stock prices are reasonable
+when nominal interest rates are low, is
+ still very common (although no one at
+the forum advanced this view). My own research and others have shown this
+ERP.book  Page 28 
+ Wednesday, December
+ 21, 2011  9:06 AM
+
+Reflections After the 2011 Eq
+uity Risk Premium Colloquium
+©2011 The Research Founda
+tion of CFA Institute29
+proposition to be a form of money ill
+usion with no power to predict (even
+noisily) long-term stock returns. But the Fed model still yields a far more bullish
+forecast than focusing just on equity 
+prices (unadjusted for nominal interest
+rates), as it has for a long time. Its 
+bullishness probably accounts for its
+continued popularity, particularly among strategists on Wall Street.
+The Shiller P/E (the current price of the S&P 500 Index divided by the
+previous 10-year average real
+ earnings) has become the 
+lingua franca
+ of those
+that discuss the ERP and how it relates 
+to current equity prices. This choice is
+not because the Shiller P/E is perfectno measure isbut simply because it is
+reasonable and historically consistent. It
+ also helps to have a common standard.
+Recently, the Shiller P/E has been back in the news because some broker
+research has called it into question. The 
+attacks are mostly ridiculous; they are
+based on bullish researchers using Wall Streets long-term preferred operating
+earnings, which are earnings before nega
+tive events are deducted, or throwing
+out historical periods that the researcher
+s do not want in the data. If the price
+of the S&P 500 is compared only with
+ other times when the price was high,
+then of course it will look lower. 
+One argument the critics advance, with some possible merit in my view, is
+that the most recent financial crisis was so severe that the past 10 years of
+earnings are too low to be a reasonable proxy for trend. Even that effect,
+however, is tiny and ultimately unconvincing.1 
+Finally, reflecting the controversy 
+about predictability discussed earlier,
+those who have issues with the Shiller P/E assume that todays low dividend
+payouts are sensible because earnings wi
+ll grow more in the future. Rob Arnott
+and I (Arnott and Asness 2003) established empirically that this notion is not
+only wrong but also backward for the 
+past 140 years. Some notions die hard,
+and notions that are more bullish tend to die harder. Both the Fed model and
+the current critique of the Shiller P/E lean in the direction of liking stocks.
+More optimistically, investment managers seem to have learned some
+important lessons since 2001. Again, many still argue about long-term mean
+reversion and predictability, but many also
+ believe, as I do, that after long-term
+strong returns (if mirrored in higher valuations at the end), expected future
+returns will be lower. 
+1This argument at least is in the right direction.
+ For instance, if instea
+d of looking at average
+10-year earnings, investors looked at median 10
+-year earnings (thus giving no weight to the
+magnitude of the crisis), the resulting Shiller P/E 
+would be very high versus history but slightly
+less high compared with the conventional approach 
+of taking the average. In my view, this minor
+adjustment, which still sh
+ows an overvalued stock market, is 
+not what the bulls are looking for,
+but it is a reasonable 
+adjustment to make.
+ERP.book  Page 29 
+ Wednesday, December
+ 21, 2011  9:06 AM
+
+Rethinking the Equity Risk Premium30©2011 The Research Foundation of CFA Institute
+In contrast, in 2001, reflecting the th
+inking of the technology bubble, many
+in the investment world seemed to be
+lieve that high past returns meant 
+higher
+long-term future returns. This belief ca
+n creep into prices in various ways, but
+perhaps the simplest occurs when an investor uses a past average of realized
+returns to forecast the future. I cannot sa
+y this view is gone, but many investors,
+perhaps most, now seem to understand that it never made sense. 
+After a time of strong long-term returns, future long-term returns will be
+lower. Reasonable people may believe that future long-term returns will be
+unaffected. No rational investor will ex
+pect long-term returns to be higher than
+normal; there are far fewer of such irrational investors today than in 2001.My Forecast and Some Thoughts on DispersionEven those who believe in long-term pred
+ictability should acknowledge that it
+is a noisy process. The standard deviation of average annual returns over 10
+years around a forecast that moves with
+ the Shiller P/E is about 45 percent.
+It is a bit tighter when the Shiller P/E is
+ very high or low. This tightness could
+mean greater predictability at those times, but it could also be a bias from
+investors not seeing the true extremes po
+ssible in the distribution. Nonetheless,
+45 percent is a lot for standard deviation, and it is big relative to the dispersion
+among all the forecasters at the forum. 
+Bullish and bearish forecasters at the
+forum mostly did not differ from each
+ other by more than one time-series
+standard deviation of 10-year returns. Thus, it will be very hard for anyone to
+claim a convincing victory!
+The financial world, however, still demands a specific forecast, so I will
+oblige. Guesswork is always involved in making such a forecast, but the thought
+process around the guesswork can be int
+eresting. I will forecast only the real
+(consumer price indexadjusted) return on the S&P 500, not the risk premium
+versus bonds. At the 2001 forum, we faile
+d in deciding what benchmark to use
+in forecasting the equity risk premium,
+ thus confusing the issue somewhat. In
+my view, our discussion was not meant 
+to reflect differing bond forecasts;
+forecasting the real return on the S&P 500 is more to the point.
+To do so, I like to start with the Shiller P/E, which was roughly 23.5 in
+early April 2011. I then reduce that number by 10 percent to get a measure of
+the current P/E using trend earnings (b
+ecause earnings grow over time, the
+unmodified Shiller P/E is a lagging indic
+ator of valuation). Doing so drops the
+Shiller P/E to about 21.5, which makes the earnings yield about 4.7 percent.
+To get a sustainable dividend yield, I 
+cut the earnings yield figure in half to
+about 2.3 percent. Reducing the earnings yield reflects a historically reasonable
+payout ratio of about 50 percent, not th
+e current payout ratio, which is lower.
+I am sneaking in some optimism by ignoring my own work with Arnott that
+ERP.book  Page 30 
+ Wednesday, December
+ 21, 2011  9:06 AM
+
+Reflections After the 2011 Eq
+uity Risk Premium Colloquium
+©2011 The Research Founda
+tion of CFA Institute31
+shows growth is slower when payouts ar
+e low, as they are today. Next, I add
+about 1.5 percent for expected real growth in earnings. Using the Gordon
+growth model (Dividend/Price + Growth),
+ the result is a long-term forecast
+real equity return of 3.8 percent.
+Finally, I round to 4 percent (not to 
+round is arrogantly overprecise!); that
+is my 10-year forecast, but with some more caveats. This rate assumes a steady
+state in the markets. That is, it assumes that the best forecast of the future Shiller
+P/E is the current Shiller P/E. A more pessimistic vision of the future would
+assume some regression to the long-run mean Shiller P/E, which is about 15.
+A very pessimistic vision of the future would assume a regression through the
+long-term mean, as some argue happens 
+eventually after all bubbles. Aside from
+about three days in early 2009, and then o
+nly trivially, valuations have not been
+below historical means since well before 2000. But I am not that pessimistic. 
+I agree with others who have argued th
+at valuations in the past were too
+low, partly because the returns that inves
+tors study are far more attainable today
+with diversified index funds. I think
+ those at the forum in 2001 were just
+beginning to appreciate this argument, and it is one of the most important
+considerations when examining the hist
+orical ERP. Too often, investors take
+for granted that they can mimic the ma
+rkets ERP by buying diversified index
+funds at very low fees. During much of the historical period, however, this
+option did not exist. Thus, investors today should require a lower total return,
+and pay a higher P/E, because they retain 
+more of the return at lower risk. So,
+my forecast does not incorporate any mean reversion of P/Es. I will stick with
+a real 4 percent. 
+Although the journey to arrive at my 
+forecast is messy, and as much art as
+science, I think the thought process is useful for investment managers.
+REFERENCESArnott, Robert D., and Clifford S. Asness. 2003. 
+Surprise! Higher Dividends = Higher Earnings
+Growth. 
+Financial Analysts Journal
+, vol. 59, no. 1 (January/February):7087. 
+ERP.book  Page 31 
+ Wednesday, December
+ 21, 2011  9:06 AM

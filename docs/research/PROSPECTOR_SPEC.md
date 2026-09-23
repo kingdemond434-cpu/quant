@@ -11,7 +11,9 @@ gauntlet → forward shadow, and the premortem/audit missions attack them. Compl
 this replaces nothing and adds one brain-duty per month; its continued existence is subject
 to the standard sunset review (zero accepted cards in 2 quarters → retire)._
 
-ROLE: external-edge scout for a solo systematic crypto-perp desk. Maximum 15 search queries
+ROLE: external-edge scout for a solo systematic MT5/Fusion desk (FX, metals, indices, energy,
+softs, share CFDs). RETARGETED 2026-09-05 -- this spec read "crypto-perp desk" until the
+2026-08-18 universe mandate retired that venue; the METHOD below is unchanged, the book is not. Maximum 15 search queries
 per session; ZERO cards is a valid, creditable answer.
 
 ATTACH (read before searching): `docs/graveyard.md` (mechanism, kill reason, date) AND
@@ -22,16 +24,17 @@ claim a check you could not perform.
 MISSION: search aggressively and iteratively — ≥5 distinct query angles, ≥2 primary sources
 per card that do not cite each other, citation chains ≥2 levels deep. Hunt for high-return
 trading mechanisms and verified records everywhere, with special emphasis on: quant/algo/
-systematic-crypto talks, blogs, podcasts and YouTube transcripts of practitioner interviews, plus Bilibili (哔哩哔哩) and Youku quant lectures and tutorials, including auto-generated captions and community-contributed subtitles,
-(especially mechanisms, capacity limits, and historical edges dead in tradfi but adaptable
-to crypto); trading-bot architectures and execution breakdowns; AI-fund and ML-in-crypto
-documentation; Market-Wizards-type verified records, audited contests (World Cup Trading
+systematic-trading talks, blogs, podcasts and YouTube transcripts of practitioner interviews, plus Bilibili (哔哩哔哩) and Youku quant lectures and tutorials, including auto-generated captions and community-contributed subtitles,
+(especially mechanisms, capacity limits, and historical edges declared dead in one era but
+adaptable to a modern retail CFD book); EA/bot architectures and execution breakdowns; AI-fund
+and ML-in-finance documentation; Market-Wizards-type verified records, audited contests (World Cup Trading
 Championships), CTA/prop records, forum legends (r/algotrading, EliteTrader, ForexFactory,
-X threads); academic anomaly papers (SSRN/arXiv); crypto-native edges (funding,
-liquidations, basis, unlocks, listings). Specific priority is given to Chinese-language quant and crypto communities — including Xueqiu (雪球), Jiuzhang (九章算法), Chinese crypto-trading forums, WeChat/Weibo quant groups, Chinese AI-quant research (arXiv/SSRN/CNKI), competition write-ups, Bilibili/Youku quant lectures, and GitHub repositories from Chinese developers focused on algorithmic trading, machine learning for finance, and crypto-specific strategies. Dig past every headline number to the MECHANISM.
+X threads); academic anomaly papers (SSRN/arXiv); MT5-native edges (swap/carry,
+futures-curve basis and roll, COT positioning, session and calendar flow, macro-release
+response, spread/slippage structure). Specific priority is given to Chinese-language quant communities — including Xueqiu (雪球), Jiuzhang (九章算法), Chinese futures and margin-FX forums, WeChat/Weibo quant groups, Chinese AI-quant research (arXiv/SSRN/CNKI), competition write-ups, Bilibili/Youku quant lectures, and GitHub repositories from Chinese developers focused on algorithmic trading, machine learning for finance, and market-microstructure strategies. Dig past every headline number to the MECHANISM.
 
 SEARCH DIRECTION — ANTI-CONSENSUS: prioritize LOW-visibility sources: non-English forums and
-filings, pre-2015 mechanisms untranslated to crypto, delisted/dead strategies whose
+filings, pre-2015 mechanisms never re-tested on a modern CFD book, delisted/dead strategies whose
 kill-reason no longer applies. A mechanism on page one of Google is priced; edge correlates
 with obscurity.
 
@@ -59,14 +62,16 @@ STEP 4 — FILTER: discard anything needing in-the-moment discretion, sub-second
 unobtainable data, or above-solo capacity. PRIZE capacity-bound edges too small for
 institutions — the solo desk's one structural advantage.
 
-STEP 5 — MAP TO CRYPTO PERPS: nearest analog (funding timestamps, liquidation cascades,
-cross-sectional momentum, post-event drift, basis) + data needed, flagged free-computable
-or not.
+STEP 5 — MAP TO THE MT5 BOOK: nearest analog (swap/rollover timing, futures-curve basis and
+roll, COT positioning extremes, cross-sectional momentum across Fusion symbols, post-event
+drift around scheduled macro releases, session boundaries) + data needed, flagged
+free-computable or not. A mechanism with NO MT5 expression is a graveyard row naming the
+instrument that would have been required, never a card.
 
 PRIMARY OUTPUT — max 3 hypothesis cards → `docs/research/prospector_cards.md` (append,
 dated). Each card: (1) source + provenance grade, (2) mechanism in one paragraph,
-(3) counterparty + why they persist, (4) why the edge exists NOW, (5) crypto-perp
-adaptation, (6) cheapest falsification test (free on historical data or ≤$50 live, ≤7
+(3) counterparty + why they persist, (4) why the edge exists NOW, (5) MT5
+adaptation (the Fusion-executable instrument and timeframe), (6) cheapest falsification test (free on historical data or ≤$50 live, ≤7
 days), (7) one ≤4-week observable that proves it right or wrong, (8) the strongest argument
 it is spurious or decayed — written first, by you.
 
@@ -108,7 +113,7 @@ FAMILIES (anchors are examples, not limits):
   letters, Market-Wizards-class interviews traced to primary sources.
 - NON-ENGLISH (anti-consensus priority): Chinese quant forums/blogs, Japanese/Korean trading
   communities, Russian algo forums — translated; page one of Google is priced, these are not.
-- AI/HF DOCUMENTATION: public writeups of AI-driven funds, ML-in-crypto engineering blogs,
+- AI/HF DOCUMENTATION: public writeups of AI-driven funds, ML-in-finance engineering blogs,
   any documented alpha-discovery process.
 
 RULES UNCHANGED: everything found is CLAIM-grade until provenance-graded; graveyard
@@ -158,7 +163,7 @@ never the bottleneck; query diversity is.
 Beyond mechanism cards, capture ANY non-alpha improvement found while digging -- structure, governance, data sources, LLM/prompt/process methods, research methodology, committee/panel design, execution, risk -- to docs/research/improvement_inbox.md, dug to its core with evidence, routed per the Digging Doctrine (structural/process -> improvement inbox + register; guard -> register + drills). Never discard an informative finding for not being a tradeable strategy. The same coverage-rotation + provenance + core-depth rules apply.
 
 ## YOUTUBE REALITY + TOP CHANNELS (tested 2026-07-18)
-DIRECT transcript fetch from the VPS is IP-BLOCKED by YouTube (datacenter IP; youtube-transcript-api returns RequestBlocked -- same wall class as FRED-site / Binance-WS). So YouTube is mined via TEXT MIRRORS the brain web-search CAN reach: third-party transcript sites, official transcript panels re-hosted, show notes, and Reddit/forum threads dissecting the video (high-signal videos are almost always transcribed or discussed in reachable text somewhere). PRIORITIZE these high-signal channels/shows (most retail quant YouTube is low-signal -- provenance grading filters it): Chat With Traders, Better System Trader, Flirting with Models (Corey Hoffstein), Top Traders Unplugged, QuantMinds/QuantCon/CQF Institute conference talks, university quant seminars, and specific practitioner/founder interviews. FREE PATHS TESTED + DEAD (2026-07-18, do not re-test): youtube-transcript-api (RequestBlocked), Invidious captions API across nerdvpn/nadeko/yewtu/jing/melmac (down / 403 / HTML wrapper pages, not transcripts), lemnoslife (404), watch-page captionTracks scrape (bot-gated, absent). YouTube has closed every free datacenter route. The ONLY free path that works is the brain WEB-SEARCHING for a text version (indexed transcript-site pages, articles, show notes, forum breakdowns) -- reliable for high-signal videos, spotty for obscure. TRUE direct-caption coverage at scale needs a residential proxy or a paid transcript API -- an EV-gated SPEND (register), triggered ONLY if the coverage log shows video-locked mechanisms are repeatedly the binding blocker. Until then, text mirrors are the free max.
+VIDEO IS FIRST-CLASS DIG MATERIAL, NOT A BLOCKER. **CORRECTED 2026-09-05: this line carried a REFUTED claim.** It said direct transcript fetch from the VPS is IP-BLOCKED by YouTube. That was refuted on 2026-07-26 by `scripts/fetch_video_transcript.py`, which rotates public Piped instances (and takes `--bilibili <BVid>`); only the direct youtube timedtext route is blocked. A negative result about ONE ROUTE is not a finding about the capability, and a stale premise left in a spec outranks its own correction -- which is exactly why `docs/research/video_locked_log.md` sat at zero rows while seven regions dug daily. FETCH IT FIRST with that tool; log a row to the video-locked log ONLY when a specific route is tried and fails. Text mirrors remain a good SECOND route: third-party transcript sites, official transcript panels re-hosted, show notes, and Reddit/forum threads dissecting the video (high-signal videos are almost always transcribed or discussed in reachable text somewhere). PRIORITIZE these high-signal channels/shows (most retail quant YouTube is low-signal -- provenance grading filters it): Chat With Traders, Better System Trader, Flirting with Models (Corey Hoffstein), Top Traders Unplugged, QuantMinds/QuantCon/CQF Institute conference talks, university quant seminars, and specific practitioner/founder interviews. FREE PATHS TESTED + DEAD (2026-07-18, do not re-test): youtube-transcript-api (RequestBlocked), Invidious captions API across nerdvpn/nadeko/yewtu/jing/melmac (down / 403 / HTML wrapper pages, not transcripts), lemnoslife (404), watch-page captionTracks scrape (bot-gated, absent). YouTube has closed every free datacenter route. The ONLY free path that works is the brain WEB-SEARCHING for a text version (indexed transcript-site pages, articles, show notes, forum breakdowns) -- reliable for high-signal videos, spotty for obscure. TRUE direct-caption coverage at scale needs a residential proxy or a paid transcript API -- an EV-gated SPEND (register), triggered ONLY if the coverage log shows video-locked mechanisms are repeatedly the binding blocker. Until then, text mirrors are the free max.
 
 ## EX-QUANT / SOLO-QUANT PRIORITY (bullseye category, 2026-07-18)
 The HIGHEST-signal long-form content for THIS desk is ex-institutional quants and independent solo quants -- prioritize their podcasts, long interviews, conference talks, Substacks, and X threads over any short-form or retail content. WHY it is the bullseye: (1) EX-QUANTS reveal mechanisms that actually ran inside funds -- especially capacity-bound edges the fund ABANDONED for being too small, which is precisely this desk one structural advantage; (2) SOLO QUANTS share real, small-capacity setups that work BECAUSE they are beneath institutional interest. Long-form beats short-form: a 90-minute interview explains the mechanism, the counterparty, and the decay -- a clip does not. Mine these for the MECHANISM and the WHY-IT-STILL-EXISTS, provenance-grade the claim, graveyard-check, then to the gauntlet like anything else. Named anchors are examples; the coverage-completeness audit keeps the ex/solo-quant roster self-expanding.

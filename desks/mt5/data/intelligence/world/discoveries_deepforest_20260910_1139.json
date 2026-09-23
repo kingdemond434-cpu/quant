@@ -1,0 +1,30 @@
+[
+ {
+  "source": "deep_forest",
+  "kind": "dataset",
+  "title": "GDT Events Results » GlobalDairyTrade",
+  "url": "https://www.globaldairytrade.info/en/product-results/",
+  "published": "2026-09-10T11:38:56+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.45,
+  "lang": "en",
+  "endpoints": [
+   "https://cdn.globaldairytrade.info/ps/static-ss4/vendor-dedeb709e9.css.gz",
+   "https://cdn.globaldairytrade.info/ps/static-ss4/app-e266dd979e.css.gz"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "c3916f4248b024dd4d95",
+  "host": "www.globaldairytrade.info",
+  "ground": "Global Dairy Trade results",
+  "region": "nz",
+  "cluster": "anz",
+  "dataset_class": "auction_fixing",
+  "available_time": "2026-09-10T11:38:56+00:00",
+  "ingested_time": "2026-09-10T11:38:56+00:00",
+  "source_hash": "c3916f4248b024dd4d95",
+  "claims": [],
+  "n_claims": 0
+ }
+]

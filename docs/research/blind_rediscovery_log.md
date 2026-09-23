@@ -1,5 +1,11 @@
 # BLIND REDISCOVERY LOG
 
+> **UNIVERSE RETARGETED 2026-08-18, header added 2026-09-05.** Inventions logged before that date
+> were derived blind against the retired crypto-exchange desk's problem set. They are kept because
+> the point of this organ is the CONVERGENCE MEASUREMENT -- what a fresh-eyes pass re-derives
+> independently is evidence about the desk's coverage, and that evidence does not expire with the
+> venue. New passes run against the MT5/Fusion book.
+
 _Companion organ to `docs/research/PROSPECTOR_SPEC.md` (Blind Rediscovery section). Cadence key:
 `data/cadence_state.json → last_blind_rediscovery`. Governed by §36 (this file is claimed by a
 cadenced producer; max age = one month + the early-fire rule)._

@@ -1,0 +1,21 @@
+[Unit]
+Description=FX Blue track-record harvest -- cursor rotation over the 5,077-handle population (RESEARCH §4)
+
+[Service]
+Type=oneshot
+# 2026-09-01: MemoryMax alone HARD-KILLS at the ceiling -- that was the normal failure
+# mode here, not a runaway backstop. MemoryHigh throttles (reclaim + slow) below it, so
+# a heavy run finishes slowly instead of dying and being retried forever. Ceiling is
+# UNCHANGED at 400M, so nothing that fits today is newly constrained.
+MemoryHigh=320M
+MemoryMax=400M
+MemorySwapMax=0
+CPUWeight=40
+WorkingDirectory=/home/quant/quant-platform
+Environment=FXBLUE_STAGE=/home/quant/fxblue_scratch
+ExecStart=/home/quant/quant-platform/.venv/bin/python desks/mt5/scripts/fxblue_track_record_miner.py \
+  --limit 60 --delay 0.45 \
+  --cursor-file /home/quant/quant-platform/desks/mt5/data/intelligence/fxblue/harvest_cursor.json \
+  --out /home/quant/quant-platform/desks/mt5/data/intelligence/fxblue/track_records_auto.jsonl \
+  --compact
+TimeoutStartSec=45m

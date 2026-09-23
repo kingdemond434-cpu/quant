@@ -1,0 +1,8 @@
+[Unit]
+Description=SGE gold premium daily self-recorder (Au99.99 + Au(T+D) vs XAUUSD; CN card #38 / R0649)
+
+[Service]
+Type=oneshot
+WorkingDirectory=/home/quant/quant-platform/desks/mt5
+ExecStart=/home/quant/quant-platform/.venv/bin/python /home/quant/quant-platform/desks/mt5/research/fetch_sge_premium.py
+TimeoutStartSec=240

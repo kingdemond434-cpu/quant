@@ -20,6 +20,7 @@ from libs.research.evidence_tier import (
     classify,
     rank,
     translate_to_crypto,
+    translate_to_mt5,
 )
 
 # --------------------------------------------------------------- claimed vs verified
@@ -147,6 +148,13 @@ def test_TRADITIONAL_CONSTRUCTS_MAP_ONTO_THINGS_THE_DESK_ACTUALLY_RECORDS() -> N
 def test_TRANSLATION_IS_SILENT_WHEN_THERE_IS_NOTHING_TO_TRANSLATE() -> None:
     assert translate_to_crypto("an ordinary sentence about nothing") == []
     assert translate_to_crypto("") == []
+
+
+def test_ACTIVE_MT5_TRANSLATION_MAPS_TO_POINT_IN_TIME_DESK_DATA() -> None:
+    got = dict(translate_to_mt5("COT commitment of traders, carry and cross-sectional momentum"))
+    assert "point-in-time CFTC COT" in got["commitment of traders"]
+    assert "MT5 long/short swap" in got["carry"]
+    assert "Fusion MT5 symbols" in got["cross-sectional momentum"]
 
 
 def test_THE_BACKTEST_AND_MECHANISM_VOCABULARIES_ARE_PRESENT_AND_WHOLE_WORD() -> None:

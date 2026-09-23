@@ -1,0 +1,17 @@
+{
+  "at": "2026-09-16T14:09:10+00:00",
+  "max_quote_skew_ms": 250,
+  "rows": [
+    {
+      "triangle": "EURGBP",
+      "status": "UNMEASURED",
+      "why": "tick parquet lacks the quote columns this needs (EURGBP: has ['ask', 'bid', 'flags', 'last', 'recv_mono', 'recv_utc', 'time', 'time_msc', 'volume', 'volume_real']; EURUSD: has ['ask', 'bid', 'flags', 'last', 'recv_mono', 'recv_utc', 'time', 'time_msc', 'volume', 'volume_real']; GBPUSD: has ['ask', 'bid', 'flags', 'last', 'recv_mono', 'recv_utc', 'time', 'time_msc', 'volume', 'volume_real']); required ['ask', 'bid', 'ts']"
+    },
+    {
+      "triangle": "AUDNZD",
+      "status": "UNMEASURED",
+      "why": "tick parquet lacks the quote columns this needs (AUDNZD: has ['ask', 'bid', 'flags', 'last', 'recv_mono', 'recv_utc', 'time', 'time_msc', 'volume', 'volume_real']; AUDUSD: has ['ask', 'bid', 'flags', 'last', 'recv_mono', 'recv_utc', 'time', 'time_msc', 'volume', 'volume_real']; NZDUSD: has ['ask', 'bid', 'flags', 'last', 'recv_mono', 'recv_utc', 'time', 'time_msc', 'volume', 'volume_real']); required ['ask', 'bid', 'ts']"
+    }
+  ],
+  "next_gate": "prospective atomicity/latency/fill shadow before any strategy test"
+}

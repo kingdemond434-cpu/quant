@@ -1,57 +1,24 @@
 {
-  "generated": "2026-08-17T03:55:15.852095+00:00",
+  "generated": "2026-08-29T03:55:01.151441+00:00",
   "law": "L1.23 -- survival first: the moat is capital in information form",
   "stores": {
     "execution_tape": {
       "status": "REPLICATED",
       "kind": "tree",
       "path": "data/moat/execution_tape",
-      "bytes": 139999,
+      "bytes": 144348,
       "sha256": {
-        "cashcarry_trades.jsonl": "fafa517df2d73d5e01c9dc16524c8c01da88e2d0b5f2ac99c63e418f60fa2541",
+        "cashcarry_trades.jsonl": "246da740fb6469ff1c617b41db8fbcb528d1d2d84cafdd202f6bbce2152c3445",
         "quarantine_test_contamination.jsonl": "58135c3618709c427b38dcbadc11d38ef5aeba52cc16613a61fb3dd361af02b3"
-      }
-    },
-    "sor_research": {
-      "status": "REPLICATED",
-      "kind": "sqlite",
-      "path": "data/sor_research.sqlite",
-      "bytes": 65458176,
-      "sha256": {
-        "sor_research": "ac6079c6d816a49b099836d698ca3def216d580ffe06fb992d5e791b36cbe8e0"
-      },
-      "table_rows": {
-        "schema_migrations": 7,
-        "snapshots": 0,
-        "config_versions": 0,
-        "audit_log": 899,
-        "trials_ledger": 0,
-        "alpha_registry": 0,
-        "risk_registry": 0,
-        "research_runs": 0,
-        "orders": 0,
-        "fills": 0,
-        "positions": 0,
-        "alpha_cards": 0,
-        "alpha_events": 0,
-        "alpha_performance": 0,
-        "research_memory": 313,
-        "metric_points": 0,
-        "alerts": 0,
-        "research_candidates": 5734,
-        "lab_checkpoint": 1,
-        "campaigns": 257,
-        "workers": 20,
-        "candidate_returns": 7870
       }
     },
     "alpha_registry": {
       "status": "REPLICATED",
       "kind": "sqlite",
       "path": "data/alpha_registry.sqlite",
-      "bytes": 630784,
+      "bytes": 679936,
       "sha256": {
-        "alpha_registry": "abeee4d3651539f1cc595ba107b0e5154d6c354463d2a1b1b380c6494ee4b9d1"
+        "alpha_registry": "035461981f23bd4e561224a78c734dba0a42d7f23bb23f22d9e9d3701dd20dbc"
       },
       "table_rows": {
         "schema_migrations": 7,
@@ -66,7 +33,7 @@
         "fills": 0,
         "positions": 0,
         "alpha_cards": 8,
-        "alpha_events": 1152,
+        "alpha_events": 1344,
         "alpha_performance": 0,
         "research_memory": 0,
         "metric_points": 0,
@@ -87,34 +54,142 @@
         "capital_events.jsonl": "2acba8709b162bb67ba74190331988a29c9bbe31b91f3c7b50b615a92a4d5c7b"
       }
     },
+    "forward_registry": {
+      "status": "REPLICATED",
+      "kind": "file",
+      "path": "desks/mt5/data/sleeve_registry.json",
+      "bytes": 18224,
+      "sha256": {
+        "sleeve_registry.json": "de7bc836941fe06424f6181cc4d2861f2ee7b749f427a9a3d441acbc2c207b19"
+      }
+    },
+    "shadow_state": {
+      "status": "REPLICATED",
+      "kind": "file",
+      "path": "desks/mt5/reports/shadow/shadow_state.json",
+      "bytes": 48773,
+      "sha256": {
+        "shadow_state.json": "bd631e2dbc7622162efd10eacd08fa355fa494c01c151c5bea4685c79cc31516"
+      }
+    },
+    "shadow_ledgers": {
+      "status": "REPLICATED",
+      "kind": "tree",
+      "path": "desks/mt5/reports/shadow",
+      "bytes": 205559,
+      "sha256": {
+        "AUDIT_NZDJPY_dow_effect.md": "a166477b161b8f1ad25261d6be92765ce80a86c1ec7d9c0accb35940ddd09534",
+        "external_shadow_state.json": "fe1cef57e1a6f3d010313629e8b42b6ffef0ca6c8811dde2d411446cb0736a41",
+        "ledger_BTCUSD_monday_gap.json": "09073d0a4c842c8dca9d5c300d697a4cde31f4a2aa27fceb742b083e30084629",
+        "ledger_BTCUSD_session_range_breakout.json": "6f382e6820fbb3fed5b26f73c5b9993af5329078ca43b54a9b61911e0f8717ff",
+        "ledger_CADJPY_asia.json": "15020c37caeae890ded239f196b0db1cb7eac633894173a55bcebaa7cbf876a5",
+        "ledger_CADJPY_asia_FAILED_BREAK.json": "b1dc77748b92e898d62acc0985cfafe68cb5105924bedf6ab310ba9145adcca8",
+        "ledger_CADJPY_fair_value_gap.json": "cae31829e6c424f7cb5da7ff3a905aae720ef360dbf7585a8b5b2892020c5112",
+        "ledger_CADJPY_level_breakout.json": "5df65b18ef46e480f378ca5ee829b62a073f6aa5e45af613dad8da674a841385",
+        "ledger_CADJPY_london_am_NORMAL_DAY.json": "70a10042f00aa1dcc6702ef5cfc115b198939142dc8c42dd342ff26caec7fcf9",
+        "ledger_EURJPY_asia.json": "9a081b7dbbdaf476621ff30388b605284404cc798dd38eda768d4db5fc34a25e",
+        "ledger_EURJPY_asia_FAILED_BREAK.json": "65cb965546fb64c4d7ff46e2110605cc120234e22b311e4e798bed33e266a656",
+        "ledger_EURJPY_asia_NORMAL_DAY.json": "370a103a3606ae99d06173f1dada4284efa7075ef03b79481d585bafa14db597",
+        "ledger_EURJPY_london_am.json": "7f1894edc450898a14b3ccf75a5dbfb24d7511fa8983a03b00d488acb124ffb3",
+        "ledger_EURZAR_overnight_gap_decay_asia.json": "2fe78998b2e16c4dade403a47f4396b5aee84ede19fdb1607ca6a01dc0893d44",
+        "ledger_GBPAUD_session_range_breakout.json": "231b05c14df45165395b934b510dcbf7949a098917395c8166c96c7b12078080",
+        "ledger_GBPJPY_asia.json": "7589f9554610487b810cd862d37cfa490c6c73b90126804d1b138bf34b91959c",
+        "ledger_GBPJPY_fair_value_gap.json": "ce2c68d7974ac7a966acdd2d6135a298b8f2a0c3a88e39174b572b93438a6c24",
+        "ledger_GBPJPY_level_breakout.json": "2caa3045522a77a802f46b5686e900e51d3ed3d47b6f10372cfcd6dd76e62404",
+        "ledger_GBPJPY_london_am.json": "9dc8a936940af9381a9839f1c7a5f7e3a4440c7de9a5c979e7355a03c4848752",
+        "ledger_GBPUSD_session_range_breakout.json": "be7bf77b9865350d0c3310120053a30fd42b3b70e248dca43d583be79fc82ff5",
+        "ledger_NZDJPY_dow_effect.json": "233863edefd4b32b39f3fce4003790e9b376bd29a2b96570499e83919097ecdf",
+        "ledger_NZDJPY_fair_value_gap.json": "4defcbf0fc96c6fe1558d52e5795f39d2c89011618ff4bbbbc1cc7af0e1ab161",
+        "ledger_NZDJPY_session_range_breakout.json": "474b1e9dc3f05961e5ff17eb9fbc4bf78dfcfe0fe588c0aa7dc1c02792f95831",
+        "ledger_USDJPY_asia.json": "95f4205e9a863047f9cd343b934d5fa6c7d51433a1f9a8a7b8ba72b4fce5255d",
+        "ledger_USDJPY_asia_FAILED_BREAK.json": "1968a84f1cc022c590c1fdf7e5e1fda43e2e8f1540d498eaa34a8c11363e2fe2",
+        "ledger_USDJPY_asia_MACRO_FAV.json": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "ledger_USDJPY_london_am.json": "d7fc6d5dbb923764776223d590b9803ce252b992dd9db84f1493f0eed8884e2f",
+        "ledger_USDJPY_london_am_FAILED_BREAK.json": "6869712bf60b7c28317cc21c8092819ce3af4fb411579dd0cea2b0e97d1f6c67",
+        "ledger_USDJPY_london_am_MACRO_FAV.json": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "ledger_USDZAR_overnight_gap_decay_asia.json": "62afa44658b8809ed8a01ecdd80bfec38ee1bd3fa5d2ed5f4105b5a09faecd60",
+        "ledger_XAGUSD_level_breakout.json": "197a78140bf01f5ddb7ff08621ababb720311a59af4794a82e3af2bf65eac864",
+        "ledger_XAUUSD_afternoon.json": "82c00d2633eba9ac9c3de7e134f0958574cfaf47ef4c13e3c61933ed80c0f5ba",
+        "ledger_XAUUSD_afternoon_MACRO_FAV.json": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "ledger_XAUUSD_asia.json": "b467472a88f4d00d38a65cf55ceee707f28273a3a90adf9971eb9b39ad530301",
+        "ledger_XAUUSD_asia_FAILED_BREAK.json": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "ledger_XAUUSD_asia_MACRO_FAV.json": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "ledger_XAUUSD_asia_NORMAL_DAY.json": "2c37838a0914b72e1ffb43f2935a9f070602d0c1d0771be892ef12e74d82795e",
+        "ledger_XAUUSD_london_am.json": "f6d36e0f7ab73be1742898fc7f3680a4ad693e92bddf11378af17dbedde7a93c",
+        "ledger_XAUUSD_london_am_MACRO_FAV.json": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "ledger_XAUUSD_london_am_NORMAL_DAY.json": "20a48054cc805d0c128fe5653412e6efb20be763765f4a75b08734ef71fe67a9",
+        "ledger_external.CADJPY.session_range_breakout.json": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "ledger_external.CADJPY.session_range_breakout.rr=1.5_wb=12.json": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "ledger_external.CADJPY.session_range_breakout.rr=2.0_wb=12.json": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "ledger_external.CADJPY.session_range_breakout.rr=2.5_wb=12.json": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "ledger_external.EURJPY.session_range_breakout.json": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "ledger_external.EURJPY.session_range_breakout.rr=1.5_wb=12.json": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "ledger_external.EURJPY.session_range_breakout.rr=2.0_wb=12.json": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "ledger_external.EURJPY.session_range_breakout.rr=2.5_wb=12.json": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "ledger_external.GBPJPY.session_range_breakout.json": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "ledger_external.GBPJPY.session_range_breakout.rr=1.5_wb=12.json": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "ledger_external.GBPJPY.session_range_breakout.rr=2.5_wb=12.json": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "ledger_external.USDJPY.session_range_breakout.json": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "ledger_external.USDJPY.session_range_breakout.rr=1.5_wb=12.json": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "ledger_external.USDJPY.session_range_breakout.rr=2.0_wb=12.json": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "ledger_external.USDJPY.session_range_breakout.rr=2.5_wb=12.json": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "ledger_external.XAUUSD.session_range_breakout.json": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "ledger_external.XAUUSD.session_range_breakout.rr=1.5_wb=12.json": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "ledger_external.XAUUSD.session_range_breakout.rr=1.5_wb=8.json": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "ledger_external.XAUUSD.session_range_breakout.rr=2.0_wb=12.json": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "ledger_external.XAUUSD.session_range_breakout.rr=2.5_wb=12.json": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "ledger_qquant.hunt16.json.AUDNZD_dav_range_filter_adx_SHORT_afternoon_NORMAL_DAY.json": "25df4356cbb088a3d401182214c00641bbb4b7c690286e825052e9c097dcdd5e",
+        "ledger_xau_m15_anti_breakout.json": "7c4fc73eb840ea504cb3e6032edba1a697aa8a482938c9df63584961375e04a1",
+        "ledger_xau_m15_anti_momentum.json": "65d36e164944f90c790e8bcdd5261c29fa96e0a19751168f661f1bbe4c9d1648",
+        "ledger_xau_m5_anti_breakout_overlap.json": "b5623996764020ed747c3d3da9bbe2216c9c5046cf935cd47f01a2b58bbfd23c",
+        "ledger_xau_m5_anti_momentum_ny.json": "f1301b9a9cd70983eb7bfa6a97b9b8809199935a0eebcfc3c092bb4266a6bb54",
+        "qquant_shadow_state.json": "88a9aebb4251328630c27b1fde64187b67ec54dc1bc70ee71392d9e50f814a13",
+        "scalp_shadow_state.json": "0adbc458c6334e5b48d81b4e35b08d22f1df278344046119aac29d51a7eac804",
+        "shadow_admission.json": "8809d011d4532fff8359d8d69b255332c88c75208ac9838b0227d59e7e2b0bfd",
+        "shadow_health.json": "6202b9d047f45febe9d706d95d07739c5b72bd974f7284aa4f4714ea6d2dbbf1",
+        "shadow_quarantine.json": "a082a150de3c3af1272ec238acae009cbbb540870881a9a5c36c31ef7305b714",
+        "shadow_state.json": "bd631e2dbc7622162efd10eacd08fa355fa494c01c151c5bea4685c79cc31516"
+      }
+    },
+    "universal_canon": {
+      "status": "REPLICATED",
+      "kind": "file",
+      "path": "desks/mt5/reports/UNIVERSAL_SURVIVORS.json",
+      "bytes": 39520,
+      "sha256": {
+        "UNIVERSAL_SURVIVORS.json": "ff190a8520226ac38b3473fef6122cf41ffe7ed0c722b02ea2d1303de7937fdf"
+      }
+    },
     "cost_model": {
       "status": "REPLICATED",
       "kind": "file",
       "path": "data/cost_model.json",
-      "bytes": 81078,
+      "bytes": 311,
       "sha256": {
-        "cost_model.json": "eb056719e82ca9d0ec423b0f516ebff3d6a31a334258fcac2a844379a9c9bb2d"
+        "cost_model.json": "63355213a32f44c6ed2dafa8f7b5ecfabdaa80dc3eb6428690b4851f6dc1a1c2"
       }
     },
     "graveyard": {
       "status": "REPLICATED",
       "kind": "file",
       "path": "docs/graveyard.md",
-      "bytes": 149129,
+      "bytes": 206316,
       "sha256": {
-        "graveyard.md": "f64db7251d259b8770e888876ea4bf102aaf36aa169ff0af7aab9a6b09ad7dbc"
+        "graveyard.md": "c3834b756af54dae488ad938869625b3e4c0586200fb382ea468ad37c8aee605"
       }
     }
   },
   "skipped_over_cap": [],
   "not_covered_bytes": {
-    "data/lake": 1444235250,
-    "data/moat": 19462809048
+    "data/lake": 1458620823,
+    "data/moat": 144348,
+    "data/sor_research.sqlite": 667770880
   },
   "not_covered_note": "bulk lake/L2 need the Storage-Box/R2 principal decision -- measured here every run so the gap stays a number",
-  "disk_free_pct": 9.88,
+  "disk_free_pct": 29.47,
   "fuse_pct": 15.0,
   "restore_drill_passed": true,
   "absent_stores": [],
-  "status": "DISK-FUSE"
+  "oversized_stores": [],
+  "status": "OK"
 }

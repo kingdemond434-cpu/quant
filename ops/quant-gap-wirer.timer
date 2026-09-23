@@ -1,0 +1,10 @@
+[Unit]
+Description=Weekly gap-wirer slot (Tuesday 18:00 Irish time, DST-aware)
+
+[Timer]
+OnCalendar=Tue *-*-* 18:00:00 Europe/Dublin
+Persistent=true
+RandomizedDelaySec=600
+
+[Install]
+WantedBy=timers.target

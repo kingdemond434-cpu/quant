@@ -1,0 +1,9 @@
+[Unit]
+Description=HOURLY at :05 -- discovery, search, merge, gauntlet, canon (principal: max diversity, no waiting a day)
+
+[Timer]
+OnCalendar=*:05
+Persistent=true
+
+[Install]
+WantedBy=timers.target

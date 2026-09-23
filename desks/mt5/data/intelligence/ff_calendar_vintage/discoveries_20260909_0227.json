@@ -1,0 +1,12 @@
+[
+ {
+  "source": "ff_calendar_vintage",
+  "kind": "fetch_error",
+  "title": "HTTPSConnectionPool(host='nfs.faireconomy.media', port=443): Max retries exceeded with url: /ff_calendar_thisweek.json (Caused by SSLError(SSLEOFError(8, '[SSL: UNEXPECTED_EOF_WHILE_READING] EOF occur",
+  "url": "",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-09T02:37:00+00:00",
+  "needs_selector_work": true
+ }
+]

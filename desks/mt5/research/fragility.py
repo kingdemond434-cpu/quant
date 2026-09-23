@@ -119,11 +119,10 @@ def main() -> int:
         return states_cache[sym]
 
     def costs_for(sym: str) -> Costs:
-        m = meta.get(sym, {})
-        return Costs(
-            spread_per_lot=0.48 if sym == "XAUUSD" else max(
-                m.get("median_spread_pts", 1) * m.get("tick_size", 1e-5) * m.get("contract_size", 1e5), 0.05),
-            commission_per_lot=3.50, contract_oz=m.get("contract_size", 1e5))
+        # `from_symbol` is the only correct constructor: the hand-rolled form wrote gold's
+        # spread in dollars-per-OUNCE into a per-LOT field and omitted quote_per_account, so
+        # the commission was undercharged 184x on USDJPY and 8.2x on CADJPY (2026-08-27).
+        return Costs.from_symbol(meta.get(sym, {}), commission_per_lot=3.50)
 
     def daily_r(sym: str, hunt: str, row: dict) -> pd.Series:
         key = (sym, hunt, row["fam"], row["side"], row["win"], row["state"])
@@ -153,7 +152,9 @@ def main() -> int:
         if sym not in mkt_cache:
             h1 = symbol_h1(sym)
             c = pd.Series(h1["close"].to_numpy(float), index=h1.index)
-            mk = np.log(c).diff().resample("D").sum().dropna()
+            # L1.68 (GAP 132): resample("D").sum() emits 0.0-return rows for empty calendar
+            # days and a stub return for the Sunday open sliver -- both deflate daily vol.
+            mk = families.d1_session_filtered(np.log(c).diff().resample("D").sum().dropna())
             mk.index = mk.index.tz_localize(None)
             mkt_cache[sym] = mk
         return mkt_cache[sym]

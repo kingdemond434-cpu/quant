@@ -16,7 +16,10 @@ This checks the RUNWAY -- everything that must be true BEFORE a seat can produce
 
 STATUS is the diagnosis, and the distinction is the whole point:
   unobservable     THIS HOST CANNOT SEE THE LOGS -- says nothing about the seats (see below)
-  ok               produced inside its max age
+  ok               produced a REAL log inside its max age
+  stub             fired on time and died at birth -> quota/auth/mutex, NOT a cadence problem
+  superseded       another seat does this work now -> forgiven ONLY while that seat is healthy
+  superseder-broken the seat that absorbed this one is itself failing -> ONE repair, N grounds
   stale            produced before, not recently  -> a runtime failure, look at the log
   never-ran        runway complete, zero output   -> scheduling/quota, not configuration
   creds-missing    cannot possibly run            -> a HUMAN step, and the real blocker today
@@ -55,8 +58,28 @@ _OUT = _ROOT / "data/miner_runway.json"
 _CRED_ANY = ("data/secrets/claude_oauth_token", "data/secrets/anthropic_api_key")
 _CRED_HOME = Path.home() / ".claude/.credentials.json"
 
-# seat -> (prompt, runner, log glob, max_age_h). Max ages mirror scripts/max_audit.py ORGANS so
-# the two organs cannot disagree about what "stale" means.
+# seat -> (prompt, runner, log glob, max_age_h).
+#
+# THE MAX AGE HERE IS VESTIGIAL AND KEPT ONLY AS A FALLBACK. Both this column and the byte
+# floor live in `max_audit.ORGANS`, and the previous version of this comment said the max ages
+# "mirror" that table -- which is exactly the restate-instead-of-import defect the promotion
+# protocol names. Mirroring copied ONE of the two columns: `ORGANS` carries
+# `(glob, min_bytes_for_success, max_age_h)` and this table took only the age, so a seat that
+# fired on schedule and produced a 118-byte stub graded `ok` on freshness alone.
+#
+# MEASURED 2026-08-26, and it is the arrivals collapse in one row: frontier-ru read
+# `status: ok` on `frontier_ru_20260825T1603.log`, whose ENTIRE content is an "attempt" line
+# and a "start" line. The dig never produced. Five frontier regions had been in that state for
+# days while this fence, `seats_productive` and the capability ratchet all read survivable, and
+# arrivals fell to 24/week against a 160/week baseline with no liveness gauge going red.
+# `ops/run_frontier_rotation.sh` has enforced the same 1500-byte bar the whole time (its resume
+# rule is `-size +1500c`, "a stub does not count, per the outcome-not-config law") -- the number
+# was never in doubt, it just was not imported.
+#
+# The join key is the GLOB, not the seat name: the two tables name the same organs differently
+# (`dataaxis` here, `dataaxis-dig` there) but agree exactly on the log pattern. A glob that
+# stops matching does not silently fall back to a default -- it is recorded in `table_drift`
+# and the seat cannot be graded on size (L1.28a: UNMEASURED is a real answer).
 _SEATS: dict[str, tuple[str, str, str, float]] = {
     "frontier-en": ("ops/frontier_en_prompt.txt", "ops/run_frontier_miner.sh",
                     "frontier_en_*.log", 36.0),
@@ -72,6 +95,11 @@ _SEATS: dict[str, tuple[str, str, str, float]] = {
                     "frontier_ar_*.log", 36.0),
     "frontier-br": ("ops/frontier_br_prompt.txt", "ops/run_frontier_miner.sh",
                     "frontier_br_*.log", 36.0),
+    # THE SEAT THAT REPLACED THE SEVEN ABOVE. 53c55b8e deleted the REGIONS loop from
+    # ops/run_frontier_rotation.sh on 2026-08-25; since then this is the only frontier dig any
+    # scheduler invokes, and until now it appeared in no liveness table anywhere.
+    "frontier-unified": ("ops/frontier_unified_prompt.txt", "ops/run_frontier_miner.sh",
+                         "frontier_unified_*.log", 36.0),
     "prospector": ("ops/prospector_dig_prompt.txt", "ops/run_prospector_dig.sh",
                    "prospector_*.log", 216.0),
     "litminer": ("ops/litminer_dig_prompt.txt", "ops/run_litminer_dig.sh",
@@ -83,7 +111,62 @@ _SEATS: dict[str, tuple[str, str, str, float]] = {
                          "blindrediscovery_*.log", 840.0),
 }
 
-_BAD = ("creds-missing", "never-ran", "not-scheduled", "missing-prompt", "unobservable")
+#: THE ONE PLACE THE BAR IS DEFINED. Imported, never restated -- `max_audit.ORGANS` is the
+#: table both fences already agree is authoritative, and importing it makes drift impossible
+#: rather than merely discouraged. Import failure is not a licence to default: the seats are
+#: then ungradeable on size and say so.
+#:
+#: ARTIFACT PARITY COMES WITH IT, and leaving it out was a defect this fence nearly shipped.
+#: A claude organ writes its deliverables through FILE TOOLS, so a completely successful run can
+#: leave nothing in the shell log but a start line -- litminer's 686-byte log on 2026-08-25 was
+#: a real dig that minted two cards and four ledger rows. Grading on bytes alone called it a
+#: stub. A fence that is wrongly red gets switched off, which is the exact failure this fence
+#: exists to prevent, so the byte floor is only consulted when the organ's own EXCLUSIVE declared
+#: artifact has ALSO gone quiet past its cadence. `_artifact_age_h` is imported rather than
+#: reimplemented for the same reason the byte floor is: max_audit already computes exclusivity
+#: (a `prospector_coverage.md` that eight organs write is not evidence any ONE of them ran), and
+#: a second copy of that logic is a second thing to drift.
+try:
+    from scripts.max_audit import ORGANS as _ORGANS
+    from scripts.max_audit import SUPERSEDED_BY as _SUPERSEDED_SRC
+    from scripts.max_audit import _artifact_age_h as _organ_artifact_age_h
+except ImportError:  # pragma: no cover - defensive; the artifact records the blindness
+    _ORGANS = {}
+    _SUPERSEDED_SRC = {}
+    _organ_artifact_age_h = None  # type: ignore[assignment]
+
+#: glob -> min bytes that count as a REAL run, joined from the shared table.
+_MIN_BYTES: dict[str, int] = {glob: int(mb) for glob, mb, _age in _ORGANS.values()}
+#: glob -> max_audit's name for the same organ, so the artifact escape resolves too. The two
+#: tables disagree on names (`litminer` here, `litminer-dig` there) and agree on globs.
+_ORGAN_BY_GLOB: dict[str, str] = {glob: name for name, (glob, _mb, _a) in _ORGANS.items()}
+
+
+#: seat -> the seat that now does its work. NOT a deletion, and the difference is the whole
+#: point. Removing these five rows would shrink the denominator until the fence went green,
+#: which is the trick LAWS §2a forbids by name; leaving them as daily reds trains every reader
+#: to ignore this fence, which is how the desk lost six days to a cron outage nobody escalated.
+#:
+#: A superseded seat therefore KEEPS ITS ROW AND INHERITS ITS OBLIGATION: it is only forgiven
+#: while the seat that absorbed it is itself healthy. If `frontier-unified` breaks, all seven
+#: regional grounds go bad WITH it, in one place, naming the one repair that fixes all of them
+#: -- which is the report the desk actually wants and could not previously produce.
+#:
+#: MEASURED 2026-08-26: nothing has invoked `run_frontier_miner.sh <region>` since 08-25, so
+#: these globs will never receive another byte. The unified dig's own log blamed the silence on
+#: "the seat auth has been down since 08-21" and called it the single largest suppressor of the
+#: desk's arrival rate -- but auth pings OPEN (PING-OK on claude-opus-5), and prospector,
+#: dataaxis and the unified dig all produced real logs today. The organ diagnosed an
+#: infrastructure outage from log ages without reading its own launcher.
+#: IMPORTED, not restated -- the same rule as the byte floor and the artifact age. It lives in
+#: max_audit beside ORGANS so both fences retire an organ on the same evidence on the same day.
+_SUPERSEDED_BY: dict[str, str] = dict(_SUPERSEDED_SRC)
+
+_BAD = ("creds-missing", "never-ran", "not-scheduled", "missing-prompt", "unobservable",
+        "stub", "superseder-broken")
+#: "stub" is BAD, and it is the rung this ladder was missing. A seat dying at birth every day is
+#: strictly worse than a stale one: it is consuming its slot, its quota and its mutex turn while
+#: producing nothing, and it renews its own freshness stamp each time it does so.
 #: "unobservable" is BAD on purpose. A run that cannot see the logs has not verified anything, and
 #: exiting 0 would let a green check stand in for a check that never happened.
 
@@ -135,12 +218,20 @@ def audit() -> dict[str, Any]:
     observable = _LOGDIR.is_dir()
     creds = _creds_present()
     seats: dict[str, Any] = {}
+    drift: list[str] = []
     for seat, (prompt, runner, glob, max_age_h) in _SEATS.items():
         p, r = _ROOT / prompt, _ROOT / runner
         prompt_ok = p.exists() and p.stat().st_size > 0
         runner_ok = r.exists()
         sched = _scheduled(runner)
         name, age_h, size = _last_run(glob)
+        min_bytes = _MIN_BYTES.get(glob)
+        organ = _ORGAN_BY_GLOB.get(glob)
+        art_h = (_organ_artifact_age_h(organ)
+                 if organ and _organ_artifact_age_h is not None else float("inf"))
+        if min_bytes is None:
+            drift.append(f"{seat}: glob {glob!r} is absent from max_audit.ORGANS -- this seat "
+                         "cannot be graded on output size")
 
         if not observable:
             # BEFORE every other verdict. Config facts (prompt/runner/unit) are read from the repo
@@ -158,13 +249,49 @@ def audit() -> dict[str, Any]:
             status = "creds-missing"
         elif name is None:
             status = "never-ran"
+        elif (min_bytes is not None and size is not None and size < min_bytes
+              and art_h > max_age_h):
+            # BEFORE the age check, deliberately. A FRESH stub is the worse condition: the seat
+            # is firing exactly on schedule and dying every time, so grading it on age would
+            # report `ok` on the day it is failing hardest -- which is what it did.
+            #
+            # AND the artifact clause, because a tiny log is ambiguous on its own: it is the
+            # signature of a dead run AND of a healthy claude organ that wrote its deliverable
+            # through file tools. Only when BOTH the log and the organ's exclusive artifact have
+            # gone quiet is "it produced nothing" a measurement rather than a guess. Organs with
+            # no exclusive artifact (every frontier seat -- they all write the shared
+            # prospector_coverage.md) fall back to bytes: weaker, but honest.
+            status = "stub"
         elif age_h is not None and age_h > max_age_h:
             status = "stale"
         else:
             status = "ok"
         seats[seat] = {"prompt": prompt_ok, "runner": runner_ok, "unit": sched, "creds": creds,
                        "last_run": name, "age_h": round(age_h, 1) if age_h is not None else None,
-                       "last_bytes": size, "max_age_h": max_age_h, "status": status}
+                       "last_bytes": size, "min_bytes": min_bytes,
+                       "artifact_age_h": (None if art_h == float("inf") else round(art_h, 1)),
+                       "max_age_h": max_age_h, "status": status}
+
+    # THE SUPERSEDE PASS, and it runs AFTER every seat has its own verdict so the superseder's
+    # real state is known. A superseded seat is forgiven only while its superseder is healthy;
+    # the moment the superseder goes bad, every ground it absorbed goes bad with it and names
+    # the single repair that fixes all of them.
+    for seat, sup_name in _SUPERSEDED_BY.items():
+        row = seats.get(seat)
+        if row is None:
+            continue
+        sup_row = seats.get(sup_name)
+        if sup_row is None:
+            # The superseder is not even in the table: the retirement pointed at nothing, which
+            # is strictly worse than no retirement. Never silently forgiven.
+            row["status"] = "superseder-broken"
+            row["covered_by"] = f"{sup_name} (ABSENT from this table)"
+            continue
+        row["covered_by"] = sup_name
+        if sup_row["status"] in _BAD:
+            row["status"] = "superseder-broken"
+        else:
+            row["status"] = "superseded"
 
     by_status: dict[str, list[str]] = {}
     for seat, row in seats.items():
@@ -188,10 +315,17 @@ def audit() -> dict[str, Any]:
                                               if r["status"] == "creds-missing"]),
                          "note": "ONE human step unblocks every seat counted here -- reported as "
                                  "a cause, not as N unrelated dead organs"})
+    if drift:
+        # A join that stops joining must be LOUD. Silently defaulting the byte floor would
+        # restore exactly the blindness this change removed, and it would do it invisibly.
+        blockers.append({"blocker": "the shared organ table no longer covers every seat",
+                         "human_step": "reconcile scripts/max_audit.py ORGANS with _SEATS",
+                         "blast_radius": len(drift),
+                         "note": "; ".join(drift)})
     return {"checked": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
             "observable": observable, "log_dir": str(_LOGDIR),
             "creds_present": creds, "seats": seats, "by_status": by_status,
-            "blockers": blockers,
+            "blockers": blockers, "table_drift": drift,
             "n_bad": sum(1 for r in seats.values() if r["status"] in _BAD)}
 
 

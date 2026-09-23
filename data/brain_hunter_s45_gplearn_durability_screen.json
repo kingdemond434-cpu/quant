@@ -1,0 +1,125 @@
+{
+  "schema_version": 1,
+  "session": "brain_hunter_s45",
+  "generated_at": "2026-08-31T18:54:58Z",
+  "venue_scope": "MT5_FUSION_ONLY",
+  "source": {
+    "repository": "trevorstephens/gplearn",
+    "url": "https://github.com/trevorstephens/gplearn",
+    "commit": "0390aea8639ce5f6c0b388400e07b58c05acad6a",
+    "license": "BSD-3-Clause",
+    "derives_from": "NONE (checked; this is the upstream repository)",
+    "inspection_mode": "public source and metadata read as text only; no install, import, pickle load or third-party execution"
+  },
+  "prefetched_corpus": {
+    "path": "data/intelligence/gpt_practitioner_corpus.jsonl",
+    "worldquant_rows_reviewed": 5,
+    "usable_new_text_rows": 0,
+    "video_fetched": 0,
+    "video_newly_locked": 0
+  },
+  "fork_graph": {
+    "repository_forks_reported": 326,
+    "metadata_rows_sampled": 100,
+    "sample_order": "GitHub forks endpoint sorted by stargazers",
+    "sample_license_counts": {
+      "BSD-3-Clause": 100
+    },
+    "sample_nonzero_star_rows": 13,
+    "sample_updated_in_2026": 7,
+    "source_compares_inspected": [
+      {
+        "fork": "otthqs/gplearn2",
+        "compare_status": "diverged",
+        "checkpoint_or_autosave_change": false
+      },
+      {
+        "fork": "vossjo/gplearn",
+        "compare_status": "diverged",
+        "checkpoint_or_autosave_change": false
+      },
+      {
+        "fork": "vnpy/gplearn",
+        "compare_status": "behind",
+        "checkpoint_or_autosave_change": false
+      },
+      {
+        "fork": "Barca0412/gplearn",
+        "compare_status": "behind",
+        "checkpoint_or_autosave_change": false
+      },
+      {
+        "fork": "vhuichen/gplearn",
+        "compare_status": "identical",
+        "checkpoint_or_autosave_change": false
+      },
+      {
+        "fork": "zaleqzzhang/gplearn",
+        "compare_status": "identical",
+        "checkpoint_or_autosave_change": false
+      }
+    ],
+    "coverage_limit": "The 100-row metadata sample is not a 326-fork source audit. Six source compares were inspected: every nonzero-star fork returned at the head of the endpoint plus the freshest 2026 rows selected this run. Residual forks remain open."
+  },
+  "findings": [
+    {
+      "id": "BH-S45-F1",
+      "verdict": "GENERATION_COMPLETION_PRECEDES_MEMORY",
+      "evidence": [
+        "gplearn/genetic.py constructs a generation through the joblib Parallel call before appending population to self._programs",
+        "run_details_ is appended only after the complete population has returned and fitness has been calculated",
+        "the fit loop contains no exception-to-terminal-outcome path"
+      ],
+      "economic_disposition": "REJECT gplearn run_details_ and warm_start state as a candidate-conservation ledger. An interruption inside a generation loses that generation and records no failed trial identities."
+    },
+    {
+      "id": "BH-S45-F2",
+      "verdict": "WARM_START_IS_NOT_DURABLE_CHECKPOINTING",
+      "evidence": [
+        "warm_start reuses in-memory self._programs from a prior completed fit call",
+        "the official advanced documentation delegates persistence to user-managed pickle after fit",
+        "issue 279 requested autosave because interrupted multi-hour fits lose prior work; the maintainer suggested an outer loop combining warm start and pickle rather than an in-loop durable ledger"
+      ],
+      "economic_disposition": "KEEP only the outer-loop idea as weak convergence on generation-bounded recovery. REFUSE direct pickle-as-ledger transfer: it does not prewrite candidate identities, type failures, checksum state or atomically separate controller recovery from immutable trial history."
+    },
+    {
+      "id": "BH-S45-F3",
+      "verdict": "NO_CHECKPOINT_REPAIR_FOUND_IN_INSPECTED_FORKS",
+      "evidence": [
+        "six selected fork compares contained no checkpoint or autosave implementation",
+        "the two divergent forks changed functions/parser/operator behavior rather than durable trial accounting",
+        "four selected forks were behind or identical to upstream"
+      ],
+      "economic_disposition": "NEGATIVE SCREEN. Do not spend implementation budget importing a fork. The existing desk repair remains append-before-evaluate candidate rows plus typed terminal outcomes and atomic checksum-valid controller checkpoints in a separate artifact."
+    }
+  ],
+  "mt5_translation": {
+    "translate_to_mt5_results": {
+      "warm-start checkpointing": [],
+      "per-generation autosave": [],
+      "append-before-evaluate trial memory": [],
+      "atomic checkpoint replace": []
+    },
+    "disposition": "These are research-integrity mechanisms over every terminal-enumerated Fusion candidate, not market features. No symbol, direction, timeframe or alpha was invented.",
+    "future_candidate_cost_contract": "Any later market candidate must bind PIT bid/ask bars, symbol-native spread, commission, realised slippage and partial-fill markout, swap, contract specification, code/config/data fingerprints and the canonical ten-gate certificate."
+  },
+  "trial_accounting": {
+    "desk_constructions": 0,
+    "target_horizon_cells": 0,
+    "tradeable_cards": 0,
+    "survivors": 0
+  },
+  "venue_discovery": {
+    "new_external_venues": 0,
+    "note": "The upstream GitHub issue and ReadTheDocs pages are adjacent source surfaces, not newly discovered venues."
+  },
+  "section_exhaustion": [
+    "trevorstephens/gplearn commit 0390aea: fit-loop, run_details, warm-start, documented persistence and autosave-issue axes exhausted 2026-08-31",
+    "selected six-fork compare slice exhausted 2026-08-31; the remaining fork population is explicitly not exhausted"
+  ],
+  "next_unexhausted_ground": [
+    "Inspect recent permissively licensed gplearn forks outside the six-source compare slice for a substantive persistence diff, prioritising commits that mention recovery, journaling or interruption rather than stars.",
+    "Follow symbolic-regression citation descendants that publish append-only experiment stores, then test whether controller rollback and immutable trial history are genuinely separated.",
+    "Inspect RD-Agent factor-proposal semantics only if they supply a novel mechanism rather than a private threshold."
+  ]
+}

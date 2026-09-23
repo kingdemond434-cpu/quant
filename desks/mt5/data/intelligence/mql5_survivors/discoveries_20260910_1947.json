@@ -1,0 +1,393 @@
+[
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/2362458",
+  "symbols": [
+   "AUDJPY",
+   "BTCUSD",
+   "CADJPY",
+   "ETHUSD",
+   "EURUSD",
+   "GBPJPY",
+   "GBPUSD",
+   "US500",
+   "USDCNH",
+   "USDJPY",
+   "XAGUSD",
+   "XAUEUR"
+  ],
+  "found_at": "2026-09-10T19:47:52+00:00",
+  "platform": "mt5",
+  "phenotypes": [
+   "max_growth",
+   "long_lived",
+   "algo_survivor",
+   "gold",
+   "multi_fx"
+  ],
+  "ev_score": 4.44,
+  "growth_pct": 215.86,
+  "weeks": 220.0,
+  "pf": 1.17,
+  "max_dd_pct": null,
+  "trades": 2313.0,
+  "win_pct": 827.0,
+  "algo_pct": 93.0,
+  "subscribers": 0.0,
+  "author": "/en/users/huangmw57935653",
+  "author_other_signals": [],
+  "hour_histogram": {
+   "10": 4,
+   "09": 2,
+   "18": 1
+  }
+ },
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/2315819",
+  "symbols": [
+   "NZDCAD"
+  ],
+  "found_at": "2026-09-10T19:47:52+00:00",
+  "platform": "mt5",
+  "phenotypes": [
+   "max_growth",
+   "high_pf",
+   "algo_survivor"
+  ],
+  "ev_score": 2.647,
+  "growth_pct": 236.76,
+  "weeks": 65.0,
+  "pf": 3.14,
+  "max_dd_pct": null,
+  "trades": 910.0,
+  "win_pct": 711.0,
+  "algo_pct": 95.0,
+  "subscribers": 1.0,
+  "author": "/en/users/gutiv",
+  "author_other_signals": [
+   {
+    "sid": "2280569",
+    "title": "'MagicGW audcad L' by Ihor Hut",
+    "growth": "3402%",
+    "curve_points": 20,
+    "curve_dd": -5.0
+   },
+   {
+    "sid": "2385768",
+    "title": "'QQ med 3398' by Ihor Hut",
+    "growth": "110%",
+    "curve_points": 20,
+    "curve_dd": -21.0
+   },
+   {
+    "sid": "2354616",
+    "title": "'GridWise qq 4321' by Ihor Hut",
+    "growth": "236%",
+    "curve_points": 20,
+    "curve_dd": 0.0
+   }
+  ],
+  "hour_histogram": {
+   "21": 2,
+   "09": 3,
+   "08": 3,
+   "03": 2,
+   "22": 1,
+   "02": 1,
+   "05": 2,
+   "20": 1,
+   "07": 1,
+   "18": 2,
+   "12": 1,
+   "06": 1,
+   "04": 1
+  }
+ },
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/2340546",
+  "symbols": [
+   "EURUSD",
+   "USDJPY",
+   "XAUUSD"
+  ],
+  "found_at": "2026-09-10T19:47:52+00:00",
+  "platform": "mt5",
+  "phenotypes": [
+   "max_growth",
+   "long_lived",
+   "algo_survivor",
+   "gold"
+  ],
+  "ev_score": 3.568,
+  "growth_pct": 251.1,
+  "weeks": 105.0,
+  "pf": 1.09,
+  "max_dd_pct": null,
+  "trades": 4602.0,
+  "win_pct": 2218.0,
+  "algo_pct": 99.0,
+  "subscribers": 0.0,
+  "author": "/en/users/jimmy282",
+  "author_other_signals": [
+   {
+    "sid": "2271995",
+    "title": "'Range Breakout EA Live' by Jimmy Peter Eriksson",
+    "growth": "338%",
+    "curve_points": 20,
+    "curve_dd": -6.0
+   },
+   {
+    "sid": "2340550",
+    "title": "'Pattern Recognition Portfolio' by Jimmy Peter Eriksson",
+    "growth": "95%",
+    "curve_points": 20,
+    "curve_dd": -15.0
+   },
+   {
+    "sid": "2344108",
+    "title": "'Prop Firm Gold x Market Anomalies Combo' by Jimmy Peter Eriksson",
+    "growth": "79%",
+    "curve_points": 20,
+    "curve_dd": -11.0
+   }
+  ],
+  "hour_histogram": {
+   "17": 1,
+   "04": 1
+  }
+ },
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/2385675",
+  "symbols": [
+   "AUDCAD"
+  ],
+  "found_at": "2026-09-10T19:47:52+00:00",
+  "platform": "mt5",
+  "phenotypes": [
+   "max_growth",
+   "high_pf",
+   "algo_survivor"
+  ],
+  "ev_score": 1.724,
+  "growth_pct": 216.42,
+  "weeks": 33.0,
+  "pf": 2.97,
+  "max_dd_pct": null,
+  "trades": 373.0,
+  "win_pct": 275.0,
+  "algo_pct": 98.0,
+  "subscribers": 1.0,
+  "author": "/en/users/nocapfx",
+  "author_other_signals": [
+   {
+    "sid": "2367552",
+    "title": "'Night Scalper High Risk Mode' by NoCap FX",
+    "growth": "96%",
+    "curve_points": 20,
+    "curve_dd": -2.0
+   }
+  ],
+  "hour_histogram": {
+   "08": 1,
+   "09": 1,
+   "07": 1
+  }
+ },
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/2325346",
+  "symbols": [
+   "USOIL",
+   "XAUUSD"
+  ],
+  "found_at": "2026-09-10T19:47:52+00:00",
+  "platform": "mt5",
+  "phenotypes": [
+   "max_growth",
+   "gold"
+  ],
+  "ev_score": 2.311,
+  "growth_pct": 216.99,
+  "weeks": 59.0,
+  "pf": 1.71,
+  "max_dd_pct": null,
+  "trades": 930.0,
+  "win_pct": 680.0,
+  "algo_pct": 72.0,
+  "subscribers": 0.0,
+  "author": "/en/users/kittinutvittaya",
+  "author_other_signals": [
+   {
+    "sid": "2369902",
+    "title": "'Grid T' by Kittinut Vittayasintana",
+    "growth": "30%",
+    "curve_points": 20,
+    "curve_dd": -24.0
+   },
+   {
+    "sid": "2336141",
+    "title": "'Grid B' by Kittinut Vittayasintana",
+    "growth": "106%",
+    "curve_points": 20,
+    "curve_dd": 0.0
+   },
+   {
+    "sid": "2353441",
+    "title": "'OIL B' by Kittinut Vittayasintana",
+    "growth": "104%",
+    "curve_points": 20,
+    "curve_dd": -59.0
+   }
+  ],
+  "hour_histogram": {
+   "04": 3,
+   "15": 3,
+   "11": 1,
+   "14": 1,
+   "09": 2,
+   "08": 2,
+   "16": 2,
+   "06": 1,
+   "17": 1,
+   "13": 1,
+   "12": 1,
+   "02": 2,
+   "00": 1
+  }
+ },
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/2378213",
+  "symbols": [
+   "BTCUSD",
+   "VFUNDV"
+  ],
+  "found_at": "2026-09-10T19:47:52+00:00",
+  "platform": "mt5",
+  "phenotypes": [
+   "max_growth",
+   "new_fast_growth"
+  ],
+  "ev_score": 1.155,
+  "growth_pct": 230.96,
+  "weeks": 13.0,
+  "pf": 1.53,
+  "max_dd_pct": null,
+  "trades": 284.0,
+  "win_pct": 139.0,
+  "algo_pct": 0.0,
+  "subscribers": 0.0,
+  "author": "/en/users/vfundv",
+  "author_other_signals": [
+   {
+    "sid": "2377938",
+    "title": "'Vfundv Errante' by Houman Gholamhossein Momayez",
+    "growth": "192%",
+    "curve_points": 20,
+    "curve_dd": -16.0
+   },
+   {
+    "sid": "2377444",
+    "title": "'Vfundv Amarkets Mt4' by Houman Gholamhossein Momayez",
+    "growth": "141%",
+    "curve_points": 20,
+    "curve_dd": -57.0
+   }
+  ],
+  "hour_histogram": {
+   "08": 3,
+   "16": 1,
+   "19": 2,
+   "15": 2,
+   "13": 4,
+   "14": 1,
+   "12": 1,
+   "20": 1,
+   "17": 1,
+   "18": 2,
+   "11": 3
+  }
+ },
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/2376022",
+  "symbols": [
+   "XAUUSD"
+  ],
+  "found_at": "2026-09-10T19:47:52+00:00",
+  "platform": "mt5",
+  "phenotypes": [
+   "max_growth",
+   "new_fast_growth",
+   "algo_survivor",
+   "gold"
+  ],
+  "ev_score": 1.244,
+  "growth_pct": 217.58,
+  "weeks": 17.0,
+  "pf": 1.58,
+  "max_dd_pct": null,
+  "trades": 111.0,
+  "win_pct": 69.0,
+  "algo_pct": 99.0,
+  "subscribers": 0.0,
+  "author": "/en/users/csantika",
+  "author_other_signals": [
+   {
+    "sid": "2378381",
+    "title": "'GH Knight' by Cep Septiawan Santika -",
+    "growth": "72%",
+    "curve_points": 20,
+    "curve_dd": -11.0
+   },
+   {
+    "sid": "2366355",
+    "title": "'Jak fx Knight' by Cep Septiawan Santika -",
+    "growth": "20%",
+    "curve_points": 20,
+    "curve_dd": 0.0
+   },
+   {
+    "sid": "2386964",
+    "title": "'TOL' by Cep Septiawan Santika -",
+    "growth": "46%",
+    "curve_points": 20,
+    "curve_dd": 0.0
+   }
+  ],
+  "hour_histogram": {
+   "11": 1,
+   "12": 4,
+   "01": 1,
+   "07": 2,
+   "00": 1,
+   "23": 1,
+   "09": 1,
+   "05": 1,
+   "08": 1,
+   "03": 2,
+   "04": 1,
+   "15": 1,
+   "14": 2,
+   "17": 1,
+   "06": 1
+  }
+ }
+]

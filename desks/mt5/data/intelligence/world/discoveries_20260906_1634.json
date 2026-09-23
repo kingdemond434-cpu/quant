@@ -1,0 +1,1797 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Affiliate Program by Forex Tester Online: Recommend &amp; Get Rewarded",
+  "url": "https://www.forextester.com/affiliates",
+  "published": "2026-09-06T16:29:58+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "cd1a3645a7c6d99f68d4",
+  "host": "www.forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Get your reward of being a Leading Trader [Forex Partner Program]",
+  "url": "https://www.forextester.com/forex-partner-program",
+  "published": "2026-09-06T16:30:00+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://www.forextester.com/download"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "38d4ae8cb5fe78a478bd",
+  "host": "www.forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "How to Profit of being a Forex Influencer [Forex Resellers Program]",
+  "url": "https://www.forextester.com/forex-reseller-program",
+  "published": "2026-09-06T16:30:02+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://www.forextester.com/download"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "6f79633160fa92c6f176",
+  "host": "www.forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Hire a Forex Programmer - Custom Indicators & Trading Tools",
+  "url": "https://www.forextester.com/hire-a-forex-programmer",
+  "published": "2026-09-06T16:30:03+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://www.forextester.com/download"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "5ad8e1d8f497c055a708",
+  "host": "www.forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "How to Make the Most Out of Our Trading Simulator [detailed video]",
+  "url": "https://www.forextester.com/video",
+  "published": "2026-09-06T16:30:06+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "flow"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.forextester.com/download"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "b2cfb83c730a8bffaff1",
+  "host": "www.forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "All you wanted to know about best trading simulator [Ultimate List]",
+  "url": "https://www.forextester.com/faq",
+  "published": "2026-09-06T16:30:08+00:00",
+  "symbols": [
+   "EURUSD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "momentum"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://www.forextester.com/download"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "8b31437f42e176c8b673",
+  "host": "www.forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download Historical Tick Data for Free - Forex Tester Desktop",
+  "url": "https://www.forextester.com/data/datasources",
+  "published": "2026-09-06T16:30:10+00:00",
+  "symbols": [
+   "AUDJPY",
+   "AUDUSD",
+   "CHFJPY",
+   "EURCAD",
+   "EURCHF",
+   "EURGBP",
+   "EURJPY",
+   "EURUSD",
+   "GBPCHF",
+   "GBPJPY",
+   "GBPUSD",
+   "NZDJPY",
+   "NZDUSD",
+   "USDCAD",
+   "USDCHF",
+   "USDJPY",
+   "XAGUSD",
+   "XAUUSD"
+  ],
+  "timeframes": [
+   "DAILY",
+   "M1"
+  ],
+  "patterns": [
+   "positioning"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://www.forextester.com/download"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "ce715bf2e8760bdaf48a",
+  "host": "www.forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Forex Tester Desktop: Buy Historical Tick Data for Backtesting",
+  "url": "https://www.forextester.com/historyservicedescription",
+  "published": "2026-09-06T16:30:12+00:00",
+  "symbols": [
+   "AUDCAD",
+   "AUDCHF",
+   "AUDHUF",
+   "AUDJPY",
+   "AUDNZD",
+   "AUDSGD",
+   "AUDUSD",
+   "CADCHF",
+   "CADJPY",
+   "CHFDKK",
+   "CHFHUF",
+   "CHFJPY",
+   "CHFNOK",
+   "CHFPLN",
+   "CHFSEK",
+   "CHFSGD",
+   "COTTON",
+   "EURAUD",
+   "EURCAD",
+   "EURCHF",
+   "EURCZK",
+   "EURDKK",
+   "EURGBP",
+   "EURHKD"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "breakout",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://www.forextester.com/download"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "5445ec406d7468c223d5",
+  "host": "www.forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Ultimate guide on the best materials to get the most of backtesting",
+  "url": "https://www.forextester.com/howtouse",
+  "published": "2026-09-06T16:30:14+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://www.forextester.com/download"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "e4ef8d78a543cb21b418",
+  "host": "www.forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Support Center - Forex Tester Online",
+  "url": "https://www.forextester.com/contacts",
+  "published": "2026-09-06T16:30:16+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e5c956e086dc59da5ee4",
+  "host": "www.forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Forex Tester Online Features | FTO - Forex Tester Online",
+  "url": "https://www.forextester.com/features",
+  "published": "2026-09-06T16:30:18+00:00",
+  "symbols": [
+   "AUDUSD",
+   "EURUSD",
+   "GBPUSD",
+   "US30",
+   "USDJPY",
+   "XAUUSD"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "breakout",
+   "correlation",
+   "gap",
+   "momentum",
+   "orderflow"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d99340b8ae5ebb07ef37",
+  "host": "www.forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Top 23 Exclusive Benefits of the Forex Trading Simulator [Screenshots]",
+  "url": "https://www.forextester.com/screens",
+  "published": "2026-09-06T16:30:19+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.forextester.com/templates/pic/screens/export-to-excel.png",
+   "https://www.forextester.com/templates/pic/screens/download-new-data.png",
+   "https://www.forextester.com/download"
+  ],
+  "n_endpoints": 3,
+  "vault_sha": "701de417e38779fb23f2",
+  "host": "www.forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "How to save time with Forex tools? Try Forex Speed Up software!",
+  "url": "https://www.forextester.com/forex-speed-up",
+  "published": "2026-09-06T16:30:21+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://www.forextester.com/download"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "abaf9b36c2d7d6281030",
+  "host": "www.forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "New Forex Tester - Free Upgrade from Previous Versions",
+  "url": "https://www.forextester.com/upgrade",
+  "published": "2026-09-06T16:30:24+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://www.forextester.com/download"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "bc34cc683c955c0a5971",
+  "host": "www.forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Forex Tester: Buy Full Version. Low Prices, Great Discounts",
+  "url": "https://www.forextester.com/order",
+  "published": "2026-09-06T16:30:26+00:00",
+  "symbols": [
+   "AUDCAD",
+   "AUDCHF",
+   "AUDHUF",
+   "AUDJPY",
+   "AUDNZD",
+   "AUDSGD",
+   "AUDUSD",
+   "CADCHF",
+   "CADJPY",
+   "CHFDKK",
+   "CHFHUF",
+   "CHFJPY",
+   "CHFNOK",
+   "CHFPLN",
+   "CHFSEK",
+   "CHFSGD",
+   "COTTON",
+   "EURAUD",
+   "EURCAD",
+   "EURCHF",
+   "EURCZK",
+   "EURDKK",
+   "EURGBP",
+   "EURHKD"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "breakout",
+   "flow",
+   "gap",
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://www.forextester.com/download"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "539adeefef04d0ccac21",
+  "host": "www.forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Educate Yourself with the Forex Tester Course",
+  "url": "https://www.forextester.com/education-course",
+  "published": "2026-09-06T16:30:28+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.forextester.com/download"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "201357bd91acd56ba620",
+  "host": "www.forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Privacy Policy - Forex Tester Online",
+  "url": "https://www.forextester.com/privacy",
+  "published": "2026-09-06T16:30:30+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "bd31bc58d87023c69c35",
+  "host": "www.forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Traders on YouTube about Forex Tester Online",
+  "url": "https://www.forextester.com/reviews",
+  "published": "2026-09-06T16:30:32+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "edc3c4858bc277421355",
+  "host": "www.forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u671f\u8d27\u9891\u9053 - \u4e1c\u65b9\u8d22\u5bcc\u7f51",
+  "url": "https://futures.eastmoney.com/",
+  "published": "2026-09-06T16:30:35+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "flow",
+   "inventory",
+   "momentum",
+   "night_session",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3342664795f0c4315f74",
+  "host": "futures.eastmoney.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Challenge Validation",
+  "url": "https://www.balticexchange.com/en/data-services/market-information0/dry-services.html",
+  "published": "2026-09-06T16:30:35+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f7f730e1dea3e5143afe",
+  "host": "www.balticexchange.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "NuGet Gallery | Package Downloads for QuantLib",
+  "url": "https://www.nuget.org/stats/packages/QuantLib?groupby=Version",
+  "published": "2026-09-06T16:30:35+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://www.nuget.org/downloads"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "6fe3e8ab8cb597288392",
+  "host": "www.nuget.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Portfolio Analysis in R: Part II | Analyzing A 60/40 Strategy | The Capital Spectator",
+  "url": "https://www.capitalspectator.com/portfolio-analysis-in-r-part-ii-analyzing-a-6040-strategy/",
+  "published": "2026-09-06T16:30:36+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "correlation",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "4d854b2ae14233201f5a",
+  "host": "www.capitalspectator.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "A Revelation For Small-Cap Investing Strategies | The Capital Spectator",
+  "url": "https://www.capitalspectator.com/a-revelation-for-small-cap-investing-strategies/",
+  "published": "2026-09-06T16:30:38+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "inventory",
+   "orderflow"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "07ca41fc6496d2dfa8a9",
+  "host": "www.capitalspectator.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "A Momentum-Based Trading Signal With Strategic Value | The Capital Spectator",
+  "url": "https://www.capitalspectator.com/a-momentum-based-trading-signal-with-strategic-value/",
+  "published": "2026-09-06T16:30:40+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "47b51268ac54b911dcb9",
+  "host": "www.capitalspectator.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Portfolio Analysis in R: Part III | Adding A Global Strategy | The Capital Spectator",
+  "url": "https://www.capitalspectator.com/portfolio-analysis-in-r-part-iii-adding-a-global-strategy/",
+  "published": "2026-09-06T16:30:42+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "basis"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ca767108c43e964bbdfe",
+  "host": "www.capitalspectator.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "We\u2019re All Backtesters Now | The Capital Spectator",
+  "url": "https://www.capitalspectator.com/were-all-backtesters-now/",
+  "published": "2026-09-06T16:30:44+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "basis"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "0860e0a97a3469df9202",
+  "host": "www.capitalspectator.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Implied vs. Realized Volatility in Delta Hedging Strategies &#8211; Relative Value Arbitrage",
+  "url": "https://blog.harbourfronts.com/2026/01/15/implied-vs-realized-volatility-in-delta-hedging-strategies/",
+  "published": "2026-09-06T16:30:49+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "correlation",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.algos.org/api/v1/file/8708a7e7-0d94-4297-9f54-d3dd3b233520.pdf"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "06865a2eada1febbbab4",
+  "host": "blog.harbourfronts.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Effectiveness of Covered Call Strategy in Developed and Emerging Markets &#8211; Relative Value Arbitrage",
+  "url": "https://blog.harbourfronts.com/2025/10/20/effectiveness-of-covered-call-strategy-in-developed-and-emerging-markets/",
+  "published": "2026-09-06T16:30:53+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage",
+   "correlation",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e75f34356fa7910c2a3d",
+  "host": "blog.harbourfronts.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "options trading strategies &#8211; Page 2 &#8211; Relative Value Arbitrage",
+  "url": "https://blog.harbourfronts.com/category/options-trading-strategies/page/2/",
+  "published": "2026-09-06T16:30:56+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "auction",
+   "basis",
+   "carry",
+   "correlation",
+   "gap",
+   "inventory",
+   "mean_reversion",
+   "momentum",
+   "night_session",
+   "orderflow",
+   "policy",
+   "positioning",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "93c38fa338e4bcb778fe",
+  "host": "blog.harbourfronts.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "options trading strategies &#8211; Page 4 &#8211; Relative Value Arbitrage",
+  "url": "https://blog.harbourfronts.com/category/options-trading-strategies/page/4/",
+  "published": "2026-09-06T16:30:58+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage",
+   "basis",
+   "correlation",
+   "momentum",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "dca729bdca77d8e46652",
+  "host": "blog.harbourfronts.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Free Point-in-Time Fundamentals Sample and Colab | Tradevo Data",
+  "url": "https://tradevodata.com/sample?ref=alt&cta_location=alternatives-quantconnect-data-inline",
+  "published": "2026-09-06T16:31:04+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "gap"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "7d3bb1290766265270fb",
+  "host": "tradevodata.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Point-in-Time Fundamentals for Python Backtests | Tradevo Data",
+  "url": "https://tradevodata.com/?ref=alt&utm_content=alt-quantconnect-data",
+  "published": "2026-09-06T16:31:06+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "gap"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "39797b9502d7066741ba",
+  "host": "tradevodata.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Free Point-in-Time Fundamentals Sample and Colab | Tradevo Data",
+  "url": "https://tradevodata.com/sample?cta_location=alternatives-quantconnect-data",
+  "published": "2026-09-06T16:31:08+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "gap"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "7d3bb1290766265270fb",
+  "host": "tradevodata.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "GitHub - christianpichichero-max/pit-fundamentals: Free point-in-time US fundamentals sample (40 large caps, 3,280 rows) \u2014 every value stamped with the date it became public. No lookahead bias. From S",
+  "url": "https://tradevodata.com/go/github-sample?utm_source=website&utm_medium=owned&utm_content=alternatives-quantconnect-data&cta_location=alternatives-quantconnect-data",
+  "published": "2026-09-06T16:31:11+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "gap",
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://tradevodata.com/manifest.json",
+   "https://tradevodata.com/christianpichichero-max/pit-fundamentals/blob/main/data/pit_fundamentals_history.csv",
+   "https://tradevodata.com/topics/dataset"
+  ],
+  "n_endpoints": 3,
+  "vault_sha": "d5eea30eb330f1d13663",
+  "host": "tradevodata.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "As-Reported vs Restated Financial Data: Why It Matters",
+  "url": "https://tradevodata.com/blog/as-reported-vs-restated-fundamentals",
+  "published": "2026-09-06T16:31:12+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry",
+   "gap"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "bd5d92521f00244a63d6",
+  "host": "tradevodata.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Factor Dual Momentum status and plea for data | RRSP Strategy",
+  "url": "https://rrspstrategy.wordpress.com/2015/03/06/factor-dual-momentum-status-and-plea-for-data/",
+  "published": "2026-09-06T16:31:12+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "momentum",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "fcf24b02cc7315912d6e",
+  "host": "rrspstrategy.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "RRSP Strategy",
+  "url": "https://rrspstrategy.wordpress.com",
+  "published": "2026-09-06T16:31:14+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage",
+   "correlation",
+   "mean_reversion",
+   "momentum",
+   "policy",
+   "positioning",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://research.stlouisfed.org/fred2/series/RECPROUSM156N"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "9ef3ff3f9905ca7c5747",
+  "host": "rrspstrategy.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Does sector momentum outperform stock momentum? | RRSP Strategy",
+  "url": "https://rrspstrategy.wordpress.com/2015/11/12/does-sector-momentum-outperform-stock-momentum/",
+  "published": "2026-09-06T16:31:16+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "correlation",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "02a6194c8eca74cacdaa",
+  "host": "rrspstrategy.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "The Market Rank Indicator: Measuring Financial Risk, Part 3 | Portfolio Optimizer",
+  "url": "https://portfoliooptimizer.io/blog/the-market-rank-indicator-measuring-financial-risk-part-3/",
+  "published": "2026-09-06T16:31:17+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "correlation",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "71d8cac9f78e136ebf48",
+  "host": "portfoliooptimizer.io",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Trading Strategy Monitoring: Modeling the PnL as a Geometric Brownian Motion | Portfolio Optimizer",
+  "url": "https://portfoliooptimizer.io/blog/trading-strategy-monitoring-modeling-the-pnl-as-a-geometric-brownian-motion/",
+  "published": "2026-09-06T16:31:19+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "57499b3d56295ea1fcab",
+  "host": "portfoliooptimizer.io",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "RRSP Strategy",
+  "url": "https://rrspstrategy.wordpress.com/",
+  "published": "2026-09-06T16:31:19+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage",
+   "correlation",
+   "mean_reversion",
+   "momentum",
+   "policy",
+   "positioning",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://research.stlouisfed.org/fred2/series/RECPROUSM156N"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "f0537e47b67b9fbe7731",
+  "host": "rrspstrategy.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "About | RRSP Strategy",
+  "url": "https://rrspstrategy.wordpress.com/about/",
+  "published": "2026-09-06T16:31:21+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a1d4430118423585c978",
+  "host": "rrspstrategy.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "j livermore | RRSP Strategy",
+  "url": "https://rrspstrategy.wordpress.com/author/koversby/",
+  "published": "2026-09-06T16:31:25+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage",
+   "correlation",
+   "mean_reversion",
+   "momentum",
+   "policy",
+   "positioning",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://research.stlouisfed.org/fred2/series/RECPROUSM156N"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "3ffa98346c84e78a2da6",
+  "host": "rrspstrategy.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "https://rrspstrategy.wordpress.com/2015/02/13/dual-momentum-lookback-parameter/?share=twitter",
+  "url": "https://rrspstrategy.wordpress.com/2015/02/13/dual-momentum-lookback-parameter/?share=twitter",
+  "published": "2026-09-06T16:31:27+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://rrspstrategy.wordpress.com/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "357cb8a532c6eac02351",
+  "host": "rrspstrategy.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Uncategorized | RRSP Strategy",
+  "url": "https://rrspstrategy.wordpress.com/category/uncategorized/",
+  "published": "2026-09-06T16:31:33+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage",
+   "correlation",
+   "mean_reversion",
+   "momentum",
+   "policy",
+   "positioning",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://research.stlouisfed.org/fred2/series/RECPROUSM156N"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "3971776eecb767fd58bc",
+  "host": "rrspstrategy.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Dual momentum: lookback parameter | RRSP Strategy",
+  "url": "https://rrspstrategy.wordpress.com/2015/02/13/dual-momentum-lookback-parameter/?replytocom=954",
+  "published": "2026-09-06T16:31:35+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "correlation",
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "28d9cd0c9974bfcc3f87",
+  "host": "rrspstrategy.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Dual momentum: lookback parameter | RRSP Strategy",
+  "url": "https://rrspstrategy.wordpress.com/2015/02/13/dual-momentum-lookback-parameter/?replytocom=956",
+  "published": "2026-09-06T16:31:37+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "correlation",
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d87bca91a08ed8569061",
+  "host": "rrspstrategy.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Dual momentum: lookback parameter | RRSP Strategy",
+  "url": "https://rrspstrategy.wordpress.com/2015/02/13/dual-momentum-lookback-parameter/?replytocom=955",
+  "published": "2026-09-06T16:31:39+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "correlation",
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "dab8e398cd6a58c1a412",
+  "host": "rrspstrategy.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Dual momentum: lookback parameter | RRSP Strategy",
+  "url": "https://rrspstrategy.wordpress.com/2015/02/13/dual-momentum-lookback-parameter/?replytocom=957",
+  "published": "2026-09-06T16:31:42+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "correlation",
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a7d9d524c6acaf00d1d3",
+  "host": "rrspstrategy.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Dual momentum: lookback parameter | RRSP Strategy",
+  "url": "https://rrspstrategy.wordpress.com/2015/02/13/dual-momentum-lookback-parameter/?replytocom=958",
+  "published": "2026-09-06T16:31:43+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "correlation",
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b921be544ddf65c51174",
+  "host": "rrspstrategy.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Dual momentum: lookback parameter | RRSP Strategy",
+  "url": "https://rrspstrategy.wordpress.com/2015/02/13/dual-momentum-lookback-parameter/?replytocom=959",
+  "published": "2026-09-06T16:31:46+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "correlation",
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "9b8651a3dd9ca3eb55ee",
+  "host": "rrspstrategy.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Dual momentum: lookback parameter | RRSP Strategy",
+  "url": "https://rrspstrategy.wordpress.com/2015/02/13/dual-momentum-lookback-parameter/?replytocom=1222",
+  "published": "2026-09-06T16:31:47+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "correlation",
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "85dca6921fe4e39223f9",
+  "host": "rrspstrategy.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Directional Trading Archives - Theta Trend",
+  "url": "https://www.thetatrend.com/category/directional-trading/",
+  "published": "2026-09-06T16:31:48+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.thetatrend.com/wp-content/plugins/download-monitor/assets/css/frontend.css?ver=7.0.4"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "cf199b27d8aa666258be",
+  "host": "www.thetatrend.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Donchian Channel System Archives - Theta Trend",
+  "url": "https://www.thetatrend.com/category/directional-trading/donchian-channel-system/",
+  "published": "2026-09-06T16:31:50+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "breakout",
+   "momentum",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.thetatrend.com/wp-content/plugins/download-monitor/assets/css/frontend.css?ver=7.0.4"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "8bee93255fc4159e3c37",
+  "host": "www.thetatrend.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Investing Archives - Theta Trend",
+  "url": "https://www.thetatrend.com/category/directional-trading/investing/",
+  "published": "2026-09-06T16:31:52+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.thetatrend.com/wp-content/plugins/download-monitor/assets/css/frontend.css?ver=7.0.4"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "7acbe75b055c523e6114",
+  "host": "www.thetatrend.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Monthly Rotation System Archives - Theta Trend",
+  "url": "https://www.thetatrend.com/category/directional-trading/monthly-rotation-system/",
+  "published": "2026-09-06T16:31:54+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.thetatrend.com/wp-content/plugins/download-monitor/assets/css/frontend.css?ver=7.0.4"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "4af157cec2826e278358",
+  "host": "www.thetatrend.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Naked Options Archives - Theta Trend",
+  "url": "https://www.thetatrend.com/category/directional-trading/naked-options/",
+  "published": "2026-09-06T16:31:56+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.thetatrend.com/wp-content/plugins/download-monitor/assets/css/frontend.css?ver=7.0.4"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "f208c2924f503e0248d0",
+  "host": "www.thetatrend.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Naked Put Selling Archives - Theta Trend",
+  "url": "https://www.thetatrend.com/category/directional-trading/naked-put-selling/",
+  "published": "2026-09-06T16:31:58+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.thetatrend.com/wp-content/plugins/download-monitor/assets/css/frontend.css?ver=7.0.4"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "1815d0bb11a5785fa34c",
+  "host": "www.thetatrend.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Weekly Options Archives - Theta Trend",
+  "url": "https://www.thetatrend.com/category/directional-trading/weekly-options/",
+  "published": "2026-09-06T16:32:00+00:00",
+  "symbols": [],
+  "timeframes": [
+   "INTRADAY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.thetatrend.com/wp-content/plugins/download-monitor/assets/css/frontend.css?ver=7.0.4"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "27f958a31592d679979f",
+  "host": "www.thetatrend.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Schwab Commission Free ETF Rotation System Backtest $SPY, $TLO, $PCY, $RWO, $SHY - Theta Trend",
+  "url": "https://www.thetatrend.com/schwab-commission-free-etf-rotation-system-backtest-spy-tlo-pcy-rwo-shy/",
+  "published": "2026-09-06T16:32:02+00:00",
+  "symbols": [
+   "USDCHF"
+  ],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "basis",
+   "momentum",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.thetatrend.com/wp-content/plugins/download-monitor/assets/css/frontend.css?ver=7.0.4"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "ea27fd359c6e0554ec73",
+  "host": "www.thetatrend.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Donchian Channel Breakout Trend Following Trading System - Theta Trend",
+  "url": "http://www.thetatrend.com/donchian-channel-breakout-trend-following-trading-system/",
+  "published": "2026-09-06T16:32:04+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "breakout",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.thetatrend.com/wp-content/plugins/download-monitor/assets/css/frontend.css?ver=7.0.4"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "3b1f10c8aaaef003d4f0",
+  "host": "www.thetatrend.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Quantitative Futures, stocks and Options Trading (AVAILABLE FOR MATLAB FREELANCING): Convert Stock CUSIPs to Stock Symbols with a MATLAB program",
+  "url": "http://tradingwithmatlab.blogspot.in/2009/06/convert-stock-cusips-to-stock-symbols.html",
+  "published": "2026-09-06T16:32:38+00:00",
+  "symbols": [],
+  "timeframes": [
+   "INTRADAY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "http://tradingwithmatlab.blogspot.com/2009/01/download-and-analyse-option-chains-data.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "86f0ce98b8d0f2102efa",
+  "host": "tradingwithmatlab.blogspot.in",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Designing State-of-the-Art Logging in Python",
+  "url": "https://www.research.hangukquant.com/p/designing-state-of-the-art-logging",
+  "published": "2026-09-06T16:33:05+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e739a4052fdc34ac8515",
+  "host": "www.research.hangukquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Track Your Strategy for Free | TradeLock",
+  "url": "https://tradelock.net/",
+  "published": "2026-09-06T16:33:05+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ccb336bb4db2e0048fba",
+  "host": "tradelock.net",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Automated Trading System &#8211; Internal Order Matching | Systematic Edge",
+  "url": "https://systematicedge.wordpress.com/2015/02/22/automated-trading-system-internal-order-matching/",
+  "published": "2026-09-06T16:33:05+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "mean_reversion",
+   "momentum",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "9b7b52ea80af876f3960",
+  "host": "systematicedge.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Percentile Channel Strategy Replication | CSSA",
+  "url": "https://cssanalytics.wordpress.com/2015/02/16/percentile-channel-strategy-replication/",
+  "published": "2026-09-06T16:33:08+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://cssanalytics.files.wordpress.com/2012/10/minimum-correlation-mincorr-spreadsheet.xlsx"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "67fafb79c69cb5382b67",
+  "host": "cssanalytics.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "G\u00f6del's Market: Interviewing the Quants: Marco Simioni and Nightly Patterns",
+  "url": "http://godelsmarket.blogspot.jp/2015/02/interviewing-quants-marco-simioni-and.html",
+  "published": "2026-09-06T16:33:09+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "correlation",
+   "momentum",
+   "night_session",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "66e1e619db90270cd9d4",
+  "host": "godelsmarket.blogspot.jp",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Open Source Algorithmic Trading Platform. - QuantConnect.com",
+  "url": "http://quantconnect.com/",
+  "published": "2026-09-06T16:33:10+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1M",
+   "DAILY"
+  ],
+  "patterns": [
+   "flow",
+   "orderflow"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://cdn.quantconnect.com/2024-quantconnect-brand-kit.zip",
+   "https://www.quantconnect.com/datasets/",
+   "http://www.quantconnect.com/datasets/",
+   "http://quantconnect.com/datasets",
+   "http://quantconnect.com/datasets/"
+  ],
+  "n_endpoints": 5,
+  "vault_sha": "8285a39ec3370fc66eee",
+  "host": "quantconnect.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Option Trading Service - SteadyOptions",
+  "url": "https://steadyoptions.com/",
+  "published": "2026-09-06T16:33:17+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d5e2b765a1cf8294d5d4",
+  "host": "steadyoptions.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Trade Easy | Home Page",
+  "url": "http://www.tradeeasy.in",
+  "published": "2026-09-06T16:33:17+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c493ec5ce29f977c8e74",
+  "host": "www.tradeeasy.in",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "What is Trading? &#8211; Trading Blog",
+  "url": "https://stocksinvestor12.finance.blog/2019/12/17/what-is-trading/",
+  "published": "2026-09-06T16:33:27+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "positioning"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a6acfbe1e32524519154",
+  "host": "stocksinvestor12.finance.blog",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Business - Webflow HTML website template",
+  "url": "https://online-trading.webflow.io/",
+  "published": "2026-09-06T16:33:27+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "positioning"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "6789b8ddf32b1b02f715",
+  "host": "online-trading.webflow.io",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Beginner&#039;s Guide To Building Trading Systems - The Chartist",
+  "url": "https://www.thechartist.com.au/beginners-guide-to-building-trading-systems",
+  "published": "2026-09-06T16:34:04+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "momentum",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "51179fdce40f733b83f0",
+  "host": "www.thechartist.com.au",
+  "claims": [],
+  "n_claims": 0
+ }
+]

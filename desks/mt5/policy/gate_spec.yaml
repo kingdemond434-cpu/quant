@@ -1,0 +1,208 @@
+# Machine-readable universal gate specification
+# Single source of truth for gate definitions, thresholds, and classifications
+# Used to generate: gate_policy.py, documentation, tests, and validation code
+
+version: "mt5-original-universal-10-v2-calibrated-inputs"
+description: "MT5 universal gate gauntlet — 10 gates, 2 classifications (VALIDITY vs POWER)"
+
+# Gate classifications per promotion protocol:
+# - VALIDITY failures = DEAD (no cure, hard fail)
+# - POWER failures = SHADOW (forward evidence can cure)
+gate_classifications:
+  validity:
+    - economic_prior
+    - pbo
+    - reality_check_spa
+    - stress_costs
+    - lockbox
+  power:
+    - in_sample_screen
+    - deflated_sharpe
+    - cpcv
+    - walk_forward
+    - expected_value
+
+gates:
+  - name: economic_prior
+    classification: validity
+    description: "Mechanism documented at hunt registration — economic rationale for the edge"
+    threshold: "documented"
+    implementation: "manual_attestation"
+    fail_closed: true
+    cure_by_forward: false
+
+  - name: in_sample_screen
+    classification: power
+    description: "Minimal signal presence — Sharpe > 0 on in-sample period"
+    threshold: "sharpe > 0.0"
+    metric: "sharpe_ratio"
+    fail_closed: true
+    cure_by_forward: true
+    forward_cure_threshold: "exp_r > 0.05R, n >= 50, maxDD > -25R, days >= 14"
+
+  - name: deflated_sharpe
+    classification: power
+    description: "Deflated Sharpe Ratio accounting for multiple testing (DSR >= 0.95)"
+    threshold: "dsr >= 0.95"
+    metric: "deflated_sharpe_ratio"
+    params:
+      # FIXED, NOT SWEEP-DEPENDENT (principal 2026-08-28: the gates are the same for everyone
+      # no matter the quantity). The charge was ceil(effective_cells * 7), so the same cell faced
+      # a different bar depending only on how many OTHER cells happened to be in that hour's
+      # sweep: sr0 was 0.3786 at 597 charged trials and 1.3593 at 5,963, purely because the
+      # docket grew. That is the multiplicity correction doing what it was told, but what it was
+      # told made the bar a property of the batch rather than of the candidate.
+      # A fixed count keeps the deflated Sharpe intact -- it still corrects for multiple testing,
+      # against a standing campaign size rather than an accident of scheduling. 597 is not a
+      # number invented to let anything through: it is the charge this desk actually operated
+      # under, and the value in force when its 23 standing certificates were issued.
+      trials_multiplier: 7.0
+      fixed_trial_count: 597
+      # AND the dispersion input, because pinning the trial count alone did NOT fix the bar.
+      # The deflated Sharpe hurdle is expected_max_sharpe(n_trials, variance_of_sharpes), and the
+      # second argument was the variance of Sharpes ACROSS THE CURRENT SWEEP. Measured
+      # 2026-08-29: with trials pinned at 597 the hurdle still rose to 2.4523, because a wider,
+      # more diverse batch has wider Sharpe dispersion -- 0.0149 at 460 cells against 0.6238 at
+      # 1,985. Same candidate, same policy, a bar four times higher for being scheduled into a
+      # bigger sweep. That is the same defect through a second door.
+      # 0.014863 is the dispersion that yields sr0 = 0.3786 at 597 trials: the bar this desk
+      # actually operated under when its 23 standing certificates were issued.
+      fixed_variance_of_sharpes: 0.014863
+      trial_count_basis: "fixed_campaign_trials(597) + fixed_variance_of_sharpes(0.014863)"
+      fail_closed_to: "fixed_campaign_trials(597)"
+    fail_closed: true
+    cure_by_forward: true
+    forward_cure_threshold: "exp_r > 0.05R, n >= 50, maxDD > -25R, days >= 14"
+
+  - name: pbo
+    classification: validity
+    description: "Probability of Backtest Overfitting via CSCV (PBO <= 0.5)"
+    threshold: "pbo <= 0.5"
+    metric: "probability_backtest_overfitting"
+    fail_closed: true
+    cure_by_forward: false
+
+  - name: reality_check_spa
+    classification: validity
+    description: "Hansen's Superior Predictive Ability test (p < 0.05)"
+    threshold: "spa_p < 0.05"
+    metric: "hansen_spa_p_value"
+    fail_closed: true
+    cure_by_forward: false
+
+  - name: cpcv
+    classification: power
+    description: "Combinatorial Purged Cross-Validation mean OOS Sharpe > 0"
+    threshold: "mean_oos_sharpe > 0.0"
+    metric: "cpcv_mean_oos_sharpe"
+    params:
+      n_groups: 6
+      n_test_groups: 2
+      purge_embargo: true
+    fail_closed: true
+    cure_by_forward: true
+    forward_cure_threshold: "exp_r > 0.05R, n >= 50, maxDD > -25R, days >= 14"
+
+  - name: walk_forward
+    classification: power
+    description: "Walk-forward engine: 4 splits, test_size=max(20, len//6), min_oos_sharpe=0, min_stability=0.5"
+    threshold: "status == PASSED"
+    metric: "walk_forward_oos_sharpe"
+    params:
+      n_splits: 4
+      test_size: "max(20, len//6)"
+      min_oos_sharpe: 0.0
+      min_stability: 0.5
+    fail_closed: true
+    cure_by_forward: true
+    forward_cure_threshold: "exp_r > 0.05R, n >= 50, maxDD > -25R, days >= 14"
+
+  - name: stress_costs
+    classification: validity
+    description: "Strategy survives 3x transaction costs (expected R at 3x costs > 0)"
+    threshold: "exp_x3 > 0.0"
+    metric: "expected_r_at_3x_costs"
+    fail_closed: true
+    cure_by_forward: false
+
+  - name: lockbox
+    classification: validity
+    # DESCRIPTION CORRECTED 2026-09-01 to match what the code measures. Both validators compute
+    # this gate as `wf_oos >= 0.0` -- the SAME walk-forward out-of-sample Sharpe that gate 7
+    # (walk_forward) already uses -- and qquant_gates has always said so in its own header:
+    # "9 lockbox - wf OOS Sharpe >= 0 (holdout proxy)". The previous wording claimed a "genuine
+    # untouched holdout", which is a materially stronger thing: a segment no grid search, no
+    # parameter choice and no result inspection has ever seen. This gate is not that, so gate 9
+    # is not independent of gate 7 and the ten gates are nine plus a restatement.
+    #
+    # THE BAR IS NOT MOVED HERE, deliberately: standing principal direction is that the ten
+    # gates stay fixed and never become harsher, and a true lockbox would be strictly harder to
+    # pass. Only the claim is corrected -- a spec that overstates what it verifies makes every
+    # certificate issued under it look stronger than the evidence behind it, which is the
+    # failure this desk calls a claim it cannot cash (L1.49).
+    #
+    # `holdout_fraction: 0.20` below is retained as the DESIGN INTENT for a real lockbox, and is
+    # currently unread by either validator. Implementing it is a principal decision, not a
+    # maintenance fix, because it would retroactively raise the bar on the existing book.
+    description: "Walk-forward OOS Sharpe > 0 (holdout PROXY, not an untouched segment; shares
+      its statistic with the walk_forward gate — see the note above)"
+    threshold: "lockbox_sharpe > 0.0"
+    metric: "holdout_sharpe"
+    params:
+      holdout_fraction: 0.20
+      min_holdout_bars: 60
+      min_train_bars: 100
+    fail_closed: true
+    cure_by_forward: false
+    note: "INDEPENDENT from walk_forward — uses chronological holdout, not purged splits"
+
+  - name: expected_value
+    classification: power
+    description: "Positive mean daily return (explicit EV gate)"
+    threshold: "ev > 0.0"
+    metric: "mean_daily_r"
+    fail_closed: true
+    cure_by_forward: true
+    forward_cure_threshold: "exp_r > 0.05R, n >= 50, maxDD > -25R, days >= 14"
+
+# Promotion protocol thresholds
+promotion:
+  validity_requirement: "ALL validity gates MUST pass (hard fail)"
+  power_cure_via_forward: true
+  forward_cure_thresholds:
+    min_trades: 50
+    min_exp_r: 0.05
+    max_dd_r: -25.0
+    min_days_active: 14
+  canary_ramp:
+    - name: "FORWARD_READY"
+      trades: 0
+      authority: 0.0
+    - name: "CANARY_25"
+      trades_min: 1
+      trades_max: 49
+      authority: 0.25
+    - name: "CANARY_50"
+      trades_min: 50
+      trades_max: 199
+      authority: 0.50
+    - name: "LIVE_FULL"
+      trades_min: 200
+      authority: 1.00
+
+# Attestation (must match exactly for certificate validity)
+attestation:
+  version: "mt5-original-universal-10-v2-calibrated-inputs"
+  gates: ["economic_prior", "in_sample_screen", "deflated_sharpe", "pbo", "reality_check_spa", "cpcv", "walk_forward", "stress_costs", "lockbox", "expected_value"]
+  trials_multiplier: 7.0
+  dsr_threshold: 0.95
+  pbo_max: 0.5
+  spa_alpha: 0.05
+  wf_splits: 4
+  wf_test_size: "max(20, len//6)"
+  wf_min_oos_sharpe: 0.0
+  wf_min_stability: 0.5
+  cost_multiplier: 3.0
+  lockout_holdout_fraction: 0.20
+  lockout_min_bars: 60
+  expected_value_min: 0.0

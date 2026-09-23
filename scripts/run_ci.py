@@ -94,6 +94,18 @@ _STEPS = [
     # the signal is dominated by `ast.AST has no attribute value` and legitimate monkeypatch
     # module access. That is a silencing campaign, and a gate green because everything is
     # silenced is worse than no gate (the rule this file's own `files` list already follows).
+    # COMPILE, AND RUFF IS NOT A SUBSTITUTE FOR IT (2026-08-26). This gate went red on
+    # `tests (pytest)` for 21h with one cause: scripts/liquidation_listener.py carried
+    # `await asyncio.sleep(30)` inside a plain `def`, and ruff, mypy AND collect were all GREEN
+    # on it. `await` outside `async` is not a PARSER error -- CPython accepts it into the AST and
+    # rejects it in the symbol-table pass -- so every AST-level tool passes while `import` raises
+    # SyntaxError. Collect missed it because the only importer imports inside a fixture. Adding
+    # this found two MORE files that had never been importable (a +4 indentation block in
+    # desks/mt5/side_channels/failure_mining.py, and a bash script named .py). ~1s for the pass
+    # every other tool skips, and it runs BEFORE the 2h test step so the cheapest failure in the
+    # repo is detected first rather than last.
+    ("compile (compileall)", [_PY, "-m", "compileall", "-q", "scripts", "libs", "desks",
+                              "tests"], 300),
     ("collect (pytest --co)", [_PY, "-m", "pytest", "--co", "-q", "tests/"], 300),
     # WHOLE TREE (2026-07-25): was 4 named files + tests/execution = ~147 of ~1099 tests, leaving
     # tests/risk (the ruin path) and tests/validation (the anti-false-positive path) ungated, and
@@ -301,6 +313,9 @@ def _mem_available_mb() -> int | None:
 
 def _run_steps() -> int:
     failed: list[str] = []
+    #: step label -> the failing test node IDs it reported. Empty for a step that passed or that
+    #: died without producing a summary (HUNG/KILLED), which is itself the honest answer.
+    details: dict[str, list[str]] = {}
     for label, cmd, budget in _STEPS:
         try:
             r = subprocess.run(cmd, cwd=str(_ROOT), capture_output=True, text=True,
@@ -350,6 +365,46 @@ def _run_steps() -> int:
         print(f"[{'PASS' if ok else 'FAIL'}] {label}: {tail[0][:120]}")
         if not ok:
             failed.append(label)
+            # RECORD *WHICH* TEST, NOT JUST WHICH STEP (2026-08-26). The marker recorded
+            # `failed: ['tests (pytest)']` and nothing else, so max_audit could report the
+            # desk-wide gate red -- as it did for 20h -- while naming no failing test. The only
+            # way to learn what broke was to re-run the whole 60-80 minute suite, which on a
+            # 3.8GB swapless box competes with the live organs and is why a red gate sits.
+            # A defect the desk cannot act on without an hour of compute is a defect it leaves
+            # alone. pytest already prints the node IDs in its short summary; keeping them costs
+            # nothing and turns the next red into a targeted fix.
+            details[label] = [
+                ln.split(" - ")[0].strip()
+                for ln in (r.stdout or "").splitlines()
+                if ln.startswith(("FAILED ", "ERROR "))
+            ][:25]
+            # "TESTS FAILED" AND "THE RUN COULD NOT FINISH" ARE DIFFERENT VERDICTS (2026-08-29).
+            # The parser above only harvests `FAILED `/`ERROR ` lines, so a pytest-timeout kill
+            # -- which prints a `+++ Timeout +++` banner and a stack dump instead -- recorded
+            # `failed: ['tests (pytest)']` with `failed_tests: []`. MEASURED: the 2026-08-29
+            # 01:20 marker held exactly that, and max_audit escalated `ci-gate-red` naming no
+            # test at all. A red with nothing named cannot be acted on, so it is read as noise
+            # and the gate stops meaning anything -- which is how the 08-28 red sat 34h.
+            #
+            # Worse, it is a MISDIRECTION rather than a mere absence: a reader sees "RED on
+            # COMMITTED code" and goes looking for a broken test that does not exist. The 25
+            # node IDs recorded on 08-28 were the same event -- timeout casualties, every one
+            # passing in isolation -- so the marker sent the desk hunting bugs that were never
+            # there. Absence and misattribution are the two ways this fails and this names both.
+            blob = (r.stdout or "") + (r.stderr or "")
+            if "+++ Timeout" in blob or "Timeout +++" in blob:
+                hung = [
+                    ln.strip()
+                    for ln in blob.splitlines()
+                    if ln.strip().startswith(("~~~~", "File ")) and "tests/" in ln
+                ][:5]
+                details[label] = [
+                    "TIMEOUT -- the run did NOT finish, so this is not a statement about any "
+                    "test passing or failing. Any node IDs below are where the clock ran out, "
+                    "not necessarily a defect; re-run them in isolation before believing them."
+                    + (f" Nearest frames: {'; '.join(hung)}" if hung else ""),
+                    *details[label],
+                ]
     failed_tracked, inflight = _attribute(failed)
     stale = [s for s in failed if s not in failed_tracked]
     if stale:
@@ -361,6 +416,21 @@ def _run_steps() -> int:
     # Freshest-truth CI status marker (2026-07-23): a red desk-wide gate sat undetected 81h
     # because the brain cycle that runs run_ci was quota-dead; max_audit now surfaces this
     # marker so a red gate always enters the escalation path. Additive; never affects the gate.
+    # WHICH COMMIT WAS THIS VERDICT ABOUT? (2026-08-28). A red verdict is a statement about a
+    # TREE, and the tree moves. On 2026-08-28 the 08:54 run recorded 25 committed-code failures;
+    # they were all fixed by 09:39, and max_audit went on reporting "RED on COMMITTED code" about
+    # a bug that no longer existed -- sending a reader to hunt it. That is the same burying the
+    # `tracked_ok` and `killed` fields above were each written to stop: an un-actionable red
+    # recurs, gets skimmed, and hides the next real one. The marker could not say which commit it
+    # measured, so no consumer could tell "still broken" from "already fixed, not re-run".
+    # ADDITIVE and carries no authority: absent on older markers, and a consumer that cannot
+    # resolve it must keep treating the red as live (unknown is never green).
+    head = None
+    with contextlib.suppress(OSError, subprocess.SubprocessError):
+        r = subprocess.run(["git", "rev-parse", "HEAD"], cwd=_ROOT, capture_output=True,
+                           text=True, timeout=30, check=False)
+        if r.returncode == 0:
+            head = (r.stdout or "").strip() or None
     with contextlib.suppress(OSError):
         (_ROOT / "data/.ci_last_run.json").write_text(
             # `ok`/`failed` keep their exact old meaning (whole tree) so every pre-existing reader
@@ -375,7 +445,9 @@ def _run_steps() -> int:
             json.dumps({"ok": not failed, "ts": datetime.now(tz=UTC).isoformat(),
                         "failed": failed, "tracked_ok": not failed_tracked,
                         "failed_tracked": failed_tracked, "inflight": inflight,
-                        "killed": [s for s in failed if "(KILLED sig" in s]}), "utf-8")
+                        "failed_tests": details,
+                        "killed": [s for s in failed if "(KILLED sig" in s],
+                        "head": head}), "utf-8")
     return 1 if failed else 0
 
 

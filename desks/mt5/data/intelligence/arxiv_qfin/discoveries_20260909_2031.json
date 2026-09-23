@@ -1,0 +1,12 @@
+[
+ {
+  "source": "arxiv_qfin",
+  "kind": "fetch_error",
+  "title": "HTTPSConnectionPool(host='export.arxiv.org', port=443): Max retries exceeded with url: /api/query?search_query=cat:q-fin.TR+OR+cat:q-fin.PM+OR+cat:q-fin.ST&sortBy=submittedDate&sortOrder=descending&ma",
+  "url": "",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-09T21:04:03+00:00",
+  "needs_selector_work": true
+ }
+]

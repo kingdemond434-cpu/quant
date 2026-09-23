@@ -1,0 +1,630 @@
+AQR Capital Management, LLC 
+Two Greenwich Plaza
+Greenwich, CT 06830
+p:
+ 
+203.742.3600
+f :
+ 
+
+203.742.3100
+www.aqr.com  
+
+Managing Director
+ 
+Head of Tax Managed Research
+Managing Director
+ 
+
+Head of Strategy and Tax Advantaged Solutions
+Vice President
+ 
+Portfolio Solutions Group
+* Results presented in this paper are based on a study of simple and 
+transparent investment strategies by Sialm and Sosner (2017). This 
+material is intended for informational purposes only and should not be 
+construed as legal or tax advice, nor is it intended to replace  the advice 
+
+her own analysis and consult with professional advisors prior to making 
+any investment decisions.
+
+Contrary to common belief, market neutral 
+only can they have low tax burdens, but they can 
+
+further increased through tax-aware rebalancing: 
+tax-aware market neutral strategies can achieve 
+time. In addition, these tax-aware strategies have 
+markets, precisely when long-biased investors 
+
+are most likely to gain from them. Importantly, in 
+our sample, tax-aware market neutral strategies 
+degradation in pre-tax returns. Based on this, we 
+conclude that tax-aware market neutral equity 
+strategies can be an important tool in the toolbox 
+of a taxable investor from both the tax and pre-tax 
+perspectives.
+
+ 
+ 
+The conventional wisdom is that the tax burden of 
+an investment strategy increases with its turnover, 
+as high-turnover strategies exhibit a higher 
+propensity to realize capital gains. Short selling in 
+since realized capital gains on short positions are 
+generally taxed at a higher short-term capital gains 
+tax rate, regardless of the holding period. In our 
+actively managed investment strategies that take 
+advantage of short selling can not only have low 
+awareness.
+1
+  
+strategies which employ short selling and explain 
+2
+ 
+We then demonstrate, through historical strategy 
+simulations, how introducing tax awareness into 
+market neutral strategies can further increase 
+of tax-aware market neutral equity strategies 
+are persistent and sustainable over time. We 
+then discuss the impact of liquidation taxes and 
+conclude with practical applications of tax-aware 
+strategies.
+What matters is not how much you make but how 
+on what investors get to keep. Some common ways 
+for individual investors to reduce their tax burdens 
+include deferring the realization of capital gains 
+and accelerating the realization of capital losses. 
+al. (2006), and Berkin and Luck (2010).
+2 
+Tax treatment depends in part on the investment vehicle used and the instruments traded. Throughout this paper we consider cash equities and 
+reasons. Long-term capital gains are taxed at a 
+lower rate than short-term capital gains. Further 
+deferral of realization of long-term capital gains 
+the time value of money with potentially more 
+capital available for reinvestment. Importantly, 
+the taxation of capital gains can be completely 
+avoided when assets with unrealized gains receive 
+a step-up of the cost basis at death or are gifted to 
+a charity. 
+On the other hand, it is advantageous to accelerate 
+the realization of capital losses since these losses 
+gains in the overall portfolio. Realizing short-
+As an example, under the assumption of a 43.4% 
+short-term capital gains tax rate, by realizing a 
+$100 short-term capital loss an investor with large 
+short-term capital gains tax liabilities can achieve 
+3
+ 
+A tax-aware approach to investing recognizes that 
+realizing gains results in tax costs and realizing 
+alpha. Since the after-tax return of an investment 
+strategy is the sum of its pre-tax return and its 
+tax-aware strategies as those that seek attractive 
+after-tax returns.  Such strategies can thus be 
+particularly well adapted to the needs of taxable 
+investors in taxable accounts.
+We simulate tax-agnostic and tax-aware versions 
+of quantitative market neutral strategies, over a 
+
+ 
+period of 31 years from 1985 to 2015. Both versions 
+use the same model, but the tax-agnostic strategy 
+does not employ tax-aware rebalancing and thus 
+represents the baseline case. The quantitative 
+strategies combine value and momentum style 
+factors with equal weights. Appendix A provides 
+further details on methodology and tax rate 
+assumptions.
+4
+ 
+The tax-aware strategy seeks to reduce tax 
+liabilities from capital gains and increase tax 
+accelerating the realization of capital losses and 
+deferring the realization of capital gains. This is 
+achieved through an optimization that balances 
+unattractive positions against the tax liabilities or 
+5
+ 
+Exhibit 1 shows performance and turnover 
+statistics for the simulated tax-agnostic and tax-
+aware strategies, each at a 4% volatility target.
+6
+The most striking result in Exhibit 1 is that the 
+tax-agnostic strategy, instead of realizing a tax 
+liability
+, realizes an annual tax 
+ of 0.3%, 
+7
+monthly frequency are better candidates for tax-aware rebalancing.
+numerous assumptions such as accuracy of the expected return and risk predictions and the ability of the investor to utilize realized loss offsets 
+optimally.
+sales of securities by the monthly average of the value of the portfolio securities (https://www.sec.gov/about/forms/formn-sar.pdf). 
+tax-aware rebalancing might lead to a progressive divergence over time of the returns of the tax-agnostic and tax-aware strategies. However, we 
+correlation is calculated over a 36-month rolling window.
+(2012). This is because deferring the realization of capital gains results in holding on to recent winners, and accelerating the realization of capital 
+losses results in selling recent losers, which is to some extent similar to how a momentum signal is constructed.
+realized by the market neutral strategy that can be 
+the investors portfolio. 
+  |  
+Performance of a Hypothetical Value-
+Momentum Market Neutral Strategy, 1985-2015  
+Annual Return
+Pre-Tax
+After-Tax
+Annual Volatility
+Pre-Tax
+After-Tax
+Annual Sharpe Ratio
+Pre-Tax
+1.1
+After-Tax
+Turnover and Gross Notional Value
+Source: AQR. Data as of December 31, 2015. Please see the Appendix 
+for an explanation of the hypothetical data. The universe is a large-cap U.S. 
+stock universe. Returns are gross of fees and transaction costs and excess 
+that AQR currently manages. Hypothetical data has inherent limitations, 
+some of which are disclosed herein.
+In our analysis, tax-aware rebalancing of the market 
+0.3% to 6.1% per year. Pre-tax return decreases by 
+about 1% as the weights of the tax-aware strategy 
+deviate somewhat from those of the tax-agnostic 
+strategy.
+8
+ However, this reduction in pre-tax return 
+result, tax awareness increases the after-tax return 
+from 5.8% to 10.4% and the after-tax Sharpe ratio 
+Exhibit 1 reveals that tax awareness also reduces 
+the turnover of the strategy.
+9
+ What explains this 
+
+ 
+ 
+3
+On average, equity markets go up  e.g., the Russell 
+1000 index had an average annual return of 12.6% 
+during our sample period. As a consequence, long 
+positions tend to appreciate, while short positions 
+tend to lose value.
+10
+Moreover, under current law, all gains and losses 
+realized on short positions, irrespective of the 
+positions holding period, are treated as short-term 
+gains and losses.
+11
+resulting from losses on the shorts: As short-term 
+We illustrate this via a numerical example in 
+Exhibit 2.
+E
+  |  
+Hypothetical Annual Pre-Tax Returns 
+and Realized Gains and Losses of the Tax-Agnostic 
+Strategy, 1985-2015 
+Source: AQR. Data as of December 31, 2015. Please see the Appendix 
+for an explanation of the hypothetical data. The universe is a large-cap 
+U.S. stock universe. Returns are gross of fees and transaction costs and 
+return over cash divided by the standard deviation of excess returns. 
+Hypothetical data has inherent limitations, some of which are disclosed 
+herein.
+10
+ 
+This is true even though the strategy seeks to produce positive returns whether the market is rising or falling, the aim of the strategy is to have the 
+longs outperform the shorts.
+11
+of Federal Regulations as of 2016.
+12
+Exhibit 2 shows that the tax-agnostic strategy has 
+a pre-tax gain of 18.2% on the longs and a pre-tax 
+loss of -12.7% on the shorts resulting in a pre-tax 
+strategy return of 5.5%. Due to the high turnover of 
+the tax-agnostic strategy, a large proportion of the 
+gains and losses are realized. In this simulation, the 
+long leg realizes a 14.5% gain, roughly 80% of the 
+total gains on the longs, consisting of a 7.5% short-
+term gain and a 7.0% long-term gain. Similarly, 
+the short leg, realizes a -11.2% loss, roughly 88% of 
+the -12.7% total loss, all of which is characterized 
+as short-term. The short-term losses on the shorts 
+short-term gains on the longs to result in a net 
+gain on the longs remains at 7.0% since there are 
+Multiplying the long-term gain and short-term 
+loss by the respective tax rates of 23.8% and 43.4% 
+yields a tax cost of 0.05%. Subtracting this cost from 
+12
+In addition to the fact that short positions on 
+average lose value due to stock market appreciation, 
+the ability to sell short increases the opportunity 
+set for loss harvesting, especially in bull markets. 
+Whether in a bull market or in a bear market, the 
+long and short sides of the portfolio will typically 
+move in opposite directions. When one side is 
+realizing gains, the other is realizing losses.  This is 
+what makes market neutral strategies particularly 
+aware management. 
+Exhibit 3 shows how tax-aware rebalancing 
+changes the pattern of realization of capital 
+Pre-Tax
+Realized
+Pre-Tax: Longs
+Pre-Tax: Shorts
+Realized: Longs Short-Term
+Realized: Longs Long-Term
+Realized: Shorts
+
+ 
+gains and losses as compared to Exhibit 2. The 
+now somewhat smaller yielding a pre-tax strategy 
+return of 4.3%. The tax-aware strategy defers the 
+realization of capital gains on the longs resulting 
+in a short-term realized loss of -2.2%  and a long-
+term realized gain of 13.8%. Together these two 
+numbers add up to a net realized gain of 11.6%, 
+which constitutes only 52% realization of the 
+22.7% total gain on the longs. In comparison, the 
+tax-agnostic strategy realizes as much as 80% of 
+the gain on the longs, as we saw in Exhibit 2. The 
+tax-aware strategy also accelerates the realization 
+of capital losses so that 98% of the losses on the 
+shorts are realized, compared to 88% for the tax-
+agnostic strategy.
+Exhibit 3
+  |  
+Hypothetical Annual Pre-Tax Returns 
+and Realized Gains and Losses of the Tax-Aware 
+Strategy, 1985-2015
+Source: AQR. Data as of December 31, 2015. Please see the Appendix 
+for an explanation of the hypothetical data. The universe is a large-cap U.S. 
+stock universe. Returns are gross of fees and transaction costs and excess 
+that AQR currently manages. Hypothetical data has inherent limitations, 
+some of which are disclosed herein.
+As seen in Exhibit 3, when short-term losses on 
+the longs and on the shorts are aggregated, the 
+total realized short-term loss is -20.2% while the 
+realized long-term gain is 13.8%. Multiplying the 
+total long-term gains and short-term losses of 
+the tax-aware strategy by the respective tax rates 
+longs and ordinary expense on the shorts  the 
+To summarize, in our simulated strategy analysis, 
+market neutral strategies over their tax-agnostic 
+counterparts results from a reduction in net 
+short-term gains realized by long positons and an 
+increase in net short-term losses realized by short 
+positions.
+agnostic and tax-aware market neutral strategies. 
+While on average the tax-agnostic strategy gives 
+the tax-aware strategy results in a meaningful tax 
+of the tax-aware market neutral strategy do not, 
+in our analysis, seem to deplete over time. What 
+section sheds light on this puzzle.
+Pre-Tax
+Realized
+Pre-Tax: Longs
+Pre-Tax: Shorts
+Realized: Longs Short-Term
+Realized: Longs Long-Term
+Realized: Shorts
+
+ 
+ 
+5
+  |  
+of Market Neutral Strategies, 1985-2015 
+Source: AQR. Data as of December 31, 2015. Please see the Appendix 
+for an explanation of the hypothetical data. The universe is a large-cap U.S. 
+stock universe. Returns are gross of fees and transaction costs and excess 
+that AQR currently manages. Hypothetical data has inherent limitations, 
+some of which are disclosed herein.
+It is a common presumption that deferral of 
+capital gains eventually causes portfolio lock-
+up  a situation where the unrealized gains are 
+so large that any rebalancing of the portfolio 
+expected economic gains from trading. Thus, 
+as the tax-aware strategy systematically defers 
+the realization of gains, its ability to continually 
+in Exhibit 4, seems counterintuitive. However, a 
+more careful inspection of unrealized gains helps 
+solve this mystery.  
+The appreciation of stocks due to the positive 
+equity premium causes a buildup of unrealized 
+gains in long positions. Shorts, on the other hand, 
+tend to incur losses thus creating a steady supply 
+of loss-harvesting opportunities. We measure the 
+buildup in unrealized gains using relative cost 
+basis  the ratio of the positions cost basis to 
+their market value.  Exhibit 5 plots the evolution of 
+the relative cost bases of long and short portfolio 
+positions.
+Exhibit 5
+  |  
+Cost Basis of Hypothetical Portfolio 
+Positions Relative to Net Asset Value , 1985-2015
+Source: AQR. Data as of December 31, 2015. Please see the Appendix 
+for an explanation of the hypothetical data. The universe is a large-cap U.S. 
+manages. Hypothetical data has inherent limitations, some of which are 
+disclosed herein.
+The top chart shows how, for a passive low 
+turnover index, like the Russell 1000, the relative 
+cost basis decreases over time. In contrast, for the 
+tax-agnostic market neutral strategy, the relative 
+cost basis of the longs remains close to 100%, 
+due to its higher turnover and more frequent 
+realization of gains. In the case of the tax-aware 
+strategy, as it defers the realization of gains on the 
+longs, the relative cost basis of its long positions 
+declines over time, but to a lesser extent than that 
+of the passive index due to the strategys naturally 
+higher turnover. 
+The bottom chart in Exhibit 5 shows the relative 
+cost basis for the shorts in the market neutral 
+2001
+2003
+2005
+2007
+2011
+2013
+2015
+Tax-Agnostic
+Tax-Aware
+2000
+2002
+2006
+2010
+2012
+Russell 1000
+Tax-Agnostic Longs
+Tax-Aware Longs
+2000
+2002
+2006
+2010
+2012
+Tax-Agnostic Shorts
+Tax-Aware Shorts
+
+6
+ 
+strategies. It remains close to 100% as both the 
+tax-agnostic and tax-aware strategies seek to 
+continuously realize losses on the shorts. By 
+constantly refreshing the cost basis of the short 
+positons, i.e. keeping it close to 100% of the 
+positions value, market neutral strategies make 
+loss realization potentially sustainable in the long 
+run.
+Long-only loss-harvesting strategies tend to 
+declining stock prices. Contrary to that, the tax-
+aware market neutral strategy tends to realize 
+losses in bull markets exactly when they are 
+needed the most  when the market performance 
+is strong and many other long-biased investments 
+are likely to be at a gain. Since shorts, on average, 
+realize losses in up markets and gains in down 
+markets, the tax-aware strategy, which gives rise 
+markets. In the simulation herein, the correlation 
+between the Russell 1000 index return and the tax-
+correlation of -0.3 between the Russell 1000 index 
+strategy.
+One consequence of deferring the realization of 
+capital gains is that the unrealized capital gains, 
+and thus the liquidation tax liability, tend to 
+liquidation tax on the investors wealth for the tax-
+agnostic and tax-aware strategies.
+13
+ The tax-aware 
+market neutral strategy has a higher liquidation 
+tax liability. However, for a taxable investor, 
+even after accounting for the liquidation tax, the 
+tax-aware strategy is more advantageous than its 
+13
+tax-agnostic counterpart as it results in a higher 
+after-tax post-liquidation wealth. This is due to 
+aware strategy that the investor gets to reinvest 
+for many years.
+14
+ We note that the assumption 
+of fully taxable liquidation in the last period is 
+fairly conservative as, under the current law, a 
+tax-aware investor has ways to reduce or entirely 
+avoid liquidation taxes, for example, by donating 
+holding them until death when the cost basis of 
+the shares is stepped-up to their market value.
+Exhibit 6
+  |  
+Investors Wealth, 1985-2015 
+Source: AQR. Data as of December 31, 2015. Please see the Appendix 
+for an explanation of the hypothetical data. The universe is a large-cap 
+U.S. stock universe. Returns are gross of fees and transaction costs. 
+Hypothetical data has inherent limitations, some of which are disclosed 
+herein.
+There are three immediate applications of the 
+aware market neutral strategies.  First, the tax-
+$0
+$2
+$6
+$10
+2000
+2002
+2006
+2010
+2012
+Tax-Agnostic
+Tax-Aware
+
+ 
+ 
+portfolio and act as the principal source of overall 
+15
+expands the opportunity set of potential managers 
+as it enables the investor to consider managers 
+to include.
+ The second application is reducing the risk of a 
+concentrated and highly appreciated position in 
+highly concentrated portfolio that she would like 
+to diversify but is unable to do so due to a high 
+tax burden of large unrealized gains. A tax-aware 
+market neutral strategy can realize tax losses to 
+period.
+16
+The third application is that even without the tax 
+investments, the tax-aware strategy may yield 
+attractive after-tax returns that are uncorrelated 
+to equity markets. To generate the same after-tax 
+return, a strategy with tax liabilities would need to 
+generate higher pre-tax returns to overcome the 
+tax drag, which can be substantial.
+In this study we show that, counter to popular 
+belief, market neutral equity strategies can be 
+to considerable opportunities for realizing short-
+term losses. 
+Adding tax-aware portfolio construction can 
+further improve after-tax returns of market neutral 
+similar in magnitude to pre-tax alpha. Moreover, 
+strategy can persist in the long run. Importantly, 
+market returns because short positions tend to 
+15
+ 
+The approach to portfolio allocation where a tax-aware passive core is used to offset capital gains realized by the trading of satellite managers was 
+proposed by Brunel (2001), Rogers (2001), Stein (2001) and Quisenberry (2003).
+16
+diversifying a concentrated portfolio.
+realize losses exactly at the time when investors 
+are up and other investments in their portfolios 
+are likely to be at a gain. 
+Tax-aware market neutral strategies have 
+important practical applications such as 
+potentially making a multi-manager investment 
+diversify concentrated low-cost-basis positions, 
+and providing a source of attractive diversifying 
+after-tax returns.
+
+ 
+Appendix
+This section describes the methodology we use in the simulation in the main body. All the results in the 
+17
+ 
+The portfolio construction process begins with a quantitative alpha model that yields stock-level alphas. 
+The model is built over a US large-cap universe similar to the universe of Russell 1000 constituents, 
+and combines value and momentum style factors with equal weights. Value is measured by the most 
+frequently used academic measure of equity value: the book-to-market ratio. Following Asness and 
+Momentum is measured by total return over the preceding 12 months, excluding the most recent month.
+The strategies are rebalanced monthly over the period from January 1985 to December 2015 and target 
+4% risk. The portfolio is dollar-neutral and the portfolio beta versus the Russell 1000 index is constrained 
+to be between +0.02 and -0.02.To create tax-aware strategies, the optimizer incorporates tax implications 
+into the portfolio construction process.
+tax rates we use correspond to the tax rates for a U.S. individual in the top federal marginal income tax 
+bracket in 2016: 23.8% on long-term and 43.4% on short-term capital gains.
+18
+ Gains on short positions 
+are almost always taxed as short-term capital gains, regardless of the holding period of the short position. 
+This assumption is consistent with strategies using relatively long holding periods, as does the combined 
+value-momentum strategy we study in this paper. All in-lieu dividends paid on short-positions are treated 
+remain constant throughout the simulation period. 
+elsewhere in the investors portfolio. This means that an investor realizing a $100 short-term capital 
+17
+
+ 
+ 
+Asness, C.S., and A. Frazzini, The Devil in HMLs Details. 
+The Journal of Portfolio Management
+, 
+Summer 2013, pp. 49-68. 
+Berkin, A.L., and C.G. Luck. Having Your Cake and Eating It Too: The Before- and After-Tax 
+Financial Analysts Journal
+, July/August 2010, pp. 33-
+45.
+The Journal of Wealth Management
+, Spring 2004, pp. 
+74-79.
+Gallmeyer, M., R. Kaniel, and S. Tompaidis. Tax Management Strategies with Multiple Risky Assets. 
+Journal of Financial Economics
+ 80, pp. 243-291.
+2012.
+The Journal of Wealth Management
+, Winter 2002, pp. 57-66.
+Quisenberry, C.H. Optimal Allocation of a Taxable Core and Satellite Portfolio Structure. 
+The Journal 
+of Wealth Management
+, Summer 2003, pp. 18-26.
+Rogers, D.S. Tax-Aware Equity Manager Allocation: A Practitioners Perspective. 
+The Journal of 
+Wealth Management
+, Winter 2001, pp. 39-45.
+Rogers, D.S. 
+Tax Aware Investment Management: The Essential Guide
+Financial 
+Analysts Journal
+Stein D.M. Equity Portfolio Structure and Design in the Presence of Taxes. 
+The Journal of Wealth 
+Management
+, Fall 2001, pp. 37-42.
+Wilcox, J., J.E. Horvitz, and D. diBartolomeo. 
+Investment Management for Taxable Private Investors
+. The 
+
+ 
+ 
+taxable investors, including private wealth, corporate accounts and taxable pension plans. Between 
+MSCI Barra as a member of the Equity Research Group. Prior to joining MSCI Barra, while in graduate 
+school at Harvard University, he worked in research capacities at Harvard Business School and State 
+Tel Aviv University and a Ph.D. in economics from Harvard University.
+ 
+Ted is a Managing Director and Head of Tax Advantaged Solutions. In this role, he is responsible 
+evaluate and assist in executing new opportunities to expand the business, improve clients experience 
+Committee and held a variety of positions at S.A.C. Capital Advisors and its successor, Point72 
+Advisors, including Global Head of Strategy, Co-Head of Equities and Head of its Aperio Investments 
+unit. He began his career as a consultant at Bain & Company. Ted earned an A.B. in astronomy and 
+astrophysics, graduating summa cum laude and a Ph.D. in astronomy, both from Harvard University, 
+as well as an M.B.A. from the University of Chicago.
+ 
+Swati is a member of AQRs Portfolio Solutions Group, where she writes white papers, conducts 
+investment research and engages clients on portfolio construction, risk allocation and capturing 
+alternative sources of returns. Prior to this, Swati was a researcher in AQRs global macro group 
+researching signals for AQRs asset allocation strategies. Before joining AQR, she spent six years in the 
+stock selection strategies. Swati received her B.Eng. from Gujarat University in India and her M.B.A. 
+from the University of Chicago.
+
+ 
+ 
+This document has been provided to you solely for information purposes and does not constitute an offer or solicitation of an offer or any ad¬vice or 
+inclusive and is not guaranteed as to its accuracy and is not to be regarded as a representation or warranty, express or implied, as to the informations 
+accuracy or completeness, nor should the attached information serve as the basis of any investment decision. This document is intended exclusively for 
+the use of the person to whom it has been delivered by AQR, and it is not to be reproduced or redis¬tributed to any other person. The information set forth 
+herein has been provided to you as secondary information and should not be the primary source for any investment or allocation decision. 
+This presentation is not research and should not be treated as research. This presentation does not represent valuation judgments with respect to any 
+positions (long or short) or engage in securities transactions that are not consistent with the informa¬tion and views expressed in this presentation. 
+The information contained herein is only as current as of the date indicated, and may be superseded by subsequent market events or for other reasons. 
+-
+ing contained herein constitutes investment, legal, tax or other advice nor is it to be relied on in making an investment or other decision. 
+There can be no assurance that an investment strategy will be successful. Historic market trends are not reliable indicators of actual future market be
+-
+havior or future performance of any particular investment which may differ materially, and should not be relied upon as such. Target allocations contained 
+that shown here. This presentation should not be viewed as a current or past recommendation or a solicita¬tion of an offer to buy or sell any securities or 
+to adopt any investment strategy. 
+The information in this presentation may contain projections or other forward-looking statements regarding future events, targets, forecasts or expecta
+-
+tions regarding the strategies described herein, and is only current as of the date indicated. There is no assurance that such events or targets will be 
+-
+mance of all cited indices is calculated on a total return basis with dividends reinvested. 
+situation. Please note that changes in the rate of exchange of a currency may affect the value, price or income of an investment adversely. 
+implied, is made or given by or on behalf of AQR, the author or any other person as to the accuracy and completeness or fairness of the information 
+contained in this presentation, and no responsibility or liability is accepted for any such information. By accepting this presen¬tation in its entirety, the 
+recipient acknowledges its understanding and acceptance of the foregoing statement.
+The data and analysis contained herein are based on theoretical and model portfolios and are not representative of the performance of funds or portfolios 
+losses. This process may be subject to revision over time 
+-
+withstand losses or adhere to a particular trading program in spite of trading losses are material points which can adversely affect actual trading results. 
+above and there can be no assurance that the models will remain the same in the future or that an application of the current models in the future will pro
+-
+duce similar results because the relevant market and economic conditions that prevailed during the hypothetical performance period will not necessarily 
+ac¬counted for in the preparation of hypothetical performance results, all of which can adversely affect actual trading results. Discounting factors may 
+be applied to reduce suspected anomalies. This backtests return, for this period, may vary depending on the date it is run. Hypothetical performance 
+results are presented for illustrative purposes only. in addition, our transaction cost assumptions utilized in backtests , where noted, are based on AQRs 
+would be lower. 
+-
+possible to lose more than the initial deposit when trading derivatives or using leverage. All funds committed to such a trading strategy should be purely 
+risk capital.
+
+AQR Capital Management, LLC
+
+,@Ke+   7ÿöS* : ?@<	 #"J    _ KK _ L   : :+%'*+3>7'7733>323267#"&54>54&#"7M!!ES^2@1K-!%	49<6/=ve$1hÀ§3;pII'moa,&:B#!;HPK@&C[kv;  ÿöJð  5 =@:.-J   g _ K _ L 42
+ &56W>"  7ÿöS* : ?@<	 #"J    _ KK _ L   : :+%'*+3>7'7733>323267#"&54>54&#"7M!!ES^2@1K-!%	49<6/=ve$1hÀ§3;pII'moa,&:B#!;HPK@&C[kv;  ÿöJð  5 =@:.-J   g _ K _ L 42

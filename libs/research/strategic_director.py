@@ -44,6 +44,7 @@ from pathlib import Path
 from typing import Any
 
 from libs.doctrine.constitution import (
+    DATA_AXIS_MANDATE,
     OBJECTIVE_PREAMBLE,
     RESIDUAL_MANDATE,
     RESIDUAL_PROTOCOL,
@@ -198,7 +199,7 @@ def build_prompt(dossier: Dossier) -> str:
     # model family, which is precisely why it needs the objective stated rather than inferred: it
     # does not share the desk's priors, so anything left implicit is a thing it will fill in from
     # its own training instead. It shipped without the preamble and the reach fence caught it.
-    return f"""{OBJECTIVE_PREAMBLE}{RESIDUAL_MANDATE}{RESIDUAL_PROTOCOL}
+    return f"""{OBJECTIVE_PREAMBLE}{RESIDUAL_MANDATE}{DATA_AXIS_MANDATE}{RESIDUAL_PROTOCOL}
 
 You are the desk's STRATEGIC DIRECTOR. Produce ranked recommendations, as JSON only.
 

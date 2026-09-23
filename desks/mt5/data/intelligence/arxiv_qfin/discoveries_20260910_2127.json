@@ -1,0 +1,227 @@
+[
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "dexamine: A Python package for Uniswap event data on Ethereum",
+  "url": "http://arxiv.org/abs/2609.10407v1",
+  "text": "Decentralized exchanges record trading and liquidity provision on public blockchains, but empirical analysis requires interpreting these records and linking them to execution metadata. dexamine is a Python package that parses Uniswap v2 and v3 events on Ethereum. It converts transaction receipt logs into observations of trades and liquidity changes, with token quantities, pool state, transaction order, and gas information. The package separates data retrieval, contract metadata, protocol interpretation, and output construction. The repository provides recorded Ethereum responses and an offline reproducible example, and version 1 has been used to construct data for an empirical study of price discovery in decentralized markets.",
+  "symbols": [],
+  "found_at": "2026-09-10T21:30:40+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "Signal Correlation, IC, and PnL Dependence",
+  "url": "http://arxiv.org/abs/2609.09588v1",
+  "text": "Signal correlation and PnL correlation are correlations over different index sets - across assets at each date versus across dates for scalar payoffs - and practitioners often treat the first as a proxy for the second. We give an exact decomposition that shows what that proxy sees and what it discards. We recall that at each date a normalized signal's projection onto the realized demeaned return direction is its realized cross-sectional Pearson IC, so that fixed-signal PnL is return dispersion times IC (Qian and Hua, 2004), and we identify the normalized similarity of two signals in the orthogonal complement as their partial correlation controlling for realized returns; the residual rotational freedom is an orthogonal gauge whose invariants are the transverse Gram matrix. Signal correlatio",
+  "symbols": [],
+  "found_at": "2026-09-10T21:30:40+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "The Log S-fBM model: Statistical analysis",
+  "url": "http://arxiv.org/abs/2609.09405v1",
+  "text": "The Log S-fBM model, introduced by Wu et al., is a stochastic volatility model whose log volatility is a stationary fractional Brownian motion (S-fBM): a stationary Gaussian process with power-decaying autocovariance driven by the Hurst exponent $H$, and variance scaled by an intermittency coefficient. A key property is that it reconciles rough volatility, where $H$ is typically near $0.1$ (see Gatheral et al.), with multifractal volatility, where $H$ is close to $0$ as in Bacry, Muzy et al.: the model's volatility measure converges to a multifractal random measure as $H\\to0$. Numerical findings in Wu et al. show intermittency of order $0.02$ across financial assets, motivating a small intermittency approximation of log volatility moments for calibration via the general method of moments (",
+  "symbols": [],
+  "found_at": "2026-09-10T21:30:40+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "The Double-Edged Sword of Short-Selling Bans",
+  "url": "http://arxiv.org/abs/2609.08881v1",
+  "text": "We develop a theoretical model that endogenizes the regulator's decision to impose short-selling bans to prevent large stock price declines. Empirically, we test the model's predictions using the cross-sectional variation in short-selling restrictions implemented across European countries in 2020. Consistent with our model, we find that bans had a detrimental effect on liquidity and failed to support the average price levels, but were effective in limiting large price drawdowns. Finally, we show that the effectiveness of the bans depends on the share of informed stockholders, a central variable in our framework, thus informing the design of more effective regulatory responses.",
+  "symbols": [],
+  "found_at": "2026-09-10T21:30:40+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "Nystr\u00f6m Attention Matches Full Attention for Cross-Sectional Stock Prediction",
+  "url": "http://arxiv.org/abs/2609.08106v1",
+  "text": "MASTER's inter-stock multi-head attention -- the module responsible for modeling cross-sectional stock relationships -- accounts for 42.5% of model parameters and 25% of predictive value. We systematically decompose this module and uncover a surprising structure: the learned attention is near-uniform (perplexity 278/300), yet forcing exact uniformity eliminates all cross-sectional discrimination. Spectral analysis resolves this paradox: the deviation from uniformity is low-rank (effective rank ~65, top-10 modes capture 96.5% of energy), explaining why sparse approximations consistently fail while Nystrom low-rank attention (m=32 landmarks) matches full O(N^2) attention at O(mN) cost -- certified equivalent via TOST at both N=300 (5 seeds, Rank IC p=0.003) and N=800 (10 seeds, Rank IC p=0.0",
+  "symbols": [],
+  "found_at": "2026-09-10T21:30:40+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "Pre-game paired-comparison modeling of professional League of Legends map outcomes",
+  "url": "http://arxiv.org/abs/2609.08060v1",
+  "text": "We build and evaluate a pre-game win-probability forecaster for individual maps (``games'') in professional \\emph{League of Legends} (LoL). The proposed model is a one-stage logistic regression fit end-to-end on the win/loss log-loss: each team's exponentially-weighted moving average of past same-side results, a ridge-shrunk stable strength that is the maximum-a-posteriori estimate of a logistic mixed model, and a first-pick draft covariate, natively calibrated out of sample (walk-forward slope $0.995$). It augments a purely dynamic Bradley--Terry specification with stable team strengths. A second, independently built two-stage composite mixed model under restricted maximum likelihood (REML) and best linear unbiased prediction (BLUP) shrinkage, with Platt calibration, serves as the stronge",
+  "symbols": [],
+  "found_at": "2026-09-10T21:30:40+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "Regimes in the Order Flow",
+  "url": "http://arxiv.org/abs/2609.07989v1",
+  "text": "Financial markets alternate between periods of relative stability and instability, with structural breaks marking the transitions between these regimes. Identifying such breaks in real time is a central requirement for any trading or risk system operating at high frequency. This report studies Bayesian Online Changepoint Detection (BOCPD) and two extensions proposed in the literature, and applies them to the signed order flow of NASDAQ-listed equities.",
+  "symbols": [],
+  "found_at": "2026-09-10T21:30:40+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "Simple Dynamic Stock/Bond/Gold Portfolios",
+  "url": "http://arxiv.org/abs/2609.07946v1",
+  "text": "For more than four decades, the 60/40 stock/bond portfolio has served as a benchmark for delivering reasonable returns without excessive risk. More recently, a 50/30/20 stock/bond/alternative portfolio has been suggested. We use gold as the alternative and as an inflation hedge. In this paper we ask: how much improvement over these benchmark fixed-weight portfolios can be obtained using widely available public data and standard methods from quantitative finance?\n  We restrict ourselves to long-only dynamic portfolios of stocks, bonds, and gold, plus cash, rebalancing monthly, using only publicly available data. We evaluate portfolios on the conventional metrics: return, volatility, Sharpe ratio (computed in excess of the federal funds rate), drawdown, and turnover, in addition to consisten",
+  "symbols": [],
+  "found_at": "2026-09-10T21:30:40+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "Filtering without recursion and some of its uses in financial economics",
+  "url": "http://arxiv.org/abs/2609.07207v1",
+  "text": "We develop a filter for time series, defined at each time $t$ as the minimizer of a discounted convex combination of observed and expected losses. The filter can be estimated by simulation to an arbitrary level of accuracy in $O(1)$ flops at each time point $t$ and can be run for all values $t=1,...,T$ in parallel. These methods are applied to robustly compute a preaveraged price process from the more than 1.5 million trades made on a single financial asset in a single day where the noise's variance is infinite. It yields a flat \"volatility signature\" plot, down to the 1 second level, so the microstructure noise no longer biases the volatility estimate. This is not true when linear methods are employed.",
+  "symbols": [],
+  "found_at": "2026-09-10T21:30:40+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "Asymmetric Long-Memory GARCH: Sign-Dependent Kernel Injection in a Two-Dimensional Markov Chain",
+  "url": "http://arxiv.org/abs/2609.06422v1",
+  "text": "We introduce ALM-GARCH, an asymmetric long-memory GARCH model in which positive and negative innovations enter conditional variance with different injection amplitudes and kernel offsets. These departures define testable level and memory channels relative to a nested symmetric benchmark. Positive Harris recurrence holds for interior configurations under a Foster-Lyapunov condition. Across five equity indices and Bitcoin, joint symmetry is rejected throughout, driven primarily by the level channel. The memory channel is supported for the Nikkei 225, KOSPI, and Bitcoin but is weakly identified when the positive branch is nearly inactive. Out-of-sample performance is broadly comparable to standard benchmarks.",
+  "symbols": [],
+  "found_at": "2026-09-10T21:30:40+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "From Discrete Trailing Returns to a Continuous Graphical Profile: Return-to-Present Curves",
+  "url": "http://arxiv.org/abs/2609.06267v1",
+  "text": "Investment performance is commonly presented either as a conventional cumulative-return chart, which fixes a historical starting date and traces performance forward, or as a trailing-return table, which fixes the current endpoint but reports only a small set of prespecified horizons. These two displays have complementary limitations: fixed-start comparisons are conditional on the selected origin, whereas trailing returns provide only discrete snapshots of the underlying fixed-endpoint return function. We present the Return-to-Present (RTP) curve as a continuous fixed-endpoint representation that brings these perspectives together by holding the evaluation date fixed while allowing the hypothetical historical purchase date to vary over the available history. Familiar 1-month, 3-month, 6-mon",
+  "symbols": [],
+  "found_at": "2026-09-10T21:30:40+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "Explainable Deep Learning for Price-Trade Dynamics: From Black-Box Forecasts to Effective Parametric Models",
+  "url": "http://arxiv.org/abs/2609.06085v1",
+  "text": "Understanding the joint dynamics of prices and trades is central to market microstructure, where returns and order flow interact through nonlinear and state-dependent mechanisms. Linear models are interpretable but may miss these effects, while deep neural networks improve forecasting at the cost of transparency. We use neural networks as tools for structural discovery rather than only for prediction. A deep feed-forward network is trained on high-frequency returns and signed volumes for large- and small-tick stocks and compared with a linear VAR benchmark. The neural network improves predictive performance, especially for returns, revealing nonlinear dependencies beyond the linear specification. Using Shapley-based explainability, we show that the dominant contributions are concentrated a",
+  "symbols": [],
+  "found_at": "2026-09-10T21:30:40+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "Artificial Intelligence in Equity and Crypto Markets: Progress, Profitability Evidence, and the Limits of Automated Investing",
+  "url": "http://arxiv.org/abs/2609.04917v1",
+  "text": "Artificial intelligence (AI) now supports investment workflows from data and prediction through research, portfolios, execution, and tool use. Technical capability, however, is not evidence of investment profitability. This critical state-of-the-art review examines public research available through 31 August 2026 on listed equities, exchange-traded funds, centralized crypto spot, perpetual futures, and on-chain markets. We organize evidence with an alpha-translation chain: point-in-time information must yield a stable signal, feasible positions, executable orders, and risk-adjusted returns after costs. Across machine learning, time-series foundation models, financial language models, reinforcement learning, and agents, the examined record shows real but mainly upstream progress in predicti",
+  "symbols": [],
+  "found_at": "2026-09-10T21:30:40+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "Convex Modeling of Price Cross-Impact over Time",
+  "url": "http://arxiv.org/abs/2609.04712v1",
+  "text": "Transaction costs can make or break a trading strategy, particularly in relative-value trading of commodity and macro markets, where edges are a few basis points. Price impact is a central component of transaction cost. Price impact models usually include self-impact (a trade in a contract moves that contract's price) but omit two well-documented effects: cross-impact (a trade in one contract also moves the prices of related contracts) and transient impact (price impact decays over time, so an unwind recovers part of the entry cost). A model without these effects overprices the impact of relative-value trades, whose correlated legs are built and unwound over days, and so forgoes potentially profitable trades. This paper models both effects with a convex quadratic cost. In each period, a po",
+  "symbols": [],
+  "found_at": "2026-09-10T21:30:40+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "Portfolio Diversification and Concentration under Dependence Uncertainty: A Majorization Approach",
+  "url": "http://arxiv.org/abs/2609.04496v1",
+  "text": "Modern portfolio theory identifies diversification as the primary tool for risk reduction. However, under model uncertainty, this cornerstone may no longer remain optimal. This paper investigates the tension between portfolio diversification and concentration under dependence uncertainty. In the absence of model uncertainty, we employ the framework of the majorization order and doubly stochastic matrices to formalize the degree of diversification, and prove that quasi-convexity is a necessary and sufficient property for a risk functional to be weakly consistent with the majorization order. We further derive worst-case risk measure inequalities and solve robust portfolio selection problems for a broad class of risk measures, including VaR, ES, Range-VaR (RVaR), and standard deviation (SD).",
+  "symbols": [],
+  "found_at": "2026-09-10T21:30:40+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "Optimal Stratified Allocation for Rare-Event Onset Forecasting in Dependent Sequences",
+  "url": "http://arxiv.org/abs/2609.04420v1",
+  "text": "Let a finite population of n labelled examples carry a class-weighted loss, with pi*n in a rare positive class weighted by N0/N1. We study estimation of total risk from a subsample K &lt;&lt; n under designs allocating K0 and K1 draws to the two strata.\n  We derive the exact finite-population variance of the weighted risk estimator under class-conditional sampling without replacement and solve for the optimal allocation. The class multiplier inflates positive-stratum dispersion by the imbalance ratio, causing that ratio to cancel from the optimal allocation and making equal, rather than proportional, allocation the natural default. Simple random sampling is dominated by an explicit between-stratum term; an exact bias identity shows that cluster-representative selection has no general unbia",
+  "symbols": [],
+  "found_at": "2026-09-10T21:30:40+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "Bayesian Confidence Recalibration and Research-Equilibrium Criticality: Temporal Support in Robust Portfolios",
+  "url": "http://arxiv.org/abs/2609.03741v1",
+  "text": "Robust portfolio rules that reconstruct confidence sets after learning need not preserve the evaluator obtained by prior-by-prior Bayesian transport. In the Gaussian model, this discrepancy is summarized by natural-coordinate displacement: inherited transport preserves it whereas fresh reconstruction can replace it. We price evaluator replacement and trace the resulting optimized curvature through endogenous research. Optimized robust value represents protocol regret as a functional Bregman divergence, while a within-vintage rectangular Gaussian benchmark with constant absolute risk aversion (CARA) yields a stopped recalibration tax. In a versioned model-release economy, validated history propagates through a strictly causal network and a same-cycle share of current optimized marginal valu",
+  "symbols": [],
+  "found_at": "2026-09-10T21:30:40+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "An Entropic Factor Model for Robust Portfolio Replication",
+  "url": "http://arxiv.org/abs/2609.03552v1",
+  "text": "Portfolio replication, or the construction of a tradable basket of assets to match the risk-return profile of a target benchmark, is fundamentally an ill-posed inverse problem. When restricted to a subset of available assets, classical variance-minimizing models often yield unstable, over-leveraged portfolios highly vulnerable to market shocks. We propose a unified, two-stage methodology rooted in information theory to achieve robust portfolio replication. First, we model the constituent asset returns against target factors, estimating parameters within data-driven empirical bounds via an entropy minimization principle. Second, using the same entropic approach, we determine the optimal weight replication. In both cases we use an entropy function of the Fermi-Dirac type defined directly on",
+  "symbols": [],
+  "found_at": "2026-09-10T21:30:40+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "The Analyst in the Prompt: Role, Retrieval, and Memory Biases in LLM Financial Analysis",
+  "url": "http://arxiv.org/abs/2609.03218v1",
+  "text": "Large Language Models (LLMs) increasingly use user context such as memory, profiles, and role prompts to personalize their responses. This personalization can affect evidence-based judgment: the same evidence may lead to different conclusions under different user contexts. Finance provides a high-stakes setting to study this problem because decisions often depend on interpreting long and complex documents. We test this using 3,575 SEC filings across twelve LLMs. We compare persona-conditioned retrieval, neutral retrieval, and memory-framed context to separate the effect of evidence selection from the effect of interpretation. We find that most user-context spillover comes from how models interpret the same evidence under different roles, rather than from retrieving different evidence. We t",
+  "symbols": [],
+  "found_at": "2026-09-10T21:30:40+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "Mean-field equilibrium of heterogeneous agents under market impact",
+  "url": "http://arxiv.org/abs/2609.03115v1",
+  "text": "Although market participants generally have access to a common information set, they make decisions based on forecasts formed over heterogeneous horizons. Because market impact depends on aggregate positions rather than trader identities, these decisions feed back into prices through their collective effect. We introduce a linear mean-field model of this interaction. The observed price is decomposed into a martingale component, a common predictable signal represented by a Volterra process, and the market impact generated by aggregate positions. Agents take positions according to conditional forecasts of future signal increments and a fraction of anticipated aggregate impact over their respective horizons. Within a Gaussian-Volterra framework, we characterize equilibrium through a linear fi",
+  "symbols": [],
+  "found_at": "2026-09-10T21:30:40+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "Eliciting ESG Preferences for Reinforcement Learning-Based Portfolio Optimization",
+  "url": "http://arxiv.org/abs/2609.02677v1",
+  "text": "Modern portfolio management increasingly demands a balance between traditional risk-adjusted returns and strict Environmental, Social, and Governance (ESG) mandates. Current Reinforcement Learning (RL) approaches typically optimize for a single ESG provider, neglecting the significant divergence in rating methodologies across the industry and the unintuitive nature of manually weighting conflicting objectives. This paper addresses these limitations by formulating ESG-aware portfolio optimization as a Multi-Objective Reinforcement Learning (MORL) problem that simultaneously incorporates ratings from three distinct ESG agencies. To bridge the gap between high-dimensional algorithmic trade-offs and human decision-making, we integrate a Preference Elicitation framework using Gaussian Processes",
+  "symbols": [],
+  "found_at": "2026-09-10T21:30:40+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "Modeling Trade Durations under Temporal Granularity Effects in Forex Markets",
+  "url": "http://arxiv.org/abs/2609.02660v1",
+  "text": "Trade durations in high-frequency foreign exchange data exhibit increased occurrence near integer values. To address this empirical phenomenon, we propose the granularity-adjusted autoregressive conditional duration (GA-ACD) model. It is based on a novel two-component mixture distribution consisting of a standard generalized gamma component for regular durations and a second component that locally redistributes probability mass around integer values to capture heaping. Conditional dynamics are modeled within a score-driven framework, allowing the scale parameter to vary over time in response to past durations, and enabling maximum likelihood estimation of all model parameters. A simulation study shows that ignoring heaping leads to biased parameter estimates and distorted inference regardi",
+  "symbols": [],
+  "found_at": "2026-09-10T21:30:40+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "Uniform Inference and Certified Capacity at a Reflexive Stability Boundary",
+  "url": "http://arxiv.org/abs/2609.02535v1",
+  "text": "This paper develops uniform inference and certified capacity decisions for an estimated financial stability boundary. Conditional risk, temporary cross-impact, and effective risk-bearing capacity are jointly estimated from dependent observations. Conventional pointwise inference is reliable at a separated simple spectral root but can fail near semisimple or defective collisions. Projecting a valid joint confidence region for the underlying inputs avoids this local approximation and yields a three-way regime decision with abstention and a one-sided capacity bound. A verified two-dimensional implementation keeps numerical error from creating a resolved sign. Structural simulations recover the predicted tradeoff between coverage and resolution, while observed-risk stresses distinguish statist",
+  "symbols": [],
+  "found_at": "2026-09-10T21:30:40+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "Switching Frictions, Heterogeneous Trading Horizons, and Long-Memory Order Flow",
+  "url": "http://arxiv.org/abs/2609.02525v1",
+  "text": "This paper develops a mechanism through which costly changes in the representations used for portfolio choice can contribute to persistent signed order flow. Heterogeneous switching thresholds and opportunity volatility generate heterogeneous residence times, and renewal aggregation maps their execution-weighted tail into the decay of aggregate flow covariance. Under common execution weights, the same tail determines the exponent of representation-spell durations, the order-flow memory exponent, and the horizon at which finite-market scaling must end. First-passage renewal analysis establishes these joint restrictions. Structural simulations recover them from realized paths, quantify the distortion created by mismatched weights, and show how finite cross sections shorten the usable inferen",
+  "symbols": [],
+  "found_at": "2026-09-10T21:30:40+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "Price manipulation in nonlinear transient impact models: rigidity before memory and complete positivity after memory",
+  "url": "http://arxiv.org/abs/2609.02447v1",
+  "text": "Transient impact models compose a nonlinearity with a memory kernel, and the order of composition determines the criterion for absence of price manipulation. We classify both orders. If an arbitrary instantaneous law $f$ acts on the trading rate before any nonzero integrable Volterra kernel, nonnegative cost on every finite piecewise-constant round trip forces $f$ to be affine, and linear for every nonzero convolution kernel. In particular, the power law $\\mathrm{sgn}(x)|x|^\u03b4$, $\u03b4&gt;0$, combined with power-law decay $t^{-\u03b3}$, $0&lt;\u03b3&lt;1$, admits manipulation if and only if $\u03b4\\ne1$: square-root impact is manipulable at every decay exponent, and the region left open by Gatheral's slow-rate two-block bound $\u03b4+\u03b3\\ge1$ collapses to the line $\u03b4=1$. Earlier rigidity theorems require a kernel th",
+  "symbols": [],
+  "found_at": "2026-09-10T21:30:40+00:00"
+ }
+]

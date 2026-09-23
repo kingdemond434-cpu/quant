@@ -58,7 +58,12 @@ def _synthetic(seed: int = 4) -> pd.DataFrame:
     wick = np.abs(rng.normal(0, 0.9, N_BARS))
     high = np.maximum(open_, close) + wick
     low = np.minimum(open_, close) - np.abs(rng.normal(0, 0.9, N_BARS))
-    idx = pd.date_range("2024-01-01", periods=N_BARS, freq="1h")
+    # tz-AWARE, because production bars are. This fixture was naive, so when a producer wrote
+    # the real parquets tz-naive on 2026-08-26 and `_h1` was fixed to declare a clock, these
+    # look-ahead guards began ERRORING on a naive/aware comparison -- a guard testing a frame
+    # shape the desk never actually feeds it. A fixture narrower than the real data is
+    # structurally incapable of exercising the path it claims to protect.
+    idx = pd.date_range("2024-01-01", periods=N_BARS, freq="1h", tz="UTC")
     return pd.DataFrame({"open": open_, "high": high, "low": low,
                          "close": close,
                          "spread": rng.integers(10, 40, N_BARS).astype(float)},
@@ -95,6 +100,23 @@ def _all_families():
         if len(required) != 1:
             continue
         yield name, fn
+    # THE ORTHOGONAL REGISTRY TOO (2026-09-08). `vars(families)` never saw `families_orthogonal`,
+    # so the thirty-odd families registered there -- and every one added since -- were outside
+    # this invariant's reach while the docstring above promised "every registered family". Only
+    # the families the sweep can call from bars alone are covered here (`FAMILY_INPUTS` says
+    # "price only", or the family reads columns the bars already carry); a family needing a
+    # peer, a tape, a calendar or source evidence is covered by its own fixture, exactly as the
+    # COT rule above already says.
+    from mt5desk import families_orthogonal as fo
+
+    for name, fn in sorted(fo.ORTHOGONAL_FAMILIES.items()):
+        need = fo.FAMILY_INPUTS.get(name, ("price only", None))[0]
+        params = inspect.signature(fn).parameters
+        required_kw = [p for p in params.values()
+                       if p.default is inspect.Parameter.empty and p.kind is p.KEYWORD_ONLY]
+        if need != "price only" or required_kw:
+            continue
+        yield f"orthogonal:{name}", fn
 
 
 def _key(sigs):
@@ -150,7 +172,7 @@ def test_the_leak_test_can_actually_fail() -> None:
 
 
 def _bars(rows):
-    idx = pd.date_range("2024-01-01", periods=len(rows), freq="1h")
+    idx = pd.date_range("2024-01-01", periods=len(rows), freq="1h", tz="UTC")
     return pd.DataFrame(
         {"open": [r[0] for r in rows], "high": [r[1] for r in rows],
          "low": [r[2] for r in rows], "close": [r[3] for r in rows]}, index=idx)

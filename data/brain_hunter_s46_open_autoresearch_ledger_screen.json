@@ -1,0 +1,108 @@
+{
+  "schema_version": 1,
+  "session": "brain_hunter_s46",
+  "generated_at": "2026-08-31T23:23:57Z",
+  "venue_scope": "MT5_FUSION_ONLY",
+  "source": {
+    "repository": "rbudnar/open-autoresearch",
+    "url": "https://github.com/rbudnar/open-autoresearch",
+    "commit": "d65b33171604edb57e41e16fdb1e472a1736b34c",
+    "license": "MIT",
+    "derives_from": "Karpathy autoresearch plus the public AlphaLab, MARS, AI Scientist v2 and Arbor/HTR research lineages declared by the source",
+    "inspection_mode": "public repository metadata, protocol, schema and ledger scripts read as text only; no install, import or third-party agent execution"
+  },
+  "discovery_path": {
+    "inherited_ground": "BRAIN hunter s45: follow symbolic-regression descendants that publish append-only experiment stores",
+    "query_surface": "public web search over gplearn checkpoint/autosave and append-only symbolic-research ledgers",
+    "selection_note": "The source was opened because it explicitly claimed immutable per-experiment records and therefore supplied a direct falsifier for the existing append-before-evaluate repair, not because its governance or thresholds were presumed correct."
+  },
+  "prefetched_corpus": {
+    "path": "data/intelligence/gpt_practitioner_corpus.jsonl",
+    "worldquant_rows_reviewed": 5,
+    "usable_new_text_rows": 0,
+    "video_fetched": 0,
+    "video_newly_locked": 0
+  },
+  "findings": [
+    {
+      "id": "BH-S46-F1",
+      "verdict": "KEEP_SHARDED_IMMUTABLE_RECORD_SET_AS_A_PROCESS_SHAPE",
+      "evidence": [
+        "PROTOCOL.md section 14.1 defines state/ledger/<id>.json as one immutable source record per experiment and requires corrections to be new child records",
+        "experiment_ledger.jsonl and research_tree.json are derived from the shard set rather than edited as competing sources of truth",
+        "validate_ledger.py checks schema validity, unique ids, filename/id equality, parent resolution and parent-cycle absence",
+        "promotion requests reference canonical record bytes by content hash"
+      ],
+      "economic_disposition": "KEEP the sharded source-of-truth and derived-view separation as independent convergence on the desk repair. It reduces merge loss and makes corrections traceable, but it has no promotion authority and is not sufficient candidate conservation by itself."
+    },
+    {
+      "id": "BH-S46-F2",
+      "verdict": "IMMUTABILITY_BEGINS_ONLY_AFTER_A_CLEAN_NON_ATOMIC_WRITE",
+      "evidence": [
+        "template/scripts/log_experiment.py write_record checks out_path.exists() and then calls Path.write_text directly on the final path",
+        "the writer uses neither an exclusive create nor temp-file plus fsync plus atomic replace",
+        "a kill during serialization can leave a malformed final-name shard; validate_ledger detects that only after the loss",
+        "PROTOCOL.md requires a single Ledger Writer but the inspected writer contains no lock or broker implementation"
+      ],
+      "economic_disposition": "REJECT the source's immutable label as crash-safety evidence. Strengthen the existing desk falsifier: kill during shard serialization, require either no final shard or a checksum-valid complete shard, and prove concurrent writers cannot overwrite one identity."
+    },
+    {
+      "id": "BH-S46-F3",
+      "verdict": "ONE_RECORD_PER_EXPERIMENT_IS_NOT_APPEND_BEFORE_EVALUATE",
+      "evidence": [
+        "the documented loop updates the ledger after every run",
+        "log_experiment.py builds one terminal record from supplied hypothesis, status and metrics; no PLANNED row is reserved before an evaluator starts",
+        "the schema allows free-form status, empty metrics, optional data_fingerprint and additional properties, so full Fusion cell identity is not required at the write boundary",
+        "an evaluator crash before log_experiment is called leaves no typed candidate row to reconcile"
+      ],
+      "economic_disposition": "REJECT direct adoption as a trial ledger. The desk requirement remains PLANNED before execution, RUNNING, then one typed terminal outcome over the full symbol/family/parameters/side/session/regime/code/config/data/cost identity."
+    },
+    {
+      "id": "BH-S46-F4",
+      "verdict": "ROLLBACK_AND_EVIDENCE_ARE_PARTLY_SEPARATED_NOT_PROVEN",
+      "evidence": [
+        "the immutable shard set is separated from derived operational views and a mutable campaign metadata file",
+        "the inspected materials do not supply an atomic checksum-valid controller checkpoint or a recovery proof joining checkpoints to prewritten candidate identities",
+        "training checkpoints are policy guidance rather than part of the ledger writer's transaction"
+      ],
+      "economic_disposition": "KEEP the separation principle, refuse the completion claim. Controller rollback may replace controller state; it must never truncate or stand in for the immutable trial ledger."
+    }
+  ],
+  "mt5_translation": {
+    "translate_to_mt5_results": {
+      "immutable sharded experiment ledger": [],
+      "append-only experiment ledger": [],
+      "atomic ledger write": [],
+      "candidate conservation": [],
+      "controller rollback": []
+    },
+    "disposition": "These are universal research-integrity mechanisms over terminal-enumerated Fusion candidates, not market features. No symbol, direction, timeframe or alpha was invented.",
+    "future_candidate_cost_contract": "Any later Fusion market cell must bind PIT bid/ask data, terminal roster, symbol-native spread, commission, realised slippage and partial-fill markout, swap, contract terms, code/config/data fingerprints and the canonical ten-gate certificate."
+  },
+  "trial_accounting": {
+    "source_constructions_read": 0,
+    "desk_constructions": 0,
+    "target_horizon_cells": 0,
+    "tradeable_cards": 0,
+    "survivors": 0
+  },
+  "venue_discovery": {
+    "new_external_venues": 0,
+    "new_repository_surface": "https://github.com/rbudnar/open-autoresearch",
+    "note": "The author profile declares no external site or social handle; repository references are lineage sources, not newly discovered communities."
+  },
+  "repair_window": {
+    "scheduled_with_enforced_due": ["R0189", "R0190", "R0191"],
+    "rejected": ["R0250"],
+    "note": "R0250 was venue-specific Binance funding reconciliation. The distinct MT5 analogue is realised Fusion closed-deal swap versus PIT contract-term swap and remains an independently measured gap, not a carried crypto row."
+  },
+  "section_exhaustion": [
+    "rbudnar/open-autoresearch commit d65b3317: protocol 0.6 experiment-ledger architecture, schema, writer and validator axes exhausted 2026-08-31",
+    "factor and model proposal content was not in this source and no BRAIN expression or private threshold was imported"
+  ],
+  "next_unexhausted_ground": [
+    "Inspect the source's declared Arbor/HTR implementation lineage as text for prewrite, atomic-commit and restart reconciliation semantics, beginning with legitimacy and exact commit identity.",
+    "Continue the residual permissively licensed gplearn fork population for substantive recovery or journaling diffs outside the s45 slice.",
+    "Inspect RD-Agent factor-proposal semantics only if they supply a novel MT5-translatable mechanism rather than another private gate."
+  ]
+}

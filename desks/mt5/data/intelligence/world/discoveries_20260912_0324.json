@@ -1,0 +1,1116 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Data - AlgoCloud",
+  "url": "https://algocloud.com/learning-academy/data/",
+  "published": "2026-09-12T03:23:15+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a4de75544b7771ec9f8a",
+  "host": "algocloud.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u671f\u8d27\u9891\u9053 - \u4e1c\u65b9\u8d22\u5bcc\u7f51",
+  "url": "https://futures.eastmoney.com/",
+  "published": "2026-09-12T03:23:17+00:00",
+  "symbols": [
+   "UST10Y",
+   "XTIUSD",
+   "XAUUSD",
+   "XAGUSD",
+   "XPTUSD",
+   "XPDUSD",
+   "XCUUSD",
+   "XALUSD",
+   "XNIUSD",
+   "XZNUSD",
+   "XPBUSD",
+   "HK50",
+   "US500",
+   "USDX",
+   "USDCNH",
+   "SOYBEAN",
+   "CORN",
+   "SUGAR",
+   "COTTON",
+   "WHEAT"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "flow",
+   "inventory",
+   "momentum",
+   "night_session",
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "bac0d0d32ae23160dec6",
+  "host": "futures.eastmoney.com",
+  "claims": [
+   {
+    "claim": "\u591a\u56fd\u51cf\u6301\u7f8e\u503a \u4f20\u7edf\u201c\u5b89\u5168\u8d44\u4ea7\u201d\u9762 9\u670812\u65e5 09:44 \u671f\u8d27\u516c\u53f8\u76d1\u7763\u7ba1\u7406\u529e\u6cd5\u4e03\u5927\u770b\u70b9\uff1a\u65b0\u589e\u4e13\u8282\u89c4\u8303\u505a\u5e02\u4e1a\u52a1 \u8d44\u7ba1\u63d0\u9ad8 9\u670812\u65e5 07:51 \u78b3\u9178\u9502\u671f\u8d27\u76d8\u4e2d\u8dcc\u8fd110% \u9502\u76d0\u4f01\u4e1a\u76f4\u8a00\u201c\u6ca1\u770b\u61c2\u201d\uff01",
+    "lang": "zh",
+    "quantities": [
+     "\u505a\u5e02"
+    ],
+    "direction": [
+     "\u8dcc"
+    ],
+    "horizon": [
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [
+      "UST10Y"
+     ],
+     "mentioned": [
+      "\u7f8e\u503a",
+      "\u78b3\u9178\u9502"
+     ],
+     "transfer_only": [
+      "\u78b3\u9178\u9502->metals"
+     ],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "09a654831681"
+   },
+   {
+    "claim": "\u7cbe\u9009 | \u591c\u76d8\u76d8\u524d\u8981\u95fb\u6c47\u603b 9\u670811\u65e5 \u5468\u4e94 \u6bcf\u65e5\u9f99\u864e\u699c | \u5546\u54c1\u671f\u8d27\u7efc\u5408\u6307\u6570\u4e0b\u8dcc2.",
+    "lang": "zh",
+    "quantities": [
+     "\u591c\u76d8"
+    ],
+    "direction": [
+     "\u4e0b\u8dcc",
+     "\u8dcc"
+    ],
+    "horizon": [
+     "\u6bcf\u65e5",
+     "\u591c\u76d8"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [
+      "\u9f99\u864e\u699c"
+     ],
+     "transfer_only": [
+      "\u9f99\u864e\u699c->cn-equities-only"
+     ],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "97df2e47f869"
+   },
+   {
+    "claim": "\u671f\u5e02\u6536\u8bc4 | \u56fd\u5185\u5546\u54c1\u5927\u9762\u79ef\u98d8\u7eff \u80fd\u5316\u677f\u5757\u76d8\u4e2d\u8df3\u6c34 \u7f8e\u8054\u50a8\u4e0b\u5468\u662f\u5426\u52a0\u606f\uff1f",
+    "lang": "zh",
+    "quantities": [
+     "\u52a0\u606f"
+    ],
+    "direction": [
+     "\u8df3\u6c34"
+    ],
+    "horizon": [
+     "\u5468"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "US500"
+     ],
+     "channels": [
+      "\u7f8e\u8054\u50a8: policy: Fed -> dollar and US equities"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "576fa58d4d04"
+   },
+   {
+    "claim": "\u7f8e\u56fd8\u6708CPI\u524d\u77bb\uff1a\u80fd\u6e90\u6da8\u4ef7\u6270\u52a8\u901a\u80c0 \u7f8e\u8054\u50a8\u52a0\u606f\u9884.",
+    "lang": "zh",
+    "quantities": [
+     "\u901a\u80c0",
+     "\u52a0\u606f",
+     "cpi"
+    ],
+    "direction": [
+     "\u6da8"
+    ],
+    "horizon": [
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "US500"
+     ],
+     "channels": [
+      "\u7f8e\u8054\u50a8: policy: Fed -> dollar and US equities"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "06442ef40a4a"
+   },
+   {
+    "claim": "\u4e0a\u671f\u6240\u539f\u6cb9\u671f\u8d272610\u5408\u7ea6\u591c\u76d8\u6536\u6da81.",
+    "lang": "zh",
+    "quantities": [
+     "\u591c\u76d8",
+     "\u539f\u6cb9"
+    ],
+    "direction": [
+     "\u6da8"
+    ],
+    "horizon": [
+     "\u591c\u76d8"
+    ],
+    "instruments": {
+     "analogues": [
+      "XTIUSD"
+     ],
+     "mentioned": [
+      "\u539f\u6cb9"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "94b12efc73b0"
+   },
+   {
+    "claim": "\u73b0\u8d27\u9ec4\u91d1\u5468\u6da8\u8d857%\u7ad9\u4e0a4300\u7f8e\u5143 \u4e3a\u4f55\u7a81\u7136\u5927\u6da8\uff1f",
+    "lang": "zh",
+    "quantities": [
+     "\u9ec4\u91d1",
+     "\u7f8e\u5143"
+    ],
+    "direction": [
+     "\u6da8"
+    ],
+    "horizon": [
+     "\u5468"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "\u9ec4\u91d1"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "1116033ebd6f"
+   },
+   {
+    "claim": "\u9ec4\u91d1\u56db\u5b63\u5ea6\u4ef7\u683c\u91cd\u5fc3\u4e0a\u79fb\u8d8b\u52bf\u4e0d\u53d8 \u94a2\u6750\u677f\u5757 \u4ece\u201c\u8d4c\u5468\u671f\u201d\u5230\u201c\u7ec3\u5185\u529f\u201d \u7a81\u7136\u8df3\u6c34\uff01",
+    "lang": "zh",
+    "quantities": [
+     "\u8d8b\u52bf",
+     "\u9ec4\u91d1"
+    ],
+    "direction": [
+     "\u8df3\u6c34"
+    ],
+    "horizon": [
+     "\u5468",
+     "\u5b63\u5ea6"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "\u9ec4\u91d1"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "ba85998cf9a2"
+   },
+   {
+    "claim": "34% \u5237\u65e5\u5185\u65b0\u9ad8 \u73b0\u8d27\u9ec4\u91d1\u4e00\u5ea6\u8dcc\u78344300\u7f8e\u5143/\u76ce\u53f8\u5173\u53e3 \u6bcf\u65e5\u9f99\u864e\u699c | \u5546\u54c1\u671f\u8d27\u7efc\u5408\u6307\u6570\u4e0b\u8dcc2.",
+    "lang": "zh",
+    "quantities": [
+     "\u65e5\u5185",
+     "\u9ec4\u91d1",
+     "\u7f8e\u5143"
+    ],
+    "direction": [
+     "\u4e0b\u8dcc",
+     "\u8dcc"
+    ],
+    "horizon": [
+     "\u65e5\u5185",
+     "\u6bcf\u65e5"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "\u9ec4\u91d1",
+      "\u9f99\u864e\u699c"
+     ],
+     "transfer_only": [
+      "\u9f99\u864e\u699c->cn-equities-only"
+     ],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "6c9faeb5bd6f"
+   }
+  ],
+  "n_claims": 10
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Statistics",
+  "url": "https://www.resbank.co.za/en/home/what-we-do/statistics",
+  "published": "2026-09-12T03:23:20+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "inventory",
+   "night_session",
+   "orderflow",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.resbank.co.za/en/home/publications/quarterly-bulletin1/download-information-from-zipped-data-files",
+   "https://www.resbank.co.za/en/home/publications/quarterly-bulletin1/download-information-from-xlsx-data-files",
+   "https://www.resbank.co.za/en/home/publications/quarterly-bulletin1/download-zipped-eviews-files"
+  ],
+  "n_endpoints": 3,
+  "vault_sha": "bc10f68ef934b57ef331",
+  "host": "www.resbank.co.za",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Statistics - International Cocoa Organization",
+  "url": "https://www.icco.org/statistics/",
+  "published": "2026-09-12T03:23:22+00:00",
+  "symbols": [
+   "USCOCOA"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "flow",
+   "inventory"
+  ],
+  "confidence": 0.95,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.icco.org/pwa-manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "fb2f484e3e802b7a3f92",
+  "host": "www.icco.org",
+  "claims": [
+   {
+    "claim": "The document is graphically illustrated and provides analysis of front-month cocoa futures contract prices denominated in U.",
+    "lang": "en",
+    "quantities": [
+     "futures"
+    ],
+    "direction": [
+     "contract"
+    ],
+    "horizon": [
+     "month"
+    ],
+    "instruments": {
+     "analogues": [
+      "USCOCOA"
+     ],
+     "mentioned": [
+      "cocoa"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "9994bdc7421b"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Gold Price Performance &amp; Data | World Gold Council",
+  "url": "https://www.gold.org/goldhub/data",
+  "published": "2026-09-12T03:23:22+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "correlation",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "8e1bb8e2fb66a0621c2f",
+  "host": "www.gold.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Challenge Validation",
+  "url": "https://www.balticexchange.com/en/data-services/market-information0/dry-services.html",
+  "published": "2026-09-12T03:23:22+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "56ddf8a79ddf4a388dcb",
+  "host": "www.balticexchange.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Diskussionspapiere | Deutsche Bundesbank",
+  "url": "https://www.bundesbank.de/de/publikationen/forschung/diskussionspapiere",
+  "published": "2026-09-12T03:23:36+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "correlation",
+   "inventory",
+   "orderflow",
+   "policy",
+   "seasonality"
+  ],
+  "confidence": 0.75,
+  "lang": "de-DE",
+  "endpoints": [
+   "https://www.bundesbank.de/de/aufgaben/geldpolitik/notenbankfaehige-sicherheiten/downloads-602058",
+   "https://www.bundesbank.de/de/aufgaben/bargeld/cashedi/downloads-und-videoanleitungen"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "dbace055b0e690dffd27",
+  "host": "www.bundesbank.de",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Datenportal der Schweizerischen Nationalbank",
+  "url": "https://data.snb.ch/",
+  "published": "2026-09-12T03:23:36+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "de",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "62930ae9fe210ebe245d",
+  "host": "data.snb.ch",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Statistics | Sveriges Riksbank",
+  "url": "https://www.riksbank.se/en-gb/statistics/",
+  "published": "2026-09-12T03:23:38+00:00",
+  "symbols": [
+   "XAUUSD",
+   "USDSEK",
+   "USDNOK"
+  ],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "auction",
+   "basis",
+   "orderflow",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.95,
+  "lang": "en-GB",
+  "endpoints": [
+   "https://www.riksbank.se/en-gb/statistics/interest-rates-and-exchange-rates/retrieving-interest-rates-and-exchange-rates-via-api/series-for-the-api/"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "c251b2e93a652084fe81",
+  "host": "www.riksbank.se",
+  "claims": [
+   {
+    "claim": "Ikon f\u00f6r hj\u00e4lptext Close helptext popup Interest rate SWESTR (Swedish krona Short Term Rate) is always expressed to three decimal places.",
+    "lang": "en",
+    "quantities": [
+     "close",
+     "rate"
+    ],
+    "direction": [
+     "short"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "USDSEK",
+      "USDNOK"
+     ],
+     "mentioned": [
+      "gold",
+      "sek",
+      "nok"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [
+      "riksbank: policy: Riksbank -> SEK"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "71b3a7df73bb"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Statistics",
+  "url": "https://www.norges-bank.no/en/topics/Statistics/",
+  "published": "2026-09-12T03:23:38+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "dd26025cb8ab68f59783",
+  "host": "www.norges-bank.no",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Statistics - Czech National Bank",
+  "url": "https://www.cnb.cz/en/statistics/",
+  "published": "2026-09-12T03:23:39+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "inventory",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.cnb.cz/export/system/modules/org.opencms.apollo/resources/img/favicon_120.png",
+   "https://www.cnb.cz/export/system/modules/cz.nelasoft.opencms.cnb/resources/css/styles.min.css?v=1787248198699"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "d677edc90c1ec200d7ed",
+  "host": "www.cnb.cz",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "https://www.mnb.hu/en/statistics",
+  "url": "https://www.mnb.hu/en/statistics",
+  "published": "2026-09-12T03:23:39+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "90166f3bcaf661047901",
+  "host": "www.mnb.hu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u0421\u0442\u0430\u0442\u0438\u0441\u0442\u0438\u043a\u0430 | \u0411\u0430\u043d\u043a \u0420\u043e\u0441\u0441\u0438\u0438",
+  "url": "https://www.cbr.ru/statistics/",
+  "published": "2026-09-12T03:23:40+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [
+   "https://www.cbr.ru/Content/Document/File/162226/%20purcb_stat_m.xlsx",
+   "https://www.cbr.ru/vfs/statistics/credit_statistics/trade/trade.xls",
+   "https://www.cbr.ru/vfs/statistics/bank_system/inform_bs_26.xlsx",
+   "https://www.cbr.ru/vfs/statistics/bank_system/inform_bs_25.xlsx",
+   "https://www.cbr.ru/vfs/statistics/bank_system/inform_bs_24.xlsx",
+   "https://www.cbr.ru/vfs/statistics/bank_system/inform_bs_23.xlsx",
+   "https://www.cbr.ru/vfs/statistics/bank_system/inform_bs_22.xlsx",
+   "https://www.cbr.ru/vfs/statistics/bank_system/inform_bs_21.xlsx",
+   "https://www.cbr.ru/vfs/statistics/bank_system/inform_bs_20.xlsx",
+   "https://www.cbr.ru/vfs/statistics/bank_system/inform_bs_19.xlsx",
+   "https://www.cbr.ru/vfs/statistics/bank_system/DivisionsPerRegion_010926.xlsx",
+   "https://www.cbr.ru/vfs/statistics/bank_system/DivisionsPerRegion_010826.xlsx",
+   "https://www.cbr.ru/vfs/statistics/bank_system/DivisionsPerRegion_010726.xlsx",
+   "https://www.cbr.ru/vfs/statistics/bank_system/DivisionsPerRegion_010626.xlsx",
+   "https://www.cbr.ru/vfs/statistics/bank_system/DivisionsPerRegion_010526.xlsx",
+   "https://www.cbr.ru/vfs/statistics/bank_system/DivisionsPerRegion_010426.xlsx",
+   "https://www.cbr.ru/vfs/statistics/bank_system/DivisionsPerRegion_010326.xlsx",
+   "https://www.cbr.ru/vfs/statistics/bank_system/DivisionsPerRegion_010226.xlsx",
+   "https://www.cbr.ru/vfs/statistics/bank_system/DivisionsPerRegion_010126.xlsx",
+   "https://www.cbr.ru/vfs/statistics/bank_system/DivisionsPerRegion_011225.xlsx",
+   "https://www.cbr.ru/vfs/statistics/bank_system/DivisionsPerRegion_011125.xlsx",
+   "https://www.cbr.ru/vfs/statistics/bank_system/DivisionsPerRegion_011025.xlsx",
+   "https://www.cbr.ru/vfs/statistics/bank_system/DivisionsPerRegion_010925.xlsx",
+   "https://www.cbr.ru/vfs/statistics/bank_system/DivisionsPerRegion_010825.xlsx",
+   "https://www.cbr.ru/vfs/statistics/bank_system/DivisionsPerRegion_010725.xlsx",
+   "https://www.cbr.ru/vfs/statistics/bank_system/DivisionsPerRegion_010625.xlsx",
+   "https://www.cbr.ru/vfs/statistics/bank_system/DivisionsPerRegion_010525.xlsx",
+   "https://www.cbr.ru/vfs/statistics/bank_system/DivisionsPerRegion_010425.xlsx",
+   "https://www.cbr.ru/vfs/statistics/bank_system/DivisionsPerRegion_010325.xlsx",
+   "https://www.cbr.ru/vfs/statistics/bank_system/DivisionsPerRegion_010225.xlsx",
+   "https://www.cbr.ru/vfs/statistics/bank_system/DivisionsPerRegion_010125.xlsx",
+   "https://www.cbr.ru/vfs/statistics/bank_system/DivisionsPerRegion_011224.xlsx",
+   "https://www.cbr.ru/vfs/statistics/bank_system/DivisionsPerRegion_011124.xlsx",
+   "https://www.cbr.ru/vfs/statistics/bank_system/DivisionsPerRegion_011024.xlsx",
+   "https://www.cbr.ru/vfs/statistics/bank_system/DivisionsPerRegion_010924.xlsx",
+   "https://www.cbr.ru/vfs/statistics/bank_system/DivisionsPerRegion_010824.xlsx",
+   "https://www.cbr.ru/vfs/statistics/bank_system/DivisionsPerRegion_010724.xlsx",
+   "https://www.cbr.ru/vfs/statistics/bank_system/DivisionsPerRegion_010624.xlsx",
+   "https://www.cbr.ru/vfs/statistics/bank_system/DivisionsPerRegion_010524.xlsx",
+   "https://www.cbr.ru/vfs/statistics/bank_system/DivisionsPerRegion_010424.xlsx",
+   "https://www.cbr.ru/vfs/statistics/bank_system/DivisionsPerRegion_010324.xlsx",
+   "https://www.cbr.ru/vfs/statistics/bank_system/DivisionsPerRegion_010224.xlsx",
+   "https://www.cbr.ru/vfs/statistics/bank_system/DivisionsPerRegion_010124.xlsx",
+   "https://www.cbr.ru/vfs/statistics/bank_system/DivisionsPerRegion_011223.xlsx",
+   "https://www.cbr.ru/vfs/statistics/bank_system/DivisionsPerRegion_011123.xlsx",
+   "https://www.cbr.ru/vfs/statistics/bank_system/DivisionsPerRegion_011023.xlsx",
+   "https://www.cbr.ru/vfs/statistics/bank_system/DivisionsPerRegion_010923.xlsx",
+   "https://www.cbr.ru/vfs/statistics/bank_system/DivisionsPerRegion_010823.xlsx",
+   "https://www.cbr.ru/vfs/statistics/bank_system/DivisionsPerRegion_010723.xlsx",
+   "https://www.cbr.ru/vfs/statistics/bank_system/DivisionsPerRegion_010623.xlsx",
+   "https://www.cbr.ru/vfs/statistics/bank_system/DivisionsPerRegion_010523.xlsx",
+   "https://www.cbr.ru/vfs/statistics/bank_system/DivisionsPerRegion_010423.xlsx",
+   "https://www.cbr.ru/vfs/statistics/bank_system/DivisionsPerRegion_010323.xlsx",
+   "https://www.cbr.ru/vfs/statistics/bank_system/DivisionsPerRegion_010223.xlsx",
+   "https://www.cbr.ru/vfs/statistics/bank_system/DivisionsPerRegion_010123.xlsx",
+   "https://www.cbr.ru/vfs/statistics/bank_system/DivisionsPerRegion_011222.xlsx",
+   "https://www.cbr.ru/vfs/statistics/bank_system/DivisionsPerRegion_011122.xlsx",
+   "https://www.cbr.ru/vfs/statistics/bank_system/DivisionsPerRegion_011022.xlsx",
+   "https://www.cbr.ru/vfs/statistics/bank_system/DivisionsPerRegion_010922.xlsx",
+   "https://www.cbr.ru/vfs/statistics/bank_system/DivisionsPerRegion_010822.xlsx",
+   "https://www.cbr.ru/vfs/statistics/bank_system/DivisionsPerRegion_010722.xlsx",
+   "https://www.cbr.ru/vfs/statistics/bank_system/DivisionsPerRegion_010622.xlsx",
+   "https://www.cbr.ru/vfs/statistics/bank_system/DivisionsPerRegion_010522.xlsx",
+   "https://www.cbr.ru/vfs/statistics/bank_system/DivisionsPerRegion_010422.xlsx",
+   "https://www.cbr.ru/vfs/statistics/bank_system/DivisionsPerRegion_010322.xlsx",
+   "https://www.cbr.ru/vfs/statistics/bank_system/DivisionsPerRegion_010222.xlsx",
+   "https://www.cbr.ru/vfs/statistics/bank_system/DivisionsPerRegion_010122.xlsx",
+   "https://www.cbr.ru/vfs/statistics/bank_system/DivisionsPerRegion_011221.xlsx",
+   "https://www.cbr.ru/vfs/statistics/bank_system/DivisionsPerRegion_011121.xlsx",
+   "https://www.cbr.ru/vfs/statistics/bank_system/DivisionsPerRegion_011021.xlsx",
+   "https://www.cbr.ru/vfs/statistics/bank_system/DivisionsPerRegion_010921.xlsx",
+   "https://www.cbr.ru/vfs/statistics/bank_system/DivisionsPerRegion_010821.xlsx",
+   "https://www.cbr.ru/vfs/statistics/bank_system/DivisionsPerRegion_010721.xlsx",
+   "https://www.cbr.ru/vfs/statistics/bank_system/DivisionsPerRegion_010621.xlsx",
+   "https://www.cbr.ru/vfs/statistics/bank_system/DivisionsPerRegion_010521.xlsx",
+   "https://www.cbr.ru/vfs/statistics/bank_system/DivisionsPerRegion_010421.xlsx",
+   "https://www.cbr.ru/vfs/statistics/bank_system/DivisionsPerRegion_010321.xlsx",
+   "https://www.cbr.ru/vfs/statistics/bank_system/DivisionsPerRegion_010221.xlsx",
+   "https://www.cbr.ru/vfs/statistics/bank_system/DivisionsPerRegion_010121.xlsx",
+   "https://www.cbr.ru/vfs/statistics/bank_system/DivisionsPerRegion_011220.xlsx",
+   "https://www.cbr.ru/vfs/statistics/bank_system/DivisionsPerRegion_011120.xlsx",
+   "https://www.cbr.ru/vfs/statistics/bank_system/DivisionsPerRegion_011020.xlsx",
+   "https://www.cbr.ru/vfs/statistics/bank_system/DivisionsPerRegion_010920.xlsx",
+   "https://www.cbr.ru/vfs/statistics/bank_system/DivisionsPerRegion_010820.xlsx",
+   "https://www.cbr.ru/vfs/statistics/bank_system/DivisionsPerRegion_010720.xlsx",
+   "https://www.cbr.ru/vfs/statistics/bank_system/DivisionsPerRegion_010620.xlsx",
+   "https://www.cbr.ru/vfs/statistics/bank_system/DivisionsPerRegion_010520.xlsx",
+   "https://www.cbr.ru/vfs/statistics/bank_system/DivisionsPerRegion_010420.xlsx",
+   "https://www.cbr.ru/vfs/statistics/bank_system/DivisionsPerRegion_010320.xlsx",
+   "https://www.cbr.ru/vfs/statistics/bank_system/DivisionsPerRegion_010220.xlsx",
+   "https://www.cbr.ru/vfs/statistics/bank_system/DivisionsPerRegion_010120.xlsx",
+   "https://www.cbr.ru/vfs/statistics/bank_system/DivisionsPerRegion_011219.xlsx",
+   "https://www.cbr.ru/vfs/statistics/bank_system/DivisionsPerRegion_011119.xlsx",
+   "https://www.cbr.ru/vfs/statistics/bank_system/DivisionsPerRegion_011019.xlsx",
+   "https://www.cbr.ru/vfs/statistics/bank_system/DivisionsPerRegion_010919.xlsx",
+   "https://www.cbr.ru/vfs/statistics/bank_system/DivisionsPerRegion_010819.xlsx",
+   "https://www.cbr.ru/vfs/statistics/bank_system/DivisionsPerRegion_010719.xlsx"
+  ],
+  "n_endpoints": 97,
+  "vault_sha": "553d8f9ab6fadea3e717",
+  "host": "www.cbr.ru",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Central bankers&#039; speeches | Bank for International Settlements",
+  "url": "https://www.bis.org/cbspeeches/index.htm",
+  "published": "2026-09-12T03:23:45+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "inventory",
+   "orderflow",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.bis.org/speeches/central-bank/download"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "92ea99577a7e8937ed9e",
+  "host": "www.bis.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Data mining | Math Trading",
+  "url": "https://mathtrading.wordpress.com/tag/data-mining/",
+  "published": "2026-09-12T03:23:45+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c84cd1a5d7311a390e79",
+  "host": "mathtrading.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u4e1c\u65b9\u8d22\u5bcc\u8bc1\u5238\uff1a\u8bc1\u5238\u4ea4\u6613|\u7092\u80a1|\u76ef\u76d8\u5b98\u65b9\u8f6f\u4ef6\u4e0b\u8f7d",
+  "url": "http://www.18.cn/download.html",
+  "published": "2026-09-12T03:23:50+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [
+   "https://zqcdn.eastmoneysec.com.cn/secuweb-ssr-18/static/builds/meta/479cc2dd-b5be-4a00-8375-0b47b2f70400.json",
+   "http://www.18.cn/download"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "fb6c92f36d25f83a1901",
+  "host": "www.18.cn",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Intro - AlgoCloud",
+  "url": "https://algocloud.com/trade-tutorial/intro/",
+  "published": "2026-09-12T03:23:51+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "160b505c8db5404c700b",
+  "host": "algocloud.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "AlgoCloud \u2013 Cloud Algo Trading Platform for US Stocks &amp; ETFs",
+  "url": "https://algocloud.com/2026/08/20/",
+  "published": "2026-09-12T03:23:53+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "basis",
+   "carry",
+   "momentum",
+   "policy",
+   "seasonality"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "9e1a4365e6196374db6e",
+  "host": "algocloud.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Uncategorized - AlgoCloud",
+  "url": "https://algocloud.com/category/uncategorized/",
+  "published": "2026-09-12T03:23:54+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry",
+   "momentum",
+   "seasonality"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f609a97e4d6dff9c7023",
+  "host": "algocloud.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "What Is Really Happening Inside Your AlgoCloud Portfolio? - AlgoCloud",
+  "url": "https://algocloud.com/what-is-really-happening-inside-your-algocloud-portfolio/",
+  "published": "2026-09-12T03:23:57+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b69393de1448f93ffb84",
+  "host": "algocloud.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "AlgoCloud \u2013 Cloud Algo Trading Platform for US Stocks &amp; ETFs",
+  "url": "https://algocloud.com/2026/07/14/",
+  "published": "2026-09-12T03:23:59+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "basis",
+   "carry",
+   "momentum",
+   "policy",
+   "seasonality"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e7d81832bd0cad3bfb66",
+  "host": "algocloud.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "How to Build a Sector ETF Rotation Strategy in Algo Cloud - AlgoCloud",
+  "url": "https://algocloud.com/how-to-build-a-sector-etf-rotation-strategy-in-algo-cloud/",
+  "published": "2026-09-12T03:24:01+00:00",
+  "symbols": [
+   "XAUUSD",
+   "XTIUSD",
+   "US500"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "carry",
+   "momentum"
+  ],
+  "confidence": 0.75,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f1704219fb4638eeab5b",
+  "host": "algocloud.com",
+  "claims": [
+   {
+    "claim": "Exit Rules: A position is closed if the price falls below the 50-period average by more than half of the average price range (ATR) over the last 14 bars .",
+    "lang": "en",
+    "quantities": [
+     "range"
+    ],
+    "direction": [
+     "falls"
+    ],
+    "horizon": [
+     "bars"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XTIUSD",
+      "US500"
+     ],
+     "mentioned": [
+      "gold",
+      "crude",
+      "spy"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "7ae2db61237c"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "AlgoCloud \u2013 Cloud Algo Trading Platform for US Stocks &amp; ETFs",
+  "url": "https://algocloud.com/2026/06/17/",
+  "published": "2026-09-12T03:24:03+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "basis",
+   "carry",
+   "momentum",
+   "policy",
+   "seasonality"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "2e1dc7267e736f1564f2",
+  "host": "algocloud.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Beating the Market: The S&amp;P 100 Pullback Momentum Strategy - AlgoCloud",
+  "url": "https://algocloud.com/beating-the-market-the-sp-100-pullback-momentum-strategy/",
+  "published": "2026-09-12T03:24:05+00:00",
+  "symbols": [
+   "XAUUSD",
+   "US500",
+   "NVIDIA"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "carry",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "6eefd319a026de98b2d4",
+  "host": "algocloud.com",
+  "claims": [
+   {
+    "claim": "The logic is built on three main pillars: Trend Confirmation: The strategy only enters trades when the market is in a clear long-term uptrend, defined by the 50-day Simple Moving Average (SMA) being above the 200-day SMA .",
+    "lang": "en",
+    "quantities": [
+     "trend"
+    ],
+    "direction": [
+     "long"
+    ],
+    "horizon": [
+     "day"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "US500",
+      "NVIDIA"
+     ],
+     "mentioned": [
+      "gold",
+      "s&p",
+      "nvidia"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "a9bdca6ef00f"
+   },
+   {
+    "claim": "It includes a Global Trend Filter , which exits all positions if the broader market (SPY) drops below its 200-day moving average .",
+    "lang": "en",
+    "quantities": [
+     "trend"
+    ],
+    "direction": [
+     "drops"
+    ],
+    "horizon": [
+     "day"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "spy"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "0d901755b76f"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Terms of Service \u2014 AlgoCloud",
+  "url": "https://algocloud.com/terms-of-service/",
+  "published": "2026-09-12T03:24:11+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "carry",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a59cebe4081a6d63aa67",
+  "host": "algocloud.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Privacy Policy \u2014 AlgoCloud",
+  "url": "https://algocloud.com/privacy-policy/",
+  "published": "2026-09-12T03:24:13+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "carry",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a3e2285ac1b3fc4b1d1f",
+  "host": "algocloud.com",
+  "claims": [],
+  "n_claims": 0
+ }
+]

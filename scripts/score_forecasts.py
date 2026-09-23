@@ -8,10 +8,18 @@ scoring turns it into calibration. An unscored forecast log silently inflates co
 the way the law warns, because every belief looks vindicated when none is ever graded.
 
 WHAT IT RESOLVES. Claims of the shape "SYMBOL trades above X at +Nh" / "Will SYMBOL trade ABOVE X
-in N hours' time?" are resolved from Binance klines at the resolve_by minute -- venue truth, not a
-cached dashboard. Anything whose claim this cannot parse UNAMBIGUOUSLY is left unresolved and
-reported by name: a guessed outcome is worse than an overdue one, because it corrupts the very
-measurement the fence exists to protect.
+in N hours' time?" are resolved from the MT5/Fusion bar store at the resolve_by minute -- venue
+truth, not a cached dashboard. Anything whose claim this cannot parse UNAMBIGUOUSLY is left
+unresolved and reported by name: a guessed outcome is worse than an overdue one, because it
+corrupts the very measurement the fence exists to protect.
+
+REPOINTED AT THE MT5 DESK, 2026-09-05 (universe mandate). This scorer used to read a retired
+exchange's public klines endpoint. That market is closed to this desk, so venue truth is now
+`desks/mt5/universe/<SYMBOL>_<TF>.parquet` -- the same bars the MT5 gateway trades against, which
+is a STRICTER definition of truth than the old one: the desk is now graded on prices it can
+actually fill at. The refusal path is unchanged and is the reason
+this repoint is safe: a symbol with no MT5 bars is reported by name as unresolvable and stays
+OVERDUE, exactly as an unreachable endpoint did. Nothing is guessed to fill the gap.
 
 SCORING CONVENTION. outcome=True iff the stated condition HELD at the deadline. p is the desk's
 stated probability that it would hold, so Brier/bias fall out of the pair directly. Resolution
@@ -23,10 +31,8 @@ cannot drift with when the scorer happens to run.
 """
 from __future__ import annotations
 
-import json
 import re
 import sys
-import urllib.request
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -34,7 +40,15 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 from libs.self_improvement import forecast_calibration as fc  # noqa: E402
 
-_UA = {"User-Agent": "Mozilla/5.0 (quant-desk forecast-scorer)"}
+#: Where MT5 venue truth lives on disk. Both roots are real on the trading box; the second is the
+#: acquisition target and the first is what the research side reads, so BOTH are searched rather
+#: than one being guessed. Order is deliberate: the acquired store wins when a symbol is in both.
+_MT5_BAR_ROOTS: tuple[Path, ...] = (ROOT / "desks/mt5/data/universe", ROOT / "desks/mt5/universe")
+
+#: Finest-to-coarsest. A forecast resolves at a defined instant, so the finest bar available is the
+#: least wrong answer -- and the timeframe actually used travels with the verdict rather than being
+#: assumed, because "resolved on H1" and "resolved on M15" are different claims about precision.
+_MT5_TIMEFRAMES: tuple[str, ...] = ("M5", "M15", "M30", "H1", "H4", "D1")
 # THE SYMBOL ALPHABET INCLUDES DIGITS, and leaving them out failed in BOTH directions (R0367).
 # These patterns were `[A-Z]{2,12}USD[TC]?`, so `S2USDT` matched nothing at all -- 46 forecasts
 # aged past their deadline ungraded and check_calibration sat OVERDUE, which is not merely a red
@@ -66,64 +80,97 @@ def auto_resolvable(claim: str) -> bool:
     return any(p.search(claim or "") for p in (_CONVICTION_SHORT, _CONVICTION, _ABOVE))
 
 
-def _price_at(symbol: str, when: datetime) -> float | None:
-    """Close of the 1m candle containing `when` -- one defined instant, not 'now'."""
-    ms = int(when.timestamp() * 1000)
-    url = (f"https://api.binance.com/api/v3/klines?symbol={symbol}&interval=1m"
-           f"&startTime={ms - 60_000}&limit=3")
+def mt5_bars(symbol: str):
+    """Every MT5 bar this desk holds for `symbol`, finest timeframe first, or ``None``.
+
+    Returns ``(frame, source)``. ``None`` means the desk has NO venue truth for that symbol, which
+    is a refusal the callers report by name -- never a zero, never a nearest-neighbour substitute.
+    A forecast graded against the wrong instrument is worse than one left OVERDUE (R0367 measured
+    exactly that: `1000PEPEUSDT` resolving as `PEPEUSDT`, a contract priced 1000x apart).
+    """
     try:
-        rows = json.loads(urllib.request.urlopen(
-            urllib.request.Request(url, headers=_UA), timeout=25).read())
-    except Exception:
+        import pandas as pd
+    except ImportError:
         return None
-    if not rows:
+    sym = symbol.upper()
+    for tf in _MT5_TIMEFRAMES:
+        for root in _MT5_BAR_ROOTS:
+            p = root / f"{sym}_{tf}.parquet"
+            if not p.exists():
+                continue
+            try:
+                frame = pd.read_parquet(p)
+            except (OSError, ValueError):
+                continue                      # unreadable file is not a price; keep looking
+            if frame.empty or not {"high", "low", "close"} <= set(frame.columns):
+                continue
+            idx = pd.to_datetime(frame.index, utc=True)
+            return frame.set_index(idx).sort_index(), f"mt5:{sym}_{tf}"
+    return None
+
+
+def fetch_bars(symbol: str, start_ms: int, end_ms: int, bar: str = "15m"
+               ) -> tuple[list[tuple[int, float, float, float, float]], str]:
+    """OHLC rows in [start_ms, end_ms] as ``(ts_ms, o, h, l, c)``, or ``([], reason)``.
+
+    THE CONTRACT IS "EMPTY WITH A REASON", NEVER A MARK. `run_calibration_probe` grades a forecast
+    on `bars[-1][4]`, so a fabricated bar here becomes a graded hit or miss on a price that never
+    traded -- and calibration is the one number the Kelly sizer consumes. It inherits this shape
+    from `resolve_paper_book.fetch_bars`, deleted 2026-09-05 under the universe mandate;
+    the signature is kept identical so the two live callers did not have to change their handling
+    of the refusal, which is the part that must not drift.
+
+    `bar` is accepted and reported for provenance but not honoured as a resample: the store's
+    finest available timeframe is used, and the caller is told which via the returned source.
+    Silently returning a coarser bar under a finer name is the misreporting this desk fences.
+    """
+    got = mt5_bars(symbol)
+    if got is None:
+        return [], (f"UNRESOLVABLE -- no MT5 bars for {symbol.upper()} under "
+                    f"{'/'.join(str(r.name) for r in _MT5_BAR_ROOTS)}")
+    frame, src = got
+    try:
+        import pandas as pd
+        lo = pd.Timestamp(start_ms, unit="ms", tz="UTC")
+        hi = pd.Timestamp(end_ms, unit="ms", tz="UTC")
+    except (ImportError, ValueError) as exc:
+        return [], f"UNRESOLVABLE -- {type(exc).__name__}: {str(exc)[:60]}"
+    window = frame.loc[lo:hi]
+    if window.empty:
+        return [], f"UNRESOLVABLE -- {src} holds no bar in [{lo:%Y-%m-%d %H:%M}, {hi:%Y-%m-%d %H:%M}]"
+    rows = [(int(ts.timestamp() * 1000), float(r.open), float(r.high), float(r.low), float(r.close))
+            for ts, r in window.iterrows()]
+    return rows, f"{src}(requested {bar})"
+
+
+def _price_at(symbol: str, when: datetime) -> float | None:
+    """Close of the finest MT5 bar containing `when` -- one defined instant, not 'now'."""
+    got = mt5_bars(symbol)
+    if got is None:
         return None
-    best = min(rows, key=lambda r: abs(int(r[0]) - ms))
-    return float(best[4])
+    frame, _src = got
+    at_or_before = frame.loc[:when]
+    if at_or_before.empty:
+        return None
+    return float(at_or_before["close"].iloc[-1])
 
 
 def _high_between(symbol: str, start: datetime, end: datetime) -> float | None:
-    """Highest 1m HIGH in [start, end] -- the mirror of _low_between, for SHORT stops."""
-    ms0, ms1 = int(start.timestamp() * 1000), int(end.timestamp() * 1000)
-    highs: list[float] = []
-    cur = ms0
-    while cur < ms1:
-        url = (f"https://api.binance.com/api/v3/klines?symbol={symbol}&interval=1m"
-               f"&startTime={cur}&endTime={ms1}&limit=1000")
-        try:
-            rows = json.loads(urllib.request.urlopen(
-                urllib.request.Request(url, headers=_UA), timeout=25).read())
-        except Exception:
-            return None
-        if not rows:
-            break
-        highs.extend(float(r[2]) for r in rows)
-        cur = int(rows[-1][0]) + 60_000
-        if len(rows) < 1000:
-            break
-    return max(highs) if highs else None
+    """Highest MT5 HIGH in [start, end] -- the mirror of _low_between, for SHORT stops."""
+    got = mt5_bars(symbol)
+    if got is None:
+        return None
+    window = got[0].loc[start:end]
+    return float(window["high"].max()) if not window.empty else None
 
 
 def _low_between(symbol: str, start: datetime, end: datetime) -> float | None:
-    """Lowest 1m LOW in [start, end] -- wicks count, because a stop is hit by the wick."""
-    ms0, ms1 = int(start.timestamp() * 1000), int(end.timestamp() * 1000)
-    lows: list[float] = []
-    cur = ms0
-    while cur < ms1:
-        url = (f"https://api.binance.com/api/v3/klines?symbol={symbol}&interval=1m"
-               f"&startTime={cur}&endTime={ms1}&limit=1000")
-        try:
-            rows = json.loads(urllib.request.urlopen(
-                urllib.request.Request(url, headers=_UA), timeout=25).read())
-        except Exception:
-            return None
-        if not rows:
-            break
-        lows.extend(float(r[3]) for r in rows)
-        cur = int(rows[-1][0]) + 60_000
-        if len(rows) < 1000:
-            break
-    return min(lows) if lows else None
+    """Lowest MT5 LOW in [start, end] -- wicks count, because a stop is hit by the wick."""
+    got = mt5_bars(symbol)
+    if got is None:
+        return None
+    window = got[0].loc[start:end]
+    return float(window["low"].min()) if not window.empty else None
 
 
 def main() -> None:

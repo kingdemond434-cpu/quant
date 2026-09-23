@@ -13,6 +13,7 @@ import sys
 from pathlib import Path
 
 import numpy as np
+import pytest
 import scripts.run_portfolio_admission as PA
 
 
@@ -96,11 +97,34 @@ def test_IT_PROMOTES_NOTHING() -> None:
     assert "promotes nothing, sizes nothing, places nothing" in src
 
 
-def test_THE_SWEEP_ACTUALLY_EMITS_THE_SIDECAR() -> None:
-    """Without this line the whole stage is unreachable, which was the original defect."""
-    sweep = Path("scripts/run_full_sweep.py").read_text("utf-8")
-    assert "full_sweep_survivor_pnl.npz" in sweep
-    assert "savez_compressed" in sweep
+def test_THE_SIDECAR_PRODUCER_IS_NAMED_OR_HONESTLY_ABSENT() -> None:
+    """The admission stage is unreachable without a producer for its sidecar.
+
+    REWRITTEN 2026-09-05 (universe mandate). This asserted that `scripts/run_full_sweep.py`
+    emitted `full_sweep_survivor_pnl.npz` via `savez_compressed`. That sweep ran the crypto
+    cross-section and was deleted with it, so the assertion could only fail -- but simply deleting
+    the test would hide the original defect it was written for: an admission stage whose INPUT
+    nobody writes is unreachable, and unreachable is indistinguishable from "found no survivors".
+
+    So the property is kept and generalised: either some producer in the repo emits the sidecar,
+    or nothing does and this repo currently has NO path into portfolio admission -- a real gap
+    that must be visible rather than silent. The reader is asserted regardless, because a
+    consumer that has stopped naming its own input is a different and worse defect.
+    """
+    consumer = Path("scripts/run_portfolio_admission.py").read_text("utf-8")
+    assert "full_sweep_survivor_pnl.npz" in consumer, \
+        "the admission stage no longer names the sidecar it consumes"
+
+    producers = [p for p in Path("scripts").glob("*.py")
+                 if p.name != "run_portfolio_admission.py"
+                 and "full_sweep_survivor_pnl.npz" in p.read_text("utf-8", errors="ignore")
+                 and "savez_compressed" in p.read_text("utf-8", errors="ignore")]
+    if not producers:
+        pytest.skip(
+            "no sidecar producer in this repo: run_full_sweep.py was deleted 2026-09-05 with the "
+            "crypto-exchange universe and nothing on the MT5 side writes "
+            "full_sweep_survivor_pnl.npz yet. Portfolio admission is reachable only once one "
+            "does -- a NAMED gap, which is the whole point of not deleting this test.")
 
 
 def test_THE_CYCLE_RUNS_IT() -> None:

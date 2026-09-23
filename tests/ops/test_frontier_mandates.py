@@ -20,7 +20,25 @@ from pathlib import Path
 
 import pytest
 
-PROMPTS = sorted(Path("ops").glob("frontier_*_prompt.txt"))
+#: The delegation marker that makes a file a ROUTER rather than a BRIEF. A router picks which
+#: grounds run today and then hands the miner the ground's standing brief; it carries no doctrine
+#: of its own, by design. `frontier_*_prompt.txt` matches both shapes, so the glob alone cannot
+#: tell them apart -- and asserting the eight standing mandates against a router produced ~39
+#: failures that said nothing about the seven briefs those mandates actually govern.
+#:
+#: This is a STRUCTURAL test, not an opt-out flag: a file is a router only because it points at
+#: the briefs, and `test_A_ROUTER_DELEGATES_TO_BRIEFS_THAT_EXIST_AND_CARRY_THE_MANDATES` below
+#: then holds it to that -- it must name every region, each named brief must exist, and each is
+#: re-checked for every mandate. A router that stopped delegating would stop matching here and
+#: fall back into BRIEFS, where it owes the mandates itself. Nothing can escape by being renamed.
+_DELEGATION = "ops/frontier_<region>_prompt.txt"
+
+_ALL = sorted(Path("ops").glob("frontier_*_prompt.txt"))
+ROUTERS = [p for p in _ALL if _DELEGATION in p.read_text("utf-8", errors="ignore")]
+PROMPTS = [p for p in _ALL if p not in ROUTERS]
+
+#: The seven grounds a router must be able to hand off to.
+REGIONS = ("en", "cn", "ru", "jp", "kr", "ar", "br")
 
 #: Every standing mandate, by the marker that must appear in all seven files.
 MANDATES: dict[str, str] = {
@@ -40,6 +58,32 @@ def test_there_are_regional_miners_at_all() -> None:
     nothing, which is worse than a red one."""
     found = [p.name for p in PROMPTS]
     assert len(PROMPTS) >= 7, f"expected the seven regional miners, found {found}"
+
+
+def test_A_ROUTER_DELEGATES_TO_BRIEFS_THAT_EXIST_AND_CARRY_THE_MANDATES() -> None:
+    """A router is EXEMPT from carrying the mandates only because it hands off to files that do.
+
+    That exemption is worth exactly as much as the hand-off, so this test buys it back: a router
+    must name every region, every brief it names must exist on disk, and every one of them is
+    re-checked here for all eight mandates. A router that quietly dropped a region -- the failure
+    the exemption could otherwise hide -- fails here, and so does one pointing at a brief that a
+    cleanup deleted.
+    """
+    for r in ROUTERS:
+        src = r.read_text("utf-8", errors="ignore")
+        missing_regions = [x for x in REGIONS if x not in src]
+        assert missing_regions == [], (
+            f"{r.name} routes to regional briefs but never names {missing_regions}. A ground the "
+            "router cannot name is a ground that never gets dug, and the router carries no "
+            "doctrine of its own to fall back on.")
+        for region in REGIONS:
+            brief = Path("ops") / f"frontier_{region}_prompt.txt"
+            assert brief.exists(), (
+                f"{r.name} delegates to {brief}, which does not exist. The router's exemption "
+                "from the standing mandates is only valid while the briefs it points at are real.")
+            text = brief.read_text("utf-8", errors="ignore")
+            absent = [m for m in MANDATES if m not in text]
+            assert absent == [], f"{brief.name} (reached via {r.name}) is missing {absent}"
 
 
 @pytest.mark.parametrize("marker", sorted(MANDATES))
@@ -85,13 +129,23 @@ def test_CONVERGENCE_IS_NEVER_SOLD_AS_A_LOWER_BAR() -> None:
             f"{p.name} does not state that convergence buys priority rather than a weaker bar")
 
 
-def test_THE_CRYPTO_MANDATE_PRIORITISES_WITHOUT_HARDCODING_A_BOUNDARY() -> None:
-    """The desk trades Binance crypto, so crypto-native grounds come first -- but a priority order
-    that hardened into a boundary would stop the miners exploring undug ground, which is the one
-    thing L1.52 forbids outright. Both halves have to be present in every region."""
+def test_THE_MT5_UNIVERSE_MANDATE_PRIORITISES_WITHOUT_HARDCODING_A_BOUNDARY() -> None:
+    """The desk trades the MT5/Fusion universe, so regional FX/metals practitioner ground comes
+    first -- but a priority order that hardened into a boundary would stop the miners exploring
+    undug ground, which is the one thing L1.52 forbids outright. Both halves in every region.
+
+    THIS FENCE USED TO PIN `crypto-native >`, AND THAT IS WHY IT IS WORTH A NOTE. The 2026-08-18
+    universe mandate replaced that ordering with the MT5 one in all seven briefs, and the fence
+    went red -- measuring ground the desk had retired, and reading as though the prompts had
+    regressed when in fact they had complied. A fence that pins a retired universe argues for
+    putting it back. The pin moved to the MT5 phrasing; the prompts were not reverted.
+    """
     for p in PROMPTS:
         src = p.read_text("utf-8", errors="ignore")
-        assert "crypto-native >" in src, f"{p.name} lost the source priority order"
+        assert "regional FX/metals practitioner ground >" in src, (
+            f"{p.name} lost the source priority order")
+        assert "crypto-native >" not in src, (
+            f"{p.name} has the retired crypto-exchange priority order back in it")
         assert "NEVER hardcode that as a boundary" in src, (
             f"{p.name} states a priority with no exploration escape -- a priority that cannot be "
             "left is a boundary, and unexplored ground is mandatory")
@@ -103,7 +157,7 @@ def test_THE_SEED_MAP_IS_NOT_TREATED_AS_THE_CATALOGUE() -> None:
     nothing. The miners' own rule already calls that breadth-theater."""
     for p in PROMPTS:
         src = p.read_text("utf-8", errors="ignore")
-        assert "crypto_source_seeds.md" in src
+        assert "mt5_source_seeds.md" in src
         assert "do NOT bulk-add" in src, f"{p.name} may dump the seed map into the catalogue"
 
 

@@ -1,0 +1,60 @@
+[
+ {
+  "source": "deep_forest",
+  "kind": "dataset",
+  "title": "Elite Trader",
+  "url": "https://www.elitetrader.com/et/",
+  "published": "2026-09-07T01:31:41+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.45,
+  "lang": "en",
+  "endpoints": [
+   "https://www.elitetrader.com/et/threads/mapped-what-every-country-exports-most.391217/",
+   "https://www.elitetrader.com/et/threads/mapped-what-every-country-exports-most.391217/latest"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "27012aabbc85b074a9af",
+  "host": "www.elitetrader.com",
+  "ground": "Elite Trader",
+  "region": "us",
+  "cluster": "west",
+  "dataset_class": null,
+  "available_time": "2026-09-07T01:31:41+00:00",
+  "ingested_time": "2026-09-07T01:31:41+00:00",
+  "source_hash": "27012aabbc85b074a9af",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "deep_forest",
+  "kind": "dataset",
+  "title": "Press releases | MNB.hu",
+  "url": "https://www.mnb.hu/en/pressroom/press-releases",
+  "published": "2026-09-07T01:31:56+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.mnb.hu/letoltes/hufonia.xls",
+   "https://www.mnb.hu/letoltes/hufonia-swap-index.xls",
+   "https://www.mnb.hu/letoltes/bubor2.xls",
+   "https://www.mnb.hu/letoltes/birs.xls"
+  ],
+  "n_endpoints": 4,
+  "vault_sha": "39b14c92fbe7715a507e",
+  "host": "www.mnb.hu",
+  "ground": "MNB press releases",
+  "region": "hu",
+  "cluster": "east_eu",
+  "dataset_class": null,
+  "available_time": "2026-09-07T01:31:56+00:00",
+  "ingested_time": "2026-09-07T01:31:56+00:00",
+  "source_hash": "39b14c92fbe7715a507e",
+  "claims": [],
+  "n_claims": 0
+ }
+]

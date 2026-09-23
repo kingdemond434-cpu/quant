@@ -42,6 +42,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 from libs.doctrine.constitution import (  # noqa: E402
+    DATA_AXIS_MANDATE,
     OBJECTIVE_PREAMBLE,
     RESIDUAL_MANDATE,
     RESIDUAL_PROTOCOL,
@@ -75,7 +76,7 @@ SYSTEM = (
     # what its output LOOKS like rather than for expected shift in E[log W] -- and, worse,
     # quietly recommends the timid option because nothing told it that timidity is a
     # scored defect rather than a neutral default.
-    OBJECTIVE_PREAMBLE + RESIDUAL_MANDATE + RESIDUAL_PROTOCOL + "\n"
+    OBJECTIVE_PREAMBLE + RESIDUAL_MANDATE + DATA_AXIS_MANDATE + RESIDUAL_PROTOCOL + "\n"
     "You write DATA COLLECTORS for a quant desk. Given a public data source, emit ONE Python "
     "function that fetches a DAILY TIME SERIES from it.\n"
     "STRICT CONTRACT:\n"

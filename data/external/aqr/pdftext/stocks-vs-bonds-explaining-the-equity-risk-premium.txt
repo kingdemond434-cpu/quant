@@ -1,0 +1,2672 @@
+Stocks vs. Bonds: Explaining the Equity Risk Premium 
+Copyright 2000, CFA Institute. Reproduced and republished from 
+Financial Analysts Journal
+ with permission from CFA 
+Institute. All rights reserved. 
+
+Stocks versus Bonds
+March/April 2000
+113
+Goyal, Amit, and Ivo Welch. 1999. 
+Ò
+Predicting the Equity
+Premium.
+Ó
+ Working paper. University of California at Los
+Angeles.
+Granger, C.J.W., and P. Newbold. 1974. 
+Ò
+Spurious Regressions
+in Econometrics.
+Ó
+ 
+Journal of Econometrics
+, vol. 2:111
+Ð
+120.
+Ilmanen, Antti. 1995. 
+Ò
+Time-Varying Expected Returns in
+International Bond Markets.
+Ó
+ 
+Journal of Finance
+, vol. 50, no. 2
+(June):481
+Ð
+506.
+Kane, Alex, Alan J. Marcus, and Jaesun Noh. 1996. 
+Ò
+The P/E
+Multiple and Market Volatility.
+Ó
+ 
+Financial Analysts Journal
+, vol.
+52, no. 4 (July/August):16
+Ð
+24.
+Kirby, Chris. 1997. 
+Ò
+Testing the Predictable Variation in Stock
+and Bond Returns.
+Ó
+ 
+Review of Financial Studies
+, vol. 10, no. 3
+(Fall):579
+Ð
+630.
+Lander, Joel, Athanasios Orphanides, and Martha
+Douvogiannis. 1997. 
+Ò
+Earnings Forecasts and the Predictability
+of Stock Returns: Evidence from Trading the S&P.
+Ó
+ 
+Journal of
+Portfolio Management
+, vol. 23, no. 4 (Summer):24
+Ð
+35.
+Lintner, John. 1956. 
+Ò
+Distribution of Incomes of Corporations
+among Dividends, Retained Earnings, and Taxes.
+Ó
+ 
+American
+Economic Review
+, vol. 46:97
+Ð
+113.
+Merton, R.C. 1980. 
+Ò
+On Estimating the Expected Return on the
+Market.
+Ó
+ 
+Journal of Financial Economics
+, vol. 8, no. 4 (June):323
+Ð
+361.
+Modigliani, F., and R. Cohn. 1979. 
+Ò
+Inflation, Rational
+Valuation, and the Market.
+Ó
+ 
+Financial Analysts Journal
+, vol. 35,
+no. 2 (March/April):24
+Ð
+44.
+Phillips, Thomas K. 1998. 
+Ò
+Why Do Valuation Ratios Forecast
+Long Run Equity Returns?
+Ó
+ Working paper. Paradigm Asset
+Management.
+Poterba, James M., and Lawrence H. Summers. 1986. 
+Ò
+The
+Persistence of Volatility and Stock Market Fluctuations.
+Ó
+American Economic Review
+, vol. 76, no. 5 (December):1142
+Ð
+51.
+Samuelson, Paul A. 1994. 
+Ò
+The Long-Term Case for Equities and
+How It Can Be Oversold.
+Ó
+ 
+Journal of Portfolio Management
+, vol. 21,
+no. 1 (Fall):15
+Ð
+26.
+Schwert, G. William. 1989. 
+Ò
+Why Does Stock Market Volatility
+Change over Time?
+Ó
+ 
+Journal of Finance
+, vol. 44, no. 5
+(December):1115
+Ð
+54.
+Shiller, Robert J. 1989. 
+Market Volatility
+. Boston, MA:
+Massachusetts Institute of Technology Press.
+Siegel, Jeremy. 1994. 
+Stocks for the Long Run
+. Burr Ridge, IL:
+Irwin.
+ 
+Sorensen, Eric H., and Robert D. Arnott. 1988. 
+Ò
+The Risk
+Premium and Stock Market Performance.
+Ó
+ 
+Journal of Portfolio
+Management
+, vol. 14, no. 4 (Summer):50
+Ð
+55.
+Stambaugh, Robert F. 1984. 
+Ò
+Bias in Regressions with Lagged
+Stochastic Regressors.
+Ó
+ Manuscript.
+
+Financial Analysts Journal
+112
+©2000,
+
+Association for Investment Management and Research
+correlation in the residuals. Each coefficient was essentially
+the same and remained statistically significant, whereas the
+first-order annual residual autocorrelation was highly sta-
+tistically significant at 0.55.
+19.This low autocorrelation matches the results of Poterba and
+Summers, who found only very short-term persistence in
+market volatility. Interestingly, I found that long-term roll-
+ing estimates of volatility seem to be crucial in determining
+the required expected return on the market but do not
+forecast the next period of long-term volatility itself. Thus,
+although investor perceptions of volatility drive market
+expected returns, those perceptions have not necessarily
+been accurate. My model might correctly describe investor
+behavior, but reconciling this behavior with market effi-
+ciency may be difficult (although not necessarily impossi-
+ble). I leave this endeavor to future work.
+20.In fact, the failure of the one regression (1895
+Ð
+1995) was
+driven by the 1975 observation (without this observation,
+the regression had an 
+R2 of 89.5 percent and a 
+t
+-statistic of
++5.93). Furthermore, by the luck of the draw, this regression
+did not include values for either the 
+x
+ or 
+y
+ variable as
+extreme as in Figures 7 and 8, which lowered the power of
+this test.
+21.These regression results should not be considered an accu-
+rate test of a short- or long-term trading strategy. First, the
+regressions used D/P, which because it has price in the
+denominator, is known to induce a small bias toward find-
+ing a positive coefficient. The regressions also used the full-
+period data to form D/P(Error), which would not have been
+known prior to the end of the period. Finally, of course, the
+regressions do not account for trading costs. These regres-
+sions are meant to be indicative of the forecasting power of
+the model versus traditional models. Formal tests of a trad-
+ing strategy based on these methods are not available from
+the author; trying to profit from such strategies is what I do
+for a day job.
+22.These tests were carried out on in-sample regression resid-
+uals to retain the full 1946
+Ð
+98 period. Analogous signifi-
+cant results (although a bit weaker) were found for 1966
+Ð
+1998 when rolling out-of-sample versions of D/P(Fit) and
+D/P(Error) were used.
+23.Two good sources for a scholarly but readable review of
+these issues are Siegel (1994) and Cornell (1999).
+24.Glassman and Hassett did offer some reasons why stock
+volatility might be lower in the future than in the past, but
+their central argument does not need this farther drop to
+happen because their argument is that stocks are no more
+risky than bonds right now.
+25.In all fairness, the actual practical investment advice in the
+book 
+Dow 36,000
+ appears quite reasonable, although it is
+still easy to see how an investor who believes in the authors
+Õ
+premise will not act so reasonably.
+26.When this article was written, May 1998 data were the latest
+used. As of November 1999, the model
+Õ
+s short-term forecast
+for stocks had joined the long-term forecast of stocks as
+below average, although not nearly as severely below aver-
+age as the long-term forecast. I would be happy to provide
+a more up-to-date forecast and can be contacted at
+cliff.asness@aqrcapital.com. Of course, trade on such a fore-
+cast at your own risk!
+27.This link does not need to hold precisely for inefficient
+portfolios.
+28.An exception is Kane, Marcus, and Noh, who correctly
+pointed out that this relationship is much clearer in 
+ex ante
+measures than in 
+ex post
+ returns.
+29.Unfortunately, I also could not determine the rationality of
+the predictive power of D/P(Error) over short horizons and
+D/P(Fit) over long horizons. Modigliani and Cohn (1979)
+argued that when inflation (and presumably bond yields)
+is low, investors mistakenly (i.e., irrationally or ineffi-
+ciently) overprice equities (and vice versa). The empirical
+results of this study support their hypothesis in one way:
+When volatility is held constant, investors do price stocks
+at higher P/Es and P/Ds when interest rates are low (and
+vice versa). This empirical finding is an important contribu-
+tion, because more-naive tests (which fail to account for
+relative volatility changes) do not pick up this relationship.
+However, distinguishing whether the short-term predictive
+power of D/P(Error) or the long-term predictive power of
+D/P(Fit) is coming from such mispricing or rational vari-
+ance in expected return (perhaps caused by changing risk
+aversion) is beyond the scope of this article.
+ReferencesBagwell, Laurie Simon, and John B. Shoven. 1989. 
+Ò
+Cash
+Distributions to Shareholders.
+Ó
+ 
+Journal of Economic Perspectives
+,
+vol. 3, no. 3 (Summer):129
+Ð
+140.
+Bernstein, Peter L. 1993. 
+Volatility: Two Views, Two Signals
+.
+Newsletter. (November 15).
+ÑÑÑ
+. 1996. 
+Ò
+Are Stocks the Best Place to Be in the Long Run?
+A Contrary Opinion.
+Ó
+ 
+Journal of Investing
+, vol. 5, no. 2
+(Summer):6
+Ð
+9.
+ÑÑÑ
+. 1997. 
+Stock/Bond Risk Perceptions and Expected Returns
+.
+Newsletter. (February 1).
+Bogle, John C. 1991. 
+Ò
+Investing in the 1990s: Occam
+Õ
+s Razor
+Revisited.
+Ó
+ 
+Journal of Portfolio Management
+, vol. 18, no. 1
+(Fall):88
+Ð
+91.
+ÑÑÑ
+. 1995. 
+Ò
+The 1990s at the Halfway Mark.
+Ó
+ 
+Journal of
+Portfolio Management
+, vol. 21, no. 4 (Summer):21
+Ð
+31.
+Boudoukh, Jacob, and Matthew Richardson. 1994. 
+Ò
+The
+Statistics of Long-Horizon Regressions Revisited.
+Ó
+ 
+Mathematical
+Finance
+, vol. 4, no. 2 (April):103
+Ð
+119.
+Campbell, John Y., and Robert J. Shiller. 1998. 
+Ò
+Valuation Ratios
+and the Long-Run Stock Market Outlook.
+Ó
+ 
+Journal of Portfolio
+Management
+, vol. 24, no. 2 (Winter):11
+Ð
+26. 
+ÑÑÑ
+. 1988. 
+Ò
+Stock Prices, Earnings, and Expected Dividends.
+Ó
+Journal of Finance
+, vol. 43, no. 3 (July): 661
+Ð
+676.
+Cole, Kevin, Jean Helwege, and David Laster. 1996. 
+Ò
+Stock
+Market Valuation Indicators: Is This Time Different?
+Ó
+ 
+Financial
+Analysts Journal
+, vol. 52, no. 3 (May/June):56
+Ð
+64.
+Cornell, Bradford. 1999. 
+The Equity Risk Premium
+. New York:
+John Wiley &
+ 
+Sons.
+Fama, Eugene F., and Kenneth R. French. 1988. 
+Ò
+Dividend
+Yields and Expected Stock Returns.
+Ó
+ 
+Journal of Financial
+Economics
+, vol. 22, no. 1 (October):3
+Ð
+26.
+ÑÑÑ
+. 1989. 
+Ò
+Business Conditions and Expected Returns on
+Stocks and Bonds.
+Ó
+ 
+Journal of Financial Economics
+, vol. 25, no. 1
+(July):23
+Ð
+50.
+French, Kenneth R., G. William Schwert, and Robert F.
+Stambaugh. 1987. 
+Ò
+Expected Stock Returns and Volatility.
+Ó
+Journal of Financial Economics
+, vol. 19, no. 1 (January):3
+Ð
+29.
+Glassman, James K., and Kevin A. Hassett. 1999. 
+Dow 36,000
+.
+New York: Random House.
+Goetzmann, William N., and Philippe Jorion. 1993. 
+Ò
+Testing the
+Predictive Power of Dividend Yields.
+Ó
+ 
+Journal of Finance
+, vol. 48,
+no. 2 (June):663
+Ð
+679.
+
+Stocks versus Bonds
+March/April 2000
+111
+short-, intermediate-, and long-term government bond
+series. The results are not sensitive to precise definitions of
+the bond yield or return.
+3.The earnings yield I used is prior year
+Õ
+s earnings over
+current price. All the economic results in this article are
+robust to using either a 3- or 10-year moving average of real
+earnings in the numerator.
+4.Equation 3 almost assuredly should be augmented with
+variables proxying time-varying expected dividend growth
+(see Fama and French 1988). I have tested such proxies and
+found them to be statistically significant, but I omitted them
+from this article because they affect none of the results or
+conclusions significantly.
+5.Bernstein (1993, 1997) examined a related (although slightly
+different) model and came to some of the same conclusions.
+6.The results presented here were insensitive to assuming
+other reasonable functional forms for this relationship (for
+example, assuming linearity in the log of the volatilities
+rather than the levels).
+7.Kane, Marcus, and Noh (1996) examined a related model
+for the first difference of market P/Es (a somewhat different
+exercise) and came to some conclusions similar to mine.
+8.These studies used forms similar to Equation 5.
+9.Another logical extension of Equations 3, 4, and 5
+ 
+is Y = 
+c
++ 
+e
+T-bill + 
+d
+
+(Bonds). That is, the yield on bonds moves
+(possibly at a multiple) with the short-term interest rate,
+and this weighted difference between long-term and short-
+term yields is a positive function of perceived bond vola-
+tility. Although not the focus of this article (but the focus
+of a future paper), empirical tests of this equation strongly
+support this specification.
+10.This work is not sensitive to the definition of generation as
+precisely 20 years.
+11.Note that I am not attempting to use the best short-term
+conditional estimate of volatility. Short-term changes in
+volatility may be mostly transitory. If so, they would have
+little impact on stock prices and required stock yields (see,
+for instance, Poterba and Summers 1986).
+12.All 
+R2 values were adjusted for degrees of freedom.
+13.Granger and Newbold (1974) found that in regressions of
+one random walk on another, rejection of the null hypoth-
+esis is more the rule than the exception. Also see Kirby
+(1997) or Goetzmann and Jorion (1993).
+14.As mentioned previously, the results of this article are not
+very sensitive to the choice of a 20-year window for volatil-
+ity. For instance, using a 10-year window for volatility esti-
+mation greatly reduced (but did not eliminate) the degree
+of autocorrelation in the right-hand variables. When I rees-
+timate Equation 9 using 10-year rolling volatility (which
+also added 10 more years, 1936
+Ð
+1945, to the regression), the
+t
+-statistics did not materially change; the 
+t
+-statistics on 
+Y
+,
+
+(Stocks), and 
+
+(Bonds) were, respectively, +10.00, +14.45,
+and 
+Ð
+14.75. Using a 7-year window (now adding data from
+1933
+Ð
+1945 to the regression), the 
+t
+-statistics were +5.21,
++11.54, and 
+Ð
+10.93. A later section addresses this issue more
+directly by using longer-term data and analyzing nonover-
+lapping 20-year periods.
+15.The sources for these data are Robert J. Shiller
+Õ
+s Web page
+(an update of the data in Chapter 26 of Shiller 1989) and the
+company Global Financial Data.
+16.These ratios are somewhat higher than reported in Figure
+5 because the duration of the bond used in these annual tests
+was, on average, somewhat shorter than the duration of 7.0
+years used in the monthly tests. Thus, bond volatility is
+somewhat lower in these annual tests. This change is only
+a matter of scale and has no economic effect on the tests.
+17.For instance, Fama and French (1988) found that the param-
+eters of the Lintner (1956) model for explaining dividend
+changes changed radically during the 1927
+Ð
+86 period.
+18.As a final check, I reestimated Equation 24 using the
+Cochrane
+Ð
+Orcutt procedure to adjust for first-order auto-
+
+Financial Analysts Journal
+110
+©2000,
+
+Association for Investment Management and Research
+even perversely, in the 1927
+Ð
+98 period but strongly
+move together in the later 40 years of this period?
+Stock and bond yields appear to move indepen-
+dently or even perversely over long periods (e.g.,
+1926
+Ð
+1998), but this appearance is an artifact of
+missing a part of their structural relationship. If the
+impact of changing volatility is taken into account,
+stock and bond yields are strongly positively corre-
+lated over the entire period for which we have data,
+which many strategists and economists would have
+hypothesized. 
+Finally, consider the third question: Why are
+today
+Õ
+s stock market yields so low and what does
+that fact mean for the future? Today
+Õ
+s stock market
+yields are so low simply because bond yields are
+low and recent realized stock market volatility has
+been low when compared with bond market vola-
+tility. I do not need to resort to 
+Ò
+the world has
+changed
+Ó
+ types of arguments to explain today
+Õ
+s
+low yields. The model fully explains them. And the
+model indicates that they will not go much lower
+unless realized stock versus bond volatility or inter-
+est rates fall farther.
+Although testing a long-term, slowly changing
+relationship has statistical difficulties, the model
+easily survived every reasonable robustness check,
+including out-of-sample testing of a previously
+untouched period (1871
+Ð
+1945) and the formation of
+completely nonoverlapping, nonserially correlated
+independent and dependent variables for the entire
+1871
+Ð
+1998 period.
+This work has strong theoretical implications.
+A link between volatility and expected return is one
+of the strongest implications of modern finance.27Researchers have found compelling evidence of this
+phenomenon in comparing asset classes (i.e., stocks
+versus bonds), but evidence of a link 
+within
+ asset
+classes (e.g., testing the capital asset pricing model
+for stocks) or an intertemporal link within one asset
+class has been weak. This article addresses the inter-
+temporal link. Past studies failed to convincingly
+link expected stock returns to 
+ex ante
+ volatility
+through realized stock returns.28 However, realized
+stock returns are very noisy. I hypothesized that D/P
+(or E/P) is a proxy for expected stock returns and 
+that
+Y
+ is a proxy for expected bond returns and found
+strong confirmation that the difference between
+these proxies is a positive function of differences in
+experienced volatility. In other words, unlike many
+other studies, I have documented a strong positive
+intertemporal relationship between expected return
+and perceived risk.
+This article demonstrated that the relative long-
+term volatility experienced by investors is a strong
+driver of the relative yields they require on stocks
+versus bonds; it did
+ not
+ show that these long-term
+realized volatility figures are accurate forecasts of
+future volatility. Thus, I have clearly identified a
+behavioral relationship that I believe is important,
+but I offer no verdict on market efficiency.29The bottom line is that today
+Õ
+s stock market (as
+of May 1998) has very low yields (D/P and E/P) for
+the simple reason that bond yields are low and stock
+volatility has been low as compared with bond vol-
+atility. These conditions historically lead investors
+to accept a low yield (and expected return) on
+stocks. If one is a short-term investor, knowing that
+these low yields are not abnormal may be comfort-
+ing. A long-term investor, however, might be very
+nervous, because raw stock yields (D/P and E/P)
+are the best predictors of long-term stock market
+returns and these raw yields are currently at very
+low levels.
+Notes1.A set of assumptions sufficient for this equality to hold for
+coupon-bearing bonds is that the yield curve be flat and
+unchanging.
+2.The sources and/or construction of the data for this article
+are as follows: For stocks, return and earnings yield data on
+the S&P 500 came from Datastream and dividend yields
+from Ibbotson Associates. For bonds, return data for Janu-
+ary 1980 to May 1998 are from the J.P. Morgan Government
+Bond Index levered to a constant duration of 7.0 (i.e., the
+monthly return used is the T-bill rate plus 7.0 divided by
+the beginning-of-the-month J.P. Morgan duration times the
+return on the J.P. Morgan index minus the T-bill return). I
+constructed a constant-duration bond in the hopes of mak-
+ing my bond return series more homoscedastic. The choice
+of a duration of 7.0 was arbitrary and had no effect on the
+results. I performed the regression of this excess return
+series on the excess monthly return of the Ibbotson Associ-
+ates long- and intermediate-term bond series for January
+1980 to May 1998. For January 1926 to December 1979, I used
+the fitted values on the Ibbotson return series to approxi-
+mate the 7.0-year duration J.P. Morgan government bond
+series. For bond yields, I used the 10-year benchmark yield
+from Datastream from January 1980 to May 1998. For Janu-
+ary 1926 to December 1979, I used the fitted multiple regres-
+sion forecast (fitted from the regression over the January
+1980
+Ð
+ May 1998 period) of the 10-year yield on the Ibbotson
+The author would like to thank Jerry Baesel, Peter
+Bernstein, Roger Clarke, Tom Dunn, Eugene Fama,
+Ken French, Britt Harris, Brian Hurst, Antti Ilmanen,
+Ray Iwanowski, David Kabiller, Bob Krail, Tom Philips,
+Jim Picerno, Rex Sinque
+Þ
+eld, and especially John Liew
+for helpful comments and editorial guidance.
+
+Stocks versus Bonds
+March/April 2000
+109
+mately 36,000). Part of their reasoning sounds much
+like the arguments advanced here. Well, part of it is,
+and part of it is not.
+Their first conclusion is 100 percent consistent
+with this article: the conclusion that stocks have low
+yields now because they are perceived to be less
+risky versus bonds than historically normal. In fact,
+my central thesis is that the return required by inves-
+tors to own stocks versus bonds varies directly with
+the perceived relative risk of the two assets (for
+which I used their respective rolling 20-year volatil-
+ities as proxies). I believe that my model, coupled
+with currently low bond market yields and a low
+perceived risk of stocks versus bonds, entirely
+explains, within the bounds of statistical error,
+today
+Õ
+s low yields on stocks (and, according to the
+model, the low long-term expected returns that
+come with low yields). Thus, my work strongly
+supports one aspect of the argument in 
+Dow 36,000
+,
+namely, that stock market expected returns versus
+bonds have come down as investor perceptions of
+the relative risk of stocks versus bonds have
+changed.
+My conclusions differ, however, from the next
+conclusion of 
+Dow 36,000
+. Glassman and Hassett
+extrapolated the trend in lowered return-premium
+expectations to continue, but my model offers them
+no support. The authors of 
+Dow 36,000
+ stated that
+the fall in stock expected returns is not over yet and
+will not be complete until the expected return on
+stocks is the same as bonds (presumably not yet the
+case) because the authors believe that stocks are no
+riskier than bonds in the long term. This hypothesis
+is quite provocative. If stocks are no riskier than
+bonds, then stock prices should rise as investors
+realize stocks are currently priced as if they are
+more risky. Now, much debate involves the long-
+run risk of stocks versus bonds, and to review or
+settle this matter is not the province of this paper.23However, much of the reason behind the current
+prominence of this debate in the first place is how
+different today appears from the past (i.e., today
+Õ
+s
+historically high stock prices versus dividends or
+earnings). My conclusion is that, in fact, the struc-
+ture of the world really is not much different today;
+only the inputs to the model have changed. In other
+words, stock yields (and required returns) have
+always moved with bond yields, and the relative
+difference between them has always been a func-
+tion of their relative perceived volatility. In fact,
+when I directly estimated this relationship, I found
+that it fits well for the long term and fits well today.
+The reason the study reported here is a prob-
+lem for theories like those proposed in 
+Dow 36,000
+is that I say the rise in stock prices today, rather than
+simply beginning as investors start to perceive how
+safe stocks really are, is actually proceeding much
+as it has throughout financial history. According to
+the model, investors have repriced stocks to reflect
+a lower perception of stock market risk, but any
+farther drop in the required return on stocks (and
+concurrent rise in stock prices) must come from a
+further reduction in actual stock volatility (versus
+bond volatility) or a reduction in bond yields. If
+investors have been all along implicitly using the
+relationship hypothesized here to price stocks (as
+the data strongly support they have since at least
+1891), then they have acted consistently in recently
+raising the price of equities. But we can expect no
+more such rises unless either interest rates or real-
+ized relative volatility change.24 The model dis-
+cussed here suggests that unless the inputs to the
+model change, any repricing of equities is approx-
+imately complete.
+Finally, if the model is accurate, a belief that a
+near-term windfall profit of about three times your
+money is currently available in the broad stock
+market, a belief held by Glassman and Hassett, is
+dangerous. First, investors who believe in the
+windfall possibility may overallocate to stocks.25Second, short-term pricing errors induced by
+believers in this argument (or 
+Ò
+bubbles
+Ó
+) can be
+dangerous to the real economy. Third, and perhaps
+most worrisome, if the model presented and tested
+in this paper is correct, the belief that stocks stand
+to receive a one-time enormous windfall profit is
+not simply wrong, it is backward. The low stock
+yields of today are fully explained by the model,
+meaning that the forecast of short-term stock
+returns is about average.26 Moreover, if the conclu-
+sion here is true that the best forecasting variable
+for long-term stock returns is the absolute level of
+stock yields, then today
+Õ
+s low yields (both D/P and
+E/P) point to a poor forecast for the long-term
+return on stocks.ConclusionEach of the puzzles stated at the beginning of this
+article can be resolved by using the model provided
+in Equation 6 for the required yield on stocks. Con-
+sider the 
+Þ
+rst question: Why did the stock market
+strongly outyield bonds for so long only to now
+consistently underyield bonds? The model states
+that (1) the higher bond yields are and (2) the higher
+perceived stock market volatility versus bond mar-
+ket volatility is, then the higher stock yields must be.
+For a long time (before the 1950s), stocks outyielded
+bonds because the realized volatility of stocks ver-
+sus bonds was much higher than in modern times. 
+Consider the second question: Why did stock
+and bond yields move relatively independently, or
+
+Financial Analysts Journal
+108
+©2000,
+
+Association for Investment Management and Research
+horizons (15 years and 20 years), D/P(Fit) is
+clearly adding considerable predictive power
+whereas D/P(Error) is adding none. Figure 9 tells
+a clear story that at short horizons, D/P(Error) is
+what counts but at long horizons, what counts is
+D/P(Fit). (Analogous results held for E/P.) 
+To sum up, the forecasting power of D/P can be
+decomposed into the forecasting power of D/P(Fit)
+and D/P(Error). In the model, D/P(Fit) is the nor-
+mal or expected dividend yield, and D/P(Error) is
+interpreted as the D/P in excess (or deficit) of nor-
+mal. Evidence presented here indicates that D/P
+itself forecasts stock returns at both long and short
+horizons but for different reasons. D/P(Fit) fore-
+casts long-horizon stock returns but has almost no
+power for the short term. D/P(Error) forecasts
+short-horizon stock returns but has little power for
+the long term.Do Stock Yields Have Farther to 
+Fall?Many have wondered lately why the market is
+currently selling at such a historically low D/P and
+E/P (or high P/D and P/E). In particular, in the
+book 
+Dow 36,000
+, Glassman and Hassett came to an
+extreme conclusion. They argued that the reason
+stock prices seem so high relative to measures such
+as dividends and earnings is that the expected (or
+required) return on the stock market is going down
+as investors realize that the stock market is less risky
+in relation to the bond market than previously
+thought. Furthermore, they reasoned that this fall
+in expected returns is not over yet and concluded
+that it will not stop until stock and bond market
+expected returns are equal (a point at which, by
+their calculations, the Dow will reach approxi-
+Figure 9.Estimated Coef
+Þ
+cients of D/P(Fit) and D/P(Error) for Each Forecast 
+Horizon, 1891
+Ð
+1998 
+Note
+: All returns are annualized compound returns.
+5
+4
+3
+2
+1
+0
+Ð
+1
+Ð
+2
+Regression Coefficient
+1
+20
+Horizon (years)
+5
+15
+10
+D/P (Fit)
+D/P (Error)
+
+Stocks versus Bonds
+March/April 2000
+107
+D/P on the S&P 500 in excess or deficit of what I
+would have predicted had I been using this model
+to forecast D/P (i.e., the unexplained portion). The
+results of the same regression tests as done for Equa-
+tions 25
+Ð
+27 on this new variable are as follows (all
+results of this section were analogous when tested
+on E/P):S&P monthly return =0.67% +1.75D/P(Error)(28)(4.29)(6.74)(with an adjusted 
+R2 of 6.6 percent);S&P 5-year return =12.60% +4.65D/P(Error)(29)(6.50)(3.00)(with an adjusted 
+R2 of 21.2 percent);S&P 10-year return =12.08% +2.01D/P(Error)(30)(5.64)(1.35)(with an adjusted 
+R2 of 7.1 percent).
+Comparing the results for D/P(Error) with
+D/P shows that D/P(Error) has far more predic-
+tive power than D/P at short (monthly) horizons
+but far less power at longer horizons.21 The power
+of D/P(Error) to forecast short-horizon returns
+can be interpreted as picking up time-varying risk
+aversion or, alternatively, as market mispricing (I
+leave this decision to future work). In either case,
+when D/P(Error) is high, stocks are selling for
+lower prices than is usual in the same interest rate
+and volatility environment and those low prices
+indicate higher short-horizon expected returns
+(and vice versa).
+Finally, I formed D/P(Fit) as the fitted values
+from regression Equation 9. D/P(Fit) can be inter-
+preted as the normal dividend yield as forecasted
+by the model considering the level of bond yields
+and stock and bond market volatility. By construc-
+tion, the following relationship holds:D/P = D/P(Fit) + D/P(Error).(31)By regressing stock returns on both D/P(Fit)
+and D/P(Error), I decomposed the forecasting
+power of D/P into a portion coming from fitted
+D/P and a portion coming from residual D/P. The
+following regressions were carried out for 1946
+Ð
+98 data:22S&P monthly return =1.25% 
+Ð
+0.15D/P(Fit)(32)
+(2.07)(
+Ð
+0.99)
++1.75D/P(Error)
+(6.74)(with an adjusted 
+R2 of 6.6 percent);S&P 5-year return =
+Ð
+2.80% +3.77D/P(Fit)(33)
+(
+Ð
+0.56)(3.93)
++4.96D/P(Error)
+(4.97)(with an adjusted 
+R2 of 57.1 percent);S&P 10-year return =
+Ð
+3.00% +3.61D/P(Fit)(34)
+(
+Ð
+0.76)(4.81)
++2.29D/P(Error)
+(2.00)(with an adjusted 
+R2 of 61.1 percent).
+Clearly, the power of D/P for predicting short-
+run (monthly) S&P 500 returns is driven by D/
+P(Error). As horizon lengthens, D/P(Fit) becomes
+more and more important, and at the 10-year
+horizon, D/P(Fit) is considerably more important.
+To examine even longer forecast horizons and
+over longer periods, I again used annual data back
+to 1871 and formed D/P(Fit) and D/P(Error) from
+Equation 24. Recall that the first 20 years are needed
+to estimate volatility, so the following regressions
+are for 1891
+Ð
+1998 (all returns are annualized com-
+pound returns): S&P annual return =18.1% 
+Ð
+1.46D/P(Fit) (35)
+(1.89) (
+Ð
+0.71)
++2.89D/P(Error)
+(1.91)(with an adjusted 
+R2 of 2.0 percent);S&P 5-year return =5.32% +0.99D/P(Fit)(36)
+(0.59)(0.51)
++2.32D/P(Error) 
+(3.67)(with an adjusted 
+R2 of 12.2 percent);S&P 10-year return =
+Ð
+1.78% +2.43D/P(Fit)(37)
+(
+Ð
+0.21)(1.43)
++0.81D/P(Error)
+(1.89)(with an adjusted 
+R2 of 12.4 percent);S&P 15-year return =
+Ð
+10.89% +4.24D/P(Fit)(38)
+(
+Ð
+3.91)(9.72)
++0.18D/P(Error)
+(0.43)(with an adjusted 
+R2 of 33.7 percent);S&P 20-year return =
+Ð
+8.66% +3.74D/P(Fit)(39)
+(
+Ð
+2.36)(5.58)
+Ð
+0.29D/P(Error)
+(
+Ð
+2.08)(with an adjusted 
+R2 of 42.2 percent).
+The estimated coefficients of D/P(Fit) and
+D/P(Error) for each of the forecast horizons
+(regression Equations 35
+Ð
+39) are plotted in 
+Figure
+9
+. Although annual predictability (Equation 35) is
+weak, the short-term predictability present is
+clearly driven by D/P(Error). The story changes
+dramatically as horizon increases, until at long
+
+Financial Analysts Journal
+106
+©2000,
+
+Association for Investment Management and Research
+Finally, for completeness, I present in 
+Table 3
+the adjusted 
+R2 and 
+t
+-statistics for each of eight
+possible regressions on nonoverlapping periods
+for which I have six 20-year data points (each row
+in Table 3 presents the results of a regression that
+differs by one year in its starting and ending point
+from the prior/next row). Only one of these eight
+regressions produced results well below tradi-
+tional levels of significance, and even in this case,
+the sign is correct.20 
+We believe these nonoverlapping tests are com-
+pelling evidence, irrespective of the econometric
+problems with our earlier tests, that following long-
+term periods of high (low) stock market volatility
+relative to bond market volatility, the required yield
+on stocks is relatively high (low) versus bonds. Market PredictabilityResearchers have found that variables D/P and E/P
+have power to forecast aggregate stock market
+returns. Moreover, this power appears to increase as
+time horizon lengthens (e.g., Fama and French 1988,
+1989). I tested this 
+Þ
+nding for 1946
+Ð
+1998 using pre-
+dictive regressions of excess monthly and annual-
+ized 5- and 10-year compound S&P 500 returns on
+aggregate D/P (
+t
+-statistics on all multiperiod regres-
+sions were adjusted for overlapping observations
+and heteroscedasticity). Here are the 
+Þ
+ndings:S&P monthly return =
+Ð
+0.56% +0.32D/P(25)
+(
+Ð
+1.03)(2.38)(with an adjusted 
+R2 of 0.7 percent);S&P 5-year return =
+Ð
+4.13% +4.09D/P(26)
+(
+Ð
+0.88)(4.77)(with an adjusted 
+R2 of 56.1 percent);S&P 10-year return =
+Ð
+1.443% +3.22D/P(27)
+(
+Ð
+0.38)(4.34)(with an adjusted 
+R2 of 58.7percent).
+Equations 25
+Ð
+27 verify the findings of other
+authors that D/P has weak, but statistically signif-
+icant, power for forecasting monthly returns and
+strong statistically significant power for forecasting
+longer-horizon returns.
+Now, a new predictive variable, D/P(Error), is
+introduced. It is the in-sample residual term from
+the regression of D/P on 
+Y
+, 
+
+(Stocks), and 
+
+(Bonds)
+for the 1946
+Ð
+98 period (Equation 9). It represents the
+Figure 8.Ratio of Annualized Monthly Stock Market Volatility to Correspond-
+ing Monthly Bond Volatility versus Excess of Stock Market Earnings 
+Yield over Bond Yield, 1881
+Ð
+May 1998
+10
+8
+6
+4
+2
+0
+Ð
+2
+Ð
+4
+E/P 
+Ð
+ 
+Y
+ (%)
+12
+Ratio of 20-Year Stock to Bond Volatility
+2
+4
+8
+10
+6
+0
+1988
+1968
+1928
+1908
+1948
+Table 3.Statistics for Eight Regressions PeriodAdjusted 
+R2t
+-Statistic
+1891
+Ð
+199188.5%+6.28
+1892
+Ð
+199273.7+3.87
+1893
+Ð
+199381.0+4.72
+1894
+Ð
+199445.6+2.28
+1895
+Ð
+19959.9+1.25
+1896
+Ð
+199691.5+7.42
+1897
+Ð
+199778.3+4.36
+1898
+Ð
+199892.0+7.64
+Mean70.1+4.73
+Median79.7+4.54
+Note
+: Each row presents the results of a regression that differs by
+one year in its starting and ending point from the prior/next row.
+
+Stocks versus Bonds
+March/April 2000
+105
+ratio of stock to bond market volatility and despite
+any changes in the world economy from 1871 to
+1998. In fact, unlike the volatility-based model, the
+time trends utterly fail to resurrect the positive
+relationship between stock and bond yields over
+the full period. When I used the data for 1946
+Ð
+1998,
+I introduced the issue of distinguishing whether
+the volatility-based model was spuriously sup-
+ported because the changes in relative volatility
+approximated a time trend. The earlier and full-
+period evidence powerfully indicates that it is the
+time trend whose efficacy is spurious for 1946
+Ð
+1998, not the volatility-based model.
+Full-Period Scatter Plots. 
+As a final and per-
+haps most compelling test, I examined nonoverlap-
+ping 20-year periods from 1878 until 1998. I report
+the results for the resulting six observations in
+Figure 7
+. Figure 7 plots the ratio of annualized
+monthly stock market volatility over correspond-
+ing monthly bond volatility for the 20 years ending
+before the labeled year against the excess of stock
+market earnings yields over bond yields for the
+year in question. I chose earnings yields for this
+investigation because the evidence is that they are
+directly close to being comparable to bond market
+yields whereas dividend yields move as a damp-
+ened function of bond yields (that is, the coefficient
+on 
+Y
+ in Equation 10 is nearly 1.0, which makes the
+simple difference relevant to examine). 
+Figure 7 clearly supports the model: The
+greater stock volatility is versus bond volatility, the
+higher E/P must be versus 
+Y
+. In contrast to the
+earlier regression tests, which were admittedly an
+econometric nightmare, nonoverlapping observa-
+tions were used for Figure 7, and the autocorrela-
+tion of both the dependent and independent series
+was close to zero.19 Thus, any need for econometric
+corrections (e.g., first differencing) was avoided. 
+The problem now is that I have only six obser-
+vations, so the tests might lack power, but this is
+not the case. The 
+t
+-statistic of the regression line is
++7.64, and the adjusted 
+R2 is 92.0 percent. With six
+observations, a 
+t-
+statistic must exceed +2.45 to be
+significant at a 
+p
+ value of 2.5 percent in a one-tailed
+test. Clearly, the 
+t
+-statistic for this test is well past
+this level of significance.
+As a robustness check, I recreated Figure 7 but
+starting 10 years later (resulting in only five obser-
+vations over this period). The results are in 
+Figure
+8
+. This figure is even more striking than Figure 7
+(the 
+t
+-statistic in Figure 8 is +12.46, and the adjusted
+R2 is 97.5 percent). Note from Figure 6 (the graph
+of the rolling volatility ratio) that two peaks are
+visible in the ratio of stock to bond volatility. These
+peaks roughly correspond to the right side of,
+respectively, Figures 7 and 8. In both cases, the
+model fits these extreme observations exception-
+ally well (that is, the largest volatility ratio corre-
+sponded to the largest end-of-period gap of stock
+earnings yield over bond yield). Also note that
+these two periods (the 20 years ending in 1918 and
+the 20 years ending in 1948) share no overlapping
+observations, yet the model fits both perfectly.  
+Figure 7.Ratio of Annualized Monthly Stock Market Volatility to Correspond-
+ing Monthly Bond Volatility versus Excess of Stock Market Earnings 
+Yield over Bond Yield, 1871
+Ð
+May 1998 
+16
+14
+12
+10
+8
+6
+4
+2
+0
+Ð
+2
+Ð
+4
+E/P 
+Ð
+ 
+Y
+ (%)
+0
+15
+Ratio of 20-Year Stock to Bond Volatility
+5
+10
+1978
+1998
+1898
+1958
+1938
+1918
+
+Financial Analysts Journal
+104
+©2000,
+
+Association for Investment Management and Research
+Recall that one problem with testing the
+hypothesis for 1946
+Ð
+1998 was that the volatility
+ratio declined nearly monotonically. Figure 6 shows
+that the new data preserve this property for this
+same time period but that the 1891
+Ð
+1945 period
+reflects no monotonic trend. Thus, if the model
+works for 1891
+Ð
+1945, or 1891
+Ð
+1998, a spurious time
+trend is not driving the results. I found that divi-
+dend yields also trended down strongly over the
+1946
+Ð
+98 period but appear much more stationary
+when viewed over the entire 1891
+Ð
+1998 period (this
+figure is available upon request). 
+As a data check, before examining the pre-1946
+data, I reexamined the 1946
+Ð
+98 period with the new
+annual data set. The following are 
+annual
+ regres-
+sions for the already-studied 1946
+Ð
+98 period:D/P =4.12%
+Ð
+ 0.04
+Y
+(13)
+(10.78)(
+Ð
+0.65)(with an adjusted 
+R2 of 
+Ð
+1.1 percent);D/P =
+Ð
+1.15% +0.29
+Y
+ +0.24
+
+(Stocks) (14)
+(
+Ð
+1.64)(6.07)(8.03)
+Ð
+0.16
+
+(Bonds)
+(
+Ð
+4.88)(with an adjusted 
+R2 of 66.0 percent;E/P =6.98% +0.13
+Y
+ (15)
+(7.57)(0.95)(with an adjusted 
+R2 of 
+Ð
+1.8 percent);E/P =
+Ð
+3.12% +0.85
+Y
+ +0.46
+
+(Stocks) (16)
+(
+Ð
+1.64)(6.07)(8.03)
+Ð
+0.40
+
+(Bonds)
+(
+Ð
+4.88)(with an adjusted 
+R2 of 48.9 percent).
+Although not precisely the same as the monthly
+regressions presented earlier, the annual regres-
+sions on the new data set are similar enough to be
+encouraging. 
+Now, consider the results for these same
+regressions for the earlier 1891
+Ð
+1945 data:D/P =2.60% +0.77
+Y
+(17)
+(2.70)(2.72)(with an adjusted 
+R2 of 10.6 percent);D/P =
+Ð
+1.65% +1.36
+Y
+ +0.19
+
+(Stocks) (18)
+(
+Ð
+1.18)(5.00)(4.75)
+Ð
+0.53
+
+(Bonds)
+(
+Ð
+2.10)(with an adjusted 
+R2 of 35.7 percent);E/P =4.20% +1.06
+Y
+(19)
+(2.20)(1.90)(with an adjusted 
+R2 of 4.6 percent); E/P =2.90% +1.68
+Y
+ +0.25
+
+(Stocks) (20)
+(1.05)(3.13)(3.15)
+Ð
+2.23
+
+(Bonds)
+(
+Ð
+4.50)(with an adjusted 
+R2 of 31.5 percent).
+These regressions provide bad news and good
+news. The bad news is that some of the regression
+coefficients are very different for the 1891
+Ð
+1945
+period from what they were for the 1946
+Ð
+98 period.
+Apparently, the (admittedly simple) model is not
+completely stable over time. Given changes in the
+world economy from 1871 to 1998, to think that the
+coefficients would be completely stable is perhaps
+wildly optimistic.17 The good news is that, although
+over the 1891
+Ð
+1945 period the stock market
+Õ
+s D/P
+and E/P were univariately weakly positively
+related to 
+Y
+ (see Equations 17 and 19), this relation-
+ship became much more strongly positive when I
+allowed for changing relative stock and bond mar-
+ket volatilities (as in the completely separate 1946
+Ð
+98 period). This relationship was, as my hypothesis
+forecasted, a strong positive function of the previ-
+ous 20 years
+Õ
+ relative stock versus bond volatility.
+Finally, I present the regressions for D/P for
+the full 1891
+Ð
+1998 period. For comparison, I also
+present full-period tests of the time-trend variables
+(the E/P results were highly analogous for all
+regressions):18D/P =5.20% 
+Ð
+0.14
+Y
+(21)
+(17.79)(
+Ð
+2.53)(with an adjusted 
+R2 of 4.8 percent);D/P =5.90% +0.03
+Y
+ 
+Ð
+0.00Linear trend(22)
+(17.32)(0.42)(
+Ð
+3.54)(with an adjusted 
+R2 of 14.1 percent);D/P =7.75% 
+Ð
+0.06
+Y
+ 
+Ð
+0.07Loglinear trend(23)
+(6.09)(
+Ð
+0.91)(
+Ð
+2.06)(with an adjusted 
+R2 of 7.6 percent);D/P =1.98% +0.26
+Y
+ +0.14
+
+(Stocks) (24)
+(2.96)(3.52)(4.95)
+Ð
+0.29
+
+(Bonds)
+(
+Ð
+5.65)(with an adjusted 
+R2 of 35.5 percent).
+The earlier data and the full-period data
+strongly support the central tenet of the hypothesis:
+Without adjusting for volatility and with or with-
+out a time trend (Equations 21
+Ð
+23), either a nega-
+tive or flat relationship appears between D/P and
+bond yields over the entire period. After adjust-
+ment for relative stock and bond volatility, this
+relationship is strongly positive (Equation 24).
+Unlike the 1946
+Ð
+98 results, these results are clearly
+present in the absence of a significant trend in the
+
+Stocks versus Bonds
+March/April 2000
+103
+Rolling Regression Forecasts. 
+I formed roll-
+ing out-of-sample forecasts of D/P starting with
+January 1966. (I began in 1966 because I needed the
+20 years from 1926 to 1946 to estimate volatility and
+the 20 years from 1946 to 1966 to formulate the first
+predictive regression.) The regressions used an
+Ò
+expanding window
+Ó
+ that always started in January
+1946 and went up to the month before the forecast.
+For comparison purposes, I formed these fore-
+casts based on five models. Model 1 attempted to
+forecast D/P by using only the average D/P (so the
+forecast of D/P on January 1966 was the average
+D/P from January 1946 through December 1965).
+Model 2 attempted to forecast D/P by using a
+rolling regression on bond yields only. Model 3
+used a rolling version of the complete model from
+Equation 9 (a regression on bond yields, stock vol-
+atility, and bond volatility). Model 4 and Model 5
+corresponded to rolling versions of, respectively,
+the linear trend model in Equation 11 and the log-
+linear trend model in Equation 12. 
+Table 2
+ presents
+the results of these out-of-sample forecasts. 
+The volatility-based Model 3 was nearly unbi-
+ased over the 1966
+Ð
+98 period, had the lowest abso-
+lute bias of any of the five models, and had the
+lowest standard deviation of forecast error. The out-
+of-sample rolling regressions thus support the
+superiority of the volatility model, although again,
+the time-trend models are somewhat effective when
+compared with the more naive Models 1 and 2.
+Earlier Data. 
+The best response to many statis-
+tical problems is extensive out-of-sample testing
+Ñ
+that is, tests with data for a previously unexamined
+period. All of the tests so far used monthly data for
+the commonly studied period commencing in 1926.
+For the tests reported in this section, I used earlier
+data. Although perhaps not as reliable as the mod-
+ern data, annual data on the aggregate stock and
+bond markets are available for as early as 1871.15In addition to simply using new data points,
+examining the older information provides an
+advantage that is specific to this study. In 
+Figure 6
+,
+the new data are used to plot the ratio of rolling 20-
+year stock market volatility to rolling 20-year bond
+market volatility over the entire 1891
+Ð
+1998 period.16 
+Table 2.Out-of-Sample Forecasts, January 1966
+Ð
+May 1998ModelAverage Forecasting Error
+
+(Forecasting error)
+1. Using average D/P
+Ð
+0.56%0.97%
+2. Using regression on 
+Y
+0.291.38
+3. Using the full model0.140.50
+4. Using linear time trend0.71 0.66
+5. Using loglinear time trend0.540.62Figure 6.Ratio of Rolling 20-Year Stock Market Volatility to Bond Market 
+Volatility, January 1891
+Ð
+May 1998 
+16
+14
+12
+10
+8
+6
+4
+2
+0
+Ratio
+1891
+1998
+00
+09
+27
+36
+45
+54
+18
+63
+72
+81
+90
+
+Financial Analysts Journal
+102
+©2000,
+
+Association for Investment Management and Research
+The issue is one of causality. Was the drop in
+the level of stock yields versus that of bond yields
+occurring because of changes in their relative expe-
+rienced volatilities (as I hypothesize), or were other
+factors causing this drop through time and thus
+producing spurious regression results? A 50-year
+regression that uses 20-year rolling data makes
+answering this question difficult. So, the next sub-
+sections attempt to explore this critique.
+Performance of the Model versus a Time
+Trend. 
+If the drop in stock yields versus bond
+yields is coincidentally, not causally, related to vol-
+atility, then a time trend might do as well as vola-
+tility in the regression tests. For ease of comparison,
+recall the results for D/P regressed on bond yields
+and stock and bond volatility; Equation 9 was D/P =0.00% +0.35
+Y
+ +0.23 
+(Stocks) 
+Ð
+0.31
+
+(Bonds),
+(
+Ð
+0.05)(28.77)(39.51)(
+Ð
+25.69)and the adjusted 
+R2 was 75.4 percent. The next
+equations report similar regressions in which,
+instead of stock and bond volatility, either a linear
+or loglinear time trend was used:D/P =6.18% +0.25(
+Y
+) 
+Ð
+0.00(Linear trend) (11)
+(51.44)(14.69)(
+Ð
+21.97)(with an adjusted 
+R2 of 43.8 percent) andD/P =27.97% +0.33(
+Y
+) 
+Ð
+0.04(Loglinear trend)(12)
+(32.32)(19.88)(
+Ð
+27.61)(with an adjusted 
+R2 of 55.1 percent).
+The time-trend variables capture much of the
+effect being studied. That is, the relationship
+between D/P and 
+Y
+ goes from weakly negative
+(Equation 7) to strongly positive in the presence of
+the trend variable
+Ñ
+meaning that the expected dif-
+ference between stock and bond yields was declin-
+ing through time and, after accounting for this trend,
+stock and bond yields were positively related. The
+volatility-based regression, however, is clearly the
+strongest: The adjusted 
+R2 is higher, and the coeffi-
+cient on bond yields is larger and more significant. 
+Next, the loglinear time trend is added to
+Equation 9 to see how the volatility variables fare
+in head-on competition:D/P =
+Ð
+10.00% +0.35
+Y
+ +0.28
+
+(Stocks) (9a)
+(
+Ð
+3.98)(28.50)(19.63)
+Ð
+ 0.46
+
+(Bonds) +0.02(Loglinear trend)
+(
+Ð
+11.87)(3.99)(with an adjusted 
+R2 of 76.0 percent).
+Clearly, the volatility variables drive out the
+time trend (analogous results held for the linear
+time trend) to the point at which the trend
+Õ
+s coeffi-
+cient is slightly positive (the wrong sign). Although
+the nearly monotonic fall in bond versus stock vol-
+atility makes it hard to distinguish between causal-
+ity and coincidence for the 1946
+Ð
+98 period, the
+superiority of the volatility-based model over a
+time trend gives comfort. Analogous results favor-
+ing the volatility model were found for E/P.
+Figure 5.Rolling 20-Year Volatilities of Stock and Bond Markets and Ratio of 
+Stock to Bond Volatility, January 1946
+Ð
+May 1998
+35
+30
+25
+20
+15
+10
+5
+0
+Volatility (%)
+46
+98
+51
+56
+66
+71
+76
+81
+61
+86
+91
+96
+Ratio
+9
+8
+7
+6
+5
+4
+3
+2
+1
+0
+Ratio (right axis)
+Stock Volatility (left axis)
+Bond Volatility (left axis)
+
+Stocks versus Bonds
+March/April 2000
+101
+replacing dividends). But these stories might not be
+at all necessary. For example, the story of stock buy-
+backs replacing dividends has been around since at
+least the late 1980s (Bagwell and Shoven 1989), yet
+the average in-sample forecasting error of my model
+for D/P for 1990
+Ð
+1998 is only 
+Ð
+9 bps. Apparently,
+nothing more than Equation 9 is needed to explain
+recent low dividend yields.
+Running a similar regression for E/P, I obtained
+the following result:E/P =
+Ð
+1.39% +0.96
+Y
+ +0.49
+
+(Stocks) 
+Ð
+0.76
+
+(Bonds)(10)(
+Ð
+3.70)(27.33)(29.58)(
+Ð
+21.56)(with an adjusted 
+R2 of 64.8 percent). The model
+explains about as much of the variance for earnings
+yield as dividend yield. As of the end of May 1998,
+the E/P for the S&P 500 was 3.6 percent, corre-
+sponding to a P/E of 27.8. The forecasted E/P from
+the Equation 10
+ 
+regression is 3.4 percent, or a fore-
+casted P/E ratio of 29.1. Unlike the case for D/P, I
+am not (even to a small degree) failing to explain
+the recent high P/Es on stocks; rather, one would
+have to explain the opposite, because according to
+the model, the May 1998 P/E of 27.8 is slightly 
+lower
+than it should be.
+Again, these results are economically signifi-
+cant: The required earnings yield was moving vir-
+tually one-for-one with 10-year T-bond yields and
+increasing 245 bps for each 5 percent rise in stock
+market volatility (all else being equal). Examining
+Figure 2 and Table 1 shows that E/P and 
+Y
+ were
+strongly positively correlated only for the later
+period of the sample (in the earlier period, they
+were actually negatively correlated, and for the
+whole period, they were close to uncorrelated).
+When changing stock- and bond-market volatility
+is accounted for in Equation 10, however, the
+strong positive relationship between E/P and 
+Y
+ is
+extended to the full period.Critique and Further EvidenceThe regression results presented in the previous
+section 
+Þ
+t intuition and the hypothesis as formal-
+ized in Equation 6, but they are certainly open to
+criticism. They are in-sample regression results and
+are thus particularly open to charges of data min-
+ing. They are level-on-level regressions, which ren-
+ders the 
+t
+-statistics invalid and makes the high 
+R2Þ
+gures potentially spurious.13 Worse, they are
+level-on-level regressions that use 20-year rolling
+data and a highly autocorrelated dependent vari-
+able.14 Because the inference is suspect, stock and
+bond volatility may have followed a pattern that
+explained a secular-level change in dividend and
+earnings yield merely by chance.
+To examine this possibility,
+ Figure 5
+ shows the
+rolling 20-year volatilities of the stock and bond
+markets used in the preceding regressions and the
+ratio of stock to bond volatility. Aside from the very
+early and very late years of the period, the ratio of
+rolling 20-year stock volatility to bond volatility
+was dropping nearly monotonically from 1946
+through mid-1998. Thus, a hypothesis that fits the
+regression results and Figure 5 is that stock yields
+and bond yields are positively related but, exoge-
+nous to this relationship, the level of stock yields
+has been declining over time.  
+Figure 4.Regression Residual: Actual D/P minus Fitted D/P, January 1946
+Ð
+May 1998
+3
+2
+1
+0
+Ð
+1
+Ð
+2
+Ð
+3
+Yield (%)
+46
+98
+51
+56
+66
+71
+76
+81
+61
+86
+91
+
+Financial Analysts Journal
+100
+©2000,
+
+Association for Investment Management and Research
+negative relationship is a highly misleading indica-
+tor of how stock and bond yields covary. When I
+adjusted for different levels of volatility, I found
+stock and bond yields to be strongly positively
+related. My interpretation of this regression is that
+stock and bond market yields are strongly posi-
+tively related and the difference between stock and
+bond yields is a direct positive function of the
+weighted difference between stock and bond vola-
+tility. Intuitively, the more volatile stocks have been
+versus bonds, the higher the yield premium (or
+smaller a yield deficit) stocks must offer. In any
+case, when volatility is held constant, stock yields
+do rise and fall with bond yields. 
+Again, these results are economically signifi-
+cant. For example, a 100 bp rise in bond yields
+translates to a 35 bp rise in the required stock
+market dividend yield, whereas a rise in stock mar-
+ket volatility from 15 percent to 20 percent leads to
+a rise of 115 bps in the required stock market divi-
+dend yield.
+The fact that stock and bond yields are univari-
+ately unrelated (or even negatively related) over
+long periods (Table 1) is a result of changes in
+relative stock and bond volatility that obscure the
+strong positive relationship between stock and
+bond yields. The reason stock and bond yields are
+univariately positively related over shorter periods
+(e.g., 1960
+Ð
+1998) is because of the stable relation-
+ship between stock and bond volatility over short
+periods. In other words, a missing-variable prob-
+lem is not much of a problem if the missing variable
+was not changing greatly during the period being
+examined (such as in 1960
+Ð
+1998). The problem is
+potentially destructive, however, if the missing
+variable varied significantly during the period
+(such as in 1927
+Ð
+1998).
+Figure 3
+ presents the actual market D/P and
+the in-sample D/P fitted from the regression in
+Equation 9. 
+Figure 4
+ presents the residual from this
+regression (actual D/P minus fitted D/P). For
+today
+Õ
+s reader, perhaps the most interesting part of
+Figures 3 and 4 is the latest results. The actual D/P
+at the end of May 1998 (the last data point) is 1.5
+percent, a historic low. The forecasted D/P is also
+at a historic low, however
+Ñ
+2.1 percent
+Ñ
+which is
+a forecasting error of only 60 bps. 
+Simply examining the D/P series leads to a
+belief that recent D/Ps are shockingly low. These
+regressions suggest a different interpretation: Given
+the recent low bond yields and a low realized differ-
+ential in volatility between stocks and bonds, I
+would forecast an all-time historically low D/P for
+stocks as of May 1998. The fact that the model does
+not forecast the actual low in dividend yield is not
+statistically anomalous (May
+Õ
+s forecast error is
+about 1 standard deviation below zero) and may be
+a result of the stories other authors have cited to
+explain today
+Õ
+s low D/P (e.g., stock buy-backs
+Figure 3.Actual S&P 500 Dividend Yield and In-Sample Dividend Yield, 
+January 1946
+Ð
+May 1998Note
+: In-sample D/P fitted from the regression in Equation 9.
+8
+7
+6
+5
+4
+3
+2
+1
+0
+Yield (%)
+46
+98
+51
+56
+66
+71
+76
+81
+61
+86
+91
+96
+Actual D/P
+Fitted D/P
+
+ 
+Stocks versus Bonds
+ 
+March/April 2000
+ 
+99
+ 
+The hypothesis is that 
+ 
+d
+ 
+ is positive whereas 
+ 
+e
+ 
+ is
+negative. That is, I assume that the expected (or
+required) return differential between stocks and
+bonds is a positive linear function of a weighted
+difference of their volatilities. 5 
+ Although Equations
+3, 4, and 5 do not represent a formal asset-pricing
+model, they do capture the spirit of allowing
+expected returns to vary through time as a function
+of volatility. Moreover, they yield empirically test-
+able implications. 6 
+Rearranging these equations (and aggregating
+coefficients) produces the following model:  D/P =  0 
+ +  1 Y  +  2 (Stocks) +  3 (Bonds) +  D/P,t 
+.(6) 
+Now, the hypothesis is that 
+
+ 1 
+ is positive, 
+
+ 2 
+ is
+positive, and 
+
+ 3 
+ is negative. This model, and the
+precisely corresponding model for E/P, is tested in
+the following section. 7 
+  
+Other authors (e.g., Merton
+1980; French, Schwert, and Stambaugh 1987) have
+tested the link between expected stock returns and
+volatility by examining the relationship between
+realized stock returns and 
+ 
+ex ante
+ 
+ measures of vol-
+atility. 8 
+ However, as these authors noted, realized
+stock returns are a noisy proxy for expected stock
+returns. I believe that linking Equations 3, 4, and 5
+and focusing on the long term will reveal a clearer
+relationship between stock market volatility and
+expected stock market returns as represented by
+stock market yield (D/P or E/P). 9 
+Preliminary Evidence 
+To investigate Equation 6, I de
+Þ
+ned a generation as
+20 years and used a simple rolling 20-year annual-
+ized monthly return volatility for 
+
+
+ 
+(Stocks) and
+
+
+ 
+(Bonds). 10 
+ The underlying argument is that each
+generation
+Õ
+s perception of the relative risk of stocks
+and bonds is shaped by the volatility it has experi-
+enced. For instance, Campbell and Shiller (1998)
+mentioned (but did not necessarily advocate) the
+argument that Baby Boomers are more risk tolerant
+Ò
+perhaps because they do not remember the extreme
+economic conditions of the 1930s.
+Ó
+ Another example
+is Glassman and Hassett (1999), who argued in 
+ 
+Dow
+36,000
+ 
+ that remembrances of the Great Depression
+have led investors to require too high an equity risk
+premium.
+A 20-year period captures the long-term gen-
+erational phenomenon that I hypothesized. 11 
+ The
+hypothesis is inherently behavioral because it
+states that the long-term, slowly changing relation-
+ship between stock and bond yields is driven by the
+long-term volatility of stocks and bonds experi-
+enced by the bulk of current investors. Although I
+believe a 20-year period is intuitively reasonable,
+given the hypothesis, I am encouraged by the fact
+that the results that follow are robust to alternative
+specifications of long-term volatility (i.e., from 10-
+year to 30-year trailing volatility) and still showed
+up significantly when windows as short as 5 years
+were used.
+The regressions in this section are simple linear
+regressions that do not account for some significant
+econometric problems; for example, the following
+regressions have highly autocorrelated independent
+variables, dependent variables, and residuals. But
+the goal of these regressions is to initially establish
+the existence of an economically significant relation-
+ship. Because statistical inference is problematic, I
+do not focus on (but do report) the 
+ 
+t
+ 
+-statistics. The
+focus is on the economic significance of the esti-
+mated coefficients and 
+ 
+R 2 
+  
+figures. (Subsequent sec-
+tions explore the issue of statistical significance and
+report robustness checks.)
+Because I required 20 years to estimate volatility
+and the monthly data began in 1926, I estimated
+Equation 6 by using monthly data from January 1946
+through May 1998. Before examining this equation
+in full, I first examine the regression of D/P on bond
+yields only and D/P on the rolling volatility of stock
+and bond markets only for the 1946
+Ð
+98 period (the
+first data points are dividend and bond yields in
+January 1946 and stock and bond volatility esti-
+mated from January 1926 through December 1945;
+the 
+ 
+t
+ 
+-statistics are in parentheses under the equa-
+tions. The results are as follows:  
+D/P = 4.10% 
+Ð
+ 0.03
+ 
+Y
+ 
+ (7)
+(40.72)(
+Ð
+2.26) 
+(with an adjusted
+ 
+ 
+ 
+R 2 
+ of 0.7 percent) and 
+D/P = 2.02% + 0.14
+
+
+ 
+(Stocks) 
+Ð
+ 0.07
+
+
+ 
+(Bonds) (8)
+(11.87)(18.96)(
+Ð
+5.24) 
+(with an adjusted
+ 
+ 
+ 
+R 2 
+ of 43.0 percent). 12 
+Equation 7 shows that D/P and 
+ 
+Y
+ 
+ have a mildly
+negative relationship for 1946
+Ð
+1998, similar to what
+I found for the entire 1926
+Ð
+98 period (Table 1).
+Equation 8 shows that a significant amount of the
+variance of D/P (note the adjusted 
+ 
+R 2 
+) is explained
+by stock and bond volatility, with D/P rising with
+stock market volatility and falling with bond mar-
+ket volatility. This relationship is economically sig-
+nificant. An increase in stock market volatility from
+15 percent to 20 percent, all else being equal, raises
+the required dividend yield on stocks by 70 basis
+points (bps). Now, note the estimate for Equation 6: 
+D/P =0.00% +0.35
+ 
+Y
+ 
+ +0.23  
+
+(Stocks) 
+Ð
+0.31
+
+(Bonds)(9)(
+Ð
+0.05)(28.77)(39.51)(
+Ð
+25.69)(with an adjusted 
+R2 of 75.4 percent).
+This result supports the hypothesis. The divi-
+dend yield is mildly negatively related to the bond
+yield when measured alone (Equation 7), but this
+
+ 
+Financial Analysts Journal
+ 
+98
+ 
+©2000,
+
+
+ 
+Association for Investment Management and Research
+ 
+Model for Stock Market Yields 
+Researchers have shown a strong link between
+aggregate dividend and earnings yields and
+expected stock market returns, especially for long
+horizons. When stock market yields are high (low),
+expected future stock returns are high (low). This
+predictability has two possible explanations that
+are at least partly consistent with ef
+Þ
+cient markets
+(there are many 
+ 
+inefÞcient
+ 
+-market explanations).
+One, investors
+Õ
+ taste for risk varies. When investors
+are relatively less risk averse, they demand less in
+the way of an expected return premium to bear
+stock market risk. Fama and French (1988, 1989),
+among others, explored this hypothesis. Two, the
+perceived level of risk can change even if investors
+Õ
+taste for risk is constant. 
+I explore the hypothesis that the perceived
+level of risk can change (although the two hypoth-
+eses are not mutually exclusive). Note that investor
+perception of long-term risk need not be accurate
+for this hypothesis to be true. If investor perception
+of risk is accurate, then the evidence presented here
+may be consistent with an efficient market. If inves-
+tor perception of risk is inaccurate but explains the
+pricing of stocks versus bonds, then the hypothesis
+may be deemed accurate but still pose a dilemma
+for fans of efficient markets.
+Consider a simple model in which the
+required long-term returns on aggregate stocks
+and bonds vary through time. Expected stock
+returns, 
+ 
+E
+ 
+(Stocks), are assumed to be proportional
+to dividend yields, whereas expected bond
+returns, 
+ 
+E
+ 
+(Bonds), are assumed to move one-for-
+one with current bond yields; that is,  
+E
+ 
+(Stocks) t 
+ = 
+ 
+a
+ 
+ + 
+ 
+b
+ 
+(D/P t 
+)   
++  
+ Stocks,t 
+,(3)
+ 
+E
+ 
+(Bonds) t 
+ = 
+ 
+Y   t 
+ + 
+
+ Bonds 
+,(4) 
+(where 
+ 
+a
+ 
+ is the intercept, 
+ 
+b
+ 
+ is the slope, D/P t 
+ is
+dividend yield at time 
+ 
+t
+ 
+, and 
+
+
+ 
+ is an error term). The
+hypothesis is that 
+ 
+b
+ 
+ is positive, so expected stock
+returns vary positively with current stock dividend
+yields, and that the 
+
+
+ 
+ terms are identically and
+independently distributed error terms represent-
+ing the portion of expected returns not captured by
+the model. 4 
+Now, I assume that expected stock and bond
+returns are linked through the long-run stock and
+bond volatility experienced by investors. So,  
+E
+ 
+(Stocks) t 
+ 
+Ð
+ 
+ 
+E
+ 
+(Bonds) t 
+ = 
+ 
+c
+ 
+ + 
+ 
+d
+
+
+ 
+(Stocks) t 
+ + 
+ 
+e
+
+
+ 
+(Bonds) t 
+. 
+(5) 
+Figure 2.S&P 500 Earnings Yield and T-Bond Yield to Maturity, January 1927
+Ð
+May 1998
+Table 1.Monthly Correlation Coef
+Þ
+cients, Various Periods 
+Period
+Correlation of
+D/P and 
+ 
+Y
+ 
+Correlation of
+E/P and 
+ 
+Y
+ 
+Full (January 1927
+Ð
+May 1998)
+Ð
+0.28+0.08
+Early (January 1927
+Ð
+December 1959)
+Ð
+0.23
+Ð
+0.49
+Late (January 1960
+Ð
+May 1998)+0.71+0.69
+18
+16
+14
+12
+10
+8
+6
+4
+2
+0
+Yield (%)
+27
+98
+34
+41
+55
+62
+69
+76
+48
+83
+90
+S&P 500 E/P
+10-Year T-Bond
+
+ 
+Stocks versus Bonds
+ 
+March/April 2000
+ 
+97
+ 
+driven by the experience of each generation of
+investors with each asset class. 
+The article also addresses the observation of
+many authors, economists, and market strategists
+that todayÕs dividend and earnings yields on stocks
+are, by historical standards, shockingly low. I find
+they are not.
+Finally, I report the results of decomposing
+stock yields into a fitted portion (i.e., stock yields
+explained by the model presented here) and a
+residual portion (i.e., stock yields not explained by
+the model).  
+Historical Yields on Stocks and 
+Bonds 
+As far as yields are concerned, 1927Ð1998 tells a tale
+of two periodsÑas 
+ 
+Figure 1
+ 
+ clearly shows. Figure 1
+plots the dividend yield for the S&P 500 and the
+yield to maturity for a 10-year U.S. T-bond from
+January 1927 through May 1998. 2 
+ Prior to the mid-
+1950s, the stock marketÕs yield was consistently
+above the bond marketÕs yield. Anecdotally, inves-
+tors of this era believed that stocks should yield
+more than bonds because stocks are riskier invest-
+ments. Since 1958, the stock yield has been below
+the bond yield, usually substantially below. As of
+the latest data in Figure 1 (May 1998), the stock
+market yield was at an all-time low of 1.5 percent
+whereas the bond market yield was at 5.5 percent,
+not at all a corresponding low point. This observa-
+tion has led many analysts to assert that the role of
+dividends has changed and that dividend yields in
+the late 1990s are not comparable to those of the
+past. Although this assertion may have some merit,
+I will argue that it is largely unnecessary to explain
+todayÕs low D/P. 
+As did dividend yields, the stock marketÕs
+earnings yields systematically exceeded bond
+yields early in the sample period, but as 
+ 
+Figure 2
+ 
+shows, since the late-1960s, earnings yields have
+been comparable to bond yields and clearly
+strongly related (as are dividend yields, albeit from
+a lower level). 3 
+ 
+ 
+Table 1
+ 
+ presents monthly correla-
+tion coefficients for various periods between the
+levels of D/P and 
+ 
+Y
+ 
+ and E/P and 
+ 
+Y
+ 
+. The numbers
+in Table 1 clearly bear out what is seen in Figures 1
+and 2. For the entire period, D/P and 
+ 
+Y
+ 
+ were neg-
+atively correlated because of their reversals; E/P
+was essentially uncorrelated with 
+ 
+Y
+ 
+. For the later
+period, however, stock and bond yields show the
+strong positive relationship many economists and
+market strategists have noted. 
+Thus, we are left with several puzzles:
+¥Why did the stock market strongly outyield
+bonds for so long only to now consistently
+underyield bonds?
+¥Why did stock and bond yields move relatively
+independently, or even perversely, in the over-
+all 1927Ð98 period but move strongly together
+in the later 40 years of this period?
+¥Perhaps most important, why are todayÕs stock
+market yields so low and what does that fact
+mean for the future?
+The rest of this article tries to answer these questions. 
+ 
+Figure 1.S&P 500 Dividend Yield and T-Bond Yield to Maturity, January 1927Ð
+May 1998
+18
+16
+14
+12
+10
+8
+6
+4
+2
+0
+Yield (%)
+27
+98
+34
+41
+55
+62
+69
+76
+48
+83
+90
+S&P 500 D/P
+10-Year T-Bond
+
+ 
+96
+ 
+©2000,
+
+
+ 
+Association for Investment Management and Research
+ 
+Stocks versus Bonds: Explaining the 
+Equity Risk Premium 
+Clifford S. Asness 
+From the 19th century through the mid-20th century, the dividend yield
+(dividends/price) and earnings yield (earnings/price) on stocks generally
+
+substantial margin. Since the mid-20th century, however, the situation has
+radically changed. In addressing this situation, I argue that the difference
+between stock yields and bond yields is driven by the long-run difference
+in volatility between stocks and bonds. This model Þts 1871Ð1998 data
+extremely well. Moreover, it explains the currently low stock market
+dividend and earnings yields. Many authors have found that although both
+stock yields forecast stock returns, they generally have more forecasting
+power for long horizons. I found, using data up to May 1998, that the
+portion of dividend and earnings yields explained by the model presented
+
+ 
+explained by the model has power largely over the short term.
+ 
+  
+he dividend yield on the S&P 500 Index
+has long been examined as a measure of
+stock market value. For instance, the well-
+known Gordon growth model expresses a
+stock price (or a stock marketÕs price) as the dis-
+counted value of a perpetually growing dividend
+stream: 
+(1) 
+where 
+ 
+P
+ 
+=price
+ 
+D
+ 
+=dividends in Year 0
+ 
+R
+ 
+=expected return
+ 
+G
+ 
+=annual growth rate of dividends in perpe-
+tuity
+Now, solving this equation for the expected return
+on stocks produces 
+(2) 
+
+price, D/P, are exactly changes in expected (or
+required) return. Empirically, studies by Fama and
+French (1988, 1989), Campbell and Shiller (1998),
+and others, have found that the dividend yield on
+the market portfolio of stocks has forecasting power
+for aggregate stock market returns and that this
+power increases as forecasting horizon lengthens.
+The market earnings yield or earnings to price,
+E/P (the inverse of the commonly tracked P/E),
+represents how much investors are willing to pay
+for a given dollar of earnings. E/P and D/P are
+linked by the payout ratio, dividends to earnings,
+which represents how much of current earnings are
+being passed directly to shareholders through divi-
+dends. Studies by Sorenson and Arnott (1988), Cole,
+Helwege, and Laster (1996), Lander, Orphanides,
+and Douvogiannis (1997), Campbell and Shiller
+(1998), and others, have found that the market E/P
+has power to forecast the aggregate market return.
+Under certain assumptions, a bondÕs yield-to-
+maturity, 
+ 
+Y,
+ 
+ will equal the nominal holding-period
+return on the bond. 1 
+ Like the equity yields exam-
+ined here, the inverse of the bond yield can be
+
+thought of as a price paid for the bondÕs cash flows
+(coupon payments and repayment of principal).
+When the yield is low (high), the price paid for the
+bondÕs cash flow is high (low). Bernstein (1997),
+Ilmanen (1995), Bogle (1995), and others, have
+shown that bond yield levels (unadjusted or
+adjusted for the level of inflation or short-term inter-
+est rates) have power to predict future bond returns.
+This article examines the relationship be-
+tween stock and bond yields and, by extension, the
+relationship between stock and bond market
+returns (the difference between stock and bond
+expected returns is commonly called the equity
+risk premium). I hypothesize that the relative
+yield stocks must provide versus bonds today is
+ 
+Clifford S. Asness is president and managing principal
+at AQR Capital Management, LLC.TP
+D
+RG
+Ð
+-------------
+-
+.
+=
+R
+D
+P
+---
+-
+G
+.
++
+=

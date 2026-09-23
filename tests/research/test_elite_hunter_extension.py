@@ -106,3 +106,48 @@ def test_creator_extraction_mines_research_system_not_only_strategy_claim() -> N
     ):
         assert field in prompt
     assert "external threshold never becomes an internal gate" in prompt
+
+
+def test_midnight_converts_named_public_leads_instead_of_summarizing() -> None:
+    midnight = " ".join(Path("ops/midnight_codex_prompt.txt").read_text("utf-8").split())
+    for required in (
+        "Alert_Attention_5905",
+        "r/Forven",
+        "data/intelligence/mt5_external_intake.json",
+        "BLOCKED_IMPLEMENTATION",
+        "Do not leave it as a chat summary",
+        "implement independently rather than copying source",
+        "MT5 tick tape",
+    ):
+        assert required in midnight
+
+
+def test_strategy_compendium_is_mandatory_but_never_blindly_copied() -> None:
+    registry = json.loads(Path("docs/research/GPT_HUNTER_SOURCES.json").read_text("utf-8"))
+    source = next(row for row in registry["sources"] if "151 Trading Strategies" in row["name"])
+    assert source["mandatory"] is True
+    assert source["url"] == "https://papers.ssrn.com/sol3/papers.cfm?abstract_id=3247865"
+    assert "summar" in source["source_license"].casefold()
+
+    midnight = Path("ops/midnight_codex_prompt.txt").read_text("utf-8")
+    assert "151 Trading Strategies" in midnight
+    assert "deduplicate" in midnight.casefold()
+    assert "BLOCKED" in midnight
+
+
+def test_public_research_extraction_requires_point_in_time_regime_rules() -> None:
+    prompt = extraction_prompt(
+        {"url": "https://example.test/strategy", "title": "conditional edge"},
+        "public research material",
+        ["PUBLIC_STRATEGY"],
+    )
+    for field in (
+        "regime_hypothesis",
+        "activation_rule",
+        "reduced_rule",
+        "hibernation_rule",
+        "unconditional_control",
+    ):
+        assert field in prompt
+    assert "frozen before OOS" in prompt
+    assert "holdout" in prompt

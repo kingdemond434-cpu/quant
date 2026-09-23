@@ -1,0 +1,22 @@
+[Unit]
+Description=Weekly coverage measurement -- the ONLY producer of coverage.json (L1.50 ratchet input)
+# THE L1.50 STALL'S REAL CAUSE, measured 2026-08-26. docs/research/COVERAGE_RATCHET.json has read
+# last_raised 2026-08-09 for 17 days, and it is NOT the scheduler: check_ratchets runs fine and
+# has nothing to do. `coverage.json` was ABSENT on this box, its ONLY producer is
+# `ops/gates.sh --full`, and that command is MANUAL-ONLY -- no timer, no manifest row, and
+# run_ci's own test step runs pytest WITHOUT --cov. So the ratchet has never had a measurement to
+# raise against since the last time a human typed the command by hand.
+# A ratchet whose input nobody produces is not a slow ratchet, it is an unmeasured one (L1.28a),
+# and "the floor has not risen" was reading as "coverage has not improved" when the truth was
+# "coverage has not been MEASURED".
+# WEEKLY, not per-CI-run: the suite under --cov measured 60-80min, and paying that on every gate
+# run would tax the thing the desk does most to feed a number that moves slowly. Sunday 01:00 UTC
+# is off-peak for the miners (whose productive window is 05:00-09:00) and off-peak for the box.
+[Service]
+Type=oneshot
+WorkingDirectory=/home/quant/quant-platform
+TimeoutStartSec=3h
+# gates.sh exits non-zero when a floor is BREACHED, which is a real finding and must not be
+# filed next to genuine crashes by the death-visibility drop-in.
+SuccessExitStatus=0 1
+ExecStart=/bin/bash -c './ops/gates.sh --full >> data/cro_ai_logs/coverage_ratchet.log 2>&1'

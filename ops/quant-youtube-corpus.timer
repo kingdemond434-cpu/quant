@@ -1,0 +1,9 @@
+[Unit]
+Description=YouTube corpus sweep hourly
+
+[Timer]
+OnCalendar=*:37
+Persistent=true
+
+[Install]
+WantedBy=timers.target

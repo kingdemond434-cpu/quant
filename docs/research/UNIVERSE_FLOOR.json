@@ -1,0 +1,28 @@
+{
+ "high_water_symbols": 251,
+ "high_water_fields": [
+  "_provenance",
+  "asset_class",
+  "bars",
+  "category",
+  "contract_size",
+  "currency_profit",
+  "digits",
+  "first",
+  "last",
+  "median_spread_pts",
+  "min_volume",
+  "point",
+  "spread_price",
+  "spread_pts_at_collection",
+  "swap_long",
+  "swap_short",
+  "symbol",
+  "tick_size",
+  "tick_value",
+  "updated_at",
+  "volume_min",
+  "volume_step"
+ ],
+ "updated": "2026-09-04T12:11:28+00:00"
+}

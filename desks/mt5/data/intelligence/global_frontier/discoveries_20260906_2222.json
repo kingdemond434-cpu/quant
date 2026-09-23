@@ -1,0 +1,12 @@
+[
+ {
+  "source": "global_frontier",
+  "kind": "fetch_error",
+  "title": "[Errno 13] Permission denied: '/home/quant/quant-platform/desks/mt5/data/intelligence/frontier_coverage.json'",
+  "url": "",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-06T22:23:29+00:00",
+  "needs_selector_work": true
+ }
+]

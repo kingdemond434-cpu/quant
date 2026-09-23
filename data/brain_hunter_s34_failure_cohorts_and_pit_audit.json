@@ -1,0 +1,128 @@
+{
+  "session": "brain_hunter_s34",
+  "date": "2026-08-30",
+  "venue_scope": "MT5_FUSION_ONLY",
+  "trials_run": 0,
+  "tradeable_mechanism_cards": 0,
+  "prefetched_corpus": {
+    "path": "data/intelligence/gpt_practitioner_corpus.jsonl",
+    "worldquant_rows_reviewed": 5,
+    "usable_new_artifacts": 0,
+    "video": {
+      "fetched": 0,
+      "locked": 0,
+      "note": "No video route was attempted in this session; the stored Great Goat rows remained transcript-unavailable and were not counted again."
+    }
+  },
+  "source_1_failure_cohort_schema": {
+    "repository": "nutdnuy/brain-sim-lib",
+    "license": "MIT",
+    "commit": "5658174f0a3630253e80cfe0828f2755679f526b",
+    "files_read_as_text": [
+      "src/brain_sim/results.py",
+      "src/brain_sim/batch.py",
+      "src/brain_sim/models.py",
+      "tests/test_results.py",
+      "examples/Tutorial 7 - Results Raw Logs And Recordsets.ipynb",
+      "examples/expected/tutorial_05_fallback_summary.csv",
+      "examples/expected/tutorial_07_recordset_summary.csv"
+    ],
+    "derives_from": "NONE declared for the result-store schema (checked in the named source files)",
+    "measured_schema": {
+      "summary_columns": 17,
+      "transport_statuses": [
+        "skipped_duplicate",
+        "submitted",
+        "complete",
+        "pending_timeout",
+        "submit_error",
+        "poll_error",
+        "exception"
+      ],
+      "check_rollups": [
+        "failed_checks",
+        "warning_checks",
+        "pending_checks"
+      ],
+      "retry_row_fields_before_timestamp": 8,
+      "recordsets": "untyped JSON/raw-text payloads; tutorial requests pnl and sharpe",
+      "raw_logs": "timestamped submit/poll events preserve payload, row_ids, batch_size, location and response/exception context",
+      "alpha_details": "full fetched alpha body retained per alpha_id"
+    },
+    "finding": "The public summary supports coarse failure cohorts by transport status and check name, but it drops each check's numeric value, threshold and full body. Typed research-failure cohorts therefore require joining summary rows to alpha-detail/raw artifacts; summary.csv alone cannot distinguish why a named check failed or measure distance to its bar.",
+    "economic_disposition": "METHOD ONLY: preserve typed failure stage, check value, threshold and complete failed-check payload in any desk-side cohort export. Do not import BRAIN check names or thresholds as gates.",
+    "section_status": "EXHAUSTED on result/recordset schema; author graph and live response diversity remain open"
+  },
+  "source_2_pit_refutation": {
+    "repository": "BB-16/worldquant_101_alphas_code",
+    "license": "MIT",
+    "commit": "320b3738c9807a47c85c457e56cf1ea95e80c106",
+    "files_read_as_text": [
+      "README.md",
+      "docs/short_window_validation.md",
+      "backtest_real_data.py",
+      "alphas/base_ops.py",
+      "generate_replication_report.py",
+      "LICENSE"
+    ],
+    "derives_from": "WorldQuant 101 Formulaic Alphas paper/formula family (declared in README and alphas/101alphas.md); no further implementation lineage declared in the inspected files",
+    "source_claims": {
+      "alpha_cells_executed": 101,
+      "positive_ic": 87,
+      "positive_gross_return": 61,
+      "positive_after_10bps_one_way_cost": 8,
+      "universe": "120 A-shares",
+      "window": "2025-02-05 to 2026-02-06",
+      "neutralization": "industry"
+    },
+    "code_path": {
+      "signal": "factor[t] after same-day signal_mask",
+      "target": "close.pct_change().shift(-1), i.e. close[t] to close[t+1]",
+      "future_filter": "buyable_mask.shift(-1) and shortable_mask.shift(-1), which use next-day open, pause, limit, volume, close and traded-amount state",
+      "position": "positions[t] are filtered by those next-day masks and multiplied by the close-to-close target"
+    },
+    "verdict": "REFUTED AS EVIDENCE",
+    "reason": "The selection at t conditions on t+1 execution state, and the credited close-to-close return includes the overnight move before a next-open execution could occur. The published 8/101 net-positive count is therefore not point-in-time and cannot evidence alpha efficacy.",
+    "mt5_translation_via_translate_to_mt5": [
+      [
+        "industry neutral",
+        "neutralize by MT5 asset class and currency-risk bucket"
+      ]
+    ],
+    "exact_mt5_analogue": {
+      "symbols": "Every contemporaneously tradable Fusion symbol from the terminal registry; no hardcoded boundary",
+      "fields": "decision-time bid/ask or OHLCV, symbol trade/session status known at decision time, contract_size, tick_size, tick_value, point value, long/short swap and commission",
+      "timeframe": "D1 for a literal daily transfer; intraday variants must be separately preregistered",
+      "execution": "If the signal is fixed at D1 close t and execution occurs at next tradable quote/open, PnL begins at that executable bid/ask, not close[t]; no t+1 availability/spread filter may enter selection before it is observed",
+      "costs": "Fusion-symbol-specific spread plus commission, slippage/partial-fill markout and swap across held rollovers; the source's flat 10 bps is not executable-cost evidence",
+      "point_in_time": "Universe membership, group labels, trade/session state and costs must be as known at the decision/execution timestamp; unavailable future state is OFF/UNMEASURED, never backfilled"
+    },
+    "economic_disposition": "KILLED: zero candidate, zero gauntlet enrollment. The implementation remains useful as a negative lookahead test case; the alpha101 operator vocabulary is not retired by this code defect.",
+    "reopen_condition": "A corrected public run that fixes execution timing (next-open-to-close or later), uses point-in-time membership/groups and reports all 101 cells under realistic executable costs.",
+    "section_status": "EXHAUSTED on timing and headline-validation semantics; formula-by-formula semantics were not reopened"
+  },
+  "source_3_boundary": {
+    "repository": "flashlight-byte/WorldQuant-Brain-AlphaSimulator",
+    "public_metadata": {
+      "size_kb": 20,
+      "pushed_at": "2026-02-13T01:38:32Z",
+      "description": "WQ Brain simulator for mining success and potential alpha",
+      "license": null,
+      "tree_blobs": 4
+    },
+    "verdict": "WALLED BY LICENSE FOR SOURCE MINING",
+    "action": "Repository metadata and tree names were recorded, but source blobs were not read because no license grants reuse. Revisit only if the author adds a permissive license.",
+    "section_status": "not exhausted"
+  },
+  "venue_discovery": {
+    "route": "GitHub Topics and repository/author metadata links",
+    "new_venues_found": 0,
+    "residual": "The BRAIN-scoped collector arm remains the persistent acquisition gap; this research-only seat did not modify collector code."
+  },
+  "next_unexhausted_ground": [
+    "Inspect BB-16's batch error outputs and repository history only if a corrected PIT commit appears; otherwise do not re-run its 101 formulas.",
+    "Continue the UNKNOWN-description queue with README/source-first licensing checks, beginning after the now-classified flashlight-byte and BB-16 rows.",
+    "Run the existing Rsquare momentum-conditioner preregistration when shared compute is quiet.",
+    "Mine brain-sim-lib's author graph and tutorial failure examples beyond the now-exhausted result schema."
+  ]
+}

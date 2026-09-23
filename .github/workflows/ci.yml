@@ -18,7 +18,19 @@ concurrency:
 jobs:
   quality:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    # RAISED FROM 20, 2026-09-05, because 20 had started FAILING THE MERGE ON THE CLOCK rather
+    # than on anything about the code. Measured on 806c98fa: the job began at 20:14:35, spent
+    # 3m20s on install and the four law/lint/type steps, entered `pytest --cov` at 20:17:55 and
+    # was killed at 20:34:48 -- exactly twenty minutes -- with `Coverage floors` skipped and the
+    # whole run reported `cancelled`. `mt5-money-path` passed on the same commit in 11m04s, so
+    # the tree was green and the merge was blocked by a budget.
+    #
+    # A cap that fires on duration is indistinguishable downstream from a real failure, which is
+    # the worse half of the problem: it reads as a red gate, so the response is to go looking for
+    # a broken test that does not exist. 45 leaves the suite room to keep growing -- it is meant
+    # to -- while still failing loudly if something genuinely hangs, which is what a timeout is
+    # for. The full-repo suite with branch coverage is simply a bigger job than it was.
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
 
@@ -63,3 +75,136 @@ jobs:
       # Floors only ever rise.
       - name: Coverage floors (ratcheted)
         run: python scripts/check_coverage_floors.py --report coverage.json
+
+  # THE MT5 MONEY PATH HAS ITS OWN GATE. The job above measures `libs`; the code that actually
+  # places, sizes and vetoes orders lives under desks/mt5 and was outside every number CI
+  # reported. This job runs the desk's suite with branch coverage on that path, holds it to its
+  # own ratcheted floor, and then checks the two integration invariants the audit named: every
+  # producer on the desk reaches a decision (capability graph) and ingested rows carry
+  # point-in-time provenance (PIT census, ratcheted). Any of the four failing blocks the merge.
+  mt5-money-path:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install (pinned dev extras)
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      # The gateway cannot be imported off Windows (MetaTrader5); its tests exec functions from
+      # the source. A money-path file absent from the report FAILS the floor unless excused by
+      # name in the script's allowlist; the gateway is in the report at ~0.6% (import prelude
+      # only) and is floored there.
+      - name: MT5 desk suite (branch coverage on the money path)
+        run: >-
+          pytest desks/mt5/tests -q -p no:randomly --timeout=600
+          --cov=desks/mt5/mt5desk --cov=desks/mt5/research --cov-branch
+          --cov-report=term:skip-covered --cov-report=json:mt5cov.json
+
+      # The baselines (desks/mt5/data/coverage_high_water.json, pit_high_water.json) are
+      # COMMITTED and the floor FAILS without them -- a ratchet with no memory is not a ratchet.
+      - name: Money-path coverage floor (ratcheted)
+        run: python scripts/check_mt5_coverage_floor.py --report mt5cov.json
+
+      # A runner that measures HIGHER than the committed baseline rewrites the baseline on its
+      # own disk and then throws that disk away. Surface the rise instead of losing it -- a
+      # warning, never a failure: a higher measurement is good news that needs a commit.
+      - name: Ratchet rose on the runner? (commit the new baseline)
+        run: >-
+          git diff --exit-code desks/mt5/data/coverage_high_water.json
+          desks/mt5/data/pit_high_water.json
+          || echo "::warning::ratchet rose on the runner -- commit the new baseline"
+
+      - name: Capability graph (every producer reaches a decision)
+        run: python scripts/check_reachability.py
+
+      - name: Point-in-time provenance census (ratcheted)
+        run: python scripts/check_pit.py
+
+      # ARCHITECTURAL ONLY ON THE RUNNER, and that is the whole reason the fence has two modes.
+      # A CI checkout has no lake: every artifact-dependent rung answers "absent" for honest
+      # reasons, so --operational here would fail every build forever and everyone would learn
+      # to ignore it (L1.37). What IS answerable from the tree alone -- does the module exist,
+      # does production import it, does a scheduler name it, does anything read its artifact --
+      # is answerable identically on every host, and those are enforced.
+      #
+      # The auditor's own problems stay fatal in both modes: the flat 20% heat floor is the
+      # principal's one fixed policy and MEASURED-without-rent is the mandate's measurement law,
+      # and neither depends on which machine is asking.
+      - name: Blueprint coverage fence (mandate §4, architectural)
+        run: python scripts/check_blueprint_coverage.py
+
+  # THE SEAL IS ITS OWN COMMIT. Once both gates are green on a push to a branch the box pulls,
+  # HEAD is sealed into desks/mt5/data/RELEASE.json as TESTED and that manifest is committed
+  # ALONE ("seal release <sha>"): the commit's diff against its parent is exactly the manifest,
+  # the one shape libs.ops.release.accepts() admits besides the sealed commit itself, so the
+  # box's release identity can name the code that actually ran the suite. `--if-needed` makes
+  # the job a no-op on its own seal commit and on the box's state-sync commits, so it cannot
+  # seal forever. Push only: a PR head is not a release. release_manifest.py is stdlib-only, so
+  # no install step.
+  seal:
+    if: >-
+      github.event_name == 'push' && (
+        github.ref == 'refs/heads/desk-sync-clean' ||
+        github.ref == 'refs/heads/claude/llm-auto-upgrade-verify-gcjac3')
+    needs: [quality, mt5-money-path]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Seal the tested release (no-op when HEAD is already the sealed code)
+        run: python scripts/release_manifest.py --seal --tested --if-needed --by "ci:${{ github.run_id }}"
+
+      # Three tries. A rejected push means the branch moved under us -- normally by the box's
+      # own state-sync or an earlier seal. The tested SHA is re-read from the new tip ONLY when
+      # the tip carries no code the gates did not run (its diff against the sealed SHA is
+      # confined to desk state); a tip with untested code is left for its own CI run to seal,
+      # because `--tested` is an attestation and this job may not make one it did not earn.
+      - name: Commit RELEASE.json alone and push
+        env:
+          BRANCH: ${{ github.ref_name }}
+          RUN_ID: ${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          git config user.name "quant-ci"
+          git config user.email "ci@users.noreply.github.com"
+          if git diff --quiet -- desks/mt5/data/RELEASE.json; then
+            echo "nothing to seal: HEAD is already the sealed code"; exit 0
+          fi
+          tested="$(git rev-parse HEAD)"
+          git add desks/mt5/data/RELEASE.json
+          git commit -q -m "seal release $(git rev-parse --short "$tested")"
+          for attempt in 1 2 3; do
+            if git push origin "HEAD:refs/heads/${BRANCH}"; then exit 0; fi
+            echo "push rejected (attempt ${attempt}): the branch moved -- re-sealing on the new tip"
+            git reset -q --hard HEAD~1
+            git pull -q --ff-only origin "${BRANCH}"
+            if ! git diff --quiet "$tested" HEAD -- . ':(exclude)desks/mt5/data'; then
+              echo "::warning::the new tip carries code these gates did not run; leaving the seal to its own CI run"
+              exit 0
+            fi
+            tested="$(git rev-parse HEAD)"
+            python scripts/release_manifest.py --seal --tested --if-needed --by "ci:${RUN_ID}"
+            if git diff --quiet -- desks/mt5/data/RELEASE.json; then
+              echo "the new tip is already the sealed code"; exit 0
+            fi
+            git add desks/mt5/data/RELEASE.json
+            git commit -q -m "seal release $(git rev-parse --short "$tested")"
+          done
+          echo "::error::could not push the seal after 3 attempts"; exit 1

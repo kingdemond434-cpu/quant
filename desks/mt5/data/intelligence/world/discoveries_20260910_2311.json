@@ -1,0 +1,1670 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Forex Tester Desktop - Backtesting Tool for Trading",
+  "url": "https://www.forextester.com/idevaffiliate/idevaffiliate.php?id=4051",
+  "published": "2026-09-10T23:08:27+00:00",
+  "symbols": [
+   "AUDCAD",
+   "AUDCHF",
+   "AUDHUF",
+   "AUDJPY",
+   "AUDNZD",
+   "AUDSGD",
+   "AUDUSD",
+   "CADCHF",
+   "CADJPY",
+   "CHFDKK",
+   "CHFHUF",
+   "CHFJPY",
+   "CHFNOK",
+   "CHFPLN",
+   "CHFSEK",
+   "CHFSGD",
+   "COTTON",
+   "EURAUD",
+   "EURCAD",
+   "EURCHF",
+   "EURCZK",
+   "EURDKK",
+   "EURGBP",
+   "EURHKD"
+  ],
+  "timeframes": [
+   "1M",
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "breakout",
+   "gap",
+   "momentum",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://www.forextester.com/download"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "7ef7045d31e5342f7a42",
+  "host": "www.forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Data on Overseas Investment | Official Website of Reserve Bank of India",
+  "url": "https://www.rbi.org.in/scripts/Data_Overseas_Investment.aspx",
+  "published": "2026-09-10T23:08:30+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e6828e6bf7de8d654e1f",
+  "host": "www.rbi.org.in",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u9999\u6e2f\u91d1\u878d\u7ba1\u7406\u5c40 - \u6578\u64da\u8207\u7d71\u8a08\u8cc7\u6599",
+  "url": "https://www.hkma.gov.hk/chi/data-publications-and-research/data-and-statistics/",
+  "published": "2026-09-10T23:08:32+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "zh-hk",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "51d5baee9e03c571522e",
+  "host": "www.hkma.gov.hk",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u671f\u8d27\u9891\u9053 - \u4e1c\u65b9\u8d22\u5bcc\u7f51",
+  "url": "https://futures.eastmoney.com/",
+  "published": "2026-09-10T23:08:34+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "flow",
+   "inventory",
+   "momentum",
+   "night_session",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "5b928fa69a4b38d81ded",
+  "host": "futures.eastmoney.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Challenge Validation",
+  "url": "https://www.balticexchange.com/en/data-services/market-information0/dry-services.html",
+  "published": "2026-09-10T23:08:34+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e09843e05dd47723d318",
+  "host": "www.balticexchange.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "NuGet Gallery | Package Downloads for QuantLib",
+  "url": "https://www.nuget.org/stats/packages/QuantLib?groupby=Version",
+  "published": "2026-09-10T23:08:35+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://www.nuget.org/downloads"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "60302bd7bb890d603e60",
+  "host": "www.nuget.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "RBI Bulletin | Official Website of Reserve Bank of India",
+  "url": "https://www.rbi.org.in/scripts/BS_ViewBulletin.aspx/scripts/Scripts/BS_ViewBulletin.aspx?Id=23129",
+  "published": "2026-09-10T23:08:36+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY",
+   "MN",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "auction",
+   "basis",
+   "carry",
+   "flow",
+   "orderflow",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "183d354808afc7a0bfe8",
+  "host": "www.rbi.org.in",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "RBI Bulletin | Official Website of Reserve Bank of India",
+  "url": "https://www.rbi.org.in/scripts/BS_ViewBulletin.aspx?Id=21209",
+  "published": "2026-09-10T23:08:38+00:00",
+  "symbols": [
+   "USDINR"
+  ],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "auction",
+   "basis",
+   "carry",
+   "flow",
+   "momentum",
+   "orderflow",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d472c865768c67c04945",
+  "host": "www.rbi.org.in",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "RBI Bulletin | Official Website of Reserve Bank of India",
+  "url": "https://www.rbi.org.in/Scripts/BS_ViewBulletin.aspx?Id=17703",
+  "published": "2026-09-10T23:08:40+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "auction",
+   "basis",
+   "correlation",
+   "orderflow",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "5e9daa7ba29dea295e4a",
+  "host": "www.rbi.org.in",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "RBI Bulletin | Official Website of Reserve Bank of India",
+  "url": "https://www.rbi.org.in/scripts/BS_ViewBulletin.aspx?Id=22526",
+  "published": "2026-09-10T23:08:43+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "auction",
+   "basis",
+   "carry",
+   "correlation",
+   "flow",
+   "inventory",
+   "orderflow",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a4328729672273bba77e",
+  "host": "www.rbi.org.in",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Publications | Official Website of Reserve Bank of India",
+  "url": "https://www.rbi.org.in/Scripts/PublicationsView.aspx?Id=5705",
+  "published": "2026-09-10T23:08:46+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "basis",
+   "flow",
+   "gap",
+   "inventory",
+   "night_session",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ebabc6a96f3afb4e3319",
+  "host": "www.rbi.org.in",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Publications | Official Website of Reserve Bank of India",
+  "url": "https://www.rbi.org.in/Scripts/PublicationsView.aspx?id=21340",
+  "published": "2026-09-10T23:08:47+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "basis",
+   "correlation",
+   "flow",
+   "inventory",
+   "orderflow",
+   "policy",
+   "positioning",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://fred.stlouisfed.org/series/FEDFUNDS#0",
+   "https://fred.stlouisfed.org/series/VIXCLS#0"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "107d6478b0ab1be316cd",
+  "host": "www.rbi.org.in",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "RBI Bulletin | Official Website of Reserve Bank of India",
+  "url": "https://www.rbi.org.in/Scripts/BS_ViewBulletin.aspx?Id=20940",
+  "published": "2026-09-10T23:08:50+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "auction",
+   "basis",
+   "carry",
+   "correlation",
+   "flow",
+   "inventory",
+   "orderflow",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "4ee5db98f610209017e0",
+  "host": "www.rbi.org.in",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Publications | Official Website of Reserve Bank of India",
+  "url": "https://www.rbi.org.in/SCRIPTs/PublicationsView.aspx?id=13364",
+  "published": "2026-09-10T23:08:53+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "auction",
+   "basis",
+   "carry",
+   "correlation",
+   "flow",
+   "inventory",
+   "orderflow",
+   "policy",
+   "positioning",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d489115ccf089564d588",
+  "host": "www.rbi.org.in",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Publications - Reserve Bank of India",
+  "url": "https://www.rbi.org.in/Scripts/publications.aspx",
+  "published": "2026-09-10T23:08:56+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "inventory",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b13dacaf7624f4ac15e7",
+  "host": "www.rbi.org.in",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Publications | Official Website of Reserve Bank of India",
+  "url": "https://www.rbi.org.in/scripts/PublicationsView.aspx?Id=20994",
+  "published": "2026-09-10T23:08:59+00:00",
+  "symbols": [
+   "USDINR"
+  ],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "basis",
+   "carry",
+   "correlation",
+   "flow",
+   "inventory",
+   "momentum",
+   "orderflow",
+   "policy",
+   "positioning",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d399b6d99c298e009048",
+  "host": "www.rbi.org.in",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Publications | Official Website of Reserve Bank of India",
+  "url": "https://www.rbi.org.in/scripts/PublicationsView.aspx?id=13973",
+  "published": "2026-09-10T23:09:00+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1H",
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "basis",
+   "correlation",
+   "night_session",
+   "orderflow",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "9c1bcd99c2431d8ae6df",
+  "host": "www.rbi.org.in",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "https://www.rbi.org.in/scripts/bs_viewcontent.aspx?Id=2254",
+  "url": "https://www.rbi.org.in/scripts/bs_viewcontent.aspx?Id=2254",
+  "published": "2026-09-10T23:09:02+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "correlation",
+   "flow",
+   "orderflow",
+   "policy",
+   "positioning",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "474f280de4f4f42984ad",
+  "host": "www.rbi.org.in",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Working Papers | Official Website of Reserve Bank of India",
+  "url": "https://www.rbi.org.in/Scripts/OccasionalPublications.aspx?head=Working+Papers",
+  "published": "2026-09-10T23:09:04+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "inventory",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a8c573f92c17c15db285",
+  "host": "www.rbi.org.in",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "https://www.rbi.org.in/Scripts/bs_viewcontent.aspx?Id=3519",
+  "url": "https://www.rbi.org.in/Scripts/bs_viewcontent.aspx?Id=3519",
+  "published": "2026-09-10T23:09:07+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "MN",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "basis",
+   "correlation",
+   "flow",
+   "orderflow",
+   "policy",
+   "positioning",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "7dd7ddb5c80616402fe1",
+  "host": "www.rbi.org.in",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Payment System Indicators| Official Website of Reserve Bank of India",
+  "url": "https://www.rbi.org.in/scripts/PSIUserView.aspx",
+  "published": "2026-09-10T23:09:09+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://rbidocs.rbi.org.in/rdocs/PSI/DOCs/PSIJULY2026721D0CC35F53407AA353D11656267FB4.XLSX",
+   "https://rbidocs.rbi.org.in/rdocs/PSI/DOCs/PSIJUNE202666288B9FA81B4BD59F06E4D67BBE9F5B.XLSX",
+   "https://rbidocs.rbi.org.in/rdocs/PSI/DOCs/PSIMAY2026CFAF12801D014362A2B1C5DED275377C.XLSX",
+   "https://rbidocs.rbi.org.in/rdocs/PSI/DOCs/PSIAPRIL20264698663F001B48E79616722DDB88CF38.XLSX",
+   "https://rbidocs.rbi.org.in/rdocs/PSI/DOCs/PSIMARCH202607B1CD7C13AA4A41A7A0B1443D1DFBE2.XLSX",
+   "https://rbidocs.rbi.org.in/rdocs/PSI/DOCs/PSIFEBRUARY2026333326F3AFFA4F31A222A7A242B54F42.XLSX",
+   "https://rbidocs.rbi.org.in/rdocs/PSI/DOCs/PSIJANUARY20269E6B9450001843A8B45C397C8C90F7DD.XLSX",
+   "https://rbidocs.rbi.org.in/rdocs/PSI/DOCs/PSIDECEMBER2025773DD2CE9DBA42A1B3A1473C9E67A638.XLSX",
+   "https://rbidocs.rbi.org.in/rdocs/PSI/DOCs/PSINOVEMBER2025F3C36563A3A9490C8A780F848C96E32E.XLSX",
+   "https://rbidocs.rbi.org.in/rdocs/PSI/DOCs/PSIOCTOBER20255937C762A8E04D62AB943A69170959ED.XLSX",
+   "https://rbidocs.rbi.org.in/rdocs/PSI/DOCs/PSISEPTEMBER20258A442C5802534790AFD24217FAA566F8.XLSX",
+   "https://rbidocs.rbi.org.in/rdocs/PSI/DOCs/PSIAUGUST20253E4CD7C42FAE4896B92ABF9DD425B33D.XLSX"
+  ],
+  "n_endpoints": 12,
+  "vault_sha": "7231a0995fa62cc5c43c",
+  "host": "www.rbi.org.in",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Tales from a Trading Desk | Software Engineering Noise",
+  "url": "http://mdavey.wordpress.com",
+  "published": "2026-09-10T23:09:11+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "positioning"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "54d2459807f14159be98",
+  "host": "mdavey.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Quantitative Finance Meta Stack Exchange",
+  "url": "https://quant.meta.stackexchange.com",
+  "published": "2026-09-10T23:09:11+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "11f33b25c917a9fa44cb",
+  "host": "quant.meta.stackexchange.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "IB UK Spot Gold and Spot Silver | Interactive Brokers U.K. Limited",
+  "url": "https://www.interactivebrokers.co.uk/en/trading/products-metals.php",
+  "published": "2026-09-10T23:09:17+00:00",
+  "symbols": [
+   "XAGUSD",
+   "XAUUSD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "carry",
+   "night_session",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.interactivebrokers.co.uk/en/trading/download-tws.php"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "4b66cf11bc3f58eb2160",
+  "host": "www.interactivebrokers.co.uk",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Leading Trading Strategies",
+  "url": "https://systematic.autotradenow.com/selector",
+  "published": "2026-09-10T23:09:23+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "7f1dd908882ad1879681",
+  "host": "systematic.autotradenow.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Supertrend, flipped to death: the most-taught indicator on the internet | The Refutation",
+  "url": "https://therefutation.com/essays/does-supertrend-work/",
+  "published": "2026-09-10T23:09:24+00:00",
+  "symbols": [],
+  "timeframes": [
+   "4H"
+  ],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ad739c00ddd8cda97064",
+  "host": "therefutation.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Does Your Backtest Survive the Adverse Same-Bar Fill? A 48.8 Million-Pair Stress Test. \u2014 Rulyfi",
+  "url": "https://rulyfi.com/blog/adverse-same-bar-fill",
+  "published": "2026-09-10T23:09:24+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "31be686ef673c8ad2418",
+  "host": "rulyfi.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "The NAAIM-AAII Equities Allocation Spread: Another Smart Money Relative Sentiment Indicator | Portfolio Optimizer",
+  "url": "https://portfoliooptimizer.io/blog/the-naaim-aaii-equities-allocation-spread-another-smart-money-relative-sentiment-indicator/",
+  "published": "2026-09-10T23:09:24+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "momentum",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "4403bc12a1d85108c3c4",
+  "host": "portfoliooptimizer.io",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Part (3/3) - Refiner Trade: A Second Signal and the Case for Trading Less",
+  "url": "https://beyondpassive.substack.com/p/part-33-refiner-trade-a-second-signal",
+  "published": "2026-09-10T23:09:25+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "carry",
+   "correlation",
+   "gap",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "af9faa9c403978fc3072",
+  "host": "beyondpassive.substack.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Research Review | 24 July 2026 | Strategy Analytics | The Capital Spectator",
+  "url": "https://www.capitalspectator.com/research-review-24-july-2026-strategy-analytics/",
+  "published": "2026-09-10T23:09:26+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "carry",
+   "mean_reversion",
+   "momentum",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "1d6fe944fd14b0ba3b2d",
+  "host": "www.capitalspectator.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "What Should You Change First in a Crypto Backtest? 99.75 Million Tests \u2014 Rulyfi",
+  "url": "https://rulyfi.com/blog/which-backtest-knob-changes-what",
+  "published": "2026-09-10T23:09:27+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "mean_reversion",
+   "momentum",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "144ed78274deb88f1242",
+  "host": "rulyfi.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algorithmic Trading, HFT, and Market Stability &#8211; Relative Value Arbitrage",
+  "url": "https://blog.harbourfronts.com/2026/07/23/algorithmic-trading-hft-and-market-stability/",
+  "published": "2026-09-10T23:09:29+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage",
+   "correlation",
+   "orderflow",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b29090c3b7556f52f55a",
+  "host": "blog.harbourfronts.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "MACD: The Indicator Is a Passenger | The Refutation",
+  "url": "https://therefutation.com/essays/macd-the-indicator-is-a-passenger/",
+  "published": "2026-09-10T23:09:29+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "gap",
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "414de66f2bed9f486371",
+  "host": "therefutation.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "The Random-Max Percentile: Grading Every Backtest Against Its Search's Random Maximum \u2014 Rulyfi",
+  "url": "https://rulyfi.com/blog/random-max-percentile",
+  "published": "2026-09-10T23:09:29+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry",
+   "correlation",
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c1d6f7d69678732a65ff",
+  "host": "rulyfi.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "How Many Backtests Is Too Many? We Ran the Same Search Twice to Find Out \u2014 Rulyfi",
+  "url": "https://rulyfi.com/blog/how-many-backtests-is-too-many",
+  "published": "2026-09-10T23:09:33+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1H",
+   "4H"
+  ],
+  "patterns": [
+   "carry",
+   "flow",
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3d80e79ef445001d9c94",
+  "host": "rulyfi.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "We Ran 100 Million Bitcoin Backtests. Only 3,130 Beat the Luck Bar. \u2014 Rulyfi",
+  "url": "https://rulyfi.com/blog/100-million-backtests-deflated-sharpe",
+  "published": "2026-09-10T23:09:36+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1H",
+   "1M",
+   "5M"
+  ],
+  "patterns": [
+   "carry",
+   "correlation",
+   "flow",
+   "gap",
+   "momentum",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "239539e1f2a929f76c92",
+  "host": "rulyfi.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Lookahead Bias in Fundamental Backtests: 66 Days, Measured",
+  "url": "https://tradevodata.com/blog/lookahead-bias-fundamental-backtests",
+  "published": "2026-09-10T23:09:37+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "gap"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "91d84c038df0370a5c14",
+  "host": "tradevodata.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Quantitative Value - by Concretum Research",
+  "url": "https://concretumgroup.substack.com/p/quantitative-value",
+  "published": "2026-09-10T23:09:37+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "9be467ab70c53880257c",
+  "host": "concretumgroup.substack.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "The Market Impact of Retail Options Trading &#8211; Relative Value Arbitrage",
+  "url": "https://blog.harbourfronts.com/2026/07/05/the-market-impact-of-retail-options-trading/",
+  "published": "2026-09-10T23:09:39+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "basis",
+   "correlation",
+   "orderflow",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e151c80a0751a1de67ca",
+  "host": "blog.harbourfronts.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Estimating the Capacity of a Trading Strategy",
+  "url": "https://concretumgroup.substack.com/p/estimating-the-capacity-of-a-trading",
+  "published": "2026-09-10T23:09:40+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1M",
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "mean_reversion",
+   "orderflow",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "079d47aa04e05a4110d9",
+  "host": "concretumgroup.substack.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Value-at-Risk Estimation: Improved Historical and Simulation-based Estimates with the Harrell-Davis Quantile Estimator | Portfolio Optimizer",
+  "url": "https://portfoliooptimizer.io/blog/value-at-risk-estimation-improved-historical-and-simulation-based-estimates-with-the-harrell-davis-quantile-estimator/",
+  "published": "2026-09-10T23:09:40+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "positioning"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3e8eb7712b408e6aadd1",
+  "host": "portfoliooptimizer.io",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Automating a Volatility Strategy With Python and Interactive Brokers",
+  "url": "https://concretumgroup.substack.com/p/automating-a-volatility-strategy",
+  "published": "2026-09-10T23:09:43+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "auction",
+   "basis",
+   "correlation",
+   "gap",
+   "inventory",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "616e938b6b8ea8280bca",
+  "host": "concretumgroup.substack.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "G\u00f6del's Market: Interviewing the Quants: An Inside Look With &#8220;Sanz Prophet&#8221;",
+  "url": "http://godelsmarket.blogspot.com/2015/01/interviewing-quants-inside-look-with.html",
+  "published": "2026-09-10T23:09:43+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "correlation",
+   "inventory",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "1395b97a59fabdf9c356",
+  "host": "godelsmarket.blogspot.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Cumulative IBS Indicator | Adaptive Trader",
+  "url": "http://adaptivetrader.wordpress.com/2012/12/28/cumulative-ibs-indicator/",
+  "published": "2026-09-10T23:09:50+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "229bd83869927b767acf",
+  "host": "adaptivetrader.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "The Non-Linear Costs of Trading - by Concretum Research",
+  "url": "https://concretumgroup.substack.com/p/the-non-linear-costs-of-trading",
+  "published": "2026-09-10T23:09:51+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1M",
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "carry",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "277c50a067bb4be5c3df",
+  "host": "concretumgroup.substack.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "AI Overfitting in Trading Systems | Wisdom Trading",
+  "url": "https://wisdomtrading.com/insights/ai-overfitting-trading-systems/",
+  "published": "2026-09-10T23:09:52+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "gap",
+   "momentum",
+   "orderflow",
+   "positioning"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "44bc154e9721a1d0c371",
+  "host": "wisdomtrading.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "How to Build a Reliable Algo Trading Infrastructure",
+  "url": "https://concretumgroup.substack.com/p/operational-pitfalls-of-algo-trading",
+  "published": "2026-09-10T23:09:53+00:00",
+  "symbols": [],
+  "timeframes": [
+   "INTRADAY"
+  ],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f469f3b8535de332aae4",
+  "host": "concretumgroup.substack.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Most of the insider trading alpha is gone by the time you see the filing: poof!",
+  "url": "https://tommijohnsen.substack.com/p/most-of-the-insider-trading-alpha",
+  "published": "2026-09-10T23:09:53+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1M",
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "carry",
+   "inventory"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "98ed3a4cf1f39699b7f8",
+  "host": "tommijohnsen.substack.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Pyramid Your Trading Profits Using the Gator - Tradinformed",
+  "url": "https://www.tradinformed.com/pyramid-trading-profits-using-gator-oscillator/",
+  "published": "2026-09-10T23:09:54+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "positioning"
+  ],
+  "confidence": 0.35,
+  "lang": "en-GB",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "330da03a8b9942304676",
+  "host": "www.tradinformed.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Dual momentum: lookback parameter | RRSP Strategy",
+  "url": "https://rrspstrategy.wordpress.com/2015/02/13/dual-momentum-lookback-parameter/",
+  "published": "2026-09-10T23:09:56+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "correlation",
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "54310fe5c5a802805700",
+  "host": "rrspstrategy.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Dual momentum: real portfolios and current status | RRSP Strategy",
+  "url": "https://rrspstrategy.wordpress.com/2015/02/05/dual-momentum-real-portfolios-and-current-status/",
+  "published": "2026-09-10T23:09:59+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "99bc5db05846e283aa25",
+  "host": "rrspstrategy.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Portfolio Analysis in R: Part II | Analyzing A 60/40 Strategy | The Capital Spectator",
+  "url": "http://www.capitalspectator.com/portfolio-analysis-in-r-part-ii-analyzing-a-6040-strategy/",
+  "published": "2026-09-10T23:10:01+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "correlation",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ffbb59dcc43a57041917",
+  "host": "www.capitalspectator.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Dual momentum with Value and Momentum factor portfolios | RRSP Strategy",
+  "url": "https://rrspstrategy.wordpress.com/2015/01/29/dual-momentum-with-value-and-momentum-factor-portfolios/",
+  "published": "2026-09-10T23:10:08+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "07273c0d22a2daffefb9",
+  "host": "rrspstrategy.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "A Revelation For Small-Cap Investing Strategies | The Capital Spectator",
+  "url": "http://www.capitalspectator.com/a-revelation-for-small-cap-investing-strategies/",
+  "published": "2026-09-10T23:10:10+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "inventory",
+   "orderflow"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c2a4c36c77151a0d9535",
+  "host": "www.capitalspectator.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "A Momentum-Based Trading Signal With Strategic Value | The Capital Spectator",
+  "url": "http://www.capitalspectator.com/a-momentum-based-trading-signal-with-strategic-value/",
+  "published": "2026-09-10T23:10:14+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d58303991b33f15ebb86",
+  "host": "www.capitalspectator.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Dual momentum without the benefit of the bond bull market | RRSP Strategy",
+  "url": "https://rrspstrategy.wordpress.com/2015/01/23/dual-momentum-without-the-benefit-of-the-bond-bull-market/",
+  "published": "2026-09-10T23:10:14+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "correlation",
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a70c68d3c6e94830b768",
+  "host": "rrspstrategy.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Schwab Commission Free ETF Rotation System Backtest $SPY, $TLO, $PCY, $RWO, $SHY - Theta Trend",
+  "url": "http://www.thetatrend.com/schwab-commission-free-etf-rotation-system-backtest-spy-tlo-pcy-rwo-shy/",
+  "published": "2026-09-10T23:10:17+00:00",
+  "symbols": [
+   "USDCHF"
+  ],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "basis",
+   "momentum",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.thetatrend.com/wp-content/plugins/download-monitor/assets/css/frontend.css?ver=7.0.4"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "224274b6aa4218bfb839",
+  "host": "www.thetatrend.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Systematic Trading Platform",
+  "url": "https://www.subscribepage.com/SSTradingPlatform",
+  "published": "2026-09-10T23:10:19+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "positioning"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c0585a04d60714d5f4a5",
+  "host": "www.subscribepage.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Consistent Profits Podcast | iHeart",
+  "url": "https://www.iheart.com/podcast/269-profit-by-design-trading-p-109844703/",
+  "published": "2026-09-10T23:10:55+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "breakout",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "93151c2cc7f48e9b57da",
+  "host": "www.iheart.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Designing State-of-the-Art Logging in Python",
+  "url": "https://www.research.hangukquant.com/p/designing-state-of-the-art-logging",
+  "published": "2026-09-10T23:10:56+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c41d10e6197e0bba13a9",
+  "host": "www.research.hangukquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Overfitting and Parameter Selection in Trading Strategies &#8211; Relative Value Arbitrage",
+  "url": "https://blog.harbourfronts.com/2026/05/04/overfitting-and-parameter-selection-in-trading-strategies/",
+  "published": "2026-09-10T23:10:59+00:00",
+  "symbols": [],
+  "timeframes": [
+   "INTRADAY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "correlation",
+   "night_session",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "31b5befe4d958ebcb998",
+  "host": "blog.harbourfronts.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Track Your Strategy for Free | TradeLock",
+  "url": "https://tradelock.net/",
+  "published": "2026-09-10T23:11:00+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ccb336bb4db2e0048fba",
+  "host": "tradelock.net",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Automated Trading System &#8211; Internal Order Matching | Systematic Edge",
+  "url": "https://systematicedge.wordpress.com/2015/02/22/automated-trading-system-internal-order-matching/",
+  "published": "2026-09-10T23:11:02+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "mean_reversion",
+   "momentum",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "874e7ebbc5193a182765",
+  "host": "systematicedge.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Percentile Channel Strategy Replication | CSSA",
+  "url": "https://cssanalytics.wordpress.com/2015/02/16/percentile-channel-strategy-replication/",
+  "published": "2026-09-10T23:11:05+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://cssanalytics.files.wordpress.com/2012/10/minimum-correlation-mincorr-spreadsheet.xlsx"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "cf6520634fea42714a17",
+  "host": "cssanalytics.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Portfolio Analysis in R: Part III | Adding A Global Strategy | The Capital Spectator",
+  "url": "http://www.capitalspectator.com/portfolio-analysis-in-r-part-iii-adding-a-global-strategy/",
+  "published": "2026-09-10T23:11:07+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "basis"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "71ed381584fcbac793f1",
+  "host": "www.capitalspectator.com",
+  "claims": [],
+  "n_claims": 0
+ }
+]

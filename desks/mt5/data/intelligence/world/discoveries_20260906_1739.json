@@ -1,0 +1,2546 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Algorithmic Trading Platform - QuantConnect.com",
+  "url": "http://quantconnect.com/datasets",
+  "published": "2026-09-06T17:35:17+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "http://quantconnect.com/datasets"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "894af463da4306900763",
+  "host": "quantconnect.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Algorithmic Trading Platform - QuantConnect.com",
+  "url": "http://quantconnect.com/datasets/",
+  "published": "2026-09-06T17:35:19+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "http://quantconnect.com/datasets"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "041473feb737539519a4",
+  "host": "quantconnect.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Forex Tester Online",
+  "url": "https://app.forextester.com/?lang=en&run=basic&user_group=1",
+  "published": "2026-09-06T17:35:19+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "262b4e1cde247a3c3d41",
+  "host": "app.forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Forex Tester Online",
+  "url": "https://app.forextester.com",
+  "published": "2026-09-06T17:35:21+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "262b4e1cde247a3c3d41",
+  "host": "app.forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u671f\u8d27\u9891\u9053 - \u4e1c\u65b9\u8d22\u5bcc\u7f51",
+  "url": "https://futures.eastmoney.com/",
+  "published": "2026-09-06T17:35:23+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "flow",
+   "inventory",
+   "momentum",
+   "night_session",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "259447c52232e8758b9c",
+  "host": "futures.eastmoney.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Challenge Validation",
+  "url": "https://www.balticexchange.com/en/data-services/market-information0/dry-services.html",
+  "published": "2026-09-06T17:35:23+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f5c9a4a0d2ce8afa2975",
+  "host": "www.balticexchange.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Modern Pairs Trading: What Still Works and Why &#8211; Relative Value Arbitrage",
+  "url": "https://blog.harbourfronts.com/2026/01/26/modern-pairs-trading-what-still-works-and-why/",
+  "published": "2026-09-06T17:35:26+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage",
+   "correlation",
+   "orderflow",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "2efa42c55880273877a6",
+  "host": "blog.harbourfronts.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Behavioral Biases and Retail Options Trading &#8211; Relative Value Arbitrage",
+  "url": "https://blog.harbourfronts.com/2025/07/20/behavioral-biases-and-retail-options-trading/",
+  "published": "2026-09-06T17:35:28+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage",
+   "auction",
+   "correlation",
+   "orderflow",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "2cf78d2acc4ee0513898",
+  "host": "blog.harbourfronts.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Profitability of Dispersion Trading in Liquid and Less Liquid Environments &#8211; Relative Value Arbitrage",
+  "url": "https://blog.harbourfronts.com/2025/04/28/profitability-of-dispersion-trading-in-liquid-and-less-liquid-environments/",
+  "published": "2026-09-06T17:35:30+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "correlation",
+   "orderflow",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "aec9d2a7ff1c19fa6983",
+  "host": "blog.harbourfronts.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Capturing Volatility Risk Premium Using Butterfly Option Strategies &#8211; Relative Value Arbitrage",
+  "url": "https://blog.harbourfronts.com/2025/03/11/capturing-volatility-risk-premium-using-butterfly-option-strategies/",
+  "published": "2026-09-06T17:35:32+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage",
+   "correlation",
+   "inventory",
+   "mean_reversion",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "72f2e729cdb31f7ebd75",
+  "host": "blog.harbourfronts.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Exploring Credit Risk: Its Influence on Equity Strategies and Risk Management &#8211; Relative Value Arbitrage",
+  "url": "https://blog.harbourfronts.com/2025/02/16/exploring-credit-risk-its-influence-on-equity-strategies-and-risk-management/",
+  "published": "2026-09-06T17:35:34+00:00",
+  "symbols": [],
+  "timeframes": [
+   "INTRADAY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "correlation",
+   "momentum",
+   "night_session",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f2789da2f00f19f074ac",
+  "host": "blog.harbourfronts.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "options trading strategies &#8211; Page 3 &#8211; Relative Value Arbitrage",
+  "url": "https://blog.harbourfronts.com/category/options-trading-strategies/page/3/",
+  "published": "2026-09-06T17:35:36+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "basis",
+   "correlation",
+   "mean_reversion",
+   "momentum",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://helda.helsinki.fi/server/api/core/bitstreams/0e2e2bc3-dd56-4117-a70e-6df43600a326/content",
+   "https://www-2.rotman.utoronto.ca/~hull/downloadablepublications/Optimal%20Delta%20Hedging.pdf"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "20c9dfadf956b8657e24",
+  "host": "blog.harbourfronts.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "October was Favorable for Short Volatility Strategies &#8211; Relative Value Arbitrage",
+  "url": "https://blog.harbourfronts.com/2016/11/30/october-was-favorable-for-short-volatility-strategies/",
+  "published": "2026-09-06T17:35:38+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage",
+   "basis",
+   "correlation",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "986d7cdc76ddcfa43da0",
+  "host": "blog.harbourfronts.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "4 Volatility Indicators for Options Trading With ThinkOrSwim ThinkScript Code - Theta Trend",
+  "url": "https://www.thetatrend.com/4-volatility-indicators-for-options-trading-with-thinkorswim-thinkscript-code/",
+  "published": "2026-09-06T17:35:38+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.thetatrend.com/wp-content/plugins/download-monitor/assets/css/frontend.css?ver=7.0.4"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "e37693e5ee68b32c4a11",
+  "host": "www.thetatrend.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "How To Improve Your Trading With Meditation and Incantations - Theta Trend",
+  "url": "https://www.thetatrend.com/how-to-improve-your-trading-using-meditation-incantations/",
+  "published": "2026-09-06T17:35:41+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "basis",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.thetatrend.com/wp-content/plugins/download-monitor/assets/css/frontend.css?ver=7.0.4"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "833110ced3cce4ca98da",
+  "host": "www.thetatrend.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Directional Trading Archives - Page 2 of 14 - Theta Trend",
+  "url": "https://www.thetatrend.com/category/directional-trading/page/2/",
+  "published": "2026-09-06T17:35:42+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.thetatrend.com/wp-content/plugins/download-monitor/assets/css/frontend.css?ver=7.0.4"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "41c770f54b9b1f22bb29",
+  "host": "www.thetatrend.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Donchian Channel Breakout Trade Alert in $DBE and a General Update",
+  "url": "https://www.thetatrend.com/donchian-channel-breakout-trade-alert-general-update/",
+  "published": "2026-09-06T17:35:44+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "breakout",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.thetatrend.com/wp-content/plugins/download-monitor/assets/css/frontend.css?ver=7.0.4"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "0b01c574f8d3bdfc66c4",
+  "host": "www.thetatrend.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Options Trend Following With Donchian Channels - Theta Breakout Video",
+  "url": "https://www.thetatrend.com/options-trend-following-donchian-channels-theta-breakout-video/",
+  "published": "2026-09-06T17:35:46+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "breakout",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.thetatrend.com/wp-content/plugins/download-monitor/assets/css/frontend.css?ver=7.0.4"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "24002a1f8cd1a590d85e",
+  "host": "www.thetatrend.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Backtest Results from Short Options Trend Following and New Questions",
+  "url": "https://www.thetatrend.com/backtest-results-short-options-trend-following-new-questions/",
+  "published": "2026-09-06T17:35:49+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "breakout",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.thetatrend.com/wp-content/plugins/download-monitor/assets/css/frontend.css?ver=7.0.4"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "bc5a4c51fccac8597620",
+  "host": "www.thetatrend.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Donchian Channel System Archives - Page 2 of 3 - Theta Trend",
+  "url": "https://www.thetatrend.com/category/directional-trading/donchian-channel-system/page/2/",
+  "published": "2026-09-06T17:35:50+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "breakout",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.thetatrend.com/wp-content/plugins/download-monitor/assets/css/frontend.css?ver=7.0.4"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "dd5bc25aa9b1e94fd006",
+  "host": "www.thetatrend.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Investing Archives - Page 2 of 3 - Theta Trend",
+  "url": "https://www.thetatrend.com/category/directional-trading/investing/page/2/",
+  "published": "2026-09-06T17:35:53+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "basis",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.thetatrend.com/wp-content/plugins/download-monitor/assets/css/frontend.css?ver=7.0.4"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "1425b673d18c6b63a64c",
+  "host": "www.thetatrend.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Monthly Rotation System Archives - Page 2 of 3 - Theta Trend",
+  "url": "https://www.thetatrend.com/category/directional-trading/monthly-rotation-system/page/2/",
+  "published": "2026-09-06T17:35:54+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "breakout",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.thetatrend.com/wp-content/plugins/download-monitor/assets/css/frontend.css?ver=7.0.4"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "d103d38485664fcf8bcc",
+  "host": "www.thetatrend.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Z-Score - An Indicator To Define Overbought and Oversold (Thinkscript) - Theta Trend",
+  "url": "https://www.thetatrend.com/z-score-an-indicator-to-define-overbought-and-oversold-thinkscript/",
+  "published": "2026-09-06T17:35:57+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "basis",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.thetatrend.com/wp-content/plugins/download-monitor/assets/css/frontend.css?ver=7.0.4"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "c64bb77ee257b2f59ef9",
+  "host": "www.thetatrend.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Naked Options Archives - Page 2 of 3 - Theta Trend",
+  "url": "https://www.thetatrend.com/category/directional-trading/naked-options/page/2/",
+  "published": "2026-09-06T17:35:58+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "breakout",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.thetatrend.com/wp-content/plugins/download-monitor/assets/css/frontend.css?ver=7.0.4"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "a2f85ea14e4e718820d9",
+  "host": "www.thetatrend.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Naked Put Selling Archives - Page 2 of 2 - Theta Trend",
+  "url": "https://www.thetatrend.com/category/directional-trading/naked-put-selling/page/2/",
+  "published": "2026-09-06T17:36:00+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.thetatrend.com/wp-content/plugins/download-monitor/assets/css/frontend.css?ver=7.0.4"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "1d0e747638deca3f2ff6",
+  "host": "www.thetatrend.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Weekly Options Archives - Page 2 of 2 - Theta Trend",
+  "url": "https://www.thetatrend.com/category/directional-trading/weekly-options/page/2/",
+  "published": "2026-09-06T17:36:02+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.thetatrend.com/wp-content/plugins/download-monitor/assets/css/frontend.css?ver=7.0.4"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "2ea9101e02f3b8687f3c",
+  "host": "www.thetatrend.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Donchian Channel Breakout Trend Following Trading System - Theta Trend",
+  "url": "https://www.thetatrend.com/donchian-channel-breakout-trend-following-trading-system/",
+  "published": "2026-09-06T17:36:04+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "breakout",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.thetatrend.com/wp-content/plugins/download-monitor/assets/css/frontend.css?ver=7.0.4"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "3b1f10c8aaaef003d4f0",
+  "host": "www.thetatrend.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Trade Diversified Trend Following Trading Systems with a Small Account",
+  "url": "http://www.thetatrend.com/building-diversified-trend-following-trading-system/",
+  "published": "2026-09-06T17:36:06+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "basis",
+   "breakout",
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.thetatrend.com/wp-content/plugins/download-monitor/assets/css/frontend.css?ver=7.0.4"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "23928c6c8b67b7d7f624",
+  "host": "www.thetatrend.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Waiting for a &quot;Real&quot; Donchian Channel Breakout",
+  "url": "http://www.thetatrend.com/waiting-for-a-real-donchian-channel-breakout/",
+  "published": "2026-09-06T17:36:08+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "breakout",
+   "carry",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.thetatrend.com/wp-content/plugins/download-monitor/assets/css/frontend.css?ver=7.0.4"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "4efa45493236b2c8dc89",
+  "host": "www.thetatrend.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Trading System Mentor Course - The Chartist",
+  "url": "https://www.thechartist.com.au/trading-system-mentor-course",
+  "published": "2026-09-06T17:36:09+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "mean_reversion",
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b2ae184e9c0eecd685c5",
+  "host": "www.thechartist.com.au",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Paper Trading for Systematic Strategies | TradeLock",
+  "url": "https://tradelock.net/blog/paper-trading-platform-systematic-strategies",
+  "published": "2026-09-06T17:36:13+00:00",
+  "symbols": [],
+  "timeframes": [
+   "INTRADAY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "gap",
+   "momentum",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "bc3e27148345edf9b7f6",
+  "host": "tradelock.net",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Before Collective2 or Darwinex: How to Build a Trading Track Record You Actually Own | TradeLock",
+  "url": "https://tradelock.net/blog/before-collective2-darwinex-build-track-record",
+  "published": "2026-09-06T17:36:15+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "gap"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "407c2991b73c698311a9",
+  "host": "tradelock.net",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "https://systematicedge.wordpress.com/2015/02/22/automated-trading-system-internal-order-matching/?share=twitter",
+  "url": "https://systematicedge.wordpress.com/2015/02/22/automated-trading-system-internal-order-matching/?share=twitter",
+  "published": "2026-09-06T17:36:16+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://systematicedge.wordpress.com/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "895fa3e9f73e0fde1870",
+  "host": "systematicedge.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "A Simple Tactical Asset Allocation Portfolio with Percentile Channels | CSSA",
+  "url": "https://cssanalytics.wordpress.com/2015/01/26/a-simple-tactical-asset-allocation-portfolio-with-percentile-channels/",
+  "published": "2026-09-06T17:36:18+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "correlation",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://cssanalytics.files.wordpress.com/2012/10/minimum-correlation-mincorr-spreadsheet.xlsx"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "90c22e5fe419fdb5c7dc",
+  "host": "cssanalytics.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "https://cssanalytics.wordpress.com/2015/02/16/percentile-channel-strategy-replication/?share=twitter",
+  "url": "https://cssanalytics.wordpress.com/2015/02/16/percentile-channel-strategy-replication/?share=twitter",
+  "published": "2026-09-06T17:36:24+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://cssanalytics.wordpress.com/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "9ee63547baba17e0da13",
+  "host": "cssanalytics.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Percentile Channel Strategy Replication | CSSA",
+  "url": "https://cssanalytics.wordpress.com/2015/02/16/percentile-channel-strategy-replication/?replytocom=7198",
+  "published": "2026-09-06T17:36:26+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://cssanalytics.files.wordpress.com/2012/10/minimum-correlation-mincorr-spreadsheet.xlsx"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "d939b579febf55cde93b",
+  "host": "cssanalytics.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Percentile Channel Strategy Replication | CSSA",
+  "url": "https://cssanalytics.wordpress.com/2015/02/16/percentile-channel-strategy-replication/?replytocom=7199",
+  "published": "2026-09-06T17:36:28+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://cssanalytics.files.wordpress.com/2012/10/minimum-correlation-mincorr-spreadsheet.xlsx"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "723eeba3ef31b7fd8857",
+  "host": "cssanalytics.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Percentile Channel Strategy Replication | CSSA",
+  "url": "https://cssanalytics.wordpress.com/2015/02/16/percentile-channel-strategy-replication/?replytocom=7203",
+  "published": "2026-09-06T17:36:30+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://cssanalytics.files.wordpress.com/2012/10/minimum-correlation-mincorr-spreadsheet.xlsx"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "df0d9246be06213add94",
+  "host": "cssanalytics.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algorithmic Trading Platform - QuantConnect.com",
+  "url": "http://quantconnect.com/terminal/",
+  "published": "2026-09-06T17:36:36+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "http://quantconnect.com/datasets"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "135e18c1b2ca24ac1fcb",
+  "host": "quantconnect.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Writing Algorithms - QuantConnect.com",
+  "url": "http://quantconnect.com/tutorials/",
+  "published": "2026-09-06T17:36:49+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "basis",
+   "correlation",
+   "flow",
+   "gap",
+   "momentum",
+   "orderflow",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://cdn.quantconnect.com/2024-quantconnect-brand-kit.zip",
+   "https://www.quantconnect.com/datasets/",
+   "http://www.quantconnect.com/datasets/",
+   "http://quantconnect.com/docs/v2/writing-algorithms/datasets/overview",
+   "http://quantconnect.com/docs/v2/writing-algorithms/datasets/quantconnect",
+   "http://quantconnect.com/docs/v2/writing-algorithms/datasets/quantconnect/binance-crypto-future-margin-rate-data",
+   "http://quantconnect.com/docs/v2/writing-algorithms/datasets/quantconnect/binance-crypto-future-price-data",
+   "http://quantconnect.com/docs/v2/writing-algorithms/datasets/quantconnect/binance-crypto-price-data",
+   "http://quantconnect.com/docs/v2/writing-algorithms/datasets/quantconnect/binance-us-crypto-price-data",
+   "http://quantconnect.com/docs/v2/writing-algorithms/datasets/quantconnect/bitfinex-crypto-price-data",
+   "http://quantconnect.com/docs/v2/writing-algorithms/datasets/quantconnect/bybit-crypto-future-margin-rate-data",
+   "http://quantconnect.com/docs/v2/writing-algorithms/datasets/quantconnect/bybit-crypto-future-price-data",
+   "http://quantconnect.com/docs/v2/writing-algorithms/datasets/quantconnect/bybit-crypto-price-data",
+   "http://quantconnect.com/docs/v2/writing-algorithms/datasets/quantconnect/cfd-data",
+   "http://quantconnect.com/docs/v2/writing-algorithms/datasets/quantconnect/cash-indices",
+   "http://quantconnect.com/docs/v2/writing-algorithms/datasets/quantconnect/coinbase-crypto-price-data",
+   "http://quantconnect.com/docs/v2/writing-algorithms/datasets/quantconnect/forex-data",
+   "http://quantconnect.com/docs/v2/writing-algorithms/datasets/quantconnect/fama-french",
+   "http://quantconnect.com/docs/v2/writing-algorithms/datasets/quantconnect/fear-and-greed",
+   "http://quantconnect.com/docs/v2/writing-algorithms/datasets/quantconnect/international-future-universe",
+   "http://quantconnect.com/docs/v2/writing-algorithms/datasets/quantconnect/kraken-crypto-price-data",
+   "http://quantconnect.com/docs/v2/writing-algorithms/datasets/quantconnect/spectral-tick-flow-signal",
+   "http://quantconnect.com/docs/v2/writing-algorithms/datasets/quantconnect/us-etf-constituents",
+   "http://quantconnect.com/docs/v2/writing-algorithms/datasets/quantconnect/us-equities-short-availability",
+   "http://quantconnect.com/docs/v2/writing-algorithms/datasets/quantconnect/us-equity-coarse-universe",
+   "http://quantconnect.com/docs/v2/writing-algorithms/datasets/quantconnect/us-equity-option-universe",
+   "http://quantconnect.com/docs/v2/writing-algorithms/datasets/quantconnect/us-equity-security-master",
+   "http://quantconnect.com/docs/v2/writing-algorithms/datasets/quantconnect/us-future-option-universe",
+   "http://quantconnect.com/docs/v2/writing-algorithms/datasets/quantconnect/us-future-universe",
+   "http://quantconnect.com/docs/v2/writing-algorithms/datasets/quantconnect/us-futures-security-master",
+   "http://quantconnect.com/docs/v2/writing-algorithms/datasets/quantconnect/us-index-option-universe",
+   "http://quantconnect.com/docs/v2/writing-algorithms/datasets/algoseek",
+   "http://quantconnect.com/docs/v2/writing-algorithms/datasets/algoseek/us-equities",
+   "http://quantconnect.com/docs/v2/writing-algorithms/datasets/algoseek/us-equity-options",
+   "http://quantconnect.com/docs/v2/writing-algorithms/datasets/algoseek/us-future-options",
+   "http://quantconnect.com/docs/v2/writing-algorithms/datasets/algoseek/us-futures",
+   "http://quantconnect.com/docs/v2/writing-algorithms/datasets/algoseek/us-index-options",
+   "http://quantconnect.com/docs/v2/writing-algorithms/datasets/morningstar",
+   "http://quantconnect.com/docs/v2/writing-algorithms/datasets/morningstar/us-fundamental-data",
+   "http://quantconnect.com/docs/v2/writing-algorithms/datasets/tickdata",
+   "http://quantconnect.com/docs/v2/writing-algorithms/datasets/tickdata/international-futures",
+   "http://quantconnect.com/docs/v2/writing-algorithms/datasets/benzinga",
+   "http://quantconnect.com/docs/v2/writing-algorithms/datasets/benzinga/benzinga-news-feed",
+   "http://quantconnect.com/docs/v2/writing-algorithms/datasets/blockchain",
+   "http://quantconnect.com/docs/v2/writing-algorithms/datasets/blockchain/bitcoin-metadata",
+   "http://quantconnect.com/docs/v2/writing-algorithms/datasets/brain",
+   "http://quantconnect.com/docs/v2/writing-algorithms/datasets/brain/brain-language-metrics-on-company-filings",
+   "http://quantconnect.com/docs/v2/writing-algorithms/datasets/brain/brain-ml-stock-ranking",
+   "http://quantconnect.com/docs/v2/writing-algorithms/datasets/brain/brain-sentiment-indicator",
+   "http://quantconnect.com/docs/v2/writing-algorithms/datasets/brain/brain-wikipedia-page-views",
+   "http://quantconnect.com/docs/v2/writing-algorithms/datasets/bureau-of-labor-statistics",
+   "http://quantconnect.com/docs/v2/writing-algorithms/datasets/bureau-of-labor-statistics/us-bureau-of-labor-statistics-(bls)",
+   "http://quantconnect.com/docs/v2/writing-algorithms/datasets/coingecko",
+   "http://quantconnect.com/docs/v2/writing-algorithms/datasets/coingecko/crypto-market-cap",
+   "http://quantconnect.com/docs/v2/writing-algorithms/datasets/commodity-futures-trading-commission",
+   "http://quantconnect.com/docs/v2/writing-algorithms/datasets/commodity-futures-trading-commission/commitments-of-traders",
+   "http://quantconnect.com/docs/v2/writing-algorithms/datasets/eod-historical-data",
+   "http://quantconnect.com/docs/v2/writing-algorithms/datasets/eod-historical-data/economic-events",
+   "http://quantconnect.com/docs/v2/writing-algorithms/datasets/eod-historical-data/macroeconomics-indicators",
+   "http://quantconnect.com/docs/v2/writing-algorithms/datasets/eod-historical-data/upcoming-dividends",
+   "http://quantconnect.com/docs/v2/writing-algorithms/datasets/eod-historical-data/upcoming-earnings",
+   "http://quantconnect.com/docs/v2/writing-algorithms/datasets/eod-historical-data/upcoming-ipos",
+   "http://quantconnect.com/docs/v2/writing-algorithms/datasets/eod-historical-data/upcoming-splits",
+   "http://quantconnect.com/docs/v2/writing-algorithms/datasets/energy-information-administration",
+   "http://quantconnect.com/docs/v2/writing-algorithms/datasets/energy-information-administration/us-energy-information-administration-(eia)",
+   "http://quantconnect.com/docs/v2/writing-algorithms/datasets/european-central-bank",
+   "http://quantconnect.com/docs/v2/writing-algorithms/datasets/european-central-bank/euro-yield-curve",
+   "http://quantconnect.com/docs/v2/writing-algorithms/datasets/european-central-bank/policy-rates",
+   "http://quantconnect.com/docs/v2/writing-algorithms/datasets/european-central-bank/systemic-stress",
+   "http://quantconnect.com/docs/v2/writing-algorithms/datasets/eurostat",
+   "http://quantconnect.com/docs/v2/writing-algorithms/datasets/eurostat/macro-indicators",
+   "http://quantconnect.com/docs/v2/writing-algorithms/datasets/eurostat/surveys",
+   "http://quantconnect.com/docs/v2/writing-algorithms/datasets/extractalpha",
+   "http://quantconnect.com/docs/v2/writing-algorithms/datasets/extractalpha/cross-asset-model",
+   "http://quantconnect.com/docs/v2/writing-algorithms/datasets/extractalpha/estimize",
+   "http://quantconnect.com/docs/v2/writing-algorithms/datasets/extractalpha/tactical",
+   "http://quantconnect.com/docs/v2/writing-algorithms/datasets/extractalpha/true-beats",
+   "http://quantconnect.com/docs/v2/writing-algorithms/datasets/fred",
+   "http://quantconnect.com/docs/v2/writing-algorithms/datasets/fred/us-federal-reserve-(fred)",
+   "http://quantconnect.com/docs/v2/writing-algorithms/datasets/federal-reserve-bank-of-st-louis",
+   "http://quantconnect.com/docs/v2/writing-algorithms/datasets/federal-reserve-bank-of-st-louis/us-interest-rate",
+   "http://quantconnect.com/docs/v2/writing-algorithms/datasets/financial-industry-regulatory-authority",
+   "http://quantconnect.com/docs/v2/writing-algorithms/datasets/financial-industry-regulatory-authority/otc-transparency",
+   "http://quantconnect.com/docs/v2/writing-algorithms/datasets/financial-industry-regulatory-authority/regulation-sho",
+   "http://quantconnect.com/docs/v2/writing-algorithms/datasets/kavout",
+   "http://quantconnect.com/docs/v2/writing-algorithms/datasets/kavout/composite-factor-bundle",
+   "http://quantconnect.com/docs/v2/writing-algorithms/datasets/nasdaq",
+   "http://quantconnect.com/docs/v2/writing-algorithms/datasets/nasdaq/data-link",
+   "http://quantconnect.com/docs/v2/writing-algorithms/datasets/quiver-quantitative",
+   "http://quantconnect.com/docs/v2/writing-algorithms/datasets/quiver-quantitative/cnbc-trading",
+   "http://quantconnect.com/docs/v2/writing-algorithms/datasets/quiver-quantitative/corporate-lobbying",
+   "http://quantconnect.com/docs/v2/writing-algorithms/datasets/quiver-quantitative/insider-trading",
+   "http://quantconnect.com/docs/v2/writing-algorithms/datasets/quiver-quantitative/us-congress-trading",
+   "http://quantconnect.com/docs/v2/writing-algorithms/datasets/quiver-quantitative/us-government-contracts",
+   "http://quantconnect.com/docs/v2/writing-algorithms/datasets/regalytics",
+   "http://quantconnect.com/docs/v2/writing-algorithms/datasets/regalytics/us-regulatory-alerts---financial-sector",
+   "http://quantconnect.com/docs/v2/writing-algorithms/datasets/securities-and-exchange-commission",
+   "http://quantconnect.com/docs/v2/writing-algorithms/datasets/securities-and-exchange-commission/us-sec-filings",
+   "http://quantconnect.com/docs/v2/writing-algorithms/datasets/smart-insider",
+   "http://quantconnect.com/docs/v2/writing-algorithms/datasets/smart-insider/corporate-buybacks",
+   "http://quantconnect.com/docs/v2/writing-algorithms/datasets/tiingo",
+   "http://quantconnect.com/docs/v2/writing-algorithms/datasets/tiingo/tiingo-news-feed",
+   "http://quantconnect.com/docs/v2/writing-algorithms/datasets/treasury-department",
+   "http://quantconnect.com/docs/v2/writing-algorithms/datasets/treasury-department/us-treasury-yield-curve",
+   "http://quantconnect.com/docs/v2/writing-algorithms/datasets/us-bureau-of-economic-analysis",
+   "http://quantconnect.com/docs/v2/writing-algorithms/datasets/us-bureau-of-economic-analysis/gdp-by-industry",
+   "http://quantconnect.com/docs/v2/writing-algorithms/datasets/us-department-of-agriculture",
+   "http://quantconnect.com/docs/v2/writing-algorithms/datasets/us-department-of-agriculture/usda-fruit-and-vegetables",
+   "http://quantconnect.com/docs/v2/writing-algorithms/datasets/united-states-patent-and-trademark-office",
+   "http://quantconnect.com/docs/v2/writing-algorithms/datasets/united-states-patent-and-trademark-office/patent-maintenance",
+   "http://quantconnect.com/docs/v2/writing-algorithms/datasets/vix-central",
+   "http://quantconnect.com/docs/v2/writing-algorithms/datasets/vix-central/vix-central-contango",
+   "http://quantconnect.com/docs/v2/writing-algorithms/live-trading/signal-exports",
+   "http://quantconnect.com/docs/v2/writing-algorithms/live-trading/signal-exports/key-concepts",
+   "http://quantconnect.com/docs/v2/writing-algorithms/live-trading/signal-exports/collective2",
+   "http://quantconnect.com/docs/v2/writing-algorithms/live-trading/signal-exports/numerai",
+   "http://quantconnect.com/docs/v2/writing-algorithms/live-trading/signal-exports/vbase"
+  ],
+  "n_endpoints": 117,
+  "vault_sha": "804cf979037644ca9cff",
+  "host": "quantconnect.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "About - QuantConnect.com",
+  "url": "http://quantconnect.com/about/",
+  "published": "2026-09-06T17:36:52+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "night_session",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://cdn.quantconnect.com/2024-quantconnect-brand-kit.zip",
+   "https://www.quantconnect.com/datasets/",
+   "http://www.quantconnect.com/datasets/",
+   "http://quantconnect.com/datasets/"
+  ],
+  "n_endpoints": 4,
+  "vault_sha": "612de6725d7a0681d6f8",
+  "host": "quantconnect.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Affiliate Program - QuantConnect.com",
+  "url": "http://quantconnect.com/affiliates/",
+  "published": "2026-09-06T17:36:54+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "orderflow"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://cdn.quantconnect.com/2024-quantconnect-brand-kit.zip",
+   "https://www.quantconnect.com/datasets/",
+   "http://www.quantconnect.com/datasets/",
+   "http://quantconnect.com/datasets/"
+  ],
+  "n_endpoints": 4,
+  "vault_sha": "f269fa852dd07b81563f",
+  "host": "quantconnect.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "QuantConnect Integration Partners - QuantConnect.com",
+  "url": "http://quantconnect.com/integration-partners/",
+  "published": "2026-09-06T17:37:00+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://cdn.quantconnect.com/2024-quantconnect-brand-kit.zip",
+   "https://www.quantconnect.com/datasets/",
+   "http://www.quantconnect.com/datasets/",
+   "http://quantconnect.com/datasets/"
+  ],
+  "n_endpoints": 4,
+  "vault_sha": "26108e2c5bacb905e19b",
+  "host": "quantconnect.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Expanded Trading Hours for Select Equity Options - SteadyOptions Trading Blog - SteadyOptions",
+  "url": "https://steadyoptions.com/articles/expanded-trading-hours-for-select-equity-options-r835/",
+  "published": "2026-09-06T17:37:01+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry",
+   "gap",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "38cac40b8ad3e32c6453",
+  "host": "steadyoptions.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Expanded Trading Hours for Select Equity Options - SteadyOptions Trading Blog - SteadyOptions",
+  "url": "https://steadyoptions.com/articles/expanded-trading-hours-for-select-equity-options-r835/?do=getLastComment&d=1&id=835",
+  "published": "2026-09-06T17:37:04+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry",
+   "gap",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "906c09eec466955296e7",
+  "host": "steadyoptions.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Long Strangle Option Strategy: The Ultimate Guide",
+  "url": "https://steadyoptions.com/articles/long-strangle-option-strategy-the-ultimate-guide-r769/",
+  "published": "2026-09-06T17:37:05+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry",
+   "inventory",
+   "mean_reversion",
+   "orderflow",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e5ff5366f9fcc6c063c0",
+  "host": "steadyoptions.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Long Straddle Options Strategy | Maximize Profits with Big Moves - SteadyOptions Trading Blog - SteadyOptions",
+  "url": "https://steadyoptions.com/articles/long-straddle-options-strategy-maximize-profits-with-big-moves-r750/",
+  "published": "2026-09-06T17:37:08+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "carry",
+   "mean_reversion",
+   "momentum",
+   "orderflow",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d54b3acbab6d75270939",
+  "host": "steadyoptions.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Beyond Strategies: What Options Traders Should Know - SteadyOptions Trading Blog - SteadyOptions",
+  "url": "https://steadyoptions.com/articles/beyond-strategies-what-options-traders-should-know-r832/",
+  "published": "2026-09-06T17:37:09+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "carry",
+   "gap",
+   "night_session",
+   "orderflow",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "1cb64a2f36a14af39ff0",
+  "host": "steadyoptions.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Beyond Strategies: What Options Traders Should Know - SteadyOptions Trading Blog - SteadyOptions",
+  "url": "https://steadyoptions.com/articles/beyond-strategies-what-options-traders-should-know-r832/?do=getLastComment&d=1&id=832",
+  "published": "2026-09-06T17:37:12+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "carry",
+   "gap",
+   "night_session",
+   "orderflow",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "0e7d726373b273890fec",
+  "host": "steadyoptions.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Could This Strategy Be The Holy Grail Of Investing? - SteadyOptions Trading Blog - SteadyOptions",
+  "url": "https://steadyoptions.com/articles/could-this-strategy-be-the-holy-grail-of-investing-r829/",
+  "published": "2026-09-06T17:37:13+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "basis",
+   "carry",
+   "correlation",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e41d3ba673ac1a6aaf18",
+  "host": "steadyoptions.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Could This Strategy Be The Holy Grail Of Investing? - SteadyOptions Trading Blog - SteadyOptions",
+  "url": "https://steadyoptions.com/articles/could-this-strategy-be-the-holy-grail-of-investing-r829/?do=getLastComment&d=1&id=829",
+  "published": "2026-09-06T17:37:16+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "basis",
+   "carry",
+   "correlation",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f2856eac41ad7ca5c397",
+  "host": "steadyoptions.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Long Straddle Options Strategy | Maximize Profits with Big Moves - SteadyOptions Trading Blog - SteadyOptions",
+  "url": "https://steadyoptions.com/articles/long-straddle-options-strategy-the-ultimate-guide-r750/",
+  "published": "2026-09-06T17:37:18+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "carry",
+   "mean_reversion",
+   "momentum",
+   "orderflow",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "dec38194afd4054220bf",
+  "host": "steadyoptions.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Calendar Spread Options Strategy | Steady Options",
+  "url": "https://steadyoptions.com/articles/calendar-spread/",
+  "published": "2026-09-06T17:37:19+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "breakout",
+   "carry",
+   "gap",
+   "orderflow",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "14f30c996172d73e3e56",
+  "host": "steadyoptions.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Reverse Iron Condor Strategy: The Ultimate Guide",
+  "url": "https://steadyoptions.com/articles/reverse-iron-condor-strategy-r245/",
+  "published": "2026-09-06T17:37:22+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "carry",
+   "mean_reversion",
+   "orderflow",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "9c66c878ac34d12e2016",
+  "host": "steadyoptions.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "10 Options Trading Myths Debunked | Learn About Options Trading",
+  "url": "https://steadyoptions.com/articles/articles/10-options-trading-myths-debunked-r207/",
+  "published": "2026-09-06T17:37:24+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "carry",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "af221c32898492932a55",
+  "host": "steadyoptions.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "https://stocksinvestor12.finance.blog/2019/12/17/what-is-trading/?share=twitter",
+  "url": "https://stocksinvestor12.finance.blog/2019/12/17/what-is-trading/?share=twitter",
+  "published": "2026-09-06T17:37:32+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://stocksinvestor12.finance.blog/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "5f7f109b6bfca60abbb6",
+  "host": "stocksinvestor12.finance.blog",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "What is Online trading? &#8211; Trading Blog",
+  "url": "https://stocksinvestor12.finance.blog/2019/12/19/what-is-online-trading/",
+  "published": "2026-09-06T17:37:36+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "fe1c38d6136a58cd54be",
+  "host": "stocksinvestor12.finance.blog",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "DIY Trading - The Chartist",
+  "url": "https://www.thechartist.com.au/diy-trading/",
+  "published": "2026-09-06T17:37:38+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b3b8bc98caf99892db10",
+  "host": "www.thechartist.com.au",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Beginner&#039;s Guide To Building Trading Systems - The Chartist",
+  "url": "https://www.thechartist.com.au/beginners-guide-to-building-trading-systems/",
+  "published": "2026-09-06T17:37:40+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "momentum",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d9510283fe694349eea8",
+  "host": "www.thechartist.com.au",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Trading System Mentor Course - The Chartist",
+  "url": "https://www.thechartist.com.au/trading-system-mentor-course/",
+  "published": "2026-09-06T17:37:42+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "mean_reversion",
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a263ef372a821983c030",
+  "host": "www.thechartist.com.au",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Share Trading Books Archives - The Chartist",
+  "url": "https://www.thechartist.com.au/product-category/share-trading-ebooks/",
+  "published": "2026-09-06T17:37:47+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "99e1d15a217995505dab",
+  "host": "www.thechartist.com.au",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Beginner's Guide to Building Trading Systems",
+  "url": "https://www.thechartist.com.au/purchase-building-trading-systems-course/",
+  "published": "2026-09-06T17:37:47+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "momentum",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [
+   "https://optassets.ontraport.com/opt_assets/static/language_pack/paths/logtxn_paths.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "a5d469cd832f9caf7cfb",
+  "host": "www.thechartist.com.au",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Free RealTest Course | Learn Backtesting &amp; System Trading Basics",
+  "url": "https://enlightenedstocktrading.com/realtest-course",
+  "published": "2026-09-06T17:37:48+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c761d9176f26cf36a568",
+  "host": "enlightenedstocktrading.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Enlightened Stock Trading: Master Proven Trading Systems",
+  "url": "https://www.enlightenedstocktrading.com",
+  "published": "2026-09-06T17:37:48+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "mean_reversion",
+   "momentum",
+   "positioning"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "10e62951329c814c8e3a",
+  "host": "www.enlightenedstocktrading.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Quant Traders - Academy, Courses, Software, Research + Podcast!",
+  "url": "https://www.algoadvantage.io",
+  "published": "2026-09-06T17:37:50+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e5b5dd50ba906455f4cf",
+  "host": "www.algoadvantage.io",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Stats Edge Trading",
+  "url": "https://statsedgetrading.com",
+  "published": "2026-09-06T17:37:50+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1M",
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "carry",
+   "momentum",
+   "night_session",
+   "orderflow",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b7094ebae82916dfd631",
+  "host": "statsedgetrading.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "024 \u2013 Trading Think Tank 02 \u2013 \u2026 - The Algorithmic Advantage - Apple Podcasts",
+  "url": "https://podcasts.apple.com/us/podcast/024-trading-think-tank-02-battle-of-the-back-testers/id1703013320?i=1000666313383",
+  "published": "2026-09-06T17:37:52+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1H",
+   "30M"
+  ],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://podcasts.apple.com/manifest.json",
+   "https://podcasts.apple.com/api/oembed?url=https%3A%2F%2Fpodcasts.apple.com%2Fus%2Fpodcast%2F024-trading-think-tank-02-battle-of-the-back-testers%2Fid1703013320%3Fi%3D1000666313383"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "e639eaf97a2517ef242d",
+  "host": "podcasts.apple.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "183: Overcoming Broken Strateg\u2026\u2013Better System Trader \u2013 Apple Podcasts",
+  "url": "https://podcasts.apple.com/ca/podcast/183-overcoming-broken-strategies-marsten-parker/id985870258?i=1000514198848",
+  "published": "2026-09-06T17:37:54+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1H"
+  ],
+  "patterns": [
+   "mean_reversion",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en-CA",
+  "endpoints": [
+   "https://podcasts.apple.com/manifest.json",
+   "https://podcasts.apple.com/api/oembed?url=https%3A%2F%2Fpodcasts.apple.com%2Fca%2Fpodcast%2F183-overcoming-broken-strategies-marsten-parker%2Fid985870258%3Fi%3D1000514198848"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "6acf742c166f39e761c3",
+  "host": "podcasts.apple.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Quant Savvy Reviews - Read Reviews on Quantsavvy.com Before You Buy | www.quantsavvy.com",
+  "url": "https://www.reviews.io/company-reviews/store/quant-savvy",
+  "published": "2026-09-06T17:37:55+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "mean_reversion",
+   "night_session"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.reviews.io/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "c3afdba3b475c124312d",
+  "host": "www.reviews.io",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Quant Savvy Reviews - Read Reviews on Quantsavvy.com Before You Buy | www.quantsavvy.com",
+  "url": "https://www.reviews.io/company-reviews/store/quant-savvy?order=highest_rated",
+  "published": "2026-09-06T17:37:59+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "mean_reversion",
+   "night_session"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.reviews.io/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "dd38bc4f4bc76152fc31",
+  "host": "www.reviews.io",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Quant Savvy Reviews - Read Reviews on Quantsavvy.com Before You Buy | www.quantsavvy.com",
+  "url": "https://www.reviews.io/company-reviews/store/quant-savvy?filters%5B0%5D=",
+  "published": "2026-09-06T17:38:01+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "mean_reversion",
+   "night_session"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.reviews.io/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "131dd51940755ddc480c",
+  "host": "www.reviews.io",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Quant Savvy Reviews - Read Reviews on Quantsavvy.com Before You Buy | www.quantsavvy.com",
+  "url": "https://www.reviews.io/company-reviews/store/quant-savvy?filters%5Brating%5D%5B0%5D=5",
+  "published": "2026-09-06T17:38:03+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "mean_reversion",
+   "night_session"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.reviews.io/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "ec8cd42e51250070792e",
+  "host": "www.reviews.io",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Quant Savvy Reviews - Read Reviews on Quantsavvy.com Before You Buy | www.quantsavvy.com",
+  "url": "https://www.reviews.io/company-reviews/store/quant-savvy?filters%5Brating%5D%5B0%5D=4",
+  "published": "2026-09-06T17:38:04+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://www.reviews.io/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "75fb4208af5190553b9a",
+  "host": "www.reviews.io",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Quant Savvy Reviews - Read Reviews on Quantsavvy.com Before You Buy | www.quantsavvy.com",
+  "url": "https://www.reviews.io/company-reviews/store/quant-savvy?filters%5Bhelpful%5D%5B0%5D=",
+  "published": "2026-09-06T17:38:13+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://www.reviews.io/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "c58cfb99cd1847fff821",
+  "host": "www.reviews.io",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Page 2 of 2 for Quant Savvy Reviews",
+  "url": "https://www.reviews.io/company-reviews/store/quant-savvy/Qr",
+  "published": "2026-09-06T17:38:15+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://www.reviews.io/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "8def9a78a219e9c42afc",
+  "host": "www.reviews.io",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algo Trading Strategies",
+  "url": "https://www.reviews.io/exit/31386",
+  "published": "2026-09-06T17:38:17+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "auction",
+   "basis",
+   "carry",
+   "correlation",
+   "gap",
+   "momentum",
+   "night_session",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ae8c9088b0300f6ecc5b",
+  "host": "www.reviews.io",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Forex Blog: Currency Trading News &amp; Analysis",
+  "url": "http://www.forexblog.org/",
+  "published": "2026-09-06T17:38:18+00:00",
+  "symbols": [
+   "AUDUSD"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "carry",
+   "correlation",
+   "flow",
+   "inventory",
+   "orderflow",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "615f70a49c0275415d4a",
+  "host": "www.forexblog.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Breaking the Rules of Intraday Trading - Concretum Group",
+  "url": "https://concretumgroup.com/breaking-the-rules-of-intraday-trading/",
+  "published": "2026-09-06T17:38:20+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "carry",
+   "gap",
+   "mean_reversion",
+   "momentum",
+   "night_session",
+   "positioning",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-GB",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d4266259d3c19dcccf82",
+  "host": "concretumgroup.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Brave New Backtest - by Kris Longmore - Edge Alchemy",
+  "url": "https://edgealchemy.robotwealth.com/p/brave-new-backtest",
+  "published": "2026-09-06T17:38:20+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage",
+   "auction",
+   "carry",
+   "correlation",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3ac5c3326bc3bd88e851",
+  "host": "edgealchemy.robotwealth.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Are you fishing in a pond that is just too small? Global value investing proven | Quant Investing",
+  "url": "http://www.quant-investing.com/blogs/general/2015/03/03/are-you-fishing-in-a-pond-that-is-just-too-small-global-value-investing-proven",
+  "published": "2026-09-06T17:38:20+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "momentum",
+   "orderflow",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "60297ca17929d28e43c4",
+  "host": "www.quant-investing.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "The MVCI (Whatever That Means) Indicator | Jay On The Markets",
+  "url": "http://jayonthemarkets.com/2015/02/26/the-mvci-whatever-that-means-indicator/",
+  "published": "2026-09-06T17:38:22+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "policy",
+   "seasonality"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "18fc1d94e4209adac578",
+  "host": "jayonthemarkets.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "ScorpionFX Market Analytics / Serving Institutional and HNW Clients",
+  "url": "http://www.scorpionfx.com/",
+  "published": "2026-09-06T17:38:22+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "orderflow",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f1bf54729ac582afbd25",
+  "host": "www.scorpionfx.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Kid Dynamite's World: More on the Crash - Possible Triggers, and High Frequency Trading",
+  "url": "http://fridayinvegas.blogspot.com/2010/05/more-on-crash-possible-triggers-and.html",
+  "published": "2026-09-06T17:38:25+00:00",
+  "symbols": [],
+  "timeframes": [
+   "INTRADAY"
+  ],
+  "patterns": [
+   "carry",
+   "correlation",
+   "inventory",
+   "mean_reversion",
+   "momentum",
+   "night_session",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ec6eeb709967c7cd99f6",
+  "host": "fridayinvegas.blogspot.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "News",
+  "url": "https://www.cbe.org.eg/en/news-publications/news",
+  "published": "2026-09-06T17:38:27+00:00",
+  "symbols": [],
+  "timeframes": [
+   "MN"
+  ],
+  "patterns": [
+   "auction",
+   "flow",
+   "inventory",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.cbe.org.eg/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "89fd3ec5a9a69d2a5ef3",
+  "host": "www.cbe.org.eg",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Quantitative Modeling and Risk Analytics",
+  "url": "https://www.cbe.org.eg/en/markets/quantitative-modeling-and-risk-analytics",
+  "published": "2026-09-06T17:38:28+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "inventory",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://www.cbe.org.eg/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "4ddac07e4919afd1def3",
+  "host": "www.cbe.org.eg",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Financial Inclusion Strategy",
+  "url": "https://www.cbe.org.eg/en/financial-inclusion/financial-inclusion-strategy",
+  "published": "2026-09-06T17:38:30+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "inventory",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://www.cbe.org.eg/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "21e6d021b5e06ea3ea46",
+  "host": "www.cbe.org.eg",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Strategy",
+  "url": "https://www.cbe.org.eg/en/about-cbe/strategy",
+  "published": "2026-09-06T17:38:32+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "inventory",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://www.cbe.org.eg/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "5c27364ca97e532f48d9",
+  "host": "www.cbe.org.eg",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u4e03\u79be\u7f51-\u4ea7\u4e1a\u667a\u5e93\u670d\u52a1\u5e73\u53f0\uff1a\u5927\u5b97\u5546\u54c1 \u4ef7\u503c\u6295\u8d44 \u4ea7\u4e1a\u7814\u7a76 \u4ef7\u683c\u7814\u7a76 \u5b9e\u76d8\u5927\u8d5b \u4ea4\u6613\u9ad8\u624b \u6295\u8d44\u5927\u4f6c \u6295\u8d44\u6545\u4e8b",
+  "url": "https://www.7hcn.com/",
+  "published": "2026-09-06T17:38:35+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage",
+   "breakout",
+   "flow",
+   "inventory",
+   "momentum",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "zh-CN",
+  "endpoints": [
+   "https://www.7hcn.com/api/bill/jump/go?id=1&url=https%3A%2F%2Fwww.7hcn.com%2F%2Fcultivate%2F179-1.html",
+   "https://www.7hcn.com/api/bill/jump/go?id=138&url=https%3A%2F%2Fwww.7hcn.com%2Farticle%2F482166-1.html",
+   "https://www.7hcn.com/api/bill/jump/go?id=3&url=https%3A%2F%2Fwww.7hcn.com%2F%2Farticle%2F468298-1.html",
+   "https://www.7hcn.com/api/bill/jump/go?id=144&url=https%3A%2F%2Fwww.7hai7.com%2F",
+   "https://www.7hcn.com/api/bill/jump/go?id=5&url=https%3A%2F%2Fwww.7hcn.com%2Fcategory%2Ffufeng-193-1.html",
+   "https://www.7hcn.com/api/bill/jump/go?id=6&url=https%3A%2F%2Fyxlm.7hcn.com%2F",
+   "https://www.7hcn.com/api/bill/jump/go?id=11&url=https%3A%2F%2Fwww.7hcn.com%2F%2Farticle%2F191623-1.html",
+   "https://www.7hcn.com/api/bill/jump/go?id=12&url=https%3A%2F%2Fwww.7hcn.com%2Fpage%2Fyxlm-qhqh.html",
+   "https://www.7hcn.com/api/bill/jump/go?id=18&url=https%3A%2F%2Fwork.weixin.qq.com%2Fca%2Fcawcdeb1192bb6af27",
+   "https://www.7hcn.com/api/bill/jump/go?id=20&url=http%3A%2F%2Fwww.shhxqh.com%2F",
+   "https://www.7hcn.com/api/bill/jump/go?id=13&url=https%3A%2F%2Fwww.7hcn.com%2Fpage%2Fyxlm-qhqh.html",
+   "https://www.7hcn.com/api/bill/jump/go?id=19&url=https%3A%2F%2Fwww.7hcn.com%2F%2Fcultivate%2F148-1.html"
+  ],
+  "n_endpoints": 12,
+  "vault_sha": "3ce0889ef8658e5b4f74",
+  "host": "www.7hcn.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u91cf\u5316\u4ea4\u6613\u4e0d\u8fdd\u6cd5\uff0c\u4f46\u672a\u5fc5\u9053\u5fb7\uff01",
+  "url": "https://www.7hcn.com/article/484721-1.html",
+  "published": "2026-09-06T17:38:37+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage",
+   "breakout",
+   "inventory",
+   "momentum",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "zh-CN",
+  "endpoints": [
+   "https://www.7hcn.com/api/bill/jump/go?id=33&url=https%3A%2F%2Fwww.7hai7.com%2Findex%2Fhome%2Fmain",
+   "https://www.7hcn.com/api/bill/jump/go?id=149&url=https%3A%2F%2Fwww.7hcn.com%2F%2Fcultivate%2F148-1.html",
+   "https://www.7hcn.com/api/bill/jump/go?id=34&url=https%3A%2F%2Fwww.7hcn.com%2F%2Fcultivate%2F77-1.html",
+   "https://www.7hcn.com/api/bill/jump/go?id=29&url=https%3A%2F%2Fyxlm.7hcn.com%2F",
+   "https://www.7hcn.com/api/bill/jump/go?id=30&url=https%3A%2F%2Fwww.7hcn.com%2F%2Fcultivate%2F179-1.html"
+  ],
+  "n_endpoints": 5,
+  "vault_sha": "ce6d69ac0023177854d1",
+  "host": "www.7hcn.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u4ea4\u6613\u5929\u624d\u7684\u201c\u9668\u843d\u201d",
+  "url": "https://www.7hcn.com/article/484683-1.html",
+  "published": "2026-09-06T17:38:39+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "breakout",
+   "inventory",
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "zh-CN",
+  "endpoints": [
+   "https://www.7hcn.com/api/bill/jump/go?id=33&url=https%3A%2F%2Fwww.7hai7.com%2Findex%2Fhome%2Fmain",
+   "https://www.7hcn.com/api/bill/jump/go?id=149&url=https%3A%2F%2Fwww.7hcn.com%2F%2Fcultivate%2F148-1.html",
+   "https://www.7hcn.com/api/bill/jump/go?id=34&url=https%3A%2F%2Fwww.7hcn.com%2F%2Fcultivate%2F77-1.html",
+   "https://www.7hcn.com/api/bill/jump/go?id=29&url=https%3A%2F%2Fyxlm.7hcn.com%2F",
+   "https://www.7hcn.com/api/bill/jump/go?id=30&url=https%3A%2F%2Fwww.7hcn.com%2F%2Fcultivate%2F179-1.html"
+  ],
+  "n_endpoints": 5,
+  "vault_sha": "d05de41ece01f673ad34",
+  "host": "www.7hcn.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u4ea4\u6613\u591a\u5e74\u540e\u6211\u9010\u6e10\u660e\u767d\uff1a\u591a\u6570\u4ea4\u6613\u8005\u4e8f\u635f\u6e90\u4e8e\u91d1\u94b1\u611f\u77e5\u529b\u7f3a\u5931",
+  "url": "https://www.7hcn.com/article/484637-1.html",
+  "published": "2026-09-06T17:38:41+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "breakout",
+   "inventory",
+   "mean_reversion",
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "zh-CN",
+  "endpoints": [
+   "https://www.7hcn.com/api/bill/jump/go?id=33&url=https%3A%2F%2Fwww.7hai7.com%2Findex%2Fhome%2Fmain",
+   "https://www.7hcn.com/api/bill/jump/go?id=149&url=https%3A%2F%2Fwww.7hcn.com%2F%2Fcultivate%2F148-1.html",
+   "https://www.7hcn.com/api/bill/jump/go?id=34&url=https%3A%2F%2Fwww.7hcn.com%2F%2Fcultivate%2F77-1.html",
+   "https://www.7hcn.com/api/bill/jump/go?id=29&url=https%3A%2F%2Fyxlm.7hcn.com%2F",
+   "https://www.7hcn.com/api/bill/jump/go?id=30&url=https%3A%2F%2Fwww.7hcn.com%2F%2Fcultivate%2F179-1.html"
+  ],
+  "n_endpoints": 5,
+  "vault_sha": "55f5b2b3c4daf8f15daa",
+  "host": "www.7hcn.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "https://www.7hcn.com/article/484508-1.html",
+  "url": "https://www.7hcn.com/article/484508-1.html",
+  "published": "2026-09-06T17:38:45+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "breakout",
+   "gap",
+   "momentum",
+   "night_session",
+   "orderflow",
+   "positioning"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d28e59a2ad4f179b8538",
+  "host": "www.7hcn.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u671f\u8d27\u4e2d\u56fd\u4e13\u8bbf\u8a00\u7a0b\u5e8f\u4ea4\u6613\u56e2\u961f:\u53ea\u8981\u6709\u6ce2\u52a8 \u5c31\u53ef\u4ee5\u8d5a\u94b1",
+  "url": "https://www.7hcn.com/article/110626-1.html",
+  "published": "2026-09-06T17:38:47+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "breakout",
+   "correlation",
+   "gap",
+   "inventory",
+   "momentum",
+   "orderflow",
+   "positioning"
+  ],
+  "confidence": 0.35,
+  "lang": "zh-CN",
+  "endpoints": [
+   "https://www.7hcn.com/api/bill/jump/go?id=33&url=https%3A%2F%2Fwww.7hai7.com%2Findex%2Fhome%2Fmain",
+   "https://www.7hcn.com/api/bill/jump/go?id=149&url=https%3A%2F%2Fwww.7hcn.com%2F%2Fcultivate%2F148-1.html",
+   "https://www.7hcn.com/api/bill/jump/go?id=34&url=https%3A%2F%2Fwww.7hcn.com%2F%2Fcultivate%2F77-1.html",
+   "https://www.7hcn.com/api/bill/jump/go?id=29&url=https%3A%2F%2Fyxlm.7hcn.com%2F",
+   "https://www.7hcn.com/api/bill/jump/go?id=30&url=https%3A%2F%2Fwww.7hcn.com%2F%2Fcultivate%2F179-1.html"
+  ],
+  "n_endpoints": 5,
+  "vault_sha": "ad6b103d52b540463f98",
+  "host": "www.7hcn.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u671f\u8d27\u4e2d\u56fd\u4e13\u8bbf\u884c\u4e3a\u4ea4\u6613\u8005\uff1a\u6301\u7eed\u76c8\u5229\u53d6\u51b3\u4e8e\u6700\u77ed\u90a3\u5757\u677f",
+  "url": "https://www.7hcn.com/article/77302-1.html",
+  "published": "2026-09-06T17:38:49+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage",
+   "breakout",
+   "inventory",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "zh-CN",
+  "endpoints": [
+   "https://www.7hcn.com/api/bill/jump/go?id=33&url=https%3A%2F%2Fwww.7hai7.com%2Findex%2Fhome%2Fmain",
+   "https://www.7hcn.com/api/bill/jump/go?id=149&url=https%3A%2F%2Fwww.7hcn.com%2F%2Fcultivate%2F148-1.html",
+   "https://www.7hcn.com/api/bill/jump/go?id=34&url=https%3A%2F%2Fwww.7hcn.com%2F%2Fcultivate%2F77-1.html",
+   "https://www.7hcn.com/api/bill/jump/go?id=29&url=https%3A%2F%2Fyxlm.7hcn.com%2F",
+   "https://www.7hcn.com/api/bill/jump/go?id=30&url=https%3A%2F%2Fwww.7hcn.com%2F%2Fcultivate%2F179-1.html"
+  ],
+  "n_endpoints": 5,
+  "vault_sha": "48fbed078f00a49a9777",
+  "host": "www.7hcn.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "https://www.simuwang.com/",
+  "url": "https://www.simuwang.com/",
+  "published": "2026-09-06T17:39:04+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1M",
+   "H4",
+   "MN"
+  ],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3699da85cf1cf48fc307",
+  "host": "www.simuwang.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u96c6\u601d\u5f55",
+  "url": "https://www.jisilu.cn/explore/",
+  "published": "2026-09-06T17:39:06+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage",
+   "basis"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f2f78b82962a8c17629c",
+  "host": "www.jisilu.cn",
+  "claims": [],
+  "n_claims": 0
+ }
+]

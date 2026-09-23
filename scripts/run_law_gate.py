@@ -108,6 +108,100 @@ _LAW_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     # construction -- it reads docs/, scripts/ and the tracked decision ledger, and judges only
     # what git TRACKS, so it means the same in CI, a fresh clone and on the box.
     ("check_birth_properties.py", ()),
+    # GROWTH GOVERNANCE (principal 2026-09-04): every risk-reduction mechanism proves it raises
+    # robust forward E[log W]; every strong opportunity may raise capital above normal; the
+    # 20% floor is flat and filled, growth free above it to 30%; the gateway deploys the book.
+    ("check_growth_governance.py", ()),
+    # NO QUOTA ON FORWARD EVIDENCE SLOTS, EVER (principal 2026-09-23). The portable half:
+    # AST-walks the enrolment path and fails when a cap comes back -- a quota constant, a slice
+    # of the certificate roster, a `len(enrolled) >= n` gate, or `forward_reconcile.family_budget`
+    # declaring itself an enrolment cap again. A forward clock gathers evidence and deploys no
+    # capital, so a cap bought no safety; the multiplicity and trial accounting are untouched and
+    # this fence checks none of them. The state half runs in _STATE_FENCES.
+    ("check_forward_enrolment.py", ("--surfaces-only",)),
+    # THE TIER-5 INSTITUTION AUDIT (principal's two blueprints, 2026-09-22): every section of
+    # the COMPLETE TIER-5 BLUEPRINT (I-CII) and the FINAL MAXIMUM-AGGRESSIVE mandate (1-170),
+    # classified EXISTS+WIRED+LIVE / DORMANT / PARTIAL / MISSING / DUPLICATIVE /
+    # REFUSED_CONSERVATIVE. The fence is that the audit cannot claim what the tree does not
+    # hold: a LIVE row must cite a file that exists, a clock this repo knows and an artifact,
+    # and a REFUSED_CONSERVATIVE row must carry the sentence saying whose aggressiveness it
+    # would have cut. Portable: it reads only tracked files.
+    ("check_tier5_audit.py", ()),
+    # THE PLUMBING-INVARIANT HIERARCHY (Tier-1 B26). Not "are the money-path laws tested" --
+    # they always were -- but WHAT EACH TEST SPEAKS FOR: one hand-written state (EXAMPLE), a
+    # generator's draws (PROPERTY), or the whole finite domain (PROOF). The fence is that the
+    # ledger cannot lie: every enforcing node must exist, carry its `def`, and be COLLECTED.
+    # `--no-collect` is deliberately NOT passed: a test that no longer imports is exactly the
+    # state this catches (L1.49, a gate that never ran).
+    ("check_plumbing_invariants.py", ()),
+    # IMMUTABLE EVALUATOR: research organs may change the hypothesis, never the judge.
+    ("check_immutable_evaluator.py", ()),
+    # THE EVOLVABLE / IMMUTABLE BOUNDARY (LAWS 5m): an evolvable organ's change set may not
+    # touch a rail. Re-uses the evaluator's seal (one manifest, reported beside its own
+    # verdict) and adds what a hash cannot see: the meta-evolution layer's lineage ledger
+    # and the evolved-commit rule. Portable: the rails are code, the ledger optional.
+    ("check_immutable_rails.py", ()),
+    # THE OPEN-SOURCE RESEARCH FEDERATION (LAWS 5h, principal 2026-09-17). The PORTABLE half:
+    # the roster, the vocabularies, the sandbox policy, the packet contract that cannot carry
+    # a verdict, and the admission rule that collapses a fork storm into one lineage. The
+    # live half (dispositions, schedules, watermarks, stranded data) needs desk state and
+    # runs in _STATE_FENCES with --require-state.
+    ("check_external_federation.py", ()),
+    # THE BIRTH FENCE FOR EXECUTABLES (LAWS 7, principal 2026-09-17). Every executable python
+    # file carries a ComponentSpec, the registry may not lie about itself (no missing code path,
+    # no required component without a schedule), the count of executables with no clock may only
+    # FALL, and no second registry (clock_fixer.RESIDENTS, moat_swarms.TASK_NAMES,
+    # forests.FOREST_TASKS) may disagree with the specs. Portable: it reads the tree and the
+    # manifest, so it means the same in CI, a fresh clone and on the box.
+    ("check_component_registry.py", ()),
+    # ONE CERTIFICATE TRUTH (principal 2026-09-22). One writer (external_gauntlet.py), one
+    # authority file (UNIVERSAL_SURVIVORS.json), one consumer (promoter.py); every derived store
+    # -- survivors ledger, sleeve registry, shadow/lane states, sleeves.json, forward_reconcile --
+    # must agree with it, banned-family (discovered) certificates and clocks are residue, and the
+    # fence fails on any divergence. Without desk state it reads UNMEASURED and passes; the
+    # state half below requires the state.
+    ("check_certificate_truth.py", ()),
+    # NOTHING IS RETIRED ON AN ABSENCE (LAWS 7, 2026-09-23). Every pass in this tree that REMOVES
+    # rather than reports is inventoried with the reference it judges against, every guarded one
+    # is proved from the AST to call `libs/ops/reference_freshness.require_live_reference`, every
+    # guarded reference has a lease or a recorded cadence derivation, and the unguarded count
+    # ratchets DOWN only. Measured cause: `certificate_truth --apply` retired 837 rows against a
+    # canon holding n=0 and 46.7h stale. Portable: it reads the tree and one tracked module, so a
+    # fresh clone and the box get the same answer; no desk state required.
+    ("check_no_retirement_on_absence.py", ()),
+    # REGIONAL PARITY (LAWS 5n, principal 2026-09-19). No region absent: every regional forest
+    # resolves a country pack or runs a dedicated region package. Depth, coverage debt and the
+    # Priority = P(useful) x Orthogonality x InformationGain x CoverageDebt / (Compute +
+    # DataCost + TrialBurden) are MEASURED and published for research_roi to fold in as a bonus;
+    # this fence caps no compute and the artifact says so in `caps_compute`. Portable: the packs
+    # are code, so the depth half means the same in CI and on the box, and the live half
+    # (resident, discovery window, lattice) reads UNMEASURED without the registry rather than
+    # failing. `--strict` promotes the live flags and belongs in the hourly box gate, not here.
+    ("check_regional_parity.py", ()),
+    # THE RECOMMENDATION LANE MUST DRAIN (principal 2026-09-23). Every OPEN ledger row names an
+    # owner and a next action, and the OPEN backlog ratchets DOWN only. Portable: the ledger and
+    # the ratchet are tracked, so both halves mean the same in CI, a fresh clone and on the box.
+    # The STALENESS half is state and rides in _STATE_FENCES with --require-state.
+    ("check_recommendation_flow.py", ()),
+    # THE UNCRAWLED SET MUST FALL (principal 2026-09-23). `research/coverage_drain.py` measures
+    # the gap between the ground the desk could lawfully hold and the ground it has actually
+    # fetched, and this ratchets it: the OVERDUE backlog and the oldest wait may fall and never
+    # rise, the cumulative drained count may rise and never fall. The headline uncrawled count
+    # may rise ONLY in a pass that registered new lawful ground -- seeding what the registry had
+    # never heard of is the organ's first duty and a fence that punished it would teach the next
+    # session to stop. Portable: without the report it reads UNMEASURED and passes, and the
+    # box half rides in _STATE_FENCES with --require-state.
+    ("check_coverage_drain.py", ()),
+    # THE JUDGE TESTS 100% OF WHAT THE DESK MINES (principal 2026-09-23). `research/
+    # judge_coverage.py` allocates the hour by UNJUDGED BACKLOG per family and interleaves the
+    # docket so every prefix the sealed gauntlet reaches carries every family holding one. This
+    # ratchets it: a family with unjudged cells and no place in the queue FAILS, a family that
+    # drained nothing it already held FAILS, and a family whose oldest unjudged cell sits past
+    # twice its own drain window FAILS. The ratchet is on the CARRIED cohort, never on raw
+    # backlog -- raw backlog rises when the miners outrun the judge, which is mining working,
+    # and a fence that punished it would be switched off inside a week. Portable: without the
+    # report it reads UNMEASURED and passes; the box half rides in _STATE_FENCES.
+    ("check_judge_coverage.py", ()),
 )
 
 #: STATE FENCES -- box-only. They measure LIVE STATE (artifacts, ledgers, organ freshness) that
@@ -117,6 +211,21 @@ _LAW_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
 #: They run in the hourly box gate, where their verdict is real.
 _STATE_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("check_conversion.py", ()),               # L1.28b -- FLATLINE fails
+    # NOTHING IS PARKED (principal 2026-09-23, "nothing should be queued in the research system,
+    # all immediate tested"). Fails when any queue's oldest row is older than ONE CYCLE of the
+    # organ that owns it, when a queue has open rows and no drainer at all, or when rows carry no
+    # enqueue timestamp so their age cannot be measured (L1.28a). It ships RED on purpose: the
+    # first census measured 63,110 rows waiting and a 654 h oldest row, and a fence tuned to pass
+    # on today's backlog would pin that backlog in place (L1.43).
+    ("check_no_queues.py", ()),
+    ("check_universe_integrity.py", ()),       # bars: corrupt is quarantined, stale named
+    ("check_external_federation.py", ("--require-state",)),   # LAWS 5h -- the live half
+    # LAWS 5h / L1.32 -- the SANDBOX half: no runnable federated system goes a rotation window
+    # without the hour (the ROI ratchet that starves a frontier), and no UNMEASURED reason sits
+    # unchanged for a week while its install task moves nowhere. A settled
+    # PERMANENTLY_UNAVAILABLE row with its exact error and its named cover is an answer, not a
+    # stall, and passes.
+    ("check_sandbox_liveness.py", ()),
     ("check_exploration.py", ()),              # L1.32 -- no exploration organ gone dark
     ("check_calibration.py", ()),              # L1.29 -- no ungraded past-due forecast
     ("check_strategy_breadth.py", ()),         # L1.32 -- the breadth MEASUREMENT
@@ -126,9 +235,107 @@ _STATE_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("check_scheduler_manifest.py", ()),       # L1.28c state half -- live crontab drift (rc=1)
     ("check_mechanism_attribution.py", ()),    # L1.6 -- no survival on unexplained P&L
     ("check_organ_liveness.py", ()),           # L1.28c -- every organ actually produces
+    # L1.28c, THE SEAT HALF -- every configured intelligence seat donates on ITS OWN cadence.
+    # A seat with no clock is UNMEASURED and counted, never a silent pass; a seat clocked on the
+    # other host is UNMEASURED_HERE and named; the overdue debt is DECLARED by seat name and may
+    # only shrink, so a newly dark seat fails this immediately.
+    ("check_seat_health.py", ()),
     ("check_promotion_gate.py", ()),           # L1.6 -- expansion is bought with evidence
     ("check_excitation.py", ()),               # L1.45 -- no absorbing set, no dead experiment
     ("check_clock_provenance.py", ()),         # L1.46 -- the tape declares which clock stamped it
+    ("check_heat_floor_wiring.py", ()),        # growth governance -- the 20% floor is DEPLOYED
+    # GROWTH GOVERNANCE Rule 1, THE COST DIRECTION WITH NO ALARM (principal 2026-09-23, "just in
+    # case we dismissed edges net based on overcharged false costs"). An UNDERCHARGED cell
+    # manufactures a survivor and every gate here exists to catch it; an OVERCHARGED cell dies in
+    # the gauntlet silently and leaves no artifact anywhere. This fence compares what the model
+    # CHARGES against what the broker QUOTES and what the account has PAID, fails on a NEW
+    # overcharged symbol or a RISING commission overcharge, and lowers its own declaration when
+    # the debt shrinks. A STATE fence: the measurement needs the terminal, so a box without one
+    # reads UNMEASURED, which is a real answer and not a pass by silence.
+    ("check_cost_truth.py", ()),
+    # L1.5 / L2.10, THE OTHER DIRECTION. check_cost_truth catches the desk charging itself MORE
+    # than the venue; this one catches a LIVE sleeve charged LESS -- the direction that
+    # manufactures survivors. It was written 2026-08-29 and never referenced by this gate or by
+    # ops/gates.sh, so it returned rc=2 for weeks and blocked nothing (LAWS 7: unwired is a
+    # defect). Its ruler was repointed 2026-09-23 from the H1 bar spread STAMP to the broker's
+    # own quote in reports/COST_TRUTH.json, because the stamp samples the widest instant of its
+    # hour and overstated the executable book by orders of magnitude (EURUSD 12 pts stamped
+    # against a live and 44,640-bar-M1 median of 0.0). Thresholds unchanged. A STATE fence: with
+    # no COST_TRUTH.json it reads NOT-READABLE-HERE, which is a real answer about the HOST.
+    ("check_cost_surface.py", ()),
+    # THE STATE HALF of the enrolment law: no certificate clockless past one cycle. An absent
+    # FORWARD_ENROLMENT.json is UNMEASURED, which is a real answer on a clean checkout.
+    ("check_forward_enrolment.py", ("--state-only",)),
+    # NO FORWARD CLOCK IS EVER FROZEN OR STALE (principal 2026-09-23). The enrolment fence above
+    # asks whether a certificate HAS a clock; this one asks whether that clock is still MOVING --
+    # a different defect and the silent one, because a clock stops when its identity leaves the
+    # certificate canon while its ledger row survives reading ACTIVE, and nothing raises. It
+    # fails while any clock is FROZEN past its OWN window (counted in the venue's open bars, so
+    # a weekend is not a freeze), while the frozen count sits above its ratchet floor, or while
+    # CLOCK_LIVENESS.json is stale. A STATE fence: off the trading box the report is absent and
+    # the verdict is UNMEASURED, which is a real answer about the host and not a pass.
+    ("check_clock_liveness.py", ()),
+    # LAWS 5c -- everything ingested is exploited; the exploitation floor ratchets UP, the
+    # DATA STRANDING count ratchets DOWN, and no qualified datum sits in storage without a
+    # defined downstream state. A STATE fence: on a clean checkout the ingestion artifact is
+    # absent and the verdict is UNMEASURED, which is a real answer and not a pass.
+    ("check_ingestion_exploitation.py", ()),
+    # LAWS 5b -- every mined row ends as a testable cell or a recorded, reasoned refusal. The
+    # CONVERSION DEBT (rows that are neither) ratchets DOWN and may never be raised, including
+    # by hand: the enforced ceiling is min(ceiling, lowest_ever). A STATE fence for the same
+    # reason as the line above -- a checkout with no registry reads UNMEASURED, which is a real
+    # answer and not a pass.
+    ("check_conversion_debt.py", ()),
+    # the live half of ONE CERTIFICATE TRUTH: on the box an absent authority file is a defect
+    ("check_certificate_truth.py", ("--require-state",)),
+    # the live half of REGIONAL PARITY (LAWS 5n): on the box the registry IS open and the forest
+    # reports DO exist, so "no resident", "no discovery in the trailing window" and "no candidate
+    # in the lattice" are measured absences and the law calls each one a defect. It still caps no
+    # compute -- it fails the gate and publishes the debt; the allocator does the rest.
+    ("check_regional_parity.py", ("--strict",)),
+    # NOTHING IS STALE (principal 2026-09-22). Every artifact the desk publishes has an expected
+    # refresh interval -- its lease, else its declared artifact_class, else DERIVED from its
+    # organ's cadence and recorded -- and one past it is a DEFECT named with its organ, its clock
+    # and its last exit. A STATE fence: it reads the live artifact set, and UNMEASURED is a
+    # verdict rather than a pass. Repairs are raised through the EXISTING control-plane
+    # reconciler (observe -> plan -> apply_plan), never by a fixer of the fence's own, and the
+    # per-artifact ratchet is suspended -- and says so -- while every MT5 clock on the box is
+    # disabled, because that is one administrative fact and not 100 separate defects.
+    ("check_no_staleness.py", ()),
+    # the live half of the recommendation lane: on the box the implementer leg runs hourly, so a
+    # ledger past its own cadence means the drain has stopped rather than "this machine has no
+    # desk state" -- which is exactly the 281.7-hour silence this fence was built for.
+    ("check_recommendation_flow.py", ("--require-state",)),
+    # the live half of the coverage drain: on the box the `coverage_drain` leg runs hourly, so an
+    # absent or stale COVERAGE_DRAIN.json means the drain stopped -- which is the state the
+    # `sources_ingested` stage was already in when this organ was written (148 uncrawled, oldest
+    # waiting 134 hours, and nothing owning the number).
+    ("check_coverage_drain.py", ("--require-state",)),
+    # the live half of judge coverage: on the box the `judge_coverage` leg runs hourly at intake,
+    # so an absent or stale JUDGE_COVERAGE.json means the allocation stopped and the judge is
+    # back to re-testing whichever families the docket happens to put first -- the exact state
+    # the 120,000-verdict measurement found (18% of the judge on a family banned from capital,
+    # the three largest mined populations barely judged at all).
+    ("check_judge_coverage.py", ("--require-state",)),
+    # THE PLUMBING MAY NOT STOP SILENTLY (principal 2026-09-23). The `plumbing_watchdog` leg
+    # proves by OBSERVATION every fifteen minutes that the adoption clock exists and is enabled
+    # with a next run inside the hour, that HEAD descends from the branch tip it should have
+    # adopted, that the git-writer lock can be TAKEN right now, that no orphaned pool worker is
+    # holding commit, that every declared task is present, that each producer/consumer pair
+    # agrees about its path, and that every registered fence has run. This gate refuses to pass
+    # while any of those defects is older than its own escalation window -- and an ABSENT
+    # watchdog report is itself such a defect, because a watchdog that stopped is the quietest
+    # failure the desk can have: no defects reported, because nothing looked.
+    ("check_plumbing_watchdog.py", ()),
+    # THE MONEY BRAIN PRODUCED, PROVED AND PUBLISHED THIS CYCLE (principal 2026-09-23). The heat
+    # fence above asks whether the FLOOR is deployed; this one asks whether the allocator RAN at
+    # all, whether its certificate is still alive, whether each input it conditioned on is inside
+    # its own clock, and whether a cycle that could not complete left a NAMED stand-down instead
+    # of nothing. Written because a probe read two absent paths -- `data/pf_allocation.json` and
+    # `desks/mt5/reports/ALLOCATOR_PROOF.json`, neither of which the allocator writes -- and
+    # concluded the allocator was dead while both real artifacts were minutes old. A STATE fence:
+    # a host that has never run the allocator reads UNMEASURED, which is a fact about the host.
+    ("check_allocator_liveness.py", ()),
 )
 
 
@@ -149,11 +356,14 @@ def fast_gate(root: Path | None = None) -> dict[str, Any]:
     except (OSError, subprocess.TimeoutExpired) as exc:
         failures.append(f"CORE-SEAL unrunnable ({exc}) -- counts as FAILED, never skipped")
 
-    # 2. THE DOCTRINE CARRIES EVERY FAMILY. The doctrine is what reaches the organ; if a family's
-    #    laws are missing from it, that organ is about to run without them (the L2.3 defect).
+    # 2. THE DOCTRINE CARRIES EVERY FAMILY. What reaches the organ is, since the 2026-08-25
+    #    consolidation, the doctrine PLUS docs/LAWS.md (ops/brain_env.sh concatenates them into
+    #    the appended system prompt), so the family check reads the same concatenation; if a
+    #    family's laws are missing from it, that organ is about to run without them (L2.3).
     try:
         from scripts.check_law_families import FAMILIES
-        doctrine = (root / "ops/principal_doctrine.txt").read_text("utf-8", errors="ignore")
+        doctrine = (root / "ops/principal_doctrine.txt").read_text("utf-8", errors="ignore") \
+            + (root / "docs/LAWS.md").read_text("utf-8", errors="ignore")
         for fam, (members, _fence, _prevents) in FAMILIES.items():
             missing = [m for m in members if m not in doctrine]
             if missing:
@@ -184,6 +394,53 @@ def _dirty(root: Path) -> list[str]:
 _ORPHAN_AFTER_S = 2 * 60 * 60
 
 
+def _is_tmpfs(path: Path) -> bool:
+    """True only when `path` demonstrably sits on a tmpfs. Unknown reads as False.
+
+    Longest-prefix match against /proc/mounts, the way the kernel resolves it. Unknown must NOT
+    read as tmpfs: the consequence of a wrong True is relocating a checkout onto a path that may
+    not exist on a host this gate has never seen, and this gate's verdict must never depend on
+    where its scratch landed.
+    """
+    try:
+        lines = Path("/proc/mounts").read_text("utf-8").splitlines()
+    except OSError:
+        return False
+    best, fstype = "", ""
+    for line in lines:
+        parts = line.split()
+        if len(parts) > 2 and str(path).startswith(parts[1]) and len(parts[1]) > len(best):
+            best, fstype = parts[1], parts[2]
+    return fstype == "tmpfs"
+
+
+def _checkout_base() -> Path:
+    """Where a HEAD checkout is allocated: DISK, never RAM.
+
+    THE DEFECT THIS CLOSES (gap-fixer 2026-08-29). `_reap_stale_checkouts` below already knows
+    this checkout lands on a tmpfs -- its own docstring says "150MB of tmpfs owned by no
+    process" -- and answered by reaping it after two hours. That treats the symptom. Measured
+    this cycle the checkout is 297MB, it has DOUBLED since that note was written, and the box
+    has 3815MB with ZERO swap: one law gate on a dirty tree claims ~50% of typical free RAM for
+    its whole run, and a reaper cannot help while the run is legitimately alive. Four of these
+    were allocated inside thirty minutes on this box.
+
+    Disk is the correct home for a throwaway checkout and there is 12GB of it. `~/.cache` is the
+    conventional place, is outside the repo (a checkout INSIDE it would show up in `git status`
+    and is the mass-deletion launder R0423 names), and is verified not to be a tmpfs itself
+    before it is used. Any failure -- no HOME, unwritable, or itself in RAM -- falls back to
+    `tempfile.gettempdir()`, which is exactly today's behaviour, so this can only improve.
+    """
+    try:
+        base = Path(os.environ.get("XDG_CACHE_HOME") or (Path.home() / ".cache")) / "quant-lawgate"
+        if _is_tmpfs(base.parent if not base.exists() else base):
+            return Path(tempfile.gettempdir())
+        base.mkdir(parents=True, exist_ok=True)
+    except (OSError, RuntimeError):
+        return Path(tempfile.gettempdir())
+    return base
+
+
 def _reap_stale_checkouts(root: Path, *, now: float | None = None) -> int:
     """Delete lawgate HEAD checkouts left by runs that DIED before reaching their own cleanup.
 
@@ -209,10 +466,16 @@ def _reap_stale_checkouts(root: Path, *, now: float | None = None) -> int:
     """
     now = now if now is not None else time.time()
     reaped = 0
-    try:
-        candidates = sorted(Path(tempfile.gettempdir()).glob("lawgate-head-*"))
-    except OSError:
-        return 0                            # unreadable /tmp is not this gate's verdict to fail
+    # BOTH bases, always. The gate RE-EXECS HEAD's copy of itself, so an older HEAD still
+    # allocates under gettempdir() -- and every orphan that predates the move lives there too.
+    # Sweeping only the new base would strand exactly the pile this relocation exists to stop.
+    candidates: list[Path] = []
+    for base in {_checkout_base(), Path(tempfile.gettempdir())}:
+        try:
+            candidates.extend(base.glob("lawgate-head-*"))
+        except OSError:
+            continue                        # unreadable base is not this gate's verdict to fail
+    candidates.sort()
     for d in candidates:
         try:
             if not d.is_dir() or now - d.stat().st_mtime < _ORPHAN_AFTER_S:
@@ -251,7 +514,7 @@ def _at_head(root: Path) -> tuple[Path, str, list[str]]:
     if not dirt:
         return root, "cwd==HEAD (tree clean)", []
     _reap_stale_checkouts(root)             # sweep our own dead before allocating another 150MB
-    tmp = Path(tempfile.mkdtemp(prefix="lawgate-head-"))
+    tmp = Path(tempfile.mkdtemp(prefix="lawgate-head-", dir=_checkout_base()))
     wt = tmp / "t"
     try:
         r = subprocess.run(["git", "worktree", "add", "--detach", str(wt), "HEAD"],

@@ -12,13 +12,12 @@ from pathlib import Path
 
 import MetaTrader5 as mt5
 import pandas as pd
-from mt5desk.config import DATA, REPORTS, desk_root  # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from mt5desk.config import terminal_path
 
 TERMINAL = terminal_path()
-OUT = DATA / "universe"
+OUT = Path(r"C:\Users\dell\mt5-research\data\universe")
 OUT.mkdir(parents=True, exist_ok=True)
 
 TRIANGLE = ["AUDCAD", "AUDNZD", "NZDCAD"]
@@ -38,8 +37,9 @@ def fetch_range(sym: str, tf, start, end, tries: int = 4) -> pd.DataFrame | None
 
 def main() -> None:
     if mt5.terminal_info() is None:
-        if not mt5.initialize(path=TERMINAL):
-            print(f"initialize failed: {mt5.last_error()}")
+        from mt5_session import attach_or_initialize
+        if not attach_or_initialize(mt5, path=TERMINAL):
+            print(f"initialize failed: {_explain(mt5.last_error())}")
             return
     print(f"terminal: {mt5.terminal_info().name} | account {mt5.account_info().login}")
 
@@ -100,3 +100,19 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
+
+def _explain(err: object) -> str:
+    """Route the raw MT5 error through the shared explanation -- see h1_source.
+
+    Imported lazily and falling back to the bare error: a diagnostic helper must never be the
+    reason a producer cannot start.
+    """
+    try:
+        from research.h1_source import explain_init_failure
+    except ImportError:
+        try:
+            from h1_source import explain_init_failure  # type: ignore[no-redef]
+        except ImportError:
+            return f"{err}"
+    return explain_init_failure(err)

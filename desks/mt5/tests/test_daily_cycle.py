@@ -52,8 +52,18 @@ def test_the_three_steps_run_in_order(cyc, monkeypatch):
 
 
 def test_the_real_step_order_is_shadow_then_promoter_then_markout():
-    """Pins the module's own STEPS, not just the fixture's."""
-    assert [n for n, _ in daily_cycle.STEPS] == ["shadow", "promoter", "markout"]
+    """Pins the module's own STEPS. The cycle has since grown legitimate stages (curve
+    compendium, reconciler, execution, portfolio, decay, dashboard export) -- the LAW here was
+    never "exactly three steps", it is the ORDER: evidence accrues (shadow) before anyone
+    promotes on it, and markouts are measured after the promoter acts, never instead of it."""
+    names = [n for n, _ in daily_cycle.STEPS]
+    for required in ("shadow", "promoter", "markout"):
+        assert required in names, f"the {required} step vanished from the daily cycle"
+    assert names.index("shadow") < names.index("promoter") < names.index("markout")
+    # 2026-09-17: the day now CLOSES with the research OS release train (M20); the export step
+    # stays, immediately before it.
+    assert "export_aurum" in names and names[-1] == "daily_research_os"
+    assert names[-2] == "export_aurum" and names[0] == "research_gap_map"
 
 
 def test_it_runs_once_per_utc_day(cyc, monkeypatch):
@@ -111,3 +121,5 @@ def test_the_hourly_loop_actually_calls_it():
     assert "daily_cycle" in src, (
         "hourly_cycle does not invoke daily_cycle -- the three processes that move an edge toward "
         "capital are unscheduled again")
+    assert "record_tape()" in src
+    assert '"tape": t' in src

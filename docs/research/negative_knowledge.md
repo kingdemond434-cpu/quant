@@ -4,6 +4,15 @@ Quarterly Temporal Rediscovery re-evaluates every record; trigger evidence (new 
 maintainers, conferences, acquisitions, growth, citations, forks, mirrors, community activity)
 re-opens a record immediately. Past absence of discoveries is evidence about the past only._
 
+> **THE REOPEN RULE DOES NOT REACH A RETIRED UNIVERSE (header added 2026-09-05).** This registry
+> is deliberately REVERSIBLE -- that is its whole design, and it is why it says "evidence about
+> the past only". But reversibility is about the desk's own budget, not about its mandate. Records
+> whose search AREA is a crypto-exchange ground (venue APIs, on-chain data, DeFi, perp venues,
+> exchange communities) were closed on 2026-08-18 by the standing MT5 universe mandate, and
+> **no trigger evidence reopens them** -- a thriving new on-chain data source is not a reason to
+> dig ground this desk is forbidden to trade. Those records stay for their coverage evidence.
+> Every other record keeps its normal reopen conditions.
+
 ## Record schema
 ```
 ### NK-<nnn> <area>                     [priority: reduced|restored]   review-due: <date>

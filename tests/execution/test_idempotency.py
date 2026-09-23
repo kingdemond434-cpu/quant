@@ -57,13 +57,13 @@ def test_the_time_bucket_fallback_still_dedupes_within_a_bucket() -> None:
     assert client_order_id("BTCUSDT", "BUY", "open", now=anchor + BUCKET_S + 1.0) != a
 
 
-def test_the_executor_passes_a_cycle_token_so_the_real_path_is_clock_independent() -> None:
-    """The connectors accept `cycle`; that only matters if the caller actually supplies one."""
-    from pathlib import Path
-    src = (Path(__file__).resolve().parents[2]
-           / "scripts/run_cashcarry_executor.py").read_text("utf-8")
-    assert "def _pair_cycle(" in src
-    assert "cycle=_cycle" in src, "the executor must thread its cycle token into the order path"
+# REMOVED 2026-09-05: `test_the_executor_passes_a_cycle_token_so_the_real_path_is_clock_independent`
+# read `scripts/run_cashcarry_executor.py` -- the retired crypto-exchange carry executor, deleted
+# with the rest of that desk. The claim it pinned ("the connectors accept `cycle`; that only
+# matters if the CALLER supplies one") still binds and is NOT weakened here: it must be re-pinned
+# on the MT5 gateway's own order path, against `desks/mt5/mt5desk/gateway.py`, by whoever wires
+# `cycle` through there. Until then no caller-side pin exists, which is recorded rather than
+# papered over. The connector-side half of the guarantee is still enforced below.
 
 
 @pytest.mark.parametrize(("field", "kw"), [
@@ -148,17 +148,24 @@ def test_unknown_errors_are_never_read_as_already_placed(err: object) -> None:
 # --------------------------------------------------------------- wiring
 
 
-@pytest.mark.parametrize("mod", ["binance_live", "binance_testnet"])
+#: The connectors this fence binds on. `binance_live` left the list on 2026-09-05 because the
+#: retired crypto-exchange LIVE connector was deleted in the MT5-only purge; `binance_testnet` is
+#: the Tier-3 deadman rail's own plumbing, survives that purge deliberately, and is still held to
+#: the full guarantee below. Nothing here is relaxed -- the list lost a file, not a rule.
+_CONNECTORS = ["binance_testnet"]
+
+
+@pytest.mark.parametrize("mod", _CONNECTORS)
 def test_both_futures_connectors_send_a_client_order_id(mod: str) -> None:
-    """An idempotency guarantee on only one connector is not a guarantee -- and the executor
-    imports the TESTNET module today."""
+    """An idempotency guarantee on only one connector is not a guarantee -- and the deadman rail
+    reconciliation path imports the TESTNET module today."""
     from pathlib import Path
     src = (Path(__file__).resolve().parents[2] / "libs/execution" / f"{mod}.py").read_text("utf-8")
     assert src.count("newClientOrderId") >= 2, "market AND post-only paths must both carry one"
     assert "from libs.execution.idempotency import client_order_id" in src
 
 
-@pytest.mark.parametrize("mod", ["binance_live", "binance_testnet"])
+@pytest.mark.parametrize("mod", _CONNECTORS)
 def test_the_market_path_passes_the_chunk_index(mod: str) -> None:
     from pathlib import Path
     src = (Path(__file__).resolve().parents[2] / "libs/execution" / f"{mod}.py").read_text("utf-8")

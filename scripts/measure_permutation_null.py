@@ -1,4 +1,9 @@
-"""Run the desk's OWN generator families against a bar-permutation null on real OKX bars.
+"""Run the desk's OWN generator families against a bar-permutation null on real MT5 bars.
+
+REPOINTED 2026-09-05 (universe mandate). The bars used to come from a live OKX perp query; they
+now come from the MT5 desk's own H1 parquet store, resampled to closed daily bars. Nothing else
+about the measurement moved -- see `fetch_ohlc` for why the venue was swapped rather than the
+question retired, and for the one derived constant (`_PPY`) that a five-day market changes.
 
 THE QUESTION. Every one of the twelve declared families is a rule over the SEQUENCE of bars. The
 gauntlet currently asks whether a candidate beats a cohort (Romano-Wolf), whether it survives
@@ -33,7 +38,6 @@ import numpy as np
 
 from libs.autodiscovery.generators import GENERATORS, carry_returns, net_returns
 from libs.autodiscovery.models import MarketSeries
-from libs.data.venue_http import get_json
 from libs.validation.bar_permutation import (
     DEFAULT_PERMUTATIONS,
     Bars,
@@ -46,42 +50,56 @@ from libs.validation.bar_permutation import (
 
 _ROOT = Path(__file__).resolve().parent.parent
 _OUT = _ROOT / "reports" / "permutation_null.json"
-_OKX = "https://www.okx.com"
-_PAGE = 100
-_REQ_SLEEP = 0.12
-_PPY = 365.0
+#: The MT5 desk's own H1 bar store. Read-only from here.
+_UNIVERSE = _ROOT / "desks" / "mt5" / "data" / "universe"
+#: Sessions per year. 365 was right for a venue that never closes; an MT5/Fusion instrument trades
+#: a five-day week, so annualising a daily Sharpe by sqrt(365) would inflate every number in the
+#: report by ~20%. The p-values are untouched by this -- a permutation rank is invariant to a
+#: positive rescaling -- so this corrects the readable statistic without moving any bar.
+_PPY = 252.0
 #: Rules needing data the daily OHLC feed does not carry degrade to flat by design
 #: (generators.py header). A flat rule has no Sharpe and would burn permutations to learn that.
 _MIN_ACTIVE_FRACTION = 0.01
 
 
-def _okx_get(url: str) -> list[list[str]]:
-    """Via venue_http, which carries the browser User-Agent. The library default UA earns a 403
-    from OKX's bot filter, and this script previously recorded that as a venue refusal."""
-    body = get_json(url)
-    if str(body.get("code")) != "0":
-        raise RuntimeError(f"okx code={body.get('code')} msg={body.get('msg')}")
-    rows: list[list[str]] = body.get("data") or []
-    return rows
+def fetch_ohlc(symbol: str, days: int) -> dict[str, np.ndarray]:
+    """Daily CLOSED OHLC bars for an MT5 symbol, aggregated from the desk's own H1 parquet.
 
+    REPOINTED 2026-09-05 (universe mandate). This used to page
+    ``okx.com/api/v5/market/history-candles?instId=<BASE>-USDT-SWAP`` -- a live query against a
+    crypto-exchange perp universe, which the mandate closed for good. The QUESTION the module asks
+    is venue-neutral ("is there information in the ORDER of bars, or is the rule harvesting drift
+    the asset hands out for free?") and the maths lives in ``libs.validation.bar_permutation``, so
+    the venue was replaced rather than the measurement retired.
 
-def fetch_ohlc(base: str, days: int) -> dict[str, np.ndarray]:
-    """Daily CONFIRMED OHLC perp bars. Only confirm=="1" -- the newest row is the in-progress bar
-    and its "close" is the current price, which would put a partial bar at the panel edge."""
-    rows: list[list[str]] = []
-    cursor = ""
-    for _ in range(max(1, -(-days // _PAGE))):
-        page = _okx_get(f"{_OKX}/api/v5/market/history-candles?instId={base}-USDT-SWAP"
-                        f"&bar=1D&limit={_PAGE}{cursor}")
-        if not page:
-            break
-        rows.extend(page)
-        cursor = f"&after={page[-1][0]}"
-        time.sleep(_REQ_SLEEP)
-    good = [r for r in rows if len(r) >= 9 and r[8] == "1"]
-    good.sort(key=lambda r: int(r[0]))
-    return {k: np.array([float(r[i]) for r in good], dtype="float64")
-            for k, i in (("open", 1), ("high", 2), ("low", 3), ("close", 4))}
+    THE SOURCE IS NOW LOCAL AND THE SCRIPT MAKES NO NETWORK CALL AT ALL. It reads the H1 parquet
+    the MT5 desk already keeps under ``desks/mt5/data/universe/`` and aggregates to daily.
+    Read-only: nothing here writes into the desk's data.
+
+    THE LAST DAY IS DROPPED, for the same reason the OKX path filtered on ``confirm == "1"``.
+    Aggregating today's partial session yields a bar whose "close" is the current price, which
+    would put a half-formed bar at the panel edge and let a rule read the present as a completed
+    day. A day is kept only when a LATER bar exists in the file to prove it closed.
+    """
+    path = _UNIVERSE / f"{symbol}_H1.parquet"
+    if not path.exists():
+        raise RuntimeError(f"{symbol}: no H1 parquet at {path.relative_to(_ROOT)}")
+    import pandas as pd
+
+    df = pd.read_parquet(path)
+    if df.empty:
+        raise RuntimeError(f"{symbol}: {path.name} is empty")
+    idx = pd.to_datetime(df.index, utc=True)
+    daily = (df.set_index(idx)
+               .resample("1D")
+               .agg({"open": "first", "high": "max", "low": "min", "close": "last"})
+               .dropna())
+    # The final calendar day in the file may still be forming; only bars strictly before it are
+    # proven closed by the existence of a later print.
+    daily = daily.iloc[:-1]
+    daily = daily.iloc[-int(days):] if days > 0 else daily
+    return {k: np.asarray(daily[k].to_numpy(), dtype="float64")
+            for k in ("open", "high", "low", "close")}
 
 
 def _series(b: Bars) -> MarketSeries:
@@ -218,7 +236,8 @@ def _read_control(p: float | None, variance_ratio: float | None) -> str:
 
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--symbols", default="BTC,ETH,SOL")
+    ap.add_argument("--symbols", default="EURUSD,XAUUSD,GBPUSD",
+                    help="MT5 symbols with an H1 parquet under desks/mt5/data/universe/")
     ap.add_argument("--days", type=int, default=800)
     ap.add_argument("--permutations", type=int, default=DEFAULT_PERMUTATIONS)
     ap.add_argument("--seed", type=int, default=90210)
@@ -233,10 +252,10 @@ def main(argv: list[str] | None = None) -> int:
         "status": "RUNNING",
         "question": ("do the desk's twelve declared families carry information in the ORDER of "
                      "bars, or are they harvesting drift the asset hands out for free"),
-        "method": ("libs.validation.bar_permutation on okx:history-candles:1D:confirmed; every "
+        "method": ("libs.validation.bar_permutation on mt5:universe:H1->1D:closed; every "
                    "GeneratorSpec x param_variant scored by its own generators.returns_for path; buy-and-hold "
                    "run as the control that measures the permutation's own bias"),
-        "source": "okx:history-candles:1D:confirmed",
+        "source": "mt5:desks/mt5/data/universe/<symbol>_H1.parquet:resampled-1D:closed",
         "symbols": symbols, "results": [], "blocked": {},
     }
     for sym in symbols:

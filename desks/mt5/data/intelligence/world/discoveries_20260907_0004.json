@@ -1,0 +1,1913 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download our Mobile App! - Commodity Broker - Options, Futures, Integrity",
+  "url": "http://www.decarleytrading.com/free-offers/decarley-trading-mobile-application/download-our-commodity-mobile-app",
+  "published": "2026-09-07T00:00:03+00:00",
+  "symbols": [],
+  "timeframes": [
+   "INTRADAY"
+  ],
+  "patterns": [
+   "basis",
+   "gap"
+  ],
+  "confidence": 0.75,
+  "lang": "en-GB",
+  "endpoints": [
+   "http://www.decarleytrading.com/free-offers/decarley-trading-mobile-application/download-our-commodity-mobile-app"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "bff92119e2b5d0a55b9f",
+  "host": "www.decarleytrading.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Datautvinning \u2013 Wikipedia",
+  "url": "https://sv.wikipedia.org/wiki/Databrytning",
+  "published": "2026-09-07T00:00:04+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "correlation",
+   "flow",
+   "inventory",
+   "mean_reversion",
+   "momentum",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "sv",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "9fd8260c7e915426f17e",
+  "host": "sv.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Trade Signals | SharkIndicators",
+  "url": "https://www.sharkindicators.com/documentation/blackbird/order-settings/trade-signals/",
+  "published": "2026-09-07T00:00:06+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.sharkindicators.com/wp-content/plugins/download-monitor/page-addon/styles.css?ver=6.1.12",
+   "https://www.sharkindicators.com/documentation/download-installer/",
+   "https://www.sharkindicators.com/downloads/"
+  ],
+  "n_endpoints": 3,
+  "vault_sha": "773605f50a4b2ef1da22",
+  "host": "www.sharkindicators.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Management Buttons | SharkIndicators",
+  "url": "https://www.sharkindicators.com/documentation/blackbird/order-settings/management-buttons/",
+  "published": "2026-09-07T00:00:08+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "basis",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.sharkindicators.com/wp-content/plugins/download-monitor/page-addon/styles.css?ver=6.1.12",
+   "https://www.sharkindicators.com/documentation/download-installer/",
+   "https://www.sharkindicators.com/downloads/"
+  ],
+  "n_endpoints": 3,
+  "vault_sha": "5aff18b3174f2cd83920",
+  "host": "www.sharkindicators.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Archive - The DeCarley Perspective",
+  "url": "https://decarleytrading.substack.com/archive",
+  "published": "2026-09-07T00:00:09+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy",
+   "seasonality"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b5fca0b358fb512cbf1d",
+  "host": "decarleytrading.substack.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download our Mobile App! - Commodity Broker - Options, Futures, Integrity",
+  "url": "https://decarleytrading.com/free-offers/decarley-trading-mobile-application/download-our-commodity-mobile-app",
+  "published": "2026-09-07T00:00:10+00:00",
+  "symbols": [],
+  "timeframes": [
+   "INTRADAY"
+  ],
+  "patterns": [
+   "basis",
+   "gap"
+  ],
+  "confidence": 0.75,
+  "lang": "en-GB",
+  "endpoints": [
+   "https://decarleytrading.com/free-offers/decarley-trading-mobile-application/download-our-commodity-mobile-app"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "dc8380f9ec3c053d8e5d",
+  "host": "decarleytrading.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Google News",
+  "url": "http://news.google.com/archivesearch?&as_src=-newswire+-wire+-presswire+-PR+-release+-wikipedia&q=%22Algoritms%22",
+  "published": "2026-09-07T00:00:13+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [
+   "http://news.google.com/_/DotsSplashUi/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "3f8c5cc125c7f52ac64e",
+  "host": "news.google.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Google Books",
+  "url": "https://www.google.co.id/books/edition/DATA_MINING/MWcHEAAAQBAJ?hl=id&newbks=1&gbpv=1&dq=statistika+dan+algoritma+em&pg=PA120&printsec=frontcover",
+  "published": "2026-09-07T00:00:18+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "id-DE",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3350c1e8e53e2e4a459e",
+  "host": "www.google.co.id",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\ud000\ud2b8 \ud22c\uc790 \uc804\ub7b5: \ubc31\ud14c\uc2a4\ud2b8\ub85c \uac80\uc99d\ub41c \ub370\uc774\ud130 \uae30\ubc18 \ud22c\uc790\ubc95",
+  "url": "https://ezfarm.tistory.com/entry/\ud000\ud2b8-\ud22c\uc790-\uc804\ub7b5-\ubc31\ud14c\uc2a4\ud2b8\ub85c-\uac80\uc99d\ub41c-\ub370\uc774\ud130-\uae30\ubc18-\ud22c\uc790\ubc95",
+  "published": "2026-09-07T00:00:20+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "ko",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "8744d22f1de69c579987",
+  "host": "ezfarm.tistory.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\ud000\ud2b8 \ud22c\uc790 \ubc31\ud14c\uc2a4\ud305\uc73c\ub85c \uc2dc\uc791\ud558\ub294 \ub370\uc774\ud130 \uae30\ubc18 \uc8fc\uc2dd\ud22c\uc790 \uc218\uc775\ub960 \ub192\uc774\ub294 \ubc29\ubc95",
+  "url": "https://nununa98.tistory.com/entry/\ud000\ud2b8-\ud22c\uc790-\ubc31\ud14c\uc2a4\ud305\uc73c\ub85c-\uc2dc\uc791\ud558\ub294-\ub370\uc774\ud130-\uae30\ubc18-\uc8fc\uc2dd\ud22c\uc790-\uc218\uc775\ub960-\ub192\uc774\ub294-\ubc29\ubc95",
+  "published": "2026-09-07T00:00:22+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "breakout",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "ko",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f5507517e13556cf8bc2",
+  "host": "nununa98.tistory.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\uc2dc\uc7a5\uc744 \uc120\ub3c4\ud558\ub294 \uc885\ubaa9\uc744 \uc7a1\ub294 \uc8fc\ub3c4\uc8fc \ud22c\uc790 \uc804\ub7b5",
+  "url": "https://ezfarm.tistory.com/entry/%EC%8B%9C%EC%9E%A5%EC%9D%84-%EC%84%A0%EB%8F%84%ED%95%98%EB%8A%94-%EC%A2%85%EB%AA%A9%EC%9D%84-%EC%9E%A1%EB%8A%94-%EC%A3%BC%EB%8F%84%EC%A3%BC-%ED%88%AC%EC%9E%90-%EC%A0%84%EB%9E%B5",
+  "published": "2026-09-07T00:00:25+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "breakout",
+   "momentum",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "ko",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "7e49b80ca2ff24983868",
+  "host": "ezfarm.tistory.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\uc2e0\ud55c\uc740\ud589 \uae08\uc735\uac70\ub798\ud655\uc778\uc11c \uc778\ud130\ub137 \ubc1c\uae09 \ubc29\ubc95 \uc815\ub9ac",
+  "url": "https://ezfarm.tistory.com/entry/%EC%8B%A0%ED%95%9C%EC%9D%80%ED%96%89-%EA%B8%88%EC%9C%B5%EA%B1%B0%EB%9E%98%ED%99%95%EC%9D%B8%EC%84%9C-%EC%9D%B8%ED%84%B0%EB%84%B7-%EB%B0%9C%EA%B8%89-21224",
+  "published": "2026-09-07T00:00:27+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "ko",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d1043edd9550e55b8135",
+  "host": "ezfarm.tistory.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\ub3d9\uc801 \uc790\uc0b0 \ubc30\ubd84 \uc804\ub7b5: BAA, TAA, \ub4c0\uc5bc \ubaa8\uba58\ud140",
+  "url": "https://ezfarm.tistory.com/entry/%EB%8F%99%EC%A0%81-%EC%9E%90%EC%82%B0-%EB%B0%B0%EB%B6%84-%EC%A0%84%EB%9E%B5-BAA-TAA-%EB%93%80%EC%96%BC-%EB%AA%A8%EB%A9%98%ED%85%80",
+  "published": "2026-09-07T00:00:29+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "ko",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "634a08f6636c40bc3a4f",
+  "host": "ezfarm.tistory.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\uafb8\uc900\ud55c \ud604\uae08 \ud750\ub984\uc744 \ub9cc\ub4dc\ub294 \ubc30\ub2f9\uc8fc \ud22c\uc790",
+  "url": "https://ezfarm.tistory.com/entry/%EA%BE%B8%EC%A4%80%ED%95%9C-%ED%98%84%EA%B8%88-%ED%9D%90%EB%A6%84%EC%9D%84-%EB%A7%8C%EB%93%9C%EB%8A%94-%EB%B0%B0%EB%8B%B9%EC%A3%BC-%ED%88%AC%EC%9E%90",
+  "published": "2026-09-07T00:00:31+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "ko",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e683e152bbdfe5469938",
+  "host": "ezfarm.tistory.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\uac00\uce58 \ud22c\uc790 \uc804\ub7b5: \ubca4\uc800\ubbfc \uadf8\ub808\uc774\uc5c4\uc758 \uc6d0\uce59\uc744 \ud604\ub300\uc801\uc73c\ub85c \ud574\uc11d\ud558\uae30",
+  "url": "https://ezfarm.tistory.com/entry/%EA%B0%80%EC%B9%98-%ED%88%AC%EC%9E%90-%EC%A0%84%EB%9E%B5-%EB%B2%A4%EC%A0%80%EB%AF%BC-%EA%B7%B8%EB%A0%88%EC%9D%B4%EC%97%84%EC%9D%98-%EC%9B%90%EC%B9%99%EC%9D%84-%ED%98%84%EB%8C%80%EC%A0%81%EC%9C%BC%EB%A1%9C-%ED%95%B4%EC%84%9D%ED%95%98%EA%B8%B0",
+  "published": "2026-09-07T00:00:33+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "ko",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "30655478990ad2f7860c",
+  "host": "ezfarm.tistory.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\ud000\ud2b8 \ud22c\uc790 \uc804\ub7b5: \ubc31\ud14c\uc2a4\ud2b8\ub85c \uac80\uc99d\ub41c \ub370\uc774\ud130 \uae30\ubc18 \ud22c\uc790\ubc95",
+  "url": "https://ezfarm.tistory.com/entry/%ED%80%80%ED%8A%B8-%ED%88%AC%EC%9E%90-%EC%A0%84%EB%9E%B5-%EB%B0%B1%ED%85%8C%EC%8A%A4%ED%8A%B8%EB%A1%9C-%EA%B2%80%EC%A6%9D%EB%90%9C-%EB%8D%B0%EC%9D%B4%ED%84%B0-%EA%B8%B0%EB%B0%98-%ED%88%AC%EC%9E%90%EB%B2%95",
+  "published": "2026-09-07T00:00:35+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "ko",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "4a9a0ebb8cc339e39f70",
+  "host": "ezfarm.tistory.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\uac00\uce58 \ud22c\uc790 \uc804\ub7b5: \ubca4\uc800\ubbfc \uadf8\ub808\uc774\uc5c4\uc758 \uc6d0\uce59\uc744 \ud604\ub300\uc801\uc73c\ub85c \ud574\uc11d\ud558\uae30",
+  "url": "https://ezfarm.tistory.com/entry/%EA%B0%80%EC%B9%98-%ED%88%AC%EC%9E%90-%EC%A0%84%EB%9E%B5-%EB%B2%A4%EC%A0%80%EB%AF%BC-%EA%B7%B8%EB%A0%88%EC%9D%B4%EC%97%84%EC%9D%98-%EC%9B%90%EC%B9%99%EC%9D%84-%ED%98%84%EB%8C%80%EC%A0%81%EC%9C%BC%EB%A1%9C-%ED%95%B4%EC%84%9D%ED%95%98%EA%B8%B0?category=1273550",
+  "published": "2026-09-07T00:00:39+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "ko",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "48219ee755446f3913ec",
+  "host": "ezfarm.tistory.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\ud000\ud2b8 \ud22c\uc790 \uc804\ub7b5: \ubc31\ud14c\uc2a4\ud2b8\ub85c \uac80\uc99d\ub41c \ub370\uc774\ud130 \uae30\ubc18 \ud22c\uc790\ubc95",
+  "url": "https://ezfarm.tistory.com/entry/%ED%80%80%ED%8A%B8-%ED%88%AC%EC%9E%90-%EC%A0%84%EB%9E%B5-%EB%B0%B1%ED%85%8C%EC%8A%A4%ED%8A%B8%EB%A1%9C-%EA%B2%80%EC%A6%9D%EB%90%9C-%EB%8D%B0%EC%9D%B4%ED%84%B0-%EA%B8%B0%EB%B0%98-%ED%88%AC%EC%9E%90%EB%B2%95?category=1273550",
+  "published": "2026-09-07T00:00:42+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "ko",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "91376d8b6b9a135accb2",
+  "host": "ezfarm.tistory.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Why Do I Teach and Do I Find Meaning in Trading - AlgoTrading101 Blog",
+  "url": "https://algotrading101.com/learn/why-do-i-teach-and-do-i-find-meaning-in-trading/",
+  "published": "2026-09-07T00:00:47+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "orderflow"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "9798364ef60491f6c59c",
+  "host": "algotrading101.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "About Us - Quantitative Trading Ideas and Guides - AlgoTrading101 Blog",
+  "url": "https://algotrading101.com/p/about-me-lucas-liew",
+  "published": "2026-09-07T00:00:54+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "gap"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "8864a66832c134bbf4d6",
+  "host": "algotrading101.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Terms of Use | AlgoTrading101",
+  "url": "https://algotrading101.com/p/terms",
+  "published": "2026-09-07T00:00:56+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "carry",
+   "positioning"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c0c5ad164f3945d2795f",
+  "host": "algotrading101.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Privacy Policy | AlgoTrading101",
+  "url": "https://algotrading101.com/p/privacy",
+  "published": "2026-09-07T00:00:58+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "carry"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "9476d079acf0b56b28c8",
+  "host": "algotrading101.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Analiza e algoritmeve - Wikipedia",
+  "url": "https://sq.wikipedia.org/wiki/Analiza_e_algoritmeve",
+  "published": "2026-09-07T00:01:09+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "sq",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "cc7a8cf8770a60cc3584",
+  "host": "sq.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Eficien\u021ba algoritmilor - Wikipedia",
+  "url": "https://ro.wikipedia.org/wiki/Eficien%C8%9Ba_algoritmilor",
+  "published": "2026-09-07T00:01:10+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "ro",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d0826f21447ff302dea2",
+  "host": "ro.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Mall:Infokast algoritm \u2013 Vikipeedia",
+  "url": "https://et.wikipedia.org/wiki/Mall:Infokast_algoritm",
+  "published": "2026-09-07T00:01:11+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "et",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "608069f68dbe04fc9aa6",
+  "host": "et.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Veidne:Algoritma infokaste \u2014 Vikip\u0113dija",
+  "url": "https://lv.wikipedia.org/wiki/Veidne:Algoritma_infokaste",
+  "published": "2026-09-07T00:01:12+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "lv",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "008590a17144074eb5a1",
+  "host": "lv.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Mall:Faktamall algoritm \u2013 Wikipedia",
+  "url": "https://sv.wikipedia.org/wiki/Mall:Faktamall_algoritm",
+  "published": "2026-09-07T00:01:13+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "mean_reversion"
+  ],
+  "confidence": 0.35,
+  "lang": "sv",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "5106df7489648272f171",
+  "host": "sv.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Padron:Infobox algorithm - Wikipedia, ang malayang ensiklopedya",
+  "url": "https://tl.wikipedia.org/wiki/Padron:Infobox_algorithm",
+  "published": "2026-09-07T00:01:13+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "tl",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "63473c6c04f259ff7803",
+  "host": "tl.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Categor\u00eda:Algorismos - Biquipedia, a enciclopedia libre",
+  "url": "https://an.wikipedia.org/wiki/Categor%C3%ADa:Algorismos",
+  "published": "2026-09-07T00:01:15+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "an",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3a813ea796dca6f0eb59",
+  "host": "an.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Kategori:Algoritmer - Wikipedia, den frie encyklop\u00e6di",
+  "url": "https://da.wikipedia.org/wiki/Kategori:Algoritmer",
+  "published": "2026-09-07T00:01:16+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "da",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b3835c81275f2eb8cd4b",
+  "host": "da.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Kategooria:Algoritmid \u2013 Vikipeedia",
+  "url": "https://et.wikipedia.org/wiki/Kategooria:Algoritmid",
+  "published": "2026-09-07T00:01:17+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "et",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "1d9b4083de9448769dca",
+  "host": "et.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Kategoria:Algoritmoak - Wikipedia, entziklopedia askea.",
+  "url": "https://eu.wikipedia.org/wiki/Kategoria:Algoritmoak",
+  "published": "2026-09-07T00:01:18+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "eu",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "2eb789c440a15a383aff",
+  "host": "eu.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Categor\u00eda:Algoritmos - Wikipedia, a enciclopedia libre",
+  "url": "https://gl.wikipedia.org/wiki/Categor%C3%ADa:Algoritmos",
+  "published": "2026-09-07T00:01:18+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "gl",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "eb384e71ba0289968639",
+  "host": "gl.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Categoria:Algorithmos - Wikipedia, le encyclopedia libere",
+  "url": "https://ia.wikipedia.org/wiki/Categoria:Algorithmos",
+  "published": "2026-09-07T00:01:20+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "ia",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ddbae3f539cdba5d384f",
+  "host": "ia.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Kategoria:Dagiti algoritmo - Wikipedia, ti nawaya nga ensiklopedia",
+  "url": "https://ilo.wikipedia.org/wiki/Kategoria:Dagiti_algoritmo",
+  "published": "2026-09-07T00:01:20+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "ilo",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "cd1dc5fa661cee6e61d8",
+  "host": "ilo.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Kategorio:Algoritmi - Wikipedio",
+  "url": "https://io.wikipedia.org/wiki/Kategorio:Algoritmi",
+  "published": "2026-09-07T00:01:21+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "io",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "5c64f1bc27e74adc0b91",
+  "host": "io.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Categoria:Algorithmi - Vicipaedia",
+  "url": "https://la.wikipedia.org/wiki/Categoria:Algorithmi",
+  "published": "2026-09-07T00:01:22+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "la",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "1afa4b71188da6b1b5f1",
+  "host": "la.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Kategorie:Algorithmen \u2013 Wikipedia",
+  "url": "https://lb.wikipedia.org/wiki/Kategorie:Algorithmen",
+  "published": "2026-09-07T00:01:22+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "lb",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c81bbad708d4106ca615",
+  "host": "lb.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Kategorija:Algoritmai \u2013 Vikipedija",
+  "url": "https://lt.wikipedia.org/wiki/Kategorija:Algoritmai",
+  "published": "2026-09-07T00:01:23+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "lt",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "6c692b70a2207dbb4f3e",
+  "host": "lt.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Kategorija:Algoritmi \u2014 Vikip\u0113dija",
+  "url": "https://lv.wikipedia.org/wiki/Kategorija:Algoritmi",
+  "published": "2026-09-07T00:01:24+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "lv",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "761ec082d8c1bf43bb12",
+  "host": "lv.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Kategori:Algoritma - Wikipedia Bahasa Melayu, ensiklopedia bebas",
+  "url": "https://ms.wikipedia.org/wiki/Kategori:Algoritma",
+  "published": "2026-09-07T00:01:24+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "ms",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b73478f2690d51ba7aa5",
+  "host": "ms.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Catadorie:Algoritmos - Biquip\u00e9dia",
+  "url": "https://mwl.wikipedia.org/wiki/Catadorie:Algoritmos",
+  "published": "2026-09-07T00:01:25+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "mwl",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "11428c7b5fc920ec28e1",
+  "host": "mwl.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Categorie:Algoritme - Wikipedia",
+  "url": "https://nl.wikipedia.org/wiki/Categorie:Algoritme",
+  "published": "2026-09-07T00:01:26+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "nl",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "430d41dbc397be9edc10",
+  "host": "nl.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Kategori:Algoritmar \u2013 Wikipedia",
+  "url": "https://nn.wikipedia.org/wiki/Kategori:Algoritmar",
+  "published": "2026-09-07T00:01:27+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "nn",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "576367bd198ae5f18dde",
+  "host": "nn.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Categoria:Algoritme \u2014 Wikip\u00e8dia",
+  "url": "https://oc.wikipedia.org/wiki/Categoria:Algoritme",
+  "published": "2026-09-07T00:01:28+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "oc",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c732993faf2246fadaf9",
+  "host": "oc.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Categorie:Algoritmi - Wikipedia",
+  "url": "https://ro.wikipedia.org/wiki/Categorie:Algoritmi",
+  "published": "2026-09-07T00:01:28+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "ro",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e9bbf8dcf01612bc57e7",
+  "host": "ro.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Category:Algorithms - Wikipedia",
+  "url": "https://sco.wikipedia.org/wiki/Category:Algorithms",
+  "published": "2026-09-07T00:01:29+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "sco",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "9bb46cc9fdd4667a6d6d",
+  "host": "sco.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Category:Algorithms - Simple English Wikipedia, the free encyclopedia",
+  "url": "https://simple.wikipedia.org/wiki/Category:Algorithms",
+  "published": "2026-09-07T00:01:30+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "235d76c1caa7d1cfee4f",
+  "host": "simple.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Kategoria:Algoritme - Wikipedia",
+  "url": "https://sq.wikipedia.org/wiki/Kategoria:Algoritme",
+  "published": "2026-09-07T00:01:32+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "sq",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "9d074895a4090c86978b",
+  "host": "sq.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Kategori:Algoritmer \u2013 Wikipedia",
+  "url": "https://sv.wikipedia.org/wiki/Kategori:Algoritmer",
+  "published": "2026-09-07T00:01:33+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "sv",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b7deb0c5879d6288cf1b",
+  "host": "sv.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Kategorya:Mga algoritmo - Wikipedia, ang malayang ensiklopedya",
+  "url": "https://tl.wikipedia.org/wiki/Kategorya:Mga_algoritmo",
+  "published": "2026-09-07T00:01:33+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "tl",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "37d8534ee6c5ae2d24b1",
+  "host": "tl.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Kategori:Algoritmalar - Vikipedi",
+  "url": "https://tr.wikipedia.org/wiki/Kategori:Algoritmalar",
+  "published": "2026-09-07T00:01:34+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "mean_reversion"
+  ],
+  "confidence": 0.35,
+  "lang": "tr",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "5b5407931348e120fa08",
+  "host": "tr.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Turkum:Algoritmlar - Vikipediya",
+  "url": "https://uz.wikipedia.org/wiki/Turkum:Algoritmlar",
+  "published": "2026-09-07T00:01:35+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "uz",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3e48e12560b9596c1648",
+  "host": "uz.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Commodity Commentary Newsletter Trial - Commodity Broker - Options, Futures, Integrity",
+  "url": "http://www.decarleytrading.com/free-offers/the-decarley-perspective",
+  "published": "2026-09-07T00:01:39+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "seasonality"
+  ],
+  "confidence": 0.35,
+  "lang": "en-GB",
+  "endpoints": [
+   "http://www.decarleytrading.com/free-offers/decarley-trading-mobile-application/download-our-commodity-mobile-app"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "c3079f2ccac72e444fb9",
+  "host": "www.decarleytrading.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "The DeCarley Perspective... - Commodity Broker - Options, Futures, Integrity",
+  "url": "http://www.decarleytrading.com/free-offers/the-decarley-perspective/subscribe-the-decarley-perspective",
+  "published": "2026-09-07T00:01:41+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "seasonality"
+  ],
+  "confidence": 0.35,
+  "lang": "en-GB",
+  "endpoints": [
+   "http://www.decarleytrading.com/free-offers/decarley-trading-mobile-application/download-our-commodity-mobile-app"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "fc985a2857d73406bc9c",
+  "host": "www.decarleytrading.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Online Futures and Options Seminars - Commodity Broker - Options, Futures, Integrity",
+  "url": "http://www.decarleytrading.com/free-offers/online-futures-and-options-seminars",
+  "published": "2026-09-07T00:01:49+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis"
+  ],
+  "confidence": 0.35,
+  "lang": "en-GB",
+  "endpoints": [
+   "http://www.decarleytrading.com/free-offers/decarley-trading-mobile-application/download-our-commodity-mobile-app"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "052b6b4d3143e56c7854",
+  "host": "www.decarleytrading.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Free Online Trading Lessons Archives - Commodity Broker - Options, Futures, Integrity",
+  "url": "http://www.decarleytrading.com/free-offers/online-futures-and-options-seminars/webinar-archives",
+  "published": "2026-09-07T00:01:52+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "orderflow",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-GB",
+  "endpoints": [
+   "http://www.decarleytrading.com/free-offers/decarley-trading-mobile-application/download-our-commodity-mobile-app"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "b62dc5b959fbacc2cab0",
+  "host": "www.decarleytrading.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Sell Commodity Options with DeCarley Trading - Commodity Broker - Options, Futures, Integrity",
+  "url": "http://www.decarleytrading.com/commodity-brokerage-services/trade-futures/sell-commodity-options-with-decarley",
+  "published": "2026-09-07T00:02:10+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-GB",
+  "endpoints": [
+   "http://www.decarleytrading.com/free-offers/decarley-trading-mobile-application/download-our-commodity-mobile-app"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "2a1945fe74cdba1a2a08",
+  "host": "www.decarleytrading.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Futures Trading Web Trader | Discover The Best Web Trader for Trading Futures",
+  "url": "https://optimusfutures.com/Web-Trader.php",
+  "published": "2026-09-07T00:02:12+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "orderflow"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f47b5a78229c318bf804",
+  "host": "optimusfutures.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Futures Trading Platforms &amp; Software | Optimus Futures",
+  "url": "https://optimusfutures.com/Futures-Trading-Platforms.php",
+  "published": "2026-09-07T00:02:15+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3276caa793ef08358840",
+  "host": "optimusfutures.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Futures Trading Commissions | Pricing As Low As $.10/Side | Optimus Futures",
+  "url": "https://optimusfutures.com/Futures-Trading-Pricing.php",
+  "published": "2026-09-07T00:02:18+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "orderflow"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "908dd12091c5af952fb6",
+  "host": "optimusfutures.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Trade Micro Futures | Even Lower Commission, Margins & Account Minimums | Optimus Futures",
+  "url": "https://optimusfutures.com/micro-futures.php",
+  "published": "2026-09-07T00:02:20+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry",
+   "orderflow"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "da7796b0e2637a01bbd7",
+  "host": "optimusfutures.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Start Futures Trading | Open an Account with a Top Rated Futures Broker",
+  "url": "https://optimusfutures.com/Futures-Commodities-Trading-Account.php",
+  "published": "2026-09-07T00:02:25+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b195263c6e543b404419",
+  "host": "optimusfutures.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Margin Requirements | Futures Trading | Optimus Futures",
+  "url": "https://optimusfutures.com/Margin-Rates.php",
+  "published": "2026-09-07T00:02:27+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "carry",
+   "night_session",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f3b6537b66391145687b",
+  "host": "optimusfutures.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Automated Trading Systems",
+  "url": "https://optimusfutures.com/Commodity-Futures-Trading-System.php",
+  "published": "2026-09-07T00:02:31+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "77a2b620a6b39919da1f",
+  "host": "optimusfutures.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Futures Trading Guides & Learning Hub | Optimus Futures",
+  "url": "https://optimusfutures.com/Commodity-Trading-Education.php",
+  "published": "2026-09-07T00:02:33+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "breakout",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "016b1790ee75599375f8",
+  "host": "optimusfutures.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Diskussion:Algorithmus - Alemannische Wikipedia",
+  "url": "https://als.wikipedia.org/wiki/Diskussion:Algorithmus",
+  "published": "2026-09-07T00:02:39+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "gsw",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e8a1a99fb2c7713ef901",
+  "host": "als.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algorithmus - Alemannische Wikipedia",
+  "url": "https://als.wikipedia.org/w/index.php?title=Algorithmus&veaction=edit",
+  "published": "2026-09-07T00:02:41+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "gsw",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "27c157357a333836922f",
+  "host": "als.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Bearbeite vo \u00abAlgorithmus\u00bb - Alemannische Wikipedia",
+  "url": "https://als.wikipedia.org/w/index.php?title=Algorithmus&action=edit",
+  "published": "2026-09-07T00:02:43+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "gsw",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "abbf8ba74db7197c3bc3",
+  "host": "als.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algorithmus: Versionsgschicht - Alemannische Wikipedia",
+  "url": "https://als.wikipedia.org/w/index.php?title=Algorithmus&action=history",
+  "published": "2026-09-07T00:02:45+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "mean_reversion"
+  ],
+  "confidence": 0.35,
+  "lang": "gsw",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "16fccddddccee107d787",
+  "host": "als.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Syte, wo uf \u201eAlgorithmus\u201c verwyse - Alemannische Wikipedia",
+  "url": "https://als.wikipedia.org/wiki/Spezial:Was_verwyyst_do_druff%3F/Algorithmus",
+  "published": "2026-09-07T00:02:47+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "mean_reversion"
+  ],
+  "confidence": 0.35,
+  "lang": "gsw",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "1622e5ccc7e8ade0780c",
+  "host": "als.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algorithmus - Alemannische Wikipedia",
+  "url": "https://als.wikipedia.org/w/index.php?title=Algorithmus&oldid=997775",
+  "published": "2026-09-07T00:02:53+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "gsw",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "eed2d455a0222ee5609e",
+  "host": "als.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Informatione zue \u201eAlgorithmus\u201c - Alemannische Wikipedia",
+  "url": "https://als.wikipedia.org/w/index.php?title=Algorithmus&action=info",
+  "published": "2026-09-07T00:02:57+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis"
+  ],
+  "confidence": 0.35,
+  "lang": "gsw",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "93ade49191358e4556b9",
+  "host": "als.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algorithmus - Alemannische Wikipedia",
+  "url": "https://als.wikipedia.org/w/index.php?title=Algorithmus&useparsoid=0",
+  "published": "2026-09-07T00:03:05+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "gsw",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "68d776ed953d945d0e2b",
+  "host": "als.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Buechgenerator - Alemannische Wikipedia",
+  "url": "https://als.wikipedia.org/w/index.php?title=Spezial:Sammlig&bookcmd=book_creator&referer=Algorithmus",
+  "published": "2026-09-07T00:03:05+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "gsw",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "2393ce922eb11afe58b6",
+  "host": "als.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algorithmus - Alemannische Wikipedia",
+  "url": "https://als.wikipedia.org/w/index.php?title=Algorithmus&printable=yes",
+  "published": "2026-09-07T00:03:10+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "gsw",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "4643b47f14da06da636a",
+  "host": "als.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algorithmus - Alemannische Wikipedia",
+  "url": "https://als.wikipedia.org/w/index.php?title=Algorithmus&veaction=edit&section=1",
+  "published": "2026-09-07T00:03:12+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "gsw",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "1b2ce82e3976e67c2623",
+  "host": "als.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Dentrar-ie - Biquipedia, a enciclopedia libre",
+  "url": "https://an.wikipedia.org/w/index.php?title=Especial:Encetar_sesi%C3%B3n&returnto=Algorismo",
+  "published": "2026-09-07T00:03:19+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "session"
+  ],
+  "confidence": 0.35,
+  "lang": "an",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "07879c92609271607641",
+  "host": "an.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Descusi\u00f3n:Algorismo - Biquipedia, a enciclopedia libre",
+  "url": "https://an.wikipedia.org/wiki/Descusi%C3%B3n:Algorismo",
+  "published": "2026-09-07T00:03:20+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "an",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b9fa3b41c8c7dcbee60d",
+  "host": "an.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algorismo - Biquipedia, a enciclopedia libre",
+  "url": "https://an.wikipedia.org/w/index.php?title=Algorismo&veaction=edit",
+  "published": "2026-09-07T00:03:24+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "an",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "5f567b2ad5188a86947c",
+  "host": "an.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Editando Algorismo - Biquipedia, a enciclopedia libre",
+  "url": "https://an.wikipedia.org/w/index.php?title=Algorismo&action=edit",
+  "published": "2026-09-07T00:03:31+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy",
+   "session"
+  ],
+  "confidence": 0.35,
+  "lang": "an",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "8df55ae7696f61d7a0d4",
+  "host": "an.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Historial de versions de \"Algorismo\" - Biquipedia, a enciclopedia libre",
+  "url": "https://an.wikipedia.org/w/index.php?title=Algorismo&action=history",
+  "published": "2026-09-07T00:03:33+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "mean_reversion",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "an",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b15b8249f561fe3cd5f5",
+  "host": "an.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algorismo - Biquipedia, a enciclopedia libre",
+  "url": "https://an.wikipedia.org/w/index.php?title=Algorismo&oldid=2303744",
+  "published": "2026-09-07T00:03:43+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "an",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "0bcbcf6cfbec9b497de6",
+  "host": "an.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Informaci\u00f3n ta \u00abAlgorismo\u00bb - Biquipedia, a enciclopedia libre",
+  "url": "https://an.wikipedia.org/w/index.php?title=Algorismo&action=info",
+  "published": "2026-09-07T00:03:44+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "an",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "bce6efbf4ab8c81b9640",
+  "host": "an.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algorismo - Biquipedia, a enciclopedia libre",
+  "url": "https://an.wikipedia.org/w/index.php?title=Algorismo&useparsoid=0",
+  "published": "2026-09-07T00:03:49+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "an",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "6a97eabbc7eb59f6a16d",
+  "host": "an.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Creyador de libros - Biquipedia, a enciclopedia libre",
+  "url": "https://an.wikipedia.org/w/index.php?title=Especial:Libro&bookcmd=book_creator&referer=Algorismo",
+  "published": "2026-09-07T00:03:51+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "an",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f676848123be98911955",
+  "host": "an.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algorismo - Biquipedia, a enciclopedia libre",
+  "url": "https://an.wikipedia.org/w/index.php?title=Algorismo&printable=yes",
+  "published": "2026-09-07T00:03:56+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "an",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c6996bc11ff6cf0a5cc8",
+  "host": "an.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algorismo - Biquipedia, a enciclopedia libre",
+  "url": "https://an.wikipedia.org/w/index.php?title=Algorismo&veaction=edit&section=1",
+  "published": "2026-09-07T00:03:58+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "an",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "295bb44d784164af6d6a",
+  "host": "an.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Olay:Algoritmo - Wikipedia",
+  "url": "https://bcl.wikipedia.org/wiki/Olay:Algoritmo",
+  "published": "2026-09-07T00:04:03+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "bcl",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a868244374408fbd8b69",
+  "host": "bcl.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritmo - Wikipedia",
+  "url": "https://bcl.wikipedia.org/w/index.php?title=Algoritmo&veaction=edit",
+  "published": "2026-09-07T00:04:05+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry",
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "bcl",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "aa666f2ab144326bc386",
+  "host": "bcl.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Pigbabago an Algoritmo - Wikipedia",
+  "url": "https://bcl.wikipedia.org/w/index.php?title=Algoritmo&action=edit",
+  "published": "2026-09-07T00:04:07+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry"
+  ],
+  "confidence": 0.35,
+  "lang": "bcl",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f17c92a6544678ba2d9f",
+  "host": "bcl.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ }
+]

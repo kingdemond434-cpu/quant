@@ -1,0 +1,808 @@
+{
+ "built_at": "2026-08-29",
+ "built_by": "BRAIN HUNTER s27",
+ "question": "s26 voided 26/55 cells as UNMEASURED -- is that a property of the grouping, or of the ORDER in which the control shuffles and restricts?",
+ "eval_years": [
+  2024,
+  2025
+ ],
+ "random_draws": 8,
+ "seed": 20260829,
+ "estimation": "clusters for year Y from Y-1 daily log-return correlations only (point-in-time)",
+ "control_pre": "s26/s24b ordering: permute the cluster map, then restrict to the eval year's members and drop singletons. Size-matched on the MAP, not on the evaluated population.",
+ "control_post": "s27 ordering: restrict to the eval year's members FIRST, then permute, then drop singletons. Exactly size-matched on the evaluated population.",
+ "rows": [
+  {
+   "method": "average",
+   "metric": "euclid",
+   "k_requested": 24,
+   "k_effective": 24,
+   "n_symbols": 244,
+   "coverage": 0.971,
+   "median_group_size": 3.0,
+   "mean_abs_corr": 0.7383,
+   "control_pre": {
+    "ceiling": 0.9105,
+    "content": 0.1722,
+    "z": -71.6,
+    "held": 8,
+    "status": "ok",
+    "n_drift": [
+     0.012,
+     0.016,
+     0.016,
+     0.016,
+     0.012,
+     0.012,
+     0.016,
+     0.008
+    ]
+   },
+   "control_post": {
+    "ceiling": 0.9111,
+    "content": 0.1728,
+    "z": -66.5,
+    "held": 8,
+    "status": "ok",
+    "n_drift": [
+     0.012,
+     0.012,
+     0.016,
+     0.016,
+     0.012,
+     0.016,
+     0.016,
+     0.012
+    ]
+   }
+  },
+  {
+   "method": "average",
+   "metric": "euclid",
+   "k_requested": 48,
+   "k_effective": 48,
+   "n_symbols": 238,
+   "coverage": 0.918,
+   "median_group_size": 3.5,
+   "mean_abs_corr": 0.6233,
+   "control_pre": {
+    "ceiling": 0.8496,
+    "content": 0.2263,
+    "z": -51.7,
+    "held": 8,
+    "status": "ok",
+    "n_drift": [
+     0.034,
+     0.038,
+     0.038,
+     0.042,
+     0.025,
+     0.029,
+     0.034,
+     0.017
+    ]
+   },
+   "control_post": {
+    "ceiling": 0.8503,
+    "content": 0.227,
+    "z": -70.8,
+    "held": 8,
+    "status": "ok",
+    "n_drift": [
+     0.029,
+     0.029,
+     0.034,
+     0.042,
+     0.021,
+     0.034,
+     0.038,
+     0.034
+    ]
+   }
+  },
+  {
+   "method": "average",
+   "metric": "euclid",
+   "k_requested": 96,
+   "k_effective": 96,
+   "n_symbols": 214,
+   "coverage": 0.781,
+   "median_group_size": 3.0,
+   "mean_abs_corr": 0.4774,
+   "control_pre": {
+    "ceiling": 0.7583,
+    "content": 0.2809,
+    "z": -41.5,
+    "held": 5,
+    "status": "ok",
+    "n_drift": [
+     0.103,
+     0.093,
+     0.112,
+     0.112,
+     0.079,
+     0.075,
+     0.093,
+     0.075
+    ]
+   },
+   "control_post": {
+    "ceiling": 0.7593,
+    "content": 0.2819,
+    "z": -61.0,
+    "held": 5,
+    "status": "ok",
+    "n_drift": [
+     0.089,
+     0.103,
+     0.121,
+     0.117,
+     0.089,
+     0.098,
+     0.084,
+     0.084
+    ]
+   }
+  },
+  {
+   "method": "average",
+   "metric": "euclid",
+   "k_requested": 128,
+   "k_effective": 128,
+   "n_symbols": 178,
+   "coverage": 0.644,
+   "median_group_size": 2.5,
+   "mean_abs_corr": 0.4135,
+   "control_pre": {
+    "ceiling": null,
+    "content": null,
+    "z": null,
+    "held": 0,
+    "status": "UNMEASURED: 0/8 controls held population",
+    "n_drift": [
+     0.219,
+     0.197,
+     0.202,
+     0.202,
+     0.242,
+     0.163,
+     0.191,
+     0.174
+    ]
+   },
+   "control_post": {
+    "ceiling": null,
+    "content": null,
+    "z": null,
+    "held": 0,
+    "status": "UNMEASURED: 0/8 controls held population",
+    "n_drift": [
+     0.202,
+     0.213,
+     0.23,
+     0.202,
+     0.236,
+     0.197,
+     0.174,
+     0.185
+    ]
+   }
+  },
+  {
+   "method": "average",
+   "metric": "euclid",
+   "k_requested": 160,
+   "k_effective": 160,
+   "n_symbols": 145,
+   "coverage": 0.509,
+   "median_group_size": 2.0,
+   "mean_abs_corr": 0.3636,
+   "control_pre": {
+    "ceiling": null,
+    "content": null,
+    "z": null,
+    "held": 0,
+    "status": "UNMEASURED: 0/8 controls held population",
+    "n_drift": [
+     0.255,
+     0.31,
+     0.29,
+     0.269,
+     0.331,
+     0.269,
+     0.303,
+     0.262
+    ]
+   },
+   "control_post": {
+    "ceiling": null,
+    "content": null,
+    "z": null,
+    "held": 0,
+    "status": "UNMEASURED: 0/8 controls held population",
+    "n_drift": [
+     0.269,
+     0.324,
+     0.29,
+     0.262,
+     0.31,
+     0.262,
+     0.276,
+     0.255
+    ]
+   }
+  },
+  {
+   "method": "average",
+   "metric": "euclid",
+   "k_requested": 192,
+   "k_effective": 192,
+   "n_symbols": 108,
+   "coverage": 0.364,
+   "median_group_size": 2.0,
+   "mean_abs_corr": 0.3127,
+   "control_pre": {
+    "ceiling": null,
+    "content": null,
+    "z": null,
+    "held": 0,
+    "status": "UNMEASURED: 0/8 controls held population",
+    "n_drift": [
+     0.306,
+     0.361,
+     0.38,
+     0.333,
+     0.398,
+     0.333,
+     0.343,
+     0.352
+    ]
+   },
+   "control_post": {
+    "ceiling": null,
+    "content": null,
+    "z": null,
+    "held": 0,
+    "status": "UNMEASURED: 0/8 controls held population",
+    "n_drift": [
+     0.361,
+     0.37,
+     0.324,
+     0.324,
+     0.389,
+     0.324,
+     0.333,
+     0.296
+    ]
+   }
+  },
+  {
+   "method": "ward",
+   "metric": "euclid",
+   "k_requested": 24,
+   "k_effective": 24,
+   "n_symbols": 248,
+   "coverage": 1.0,
+   "median_group_size": 8.5,
+   "mean_abs_corr": 0.638,
+   "control_pre": {
+    "ceiling": 0.8736,
+    "content": 0.2356,
+    "z": -92.3,
+    "held": 8,
+    "status": "ok",
+    "n_drift": [
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0
+    ]
+   },
+   "control_post": {
+    "ceiling": 0.8736,
+    "content": 0.2356,
+    "z": -112.2,
+    "held": 8,
+    "status": "ok",
+    "n_drift": [
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0
+    ]
+   }
+  },
+  {
+   "method": "ward",
+   "metric": "euclid",
+   "k_requested": 48,
+   "k_effective": 48,
+   "n_symbols": 248,
+   "coverage": 0.998,
+   "median_group_size": 4.5,
+   "mean_abs_corr": 0.5307,
+   "control_pre": {
+    "ceiling": 0.7756,
+    "content": 0.2449,
+    "z": -50.0,
+    "held": 8,
+    "status": "ok",
+    "n_drift": [
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0
+    ]
+   },
+   "control_post": {
+    "ceiling": 0.7743,
+    "content": 0.2436,
+    "z": -76.9,
+    "held": 8,
+    "status": "ok",
+    "n_drift": [
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0
+    ]
+   }
+  },
+  {
+   "method": "ward",
+   "metric": "euclid",
+   "k_requested": 96,
+   "k_effective": 96,
+   "n_symbols": 232,
+   "coverage": 0.875,
+   "median_group_size": 2.0,
+   "mean_abs_corr": 0.4329,
+   "control_pre": {
+    "ceiling": 0.6838,
+    "content": 0.2509,
+    "z": -60.7,
+    "held": 8,
+    "status": "ok",
+    "n_drift": [
+     0.06,
+     0.056,
+     0.056,
+     0.047,
+     0.034,
+     0.039,
+     0.047,
+     0.034
+    ]
+   },
+   "control_post": {
+    "ceiling": 0.6843,
+    "content": 0.2514,
+    "z": -47.1,
+    "held": 8,
+    "status": "ok",
+    "n_drift": [
+     0.047,
+     0.056,
+     0.052,
+     0.047,
+     0.043,
+     0.056,
+     0.052,
+     0.047
+    ]
+   }
+  },
+  {
+   "method": "ward",
+   "metric": "euclid",
+   "k_requested": 128,
+   "k_effective": 128,
+   "n_symbols": 205,
+   "coverage": 0.734,
+   "median_group_size": 2.0,
+   "mean_abs_corr": 0.3783,
+   "control_pre": {
+    "ceiling": null,
+    "content": null,
+    "z": null,
+    "held": 2,
+    "status": "UNMEASURED: 2/8 controls held population",
+    "n_drift": [
+     0.117,
+     0.107,
+     0.122,
+     0.127,
+     0.117,
+     0.093,
+     0.122,
+     0.093
+    ]
+   },
+   "control_post": {
+    "ceiling": null,
+    "content": null,
+    "z": null,
+    "held": 1,
+    "status": "UNMEASURED: 1/8 controls held population",
+    "n_drift": [
+     0.107,
+     0.122,
+     0.151,
+     0.112,
+     0.122,
+     0.127,
+     0.098,
+     0.127
+    ]
+   }
+  },
+  {
+   "method": "ward",
+   "metric": "euclid",
+   "k_requested": 160,
+   "k_effective": 160,
+   "n_symbols": 157,
+   "coverage": 0.568,
+   "median_group_size": 2.0,
+   "mean_abs_corr": 0.3255,
+   "control_pre": {
+    "ceiling": null,
+    "content": null,
+    "z": null,
+    "held": 0,
+    "status": "UNMEASURED: 0/8 controls held population",
+    "n_drift": [
+     0.261,
+     0.287,
+     0.248,
+     0.242,
+     0.299,
+     0.236,
+     0.261,
+     0.261
+    ]
+   },
+   "control_post": {
+    "ceiling": null,
+    "content": null,
+    "z": null,
+    "held": 0,
+    "status": "UNMEASURED: 0/8 controls held population",
+    "n_drift": [
+     0.287,
+     0.306,
+     0.28,
+     0.248,
+     0.287,
+     0.248,
+     0.255,
+     0.242
+    ]
+   }
+  },
+  {
+   "method": "ward",
+   "metric": "euclid",
+   "k_requested": 192,
+   "k_effective": 192,
+   "n_symbols": 118,
+   "coverage": 0.378,
+   "median_group_size": 2.0,
+   "mean_abs_corr": 0.3071,
+   "control_pre": {
+    "ceiling": null,
+    "content": null,
+    "z": null,
+    "held": 0,
+    "status": "UNMEASURED: 0/8 controls held population",
+    "n_drift": [
+     0.229,
+     0.28,
+     0.305,
+     0.254,
+     0.339,
+     0.254,
+     0.28,
+     0.288
+    ]
+   },
+   "control_post": {
+    "ceiling": null,
+    "content": null,
+    "z": null,
+    "held": 0,
+    "status": "UNMEASURED: 0/8 controls held population",
+    "n_drift": [
+     0.288,
+     0.305,
+     0.254,
+     0.237,
+     0.322,
+     0.246,
+     0.254,
+     0.229
+    ]
+   }
+  },
+  {
+   "method": "complete",
+   "metric": "euclid",
+   "k_requested": 24,
+   "k_effective": 24,
+   "n_symbols": 248,
+   "coverage": 0.998,
+   "median_group_size": 6.8,
+   "mean_abs_corr": 0.664,
+   "control_pre": {
+    "ceiling": 0.8753,
+    "content": 0.2113,
+    "z": -59.8,
+    "held": 8,
+    "status": "ok",
+    "n_drift": [
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0
+    ]
+   },
+   "control_post": {
+    "ceiling": 0.8755,
+    "content": 0.2115,
+    "z": -83.8,
+    "held": 8,
+    "status": "ok",
+    "n_drift": [
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0
+    ]
+   }
+  },
+  {
+   "method": "complete",
+   "metric": "euclid",
+   "k_requested": 48,
+   "k_effective": 48,
+   "n_symbols": 242,
+   "coverage": 0.963,
+   "median_group_size": 4.5,
+   "mean_abs_corr": 0.5641,
+   "control_pre": {
+    "ceiling": 0.8031,
+    "content": 0.239,
+    "z": -57.9,
+    "held": 8,
+    "status": "ok",
+    "n_drift": [
+     0.021,
+     0.025,
+     0.025,
+     0.025,
+     0.017,
+     0.025,
+     0.021,
+     0.021
+    ]
+   },
+   "control_post": {
+    "ceiling": 0.8018,
+    "content": 0.2377,
+    "z": -59.5,
+    "held": 8,
+    "status": "ok",
+    "n_drift": [
+     0.017,
+     0.021,
+     0.025,
+     0.025,
+     0.021,
+     0.025,
+     0.021,
+     0.025
+    ]
+   }
+  },
+  {
+   "method": "complete",
+   "metric": "euclid",
+   "k_requested": 96,
+   "k_effective": 96,
+   "n_symbols": 225,
+   "coverage": 0.83,
+   "median_group_size": 2.5,
+   "mean_abs_corr": 0.4499,
+   "control_pre": {
+    "ceiling": 0.7153,
+    "content": 0.2654,
+    "z": -48.7,
+    "held": 8,
+    "status": "ok",
+    "n_drift": [
+     0.071,
+     0.058,
+     0.067,
+     0.071,
+     0.053,
+     0.053,
+     0.071,
+     0.027
+    ]
+   },
+   "control_post": {
+    "ceiling": 0.7166,
+    "content": 0.2667,
+    "z": -70.2,
+    "held": 8,
+    "status": "ok",
+    "n_drift": [
+     0.053,
+     0.067,
+     0.076,
+     0.058,
+     0.067,
+     0.071,
+     0.058,
+     0.058
+    ]
+   }
+  },
+  {
+   "method": "complete",
+   "metric": "euclid",
+   "k_requested": 128,
+   "k_effective": 128,
+   "n_symbols": 193,
+   "coverage": 0.7,
+   "median_group_size": 2.0,
+   "mean_abs_corr": 0.3937,
+   "control_pre": {
+    "ceiling": null,
+    "content": null,
+    "z": null,
+    "held": 0,
+    "status": "UNMEASURED: 0/8 controls held population",
+    "n_drift": [
+     0.166,
+     0.166,
+     0.166,
+     0.171,
+     0.171,
+     0.124,
+     0.166,
+     0.13
+    ]
+   },
+   "control_post": {
+    "ceiling": null,
+    "content": null,
+    "z": null,
+    "held": 0,
+    "status": "UNMEASURED: 0/8 controls held population",
+    "n_drift": [
+     0.15,
+     0.166,
+     0.192,
+     0.155,
+     0.176,
+     0.15,
+     0.135,
+     0.14
+    ]
+   }
+  },
+  {
+   "method": "complete",
+   "metric": "euclid",
+   "k_requested": 160,
+   "k_effective": 160,
+   "n_symbols": 156,
+   "coverage": 0.552,
+   "median_group_size": 2.0,
+   "mean_abs_corr": 0.3449,
+   "control_pre": {
+    "ceiling": null,
+    "content": null,
+    "z": null,
+    "held": 0,
+    "status": "UNMEASURED: 0/8 controls held population",
+    "n_drift": [
+     0.244,
+     0.269,
+     0.237,
+     0.218,
+     0.276,
+     0.231,
+     0.269,
+     0.237
+    ]
+   },
+   "control_post": {
+    "ceiling": null,
+    "content": null,
+    "z": null,
+    "held": 0,
+    "status": "UNMEASURED: 0/8 controls held population",
+    "n_drift": [
+     0.25,
+     0.263,
+     0.269,
+     0.224,
+     0.263,
+     0.224,
+     0.237,
+     0.224
+    ]
+   }
+  },
+  {
+   "method": "complete",
+   "metric": "euclid",
+   "k_requested": 192,
+   "k_effective": 192,
+   "n_symbols": 114,
+   "coverage": 0.374,
+   "median_group_size": 2.0,
+   "mean_abs_corr": 0.3106,
+   "control_pre": {
+    "ceiling": null,
+    "content": null,
+    "z": null,
+    "held": 0,
+    "status": "UNMEASURED: 0/8 controls held population",
+    "n_drift": [
+     0.254,
+     0.307,
+     0.333,
+     0.289,
+     0.368,
+     0.289,
+     0.307,
+     0.316
+    ]
+   },
+   "control_post": {
+    "ceiling": null,
+    "content": null,
+    "z": null,
+    "held": 0,
+    "status": "UNMEASURED: 0/8 controls held population",
+    "n_drift": [
+     0.325,
+     0.333,
+     0.289,
+     0.272,
+     0.342,
+     0.281,
+     0.281,
+     0.263
+    ]
+   }
+  }
+ ]
+}

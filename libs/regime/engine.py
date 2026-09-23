@@ -37,8 +37,27 @@ def _characterise(states: np.ndarray, raw_ret: np.ndarray, k: int) -> dict[int, 
     for rank, j in enumerate(vol_order):
         tier[j] = "low_vol" if rank == 0 else ("high_vol" if rank == k - 1 else "mid_vol")
     out: dict[int, dict[str, object]] = {}
+    # TREND IS RELATIVE TO THE OTHER STATES, NOT TO ZERO -- and this is the difference between a
+    # regime label that carries information and one that restates the asset's drift.
+    #
+    # MEASURED 2026-09-02 on XAUUSD, 2,181 daily closes: gold rose over the window, so EVERY HMM
+    # state had a positive mean return and every one was labelled "bull". The GMM, clustering the
+    # same features differently, produced bear/low_vol, bull/mid_vol and bear/high_vol. The two
+    # models therefore disagreed on the trend axis for two states out of three, `hmm_gmm_agree`
+    # went False, and `current()` returned confidence 0.000 -- on every single call.
+    #
+    # Downstream that made the entire regime layer inert: the allocator's world sampler mixes
+    # over regime probabilities weighted by this confidence, so it fell back to empirical
+    # frequency on every pass and the regime axis cost compute while contributing nothing.
+    #
+    # A state is bullish RELATIVE to the regime set it belongs to. Splitting at the cross-state
+    # median mean makes the label informative for an asset with any drift, up or down, and makes
+    # the two models comparable -- they are then both answering "which of these states is the
+    # strong one", rather than one answering "did the price rise" and the other "did this cluster
+    # rise". The vol axis was already relative (ranked low/mid/high) and always worked.
+    _pivot = float(np.median([stats[j]["mean_ret"] for j in range(k)])) if k else 0.0
     for j in range(k):
-        trend = "bull" if stats[j]["mean_ret"] >= 0 else "bear"
+        trend = "bull" if stats[j]["mean_ret"] >= _pivot else "bear"
         vt = tier[j]
         lev = max(0.2, min(1.0, _VOL_FACTOR[vt] * _TREND_FACTOR[trend]))
         out[j] = {"label": f"{trend}/{vt}", "trend": trend, "vol_tier": vt,
@@ -55,6 +74,8 @@ class RegimeEngine:
         self.gmm: Any = None                   # sklearn GaussianMixture (untyped) once fitted
         self.x: np.ndarray = np.zeros((0, 3))
         self.hmm_states: np.ndarray = np.zeros(0, dtype="int64")
+        #: Causal per-day labels (argmax of the forward filter). Sizing paths read THIS.
+        self.filtered_states: np.ndarray = np.zeros(0, dtype="int64")
         self.hmm_char: dict[int, dict[str, object]] = {}
         self.gmm_char: dict[int, dict[str, object]] = {}
         self.posteriors: np.ndarray = np.zeros((0, n_states))
@@ -65,6 +86,30 @@ class RegimeEngine:
         self.hmm.fit(x)
         self.hmm_states = self.hmm.predict(x)
         self.posteriors = self.hmm.filter_posterior(x)
+        # THE CAUSAL LABEL, AND THE ONLY ONE ANY SIZING PATH MAY READ.
+        #
+        # `hmm.predict` is Viterbi, and Viterbi has a BACKWARD PASS:
+        #
+        #     states[-1] = argmax(delta[-1])
+        #     for t in range(n - 2, -1, -1):
+        #         states[t] = psi[t + 1, states[t + 1]]
+        #
+        # The label at t is chosen by the label at t+1, so every historical entry in
+        # `hmm_states` was assigned using observations from AFTER the day it describes. That is
+        # the standard public-HMM recipe and it is a lookahead leak. Found 2026-09-12 by reading
+        # the Aurum desk's regime_hmm.py, whose docstring names this exact trap; the leak was
+        # live here, in `pf_allocator`'s `by_day` map, which conditions the state growth curves
+        # that SET HEAT.
+        #
+        # `filter_posterior` is P(state_t | x_1..t) -- the forward filter, which by construction
+        # has seen nothing after t. Its argmax is the label a desk could actually have known on
+        # the day, and it is what every conditioning map now uses.
+        #
+        # `hmm_states` IS KEPT, because smoothed labels are the right instrument for DESCRIBING
+        # history (what regime was that month, really) and `_characterise` is exactly that use.
+        # The rule is not "Viterbi is wrong"; it is "Viterbi may never reach a number that sizes
+        # a position".
+        self.filtered_states = np.argmax(self.posteriors, axis=1).astype("int64")
         self.hmm_char = _characterise(self.hmm_states, raw, self.k)
         self.gmm = fit_gmm(x, n_states=self.k, seed=self.seed)
         gmm_states = self.gmm.predict(x)
@@ -98,9 +143,30 @@ class RegimeEngine:
             # Scale the HMM posterior by the GMM's own posterior mass on the HMM's label; on
             # disagreement the winning GMM component carries a different label, so this factor
             # is strictly < 1 and a confident contradiction drives conf towards 0.
+            # AGREEMENT IS PER AXIS, NOT ON THE CONCATENATED STRING. This required an exact
+            # match on "trend/vol_tier", so if the GMM's state set simply did not CONTAIN the
+            # HMM's label the factor was exactly 0 -- however much the two models actually
+            # agreed. MEASURED 2026-09-02 on XAUUSD: the HMM's current state was bull/high_vol
+            # and the GMM's high-vol state was bear/high_vol, so `same` was empty, the factor was
+            # 0, and confidence came back 0.000 on every call. Two models clustering continuous
+            # features into three states will rarely produce identical label SETS, so an exact
+            # string match makes confidence zero almost always -- and a confidence that is always
+            # zero is not a measurement, it is a switch stuck off.
+            #
+            # The vol tier and the trend are separate claims and are scored separately: the GMM's
+            # posterior mass on states sharing the HMM's vol tier, and on states sharing its
+            # trend. Agreeing on volatility while differing on direction is partial agreement and
+            # is dampened, not annihilated. Total contradiction still drives the factor to 0,
+            # which is the conservative property the original was reaching for, and this branch
+            # can still only ever LOWER confidence.
             gp = gmm_posteriors(self.gmm, self.x[-1:])[0]
-            same = [m for m in range(self.k) if str(self.gmm_char[m]["label"]) == ch["label"]]
-            conf *= float(gp[same].sum())
+            same_vol = [m for m in range(self.k)
+                        if str(self.gmm_char[m]["vol_tier"]) == str(ch["vol_tier"])]
+            same_trend = [m for m in range(self.k)
+                          if str(self.gmm_char[m]["trend"]) == str(ch["trend"])]
+            agree_vol = float(gp[same_vol].sum()) if same_vol else 0.0
+            agree_trend = float(gp[same_trend].sum()) if same_trend else 0.0
+            conf *= 0.5 * (agree_vol + agree_trend)
         return {
             "regime": ch["label"], "trend": ch["trend"], "vol_tier": ch["vol_tier"],
             "confidence": round(conf, 3),

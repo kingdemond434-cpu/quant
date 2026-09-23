@@ -1,0 +1,10 @@
+[Unit]
+Description=Timer for restored organ: organ-catchup
+
+[Timer]
+OnCalendar=*-*-* *:00/5:00
+RandomizedDelaySec=20
+Unit=quant-organ-catchup.service
+
+[Install]
+WantedBy=timers.target

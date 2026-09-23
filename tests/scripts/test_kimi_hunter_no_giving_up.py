@@ -68,9 +68,16 @@ class TestAChainNeverASingleName:
         assert any(m.endswith(":free") for m in K.MODEL_CHAIN), (
             "a free tier must be present -- 'the account is unfunded' is a reason to hunt "
             "cheaper, never a reason to stop hunting")
-        free_at = min(i for i, m in enumerate(K.MODEL_CHAIN) if m.endswith(":free"))
-        paid_at = max(i for i, m in enumerate(K.MODEL_CHAIN) if not m.endswith(":free"))
-        assert free_at > paid_at, "free tiers belong at the END of the chain, not the front"
+        # FREE-LAST ONLY APPLIES WHEN BOTH TIERS ARE PRESENT (2026-09-12). The principal put the
+        # whole OpenRouter side on the free tier, so the active chain is now free end to end and
+        # `max()` over the paid routes would be an empty sequence. The invariant that mattered is
+        # kept and narrowed: a chain must never put a free route AHEAD of a paid one it still
+        # carries. An all-free chain satisfies it trivially, which is the correct reading -- there
+        # is no cheaper option being preferred over a better one, there is only one tier.
+        paid = [i for i, m in enumerate(K.MODEL_CHAIN) if not m.endswith(":free")]
+        if paid:
+            free_at = min(i for i, m in enumerate(K.MODEL_CHAIN) if m.endswith(":free"))
+            assert free_at > max(paid), "free tiers belong at the END of a mixed chain"
 
     def test_the_chain_spans_more_than_one_model_family(self) -> None:
         """Same-family fallbacks share a prior about what is under-observed, and the hunt's whole
@@ -90,9 +97,19 @@ class TestAChainNeverASingleName:
             {"model": "some/other-model", "base_url": "https://openrouter.ai/api/v1",
              "key": "sk-test"}]}), "utf-8")
         monkeypatch.setattr(K, "KEYS", keys)
-        chain = K._providers()
-        assert chain, "an OpenRouter seat must be able to route the chain models"
-        assert K.MODEL_CHAIN[0] in {m for m, _, _ in chain}, "the preferred model must be tried"
+        # 2026-08-20: routine (deep=False, the default) and --deep now use DIFFERENT chains --
+        # free-tier-first for the 8x/day heartbeat, paid-first only for the 2x/week deep pass.
+        # The routing property under test (a seat can serve a chain model it is not named as)
+        # must hold for both chains, so both are checked against their own preferred entry.
+        routine_chain = K._providers()
+        assert routine_chain, "an OpenRouter seat must be able to route the routine chain models"
+        assert K.ROUTINE_MODEL_CHAIN[0] in {m for m, _, _ in routine_chain}, \
+            "the preferred routine model must be tried"
+
+        deep_chain = K._providers(deep=True)
+        assert deep_chain, "an OpenRouter seat must be able to route the deep chain models"
+        assert K.MODEL_CHAIN[0] in {m for m, _, _ in deep_chain}, \
+            "the preferred deep model must be tried"
 
     def test_no_credential_anywhere_yields_an_empty_chain_not_an_invention(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
@@ -173,7 +190,9 @@ class TestPartialWorkIsKept:
         the next run re-hunted the same forest -- the 45-day vector cooldown silently defeated by
         its own failure path."""
         body = ast.unparse(_wave_loop())
-        assert "_COVERAGE.write_text" in body, (
+        # The write moved behind `hunt_frontier.save` when coverage became a VectorState; the
+        # property pinned is unchanged -- the save happens INSIDE the loop.
+        assert "hf.save(state, _COVERAGE)" in body, (
             "coverage must be persisted INSIDE the wave loop, not only after the last wave")
 
     def test_a_dead_wave_breaks_rather_than_exits(self) -> None:
@@ -214,6 +233,7 @@ class TestTheDepthReadoutIsRealRatherThanObfuscated:
         check whether depth is accruing at all."""
         code = _code()
         assert "chr(34)" not in code, "the obfuscated (and wrong) coverage lookup came back"
-        assert 'cov.get("vectors", {})' in code
-        assert K._load_coverage().get("vectors") == {} or isinstance(
-            K._load_coverage()["vectors"], dict)
+        # Coverage is a `hunt_frontier.VectorState` now; the readout counts its `vectors`.
+        assert "n_terr = len(state.vectors)" in code
+        from libs.research import hunt_frontier as hf
+        assert isinstance(hf.load(Path("definitely/absent/coverage.json")).vectors, dict)

@@ -1,0 +1,76 @@
+{
+  "session": "brain_hunter_s49",
+  "date": "2026-09-03",
+  "ground": "prefetched corpus data/intelligence/gpt_practitioner_corpus.jsonl (arXiv Portfolio Management / q-fin Trading atom rows) -- the citation-neighbour ground named by s48",
+  "corpus_fact": {
+    "rows": 710,
+    "rows_with_text": 0,
+    "note": "every row carries description (abstract) only; the `text` field is None for all 710. Abstract-depth is the corpus ceiling, not a per-row miss."
+  },
+  "artifacts_read": [
+    {"url": "https://arxiv.org/pdf/2608.08405v1", "title": "Robustness or Crowding: Experimental Design for Trading Strategy Capacity", "verdict": "MECHANISM ADOPTED (methodology)"},
+    {"url": "https://arxiv.org/pdf/2608.10410v1", "title": "Objective-oriented quantitative investment (OOQI)", "verdict": "ENGINE SHAPE, deferred -- s48 already carded three of this class"},
+    {"url": "https://arxiv.org/pdf/2608.08625v1", "title": "Retained hidden excess generates memory in price-limited markets", "verdict": "MT5 ANALOGUE NAMED, not screened (CME daily price limits on energy/softs; desk softs symbols carry zero bars)"}
+  ],
+  "mechanism_extracted": {
+    "source": "arXiv 2608.08405v1",
+    "claim_1": "A same-date cross-sectional design identifies ONE implementation's private response at the prevailing level of aggregate positioning. The date effect that makes the comparison robust to market-wide shocks absorbs the strategy's own accumulated crowding EXACTLY, because that crowding is common to the implementations being compared.",
+    "claim_2": "A trial of FIXED length understates the eventual capacity effect, because deployed capital erodes the edge gradually. Reaching the aggregate effect requires implementations with deliberately different exposure, or variation in aggregate positioning over time.",
+    "desk_relevance": "libs/research/crowding.py takes exactly the same-date residual (rate minus the same-instant cross-section) and its docstring already claims the split ('level is the market; residual is ours'). The paper CONFIRMS the split is real and prices what it costs: the residual arm is provably blind to cohort-wide crowding, and no amount of accrual fixes that. The desk's forward window is a FIXED 14 days (L1.58), so any capacity erosion measured across it is a LOWER BOUND on the eventual effect.",
+    "l1_6_note": "This is an attenuation CORRECTION (measured effect understates truth), never a bar loosening. No in-sample threshold, Sharpe bar or fitness grade was imported from any artifact this session."
+  },
+  "findings_confirmed": [
+    {
+      "id": "s49-F1",
+      "title": "MT5 crowding miner dead 9 days on a permanent, self-repeating IndexError",
+      "file": "desks/mt5/research/crowding_miner.py",
+      "lines": [97, 105],
+      "evidence": "desks/mt5/logs/crowding_miner.log last two lines are cycle error: IndexError('list index out of range') at 2026-08-25T14:55 and 15:55, then silence; crowding_history.jsonl last row 2026-08-25T13:55.",
+      "root_cause": "gh.get('top_stars', [0])[0] -- when a GitHub query returns zero results the key is PRESENT as [], so the [0] default never applies and indexing raises. Four sibling expressions (lines 98/101/102/104) already carry the (... or [0])[0] guard; lines 97 and 105 do not.",
+      "reproduced": true,
+      "permanence": "the query rotation index is deterministic and the query strings are fixed, so the failing cycle recurs forever -- not a transient",
+      "verdict": "CONFIRMED",
+      "ledgered": "R0750"
+    },
+    {
+      "id": "s49-F2",
+      "title": "The MT5 book has zero market-data crowding/capacity instrument, and the fence that would say so reports a false accrual promise",
+      "files": ["scripts/check_crowding.py", "libs/research/crowding.py", "scripts/collect_funding_cross_section.py"],
+      "evidence": "check_crowding.py --json returns status FLAT-BOOK, rc=2, n_snapshots=331, universe_width=875, tape_last=2026-08-20T20:07:04Z. The sole feed is collect_funding_cross_section.py -> Binance USD-M premiumIndex (venue 'binance_usdm'), permanently banned ground under LAWS 1. data/RECORDERS_OFF set 2026-08-25.",
+      "defect": "next_action reads 'book is flat; the tape keeps accruing so the measure is live the day a position opens' -- false in both clauses. The tape cannot accrue (collector idled, universe retired) and an MT5 position can never appear in a perp held-book. WS-005 class: unmeasurable-because-retired renders identically to unmeasurable-because-not-yet.",
+      "distinct_organ_checked": "desks/mt5/research/crowding_miner.py is NOT a substitute: it measures GitHub stars and Reddit post counts for a mechanism KEYWORD (edge_publicity/expected_decay). It never touches price, fills, financing or the desk's own positions, so it cannot detect a competitor on the desk's names. It is also dead (s49-F1).",
+      "verdict": "CONFIRMED",
+      "ledgered": "R0751"
+    },
+    {
+      "id": "s49-F3",
+      "title": "translate_to_mt5() is empty across the whole capacity/crowding vocabulary",
+      "file": "libs/research/evidence_tier.py:248",
+      "evidence": "returns [] for 'strategy capacity', 'crowding', 'funding rate', 'borrow cost', 'holding period', 'aggregate positioning', 'deployed capital erodes the edge', 'same-date fixed effect'; returns correct mappings for 'sector neutralization' and 'commitment of traders'.",
+      "consequence": "every capacity-class finding routes as an unmapped data gap by default, so this axis cannot be carded as MT5-transferable by the brief's own routing rule",
+      "verdict": "CONFIRMED",
+      "ledgered": "R0752"
+    }
+  ],
+  "secondary_observation": {
+    "id": "s49-O1",
+    "note": "desks/mt5/data/crowding_state.json has mtime 2026-09-03T12:00 but an `updated` payload of 2026-08-21T22:55. A snapshot/sync process rewrites the file with stale content, so an mtime-based freshness check reads it green while the content is 13 days old. Same class as the s23 stale-tape lesson; not separately ledgered because R0750 removes the staleness at source.",
+    "verdict": "OBSERVED, not root-caused"
+  },
+  "counts": {
+    "desk_constructions": 0,
+    "target_horizon_cells": 0,
+    "tradeable_cards": 0,
+    "survivors": 0,
+    "trials_run": 0,
+    "note": "zero trials run, so no multiplicity is incurred and none is reported. This session's output is validated information (three confirmed defects) plus one adopted methodology, not a candidate."
+  },
+  "legitimacy": {
+    "account_walled_content_touched": false,
+    "private_brain_api_touched": false,
+    "third_party_agent_tooling_installed_or_run": false,
+    "sources": "public arXiv abstracts already present in the desk's own prefetched corpus; no live browsing performed"
+  },
+  "video": {"fetched": 0, "newly_locked": 0},
+  "new_external_venues": 0
+}

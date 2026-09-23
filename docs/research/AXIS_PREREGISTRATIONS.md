@@ -122,3 +122,41 @@ so the result cannot be spun after the fact. Screen only -- ZERO promotion autho
 - Weekly alignment: COT is as-of Tuesday, published Friday. Returns are taken from the FOLLOWING
   week to avoid using data before it was public -- the publication lag is a lookahead trap and is
   handled explicitly, not assumed away.
+
+## COT POSITION-CHANGE LIQUIDITY PREMIUM (KRT channel) -- pre-registered 2026-08-25 BEFORE any
+computation (data_axis_watchlist card #40; §33 T2 conversion). Screen only -- ZERO promotion
+authority (L1.6); survivors go to the canonical 10-gate door, never past it.
+
+### C. krt_position_change_liquidity (the construction the 41y screen never charged)
+- **Mechanism under test (KRT JF 2020; Maréchal JFM 2023 replication):** noncommercials demanding
+  immediacy move futures away from value; commercials accommodate and earn the reversion at ~weekly
+  horizon. Change-CHASERS pay, faders earn. Distinct from the LEVEL/insurance channel the desk
+  already killed (COT_SCREEN_RESULT.md, pooled NW t=-0.64) -- that kill is not re-litigated.
+- **Universe (fixed by what is on-box, drops stated):** gold, silver, aud, cad, chf, gbp, jpy,
+  nzd, sp500, nasdaq100 from `desks/mt5/cot/*.parquet` (legacy futures-only, weekly). DROPPED:
+  eur (no legacy parquet on box; TFF taxonomy is a different construction -- follow-up: extend the
+  fetcher), dxy (not an MT5 leg), crude/natgas (no COT parquet on box -- follow-up with eur).
+- **Signal (fixed):** spec_share = (noncomm_long - noncomm_short) / OI at report_date.
+  dx1 = spec_share_t - spec_share_{t-1}; dx4 = spec_share_t - spec_share_{t-4}.
+- **Release alignment (fixed; the 41y screen's Wed-start residual is NOT reused):** report_date is
+  Tuesday, published Friday 15:30 ET. Entry = first price close with date STRICTLY > report_date
+  + 3 calendar days; exit = first close STRICTLY > report_date + 10 days. Only post-release
+  closes are ever used (typically Monday -> Monday).
+- **Price legs (fixed):** FRED keyless daily, orientation corrected to the CONTRACT underlying
+  (DEXJPUS, DEXSZUS, DEXCAUS inverted; DEXUSAL/DEXUSUK/DEXUSNZ as-is); sp500 = FRED SP500
+  (2016->); nasdaq100 = FRED NASDAQCOM (composite as NAS100 proxy -- stated approximation);
+  gold/silver = desk `desks/mt5/universe/XA{U,G}USD_H1.parquet` resampled to daily last close
+  (2018->; server-clock-mislabelled-UTC caveat noted, sub-material at weekly horizon).
+- **Tests, sign expected NEGATIVE on every cell (fade the change):**
+  1. PRIMARY: pooled TS regression next-week return ~ dx1 (x standardized per-asset by trailing
+     104w past-only std), Newey-West(4) t. 2. pooled dx4. 3. per-asset TS cells (asset x horizon).
+  4. XS weekly Spearman(dx, next-week return) across assets, weeks with >=6 assets; mean IC/se.
+  5. Recency (RESEARCH 6b): trailing 24 months, same cells, same bar.
+- **Per-asset guard:** <100 usable weeks -> cell dropped, stated.
+- **Trials charged:** every computed cell, full + recent windows, logged in the artifact
+  (<=48; exact count in `data/cot_change_screen.json`). Returns are GROSS (cost_basis declared
+  in the artifact); cost stress belongs to the gauntlet, not the screen.
+- **KILL (fixed):** pooled dx1 beta >= 0 OR NW t > -1.96 on the full window -> SCREEN-KILL, card
+  gets [§33: killed] with the mechanism note. SURVIVE -> hypothesis card into the desk queue for
+  the 10-gate door. Decay watch (RT2012): recent-window sign flip on a full-window pass is
+  flagged, never smoothed over.

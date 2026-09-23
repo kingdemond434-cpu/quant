@@ -1,0 +1,774 @@
+[
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/2376950",
+  "symbols": [],
+  "found_at": "2026-09-07T03:31:41+00:00",
+  "platform": "mt5",
+  "phenotypes": [
+   "max_growth",
+   "long_lived",
+   "algo_survivor"
+  ],
+  "ev_score": 8.468,
+  "growth_pct": 376.54,
+  "weeks": 263.0,
+  "pf": 1.17,
+  "max_dd_pct": null,
+  "trades": 12601.0,
+  "win_pct": 8548.0,
+  "algo_pct": 97.0,
+  "subscribers": 1.0,
+  "author": "/en/users/strueli",
+  "author_other_signals": [
+   {
+    "sid": "2265877",
+    "title": "'Gold Reaper New V2 2' by Profalgo Limited",
+    "growth": "301%",
+    "curve_points": 20,
+    "curve_dd": -1.0
+   },
+   {
+    "sid": "2204998",
+    "title": "'Gold Reaper Goldtrade Pro Daytrade Pro' by Profalgo Limited",
+    "growth": "954%",
+    "curve_points": 20,
+    "curve_dd": -6.0
+   },
+   {
+    "sid": "2084890",
+    "title": "'Goldtrade Pro ICM' by Profalgo Limited",
+    "growth": "649%",
+    "curve_points": 20,
+    "curve_dd": -9.0
+   }
+  ],
+  "hour_histogram": {
+   "10": 2
+  }
+ },
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/2360068",
+  "symbols": [
+   "AUDCAD",
+   "NZDCAD"
+  ],
+  "found_at": "2026-09-07T03:31:41+00:00",
+  "platform": "mt5",
+  "phenotypes": [
+   "max_growth",
+   "low_dd_high_return",
+   "long_lived",
+   "algo_survivor"
+  ],
+  "ev_score": 32.264,
+  "growth_pct": 2228.48,
+  "weeks": 109.0,
+  "pf": 1.94,
+  "max_dd_pct": null,
+  "trades": 1194.0,
+  "win_pct": 784.0,
+  "algo_pct": 100.0,
+  "subscribers": 0.0,
+  "author": "/en/users/mnimoos",
+  "author_other_signals": [
+   {
+    "sid": "2388397",
+    "title": "'Harmonizer Mid Risk PAMM' by Amir Hossein Moharreri",
+    "growth": "171%",
+    "curve_points": 20,
+    "curve_dd": 0.0
+   },
+   {
+    "sid": "2388399",
+    "title": "'Harmonizer High Risk PAMM' by Amir Hossein Moharreri",
+    "growth": "101%",
+    "curve_points": 20,
+    "curve_dd": 0.0
+   }
+  ],
+  "hour_histogram": {
+   "20": 1,
+   "11": 3,
+   "10": 1,
+   "12": 4,
+   "09": 2,
+   "01": 1,
+   "03": 1
+  }
+ },
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/2361784",
+  "symbols": [
+   "EURJPY",
+   "GBPJPY",
+   "USDJPY",
+   "XAUJPY",
+   "XAUUSD"
+  ],
+  "found_at": "2026-09-07T03:31:41+00:00",
+  "platform": "mt5",
+  "phenotypes": [
+   "max_growth",
+   "long_lived",
+   "algo_survivor",
+   "gold",
+   "multi_fx"
+  ],
+  "ev_score": 5.641,
+  "growth_pct": 379.35,
+  "weeks": 115.0,
+  "pf": 1.49,
+  "max_dd_pct": null,
+  "trades": 1683.0,
+  "win_pct": 831.0,
+  "algo_pct": 98.0,
+  "subscribers": 0.0,
+  "author": "/en/users/dudu20171019",
+  "author_other_signals": [
+   {
+    "sid": "2351032",
+    "title": "'Dudu Whale' by Xue Mei",
+    "growth": "264%",
+    "curve_points": 20,
+    "curve_dd": -3.0
+   },
+   {
+    "sid": "2351357",
+    "title": "'Dudu Jolin' by Xue Mei",
+    "growth": "156%",
+    "curve_points": 20,
+    "curve_dd": -8.0
+   },
+   {
+    "sid": "2197770",
+    "title": "'Dudu Aircraft Carrier' by Xue Mei",
+    "growth": "2057%",
+    "curve_points": 20,
+    "curve_dd": -3.0
+   }
+  ],
+  "hour_histogram": {
+   "14": 2
+  }
+ },
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/2361280",
+  "symbols": [
+   "XAUUSD"
+  ],
+  "found_at": "2026-09-07T03:31:41+00:00",
+  "platform": "mt5",
+  "phenotypes": [
+   "max_growth",
+   "high_pf",
+   "algo_survivor",
+   "gold"
+  ],
+  "ev_score": 2.69,
+  "growth_pct": 373.31,
+  "weeks": 27.0,
+  "pf": 2.06,
+  "max_dd_pct": null,
+  "trades": 357.0,
+  "win_pct": 232.0,
+  "algo_pct": 91.0,
+  "subscribers": 0.0,
+  "author": "/en/users/dermasupratman",
+  "author_other_signals": [
+   {
+    "sid": "2346593",
+    "title": "'Vasa Trading Sistem 22' by Evan Rahma Pradipta",
+    "growth": "80%",
+    "curve_points": 20,
+    "curve_dd": -15.0
+   },
+   {
+    "sid": "2370297",
+    "title": "'Vasa Trading Sistem 17' by Evan Rahma Pradipta",
+    "growth": "21%",
+    "curve_points": 20,
+    "curve_dd": -27.0
+   },
+   {
+    "sid": "2385226",
+    "title": "'VTS Yolo Scalp' by Evan Rahma Pradipta",
+    "growth": "85%",
+    "curve_points": 20,
+    "curve_dd": -50.0
+   }
+  ],
+  "hour_histogram": {
+   "13": 3,
+   "17": 3,
+   "14": 6,
+   "15": 1,
+   "21": 1,
+   "16": 2,
+   "20": 1,
+   "04": 1,
+   "03": 1,
+   "01": 1,
+   "23": 2
+  }
+ },
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/2364493",
+  "symbols": [
+   "BTCUSD",
+   "CHFJPY",
+   "EURJPY",
+   "EURUSD",
+   "GBPJPY",
+   "GBPUSD",
+   "NAS100",
+   "US500",
+   "USDJPY",
+   "XAUUSD"
+  ],
+  "found_at": "2026-09-07T03:31:41+00:00",
+  "platform": "mt5",
+  "phenotypes": [
+   "max_growth",
+   "algo_survivor",
+   "gold",
+   "multi_fx"
+  ],
+  "ev_score": 3.835,
+  "growth_pct": 360.02,
+  "weeks": 59.0,
+  "pf": 1.25,
+  "max_dd_pct": null,
+  "trades": 1045.0,
+  "win_pct": 546.0,
+  "algo_pct": 97.0,
+  "subscribers": 1.0,
+  "author": "/en/users/tonnek",
+  "author_other_signals": [],
+  "hour_histogram": {
+   "22": 1,
+   "21": 1,
+   "19": 1,
+   "05": 1,
+   "17": 2,
+   "20": 3,
+   "18": 1,
+   "16": 1,
+   "13": 1,
+   "09": 1,
+   "01": 2,
+   "23": 2,
+   "00": 1,
+   "06": 1,
+   "08": 1,
+   "02": 1
+  }
+ },
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/2329641",
+  "symbols": [
+   "BTCUSD",
+   "NAS100",
+   "XAUUSD"
+  ],
+  "found_at": "2026-09-07T03:31:41+00:00",
+  "platform": "mt5",
+  "phenotypes": [
+   "max_growth",
+   "algo_survivor",
+   "gold"
+  ],
+  "ev_score": 5.039,
+  "growth_pct": 494.49,
+  "weeks": 54.0,
+  "pf": 1.47,
+  "max_dd_pct": null,
+  "trades": 781.0,
+  "win_pct": 593.0,
+  "algo_pct": 97.0,
+  "subscribers": 0.0,
+  "author": "/en/users/devpawar999",
+  "author_other_signals": [],
+  "hour_histogram": {
+   "19": 2,
+   "14": 3,
+   "10": 1,
+   "00": 3,
+   "07": 1,
+   "05": 2,
+   "02": 1,
+   "22": 1,
+   "12": 4,
+   "08": 1,
+   "06": 1,
+   "04": 1
+  }
+ },
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/2337490",
+  "symbols": [
+   "XAUUSD"
+  ],
+  "found_at": "2026-09-07T03:31:41+00:00",
+  "platform": "mt5",
+  "phenotypes": [
+   "max_growth",
+   "algo_survivor",
+   "gold"
+  ],
+  "ev_score": 3.814,
+  "growth_pct": 328.72,
+  "weeks": 70.0,
+  "pf": 1.2,
+  "max_dd_pct": null,
+  "trades": 320.0,
+  "win_pct": 222.0,
+  "algo_pct": 98.0,
+  "subscribers": 0.0,
+  "author": "/en/users/alex33055",
+  "author_other_signals": [
+   {
+    "sid": "2337459",
+    "title": "'HiGold' by Oleksandr Khrypunenko",
+    "growth": "48%",
+    "curve_points": 20,
+    "curve_dd": -16.0
+   },
+   {
+    "sid": "2357666",
+    "title": "'Prop firm signal 1' by Oleksandr Khrypunenko",
+    "growth": "29%",
+    "curve_points": 20,
+    "curve_dd": -23.0
+   },
+   {
+    "sid": "2357667",
+    "title": "'Prop firm signal 2' by Oleksandr Khrypunenko",
+    "growth": "23%",
+    "curve_points": 20,
+    "curve_dd": -33.0
+   }
+  ],
+  "hour_histogram": {
+   "19": 1,
+   "18": 2,
+   "13": 1,
+   "05": 2,
+   "01": 2,
+   "00": 3,
+   "21": 1,
+   "10": 1,
+   "08": 2,
+   "15": 1,
+   "16": 1,
+   "11": 1,
+   "07": 2
+  }
+ },
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/2376482",
+  "symbols": [
+   "EURUSD",
+   "XAUUSD"
+  ],
+  "found_at": "2026-09-07T03:31:41+00:00",
+  "platform": "mt5",
+  "phenotypes": [],
+  "ev_score": 0.0,
+  "growth_pct": 401.97,
+  "weeks": 15.0,
+  "pf": 1.5,
+  "max_dd_pct": null,
+  "trades": 58.0,
+  "win_pct": 30.0,
+  "algo_pct": 0.0,
+  "subscribers": 0.0,
+  "author": "/en/users/almunpdam",
+  "author_other_signals": [],
+  "hour_histogram": {
+   "09": 3,
+   "14": 1,
+   "02": 1,
+   "04": 4,
+   "13": 3,
+   "11": 3,
+   "03": 2,
+   "08": 1,
+   "17": 1
+  }
+ },
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/2370969",
+  "symbols": [],
+  "found_at": "2026-09-07T03:31:41+00:00",
+  "platform": "mt5",
+  "phenotypes": [
+   "max_growth",
+   "new_fast_growth",
+   "algo_survivor"
+  ],
+  "ev_score": 2.407,
+  "growth_pct": 398.2,
+  "weeks": 19.0,
+  "pf": 1.51,
+  "max_dd_pct": null,
+  "trades": 163.0,
+  "win_pct": 140.0,
+  "algo_pct": 99.0,
+  "subscribers": 0.0,
+  "author": "/en/users/nicedata",
+  "author_other_signals": [
+   {
+    "sid": "2365514",
+    "title": "'Dynamic Liquidity Intelligence R300' by Sathit Sukhirun",
+    "growth": "642%",
+    "curve_points": 20,
+    "curve_dd": -54.0
+   },
+   {
+    "sid": "2373900",
+    "title": "'Dynamic Liquidity Intelligence HFM50' by Sathit Sukhirun",
+    "growth": "1146%",
+    "curve_points": 20,
+    "curve_dd": -59.0
+   },
+   {
+    "sid": "2365513",
+    "title": "'Dynamic Liquidity Intelligence R500' by Sathit Sukhirun",
+    "growth": "177%",
+    "curve_points": 20,
+    "curve_dd": -56.0
+   }
+  ],
+  "hour_histogram": {
+   "15": 1,
+   "06": 6,
+   "12": 1,
+   "08": 1,
+   "09": 1,
+   "14": 1,
+   "03": 1,
+   "16": 5,
+   "07": 2,
+   "05": 2
+  }
+ },
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/2324441",
+  "symbols": [
+   "US500",
+   "XAUUSD"
+  ],
+  "found_at": "2026-09-07T03:31:41+00:00",
+  "platform": "mt5",
+  "phenotypes": [
+   "max_growth",
+   "algo_survivor",
+   "gold"
+  ],
+  "ev_score": 3.241,
+  "growth_pct": 309.52,
+  "weeks": 57.0,
+  "pf": 1.38,
+  "max_dd_pct": null,
+  "trades": 2348.0,
+  "win_pct": 1166.0,
+  "algo_pct": 99.0,
+  "subscribers": 0.0,
+  "author": "/en/users/andr.soma",
+  "author_other_signals": [
+   {
+    "sid": "2268766",
+    "title": "'Soma PureGold Indexes and Oil' by Andrii Soma",
+    "growth": "777%",
+    "curve_points": 20,
+    "curve_dd": -1.0
+   },
+   {
+    "sid": "2362868",
+    "title": "'Pure Gold 2000 Vantage' by Andrii Soma",
+    "growth": "191%",
+    "curve_points": 20,
+    "curve_dd": -6.0
+   },
+   {
+    "sid": "2363858",
+    "title": "'Pure Gold 2000 Wifey' by Andrii Soma",
+    "growth": "144%",
+    "curve_points": 20,
+    "curve_dd": -11.0
+   }
+  ],
+  "hour_histogram": {
+   "20": 2,
+   "16": 2,
+   "14": 3,
+   "15": 3,
+   "17": 1,
+   "06": 1,
+   "08": 1,
+   "09": 1,
+   "13": 1,
+   "07": 1,
+   "18": 4,
+   "23": 1,
+   "12": 2,
+   "11": 1
+  }
+ },
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/2269966",
+  "symbols": [
+   "XAUUSD"
+  ],
+  "found_at": "2026-09-07T03:31:41+00:00",
+  "platform": "mt5",
+  "phenotypes": [
+   "max_growth",
+   "low_dd_high_return",
+   "algo_survivor",
+   "gold"
+  ],
+  "ev_score": 20.134,
+  "growth_pct": 1466.61,
+  "weeks": 98.0,
+  "pf": 1.35,
+  "max_dd_pct": null,
+  "trades": 413.0,
+  "win_pct": 311.0,
+  "algo_pct": 100.0,
+  "subscribers": 1.0,
+  "author": "/en/users/tomosie",
+  "author_other_signals": [
+   {
+    "sid": "2271031",
+    "title": "'Break Zone Tickmill' by Agus Wahyu Pratomo",
+    "growth": "431%",
+    "curve_points": 20,
+    "curve_dd": -22.0
+   },
+   {
+    "sid": "2361988",
+    "title": "'Zone Breaker Eightcap' by Agus Wahyu Pratomo",
+    "growth": "91%",
+    "curve_points": 20,
+    "curve_dd": -26.0
+   },
+   {
+    "sid": "2368829",
+    "title": "'Zone Breakout HFM' by Agus Wahyu Pratomo",
+    "growth": "72%",
+    "curve_points": 20,
+    "curve_dd": -41.0
+   }
+  ],
+  "hour_histogram": {
+   "03": 3,
+   "00": 3,
+   "12": 1,
+   "07": 4,
+   "23": 1,
+   "14": 1,
+   "02": 2,
+   "10": 2,
+   "01": 4
+  }
+ },
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/2362349",
+  "symbols": [
+   "AUDCAD",
+   "AUDCHF",
+   "AUDJPY",
+   "AUDNZD",
+   "AUDUSD",
+   "CADCHF",
+   "CADJPY",
+   "CHFJPY",
+   "EURAUD",
+   "EURCAD",
+   "EURCHF",
+   "EURGBP"
+  ],
+  "found_at": "2026-09-07T03:31:41+00:00",
+  "platform": "mt5",
+  "phenotypes": [
+   "max_growth",
+   "high_pf",
+   "algo_survivor",
+   "multi_fx"
+  ],
+  "ev_score": 5.105,
+  "growth_pct": 622.3,
+  "weeks": 35.0,
+  "pf": 3.61,
+  "max_dd_pct": null,
+  "trades": 732.0,
+  "win_pct": 696.0,
+  "algo_pct": 100.0,
+  "subscribers": 4.0,
+  "author": "/en/users/test-standart",
+  "author_other_signals": [
+   {
+    "sid": "2372984",
+    "title": "'Profile Darwinex' by Konstantin Kulikov",
+    "growth": "42%",
+    "curve_points": 20,
+    "curve_dd": -1.0
+   },
+   {
+    "sid": "2341858",
+    "title": "'Friday Monday' by Konstantin Kulikov",
+    "growth": "70%",
+    "curve_points": 20,
+    "curve_dd": -58.0
+   },
+   {
+    "sid": "2335461",
+    "title": "'Good Monday' by Konstantin Kulikov",
+    "growth": "64%",
+    "curve_points": 20,
+    "curve_dd": -59.0
+   }
+  ],
+  "hour_histogram": {
+   "20": 2,
+   "12": 1,
+   "22": 1
+  }
+ },
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/2351091",
+  "symbols": [
+   "BTCUSD",
+   "XAUUSD"
+  ],
+  "found_at": "2026-09-07T03:31:41+00:00",
+  "platform": "mt5",
+  "phenotypes": [
+   "max_growth",
+   "low_dd_high_return",
+   "algo_survivor",
+   "gold"
+  ],
+  "ev_score": 9.767,
+  "growth_pct": 1190.51,
+  "weeks": 35.0,
+  "pf": 2.22,
+  "max_dd_pct": null,
+  "trades": 107.0,
+  "win_pct": 74.0,
+  "algo_pct": 99.0,
+  "subscribers": 1.0,
+  "author": "/en/users/daosengathit",
+  "author_other_signals": [],
+  "hour_histogram": {
+   "10": 2,
+   "16": 1,
+   "14": 4,
+   "01": 2,
+   "02": 1,
+   "13": 1,
+   "15": 1,
+   "03": 4,
+   "05": 2,
+   "07": 2,
+   "17": 2,
+   "09": 1,
+   "08": 1,
+   "06": 2,
+   "20": 1
+  }
+ },
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/2362856",
+  "symbols": [
+   "EURUSD",
+   "GBPUSD",
+   "USDJPY"
+  ],
+  "found_at": "2026-09-07T03:31:41+00:00",
+  "platform": "mt5",
+  "phenotypes": [
+   "max_growth",
+   "low_dd_high_return",
+   "long_lived",
+   "algo_survivor"
+  ],
+  "ev_score": 13.534,
+  "growth_pct": 922.22,
+  "weeks": 112.0,
+  "pf": 1.27,
+  "max_dd_pct": null,
+  "trades": 1731.0,
+  "win_pct": 1191.0,
+  "algo_pct": 98.0,
+  "subscribers": 0.0,
+  "author": "/en/users/neurofx",
+  "author_other_signals": [
+   {
+    "sid": "2385091",
+    "title": "'Wall Street US30 Scalper' by Evgenii Aksenov",
+    "growth": "47%",
+    "curve_points": 20,
+    "curve_dd": -59.0
+   },
+   {
+    "sid": "2378548",
+    "title": "'Prometheus EA' by Evgenii Aksenov",
+    "growth": "22%",
+    "curve_points": 20,
+    "curve_dd": -50.0
+   }
+  ],
+  "hour_histogram": {
+   "07": 1,
+   "06": 1,
+   "05": 1,
+   "16": 1,
+   "10": 1,
+   "08": 2
+  }
+ }
+]

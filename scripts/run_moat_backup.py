@@ -62,17 +62,34 @@ _STORES: dict[str, tuple[str, str]] = {
     # shortfall when the real figure was 4/4 of what exists. The same phantom path has four
     # readers elsewhere (rowed as R0079, repoint to sor_research.sqlite). A backup must not
     # declare coverage of a file nobody writes.
-    "sor_research": ("data/sor_research.sqlite", "sqlite"),
-    # ADDED 2026-08-01: exists (487KB), irreplaceable, and was silently uncovered -- the backup
-    # named three sqlites, one of which is a phantom, and missed a real one.
+    # "sor_research" MOVED TO BULK 2026-08-26: added 2026-08-01 at 487KB, it grew 1300x to
+    # 637MB and the covered-class assumption ("small, fits in git") rotted silently -- the
+    # 04:04Z replica was rejected by GitHub's 100MB pre-receive hook, so the off-box copy
+    # this class promises never existed. It is now a measured-bulk store (uncovered gap
+    # stays a NUMBER every run); _COVERED_MAX_BYTES below prevents the class from rotting
+    # silently again for any store.
     "alpha_registry": ("data/alpha_registry.sqlite", "sqlite"),
     "capital_events": ("data/capital_events.jsonl", "file"),
+    # FORWARD EVIDENCE (added 2026-08-27): the 14-day clocks are time that cannot be re-earned.
+    # The registry was re-based to day zero three times in 32 hours before atomic writes fixed
+    # the writer -- and had these been in the backup, the evidence would have been recoverable
+    # instead of gone. Every store here rides the existing sha256 manifest + per-backup drill.
+    "forward_registry": ("desks/mt5/data/sleeve_registry.json", "file"),
+    "shadow_state": ("desks/mt5/reports/shadow/shadow_state.json", "file"),
+    "shadow_ledgers": ("desks/mt5/reports/shadow", "tree"),
+    "universal_canon": ("desks/mt5/reports/UNIVERSAL_SURVIVORS.json", "file"),
     "cost_model": ("data/cost_model.json", "file"),
     "graveyard": ("docs/graveyard.md", "file"),
 }
 
 #: Bulk stores git cannot carry -- measured every run so the uncovered gap stays a NUMBER.
-_NOT_COVERED = ("data/lake", "data/moat")
+_NOT_COVERED = ("data/lake", "data/moat", "data/sor_research.sqlite")
+
+#: A covered store larger than this cannot reach the off-box replica (GitHub pre-receive
+#: rejects >100MB), so bundling it manufactures a replica that LOOKS covered and can never
+#: push. Refuse loudly instead: the store reports OVERSIZED (degraded), and the fix is a
+#: deliberate reclassification or a real bulk route -- never a silent giant bundle.
+_COVERED_MAX_BYTES = 50 * 1024 * 1024
 
 
 def _sha256(path: Path) -> str:
@@ -206,6 +223,17 @@ def build_backup(root: Path, dest: Path | None = None,
             stores[name] = {"status": "ABSENT", "kind": kind, "path": rel, "sha256": {},
                             "note": "store missing on this host -- recorded, not skipped silently"}
             continue
+        if _du(src) > _COVERED_MAX_BYTES:
+            # The sor_research lesson (2026-08-26): a covered store that outgrows the off-box
+            # route must go LOUD, never become a giant bundle the remote pre-receive rejects --
+            # that replica looks covered and can never push, the worst of both.
+            stores[name] = {"status": "OVERSIZED", "kind": kind, "path": rel,
+                            "bytes": _du(src), "sha256": {},
+                            "note": f"source exceeds the {_COVERED_MAX_BYTES // (1024*1024)}MB "
+                                    "covered-class cap -- reclassify to measured-bulk or "
+                                    "provision a real bulk route; a silent giant bundle is "
+                                    "refused by design"}
+            continue
         target = dest / name
         census: dict[str, int] | None = None
         if kind == "sqlite":
@@ -242,7 +270,9 @@ def build_backup(root: Path, dest: Path | None = None,
     # historical run for a file that never existed, is removed from _STORES above -- the fix for a
     # store that cannot exist is to stop declaring it, never to tolerate absence generally.)
     absent = sorted(n for n, s in stores.items() if s["status"] == "ABSENT")
+    oversized = sorted(n for n, s in stores.items() if s["status"] == "OVERSIZED")
     manifest["absent_stores"] = absent
+    manifest["oversized_stores"] = oversized
     status = "OK"
     if free < FUSE_PCT:
         status = "DISK-FUSE"
@@ -250,7 +280,7 @@ def build_backup(root: Path, dest: Path | None = None,
         status = "DRILL-FAILED"
     elif all(s["status"] == "ABSENT" for s in stores.values()):
         status = "NOTHING-REPLICATED"
-    elif absent:
+    elif absent or oversized:
         status = "DEGRADED"
     manifest["status"] = status
     (dest / "manifest.json").write_text(json.dumps(manifest, indent=2), "utf-8")
@@ -277,6 +307,9 @@ def main() -> int:
         print(f"-> {out}")
     if rep.get("absent_stores"):
         print(f"   ABSENT (declared but missing): {', '.join(rep['absent_stores'])}")
+    if rep.get("oversized_stores"):
+        print(f"   OVERSIZED (outgrew the covered class, refused loudly): "
+              f"{', '.join(rep['oversized_stores'])}")
     if args.report_only:
         return 0
     # DEGRADED joins the failing set: every store here is declared "small and irreplaceable", so a

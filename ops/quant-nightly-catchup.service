@@ -1,0 +1,36 @@
+[Unit]
+Description=Nightly catch-up: everything the hourly cycle did not finish
+After=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/home/quant/quant-platform/desks/mt5
+# --apply, because a catch-up that only measures is a report nobody reads. The steps it runs are
+# the same modules the hourly cycle runs, with the same gates at the same thresholds; the only
+# thing this adds is that it works the RESIDUE rather than the fresh hour.
+ExecStart=/home/quant/quant-platform/.venv/bin/python research/nightly_catchup.py --apply
+# The docket sweep is the long pole and measured 265s for 8,057 cells on three workers. Four
+# hours covers a docket several times today's, and a run that overruns is killed rather than
+# left to collide with the next firing.
+TimeoutStartSec=14400
+# Research work must never queue the gateway behind it. Nice + idle IO means the sweep uses
+# whatever the trading path is not using, which is why this can run every three hours without
+# competing with execution.
+Nice=15
+IOSchedulingClass=idle
+# MemoryMax=4G ON A 4GB BOX IS NOT A CEILING, IT IS THE WHOLE MACHINE. This unit and
+# quant-recertify-canon each carried 3G/4G and neither joined quant-heavy.slice, so either could
+# consume every page on the host on its own -- and the global OOM killer then picks the largest
+# process it can see, which on this box is routinely the dashboard server or cloudflared rather
+# than the organ that actually overran. That is the precise failure quant-heavy.slice was created
+# for on 2026-09-01, and these two were simply never put in it.
+#
+# NO PER-UNIT CEILING, DELIBERATELY: the slice governs. `ops/size_memory_budget.sh` derives the
+# slice's budget from the host's own MemTotal, so this unit gets ~60% of a 4GB box and ~60% of an
+# 8GB one with nothing to edit. A number typed here would become the binding constraint the day
+# the host is resized and would quietly waste the new RAM -- a constant is correct for exactly one
+# machine, and this desk has now been moved and resized inside a fortnight.
+Slice=quant-heavy.slice
+
+[Install]
+WantedBy=default.target

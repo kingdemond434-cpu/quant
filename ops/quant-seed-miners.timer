@@ -1,0 +1,9 @@
+[Unit]
+Description=Seed miner suite hourly
+
+[Timer]
+OnCalendar=*:22
+Persistent=true
+
+[Install]
+WantedBy=timers.target

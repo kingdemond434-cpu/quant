@@ -56,17 +56,22 @@ class TestRealManifest:
         reconstitutable from the manifest (docs/GAP_REGISTER.md:272)."""
         man = c.parse_manifest(ROOT / "ops/crontab.manifest")
         refs = set(c.referenced_paths(man))
+        # Row 58 named eight jobs. Four of them were the crypto-venue recorders and the
+        # cash-and-carry executor, retired from the schedule under the MT5 universe mandate
+        # (2026-08-18; the executor's script itself went in dadac868 and stays gone). A DR floor
+        # that still promised them would reconstitute a desk hunting a forbidden universe, so
+        # the pin now names the four that must survive a restore -- including the Tier-3 ruin
+        # rail, which the same sync commit deleted by accident and which is restored
+        # byte-for-byte.
         for script in (
-            "scripts/watchdog.py",                      # executor/deadman respawn + run_alerts tick
-            "scripts/ensure_recorder.py",               # recorder self-heal
-            "scripts/run_recorder_spot.py",             # spot recorder pgrep guard
-            "scripts/run_recorder_bybit.py",            # bybit recorder pgrep guard
+            "scripts/watchdog.py",                      # deadman respawn + run_alerts tick
             "scripts/run_venue_divergence_shadow.py",   # the */5 divergence sampler
             "scripts/daily_research_cycle.py",          # shadows/cost_model/nav_attest/git_snapshot
-            "scripts/run_cashcarry_executor.py",        # systemd plane, quant-cashcarry
             "scripts/run_deadman_switch.py",            # systemd plane, quant-deadman
         ):
             assert script in refs, f"{script} lost from the manifest"
+        assert "scripts/run_cashcarry_executor.py" not in refs, (
+            "the retired cash-and-carry executor is back on the schedule")
 
 
 # ---------------------------------------------------------------------------------------------

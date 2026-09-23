@@ -23,3 +23,15 @@ BEFORE claiming any outcome:
 BEFORE reading any secrets file:
 - [ ] extract named fields only; NEVER print provider dicts (07-20: OpenRouter key + 07-20:
       Databento key both hit chat; both required rotation)
+
+WHEN a primary data feed is blocked (FRED throttled, CFTC down, a calendar mirror gone):
+- [ ] do NOT record the family as "quiet ground" -- three families starved on all 297 sweep
+      passes of 08-27 because every producer knew ONE upstream (principal: "data blocked ->
+      the fixers always immediately find alternative ecosystem data")
+- [ ] fetch through the alternate-route registry, which records WHICH route served each feed
+      in data/data_route_provenance.json so provenance travels with the switch:
+      `.venv/bin/python scripts/data_alternates.py <feed>` (macro series via DBnomics, market
+      series via Stooq; routes needing packages the box lacks report UNAVAILABLE, never
+      half-import)
+- [ ] a route that served is a producer change owed, not a workaround: name the feed and the
+      route in the gap register so the collector learns the alternate permanently

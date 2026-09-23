@@ -68,3 +68,89 @@ def risk_per_trade(tolerance: float = MAX_DRAWDOWN_TOLERANCE,
 #: first diverge at EUR 2,076. This changes no order at current equity -- it removes a brake that
 #: would otherwise bind for the whole of the account's growth.
 Q_OPT = risk_per_trade()
+
+
+# ---------------------------------------------------------------------------------------
+# PORTFOLIO HEAT -- the three numbers that bound total open risk, defined here for the same
+# reason Q_OPT is: two files holding a risk budget is a defect waiting for the edit that
+# forgets one. `heat_budget()` in the gateway and `research/heat_policy.py` both read these.
+# ---------------------------------------------------------------------------------------
+
+#: NORMAL FULL-UTILISATION TARGET (principal, 2026-09-02). Total heat the desk aims to have
+#: WORKING at all times during certified operation -- a target, not a ceiling. Raised from the
+#: 15% that stood here after the E[log W] allocator was measured against it.
+#:
+#: WHY A TARGET AND NOT MERELY A CAP. A cap answers "how much may we risk"; the desk needs the
+#: answer to "how much SHOULD we risk", and those differ whenever the cap binds. Under a cap the
+#: allocator quietly runs at 3-6% because the free robust optimum sits there, and the account
+#: compounds at a fraction of what the opportunity set supports. Under a target the question
+#: becomes WHAT the budget is spent on, and an unfillable budget becomes a research request
+#: (`pf_allocator.opportunity`) instead of an invisible shortfall.
+#:
+#: CERTIFIED, NOT ASSERTED. `heat_policy.certify()` re-measures the growth curve on the live
+#: world population every heavy pass and `reports/pf_allocation.json` carries the verdict: if the
+#: opportunity set ever degrades enough that 20% sits past the peak of the curve, that artifact
+#: says so and `gateway.allocator_heat()` refuses the number. This comment is not the evidence.
+HEAT_TARGET = 0.20
+
+#: THE HARD BAR. Total heat may never cross this, whatever the optimiser computes -- the outer
+#: envelope inside which the allocator is free, and the only constant here that is a limit rather
+#: than a goal.
+#:
+#: 30% IS WHERE THE ARITHMETIC TURNS, which is why it is the bar rather than a round number.
+#: Measured 2026-09-02 across 256 sampled worlds on the 109-sleeve matrix: the ROBUST score (half
+#: its weight on the worst 20% of worlds) runs +0.00133/day at the free optimum, +0.00072 at 20%,
+#: +0.00011 at 25% and NEGATIVE at 30%. Past 30% the book loses wealth in the worlds it has to
+#: survive, and no amount of average-case growth buys that back.
+HEAT_HARD_CEILING = 0.30
+
+#: No single sleeve may hold more than this share of total heat. NOT tidiness -- measured
+#: 2026-09-02: told to spend 20% with no per-sleeve bound, the optimiser put 14.4 of those 20
+#: points into one sleeve it gives exactly ZERO when free, because a near-cash sleeve is the
+#: cheapest place to park a budget you do not believe in. A mandate without this bound funds the
+#: flattest row in the matrix, not the book.
+MAX_SLEEVE_HEAT_SHARE = 0.25
+
+#: No single MECHANISM may hold more than this share of total heat.
+#:
+#: MEASURED 2026-09-02: the solved book put 97% of its heat into `overnight_gap_decay` across
+#: seven exotic crosses. DISCOVERY DID NOT CAUSE THAT -- the family is 232 of 23,465 docket cells
+#: (0.99%), against 20,341 from the family-free searcher, and it holds 12 of 65 certificates.
+#: Nothing directs the search at it. The ALLOCATOR concentrated, because that family's replayed
+#: edge was the largest among the sleeves it could price.
+#:
+#: THE REDUNDANCY TERM CANNOT SEE THIS. It charges pairwise correlation of daily returns, and
+#: seven gap sleeves on different currency pairs genuinely are weakly correlated day to day. They
+#: also share one mechanism and one fill hour (01:00, the thinnest book of the session), so they
+#: fail TOGETHER on a liquidity event that no daily correlation contains. That is the factor
+#: duplication and tail co-failure the mandate asks to penalise, and it needs a CONSTRAINT rather
+#: than a price: a penalty is something growth can outbid.
+#:
+#: 60%, MEASURED (2026-09-04). The cap was 40% on the reasoning above, which is sound about WHY a
+#: constraint is needed and was a guess about WHERE it belongs. Swept on the live 126-sleeve
+#: universe at the 30% heat ceiling, every axis peaks or bottoms together at 60%:
+#:
+#:     famcap   ann %    robust      cvar     P(loss)  histDD  legs   d growth
+#:       40%    322.1   0.00123   -0.00049    0.062    27.8%    13
+#:       50%    427.8   0.00217   -0.00021    0.062    26.8%    12     +53.0
+#:       55%    482.7   0.00261   -0.00012    0.062    25.6%    11     +54.9
+#:       60%    543.3   0.00304   -0.00010    0.047    25.3%    11     +60.6   <-- optimum
+#:       65%    610.5   0.00344   -0.00017    0.047    27.2%    10     +67.2
+#:       70%    657.3   0.00369   -0.00026    0.047    28.5%     8     +46.8
+#:       80%    657.3   0.00369   -0.00026    0.047    28.5%     8      +0.0
+#:
+#: 40% WAS DOMINATED, not merely conservative: 60% carries +221pp of annual growth with LOWER
+#: drawdown (25.3% vs 27.8%), a less negative tail and a lower probability of annual loss. A
+#: constraint that costs growth AND worsens the tail is not buying safety with return; it is
+#: simply mis-sited.
+#:
+#: WHY NOT FURTHER, WHICH IS THE HALF THAT MATTERS. Past 60% the trade inverts: at 65% CVaR
+#: worsens and drawdown climbs back, and at 70% the book collapses from 11 sleeves to 8 for the
+#: SMALLEST marginal gain in the table. 80% and 101% are byte-identical to 70%, which means the
+#: cap has stopped binding there -- that concentration is the solver's own choice, and the
+#: original argument applies to it exactly: seven sleeves sharing one mechanism and one 01:00
+#: fill hour fail together on a liquidity event no daily correlation contains.
+#:
+#: So the constraint stays, and still forces several independent mechanisms to be right. It is
+#: now placed where the evidence puts it rather than where it felt prudent.
+MAX_FAMILY_HEAT_SHARE = 0.60

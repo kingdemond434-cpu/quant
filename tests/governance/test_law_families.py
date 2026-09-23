@@ -63,7 +63,10 @@ def test_aggression_family_holds_the_full_stack():
 
 def test_l23_reaches_the_organs_now():
     # The proving instance: fenced in the matrix, absent from doctrine, never told to an organ.
-    assert "L2.3" in Path("ops/principal_doctrine.txt").read_text("utf-8")
+    # Reach is judged on the PAYLOAD an organ receives (doctrine + docs/LAWS.md since the
+    # 2026-08-25 consolidation), the same corpus the fence and the fast gate read.
+    from libs.doctrine.corpus import doctrine_text
+    assert "L2.3" in doctrine_text()
 
 
 def test_timidity_fence_sweeps_every_prompt_surface():
@@ -128,13 +131,35 @@ def test_law_and_state_fences_are_separated():
     assert sched_law == [("--report-only",)]
 
 
+@pytest.mark.timeout(900)
 def test_laws_only_gate_passes_in_a_fresh_checkout():
     """R0402: this test asserted a property of a FRESH CHECKOUT and evaluated it against the
     shared working tree. On a box where sibling sessions build continuously that is a different
     artifact, and on 2026-08-05 it was a materially different one -- rc=2 on nine scripts whose
     manifest lines existed only in another session's uncommitted file. The gate now judges HEAD,
     so the name and the assertion finally describe the same thing; `subject` is asserted because
-    a verdict that does not name its subject is what let the two drift apart unnoticed."""
+    a verdict that does not name its subject is what let the two drift apart unnoticed.
+
+    STATES ITS OWN COST (gap-fixer 2026-08-29), which is the mechanism pyproject.toml's timeout
+    comment prescribes: "A genuinely slow test states its own cost with @pytest.mark.timeout(N)
+    rather than relaxing the floor for everything."
+
+    MEASURED on a QUIET box: 88 seconds. It is expensive by construction and legitimately so --
+    on a dirty tree `full_gate` does a real `git worktree add --detach` of this repository and
+    then runs the entire law battery inside it, because judging the working tree as it sits was
+    R0402's bug. The desk's tree is essentially always dirty (organs commit ~200x/day and leave
+    artifacts modified), so the expensive branch is the normal one.
+
+    WHY THIS MATTERS MORE THAN ONE TEST: under load it exceeded the 300s floor, and
+    pytest-timeout kills the SESSION. That is what took the desk-wide CI gate down -- the
+    2026-08-29 01:20 marker recorded `failed: ['tests (pytest)']` with an EMPTY failing-test
+    list, and the 2026-08-28 08:54 marker named 25 tests that all pass in isolation. Every
+    other test's verdict in those runs was simply unknown. A suite that cannot finish is worse
+    than a suite with a named red: it converts one slow test into total blindness.
+
+    900s is this test's honest cost plus contention headroom, and it is scoped to this test
+    alone -- the 300s floor is untouched for everything else (the ratchet rule: one test's need
+    is never the whole suite's licence)."""
     from scripts.run_law_gate import full_gate
     rep = full_gate(laws_only=True)
     assert rep["ok"] is True, rep["failures"]
@@ -220,8 +245,8 @@ def test_l39_draws_the_action_vs_validation_distinction():
     assert "L1.39 ZERO IDLE FINDINGS" in const
     assert "never size it immediately" in const
     assert "a candidate is never an edge" in const
-    doc = Path("ops/principal_doctrine.txt").read_text("utf-8")
-    assert "THE IMMEDIACY IS IN THE ROUTING, NEVER IN THE BAR" in doc
+    from libs.doctrine.corpus import doctrine_text
+    assert "THE IMMEDIACY IS IN THE ROUTING, NEVER IN THE BAR" in doctrine_text()
 
 
 # --- the gate must be green on a VIRGIN tree, not only on one that has run it before -----------

@@ -1,0 +1,10 @@
+[Unit]
+Description=Daily brain chain slot (09:00 UTC)
+
+[Timer]
+OnCalendar=*-*-* 09:00:00 UTC
+Persistent=true
+RandomizedDelaySec=300
+
+[Install]
+WantedBy=timers.target

@@ -60,6 +60,21 @@ def main() -> None:
     signal.signal(signal.SIGTERM, _handle)
 
     families = [f.strip() for f in args.families.split(",") if f.strip()] or None
+    # THE CONTROLLER FILLS THE QUEUE, NOT THE COMMAND LINE (2026-09-04). run_research_loop computes
+    # an action, a UCB over branches and a per-family trial allocation every hour, and this
+    # supervisor filled its queue from a static --families list -- so every posterior update
+    # steered a REPORT and never a single unit of compute. That is the gap RD-Agent(Q) closes with
+    # its feedback stage, and it is the difference between having frontier machinery and running
+    # it. Falls back to the static list, LOUDLY, when the allocation is missing or stale: steering
+    # by a posterior from before the last few hundred experiments is worse than not steering.
+    from libs.ops.controller_feed import controller_families
+
+    steered, feed_why = controller_families(fallback=families)
+    if steered is not families:
+        families = steered
+        print(f"supervisor: queue steered by the research controller -- {feed_why}")
+    else:
+        print(f"supervisor: FALLING BACK to --families -- {feed_why}")
     db = Database(Path(args.db))
     run_migrations(db, MIGRATIONS)
 
@@ -69,7 +84,12 @@ def main() -> None:
 
     sup = Supervisor(
         db,
-        generator=lambda: lake_campaign_specs(args.lake, families=families, batch=args.batch),
+        # RE-READ THE ALLOCATION ON EVERY REFILL, not once at startup. A supervisor that binds
+        # the controller's ranking at boot runs on it until someone restarts the process, which
+        # on a forever daemon means until the next deploy -- the posterior would update hourly
+        # and the fleet would never hear about it.
+        generator=lambda: lake_campaign_specs(
+            args.lake, families=(controller_families(fallback=families)[0]), batch=args.batch),
         min_queue_depth=args.min_queue_depth,
     )
     print(f"supervisor: seeded {sup.ensure_queue()} campaign(s)")

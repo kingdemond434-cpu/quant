@@ -1,0 +1,90 @@
+{
+  "schema_version": 1,
+  "session": "BRAIN_HUNTER_s44",
+  "observed_at": "2026-08-31T18:26:28Z",
+  "source": {
+    "repository": "https://github.com/microsoft/RD-Agent",
+    "commit": "6762f84f9bc0f5c6486c50a00e128a57ac6c3683",
+    "license": "MIT",
+    "access": "public GitHub metadata and raw source, read as text only; third-party agent tooling was not installed or run",
+    "derives_from": "Microsoft Qlib/RD-Agent is the lineage named by alpha-forge; this read follows that declared repository-level lineage"
+  },
+  "scope": {
+    "question": "Does the nearest Qlib/RD-Agent lineage preserve proposed and failed experiments before evaluation and across crashes?",
+    "files_read": [
+      "rdagent/components/workflow/rd_loop.py",
+      "rdagent/utils/workflow/loop.py",
+      "rdagent/app/qlib_rd_loop/factor.py",
+      "rdagent/app/qlib_rd_loop/quant.py",
+      "rdagent/core/proposal.py",
+      "rdagent/core/experiment.py",
+      "rdagent/log/logger.py",
+      "rdagent/log/storage.py",
+      "rdagent/components/coder/CoSTEER/knowledge_management.py"
+    ],
+    "desk_constructions": 0,
+    "desk_target_horizon_cells": 0,
+    "tradeable_cards": 0,
+    "survivors": 0
+  },
+  "findings": [
+    {
+      "id": "S44-F1",
+      "verdict": "PARTIAL_FAILURE_MEMORY_PRECEDES_EVALUATION",
+      "evidence": [
+        "RDLoop logs the generated hypothesis and experiment before coding or running",
+        "LoopBase snapshots the whole loop after each successfully completed step",
+        "FactorRDLoop routes declared FactorEmptyError/CoderError failures to feedback; the record step then appends the failed experiment and feedback to Trace.hist"
+      ],
+      "implication": "Independent convergence on the good half of s41-s43: identity must exist before expensive evaluation, and typed expected failures must end in a durable terminal record.",
+      "limitation": "The guarantee covers successful steps and explicitly declared skip-loop exception classes, not every failure. An undeclared exception is re-raised before terminal feedback/record."
+    },
+    {
+      "id": "S44-F2",
+      "verdict": "CHECKPOINT_WRITE_IS_NON_ATOMIC_AND_UNVALIDATED",
+      "evidence": [
+        "LoopBase.dump opens the final checkpoint path directly with wb and pickle.dump; there is no temporary file, fsync or atomic replace",
+        "LoopBase.load chooses the latest numeric session file and calls pickle.load without checksum, schema or fallback-to-previous validation"
+      ],
+      "implication": "A crash during checkpoint write can destroy the newest recovery point. Step-frequency checkpointing is not durability unless checkpoint commit is atomic and verified.",
+      "repair_test": "Kill during serialization; reject the incomplete generation and resume from the last checksum-valid atomically renamed checkpoint without losing the prewritten trial row."
+    },
+    {
+      "id": "S44-F3",
+      "verdict": "CHECKOUT_CAN_DELETE_LATER_HISTORY",
+      "evidence": [
+        "LoopBase.load(checkout=True) invokes truncate_session_folder and logger.truncate_storages",
+        "those methods delete session checkpoints and object logs after the selected point"
+      ],
+      "implication": "The source offers rollback, not an append-only evidence ledger. Restored control state and immutable trial history require different artifacts and truncation semantics."
+    },
+    {
+      "id": "S44-F4",
+      "verdict": "PICKLE_IS_NOT_A_DESK_IMPORT_FORMAT",
+      "evidence": [
+        "session snapshots, hypothesis objects and experiment logs are persisted as Python pickle by default",
+        "restart and log iteration deserialize those pickles directly"
+      ],
+      "implication": "Mine the framework as text only. Transfer typed append-before-evaluate state into a data-only format with explicit schema and hashes; do not ingest or execute its artifacts."
+    }
+  ],
+  "economic_disposition": {
+    "source_alpha_claims": "NONE_INSPECTED",
+    "process_shape": "KEEP_AS_INDEPENDENT_CONVERGENCE_AND_FALSIFIER_FOR_EXISTING_S33_S41_S42_S43_CONSERVATION_REPAIR; DO_NOT_IMPORT_OR_RUN",
+    "mt5_translation": "translate_to_mt5 returned no mapping for append-before-evaluate, typed failed feedback, step checkpointing or experiment identity. These are universal research-integrity controls over every terminal-enumerated Fusion candidate, not market features.",
+    "costs": "No market construction was tested. Any later Fusion candidate must bind PIT bid/ask, symbol-native spread, commission, realised slippage/partial-fill markout, swap and contract terms before the canonical ten gates.",
+    "expected_log_wealth_effect": "Positive but unmeasured through preventing trial loss and semantic reuse from corrupting multiplicity and capital admission; the source contributes no alpha estimate."
+  },
+  "venue_discovery": {
+    "url": "https://rdagent.azurewebsites.net/",
+    "how_found": "repository homepage metadata",
+    "what_lives_there": "advertised RD-Agent product/research interface",
+    "first_pass_verdict": "DEAD",
+    "evidence": "robots and root both returned HTTP 403 Site Disabled on 2026-08-31; no access control was routed around"
+  },
+  "video": {
+    "fetched": 0,
+    "locked": 0,
+    "reason": "no new video route attempted; five prefetched WorldQuant rows remained text-empty and were not retried"
+  }
+}

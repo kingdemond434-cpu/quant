@@ -28,7 +28,7 @@ from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from libs.execution import binance_spot_testnet as spot
+import libs.execution.binance_spot_testnet as spot
 
 _ROOT = Path(__file__).resolve().parent.parent
 _OUT = _ROOT / "data" / "deadman_stranded_sweep_log.json"

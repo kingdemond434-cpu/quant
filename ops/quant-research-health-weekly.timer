@@ -1,0 +1,9 @@
+[Unit]
+Description=Research-loop health weekly deep audit, Sunday 06:15
+
+[Timer]
+OnCalendar=Sun 06:15
+Persistent=true
+
+[Install]
+WantedBy=timers.target

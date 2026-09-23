@@ -111,6 +111,41 @@ def _table_rows(clauses: dict[str, str]) -> set[str]:
 # misreadable law, it is a direct order to do less, so these are matched as literal phrases and
 # any hit is a defect regardless of surrounding context.
 _DOCTRINE = _ROOT / "ops/principal_doctrine.txt"
+#: Where brain_env builds the payload it injects. Parsed rather than restated so this fence and
+#: the injector can never disagree about what an organ actually receives.
+_BRAIN_ENV = _ROOT / "ops/brain_env.sh"
+
+
+def _injected_doctrine_files() -> list[Path]:
+    """Every file `brain_env.sh` concatenates into the injected doctrine.
+
+    THE CONSOLIDATION OF 2026-08-25 SPLIT THE DOCTRINE IN TWO and this fence did not follow it.
+    `brain_env.sh` injects `ops/principal_doctrine.txt` AND `docs/LAWS.md` together; the sealed
+    core states the principle in prose ("TIMIDITY IS SCORED ON EVERY AXIS") while the token
+    `L1.28` lives in LAWS.md, six times. Reading only the first file, this fence reported
+    "the law is not reaching any organ" every run while the law was demonstrably reaching every
+    organ -- a fence that is WRONG is worse than no fence, because it teaches the reader to skip
+    the line where a real one would appear (L1.43).
+    """
+    files: list[Path] = []
+    try:
+        for line in _BRAIN_ENV.read_text("utf-8").splitlines():
+            if "_DOCTRINE=" in line and "cat " in line:
+                for tok in re.findall(r'\$_BRAIN_ROOT/([\w./-]+)', line):
+                    cand = _ROOT / tok
+                    if cand.exists():
+                        files.append(cand)
+                break
+    except OSError:
+        pass
+    if not files:
+        # UNPARSEABLE is not a pass: fall back to the known pair and say so in the artifact.
+        files = [f for f in (_DOCTRINE, _ROOT / "docs/LAWS.md") if f.exists()]
+    return files
+
+
+def _injected_doctrine_text() -> str:
+    return "\n".join(f.read_text("utf-8", errors="replace") for f in _injected_doctrine_files())
 
 _TIMID_INSTRUCTIONS = (
     "prefer the smaller change", "propose rather than build", "propose instead of building",
@@ -282,8 +317,9 @@ def audit() -> dict[str, Any]:
                "reading; every evidence/risk restraint is declared as such and stays strict.",
         "counts": counts,
         "unclassified": [r["principle"] for r in rows if r["status"] == "UNCLASSIFIED"],
-        "doctrine_injected": "l1.28" in (_DOCTRINE.read_text("utf-8").lower()
-                                         if _DOCTRINE.exists() else ""),
+        "doctrine_injected": "l1.28" in _injected_doctrine_text().lower(),
+        "doctrine_files_injected": [str(f.relative_to(_ROOT))
+                                    for f in _injected_doctrine_files()],
         "doctrine_timid_instructions": doctrine["hits"],
         "prompt_surfaces_scanned": len(_prompt_surfaces()),
         "prompt_timid_hits": prompt_hits,
@@ -315,8 +351,9 @@ def main() -> int:
             print(f"  {h['kind']:<12} {h['file']}:{h['line']} -- {h['why']}\n"
                   f"               {h['text']}")
         if not rep["doctrine_injected"]:
-            print("  NOT-INJECTED L1.28 is absent from ops/principal_doctrine.txt -- the law is "
-                  "not reaching any organ (L2.1)")
+            print("  NOT-INJECTED L1.28 is absent from the payload brain_env injects "
+                  f"({', '.join(rep['doctrine_files_injected']) or 'NO FILES RESOLVED'}) -- "
+                  "the law is not reaching any organ (L2.1)")
         print(f"-> {_OUT.relative_to(_ROOT)}")
     # THE TWO DENOMINATORS THIS VERDICT RESTS ON, NEITHER OF WHICH WAS CONSULTED (L1.57).
     # `prompt_surfaces_scanned` was computed, published into the artifact, and then left out of

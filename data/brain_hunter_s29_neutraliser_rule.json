@@ -1,0 +1,400 @@
+{
+  "session": "brain_hunter_s29",
+  "date": "2026-08-29",
+  "tests": "s28's per-feature neutraliser rule, on six features s28 never saw, with the side pre-registered before the run",
+  "preregistered_prediction": {
+    "mom_120": {
+      "side": "trend",
+      "delta_sign": "negative"
+    },
+    "mom_250": {
+      "side": "trend",
+      "delta_sign": "negative"
+    },
+    "mom_60_skip5": {
+      "side": "trend",
+      "delta_sign": "negative"
+    },
+    "reversal_5": {
+      "side": "dispersion",
+      "delta_sign": "positive"
+    },
+    "lowvol_60": {
+      "side": "dispersion",
+      "delta_sign": "positive"
+    },
+    "absret_20": {
+      "side": "dispersion",
+      "delta_sign": "positive"
+    }
+  },
+  "falsifier": "rule survives ONLY at 6/6 predicted signs; a coin flip reaches 6/6 with p=1/64, so <=5/6 is a refutation of the rule AS STATED",
+  "eval_years": [
+    2019,
+    2026
+  ],
+  "min_names": 8,
+  "trials_run": 72,
+  "multiplicity_note": "every cell tried is reported, winners and losers; no bar applied here (L1.60) -- trial count is handed to the gauntlet",
+  "verdict": {
+    "rule": "REFUTED",
+    "held": [
+      "mom_120",
+      "mom_60_skip5",
+      "reversal_5",
+      "lowvol_60",
+      "absret_20"
+    ],
+    "failed": [
+      "mom_250"
+    ],
+    "unmeasured": [],
+    "score": "5/6"
+  },
+  "per_feature": {
+    "mom_120": {
+      "side": "trend",
+      "predicted": "negative",
+      "observed": "negative",
+      "delta_ward_minus_universe": -0.126,
+      "sharpe_universe": 0.242,
+      "sharpe_ward_k24": 0.116,
+      "mean_names_universe": 135.6,
+      "mean_names_ward": 129.2,
+      "days": 2380,
+      "delta_vs_exact_random_control": -0.07,
+      "z_vs_random_control": -6.31,
+      "prediction_held": true
+    },
+    "mom_250": {
+      "side": "trend",
+      "predicted": "negative",
+      "observed": "positive",
+      "delta_ward_minus_universe": 0.194,
+      "sharpe_universe": 0.321,
+      "sharpe_ward_k24": 0.515,
+      "mean_names_universe": 129.9,
+      "mean_names_ward": 127.7,
+      "days": 2379,
+      "delta_vs_exact_random_control": 0.181,
+      "z_vs_random_control": 5.51,
+      "prediction_held": false
+    },
+    "mom_60_skip5": {
+      "side": "trend",
+      "predicted": "negative",
+      "observed": "negative",
+      "delta_ward_minus_universe": -0.086,
+      "sharpe_universe": -0.163,
+      "sharpe_ward_k24": -0.249,
+      "mean_names_universe": 138.1,
+      "mean_names_ward": 129.2,
+      "days": 2380,
+      "delta_vs_exact_random_control": -0.124,
+      "z_vs_random_control": -3.48,
+      "prediction_held": true
+    },
+    "reversal_5": {
+      "side": "dispersion",
+      "predicted": "positive",
+      "observed": "positive",
+      "delta_ward_minus_universe": 0.174,
+      "sharpe_universe": 0.02,
+      "sharpe_ward_k24": 0.194,
+      "mean_names_universe": 140.5,
+      "mean_names_ward": 129.2,
+      "days": 2380,
+      "delta_vs_exact_random_control": 0.191,
+      "z_vs_random_control": 4.33,
+      "prediction_held": true
+    },
+    "lowvol_60": {
+      "side": "dispersion",
+      "predicted": "positive",
+      "observed": "positive",
+      "delta_ward_minus_universe": 0.224,
+      "sharpe_universe": 0.198,
+      "sharpe_ward_k24": 0.422,
+      "mean_names_universe": 138.1,
+      "mean_names_ward": 129.2,
+      "days": 2380,
+      "delta_vs_exact_random_control": 0.252,
+      "z_vs_random_control": 6.44,
+      "prediction_held": true
+    },
+    "absret_20": {
+      "side": "dispersion",
+      "predicted": "positive",
+      "observed": "positive",
+      "delta_ward_minus_universe": 0.145,
+      "sharpe_universe": 0.088,
+      "sharpe_ward_k24": 0.233,
+      "mean_names_universe": 139.8,
+      "mean_names_ward": 129.2,
+      "days": 2380,
+      "delta_vs_exact_random_control": 0.142,
+      "z_vs_random_control": 5.91,
+      "prediction_held": true
+    }
+  },
+  "cells": {
+    "mom_120": {
+      "universe": {
+        "days": 2380,
+        "mean_names": 135.6,
+        "sharpe_gross": 0.242,
+        "t_stat": 0.744,
+        "ann_return": 0.02715,
+        "daily_turnover": 0.568,
+        "bp_per_unit_turnover_to_zero": 1.898
+      },
+      "ward_k24": {
+        "days": 2380,
+        "mean_names": 129.2,
+        "sharpe_gross": 0.116,
+        "t_stat": 0.358,
+        "ann_return": 0.00879,
+        "daily_turnover": 0.591,
+        "bp_per_unit_turnover_to_zero": 0.59
+      },
+      "asset_class": {
+        "days": 2380,
+        "mean_names": 134.2,
+        "sharpe_gross": 0.265,
+        "t_stat": 0.815,
+        "ann_return": 0.02189,
+        "daily_turnover": 0.58,
+        "bp_per_unit_turnover_to_zero": 1.499
+      },
+      "currency_quote": {
+        "days": 1616,
+        "mean_names": 72.6,
+        "sharpe_gross": -0.682,
+        "t_stat": -1.728,
+        "ann_return": -0.01867,
+        "daily_turnover": 0.216,
+        "bp_per_unit_turnover_to_zero": 3.437
+      },
+      "random_k24": {
+        "draws": 8,
+        "sharpe_mean": 0.186,
+        "sharpe_sd": 0.011
+      }
+    },
+    "mom_250": {
+      "universe": {
+        "days": 2379,
+        "mean_names": 129.9,
+        "sharpe_gross": 0.321,
+        "t_stat": 0.986,
+        "ann_return": 0.03575,
+        "daily_turnover": 0.536,
+        "bp_per_unit_turnover_to_zero": 2.647
+      },
+      "ward_k24": {
+        "days": 2379,
+        "mean_names": 127.7,
+        "sharpe_gross": 0.515,
+        "t_stat": 1.582,
+        "ann_return": 0.03958,
+        "daily_turnover": 0.56,
+        "bp_per_unit_turnover_to_zero": 2.805
+      },
+      "asset_class": {
+        "days": 2379,
+        "mean_names": 128.6,
+        "sharpe_gross": 0.579,
+        "t_stat": 1.78,
+        "ann_return": 0.04944,
+        "daily_turnover": 0.547,
+        "bp_per_unit_turnover_to_zero": 3.583
+      },
+      "currency_quote": {
+        "days": 1616,
+        "mean_names": 72.4,
+        "sharpe_gross": -0.16,
+        "t_stat": -0.405,
+        "ann_return": -0.00446,
+        "daily_turnover": 0.176,
+        "bp_per_unit_turnover_to_zero": 1.007
+      },
+      "random_k24": {
+        "draws": 8,
+        "sharpe_mean": 0.334,
+        "sharpe_sd": 0.033
+      }
+    },
+    "mom_60_skip5": {
+      "universe": {
+        "days": 2380,
+        "mean_names": 138.1,
+        "sharpe_gross": -0.163,
+        "t_stat": -0.501,
+        "ann_return": -0.0178,
+        "daily_turnover": 0.611,
+        "bp_per_unit_turnover_to_zero": 1.156
+      },
+      "ward_k24": {
+        "days": 2380,
+        "mean_names": 129.2,
+        "sharpe_gross": -0.249,
+        "t_stat": -0.766,
+        "ann_return": -0.0191,
+        "daily_turnover": 0.638,
+        "bp_per_unit_turnover_to_zero": 1.187
+      },
+      "asset_class": {
+        "days": 2380,
+        "mean_names": 136.7,
+        "sharpe_gross": -0.133,
+        "t_stat": -0.41,
+        "ann_return": -0.01112,
+        "daily_turnover": 0.625,
+        "bp_per_unit_turnover_to_zero": 0.706
+      },
+      "currency_quote": {
+        "days": 1616,
+        "mean_names": 72.7,
+        "sharpe_gross": -0.803,
+        "t_stat": -2.033,
+        "ann_return": -0.02153,
+        "daily_turnover": 0.281,
+        "bp_per_unit_turnover_to_zero": 3.039
+      },
+      "random_k24": {
+        "draws": 8,
+        "sharpe_mean": -0.125,
+        "sharpe_sd": 0.036
+      }
+    },
+    "reversal_5": {
+      "universe": {
+        "days": 2380,
+        "mean_names": 140.5,
+        "sharpe_gross": 0.02,
+        "t_stat": 0.062,
+        "ann_return": 0.00229,
+        "daily_turnover": 0.905,
+        "bp_per_unit_turnover_to_zero": 0.101
+      },
+      "ward_k24": {
+        "days": 2380,
+        "mean_names": 129.2,
+        "sharpe_gross": 0.194,
+        "t_stat": 0.596,
+        "ann_return": 0.01589,
+        "daily_turnover": 0.942,
+        "bp_per_unit_turnover_to_zero": 0.67
+      },
+      "asset_class": {
+        "days": 2380,
+        "mean_names": 139.0,
+        "sharpe_gross": 0.226,
+        "t_stat": 0.694,
+        "ann_return": 0.01993,
+        "daily_turnover": 0.929,
+        "bp_per_unit_turnover_to_zero": 0.851
+      },
+      "currency_quote": {
+        "days": 1616,
+        "mean_names": 72.7,
+        "sharpe_gross": 0.518,
+        "t_stat": 1.313,
+        "ann_return": 0.01375,
+        "daily_turnover": 0.687,
+        "bp_per_unit_turnover_to_zero": 0.794
+      },
+      "random_k24": {
+        "draws": 8,
+        "sharpe_mean": 0.003,
+        "sharpe_sd": 0.044
+      }
+    },
+    "lowvol_60": {
+      "universe": {
+        "days": 2380,
+        "mean_names": 138.1,
+        "sharpe_gross": 0.198,
+        "t_stat": 0.607,
+        "ann_return": 0.02742,
+        "daily_turnover": 0.503,
+        "bp_per_unit_turnover_to_zero": 2.165
+      },
+      "ward_k24": {
+        "days": 2380,
+        "mean_names": 129.2,
+        "sharpe_gross": 0.422,
+        "t_stat": 1.296,
+        "ann_return": 0.0351,
+        "daily_turnover": 0.522,
+        "bp_per_unit_turnover_to_zero": 2.669
+      },
+      "asset_class": {
+        "days": 2380,
+        "mean_names": 136.7,
+        "sharpe_gross": 0.632,
+        "t_stat": 1.942,
+        "ann_return": 0.05942,
+        "daily_turnover": 0.516,
+        "bp_per_unit_turnover_to_zero": 4.569
+      },
+      "currency_quote": {
+        "days": 1616,
+        "mean_names": 72.7,
+        "sharpe_gross": -0.175,
+        "t_stat": -0.443,
+        "ann_return": -0.00275,
+        "daily_turnover": 0.118,
+        "bp_per_unit_turnover_to_zero": 0.927
+      },
+      "random_k24": {
+        "draws": 8,
+        "sharpe_mean": 0.17,
+        "sharpe_sd": 0.039
+      }
+    },
+    "absret_20": {
+      "universe": {
+        "days": 2380,
+        "mean_names": 139.8,
+        "sharpe_gross": 0.088,
+        "t_stat": 0.271,
+        "ann_return": 0.01248,
+        "daily_turnover": 0.539,
+        "bp_per_unit_turnover_to_zero": 0.919
+      },
+      "ward_k24": {
+        "days": 2380,
+        "mean_names": 129.2,
+        "sharpe_gross": 0.233,
+        "t_stat": 0.715,
+        "ann_return": 0.02084,
+        "daily_turnover": 0.593,
+        "bp_per_unit_turnover_to_zero": 1.393
+      },
+      "asset_class": {
+        "days": 2380,
+        "mean_names": 138.4,
+        "sharpe_gross": 0.426,
+        "t_stat": 1.309,
+        "ann_return": 0.04228,
+        "daily_turnover": 0.579,
+        "bp_per_unit_turnover_to_zero": 2.896
+      },
+      "currency_quote": {
+        "days": 1616,
+        "mean_names": 72.7,
+        "sharpe_gross": 0.061,
+        "t_stat": 0.155,
+        "ann_return": 0.00092,
+        "daily_turnover": 0.224,
+        "bp_per_unit_turnover_to_zero": 0.162
+      },
+      "random_k24": {
+        "draws": 8,
+        "sharpe_mean": 0.091,
+        "sharpe_sd": 0.024
+      }
+    }
+  }
+}

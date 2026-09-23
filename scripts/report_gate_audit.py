@@ -144,7 +144,29 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--json", default=str(_DEFAULT))
     args = ap.parse_args()
-    d = json.loads(Path(args.json).read_text("utf-8"))
+    src = Path(args.json)
+    try:
+        d = json.loads(src.read_text("utf-8"))
+    except (OSError, json.JSONDecodeError) as e:
+        # UNMEASURED, said in one readable line (L1.28a). This crashed with a raw
+        # FileNotFoundError traceback whenever its producer had not run -- which on this box was
+        # every run since the 2026-08-20 cron death, because scripts/measure_admission_power.py
+        # is the only thing that writes this file. A traceback and a real finding are the same
+        # rc=1 to systemd, so the audit's absence was indistinguishable from its failure.
+        # ITS PRODUCER IS RETIRED, AND SAYING SO IS THE WHOLE VALUE (corrected 2026-08-29).
+        # The first repair this cycle told the reader to "run measure_admission_power first";
+        # then measure_admission_power was run to completion and wrote reports/
+        # admission_power.json, a DIFFERENT artifact with a different schema (no
+        # studies.power_curve). gate_power_audit.json belongs to the retired ALL-GATES path and
+        # nothing on the desk writes it any more. Naming the wrong producer is worse than naming
+        # none: it sends the next reader to spend 41 minutes of CPU on a file this cannot read.
+        print(f"gate-power audit: NO PRODUCER ({type(e).__name__}) -- {src} belongs to the "
+              "retired all-gates path and nothing writes it. The exception type is kept because "
+              "an ABSENT input and a CORRUPT one are different problems with different owners. "
+              "The live measurement is reports/admission_power.json "
+              "(scripts/measure_admission_power.py, weekly), which has a different schema and "
+              "prints its own verdict. This reader has no input and is not scheduled.")
+        return 2
     studies = d["studies"]
     pc = studies.get("power_curve") or []
     if pc:

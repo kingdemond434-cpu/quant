@@ -26,6 +26,13 @@ from mt5desk import families  # noqa: E402
 from mt5desk.engine import Costs, run_backtest  # noqa: E402
 from research.run_hunt12 import day_states  # noqa: E402
 
+#: MEASURED, not published: 2.00 in ACCOUNT CURRENCY per lot per side, over all 433
+#: deals account 495044 has ever done (reports/COST_TRUTH.json, 2026-09-23, p10=p50=p90).
+#: Mirrors `libs.portfolio.fusion_cost.COMMISSION_PER_LOT_PER_SIDE`. The 2.25 this
+#: replaced was the brochure's USD figure fed to a field `Costs.from_symbol` converts as
+#: ACCOUNT currency -- a 1.125x overcharge on the term that is ~98% of this book's cost.
+FUSION_COMMISSION_PER_SIDE = 2.00
+
 BASE = Path(__file__).resolve().parent.parent
 UNI = BASE / "data" / "universe"
 WINDOWS = {
@@ -78,9 +85,21 @@ def main() -> None:
     for sym, win, state in CELLS:
         h1 = families._h1(pd.read_parquet(UNI / f"{sym}_H1.parquet"))
         m = meta[sym]
-        costs = Costs(spread_per_lot=0.48 if sym == "XAUUSD" else max(
-            m["median_spread_pts"] * m["tick_size"] * m["contract_size"], 0.05),
-            commission_per_lot=3.50, contract_oz=m["contract_size"])
+        # COST THROUGH THE ONLY CORRECT CONSTRUCTOR. This site hand-rolled `Costs(...)` and
+        # carried both traps `engine.Costs.from_symbol` exists to close:
+        #
+        #   * no `quote_per_account`, so commission stayed in ACCOUNT CURRENCY and was divided by
+        #     contract_size as if it were PRICE -- "184x too little, on the JPY crosses where this
+        #     desk's surviving edges actually live, in the direction that manufactures survivors"
+        #   * `commission_per_lot=3.50`, a ROUND-TURN figure in a PER-SIDE field, billing $7.00 a
+        #     round trip against Fusion Zero's contractual $4.50
+        #   * and the gold override `spread_per_lot=0.48`, which the engine's own docstring
+        #     records as "0.16/oz median written as dollars PER OUNCE into a field that wants
+        #     dollars per lot ... every gold backtest on this desk has run very nearly spread-free"
+        #
+        # `from_symbol` closes all three, and the net direction is MORE expensive, which is the
+        # safe one: it can only remove survivors that were passing on an undercharge.
+        costs = Costs.from_symbol(m, commission_per_lot=FUSION_COMMISSION_PER_SIDE)
         sigs = families.family_session_range_breakout(h1, **WINDOWS[win])
         if state:
             st = day_states(h1)

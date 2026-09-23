@@ -1,0 +1,30 @@
+[
+ {
+  "source": "deep_forest",
+  "kind": "dataset",
+  "title": "SET50 Index Overview - The Stock Exchange of Thailand",
+  "url": "https://www.set.or.th/en/market/index/SET50",
+  "published": "2026-09-12T01:49:33+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.45,
+  "lang": "th",
+  "endpoints": [
+   "https://www.set.or.th/dat/eod/listedcompany/static/listedCompanies_en_US.xls",
+   "https://media.set.or.th/set/Documents/2022/Jul/PossibleDelistingCompanies_en.xlsx"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "453351b7d626c0eadde4",
+  "host": "www.set.or.th",
+  "ground": "SET research",
+  "region": "th",
+  "cluster": "sea",
+  "dataset_class": null,
+  "available_time": "2026-09-12T01:49:33+00:00",
+  "ingested_time": "2026-09-12T01:49:33+00:00",
+  "source_hash": "453351b7d626c0eadde4",
+  "claims": [],
+  "n_claims": 0
+ }
+]

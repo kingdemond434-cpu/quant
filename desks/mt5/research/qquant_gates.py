@@ -1,5 +1,5 @@
 """QQUANT UNIVERSAL GATES — the original qquant platform validation stack, applied
-verbatim to the MT5 hunt survivors. PARALLEL build (same statistics, same
+verbatim to every tested MT5 cell without a battery prefilter. PARALLEL build (same statistics, same
 thresholds, same libs — only the orchestration is parallelized).
 
 Uses the EXACT implementations from C:\\Users\\dell\\quant-platform\\libs\\validation
@@ -9,7 +9,8 @@ Run under the quant-platform venv python.
 Gate order (gauntlet.py + run_campaign.py):
   1 economic_prior     - mechanism documented (every MT5 family has a registered rationale)
   2 in_sample_screen   - Sharpe > 0
-  3 deflated_sharpe    - DSR >= 0.95, n_trials = max(2, ceil(cells_tested * 7.0))
+  3 deflated_sharpe    - DSR >= 0.95, n_trials = ceil(N_eff(cells) * 7.0), with a
+                         fail-closed raw-cell fallback when dependence is unmeasurable
   4 pbo                - CSCV PBO <= 0.5
   5 reality_check_spa  - Hansen SPA p < 0.05
   6 cpcv               - CPCV mean OOS Sharpe > 0 (purge + embargo)
@@ -46,21 +47,27 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[3]))  # quant repo root:
 
 from libs.validation.cpcv import CPCV  # noqa: E402
 from libs.validation.dsr import deflated_sharpe_ratio, sharpe_ratio  # noqa: E402
-from mt5desk.canonical import census_report  # noqa: E402
+from mt5desk.canonical import calibrated_census_report  # noqa: E402
 from libs.validation.pbo import probability_backtest_overfitting  # noqa: E402
 from libs.validation.reality_check import hansen_spa  # noqa: E402
 from libs.validation.revalidation import WalkForwardEngine, WalkForwardStatus  # noqa: E402
 
 from mt5desk import families  # noqa: E402
 from mt5desk.engine import Costs, run_backtest  # noqa: E402
+from gate_policy import (  # noqa: E402
+    ATTESTATION as GATE_POLICY,
+    COST_SCENARIO,
+    DSR_THRESHOLD,
+    DONE_MARKER,
+    GATES,
+    PBO_THRESHOLD,
+    SPA_ALPHA,
+    TRIALS_MULTIPLIER,
+    WF_MIN_STABILITY,
+    WF_SPLITS,
+    charged_trial_count,
+)
 
-TRIALS_MULTIPLIER = 7.0
-DSR_THRESHOLD = 0.95
-PBO_THRESHOLD = 0.5
-SPA_ALPHA = 0.05
-WF_SPLITS = 4
-WF_MIN_STABILITY = 0.5
-COST_SCENARIO = 3.0  # X3
 WORKERS = int(sys.argv[sys.argv.index("--workers") + 1]) if "--workers" in sys.argv else 8
 
 _worker_ctx: dict = {}
@@ -77,12 +84,21 @@ def _init_worker() -> None:
                                       .read_text("utf-8"))}
 
     def costs_for(sym: str, mult: float = 1.0) -> Costs:
+        # WAS: a hand-rolled hardcoded 0.48 special-case for XAUUSD -- the EXACT bug diagnosed
+        # and fixed in Costs' own class docstring (engine.py) and in portfolio_projection.py
+        # (commit 1fbbf3c3, 2026-08-20): 0.48 is dollars per OUNCE passed into a field that wants
+        # dollars per LOT, so gold ran at ~3% of its real spread. This call site never got that
+        # fix -- caught live 2026-08-23 while checking whether stress_costs/deflated_sharpe were
+        # unfairly harsh. They were not: costs here were UNDERSTATED, not overstated, so the
+        # fix makes real costs higher, not lower. Costs.from_symbol() derives every symbol,
+        # gold included, from the same universe.json metadata formula -- no special case.
         m = _worker_ctx["meta"].get(sym, {})
-        return Costs(
-            spread_per_lot=0.48 * mult if sym == "XAUUSD" else max(
-                m.get("median_spread_pts", 1) * m.get("tick_size", 1e-5)
-                * m.get("contract_size", 1e5), 0.05) * mult,
-            commission_per_lot=3.50 * mult, contract_oz=m.get("contract_size", 1e5))
+        # `mult` STILL SCALES THE COMMISSION, which `from_symbol`'s docstring argues against (a
+        # contractual fee does not widen). Changing it here would LOWER a stressed cost, which is
+        # the one direction that can manufacture a survivor; the hand-roll this replaced charged
+        # 3.50 x mult, so every component of this cost stays >= what it was (desk-sync-clean,
+        # 2026-08-29). The commission-stress question is a separate decision with its own evidence.
+        return Costs.from_symbol(m, mult=mult, commission_per_lot=3.50 * mult)
 
     _worker_ctx["costs_for"] = costs_for
 
@@ -128,8 +144,11 @@ def _series_of(hunt: int, sym: str, fam: str, side: str, win: str, state: str,
     sub = [s for s, d in zip(sigs, sdays) if states.get(d) == state]
     if not sub:
         return None
+    # mult=2.0 is the HONEST baseline, not a stress (Costs.from_symbol's own docstring): a round
+    # trip crosses the spread twice, on the way in and the way out. The stress scenario applies
+    # COST_SCENARIO ON TOP of that honest baseline, not instead of it -- see costs_for() below.
     res = run_backtest(h1, sub, _worker_ctx["costs_for"](
-        sym, COST_SCENARIO if stress else 1.0))
+        sym, 2.0 * COST_SCENARIO if stress else 2.0))
     series = pd.Series({pd.Timestamp(t.entry_time).date(): t.r_multiple
                         for t in res.trades}, dtype=float)
     series = series.groupby(level=0).sum()
@@ -241,16 +260,65 @@ def worker_eval_row(r: dict, pbo12_v: float, pbo16_v: float, spa12_v: float,
     return ev
 
 
+def _hunt_cells(fname: str) -> tuple[list, str]:
+    """This hunt's cells, and a NAMED reason when there are none.
+
+    THE UNGUARDED READ THAT KILLED THE CERTIFIER. This was
+    `json.loads((REPORTS / "hunt12.json").read_text("utf-8"))` inline in `main`, two lines with
+    no existence check, and on any host where either report is missing it raises
+    FileNotFoundError before the first gate is scored. Measured 2026-09-06: that is exactly what
+    MT5-QQUANTGATESCERTIFY was doing on the box -- dying at import-time-ish speed every run, so
+    no certificate had been re-minted for as long as the report had been absent, while the
+    scheduled task reported only `FAILING` with no cause. Certification is the desk's one door
+    from research to capital; it may not be closed by an unguarded `read_text`.
+
+    A crash and an empty hunt are DIFFERENT ANSWERS and this returns them differently: cells plus
+    an empty string when the report is readable, `[]` plus prose when it is not. The caller
+    refuses outright when BOTH are absent and proceeds -- loudly, recording `hunts_absent` -- when
+    only one is. That asymmetry is the point: one absent hunt costs the cells of that hunt, two
+    absent hunts means the question was never asked, and those must not produce the same artifact.
+
+    A malformed report is treated as absent rather than fatal, for the same reason: a half-written
+    JSON from an interrupted sweep is a missing answer, not a reason to stop judging the hunt that
+    did complete. No gate is touched here -- every cell that IS present is judged by the identical
+    ten gates at the identical thresholds.
+    """
+    path = REPORTS / fname
+    try:
+        doc = json.loads(path.read_text("utf-8"))
+    except FileNotFoundError:
+        return [], f"{fname} is absent from {REPORTS}"
+    except (OSError, json.JSONDecodeError) as exc:
+        return [], f"{fname} is unreadable ({type(exc).__name__}: {exc})"
+    cells = doc.get("all") if isinstance(doc, dict) else None
+    if not isinstance(cells, list):
+        return [], (f"{fname} carries no `all` list "
+                    f"(found {type(cells).__name__}), so it names no cells to judge")
+    return cells, ""
+
+
 def main() -> int:
     import multiprocessing as mp
-    from run_hunt12 import WINDOWS as W12  # noqa
-    from run_hunt16 import WINDOWS as W16  # noqa
 
-    sv = json.loads((REPORTS / "REAL_SURVIVORS.json").read_text("utf-8"))
-    h12 = json.loads((REPORTS / "hunt12.json").read_text("utf-8"))
-    h16 = json.loads((REPORTS / "hunt16.json").read_text("utf-8"))
-    all12 = h12.get("all", [])
-    all16 = h16.get("all", [])
+    all12, absent12 = _hunt_cells("hunt12.json")
+    all16, absent16 = _hunt_cells("hunt16.json")
+    hunts_absent = [a for a in (absent12, absent16) if a]
+    if absent12 and absent16:
+        # NOTHING TO JUDGE IS NOT A CLEAN SWEEP. Certifying from two absent reports would write
+        # a QQUANT_GATES.json saying "0 judged, 0 certified" -- indistinguishable, to every
+        # downstream reader and to the dashboard, from a sweep that ran and found nothing. Exit
+        # 2 is this desk's UNANSWERED code (see shadow_gap.py): the question was not answered
+        # on this host, and no artifact is written to be mistaken for an answer.
+        print(f"UNANSWERED: no hunt report is readable in {REPORTS} "
+              f"({absent12}; {absent16}) -- nothing to certify, and refusing to publish an "
+              f"empty verdict that would read as 'swept, no survivors'", file=sys.stderr)
+        return 2
+    for a in hunts_absent:
+        # PARTIAL, AND SAID SO. The surviving hunt is judged on its own cells exactly as before
+        # -- build_matrix returns an empty matrix for the absent one and every consumer below
+        # already guards on `.size` -- but `hunts_absent` rides into the report so a partial
+        # run can never be read as a full one.
+        print(f"PARTIAL SWEEP: {a}; certifying from the readable hunt only", file=sys.stderr)
     n_cells = {12: len(all12), 16: len(all16)}
     t0 = datetime.now(timezone.utc)
 
@@ -291,8 +359,7 @@ def main() -> int:
 
             arr = np.asarray(list(s.values()))          # dates discarded
             ...
-            min_len = min(len(a) for a in cols)
-            np.column_stack([a[-min_len:] for a in cols])
+            np.column_stack([a[-shortest:] for a in cols])   # clipped to the shortest cell
 
         which stacked the last N values of each column POSITIONALLY. Cells trade on different
         days, so row 5 of column A and row 5 of column B were different dates. Every number
@@ -300,7 +367,7 @@ def main() -> int:
         implied across trials -- was measured on a cross-section that never existed. Those are
         precisely the gates that decide whether a survivor is a curve fit.
 
-        The truncation was the second defect: `min_len` clipped every column to the shortest,
+        The truncation was the second defect: clipping every column to the shortest cell,
         so one sparse cell with 60 observations reduced a matrix whose other cells had thousands
         to a 167-day window. Both defects have the same root -- the date index was thrown away --
         and both are fixed by joining on it.
@@ -360,30 +427,45 @@ def main() -> int:
 
     sharpes12 = np.array([sharpe_ratio(m12[:, k]) for k in range(m12.shape[1])])
     sharpes16 = np.array([sharpe_ratio(m16[:, k]) for k in range(m16.shape[1])])
-    n_trials12 = max(2, math.ceil(n_cells[12] * TRIALS_MULTIPLIER))
-    n_trials16 = max(2, math.ceil(n_cells[16] * TRIALS_MULTIPLIER))
+    raw_trials12 = max(2, math.ceil(n_cells[12] * TRIALS_MULTIPLIER))
+    raw_trials16 = max(2, math.ceil(n_cells[16] * TRIALS_MULTIPLIER))
 
     # HOW MANY SEARCHES WERE ACTUALLY PERFORMED, as distinct from how many cells were counted.
     # The DSR threshold scales with E[max of N], derived for N INDEPENDENT draws, and a sweep over
     # (symbol x family x side x window x state x params) manufactures near-copies structurally:
     # rr=2.0/ttl=12 and rr=2.0/ttl=13 are one search sampled twice. Reported at BOTH counts and
     # never silently substituted -- lowering N makes every threshold easier, so the correction has
-    # to be visible. The gates below still run on n_trials (the raw count); this census is the
-    # evidence for whether that count is the right one.
+    # to be visible. The gate uses only the fixed participation-ratio result and retains the 7x
+    # campaign-history multiplier; an unmeasurable census fails closed to raw cells x 7.
     census = {}
-    for hunt, mat, sh, n_raw in ((12, m12, sharpes12, n_trials12),
-                                 (16, m16, sharpes16, n_trials16)):
+    charged_trials = {12: raw_trials12, 16: raw_trials16}
+    for hunt, mat, sh, n_raw in ((12, m12, sharpes12, raw_trials12),
+                                 (16, m16, sharpes16, raw_trials16)):
         if mat.size and mat.shape[1] >= 2:
             sd = float(np.std(sh)) if len(sh) > 1 else 0.0
-            rep = census_report([mat[:, k] for k in range(mat.shape[1])], sd_sharpe=sd)
-            rep["n_raw_declared"] = n_raw     # cells x TRIALS_MULTIPLIER, what the gates use
+            rep = calibrated_census_report(
+                [mat[:, k] for k in range(mat.shape[1])], sd_sharpe=sd)
+            rep["n_raw_declared"] = n_raw
+            # The 7x campaign multiplier remains intact: it prices the broader steered search,
+            # while the fixed, independent-null-calibrated participation census removes only
+            # dependence beyond the estimator's finite-sample floor. If the census is absent,
+            # malformed, or not the expected fixed method, the raw burden remains.
+            charged_trials[hunt], rep["trial_count_basis"] = charged_trial_count(
+                mat.shape[1], rep.get("n_effective"), rep.get("method"))
+            rep["n_trials_charged"] = charged_trials[hunt]
             census[f"hunt{hunt}"] = rep
             print(f"trial census hunt{hunt}: {rep['n_raw']} cells behave as "
                   f"{rep['n_effective']} independent searches ({rep['inflation']}x inflation); "
                   f"SR0 {rep['sr0_raw']} -> {rep['sr0_effective']}", flush=True)
         else:
             census[f"hunt{hunt}"] = {"status": "UNMEASURABLE", "n_raw_declared": n_raw,
+                                     "n_trials_charged": charged_trials[hunt],
+                                     "trial_count_basis":
+                                         "raw_cells_x_campaign_multiplier_fail_closed",
                                      "why": "fewer than two usable columns in the trial matrix"}
+
+    n_trials12 = charged_trials[12]
+    n_trials16 = charged_trials[16]
 
     print("program-level: PBO + SPA on full trial matrices...", flush=True)
     pbo12 = probability_backtest_overfitting(m12)
@@ -398,20 +480,33 @@ def main() -> int:
     print(f"hunt12 PBO={pbo12.pbo:.3f} SPA p={spa12.p_value:.3f} | "
           f"hunt16 PBO={pbo16.pbo:.3f} SPA p={spa16.p_value:.3f}", flush=True)
 
-    rows = sv["real_survivors"]
-    print(f"running the universal gauntlet on {len(rows)} REAL survivors "
-          f"({WORKERS} workers)...", flush=True)
+    # The old path evaluated only rows that had already cleared the hunt battery,
+    # making that later/harsher diagnostic an undeclared pre-veto on the original
+    # ten gates. Evaluate EVERY tested cell; only these ten verdicts decide shadow.
+    rows = ([{**r, "hunt": "hunt12.json"} for r in all12]
+            + [{**r, "hunt": "hunt16.json"} for r in all16])
+    print(f"running the original universal gauntlet on all {len(rows)} tested cells "
+          f"({WORKERS} workers; no battery prefilter)...", flush=True)
 
+    # pool.imap() passes exactly one argument per call from its iterable -- it cannot fan out the
+    # 8 constant arguments worker_eval_row also needs (same for every row). starmap() unpacks a
+    # tuple of arguments per call instead, which is what this actually needs; zip() builds those
+    # tuples by pairing each row with the (repeated) constants. Confirmed live 2026-08-23: this
+    # crashed with `TypeError: Pool.imap() takes from 3 to 4 positional arguments but 11 were
+    # given` on line 412, after ~5 minutes of real upstream computation (cell series, trial
+    # matrices, program-level PBO/SPA) -- the script had never been run to completion before.
     with mp.Pool(WORKERS, initializer=_init_eval_worker, initargs=(cell_map,)) as pool:
-        verdicts = list(pool.imap(worker_eval_row, rows,
-                                  itertools.repeat(float(pbo12.pbo)),
-                                  itertools.repeat(float(pbo16.pbo)),
-                                  itertools.repeat(float(spa12.p_value)),
-                                  itertools.repeat(float(spa16.p_value)),
-                                  itertools.repeat(n_trials12),
-                                  itertools.repeat(n_trials16),
-                                  itertools.repeat(sharpes12),
-                                  itertools.repeat(sharpes16)))
+        verdicts = pool.starmap(worker_eval_row, zip(
+            rows,
+            itertools.repeat(float(pbo12.pbo)),
+            itertools.repeat(float(pbo16.pbo)),
+            itertools.repeat(float(spa12.p_value)),
+            itertools.repeat(float(spa16.p_value)),
+            itertools.repeat(n_trials12),
+            itertools.repeat(n_trials16),
+            itertools.repeat(sharpes12),
+            itertools.repeat(sharpes16),
+        ))
     n_pass = sum(1 for v in verdicts if v.get("passed"))
     gate_fails: dict[str, int] = {}
     for v in verdicts:
@@ -429,13 +524,19 @@ def main() -> int:
             "hunt16": {"pbo": round(float(pbo16.pbo), 4),
                        "spa_p": round(float(spa16.p_value), 4)},
         },
-        "gates": [n for n in ("economic_prior", "in_sample_screen", "deflated_sharpe",
-                              "pbo", "reality_check_spa", "cpcv", "walk_forward",
-                              "stress_costs", "lockbox", "expected_value")],
+        "gates": list(GATES),
+        "gate_policy": GATE_POLICY,
+        "admission_unit": GATE_POLICY["regime_admission_unit"],
+        "activation_law": GATE_POLICY["regime_control"],
         "survivors_passing_all": n_pass,
         "survivors_total": len(verdicts),
         "gate_fails": gate_fails,
         "verdicts": verdicts,
+        # A PARTIAL SWEEP THAT CANNOT BE READ AS A FULL ONE. Empty on a complete run; when one
+        # hunt report was absent or unreadable this names it, so `survivors_total` is never
+        # mistaken for the whole population by a reader (or a dashboard) that has no other way
+        # to tell "judged and found nothing" from "never read the file".
+        "hunts_absent": hunts_absent,
         "swept_at": datetime.now(timezone.utc).isoformat(),
         "wall_s": round((datetime.now(timezone.utc) - t0).total_seconds(), 1),
         "workers": WORKERS,
@@ -443,6 +544,8 @@ def main() -> int:
     (REPORTS / "QQUANT_GATES.json").write_text(json.dumps(out, indent=2, default=str),
                                                encoding="utf-8")
     (REPORTS / "DONE_qquant_gates").write_text(
+        datetime.now(timezone.utc).isoformat(), encoding="utf-8")
+    (REPORTS / DONE_MARKER).write_text(
         datetime.now(timezone.utc).isoformat(), encoding="utf-8")
     print(f"\nUNIVERSAL GAUNTLET: {n_pass}/{len(verdicts)} survivors pass all 10 gates "
           f"(wall {(datetime.now(timezone.utc) - t0).total_seconds() / 60:.1f} min)",

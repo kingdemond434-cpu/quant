@@ -212,6 +212,33 @@ class AlphaStateLedger:
         self.records[alpha_id] = moved
         return moved, reason
 
+    def retreat(self, alpha_id: str, to: str, *, reason: str,
+                now: str = "") -> tuple[AlphaRecord, str]:
+        """Persist a retreat to a TERMINAL state with the caller's own reason.
+
+        `advance()` reaches DEGRADED / RETIRED too, but it stamps the generic note "advance()
+        called with a terminal state", and a retirement whose reason is not the one that
+        retired it loses the most specific information the desk owns (the same rule `retreat`
+        itself states). This carries the stated reason onto the record.
+
+        TERMINAL TARGETS ONLY, so the file stays readable: `_load` replays a non-terminal row
+        through `advance`, which refuses every downward move, so a persisted retreat to a lower
+        rung would make every later read of the ledger fail. A downward move onto the ladder is
+        refused here rather than written; the caller records it elsewhere as an observation.
+        """
+        if to not in TERMINAL:
+            return self.get(alpha_id), (
+                f"REFUSED: the ledger persists retreats only to {TERMINAL}; {to!r} is on the "
+                "ladder and a persisted downward step would make the ledger unreadable on the "
+                "next load. Record it as an observation instead")
+        current = self.get(alpha_id)
+        moved, why = retreat(current, to, reason=reason, now=now)
+        if moved == current:
+            return moved, why
+        self._append(moved)
+        self.records[alpha_id] = moved
+        return moved, why
+
     def _append(self, rec: AlphaRecord) -> None:
         self.path.parent.mkdir(parents=True, exist_ok=True)
         row = json.dumps({

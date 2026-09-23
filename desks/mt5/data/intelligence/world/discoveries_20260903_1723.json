@@ -1,0 +1,930 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Trading Platform: Axi Trading Platform (Mobile App)",
+  "url": "https://cysecsupport.axi.com/en-US/axicysec--axicorp-prod/directories/kw7TBcU2",
+  "published": "2026-09-03T17:21:43+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "69276ceed52c7b59feba",
+  "host": "cysecsupport.axi.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Trading Platform: MetaTrader 4",
+  "url": "https://cysecsupport.axi.com/en-US/axicysec--axicorp-prod/directories/7nB_RMWk",
+  "published": "2026-09-03T17:21:46+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "42c673e5daf66508dff7",
+  "host": "cysecsupport.axi.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Trading Platform: MetaTrader 5",
+  "url": "https://cysecsupport.axi.com/en-US/axicysec--axicorp-prod/directories/x6hunNmE",
+  "published": "2026-09-03T17:21:47+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "5934c9deaa3e30f653a9",
+  "host": "cysecsupport.axi.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Trading Platform Troubleshooting",
+  "url": "https://cysecsupport.axi.com/en-US/axicysec--axicorp-prod/directories/JnrCmOaj",
+  "published": "2026-09-03T17:21:49+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "1fa17d9461cedb6599da",
+  "host": "cysecsupport.axi.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Trading Tools",
+  "url": "https://cysecsupport.axi.com/en-US/axicysec--axicorp-prod/directories/QtSU37nf",
+  "published": "2026-09-03T17:21:51+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "57fa81c41a134b87eafc",
+  "host": "cysecsupport.axi.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Educational Videos",
+  "url": "https://cysecsupport.axi.com/en-US/axicysec--axicorp-prod/directories/bUn3KsZF",
+  "published": "2026-09-03T17:21:53+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d4f52a01c01934847bec",
+  "host": "cysecsupport.axi.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Trading Accounts",
+  "url": "https://cysecsupport.axi.com/en-US/axicysec--axicorp-prod/directories/Go9-g065",
+  "published": "2026-09-03T17:21:55+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "85307d7401897c50d3ef",
+  "host": "cysecsupport.axi.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "How do I access World Development Indicators (WDI) online tables? \u2013 World Bank Data Help Desk",
+  "url": "https://datahelpdesk.worldbank.org/knowledgebase/articles/191128-how-do-i-access-world-development-indicators-wdi",
+  "published": "2026-09-03T17:21:56+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "94955850e575ca873b0e",
+  "host": "datahelpdesk.worldbank.org"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Forex Tester Desktop: Buy Historical Tick Data for Backtesting",
+  "url": "https://desktop.forextester.com/historyservicedescription",
+  "published": "2026-09-03T17:21:58+00:00",
+  "symbols": [
+   "AUDCAD",
+   "AUDCHF",
+   "AUDHUF",
+   "AUDJPY",
+   "AUDNZD",
+   "AUDSGD",
+   "AUDUSD",
+   "CADCHF",
+   "CADJPY",
+   "CHFDKK",
+   "CHFHUF",
+   "CHFJPY",
+   "CHFNOK",
+   "CHFPLN",
+   "CHFSEK",
+   "CHFSGD",
+   "COTTON",
+   "EURAUD",
+   "EURCAD",
+   "EURCHF",
+   "EURCZK",
+   "EURDKK",
+   "EURGBP",
+   "EURHKD"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "breakout"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://desktop.forextester.com/download"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "1ee2eb2e92b82b281eb2",
+  "host": "desktop.forextester.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Ultimate guide on the best materials to get the most of backtesting",
+  "url": "https://desktop.forextester.com/howtouse",
+  "published": "2026-09-03T17:21:59+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://desktop.forextester.com/download"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "233f0e14c0eb8d4348b7",
+  "host": "desktop.forextester.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Questions about our trading simulator? Contact us [Free 10/7 Support]",
+  "url": "https://desktop.forextester.com/contacts",
+  "published": "2026-09-03T17:22:01+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://desktop.forextester.com/download"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "f87f77f5ebf6df5d7c80",
+  "host": "desktop.forextester.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "30+ Reasons Our Forex Trading Simulator Remains the Best",
+  "url": "https://desktop.forextester.com/features",
+  "published": "2026-09-03T17:22:04+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "gap",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://desktop.forextester.com/download"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "c25e58cc00725df2459e",
+  "host": "desktop.forextester.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Top 23 Exclusive Benefits of the Forex Trading Simulator [Screenshots]",
+  "url": "https://desktop.forextester.com/screens",
+  "published": "2026-09-03T17:22:05+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://desktop.forextester.com/templates/pic/screens/export-to-excel.png",
+   "https://desktop.forextester.com/templates/pic/screens/download-new-data.png",
+   "https://desktop.forextester.com/download"
+  ],
+  "n_endpoints": 3,
+  "vault_sha": "2db0fbef1da47a59edb3",
+  "host": "desktop.forextester.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "How to save time with Forex tools? Try Forex Speed Up software!",
+  "url": "https://desktop.forextester.com/forex-speed-up",
+  "published": "2026-09-03T17:22:14+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://desktop.forextester.com/download"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "188ca28d9f653c57f323",
+  "host": "desktop.forextester.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "New Forex Tester - Free Upgrade from Previous Versions",
+  "url": "https://desktop.forextester.com/upgrade",
+  "published": "2026-09-03T17:22:16+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://desktop.forextester.com/download"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "5d156f62db54432a1ac8",
+  "host": "desktop.forextester.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u5927\u5b97\u4ea4\u6613\u9996\u9875 _ \u4e1c\u65b9\u8d22\u5bcc\u7f51_ \u6570\u636e\u9891\u9053",
+  "url": "http://js1.eastmoney.com/tg.aspx?ID=731",
+  "published": "2026-09-03T17:22:26+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "zh_CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "994af6f3d58dbc4f6fd5",
+  "host": "js1.eastmoney.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "[\u30ce\u30a6\u30cf\u30a6] \u30d5\u30a9\u30ec\u30c3\u30af\u30b9\u30c6\u30b9\u30bf\u30fc(Forex Tester)\u306e\u30c7\u30fc\u30bf\u30bb\u30f3\u30bf\u30fc",
+  "url": "https://forextester.jp/datacenter",
+  "published": "2026-09-03T17:22:27+00:00",
+  "symbols": [],
+  "timeframes": [
+   "M1"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "ja-JP",
+  "endpoints": [
+   "https://forextester.jp/download"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "6fdae1dd2bef2067fe2b",
+  "host": "forextester.jp"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "[\u30cf\u30a6\u30c4\u30fc] \u30d5\u30a9\u30ec\u30c3\u30af\u30b9\u30c6\u30b9\u30bf\u30fc\u306e\u30cb\u30e5\u30fc\u30b9\u30fb\u30b5\u30fc\u30d3\u30b9 | Forex Tester",
+  "url": "https://forextester.jp/historical-forex-news",
+  "published": "2026-09-03T17:22:28+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "ja-JP",
+  "endpoints": [
+   "https://forextester.jp/download"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "ef16b936d4d1fd6ee714",
+  "host": "forextester.jp"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "[\u30cf\u30a6\u30c4\u30fc] \u30d5\u30a9\u30ec\u30c3\u30af\u30b9\u30c6\u30b9\u30bf\u30fc\u306e\u53e3\u5ea7\u5c65\u6b74\u3068\u7d71\u8a08 | Forex Tester",
+  "url": "https://forextester.jp/statistics",
+  "published": "2026-09-03T17:22:30+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "ja-JP",
+  "endpoints": [
+   "https://forextester.jp/download"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "a989a263361754ad3fac",
+  "host": "forextester.jp"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "[\u516c\u5f0f] Forex Tester\u30c0\u30a6\u30f3\u30ed\u30fc\u30c9\u30da\u30fc\u30b8",
+  "url": "https://forextester.jp/download",
+  "published": "2026-09-03T17:22:33+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "ja-JP",
+  "endpoints": [
+   "https://forextester.jp/download",
+   "https://desktop.forextester.com/download",
+   "https://forextester.jp/templates/css/min/download.css"
+  ],
+  "n_endpoints": 3,
+  "vault_sha": "2561f819f4229be071ab",
+  "host": "forextester.jp"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "World Development Indicators (WDI) \u2013 World Bank Data Help Desk",
+  "url": "https://datahelpdesk.worldbank.org/knowledgebase/topics/19286-world-development-indicators-wdi",
+  "published": "2026-09-03T17:22:33+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "6fa24f895fb14bacc22f",
+  "host": "datahelpdesk.worldbank.org"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u30d0\u30c3\u30af\u30c6\u30b9\u30c6\u30a3\u30f3\u30b0\u306e\u6539\u5584\u306b\u5f79\u7acb\u3064Forex\u30d2\u30b9\u30c8\u30ea\u30ab\u30eb\u30c7\u30fc\u30bf\u306e\u691c\u7d22\u65b9\u6cd5",
+  "url": "https://forextester.jp/data/datasources",
+  "published": "2026-09-03T17:22:34+00:00",
+  "symbols": [
+   "AUDJPY",
+   "AUDUSD",
+   "CHFJPY",
+   "EURCAD",
+   "EURCHF",
+   "EURGBP",
+   "EURJPY",
+   "EURUSD",
+   "GBPCHF",
+   "GBPJPY",
+   "GBPUSD",
+   "NZDJPY",
+   "NZDUSD",
+   "USDCAD",
+   "USDCHF",
+   "USDJPY",
+   "XAGUSD",
+   "XAUUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "ja-JP",
+  "endpoints": [
+   "https://forextester.jp/download"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "9a4868f77abff5ce8c25",
+  "host": "forextester.jp"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u5916\u6c47(waihui)\u80a1\u5427_\u5916\u6c47\u600e\u4e48\u6837_\u5206\u6790\u8ba8\u8bba\u793e\u533a\u2014\u4e1c\u65b9\u8d22\u5bcc\u7f51",
+  "url": "http://guba.eastmoney.com/list,waihui.html",
+  "published": "2026-09-03T17:22:36+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "6b868ea47fbdc94c64be",
+  "host": "guba.eastmoney.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "_\u5916\u6c47(waihui)\u80a1\u5427_\u4e1c\u65b9\u8d22\u5bcc\u7f51\u80a1\u5427",
+  "url": "http://guba.eastmoney.com/news,waihui,1768527825.html",
+  "published": "2026-09-03T17:22:38+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "36d9d67b97c6ef399272",
+  "host": "guba.eastmoney.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "How does the World Bank code its indicators? \u2013 World Bank Data Help Desk",
+  "url": "https://datahelpdesk.worldbank.org/knowledgebase/articles/201175-how-does-the-world-bank-code-its-indicators",
+  "published": "2026-09-03T17:22:39+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "http://databank.worldbank.org/data/download/site-content/WDI_CETS.xls"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "b6b70580440d707fa7f0",
+  "host": "datahelpdesk.worldbank.org"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Data Mining: Theories, Algorithms, and Examples - 1st Edition - Nong Y",
+  "url": "https://www.crcpress.com/Data-Mining-Theories-Algorithms-and-Examples/Ye/p/book/9781439808382",
+  "published": "2026-09-03T17:22:41+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "2fddb54e5f24fc09dbe7",
+  "host": "www.crcpress.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "LBMA Precious Metal Prices | LBMA",
+  "url": "https://www.lbma.org.uk/prices-and-data",
+  "published": "2026-09-03T17:22:43+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1M",
+   "DAILY"
+  ],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.75,
+  "lang": "en-GB",
+  "endpoints": [
+   "https://www.lbma.org.uk/humans.txt"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "3b6ab43f47f6dd63b188",
+  "host": "www.lbma.org.uk"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "TrueFX Downloads &#8211; TrueFX",
+  "url": "https://www.truefx.com/truefx-historical-downloads/",
+  "published": "2026-09-03T17:22:43+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e1ecca69f1e7b4f0999f",
+  "host": "www.truefx.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u5168\u7403\u8d22\u7ecf\u5feb\u8baf_\u4e1c\u65b9\u8d22\u5bcc\u7f51",
+  "url": "https://kuaixun.eastmoney.com/wh.html",
+  "published": "2026-09-03T17:22:44+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a9d53b79271f92e56d1b",
+  "host": "kuaixun.eastmoney.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Cabinet",
+  "url": "https://eu-live.dukascopy.com/cabinet/trader/auth/forgot",
+  "published": "2026-09-03T17:22:45+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://eu-live.dukascopy.com/cabinet/trader/auth/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "851863a4efb6bcee954e",
+  "host": "eu-live.dukascopy.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u884c\u60c5\u4e2d\u5fc3\uff1a\u56fd\u5185\u5feb\u6377\u5168\u9762\u7684\u80a1\u7968\u3001\u57fa\u91d1\u3001\u671f\u8d27\u3001\u7f8e\u80a1\u3001\u6e2f\u80a1\u3001\u5916\u6c47\u3001\u9ec4\u91d1\u3001\u503a\u5238\u884c\u60c5\u7cfb\u7edf_\u4e1c\u65b9\u8d22\u5bcc\u7f51",
+  "url": "https://js1.eastmoney.com/tg.aspx?ID=667",
+  "published": "2026-09-03T17:22:59+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "08a4caec51e0977f5ccc",
+  "host": "js1.eastmoney.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u884c\u60c5\u4e2d\u5fc3\uff1a\u56fd\u5185\u5feb\u6377\u5168\u9762\u7684\u80a1\u7968\u3001\u57fa\u91d1\u3001\u671f\u8d27\u3001\u7f8e\u80a1\u3001\u6e2f\u80a1\u3001\u5916\u6c47\u3001\u9ec4\u91d1\u3001\u503a\u5238\u884c\u60c5\u7cfb\u7edf_\u4e1c\u65b9\u8d22\u5bcc\u7f51",
+  "url": "http://js1.eastmoney.com/tg.aspx?ID=667",
+  "published": "2026-09-03T17:23:00+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "08a4caec51e0977f5ccc",
+  "host": "js1.eastmoney.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Country Engagement",
+  "url": "http://www.worldbank.org/en/projects-operations/country-strategies",
+  "published": "2026-09-03T17:23:01+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "7bb8f171c9c395ffda26",
+  "host": "www.worldbank.org"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Cabinet",
+  "url": "https://live-login.dukascopy.com/cabinet/trader/?lang=en",
+  "published": "2026-09-03T17:23:03+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://live-login.dukascopy.com/cabinet/trader/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "85944511e20ca954b99f",
+  "host": "live-login.dukascopy.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Cabinet",
+  "url": "https://live-login.dukascopy.com/cabinet/trader/auth/forgot",
+  "published": "2026-09-03T17:23:05+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://live-login.dukascopy.com/cabinet/trader/auth/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "3eb598af1530175afd8c",
+  "host": "live-login.dukascopy.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u5927\u5b97\u4ea4\u6613\u9996\u9875 _ \u4e1c\u65b9\u8d22\u5bcc\u7f51_ \u6570\u636e\u9891\u9053",
+  "url": "https://acttg.eastmoney.com/pub/web_dfcfsy_wzl_dhl_03_01_14_0",
+  "published": "2026-09-03T17:23:08+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "zh_CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "0687bbf6921cba56f358",
+  "host": "acttg.eastmoney.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Opendata - U.S. Energy Information Administration (EIA)",
+  "url": "https://www.eia.gov/opendata/",
+  "published": "2026-09-03T17:23:19+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [
+   "https://www.eia.gov/opendata/bulk/AEO2026.zip",
+   "https://www.eia.gov/opendata/bulk/AEO2025.zip",
+   "https://www.eia.gov/opendata/bulk/AEO2023.zip",
+   "https://www.eia.gov/opendata/bulk/AEO2022.zip",
+   "https://www.eia.gov/opendata/bulk/AEO2021.zip",
+   "https://www.eia.gov/opendata/bulk/AEO2020.zip",
+   "https://www.eia.gov/opendata/bulk/AEO2019.zip",
+   "https://www.eia.gov/opendata/bulk/AEO2018.zip",
+   "https://www.eia.gov/opendata/bulk/AEO2017.zip",
+   "https://www.eia.gov/opendata/bulk/AEO2016.zip",
+   "https://www.eia.gov/opendata/bulk/AEO2015.zip",
+   "https://www.eia.gov/opendata/bulk/AEO2014.zip",
+   "https://www.eia.gov/opendata/bulk/COAL.zip",
+   "https://www.eia.gov/opendata/bulk/PET_IMPORTS.zip",
+   "https://www.eia.gov/opendata/bulk/EBA.zip",
+   "https://www.eia.gov/opendata/bulk/EBA-pre2019.zip",
+   "https://www.eia.gov/opendata/bulk/ELEC.zip",
+   "https://www.eia.gov/opendata/bulk/EMISS.zip",
+   "https://www.eia.gov/opendata/bulk/EMISS-old.zip",
+   "https://www.eia.gov/opendata/bulk/IEO.zip",
+   "https://www.eia.gov/opendata/bulk/IEO2023.zip",
+   "https://www.eia.gov/opendata/bulk/IEO2021.zip",
+   "https://www.eia.gov/opendata/bulk/IEO2019.zip",
+   "https://www.eia.gov/opendata/bulk/IEO2017.zip",
+   "https://www.eia.gov/opendata/bulk/INTL.zip",
+   "https://www.eia.gov/opendata/bulk/NG.zip",
+   "https://www.eia.gov/opendata/bulk/NUC_STATUS.zip",
+   "https://www.eia.gov/opendata/bulk/PET.zip",
+   "https://www.eia.gov/opendata/bulk/SEDS.zip",
+   "https://www.eia.gov/opendata/bulk/STEO.zip",
+   "https://www.eia.gov/opendata/bulk/TOTAL.zip",
+   "https://www.eia.gov/opendata/bulk/manifest.txt",
+   "https://www.eia.gov/opendata/browser/coal/exports-imports-quantity-price",
+   "https://www.eia.gov/opendata/browser/densified-biomass/export-sales-and-price",
+   "https://www.eia.gov/beta/api/"
+  ],
+  "n_endpoints": 35,
+  "vault_sha": "5936401c4cfc89ae370c",
+  "host": "www.eia.gov"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u884c\u60c5\u4e2d\u5fc3\uff1a\u56fd\u5185\u5feb\u6377\u5168\u9762\u7684\u80a1\u7968\u3001\u57fa\u91d1\u3001\u671f\u8d27\u3001\u7f8e\u80a1\u3001\u6e2f\u80a1\u3001\u5916\u6c47\u3001\u9ec4\u91d1\u3001\u503a\u5238\u884c\u60c5\u7cfb\u7edf_\u4e1c\u65b9\u8d22\u5bcc\u7f51",
+  "url": "http://acttg.eastmoney.com/pub/web_dfcfsy_wzl_dhl_02_01_19_0",
+  "published": "2026-09-03T17:23:21+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ff41a1a42bab4c393691",
+  "host": "acttg.eastmoney.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u30d5\u30a9\u30ec\u30c3\u30af\u30b9\u30c6\u30b9\u30bf\u30fcFX\u30c8\u30ec\u30fc\u30c9\u691c\u8a3c\u30bd\u30d5\u30c8\u306e\u6700\u9ad8\u5cf0",
+  "url": "https://forextester.jp/",
+  "published": "2026-09-03T17:23:24+00:00",
+  "symbols": [
+   "AUDCAD",
+   "AUDCHF",
+   "AUDHUF",
+   "AUDJPY",
+   "AUDNZD",
+   "AUDSGD",
+   "AUDUSD",
+   "CADCHF",
+   "CADJPY",
+   "CHFDKK",
+   "CHFHUF",
+   "CHFJPY",
+   "CHFNOK",
+   "CHFPLN",
+   "CHFSEK",
+   "CHFSGD",
+   "COTTON",
+   "EURAUD",
+   "EURCAD",
+   "EURCHF",
+   "EURCZK",
+   "EURDKK",
+   "EURGBP",
+   "EURHKD"
+  ],
+  "timeframes": [
+   "\u65e5\u8db3"
+  ],
+  "patterns": [
+   "breakout",
+   "session"
+  ],
+  "confidence": 0.75,
+  "lang": "ja-JP",
+  "endpoints": [
+   "https://forextester.jp/download"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "ee4f59a78b62322f85aa",
+  "host": "forextester.jp"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Position Sizing for Practitioners [Part 3: A Portfolio Approach] &#8211; Quant Fiction",
+  "url": "https://quantfiction.com/2018/12/20/position-sizing-for-practitioners-part-3-a-portfolio-approach/",
+  "published": "2026-09-03T17:23:28+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "correlation",
+   "mean_reversion",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "7b8de1e21ab0d0c99a4a",
+  "host": "quantfiction.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Bitcoin Seasonality: Fooled by Randomness &#8211; Quant Fiction",
+  "url": "https://quantfiction.com/2018/09/28/bitcoin-seasonality-fooled-by-randomness/",
+  "published": "2026-09-03T17:23:29+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "seasonality"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3473582e53f02a57c8a8",
+  "host": "quantfiction.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Trading Metrics that Actually Matter &#8211; Quant Fiction",
+  "url": "https://quantfiction.com/2018/08/20/trading-metrics-that-actually-matter/",
+  "published": "2026-09-03T17:23:31+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "correlation",
+   "seasonality"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "1e08e75660dc496247f2",
+  "host": "quantfiction.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Position Sizing for Practitioners [Part 2: Dealing with Drawdown] &#8211; Quant Fiction",
+  "url": "https://quantfiction.com/2018/05/13/position-sizing-for-practitioners-part-2-dealing-with-drawdown/",
+  "published": "2026-09-03T17:23:33+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "correlation",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e0c7e16062961b70afe8",
+  "host": "quantfiction.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Position Sizing for Practitioners [Part 1: Beyond Kelly] &#8211; Quant Fiction",
+  "url": "https://quantfiction.com/2018/05/06/position-sizing-for-practitioners-part-1-beyond-kelly/",
+  "published": "2026-09-03T17:23:36+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "bb0682ec141212f3d4f2",
+  "host": "quantfiction.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Volume and Volatility: A Tale of Two Vols &#8211; Quant Fiction",
+  "url": "https://quantfiction.com/2018/03/15/volume-and-volatility-a-tale-of-two-vols/",
+  "published": "2026-09-03T17:23:38+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "correlation",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "75336f3a714ab4a42c22",
+  "host": "quantfiction.com"
+ }
+]

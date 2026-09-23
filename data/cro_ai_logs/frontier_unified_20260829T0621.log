@@ -1,0 +1,139 @@
+=== frontier-unified 2026-08-29 (Claude) ===
+
+## ALLOCATION -- one ground, and the reason is a debt, not a rotation
+
+**Ground worked: creator/track-record (FX Blue), CONVERSION ONLY.** The 08-28 run left
+H-20260828-005 preregistered and unjudged, and item 3 of its own owed list was "H-005/H-006 into
+the backtest and the ten gates the same day they are picked up (L1.58)". That is a card sitting
+one step from a verdict with the gauntlet idle, which is the highest expected survivor-value act
+available today: the pipeline's binding transition is conversion, not discovery, and the §33
+banner opened this window in REPAIR-MODE. H-20260828-006 needed nothing -- it was already
+REFUTED_AT_PREMISE on 08-28 by the free-data seat's trimmed-mean test, so the queue was one card.
+Measured conversion prior favours `data_axis_watchlist` (0.454); the track-record class is the
+desk's measured best source class and it is the one that produced this card.
+
+**Grounds NOT worked, each named:**
+- **en / ru / jp / kr / ar / br** -- no cardable debt a unified dig can close without the seat's
+  own operator set, and today's budget was committed to a conversion debt that outranks new
+  breadth under §33. NOT demoted: their logs are old because of seat auth/OOM infrastructure,
+  which is a defect verdict about this box and not about the ground.
+- **cn** -- worked 08-25; its open unit (Bilibili) needs the CN operator set, Zhihu is WALLED x2.
+- **macro-document ground** -- funded and CLOSED on 08-28: the BIS corpus landed and the
+  daily-aggregated directional reading was refuted on three arms. Its residual (the intraday
+  event window) is a DATA problem, not a mining one, and is re-owed below.
+- **new FX Blue breadth (wave 4+)** -- deliberately not run. The corpus at 887 accounts had
+  produced two cards and zero verdicts. Harvesting more accounts before judging the cards the
+  last harvest produced is discovery outrunning conversion in the one direction §33 forbids.
+
+---
+
+## FINDING 1 (T1) -- H-20260828-005 is REFUTED at the canonical ten gates, in BOTH directions
+
+Registered `family_retail_overlap_reversal` and judged it through
+`external_gauntlet.run_gauntlet` -- the existing door, no inserted threshold in either direction
+(L1.60). Report: `desks/mt5/reports/gauntlet_H-20260828-005.json`.
+
+24 preregistered cells, **all reported**: 3 symbols x rr{1.0,1.5} x ttl{2,4} x BOTH directions.
+The card set `direction: 0` and said in terms that direction "is the gauntlet's question", so
+publishing the fade arm alone would have been the producer answering a question it had deferred.
+Charged trial census 31.
+
+    survivors passing all ten:  0 / 24
+    program level:              PBO 0.3295 (pass), Hansen SPA p = 0.827 (fail)
+    deflated_sharpe:            fails 24/24, DSR ~ 0 against sr0 0.1142
+    best cell of 24:            USDJPY follow rr=1.5 ttl=4, Sharpe 0.0297, EV 0.0249R
+    fade arm alone (12 cells):  every Sharpe negative, -0.006 .. -0.164
+
+The direction question is answered and the answer is NEITHER. Note the follow arm is *not* the
+fade arm's mirror -- stops, targets and costs break the symmetry -- so "flip the sign of a
+negative backtest" was checked rather than assumed, and it does not rescue the card.
+
+**UNMEASURED, not failed (L1.28a):** the M15 arm the card prescribes. This box holds 203 `_H1`
+parquets and no M15 for these symbols, so what ran is the H1 arm of the mechanism: a 2h hold is
+2 bars instead of 8, and the entry is an hour late instead of a quarter. That residual is real
+and is carded, not waved.
+
+## FINDING 2 (T1) -- the card's clock LABEL was wrong and its INTEGERS were right, and the
+## repair a reader would have made is the one that breaks it
+
+The card says "15:00-17:00 UTC". Measured on the live parquets: **446 of 452 weeks in EURUSD_H1
+begin Monday 00:00 and end Friday 23:00, in summer and winter alike.** No true-UTC FX tape can
+do that -- its week boundary walks between 21:00 and 22:00 Sunday with DST. The stamps are
+broker EET (UTC+3/+2) wearing a `+00:00` label.
+
+The FX Blue corpus carries the SAME convention, and the tape proves it: the corpus trade-share
+peak (15/16/17) IS the tape's own stamp-hour tick_volume peak -- EURUSD 7.3/7.8/8.5%, GBPUSD
+7.0/7.6/8.2%, XAUUSD 6.7/8.4/8.4% -- while under a UTC reading the corpus peak would land on
+18-20, where the tape falls away to 6.1/4.2/3.6%. So both clocks are broker EET, no conversion
+is owed anywhere, and **anyone who had "fixed" the label by converting would have introduced the
+three-hour error the label implied.** What is actually wrong is the mechanism narrative: stamp
+15-17 is UTC 12-14, the London afternoon into the NY open, not the centre of the overlap.
+
+## FINDING 3 (T1, repaired) -- `_h1` asserted a contract that is false, and gate 1 judges on it
+
+`families._h1` said "Bars on this desk are broker-UTC by contract". They are not. The cost is
+not arithmetic -- every family compares stamp-hours to stamp-hours and is self-consistent -- it
+is a MECHANISM CLAIM, which is gate 1's entire subject. `family_london_close_momentum` fires at
+stamp-hour 16 = 13:00 UTC in summer: it is named for the London close and trades the London
+afternoon, and gate 1 passes it on the strength of that name. `family_usd_session_shock` runs
+"London" 7-16 = 04:00-13:00 UTC, opening three hours before London does.
+
+Corrected the contract in place, with the proof, and corrected the two mislabelled families.
+**Hour constants deliberately NOT changed:** several were evidently chosen in broker time and
+land correctly (comex `settle_hour=20` is 17:00 UTC, the real COMEX settlement), and silently
+re-timing a tested cell is a worse defect than a wrong label. The re-timing question is carded.
+
+## FINDING 4 (T1, repaired) -- the gauntlet's cell id collapsed 24 trials onto 8 names
+
+`frontier_identity.cell_id` took its legacy short form whenever `rr` OR `wait_bars` was present
+and dropped every other parameter. My 24 cells printed as 8 ids, three deep each -- **cells with
+opposite-signed Sharpes under one name**, in the report that grants certificates. The
+function's own docstring already said "arbitrary DSL parameters must never collapse onto
+rr=?/wb=? IDs"; the branch predicate did not enforce what the docstring promised. The short form
+now requires `{rr, wait_bars}` to be the WHOLE parameter set, so no historical id changes value.
+This is the desk's dominant class again: a producer computes a distinction and the layer above
+collapses it.
+
+## FINDING 5 (T1, repaired + fenced) -- the orphaned-inode audit the 08-28 run owed
+
+Owed item 4 was "apply the repair to every other long-running writer under desks/mt5/data". An
+audit is a snapshot, so what landed is a fence: `scripts/check_orphanable_writers.py`, wired
+07:41 daily in the manifest. The defect is a SHAPE -- an append handle held open across a loop
+that waits -- and it recurs in whatever directory is written next.
+
+Its first draft reported **58** hits and would have been unreadable. A loop flushing a list in
+milliseconds is not exposed; narrowing to loops that WAIT (network/sleep/subprocess) cut it to
+4, and restricting to git-TRACKED targets (an ignored artifact has no checkout to unlink it,
+which cleared two retired crypto collectors writing to `data/*`) cut it to 2. **Both were real:**
+the already-repaired fxblue miner, and one unfixed live instance --
+`cohort_and_identity.observe_due` held its handle on the tracked
+`desks/mt5/data/intelligence/cohorts/observations.jsonl` across a loop that sleeps 1s and waits
+up to 20s per member, i.e. minutes, against a tree this box checks out every ten. Staged to /tmp
+and published in one append. Fence green, its own test asserts the vulnerable shape, the
+fast-loop false positive, the staged repair and the tracked filter.
+
+---
+
+## SURVIVOR-PIPELINE CONTRIBUTION
+
+Cards fed to the gauntlet: 1 (H-20260828-005). Certificates: 0. Survivors: 0. Trials declared
+and reported: 24. The deliverable is a **disproof** -- the objective counts the shift, not the
+sign, and this one withdraws attention from a mechanism the corpus was about to keep generating
+descendants for. The corpus itself survives: the retail concentration is a real, re-measured
+population property, and the clock finding is now a desk-wide asset rather than one card's note.
+
+## OWED NEXT RUN
+1. **The M15 arm of H-005.** Not a mining debt -- the desk has no M15 tape for EURUSD/GBPUSD/
+   USDJPY. Until it does, the H1 refutation is a verdict about H1 and the card's own resolution
+   is UNMEASURED. Acquiring M15/M5 for the majors is the enabling change.
+2. **The session re-timing question.** Six families carry hardcoded hour constants; two are
+   named 2-3h off the window they trade. Whether the NAMED session or the CURRENT constant is
+   the better cell is an empirical question worth one preregistered pass, and it must be run as
+   a NEW cell against the census, never as an edit to a tested one.
+3. **The intraday arm of the 08-28 CB refutation** -- same blocker as item 1, same acquisition.
+4. **FX Blue wave 4+ still wants a timer, not a manual run** -- but only now that its cards have
+   verdicts. Harvesting was correctly deprioritised today; it is not correctly deprioritised
+   twice in a row.
+5. Untouched and still owed: the **body-line `[§33:]` parser fix** (engineering-owned),
+   **Myfxbook `/members/*` and Collective2 `/strategies/*` under OP-098**, the **Darwinex
+   metrics XHR** respecting the `/api` robots bar.

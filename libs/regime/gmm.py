@@ -8,7 +8,7 @@ current regime, confidence is high; when they disagree, the engine flags it.
 from __future__ import annotations
 
 import numpy as np
-from sklearn.mixture import GaussianMixture  # type: ignore[import-untyped]
+from sklearn.mixture import GaussianMixture
 
 
 def fit_gmm(x: np.ndarray, *, n_states: int = 3, seed: int = 0) -> GaussianMixture:

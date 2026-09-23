@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import json
 import sys
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
@@ -42,13 +43,76 @@ def desk(tmp_path, monkeypatch):
     monkeypatch.setattr(promoter, "SLEEVES_FILE", tmp_path / "data" / "sleeves.json")
     monkeypatch.setattr(promoter, "LEDGER", tmp_path / "data" / "live_ledger.jsonl")
     monkeypatch.setattr(promoter, "LOG", tmp_path / "logs" / "promoter.log")
+    # THE GOLD BOOK'S FILES TOO. The promoter now RE-DERIVES a standing gold retirement against
+    # the account in hand (2026-09-08); a fixture that left these at the desk's real paths
+    # voided the tree's own data/GOLD_RETIRED.json from a test run. Every path the promoter
+    # writes points at tmp_path.
+    monkeypatch.setattr(promoter, "GOLD_RETIRED_FILE", tmp_path / "data" / "GOLD_RETIRED.json")
+    monkeypatch.setattr(promoter, "GOLD_RETIRED_VOIDED_FILE",
+                        tmp_path / "data" / "GOLD_RETIRED_VOIDED.json")
     monkeypatch.setattr(promoter.provenance, "current_account", lambda _acc: _ACC)
+    monkeypatch.setattr(promoter, "authorized_specs", lambda _base: {
+        (sym, "asia", state, "session_range_breakout", False)
+        for sym in ("CADJPY", "USDJPY", "EURJPY", "XAUUSD")
+        for state in (None, "FAILED_BREAK", "NORMAL_DAY")
+    })
+
+    # LIVE PROMOTION REQUIRES THE CANONICAL CERTIFICATE (2026-08-26: authority revoked from
+    # uncertified lanes). These tests exercise the promotion MECHANICS, so the fixture grants
+    # authority for exactly the keys each test writes -- read from the tmp shadow file at call
+    # time, mirroring authorized_specs' spec shape. The refusal law has its own test below.
+    def _authority_from_shadow(base=None):
+        try:
+            blob = json.loads((shadow_dir / "shadow_state.json").read_text(encoding="utf-8"))
+        except OSError:
+            return set()
+        out = set()
+        for key, row in blob.items():
+            if not isinstance(row, dict):
+                continue
+            parts = key.split(".")
+            if len(parts) < 2:
+                continue
+            cond = parts[2] if len(parts) > 2 else None
+            out.add((parts[0], parts[1], cond, "session_range_breakout", False))
+        return out
+    monkeypatch.setattr(promoter, "authorized_specs", _authority_from_shadow)
+
+    # CAPITAL NOW REQUIRES A MEASURED dE[log W] (principal 2026-09-05), and these tests exercise
+    # the promotion MECHANICS -- the same reason the fixture already grants the certificate
+    # authority above. So the allocator is made to admit exactly the keys each test writes, and
+    # the criterion itself has its own file (test_marginal_admission.py). A test that wants a
+    # refusal, a stale scan or a demotion calls `desk.allocation(...)` explicitly.
+    alloc = tmp_path / "reports" / "pf_allocation.json"
+    alloc.parent.mkdir(parents=True, exist_ok=True)
+    monkeypatch.setattr(promoter, "ALLOCATION", alloc)
+    pinned: dict = {}
+
+    def _write_allocation(keys, *, admit=True, heat=0.03, at=None) -> None:
+        stamp = (at or datetime.now(tz=UTC)).isoformat()
+        alloc.write_text(json.dumps({
+            "generated_utc": stamp, "heat": {"total": 0.20}, "book": {}, "book_zeroed": {},
+            "admission": {
+                "status": "MEASURED", "measured_utc": stamp, "universe": {},
+                "candidates": {k: {"symbol": "", "family": "", "selector": "",
+                                   "delta_elogw_per_day": 0.0004 if admit else -0.0002,
+                                   "heat_earned": heat if admit else 0.0, "admit": bool(admit),
+                                   "why": "fixture: admitted" if admit else "fixture: refused"}
+                               for k in keys}},
+        }), encoding="utf-8")
 
     class Desk:
         root = tmp_path
 
+        def allocation(self, keys, *, admit=True, heat=0.03, at=None) -> None:
+            """Pin what the allocator says; stops the shadow writer from overwriting it."""
+            pinned["on"] = True
+            _write_allocation(keys, admit=admit, heat=heat, at=at)
+
         def shadow(self, blob: dict) -> None:
             (shadow_dir / "shadow_state.json").write_text(json.dumps(blob), encoding="utf-8")
+            if not pinned:
+                _write_allocation(list(blob))
 
         def read_shadow(self) -> dict:
             return json.loads((shadow_dir / "shadow_state.json").read_text(encoding="utf-8"))
@@ -73,6 +137,79 @@ def desk(tmp_path, monkeypatch):
 
 
 _GOOD = {"status": "PROMOTION CANDIDATE", "exp_r": 0.276, "n": 40, "max_dd_r": -8.0}
+
+
+def test_the_authority_set_is_recorded_as_drift_never_a_block(desk, monkeypatch):
+    """UNIVERSAL PROMOTION (principal 2026-09-05). The ten gates gate ENROLMENT: a forward clock
+    exists only because a certificate started it (grandfathering ended 2026-08-26), so a spec
+    missing from TODAY's authority set is registry drift -- a renamed, re-keyed or trampled
+    certificate -- and re-checking it at promotion time held matured clocks out of the book.
+    Drift is written on the row and the sleeve promotes on its own enrolment. An EMPTY authority
+    set (an unreadable canon) is no opinion at all and records nothing."""
+    monkeypatch.setattr(promoter, "authorized_specs",
+                        lambda base=None: {("XAUUSD", "asia", None, "session_range_breakout",
+                                            False)})
+    desk.shadow({"CADJPY.asia": dict(_GOOD)})
+    promoter.main()
+    (s,) = desk.sleeves()
+    assert s["name"] == "CADJPY.asia" and s["status"] == "LIVE"
+    assert s["certificate_drift"] is True
+    assert desk.read_shadow()["CADJPY.asia"]["certificate_drift"] is True
+    monkeypatch.setattr(promoter, "authorized_specs", lambda base=None: set())
+    desk.shadow({"CADJPY.london_am": dict(_GOOD)})
+    promoter.main()
+    assert {x["name"] for x in desk.sleeves()} == {"CADJPY.asia", "CADJPY.london_am"}
+    assert desk.read_shadow()["CADJPY.london_am"]["certificate_drift"] is False
+
+
+def test_a_family_clock_promotes_as_family_market_or_names_its_executor_gap(desk, monkeypatch):
+    """Every lane, every family. A matured clock of a family the gateway's executor runs is
+    written LIVE with exec=family_market and its exact identity; one the executor CANNOT run is
+    not written as a row the book would fund and hold as air -- the gap is named on the clock
+    (`executor_gap`) and the candidate promotes on the run the executor widens.
+
+    THE RUN THAT WIDENS IT HAPPENED, 2026-09-05. This test asserted that `overnight_gap_decay`
+    promotes to nothing because it lives in the `orthogonal` population -- true of the executor
+    that existed, and 65 of the desk's 66 certificates were held out the same way. The universal
+    executor resolves all three populations through `executables`, so an orthogonal clock now
+    promotes exactly like a hunt16 one, which is the outcome this test's own docstring predicted.
+
+    THE PROPERTY IS UNCHANGED and is what still gets asserted: an executable family becomes a
+    `family_market` row carrying its exact identity, and a family the executor genuinely cannot
+    run is refused by name and left as a candidate. The second case is now a family no code on
+    this tree answers to, which is the honest remaining gap.
+    """
+    ids = {
+        "AUDNZD.dav_range_filter_adx.afternoon": {
+            "symbol": "AUDNZD", "selector": "afternoon", "family": "dav_range_filter_adx",
+            "params": {"adx": 20}, "side": "SHORT"},
+        "EURZAR.overnight_gap_decay.asia": {
+            "symbol": "EURZAR", "selector": "asia", "family": "overnight_gap_decay",
+            "params": {}, "side": "LONG"},
+        "EURZAR.a_family_no_code_answers_to.asia": {
+            "symbol": "EURZAR", "selector": "asia", "family": "a_family_no_code_answers_to",
+            "params": {}, "side": "LONG"},
+    }
+    monkeypatch.setattr(promoter, "clock_identities", lambda: ids)
+    desk.shadow({k: dict(_GOOD) for k in ids})
+    promoter.main()
+    rows = {s["name"]: s for s in desk.sleeves()}
+
+    # The hunt16-population clock, exactly as before.
+    s = rows["AUDNZD.dav_range_filter_adx.afternoon"]
+    assert s["exec"] == "family_market" and s["family"] == "dav_range_filter_adx"
+    assert s["side"] == "SHORT" and s["selector"] == "afternoon" and s["params"] == {"adx": 20}
+
+    # THE ORTHOGONAL CLOCK NOW REACHES CAPITAL, by the same path and carrying the same identity.
+    o = rows["EURZAR.overnight_gap_decay.asia"]
+    assert o["exec"] == "family_market" and o["family"] == "overnight_gap_decay"
+    assert o["selector"] == "asia" and o["side"] == "LONG"
+
+    # AND THE BOUNDARY STILL EXISTS. A certificate for a family with no constructor is an orphan.
+    assert "EURZAR.a_family_no_code_answers_to.asia" not in rows
+    gap = desk.read_shadow()["EURZAR.a_family_no_code_answers_to.asia"]
+    assert gap["status"] == "PROMOTION CANDIDATE"          # still a candidate, never blocked
+    assert "no constructor" in gap["executor_gap"]
 
 
 # --------------------------------------------------------------------- promote
@@ -103,7 +240,16 @@ def test_promotion_is_idempotent(desk):
 # ---------------------------------------------------------------------- retire
 
 def _losing(name: str, n: int = 12) -> list[dict]:
-    return [{"sleeve": name, "r_multiple": -1.0} for _ in range(n)]
+    """A sleeve that genuinely lost -- LOSSES THAT DIFFER, on purpose.
+
+    This returned n identical -1.0 R multiples, which `promoter.degenerate_evidence` now refuses
+    to retire on: a constant series is what a broken computation looks like, and the desk
+    retired a live, profitable gold sleeve on exactly that shape (n=30, exp=-1.000, while the
+    account was +EUR 103.84). A fixture that trips the safety guard tests the guard, not the
+    retire path these tests are about. Real losses vary; these do, and still average -0.85R.
+    """
+    losses = (-1.0, -0.62, -1.0, -0.95, -0.41, -1.0, -0.88, -1.0, -0.73, -1.0, -0.55, -1.0)
+    return [{"sleeve": name, "r_multiple": losses[i % len(losses)]} for i in range(n)]
 
 
 def test_retiring_a_conditioned_sleeve_kills_THAT_sleeve_in_shadow(desk):
@@ -161,18 +307,28 @@ def test_a_winning_sleeve_is_not_retired(desk):
 
 # ------------------------------------------------------------- gold challengers
 
-def test_a_gold_challenger_waits_for_the_armed_book(desk):
+def test_a_gold_challenger_no_longer_waits_for_the_armed_book(desk):
+    """PRINCIPAL 2026-09-04: every promotion candidate goes live immediately, no waiting. A
+    challenger used to sit in shadow until the armed window had forward rows to compare
+    against; a certified, matured sleeve held out of the book by a comparison that had never
+    proved it raised E[log W]."""
     desk.shadow({"XAUUSD.asia.NORMAL_DAY": dict(_GOOD)})
     promoter.main()
-    assert desk.sleeves() == [], "promoted with nothing to compare against"
+    (s,) = desk.sleeves()
+    assert s["status"] == "LIVE" and s["vs_armed"] is None
 
 
-def test_a_gold_challenger_that_loses_to_the_armed_book_is_killed_not_promoted(desk):
+def test_a_gold_challenger_that_trails_the_armed_book_is_promoted_with_the_number_recorded(desk):
+    """The comparison is MEASURED and written on the row; it no longer kills. Capital is the
+    allocator's decision by dElogW, not a promoter heuristic."""
     desk.shadow({"XAUUSD.asia.NORMAL_DAY": {**_GOOD, "exp_r": 0.10}})
     desk.ledger([{"sleeve": "gold_asia", "r_multiple": 0.40} for _ in range(6)])
     promoter.main()
-    assert desk.sleeves() == []
-    assert desk.read_shadow()["XAUUSD.asia.NORMAL_DAY"]["status"] == "KILL"
+    (s,) = desk.sleeves()
+    assert s["status"] == "LIVE"
+    assert s["vs_armed"]["trails_by_more_than"] is True
+    assert s["vs_armed"]["armed_exp_r"] == pytest.approx(0.40)
+    assert desk.read_shadow()["XAUUSD.asia.NORMAL_DAY"]["status"] == "PROMOTION CANDIDATE"
 
 
 def test_a_gold_challenger_that_beats_the_armed_book_promotes(desk):
@@ -181,6 +337,7 @@ def test_a_gold_challenger_that_beats_the_armed_book_promotes(desk):
     promoter.main()
     (s,) = desk.sleeves()
     assert s["name"] == "XAUUSD.asia.NORMAL_DAY" and s["state"] == "NORMAL_DAY"
+    assert s["vs_armed"]["trails_by_more_than"] is False
 
 
 def test_a_demo_fill_cannot_retire_a_live_sleeve(desk):

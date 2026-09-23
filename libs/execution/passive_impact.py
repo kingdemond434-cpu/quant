@@ -237,13 +237,17 @@ def fit_fill_decay(distance_bps: np.ndarray | list[float],
 def signed_flow(rows: list[dict[str, Any]]) -> tuple[np.ndarray, np.ndarray]:
     """(timestamp_ms, SIGNED size) for every print. The primitive the repo did not have.
 
-    `libs/hypmax/moat_features._trade_stream` returns unsigned size and its docstring asserts
-    "direction is not published". THAT IS FACTUALLY WRONG for both venues the desk records, and
-    the error is load-bearing: unsigned volume cannot estimate an order-flow IMBALANCE at all.
+    THE CLAIM THIS EXISTS TO REFUTE is "direction is not published", which a previous trade
+    reader asserted while returning unsigned size. It is false for every tape the desk has ever
+    recorded, and the error is load-bearing: unsigned volume cannot estimate an order-flow
+    IMBALANCE at all, which is the one quantity the module is for.
 
-      Binance (k="t"):     "m" is buyer-is-maker. m=True  -> the buyer was passive, so the
-                           AGGRESSOR was a seller -> -1. m=False -> aggressor bought -> +1.
-      Bybit   (k="trades"): each print in "v" carries "side", already the TAKER side.
+      A maker flag (k="t"):     "m" is buyer-is-maker. m=True -> the buyer was passive, so the
+                                AGGRESSOR was a seller -> -1. m=False -> aggressor bought -> +1.
+      An explicit side (k="trades"): each print in "v" carries "side", already the TAKER side.
+
+    MT5 ticks carry the same information in a third spelling -- a tick flagged BUY or SELL names
+    the aggressor directly -- so a reader for that tape adds a branch here rather than a module.
 
     Rows whose direction genuinely cannot be read are DROPPED, not signed zero -- a zero is a real
     flow observation meaning "balanced", and manufacturing one from an unreadable row would bias

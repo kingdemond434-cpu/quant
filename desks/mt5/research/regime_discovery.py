@@ -67,7 +67,10 @@ def daily_features(h1: pd.DataFrame) -> pd.DataFrame:
     ny_sum = ars[ny_mask].resample("D").sum()
     day_sum = ars.resample("D").sum()
     df["ny_share"] = ny_sum / day_sum.replace(0, np.nan)
-    return df.replace([np.inf, -np.inf], np.nan).dropna()
+    # L1.68 (GAP 132): a Sunday row here is 1-3 H1 stub bars posing as a day -- its
+    # realized_vol/skew/jump stats are computed on a handful of observations and feed the
+    # regime conditioning (RESEARCH 6c). Excluded at consumption, never from disk.
+    return families.d1_session_filtered(df.replace([np.inf, -np.inf], np.nan).dropna())
 
 
 def kmeans(X: np.ndarray, k: int, iters: int = 30, seed: int = 7) -> tuple[np.ndarray, np.ndarray]:
@@ -182,10 +185,10 @@ def main() -> int:
         full_lab[split:] = lab_te
         sigs_all = families.family_session_range_breakout(
             h1, range_start=10, range_end=13, signal_at=13, wait_bars=8, rr=2.0, ttl_bars=12)
-        m = meta.get(sym, {})
-        costs = Costs(spread_per_lot=0.48 if sym == "XAUUSD" else max(
-            m.get("median_spread_pts", 1) * m.get("tick_size", 1e-5) * m.get("contract_size", 1e5), 0.05),
-            commission_per_lot=3.50, contract_oz=m.get("contract_size", 1e5))
+        # `from_symbol` or the costs are wrong: the hand-rolled form put gold's spread in
+        # dollars-per-OUNCE into a per-LOT field and left quote_per_account at 1.0, which
+        # undercharges the commission 184x on USDJPY and 8.2x on CADJPY (measured 2026-08-27).
+        costs = Costs.from_symbol(meta.get(sym, {}), commission_per_lot=3.50)
         cells = {}
         for cl in range(k):
             days = {pd.Timestamp(d).date() for d in day_idx[full_lab == cl]}

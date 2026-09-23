@@ -1,0 +1,141 @@
+{
+  "schema_version": 1,
+  "note": "Paid institutional data frontier mapped to free equivalents. Classes: FREE_EQUIVALENT_FOUND, FREE_PROXY_ENSEMBLE, PARTIAL_PROXY, PAID_MATERIALLY_SUPERIOR (theoretical only - we never buy), RELATIONSHIP_ONLY, NOT_WORTH_ACQUIRING, ACQUIRE_WHEN_CAPITAL_JUSTIFIES (theoretical only). STRUCTURALLY_PRIVATE list in section private_list.",
+  "curated": "2026-08-17",
+  "categories": {
+    "terminals_macro": {
+      "class": "FREE_PROXY_ENSEMBLE",
+      "sources": ["Bloomberg Terminal", "Bloomberg B-PIPE", "Bloomberg Data License", "LSEG Workspace", "LSEG DataScope", "LSEG Real-Time", "FactSet", "FactSet DataFeed", "S&P Capital IQ Pro", "S&P Compustat", "Morningstar Direct", "SIX Financial", "Moody's Analytics", "Fitch Solutions", "Macrobond", "Haver Analytics", "CEIC"],
+      "free_equivalents": ["FRED + ALFRED (free key = vintage PIT)", "BIS", "IMF", "OECD", "Eurostat", "World Bank", "central bank releases/APIs", "ECB SDW", "Treasury", "national statistical agencies"],
+      "proxy_graph": "MACRO_STATE = FRED+ALFRED+BIS+IMF+OECD+WB+central banks + internal feature engineering",
+      "info_loss": "low for macro levels/rates; medium for curated analytics/estimates",
+      "status": "exploit free stack; ALFRED key = P2"
+    },
+    "exchange_tick_mbo_pcap": {
+      "class": "PARTIAL_PROXY",
+      "sources": ["CME DataMine", "CME Market-by-Order", "CME PCAP", "CME EBS", "CME options/Greeks/CVOL", "Cboe DataShop", "Cboe FX ITCH", "Cboe Open-Close", "ICE Data Services", "Nasdaq TotalView", "NYSE TAQ/OpenBook", "Eurex EOBI", "Deutsche Boerse feeds", "LME feeds", "SGX/JPX/HKEX/ASX/TMX feeds", "BMLL", "Databento", "dxFeed", "TickData", "AlgoSeek"],
+      "free_equivalents": ["CME settlement files (daily OHLC/volume/OI - free)", "CME warehouse/depository reports (free)", "MT5 H1 + M15 ticks", "crypto exchange order books (free, deep)", "delayed public quotes"],
+      "proxy_graph": "order-flow states from H1/M15 (session volume, range z, sweep proxies) + crypto L2 microstructure as free MBO shadow + daily futures vol/OI shocks",
+      "info_loss": "high for order-level microstructure (queue depletion, refill, icebergs); medium for daily flow state",
+      "notes": "MBO-level = RELATIONSHIP_ONLY without purchase; daily-volume/OI layer fully free",
+      "status": "partially exploited (hunt7/8/9); crypto L2 shadow = P2"
+    },
+    "institutional_fx_flow": {
+      "class": "FREE_PROXY_ENSEMBLE",
+      "sources": ["CLSMarketData", "CLS FX Flow", "CLS FX Volume", "CLS FX Outstanding", "CLS Pricing", "EBS", "360T", "LMAX", "Cboe FX", "Euronext FX", "Currenex", "FXSpotStream", "Integral", "State Street FX Connect", "Tradeweb FX", "Fenics/BGC FX", "bank FX-flow products", "custodian FX-flow products", "prime-broker FX positioning"],
+      "free_equivalents": ["CFTC legacy COT (FX majors, 1986+)", "CFTC TFF (dealer/AM/lm, 2018+)", "CME FX futures volume/OI", "FRED yield differentials + DXY", "H1 session/breadth states", "fixing behavior", "MoF intervention data"],
+      "proxy_graph": "FX_FLOW_PROXY = f(futures signed return/volume, vol shock, OI change, COT positioning, cross-pair breadth, yield differential, spot/futures basis, session structure, retail positioning, fixing behavior, event state); JPY_FLOW_STATE = f(TFF jpy dealer/am/lm pct, jpy_rates_z, jpy_cross_breadth)",
+      "info_loss": "medium-high for true executed flow; the tradable state (pressure/crowding) partially recoverable",
+      "notes": "CLS Pricing 5-min executed VWAP = RELATIONSHIP_ONLY; bank/custodian/PB flow = private_list",
+      "status": "v1 states in data/states/*.parquet; hunt10 ablation"
+    },
+    "options_vol_dealer": {
+      "class": "FREE_PROXY_ENSEMBLE",
+      "sources": ["OptionMetrics", "LiveVol", "ORATS", "SpiderRock", "Cboe Hanweck", "OTC FX vol surfaces", "dealer gamma estimates", "dealer delta/vega positioning", "exchange options MBO", "OTC risk reversals/butterflies/strangles", "vol term structures", "forward vol surfaces"],
+      "free_equivalents": ["public exchange daily OI + settlement (CME/SGX/ICE free pages)", "free IV mirrors (investing.com-style ATM IV, 25D RR/BF scrapes)", "CBOE daily reports", "realized vol from H1"],
+      "proxy_graph": "DEALER_GAMMA_PROXY = f(public option OI, strike concentration, IV surface, expiry calendar, distance from strikes, approx Greeks, vol/OI changes)",
+      "info_loss": "high for strike-level dealer positioning; medium for surface-level state",
+      "status": "P2 build (IV mirrors + OI scrapes); dealer positioning = private_list"
+    },
+    "rates_credit": {
+      "class": "PARTIAL_PROXY",
+      "sources": ["Tradeweb", "MarketAxess", "BrokerTec", "Bloomberg BVAL", "ICE evaluated pricing", "S&P evaluated pricing", "DTCC commercial derivatives", "CME Treasury/SOFR MBO", "MTS", "Eurex Repo", "securities-finance datasets", "CDS curves", "dealer/RFQ analytics"],
+      "free_equivalents": ["FRED (DGS2/10/30, DFII, T5YIE/T10YIE, SOFR, DFF, BAMLH0A0HYM2)", "DTCC public swap dissemination (free)", "ICE public swap dissemination", "CFTC SDR public data", "CME public derivatives reports"],
+      "proxy_graph": "rates state from FRED lake (level + z) x intraday triggers",
+      "info_loss": "low for rates levels; high for evaluated pricing/RFQ/dealer skew",
+      "notes": "DTCC/CFTC SDR public = FREE_EQUIVALENT_FOUND layer already available",
+      "status": "FRED lake live; SDR/DTCC public ingest = P2"
+    },
+    "positioning_crowding": {
+      "class": "FREE_PROXY_ENSEMBLE",
+      "sources": ["State Street institutional holdings/flow", "EPFR", "prime-broker crowding", "hedge-fund leverage", "PB gross/net exposures", "custodian flow", "Morningstar fund flows", "Lipper", "FactSet Ownership", "eVestment", "Preqin", "S3 Partners", "DataLend", "EquiLend", "Hazeltree"],
+      "free_equivalents": ["SEC 13F/EDGAR (free, quarterly institutional holdings)", "CFTC AM/lm positioning", "ICI fund-flow estimates", "public ETF holdings/flows", "FINRA short interest (free, daily)", "FRED H.8/flow data"],
+      "proxy_graph": "INSTITUTIONAL_RISK_FLOW_PROXY = f(CFTC AM/LM, ETF flows, 13F changes, ICI flows, futures positioning, FX price/volume response, rates, risk assets)",
+      "info_loss": "medium (quarterly vs realtime; equities-centric) - tradable crowding state partially recoverable for FX/metals via CFTC",
+      "status": "CFTC layer live; EDGAR/FINRA/ICI = P2 ingest"
+    },
+    "machine_news": {
+      "class": "FREE_PROXY_ENSEMBLE",
+      "sources": ["RavenPack", "LSEG Machine Readable News", "Reuters MRN", "Bloomberg event feeds", "Dow Jones MRN", "Dataminr", "MNI", "Newsquawk", "TradeTheNews", "MarketPsych", "Acuity"],
+      "free_equivalents": ["GDELT 2.0 (15-min global news, translated)", "official central-bank releases/calendars", "FOMC transcripts/statements", "exchange announcements", "public RSS with permitted access", "government feeds"],
+      "proxy_graph": "EVENT_REACTION_ANOMALY = f(GDELT significance/novelty, official schedule, price displacement after release)",
+      "info_loss": "medium (timing/headline precision lower); macro-surprise content recoverable from actuals vs consensus (FRED + official releases)",
+      "status": "GDELT registered (registry, low priority); official calendars = P2"
+    },
+    "energy_physical": {
+      "class": "FREE_PROXY_ENSEMBLE",
+      "sources": ["Kpler", "Vortexa", "Energy Aspects", "Platts/S&P CI", "Argus", "Wood Mackenzie", "Rystad", "ICIS", "OPIS", "OilX", "Kayrros", "Enverus", "Fastmarkets", "Baltic commercial", "Spark Commodities"],
+      "free_equivalents": ["EIA (weekly/monthly inventories, rigs - free)", "JODI (free)", "AIS public vessel tracking", "customs/port statistics", "Sentinel-1/2 satellite (free)", "futures curves (free daily)", "Freightos Baltic Index (free daily)"],
+      "proxy_graph": "PHYSICAL_ENERGY_STATE = f(EIA, JODI, AIS, customs, port stats, Sentinel, refinery reports, futures curve, inventories)",
+      "info_loss": "medium (assessments/forecasts not reproducible; flows partially from AIS+EIA)",
+      "notes": "Platts/Argus assessments = PARTIAL_PROXY (curated proprietary assessments)",
+      "status": "P2/P3 (not traded yet - energy instruments Tier-1 fetch pending)"
+    },
+    "gold_metals": {
+      "class": "FREE_PROXY_ENSEMBLE",
+      "sources": ["Metals Focus", "Fastmarkets", "CRU", "Wood Mackenzie M&M", "Benchmark Mineral Intelligence", "SMM premium data", "Mysteel", "GFMS/LSEG commodities", "RS Metrics", "commercial LME/CME/SGE/LBMA datasets", "refinery/smelter/inventory intelligence"],
+      "free_equivalents": ["CME COMEX warehouse/depository reports (free)", "CME settlement/volume/OI (free)", "LBMA", "World Gold Council", "USGS", "SGE public", "ETF holdings/flows", "central-bank reserve changes (IMF IFS free)", "CFTC gold positioning (legacy+TFF+disagg)"],
+      "proxy_graph": "GOLD_PHYSICAL_PAPER_PRESSURE = f(COMEX inventory change, futures OI, CFTC AM vs lm, ETF flow, real yields, DXY, ratio, Asian activity)",
+      "info_loss": "low-medium - gold has the richest free institutional shadow set of any market",
+      "status": "v1 states live (gold_physical_paper, gold_macro_stress, gold_real_yield_z, gold_ratio_z); hunt10 ablation"
+    },
+    "shipping_trade": {
+      "class": "FREE_PROXY_ENSEMBLE",
+      "sources": ["Kpler", "Vortexa", "MarineTraffic commercial", "Spire Maritime", "VesselsValue", "Clarksons", "Signal Ocean", "Windward", "Lloyd's List Intelligence", "Xeneta", "Drewry", "Freightos", "Panjiva", "ImportGenius", "Datamyne"],
+      "free_equivalents": ["AIS public data", "UN Comtrade", "national customs statistics", "Census trade data", "port authority statistics", "Baltic Exchange public indices", "Freightos Baltic Index (free daily)", "Clarksons free research snippets"],
+      "proxy_graph": "trade-flow states from customs + AIS + indices",
+      "info_loss": "medium-high for proprietary vessel/trade intelligence",
+      "status": "not yet exploited (no shipping exposure in universe)"
+    },
+    "satellite_geospatial": {
+      "class": "FREE_EQUIVALENT_FOUND",
+      "sources": ["Planet", "Maxar", "BlackSky", "ICEYE", "Capella", "Umbra", "Spire", "Kayrros", "RS Metrics", "SpaceKnow", "EarthDaily", "Descartes Labs", "specialist commodity satellite analytics"],
+      "free_equivalents": ["Copernicus Sentinel-1/2 (free, open)", "Landsat (free)", "NASA Earthdata", "NOAA", "ECMWF Open Data", "Copernicus Climate Data Store"],
+      "proxy_graph": "the entire commercial satellite family is replaceable by free government constellations; analytics layer (oil storage, crop) must be self-built from free imagery",
+      "info_loss": "medium (compute-heavy self-processing vs bought analytics)",
+      "status": "not started (P3; energy/agri exposure first)"
+    },
+    "consumer_payments": {
+      "class": "STRUCTURALLY_PRIVATE",
+      "sources": ["Mastercard SpendingPulse", "Visa analytics", "Consumer Edge", "Earnest Analytics", "YipitData", "Bloomberg Second Measure", "Facteus", "Affinity Solutions", "NIQ", "Circana", "Numerator", "commercial acquirer/payment datasets"],
+      "free_equivalents": ["FRED retail sales (free)", "Google Trends", "Cloudflare Radar", "public economic activity proxies", "card-level = none"],
+      "proxy_graph": "consumer state from retail sales + trends proxies only",
+      "info_loss": "high - payment panels cannot be replicated; do not hunt",
+      "status": "private_list"
+    },
+    "web_app_digital": {
+      "class": "PARTIAL_PROXY",
+      "sources": ["Similarweb", "Sensor Tower", "Apptopia", "Semrush Enterprise", "Appfigures", "Datos", "enterprise clickstream", "licensed social firehoses"],
+      "free_equivalents": ["Google Trends", "Cloudflare Radar", "public app store charts", "public web analytics"],
+      "proxy_graph": "attention proxies from trends/radar",
+      "info_loss": "high for exact usage panels; not material for current MT5 universe",
+      "status": "not started (irrelevant to current universe)"
+    },
+    "employment_supply_chain": {
+      "class": "PARTIAL_PROXY",
+      "sources": ["Revelio Labs", "Lightcast", "LinkUp", "Thinknum", "PitchBook", "CB Insights", "Panjiva", "Sayari", "Interos", "Altana", "D&B", "Orbis", "FactSet Revere", "Bloomberg supply-chain datasets"],
+      "free_equivalents": ["BLS JOLTS/CES/employment (free, official)", "SEC EDGAR", "OpenCorporates", "import customs data", "company career-page scraping (labor)"],
+      "proxy_graph": "employment state from BLS; supply-chain state from customs + EDGAR",
+      "info_loss": "medium-high; macro employment well covered, company-level poorly",
+      "status": "not started (equities-only relevance)"
+    },
+    "alt_data_marketplaces": {
+      "class": "NOT_WORTH_ACQUIRING",
+      "sources": ["Neudata", "Eagle Alpha", "BattleFin", "Snowflake Marketplace", "AWS Data Exchange", "Databricks Marketplace", "FactSet Marketplace", "Nasdaq Data Link premium", "S&P Marketplace"],
+      "free_equivalents": ["AWS Open Data", "Google Dataset Search", "Kaggle", "GitHub", "Nasdaq Data Link free catalog", "government open-data portals"],
+      "proxy_graph": "marketplaces are DISCOVERY CHANNELS, not datasets; use free catalogs as the scanning frontier",
+      "info_loss": "n/a",
+      "status": "scan as frontier channel"
+    }
+  },
+  "free_equivalent_highlights": ["SEC 13F/EDGAR", "CFTC SDR public swap data", "DTCC public swap dissemination", "FINRA short interest", "CME settlement + warehouse reports", "EIA", "JODI", "Baltic/Freightos free indices", "Sentinel/Landsat/NASA", "IMF IFS central-bank reserves", "GDELT", "ALFRED vintages", "UN Comtrade + national customs"],
+  "private_list": [
+    "prime-broker client books", "bank client FX order flow", "dealer proprietary inventory",
+    "dealer quote skew", "private custodian FX hedges", "genuine RFQ response data",
+    "private OTC executable runs", "liquidity-provider internal toxicity",
+    "bank payment networks", "card transaction panels", "private corporate cash balances",
+    "private commodity merchant flow", "true broker stop databases", "private hedge-fund books",
+    "CLS 5-min executed VWAP/TWAP", "CME MBO-level order book"
+  ],
+  "policy": "ACQUIRE_WHEN_CAPITAL_JUSTIFIES / ACQUIRE_NOW / PAID_MATERIALLY_SUPERIOR classes are retained for ranking only. This desk NEVER buys. Operative action for any paid source = maximize free proxy exploitation."
+}

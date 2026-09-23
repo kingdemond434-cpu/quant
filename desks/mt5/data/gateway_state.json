@@ -22,145 +22,362 @@
       "orders": []
     }
   },
-  "position": null,
-  "last_bracket_date": "2026-08-14",
-  "last_reconcile": "2026-08-16T21:31:02+00:00",
+  "position": [
+    {
+      "ticket": 222861645,
+      "type": 1,
+      "volume": 0.04,
+      "price_open": 0.8568,
+      "sl": 0.85754,
+      "tp": 0.85519,
+      "profit": 0.56,
+      "symbol": "EURGBP"
+    },
+    {
+      "ticket": 222826613,
+      "type": 1,
+      "volume": 0.02,
+      "price_open": 0.81849,
+      "sl": 0.82004,
+      "tp": 0.81649,
+      "profit": -0.85,
+      "symbol": "USDCHF"
+    },
+    {
+      "ticket": 222864183,
+      "type": 1,
+      "volume": 0.01,
+      "price_open": 11.41207,
+      "sl": 11.45206,
+      "tp": 11.36404,
+      "profit": -0.78,
+      "symbol": "CHFNOK"
+    },
+    {
+      "ticket": 222838490,
+      "type": 1,
+      "volume": 0.02,
+      "price_open": 0.94486,
+      "sl": 0.94627,
+      "tp": 0.94337,
+      "profit": -0.25,
+      "symbol": "EURCHF"
+    },
+    {
+      "ticket": 222910467,
+      "type": 1,
+      "volume": 0.04,
+      "price_open": 0.94512,
+      "sl": 0.94599,
+      "tp": 0.94309,
+      "profit": 0.59,
+      "symbol": "EURCHF"
+    },
+    {
+      "ticket": 222841892,
+      "type": 1,
+      "volume": 0.03,
+      "price_open": 0.713,
+      "sl": 0.71451,
+      "tp": 0.71129,
+      "profit": 0.1,
+      "symbol": "AUDUSD"
+    },
+    {
+      "ticket": 222910464,
+      "type": 1,
+      "volume": 0.03,
+      "price_open": 0.71299,
+      "sl": 0.71434,
+      "tp": 0.71107,
+      "profit": 0.08,
+      "symbol": "AUDUSD"
+    },
+    {
+      "ticket": 222861649,
+      "type": 1,
+      "volume": 0.04,
+      "price_open": 0.80218,
+      "sl": 0.80418,
+      "tp": 0.79898,
+      "profit": 0.82,
+      "symbol": "NZDCAD"
+    },
+    {
+      "ticket": 222910462,
+      "type": 1,
+      "volume": 0.04,
+      "price_open": 0.99295,
+      "sl": 0.99463,
+      "tp": 0.99081,
+      "profit": 0.47,
+      "symbol": "AUDCAD"
+    }
+  ],
+  "last_bracket_date": "2026-09-16",
+  "last_reconcile": "2026-09-16T09:46:53+00:00",
   "bracket_cancelled": true,
-  "pending": null,
-  "brackets": {
-    "asia": {
-      "date": "2026-08-14",
-      "hi": 4364.14,
-      "lo": 4310.94,
-      "spec": {
-        "buy_stop": {
-          "price": 4364.14,
-          "sl": 4310.740000000001,
-          "tp": 4470.54
-        },
-        "sell_stop": {
-          "price": 4310.94,
-          "sl": 4364.339999999999,
-          "tp": 4204.54
-        }
-      },
-      "placed_at": "2026-08-16T15:13:25+00:00",
-      "result": {
-        "shadow": false,
-        "orders": [
-          {
-            "side": "buy_stop",
-            "retcode": 10015,
-            "comment": "Invalid price"
-          },
-          {
-            "side": "sell_stop",
-            "retcode": 10017,
-            "comment": "Trade disabled"
-          }
-        ]
-      }
+  "pending": [
+    {
+      "ticket": 222814285,
+      "type": 4,
+      "price": 4341.14,
+      "symbol": "XAUUSD"
     },
-    "london_am": {
-      "date": "2026-08-14",
-      "hi": 4357.44,
-      "lo": 4329.73,
-      "spec": {
-        "buy_stop": {
-          "price": 4357.44,
-          "sl": 4329.53,
-          "tp": 4412.86
-        },
-        "sell_stop": {
-          "price": 4329.73,
-          "sl": 4357.639999999999,
-          "tp": 4274.3099999999995
-        }
-      },
-      "placed_at": "2026-08-16T15:13:25+00:00",
-      "result": {
-        "shadow": false,
-        "orders": [
-          {
-            "side": "buy_stop",
-            "retcode": 10015,
-            "comment": "Invalid price"
-          },
-          {
-            "side": "sell_stop",
-            "retcode": 10017,
-            "comment": "Trade disabled"
-          }
-        ]
-      }
+    {
+      "ticket": 222814286,
+      "type": 5,
+      "price": 4275.54,
+      "symbol": "XAUUSD"
     },
-    "ny_open": {
-      "date": "2026-08-14",
-      "hi": 4358.67,
-      "lo": 4348.25,
-      "spec": {
-        "buy_stop": {
-          "price": 4358.67,
-          "sl": 4340.02,
-          "tp": 4395.58
-        },
-        "sell_stop": {
-          "price": 4348.25,
-          "sl": 4366.9,
-          "tp": 4311.34
-        }
-      },
-      "placed_at": "2026-08-16T15:13:25+00:00",
-      "result": {
-        "shadow": false,
-        "orders": [
-          {
-            "side": "buy_stop",
-            "retcode": 10015,
-            "comment": "Invalid price"
-          },
-          {
-            "side": "sell_stop",
-            "retcode": 10017,
-            "comment": "Trade disabled"
-          }
-        ]
-      }
+    {
+      "ticket": 222814285,
+      "type": 4,
+      "price": 4341.14,
+      "symbol": "XAUUSD"
     },
-    "afternoon": {
-      "date": "2026-08-14",
-      "hi": 4396.96,
-      "lo": 4348.52,
-      "spec": {
-        "buy_stop": {
-          "price": 4396.96,
-          "sl": 4348.32,
-          "tp": 4493.84
-        },
-        "sell_stop": {
-          "price": 4348.52,
-          "sl": 4397.160000000001,
-          "tp": 4251.64
-        }
-      },
-      "placed_at": "2026-08-16T15:13:25+00:00",
-      "result": {
-        "shadow": false,
-        "orders": [
-          {
-            "side": "buy_stop",
-            "retcode": 10017,
-            "comment": "Trade disabled"
-          },
-          {
-            "side": "sell_stop",
-            "retcode": 10017,
-            "comment": "Trade disabled"
-          }
-        ]
-      }
+    {
+      "ticket": 222814286,
+      "type": 5,
+      "price": 4275.54,
+      "symbol": "XAUUSD"
+    }
+  ],
+  "brackets": {},
+  "lot": 0.06,
+  "equity": 557.09,
+  "placement_health": {
+    "consecutive_total_rejections": 2,
+    "last_ok": null,
+    "last_error": {
+      "time": "2026-08-25T04:00:03+00:00",
+      "sleeve": "gold_asia",
+      "diagnoses": [
+        "10027 AutoTrading disabled by client: the terminal's AutoTrading button is off. One click, in the terminal."
+      ]
     }
   },
-  "lot": 0.06,
-  "equity": 1833.89
+  "scalp": {
+    "xau_m5_anti_momentum_ny": {
+      "last_signal_bar": "2026-09-15 12:35:00+00:00"
+    },
+    "xau_m15_anti_breakout": {
+      "last_signal_bar": "2026-09-16 12:30:00+00:00"
+    },
+    "xau_m5_anti_breakout_overlap": {
+      "last_signal_bar": "2026-09-15 18:35:00+00:00"
+    }
+  },
+  "vetoed_today": {},
+  "placement_pass": "2026-09-16T12:48:25+00:00",
+  "netting_booked": {},
+  "generic": {
+    "audcad_discovered_asia_p_7c996ac8456c8919": {
+      "last_signal_bar": "2026-09-15 19:00:00+00:00"
+    },
+    "audcad_discovered_asia_p_8030fb339510dceb": {
+      "last_signal_bar": "2026-09-15 19:00:00+00:00"
+    },
+    "audcad_discovered_asia_p_a7324e7affe1f80a": {
+      "last_signal_bar": "2026-09-15 19:00:00+00:00"
+    },
+    "audchf_overnight_gap_decay_asia_p_44136fa355b3678a": {
+      "last_signal_bar": "2026-09-15 19:00:00+00:00"
+    },
+    "audnzd_discovered_asia_p_c76b860ff91ee920": {
+      "last_signal_bar": "2026-09-15 19:00:00+00:00"
+    },
+    "audusd_discovered_asia_p_8e61ea22743f15b7": {
+      "last_signal_bar": "2026-09-15 19:00:00+00:00"
+    },
+    "audusd_discovered_asia_p_a5bbf78b5c8595c0": {
+      "last_signal_bar": "2026-09-15 19:00:00+00:00"
+    },
+    "audusd_discovered_asia_p_cf0368e026d6b477": {
+      "last_signal_bar": "2026-09-15 19:00:00+00:00"
+    },
+    "audusd_discovered_asia_p_de80ad4f2ef91116": {
+      "last_signal_bar": "2026-09-15 19:00:00+00:00"
+    },
+    "cadchf_overnight_gap_decay_asia_p_44136fa355b3678a": {
+      "last_signal_bar": "2026-09-15 14:00:00+00:00"
+    },
+    "cadjpy_session_range_breakout_asia_5_wb_12": {},
+    "cadjpy_session_range_breakout_asia_0_wb_12": {},
+    "chfdkk_overnight_gap_decay_asia_p_44136fa355b3678a": {
+      "last_signal_bar": "2026-09-15 19:00:00+00:00"
+    },
+    "chfnok_carry_asia_p_98d776f3e210d3e2": {
+      "last_signal_bar": "2026-09-15 19:00:00+00:00",
+      "open_ttl_until": "2026-09-20T20:00:00+00:00"
+    },
+    "eurchf_discovered_asia_p_16bd35526c7f3515": {
+      "last_signal_bar": "2026-09-15 19:00:00+00:00"
+    },
+    "eurchf_discovered_asia_p_4cba1afa572a99cd": {
+      "last_signal_bar": "2026-09-15 19:00:00+00:00"
+    },
+    "eurchf_discovered_asia_p_6c7943b997558157": {
+      "last_signal_bar": "2026-09-15 19:00:00+00:00"
+    },
+    "eurchf_discovered_asia_p_9bc1f7c40f200e78": {
+      "last_signal_bar": "2026-09-15 19:00:00+00:00"
+    },
+    "eurchf_discovered_asia_p_a5bbf78b5c8595c0": {
+      "last_signal_bar": "2026-09-15 19:00:00+00:00"
+    },
+    "eurchf_discovered_asia_p_c14e361e680e6d0b": {
+      "last_signal_bar": "2026-09-15 19:00:00+00:00"
+    },
+    "eurchf_discovered_asia_p_c7d53510458ba32c": {
+      "last_signal_bar": "2026-09-15 19:00:00+00:00"
+    },
+    "eurchf_discovered_asia_p_e266baf78567bef3": {
+      "last_signal_bar": "2026-09-15 19:00:00+00:00"
+    },
+    "eurgbp_discovered_asia_p_8e61ea22743f15b7": {
+      "last_signal_bar": "2026-09-15 19:00:00+00:00"
+    },
+    "eurgbp_discovered_asia_p_f31f02aa2b9d79b1": {
+      "last_signal_bar": "2026-09-15 19:00:00+00:00"
+    },
+    "eurjpy_session_range_breakout_asia_5_wb_12": {},
+    "eurjpy_session_range_breakout_asia_0_wb_12": {},
+    "eurnok_overnight_gap_decay_asia_p_44136fa355b3678a": {
+      "last_signal_bar": "2026-09-15 19:00:00+00:00"
+    },
+    "eurusd_discovered_asia_p_6d034b421914e1a2": {
+      "last_signal_bar": "2026-09-15 19:00:00+00:00"
+    },
+    "eurusd_discovered_asia_p_f8bd412f38e33d20": {
+      "last_signal_bar": "2026-09-15 19:00:00+00:00"
+    },
+    "eurzar_overnight_gap_decay_asia_p_44136fa355b3678a": {
+      "last_signal_bar": "2026-09-15 19:00:00+00:00"
+    },
+    "gbpchf_overnight_gap_decay_asia_p_44136fa355b3678a": {
+      "last_signal_bar": "2026-09-15 12:00:00+00:00"
+    },
+    "gbpjpy_session_range_breakout_asia_5_wb_12": {},
+    "gbpmxn_overnight_gap_decay_asia_p_44136fa355b3678a": {
+      "last_signal_bar": "2026-09-15 19:00:00+00:00"
+    },
+    "gbpnok_overnight_gap_decay_asia_p_44136fa355b3678a": {
+      "last_signal_bar": "2026-09-15 19:00:00+00:00"
+    },
+    "gbpsek_overnight_gap_decay_asia_p_44136fa355b3678a": {
+      "last_signal_bar": "2026-09-15 19:00:00+00:00"
+    },
+    "gbpzar_overnight_gap_decay_asia_p_44136fa355b3678a": {
+      "last_signal_bar": "2026-09-15 19:00:00+00:00"
+    },
+    "nzdcad_discovered_asia_p_0ffb1e19a04f260e": {
+      "last_signal_bar": "2026-09-15 19:00:00+00:00"
+    },
+    "usdcad_discovered_asia_p_193aadf2caba3698": {
+      "last_signal_bar": "2026-09-15 19:00:00+00:00"
+    },
+    "usdcad_discovered_asia_p_56aadf0a3018c790": {
+      "last_signal_bar": "2026-09-15 19:00:00+00:00"
+    },
+    "usdchf_discovered_asia_p_19dd11ec392fa005": {
+      "last_signal_bar": "2026-09-15 19:00:00+00:00"
+    },
+    "usdjpy_session_range_breakout_asia_5_wb_12": {},
+    "usdjpy_session_range_breakout_asia_0_wb_12": {},
+    "usdmxn_overnight_gap_decay_asia_p_44136fa355b3678a": {
+      "last_signal_bar": "2026-09-15 19:00:00+00:00"
+    },
+    "usdzar_overnight_gap_decay_asia_p_44136fa355b3678a": {
+      "last_signal_bar": "2026-09-15 19:00:00+00:00"
+    },
+    "xauusd_session_range_breakout_asia_5_wb_12": {},
+    "xauusd_session_range_breakout_asia_5_wb_8": {},
+    "xauusd_session_range_breakout_asia_0_wb_12": {},
+    "cadjpy_session_range_breakout_asia_session_range_breakout": {},
+    "eurjpy_session_range_breakout_asia_session_range_breakout": {},
+    "gbpjpy_session_range_breakout_asia_session_range_breakout": {},
+    "usdjpy_session_range_breakout_asia_session_range_breakout": {},
+    "xauusd_session_range_breakout_asia_session_range_breakout": {},
+    "audnzd_dav_range_filter_adx_afternoon_audnzd_dav_range_filte": {
+      "last_signal_bar": "2026-09-15 17:00:00+00:00"
+    },
+    "CHFNOK.carry.asia#input_symbol=CHFNOK": {}
+  },
+  "orig_stop_dist": {
+    "222235480": 34.849999999999454,
+    "222310279": 8.470000000000255,
+    "222310367": 6.4299999999993815,
+    "222330189": 8.139999999999418,
+    "222332220": 9.44000000000051,
+    "222361403": 0.03772999999999982,
+    "222361404": 0.0018399999999999528,
+    "222385235": 0.031370000000000786,
+    "222385274": 0.0017400000000000748,
+    "222397470": 2.6799999999993815,
+    "222405892": 0.0013499999999999623,
+    "222405893": 0.03509000000000029,
+    "222405894": 0.0010399999999999299,
+    "222435783": 3.1400000000003274,
+    "222446400": 2.0600000000004,
+    "222448300": 0.0013800000000000479,
+    "222448319": 0.036450000000000315,
+    "222448344": 0.000260000000000038,
+    "222448327": 0.0009900000000000464,
+    "222448335": 0.0009900000000000464,
+    "222382270": 34.22999999999956,
+    "222476969": 12.25,
+    "222477318": 8.010000000000218,
+    "222477331": 5.400000000000546,
+    "222479017": 0.0013900000000000023,
+    "222479023": 0.0013800000000000479,
+    "222512959": 5.469999999999345,
+    "222527013": 0.037850000000000605,
+    "222571384": 0.03387999999999991,
+    "222571385": 0.0015799999999999148,
+    "222571378": 0.0020999999999999908,
+    "222598754": 0.0013700000000000934,
+    "222600673": 0.039509999999999934,
+    "222600674": 0.0012499999999999734,
+    "222600672": 0.002650000000000041,
+    "222532865": 27.210000000000036,
+    "222705151": 0.0013999999999999568,
+    "222707406": 0.0014300000000000423,
+    "222717248": 0.0018700000000000383,
+    "222720428": 0.0020300000000000873,
+    "222731805": 0.0016599999999999948,
+    "222732632": 0.0015299999999999203,
+    "222717253": 0.0013999999999999568,
+    "222717259": 0.0013999999999999568,
+    "222720433": 0.0013499999999999623,
+    "222720445": 0.0013499999999999623,
+    "222731809": 0.0015300000000000313,
+    "222732636": 0.0014300000000000423,
+    "222814008": 0.0014199999999999768,
+    "222814009": 0.0014199999999999768,
+    "222802708": 2.9899999999997817,
+    "222717260": 0.0010599999999999499,
+    "222720446": 0.0010000000000000009,
+    "222705163": 0.0011600000000000499,
+    "222707460": 0.0011200000000000099,
+    "222720447": 0.0013100000000000334,
+    "222720483": 0.0013100000000000334,
+    "222732640": 0.0015600000000000058,
+    "222717249": 0.0015299999999999203,
+    "222720429": 0.0016699999999999493,
+    "222814007": 0.0010499999999999954,
+    "222705160": 0.0940000000000012,
+    "222707433": 0.09353000000000122,
+    "222717251": 0.03121999999999936,
+    "222826613": 0.0015499999999999403,
+    "222838490": 0.0014099999999999113,
+    "222841894": 0.00017999999999995797,
+    "222841892": 0.0015100000000000113,
+    "222861649": 0.0020000000000000018,
+    "222864183": 0.039989999999999526,
+    "222861645": 0.0007399999999999629,
+    "222910464": 0.0013499999999999623,
+    "222910462": 0.0016800000000000148,
+    "222910467": 0.0008700000000000374
+  }
 }

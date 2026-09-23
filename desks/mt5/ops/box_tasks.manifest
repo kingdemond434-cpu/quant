@@ -1,0 +1,236 @@
+# THE WINDOWS BOX'S SCHEDULED TASKS -- the DR floor for the machine that touches money.
+#
+# WHY THIS FILE EXISTS. `ops/crontab.manifest` is the VPS's answer to "can this repo still
+# reconstitute the desk", and `scripts/check_scheduler_manifest.py` keeps it honest. The box had
+# NO equivalent. Measured 2026-09-05 across the whole tree: twenty-five MT5-* tasks are named in
+# code, `stall_watch.ps1` heals eight of them by name every ten minutes, and FIVE OF THOSE EIGHT
+# HAVE NO INSTALLER ANYWHERE IN THIS REPO -- MT5-Gauntlet, MT5-Shadow, MT5-UniversalGate,
+# MT5-QQuantShadow, MT5-ResearchSupervisor. They exist only in one machine's task registry.
+#
+# Two things follow, and both are live today rather than hypothetical:
+#
+#   THE CADENCE IS UNVERIFIABLE. The standing requirement is that the gauntlet judges, the clocks
+#   advance and certificates mint EVERY HOUR. Nothing in this repo can confirm or deny that the
+#   box does it, because nothing here declares when those tasks fire. "It runs hourly" has been
+#   an assumption, not a fact, for as long as the tasks have existed.
+#
+#   A REBUILD LOSES THE RESEARCH LANE. Restore this repo onto a fresh box and the gateway, the
+#   deadman, the tape recorders and the dashboard come back -- they have installers. The gauntlet,
+#   the forward clocks, the universal gate and the supervisor do not come back at all, and nothing
+#   would say so: `stall_watch` would report them missing, which reads identically to a task that
+#   is merely disabled.
+#
+# WHAT THIS FILE IS. One line per task, in the box's own vocabulary, so the tasks can be compared
+# to what the machine actually runs and rebuilt when it is replaced. It is a MANIFEST, not an
+# installer: `scripts/check_box_tasks.py` reads it and reports drift.
+#
+# UNDECLARED IS WRITTEN AS UNDECLARED. The tasks below carrying `trigger=UNDECLARED` do so because this
+# repo does not know their cadence and nobody here may invent one -- a manifest that guessed
+# "hourly" would answer the standing question with a fabrication, and the answer would look exactly
+# like a measurement. Reading the real trigger off the box (`Get-ScheduledTask -TaskName <name> |
+# Select -Expand Triggers`) and pasting it here is a five-minute job that turns five guesses into
+# facts, and until it is done this file says exactly which ones remain guesses.
+#
+# WRITING THIS FILE FOUND THREE INSTALLERS NOBODY HAD LINKED and one task nobody had listed:
+# install_moat_miner_task.ps1, install_contract_terms_task.ps1 and install_cachewarm_task.ps1
+# carry real triggers, and MT5-MoatFence is named as the tape recorder's watchdog with no
+# installer anywhere. That is the manifest earning its place before its fence had even run twice.
+#
+# FORMAT: one `TASK` line per task, whitespace-separated key="value" pairs.
+#   name      the Windows task name, exactly as `stall_watch.ps1` heals it
+#   trigger   the repetition, in plain words, or UNDECLARED
+#   runs      the script or module it executes, repo-relative where one exists
+#   installer the file in THIS repo that registers it, or NONE
+#   lane      money | research | data | ops -- what a failure of it costs
+
+# ---------------------------------------------------------------- money path (never research)
+# THE ORGANS ADDED 2026-09-12. Each was built, correct, and running nowhere -- the class the
+# principal asked to end. MT5-CostState carries the two cost producers that
+# check_enforcement_execution measured MENTIONED: each has a main() and writes an
+# artifact, and neither had ever been scheduled, so the desk went on charging one flat
+# spread per symbol at every hour and zero overnight financing.
+TASK name="MT5-MoatCapture"        trigger="every 30 minutes"     runs="desks/mt5/moat/capture_watch.py"        installer="NONE" lane="ops"
+TASK name="MT5-ShiftWatch"         trigger="hourly"              runs="desks/mt5/research/shift_watch.py"      installer="NONE" lane="research"
+TASK name="MT5-CostState"          trigger="daily 04:20"         runs="desks/mt5/research/cost_surface.py"     installer="NONE" lane="research"
+TASK name="MT5-CostState"          trigger="daily 04:20"         runs="desks/mt5/research/carry_state.py"      installer="NONE" lane="research"
+TASK name="MT5-CostState"          trigger="daily 04:20"         runs="desks/mt5/research/cost_honesty.py"     installer="NONE" lane="research"
+# THE FRONTIER MEASUREMENT LANE. Six organs, one task, daily -- each built, correct and with no
+# caller anywhere in this tree until 2026-09-12. certificate_hygiene runs first because it is the
+# only one that mutates anything; the rest read the registry it leaves behind.
+TASK name="MT5-FrontierAudit"      trigger="daily 05:10"         runs="ops/run_frontier_audit.cmd"            installer="NONE" lane="research"
+TASK name="MT5-AuditLane"          trigger="every 1 hour"        runs="ops/run_audit_lane.cmd"                installer="NONE" lane="research"
+TASK name="MT5-ScientistTournament" trigger="daily 02:30 local (00:30 UTC)" runs="ops/run_scientist_tournament.cmd" installer="NONE" lane="research"
+TASK name="MT5-Gateway"            trigger="continuous loop"      runs="desks/mt5/research/run_gateway_loop.py" installer="NONE" lane="money"
+TASK name="MT5-FusionDeadman"      trigger="UNDECLARED"           runs="scripts/run_deadman_switch.py"         installer="NONE" lane="money"
+# THE MT5 RAIL, DRY-RUN ONLY (2026-09-08). A separate task from MT5-FusionDeadman above, which runs
+# the Tier-3 crypto rail and is not touched. This one evaluates the live MT5 account's rails every
+# five minutes and writes data/fusion_deadman_state.json saying what it WOULD do; it arms nothing
+# (no `--live`), so its failure costs a measurement, which is why the lane is ops. Arming is the
+# principal's decision.
+TASK name="MT5-FusionDeadmanDryRun" trigger="every 5 minutes"     runs="desks/mt5/proposals/fusion_deadman.py"  installer="desks/mt5/scripts/Install-QuantWindows.ps1" lane="ops"
+TASK name="MT5-TerminalBoot"       trigger="at startup"           runs="terminal64.exe"                        installer="NONE" lane="money"
+
+# ---------------------------------------------------------------------------- the research lane
+# THE FIVE THAT `stall_watch` HEALS AND NOTHING HERE INSTALLS. Whether they run hourly -- the
+# standing requirement -- cannot be answered from this repo until these five triggers are read off
+# the box and written down.
+# MT5-Gauntlet now runs through RunGauntlet.cmd, which exports the worker count, memory budget and
+# headroom ceiling that `research/judging_throughput.py` measured off THIS box into the environment
+# the SEALED external_gauntlet.py already reads. The sealed file is never edited; the cadence below
+# is raised to :05 by `judging_throughput.apply_cadence` while the queue is deep and headroom
+# exists, and the manifest records the base trigger.
+TASK name="MT5-Gauntlet"           trigger="every 10 minutes, at :01 (raised to every 5 by judging_throughput while the queue is deep)" runs="desks/mt5/scripts/RunGauntlet.cmd"      installer="NONE" lane="research"
+TASK name="MT5-Shadow"             trigger="every 1 hour, at :55" runs="desks/mt5/research/shadow_cycle.py"          installer="NONE" lane="research"
+TASK name="MT5-UniversalGate"      trigger="every 1 hour, at :07" runs="desks/mt5/research/universal_gate.py"        installer="NONE" lane="research"
+TASK name="MT5-QQuantShadow"       trigger="every 30 minutes, at :25" runs="desks/mt5/research/qquant_shadow.py"         installer="NONE" lane="research"
+TASK name="MT5-ResearchSupervisor" trigger="every 30 minutes, at :26" runs="desks/mt5/research/research_supervisor.py"   installer="NONE" lane="research"
+TASK name="MT5-QQuantGatesCertify" trigger="every 1 hour, at :27" runs="desks/mt5/research/qquant_gates.py"          installer="NONE" lane="research"
+
+# Declared here because their installers are in the repo and were read to write these lines.
+TASK name="MT5-Hourly"             trigger="every 1 hour (keep-alive of the 24/7 discovery resident)" runs="desks/mt5/research/department_resident.py" installer="desks/mt5/scripts/MT5Hourly.cmd" lane="research"
+# THE MOAT SWARMS (M19, principal 2026-09-17): EXPLOIT / EXPLORE / RESURRECT run 100% concurrently
+# as 24/7 residents (moat_swarms.py --swarm <name>: singleton lock, engines as children under
+# budgets by measured generator yield with floors, discovery_compiler last). Unlimited limit,
+# IgnoreNew, SYSTEM; the trigger is a keep-alive.
+TASK name="MT5-Moat-Exploit" trigger="at startup + every 10 minutes (keep-alive of a 24/7 resident)" runs="desks/mt5/research/moat_swarms.py" installer="NONE" lane="research"
+TASK name="MT5-Moat-Explore" trigger="at startup + every 10 minutes (keep-alive of a 24/7 resident)" runs="desks/mt5/research/moat_swarms.py" installer="NONE" lane="research"
+TASK name="MT5-Moat-Resurrect" trigger="at startup + every 10 minutes (keep-alive of a 24/7 resident)" runs="desks/mt5/research/moat_swarms.py" installer="NONE" lane="research"
+# THE REGION DEPARTMENTS (principal 2026-09-17): Japan on its own hourly resident (HOURLY_PLAN=
+# dept:japan) and the global research OS over every country lab (dept:regions), both 24/7
+# residents of department_resident.py like the other nine.
+TASK name="MT5-Dept-Japan" trigger="at startup + every 10 minutes (keep-alive of a 24/7 resident)" runs="desks/mt5/research/department_resident.py" installer="NONE" lane="research"
+TASK name="MT5-Dept-Regions" trigger="at startup + every 10 minutes (keep-alive of a 24/7 resident)" runs="desks/mt5/research/department_resident.py" installer="NONE" lane="research"
+# THE AI MATHEMATICS RESEARCH CIVILIZATION (principal 2026-09-17 / 2026-09-22): twenty-eight
+# mathematical traditions on the world model's residual, one leg (math_lab) on its own 24/7
+# resident (HOURLY_PLAN=dept:mathlab), like the other departments.
+TASK name="MT5-Dept-Mathlab" trigger="at startup + every 10 minutes (keep-alive of a 24/7 resident)" runs="desks/mt5/research/department_resident.py" installer="NONE" lane="research"
+# THE ALLOCATOR'S 24/7 REACTION (principal 2026-09-23: "24/7 and not slow ... trades on instant
+# macro news"). The hourly `pf_allocator` leg is the BACKSTOP full solve; this resident watches
+# MACRO_VIEW / regime_state / REGIME_ROUTER / sleeve_registry / gateway_state / NET_EDGE and
+# fires `pf_allocator --mode fast` the moment one of them carries a real state change, then
+# publishes the event-to-allocation latency per trigger kind in reports/ALLOCATOR_REACTION.json.
+# NOT YET REGISTERED ON THE BOX -- declared here first, as the manifest's own rule requires, so
+# `scripts/check_box_tasks.py` reports it as drift until the task exists rather than the task
+# existing with nothing declaring it. lane=money: it is the sizing path.
+TASK name="MT5-AllocatorPulse" trigger="at startup + every 5 minutes (keep-alive of a 24/7 resident)" runs="desks/mt5/research/allocator_trigger.py" installer="NONE" lane="money"
+# THE FOREST FEDERATION (principal 2026-09-17). Eleven regional research civilizations,
+# each a 24/7 resident running the eleven agent roles of libs/research/forests.ROLES in
+# parallel through desks/mt5/research/forest_runner.py. Japan and global macro already
+# have residents (MT5-Dept-Japan, MT5-Dept-Macro) and the four global-LAYER forests ride
+# MT5-Dept-Regions, so those six are deliberately NOT repeated here.
+TASK name="MT5-Forest-Korea" trigger="at startup + every 10 minutes (keep-alive of a 24/7 resident)" runs="desks/mt5/research/department_resident.py" installer="NONE" lane="research"
+TASK name="MT5-Forest-China" trigger="at startup + every 10 minutes (keep-alive of a 24/7 resident)" runs="desks/mt5/research/department_resident.py" installer="NONE" lane="research"
+TASK name="MT5-Forest-RussiaCis" trigger="at startup + every 10 minutes (keep-alive of a 24/7 resident)" runs="desks/mt5/research/department_resident.py" installer="NONE" lane="research"
+TASK name="MT5-Forest-SouthAsia" trigger="at startup + every 10 minutes (keep-alive of a 24/7 resident)" runs="desks/mt5/research/department_resident.py" installer="NONE" lane="research"
+TASK name="MT5-Forest-Asean" trigger="at startup + every 10 minutes (keep-alive of a 24/7 resident)" runs="desks/mt5/research/department_resident.py" installer="NONE" lane="research"
+TASK name="MT5-Forest-Oceania" trigger="at startup + every 10 minutes (keep-alive of a 24/7 resident)" runs="desks/mt5/research/department_resident.py" installer="NONE" lane="research"
+TASK name="MT5-Forest-Europe" trigger="at startup + every 10 minutes (keep-alive of a 24/7 resident)" runs="desks/mt5/research/department_resident.py" installer="NONE" lane="research"
+TASK name="MT5-Forest-NorthAmerica" trigger="at startup + every 10 minutes (keep-alive of a 24/7 resident)" runs="desks/mt5/research/department_resident.py" installer="NONE" lane="research"
+TASK name="MT5-Forest-Latam" trigger="at startup + every 10 minutes (keep-alive of a 24/7 resident)" runs="desks/mt5/research/department_resident.py" installer="NONE" lane="research"
+TASK name="MT5-Forest-Mena" trigger="at startup + every 10 minutes (keep-alive of a 24/7 resident)" runs="desks/mt5/research/department_resident.py" installer="NONE" lane="research"
+TASK name="MT5-Forest-Africa" trigger="at startup + every 10 minutes (keep-alive of a 24/7 resident)" runs="desks/mt5/research/department_resident.py" installer="NONE" lane="research"
+TASK name="MT5-Deepening"          trigger="every 1 hour"  runs="desks/mt5/research/deepening_worker.py"  installer="desks/mt5/scripts/install_deepening_task.ps1" lane="research"
+
+# ------------------------------------------------------------------------------- the data moat
+TASK name="MT5-TickRecorder"       trigger="every 1 hour"          runs="desks/mt5/recorders/tick_recorder.py"   installer="desks/mt5/recorders/install_tape_tasks.ps1" lane="data"
+TASK name="MT5-TickIntegrity"      trigger="every 1 hour, at :20"  runs="desks/mt5/recorders/tick_integrity.py"  installer="desks/mt5/recorders/install_tape_tasks.ps1" lane="data"
+TASK name="MT5-TapeFeatures"       trigger="every 1 hour, at :40"  runs="desks/mt5/recorders/tape_features.py"   installer="desks/mt5/recorders/install_tape_tasks.ps1" lane="data"
+TASK name="MT5-VolArchive"         trigger="UNDECLARED"            runs="desks/mt5/recorders/vol_archive.py"     installer="NONE" lane="data"
+TASK name="MT5-MoatRecorder"       trigger="every 30 minutes, at :10"            runs="desks/mt5/moat/moat_recorder.py"   installer="NONE" lane="data"
+TASK name="MT5-MoatSilver"         trigger="every 1 hour, at :23"            runs="desks/mt5/moat/moat_silver.py"      installer="NONE" lane="data"
+TASK name="MT5-MoatMiner"          trigger="every 1 hour"          runs="desks/mt5/moat/moat_miner.py"       installer="desks/mt5/scripts/install_moat_miner_task.ps1" lane="data"
+# Named by install_moat_miner_task.ps1 as the tape recorder's watchdog. Its own installer is not
+# in this repo, which is exactly the class of gap this manifest exists to make countable.
+TASK name="MT5-MoatFence"          trigger="every 30 minutes, at :17"            runs="UNKNOWN"                            installer="NONE" lane="data"
+TASK name="MT5-Universe"           trigger="every 1 hour, at :26"            runs="desks/mt5/research/expand_universe.py"  installer="NONE" lane="data"
+TASK name="MT5-ContractTerms"      trigger="every 1 hour"          runs="UNKNOWN"   installer="desks/mt5/scripts/install_contract_terms_task.ps1" lane="data"
+TASK name="MT5-CacheWarm"          trigger="every 30 minutes"      runs="UNKNOWN"   installer="desks/mt5/scripts/install_cachewarm_task.ps1" lane="data"
+
+# -------------------------------------------------------------------------------------- ops
+TASK name="MT5-StallWatch"         trigger="every 10 minutes" runs="desks/mt5/scripts/stall_watch.ps1"        installer="NONE" lane="ops"
+# The post-reboot drill (2026-09-08): read-only apart from re-enabling a Disabled task; records
+# PASS/FAIL to desks/mt5/reports/REBOOT_DRILL.json and raises data/REBOOT_DRILL_ALARM.txt on FAIL.
+TASK name="MT5-RebootDrill"        trigger="daily at 06:30"   runs="ops/reboot_drill.ps1"                     installer="desks/mt5/scripts/Install-QuantWindows.ps1" lane="ops"
+TASK name="MT5-DeskState"          trigger="every 15 minutes, at :05"       runs="scripts/build_zentech_state.py" installer="NONE" lane="ops"
+TASK name="MT5-LocalDashboard"     trigger="at startup"       runs="scripts/serve_dashboard.py"         installer="desks/mt5/scripts/install_local_dashboard.ps1" lane="ops"
+TASK name="MT5-ShadowSync"         trigger="UNDECLARED"       runs="desks/mt5/scripts/MT5Sync.cmd"            installer="NONE" lane="ops"
+
+# --- MEASURED ON THE BOX 2026-09-16 (schtasks /Query) so the DR floor knows them. MT5-HourlyCore
+# runs hourly_cycle.py under HOURLY_PLAN=core (the cheap governance/forward/publication legs,
+# ~15 min) while MT5-Hourly runs HOURLY_PLAN=heavy on a PT3H limit; MT5-AdoptRelease's limit is
+# PT2H (PT20M terminated it before the seal). ---
+TASK name="MT5-HourlyCore" trigger="every 1 hour, at :36" runs="desks/mt5/research/hourly_cycle.py" installer="NONE" lane="research"
+TASK name="MT5-GateAttest" trigger="every 2 hours" runs="scripts/run_gate_attestation.py" installer="NONE" lane="ops"
+TASK name="MT5-SshGuard" trigger="every 5 minutes" runs="desks/mt5/scripts/ssh_guard.ps1" installer="NONE" lane="ops"
+TASK name="E8-Gold" trigger="every 5 minutes" runs="desks/mt5/prop/e8_gold.py" installer="NONE" lane="prop"
+TASK name="MT5-GatewayResident" trigger="every 10 minutes" runs="desks/mt5/research/gateway_resident.py" installer="NONE" lane="ops"
+TASK name="MT5-AdoptRelease" trigger="every 1 hour, at :12" runs="desks/mt5/scripts/Adopt-And-Seal.ps1" installer="desks/mt5/scripts/install_adopt_release_task.ps1" lane="ops"
+TASK name="MT5-IdentityHealer" trigger="every 30 minutes" runs="desks/mt5/scripts/heal_identity_broken_clocks.py" installer="NONE" lane="research"
+# THE PLUMBING WATCHDOG (principal 2026-09-23, "the plumbing must never ever permanently stop
+# silently"). Every fifteen minutes it PROVES BY OBSERVATION that the adoption task exists, is
+# enabled, runs inside the hour and did not last exit an error; that HEAD descends from the branch
+# tip it should have adopted, and by how many commits it does not; that the git-writer lock can be
+# TAKEN right now (the four-day outage was a mutex that could not be opened, logged correctly
+# every hour to a file nobody reads); that no orphaned pool worker is holding commit and headroom
+# is above a DERIVED floor; that every declared task is present and enabled; that every
+# producer/consumer pair in the control plane's edge list agrees about its path; and that every
+# fence registered in run_law_gate has actually run. Defects are raised through the reconciler's
+# own API -- never a fixer of its own -- and escalate to the dashboard, the events log and
+# docs/research/PLUMBING_ALERTS.md. scripts/check_plumbing_watchdog.py wedges the law gate while
+# one outlives its window, INCLUDING the absence of this task's own report.
+TASK name="MT5-PlumbingWatchdog" trigger="every 15 minutes" runs="desks/mt5/research/plumbing_watchdog.py" installer="desks/mt5/scripts/install_plumbing_watchdog_task.ps1" lane="ops"
+# THE CLOCK FIXER (principal 2026-09-17, permanent): every fifteen minutes every certificate and
+# every stopped clock gets a live clock and every dead resident is restarted; verification by
+# observation. SYSTEM, PT12M limit, IgnoreNew.
+TASK name="MT5-ClockFixer" trigger="every 15 minutes" runs="desks/mt5/research/clock_fixer.py" installer="NONE" lane="research"
+TASK name="MT5-Daily" trigger="daily 23:50" runs="desks/mt5/research/daily_cycle.py" installer="NONE" lane="research"
+TASK name="MT5-ForwardReconcile" trigger="daily 04:00" runs="desks/mt5/research/forward_reconcile.py" installer="NONE" lane="research"
+TASK name="MT5-CEODocket" trigger="every 1 hour, at :10" runs="ops/run_ceo_docket.cmd" installer="NONE" lane="research"
+TASK name="MT5-ProcessHealth" trigger="every 30 minutes" runs="ops/run_process_health.cmd" installer="NONE" lane="ops"
+TASK name="MT5-ReleaseAuthority" trigger="every 15 minutes" runs="ops/run_release_authority.cmd" installer="NONE" lane="ops"
+TASK name="MT5-ResearchReports" trigger="at system start-up (resident)" runs="desks/mt5/scripts/run_research_reports.py" installer="NONE" lane="research"
+TASK name="MT5-RiskUnitsFence" trigger="every 1 hour, at :02" runs="scripts/check_risk_units.py" installer="NONE" lane="ops"
+TASK name="MT5-SealIfClean" trigger="every 10 minutes" runs="desks/mt5/scripts/Seal-IfClean.ps1" installer="NONE" lane="ops"
+TASK name="MT5-AccountState" trigger="every 15 minutes" runs="ops/run_account_state.cmd" installer="NONE" lane="ops"
+TASK name="MT5-AllocatorFast" trigger="every 15 minutes" runs="desks/mt5/research/pf_allocator.py" installer="NONE" lane="research"
+TASK name="MT5-AxisIngest" trigger="daily 04:40" runs="ops/run_axis_ingest.cmd" installer="NONE" lane="data"
+TASK name="MT5-ConvertSwarm" trigger="every 1 hour, at :38" runs="ops/run_convert_swarm.cmd" installer="NONE" lane="research"
+TASK name="MT5-DataAxis" trigger="every 1 hour" runs="ops/run_data_axis_miner.cmd" installer="NONE" lane="data"
+TASK name="MT5-Frontier" trigger="every 1 hour, at :08" runs="desks/mt5/frontier_intel/frontier_supervisor.py" installer="NONE" lane="research"
+TASK name="MT5-IntelShip" trigger="every 1 hour, at :01" runs="desks/mt5/scripts/intel_ship_adopt.ps1" installer="NONE" lane="ops"
+TASK name="MT5-LocalConvert" trigger="every 1 hour, at :12" runs="ops/run_local_convert.cmd" installer="NONE" lane="research"
+TASK name="MT5-NeverStale" trigger="every 15 minutes" runs="ops/run_never_stale.cmd" installer="NONE" lane="ops"
+TASK name="MT5-NewsDesk" trigger="at system start-up (resident)" runs="desks/mt5/research/news_desk.py" installer="NONE" lane="research"
+TASK name="MT5-NoLog" trigger="daily 06:40" runs="desks/mt5/research/no_log.py" installer="NONE" lane="ops"
+TASK name="MT5-RegimeMonitor" trigger="every 15 minutes" runs="desks/mt5/research/regime_monitor.py" installer="NONE" lane="research"
+TASK name="MT5-MoatRecorder-Watchdog" trigger="every 30 minutes" runs="desks/mt5/moat/moat_recorder.py" installer="NONE" lane="data"
+TASK name="E8-Book" trigger="every 6 hours" runs="desks/mt5/prop/e8_book.py" installer="NONE" lane="prop"
+TASK name="E8-Executor" trigger="every 15 minutes" runs="desks/mt5/prop/e8_executor.py" installer="NONE" lane="prop"
+TASK name="E8-Spreads" trigger="every 1 hour, at :02" runs="desks/mt5/prop/e8_spread_sampler.py" installer="NONE" lane="prop"
+TASK name="MT5-Healers" trigger="every 1 hour, at :48" runs="ops/run_healers.cmd" installer="NONE" lane="research"
+# Referenced by ops/run_gold_hour_sweep.cmd; not installed on the box 2026-09-16, cadence unknown.
+TASK name="MT5-GoldHourSweep" trigger="UNDECLARED" runs="ops/run_gold_hour_sweep.cmd" installer="NONE" lane="research"
+# ops/organ_contract.py names it; not installed on the box 2026-09-16.
+TASK name="MT5-CertHygiene" trigger="UNDECLARED" runs="UNKNOWN" installer="NONE" lane="research"
+# desks/mt5/scripts/Install-QuantWindows.ps1 registers it; not installed on the box 2026-09-16.
+TASK name="MT5-CycleMidnight" trigger="UNDECLARED" runs="desks/mt5/research/hourly_cycle.py" installer="NONE" lane="research"
+# desks/mt5/scripts/Install-QuantWindows.ps1 registers it; not installed on the box 2026-09-16.
+TASK name="MT5-CycleNoon" trigger="UNDECLARED" runs="desks/mt5/research/hourly_cycle.py" installer="NONE" lane="research"
+# scripts/check_scheduled_tasks.py names it; not installed on the box 2026-09-16.
+TASK name="MT5-DashMirror" trigger="UNDECLARED" runs="UNKNOWN" installer="NONE" lane="ops"
+# desks/mt5/scripts/Install-QuantWindows.ps1 registers it; not installed on the box 2026-09-16.
+TASK name="MT5-ArtifactSync" trigger="UNDECLARED" runs="UNKNOWN" installer="desks/mt5/scripts/Install-QuantWindows.ps1" lane="ops"
+
+# THE DEPARTMENTS (2026-09-16): each research mission on its own hourly clock at full throughput
+# (HOURLY_PLAN=dept:<name>) as 24/7 RESIDENTS (department_resident.py: singleton lock, a pass
+# restarts the moment the last one ends, BELOW_NORMAL child, memory guard); the trigger is a
+# keep-alive that is a no-op while the resident lives. MT5-Hourly is the discovery resident.
+# Unlimited ExecutionTimeLimit, IgnoreNew, SYSTEM. Principal 2026-09-17: "pure 24/7".
+TASK name="MT5-Dept-Data" trigger="at startup + every 10 minutes (keep-alive of a 24/7 resident)" runs="desks/mt5/research/department_resident.py" installer="NONE" lane="research"
+TASK name="MT5-Dept-Intel" trigger="at startup + every 10 minutes (keep-alive of a 24/7 resident)" runs="desks/mt5/research/department_resident.py" installer="NONE" lane="research"
+TASK name="MT5-Dept-Validate" trigger="at startup + every 10 minutes (keep-alive of a 24/7 resident)" runs="desks/mt5/research/department_resident.py" installer="NONE" lane="research"
+TASK name="MT5-Dept-Macro" trigger="at startup + every 10 minutes (keep-alive of a 24/7 resident)" runs="desks/mt5/research/department_resident.py" installer="NONE" lane="research"
+TASK name="MT5-Dept-Execution" trigger="at startup + every 10 minutes (keep-alive of a 24/7 resident)" runs="desks/mt5/research/department_resident.py" installer="NONE" lane="research"
+TASK name="MT5-Dept-Forward" trigger="at startup + every 10 minutes (keep-alive of a 24/7 resident)" runs="desks/mt5/research/department_resident.py" installer="NONE" lane="research"
+TASK name="MT5-Dept-Meta" trigger="at startup + every 10 minutes (keep-alive of a 24/7 resident)" runs="desks/mt5/research/department_resident.py" installer="NONE" lane="research"
+TASK name="MT5-Dept-Rest" trigger="at startup + every 10 minutes (keep-alive of a 24/7 resident)" runs="desks/mt5/research/department_resident.py" installer="NONE" lane="research"

@@ -1,0 +1,2415 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\ud000\ud2b8 \ud22c\uc790 \ubc31\ud14c\uc2a4\ud305\uc73c\ub85c \uc2dc\uc791\ud558\ub294 \ub370\uc774\ud130 \uae30\ubc18 \uc8fc\uc2dd\ud22c\uc790 \uc218\uc775\ub960 \ub192\uc774\ub294 \ubc29\ubc95",
+  "url": "https://nununa98.tistory.com/entry/\ud000\ud2b8-\ud22c\uc790-\ubc31\ud14c\uc2a4\ud305\uc73c\ub85c-\uc2dc\uc791\ud558\ub294-\ub370\uc774\ud130-\uae30\ubc18-\uc8fc\uc2dd\ud22c\uc790-\uc218\uc775\ub960-\ub192\uc774\ub294-\ubc29\ubc95",
+  "published": "2026-09-06T21:51:03+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "breakout",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "ko",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "7b93233696e21e1deec2",
+  "host": "nununa98.tistory.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\ud000\ud2b8 \ud22c\uc790 \uc804\ub7b5: \ubc31\ud14c\uc2a4\ud2b8\ub85c \uac80\uc99d\ub41c \ub370\uc774\ud130 \uae30\ubc18 \ud22c\uc790\ubc95",
+  "url": "https://ezfarm.tistory.com/entry/\ud000\ud2b8-\ud22c\uc790-\uc804\ub7b5-\ubc31\ud14c\uc2a4\ud2b8\ub85c-\uac80\uc99d\ub41c-\ub370\uc774\ud130-\uae30\ubc18-\ud22c\uc790\ubc95",
+  "published": "2026-09-06T21:51:05+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "ko",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "4c243cd6cba341293901",
+  "host": "ezfarm.tistory.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Europe Equities Trading | Cboe",
+  "url": "https://www.cboe.com/markets/eu/equities/trading",
+  "published": "2026-09-06T21:51:05+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "1e6493b4b997f259e756",
+  "host": "www.cboe.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Europe Equities Order Books | Cboe",
+  "url": "https://www.cboe.com/markets/eu/equities/trading/order-books",
+  "published": "2026-09-06T21:51:08+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "1280d0f8bf8b0cf26161",
+  "host": "www.cboe.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Periodic Auctions Book | Cboe",
+  "url": "https://www.cboe.com/markets/eu/equities/trading/periodic-auctions-book",
+  "published": "2026-09-06T21:51:10+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f179392b3377cf1a4778",
+  "host": "www.cboe.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Europe Equities Cboe Closing Cross (3C) | Cboe",
+  "url": "https://www.cboe.com/markets/eu/equities/trading/closing-cross",
+  "published": "2026-09-06T21:51:12+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ad235c3be4e1b6784e19",
+  "host": "www.cboe.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Cboe BIDS Europe | Cboe",
+  "url": "https://www.cboe.com/markets/eu/equities/trading/cboe-bids/",
+  "published": "2026-09-06T21:51:13+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "4b0be80129eec409bb32",
+  "host": "www.cboe.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Cboe BIDS VWAP-X | Cboe",
+  "url": "https://www.cboe.com/markets/eu/equities/trading/cboe-bids-vwapx/",
+  "published": "2026-09-06T21:51:16+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d745d974e7141e077553",
+  "host": "www.cboe.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Cboe Europe EBBO Retail Service | Cboe",
+  "url": "https://www.cboe.com/markets/eu/equities/trading/ebbo-retail-service/",
+  "published": "2026-09-06T21:51:18+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "8520dd666d5d8eddacb6",
+  "host": "www.cboe.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Europe Liquidity Provider Program | Cboe",
+  "url": "https://www.cboe.com/markets/eu/equities/trading/lpp",
+  "published": "2026-09-06T21:51:20+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f7ae9bb2417d46afc944",
+  "host": "www.cboe.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Europe Equities Other Services | Cboe",
+  "url": "https://www.cboe.com/markets/eu/equities/trading/additional",
+  "published": "2026-09-06T21:51:22+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "cc362667e50baf923a00",
+  "host": "www.cboe.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Cboe European Equities BIDS - Sell Side Go Live",
+  "url": "https://www.cboe.com/europe/equities/trading/cboe_bids_sell_side_go_live/",
+  "published": "2026-09-06T21:51:24+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "auction",
+   "basis",
+   "correlation",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-us",
+  "endpoints": [
+   "https://www.cboe.com/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "b49a5f28b89407193099",
+  "host": "www.cboe.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Cboe European Equities BIDS - Buy Side Go Live",
+  "url": "https://www.cboe.com/europe/equities/trading/cboe_bids_buy_side_go_live/",
+  "published": "2026-09-06T21:51:26+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "auction",
+   "basis",
+   "correlation",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-us",
+  "endpoints": [
+   "https://www.cboe.com/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "ea4270147c7d8fe7fef2",
+  "host": "www.cboe.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "U.S. Equities Exchanges Trading | Cboe",
+  "url": "https://www.cboe.com/markets/us/equities/trading",
+  "published": "2026-09-06T21:51:27+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "4ab3ff309b3d08be0010",
+  "host": "www.cboe.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Cboe Order Types and Routing",
+  "url": "https://www.cboe.com/us/equities/trading/offerings/order_types_and_routing/",
+  "published": "2026-09-06T21:51:30+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "auction",
+   "basis",
+   "correlation",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-us",
+  "endpoints": [
+   "https://www.cboe.com/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "c774d9d1cad5331387f3",
+  "host": "www.cboe.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Cboe U.S. Equities Exchanges Risk Management",
+  "url": "https://www.cboe.com/us/equities/trading/offerings/risk_management/",
+  "published": "2026-09-06T21:51:32+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "auction",
+   "basis",
+   "correlation",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-us",
+  "endpoints": [
+   "https://www.cboe.com/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "02a2f5fcab0bb0870fed",
+  "host": "www.cboe.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Cboe U.S. Equities Exchanges Non-Displayed Swap",
+  "url": "https://www.cboe.com/us/equities/trading/offerings/non_displayed_swap/",
+  "published": "2026-09-06T21:51:34+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "auction",
+   "basis",
+   "correlation",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-us",
+  "endpoints": [
+   "https://www.cboe.com/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "6c739ece044b5a26fcd0",
+  "host": "www.cboe.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Cboe U.S. Equities Exchanges Midpoint Discretionary Order",
+  "url": "https://www.cboe.com/us/equities/trading/offerings/midpoint_discretionary_order/",
+  "published": "2026-09-06T21:51:36+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "auction",
+   "basis",
+   "correlation",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-us",
+  "endpoints": [
+   "https://www.cboe.com/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "5d02774690278bb47658",
+  "host": "www.cboe.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Cboe U.S. Equities Exchanges Retail Priority",
+  "url": "https://www.cboe.com/us/equities/trading/offerings/retail_priority/",
+  "published": "2026-09-06T21:51:38+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "auction",
+   "basis",
+   "correlation",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-us",
+  "endpoints": [
+   "https://www.cboe.com/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "01cdedab5143539795bd",
+  "host": "www.cboe.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "U.S. Equities: Retail Price Improvement | Cboe",
+  "url": "https://www.cboe.com/markets/us/equities/trading/retail-price-improvement",
+  "published": "2026-09-06T21:51:40+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f7fa941943612c10c0d0",
+  "host": "www.cboe.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Forget the \"Trading Error\" -- Today's Sharp Pullback in Stocks Is Hardly a Surprise - Business Insider",
+  "url": "https://www.businessinsider.com/henry-blodget-dont-miss-forest-for-trees-trading-error-or-no-market-closed-down-350-2010-5",
+  "published": "2026-09-06T21:51:40+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "08521e2c7343e0d220f9",
+  "host": "www.businessinsider.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Macy's CEO Tony Spring Shares 4 Career Tips From Long Retail Career - Business Insider",
+  "url": "http://www.businessinsider.com/macys-ceo-tony-spring-career-advice-strategy-retail-life-lessons-2026-8",
+  "published": "2026-09-06T21:51:42+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c653588fa470f4bea978",
+  "host": "www.businessinsider.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "4 Key Lessons From Barnes & Noble's Comeback: CEO James Daunt - Business Insider",
+  "url": "http://www.businessinsider.com/barnes-noble-daunt-elliott-bookstores-retail-books-booktok-strategy-culture-2026-8",
+  "published": "2026-09-06T21:51:44+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "inventory",
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "0645f2f5f32b6e05793c",
+  "host": "www.businessinsider.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Super Savers Share Top Tips for Saving Money Without Feeling Deprived - Business Insider",
+  "url": "http://www.businessinsider.com/super-savers-top-tips-for-saving-money-without-feeling-deprived-2026-8",
+  "published": "2026-09-06T21:51:46+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "2c9c8f544fe19c5bad89",
+  "host": "www.businessinsider.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "How a Professor Reached Lean FI Using the Permanent Portfolio Strategy - Business Insider",
+  "url": "http://www.businessinsider.com/professor-reached-lean-financial-independence-using-permanent-portfolio-investment-strategy-2026-7",
+  "published": "2026-09-06T21:51:48+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "0cf7a17f08aeabece0bd",
+  "host": "www.businessinsider.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Mastercard CMO Jill Kramer Says AI Can Spark Human Creativity - Business Insider",
+  "url": "http://www.businessinsider.com/mastercard-cmo-jill-kramer-ai-marketing-strategy-2026-6",
+  "published": "2026-09-06T21:51:50+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "1152669b8814a2c80bfc",
+  "host": "www.businessinsider.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Monday.com Plans 20% Layoffs Citing 'AI-Driven Growth Strategy' - Business Insider",
+  "url": "http://www.businessinsider.com/monday-com-layoffs-ai-growth-strategy-2026-7",
+  "published": "2026-09-06T21:51:52+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "flow",
+   "momentum",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "28433f314de64b62c8a9",
+  "host": "www.businessinsider.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Ex-PepsiCo CEO Indra Nooyi Shares 6 Tips for Career Success - Business Insider",
+  "url": "http://www.businessinsider.com/pepsico-ceo-indra-nooyi-career-advice-tips-strategy-mentors-risks-2026-7",
+  "published": "2026-09-06T21:51:54+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "2a1715b43279038856a2",
+  "host": "www.businessinsider.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Ben & Jerry's Cofounder Shares His Career Advice for the AI Era - Business Insider",
+  "url": "http://www.businessinsider.com/ben-and-jerrys-cofounder-cohen-sxsw-career-advice-ai-strategy-2026-6",
+  "published": "2026-09-06T21:51:56+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "gap",
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "65e9012aa8a96f23e787",
+  "host": "www.businessinsider.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "KFC's Strategy Shifts Focus to Timeless Relevance, Not Just Gen Z - Business Insider",
+  "url": "http://www.businessinsider.com/kfc-strategy-shifts-focus-timeless-relevance-not-just-gen-z-2026-6",
+  "published": "2026-09-06T21:51:58+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "gap",
+   "momentum",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "eed10a066c00eca96c77",
+  "host": "www.businessinsider.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Panera's RISE Strategy Revamps Summer Menu to Boost Customer Visits - Business Insider",
+  "url": "http://www.businessinsider.com/panera-rise-revitalization-strategy-revamps-summer-menu-boost-customer-visits-2026-6",
+  "published": "2026-09-06T21:52:00+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "750c7ebb78beba3bf8a2",
+  "host": "www.businessinsider.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "KFC's Plan to Win the Next Chapter of the Chicken Wars - Business Insider",
+  "url": "http://www.businessinsider.com/kfc-colonel-rebrand-modernize-menu-strategy-restaurant-redesign-glow-up-2026-6",
+  "published": "2026-09-06T21:52:02+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "gap",
+   "momentum",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "61f63867f16ea3e130ec",
+  "host": "www.businessinsider.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Coinbase's CEO Details Strategy to Help Keep AI Costs 'Roughly Flat' - Business Insider",
+  "url": "http://www.businessinsider.com/coinbase-ceo-ai-cost-savings-strategy-token-costs-2026-6",
+  "published": "2026-09-06T21:52:04+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "9a10b2e206e4b5a2e7b0",
+  "host": "www.businessinsider.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Strategy - Business Insider",
+  "url": "https://www.businessinsider.com/strategy",
+  "published": "2026-09-06T21:52:06+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "flow",
+   "gap",
+   "momentum",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.businessinsider.com/flexport-ceo-remote-work-white-collar-fraud-2026-6"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "2dc01489a44899a58ba8",
+  "host": "www.businessinsider.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Here's How High Frequency Traders Dominate the Markets - Business Insider",
+  "url": "https://www.businessinsider.com/how-high-frequency-traders-make-markets-2009-12",
+  "published": "2026-09-06T21:52:08+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "momentum",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "2d3236a7503c4a433b4f",
+  "host": "www.businessinsider.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Strassen algorithm - Wikidata",
+  "url": "https://www.wikidata.org/wiki/Special:EntityPage/Q728507",
+  "published": "2026-09-06T21:52:09+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://www.wikidata.org/wiki/Special:EntityData/Q728507.json",
+   "https://docs.openalex.org/download-snapshot/snapshot-data-format"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "5cfd44931665f739dfca",
+  "host": "www.wikidata.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "data clustering algorithm - Wikidata",
+  "url": "https://www.wikidata.org/wiki/Q28058114",
+  "published": "2026-09-06T21:52:10+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://www.wikidata.org/wiki/Special:EntityData/Q28058114.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "8b3853455acba7832552",
+  "host": "www.wikidata.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "algorithm - Wikidata",
+  "url": "https://www.wikidata.org/wiki/Q8366",
+  "published": "2026-09-06T21:52:13+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://www.wikidata.org/wiki/Special:EntityData/Q8366.json",
+   "https://docs.openalex.org/download-snapshot/snapshot-data-format"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "f45c90f3daef1722f5b6",
+  "host": "www.wikidata.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Category:Cluster analysis algorithms - Wikidata",
+  "url": "https://www.wikidata.org/wiki/Q8363832",
+  "published": "2026-09-06T21:52:15+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://www.wikidata.org/wiki/Special:EntityData/Q8363832.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "47dae244cef6ff806874",
+  "host": "www.wikidata.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Daily Indicators",
+  "url": "https://si3.bcentral.cl/Indicadoressiete/secure/IndicadoresDiarios.aspx?Idioma=en-US",
+  "published": "2026-09-06T21:52:18+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "509023e4dfdfbb49ab0c",
+  "host": "si3.bcentral.cl",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Indicadores diarios",
+  "url": "https://si3.bcentral.cl/Indicadoressiete/secure/Serie.aspx?gcode=UF&param=RABmAFYAWQB3AGYAaQBuAEkALQAzADUAbgBNAGgAaAAkADUAVwBQAC4AbQBYADAARwBOAGUAYwBjACMAQQBaAHAARgBhAGcAUABTAGUAYwBsAEMAMQA0AE0AawBLAF8AdQBDACQASABzAG0AXwA2AHQAawBvAFcAZwBKAEwAegBzAF8AbgBMAHIAYgBDAC4ARQA3AFUAVwB4AFIAWQBhAEEAOABkAHkAZwAxAEEARAA=",
+  "published": "2026-09-06T21:52:22+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f5251bd72665fbc21922",
+  "host": "si3.bcentral.cl",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Indicadores diarios",
+  "url": "https://si3.bcentral.cl/Indicadoressiete/secure/Serie.aspx?gcode=PRE_TCO&param=RABmAFYAWQB3AGYAaQBuAEkALQAzADUAbgBNAGgAaAAkADUAVwBQAC4AbQBYADAARwBOAGUAYwBjACMAQQBaAHAARgBhAGcAUABTAGUAdwA1ADQAMQA0AE0AawBLAF8AdQBDACQASABzAG0AXwA2AHQAawBvAFcAZwBKAEwAegBzAF8AbgBMAHIAYgBDAC4ARQA3AFUAVwB4AFIAWQBhAEEAOABkAHkAZwAxAEEARAA=",
+  "published": "2026-09-06T21:52:29+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy",
+   "session"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "370effac8aeb2fc4df31",
+  "host": "si3.bcentral.cl",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Indicadores diarios",
+  "url": "https://si3.bcentral.cl/Indicadoressiete/secure/ListaSerie.aspx?param=VQB3AE4ASwBDAHcAagBRACMALQBHAGEAUQBtAGkAaQBaAGEAbgA3AEwAdgAkAHIAcwBCAHkAVgB6AFYAbwB6AGwAXwBiAFcATgBSAFMAOABFAHQAaAAxAHIATgAtAHkAeQAtAGIARQBaAFQA",
+  "published": "2026-09-06T21:52:35+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "957c83596708a49aebe3",
+  "host": "si3.bcentral.cl",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Indicadores diarios",
+  "url": "https://si3.bcentral.cl/Indicadoressiete/secure/ListaSerie.aspx?param=VQB3AE4ASwBDAHcAagBRACMALQBHAGEAUQBtAGkAaQBaAGEAbgA3AEwAdgAkAHIAcwBCAHkAVgB6AFYAbwB6AGwAXwBzAG0AbQBSAFMAOABFAHQAaAAxAHIATgAtAHkAeQAtAGIARQBaAFQA",
+  "published": "2026-09-06T21:52:46+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "7d12be42efe25c7f2e20",
+  "host": "si3.bcentral.cl",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Indicadores diarios",
+  "url": "https://si3.bcentral.cl/Indicadoressiete/secure/ListaSerie.aspx?param=bgBMAFQARQBSAEwAcQBCAHQALQBpAGsAQgA0AHIAcgBHAGsAZABOAFAASgAzAHoAagBsAHgAQwBzAEMAdQBzAEkAbwBqAEUARwB6ADAAWABJAFkANwBuAEoATgBCAEgAZgAzAFoAeABzADEALQBGAEYALQAyAGYAaQB5AA==",
+  "published": "2026-09-06T21:52:49+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "cfe69d94e6ef2a356141",
+  "host": "si3.bcentral.cl",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritme \u2013 Wikipedia",
+  "url": "https://no.wikipedia.org/wiki/Algoritme",
+  "published": "2026-09-06T21:53:13+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "nb",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "da8ac25e0e3696d07491",
+  "host": "no.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Multilateral handelsfasilitet \u2013 Wikipedia",
+  "url": "https://no.wikipedia.org/w/index.php?title=Multilateral_handelsfasilitet&veaction=edit",
+  "published": "2026-09-06T21:53:21+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "nb",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ca975c9e97cc46167f10",
+  "host": "no.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Multilateral handelsfasilitet: Sideversjonshistorikk \u2013 Wikipedia",
+  "url": "https://no.wikipedia.org/w/index.php?title=Multilateral_handelsfasilitet&action=history",
+  "published": "2026-09-06T21:53:25+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "inventory"
+  ],
+  "confidence": 0.35,
+  "lang": "nb",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "eda3f0a71f7e6e60ddf5",
+  "host": "no.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Multilateral handelsfasilitet \u2013 Wikipedia",
+  "url": "https://no.wikipedia.org/w/index.php?title=Multilateral_handelsfasilitet&oldid=23659825",
+  "published": "2026-09-06T21:53:31+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "nb",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "8cf147deafea60996391",
+  "host": "no.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Multilateral handelsfasilitet \u2013 Wikipedia",
+  "url": "https://no.wikipedia.org/w/index.php?title=Multilateral_handelsfasilitet&useparsoid=0",
+  "published": "2026-09-06T21:53:39+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "nb",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "95a7147587d67be19c20",
+  "host": "no.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Multilateral handelsfasilitet \u2013 Wikipedia",
+  "url": "https://no.wikipedia.org/w/index.php?title=Multilateral_handelsfasilitet&printable=yes",
+  "published": "2026-09-06T21:53:43+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "nb",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "97da84b179dd1feab4fa",
+  "host": "no.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Multilateral handelsfasilitet \u2013 Wikipedia",
+  "url": "https://no.wikipedia.org/w/index.php?title=Multilateral_handelsfasilitet&veaction=edit&section=1",
+  "published": "2026-09-06T21:53:45+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "nb",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "db85a76104eaad97a811",
+  "host": "no.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Erweiterte Buchsuche",
+  "url": "https://books.google.de/advanced_book_search?q=Multilaterales+Handelssystem&hl=de",
+  "published": "2026-09-06T21:53:47+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "0fabeaed3167e60dd396",
+  "host": "books.google.de",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Unsolved Problems in Algorithms",
+  "url": "https://iq.opengenus.org/unsolved-problems-in-algorithms/",
+  "published": "2026-09-06T21:53:51+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "gap"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3587b840ef359999911c",
+  "host": "iq.opengenus.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "100+ Graph Algorithms and Techniques [Complete List]",
+  "url": "https://iq.opengenus.org/list-of-graph-algorithms/",
+  "published": "2026-09-06T21:53:57+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1M"
+  ],
+  "patterns": [
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "8fb08a0a793773d2bb97",
+  "host": "iq.opengenus.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Cannon\u2019s algorithm for distributed matrix multiplication",
+  "url": "https://iq.opengenus.org/cannon-algorithm-distributed-matrix-multiplication/",
+  "published": "2026-09-06T21:53:59+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1M"
+  ],
+  "patterns": [
+   "correlation"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "68369b421e68cf6c2974",
+  "host": "iq.opengenus.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Freivalds\u2019 algorithm for verifying Matrix Multiplication",
+  "url": "https://iq.opengenus.org/freivalds-algorithm/",
+  "published": "2026-09-06T21:54:01+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1M"
+  ],
+  "patterns": [
+   "correlation"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a1c9ec773ca9eff4f2cb",
+  "host": "iq.opengenus.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Russian peasant multiplication algorithm",
+  "url": "https://iq.opengenus.org/russian-peasant-multiplication-algorithm/",
+  "published": "2026-09-06T21:54:03+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1M"
+  ],
+  "patterns": [
+   "correlation"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "dc56fed88f418387b5db",
+  "host": "iq.opengenus.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Fowler-Noll-Vo (FNV) Hash Algorithm",
+  "url": "https://iq.opengenus.org/fnv-hash-algorithm/",
+  "published": "2026-09-06T21:54:09+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1M"
+  ],
+  "patterns": [
+   "basis",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e05ed35635290924b1ba",
+  "host": "iq.opengenus.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algorithms that run our Universe",
+  "url": "https://iq.opengenus.org/tag/algorithm/",
+  "published": "2026-09-06T21:54:11+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "positioning"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "679aa081f220c91dfccb",
+  "host": "iq.opengenus.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Start Here | Ultimate Algo Trading",
+  "url": "https://ultimate-algo-trading.teachable.com/courses/strategy-factory-workshop/lectures/66652478",
+  "published": "2026-09-06T21:54:14+00:00",
+  "symbols": [],
+  "timeframes": [
+   "INTRADAY"
+  ],
+  "patterns": [
+   "correlation",
+   "mean_reversion",
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "fec93c1cbe90131e7108",
+  "host": "ultimate-algo-trading.teachable.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Welcome &amp; Road Map | Ultimate Algo Trading",
+  "url": "https://ultimate-algo-trading.teachable.com/courses/strategy-factory-workshop/lectures/22710771",
+  "published": "2026-09-06T21:54:15+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "mean_reversion",
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "995eec615e470efa4927",
+  "host": "ultimate-algo-trading.teachable.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "90 Minute Onboarding Session | Ultimate Algo Trading",
+  "url": "https://ultimate-algo-trading.teachable.com/courses/strategy-factory-workshop/lectures/61498030",
+  "published": "2026-09-06T21:54:17+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "mean_reversion",
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "04aab74a8833814746f9",
+  "host": "ultimate-algo-trading.teachable.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Resources | Ultimate Algo Trading",
+  "url": "https://ultimate-algo-trading.teachable.com/courses/strategy-factory-workshop/lectures/64528521",
+  "published": "2026-09-06T21:54:20+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "mean_reversion",
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "8d0e251ecd35b4e5756c",
+  "host": "ultimate-algo-trading.teachable.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Strategies | Ultimate Algo Trading",
+  "url": "https://ultimate-algo-trading.teachable.com/courses/strategy-factory-workshop/lectures/66618572",
+  "published": "2026-09-06T21:54:22+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "mean_reversion",
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "32702f3d960d55fe8fe9",
+  "host": "ultimate-algo-trading.teachable.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Introduction, Live Workshop Slides | Ultimate Algo Trading",
+  "url": "https://ultimate-algo-trading.teachable.com/courses/strategy-factory-workshop/lectures/22711075",
+  "published": "2026-09-06T21:54:24+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "mean_reversion",
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "6805f729e94debed46ae",
+  "host": "ultimate-algo-trading.teachable.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Live Workshop Recordings - July 23, 2026 | Ultimate Algo Trading",
+  "url": "https://ultimate-algo-trading.teachable.com/courses/strategy-factory-workshop/lectures/66372779",
+  "published": "2026-09-06T21:54:25+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "mean_reversion",
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "27207d87f263d37e20dc",
+  "host": "ultimate-algo-trading.teachable.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Live Q&amp;A - Mar 18,2021 | Ultimate Algo Trading",
+  "url": "https://ultimate-algo-trading.teachable.com/courses/strategy-factory-workshop/lectures/31250022",
+  "published": "2026-09-06T21:54:28+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "mean_reversion",
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "6faaa300ad176bd0177c",
+  "host": "ultimate-algo-trading.teachable.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Live Q&amp;A - August 7, 2023 | Ultimate Algo Trading",
+  "url": "https://ultimate-algo-trading.teachable.com/courses/strategy-factory-workshop/lectures/48571081",
+  "published": "2026-09-06T21:54:30+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "mean_reversion",
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "7df53e56b4edcb7150f8",
+  "host": "ultimate-algo-trading.teachable.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Introduction and Roadmap | Ultimate Algo Trading",
+  "url": "https://ultimate-algo-trading.teachable.com/courses/strategy-factory-workshop/lectures/22846027",
+  "published": "2026-09-06T21:54:31+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "mean_reversion",
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "8034d81f65b47130f35c",
+  "host": "ultimate-algo-trading.teachable.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Helpful Guides From Tradestation | Ultimate Algo Trading",
+  "url": "https://ultimate-algo-trading.teachable.com/courses/strategy-factory-workshop/lectures/36041697",
+  "published": "2026-09-06T21:54:33+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "mean_reversion",
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d6791340d7c8a7a616e8",
+  "host": "ultimate-algo-trading.teachable.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Reference Material, Getting Help | Ultimate Algo Trading",
+  "url": "https://ultimate-algo-trading.teachable.com/courses/strategy-factory-workshop/lectures/22846173",
+  "published": "2026-09-06T21:54:36+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "mean_reversion",
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "bf26325a0acd79ad4daf",
+  "host": "ultimate-algo-trading.teachable.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Getting Correct TS Version (I use 10.0 as of mid 2021) | Ultimate Algo",
+  "url": "https://ultimate-algo-trading.teachable.com/courses/strategy-factory-workshop/lectures/22846333",
+  "published": "2026-09-06T21:54:37+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "mean_reversion",
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "9278c10a5d2d86aad08c",
+  "host": "ultimate-algo-trading.teachable.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Inserting A Chart | Ultimate Algo Trading",
+  "url": "https://ultimate-algo-trading.teachable.com/courses/strategy-factory-workshop/lectures/22846786",
+  "published": "2026-09-06T21:54:39+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "mean_reversion",
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b5dbcbfce413e0c073d5",
+  "host": "ultimate-algo-trading.teachable.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "What Are Futures Continuous Contracts? | Ultimate Algo Trading",
+  "url": "https://ultimate-algo-trading.teachable.com/courses/strategy-factory-workshop/lectures/22846787",
+  "published": "2026-09-06T21:54:41+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "mean_reversion",
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "eff3fc66f0db18e11258",
+  "host": "ultimate-algo-trading.teachable.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Building A Strategy | Ultimate Algo Trading",
+  "url": "https://ultimate-algo-trading.teachable.com/courses/strategy-factory-workshop/lectures/22846789",
+  "published": "2026-09-06T21:54:44+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "mean_reversion",
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "562eea0eb733b898c20f",
+  "host": "ultimate-algo-trading.teachable.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Adding A Stop Loss To A Strategy | Ultimate Algo Trading",
+  "url": "https://ultimate-algo-trading.teachable.com/courses/strategy-factory-workshop/lectures/22846790",
+  "published": "2026-09-06T21:54:45+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "mean_reversion",
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "17c473516d768b02e071",
+  "host": "ultimate-algo-trading.teachable.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Adding A Profit Target To A Strategy | Ultimate Algo Trading",
+  "url": "https://ultimate-algo-trading.teachable.com/courses/strategy-factory-workshop/lectures/22846792",
+  "published": "2026-09-06T21:54:48+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "mean_reversion",
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b78a0fd8f457c21265fb",
+  "host": "ultimate-algo-trading.teachable.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "World Cup Trading Championship Historical Standings - World Cup Trading Championships",
+  "url": "https://www.worldcupchampionships.com/world-cup-trading-championship-historical-standings",
+  "published": "2026-09-06T21:54:51+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "78353133647273bbd7f0",
+  "host": "www.worldcupchampionships.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Trading Strategies: FX, Stock, Crypto, Options, And Futures",
+  "url": "https://tradingstrategyguides.com/trading-strategy-guides-blog/",
+  "published": "2026-09-06T21:54:52+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "breakout"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "040164b4d007c289acbc",
+  "host": "tradingstrategyguides.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "6 Of The Best Free Trading Tools For Traders",
+  "url": "https://tradingstrategyguides.com/free-tools/",
+  "published": "2026-09-06T21:54:58+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "88f02a2efac0a12c13b8",
+  "host": "tradingstrategyguides.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "The Best Algorithmic Trading Strategy | Complete Guide 2024",
+  "url": "https://tradingstrategyguides.com/algorithmic-trading-strategies/",
+  "published": "2026-09-06T21:55:06+00:00",
+  "symbols": [],
+  "timeframes": [
+   "INTRADAY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "breakout",
+   "gap",
+   "mean_reversion",
+   "momentum",
+   "orderflow",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "89ee336c9ba45d1c79ac",
+  "host": "tradingstrategyguides.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "What Is The Best Trading Strategy: Become Profitable In 2024",
+  "url": "https://tradingstrategyguides.com/best-trading-strategy/",
+  "published": "2026-09-06T21:55:09+00:00",
+  "symbols": [],
+  "timeframes": [
+   "INTRADAY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "basis",
+   "breakout",
+   "gap",
+   "momentum",
+   "orderflow",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "0ea7fd632b47c362b9f0",
+  "host": "tradingstrategyguides.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Trading Risk Management Strategy: The Ultimate Guide To Risk",
+  "url": "https://tradingstrategyguides.com/trading-risk-management-strategy/",
+  "published": "2026-09-06T21:55:10+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "basis",
+   "breakout",
+   "gap",
+   "momentum",
+   "orderflow",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "09d42c083a81e91f024b",
+  "host": "tradingstrategyguides.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Home - World Cup Trading Championships",
+  "url": "https://www.worldcupchampionships.com/",
+  "published": "2026-09-06T21:55:11+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "night_session"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "904b12cd4dae792a6895",
+  "host": "www.worldcupchampionships.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "ICT Order Block: Complete Guide To Institutional Footprints | Trading Strategy Guides",
+  "url": "https://tradingstrategyguides.com/ict-order-block-complete-guide-to-institutional-footprints/",
+  "published": "2026-09-06T21:55:13+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "basis",
+   "breakout",
+   "carry",
+   "gap",
+   "momentum",
+   "orderflow"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "344851685f89eba776d5",
+  "host": "tradingstrategyguides.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Spinning Top Candlestick: The Definitive Price Action Guide | Trading Strategy Guides",
+  "url": "https://tradingstrategyguides.com/spinning-top-candlestick-the-definitive-price-action-guide/",
+  "published": "2026-09-06T21:55:15+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "breakout",
+   "carry",
+   "gap",
+   "mean_reversion",
+   "momentum",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "5d00ca742fd978cdd9f9",
+  "host": "tradingstrategyguides.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "The Kinetic Lynx: High-Velocity Trend Pullback Strategy | Trading Strategy Guides",
+  "url": "https://tradingstrategyguides.com/the-kinetic-lynx-high-velocity-trend-pullback-strategy/",
+  "published": "2026-09-06T21:55:16+00:00",
+  "symbols": [
+   "EURUSD",
+   "GBPUSD"
+  ],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "breakout",
+   "gap",
+   "momentum",
+   "orderflow",
+   "policy",
+   "session",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b9ecde960cf9715de215",
+  "host": "tradingstrategyguides.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Top 5 Best Multi-Confirmation Breakout Scanners: 2026 Edition | Trading Strategy Guides",
+  "url": "https://tradingstrategyguides.com/top-5-best-multi-confirmation-breakout-scanners-2026-edition/",
+  "published": "2026-09-06T21:55:18+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "breakout",
+   "gap",
+   "momentum",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c1c2135798873413242e",
+  "host": "tradingstrategyguides.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "5 Stocks To Watch This Week (September 7, 2026): Hormuz Standoff And Chip Friction | Trading Strategy Guides",
+  "url": "https://tradingstrategyguides.com/5-stocks-to-watch-this-week-september-7-2026-hormuz-standoff-and-chip-friction/",
+  "published": "2026-09-06T21:55:21+00:00",
+  "symbols": [
+   "NVIDIA"
+  ],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "breakout",
+   "flow",
+   "gap",
+   "inventory",
+   "momentum",
+   "orderflow",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ac3e932a1dc7237bfab6",
+  "host": "tradingstrategyguides.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Dow Jones Futures: What To Watch On September 6, 2026 | Trading Strategy Guides",
+  "url": "https://tradingstrategyguides.com/dow-jones-futures-what-to-watch-on-september-6-2026/",
+  "published": "2026-09-06T21:55:23+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "breakout",
+   "carry",
+   "flow",
+   "gap",
+   "momentum",
+   "orderflow",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "dc445773d4c47995d6c5",
+  "host": "tradingstrategyguides.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "FICO Stock News: Why It Tanked On September 5, 2026 | Trading Strategy Guides",
+  "url": "https://tradingstrategyguides.com/fico-stock-news-why-it-tanked-on-september-5-2026/",
+  "published": "2026-09-06T21:55:25+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "breakout",
+   "gap",
+   "momentum",
+   "orderflow",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b46c4f70501522757558",
+  "host": "tradingstrategyguides.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "What Is A Fair Value Gap (FVG) In Trading? | Trading Strategy Guides",
+  "url": "https://tradingstrategyguides.com/what-is-a-fair-value-gap-fvg-in-trading/",
+  "published": "2026-09-06T21:55:26+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "auction",
+   "breakout",
+   "carry",
+   "gap",
+   "inventory",
+   "momentum",
+   "orderflow"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "02efb6d002e7f4bc5aba",
+  "host": "tradingstrategyguides.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Trading Intern - Summer 2027 (DV Commodities) - DV Commodities",
+  "url": "https://dvcommodities.com/career/trading-intern-summer-2027-dv-commodities-2/",
+  "published": "2026-09-06T21:55:27+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "bd05e2c45c243e824984",
+  "host": "dvcommodities.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Trading Intern - Summer 2027 (DV Commodities) - DV Commodities",
+  "url": "https://dvcommodities.com/career/trading-intern-summer-2027-dv-commodities/",
+  "published": "2026-09-06T21:55:29+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "eaf8321f62a9248cfd2e",
+  "host": "dvcommodities.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Trading Reviews and Vendors - NexusFi",
+  "url": "https://nexusfi.com/trading-reviews-vendors/",
+  "published": "2026-09-06T21:55:59+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://nexusfi.com/download/"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "0f5e55818260abc99a62",
+  "host": "nexusfi.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Platforms and Indicators - NexusFi",
+  "url": "https://nexusfi.com/platforms-indicators/",
+  "published": "2026-09-06T21:56:01+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://nexusfi.com/download/"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "4894b5db7d6dac4e522e",
+  "host": "nexusfi.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Trading Journals - NexusFi",
+  "url": "https://nexusfi.com/trading-journals/",
+  "published": "2026-09-06T21:56:03+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://nexusfi.com/download/"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "4295ebbe00ba000e4768",
+  "host": "nexusfi.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Elite Trading Journals - NexusFi",
+  "url": "https://nexusfi.com/elite-trading-journals/",
+  "published": "2026-09-06T21:56:05+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://nexusfi.com/download/"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "4e4f1527b5b59b97ef27",
+  "host": "nexusfi.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "2019 Dow E-Mini YM Trading Journal | NexusFi Forum",
+  "url": "https://nexusfi.com/showthread.php?t=46257",
+  "published": "2026-09-06T21:56:07+00:00",
+  "symbols": [],
+  "timeframes": [
+   "5M",
+   "DAILY"
+  ],
+  "patterns": [
+   "breakout",
+   "carry",
+   "momentum",
+   "night_session",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "fddf065231e51048f365",
+  "host": "nexusfi.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "L2/L3 data for backtesting | NexusFi Forum",
+  "url": "https://nexusfi.com/showthread.php?t=62141&goto=newpost",
+  "published": "2026-09-06T21:56:10+00:00",
+  "symbols": [],
+  "timeframes": [
+   "5M"
+  ],
+  "patterns": [
+   "flow",
+   "momentum",
+   "orderflow"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a500a6d21b2a70c321e9",
+  "host": "nexusfi.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "BluSky Trading - The Funded Futures Prop Firm For Serious Traders",
+  "url": "https://blusky.pro",
+  "published": "2026-09-06T21:56:11+00:00",
+  "symbols": [],
+  "timeframes": [
+   "15M",
+   "DAILY"
+  ],
+  "patterns": [
+   "basis"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d5d7d37609de572a3b18",
+  "host": "blusky.pro",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Attack of the Robots - An Algo Journal | NexusFi Forum",
+  "url": "https://nexusfi.com/showthread.php?t=46621",
+  "published": "2026-09-06T21:56:12+00:00",
+  "symbols": [],
+  "timeframes": [
+   "5M",
+   "DAILY"
+  ],
+  "patterns": [
+   "carry",
+   "momentum",
+   "orderflow"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ac4c11d27263e8a9945c",
+  "host": "nexusfi.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "2019 Dow E-Mini YM Trading Journal | NexusFi Forum",
+  "url": "https://nexusfi.com/trading-journals/46257-2019-dow-e-mini-ym-mini-sized-dow-futures-contract-trading-journal.html",
+  "published": "2026-09-06T21:56:15+00:00",
+  "symbols": [],
+  "timeframes": [
+   "5M",
+   "DAILY"
+  ],
+  "patterns": [
+   "breakout",
+   "carry",
+   "momentum",
+   "night_session",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "8678a1148b3a08f4b5f2",
+  "host": "nexusfi.com",
+  "claims": [],
+  "n_claims": 0
+ }
+]

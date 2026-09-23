@@ -1,0 +1,435 @@
+{
+ "measured_at": "2026-08-29",
+ "seat": "brain_hunter_s17",
+ "what": "(1) power control on QuantGPT adversarial tests 3+4; (2) cost-blindness census over the 14 permissive BRAIN generator repos; (3) duplicate-repo correction to s16's n=14",
+ "boundary": "public GitHub, 14 shallow --depth 1 clones of permissively-licensed repos. No login, no api.worldquantbrain.com, no platform-internal surface. Research freeze respected: docs/research/* and data/* only.",
+ "part_1_power_control": {
+  "method": "synthetic panel 40 names x 200 bdays, factor_value ~ N(0,1), fwd_ret = true_ic*f + sqrt(1-true_ic^2)*eps injected EXACTLY (validator's derived fwd_ret overwritten), 2 seeds per cell, tests called at their SHIPPED defaults (n_trials=12 for random_universe, noise_levels shipped for noise_injection)",
+  "test_random_universe": {
+   "verdict": "VALIDATED - it separates",
+   "detail": "FAILS at true_ic=0 (consistency 0.500/0.583, bar 0.70) and PASSES at true_ic>=0.05 (consistency 1.000 in all 8 signal cells). This is the second of four adversarial tests on this ground to survive its own power control.",
+   "limits": [
+    "saturates at 1.000 by true_ic=0.05, so it detects PRESENCE of IC and cannot grade STRENGTH",
+    "the 0 -> 0.05 transition region was not sampled",
+    "it is a WITHIN-SAMPLE stability statistic - it tests that the realized full-sample IC sign is reproducible on subsets, NOT that the factor holds out of sample. It is close to a t-test on the daily IC series and must never be reported as OOS evidence."
+   ]
+  },
+  "test_noise_injection": {
+   "verdict": "REFUTED - the verdict is a constant function of the test's own noise level",
+   "detail": "PASSES in 14 of 14 cells including all 6 true_ic=0 cells (retention 0.53/0.73 vs its 0.50 bar). Its verdict never varied with the injected signal.",
+   "analytic_cause": "for f' = f + k*sigma*eps, corr(f',r) = corr(f,r)/sqrt(1+k^2), INDEPENDENT of the true IC. At the shipped k=0.5 that constant is 0.8944, which sits above the shipped 0.50 bar, so the test can essentially never fail a real factor.",
+   "analytic_confirmation": {
+    "k": [
+     0.1,
+     0.2,
+     0.5,
+     1.0,
+     2.0
+    ],
+    "predicted_1_over_sqrt_1_plus_k2": [
+     0.995,
+     0.9806,
+     0.8944,
+     0.7071,
+     0.4472
+    ],
+    "measured_true_ic_0.30": [
+     0.9936,
+     0.9836,
+     0.903,
+     0.6959,
+     0.4523
+    ],
+    "measured_true_ic_0.02": [
+     1.6009,
+     1.2998,
+     2.1067,
+     20.7032,
+     2.1415
+    ],
+    "note": "for a near-null factor the statistic is a ratio of two near-zero quantities: it does not merely pass, it EXPLODES above 1.0 and passes harder than a real factor. Doubly broken."
+   },
+   "n_cells": 14
+  },
+  "cells": [
+   {
+    "true_ic": 0.0,
+    "seed": 1,
+    "realized_ic": -0.007272983114446529,
+    "ru_passed": false,
+    "consistency": 0.5,
+    "ni_passed": true,
+    "retention_at_0_5": 0.7312,
+    "noise_curve": {
+     "0.1": 0.0065,
+     "0.2": 0.0064,
+     "0.5": 0.0053,
+     "1.0": 0.0042,
+     "2.0": 0.0117
+    }
+   },
+   {
+    "true_ic": 0.0,
+    "seed": 2,
+    "realized_ic": 0.01026078799249531,
+    "ru_passed": false,
+    "consistency": 0.5833,
+    "ni_passed": true,
+    "retention_at_0_5": 0.5317,
+    "noise_curve": {
+     "0.1": 0.0073,
+     "0.2": 0.0081,
+     "0.5": 0.0055,
+     "1.0": 0.0036,
+     "2.0": 0.0127
+    }
+   },
+   {
+    "true_ic": 0.0,
+    "seed": 1,
+    "realized_ic": -0.007272983114446529,
+    "ru_passed": false,
+    "consistency": 0.5,
+    "ni_passed": true,
+    "retention_at_0_5": 0.7312,
+    "noise_curve": {
+     "0.1": 0.0065,
+     "0.2": 0.0064,
+     "0.5": 0.0053,
+     "1.0": 0.0042,
+     "2.0": 0.0117
+    }
+   },
+   {
+    "true_ic": 0.0,
+    "seed": 2,
+    "realized_ic": 0.01026078799249531,
+    "ru_passed": false,
+    "consistency": 0.5833,
+    "ni_passed": true,
+    "retention_at_0_5": 0.5317,
+    "noise_curve": {
+     "0.1": 0.0073,
+     "0.2": 0.0081,
+     "0.5": 0.0055,
+     "1.0": 0.0036,
+     "2.0": 0.0127
+    }
+   },
+   {
+    "true_ic": 0.0,
+    "seed": 1,
+    "realized_ic": -0.007272983114446529,
+    "ru_passed": false,
+    "consistency": 0.5,
+    "ni_passed": true,
+    "retention_at_0_5": 0.7312,
+    "noise_curve": {
+     "0.1": 0.0065,
+     "0.2": 0.0064,
+     "0.5": 0.0053,
+     "1.0": 0.0042,
+     "2.0": 0.0117
+    }
+   },
+   {
+    "true_ic": 0.0,
+    "seed": 2,
+    "realized_ic": 0.01026078799249531,
+    "ru_passed": false,
+    "consistency": 0.5833,
+    "ni_passed": true,
+    "retention_at_0_5": 0.5317,
+    "noise_curve": {
+     "0.1": 0.0073,
+     "0.2": 0.0081,
+     "0.5": 0.0055,
+     "1.0": 0.0036,
+     "2.0": 0.0127
+    }
+   },
+   {
+    "true_ic": 0.05,
+    "seed": 1,
+    "realized_ic": 0.040359287054409006,
+    "ru_passed": true,
+    "consistency": 1.0,
+    "ni_passed": true,
+    "retention_at_0_5": 0.9294,
+    "noise_curve": {
+     "0.1": 0.0412,
+     "0.2": 0.04,
+     "0.5": 0.0375,
+     "1.0": 0.0298,
+     "2.0": 0.0092
+    }
+   },
+   {
+    "true_ic": 0.05,
+    "seed": 2,
+    "realized_ic": 0.0575891181988743,
+    "ru_passed": true,
+    "consistency": 1.0,
+    "ni_passed": true,
+    "retention_at_0_5": 0.8307,
+    "noise_curve": {
+     "0.1": 0.0546,
+     "0.2": 0.0548,
+     "0.5": 0.0478,
+     "1.0": 0.0367,
+     "2.0": 0.0073
+    }
+   },
+   {
+    "true_ic": 0.1,
+    "seed": 1,
+    "realized_ic": 0.08677954971857414,
+    "ru_passed": true,
+    "consistency": 1.0,
+    "ni_passed": true,
+    "retention_at_0_5": 0.9087,
+    "noise_curve": {
+     "0.1": 0.0875,
+     "0.2": 0.0855,
+     "0.5": 0.0789,
+     "1.0": 0.0635,
+     "2.0": 0.0297
+    }
+   },
+   {
+    "true_ic": 0.1,
+    "seed": 2,
+    "realized_ic": 0.10474671669793623,
+    "ru_passed": true,
+    "consistency": 1.0,
+    "ni_passed": true,
+    "retention_at_0_5": 0.8613,
+    "noise_curve": {
+     "0.1": 0.1015,
+     "0.2": 0.1009,
+     "0.5": 0.0902,
+     "1.0": 0.0696,
+     "2.0": 0.026
+    }
+   },
+   {
+    "true_ic": 0.2,
+    "seed": 1,
+    "realized_ic": 0.18138742964352722,
+    "ru_passed": true,
+    "consistency": 1.0,
+    "ni_passed": true,
+    "retention_at_0_5": 0.899,
+    "noise_curve": {
+     "0.1": 0.1818,
+     "0.2": 0.1784,
+     "0.5": 0.1631,
+     "1.0": 0.1312,
+     "2.0": 0.0733
+    }
+   },
+   {
+    "true_ic": 0.2,
+    "seed": 2,
+    "realized_ic": 0.19834240150093813,
+    "ru_passed": true,
+    "consistency": 1.0,
+    "ni_passed": true,
+    "retention_at_0_5": 0.8767,
+    "noise_curve": {
+     "0.1": 0.1946,
+     "0.2": 0.1922,
+     "0.5": 0.1739,
+     "1.0": 0.1362,
+     "2.0": 0.0682
+    }
+   },
+   {
+    "true_ic": 0.4,
+    "seed": 1,
+    "realized_ic": 0.3706013133208256,
+    "ru_passed": true,
+    "consistency": 1.0,
+    "ni_passed": true,
+    "retention_at_0_5": 0.8976,
+    "noise_curve": {
+     "0.1": 0.3702,
+     "0.2": 0.3641,
+     "0.5": 0.3327,
+     "1.0": 0.2657,
+     "2.0": 0.1555
+    }
+   },
+   {
+    "true_ic": 0.4,
+    "seed": 2,
+    "realized_ic": 0.3834756097560976,
+    "ru_passed": true,
+    "consistency": 1.0,
+    "ni_passed": true,
+    "retention_at_0_5": 0.8854,
+    "noise_curve": {
+     "0.1": 0.379,
+     "0.2": 0.374,
+     "0.5": 0.3395,
+     "1.0": 0.267,
+     "2.0": 0.1468
+    }
+   }
+  ]
+ },
+ "part_2_cost_blindness_census": {
+  "population": "the same 14 permissive repos as s16, re-cloned 2026-08-29",
+  "vocabulary_core": [
+   "transaction cost",
+   "slippage",
+   "commission",
+   "fee(s)",
+   "bid-ask",
+   "half-spread",
+   "net of cost",
+   "after cost",
+   "cost model"
+  ],
+  "positive_control": "'sharpe' fires 2531 times across the class; 'turnover' fires in 12 of 14 repos",
+  "headline": "11 of 14 repos have ZERO core-cost vocabulary in any .py/.md/.ipynb. Only 3 have any, and only ONE applies a cost to a reported number.",
+  "adjudication": {
+   "Miasyster_QuantGPT": "REAL and APPLIED - backtest.py deducts turnover*cost_rate per rebalance, cost_rate default 0.003. But 0.3% flat is an A-share retail convention (its own docstring says 'commission + stamp tax + slippage') and does not transfer to an MT5 CFD book.",
+   "gyx09212214-prog_worldquant-harness": "SAME CODE as QuantGPT - byte-identical backtest.py and CONTRIBUTING.md. Not an independent observation.",
+   "zhutoutoutousan_worldquant-miner": "DECLARED, NEVER APPLIED - mini-quant/alpha_backtesting_system.py:32-35 stores commission=0.001 and slippage=0.0001; neither attribute is read anywhere in the repo, and process_signal (the only consumer, called at line 221) has a body of `pass`. Costs are decorative."
+  },
+  "conclusion": "cost-blindness is a SECOND independent reason every performance number from this ground is uninformative, alongside s16's zero multiplicity control. The two defects compound: an unpriced search reported gross.",
+  "per_repo": {
+   "0xceb1_brain-learn": {
+    "files": 14,
+    "core_cost_hits": 0,
+    "turnover_hits": 5,
+    "sharpe_hits": 37,
+    "broad_cost_hits": 5,
+    "files_with_core": {}
+   },
+   "Miasyster_QuantGPT": {
+    "files": 115,
+    "core_cost_hits": 5,
+    "turnover_hits": 99,
+    "sharpe_hits": 115,
+    "broad_cost_hits": 146,
+    "files_with_core": {
+     "quantgpt/backtest.py": 3,
+     "CONTRIBUTING.md": 2
+    }
+   },
+   "NewAmorend_AlphaGen-Agent": {
+    "files": 102,
+    "core_cost_hits": 0,
+    "turnover_hits": 124,
+    "sharpe_hits": 178,
+    "broad_cost_hits": 133,
+    "files_with_core": {}
+   },
+   "aircrushin_wq-alpha-agent": {
+    "files": 21,
+    "core_cost_hits": 0,
+    "turnover_hits": 60,
+    "sharpe_hits": 60,
+    "broad_cost_hits": 61,
+    "files_with_core": {}
+   },
+   "angel4angelov-glitch_wq-alpha-pipeline": {
+    "files": 16,
+    "core_cost_hits": 0,
+    "turnover_hits": 8,
+    "sharpe_hits": 56,
+    "broad_cost_hits": 8,
+    "files_with_core": {}
+   },
+   "aznikline_alpha-mining-system": {
+    "files": 22,
+    "core_cost_hits": 0,
+    "turnover_hits": 2,
+    "sharpe_hits": 6,
+    "broad_cost_hits": 2,
+    "files_with_core": {}
+   },
+   "gyx09212214-prog_worldquant-harness": {
+    "files": 368,
+    "core_cost_hits": 5,
+    "turnover_hits": 675,
+    "sharpe_hits": 707,
+    "broad_cost_hits": 734,
+    "files_with_core": {
+     "worldquant_harness/backtest.py": 3,
+     "CONTRIBUTING.md": 2
+    }
+   },
+   "mohitprashant_Quant-Alpha-Hypotheses": {
+    "files": 1,
+    "core_cost_hits": 0,
+    "turnover_hits": 0,
+    "sharpe_hits": 0,
+    "broad_cost_hits": 0,
+    "files_with_core": {}
+   },
+   "nutdnuy_brain-paper-to-alpha-plugin": {
+    "files": 15,
+    "core_cost_hits": 0,
+    "turnover_hits": 13,
+    "sharpe_hits": 8,
+    "broad_cost_hits": 13,
+    "files_with_core": {}
+   },
+   "seuzxh_quant-factor-skill": {
+    "files": 6,
+    "core_cost_hits": 0,
+    "turnover_hits": 0,
+    "sharpe_hits": 0,
+    "broad_cost_hits": 0,
+    "files_with_core": {}
+   },
+   "slydg_Lightweight-Alpha-Miner": {
+    "files": 7,
+    "core_cost_hits": 0,
+    "turnover_hits": 6,
+    "sharpe_hits": 23,
+    "broad_cost_hits": 6,
+    "files_with_core": {}
+   },
+   "xiao634zhang_wq-factor-miner": {
+    "files": 23,
+    "core_cost_hits": 0,
+    "turnover_hits": 33,
+    "sharpe_hits": 39,
+    "broad_cost_hits": 35,
+    "files_with_core": {}
+   },
+   "zeron-G_worldquant-alpha-research-agent": {
+    "files": 23,
+    "core_cost_hits": 0,
+    "turnover_hits": 28,
+    "sharpe_hits": 31,
+    "broad_cost_hits": 28,
+    "files_with_core": {}
+   },
+   "zhutoutoutousan_worldquant-miner": {
+    "files": 1718,
+    "core_cost_hits": 14,
+    "turnover_hits": 518,
+    "sharpe_hits": 1271,
+    "broad_cost_hits": 576,
+    "files_with_core": {
+     "mini-quant/alpha_backtesting_system.py": 8,
+     "generation_one/cursor_idea_workbench/ALPHA_README.md": 2,
+     "stone_age/python/agent/gui/agent_designer.py": 1,
+     "generation_one/cursor_idea_workbench/example_usage.py": 1,
+     "generation_one/cursor_idea_workbench/alpha_analyzer.py": 1,
+     "generation_one/consultant-templates-ollama-lts/BACKUP.py": 1
+    }
+   }
+  }
+ },
+ "part_3_correction_to_s16": {
+  "finding": "s16 reported the multiplicity census over n=14 repos. Two of those are near-duplicates: Miasyster/QuantGPT and gyx09212214-prog/worldquant-harness share 34 byte-identical .py/.md/.ipynb files (29.8% of the smaller repo), including backtest.py and CONTRIBUTING.md.",
+  "method": "sha256 of every .py/.md/.ipynb, pairwise intersection over all 91 repo pairs; this was the ONLY pair above 10% overlap",
+  "effect": "the class is 13 independent observations, not 14. s16's headline (0 of 14 with multiplicity control) is NOT overturned - 13 independent zeros carry the same verdict - but the seat's stated n was inflated by one and any future significance statement over this class must use 13."
+ }
+}

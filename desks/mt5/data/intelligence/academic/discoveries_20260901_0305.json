@@ -1,0 +1,41 @@
+[
+  {
+    "source": "arxiv",
+    "type": "academic_paper",
+    "title": "The impact of hot mode accretion and angular momentum conservation on metallicity gradients of galactic discs",
+    "summary": "The hot circumgalactic medium (CGM) of a galaxy inevitably rotates more slowly than the cold gas in the disc it surrounds, due to a higher pressure support against gravity. If it accretes vertically o",
+    "url": "https://arxiv.org/abs/2608.31144v1",
+    "published": "2026-08-31T17:49:08Z",
+    "trading_terms": [
+      "momentum"
+    ],
+    "symbols": [],
+    "confidence": 0.1
+  },
+  {
+    "source": "arxiv",
+    "type": "academic_paper",
+    "title": "Test-time Reinforcement Learning in Imperfect Information Games",
+    "summary": "Test-time reasoning has significantly improved performance in domains ranging from games to language models. However, test-time policy changes with formal guarantees on the performance of the resultin",
+    "url": "https://arxiv.org/abs/2608.30635v1",
+    "published": "2026-08-31T11:44:15Z",
+    "trading_terms": [
+      "strategy"
+    ],
+    "symbols": [],
+    "confidence": 0.1
+  },
+  {
+    "source": "arxiv",
+    "type": "academic_paper",
+    "title": "A model-inversion control strategy to attain desired equilibrium points when synthesizing nonlinear resonators",
+    "summary": "The initial conditions of a deterministic nonlinear system affects the attained asymptotic solutions. This is a problem when the nonlinear behaviour is achieved by active control synthesis, and the in",
+    "url": "https://arxiv.org/abs/2608.30626v1",
+    "published": "2026-08-31T11:33:52Z",
+    "trading_terms": [
+      "strategy"
+    ],
+    "symbols": [],
+    "confidence": 0.1
+  }
+]

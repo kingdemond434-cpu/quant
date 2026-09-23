@@ -1,0 +1,563 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "How we do Open Data: #1 - choosing development indicators",
+  "url": "https://blogs.worldbank.org/en/opendata/how-we-do-open-data-choosing-development-indicators",
+  "published": "2026-09-04T08:13:10+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://research.stlouisfed.org/fred2/tags/series"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "54bf7cc652872f116e43",
+  "host": "blogs.worldbank.org"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u6211\u4eec\u5982\u4f55\u5236\u4f5c\u516c\u5f00\u6570\u636e\uff1a#1\u2014\u9009\u62e9\u53d1\u5c55\u6307\u6807",
+  "url": "https://blogs.worldbank.org/zh/opendata/how-we-do-open-data-choosing-development-indicators",
+  "published": "2026-09-04T08:13:12+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation"
+  ],
+  "confidence": 0.55,
+  "lang": "zh",
+  "endpoints": [
+   "https://research.stlouisfed.org/fred2/tags/series"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "058c2d401eff4b1e724e",
+  "host": "blogs.worldbank.org"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u901a\u7528\u6570\u636e-\u91cf\u5316\u4ea4\u6613\u6570\u636e\u83b7\u53d6-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/categories/-\u901a\u7528\u6570\u636e",
+  "published": "2026-09-04T08:13:13+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "fb8e5353ed926923ffbf",
+  "host": "bigquant.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u80a1\u7968\u6570\u636e-\u91cf\u5316\u4ea4\u6613\u6570\u636e\u83b7\u53d6-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/categories/-\u80a1\u7968\u6570\u636e",
+  "published": "2026-09-04T08:13:16+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f213bd54889ec0f8cb70",
+  "host": "bigquant.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u80a1\u7968\u6570\u636e-\u80a1\u7968\u884c\u60c5-\u91cf\u5316\u4ea4\u6613\u6570\u636e\u83b7\u53d6-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/categories/-\u80a1\u7968\u6570\u636e-\u80a1\u7968\u884c\u60c5",
+  "published": "2026-09-04T08:13:17+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ab2a8cfe9271b70bdb98",
+  "host": "bigquant.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u80a1\u7968\u6570\u636e-\u5206\u949f\u884c\u60c5-\u91cf\u5316\u4ea4\u6613\u6570\u636e\u83b7\u53d6-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/categories/-\u80a1\u7968\u6570\u636e-\u5206\u949f\u884c\u60c5",
+  "published": "2026-09-04T08:13:20+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e55b53964145f0b74bac",
+  "host": "bigquant.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u80a1\u7968\u6570\u636e-\u80a1\u7968\u4fe1\u606f-\u91cf\u5316\u4ea4\u6613\u6570\u636e\u83b7\u53d6-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/categories/-\u80a1\u7968\u6570\u636e-\u80a1\u7968\u4fe1\u606f",
+  "published": "2026-09-04T08:13:21+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "7a9f10d28c56dd850a31",
+  "host": "bigquant.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u8d22\u52a1\u6570\u636e-\u91cf\u5316\u4ea4\u6613\u6570\u636e\u83b7\u53d6-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/categories/-\u8d22\u52a1\u6570\u636e",
+  "published": "2026-09-04T08:13:24+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.55,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a7a5b57fa57714794f8e",
+  "host": "bigquant.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u8d22\u52a1\u6570\u636e-\u539f\u59cb\u6570\u636e-\u91cf\u5316\u4ea4\u6613\u6570\u636e\u83b7\u53d6-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/categories/-\u8d22\u52a1\u6570\u636e-\u539f\u59cb\u6570\u636e",
+  "published": "2026-09-04T08:13:25+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.55,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ff2b9b41e89591245c1e",
+  "host": "bigquant.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "https://fto-2.gitbook.io/fto-indicators-docs/download-indicator-examples.md",
+  "url": "https://fto-2.gitbook.io/fto-indicators-docs/download-indicator-examples.md",
+  "published": "2026-09-04T08:13:26+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a39b4fe727984d147b2a",
+  "host": "fto-2.gitbook.io"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download Trader Workstation (TWS) | Interactive Brokers LLC",
+  "url": "https://www.interactivebrokers.com/en/trading/download-tws.php?menu=B",
+  "published": "2026-09-04T08:13:34+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.interactivebrokers.com/en/trading/download-tws.php",
+   "https://www.interactivebrokers.com/en/trading/download-tws.php?menu=B",
+   "https://download2.interactivebrokers.com/installers/tws/latest/tws-latest-macos-arm.dmg",
+   "https://download2.interactivebrokers.com/installers/tws/latest/tws-latest-macosx-x64.dmg",
+   "https://download2.interactivebrokers.com/installers/tws/latest/tws-latest-windows-x64.exe",
+   "https://download2.interactivebrokers.com/installers/tws/latest/tws-latest-linux-x64.sh",
+   "https://download2.interactivebrokers.com/installers/tws/stable/tws-stable-macos-arm.dmg",
+   "https://download2.interactivebrokers.com/installers/tws/stable/tws-stable-macosx-x64.dmg",
+   "https://download2.interactivebrokers.com/installers/tws/stable/tws-stable-windows-x64.exe",
+   "https://download2.interactivebrokers.com/installers/tws/stable/tws-stable-linux-x64.sh",
+   "https://download2.interactivebrokers.com/installers/tws/beta/tws-beta-macos-arm.dmg",
+   "https://download2.interactivebrokers.com/installers/tws/beta/tws-beta-macosx-x64.dmg",
+   "https://download2.interactivebrokers.com/installers/tws/beta/tws-beta-windows-x64.exe",
+   "https://download2.interactivebrokers.com/installers/tws/beta/tws-beta-linux-x64.sh",
+   "https://download2.interactivebrokers.com/installers/tws/latest-standalone/tws-latest-standalone-macos-arm.dmg",
+   "https://download2.interactivebrokers.com/installers/tws/latest-standalone/tws-latest-standalone-macosx-x64.dmg",
+   "https://download2.interactivebrokers.com/installers/tws/latest-standalone/tws-latest-standalone-windows-x64.exe",
+   "https://download2.interactivebrokers.com/installers/tws/latest-standalone/tws-latest-standalone-linux-x64.sh",
+   "https://download2.interactivebrokers.com/installers/tws/stable-standalone/tws-stable-standalone-macos-arm.dmg",
+   "https://download2.interactivebrokers.com/installers/tws/stable-standalone/tws-stable-standalone-macosx-x64.dmg",
+   "https://download2.interactivebrokers.com/installers/tws/stable-standalone/tws-stable-standalone-windows-x64.exe",
+   "https://download2.interactivebrokers.com/installers/tws/stable-standalone/tws-stable-standalone-linux-x64.sh"
+  ],
+  "n_endpoints": 22,
+  "vault_sha": "ba5d0dbacbfcac3352c2",
+  "host": "www.interactivebrokers.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u4e1c\u65b9\u8d22\u5bcc\u8bc1\u5238\uff1a\u7f51\u4e0a\u8425\u4e1a\u5385,\u80a1\u7968\u4ea4\u6613,\u80a1\u7968\u884c\u60c5,\u80a1\u7968\u5f00\u6237,\u57fa\u91d1\u7406\u8d22,\u7092\u80a1\u8f6f\u4ef6\u4e0b\u8f7d,\u5238\u5546,\u8bc1\u5238\u4ea4\u6613,\u8bc1\u5238\u516c\u53f8",
+  "url": "http://www.18.cn/personnelAnnouncement/zq",
+  "published": "2026-09-04T08:13:49+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [
+   "https://zqcdn.eastmoneysec.com.cn/secuweb-ssr-18/static/builds/meta/0566adbc-93cf-49be-8bc7-6a320b785825.json",
+   "http://www.18.cn/download"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "d6351618ff518a11b28f",
+  "host": "www.18.cn"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u4e1c\u65b9\u8d22\u5bcc\u8bc1\u5238\uff1a\u7f51\u4e0a\u8425\u4e1a\u5385,\u80a1\u7968\u4ea4\u6613,\u80a1\u7968\u884c\u60c5,\u80a1\u7968\u5f00\u6237,\u57fa\u91d1\u7406\u8d22,\u7092\u80a1\u8f6f\u4ef6\u4e0b\u8f7d,\u5238\u5546,\u8bc1\u5238\u4ea4\u6613,\u8bc1\u5238\u516c\u53f8",
+  "url": "http://www.18.cn/business/repurchase",
+  "published": "2026-09-04T08:13:51+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [
+   "https://zqcdn.eastmoneysec.com.cn/secuweb-ssr-18/static/builds/meta/0566adbc-93cf-49be-8bc7-6a320b785825.json",
+   "http://www.18.cn/download"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "5507a113dfe7547b9d34",
+  "host": "www.18.cn"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u4e1c\u65b9\u8d22\u5bcc\u8bc1\u5238\uff1a\u7f51\u4e0a\u8425\u4e1a\u5385,\u80a1\u7968\u4ea4\u6613,\u80a1\u7968\u884c\u60c5,\u80a1\u7968\u5f00\u6237,\u57fa\u91d1\u7406\u8d22,\u7092\u80a1\u8f6f\u4ef6\u4e0b\u8f7d,\u5238\u5546,\u8bc1\u5238\u4ea4\u6613,\u8bc1\u5238\u516c\u53f8",
+  "url": "http://www.18.cn/business/buyback",
+  "published": "2026-09-04T08:13:54+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [
+   "https://zqcdn.eastmoneysec.com.cn/secuweb-ssr-18/static/builds/meta/0566adbc-93cf-49be-8bc7-6a320b785825.json",
+   "http://www.18.cn/download"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "277851d27dd7b2783e97",
+  "host": "www.18.cn"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "IBKR BestX | Interactive Brokers LLC",
+  "url": "https://www.interactivebrokers.com/en/trading/bestx.php?menu=B",
+  "published": "2026-09-04T08:13:55+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.interactivebrokers.com/en/trading/download-tws.php?menu=B"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "fadd267527777774586e",
+  "host": "www.interactivebrokers.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Products ETF Trading | Interactive Brokers LLC",
+  "url": "https://www.interactivebrokers.com/en/trading/products-etfs.php?menu=B",
+  "published": "2026-09-04T08:13:59+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "carry",
+   "orderflow"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.interactivebrokers.com/en/trading/download-tws.php?menu=B"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "59c3d04e2453bb18e161",
+  "host": "www.interactivebrokers.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Investment Products Options Trading | Interactive Brokers LLC",
+  "url": "https://www.interactivebrokers.com/en/trading/products-options.php?menu=B",
+  "published": "2026-09-04T08:14:00+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.interactivebrokers.com/en/trading/download-tws.php?menu=B"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "a77cd411d3c9b68184fe",
+  "host": "www.interactivebrokers.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Futures Trading \u2013 Resources & Products from IBKR | Interactive Brokers LLC",
+  "url": "https://www.interactivebrokers.com/en/trading/products-futures.php?menu=B",
+  "published": "2026-09-04T08:14:02+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "carry",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.interactivebrokers.com/en/trading/download-tws.php?menu=B"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "2e75ee8103be1d474baa",
+  "host": "www.interactivebrokers.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Currency Trading | Interactive Brokers LLC",
+  "url": "https://www.interactivebrokers.com/en/trading/products-spot-currencies.php?menu=B",
+  "published": "2026-09-04T08:14:04+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.interactivebrokers.com/en/trading/download-tws.php?menu=B"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "458abf702cb88f807c4d",
+  "host": "www.interactivebrokers.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "QUANTITATIVE RESEARCH AND TRADING - The latest theories, models and investment strategies in quantitative research and trading",
+  "url": "http://jonathankinlay.com/",
+  "published": "2026-09-04T08:14:29+00:00",
+  "symbols": [
+   "NVIDIA"
+  ],
+  "timeframes": [
+   "1M",
+   "5M",
+   "D1",
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "carry",
+   "correlation",
+   "gap",
+   "mean_reversion",
+   "momentum",
+   "orderflow",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "8434003735aa72310713",
+  "host": "jonathankinlay.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Quant Mashup - Quantocracy",
+  "url": "http://www.quantocracy.com",
+  "published": "2026-09-04T08:14:31+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "carry",
+   "correlation",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "4cb2077e8dbfa1d5f419",
+  "host": "www.quantocracy.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Intelligent Trading",
+  "url": "http://intelligenttradingtech.blogspot.com/",
+  "published": "2026-09-04T08:14:43+00:00",
+  "symbols": [],
+  "timeframes": [
+   "D1",
+   "DAILY"
+  ],
+  "patterns": [
+   "gap"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [
+   "http://inside-r.org/r-doc/utils/read.csv",
+   "http://inside-r.org/r-doc/utils/write.csv"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "9523fbbdb74cbabe7a86",
+  "host": "intelligenttradingtech.blogspot.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Quantifiable Edges",
+  "url": "http://quantifiableedges.blogspot.com/",
+  "published": "2026-09-04T08:14:43+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "gap",
+   "seasonality"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "9aba48fe62e8bcb68414",
+  "host": "quantifiableedges.blogspot.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Coding the markets | Electronic trading in the fixed income markets",
+  "url": "http://etrading.wordpress.com/",
+  "published": "2026-09-04T08:15:49+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry",
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://github.com/SpreadServe/SSAddin/blob/master/xls/flight_bare_model2.xls",
+   "http://spreadserve.com/s3/downloads.html",
+   "http://sscalc0.online/flight_bare_model2.xls/MRR%20Export"
+  ],
+  "n_endpoints": 3,
+  "vault_sha": "e62ff6dd1857ab7b2b67",
+  "host": "etrading.wordpress.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Quantitative Finance Stack Exchange",
+  "url": "http://quant.stackexchange.com/",
+  "published": "2026-09-04T08:15:50+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b3fc8b7d96fb9e26802c",
+  "host": "quant.stackexchange.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "QUANTITATIVE RESEARCH AND TRADING - The latest theories, models and investment strategies in quantitative research and trading",
+  "url": "http://www.jonathankinlay.com/",
+  "published": "2026-09-04T08:15:52+00:00",
+  "symbols": [
+   "NVIDIA"
+  ],
+  "timeframes": [
+   "1M",
+   "5M",
+   "D1",
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "carry",
+   "correlation",
+   "gap",
+   "mean_reversion",
+   "momentum",
+   "orderflow",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "8434003735aa72310713",
+  "host": "www.jonathankinlay.com"
+ }
+]

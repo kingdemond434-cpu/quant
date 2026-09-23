@@ -94,10 +94,15 @@ except Exception as e:  # blind-except intentional (BLE001)
     print(f"    vitals unreadable: {e!r}")
 
 # 5 -- this session's builds, each must be reachable
+# THREE ENTRIES DROPPED 2026-09-05 (universe mandate): hedge_integrity (the spot-perp carry
+# invariant), collect_defi_lending (Aave/Compound/Morpho) and collect_oi_ls_live (Binance
+# open-interest and long/short ratios). All three modules are deleted, and a REACHABILITY list
+# naming an absent file reports UNREACHABLE forever about something that is not supposed to
+# exist -- which is the same crying-wolf failure this audit exists to surface, pointed inward.
 BUILT = ["experiment_registry", "research_exchange", "measurement_gate", "feature_library",
-         "leakage_detector", "execution_bottleneck", "hedge_integrity", "research_cio",
+         "leakage_detector", "execution_bottleneck", "research_cio",
          "data_vitals", "alpha_lifecycle", "dependency_graph", "knowledge_engine",
-         "module_justification", "kimi_hunter", "collect_defi_lending", "collect_oi_ls_live",
+         "module_justification", "kimi_hunter",
          "build_audit_shards", "coverage_audit"]
 print(f"\n  SESSION BUILDS -- reachability ({len(BUILT)} modules)")
 print(f"  {'module':<26}{'in cycle':>10}{'in cron':>9}{'artifact':>10}   reachable")

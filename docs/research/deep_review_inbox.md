@@ -1,6 +1,17 @@
 
 
 # DEEP REVIEW -- libs/execution/staging.py -- 2026-08-05T17:43:16.074843+00:00
+
+> **UNIVERSE RETARGETED 2026-08-18, header added 2026-09-05.** Reviews dated before 2026-08-18 examine money-path files of the retired crypto-exchange desk, several of which have since been deleted. The REVIEW METHOD is the desk's and transfers; the files it judged mostly do not.
+>
+> Nothing below is deleted: a row recording what was tried, graded or exhausted on the retired
+> desk is exactly the knowledge that stops a future session paying for the same thing twice. But
+> it is a RECORD, not a queue. Every new row runs against the MT5/Fusion Markets universe -- FX
+> majors/crosses/exotics, metals, equity indices, energy, softs, US share CFDs and the crypto CFDs
+> Fusion itself lists. **No crypto-exchange venue may be hunted, screened or scored again**
+> (`docs/LAWS.md` S1); crypto reference data is admissible only where a specific reading informs a
+> Fusion-executable instrument, never as a universe of its own.
+
 3/4 seats responded on the FREE roster. RISK-PATH depth pass (LIVE_CONNECTOR_SPEC section 7 bar). Triage per panel protocol: verify every claim against the code; consensus = high prior; record each accepted finding via scripts/track_findings.py so it cannot be silently dropped.
 
 ## nvidia/nemotron-3-ultra-550b-a55b:free
@@ -2575,3 +2586,303 @@ The **most dangerous defect** is the **silent swallowing of order‑placement er
 The **second‑most critical** issue is the **disarmed‑live false negative**, where the rail pages but never fires, again leaving the book open while the ruin threshold is breached.  
 
 Both must be patched before any production deployment; the other findings are secondary but still warrant attention.
+
+
+# DEEP REVIEW -- desks/mt5/mt5desk/sizing.py -- 2026-08-30T03:50:08.496420+00:00
+0/13 seats responded on the PAID roster. RISK-PATH depth pass (LIVE_CONNECTOR_SPEC section 7 bar). Triage per panel protocol: verify every claim against the code; consensus = high prior; record each accepted finding via scripts/track_findings.py so it cannot be silently dropped.
+
+
+# DEEP REVIEW -- desks/mt5/mt5desk/account_profile.py -- 2026-08-30T03:50:08.496420+00:00
+0/13 seats responded on the PAID roster. RISK-PATH depth pass (LIVE_CONNECTOR_SPEC section 7 bar). Triage per panel protocol: verify every claim against the code; consensus = high prior; record each accepted finding via scripts/track_findings.py so it cannot be silently dropped.
+
+
+# DEEP REVIEW -- desks/mt5/mt5desk/engine.py -- 2026-08-30T03:50:08.496420+00:00
+0/13 seats responded on the PAID roster. RISK-PATH depth pass (LIVE_CONNECTOR_SPEC section 7 bar). Triage per panel protocol: verify every claim against the code; consensus = high prior; record each accepted finding via scripts/track_findings.py so it cannot be silently dropped.
+
+
+# DEEP REVIEW -- desks/mt5/mt5desk/financing.py -- 2026-08-30T03:50:08.496420+00:00
+0/13 seats responded on the PAID roster. RISK-PATH depth pass (LIVE_CONNECTOR_SPEC section 7 bar). Triage per panel protocol: verify every claim against the code; consensus = high prior; record each accepted finding via scripts/track_findings.py so it cannot be silently dropped.
+
+
+# DEEP REVIEW -- desks/mt5/research/shadow_forward.py -- 2026-08-30T03:50:08.496420+00:00
+0/13 seats responded on the PAID roster. RISK-PATH depth pass (LIVE_CONNECTOR_SPEC section 7 bar). Triage per panel protocol: verify every claim against the code; consensus = high prior; record each accepted finding via scripts/track_findings.py so it cannot be silently dropped.
+
+
+# DEEP REVIEW -- desks/mt5/mt5desk/sizing.py -- 2026-08-31T07:50:51.463662+00:00
+0/13 seats responded on the PAID roster. RISK-PATH depth pass (LIVE_CONNECTOR_SPEC section 7 bar). Triage per panel protocol: verify every claim against the code; consensus = high prior; record each accepted finding via scripts/track_findings.py so it cannot be silently dropped.
+
+
+# DEEP REVIEW -- desks/mt5/mt5desk/account_profile.py -- 2026-08-31T07:50:51.463662+00:00
+0/13 seats responded on the PAID roster. RISK-PATH depth pass (LIVE_CONNECTOR_SPEC section 7 bar). Triage per panel protocol: verify every claim against the code; consensus = high prior; record each accepted finding via scripts/track_findings.py so it cannot be silently dropped.
+
+
+# DEEP REVIEW -- desks/mt5/mt5desk/engine.py -- 2026-08-31T07:50:51.463662+00:00
+0/13 seats responded on the PAID roster. RISK-PATH depth pass (LIVE_CONNECTOR_SPEC section 7 bar). Triage per panel protocol: verify every claim against the code; consensus = high prior; record each accepted finding via scripts/track_findings.py so it cannot be silently dropped.
+
+
+# DEEP REVIEW -- desks/mt5/mt5desk/financing.py -- 2026-08-31T07:50:51.463662+00:00
+0/13 seats responded on the PAID roster. RISK-PATH depth pass (LIVE_CONNECTOR_SPEC section 7 bar). Triage per panel protocol: verify every claim against the code; consensus = high prior; record each accepted finding via scripts/track_findings.py so it cannot be silently dropped.
+
+
+# DEEP REVIEW -- desks/mt5/research/shadow_forward.py -- 2026-08-31T07:50:51.463662+00:00
+0/13 seats responded on the PAID roster. RISK-PATH depth pass (LIVE_CONNECTOR_SPEC section 7 bar). Triage per panel protocol: verify every claim against the code; consensus = high prior; record each accepted finding via scripts/track_findings.py so it cannot be silently dropped.
+
+
+# DEEP REVIEW -- desks/mt5/mt5desk/sizing.py -- 2026-08-31T11:54:53.580391+00:00
+0/13 seats responded on the PAID roster. RISK-PATH depth pass (LIVE_CONNECTOR_SPEC section 7 bar). Triage per panel protocol: verify every claim against the code; consensus = high prior; record each accepted finding via scripts/track_findings.py so it cannot be silently dropped.
+
+
+# DEEP REVIEW -- desks/mt5/mt5desk/account_profile.py -- 2026-08-31T11:54:53.580391+00:00
+0/13 seats responded on the PAID roster. RISK-PATH depth pass (LIVE_CONNECTOR_SPEC section 7 bar). Triage per panel protocol: verify every claim against the code; consensus = high prior; record each accepted finding via scripts/track_findings.py so it cannot be silently dropped.
+
+
+# DEEP REVIEW -- desks/mt5/mt5desk/engine.py -- 2026-08-31T11:54:53.580391+00:00
+0/13 seats responded on the PAID roster. RISK-PATH depth pass (LIVE_CONNECTOR_SPEC section 7 bar). Triage per panel protocol: verify every claim against the code; consensus = high prior; record each accepted finding via scripts/track_findings.py so it cannot be silently dropped.
+
+
+# DEEP REVIEW -- desks/mt5/mt5desk/financing.py -- 2026-08-31T11:54:53.580391+00:00
+0/13 seats responded on the PAID roster. RISK-PATH depth pass (LIVE_CONNECTOR_SPEC section 7 bar). Triage per panel protocol: verify every claim against the code; consensus = high prior; record each accepted finding via scripts/track_findings.py so it cannot be silently dropped.
+
+
+# DEEP REVIEW -- desks/mt5/research/shadow_forward.py -- 2026-08-31T11:54:53.580391+00:00
+0/13 seats responded on the PAID roster. RISK-PATH depth pass (LIVE_CONNECTOR_SPEC section 7 bar). Triage per panel protocol: verify every claim against the code; consensus = high prior; record each accepted finding via scripts/track_findings.py so it cannot be silently dropped.
+
+
+# DEEP REVIEW -- desks/mt5/mt5desk/sizing.py -- 2026-08-31T15:49:21.474525+00:00
+0/13 seats responded on the PAID roster. RISK-PATH depth pass (LIVE_CONNECTOR_SPEC section 7 bar). Triage per panel protocol: verify every claim against the code; consensus = high prior; record each accepted finding via scripts/track_findings.py so it cannot be silently dropped.
+
+
+# DEEP REVIEW -- desks/mt5/mt5desk/account_profile.py -- 2026-08-31T15:49:21.474525+00:00
+0/13 seats responded on the PAID roster. RISK-PATH depth pass (LIVE_CONNECTOR_SPEC section 7 bar). Triage per panel protocol: verify every claim against the code; consensus = high prior; record each accepted finding via scripts/track_findings.py so it cannot be silently dropped.
+
+
+# DEEP REVIEW -- desks/mt5/mt5desk/engine.py -- 2026-08-31T15:49:21.474525+00:00
+0/13 seats responded on the PAID roster. RISK-PATH depth pass (LIVE_CONNECTOR_SPEC section 7 bar). Triage per panel protocol: verify every claim against the code; consensus = high prior; record each accepted finding via scripts/track_findings.py so it cannot be silently dropped.
+
+
+# DEEP REVIEW -- desks/mt5/mt5desk/financing.py -- 2026-08-31T15:49:21.474525+00:00
+0/13 seats responded on the PAID roster. RISK-PATH depth pass (LIVE_CONNECTOR_SPEC section 7 bar). Triage per panel protocol: verify every claim against the code; consensus = high prior; record each accepted finding via scripts/track_findings.py so it cannot be silently dropped.
+
+
+# DEEP REVIEW -- desks/mt5/research/shadow_forward.py -- 2026-08-31T15:49:21.474525+00:00
+0/13 seats responded on the PAID roster. RISK-PATH depth pass (LIVE_CONNECTOR_SPEC section 7 bar). Triage per panel protocol: verify every claim against the code; consensus = high prior; record each accepted finding via scripts/track_findings.py so it cannot be silently dropped.
+
+
+# DEEP REVIEW -- desks/mt5/mt5desk/sizing.py -- 2026-08-31T19:57:43.880711+00:00
+0/13 seats responded on the PAID roster. RISK-PATH depth pass (LIVE_CONNECTOR_SPEC section 7 bar). Triage per panel protocol: verify every claim against the code; consensus = high prior; record each accepted finding via scripts/track_findings.py so it cannot be silently dropped.
+
+
+# DEEP REVIEW -- desks/mt5/mt5desk/account_profile.py -- 2026-08-31T19:57:43.880711+00:00
+0/13 seats responded on the PAID roster. RISK-PATH depth pass (LIVE_CONNECTOR_SPEC section 7 bar). Triage per panel protocol: verify every claim against the code; consensus = high prior; record each accepted finding via scripts/track_findings.py so it cannot be silently dropped.
+
+
+# DEEP REVIEW -- desks/mt5/mt5desk/engine.py -- 2026-08-31T19:57:43.880711+00:00
+0/13 seats responded on the PAID roster. RISK-PATH depth pass (LIVE_CONNECTOR_SPEC section 7 bar). Triage per panel protocol: verify every claim against the code; consensus = high prior; record each accepted finding via scripts/track_findings.py so it cannot be silently dropped.
+
+
+# DEEP REVIEW -- desks/mt5/mt5desk/financing.py -- 2026-08-31T19:57:43.880711+00:00
+0/13 seats responded on the PAID roster. RISK-PATH depth pass (LIVE_CONNECTOR_SPEC section 7 bar). Triage per panel protocol: verify every claim against the code; consensus = high prior; record each accepted finding via scripts/track_findings.py so it cannot be silently dropped.
+
+
+# DEEP REVIEW -- desks/mt5/research/shadow_forward.py -- 2026-08-31T19:57:43.880711+00:00
+0/13 seats responded on the PAID roster. RISK-PATH depth pass (LIVE_CONNECTOR_SPEC section 7 bar). Triage per panel protocol: verify every claim against the code; consensus = high prior; record each accepted finding via scripts/track_findings.py so it cannot be silently dropped.
+
+
+# DEEP REVIEW -- desks/mt5/mt5desk/sizing.py -- 2026-09-01T23:57:18.644237+00:00
+0/13 seats responded on the PAID roster. RISK-PATH depth pass (LIVE_CONNECTOR_SPEC section 7 bar). Triage per panel protocol: verify every claim against the code; consensus = high prior; record each accepted finding via scripts/track_findings.py so it cannot be silently dropped.
+
+
+# DEEP REVIEW -- desks/mt5/mt5desk/account_profile.py -- 2026-09-01T23:57:18.644237+00:00
+0/13 seats responded on the PAID roster. RISK-PATH depth pass (LIVE_CONNECTOR_SPEC section 7 bar). Triage per panel protocol: verify every claim against the code; consensus = high prior; record each accepted finding via scripts/track_findings.py so it cannot be silently dropped.
+
+
+# DEEP REVIEW -- desks/mt5/mt5desk/engine.py -- 2026-09-01T23:57:18.644237+00:00
+0/13 seats responded on the PAID roster. RISK-PATH depth pass (LIVE_CONNECTOR_SPEC section 7 bar). Triage per panel protocol: verify every claim against the code; consensus = high prior; record each accepted finding via scripts/track_findings.py so it cannot be silently dropped.
+
+
+# DEEP REVIEW -- desks/mt5/mt5desk/financing.py -- 2026-09-01T23:57:18.644237+00:00
+0/13 seats responded on the PAID roster. RISK-PATH depth pass (LIVE_CONNECTOR_SPEC section 7 bar). Triage per panel protocol: verify every claim against the code; consensus = high prior; record each accepted finding via scripts/track_findings.py so it cannot be silently dropped.
+
+
+# DEEP REVIEW -- desks/mt5/research/shadow_forward.py -- 2026-09-01T23:57:18.644237+00:00
+0/13 seats responded on the PAID roster. RISK-PATH depth pass (LIVE_CONNECTOR_SPEC section 7 bar). Triage per panel protocol: verify every claim against the code; consensus = high prior; record each accepted finding via scripts/track_findings.py so it cannot be silently dropped.
+
+
+# DEEP REVIEW -- desks/mt5/mt5desk/sizing.py -- 2026-09-02T11:55:20.103008+00:00
+0/13 seats responded on the PAID roster. RISK-PATH depth pass (LIVE_CONNECTOR_SPEC section 7 bar). Triage per panel protocol: verify every claim against the code; consensus = high prior; record each accepted finding via scripts/track_findings.py so it cannot be silently dropped.
+
+
+# DEEP REVIEW -- desks/mt5/mt5desk/account_profile.py -- 2026-09-02T11:55:20.103008+00:00
+0/13 seats responded on the PAID roster. RISK-PATH depth pass (LIVE_CONNECTOR_SPEC section 7 bar). Triage per panel protocol: verify every claim against the code; consensus = high prior; record each accepted finding via scripts/track_findings.py so it cannot be silently dropped.
+
+
+# DEEP REVIEW -- desks/mt5/mt5desk/engine.py -- 2026-09-02T11:55:20.103008+00:00
+0/13 seats responded on the PAID roster. RISK-PATH depth pass (LIVE_CONNECTOR_SPEC section 7 bar). Triage per panel protocol: verify every claim against the code; consensus = high prior; record each accepted finding via scripts/track_findings.py so it cannot be silently dropped.
+
+
+# DEEP REVIEW -- desks/mt5/mt5desk/financing.py -- 2026-09-02T11:55:20.103008+00:00
+0/13 seats responded on the PAID roster. RISK-PATH depth pass (LIVE_CONNECTOR_SPEC section 7 bar). Triage per panel protocol: verify every claim against the code; consensus = high prior; record each accepted finding via scripts/track_findings.py so it cannot be silently dropped.
+
+
+# DEEP REVIEW -- desks/mt5/research/shadow_forward.py -- 2026-09-02T11:55:20.103008+00:00
+0/13 seats responded on the PAID roster. RISK-PATH depth pass (LIVE_CONNECTOR_SPEC section 7 bar). Triage per panel protocol: verify every claim against the code; consensus = high prior; record each accepted finding via scripts/track_findings.py so it cannot be silently dropped.
+
+
+# DEEP REVIEW -- desks/mt5/mt5desk/sizing.py -- 2026-09-02T15:56:06.159642+00:00
+0/13 seats responded on the PAID roster. RISK-PATH depth pass (LIVE_CONNECTOR_SPEC section 7 bar). Triage per panel protocol: verify every claim against the code; consensus = high prior; record each accepted finding via scripts/track_findings.py so it cannot be silently dropped.
+
+
+# DEEP REVIEW -- desks/mt5/mt5desk/account_profile.py -- 2026-09-02T15:56:06.159642+00:00
+0/13 seats responded on the PAID roster. RISK-PATH depth pass (LIVE_CONNECTOR_SPEC section 7 bar). Triage per panel protocol: verify every claim against the code; consensus = high prior; record each accepted finding via scripts/track_findings.py so it cannot be silently dropped.
+
+
+# DEEP REVIEW -- desks/mt5/mt5desk/engine.py -- 2026-09-02T15:56:06.159642+00:00
+0/13 seats responded on the PAID roster. RISK-PATH depth pass (LIVE_CONNECTOR_SPEC section 7 bar). Triage per panel protocol: verify every claim against the code; consensus = high prior; record each accepted finding via scripts/track_findings.py so it cannot be silently dropped.
+
+
+# DEEP REVIEW -- desks/mt5/mt5desk/financing.py -- 2026-09-02T15:56:06.159642+00:00
+0/13 seats responded on the PAID roster. RISK-PATH depth pass (LIVE_CONNECTOR_SPEC section 7 bar). Triage per panel protocol: verify every claim against the code; consensus = high prior; record each accepted finding via scripts/track_findings.py so it cannot be silently dropped.
+
+
+# DEEP REVIEW -- desks/mt5/research/shadow_forward.py -- 2026-09-02T15:56:06.159642+00:00
+0/13 seats responded on the PAID roster. RISK-PATH depth pass (LIVE_CONNECTOR_SPEC section 7 bar). Triage per panel protocol: verify every claim against the code; consensus = high prior; record each accepted finding via scripts/track_findings.py so it cannot be silently dropped.
+
+
+# DEEP REVIEW -- desks/mt5/mt5desk/sizing.py -- 2026-09-02T19:50:08.268649+00:00
+0/13 seats responded on the PAID roster. RISK-PATH depth pass (LIVE_CONNECTOR_SPEC section 7 bar). Triage per panel protocol: verify every claim against the code; consensus = high prior; record each accepted finding via scripts/track_findings.py so it cannot be silently dropped.
+
+
+# DEEP REVIEW -- desks/mt5/mt5desk/account_profile.py -- 2026-09-02T19:50:08.268649+00:00
+0/13 seats responded on the PAID roster. RISK-PATH depth pass (LIVE_CONNECTOR_SPEC section 7 bar). Triage per panel protocol: verify every claim against the code; consensus = high prior; record each accepted finding via scripts/track_findings.py so it cannot be silently dropped.
+
+
+# DEEP REVIEW -- desks/mt5/mt5desk/engine.py -- 2026-09-02T19:50:08.268649+00:00
+0/13 seats responded on the PAID roster. RISK-PATH depth pass (LIVE_CONNECTOR_SPEC section 7 bar). Triage per panel protocol: verify every claim against the code; consensus = high prior; record each accepted finding via scripts/track_findings.py so it cannot be silently dropped.
+
+
+# DEEP REVIEW -- desks/mt5/mt5desk/financing.py -- 2026-09-02T19:50:08.268649+00:00
+0/13 seats responded on the PAID roster. RISK-PATH depth pass (LIVE_CONNECTOR_SPEC section 7 bar). Triage per panel protocol: verify every claim against the code; consensus = high prior; record each accepted finding via scripts/track_findings.py so it cannot be silently dropped.
+
+
+# DEEP REVIEW -- desks/mt5/research/shadow_forward.py -- 2026-09-02T19:50:08.268649+00:00
+0/13 seats responded on the PAID roster. RISK-PATH depth pass (LIVE_CONNECTOR_SPEC section 7 bar). Triage per panel protocol: verify every claim against the code; consensus = high prior; record each accepted finding via scripts/track_findings.py so it cannot be silently dropped.
+
+
+# DEEP REVIEW -- desks/mt5/mt5desk/sizing.py -- 2026-09-03T07:54:36.931355+00:00
+0/13 seats responded on the PAID roster. RISK-PATH depth pass (LIVE_CONNECTOR_SPEC section 7 bar). Triage per panel protocol: verify every claim against the code; consensus = high prior; record each accepted finding via scripts/track_findings.py so it cannot be silently dropped.
+
+
+# DEEP REVIEW -- desks/mt5/mt5desk/account_profile.py -- 2026-09-03T07:54:36.931355+00:00
+0/13 seats responded on the PAID roster. RISK-PATH depth pass (LIVE_CONNECTOR_SPEC section 7 bar). Triage per panel protocol: verify every claim against the code; consensus = high prior; record each accepted finding via scripts/track_findings.py so it cannot be silently dropped.
+
+
+# DEEP REVIEW -- desks/mt5/mt5desk/engine.py -- 2026-09-03T07:54:36.931355+00:00
+0/13 seats responded on the PAID roster. RISK-PATH depth pass (LIVE_CONNECTOR_SPEC section 7 bar). Triage per panel protocol: verify every claim against the code; consensus = high prior; record each accepted finding via scripts/track_findings.py so it cannot be silently dropped.
+
+
+# DEEP REVIEW -- desks/mt5/mt5desk/financing.py -- 2026-09-03T07:54:36.931355+00:00
+0/13 seats responded on the PAID roster. RISK-PATH depth pass (LIVE_CONNECTOR_SPEC section 7 bar). Triage per panel protocol: verify every claim against the code; consensus = high prior; record each accepted finding via scripts/track_findings.py so it cannot be silently dropped.
+
+
+# DEEP REVIEW -- desks/mt5/research/shadow_forward.py -- 2026-09-03T07:54:36.931355+00:00
+0/13 seats responded on the PAID roster. RISK-PATH depth pass (LIVE_CONNECTOR_SPEC section 7 bar). Triage per panel protocol: verify every claim against the code; consensus = high prior; record each accepted finding via scripts/track_findings.py so it cannot be silently dropped.
+
+
+# DEEP REVIEW -- desks/mt5/mt5desk/sizing.py -- 2026-09-03T11:55:32.281977+00:00
+0/13 seats responded on the PAID roster. RISK-PATH depth pass (LIVE_CONNECTOR_SPEC section 7 bar). Triage per panel protocol: verify every claim against the code; consensus = high prior; record each accepted finding via scripts/track_findings.py so it cannot be silently dropped.
+
+
+# DEEP REVIEW -- desks/mt5/mt5desk/account_profile.py -- 2026-09-03T11:55:32.281977+00:00
+0/13 seats responded on the PAID roster. RISK-PATH depth pass (LIVE_CONNECTOR_SPEC section 7 bar). Triage per panel protocol: verify every claim against the code; consensus = high prior; record each accepted finding via scripts/track_findings.py so it cannot be silently dropped.
+
+
+# DEEP REVIEW -- desks/mt5/mt5desk/engine.py -- 2026-09-03T11:55:32.281977+00:00
+0/13 seats responded on the PAID roster. RISK-PATH depth pass (LIVE_CONNECTOR_SPEC section 7 bar). Triage per panel protocol: verify every claim against the code; consensus = high prior; record each accepted finding via scripts/track_findings.py so it cannot be silently dropped.
+
+
+# DEEP REVIEW -- desks/mt5/mt5desk/financing.py -- 2026-09-03T11:55:32.281977+00:00
+0/13 seats responded on the PAID roster. RISK-PATH depth pass (LIVE_CONNECTOR_SPEC section 7 bar). Triage per panel protocol: verify every claim against the code; consensus = high prior; record each accepted finding via scripts/track_findings.py so it cannot be silently dropped.
+
+
+# DEEP REVIEW -- desks/mt5/research/shadow_forward.py -- 2026-09-03T11:55:32.281977+00:00
+0/13 seats responded on the PAID roster. RISK-PATH depth pass (LIVE_CONNECTOR_SPEC section 7 bar). Triage per panel protocol: verify every claim against the code; consensus = high prior; record each accepted finding via scripts/track_findings.py so it cannot be silently dropped.
+
+
+# DEEP REVIEW -- desks/mt5/mt5desk/sizing.py -- 2026-09-03T19:49:10.199022+00:00
+0/13 seats responded on the PAID roster. RISK-PATH depth pass (LIVE_CONNECTOR_SPEC section 7 bar). Triage per panel protocol: verify every claim against the code; consensus = high prior; record each accepted finding via scripts/track_findings.py so it cannot be silently dropped.
+
+
+# DEEP REVIEW -- desks/mt5/mt5desk/account_profile.py -- 2026-09-03T19:49:10.199022+00:00
+0/13 seats responded on the PAID roster. RISK-PATH depth pass (LIVE_CONNECTOR_SPEC section 7 bar). Triage per panel protocol: verify every claim against the code; consensus = high prior; record each accepted finding via scripts/track_findings.py so it cannot be silently dropped.
+
+
+# DEEP REVIEW -- desks/mt5/mt5desk/engine.py -- 2026-09-03T19:49:10.199022+00:00
+0/13 seats responded on the PAID roster. RISK-PATH depth pass (LIVE_CONNECTOR_SPEC section 7 bar). Triage per panel protocol: verify every claim against the code; consensus = high prior; record each accepted finding via scripts/track_findings.py so it cannot be silently dropped.
+
+
+# DEEP REVIEW -- desks/mt5/mt5desk/financing.py -- 2026-09-03T19:49:10.199022+00:00
+0/13 seats responded on the PAID roster. RISK-PATH depth pass (LIVE_CONNECTOR_SPEC section 7 bar). Triage per panel protocol: verify every claim against the code; consensus = high prior; record each accepted finding via scripts/track_findings.py so it cannot be silently dropped.
+
+
+# DEEP REVIEW -- desks/mt5/research/shadow_forward.py -- 2026-09-03T19:49:10.199022+00:00
+0/13 seats responded on the PAID roster. RISK-PATH depth pass (LIVE_CONNECTOR_SPEC section 7 bar). Triage per panel protocol: verify every claim against the code; consensus = high prior; record each accepted finding via scripts/track_findings.py so it cannot be silently dropped.
+
+
+# DEEP REVIEW -- desks/mt5/mt5desk/sizing.py -- 2026-09-03T23:58:03.100570+00:00
+0/13 seats responded on the PAID roster. RISK-PATH depth pass (LIVE_CONNECTOR_SPEC section 7 bar). Triage per panel protocol: verify every claim against the code; consensus = high prior; record each accepted finding via scripts/track_findings.py so it cannot be silently dropped.
+
+
+# DEEP REVIEW -- desks/mt5/mt5desk/account_profile.py -- 2026-09-03T23:58:03.100570+00:00
+0/13 seats responded on the PAID roster. RISK-PATH depth pass (LIVE_CONNECTOR_SPEC section 7 bar). Triage per panel protocol: verify every claim against the code; consensus = high prior; record each accepted finding via scripts/track_findings.py so it cannot be silently dropped.
+
+
+# DEEP REVIEW -- desks/mt5/mt5desk/engine.py -- 2026-09-03T23:58:03.100570+00:00
+0/13 seats responded on the PAID roster. RISK-PATH depth pass (LIVE_CONNECTOR_SPEC section 7 bar). Triage per panel protocol: verify every claim against the code; consensus = high prior; record each accepted finding via scripts/track_findings.py so it cannot be silently dropped.
+
+
+# DEEP REVIEW -- desks/mt5/mt5desk/financing.py -- 2026-09-03T23:58:03.100570+00:00
+0/13 seats responded on the PAID roster. RISK-PATH depth pass (LIVE_CONNECTOR_SPEC section 7 bar). Triage per panel protocol: verify every claim against the code; consensus = high prior; record each accepted finding via scripts/track_findings.py so it cannot be silently dropped.
+
+
+# DEEP REVIEW -- desks/mt5/research/shadow_forward.py -- 2026-09-03T23:58:03.100570+00:00
+0/13 seats responded on the PAID roster. RISK-PATH depth pass (LIVE_CONNECTOR_SPEC section 7 bar). Triage per panel protocol: verify every claim against the code; consensus = high prior; record each accepted finding via scripts/track_findings.py so it cannot be silently dropped.
+
+
+# DEEP REVIEW -- desks/mt5/mt5desk/sizing.py -- 2026-09-04T07:55:15.680866+00:00
+0/13 seats responded on the PAID roster. RISK-PATH depth pass (LIVE_CONNECTOR_SPEC section 7 bar). Triage per panel protocol: verify every claim against the code; consensus = high prior; record each accepted finding via scripts/track_findings.py so it cannot be silently dropped.
+
+
+# DEEP REVIEW -- desks/mt5/mt5desk/account_profile.py -- 2026-09-04T07:55:15.680866+00:00
+0/13 seats responded on the PAID roster. RISK-PATH depth pass (LIVE_CONNECTOR_SPEC section 7 bar). Triage per panel protocol: verify every claim against the code; consensus = high prior; record each accepted finding via scripts/track_findings.py so it cannot be silently dropped.
+
+
+# DEEP REVIEW -- desks/mt5/mt5desk/engine.py -- 2026-09-04T07:55:15.680866+00:00
+0/13 seats responded on the PAID roster. RISK-PATH depth pass (LIVE_CONNECTOR_SPEC section 7 bar). Triage per panel protocol: verify every claim against the code; consensus = high prior; record each accepted finding via scripts/track_findings.py so it cannot be silently dropped.
+
+
+# DEEP REVIEW -- desks/mt5/mt5desk/financing.py -- 2026-09-04T07:55:15.680866+00:00
+0/13 seats responded on the PAID roster. RISK-PATH depth pass (LIVE_CONNECTOR_SPEC section 7 bar). Triage per panel protocol: verify every claim against the code; consensus = high prior; record each accepted finding via scripts/track_findings.py so it cannot be silently dropped.
+
+
+# DEEP REVIEW -- desks/mt5/research/shadow_forward.py -- 2026-09-04T07:55:15.680866+00:00
+0/13 seats responded on the PAID roster. RISK-PATH depth pass (LIVE_CONNECTOR_SPEC section 7 bar). Triage per panel protocol: verify every claim against the code; consensus = high prior; record each accepted finding via scripts/track_findings.py so it cannot be silently dropped.
+
+
+# DEEP REVIEW -- desks/mt5/mt5desk/sizing.py -- 2026-09-04T11:53:21.395968+00:00
+0/13 seats responded on the PAID roster. RISK-PATH depth pass (LIVE_CONNECTOR_SPEC section 7 bar). Triage per panel protocol: verify every claim against the code; consensus = high prior; record each accepted finding via scripts/track_findings.py so it cannot be silently dropped.
+
+
+# DEEP REVIEW -- desks/mt5/mt5desk/account_profile.py -- 2026-09-04T11:53:21.395968+00:00
+0/13 seats responded on the PAID roster. RISK-PATH depth pass (LIVE_CONNECTOR_SPEC section 7 bar). Triage per panel protocol: verify every claim against the code; consensus = high prior; record each accepted finding via scripts/track_findings.py so it cannot be silently dropped.
+
+
+# DEEP REVIEW -- desks/mt5/mt5desk/engine.py -- 2026-09-04T11:53:21.395968+00:00
+0/13 seats responded on the PAID roster. RISK-PATH depth pass (LIVE_CONNECTOR_SPEC section 7 bar). Triage per panel protocol: verify every claim against the code; consensus = high prior; record each accepted finding via scripts/track_findings.py so it cannot be silently dropped.
+
+
+# DEEP REVIEW -- desks/mt5/mt5desk/financing.py -- 2026-09-04T11:53:21.395968+00:00
+0/13 seats responded on the PAID roster. RISK-PATH depth pass (LIVE_CONNECTOR_SPEC section 7 bar). Triage per panel protocol: verify every claim against the code; consensus = high prior; record each accepted finding via scripts/track_findings.py so it cannot be silently dropped.
+
+
+# DEEP REVIEW -- desks/mt5/research/shadow_forward.py -- 2026-09-04T11:53:21.395968+00:00
+0/13 seats responded on the PAID roster. RISK-PATH depth pass (LIVE_CONNECTOR_SPEC section 7 bar). Triage per panel protocol: verify every claim against the code; consensus = high prior; record each accepted finding via scripts/track_findings.py so it cannot be silently dropped.

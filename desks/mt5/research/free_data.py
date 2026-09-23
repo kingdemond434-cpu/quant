@@ -3,7 +3,6 @@
 Sources (all lawful, public, first-party):
   - FRED / ALFRED fredgraph.csv (rates, policy, macro, gold, oil, DXY, VIX)
     vintage_date param => point-in-time history (no API key needed)
-  - Deribit public REST (crypto options implied vols; no key)
   - Yahoo Finance via yfinance (DXY, VIX, TNX, GC=F, CL=F, indices; no key)
   - Official government RSS feeds (Fed, BLS, ...; parsed with stdlib)
   - GitHub search + Reddit JSON (crowding/adoption proxies; no key)
@@ -18,10 +17,10 @@ import csv
 import io
 import json
 import time
-import urllib.request
 import urllib.parse
+import urllib.request
 import xml.etree.ElementTree as ET
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 BASE = Path(__file__).resolve().parent.parent
@@ -97,9 +96,33 @@ def fred_series(series_id: str, start: str = "2010-01-01",
         if len(out) > 30:
             _cache_put(key, out)
             return out
-        return None
+        return _fred_alternate(series_id, vintage, key)
     except Exception:
-        return None
+        # A BLOCKED PRIMARY MUST NOT STARVE THE FAMILY (2026-08-27: FRED timed out for days,
+        # macro_state went 5 days stale, and macro_conditional produced zero signals on 297
+        # straight sweep passes while the staleness read as quiet ground). The alternate route
+        # registry (scripts/data_alternates) serves the same series from the DBnomics mirror,
+        # with provenance recorded -- a switched source is a fact, never a silent substitution.
+        return _fred_alternate(series_id, vintage, key)
+
+
+def _fred_alternate(series_id: str, vintage: str | None, cache_key: str):
+    if vintage:
+        return None          # point-in-time vintages exist only at ALFRED; never fake one
+    try:
+        import sys as _sys
+        _root = str(Path(__file__).resolve().parents[3] / "scripts")
+        if _root not in _sys.path:
+            _sys.path.insert(0, _root)
+        from data_alternates import dbnomics_route
+        out = dbnomics_route(series_id)
+        if len(out) > 30:
+            _cache_put(cache_key, out)
+            print(f"free_data: {series_id} served by DBNOMICS mirror (primary blocked)")
+            return out
+    except Exception:
+        pass
+    return None
 
 
 def fred_vintage_series(series_id: str, vintage_dates: list[str],
@@ -111,47 +134,6 @@ def fred_vintage_series(series_id: str, vintage_dates: list[str],
         if s:
             out[vd] = s
     return out
-
-
-# ------------------------------------------------------------- DERIBIT ----
-def deribit_book_summary(currency: str = "BTC") -> list[dict] | None:
-    """All option contracts with mark_iv for a currency (one public call)."""
-    url = (f"https://www.deribit.com/api/v2/public/get_book_summary_by_currency"
-           f"?currency={currency}&kind=option")
-    key = f"deribit_{currency}"
-    hit = _cache_get(key)
-    if hit:
-        return hit
-    try:
-        data = json.loads(_get(url))
-        res = data.get("result", []) if data.get("result") is not None else []
-        if res:
-            _cache_put(key, res)
-        return res
-    except Exception:
-        return None
-
-
-def deribit_index(currency: str = "BTC") -> float | None:
-    try:
-        url = f"https://www.deribit.com/api/v2/public/get_index_price?index_name={currency.lower()}_usd"
-        data = json.loads(_get(url))
-        return float(data["result"]["index_price"])
-    except Exception:
-        return None
-
-
-def deribit_vol_index(currency: str = "BTC") -> float | None:
-    try:
-        url = (f"https://www.deribit.com/api/v2/public/get_volatility_index_data"
-               f"?currency={currency}&start_timestamp=0&end_timestamp=9999999999999&resolution=3600")
-        data = json.loads(_get(url))
-        rows = data.get("result", {}).get("data", [])
-        if rows:
-            return float(rows[-1][1]) / 100.0
-        return None
-    except Exception:
-        return None
 
 
 # ---------------------------------------------------------------- YAHOO ----
@@ -182,7 +164,7 @@ def yahoo_daily(ticker: str) -> dict[str, float] | None:
         for t, c in zip(ts, closes):
             if c is None:
                 continue
-            d = datetime.fromtimestamp(int(t), tz=timezone.utc).date().isoformat()
+            d = datetime.fromtimestamp(int(t), tz=UTC).date().isoformat()
             out[d] = float(c)
         if len(out) > 60:
             _cache_put(key, out)
@@ -227,7 +209,7 @@ def rss_fetch(url: str) -> list[dict]:
 # -------------------------------------------------------- CROWDING (free) --
 GITHUB_QUERIES = [
     "quant trading strategy", "trading bot forex", "gold trading algorithm",
-    "crypto options implied volatility", "mean reversion forex", "breakout trading",
+    "mean reversion forex", "breakout trading", "xauusd strategy",
 ]
 
 
@@ -261,4 +243,4 @@ def reddit_hot(subreddit: str = "algotrading", limit: int = 25) -> list[dict]:
 
 
 def now_iso() -> str:
-    return datetime.now(timezone.utc).isoformat()
+    return datetime.now(UTC).isoformat()

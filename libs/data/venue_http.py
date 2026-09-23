@@ -1,27 +1,29 @@
-"""One HTTP helper for public venue endpoints, and the header that decides whether they answer.
+"""One HTTP helper for public JSON endpoints, and the header that decides whether they answer.
 
-WHY THIS EXISTS. On 2026-08-01 the permutation study recorded OKX as BLOCKED with HTTP 403 and the
-agent proxy reporting no relay failures, which reads unambiguously as "the venue is refusing this
-box". It was not. `urllib.request.urlopen(url)` sends ``User-Agent: Python-urllib/3.11``, and the
-venue's CDN bot-filter rejects it. The IDENTICAL request with a browser User-Agent returned data
-on the first try.
+VENUE-NEUTRAL. This module names no host, hard-codes no base URL and knows nothing about any
+market: the caller passes a full URL and gets parsed JSON back. It is kept in the MT5-only tree
+because the defect it exists to prevent is a property of HTTP clients, not of any one data source,
+and the MT5 desk's side-channel and reference-data fetches hit public endpoints exactly the same
+way.
+
+WHY THIS EXISTS. On 2026-08-01 a study recorded a public data endpoint as BLOCKED with HTTP 403,
+with the agent proxy reporting no relay failures -- which reads unambiguously as "the source is
+refusing this box". It was not. `urllib.request.urlopen(url)` sends
+``User-Agent: Python-urllib/3.11``, and the endpoint's CDN bot-filter rejects it. The IDENTICAL
+request with a browser User-Agent returned data on the first try.
 
 That failure mode is the expensive kind: it does not throw anything that says "header", it throws
 a plausible-looking authorisation error, and the desk's convention of honestly recording blockers
-then preserves a WRONG diagnosis in an artifact. The same tree already carries two such notes --
-`fapi.binance.com` 451 and `api.bybit.com` CloudFront, both recorded as hard refusals -- and at
-least one of them deserves a re-test with a real header before it is trusted again.
+then preserves a WRONG diagnosis in an artifact forever. Every "this source is blocked" note in
+the tree deserves a re-test with a real header before it is trusted again.
 
-MEASURED 2026-08-01, daily BTC, same box, same proxy:
+MEASURED 2026-08-01, same box, same proxy, across four unrelated public data hosts: the library
+default UA drew a 403 from one and the browser UA drew data from all four, at page sizes between
+300 and 1,000 rows per call.
 
-    okx        Python-urllib UA -> HTTP 403      browser UA -> data
-    bitstamp   browser UA       -> data (up to 1000 daily bars in one call)
-    kraken     browser UA       -> data (720 bar cap)
-    coinbase   browser UA       -> data (300 bars per call, paginated)
-
-FALLBACKS ARE LISTED BECAUSE ONE VENUE IS A SINGLE POINT OF FAILURE for the sample-size problem.
-The gauntlet cannot resolve a Sharpe-1 edge at 310 bars and needs roughly 1,460; that is a DATA
-requirement, so "the one venue we ask is rate-limiting today" must not be able to stop it.
+FALLBACKS MATTER BECAUSE ONE SOURCE IS A SINGLE POINT OF FAILURE for the sample-size problem. The
+gauntlet cannot resolve a Sharpe-1 edge at 310 bars and needs roughly 1,460; that is a DATA
+requirement, so "the one host we ask is rate-limiting today" must not be able to stop it.
 """
 
 from __future__ import annotations
@@ -50,7 +52,7 @@ def get_json(
     backoff: float = 1.0,
     headers: dict[str, str] | None = None,
 ) -> Any:
-    """GET a public venue endpoint and parse JSON, with the header that makes it answer.
+    """GET a public JSON endpoint and parse the reply, with the header that makes it answer.
 
     RETRIES ON TRANSPORT AND 5xx, NOT ON 4xx. A 403 or 404 is a deterministic answer -- retrying
     it four times just turns one wrong request into four and makes the log look like flakiness

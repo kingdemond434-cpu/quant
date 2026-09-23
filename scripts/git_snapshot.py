@@ -10,9 +10,16 @@ deployment -- rollback_guard remains the revert mechanism for autonomous changes
 
 from __future__ import annotations
 
+import re
 import subprocess
+import sys
 from datetime import UTC, datetime
 from pathlib import Path
+
+_ROOT = Path(__file__).resolve().parents[1]
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
+from libs.ops.git_writer_lock import git_writer_lock  # noqa: E402
 
 
 def _git(*args: str) -> subprocess.CompletedProcess[str]:
@@ -43,9 +50,30 @@ def _drop_accidental_gitlinks() -> list[str]:
 
 
 def main() -> None:
+    """THE REPOSITORY-WIDE `git add -A` TAKES THE DESK'S GIT-WRITER LOCK FIRST (2026-09-23).
+
+    This is the single widest index write on either machine, and on the trading box it used to
+    run beside an hourly adoption that stages thousands of paths of its own. Whichever of the two
+    lost `.git/index.lock` died on `fatal: Unable to create ... index.lock: File exists` -- and
+    when the loser was the adoption, the box ran unshipped code for another hour. The four
+    PowerShell writers already serialise on this lock; there was no Python half until now.
+
+    A lock that could not be TAKEN is a reason to skip this pass, not to write anyway: a forensic
+    snapshot is worth exactly one cycle of delay and never worth a corrupted index.
+    """
     if _git("rev-parse", "--git-dir").returncode != 0:
         print("git-snapshot: not a git repo -- skipped (run git init once)")
         return
+    with git_writer_lock() as lock:
+        if not lock.held:
+            print(f"git-snapshot: skipped this pass -- {lock.why} ({lock.mechanism})")
+            return
+        for note in lock.notes:
+            print(f"git-snapshot: {note}")
+        _snapshot()
+
+
+def _snapshot() -> None:
     _git("add", "-A")
     for path in _drop_accidental_gitlinks():
         print(f"git-snapshot: refused to track gitlink {path} (worktree/clone, not a submodule)")
@@ -56,11 +84,53 @@ def main() -> None:
     r = _git("commit", "-m", msg)
     if r.returncode == 0:
         print(f"git-snapshot: committed -- {msg}")
-        pr = _git("push", "origin", "HEAD")
-        print("git-snapshot: pushed to GitHub" if pr.returncode == 0
-              else f"git-snapshot: push failed (offsite deferred): {(pr.stderr or '')[:80]}")
+        _report_push(_git("push", "origin", "HEAD"))
     else:
         print(f"git-snapshot: commit failed: {(r.stderr or r.stdout)[:140]}")
+
+
+def _head_is_on_remote() -> bool:
+    """Ask the REMOTE what it holds, rather than a local tracking ref.
+
+    `@{u}` is wrong here twice over: this pushes `origin HEAD`, so the branch need not have an
+    upstream configured at all (on a box where it does not, an ancestor test against `@{u}` fails
+    and reports a perfectly good push as lost), and a tracking ref is a local cache that a failed
+    fetch leaves stale. `ls-remote` is the only answer that came from the server.
+    """
+    branch = _git("rev-parse", "--abbrev-ref", "HEAD").stdout.strip()
+    if not branch or branch == "HEAD":
+        return False  # detached: nothing to compare, so never claim it landed
+    ls = _git("ls-remote", "origin", f"refs/heads/{branch}")
+    if ls.returncode != 0 or not ls.stdout.strip():
+        return False
+    remote_sha = ls.stdout.split()[0]
+    return _git("merge-base", "--is-ancestor", "HEAD", remote_sha).returncode == 0
+
+
+def _report_push(pr: subprocess.CompletedProcess[str]) -> None:
+    """Judge the push from the REMOTE, never from git's exit code.
+
+    `git push` EXITS 0 ON A REMOTE REJECT: the pre-receive hook declines, the transport
+    succeeded, and the exit code reports the transport. This desk has paid for that three
+    times, and it was still live here -- daily_research_cycle logged
+    `[git_snapshot] {'ok': True, 'rc': 0, 'tail': ' ! [remote rejected]   HEAD -> desk-sy'}`,
+    i.e. the offsite snapshot announcing success for a push that landed nothing. An offsite
+    backup that reports green while shipping nothing is worse than no backup, because it is
+    the one failure nobody goes looking for.
+
+    Two independent arms, because either alone has been fooled before: grep the OUTPUT for a
+    refusal, and confirm from the remote-tracking ref that HEAD is actually contained in it.
+    """
+    out = f"{pr.stdout or ''}\n{pr.stderr or ''}"
+    refused = re.search(r"rejected|denied|error:|failed to push", out, re.I)
+    landed = _head_is_on_remote()
+    if pr.returncode == 0 and landed and not refused:
+        print("git-snapshot: pushed to GitHub")
+        return
+    why = "REJECTED by the remote" if refused else (
+        "exit 0 but HEAD is not on the upstream ref" if pr.returncode == 0 else "transport failed")
+    print(f"git-snapshot: PUSH DID NOT LAND ({why}) -- this snapshot exists only on this box: "
+          f"{out.strip()[:200].replace(chr(10), ' ')}")
 
 
 if __name__ == "__main__":

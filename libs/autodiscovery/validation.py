@@ -31,8 +31,8 @@ the series has no bar clock (per-BET returns, e.g. scripts/run_prediction_market
 
 PRE-FIX STORED ROWS ARE INFLATED AND ARE NOT COMPARABLE TO POST-FIX ONES.
 Every ``research_candidates.annual_sharpe`` written before 2026-08-05 was produced by the hourly
-constant above, whatever bars the campaign actually ran on; the lab's own default path is
-``crypto_adapter``'s D1, so those rows carry the 4.135x inflation. History is NOT rewritten here —
+constant above, whatever bars the campaign actually ran on; the lab's own default path was D1, so
+those rows carry the 4.135x inflation. History is NOT rewritten here —
 silently rescaling stored verdicts would destroy the ability to reproduce what the desk decided at
 the time — so the two populations are distinguished at the point of writing instead: since this
 fix, the lab records the bar interval it scored on in ``candidate_returns.timeframe`` (it used to

@@ -1,0 +1,8 @@
+{
+ "floor": 216,
+ "at": "2026-09-23T03:11:45.713381+00:00",
+ "rises": [],
+ "open_now": 216,
+ "measured_at": "2026-09-23T03:11:45.713381+00:00",
+ "law": "The OPEN backlog ratchets DOWN only. `floor` is the lowest open count ever measured; a pass may exceed it only by recording, here, what raised it."
+}

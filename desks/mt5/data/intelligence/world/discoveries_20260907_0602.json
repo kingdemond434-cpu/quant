@@ -1,0 +1,2226 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Statistics",
+  "url": "https://www.eurex.com/ex-en/data/statistics",
+  "published": "2026-09-07T05:58:29+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ae574a870ae2b4ae081a",
+  "host": "www.eurex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Trading Calendar &amp; Market Events | Eurex",
+  "url": "https://www.eurex.com/ex-en/trade/trading-calendar",
+  "published": "2026-09-07T05:58:31+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b1a9bb6411ecd943d7f7",
+  "host": "www.eurex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Trading hours",
+  "url": "https://www.eurex.com/ex-en/trade/trading-hours",
+  "published": "2026-09-07T05:58:33+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c4647d444a38b11eecb5",
+  "host": "www.eurex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Trading calendar archive",
+  "url": "https://www.eurex.com/ex-en/trade/trading-calendar/trading-calendar-archive",
+  "published": "2026-09-07T05:58:35+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "af8bb222e21f5cc49cd2",
+  "host": "www.eurex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Indicative trading calendars",
+  "url": "https://www.eurex.com/ex-en/trade/trading-calendar/indicative-trading-calendars",
+  "published": "2026-09-07T05:58:37+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "orderflow",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://www.eurex.com/resource/blob/5098674/ecf1bc8a3930b953bb90cc2b0a95b1e1/data/indicative-trading-calendars.csv"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "ee0c735b9e08ec0a80c4",
+  "host": "www.eurex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Holiday regulations",
+  "url": "https://www.eurex.com/ex-en/trade/trading-calendar/holiday-regulations",
+  "published": "2026-09-07T05:58:39+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "orderflow",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "6a6c88873efbc6943ec3",
+  "host": "www.eurex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Simulation calendar",
+  "url": "https://www.eurex.com/ex-en/trade/trading-calendar/simulation-calendar",
+  "published": "2026-09-07T05:58:41+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://www.eurex.com/resource/blob/3195548/cda004a31a89b672f69a9ff0c5041e0e/data/C%20SimuCal%20Eurex%2020260622%20-%20202612220.csv"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "922bca51813b0088ad74",
+  "host": "www.eurex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Trading phases",
+  "url": "https://www.eurex.com/ex-en/trade/trading-hours/trading-phases",
+  "published": "2026-09-07T05:58:43+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "474ba4a706015fe17aca",
+  "host": "www.eurex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Trade Eurex Derivatives Across All Time Zones",
+  "url": "https://www.eurex.com/ex-en/trade/trading-hours/thx",
+  "published": "2026-09-07T05:58:45+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "dc127da4427c62d47bd7",
+  "host": "www.eurex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Order book trading",
+  "url": "https://www.eurex.com/ex-en/trade/order-book-trading",
+  "published": "2026-09-07T05:58:47+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "12da3cb7309044b1278c",
+  "host": "www.eurex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Matching principles",
+  "url": "https://www.eurex.com/ex-en/trade/order-book-trading/matching-principles",
+  "published": "2026-09-07T05:58:49+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "auction",
+   "carry",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "54a67f5cb2fae1b446a0",
+  "host": "www.eurex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Strategy trading",
+  "url": "https://www.eurex.com/ex-en/trade/order-book-trading/trading-in-complex-instruments",
+  "published": "2026-09-07T05:58:51+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "67c01322a067bb53c659",
+  "host": "www.eurex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Order types",
+  "url": "https://www.eurex.com/ex-en/trade/order-book-trading/order-types",
+  "published": "2026-09-07T05:58:53+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "auction",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "844651de9111f9e57714",
+  "host": "www.eurex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Order handling",
+  "url": "https://www.eurex.com/ex-en/trade/order-book-trading/order-handling",
+  "published": "2026-09-07T05:58:56+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ead22a1570d36ed5caa9",
+  "host": "www.eurex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Account structure",
+  "url": "https://www.eurex.com/ex-en/trade/order-book-trading/account-structure",
+  "published": "2026-09-07T05:58:57+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "M1"
+  ],
+  "patterns": [
+   "basis",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "9f316753e75b7870de12",
+  "host": "www.eurex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Trading tools",
+  "url": "https://www.eurex.com/ex-en/trade/trading-tools",
+  "published": "2026-09-07T05:58:59+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "9a0e3b2968933c1aea9f",
+  "host": "www.eurex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "StrategyMaster",
+  "url": "https://www.eurex.com/ex-en/trade/trading-tools/strategy-master",
+  "published": "2026-09-07T05:59:02+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://www.eurex.com/resource/blob/246940/0d219bb7330008ff48b0f7842b82275c/data/StrategyMaster.zip"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "f364de1638231aee4957",
+  "host": "www.eurex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "TRF Calculator",
+  "url": "https://www.eurex.com/ex-en/trade/trading-tools/trf-calculator",
+  "published": "2026-09-07T05:59:03+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "87c768ad45bd98339fef",
+  "host": "www.eurex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Historical Data - Pakistan Stock Exchange (PSX)",
+  "url": "https://dps.psx.com.pk/historical",
+  "published": "2026-09-07T05:59:04+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "auction",
+   "basis",
+   "carry",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "",
+  "endpoints": [
+   "https://dps.psx.com.pk/downloads"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "8735331e6ef971220409",
+  "host": "dps.psx.com.pk",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "SBP STRATEGIC PLAN FY 2024-28",
+  "url": "https://archive.sbp.org.pk/SBPVision/Index.html",
+  "published": "2026-09-07T05:59:06+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c4275379e2e8143a3b3b",
+  "host": "archive.sbp.org.pk",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Google News",
+  "url": "http://news.google.com/archivesearch?&as_src=-newswire+-wire+-presswire+-PR+-release+-wikipedia&q=%22Algoritms%22",
+  "published": "2026-09-07T05:59:06+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [
+   "http://news.google.com/_/DotsSplashUi/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "2962c67a3f57bb90305a",
+  "host": "news.google.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algorithms - Wikibooks, open books for an open world",
+  "url": "https://en.wikibooks.org/wiki/en:Algorithms",
+  "published": "2026-09-07T05:59:13+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "97644eb13a4ae6b09baa",
+  "host": "en.wikibooks.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algorithms - Wikiversity",
+  "url": "https://en.wikiversity.org/wiki/en:Algorithms",
+  "published": "2026-09-07T05:59:14+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "9a79de8a521a59ce3629",
+  "host": "en.wikiversity.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algorithms - Wikiquote",
+  "url": "https://en.wikiquote.org/wiki/en:Algorithms",
+  "published": "2026-09-07T05:59:15+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d0fbeefd173066048fd0",
+  "host": "en.wikiquote.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Monetary Policy",
+  "url": "https://www.mas.gov.sg/monetary-policy",
+  "published": "2026-09-07T05:59:19+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "basis",
+   "night_session",
+   "orderflow",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://www.mas.gov.sg/html/site/_assets/fonts/SourceSansPro-Bold-export/SourceSansPro-Bold.woff2",
+   "https://www.mas.gov.sg/html/site/_assets/fonts/SourceSansPro-Regular-export/SourceSansPro-Regular.woff2",
+   "https://www.mas.gov.sg/html/site/_assets/fonts/SourceSansPro-SemiBold-export/SourceSansPro-SemiBold.woff2"
+  ],
+  "n_endpoints": 3,
+  "vault_sha": "55829f79287c06b63b48",
+  "host": "www.mas.gov.sg",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "MAS Survey of Professional Forecasters",
+  "url": "https://www.mas.gov.sg/monetary-policy/mas-survey-of-professional-forecasters",
+  "published": "2026-09-07T05:59:21+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "night_session",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://www.mas.gov.sg/-/media/mas-media-library/monetary-policy/mas-survey-of-professional-forecasters/2026/sep26q3.xlsx",
+   "https://www.mas.gov.sg/-/media/mas-media-library/monetary-policy/mas-survey-of-professional-forecasters/2025/dec25q4.xlsx",
+   "https://www.mas.gov.sg/-/media/mas-media-library/monetary-policy/mas-survey-of-professional-forecasters/2026/survey-1999-2024.zip",
+   "https://www.mas.gov.sg/html/site/_assets/fonts/SourceSansPro-Bold-export/SourceSansPro-Bold.woff2",
+   "https://www.mas.gov.sg/html/site/_assets/fonts/SourceSansPro-Regular-export/SourceSansPro-Regular.woff2",
+   "https://www.mas.gov.sg/html/site/_assets/fonts/SourceSansPro-SemiBold-export/SourceSansPro-SemiBold.woff2"
+  ],
+  "n_endpoints": 6,
+  "vault_sha": "d70b70b3148c009dd4e1",
+  "host": "www.mas.gov.sg",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Learn Algorithmic Trading &#38; Python | Investopedia-Recommended Course",
+  "url": "http://b.link/algotrading101_blog_to_course",
+  "published": "2026-09-07T05:59:57+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "inventory",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.filepicker.io/api/file/17HniYF8TFymzWNN35Vc"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "0db9d43ce6568099d146",
+  "host": "b.link",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Portal:Toolforge - Wikitech",
+  "url": "http://tools.wikimedia.de/~daniel/WikiSense/MediaSearch.php?wikilang=oc&wikifam=.wikipedia.org&category=Algoritme&depth=3&mediatype=auto&order=-img_timestamp&max=100&order=-img_timestamp&format=html",
+  "published": "2026-09-07T05:59:59+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ef1b24258a782483bacc",
+  "host": "tools.wikimedia.de",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Portal:Toolforge - Wikitech",
+  "url": "http://tools.wikimedia.de/~daniel/WikiSense/CategoryIntersect.php?wikilang=oc&wikifam=.wikipedia.org&basecat=Algoritme&basedeep=3&mode=al&go=Trobar&userlang=oc",
+  "published": "2026-09-07T06:00:01+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ef1b24258a782483bacc",
+  "host": "tools.wikimedia.de",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Z\u0141OTO - Notowania surowc\u00f3w - Z\u0142oto - Ropa - Surowce - Bankier.pl",
+  "url": "https://www.bankier.pl/inwestowanie/profile/quote.html?symbol=ZLOTO",
+  "published": "2026-09-07T06:00:17+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1M"
+  ],
+  "patterns": [
+   "policy",
+   "session"
+  ],
+  "confidence": 0.55,
+  "lang": "pl",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "62ca63a0a8a8456b81ef",
+  "host": "www.bankier.pl",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Jak inwestowa\u0107 w z\u0142oto? Praktyczny poradnik | SMART Bankier.pl",
+  "url": "https://www.bankier.pl/smart/jak-inwestowac-w-zloto-praktyczny-poradnik",
+  "published": "2026-09-07T06:00:20+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "orderflow",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "pl",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "bcbd9a8b1887178e904c",
+  "host": "www.bankier.pl",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Co wp\u0142ywa na ceny z\u0142ota? | Biuro prasowe Bankier.pl",
+  "url": "https://media.bankier.pl/aktualnosci/pr/123934/co-wplywa-na-ceny-zlota",
+  "published": "2026-09-07T06:00:20+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "pl",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "8685e2817bda9e4eb36f",
+  "host": "media.bankier.pl",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Notowania surowc\u00f3w - Z\u0142oto - Ropa - Surowce - Bankier.pl",
+  "url": "https://www.bankier.pl/surowce/notowania",
+  "published": "2026-09-07T06:00:21+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy",
+   "session"
+  ],
+  "confidence": 0.35,
+  "lang": "pl",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "dc7c9427f7a12b85cc82",
+  "host": "www.bankier.pl",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Z\u0142oto - najnowsze wiadomo\u015bci - Bankier.pl",
+  "url": "https://www.bankier.pl/tag/zloto",
+  "published": "2026-09-07T06:00:23+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "policy",
+   "session"
+  ],
+  "confidence": 0.35,
+  "lang": "pl",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "dc870bbd14b8ae2200cb",
+  "host": "www.bankier.pl",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Z\u0142oto filarem portfela d\u0142ugoterminowego. Warto w nie inwestowa\u0107 systematycznie - Bankier.pl",
+  "url": "https://www.bankier.pl/wiadomosc/Zloto-filarem-portfela-dlugoterminowego-Warto-w-nie-inwestowac-systematycznie-9033197.html",
+  "published": "2026-09-07T06:00:26+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "mean_reversion",
+   "policy",
+   "session"
+  ],
+  "confidence": 0.35,
+  "lang": "pl",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b2240439ce79750162f1",
+  "host": "www.bankier.pl",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Ekspert Grupy Goldenmark: Boom na z\u0142oto trwa. Polska goni Niemcy i Szwajcari\u0119 - Bankier.pl",
+  "url": "https://www.bankier.pl/wiadomosc/Ekspert-Grupy-Goldenmark-Boom-na-zloto-trwa-Polska-goni-Niemcy-i-Szwajcarie-8947961.html",
+  "published": "2026-09-07T06:00:28+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy",
+   "session"
+  ],
+  "confidence": 0.35,
+  "lang": "pl",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "5ef81b1226b293c74c2d",
+  "host": "www.bankier.pl",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Punkt zwrotny \u2013 strategia, kt\u00f3ra zmieni\u0142a podej\u015bcie NBP do rezerw z\u0142ota - Bankier.pl",
+  "url": "https://www.bankier.pl/wiadomosc/Punkt-zwrotny-strategia-ktora-zmienila-podejscie-NBP-do-rezerw-zlota-9131711.html",
+  "published": "2026-09-07T06:00:30+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "policy",
+   "session"
+  ],
+  "confidence": 0.35,
+  "lang": "pl",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "9f7d1e99a782e74cf1c3",
+  "host": "www.bankier.pl",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Ostra kontra na rynkach metali szlachetnych. Z\u0142oto przecenione najmocniej od 12 lat - Bankier.pl",
+  "url": "https://www.bankier.pl/wiadomosc/Ostra-kontra-na-rynkach-metali-szlachetnych-Zloto-przecenione-najmocniej-od-12-lat-9028174.html",
+  "published": "2026-09-07T06:00:32+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy",
+   "session"
+  ],
+  "confidence": 0.35,
+  "lang": "pl",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "4cbbad66deab86aa3745",
+  "host": "www.bankier.pl",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Z\u0142oto jako inwestycja \u2013 co wybra\u0107? Sztabki, monety, ETF-y, r\u00f3\u017cnice mi\u0119dzy z\u0142otem fizycznym a instrumentami finansowymi - Bankier.pl",
+  "url": "https://www.bankier.pl/wiadomosc/Zloto-jako-inwestycja-co-wybrac-Sztabki-monety-ETF-y-roznice-miedzy-zlotem-fizycznym-a-instrumentami-finansowymi-8945329.html",
+  "published": "2026-09-07T06:00:34+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "orderflow",
+   "policy",
+   "session"
+  ],
+  "confidence": 0.35,
+  "lang": "pl",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e3aab6e887a039577944",
+  "host": "www.bankier.pl",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "WIG20 - Notowania indeks\u00f3w gie\u0142dowych - Bankier.pl",
+  "url": "https://www.bankier.pl/inwestowanie/profile/quote.html?symbol=WIG20",
+  "published": "2026-09-07T06:00:35+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1M"
+  ],
+  "patterns": [
+   "policy",
+   "session"
+  ],
+  "confidence": 0.55,
+  "lang": "pl",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "5e2c81bc2742640668be",
+  "host": "www.bankier.pl",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "WIG20: zawy\u017cone zamkni\u0119cie sesji - Bankier.pl",
+  "url": "https://www.bankier.pl/wiadomosc/WIG20-zawyzone-zamkniecie-sesji-2079110.html",
+  "published": "2026-09-07T06:00:38+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "breakout",
+   "policy",
+   "session"
+  ],
+  "confidence": 0.35,
+  "lang": "pl",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "84ad62de06f797f72713",
+  "host": "www.bankier.pl",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Zatrzymana wzrostowa seria na WIG20. &#34;Zamkni\u0119cie tygodnia istotne dla dalszej koniunktury&#34; - Bankier.pl",
+  "url": "https://www.bankier.pl/wiadomosc/Zatrzymana-wzrostowa-seria-na-WIG20-Zamkniecie-tygodnia-istotne-dla-dalszej-koniunktury-8470650.html",
+  "published": "2026-09-07T06:00:40+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "policy",
+   "session"
+  ],
+  "confidence": 0.35,
+  "lang": "pl",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b43037f0c9f245bc8151",
+  "host": "www.bankier.pl",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Sesja na GPW: korekta oczekiwa\u0144 na pok\u00f3j, spadki indeks\u00f3w i rajd Trans Polonii - Bankier.pl",
+  "url": "https://www.bankier.pl/wiadomosc/Sesja-na-GPW-korekta-oczekiwan-na-pokoj-spadki-indeksow-i-rajd-Trans-Polonii-9103456.html",
+  "published": "2026-09-07T06:00:42+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy",
+   "session"
+  ],
+  "confidence": 0.35,
+  "lang": "pl",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "8e8e7d3bf70bf0128a27",
+  "host": "www.bankier.pl",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "A jednak nad kresk\u0105. WIG i WIG20 odrobi\u0142y pocz\u0105tkowe straty - Bankier.pl",
+  "url": "https://www.bankier.pl/wiadomosc/A-jednak-nad-kreska-WIG-i-WIG20-odrobily-poczatkowe-straty-8998768.html",
+  "published": "2026-09-07T06:00:44+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy",
+   "session"
+  ],
+  "confidence": 0.35,
+  "lang": "pl",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "4d896f7287a6cacde72e",
+  "host": "www.bankier.pl",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Statystyka sesji na GPW - Podsumowanie dnia na gie\u0142dzie \u2013 Bankier.pl",
+  "url": "https://www.bankier.pl/gielda/statystyka-sesji/wig20",
+  "published": "2026-09-07T06:00:45+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy",
+   "session"
+  ],
+  "confidence": 0.35,
+  "lang": "pl",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "9f4e3bc9ed0230c7d73a",
+  "host": "www.bankier.pl",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "WIG20 najwy\u017cej od wrze\u015bnia. Gie\u0142da Papier\u00f3w Warto\u015bciowych w Warszawie coraz bli\u017cej rekordu - Bankier.pl",
+  "url": "https://www.bankier.pl/wiadomosc/WIG20-najwyzej-od-wrzesnia-Gielda-Papierow-Wartosciowych-w-Warszawie-coraz-blizej-rekordu-8883396.html",
+  "published": "2026-09-07T06:00:48+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "policy",
+   "session"
+  ],
+  "confidence": 0.35,
+  "lang": "pl",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b0694988ae87f29753d6",
+  "host": "www.bankier.pl",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Wied\u017amy zamiesza\u0142y na koniec sesji. WIG20 traci - Bankier.pl",
+  "url": "https://www.bankier.pl/wiadomosc/Wiedzmy-zamieszaly-na-koniec-sesji-WIG20-traci-7216228.html",
+  "published": "2026-09-07T06:00:50+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy",
+   "session",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "pl",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "73f2bf9951a445546b41",
+  "host": "www.bankier.pl",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Sesja pe\u0142na rozczarowa\u0144, ale WIG20 obroni\u0142 2100 pkt. - Bankier.pl",
+  "url": "https://www.bankier.pl/wiadomosc/Sesja-pelna-rozczarowan-ale-WIG20-obronil-2100-pkt-7726481.html",
+  "published": "2026-09-07T06:00:52+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1M"
+  ],
+  "patterns": [
+   "policy",
+   "session"
+  ],
+  "confidence": 0.55,
+  "lang": "pl",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d12c837a65ef9ad64599",
+  "host": "www.bankier.pl",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Tj&#xE4;nsteexporten st&#xE4;rker nettot",
+  "url": "https://www.scb.se/hitta-statistik/statistik-efter-amne/naringsverksamhet-och-utrikeshandel/utrikeshandel/utrikeshandel-med-tjanster/pong/statistiknyhet/utrikeshandel-med-tjanster-kvartal-2-2026/",
+  "published": "2026-09-07T06:00:54+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "mean_reversion",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "sv",
+  "endpoints": [
+   "https://www.scb.se/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "744a530de417bcb83aaf",
+  "host": "www.scb.se",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Backtest KSE-100 &amp; PSX Strategies in Python \u00b7 pyPSX",
+  "url": "https://www.pypsx.com/backtesting",
+  "published": "2026-09-07T06:00:54+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "mean_reversion",
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.pypsx.com/llms.txt"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "ef0030ae69ac61e56f4f",
+  "host": "www.pypsx.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "How to backtest a KSE-100 strategy in Python \u00b7 pyPSX",
+  "url": "https://www.pypsx.com/blog/backtest-kse100-strategy-python",
+  "published": "2026-09-07T06:00:56+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "mean_reversion",
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://www.pypsx.com/llms.txt"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "2b997f95d624e14371c3",
+  "host": "www.pypsx.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "TKT Strategy \u2014 Free KSE-100 Technical Analysis &amp; PSX Buy Signals | TKT Strategy",
+  "url": "https://www.tktstrategy.com/",
+  "published": "2026-09-07T06:01:02+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "60290978b2460adc4868",
+  "host": "www.tktstrategy.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "PSX Technical Analysis \u2014 KSE-100 Charts & Moving Averages | PSX Tactics",
+  "url": "https://psxtactics.vercel.app/Analysis",
+  "published": "2026-09-07T06:01:03+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "db98a0a71301b7235abf",
+  "host": "psxtactics.vercel.app",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Pakistan Stock Exchange (PSX) Data via API \u2014 Real-Time Market Data &amp; Quantitative Trading Implementation Guide - iTick",
+  "url": "https://blog.itick.org/en/stock-api/pakistan-stock-exchange-psx-api-integration-guide",
+  "published": "2026-09-07T06:01:06+00:00",
+  "symbols": [
+   "XAUUSD"
+  ],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "flow",
+   "orderflow",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en-US",
+  "endpoints": [
+   "https://blog.itick.org/_nuxt/builds/meta/427823ab-4605-41f0-b3e5-fe3c2dd2ed44.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "cb26044337a1a05b147c",
+  "host": "blog.itick.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "KSE100 - KSE 100 Index Technical Analysis | Investify",
+  "url": "https://www.investify.pk/indices/KSE100/technicals",
+  "published": "2026-09-07T06:01:07+00:00",
+  "symbols": [],
+  "timeframes": [
+   "5M",
+   "DAILY"
+  ],
+  "patterns": [
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "668306aa113319ed02bb",
+  "host": "www.investify.pk",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "SBP forex interventions total $15.4b in 22 months - Profit by Pakistan Today",
+  "url": "https://profit.pakistantoday.com.pk/2026/07/28/sbps-strategic-forex-interventions-totalled-dollar154-billion-in-22-months",
+  "published": "2026-09-07T06:01:08+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "momentum",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "976f49ba655e0565b0e8",
+  "host": "profit.pakistantoday.com.pk",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "USD/PKR Exchange Rate Explained: SBP Interventions, Remittances, Inflation &amp; Market Rates",
+  "url": "https://item.pandaremit.com/article/231349",
+  "published": "2026-09-07T06:01:09+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "auction",
+   "flow",
+   "gap",
+   "orderflow",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "zh-CN",
+  "endpoints": [
+   "https://www.pandaremit.com/en/downloadApp"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "cca1c3952c7609807480",
+  "host": "item.pandaremit.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "SBP net FX intervention in interbank market reaches $3.8bn in five months",
+  "url": "https://www.thenews.com.pk/print/1279807-sbp-net-fx-intervention-in-interbank-market-reaches-3-8bn-in-five-months",
+  "published": "2026-09-07T06:01:09+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "momentum",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a1b85ae1271274351bec",
+  "host": "www.thenews.com.pk",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "SBP Buys $1.03 Billion in Interbank Forex Market, Continues Strong Intervention - PakBanker",
+  "url": "https://pakbanker.com/sbp-buys-1-03-billion-in-interbank-forex-market-continues-strong-intervention/",
+  "published": "2026-09-07T06:01:10+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "orderflow",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [
+   "https://pakbanker.com/pakistan-gdp-growth-likely-below-imf-forecast-experts-cite-weak-exports-and-investment/"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "255376006a6171c91cff",
+  "host": "pakbanker.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "SBP $9 Billion Forex Move in 2024: A Key Economic Strategy",
+  "url": "https://bloompakistan.com/sbps-9-billion-forex-move-in-2024-a-key-economic-strategy/",
+  "published": "2026-09-07T06:01:11+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "momentum",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e0dbac59cb4d0a86f1db",
+  "host": "bloompakistan.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "SBP conducts $7.2 billion in foreign exchange interventions to boost reserves from June to April 2025 - Profit by Pakistan Today",
+  "url": "https://profit.pakistantoday.com.pk/2025/07/29/sbp-conducts-7-2-billion-in-foreign-exchange-interventions-to-boost-reserves-from-june-to-april-2025",
+  "published": "2026-09-07T06:01:12+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "8a6c9c27038943cf87bf",
+  "host": "profit.pakistantoday.com.pk",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Futures Trading",
+  "url": "https://www.ninjatrader.com/support/helpGuides/nt7/strategy_analyzer.htm",
+  "published": "2026-09-07T06:01:12+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c9b612be6a22c4912b53",
+  "host": "www.ninjatrader.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\uc7ac\uc815\uacbd\uc81c\ubd80",
+  "url": "https://www.moef.go.kr/",
+  "published": "2026-09-07T06:01:19+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "ko",
+  "endpoints": [
+   "https://www.mofe.go.kr/images/mofe.zip",
+   "https://www.export119.go.kr"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "a5ef41967d40516ed7a9",
+  "host": "www.moef.go.kr",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\uc77c\uc77c\uacbd\uc81c\uc9c0\ud45c | \uc7ac\uc815\uacbd\uc81c\ubd80",
+  "url": "https://www.moef.go.kr/st/ecnmyidx/TbEconomyIndicatorList.do;jsessionid=f6q5tOa7eWMoGqbEz_YzVKjmJpgFbmBmBSIlGIOQ.node20?bbsId=MOSFBBS_000000000045&menuNo=6010200",
+  "published": "2026-09-07T06:01:22+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "ko",
+  "endpoints": [
+   "https://www.export119.go.kr"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "65519e32daafbaaa799b",
+  "host": "www.moef.go.kr",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\uc77c\uc77c\uacbd\uc81c\uc9c0\ud45c | \uc7ac\uc815\uacbd\uc81c\ubd80",
+  "url": "https://www.moef.go.kr/st/ecnmyidx/TbEconomyIndicatorList.do?bbsId=MOSFBBS_000000000045&menuNo=6010200",
+  "published": "2026-09-07T06:01:27+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "ko",
+  "endpoints": [
+   "https://www.export119.go.kr"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "de72dfbc7e183a902764",
+  "host": "www.moef.go.kr",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\uc2dc\uc7a5\uc0c1\ud669\uc810\uac80\ud68c\uc758 \uac1c\ucd5c | \ubcf4\ub3c4\u00b7\ucc38\uace0\uc790\ub8cc | \uc7ac\uc815\uacbd\uc81c\ubd80",
+  "url": "https://www.moef.go.kr/nw/nes/detailNesDtaView.do;jsessionid=f6q5tOa7eWMoGqbEz_YzVKjmJpgFbmBmBSIlGIOQ.node20?searchBbsId1=MOSFBBS_000000000028&searchNttId1=MOSF_000000000079247&menuNo=4010100",
+  "published": "2026-09-07T06:01:30+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "ko",
+  "endpoints": [
+   "https://www.export119.go.kr"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "2cbe5202226b823e3701",
+  "host": "www.moef.go.kr",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\uc77c\uc77c\uacbd\uc81c\uc9c0\ud45c(&#039;26.9.4) | \uc77c\uc77c\uacbd\uc81c\uc9c0\ud45c | \uc7ac\uc815\uacbd\uc81c\ubd80",
+  "url": "https://www.moef.go.kr/st/ecnmyidx/detailTbEconomyIndicatorView.do?bbsId=MOSFBBS_000000000045&searchNttId1=MOSF_000000000079258&menuNo=6010200",
+  "published": "2026-09-07T06:01:33+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "ko",
+  "endpoints": [
+   "https://www.export119.go.kr"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "11237980f118bc573861",
+  "host": "www.moef.go.kr",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\uc77c\uc77c\uacbd\uc81c\uc9c0\ud45c(&#039;26.9.3) | \uc77c\uc77c\uacbd\uc81c\uc9c0\ud45c | \uc7ac\uc815\uacbd\uc81c\ubd80",
+  "url": "https://www.moef.go.kr/st/ecnmyidx/detailTbEconomyIndicatorView.do?bbsId=MOSFBBS_000000000045&searchNttId1=MOSF_000000000079240&menuNo=6010200",
+  "published": "2026-09-07T06:01:36+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "ko",
+  "endpoints": [
+   "https://www.export119.go.kr"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "ad4f466f2efc44b03de7",
+  "host": "www.moef.go.kr",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\uc77c\uc77c\uacbd\uc81c\uc9c0\ud45c(&#039;26.9.2) | \uc77c\uc77c\uacbd\uc81c\uc9c0\ud45c | \uc7ac\uc815\uacbd\uc81c\ubd80",
+  "url": "https://www.moef.go.kr/st/ecnmyidx/detailTbEconomyIndicatorView.do?bbsId=MOSFBBS_000000000045&searchNttId1=MOSF_000000000079210&menuNo=6010200",
+  "published": "2026-09-07T06:01:38+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "ko",
+  "endpoints": [
+   "https://www.export119.go.kr"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "863376bad48fd4ef438b",
+  "host": "www.moef.go.kr",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\uc628\ub77c\uc778 \uc678\ud658\uc2ec\uc0ac \uc2dc\uc2a4\ud15c",
+  "url": "https://fxra.bok.or.kr:4443",
+  "published": "2026-09-07T06:01:40+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [
+   "https://fxra.bok.or.kr:4443/img/portal/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "6110fb171d75ec243a74",
+  "host": "fxra.bok.or.kr:4443",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Scriptor:Algorithmus - Wikisource",
+  "url": "https://la.wikisource.org/wiki/Scriptor:Algorithmus",
+  "published": "2026-09-07T06:01:41+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "la",
+  "endpoints": [
+   "https://ws-export.wmcloud.org/?format=epub&amp;lang=la&amp;page=Scriptor%3AAlgorithmus",
+   "https://ws-export.wmcloud.org/?format=mobi&amp;lang=la&amp;page=Scriptor%3AAlgorithmus",
+   "https://ws-export.wmcloud.org/?format=pdf&amp;lang=la&amp;page=Scriptor%3AAlgorithmus",
+   "https://ws-export.wmcloud.org/?lang=la&amp;title=Scriptor%3AAlgorithmus"
+  ],
+  "n_endpoints": 4,
+  "vault_sha": "820afeec747569bef91c",
+  "host": "la.wikisource.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "G\u0142\u00f3wny Rynek GPW - Statystyki GPW",
+  "url": "https://www.gpw.pl/statystyki-gpw",
+  "published": "2026-09-07T06:01:42+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "orderflow",
+   "session",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "pl",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "7922a9892403bd995bf3",
+  "host": "www.gpw.pl",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Latest (Daily Trends in FPI Investments)",
+  "url": "https://www.fpi.nsdl.co.in/web/Reports/Latest.aspx",
+  "published": "2026-09-07T06:01:43+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a5656317e6b6e2ce2cc8",
+  "host": "www.fpi.nsdl.co.in",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Gratis woordenboek | Van Dale Uitgevers",
+  "url": "http://www.vandale.nl/opzoeken/woordenboek/?zoekwoord=algoritme",
+  "published": "2026-09-07T06:01:46+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "nl",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c63393d79d97e799e09c",
+  "host": "www.vandale.nl",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "https://woordenlijst.org/",
+  "url": "https://woordenlijst.org/",
+  "published": "2026-09-07T06:01:46+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d0a6f9880327945faee2",
+  "host": "woordenlijst.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Puzzelwoordenboek | Van Dale Puzzelwoordenboek",
+  "url": "https://www.woordenboek.nl/lidwoord/algoritme",
+  "published": "2026-09-07T06:01:46+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis"
+  ],
+  "confidence": 0.35,
+  "lang": "nl-nl",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "28a599ea6c2e1a73db1b",
+  "host": "www.woordenboek.nl",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "algoritme - WikiWoordenboek",
+  "url": "https://nl.wiktionary.org/wiki/algoritme",
+  "published": "2026-09-07T06:01:46+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "nl",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "bf385c25205f868f5a6f",
+  "host": "nl.wiktionary.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Is uw gemeente al overgenomen door algoritmen? - Sociale Vraagstukken",
+  "url": "https://www.socialevraagstukken.nl/is-uw-gemeente-al-overgenomen-door-algoritmen/",
+  "published": "2026-09-07T06:01:47+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis"
+  ],
+  "confidence": 0.35,
+  "lang": "nl-NL",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d76a1a10044cb232cce0",
+  "host": "www.socialevraagstukken.nl",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Het algoritme van Muhammad al-Khwarizmi | VPRO Tegenlicht",
+  "url": "https://www.vpro.nl/programmas/tegenlicht/lees/bijlagen/2017-2018/verslaafd-aan-het-algoritme/Het-algoritme-van-Muhammad-al-Khwarizmi.html",
+  "published": "2026-09-07T06:01:48+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "nl",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "528f23dc92bf3e92c375",
+  "host": "www.vpro.nl",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Portal:Toolforge - Wikitech",
+  "url": "http://tools.wikimedia.de/~escaladix/cgi-bin/auteurs.tcl?title=Algoritme&lang=oc",
+  "published": "2026-09-07T06:01:49+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ef1b24258a782483bacc",
+  "host": "tools.wikimedia.de",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Portal:Toolforge - Wikitech",
+  "url": "http://tools.wikimedia.de/~daniel/WikiSense/Contributors.php?wikilang=oc&wikifam=.wikipedia.org&page=Algoritme&grouped=on&order=-edit_count&max=100&format=html",
+  "published": "2026-09-07T06:01:51+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ef1b24258a782483bacc",
+  "host": "tools.wikimedia.de",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "algorithm - \u0989\u0987\u0995\u09bf\u0985\u09ad\u09bf\u09a7\u09be\u09a8",
+  "url": "https://bn.wiktionary.org/wiki/algorithm",
+  "published": "2026-09-07T06:01:54+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "bn",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "0eec4bb093af7835ab83",
+  "host": "bn.wiktionary.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "algorithm \u2013 Wikislovn\u00edk",
+  "url": "https://cs.wiktionary.org/wiki/algorithm",
+  "published": "2026-09-07T06:01:55+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "cs",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "349219191e405293a32b",
+  "host": "cs.wiktionary.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "algorithm \u2014 Wiktionnaire, le dictionnaire libre",
+  "url": "https://fr.wiktionary.org/wiki/algorithm",
+  "published": "2026-09-07T06:01:55+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "fr",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "2d73546dcba5e9b002f4",
+  "host": "fr.wiktionary.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "algorithm - WikiWoordenboek",
+  "url": "https://nl.wiktionary.org/wiki/algorithm",
+  "published": "2026-09-07T06:01:56+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "nl",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c0e2247f46e4842dd389",
+  "host": "nl.wiktionary.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "algorithm \u2013 Wikis\u0142ownik, wolny s\u0142ownik wieloj\u0119zyczny",
+  "url": "https://pl.wiktionary.org/wiki/algorithm",
+  "published": "2026-09-07T06:01:57+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "pl",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "5ea6ab8d080ca7a71fda",
+  "host": "pl.wiktionary.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u81fa\u7063\u671f\u8ca8\u4ea4\u6613\u6240-\u4ea4\u6613\u8cc7\u8a0a-\u4e09\u5927\u6cd5\u4eba-\u67e5\u8a62-\u5340\u5206\u5404\u671f\u8ca8\u5951\u7d04-\u4f9d\u65e5\u671f",
+  "url": "https://www.taifex.com.tw/cht/3/futContractsDate",
+  "published": "2026-09-07T06:02:04+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "night_session",
+   "orderflow",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "zh-Hant-",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "964e40aa79739e46112c",
+  "host": "www.taifex.com.tw",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u81fa\u7063\u671f\u8ca8\u4ea4\u6613\u6240-\u4ea4\u6613\u8cc7\u8a0a-\u4ea4\u6613\u8cc7\u8a0a-\u671f\u8ca8-\u671f\u8ca8\u6bcf\u65e5\u4ea4\u6613\u884c\u60c5\u67e5\u8a62",
+  "url": "https://www.taifex.com.tw/cht/3/futDailyMarketReport",
+  "published": "2026-09-07T06:02:08+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "night_session",
+   "orderflow",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "zh-Hant-",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "2947588945cc0d5caddc",
+  "host": "www.taifex.com.tw",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u81fa\u7063\u671f\u8ca8\u4ea4\u6613\u6240-\u4ea4\u6613\u8cc7\u8a0a-\u5927\u984d\u4ea4\u6613\u4eba\u672a\u6c96\u92b7\u90e8\u4f4d\u7d50\u69cb-\u67e5\u8a62-\u671f\u8ca8\u5927\u984d\u4ea4\u6613\u4eba\u672a\u6c96\u92b7\u90e8\u4f4d\u7d50\u69cb\u8868",
+  "url": "https://www.taifex.com.tw/cht/3/largeTraderFutQry",
+  "published": "2026-09-07T06:02:13+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "night_session",
+   "orderflow",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "zh-Hant-",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "86bed427ce5ba56e9039",
+  "host": "www.taifex.com.tw",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u81fa\u7063\u671f\u8ca8\u4ea4\u6613\u6240-\u4ea4\u6613\u8cc7\u8a0a-\u4ea4\u6613\u6b77\u53f2\u8cc7\u6599\u7533\u8acb",
+  "url": "https://www.taifex.com.tw/cht/3/hisAppForm",
+  "published": "2026-09-07T06:02:17+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "night_session",
+   "orderflow",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "zh-Hant-",
+  "endpoints": [
+   "https://www.taifex.com.tw/file/taifex/CHINESE/3/sample/1.zip",
+   "https://www.taifex.com.tw/file/taifex/CHINESE/3/sample/2.zip",
+   "https://www.taifex.com.tw/file/taifex/CHINESE/3/sample/3.zip",
+   "https://www.taifex.com.tw/file/taifex/CHINESE/3/sample/4.zip",
+   "https://www.taifex.com.tw/file/taifex/CHINESE/3/sample/5.txt",
+   "https://www.taifex.com.tw/file/taifex/CHINESE/3/sample/6.txt",
+   "https://www.taifex.com.tw/file/taifex/CHINESE/3/sample/7.txt",
+   "https://www.taifex.com.tw/file/taifex/CHINESE/3/sample/8.txt",
+   "https://www.taifex.com.tw/file/taifex/CHINESE/3/sample/9.txt",
+   "https://www.taifex.com.tw/file/taifex/CHINESE/3/sample/10.txt",
+   "https://www.taifex.com.tw/file/taifex/CHINESE/3/sample/13.txt",
+   "https://www.taifex.com.tw/file/taifex/CHINESE/3/sample/14.txt",
+   "https://www.taifex.com.tw/file/taifex/CHINESE/3/sample/11.zip",
+   "https://www.taifex.com.tw/file/taifex/CHINESE/3/sample/12.zip",
+   "https://www.taifex.com.tw/file/taifex/CHINESE/3/sample/DailyMS_2017_05_16.zip",
+   "https://www.taifex.com.tw/file/taifex/CHINESE/3/sample/OptionsDailyMS_2017_05_16.zip",
+   "https://www.taifex.com.tw/file/taifex/CHINESE/3/sample/TX_DailyMS_2017_05_16.zip",
+   "https://www.taifex.com.tw/file/taifex/CHINESE/3/sample/MTX_DailyMS_2017_05_16.zip",
+   "https://www.taifex.com.tw/file/taifex/CHINESE/3/sample/A7\u5fae\u578b\u81fa\u80a1\u671f\u8ca8(TMF)\u767e\u5206\u79d2\u6210\u4ea4\u7c21\u6a94_\u7bc4\u4f8b.csv",
+   "https://www.taifex.com.tw/file/taifex/CHINESE/3/sample/TE_DailyMS_2017_05_16.zip",
+   "https://www.taifex.com.tw/file/taifex/CHINESE/3/sample/TF_DailyMS_2017_05_16.zip",
+   "https://www.taifex.com.tw/file/taifex/CHINESE/3/sample/STF_DailyMS_2017_05_16.zip",
+   "https://www.taifex.com.tw/file/taifex/CHINESE/3/sample/TXO_OptionsDailyMS_2017_05_16.zip",
+   "https://www.taifex.com.tw/file/taifex/CHINESE/3/sample/TEO_OptionsDailyMS_2017_05_16.zip",
+   "https://www.taifex.com.tw/file/taifex/CHINESE/3/sample/TFO_OptionsDailyMS_2017_05_16.zip",
+   "https://www.taifex.com.tw/file/taifex/CHINESE/3/sample/STC_OptionsDailyMS_2017_05_16.zip",
+   "https://www.taifex.com.tw/file/taifex/CHINESE/3/sample/COM_1\u671f\u8ca8\u5546\u4ea4\u6613\u91cf\u65e5\u5831\u8868_\u7bc4\u4f8b.txt",
+   "https://www.taifex.com.tw/file/taifex/CHINESE/3/sample/COM_2\u671f\u8ca8\u5546\u4ea4\u6613\u91cf\u9031\u5831\u8868_\u7bc4\u4f8b.txt",
+   "https://www.taifex.com.tw/file/taifex/CHINESE/3/sample/COM_3\u671f\u8ca8\u5546\u4ea4\u6613\u91cf\u6708\u5831\u8868_\u7bc4\u4f8b.txt",
+   "https://www.taifex.com.tw/file/taifex/CHINESE/3/sample/COM_4\u4ea4\u6613\u4eba\u6bcf\u6708\u4ea4\u6613\u91cf\u5f59\u7e3d\u8868_\u7bc4\u4f8b.txt",
+   "https://www.taifex.com.tw/file/taifex/CHINESE/3/sample/COM_5\u671f\u8ca8\u4ea4\u6613\u5e02\u5834\u6982\u6cc1\u8868_\u7bc4\u4f8b.txt",
+   "https://www.taifex.com.tw/file/taifex/CHINESE/3/sample/COM_6\u671f\u8ca8\u4ea4\u6613\u5e02\u5834\u6982\u6cc1\u660e\u7d30\u8868_\u7bc4\u4f8b.txt",
+   "https://www.taifex.com.tw/file/taifex/CHINESE/3/sample/COM_7\u671f\u8ca8\u4ea4\u6613\u91cf\u6bd4\u8f03\u8868_\u7bc4\u4f8b.txt",
+   "https://www.taifex.com.tw/file/taifex/CHINESE/3/sample/COM_8\u671f\u8ca8\u5546\u4ea4\u6613\u91cf\u5e74\u5831\u8868_\u7bc4\u4f8b.txt",
+   "https://www.taifex.com.tw/file/taifex/CHINESE/3/sample/COM_9\u5404\u5546\u54c1\u5e74\u6210\u4ea4\u91cf\u7d71\u8a08\u8868_\u7bc4\u4f8b.txt"
+  ],
+  "n_endpoints": 35,
+  "vault_sha": "5485a4282fe264804c46",
+  "host": "www.taifex.com.tw",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u81fa\u7063\u671f\u8ca8\u4ea4\u6613\u6240-\u4ea4\u6613\u8cc7\u8a0a-\u8a0a\u606f\u9762\u66ab\u505c\u4ea4\u6613\u4e4b\u80a1\u7968\u671f\u8ca8\u53ca\u9078\u64c7\u6b0a-\u8a0a\u606f\u9762\u66ab\u505c\u4ea4\u6613\u4e4b\u80a1\u7968\u671f\u8ca8\u53ca\u9078\u64c7\u6b0a",
+  "url": "https://www.taifex.com.tw/cht/3/tradeHalt",
+  "published": "2026-09-07T06:02:18+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "night_session",
+   "orderflow",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "zh-Hant-",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3eac3171421bc5cafe08",
+  "host": "www.taifex.com.tw",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u81fa\u7063\u671f\u8ca8\u4ea4\u6613\u6240-\u671f\u8ca8\u4ea4\u6613\u8cc7\u8a0a\u89c0\u6e2c\u7ad9",
+  "url": "https://www.taifex.com.tw/eventTaifexTradingCenter/cht/index.do",
+  "published": "2026-09-07T06:02:23+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "night_session",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "zh-Hant",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ae0375b36abfbd49def8",
+  "host": "www.taifex.com.tw",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u81fa\u7063\u671f\u8ca8\u4ea4\u6613\u6240-\u4ea4\u6613\u5236\u5ea6-\u4ea4\u6613\u5236\u5ea6-\u671f\u8ca8\u5e02\u5834\u67b6\u69cb",
+  "url": "https://www.taifex.com.tw/cht/4/marketFramework",
+  "published": "2026-09-07T06:02:28+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage",
+   "night_session",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "zh-Hant-",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "7d77f1bfa0753ea50918",
+  "host": "www.taifex.com.tw",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u81fa\u7063\u671f\u8ca8\u4ea4\u6613\u6240-\u4ea4\u6613\u5236\u5ea6-\u96fb\u5b50\u4ea4\u6613\u7cfb\u7d71",
+  "url": "https://www.taifex.com.tw/cht/4/tradingSystem",
+  "published": "2026-09-07T06:02:31+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "night_session",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "zh-Hant-",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f7b2ff75016d508a816d",
+  "host": "www.taifex.com.tw",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u81fa\u7063\u671f\u8ca8\u4ea4\u6613\u6240-\u4ea4\u6613\u5236\u5ea6-\u671f\u8ca8\u5546\u3001\u671f\u8ca8\u4ea4\u6613\u8f14\u52a9\u4eba\u53ca\u5176\u5b83\u540d\u518a-\u671f\u8ca8\u5546\u540d\u518a",
+  "url": "https://www.taifex.com.tw/cht/4/fCMList",
+  "published": "2026-09-07T06:02:32+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "night_session",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "zh-Hant-",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "8d6f90f9e8e90a49e794",
+  "host": "www.taifex.com.tw",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u81fa\u7063\u671f\u8ca8\u4ea4\u6613\u6240-\u4ea4\u6613\u5236\u5ea6-\u4ea4\u6613\u9632\u885b\u6a5f\u5236",
+  "url": "https://www.taifex.com.tw/cht/4/tradingSafeguard",
+  "published": "2026-09-07T06:02:34+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "night_session",
+   "orderflow",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "zh-Hant-",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "370d800683207e88a4b9",
+  "host": "www.taifex.com.tw",
+  "claims": [],
+  "n_claims": 0
+ }
+]

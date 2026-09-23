@@ -16,29 +16,89 @@ UTC (Friday too), never trade a closed market (stale-tick guard).
 
 Deal ledger: every closed trade tagged with its sleeve (order comment) is
 appended to data/live_ledger.jsonl for retire/champion logic.
+
+THIS FILE IS THE VENUE ADAPTER (split 2026-09-05). It imports MetaTrader5, which exists only on
+the Windows box, so nothing in it can run or be measured anywhere else -- and for as long as the
+sizing, heat and admission decisions lived here, the capital-moving code had 0.6% branch coverage
+on the runner: the import prelude. Every decision now lives in `mt5desk/decision_core.py`, pure
+over its arguments and branch-covered on any host; what stays here reads the terminal, keeps the
+pass state and the ledgers, and sends what the core decided.
 """
 
 from __future__ import annotations
 
+import contextlib
+import hashlib
 import json
-import math
+import os
+import re
+import sys
 import time
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
-import sys
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import MetaTrader5 as mt5
-import numpy as np
 import pandas as pd
-from mt5desk import provenance as _prov  # noqa: E402
-from mt5desk.independence import measure_from_ledger  # noqa: E402
-from mt5desk.config import desk_root, gateway_paused, terminal_path  # noqa: E402
+from mt5desk import account_profile as _acct
+from mt5desk import decision_core as _core
+from mt5desk import position_manager as _pm
+from mt5desk import provenance as _prov
+from mt5desk.config import desk_root, gateway_paused, terminal_path
+from mt5desk.decision_core import (
+    ATR_N,
+    BRACKET_TTL_HOURS,
+    CANCEL_HOUR,
+    CLOSE_HOUR,
+    GOLD_SYMBOL,
+    MAX_TOTAL_REJECTIONS,
+    MIN_RATCHET_IMPROVEMENT_R,
+    PROMOTED_MIN_EQUITY,
+    REJECTION_STREAK_WINDOW_H,
+    addon_desc,
+    addon_entries,
+    allocator_rank,
+    atr_last,
+    bar_already_traded,
+    basket_lots,
+    basket_record,
+    book_from_allocation,
+    bracket_deadline,
+    bracket_from_bars,
+    closed_trade_r,
+    diagnose,
+    entry_is_legal,
+    exec_context,
+    family_bar_due,
+    family_bracket,
+    family_order_desc,
+    family_signal_hour,
+    family_signal_step,
+    family_ttl_until,
+    h1_frame,
+    hibernated,
+    placement_verdict,
+    ramped_fraction,
+    release_gate,
+    roster,
+    scalp_order_desc,
+    scalp_recipe,
+    signal_with_levels,
+    sleeve_from_comment,
+    state_allows,
+    stop_distance,
+    ttl_expired,
+)
+from mt5desk.independence import measure_from_ledger
+from mt5desk.sizing import decay_factor
 
 BASE = desk_root()
 STATE = BASE / "data" / "gateway_state.json"
 SLEEVES_FILE = BASE / "data" / "sleeves.json"
+#: Sleeves the decay monitor retired whose open positions must still be closed
+#: (`close_retired_positions` reads and drains it).
+RETIRED_CLOSE_QUEUE = BASE / "data" / "RETIRED_CLOSE_QUEUE.json"
 LEDGER = BASE / "data" / "live_ledger.jsonl"
 LOG = BASE / "logs" / "gateway.log"
 #: The pause flag `gateway_paused()` reads. Named here so the desk can set the
@@ -49,7 +109,55 @@ PAUSED = BASE / "data" / "GATEWAY_PAUSED"
 TERMINAL = terminal_path()
 MAGIC = 341953
 
-LOT = 0.02              # gold book lot; see Q_OPT below for the sizing policy
+#: The longest order comment THIS terminal accepts. MEASURED, not documented.
+#:
+#: MetaTrader documents 31 characters and the gateway truncated to `[:31]` accordingly. The
+#: terminal on this box refuses 30 and above: probed 2026-09-15 with `order_check` (which
+#: validates a request without sending it) across lengths 0..33, every length to 29 returned
+#: retcode 0 and every length from 30 returned None with
+#: `last_error=(-2, 'Invalid "comment" argument')`.
+#:
+#: THIS IS WHY NO FOREX SLEEVE HAD EVER TRADED. A family sleeve's name is long --
+#: `chfnok_carry_asia_p_98d776f3e210d3e2` -- so `f"DW{name}"[:31]` produced EXACTLY 31 characters
+#: for every one of them, and the terminal refused every order at the API boundary. The gold
+#: book's names are short (`DWgold_asia`, 11 characters), so gold placed normally all week and
+#: the failure looked like "forex has no signals" rather than "forex cannot be sent".
+#:
+#: The bound is a property of the terminal, so it is measured here and used everywhere a tag is
+#: built -- the comment is also the tag that matches a sleeve to its open positions, and a
+#: truncation that differs between the send path and the match path would orphan positions.
+COMMENT_MAX = 29
+
+
+def order_comment(name: str) -> str:
+    """The order comment (and position tag) for a sleeve, at this terminal's measured bound.
+
+    One function so the SEND path and the MATCH path cannot disagree: `_sleeve_positions` finds a
+    sleeve's positions by comparing this exact string to `position.comment`, so if the two were
+    truncated differently the desk would open a position it could never afterwards recognise as
+    its own -- and would then re-open it on the next pass, forever.
+    """
+    return f"DW{name}"[:COMMENT_MAX]
+
+#: How far back record_trades looks for closed deals it has not yet written. Deals are deduped
+#: by the venue's own ticket, so a wider window costs a list scan and cannot double-count. It
+#: exists because the previous day-wide window silently lost every fill the gateway did not see
+#: on the same calendar day: a skipped pass, an OOM kill or a restart after midnight left those
+#: closes unrecorded permanently, since nothing ever looked backwards.
+#: THIRTY DAYS IS DERIVED FROM THE DEDUP GUARANTEE, not chosen for comfort. Deals are keyed by
+#: the venue's own ticket, so widening the window cannot double-count -- the only cost is a
+#: longer list scan. The floor is set by the longest credible gap in the gateway's own cadence:
+#: a restart spanning a weekend plus a holiday is ~4 days, and 30 covers seven such gaps back
+#: to back. Anything shorter re-creates the defect below, where a skipped pass lost those
+#: closes permanently because nothing ever looked backwards.
+LEDGER_LOOKBACK_DAYS = 30
+
+#: The gold book's ticket. 0.02 is twice the venue minimum of 0.01, and that ratio IS the
+#: derivation: at 0.01 the rounding step is 100% of the ticket, so any size the allocator asks
+#: for between 0.01 and 0.02 rounds to one end and realised heat misses target by a whole step.
+#: At 0.02 the same absolute step is 50% of the ticket. A FLOOR on the gold book only -- Q_OPT
+#: below decides the actual size and this never raises it.
+LOT = 0.02
 # RISK FRACTION OF EQUITY PER TRADE. Was 0.055, and that was not an arbitrary number: measured
 # full Kelly on the 3-leg gold book (E[ln(1+qR)] maximised over the daily portfolio series,
 # 5,728 trades, 2018-2026) is q* = 6.00%, so 5.5% was ~92% of Kelly, chosen deliberately.
@@ -77,304 +185,451 @@ LOT = 0.02              # gold book lot; see Q_OPT below for the sizing policy
 # q without anyone touching this constant. Raising q is a separate claim: that the edge is better
 # known than it is today. That claim is settled by live trades, not by backtest cells.
 
-#: IMPORTED, NOT RESTATED. These used to be literals here AND in gateway_config_fallback.py, kept
-#: in step by a test -- which duly caught the first drift, but only because someone had thought to
-#: write it. Research code on Linux cannot import this module (MetaTrader5), so the fallback is
-#: the one both sides can reach and is therefore the definition. Q_OPT is derived there from the
-#: drawdown tolerance rather than chosen: 1.27%, the risk that spends exactly MAX_DRAWDOWN_
-#: TOLERANCE over the book's worst -33.7R. See that module for the full argument.
-from mt5desk.gateway_config_fallback import (  # noqa: E402
-    BOOK_WORST_DD_R as _BOOK_WORST_DD_R,
-    MAX_DRAWDOWN_TOLERANCE,
-    Q_OPT,
+#: RE-EXPORTS, NOT RESTATEMENTS. Nothing below is defined here: the risk budget lives in
+#: gateway_config_fallback and the arithmetic that uses it lives in `decision_core` since the
+#: 2026-09-05 split. Both are imported into this namespace because the desk's research code and
+#: tests have always read these names FROM THE GATEWAY -- `from mt5desk.gateway import Q_OPT` in
+#: research/allocation.py is a fenced marker, and `GOLD_WINDOWS`, `bracket_spec` and `heat_budget`
+#: are read the same way -- so the split may move a definition but may not move a name off this
+#: module. The redundant `X as X` alias is the explicit re-export form, not a typo, and it is why
+#: the block carries `noqa: I001`: isort wants every explicit re-export in a statement of its own,
+#: which would turn one readable list of fourteen re-exported names into fourteen import lines.
+from mt5desk.decision_core import (
+    ABSOLUTE_SIM_MAX as ABSOLUTE_SIM_MAX,
 )
-DIST_USD = 19.1         # ~1.2xATR stop distance (USD/oz), used for auto lot scaling
-CONTRACT_OZ = 100
-FX_EUR = 0.92
-RR = 2.0
-ATR_N = 20
-CANCEL_HOUR = 20.5      # cancel unfilled brackets at 20:30 UTC
-CLOSE_HOUR = 19.5       # force-close positions at 19:30 UTC
-PROMOTED_MIN_EQUITY = 300.0  # EUR: below this, promoted sleeves stay dormant
-                             # (0.01 lot at 300 EUR ~= 5.9% risk/trade ~= validated 5.5%)
+from mt5desk.decision_core import (
+    CONTRACT_OZ as CONTRACT_OZ,
+)
+from mt5desk.decision_core import (
+    DIST_USD as DIST_USD,
+)
+from mt5desk.decision_core import (
+    ENTRY_DRIFT_TOL_FRAC as ENTRY_DRIFT_TOL_FRAC,
+)
+from mt5desk.decision_core import (
+    FX_EUR as FX_EUR,
+)
+from mt5desk.decision_core import (
+    GOLD_WINDOWS as GOLD_WINDOWS,
+)
+from mt5desk.decision_core import (
+    HEAT_SLIDE as HEAT_SLIDE,
+)
+from mt5desk.decision_core import (
+    MAX_HEAT_CEILING as MAX_HEAT_CEILING,
+)
+from mt5desk.decision_core import (
+    MIN_LOT_RISK_EUR as MIN_LOT_RISK_EUR,
+)
+from mt5desk.decision_core import (
+    RETCODE_MEANING as RETCODE_MEANING,
+)
+from mt5desk.decision_core import (
+    RR as RR,
+)
+from mt5desk.decision_core import (
+    allocator_order as allocator_order,
+)
+from mt5desk.decision_core import (
+    bracket_spec as bracket_spec,
+)
+from mt5desk.decision_core import (
+    day_range as day_range,
+)
+from mt5desk.decision_core import (
+    family_entry as family_entry,
+)
+from mt5desk.decision_core import (
+    gold_book_lot as gold_book_lot,
+)
+from mt5desk.decision_core import (
+    heat_budget as heat_budget,
+)
+from mt5desk.decision_core import (
+    live_heat_ceiling as live_heat_ceiling,
+)
+from mt5desk.decision_core import (
+    min_lot_risk_eur as min_lot_risk_eur,
+)
+from mt5desk.gateway_config_fallback import (
+    HEAT_HARD_CEILING as HEAT_HARD_CEILING,
+)
+from mt5desk.gateway_config_fallback import (
+    HEAT_TARGET as HEAT_TARGET,
+)
+from mt5desk.gateway_config_fallback import (
+    Q_OPT as Q_OPT,
+)
+
+# ---------------------------------------------------------------------------------------------
+# THE DECISIONS LIVE IN `mt5desk.decision_core` (split 2026-09-05, principal's audit: "the most
+# important capital-moving code must have the strongest proof"). This file imports MetaTrader5
+# and therefore cannot be imported -- or measured -- anywhere but the Windows box; the sizing
+# laws, the heat cap, the allocator readers, roster admission, the state gate, the bracket
+# arithmetic, the retcode diagnosis, the session deadline, the execution context, the release
+# gate and both lanes' decision steps now live in a module that imports on any host and is
+# branch-covered there. What follows binds them to this desk's paths and the terminal's readings.
+# ---------------------------------------------------------------------------------------------
 
 
-def promoted_lot(equity: float, live_n: int, dist_usd: float | None = None) -> float:
-    """Dynamic lot for promoted sleeves: auto_lot(equity, dist) x ramp.
+def promoted_lot(equity: float, live_n: int, dist_usd: float | None = None,
+                 symbol: str = GOLD_SYMBOL, info: object | None = None,
+                 risk_frac: float | None = None,
+                 decay_faded: object = None, from_book: bool = False) -> float:
+    """Dynamic lot for a promoted sleeve -- `decision_core.promoted_lot`, bound here by name.
 
-    Ramp earns full authority only with forward proof: 0.25x before 50 live
-    trades, 0.5x before 200, 1.0x after 200. Floor 0.01, cap 5.0.
-
-    `dist_usd` is the sleeve's own stop and is passed through for the same reason
-    `auto_lot` takes it: a promoted sleeve on a wide session runs the same 2.8x
-    overshoot as an armed one, and the ramp would have made it look deliberate.
+    A `def` AND NOT A BARE RE-EXPORT, for one reason: scripts/check_risk_units.py (L1.67)
+    audits THIS file's sizing FunctionDefs by name -- it walks `auto_lot`, `realised_q` and
+    `promoted_lot` for gold's constants and counts their call sites' arity -- and that fence is
+    not editable from the gateway lane. The law itself, and its proof, live in the core: the
+    allocator's fraction reaches the venue un-re-shrunk (`from_book`), the 3% base ramps with
+    live authority otherwise, the L1.59 fade is reduce-only, and no heat is no lot.
     """
-    ramp = 0.25 if live_n < 50 else (0.5 if live_n < 200 else 1.0)
-    lot = auto_lot(equity, dist_usd) * ramp
-    # FLOOR, not nearest. Rounding up here reintroduced the overshoot `_lot_steps`
-    # exists to prevent, on exactly the sleeves with the least forward evidence.
-    lot = math.floor(lot / 0.01 + 1e-9) * 0.01
-    return float(min(max(lot, 0.01), 5.0))
+    return _core.promoted_lot(equity, live_n, dist_usd, symbol, info, risk_frac, decay_faded,
+                              from_book=from_book)
+
+
+def auto_lot(equity: float, dist_usd: float | None = None,
+             symbol: str = GOLD_SYMBOL, info: object | None = None,
+             q: float | None = None) -> float:
+    """Fixed-fractional sizing -- `decision_core.auto_lot`, bound here by name (see
+    `promoted_lot` for why a `def` rather than a re-export)."""
+    return _core.auto_lot(equity, dist_usd, symbol, info, q=q)
+
+
+#: The desk's minimum lot per trade, the GOLD book's higher floor, and their override files --
+#: bound here so the gateway's own surface names every number that decides a live order (see
+#: `test_decision_core`'s reachability fence). Read through the functions, never assigned to.
+MIN_LOT = _core.MIN_LOT
+MIN_LOT_FILE = _core.MIN_LOT_FILE
+GOLD_MIN_LOT = _core.GOLD_MIN_LOT
+GOLD_MIN_LOT_FILE = _core.GOLD_MIN_LOT_FILE
+
+
+def min_lot() -> float:
+    """The desk's minimum lot per trade -- `decision_core.min_lot`, bound here by name (see
+    `promoted_lot` for why a `def` rather than a re-export)."""
+    return _core.min_lot()
+
+
+def gold_min_lot() -> float:
+    """The GOLD book's minimum lot, which is higher than the desk's -- `decision_core.
+    gold_min_lot`, bound here by name (see `promoted_lot` for why a `def`)."""
+    return _core.gold_min_lot()
+
+
+#: E2's ARM SWITCH, deliberately its own file beside GENERIC_EXEC_ENABLED. Present means the
+#: winner of the priced execution competition chooses the order shape; absent means the
+#: competition is still run, still ranked and still logged, and the hard-coded market order is
+#: still what goes out. A principal who armed generic execution must not silently acquire a
+#: router, so the two are separate acts.
+EXEC_ROUTING_ENABLED = BASE / "data" / "EXEC_ROUTING_ENABLED"
+
+#: Algorithms this router may select. Every child must be a `market` child: those need no
+#: management between signal and fill, so a wrong choice costs slippage rather than leaving an
+#: unmanaged resting order on the book. `twap`, `sniper`, `pullback` and the staged shapes stay
+#: measured and unrouted until the fill surface is fitted on this box's own fills.
+ROUTABLE_ALGOS = ("market",)
+
+
+def _exec_route(symbol: str, side: int, entry_ref: float, tick: object, sym: object,
+                dist: float, signal: object, lot: float) -> dict:
+    """Run the execution competition and say whether its winner may be routed. E2.
+
+    ALWAYS RUNS, ROUTES ONLY WHEN ARMED. The competition's value is the same either way -- the
+    counterfactual ledger scores the road not taken from it -- so refusing to compute it when
+    disarmed would cost the evidence and save nothing.
+
+    Returns a row that is recorded whether or not it routed, because "the router would have
+    chosen twap and was not allowed to" is the measurement that decides whether to arm it.
+    """
+    out: dict = {"routed": False, "armed": EXEC_ROUTING_ENABLED.exists()}
+    try:
+        from mt5desk import execution_registry as er
+
+        # `side` IS A STRING HERE and an int at the call site; `stop_frac` is the stop distance
+        # over the price, which is the R denominator the competition prices everything in.
+        intent = er.Intent(symbol=symbol, side=("buy" if int(side) > 0 else "sell"),
+                           lots=float(lot), price=float(entry_ref),
+                           stop_frac=(float(dist) / float(entry_ref)) if entry_ref else 0.0)
+        comp = er.compete(intent)
+        best = comp["plans"][comp["best"]]
+        market = comp["plans"].get("market")
+        out.update({
+            "algo": str(comp["best"]),
+            "utility": float(best.utility),
+            "market_utility": float(market.utility) if market is not None else None,
+            "utilities": {k: round(float(v), 6) for k, v in (comp.get("utilities") or {}).items()},
+            "children_all_market": all(str(c.get("kind", "")) == "market"
+                                       for c in (best.children or [])),
+        })
+    except Exception as exc:
+        out["why"] = f"competition unavailable ({type(exc).__name__}: {str(exc)[:110]})"
+        return out
+    if not out["armed"]:
+        out["why"] = ("EXEC_ROUTING_ENABLED absent: the winner is logged and the hard-coded "
+                      "market order is sent. Arming this is a separate principal act")
+        return out
+    if out["algo"] not in ROUTABLE_ALGOS or not out["children_all_market"]:
+        out["why"] = (f"{out['algo']} is not routable: only algorithms whose children are all "
+                      "`market` may be selected, because the rest leave resting orders this lane "
+                      "does not yet manage")
+        return out
+    out["routed"] = True
+    return out
+
+
+def venue_min_lot(symbol: str = GOLD_SYMBOL, info: object | None = None) -> float:
+    """The smallest lot THIS VENUE accepts for THIS symbol -- `decision_core.venue_min_lot`.
+
+    Bound here by name for the same reason every other sizing decision is: the reachability
+    fence in `test_decision_core` walks this file's surface and fails when a decision that moves
+    a live order cannot be reached through the gateway. It caught this function on the pass that
+    introduced it, which is the fence doing its job.
+
+    It decides a live order under the principal's 2026-09-12 order -- a sleeve the allocator
+    zeroed trades the venue minimum rather than being skipped -- so it belongs on this surface.
+    """
+    return _core.venue_min_lot(symbol, info)
+
+
+def gold_lot(equity: float, dist_usd: float | None = None,
+             info: object | None = None) -> float:
+    """The gold book's lot, floored at the principal's minimum -- `decision_core.gold_lot`,
+    bound here by name (see `promoted_lot` for why a `def` rather than a re-export)."""
+    return _core.gold_lot(equity, dist_usd, info)
+
+
+def realised_q(equity: float, dist_usd: float | None = None,
+               symbol: str = GOLD_SYMBOL, info: object | None = None,
+               lot: float | None = None) -> float:
+    """The risk fraction the account WILL actually run -- `decision_core.realised_q`, bound
+    here by name (see `promoted_lot` for why a `def` rather than a re-export)."""
+    return _core.realised_q(equity, dist_usd, symbol, info, lot=lot)
 
 
 def sleeve_live_n(name: str) -> int:
-    """Closed-trade count for a sleeve from the live ledger."""
-    if not LEDGER.exists():
-        return 0
-    try:
-        n = 0
-        for line in LEDGER.read_text(encoding="utf-8").splitlines():
-            if not line.strip():
-                continue
-            try:
-                if json.loads(line).get("sleeve") == name:
-                    n += 1
-            except Exception:
-                continue
-        return n
-    except Exception:
-        return 0
-
-# (label, signal_hour, range window)  range None => [0, signal_hour)
-# ny_open QUARANTINED 2026-08-17: exp +0.029R, PF 1.05, maxDD -52.8R (rank 9).
-# Must re-earn admission via a genuinely different conditioning rule.
-GOLD_WINDOWS = [
-    ("asia", 7, None),
-    ("london_am", 13, (10, 13)),
-    ("afternoon", 17, (14, 17)),
-]
-
-
-#: EUR put at risk by the venue's smallest tradeable position on gold. Below the equity where
-#: this equals Q_OPT, the FLOOR sets the risk and the policy does not -- deliberately kept, so a
-#: small account can trade and compound up rather than being locked out, but never silently.
-MIN_LOT_RISK_EUR = 0.01 * DIST_USD * CONTRACT_OZ * FX_EUR   # ~17.57
-
-
-def _lot_steps(raw_lot: float) -> float:
-    """Snap a raw lot DOWN to the venue's 0.01 grain. Never up.
-
-    This was `round()` -- to nearest -- and that let realised risk EXCEED the policy by up to half
-    a lot step. It was invisible while Q_OPT sat 41% below the heat budget, because there was
-    slack to absorb the overshoot. Now that Q_OPT is derived from the drawdown tolerance, the base
-    budget is exactly `Q_OPT x 3 legs`, so an upward round on every leg puts the armed gold book
-    OVER its own cap and `cap_by_heat` amputates a validated leg: at EUR 8,000 nearest-rounding
-    gave 0.06 lot (1.32% x 3 = 3.95% against a 3.81% budget) and dropped gold_afternoon.
-
-    Rounding down costs a little size in the gaps between lot steps -- 0.05 rather than 0.06 at
-    EUR 8,000 -- and buys the invariant that realised risk is never above the stated policy. The
-    0.01 minimum below is the sole documented exception, where the venue's floor overrides the
-    policy upward and `realised_q` reports exactly that.
-    """
-    return math.floor(raw_lot / 0.01 + 1e-9) * 0.01
-
-
-def stop_distance(spec: dict) -> float | None:
-    """The bracket's OWN stop, in USD/oz. None when the spec cannot supply one.
-
-    None rather than a fallback: a caller that cannot see the real stop must
-    decide what to do about that, and silently substituting the house average is
-    the exact defect this function exists to end.
-    """
-    for side in ("buy_stop", "sell_stop"):
-        leg = (spec or {}).get(side) or {}
-        p, sl = leg.get("price"), leg.get("sl")
-        if p is not None and sl is not None and abs(p - sl) > 1e-9:
-            return abs(float(p) - float(sl))
-    return None
-
-
-def realised_q(equity: float, dist_usd: float | None = None) -> float:
-    """The risk fraction the account WILL actually run, after the 0.01-lot floor.
-
-    Not the same as Q_OPT whenever equity is small, and that gap is the whole point of this
-    function existing. `auto_lot` used to clamp to 0.01 inside a `min(max(...))` and return only
-    the lot, so a book configured for 0.75% could run at 5.9% with nothing in the code, the log
-    or the state file ever saying so. A policy number that the venue silently overrides is not a
-    policy.
-
-    `dist_usd` IS THE SLEEVE'S OWN STOP where the caller knows it. See `auto_lot`.
-    """
-    d = float(dist_usd) if dist_usd and dist_usd > 0 else DIST_USD
-    lot = max(_lot_steps(Q_OPT * equity / (d * CONTRACT_OZ * FX_EUR)), 0.01)
-    return float(lot * d * CONTRACT_OZ * FX_EUR / equity) if equity > 0 else 0.0
-
-
-def auto_lot(equity: float, dist_usd: float | None = None) -> float:
-    """Fixed-fractional sizing: Q_OPT of equity per trade, floored at the venue minimum.
-
-    `dist_usd` IS THE SLEEVE'S OWN STOP, AND PASSING IT IS NOT OPTIONAL IN THE LIVE PATH.
-
-    This sized every sleeve from the house constant DIST_USD = 19.1 while the caller had the
-    real bracket in hand on the line above. Fixed-fractional sizing means lot = risk_budget /
-    stop_distance, so using a stop 2.8x narrower than the real one produces a position 2.8x
-    larger than the budget bought. The live brackets on 2026-08-14 were:
-
-        sleeve        actual stop     vs DIST_USD 19.1     realised risk multiple
-        asia            $53.40             2.80x                   2.80x
-        afternoon       $48.64             2.55x                   2.55x
-        london_am       $27.91             1.46x                   1.46x
-        ny_open         $18.65             0.98x                   0.98x
-
-    So two of four sleeves ran at roughly 2.5-2.8x the stated policy, at EVERY equity, while
-    `realised_q` reported the policy figure and the heat cap admitted legs against it. The
-    three-leg book believed it was at its 3.81% budget and was closer to 8%. Nothing was wrong
-    with either number in isolation; the constant was simply not the thing being traded.
-
-    Session-range stops are the reason the gap is this large. These brackets are the session
-    high to session low, so the stop is as wide as the session was -- a quantity that varies by
-    a factor of three across the day and has no reason to sit near a single average.
-
-    THE FLOOR IS A DECISION, NOT A ROUNDING ARTIFACT. 0.01 lot risks ~EUR 17.57 on gold at the
-    house distance, so the smallest position the venue will accept already implies a fixed EUR
-    risk, and the fraction that represents falls as equity grows (figures below at DIST_USD;
-    a wider sleeve scales them by its own multiple):
-
-        equity  realised q   worst historical DD (3-leg book, -33.7R)
-          300      5.86%          -86.9%     <- ~full Kelly. This is where accounts die.
-          500      3.51%          -70.1%
-          800      2.20%          -52.7%
-        1,684      1.04%          -29.8%     <- current account; survivable
-        2,300      0.76%          -22.7%     <- last equity the floor still binds at
-        3,000      1.17%          -32.7%     <- policy reachable; q now tracks Q_OPT from here
-       25,000      1.27%          -34.9%
-
-    Note the DIP around EUR 2,300 and not a monotone fall: once the raw lot clears 0.01 the floor
-    stops binding, and realised q drops to whatever the 0.01 grain allows before climbing back
-    toward Q_OPT as equity makes the grain finer. Sizing is a step function, not a curve.
-
-    Kept floored rather than refusing to trade, because a book that cannot open a position also
-    cannot compound out of the range where the floor binds. The cost of that choice is real and
-    it is highest at the smallest sizes, which is precisely when it is least visible on a
-    statement -- so the realised fraction is computed explicitly by `realised_q` and recorded by
-    the caller instead of being inferred from a lot size after the fact.
-    """
-    d = float(dist_usd) if dist_usd and dist_usd > 0 else DIST_USD
-    lot = _lot_steps(Q_OPT * equity / (d * CONTRACT_OZ * FX_EUR))
-    return float(min(max(lot, 0.01), 5.0))
-
-
-#: THE PORTFOLIO CAP IS `heat_budget()`, NOT A CONSTANT. A fixed `MAX_PORTFOLIO_HEAT = 0.04`
-#: stood here and was already dead -- `cap_by_heat` consults `heat_budget(k_eff)` and nothing read
-#: the constant -- but it stated 4% in the one place a reader looks for the budget, while the live
-#: base is 3.81%. Two numbers, one of them decorative, is how a desk ends up sized by whichever
-#: one the next person happens to find.
-#:
-#: WHY A BUDGET AND NOT A SLEEVE COUNT. Promoted sleeves take a fixed 0.01 lot -- 1.04% of equity
-#: at EUR 1,684 -- and `load_sleeves()` returns every LIVE one. Ten promotions bracketing the same
-#: morning is ~10% of the account at risk in one session. A COUNT cap would also let total risk
-#: grow silently as equity FALLS, because the fixed floor becomes a larger fraction of a smaller
-#: account: risk rising exactly when the account can least afford it. Per-sleeve risk control is
-#: not risk control -- correlated sleeves fire together precisely in the regimes that hurt.
-
-#: The k_eff the base budget is calibrated to: the armed 3-leg gold book, whose measured
-#: cross-sleeve correlation is 0.165 -> 2.26 independent bets.
-_HEAT_BASE_KEFF = 2.26
-
-#: Legs in the book that -DD figure was measured on (asia, london_am, afternoon). The budget is
-#: expressed as total heat = per-trade risk x legs, so this converts one into the other.
-_HEAT_BASE_LEGS = 3
-
-#: Never exceed this however good the diversification looks. Correlations rise in exactly the
-#: regime where the budget would be spent, and a measured k_eff is an estimate from calm. Raised
-#: from 10% only because the budget is now solved against an explicit drawdown target -- the
-#: ceiling is a backstop against a bad k_eff estimate, not the operative limit.
-MAX_HEAT_CEILING = 0.15
-
-
-def heat_budget(k_eff: float | None = None) -> float:
-    """Total risk the book may carry, scaled by how many INDEPENDENT bets it actually holds.
-
-    A FIXED PERCENTAGE IS THE WRONG INSTRUMENT AND IT CAPS GROWTH PERMANENTLY. At a flat 4% the
-    admitted sleeve count converges to five at ANY equity -- 5 at EUR 2,343 and still 5 at EUR
-    100,000 -- because `realised_q` converges to Q_OPT once the account clears the 0.01 lot floor.
-    The book would stop widening forever, which is the opposite of safe aggressive growth.
-
-    The reason 4% was right for three gold legs is not the number of sleeves, it is that those
-    legs are 0.165 correlated and therefore only ~2.26 independent bets. Portfolio drawdown for N
-    sleeves at total heat H scales roughly as H / sqrt(k_eff), so holding drawdown fixed lets H
-    grow with sqrt(k_eff). Five genuinely independent sleeves are SAFER at 6% than three
-    correlated ones at 4%, and a constant refuses to see the difference.
-
-        k_eff 2.26 (gold book today)      -> 4.0%
-        k_eff 5.12 (the 9 candidates)     -> 6.0%
-        k_eff 9.0                          -> 8.0%
-
-    UNMEASURED k_eff RETURNS THE BASE BUDGET, never the ceiling. The desk has no live
-    cross-sleeve correlation yet -- shadow started 2026-08-16 -- and treating "not yet measured"
-    as "independent" is the single assumption that would let a correlated book size like a
-    diversified one, which is how a portfolio discovers its real correlation during the drawdown
-    rather than before it.
-    """
-    # SOLVED AGAINST THE DRAWDOWN TARGET, not read off a constant -- and it is THE SAME q the
-    # desk actually sizes each trade at, because Q_OPT is now that same derivation rather than a
-    # hardcoded second opinion. One tolerance, one formula, both levels: the budget can no longer
-    # be spending a drawdown allowance that per-trade sizing has privately decided against.
-    q_star = Q_OPT
-    # MULTIPLIED BY THE VALIDATED LEG COUNT, NOT BY k_eff -- and the difference matters. The
-    # -33.7R figure is the drawdown of the SUMMED three-leg series, so it already contains how
-    # often those legs co-fire; scaling it by k_eff as well double-counts the diversification and
-    # returned 2.87%, which is less than the 3.12% the armed gold book actually runs. The first
-    # version of this line therefore amputated the very book the budget is calibrated on.
-    base = q_star * _HEAT_BASE_LEGS
-    if k_eff is None or not (k_eff == k_eff) or k_eff < 1.0:
-        return float(min(base, MAX_HEAT_CEILING))
-    # More independent bets survive more total heat at the SAME drawdown: portfolio drawdown for
-    # N sleeves at heat H scales roughly as H/sqrt(k_eff), so holding drawdown fixed lets H grow
-    # with sqrt(k_eff). Breadth is paid for with measured orthogonality.
-    scaled = base * math.sqrt(float(k_eff) / _HEAT_BASE_KEFF)
-    return float(min(max(scaled, base), MAX_HEAT_CEILING))
+    """Closed-trade count for a sleeve from this desk's live ledger."""
+    return _core.sleeve_live_n(name, LEDGER)
 
 
 def load_sleeves() -> list[dict]:
-    """Promoted sleeves from data/sleeves.json (writer: research/promoter.py)."""
-    if not SLEEVES_FILE.exists():
-        return []
+    """Promoted sleeves from data/sleeves.json (writer: research/promoter.py), minus anything the
+    live policy refuses (`mt5desk/live_policy.py`) -- and every refusal is LOGGED, because a
+    sleeve that vanishes from a roster silently is indistinguishable from one nobody wrote.
+
+    The principal stopped the forex sleeves and the XAUUSD M15 sleeve on 2026-09-17 after they
+    had already been retired twice and come back through automatic promotion. This door is why
+    they cannot come back a third time: admission is re-checked here on every pass."""
+    sleeves, notes = _core.load_sleeves_verbose(SLEEVES_FILE)
+    for note in notes:
+        log(note)
+    # LINEAGE IS ACKNOWLEDGED, NEVER INFERRED (LAWS.md 7). This is the last mandatory edge of the
+    # whole pipeline -- promoter -> allocator -> GATEWAY -- and without the acknowledgement the
+    # control plane can only observe that sleeves.json was written, never that the gateway read
+    # it. Fully guarded: a failure here may not touch the money path.
     try:
-        data = json.loads(SLEEVES_FILE.read_text(encoding="utf-8"))
-        return [s for s in data.get("sleeves", []) if s.get("status") == "LIVE"]
+        import sys as _sys
+        _root = str(BASE.parents[1])
+        if _root not in _sys.path:
+            _sys.path.insert(0, _root)
+        from libs.ops.control_plane.lease import ack_artifact
+        ack_artifact("task:MT5-Gateway", SLEEVES_FILE)
     except Exception:
-        return []
+        pass
+    return sleeves
+
+
+def allocator_heat() -> tuple[float | None, str]:
+    """Total heat the E[log W] allocator resolved under this desk root, or None with the
+    reason -- `decision_core.allocator_heat` over the artifacts this desk actually reads."""
+    return _core.allocator_heat(BASE)
+
+
+def _book_key(s: dict, book: dict[str, float] | None) -> str | None:
+    """This sleeve's key in the allocator's book, or None when the allocator did not price it.
+
+    THE ALLOCATOR HAD NEVER SIZED A SINGLE SLEEVE, AND THIS IS THE REASON (measured 2026-09-15).
+    The lookup was `s["name"] in book`, and the two sides name the same sleeve differently:
+
+        allocator book   CHFNOK_carry_asia          SYMBOL_family_selector, symbol upper-cased
+        sleeve registry  chfnok_carry_asia_p_98d7   symbol lower-cased, parameter hash appended
+
+    Across the 40 LIVE rows the EXACT intersection with the dynamic book was 1 and with the
+    fallback book 0. So `from_book` was False for essentially every sleeve, every pass, and each
+    one fell through to `promoted_lot`'s ramp and `clamp_risk_frac`, which floors at
+    BASE_RISK_FRAC. The optimiser, the baseline contest, the proof certificate and the heat
+    budget all resolved to a flat base fraction at the venue: GBPNOK at a measured forward
+    +1.77R and AUDUSD at -0.574R were sized identically, and the book went six deep on one
+    currency because nothing was weighting anything.
+
+    Deriving the allocator's own key from the row's fields takes the join from 1 to 8 -- 8 being
+    the number of LIVE sleeves the allocator actually priced this solve. The other 32 are newly
+    promoted with no evidence yet, and their base fraction is DELIBERATE: automatic promotion
+    (principal, 2026-09-04) puts a certified candidate straight into the account so it can build
+    a record. Nothing here zeroes them; this only lets the allocator's weight reach the sleeves
+    it has evidence for.
+
+    The exact name is tried first so any row that already matches is untouched.
+    """
+    if not book:
+        return None
+    name = str(s.get("name") or "")
+    if name in book:
+        return name
+    # THE VERSION SUFFIX, measured 2026-09-23 and the reason the join was 0/7. The live rows are
+    # `gold_afternoon_v2/_v3/_v4` and `gold_london_am_v2/_v3/_v4`; the allocator prices the window
+    # itself -- `gold_afternoon`, `gold_asia`. A re-versioned row is the SAME sleeve on the same
+    # window, so the version is not part of its identity to the book, and the join emptied on a
+    # suffix. Only `_v<digits>` is stripped and only when the full name missed, so a book key that
+    # carries its own version still matches exactly first and a genuine miss stays a miss.
+    base = re.sub(r"_v\d+$", "", name)
+    if base != name:
+        if base in book:
+            return base
+        _fold = {k.lower(): k for k in book}
+        if base.lower() in _fold:
+            return _fold[base.lower()]
+    sym = str(s.get("symbol") or "").upper()
+    fam = str(s.get("family") or "")
+    sel = str(s.get("selector") or "")
+    if not (sym and fam):
+        return None
+    derived = f"{sym}_{fam}_{sel}" if sel else f"{sym}_{fam}"
+    if derived in book:
+        return derived
+    # Case is the only other way these two spellings have differed; compare folded rather than
+    # inventing further shapes, so a genuine miss stays a miss.
+    folded = {k.lower(): k for k in book}
+    return folded.get(derived.lower())
+
+
+def allocator_book() -> tuple[dict[str, float] | None, str]:
+    """The optimiser's PER-SLEEVE target risk fractions, or None with the reason.
+
+    THE GATEWAY READS, THE CORE DECIDES. Three inputs come off disk here -- the certified total
+    from `allocator_heat`, the proof certificate (`libs.portfolio.allocator_proof`), and the
+    allocation artifact itself -- and each read fails closed with its own reason, because a book
+    the desk cannot fully read is not a book it may size from. What those inputs MEAN (the
+    dynamic book when the proof is fresh, the best baseline `book_fallback` at the same heat when
+    it is not, the drift and empty-book refusals) is `decision_core.book_from_allocation`, which
+    takes the parsed pieces and nothing else.
+
+    A*_t: THE ALLOCATOR THAT WON HERE, NOT THE ONE THAT WON THE AVERAGE (2026-09-05). The
+    certificate now carries a per-state verdict, and `select` answers which book may size in the
+    state the desk is actually in: the state's own winner, else the same winner matched on the
+    regime suffix, else the global verdict -- which is exactly what this did before per-state
+    scoring existed, so an artifact without `by_state` is unchanged. A challenger that beat the
+    dynamic allocator in this state is sized as a FALLBACK book (`certified=False`): it is a
+    real book with real evidence behind it, and it is not the thing the global proof certified.
+    """
+    total, why = allocator_heat()
+    if total is None:
+        return None, f"no allocator book: {why}"
+    try:
+        from libs.portfolio.allocator_proof import read_certificate, select
+        cert, cwhy = read_certificate(BASE.parent.parent)
+    except Exception as exc:
+        return None, f"proof unreadable ({type(exc).__name__}: {exc})"
+    try:
+        art = json.loads((BASE / "reports" / "pf_allocation.json").read_text(encoding="utf-8"))
+    except Exception as exc:
+        return None, f"pf_allocation unreadable ({type(exc).__name__})"
+    # `heat.state` is the id pf_allocator solved under and the certificate's `by_state` is keyed
+    # the same way; a state with no bucket falls back to the global verdict INSIDE `select`.
+    state = str((art.get("heat") or {}).get("state") or "")
+    src, swhy = select(cert, state) if cert is not None else ("", cwhy)
+    if src and src != "dynamic":
+        # THE ENSEMBLE, NOT THE SINGLE WINNER (principal, 2026-09-07: "don't necessarily
+        # winner-take-all -- learn w_A = P(A is best | X_t) and blend"). The certificate scores
+        # every contested book and `select` used exactly one, which over-claims whenever two
+        # scores are the same number. `select_blend` mixes the books within the desk's own
+        # declared noise margin and returns the winner alone when nothing else is close, so this
+        # can only differ where the evidence was genuinely ambiguous.
+        #
+        # AUTHORITY IS STILL `select`'S. The blend runs only on the path `select` already routed
+        # to a challenger, over the books it deems eligible; a book that LOST this state is
+        # excluded from the mixture rather than down-weighted into it.
+        by_name = {str(k): float(v) for k, v in
+                   (((cert or {}).get("books") or {}).get(src) or {}).items() if float(v) > 0.0}
+        try:
+            from libs.portfolio.allocator_blend import select_blend
+            from libs.portfolio.allocator_proof import MARGIN_FRAC
+            mix = select_blend(cert, state, margin_frac=MARGIN_FRAC)
+            if mix.get("status") == "BLENDED" and mix.get("book"):
+                by_name = {str(k): float(v) for k, v in mix["book"].items() if float(v) > 0.0}
+                src, swhy = "blend", mix["why"]
+        except Exception as exc:
+            # A broken ensemble must never cost the desk the book `select` already chose.
+            swhy = f"{swhy}; ensemble unavailable ({type(exc).__name__}: {exc})"
+        if by_name:
+            return book_from_allocation(total, art.get("book"),
+                                        {"name": src, "book": by_name},
+                                        certified=False, why=f"state-conditioned: {swhy}")
+    # `book_zeroed` names the rostered sleeves THIS solve gave no heat. Carried through so the
+    # answer can be zero: without it a zeroed sleeve is invisible to the sizer and falls back to
+    # the BASE_RISK_FRAC floor (see `book_from_allocation`), which is applied OUTSIDE the
+    # allocator's total and therefore adds heat the budget never granted.
+    #
+    # IT IS NOW PASSED ON BOTH PATHS. It used to be certified-only, on the reasoning that a
+    # baseline fallback is a different allocation and should not inherit this solve's refusals.
+    # That holds for the baseline's own weights and not for the names it is silent about --
+    # measured 2026-09-15, 261 of 318 passes (82%) took the fallback, and the sleeves the dynamic
+    # solve had explicitly excluded were funded anyway through the fall-through. `book_from_
+    # allocation` only zeroes names the fallback book does not itself fund, so the baseline still
+    # decides everything it has an opinion about.
+    return book_from_allocation(total, art.get("book"), art.get("book_fallback"),
+                                certified=(cert is not None and src == "dynamic"),
+                                why=(f"{cwhy}; {swhy}" if cert is not None else cwhy),
+                                zeroed=art.get("book_zeroed"))
 
 
 def cap_by_heat(sleeves: list[dict], equity: float,
                 per_sleeve_q: float | None = None,
                 k_eff: float | None = None) -> tuple[list[dict], str | None]:
-    """Trim `sleeves` so their combined risk stays inside MAX_PORTFOLIO_HEAT.
+    """Trim `sleeves` to the heat budget: `decision_core.cap_by_heat`, fed the allocator verdict.
 
-    Returns the admitted sleeves and a note when anything was dropped, because a silently
-    shortened book is indistinguishable from a book that had nothing to trade.
-
-    ORDER IS PRESERVED, so the caller's own priority decides who is dropped -- and the gold book
-    is placed first by `sleeve_set()`, which makes the armed, human-authorised sleeves senior to
-    anything the promoter added on its own. A cap that dropped sleeves arbitrarily could silently
-    retire the one book with forward evidence behind it in favour of three that have none.
+    THE ALLOCATOR'S BOOK IS THE BUDGET WHEN THERE IS ONE. `heat_budget` is the derivation the
+    desk falls back to; `allocator_heat` is a number something actually solved for. Both the
+    solved total and the marginal ranking are read HERE, from this desk's artifacts, and handed
+    to the core, which fails closed to the derivation on any doubt -- so this cannot raise heat
+    by accident, and the cap's arithmetic is proven without a terminal.
     """
-    if equity <= 0 or not sleeves:
-        return list(sleeves), None
-    q = per_sleeve_q if per_sleeve_q is not None else realised_q(equity)
-    if q <= 0:
-        return list(sleeves), None
-    budget = heat_budget(k_eff)
-    room = int(budget / q)
-    if room >= len(sleeves):
-        return list(sleeves), None
-    dropped = [s.get("name", "?") for s in sleeves[max(room, 0):]]
-    note = (f"PORTFOLIO HEAT CAP: {len(sleeves)} sleeves x {q:.2%} = "
-            f"{len(sleeves) * q:.1%} exceeds {budget:.1%} "
-            f"(k_eff {'unmeasured' if k_eff is None else format(k_eff, '.2f')}); "
-            f"admitting {max(room, 0)}, deferring {dropped}")
-    return sleeves[:max(room, 0)], note
+    solved, why = allocator_heat()
+    return _core.cap_by_heat(sleeves, equity, per_sleeve_q, k_eff,
+                             allocation=(solved, why), rank=allocator_rank(BASE),
+                             venue_cap=venue_heat_cap())
+
+
+def venue_heat_cap() -> tuple[float | None, str]:
+    """The connected account's own hard bar on concurrent risk, or (None, why) for none.
+
+    (principal, 2026-09-09: "we tune only our prop firm side for the prop firm n keep 20 percent
+    heat rule fr the main only".)
+
+    NOTHING CHANGES ON THE MAIN BOOK, twice over: this box has no `ACCOUNT_PROFILES.json`, so the
+    resolver returns None; and the `fusion-live` profile has no daily loss limit, so it would
+    return None even once one is declared. A bar can only appear for an account someone has
+    declared to sit at a venue that can END it on a daily loss.
+
+    READS THE TERMINAL AND NEVER RAISES. An unreachable terminal is an unidentified account, not
+    an absent one -- which the resolver already treats as the tightest envelope WHEN declarations
+    exist, and as no change when they do not. Either way the failure mode is a decision someone
+    wrote down, not an exception inside the cap.
+    """
+    try:
+        acc = _prov.current_account(mt5.account_info())
+    except Exception as exc:
+        acc = None
+        _ = exc
+    return _acct.venue_heat_cap(acc, BASE.parent.parent)
 
 
 def regime_hibernate(sleeves: list[dict]) -> set[str]:
-    """Gateway names of sleeves flagged 'hibernate' in data/regime_state.json
-    (writer: research/regime_monitor.py). Auto-kill: no new brackets until a
-    human re-admits the sleeve (flag cleared or removed).
-
-    Sleeve-key mapping: armed gold windows = 'XAUUSD|asia' etc; promoted
-    sleeves use their ledger tag (symbol|window).
-    """
+    """Gateway names of sleeves flagged 'hibernate' in data/regime_state.json (writer:
+    research/regime_monitor.py). Auto-kill: no new brackets until a human re-admits the sleeve
+    (flag cleared or removed). An absent or unreadable file hibernates nothing; the key mapping
+    is `decision_core.hibernated`."""
     p = BASE / "data" / "regime_state.json"
     if not p.exists():
         return set()
@@ -382,14 +637,7 @@ def regime_hibernate(sleeves: list[dict]) -> set[str]:
         state = json.loads(p.read_text(encoding="utf-8"))
     except Exception:
         return set()
-    flags = state.get("sleeves", {})
-    killed = set()
-    for s in sleeves:
-        name = s["name"]
-        key = f"XAUUSD|{name[5:]}" if name.startswith("gold_") else name.replace(".", "|")
-        if flags.get(key, {}).get("flag") == "hibernate":
-            killed.add(name)
-    return killed
+    return hibernated(sleeves, state)
 
 
 def now() -> str:
@@ -429,74 +677,26 @@ def connect() -> bool:
     return True
 
 
-def day_range(h1: pd.DataFrame, rng: tuple | None, sig_hour: int) -> tuple[float, float] | None:
-    """Range of the LAST calendar day: hours [0, sig_hour) if rng None else rng."""
-    last_date = h1.index[-1].date()
-    day = h1[h1.index.date == last_date]
-    hours = day.index.hour.to_numpy()
-    if rng is None:
-        mask = hours < sig_hour
-    else:
-        mask = (hours >= rng[0]) & (hours < rng[1])
-    if not mask.any():
-        return None
-    return float(day["high"].to_numpy()[mask].max()), float(day["low"].to_numpy()[mask].min())
+def _past_cancel_hour(hour: float) -> bool:
+    """Is the day's pending-order backstop already due? A bracket sent now is cancelled by the
+    housekeeping block in the same pass (named so the housekeeping test can still find its own
+    `if hour >= CANCEL_HOUR` first)."""
+    return hour >= CANCEL_HOUR
 
 
-def bracket_spec(hi: float, lo: float, a: float, tick: float, stops_level: int = 20) -> dict:
-    """Build the bracket orders and their SL/TP as MT5 order fields."""
-    span = hi - lo
-    dist = max(1.2 * a, span)
-    tick = max(tick, 0.01)
-    sl_dist_pts = int(round(dist / tick)) + stops_level
-    tp_dist_pts = int(round(dist * RR / tick))
-    return {
-        "buy_stop": {"price": hi, "sl": hi - sl_dist_pts * tick,
-                     "tp": hi + tp_dist_pts * tick},
-        "sell_stop": {"price": lo, "sl": lo + sl_dist_pts * tick,
-                      "tp": lo - tp_dist_pts * tick},
-    }
-
-
-#: MT5 retcodes this desk has actually seen, and what each one means for the operator.
-#: A bare number in a state file is not a diagnosis, and the difference between these
-#: two is the difference between a five-minute fix and four days of silence.
-RETCODE_MEANING = {
-    10015: ("Invalid price",
-            "the PENDING ORDER PRICE sits inside the broker's stops/freeze distance. "
-            "A buy_stop must be at least stops_level points ABOVE the current ask and a "
-            "sell_stop the same distance BELOW the bid. Session-range brackets hit this "
-            "whenever price is already sitting on the range edge when the order goes out."),
-    10017: ("Trade disabled",
-            "the ACCOUNT or TERMINAL will not accept orders at all. Check "
-            "'Allow algorithmic trading' in Options > Expert Advisors, that the account "
-            "is not read-only or an expired demo, and that the symbol is enabled for "
-            "trading rather than quotes-only."),
-    10016: ("Invalid stops",
-            "the SL or TP is inside the stops/freeze distance from the entry."),
-    10019: ("No money", "insufficient free margin for the requested volume."),
-    10018: ("Market closed", "the venue is shut for this symbol."),
-    10027: ("AutoTrading disabled by client",
-            "the terminal's AutoTrading button is off. One click, in the terminal."),
-    10014: ("Invalid volume", "the lot is below the venue minimum or off its step."),
-}
-
-#: Consecutive placement passes where EVERY order was rejected, after which the
-#: gateway pauses itself. Two, because one can be a bad minute at the open and
-#: three is another whole day of a desk that is not trading and does not know it.
-MAX_TOTAL_REJECTIONS = 2
-
-
-def diagnose(retcode: int | None, comment: str = "") -> str:
-    """Turn a retcode into something an operator can act on."""
-    if retcode is None:
-        return "order_send returned nothing at all — the terminal connection is gone."
-    if retcode in (10008, 10009):                     # placed / done
-        return ""
-    name, why = RETCODE_MEANING.get(
-        retcode, (comment or "unrecognised", "not a retcode this desk has seen before; "
-                  "look it up in the MT5 docs and add it to RETCODE_MEANING."))
-    return f"{retcode} {name}: {why}"
+def _rejection_streak_expired(last_at: str, now_at: str) -> bool:
+    """Is the last rejection older than REJECTION_STREAK_WINDOW_H? Unparseable stamps are NOT
+    expired: a streak the desk cannot date is kept, never forgotten."""
+    try:
+        a = datetime.fromisoformat(last_at.replace("Z", "+00:00"))
+        b = datetime.fromisoformat(now_at.replace("Z", "+00:00"))
+    except (ValueError, AttributeError):
+        return False
+    if a.tzinfo is None:
+        a = a.replace(tzinfo=UTC)
+    if b.tzinfo is None:
+        b = b.replace(tzinfo=UTC)
+    return (b - a).total_seconds() > REJECTION_STREAK_WINDOW_H * 3600.0
 
 
 def note_placement(st: dict, sleeve: str, orders: list) -> bool:
@@ -512,12 +712,10 @@ def note_placement(st: dict, sleeve: str, orders: list) -> bool:
 
     Returns True while the desk is still healthy enough to keep going.
     """
-    # UNAVAILABLE IS NOT REJECTED. A bracket the desk declined to send because
-    # price sat inside the broker's freeze band is the strategy having nothing
-    # to do today, not the venue refusing us. Counting it would pause the desk
-    # on exactly the days it correctly stood aside.
-    attempted = [o for o in orders if not o.get("unavailable")]
-    ok = [o for o in attempted if o.get("retcode") in (10008, 10009)]
+    # UNAVAILABLE IS NOT REJECTED (see `decision_core.placement_verdict`): a bracket the desk
+    # declined to send because price sat inside the broker's freeze band is the strategy having
+    # nothing to do today, not the venue refusing us.
+    attempted, ok, diags = placement_verdict(orders)
     hist = st.setdefault("placement_health", {"consecutive_total_rejections": 0,
                                               "last_ok": None, "last_error": None})
     if not attempted:
@@ -527,17 +725,39 @@ def note_placement(st: dict, sleeve: str, orders: list) -> bool:
         hist["last_ok"] = now()
         return True
 
-    hist["consecutive_total_rejections"] += 1
-    diags = sorted({diagnose(o.get("retcode"), o.get("comment") or "")
-                    for o in orders if diagnose(o.get("retcode"), o.get("comment") or "")})
-    hist["last_error"] = {"time": now(), "sleeve": sleeve, "diagnoses": diags}
+    # A STREAK IS CONSECUTIVE IN TIME, NOT ONLY IN COUNT (see REJECTION_STREAK_WINDOW_H). The
+    # last rejection's own timestamp decides; a record without one keeps its streak -- absence
+    # is not a reason to forget a refusal.
+    prev = hist.get("consecutive_total_rejections") or 0
+    last = hist.get("last_error") or {}
+    last_at = str(last.get("time") or "")
+    if prev and last_at and _rejection_streak_expired(last_at, now()):
+        log(f"placement streak of {prev} last seen {last_at} is older than "
+            f"{REJECTION_STREAK_WINDOW_H:.0f}h -- not evidence about today's venue; counting "
+            f"this rejection from zero")
+        hist["consecutive_total_rejections"] = 0
+        prev = 0
+
+    # THE STREAK COUNTS PASSES, NOT SLEEVES IN ONE PASS (2026-09-08). MAX_TOTAL_REJECTIONS is
+    # "consecutive placement PASSES with no accepted order" -- two, so one bad minute at the open
+    # is not a pause. Counted per sleeve, two windows refused in the SAME minute reached two and
+    # paused the whole desk on one bad minute, which is exactly the case the number was chosen
+    # to tolerate. `main` stamps every pass; a rejection carrying the stamp of the last one is
+    # the same pass and does not advance the count.
+    pass_id = str(st.get("placement_pass") or "")
+    same_pass = bool(pass_id) and prev > 0 and str(last.get("placement_pass") or "") == pass_id
+    if not same_pass:
+        hist["consecutive_total_rejections"] += 1
+    hist["last_error"] = {"time": now(), "sleeve": sleeve, "diagnoses": diags,
+                          "placement_pass": pass_id}
     n = hist["consecutive_total_rejections"]
     log(f"PLACEMENT FAILED ENTIRELY [{sleeve}] -- {n} consecutive pass(es) with no "
-        f"accepted order")
+        f"accepted order" + (" (same pass as the last rejection; not counted twice)"
+                             if same_pass else ""))
     for d in diags:
         log(f"    {d}")
-    if n < MAX_TOTAL_REJECTIONS:
-        return True
+    if same_pass or n < MAX_TOTAL_REJECTIONS:
+        return n < MAX_TOTAL_REJECTIONS
 
     # PAUSE, not just shout. A desk nobody is watching that logs an error and
     # keeps going is a desk that discovers the problem when someone happens to
@@ -547,7 +767,7 @@ def note_placement(st: dict, sleeve: str, orders: list) -> bool:
     PAUSED.write_text(
         f"AUTO-PAUSED {now()}: {n} consecutive placement passes with ZERO accepted "
         f"orders.\n\n" + "\n".join(f"  {d}" for d in diags) +
-        f"\n\nNothing has traded. Fix the cause, then delete this file to re-arm.\n",
+        "\n\nNothing has traded. Fix the cause, then delete this file to re-arm.\n",
         encoding="utf-8")
     log("GATEWAY AUTO-PAUSED: no order has been accepted in "
         f"{n} consecutive passes. Nothing is trading; the reason is in "
@@ -561,7 +781,7 @@ def margin_ok(symbol: str, lot: float, price: float) -> bool:
     acc = mt5.account_info()
     if acc is None or acc.margin_free <= 0:
         return False
-    need = mt5.order_calc_margin(symbol, mt5.ORDER_TYPE_BUY, lot, price)
+    need = mt5.order_calc_margin(mt5.ORDER_TYPE_BUY, symbol, lot, price)
     if need is None:
         return True  # cannot compute; let broker decide
     return need <= acc.margin_free * 0.9
@@ -574,21 +794,221 @@ def margin_ok(symbol: str, lot: float, price: float) -> bool:
 #: than inferred from an absence.
 INTENTS = BASE / "data" / "order_intents.jsonl"
 
+_SV_CACHE: tuple[float, str] = (0.0, "")
 
-def _record_intent(**row) -> None:
-    """Append one placement intent. NEVER raises -- telemetry must not break the money path."""
+
+def _state_vector_id() -> str:
+    """The id of the world description current at this placement, or "" if none is fresh.
+
+    WHY AN ID ON AN ORDER. Slippage is not a constant; it is a function of the conditions the
+    order was sent into -- session, event phase, liquidity state, volatility regime. Recording
+    the price paid without recording the world it was paid in gives an average that describes no
+    situation the desk will ever be in again. Stamping the state vector's id makes execution cost
+    a learnable function of a state that can be reconstructed exactly, months later, from the
+    artifact rather than re-derived from a timestamp and a guess.
+
+    Cached on mtime and NEVER raises: this is on the money path, and an unreadable telemetry file
+    must cost an empty string rather than an order.
+    """
+    global _SV_CACHE
+    try:
+        p = BASE / "data" / "state_vector.json"
+        mtime = p.stat().st_mtime
+        if mtime == _SV_CACHE[0]:
+            return _SV_CACHE[1]
+        sid = str(json.loads(p.read_text("utf-8")).get("id") or "")
+        _SV_CACHE = (mtime, sid)
+        return sid
+    except Exception:
+        return ""
+
+
+DECISIONS = BASE / "data" / "decision_ledger.jsonl"
+
+
+def _release_id() -> str:
+    """The canonical live release this process runs under (libs.ops.release). One SHA, named on
+    every intent and every decision, so a fill weeks later is attributable to one code state."""
+    try:
+        from libs.ops.release import release_id
+        return release_id()
+    except Exception:
+        return "unreleased"
+
+
+def _record_decision(**row) -> None:
+    """Append one CONSIDERED signal -- taken or not -- with why, the size, the execution, the
+    exit rule and the book it was decided inside. NEVER raises.
+
+    THE DATASET NOBODY ELSE HAS. The intent ledger records what was sent to the broker. This
+    records everything the desk LOOKED AT: the bracket it would have placed, whether it placed
+    it, and if not, which filter said no. Joined later to what the market did, that is the P&L of
+    every veto the desk runs, which is the number that decides whether a filter earns its place.
+
+    THE FULL RECORD (2026-09-05, the counterfactual-world order). This wrote a hand-rolled dict
+    -- sleeve, side, price, stop, target, taken, reason -- and nothing could price the
+    alternatives from it. `libs.research.decision_ledger.write_decision` is now the one writer:
+    it normalises this keyword dict through `Decision` (every new field defaulted, so a row
+    written today is a superset of one written last month), keeps `time`, `state_vector_id` and
+    `taken` on the line verbatim so `counterfactual_markout`'s join is untouched, and never
+    raises -- on the money path a ledger fault must cost a row, and a row is cheaper than an
+    order.
+    """
+    from libs.research.decision_ledger import write_decision
+
+    row["time"] = now()
+    row.setdefault("state_vector_id", _state_vector_id())
+    try:
+        row.setdefault("release_id", _release_id())
+    except Exception:
+        row.setdefault("release_id", "unreleased")
+    row.setdefault("size_mult", 1.0)
+    row.setdefault("execution",
+                   "pending_stop" if str(row.get("side") or "").endswith("_stop") else "market")
+    row.setdefault("exit_rule", "fixed_tp")
+    row.setdefault("veto_reason", "" if row.get("taken") else str(row.get("reason") or ""))
+    row.setdefault("portfolio_context", _decision_portfolio_context(row.get("sleeve")))
+    # THE ADDRESS THE DECISION SHARES WITH ITS INTENT (2026-09-08). A placed leg passes the id
+    # `_record_intent` stamped; a veto or a refusal derives the same formula from its own row, so
+    # every decision row has one and a placed one equals its intent's. Costs a field, never a row.
+    with contextlib.suppress(Exception):
+        if not row.get("intent_id"):
+            row["intent_id"] = _intent_id(row.get("symbol"), row.get("sleeve"),
+                                          row.get("side"), row["time"])
+    write_decision(DECISIONS, row, log=log)
+
+
+#: The book at the moment of a decision, memoised for one pass. `allocator_book()` is three disk
+#: reads and a decision pass records many rows; a stale-by-one-pass book is the right trade,
+#: and a failure costs an empty context and never an order.
+_PF_CTX: dict[str, object] = {"at": "", "book": None, "why": ""}
+
+
+def _decision_portfolio_context(sleeve) -> dict:
+    """The portfolio the decision was made inside: the sleeve's target fraction and the book's
+    size, or the reason there is no book. Never raises."""
+    try:
+        stamp = now()[:16]                                  # one refresh per minute at most
+        if _PF_CTX["at"] != stamp:
+            book, why = allocator_book()
+            _PF_CTX.update({"at": stamp, "book": book, "why": why})
+        book, why = _PF_CTX["book"], _PF_CTX["why"]
+        if not isinstance(book, dict):
+            return {"book": None, "why": why}
+        return {"h": book.get(str(sleeve or "")), "n_book": len(book),
+                "total_heat": round(sum(float(v) for v in book.values()), 6), "why": why}
+    except Exception as exc:
+        return {"book": None, "why": f"{type(exc).__name__}: {exc}"}
+
+
+def _record_vetoed_bracket(s: dict, df: pd.DataFrame, sym, reason: str,
+                           detail: str = "") -> bool:
+    """Record the bracket a VETOED sleeve would have placed today, both sides. NEVER raises.
+
+    A veto that fires before the bracket is computed (regime hibernate, the state gate) leaves
+    no trace of what it refused, and a filter with no trace cannot be valued. This computes the
+    same range and the same spec the bracket loop would have -- the identical `day_range` and
+    `bracket_spec` calls, on the identical bars -- and writes the two pending-stop levels with
+    the veto reason, so `counterfactual_markout` can replay them exactly as it replays a margin
+    veto. Nothing is sent to the broker; the sleeve is not sized; state is not touched.
+
+    Returns True when a record was written (range ready), False when the sleeve's range was not
+    yet formed at this hour -- in which case the next pass tries again, exactly as the live loop
+    would have.
+    """
+    try:
+        built = bracket_from_bars(df, s.get("rng"), s["sig_hour"], sym.trade_tick_size,
+                                  int(getattr(sym, "trade_stops_level", 0) or 20))
+        if built is None:
+            return False
+        _hi, _lo, spec = built
+        for side in ("buy_stop", "sell_stop"):
+            leg = spec.get(side) or {}
+            _record_decision(sleeve=s["name"], symbol=s["symbol"], side=side, lot=None,
+                             price=leg.get("price"), sl=leg.get("sl"), tp=leg.get("tp"),
+                             taken=False, reason=reason, detail=detail)
+        return True
+    except Exception as exc:
+        log(f"vetoed-bracket record failed (non-fatal) [{s.get('name')}]: "
+            f"{type(exc).__name__}: {exc}")
+        return False
+
+
+def _minute_of(stamp: str) -> str:
+    """The decision minute exactly as `libs.research.decision_dataset.minute_of` floors it: the
+    ISO stamp parsed ('Z' and a naive stamp read as UTC), floored to the minute, ISO with offset."""
+    s = str(stamp or "").strip()
+    if s.endswith("Z"):
+        s = s[:-1] + "+00:00"
+    d = datetime.fromisoformat(s)
+    d = d.astimezone(UTC) if d.tzinfo is not None else d.replace(tzinfo=UTC)
+    return d.replace(second=0, microsecond=0).isoformat()
+
+
+def _intent_id(symbol, sleeve, side, stamp: str) -> str:
+    """The one address an intent and its decision share.
+
+    `libs.research.decision_dataset.row_id`'s formula -- sha1 of `symbol|sleeve|side|minute`, cut
+    to 16 hex -- computed here rather than imported, so stamping a row on the money path does not
+    load a research module; `test_execution_attribution` pins the two equal. None reads as ""
+    exactly as the dataset reads a side-less refusal. An ADDRESS, never a secret.
+    """
+    key = f"{symbol or ''}|{sleeve or ''}|{side or ''}|{_minute_of(stamp)}"
+    return hashlib.sha1(key.encode("utf-8"), usedforsecurity=False).hexdigest()[:16]
+
+
+def _sleeve_identity(s) -> dict:
+    """The identity keys a sleeve row carries UPSTREAM of its name -- the certificate that
+    justified it and the registry's sleeve id -- read with .get and never required, because the
+    promoter writes them onto sleeves.json in its own wave and a row without them must still
+    place. Only the 31-char name reached the intent row before this; a euro of realised P&L could
+    walk back to a sleeve and no further."""
+    if not isinstance(s, dict):
+        return {}
+    return {k: s[k] for k in ("certificate", "sleeve_id") if s.get(k)}
+
+
+def _record_intent(**row) -> str | None:
+    """Append one placement intent. NEVER raises -- telemetry must not break the money path.
+
+    Returns the `intent_id` stamped on the row (None when the row could not be written), so the
+    decision recorded beside a placement can carry the same address. The id is derived from the
+    row's own `time`, and a caller may pass one; either way a fault in deriving it costs the
+    field and not the row.
+    """
     try:
         row["time"] = now()
+        row.setdefault("state_vector_id", _state_vector_id())
+        try:
+            row.setdefault("release_id", _release_id())
+        except Exception:
+            row.setdefault("release_id", "unreleased")
+        with contextlib.suppress(Exception):
+            row.setdefault("intent_id", _intent_id(row.get("symbol"), row.get("sleeve"),
+                                                   row.get("side"), row["time"]))
         INTENTS.parent.mkdir(parents=True, exist_ok=True)
         with INTENTS.open("a", encoding="utf-8") as f:
             f.write(json.dumps(row, default=str) + "\n")
-    except Exception as exc:                      # noqa: BLE001
+        return row.get("intent_id")
+    except Exception as exc:
         log(f"intent record failed (non-fatal): {type(exc).__name__}: {exc}")
+        return None
 
 
-def place_bracket(st: dict, spec: dict, sleeve: str, symbol: str, lot: float) -> dict:
+def place_bracket(st: dict, spec: dict, sleeve: str, symbol: str, lot: float,
+                  sleeve_row: dict | None = None) -> dict:
+    """Send both legs of a bracket exactly as before; `sleeve_row` (the roster row, optional) is
+    read only to carry the sleeve's certificate and registry id onto the intent row."""
+    if _DESK_STALE is not None:
+        log(f"[{sleeve}] refused: desk stale ({_DESK_STALE['verdict']}), no new risk")
+        return {"ok": False, "stage": "desk_stale", "why": _DESK_STALE["why"]}
     if not st["armed"]:
         log(f"SHADOW [{sleeve}] would place bracket: {json.dumps(spec, default=str)}")
+        for side in ("buy_stop", "sell_stop"):
+            s = spec.get(side) or {}
+            _record_decision(sleeve=sleeve, symbol=symbol, side=side, lot=lot,
+                             price=s.get("price"), sl=s.get("sl"), tp=s.get("tp"),
+                             taken=False, reason="shadow_not_armed")
         return {"shadow": True, "orders": []}
     sent = []
     # Current market, read ONCE for the legality check below. A pending order
@@ -602,7 +1022,26 @@ def place_bracket(st: dict, spec: dict, sleeve: str, symbol: str, lot: float) ->
 
     for side in ("buy_stop", "sell_stop"):
         s = spec[side]
-        if _t is not None and _lvl > 0:
+        # STOPS_LEVEL ZERO MEANS NO MINIMUM DISTANCE, NOT "ANY PRICE IS LEGAL" (fixed 2026-09-14).
+        #
+        # This was guarded `and _lvl > 0`, and Fusion reports trade_stops_level 0 on every symbol
+        # -- XAUUSD, EURUSD, AUDNZD all measured at 0. So `entry_is_legal` was NEVER CALLED on
+        # this broker, and the function whose own docstring says "THE CAUSE OF EVERY 10015 THIS
+        # DESK HAS SEEN" was switched off on exactly the venue the desk trades.
+        #
+        # The SIDE requirement is unconditional and has nothing to do with the distance band: a
+        # buy_stop below the ask is not a stop order at all, it is a limit order wearing the wrong
+        # name, and MT5 rejects it outright. `entry_is_legal` already handles a zero band
+        # correctly -- band becomes 0 and `gap < 0` still bites -- so the guard was the only thing
+        # standing between the desk and three of its eight rejections.
+        #
+        # MEASURED on the live intent ledger: every 10015 was a buy_stop below the ask.
+        #     buy_stop 4407.85 vs ask 4408.13   (0.28 below)
+        #     buy_stop 4407.85 vs ask 4408.09   (0.24 below)
+        #     buy_stop 4357.47 vs ask 4371.25  (13.78 below)
+        # Price had run past the range high between the range completing and the order going out,
+        # which is the ordinary behaviour of a breakout, not an anomaly.
+        if _t is not None:
             legal, why_illegal = entry_is_legal(
                 float(s["price"]), side, float(_t.bid), float(_t.ask), _point, _lvl)
             if not legal:
@@ -614,6 +1053,10 @@ def place_bracket(st: dict, spec: dict, sleeve: str, symbol: str, lot: float) ->
                 # the days its strategy has nothing to do.
                 sent.append({"side": side, "retcode": None, "unavailable": True,
                              "comment": why_illegal})
+                _record_decision(sleeve=sleeve, symbol=symbol, side=side, lot=lot,
+                                 price=s.get("price"), sl=s.get("sl"), tp=s.get("tp"),
+                                 taken=False, reason="entry_inside_freeze_band",
+                                 detail=why_illegal)
                 continue
         req = {
             "action": mt5.TRADE_ACTION_PENDING,
@@ -623,15 +1066,26 @@ def place_bracket(st: dict, spec: dict, sleeve: str, symbol: str, lot: float) ->
             "price": s["price"],
             "sl": s["sl"],
             "tp": s["tp"],
-            "type_time": mt5.ORDER_TIME_GTC,
+            # BROKER-SIDE EXPIRY, so the TTL survives this process dying. A gateway-side sweep
+            # only runs while the gateway runs, and an OOM kill or a box restart would leave a
+            # stale bracket resting at the broker indefinitely -- exposure nothing is managing.
+            # `_expiry_request` falls back to GTC when the symbol refuses timed orders, and the
+            # sweep below is what covers that case.
+            **_expiry_request(symbol, sleeve, spec.get("window")),
             "type_filling": mt5.ORDER_FILLING_RETURN,
             "deviation": 20,
             "magic": MAGIC,
-            "comment": f"DW{sleeve}",
+            "comment": order_comment(sleeve),
         }
+        # LATENCY, MEASURED IN PLACE (2026-09-08): the wall clock around the one call that
+        # reaches the venue. `decision_dataset` has read `latency_ms` off the intent since it was
+        # written and nothing ever wrote it -- it is the one execution feature that cannot be
+        # reconstructed afterwards. Recorded, never acted on.
+        _t0 = time.perf_counter()
         res = mt5.order_send(req)
+        _lat_ms = round((time.perf_counter() - _t0) * 1000.0, 3)
         code = res.retcode if res else None
-        why = diagnose(code, getattr(res, "comment", "") or "")
+        why = diagnose(code, getattr(res, "comment", "") or "", _send_error(res))
         if why:
             log(f"ORDER FAILED [{sleeve}] {side}: {why}")
         # THE INTENT, RECORDED AT PLACEMENT. Without this line slippage is unknowable: once the
@@ -641,11 +1095,27 @@ def place_bracket(st: dict, spec: dict, sleeve: str, symbol: str, lot: float) ->
         # discovered its real execution cost was 50x its modelled one, on trades that needed
         # twelve days of funding to repay a single entry. Written at send time, joined by ticket
         # in `markout.py` when the deal closes.
-        _record_intent(sleeve=sleeve, symbol=symbol, side=side, lot=lot,
-                       intended=float(s["price"]), sl=float(s["sl"]), tp=float(s["tp"]),
-                       ticket=(getattr(res, "order", None) if res else None), retcode=code)
+        # THE CONDITIONS AT DECISION, not just the price asked. Slippage measured without the
+        # market it was paid into averages over every situation at once and describes none of
+        # them; with the quote and spread recorded here, execution cost becomes a function of
+        # symbol, hour, spread and state rather than one scalar per symbol. `_t` was already read
+        # above for the legality check, so this costs nothing and cannot fail separately.
+        _iid = _record_intent(
+            sleeve=sleeve, symbol=symbol, side=side, lot=lot,
+            intended=float(s["price"]), sl=float(s["sl"]), tp=float(s["tp"]),
+            ticket=(getattr(res, "order", None) if res else None), retcode=code,
+            decision_bid=(float(_t.bid) if _t is not None else None),
+            decision_ask=(float(_t.ask) if _t is not None else None),
+            spread_at_decision=(float(_t.ask) - float(_t.bid) if _t is not None else None),
+            point=_point, stops_level=_lvl, order_type="pending_stop", latency_ms=_lat_ms,
+            **_sleeve_identity(sleeve_row))
         sent.append({"side": side, "retcode": code,
                      "comment": res.comment if res else None})
+        _record_decision(sleeve=sleeve, symbol=symbol, side=side, lot=lot,
+                         price=s.get("price"), sl=s.get("sl"), tp=s.get("tp"),
+                         taken=(not why), reason=("placed" if not why else "broker_rejected"),
+                         detail=(why or ""), ticket=(getattr(res, "order", None) if res else None),
+                         intent_id=_iid)
         log(f"ORDER [{sleeve}] {side} -> retcode={code} "
             f"{res.comment if res else ''}")
     # THE SUCCESS CHECK. Without it a pass where every order was refused is
@@ -655,55 +1125,238 @@ def place_bracket(st: dict, spec: dict, sleeve: str, symbol: str, lot: float) ->
     return {"shadow": False, "orders": sent}
 
 
-def entry_is_legal(price: float, side: str, bid: float, ask: float,
-                   point: float, stops_level: int) -> tuple[bool, str]:
-    """Is this pending-order price far enough from market for the broker?
+def _expiry_request(symbol: str, sleeve: str = "", window: str | None = None) -> dict:
+    """`type_time`/`expiration` fields for a bracket, or GTC when the symbol refuses timed orders.
 
-    THE CAUSE OF EVERY 10015 THIS DESK HAS SEEN. `bracket_spec` applies
-    stops_level to the SL distance, which is a different constraint: a pending
-    order is also rejected when its own ENTRY sits inside the stops/freeze band.
-    A buy_stop must be at least stops_level points above the ask, a sell_stop
-    the same below the bid.
-
-    Session-range brackets hit this constantly, because the whole point of the
-    strategy is to place the order AT the session extreme — and by the time the
-    range is complete, price is frequently sitting right on it.
-
-    Refusing here rather than pushing the price out is deliberate. Moving the
-    entry to the nearest legal level would silently trade a different strategy:
-    the edge was measured at the range boundary, not at the boundary plus
-    whatever the broker's freeze distance happens to be today.
+    MT5 exposes what a symbol accepts through `symbol_info().expiration_mode`; a symbol without
+    the SPECIFIED bit rejects the whole order if one is sent, so this asks first rather than
+    losing the bracket. Absence of the information falls back to GTC and the gateway-side sweep,
+    never to an unbounded order the desk believes is bounded.
     """
-    band = max(stops_level, 0) * max(point, 1e-9)
-    if side == "buy_stop":
-        gap = price - ask
-        if gap < band:
-            return False, (f"buy_stop {price:.2f} is {gap:.2f} above ask {ask:.2f}; "
-                           f"broker needs {band:.2f}. Price is already at the range "
-                           f"edge, so this bracket is NOT AVAILABLE today rather "
-                           f"than available at a different level.")
-        return True, ""
-    gap = bid - price
-    if gap < band:
-        return False, (f"sell_stop {price:.2f} is {gap:.2f} below bid {bid:.2f}; "
-                       f"broker needs {band:.2f}. NOT AVAILABLE today.")
-    return True, ""
+    try:
+        info = mt5.symbol_info(symbol)
+        mode = int(getattr(info, "expiration_mode", 0) or 0)
+        if info is not None and (mode & mt5.SYMBOL_EXPIRATION_SPECIFIED):
+            until = bracket_deadline(sleeve, window)
+            return {"type_time": mt5.ORDER_TIME_SPECIFIED,
+                    "expiration": int(until.timestamp())}
+    except Exception as exc:
+        log(f"{symbol}: expiration mode unreadable ({type(exc).__name__}); bracket is GTC "
+            f"and relies on the {BRACKET_TTL_HOURS:.0f}h sweep")
+    return {"type_time": mt5.ORDER_TIME_GTC}
+
+
+def expire_stale_brackets(st: dict) -> int:
+    """Cancel this desk's pending orders whose SESSION has ended. Returns how many.
+
+    THE SWEEP IS NOT REDUNDANT WITH THE BROKER EXPIRY. It covers the symbols whose expiration
+    mode refuses a timed order, brackets placed before this TTL existed, and anything left
+    resting by a gateway that died between placing and cancelling. It is keyed on MAGIC, so it
+    can only ever touch orders this desk placed.
+    """
+    try:
+        orders = mt5.orders_get() or ()
+    except Exception as exc:
+        log(f"TTL sweep skipped: orders_get failed ({type(exc).__name__})")
+        return 0
+    killed = 0
+    now_utc = datetime.now(tz=UTC)
+    for o in orders:
+        if int(getattr(o, "magic", 0) or 0) != MAGIC:
+            continue
+        setup = getattr(o, "time_setup", None)
+        if not setup:
+            continue
+        placed = datetime.fromtimestamp(int(setup), tz=UTC)
+        # THE SAME PER-SESSION RULE THE ORDER WAS PLACED UNDER, recovered from its own label, so
+        # the sweep and the broker expiry can never disagree. A flat cutoff here would defeat the
+        # point: it would keep an afternoon bracket alive hours past the force-close the broker
+        # had already been told to kill it at.
+        sleeve = sleeve_from_comment(str(getattr(o, "comment", "") or ""))
+        if bracket_deadline(sleeve) > now_utc and placed.date() == now_utc.date():
+            continue
+        res = mt5.order_send({"action": mt5.TRADE_ACTION_REMOVE, "order": o.ticket})
+        gone = not any(getattr(x, "ticket", None) == o.ticket
+                       for x in (mt5.orders_get(symbol=o.symbol) or ()))
+        if gone:
+            killed += 1
+            log(f"TTL: cancelled {o.symbol} order {o.ticket} placed {placed:%H:%M} "
+                f"({(datetime.now(tz=UTC) - placed).total_seconds() / 3600:.1f}h old, "
+                f"limit {BRACKET_TTL_HOURS:.0f}h)")
+        else:
+            log(f"TTL: {o.symbol} order {o.ticket} SURVIVED cancellation "
+                f"(retcode {getattr(res, 'retcode', None)}); it is still resting")
+    return killed
 
 
 def cancel_pending(st: dict, symbol: str) -> None:
-    if st["armed"]:
-        for o in mt5.orders_get(symbol=symbol) or []:
-            mt5.order_delete(o.ticket)
-            log(f"cancelled pending ticket {o.ticket} ({symbol})")
-    else:
+    """Remove unfilled pending orders, and PROVE each one is gone.
+
+    THIS NEVER WORKED ONCE. It called `mt5.order_delete(ticket)`, and the MetaTrader5 Python
+    package HAS NO SUCH FUNCTION -- verified against the live terminal 2026-09-01:
+    `hasattr(mt5, "order_delete")` is False. Removal is documented as order_send() with
+    TRADE_ACTION_REMOVE (=8). So every call raised AttributeError while the very next line
+    logged "cancelled pending ticket <n>", and unfilled buy/sell stops were left standing on a
+    live account with the desk reporting them cancelled.
+
+    IT ALSO TOOK THE REST OF THE PASS WITH IT. Neither this function nor its caller caught the
+    exception, and the housekeeping block runs at hour >= CANCEL_HOUR (20:30 UTC) BEFORE
+    close_positions, record_trades and reconcile. From 20:30 onward, every one of those was
+    skipped -- which is the shape of `last_reconcile` standing at 2026-08-17 and of a live
+    ledger that never appeared.
+
+    SO CANCELLATION IS NOW IDEMPOTENT AND VERIFIED, not hopeful: send the documented removal,
+    read the retcode, then re-read orders_get and confirm the ticket is ABSENT. A ticket that
+    survives is reported as still live rather than logged as cancelled, because a cancellation
+    the desk believes in but the venue did not perform is worse than a loud failure. One
+    ticket's failure never aborts the others, and never the pass.
+    """
+    if not st["armed"]:
         log("SHADOW would cancel unfilled brackets")
+        return
+    pending = list(mt5.orders_get(symbol=symbol) or [])
+    if not pending:
+        return
+    for o in pending:
+        ticket = getattr(o, "ticket", None)
+        try:
+            res = mt5.order_send({"action": mt5.TRADE_ACTION_REMOVE, "order": ticket})
+        # Broad on purpose: one bad ticket must not strand the others, nor abort the pass.
+        except Exception as exc:
+            log(f"CANCEL FAILED ticket {ticket} ({symbol}): "
+                f"{type(exc).__name__}: {exc}; order may still be live")
+            continue
+        retcode = getattr(res, "retcode", None)
+        # THE VENUE IS THE STATE, not the return value. A retcode can be optimistic, a result can
+        # be None on a dropped connection, and either way the only fact that matters is whether
+        # the ticket is still accepting a fill.
+        still = any(getattr(x, "ticket", None) == ticket
+                    for x in (mt5.orders_get(symbol=symbol) or []))
+        if still:
+            log(f"CANCEL NOT CONFIRMED ticket {ticket} ({symbol}): retcode={retcode}, "
+                f"order STILL PRESENT after remove -- treat as live")
+            continue
+        log(f"cancelled pending ticket {ticket} ({symbol}) retcode={retcode}, "
+            f"confirmed absent from orders_get")
 
 
-def close_positions(st: dict, symbol: str) -> None:
+#: How many positions the DESK may hold on one symbol in one direction across EVERY sleeve.
+#: MEASURED 2026-09-16 on EURCHF: seven parameterisations of one discovered mechanism shorted a
+#: 12-pip box ~40 times in twelve hours, re-entering every bar while the pair drifted into their
+#: stops -- one bet taken forty times, each copy paying the spread, 0-for-27 between five of
+#: them. Single-position discipline is per SLEEVE; this is the same discipline at the level
+#: the venue actually nets, symbol-and-direction. The heat a refused copy would have taken stays
+#: in the budget for a sleeve on a leg the book does not already hold (leg_balance's boost side),
+#: so the book is not smaller -- it is not forty copies of one trade.
+MAX_SAME_SIDE_PER_SYMBOL = 2
+MAX_SAME_SIDE_PER_SYMBOL = int(os.environ.get("MAX_SAME_SIDE_PER_SYMBOL", MAX_SAME_SIDE_PER_SYMBOL))
+REFUSALS = BASE / "data" / "refused_orders.jsonl"
+
+
+def same_side_count(symbol: str, side: int, positions: object,
+                    pending: dict[str, float] | None = None) -> int:
+    """Desk-tagged positions already open on `symbol` in `side`'s direction, plus one when this
+    pass has already decided to send one on the same side (`pending`, signed lots by symbol)."""
+    want = 0 if side > 0 else 1                                     # MT5: 0 = buy, 1 = sell
+    n = 0
+    for p in positions or []:
+        if str(getattr(p, "symbol", "") or "") != symbol:
+            continue
+        tagged = str(getattr(p, "comment", "") or "").startswith("DW")
+        if int(getattr(p, "type", -1)) == want and tagged:
+            n += 1
+    q = float((pending or {}).get(symbol, 0.0))
+    if q * (1.0 if side > 0 else -1.0) > 0:
+        n += 1
+    return n
+
+
+def journal_refusal(sleeve: str, symbol: str, side: int, stage: str, why: str,
+                    lot: float | None = None, price: float | None = None) -> None:
+    """Every order the desk declines to send is written down, so `missed_growth` can price the
+    refusal instead of the refusal disappearing into a log line. Never raises."""
+    try:
+        REFUSALS.parent.mkdir(parents=True, exist_ok=True)
+        with REFUSALS.open("a", encoding="utf-8") as fh:
+            fh.write(json.dumps({"time": now(), "sleeve": sleeve, "symbol": symbol,
+                                 "side": "buy" if side > 0 else "sell", "stage": stage,
+                                 "why": why, "lot": lot, "price": price}) + "\n")
+    except Exception:
+        pass
+
+
+#: A stop closer than this many spreads to the entry is inside the quote's own noise. Three:
+#: the entry pays one spread, and a stop two more away is still hit by a normal widening at a
+#: session open without any move in the mid.
+MIN_STOP_SPREAD_MULT = 3.0
+MIN_STOP_SPREAD_MULT = float(os.environ.get("MIN_STOP_SPREAD_MULT", MIN_STOP_SPREAD_MULT))
+
+
+def floor_stop_to_spread(plan: object, tick: object) -> tuple[object, str]:
+    """Scale a scalp plan's stop AND target so the stop is at least MIN_STOP_SPREAD_MULT
+    spreads from the entry. Returns (plan, note); the plan is unchanged when already outside."""
+    try:
+        spread = float(getattr(tick, "ask", 0.0)) - float(getattr(tick, "bid", 0.0))
+        dist = float(getattr(plan, "stop_dist", 0.0))
+        side = int(getattr(plan, "side", 0))
+        entry = float(getattr(plan, "entry_ref", 0.0))
+        target = float(getattr(plan, "target", 0.0))
+    except (TypeError, ValueError):
+        return plan, "stop floor: plan unreadable, left as planned"
+    if not (spread > 0.0 and dist > 0.0 and side in (1, -1)):
+        return plan, "stop floor: no spread or no stop to compare, left as planned"
+    floor = MIN_STOP_SPREAD_MULT * spread
+    if dist >= floor:
+        return plan, f"stop floor: {dist:.5g} >= {floor:.5g} ({MIN_STOP_SPREAD_MULT:g}x spread)"
+    k = floor / dist
+    try:
+        from dataclasses import replace as _replace
+        new = _replace(plan, stop=entry - side * floor,
+                       target=entry + side * abs(target - entry) * k,
+                       stop_dist=floor)
+    except Exception as exc:
+        return plan, (f"stop floor: could not rescale the plan ({type(exc).__name__}); "
+                      f"left as planned")
+    return new, (f"stop floor: {dist:.5g} -> {floor:.5g} ({MIN_STOP_SPREAD_MULT:g}x spread "
+                 f"{spread:.5g}); target scaled x{k:.2f} to keep the certified R:R")
+
+
+def scalp_position_tags(sleeves: list[dict]) -> frozenset[str]:
+    """The order-comment tags of the scalp lane's positions: the ones the gold book's end-of-day
+    close must leave alone. Every lane tags its positions `DW<sleeve name>` (`place_bracket`,
+    `run_scalp_sleeves`), so the tag is the lane."""
+    return frozenset(order_comment(s["name"]) for s in sleeves
+                     if s.get("exec") == "scalp_market" and s.get("name"))
+
+
+def family_position_tags(sleeves: list[dict]) -> frozenset[str]:
+    """The order-comment tags of the family lane's positions -- the second lane the gold book's
+    end-of-day close must leave alone. Same tag, same reason as `scalp_position_tags`: a family
+    sleeve's exit is its certified `ttl_bars`, run by the TTL housekeeping in
+    `run_family_sleeves`, never the 19:30 UTC backstop."""
+    return frozenset(order_comment(s["name"]) for s in sleeves
+                     if s.get("exec") == "family_market" and s.get("name"))
+
+
+def close_positions(st: dict, symbol: str, keep_tags: frozenset[str] = frozenset()) -> None:
+    """Force-close every position on `symbol` except those tagged in `keep_tags`.
+
+    THE GOLD BOOK'S END OF DAY IS NOT THE SCALP LANE'S (2026-09-08). CLOSE_HOUR (19:30 UTC) is
+    the gold windows' rule: their brackets are day trades and nothing of theirs may sit
+    overnight. It was applied BY SYMBOL, and the promoted scalp sleeves trade the same XAUUSD --
+    so a basket an 'all'-session M15 sleeve opened at 19:31 was closed at 19:32 by the gold
+    book's backstop, spread paid for nothing, every night. The forward clock that certified
+    that sleeve held its positions to their own time exit (`scalp_exec` max_hold) straight
+    through 19:30; the live lane did not, so live was not the certified behaviour. Scoping the
+    close by the lane's tag restores it. This LOOSENS nothing: the scalp lane keeps its own
+    TTL and session exits, and the Friday weekend close below still takes every lane flat.
+    """
     if not st["armed"]:
         log("SHADOW would force-close open positions")
         return
     for p in mt5.positions_get(symbol=symbol) or []:
+        if keep_tags and str(getattr(p, "comment", "") or "") in keep_tags:
+            continue
         tick = mt5.symbol_info_tick(symbol)
         req = {
             "action": mt5.TRADE_ACTION_DEAL,
@@ -720,10 +1373,169 @@ def close_positions(st: dict, symbol: str) -> None:
             f"{res.comment if res else ''}")
 
 
+def _original_stop_distance(st: dict, ticket: int, price_open: float, sl: float) -> float | None:
+    """The stop distance this position was OPENED with, captured once and then remembered.
+
+    R is defined against the INITIAL risk. Once management starts moving the stop, the live
+    `sl` no longer encodes it, so the distance has to be captured while it still does -- the
+    first time this ticket is seen -- and reused thereafter.
+
+    THE RESTART HAZARD IS REAL AND IS LOGGED RATHER THAN HIDDEN. If `data/gateway_state.json`
+    is lost while a managed position is open, first sight after the restart captures the ALREADY
+    MOVED stop and every subsequent R for that ticket is computed against a smaller denominator,
+    overstating the multiple. The capture is therefore logged loudly on the pass it happens, so
+    a capture appearing for a position that is not brand new is visible as the anomaly it is.
+    A position with no stop at all returns None and is left alone: there is no initial risk to
+    ratchet against, and inventing one would be inventing the denominator of every number that
+    follows.
+    """
+    if not sl:
+        return None
+    store = st.setdefault("orig_stop_dist", {})
+    key = str(ticket)
+    if key not in store:
+        dist = abs(price_open - sl)
+        if dist <= 0:
+            return None
+        store[key] = dist
+        log(f"MANAGE capture: ticket {ticket} initial stop distance {dist:.5f} "
+            f"(open {price_open:.5f} sl {sl:.5f}) -- expected only on a position's first pass")
+    return float(store[key])
+
+
+def manage_open_positions(st: dict, sleeves: list[dict]) -> None:
+    """Ratchet the stop on every open position. SHADOW UNLESS `st["armed"]`.
+
+    THE GAP THIS CLOSES. `engine.py` models a trailing, banking runner and every backtest
+    expectancy on this desk is computed with it applied; this gateway placed a stop at entry and
+    never touched it again. The two were different strategies and the difference was the whole
+    right tail -- a live winner could round-trip to its opening stop, an outcome the backtest
+    would never have shown because there the stop had moved.
+
+    THE BROKER IS THE STATE. `p.sl` is re-read from `positions_get` on every pass and fed in as
+    the current stop, so a rejected modify simply leaves the next pass re-proposing against the
+    unchanged level. Nothing is cached that could disagree with the account, which is what makes
+    this idempotent and acknowledgement-driven rather than merely hopeful.
+    """
+    symbols = list({s["symbol"] for s in sleeves} | {"XAUUSD"})
+    _fixed_tags = {order_comment(str(s.get("name") or "")): str(s.get("name") or "")
+                   for s in sleeves if s.get("exec") == "family_market" and s.get("name")}
+    for symbol in symbols:
+        positions = mt5.positions_get(symbol=symbol) or []
+        if not positions:
+            continue
+        info = mt5.symbol_info(symbol)
+        if info is None:
+            log(f"MANAGE {symbol}: no symbol_info; skipped")
+            continue
+        for p in positions:
+            side = 1 if p.type == mt5.POSITION_TYPE_BUY else -1
+            # A FIXED BRACKET IS NOT RATCHETED (2026-09-16). This routine trailed EVERY position,
+            # and the family lane's certificates were earned with a fixed stop, a fixed target
+            # and a time exit (`engine.Signal.runner_trail_k = 0`: "0 = fixed stop"; no
+            # orthogonal family sets it). Trailing them is a lookalike strategy under a certified
+            # name: measured that day, five forex closes at a manage-tightened stop, five losses,
+            # -4.25 EUR, on holds the certificate would have carried to their time exit. Only a
+            # position whose own signal carried a trail (`trail_k` recorded at the send) is
+            # managed here; the gold and scalp lanes are unchanged.
+            _fam_name = _fixed_tags.get(str(getattr(p, "comment", "") or ""))
+            if _fam_name is not None:
+                _trail = float(((st.get("generic") or {}).get(_fam_name) or {})
+                               .get("trail_k") or 0.0)
+                if not _trail > 0.0:
+                    log(f"MANAGE ticket {p.ticket} ({symbol}): certified exit is a fixed "
+                        f"bracket and the time exit; not ratcheted")
+                    continue
+            dist = _original_stop_distance(st, p.ticket, p.price_open, p.sl)
+            if dist is None:
+                log(f"MANAGE ticket {p.ticket} ({symbol}): no stop on the position; "
+                    f"nothing to ratchet against and none invented")
+                continue
+
+            # Bars SINCE ENTRY only. A pre-entry extreme is a level the thesis never reached.
+            since = mt5.copy_rates_range(symbol, mt5.TIMEFRAME_H1,
+                                         datetime.fromtimestamp(p.time, tz=UTC),
+                                         datetime.now(tz=UTC))
+            if since is None or len(since) < 2:
+                log(f"MANAGE ticket {p.ticket} ({symbol}): fewer than 2 bars since entry; "
+                    f"too early to locate an extreme")
+                continue
+            bars = pd.DataFrame(since)
+
+            # ATR on a longer window than the holding period, because a young position has too
+            # few bars of its own to characterise volatility with.
+            h1 = mt5.copy_rates_from_pos(symbol, mt5.TIMEFRAME_H1, 0, 400)
+            if h1 is None or len(h1) < ATR_N + 1:
+                log(f"MANAGE ticket {p.ticket} ({symbol}): ATR unavailable; skipped")
+                continue
+            atr = atr_last(pd.DataFrame(h1))
+            if not (atr > 0):
+                log(f"MANAGE ticket {p.ticket} ({symbol}): ATR non-positive; skipped")
+                continue
+
+            extreme, stall = _pm.extreme_and_stall(
+                highs=[float(x) for x in bars["high"]],
+                lows=[float(x) for x in bars["low"]], side=side)
+            decision = _pm.ratchet(
+                entry=float(p.price_open), current_stop=float(p.sl), stop_distance=dist,
+                extreme=extreme, atr=atr, side=side, bars_since_extreme=stall)
+
+            tag = f"MANAGE ticket {p.ticket} ({symbol})"
+            if not decision.moves:
+                log(f"{tag}: {decision.reason}")
+                continue
+            if decision.improvement_r < MIN_RATCHET_IMPROVEMENT_R:
+                log(f"{tag}: improvement {decision.improvement_r:+.3f}R below the "
+                    f"{MIN_RATCHET_IMPROVEMENT_R:.2f}R floor; not worth a modify")
+                continue
+
+            # THE VENUE'S OWN MINIMUM DISTANCE. A stop inside stops_level is rejected, and a
+            # rejection every pass is a management loop that looks busy and protects nothing.
+            stops_level = int(getattr(info, "trade_stops_level", 0) or 0)
+            tick_size = float(getattr(info, "trade_tick_size", 0.0) or 0.0)
+            tick_now = mt5.symbol_info_tick(symbol)
+            if stops_level and tick_size and tick_now is not None:
+                ref = tick_now.bid if side == 1 else tick_now.ask
+                if abs(ref - decision.new_stop) < stops_level * tick_size:
+                    log(f"{tag}: proposed stop {decision.new_stop:.5f} is inside the venue's "
+                        f"{stops_level}-point stops level; held")
+                    continue
+
+            if not st["armed"]:
+                log(f"SHADOW would modify {tag}: sl {p.sl:.5f} -> {decision.new_stop:.5f} "
+                    f"| {decision.reason}")
+                continue
+
+            res = mt5.order_send({
+                "action": mt5.TRADE_ACTION_SLTP,
+                "symbol": symbol,
+                "position": p.ticket,
+                "sl": decision.new_stop,
+                "tp": p.tp,
+                "magic": MAGIC,
+            })
+            rc = res.retcode if res else None
+            log(f"{tag}: MODIFY sl {p.sl:.5f} -> {decision.new_stop:.5f} "
+                f"(protected {decision.protected_r_before:+.3f}R -> "
+                f"{decision.protected_r_after:+.3f}R) retcode={rc} "
+                f"{diagnose(rc, res.comment if res else '')}")
+
+            # CONFIRM FROM THE BROKER, not from the return code. A retcode is an answer about
+            # the request; the position is the answer about the account.
+            after = mt5.positions_get(ticket=p.ticket) or []
+            if after:
+                got = float(after[0].sl)
+                if abs(got - decision.new_stop) > (tick_size or 1e-9):
+                    log(f"{tag}: WARNING requested sl {decision.new_stop:.5f} but the broker "
+                        f"reports {got:.5f} -- next pass re-proposes against what it reports")
+
+
 def reconcile(st: dict) -> dict:
     pos = []
     pend = []
-    for symbol in list({s["symbol"] for s in load_sleeves()}) + ["XAUUSD"]:
+    # ONE READ PER SYMBOL: XAUUSD is on the roster too, and appending it again listed every gold
+    # position and pending order twice (`pending=4` for two orders, measured 2026-09-16).
+    for symbol in sorted({s["symbol"] for s in load_sleeves()} | {"XAUUSD"}):
         pos += mt5.positions_get(symbol=symbol) or []
         pend += mt5.orders_get(symbol=symbol) or []
     st["position"] = [
@@ -737,6 +1549,61 @@ def reconcile(st: dict) -> dict:
     return st
 
 
+def _position_context(deal: object) -> tuple[float, float, float, str]:
+    """(entry price, stop, take-profit, comment) for the position a closing deal belongs to.
+
+    MT5 splits what this desk needs across two record types and joins them only on
+    `position_id`: the DEAL holds the executed price and P&L, the ORDER holds the stop and
+    target. A closing deal therefore knows what it made and not what it risked, and R is the
+    ratio of the two -- so both must be fetched.
+
+    RETURNS ZEROS RATHER THAN RAISING. A single unreadable position must not abort the loop that
+    records every other fill: that is exactly how one AttributeError kept the entire live ledger
+    empty while the account carried real P&L.
+    """
+    e = _position_entry(getattr(deal, "position_id", None))
+    return e["entry_price"], e["sl"], e["tp"], e["comment"]
+
+
+def _position_entry(pid) -> dict:
+    """Everything the position's OPENING side knows, keyed so a closing deal can be joined back
+    to the intent that caused it.
+
+    THE JOIN THAT NEVER MATCHED (2026-09-08, the review's "P&L happened, 0 attributed fills").
+    `order_intents.jsonl` records the pending ENTRY order's ticket at send time. The ledger
+    recorded closing deals, whose `order` is the server-created stop/target order -- a ticket
+    the desk never saw -- and `markout.compute` joined the two on exactly those fields. So the
+    join could not match by construction, on any account, on any day; and the "fill" it would
+    have compared was the CLOSING price, not the entry. MT5 offers one bridge: a position's id is
+    the ticket of the order that opened it, and every deal of the position carries `position_id`.
+    This returns that bridge -- the entry deal's `order` (== the intent's ticket for a pending
+    stop) and the entry deal's own ticket -- beside the entry price, stop and target.
+
+    Zeros and empties rather than raising: one unreadable position must not abort the loop that
+    records every other fill.
+    """
+    out = {"entry_price": 0.0, "sl": 0.0, "tp": 0.0, "comment": "",
+           "entry_order": None, "entry_deal": None, "position_id": pid}
+    if not pid:
+        return out
+    try:
+        for o in (mt5.history_orders_get(position=pid) or ()):
+            if not out["comment"]:
+                out["comment"] = str(getattr(o, "comment", "") or "")
+            if float(getattr(o, "sl", 0.0) or 0.0) > 0:
+                out["sl"] = float(o.sl)
+                out["tp"] = float(getattr(o, "tp", 0.0) or 0.0)
+        for x in (mt5.history_deals_get(position=pid) or ()):
+            if getattr(x, "entry", None) == mt5.DEAL_ENTRY_IN:
+                out["entry_price"] = float(getattr(x, "price", 0.0) or 0.0)
+                out["entry_order"] = getattr(x, "order", None)
+                out["entry_deal"] = getattr(x, "ticket", None)
+                break
+    except Exception as exc:
+        log(f"position {pid}: context unreadable ({type(exc).__name__}); R left unmeasured")
+    return out
+
+
 def record_trades(st: dict, sleeves: list[dict]) -> None:
     """Append closed trades (deal OUT with DW comment) to the live ledger.
 
@@ -745,29 +1612,104 @@ def record_trades(st: dict, sleeves: list[dict]) -> None:
     """
     if not st["armed"]:
         return
+
+    # ALREADY-RECORDED DEALS, so the window below can be widened without duplicating rows.
+    # The ledger is append-only JSONL and `deal` is the venue's own ticket, unique per fill.
+    seen_deals: set = set()
+    if LEDGER.exists():
+        try:
+            for line in LEDGER.read_text(encoding="utf-8").splitlines():
+                line = line.strip()
+                if not line:
+                    continue
+                with contextlib.suppress(ValueError):
+                    tid = json.loads(line).get("deal")
+                    if tid is not None:
+                        seen_deals.add(tid)
+        except OSError:
+            seen_deals = set()
+
     try:
-        day_start = datetime.combine(datetime.now(tz=UTC).date(),
-                                     datetime.min.time(), tzinfo=UTC)
-        deals = mt5.history_deals_get(day_start, datetime.now(tz=UTC), magic=MAGIC) or []
-    except Exception:
+        # A DAY-WIDE WINDOW LOSES EVERY FILL THE GATEWAY DID NOT SEE THE SAME DAY. Any pass that
+        # is skipped, OOM-killed or started after midnight left that day's closes unrecorded
+        # forever, because nothing ever looked backwards. Dedupe by deal ticket makes a wider
+        # window free, so the lookback is bounded by history rather than by uptime.
+        since = datetime.now(tz=UTC) - timedelta(days=LEDGER_LOOKBACK_DAYS)
+        # THE MAGIC FILTER IS APPLIED HERE, IN PYTHON. `history_deals_get` documents three call
+        # shapes -- (date_from, date_to, group=...), (ticket=...), (position=...) -- and `magic`
+        # is not among them; a keyword the binding refuses lands in the `except` below and the
+        # ledger is silently never written, which is indistinguishable from a quiet day.
+        # Filtering the returned deals costs a list scan and cannot fail.
+        deals = [d for d in (mt5.history_deals_get(since, datetime.now(tz=UTC)) or [])
+                 if int(getattr(d, "magic", 0) or 0) == MAGIC]
+    except Exception as exc:
+        log(f"ledger: history unreadable ({type(exc).__name__}: {exc}); nothing recorded")
         return
     written = 0
     for d in deals:
         if d.entry != mt5.DEAL_ENTRY_OUT:
             continue
-        comment = (d.comment or "")
-        if not comment.startswith("DW"):
+        if getattr(d, "ticket", None) in seen_deals:
             continue
-        sleeve = comment[2:]
+        # A DEAL CARRIES NO STOP, NO TAKE-PROFIT AND NO ENTRY PRICE, and this function read all
+        # three off it. MEASURED 2026-09-02 on the live box: every pass raised
+        # `AttributeError("'TradeDeal' object has no attribute 'price_open'")` and the whole
+        # trade loop aborted, so `live_ledger.jsonl` was never written -- the file whose absence
+        # was diagnosed on 2026-09-01 as a comment-prefix problem and fixed there. That fix was
+        # necessary and not sufficient: the function could not run at all.
+        #
+        # MT5's own shapes: TradeDeal has {price, position_id, order, entry, profit, commission,
+        # swap, volume}; TradeOrder has {price_open, sl, tp}. So the risk this trade actually
+        # took is reconstructed from the position's OPENING deal (entry price) and its ORDER
+        # (stop), joined on position_id -- the only join MT5 offers between the two.
+        ctx = _position_entry(getattr(d, "position_id", None))
+        entry_price, sl_price, tp_price = ctx["entry_price"], ctx["sl"], ctx["tp"]
+        # THE ENTRY'S TAG IS THE SLEEVE; THE EXIT'S TAG IS THE BROKER'S, AND IT IS NOT A NAME.
+        #
+        # This read `d.comment or ctx["comment"]`. A trade the desk closes has an empty OUT
+        # comment, so it fell through to the entry's `DW<sleeve>` tag and was attributed. A trade
+        # the BROKER closes -- every stop-out, every target hit -- carries the broker's own label
+        # on the OUT deal, `[sl 4300.69]` or `[tp 4267.99]`, which is truthy, so the entry tag
+        # was never consulted. `sleeve_from_comment('[sl 4300.69]')` returns '[sl 4300.69]'
+        # verbatim, and the trade landed in the ledger under a UNIQUE garbage sleeve name per
+        # trade.
+        #
+        # MEASURED 2026-09-16: xau_m15_anti_breakout had 18 closed live trades and the ledger held
+        # 3 of them under its name -- the three the desk closed itself. The 15 stop-outs sat under
+        # fifteen different '[sl ...]' names with one trade each. `decay_monitor` needs n >= 20 on
+        # ONE name to fade or retire, so a sleeve whose losses are stop-outs -- which is what a
+        # losing sleeve's losses ARE -- could never accumulate the evidence to be retired. The
+        # organ was not blind by threshold; it was blind by attribution.
+        _out_comment = str(d.comment or "")
+        _broker_close = _out_comment.startswith("[")
+        comment = ((ctx["comment"] or "") if _broker_close else (_out_comment or ctx["comment"] or ""))
+        # MAGIC IS THE IDENTITY, NOT THE COMMENT. history_deals_get already filtered to
+        # magic=MAGIC, so every deal here is this gateway's own; requiring the comment to ALSO
+        # start with "DW" made a broker-side rewrite silently discard the entire ledger. Brokers
+        # do rewrite comments -- it is the same lesson the EA learned when it stopped trusting
+        # them for idempotency and moved to a persistent journal. Measured 2026-09-01:
+        # live_ledger.jsonl did not exist on either box while the account carried real P&L and
+        # open margin, so matched_fills read 0 and execution was UNMEASURED. A fill this desk
+        # placed is now recorded whether or not its label survived the round trip; the sleeve
+        # name is taken from the comment when it is there and marked unattributed when it is not,
+        # which is a recoverable gap, unlike never recording the fill at all.
+        sleeve = sleeve_from_comment(comment, "UNATTRIBUTED")
         sym_info = mt5.symbol_info(d.symbol)
         if sym_info is None:
             continue
         # risk per lot at entry: SL distance x contract (quote units)
         pl_quote = float(d.profit) + float(d.commission or 0.0) + float(d.swap or 0.0)
-        risk_quote = (d.price_open - d.sl if d.type == mt5.POSITION_TYPE_BUY
-                      else d.sl - d.price_open)
-        risk_per_lot = max(risk_quote, 0.0) * sym_info.trade_contract_size
-        r = pl_quote / risk_per_lot if risk_per_lot > 0 else 0.0
+        # UNRECONSTRUCTIBLE IS RECORDED, NEVER GUESSED -- `decision_core.closed_trade_r` returns
+        # zeros without both the entry and the stop, and the row below says so.
+        # THE POSITION'S OWN VOLUME AND THE VENUE'S TICK VALUE (2026-09-16): see
+        # `decision_core.closed_trade_r` for the zero this replaced.
+        risk_quote, r = closed_trade_r(entry_price, sl_price, d.type == mt5.POSITION_TYPE_BUY,
+                                       sym_info.trade_contract_size, pl_quote,
+                                       volume=float(getattr(d, "volume", 0.0) or 0.0),
+                                       tick_value=float(getattr(sym_info, "trade_tick_value",
+                                                                0.0) or 0.0),
+                                       tick_size=float(getattr(sym_info, "trade_tick_size",
+                                                               0.0) or 0.0))
         rec = {"time": now(), "sleeve": sleeve, "symbol": d.symbol,
                "side": d.type, "pl_quote": round(pl_quote, 2),
                "r_multiple": round(r, 4), "volume": d.volume,
@@ -777,8 +1719,17 @@ def record_trades(st: dict, sleeves: list[dict]) -> None:
                # possible: the one number that reveals execution quality was computed and
                # discarded on every single trade. contract_size travels with it so slippage can
                # be converted to account currency without a second lookup at analysis time.
-               "fill_price": float(d.price_open), "sl": float(d.sl), "tp": float(d.tp),
+               "fill_price": float(d.price), "entry_price": float(entry_price),
+               "sl": float(sl_price), "tp": float(tp_price),
+               "r_unreconstructible": bool(entry_price <= 0 or sl_price <= 0),
                "order": getattr(d, "order", None),
+               # THE KEY CHAIN (2026-09-08): intent.ticket == entry_order == position_id for a
+               # pending stop; entry_deal and this closing deal hang off position_id. With these
+               # four on the row, a euro of realised P&L walks back to the intent, its
+               # release_id and its state vector -- the chain the review found empty.
+               "position_id": getattr(d, "position_id", None),
+               "entry_order": ctx["entry_order"], "entry_deal": ctx["entry_deal"],
+               "close_order": getattr(d, "order", None), "magic": getattr(d, "magic", None),
                "contract_size": float(sym_info.trade_contract_size),
                "risk_quote": round(float(risk_quote), 6),
                # WHICH ACCOUNT TRADED. The broker is switched by editing one line of
@@ -799,68 +1750,1630 @@ def record_trades(st: dict, sleeves: list[dict]) -> None:
 
 def ledger_rows() -> list[dict]:
     """Closed trades recorded by this desk. Torn final lines are skipped, never fatal."""
-    if not LEDGER.exists():
-        return []
-    out = []
-    for line in LEDGER.read_text(encoding="utf-8").splitlines():
-        line = line.strip()
-        if not line:
-            continue
-        try:
-            row = json.loads(line)
-        except ValueError:
-            continue
-        if isinstance(row, dict):
-            out.append(row)
-    return out
+    return _core.ledger_rows(LEDGER)
+
+
+#: Written by research/promoter.py when a gold window trips a retire rule. Read on every pass so
+#: a retirement takes effect within one gateway cycle rather than waiting for a restart.
+GOLD_RETIRED_FILE = BASE / "data" / "GOLD_RETIRED.json"
+
+
+def _load_retired_gold() -> dict:
+    """Retired gold windows, or {} when the file is absent/unreadable -- fails OPEN, for the
+    reason `decision_core.load_retired_gold` states: an unreadable file must not silently stop a
+    live book that is otherwise trading correctly."""
+    return _core.load_retired_gold(GOLD_RETIRED_FILE)
 
 
 def sleeve_set() -> list[dict]:
-    """All active sleeves: gold book + promoted, with window metadata."""
-    sleeves = []
-    for label, sig_hour, rng in GOLD_WINDOWS:
-        sleeves.append({"name": f"gold_{label}", "symbol": "XAUUSD",
-                        "window": label, "sig_hour": sig_hour, "rng": rng,
-                        "lot": "auto", "status": "LIVE"})
-    for s in load_sleeves():
-        if s.get("window") not in {w[0] for w in GOLD_WINDOWS}:
-            continue  # only validated window semantics
-        sleeves.append({"name": s["name"], "symbol": s["symbol"],
-                        "window": s["window"],
-                        "sig_hour": next(w[1] for w in GOLD_WINDOWS if w[0] == s["window"]),
-                        "rng": next(w[2] for w in GOLD_WINDOWS if w[0] == s["window"]),
-                        # THE CONDITIONING STATE TRAVELS WITH THE SLEEVE, and before this it did
-                        # not exist anywhere in the live chain. shadow_forward keyed on
-                        # (symbol, window), promoter wrote no state field, and this function
-                        # rebuilt every sleeve from `window` alone -- so a promoted
-                        # "CADJPY asia FAILED_BREAK" would have traded CADJPY asia on EVERY day.
-                        # The sleeve would carry the name of a validated strategy while running
-                        # an unvalidated one (+0.163R unconditioned against the +0.276R that
-                        # earned promotion), and nothing would have said so.
-                        "state": s.get("state"),
-                        "lot": "auto_ramp", "status": "LIVE"})
+    """All active sleeves: gold book + promoted, with window metadata.
+
+    The admission rules -- which gold windows the promoter has retired, which promoted rows
+    carry validated semantics, the `auto_ramp` rewrite that keeps the promoter's literal lot
+    from ever reaching the venue -- are `decision_core.roster`; this reads the two files it
+    decides over and logs what it declined.
+    """
+    sleeves, notes = roster(_load_retired_gold(), load_sleeves())
+    for note in notes:
+        log(note)
     return sleeves
 
 
-def state_allows(sleeve: dict, h1: "pd.DataFrame", day: object) -> tuple[bool, str]:
-    """May a state-conditioned sleeve trade today? FAILS CLOSED on any doubt.
+#: The one-file arm switch for generic family execution. ABSENT = every family sleeve logs the
+#: exact order it would place and places nothing; the operator watches it be right, then
+#: `type nul > data\GENERIC_EXEC_ENABLED` is the deliberate human act that arms the lane.
+GENERIC_EXEC_ENABLED = BASE / "data" / "GENERIC_EXEC_ENABLED"
 
-    An unconditioned sleeve always passes. A conditioned one must have its state computable from
-    the bars in hand AND match; if the state cannot be computed the sleeve does NOT trade, because
-    the alternative is trading the unconditioned strategy under a conditioned sleeve's name and
-    risk budget. Absence of a state is not permission.
+
+def unarmed_why(st: dict[str, object]) -> str:
+    """WHICH of the three arming terms is false, by name.
+
+    `armed` is `st["armed"] AND GENERIC_EXEC_ENABLED.exists() AND NEW_RISK_OK`, and the
+    WOULD-PLACE line used to print "enable=GENERIC_EXEC_ENABLED" whatever the cause. Measured
+    2026-09-11: the flag file had been present since 2026-09-06 and the false term was
+    NEW_RISK_OK (a release identity the seal had not caught up with), so every scalp signal for
+    hours advertised a fix that was already done while the real blocker went unnamed. A
+    diagnostic that points at the wrong term is worse than none: it sends whoever reads it to
+    re-do something that is not broken.
     """
-    want = sleeve.get("state")
-    if not want:
-        return True, ""
+    missing = []
+    if not st.get("armed"):
+        missing.append("account unarmed (state.armed false)")
+    if not GENERIC_EXEC_ENABLED.exists():
+        missing.append(f"{GENERIC_EXEC_ENABLED.name} absent")
+    if not NEW_RISK_OK:
+        missing.append("release identity refuses new risk")
+    return "; ".join(missing) if missing else "armed"
+
+#: RELEASE IDENTITY (2026-09-05). The code this box runs must be the code that was sealed,
+#: tested and merged -- one SHA. When it is not (a stale checkout, a trampled module, a seal that
+#: never landed, an identity that cannot be measured), the gateway keeps managing what is open
+#: and opens NOTHING new: stops still ratchet, TTLs still close, reconciliation still runs. Set
+#: once per pass in `main()` from `mt5desk.release_identity.verdict()`; the three placement
+#: sites read it. Unmeasured is not a licence, so the default before the first measurement
+#: is a refusal.
+NEW_RISK_OK: bool = False
+
+
+def _policy_advice(symbol: str, side: int, entry_ref: float, tick, sym, dist: float, g,
+                   lot: float = 0.0) -> dict:
+    """The execution policy's shadow choice for one order. NEVER raises, never routes.
+
+    THE LOT IS THE REAL LOT, NOT 0.0. The algorithm registry (`execution_registry.compete`)
+    splits a parent order into children -- a TWAP slices it, an iceberg displays part of it --
+    and a zero-lot intent gives the schedulers nothing to split, so every algorithm priced
+    identically and the competition on the intent row was vacuous. Called after `promoted_lot`
+    so the row carries the competition on the order that is actually about to be placed.
+    """
     try:
-        from research.run_hunt12 import day_states           # noqa: PLC0415
-        got = day_states(h1).get(day)
-    except Exception as exc:                                  # noqa: BLE001
-        return False, f"state UNCOMPUTABLE ({type(exc).__name__}); refusing to trade unconditioned"
-    if got is None:
-        return False, "state unknown for today; refusing to trade unconditioned"
-    return (got == want), (f"state {got} != {want}" if got != want else "")
+        from mt5desk.execution_policy import choose
+        return choose(exec_context(symbol, side, entry_ref, tick, dist, g, lot),
+                      _fill_surface())
+    except Exception as exc:
+        return {"policy": "MARKET", "why": f"advice unavailable: {type(exc).__name__}"}
+
+
+_SURFACE: object = None
+
+
+def _fill_surface():
+    """The box's own fill/slip surface, fitted once per process from the intent ledger.
+
+    `fill_surface.FillSurface` has no loader for its report, so the surface is refitted here
+    from the rows the gateway itself recorded; a cheap ridge on a few hundred fills. None when
+    there is nothing to fit -- the policy and the registry then price on the spread prior, which
+    is the honest state of a box that has not filled enough to know its own slippage.
+    """
+    global _SURFACE
+    if _SURFACE is None:
+        try:
+            from mt5desk import fill_surface
+            rows = [json.loads(ln) for ln in INTENTS.read_text("utf-8").splitlines()
+                    if ln.strip()] if INTENTS.exists() else []
+            fs = fill_surface.FillSurface().fit(rows) if rows else None
+            _SURFACE = fs if fs is not None else False
+        except Exception as exc:
+            log(f"fill surface unavailable ({type(exc).__name__}: {exc}); spread prior only")
+            _SURFACE = False
+    return _SURFACE or None
+
+
+_BOOK: object = None
+#: The desk-staleness verdict for THIS pass (`mt5desk.desk_staleness`), None while the research
+#: organs are alive. Set once in `main`, read by every path that opens new risk.
+_DESK_STALE: dict | None = None
+
+
+def _netting_book():
+    """The theoretical-position ledger, one per process. A ledger fault never stops a pass.
+
+    WHY A LEDGER BESIDE THE TERMINAL. The terminal knows the account's net position per
+    symbol; it does not know which sleeve wants what. Two sleeves long and short the same
+    symbol net to nothing at the venue, and without a per-sleeve book the desk could neither
+    attribute the P&L of each nor measure the spread the netting saved. `netting.TheoreticalBook`
+    keeps every sleeve whole and lets `netting.route` compute the ONE order the venue should see.
+    Today that order is MEASURED and logged, never sent (see `_net_routes`).
+    """
+    global _BOOK
+    if _BOOK is None:
+        try:
+            from mt5desk import netting
+            _BOOK = netting.TheoreticalBook()
+        except Exception as exc:
+            log(f"netting book unavailable ({type(exc).__name__}: {exc}); pass runs without it")
+            _BOOK = False
+    return _BOOK or None
+
+
+def _book_target(name: str, symbol: str, lots_signed: float, reason: str,
+                 price: float | None = None) -> None:
+    """A sleeve's desired signed position, asserted every pass (idempotent). Shadow included."""
+    book = _netting_book()
+    if book is None:
+        return
+    try:
+        book.set_target(name, symbol, float(lots_signed), reason=reason,
+                        at=datetime.now(tz=UTC), price=price)
+    except Exception as exc:
+        log(f"[{name}] netting target not recorded ({type(exc).__name__}: {exc})")
+
+
+def _book_fill(name: str, symbol: str, lots_signed: float, price: float) -> None:
+    """What the venue actually gave a sleeve. Exits the broker performs (stop, target) are not
+    seen here; `_net_routes` reports the resulting ledger-vs-terminal gap as a finding."""
+    book = _netting_book()
+    if book is None:
+        return
+    try:
+        book.fill(name, symbol, float(lots_signed), float(price), at=datetime.now(tz=UTC))
+    except Exception as exc:
+        log(f"[{name}] netting fill not recorded ({type(exc).__name__}: {exc})")
+
+
+def _record_exec_outcome(symbol: str, side: int, lot: float, entry_ref: float, tick,
+                         dist: float, g, fill_price: float) -> None:
+    """What the market algorithm expected against what the venue did -- the learning loop
+    behind algorithm choice. Market is what is actually sent today; once an algorithm is
+    routed, the plan recorded here is the one that ran."""
+    try:
+        from mt5desk import execution_registry
+        from mt5desk.execution_policy import intent_of
+        ctx = exec_context(symbol, side, entry_ref, tick, dist, g, lot)
+        plan = execution_registry.market(intent_of(ctx), surface=_fill_surface())
+        execution_registry.record_outcome(plan, [(float(lot), float(fill_price))],
+                                          at=datetime.now(tz=UTC))
+    except Exception as exc:
+        log(f"execution outcome not recorded for {symbol} ({type(exc).__name__}: {exc})")
+
+
+def _net_routes(symbols: set[str]) -> None:
+    """The ONE order per symbol the venue would see if the sleeves were netted -- measured and
+    logged as NET WOULD SEND, never placed. Also reconciles the ledger's account position
+    against the terminal's: a disagreement is a finding to log (exits the broker performed,
+    fills from before the ledger existed), never something to auto-correct."""
+    book = _netting_book()
+    if book is None or not symbols:
+        return
+    from mt5desk import netting
+    for symbol in sorted(symbols):
+        try:
+            tick = mt5.symbol_info_tick(symbol)
+            sym = mt5.symbol_info(symbol)
+            if tick is None or sym is None:
+                continue
+            mid = 0.5 * (float(tick.bid) + float(tick.ask))
+            r = netting.route(book, symbol, mid,
+                              lot_step=float(getattr(sym, "volume_step", 0.01) or 0.01),
+                              lot_min=float(getattr(sym, "volume_min", 0.01) or 0.01))
+            log(f"[netting] {symbol} NET WOULD SEND {r.get('side')} {r.get('lots')} "
+                f"(delta {r.get('delta')}, netted {r.get('netted_lots')} lots across "
+                f"{len(r.get('sleeves') or [])} sleeves){' -- ' + str(r['why']) if r.get('why') else ''}")
+            terminal = 0.0
+            for p in mt5.positions_get(symbol=symbol) or []:
+                sgn = 1.0 if int(getattr(p, "type", 0)) == 0 else -1.0
+                terminal += sgn * float(getattr(p, "volume", 0.0) or 0.0)
+            ledger = float(book.account_position(symbol))
+            if abs(terminal - ledger) > 1e-9:
+                log(f"[netting] {symbol} ledger {ledger:+.2f} vs terminal {terminal:+.2f} lots"
+                    f" -- broker-side exits or pre-ledger fills; reported, not corrected")
+        except Exception as exc:
+            log(f"[netting] {symbol} route unmeasured ({type(exc).__name__}: {exc})")
+
+
+def _closing_fill(ticket: int) -> tuple[float, float] | None:
+    """(lots closed, volume-weighted close price) from the position's DEAL_ENTRY_OUT deals, or
+    None while the terminal has not recorded one. Read-only history, the same call
+    `_position_entry` makes; never raises past its caller's guard."""
+    lots = notional = 0.0
+    for x in (mt5.history_deals_get(position=ticket) or ()):
+        if getattr(x, "entry", None) == mt5.DEAL_ENTRY_OUT:
+            v = float(getattr(x, "volume", 0.0) or 0.0)
+            lots += v
+            notional += v * float(getattr(x, "price", 0.0) or 0.0)
+    return (lots, notional / lots) if lots > 0 else None
+
+
+def _book_bracket_lane(st: dict, sleeves: list[dict]) -> None:
+    """The bracket sleeves' theoretical positions, asserted from the terminal's own positions
+    every pass, so data/theoretical_positions.jsonl records the one book that has ever traded.
+
+    THE GAP THIS CLOSES (2026-09-08). `_book_target` ran on the family and scalp lanes only, and
+    neither has ever been armed; the gold brackets -- the only sleeves that have placed a live
+    order -- never reached the book, so the theoretical ledger had never been written and
+    `netting.book_savings` had nothing to measure. A bracket is two-sided until a leg fills, so
+    its theoretical position is what the venue shows for it (netting.py: the bracket sleeves
+    "resolve their direction only on a fill"): +lots on a filled buy stop, -lots on a filled
+    sell stop, flat otherwise.
+
+    IDEMPOTENT PER PASS AND MEASUREMENT ONLY. `set_target` appends on change alone; a fill is
+    booked once per position ticket and its broker-side exit once, from the position's own
+    closing deals, with the tickets the book holds carried in the pass state so a restart does
+    not book a fill twice. Read-only against the terminal -- positions and deal history --
+    and it sends nothing; a ledger fault costs this measurement and never the pass.
+    """
+    if _netting_book() is None:
+        return
+    booked: dict = dict(st.get("netting_booked") or {})
+    open_now: set[str] = set()
+    wanted: dict[str, tuple[str, float, float | None]] = {}     # sleeve -> (symbol, lots, mark)
+    for s in sleeves:
+        if s.get("exec") in ("family_market", "scalp_market"):
+            continue
+        name, symbol = s["name"], s["symbol"]
+        try:
+            positions = _sleeve_positions(symbol, name)
+        except Exception as exc:
+            log(f"[netting] {name} bracket book unmeasured ({type(exc).__name__}: {exc})")
+            continue
+        lots, mark = 0.0, None
+        for p in positions:
+            sgn = 1.0 if int(getattr(p, "type", 0)) == 0 else -1.0
+            vol = sgn * float(getattr(p, "volume", 0.0) or 0.0)
+            px = float(getattr(p, "price_open", 0.0) or 0.0)
+            ticket = str(getattr(p, "ticket", "") or "")
+            lots += vol
+            mark = px or mark
+            if ticket:
+                open_now.add(ticket)
+                if ticket not in booked and vol:
+                    _book_fill(name, symbol, vol, px)
+                    booked[ticket] = {"sleeve": name, "symbol": symbol, "lots": vol}
+        wanted[name] = (symbol, lots, mark)
+    # A ticket the book holds and the terminal no longer shows was closed at the broker (stop,
+    # target, the day's force-close): its closing deal is the exit fill. Until the terminal has
+    # recorded that deal the ticket stays booked, the sleeve's target stays where it was, and
+    # both are asked again next pass -- so the book's delta never carries a phantom order for
+    # an exit the venue already made, and the ledger lags the venue rather than inventing it.
+    unresolved: set[str] = set()
+    for ticket, rec in list(booked.items()):
+        if ticket in open_now:
+            continue
+        try:
+            closed = _closing_fill(int(ticket))
+        except Exception as exc:
+            log(f"[netting] {rec.get('sleeve')} exit fill unmeasured "
+                f"({type(exc).__name__}: {exc}); retried next pass")
+            closed = None
+        if closed is None:
+            log(f"[netting] {rec.get('sleeve')} position {ticket} gone from the terminal with "
+                f"no closing deal yet; exit fill retried next pass")
+            unresolved.add(str(rec.get("sleeve")))
+            continue
+        _lots, px = closed
+        _book_fill(str(rec.get("sleeve")), str(rec.get("symbol")),
+                   -float(rec.get("lots") or 0.0), px)
+        booked.pop(ticket, None)
+    for name, (symbol, lots, mark) in wanted.items():
+        if name in unresolved:
+            continue
+        _book_target(name, symbol, lots, "bracket_fill" if lots else "bracket_flat", price=mark)
+    st["netting_booked"] = booked
+
+#: Bars an H1 family read has always fetched. DERIVED BY PRESERVATION, not chosen: 400 is the
+#: literal every `family_market` path in this file passed to `copy_rates_from_pos` before the
+#: ladder landed, so an H1 certificate resolves to exactly the read it has always had and no
+#: existing sleeve changes behaviour. The market time it buys is 400 hours, about 16 trading days,
+#: which is what the daily-range and day-state helpers need behind them: `day_range` reads the
+#: last calendar day, `day_states` classifies several, and ATR_N=14 needs its own window on top.
+_FAMILY_H1_BARS = 400
+#: Bars per hour on each chart. The bar COUNT is scaled by this so a family is not handed the same
+#: number of bars on every chart: 400 M1 bars is under seven hours, and a daily-range family
+#: handed that would compute its range from a fraction of a day and take a position on it.
+#:
+#: THE INVARIANT IS "ENOUGH BARS ON EVERY CHART", NOT "THE SAME MARKET TIME", and the two pull in
+#: opposite directions at the ends of the ladder. Scaling alone would give D1 seventeen bars --
+#: fewer than ATR_N needs -- so the floor below raises it to 60, which is 60 DAYS, far more market
+#: time than H1's 400 hours. That asymmetry is deliberate: each chart gets what its own lookbacks
+#: require, and a rule that insisted on equal market time would starve the slow end to match the
+#: fast one.
+#: MINUTES PER BAR rather than bars per hour, so every value is an integer literal. The inverse
+#: form needed `"D1": 1 / 24`, and a division is not a literal -- which mattered beyond style:
+#: `test_gateway_adapter` builds its harness by `ast.literal_eval`-ing the gateway's module-level
+#: constants, and a BinOp there is silently uncarried, so the executor raised NameError inside the
+#: harness and six passing tests failed for a reason none of them was about.
+#: EXTERNAL FACT, not a desk decision: these are MetaTrader 5's own chart definitions, documented
+#: by the terminal itself -- M5 is 5 minutes because the platform says so, D1 is 1440. A hard
+#: limit in the same sense as a venue's fee schedule: nothing here is derivable or arguable, and a
+#: value disagreeing with the terminal would simply be wrong.
+_BAR_MINUTES: dict[str, int] = {"M1": 1, "M5": 5, "M15": 15, "M30": 30,
+                                "H1": 60, "H4": 240, "D1": 1440}
+#: Hard cap on one `copy_rates_from_pos` call, DERIVED FROM WHAT THE HELPERS ACTUALLY READ.
+#: Scaling 400 hours onto M1 asks for 24,000 bars; the terminal will serve them, but the family
+#: helpers never look past the recent days and the remainder is pure latency on a box measured at
+#: six resident pythons holding 3.1 GB of 8.4 GB. 6,000 M1 bars is 100 hours -- a little over four
+#: calendar days -- which covers `day_range`'s single day, `day_states`' multi-day classification
+#: and the ATR_N=14 window with several days to spare. Binding on M1 only: M5 asks for 4,800 and
+#: every slower chart less, so no other rung is truncated by it.
+_FAMILY_MAX_BARS = 6000
+#: The full ladder the sweep hunts, mapped to MT5's own constants. `scalp_exec` carries M1..H1 for
+#: its own lane; this one adds H4 and D1 because the family sweep certifies on them and a family
+#: executor that stopped at H1 was the whole reason `GATEWAY_FAMILY_TIMEFRAMES` had to exist.
+_FAMILY_TF_ATTR: dict[str, str] = {
+    "M1": "TIMEFRAME_M1", "M5": "TIMEFRAME_M5", "M15": "TIMEFRAME_M15",
+    "M30": "TIMEFRAME_M30", "H1": "TIMEFRAME_H1", "H4": "TIMEFRAME_H4", "D1": "TIMEFRAME_D1",
+}
+
+
+def _family_chart(s: dict) -> tuple[str, object, int]:
+    """(timeframe, mt5 timeframe constant, bars to fetch) for one family sleeve row.
+
+    THE CHART COMES FROM THE CERTIFICATE, NOT FROM A CONSTANT. Every `family_market` path here
+    used to call `copy_rates_from_pos(sym, mt5.TIMEFRAME_H1, 0, 400)` unconditionally, so a
+    certificate earned on M5 would have had its signals computed from HOURLY bars -- a live
+    position in a strategy nobody certified, under the name of one that was, with every artifact
+    agreeing. `executables.GATEWAY_FAMILY_TIMEFRAMES` existed to keep those rows out of the book
+    entirely while that was true.
+
+    ABSENT MEANS H1, the desk-wide spelling: every certificate written before the M1..D1 ladder is
+    an H1 one and naming H1 explicitly would rename all of them at once. So an old row resolves to
+    exactly what it resolved to before, including its 400-bar read.
+    """
+    tf = str((s.get("params") or {}).get("timeframe") or "H1").upper()
+    attr = _FAMILY_TF_ATTR.get(tf)
+    if attr is None or not hasattr(mt5, attr):
+        return tf, None, 0                       # caller refuses the row by name; never guesses
+    minutes = _FAMILY_H1_BARS * 60                    # the market time an H1 read has always seen
+    bars = int(min(_FAMILY_MAX_BARS, round(minutes / _BAR_MINUTES.get(tf, 60))))
+    return tf, getattr(mt5, attr), max(bars, 60)
+
+
+def _family_constructor(family: str) -> tuple[object | None, str | None]:
+    """(constructor, population) for a certified family, or (None, None) when nothing answers.
+
+    THE RESOLUTION IS `executables`', NOT `run_hunt16.FAMILIES`'. This executor read the hunt16
+    mapping alone, so `executables.GATEWAY_FAMILY_POPULATIONS` had to read `("hunt16",)` and every
+    certificate outside it was a named `executor_gap` that could never become a live row. Measured
+    2026-09-05 against the canon: 45 orthogonal, 20 `families`, 1 hunt16 -- one executable
+    certificate out of sixty-six, which is the whole reason the dashboard read `promotion_ready 0`
+    while the canon was full.
+    """
+    try:
+        from mt5desk import executables
+        return executables.resolve_family(family), executables.population_of(family)
+    except Exception as exc:
+        log(f"FAMILY-EXEC: executables unavailable ({type(exc).__name__}: {exc})")
+        return None, None
+
+
+def _family_takes_side(fn: object) -> bool:
+    """Whether this family can be told a direction -- `family_call`'s answer, not a second one."""
+    try:
+        from mt5desk.family_call import accepts_side
+        return accepts_side(fn)
+    except Exception:
+        return False
+
+
+def _params_from_certificate(s: dict[str, object]) -> tuple[dict[str, object] | None, str]:
+    """The certified parameters for a sleeve whose registry row does not carry them.
+
+    NO FOREX SLEEVE HAS EVER SENT AN ORDER, AND THIS IS WHY (measured 2026-09-14). Every one of
+    the 53 `family_market` rows is LIVE, armed (`GENERIC_EXEC_ENABLED` present since 2026-09-11),
+    admitted by the heat cap and sized -- and `order_intents.jsonl` holds 59 intents of which
+    NOT ONE is on a non-gold symbol. `_family_call_params` read `s["params"]`; not one of the 53
+    rows has that key, so every sleeve was called with `{}`.
+
+        audcad_discovered_asia_p_7c996ac8456c8919
+        certified params: {"feature": "ext_resid_EURGBP_z", "band": [0.9, 1.0],
+                           "horizon": 1, "side": -1}
+        called with:      {}
+        signals over 400 bars: 0
+
+    `family_discovered` unparameterised selects no feature and no band, so it returns an empty
+    signal list forever. That lands on stage `no_signal`, which `run_family_sleeves` is
+    DELIBERATELY silent about -- "the ordinary quiet outcome" -- so 53 sleeves produced nothing,
+    every hour, for days, and the log said exactly nothing about it. One FAMILY-EXEC line exists
+    in the entire gateway log.
+
+    THE PARAMS ARE ONE-WAY IN THE NAME AND RECOVERABLE FROM THE DOCKET. The certificate names its
+    cell `external.AUDCAD.discovered.p=7c996ac8456c8919`, where the `p=` field is a SHA256 digest
+    of the parameters. `frontier_identity.cell_id` is the desk's own identity function, so
+    recomputing it across `external_survivors.json` joins the two exactly: 47 of the 53 sleeves
+    recover their certified params this way.
+
+    AND THE RECONSTRUCTION IS VERIFIED, NOT TRUSTED. Whatever the docket hands back is hashed and
+    must reproduce the certificate's own cell id before it is used. That is what makes an EMPTY
+    result safe to accept when it is genuine -- `audchf_overnight_gap_decay_asia_p_44136fa355b3678a`
+    really is parameterised `{}`, and 44136fa355b3678a really is the digest of `{}` -- while an
+    empty result that does NOT hash back is refused. Without that check this function would
+    re-introduce the original defect for any sleeve it failed to join: calling a parameterised
+    family with nothing, which is "trading a lookalike strategy under a certified sleeve's name",
+    the defect class `resolve_family_order` already refuses by name elsewhere.
+    """
+    # THE CERTIFICATE FIELD CARRIES TWO SHAPES, and only one of them was read. Measured across
+    # the registry 2026-09-15: 53 rows hold a dict (with `cell` inside), 3 hold a bare string,
+    # 9 hold nothing.
+    #
+    # A STRING IS ONLY A CELL WHEN IT LOOKS LIKE ONE. The three string rows say `forward_clock`,
+    # which names the lane that promoted them, NOT a cell -- so accepting any string here would
+    # feed `forward_clock` into the identity check and turn a clear "names no cell" into a
+    # confusing docket miss. A cell identity is always dotted (`external.CADJPY.session_range_
+    # breakout`, `AUDCAD.discovered.p=7c99...`), so the dot is the test.
+    cert = s.get("certificate")
+    if isinstance(cert, dict):
+        cell = str(cert.get("cell") or "")
+    elif isinstance(cert, str) and "." in cert:
+        cell = cert.strip()
+    else:
+        cell = ""
+    if not cell:
+        return None, "registry row carries no params and its certificate names no cell"
+    want = cell.split(".", 1)[1] if cell.startswith("external.") else cell
+    try:
+        from research.frontier_identity import cell_id
+    except Exception as exc:
+        return None, f"frontier_identity unavailable ({type(exc).__name__}: {exc})"
+    # A qquant CELL CARRIES ITS SIDE IN ITS NAME, and the family takes it as a REQUIRED argument.
+    # `qquant.hunt16.json.AUDNZD dav_range_filter_adx SHORT afternoon NORMAL_DAY` is a
+    # space-separated descriptor, not a dotted identity, and the sleeve's `params` is null -- so
+    # the docket join below cannot apply and the family raises
+    # `dav_range_filter_adx() missing 1 required positional argument: 'side'`. Measured
+    # 2026-09-15: one sleeve of 49, the only forex sleeve still failing after the bare-cell fix.
+    #
+    # The word is read from the cell and converted to the desk's numeric convention (+1 long,
+    # -1 short; see `engine.Signal.side`). An unrecognised descriptor falls through to the normal
+    # path rather than guessing a direction.
+    if cell.startswith("qquant.") or " " in want:
+        words = want.replace(".", " ").split()
+        sign = next((v for w in words
+                     for k, v in (("SHORT", -1), ("SELL", -1), ("LONG", 1), ("BUY", 1))
+                     if w.upper() == k), None)
+        if sign is not None:
+            return {"side": sign}, ""
+
+    # A BARE CELL NAME IS NOT AN UNKNOWN PARAMETERISATION -- IT IS THE DEFAULT ONE, and refusing
+    # it kept every session_range_breakout sleeve out of the market (measured 2026-09-15).
+    #
+    # `cell_id` ALWAYS appends a parameter field: empty params render as
+    # `CADJPY.session_range_breakout.p=44136fa355b3678a`. The certificates for these sleeves are
+    # named `external.CADJPY.session_range_breakout` with no suffix at all, so the docket join
+    # below can never match them -- not because the row is missing, but because the two names are
+    # built by different rules. Five sleeves (CADJPY, EURJPY, GBPJPY, USDJPY, XAUUSD) refused
+    # every pass with "not in the docket on this box", which reads as a data gap and is a naming
+    # mismatch.
+    #
+    # THE ACCEPTANCE IS STILL VERIFIED, on the same rule the docket path uses: `{}` is accepted
+    # only when hashing it reproduces the cell id the bare name would have had. So this admits the
+    # genuine default parameterisation and still refuses anything whose identity does not check.
+    if "." in want and not re.search(r"\.(p=|[a-z_]+=)", want):
+        try:
+            derived = cell_id({"sym": want.split(".", 1)[0],
+                               "family": want.split(".", 1)[1], "params": {}})
+        except Exception as exc:
+            return None, f"cannot derive the default identity for {want!r} ({type(exc).__name__})"
+        if derived.startswith(want + ".p="):
+            # THE IDENTITY CHECK IS NOT ENOUGH ON ITS OWN, AND ASSUMING IT WAS WAS MY ERROR.
+            #
+            # A bare name extends to the DEFAULT identity for any family, so this branch alone
+            # says only "the default parameterisation would be named this way" -- never "this
+            # certificate was earned at the default parameterisation". Those are different
+            # claims, and the docket settles which one is true.
+            #
+            # MEASURED 2026-09-15: the docket holds 115 DISTINCT parameterisations of
+            # CADJPY.session_range_breakout, 115 of EURJPY, 88 of GBPJPY, 115 of USDJPY and 278
+            # of XAUUSD. `external.CADJPY.session_range_breakout` could be any one of the 115.
+            # Returning `{}` there picks one at random and trades it under a certificate earned
+            # by a different spec -- the exact lookalike defect this file refuses everywhere
+            # else. `certificate_hygiene` reaches the same verdict independently and calls those
+            # six certificates UNRUNNABLE because `shadow_spec.params` is absent.
+            #
+            # So the default is admitted only when the docket agrees it is the ONLY candidate.
+            # One parameterisation means the bare name is unambiguous; more than one means the
+            # certificate lost the information and the cell must be RE-EARNED, not guessed.
+            sym_w, fam_w = want.split(".", 1)
+            cands = {json.dumps(r.get("params") or {}, sort_keys=True)
+                     for r in _docket_rows()
+                     if str(r.get("symbol")) == sym_w and str(r.get("family")) == fam_w}
+            if len(cands) > 1:
+                return None, (f"refused: {want!r} names no parameterisation and the docket holds "
+                              f"{len(cands)} distinct ones for {sym_w}.{fam_w}; the certificate "
+                              f"lost which spec earned it, so it must be re-earned rather than "
+                              f"guessed")
+            if len(cands) == 1:
+                only = json.loads(next(iter(cands)))
+                if only:
+                    return dict(only), ""
+            return {}, ""
+        return None, (f"{want!r} names no parameters and the default identity {derived!r} does "
+                      f"not extend it; refusing to guess a parameterisation")
+
+    docket = _docket_rows()
+    if not docket:
+        return None, f"no docket on this box to recover params for cell {want!r}"
+    for row in docket:
+        try:
+            got = cell_id({**row, "sym": row.get("symbol"), "family": row.get("family"),
+                           "params": row.get("params")})
+        except Exception:
+            continue
+        if got != want:
+            continue
+        found = row.get("params")
+        found = dict(found) if isinstance(found, dict) else {}
+        # VERIFIED, not merely found: the digest must reproduce the certified identity.
+        if cell_id({"sym": row.get("symbol"), "family": row.get("family"),
+                    "params": found}) != want:
+            return None, (f"docket row for {want!r} does not hash back to its own cell id; "
+                          f"refusing to trade unverified parameters")
+        return found, ""
+    return None, (f"certified cell {want!r} is not in the docket on this box, so its parameters "
+                  f"cannot be reconstructed; refusing to trade the family unparameterised")
+
+
+def _docket_rows() -> list[dict[str, object]]:
+    """`external_survivors.json`, cached for the life of the process. ~23k rows, read once."""
+    global _DOCKET_CACHE
+    if _DOCKET_CACHE is None:
+        try:
+            rows = json.loads(
+                (BASE / "data" / "hypotheses" / "external_survivors.json").read_text("utf-8"))
+            _DOCKET_CACHE = ([r for r in rows if isinstance(r, dict)]
+                             if isinstance(rows, list) else [])
+        except (OSError, ValueError):
+            _DOCKET_CACHE = []
+    return _DOCKET_CACHE
+
+
+_DOCKET_CACHE: list[dict[str, object]] | None = None
+
+
+def _send_error(res: object) -> object:
+    """MT5's `last_error()` when a send came back empty, so the log states a cause it CHECKED.
+
+    `order_send` returns None when the request is refused at the API boundary -- the same shape as
+    `copy_rates_from_pos` returning None with `(-2, 'Terminal: Invalid params')`. Until 2026-09-14
+    the desk logged "the terminal connection is gone" for every such case without asking, and that
+    was measurably wrong: one sleeve's order was ACCEPTED in the same second another's was lost.
+    """
+    if res is not None:
+        return None
+    try:
+        return mt5.last_error()
+    except Exception:
+        return None
+
+
+def _family_call_params(s: dict, family: str, bars: object) -> tuple[dict | None, str]:
+    """The keyword params a non-hunt16 certified cell is called with, or (None, reason).
+
+    ONE RECONSTRUCTION, THREE CONSUMERS. `family_inputs.resolve` is what the gauntlet's
+    `build_cell` and the forward clock both use to rebuild swap terms, peer bars, factor bars,
+    macro and COT series from a cell's own stored params. The executor uses the same call, so a
+    sleeve is handed live exactly the inputs its certificate was earned on; a fourth copy of that
+    mapping here is the drift this desk keeps paying for.
+
+    FAIL CLOSED: a family whose inputs cannot be rebuilt returns None with the reason and the
+    caller refuses the row by name. An empty dict is a valid answer -- a price-only family needs
+    nothing beyond bars -- and is not a gap.
+    """
+    params = dict(s.get("params") or {})
+    if not params:
+        recovered, why = _params_from_certificate(s)
+        if recovered is None:
+            return None, why
+        params = dict(recovered)
+    try:
+        from mt5desk.family_inputs import resolve, strip_identity_keys
+    except Exception as exc:
+        return None, f"family_inputs unavailable ({type(exc).__name__}: {exc})"
+    try:
+        call_params = strip_identity_keys(family, params)
+        extra, why = resolve(str(s["symbol"]), family, params, bars)
+    except Exception as exc:
+        return None, f"input reconstruction raised ({type(exc).__name__}: {exc})"
+    if extra is None:
+        return None, why
+    call_params.update(extra)
+    return call_params, ""
+
+
+def resolve_family_order(st: dict, s: dict, equity: float,
+                         pending: dict[str, float] | None = None) -> dict:
+    """The order this family sleeve would send THIS pass, priced -- read-only, no state written.
+
+    THE SAME MOVE THE BRACKET LANE MADE, ONE LANE OVER (external audit round 3, 2026-09-09).
+    `cap_by_heat` charged a family row `ramped_fraction` -- a FRACTION, fixed before this
+    sleeve's stop existed -- and then this lane sized the order with `promoted_lot` against the
+    signal's real stop and let the venue's lot floor round it. Those are two different trades,
+    and the audit named the general rule: the cap must operate on FINAL EXECUTABLE RISK, after
+    the actual stop, the lot step, the minimum lot and the live tick value are known.
+
+    So the resolution moves in front of the cap and the executor consumes what it returns.
+    NOTHING HERE WRITES STATE, and that is load-bearing: `family_signal_step` reports whether
+    the signal bar should be MARKED as considered, and the mark must only be applied when the
+    executor actually acts on it. Applying it here would consume a signal the cap then
+    rejected, and the sleeve would never see that bar again.
+
+    Returns a dict always carrying `ok`, `stage` and `why`; on `ok` also `lot`, `dist`, `sym`,
+    `tick`, `entry_ref`, `signal`, `last_bar`, `mark`, `note`, `ttl_until`, `side`, `tf` and
+    `basis`.
+    """
+    name, family, selector = s["name"], s.get("family"), s.get("selector")
+    try:
+        from research.run_hunt12 import day_states
+        from research.run_hunt16 import WINDOWS
+    except Exception as exc:
+        return {"ok": False, "stage": "unavailable",
+                "why": f"unavailable ({type(exc).__name__}: {exc})"}
+    side = 1 if str(s.get("side", "LONG")).upper() == "LONG" else -1
+    fam_fn, population = _family_constructor(str(family or ""))
+    if fam_fn is None:
+        return {"ok": False, "stage": "no_constructor",
+                "sep": " ",
+                "why": f"refused: no constructor for family {family!r} on this box"}
+    if population == "hunt16" and selector not in WINDOWS:
+        return {"ok": False, "stage": "no_window",
+                "sep": " ", "why": f"refused: hunt16 selector {selector!r} has no window"}
+    tf, tf_const, n_bars = _family_chart(s)
+    if tf_const is None:
+        # REFUSED BY NAME, never traded on a substitute chart. Computing an M5 certificate's
+        # signals from hourly bars is a live position in a strategy nobody certified.
+        return {"ok": False, "stage": "no_chart",
+                "sep": " ", "why": f"refused: timeframe {tf!r} has no MT5 chart on this box"}
+    h1 = mt5.copy_rates_from_pos(s["symbol"], tf_const, 0, n_bars)
+    if h1 is None or len(h1) < 60:
+        return {"ok": False, "stage": "no_bars", "why": f"{tf} bars unavailable; skipped"}
+    # `frame` KEEPS THE FORMING BAR; `closed` drops it. Both are needed and they are not
+    # interchangeable: every decision below is made on CLOSED data only, but the family's own
+    # loop bound is `len(d) - 1`, so it can only emit on `last_bar` if one more bar exists after
+    # it in the frame it is handed. See `family_signal_step`'s `signal_bars` for the measurement.
+    frame = h1_frame(h1)
+    closed = frame.iloc[:-1]
+    call_params: dict | None = None
+    if population == "hunt16":
+        # ONE DECISION A DAY AT THE CERTIFIED HOUR.
+        last_bar = family_bar_due(closed, family_signal_hour(WINDOWS[selector]))
+    else:
+        # NO HOUR FILTER, BECAUSE THE CLOCK APPLIES NONE -- the family itself owns when it fires.
+        last_bar = closed.index[-1] if len(closed) else None
+    # THE MARK IS READ BEFORE THE INPUTS ARE REBUILT (2026-09-16). Input reconstruction is the
+    # expensive step -- peer bars, factor bars, primitives -- and it was paid on every pass for
+    # every sleeve whether or not the bar had already been considered: 64 sleeves at 2-5 s each
+    # made passes 2-7 minutes long, and a slow pass is the entry drift `family_bracket` and the
+    # concurrent-pass double entries both trace back to. A considered bar is the ordinary quiet
+    # outcome (`family_signal_step` returns mark=False for it) and now costs nothing.
+    _srec0 = (st.get("generic") or {}).get(name) or {}
+    if last_bar is not None and str(_srec0.get("last_signal_bar") or "") == str(last_bar):
+        return {"ok": False, "stage": "no_signal", "why": "bar already considered",
+                "mark": False, "last_bar": last_bar, "considered": False}
+    if population != "hunt16":
+        call_params, why = _family_call_params(s, str(family), closed)
+        if call_params is None:
+            return {"ok": False, "stage": "no_inputs",
+                    "sep": " ",
+                    "why": f"refused: runtime inputs unavailable ({why}); this is a wiring "
+                           f"gap, not a null signal"}
+        if side < 0 and not _family_takes_side(fam_fn):
+            return {"ok": False, "stage": "wrong_side",
+                    "sep": " ",
+                    "why": f"refused: certificate is SHORT and family {family!r} takes no "
+                           f"`side` -- refusing to trade it LONG"}
+    if last_bar is None:
+        return {"ok": False, "stage": "no_signal_bar", "why": "no signal bar due on these bars"}
+    # SINGLE-POSITION DISCIPLINE, BECAUSE THAT IS WHAT THE CERTIFICATE WAS EARNED UNDER.
+    #
+    # `engine.py` replays every cell with an explicit rule -- `last_exit_idx = -1  # single-
+    # position discipline: no overlapping trades`, and `if i <= last_exit_idx: continue`. A
+    # signal that arrives while the trade is open is SKIPPED in the replay. Every expectancy,
+    # every gate verdict and every certificate this desk holds was measured that way.
+    #
+    # The live lane had no such check, so a sleeve re-entered on every firing bar and stacked.
+    # MEASURED 2026-09-16: 48 open positions, TWENTY-TWO of them EURCHF -- 0.16 lots long and
+    # 0.68 short at the same time, 0.32 lots hedged against itself paying spread twice for zero
+    # exposure -- with margin at 211.79 on 568 equity. That book is not the certified strategy
+    # run larger; it is a different strategy, which is the one thing the family executor refuses
+    # everywhere else it looks.
+    #
+    # THIS IS NOT A RISK REDUCTION AND DOES NOT SHRINK THE BOOK. It makes live match the replay.
+    # The heat the allocator grants is unchanged and is spent on ONE position per sleeve, exactly
+    # as the certificate spends it; breadth still comes from more SLEEVES, which is the only
+    # place it ever came from.
+    if _DESK_STALE is not None:
+        return {"ok": False, "stage": "desk_stale", "considered": True, "sep": " ",
+                "why": f"desk stale ({_DESK_STALE['verdict']}): no new risk", "mark": False,
+                "last_bar": last_bar}
+    _open_now = _sleeve_positions(s["symbol"], name)
+    if _open_now:
+        _lots = sum(float(getattr(p, "volume", 0.0) or 0.0) for p in _open_now)
+        return {"ok": False, "stage": "already_open", "considered": True, "sep": " ",
+                "why": (f"refused: this sleeve already holds {len(_open_now)} position(s) "
+                        f"({_lots:g} lot) on {s['symbol']}; the certificate was earned under "
+                        f"engine.py's single-position discipline (no overlapping trades), so a "
+                        f"second entry trades a strategy the gates never judged"),
+                "mark": False, "last_bar": last_bar}
+    srec = (st.get("generic") or {}).get(name) or {}
+    step = family_signal_step(closed, last_bar, last_signal_bar=srec.get("last_signal_bar"),
+                              want_state=s.get("state"), side=side, family_fn=fam_fn,
+                              day_states_fn=day_states, call_params=call_params,
+                              signal_bars=frame)
+    if step.signal is None:
+        return {"ok": False, "stage": "no_signal", "why": step.note or "no signal on this bar",
+                "mark": bool(step.mark), "last_bar": last_bar, "note": step.note,
+                "considered": True}
+    g = step.signal
+    # THE SIGNAL'S OWN SIDE OWNS THE BRACKET IT CARRIES (measured 2026-09-15).
+    #
+    # `side` above comes from the SLEEVE: `1 if str(s.get("side", "LONG")).upper() == "LONG"`.
+    # Most family rows declare no side at all, so that expression reads the default and returns
+    # LONG -- while the family itself decides direction per signal (`family_overnight_gap_decay`
+    # computes `side = -1 if gap > 0 else 1`, fading whichever way the gap went). When the family
+    # emitted a SHORT, the gateway sent a BUY carrying that short's stop and target:
+    #
+    #   BUY 0.02 USDCHF @market sl=0.81948 tp=0.81500   (entry 0.81795)
+    #
+    # -- stop ABOVE the entry and target BELOW it, which is a sell bracket on a buy order. The
+    # venue refused every one with retcode 10016 "Invalid stops: the SL or TP is inside the
+    # stops/freeze distance from the entry", and that message is true but describes the symptom:
+    # the levels are not too close, they are on the wrong sides, because the direction and the
+    # bracket came from two different decisions.
+    #
+    # `g.side` is the one that cannot disagree with `g.stop` and `g.target`, so it is the one the
+    # order follows. For a sleeve that DOES declare a side this changes nothing: `family_call`
+    # already filtered the family to that side, so `g.side` equals it.
+    side = int(getattr(g, "side", side) or side)
+    tick = mt5.symbol_info_tick(s["symbol"])
+    sym = mt5.symbol_info(s["symbol"])
+    if tick is None or sym is None:
+        return {"ok": False, "stage": "no_tick", "why": "no tick/symbol_info; skipped",
+                "mark": bool(step.mark), "last_bar": last_bar, "note": step.note,
+                "considered": True}
+    # THE VENUE IS ASKED WHETHER THIS BAR WAS ALREADY TRADED (2026-09-16). The state mark is the
+    # first witness; the account history is the second, and it is the one that cannot be lost
+    # between passes. The window is the bar AFTER the signal bar -- the bar during which this
+    # signal's entry is sent -- so the previous signal's fill never shadows a new bar.
+    _bar_min = int(_BAR_MINUTES.get(tf, 60))
+    try:
+        # EPOCH SECONDS, NEVER A DATETIME (measured 2026-09-16, CHFNOK sold twice 7 minutes
+        # apart with the witness live). The MetaTrader5 API reads a naive datetime in the BOX'S
+        # local zone (UTC+2 here) while deal times are the server's clock stamped as UTC, so an
+        # H1 window handed over as a datetime landed two hours away from the bar it named and
+        # saw nothing. The bar label is already server time stamped UTC; its epoch is the
+        # deal's own convention.
+        _from_s = int(pd.Timestamp(last_bar).timestamp()) + _bar_min * 60
+        _deals = mt5.history_deals_get(_from_s, _from_s + _bar_min * 60) or []
+    except Exception:
+        _deals = []                                  # UNMEASURED: the state mark still stands
+    _traded = bar_already_traded(_deals, order_comment(name))
+    if _traded is not None:
+        return {"ok": False, "stage": "bar_traded", "considered": True, "sep": " ",
+                "mark": True, "last_bar": last_bar,
+                "why": (f"refused: this sleeve already opened on bar {last_bar} at the venue "
+                        f"(deal {_traded[0]} at {_traded[1]}); the replay fills once per signal "
+                        f"and never re-enters a bar after its stop")}
+    # THE BRACKET IS LAID FROM THE ENTRY THE VENUE GIVES, NOT FROM A CLOSE IT HAS LEFT: see
+    # `family_bracket` for the 0.27-lot, 1.3-pip EURGBP stop this replaces.
+    try:
+        _sig_close = (float(closed["close"].loc[last_bar]) if last_bar in closed.index
+                      else float(closed["close"].iloc[-1]))
+    except Exception:
+        _sig_close = None
+    entry_ref, _stop, _target, dist, _drift_note, _drift, _verdict = family_bracket(
+        g, side, tick.bid, tick.ask, _sig_close)
+    if _verdict == "stale":
+        # The replay's trade already ended at its stop or its target; opening one now is a
+        # trade the certificate never made. Journaled so `missed_growth` prices the refusal.
+        journal_refusal(name, s["symbol"], side, "stale_signal", _drift_note)
+        return {"ok": False, "stage": "stale_signal", "considered": True, "sep": " ",
+                "mark": True, "last_bar": last_bar, "why": f"refused: {_drift_note}"}
+    if _verdict == "re_anchored":
+        g = signal_with_levels(g, _stop, _target)
+        log(f"[{name}] FAMILY-EXEC {_drift_note}")
+    if not (dist > 0):
+        return {"ok": False, "stage": "degenerate_stop",
+                "why": "degenerate stop distance; skipped", "considered": True,
+                "mark": bool(step.mark), "last_bar": last_bar, "note": step.note}
+    n_live = sleeve_live_n(name)
+    from_book = s.get("sized_by") == "allocator_book"
+    try:
+        # `from_book=` spelled literally: see `bracket_lane_lot` for why the fence greps it.
+        lot = promoted_lot(equity, n_live, dist, s["symbol"], sym, s.get("risk_frac"),
+                           s.get("decay_faded"),
+                           from_book=(s.get("sized_by") == "allocator_book"))
+    except Exception as exc:
+        return {"ok": False, "stage": "unpriceable", "considered": True,
+                "why": f"cannot price risk ({exc}); skipped",
+                "mark": bool(step.mark), "last_bar": last_bar, "note": step.note}
+    # CURRENCY-LEG BALANCE, TWO-SIDED (2026-09-15). Measured that day: eight forex positions
+    # closed, all eight on their stop, -34.05 EUR -- and six of them were ONE bet, because
+    # EURCHF short x4 and USDCHF short x2 are both long CHF. The desk could already SEE this
+    # (`independence.factor_k_eff` decomposes the book into legs) and sized nothing by it.
+    #
+    # This is not a cap on the book: it is heat-neutral by construction and boosts as readily as
+    # it damps. An order piling onto a leg the book already holds gets less; an order on a leg
+    # the book does not hold gets MORE, by the same bound. Total heat stays where `heat_budget`
+    # put it -- what changes is which bets it buys, which is the principal's own definition of
+    # Tier-1: more independent positive-Elog bets inside the same heat.
+    _same = same_side_count(s["symbol"], side, mt5.positions_get() or [], pending)
+    if _same >= MAX_SAME_SIDE_PER_SYMBOL:
+        _why = (f"{_same} {'long' if side > 0 else 'short'} position(s) already on {s['symbol']} "
+                f"across sleeves (cap {MAX_SAME_SIDE_PER_SYMBOL}): one bet is not taken again")
+        journal_refusal(name, s["symbol"], side, "symbol_side_cap", _why)
+        # The bar is MARKED: the copy is refused for this bar, not retried every minute (which
+        # would journal one refusal per sleeve per pass); a slot that frees is taken next bar.
+        return {"ok": False, "stage": "symbol_side_cap", "considered": True, "sep": " ",
+                "why": _why, "mark": True, "last_bar": last_bar}
+    leg_mult, leg_why = 1.0, ""
+    try:
+        from mt5desk import leg_balance
+        leg_mult, leg_why = leg_balance.multiplier(s["symbol"], side,
+                                                   mt5.positions_get() or [],
+                                                   pending=pending)
+        _vmin = float(getattr(sym, "volume_min", 0.01) or 0.01)
+        _vstep = float(getattr(sym, "volume_step", 0.01) or 0.01)
+        _scaled = float(lot) * leg_mult
+        # DAMPING IS INERT AT THE VENUE FLOOR, AND ON THIS ACCOUNT ALMOST EVERYTHING IS AT IT.
+        #
+        # This rounded up to `volume_min` on the reasoning that the floor is not a suggestion.
+        # True for a single order and false for a crowded one: an equity of ~600 EUR sizes nearly
+        # every sleeve at the 0.01 minimum already, so multiplying by 0.55 and flooring returns
+        # 0.01 unchanged. Three sleeves on one leg then send three IDENTICAL minimum orders and
+        # the balance has done nothing at all.
+        #
+        # MEASURED 2026-09-16: EURCHF sell 0.01 three times at 00:16:37, each -1.34; twice more
+        # at 00:11:10, each -1.10. One bet, charged three times, at the one size the damping
+        # cannot reduce.
+        #
+        # So when the leg is CROWDED and the damped order would fall below the venue minimum, the
+        # honest answer is not the minimum -- it is NOT THIS ONE. The bet is already held; a
+        # fourth copy at the smallest tradeable size adds spread and no exposure worth having.
+        # This is the same rule `book_zeroed` established for the allocator: "hold none of this"
+        # must be able to mean zero rather than arriving as a floor.
+        #
+        # IT ONLY EVER REFUSES A DUPLICATE. `leg_mult >= 1` (a fresh or neutral leg) never takes
+        # this path, so a sleeve opening ground the book does not hold is unaffected, and the
+        # first sleeve on any leg always trades.
+        # THE TEST IS ON THE LOT THE VENUE WILL SEE, not on the unrounded figure. Measured while
+        # writing this: a damped 0.0125 looks larger than the 0.01 floor and rounds to exactly
+        # 0.01, so comparing the raw number let the second and third copies through while
+        # reporting that they had been damped. What matters is whether the order ARRIVES at the
+        # minimum, because that is the size that cannot be reduced any further.
+        # THE MACRO LEAN, APPLIED AS A SECOND TWO-SIDED MULTIPLIER (2026-09-16). `leg_balance`
+        # asks "how much of this leg does the book already hold"; this asks "which way is the
+        # currency itself leaning". Measured the night it was written: every currency leg the
+        # book held was losing at once, the signature of no directional view -- and the view,
+        # even on 12-day-stale FRED data, leaned CHF -0.31 (risk-on) while the desk was SHORT
+        # EURCHF and USDCHF, its three largest losers. An aligned order is sized up by the same
+        # bound an opposed one is sized down, so total heat is unchanged; a certificate that
+        # disagrees with the macro still trades, smaller, and the basis line says so.
+        macro_mult, macro_why = 1.0, ""
+        try:
+            from mt5desk import macro_view
+            macro_mult, macro_why = macro_view.multiplier(
+                s["symbol"], side, family=str(family or ""),
+                ttl_bars=getattr(g, "ttl_bars", None), bar_minutes=_BAR_MINUTES.get(tf, 60))
+            _scaled = _scaled * macro_mult
+        except Exception as exc:
+            macro_mult, macro_why = 1.0, f"macro UNMEASURED ({type(exc).__name__}: {exc})"
+        # ZERO HEAT STAYS ZERO (2026-09-16, caught by the harness): the venue floor is a floor
+        # for an order the allocator FUNDED, never a way for an unfunded sleeve to trade 0.01.
+        _final = (0.0 if not float(lot) > 0.0
+                  else max(_vmin, round(_scaled / _vstep) * _vstep))
+        _held = leg_balance.already_held(s["symbol"], side, mt5.positions_get() or [], pending)
+        if _held > 0 and _final <= _vmin + 1e-12:
+            return {"ok": False, "stage": "duplicate_at_floor", "considered": True,
+                    "sep": " ",
+                    "why": (f"refused: {_held:g} lot(s) already "
+                            f"{'long' if side > 0 else 'short'} {s['symbol']} and this order "
+                            f"prices at the venue minimum {_vmin:g}, which cannot be sized down "
+                            f"-- a second copy at the floor buys spread, not exposure. "
+                            f"{leg_why}"),
+                    "mark": bool(step.mark), "last_bar": last_bar, "note": step.note}
+        lot = _final
+    except Exception as exc:
+        # UNMEASURED IS 1.0, NEVER A SILENT SHRINK: a decomposition that cannot be trusted must
+        # not quietly become a reason to trade smaller.
+        leg_mult, leg_why = 1.0, f"leg balance UNMEASURED ({type(exc).__name__}: {exc})"
+    return {"ok": True, "stage": "ok", "why": "resolved", "considered": True,
+            "lot": float(lot), "dist": float(dist),
+            "sym": sym, "tick": tick, "entry_ref": float(entry_ref), "signal": g, "side": side,
+            "tf": tf, "last_bar": last_bar, "mark": bool(step.mark), "note": step.note,
+            "population": population,
+            "ttl_until": family_ttl_until(last_bar, g.ttl_bars, _BAR_MINUTES.get(tf, 60)),
+            "leg_mult": float(leg_mult), "leg_why": leg_why,
+            "macro_mult": float(macro_mult), "macro_why": macro_why,
+            "basis": (f"promoted_lot: risk_frac={s.get('risk_frac')} x ramp(n_live={n_live})"
+                      f"{' from the allocator book' if from_book else ''} at the signal's own "
+                      f"{dist:.5g} stop; {leg_why}; {macro_why}")}
+
+
+def run_family_sleeves(st: dict, sleeves: list[dict], equity: float) -> None:
+    """Send what the pre-cap phase resolved for each hunt-certified family sleeve (GAP 124).
+
+    FAITHFUL TO THE REPLAY OR NOT AT ALL: signals come from the SAME
+    `run_hunt16.FAMILIES[family]` code the forward clock replays, filtered to the same
+    selector hour and day-state condition; entry is market at the open following the signal
+    bar (the engine's fill rule); sl/tp are the Signal's own absolute levels; TTL closes the
+    position `ttl_bars` hours after entry. Anything this lane cannot compute exactly is a loud
+    skip, never an approximation -- trading a lookalike strategy under a certified sleeve's
+    name is the defect class `state_allows` documents.
+
+    THE DECISION IS NO LONGER MADE HERE. `resolve_family_order` makes it before `cap_by_heat`,
+    so the cap charges `realised_q` at the signal's real stop and the venue's actual lot rather
+    than at `ramped_fraction`, an abstract number fixed before the stop existed. This function
+    reads that resolution, applies the signal MARK (which the resolver deliberately does not),
+    records what the core decided in the pass state, and sends. A sleeve with no resolution
+    reached this pass without being priced by the cap and is not traded -- the same rule the
+    bracket lane follows, and for the same reason.
+    """
+    fam_sleeves = [s for s in sleeves if s.get("exec") == "family_market"]
+    if not fam_sleeves:
+        return
+    armed = bool(st.get("armed")) and GENERIC_EXEC_ENABLED.exists() and NEW_RISK_OK
+    gstate = st.setdefault("generic", {})
+    now_utc = datetime.now(tz=UTC)
+    for s in fam_sleeves:
+        name, family, selector = s["name"], s.get("family"), s.get("selector")
+        plan = s.get("pending_order")
+        if not isinstance(plan, dict):
+            log(f"[{name}] FAMILY-EXEC: no pre-cap resolution this pass; the heat cap never "
+                f"priced this order, so it is not sent")
+            continue
+        # THE MARK IS APPLIED HERE AND NOWHERE ELSE. The resolver reports it; only an executor
+        # that actually acted on the bar may consume it, or a signal the heat cap rejected would
+        # be thrown away unseen. `setdefault` is deliberately behind the mark: a pass that
+        # decided nothing must leave no trace in the pass state, which is what
+        # `test_off_the_signal_hour_the_executor_touches_no_state` measures.
+        # A SLEEVE WHOSE BAR WAS CONSIDERED KEEPS A RECORD, even an empty one: empty means
+        # "considered this pass and not marked, so the next pass retries". A sleeve off its
+        # signal hour decided nothing and must leave no trace at all.
+        if plan.get("considered"):
+            gstate.setdefault(name, {})
+        # A BAR MUST NOT BE CONSUMED BY A PASS THAT WAS FORBIDDEN TO PLACE.
+        #
+        # MEASURED 2026-09-15, and it is why no forex sleeve traded all session. The mark is
+        # dedupe: it stops one signal firing twice on the same bar. But it was applied whatever
+        # the gateway was allowed to do -- so while the release-identity fence was refusing NEW
+        # risk ("managing open positions only"), three passes at 02:42, 03:42 and 04:22 walked
+        # every sleeve, resolved its signal, and STAMPED the bar consumed without sending
+        # anything. Every forex sleeve in `generic` carried
+        # `last_signal_bar: 2026-09-15 06:00`, and USDCHF's family really did produce a signal on
+        # that exact bar. The signal was burned by a pass that could not act on it.
+        #
+        # This is GAP #27's shape in the money path: marked BEFORE the thing the mark attests to
+        # actually happened. There the sweep stamped a cell JUDGED before its verdict was
+        # durable; here the gateway stamps a bar SEEN before it was allowed to trade it. Both are
+        # self-sustaining, because the stamp then hides the work from the pass that could have
+        # done it.
+        #
+        # The dedupe itself is unchanged when the desk CAN act -- including when it looks and
+        # declines, which is a real decision about the bar. Only a pass under a new-risk refusal
+        # leaves no trace, so the next permitted pass sees the signal still standing.
+        if plan.get("mark") and NEW_RISK_OK:
+            gstate.setdefault(name, {})["last_signal_bar"] = str(plan.get("last_bar"))
+        if plan.get("note"):
+            log(f"[{name}] {plan['note']}")
+        if not plan.get("ok"):
+            # `no_signal` and `no_signal_bar` are the ordinary quiet outcomes -- most sleeves on
+            # most passes -- and were silent when these guards were inline. Everything else is a
+            # refusal an operator must be able to read, logged with the wording it has always
+            # had: `sep` carries the separator so a "refused:" reads as one and a plain skip
+            # reads as one.
+            if plan["stage"] not in ("no_signal", "no_signal_bar"):
+                log(f"[{name}] FAMILY-EXEC{plan.get('sep', ': ')}{plan['why']}")
+            continue
+        srec = gstate.setdefault(name, {})
+        side, lot, dist = int(plan["side"]), float(plan["lot"]), float(plan["dist"])
+        sym, tick, entry_ref, g = plan["sym"], plan["tick"], float(plan["entry_ref"]), \
+            plan["signal"]
+        if not (lot > 0):
+            log(f"[{name}] FAMILY-EXEC: allocator gave this sleeve no heat; skipped")
+            continue
+        # EXECUTION POLICY, IN SHADOW: what the utility-maximising plan would have been for this
+        # order (market / passive / pullback / split / skip), recorded on the intent so the
+        # counterfactual ledger can score the road not taken. Routing stays MARKET until the
+        # fill surface is fitted on enough of the box's own fills to make the choice measured.
+        policy_advice = _policy_advice(s["symbol"], side, entry_ref, tick, sym, dist, g, lot)
+        # E2 -- THE COMPETITION IS RUN ON EVERY PASS AND ROUTES NOTHING UNLESS ARMED SEPARATELY.
+        #
+        # Nine execution policies and five child-order algorithms are priced and ranked inside
+        # every gateway pass, and exactly two order shapes have ever reached the venue: a pending
+        # stop for gold and a market order for everything else, chosen by a hard-coded branch
+        # rather than by the argmax the competition computes. That is the whole of E2: the
+        # ranking exists, is measured, and decides nothing.
+        #
+        # WHY THIS IS A SEPARATE SWITCH FROM GENERIC_EXEC_ENABLED. Arming generic execution says
+        # "this lane may send". Arming this says "the WINNER of a priced competition chooses the
+        # order shape" -- a different decision, on a different kind of evidence, and one that
+        # changes what arrives at the venue for sleeves already trading. Folding it into the
+        # existing switch would mean a principal who armed execution last month silently
+        # acquired a router today.
+        #
+        # ONLY ALGORITHMS WHOSE CHILDREN ARE ALL `market` ARE ELIGIBLE, and that bound is the
+        # reason this can be armed at all. `twap` and `sniper` win by SPLITTING or DELAYING, and
+        # both introduce a live decision between the signal and the fill -- a resting child that
+        # the desk must then manage, cancel and reconcile. `market` children need none of that:
+        # the only thing the router changes is WHICH market order is sent, so a wrong answer
+        # costs slippage rather than an unmanaged resting order. The staged and time-sliced
+        # algorithms stay measured and unrouted until the fill surface is fitted on this box's
+        # own fills, which needs matched_fills > 0 and it is 0.
+        exec_route = _exec_route(s["symbol"], side, entry_ref, tick, sym, dist, g, lot)
+        if exec_route.get("routed"):
+            _mu = exec_route["market_utility"]
+            log(f"[{name}] EXEC-ROUTE {exec_route['algo']} "
+                f"(utility {exec_route['utility']:+.5f} vs market "
+                f"{_mu:+.5f})" if _mu is not None else f"[{name}] EXEC-ROUTE {exec_route['algo']}")
+        # The theoretical book sees every intent, armed or not, so netting is measured in shadow.
+        _book_target(name, s["symbol"], side * lot, f"family_market/{family}/{selector}",
+                     price=entry_ref)
+        # THE HOLD IS IN THIS CHART'S BARS. `engine.py` counts `ttl_bars` in index positions, so
+        # twelve bars is twelve hours on H1 and one hour on M5; passing the chart's own bar length
+        # is what keeps a promoted M5 sleeve from holding twelve times its certified duration.
+        ttl_until = str(plan["ttl_until"])
+        order_desc = family_order_desc(side, lot, s["symbol"], g, ttl_until)
+        if not armed:
+            log(f"[{name}] WOULD PLACE (generic exec blocked: "
+                f"{unarmed_why(st)}): {order_desc}")
+            continue
+        if not margin_ok(s["symbol"], lot, entry_ref):
+            log(f"[{name}] FAMILY-EXEC SKIPPED: margin tight (lot={lot})")
+            continue
+        _t0 = time.perf_counter()
+        res = mt5.order_send({
+            "action": mt5.TRADE_ACTION_DEAL, "symbol": s["symbol"], "volume": lot,
+            "type": mt5.ORDER_TYPE_BUY if side == 1 else mt5.ORDER_TYPE_SELL,
+            "price": entry_ref, "sl": float(g.stop), "tp": float(g.target),
+            "deviation": 20, "magic": MAGIC, "comment": order_comment(name),
+        })
+        _lat_ms = round((time.perf_counter() - _t0) * 1000.0, 3)
+        rc = res.retcode if res else None
+        _record_intent(sleeve=name, symbol=s["symbol"],
+                       side=("buy" if side == 1 else "sell"), lot=lot,
+                       intended=entry_ref, sl=float(g.stop), tp=float(g.target),
+                       ticket=(getattr(res, "order", None) if res else None), retcode=rc,
+                       policy_advice=policy_advice, latency_ms=_lat_ms,
+                       **_sleeve_identity(s))
+        log(f"[{name}] FAMILY-EXEC ORDER -> retcode={rc} "
+            f"{diagnose(rc, getattr(res, 'comment', '') or '', _send_error(res))} "
+            f"| {order_desc}")
+        if rc in (10008, 10009):
+            srec["open_ttl_until"] = ttl_until
+            # Whether this signal's certificate carried a trail: `manage_open_positions` ratchets
+            # only positions whose own signal did (engine.Signal.runner_trail_k, 0 = fixed).
+            srec["trail_k"] = float(getattr(g, "runner_trail_k", 0.0) or 0.0)
+            fill_px = float(getattr(res, "price", 0.0) or entry_ref)
+            _book_fill(name, s["symbol"], side * lot, fill_px)
+            _record_exec_outcome(s["symbol"], side, lot, entry_ref, tick, dist, g, fill_px)
+    # TTL housekeeping: positions past their deadline are closed regardless of P&L -- the
+    # replay's ttl exit is part of the certified strategy, not an optional tidy-up.
+    for s in fam_sleeves:
+        srec = gstate.get(s["name"]) or {}
+        if ttl_expired(srec.get("open_ttl_until"), now_utc.isoformat()):
+            _book_target(s["name"], s["symbol"], 0.0, "ttl")
+            if st.get("armed") and GENERIC_EXEC_ENABLED.exists():
+                # ONE SLEEVE'S TIME EXIT IS NOT THE SYMBOL'S. This called `close_positions`,
+                # which force-closes EVERY position on the symbol -- so whenever one sleeve's TTL
+                # expired it also closed positions other sleeves had opened seconds earlier in
+                # THIS SAME PASS, the opening loop above running immediately before it.
+                #
+                # MEASURED 2026-09-15: 18 of 58 round trips closed 0-1 SECONDS after opening, at
+                # the same price, with an empty exit tag (no stop, no target, no broker close) --
+                # EURCHF 0.04 twice at 22:44:43, both 0.94497 -> 0.94497; AUDUSD 0.03 at
+                # 0.71300 -> 0.71300. Net -5.82 EUR of pure spread and commission for positions
+                # that never had a chance to express anything.
+                #
+                # `close_positions`' OWN docstring documents this defect class, found and fixed
+                # for the gold/scalp lane on 2026-09-08 -- "a basket an 'all'-session M15 sleeve
+                # opened at 19:31 was closed at 19:32 by the gold book's backstop, spread paid
+                # for nothing, every night" -- and `close_sleeve_positions` was written for it.
+                # The family lane was never moved over. It is now.
+                close_sleeve_positions(st, s["symbol"], s["name"])
+            else:
+                log(f"[{s['name']}] SHADOW would TTL-close open position(s)")
+            srec.pop("open_ttl_until", None)
+
+
+def _sleeve_positions(symbol: str, name: str) -> list:
+    """Open positions this sleeve owns: the order comment is the sleeve's tag."""
+    tag = order_comment(name)
+    return [p for p in (mt5.positions_get(symbol=symbol) or [])
+            if str(getattr(p, "comment", "") or "") == tag]
+
+
+def close_retired_positions(st: dict) -> None:
+    """A SLEEVE THAT LEAVES THE ROSTER LEAVES THE BOOK (2026-09-16).
+
+    The decay monitor's RETIRE popped the row and nothing else: its open positions kept their
+    stop and target and nobody ran their time exit, because the TTL housekeeping walks the
+    ROSTER. Seven positions of the retired `discovered` forex family sat open at ~1% risk each
+    the day the family was retired at pooled t=-4.5. The monitor now queues the retired names
+    in data/RETIRED_CLOSE_QUEUE.json and this closes their positions on the next pass, by the
+    order comment, one sleeve at a time; a name leaves the queue once the venue shows no
+    position under its tag. SHADOW unless armed, like every other close here.
+    """
+    try:
+        doc = json.loads(RETIRED_CLOSE_QUEUE.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return
+    names = [str(n) for n in (doc.get("names") or []) if n]
+    if not names:
+        return
+    remaining: list[str] = []
+    for name in names:
+        tag = order_comment(name)
+        held = [p for p in (mt5.positions_get() or [])
+                if str(getattr(p, "comment", "") or "") == tag]
+        if not held:
+            log(f"[{name}] RETIRED: no open position under its tag; dropped from the close queue")
+            continue
+        remaining.append(name)                  # verified gone on a later pass, never assumed
+        if not st.get("armed"):
+            log(f"[{name}] SHADOW would close {len(held)} retired position(s)")
+            continue
+        for p in held:
+            tick = mt5.symbol_info_tick(p.symbol)
+            if tick is None:
+                log(f"[{name}] RETIRED: no tick for {p.symbol}; ticket {p.ticket} left for "
+                    f"the next pass")
+                continue
+            res = mt5.order_send({
+                "action": mt5.TRADE_ACTION_DEAL, "symbol": p.symbol, "volume": p.volume,
+                "type": (mt5.ORDER_TYPE_SELL if p.type == mt5.POSITION_TYPE_BUY
+                         else mt5.ORDER_TYPE_BUY),
+                "position": p.ticket,
+                "price": tick.bid if p.type == mt5.POSITION_TYPE_BUY else tick.ask,
+                "deviation": 20, "magic": MAGIC, "comment": order_comment(name),
+            })
+            log(f"[{name}] RETIRED: CLOSE ticket {p.ticket} ({p.symbol} {p.volume}) -> "
+                f"retcode={res.retcode if res else None}")
+    with contextlib.suppress(OSError):
+        RETIRED_CLOSE_QUEUE.write_text(json.dumps(
+            {"names": remaining,
+             "at": datetime.now(tz=UTC).isoformat(timespec="seconds")}, indent=1),
+            encoding="utf-8")
+
+
+def close_sleeve_positions(st: dict, symbol: str, name: str) -> None:
+    """Close ONE sleeve's positions on a symbol, never the symbol's whole book.
+
+    `close_positions` closes every position on the symbol, which on XAUUSD would take the armed
+    gold windows down with a scalp basket's time exit. Scoped by the order comment instead.
+    """
+    if not st.get("armed"):
+        log(f"[{name}] SHADOW would close its open position(s)")
+        return
+    for p in _sleeve_positions(symbol, name):
+        tick = mt5.symbol_info_tick(symbol)
+        if tick is None:
+            continue
+        res = mt5.order_send({
+            "action": mt5.TRADE_ACTION_DEAL, "symbol": symbol, "volume": p.volume,
+            "type": (mt5.ORDER_TYPE_SELL if p.type == mt5.POSITION_TYPE_BUY
+                     else mt5.ORDER_TYPE_BUY),
+            "position": p.ticket,
+            "price": tick.bid if p.type == mt5.POSITION_TYPE_BUY else tick.ask,
+            "deviation": 20, "magic": MAGIC, "comment": order_comment(name),
+        })
+        log(f"[{name}] CLOSE ticket {p.ticket} -> retcode={res.retcode if res else None}")
+
+
+def _retarget_sleeve_positions(symbol: str, name: str, sl: float, tp: float) -> None:
+    """Move every slice's target to the basket's new average-entry target (stop unchanged)."""
+    for p in _sleeve_positions(symbol, name):
+        res = mt5.order_send({"action": mt5.TRADE_ACTION_SLTP, "position": p.ticket,
+                              "symbol": symbol, "sl": float(sl), "tp": float(tp),
+                              "magic": MAGIC})
+        log(f"[{name}] RETARGET ticket {p.ticket} tp={tp:.5f} -> "
+            f"retcode={res.retcode if res else None}")
+
+
+def manage_scalp_baskets(st: dict, sleeves: list[dict]) -> None:
+    """Scalp POSITION MANAGEMENT: a basket the broker has closed, and the time exit. No new risk.
+
+    WHY IT IS ITS OWN FUNCTION AND WHY IT RUNS BEFORE THE HEAT CAP (2026-09-09). These two steps
+    used to sit at the top of the executor, which runs AFTER `cap_by_heat`. That put management
+    behind an admission gate, and this desk's own doctrine says the opposite in
+    `manage_open_positions`: "a position that is already on carries risk regardless of whether
+    the desk would enter it again today, and hibernating a sleeve must not orphan its open
+    trade". A scalp basket whose sleeve the cap declined was exactly that orphan -- its time
+    exit never ran.
+
+    It also has to happen before the resolution, not merely before the send: `resolve_scalp_order`
+    prices an add-on against the OPEN basket, so a basket the broker has already closed must be
+    cleared first or the cap is charged for a slice added to a position that no longer exists.
+    """
+    sc_sleeves = [s for s in sleeves if s.get("exec") == "scalp_market"]
+    if not sc_sleeves:
+        return
+    armed = bool(st.get("armed")) and GENERIC_EXEC_ENABLED.exists() and NEW_RISK_OK
+    gstate = st.setdefault("scalp", {})
+    now_iso = datetime.now(tz=UTC).isoformat()
+    for s in sc_sleeves:
+        name = s["name"]
+        srec = gstate.get(name)
+        if not srec:
+            continue
+        # THE BASKET ENDS WHEN THE BROKER SAYS SO: stop, target or the day's force-close leave no
+        # position, and a basket with no position must not accept an add-on slice.
+        if srec.get("basket") and armed and not _sleeve_positions(s["symbol"], name):
+            srec.pop("basket", None)
+            srec.pop("open_ttl_until", None)
+            _book_target(name, s["symbol"], 0.0, "bracket_exit")
+        # THE TIME EXIT is part of the certified strategy, not an optional tidy-up.
+        if ttl_expired(srec.get("open_ttl_until"), now_iso):
+            _book_target(name, s["symbol"], 0.0, "ttl")
+            close_sleeve_positions(st, s["symbol"], name)
+            srec.pop("open_ttl_until", None)
+            srec.pop("basket", None)
+
+
+def scalp_open_basket_q(st: dict, s: dict, equity: float, sym: object) -> tuple[float, str]:
+    """The risk the sleeve's OPEN basket already carries, as a fraction of equity.
+
+    THE HALF OF THE SCALP CHARGE THAT IS NOT A NEW ORDER. A scalp sleeve can hold four slices at
+    different prices against one stop; that exposure is real whether or not this pass adds to it,
+    and `ramped_fraction` -- the number this lane was charged until 2026-09-09 -- describes
+    neither the slices nor the stop. Each slice is priced at its OWN distance to the basket's
+    stop through `realised_q`, so the conversion is the desk's single one and a four-slice basket
+    is charged four times, not once.
+    """
+    srec = (st.get("scalp") or {}).get(s["name"]) or {}
+    basket = srec.get("basket")
+    if not isinstance(basket, dict) or not basket.get("entries"):
+        return 0.0, "no open basket"
+    try:
+        stop = float(basket["stop"])
+        total = 0.0
+        for price, units in basket["entries"]:
+            dist = abs(float(price) - stop)
+            if dist > 0 and float(units) > 0:
+                total += realised_q(equity, dist, s["symbol"], sym, lot=float(units))
+        return float(total), (f"{len(basket['entries'])} open slice(s) against the basket's "
+                              f"{stop:.5f} stop")
+    except Exception as exc:                                # a charge must never stop the pass
+        return 0.0, f"open basket unpriceable ({type(exc).__name__}: {exc})"
+
+
+def resolve_scalp_order(st: dict, s: dict, equity: float) -> dict:
+    """The slice this scalp sleeve would send THIS pass, priced -- read-only, no state written.
+
+    THE LAST LANE TO BE GENERALISED (external audit rounds 3 and 4, 2026-09-09). The bracket lane
+    and the family lane were moved in front of `cap_by_heat` so the cap prices FINAL EXECUTABLE
+    RISK; this lane stayed on `ramped_fraction`, a requested fraction fixed before any stop
+    existed, while the executor sized `promoted_lot` against the plan's real stop and then cut it
+    into venue-legal slices with `sx.slice_lot`. Three transformations the charge could not see,
+    and the last of them is a lot floor -- the term that matters most on a small account.
+
+    IT WAS A REFACTOR AND NOT AN EXTRACTION, which is why it came last. The executor interleaved
+    the entry decision with live basket state: an add-on slice is sized against the OPEN basket's
+    stop and its depth, and the basket itself is cleaned up two branches earlier. That cleanup is
+    now `manage_scalp_baskets`, which runs before this, so the state this reads is settled.
+
+    NOTHING HERE WRITES STATE. The "already considered this bar" mark is REPORTED and applied by
+    the executor, for the same reason the family lane does it: a mark consumed by a pass the cap
+    then rejected would throw away a signal the sleeve never traded.
+
+    Returns a dict always carrying `ok`, `stage` and `why`; on `ok` also `per`, `mode`, `side`,
+    `price`, `stop`, `tp`, `dist`, `sym`, `tick`, `desc`, `kind` ("entry" or "addon"), `forming`
+    and, for an entry, `plan`.
+    """
+    name, tf = s["name"], str(s.get("timeframe") or "")
+    try:
+        from mt5desk import scalp_exec as sx
+    except Exception as exc:
+        return {"ok": False, "stage": "unavailable",
+                "why": f"SCALP-EXEC unavailable ({type(exc).__name__}: {exc})"}
+    tf_attr = sx.MT5_TIMEFRAME_ATTR.get(tf)
+    if tf_attr is None or not hasattr(mt5, tf_attr):
+        return {"ok": False, "stage": "no_chart",
+                "why": f"refused: timeframe {tf!r} has no exact executable"}
+    try:
+        family, session, stop_atr, target_atr, max_hold = scalp_recipe(s)
+    except (KeyError, TypeError, ValueError) as exc:
+        return {"ok": False, "stage": "no_recipe", "why": f"refused: recipe incomplete ({exc})"}
+    rates = mt5.copy_rates_from_pos(s["symbol"], getattr(mt5, tf_attr), 0, sx.BARS_NEEDED)
+    if rates is None or len(rates) < sx.MIN_BARS + 1:
+        return {"ok": False, "stage": "no_bars", "why": "bars unavailable; skipped"}
+    try:
+        df = sx.frame_from_rates(rates)
+    except ValueError as exc:
+        return {"ok": False, "stage": "bad_bars", "why": f"bars unreadable ({exc}); skipped"}
+    closed, forming = df.iloc[:-1], df.index[-1]
+    srec = (st.get("scalp") or {}).get(name) or {}
+    if srec.get("last_signal_bar") == str(forming):
+        return {"ok": False, "stage": "already_considered", "forming": forming,
+                "why": "this bar's open was already considered"}
+    tick = mt5.symbol_info_tick(s["symbol"])
+    sym = mt5.symbol_info(s["symbol"])
+    if tick is None or sym is None:
+        return {"ok": False, "stage": "no_tick", "forming": forming, "mark": True,
+                "why": "no tick/symbol_info; skipped"}
+    vmin = float(getattr(sym, "volume_min", 0.01) or 0.01)
+    vstep = float(getattr(sym, "volume_step", 0.01) or 0.01)
+    n_live = sleeve_live_n(name)
+    basket = srec.get("basket")
+    if basket:
+        # AN ADD-ON SLICE, at this bar's open, on the replay's own conditions.
+        side = int(basket["side"])
+        price = float(tick.ask if side == 1 else tick.bid)
+        try:
+            ok = sx.addon_allowed(closed, tf=tf, family=family, session=session, side=side,
+                                  stop=float(basket["stop"]), depth=len(basket["entries"]),
+                                  price=price, forming_time=forming)
+        except Exception as exc:
+            return {"ok": False, "stage": "addon_signal_failed", "forming": forming, "mark": True,
+                    "why": f"add-on signal failed ({exc}); skipped"}
+        if not ok or basket.get("mode") != "bounded_structural":
+            return {"ok": False, "stage": "no_addon", "forming": forming, "mark": True,
+                    "why": "no add-on due on this bar"}
+        dist = abs(price - float(basket["stop"]))
+        try:
+            lot = promoted_lot(equity, n_live, dist, s["symbol"], sym, s.get("risk_frac"),
+                               s.get("decay_faded"),
+                               from_book=(s.get("sized_by") == "allocator_book"))
+        except Exception as exc:
+            return {"ok": False, "stage": "unpriceable", "forming": forming, "mark": True,
+                    "why": f"cannot price add-on risk ({exc}); skipped"}
+        per, mode = sx.slice_lot(lot, vmin, vstep)
+        if mode != "bounded_structural" or not (per > 0):
+            return {"ok": False, "stage": "no_slice", "forming": forming, "mark": True,
+                    "why": f"add-on slice {per} is not a bounded_structural lot"}
+        entries = addon_entries(basket["entries"], price, per)
+        new_tp = sx.basket_target(entries, side, float(basket["target_atr"]),
+                                  float(basket["atr"]))
+        return {"ok": True, "stage": "ok", "why": "resolved", "kind": "addon", "forming": forming,
+                "mark": True, "per": float(per), "mode": mode, "side": side, "price": price,
+                "stop": float(basket["stop"]), "tp": float(new_tp), "dist": float(dist),
+                "sym": sym, "tick": tick, "entries": [[float(p), float(u)] for p, u in entries],
+                "desc": addon_desc(side, per, s["symbol"], float(basket["stop"]), new_tp,
+                                   len(entries)),
+                "basis": (f"promoted_lot: risk_frac={s.get('risk_frac')} x ramp(n_live={n_live}) "
+                          f"at the basket's own {dist:.5g} stop, sliced to {per} ({mode})")}
+    try:
+        plan = sx.plan_entry(closed, tf=tf, family=family, session=session, stop_atr=stop_atr,
+                             target_atr=target_atr, max_hold=max_hold, bid=float(tick.bid),
+                             ask=float(tick.ask), forming_time=forming)
+    except Exception as exc:
+        return {"ok": False, "stage": "signal_failed", "forming": forming, "mark": True,
+                "why": f"signal computation failed ({exc}); skipped"}
+    if plan is None:
+        return {"ok": False, "stage": "no_signal", "forming": forming, "mark": True,
+                "why": "no signal on this bar"}
+    # THE STOP MUST SIT OUTSIDE THE SPREAD'S REACH (2026-09-16). An M5 ATR on EURGBP is a pip
+    # or two, so the plan's stop landed 1.8 pips from entry and the lot sizer -- correctly --
+    # inverted that into 0.27 lots on a 560 EUR account. A stop inside two spreads is hit by the
+    # spread itself: measured 24h to 07:00 UTC, `eurgbp_discovered_asia_p_8e` was stopped three
+    # times for -11.87 EUR, each exit a slippage loss past a stop the quote could reach without
+    # the price moving. The stop and target are scaled by the SAME factor so the certified
+    # reward-to-risk geometry is unchanged, and the risk fraction is unchanged; only the lot
+    # falls, in proportion. Not a cap and not a veto -- the order goes, at a distance the venue
+    # can honour.
+    plan, _floor_note = floor_stop_to_spread(plan, tick)
+    _same = same_side_count(s["symbol"], int(plan.side), mt5.positions_get() or [])
+    if _same >= MAX_SAME_SIDE_PER_SYMBOL:
+        _why = (f"{_same} {'long' if int(plan.side) > 0 else 'short'} position(s) already on "
+                f"{s['symbol']} across sleeves (cap {MAX_SAME_SIDE_PER_SYMBOL})")
+        journal_refusal(s["name"], s["symbol"], int(plan.side), "symbol_side_cap", _why)
+        return {"ok": False, "stage": "symbol_side_cap", "forming": forming, "mark": True,
+                "why": _why}
+    try:
+        lot = promoted_lot(equity, n_live, plan.stop_dist, s["symbol"], sym, s.get("risk_frac"),
+                           s.get("decay_faded"),
+                           from_book=(s.get("sized_by") == "allocator_book"))
+    except Exception as exc:
+        return {"ok": False, "stage": "unpriceable", "forming": forming, "mark": True,
+                "why": f"cannot price risk ({exc}); skipped"}
+    if not (lot > 0):
+        return {"ok": False, "stage": "no_heat", "forming": forming, "mark": True,
+                "why": "allocator gave this sleeve no heat; skipped"}
+    per, mode = sx.slice_lot(lot, vmin, vstep)
+    if not (per > 0):
+        return {"ok": False, "stage": "below_min", "forming": forming, "mark": True,
+                "why": f"lot {lot} below the symbol's minimum; skipped"}
+    return {"ok": True, "stage": "ok", "why": "resolved", "kind": "entry", "forming": forming,
+            "mark": True, "per": float(per), "mode": mode, "side": int(plan.side),
+            "price": float(plan.entry_ref), "stop": float(plan.stop), "tp": float(plan.target),
+            "dist": float(plan.stop_dist), "sym": sym, "tick": tick, "plan": plan,
+            "family": family, "target_atr": target_atr,
+            "desc": scalp_order_desc(plan, per, s["symbol"], mode),
+            "basis": (f"promoted_lot: risk_frac={s.get('risk_frac')} x ramp(n_live={n_live}) at "
+                      f"the plan's own {plan.stop_dist:.5g} stop, sliced to {per} ({mode})")}
+
+
+def run_scalp_sleeves(st: dict, sleeves: list[dict], equity: float) -> None:
+    """Send what the pre-cap phase resolved for each promoted scalp sleeve (principal 2026-09-04).
+
+    FAITHFUL TO THE REPLAY OR NOT AT ALL, as for the family lane: the signal, the ATR geometry,
+    the four-slice structural basket and the time exit are `mt5desk/scalp_exec.py`'s reading of
+    `scalp_reverse_engineering.simulate`, computed on the broker's own M5/M15 bars. The one
+    stated deviation is the stop's ATR (last closed bar, since the replay's bar-i ATR cannot be
+    known at the open). LOG-ONLY under the same arm switch as the family lane.
+
+    THE DECISION IS NO LONGER MADE HERE. `manage_scalp_baskets` settles the open position and
+    `resolve_scalp_order` decides and prices the slice, both before `cap_by_heat` -- so the cap
+    is charged `realised_q` at the plan's real stop and the venue-legal SLICE, plus whatever the
+    open basket already carries, instead of the abstract `ramped_fraction` this lane was billed
+    until 2026-09-09. This function applies the mark, records what was decided and sends.
+    """
+    sc_sleeves = [s for s in sleeves if s.get("exec") == "scalp_market"]
+    if not sc_sleeves:
+        return
+    armed = bool(st.get("armed")) and GENERIC_EXEC_ENABLED.exists() and NEW_RISK_OK
+    gstate = st.setdefault("scalp", {})
+    for s in sc_sleeves:
+        name = s["name"]
+        plan = s.get("pending_order")
+        if not isinstance(plan, dict):
+            log(f"[{name}] SCALP-EXEC: no pre-cap resolution this pass; the heat cap never "
+                f"priced this order, so it is not sent")
+            continue
+        # THE MARK IS APPLIED HERE AND NOWHERE ELSE: a bar considered by a pass the cap then
+        # rejected must be reconsidered next pass, not thrown away by the resolver.
+        if plan.get("mark") and plan.get("forming") is not None:
+            gstate.setdefault(name, {})["last_signal_bar"] = str(plan["forming"])
+        if not plan.get("ok"):
+            if plan["stage"] not in ("already_considered", "no_signal", "no_addon"):
+                log(f"[{name}] SCALP-EXEC {plan['why']}")
+            continue
+        srec = gstate.setdefault(name, {})
+        per, side, price = float(plan["per"]), int(plan["side"]), float(plan["price"])
+        stop, tp, sym, tick = float(plan["stop"]), float(plan["tp"]), plan["sym"], plan["tick"]
+        desc, is_addon = str(plan["desc"]), plan["kind"] == "addon"
+        log(f"[{name}] scalp sizing basis: {plan['basis']}")
+        policy_advice = None
+        if not is_addon:
+            policy_advice = _policy_advice(s["symbol"], side, price, tick, sym,
+                                           float(plan["dist"]), plan["plan"], per)
+            _book_target(name, s["symbol"], side * per, f"scalp_market/{plan['family']}",
+                         price=price)
+        if not armed:
+            log(f"[{name}] WOULD PLACE (scalp exec blocked: "
+                f"{unarmed_why(st)}): {desc}")
+            continue
+        if not margin_ok(s["symbol"], per, price):
+            log(f"[{name}] SCALP-EXEC{' add-on' if is_addon else ''} SKIPPED: margin tight "
+                f"(lot={per})")
+            continue
+        _t0 = time.perf_counter()
+        res = mt5.order_send({
+            "action": mt5.TRADE_ACTION_DEAL, "symbol": s["symbol"], "volume": per,
+            "type": mt5.ORDER_TYPE_BUY if side == 1 else mt5.ORDER_TYPE_SELL,
+            "price": price, "sl": stop, "tp": tp,
+            "deviation": 20, "magic": MAGIC, "comment": order_comment(name),
+        })
+        _lat_ms = round((time.perf_counter() - _t0) * 1000.0, 3)
+        rc = res.retcode if res else None
+        _record_intent(sleeve=name, symbol=s["symbol"],
+                       side=("buy" if side == 1 else "sell"), lot=per, intended=price,
+                       sl=stop, tp=tp,
+                       ticket=(getattr(res, "order", None) if res else None), retcode=rc,
+                       policy_advice=policy_advice,
+                       slice_depth=(len(plan["entries"]) if is_addon else 1),
+                       latency_ms=_lat_ms, **_sleeve_identity(s))
+        log(f"[{name}] SCALP-EXEC {'ADD-ON' if is_addon else 'ORDER'} -> retcode={rc} "
+            f"{diagnose(rc, getattr(res, 'comment', '') or '', _send_error(res))} | {desc}")
+        if rc not in (10008, 10009):
+            continue
+        fill_px = float(getattr(res, "price", 0.0) or price)
+        if is_addon:
+            basket = srec.get("basket") or {}
+            basket["entries"] = [[p, u] for p, u in plan["entries"]]
+            basket["target"] = tp
+            srec["basket"] = basket
+            _book_fill(name, s["symbol"], side * per, fill_px)
+            _book_target(name, s["symbol"], side * basket_lots(plan["entries"]),
+                         "scalp_market/add-on", price=price)
+            _retarget_sleeve_positions(s["symbol"], name, stop, tp)
+        else:
+            srec["open_ttl_until"] = plan["plan"].ttl_until
+            _book_fill(name, s["symbol"], side * per, fill_px)
+            _record_exec_outcome(s["symbol"], side, per, price, tick, float(plan["dist"]),
+                                 plan["plan"], fill_px)
+            srec["basket"] = basket_record(plan["plan"], per, str(plan["mode"]),
+                                           float(plan["target_atr"]))
+
+
+def resolve_pending_bracket(s: dict, hour: float, today) -> dict:
+    """The bracket this sleeve would place THIS pass -- resolved once, read-only, no side effects.
+
+    WHY THIS EXISTS AS A FUNCTION (external audit, 2026-09-09). The heat cap runs before the
+    placement loop, so until now it had to price a gold leg at the HOUSE NOMINAL stop
+    (`realised_q(equity, None, ...)`) while the loop, minutes of code later, sized and sent that
+    same leg against the bracket's REAL stop (`stop_distance(spec)`). `auto_lot` is a function of
+    the stop distance, so those are two different trades: the desk's own source records what that
+    class of gap costs -- "sizing from the house DIST_USD while the real bracket was in hand made
+    every wide-session sleeve trade 2.5-2.8x its budget". Charging one number and sending another
+    is precisely what a heat budget exists to prevent, and no `max` can paper over it, because the
+    0.02 floor can make BOTH calls return the same lot while the wider real stop makes the
+    realised fraction of that identical lot substantially larger than the fraction reserved.
+
+    So the resolution moves in FRONT of the cap: the roster loop calls this, sizes at the returned
+    `dist` and live `sym`, charges exactly that, and hands the resolved dict back to the placement
+    loop, which sends it unchanged. The cap then admits or rejects the exact trade that will be
+    sent, which is the invariant `test_gold_charge_equals_the_trade_that_is_sent` pins.
+
+    Returns a dict that ALWAYS carries `ok`, `stage` and `why`; on `ok` it also carries `sym`,
+    `df`, `hi`, `lo`, `spec` and `dist`. `stage` is what the placement loop keys its logging and
+    its veto record off, so a refusal reads the same as it did when the guards were inline.
+
+    THE WINDOW GUARDS ARE PART OF THE RESOLUTION, NOT OF THE SEND (external audit round 3,
+    2026-09-09). The cancel hour was checked only in the placement loop, so after it passed the
+    pre-cap phase could resolve a perfectly good bracket, have `cap_by_heat` RESERVE budget for
+    it, and then watch the loop refuse to place it -- heat held for an order that could never
+    reach the venue, and a better sleeve possibly deferred behind it. Nothing about that is
+    unsafe; it is a growth cost, and this desk's objective is growth. The cap must see exactly
+    the set of orders that are ELIGIBLE, so every reason a bracket cannot be sent this pass is
+    resolved here, before the charge, and never after it.
+    """
+    if hour < s["sig_hour"]:
+        return {"ok": False, "stage": "signal_hour",
+                "why": f"signal hour {s['sig_hour']} not reached at {hour:.1f}"}
+    if _past_cancel_hour(hour):
+        # THE DAY'S BACKSTOP HAS ALREADY RUN. A bracket sent now is cancelled by the housekeeping
+        # block in the same pass -- two real order_sends for nothing -- so it is not an eligible
+        # order and must not be priced into the budget.
+        return {"ok": False, "stage": "past_cancel_hour",
+                "why": f"cancel hour {CANCEL_HOUR} passed at {hour:.1f}; a bracket sent now is "
+                       f"taken back by this same pass"}
+    sym = mt5.symbol_info(s["symbol"])
+    if sym is None:
+        return {"ok": False, "stage": "no_symbol_info", "why": f"no symbol_info {s['symbol']}"}
+    h1 = mt5.copy_rates_from_pos(s["symbol"], mt5.TIMEFRAME_H1, 0, 400)
+    if h1 is None:
+        return {"ok": False, "stage": "no_bars", "sym": sym,
+                "why": f"copy_rates failed {s['symbol']}: {mt5.last_error()}"}
+    df = h1_frame(h1)
+    # THE STATE GATE, applied before any bracket is computed. A conditioned sleeve that cannot
+    # confirm its state does not trade -- see `state_allows`.
+    ok_state, why_state = state_allows(s, df, today)
+    if not ok_state:
+        return {"ok": False, "stage": "state_gate", "sym": sym, "df": df, "why": why_state}
+    # THE RANGE, THE ATR AND THE BRACKET are one computation in the core, shared with the veto
+    # record so the ledger's "would have placed" is exactly this.
+    built = bracket_from_bars(df, s["rng"], s["sig_hour"], sym.trade_tick_size,
+                              int(getattr(sym, "trade_stops_level", 0) or 20))
+    if built is None:
+        return {"ok": False, "stage": "range_not_ready", "sym": sym, "df": df,
+                "why": f"range not ready at {hour:.1f}"}
+    hi, lo, spec = built
+    # SIZE AGAINST THIS SLEEVE'S OWN STOP, which `spec` holds one line above. Sizing from the
+    # house DIST_USD while the real bracket was in hand made every wide-session sleeve trade
+    # 2.5-2.8x its budget -- see `auto_lot`.
+    dist = stop_distance(spec)
+    if dist is None:
+        return {"ok": False, "stage": "no_stop", "sym": sym, "df": df,
+                "why": ("bracket spec has no usable stop distance; "
+                        "refusing to size from the house average")}
+    return {"ok": True, "stage": "ok", "why": "resolved", "sym": sym, "df": df,
+            "hi": hi, "lo": lo, "spec": spec, "dist": dist}
+
+
+def bracket_lane_lot(s: dict, equity: float, dist: float | None,
+                     sym: object) -> tuple[float, str]:
+    """The lot this bracket-lane sleeve will send, and the basis that set it. ONE expression.
+
+    THE CHARGE AND THE SEND CALL THIS, AND NOTHING ELSE CALLS ANYTHING ELSE. The whole
+    charge-versus-send defect class the external audits kept finding is what happens when two
+    sites compute "the lot" from two expressions: they agree until an argument diverges, and
+    then they disagree silently on the money path. Gold was fixed by making both sites call
+    `gold_book_lot` with one set of arguments; this is that fix generalised to every lane the
+    bracket loop sends, because `auto_ramp` had exactly the same shape one lane over
+    (`ramped_fraction` charged before the stop was known, `promoted_lot` sized after it).
+
+    `"auto"` is the gold book and nothing else -- `decision_core.roster` gives it to the three
+    GOLD_WINDOWS rows alone -- so the principal's 0.02 floor binds inside `gold_book_lot` as
+    `max(allocator, policy, floor)` and never as a replacement for the policy lot.
+    """
+    mode = s.get("lot")
+    if mode == "auto":
+        return gold_book_lot(
+            equity, dist, sym,
+            s.get("risk_frac") if s.get("sized_by") == "allocator_book" else None,
+            s.get("decay_faded"))
+    if mode == "auto_ramp":
+        n_live = sleeve_live_n(s["name"])
+        from_book = s.get("sized_by") == "allocator_book"
+        # THE LITERAL SPELLING IS THE FENCE'S (scripts/check_growth_governance.py G3, and
+        # test_every_promoted_lot_call_site_passes_from_book). It greps for this exact argument
+        # at every sizing site, because the property it protects -- the allocator book's
+        # fraction reaching the venue UN-RE-SHRUNK -- is one a rename could silently drop.
+        lot = promoted_lot(equity, n_live, dist, s["symbol"], sym,
+                           s.get("risk_frac"), s.get("decay_faded"),
+                           from_book=(s.get("sized_by") == "allocator_book"))
+        return float(lot), (
+            f"promoted_lot: risk_frac={s.get('risk_frac')} x ramp(n_live={n_live})"
+            f"{' from the allocator book' if from_book else ''}"
+            f"{', faded' if s.get('decay_faded') else ''}")
+    return float(mode), f"fixed lot {float(mode):.2f} from the sleeve row"
 
 
 def main() -> None:
@@ -878,10 +3391,39 @@ def main() -> None:
     equity = float(mt5.account_info().equity)
     st["equity"] = round(equity, 2)
 
+    # STALENESS MUST DISARM (principal, 2026-09-16). If every research heartbeat on this box has
+    # been silent for DISARM_DAYS the desk is trading blind: no new risk this pass, loudly. At
+    # FLATTEN_DAYS nobody is coming: the book goes flat and waits for a human. Open positions
+    # are otherwise untouched -- their brackets and exits still run below.
+    global _DESK_STALE
+    try:
+        from mt5desk import desk_staleness as _ds
+        _stale = _ds.staleness()
+        _DESK_STALE = _stale if _stale["verdict"] != "OK" else None
+        if _DESK_STALE is not None:
+            log(f"DESK STALE -- {_stale['verdict']}: {_stale['why']}")
+            _flat = None
+            if _stale["verdict"] == "FLATTEN" and st.get("armed"):
+                _syms = sorted({str(p.symbol) for p in (mt5.positions_get() or [])})
+                for _sym in _syms:
+                    close_positions(st, _sym)
+                _flat = len(_syms)
+                log(f"DESK STALE -- flattened {_flat} symbol(s); waiting for a human")
+            _ds.publish(_stale, flattened=_flat)
+        else:
+            _ds.publish(_stale)
+    except Exception as _exc:
+        # The rule must never take the gateway down; an unreadable clock is logged, not obeyed.
+        _DESK_STALE = None
+        log(f"desk staleness unreadable ({type(_exc).__name__}: {_exc}); pass continues")
+
     tnow = pd.Timestamp(tick.time, unit="s", tz="UTC")
     today = tnow.date()
     hour = tnow.hour + tnow.minute / 60.0
     day_key = str(today)
+    # ONE PASS, ONE IDENTITY: `note_placement` counts rejection PASSES, and every sleeve placed in
+    # this pass carries this stamp so two sleeves refused in one minute are one pass, not two.
+    st["placement_pass"] = tnow.isoformat()
 
     # stale tick (weekend/holiday/terminal dead): never trade a closed market
     age_sec = (datetime.now(tz=UTC) - tnow).total_seconds()
@@ -898,7 +3440,55 @@ def main() -> None:
         save_state(st)
 
     sleeves = sleeve_set()
+
+    # MANAGE WHAT IS ALREADY OPEN BEFORE CONSIDERING ANYTHING NEW, and run it on EVERY pass --
+    # before the regime filter, before the equity floor, before heat. Those gates decide whether
+    # to OPEN a position; a position that is already on carries risk regardless of whether the
+    # desk would enter it again today, and hibernating a sleeve must not orphan its open trade.
+    # Shadow unless st["armed"]: unarmed passes log the modification they would have sent.
+    try:
+        manage_open_positions(st, sleeves)
+    except Exception as exc:
+        # Never let management take the gateway down. A desk that cannot ratchet a stop is
+        # degraded; a desk that cannot place or reconcile anything because management raised is
+        # broken, and the second is strictly worse than the first.
+        log(f"MANAGE FAILED (positions left untouched): {type(exc).__name__}: {exc}")
+    # A sleeve that left the roster leaves the book: retired names queued by the decay monitor
+    # have their open positions closed here, one pass at a time, never from inside management.
+    try:
+        close_retired_positions(st)
+    except Exception as exc:
+        log(f"RETIRED CLOSE FAILED (positions left untouched): {type(exc).__name__}: {exc}")
+    save_state(st)
+
+    # RELEASE IDENTITY: measured after management and before anything that could open a
+    # position, so a refusal costs new entries only. The verdict file travels with the box's
+    # git sync; the reason is logged every pass it refuses so it never reads as a quiet day.
+    global NEW_RISK_OK
+    NEW_RISK_OK, _ident_why = release_gate()
+    if not NEW_RISK_OK:
+        log(f"RELEASE IDENTITY refuses NEW risk: {_ident_why} -- managing open positions only")
+
+    # THE SCALP LANE'S OWN MANAGEMENT, HERE AND NOT INSIDE ITS EXECUTOR (2026-09-09). A basket
+    # the broker has closed and a basket past its time exit are POSITIONS, and this desk's
+    # doctrine puts management before admission: `manage_open_positions` above says a position
+    # already on carries risk whether or not the desk would enter it again today. Inside the
+    # executor these two steps sat behind `cap_by_heat`, so a scalp sleeve the cap declined kept
+    # an orphaned basket whose time exit never ran.
+    #
+    # It runs on the UNFILTERED roster for the same reason -- a hibernated sleeve's open basket
+    # still needs its exit -- and before `resolve_scalp_order`, which prices an add-on against
+    # the open basket and must not be handed one the broker has already closed.
+    try:
+        manage_scalp_baskets(st, sleeves)
+    except Exception as exc:
+        log(f"SCALP-MANAGE FAILED (positions left untouched): {type(exc).__name__}: {exc}")
+
     reg_killed = regime_hibernate(sleeves)
+    # THE VETOED SLEEVES ARE KEPT ASIDE, NOT FORGOTTEN. They are removed from `sleeves` so nothing
+    # downstream sizes or places them, and walked once more below -- after the bracket loop, on
+    # the same bars -- purely to write what they would have placed into the decision ledger.
+    _hibernated = [s for s in sleeves if s["name"] in reg_killed] if reg_killed else []
     if reg_killed:
         log(f"REGIME: auto-hibernate, no new brackets: {reg_killed}")
         sleeves = [s for s in sleeves if s["name"] not in reg_killed]
@@ -921,64 +3511,417 @@ def main() -> None:
     # filled), the 95% UPPER bound on mean correlation is used rather than the point estimate, and
     # an unmeasurable book returns None, which routes back to the base budget rather than to the
     # ceiling.
+    # CURRENCY CONCENTRATION BINDS THE BUDGET TOO, from the positions actually open.
+    #
+    # Return correlation is backward-looking and estimated on the quiet sample: four sleeves each
+    # secretly SHORT USD measure as four independent bets for as long as the dollar does not move,
+    # and then move together on the day it does. `libs/risk/fx_factors` decomposes a book into its
+    # currency legs and reported `n_effective 1.019 across 17 sleeves` on the live survivor set --
+    # seventeen positions behaving as one bet. It had ZERO non-test callers.
+    #
+    # EXPOSURES COME FROM OPEN POSITIONS, NOT FROM THE SLEEVE ROSTER, and the distinction is not
+    # pedantry: a session bracket places a buy stop AND a sell stop, so its direction does not
+    # exist until one of them fills. Reading intent off the roster would assume a sign the desk
+    # has not taken, and could tighten the budget against a book that is genuinely two-sided.
+    # A flat book has nothing to concentrate and so correctly constrains nothing.
+    _exposure: dict[str, float] = {}
+    try:
+        for _p in mt5.positions_get() or []:
+            _sgn = 1.0 if int(getattr(_p, "type", 0)) == 0 else -1.0
+            _exposure[str(_p.symbol)] = _exposure.get(str(_p.symbol), 0.0) + _sgn * float(
+                getattr(_p, "volume", 0.0) or 0.0)
+    except Exception as _exc:
+        # A breadth MEASUREMENT must never stop the trading loop. An unreadable position list
+        # leaves exposures empty, which leaves the budget exactly as the return series set it.
+        log(f"factor breadth: positions unreadable ({type(_exc).__name__}: {_exc}); "
+            f"return breadth alone")
     k_eff, k_why = measure_from_ledger(
-        ledger_rows(), _prov.current_account(mt5.account_info()))
+        ledger_rows(), _prov.current_account(mt5.account_info()),
+        exposures=_exposure or None)
     log(k_why)
+    # Read ONCE per pass: the book is an artifact, and re-reading it per sleeve could size two
+    # legs of the same pass from two different solves if the allocator rewrote it mid-loop.
+    _book, _book_why = allocator_book()
+    log(f"sizing: {_book_why}")
+    # EACH SLEEVE'S LAST REAL STOP, so the cap prices legs on what they actually traded rather
+    # than on a house average. The gateway already records every bracket it places; not reading
+    # them back meant the one number that decides how much heat a leg costs was the only number
+    # the cap did not have.
+    # WHAT THIS PASS HAS ALREADY DECIDED TO SEND, keyed by symbol and signed by side. Every
+    # sleeve is resolved before any is sent, so without this each one sees the book as it was
+    # when the pass STARTED -- and two sleeves on the same instrument both read an empty leg and
+    # both take the full fresh-leg boost. That is precisely the doubled EURCHF 0.05 and USDCHF
+    # 0.02 pairs that went out in the same second on 2026-09-15 and lost together.
+    _pending_legs: dict[str, float] = {}
+    for _s in sleeves:
+        _spec = (st.get("brackets", {}).get(_s["name"]) or {}).get("spec")
+        _d = stop_distance(_spec) if _spec else None
+        if _d:
+            _s["dist"] = _d
+        # A risk_frac sleeve is BILLED its own effective fraction (base x ramp), not the house
+        # Q_OPT -- undercharging heat for the very sleeves running above Q_OPT would recreate
+        # the 2.94%-believed/22.2%-true defect documented on cap_by_heat.
+        # THE OPTIMISER'S OWN FRACTION, WHEN IT HAS EARNED THE RIGHT TO SET IT. h_i is what
+        # maximised E[log W] jointly with every other sleeve; Q_OPT and the ramp are what the
+        # desk falls back to when nothing solved for it. Only reachable behind a fresh proof
+        # certificate (see `allocator_book`), so an unproven allocator cannot resize the book.
+        _key = _book_key(_s, _book)
+        from_book = _key is not None
+        if from_book:
+            _s["risk_frac"] = float(_book[_key])
+            _s["sized_by"] = "allocator_book"
+        if _s.get("exec") not in ("family_market", "scalp_market"):
+            # EVERY BRACKET-LANE SLEEVE IS BILLED AT THE ORDER IT WILL ACTUALLY SEND -- gold,
+            # promoted and fixed-lot alike. Three external audit rounds found the same defect
+            # class in three places, and the third one (2026-09-09) named the general rule:
+            #
+            #     the heat cap must operate on FINAL EXECUTABLE RISK, not on abstract
+            #     requested risk -- after the actual stop, the lot step, the minimum lot, the
+            #     live tick value, the fade and the allocator fraction are all known.
+            #
+            # It was gold first (charged at the house nominal stop, sent at the bracket's own),
+            # then the same shape one lane over: an `auto_ramp` row was charged
+            # `ramped_fraction` -- a FRACTION, computed before its stop existed -- while
+            # `promoted_lot` sized the order against the real stop and then hit the venue's lot
+            # floor. On a small account that floor is the whole story: 0.02 lots is a fixed
+            # quantity of risk and a shrinking account runs a LARGER fraction of it, which is
+            # exactly what a heat budget exists to catch and exactly what a fraction charged
+            # before the stop cannot see.
+            #
+            # So the resolution moves in front of the cap for the whole lane, and the cap sees
+            # `realised_q` at the resolved stop, the live symbol_info and the final lot.
+            if _spec and _d:
+                # ALREADY ON THE BOOK. The leg the cap must price is the one the venue is
+                # holding -- its recorded stop and, since 2026-09-09, its recorded LOT -- not a
+                # fresh range built from bars that have moved since.
+                _live_info = None
+                with contextlib.suppress(Exception):
+                    _live_info = mt5.symbol_info(_s["symbol"])
+                _pend = {"ok": True, "stage": "placed", "why": "today's bracket is on the book",
+                         "dist": _d, "sym": _live_info,
+                         "placed_lot": (st.get("brackets", {}).get(_s["name"]) or {}).get("lot")}
+            else:
+                try:
+                    # THE SAME DAY THE PLACEMENT LOOP WILL ASK ABOUT. `state_allows` is dated,
+                    # and the placement site has always dated it from the wall clock; passing
+                    # the broker tick's day here instead would let the two sites disagree across
+                    # midnight -- and since the cached resolution is what gets SENT, the charge
+                    # site's answer would quietly become the trading rule.
+                    _pend = resolve_pending_bracket(_s, hour, datetime.now(tz=UTC).date())
+                except Exception as _exc:
+                    _pend = {"ok": False, "stage": "resolve_failed",
+                             "why": f"{type(_exc).__name__}: {_exc}"}
+            if _pend.get("ok"):
+                try:
+                    _placed_lot = _pend.get("placed_lot")
+                    if isinstance(_placed_lot, (int, float)) and float(_placed_lot) > 0:
+                        # The venue is holding THIS many lots. Re-sizing would price a trade the
+                        # book does not have; the recorded lot is the trade it does.
+                        _lot_charge = float(_placed_lot)
+                        _charge_basis = f"the {_lot_charge:.2f} lots already on the book"
+                    else:
+                        _lot_charge, _charge_basis = bracket_lane_lot(
+                            _s, equity, _pend["dist"], _pend["sym"])
+                    _s["q_charge"] = realised_q(equity, _pend["dist"], _s["symbol"],
+                                                _pend["sym"], lot=_lot_charge)
+                except Exception as _exc:
+                    # UNPRICEABLE IS NOT PLACEABLE. The placement site refuses to size a sleeve
+                    # whose risk it cannot express in account currency; charging it anything at
+                    # all would reserve budget for an order that cannot be sent.
+                    _pend = {"ok": False, "stage": "unpriceable",
+                             "why": f"cannot price {_s['symbol']} risk in account currency "
+                                    f"({type(_exc).__name__}: {_exc})"}
+                else:
+                    # The sleeve's own stop replaces the last-bracket `dist` read above, so every
+                    # reader that prices this row -- `cap_by_heat`'s fallback included -- sees
+                    # this pass's stop and not the previous pass's.
+                    _s["dist"] = _pend["dist"]
+                    _pend.update({"date": day_key, "lot": _lot_charge,
+                                  "q_real": _s["q_charge"], "basis": _charge_basis})
+                    _s["q_charge_basis"] = (
+                        f"{_charge_basis}; charged at the order this pass will send "
+                        f"({_pend['stage']}: stop {_pend['dist']:.5g}, "
+                        f"lot {_lot_charge:.2f})")
+            if not _pend.get("ok"):
+                # NOT RESOLVED BEFORE THE CAP MEANS NOT SENT IN THIS PASS (external audit round
+                # 3, 2026-09-09). The previous version charged the house nominal here and let the
+                # placement loop try again; when that second attempt succeeded, an order went to
+                # the venue whose exact risk the cap had never seen -- the invariant held on the
+                # normal path and not universally. A tripwire that only LOGS the breach is not
+                # the fix.
+                #
+                # IT IS NOT A SIZE CUT, WHICH IS WHY THIS IS THE RIGHT SHAPE. Nothing is shrunk,
+                # capped or vetoed: the sleeve simply waits for the next pass, where it is
+                # resolved and charged properly from the start. The gateway runs every few
+                # minutes, and the sleeve's signal hour lasts an hour.
+                #
+                # ITS CHARGE IS ZERO, AND THAT FREES BUDGET RATHER THAN SPENDING IT. A sleeve
+                # that cannot place an order this pass holds no risk this pass, so reserving
+                # heat for it would defer a sleeve that CAN trade -- the growth cost the audit
+                # named. Any bracket it already holds is priced by the `placed` branch above,
+                # so an open position is never charged zero.
+                _s["q_charge"] = 0.0
+                _s["placeable"] = False
+                _s["q_charge_basis"] = (
+                    f"NOT PLACEABLE THIS PASS ({_pend.get('stage')}: {_pend.get('why')}); "
+                    f"charged nothing and refused the venue, so the next pass prices it before "
+                    f"the cap instead of sending what the cap never saw")
+            _pend["date"] = day_key
+            _s["pending_bracket"] = _pend
+        elif _s.get("exec") == "family_market":
+            # THE FAMILY LANE IS PRICED AT ITS RESOLVED ORDER TOO. Same rule, same reason: this
+            # row used to be charged `ramped_fraction` -- a fraction fixed before the signal's
+            # stop existed -- while the executor sized `promoted_lot` against that stop and let
+            # the venue's lot floor round it. `resolve_family_order` writes no state, so the
+            # signal MARK is left for the executor to apply if it acts.
+            try:
+                _plan = resolve_family_order(st, _s, equity, pending=_pending_legs)
+            except Exception as _exc:
+                _plan = {"ok": False, "stage": "resolve_failed",
+                         "why": f"{type(_exc).__name__}: {_exc}"}
+            if _plan.get("ok"):
+                # BOOK IT AGAINST THE REST OF THIS PASS. A sleeve that has been resolved WILL be
+                # sent by `run_family_sleeves`, so from here on it is part of the book every
+                # later sleeve is measured against.
+                _pending_legs[_s["symbol"]] = (_pending_legs.get(_s["symbol"], 0.0)
+                                               + float(_plan["side"]) * float(_plan["lot"]))
+                try:
+                    _s["q_charge"] = realised_q(equity, _plan["dist"], _s["symbol"],
+                                                _plan["sym"], lot=_plan["lot"])
+                    _s["dist"] = _plan["dist"]
+                    _s["q_charge_basis"] = (
+                        f"{_plan['basis']}; charged at the order this pass will send "
+                        f"(lot {_plan['lot']:.2f})")
+                except Exception as _exc:
+                    _plan = {"ok": False, "stage": "unpriceable",
+                             "why": f"cannot price {_s['symbol']} risk ({type(_exc).__name__}: "
+                                    f"{_exc})"}
+            if not _plan.get("ok"):
+                # NO ORDER THIS PASS MEANS NO HEAT THIS PASS. A family sleeve with no signal --
+                # which is most sleeves on most passes -- was reserving budget for an order that
+                # was never going to exist, deferring sleeves that had one.
+                _s["q_charge"] = 0.0
+                _s["q_charge_basis"] = (f"no order to send this pass ({_plan.get('stage')}: "
+                                        f"{_plan.get('why')}); charged nothing")
+            _s["pending_order"] = _plan
+        elif _s.get("exec") == "scalp_market":
+            # THE LAST LANE, AND THE ONE THAT NEEDED A REFACTOR RATHER THAN AN EXTRACTION. It was
+            # billed `ramped_fraction` -- a requested fraction, fixed before any stop existed --
+            # while the executor sized `promoted_lot` against the plan's real stop and then cut
+            # that into venue-legal slices with `sx.slice_lot`. Three transformations the charge
+            # could not see, the last of them a lot floor, which is the term that dominates on a
+            # small account.
+            #
+            # THE CHARGE IS BOTH HALVES: whatever the OPEN basket already carries, priced slice
+            # by slice at each one's own distance to the basket's stop, plus the slice this pass
+            # would add. A sleeve holding four slices and adding none is still holding four.
+            try:
+                _plan = resolve_scalp_order(st, _s, equity)
+            except Exception as _exc:
+                _plan = {"ok": False, "stage": "resolve_failed",
+                         "why": f"{type(_exc).__name__}: {_exc}"}
+            _open_q, _open_why = 0.0, "no open basket"
+            try:
+                _open_q, _open_why = scalp_open_basket_q(
+                    st, _s, equity, _plan.get("sym") if _plan.get("ok") else None)
+            except Exception as _exc:                       # a charge never stops the pass
+                _open_why = f"open basket unpriceable ({type(_exc).__name__}: {_exc})"
+            if _plan.get("ok"):
+                try:
+                    _new_q = realised_q(equity, _plan["dist"], _s["symbol"], _plan["sym"],
+                                        lot=_plan["per"])
+                except Exception as _exc:
+                    _plan = {"ok": False, "stage": "unpriceable",
+                             "why": f"cannot price {_s['symbol']} risk "
+                                    f"({type(_exc).__name__}: {_exc})"}
+                else:
+                    _s["dist"] = _plan["dist"]
+                    _s["q_charge"] = _open_q + _new_q
+                    _s["q_charge_basis"] = (
+                        f"{_plan['basis']}; charged {_new_q:.4%} for the slice this pass will "
+                        f"send plus {_open_q:.4%} for {_open_why}")
+            if not _plan.get("ok"):
+                # NO NEW SLICE THIS PASS -- but an open basket is still risk, so the charge is
+                # what it carries and not zero.
+                _s["q_charge"] = _open_q
+                _s["q_charge_basis"] = (f"no slice to send this pass ({_plan.get('stage')}: "
+                                        f"{_plan.get('why')}); charged {_open_q:.4%} for "
+                                        f"{_open_why}")
+            _s["pending_order"] = _plan
+        elif from_book:
+            # BILLED AT EXACTLY THE FRACTION IT IS SIZED AT (see promoted_lot from_book): the
+            # heat cap and the sizer must price the same leg at the same number. Reached only by
+            # a lane with no resolver -- every lane that sends an order now has one.
+            _s["q_charge"] = float(_book[_s["name"]]) * decay_factor(_s.get("decay_faded"))
+        elif _s.get("lot") == "auto_ramp":
+            # THE SAME LADDER THE SIZER USES (`decision_core.ramped_fraction`): base clamp x
+            # authority ramp x fade. A second copy of it here, beside promoted_lot's, was how the
+            # heat ledger and the order path could come to disagree about the same leg.
+            _s["q_charge"] = ramped_fraction(_s.get("risk_frac"), sleeve_live_n(_s["name"]),
+                                             _s.get("decay_faded"))
     sleeves, heat_note = cap_by_heat(sleeves, equity, k_eff=k_eff)
     if heat_note:
         log(heat_note)
+    # Hunt-certified family sleeves run their own replay-faithful executor -- AFTER the heat
+    # cap, so an inadmissible sleeve never reaches it, and OUTSIDE the bracket loop, whose
+    # session-window semantics they do not share.
+    try:
+        run_family_sleeves(st, sleeves, equity)
+    except Exception as exc:
+        log(f"FAMILY-EXEC FAILED (bracket path unaffected): {type(exc).__name__}: {exc}")
+    try:
+        run_scalp_sleeves(st, sleeves, equity)
+    except Exception as exc:
+        log(f"SCALP-EXEC FAILED (bracket path unaffected): {type(exc).__name__}: {exc}")
+    # The net order per symbol across every sleeve's theoretical position -- measured, never
+    # sent: the ledger's answer to "what would the venue see if the sleeves were netted".
+    # EVERY SLEEVE'S SYMBOL, THE BRACKET BOOK INCLUDED (2026-09-08). The set was filtered to the
+    # family and scalp lanes, which have never been armed, so NET WOULD SEND was measured on
+    # everything except the one book that has ever traded. The bracket lane's theoretical
+    # positions are asserted first, from the terminal's own positions, so the route below has
+    # a book to read; both are measurement and the log line stays a log line.
+    try:
+        _book_bracket_lane(st, sleeves)
+    except Exception as exc:
+        log(f"bracket book measurement FAILED (trading unaffected): {type(exc).__name__}: {exc}")
+    try:
+        _net_routes({s["symbol"] for s in sleeves})
+    except Exception as exc:
+        log(f"netting measurement FAILED (trading unaffected): {type(exc).__name__}: {exc}")
+    save_state(st)
     if st["last_bracket_date"] == day_key:
         for s in sleeves:
+            if s.get("exec") in ("family_market", "scalp_market"):
+                continue
             if st["brackets"].get(s["name"]):
                 continue
             if hour < s["sig_hour"]:
                 continue
-            sym = mt5.symbol_info(s["symbol"])
-            if sym is None:
+            if _past_cancel_hour(hour):
+                # THE DAY'S BACKSTOP HAS ALREADY RUN (2026-09-08). This loop had a lower bound
+                # (the signal hour) and no upper one, so a gateway armed at 22:40 broker computed
+                # and SENT the london_am and afternoon brackets and the housekeeping block below
+                # cancelled them in the same pass -- two real order_sends for nothing, and on a
+                # terminal with AutoTrading off, two total rejections in one pass. A bracket the
+                # cancel hour would take back is never sent.
                 continue
-            h1 = mt5.copy_rates_from_pos(s["symbol"], mt5.TIMEFRAME_H1, 0, 400)
-            if h1 is None:
-                log(f"copy_rates failed {s['symbol']}: {mt5.last_error()}")
+            # THE ORDER THE HEAT CAP PRICED IS THE ORDER THAT IS SENT, AND NOTHING ELSE IS.
+            # The pre-cap phase resolved this sleeve's bracket, sized it and charged the cap at
+            # its exact realised risk; this site consumes that resolution and NEVER resolves
+            # again. Two reasons, and the second is the one an audit had to find twice:
+            #
+            #   * a bar can close between the two loops, so a second resolution would send an
+            #     order built on a range the cap never saw;
+            #   * a sleeve whose pre-cap resolution FAILED must not become placeable later in
+            #     the same pass. It used to: the charge fell back to the house nominal, this
+            #     site tried again, succeeded, and sent an order whose exact risk had never been
+            #     admitted by anything. A tripwire logged it and let it go.
+            #
+            # There is no size cut in that refusal -- the sleeve is resolved and charged
+            # properly on the next pass, minutes later.
+            _pend = s.get("pending_bracket")
+            if not isinstance(_pend, dict) or _pend.get("date") != day_key:
+                log(f"[{s['name']}] NOT PLACED: no pre-cap resolution this pass; the heat cap "
+                    f"never priced it, so it waits for the next pass rather than sending an "
+                    f"order nothing admitted")
                 continue
-            df = pd.DataFrame(h1)
-            df["time"] = pd.to_datetime(df["time"], unit="s", utc=True)
-            df = df.set_index("time").sort_index()
-            # THE STATE GATE, applied before any bracket is computed. A conditioned sleeve that
-            # cannot confirm its state does not trade -- see `state_allows`.
-            ok_state, why_state = state_allows(s, df, datetime.now(tz=UTC).date())
-            if not ok_state:
-                log(f"[{s['name']}] no trade today: {why_state}")
+            if _pend.get("stage") != "ok":
+                if _pend["stage"] == "state_gate":
+                    log(f"[{s['name']}] no trade today: {_pend['why']}")
+                    # The gate's refusal is a decision with a P&L; write what it refused, once.
+                    _vetoed = st.setdefault("vetoed_today", {})
+                    if _vetoed.get(s["name"]) != day_key and _record_vetoed_bracket(
+                            s, _pend["df"], _pend["sym"], "state_gate", _pend["why"]):
+                        _vetoed[s["name"]] = day_key
+                        save_state(st)
+                elif _pend["stage"] == "no_bars":
+                    log(_pend["why"])
+                elif _pend["stage"] == "range_not_ready":
+                    log(f"[{s['name']}] {_pend['why']}")
+                elif _pend["stage"] == "no_stop":
+                    log(f"[{s['name']}] SKIPPED: {_pend['why']}")
                 continue
-            rng2 = day_range(df, s["rng"], s["sig_hour"])
-            if rng2 is None:
-                log(f"[{s['name']}] range not ready at {hour:.1f}")
+            sym, df = _pend["sym"], _pend["df"]
+            hi, lo, spec, dist = _pend["hi"], _pend["lo"], _pend["spec"], _pend["dist"]
+            # THE LOT IS THE ONE THE CAP ADMITTED, taken from the resolution rather than
+            # recomputed. `bracket_lane_lot` is deterministic over (sleeve, equity, dist, sym)
+            # and all four are the pre-cap values, so a recomputation would agree -- but reading
+            # the admitted number is what makes that a guarantee instead of an argument, and it
+            # is the difference between an invariant and a coincidence.
+            lot = float(_pend["lot"])
+            q_real = float(_pend["q_real"])
+            log(f"[{s['name']}] sizing basis: {_pend['basis']}")
+            if not (lot > 0):
+                log(f"[{s['name']}] SKIPPED: allocator gave this sleeve no heat")
                 continue
-            hi, lo = rng2
-            tr = pd.concat(
-                [df["high"] - df["low"],
-                 (df["high"] - df["close"].shift(1)).abs(),
-                 (df["low"] - df["close"].shift(1)).abs()], axis=1
-            ).max(axis=1)
-            a = float(tr.ewm(alpha=1 / ATR_N, min_periods=ATR_N).mean().iloc[-1])
-            spec = bracket_spec(hi, lo, max(a, 5.0), sym.trade_tick_size,
-                                stops_level=int(getattr(sym, "trade_stops_level", 0) or 20))
-            # SIZE AGAINST THIS SLEEVE'S OWN STOP, which `spec` holds one line above.
-            # Sizing from the house DIST_USD while the real bracket was in hand made every
-            # wide-session sleeve trade 2.5-2.8x its budget -- see `auto_lot`.
-            dist = stop_distance(spec)
-            if dist is None:
-                log(f"[{s['name']}] SKIPPED: bracket spec has no usable stop distance; "
-                    f"refusing to size from the house average")
-                continue
-            lot = auto_lot(equity, dist) if s["lot"] == "auto" else (
-                promoted_lot(equity, sleeve_live_n(s["name"]), dist) if s["lot"] == "auto_ramp"
-                else float(s["lot"]))
-            log(f"[{s['name']}] stop ${dist:.2f} -> lot {lot:.2f} "
-                f"(realised q {realised_q(equity, dist):.2%})")
+            log(f"[{s['name']}] stop {dist:.5g} -> lot {lot:.2f} "
+                f"(realised q {q_real:.2%})")
+            # THE INVARIANT, ASSERTED WHERE THE MONEY IS:
+            #
+            #     q_charge == realised_q(equity, actual_stop, symbol, live_info, lot=final_lot)
+            #
+            # for EVERY admitted bracket order -- gold, promoted and fixed-lot alike, not merely
+            # for gold on its normal path. Both sides are now literally the same number: the cap
+            # was charged `_pend["q_real"]` and this order sends `_pend["lot"]`, from one
+            # resolution. So it cannot fire for a sleeve that reached here, and if it ever does,
+            # something mutated the resolution between the two loops and the log says so before
+            # the order goes out.
+            #
+            # IT IS A TRIPWIRE AND NOT A GATE. It never refuses, resizes or defers a trade: the
+            # desk's aggressiveness is the principal's to set, and a heat check that quietly
+            # shrinks an order is how a budget becomes a size cut nobody authorised. The refusal
+            # that actually protects the invariant is UPSTREAM -- a sleeve the pre-cap phase
+            # could not resolve never reaches this loop -- and it costs no size, because the next
+            # pass prices it before the cap instead. An audit was right that a tripwire alone is
+            # not the fix; it is the alarm on a door that is now bolted.
+            _billed_q = s.get("q_charge")
+            if isinstance(_billed_q, (int, float)) and not isinstance(_billed_q, bool) \
+                    and float(_billed_q) > 0 and abs(float(_billed_q) - q_real) > 1e-9:
+                log(f"[{s['name']}] HEAT RECONCILE: the cap reserved {float(_billed_q):.4%} and "
+                    f"this order runs {q_real:.4%} "
+                    f"({q_real / float(_billed_q):.2f}x); charge basis was "
+                    f"{s.get('q_charge_basis') or 'unstated'}")
+            # THE INVARIANT, ASSERTED WHERE THE MONEY IS:
+            #
+            #     q_charge == realised_q(equity, actual_stop, symbol, live_info, lot=final_lot)
+            #
+            # for EVERY admitted bracket order, not merely for gold on its normal path. Both
+            # sides are now literally the same number -- the cap was charged `_pend["q_real"]`
+            # and the order sends `_pend["lot"]` -- so this cannot fire for a sleeve that
+            # reached here, and if it ever does, something has mutated the resolution between
+            # the two loops and the log must say so before the order goes out.
+            #
+            # IT IS A TRIPWIRE AND NOT A GATE. It never refuses, resizes or defers a trade: the
+            # desk's aggressiveness is the principal's to set, and a heat check that quietly
+            # shrinks an order is how a budget becomes a size cut nobody authorised. The
+            # refusal that DOES protect the invariant is upstream -- a sleeve the pre-cap phase
+            # could not resolve never reaches this loop at all -- and it costs no size, because
+            # the next pass prices it before the cap instead.
+            # WHEN THE FLOOR IS WHAT SET THE SIZE, SAY SO AND SAY WHAT IT COST. A leg at the
+            # venue minimum is not sized by policy at all -- there is nothing smaller to send --
+            # and it runs a LARGER fraction of a small account than policy asked for, which is
+            # exactly what `realised_q` was written to expose ("a book configured for 0.75%
+            # could run at 5.9% with nothing in the code, the log or the state file ever saying
+            # so"). For a promoted sleeve the heat ledger reserved `ramped_fraction`, computed
+            # before this sleeve's stop was known, so it cannot see that overshoot; naming both
+            # fractions on one line is what keeps the difference measured rather than merely
+            # true, and it is the line that shows a shrinking account its risk RISING.
+            _floor = gold_min_lot() if s.get("lot") == "auto" else min_lot()
+            if lot <= _floor + 1e-9:
+                _billed = s.get("q_charge")
+                log(f"[{s['name']}] lot came from the FLOOR {_floor:.2f}, not from policy: "
+                    f"this leg runs {q_real:.2%} of equity"
+                    + (f" against the {float(_billed):.2%} the heat ledger reserved for it"
+                       if isinstance(_billed, (int, float)) and not isinstance(_billed, bool)
+                       and float(_billed) > 0 else ""))
             # margin guard (machine kill switch): skip sleeve if tight
             if not margin_ok(s["symbol"], lot, max(hi, lo)):
                 log(f"[{s['name']}] SKIPPED: margin tight (lot={lot})")
-                st["brackets"][s["name"]] = {"date": day_key, "hi": hi, "lo": lo,
+                for _side, _px in (("buy_stop", hi), ("sell_stop", lo)):
+                    _record_decision(sleeve=s["name"], symbol=s["symbol"], side=_side, lot=lot,
+                                     price=_px, sl=None, tp=None, taken=False,
+                                     reason="margin_guard")
+                st["brackets"][s["name"]] = {"date": day_key, "hi": hi, "lo": lo, "lot": lot,
                                              "spec": spec, "result": {"margin": False}}
                 save_state(st)
                 continue
@@ -989,24 +3932,77 @@ def main() -> None:
                 or abs(o.price_open - spec["sell_stop"]["price"]) < 0.5
             ]
             if matches:
-                st["brackets"][s["name"]] = {"date": day_key, "recovered": True,
+                st["brackets"][s["name"]] = {"date": day_key, "recovered": True, "lot": lot,
                                              "hi": hi, "lo": lo, "spec": spec}
                 log(f"recovered [{s['name']}] bracket for {day_key}")
                 save_state(st)
                 continue
-            res = place_bracket(st, spec, s["name"], s["symbol"], lot)
-            st["brackets"][s["name"]] = {"date": day_key, "hi": hi, "lo": lo,
+            if not NEW_RISK_OK:
+                # The bracket is computed and written as a not-taken decision, so the ledger
+                # shows what the sealed code would have placed while the running code could not.
+                log(f"[{s['name']}] bracket NOT placed: release identity refuses new risk")
+                try:
+                    _record_decision(sleeve=s["name"], symbol=s["symbol"], side=None, lot=lot,
+                                     price=None, sl=None, tp=None, taken=False,
+                                     reason="release_identity_refused", detail=spec)
+                except Exception as exc:
+                    log(f"release-refusal record failed (non-fatal) [{s['name']}]: "
+                        f"{type(exc).__name__}: {exc}")
+                continue
+            res = place_bracket(st, spec, s["name"], s["symbol"], lot, sleeve_row=s)
+            # THE LOT IS RECORDED WITH THE BRACKET (2026-09-09). Without it, the next pass had
+            # to RE-SIZE an order the venue was already holding in order to charge heat for it --
+            # a different number at a different equity, so the cap priced a trade the book does
+            # not have. The bracket's own quantity is the only honest charge for an open leg.
+            st["brackets"][s["name"]] = {"date": day_key, "hi": hi, "lo": lo, "lot": lot,
                                          "spec": spec, "placed_at": now(), "result": res}
             save_state(st)
+        # THE HIBERNATE VETO'S LEDGER LINE. Each sleeve the regime monitor silenced today has its
+        # would-be bracket computed on the same bars the live loop reads and written as a not-taken
+        # decision, once per day. This is the only path by which a hibernated sleeve touches the
+        # broker API, and it is read-only: symbol_info and copy_rates, never an order.
+        _vetoed = st.setdefault("vetoed_today", {})
+        for s in _hibernated:
+            if s.get("exec") in ("family_market", "scalp_market") \
+                    or _vetoed.get(s["name"]) == day_key:
+                continue
+            if hour < s.get("sig_hour", 0):
+                continue
+            try:
+                sym = mt5.symbol_info(s["symbol"])
+                h1 = mt5.copy_rates_from_pos(s["symbol"], mt5.TIMEFRAME_H1, 0, 400)
+                if sym is None or h1 is None:
+                    continue
+                df = h1_frame(h1)
+                if _record_vetoed_bracket(s, df, sym, "regime_hibernate",
+                                          f"hibernated by regime monitor: {s['name']}"):
+                    _vetoed[s["name"]] = day_key
+                    save_state(st)
+            except Exception as exc:
+                log(f"hibernate ledger [{s['name']}] skipped: {type(exc).__name__}: {exc}")
 
-    # housekeeping: cancel unfilled brackets, force-close positions
+    # housekeeping: expire stale brackets FIRST (every pass, not just at CANCEL_HOUR), then the
+    # end-of-day backstop and the force-close.
+    expire_stale_brackets(st)
     if hour >= CANCEL_HOUR:
         for s in sleeves:
             cancel_pending(st, s["symbol"])
     if hour >= CLOSE_HOUR:
+        # The gold book's day ends here; the scalp lane's positions run to their own time exit
+        # (see `close_positions`). Friday's weekend close below is every lane's.
+        #
+        # THE FAMILY LANE RUNS TO ITS OWN TTL TOO (2026-09-16). `keep` protected only the scalp
+        # lane, so from 19:30 UTC until midnight every pass force-closed every FAMILY-lane
+        # position on any symbol a bracket sleeve trades -- including the ones the family loop
+        # had opened seconds earlier in the same pass. Measured over the 24h to 07:00 UTC: 34
+        # positions closed within 120 s of opening, every one an expert close with no stop and
+        # no target tag, -20.60 EUR of pure spread and commission (EURCHF, AUDUSD, CHFNOK at
+        # 21:11 and 21:16 UTC alike). The certified behaviour of a family sleeve is its own
+        # `ttl_bars` exit; the gold windows' day-trade backstop is not part of its certificate.
+        keep = scalp_position_tags(sleeves) | family_position_tags(sleeves)
         for s in sleeves:
-            close_positions(st, s["symbol"])
-    if tnow.dayofweek == 4 and hour >= CLOSE_HOUR:  # Friday: weekend close
+            close_positions(st, s["symbol"], keep_tags=keep)
+    if tnow.dayofweek == 4 and hour >= CLOSE_HOUR:  # Friday: weekend close, EVERY lane
         for s in sleeves:
             close_positions(st, s["symbol"])
 

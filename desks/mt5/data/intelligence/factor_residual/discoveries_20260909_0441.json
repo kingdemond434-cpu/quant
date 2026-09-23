@@ -1,0 +1,596 @@
+{
+ "source": "factor_residual",
+ "generated_at": "2026-09-09T04:41:50.199654+00:00",
+ "tests_run": 8780,
+ "discoveries": [
+  {
+   "source": "factor_residual",
+   "kind": "factor_residual",
+   "symbol": "CHFNOK",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "USDCHF",
+     "USDNOK"
+    ],
+    "lookback": 240,
+    "beta_win": 240,
+    "entry_z": 3.0,
+    "ttl_bars": 8,
+    "side_mode": "revert"
+   },
+   "mechanism": "CHFNOK regressed on USDCHF + USDNOK (triangle): CHFNOK is USDCHF against USDNOK up to the cross spread; the residual is flow specific to this cross rather than to either currency. The residual is faded beyond 3.0 sigma.",
+   "title": "CHFNOK.triangle residual revert z>=3.0 h=8",
+   "url": "",
+   "evidence": {
+    "n_independent": 549,
+    "gross_per_trade": 0.0027167,
+    "net_per_trade": 0.00220538,
+    "cost_frac": 0.00051132,
+    "t_non_overlapping": 18.265,
+    "t_naive_overlapping": 17.329,
+    "t_deflated_within_sweep": 14.559,
+    "tests_this_sweep": 8780,
+    "screen": "causal betas, non-overlapping t, net of round trip, self-deflated"
+   }
+  },
+  {
+   "source": "factor_residual",
+   "kind": "factor_residual",
+   "symbol": "CHFSEK",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "USDCHF",
+     "USDSEK"
+    ],
+    "lookback": 240,
+    "beta_win": 240,
+    "entry_z": 3.0,
+    "ttl_bars": 8,
+    "side_mode": "revert"
+   },
+   "mechanism": "CHFSEK regressed on USDCHF + USDSEK (triangle): CHFSEK is USDCHF against USDSEK up to the cross spread; the residual is flow specific to this cross rather than to either currency. The residual is faded beyond 3.0 sigma.",
+   "title": "CHFSEK.triangle residual revert z>=3.0 h=8",
+   "url": "",
+   "evidence": {
+    "n_independent": 498,
+    "gross_per_trade": 0.00193976,
+    "net_per_trade": 0.0014212,
+    "cost_frac": 0.00051856,
+    "t_non_overlapping": 17.053,
+    "t_naive_overlapping": 13.752,
+    "t_deflated_within_sweep": 13.347,
+    "tests_this_sweep": 8780,
+    "screen": "causal betas, non-overlapping t, net of round trip, self-deflated"
+   }
+  },
+  {
+   "source": "factor_residual",
+   "kind": "factor_residual",
+   "symbol": "CHFHUF",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "USDCHF",
+     "USDHUF"
+    ],
+    "lookback": 240,
+    "beta_win": 240,
+    "entry_z": 3.0,
+    "ttl_bars": 8,
+    "side_mode": "revert"
+   },
+   "mechanism": "CHFHUF regressed on USDCHF + USDHUF (triangle): CHFHUF is USDCHF against USDHUF up to the cross spread; the residual is flow specific to this cross rather than to either currency. The residual is faded beyond 3.0 sigma.",
+   "title": "CHFHUF.triangle residual revert z>=3.0 h=8",
+   "url": "",
+   "evidence": {
+    "n_independent": 462,
+    "gross_per_trade": 0.00213274,
+    "net_per_trade": 0.00122935,
+    "cost_frac": 0.00090339,
+    "t_non_overlapping": 16.55,
+    "t_naive_overlapping": 13.115,
+    "t_deflated_within_sweep": 12.844,
+    "tests_this_sweep": 8780,
+    "screen": "causal betas, non-overlapping t, net of round trip, self-deflated"
+   }
+  },
+  {
+   "source": "factor_residual",
+   "kind": "factor_residual",
+   "symbol": "NOKSEK",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "USDNOK",
+     "USDSEK"
+    ],
+    "lookback": 240,
+    "beta_win": 240,
+    "entry_z": 3.0,
+    "ttl_bars": 8,
+    "side_mode": "revert"
+   },
+   "mechanism": "NOKSEK regressed on USDNOK + USDSEK (triangle): NOKSEK is USDNOK against USDSEK up to the cross spread; the residual is flow specific to this cross rather than to either currency. The residual is faded beyond 3.0 sigma.",
+   "title": "NOKSEK.triangle residual revert z>=3.0 h=8",
+   "url": "",
+   "evidence": {
+    "n_independent": 405,
+    "gross_per_trade": 0.00273212,
+    "net_per_trade": 0.00153779,
+    "cost_frac": 0.00119433,
+    "t_non_overlapping": 16.03,
+    "t_naive_overlapping": 12.058,
+    "t_deflated_within_sweep": 12.324,
+    "tests_this_sweep": 8780,
+    "screen": "causal betas, non-overlapping t, net of round trip, self-deflated"
+   }
+  },
+  {
+   "source": "factor_residual",
+   "kind": "factor_residual",
+   "symbol": "CHFPLN",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "USDCHF",
+     "USDPLN"
+    ],
+    "lookback": 240,
+    "beta_win": 240,
+    "entry_z": 2.5,
+    "ttl_bars": 8,
+    "side_mode": "revert"
+   },
+   "mechanism": "CHFPLN regressed on USDCHF + USDPLN (triangle): CHFPLN is USDCHF against USDPLN up to the cross spread; the residual is flow specific to this cross rather than to either currency. The residual is faded beyond 2.5 sigma.",
+   "title": "CHFPLN.triangle residual revert z>=2.5 h=8",
+   "url": "",
+   "evidence": {
+    "n_independent": 725,
+    "gross_per_trade": 0.00149105,
+    "net_per_trade": 0.00068885,
+    "cost_frac": 0.0008022,
+    "t_non_overlapping": 15.808,
+    "t_naive_overlapping": 11.403,
+    "t_deflated_within_sweep": 12.102,
+    "tests_this_sweep": 8780,
+    "screen": "causal betas, non-overlapping t, net of round trip, self-deflated"
+   }
+  },
+  {
+   "source": "factor_residual",
+   "kind": "factor_residual",
+   "symbol": "ZARJPY",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "USDZAR",
+     "USDJPY"
+    ],
+    "lookback": 240,
+    "beta_win": 240,
+    "entry_z": 3.0,
+    "ttl_bars": 8,
+    "side_mode": "revert"
+   },
+   "mechanism": "ZARJPY regressed on USDZAR + USDJPY (triangle): ZARJPY is USDZAR against USDJPY up to the cross spread; the residual is flow specific to this cross rather than to either currency. The residual is faded beyond 3.0 sigma.",
+   "title": "ZARJPY.triangle residual revert z>=3.0 h=8",
+   "url": "",
+   "evidence": {
+    "n_independent": 437,
+    "gross_per_trade": 0.00286956,
+    "net_per_trade": 0.00055012,
+    "cost_frac": 0.00231945,
+    "t_non_overlapping": 14.014,
+    "t_naive_overlapping": 15.847,
+    "t_deflated_within_sweep": 10.308,
+    "tests_this_sweep": 8780,
+    "screen": "causal betas, non-overlapping t, net of round trip, self-deflated"
+   }
+  },
+  {
+   "source": "factor_residual",
+   "kind": "factor_residual",
+   "symbol": "NZDHUF",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "NZDUSD",
+     "USDHUF"
+    ],
+    "lookback": 240,
+    "beta_win": 240,
+    "entry_z": 2.0,
+    "ttl_bars": 8,
+    "side_mode": "revert"
+   },
+   "mechanism": "NZDHUF regressed on NZDUSD + USDHUF (triangle): NZDHUF is NZDUSD against USDHUF up to the cross spread; the residual is flow specific to this cross rather than to either currency. The residual is faded beyond 2.0 sigma.",
+   "title": "NZDHUF.triangle residual revert z>=2.0 h=8",
+   "url": "",
+   "evidence": {
+    "n_independent": 1030,
+    "gross_per_trade": 0.00159731,
+    "net_per_trade": 0.00023543,
+    "cost_frac": 0.00136189,
+    "t_non_overlapping": 13.362,
+    "t_naive_overlapping": 15.571,
+    "t_deflated_within_sweep": 9.656,
+    "tests_this_sweep": 8780,
+    "screen": "causal betas, non-overlapping t, net of round trip, self-deflated"
+   }
+  },
+  {
+   "source": "factor_residual",
+   "kind": "factor_residual",
+   "symbol": "AUDHUF",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "AUDUSD",
+     "USDHUF"
+    ],
+    "lookback": 240,
+    "beta_win": 240,
+    "entry_z": 3.0,
+    "ttl_bars": 8,
+    "side_mode": "revert"
+   },
+   "mechanism": "AUDHUF regressed on AUDUSD + USDHUF (triangle): AUDHUF is AUDUSD against USDHUF up to the cross spread; the residual is flow specific to this cross rather than to either currency. The residual is faded beyond 3.0 sigma.",
+   "title": "AUDHUF.triangle residual revert z>=3.0 h=8",
+   "url": "",
+   "evidence": {
+    "n_independent": 499,
+    "gross_per_trade": 0.00215887,
+    "net_per_trade": 0.00111919,
+    "cost_frac": 0.00103968,
+    "t_non_overlapping": 12.54,
+    "t_naive_overlapping": 14.295,
+    "t_deflated_within_sweep": 8.834,
+    "tests_this_sweep": 8780,
+    "screen": "causal betas, non-overlapping t, net of round trip, self-deflated"
+   }
+  },
+  {
+   "source": "factor_residual",
+   "kind": "factor_residual",
+   "symbol": "GBPHUF",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "GBPUSD",
+     "USDHUF"
+    ],
+    "lookback": 240,
+    "beta_win": 240,
+    "entry_z": 3.0,
+    "ttl_bars": 8,
+    "side_mode": "revert"
+   },
+   "mechanism": "GBPHUF regressed on GBPUSD + USDHUF (triangle): GBPHUF is GBPUSD against USDHUF up to the cross spread; the residual is flow specific to this cross rather than to either currency. The residual is faded beyond 3.0 sigma.",
+   "title": "GBPHUF.triangle residual revert z>=3.0 h=8",
+   "url": "",
+   "evidence": {
+    "n_independent": 479,
+    "gross_per_trade": 0.00174571,
+    "net_per_trade": 0.00086893,
+    "cost_frac": 0.00087678,
+    "t_non_overlapping": 12.264,
+    "t_naive_overlapping": 12.381,
+    "t_deflated_within_sweep": 8.558,
+    "tests_this_sweep": 8780,
+    "screen": "causal betas, non-overlapping t, net of round trip, self-deflated"
+   }
+  },
+  {
+   "source": "factor_residual",
+   "kind": "factor_residual",
+   "symbol": "CHFDKK",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "USDCHF",
+     "USDDKK"
+    ],
+    "lookback": 240,
+    "beta_win": 240,
+    "entry_z": 3.0,
+    "ttl_bars": 8,
+    "side_mode": "revert"
+   },
+   "mechanism": "CHFDKK regressed on USDCHF + USDDKK (triangle): CHFDKK is USDCHF against USDDKK up to the cross spread; the residual is flow specific to this cross rather than to either currency. The residual is faded beyond 3.0 sigma.",
+   "title": "CHFDKK.triangle residual revert z>=3.0 h=8",
+   "url": "",
+   "evidence": {
+    "n_independent": 446,
+    "gross_per_trade": 0.00068334,
+    "net_per_trade": 0.0005403,
+    "cost_frac": 0.00014305,
+    "t_non_overlapping": 9.998,
+    "t_naive_overlapping": 7.765,
+    "t_deflated_within_sweep": 6.292,
+    "tests_this_sweep": 8780,
+    "screen": "causal betas, non-overlapping t, net of round trip, self-deflated"
+   }
+  },
+  {
+   "source": "factor_residual",
+   "kind": "factor_residual",
+   "symbol": "CHFJPY",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "USDCHF",
+     "USDJPY"
+    ],
+    "lookback": 240,
+    "beta_win": 240,
+    "entry_z": 3.0,
+    "ttl_bars": 8,
+    "side_mode": "revert"
+   },
+   "mechanism": "CHFJPY regressed on USDCHF + USDJPY (triangle): CHFJPY is USDCHF against USDJPY up to the cross spread; the residual is flow specific to this cross rather than to either currency. The residual is faded beyond 3.0 sigma.",
+   "title": "CHFJPY.triangle residual revert z>=3.0 h=8",
+   "url": "",
+   "evidence": {
+    "n_independent": 753,
+    "gross_per_trade": 0.00077974,
+    "net_per_trade": 0.00072583,
+    "cost_frac": 5.391e-05,
+    "t_non_overlapping": 8.82,
+    "t_naive_overlapping": 5.502,
+    "t_deflated_within_sweep": 5.114,
+    "tests_this_sweep": 8780,
+    "screen": "causal betas, non-overlapping t, net of round trip, self-deflated"
+   }
+  },
+  {
+   "source": "factor_residual",
+   "kind": "factor_residual",
+   "symbol": "CHFSGD",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "USDCHF",
+     "USDSGD"
+    ],
+    "lookback": 240,
+    "beta_win": 240,
+    "entry_z": 3.0,
+    "ttl_bars": 8,
+    "side_mode": "revert"
+   },
+   "mechanism": "CHFSGD regressed on USDCHF + USDSGD (triangle): CHFSGD is USDCHF against USDSGD up to the cross spread; the residual is flow specific to this cross rather than to either currency. The residual is faded beyond 3.0 sigma.",
+   "title": "CHFSGD.triangle residual revert z>=3.0 h=8",
+   "url": "",
+   "evidence": {
+    "n_independent": 517,
+    "gross_per_trade": 0.00062437,
+    "net_per_trade": 0.0005436,
+    "cost_frac": 8.077e-05,
+    "t_non_overlapping": 8.221,
+    "t_naive_overlapping": 6.492,
+    "t_deflated_within_sweep": 4.515,
+    "tests_this_sweep": 8780,
+    "screen": "causal betas, non-overlapping t, net of round trip, self-deflated"
+   }
+  },
+  {
+   "source": "factor_residual",
+   "kind": "factor_residual",
+   "symbol": "GBPNOK",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "GBPUSD",
+     "USDNOK"
+    ],
+    "lookback": 240,
+    "beta_win": 240,
+    "entry_z": 2.0,
+    "ttl_bars": 8,
+    "side_mode": "revert"
+   },
+   "mechanism": "GBPNOK regressed on GBPUSD + USDNOK (triangle): GBPNOK is GBPUSD against USDNOK up to the cross spread; the residual is flow specific to this cross rather than to either currency. The residual is faded beyond 2.0 sigma.",
+   "title": "GBPNOK.triangle residual revert z>=2.0 h=8",
+   "url": "",
+   "evidence": {
+    "n_independent": 1184,
+    "gross_per_trade": 0.00080636,
+    "net_per_trade": 0.00032526,
+    "cost_frac": 0.0004811,
+    "t_non_overlapping": 8.189,
+    "t_naive_overlapping": 7.481,
+    "t_deflated_within_sweep": 4.483,
+    "tests_this_sweep": 8780,
+    "screen": "causal betas, non-overlapping t, net of round trip, self-deflated"
+   }
+  },
+  {
+   "source": "factor_residual",
+   "kind": "factor_residual",
+   "symbol": "GBPZAR",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "GBPUSD",
+     "USDZAR"
+    ],
+    "lookback": 240,
+    "beta_win": 240,
+    "entry_z": 3.0,
+    "ttl_bars": 8,
+    "side_mode": "revert"
+   },
+   "mechanism": "GBPZAR regressed on GBPUSD + USDZAR (triangle): GBPZAR is GBPUSD against USDZAR up to the cross spread; the residual is flow specific to this cross rather than to either currency. The residual is faded beyond 3.0 sigma.",
+   "title": "GBPZAR.triangle residual revert z>=3.0 h=8",
+   "url": "",
+   "evidence": {
+    "n_independent": 517,
+    "gross_per_trade": 0.00126292,
+    "net_per_trade": 0.0008727,
+    "cost_frac": 0.00039022,
+    "t_non_overlapping": 7.459,
+    "t_naive_overlapping": 6.389,
+    "t_deflated_within_sweep": 3.753,
+    "tests_this_sweep": 8780,
+    "screen": "causal betas, non-overlapping t, net of round trip, self-deflated"
+   }
+  },
+  {
+   "source": "factor_residual",
+   "kind": "factor_residual",
+   "symbol": "USDRUB",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "XBRUSD",
+     "USDX"
+    ],
+    "lookback": 240,
+    "beta_win": 240,
+    "entry_z": 2.0,
+    "ttl_bars": 8,
+    "side_mode": "revert"
+   },
+   "mechanism": "USDRUB regressed on XBRUSD + USDX (commodity_rub): Russia's external account is dominated by energy exports, so RUB is partly a commodity price wearing a currency's name. The residual is faded beyond 2.0 sigma.",
+   "title": "USDRUB.commodity_rub residual revert z>=2.0 h=8",
+   "url": "",
+   "evidence": {
+    "n_independent": 365,
+    "gross_per_trade": 0.00680552,
+    "net_per_trade": 0.00174365,
+    "cost_frac": 0.00506187,
+    "t_non_overlapping": 6.6,
+    "t_naive_overlapping": 10.645,
+    "t_deflated_within_sweep": 2.894,
+    "tests_this_sweep": 8780,
+    "screen": "causal betas, non-overlapping t, net of round trip, self-deflated"
+   }
+  },
+  {
+   "source": "factor_residual",
+   "kind": "factor_residual",
+   "symbol": "GBPMXN",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "GBPUSD",
+     "USDMXN"
+    ],
+    "lookback": 240,
+    "beta_win": 240,
+    "entry_z": 2.5,
+    "ttl_bars": 8,
+    "side_mode": "revert"
+   },
+   "mechanism": "GBPMXN regressed on GBPUSD + USDMXN (triangle): GBPMXN is GBPUSD against USDMXN up to the cross spread; the residual is flow specific to this cross rather than to either currency. The residual is faded beyond 2.5 sigma.",
+   "title": "GBPMXN.triangle residual revert z>=2.5 h=8",
+   "url": "",
+   "evidence": {
+    "n_independent": 751,
+    "gross_per_trade": 0.00081825,
+    "net_per_trade": 0.00051762,
+    "cost_frac": 0.00030063,
+    "t_non_overlapping": 6.57,
+    "t_naive_overlapping": 6.086,
+    "t_deflated_within_sweep": 2.864,
+    "tests_this_sweep": 8780,
+    "screen": "causal betas, non-overlapping t, net of round trip, self-deflated"
+   }
+  },
+  {
+   "source": "factor_residual",
+   "kind": "factor_residual",
+   "symbol": "SGDJPY",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "USDSGD",
+     "USDJPY"
+    ],
+    "lookback": 240,
+    "beta_win": 240,
+    "entry_z": 3.0,
+    "ttl_bars": 8,
+    "side_mode": "revert"
+   },
+   "mechanism": "SGDJPY regressed on USDSGD + USDJPY (triangle): SGDJPY is USDSGD against USDJPY up to the cross spread; the residual is flow specific to this cross rather than to either currency. The residual is faded beyond 3.0 sigma.",
+   "title": "SGDJPY.triangle residual revert z>=3.0 h=8",
+   "url": "",
+   "evidence": {
+    "n_independent": 482,
+    "gross_per_trade": 0.00082819,
+    "net_per_trade": 0.00074391,
+    "cost_frac": 8.428e-05,
+    "t_non_overlapping": 6.151,
+    "t_naive_overlapping": 8.003,
+    "t_deflated_within_sweep": 2.445,
+    "tests_this_sweep": 8780,
+    "screen": "causal betas, non-overlapping t, net of round trip, self-deflated"
+   }
+  },
+  {
+   "source": "factor_residual",
+   "kind": "factor_residual",
+   "symbol": "EURRUB",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "EURUSD",
+     "USDRUB"
+    ],
+    "lookback": 240,
+    "beta_win": 240,
+    "entry_z": 3.0,
+    "ttl_bars": 8,
+    "side_mode": "revert"
+   },
+   "mechanism": "EURRUB regressed on EURUSD + USDRUB (triangle): EURRUB is EURUSD against USDRUB up to the cross spread; the residual is flow specific to this cross rather than to either currency. The residual is faded beyond 3.0 sigma.",
+   "title": "EURRUB.triangle residual revert z>=3.0 h=8",
+   "url": "",
+   "evidence": {
+    "n_independent": 79,
+    "gross_per_trade": 0.00532559,
+    "net_per_trade": 0.00526988,
+    "cost_frac": 5.572e-05,
+    "t_non_overlapping": 5.818,
+    "t_naive_overlapping": 4.801,
+    "t_deflated_within_sweep": 2.112,
+    "tests_this_sweep": 8780,
+    "screen": "causal betas, non-overlapping t, net of round trip, self-deflated"
+   }
+  },
+  {
+   "source": "factor_residual",
+   "kind": "factor_residual",
+   "symbol": "USDRUB",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "USDX",
+     "UST10Y"
+    ],
+    "lookback": 240,
+    "beta_win": 240,
+    "entry_z": 2.0,
+    "ttl_bars": 8,
+    "side_mode": "revert"
+   },
+   "mechanism": "USDRUB regressed on USDX + UST10Y (dollar_rates): an exchange rate is a relative claim on two policy rates, priced against the dollar and the term structure it competes with. The residual is faded beyond 2.0 sigma.",
+   "title": "USDRUB.dollar_rates residual revert z>=2.0 h=8",
+   "url": "",
+   "evidence": {
+    "n_independent": 138,
+    "gross_per_trade": 0.01263141,
+    "net_per_trade": 0.00756954,
+    "cost_frac": 0.00506187,
+    "t_non_overlapping": 5.809,
+    "t_naive_overlapping": 9.763,
+    "t_deflated_within_sweep": 2.103,
+    "tests_this_sweep": 8780,
+    "screen": "causal betas, non-overlapping t, net of round trip, self-deflated"
+   }
+  }
+ ]
+}

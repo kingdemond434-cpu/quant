@@ -19,6 +19,27 @@ import pytest
 ROOT = Path(__file__).resolve().parents[2]
 _SRC = ROOT / "scripts/check_margin_topology.py"
 
+# THE SUBJECT IS PARKED, NOT RETIRED, AND THAT DISTINCTION IS WHY THIS FILE STILL EXISTS.
+#
+# `scripts/check_margin_topology.py` imports `libs.portfolio.margin_topology`, which was deleted in
+# 1657d5f7 during the crypto-exchange purge, so the fence can no longer import and its cron rows
+# are parked in ops/crontab.manifest. But the manifest says in as many words that this is NOT a
+# universe retirement and that the rows are a RESTORATION CANDIDATE: margin construction -- whether
+# a book is INHERITED from the venue's leverage or chosen against measured alternatives -- is an
+# MT5-relevant risk concept, and L1.64 has no other scheduled enforcement point.
+#
+# So the SPEC is kept executable rather than deleted. The skip is CONDITIONAL on the file's absence,
+# which means restoring the module re-arms all seven assertions automatically -- nobody has to
+# remember this file exists. A deleted spec would have to be rewritten from scratch to restore a
+# law the desk still holds, and it would be rewritten from memory of what the fence used to refuse.
+if not _SRC.exists():                                                  # pragma: no cover
+    pytest.skip(
+        "L1.64 PARKED 2026-09-05: scripts/check_margin_topology.py cannot import because "
+        "libs.portfolio.margin_topology was deleted in 1657d5f7. This is a RESTORATION CANDIDATE, "
+        "not a retirement -- ops/crontab.manifest carries the parked rows and the reason. Restore "
+        "the module and every assertion below arms again with no edit here.",
+        allow_module_level=True)
+
 
 def _load(monkeypatch: pytest.MonkeyPatch, root: Path) -> Any:
     """Import the fence with every artifact path pointed at a temporary tree."""

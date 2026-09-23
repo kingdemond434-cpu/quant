@@ -1,0 +1,596 @@
+{
+  "version": "screenshot-scalp-2026-08-22-a",
+  "evidence": "broker_native_bar_spread_plus_fusion_zero_commission",
+  "fusion_cost": "$4.50/lot round turn plus each bar's recorded broker spread",
+  "selection": "first 60% chronological; report/promote on untouched last 40%",
+  "same_bar_policy": "stop_first",
+  "timeframes": {
+    "M1": {
+      "status": "MEASURED",
+      "bars": 90000,
+      "train_bars": 54000,
+      "oos_bars": 36000,
+      "configs_tried": 48,
+      "selected": [
+        {
+          "config": {
+            "family": "sweep_reclaim",
+            "lookback": 20,
+            "displacement_atr": 1.5,
+            "stop_atr": 1.5,
+            "target_atr": 1.0,
+            "max_hold": 15,
+            "mode": "single"
+          },
+          "oos": {
+            "n": 2724,
+            "mean_r": -0.13208,
+            "t_stat": -8.45,
+            "psr": 0.0,
+            "win_rate": 0.583,
+            "worst_r": -1.3509,
+            "total_r": -359.79
+          },
+          "frictionless_ablation": {
+            "n": 2724,
+            "mean_r": -0.02207,
+            "t_stat": -1.412,
+            "psr": 0.07804,
+            "win_rate": 0.5844,
+            "worst_r": -1.0,
+            "total_r": -60.11
+          },
+          "original_gate": false,
+          "disposition": "REJECT"
+        },
+        {
+          "config": {
+            "family": "sweep_reclaim",
+            "lookback": 20,
+            "displacement_atr": 1.5,
+            "stop_atr": 1.5,
+            "target_atr": 1.0,
+            "max_hold": 15,
+            "mode": "bounded_structural"
+          },
+          "oos": {
+            "n": 2729,
+            "mean_r": -0.0399,
+            "t_stat": -6.034,
+            "psr": 0.0,
+            "win_rate": 0.594,
+            "worst_r": -1.3381,
+            "total_r": -108.87
+          },
+          "frictionless_ablation": {
+            "n": 2729,
+            "mean_r": 0.00229,
+            "t_stat": 0.348,
+            "psr": 0.63609,
+            "win_rate": 0.5947,
+            "worst_r": -1.0,
+            "total_r": 6.26
+          },
+          "original_gate": false,
+          "disposition": "REJECT"
+        },
+        {
+          "config": {
+            "family": "displacement_continuation",
+            "lookback": 20,
+            "displacement_atr": 1.5,
+            "stop_atr": 1.5,
+            "target_atr": 1.0,
+            "max_hold": 5,
+            "mode": "single"
+          },
+          "oos": {
+            "n": 2668,
+            "mean_r": -0.16504,
+            "t_stat": -11.258,
+            "psr": 0.0,
+            "win_rate": 0.5172,
+            "worst_r": -1.3624,
+            "total_r": -440.32
+          },
+          "frictionless_ablation": {
+            "n": 2668,
+            "mean_r": -0.05504,
+            "t_stat": -3.761,
+            "psr": 7.3e-05,
+            "win_rate": 0.5379,
+            "worst_r": -1.0,
+            "total_r": -146.84
+          },
+          "original_gate": false,
+          "disposition": "REJECT"
+        },
+        {
+          "config": {
+            "family": "displacement_continuation",
+            "lookback": 20,
+            "displacement_atr": 1.5,
+            "stop_atr": 1.5,
+            "target_atr": 1.0,
+            "max_hold": 5,
+            "mode": "bounded_structural"
+          },
+          "oos": {
+            "n": 2668,
+            "mean_r": -0.04196,
+            "t_stat": -11.345,
+            "psr": 0.0,
+            "win_rate": 0.5169,
+            "worst_r": -0.5735,
+            "total_r": -111.95
+          },
+          "frictionless_ablation": {
+            "n": 2668,
+            "mean_r": -0.01421,
+            "t_stat": -3.847,
+            "psr": 5.1e-05,
+            "win_rate": 0.5371,
+            "worst_r": -0.5,
+            "total_r": -37.9
+          },
+          "original_gate": false,
+          "disposition": "REJECT"
+        },
+        {
+          "config": {
+            "family": "sweep_or_displacement",
+            "lookback": 20,
+            "displacement_atr": 1.5,
+            "stop_atr": 1.5,
+            "target_atr": 1.0,
+            "max_hold": 5,
+            "mode": "single"
+          },
+          "oos": {
+            "n": 4520,
+            "mean_r": -0.15199,
+            "t_stat": -13.513,
+            "psr": 0.0,
+            "win_rate": 0.527,
+            "worst_r": -1.3624,
+            "total_r": -686.99
+          },
+          "frictionless_ablation": {
+            "n": 4520,
+            "mean_r": -0.04172,
+            "t_stat": -3.712,
+            "psr": 9.1e-05,
+            "win_rate": 0.548,
+            "worst_r": -1.0,
+            "total_r": -188.56
+          },
+          "original_gate": false,
+          "disposition": "REJECT"
+        },
+        {
+          "config": {
+            "family": "sweep_or_displacement",
+            "lookback": 20,
+            "displacement_atr": 1.5,
+            "stop_atr": 1.5,
+            "target_atr": 1.0,
+            "max_hold": 5,
+            "mode": "bounded_structural"
+          },
+          "oos": {
+            "n": 4524,
+            "mean_r": -0.04134,
+            "t_stat": -11.449,
+            "psr": 0.0,
+            "win_rate": 0.5393,
+            "worst_r": -1.2262,
+            "total_r": -187.03
+          },
+          "frictionless_ablation": {
+            "n": 4524,
+            "mean_r": -0.00742,
+            "t_stat": -2.062,
+            "psr": 0.019389,
+            "win_rate": 0.5584,
+            "worst_r": -1.0,
+            "total_r": -33.58
+          },
+          "original_gate": false,
+          "disposition": "REJECT"
+        }
+      ]
+    },
+    "M5": {
+      "status": "MEASURED",
+      "bars": 90000,
+      "train_bars": 54000,
+      "oos_bars": 36000,
+      "configs_tried": 48,
+      "selected": [
+        {
+          "config": {
+            "family": "sweep_reclaim",
+            "lookback": 20,
+            "displacement_atr": 1.5,
+            "stop_atr": 1.5,
+            "target_atr": 1.0,
+            "max_hold": 3,
+            "mode": "single"
+          },
+          "oos": {
+            "n": 3067,
+            "mean_r": -0.0531,
+            "t_stat": -4.302,
+            "psr": 6e-06,
+            "win_rate": 0.5318,
+            "worst_r": -1.1014,
+            "total_r": -162.85
+          },
+          "frictionless_ablation": {
+            "n": 3067,
+            "mean_r": -0.01665,
+            "t_stat": -1.348,
+            "psr": 0.087846,
+            "win_rate": 0.5439,
+            "worst_r": -1.0,
+            "total_r": -51.06
+          },
+          "original_gate": false,
+          "disposition": "REJECT"
+        },
+        {
+          "config": {
+            "family": "sweep_reclaim",
+            "lookback": 20,
+            "displacement_atr": 1.5,
+            "stop_atr": 1.0,
+            "target_atr": 1.0,
+            "max_hold": 9,
+            "mode": "bounded_structural"
+          },
+          "oos": {
+            "n": 3144,
+            "mean_r": -0.00933,
+            "t_stat": -1.551,
+            "psr": 0.061178,
+            "win_rate": 0.5038,
+            "worst_r": -1.0951,
+            "total_r": -29.34
+          },
+          "frictionless_ablation": {
+            "n": 3144,
+            "mean_r": 0.00818,
+            "t_stat": 1.357,
+            "psr": 0.913551,
+            "win_rate": 0.5057,
+            "worst_r": -1.0,
+            "total_r": 25.72
+          },
+          "original_gate": false,
+          "disposition": "REJECT"
+        },
+        {
+          "config": {
+            "family": "displacement_continuation",
+            "lookback": 20,
+            "displacement_atr": 1.5,
+            "stop_atr": 1.5,
+            "target_atr": 1.0,
+            "max_hold": 3,
+            "mode": "single"
+          },
+          "oos": {
+            "n": 2386,
+            "mean_r": -0.05564,
+            "t_stat": -3.832,
+            "psr": 5.2e-05,
+            "win_rate": 0.5231,
+            "worst_r": -1.0976,
+            "total_r": -132.76
+          },
+          "frictionless_ablation": {
+            "n": 2386,
+            "mean_r": -0.02094,
+            "t_stat": -1.442,
+            "psr": 0.073687,
+            "win_rate": 0.5335,
+            "worst_r": -1.0,
+            "total_r": -49.97
+          },
+          "original_gate": false,
+          "disposition": "REJECT"
+        },
+        {
+          "config": {
+            "family": "displacement_continuation",
+            "lookback": 20,
+            "displacement_atr": 1.5,
+            "stop_atr": 1.5,
+            "target_atr": 1.0,
+            "max_hold": 3,
+            "mode": "bounded_structural"
+          },
+          "oos": {
+            "n": 2386,
+            "mean_r": -0.01422,
+            "t_stat": -3.907,
+            "psr": 3.8e-05,
+            "win_rate": 0.5218,
+            "worst_r": -0.5179,
+            "total_r": -33.93
+          },
+          "frictionless_ablation": {
+            "n": 2386,
+            "mean_r": -0.00552,
+            "t_stat": -1.516,
+            "psr": 0.063847,
+            "win_rate": 0.5319,
+            "worst_r": -0.5,
+            "total_r": -13.16
+          },
+          "original_gate": false,
+          "disposition": "REJECT"
+        },
+        {
+          "config": {
+            "family": "sweep_or_displacement",
+            "lookback": 20,
+            "displacement_atr": 1.5,
+            "stop_atr": 1.5,
+            "target_atr": 1.0,
+            "max_hold": 3,
+            "mode": "single"
+          },
+          "oos": {
+            "n": 4507,
+            "mean_r": -0.05846,
+            "t_stat": -5.67,
+            "psr": 0.0,
+            "win_rate": 0.5243,
+            "worst_r": -1.1014,
+            "total_r": -263.46
+          },
+          "frictionless_ablation": {
+            "n": 4507,
+            "mean_r": -0.02258,
+            "t_stat": -2.19,
+            "psr": 0.01385,
+            "win_rate": 0.5358,
+            "worst_r": -1.0,
+            "total_r": -101.76
+          },
+          "original_gate": false,
+          "disposition": "REJECT"
+        },
+        {
+          "config": {
+            "family": "sweep_or_displacement",
+            "lookback": 20,
+            "displacement_atr": 1.5,
+            "stop_atr": 1.5,
+            "target_atr": 1.0,
+            "max_hold": 3,
+            "mode": "bounded_structural"
+          },
+          "oos": {
+            "n": 4506,
+            "mean_r": -0.01455,
+            "t_stat": -4.745,
+            "psr": 1e-06,
+            "win_rate": 0.5337,
+            "worst_r": -0.7983,
+            "total_r": -65.58
+          },
+          "frictionless_ablation": {
+            "n": 4506,
+            "mean_r": -0.00348,
+            "t_stat": -1.134,
+            "psr": 0.128181,
+            "win_rate": 0.5468,
+            "worst_r": -0.75,
+            "total_r": -15.69
+          },
+          "original_gate": false,
+          "disposition": "REJECT"
+        }
+      ]
+    },
+    "M15": {
+      "status": "MEASURED",
+      "bars": 90000,
+      "train_bars": 54000,
+      "oos_bars": 36000,
+      "configs_tried": 48,
+      "selected": [
+        {
+          "config": {
+            "family": "sweep_reclaim",
+            "lookback": 20,
+            "displacement_atr": 1.5,
+            "stop_atr": 1.5,
+            "target_atr": 1.0,
+            "max_hold": 2,
+            "mode": "single"
+          },
+          "oos": {
+            "n": 3244,
+            "mean_r": -0.04696,
+            "t_stat": -4.167,
+            "psr": 1.2e-05,
+            "win_rate": 0.5145,
+            "worst_r": -1.0843,
+            "total_r": -152.32
+          },
+          "frictionless_ablation": {
+            "n": 3244,
+            "mean_r": -0.02241,
+            "t_stat": -1.988,
+            "psr": 0.022762,
+            "win_rate": 0.5256,
+            "worst_r": -1.0,
+            "total_r": -72.71
+          },
+          "original_gate": false,
+          "disposition": "REJECT"
+        },
+        {
+          "config": {
+            "family": "sweep_reclaim",
+            "lookback": 20,
+            "displacement_atr": 1.5,
+            "stop_atr": 1.5,
+            "target_atr": 1.0,
+            "max_hold": 2,
+            "mode": "bounded_structural"
+          },
+          "oos": {
+            "n": 3244,
+            "mean_r": -0.01207,
+            "t_stat": -3.573,
+            "psr": 0.000172,
+            "win_rate": 0.5277,
+            "worst_r": -0.6753,
+            "total_r": -39.15
+          },
+          "frictionless_ablation": {
+            "n": 3244,
+            "mean_r": -0.00417,
+            "t_stat": -1.234,
+            "psr": 0.108371,
+            "win_rate": 0.5379,
+            "worst_r": -0.6617,
+            "total_r": -13.51
+          },
+          "original_gate": false,
+          "disposition": "REJECT"
+        },
+        {
+          "config": {
+            "family": "displacement_continuation",
+            "lookback": 20,
+            "displacement_atr": 1.5,
+            "stop_atr": 1.5,
+            "target_atr": 1.0,
+            "max_hold": 6,
+            "mode": "single"
+          },
+          "oos": {
+            "n": 2462,
+            "mean_r": -0.05877,
+            "t_stat": -3.753,
+            "psr": 7.3e-05,
+            "win_rate": 0.5516,
+            "worst_r": -1.0759,
+            "total_r": -144.69
+          },
+          "frictionless_ablation": {
+            "n": 2462,
+            "mean_r": -0.0369,
+            "t_stat": -2.356,
+            "psr": 0.008812,
+            "win_rate": 0.5548,
+            "worst_r": -1.0,
+            "total_r": -90.84
+          },
+          "original_gate": false,
+          "disposition": "REJECT"
+        },
+        {
+          "config": {
+            "family": "displacement_continuation",
+            "lookback": 20,
+            "displacement_atr": 1.5,
+            "stop_atr": 1.5,
+            "target_atr": 1.0,
+            "max_hold": 2,
+            "mode": "bounded_structural"
+          },
+          "oos": {
+            "n": 2500,
+            "mean_r": -0.01459,
+            "t_stat": -4.314,
+            "psr": 6e-06,
+            "win_rate": 0.5148,
+            "worst_r": -0.3689,
+            "total_r": -36.47
+          },
+          "frictionless_ablation": {
+            "n": 2500,
+            "mean_r": -0.0091,
+            "t_stat": -2.691,
+            "psr": 0.003346,
+            "win_rate": 0.5252,
+            "worst_r": -0.3621,
+            "total_r": -22.74
+          },
+          "original_gate": false,
+          "disposition": "REJECT"
+        },
+        {
+          "config": {
+            "family": "sweep_or_displacement",
+            "lookback": 20,
+            "displacement_atr": 1.5,
+            "stop_atr": 1.5,
+            "target_atr": 1.0,
+            "max_hold": 6,
+            "mode": "single"
+          },
+          "oos": {
+            "n": 4291,
+            "mean_r": -0.0628,
+            "t_stat": -5.352,
+            "psr": 0.0,
+            "win_rate": 0.5509,
+            "worst_r": -1.0843,
+            "total_r": -269.47
+          },
+          "frictionless_ablation": {
+            "n": 4291,
+            "mean_r": -0.03946,
+            "t_stat": -3.362,
+            "psr": 0.000351,
+            "win_rate": 0.5551,
+            "worst_r": -1.0,
+            "total_r": -169.31
+          },
+          "original_gate": false,
+          "disposition": "REJECT"
+        },
+        {
+          "config": {
+            "family": "sweep_or_displacement",
+            "lookback": 20,
+            "displacement_atr": 1.5,
+            "stop_atr": 1.5,
+            "target_atr": 1.0,
+            "max_hold": 2,
+            "mode": "bounded_structural"
+          },
+          "oos": {
+            "n": 4770,
+            "mean_r": -0.01423,
+            "t_stat": -5.337,
+            "psr": 0.0,
+            "win_rate": 0.5197,
+            "worst_r": -0.5565,
+            "total_r": -67.87
+          },
+          "frictionless_ablation": {
+            "n": 4770,
+            "mean_r": -0.00722,
+            "t_stat": -2.71,
+            "psr": 0.003326,
+            "win_rate": 0.5296,
+            "worst_r": -0.5024,
+            "total_r": -34.45
+          },
+          "original_gate": false,
+          "disposition": "REJECT"
+        }
+      ]
+    }
+  },
+  "shadow_candidates": [],
+  "verdict": "REJECTED: no costed untouched-OOS arm cleared the original gate"
+}

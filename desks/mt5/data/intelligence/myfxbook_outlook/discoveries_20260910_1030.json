@@ -1,0 +1,14 @@
+[
+ {
+  "source": "myfxbook_outlook",
+  "kind": "walled",
+  "title": "ANTIBOT_CHALLENGE: still blocked: HTTPSConnectionPool(host='www.myfxbook.com', port=443): Max retries exceeded with url: /community/outlook (Caused by SSL",
+  "url": "https://www.myfxbook.com/community/outlook",
+  "text": "Cloudflare managed challenge fronts the whole host -- even /robots.txt returns the 'Just a moment...' interstitial (cType: 'managed'). Passing it means defeating an access control, which \u00a713 forbids outright.",
+  "symbols": [],
+  "found_at": "2026-09-10T10:40:24+00:00",
+  "verdict": "ANTIBOT_CHALLENGE",
+  "walled_since": "2026-08-26",
+  "needs_selector_work": false
+ }
+]

@@ -207,15 +207,24 @@ _GUARD = "data/live_guard.json"
 #: feed one function, the gate's own contract requires them to agree; where their ``measures``
 #: differ, the CONTRACT is the defect, not either reading.
 _S1_CRITERIA: tuple[tuple[str, str, str, str, bool], ...] = (
+    # REPAIRED 2026-08-19 (R0536/R0537): the two rows below used to read `from_absent_input=True`
+    # because each side built this criterion from its own source and the guard's source did not
+    # exist. Both organs now call ONE reader (libs/execution/gate0_evidence.py), so the divergence
+    # is closed at the input exactly as this fence prescribed -- REPAIR THE INPUT, NOT THE VERDICT.
+    # The registry follows the code and never the other way round: these flags are read from the
+    # producer, so leaving them True after the repair would make the fence accuse a measurement.
     ("principal_signoff", "Has the principal recorded Gate-0 consent?",
-     "data/gate0_signoff.json exists (the file IS the consent; deleting it revokes)",
-     "data/stage_state.json['principal_signoff'] -- A KEY NO CODE ANYWHERE WRITES", True),
+     "gate0_evidence.principal_signoff -- data/gate0_signoff.json exists "
+     "(the file IS the consent; deleting it revokes)",
+     "gate0_evidence.principal_signoff -- THE SAME READER (was: "
+     "data/stage_state.json['principal_signoff'], a key no code anywhere writes)", False),
     ("capital_fraction_le_010", "Is the configured capital <=10% of desk equity?",
      "cashcarry_config.capital / _desk_equity_usd()",
      "the guard's own computed size_fraction", False),
     ("symbol_count_4_5", "Are 4-5 concurrent carries configured?",
-     "cashcarry_config['top']",
-     "ONLY the ramp_state.json evidence spread -- absent, so int(...) defaults to 0", True),
+     "gate0_evidence.symbol_count -- cashcarry_config['top']",
+     "gate0_evidence.symbol_count -- THE SAME READER (was: only the ramp_state.json evidence "
+     "spread, absent, so int(...) defaulted to 0)", False),
     ("keys_present", "Are live-venue credentials present?",
      "credential FILES present in data/secrets/",
      "the venue CONNECTOR OBJECT was constructed (venue is not None)", False),

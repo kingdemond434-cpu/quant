@@ -2,7 +2,7 @@
   "valid_through": "2027-12-08",
   "refresh_by": "2027-01-31",
   "source": "federalreserve.gov/monetarypolicy/fomccalendars.htm",
-  "generated": "2026-08-06T01:26:17Z",
+  "generated": "2026-08-29T02:53:51Z",
   "generator": "scripts/build_event_calendar.py",
   "law": "R0276 -- a stop is a promise the book cannot keep across a scheduled repricing. Entries are DEFERRED inside the window, never cancelled; costs zero statistical power because nothing here judges whether an edge is real.",
   "note": "FOMC decision days only (the SECOND day of each two-day meeting, when the statement is released at 14:00 ET). Dates are tentative until confirmed at the preceding meeting -- re-pull annually; a revised date is a diff.",

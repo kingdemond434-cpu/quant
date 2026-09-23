@@ -19,6 +19,7 @@ import json
 import re
 import subprocess
 import sys
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pytest
@@ -89,3 +90,52 @@ def test_every_reported_duty_matches_a_real_due_test_in_the_source(label, key, p
         f"{label}: _REPORTED_DUTIES says {key} every {period}d, but no matching "
         f"`_days_since(state, {key!r}) >= {period}` appears in run_cadence.py -- the report "
         f"would publish a cadence the engine does not run")
+
+
+# --------------------------------------------------------------------------------------------
+# A NAIVE STAMP IS A DATE, NOT AN ABSENCE (regression, 2026-08-28).
+#
+# Several cadence keys are stamped by LLM organs told in prose to "mark done:
+# last_data_axis_dig". They write a bare `"2026-08-28"`. `datetime.fromisoformat` parses that
+# into a NAIVE datetime; subtracting it from an aware `now()` raises TypeError; `_days_since`
+# swallowed that into its 1e9 "never ran" sentinel. MEASURED: `last_data_axis_dig` held TODAY'S
+# date while `--report` printed "never run", so a WEEKLY duty re-fired on EVERY cycle and a
+# healthy organ was published as dead. Absence and an unparseable value must never render
+# identically (WS-005 / L1.28a).
+# --------------------------------------------------------------------------------------------
+
+def test_a_bare_date_stamp_is_read_as_a_date_not_as_never_run():
+    """THE REGRESSION. The exact value an LLM organ writes for these keys."""
+    m = _mod()
+    today = datetime.now(tz=UTC).date().isoformat()
+    days = m._days_since({"last_data_axis_dig": today}, "last_data_axis_dig")
+    assert days < 2.0, (
+        f"a bare date stamped today must read as ~0 days, got {days} -- 1e9 here is what made a "
+        "weekly duty fire every cycle and published a live organ as 'never run'")
+
+
+def test_a_naive_stamp_is_never_read_as_newer_than_it_is():
+    """The safe direction. Assuming UTC may age a stamp, never freshen it -- no floor relaxes."""
+    m = _mod()
+    naive = "2026-08-01T00:00:00"
+    aware = "2026-08-01T00:00:00+00:00"
+    assert m._days_since({"k": naive}, "k") >= m._days_since({"k": aware}, "k") - 1e-6
+
+
+@pytest.mark.parametrize("raw", [None, "", "not a date", "2026-13-45", 12345, [], {}])
+def test_absence_and_garbage_still_read_as_due(raw):
+    """The sentinel must survive for the cases it was actually for -- never skip on junk."""
+    m = _mod()
+    assert m._days_since({"k": raw}, "k") == 1e9
+
+
+def test_a_missing_key_reads_as_due():
+    m = _mod()
+    assert m._days_since({}, "never_stamped_at_all") == 1e9
+
+
+def test_an_aware_stamp_is_unchanged():
+    """The path that already worked must not move."""
+    m = _mod()
+    then = datetime.now(tz=UTC) - timedelta(days=3)
+    assert 2.9 < m._days_since({"k": then.isoformat()}, "k") < 3.1

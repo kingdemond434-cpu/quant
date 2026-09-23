@@ -1,0 +1,25 @@
+{
+ "generated": "2026-09-04T22:10:15.045393+00:00",
+ "authority": "EXTERNAL_PRIOR_ONLY; executable queue still requires original ten gates",
+ "supported_families": [
+  "asia_meanrev",
+  "d1_inside",
+  "d1_swing_break",
+  "d1_trend_pullback",
+  "gold_dxy_shock",
+  "h4_momentum",
+  "h4_vol_break",
+  "london_ny_breakout",
+  "macro_gold_yield"
+ ],
+ "queued": [],
+ "dispositions": [
+  {
+   "external_candidate_id": "b5117b4daa3e4420acdf",
+   "source": "https://paper",
+   "mechanism": "liquidity state conditions order-flow response",
+   "disposition": "BLOCKED_IMPLEMENTATION",
+   "reason": "no exact existing MT5 family; independent implementation and preregistration owed"
+  }
+ ]
+}

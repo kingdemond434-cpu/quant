@@ -1,4 +1,15 @@
 # DISCOVERY HYPOTHESIS ENGINE — permanent learning record (Charter §22)
+
+> **UNIVERSE RETARGETED 2026-08-18, header added 2026-09-05.** Hypotheses recorded before 2026-08-18 are about where information lived in the retired crypto-exchange ecosystem. Their VERDICTS are permanent and reusable; their search targets are not.
+>
+> Nothing below is deleted: a row recording what was tried, graded or exhausted on the retired
+> desk is exactly the knowledge that stops a future session paying for the same thing twice. But
+> it is a RECORD, not a queue. Every new row runs against the MT5/Fusion Markets universe -- FX
+> majors/crosses/exotics, metals, equity indices, energy, softs, US share CFDs and the crypto CFDs
+> Fusion itself lists. **No crypto-exchange venue may be hunted, screened or scored again**
+> (`docs/LAWS.md` S1); crypto reference data is admissible only where a specific reading informs a
+> Fusion-executable instrument, never as a universe of its own.
+
 _Explicit hypotheses about WHERE valuable information exists but has not yet been observed.
 Failed hypotheses are as permanent as successful ones — the search process itself is a
 falsifiable, self-improving research programme. Every newly validated + adopted dataset

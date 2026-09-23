@@ -64,6 +64,11 @@ CLONE_RHO = 0.95
 #: Series shorter than this cannot support a correlation worth acting on.
 MIN_SERIES = 30
 
+# Fixed once: enough permutations to measure the estimator's finite-sample floor without making
+# a seven-hour gate run materially longer. The seed is part of the instrument, not a tuning knob.
+NULL_CALIBRATION_DRAWS = 8
+NULL_CALIBRATION_SEED = 20260823
+
 
 # ---------------------------------------------------------------- structural fingerprint
 
@@ -196,6 +201,42 @@ def effective_trials(series: Iterable[np.ndarray]) -> TrialCensus:
              f"{len(pairs)} pair(s) at |rho| >= {CLONE_RHO}"))
 
 
+def null_calibrated_effective_trials(series: Iterable[np.ndarray]) -> TrialCensus:
+    """Remove the participation-ratio estimator's own finite-history floor.
+
+    Independent per-column permutations preserve each trial's marginal distribution and sparsity
+    while destroying cross-trial dependence. The observed rank is measured relative to that fixed
+    null and scaled back to N, so only dependence beyond sampling noise earns gate relief.
+    """
+    cols = [np.asarray(s, dtype=float) for s in series]
+    observed = effective_trials(cols)
+    if observed.method != "participation_ratio":
+        return observed
+    rng = np.random.default_rng(NULL_CALIBRATION_SEED)
+    null_ranks = []
+    for _ in range(NULL_CALIBRATION_DRAWS):
+        null = effective_trials([rng.permutation(col) for col in cols])
+        if null.method != "participation_ratio":
+            return TrialCensus(
+                observed.n_raw, float(observed.n_raw), "unmeasurable",
+                why="null calibration failed; N_eff left at N_raw")
+        null_ranks.append(null.n_effective)
+    null_floor = float(np.mean(null_ranks))
+    if not np.isfinite(null_floor) or null_floor <= 0:
+        return TrialCensus(
+            observed.n_raw, float(observed.n_raw), "unmeasurable",
+            why="invalid null-calibration floor; N_eff left at N_raw")
+    calibrated = max(
+        2.0, min(float(observed.n_raw), observed.n_effective / null_floor * observed.n_raw))
+    return TrialCensus(
+        observed.n_raw, calibrated, "null_calibrated_participation_ratio",
+        observed.clone_pairs,
+        why=(f"observed participation rank {observed.n_effective:.2f}; fixed "
+             f"{NULL_CALIBRATION_DRAWS}-permutation independent-null rank {null_floor:.2f}; "
+             f"calibrated to {calibrated:.2f} of {observed.n_raw} trials"),
+    )
+
+
 # ------------------------------------------------------------- deflation at both counts
 
 def expected_max_z(n: float) -> float:
@@ -243,4 +284,19 @@ def census_report(series: Iterable[np.ndarray], sd_sharpe: float,
             for i, j, r in census.clone_pairs[:200]
         ]
         out["n_clone_pairs"] = len(census.clone_pairs)
+    return out
+
+
+def calibrated_census_report(series: Iterable[np.ndarray], sd_sharpe: float,
+                             labels: list[Any] | None = None) -> dict:
+    """Gate-authoritative census with the fixed independent-null floor removed."""
+    cols = [np.asarray(s, dtype=float) for s in series]
+    census = null_calibrated_effective_trials(cols)
+    out = deflation_pair(census, sd_sharpe)
+    if labels and census.clone_pairs:
+        out["clone_pairs"] = [
+            {"left": labels[i], "right": labels[j], "rho": round(rho, 4)}
+            for i, j, rho in census.clone_pairs
+            if i < len(labels) and j < len(labels)
+        ]
     return out

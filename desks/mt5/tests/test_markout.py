@@ -119,3 +119,67 @@ def test_the_gateway_actually_records_both_halves():
     assert "_record_intent(" in src, "placement intent is never written"
     assert '"fill_price"' in src, "the deal ledger does not record the fill price"
     assert "order_intents.jsonl" in src
+
+
+# ------------------------------------------------------------ the join that never matched
+def _closing_deal(pid, entry_fill, close_fill, side=BUY, risk=19.1, **over):
+    """A ledger row as the gateway writes it for a CLOSING deal: `order` is the server's
+    stop/target order (a ticket the desk never saw), `fill_price` is the exit, and the entry
+    side is carried on position_id / entry_order / entry_deal / entry_price."""
+    row = {"order": pid * 1000 + 1, "position_id": pid,
+           "entry_order": pid, "entry_deal": pid * 10 + 1,
+           "entry_price": entry_fill, "fill_price": close_fill, "side": side,
+           "risk_quote": risk, "sleeve": "gold_asia", "symbol": "XAUUSD",
+           "deal": pid * 10 + 2, "r_multiple": 1.7, "pl_quote": 32.5,
+           "time": "2026-09-08T14:00:00Z"}
+    row.update(over)
+    return row
+
+
+def test_a_closing_deal_joins_on_the_position_id_and_slips_against_the_entry_fill():
+    """THE ZERO THE REVIEW FOUND. The ledger records closing deals; their `order` is the exit
+    order, never the intent's ticket, so the old join matched nothing by construction -- and
+    the price it would have compared was the exit, not the entry."""
+    intent = _intent(7, 2000.0)
+    intent.update({"time": "2026-09-08T04:00:00Z", "release_id": "abc123",
+                   "state_vector_id": "sv-9"})
+    m = compute([intent], [_closing_deal(7, entry_fill=2000.5, close_fill=2019.1)])
+    assert m.usable and m.n_matched == 1
+    assert m.mean_slip_quote == pytest.approx(0.5), "slip must be measured at the ENTRY"
+    assert m.attributed_deals == 1 and m.attributed_share == 1.0
+    (link,) = m.chain
+    assert link["release_id"] == "abc123" and link["state_vector_id"] == "sv-9"
+    assert link["ticket"] == 7 and link["close_deal"] == 72 and link["entry_deal"] == 71
+    assert link["realized_r"] == 1.7 and link["slip_quote"] == pytest.approx(0.5)
+
+
+def test_a_row_with_only_the_position_id_still_joins():
+    m = compute([_intent(7, 2000.0)],
+                [_closing_deal(7, 2000.2, 2010.0, entry_order=None)])
+    assert m.n_matched == 1 and m.mean_slip_quote == pytest.approx(0.2)
+
+
+def test_a_closing_order_ticket_alone_never_matches_an_intent():
+    """Rows written before the position id was recorded carry only the exit order: they stay
+    unmatched, reported as such, never silently attributed to the wrong intent."""
+    m = compute([_intent(7, 2000.0)],
+                [_closing_deal(7, 2000.2, 2010.0, entry_order=None, position_id=None)])
+    assert m.n_matched == 0 and m.n_unmatched_deals == 1 and m.attributed_deals == 0
+
+
+def test_attribution_share_counts_every_deal_the_desk_can_explain():
+    m = compute([_intent(7, 2000.0)],
+                [_closing_deal(7, 2000.5, 2010.0), _closing_deal(8, 2000.5, 2010.0)])
+    assert m.attributed_deals == 1 and m.n_deals == 2
+    assert m.attributed_share == pytest.approx(0.5)
+    assert "attributed deals     1/2" in render(m)
+
+
+def test_the_gateway_writes_the_key_chain_and_filters_magic_in_python():
+    src = (_DESK / "mt5desk" / "gateway.py").read_text(encoding="utf-8")
+    for key in ('"position_id"', '"entry_order"', '"entry_deal"', '"close_order"'):
+        assert key in src, f"the ledger row does not carry {key}"
+    assert "magic=MAGIC)" not in src, (
+        "history_deals_get takes no magic keyword; a refused keyword lands in the except and "
+        "the ledger is silently never written")
+    assert 'getattr(d, "magic", 0)' in src

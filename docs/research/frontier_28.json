@@ -1,0 +1,449 @@
+{
+ "version": 1,
+ "recorded": "2026-09-12",
+ "source": "principal, 2026-09-12 session -- the 100%-target blueprint remainder, delivered verbatim after an independent read of the active tree",
+ "why_this_file_exists": [
+  "A blueprint that lives only in a chat transcript is a blueprint the next session cannot act on.",
+  "The principal's own review corrected an earlier estimate UPWARD: portfolio-aware genetic/program search, nine search populations, successive halving, trial charging, MAP-Elites quality-diversity, structural alpha genome, feature genealogy, autonomous PIT dataset acquisition, adversarial poison canaries, sequential RL over partial specs, role-separated research agents and counterfactual Elog attribution are ALREADY REAL CODE on the active tree -- not future work.",
+  "So this ledger records the REMAINDER only, at ~94-96% architectural coverage, with the explicit caveat that end-to-end maturity is lower because several final pieces exist partially or are not yet capital-authoritative."
+ ],
+ "implementation_order": [
+  "release/time/provenance authority",
+  "forward/null calibration",
+  "world model + representation discovery",
+  "joint strategy evolution",
+  "research-tree + scientist tournament",
+  "learned negative knowledge / unknown-unknowns",
+  "unified meta-controller",
+  "market ecology + autonomous data acquisition",
+  "capacity/execution science",
+  "recursive Meta-R&D + formal verification"
+ ],
+ "status_vocabulary": {
+  "OPEN": "not started on this tree",
+  "PARTIAL": "machinery exists and is named in the item; the gap is stated in `gap`",
+  "LANDED": "built, scheduled, leaves an artifact, and something reads it",
+  "REFUSED": "deliberately not done, with the standing order that refuses it"
+ },
+ "items": [
+  {
+   "id": "F1",
+   "rank": 1,
+   "title": "Canonical release / capital authority",
+   "status": "LANDED",
+   "need": "exactly one canonical branch and release lineage, protected and immutable; builds tied to an exact commit/data/config hash; live boxes accept ONLY signed release artifacts; no healer, sync process or agent may overwrite money-path files directly",
+   "gap": "",
+   "exists": [
+    "libs/ops/release_signing.py",
+    "libs/ops/release.py",
+    "desks/mt5/scripts/Adopt-And-Seal.ps1",
+    "ops/githooks/moneypath_precommit_guard.py",
+    "data/release_identity.json",
+    "ops/release_authority.py",
+    "ops/run_release_authority.cmd"
+   ],
+   "note": "the principal names this the most important remaining NON-RESEARCH item",
+   "landed": "the release guards existed and had no caller: `release.verify()` answers whether the running tree matches the written release across seven component hashes and `release_signing.verify` authenticates that record, and neither had a caller outside tests. `ops/release_authority.py` now runs both every 15 minutes as MT5-ReleaseAuthority with a contract. THE FOURTH CLAUSE IS THE ONE THE PRINCIPAL CITED and it is now measured correctly: Adopt-Release lands the branch's tree IN PLACE, which is catastrophic when the box is ahead. The guard reported families.py AT_RISK on 2026-09-12 while the box, the working tree and upstream all held byte-identical content -- the file had reached upstream by a code-only ship commit the box's branch never merged, so it was unreachable AS A COMMIT and perfectly safe AS BYTES. Adoption writes bytes, so the guard now compares CONTENT as well as ancestry (over normalised line endings, the bug that once made the immutable fence unsatisfiable) and reads SAFE. A guard standing between an unattended hourly process and the files that size positions cannot afford to cry wolf. TWO CLAUSES REMAIN AND BOTH ARE THE PRINCIPAL'S, not this session's: RELEASE.json is UNSIGNED -- signing needs a key under data/secrets/**, which never leaves the box and is an authority decision -- and branch protection is a GitHub setting. Both are reported by the running verifier rather than assumed."
+  },
+  {
+   "id": "F2",
+   "rank": 2,
+   "title": "Universal point-in-time truth",
+   "status": "LANDED",
+   "need": "event time, observation time, receive time, broker/server time, publication time, revision/vintage, timezone source, transformation lineage and availability timestamp on EVERY market and data path; derived features inherit full lineage; no implicit timezone conversion anywhere",
+   "gap": "",
+   "exists": [
+    "desks/mt5/research/acquire_datasets.py",
+    "desks/mt5/research/pit_audit.py",
+    "ops/run_frontier_audit.cmd"
+   ],
+   "landed": "the seven-question standard is now ASKED of every data path the desk reads, not only the acquired ones. First run 2026-09-12: 0/10 paths certified, five money-path paths uncertified (universe_bars, macro_events, cost_surface, carry_state, live_ledger), each with its missing FIELDS named. The audit is the enumeration F2 required before it could be a gate."
+  },
+  {
+   "id": "F3",
+   "rank": 3,
+   "title": "Probabilistic Market World Model",
+   "status": "LANDED",
+   "need": "ensemble POSTERIOR models of volatility, liquidity, trend/reversion, jumps, event state, macro state, cross-asset transmission, participant pressure and structural breaks, emitting DISTRIBUTIONS and uncertainty rather than one regime label",
+   "gap": "",
+   "exists": [
+    "desks/mt5/research/alpha_habitat.py",
+    "libs/regime/engine.py",
+    "desks/mt5/research/world_model.py",
+    "ops/run_frontier_audit.cmd"
+   ],
+   "landed": "nine axes emitted as POSTERIORS, each by at least two estimators that fail differently, with the disagreement kept PER AXIS rather than collapsed into one falling confidence scalar. First run 2026-09-12: 20 live symbols, 13 contested axis-readings (all structural_break, where a break in SCALE and a break in LEVEL disagree -- AUDUSD 0.85 apart), 19 of 190 pairs leading beyond their same-bar correlation. event_state and macro_state report UNMEASURED, because the event ledger parses to zero rows and the axes directory is empty; filling them with a neutral prior would assert that nothing is happening in the world."
+  },
+  {
+   "id": "F4",
+   "rank": 4,
+   "title": "Learned representation discovery",
+   "status": "LANDED",
+   "need": "learned latent states, cross-market embeddings, nonlinear residual representations, event embeddings, participant-state embeddings, automatically invented composite variables -- COMPETING against symbolic/econometric representations, never replacing them",
+   "gap": "",
+   "landed": "six learned representation families -- cross-market SVD embeddings, k-means latent states, nonlinear residual maps, residual energy, participant-state embeddings and automatically invented composites -- scored HEAD-TO-HEAD against the symbolic grammar's own primitives on the same purged/embargoed split, the same target and the same block-permutation null. First run 2026-09-12: 12 symbols, 2,196 composite trials declared, learned lane wins on 5 symbols and the symbolic lane on 7. 102 representations beat their own null on the signed return -- and only 17 beat it on the SIGN, the rest being volatility forecasters that heteroskedasticity alone delivers. Nothing is enrolled; a winner is a candidate vocabulary item and reaches the book through the ten gates like everything else.",
+   "exists": [
+    "desks/mt5/research/representation_discovery.py",
+    "ops/run_frontier_audit.cmd"
+   ]
+  },
+  {
+   "id": "F5",
+   "rank": 5,
+   "title": "Joint factor x model x state x execution x portfolio evolution",
+   "status": "LANDED",
+   "need": "evolve the whole executable object -- representation, predictive model, state condition, horizon, entry, exit, execution policy, portfolio role -- so search discovers INTERACTION STRUCTURE instead of optimising each layer separately",
+   "gap": "",
+   "landed": "the whole executable object is now searched jointly -- the family's own signal-shape kwargs plus state condition, horizon, entry, exit and execution policy -- and the SEPARABILITY of those layers is measured by a functional ANOVA over the sampled fitness surface rather than assumed. First run 2026-09-12: 12 of 12 measured surfaces are NOT separable; range_start x trigger_atr carries 43.5% of fitness variance in its interaction alone (representation x execution policy), atr_n x session 24.3%, rest_bars x rr_mult 21.7%. The joint genome beats the fixed recipe out of sample on 5 of 12 surfaces. Winners are donated through proposer_common as family `joint_genome`, a REGISTERED family that applies the identical layer transform, so build_cell can build the object the search scored -- verified on the box: 23,348 / 9,261 / 970 signals on the three donated cells. Portfolio role is UNMEASURED: the live ledger holds 16 deals across 3 days.",
+   "exists": [
+    "desks/mt5/research/joint_evolution.py",
+    "desks/mt5/mt5desk/families.py",
+    "ops/run_frontier_audit.cmd"
+   ]
+  },
+  {
+   "id": "F6",
+   "rank": 6,
+   "title": "Agentic research-tree search",
+   "status": "LANDED",
+   "need": "every promising mechanism spawns a persistent tree (mechanism -> basic experiment -> alternative explanations -> falsifiers -> state variants -> cross-market analogues -> execution variants -> portfolio-residual variants) with posterior value and expected information gain per node, MCTS/beam/best-first compute allocation, permanent pruning",
+   "gap": "",
+   "landed": "a PERSISTENT tree, hourly on the audit lane, over the principal's own eight node kinds in order -- a kind may only be spawned by the kind before it, so no branch grows execution variants of a mechanism whose alternative explanations were never enumerated. Posterior value is a Beta over 'a cell in this branch certifies' from the desk's own 61 certificates against 21,572 docket cells, a child inheriting the parent's evidence shrunk 0.5 toward the base rate. Allocation is best-first by EXACT expected entropy reduction per cell-equivalent. Pruning is permanent, on a LEAVE-ONE-OUT benchmark, and separates REFUTED from EXHAUSTED_OF_NEW. First run 2026-09-12: 42 roots, 14 branches pruned -- including `discovered` at 17,151 of 21,572 docket cells (79% of the desk's research compute) certifying at 0.192% against 0.633% for every other branch.",
+   "exists": [
+    "desks/mt5/research/research_tree.py",
+    "ops/run_audit_lane.cmd"
+   ]
+  },
+  {
+   "id": "F7",
+   "rank": 7,
+   "title": "Full AI scientist tournament",
+   "status": "LANDED",
+   "need": "independent competing agents -- generator, causal critic, statistician, leakage hunter, data/PIT critic, execution critic, portfolio critic, novelty critic, alternative-explanation, red team, reviewer, meta-reviewer -- with genuinely independent context and priors, and DISAGREEMENT PRESERVED rather than averaged away",
+   "gap": "",
+   "landed": "twelve roles with GENUINELY independent context and priors. Each critic is handed only the evidence its question needs and denied the rest -- the statistician never sees the mechanism story, the causal critic never sees the p-value, the leakage hunter never learns whether it made money. Roles are dealt round-robin across the free catalogue's distinct VENDORS, by declared parameter count: verified on the box 2026-09-12 across 9 vendors (cohere, dots-studio, google, inclusionai, liquid, nex-agi, nvidia, poolside, thinkingmachines), so an agreement is corroboration rather than one model answering twelve questions. The reviewer is FORBIDDEN to resolve a dissent and the meta-reviewer audits it for dissents that went missing; dissent pairs are also counted mechanically, and every recommendation passes audit_intake first so anything touching the 20% heat floor or proposing a smaller book is refused on sight. First run seated 8 of 10 critics (3 UNDERMINES, 3 CANNOT_JUDGE) before the provider's real daily ceiling stopped it.",
+   "exists": [
+    "desks/mt5/research/scientist_tournament.py",
+    "ops/run_scientist_tournament.cmd",
+    "libs/ops/llm_seat.py"
+   ]
+  },
+  {
+   "id": "F8",
+   "rank": 8,
+   "title": "Unknown-Unknowns Engine",
+   "status": "LANDED",
+   "need": "feed the model everything the existing models CANNOT explain -- large forecast residuals, ensemble disagreement, unexplained drawdowns, cross-market decouplings, execution deterioration, state transitions, new latent clusters -- and generate hypotheses whose purpose is to explain those errors",
+   "why": "this is how the system searches OUTSIDE its current ontology",
+   "landed": "a queue of what the desk's models cannot explain, phrased as QUESTIONS for a seat rather than as hypotheses. First run 2026-09-12: 128 anomalies across 16 symbols -- and the verdict is UNMEASURED, not OK, because the event ledger parsed zero events, so every extreme move is unexplained by construction. Fixing the event ledger is the named next step.",
+   "gap": "",
+   "exists": [
+    "desks/mt5/research/unknown_unknowns.py",
+    "ops/run_frontier_audit.cmd"
+   ]
+  },
+  {
+   "id": "F9",
+   "rank": 9,
+   "title": "Research Frontier Map as authoritative scheduler input",
+   "status": "LANDED",
+   "need": "ONE global map of data x mechanism x market x horizon x state x representation x execution x payoff geometry, with occupancy/confidence/expected value per region, DIRECTLY controlling research allocation",
+   "gap": "",
+   "exists": [
+    "desks/mt5/research/alpha_frontier.py",
+    "desks/mt5/research/frontier_map.py",
+    "desks/mt5/research/proposer_common.py",
+    "ops/run_frontier_audit.cmd"
+   ],
+   "landed": "one map over all eight axes, each derived from the cell's OWN record rather than declared. First run 2026-09-12: 21,582 cells in 267 occupied regions, 80 holding enough cells to quote a rate, 2,660 regions ONE axis away. There is deliberately NO coverage percentage -- the cross product is hundreds of thousands of mostly meaningless regions and dividing by it would invent a denominator. The frontier is the reachable one-step neighbourhood instead. It found the desk's largest research leak: 10,927 of 21,582 cells (51%) sit on symbols the two-lane mandate forbids hypothesising on, holding ZERO certificates at a 0.046% upper bound, with 447 of them minted in September -- after the mandate. proposer_common.donate now refuses wrong-lane rows at the docket's door, with four tests pinning it."
+  },
+  {
+   "id": "F10",
+   "rank": 10,
+   "title": "Learned Negative-Knowledge Model",
+   "status": "LANDED",
+   "need": "a trained meta-model over historical experiments predicting P(survive), likely failure gate, expected forward retention and expected dElog -- rejecting expensive low-value experiments BEFORE the gauntlet while preserving exploration",
+   "gap": "",
+   "landed": "P(survive) trained on the desk's own record -- 21,582 docket cells, 61 certificates, TEMPORAL split by first_seen -- with an L2 logistic fit written in numpy because sklearn is not installed on the box that runs it. The exploration floor is absolute: 20% of admissions come from the cells the model scores WORST, and a family with fewer than 40 observations is never downranked. It ranks and never refuses. Performance is reported UNMEASURED because the held-out window holds 2 survivors against a floor of 10 -- the AUC of 0.825 is published as INDICATIVE ONLY. `likely failure gate` was UNMEASURED on the first run and is now wired: external_gauntlet appends each cell's terminal_gate to a ledger ON CHANGE ONLY (verified: same verdict twice appends once), because the verdicts always carried the gate and were being overwritten every sweep. `expected dElog` stays UNMEASURED: the live book holds 16 deals across 3 days.",
+   "exists": [
+    "desks/mt5/research/negative_knowledge.py",
+    "desks/mt5/scripts/external_gauntlet.py",
+    "ops/run_frontier_audit.cmd"
+   ]
+  },
+  {
+   "id": "F11",
+   "rank": 11,
+   "title": "Unified Expected-Value-of-Information controller",
+   "status": "LANDED",
+   "need": "one controller choosing between fundamentally different actions -- new hypothesis, deepen existing, acquire dataset, run another falsifier, investigate an anomaly, gather forward observations, evolve a family, test cross-market transfer, abandon a region -- optimising expected future dElog + information value - compute/data/delay/trial cost",
+   "gap": "",
+   "landed": "one controller over all nine action kinds the principal named, each sourced from the organ that measures it: frontier_map for new hypotheses and cross-market transfers, research_tree for deepening, pit_audit for dataset repair, the survivor registry for falsifiers, unknown_unknowns for anomalies, forward_calibration for forward observations, joint_evolution for family evolution, and frontier_map plus the tree's prunings for abandonment. First run 2026-09-12: 142 actions across 9 kinds. TRIALS ARE NOT COMPUTE and the columns are separate: a falsifier against an existing certificate costs a cell and ZERO trials because the claim was already charged for.",
+   "exists": [
+    "desks/mt5/research/meta_controller.py",
+    "desks/mt5/research/budget_market.py",
+    "libs/ops/scaling_laws.py",
+    "ops/run_frontier_audit.cmd"
+   ]
+  },
+  {
+   "id": "F12",
+   "rank": 12,
+   "title": "Connect all search populations to delayed truth",
+   "status": "LANDED",
+   "need": "a population's ultimate reward comes from FORWARD/LIVE incremental portfolio contribution, not screening success; credit flows backwards live outcome -> sleeve -> hypothesis -> representation -> search operator -> scientist -> dataset",
+   "gap": "",
+   "landed": "the credit chain was ENTIRELY ON DISK and nobody had walked it: forward clock -> sleeve -> certificate -> docket row -> scientist -> representation lane. Closed 2026-09-12, and 61 of 61 certificates now trace to the source that proposed them. Credit is REALISED R, never certificates minted -- a source that mints forty certificates earning nothing has produced forty ways to spend a fixed error budget. Top scientist: orthogonal_sweep:overnight_gap_decay at +55.10R over 86 trades from 12 certificates. By lane: external_claim +70.68R from 5 certificates (14.14 R per certificate, the best of any lane), symbolic_grammar +37.95R from 22 (1.73), mined_anomaly +9.84R from 1. AND THE NUMBER A ROLLUP HIDES: 33 of 61 certificates have NO credited forward evidence at all, 23 of them `discovered` -- the same lane F6 measured at 0.192% certification against 0.633% for every other branch, confirmed now from the earnings side. Live is the intended evidence and is too thin (16 deals against a floor of 30), so forward is used and labelled on every row. Nothing reweights a generator: doing that automatically off a thin forward record is how a desk starves the lane that was merely unlucky.",
+   "exists": [
+    "desks/mt5/research/credit_assignment.py",
+    "ops/run_frontier_audit.cmd"
+   ]
+  },
+  {
+   "id": "F13",
+   "rank": 13,
+   "title": "Orthogonality beyond correlation",
+   "status": "LANDED",
+   "need": "conditional correlation, nonlinear mutual information, tail dependence, co-drawdown probability, same-event loss, common liquidity dependence, execution-resource overlap, factor residualisation, capacity overlap -- final score is marginal portfolio Elog after residualising against the ENTIRE existing book",
+   "gap": "",
+   "landed": "n_eff of the LIVE book, by linear correlation and by tail coincidence separately, with the pairs whose tail dependence hides behind a low Pearson named. First run 2026-09-12: 16 live symbols, n_eff 3.52 linear and 4.14 tail-implied, one hidden-dependence pair (EURCHF/EURGBP, pearson +0.142, tail lift 2.224x).",
+   "exists": [
+    "desks/mt5/research/orthogonality.py",
+    "ops/run_frontier_audit.cmd"
+   ]
+  },
+  {
+   "id": "F14",
+   "rank": 14,
+   "title": "Autonomous information-acquisition brain",
+   "status": "LANDED",
+   "need": "decide which MISSING observation is worth obtaining, estimate a dataset's EVIG BEFORE acquisition, find legal/public/licensed sources, compare competing providers, infer publication lags, build parsers, retire datasets that never contribute information",
+   "gap": "",
+   "exists": [
+    "desks/mt5/research/acquire_datasets.py",
+    "desks/mt5/research/data_axis_miner.py",
+    "desks/mt5/research/axis_ingest_all.py",
+    "desks/mt5/research/information_value.py",
+    "ops/run_frontier_audit.cmd"
+   ],
+   "landed": "the deciding half. Every UNMEASURED verdict the desk publishes already names the dataset that would close it -- those sentences were purchase orders nobody had read. First run 2026-09-12: 210 UNMEASURED verdicts across 178 reports, de-duplicated to 51 DISTINCT blind spots, 6 naming an obtainable dataset. The ranked purchase order is macro_event_calendar, which F8 and F3 both need. EVIG is in BLIND SPOTS CLOSED and says so -- converting to dE[log W] would need the value of each verdict and would make a purchase decision look like a portfolio calculation. Two findings fell out: 19 of 19 acquired series have never been referenced by any candidate, and 51 UNMEASURED verdicts carry NO `why` at all, which is its own defect -- L1.28a's force is that absence must say WHAT is absent."
+  },
+  {
+   "id": "F15",
+   "rank": 15,
+   "title": "Market ecology / opponent modelling",
+   "status": "LANDED",
+   "need": "model other participants -- dealer hedging, CTA flows, retail crowding, benchmark flows, producer hedging, systematic rebalance, vol-control funds, market makers, diffusion of public strategies -- and estimate how an edge decays as competitors learn it and how OWN size changes the market response",
+   "gap": "",
+   "landed": "six participant classes measured by the FOOTPRINT each must leave in the tape, every one against a block-permuted null of its own series. First run 2026-09-12 across 12 symbols: vol-control detected on 11, round-number clustering on 8, month-end systematic rebalance on 3. Edge decay -- the diffusion clause -- is a cohort slope of -0.0034 R per clock in start order, t=-0.604 over 41 clocks, i.e. not significant and honestly reported as such. retail_crowding and producer_hedging are UNMEASURED: both need COT positioning and the axes directory is empty. own_size_impact is UNMEASURED and belongs to F21. A first version compared session handovers to ALL other hours and detected a market-maker footprint on 11 of 12 symbols -- it was measuring the daily rollover, where spreads blow out by an order of magnitude; a local contrast against the two preceding hours removed all 11.",
+   "exists": [
+    "desks/mt5/research/market_ecology.py",
+    "ops/run_frontier_audit.cmd"
+   ]
+  },
+  {
+   "id": "F16",
+   "rank": 16,
+   "title": "Causal discovery, not only causal stories",
+   "status": "LANDED",
+   "need": "causal-DAG discovery, conditional independence tests, natural experiments, event discontinuities, instrumental variables where defensible, automated distinguishing experiments -- the system CHOOSES between two causal explanations rather than describing both",
+   "gap": "",
+   "landed": "the PC algorithm's constraint phase over the live book's returns, with partial correlation and a Fisher z-test as the independence oracle. First run 2026-09-12: 10 nodes, 5,706 shared bars, 29 of 45 edges survive and 16 are removed by a conditional independence test with the separating set recorded. IT CHOOSES ONLY WHERE DATA CAN. A chain X->Z->Y and a confounder X<-Z->Y leave the same footprint and are reported as indistinguishable rather than resolved by preference; a COLLIDER reverses that footprint and is the one orientation observational data settles. 49 v-structures were found and only 8 edges are oriented CONSISTENTLY -- 21 were claimed in BOTH directions and neither direction is reported. That conflict count is the useful output: inside PC it is the signature of a violated assumption, and causal sufficiency is already known false on this panel because the dollar and risk cycles are common causes of nearly every pair and neither is a node. Every unorientable edge carries the experiment that would settle it -- a lead-lag asymmetry, a session-boundary discontinuity, or the third leg of the triangle as an instrument -- so it is a research task rather than a shrug.",
+   "exists": [
+    "desks/mt5/research/causal_discovery.py",
+    "ops/run_frontier_audit.cmd"
+   ]
+  },
+  {
+   "id": "F17",
+   "rank": 17,
+   "title": "Adversarial co-evolution",
+   "status": "LANDED",
+   "need": "an EVOLVING adversary population: every time the scientist improves, the destroyer invents new timestamp perturbations, synthetic leaks, state shifts, cost regimes, execution failures, covariance breaks and selection traps, so researchers evolve against a moving target",
+   "gap": "",
+   "exists": [
+    "desks/mt5/research/adversary.py",
+    "desks/mt5/research/adversary_evolution.py",
+    "ops/run_frontier_audit.cmd"
+   ],
+   "landed": "the five hand-written canaries are CORNERS of a continuous eight-gene failure space; a persistent population now searches between them, judged by the REAL ten gates via adversary.docket_cell and external_gauntlet.run_gauntlet. It inherits across runs, so when a gate tightens the attacks that used to score lose their fitness and the population moves -- the moving target the principal asked for. EVERY GENOME DECLARES THE VERDICT IT OUGHT TO RECEIVE, and that took two tries: the first version scored any pass as a breach and reported three, all with leak near 1.0, which docket_cell's own docstring had already named as the caller cheating before the harness ever saw it. In this harness a strong honest edge and a leak are the same array and only the STAMP separates them, so ground truth is derived from the genome's own pathologies and the stamp is the honest timestamp of the information it carries. Measured 2026-09-12: ZERO breaches across two generations, the fittest attack stopped at deflated_sharpe / pbo / reality_check_spa. AND THE CONTROL ARM GAVE THE DESK ITS FIRST FALSE-REJECTION MEASUREMENT: three clean genomes -- 0.22 to 0.28 signal/outcome correlation at 5.5-7.8x costs, correctly stamped, no pathology -- all refused, all at deflated_sharpe, dsr 0.0000 to 0.0001 against sr0 0.3786 at the FIXED 597-trial charge. That corroborates the desk's own record of 42 of 42 judged cells rejected at 597 trials, and turns the fixed trial charge from a suspicion into a measured bottleneck on certification."
+  },
+  {
+   "id": "F18",
+   "rank": 18,
+   "title": "Permanent QuantBench",
+   "status": "LANDED",
+   "need": "every historical defect becomes an immutable benchmark -- same-bar ambiguity, state-drop propagation, JPY cost conversion, stale artifacts, timestamps, scheduler claims, dead scripts returning success, release overwrite, duplicate research identity, null admission -- and no new researcher, evaluator, allocator or release stack graduates without passing every historical failure mode plus synthetic variants",
+   "gap": "",
+   "landed": "eleven cases, every one a defect that ACTUALLY HAPPENED on a named date, probed against the CURRENT tree rather than against the fix that was applied. The suite runs it (four tests), so no refactor clears the gate while a survived defect is back. Immutability is a RATCHET plus a content hash: data/quantbench_floor.json records the highest case count ever seen and the `bench_erosion` case FAILS when a run finds fewer, so deleting an inconvenient benchmark is a visible act -- which is the only immutability a text file can have. UNMEASURABLE is a verdict and NOT a pass, because a bench that scored absence as success would score highest on an empty box. Three sampling rules and one staleness bug were found by the bench failing on itself, including its own first failure: run on the mirror box it read a CAPACITY.json written before the repair and asserted the defect had returned, so a probe now reports UNMEASURABLE on any artifact older than the code that produces it -- it is measuring history, not the tree.",
+   "exists": [
+    "desks/mt5/research/quantbench.py",
+    "desks/mt5/tests/test_quantbench.py",
+    "ops/run_frontier_audit.cmd"
+   ]
+  },
+  {
+   "id": "F19",
+   "rank": 19,
+   "title": "Cryptographic Evidence Vault",
+   "status": "LANDED",
+   "need": "multiple sealed holdout tiers, irreversible reveal counters, ancestry-aware trial charges, signed code/data/config hashes, an independent certificate authority, LIMITED verdict feedback to researchers, and automatic certificate invalidation when any economically relevant dependency changes",
+   "gap": "",
+   "landed": "sealed holdout tiers (12 sealed 2026-09-12, the most recent 20% of each live symbol's history, content-hashed, sealed ONCE and never re-sealed -- a tier resealed each pass tracks the data forward and proves nothing), irreversible reveal counters, and a dependency fingerprint over the judge, the engine, the family definitions, the cost model and the contract terms. THE ANCESTRY-AWARE TRIAL CHARGE IS THE FINDING, and it needed no new instrumentation because every certificate already records the charge its verdict was granted under: the registry holds TWO regimes -- 15 certificates at n_trials 203 / sr0 0.0808 (all 2026-08-26) and 46 at 597 / sr0 0.3786. The charge nearly tripled and the bar rose 4.7x, so 15 of 61 certificates cleared a standard the desk no longer applies, and nothing said so. That is the same gate F17's clean controls are refused by today. It does NOT make those certificates wrong -- untested against the current standard is a weaker and different claim, and the remedy is a re-judge rather than a revocation. Invalidation is PROPOSED and never executed: certificate_hygiene is the only organ that moves a row, and a vault that revoked silently would be the second certificate authority F26's invariant forbids. Two clauses are NAMED AS NOT BUILT rather than quietly skipped: an independent certificate authority (two judges would mostly prove two programs agree, against this desk's one-canonical-validator rule) and limited verdict feedback (buildable, but it changes what every downstream organ can read).",
+   "exists": [
+    "desks/mt5/research/evidence_vault.py",
+    "ops/run_frontier_audit.cmd"
+   ]
+  },
+  {
+   "id": "F20",
+   "rank": 20,
+   "title": "Calibrated forward laboratory",
+   "status": "LANDED",
+   "need": "forward testing as SEQUENTIAL statistical inference: placebo/null candidates run beside real ones, observed false-admission measured continuously, always-valid/sequential tests or Bayesian updating, pre-registered stopping rules, selection pressure calibrated against forward CAPACITY",
+   "gap": "",
+   "landed": "the forward lane's false-admission rate is MEASURED, not assumed: null clocks drawn at this desk's own trade counts and per-trade dispersion, judged by the lane's own rule. First run 2026-09-12: noise would pass 3.34% CI95 [3.27%, 3.40%]; 0 clocks are yet eligible, which the report states as UNMEASURED rather than as a pass rate.",
+   "exists": [
+    "desks/mt5/research/forward_calibration.py",
+    "ops/run_frontier_audit.cmd"
+   ]
+  },
+  {
+   "id": "F21",
+   "rank": 21,
+   "title": "Empirical Capacity / Impact brain",
+   "status": "LANDED",
+   "need": "measure alpha(size), slippage(size), fill probability(size), rejection probability, broker depth/proxy liquidity, spread widening, market-impact decay and crowding; allocate strategy AND scale by marginal Elog of the NEXT unit of capital",
+   "gap": "",
+   "landed": "BOTH bounds, and an honest account of what this venue cannot answer. The depth probe says symbols_with_real_depth: [] -- every subscribed symbol returns levels 0 -- so fill probability by size, rejection probability and impact decay are UNMEASURABLE here rather than unmeasured, and are listed so nobody plans work against data that does not exist. What IS measurable: size reaches a CFD account through the cost it pays, so the frontier is the MULTIPLE of today's round trip at which each mechanism's edge reaches zero. First run 2026-09-12 over 18 curves: 2 have a crossing, 7 survive 8x, 9 have no edge at 1x at all. The cross-finding neither half shows alone: AUDNZD session_range_breakout dies at 2.34x and AUDNZD's spread widens 88x at hour 00 -- it is not fragile in theory, it is underwater in that hour every day and the daily average hides it. research/capacity.py, which answers the LOWER bound and had no runner since it was written, is on the clock in the same commit.",
+   "exists": [
+    "desks/mt5/research/capacity_frontier.py",
+    "desks/mt5/research/capacity.py",
+    "ops/run_frontier_audit.cmd"
+   ]
+  },
+  {
+   "id": "F22",
+   "rank": 22,
+   "title": "Execution Scientist",
+   "status": "LANDED",
+   "need": "research execution like alpha -- order timing, order type, entry delay, partial fills, spread state, adverse selection, rollover/swap, stop behaviour, session boundaries, broker microstructure -- with live fills continuously recalibrating the simulator and signal alpha attributed separately from execution alpha",
+   "exists": [
+    "desks/mt5/research/cost_surface.py",
+    "desks/mt5/research/carry_state.py",
+    "desks/mt5/research/cost_honesty.py",
+    "desks/mt5/research/execution_science.py",
+    "ops/run_frontier_audit.cmd"
+   ],
+   "note": "cost_surface and carry_state were MENTIONED-but-unscheduled until 2026-09-12 and are now on a daily clock",
+   "gap": "",
+   "landed": "execution researched like alpha, with the separation that matters: the identical signal list scored at costs_for(mult=0) is the FRICTIONLESS path -- pure signal alpha -- and at mult=1 is what the desk would have earned. First run 2026-09-12 over 92 (symbol, family, variant) cells: execution drag is 10.1% of signal alpha at the median. Banking half at target beats market-at-next-open by +0.0006 log-growth/day ON THE SAME TRADES; both resting-entry variants LOSE, so the better price costs more in missed fills than it buys. A session filter topped the raw board while keeping 32% of signals -- that is SELECTION, not execution, and like-for-like comparability is now measured per variant rather than assumed from its label. Live-fill recalibration is UNMEASURED (16 deals) with the hook named: every deal already records entry_price and fill_price."
+  },
+  {
+   "id": "F23",
+   "rank": 23,
+   "title": "Live counterfactual attribution at every timeframe",
+   "status": "LANDED",
+   "need": "M1/M5/M15/tick-level replay, and enough entry/stop/exit metadata on every live decision to make it replayable",
+   "gap": "",
+   "exists": [
+    "desks/mt5/research/action_counterfactuals.py",
+    "desks/mt5/research/subhour_counterfactuals.py",
+    "ops/run_frontier_audit.cmd"
+   ],
+   "landed": "the sub-H1 sleeves action_counterfactuals says in its own code that it skips. Three are LIVE; the M1/M5/M15 parquets and 7.09 GB of tick tape were already on the box, so the skip was never a data problem. It calls the CANONICAL counterfactual_path with a different bar frame -- no second implementation -- and runs it at both resolutions to measure what the H1 approximation was costing. First run 2026-09-12: the first native-resolution counterfactual this desk has ever produced for a sub-H1 sleeve (xau_m15_anti_breakout, replayed on M1; the stop was never hit at native resolution). The H1 comparison is UNMEASURED for that trade and says exactly why -- it is two hours old and the H1 frame cannot supply a full horizon after entry -- rather than discarding the native replay along with it."
+  },
+  {
+   "id": "F24",
+   "rank": 24,
+   "title": "Every risk/growth modifier proves itself counterfactually",
+   "status": "LANDED",
+   "need": "every shrink, cap, gate, regime haircut, correlation penalty, decay prior and execution buffer carries a counterfactual ledger -- Elog with it versus without -- and BOOST decisions likewise prove positive contribution; governance becomes empirically priced",
+   "exists": [
+    "libs/portfolio/rails.py",
+    "desks/mt5/research/missed_growth.py",
+    "libs/portfolio/capital_modifiers.py",
+    "desks/mt5/research/modifier_counterfactuals.py",
+    "ops/run_frontier_audit.cmd"
+   ],
+   "note": "GROWTH_GOVERNANCE Rule 1 already demands this of any NEW modifier; the existing ones are not all priced",
+   "gap": "",
+   "landed": "every applied capital multiplier priced in E[log W], and both existing organs put on a clock -- missed_growth walks 22 rails against the allocator's growth curve and capital_modifiers scores 693 ledger rows, and NEITHER had a runner or a contract. The counterfactual had to be got right twice: dividing the multiplier out is a TAUTOLOGY, because with positive mean returns a boost always beats a smaller position whatever states it chose -- the first run scored every category PROVES_GROWTH at t up to 42, including NORMAL, whose multiplier is nominally 1.0. The counterfactual arm now holds the SAME AVERAGE HEAT spread flat, so scale cancels and what remains is the modifier's timing. Measured 2026-09-12 on 139 matched sleeve-days: NO_MEASURED_CONTRIBUTION for every priced category, STRONG_BOOST at -0.0025 log-growth per sleeve-day with paired t = -1.31. The report reconciles itself with capital_modifiers.score, which measures the same rows as COSTING growth on mean R: different questions -- that is about the STATES selected, this is about the modifier at constant heat -- and reading either as the other is how a desk deletes a modifier for the wrong reason. 21 rails remain UNPRICED and are named, because a rail whose counterfactual is unmeasured is not a rail that is free."
+  },
+  {
+   "id": "F25",
+   "rank": 25,
+   "title": "Recursive Meta-R&D",
+   "status": "LANDED",
+   "need": "the system may modify researcher prompts, role structures, grammar primitives, search operators, experiment schedulers, representations and search algorithms -- but every meta-version competes against the incumbent on sealed historical traps + synthetic benchmarks + prospective campaigns, and only an objectively better research system becomes champion",
+   "hard_boundary": "NEVER give this subsystem direct authority over live money-path code",
+   "gap": "",
+   "landed": "a meta-version tournament with three real arenas, which is why it is last: it could not be built before the things it judges with existed. Sealed historical traps are `quantbench` (11 defects this desk survived, as executable probes); synthetic benchmarks are `adversary_evolution` (attacks with declared ground truth plus a reserved control arm); prospective campaigns are `credit_assignment` (realised forward R per scientist, 118.47R so far with 33 certificates still silent). THE ONE RULE THAT MAKES SELF-MODIFICATION SAFE: a system graded on its own score will lower its own bar, so the synthetic arena is the ADVERSARY and weakening a gate fails BY CONSTRUCTION -- breaches rise. False rejections are reported and never scored, because cutting them by making the gates permissive is the same lever with a friendlier name. Six movable knobs are enumerated (tree beam and inheritance, joint-evolution draws, composite beam, adversary mutation rate, the exploration floor) and four forbidden classes are enumerated beside them -- gate thresholds, heat, sizing, and the trial charge, the last because F19 measured what happens when it moves. Verified 2026-09-12: a research knob is accepted as a challenger and `deflated_sharpe.threshold` is REFUSED. The champion holds by default and a challenger must be strictly better on a measurable arena and worse on none; the prospective arm stays OPEN with the evidence it awaits named, because declaring a winner on two arenas of three is what this desk criticises its own forward lane for.",
+   "exists": [
+    "desks/mt5/research/meta_rnd.py",
+    "ops/run_frontier_audit.cmd"
+   ]
+  },
+  {
+   "id": "F26",
+   "rank": 26,
+   "title": "Formal verification where proof is possible",
+   "status": "LANDED",
+   "need": "property/model checking or SMT for structural invariants: no illegal alpha-state transition, no certificate bypass, no future observation access, no uncharged trial path, no unsigned deployment, no impossible sizing state, no multiple capital authorities",
+   "note": "statistical questions stay statistical; STRUCTURAL questions should be proved rather than tested",
+   "gap": "",
+   "landed": "all seven invariants, each with a verdict that carries its own epistemic weight. PROVEN means checked over the ENTIRE space: the alpha state machine's 49 ordered pairs are total, both simple paths from CANDIDATE to ACTIVE pass PROBATION, RETIRED is terminal and reachable from all six other states, and every promote_target is an allowed edge. The sizing state is proven over its 15 published quantities. ENFORCED means a complete enumeration of the DIRECT writers in this tree: exactly one capital authority (pf_allocator), and the donation door verified by EXECUTING it. OBLIGATION is the third verdict and names what would discharge it -- the trial-charge property is vacuous under a FIXED 597-cell campaign charge, which is a different situation from the one the invariant was written for and is not reported as a pass. no_certificate_bypass is VIOLATED and stays violated: universal_gate.py, full_pipeline.py and full_pipeline_v2.py each declare in their own first line that they mint certificates, and full_pipeline is on a VPS timer at 06:00 daily. That is the condition that produced 18 unrunnable certificates, and whitelisting it would be the verifier lying to keep itself green.",
+   "exists": [
+    "desks/mt5/research/formal_invariants.py",
+    "ops/run_frontier_audit.cmd"
+   ]
+  },
+  {
+   "id": "F27",
+   "rank": 27,
+   "title": "Single Meta-Controller over RL and search allocation",
+   "status": "LANDED",
+   "need": "combine the sequential learner with the population bandit, EVIG, frontier coverage, research costs and delayed live credit so ALL research compute competes in one budget market",
+   "gap": "",
+   "exists": [
+    "desks/mt5/research/alpha_rl.py",
+    "desks/mt5/research/budget_market.py",
+    "desks/mt5/research/meta_controller.py",
+    "libs/ops/scaling_laws.py",
+    "ops/run_frontier_audit.cmd"
+   ],
+   "landed": "all research compute competes in ONE market: the controller reads budget_market's shadow prices rather than inventing its own, ranks each action per unit of the resource it consumes, and names the binding resource -- capital, at +5.899e-02 dE[log W]/day per unit of heat on the first run. Where a price is UNMEASURED there is a SECOND board in nats per cell-equivalent and the report says which is which, because filling compute's missing price with a plausible number would price every research hour off a guess and every ranking would inherit it silently."
+  },
+  {
+   "id": "F28",
+   "rank": 28,
+   "title": "Three-resource optimisation loop closed",
+   "status": "LANDED",
+   "need": "jointly allocate COMPUTE by expected future dElog/compute, INFORMATION/TRIAL budget by expected information gain/statistical cost, and CAPITAL by expected marginal robust dElog/capital -- with every outcome updating all three",
+   "note": "the principal calls this the actual end-state",
+   "gap": "",
+   "landed": "budget_market already priced compute, trials and capital against each other in dE[log W] and had NO CALLER anywhere -- built, correct, running nowhere. Now on the daily lane with scaling_laws ahead of it (the only input that gives compute a price) and meta_controller after it. Measured 2026-09-12: capital +5.899e-02 per unit of heat, trials +0.0 (the desk charges a fixed 597, so a marginal trial costs no significance), compute UNMEASURED because scaling_laws needs seven days of compute ledger and the box holds two. That is a data limit that resolves itself, not a gap.",
+   "exists": [
+    "desks/mt5/research/meta_controller.py",
+    "desks/mt5/research/budget_market.py",
+    "libs/ops/scaling_laws.py",
+    "ops/run_frontier_audit.cmd"
+   ]
+  }
+ ],
+ "already_real_not_future": [
+  "portfolio-aware genetic/program search",
+  "nine search populations",
+  "successive halving",
+  "trial charging",
+  "MAP-Elites quality-diversity archive",
+  "search fitness over marginal portfolio dE[log W], novelty, tails, state breadth, capacity, costs, fragility, complexity, multiplicity",
+  "structural alpha genome",
+  "feature genealogy",
+  "autonomous PIT dataset acquisition",
+  "adversarial poison canaries",
+  "sequential RL over partial strategy specifications",
+  "role-separated research agents",
+  "counterfactual Elog attribution"
+ ]
+}

@@ -1,0 +1,18 @@
+[Unit]
+Description=Gauntlet fixer: restore canonical pipeline, verify gates never rise, run if stale
+
+[Service]
+# Shares one memory budget with the other heavy organs (see ops/quant-heavy.slice): the
+# per-unit caps stop a unit killing itself, the slice stops them collectively exhausting
+# the box and getting an innocent neighbour killed by the global OOM killer.
+Slice=quant-heavy.slice
+# 2026-09-01: measured 24h peak is 1.2G. Throttle sits above the real working set,
+# never below it -- a MemoryHigh under the peak is permanent reclaim, i.e. a slow kill.
+MemoryHigh=1600M
+MemoryMax=2100M
+Type=oneshot
+WorkingDirectory=/home/quant/quant-platform
+Environment=PATH=/home/quant/quant-platform/.venv/bin:/usr/bin
+ExecStart=/home/quant/quant-platform/.venv/bin/python /home/quant/quant-platform/desks/mt5/side_channels/fix_gauntlet.py watch
+StandardOutput=append:/home/quant/quant-platform/logs/fix_gauntlet.log
+StandardError=append:/home/quant/quant-platform/logs/fix_gauntlet.log

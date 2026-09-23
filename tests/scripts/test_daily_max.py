@@ -91,13 +91,27 @@ def test_dry_run_attempts_nothing(tmp_path, monkeypatch) -> None:
 
 
 def test_credit_blocked_defects_are_marked_human_not_retried(tmp_path, monkeypatch) -> None:
-    """Retrying a credit shortage daily is how an autonomous loop becomes a noise source."""
+    """Retrying a credit shortage daily is how an autonomous loop becomes a noise source.
+
+    THE DEFECT LIST IS SUPPLIED, NOT SWEPT FOR. This asserted a property of `main`'s
+    CLASSIFICATION -- credit-blocked goes to needs_human and is never retried -- but obtained its
+    input by letting `main` shell out to a live `max_audit.py` sweep of the actual repository. So
+    it passed only on a box where that sweep happened to find an `organ-never` defect, took up to
+    the sweep's 1800s timeout, and on 2026-09-14 hung long enough for pytest-timeout to kill the
+    whole SESSION -- which is why `coverage.json` was never written and the L1.50 ratchet could
+    not be read. A unit test for a classification rule must state its own inputs.
+    """
     monkeypatch.setattr(D, "LEDGER", tmp_path / "l.json")
     monkeypatch.setattr(D, "REPORT", tmp_path / "r.json")
+    monkeypatch.setattr(D, "_run_audit",
+                        lambda regenerate=True: [{"id": "organ-never-ran",
+                                                  "msg": "organ has never produced an artifact",
+                                                  "scope": "RUNTIME"}])
     monkeypatch.setattr(sys, "argv", ["daily_max.py", "--dry-run"])
     assert D.main() == 0
     rep = json.loads((tmp_path / "r.json").read_text("utf-8"))
-    assert any("organ-never" in h for h in rep["needs_human"])
+    assert any("organ-never" in h for h in rep["needs_human"]), (
+        "a credit-blocked defect must be routed to a human, never queued for retry")
 
 
 def test_an_artifact_with_no_producer_is_named_as_such() -> None:

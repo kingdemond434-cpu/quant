@@ -54,7 +54,7 @@ WHAT IS BUILT, in descending order of how much it should matter to this desk:
 
 AXIS CONVENTION, stated once and enforced everywhere below. Arrays are 1-D or 2-D. A 2-D array is
 ALWAYS (observations x names) -- time down the rows, instruments across the columns, matching
-`libs/research/crypto_xsec.py` and every panel in the repo. Cross-sectional operators
+every panel in the repo. Cross-sectional operators
 (`group_rank`) act ACROSS a row; time-series operators (`ts_backfill`, `ts_information_ratio`) act
 DOWN a column. `vector_neut` is the one operator that is used both ways, so it defines its
 contraction axis explicitly as the LAST axis of `a` -- see its docstring.
@@ -76,11 +76,12 @@ STATUS: DRAFTED, NOT BUILT. Per the desk's own standard, a module with tests and
 importer is drafted. Nothing in `scripts/` imports this yet. The two wirings that would make it
 built, in order of value: (a) `scripts/run_generation_diversity.py`, which already scores cohort
 novelty, should neutralise each new candidate's return series against the accepted cohort before
-scoring -- currently it MEASURES redundancy it could instead REMOVE; (b) the cross-sectional
-funding signal in `libs/research/crypto_xsec.py` currently ranks funding globally and would be a
-one-line `group_rank` change against a sector map, which is precisely the change the webinar
-measured as worth 24 points of drawdown. Neither is done here, and this file must not be described
-as built until one of them is.
+scoring -- currently it MEASURES redundancy it could instead REMOVE; (b) any cross-sectional
+ranker that ranks a quantity GLOBALLY across the whole MT5 universe -- FX crosses, metals, indices
+and energies in one pool -- when it should rank WITHIN each of those groups, which is a one-line
+`group_rank` change against an asset-class map and is precisely the change the webinar measured as
+worth 24 points of drawdown. Neither is done here, and this file must not be described as built
+until one of them is.
 
 NOT ADOPTED from the same source, recorded rather than dropped:
   * `trade_when` / event-conditioned position holding. It is a genuinely good operator, but its
@@ -492,9 +493,9 @@ def ts_backfill(x: np.ndarray, d: int) -> np.ndarray:
 
     WHY THE CAP `d` IS THE WHOLE FUNCTION. An uncapped forward fill is not a fill, it is a fiction:
     it carries a delisted name's last price forward forever, and a frozen constant is the
-    lowest-realised-volatility series in any universe, so every inverse-volatility weighting scheme
-    downstream -- including `crypto_xsec.xsec_funding_returns` -- will hand it the LARGEST weight.
-    A dead asset becoming the book's biggest position is the failure mode this cap exists to stop.
+    lowest-realised-volatility series in any universe, so EVERY inverse-volatility weighting
+    scheme downstream will hand it the LARGEST weight. A delisted share CFD or a retired index
+    contract becoming the book's biggest position is the failure mode this cap exists to stop.
     `d` is therefore an assertion about how long a stale value stays economically meaningful, and
     it should be short relative to the signal's own horizon.
 

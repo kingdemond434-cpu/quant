@@ -94,3 +94,82 @@ def test_a_bare_number_with_no_reason_is_still_flagged(tmp_path):
     derivation word nor a number is exactly what this fence exists to catch."""
     (tmp_path / "mod.py").write_text("#: Seems about right.\nSOME_LIMIT: float = 3.0\n", "utf-8")
     assert audit_module(tmp_path, "mod.py")["state"] == "UNJUSTIFIED-CONSTANTS"
+
+
+# =============================================================================================
+# ONE `#:` BLOCK DOCUMENTS ITS WHOLE GROUP -- and stops at the group's edge (gap-fixer 08-29).
+#
+# The walk used to halt at the first non-comment line, so a block covering several related
+# constants was credited to whichever one sat directly beneath it and its siblings were reported
+# `no derivation cited`. MEASURED: `scripts/resolve_paper_book.py` carries ONE preregistration
+# block deriving TRAIL_FWD_DECIDE_N=25, TRAIL_FWD_HARD_N=50 and TRAIL_FWD_T=1.7 together, and
+# this fence reported three of them plus TRAIL_FWD_CHALLENGER. Those four false breaches held
+# `run_law_gate --laws-only` RED -- and a gate red on correct code is exactly how a gate red on
+# a REAL breach stops being read (L1.43).
+#
+# THE NEGATIVE TESTS MATTER MORE THAN THE POSITIVE ONE. Widening a fence's reach is how a fence
+# quietly stops asking anything, so the group must END at a blank line or any non-assignment.
+# =============================================================================================
+
+
+def test_one_block_documents_the_whole_contiguous_group(tmp_path):
+    """The defect. Three constants, one derivation block, no blank lines between them."""
+    r = _mod(tmp_path,
+             "#: simulated over 250 days: 25 paired reads, 50 hard stop, |t|>=1.7 one-sided\n"
+             "DECIDE_N = 25\n"
+             "HARD_N = 50\n"
+             "T_BAR = 1.7\n")
+    assert r["state"] == "OK", r["undocumented"]
+    assert r["n_bad"] == 0
+
+
+def test_a_blank_line_ends_the_group_and_the_next_constant_is_on_its_own(tmp_path):
+    """THE GUARD. Without this the walk would reach back through a whole file and credit a
+    comment written about something else -- a fence that passes everything asks nothing."""
+    r = _mod(tmp_path,
+             "#: simulated over 250 days: 25 paired reads gives P(miss) = 4%\n"
+             "DECIDE_N = 25\n"
+             "\n"
+             "UNRELATED = 0.42\n")
+    assert r["state"] == "UNJUSTIFIED-CONSTANTS"
+    names = [u["name"] for u in r["undocumented"]]
+    assert names == ["UNRELATED"], names
+
+
+def test_any_non_assignment_ends_the_group(tmp_path):
+    """A function, an import, an `if` -- anything that is not a sibling constant closes it."""
+    r = _mod(tmp_path,
+             "#: measured over 250 days: 25 paired reads gives P(miss) = 4%\n"
+             "DECIDE_N = 25\n"
+             "def helper():\n"
+             "    return 1\n"
+             "AFTER_CODE = 0.42\n")
+    names = [u["name"] for u in r["undocumented"]]
+    assert names == ["AFTER_CODE"], names
+
+
+def test_a_comment_never_credits_the_constant_ABOVE_it(tmp_path):
+    """Direction matters: `#:` documents what FOLLOWS. Reaching upward would credit a constant
+    with a justification written about a different one."""
+    r = _mod(tmp_path,
+             "BEFORE_BLOCK = 0.42\n"
+             "#: measured over 250 days: 25 paired reads gives P(miss) = 4%\n"
+             "DECIDE_N = 25\n")
+    names = [u["name"] for u in r["undocumented"]]
+    assert names == ["BEFORE_BLOCK"], names
+
+
+def test_the_widened_vocabulary_still_rejects_a_number_picked_by_feel(tmp_path):
+    """The fifth false-positive class was widened for; the fence must still bite on taste."""
+    r = _mod(tmp_path, "#: 1.7 felt about right and nobody objected\nT_BAR = 1.7\n")
+    assert r["state"] == "UNJUSTIFIED-CONSTANTS", r
+
+
+def test_alpha_is_deliberately_absent_from_the_vocabulary() -> None:
+    """This desk says `alpha` on nearly every line; admitting it would pass everything."""
+    from scripts.check_sizing_derivation import _DERIVATION_WORDS
+
+    assert "alpha" not in _DERIVATION_WORDS, (
+        "'alpha' means edge in almost every comment this desk writes -- as a derivation keyword "
+        "it would make the fence unconditionally green, which is a gate carrying zero information"
+    )

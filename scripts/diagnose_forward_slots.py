@@ -54,9 +54,12 @@ _SPAWNERS: tuple[tuple[str, str, str], ...] = (
      "libs.research.clock_registry.register_owed(..., source='conversion_engine')"),
     ("full_sweep", "scripts/run_paper_sleeve_spawner.py",
      "data/paper_sleeve_forward.json, written by run_paper_sleeve_forward.py"),
-    ("perpdex_funding", "scripts/screen_perpdex_funding.py",
-     "libs.research.axis_screen.stage_a_screen(clock=...)"),
-    ("cat|", "scripts/run_axis_shadows.py", "data/axis_shadow_state.json"),
+    # `perpdex_funding` (screen_perpdex_funding.py) and `cat|` (run_axis_shadows.py) were removed
+    # 2026-09-05: both spawners were deleted with the retired universe. Their fragments are gone
+    # rather than kept pointing at absent files, because `_owner` returns the FIRST fragment match
+    # -- a rule naming a deleted script would attribute a slot to an owner that cannot exist, and
+    # a wrongly-attributed slot is worse than an ORPHAN one, which at least says "nobody owns
+    # this". Any surviving slot whose name carries those fragments now correctly reports ORPHAN.
 )
 
 

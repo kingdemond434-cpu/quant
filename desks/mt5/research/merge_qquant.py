@@ -12,6 +12,8 @@ import time
 from datetime import datetime, timezone
 from pathlib import Path
 
+from gate_policy import DONE_MARKER
+
 BASE = Path(__file__).resolve().parent.parent
 REPORTS = BASE / "reports"
 
@@ -28,7 +30,7 @@ def wait_for(marker: str, name: str) -> None:
 
 def main() -> int:
     wait_for("DONE_fragility", "fragility")
-    wait_for("DONE_qquant_gates", "qquant_gates")
+    wait_for(DONE_MARKER, "qquant_gates")
     sv = json.loads((REPORTS / "REAL_SURVIVORS.json").read_text("utf-8"))
     qq = json.loads((REPORTS / "QQUANT_GATES.json").read_text("utf-8"))
     rows = sv["real_survivors"]
@@ -52,6 +54,7 @@ def main() -> int:
         r["qquant_gates"] = {
             "passed": bool(v.get("passed")),
             "stages": v.get("stages", {}),
+            "policy": qq.get("gate_policy"),
         }
         r["REAL3"] = bool(v.get("passed"))
         if r["REAL3"]:

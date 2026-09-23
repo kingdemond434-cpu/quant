@@ -1,0 +1,907 @@
+{
+  "session": "brain_hunter_s31",
+  "date": "2026-08-29",
+  "what": "the 99 never-named repos of the s30 census, ranked by the ALTERNATIVE-IMPLEMENTATION TEST",
+  "test": "a repo that COMPUTES carries operator semantics a reader can extract; a repo that only calls the BRAIN HTTP API carries none, however many stars it has. Ranked on the description only -- this is a TRIAGE ORDER, not a verdict on any repo.",
+  "caveat": "s30's census is a FLOOR: GitHub code search is 401 keyless, so repos whose README never says 'worldquant' are invisible to it. Ranking a floor does not make it a ceiling.",
+  "counts": {
+    "COMPUTES (semantics carrier)": 17,
+    "MIXED": 9,
+    "UNKNOWN (no description)": 56,
+    "CLIENT ONLY (no semantics)": 17
+  },
+  "unnamed_population": 99,
+  "ranked": [
+    {
+      "repo": "JKabaru/worldquant-research-agent",
+      "verdict": "COMPUTES (semantics carrier)",
+      "stars": 0,
+      "lang": "TypeScript",
+      "licence": null,
+      "size_kb": 225508,
+      "desc": "A stage 1 Alpha engine using models of your choice."
+    },
+    {
+      "repo": "kunboyao-Bo/WorldQuant-101-factors-backtest-Chinese-A-share",
+      "verdict": "COMPUTES (semantics carrier)",
+      "stars": 2,
+      "lang": "Python",
+      "licence": "MIT",
+      "size_kb": 64412,
+      "desc": "Implementation and backtesting of WorldQuant 101 Alpha factors on whole Chinese A share stocks, including factor calculation, validation and performance analysi"
+    },
+    {
+      "repo": "parthjn2709/worldquant-iqc-2026-alphas",
+      "verdict": "COMPUTES (semantics carrier)",
+      "stars": 5,
+      "lang": "Python",
+      "licence": null,
+      "size_kb": 8768,
+      "desc": "Alpha research repository for WorldQuant IQC 2026. Each alpha includes its hypothesis, expression, simulation settings, and performance metrics (Sharpe, Fitness"
+    },
+    {
+      "repo": "GaomingOrion/qweave",
+      "verdict": "COMPUTES (semantics carrier)",
+      "stars": 4,
+      "lang": "Rust",
+      "licence": "MIT",
+      "size_kb": 3691,
+      "desc": "Rust factor-computation engine with Python (Polars) bindings, including the WorldQuant 101 alphas."
+    },
+    {
+      "repo": "BRV-2728/WorldQuantBrain-auto-tool",
+      "verdict": "COMPUTES (semantics carrier)",
+      "stars": 1,
+      "lang": null,
+      "licence": null,
+      "size_kb": 834,
+      "desc": "A Python script for batch automatic backtesting and automatic submission of alphas"
+    },
+    {
+      "repo": "kuloutoussssss/worldquant-autocommit-alpha-master",
+      "verdict": "COMPUTES (semantics carrier)",
+      "stars": 3,
+      "lang": "Python",
+      "licence": null,
+      "size_kb": 521,
+      "desc": "worldquant-autocommit-alpha-master"
+    },
+    {
+      "repo": "Ewan-Sutherland/WorldQuant---International-quant-competition-2026",
+      "verdict": "COMPUTES (semantics carrier)",
+      "stars": 0,
+      "lang": "Python",
+      "licence": null,
+      "size_kb": 393,
+      "desc": "Automated alpha-research engine for the WorldQuant BRAIN platform - generates, simulates, filters and stages uncorrelated quant signals."
+    },
+    {
+      "repo": "cjwcoding/worldquant-auto-backtest-scripts",
+      "verdict": "COMPUTES (semantics carrier)",
+      "stars": 3,
+      "lang": "Jupyter Notebook",
+      "licence": null,
+      "size_kb": 209,
+      "desc": "\u7528\u4e8eWorldQuant\u76f8\u5173\u7814\u7a76\u7684\u7efc\u5408\u81ea\u52a8\u5316\u56de\u6d4b\u811a\u672c\u4ed3\u5e93\uff0c\u5305\u542b\u6279\u91cf\u56de\u6d4b\u3001\u7ed3\u679c\u6574\u7406\u3001\u53c2\u6570\u7ba1\u7406\u3001\u5b9e\u9a8c\u8bb0\u5f55\u4e0e\u8f85\u52a9\u5206\u6790\u7b49\u5185\u5bb9\u3002A repository of integrated automated backtesting scripts for WorldQuant-related research, mainly incl"
+    },
+    {
+      "repo": "openclaw-pza/alpha-gauntlet",
+      "verdict": "COMPUTES (semantics carrier)",
+      "stars": 0,
+      "lang": "Python",
+      "licence": "MIT",
+      "size_kb": 134,
+      "desc": "A factor-research framework: cross-sectional Rank-IC/ICIR/t-stat evaluation, a PIT-correct backtester, a WorldQuant-101 + custom factor library, and an anti-ove"
+    },
+    {
+      "repo": "pengpengyi92/pengyi-quant-super-line",
+      "verdict": "COMPUTES (semantics carrier)",
+      "stars": 0,
+      "lang": "Python",
+      "licence": "NOASSERTION",
+      "size_kb": 71,
+      "desc": "Public-safe quant engineering production line for WorldQuant-style alpha operator reproduction and factor evaluation."
+    },
+    {
+      "repo": "gkfla2020-bit/wq-alpha-evolution",
+      "verdict": "COMPUTES (semantics carrier)",
+      "stars": 1,
+      "lang": "Python",
+      "licence": "MIT",
+      "size_kb": 65,
+      "desc": "WorldQuant BRAIN Alpha Auto-Discovery \u2014 7-Round Genetic Algorithm Evolution Engine with Island Model, SHADE, MAP-Elites, Surrogate Model"
+    },
+    {
+      "repo": "song1357/wq-alpha-miner",
+      "verdict": "COMPUTES (semantics carrier)",
+      "stars": 2,
+      "lang": "Python",
+      "licence": null,
+      "size_kb": 53,
+      "desc": "Automated alpha discovery engine for WorldQuant BRAIN platform with signal light navigation system"
+    },
+    {
+      "repo": "TheSinghX/alpha-generator",
+      "verdict": "COMPUTES (semantics carrier)",
+      "stars": 0,
+      "lang": "Python",
+      "licence": null,
+      "size_kb": 40,
+      "desc": "Python-based tool for generating and organizing quantitative alpha expressions for WorldQuant Brain."
+    },
+    {
+      "repo": "IcarusBai/Alpha_Translator",
+      "verdict": "COMPUTES (semantics carrier)",
+      "stars": 0,
+      "lang": "HTML",
+      "licence": null,
+      "size_kb": 20,
+      "desc": "AI-powered Alpha factor translator for WorldQuant Brain \u2014 turn market intuitions into expressions. Actively maintained."
+    },
+    {
+      "repo": "adanx-ong/worldquant-factor-builder",
+      "verdict": "COMPUTES (semantics carrier)",
+      "stars": 2,
+      "lang": null,
+      "licence": null,
+      "size_kb": 17,
+      "desc": "High-Sharpe alpha factor templates and operator reference for WorldQuant BRAIN platform. Includes verified expressions (Sharpe 1.7-2.0), self-correlation soluti"
+    },
+    {
+      "repo": "projectkrwj/WorldQuant_Auto",
+      "verdict": "COMPUTES (semantics carrier)",
+      "stars": 0,
+      "lang": "Python",
+      "licence": null,
+      "size_kb": 16,
+      "desc": "Auto, Bayesian, Genetic Algorithm of WorldQuant Brain engine"
+    },
+    {
+      "repo": "myselflove/Worldquant-Brain-Api-Web-",
+      "verdict": "COMPUTES (semantics carrier)",
+      "stars": 0,
+      "lang": null,
+      "licence": null,
+      "size_kb": 1,
+      "desc": "AI-powered research copilot for WorldQuant BRAIN. Organizes official documentation, operators, datasets, research papers, and simulation knowledge into a search"
+    },
+    {
+      "repo": "justinhuang0208/brain_viewer",
+      "verdict": "MIXED",
+      "stars": 16,
+      "lang": "Python",
+      "licence": null,
+      "size_kb": 2364,
+      "desc": "Desktop GUI and CLI toolkit for WorldQuant Brain API workflows, including datasets, operators, alpha generation, simulations, backtests, evolution, and Telegram"
+    },
+    {
+      "repo": "hsrxr/alphaminingv2",
+      "verdict": "MIXED",
+      "stars": 2,
+      "lang": "Python",
+      "licence": null,
+      "size_kb": 1332,
+      "desc": "Autonomous alpha factor mining system for WorldQuant Brain. An LLM-driven agent that researches         datasets, constructs FASTEXPR factors, submits backtests"
+    },
+    {
+      "repo": "Carmi-mi/quant_factor_agents",
+      "verdict": "MIXED",
+      "stars": 0,
+      "lang": "Python",
+      "licence": "MIT",
+      "size_kb": 1205,
+      "desc": "A multi-agent LLM system for automated quantitative factor discovery. Agents collaborate through idea generation,   template-based expression building, parallel"
+    },
+    {
+      "repo": "NewAmorend/AlphaGen-Agent",
+      "verdict": "MIXED",
+      "stars": 6,
+      "lang": "Python",
+      "licence": "MIT",
+      "size_kb": 689,
+      "desc": "AlphaGen Agent \u2014 WorldQuant alpha generation and backtesting harness"
+    },
+    {
+      "repo": "fnick9935-dot/brain-alpha-workspace",
+      "verdict": "MIXED",
+      "stars": 1,
+      "lang": "Python",
+      "licence": null,
+      "size_kb": 399,
+      "desc": "Local workflow toolkit for WorldQuant BRAIN alpha idea generation, queue backtesting, similarity review, and dashboard visualization."
+    },
+    {
+      "repo": "duy0699cat/worldquant-brain-mcp",
+      "verdict": "MIXED",
+      "stars": 1,
+      "lang": "Python",
+      "licence": "MIT",
+      "size_kb": 109,
+      "desc": "Python MCP server for automating WorldQuant BRAIN alpha-research workflows: async API client, batch-simulation lab, and an AST-based expression parser with nove"
+    },
+    {
+      "repo": "Tazeon/alpha-generated",
+      "verdict": "MIXED",
+      "stars": 2,
+      "lang": "Jupyter Notebook",
+      "licence": null,
+      "size_kb": 46,
+      "desc": "WorldQuant generated alpha expression and auto submitted with LLM"
+    },
+    {
+      "repo": "zl3311/brain-submission-queue-server",
+      "verdict": "MIXED",
+      "stars": 0,
+      "lang": "Python",
+      "licence": "MIT",
+      "size_kb": 40,
+      "desc": "Async job queue for WorldQuant BRAIN alpha simulations (archived reference implementation)"
+    },
+    {
+      "repo": "wygwl/worldquant-brain-gui",
+      "verdict": "MIXED",
+      "stars": 0,
+      "lang": "Python",
+      "licence": null,
+      "size_kb": 24,
+      "desc": "Streamlit GUI for WorldQuant BRAIN alpha backtesting platform"
+    },
+    {
+      "repo": "zxx264547/worldquant-brain-research",
+      "verdict": "UNKNOWN (no description)",
+      "stars": 4,
+      "lang": "Python",
+      "licence": null,
+      "size_kb": 21832,
+      "desc": ""
+    },
+    {
+      "repo": "Arcosium/GenomicWQB",
+      "verdict": "UNKNOWN (no description)",
+      "stars": 0,
+      "lang": "Python",
+      "licence": null,
+      "size_kb": 13473,
+      "desc": "Genetic-algorithm alpha discovery for WorldQuant: selection, crossover, directed mutation, novelty pressure, and automated validation"
+    },
+    {
+      "repo": "Poepon/worldquant-alpha-aiac",
+      "verdict": "UNKNOWN (no description)",
+      "stars": 0,
+      "lang": "Python",
+      "licence": null,
+      "size_kb": 10890,
+      "desc": ""
+    },
+    {
+      "repo": "bubi-wei/worldquant-alpha-aiac",
+      "verdict": "UNKNOWN (no description)",
+      "stars": 0,
+      "lang": null,
+      "licence": null,
+      "size_kb": 10886,
+      "desc": ""
+    },
+    {
+      "repo": "lavender1203/worldquant-alpha-aiac",
+      "verdict": "UNKNOWN (no description)",
+      "stars": 125,
+      "lang": "Python",
+      "licence": null,
+      "size_kb": 9874,
+      "desc": "worldquant brain alpha\u56e0\u5b50\u6316\u6398\uff0c\u5168\u7a0b\u4f7f\u7528AI\u6316\u6398\u7684\u65b9\u5f0f"
+    },
+    {
+      "repo": "smjjjjjj/101-alphas-in-cryptocurrency-market",
+      "verdict": "UNKNOWN (no description)",
+      "stars": 1,
+      "lang": "Jupyter Notebook",
+      "licence": null,
+      "size_kb": 8708,
+      "desc": "Implemented and adapted selected alphas from the WorldQuant 101 Alphas framework to the cryptocurrency market. Built a 2020\u20132025 dataset with train/test split, "
+    },
+    {
+      "repo": "ashish-007-700/WorldQuant-Alphas",
+      "verdict": "UNKNOWN (no description)",
+      "stars": 0,
+      "lang": "Python",
+      "licence": null,
+      "size_kb": 5470,
+      "desc": ""
+    },
+    {
+      "repo": "TerenceWongsExtravaganza/WorldQuant-BRAIN-Alpha-gen",
+      "verdict": "UNKNOWN (no description)",
+      "stars": 0,
+      "lang": "Jupyter Notebook",
+      "licence": null,
+      "size_kb": 4600,
+      "desc": ""
+    },
+    {
+      "repo": "dafu-zhu/alpha-lab",
+      "verdict": "UNKNOWN (no description)",
+      "stars": 0,
+      "lang": "Python",
+      "licence": null,
+      "size_kb": 3182,
+      "desc": "Local-first alpha research platform inspired by WorldQuant BRAIN"
+    },
+    {
+      "repo": "anweat/worldquantAlpha-dev",
+      "verdict": "UNKNOWN (no description)",
+      "stars": 8,
+      "lang": "Python",
+      "licence": null,
+      "size_kb": 2869,
+      "desc": ""
+    },
+    {
+      "repo": "Taiwan-LZX/worldquant-alpha-aiac-pro",
+      "verdict": "UNKNOWN (no description)",
+      "stars": 4,
+      "lang": "Python",
+      "licence": null,
+      "size_kb": 2286,
+      "desc": "\u57fa\u4e8e https://github.com/lavender1203/worldquant-alpha-aiac.git \u8fdb\u884c\u6539\u8fdb"
+    },
+    {
+      "repo": "junyuan881/WQB_alpha_research",
+      "verdict": "UNKNOWN (no description)",
+      "stars": 0,
+      "lang": "Python",
+      "licence": null,
+      "size_kb": 1143,
+      "desc": "Paper-to-alpha research pipeline for WorldQuant BRAIN with validation, simulation, and genetic search."
+    },
+    {
+      "repo": "talingaur/quant-research-model-WorldQuant",
+      "verdict": "UNKNOWN (no description)",
+      "stars": 0,
+      "lang": "TypeScript",
+      "licence": "MIT",
+      "size_kb": 872,
+      "desc": "Exported from Caffeine project: IQC 2026 Alpha Launchpad"
+    },
+    {
+      "repo": "Milkyway688/wq_auto_backtests",
+      "verdict": "UNKNOWN (no description)",
+      "stars": 0,
+      "lang": null,
+      "licence": "Apache-2.0",
+      "size_kb": 872,
+      "desc": "\u81ea\u52a8\u5316\u963f\u5c14\u6cd5\u6a21\u7248\u4eff\u771f\u56de\u6d4b\u5de5\u5177\u3002An Automated Alpha Templates Testing Pipeline for WorldQuant BRAIN."
+    },
+    {
+      "repo": "A-peiron/wq-alpha-mining-pipeline",
+      "verdict": "UNKNOWN (no description)",
+      "stars": 0,
+      "lang": "TypeScript",
+      "licence": "NOASSERTION",
+      "size_kb": 634,
+      "desc": "\u9762\u5411 WorldQuant BRAIN \u7684\u5206\u9636\u6bb5\u56e0\u5b50\u6316\u6398\u6d41\u6c34\u7ebf\uff0c\u914d Web \u63a7\u5236\u53f0"
+    },
+    {
+      "repo": "ThinhPhan0108/wq-brain-alpha-analytics",
+      "verdict": "UNKNOWN (no description)",
+      "stars": 1,
+      "lang": "Python",
+      "licence": "MIT",
+      "size_kb": 559,
+      "desc": "A local web analytics dashboard for WorldQuant Brain active alphas, dataset allocation, and monthly CAP/VF tracking."
+    },
+    {
+      "repo": "0xceb1/brain-learn",
+      "verdict": "UNKNOWN (no description)",
+      "stars": 6,
+      "lang": "Python",
+      "licence": "MIT",
+      "size_kb": 310,
+      "desc": "GP learn framework for automatic alpha mining on WorldQuant BRAIN platform"
+    },
+    {
+      "repo": "RiteshGmoger/AlphaForge",
+      "verdict": "UNKNOWN (no description)",
+      "stars": 0,
+      "lang": "Python",
+      "licence": null,
+      "size_kb": 305,
+      "desc": "DeepSeek-powered AI framework for autonomous WorldQuant alpha research and generation"
+    },
+    {
+      "repo": "dasssp/worldquant-alpha-fusion-platform",
+      "verdict": "UNKNOWN (no description)",
+      "stars": 0,
+      "lang": null,
+      "licence": null,
+      "size_kb": 239,
+      "desc": "\u6316\u6398\u56e0\u5b50\u5de5\u5177"
+    },
+    {
+      "repo": "Khdeng/WorldQuant-Alpha-Autosubmission",
+      "verdict": "UNKNOWN (no description)",
+      "stars": 4,
+      "lang": "Python",
+      "licence": null,
+      "size_kb": 232,
+      "desc": ""
+    },
+    {
+      "repo": "571579269/wq-brain-skill",
+      "verdict": "UNKNOWN (no description)",
+      "stars": 0,
+      "lang": "Python",
+      "licence": null,
+      "size_kb": 211,
+      "desc": "WorldQuant BRAIN \u91cf\u5316\u56e0\u5b50\u7814\u7a76\u52a9\u624b - QClaw AI Skill"
+    },
+    {
+      "repo": "angzeli/brain-bo-alpha-lab",
+      "verdict": "UNKNOWN (no description)",
+      "stars": 0,
+      "lang": "Python",
+      "licence": "MIT",
+      "size_kb": 196,
+      "desc": "A BoTorch-powered human-in-the-loop workflow for structured WorldQuant BRAIN alpha experimentation."
+    },
+    {
+      "repo": "nutdnuy/brain-sim-lib",
+      "verdict": "UNKNOWN (no description)",
+      "stars": 0,
+      "lang": "Python",
+      "licence": "MIT",
+      "size_kb": 172,
+      "desc": "Professional Python library and CLI for WorldQuant BRAIN alpha simulation"
+    },
+    {
+      "repo": "onefreecomet/dsh-qianxun-alpha",
+      "verdict": "UNKNOWN (no description)",
+      "stars": 1,
+      "lang": "Python",
+      "licence": "MIT",
+      "size_kb": 138,
+      "desc": "\u5343\u5bfb\u56de\u6d4b - WorldQuant BRAIN alpha \u56de\u6d4b\u5f15\u64ce\u7684\u672c\u5730\u4ee3\u7406 + DSH \u4fa7\u8fb9\u680f\u96c6\u6210\u3002ACTUAL PnL/CHECK \u81ea\u76f8\u5173\u6027\uff0c\u96f6\u7b49\u5f85"
+    },
+    {
+      "repo": "hitendras510/OpenAlpha-Brain",
+      "verdict": "UNKNOWN (no description)",
+      "stars": 3,
+      "lang": "Python",
+      "licence": null,
+      "size_kb": 113,
+      "desc": "An autonomous, closed-loop alpha mining platform for the **WorldQuant BRAIN IQC 2026** competition."
+    },
+    {
+      "repo": "namlp0212/worldquant-brain-tool",
+      "verdict": "UNKNOWN (no description)",
+      "stars": 1,
+      "lang": "Java",
+      "licence": null,
+      "size_kb": 107,
+      "desc": ""
+    },
+    {
+      "repo": "coke5151/wqb-python-workshop",
+      "verdict": "UNKNOWN (no description)",
+      "stars": 3,
+      "lang": "Python",
+      "licence": null,
+      "size_kb": 88,
+      "desc": "WorldQuant Brain \u5de5\u4f5c\u574a\uff1aPython \u56de\u6e2c\u5de5\u5177"
+    },
+    {
+      "repo": "satyamsanu-max/WORLDQUANT-AUTOMATION",
+      "verdict": "UNKNOWN (no description)",
+      "stars": 0,
+      "lang": "Jupyter Notebook",
+      "licence": null,
+      "size_kb": 87,
+      "desc": "this repo is for those whose want world quant automation for crearting alpha idea and it is too robust"
+    },
+    {
+      "repo": "BB-16/worldquant_101_alphas_code",
+      "verdict": "UNKNOWN (no description)",
+      "stars": 1,
+      "lang": "Python",
+      "licence": "MIT",
+      "size_kb": 73,
+      "desc": ""
+    },
+    {
+      "repo": "dhb520cat/wq-brain-automation",
+      "verdict": "UNKNOWN (no description)",
+      "stars": 1,
+      "lang": "Python",
+      "licence": null,
+      "size_kb": 71,
+      "desc": "WorldQuant BRAIN \u81ea\u52a8\u5316\u5de5\u7a0b\u9aa8\u67b6: multi-sim \u5f15\u64ce + \u5e93\u5b58\u540c\u6b65 + \u961f\u5217\u8c03\u5ea6(\u4e0d\u542b\u7b56\u7565\u903b\u8f91)"
+    },
+    {
+      "repo": "myacgl/ProdMemo",
+      "verdict": "UNKNOWN (no description)",
+      "stars": 6,
+      "lang": "JavaScript",
+      "licence": "MIT",
+      "size_kb": 66,
+      "desc": "Chrome extension for caching and displaying Production Correlation data in WorldQuant Brain"
+    },
+    {
+      "repo": "Fin-Agentian/openalpha",
+      "verdict": "UNKNOWN (no description)",
+      "stars": 0,
+      "lang": "Python",
+      "licence": "MIT",
+      "size_kb": 59,
+      "desc": "Automated alpha-mining pipeline for WorldQuant Brain / IQC with an AI news & social intelligence module"
+    },
+    {
+      "repo": "Loki-Zhu/worldquant-alpha-workload",
+      "verdict": "UNKNOWN (no description)",
+      "stars": 1,
+      "lang": "Python",
+      "licence": null,
+      "size_kb": 47,
+      "desc": ""
+    },
+    {
+      "repo": "huang-zirun/DearAlpha",
+      "verdict": "UNKNOWN (no description)",
+      "stars": 3,
+      "lang": "Python",
+      "licence": null,
+      "size_kb": 46,
+      "desc": "\u6316\u6398WorldQuant Barin\u7684alpha"
+    },
+    {
+      "repo": "xiao634zhang/wq-factor-miner",
+      "verdict": "UNKNOWN (no description)",
+      "stars": 2,
+      "lang": "Python",
+      "licence": "MIT",
+      "size_kb": 46,
+      "desc": "WorldQuant Brain Factor Mining System"
+    },
+    {
+      "repo": "KCDC-0/Quant-Finance",
+      "verdict": "UNKNOWN (no description)",
+      "stars": 0,
+      "lang": null,
+      "licence": null,
+      "size_kb": 46,
+      "desc": "Notes and tracking for quant finance and alpha simulation on worldQuant"
+    },
+    {
+      "repo": "ljb189/wq-alpha-skill",
+      "verdict": "UNKNOWN (no description)",
+      "stars": 3,
+      "lang": null,
+      "licence": "MIT",
+      "size_kb": 45,
+      "desc": "WorldQuant BRAIN Alpha \u6316\u6398 Skill v2.0 (\u878d\u5408\u4f18\u5316\u7248) - \u542b\u7a33\u5065\u6027\u68c0\u9a8c/WARNING\u5206\u7ea7/\u7ed3\u6784\u5316\u7ecf\u9a8c\u6c89\u6dc0"
+    },
+    {
+      "repo": "sanqiushu/worldquant-alpha-research-playbook",
+      "verdict": "UNKNOWN (no description)",
+      "stars": 0,
+      "lang": "JavaScript",
+      "licence": null,
+      "size_kb": 37,
+      "desc": "Unofficial hypothesis-first playbook and reusable tools for auditable WorldQuant BRAIN Alpha research"
+    },
+    {
+      "repo": "vahangevorgyan1/WorldQuant-Alpha-Research-28_02_26",
+      "verdict": "UNKNOWN (no description)",
+      "stars": 1,
+      "lang": "Python",
+      "licence": null,
+      "size_kb": 36,
+      "desc": "Quantitative research and automated simulation of alpha signals for the WorldQuant BRAIN platform."
+    },
+    {
+      "repo": "YungTingKai/Worldquant-BRAIN-alpha-generator-",
+      "verdict": "UNKNOWN (no description)",
+      "stars": 0,
+      "lang": "Jupyter Notebook",
+      "licence": null,
+      "size_kb": 26,
+      "desc": ""
+    },
+    {
+      "repo": "witttingtorch/wq_alpha_project",
+      "verdict": "UNKNOWN (no description)",
+      "stars": 0,
+      "lang": "Python",
+      "licence": null,
+      "size_kb": 23,
+      "desc": "WorldQuant alpha simulation project"
+    },
+    {
+      "repo": "958136706-create/worldquant-brain-skill",
+      "verdict": "UNKNOWN (no description)",
+      "stars": 0,
+      "lang": null,
+      "licence": null,
+      "size_kb": 20,
+      "desc": "Codex skill files for WorldQuant BRAIN alpha research"
+    },
+    {
+      "repo": "flashlight-byte/WorldQuant-Brain-AlphaSimulator",
+      "verdict": "UNKNOWN (no description)",
+      "stars": 0,
+      "lang": "Python",
+      "licence": null,
+      "size_kb": 20,
+      "desc": "WQ Brain simulator for mining success and potential alpha"
+    },
+    {
+      "repo": "huashengditie/alphaPipeline778",
+      "verdict": "UNKNOWN (no description)",
+      "stars": 0,
+      "lang": "Python",
+      "licence": null,
+      "size_kb": 16,
+      "desc": "Automated alpha research and submission toolkit for the WorldQuant Brain platform. Supports datafield search, template-based alpha generation, batch simulation "
+    },
+    {
+      "repo": "onefreecomet/wq-gem-workflow",
+      "verdict": "UNKNOWN (no description)",
+      "stars": 0,
+      "lang": "Python",
+      "licence": null,
+      "size_kb": 15,
+      "desc": "\u9891\u7387\u611f\u77e5\u7684 Seed \u6784\u9020 \u00d7 CW \u524d\u7f6e\u5206\u5c42\u8bca\u65ad \u00d7 \u591a GEM \u964d\u76f8\u5173 \u2014\u2014 WorldQuant BRAIN \u81ea\u52a8\u5316 Alpha \u6316\u6398\u6e90\u5934\u964d\u76f8\u5173\u65b9\u6cd5\u8bba skill"
+    },
+    {
+      "repo": "jiangabcyu4/skill-worldquant-brain-interviewer",
+      "verdict": "UNKNOWN (no description)",
+      "stars": 0,
+      "lang": null,
+      "licence": null,
+      "size_kb": 15,
+      "desc": "Self-contained WorldQuant BRAIN interview rehearsal skill"
+    },
+    {
+      "repo": "Hoolum/worldquant-brain-mvp",
+      "verdict": "UNKNOWN (no description)",
+      "stars": 0,
+      "lang": "JavaScript",
+      "licence": null,
+      "size_kb": 14,
+      "desc": ""
+    },
+    {
+      "repo": "harsh-dev-ux/worldquant-brain-alphas",
+      "verdict": "UNKNOWN (no description)",
+      "stars": 0,
+      "lang": null,
+      "licence": "NOASSERTION",
+      "size_kb": 13,
+      "desc": "WorldQuant BRAIN alpha research portfolio - accepted alphas, settings, and research notes."
+    },
+    {
+      "repo": "ngesarosemary938-jpg/worldquant-alphas",
+      "verdict": "UNKNOWN (no description)",
+      "stars": 0,
+      "lang": "Python",
+      "licence": null,
+      "size_kb": 13,
+      "desc": "\"Advanced trading alphas for WorldQuant Brain\""
+    },
+    {
+      "repo": "Henxun/worlquant_alpha",
+      "verdict": "UNKNOWN (no description)",
+      "stars": 0,
+      "lang": "Python",
+      "licence": null,
+      "size_kb": 11,
+      "desc": "worldquant alpha skill"
+    },
+    {
+      "repo": "Anikesh-99/wq_alpha_research",
+      "verdict": "UNKNOWN (no description)",
+      "stars": 0,
+      "lang": "Python",
+      "licence": null,
+      "size_kb": 7,
+      "desc": "Disciplined post-mortem of ~400 WorldQuant BRAIN alpha simulations: a robustness-gated selection funnel (259 tested -> 30 survivors), not cherry-picked Sharpe."
+    },
+    {
+      "repo": "Frank880-star/ai-worldquant-research-os",
+      "verdict": "UNKNOWN (no description)",
+      "stars": 0,
+      "lang": null,
+      "licence": "MIT",
+      "size_kb": 5,
+      "desc": "AI-powered quantitative research platform for WorldQuant Brain"
+    },
+    {
+      "repo": "mingu0822/WorldQuantBrain---tools",
+      "verdict": "UNKNOWN (no description)",
+      "stars": 0,
+      "lang": "Python",
+      "licence": null,
+      "size_kb": 4,
+      "desc": "useful tools for brain"
+    },
+    {
+      "repo": "zc6600/worldquant-brain-hub",
+      "verdict": "UNKNOWN (no description)",
+      "stars": 0,
+      "lang": null,
+      "licence": "MIT",
+      "size_kb": 1,
+      "desc": "[WIP] Scripts and utilities for WorldQuant Brain"
+    },
+    {
+      "repo": "YungTingKai/Worldquant-BRAIN-alpha-generator",
+      "verdict": "UNKNOWN (no description)",
+      "stars": 0,
+      "lang": null,
+      "licence": null,
+      "size_kb": 0,
+      "desc": ""
+    },
+    {
+      "repo": "nutdnuy/worldquant-brain-public-knowledge",
+      "verdict": "UNKNOWN (no description)",
+      "stars": 0,
+      "lang": null,
+      "licence": null,
+      "size_kb": 0,
+      "desc": "Public WorldQuant BRAIN research workflow knowledge base"
+    },
+    {
+      "repo": "Rohan473/Persistent-memory",
+      "verdict": "CLIENT ONLY (no semantics)",
+      "stars": 1,
+      "lang": "Python",
+      "licence": "MIT",
+      "size_kb": 25899,
+      "desc": "Knowledge graph + live memory layer for systematic alpha research on WorldQuant Brain: NetworkX graph, WQB API simulation loop, overfit/correlation gating, sani"
+    },
+    {
+      "repo": "wh0amibjm/brainapi-go-sdk",
+      "verdict": "CLIENT ONLY (no semantics)",
+      "stars": 1,
+      "lang": "Go",
+      "licence": "MIT",
+      "size_kb": 8442,
+      "desc": "Typed Go SDK + cross-platform CLI for the WorldQuant BRAIN HTTP API"
+    },
+    {
+      "repo": "CwWwWwW/alphaforge",
+      "verdict": "CLIENT ONLY (no semantics)",
+      "stars": 0,
+      "lang": "Python",
+      "licence": "GPL-3.0",
+      "size_kb": 1277,
+      "desc": "AlphaForge is a WorldQuant-focused alpha research automation toolkit using browser-based workflow control instead of the WorldQuant API."
+    },
+    {
+      "repo": "dfkai/wq-challenge-gold-skill",
+      "verdict": "CLIENT ONLY (no semantics)",
+      "stars": 1,
+      "lang": "Python",
+      "licence": "MIT",
+      "size_kb": 543,
+      "desc": "A comprehensive guide and AI SKILL for achieving gold in the WorldQuant BRAIN challenge."
+    },
+    {
+      "repo": "hoangdeptrai18/AlphaGen",
+      "verdict": "CLIENT ONLY (no semantics)",
+      "stars": 0,
+      "lang": "Python",
+      "licence": null,
+      "size_kb": 447,
+      "desc": "An evolutionary alpha optimizer for WorldQuant BRAIN. Runs 3 parallel LLM agents that each explore datafield swaps from different data categories, simulate the "
+    },
+    {
+      "repo": "lakshayxi/alpha-cli",
+      "verdict": "CLIENT ONLY (no semantics)",
+      "stars": 0,
+      "lang": "Python",
+      "licence": "MIT",
+      "size_kb": 238,
+      "desc": "Local CLI for WorldQuant Brain alpha research with LLMs"
+    },
+    {
+      "repo": "Cai-Huayi/wq-auto-pipeline",
+      "verdict": "CLIENT ONLY (no semantics)",
+      "stars": 1,
+      "lang": "Python",
+      "licence": null,
+      "size_kb": 209,
+      "desc": "Sanitized portfolio edition of an agentic, recoverable WorldQuant BRAIN research workflow."
+    },
+    {
+      "repo": "hsrxr/wq-brain-mcp",
+      "verdict": "CLIENT ONLY (no semantics)",
+      "stars": 3,
+      "lang": "Python",
+      "licence": null,
+      "size_kb": 104,
+      "desc": "MCP Server for WorldQuant Brain alpha factor mining \u2014 \u4e16\u5764 Brain \u56de\u6d4b\u56e0\u5b50 MCP \u670d\u52a1"
+    },
+    {
+      "repo": "thisisebube/wq-lab",
+      "verdict": "CLIENT ONLY (no semantics)",
+      "stars": 0,
+      "lang": "HTML",
+      "licence": null,
+      "size_kb": 96,
+      "desc": "An Agentic simulation similar to WorldQuant Brain"
+    },
+    {
+      "repo": "onefreecomet/qianxun-web-engine",
+      "verdict": "CLIENT ONLY (no semantics)",
+      "stars": 0,
+      "lang": "Python",
+      "licence": "MIT",
+      "size_kb": 81,
+      "desc": "\u5343\u5bfb web \u5f15\u64ce\uff1aWorldQuant BRAIN alpha \u56de\u6d4b\u5f15\u64ce\uff0cWeb \u6307\u6325\u4e2d\u5fc3 + MCP Server\uff08AI Agent \u53ef\u5bf9\u63a5\uff09"
+    },
+    {
+      "repo": "Xiaoyii-Shang/worldquant-alpha-pipeline",
+      "verdict": "CLIENT ONLY (no semantics)",
+      "stars": 0,
+      "lang": "Python",
+      "licence": null,
+      "size_kb": 75,
+      "desc": "Multi-agent pipeline for automated alpha research on WorldQuant BRAIN: generator, simulator, analyzer, validator, selector, reflector orchestrated by orchestrat"
+    },
+    {
+      "repo": "NewtonHatesApples/WorldQuantV2",
+      "verdict": "CLIENT ONLY (no semantics)",
+      "stars": 1,
+      "lang": "Python",
+      "licence": null,
+      "size_kb": 58,
+      "desc": "WorldQuant BRAIN API and Client"
+    },
+    {
+      "repo": "HirongVSuen/wqb-rs",
+      "verdict": "CLIENT ONLY (no semantics)",
+      "stars": 1,
+      "lang": "Rust",
+      "licence": "MIT",
+      "size_kb": 46,
+      "desc": "\u4e00\u4e2a\u7528\u4e8e\u8bbf\u95ee WorldQuant Brain API \u7684 Rust \u5ba2\u6237\u7aef\u5e93"
+    },
+    {
+      "repo": "Xiaoyii-Shang/worldquant-brain-mcp",
+      "verdict": "CLIENT ONLY (no semantics)",
+      "stars": 0,
+      "lang": "Python",
+      "licence": null,
+      "size_kb": 44,
+      "desc": "MCP server and Claude Code skill for WorldQuant BRAIN platform \u2014 simulate, submit, data-field exploration, forum functions."
+    },
+    {
+      "repo": "nutdnuy/brain-paper-to-alpha-plugin",
+      "verdict": "CLIENT ONLY (no semantics)",
+      "stars": 2,
+      "lang": "Python",
+      "licence": "MIT",
+      "size_kb": 29,
+      "desc": "Claude Code/Codex Agent-native plugin for WorldQuant BRAIN paper-to-alpha research workflows."
+    },
+    {
+      "repo": "slydg/Lightweight-Alpha-Miner",
+      "verdict": "CLIENT ONLY (no semantics)",
+      "stars": 8,
+      "lang": "Python",
+      "licence": "MIT",
+      "size_kb": 20,
+      "desc": "\u8fd9\u662f\u4e00\u4e2a\u57fa\u4e8e\u5927\u8bed\u8a00\u6a21\u578b\uff08LLM\uff09\u548c WorldQuant Brain API \u7684\u8f7b\u91cf\u7ea7\u91cf\u5316\u56e0\u5b50\u81ea\u52a8\u6316\u6398\u5de5\u5177\u3002\u901a\u8fc7\u96c6\u6210 Ollama \u672c\u5730\u6a21\u578b\uff0c\u5b9e\u73b0\u56e0\u5b50\u751f\u6210\u3001\u56de\u6d4b\u3001\u903b\u8f91\u53cd\u9988\u53ca\u81ea\u52a8\u4f18\u5316\u7684\u95ed\u73af\u6d41\u7a0b\u3002"
+    },
+    {
+      "repo": "gabuGABU-dev/worldquant-brain-toolkit",
+      "verdict": "CLIENT ONLY (no semantics)",
+      "stars": 0,
+      "lang": null,
+      "licence": null,
+      "size_kb": 0,
+      "desc": "Comprehensive toolkit for WorldQuant Brain with trading algorithms, data analysis, and API usage examples"
+    }
+  ]
+}

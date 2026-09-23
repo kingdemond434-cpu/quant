@@ -7,18 +7,32 @@ a diff and reverted by hand. That is not a control; it is a habit, and the next 
 inside a busy commit nobody will read the diff.
 
 WHAT THIS DOES. Snapshots `libs.ops.protected_artifacts.PROTECTED` before the first test; after
-EVERY test, re-hashes them; the first test to change one is NAMED, the file is put straight back,
-and the session fails at the end with the reason that artifact is protected.
+EVERY test, re-hashes them; the first test to change one is NAMED and the session fails at the
+end with the reason that artifact is protected. THE BYTES ARE LEFT WHERE THEY ARE.
 
 WHY PER-TEST AND NOT ONCE AT THE END. Once at the end tells you the suite wrote something and
 leaves you bisecting 5,000 tests to find out which. Fourteen small files hashed per test is a few
 milliseconds against a suite measured in minutes, and it converts an afternoon of bisection into
 a line of output. It also stops the FIRST write from contaminating what every later test reads.
 
-WHY IT RESTORES AND STILL FAILS. Restoring keeps the next run honest -- otherwise run two ratchets
-from an already-corrupted baseline and blames itself. Failing is what makes it a gate rather than
-a cleanup: a guard that silently repaired the damage would let the underlying write survive
-forever, which is exactly how these three lived long enough to be measured.
+WHY IT DETECTS AND REFUSES RATHER THAN REVERTING (changed 2026-09-05). It used to put the bytes
+back. It could not: this process cannot tell a write made by a TEST from a write made by anything
+else touching the tree during a 60-80 minute run -- an editor, an agent, a concurrent organ, a git
+operation. All it ever knew was that a hash moved between two teardowns, and it answered that with
+somebody else's old bytes.
+
+It cost real evidence twice. 2026-08-18: a concurrent max_audit's recommendation-ledger rows and
+two hand-raised rows were attributed to a governance test and restored out of existence -- which
+bought the per-test re-baseline below, narrowing the window without closing it. 2026-09-05: a
+repair to docs/desk_lessons.jsonl landed inside that residual window and was reverted mid-session,
+twice; the only symptom was a `git diff` that came back empty.
+
+Refusing loses nothing. Detection is unchanged, the culprit is still named per test, the session
+still fails -- and a failing suite is already a stop signal, so the "next run starts from a
+corrupted baseline" worry is answered by the red run rather than by a silent repair. What
+reverting actually bought was invisibility: a clean tree, with the only record of the write in a
+summary block someone had to read. Leaving the change on disk puts it in `git status`, where it
+is seen. Undoing it is then one deliberate `git checkout --`, made with the diff in view.
 
 THERE IS NO HOST EXEMPTION, and that is deliberate. The owning-host guard (GAP 111) exists because
 "may this box recompute state?" has a legitimate YES. "May a test run recompute state?" does not:
@@ -50,13 +64,13 @@ from libs.ops.protected_artifacts import (  # noqa: E402  (must follow the boots
     PROTECTED,
     Snapshot,
     changed,
-    restore,
     snapshot,
 )
 
-#: rel-path -> (nodeid of the test that changed it, what the restore did). First writer only: the
-#: interesting fact is WHICH test introduced the write, and a list of every later test that
-#: touched the same file afterwards is noise once the file is being restored each time anyway.
+#: rel-path -> (nodeid of the test that changed it, what was done about it -- always 'nothing').
+#: First writer only: the
+#: interesting fact is WHICH test introduced the write; every later test then sees the changed
+#: file as its own baseline, so listing them all would name bystanders.
 _VIOLATIONS: dict[str, tuple[str, str]] = {}
 _SNAP: Snapshot | None = None
 
@@ -77,8 +91,9 @@ def pytest_runtest_setup(item: Any) -> None:
     tests/governance/test_denominators.py::test_meta_fence_runs_and_reports_a_measured_denominator
     and 'restored' out of existence. Re-snapshotting per test absorbs between-test organ writes
     into the baseline and keeps the guard's real property: a change that appears DURING one test
-    is that test's write, named and reverted. The residual window (an organ writing mid-test) is
-    seconds, not the session."""
+    is that test's write, and is named. The residual window (an organ or an editor writing
+    mid-test) is seconds rather than the session -- and since 2026-09-05 a false positive inside
+    that window costs a spurious failure line instead of somebody's work."""
     global _SNAP
     _SNAP = snapshot(_ROOT)
 
@@ -102,13 +117,77 @@ def _denominator_registry_in_tmp(tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     monkeypatch.setattr("libs.ops.denominator._root", lambda: tmp_path)
 
 
+# LOST IN A MERGE AND RESTORED 2026-08-28. This fixture landed in 3358a73b and was gone at HEAD
+# with NO commit touching this file after 84cbf97d -- the unification class: the merge kept the
+# test that names the guarantee (tests/governance/test_conftest_isolation.py) and dropped the
+# fixture it guards. Restored verbatim; the two isolation halves are siblings and travel together.
+
+@pytest.fixture(autouse=True)
+def _freshness_registry_in_tmp(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """NOR THE L1.44 FRESHNESS REGISTRY (R0544, R0398 follow-up).
+
+    `read_fresh` appends its contract row to `data/freshness_contracts.jsonl` under
+    `fresh._root()`, which is cwd when QUANT_FRESH_ROOT is unset -- so a test that points a
+    production reader at a tmp artifact still files that read in the PRODUCTION registry, under
+    an absolute /tmp/pytest-of-quant/... path. Measured 2026-08-12: 1089 of 1097 rows. Re-measured
+    2026-08-19 after the row sat open: 2053 of 2478 (82.8%), from exactly two callers --
+    `run_cashcarry_executor._structurally_bleeding` (1322) and `._rt_bps` (731).
+
+    THE VERDICTS WERE NEVER WRONG, THE DENOMINATOR WAS. `check_freshness.py` quarantines an
+    off-root path as FOREIGN, so nothing was mis-graded; what it lost is the one number the L1.44
+    fence is read for. n_contracts=8 real contracts inside 2478 rows is the L1.57 class pointed at
+    a self-building registry: a count that grows with test volume and is 82.8% noise reads as
+    coverage. Deleting the rows would be the wrong repair twice over -- it treats the symptom, and
+    it blinds the FOREIGN guard to a real production leak, which is the thing it exists to catch.
+
+    FIX AT THE WRITER, WHICH IS WHY THIS IS SUITE-WIDE AND NOT PER-DIRECTORY. The two owning
+    suites (tests/ops/test_fresh*.py, tests/governance/test_freshness_fence.py) already pin the
+    root; the leak is from every OTHER test that drives a production reader and has no reason to
+    know a second path exists. Opt-in isolation only ever protects the tests that remembered to
+    ask, and the next one will not -- the same argument the execution suite's bleed-cache fixture
+    was written on, one level up.
+
+    tmp_path, not a shared temp dir: it is the SAME per-test directory the test itself writes its
+    fixture artifacts into, so a relative read resolves exactly where the test put the file and
+    `_rel()` records it by its relative name rather than as an off-root absolute. A test that
+    passes `root=` explicitly, or that delenv's this itself to exercise the cwd fallback, still
+    wins inside its own scope.
+    """
+    monkeypatch.setenv("QUANT_FRESH_ROOT", str(tmp_path))
+
+
 def pytest_runtest_teardown(item: Any) -> None:
-    """After every test: re-hash, name the culprit, put the bytes back."""
+    """After every test: re-hash and name the culprit. NEVER put the bytes back.
+
+    THIS FENCE USED TO RESTORE, AND THE RESTORE WAS THE DEFECT. It could not tell a write made by
+    a TEST from a write made by anything else touching the tree while the suite ran -- an editor,
+    an agent, a concurrent script, a git operation. All it knew was that a hash moved between two
+    teardowns. So a legitimate edit made during a run was reverted to a snapshot taken before the
+    edit existed, attributed to whichever test happened to be executing, and the work was gone.
+
+    Measured 2026-09-05: a repair to `docs/desk_lessons.jsonl` -- eleven rows normalised out of a
+    foreign key vocabulary that was making the WHOLE lesson corpus fail to load -- was silently
+    reverted mid-session by exactly this path, twice, while a full-suite run was in the
+    background. The evidence that it had happened was a `git diff` that came back empty.
+
+    REMOVING THE RESTORE COSTS NO PROTECTION. The detection is unchanged, the culprit is still
+    named per-test, and the session still fails. The old docstring justified restoring as "keeps
+    the next run honest -- otherwise run two ratchets from an already-corrupted baseline", but a
+    failing suite is already a stop signal, and running a ratchet off a red suite is a separate
+    violation. What restoring actually bought was that the damage became invisible: the tree
+    looked clean, so the only record of the write was a summary block someone had to read. Leaving
+    the bytes where they are makes the write show up in `git status` and `git diff`, which is
+    where a human will actually see it.
+
+    IF YOU WANT THE OLD BYTES BACK, `git checkout -- <path>` is one command and it is a DECISION
+    someone makes with the diff in front of them, rather than a thing that happens to them.
+    """
     if _SNAP is None:
         return
     for rel in changed(_ROOT, _SNAP):
-        did = restore(_ROOT, rel, _SNAP)
-        _VIOLATIONS.setdefault(rel, (getattr(item, "nodeid", "?"), did))
+        _VIOLATIONS.setdefault(
+            rel, (getattr(item, "nodeid", "?"),
+                  "LEFT IN PLACE -- inspect with `git diff -- " + rel + "`"))
 
 
 def pytest_terminal_summary(terminalreporter: Any, exitstatus: int, config: Any) -> None:
@@ -123,9 +202,11 @@ def pytest_terminal_summary(terminalreporter: Any, exitstatus: int, config: Any)
         w.write_line(f"    action     : {did}")
     w.write_line("")
     w.write_line("  A test run is an OBSERVATION and must never be a write to the thing observed.")
-    w.write_line("  The files above were put back, so the tree is clean and the next run starts "
-                 "from an uncorrupted baseline -- but the write still happened and the session "
-                 "fails on it. Point the offending call at tmp_path.")
+    w.write_line("  THE FILES WERE LEFT EXACTLY AS FOUND. This fence detects and refuses; it does "
+                 "not revert, because it cannot tell a test's write from a concurrent editor's "
+                 "and reverting the latter destroys work that was never the suite's to touch.")
+    w.write_line("  Read `git diff` on the paths above, then either point the offending call at "
+                 "tmp_path or keep the change deliberately.")
 
 
 def pytest_sessionfinish(session: Any, exitstatus: int) -> None:

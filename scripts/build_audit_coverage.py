@@ -37,8 +37,13 @@ EXCLUDE_PARTS = ("secrets", "__pycache__", ".venv", ".git", "node_modules")
 EXCLUDE_SUFFIX = (".bak", ".pyc", ".log")
 
 # RISK-class (money path) files are audited on a tighter clock than everything else
-RISK_PREFIXES = ("libs/execution/", "scripts/run_deadman_switch.py", "scripts/run_cashcarry",
-                  "scripts/run_alerts.py", "scripts/run_recorder.py", "scripts/run_ci.py")
+# `scripts/run_cashcarry` and `scripts/run_recorder.py` were dropped 2026-09-05: those scripts
+# were deleted with the retired universe, and this is a PREFIX list whose job is to say which code
+# gets the tighter clock -- a prefix matching nothing quietly overstates the money path's size.
+# desks/mt5/mt5desk/ replaces them: that is where an execution defect now costs real money.
+RISK_PREFIXES = ("libs/execution/", "scripts/run_deadman_switch.py",
+                 "scripts/run_alerts.py", "scripts/run_ci.py",
+                 "desks/mt5/mt5desk/")
 RISK_MAX_AGE_D = 14.0
 ROTATE_MAX_AGE_D = 30.0
 

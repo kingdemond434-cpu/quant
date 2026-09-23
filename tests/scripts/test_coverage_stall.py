@@ -230,3 +230,104 @@ def test_days_since_REFUSES_RATHER_THAN_GUESSES() -> None:
     assert fresh is not None and fresh < 0.01
     future = C.days_since((datetime.now(tz=UTC) + timedelta(days=5)).isoformat())
     assert future == 0.0, "a clock skew into the future must clamp, never report negative age"
+
+
+# =============================================================================================
+# THE FLOOR WAS GUARDING RETIRED CODE (gap-fixer 2026-08-29).
+#
+# Until today MONEY_PATH was the five `libs/execution/binance_*` adapters. The principal retired
+# that universe on 2026-08-18 (LAWS §1: no crypto-exchange-native ground, ever again), and
+# nobody updated the list -- so the "money path 89.44%" every session read at the top of its
+# context was measured entirely over code that can never execute, while
+# `desks/mt5/mt5desk/gateway.py` (1510 lines, FOUR `mt5.order_send` call sites) and
+# `libs/execution/broker.py` (`place_order`/`cancel_order`) sat in no floor at all.
+#
+# A guard aimed at retired ground reads healthy forever. These tests pin the three properties
+# that keep that from happening again -- and note the FIRST one is about the list itself, since
+# every other property here would have passed unchanged while the list pointed at dead code.
+# =============================================================================================
+
+
+def test_the_money_path_is_the_universe_the_desk_actually_trades() -> None:
+    """The defect itself: a floor whose population the mandate retired seven days earlier."""
+    banned = [f for f in C.MONEY_PATH if "binance" in f]
+    assert not banned, (
+        f"MONEY_PATH still contains retired crypto adapters {banned}. LAWS §1 bans that universe "
+        "permanently, so their coverage cannot describe code that can move funds -- it describes "
+        "code that cannot run. Retired populations belong in MONEY_PATH_RETIRED."
+    )
+    assert C.MONEY_PATH, "an empty money path is not a clean reading, it is an absent one"
+    live = set(C.MONEY_PATH) | set(C.MONEY_PATH_UNMEASURABLE_HERE)
+    assert "desks/mt5/mt5desk/gateway.py" in live, (
+        "the MT5 gateway places every real order on the mandated universe; it must be in the "
+        "money path, either measured or explicitly named unmeasurable"
+    )
+
+
+def test_an_unmeasurable_money_path_file_is_named_never_silently_dropped() -> None:
+    """L1.28a. `gateway.py` cannot be imported here (MetaTrader5 is Windows-only).
+
+    Absent-and-fine and absent-and-broken must not render identically, and the reason has to
+    travel with the verdict or the next reader re-derives it from scratch.
+    """
+    assert C.MONEY_PATH_UNMEASURABLE_HERE, "the unmeasurable set went empty -- was it dropped?"
+    for path, reason in C.MONEY_PATH_UNMEASURABLE_HERE.items():
+        assert len(reason) > 80, f"{path} carries no real reason, just a label"
+    measured = C.measure(_report())
+    assert measured["money_path_unmeasurable_here"] == sorted(C.MONEY_PATH_UNMEASURABLE_HERE)
+    # ...and the percentage must not absorb it: 88 statements of broker+staging is the whole
+    # denominator, so an unmeasurable 1510-line file cannot flatter the number by joining it.
+    assert "desks/mt5/mt5desk/gateway.py" not in C.MONEY_PATH
+
+
+def test_gap_to_target_never_claims_zero_while_a_file_is_unmeasurable() -> None:
+    """At 100% of the measurable set this printed '~0 uncovered statements on the code that can
+    move funds' -- with the largest order-placing file in the repo executed by nothing."""
+    text = C.gap_to_target(C.measure(_report(repo=100.0, money=100.0)))
+    assert "UNKNOWN, not zero" in text, text
+    assert "desks/mt5/mt5desk/gateway.py" in text, text
+
+
+def test_a_floor_from_one_population_is_never_compared_to_another(  # type: ignore[no-untyped-def]
+    monkeypatch, tmp_path
+) -> None:
+    """The GENERAL form of today's bug, and the fence that would have caught it on 08-18.
+
+    Comparing a new population to an inherited floor is meaningless in both directions: it
+    invents a breach when the new set is younger and certifies a pass when it is easier.
+    """
+    rec = _rec(repo=90.0, money=89.44, raised=datetime.now(tz=UTC).isoformat())
+    rec["money_path_files"] = ["libs/execution/binance_live.py", "libs/execution/staging.py"]
+    code, out, _ = _run(monkeypatch, tmp_path, rec, _report(repo=95.0, money=10.0))
+    assert "POPULATION CHANGED" in out, out
+    assert "MONEY PATH coverage" not in out, (
+        "a 10% measurement was compared against a 89.44% floor earned by DIFFERENT files; "
+        f"that comparison is not a measurement:\n{out}"
+    )
+    assert code == 0, f"an inherited-population notice is not a breach:\n{out}"
+
+
+def test_migration_preserves_the_old_floor_and_its_files(  # type: ignore[no-untyped-def]
+    monkeypatch, tmp_path
+) -> None:
+    """Deleting the retired number would be the denominator trick; max()-ing across populations
+    would pin an unrelated set to a bar it never ran against. Neither: archive, then establish."""
+    # repo coverage held FLAT on purpose: if it rose, `last_raised` would move for a legitimate
+    # reason and the assertion below could not tell that apart from the migration moving it.
+    rec = _rec(repo=95.0, money=89.44, raised="2026-08-09T03:39:44.592569+00:00")
+    rec["money_path_files"] = ["libs/execution/binance_live.py"]
+    code, out, after = _run(monkeypatch, tmp_path, rec, _report(repo=95.0, money=40.0), update=True)
+    assert code == 0, out
+    sup = after["high_water"].get("superseded_money_path")
+    assert sup, f"the old floor was discarded rather than archived: {after['high_water']}"
+    assert sup["pct"] == 89.44
+    assert sup["files"] == ["libs/execution/binance_live.py"], "archived without its population"
+    assert after["high_water"]["money_path_pct"] == 40.0, (
+        "the new population must be floored on its own FIRST measurement, not max()'d against a "
+        "bar earned by files it does not contain"
+    )
+    # A MIGRATION IS NOT A RAISE: stamping last_raised here would restart the L1.50 stall clock
+    # on an accounting change and the ratchet would read as moving while nothing improved.
+    assert after["last_raised"] == "2026-08-09T03:39:44.592569+00:00", (
+        f"last_raised moved on a population migration: {after['last_raised']}"
+    )

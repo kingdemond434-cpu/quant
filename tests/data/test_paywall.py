@@ -65,10 +65,13 @@ class TestRecordingIsAutomaticAndSurvives:
         assert row["verdict"] == "PAYWALL"
 
     def test_the_vendor_is_normalised_so_one_vendor_is_one_row(self, tmp_path: Path) -> None:
-        for url in ("https://api.llama.fi/emissions", "https://www.llama.fi/x",
-                    "https://pro.llama.fi/y"):
+        """api./www./pro. are one VENDOR asking for one payment, not three. Counting them
+        separately would triple a vendor's apparent cost and hide that a single subscription
+        unlocks all three."""
+        for url in ("https://api.datavendor.example/series", "https://www.datavendor.example/x",
+                    "https://pro.datavendor.example/y"):
             record(url, status=402, unlocks="u", root=tmp_path)
-        assert list(vendors_encountered(tmp_path)) == ["llama.fi"]
+        assert list(vendors_encountered(tmp_path)) == ["datavendor.example"]
 
     def test_maybe_paywalls_stay_in_the_ledger_but_do_not_demand_a_registry_row(
             self, tmp_path: Path) -> None:

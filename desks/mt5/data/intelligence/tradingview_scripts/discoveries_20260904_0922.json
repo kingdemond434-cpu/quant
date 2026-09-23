@@ -1,0 +1,232 @@
+[
+ {
+  "source": "tradingview_scripts",
+  "kind": "strategy_source",
+  "title": "Golden Trident | Swing-Anchored VWAP Trend System",
+  "url": "https://www.tradingview.com/script/Eq4kPrrJ-Golden-Trident-Swing-Anchored-VWAP-Trend-System/",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-04T09:24:26+00:00",
+  "script_id": "Eq4kPrrJ"
+ },
+ {
+  "source": "tradingview_scripts",
+  "kind": "strategy_source",
+  "title": "Execution-Aware Trend [BSL]",
+  "url": "https://www.tradingview.com/script/Z9O5w3SG-Execution-Aware-Trend-BSL/",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-04T09:24:26+00:00",
+  "script_id": "Z9O5w3SG"
+ },
+ {
+  "source": "tradingview_scripts",
+  "kind": "strategy_source",
+  "title": "EMA Pullback Trend Continuation Strategy with Volume and Momentu",
+  "url": "https://www.tradingview.com/script/PETyqH3b-EMA-Pullback-Trend-Continuation-Strategy-with-Volume-and-Momentu/",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-04T09:24:26+00:00",
+  "script_id": "PETyqH3b"
+ },
+ {
+  "source": "tradingview_scripts",
+  "kind": "strategy_source",
+  "title": "Trend Trigger | EMA Trend Filter + MTF Stochastic Entry with ATR",
+  "url": "https://www.tradingview.com/script/o9dV6uWc-Trend-Trigger-EMA-Trend-Filter-MTF-Stochastic-Entry-with-ATR/",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-04T09:24:26+00:00",
+  "script_id": "o9dV6uWc"
+ },
+ {
+  "source": "tradingview_scripts",
+  "kind": "strategy_source",
+  "title": "DNSE VN301!, SMA ADX/DI Trend Following Strategy",
+  "url": "https://www.tradingview.com/script/ToaH6cKJ/",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-04T09:24:26+00:00",
+  "script_id": "ToaH6cKJ"
+ },
+ {
+  "source": "tradingview_scripts",
+  "kind": "strategy_source",
+  "title": "Power Surge | BB Momentum Squeeze Release",
+  "url": "https://www.tradingview.com/script/M6uONKNI-Power-Surge-BB-Momentum-Squeeze-Release/",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-04T09:24:26+00:00",
+  "script_id": "M6uONKNI"
+ },
+ {
+  "source": "tradingview_scripts",
+  "kind": "strategy_source",
+  "title": "Gradient Ribbon | EMA Ribbon Slope-Acceleration System",
+  "url": "https://www.tradingview.com/script/X0F9OE4L-Gradient-Ribbon-EMA-Ribbon-Slope-Acceleration-System/",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-04T09:24:26+00:00",
+  "script_id": "X0F9OE4L"
+ },
+ {
+  "source": "tradingview_scripts",
+  "kind": "strategy_source",
+  "title": "Coil Breaker | RSI Range Compression",
+  "url": "https://www.tradingview.com/script/dwgn7hrE-Coil-Breaker-RSI-Range-Compression/",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-04T09:24:26+00:00",
+  "script_id": "dwgn7hrE"
+ },
+ {
+  "source": "tradingview_scripts",
+  "kind": "strategy_source",
+  "title": "Return Dispersion Matrix Strategy [The Quant Science]",
+  "url": "https://www.tradingview.com/script/vrrutnMb-Return-Dispersion-Matrix-Strategy-The-Quant-Science/",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-04T09:24:26+00:00",
+  "script_id": "vrrutnMb"
+ },
+ {
+  "source": "tradingview_scripts",
+  "kind": "strategy_source",
+  "title": "Momentum Rotor | Basket Breakout &amp; Leadership Rotation",
+  "url": "https://www.tradingview.com/script/XLFwVxKY-Momentum-Rotor-Basket-Breakout-Leadership-Rotation/",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-04T09:24:26+00:00",
+  "script_id": "XLFwVxKY"
+ },
+ {
+  "source": "tradingview_scripts",
+  "kind": "strategy_source",
+  "title": "Channel Reversion System",
+  "url": "https://www.tradingview.com/script/XRZCjbFr-Channel-Reversion-System/",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-04T09:24:26+00:00",
+  "script_id": "XRZCjbFr"
+ },
+ {
+  "source": "tradingview_scripts",
+  "kind": "strategy_source",
+  "title": "Vol-Target Trend Engine",
+  "url": "https://www.tradingview.com/script/2wyXTTMc-Vol-Target-Trend-Engine/",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-04T09:24:26+00:00",
+  "script_id": "2wyXTTMc"
+ },
+ {
+  "source": "tradingview_scripts",
+  "kind": "strategy_source",
+  "title": "Compression Breakout System",
+  "url": "https://www.tradingview.com/script/97gxVA5b-Compression-Breakout-System/",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-04T09:24:26+00:00",
+  "script_id": "97gxVA5b"
+ },
+ {
+  "source": "tradingview_scripts",
+  "kind": "strategy_source",
+  "title": "Slope &amp; MA Cross + Acc + Range Filter",
+  "url": "https://www.tradingview.com/script/MqmIh0D9/",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-04T09:24:26+00:00",
+  "script_id": "MqmIh0D9"
+ },
+ {
+  "source": "tradingview_scripts",
+  "kind": "strategy_source",
+  "title": "TrendShift | Supertrend + ADX Regime-Adaptive Strategy",
+  "url": "https://www.tradingview.com/script/TbK1rB5B-TrendShift-Supertrend-ADX-Regime-Adaptive-Strategy/",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-04T09:24:26+00:00",
+  "script_id": "TbK1rB5B"
+ },
+ {
+  "source": "tradingview_scripts",
+  "kind": "strategy_source",
+  "title": "TURKS - Tiered Unit Risk Kernel Strategy",
+  "url": "https://www.tradingview.com/script/woRXiMlC-TURKS-Tiered-Unit-Risk-Kernel-Strategy/",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-04T09:24:26+00:00",
+  "script_id": "woRXiMlC"
+ },
+ {
+  "source": "tradingview_scripts",
+  "kind": "strategy_source",
+  "title": "TRADLEWARE-DCA+Trend ETF",
+  "url": "https://www.tradingview.com/script/et8U6rd3-TRADLEWARE-DCA-Trend-ETF/",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-04T09:24:26+00:00",
+  "script_id": "et8U6rd3"
+ },
+ {
+  "source": "tradingview_scripts",
+  "kind": "strategy_source",
+  "title": "Momentum Bands | Breakout",
+  "url": "https://www.tradingview.com/script/gqaZYhUN-Momentum-Bands-Breakout/",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-04T09:24:26+00:00",
+  "script_id": "gqaZYhUN"
+ },
+ {
+  "source": "tradingview_scripts",
+  "kind": "strategy_source",
+  "title": "FCPO KDJ Tower HA EMA Strategy",
+  "url": "https://www.tradingview.com/script/aIssaYjv-FCPO-KDJ-Tower-HA-EMA-Strategy/",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-04T09:24:26+00:00",
+  "script_id": "aIssaYjv"
+ },
+ {
+  "source": "tradingview_scripts",
+  "kind": "strategy_source",
+  "title": "TP/SL Toolkit [AxeAlgo]",
+  "url": "https://www.tradingview.com/script/iILE5e3m-TP-SL-Toolkit-AxeAlgo/",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-04T09:24:26+00:00",
+  "script_id": "iILE5e3m"
+ },
+ {
+  "source": "tradingview_scripts",
+  "kind": "strategy_source",
+  "title": "VWAP Trend Momentum [Artillery]",
+  "url": "https://www.tradingview.com/script/Zl0fql8o-VWAP-Trend-Momentum-Artillery/",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-04T09:24:26+00:00",
+  "script_id": "Zl0fql8o"
+ },
+ {
+  "source": "tradingview_scripts",
+  "kind": "strategy_source",
+  "title": "StackLight MTF | MTF Momentum Stack + Stochastic Confluence",
+  "url": "https://www.tradingview.com/script/8Ti8z8QO-StackLight-MTF-MTF-Momentum-Stack-Stochastic-Confluence/",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-04T09:24:26+00:00",
+  "script_id": "8Ti8z8QO"
+ },
+ {
+  "source": "tradingview_scripts",
+  "kind": "strategy_source",
+  "title": "Alpha S/R Channel Strategy",
+  "url": "https://www.tradingview.com/script/mikVFwAu-Alpha-S-R-Channel-Strategy/",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-04T09:24:26+00:00",
+  "script_id": "mikVFwAu"
+ }
+]

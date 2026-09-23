@@ -1,0 +1,138 @@
+{
+ "updated": "2026-09-12T11:26:35.233173+00:00",
+ "series": {
+  "PAYEMS": {
+   "series": "PAYEMS",
+   "ok": true,
+   "last": 159069.0,
+   "last_date": "2025-01-01",
+   "z": 1.73441873917903,
+   "mom": 0.21593792998012537
+  },
+  "UNRATE": {
+   "series": "UNRATE",
+   "ok": true,
+   "last": 4.0,
+   "last_date": "2025-01-01",
+   "z": -0.984541688380747
+  },
+  "INDPRO": {
+   "series": "INDPRO",
+   "ok": true,
+   "last": 102.9939,
+   "last_date": "2026-07-31",
+   "z": 1.5875934159495095,
+   "mom": 0.05979010797122544
+  },
+  "CPILFESL": {
+   "series": "CPILFESL",
+   "ok": true,
+   "last": 324.739,
+   "last_date": "2025-01-01",
+   "z": 2.141835461725848,
+   "mom_yoy": 0.6661826577732168
+  },
+  "CPIAUCSL": {
+   "series": "CPIAUCSL",
+   "ok": true,
+   "last": 319.086,
+   "last_date": "2025-01-01",
+   "z": 2.262197268791182,
+   "mom_yoy": 0.7090840921264062
+  },
+  "DGS2": {
+   "series": "DGS2",
+   "ok": true,
+   "last": 4.43,
+   "last_date": "2026-09-09",
+   "z": -0.14303611030423813
+  },
+  "DFF": {
+   "series": "DFF",
+   "ok": true,
+   "last": 3.63,
+   "last_date": "2026-09-09",
+   "z": -0.2722338922355925
+  },
+  "DGS10": {
+   "series": "DGS10",
+   "ok": true,
+   "last": 4.83,
+   "last_date": "2026-09-09",
+   "z": -0.3329495281560354
+  },
+  "RETAILSMxSA": {
+   "series": "RETAILSMxSA",
+   "ok": false
+  },
+  "T10YIE": {
+   "series": "T10YIE",
+   "ok": false
+  },
+  "DFEDTARU": {
+   "series": "DFEDTARU",
+   "ok": false
+  },
+  "T5YIE": {
+   "series": "T5YIE",
+   "ok": false
+  },
+  "SOFR": {
+   "series": "SOFR",
+   "ok": false
+  },
+  "T10Y2Y": {
+   "series": "T10Y2Y",
+   "ok": false
+  },
+  "UMCSENT": {
+   "series": "UMCSENT",
+   "ok": false
+  },
+  "RRPONTSYD": {
+   "series": "RRPONTSYD",
+   "ok": false
+  },
+  "DTWEXBGS": {
+   "series": "DTWEXBGS",
+   "ok": false
+  },
+  "WALCL": {
+   "series": "WALCL",
+   "ok": false
+  },
+  "BAMLH0A0HYM2": {
+   "series": "BAMLH0A0HYM2",
+   "ok": false
+  },
+  "VIXCLS": {
+   "series": "VIXCLS",
+   "ok": false
+  },
+  "GOLDAMGBD228NLBM": {
+   "series": "GOLDAMGBD228NLBM",
+   "ok": false
+  },
+  "DCOILWTICO": {
+   "series": "DCOILWTICO",
+   "ok": false
+  }
+ },
+ "states": {
+  "GROWTH_STATE": 0.779,
+  "INFLATION_STATE": 2.142,
+  "LIQUIDITY_STATE": null,
+  "RISK_STATE": null,
+  "DOLLAR_STATE": null,
+  "POLICY_RATE": null,
+  "EFF_RATE": 3.63,
+  "CURVE_T10Y2Y": null,
+  "GOLD_USD": null,
+  "WTI": null,
+  "POLICY_STATE": null,
+  "POLICY_PATH_HAWKISH": false
+ },
+ "differentials": {
+  "US10Y": 4.83
+ }
+}

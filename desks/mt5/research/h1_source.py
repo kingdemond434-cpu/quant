@@ -40,10 +40,11 @@ a quiet market.
 from __future__ import annotations
 
 import json
+import os
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Callable, Optional
 
 import pandas as pd
 
@@ -60,35 +61,98 @@ STALE_AFTER_H = 6.0
 _COLUMNS = ["open", "high", "low", "close", "tick_volume", "spread", "real_volume"]
 
 
+def _market_open(ts: pd.Timestamp) -> bool:
+    ts = pd.Timestamp(ts).tz_convert("UTC")
+    wd, hour = ts.weekday(), ts.hour
+    return not (wd == 5 or (wd == 4 and hour >= 22) or (wd == 6 and hour < 22))
+
+
+def trading_lag_hours(last_bar: pd.Timestamp, end: datetime | pd.Timestamp) -> float:
+    """Market-open hours missing after a bar; a closed weekend is not stale data."""
+    cursor = pd.Timestamp(last_bar).ceil("h")
+    finish = pd.Timestamp(end)
+    cursor = cursor.tz_localize("UTC") if cursor.tzinfo is None else cursor.tz_convert("UTC")
+    finish = finish.tz_localize("UTC") if finish.tzinfo is None else finish.tz_convert("UTC")
+    hours = 0
+    while cursor < finish:
+        if _market_open(cursor):
+            hours += 1
+        cursor += pd.Timedelta(hours=1)
+    return float(hours)
+
+
 @dataclass
 class Bars:
-    """H1 bars plus the honest provenance of where they came from."""
+    """H1 bars plus the honest provenance of where they came from.
+
+    `source` and `venue` are two DIFFERENT facts and conflating them welded the
+    forward clocks shut. See `evidence_venue`.
+    """
     df: pd.DataFrame
-    source: str                     # MT5 | HTTP:<host> | CACHE:<file>
+    source: str                     # ROUTE: MT5 | HTTP:<host> | CACHE:<file>
     fetched_utc: str
     why: str = ""
+    promotion_authority: bool = False
+    venue: str = ""                 # WHOSE PRINTS these are -- see evidence_venue
+    #: True when the cache file arrived tz-naive and `from_cache` restored the UTC label its
+    #: epoch source already implies. Recorded rather than done silently: a reader must be able to
+    #: tell a file that declared its clock from one whose clock was reconstructed.
+    naive_index_restored: bool = False
+
+    @property
+    def evidence_venue(self) -> str:
+        """The venue whose prints this evidence IS, independent of how it was retrieved.
+
+        THE DEFECT THIS FIXES (measured 2026-08-26). `shadow_forward` put `source` into the
+        frozen sleeve identity. But `source` is a ROUTE -- "MT5:FusionMarkets-Live" when the
+        Windows terminal answers, "CACHE:USDJPY_H1.parquet" when it does not -- and those are
+        the SAME broker's bars arriving two different ways. `from_cache` already says so in
+        code: it sets promotion_authority from broker_info.json precisely because cached Fusion
+        bars "carry the same evidence quality as live broker bars for promotion". So every
+        forward clock broke on identity drift on every run the terminal was down, which on this
+        Linux box is every run: 195 IDENTITY BROKEN lines in reports, data_venue named in
+        195/195. A break is terminal, so the 14-day window never survived a single day and
+        nothing could ever reach promotion.
+
+        The old field was ALSO blind to the change it existed to catch: a demo feed and a live
+        feed reaching us by the same route both read "CACHE:<file>". broker_info.json currently
+        records FusionMarkets-Demo while the frozen rows say FusionMarkets-Live -- a real venue
+        change the transport string could not see. This property is therefore STRICTER, not
+        looser: it ignores the route and reports the venue, so a genuine venue change breaks the
+        clock and a terminal outage does not.
+
+        Fails closed: an unrecoverable venue is "UNKNOWN-VENUE", which matches no frozen
+        identity and so breaks the clock rather than quietly passing (L1.28a -- unmeasured is a
+        real answer, never a clean verdict).
+        """
+        return self.venue or "UNKNOWN-VENUE"
 
     @property
     def n(self) -> int:
         return 0 if self.df is None else len(self.df)
 
     @property
-    def freshest(self) -> Optional[pd.Timestamp]:
+    def freshest(self) -> pd.Timestamp | None:
         return None if self.df is None or self.df.empty else self.df.index.max()
 
     @property
-    def age_hours(self) -> Optional[float]:
+    def age_hours(self) -> float | None:
         f = self.freshest
         if f is None:
             return None
-        return (datetime.now(timezone.utc) - f.to_pydatetime()).total_seconds() / 3600.0
+        return (datetime.now(UTC) - f.to_pydatetime()).total_seconds() / 3600.0
+
+    @property
+    def trading_age_hours(self) -> float | None:
+        f = self.freshest
+        return None if f is None else trading_lag_hours(f, datetime.now(UTC))
 
     @property
     def stale(self) -> bool:
-        a = self.age_hours
+        a = self.trading_age_hours
         return a is not None and a > STALE_AFTER_H
 
-    def covers(self, start: datetime, end: Optional[datetime] = None) -> tuple:
+    def covers(self, start: datetime, end: datetime | None = None) -> tuple:
         """Does this actually contain bars for the window? Returns (bool, why).
 
         THE CHECK THAT KEEPS A GAP FROM READING AS A QUIET MARKET. A caller that
@@ -96,7 +160,7 @@ class Bars:
         simply had no data for, and every rate the promoter computes is then
         divided by a denominator that includes them.
         """
-        end = end or datetime.now(timezone.utc)
+        end = end or datetime.now(UTC)
         if self.df is None or self.df.empty:
             return False, f"{self.source} returned no bars at all"
         lo, hi = self.df.index.min(), self.df.index.max()
@@ -107,7 +171,7 @@ class Bars:
         if lo > pd.Timestamp(start):
             return False, (f"{self.source} starts {lo.isoformat()}, after the "
                            f"window start {start.isoformat()}")
-        gap_h = (pd.Timestamp(end) - hi).total_seconds() / 3600.0
+        gap_h = trading_lag_hours(hi, end)
         if gap_h > STALE_AFTER_H:
             return False, (f"{self.source} ends {hi.isoformat()}, {gap_h:.1f}h "
                            f"before the window end: the tail of this period is "
@@ -116,9 +180,97 @@ class Bars:
 
     def stamp(self) -> dict:
         """What the caller writes into every ledger row built from these bars."""
-        return {"bar_source": self.source, "bars_fetched_utc": self.fetched_utc,
+        return {"bar_source": self.source, "evidence_venue": self.evidence_venue,
+                "bars_fetched_utc": self.fetched_utc,
                 "bars_freshest": None if self.freshest is None else self.freshest.isoformat(),
-                "bars_stale": self.stale, "h1_source_version": H1_SOURCE_VERSION}
+                "bars_stale": self.stale,
+                "promotion_authority": self.promotion_authority,
+                "h1_source_version": H1_SOURCE_VERSION}
+
+
+def broker_utc_offset_hours(mt5_mod) -> float:
+    """Return the offset required to compare MT5 Python timestamps with UTC.
+
+    THE DEFECT THIS MEASURES. `copy_rates_*` returns the broker SERVER's wall time, not UTC.
+    Stamping it `utc=True` -- as this file did -- labels every bar with a time it does not have.
+    Measured 2026-08-26: a Fusion tick carried 04:29:03 while true UTC was 01:29:03, so every
+    bar in the desk's history is labelled THREE HOURS LATE. Two things break silently:
+
+      * any comparison between a bar timestamp and a real clock (a forward-window boundary, a
+        staleness check, "is this bar fresh") is wrong by the offset;
+      * session windows are hour-of-day filters. They still select coherent broker sessions --
+        they were fitted and gauntleted on these labels, so the STRATEGIES are unaffected -- but
+        the label "07:00 UTC" names an hour that is really 04:00 UTC.
+
+    `MetaTrader5` exposes ``tick.time`` as a Unix timestamp.  Unix timestamps are UTC, so its
+    numeric value cannot reveal a broker-wall-clock offset.  Subtracting it from ``now`` was
+    therefore measuring *tick age*, not timezone: over a weekend it wrote offsets such as -29h,
+    shifted a forward boundary backwards, and counted historical trades as forward evidence.
+
+    The bar reader uses the same UTC epoch conversion.  There is consequently no conversion to
+    apply at this API boundary.  Keep this named function so callers declare the comparison, but
+    return the only honest value rather than turning a stale quote into a clock transform.
+    """
+    del mt5_mod
+    return 0.0
+
+
+def _terminal_candidates() -> list[str]:
+    """Configured terminal first, then explicitly configured/read-only fallbacks."""
+    paths: list[str] = []
+    try:
+        from mt5desk.config import terminal_path
+        paths.append(str(terminal_path()))
+    except Exception:
+        pass
+    paths.extend(p for p in os.environ.get("MT5_SHADOW_TERMINALS", "").split(os.pathsep) if p)
+    if os.name == "nt":
+        paths.extend([
+            r"C:\Program Files\Fusion Markets MetaTrader 5\terminal64.exe",
+            r"C:\Program Files\VIG Group MT5 Terminal\terminal64.exe",
+        ])
+    return list(dict.fromkeys(paths))
+
+
+def explain_init_failure(err: object, candidates: list[str] | None = None) -> str:
+    """The MT5 error, plus what it actually means when the executable is present.
+
+    MEASURED 2026-09-06, AND THE BARE ERROR SENT EVERYONE TO THE WRONG PLACE. The box logged
+
+        -10003 "IPC initialize failed, Process create failed
+                'C:/Program Files/Fusion Markets MetaTrader 5/terminal64.exe'"
+
+    every hour for days. The message names a path, so the path is what gets checked -- and the
+    file was there, at exactly that path. The real cause is that `terminal64.exe` is a GUI
+    process and the hourly cycle runs as a scheduled task with LogonType Password/S4U, i.e. in
+    Session 0, where Windows refuses to create an interactive process. `m.initialize()` typed
+    into a logged-in shell on the same box returned `True (1, 'Success')` in the same hour.
+
+    So this checks whether the named executable EXISTS before repeating the error, and says the
+    two things apart:
+
+        file missing   -> a path or install problem, fix the path
+        file present   -> a SESSION problem, fix the task's logon type
+
+    Consequences, so nobody has to re-derive them: with no terminal there are no bars, no ticks
+    and no account state, so the gauntlet refuses cells at symbol_eligibility for want of bars,
+    the triangles report UNMEASURED, and the dashboard shows no readable clock. One dead
+    terminal presents as four unrelated research failures.
+    """
+    text = f"{err}"
+    paths = candidates if candidates is not None else _terminal_candidates()
+    present = [p for p in paths if p and Path(p).exists()]
+    if not present:
+        return (f"{text} -- no candidate terminal exists on this host "
+                f"({len(paths)} tried). Set MT5_SHADOW_TERMINALS to the real terminal64.exe.")
+    return (f"{text} -- but {present[0]} EXISTS, so this is not a path problem. On Windows this "
+            f"is almost always a SESSION problem: terminal64.exe is a GUI process and a "
+            f"scheduled task with LogonType Password/S4U runs in Session 0, where Windows "
+            f"refuses to create one. Set the task to 'Run only when user is logged on' "
+            f"(LogonType Interactive) and keep a desktop session, or leave the terminal running "
+            f"so initialize() attaches instead of creating. Until it initializes there are no "
+            f"bars, no ticks and no account state, which presents downstream as cells refused "
+            f"for missing bars, UNMEASURED triangles and a dashboard with no readable clock.")
 
 
 def _normalise(df: pd.DataFrame) -> pd.DataFrame:
@@ -145,52 +297,120 @@ def _normalise(df: pd.DataFrame) -> pd.DataFrame:
 
 # ----------------------------------------------------------------- the sources
 
-def from_mt5(sym: str, start: datetime) -> Optional[Bars]:
-    """The broker's own bars. Best evidence, least available."""
+def from_mt5(sym: str, start: datetime, timeframe: str = "H1") -> Bars | None:
+    """The broker's own bars, on `timeframe`. Best evidence, least available."""
     try:
         import MetaTrader5 as mt5
     except ImportError:
         return None
-    try:
-        if mt5.terminal_info() is None:
-            from mt5desk.config import terminal_path
-            if not mt5.initialize(path=terminal_path()):
-                return None
-        rates = mt5.copy_rates_range(sym, mt5.TIMEFRAME_H1, start,
-                                     datetime.now(timezone.utc))
-        if rates is None or len(rates) < 100:
-            return None
-        df = pd.DataFrame(rates)
-        df["time"] = pd.to_datetime(df["time"], unit="s", utc=True)
-        return Bars(_normalise(df.set_index("time")), "MT5",
-                    datetime.now(timezone.utc).isoformat(timespec="seconds"),
-                    "the venue's own bars — the only source whose sessions and "
-                    "spreads match what would actually have been traded")
-    except Exception:                                # noqa: BLE001
-        return None
+    tf_code = getattr(mt5, f"TIMEFRAME_{str(timeframe).upper()}", None)
+    if tf_code is None:
+        return None                    # a terminal without this chart: NO DATA, never a guess
+    candidates: list[str | None] = [None] if mt5.terminal_info() is not None else []
+    candidates.extend(_terminal_candidates())
+    for terminal in candidates:
+        try:
+            if terminal is not None:
+                mt5.shutdown()
+                from mt5_session import attach_or_initialize
+                if not attach_or_initialize(mt5, path=terminal, timeout=15_000):
+                    continue
+            account = mt5.account_info()
+            server = str(getattr(account, "server", "unknown"))
+            rates = mt5.copy_rates_range(sym, tf_code, start,
+                                         datetime.now(UTC))
+            if rates is None or len(rates) < 100:
+                continue
+            df = pd.DataFrame(rates)
+            # These are BROKER-CLOCK timestamps. `utc=True` here is a label, not a conversion --
+            # kept because every session window and every gauntleted cell is defined on this
+            # clock, and silently shifting history would change what the certified strategies do.
+            # The honest part is publishing the offset so callers that compare against a real
+            # clock can convert; see broker_utc_offset_hours().
+            df["time"] = pd.to_datetime(df["time"], unit="s", utc=True)
+            authority = "fusion" in server.casefold()
+            offset = broker_utc_offset_hours(mt5)
+            return Bars(
+                _normalise(df.set_index("time")), f"MT5:{server}",
+                datetime.now(UTC).isoformat(timespec="seconds"),
+                f"broker-native bars on the BROKER clock (offset {offset:+.2f}h from UTC; "
+                f"timestamps are labelled UTC but are not); capital authority only when the "
+                f"server is the configured Fusion venue", authority,
+                venue=f"MT5:{server}",
+            )
+        except Exception:
+            continue
+    return None
 
 
-def from_cache(sym: str, start: datetime) -> Optional[Bars]:
-    """The parquet cached by `fetch_universe`. Works offline; goes stale.
+def from_cache(sym: str, start: datetime, timeframe: str = "H1") -> Bars | None:
+    """The parquet cached by `fetch_universe`, on `timeframe`. Works offline; goes stale.
 
     Kept as a real source rather than a fallback of last resort, because a
     strategy replayed on cached history up to the cache's end is valid evidence
     FOR THAT PERIOD. What it must not do is pretend to cover days it does not
     have, which is what `covers()` is for.
+
+    Reads broker_info.json (written by refresh_tail.py on the Windows box)
+    to determine promotion_authority: if the MT5 server is Fusion, the cached
+    bars carry the same evidence quality as live broker bars for promotion.
     """
-    p = UNI / f"{sym}_H1.parquet"
+    p = UNI / f"{sym}_{str(timeframe).upper()}.parquet"
     if not p.exists():
         return None
     try:
         df = pd.read_parquet(p)
-    except Exception:                                # noqa: BLE001
+    except Exception:
         return None
     if df.empty:
         return None
+
+    # Check broker_info.json for promotion_authority
+    broker_info_path = UNI / "broker_info.json"
+    is_fusion = False
+    # THE VENUE TRAVELS WITH THE CACHE. broker_info.json already records which server the
+    # parquet was refreshed from, so a cached bar can name its venue exactly as a live one
+    # does. Without this the identity check saw only "CACHE:<file>" -- a route, not a venue.
+    server = ""
+    if broker_info_path.exists():
+        try:
+            broker_info = json.loads(broker_info_path.read_text(encoding="utf-8"))
+            is_fusion = broker_info.get("is_fusion", False)
+            server = str(broker_info.get("server") or "")
+            # Per-symbol override if available
+            sym_info = broker_info.get("symbols", {}).get(sym, {})
+            if "is_fusion" in sym_info:
+                is_fusion = sym_info["is_fusion"]
+            if sym_info.get("server"):
+                server = str(sym_info["server"])
+        except Exception:
+            pass
+
+    # RESTORE THE LABEL THE EPOCH ALREADY IMPLIES -- this is provenance, not an assumption.
+    # Every file in this directory comes from MT5 `rates["time"]`, which is UNIX EPOCH SECONDS:
+    # the instants are unambiguous and no server offset can apply to them. Five bulk downloaders
+    # called `pd.to_datetime(..., unit="s")` without `utc=True`, which keeps the same instants and
+    # merely drops the tz label -- and `_normalise` then refused the file. MEASURED 2026-08-27:
+    # 173 of 197 H1 parquets were tz-naive, so `fetch_h1` returned None for 88% of the registry
+    # and the desk's universal-ground mandate (LAWS L1.61) was running on 24 symbols. The
+    # generic guard in `_normalise` STAYS STRICT -- a naive index from an arbitrary feed really
+    # is ambiguous. This localisation is confined to the one directory whose provenance is known,
+    # and it is verified by the session structure: the naive files' Friday tail (21,22,23) and
+    # Monday head (0,1,2) match the tz-aware files exactly, which a server-offset shift would not.
+    if isinstance(df.index, pd.DatetimeIndex) and df.index.tz is None:
+        df = df.copy()
+        df.index = df.index.tz_localize("UTC")
+        naive_restored = True
+    else:
+        naive_restored = False
+
     b = Bars(_normalise(df), f"CACHE:{p.name}",
-             datetime.now(timezone.utc).isoformat(timespec="seconds"),
-             "cached history — valid evidence up to its own end, and NO DATA "
-             "after it. Re-run research/fetch_universe.py to extend.")
+             datetime.now(UTC).isoformat(timespec="seconds"),
+             "cached history \u2014 valid evidence up to its own end, and NO DATA "
+             "after it. Re-run research/fetch_universe.py to extend.",
+             promotion_authority=is_fusion,
+             venue=f"MT5:{server}" if server else "UNKNOWN-VENUE")
+    b.naive_index_restored = naive_restored
     return b
 
 
@@ -209,7 +429,7 @@ _YF_SYMBOLS = {
 }
 
 
-def from_yfinance(sym: str, start: datetime) -> Optional[Bars]:
+def from_yfinance(sym: str, start: datetime) -> Bars | None:
     """H1 from Yahoo. No account, no key — the source that works on a VPS.
 
     NOT REGISTERED BY DEFAULT. Call `register_source(from_yfinance)` to enable
@@ -232,7 +452,7 @@ def from_yfinance(sym: str, start: datetime) -> Optional[Bars]:
     try:
         raw = yf.download(tkr, start=start.date().isoformat(), interval="1h",
                           progress=False, auto_adjust=False)
-    except Exception:                                # noqa: BLE001
+    except Exception:
         return None
     if raw is None or raw.empty:
         return None
@@ -246,10 +466,11 @@ def from_yfinance(sym: str, start: datetime) -> Optional[Bars]:
     else:
         df.index = df.index.tz_convert("UTC")
     return Bars(_normalise(df), f"HTTP:yfinance/{tkr}",
-                datetime.now(timezone.utc).isoformat(timespec="seconds"),
+                datetime.now(UTC).isoformat(timespec="seconds"),
                 "free hourly bars — a DIFFERENT series from the broker's: no "
                 "dealer spread, different session boundaries, and no guarantee "
-                "the highs and lows match what the venue printed")
+                "the highs and lows match what the venue printed",
+                venue="HTTP:yfinance")
 
 
 #: Extra sources a deployment can register — an HTTP feed on the VPS, a vendor
@@ -258,13 +479,35 @@ def from_yfinance(sym: str, start: datetime) -> Optional[Bars]:
 EXTRA_SOURCES: list = []
 
 
-def register_source(fn: Callable[[str, datetime], Optional[Bars]]) -> None:
+def register_source(fn: Callable[[str, datetime], Bars | None]) -> None:
     """Add a source. Tried after MT5 and before the cache."""
     EXTRA_SOURCES.append(fn)
 
 
+def _accepts_timeframe(fn) -> bool:
+    """Can this source be asked for a chart other than H1? Read from its signature.
+
+    A source registered before the ladder existed takes `(sym, start)` and has never promised
+    anything but hourly bars. Asking it for M5 and labelling the answer M5 evidence would be the
+    silent feed substitution this module refuses elsewhere, so it is skipped for a fine chart --
+    NO DATA, which is a real answer -- and used unchanged for H1.
+    """
+    import inspect
+    try:
+        params = inspect.signature(fn).parameters
+    except (TypeError, ValueError):
+        return False
+    if "timeframe" in params:
+        return True
+    positional = [p for p in params.values()
+                  if p.kind in (p.POSITIONAL_ONLY, p.POSITIONAL_OR_KEYWORD)]
+    return len(positional) >= 3 or any(p.kind is p.VAR_POSITIONAL for p in params.values())
+
+
 def fetch_h1(sym: str, start: datetime,
-             prefer: Optional[str] = None) -> Optional[Bars]:
+             prefer: str | None = None,
+             prefer_promotion_authority: bool = False,
+             timeframe: str = "H1") -> Bars | None:
     """First source that returns usable bars, in quality order.
 
     MT5 first because it is the venue actually traded; registered sources next
@@ -273,19 +516,41 @@ def fetch_h1(sym: str, start: datetime,
 
     Returns None only when NOTHING worked, which is a real condition the caller
     must handle as NO DATA rather than as an empty market.
+
+    `timeframe` defaults to H1, so every existing caller is byte-identical. A
+    non-H1 request goes ONLY to the two built-in sources that were told about
+    the ladder: a registered source's contract is `(sym, start)` and it has
+    never promised anything but hourly bars, so silently handing it a fine-chart
+    request and labelling whatever came back as M5 evidence would be the
+    feed-substitution this module's own `from_yfinance` note refuses. A source
+    that cannot answer for a chart is NO DATA, which is a real answer.
     """
+    tf = str(timeframe).upper()
     chain = [("MT5", from_mt5)] + [(f"extra{i}", f) for i, f in enumerate(EXTRA_SOURCES)] \
             + [("CACHE", from_cache)]
     if prefer:
         chain.sort(key=lambda kv: 0 if kv[0].upper().startswith(prefer.upper()) else 1)
+    best_proxy: Bars | None = None
     for _, fn in chain:
+        # ASKED OF THE SIGNATURE, never discovered by catching TypeError. A TypeError raised
+        # INSIDE a source would otherwise be retried as though the source had the older
+        # two-argument shape, and the second failure would be reported as a missing feed.
+        ladder = _accepts_timeframe(fn)
+        if tf != "H1" and not ladder:
+            # A source that never promised anything but hourly bars is NO DATA for a fine chart.
+            # Calling it anyway and labelling whatever came back as M5 evidence is precisely the
+            # feed substitution `from_yfinance` refuses to do silently.
+            continue
         try:
-            b = fn(sym, start)
-        except Exception:                            # noqa: BLE001
+            b = fn(sym, start, tf) if ladder else fn(sym, start)
+        except Exception:
             continue
         if b is not None and b.n > 0:
-            return b
-    return None
+            if not prefer_promotion_authority or b.promotion_authority:
+                return b
+            if best_proxy is None:
+                best_proxy = b
+    return best_proxy
 
 
 # --------------------------------------------------------------- the mix

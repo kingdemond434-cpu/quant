@@ -317,72 +317,22 @@ def test_a_measure_with_no_dedicated_organ_is_itself_a_breach(monkeypatch, tmp_p
     assert "exploration-has-no-dedicated-organ" in {k for k, _ in d}
 
 
-def test_the_dedicated_continuous_miner_exists_and_loops() -> None:
-    """The user's ask, checked structurally: a SEPARATE always-on miner, not a cadence step."""
-    runner = Path("ops/run_moat_miner.sh")
-    assert runner.exists()
-    body = runner.read_text("utf-8")
-    assert "--loop" in body
-    assert "mine_moat.py" in body
-    src = Path("scripts/mine_moat.py").read_text("utf-8")
-    assert "def loop(" in src
-    assert "must never end the exploration" in src, (
-        "a miner that dies on one unreadable file has stopped exploring")
-
-
-# ------------------------------------------------------------------ the deploy path exists
-
-def test_every_recorder_has_a_systemd_unit() -> None:
-    """THE ACTUAL REASON THE MOAT IS EMPTY. The recorders had no unit file at all -- they were
-    started by hand, and a process started by hand stops on the next reboot and never comes back.
-    Not funding, not code, not a decision: four unit files."""
-    import configparser
-    units = {
-        "ops/quant-recorder-fut.service": "scripts/run_recorder.py",
-        "ops/quant-recorder-spot.service": "scripts/run_recorder_spot.py",
-        "ops/quant-recorder-bybit.service": "scripts/run_recorder_bybit.py",
-        "ops/quant-moat-miner.service": "ops/run_moat_miner.sh",
-        # The hunt is a unit too. A screen that only exists as a script somebody remembers to run
-        # is a screen that stops at the next reboot -- the exact failure that left the moat empty.
-        "ops/quant-moat-screen.service": "ops/run_moat_screen.sh",
-    }
-    for unit, target in units.items():
-        p = Path(unit)
-        assert p.exists(), f"{unit} missing -- the desk cannot reconstitute itself from the repo"
-        assert Path(target).exists(), f"{unit} points at {target}, which does not exist"
-        c = configparser.ConfigParser(strict=False)
-        c.read(p)
-        assert {"Unit", "Service", "Install"} <= set(c.sections()), unit
-        assert Path(target).name in c.get("Service", "ExecStart"), unit
-
-
-def test_recorders_restart_always_because_tape_cannot_be_backfilled() -> None:
-    """on-failure is wrong here: a venue cutoff or a CLEAN exit is still a gap in the tape, and
-    the tape is the one thing money cannot buy back later."""
-    import configparser
-    for unit in ("ops/quant-recorder-fut.service", "ops/quant-recorder-spot.service",
-                 "ops/quant-recorder-bybit.service"):
-        c = configparser.ConfigParser(strict=False)
-        c.read(Path(unit))
-        assert c.get("Service", "Restart") == "always", unit
-        assert int(c.get("Service", "RestartSec")) <= 30, f"{unit}: slow restart loses tape"
-
-
-def test_the_miner_never_competes_with_a_recorder_for_io() -> None:
-    """Losing tape is permanent; a slower mining pass costs minutes. The priority ordering has to
-    reflect that asymmetry or a busy box quietly trades the irreplaceable for the recoverable."""
-    import configparser
-    for unit in ("ops/quant-moat-miner.service", "ops/quant-moat-screen.service"):
-        c = configparser.ConfigParser(strict=False)
-        c.read(Path(unit))
-        assert c.get("Service", "IOSchedulingClass") == "idle", unit
-        assert int(c.get("Service", "Nice")) > 5, unit
-    # AND THE SCREEN SITS BELOW THE MINER. The priority order is the value order: lost tape is
-    # unbuyable, an unmined cell is a delay, an unscreened cell is a delay behind that one.
-    mine, screen = configparser.ConfigParser(strict=False), configparser.ConfigParser(strict=False)
-    mine.read(Path("ops/quant-moat-miner.service"))
-    screen.read(Path("ops/quant-moat-screen.service"))
-    assert int(screen.get("Service", "Nice")) >= int(mine.get("Service", "Nice"))
+# FOUR TESTS REMOVED 2026-09-05 (universe mandate), and their subjects with them:
+#
+#   test_the_dedicated_continuous_miner_exists_and_loops    ops/run_moat_miner.sh + mine_moat.py
+#   test_every_recorder_has_a_systemd_unit                  the three crypto recorder units
+#   test_recorders_restart_always_because_tape_...          Restart=always on those recorders
+#   test_the_miner_never_competes_with_a_recorder_for_io    miner vs recorder IO priority
+#
+# Every file they asserted about is deleted: the recorders that wrote the crypto-exchange L2
+# tape, the miner and screen that read it, and the ops units that started all five. The reasoning
+# they encoded was specifically about THAT tape -- "lost tape is unbuyable, an unmined cell is a
+# delay" -- and it does not transfer to a market the desk reaches through a broker terminal. The
+# MT5 desk records its own tape under desks/mt5/recorders and carries its own units.
+#
+# `test_units_cannot_write_outside_the_data_lake` below is deliberately KEPT even though its glob
+# currently matches nothing: it is a standing rule about what a recorder unit may touch, and the
+# day an MT5 recorder unit lands in ops/ it is the test that catches a unit able to reach the book.
 
 
 def test_units_cannot_write_outside_the_data_lake() -> None:
@@ -395,39 +345,16 @@ def test_units_cannot_write_outside_the_data_lake() -> None:
         assert c.get("Service", "ReadWritePaths").endswith("/data"), unit.name
 
 
-def test_the_runbook_names_the_real_acceptance_test() -> None:
-    """An exit code proves a process ended, never that it produced -- the desk has been burned by
-    exactly that. The runbook must send the operator to PRODUCTION, not to systemctl status."""
-    doc = Path("docs/RECORDER_DEPLOY.md").read_text("utf-8")
-    assert "never that it produced" in doc
-    assert "enforce_constitution.py" in doc
-    assert "exploration-blocked-upstream" in doc, (
-        "the operator must be told which breach clearing means it worked")
-    assert "permanently unbuyable" in doc
-
-
-def test_there_is_a_zero_privilege_path_to_starting_the_recorders() -> None:
-    """THE HETZNER BOX HAS NO SUDO FOR `quant`, so /etc/systemd/system is unreachable. That is
-    not a reason to leave the tape unrecorded -- every unrecorded second is permanently unbuyable,
-    which is the only cost here money cannot fix afterwards."""
-    sh = Path("ops/start_recorders_nosudo.sh")
-    assert sh.exists()
-    body = sh.read_text("utf-8")
-    for script in ("run_recorder.py", "run_recorder_spot.py", "run_recorder_bybit.py"):
-        assert script in body, script
-    assert "pgrep" in body, "must be idempotent -- it is both the starter and the watchdog"
-    doc = Path("docs/RECORDER_DEPLOY.md").read_text("utf-8")
-    assert "no sudo" in doc.lower()
-    assert "crontab" in doc
-
-
-def test_the_starter_matches_each_recorder_exactly_not_by_prefix() -> None:
-    """A loose `pgrep -f run_recorder` ALSO matches run_recorder_spot and run_recorder_bybit, so
-    one running recorder would report all three alive -- and the desk would record one venue while
-    believing it recorded three."""
-    body = Path("ops/start_recorders_nosudo.sh").read_text("utf-8")
-    assert "[s]cripts/${script}" in body, "must match the full script path, not a bare prefix"
-    assert "believing it recorded three" in body, "the reason must survive in the source"
+# THREE MORE REMOVED IN THE SAME PASS: test_the_runbook_names_the_real_acceptance_test,
+# test_there_is_a_zero_privilege_path_to_starting_the_recorders and
+# test_the_starter_matches_each_recorder_exactly_not_by_prefix. All three read
+# `docs/RECORDER_DEPLOY.md` and `ops/start_recorders_nosudo.sh`, the runbook and the no-sudo
+# starter for the retired crypto recorders. Both are gone.
+#
+# The lesson the last of them pinned is worth restating where the next person will find it, since
+# the test can no longer state it: a loose `pgrep -f run_recorder` also matches run_recorder_spot
+# and run_recorder_bybit, so one live process reported all three alive and the desk believed it
+# recorded three venues while recording one. Any future starter must match the full script path.
 
 
 def test_the_enforcer_has_ONE_definition_of_scope() -> None:
@@ -438,8 +365,12 @@ def test_the_enforcer_has_ONE_definition_of_scope() -> None:
     itself. The rule now lives in max_audit and the enforcer delegates.
     """
     import scripts.max_audit as audit
+    # `ops/run_moat_miner.sh` stood here until 2026-09-05; it is the TRACKED half of the fixture
+    # and had to be a path that really exists, so it moved to a surviving launcher rather than
+    # being dropped -- this test needs one tracked and one untracked citation to exercise both
+    # branches of the scope rule at all.
     absent = ("moat: data/never_written_by_anything.json absent -- coverage is not MEASURED. "
-              "Run ops/run_moat_miner.sh.")
+              "Run ops/gates.sh.")
     tracked, untracked = audit.cited_evidence(absent)
     assert tracked and untracked, "the fixture must exercise BOTH kinds of path"
     assert E._scope(audit, tracked, untracked) == audit.scope_of(tracked, untracked) == "RUNTIME"

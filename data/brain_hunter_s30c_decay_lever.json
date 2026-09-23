@@ -1,0 +1,236 @@
+{
+  "session": "brain_hunter_s30c",
+  "date": "2026-08-29",
+  "tests": "BRAIN's decay_linear ported as a MECHANISM and pointed at the constraint s29b localised: is smoothing the FEATURE a real cost lever on reversal_1?",
+  "preregistered": {
+    "a_mechanical": "daily_turnover strictly decreasing in d, else the run is VOID",
+    "b_substantive": "break-even bp maximised at some d > 1 on the ward_k24 arm",
+    "falsifier": "break-even bp maximised at d=1 REFUTES the lever for this family"
+  },
+  "eval_years": [
+    2019,
+    2026
+  ],
+  "min_names": 8,
+  "decays_tried": [
+    1,
+    2,
+    3,
+    5,
+    10,
+    20,
+    30
+  ],
+  "trials_run": 14,
+  "multiplicity_note": "every d tried is reported, winners and losers; no bar applied here (L1.60) -- trial count is handed to the gauntlet",
+  "costs_note": "sharpe_gross is BEFORE costs; bp_per_unit_turnover_to_zero is the round-trip bp that takes the cell to zero, compared against real spread",
+  "verdict": {
+    "call": "REFUTED -- break-even bp is maximised at d=1; decay is not a cost lever here",
+    "universe": {
+      "turnover_by_d": {
+        "1": 1.449,
+        "2": 1.22,
+        "3": 1.1,
+        "5": 0.966,
+        "10": 0.827,
+        "20": 0.725,
+        "30": 0.679
+      },
+      "breakeven_bp_by_d": {
+        "1": 1.484,
+        "2": 0.502,
+        "3": 0.233,
+        "5": 0.273,
+        "10": 0.091,
+        "20": 0.803,
+        "30": 0.831
+      },
+      "sharpe_gross_by_d": {
+        "1": 0.51,
+        "2": 0.146,
+        "3": 0.059,
+        "5": -0.06,
+        "10": -0.017,
+        "20": -0.126,
+        "30": -0.12
+      },
+      "turnover_strictly_decreasing_in_d": true,
+      "breakeven_maximised_at_d": 1,
+      "breakeven_gain_vs_d1": 0.0
+    },
+    "ward_k24": {
+      "turnover_by_d": {
+        "1": 1.467,
+        "2": 1.247,
+        "3": 1.128,
+        "5": 0.997,
+        "10": 0.856,
+        "20": 0.754,
+        "30": 0.703
+      },
+      "breakeven_bp_by_d": {
+        "1": 1.596,
+        "2": 0.903,
+        "3": 0.787,
+        "5": 0.376,
+        "10": 0.806,
+        "20": 0.785,
+        "30": 0.706
+      },
+      "sharpe_gross_by_d": {
+        "1": 0.759,
+        "2": 0.368,
+        "3": 0.278,
+        "5": 0.118,
+        "10": 0.217,
+        "20": 0.181,
+        "30": 0.15
+      },
+      "turnover_strictly_decreasing_in_d": true,
+      "breakeven_maximised_at_d": 1,
+      "breakeven_gain_vs_d1": 0.0
+    }
+  },
+  "cells": {
+    "decay_1": {
+      "universe": {
+        "days": 2380,
+        "mean_names": 140.6,
+        "sharpe_gross": 0.51,
+        "t_stat": 1.566,
+        "ann_return": 0.05419,
+        "daily_turnover": 1.449,
+        "bp_per_unit_turnover_to_zero": 1.484
+      },
+      "ward_k24": {
+        "days": 2380,
+        "mean_names": 129.2,
+        "sharpe_gross": 0.759,
+        "t_stat": 2.332,
+        "ann_return": 0.05902,
+        "daily_turnover": 1.467,
+        "bp_per_unit_turnover_to_zero": 1.596
+      }
+    },
+    "decay_2": {
+      "universe": {
+        "days": 2380,
+        "mean_names": 140.6,
+        "sharpe_gross": 0.146,
+        "t_stat": 0.449,
+        "ann_return": 0.01544,
+        "daily_turnover": 1.22,
+        "bp_per_unit_turnover_to_zero": 0.502
+      },
+      "ward_k24": {
+        "days": 2380,
+        "mean_names": 129.2,
+        "sharpe_gross": 0.368,
+        "t_stat": 1.131,
+        "ann_return": 0.02837,
+        "daily_turnover": 1.247,
+        "bp_per_unit_turnover_to_zero": 0.903
+      }
+    },
+    "decay_3": {
+      "universe": {
+        "days": 2380,
+        "mean_names": 140.5,
+        "sharpe_gross": 0.059,
+        "t_stat": 0.182,
+        "ann_return": 0.00645,
+        "daily_turnover": 1.1,
+        "bp_per_unit_turnover_to_zero": 0.233
+      },
+      "ward_k24": {
+        "days": 2380,
+        "mean_names": 129.2,
+        "sharpe_gross": 0.278,
+        "t_stat": 0.855,
+        "ann_return": 0.02237,
+        "daily_turnover": 1.128,
+        "bp_per_unit_turnover_to_zero": 0.787
+      }
+    },
+    "decay_5": {
+      "universe": {
+        "days": 2380,
+        "mean_names": 140.5,
+        "sharpe_gross": -0.06,
+        "t_stat": -0.184,
+        "ann_return": -0.00665,
+        "daily_turnover": 0.966,
+        "bp_per_unit_turnover_to_zero": 0.273
+      },
+      "ward_k24": {
+        "days": 2380,
+        "mean_names": 129.2,
+        "sharpe_gross": 0.118,
+        "t_stat": 0.363,
+        "ann_return": 0.00944,
+        "daily_turnover": 0.997,
+        "bp_per_unit_turnover_to_zero": 0.376
+      }
+    },
+    "decay_10": {
+      "universe": {
+        "days": 2380,
+        "mean_names": 140.2,
+        "sharpe_gross": -0.017,
+        "t_stat": -0.052,
+        "ann_return": -0.0019,
+        "daily_turnover": 0.827,
+        "bp_per_unit_turnover_to_zero": 0.091
+      },
+      "ward_k24": {
+        "days": 2380,
+        "mean_names": 129.2,
+        "sharpe_gross": 0.217,
+        "t_stat": 0.665,
+        "ann_return": 0.01739,
+        "daily_turnover": 0.856,
+        "bp_per_unit_turnover_to_zero": 0.806
+      }
+    },
+    "decay_20": {
+      "universe": {
+        "days": 2380,
+        "mean_names": 139.8,
+        "sharpe_gross": -0.126,
+        "t_stat": -0.388,
+        "ann_return": -0.01468,
+        "daily_turnover": 0.725,
+        "bp_per_unit_turnover_to_zero": 0.803
+      },
+      "ward_k24": {
+        "days": 2380,
+        "mean_names": 129.2,
+        "sharpe_gross": 0.181,
+        "t_stat": 0.556,
+        "ann_return": 0.01493,
+        "daily_turnover": 0.754,
+        "bp_per_unit_turnover_to_zero": 0.785
+      }
+    },
+    "decay_30": {
+      "universe": {
+        "days": 2380,
+        "mean_names": 139.4,
+        "sharpe_gross": -0.12,
+        "t_stat": -0.37,
+        "ann_return": -0.01422,
+        "daily_turnover": 0.679,
+        "bp_per_unit_turnover_to_zero": 0.831
+      },
+      "ward_k24": {
+        "days": 2380,
+        "mean_names": 129.2,
+        "sharpe_gross": 0.15,
+        "t_stat": 0.461,
+        "ann_return": 0.0125,
+        "daily_turnover": 0.703,
+        "bp_per_unit_turnover_to_zero": 0.706
+      }
+    }
+  }
+}

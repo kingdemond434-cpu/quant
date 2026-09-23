@@ -1,0 +1,72 @@
+{
+ "generated": "2026-08-26",
+ "source": "https://www.mql5.com/sitemap.xml",
+ "note": "URL counts from the sitemap index. 45001/10001 are the site's own per-file caps -- treat those as FLOORS, not censuses.",
+ "languages": [
+  "en",
+  "ru",
+  "zh",
+  "es",
+  "pt",
+  "ja",
+  "de",
+  "ko",
+  "fr",
+  "it",
+  "tr"
+ ],
+ "sitemaps_per_language": 28,
+ "index_entries": 342,
+ "counts_en": {
+  "forum_general": 45001,
+  "forum_mql4": 45001,
+  "forum_ea": 15683,
+  "forum_indicators": 5549,
+  "forum_trading_systems": 4113,
+  "forum_stock-exchange": 371,
+  "forum_financial-news": 205,
+  "articles": 3278,
+  "codebase": 10001,
+  "blogs": 10001,
+  "jobs": 158
+ },
+ "counts_forum_trading_systems_by_lang": {
+  "en": 4113,
+  "ru": 2141,
+  "zh": 864,
+  "de": 746,
+  "pt": 556,
+  "es": 389,
+  "ja": 294,
+  "tr": 271,
+  "ko": 269
+ },
+ "robots": {
+  "read": "full 2961 B",
+  "allowed": [
+   "/en/forum",
+   "/en/forum/<section>",
+   "/en/articles",
+   "/sitemap*.xml"
+  ],
+  "disallowed_for_star": [
+   "/*/search*",
+   "/data*",
+   "/*/messages/*",
+   "/*/channels/*",
+   "/*/code/viewcode/*",
+   "/*/code/download/*/",
+   "/*/signals/*/deals/page*",
+   "/*/signals/*/reviews",
+   "/*/market/product/*/comments"
+  ]
+ },
+ "rate_limit": "pace >=5s; ~50-60 sequential list pages at 1.5s -> HTTP 403 for the IP. 403 is BACK-OFF, never an empty result.",
+ "routes": {
+  "articles_list": "/en/articles/pageN (40 tiles/page, 82 pages; titles live in the /en/articles/<id> ANCHOR, there are ZERO <h3> tags)",
+  "forum_section_list": "/en/forum/<section>/pageN (30 threads/page; div.widgetRow carries title + preview + <span title=\"Replies\">)",
+  "forum_thread": "/en/forum/<id>[/pageN] (div.comment-box per post; quoted parent text is inline, so reply chains are readable without extra fetches)",
+  "codebase": "/en/code/mt5/{experts,indicators,libraries,scripts}/pageN  (NOT /en/code_base -- that 404s)",
+  "signals": "/en/signals/mt5/list/pageN"
+ }
+}

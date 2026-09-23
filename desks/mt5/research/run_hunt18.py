@@ -29,6 +29,11 @@ from mt5desk.engine import Costs  # noqa: E402
 from registry import append_hunt_record  # noqa: E402
 from run_hunt17 import (FAMILIES, PARAMS, battery, resample)  # noqa: E402
 
+#: Fusion Zero's published contract, USD per lot PER SIDE ($4.50 round turn). Mirrors
+#: `libs.portfolio.fusion_cost.COMMISSION_PER_LOT_PER_SIDE`. The 3.50 this replaced was a
+#: ROUND-TURN figure sitting in a PER-SIDE field, billing $7.00 a round trip against $4.50.
+FUSION_COMMISSION_PER_SIDE = 2.25
+
 BASE = Path(__file__).resolve().parent.parent
 UNI = BASE / "data" / "universe"
 REPORTS = BASE / "reports"
@@ -89,9 +94,7 @@ def main() -> int:
         h1 = families._h1(pd.read_parquet(fp))
         h4, d1 = resample(h1)
         m = meta[sym]
-        costs = Costs(spread_per_lot=0.48 if sym == "XAUUSD" else max(
-            m["median_spread_pts"] * m["tick_size"] * m["contract_size"], 0.05),
-            commission_per_lot=3.50, contract_oz=m["contract_size"])
+        costs = Costs.from_symbol(m, commission_per_lot=FUSION_COMMISSION_PER_SIDE)
         sigs = fn(h4, d1, side, **params)
         if len(sigs) < 60:
             continue

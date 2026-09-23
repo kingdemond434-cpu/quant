@@ -1,0 +1,1043 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Algorithmic Trading Articles for Statistics and analysis | MetaTrader",
+  "url": "https://www.metatrader.com/en/algotrading/statistics",
+  "published": "2026-09-03T20:13:42+00:00",
+  "symbols": [
+   "BTCUSD",
+   "EURUSD",
+   "GBPUSD",
+   "USDCAD",
+   "USDCHF",
+   "USDJPY"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "breakout",
+   "correlation",
+   "gap",
+   "momentum",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://www.metatrader.com/manifest.json",
+   "https://download.terminal.free/cdn/web/metaquotes.ltd/mt5/MetaTrader5.pkg.zip?utm_source=www.metatrader.com&amp;utm_campaign=download.mt5.macos",
+   "https://www.metatrader.com/en/download",
+   "https://download.terminal.free/cdn/web/metaquotes.ltd/mt5/mt5setup.exe?utm_source=www.metatrader.com&amp;utm_campaign=download",
+   "https://download.terminal.free/cdn/mobile/mt5/ios?hl=en&amp;utm_source=www.metatrader.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/mobile/mt5/android?hl=en&amp;utm_source=www.metatrader.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/mobile/mt5/android/app-gallery?hl=en&amp;utm_source=www.metatrader.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/web/metaquotes.software.corp/mt5/metatrader5.apk?utm_source=www.metatrader.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/mobile/mql5.channels/ios",
+   "https://download.terminal.free/cdn/mobile/mql5.channels/android",
+   "https://download.terminal.free/cdn/mobile/mql5.channels/android/app-gallery",
+   "https://download.terminal.free/cdn/web/metaquotes.software.corp/mql5channels/mql5channels.apk",
+   "https://www.tradays.com/en/download",
+   "https://download.terminal.free/cdn/mobile/tradays/ios",
+   "https://download.terminal.free/cdn/mobile/tradays/android",
+   "https://download.terminal.free/cdn/mobile/tradays/android/app-gallery",
+   "https://download.terminal.free/cdn/web/metaquotes.software.corp/tradays/tradays.apk"
+  ],
+  "n_endpoints": 17,
+  "vault_sha": "cb892098be0f5356e9d8",
+  "host": "www.metatrader.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Sharadar Data Pricing",
+  "url": "https://www.quantrocket.com/pricing/data/sharadar/",
+  "published": "2026-09-03T20:13:43+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://www.quantrocket.com/favicons/manifest.json",
+   "https://www.quantrocket.com/docs/api/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "2b6e4fc1f51b8d389dd5",
+  "host": "www.quantrocket.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "EDI Data Pricing",
+  "url": "https://www.quantrocket.com/pricing/data/edi/",
+  "published": "2026-09-03T20:13:45+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.quantrocket.com/favicons/manifest.json",
+   "https://www.quantrocket.com/docs/api/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "2535a9daeb8e1df84d2b",
+  "host": "www.quantrocket.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Brain Language Metrics Data Pricing",
+  "url": "https://www.quantrocket.com/pricing/data/brain/blm/",
+  "published": "2026-09-03T20:13:47+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://www.quantrocket.com/favicons/manifest.json",
+   "https://www.quantrocket.com/docs/api/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "4a07c002f88d8f92a8eb",
+  "host": "www.quantrocket.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Brain Sentiment Indicator Data Pricing",
+  "url": "https://www.quantrocket.com/pricing/data/brain/bsi/",
+  "published": "2026-09-03T20:13:49+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://www.quantrocket.com/favicons/manifest.json",
+   "https://www.quantrocket.com/docs/api/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "d129add7e3c8c61a7d9c",
+  "host": "www.quantrocket.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u5916\u6c47(waihui)\u80a1\u5427_\u5916\u6c47\u600e\u4e48\u6837_\u5206\u6790\u8ba8\u8bba\u793e\u533a\u2014\u4e1c\u65b9\u8d22\u5bcc\u7f51",
+  "url": "http://guba.eastmoney.com/list,waihui.html",
+  "published": "2026-09-03T20:13:57+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "847f22a495676f8fc8fc",
+  "host": "guba.eastmoney.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "_\u5916\u6c47(waihui)\u80a1\u5427_\u4e1c\u65b9\u8d22\u5bcc\u7f51\u80a1\u5427",
+  "url": "http://guba.eastmoney.com/news,waihui,1768527825.html",
+  "published": "2026-09-03T20:13:58+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "820029e5d2a29d73069f",
+  "host": "guba.eastmoney.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Data Mining: Theories, Algorithms, and Examples - 1st Edition - Nong Y",
+  "url": "https://www.crcpress.com/Data-Mining-Theories-Algorithms-and-Examples/Ye/p/book/9781439808382",
+  "published": "2026-09-03T20:13:59+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "6537dd4eea5f7ee74d0b",
+  "host": "www.crcpress.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "LBMA Precious Metal Prices | LBMA",
+  "url": "https://www.lbma.org.uk/prices-and-data",
+  "published": "2026-09-03T20:14:01+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1M",
+   "DAILY"
+  ],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.75,
+  "lang": "en-GB",
+  "endpoints": [
+   "https://www.lbma.org.uk/humans.txt"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "aa26efe94d9fdaebac1a",
+  "host": "www.lbma.org.uk"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "TrueFX Downloads &#8211; TrueFX",
+  "url": "https://www.truefx.com/truefx-historical-downloads/",
+  "published": "2026-09-03T20:14:02+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c27908aa822755057a5c",
+  "host": "www.truefx.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u5168\u7403\u8d22\u7ecf\u5feb\u8baf_\u4e1c\u65b9\u8d22\u5bcc\u7f51",
+  "url": "https://kuaixun.eastmoney.com/wh.html",
+  "published": "2026-09-03T20:14:03+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a349b2f629e7244f8702",
+  "host": "kuaixun.eastmoney.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Cabinet",
+  "url": "https://eu-live.dukascopy.com/cabinet/trader/auth/forgot",
+  "published": "2026-09-03T20:14:03+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://eu-live.dukascopy.com/cabinet/trader/auth/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "1355a0947a575e38ffef",
+  "host": "eu-live.dukascopy.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Country Engagement",
+  "url": "http://www.worldbank.org/en/projects-operations/country-strategies",
+  "published": "2026-09-03T20:14:04+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "7bb8f171c9c395ffda26",
+  "host": "www.worldbank.org"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Correlation - Quantifiable Edges",
+  "url": "https://quantifiableedges.com/category/correlation/",
+  "published": "2026-09-03T20:14:04+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "orderflow"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "6e1e1a8e1b52e2d2b7ed",
+  "host": "quantifiableedges.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Quantitative Study - Quantifiable Edges",
+  "url": "https://quantifiableedges.com/category/quantitative-study/",
+  "published": "2026-09-03T20:14:06+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "orderflow"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "09efb06f77a9f7f9ebd3",
+  "host": "quantifiableedges.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Down June &amp; July: 11 of 13 Septembers Closed Lower - Quantifiable Edges",
+  "url": "https://quantifiableedges.com/how-august-and-september-have-fared-after-june-july-both-close-lower/",
+  "published": "2026-09-03T20:14:08+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "correlation",
+   "orderflow",
+   "seasonality"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "513ea695f9ea68ba6a61",
+  "host": "quantifiableedges.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "seasonality - Quantifiable Edges",
+  "url": "https://quantifiableedges.com/category/seasonality/",
+  "published": "2026-09-03T20:14:10+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "orderflow",
+   "seasonality"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "45f27fb8a976b6323389",
+  "host": "quantifiableedges.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "How Changing Correlation Impacts the Range of Probable Outcomes (Video) - Quantifiable Edges",
+  "url": "https://quantifiableedges.com/how-changing-correlation-impacts-the-range-of-probable-outcomes/",
+  "published": "2026-09-03T20:14:13+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "correlation",
+   "orderflow",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "6c92ed2a8afa91dded2d",
+  "host": "quantifiableedges.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Three Benefits of (Non)Correlation [Video] - Quantifiable Edges",
+  "url": "https://quantifiableedges.com/three-benefits-of-noncorrelation/",
+  "published": "2026-09-03T20:14:14+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "correlation",
+   "orderflow",
+   "seasonality"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "71b2765935c45aae0cf8",
+  "host": "quantifiableedges.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "New Tool: Correlation &amp; Diversification Simulator - Quantifiable Edges",
+  "url": "https://quantifiableedges.com/introducing-the-quantifiable-edges-hypothetical-correlation-tool/",
+  "published": "2026-09-03T20:14:16+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "correlation",
+   "orderflow",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "45c7b38dacccf6047c64",
+  "host": "quantifiableedges.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Stock Universe Selection on Multiple Timeframes - Quantish",
+  "url": "https://blog.quantish.io/2022/01/05/stock-universe-selection-on-multiple-timeframes/",
+  "published": "2026-09-03T20:14:25+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "breakout",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "84da55ce65fc24bb904f",
+  "host": "blog.quantish.io"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Kalman and Laguerre signals - Quantish",
+  "url": "https://blog.quantish.io/2021/12/09/kalman-and-laguerre/",
+  "published": "2026-09-03T20:14:27+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "breakout",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "beb2639ac9f4f14caacf",
+  "host": "blog.quantish.io"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Presenting. Crypto. Trend following. - Quantish",
+  "url": "https://blog.quantish.io/2021/11/02/presenting-crypto-trend-following/",
+  "published": "2026-09-03T20:14:29+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "breakout",
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "7140c5f136f62d9161ea",
+  "host": "blog.quantish.io"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Backtests - Quantish",
+  "url": "https://blog.quantish.io/category/backtests/",
+  "published": "2026-09-03T20:14:33+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "breakout"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e766562509b2dc3069df",
+  "host": "blog.quantish.io"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Options - Quantish",
+  "url": "https://blog.quantish.io/category/options/",
+  "published": "2026-09-03T20:14:35+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "breakout"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ee22a39db4b3f189afe3",
+  "host": "blog.quantish.io"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Several Key PerformanceAnalytics Functions From R Now In Python (special thanks to Vijay Vaidyanathan) | QuantStrat TradeR",
+  "url": "https://quantstrattrader.wordpress.com/2023/06/21/several-key-performanceanalytics-functions-from-r-now-in-python-special-thanks-to-vijay-vaidyanathan/",
+  "published": "2026-09-03T20:14:36+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "dcb4492f8ebb94fa9f69",
+  "host": "quantstrattrader.wordpress.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Ilya Kipnis | QuantStrat TradeR",
+  "url": "https://quantstrattrader.wordpress.com/author/ikfuntech/",
+  "published": "2026-09-03T20:14:38+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "correlation",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "be6b8d2483d05d119757",
+  "host": "quantstrattrader.wordpress.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "AI | QuantStrat TradeR",
+  "url": "https://quantstrattrader.wordpress.com/category/ai/",
+  "published": "2026-09-03T20:14:40+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "26a39ef2c38ccaf4c460",
+  "host": "quantstrattrader.wordpress.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Asset Allocation | QuantStrat TradeR",
+  "url": "https://quantstrattrader.wordpress.com/category/asset-allocation/",
+  "published": "2026-09-03T20:14:42+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "correlation",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "053ef92cd4cd557676d9",
+  "host": "quantstrattrader.wordpress.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Basics | QuantStrat TradeR",
+  "url": "https://quantstrattrader.wordpress.com/category/basics/",
+  "published": "2026-09-03T20:14:44+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "6966de90a33ef4da78f6",
+  "host": "quantstrattrader.wordpress.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Portfolio Management | QuantStrat TradeR",
+  "url": "https://quantstrattrader.wordpress.com/category/portfolio-management/",
+  "published": "2026-09-03T20:14:46+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "correlation",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c43f2d658f5e44f5f016",
+  "host": "quantstrattrader.wordpress.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u0421\u0442\u0430\u0442\u044c\u0438 \u043f\u043e \u0430\u043b\u0433\u043e\u0442\u0440\u0435\u0439\u0434\u0438\u043d\u0433\u0443 \u2014 \u0440\u0443\u043a\u043e\u0432\u043e\u0434\u0441\u0442\u0432\u0430 \u0438 \u043f\u0440\u0438\u043c\u0435\u0440\u044b | MetaTrader",
+  "url": "https://www.metatrader.com/ru/algotrading",
+  "published": "2026-09-03T20:14:47+00:00",
+  "symbols": [
+   "GBPUSD"
+  ],
+  "timeframes": [
+   "H1"
+  ],
+  "patterns": [
+   "correlation",
+   "mean_reversion",
+   "momentum",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "ru",
+  "endpoints": [
+   "https://www.metatrader.com/manifest.json",
+   "https://download.terminal.free/cdn/web/metaquotes.ltd/mt5/MetaTrader5.pkg.zip?utm_source=www.metatrader.com&amp;utm_campaign=download.mt5.macos",
+   "https://www.metatrader.com/ru/download",
+   "https://download.terminal.free/cdn/web/metaquotes.ltd/mt5/mt5setup.exe?utm_source=www.metatrader.com&amp;utm_campaign=download",
+   "https://download.terminal.free/cdn/mobile/mt5/ios?hl=ru&amp;utm_source=www.metatrader.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/mobile/mt5/android?hl=ru&amp;utm_source=www.metatrader.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/mobile/mt5/android/app-gallery?hl=ru&amp;utm_source=www.metatrader.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/web/metaquotes.software.corp/mt5/metatrader5.apk?utm_source=www.metatrader.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/mobile/mql5.channels/ios",
+   "https://download.terminal.free/cdn/mobile/mql5.channels/android",
+   "https://download.terminal.free/cdn/mobile/mql5.channels/android/app-gallery",
+   "https://download.terminal.free/cdn/web/metaquotes.software.corp/mql5channels/mql5channels.apk",
+   "https://www.tradays.com/en/download",
+   "https://download.terminal.free/cdn/mobile/tradays/ios",
+   "https://download.terminal.free/cdn/mobile/tradays/android",
+   "https://download.terminal.free/cdn/mobile/tradays/android/app-gallery",
+   "https://download.terminal.free/cdn/web/metaquotes.software.corp/tradays/tradays.apk"
+  ],
+  "n_endpoints": 17,
+  "vault_sha": "b0006e6a27004ce2ba70",
+  "host": "www.metatrader.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u7b97\u6cd5\u4ea4\u6613\u6587\u7ae0 \u2014\u2014 \u6307\u5357\u4e0e\u793a\u4f8b | MetaTrader",
+  "url": "https://www.metatrader.com/zh/algotrading",
+  "published": "2026-09-03T20:14:49+00:00",
+  "symbols": [
+   "AUDUSD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "breakout",
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "zh",
+  "endpoints": [
+   "https://www.metatrader.com/manifest.json",
+   "https://download.terminal.free/cdn/web/metaquotes.ltd/mt5/MetaTrader5.pkg.zip?utm_source=www.metatrader.com&amp;utm_campaign=download.mt5.macos",
+   "https://www.metatrader.com/zh/download",
+   "https://download.terminal.free/cdn/web/metaquotes.ltd/mt5/mt5setup.exe?utm_source=www.metatrader.com&amp;utm_campaign=download",
+   "https://download.terminal.free/cdn/mobile/mt5/ios?hl=zh&amp;utm_source=www.metatrader.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/mobile/mt5/android?hl=zh&amp;utm_source=www.metatrader.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/mobile/mt5/android/app-gallery?hl=zh&amp;utm_source=www.metatrader.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/web/metaquotes.software.corp/mt5/metatrader5.apk?utm_source=www.metatrader.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/mobile/mql5.channels/ios",
+   "https://download.terminal.free/cdn/mobile/mql5.channels/android",
+   "https://download.terminal.free/cdn/mobile/mql5.channels/android/app-gallery",
+   "https://download.terminal.free/cdn/web/metaquotes.software.corp/mql5channels/mql5channels.apk",
+   "https://www.tradays.com/en/download",
+   "https://download.terminal.free/cdn/mobile/tradays/ios",
+   "https://download.terminal.free/cdn/mobile/tradays/android",
+   "https://download.terminal.free/cdn/mobile/tradays/android/app-gallery",
+   "https://download.terminal.free/cdn/web/metaquotes.software.corp/tradays/tradays.apk"
+  ],
+  "n_endpoints": 17,
+  "vault_sha": "3eb6d3294c674ca7ec5b",
+  "host": "www.metatrader.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Art\u00edculos sobre trading algor\u00edtmico: gu\u00edas y ejemplos | MetaTrader",
+  "url": "https://www.metatrader.com/es/algotrading",
+  "published": "2026-09-03T20:14:51+00:00",
+  "symbols": [],
+  "timeframes": [
+   "D1",
+   "H4",
+   "M15"
+  ],
+  "patterns": [
+   "mean_reversion",
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "es",
+  "endpoints": [
+   "https://www.metatrader.com/manifest.json",
+   "https://download.terminal.free/cdn/web/metaquotes.ltd/mt5/MetaTrader5.pkg.zip?utm_source=www.metatrader.com&amp;utm_campaign=download.mt5.macos",
+   "https://www.metatrader.com/es/download",
+   "https://download.terminal.free/cdn/web/metaquotes.ltd/mt5/mt5setup.exe?utm_source=www.metatrader.com&amp;utm_campaign=download",
+   "https://download.terminal.free/cdn/mobile/mt5/ios?hl=es&amp;utm_source=www.metatrader.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/mobile/mt5/android?hl=es&amp;utm_source=www.metatrader.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/mobile/mt5/android/app-gallery?hl=es&amp;utm_source=www.metatrader.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/web/metaquotes.software.corp/mt5/metatrader5.apk?utm_source=www.metatrader.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/mobile/mql5.channels/ios",
+   "https://download.terminal.free/cdn/mobile/mql5.channels/android",
+   "https://download.terminal.free/cdn/mobile/mql5.channels/android/app-gallery",
+   "https://download.terminal.free/cdn/web/metaquotes.software.corp/mql5channels/mql5channels.apk",
+   "https://www.tradays.com/en/download",
+   "https://download.terminal.free/cdn/mobile/tradays/ios",
+   "https://download.terminal.free/cdn/mobile/tradays/android",
+   "https://download.terminal.free/cdn/mobile/tradays/android/app-gallery",
+   "https://download.terminal.free/cdn/web/metaquotes.software.corp/tradays/tradays.apk"
+  ],
+  "n_endpoints": 17,
+  "vault_sha": "ce07b7aa9ab89aa4964c",
+  "host": "www.metatrader.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u30a2\u30eb\u30b4\u30ea\u30ba\u30e0\u53d6\u5f15\u306b\u95a2\u3059\u308b\u8a18\u4e8b \u2014 \u30ac\u30a4\u30c9\u3068\u4e8b\u4f8b | MetaTrader",
+  "url": "https://www.metatrader.com/ja/algotrading",
+  "published": "2026-09-03T20:14:55+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "ja",
+  "endpoints": [
+   "https://www.metatrader.com/manifest.json",
+   "https://download.terminal.free/cdn/web/metaquotes.ltd/mt5/MetaTrader5.pkg.zip?utm_source=www.metatrader.com&amp;utm_campaign=download.mt5.macos",
+   "https://www.metatrader.com/ja/download",
+   "https://download.terminal.free/cdn/web/metaquotes.ltd/mt5/mt5setup.exe?utm_source=www.metatrader.com&amp;utm_campaign=download",
+   "https://download.terminal.free/cdn/mobile/mt5/ios?hl=ja&amp;utm_source=www.metatrader.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/mobile/mt5/android?hl=ja&amp;utm_source=www.metatrader.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/mobile/mt5/android/app-gallery?hl=ja&amp;utm_source=www.metatrader.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/web/metaquotes.software.corp/mt5/metatrader5.apk?utm_source=www.metatrader.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/mobile/mql5.channels/ios",
+   "https://download.terminal.free/cdn/mobile/mql5.channels/android",
+   "https://download.terminal.free/cdn/mobile/mql5.channels/android/app-gallery",
+   "https://download.terminal.free/cdn/web/metaquotes.software.corp/mql5channels/mql5channels.apk",
+   "https://www.tradays.com/en/download",
+   "https://download.terminal.free/cdn/mobile/tradays/ios",
+   "https://download.terminal.free/cdn/mobile/tradays/android",
+   "https://download.terminal.free/cdn/mobile/tradays/android/app-gallery",
+   "https://download.terminal.free/cdn/web/metaquotes.software.corp/tradays/tradays.apk"
+  ],
+  "n_endpoints": 17,
+  "vault_sha": "92048b6ec4719dff86f4",
+  "host": "www.metatrader.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Quantum Financier &#8211; On algorithmic trading",
+  "url": "https://quantumfinancier.wordpress.com",
+  "published": "2026-09-03T20:14:57+00:00",
+  "symbols": [
+   "USDCAD",
+   "USDJPY"
+  ],
+  "timeframes": [
+   "1M",
+   "DAILY"
+  ],
+  "patterns": [
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "81a9f89ba51cf485ab8b",
+  "host": "quantumfinancier.wordpress.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Quantum Financier &#8211; Quantum Financier",
+  "url": "https://quantumfinancier.wordpress.com/author/jipibelanger/",
+  "published": "2026-09-03T20:15:05+00:00",
+  "symbols": [
+   "USDCAD",
+   "USDJPY"
+  ],
+  "timeframes": [
+   "1M",
+   "DAILY"
+  ],
+  "patterns": [
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d1a688777b49bac0e6f9",
+  "host": "quantumfinancier.wordpress.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Extreme Ownership: A Trader&#8217;s Perspective &#8211; Quantum Financier",
+  "url": "https://quantumfinancier.wordpress.com/2018/06/01/extreme-ownership-a-traders-perspective/",
+  "published": "2026-09-03T20:15:07+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "adcbe2cc21e32c6aa6f5",
+  "host": "quantumfinancier.wordpress.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Quantivity | Uncommon Returns through Quantitative and Algorithmic Trading",
+  "url": "http://quantivity.wordpress.com/",
+  "published": "2026-09-03T20:15:09+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "2f2447c3f4a5049c47e2",
+  "host": "quantivity.wordpress.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Trading with Python",
+  "url": "http://tradingwithpython.blogspot.com/",
+  "published": "2026-09-03T20:15:10+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "W1"
+  ],
+  "patterns": [
+   "correlation",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [
+   "http://code.google.com/p/pythonxy/wiki/Downloads",
+   "http://tortoisesvn.net/downloads.html"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "86631613551e38929ee7",
+  "host": "tradingwithpython.blogspot.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Glossary &#8211; The Sober Quant",
+  "url": "https://www.thesoberquant.com/glossary/",
+  "published": "2026-09-03T20:15:13+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "5b65069f13e268348d85",
+  "host": "www.thesoberquant.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Examining Short Term Reversals in Stocks &#8211; Part 1 (Returns Data) &#8211; The Sober Quant",
+  "url": "https://www.thesoberquant.com/examining-short-term-reversals-in-stocks-part-1-returns-data/",
+  "published": "2026-09-03T20:15:16+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "correlation",
+   "mean_reversion",
+   "momentum",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "eb0a7d9b5c9a7cfe57f9",
+  "host": "www.thesoberquant.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Equities &#8211; The Sober Quant",
+  "url": "https://www.thesoberquant.com/category/equities/",
+  "published": "2026-09-03T20:15:17+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "mean_reversion"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "107aec95c0c09a9c5ce2",
+  "host": "www.thesoberquant.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Factor Modeling &#8211; The Sober Quant",
+  "url": "https://www.thesoberquant.com/category/factor-modeling/",
+  "published": "2026-09-03T20:15:19+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "mean_reversion"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "90e99fb242b96992d638",
+  "host": "www.thesoberquant.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Technicals &#8211; The Sober Quant",
+  "url": "https://www.thesoberquant.com/category/technicals/",
+  "published": "2026-09-03T20:15:21+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "mean_reversion"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "93153603c0c5c3185cda",
+  "host": "www.thesoberquant.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "February 2018 &#8211; The Sober Quant",
+  "url": "https://www.thesoberquant.com/2018/02/",
+  "published": "2026-09-03T20:15:23+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "mean_reversion"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "7ea5ceac1324164285fc",
+  "host": "www.thesoberquant.com"
+ }
+]

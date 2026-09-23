@@ -1,0 +1,8 @@
+[Unit]
+Description=Daily creator/video hunter (the desk's measured top survivor source; principal-scheduled 2026-08-25)
+
+[Service]
+Type=oneshot
+WorkingDirectory=/home/quant/quant-platform
+ExecStart=/bin/bash /home/quant/quant-platform/ops/run_video_hunter.sh
+TimeoutStartSec=4h

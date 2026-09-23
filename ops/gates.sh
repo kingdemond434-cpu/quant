@@ -43,10 +43,42 @@ run() {
   fi
 }
 
+# WAIT FOR MEMORY, DO NOT RACE INTO AN OOM (2026-08-29). This box has 3814MB and NO SWAP, and
+# routinely sits under 1GB available -- over a gigabyte of it held by Claude Code sessions and a
+# separate live desk, against 224MB for the whole quant platform. mypy over ~700 files plus a
+# pytest collection needs several hundred MB, and this script was killed with signal 9 mid-run.
+# A gate run that dies on OOM has burned its full runtime and produced nothing; the same run
+# started ninety seconds later completes. So block for headroom rather than racing for it.
+#
+# Exit 75 (EX_TEMPFAIL) means "not started, box is short" -- a distinct outcome from a red gate,
+# and one a caller must not mistake for a passing tree.
+if [ -f scripts/memory_guard.py ] && [ -z "${QUANT_SKIP_MEMORY_GUARD:-}" ]; then
+  if ! $PY scripts/memory_guard.py --label gates --need-mb 700 --max-wait-s 600 -- true; then
+    echo "gates: NOT RUN -- insufficient memory (exit 75). This is not a green tree."
+    exit 75
+  fi
+fi
+# Cap glibc per-thread arenas for the gate processes themselves; the default 64MB-per-thread
+# arenas cost hundreds of MB of address space this workload never touches.
+export MALLOC_ARENA_MAX="${MALLOC_ARENA_MAX:-2}"
+
 echo "gates:"
 # ruff first: it is the cheapest and its failures are the least interesting, so getting them out
 # of the way keeps the expensive output readable.
 run "lint (ruff)"          $PY -m ruff check .
+# COMPILE IS ITS OWN GATE, AND RUFF IS NOT A SUBSTITUTE FOR IT (2026-08-26). scripts/
+# liquidation_listener.py sat in committed code with `await asyncio.sleep(30)` inside a plain
+# `def`, and ruff, mypy AND pytest --co all reported GREEN on it -- for at least 21h, during
+# which it was the sole cause of the desk-wide CI red. `await` outside `async` is not a PARSER
+# error: CPython accepts it into the AST and rejects it in the symbol-table pass, so every
+# AST-level tool (ruff included, and `ast.parse` if you reach for it to check by hand) says the
+# file is fine while `import` raises SyntaxError. Collection missed it because the only importer
+# does so inside a fixture, so the module is never touched at collection time -- and the four
+# tests that would have caught the REAL defect underneath (a non-atomic archive write that had
+# already destroyed ~40 days of data) ERRORED on import instead of FAILING on behaviour, which
+# is how the lost implementation stayed lost. compileall runs the pass the others skip, over the
+# whole tree, in about a second.
+run "compile (compileall)" $PY -m compileall -q scripts libs desks tests
 # COLLECTION IS ITS OWN GATE. An uncollectable module is not a failing test, it is a test that
 # DOES NOT RUN, and pytest reports that as an error count sitting next to a green pass count.
 # ruff does not resolve names and mypy's `files` excludes tests/, so a deleted function or a
@@ -58,14 +90,24 @@ if [ "$FULL" = "1" ]; then
   run "tests (pytest)"      $PY -m pytest -q --cov=libs --cov-branch \
                                 --cov-report=json:coverage.json
   run "coverage floors"     $PY scripts/check_coverage_floors.py --report coverage.json
+  # THE MONEY PATH HAS ITS OWN FLOOR, and until 2026-09-23 it ran on no clock at all: the
+  # ratchet over the files that move capital was a script nothing invoked (LAWS 7 -- unwired
+  # is a defect; L1.49 -- a gate that never ran is a claim the desk cannot cash).
+  run "mt5 money-path floor" $PY scripts/check_mt5_coverage_floor.py
 else
   echo "  (--full adds the suite + coverage floors; the floors are a RATCHET and a push that"
   echo "   lowers them is a breach, so run it before any commit that touches libs/)"
 fi
 
+# ATTEST WHAT WAS TESTED, AND ON WHICH COMMIT. A release that seals a sha and cannot say what
+# passed against it has provenance for the bytes and none for the judgement. Written on RED too:
+# "these gates failed on this sha" is a measurement, and suppressing it would leave the last
+# green attestation standing as though nothing had happened since.
 if [ "$fail" = "0" ]; then
   echo "gates: all green"
+  $PY scripts/gate_attestation.py --gates "$([ "$FULL" = "1" ] && echo full || echo fast)" --result pass || true
 else
   echo "gates: RED -- see above. Do not push."
+  $PY scripts/gate_attestation.py --gates "$([ "$FULL" = "1" ] && echo full || echo fast)" --result fail || true
 fi
 exit "$fail"

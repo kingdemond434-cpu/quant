@@ -25,6 +25,11 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from mt5desk import families  # noqa: E402
 from mt5desk.engine import Costs, run_backtest  # noqa: E402
 
+#: Fusion Zero's published contract, USD per lot PER SIDE ($4.50 round turn). Mirrors
+#: `libs.portfolio.fusion_cost.COMMISSION_PER_LOT_PER_SIDE`; the 3.50 this replaced was a
+#: round-turn figure sitting in a per-side field, billing $7.00 a round trip against $4.50.
+FUSION_COMMISSION_PER_SIDE = 2.25
+
 BASE = Path(__file__).resolve().parent.parent
 UNI = BASE / "data" / "universe"
 E_MAX = 1.5
@@ -86,9 +91,12 @@ def wf_oos(h1: pd.DataFrame, sigs: list, costs: Costs) -> list[float]:
 
 def battery(h1: pd.DataFrame, sigs: list, costs: Costs) -> dict:
     r = run_backtest(h1, sigs, costs).stats()
-    r2 = run_backtest(h1, sigs, Costs(costs.spread_per_lot * 2,
-                                      costs.commission_per_lot * 2,
-                                      costs.contract_oz)).stats()
+    # THE STRESS SCALES THE SPREAD ONLY. This rebuilt `Costs(...)` POSITIONALLY from three
+    # fields of an existing one -- the trap `engine.py:71` names -- which dropped
+    # `quote_per_account` (184x too little commission on a JPY cross) AND doubled the commission.
+    # Commission is contractual and does not widen: "stressing it models nothing that happens".
+    # `Costs.stressed` is the constructor that does exactly the right thing.
+    r2 = run_backtest(h1, sigs, costs.stressed(2.0)).stats()
     wf = wf_oos(h1, sigs, costs)
     defl = r["t_stat"] - E_MAX
     gate = (r["n"] > 60 and defl > 2 and r["profit_factor"] > 1.05
@@ -127,9 +135,21 @@ def main() -> None:
         h1 = pd.read_parquet(UNI / f"{sym}_H1.parquet")
         h1 = families._h1(h1)
         m = meta[sym]
-        costs = Costs(spread_per_lot=0.48 if sym == "XAUUSD" else max(
-            m["median_spread_pts"] * m["tick_size"] * m["contract_size"], 0.05),
-            commission_per_lot=3.50, contract_oz=m["contract_size"])
+        # COST THROUGH THE ONLY CORRECT CONSTRUCTOR. This site hand-rolled `Costs(...)` and
+        # carried both traps `engine.Costs.from_symbol` exists to close:
+        #
+        #   * no `quote_per_account`, so commission stayed in ACCOUNT CURRENCY and was divided by
+        #     contract_size as if it were PRICE -- "184x too little, on the JPY crosses where this
+        #     desk's surviving edges actually live, in the direction that manufactures survivors"
+        #   * `commission_per_lot=3.50`, a ROUND-TURN figure in a PER-SIDE field, billing $7.00 a
+        #     round trip against Fusion Zero's contractual $4.50
+        #   * and the gold override `spread_per_lot=0.48`, which the engine's own docstring
+        #     records as "0.16/oz median written as dollars PER OUNCE into a field that wants
+        #     dollars per lot ... every gold backtest on this desk has run very nearly spread-free"
+        #
+        # `from_symbol` closes all three, and the net direction is MORE expensive, which is the
+        # safe one: it can only remove survivors that were passing on an undercharge.
+        costs = Costs.from_symbol(m, commission_per_lot=FUSION_COMMISSION_PER_SIDE)
         states = day_states(h1)
         for wname, wp in WINDOWS.items():
             sigs = families.family_session_range_breakout(h1, **wp)

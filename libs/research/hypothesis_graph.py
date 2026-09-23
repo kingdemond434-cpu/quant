@@ -1,0 +1,644 @@
+"""Every hypothesis with its parent and its fate, so the desk stops re-proposing what it buried.
+
+TWO GRAPHS IN ONE LEDGER.
+
+ANCESTRY. Each candidate records where it came from -- the miner row, the proposer sweep, the
+deepening task, the certificate it descended from -- as a parent hash. That is what turns
+"survivor count" into a lineage: a family that certifies only through one source, a source that
+only ever produces one family, a descendant that outlives its parent. `research_queue.json`
+already carries a `geneology_id` on 47,150 rows; this is that field made universal and joined
+to outcomes.
+
+TWO ANCESTORS, TWO FIELDS (2026-09-17). `seed_key` is the MINER ROW the idea entered the desk
+on -- sha of (source, title, url), the join `lead_schema.compiler_parent_key` reproduces and
+`knowledge_graph` BECAME resolves against. `parent` is the CELL this one was mutated from, and
+until this date it held the seed too: measured on the live ledger, 0 of 35,199 `parent` values
+resolved to any of the 23,972 node ids, because the writer recorded the seed it was handed and
+threw the donor's explicit parent away. `descendants` had been writing `parent = root_id` (a
+real node id) and `operator = descendant:<axis>` into a field that was overwritten one function
+later, so `alpha_lineage_search.untried_mutations` found no mutation edge under any family and
+`Graph.lineage` could never walk past the first row. A row with no explicit parent still carries
+the seed in BOTH fields, so nothing that reads `parent` as a seed today changes.
+
+NEGATIVE KNOWLEDGE. Every cell the gauntlet judged and failed is indexed by (symbol, family,
+parameter region). Before a proposer or the compiler admits a candidate, it asks whether the desk
+has already buried that region, and how many times. `funnel_census` knows cross_asset_residual
+failed 348 times as a FAMILY; this knows that XAUUSD.cross_asset_residual with lookback in
+[200, 300) and entry_z in [2, 2.5) failed six times and why. A candidate that lands in a buried
+region is not rejected -- the compiler still decides -- but it is CHARGED: the ledger reports the
+prior failures and the caller's deflation can count them.
+
+APPEND-ONLY. A node is never edited; a new fate is a new row with the same node id. The current
+state of a hypothesis is the last row about it, and its history is every row.
+
+TYPED EDGES (2026-09-08). Until this date the only edge was the scalar `parent` hash, so a
+question like "which hypotheses use the COT vintage on JPY crosses" could not be asked of the
+ledger at all. Each row now carries `edges: list[dict]`, every edge `{"type", "to"}` plus any
+detail, and the types are the ones the compiler's candidates already carry the facts for:
+
+    applies_to_symbol   -> symbol:<SYM>                 from the candidate's `symbol`
+    uses_data           -> data:<name>                  from params.input_source, factor_symbols,
+                                                        input_symbol, peer_symbol, factors
+    mutated_from        -> <parent certificate key>     from `parent` / evidence.parent, with the
+                                                        named operator so mutation_yield can bill
+    sourced_from        -> url:<source_url>             from the miner row's `source_url`
+
+A row written before this field existed has no `edges` key and reads as []; nothing about the
+30,313 existing rows changes. `Graph.query` filters the current state by edge type, target,
+symbol, family and fate.
+"""
+from __future__ import annotations
+
+import hashlib
+import json
+from collections.abc import Container, Iterable, Mapping
+from dataclasses import dataclass, field
+from datetime import UTC, datetime
+from pathlib import Path
+from typing import Any
+
+ROOT = Path(__file__).resolve().parents[2]
+LEDGER = ROOT / "desks" / "mt5" / "data" / "hypothesis_graph.jsonl"
+
+#: How a parameter is coarsened into a region, per parameter name. Anything not listed is
+#: bucketed by its exact value -- most params are discrete already.
+REGION_WIDTH: dict[str, float] = {
+    "lookback": 100, "beta_win": 100, "window": 250, "refit_days": 100,
+    "entry_z": 0.5, "entry_p_leave": 0.1, "hold_bars": 4, "lead_bars": 2,
+    "ttl_bars": 24, "stop_atr": 0.5, "rr": 0.5, "min_age": 5,
+}
+
+BORN, JUDGED, CERTIFIED, FAILED, RETIRED, BURIED = (
+    "BORN", "JUDGED", "CERTIFIED", "FAILED", "RETIRED", "BURIED")
+
+#: The typed edges a row may carry. Anything else on an edge is detail, never a new type.
+USES_DATA, APPLIES_TO_SYMBOL, MUTATED_FROM, SOURCED_FROM = (
+    "uses_data", "applies_to_symbol", "mutated_from", "sourced_from")
+EDGE_TYPES: tuple[str, ...] = (USES_DATA, APPLIES_TO_SYMBOL, MUTATED_FROM, SOURCED_FROM)
+#: Parameter names whose VALUE names a dataset or an input series the hypothesis reads.
+DATA_PARAMS: tuple[str, ...] = ("input_source", "factor_symbols", "input_symbol",
+                                "peer_symbol", "factors")
+
+
+@dataclass(frozen=True)
+class Node:
+    symbol: str
+    family: str
+    params: dict[str, Any]
+    source: str = ""
+    parent: str = ""
+    fate: str = BORN
+    why: str = ""
+    gates: dict[str, Any] = field(default_factory=dict)
+    at: str = ""
+    #: Typed edges (`edges_for`). Absent on rows written before 2026-09-08, which read as [].
+    edges: list[dict[str, Any]] = field(default_factory=list)
+    #: The MINER-ROW hash (`compiler_parent_key`): where the idea entered the desk. Separate
+    #: from `parent` since 2026-09-17 -- see `record_candidates`. Empty when there is no seed.
+    seed_key: str = ""
+    #: The transformation that produced this cell from its parent (`step_lookback_up`,
+    #: `descendant:chart`). Written only when the donor named one; never inferred.
+    operator: str = ""
+    #: The gate the JUDGE said stopped this cell, passed through from the verdict rather than
+    #: re-derived from `gates` -- which holds `canonical_report` and nothing else on most rows.
+    terminal_gate: str = ""
+
+    @property
+    def id(self) -> str:
+        return node_id(self.symbol, self.family, self.params)
+
+    @property
+    def region(self) -> str:
+        return region_key(self.symbol, self.family, self.params)
+
+    def to_row(self) -> dict[str, Any]:
+        row = {"id": self.id, "region": self.region, "symbol": self.symbol,
+               "family": self.family, "params": self.params, "source": self.source,
+               "parent": self.parent, "fate": self.fate, "why": self.why, "gates": self.gates,
+               "at": self.at or datetime.now(tz=UTC).isoformat(),
+               "edges": [dict(e) for e in self.edges],
+               # THE SEED IS NEVER DROPPED. Every caller that set only `parent` was setting the
+               # seed, so an unset `seed_key` falls back to it and the BECAME join in
+               # `knowledge_graph` keeps resolving on rows written either way.
+               "seed_key": self.seed_key or self.parent}
+        if self.operator:
+            row["operator"] = self.operator
+        if self.terminal_gate:
+            row["terminal_gate"] = self.terminal_gate
+        profile = death_profile(self.gates, self.fate)
+        if profile:
+            row["death"] = profile
+        return row
+
+
+#: The numeric reading each gate leaves behind, and where it sits inside that gate's dict.
+#: Tier-1 item A3: the burial record kept symbol/family/params/region/source/parent/fate/why and
+#: the whole `gates` blob, so WHAT it died of was a prose string and HOW BADLY was buried inside
+#: a nested dict nothing read. A generator asking "has this region been tried, and how close did
+#: it come?" could get the first answer and never the second, so a cell that missed the deflated
+#: Sharpe by a hair and one that failed every gate were the same row to the novelty gate.
+#: The ten gates in the order external_gauntlet runs them, plus the two pre-gates and the
+#: observations check. THE ORDER IS SEPARATE FROM THE READINGS because two gates refuse without
+#: leaving a number -- `economic_prior` and `symbol_eligibility` are terminal Gate-1 rejections
+#: -- and deriving the order from the readings table put them last, so a cell rejected before it
+#: was ever built was reported as dying of its deflated Sharpe.
+GATE_ORDER = ("symbol_eligibility", "economic_prior", "observations", "in_sample_screen",
+              "deflated_sharpe", "pbo", "reality_check_spa", "cpcv", "walk_forward",
+              "stress_costs", "lockbox", "expected_value")
+
+_READINGS = {
+    "deflated_sharpe": ("dsr", ("dsr", "value", "deflated_sharpe")),
+    "in_sample_screen": ("sharpe", ("sharpe", "value", "sharpe_ratio")),
+    "pbo": ("pbo", ("pbo", "value")),
+    "reality_check_spa": ("spa_p", ("p_value", "p", "value")),
+    "cpcv": ("cpcv_oos_sharpe", ("mean_oos_sharpe", "oos_sharpe", "value")),
+    "walk_forward": ("wf_oos_sharpe", ("oos_sharpe", "value")),
+    "stress_costs": ("cost_stress_mean", ("mean", "value")),
+    "lockbox": ("lockbox_sharpe", ("lockbox_sharpe", "value")),
+    "expected_value": ("ev", ("ev", "mean", "value")),
+    "observations": ("days", ("days",)),
+}
+
+
+def death_profile(gates: dict[str, Any], fate: str) -> dict[str, Any]:
+    """What this cell died of, with the numbers -- not a sentence.
+
+    Returns {} for a fate that is not a death and for a gates blob with nothing in it, so an
+    absent profile means "never judged", never "judged and fine". `terminal_gate` is the FIRST
+    gate that refused in the ten-gate order, because that is the one a generator must beat;
+    `passed` names the gates it did clear, which is where the idea worked.
+
+    ABSENT BY CONSTRUCTION, and named rather than omitted: a correlation profile against the live
+    book cannot be computed here (the gauntlet judges a cell against its own returns, never
+    against the book), so `correlation_profile` reads ABSENT until an organ that holds both
+    writes it.
+    """
+    if fate not in (FAILED, BURIED, RETIRED) or not isinstance(gates, dict) or not gates:
+        return {}
+    passed, failed, readings = [], [], {}
+    for name, g in gates.items():
+        if not isinstance(g, dict):
+            continue
+        if g.get("passed") is True:
+            passed.append(name)
+        elif g.get("passed") is False:
+            failed.append(name)
+        spec = _READINGS.get(name)
+        if spec:
+            key, fields = spec
+            for f in fields:
+                v = g.get(f)
+                if isinstance(v, (int, float)) and not isinstance(v, bool):
+                    readings[key] = round(float(v), 6)
+                    break
+    terminal = next((k for k in GATE_ORDER if k in failed), failed[0] if failed else "")
+    return {"terminal_gate": terminal, "failed": sorted(failed), "passed": sorted(passed),
+            "n_gates": len(passed) + len(failed), "readings": readings,
+            "unmeasured": bool(gates.get("observations", {}).get("passed") is False),
+            "correlation_profile": ("ABSENT: the gauntlet judges a cell against its own returns, "
+                                    "never against the live book"),
+            "sample_days": readings.get("days")}
+
+
+def edges_for(symbol: str, params: dict[str, Any], *, parent: str = "", operator: str = "",
+              source_url: str = "") -> list[dict[str, Any]]:
+    """The typed edges a candidate's own fields imply. Deterministic, deduplicated, ordered.
+
+    Nothing here is inferred: every edge names a field the caller already carried. A candidate
+    with no `input_source`, no factor list and no parent gets exactly one edge -- its symbol --
+    and that is the honest graph of it.
+    """
+    out: list[dict[str, Any]] = []
+    sym = str(symbol or "").strip().upper()
+    if sym:
+        out.append({"type": APPLIES_TO_SYMBOL, "to": f"symbol:{sym}"})
+    seen: set[str] = set()
+    for name in DATA_PARAMS:
+        v = (params or {}).get(name)
+        if v is None or v == "" or v == []:
+            continue
+        values = v if isinstance(v, (list, tuple)) else [v]
+        for x in values:
+            to = f"data:{str(x).strip()}"
+            if to in seen or to == "data:":
+                continue
+            seen.add(to)
+            out.append({"type": USES_DATA, "to": to, "via": name})
+    if parent:
+        e: dict[str, Any] = {"type": MUTATED_FROM, "to": str(parent)}
+        if operator:
+            e["operator"] = str(operator)
+        out.append(e)
+    if source_url:
+        out.append({"type": SOURCED_FROM, "to": f"url:{str(source_url).strip()}"})
+    return out
+
+
+def edges_of(row: dict[str, Any]) -> list[dict[str, Any]]:
+    """A row's typed edges; [] for the rows written before the field existed."""
+    e = row.get("edges") if isinstance(row, dict) else None
+    return [x for x in e if isinstance(x, dict)] if isinstance(e, list) else []
+
+
+def node_id(symbol: str, family: str, params: dict[str, Any]) -> str:
+    payload = json.dumps({"s": str(symbol).upper(), "f": family, "p": params},
+                         sort_keys=True, default=str)
+    return hashlib.sha256(payload.encode()).hexdigest()[:16]
+
+
+def spec_identity(spec: Mapping[str, Any]) -> tuple[str, str, dict[str, Any]]:
+    """(symbol, family, params) off any spelling of a spec: a compiled candidate (`symbol`), a
+    gauntlet cell or a verdict row (`sym`). ONE reading, so the id a judge stamps on a verdict
+    and the id the graph wrote for the same cell cannot drift apart by a field name.
+
+    The chart and the session are NOT read here: both ride inside `params` on every producer
+    this desk runs (`descendants.spec_of`, `miner_candidate_compiler.expand_axes`), and folding
+    a row-level `timeframe` in would give a verdict an id the BORN row never had. A cell whose
+    chart rides on the ROW therefore shares a node with the H1 cell of the same parameters --
+    the pre-existing property of `node_id`, named here rather than silently inherited.
+    """
+    symbol = spec.get("symbol") or spec.get("sym") or ""
+    params = spec.get("params")
+    return (str(symbol), str(spec.get("family") or ""),
+            dict(params) if isinstance(params, Mapping) else {})
+
+
+def node_id_for_spec(spec: Mapping[str, Any]) -> str:
+    """The graph's node id for a spec -- the join key between a judged cell and its hypothesis.
+
+    `external_gauntlet` stamps this on every gate-verdict row as `graph_id`, because the verdict
+    ledger names cells as `EURAUD.overnight_gap_decay.p=<sha of params>` while the graph names
+    them by this hash: two ids for one cell, and no join between trials and candidates.
+    """
+    sym, family, params = spec_identity(spec)
+    return node_id(sym, family, params)
+
+
+def _bucket(name: str, value: Any) -> str:
+    w = REGION_WIDTH.get(name)
+    if w is None or not isinstance(value, (int, float)) or isinstance(value, bool):
+        return json.dumps(value, sort_keys=True, default=str)
+    lo = (float(value) // w) * w
+    return f"[{lo:g},{lo + w:g})"
+
+
+def region_key(symbol: str, family: str, params: dict[str, Any]) -> str:
+    parts = ",".join(f"{k}={_bucket(k, v)}" for k, v in sorted((params or {}).items()))
+    return f"{str(symbol).upper()}.{family}{{{parts}}}"
+
+
+class Graph:
+    """The ledger with a read cache keyed on (mtime, size): the backfilled graph holds ~47,000
+    rows, and the deepening worker asks `prior_failures` once per queued task, so re-parsing
+    the file per question would be O(tasks x rows). An append invalidates the cache."""
+
+    def __init__(self, path: Path = LEDGER) -> None:
+        self.path = path
+        self._stamp: tuple[float, int] | None = None
+        self._rows: list[dict[str, Any]] = []
+        self._current: dict[str, dict[str, Any]] | None = None
+        self._buried: dict[str, list[dict[str, Any]]] | None = None
+
+    def append(self, node: Node) -> dict[str, Any]:
+        row = node.to_row()
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        with self.path.open("a", encoding="utf-8") as fh:
+            fh.write(json.dumps(row, default=str) + "\n")
+        self._stamp = None
+        return row
+
+    def rows(self) -> list[dict[str, Any]]:
+        try:
+            st = self.path.stat()
+            stamp = (st.st_mtime, st.st_size)
+        except OSError:
+            return []
+        if self._stamp != stamp:
+            try:
+                self._rows = [json.loads(ln) for ln in self.path.read_text("utf-8").splitlines()
+                              if ln.strip()]
+            except (OSError, ValueError):
+                self._rows = []
+            self._stamp = stamp
+            self._current = None
+            self._buried = None
+        return self._rows
+
+    def current(self) -> dict[str, dict[str, Any]]:
+        """Last row per node id -- the present fate of every hypothesis ever recorded."""
+        rows = self.rows()
+        if self._current is None:
+            out: dict[str, dict[str, Any]] = {}
+            for r in rows:
+                out[str(r.get("id"))] = r
+            self._current = out
+        return self._current
+
+    def buried(self) -> dict[str, list[dict[str, Any]]]:
+        """region -> the FAILED/BURIED rows in it. This is the negative-knowledge index."""
+        cur = self.current()
+        if self._buried is None:
+            out: dict[str, list[dict[str, Any]]] = {}
+            for r in cur.values():
+                if r.get("fate") in (FAILED, BURIED):
+                    out.setdefault(str(r.get("region")), []).append(r)
+            self._buried = out
+        return self._buried
+
+    def prior_failures(self, symbol: str, family: str, params: dict[str, Any]) -> dict[str, Any]:
+        """What the desk already knows about this region. Empty means: never tried."""
+        key = region_key(symbol, family, params)
+        rows = self.buried().get(key, [])
+        # HOW CLOSE IT CAME, NOT JUST THAT IT DIED (A3). A region whose best deflated Sharpe was
+        # 0.94 against a 0.95 bar is a different object from one that failed every gate, and a
+        # novelty gate that cannot tell them apart discards the desk's most promising ground.
+        profiles = [p for p in (r.get("death") or death_profile(r.get("gates") or {},
+                                                                str(r.get("fate") or ""))
+                                for r in rows) if p]
+        terminal: dict[str, int] = {}
+        best: dict[str, float] = {}
+        for p in profiles:
+            t = str(p.get("terminal_gate") or "")
+            if t:
+                terminal[t] = terminal.get(t, 0) + 1
+            for k, v in (p.get("readings") or {}).items():
+                if isinstance(v, (int, float)):
+                    best[k] = max(best.get(k, float(v)), float(v))
+        return {"region": key, "n_failed": len(rows),
+                "gates_failed": sorted({g for r in rows for g, v in (r.get("gates") or {}).items()
+                                        if isinstance(v, dict) and v.get("passed") is False}),
+                "last_why": (rows[-1].get("why") if rows else ""),
+                "terminal_gates": dict(sorted(terminal.items(), key=lambda kv: -kv[1])),
+                "best_readings": {k: round(v, 6) for k, v in sorted(best.items())},
+                "profiles": len(profiles)}
+
+    def lineage(self, node_id_: str) -> list[dict[str, Any]]:
+        """Walk parents back to the root. A cycle or a missing parent ends the walk."""
+        cur = self.current()
+        out, seen = [], set()
+        n = cur.get(node_id_)
+        while n and n["id"] not in seen:
+            out.append(n)
+            seen.add(n["id"])
+            n = cur.get(str(n.get("parent") or ""))
+        return out
+
+    def census(self) -> dict[str, Any]:
+        cur = self.current()
+        by_fate: dict[str, int] = {}
+        by_source: dict[str, dict[str, int]] = {}
+        by_edge: dict[str, int] = {}
+        with_edges = 0
+        for r in cur.values():
+            by_fate[r.get("fate", "?")] = by_fate.get(r.get("fate", "?"), 0) + 1
+            s = by_source.setdefault(str(r.get("source") or "?"), {})
+            s[r.get("fate", "?")] = s.get(r.get("fate", "?"), 0) + 1
+            es = edges_of(r)
+            with_edges += int(bool(es))
+            for e in es:
+                t = str(e.get("type") or "?")
+                by_edge[t] = by_edge.get(t, 0) + 1
+        return {"nodes": len(cur), "by_fate": by_fate, "by_source": by_source,
+                "buried_regions": len(self.buried()),
+                # Nodes written before 2026-09-08 carry no edges; the count says how much of
+                # the graph is typed rather than pretending the whole ledger is.
+                "nodes_with_edges": with_edges, "by_edge_type": by_edge}
+
+    def query(self, *, edge_type: str | None = None, to: str | None = None,
+              symbol: str | None = None, family: str | None = None,
+              fate: str | None = None) -> list[dict[str, Any]]:
+        """Current-state rows matching every given filter; an omitted filter matches all.
+
+        `edge_type` keeps rows carrying at least one edge of that type; `to` narrows to edges
+        whose target is that string or starts with it (`data:` for every dataset edge,
+        `symbol:USDJPY` for one instrument). `symbol` is matched case-insensitively.
+        """
+        if edge_type is not None and edge_type not in EDGE_TYPES:
+            raise ValueError(f"unknown edge type {edge_type!r}; expected one of {EDGE_TYPES}")
+        sym = str(symbol).upper() if symbol is not None else None
+        out: list[dict[str, Any]] = []
+        for r in self.current().values():
+            if sym is not None and str(r.get("symbol") or "").upper() != sym:
+                continue
+            if family is not None and str(r.get("family") or "") != family:
+                continue
+            if fate is not None and str(r.get("fate") or "") != fate:
+                continue
+            if edge_type is not None or to is not None:
+                hit = False
+                for e in edges_of(r):
+                    if edge_type is not None and e.get("type") != edge_type:
+                        continue
+                    target = str(e.get("to") or "")
+                    if to is not None and not (target == to or target.startswith(to)):
+                        continue
+                    hit = True
+                    break
+                if not hit:
+                    continue
+            out.append(r)
+        return out
+
+
+#: Where a donated candidate may name the PARENT CELL it was mutated from. Read in this order,
+#: on the candidate itself and on its `evidence` block, because six producers spell it six ways:
+#: `descendants` writes `parent` + `lineage.root`, the distiller writes `evidence.parent`, the
+#: recombiners write `parent_ids`, and `libs/moat/registry` reads `parent_ids` back out.
+PARENT_FIELDS: tuple[str, ...] = ("parent", "parent_id", "mutated_from")
+PARENT_LIST_FIELDS: tuple[str, ...] = ("parent_ids",)
+#: The same, inside a `lineage` block.
+LINEAGE_FIELDS: tuple[str, ...] = ("root", "parent")
+LINEAGE_LIST_FIELDS: tuple[str, ...] = ("parents",)
+
+
+def _as_parent_id(value: Any) -> str:
+    """One claimed parent as a node id: a string is taken as written, a SPEC dict is hashed.
+
+    A spec is canonical by construction -- it IS the node id of that rule -- so it needs no
+    lookup; a bare string is only a claim until something resolves it.
+    """
+    if isinstance(value, Mapping):
+        return node_id_for_spec(value) if (value.get("symbol") or value.get("sym")) else ""
+    return str(value or "").strip()
+
+
+def parent_claims(c: Mapping[str, Any]) -> list[str]:
+    """Every parent cell id this candidate names, in priority order, deduplicated.
+
+    Claims only. Nothing here is inferred from the mechanism, the family or the source: a row
+    that names no parent returns [], which is the honest lineage of a cell nobody stepped from.
+    """
+    _ev = c.get("evidence")
+    blocks: list[Mapping[str, Any]] = [c]
+    if isinstance(_ev, Mapping):
+        blocks.append(_ev)
+    out: list[str] = []
+
+    def _add(value: Any) -> None:
+        pid = _as_parent_id(value)
+        if pid and pid not in out:
+            out.append(pid)
+
+    for block in blocks:
+        for name in PARENT_FIELDS:
+            _add(block.get(name))
+        for name in PARENT_LIST_FIELDS:
+            for item in (block.get(name) or []) if isinstance(block.get(name), list) else []:
+                _add(item)
+        lin = block.get("lineage")
+        if isinstance(lin, Mapping):
+            for name in LINEAGE_FIELDS:
+                _add(lin.get(name))
+            for name in LINEAGE_LIST_FIELDS:
+                for item in (lin.get(name) or []) if isinstance(lin.get(name), list) else []:
+                    _add(item)
+    return out
+
+
+def resolve_parent(c: Mapping[str, Any], known: Container[str]) -> str:
+    """The first claimed parent that IS a node of this graph, or "" when none is.
+
+    RESOLUTION IS THE POINT. Measured 2026-09-17 on the live ledger: 0 of 35,199 `parent`
+    references resolved to any of the 23,972 node ids, because the writer recorded the SEED it
+    was handed rather than the cell that was mutated -- so `alpha_lineage_search.untried_mutations`
+    skipped every family, `descendants` wrote `parent = root_id` into a field that was then
+    overwritten, and `Graph.lineage` walked exactly one step. An unresolvable claim is NOT
+    written into `parent` (that is how the field filled with prose in the first place); it keeps
+    its `mutated_from` edge, where a claim is allowed to be a claim.
+    """
+    for pid in parent_claims(c):
+        if pid in known:
+            return pid
+    return ""
+
+
+def operator_of(c: Mapping[str, Any]) -> str:
+    """The transformation the donor named, from the row or its evidence. Never inferred."""
+    _ev = c.get("evidence")
+    ev: Mapping[str, Any] = _ev if isinstance(_ev, Mapping) else {}
+    return str(c.get("operator") or ev.get("operator") or "")
+
+
+def seed_key_of(c: Mapping[str, Any]) -> str:
+    """The miner row that produced this candidate: sha of (source, title, url), truncated.
+
+    Byte-identical to what `record_candidates` has always stamped into `parent`, and reproduced
+    by `lead_schema.compiler_parent_key` -- the ONLY deterministic join from a mined row to the
+    cells it became, which is why it is kept in its own field rather than overwritten.
+    """
+    return hashlib.sha256(json.dumps({"u": c.get("source_url"), "t": c.get("source_title"),
+                                      "s": c.get("source")}, sort_keys=True,
+                                     default=str).encode()).hexdigest()[:16]
+
+
+def _candidate_parent_key(c: dict[str, Any]) -> tuple[str, str]:
+    """(certificate key the candidate was stepped from, operator) or ("", "").
+
+    The distiller and the mutation proposers carry both on `evidence`; a candidate may also
+    carry `parent`, `parent_ids` or a `lineage` block at the top level. A parent that is only
+    the miner-row hash (`seed_key_of`) is NOT a mutation and gets no `mutated_from` edge.
+    """
+    claims = parent_claims(c)
+    return (claims[0] if claims else ""), operator_of(c)
+
+
+def record_candidates(cands: Iterable[dict[str, Any]], source: str,
+                      graph: Graph | None = None) -> int:
+    """Register newly compiled candidates as BORN, with the miner row that produced each.
+
+    TWO DIFFERENT ANCESTORS, AND THEY USED TO SHARE ONE FIELD. `seed_key` is the miner row the
+    idea entered on; `parent` is the CELL this one was mutated from. A candidate that names a
+    parent the graph holds gets it -- that is the lineage `alpha_lineage_search`,
+    `trajectory_evolution`, `descendants` and `lineage_dag` were written to walk. A candidate
+    that names none keeps the seed in `parent` exactly as before, so every reader that treats
+    `parent` as a seed still reads one.
+    """
+    g = graph or Graph()
+    # Read once: `append` invalidates the row cache, so asking per candidate would re-parse an
+    # 18 MB ledger per row. New nodes are added as they are written, so a batch can be its own
+    # ancestry -- a mutation donated beside its parent still resolves.
+    known: set[str] = set(g.current())
+    n = 0
+    for c in cands:
+        seed = seed_key_of(c)
+        params = dict(c.get("params") or {})
+        sym, family, _ = spec_identity(c)
+        claims = parent_claims(c)
+        op = operator_of(c)
+        resolved = next((p for p in claims if p in known), "")
+        # The EDGE carries the claim even when nothing resolves it -- an edge is allowed to be a
+        # claim, the scalar `parent` is not. The resolved id wins when there is one, so the edge
+        # and the field never name two different ancestors.
+        mut_parent = resolved or (claims[0] if claims else "")
+        node = Node(symbol=sym, family=family,
+                    params=params,
+                    # THE CANDIDATE'S OWN SOURCE WINS. The compiler registers every candidate it
+                    # admits, and stamping them all "miner_candidate_compiler" erased which
+                    # proposer found each one -- the bandit's per-arm evidence and the research
+                    # P&L attribute by this field.
+                    source=str(c.get("source") or source),
+                    parent=resolved or seed, seed_key=seed, operator=op,
+                    fate=BORN, why=str(c.get("mechanism_note") or "")[:200],
+                    edges=edges_for(sym, params, parent=mut_parent, operator=op,
+                                    source_url=str(c.get("source_url") or "")))
+        g.append(node)
+        known.add(node.id)
+        n += 1
+    return n
+
+
+def record_verdicts(verdicts: Iterable[dict[str, Any]], graph: Graph | None = None) -> int:
+    """Record gauntlet outcomes. A cell that fails any gate is FAILED with the gates it failed."""
+    g = graph or Graph()
+    n = 0
+    for v in verdicts:
+        gates = v.get("gates") or {}
+        passed_all = bool(gates) and all(isinstance(x, dict) and x.get("passed") is True
+                                         for x in gates.values())
+        failed = [k for k, x in gates.items() if isinstance(x, dict) and x.get("passed") is False]
+        sym, family, params = spec_identity(v)
+        g.append(Node(symbol=sym, family=family,
+                      params=params, source=str(v.get("hunt") or "gauntlet"),
+                      fate=CERTIFIED if passed_all else FAILED,
+                      why=("passed all gates" if passed_all else
+                           f"failed {', '.join(failed) or 'unmeasured'}"), gates=gates,
+                      # WHAT THE JUDGE SAID, not what this row's `gates` blob can be made to
+                      # say: 24,027 of 26,843 dead cells carry no terminal gate here because
+                      # `gates` holds `canonical_report` alone, while the judging code had the
+                      # answer in hand and dropped it on the way in.
+                      terminal_gate=str(v.get("terminal_gate") or ""),
+                      edges=edges_for(sym, params)))
+        n += 1
+    return n
+
+
+CAUSAL_GATE = "causal_adjudication"
+
+
+def record_causal_verdicts(rows: Iterable[Mapping[str, Any]], graph: Graph | None = None) -> int:
+    """Record the causal adjudicator's verdict on a cell as a gate reading (LAWS 5m).
+
+    `rows` carry `symbol`, `family`, `params` and `verdict` (SUPPORTED / REFUTED /
+    UNIDENTIFIABLE / UNMEASURED) with `failing_test`. The node keeps its BORN fate: an
+    adjudication is a reading about the mechanism, not a fate the gauntlet has not decided
+    (L1.60), so it lands in `gates[CAUSAL_GATE]` where `death_profile` and the cartographer can
+    see it beside the ten gates without any of them being edited.
+    """
+    g = graph or Graph()
+    n = 0
+    for row in rows:
+        sym, family, params = spec_identity(row)
+        if not sym or not family:
+            continue
+        verdict = str(row.get("verdict") or "UNMEASURED")
+        g.append(Node(symbol=sym, family=family, params=params,
+                      source=str(row.get("source") or "event_graph_lab"), fate=BORN,
+                      why=f"causal adjudication: {verdict}"
+                          + (f" ({row.get('failing_test')})" if row.get("failing_test") else ""),
+                      gates={CAUSAL_GATE: {"passed": verdict == "SUPPORTED", "verdict": verdict,
+                                           "failing_test": str(row.get("failing_test") or ""),
+                                           "effect": row.get("effect"),
+                                           "eligible": bool(row.get("eligible"))}},
+                      edges=edges_for(sym, params)))
+        n += 1
+    return n

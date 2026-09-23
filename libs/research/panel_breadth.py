@@ -63,7 +63,7 @@ the full-K deflator, and it says so.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, cast
 
 import numpy as np
 
@@ -185,10 +185,12 @@ def measure_panel_breadth(signal: np.ndarray, target: np.ndarray, *,
     # exactly this deletion per pair; mean-imputing instead would bias every correlation toward
     # zero, which INFLATES breadth -- the over-claim direction this module exists to prevent.
     with np.errstate(invalid="ignore", divide="ignore"):
-        # numpy ships np.ma.corrcoef untyped; the ignore is on the CALL, not the result, so a
-        # future typed numpy turns this into an unused-ignore error rather than hiding a real one.
-        c = np.ma.corrcoef(  # type: ignore[no-untyped-call]
-            np.ma.masked_invalid(m), rowvar=False, allow_masked=True)
+        # np.ma.corrcoef HAS BEEN TYPED AND UNTYPED IN SUCCESSIVE NUMPY STUBS, and the file has
+        # now carried an ignore (unused when typed) and no ignore (a no-untyped-call error when
+        # untyped) -- each correct against one numpy and red against the other. A local cast is
+        # right under both, and unlike an ignore it does not silence anything else on the line.
+        _corrcoef = cast(Any, np.ma.corrcoef)
+        c = _corrcoef(np.ma.masked_invalid(m), rowvar=False, allow_masked=True)
     cm = np.ma.filled(c, np.nan)
     k = cm.shape[0]
     iu = np.triu_indices(k, k=1)

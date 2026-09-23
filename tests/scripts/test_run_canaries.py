@@ -39,27 +39,16 @@ class TestNumericBand:
         assert rc._numeric_shift("total=0", "total=1") is True
 
 
-class TestC9Categorical:
-    def test_accepted_getlogs_reads_ok(self) -> None:
-        assert rc._extract("rpc", '{"jsonrpc":"2.0","id":1,"result":[]}') == "getLogs700=ok"
-        assert rc._extract(
-            "rpc", '{"result": [{"address":"0xabc"}]}') == "getLogs700=ok"
-
-    def test_range_cap_is_its_own_class(self) -> None:
-        body = '{"error":{"code":-32005,"message":"block range too large, max 250"}}'
-        assert rc._extract("rpc", body) == "getLogs700=range-capped"
-
-    def test_auth_demand_is_its_own_class(self) -> None:
-        body = '{"error":{"message":"Unauthorized: you must authenticate"}}'
-        assert rc._extract("rpc", body) == "getLogs700=auth-required"
-
-    def test_plain_denial(self) -> None:
-        assert rc._extract("rpc", '{"error":{"message":"forbidden"}}') == "getLogs700=denied"
-
-    def test_head_never_appears_in_the_value(self) -> None:
-        """The welded quantity must be gone: no value may track the block number."""
-        for body in ('{"result":[]}', '{"error":{"message":"x"}}', ""):
-            assert "head=" not in rc._extract("rpc", body)
+# `TestC9Categorical` was removed 2026-09-05 (universe mandate). It pinned the `rpc` extractor's
+# categorical acceptance verdict for C9, the keyless Ethereum `eth_getLogs` canary -- the one
+# canary in the table with no MT5 question to ask. The canary, the extractor and its JSON-RPC POST
+# client all went together, so these five tests had no subject left.
+#
+# WHAT THE CLASS WAS ACTUALLY PROTECTING is not lost: `test_head_never_appears_in_the_value`
+# guarded against a canary whose tracked value moves every run (the block head advanced every
+# ~12s, so the canary read SHIFT on every single look -- welded ON, zero information). That
+# property now lives on the numeric canaries and is asserted by `TestVerdictWiring` below, which
+# is where the 10% band that made PASS the steady state is exercised.
 
 
 class TestVerdictWiring:

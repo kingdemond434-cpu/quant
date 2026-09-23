@@ -1,0 +1,374 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quant Desk</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+/* ===========================================================================
+   QUANT DESK — the six-page layout from docs/DASHBOARD.md, as one static file.
+
+   WHY ONE FILE AND NO BUILD. The design shipped as FastAPI + Next.js in July
+   2026 and was never once served: api/ and frontend/ both exist, both date to
+   2026-07-16, and nothing has ever listened on 8000 or 3000. A dashboard that
+   needs a node toolchain, a build step and two long-lived processes is a
+   dashboard that stops working the first time nobody restarts it. This reads
+   the JSON the desk already publishes and renders it — so it works wherever
+   the file is served, and there is nothing to keep alive.
+
+   HONESTY BY DESIGN, WHICH HERE MEANS SHOWING AGE. Every block carries the
+   timestamp of the artifact behind it. A stale number is rendered STALE, in
+   amber, with its age — never as a current one. The failure this replaces is
+   exactly that: the page showed live equity beside seven-day-old breadth and
+   nothing distinguished them.
+   ========================================================================= */
+:root{
+  --ground:#08080a; --panel:#0e0e11; --card:#121215; --card-2:#16161a;
+  --line:#1f1f24; --line-soft:#191920;
+  --gold:#c9a961; --gold-hi:#e8d5a3; --gold-dim:#7a6636;
+  --ink:#f2f2f4; --ink-2:#8c8c95; --ink-3:#63636c;
+  --good:#34d399; --bad:#f87171; --warn:#d9a441; --info:#7aa2d6;
+  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  --sans:"Archivo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--ground);color:var(--ink);font-family:var(--sans)}
+body{display:flex;min-height:100vh}
+a{color:inherit;text-decoration:none}
+
+/* ---- sidebar ---- */
+nav{width:210px;flex:0 0 210px;background:var(--panel);border-right:1px solid var(--line);
+    padding:18px 0;position:sticky;top:0;height:100vh;overflow-y:auto}
+nav .brand{padding:0 18px 16px;border-bottom:1px solid var(--line-soft);margin-bottom:12px}
+nav .brand b{display:block;font-size:15px;letter-spacing:.02em}
+nav .brand span{display:block;font-family:var(--mono);font-size:10px;color:var(--ink-3);margin-top:3px}
+nav button{display:block;width:100%;text-align:left;background:none;border:0;color:var(--ink-2);
+    font-family:var(--sans);font-size:13px;padding:9px 18px;cursor:pointer;border-left:2px solid transparent}
+nav button:hover{color:var(--ink);background:var(--card)}
+nav button.on{color:var(--gold-hi);border-left-color:var(--gold);background:var(--card)}
+nav .foot{padding:14px 18px;font-family:var(--mono);font-size:10px;color:var(--ink-3);
+    border-top:1px solid var(--line-soft);margin-top:12px}
+
+/* ---- main ---- */
+main{flex:1;padding:22px 26px 60px;max-width:1500px}
+header.page{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;margin-bottom:18px}
+header.page h1{font-size:19px;margin:0;font-weight:600}
+header.page .sub{font-family:var(--mono);font-size:11px;color:var(--ink-3)}
+.live{margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--ink-2);
+      display:flex;align-items:center;gap:7px}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--good);box-shadow:0 0 6px var(--good)}
+.dot.stale{background:var(--warn);box-shadow:0 0 6px var(--warn)}
+.dot.dead{background:var(--bad);box-shadow:0 0 6px var(--bad)}
+
+.grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(215px,1fr));margin-bottom:14px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:9px;padding:13px 15px}
+.stat .k{font-family:var(--mono);font-size:10px;color:var(--ink-3);text-transform:uppercase;
+         letter-spacing:.07em;margin-bottom:7px}
+.stat .v{font-family:var(--mono);font-size:22px;font-weight:600;letter-spacing:-.01em}
+.stat .n{font-family:var(--mono);font-size:10px;color:var(--ink-3);margin-top:5px}
+.pos{color:var(--good)} .neg{color:var(--bad)} .muted{color:var(--ink-3)}
+
+.panel{background:var(--card);border:1px solid var(--line);border-radius:9px;margin-bottom:14px;overflow:hidden}
+.panel > h2{margin:0;padding:11px 15px;font-size:12px;font-weight:600;letter-spacing:.05em;
+   text-transform:uppercase;color:var(--ink-2);border-bottom:1px solid var(--line-soft);
+   display:flex;align-items:center;gap:10px}
+.panel > h2 .age{margin-left:auto;font-family:var(--mono);font-size:10px;font-weight:400;
+   text-transform:none;letter-spacing:0}
+.panel .body{padding:13px 15px}
+.age.fresh{color:var(--ink-3)} .age.warn{color:var(--warn)} .age.dead{color:var(--bad)}
+
+table{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:11.5px}
+th{text-align:left;color:var(--ink-3);font-weight:500;padding:6px 9px;border-bottom:1px solid var(--line);
+   text-transform:uppercase;font-size:10px;letter-spacing:.05em}
+td{padding:6px 9px;border-bottom:1px solid var(--line-soft);color:var(--ink-2)}
+tr:last-child td{border-bottom:0}
+td.num{text-align:right}
+.tag{display:inline-block;font-family:var(--mono);font-size:9.5px;padding:2px 6px;border-radius:4px;
+     border:1px solid var(--line);color:var(--ink-2)}
+.tag.ok{color:var(--good);border-color:rgba(52,211,153,.3)}
+.tag.bad{color:var(--bad);border-color:rgba(248,113,113,.3)}
+.tag.warn{color:var(--warn);border-color:rgba(217,164,65,.3)}
+.empty{color:var(--ink-3);font-family:var(--mono);font-size:11.5px;padding:8px 0;line-height:1.6}
+.page-view{display:none} .page-view.on{display:block}
+.note{font-family:var(--mono);font-size:10.5px;color:var(--ink-3);line-height:1.65;margin-top:9px}
+.bar{height:5px;border-radius:3px;background:var(--line);overflow:hidden;margin-top:6px}
+.bar > i{display:block;height:100%;background:var(--gold)}
+@media(max-width:820px){body{flex-direction:column}nav{width:100%;height:auto;position:static;
+  display:flex;flex-wrap:wrap;padding:10px}nav .brand,nav .foot{width:100%}nav button{width:auto}}
+</style>
+</head>
+<body>
+<nav>
+  <div class="brand"><b>Quant Desk</b><span id="brand-sub">loading…</span></div>
+  <button data-p="exec" class="on">Executive</button>
+  <button data-p="research">Research</button>
+  <button data-p="portfolio">Portfolio</button>
+  <button data-p="risk">Risk</button>
+  <button data-p="execution">Execution</button>
+  <button data-p="monitor">Monitoring</button>
+  <div class="foot" id="nav-foot">—</div>
+</nav>
+
+<main>
+  <header class="page">
+    <h1 id="page-title">Executive Overview</h1>
+    <span class="sub" id="page-sub"></span>
+    <span class="live"><span class="dot" id="live-dot"></span><span id="live-txt">connecting…</span></span>
+  </header>
+  <div id="view-exec"       class="page-view on"></div>
+  <div id="view-research"   class="page-view"></div>
+  <div id="view-portfolio"  class="page-view"></div>
+  <div id="view-risk"       class="page-view"></div>
+  <div id="view-execution"  class="page-view"></div>
+  <div id="view-monitor"    class="page-view"></div>
+</main>
+
+<script>
+/* ---------------------------------------------------------------------------
+   THE ONE RULE OF THIS FILE: never render a number without its age.
+   `age()` returns the hours since a timestamp, and `ageTag` turns that into a
+   visible badge. A block whose artifact is old says so, in amber, next to the
+   figure — because the page this replaces showed one-minute equity beside
+   seven-day-old breadth with nothing to tell them apart.
+--------------------------------------------------------------------------- */
+const POLL_MS = 15000;
+const STALE_H = 3, DEAD_H = 24;
+let S = null, lastOk = 0;
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const num = (v,d=2) => (v==null||v===''||Number.isNaN(Number(v))) ? '—' : Number(v).toLocaleString(undefined,{minimumFractionDigits:d,maximumFractionDigits:d});
+const pct = (v,d=1) => v==null ? '—' : (Number(v)*100).toFixed(d)+'%';
+const sign = v => v==null ? 'muted' : (Number(v)>0?'pos':Number(v)<0?'neg':'muted');
+
+function age(ts){
+  if(!ts) return null;
+  const t = Date.parse(ts);
+  if(Number.isNaN(t)) return null;
+  return (Date.now()-t)/3.6e6;
+}
+function ageTxt(h){
+  if(h==null) return 'no timestamp';
+  if(h < 1/60) return 'just now';
+  if(h < 1) return Math.round(h*60)+' min old';
+  if(h < 48) return h.toFixed(1)+'h old';
+  return (h/24).toFixed(1)+'d old';
+}
+function ageCls(h){ return h==null ? 'dead' : h>DEAD_H ? 'dead' : h>STALE_H ? 'warn' : 'fresh'; }
+function ageTag(ts){
+  const h = age(ts);
+  const extra = (h!=null && h>STALE_H) ? ' — STALE' : '';
+  return `<span class="age ${ageCls(h)}">${esc(ageTxt(h))}${extra}</span>`;
+}
+function panel(title, ts, bodyHtml){
+  return `<div class="panel"><h2>${esc(title)}${ts!==undefined?ageTag(ts):''}</h2>
+          <div class="body">${bodyHtml}</div></div>`;
+}
+function stat(k, v, note, cls){
+  return `<div class="stat"><div class="k">${esc(k)}</div>
+          <div class="v ${cls||''}">${v}</div>
+          ${note?`<div class="n">${esc(note)}</div>`:''}</div>`;
+}
+function empty(msg){ return `<div class="empty">${esc(msg)}</div>`; }
+
+function table(cols, rows, emptyMsg){
+  if(!rows || !rows.length) return empty(emptyMsg || 'no rows');
+  const head = cols.map(c=>`<th${c.num?' style="text-align:right"':''}>${esc(c.h)}</th>`).join('');
+  const body = rows.map(r=>'<tr>'+cols.map(c=>{
+    const v = c.f ? c.f(r) : r[c.k];
+    return `<td class="${c.num?'num':''} ${c.cls?c.cls(r):''}">${v==null?'—':v}</td>`;
+  }).join('')+'</tr>').join('');
+  return `<table><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>`;
+}
+
+/* ------------------------------------------------------------------ pages */
+function pageExec(){
+  const a = S.account||{}, h = S.health||{}, r = S.research||{}, b = S.breadth||{};
+  const bb = b.book_breadth||{};
+  const g = `<div class="grid">
+    ${stat('Equity', (a.currency||'')+' '+num(a.equity), 'balance '+num(a.balance))}
+    ${stat('Today P&L', num(a.today_pnl), 'open '+num(a.open_pnl), sign(a.today_pnl))}
+    ${stat('Open positions', (S.execution&&S.execution.open_trades? S.execution.open_trades.length : 0), 'margin '+num(a.margin))}
+    ${stat('Certificates', r.canonical_survivors!=null?r.canonical_survivors:'—', 'ten-gate survivors')}
+    ${stat('Family concentration', bb.family_concentration!=null?pct(bb.family_concentration):'—',
+           bb.largest_family?('largest: '+bb.largest_family):'', bb.family_concentration>0.8?'neg':'')}
+  </div>`;
+  return g
+    + panel('Account', S.generated_at, table(
+        [{h:'field', f:r=>esc(r.field)}, {h:'value', num:true, f:r=>esc(r.value)}],
+        Object.entries(a).filter(([,v])=>typeof v!=='object')
+                         .map(([k,v])=>({field:k, value:v==null?'—':v})),
+        'no account block'))
+    + panel('Breadth — the binding constraint', b.measured_at,
+        (bb.why ? `<div class="note">${esc(bb.why)}</div>` : '')
+        + table([{h:'family'},{h:'state'},{h:'needs'}],
+            (bb.missing_families||[]).map(f=>({family:f.family,state:`<span class="tag warn">${esc(f.state||'')}</span>`,needs:f.why||f.needs})),
+            'no missing-family list in this payload')
+      )
+    + panel('Issues', S.generated_at, table(
+        [{h:'issue'},{h:'detail'}],
+        (S.issues||[]).slice(0,14).map(i=>typeof i==='string'?{issue:esc(i),detail:''}:{issue:esc(i.title||i.id||''),detail:esc(i.why||i.detail||'')}),
+        'no open issues reported'));
+}
+
+function pageResearch(){
+  const r = S.research||{}, p = S.pipeline||{}, b = S.breadth||{};
+  const miners = b.miners||{};
+  const rows = Object.entries(miners).map(([name,m])=>({
+    miner:name, disc:m.discoveries, comp:m.compiled_candidates, surv:m.survivors,
+    conv:m.conversion!=null?pct(m.conversion,1):'—',
+    status:`<span class="tag ${m.attribution_status==='UNMEASURED'?'warn':'ok'}">${esc(m.attribution_status||'')}</span>`
+  })).sort((x,y)=>(y.disc||0)-(x.disc||0));
+  return `<div class="grid">
+      ${stat('Canonical survivors', r.canonical_survivors!=null?r.canonical_survivors:'—','passed all ten gates')}
+      ${stat('Candidates tested', r.candidates_tested!=null?r.candidates_tested:'—','UNMEASURED means not reported')}
+      ${stat('Miners reporting', Object.keys(miners).length, 'sources feeding the compiler')}
+      ${stat('Zero-yield miners', (b.zero_yield_miners||[]).length, (b.zero_yield_miners||[]).join(', ')||'none')}
+    </div>`
+    + panel('Miner conversion', b.measured_at,
+        table([{h:'miner'},{h:'discoveries',num:true,k:'disc'},{h:'compiled',num:true,k:'comp'},
+               {h:'survivors',num:true,k:'surv'},{h:'conversion',num:true,k:'conv'},{h:'attribution',k:'status'}],
+              rows, 'no miner block in this payload')
+        + `<div class="note">Conversion is survivors divided by discoveries. A miner at 0% has produced rows
+           the gates never admitted — that is a measurement, not an absence.</div>`)
+    + panel('Pipeline', S.generated_at, table([{h:'stage'},{h:'count',num:true}],
+        Object.entries(p).filter(([,v])=>typeof v!=='object').map(([k,v])=>({stage:k,count:v})),
+        'no pipeline block'));
+}
+
+function pagePortfolio(){
+  const a = S.account||{}, sh = S.shadow||{};
+  const eq = S.equity_curve||[];
+  return `<div class="grid">
+      ${stat('Equity', (a.currency||'')+' '+num(a.equity))}
+      ${stat('Starting capital', num(a.starting_capital))}
+      ${stat('Return', a.starting_capital?pct((a.equity-a.starting_capital)/a.starting_capital):'—','since inception',
+             sign(a.equity-a.starting_capital))}
+      ${stat('Equity points', eq.length, S.equity_curve_source||'')}
+    </div>`
+    + panel('Forward clocks (shadow)', S.generated_at, table(
+        [{h:'cell'},{h:'n',num:true},{h:'exp R',num:true},{h:'status'}],
+        Object.entries(sh).slice(0,20).map(([k,v])=>({
+          cell:esc(k), n:(v&&v.n)||'—',
+          'exp R':v&&v.exp_r!=null?num(v.exp_r,3):'—',
+          status:`<span class="tag ${v&&v.status==='ACTIVE'?'ok':'warn'}">${esc((v&&v.status)||'')}</span>`})),
+        'no shadow block in this payload'))
+    + panel('Equity curve', S.generated_at,
+        eq.length ? table([{h:'point'},{h:'equity',num:true}],
+            eq.slice(-25).map((p,i)=>({point:esc(p.t||p.time||i), equity:num(p.equity!=null?p.equity:p.v)})),'')
+          : empty('no equity curve published'));
+}
+
+function pageRisk(){
+  const h = S.health||{}, rd = S.readiness||{}, d = S.decay||{};
+  return `<div class="grid">
+      ${stat('Readiness', rd.status||'—', rd.why||'')}
+      ${stat('Health', h.status||'—', h.why||'')}
+      ${stat('Decay flags', Object.keys(d).length||0, 'sleeves flagged fading')}
+    </div>`
+    + panel('Readiness', S.generated_at, table([{h:'field'},{h:'value'}],
+        Object.entries(rd).filter(([,v])=>typeof v!=='object').map(([k,v])=>({field:k,value:esc(v)})),
+        'no readiness block'))
+    + panel('Decay', S.generated_at, table([{h:'sleeve'},{h:'state'}],
+        Object.entries(d).map(([k,v])=>({sleeve:esc(k),state:esc(typeof v==='object'?JSON.stringify(v).slice(0,90):v)})),
+        'nothing flagged as decaying'))
+    + `<div class="note">Risk panels render what the desk publishes. A blank panel means the artifact behind it
+       was not written — never that the risk is zero.</div>`;
+}
+
+function pageExecution(){
+  const e = S.execution||{};
+  const open = e.open_trades||[];
+  return `<div class="grid">
+      ${stat('Open trades', open.length)}
+      ${stat('Matched fills', e.matched_fills!=null?e.matched_fills:'—','UNMEASURED if blank')}
+      ${stat('Markout usable', e.markout_usable===true?'yes':e.markout_usable===false?'no':'—', e.why||'')}
+    </div>`
+    + panel('Open trades', S.generated_at, table(
+        [{h:'symbol'},{h:'side'},{h:'volume',num:true},{h:'entry',num:true},{h:'P&L',num:true}],
+        open.map(t=>({symbol:esc(t.symbol),side:esc(t.side||t.type),volume:num(t.volume,2),
+                      entry:num(t.price||t.entry,5),'P&L':num(t.profit,2)})),
+        'no open trades'))
+    + panel('Execution quality', S.generated_at, table([{h:'field'},{h:'value'}],
+        Object.entries(e).filter(([,v])=>typeof v!=='object').map(([k,v])=>({field:k,value:esc(v)})),
+        'no execution block'));
+}
+
+function pageMonitor(){
+  const sw = S.stall_watch||{}, h = S.health||{};
+  const mem = sw.memory||{};
+  const procs = mem.top || sw.top || [];
+  return `<div class="grid">
+      ${stat('Physical memory', mem.total_phys_mb?num(mem.total_phys_mb,0)+' MB':'—',
+             mem.free_phys_mb!=null?('free '+num(mem.free_phys_mb,0)+' MB'):'')}
+      ${stat('Health', h.status||'—', h.why||'')}
+      ${stat('Payload size', (JSON.stringify(S).length/1024).toFixed(0)+' KB','desk_state.json')}
+    </div>`
+    + panel('Largest processes', S.generated_at, table(
+        [{h:'pid',num:true},{h:'name'},{h:'commit MB',num:true},{h:'rss MB',num:true}],
+        (Array.isArray(procs)?procs:[]).slice(0,12).map(p=>({pid:p.pid,name:esc(p.name),
+          'commit MB':num(p.commit_mb,0),'rss MB':num(p.rss_mb,0)})),
+        'no process table in stall_watch'))
+    + panel('Block freshness — every artifact behind this page', undefined,
+        table([{h:'block'},{h:'timestamp'},{h:'age'}],
+          [['generated_at',S.generated_at],['breadth.measured_at',(S.breadth||{}).measured_at],
+           ['shadow',(S.shadow&&Object.keys(S.shadow).length)?S.generated_at:null],
+           ['stall_watch',sw.at||sw.measured_utc||null]]
+          .map(([k,v])=>({block:esc(k),timestamp:esc(v||'—'),age:ageTag(v)})),'')
+        + `<div class="note">This table is the point of the page. Equity can be one minute old while breadth is
+           seven days old, and a dashboard that shows both as plain numbers is telling you something untrue.</div>`);
+}
+
+const PAGES = {exec:['Executive Overview',pageExec], research:['Research',pageResearch],
+  portfolio:['Portfolio',pagePortfolio], risk:['Risk',pageRisk],
+  execution:['Execution',pageExecution], monitor:['Monitoring',pageMonitor]};
+let current = 'exec';
+
+function render(){
+  if(!S) return;
+  const [title, fn] = PAGES[current];
+  $('page-title').textContent = title;
+  try { $('view-'+current).innerHTML = fn(); }
+  catch(err){ $('view-'+current).innerHTML = empty('panel failed to render: '+err.message); }
+  const h = age(S.generated_at);
+  $('page-sub').textContent = S.identity ? (S.identity.desk||S.identity.name||'') : '';
+  $('brand-sub').textContent = (S.account&&S.account.currency?S.account.currency+' ':'')+
+      (S.account?num(S.account.equity):'');
+  $('nav-foot').innerHTML = 'payload '+ (JSON.stringify(S).length/1024).toFixed(0)+' KB<br>'+ageTxt(h);
+  const dot = $('live-dot');
+  dot.className = 'dot ' + (h==null?'dead':h>DEAD_H?'dead':h>STALE_H?'stale':'');
+  $('live-txt').textContent = 'desk_state ' + ageTxt(h);
+}
+
+async function poll(){
+  try{
+    // Cache-busted on purpose: a CDN holding the previous payload is the same
+    // failure as a stale artifact, and indistinguishable from the page.
+    const res = await fetch('desk_state.json?t='+Date.now(), {cache:'no-store'});
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    S = await res.json(); lastOk = Date.now(); render();
+  }catch(err){
+    $('live-txt').textContent = 'fetch failed: '+err.message;
+    $('live-dot').className = 'dot dead';
+  }
+}
+
+document.querySelectorAll('nav button').forEach(b=>{
+  b.addEventListener('click',()=>{
+    document.querySelectorAll('nav button').forEach(x=>x.classList.remove('on'));
+    b.classList.add('on');
+    document.querySelectorAll('.page-view').forEach(v=>v.classList.remove('on'));
+    current = b.dataset.p;
+    $('view-'+current).classList.add('on');
+    render();
+  });
+});
+
+poll();
+setInterval(poll, POLL_MS);
+</script>
+</body>
+</html>

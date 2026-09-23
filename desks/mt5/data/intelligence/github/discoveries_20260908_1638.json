@@ -1,0 +1,273 @@
+[
+  {
+    "source": "github",
+    "repo": "ashikscreativemath-commits/Paldo-ALM",
+    "url": "https://github.com/ashikscreativemath-commits/Paldo-ALM",
+    "description": "\ud83e\udde0 Build adaptive algorithmic trading bots using machine learning and custom logic for MetaTrader 5 scalping and swing strategies.",
+    "stars": 21,
+    "language": "Python",
+    "symbols": [],
+    "patterns": [
+      "scalping",
+      "swing"
+    ],
+    "confidence": 0.321
+  },
+  {
+    "source": "github",
+    "repo": "ilahuerta-IA/tradingsystem",
+    "url": "https://github.com/ilahuerta-IA/tradingsystem",
+    "description": "Modular backtesting framework for algorithmic trading using Backtrader. Features a 4-phase state machine strategy, JPY pair P&L correction (ERIS logic), and professional reporting. Educational resource for learning systematic trading.",
+    "stars": 15,
+    "language": "Python",
+    "symbols": [],
+    "patterns": [
+      "EMA"
+    ],
+    "confidence": 0.16499999999999998
+  },
+  {
+    "source": "github",
+    "repo": "NadirAliOfficial/-MT5-LSTM-Trading-Bot-GBPUSD-",
+    "url": "https://github.com/NadirAliOfficial/-MT5-LSTM-Trading-Bot-GBPUSD-",
+    "description": "A complete trading automation framework using MetaTrader 5, LSTM Neural Networks, and Python. The bot detects engulfing candlestick patterns, combines volume and pivot-based signals, and trades GBPUSD using a risk-managed strategy with trailing stop-loss, partial take-profit, and live execution support.",
+    "stars": 14,
+    "language": "Python",
+    "symbols": [
+      "GBPUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.21400000000000002
+  },
+  {
+    "source": "github",
+    "repo": "goodie1972/algoforge",
+    "url": "https://github.com/goodie1972/algoforge",
+    "description": "XAUUSD \u9ec4\u91d1\u81ea\u52a8\u5316\u4ea4\u6613\u7cfb\u7edf | Algorithmic Gold Trading \u2014 \u591a\u7b56\u7565\u5e76\u884c\u00b7\u96f6\u914d\u7f6e\u81ea\u52a8\u53d1\u73b0 | Multi-strategy, zero-config auto-discovery \u00b7 \u4e09\u8f68\u5b9e\u65f6\u5f15\u64ce+\u4e09\u5c42\u98ce\u63a7\u81ea\u6108 | Three-rail real-time engine + 3-layer self-healing risk \u00b7 26 \u6307\u6807\u5171\u4eab\u7f13\u5b58\u00b7\u53cc\u8bed Web \u9762\u677f | Shared TA-Lib cache, bilingual dashboard",
+    "stars": 5,
+    "language": "HTML",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.20500000000000002
+  },
+  {
+    "source": "github",
+    "repo": "rolling-panda-san/notebooks",
+    "url": "https://github.com/rolling-panda-san/notebooks",
+    "description": "Analysis on systematic trading strategies (e.g., trend-following, carry and mean-reversion). The result is regularly updated. ",
+    "stars": 758,
+    "language": "Jupyter Notebook",
+    "symbols": [],
+    "patterns": [
+      "RSI",
+      "EMA"
+    ],
+    "confidence": 1.0
+  },
+  {
+    "source": "github",
+    "repo": "Gharrr544/hyperliquid-mean-reversion-bot",
+    "url": "https://github.com/Gharrr544/hyperliquid-mean-reversion-bot",
+    "description": "hyperliquid-mean-reversion-trading-bot hyperliquid-mean-reversion-trading-bot hyperliquid-mean-reversion-trading-bot hyperliquid-mean-reversion-trading-bot hyperliquid-mean-reversion-trading-bot hyperliquid-mean-reversion-trading-bot hyperliquid-mean-reversion-trading-bot hyperliquid-mean-reversion-trading-bot hyperliquid-mean-reversion-trading-bot",
+    "stars": 8,
+    "language": "Python",
+    "symbols": [],
+    "patterns": [
+      "RSI"
+    ],
+    "confidence": 0.158
+  },
+  {
+    "source": "github",
+    "repo": "moss-site/moss-trade-bot-skills",
+    "url": "https://github.com/moss-site/moss-trade-bot-skills",
+    "description": "LLM-powered trading agents that turn plain natural language into a five-pillar strategy: Trend, Mean-Reversion, Momentum, Volume, and Risk. Each strategy is hosted, self-evolving, configurable through 30+ tunable parameters, and bit-exact between backtest and live execution. Built for simulated Hyperliquid perpetuals.",
+    "stars": 382,
+    "language": "Python",
+    "symbols": [],
+    "patterns": [
+      "momentum",
+      "RSI"
+    ],
+    "confidence": 0.6819999999999999
+  },
+  {
+    "source": "github",
+    "repo": "mbordash/DRADIS",
+    "url": "https://github.com/mbordash/DRADIS",
+    "description": "Low-latency Rust prediction-market trading bot for Kalshi & Polymarket. 9 autonomous strategies (Momentum, Maker, Arbitrage, ML, etc.), real-time Next.js Control Tower, and an AI LLM Advisor that delivers optimization recommendations via Ollama (local or remote), MCP + Telegram and OpenClaw.",
+    "stars": 24,
+    "language": "Rust",
+    "symbols": [],
+    "patterns": [
+      "momentum"
+    ],
+    "confidence": 0.174
+  },
+  {
+    "source": "github",
+    "repo": "nirholas/robinhood-chain-trading-bot",
+    "url": "https://github.com/nirholas/robinhood-chain-trading-bot",
+    "description": "Open-source autonomous trading bot for Robinhood Chain. Four strategies: launch sniping, momentum, Stock Token premium/discount arbitrage, and a bring-your-own-key LLM strategist (Claude, OpenAI, Groq, or OpenRouter). Real risk caps, real signed swaps, paper mode by default, live P&L dashboard.",
+    "stars": 7,
+    "language": "TypeScript",
+    "symbols": [],
+    "patterns": [
+      "momentum"
+    ],
+    "confidence": 0.157
+  },
+  {
+    "source": "github",
+    "repo": "nmj94/momentum-lab",
+    "url": "https://github.com/nmj94/momentum-lab",
+    "description": "Find the optimal momentum trading strategy for any asset. Just provide a ticker. 26 strategies, 1.6M+ parameter combinations, regime-aware adaptive switching.",
+    "stars": 101,
+    "language": "Python",
+    "symbols": [],
+    "patterns": [
+      "momentum"
+    ],
+    "confidence": 0.251
+  },
+  {
+    "source": "github",
+    "repo": "ChypherFish3r/coinbase-trading-bot",
+    "url": "https://github.com/ChypherFish3r/coinbase-trading-bot",
+    "description": "coinbase trading bot for momentum strategies with optional profit transfers, CSV backtests, and a clean CLI",
+    "stars": 148,
+    "language": "JavaScript",
+    "symbols": [],
+    "patterns": [
+      "momentum"
+    ],
+    "confidence": 0.298
+  },
+  {
+    "source": "github",
+    "repo": "utplawan/momentum-trading-backtester-",
+    "url": "https://github.com/utplawan/momentum-trading-backtester-",
+    "description": "Momentum investing strategy backtester with statistical validation and interactive Streamlit dashboard ",
+    "stars": 11,
+    "language": "Python",
+    "symbols": [],
+    "patterns": [
+      "momentum"
+    ],
+    "confidence": 0.161
+  },
+  {
+    "source": "github",
+    "repo": "moss-site/moss-trade-bot-skills",
+    "url": "https://github.com/moss-site/moss-trade-bot-skills",
+    "description": "LLM-powered trading agents that turn plain natural language into a five-pillar strategy: Trend, Mean-Reversion, Momentum, Volume, and Risk. Each strategy is hosted, self-evolving, configurable through 30+ tunable parameters, and bit-exact between backtest and live execution. Built for simulated Hyperliquid perpetuals.",
+    "stars": 382,
+    "language": "Python",
+    "symbols": [],
+    "patterns": [
+      "momentum",
+      "RSI"
+    ],
+    "confidence": 0.6819999999999999
+  },
+  {
+    "source": "github",
+    "repo": "Ahmed-GoCode/Quant-Edge-Indicators",
+    "url": "https://github.com/Ahmed-GoCode/Quant-Edge-Indicators",
+    "description": "\u26a1 A professional open-source algorithmic trading suite for TradingView. Features 16 Pine Script v6 strategies covering Smart Money Concepts (SMC), Order Flow, Momentum, and Trend Breakouts.",
+    "stars": 47,
+    "language": null,
+    "symbols": [],
+    "patterns": [
+      "breakout",
+      "momentum",
+      "SMA",
+      "smart money"
+    ],
+    "confidence": 0.647
+  },
+  {
+    "source": "github",
+    "repo": "jefrnc/strategy-orb15-momentum",
+    "url": "https://github.com/jefrnc/strategy-orb15-momentum",
+    "description": "Opening Range Breakout system in Python \u2014 reproducible backtest, risk management and walk-forward validation. Results are in the repo; no return promises.",
+    "stars": 16,
+    "language": "Python",
+    "symbols": [],
+    "patterns": [
+      "breakout",
+      "momentum"
+    ],
+    "confidence": 0.316
+  },
+  {
+    "source": "github",
+    "repo": "goodie1972/algoforge",
+    "url": "https://github.com/goodie1972/algoforge",
+    "description": "XAUUSD \u9ec4\u91d1\u81ea\u52a8\u5316\u4ea4\u6613\u7cfb\u7edf | Algorithmic Gold Trading \u2014 \u591a\u7b56\u7565\u5e76\u884c\u00b7\u96f6\u914d\u7f6e\u81ea\u52a8\u53d1\u73b0 | Multi-strategy, zero-config auto-discovery \u00b7 \u4e09\u8f68\u5b9e\u65f6\u5f15\u64ce+\u4e09\u5c42\u98ce\u63a7\u81ea\u6108 | Three-rail real-time engine + 3-layer self-healing risk \u00b7 26 \u6307\u6807\u5171\u4eab\u7f13\u5b58\u00b7\u53cc\u8bed Web \u9762\u677f | Shared TA-Lib cache, bilingual dashboard",
+    "stars": 5,
+    "language": "HTML",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.20500000000000002
+  },
+  {
+    "source": "github",
+    "repo": "JustinGuese/python_tradingbot_framework",
+    "url": "https://github.com/JustinGuese/python_tradingbot_framework",
+    "description": "Python algorithmic trading bot framework for Kubernetes: backtesting, hyperparameter optimization, 150+ technical analysis indicators (RSI, MACD, Bollinger Bands, ADX), portfolio management, PostgreSQL integration, Helm deployment, CronJob scheduling. Minimal overhead, production-ready, Yahoo Finance data.",
+    "stars": 39,
+    "language": "Jupyter Notebook",
+    "symbols": [],
+    "patterns": [
+      "bollinger",
+      "RSI",
+      "MACD"
+    ],
+    "confidence": 0.489
+  },
+  {
+    "source": "github",
+    "repo": "griddaimyorun/Metatraider-Traiding-Bot",
+    "url": "https://github.com/griddaimyorun/Metatraider-Traiding-Bot",
+    "description": "Production-ready MetaTrader 5 (MT5) algorithmic trading bot framework. Features automated execution, real-time market data integration via Python API, risk management, and backtesting infrastructure for systematic strategies.",
+    "stars": 506,
+    "language": null,
+    "symbols": [],
+    "patterns": [
+      "EMA"
+    ],
+    "confidence": 0.656
+  },
+  {
+    "source": "github",
+    "repo": "ashikscreativemath-commits/Paldo-ALM",
+    "url": "https://github.com/ashikscreativemath-commits/Paldo-ALM",
+    "description": "\ud83e\udde0 Build adaptive algorithmic trading bots using machine learning and custom logic for MetaTrader 5 scalping and swing strategies.",
+    "stars": 21,
+    "language": "Python",
+    "symbols": [],
+    "patterns": [
+      "scalping",
+      "swing"
+    ],
+    "confidence": 0.321
+  },
+  {
+    "source": "github",
+    "repo": "xzaviourr/zerodha-algorithmic-trader",
+    "url": "https://github.com/xzaviourr/zerodha-algorithmic-trader",
+    "description": "Archived Flask trading-server prototype integrating Zerodha Kite Connect with five-EMA and Bank NIFTY short-straddle strategies; not investment advice.",
+    "stars": 8,
+    "language": "Python",
+    "symbols": [],
+    "patterns": [
+      "EMA"
+    ],
+    "confidence": 0.158
+  }
+]

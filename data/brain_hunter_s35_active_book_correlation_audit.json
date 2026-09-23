@@ -1,0 +1,108 @@
+{
+  "session": "brain_hunter_s35",
+  "date": "2026-08-30",
+  "authority": "research evidence only; no promotion, allocation, gate, or capital authority",
+  "corpora_first": {
+    "path": "data/intelligence/gpt_practitioner_corpus.jsonl",
+    "worldquant_rows_reviewed": 5,
+    "usable_new_artifacts": 0,
+    "video_fetched": 0,
+    "video_locked": 0,
+    "note": "Great Goat rows remained transcript-unavailable; no video route was attempted this session."
+  },
+  "repair_window": {
+    "recommendation": "R0082",
+    "disposition": "IMPLEMENTED",
+    "evidence_commit": "963df910",
+    "verification": "libs/data/crypto_source.py carries the cross-process 418/429 latch, Retry-After capture, code classification, recorded cooldown, and fail-fast behavior requested by the row."
+  },
+  "sources": [
+    {
+      "repo": "dhb520cat/wq-brain-automation",
+      "commit": "cde9843def1defb9f26e20a58913fa37ed75fc96",
+      "license": null,
+      "size_kb": 71,
+      "verdict": "LICENSE_WALLED",
+      "read_scope": "public repository metadata and root tree names only",
+      "derives_from": "UNMEASURED; source not read past the license boundary"
+    },
+    {
+      "repo": "myacgl/ProdMemo",
+      "commit": "c0e2402bb199c2aef82d6377ccb44e8bde671711",
+      "license": "MIT",
+      "size_kb": 66,
+      "verdict": "METHODOLOGY_CARRIER",
+      "files_read_as_text": ["README.md", "manifest.json", "background.js", "content.js", "corrWorker.js", "inject.js", "popup.js"],
+      "derives_from": "NONE declared for the local correlation implementation (checked README and inspected files)"
+    },
+    {
+      "repo": "Fin-Agentian/openalpha",
+      "commit": "405828e54f2be8c1d8b5facead3f537f8490727c",
+      "license": "MIT",
+      "size_kb": 59,
+      "verdict": "METHOD_CONVERGENCE_WITH_NEGATIVE_CONTROLS",
+      "files_read_as_text": ["README.md", "ARCHITECTURE.md", "docs/METHODOLOGY.md", "openalpha/pipeline/picker.py", "openalpha/pipeline/runner.py", "openalpha/pipeline/report.py", "openalpha/intel/field_map.py", "openalpha/intel/sources.py", "openalpha/db.py"],
+      "derives_from": "Explicit clean-room rewrite of a private IQC 2026 research harness and named legacy scripts; not independent at the implementation-lineage level"
+    }
+  ],
+  "prod_memo_semantics": {
+    "window": "four calendar years ending in the latest PnL year",
+    "target": "first differences of target cumulative PnL",
+    "peer_alignment": "peer cumulative PnL forward-filled on the union date grid, then first-differenced",
+    "statistic": "Pearson correlation on overlapping dated returns",
+    "self_pool": "same region, OS stage; Power Pool Eligible rows enter only when also REGULAR:REGULAR",
+    "ppa_pool": "same region and POWER_POOL:POWER_POOL_ELIGIBLE",
+    "result_shape": "min, max, and top five signed correlations plus pool size, window, algorithm version, and pool fingerprint",
+    "production_correlation": "platform /alphas/{id}/correlations/prod response is intercepted and cached with a timestamp",
+    "freshness_gap": "the production-correlation timestamp is stored but no maximum consumption age is enforced"
+  },
+  "openalpha_negative_controls": [
+    {
+      "code": "ONE_INCUMBENT_REFUSED",
+      "evidence": "_active_pnl_matrix raises when fewer than two ACTIVE alphas have PnL",
+      "economic_disposition": "Do not copy. Candidate-versus-book correlation is already meaningful with one incumbent and becomes binding before the second sleeve is admitted."
+    },
+    {
+      "code": "RANK_THEN_TRUNCATE_REVERSED",
+      "evidence": "_candidate_rows selects ORDER BY sharpe DESC LIMIT 200 before orthogonality is computed",
+      "economic_disposition": "Do not copy. This deletes the exact modest-standalone/high-marginal candidates the independence stage exists to discover."
+    },
+    {
+      "code": "NUMERICAL_FAILURE_AWARDED_BEST",
+      "evidence": "orthogonal_score catches numpy.linalg.LinAlgError and assigns residual fraction 1.0",
+      "economic_disposition": "Do not copy. A failed projection is UNMEASURED, never maximally independent."
+    },
+    {
+      "code": "UNBOUNDED_PNL_CACHE",
+      "evidence": "fetch_pnl_series returns an existing cache file without TTL, content hash, source revision, or consumption-time refresh",
+      "economic_disposition": "Do not copy. A portfolio-correlation decision must identify the return-panel vintage and reject stale inputs."
+    }
+  ],
+  "mt5_translation": {
+    "translate_to_mt5_result": [],
+    "named_mapping": "candidate net-R return stream versus every currently deployed Fusion sleeve and the deployed book aggregate on jointly observable forward timestamps",
+    "universe": "every tradable symbol enumerated from the Fusion terminal; no literal symbol boundary",
+    "timeframe": "native sleeve decision clock, aggregated to a common daily net-R panel for the admission comparison; no forward fill across unobserved candidate returns",
+    "fields": ["point-in-time bid/ask", "actual or shadow fills", "spread", "commission", "swap", "markout and partial-fill evidence", "forward timestamp", "candidate and incumbent net R"],
+    "costs": "Fusion symbol-specific executable costs and realized fill evidence, never BRAIN's reported PnL convention",
+    "point_in_time": "incumbent membership and return-panel vintage fixed as known at the admission timestamp",
+    "existing_desk_path": "scripts/run_portfolio_admission.py plus libs/research/marginal_admission.py",
+    "measured_current_state": "data/live_cohort_pnl.npz absent; data/portfolio_admission.json reports 3/3 against EMPTY BOOK and explicitly labels that a weak standalone-Sharpe result",
+    "open_obligation": "R0602: make candidate-versus-deployed evidence a consumption-time promotion input before a second live sleeve is admitted"
+  },
+  "trial_accounting": {
+    "tradeable_constructions_tested": 0,
+    "target_horizon_cells_tested": 0,
+    "reason": "methodology and failure-cohort audit only; no alpha claim entered Stage A"
+  },
+  "venue_discovery": {
+    "routes": ["repository owner metadata", "repository issues", "repository root and recursive trees"],
+    "new_venues": 0,
+    "verdict": "negative screen, not ground exhaustion"
+  },
+  "next_unexhausted_ground": [
+    "continue the s31 UNKNOWN-description queue with README/source-first license checks after Fin-Agentian/openalpha",
+    "mine ProdMemo version history for population-rule corrections only if a new commit changes algorithmVersion or pool membership",
+    "mine openalpha's field-attention genealogy only as methodology; its private-harness lineage prevents an independence claim"
+  ]
+}

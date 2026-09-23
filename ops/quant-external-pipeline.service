@@ -1,0 +1,40 @@
+[Unit]
+Description=Same-day stages 2-4: external backtest -> ten-gate gauntlet -> canon sync
+
+[Service]
+Type=oneshot
+# DERIVED FROM THE MACHINE, NEVER A HARD-CODED NUMBER (2026-09-14).
+#
+# This read MemoryMax=1500M with OOMPolicy=stop. The midnight run reported
+# mem_available_mb 2251.2 on the host it actually ran on, so the cap was two thirds of everything
+# free and the pipeline was killed by its own limit -- published as `hard_failures:
+# canonical_external_pipeline` and read downstream as "the gauntlet is broken". Nothing was
+# broken. The stage was sized for a machine that no longer describes where it runs.
+#
+# THE DESK HAS ALREADY PAID FOR THIS LESSON ONCE. `miner_candidate_compiler` carried
+# MAX_ROWS_PER_PASS = 1_000_000 as a memory bound written for the smaller box; on the trading box
+# it bound every pass and deferred 420 files of donations an hour until it was made to derive the
+# cap from measured free memory. CLAUDE.md records that in full, ending "NEVER SIZE A FLOOR OFF A
+# CLAIM, AND NEVER OFF THE OTHER BOX EITHER." This unit is the same defect in a second place, and
+# it survived because a systemd directive does not look like a tuning constant.
+#
+# Percentages are relative to the host's physical memory, so one unit file is correct on both
+# machines: ~4.0G high / ~6.0G max on the 8 GB research VPS, and it scales by itself if the stage
+# is ever moved to the 98 GB box, which is where this work belongs -- conversion is memory-bound
+# and the VPS is the only reason it is capped at all.
+#
+# MemoryHigh THROTTLES (the cgroup is put under reclaim pressure and slowed); MemoryMax KILLS.
+# Leaving a wide band between them means contention costs throughput first and the stage second,
+# which is the correct order for research that yields to the gateway anyway.
+MemoryHigh=50%
+MemoryMax=75%
+MemorySwapMax=0
+# Research yields to recorders, gateways and shadow evidence under contention; when the box is
+# otherwise idle these weights impose no throughput ceiling.
+CPUWeight=25
+Nice=10
+IOSchedulingClass=idle
+OOMPolicy=stop
+WorkingDirectory=/home/quant/quant-platform
+ExecStart=/bin/bash /home/quant/quant-platform/ops/run_external_pipeline.sh
+TimeoutStartSec=2h

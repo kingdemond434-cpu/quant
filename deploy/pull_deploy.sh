@@ -252,8 +252,11 @@ fi
 # THE ORDER IS THE WHOLE SECURITY PROPERTY (R0246). This block used to `git merge --ff-only` and
 # only THEN run the gate -- so the live tree held unreviewed upstream code, and the very first
 # thing to execute from it was that code's own copy of run_ci.py. The control the desk counted on
-# as its safety gate WAS the payload trigger, on the box that owns data/secrets/binance_live.json,
-# every 10 minutes. Two further paths inherited the same inversion by running from the live tree
+# as its safety gate WAS the payload trigger, on the box that owns the live broker credentials,
+# every 10 minutes. (The credential named here at the time was data/secrets/binance_live.json, on
+# the crypto-exchange desk retired 2026-08-18; the box now owns the MT5/Fusion login instead. The
+# inversion this paragraph describes is a property of the ORDER of operations, not of the venue,
+# which is why the record is kept verbatim in every other respect.) Two further paths inherited the same inversion by running from the live tree
 # on the NEXT tick: the pre-push hook this script copies into .git/hooks and chmods +x (line 110),
 # and reconstitute_cron.sh installing an arbitrary crontab on a manifest-hash change (line 126).
 # Gating a DETACHED WORKTREE and merging only on green means the live tree -- and therefore both

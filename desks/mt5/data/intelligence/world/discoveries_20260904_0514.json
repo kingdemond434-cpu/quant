@@ -1,0 +1,662 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download Trader Workstation (TWS) | Interactive Brokers LLC",
+  "url": "https://www.interactivebrokers.com/en/trading/download-tws.php?menu=B",
+  "published": "2026-09-04T05:13:28+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.interactivebrokers.com/en/trading/download-tws.php",
+   "https://www.interactivebrokers.com/en/trading/download-tws.php?menu=B",
+   "https://download2.interactivebrokers.com/installers/tws/latest/tws-latest-macos-arm.dmg",
+   "https://download2.interactivebrokers.com/installers/tws/latest/tws-latest-macosx-x64.dmg",
+   "https://download2.interactivebrokers.com/installers/tws/latest/tws-latest-windows-x64.exe",
+   "https://download2.interactivebrokers.com/installers/tws/latest/tws-latest-linux-x64.sh",
+   "https://download2.interactivebrokers.com/installers/tws/stable/tws-stable-macos-arm.dmg",
+   "https://download2.interactivebrokers.com/installers/tws/stable/tws-stable-macosx-x64.dmg",
+   "https://download2.interactivebrokers.com/installers/tws/stable/tws-stable-windows-x64.exe",
+   "https://download2.interactivebrokers.com/installers/tws/stable/tws-stable-linux-x64.sh",
+   "https://download2.interactivebrokers.com/installers/tws/beta/tws-beta-macos-arm.dmg",
+   "https://download2.interactivebrokers.com/installers/tws/beta/tws-beta-macosx-x64.dmg",
+   "https://download2.interactivebrokers.com/installers/tws/beta/tws-beta-windows-x64.exe",
+   "https://download2.interactivebrokers.com/installers/tws/beta/tws-beta-linux-x64.sh",
+   "https://download2.interactivebrokers.com/installers/tws/latest-standalone/tws-latest-standalone-macos-arm.dmg",
+   "https://download2.interactivebrokers.com/installers/tws/latest-standalone/tws-latest-standalone-macosx-x64.dmg",
+   "https://download2.interactivebrokers.com/installers/tws/latest-standalone/tws-latest-standalone-windows-x64.exe",
+   "https://download2.interactivebrokers.com/installers/tws/latest-standalone/tws-latest-standalone-linux-x64.sh",
+   "https://download2.interactivebrokers.com/installers/tws/stable-standalone/tws-stable-standalone-macos-arm.dmg",
+   "https://download2.interactivebrokers.com/installers/tws/stable-standalone/tws-stable-standalone-macosx-x64.dmg",
+   "https://download2.interactivebrokers.com/installers/tws/stable-standalone/tws-stable-standalone-windows-x64.exe",
+   "https://download2.interactivebrokers.com/installers/tws/stable-standalone/tws-stable-standalone-linux-x64.sh"
+  ],
+  "n_endpoints": 22,
+  "vault_sha": "713901753bbaa2fbf674",
+  "host": "www.interactivebrokers.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Sign in - Google Accounts",
+  "url": "https://accounts.google.com/ServiceLogin?passive=1209600&continue=https://gemini.google.com/app?q%3DProvide%2Ba%2Bsummary%2Bof%2Bthe%2Bcontent%2Bat%2B%255Bhttps://fxmacrodata.com/ar/indicators/exports%255D%2Band%2Btag%2Bit%2Bas%2Ba%2Bsource%2Bof%2Bexpertise%2Bfor%2Bfuture%2Breference&followup=https://gemini.google.com/app?q%3DProvide%2Ba%2Bsummary%2Bof%2Bthe%2Bcontent%2Bat%2B%255Bhttps://fxmacrodata.com/ar/indicators/exports%255D%2Band%2Btag%2Bit%2Bas%2Ba%2Bsource%2Bof%2Bexpertise%2Bfor%2Bfuture%2Breference&ec=GAZAkgU",
+  "published": "2026-09-04T05:13:28+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "236a6c06f77f780c65ea",
+  "host": "accounts.google.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Sign in - Google Accounts",
+  "url": "https://accounts.google.com/ServiceLogin?passive=1209600&continue=https://gemini.google.com/app?q%3DProvide%2Ba%2Bsummary%2Bof%2Bthe%2Bcontent%2Bat%2B%255Bhttps://fxmacrodata.com/hi/indicators/exports%255D%2Band%2Btag%2Bit%2Bas%2Ba%2Bsource%2Bof%2Bexpertise%2Bfor%2Bfuture%2Breference&followup=https://gemini.google.com/app?q%3DProvide%2Ba%2Bsummary%2Bof%2Bthe%2Bcontent%2Bat%2B%255Bhttps://fxmacrodata.com/hi/indicators/exports%255D%2Band%2Btag%2Bit%2Bas%2Ba%2Bsource%2Bof%2Bexpertise%2Bfor%2Bfuture%2Breference&ec=GAZAkgU",
+  "published": "2026-09-04T05:13:30+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "66bdb2969e88cfa70af5",
+  "host": "accounts.google.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Sign in - Google Accounts",
+  "url": "https://accounts.google.com/ServiceLogin?passive=1209600&continue=https://gemini.google.com/app?q%3DProvide%2Ba%2Bsummary%2Bof%2Bthe%2Bcontent%2Bat%2B%255Bhttps://fxmacrodata.com/zh/indicators/exports%255D%2Band%2Btag%2Bit%2Bas%2Ba%2Bsource%2Bof%2Bexpertise%2Bfor%2Bfuture%2Breference&followup=https://gemini.google.com/app?q%3DProvide%2Ba%2Bsummary%2Bof%2Bthe%2Bcontent%2Bat%2B%255Bhttps://fxmacrodata.com/zh/indicators/exports%255D%2Band%2Btag%2Bit%2Bas%2Ba%2Bsource%2Bof%2Bexpertise%2Bfor%2Bfuture%2Breference&ec=GAZAkgU",
+  "published": "2026-09-04T05:13:32+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c19b62271746ad500fb7",
+  "host": "accounts.google.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Sign in - Google Accounts",
+  "url": "https://accounts.google.com/ServiceLogin?passive=1209600&continue=https://gemini.google.com/app?q%3DProvide%2Ba%2Bsummary%2Bof%2Bthe%2Bcontent%2Bat%2B%255Bhttps://fxmacrodata.com/ja/indicators/exports%255D%2Band%2Btag%2Bit%2Bas%2Ba%2Bsource%2Bof%2Bexpertise%2Bfor%2Bfuture%2Breference&followup=https://gemini.google.com/app?q%3DProvide%2Ba%2Bsummary%2Bof%2Bthe%2Bcontent%2Bat%2B%255Bhttps://fxmacrodata.com/ja/indicators/exports%255D%2Band%2Btag%2Bit%2Bas%2Ba%2Bsource%2Bof%2Bexpertise%2Bfor%2Bfuture%2Breference&ec=GAZAkgU",
+  "published": "2026-09-04T05:13:34+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "1d0aba558c7be9e06476",
+  "host": "accounts.google.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Sign in - Google Accounts",
+  "url": "https://accounts.google.com/ServiceLogin?passive=1209600&continue=https://gemini.google.com/app?q%3DProvide%2Ba%2Bsummary%2Bof%2Bthe%2Bcontent%2Bat%2B%255Bhttps://fxmacrodata.com/indicators/exports%255D%2Band%2Btag%2Bit%2Bas%2Ba%2Bsource%2Bof%2Bexpertise%2Bfor%2Bfuture%2Breference&followup=https://gemini.google.com/app?q%3DProvide%2Ba%2Bsummary%2Bof%2Bthe%2Bcontent%2Bat%2B%255Bhttps://fxmacrodata.com/indicators/exports%255D%2Band%2Btag%2Bit%2Bas%2Ba%2Bsource%2Bof%2Bexpertise%2Bfor%2Bfuture%2Breference&ec=GAZAkgU",
+  "published": "2026-09-04T05:13:36+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e71c2a3ae160d89d7af9",
+  "host": "accounts.google.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Option Trading Strategies | Option Strategy - The Options Playbook",
+  "url": "http://www.optionsplaybook.com/option-strategies/",
+  "published": "2026-09-04T05:13:37+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b715249d8afc07086bb6",
+  "host": "www.optionsplaybook.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Covered Call Strategies | Covered Call Options - The Options Playbook",
+  "url": "http://www.optionsplaybook.com/option-strategies/covered-call",
+  "published": "2026-09-04T05:13:38+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "029da459bf06c9d47845",
+  "host": "www.optionsplaybook.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Protective Put | Trading Put Options - The Options Playbook",
+  "url": "http://www.optionsplaybook.com/option-strategies/protective-put",
+  "published": "2026-09-04T05:13:41+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "4fc49d8027670234c663",
+  "host": "www.optionsplaybook.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Collar Options Strategy | Collar Options - The Options Playbook",
+  "url": "http://www.optionsplaybook.com/option-strategies/collar-option",
+  "published": "2026-09-04T05:13:43+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "65f84e6254a6c8d3a903",
+  "host": "www.optionsplaybook.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Cash-Secured Put | Trading Put Options - The Options Playbook",
+  "url": "http://www.optionsplaybook.com/option-strategies/cash-secured-put",
+  "published": "2026-09-04T05:13:45+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b4467383f5afec61127d",
+  "host": "www.optionsplaybook.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Long Call Option Strategy | Call Options - The Options Playbook",
+  "url": "http://www.optionsplaybook.com/option-strategies/long-call",
+  "published": "2026-09-04T05:13:47+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "02359635061a2b55f547",
+  "host": "www.optionsplaybook.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Long Put Option Strategy | Trading Put Options - The Options Playbook",
+  "url": "http://www.optionsplaybook.com/option-strategies/long-put",
+  "published": "2026-09-04T05:13:49+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "9377c3c561b4606afd81",
+  "host": "www.optionsplaybook.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Trading | Latest News, Updates & Articles on Trading - Outlook India",
+  "url": "https://www.outlookindia.com/topic/trading",
+  "published": "2026-09-04T05:13:52+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://fea.assettype.com/outlook/outlook-india/assets/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "c7a424056c0c14e3b7d5",
+  "host": "www.outlookindia.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "From algorithms to intelligence: How AI is reshaping quantitative finance education - The Times of India",
+  "url": "https://timesofindia.indiatimes.com/education/news/from-algorithms-to-intelligence-how-ai-is-reshaping-quantitative-finance-education/articleshow/124183605.cms",
+  "published": "2026-09-04T05:13:58+00:00",
+  "symbols": [],
+  "timeframes": [
+   "H1",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "momentum",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "9e938b3548db16cb0c7e",
+  "host": "timesofindia.indiatimes.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "&quot;Keegan has done a nice job&quot;: Xander Schauffele hails US Ryder Cup captain\u2019s leadership and strategy skills | International Sports News - The Times of India",
+  "url": "https://timesofindia.indiatimes.com/sports/international-sports/keegan-has-done-a-nice-job-xander-schauffele-hails-us-ryder-cup-captains-leadership-and-strategy-skills/articleshow/124078331.cms",
+  "published": "2026-09-04T05:14:00+00:00",
+  "symbols": [],
+  "timeframes": [
+   "H1"
+  ],
+  "patterns": [
+   "carry"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "107f586eba922a3d9b3a",
+  "host": "timesofindia.indiatimes.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Systems - Systematic Algo Trader",
+  "url": "https://systematicalgotrader.com/systems/",
+  "published": "2026-09-04T05:14:04+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "mean_reversion",
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f79d94754cdc0ec57489",
+  "host": "systematicalgotrader.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Disclaimer - Systematic Algo Trader",
+  "url": "https://systematicalgotrader.com/disclaimer/",
+  "published": "2026-09-04T05:14:06+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b71570d3d5b38a8e0902",
+  "host": "systematicalgotrader.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Trading Idea #031 - Another Oddball 1 - Systematic Algo Trader",
+  "url": "https://systematicalgotrader.com/2022/03/31/trading-idea-031-another-oddball-system/",
+  "published": "2026-09-04T05:14:11+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "breakout",
+   "mean_reversion",
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e09307af5f8448c97db2",
+  "host": "systematicalgotrader.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Trading Idea #030 - Momentum Pinball 1 - Systematic Algo Trader",
+  "url": "https://systematicalgotrader.com/2022/03/16/trading-idea-030-momentum-pinball1/",
+  "published": "2026-09-04T05:14:12+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "carry",
+   "mean_reversion",
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "7aefefbdf211308d12b0",
+  "host": "systematicalgotrader.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Forex Trading: Trade Currency Pairs and Precious Metals | Swissquote",
+  "url": "https://en.swissquote.com/en-ch/private/trade/products/forex",
+  "published": "2026-09-04T05:14:13+00:00",
+  "symbols": [
+   "XAGUSD",
+   "XAUUSD",
+   "XPDUSD",
+   "XPTUSD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e5ff8deb460fbf870f2e",
+  "host": "en.swissquote.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Forex &amp; CFD Risk Disclosure | Swissquote",
+  "url": "https://en.swissquote.com/en-ch/private/help/legal-tax/legal-information/forex-cfd-risk-disclosure",
+  "published": "2026-09-04T05:14:19+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "992806ff2408bab2f558",
+  "host": "en.swissquote.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "View source for Alternative trading system - Wikipedia",
+  "url": "https://en.wikipedia.org/w/index.php?title=Alternative_trading_system&action=edit",
+  "published": "2026-09-04T05:14:25+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "09782edb96e9920945c3",
+  "host": "en.wikipedia.org"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Majors Active Trading | Crypto Craft",
+  "url": "https://www.cryptocraft.com/thread/725370-majors-active-trading",
+  "published": "2026-09-04T05:14:28+00:00",
+  "symbols": [
+   "AUDUSD",
+   "BTCUSD",
+   "EURJPY",
+   "EURUSD",
+   "GBPUSD",
+   "USDCHF",
+   "USDJPY",
+   "XAUUSD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.cryptocraft.com/manifests/manifest-cc.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "3b10bd5a1e7cd9603f1b",
+  "host": "www.cryptocraft.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Crypto - btc/altcoins trading | Crypto Craft",
+  "url": "https://www.cryptocraft.com/thread/1267690-crypto-btcaltcoins-trading",
+  "published": "2026-09-04T05:14:30+00:00",
+  "symbols": [
+   "BTCUSD"
+  ],
+  "timeframes": [
+   "D1",
+   "W1"
+  ],
+  "patterns": [
+   "breakout",
+   "orderflow"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://www.cryptocraft.com/manifests/manifest-cc.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "bc978d910c3128451e49",
+  "host": "www.cryptocraft.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Alt Coins trading | Crypto Craft",
+  "url": "https://www.cryptocraft.com/thread/481550-alt-coins-trading",
+  "published": "2026-09-04T05:14:32+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "breakout"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://www.cryptocraft.com/manifests/manifest-cc.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "601a9fff1aedbc847315",
+  "host": "www.cryptocraft.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Trading Solana using Wyckoff and VSA Principles | Crypto Craft",
+  "url": "https://www.cryptocraft.com/thread/1335902-trading-solana-using-wyckoff-and-vsa-principles",
+  "published": "2026-09-04T05:14:34+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "breakout"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://www.cryptocraft.com/manifests/manifest-cc.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "6c7ab0e6dcdcab648504",
+  "host": "www.cryptocraft.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Ethereum Trading | Crypto Craft",
+  "url": "https://www.cryptocraft.com/thread/939256-ethereum-trading",
+  "published": "2026-09-04T05:14:36+00:00",
+  "symbols": [],
+  "timeframes": [
+   "15M",
+   "1H",
+   "DAILY",
+   "H1"
+  ],
+  "patterns": [
+   "breakout",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.cryptocraft.com/manifests/manifest-cc.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "3bd54c877c8b0c2573e4",
+  "host": "www.cryptocraft.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "High Impact Events Trading... Bitcoin | Crypto Craft",
+  "url": "https://www.cryptocraft.com/thread/1171385-high-impact-events-trading-bitcoin",
+  "published": "2026-09-04T05:14:38+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://www.cryptocraft.com/manifests/manifest-cc.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "9d6dc8d3f6442d40f9f2",
+  "host": "www.cryptocraft.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "BCH (Bitcoin Cash) Trading | Crypto Craft",
+  "url": "https://www.cryptocraft.com/thread/1140105-bch-bitcoin-cash-trading",
+  "published": "2026-09-04T05:14:40+00:00",
+  "symbols": [
+   "BTCUSD"
+  ],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.cryptocraft.com/manifests/manifest-cc.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "44e37598bddc7d1a476f",
+  "host": "www.cryptocraft.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Trading Strategies Archives - Quant Savvy",
+  "url": "https://quantsavvy.com/category/trading-startegies/",
+  "published": "2026-09-04T05:14:47+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "gap",
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "0efeb9736dcd035e2705",
+  "host": "quantsavvy.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "E*Trade Platform Review - Quant Savvy",
+  "url": "https://quantsavvy.com/etrade-review/",
+  "published": "2026-09-04T05:14:55+00:00",
+  "symbols": [
+   "BTCUSD",
+   "ETHUSD"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "7485ca45ecd3fefce272",
+  "host": "quantsavvy.com"
+ }
+]

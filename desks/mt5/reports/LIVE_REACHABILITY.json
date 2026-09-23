@@ -1,0 +1,799 @@
+{
+ "generated_utc": "2026-09-05T01:22:19.075928+00:00",
+ "artifacts": {
+  "desks/mt5/data/LIVE_MANIFEST.jsonl": {
+   "reaches_authority": false,
+   "paths": [],
+   "human_read": true,
+   "external_reader": null
+  },
+  "desks/mt5/data/RELEASE.json": {
+   "reaches_authority": true,
+   "paths": [
+    "desks/mt5/data/RELEASE.json -> gateway[position,size]",
+    "desks/mt5/data/RELEASE.json -> gateway -> desks/mt5/data/broker_clock.json -> opportunity_curve -> desks/mt5/data/hypotheses/miner_deepening_queue.json -> deepening_worker -> desks/mt5/data/hypotheses/deepening_worked.jsonl -> deep_forest_miner -> desks/mt5/data/intelligence/world/frontier.json -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet[certificate]",
+    "desks/mt5/data/RELEASE.json -> gateway -> desks/mt5/data/broker_clock.json -> opportunity_curve -> desks/mt5/data/hypotheses/miner_deepening_queue.json -> deepening_worker -> desks/mt5/data/hypotheses/deepening_worked.jsonl -> deep_forest_miner -> desks/mt5/data/intelligence/world/frontier.json -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> pf_allocator[sizing]",
+    "desks/mt5/data/RELEASE.json -> gateway -> desks/mt5/data/decision_ledger.jsonl -> counterfactual_markout -> desks/mt5/reports/FILTER_VALUE.json -> regime_monitor[hibernate]",
+    "desks/mt5/data/RELEASE.json -> gateway -> desks/mt5/data/live_ledger.jsonl -> state_admission_run[conditioning]"
+   ],
+   "human_read": false,
+   "external_reader": null
+  },
+  "desks/mt5/data/UNIVERSAL_SURVIVORS.canon.json": {
+   "reaches_authority": true,
+   "paths": [
+    "desks/mt5/data/UNIVERSAL_SURVIVORS.canon.json -> promoter[promotion]",
+    "desks/mt5/data/UNIVERSAL_SURVIVORS.canon.json -> drift_monitor -> desks/mt5/reports/DRIFT.json -> revival_engine -> desks/mt5/data/hypotheses/miner_deepening_queue.json -> deepening_worker -> desks/mt5/data/hypotheses/deepening_worked.jsonl -> deep_forest_miner -> desks/mt5/data/intelligence/world/frontier.json -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet[certificate]",
+    "desks/mt5/data/UNIVERSAL_SURVIVORS.canon.json -> release -> desks/mt5/data/RELEASE.json -> gateway[position,size]",
+    "desks/mt5/data/UNIVERSAL_SURVIVORS.canon.json -> release -> desks/mt5/data/RELEASE.json -> gateway -> desks/mt5/data/decision_ledger.jsonl -> counterfactual_markout -> desks/mt5/reports/FILTER_VALUE.json -> regime_monitor[hibernate]",
+    "desks/mt5/data/UNIVERSAL_SURVIVORS.canon.json -> release -> desks/mt5/data/RELEASE.json -> gateway -> desks/mt5/data/decision_ledger.jsonl -> counterfactual_markout -> desks/mt5/reports/FILTER_VALUE.json -> missed_growth -> desks/mt5/data/rail_calibration.json -> pf_allocator[sizing]",
+    "desks/mt5/data/UNIVERSAL_SURVIVORS.canon.json -> release -> desks/mt5/data/RELEASE.json -> gateway -> desks/mt5/data/live_ledger.jsonl -> state_admission_run[conditioning]"
+   ],
+   "human_read": false,
+   "external_reader": null
+  },
+  "desks/mt5/data/action_counterfactuals.jsonl": {
+   "reaches_authority": false,
+   "paths": [],
+   "human_read": false,
+   "external_reader": "action_counterfactuals (its own memory)"
+  },
+  "desks/mt5/data/broker_clock.json": {
+   "reaches_authority": true,
+   "paths": [
+    "desks/mt5/data/broker_clock.json -> opportunity_curve -> desks/mt5/data/hypotheses/miner_deepening_queue.json -> deepening_worker -> desks/mt5/data/hypotheses/deepening_worked.jsonl -> deep_forest_miner -> desks/mt5/data/intelligence/world/frontier.json -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet[certificate]",
+    "desks/mt5/data/broker_clock.json -> opportunity_curve -> desks/mt5/data/hypotheses/miner_deepening_queue.json -> deepening_worker -> desks/mt5/data/hypotheses/deepening_worked.jsonl -> deep_forest_miner -> desks/mt5/data/intelligence/world/frontier.json -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> pf_allocator[sizing]",
+    "desks/mt5/data/broker_clock.json -> opportunity_curve -> desks/mt5/data/hypotheses/miner_deepening_queue.json -> deepening_worker -> desks/mt5/data/hypotheses/deepening_worked.jsonl -> deep_forest_miner -> desks/mt5/data/intelligence/world/frontier.json -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> gateway[position,size]",
+    "desks/mt5/data/broker_clock.json -> opportunity_curve -> desks/mt5/data/hypotheses/miner_deepening_queue.json -> deepening_worker -> desks/mt5/data/hypotheses/deepening_worked.jsonl -> deep_forest_miner -> desks/mt5/data/intelligence/world/frontier.json -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> gateway -> desks/mt5/data/decision_ledger.jsonl -> counterfactual_markout -> desks/mt5/reports/FILTER_VALUE.json -> regime_monitor[hibernate]",
+    "desks/mt5/data/broker_clock.json -> opportunity_curve -> desks/mt5/data/hypotheses/miner_deepening_queue.json -> deepening_worker -> desks/mt5/data/hypotheses/deepening_worked.jsonl -> deep_forest_miner -> desks/mt5/data/intelligence/world/frontier.json -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> gateway -> desks/mt5/data/live_ledger.jsonl -> state_admission_run[conditioning]"
+   ],
+   "human_read": false,
+   "external_reader": null
+  },
+  "desks/mt5/data/capital_modifier_ledger.jsonl": {
+   "reaches_authority": false,
+   "paths": [],
+   "human_read": false,
+   "external_reader": null
+  },
+  "desks/mt5/data/coevolution_trials.jsonl": {
+   "reaches_authority": false,
+   "paths": [],
+   "human_read": false,
+   "external_reader": "experiment_ledger (lifetime multiplicity)"
+  },
+  "desks/mt5/data/counterfactuals.jsonl": {
+   "reaches_authority": false,
+   "paths": [],
+   "human_read": false,
+   "external_reader": "counterfactual_markout (its own append-only memory)"
+  },
+  "desks/mt5/data/decision_ledger.jsonl": {
+   "reaches_authority": true,
+   "paths": [
+    "desks/mt5/data/decision_ledger.jsonl -> counterfactual_markout -> desks/mt5/reports/FILTER_VALUE.json -> regime_monitor[hibernate]",
+    "desks/mt5/data/decision_ledger.jsonl -> counterfactual_markout -> desks/mt5/reports/FILTER_VALUE.json -> regime_monitor -> desks/mt5/data/regime_state.json -> gateway[position,size]",
+    "desks/mt5/data/decision_ledger.jsonl -> counterfactual_markout -> desks/mt5/reports/FILTER_VALUE.json -> regime_monitor -> desks/mt5/data/regime_state.json -> gateway -> desks/mt5/data/broker_clock.json -> opportunity_curve -> desks/mt5/data/hypotheses/miner_deepening_queue.json -> deepening_worker -> desks/mt5/data/hypotheses/deepening_worked.jsonl -> deep_forest_miner -> desks/mt5/data/intelligence/world/frontier.json -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet[certificate]",
+    "desks/mt5/data/decision_ledger.jsonl -> counterfactual_markout -> desks/mt5/reports/FILTER_VALUE.json -> regime_monitor -> desks/mt5/data/regime_state.json -> gateway -> desks/mt5/data/broker_clock.json -> opportunity_curve -> desks/mt5/data/hypotheses/miner_deepening_queue.json -> deepening_worker -> desks/mt5/data/hypotheses/deepening_worked.jsonl -> deep_forest_miner -> desks/mt5/data/intelligence/world/frontier.json -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> pf_allocator[sizing]",
+    "desks/mt5/data/decision_ledger.jsonl -> counterfactual_markout -> desks/mt5/reports/FILTER_VALUE.json -> regime_monitor -> desks/mt5/data/regime_state.json -> gateway -> desks/mt5/data/live_ledger.jsonl -> state_admission_run[conditioning]"
+   ],
+   "human_read": false,
+   "external_reader": null
+  },
+  "desks/mt5/data/deep_forest_claims.jsonl": {
+   "reaches_authority": true,
+   "paths": [
+    "desks/mt5/data/deep_forest_claims.jsonl -> deep_forest_miner -> desks/mt5/data/intelligence/world/frontier.json -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet[certificate]",
+    "desks/mt5/data/deep_forest_claims.jsonl -> deep_forest_miner -> desks/mt5/data/intelligence/world/frontier.json -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> pf_allocator[sizing]",
+    "desks/mt5/data/deep_forest_claims.jsonl -> deep_forest_miner -> desks/mt5/data/intelligence/world/frontier.json -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> gateway[position,size]",
+    "desks/mt5/data/deep_forest_claims.jsonl -> deep_forest_miner -> desks/mt5/data/intelligence/world/frontier.json -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> gateway -> desks/mt5/data/decision_ledger.jsonl -> counterfactual_markout -> desks/mt5/reports/FILTER_VALUE.json -> regime_monitor[hibernate]",
+    "desks/mt5/data/deep_forest_claims.jsonl -> deep_forest_miner -> desks/mt5/data/intelligence/world/frontier.json -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> gateway -> desks/mt5/data/live_ledger.jsonl -> state_admission_run[conditioning]"
+   ],
+   "human_read": false,
+   "external_reader": "deep_forest_miner (its own append-only memory)"
+  },
+  "desks/mt5/data/deep_forest_seen.json": {
+   "reaches_authority": true,
+   "paths": [
+    "desks/mt5/data/deep_forest_seen.json -> deep_forest_miner -> desks/mt5/data/intelligence/world/frontier.json -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet[certificate]",
+    "desks/mt5/data/deep_forest_seen.json -> deep_forest_miner -> desks/mt5/data/intelligence/world/frontier.json -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> pf_allocator[sizing]",
+    "desks/mt5/data/deep_forest_seen.json -> deep_forest_miner -> desks/mt5/data/intelligence/world/frontier.json -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> gateway[position,size]",
+    "desks/mt5/data/deep_forest_seen.json -> deep_forest_miner -> desks/mt5/data/intelligence/world/frontier.json -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> gateway -> desks/mt5/data/decision_ledger.jsonl -> counterfactual_markout -> desks/mt5/reports/FILTER_VALUE.json -> regime_monitor[hibernate]",
+    "desks/mt5/data/deep_forest_seen.json -> deep_forest_miner -> desks/mt5/data/intelligence/world/frontier.json -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> gateway -> desks/mt5/data/live_ledger.jsonl -> state_admission_run[conditioning]"
+   ],
+   "human_read": false,
+   "external_reader": "deep_forest_miner (its own seen-ledger)"
+  },
+  "desks/mt5/data/excursions.jsonl": {
+   "reaches_authority": true,
+   "paths": [
+    "desks/mt5/data/excursions.jsonl -> exit_accounts -> desks/mt5/data/hypotheses/miner_deepening_queue.json -> deepening_worker -> desks/mt5/data/hypotheses/deepening_worked.jsonl -> deep_forest_miner -> desks/mt5/data/intelligence/world/frontier.json -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet[certificate]",
+    "desks/mt5/data/excursions.jsonl -> exit_accounts -> desks/mt5/data/hypotheses/miner_deepening_queue.json -> deepening_worker -> desks/mt5/data/hypotheses/deepening_worked.jsonl -> deep_forest_miner -> desks/mt5/data/intelligence/world/frontier.json -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> pf_allocator[sizing]",
+    "desks/mt5/data/excursions.jsonl -> exit_accounts -> desks/mt5/data/hypotheses/miner_deepening_queue.json -> deepening_worker -> desks/mt5/data/hypotheses/deepening_worked.jsonl -> deep_forest_miner -> desks/mt5/data/intelligence/world/frontier.json -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> gateway[position,size]",
+    "desks/mt5/data/excursions.jsonl -> exit_accounts -> desks/mt5/data/hypotheses/miner_deepening_queue.json -> deepening_worker -> desks/mt5/data/hypotheses/deepening_worked.jsonl -> deep_forest_miner -> desks/mt5/data/intelligence/world/frontier.json -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> gateway -> desks/mt5/data/decision_ledger.jsonl -> counterfactual_markout -> desks/mt5/reports/FILTER_VALUE.json -> regime_monitor[hibernate]",
+    "desks/mt5/data/excursions.jsonl -> exit_accounts -> desks/mt5/data/hypotheses/miner_deepening_queue.json -> deepening_worker -> desks/mt5/data/hypotheses/deepening_worked.jsonl -> deep_forest_miner -> desks/mt5/data/intelligence/world/frontier.json -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> gateway -> desks/mt5/data/live_ledger.jsonl -> state_admission_run[conditioning]"
+   ],
+   "human_read": false,
+   "external_reader": "excursions (its own append-only memory)"
+  },
+  "desks/mt5/data/features/": {
+   "reaches_authority": true,
+   "paths": [
+    "desks/mt5/data/features/ -> factor_model_coevolution -> desks/mt5/data/hypotheses/miner_deepening_queue.json -> deepening_worker -> desks/mt5/data/hypotheses/deepening_worked.jsonl -> deep_forest_miner -> desks/mt5/data/intelligence/world/frontier.json -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet[certificate]",
+    "desks/mt5/data/features/ -> factor_model_coevolution -> desks/mt5/data/hypotheses/miner_deepening_queue.json -> deepening_worker -> desks/mt5/data/hypotheses/deepening_worked.jsonl -> deep_forest_miner -> desks/mt5/data/intelligence/world/frontier.json -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> pf_allocator[sizing]",
+    "desks/mt5/data/features/ -> factor_model_coevolution -> desks/mt5/data/hypotheses/miner_deepening_queue.json -> deepening_worker -> desks/mt5/data/hypotheses/deepening_worked.jsonl -> deep_forest_miner -> desks/mt5/data/intelligence/world/frontier.json -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> gateway[position,size]",
+    "desks/mt5/data/features/ -> factor_model_coevolution -> desks/mt5/data/hypotheses/miner_deepening_queue.json -> deepening_worker -> desks/mt5/data/hypotheses/deepening_worked.jsonl -> deep_forest_miner -> desks/mt5/data/intelligence/world/frontier.json -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> gateway -> desks/mt5/data/decision_ledger.jsonl -> counterfactual_markout -> desks/mt5/reports/FILTER_VALUE.json -> regime_monitor[hibernate]",
+    "desks/mt5/data/features/ -> factor_model_coevolution -> desks/mt5/data/hypotheses/miner_deepening_queue.json -> deepening_worker -> desks/mt5/data/hypotheses/deepening_worked.jsonl -> deep_forest_miner -> desks/mt5/data/intelligence/world/frontier.json -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> gateway -> desks/mt5/data/live_ledger.jsonl -> state_admission_run[conditioning]"
+   ],
+   "human_read": false,
+   "external_reader": "feature_store (content-addressed cache)"
+  },
+  "desks/mt5/data/gateway_state.json": {
+   "reaches_authority": false,
+   "paths": [],
+   "human_read": false,
+   "external_reader": null
+  },
+  "desks/mt5/data/generator_weights.json": {
+   "reaches_authority": true,
+   "paths": [
+    "desks/mt5/data/generator_weights.json -> alpha_evolution -> desks/mt5/data/intelligence/alpha_evolution/ -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet[certificate]",
+    "desks/mt5/data/generator_weights.json -> alpha_evolution -> desks/mt5/data/intelligence/alpha_evolution/ -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> pf_allocator[sizing]",
+    "desks/mt5/data/generator_weights.json -> alpha_evolution -> desks/mt5/data/intelligence/alpha_evolution/ -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> gateway[position,size]",
+    "desks/mt5/data/generator_weights.json -> alpha_evolution -> desks/mt5/data/intelligence/alpha_evolution/ -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> gateway -> desks/mt5/data/decision_ledger.jsonl -> counterfactual_markout -> desks/mt5/reports/FILTER_VALUE.json -> regime_monitor[hibernate]",
+    "desks/mt5/data/generator_weights.json -> alpha_evolution -> desks/mt5/data/intelligence/alpha_evolution/ -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> gateway -> desks/mt5/data/live_ledger.jsonl -> state_admission_run[conditioning]"
+   ],
+   "human_read": false,
+   "external_reader": null
+  },
+  "desks/mt5/data/hypotheses/deepened_candidates.json": {
+   "reaches_authority": false,
+   "paths": [],
+   "human_read": false,
+   "external_reader": "external_gauntlet via compiler merge"
+  },
+  "desks/mt5/data/hypotheses/deepening_worked.jsonl": {
+   "reaches_authority": true,
+   "paths": [
+    "desks/mt5/data/hypotheses/deepening_worked.jsonl -> deep_forest_miner -> desks/mt5/data/intelligence/world/frontier.json -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet[certificate]",
+    "desks/mt5/data/hypotheses/deepening_worked.jsonl -> deep_forest_miner -> desks/mt5/data/intelligence/world/frontier.json -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> pf_allocator[sizing]",
+    "desks/mt5/data/hypotheses/deepening_worked.jsonl -> deep_forest_miner -> desks/mt5/data/intelligence/world/frontier.json -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> gateway[position,size]",
+    "desks/mt5/data/hypotheses/deepening_worked.jsonl -> deep_forest_miner -> desks/mt5/data/intelligence/world/frontier.json -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> gateway -> desks/mt5/data/decision_ledger.jsonl -> counterfactual_markout -> desks/mt5/reports/FILTER_VALUE.json -> regime_monitor[hibernate]",
+    "desks/mt5/data/hypotheses/deepening_worked.jsonl -> deep_forest_miner -> desks/mt5/data/intelligence/world/frontier.json -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> gateway -> desks/mt5/data/live_ledger.jsonl -> state_admission_run[conditioning]"
+   ],
+   "human_read": false,
+   "external_reader": null
+  },
+  "desks/mt5/data/hypotheses/miner_candidates.json": {
+   "reaches_authority": true,
+   "paths": [
+    "desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet[certificate]",
+    "desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> pf_allocator[sizing]",
+    "desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> gateway[position,size]",
+    "desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> gateway -> desks/mt5/data/decision_ledger.jsonl -> counterfactual_markout -> desks/mt5/reports/FILTER_VALUE.json -> regime_monitor[hibernate]",
+    "desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> gateway -> desks/mt5/data/live_ledger.jsonl -> state_admission_run[conditioning]"
+   ],
+   "human_read": false,
+   "external_reader": null
+  },
+  "desks/mt5/data/hypotheses/miner_deepening_queue.json": {
+   "reaches_authority": true,
+   "paths": [
+    "desks/mt5/data/hypotheses/miner_deepening_queue.json -> deepening_worker -> desks/mt5/data/hypotheses/deepening_worked.jsonl -> deep_forest_miner -> desks/mt5/data/intelligence/world/frontier.json -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet[certificate]",
+    "desks/mt5/data/hypotheses/miner_deepening_queue.json -> deepening_worker -> desks/mt5/data/hypotheses/deepening_worked.jsonl -> deep_forest_miner -> desks/mt5/data/intelligence/world/frontier.json -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> pf_allocator[sizing]",
+    "desks/mt5/data/hypotheses/miner_deepening_queue.json -> deepening_worker -> desks/mt5/data/hypotheses/deepening_worked.jsonl -> deep_forest_miner -> desks/mt5/data/intelligence/world/frontier.json -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> gateway[position,size]",
+    "desks/mt5/data/hypotheses/miner_deepening_queue.json -> deepening_worker -> desks/mt5/data/hypotheses/deepening_worked.jsonl -> deep_forest_miner -> desks/mt5/data/intelligence/world/frontier.json -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> gateway -> desks/mt5/data/decision_ledger.jsonl -> counterfactual_markout -> desks/mt5/reports/FILTER_VALUE.json -> regime_monitor[hibernate]",
+    "desks/mt5/data/hypotheses/miner_deepening_queue.json -> deepening_worker -> desks/mt5/data/hypotheses/deepening_worked.jsonl -> deep_forest_miner -> desks/mt5/data/intelligence/world/frontier.json -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> gateway -> desks/mt5/data/live_ledger.jsonl -> state_admission_run[conditioning]"
+   ],
+   "human_read": false,
+   "external_reader": null
+  },
+  "desks/mt5/data/hypothesis_graph.jsonl": {
+   "reaches_authority": true,
+   "paths": [
+    "desks/mt5/data/hypothesis_graph.jsonl -> mutation_yield -> desks/mt5/data/generator_weights.json -> alpha_evolution -> desks/mt5/data/intelligence/alpha_evolution/ -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet[certificate]",
+    "desks/mt5/data/hypothesis_graph.jsonl -> mutation_yield -> desks/mt5/data/generator_weights.json -> alpha_evolution -> desks/mt5/data/intelligence/alpha_evolution/ -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> pf_allocator[sizing]",
+    "desks/mt5/data/hypothesis_graph.jsonl -> mutation_yield -> desks/mt5/data/generator_weights.json -> alpha_evolution -> desks/mt5/data/intelligence/alpha_evolution/ -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> gateway[position,size]",
+    "desks/mt5/data/hypothesis_graph.jsonl -> mutation_yield -> desks/mt5/data/generator_weights.json -> alpha_evolution -> desks/mt5/data/intelligence/alpha_evolution/ -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> gateway -> desks/mt5/data/decision_ledger.jsonl -> counterfactual_markout -> desks/mt5/reports/FILTER_VALUE.json -> regime_monitor[hibernate]",
+    "desks/mt5/data/hypothesis_graph.jsonl -> mutation_yield -> desks/mt5/data/generator_weights.json -> alpha_evolution -> desks/mt5/data/intelligence/alpha_evolution/ -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> gateway -> desks/mt5/data/live_ledger.jsonl -> state_admission_run[conditioning]"
+   ],
+   "human_read": false,
+   "external_reader": null
+  },
+  "desks/mt5/data/intelligence/": {
+   "reaches_authority": true,
+   "paths": [
+    "desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> pf_allocator[sizing]",
+    "desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> gateway[position,size]",
+    "desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> gateway -> desks/mt5/data/decision_ledger.jsonl -> counterfactual_markout -> desks/mt5/reports/FILTER_VALUE.json -> regime_monitor[hibernate]",
+    "desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> gateway -> desks/mt5/data/live_ledger.jsonl -> state_admission_run[conditioning]",
+    "desks/mt5/data/intelligence/ -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet[certificate]"
+   ],
+   "human_read": false,
+   "external_reader": null
+  },
+  "desks/mt5/data/intelligence/alpha_evolution/": {
+   "reaches_authority": true,
+   "paths": [
+    "desks/mt5/data/intelligence/alpha_evolution/ -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet[certificate]",
+    "desks/mt5/data/intelligence/alpha_evolution/ -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> pf_allocator[sizing]",
+    "desks/mt5/data/intelligence/alpha_evolution/ -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> gateway[position,size]",
+    "desks/mt5/data/intelligence/alpha_evolution/ -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> gateway -> desks/mt5/data/decision_ledger.jsonl -> counterfactual_markout -> desks/mt5/reports/FILTER_VALUE.json -> regime_monitor[hibernate]",
+    "desks/mt5/data/intelligence/alpha_evolution/ -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> gateway -> desks/mt5/data/live_ledger.jsonl -> state_admission_run[conditioning]"
+   ],
+   "human_read": false,
+   "external_reader": "miner_candidate_compiler intake glob"
+  },
+  "desks/mt5/data/intelligence/anomalies/": {
+   "reaches_authority": true,
+   "paths": [
+    "desks/mt5/data/intelligence/anomalies/ -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet[certificate]",
+    "desks/mt5/data/intelligence/anomalies/ -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> pf_allocator[sizing]",
+    "desks/mt5/data/intelligence/anomalies/ -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> gateway[position,size]",
+    "desks/mt5/data/intelligence/anomalies/ -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> gateway -> desks/mt5/data/decision_ledger.jsonl -> counterfactual_markout -> desks/mt5/reports/FILTER_VALUE.json -> regime_monitor[hibernate]",
+    "desks/mt5/data/intelligence/anomalies/ -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> gateway -> desks/mt5/data/live_ledger.jsonl -> state_admission_run[conditioning]"
+   ],
+   "human_read": false,
+   "external_reader": null
+  },
+  "desks/mt5/data/intelligence/anomaly_cursor.json": {
+   "reaches_authority": true,
+   "paths": [
+    "desks/mt5/data/intelligence/anomaly_cursor.json -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet[certificate]",
+    "desks/mt5/data/intelligence/anomaly_cursor.json -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> pf_allocator[sizing]",
+    "desks/mt5/data/intelligence/anomaly_cursor.json -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> gateway[position,size]",
+    "desks/mt5/data/intelligence/anomaly_cursor.json -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> gateway -> desks/mt5/data/decision_ledger.jsonl -> counterfactual_markout -> desks/mt5/reports/FILTER_VALUE.json -> regime_monitor[hibernate]",
+    "desks/mt5/data/intelligence/anomaly_cursor.json -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> gateway -> desks/mt5/data/live_ledger.jsonl -> state_admission_run[conditioning]"
+   ],
+   "human_read": false,
+   "external_reader": "anomaly_miner (its own rotation cursor)"
+  },
+  "desks/mt5/data/intelligence/anomaly_factory/": {
+   "reaches_authority": true,
+   "paths": [
+    "desks/mt5/data/intelligence/anomaly_factory/ -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet[certificate]",
+    "desks/mt5/data/intelligence/anomaly_factory/ -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> pf_allocator[sizing]",
+    "desks/mt5/data/intelligence/anomaly_factory/ -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> gateway[position,size]",
+    "desks/mt5/data/intelligence/anomaly_factory/ -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> gateway -> desks/mt5/data/decision_ledger.jsonl -> counterfactual_markout -> desks/mt5/reports/FILTER_VALUE.json -> regime_monitor[hibernate]",
+    "desks/mt5/data/intelligence/anomaly_factory/ -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> gateway -> desks/mt5/data/live_ledger.jsonl -> state_admission_run[conditioning]"
+   ],
+   "human_read": false,
+   "external_reader": "miner_candidate_compiler intake glob"
+  },
+  "desks/mt5/data/intelligence/cross_asset_graph/": {
+   "reaches_authority": true,
+   "paths": [
+    "desks/mt5/data/intelligence/cross_asset_graph/ -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet[certificate]",
+    "desks/mt5/data/intelligence/cross_asset_graph/ -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> pf_allocator[sizing]",
+    "desks/mt5/data/intelligence/cross_asset_graph/ -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> gateway[position,size]",
+    "desks/mt5/data/intelligence/cross_asset_graph/ -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> gateway -> desks/mt5/data/decision_ledger.jsonl -> counterfactual_markout -> desks/mt5/reports/FILTER_VALUE.json -> regime_monitor[hibernate]",
+    "desks/mt5/data/intelligence/cross_asset_graph/ -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> gateway -> desks/mt5/data/live_ledger.jsonl -> state_admission_run[conditioning]"
+   ],
+   "human_read": false,
+   "external_reader": "miner_candidate_compiler intake glob"
+  },
+  "desks/mt5/data/intelligence/style_premia/": {
+   "reaches_authority": true,
+   "paths": [
+    "desks/mt5/data/intelligence/style_premia/ -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet[certificate]",
+    "desks/mt5/data/intelligence/style_premia/ -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> pf_allocator[sizing]",
+    "desks/mt5/data/intelligence/style_premia/ -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> gateway[position,size]",
+    "desks/mt5/data/intelligence/style_premia/ -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> gateway -> desks/mt5/data/decision_ledger.jsonl -> counterfactual_markout -> desks/mt5/reports/FILTER_VALUE.json -> regime_monitor[hibernate]",
+    "desks/mt5/data/intelligence/style_premia/ -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> gateway -> desks/mt5/data/live_ledger.jsonl -> state_admission_run[conditioning]"
+   ],
+   "human_read": false,
+   "external_reader": "miner_candidate_compiler intake glob"
+  },
+  "desks/mt5/data/intelligence/survivor_distiller/": {
+   "reaches_authority": true,
+   "paths": [
+    "desks/mt5/data/intelligence/survivor_distiller/ -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet[certificate]",
+    "desks/mt5/data/intelligence/survivor_distiller/ -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> pf_allocator[sizing]",
+    "desks/mt5/data/intelligence/survivor_distiller/ -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> gateway[position,size]",
+    "desks/mt5/data/intelligence/survivor_distiller/ -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> gateway -> desks/mt5/data/decision_ledger.jsonl -> counterfactual_markout -> desks/mt5/reports/FILTER_VALUE.json -> regime_monitor[hibernate]",
+    "desks/mt5/data/intelligence/survivor_distiller/ -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> gateway -> desks/mt5/data/live_ledger.jsonl -> state_admission_run[conditioning]"
+   ],
+   "human_read": false,
+   "external_reader": "miner_candidate_compiler intake glob"
+  },
+  "desks/mt5/data/intelligence/tail_alpha/": {
+   "reaches_authority": true,
+   "paths": [
+    "desks/mt5/data/intelligence/tail_alpha/ -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet[certificate]",
+    "desks/mt5/data/intelligence/tail_alpha/ -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> pf_allocator[sizing]",
+    "desks/mt5/data/intelligence/tail_alpha/ -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> gateway[position,size]",
+    "desks/mt5/data/intelligence/tail_alpha/ -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> gateway -> desks/mt5/data/decision_ledger.jsonl -> counterfactual_markout -> desks/mt5/reports/FILTER_VALUE.json -> regime_monitor[hibernate]",
+    "desks/mt5/data/intelligence/tail_alpha/ -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> gateway -> desks/mt5/data/live_ledger.jsonl -> state_admission_run[conditioning]"
+   ],
+   "human_read": false,
+   "external_reader": "miner_candidate_compiler intake glob"
+  },
+  "desks/mt5/data/intelligence/world/frontier.json": {
+   "reaches_authority": true,
+   "paths": [
+    "desks/mt5/data/intelligence/world/frontier.json -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet[certificate]",
+    "desks/mt5/data/intelligence/world/frontier.json -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> pf_allocator[sizing]",
+    "desks/mt5/data/intelligence/world/frontier.json -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> gateway[position,size]",
+    "desks/mt5/data/intelligence/world/frontier.json -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> gateway -> desks/mt5/data/decision_ledger.jsonl -> counterfactual_markout -> desks/mt5/reports/FILTER_VALUE.json -> regime_monitor[hibernate]",
+    "desks/mt5/data/intelligence/world/frontier.json -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> gateway -> desks/mt5/data/live_ledger.jsonl -> state_admission_run[conditioning]"
+   ],
+   "human_read": false,
+   "external_reader": "world_crawler (side_channels)"
+  },
+  "desks/mt5/data/live_ledger.jsonl": {
+   "reaches_authority": true,
+   "paths": [
+    "desks/mt5/data/live_ledger.jsonl -> state_admission_run[conditioning]",
+    "desks/mt5/data/live_ledger.jsonl -> regime_monitor[hibernate]",
+    "desks/mt5/data/live_ledger.jsonl -> action_counterfactuals -> desks/mt5/data/hypotheses/miner_deepening_queue.json -> deepening_worker -> desks/mt5/data/hypotheses/deepening_worked.jsonl -> deep_forest_miner -> desks/mt5/data/intelligence/world/frontier.json -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet[certificate]",
+    "desks/mt5/data/live_ledger.jsonl -> action_counterfactuals -> desks/mt5/data/hypotheses/miner_deepening_queue.json -> deepening_worker -> desks/mt5/data/hypotheses/deepening_worked.jsonl -> deep_forest_miner -> desks/mt5/data/intelligence/world/frontier.json -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> pf_allocator[sizing]",
+    "desks/mt5/data/live_ledger.jsonl -> action_counterfactuals -> desks/mt5/data/hypotheses/miner_deepening_queue.json -> deepening_worker -> desks/mt5/data/hypotheses/deepening_worked.jsonl -> deep_forest_miner -> desks/mt5/data/intelligence/world/frontier.json -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> gateway[position,size]"
+   ],
+   "human_read": false,
+   "external_reader": null
+  },
+  "desks/mt5/data/memory/": {
+   "reaches_authority": false,
+   "paths": [],
+   "human_read": false,
+   "external_reader": "deepening_worker.task_text (memory.prompt_context on every prompt)"
+  },
+  "desks/mt5/data/missed_growth.jsonl": {
+   "reaches_authority": false,
+   "paths": [],
+   "human_read": false,
+   "external_reader": "missed_growth (its own append-only memory)"
+  },
+  "desks/mt5/data/mutation_operator_weights.json": {
+   "reaches_authority": true,
+   "paths": [
+    "desks/mt5/data/mutation_operator_weights.json -> survivor_distiller -> desks/mt5/data/hypotheses/miner_deepening_queue.json -> deepening_worker -> desks/mt5/data/hypotheses/deepening_worked.jsonl -> deep_forest_miner -> desks/mt5/data/intelligence/world/frontier.json -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet[certificate]",
+    "desks/mt5/data/mutation_operator_weights.json -> survivor_distiller -> desks/mt5/data/hypotheses/miner_deepening_queue.json -> deepening_worker -> desks/mt5/data/hypotheses/deepening_worked.jsonl -> deep_forest_miner -> desks/mt5/data/intelligence/world/frontier.json -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> pf_allocator[sizing]",
+    "desks/mt5/data/mutation_operator_weights.json -> survivor_distiller -> desks/mt5/data/hypotheses/miner_deepening_queue.json -> deepening_worker -> desks/mt5/data/hypotheses/deepening_worked.jsonl -> deep_forest_miner -> desks/mt5/data/intelligence/world/frontier.json -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> gateway[position,size]",
+    "desks/mt5/data/mutation_operator_weights.json -> survivor_distiller -> desks/mt5/data/hypotheses/miner_deepening_queue.json -> deepening_worker -> desks/mt5/data/hypotheses/deepening_worked.jsonl -> deep_forest_miner -> desks/mt5/data/intelligence/world/frontier.json -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> gateway -> desks/mt5/data/decision_ledger.jsonl -> counterfactual_markout -> desks/mt5/reports/FILTER_VALUE.json -> regime_monitor[hibernate]",
+    "desks/mt5/data/mutation_operator_weights.json -> survivor_distiller -> desks/mt5/data/hypotheses/miner_deepening_queue.json -> deepening_worker -> desks/mt5/data/hypotheses/deepening_worked.jsonl -> deep_forest_miner -> desks/mt5/data/intelligence/world/frontier.json -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> gateway -> desks/mt5/data/live_ledger.jsonl -> state_admission_run[conditioning]"
+   ],
+   "human_read": false,
+   "external_reader": null
+  },
+  "desks/mt5/data/order_intents.jsonl": {
+   "reaches_authority": true,
+   "paths": [
+    "desks/mt5/data/order_intents.jsonl -> fill_surface -> desks/mt5/reports/FILL_SURFACE.json -> revival_engine -> desks/mt5/data/hypotheses/miner_deepening_queue.json -> deepening_worker -> desks/mt5/data/hypotheses/deepening_worked.jsonl -> deep_forest_miner -> desks/mt5/data/intelligence/world/frontier.json -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet[certificate]",
+    "desks/mt5/data/order_intents.jsonl -> fill_surface -> desks/mt5/reports/FILL_SURFACE.json -> revival_engine -> desks/mt5/data/hypotheses/miner_deepening_queue.json -> deepening_worker -> desks/mt5/data/hypotheses/deepening_worked.jsonl -> deep_forest_miner -> desks/mt5/data/intelligence/world/frontier.json -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> pf_allocator[sizing]",
+    "desks/mt5/data/order_intents.jsonl -> fill_surface -> desks/mt5/reports/FILL_SURFACE.json -> revival_engine -> desks/mt5/data/hypotheses/miner_deepening_queue.json -> deepening_worker -> desks/mt5/data/hypotheses/deepening_worked.jsonl -> deep_forest_miner -> desks/mt5/data/intelligence/world/frontier.json -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> gateway[position,size]",
+    "desks/mt5/data/order_intents.jsonl -> fill_surface -> desks/mt5/reports/FILL_SURFACE.json -> revival_engine -> desks/mt5/data/hypotheses/miner_deepening_queue.json -> deepening_worker -> desks/mt5/data/hypotheses/deepening_worked.jsonl -> deep_forest_miner -> desks/mt5/data/intelligence/world/frontier.json -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> gateway -> desks/mt5/data/decision_ledger.jsonl -> counterfactual_markout -> desks/mt5/reports/FILTER_VALUE.json -> regime_monitor[hibernate]",
+    "desks/mt5/data/order_intents.jsonl -> fill_surface -> desks/mt5/reports/FILL_SURFACE.json -> revival_engine -> desks/mt5/data/hypotheses/miner_deepening_queue.json -> deepening_worker -> desks/mt5/data/hypotheses/deepening_worked.jsonl -> deep_forest_miner -> desks/mt5/data/intelligence/world/frontier.json -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> gateway -> desks/mt5/data/live_ledger.jsonl -> state_admission_run[conditioning]"
+   ],
+   "human_read": false,
+   "external_reader": null
+  },
+  "desks/mt5/data/pf_forecast_log.jsonl": {
+   "reaches_authority": true,
+   "paths": [
+    "desks/mt5/data/pf_forecast_log.jsonl -> action_counterfactuals -> desks/mt5/data/hypotheses/miner_deepening_queue.json -> deepening_worker -> desks/mt5/data/hypotheses/deepening_worked.jsonl -> deep_forest_miner -> desks/mt5/data/intelligence/world/frontier.json -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet[certificate]",
+    "desks/mt5/data/pf_forecast_log.jsonl -> action_counterfactuals -> desks/mt5/data/hypotheses/miner_deepening_queue.json -> deepening_worker -> desks/mt5/data/hypotheses/deepening_worked.jsonl -> deep_forest_miner -> desks/mt5/data/intelligence/world/frontier.json -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> pf_allocator[sizing]",
+    "desks/mt5/data/pf_forecast_log.jsonl -> action_counterfactuals -> desks/mt5/data/hypotheses/miner_deepening_queue.json -> deepening_worker -> desks/mt5/data/hypotheses/deepening_worked.jsonl -> deep_forest_miner -> desks/mt5/data/intelligence/world/frontier.json -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> gateway[position,size]",
+    "desks/mt5/data/pf_forecast_log.jsonl -> action_counterfactuals -> desks/mt5/data/hypotheses/miner_deepening_queue.json -> deepening_worker -> desks/mt5/data/hypotheses/deepening_worked.jsonl -> deep_forest_miner -> desks/mt5/data/intelligence/world/frontier.json -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> gateway -> desks/mt5/data/decision_ledger.jsonl -> counterfactual_markout -> desks/mt5/reports/FILTER_VALUE.json -> regime_monitor[hibernate]",
+    "desks/mt5/data/pf_forecast_log.jsonl -> action_counterfactuals -> desks/mt5/data/hypotheses/miner_deepening_queue.json -> deepening_worker -> desks/mt5/data/hypotheses/deepening_worked.jsonl -> deep_forest_miner -> desks/mt5/data/intelligence/world/frontier.json -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> gateway -> desks/mt5/data/live_ledger.jsonl -> state_admission_run[conditioning]"
+   ],
+   "human_read": false,
+   "external_reader": null
+  },
+  "desks/mt5/data/prospector_targets.json": {
+   "reaches_authority": false,
+   "paths": [],
+   "human_read": false,
+   "external_reader": "world_crawler (side_channels)"
+  },
+  "desks/mt5/data/rail_calibration.json": {
+   "reaches_authority": true,
+   "paths": [
+    "desks/mt5/data/rail_calibration.json -> pf_allocator[sizing]",
+    "desks/mt5/data/rail_calibration.json -> pf_allocator -> desks/mt5/reports/pf_allocation.json -> gateway[position,size]",
+    "desks/mt5/data/rail_calibration.json -> pf_allocator -> desks/mt5/reports/pf_allocation.json -> missed_growth -> desks/mt5/data/hypotheses/miner_deepening_queue.json -> deepening_worker -> desks/mt5/data/hypotheses/deepening_worked.jsonl -> deep_forest_miner -> desks/mt5/data/intelligence/world/frontier.json -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet[certificate]",
+    "desks/mt5/data/rail_calibration.json -> pf_allocator -> desks/mt5/reports/pf_allocation.json -> gateway -> desks/mt5/data/decision_ledger.jsonl -> counterfactual_markout -> desks/mt5/reports/FILTER_VALUE.json -> regime_monitor[hibernate]",
+    "desks/mt5/data/rail_calibration.json -> pf_allocator -> desks/mt5/reports/pf_allocation.json -> gateway -> desks/mt5/data/live_ledger.jsonl -> state_admission_run[conditioning]"
+   ],
+   "human_read": false,
+   "external_reader": null
+  },
+  "desks/mt5/data/regime_state.json": {
+   "reaches_authority": true,
+   "paths": [
+    "desks/mt5/data/regime_state.json -> gateway[position,size]",
+    "desks/mt5/data/regime_state.json -> gateway -> desks/mt5/data/broker_clock.json -> opportunity_curve -> desks/mt5/data/hypotheses/miner_deepening_queue.json -> deepening_worker -> desks/mt5/data/hypotheses/deepening_worked.jsonl -> deep_forest_miner -> desks/mt5/data/intelligence/world/frontier.json -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet[certificate]",
+    "desks/mt5/data/regime_state.json -> gateway -> desks/mt5/data/broker_clock.json -> opportunity_curve -> desks/mt5/data/hypotheses/miner_deepening_queue.json -> deepening_worker -> desks/mt5/data/hypotheses/deepening_worked.jsonl -> deep_forest_miner -> desks/mt5/data/intelligence/world/frontier.json -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> pf_allocator[sizing]",
+    "desks/mt5/data/regime_state.json -> gateway -> desks/mt5/data/decision_ledger.jsonl -> counterfactual_markout -> desks/mt5/reports/FILTER_VALUE.json -> regime_monitor[hibernate]",
+    "desks/mt5/data/regime_state.json -> gateway -> desks/mt5/data/live_ledger.jsonl -> state_admission_run[conditioning]"
+   ],
+   "human_read": false,
+   "external_reader": null
+  },
+  "desks/mt5/data/repo_cache/": {
+   "reaches_authority": true,
+   "paths": [
+    "desks/mt5/data/repo_cache/ -> repo_miner -> desks/mt5/data/hypotheses/miner_deepening_queue.json -> deepening_worker -> desks/mt5/data/hypotheses/deepening_worked.jsonl -> deep_forest_miner -> desks/mt5/data/intelligence/world/frontier.json -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet[certificate]",
+    "desks/mt5/data/repo_cache/ -> repo_miner -> desks/mt5/data/hypotheses/miner_deepening_queue.json -> deepening_worker -> desks/mt5/data/hypotheses/deepening_worked.jsonl -> deep_forest_miner -> desks/mt5/data/intelligence/world/frontier.json -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> pf_allocator[sizing]",
+    "desks/mt5/data/repo_cache/ -> repo_miner -> desks/mt5/data/hypotheses/miner_deepening_queue.json -> deepening_worker -> desks/mt5/data/hypotheses/deepening_worked.jsonl -> deep_forest_miner -> desks/mt5/data/intelligence/world/frontier.json -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> gateway[position,size]",
+    "desks/mt5/data/repo_cache/ -> repo_miner -> desks/mt5/data/hypotheses/miner_deepening_queue.json -> deepening_worker -> desks/mt5/data/hypotheses/deepening_worked.jsonl -> deep_forest_miner -> desks/mt5/data/intelligence/world/frontier.json -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> gateway -> desks/mt5/data/decision_ledger.jsonl -> counterfactual_markout -> desks/mt5/reports/FILTER_VALUE.json -> regime_monitor[hibernate]",
+    "desks/mt5/data/repo_cache/ -> repo_miner -> desks/mt5/data/hypotheses/miner_deepening_queue.json -> deepening_worker -> desks/mt5/data/hypotheses/deepening_worked.jsonl -> deep_forest_miner -> desks/mt5/data/intelligence/world/frontier.json -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> gateway -> desks/mt5/data/live_ledger.jsonl -> state_admission_run[conditioning]"
+   ],
+   "human_read": false,
+   "external_reader": "repo_miner (its own cache)"
+  },
+  "desks/mt5/data/research_budget.json": {
+   "reaches_authority": false,
+   "paths": [],
+   "human_read": false,
+   "external_reader": "daily_cycle proposer budgets and deepening_worker voi_order, through bandit.arm_weight"
+  },
+  "desks/mt5/data/research_marginal.json": {
+   "reaches_authority": false,
+   "paths": [],
+   "human_read": false,
+   "external_reader": null
+  },
+  "desks/mt5/data/sleeve_registry.json": {
+   "reaches_authority": true,
+   "paths": [
+    "desks/mt5/data/sleeve_registry.json -> gateway[position,size]",
+    "desks/mt5/data/sleeve_registry.json -> gateway -> desks/mt5/data/broker_clock.json -> opportunity_curve -> desks/mt5/data/hypotheses/miner_deepening_queue.json -> deepening_worker -> desks/mt5/data/hypotheses/deepening_worked.jsonl -> deep_forest_miner -> desks/mt5/data/intelligence/world/frontier.json -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet[certificate]",
+    "desks/mt5/data/sleeve_registry.json -> gateway -> desks/mt5/data/broker_clock.json -> opportunity_curve -> desks/mt5/data/hypotheses/miner_deepening_queue.json -> deepening_worker -> desks/mt5/data/hypotheses/deepening_worked.jsonl -> deep_forest_miner -> desks/mt5/data/intelligence/world/frontier.json -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> pf_allocator[sizing]",
+    "desks/mt5/data/sleeve_registry.json -> gateway -> desks/mt5/data/decision_ledger.jsonl -> counterfactual_markout -> desks/mt5/reports/FILTER_VALUE.json -> regime_monitor[hibernate]",
+    "desks/mt5/data/sleeve_registry.json -> gateway -> desks/mt5/data/live_ledger.jsonl -> state_admission_run[conditioning]"
+   ],
+   "human_read": false,
+   "external_reader": null
+  },
+  "desks/mt5/data/state_fits.json": {
+   "reaches_authority": true,
+   "paths": [
+    "desks/mt5/data/state_fits.json -> state_vector_build -> desks/mt5/data/state_vector.json -> pf_allocator[sizing]",
+    "desks/mt5/data/state_fits.json -> state_vector_build -> desks/mt5/data/state_vector.json -> gateway[position,size]",
+    "desks/mt5/data/state_fits.json -> state_vector_build -> desks/mt5/data/state_vector.json -> gateway -> desks/mt5/data/broker_clock.json -> opportunity_curve -> desks/mt5/data/hypotheses/miner_deepening_queue.json -> deepening_worker -> desks/mt5/data/hypotheses/deepening_worked.jsonl -> deep_forest_miner -> desks/mt5/data/intelligence/world/frontier.json -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet[certificate]",
+    "desks/mt5/data/state_fits.json -> state_vector_build -> desks/mt5/data/state_vector.json -> gateway -> desks/mt5/data/decision_ledger.jsonl -> counterfactual_markout -> desks/mt5/reports/FILTER_VALUE.json -> regime_monitor[hibernate]",
+    "desks/mt5/data/state_fits.json -> state_vector_build -> desks/mt5/data/state_vector.json -> gateway -> desks/mt5/data/live_ledger.jsonl -> state_admission_run[conditioning]"
+   ],
+   "human_read": false,
+   "external_reader": "state_vector_build (its own cache)"
+  },
+  "desks/mt5/data/state_vector.json": {
+   "reaches_authority": true,
+   "paths": [
+    "desks/mt5/data/state_vector.json -> pf_allocator[sizing]",
+    "desks/mt5/data/state_vector.json -> gateway[position,size]",
+    "desks/mt5/data/state_vector.json -> gateway -> desks/mt5/data/broker_clock.json -> opportunity_curve -> desks/mt5/data/hypotheses/miner_deepening_queue.json -> deepening_worker -> desks/mt5/data/hypotheses/deepening_worked.jsonl -> deep_forest_miner -> desks/mt5/data/intelligence/world/frontier.json -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet[certificate]",
+    "desks/mt5/data/state_vector.json -> gateway -> desks/mt5/data/decision_ledger.jsonl -> counterfactual_markout -> desks/mt5/reports/FILTER_VALUE.json -> regime_monitor[hibernate]",
+    "desks/mt5/data/state_vector.json -> gateway -> desks/mt5/data/live_ledger.jsonl -> state_admission_run[conditioning]"
+   ],
+   "human_read": false,
+   "external_reader": null
+  },
+  "desks/mt5/reports/ACTION_COUNTERFACTUALS.json": {
+   "reaches_authority": false,
+   "paths": [],
+   "human_read": true,
+   "external_reader": null
+  },
+  "desks/mt5/reports/ALLOCATOR_PROOF.json": {
+   "reaches_authority": true,
+   "paths": [
+    "desks/mt5/reports/ALLOCATOR_PROOF.json -> gateway[position,size]",
+    "desks/mt5/reports/ALLOCATOR_PROOF.json -> gateway -> desks/mt5/data/broker_clock.json -> opportunity_curve -> desks/mt5/data/hypotheses/miner_deepening_queue.json -> deepening_worker -> desks/mt5/data/hypotheses/deepening_worked.jsonl -> deep_forest_miner -> desks/mt5/data/intelligence/world/frontier.json -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet[certificate]",
+    "desks/mt5/reports/ALLOCATOR_PROOF.json -> gateway -> desks/mt5/data/broker_clock.json -> opportunity_curve -> desks/mt5/data/hypotheses/miner_deepening_queue.json -> deepening_worker -> desks/mt5/data/hypotheses/deepening_worked.jsonl -> deep_forest_miner -> desks/mt5/data/intelligence/world/frontier.json -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> pf_allocator[sizing]",
+    "desks/mt5/reports/ALLOCATOR_PROOF.json -> gateway -> desks/mt5/data/decision_ledger.jsonl -> counterfactual_markout -> desks/mt5/reports/FILTER_VALUE.json -> regime_monitor[hibernate]",
+    "desks/mt5/reports/ALLOCATOR_PROOF.json -> gateway -> desks/mt5/data/live_ledger.jsonl -> state_admission_run[conditioning]"
+   ],
+   "human_read": false,
+   "external_reader": null
+  },
+  "desks/mt5/reports/ALPHA_GENOME.json": {
+   "reaches_authority": true,
+   "paths": [
+    "desks/mt5/reports/ALPHA_GENOME.json -> regime_coverage -> desks/mt5/data/hypotheses/miner_deepening_queue.json -> deepening_worker -> desks/mt5/data/hypotheses/deepening_worked.jsonl -> deep_forest_miner -> desks/mt5/data/intelligence/world/frontier.json -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet[certificate]",
+    "desks/mt5/reports/ALPHA_GENOME.json -> regime_coverage -> desks/mt5/data/hypotheses/miner_deepening_queue.json -> deepening_worker -> desks/mt5/data/hypotheses/deepening_worked.jsonl -> deep_forest_miner -> desks/mt5/data/intelligence/world/frontier.json -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> pf_allocator[sizing]",
+    "desks/mt5/reports/ALPHA_GENOME.json -> regime_coverage -> desks/mt5/data/hypotheses/miner_deepening_queue.json -> deepening_worker -> desks/mt5/data/hypotheses/deepening_worked.jsonl -> deep_forest_miner -> desks/mt5/data/intelligence/world/frontier.json -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> gateway[position,size]",
+    "desks/mt5/reports/ALPHA_GENOME.json -> regime_coverage -> desks/mt5/data/hypotheses/miner_deepening_queue.json -> deepening_worker -> desks/mt5/data/hypotheses/deepening_worked.jsonl -> deep_forest_miner -> desks/mt5/data/intelligence/world/frontier.json -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> gateway -> desks/mt5/data/decision_ledger.jsonl -> counterfactual_markout -> desks/mt5/reports/FILTER_VALUE.json -> regime_monitor[hibernate]",
+    "desks/mt5/reports/ALPHA_GENOME.json -> regime_coverage -> desks/mt5/data/hypotheses/miner_deepening_queue.json -> deepening_worker -> desks/mt5/data/hypotheses/deepening_worked.jsonl -> deep_forest_miner -> desks/mt5/data/intelligence/world/frontier.json -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> gateway -> desks/mt5/data/live_ledger.jsonl -> state_admission_run[conditioning]"
+   ],
+   "human_read": true,
+   "external_reader": null
+  },
+  "desks/mt5/reports/ANOMALY_FACTORY.json": {
+   "reaches_authority": false,
+   "paths": [],
+   "human_read": true,
+   "external_reader": null
+  },
+  "desks/mt5/reports/CAPITAL_MODIFIERS.json": {
+   "reaches_authority": false,
+   "paths": [],
+   "human_read": true,
+   "external_reader": null
+  },
+  "desks/mt5/reports/COEVOLUTION.json": {
+   "reaches_authority": false,
+   "paths": [],
+   "human_read": true,
+   "external_reader": null
+  },
+  "desks/mt5/reports/CROSS_ASSET_GRAPH.json": {
+   "reaches_authority": false,
+   "paths": [],
+   "human_read": true,
+   "external_reader": null
+  },
+  "desks/mt5/reports/DATA_PROSPECTOR.json": {
+   "reaches_authority": false,
+   "paths": [],
+   "human_read": true,
+   "external_reader": null
+  },
+  "desks/mt5/reports/DEEP_FOREST.json": {
+   "reaches_authority": false,
+   "paths": [],
+   "human_read": true,
+   "external_reader": null
+  },
+  "desks/mt5/reports/DRIFT.json": {
+   "reaches_authority": true,
+   "paths": [
+    "desks/mt5/reports/DRIFT.json -> revival_engine -> desks/mt5/data/hypotheses/miner_deepening_queue.json -> deepening_worker -> desks/mt5/data/hypotheses/deepening_worked.jsonl -> deep_forest_miner -> desks/mt5/data/intelligence/world/frontier.json -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet[certificate]",
+    "desks/mt5/reports/DRIFT.json -> revival_engine -> desks/mt5/data/hypotheses/miner_deepening_queue.json -> deepening_worker -> desks/mt5/data/hypotheses/deepening_worked.jsonl -> deep_forest_miner -> desks/mt5/data/intelligence/world/frontier.json -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> pf_allocator[sizing]",
+    "desks/mt5/reports/DRIFT.json -> revival_engine -> desks/mt5/data/hypotheses/miner_deepening_queue.json -> deepening_worker -> desks/mt5/data/hypotheses/deepening_worked.jsonl -> deep_forest_miner -> desks/mt5/data/intelligence/world/frontier.json -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> gateway[position,size]",
+    "desks/mt5/reports/DRIFT.json -> revival_engine -> desks/mt5/data/hypotheses/miner_deepening_queue.json -> deepening_worker -> desks/mt5/data/hypotheses/deepening_worked.jsonl -> deep_forest_miner -> desks/mt5/data/intelligence/world/frontier.json -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> gateway -> desks/mt5/data/decision_ledger.jsonl -> counterfactual_markout -> desks/mt5/reports/FILTER_VALUE.json -> regime_monitor[hibernate]",
+    "desks/mt5/reports/DRIFT.json -> revival_engine -> desks/mt5/data/hypotheses/miner_deepening_queue.json -> deepening_worker -> desks/mt5/data/hypotheses/deepening_worked.jsonl -> deep_forest_miner -> desks/mt5/data/intelligence/world/frontier.json -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> gateway -> desks/mt5/data/live_ledger.jsonl -> state_admission_run[conditioning]"
+   ],
+   "human_read": false,
+   "external_reader": null
+  },
+  "desks/mt5/reports/EXCURSIONS.json": {
+   "reaches_authority": false,
+   "paths": [],
+   "human_read": true,
+   "external_reader": null
+  },
+  "desks/mt5/reports/EXIT_ACCOUNTS.json": {
+   "reaches_authority": false,
+   "paths": [],
+   "human_read": true,
+   "external_reader": null
+  },
+  "desks/mt5/reports/FILL_SURFACE.json": {
+   "reaches_authority": true,
+   "paths": [
+    "desks/mt5/reports/FILL_SURFACE.json -> revival_engine -> desks/mt5/data/hypotheses/miner_deepening_queue.json -> deepening_worker -> desks/mt5/data/hypotheses/deepening_worked.jsonl -> deep_forest_miner -> desks/mt5/data/intelligence/world/frontier.json -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet[certificate]",
+    "desks/mt5/reports/FILL_SURFACE.json -> revival_engine -> desks/mt5/data/hypotheses/miner_deepening_queue.json -> deepening_worker -> desks/mt5/data/hypotheses/deepening_worked.jsonl -> deep_forest_miner -> desks/mt5/data/intelligence/world/frontier.json -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> pf_allocator[sizing]",
+    "desks/mt5/reports/FILL_SURFACE.json -> revival_engine -> desks/mt5/data/hypotheses/miner_deepening_queue.json -> deepening_worker -> desks/mt5/data/hypotheses/deepening_worked.jsonl -> deep_forest_miner -> desks/mt5/data/intelligence/world/frontier.json -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> gateway[position,size]",
+    "desks/mt5/reports/FILL_SURFACE.json -> revival_engine -> desks/mt5/data/hypotheses/miner_deepening_queue.json -> deepening_worker -> desks/mt5/data/hypotheses/deepening_worked.jsonl -> deep_forest_miner -> desks/mt5/data/intelligence/world/frontier.json -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> gateway -> desks/mt5/data/decision_ledger.jsonl -> counterfactual_markout -> desks/mt5/reports/FILTER_VALUE.json -> regime_monitor[hibernate]",
+    "desks/mt5/reports/FILL_SURFACE.json -> revival_engine -> desks/mt5/data/hypotheses/miner_deepening_queue.json -> deepening_worker -> desks/mt5/data/hypotheses/deepening_worked.jsonl -> deep_forest_miner -> desks/mt5/data/intelligence/world/frontier.json -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> gateway -> desks/mt5/data/live_ledger.jsonl -> state_admission_run[conditioning]"
+   ],
+   "human_read": true,
+   "external_reader": null
+  },
+  "desks/mt5/reports/FILTER_VALUE.json": {
+   "reaches_authority": true,
+   "paths": [
+    "desks/mt5/reports/FILTER_VALUE.json -> regime_monitor[hibernate]",
+    "desks/mt5/reports/FILTER_VALUE.json -> regime_monitor -> desks/mt5/data/regime_state.json -> gateway[position,size]",
+    "desks/mt5/reports/FILTER_VALUE.json -> regime_monitor -> desks/mt5/data/regime_state.json -> gateway -> desks/mt5/data/broker_clock.json -> opportunity_curve -> desks/mt5/data/hypotheses/miner_deepening_queue.json -> deepening_worker -> desks/mt5/data/hypotheses/deepening_worked.jsonl -> deep_forest_miner -> desks/mt5/data/intelligence/world/frontier.json -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet[certificate]",
+    "desks/mt5/reports/FILTER_VALUE.json -> regime_monitor -> desks/mt5/data/regime_state.json -> gateway -> desks/mt5/data/broker_clock.json -> opportunity_curve -> desks/mt5/data/hypotheses/miner_deepening_queue.json -> deepening_worker -> desks/mt5/data/hypotheses/deepening_worked.jsonl -> deep_forest_miner -> desks/mt5/data/intelligence/world/frontier.json -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> pf_allocator[sizing]",
+    "desks/mt5/reports/FILTER_VALUE.json -> regime_monitor -> desks/mt5/data/regime_state.json -> gateway -> desks/mt5/data/live_ledger.jsonl -> state_admission_run[conditioning]"
+   ],
+   "human_read": true,
+   "external_reader": null
+  },
+  "desks/mt5/reports/FUND_PLAYBOOK.json": {
+   "reaches_authority": false,
+   "paths": [],
+   "human_read": true,
+   "external_reader": null
+  },
+  "desks/mt5/reports/MICROSTRUCTURE_SURFACES.json": {
+   "reaches_authority": false,
+   "paths": [],
+   "human_read": true,
+   "external_reader": null
+  },
+  "desks/mt5/reports/MISSED_GROWTH.json": {
+   "reaches_authority": false,
+   "paths": [],
+   "human_read": true,
+   "external_reader": null
+  },
+  "desks/mt5/reports/MUTATION_YIELD.json": {
+   "reaches_authority": false,
+   "paths": [],
+   "human_read": true,
+   "external_reader": null
+  },
+  "desks/mt5/reports/NETTING.json": {
+   "reaches_authority": false,
+   "paths": [],
+   "human_read": true,
+   "external_reader": null
+  },
+  "desks/mt5/reports/OPPORTUNITY_CURVE.json": {
+   "reaches_authority": false,
+   "paths": [],
+   "human_read": true,
+   "external_reader": null
+  },
+  "desks/mt5/reports/REGIME_COVERAGE.json": {
+   "reaches_authority": true,
+   "paths": [
+    "desks/mt5/reports/REGIME_COVERAGE.json -> revival_engine -> desks/mt5/data/hypotheses/miner_deepening_queue.json -> deepening_worker -> desks/mt5/data/hypotheses/deepening_worked.jsonl -> deep_forest_miner -> desks/mt5/data/intelligence/world/frontier.json -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet[certificate]",
+    "desks/mt5/reports/REGIME_COVERAGE.json -> revival_engine -> desks/mt5/data/hypotheses/miner_deepening_queue.json -> deepening_worker -> desks/mt5/data/hypotheses/deepening_worked.jsonl -> deep_forest_miner -> desks/mt5/data/intelligence/world/frontier.json -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> pf_allocator[sizing]",
+    "desks/mt5/reports/REGIME_COVERAGE.json -> revival_engine -> desks/mt5/data/hypotheses/miner_deepening_queue.json -> deepening_worker -> desks/mt5/data/hypotheses/deepening_worked.jsonl -> deep_forest_miner -> desks/mt5/data/intelligence/world/frontier.json -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> gateway[position,size]",
+    "desks/mt5/reports/REGIME_COVERAGE.json -> revival_engine -> desks/mt5/data/hypotheses/miner_deepening_queue.json -> deepening_worker -> desks/mt5/data/hypotheses/deepening_worked.jsonl -> deep_forest_miner -> desks/mt5/data/intelligence/world/frontier.json -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> gateway -> desks/mt5/data/decision_ledger.jsonl -> counterfactual_markout -> desks/mt5/reports/FILTER_VALUE.json -> regime_monitor[hibernate]",
+    "desks/mt5/reports/REGIME_COVERAGE.json -> revival_engine -> desks/mt5/data/hypotheses/miner_deepening_queue.json -> deepening_worker -> desks/mt5/data/hypotheses/deepening_worked.jsonl -> deep_forest_miner -> desks/mt5/data/intelligence/world/frontier.json -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> gateway -> desks/mt5/data/live_ledger.jsonl -> state_admission_run[conditioning]"
+   ],
+   "human_read": true,
+   "external_reader": null
+  },
+  "desks/mt5/reports/REPO_MINER.json": {
+   "reaches_authority": false,
+   "paths": [],
+   "human_read": true,
+   "external_reader": null
+  },
+  "desks/mt5/reports/RESEARCH_BANDIT.json": {
+   "reaches_authority": false,
+   "paths": [],
+   "human_read": true,
+   "external_reader": null
+  },
+  "desks/mt5/reports/RESEARCH_PNL.json": {
+   "reaches_authority": false,
+   "paths": [],
+   "human_read": true,
+   "external_reader": null
+  },
+  "desks/mt5/reports/RESEARCH_PRODUCTIVITY.json": {
+   "reaches_authority": false,
+   "paths": [],
+   "human_read": true,
+   "external_reader": null
+  },
+  "desks/mt5/reports/RESURRECTION.json": {
+   "reaches_authority": false,
+   "paths": [],
+   "human_read": true,
+   "external_reader": null
+  },
+  "desks/mt5/reports/REVIVAL.json": {
+   "reaches_authority": false,
+   "paths": [],
+   "human_read": true,
+   "external_reader": null
+  },
+  "desks/mt5/reports/STATE_ADMISSION.json": {
+   "reaches_authority": true,
+   "paths": [
+    "desks/mt5/reports/STATE_ADMISSION.json -> pf_allocator[sizing]",
+    "desks/mt5/reports/STATE_ADMISSION.json -> regime_coverage -> desks/mt5/data/hypotheses/miner_deepening_queue.json -> deepening_worker -> desks/mt5/data/hypotheses/deepening_worked.jsonl -> deep_forest_miner -> desks/mt5/data/intelligence/world/frontier.json -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet[certificate]",
+    "desks/mt5/reports/STATE_ADMISSION.json -> regime_coverage -> desks/mt5/data/hypotheses/miner_deepening_queue.json -> deepening_worker -> desks/mt5/data/hypotheses/deepening_worked.jsonl -> deep_forest_miner -> desks/mt5/data/intelligence/world/frontier.json -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> gateway[position,size]",
+    "desks/mt5/reports/STATE_ADMISSION.json -> regime_coverage -> desks/mt5/data/hypotheses/miner_deepening_queue.json -> deepening_worker -> desks/mt5/data/hypotheses/deepening_worked.jsonl -> deep_forest_miner -> desks/mt5/data/intelligence/world/frontier.json -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> gateway -> desks/mt5/data/decision_ledger.jsonl -> counterfactual_markout -> desks/mt5/reports/FILTER_VALUE.json -> regime_monitor[hibernate]",
+    "desks/mt5/reports/STATE_ADMISSION.json -> regime_coverage -> desks/mt5/data/hypotheses/miner_deepening_queue.json -> deepening_worker -> desks/mt5/data/hypotheses/deepening_worked.jsonl -> deep_forest_miner -> desks/mt5/data/intelligence/world/frontier.json -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> gateway -> desks/mt5/data/live_ledger.jsonl -> state_admission_run[conditioning]"
+   ],
+   "human_read": false,
+   "external_reader": null
+  },
+  "desks/mt5/reports/SURVIVOR_DISTILLER.json": {
+   "reaches_authority": false,
+   "paths": [],
+   "human_read": true,
+   "external_reader": null
+  },
+  "desks/mt5/reports/allocator_attribution.json": {
+   "reaches_authority": false,
+   "paths": [],
+   "human_read": true,
+   "external_reader": null
+  },
+  "desks/mt5/reports/alpha_evolution.json": {
+   "reaches_authority": false,
+   "paths": [],
+   "human_read": true,
+   "external_reader": null
+  },
+  "desks/mt5/reports/factor_residual.json": {
+   "reaches_authority": false,
+   "paths": [],
+   "human_read": true,
+   "external_reader": null
+  },
+  "desks/mt5/reports/markout.json": {
+   "reaches_authority": true,
+   "paths": [
+    "desks/mt5/reports/markout.json -> fill_surface -> desks/mt5/reports/FILL_SURFACE.json -> revival_engine -> desks/mt5/data/hypotheses/miner_deepening_queue.json -> deepening_worker -> desks/mt5/data/hypotheses/deepening_worked.jsonl -> deep_forest_miner -> desks/mt5/data/intelligence/world/frontier.json -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet[certificate]",
+    "desks/mt5/reports/markout.json -> fill_surface -> desks/mt5/reports/FILL_SURFACE.json -> revival_engine -> desks/mt5/data/hypotheses/miner_deepening_queue.json -> deepening_worker -> desks/mt5/data/hypotheses/deepening_worked.jsonl -> deep_forest_miner -> desks/mt5/data/intelligence/world/frontier.json -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> pf_allocator[sizing]",
+    "desks/mt5/reports/markout.json -> fill_surface -> desks/mt5/reports/FILL_SURFACE.json -> revival_engine -> desks/mt5/data/hypotheses/miner_deepening_queue.json -> deepening_worker -> desks/mt5/data/hypotheses/deepening_worked.jsonl -> deep_forest_miner -> desks/mt5/data/intelligence/world/frontier.json -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> gateway[position,size]",
+    "desks/mt5/reports/markout.json -> fill_surface -> desks/mt5/reports/FILL_SURFACE.json -> revival_engine -> desks/mt5/data/hypotheses/miner_deepening_queue.json -> deepening_worker -> desks/mt5/data/hypotheses/deepening_worked.jsonl -> deep_forest_miner -> desks/mt5/data/intelligence/world/frontier.json -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> gateway -> desks/mt5/data/decision_ledger.jsonl -> counterfactual_markout -> desks/mt5/reports/FILTER_VALUE.json -> regime_monitor[hibernate]",
+    "desks/mt5/reports/markout.json -> fill_surface -> desks/mt5/reports/FILL_SURFACE.json -> revival_engine -> desks/mt5/data/hypotheses/miner_deepening_queue.json -> deepening_worker -> desks/mt5/data/hypotheses/deepening_worked.jsonl -> deep_forest_miner -> desks/mt5/data/intelligence/world/frontier.json -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> gateway -> desks/mt5/data/live_ledger.jsonl -> state_admission_run[conditioning]"
+   ],
+   "human_read": true,
+   "external_reader": null
+  },
+  "desks/mt5/reports/microstructure_miner.json": {
+   "reaches_authority": false,
+   "paths": [],
+   "human_read": true,
+   "external_reader": null
+  },
+  "desks/mt5/reports/pf_allocation.json": {
+   "reaches_authority": true,
+   "paths": [
+    "desks/mt5/reports/pf_allocation.json -> gateway[position,size]",
+    "desks/mt5/reports/pf_allocation.json -> missed_growth -> desks/mt5/data/hypotheses/miner_deepening_queue.json -> deepening_worker -> desks/mt5/data/hypotheses/deepening_worked.jsonl -> deep_forest_miner -> desks/mt5/data/intelligence/world/frontier.json -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet[certificate]",
+    "desks/mt5/reports/pf_allocation.json -> missed_growth -> desks/mt5/data/hypotheses/miner_deepening_queue.json -> deepening_worker -> desks/mt5/data/hypotheses/deepening_worked.jsonl -> deep_forest_miner -> desks/mt5/data/intelligence/world/frontier.json -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> pf_allocator[sizing]",
+    "desks/mt5/reports/pf_allocation.json -> gateway -> desks/mt5/data/decision_ledger.jsonl -> counterfactual_markout -> desks/mt5/reports/FILTER_VALUE.json -> regime_monitor[hibernate]",
+    "desks/mt5/reports/pf_allocation.json -> gateway -> desks/mt5/data/live_ledger.jsonl -> state_admission_run[conditioning]"
+   ],
+   "human_read": false,
+   "external_reader": null
+  },
+  "desks/mt5/reports/pf_allocator.json": {
+   "reaches_authority": false,
+   "paths": [],
+   "human_read": true,
+   "external_reader": null
+  },
+  "desks/mt5/reports/plumbing_miner.json": {
+   "reaches_authority": false,
+   "paths": [],
+   "human_read": true,
+   "external_reader": null
+  },
+  "desks/mt5/reports/shadow/": {
+   "reaches_authority": true,
+   "paths": [
+    "desks/mt5/reports/shadow/ -> promoter[promotion]",
+    "desks/mt5/reports/shadow/ -> regime_monitor[hibernate]",
+    "desks/mt5/reports/shadow/ -> drift_monitor -> desks/mt5/reports/DRIFT.json -> revival_engine -> desks/mt5/data/hypotheses/miner_deepening_queue.json -> deepening_worker -> desks/mt5/data/hypotheses/deepening_worked.jsonl -> deep_forest_miner -> desks/mt5/data/intelligence/world/frontier.json -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet[certificate]",
+    "desks/mt5/reports/shadow/ -> drift_monitor -> desks/mt5/reports/DRIFT.json -> revival_engine -> desks/mt5/data/hypotheses/miner_deepening_queue.json -> deepening_worker -> desks/mt5/data/hypotheses/deepening_worked.jsonl -> deep_forest_miner -> desks/mt5/data/intelligence/world/frontier.json -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> pf_allocator[sizing]",
+    "desks/mt5/reports/shadow/ -> drift_monitor -> desks/mt5/reports/DRIFT.json -> revival_engine -> desks/mt5/data/hypotheses/miner_deepening_queue.json -> deepening_worker -> desks/mt5/data/hypotheses/deepening_worked.jsonl -> deep_forest_miner -> desks/mt5/data/intelligence/world/frontier.json -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> gateway[position,size]",
+    "desks/mt5/reports/shadow/ -> drift_monitor -> desks/mt5/reports/DRIFT.json -> revival_engine -> desks/mt5/data/hypotheses/miner_deepening_queue.json -> deepening_worker -> desks/mt5/data/hypotheses/deepening_worked.jsonl -> deep_forest_miner -> desks/mt5/data/intelligence/world/frontier.json -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet -> desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> gateway -> desks/mt5/data/live_ledger.jsonl -> state_admission_run[conditioning]"
+   ],
+   "human_read": false,
+   "external_reader": null
+  },
+  "desks/mt5/reports/style_premia_sweep.json": {
+   "reaches_authority": false,
+   "paths": [],
+   "human_read": true,
+   "external_reader": null
+  },
+  "desks/mt5/reports/tail_alpha_search.json": {
+   "reaches_authority": false,
+   "paths": [],
+   "human_read": true,
+   "external_reader": null
+  },
+  "desks/mt5/reports/transition_alpha.json": {
+   "reaches_authority": false,
+   "paths": [],
+   "human_read": true,
+   "external_reader": null
+  },
+  "desks/mt5/reports/universal_gates_external.json": {
+   "reaches_authority": true,
+   "paths": [
+    "desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> pf_allocator[sizing]",
+    "desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> gateway[position,size]",
+    "desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> gateway -> desks/mt5/data/decision_ledger.jsonl -> counterfactual_markout -> desks/mt5/reports/FILTER_VALUE.json -> regime_monitor[hibernate]",
+    "desks/mt5/reports/universal_gates_external.json -> weak_signal_compiler -> desks/mt5/data/intelligence/ -> state_vector_build -> desks/mt5/data/state_vector.json -> gateway -> desks/mt5/data/live_ledger.jsonl -> state_admission_run[conditioning]",
+    "desks/mt5/reports/universal_gates_external.json -> miner_candidate_compiler -> desks/mt5/data/hypotheses/miner_candidates.json -> external_gauntlet[certificate]"
+   ],
+   "human_read": false,
+   "external_reader": null
+  },
+  "desks/mt5/reports/weak_signal_compiler.json": {
+   "reaches_authority": false,
+   "paths": [],
+   "human_read": true,
+   "external_reader": null
+  }
+ }
+}

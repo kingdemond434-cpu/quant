@@ -22,8 +22,27 @@ _OUT = Path("docs/EXTERNAL_PANEL_DOSSIER.md")
 # hard-block patterns: secrets-shaped strings must never leave the machine in a dossier.
 # Token heuristic = 28+ chars WITHOUT a hyphen (keys/tokens are long unhyphenated runs;
 # ledger ids like 2026-07-12-first-inversion-... are hyphen-segmented and stay readable).
+#: A NAME PER PATTERN, so a refusal can say WHICH control fired without ever quoting what it
+#: matched. `run_micro_audit` refused to send every day from at least 2026-08-23 to 2026-08-28,
+#: printing the identical line "micro-audit brief failed sanitization -- refusing to send", and
+#: nothing anywhere named the cause. A fail-closed control nobody can diagnose is a scheduled
+#: organ that is dead and looks careful.
+_BLOCK_NAMES = ("prefixed-token", "mixed-class-run", "pager-topic", "ntfy-url", "secrets-path",
+                "tunnel-host", "ip-address", "aws-access-key-id")
 _BLOCK = [re.compile(p, re.I) for p in (
-    r"(?:sk|pk|oat|api|key|tok|ghp|xox|AKIA)[-_][A-Za-z0-9-]{16,}",  # prefixed real tokens
+    # THE PREFIX MUST START A TOKEN. Unanchored, this matched INSIDE ordinary hyphenated words:
+    # `m|oat-tape-decontamination-and-repair-window` (oat-), `ri|sk-adjusted-...` (sk-),
+    # `mon|key-...` (key-). Measured 2026-08-28: the desk's own word "moat" -- moat tape, moat
+    # coverage, the data moat -- silently killed the daily external micro-audit for at least six
+    # days, and the comment two lines above already promised that hyphen-segmented ledger ids
+    # "stay readable". A real credential begins at a token boundary (start, whitespace, quote,
+    # `=`, `:`), so requiring one removes false positives without giving up one real key shape;
+    # the positive controls in tests/test_secret_sanitizer.py pin every format the desk handles.
+    # `xox` -> `xox[a-z]?`: every real Slack token is xoxb-/xoxp-/xoxa-/xoxs-, so the bare `xox`
+    # needed a `[-_]` immediately after it and NEVER matched one. Found by the positive control
+    # in tests/test_secret_sanitizer.py, not by the anchoring work -- this is a true-negative the
+    # control had carried from the start, and closing it strengthens the block.
+    r"(?<![A-Za-z0-9])(?:sk|pk|oat|api|key|tok|ghp|xox[a-z]?|AKIA)[-_][A-Za-z0-9-]{16,}",
     # mixed-class token body: 28+ run with lower+upper+digit, no underscore
     r"\b(?=[A-Za-z0-9]*[a-z])(?=[A-Za-z0-9]*[A-Z])(?=[A-Za-z0-9]*\d)[A-Za-z0-9]{28,}\b",
     r"quant-desk-[0-9a-f]+",         # pager topic
@@ -31,7 +50,13 @@ _BLOCK = [re.compile(p, re.I) for p in (
     r"data[/\\]secrets",
     r"ngrok|netlify\.app|trycloudflare",
     r"\b\d{1,3}(?:\.\d{1,3}){3}\b",  # IP addresses (2026-07-16: gap register carries the VPS
-)]                                   # IP -- must never reach external labs)
+                                     # IP -- must never reach external labs)
+    # AWS ACCESS KEY IDS WERE NEVER COVERED. `AKIAIOSFODNN7EXAMPLE` is AKIA + 16 upper/digit with
+    # no separator, so the prefixed-token pattern (which requires `[-_]`) never saw it, and the
+    # mixed-class pattern needs a lowercase letter it does not have. Found while anchoring the
+    # pattern above; adding it STRENGTHENS the control and is not part of that change.
+    r"AKIA[0-9A-Z]{16}",
+)]
 
 
 def sanitize(text: str) -> str:
@@ -39,6 +64,24 @@ def sanitize(text: str) -> str:
     for pat in _BLOCK:
         text = pat.sub("[redacted]", text)
     return text
+
+
+def sanitize_findings(text: str) -> list[str]:
+    """WHICH block patterns fired and WHERE -- never what they matched.
+
+    The matched text is deliberately never returned: if the match is a real credential, printing
+    it into a log is the leak the control exists to prevent, and if it is a false positive the
+    position and the surrounding artifact are enough to find it. `data/secrets/**` never leaves
+    the box and no tool ever prints a key.
+    """
+    out: list[str] = []
+    for idx, pat in enumerate(_BLOCK):
+        hits = list(pat.finditer(text))
+        if hits:
+            name = _BLOCK_NAMES[idx] if idx < len(_BLOCK_NAMES) else f"pattern-{idx}"
+            out.append(f"{name}: {len(hits)} match(es), first at char {hits[0].start()} "
+                       f"(length {len(hits[0].group(0))})")
+    return out
 
 
 def _load(p: str) -> dict[str, Any]:

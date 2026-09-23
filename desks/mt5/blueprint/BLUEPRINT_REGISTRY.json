@@ -1,0 +1,3353 @@
+{
+  "generated_at": "2026-09-06T06:54:06.905761+00:00",
+  "git_sha": "08f7d1eba9da",
+  "total": 94,
+  "by_status": {
+    "MISSING": 0,
+    "CODED": 0,
+    "WIRED": 12,
+    "SCHEDULED": 29,
+    "RUNNING": 46,
+    "DECISION_AFFECTING": 0,
+    "MEASURED": 0,
+    "PROVEN": 7
+  },
+  "problems": [],
+  "capabilities": [
+    {
+      "id": "P0.1",
+      "name": "release identity matches across research, validation, forward, allocator, gatewa",
+      "category": "P0",
+      "description": "release identity matches across research, validation, forward, allocator, gateway and live; no match = no new capital authority",
+      "producer": "desks/mt5/data/release_identity.json",
+      "artifacts": [
+        "desks/mt5/data/release_identity.json"
+      ],
+      "consumers": [
+        "desks/mt5/mt5desk/decision_core.py",
+        "desks/mt5/research/live_manifest.py",
+        "desks/mt5/scripts/smoke_release.py",
+        "desks/mt5/tests/test_decision_core.py",
+        "desks/mt5/tests/test_release_identity.py",
+        "desks/mt5/mt5desk/decision_core.py",
+        "desks/mt5/mt5desk/release_identity.py",
+        "desks/mt5/research/live_manifest.py",
+        "libs/ops/capability_graph.py",
+        "libs/ops/release.py",
+        "scripts/check_absolute_ceiling.py",
+        "scripts/check_blueprint_coverage.py",
+        "scripts/check_partition_power.py",
+        "scripts/max_audit.py",
+        "tests/validation/test_partition_power.py"
+      ],
+      "scheduler": [],
+      "decision_path": "producer -> artifact -> consumer -> decision",
+      "status": "RUNNING",
+      "code_paths": [
+        "desks/mt5/data/release_identity.json"
+      ],
+      "tests": [
+        "desks/mt5/tests/test_decision_core.py",
+        "desks/mt5/tests/test_release_identity.py",
+        "tests/ops/test_release_seal.py",
+        "tests/research/test_decision_dataset.py",
+        "tests/validation/test_partition_power.py"
+      ],
+      "measurements": "capital authority is refused under ambiguous lineage",
+      "rent_status": "UNPRICED",
+      "last_verified": "2026-09-06T06:54:06.905761+00:00",
+      "git_sha": "08f7d1eba9da",
+      "blockers": []
+    },
+    {
+      "id": "P0.2",
+      "name": "20% nominal heat floor, flat -- no readiness/evidence mechanism may reduce it; a",
+      "category": "P0",
+      "description": "20% nominal heat floor, flat -- no readiness/evidence mechanism may reduce it; above it stays evidence-determined through 45%",
+      "producer": "desks/mt5/research/heat_policy.py",
+      "artifacts": [
+        "desks/mt5/reports/HEAT_POLICY.json"
+      ],
+      "consumers": [
+        "desks/mt5/research/allocator_attribution.py",
+        "desks/mt5/research/pf_allocator.py",
+        "desks/mt5/tests/test_effective_heat_binds.py",
+        "desks/mt5/tests/test_factor_breadth_binds.py",
+        "desks/mt5/tests/test_growth_governance.py",
+        "desks/mt5/tests/test_heat_floor_is_not_negotiable.py",
+        "desks/mt5/tests/test_heat_policy.py",
+        "desks/mt5/tests/test_state_proof.py",
+        "scripts/check_absolute_ceiling.py"
+      ],
+      "scheduler": [
+        "ops/run_cro_ai.sh"
+      ],
+      "decision_path": "no scheduler surface names heat_policy -- it is wired but nothing runs it",
+      "status": "WIRED",
+      "code_paths": [
+        "desks/mt5/research/heat_policy.py"
+      ],
+      "tests": [
+        "desks/mt5/tests/test_effective_heat_binds.py",
+        "desks/mt5/tests/test_factor_breadth_binds.py",
+        "desks/mt5/tests/test_growth_governance.py",
+        "desks/mt5/tests/test_heat_floor_is_not_negotiable.py",
+        "desks/mt5/tests/test_heat_policy.py",
+        "desks/mt5/tests/test_measured_heat_ceiling.py",
+        "desks/mt5/tests/test_portfolio_heat.py",
+        "desks/mt5/tests/test_rail_evidence.py"
+      ],
+      "measurements": "floor_binding + missed-growth attribution when unsatisfiable",
+      "rent_status": "UNPRICED",
+      "last_verified": "2026-09-06T06:54:06.905761+00:00",
+      "git_sha": "08f7d1eba9da",
+      "blockers": [
+        "no scheduler surface names heat_policy -- it is wired but nothing runs it"
+      ]
+    },
+    {
+      "id": "P0.3",
+      "name": "capability status regenerated from the current SHA over the full ladder",
+      "category": "P0",
+      "description": "capability status regenerated from the current SHA over the full ladder",
+      "producer": "libs/ops/capability_graph.py",
+      "artifacts": [
+        "desks/mt5/reports/CAPABILITY_STATUS.json"
+      ],
+      "consumers": [
+        "desks/mt5/tests/test_flywheel.py",
+        "libs/ops/module_rent.py",
+        "libs/research/desk_memory.py",
+        "scripts/check_absolute_ceiling.py",
+        "scripts/check_producer_schedules.py",
+        "scripts/check_reachability.py",
+        "tests/ops/test_module_rent.py",
+        "tests/scripts/test_producer_schedules.py",
+        "scripts/check_absolute_ceiling.py"
+      ],
+      "scheduler": [],
+      "decision_path": "no scheduler surface names capability_graph -- it is wired but nothing runs it",
+      "status": "WIRED",
+      "code_paths": [
+        "libs/ops/capability_graph.py"
+      ],
+      "tests": [
+        "desks/mt5/tests/test_flywheel.py",
+        "tests/governance/test_capability_ladder_honesty.py",
+        "tests/ops/test_module_rent.py",
+        "tests/research/test_external_intelligence.py",
+        "tests/scripts/test_producer_schedules.py"
+      ],
+      "measurements": "unbillable count",
+      "rent_status": "UNPRICED",
+      "last_verified": "2026-09-06T06:54:06.905761+00:00",
+      "git_sha": "08f7d1eba9da",
+      "blockers": [
+        "no scheduler surface names capability_graph -- it is wired but nothing runs it"
+      ]
+    },
+    {
+      "id": "P1",
+      "name": "every organ proves producer -> artifact -> consumer -> decision -> telemetry -> ",
+      "category": "P1",
+      "description": "every organ proves producer -> artifact -> consumer -> decision -> telemetry -> counterfactual -> rent",
+      "producer": "libs/ops/module_rent.py",
+      "artifacts": [
+        "desks/mt5/data/module_rent.jsonl"
+      ],
+      "consumers": [
+        "desks/mt5/research/daily_cycle.py",
+        "libs/ops/capability_graph.py",
+        "scripts/check_absolute_ceiling.py",
+        "tests/governance/test_capability_ladder_honesty.py",
+        "tests/ops/test_module_rent.py",
+        "libs/ops/capability_graph.py",
+        "scripts/check_absolute_ceiling.py"
+      ],
+      "scheduler": [
+        "desks/mt5/research/daily_cycle.py"
+      ],
+      "decision_path": "artifact desks/mt5/data/module_rent.jsonl absent on this host -- scheduled, but no evidence it has produced anything here",
+      "status": "SCHEDULED",
+      "code_paths": [
+        "libs/ops/module_rent.py"
+      ],
+      "tests": [
+        "tests/governance/test_capability_ladder_honesty.py",
+        "tests/ops/test_module_rent.py"
+      ],
+      "measurements": "EARNS/COSTS/NOT_BINDING per module",
+      "rent_status": "UNPRICED",
+      "last_verified": "2026-09-06T06:54:06.905761+00:00",
+      "git_sha": "08f7d1eba9da",
+      "blockers": [
+        "artifact desks/mt5/data/module_rent.jsonl absent on this host -- scheduled, but no evidence it has produced anything here"
+      ]
+    },
+    {
+      "id": "P2",
+      "name": "macro event -> structured information -> forecast -> portfolio delta -> dE[logW]",
+      "category": "P2",
+      "description": "macro event -> structured information -> forecast -> portfolio delta -> dE[logW] -> interrupt -> rebalance, closed",
+      "producer": "desks/mt5/research/macro_desk.py",
+      "artifacts": [
+        "desks/mt5/reports/MACRO_DESK.json"
+      ],
+      "consumers": [
+        "scripts/check_absolute_ceiling.py"
+      ],
+      "scheduler": [
+        "desks/mt5/research/research_supervisor.py"
+      ],
+      "decision_path": "artifact desks/mt5/reports/MACRO_DESK.json absent on this host -- scheduled, but no evidence it has produced anything here",
+      "status": "SCHEDULED",
+      "code_paths": [
+        "desks/mt5/research/macro_desk.py"
+      ],
+      "tests": [],
+      "measurements": "measured portfolio gain attributable to the interrupt",
+      "rent_status": "UNPRICED",
+      "last_verified": "2026-09-06T06:54:06.905761+00:00",
+      "git_sha": "08f7d1eba9da",
+      "blockers": [
+        "artifact desks/mt5/reports/MACRO_DESK.json absent on this host -- scheduled, but no evidence it has produced anything here"
+      ]
+    },
+    {
+      "id": "P3",
+      "name": "one-minute heartbeat and event triggers re-evaluate Elog optimality; rebalance o",
+      "category": "P3",
+      "description": "one-minute heartbeat and event triggers re-evaluate Elog optimality; rebalance only when dElog > execution cost + uncertainty",
+      "producer": "desks/mt5/research/rebalance_trigger.py",
+      "artifacts": [
+        "desks/mt5/reports/REBALANCE_TRIGGER.json"
+      ],
+      "consumers": [
+        "scripts/check_absolute_ceiling.py"
+      ],
+      "scheduler": [
+        "desks/mt5/research/hourly_cycle.py"
+      ],
+      "decision_path": "capability graph reports no node -- running, but no proven route from this artifact into a decision",
+      "status": "RUNNING",
+      "code_paths": [
+        "desks/mt5/research/rebalance_trigger.py"
+      ],
+      "tests": [],
+      "measurements": "turnover cost vs realised gain",
+      "rent_status": "UNPRICED",
+      "last_verified": "2026-09-06T06:54:06.905761+00:00",
+      "git_sha": "08f7d1eba9da",
+      "blockers": [
+        "capability graph reports no node -- running, but no proven route from this artifact into a decision"
+      ]
+    },
+    {
+      "id": "P4",
+      "name": "universal forecast contract; models publish beliefs, own no positions",
+      "category": "P4",
+      "description": "universal forecast contract; models publish beliefs, own no positions",
+      "producer": "desks/mt5/research/forecast_contract.py",
+      "artifacts": [
+        "desks/mt5/reports/FORECAST_CONTRACT.json"
+      ],
+      "consumers": [
+        "desks/mt5/research/issue_board.py",
+        "scripts/check_absolute_ceiling.py"
+      ],
+      "scheduler": [
+        "desks/mt5/research/hourly_cycle.py"
+      ],
+      "decision_path": "capability graph reports no node -- running, but no proven route from this artifact into a decision",
+      "status": "RUNNING",
+      "code_paths": [
+        "desks/mt5/research/forecast_contract.py"
+      ],
+      "tests": [
+        "tests/research/test_forecast_contract_and_league.py"
+      ],
+      "measurements": "belief weight earned per model",
+      "rent_status": "UNPRICED",
+      "last_verified": "2026-09-06T06:54:06.905761+00:00",
+      "git_sha": "08f7d1eba9da",
+      "blockers": [
+        "capability graph reports no node -- running, but no proven route from this artifact into a decision"
+      ]
+    },
+    {
+      "id": "P5",
+      "name": "forecast calibration marketplace: every model scored forecast -> realized, biase",
+      "category": "P5",
+      "description": "forecast calibration marketplace: every model scored forecast -> realized, biased predictors recalibrated automatically",
+      "producer": "desks/mt5/research/model_self_improvement.py",
+      "artifacts": [
+        "desks/mt5/reports/MODEL_SELF_IMPROVEMENT.json"
+      ],
+      "consumers": [
+        "scripts/check_absolute_ceiling.py"
+      ],
+      "scheduler": [
+        "desks/mt5/research/hourly_cycle.py"
+      ],
+      "decision_path": "capability graph reports no node -- running, but no proven route from this artifact into a decision",
+      "status": "RUNNING",
+      "code_paths": [
+        "desks/mt5/research/model_self_improvement.py"
+      ],
+      "tests": [],
+      "measurements": "Brier/MAE skill vs a named baseline, per predictor",
+      "rent_status": "UNPRICED",
+      "last_verified": "2026-09-06T06:54:06.905761+00:00",
+      "git_sha": "08f7d1eba9da",
+      "blockers": [
+        "capability graph reports no node -- running, but no proven route from this artifact into a decision"
+      ]
+    },
+    {
+      "id": "P6",
+      "name": "learned multi-horizon representation layer, challenger-only",
+      "category": "P6",
+      "description": "learned multi-horizon representation layer, challenger-only",
+      "producer": "desks/mt5/research/ml_layer.py",
+      "artifacts": [
+        "desks/mt5/reports/ML_LAYER.json"
+      ],
+      "consumers": [
+        "scripts/check_absolute_ceiling.py"
+      ],
+      "scheduler": [
+        "desks/mt5/research/hourly_cycle.py"
+      ],
+      "decision_path": "capability graph reports no node -- running, but no proven route from this artifact into a decision",
+      "status": "RUNNING",
+      "code_paths": [
+        "desks/mt5/research/ml_layer.py"
+      ],
+      "tests": [
+        "tests/research/test_ml_layer.py"
+      ],
+      "measurements": "OOS dElog of representation-derived heads",
+      "rent_status": "UNPRICED",
+      "last_verified": "2026-09-06T06:54:06.905761+00:00",
+      "git_sha": "08f7d1eba9da",
+      "blockers": [
+        "capability graph reports no node -- running, but no proven route from this artifact into a decision"
+      ]
+    },
+    {
+      "id": "P7",
+      "name": "model zoo benchmarked on dElog after cost and complexity rent",
+      "category": "P7",
+      "description": "model zoo benchmarked on dElog after cost and complexity rent",
+      "producer": "desks/mt5/research/model_zoo.py",
+      "artifacts": [
+        "desks/mt5/reports/MODEL_ZOO.json"
+      ],
+      "consumers": [
+        "desks/mt5/research/issue_board.py",
+        "scripts/check_absolute_ceiling.py"
+      ],
+      "scheduler": [
+        "desks/mt5/research/hourly_cycle.py"
+      ],
+      "decision_path": "capability graph reports no node -- running, but no proven route from this artifact into a decision",
+      "status": "RUNNING",
+      "code_paths": [
+        "desks/mt5/research/model_zoo.py"
+      ],
+      "tests": [
+        "tests/research/test_forecast_contract_and_league.py"
+      ],
+      "measurements": "dElog per model per compute hour",
+      "rent_status": "UNPRICED",
+      "last_verified": "2026-09-06T06:54:06.905761+00:00",
+      "git_sha": "08f7d1eba9da",
+      "blockers": [
+        "capability graph reports no node -- running, but no proven route from this artifact into a decision"
+      ]
+    },
+    {
+      "id": "P8",
+      "name": "self-supervised and contrastive learning on unlabelled history",
+      "category": "P8",
+      "description": "self-supervised and contrastive learning on unlabelled history",
+      "producer": "desks/mt5/research/ml_layer.py",
+      "artifacts": [
+        "desks/mt5/reports/ML_LAYER.json"
+      ],
+      "consumers": [
+        "scripts/check_absolute_ceiling.py"
+      ],
+      "scheduler": [
+        "desks/mt5/research/hourly_cycle.py"
+      ],
+      "decision_path": "capability graph reports no node -- running, but no proven route from this artifact into a decision",
+      "status": "RUNNING",
+      "code_paths": [
+        "desks/mt5/research/ml_layer.py"
+      ],
+      "tests": [
+        "tests/research/test_ml_layer.py"
+      ],
+      "measurements": "downstream OOS improvement",
+      "rent_status": "UNPRICED",
+      "last_verified": "2026-09-06T06:54:06.905761+00:00",
+      "git_sha": "08f7d1eba9da",
+      "blockers": [
+        "capability graph reports no node -- running, but no proven route from this artifact into a decision"
+      ]
+    },
+    {
+      "id": "P9",
+      "name": "financial mixture of experts with an OOS-admitted gate",
+      "category": "P9",
+      "description": "financial mixture of experts with an OOS-admitted gate",
+      "producer": "desks/mt5/research/ml_layer.py",
+      "artifacts": [
+        "desks/mt5/reports/ML_LAYER.json"
+      ],
+      "consumers": [
+        "scripts/check_absolute_ceiling.py"
+      ],
+      "scheduler": [
+        "desks/mt5/research/hourly_cycle.py"
+      ],
+      "decision_path": "capability graph reports no node -- running, but no proven route from this artifact into a decision",
+      "status": "RUNNING",
+      "code_paths": [
+        "desks/mt5/research/ml_layer.py"
+      ],
+      "tests": [
+        "tests/research/test_ml_layer.py"
+      ],
+      "measurements": "gate-weighted OOS skill",
+      "rent_status": "UNPRICED",
+      "last_verified": "2026-09-06T06:54:06.905761+00:00",
+      "git_sha": "08f7d1eba9da",
+      "blockers": [
+        "capability graph reports no node -- running, but no proven route from this artifact into a decision"
+      ]
+    },
+    {
+      "id": "P10",
+      "name": "live dynamic market graph with state-dependent edges",
+      "category": "P10",
+      "description": "live dynamic market graph with state-dependent edges",
+      "producer": "desks/mt5/research/world_causal_graph.py",
+      "artifacts": [
+        "desks/mt5/reports/CROSS_ASSET_GRAPH.json"
+      ],
+      "consumers": [
+        "desks/mt5/research/state_vector_build.py",
+        "desks/mt5/tests/test_world_causal_graph.py",
+        "desks/mt5/research/cross_asset_graph.py",
+        "desks/mt5/research/drift_monitor.py",
+        "desks/mt5/tests/test_world_causal_graph.py",
+        "libs/ops/capability_graph.py",
+        "scripts/check_absolute_ceiling.py"
+      ],
+      "scheduler": [
+        "desks/mt5/research/hourly_cycle.py"
+      ],
+      "decision_path": "capability graph reports WIRED -- running, but no proven route from this artifact into a decision",
+      "status": "RUNNING",
+      "code_paths": [
+        "desks/mt5/research/world_causal_graph.py"
+      ],
+      "tests": [
+        "desks/mt5/tests/test_world_causal_graph.py"
+      ],
+      "measurements": "dElog of graph-conditioned forecasts",
+      "rent_status": "UNPRICED",
+      "last_verified": "2026-09-06T06:54:06.905761+00:00",
+      "git_sha": "08f7d1eba9da",
+      "blockers": [
+        "capability graph reports WIRED -- running, but no proven route from this artifact into a decision"
+      ]
+    },
+    {
+      "id": "P11",
+      "name": "information-first discovery: search incremental mutual information, reward dN_ef",
+      "category": "P11",
+      "description": "information-first discovery: search incremental mutual information, reward dN_eff and dElog rather than more transforms of one price",
+      "producer": "desks/mt5/research/edge_search.py",
+      "artifacts": [
+        "desks/mt5/reports/EDGE_SEARCH.json"
+      ],
+      "consumers": [
+        "desks/mt5/mt5desk/families_orthogonal.py",
+        "desks/mt5/mt5desk/family_inputs.py",
+        "desks/mt5/research/anomaly_factory.py",
+        "desks/mt5/research/backfill_coverage.py",
+        "desks/mt5/research/merge_hypotheses.py",
+        "desks/mt5/scripts/external_gauntlet.py",
+        "desks/mt5/tests/test_hourly_frontier_search.py",
+        "desks/mt5/tests/test_resolve_inputs_cache.py",
+        "libs/research/anomaly_miner.py",
+        "scripts/requeue_named_mechanisms.py",
+        "tests/desks/test_edge_search_budget.py",
+        "tests/desks/test_search_checkpoints.py",
+        "scripts/check_absolute_ceiling.py"
+      ],
+      "scheduler": [
+        "desks/mt5/research/hourly_cycle.py",
+        "ops/run_external_pipeline.sh"
+      ],
+      "decision_path": "artifact desks/mt5/reports/EDGE_SEARCH.json absent on this host -- scheduled, but no evidence it has produced anything here",
+      "status": "SCHEDULED",
+      "code_paths": [
+        "desks/mt5/research/edge_search.py"
+      ],
+      "tests": [
+        "desks/mt5/tests/test_admission_outlier_does_not_lock_a_job_out.py",
+        "desks/mt5/tests/test_cot_reaches_the_search_leg.py",
+        "desks/mt5/tests/test_hourly_frontier_search.py",
+        "desks/mt5/tests/test_job_lock_liveness.py",
+        "desks/mt5/tests/test_resolve_inputs_cache.py",
+        "desks/mt5/tests/test_trial_allocator.py",
+        "tests/desks/test_edge_search_budget.py",
+        "tests/desks/test_search_checkpoints.py"
+      ],
+      "measurements": "dN_eff and dElog per search hour",
+      "rent_status": "UNPRICED",
+      "last_verified": "2026-09-06T06:54:06.905761+00:00",
+      "git_sha": "08f7d1eba9da",
+      "blockers": [
+        "artifact desks/mt5/reports/EDGE_SEARCH.json absent on this host -- scheduled, but no evidence it has produced anything here"
+      ]
+    },
+    {
+      "id": "P12",
+      "name": "data genome and Data ROI with with/without ablations",
+      "category": "P12",
+      "description": "data genome and Data ROI with with/without ablations",
+      "producer": "desks/mt5/research/data_prospector.py",
+      "artifacts": [
+        "desks/mt5/reports/DATA_PROSPECTOR.json"
+      ],
+      "consumers": [
+        "desks/mt5/tests/test_research_feedback.py",
+        "libs/ops/allocators.py",
+        "libs/ops/capability_graph.py",
+        "scripts/check_absolute_ceiling.py"
+      ],
+      "scheduler": [
+        "desks/mt5/research/daily_cycle.py"
+      ],
+      "decision_path": "capability graph reports RUNNING -- running, but no proven route from this artifact into a decision",
+      "status": "RUNNING",
+      "code_paths": [
+        "desks/mt5/research/data_prospector.py"
+      ],
+      "tests": [
+        "desks/mt5/tests/test_research_feedback.py",
+        "tests/ops/test_module_rent.py"
+      ],
+      "measurements": "dElog / total data cost",
+      "rent_status": "UNPRICED",
+      "last_verified": "2026-09-06T06:54:06.905761+00:00",
+      "git_sha": "08f7d1eba9da",
+      "blockers": [
+        "capability graph reports RUNNING -- running, but no proven route from this artifact into a decision"
+      ]
+    },
+    {
+      "id": "P13",
+      "name": "residual -> missing information loop, repeated to noise",
+      "category": "P13",
+      "description": "residual -> missing information loop, repeated to noise",
+      "producer": "desks/mt5/research/factor_residual_engine.py",
+      "artifacts": [
+        "desks/mt5/reports/RESIDUAL_ALPHA.json"
+      ],
+      "consumers": [
+        "desks/mt5/research/daily_cycle.py",
+        "desks/mt5/tests/test_factor_residual_engine.py",
+        "scripts/check_absolute_ceiling.py"
+      ],
+      "scheduler": [
+        "desks/mt5/research/daily_cycle.py"
+      ],
+      "decision_path": "artifact desks/mt5/reports/RESIDUAL_ALPHA.json absent on this host -- scheduled, but no evidence it has produced anything here",
+      "status": "SCHEDULED",
+      "code_paths": [
+        "desks/mt5/research/factor_residual_engine.py"
+      ],
+      "tests": [
+        "desks/mt5/tests/test_factor_residual_engine.py"
+      ],
+      "measurements": "dElog of information added by residual clustering",
+      "rent_status": "UNPRICED",
+      "last_verified": "2026-09-06T06:54:06.905761+00:00",
+      "git_sha": "08f7d1eba9da",
+      "blockers": [
+        "artifact desks/mt5/reports/RESIDUAL_ALPHA.json absent on this host -- scheduled, but no evidence it has produced anything here"
+      ]
+    },
+    {
+      "id": "P14",
+      "name": "options intelligence: surface, skew, term structure, implied tails",
+      "category": "P14",
+      "description": "options intelligence: surface, skew, term structure, implied tails",
+      "producer": "desks/mt5/research/market_intelligence.py",
+      "artifacts": [
+        "desks/mt5/reports/MARKET_INTELLIGENCE.json"
+      ],
+      "consumers": [
+        "desks/mt5/research/issue_board.py",
+        "scripts/check_absolute_ceiling.py"
+      ],
+      "scheduler": [
+        "desks/mt5/research/hourly_cycle.py"
+      ],
+      "decision_path": "capability graph reports no node -- running, but no proven route from this artifact into a decision",
+      "status": "RUNNING",
+      "code_paths": [
+        "desks/mt5/research/market_intelligence.py"
+      ],
+      "tests": [
+        "tests/research/test_market_intelligence.py"
+      ],
+      "measurements": "dElog of options-derived features",
+      "rent_status": "UNPRICED",
+      "last_verified": "2026-09-06T06:54:06.905761+00:00",
+      "git_sha": "08f7d1eba9da",
+      "blockers": [
+        "capability graph reports no node -- running, but no proven route from this artifact into a decision"
+      ]
+    },
+    {
+      "id": "P15",
+      "name": "exchange futures information -- never MT5 tick volume as a substitute",
+      "category": "P15",
+      "description": "exchange futures information -- never MT5 tick volume as a substitute",
+      "producer": "desks/mt5/research/fetch_futures_curves.py",
+      "artifacts": [],
+      "consumers": [
+        "desks/mt5/research/daily_cycle.py",
+        "desks/mt5/tests/test_compendium_data.py"
+      ],
+      "scheduler": [
+        "desks/mt5/research/daily_cycle.py"
+      ],
+      "decision_path": "artifact (undeclared) absent on this host -- scheduled, but no evidence it has produced anything here",
+      "status": "SCHEDULED",
+      "code_paths": [
+        "desks/mt5/research/fetch_futures_curves.py"
+      ],
+      "tests": [
+        "desks/mt5/tests/test_compendium_data.py"
+      ],
+      "measurements": "dElog of exchange-flow features",
+      "rent_status": "UNPRICED",
+      "last_verified": "2026-09-06T06:54:06.905761+00:00",
+      "git_sha": "08f7d1eba9da",
+      "blockers": [
+        "artifact (undeclared) absent on this host -- scheduled, but no evidence it has produced anything here"
+      ]
+    },
+    {
+      "id": "P16",
+      "name": "physical commodity intelligence, point-in-time only",
+      "category": "P16",
+      "description": "physical commodity intelligence, point-in-time only",
+      "producer": "desks/mt5/research/market_intelligence.py",
+      "artifacts": [
+        "desks/mt5/reports/MARKET_INTELLIGENCE.json"
+      ],
+      "consumers": [
+        "desks/mt5/research/issue_board.py",
+        "scripts/check_absolute_ceiling.py"
+      ],
+      "scheduler": [
+        "desks/mt5/research/hourly_cycle.py"
+      ],
+      "decision_path": "capability graph reports no node -- running, but no proven route from this artifact into a decision",
+      "status": "RUNNING",
+      "code_paths": [
+        "desks/mt5/research/market_intelligence.py"
+      ],
+      "tests": [
+        "tests/research/test_market_intelligence.py"
+      ],
+      "measurements": "dElog of physical features",
+      "rent_status": "UNPRICED",
+      "last_verified": "2026-09-06T06:54:06.905761+00:00",
+      "git_sha": "08f7d1eba9da",
+      "blockers": [
+        "capability graph reports no node -- running, but no proven route from this artifact into a decision"
+      ]
+    },
+    {
+      "id": "P17",
+      "name": "market ecology brain: latent participant pressure inferred, never claimed",
+      "category": "P17",
+      "description": "market ecology brain: latent participant pressure inferred, never claimed",
+      "producer": "desks/mt5/research/market_intelligence.py",
+      "artifacts": [
+        "desks/mt5/reports/MARKET_INTELLIGENCE.json"
+      ],
+      "consumers": [
+        "desks/mt5/research/issue_board.py",
+        "scripts/check_absolute_ceiling.py"
+      ],
+      "scheduler": [
+        "desks/mt5/research/hourly_cycle.py"
+      ],
+      "decision_path": "capability graph reports no node -- running, but no proven route from this artifact into a decision",
+      "status": "RUNNING",
+      "code_paths": [
+        "desks/mt5/research/market_intelligence.py"
+      ],
+      "tests": [
+        "tests/research/test_market_intelligence.py"
+      ],
+      "measurements": "OOS predictive value of ecology state",
+      "rent_status": "UNPRICED",
+      "last_verified": "2026-09-06T06:54:06.905761+00:00",
+      "git_sha": "08f7d1eba9da",
+      "blockers": [
+        "capability graph reports no node -- running, but no proven route from this artifact into a decision"
+      ]
+    },
+    {
+      "id": "P18",
+      "name": "active learning / EVSI drives dataset, experiment and probe choice",
+      "category": "P18",
+      "description": "active learning / EVSI drives dataset, experiment and probe choice",
+      "producer": "desks/mt5/research/experiment_design.py",
+      "artifacts": [
+        "desks/mt5/reports/EXPERIMENT_DESIGN.json"
+      ],
+      "consumers": [
+        "desks/mt5/research/issue_board.py",
+        "scripts/check_absolute_ceiling.py"
+      ],
+      "scheduler": [
+        "desks/mt5/research/hourly_cycle.py"
+      ],
+      "decision_path": "capability graph reports no node -- running, but no proven route from this artifact into a decision",
+      "status": "RUNNING",
+      "code_paths": [
+        "desks/mt5/research/experiment_design.py"
+      ],
+      "tests": [
+        "tests/research/test_experiment_design.py",
+        "tests/scripts/test_frontier_mandate_runner.py",
+        "tests/validation/test_sequential_experiment_design.py"
+      ],
+      "measurements": "EVSI realised vs predicted",
+      "rent_status": "UNPRICED",
+      "last_verified": "2026-09-06T06:54:06.905761+00:00",
+      "git_sha": "08f7d1eba9da",
+      "blockers": [
+        "capability graph reports no node -- running, but no proven route from this artifact into a decision"
+      ]
+    },
+    {
+      "id": "P19",
+      "name": "measurement-design brain: cheapest falsifying experiment",
+      "category": "P19",
+      "description": "measurement-design brain: cheapest falsifying experiment",
+      "producer": "desks/mt5/research/experiment_design.py",
+      "artifacts": [
+        "desks/mt5/reports/EXPERIMENT_DESIGN.json"
+      ],
+      "consumers": [
+        "desks/mt5/research/issue_board.py",
+        "scripts/check_absolute_ceiling.py"
+      ],
+      "scheduler": [
+        "desks/mt5/research/hourly_cycle.py"
+      ],
+      "decision_path": "capability graph reports no node -- running, but no proven route from this artifact into a decision",
+      "status": "RUNNING",
+      "code_paths": [
+        "desks/mt5/research/experiment_design.py"
+      ],
+      "tests": [
+        "tests/research/test_experiment_design.py",
+        "tests/scripts/test_frontier_mandate_runner.py",
+        "tests/validation/test_sequential_experiment_design.py"
+      ],
+      "measurements": "compute-hours per survivor",
+      "rent_status": "UNPRICED",
+      "last_verified": "2026-09-06T06:54:06.905761+00:00",
+      "git_sha": "08f7d1eba9da",
+      "blockers": [
+        "capability graph reports no node -- running, but no proven route from this artifact into a decision"
+      ]
+    },
+    {
+      "id": "P20",
+      "name": "decision regret engine attributing regret to its cause",
+      "category": "P20",
+      "description": "decision regret engine attributing regret to its cause",
+      "producer": "desks/mt5/research/action_counterfactuals.py",
+      "artifacts": [
+        "desks/mt5/reports/ACTION_COUNTERFACTUALS.json"
+      ],
+      "consumers": [
+        "desks/mt5/tests/test_feedback_engines.py",
+        "desks/mt5/tests/test_feedback_engines.py",
+        "libs/ops/capability_graph.py",
+        "libs/ops/module_rent.py",
+        "scripts/check_absolute_ceiling.py"
+      ],
+      "scheduler": [
+        "desks/mt5/research/daily_cycle.py"
+      ],
+      "decision_path": "artifact desks/mt5/reports/ACTION_COUNTERFACTUALS.json absent on this host -- scheduled, but no evidence it has produced anything here",
+      "status": "SCHEDULED",
+      "code_paths": [
+        "desks/mt5/research/action_counterfactuals.py"
+      ],
+      "tests": [
+        "desks/mt5/tests/test_feedback_engines.py",
+        "tests/research/test_decision_dataset.py"
+      ],
+      "measurements": "regret in Elog by source",
+      "rent_status": "UNPRICED",
+      "last_verified": "2026-09-06T06:54:06.905761+00:00",
+      "git_sha": "08f7d1eba9da",
+      "blockers": [
+        "artifact desks/mt5/reports/ACTION_COUNTERFACTUALS.json absent on this host -- scheduled, but no evidence it has produced anything here"
+      ]
+    },
+    {
+      "id": "P21",
+      "name": "distribution-shift sentinel over latent state; never lowers the 20% floor",
+      "category": "P21",
+      "description": "distribution-shift sentinel over latent state; never lowers the 20% floor",
+      "producer": "desks/mt5/research/drift_monitor.py",
+      "artifacts": [
+        "desks/mt5/reports/DRIFT.json"
+      ],
+      "consumers": [
+        "desks/mt5/research/pf_allocator.py",
+        "desks/mt5/tests/test_hazard.py",
+        "desks/mt5/tests/test_monitor_proposers.py",
+        "desks/mt5/research/missed_growth.py",
+        "desks/mt5/research/pf_allocator.py",
+        "desks/mt5/research/revival_engine.py",
+        "desks/mt5/tests/test_effective_heat_binds.py",
+        "desks/mt5/tests/test_monitor_proposers.py",
+        "libs/ops/capability_graph.py",
+        "libs/ops/module_rent.py",
+        "libs/portfolio/latent_factors.py",
+        "libs/research/crowding_hazard.py",
+        "libs/research/perishability.py",
+        "scripts/check_absolute_ceiling.py"
+      ],
+      "scheduler": [
+        "desks/mt5/research/daily_cycle.py"
+      ],
+      "decision_path": "artifact desks/mt5/reports/DRIFT.json absent on this host -- scheduled, but no evidence it has produced anything here",
+      "status": "SCHEDULED",
+      "code_paths": [
+        "desks/mt5/research/drift_monitor.py"
+      ],
+      "tests": [
+        "desks/mt5/tests/test_hazard.py",
+        "desks/mt5/tests/test_monitor_proposers.py"
+      ],
+      "measurements": "loss avoided under shift",
+      "rent_status": "UNPRICED",
+      "last_verified": "2026-09-06T06:54:06.905761+00:00",
+      "git_sha": "08f7d1eba9da",
+      "blockers": [
+        "artifact desks/mt5/reports/DRIFT.json absent on this host -- scheduled, but no evidence it has produced anything here"
+      ]
+    },
+    {
+      "id": "P22",
+      "name": "mechanism transfer engine -- transfer mechanism, never configuration",
+      "category": "P22",
+      "description": "mechanism transfer engine -- transfer mechanism, never configuration",
+      "producer": "desks/mt5/research/alpha_genome.py",
+      "artifacts": [
+        "desks/mt5/reports/ALPHA_GENOME.json"
+      ],
+      "consumers": [
+        "desks/mt5/research/regime_coverage.py",
+        "libs/ops/capability_graph.py",
+        "libs/ops/module_rent.py",
+        "scripts/check_absolute_ceiling.py"
+      ],
+      "scheduler": [
+        "desks/mt5/research/daily_cycle.py"
+      ],
+      "decision_path": "producer -> artifact -> consumer -> decision",
+      "status": "PROVEN",
+      "code_paths": [
+        "desks/mt5/research/alpha_genome.py"
+      ],
+      "tests": [
+        "desks/mt5/tests/test_canon_fallback.py",
+        "desks/mt5/tests/test_flywheel.py"
+      ],
+      "measurements": "survivors per transfer hypothesis",
+      "rent_status": "PRICED",
+      "last_verified": "2026-09-06T06:54:06.905761+00:00",
+      "git_sha": "08f7d1eba9da",
+      "blockers": []
+    },
+    {
+      "id": "P23",
+      "name": "market-memory retrieval of nearest historical worlds, PIT only",
+      "category": "P23",
+      "description": "market-memory retrieval of nearest historical worlds, PIT only",
+      "producer": "desks/mt5/research/market_intelligence.py",
+      "artifacts": [
+        "desks/mt5/reports/MARKET_INTELLIGENCE.json"
+      ],
+      "consumers": [
+        "desks/mt5/research/issue_board.py",
+        "scripts/check_absolute_ceiling.py"
+      ],
+      "scheduler": [
+        "desks/mt5/research/hourly_cycle.py"
+      ],
+      "decision_path": "capability graph reports no node -- running, but no proven route from this artifact into a decision",
+      "status": "RUNNING",
+      "code_paths": [
+        "desks/mt5/research/market_intelligence.py"
+      ],
+      "tests": [
+        "tests/research/test_market_intelligence.py"
+      ],
+      "measurements": "dElog of retrieval-conditioned decisions",
+      "rent_status": "UNPRICED",
+      "last_verified": "2026-09-06T06:54:06.905761+00:00",
+      "git_sha": "08f7d1eba9da",
+      "blockers": [
+        "capability graph reports no node -- running, but no proven route from this artifact into a decision"
+      ]
+    },
+    {
+      "id": "P24",
+      "name": "'what changed' engine ranking standardized cross-asset surprise",
+      "category": "P24",
+      "description": "'what changed' engine ranking standardized cross-asset surprise",
+      "producer": "desks/mt5/research/market_intelligence.py",
+      "artifacts": [
+        "desks/mt5/reports/MARKET_INTELLIGENCE.json"
+      ],
+      "consumers": [
+        "desks/mt5/research/issue_board.py",
+        "scripts/check_absolute_ceiling.py"
+      ],
+      "scheduler": [
+        "desks/mt5/research/hourly_cycle.py"
+      ],
+      "decision_path": "capability graph reports no node -- running, but no proven route from this artifact into a decision",
+      "status": "RUNNING",
+      "code_paths": [
+        "desks/mt5/research/market_intelligence.py"
+      ],
+      "tests": [
+        "tests/research/test_market_intelligence.py"
+      ],
+      "measurements": "hit rate of anomaly -> interpretation",
+      "rent_status": "UNPRICED",
+      "last_verified": "2026-09-06T06:54:06.905761+00:00",
+      "git_sha": "08f7d1eba9da",
+      "blockers": [
+        "capability graph reports no node -- running, but no proven route from this artifact into a decision"
+      ]
+    },
+    {
+      "id": "P25",
+      "name": "expectations engine: actual vs market-implied as the primary surprise",
+      "category": "P25",
+      "description": "expectations engine: actual vs market-implied as the primary surprise",
+      "producer": "desks/mt5/research/news_desk.py",
+      "artifacts": [
+        "desks/mt5/reports/NEWS_DESK.json"
+      ],
+      "consumers": [
+        "scripts/check_absolute_ceiling.py"
+      ],
+      "scheduler": [
+        "desks/mt5/research/research_supervisor.py"
+      ],
+      "decision_path": "artifact desks/mt5/reports/NEWS_DESK.json absent on this host -- scheduled, but no evidence it has produced anything here",
+      "status": "SCHEDULED",
+      "code_paths": [
+        "desks/mt5/research/news_desk.py"
+      ],
+      "tests": [],
+      "measurements": "dElog of surprise-conditioned forecasts",
+      "rent_status": "UNPRICED",
+      "last_verified": "2026-09-06T06:54:06.905761+00:00",
+      "git_sha": "08f7d1eba9da",
+      "blockers": [
+        "artifact desks/mt5/reports/NEWS_DESK.json absent on this host -- scheduled, but no evidence it has produced anything here"
+      ]
+    },
+    {
+      "id": "P26",
+      "name": "event response surfaces across horizons: shock, discovery, drift, reversal",
+      "category": "P26",
+      "description": "event response surfaces across horizons: shock, discovery, drift, reversal",
+      "producer": "desks/mt5/research/market_intelligence.py",
+      "artifacts": [
+        "desks/mt5/reports/MARKET_INTELLIGENCE.json"
+      ],
+      "consumers": [
+        "desks/mt5/research/issue_board.py",
+        "scripts/check_absolute_ceiling.py"
+      ],
+      "scheduler": [
+        "desks/mt5/research/hourly_cycle.py"
+      ],
+      "decision_path": "capability graph reports no node -- running, but no proven route from this artifact into a decision",
+      "status": "RUNNING",
+      "code_paths": [
+        "desks/mt5/research/market_intelligence.py"
+      ],
+      "tests": [
+        "tests/research/test_market_intelligence.py"
+      ],
+      "measurements": "dElog by horizon",
+      "rent_status": "UNPRICED",
+      "last_verified": "2026-09-06T06:54:06.905761+00:00",
+      "git_sha": "08f7d1eba9da",
+      "blockers": [
+        "capability graph reports no node -- running, but no proven route from this artifact into a decision"
+      ]
+    },
+    {
+      "id": "P27",
+      "name": "expression optimizer: best market to express one information event",
+      "category": "P27",
+      "description": "expression optimizer: best market to express one information event",
+      "producer": "desks/mt5/research/execution_resolver.py",
+      "artifacts": [],
+      "consumers": [],
+      "scheduler": [],
+      "decision_path": "no scheduler surface names execution_resolver -- it is wired but nothing runs it",
+      "status": "WIRED",
+      "code_paths": [
+        "desks/mt5/research/execution_resolver.py"
+      ],
+      "tests": [],
+      "measurements": "post-cost alpha per unit risk by expression",
+      "rent_status": "UNPRICED",
+      "last_verified": "2026-09-06T06:54:06.905761+00:00",
+      "git_sha": "08f7d1eba9da",
+      "blockers": [
+        "no scheduler surface names execution_resolver -- it is wired but nothing runs it"
+      ]
+    },
+    {
+      "id": "P28",
+      "name": "capacity engine binding mu(q) and Cost(q) into the optimizer",
+      "category": "P28",
+      "description": "capacity engine binding mu(q) and Cost(q) into the optimizer",
+      "producer": "desks/mt5/research/cost_surface.py",
+      "artifacts": [
+        "desks/mt5/reports/COST_SURFACE.json"
+      ],
+      "consumers": [
+        "desks/mt5/scripts/external_gauntlet.py",
+        "desks/mt5/tests/test_tape_features.py",
+        "scripts/check_absolute_ceiling.py"
+      ],
+      "scheduler": [
+        "ops/crontab.manifest",
+        "ops/run_external_pipeline.sh"
+      ],
+      "decision_path": "artifact desks/mt5/reports/COST_SURFACE.json absent on this host -- scheduled, but no evidence it has produced anything here",
+      "status": "SCHEDULED",
+      "code_paths": [
+        "desks/mt5/research/cost_surface.py"
+      ],
+      "tests": [
+        "desks/mt5/tests/test_tape_features.py",
+        "tests/costs/test_cost_surface.py",
+        "tests/research/test_capability_ratchet.py",
+        "tests/scripts/test_check_read_without_writer.py"
+      ],
+      "measurements": "dElog lost to capacity",
+      "rent_status": "UNPRICED",
+      "last_verified": "2026-09-06T06:54:06.905761+00:00",
+      "git_sha": "08f7d1eba9da",
+      "blockers": [
+        "artifact desks/mt5/reports/COST_SURFACE.json absent on this host -- scheduled, but no evidence it has produced anything here"
+      ]
+    },
+    {
+      "id": "P29",
+      "name": "capital-scale morphing: strategy universe as a function of q",
+      "category": "P29",
+      "description": "capital-scale morphing: strategy universe as a function of q",
+      "producer": "desks/mt5/research/experiment_design.py",
+      "artifacts": [
+        "desks/mt5/reports/EXPERIMENT_DESIGN.json"
+      ],
+      "consumers": [
+        "desks/mt5/research/issue_board.py",
+        "scripts/check_absolute_ceiling.py"
+      ],
+      "scheduler": [
+        "desks/mt5/research/hourly_cycle.py"
+      ],
+      "decision_path": "capability graph reports no node -- running, but no proven route from this artifact into a decision",
+      "status": "RUNNING",
+      "code_paths": [
+        "desks/mt5/research/experiment_design.py"
+      ],
+      "tests": [
+        "tests/research/test_experiment_design.py",
+        "tests/scripts/test_frontier_mandate_runner.py",
+        "tests/validation/test_sequential_experiment_design.py"
+      ],
+      "measurements": "dElog by operating tier",
+      "rent_status": "UNPRICED",
+      "last_verified": "2026-09-06T06:54:06.905761+00:00",
+      "git_sha": "08f7d1eba9da",
+      "blockers": [
+        "capability graph reports no node -- running, but no proven route from this artifact into a decision"
+      ]
+    },
+    {
+      "id": "P30",
+      "name": "small-capacity alpha desk scored at OUR capital",
+      "category": "P30",
+      "description": "small-capacity alpha desk scored at OUR capital",
+      "producer": "desks/mt5/research/experiment_design.py",
+      "artifacts": [
+        "desks/mt5/reports/EXPERIMENT_DESIGN.json"
+      ],
+      "consumers": [
+        "desks/mt5/research/issue_board.py",
+        "scripts/check_absolute_ceiling.py"
+      ],
+      "scheduler": [
+        "desks/mt5/research/hourly_cycle.py"
+      ],
+      "decision_path": "capability graph reports no node -- running, but no proven route from this artifact into a decision",
+      "status": "RUNNING",
+      "code_paths": [
+        "desks/mt5/research/experiment_design.py"
+      ],
+      "tests": [
+        "tests/research/test_experiment_design.py",
+        "tests/scripts/test_frontier_mandate_runner.py",
+        "tests/validation/test_sequential_experiment_design.py"
+      ],
+      "measurements": "dElog of sub-scale edges",
+      "rent_status": "UNPRICED",
+      "last_verified": "2026-09-06T06:54:06.905761+00:00",
+      "git_sha": "08f7d1eba9da",
+      "blockers": [
+        "capability graph reports no node -- running, but no proven route from this artifact into a decision"
+      ]
+    },
+    {
+      "id": "P31",
+      "name": "tail-alpha desk: E[R | book stress] > 0",
+      "category": "P31",
+      "description": "tail-alpha desk: E[R | book stress] > 0",
+      "producer": "desks/mt5/research/tail_alpha_search.py",
+      "artifacts": [
+        "desks/mt5/reports/TAIL_ALPHA.json"
+      ],
+      "consumers": [
+        "scripts/check_absolute_ceiling.py"
+      ],
+      "scheduler": [
+        "desks/mt5/research/daily_cycle.py"
+      ],
+      "decision_path": "artifact desks/mt5/reports/TAIL_ALPHA.json absent on this host -- scheduled, but no evidence it has produced anything here",
+      "status": "SCHEDULED",
+      "code_paths": [
+        "desks/mt5/research/tail_alpha_search.py"
+      ],
+      "tests": [
+        "desks/mt5/tests/test_hourly_discovery.py"
+      ],
+      "measurements": "extra normal growth its diversification permits",
+      "rent_status": "UNPRICED",
+      "last_verified": "2026-09-06T06:54:06.905761+00:00",
+      "git_sha": "08f7d1eba9da",
+      "blockers": [
+        "artifact desks/mt5/reports/TAIL_ALPHA.json absent on this host -- scheduled, but no evidence it has produced anything here"
+      ]
+    },
+    {
+      "id": "P32",
+      "name": "alpha mortality and crowding: shrink before realised alpha dies",
+      "category": "P32",
+      "description": "alpha mortality and crowding: shrink before realised alpha dies",
+      "producer": "desks/mt5/research/decay_monitor.py",
+      "artifacts": [
+        "desks/mt5/reports/DECAY.json"
+      ],
+      "consumers": [
+        "desks/mt5/research/daily_cycle.py",
+        "desks/mt5/tests/test_decay_roster_state.py",
+        "desks/mt5/tests/test_fade_actually_reduces_risk.py",
+        "libs/portfolio/capital_modifiers.py",
+        "scripts/check_absolute_ceiling.py"
+      ],
+      "scheduler": [
+        "desks/mt5/research/daily_cycle.py"
+      ],
+      "decision_path": "artifact desks/mt5/reports/DECAY.json absent on this host -- scheduled, but no evidence it has produced anything here",
+      "status": "SCHEDULED",
+      "code_paths": [
+        "desks/mt5/research/decay_monitor.py"
+      ],
+      "tests": [
+        "desks/mt5/tests/test_decay_roster_state.py",
+        "desks/mt5/tests/test_fade_actually_reduces_risk.py",
+        "tests/ops/test_desk_module_drift_covers_the_daily_chain.py"
+      ],
+      "measurements": "loss avoided by early hibernation",
+      "rent_status": "UNPRICED",
+      "last_verified": "2026-09-06T06:54:06.905761+00:00",
+      "git_sha": "08f7d1eba9da",
+      "blockers": [
+        "artifact desks/mt5/reports/DECAY.json absent on this host -- scheduled, but no evidence it has produced anything here"
+      ]
+    },
+    {
+      "id": "P33",
+      "name": "complete evidence-triggered alpha lifecycle",
+      "category": "P33",
+      "description": "complete evidence-triggered alpha lifecycle",
+      "producer": "desks/mt5/research/promoter.py",
+      "artifacts": [
+        "desks/mt5/reports/PROMOTION.json"
+      ],
+      "consumers": [
+        "desks/mt5/research/daily_cycle.py",
+        "desks/mt5/research/pf_allocator.py",
+        "desks/mt5/research/run_gateway_loop.py",
+        "desks/mt5/research/shadow_cycle.py",
+        "desks/mt5/run_gateway_loop.py",
+        "desks/mt5/scripts/check_promoter.py",
+        "desks/mt5/side_channels/ensemble_disagreement_miner.py",
+        "desks/mt5/tests/test_gold_retire_names.py",
+        "desks/mt5/tests/test_promotion_lifecycle.py",
+        "desks/mt5/tests/test_recertification_gate.py",
+        "desks/mt5/tests/test_retire_evidence.py",
+        "desks/mt5/tests/test_scalp_promotion.py",
+        "scripts/check_absolute_ceiling.py"
+      ],
+      "scheduler": [
+        "desks/mt5/research/daily_cycle.py",
+        "desks/mt5/research/hourly_cycle.py",
+        "ops/crontab.manifest"
+      ],
+      "decision_path": "artifact desks/mt5/reports/PROMOTION.json absent on this host -- scheduled, but no evidence it has produced anything here",
+      "status": "SCHEDULED",
+      "code_paths": [
+        "desks/mt5/research/promoter.py"
+      ],
+      "tests": [
+        "desks/mt5/tests/test_account_provenance.py",
+        "desks/mt5/tests/test_canon_fallback.py",
+        "desks/mt5/tests/test_daily_cycle.py",
+        "desks/mt5/tests/test_decay_roster_state.py",
+        "desks/mt5/tests/test_decision_core.py",
+        "desks/mt5/tests/test_gold_retire_names.py",
+        "desks/mt5/tests/test_h1_source.py",
+        "desks/mt5/tests/test_marginal_admission.py"
+      ],
+      "measurements": "live retention per promotion",
+      "rent_status": "UNPRICED",
+      "last_verified": "2026-09-06T06:54:06.905761+00:00",
+      "git_sha": "08f7d1eba9da",
+      "blockers": [
+        "artifact desks/mt5/reports/PROMOTION.json absent on this host -- scheduled, but no evidence it has produced anything here"
+      ]
+    },
+    {
+      "id": "P34",
+      "name": "execution intelligence predicting cost, fill probability, adverse selection",
+      "category": "P34",
+      "description": "execution intelligence predicting cost, fill probability, adverse selection",
+      "producer": "desks/mt5/research/execution_intelligence.py",
+      "artifacts": [
+        "desks/mt5/reports/EXECUTION_INTELLIGENCE.json"
+      ],
+      "consumers": [
+        "desks/mt5/tests/test_execution_intelligence.py",
+        "scripts/check_absolute_ceiling.py"
+      ],
+      "scheduler": [
+        "desks/mt5/research/daily_cycle.py"
+      ],
+      "decision_path": "artifact desks/mt5/reports/EXECUTION_INTELLIGENCE.json absent on this host -- scheduled, but no evidence it has produced anything here",
+      "status": "SCHEDULED",
+      "code_paths": [
+        "desks/mt5/research/execution_intelligence.py"
+      ],
+      "tests": [
+        "desks/mt5/tests/test_execution_intelligence.py",
+        "desks/mt5/tests/test_feature_roi.py"
+      ],
+      "measurements": "alpha captured / alpha available",
+      "rent_status": "UNPRICED",
+      "last_verified": "2026-09-06T06:54:06.905761+00:00",
+      "git_sha": "08f7d1eba9da",
+      "blockers": [
+        "artifact desks/mt5/reports/EXECUTION_INTELLIGENCE.json absent on this host -- scheduled, but no evidence it has produced anything here"
+      ]
+    },
+    {
+      "id": "P35",
+      "name": "execution RL as a challenger, only after the twin is calibrated",
+      "category": "P35",
+      "description": "execution RL as a challenger, only after the twin is calibrated",
+      "producer": "desks/mt5/research/rebalance_trigger.py",
+      "artifacts": [
+        "desks/mt5/reports/REBALANCE_TRIGGER.json"
+      ],
+      "consumers": [
+        "scripts/check_absolute_ceiling.py"
+      ],
+      "scheduler": [
+        "desks/mt5/research/hourly_cycle.py"
+      ],
+      "decision_path": "capability graph reports no node -- running, but no proven route from this artifact into a decision",
+      "status": "RUNNING",
+      "code_paths": [
+        "desks/mt5/research/rebalance_trigger.py"
+      ],
+      "tests": [],
+      "measurements": "dElog vs champion execution policy",
+      "rent_status": "UNPRICED",
+      "last_verified": "2026-09-06T06:54:06.905761+00:00",
+      "git_sha": "08f7d1eba9da",
+      "blockers": [
+        "capability graph reports no node -- running, but no proven route from this artifact into a decision"
+      ]
+    },
+    {
+      "id": "P36",
+      "name": "alpha capture OS decomposing leakage",
+      "category": "P36",
+      "description": "alpha capture OS decomposing leakage",
+      "producer": "desks/mt5/research/missed_growth.py",
+      "artifacts": [
+        "desks/mt5/reports/MISSED_GROWTH.json"
+      ],
+      "consumers": [
+        "desks/mt5/tests/test_effective_heat_binds.py",
+        "desks/mt5/tests/test_growth_governance.py",
+        "desks/mt5/tests/test_rail_evidence.py",
+        "scripts/check_growth_governance.py",
+        "desks/mt5/research/allocator_attribution.py",
+        "desks/mt5/tests/test_allocator_attribution.py",
+        "desks/mt5/tests/test_flow_features_generators.py",
+        "libs/ops/capability_graph.py",
+        "libs/ops/module_rent.py",
+        "libs/portfolio/capital_modifiers.py",
+        "scripts/check_absolute_ceiling.py"
+      ],
+      "scheduler": [
+        "desks/mt5/research/daily_cycle.py"
+      ],
+      "decision_path": "producer -> artifact -> consumer -> decision",
+      "status": "PROVEN",
+      "code_paths": [
+        "desks/mt5/research/missed_growth.py"
+      ],
+      "tests": [
+        "desks/mt5/tests/test_effective_heat_binds.py",
+        "desks/mt5/tests/test_growth_governance.py",
+        "desks/mt5/tests/test_rail_evidence.py",
+        "tests/ops/test_module_rent.py",
+        "tests/research/test_counterfactual_world.py"
+      ],
+      "measurements": "leakage in Elog by cause",
+      "rent_status": "PRICED",
+      "last_verified": "2026-09-06T06:54:06.905761+00:00",
+      "git_sha": "08f7d1eba9da",
+      "blockers": []
+    },
+    {
+      "id": "P37",
+      "name": "multi-venue abstraction: forecast -> intent -> order -> venue adapter",
+      "category": "P37",
+      "description": "multi-venue abstraction: forecast -> intent -> order -> venue adapter",
+      "producer": "desks/mt5/research/execution_resolver.py",
+      "artifacts": [],
+      "consumers": [],
+      "scheduler": [],
+      "decision_path": "no scheduler surface names execution_resolver -- it is wired but nothing runs it",
+      "status": "WIRED",
+      "code_paths": [
+        "desks/mt5/research/execution_resolver.py"
+      ],
+      "tests": [],
+      "measurements": "cost of a venue change to alpha intelligence",
+      "rent_status": "UNPRICED",
+      "last_verified": "2026-09-06T06:54:06.905761+00:00",
+      "git_sha": "08f7d1eba9da",
+      "blockers": [
+        "no scheduler surface names execution_resolver -- it is wired but nothing runs it"
+      ]
+    },
+    {
+      "id": "P38",
+      "name": "compute allocator scheduling by marginal compute value",
+      "category": "P38",
+      "description": "compute allocator scheduling by marginal compute value",
+      "producer": "libs/ops/compute_ledger.py",
+      "artifacts": [
+        "data/compute_ledger.jsonl"
+      ],
+      "consumers": [
+        "desks/mt5/research/hourly_cycle.py",
+        "tests/ops/test_compute_ledger.py",
+        "desks/mt5/research/model_zoo.py",
+        "libs/ops/allocators.py",
+        "scripts/check_absolute_ceiling.py",
+        "tests/ops/test_compute_ledger.py"
+      ],
+      "scheduler": [
+        "desks/mt5/research/hourly_cycle.py"
+      ],
+      "decision_path": "artifact data/compute_ledger.jsonl absent on this host -- scheduled, but no evidence it has produced anything here",
+      "status": "SCHEDULED",
+      "code_paths": [
+        "libs/ops/compute_ledger.py"
+      ],
+      "tests": [
+        "tests/ops/test_compute_ledger.py"
+      ],
+      "measurements": "dElog per CPU/GPU hour",
+      "rent_status": "UNPRICED",
+      "last_verified": "2026-09-06T06:54:06.905761+00:00",
+      "git_sha": "08f7d1eba9da",
+      "blockers": [
+        "artifact data/compute_ledger.jsonl absent on this host -- scheduled, but no evidence it has produced anything here"
+      ]
+    },
+    {
+      "id": "P39",
+      "name": "distributed experiment cache keyed on data/feature/model/code/seed",
+      "category": "P39",
+      "description": "distributed experiment cache keyed on data/feature/model/code/seed",
+      "producer": "desks/mt5/research/experiment_cache.py",
+      "artifacts": [
+        "desks/mt5/reports/EXPERIMENT_CACHE.json"
+      ],
+      "consumers": [
+        "scripts/check_absolute_ceiling.py"
+      ],
+      "scheduler": [
+        "desks/mt5/research/hourly_cycle.py"
+      ],
+      "decision_path": "artifact desks/mt5/reports/EXPERIMENT_CACHE.json absent on this host -- scheduled, but no evidence it has produced anything here",
+      "status": "SCHEDULED",
+      "code_paths": [
+        "desks/mt5/research/experiment_cache.py"
+      ],
+      "tests": [
+        "tests/research/test_experiment_cache.py"
+      ],
+      "measurements": "cache hit rate, hours saved",
+      "rent_status": "UNPRICED",
+      "last_verified": "2026-09-06T06:54:06.905761+00:00",
+      "git_sha": "08f7d1eba9da",
+      "blockers": [
+        "artifact desks/mt5/reports/EXPERIMENT_CACHE.json absent on this host -- scheduled, but no evidence it has produced anything here"
+      ]
+    },
+    {
+      "id": "P40",
+      "name": "financial scaling-law lab: OOS = f(data, model size, compute)",
+      "category": "P40",
+      "description": "financial scaling-law lab: OOS = f(data, model size, compute)",
+      "producer": "desks/mt5/research/experiment_cache.py",
+      "artifacts": [
+        "desks/mt5/reports/EXPERIMENT_CACHE.json"
+      ],
+      "consumers": [
+        "scripts/check_absolute_ceiling.py"
+      ],
+      "scheduler": [
+        "desks/mt5/research/hourly_cycle.py"
+      ],
+      "decision_path": "artifact desks/mt5/reports/EXPERIMENT_CACHE.json absent on this host -- scheduled, but no evidence it has produced anything here",
+      "status": "SCHEDULED",
+      "code_paths": [
+        "desks/mt5/research/experiment_cache.py"
+      ],
+      "tests": [
+        "tests/research/test_experiment_cache.py"
+      ],
+      "measurements": "marginal value of data vs model vs compute",
+      "rent_status": "UNPRICED",
+      "last_verified": "2026-09-06T06:54:06.905761+00:00",
+      "git_sha": "08f7d1eba9da",
+      "blockers": [
+        "artifact desks/mt5/reports/EXPERIMENT_CACHE.json absent on this host -- scheduled, but no evidence it has produced anything here"
+      ]
+    },
+    {
+      "id": "P41",
+      "name": "model-size efficient frontier; smallest model at equal rent",
+      "category": "P41",
+      "description": "model-size efficient frontier; smallest model at equal rent",
+      "producer": "desks/mt5/research/model_zoo.py",
+      "artifacts": [
+        "desks/mt5/reports/MODEL_ZOO.json"
+      ],
+      "consumers": [
+        "desks/mt5/research/issue_board.py",
+        "scripts/check_absolute_ceiling.py"
+      ],
+      "scheduler": [
+        "desks/mt5/research/hourly_cycle.py"
+      ],
+      "decision_path": "capability graph reports no node -- running, but no proven route from this artifact into a decision",
+      "status": "RUNNING",
+      "code_paths": [
+        "desks/mt5/research/model_zoo.py"
+      ],
+      "tests": [
+        "tests/research/test_forecast_contract_and_league.py"
+      ],
+      "measurements": "rent per unit inference cost",
+      "rent_status": "UNPRICED",
+      "last_verified": "2026-09-06T06:54:06.905761+00:00",
+      "git_sha": "08f7d1eba9da",
+      "blockers": [
+        "capability graph reports no node -- running, but no proven route from this artifact into a decision"
+      ]
+    },
+    {
+      "id": "P42",
+      "name": "distillation: student independently retains the required dElog",
+      "category": "P42",
+      "description": "distillation: student independently retains the required dElog",
+      "producer": "desks/mt5/research/ml_layer.py",
+      "artifacts": [
+        "desks/mt5/reports/ML_LAYER.json"
+      ],
+      "consumers": [
+        "scripts/check_absolute_ceiling.py"
+      ],
+      "scheduler": [
+        "desks/mt5/research/hourly_cycle.py"
+      ],
+      "decision_path": "capability graph reports no node -- running, but no proven route from this artifact into a decision",
+      "status": "RUNNING",
+      "code_paths": [
+        "desks/mt5/research/ml_layer.py"
+      ],
+      "tests": [
+        "tests/research/test_ml_layer.py"
+      ],
+      "measurements": "student dElog vs teacher",
+      "rent_status": "UNPRICED",
+      "last_verified": "2026-09-06T06:54:06.905761+00:00",
+      "git_sha": "08f7d1eba9da",
+      "blockers": [
+        "capability graph reports no node -- running, but no proven route from this artifact into a decision"
+      ]
+    },
+    {
+      "id": "P43",
+      "name": "guarded online learning: champion authoritative, challenger updates, promotion o",
+      "category": "P43",
+      "description": "guarded online learning: champion authoritative, challenger updates, promotion on measured evidence, no silent live mutation",
+      "producer": "desks/mt5/research/model_self_improvement.py",
+      "artifacts": [
+        "desks/mt5/data/model_skill_track.jsonl"
+      ],
+      "consumers": [
+        "desks/mt5/research/model_zoo.py",
+        "scripts/check_absolute_ceiling.py"
+      ],
+      "scheduler": [
+        "desks/mt5/research/hourly_cycle.py"
+      ],
+      "decision_path": "artifact desks/mt5/data/model_skill_track.jsonl absent on this host -- scheduled, but no evidence it has produced anything here",
+      "status": "SCHEDULED",
+      "code_paths": [
+        "desks/mt5/research/model_self_improvement.py"
+      ],
+      "tests": [],
+      "measurements": "out-of-sample skill gain at promotion",
+      "rent_status": "UNPRICED",
+      "last_verified": "2026-09-06T06:54:06.905761+00:00",
+      "git_sha": "08f7d1eba9da",
+      "blockers": [
+        "artifact desks/mt5/data/model_skill_track.jsonl absent on this host -- scheduled, but no evidence it has produced anything here"
+      ]
+    },
+    {
+      "id": "P44",
+      "name": "population-based training selected on hostile OOS evaluation",
+      "category": "P44",
+      "description": "population-based training selected on hostile OOS evaluation",
+      "producer": "desks/mt5/research/alpha_evolution.py",
+      "artifacts": [
+        "desks/mt5/reports/ALPHA_EVOLUTION.json"
+      ],
+      "consumers": [
+        "desks/mt5/tests/test_alpha_factory.py",
+        "desks/mt5/tests/test_deep_forest.py",
+        "desks/mt5/tests/test_flow_features_generators.py",
+        "scripts/check_absolute_ceiling.py"
+      ],
+      "scheduler": [
+        "desks/mt5/research/daily_cycle.py",
+        "ops/quant-hourly-discovery.service"
+      ],
+      "decision_path": "artifact desks/mt5/reports/ALPHA_EVOLUTION.json absent on this host -- scheduled, but no evidence it has produced anything here",
+      "status": "SCHEDULED",
+      "code_paths": [
+        "desks/mt5/research/alpha_evolution.py"
+      ],
+      "tests": [
+        "desks/mt5/tests/test_allocator_attribution.py",
+        "desks/mt5/tests/test_alpha_factory.py",
+        "desks/mt5/tests/test_deep_forest.py",
+        "desks/mt5/tests/test_flow_features_generators.py",
+        "desks/mt5/tests/test_superset_a.py",
+        "tests/ops/test_module_rent.py"
+      ],
+      "measurements": "survivors per mutation generation",
+      "rent_status": "UNPRICED",
+      "last_verified": "2026-09-06T06:54:06.905761+00:00",
+      "git_sha": "08f7d1eba9da",
+      "blockers": [
+        "artifact desks/mt5/reports/ALPHA_EVOLUTION.json absent on this host -- scheduled, but no evidence it has produced anything here"
+      ]
+    },
+    {
+      "id": "P45",
+      "name": "generative stress worlds -- risk falsification only, never alpha proof",
+      "category": "P45",
+      "description": "generative stress worlds -- risk falsification only, never alpha proof",
+      "producer": "libs/research/counterfactual_world.py",
+      "artifacts": [
+        "desks/mt5/reports/COUNTERFACTUAL_WORLD.json"
+      ],
+      "consumers": [
+        "desks/mt5/research/counterfactual_replay.py",
+        "tests/research/test_counterfactual_world.py",
+        "desks/mt5/research/counterfactual_replay.py",
+        "desks/mt5/research/missed_growth.py",
+        "desks/mt5/tests/test_counterfactual_replay.py",
+        "desks/mt5/tests/test_rail_evidence.py",
+        "libs/ops/capability_graph.py",
+        "libs/ops/module_rent.py",
+        "scripts/check_absolute_ceiling.py"
+      ],
+      "scheduler": [],
+      "decision_path": "no scheduler surface names counterfactual_world -- it is wired but nothing runs it",
+      "status": "WIRED",
+      "code_paths": [
+        "libs/research/counterfactual_world.py"
+      ],
+      "tests": [
+        "desks/mt5/tests/test_fill_corpus.py",
+        "desks/mt5/tests/test_rail_evidence.py",
+        "tests/ops/test_counterfactual_reality.py",
+        "tests/research/test_counterfactual_world.py"
+      ],
+      "measurements": "risk discovered per synthetic world",
+      "rent_status": "UNPRICED",
+      "last_verified": "2026-09-06T06:54:06.905761+00:00",
+      "git_sha": "08f7d1eba9da",
+      "blockers": [
+        "no scheduler surface names counterfactual_world -- it is wired but nothing runs it"
+      ]
+    },
+    {
+      "id": "P46",
+      "name": "model uncertainty ensemble widening the posterior on disagreement",
+      "category": "P46",
+      "description": "model uncertainty ensemble widening the posterior on disagreement",
+      "producer": "libs/self_improvement/ensemble_optimizer.py",
+      "artifacts": [],
+      "consumers": [
+        "libs/self_improvement/__init__.py",
+        "tests/self_improvement/test_research_ensemble_meta.py"
+      ],
+      "scheduler": [],
+      "decision_path": "no scheduler surface names ensemble_optimizer -- it is wired but nothing runs it",
+      "status": "WIRED",
+      "code_paths": [
+        "libs/self_improvement/ensemble_optimizer.py"
+      ],
+      "tests": [
+        "tests/self_improvement/test_research_ensemble_meta.py"
+      ],
+      "measurements": "calibration improvement from disagreement",
+      "rent_status": "UNPRICED",
+      "last_verified": "2026-09-06T06:54:06.905761+00:00",
+      "git_sha": "08f7d1eba9da",
+      "blockers": [
+        "no scheduler surface names ensemble_optimizer -- it is wired but nothing runs it"
+      ]
+    },
+    {
+      "id": "P47",
+      "name": "independent validator/killer agents; research does not grade itself",
+      "category": "P47",
+      "description": "independent validator/killer agents; research does not grade itself",
+      "producer": "libs/validation/__init__.py",
+      "artifacts": [
+        "desks/mt5/reports/VALIDATION.json"
+      ],
+      "consumers": [
+        "scripts/check_absolute_ceiling.py"
+      ],
+      "scheduler": [
+        "ops/crontab.manifest"
+      ],
+      "decision_path": "artifact desks/mt5/reports/VALIDATION.json absent on this host -- scheduled, but no evidence it has produced anything here",
+      "status": "SCHEDULED",
+      "code_paths": [
+        "libs/validation/__init__.py"
+      ],
+      "tests": [
+        "desks/mt5/tests/test_account_provenance.py",
+        "desks/mt5/tests/test_decision_core.py",
+        "desks/mt5/tests/test_deep_forest.py",
+        "desks/mt5/tests/test_execution_twin.py",
+        "desks/mt5/tests/test_risk_units.py",
+        "desks/mt5/tests/test_scalp_gauntlet.py",
+        "desks/mt5/tests/test_universal_family_executor.py",
+        "desks/mt5/tests/test_universe_registry.py"
+      ],
+      "measurements": "false discoveries caught per validation hour",
+      "rent_status": "UNPRICED",
+      "last_verified": "2026-09-06T06:54:06.905761+00:00",
+      "git_sha": "08f7d1eba9da",
+      "blockers": [
+        "artifact desks/mt5/reports/VALIDATION.json absent on this host -- scheduled, but no evidence it has produced anything here"
+      ]
+    },
+    {
+      "id": "P48",
+      "name": "internal bug-bounty / fraud agent rewarded for finding silent defects",
+      "category": "P48",
+      "description": "internal bug-bounty / fraud agent rewarded for finding silent defects",
+      "producer": "desks/mt5/research/adversary.py",
+      "artifacts": [
+        "desks/mt5/reports/ADVERSARY.json"
+      ],
+      "consumers": [
+        "desks/mt5/research/issue_board.py",
+        "scripts/check_absolute_ceiling.py"
+      ],
+      "scheduler": [
+        "desks/mt5/research/hourly_cycle.py",
+        "ops/crontab.manifest"
+      ],
+      "decision_path": "capability graph reports no node -- running, but no proven route from this artifact into a decision",
+      "status": "RUNNING",
+      "code_paths": [
+        "desks/mt5/research/adversary.py"
+      ],
+      "tests": [
+        "tests/research/test_adversary.py"
+      ],
+      "measurements": "defects found before capital",
+      "rent_status": "UNPRICED",
+      "last_verified": "2026-09-06T06:54:06.905761+00:00",
+      "git_sha": "08f7d1eba9da",
+      "blockers": [
+        "capability graph reports no node -- running, but no proven route from this artifact into a decision"
+      ]
+    },
+    {
+      "id": "P49",
+      "name": "permanent poison canaries continuously rejected by validation",
+      "category": "P49",
+      "description": "permanent poison canaries continuously rejected by validation",
+      "producer": "desks/mt5/research/adversary.py",
+      "artifacts": [
+        "desks/mt5/reports/ADVERSARY.json"
+      ],
+      "consumers": [
+        "desks/mt5/research/issue_board.py",
+        "scripts/check_absolute_ceiling.py"
+      ],
+      "scheduler": [
+        "desks/mt5/research/hourly_cycle.py",
+        "ops/crontab.manifest"
+      ],
+      "decision_path": "capability graph reports no node -- running, but no proven route from this artifact into a decision",
+      "status": "RUNNING",
+      "code_paths": [
+        "desks/mt5/research/adversary.py"
+      ],
+      "tests": [
+        "tests/research/test_adversary.py"
+      ],
+      "measurements": "canary rejection rate (must stay 100%)",
+      "rent_status": "UNPRICED",
+      "last_verified": "2026-09-06T06:54:06.905761+00:00",
+      "git_sha": "08f7d1eba9da",
+      "blockers": [
+        "capability graph reports no node -- running, but no proven route from this artifact into a decision"
+      ]
+    },
+    {
+      "id": "P50",
+      "name": "model of the desk: digital twin of the research organisation itself",
+      "category": "P50",
+      "description": "model of the desk: digital twin of the research organisation itself",
+      "producer": "desks/mt5/research/opportunity_gap.py",
+      "artifacts": [
+        "desks/mt5/reports/OPPORTUNITY_GAP.json"
+      ],
+      "consumers": [
+        "desks/mt5/research/issue_board.py",
+        "scripts/check_absolute_ceiling.py"
+      ],
+      "scheduler": [
+        "desks/mt5/research/hourly_cycle.py"
+      ],
+      "decision_path": "capability graph reports no node -- running, but no proven route from this artifact into a decision",
+      "status": "RUNNING",
+      "code_paths": [
+        "desks/mt5/research/opportunity_gap.py"
+      ],
+      "tests": [
+        "tests/research/test_opportunity_gap.py"
+      ],
+      "measurements": "dElog of an organisational change",
+      "rent_status": "UNPRICED",
+      "last_verified": "2026-09-06T06:54:06.905761+00:00",
+      "git_sha": "08f7d1eba9da",
+      "blockers": [
+        "capability graph reports no node -- running, but no proven route from this artifact into a decision"
+      ]
+    },
+    {
+      "id": "P51",
+      "name": "research capital governor allocating across all action types by RROI",
+      "category": "P51",
+      "description": "research capital governor allocating across all action types by RROI",
+      "producer": "desks/mt5/research/research_bandit.py",
+      "artifacts": [
+        "desks/mt5/reports/RESEARCH_BANDIT.json"
+      ],
+      "consumers": [
+        "desks/mt5/research/daily_cycle.py",
+        "libs/ops/allocators.py",
+        "libs/ops/capability_graph.py",
+        "libs/research/bandit.py",
+        "scripts/check_absolute_ceiling.py"
+      ],
+      "scheduler": [
+        "desks/mt5/research/daily_cycle.py"
+      ],
+      "decision_path": "capability graph reports RUNNING -- running, but no proven route from this artifact into a decision",
+      "status": "RUNNING",
+      "code_paths": [
+        "desks/mt5/research/research_bandit.py"
+      ],
+      "tests": [],
+      "measurements": "RROI realised vs predicted",
+      "rent_status": "UNPRICED",
+      "last_verified": "2026-09-06T06:54:06.905761+00:00",
+      "git_sha": "08f7d1eba9da",
+      "blockers": [
+        "capability graph reports RUNNING -- running, but no proven route from this artifact into a decision"
+      ]
+    },
+    {
+      "id": "P52",
+      "name": "research program competition on survivors per unit research cost",
+      "category": "P52",
+      "description": "research program competition on survivors per unit research cost",
+      "producer": "desks/mt5/research/research_productivity.py",
+      "artifacts": [
+        "desks/mt5/reports/RESEARCH_PRODUCTIVITY.json"
+      ],
+      "consumers": [
+        "desks/mt5/frontier_intel/ontology.py",
+        "desks/mt5/research/conversion_ledger.py",
+        "desks/mt5/tests/test_conversion_ledger.py",
+        "libs/ops/capability_graph.py",
+        "scripts/check_absolute_ceiling.py"
+      ],
+      "scheduler": [
+        "desks/mt5/research/daily_cycle.py"
+      ],
+      "decision_path": "capability graph reports RUNNING -- running, but no proven route from this artifact into a decision",
+      "status": "RUNNING",
+      "code_paths": [
+        "desks/mt5/research/research_productivity.py"
+      ],
+      "tests": [],
+      "measurements": "forward survivors per research cost",
+      "rent_status": "UNPRICED",
+      "last_verified": "2026-09-06T06:54:06.905761+00:00",
+      "git_sha": "08f7d1eba9da",
+      "blockers": [
+        "capability graph reports RUNNING -- running, but no proven route from this artifact into a decision"
+      ]
+    },
+    {
+      "id": "P53",
+      "name": "AI scientist organisation with tracked reputation per agent",
+      "category": "P53",
+      "description": "AI scientist organisation with tracked reputation per agent",
+      "producer": "desks/mt5/research/research_org.py",
+      "artifacts": [
+        "desks/mt5/reports/RESEARCH_ORG.json"
+      ],
+      "consumers": [
+        "scripts/check_absolute_ceiling.py"
+      ],
+      "scheduler": [
+        "desks/mt5/research/hourly_cycle.py"
+      ],
+      "decision_path": "capability graph reports no node -- running, but no proven route from this artifact into a decision",
+      "status": "RUNNING",
+      "code_paths": [
+        "desks/mt5/research/research_org.py"
+      ],
+      "tests": [
+        "tests/research/test_research_org.py"
+      ],
+      "measurements": "net dElog per agent",
+      "rent_status": "UNPRICED",
+      "last_verified": "2026-09-06T06:54:06.905761+00:00",
+      "git_sha": "08f7d1eba9da",
+      "blockers": [
+        "capability graph reports no node -- running, but no proven route from this artifact into a decision"
+      ]
+    },
+    {
+      "id": "P54",
+      "name": "advocate / skeptic / replicator / validator roles kept separate",
+      "category": "P54",
+      "description": "advocate / skeptic / replicator / validator roles kept separate",
+      "producer": "desks/mt5/research/research_org.py",
+      "artifacts": [
+        "desks/mt5/reports/RESEARCH_ORG.json"
+      ],
+      "consumers": [
+        "scripts/check_absolute_ceiling.py"
+      ],
+      "scheduler": [
+        "desks/mt5/research/hourly_cycle.py"
+      ],
+      "decision_path": "capability graph reports no node -- running, but no proven route from this artifact into a decision",
+      "status": "RUNNING",
+      "code_paths": [
+        "desks/mt5/research/research_org.py"
+      ],
+      "tests": [
+        "tests/research/test_research_org.py"
+      ],
+      "measurements": "proposals overturned by independent review",
+      "rent_status": "UNPRICED",
+      "last_verified": "2026-09-06T06:54:06.905761+00:00",
+      "git_sha": "08f7d1eba9da",
+      "blockers": [
+        "capability graph reports no node -- running, but no proven route from this artifact into a decision"
+      ]
+    },
+    {
+      "id": "P55",
+      "name": "permanent unknown-unknown budget that expands the ontology",
+      "category": "P55",
+      "description": "permanent unknown-unknown budget that expands the ontology",
+      "producer": "desks/mt5/frontier_intel/unknowns.py",
+      "artifacts": [
+        "desks/mt5/reports/FRONTIER_GAPS.json"
+      ],
+      "consumers": [
+        "scripts/run_intelligence_cycle.py",
+        "tests/research/test_unknowns.py",
+        "desks/mt5/frontier_intel/frontier_supervisor.py",
+        "desks/mt5/research/nightly_catchup.py",
+        "libs/ops/allocators.py",
+        "scripts/check_absolute_ceiling.py"
+      ],
+      "scheduler": [],
+      "decision_path": "no scheduler surface names unknowns -- it is wired but nothing runs it",
+      "status": "WIRED",
+      "code_paths": [
+        "desks/mt5/frontier_intel/unknowns.py"
+      ],
+      "tests": [
+        "desks/mt5/tests/test_frontier_intel.py",
+        "desks/mt5/tests/test_macro_taxonomy_growth.py",
+        "tests/data/test_paywall.py",
+        "tests/research/test_unknowns.py",
+        "tests/risk/test_fx_factors.py",
+        "tests/test_operators.py"
+      ],
+      "measurements": "ontology terms added that later pay rent",
+      "rent_status": "UNPRICED",
+      "last_verified": "2026-09-06T06:54:06.905761+00:00",
+      "git_sha": "08f7d1eba9da",
+      "blockers": [
+        "no scheduler surface names unknowns -- it is wired but nothing runs it"
+      ]
+    },
+    {
+      "id": "P56",
+      "name": "institutional frontier miner: hourly scan -> extract -> gap -> ROI -> build -> t",
+      "category": "P56",
+      "description": "institutional frontier miner: hourly scan -> extract -> gap -> ROI -> build -> test -> measure, separate from alpha miners",
+      "producer": "desks/mt5/frontier_intel/frontier_supervisor.py",
+      "artifacts": [
+        "desks/mt5/reports/FRONTIER_INTELLIGENCE.json"
+      ],
+      "consumers": [
+        "desks/mt5/research/hourly_cycle.py",
+        "desks/mt5/research/nightly_catchup.py",
+        "libs/ops/allocators.py",
+        "scripts/check_absolute_ceiling.py"
+      ],
+      "scheduler": [
+        "desks/mt5/research/hourly_cycle.py"
+      ],
+      "decision_path": "capability graph reports no node -- running, but no proven route from this artifact into a decision",
+      "status": "RUNNING",
+      "code_paths": [
+        "desks/mt5/frontier_intel/frontier_supervisor.py"
+      ],
+      "tests": [
+        "desks/mt5/tests/test_frontier_intel.py"
+      ],
+      "measurements": "capabilities replicated that pay rent",
+      "rent_status": "UNPRICED",
+      "last_verified": "2026-09-06T06:54:06.905761+00:00",
+      "git_sha": "08f7d1eba9da",
+      "blockers": [
+        "capability graph reports no node -- running, but no proven route from this artifact into a decision"
+      ]
+    },
+    {
+      "id": "P57",
+      "name": "maximally permissive discovery, strict authority: any public claim may inspire a",
+      "category": "P57",
+      "description": "maximally permissive discovery, strict authority: any public claim may inspire a hypothesis, none may bypass independent validation",
+      "producer": "desks/mt5/frontier_intel/roi.py",
+      "artifacts": [],
+      "consumers": [],
+      "scheduler": [
+        "desks/mt5/research/daily_cycle.py",
+        "ops/crontab.manifest",
+        "ops/quant-dig-roi.service",
+        "ops/run_frontier_rotation.sh"
+      ],
+      "decision_path": "artifact (undeclared) absent on this host -- scheduled, but no evidence it has produced anything here",
+      "status": "SCHEDULED",
+      "code_paths": [
+        "desks/mt5/frontier_intel/roi.py"
+      ],
+      "tests": [
+        "desks/mt5/tests/test_allocator_attribution.py",
+        "desks/mt5/tests/test_feature_roi.py",
+        "desks/mt5/tests/test_feedback_engines.py",
+        "desks/mt5/tests/test_frontier_intel.py",
+        "desks/mt5/tests/test_macro_taxonomy_growth.py",
+        "desks/mt5/tests/test_marginal_admission.py",
+        "tests/alpha_factory/test_ranking_scoring_evolution.py",
+        "tests/autodiscovery/test_generation_roi.py"
+      ],
+      "measurements": "hypotheses per source vs survivors per source",
+      "rent_status": "UNPRICED",
+      "last_verified": "2026-09-06T06:54:06.905761+00:00",
+      "git_sha": "08f7d1eba9da",
+      "blockers": [
+        "artifact (undeclared) absent on this host -- scheduled, but no evidence it has produced anything here"
+      ]
+    },
+    {
+      "id": "P58",
+      "name": "claim genealogy and anti-echo: ten reposts are one lineage",
+      "category": "P58",
+      "description": "claim genealogy and anti-echo: ten reposts are one lineage",
+      "producer": "desks/mt5/research/adversary.py",
+      "artifacts": [
+        "desks/mt5/reports/ADVERSARY.json"
+      ],
+      "consumers": [
+        "desks/mt5/research/issue_board.py",
+        "scripts/check_absolute_ceiling.py"
+      ],
+      "scheduler": [
+        "desks/mt5/research/hourly_cycle.py",
+        "ops/crontab.manifest"
+      ],
+      "decision_path": "capability graph reports no node -- running, but no proven route from this artifact into a decision",
+      "status": "RUNNING",
+      "code_paths": [
+        "desks/mt5/research/adversary.py"
+      ],
+      "tests": [
+        "tests/research/test_adversary.py"
+      ],
+      "measurements": "corroboration count corrected for lineage",
+      "rent_status": "UNPRICED",
+      "last_verified": "2026-09-06T06:54:06.905761+00:00",
+      "git_sha": "08f7d1eba9da",
+      "blockers": [
+        "capability graph reports no node -- running, but no proven route from this artifact into a decision"
+      ]
+    },
+    {
+      "id": "P59",
+      "name": "multilingual regional scouts with native-context queries",
+      "category": "P59",
+      "description": "multilingual regional scouts with native-context queries",
+      "producer": "desks/mt5/frontier_intel/registry.py",
+      "artifacts": [],
+      "consumers": [
+        "app/dashboard.py",
+        "desks/mt5/mt5desk/families.py",
+        "desks/mt5/research/run_hunt18.py",
+        "desks/mt5/scripts/families_patch.py",
+        "desks/mt5/scripts/full_pipeline_v2.py",
+        "desks/mt5/scripts/run_external_backtest_v2.py",
+        "libs/alpha/__init__.py",
+        "libs/alpha/manager.py",
+        "libs/features/__init__.py",
+        "libs/features/builtin.py",
+        "libs/ict/canonical.py",
+        "libs/ict/patterns.py"
+      ],
+      "scheduler": [
+        "desks/mt5/ops/box_tasks.manifest",
+        "desks/mt5/research/daily_cycle.py",
+        "ops/crontab.manifest",
+        "ops/pull_bars.sh",
+        "ops/pull_desk_state.sh",
+        "ops/quant-universe-registry.service",
+        "ops/quant-universe-registry.timer",
+        "ops/restore_research_data.sh"
+      ],
+      "decision_path": "artifact (undeclared) absent on this host -- scheduled, but no evidence it has produced anything here",
+      "status": "SCHEDULED",
+      "code_paths": [
+        "desks/mt5/frontier_intel/registry.py"
+      ],
+      "tests": [
+        "desks/mt5/tests/test_compiler_reads_everything.py",
+        "desks/mt5/tests/test_conversion_ledger.py",
+        "desks/mt5/tests/test_cost_rebase.py",
+        "desks/mt5/tests/test_cost_units.py",
+        "desks/mt5/tests/test_counterfactual_replay.py",
+        "desks/mt5/tests/test_crawler_targeting.py",
+        "desks/mt5/tests/test_deepening_worker.py",
+        "desks/mt5/tests/test_distill_memory.py"
+      ],
+      "measurements": "survivors per region per scout hour",
+      "rent_status": "UNPRICED",
+      "last_verified": "2026-09-06T06:54:06.905761+00:00",
+      "git_sha": "08f7d1eba9da",
+      "blockers": [
+        "artifact (undeclared) absent on this host -- scheduled, but no evidence it has produced anything here"
+      ]
+    },
+    {
+      "id": "P60",
+      "name": "frontier-of-frontiers: transferable methods from adjacent sciences",
+      "category": "P60",
+      "description": "frontier-of-frontiers: transferable methods from adjacent sciences",
+      "producer": "desks/mt5/research/research_org.py",
+      "artifacts": [
+        "desks/mt5/reports/RESEARCH_ORG.json"
+      ],
+      "consumers": [
+        "scripts/check_absolute_ceiling.py"
+      ],
+      "scheduler": [
+        "desks/mt5/research/hourly_cycle.py"
+      ],
+      "decision_path": "capability graph reports no node -- running, but no proven route from this artifact into a decision",
+      "status": "RUNNING",
+      "code_paths": [
+        "desks/mt5/research/research_org.py"
+      ],
+      "tests": [
+        "tests/research/test_research_org.py"
+      ],
+      "measurements": "cross-domain hypotheses that survive",
+      "rent_status": "UNPRICED",
+      "last_verified": "2026-09-06T06:54:06.905761+00:00",
+      "git_sha": "08f7d1eba9da",
+      "blockers": [
+        "capability graph reports no node -- running, but no proven route from this artifact into a decision"
+      ]
+    },
+    {
+      "id": "P61",
+      "name": "institutional gap graph firm -> process -> capability -> gap -> rent",
+      "category": "P61",
+      "description": "institutional gap graph firm -> process -> capability -> gap -> rent",
+      "producer": "desks/mt5/frontier_intel/ontology.py",
+      "artifacts": [
+        "desks/mt5/reports/FRONTIER_GAPS.json"
+      ],
+      "consumers": [
+        "desks/mt5/frontier_intel/frontier_supervisor.py",
+        "desks/mt5/frontier_intel/roi.py",
+        "desks/mt5/frontier_intel/unknowns.py",
+        "scripts/acquire_data.py",
+        "tests/libs/test_ontology.py",
+        "tests/scripts/test_acquire_data.py",
+        "desks/mt5/frontier_intel/frontier_supervisor.py",
+        "desks/mt5/research/nightly_catchup.py",
+        "libs/ops/allocators.py",
+        "scripts/check_absolute_ceiling.py"
+      ],
+      "scheduler": [
+        "ops/run_research_cycle.sh"
+      ],
+      "decision_path": "no scheduler surface names ontology -- it is wired but nothing runs it",
+      "status": "WIRED",
+      "code_paths": [
+        "desks/mt5/frontier_intel/ontology.py"
+      ],
+      "tests": [
+        "desks/mt5/tests/test_frontier_intel.py",
+        "tests/libs/test_ontology.py",
+        "tests/research/test_opportunity_books.py",
+        "tests/research/test_opportunity_books_paths.py",
+        "tests/research/test_research_control.py",
+        "tests/scripts/test_acquire_data.py"
+      ],
+      "measurements": "gaps closed that pay rent",
+      "rent_status": "UNPRICED",
+      "last_verified": "2026-09-06T06:54:06.905761+00:00",
+      "git_sha": "08f7d1eba9da",
+      "blockers": [
+        "no scheduler surface names ontology -- it is wired but nothing runs it"
+      ]
+    },
+    {
+      "id": "P62",
+      "name": "frontier autonomous implementer: gap -> branch -> build -> tests -> canaries -> ",
+      "category": "P62",
+      "description": "frontier autonomous implementer: gap -> branch -> build -> tests -> canaries -> zero-authority challenger -> rent -> promote or graveyard",
+      "producer": "desks/mt5/research/research_org.py",
+      "artifacts": [
+        "desks/mt5/reports/RESEARCH_ORG.json"
+      ],
+      "consumers": [
+        "scripts/check_absolute_ceiling.py"
+      ],
+      "scheduler": [
+        "desks/mt5/research/hourly_cycle.py"
+      ],
+      "decision_path": "capability graph reports no node -- running, but no proven route from this artifact into a decision",
+      "status": "RUNNING",
+      "code_paths": [
+        "desks/mt5/research/research_org.py"
+      ],
+      "tests": [
+        "tests/research/test_research_org.py"
+      ],
+      "measurements": "capabilities autonomously landed that pay rent",
+      "rent_status": "UNPRICED",
+      "last_verified": "2026-09-06T06:54:06.905761+00:00",
+      "git_sha": "08f7d1eba9da",
+      "blockers": [
+        "capability graph reports no node -- running, but no proven route from this artifact into a decision",
+        "blocked by P61"
+      ]
+    },
+    {
+      "id": "P63",
+      "name": "complexity rent: net dElog = gross - compute - latency - maintenance",
+      "category": "P63",
+      "description": "complexity rent: net dElog = gross - compute - latency - maintenance",
+      "producer": "libs/ops/module_rent.py",
+      "artifacts": [
+        "desks/mt5/data/module_rent.jsonl"
+      ],
+      "consumers": [
+        "desks/mt5/research/daily_cycle.py",
+        "libs/ops/capability_graph.py",
+        "scripts/check_absolute_ceiling.py",
+        "tests/governance/test_capability_ladder_honesty.py",
+        "tests/ops/test_module_rent.py",
+        "libs/ops/capability_graph.py",
+        "scripts/check_absolute_ceiling.py"
+      ],
+      "scheduler": [
+        "desks/mt5/research/daily_cycle.py"
+      ],
+      "decision_path": "artifact desks/mt5/data/module_rent.jsonl absent on this host -- scheduled, but no evidence it has produced anything here",
+      "status": "SCHEDULED",
+      "code_paths": [
+        "libs/ops/module_rent.py"
+      ],
+      "tests": [
+        "tests/governance/test_capability_ladder_honesty.py",
+        "tests/ops/test_module_rent.py"
+      ],
+      "measurements": "net dElog after complexity rent",
+      "rent_status": "UNPRICED",
+      "last_verified": "2026-09-06T06:54:06.905761+00:00",
+      "git_sha": "08f7d1eba9da",
+      "blockers": [
+        "artifact desks/mt5/data/module_rent.jsonl absent on this host -- scheduled, but no evidence it has produced anything here"
+      ]
+    },
+    {
+      "id": "P64",
+      "name": "frontier source / firm / agent ROI tracked separately from truth",
+      "category": "P64",
+      "description": "frontier source / firm / agent ROI tracked separately from truth",
+      "producer": "desks/mt5/frontier_intel/roi.py",
+      "artifacts": [
+        "desks/mt5/reports/FRONTIER_INTELLIGENCE.json"
+      ],
+      "consumers": [
+        "desks/mt5/frontier_intel/frontier_supervisor.py",
+        "desks/mt5/research/nightly_catchup.py",
+        "libs/ops/allocators.py",
+        "scripts/check_absolute_ceiling.py"
+      ],
+      "scheduler": [
+        "desks/mt5/research/daily_cycle.py",
+        "ops/crontab.manifest",
+        "ops/quant-dig-roi.service",
+        "ops/run_frontier_rotation.sh"
+      ],
+      "decision_path": "producer -> artifact -> consumer -> decision",
+      "status": "PROVEN",
+      "code_paths": [
+        "desks/mt5/frontier_intel/roi.py"
+      ],
+      "tests": [
+        "desks/mt5/tests/test_allocator_attribution.py",
+        "desks/mt5/tests/test_feature_roi.py",
+        "desks/mt5/tests/test_feedback_engines.py",
+        "desks/mt5/tests/test_frontier_intel.py",
+        "desks/mt5/tests/test_macro_taxonomy_growth.py",
+        "desks/mt5/tests/test_marginal_admission.py",
+        "tests/alpha_factory/test_ranking_scoring_evolution.py",
+        "tests/autodiscovery/test_generation_roi.py"
+      ],
+      "measurements": "idea yield vs truth rate per source",
+      "rent_status": "PRICED",
+      "last_verified": "2026-09-06T06:54:06.905761+00:00",
+      "git_sha": "08f7d1eba9da",
+      "blockers": []
+    },
+    {
+      "id": "P65",
+      "name": "theory vs empirics arbitrator over P(mechanism) and P(empirical edge)",
+      "category": "P65",
+      "description": "theory vs empirics arbitrator over P(mechanism) and P(empirical edge)",
+      "producer": "desks/mt5/research/experiment_design.py",
+      "artifacts": [
+        "desks/mt5/reports/EXPERIMENT_DESIGN.json"
+      ],
+      "consumers": [
+        "desks/mt5/research/issue_board.py",
+        "scripts/check_absolute_ceiling.py"
+      ],
+      "scheduler": [
+        "desks/mt5/research/hourly_cycle.py"
+      ],
+      "decision_path": "capability graph reports no node -- running, but no proven route from this artifact into a decision",
+      "status": "RUNNING",
+      "code_paths": [
+        "desks/mt5/research/experiment_design.py"
+      ],
+      "tests": [
+        "tests/research/test_experiment_design.py",
+        "tests/scripts/test_frontier_mandate_runner.py",
+        "tests/validation/test_sequential_experiment_design.py"
+      ],
+      "measurements": "survival rate by quadrant",
+      "rent_status": "UNPRICED",
+      "last_verified": "2026-09-06T06:54:06.905761+00:00",
+      "git_sha": "08f7d1eba9da",
+      "blockers": [
+        "capability graph reports no node -- running, but no proven route from this artifact into a decision"
+      ]
+    },
+    {
+      "id": "P66",
+      "name": "opportunity-gap monitor decomposing G by cause",
+      "category": "P66",
+      "description": "opportunity-gap monitor decomposing G by cause",
+      "producer": "desks/mt5/research/opportunity_gap.py",
+      "artifacts": [
+        "desks/mt5/reports/OPPORTUNITY_GAP.json"
+      ],
+      "consumers": [
+        "desks/mt5/research/issue_board.py",
+        "scripts/check_absolute_ceiling.py"
+      ],
+      "scheduler": [
+        "desks/mt5/research/hourly_cycle.py"
+      ],
+      "decision_path": "capability graph reports no node -- running, but no proven route from this artifact into a decision",
+      "status": "RUNNING",
+      "code_paths": [
+        "desks/mt5/research/opportunity_gap.py"
+      ],
+      "tests": [
+        "tests/research/test_opportunity_gap.py"
+      ],
+      "measurements": "largest G component, and its closure",
+      "rent_status": "UNPRICED",
+      "last_verified": "2026-09-06T06:54:06.905761+00:00",
+      "git_sha": "08f7d1eba9da",
+      "blockers": [
+        "capability graph reports no node -- running, but no proven route from this artifact into a decision"
+      ]
+    },
+    {
+      "id": "P67",
+      "name": "missing-sleeve generator targeting uncovered states",
+      "category": "P67",
+      "description": "missing-sleeve generator targeting uncovered states",
+      "producer": "desks/mt5/research/portfolio_gap.py",
+      "artifacts": [
+        "desks/mt5/reports/PORTFOLIO_GAP.json"
+      ],
+      "consumers": [
+        "desks/mt5/research/pf_allocator.py",
+        "desks/mt5/side_channels/hourly_controller.py",
+        "desks/mt5/tests/test_portfolio_gap.py",
+        "hourly_controller.py",
+        "scripts/check_absolute_ceiling.py"
+      ],
+      "scheduler": [
+        "desks/mt5/research/daily_cycle.py"
+      ],
+      "decision_path": "artifact desks/mt5/reports/PORTFOLIO_GAP.json absent on this host -- scheduled, but no evidence it has produced anything here",
+      "status": "SCHEDULED",
+      "code_paths": [
+        "desks/mt5/research/portfolio_gap.py"
+      ],
+      "tests": [
+        "desks/mt5/tests/test_decision_core.py",
+        "desks/mt5/tests/test_portfolio_gap.py",
+        "tests/alpha_factory/test_controller_discovery.py",
+        "tests/scripts/test_alpha_factory_run.py"
+      ],
+      "measurements": "dElog of newly covered states",
+      "rent_status": "UNPRICED",
+      "last_verified": "2026-09-06T06:54:06.905761+00:00",
+      "git_sha": "08f7d1eba9da",
+      "blockers": [
+        "artifact desks/mt5/reports/PORTFOLIO_GAP.json absent on this host -- scheduled, but no evidence it has produced anything here"
+      ]
+    },
+    {
+      "id": "P68",
+      "name": "effective breadth as a first-class KPI over covariance, factor and tail",
+      "category": "P68",
+      "description": "effective breadth as a first-class KPI over covariance, factor and tail",
+      "producer": "desks/mt5/research/alpha_breadth.py",
+      "artifacts": [
+        "desks/mt5/reports/EFFECTIVE_BREADTH.json"
+      ],
+      "consumers": [
+        "desks/mt5/tests/test_alpha_breadth_factory.py",
+        "desks/mt5/frontier_intel/ontology.py",
+        "desks/mt5/research/drawdown_alpha.py",
+        "desks/mt5/tests/test_alpha_breadth_factory.py",
+        "libs/ops/capability_graph.py",
+        "scripts/check_absolute_ceiling.py"
+      ],
+      "scheduler": [
+        "desks/mt5/research/daily_cycle.py"
+      ],
+      "decision_path": "producer -> artifact -> consumer -> decision",
+      "status": "PROVEN",
+      "code_paths": [
+        "desks/mt5/research/alpha_breadth.py"
+      ],
+      "tests": [
+        "desks/mt5/tests/test_alpha_breadth_factory.py"
+      ],
+      "measurements": "dN_eff per research unit",
+      "rent_status": "PRICED",
+      "last_verified": "2026-09-06T06:54:06.905761+00:00",
+      "git_sha": "08f7d1eba9da",
+      "blockers": []
+    },
+    {
+      "id": "P69",
+      "name": "portfolio alpha, not strategy alpha: score by dElog of the BOOK",
+      "category": "P69",
+      "description": "portfolio alpha, not strategy alpha: score by dElog of the BOOK",
+      "producer": "desks/mt5/research/pf_allocator.py",
+      "artifacts": [
+        "desks/mt5/reports/ALLOCATOR_STACK.json"
+      ],
+      "consumers": [
+        "desks/mt5/tests/test_conditional_covariance.py",
+        "desks/mt5/tests/test_growth_governance.py",
+        "desks/mt5/tests/test_no_trade_binds.py",
+        "desks/mt5/tests/test_regime_transitions.py",
+        "desks/mt5/tests/test_state_admission.py",
+        "scripts/check_partition_power.py",
+        "desks/mt5/research/model_self_improvement.py",
+        "libs/ops/allocators.py",
+        "scripts/check_absolute_ceiling.py"
+      ],
+      "scheduler": [
+        "desks/mt5/research/research_supervisor.py",
+        "ops/sync_allocation_to_desk.sh"
+      ],
+      "decision_path": "producer -> artifact -> consumer -> decision",
+      "status": "PROVEN",
+      "code_paths": [
+        "desks/mt5/research/pf_allocator.py"
+      ],
+      "tests": [
+        "desks/mt5/tests/test_conditional_covariance.py",
+        "desks/mt5/tests/test_decision_core.py",
+        "desks/mt5/tests/test_effective_heat_binds.py",
+        "desks/mt5/tests/test_growth_governance.py",
+        "desks/mt5/tests/test_macro_allocator_price.py",
+        "desks/mt5/tests/test_macro_interrupt_contract.py",
+        "desks/mt5/tests/test_marginal_admission.py",
+        "desks/mt5/tests/test_measured_heat_ceiling.py"
+      ],
+      "measurements": "dElog_book per candidate",
+      "rent_status": "PRICED",
+      "last_verified": "2026-09-06T06:54:06.905761+00:00",
+      "git_sha": "08f7d1eba9da",
+      "blockers": []
+    },
+    {
+      "id": "P70",
+      "name": "full world simulator jointly carrying edge, state, cost and broker risk",
+      "category": "P70",
+      "description": "full world simulator jointly carrying edge, state, cost and broker risk",
+      "producer": "libs/research/counterfactual_world.py",
+      "artifacts": [
+        "desks/mt5/reports/COUNTERFACTUAL_WORLD.json"
+      ],
+      "consumers": [
+        "desks/mt5/research/counterfactual_replay.py",
+        "tests/research/test_counterfactual_world.py",
+        "desks/mt5/research/counterfactual_replay.py",
+        "desks/mt5/research/missed_growth.py",
+        "desks/mt5/tests/test_counterfactual_replay.py",
+        "desks/mt5/tests/test_rail_evidence.py",
+        "libs/ops/capability_graph.py",
+        "libs/ops/module_rent.py",
+        "scripts/check_absolute_ceiling.py"
+      ],
+      "scheduler": [],
+      "decision_path": "no scheduler surface names counterfactual_world -- it is wired but nothing runs it",
+      "status": "WIRED",
+      "code_paths": [
+        "libs/research/counterfactual_world.py"
+      ],
+      "tests": [
+        "desks/mt5/tests/test_fill_corpus.py",
+        "desks/mt5/tests/test_rail_evidence.py",
+        "tests/ops/test_counterfactual_reality.py",
+        "tests/research/test_counterfactual_world.py"
+      ],
+      "measurements": "E_{Theta,S,E,C}[log W]",
+      "rent_status": "UNPRICED",
+      "last_verified": "2026-09-06T06:54:06.905761+00:00",
+      "git_sha": "08f7d1eba9da",
+      "blockers": [
+        "no scheduler surface names counterfactual_world -- it is wired but nothing runs it"
+      ]
+    },
+    {
+      "id": "P71",
+      "name": "structural counterfactuals: World|event vs World|not-event",
+      "category": "P71",
+      "description": "structural counterfactuals: World|event vs World|not-event",
+      "producer": "desks/mt5/research/counterfactual_replay.py",
+      "artifacts": [],
+      "consumers": [
+        "desks/mt5/tests/test_counterfactual_replay.py"
+      ],
+      "scheduler": [
+        "desks/mt5/research/daily_cycle.py"
+      ],
+      "decision_path": "artifact (undeclared) absent on this host -- scheduled, but no evidence it has produced anything here",
+      "status": "SCHEDULED",
+      "code_paths": [
+        "desks/mt5/research/counterfactual_replay.py"
+      ],
+      "tests": [
+        "desks/mt5/tests/test_counterfactual_replay.py",
+        "desks/mt5/tests/test_rail_evidence.py"
+      ],
+      "measurements": "event causal contribution separated from drift",
+      "rent_status": "UNPRICED",
+      "last_verified": "2026-09-06T06:54:06.905761+00:00",
+      "git_sha": "08f7d1eba9da",
+      "blockers": [
+        "artifact (undeclared) absent on this host -- scheduled, but no evidence it has produced anything here"
+      ]
+    },
+    {
+      "id": "P72",
+      "name": "full counterfactual decision ledger over every alternative action",
+      "category": "P72",
+      "description": "full counterfactual decision ledger over every alternative action",
+      "producer": "desks/mt5/research/action_counterfactuals.py",
+      "artifacts": [
+        "desks/mt5/reports/ACTION_COUNTERFACTUALS.json"
+      ],
+      "consumers": [
+        "desks/mt5/tests/test_feedback_engines.py",
+        "desks/mt5/tests/test_feedback_engines.py",
+        "libs/ops/capability_graph.py",
+        "libs/ops/module_rent.py",
+        "scripts/check_absolute_ceiling.py"
+      ],
+      "scheduler": [
+        "desks/mt5/research/daily_cycle.py"
+      ],
+      "decision_path": "artifact desks/mt5/reports/ACTION_COUNTERFACTUALS.json absent on this host -- scheduled, but no evidence it has produced anything here",
+      "status": "SCHEDULED",
+      "code_paths": [
+        "desks/mt5/research/action_counterfactuals.py"
+      ],
+      "tests": [
+        "desks/mt5/tests/test_feedback_engines.py",
+        "tests/research/test_decision_dataset.py"
+      ],
+      "measurements": "regret by alternative",
+      "rent_status": "UNPRICED",
+      "last_verified": "2026-09-06T06:54:06.905761+00:00",
+      "git_sha": "08f7d1eba9da",
+      "blockers": [
+        "artifact desks/mt5/reports/ACTION_COUNTERFACTUALS.json absent on this host -- scheduled, but no evidence it has produced anything here"
+      ]
+    },
+    {
+      "id": "P73",
+      "name": "exit / re-entry / pyramid researched as separate alpha domains",
+      "category": "P73",
+      "description": "exit / re-entry / pyramid researched as separate alpha domains",
+      "producer": "desks/mt5/research/exit_study.py",
+      "artifacts": [
+        "desks/mt5/reports/EXIT_STUDY.json"
+      ],
+      "consumers": [
+        "scripts/check_absolute_ceiling.py"
+      ],
+      "scheduler": [],
+      "decision_path": "no scheduler surface names exit_study -- it is wired but nothing runs it",
+      "status": "WIRED",
+      "code_paths": [
+        "desks/mt5/research/exit_study.py"
+      ],
+      "tests": [],
+      "measurements": "incremental Elog of the exit rule",
+      "rent_status": "UNPRICED",
+      "last_verified": "2026-09-06T06:54:06.905761+00:00",
+      "git_sha": "08f7d1eba9da",
+      "blockers": [
+        "no scheduler surface names exit_study -- it is wired but nothing runs it"
+      ]
+    },
+    {
+      "id": "P74",
+      "name": "research reproducibility: every experiment hashed and never overwritten",
+      "category": "P74",
+      "description": "research reproducibility: every experiment hashed and never overwritten",
+      "producer": "desks/mt5/research/registry.py",
+      "artifacts": [
+        "desks/mt5/reports/EXPERIMENT_LEDGER.json"
+      ],
+      "consumers": [
+        "app/dashboard.py",
+        "desks/mt5/mt5desk/families.py",
+        "desks/mt5/research/run_hunt18.py",
+        "desks/mt5/scripts/families_patch.py",
+        "desks/mt5/scripts/full_pipeline_v2.py",
+        "desks/mt5/scripts/run_external_backtest_v2.py",
+        "libs/alpha/__init__.py",
+        "libs/alpha/manager.py",
+        "libs/features/__init__.py",
+        "libs/features/builtin.py",
+        "libs/ict/canonical.py",
+        "libs/ict/patterns.py",
+        "libs/research/experiment_ledger.py",
+        "scripts/check_absolute_ceiling.py"
+      ],
+      "scheduler": [
+        "desks/mt5/ops/box_tasks.manifest",
+        "desks/mt5/research/daily_cycle.py",
+        "ops/crontab.manifest",
+        "ops/pull_bars.sh",
+        "ops/pull_desk_state.sh",
+        "ops/quant-universe-registry.service",
+        "ops/quant-universe-registry.timer",
+        "ops/restore_research_data.sh"
+      ],
+      "decision_path": "capability graph reports no node -- running, but no proven route from this artifact into a decision",
+      "status": "RUNNING",
+      "code_paths": [
+        "desks/mt5/research/registry.py"
+      ],
+      "tests": [
+        "desks/mt5/tests/test_compiler_reads_everything.py",
+        "desks/mt5/tests/test_conversion_ledger.py",
+        "desks/mt5/tests/test_cost_rebase.py",
+        "desks/mt5/tests/test_cost_units.py",
+        "desks/mt5/tests/test_counterfactual_replay.py",
+        "desks/mt5/tests/test_crawler_targeting.py",
+        "desks/mt5/tests/test_deepening_worker.py",
+        "desks/mt5/tests/test_distill_memory.py"
+      ],
+      "measurements": "reproducible fraction of experiments",
+      "rent_status": "UNPRICED",
+      "last_verified": "2026-09-06T06:54:06.905761+00:00",
+      "git_sha": "08f7d1eba9da",
+      "blockers": [
+        "capability graph reports no node -- running, but no proven route from this artifact into a decision"
+      ]
+    },
+    {
+      "id": "P75",
+      "name": "graveyard meta-learning: P(pass | hypothesis DNA) from failures",
+      "category": "P75",
+      "description": "graveyard meta-learning: P(pass | hypothesis DNA) from failures",
+      "producer": "libs/research/graveyard_model.py",
+      "artifacts": [
+        "docs/graveyard.md"
+      ],
+      "consumers": [
+        "desks/mt5/research/deepening_worker.py",
+        "desks/mt5/research/miner_candidate_compiler.py",
+        "desks/mt5/research/revival_engine.py",
+        "desks/mt5/tests/test_superset_a.py",
+        "desks/mt5/tests/test_distill_memory.py",
+        "libs/autodiscovery/novelty.py",
+        "libs/discovery/__init__.py",
+        "libs/ops/blind_trigger.py",
+        "libs/ops/capability_graph.py",
+        "libs/ops/deepseek_cycle.py",
+        "libs/ops/protected_artifacts.py",
+        "libs/research/capability_ratchet.py",
+        "libs/research/mechanism_census.py",
+        "libs/research/memory.py",
+        "libs/research/mine_conversion.py",
+        "libs/research/orphan_scan.py"
+      ],
+      "scheduler": [],
+      "decision_path": "no scheduler surface names graveyard_model -- it is wired but nothing runs it",
+      "status": "WIRED",
+      "code_paths": [
+        "libs/research/graveyard_model.py"
+      ],
+      "tests": [
+        "desks/mt5/tests/test_superset_a.py"
+      ],
+      "measurements": "precision gain from learned taste",
+      "rent_status": "UNPRICED",
+      "last_verified": "2026-09-06T06:54:06.905761+00:00",
+      "git_sha": "08f7d1eba9da",
+      "blockers": [
+        "no scheduler surface names graveyard_model -- it is wired but nothing runs it"
+      ]
+    },
+    {
+      "id": "P76",
+      "name": "alpha genome complete; multiplicity operates on mechanism ancestry",
+      "category": "P76",
+      "description": "alpha genome complete; multiplicity operates on mechanism ancestry",
+      "producer": "desks/mt5/research/alpha_genome.py",
+      "artifacts": [
+        "desks/mt5/reports/ALPHA_GENOME.json"
+      ],
+      "consumers": [
+        "desks/mt5/research/regime_coverage.py",
+        "libs/ops/capability_graph.py",
+        "libs/ops/module_rent.py",
+        "scripts/check_absolute_ceiling.py"
+      ],
+      "scheduler": [
+        "desks/mt5/research/daily_cycle.py"
+      ],
+      "decision_path": "producer -> artifact -> consumer -> decision",
+      "status": "PROVEN",
+      "code_paths": [
+        "desks/mt5/research/alpha_genome.py"
+      ],
+      "tests": [
+        "desks/mt5/tests/test_canon_fallback.py",
+        "desks/mt5/tests/test_flywheel.py"
+      ],
+      "measurements": "family-corrected discovery rate",
+      "rent_status": "PRICED",
+      "last_verified": "2026-09-06T06:54:06.905761+00:00",
+      "git_sha": "08f7d1eba9da",
+      "blockers": []
+    },
+    {
+      "id": "P77",
+      "name": "research throughput KPIs including cost per survivor",
+      "category": "P77",
+      "description": "research throughput KPIs including cost per survivor",
+      "producer": "desks/mt5/research/research_productivity.py",
+      "artifacts": [
+        "desks/mt5/reports/RESEARCH_PRODUCTIVITY.json"
+      ],
+      "consumers": [
+        "desks/mt5/frontier_intel/ontology.py",
+        "desks/mt5/research/conversion_ledger.py",
+        "desks/mt5/tests/test_conversion_ledger.py",
+        "libs/ops/capability_graph.py",
+        "scripts/check_absolute_ceiling.py"
+      ],
+      "scheduler": [
+        "desks/mt5/research/daily_cycle.py"
+      ],
+      "decision_path": "capability graph reports RUNNING -- running, but no proven route from this artifact into a decision",
+      "status": "RUNNING",
+      "code_paths": [
+        "desks/mt5/research/research_productivity.py"
+      ],
+      "tests": [],
+      "measurements": "survivors per compute and engineering hour",
+      "rent_status": "UNPRICED",
+      "last_verified": "2026-09-06T06:54:06.905761+00:00",
+      "git_sha": "08f7d1eba9da",
+      "blockers": [
+        "capability graph reports RUNNING -- running, but no proven route from this artifact into a decision"
+      ]
+    },
+    {
+      "id": "P78",
+      "name": "daily autonomous retrospective feeding the governor",
+      "category": "P78",
+      "description": "daily autonomous retrospective feeding the governor",
+      "producer": "desks/mt5/research/daily_cycle.py",
+      "artifacts": [
+        "desks/mt5/reports/DAILY.json"
+      ],
+      "consumers": [
+        "desks/mt5/research/export_aurum_findings.py",
+        "desks/mt5/research/hourly_cycle.py",
+        "desks/mt5/tests/test_daily_cycle.py",
+        "desks/mt5/tests/test_qquant_shadow.py",
+        "desks/mt5/tests/test_recertification_gate.py",
+        "desks/mt5/tests/test_research_feedback.py",
+        "desks/mt5/tests/test_state_admission.py",
+        "scripts/check_absolute_ceiling.py"
+      ],
+      "scheduler": [
+        "desks/mt5/research/daily_cycle.py",
+        "desks/mt5/research/hourly_cycle.py",
+        "ops/crontab.manifest",
+        "ops/pull_desk_state.sh"
+      ],
+      "decision_path": "artifact desks/mt5/reports/DAILY.json absent on this host -- scheduled, but no evidence it has produced anything here",
+      "status": "SCHEDULED",
+      "code_paths": [
+        "desks/mt5/research/daily_cycle.py"
+      ],
+      "tests": [
+        "desks/mt5/tests/test_allocator_attribution.py",
+        "desks/mt5/tests/test_daily_cycle.py",
+        "desks/mt5/tests/test_hourly_cycle_paths.py",
+        "desks/mt5/tests/test_qquant_shadow.py",
+        "desks/mt5/tests/test_recertification_gate.py",
+        "desks/mt5/tests/test_research_feedback.py",
+        "desks/mt5/tests/test_state_admission.py",
+        "desks/mt5/tests/test_universe_registry.py"
+      ],
+      "measurements": "actions taken from the retrospective",
+      "rent_status": "UNPRICED",
+      "last_verified": "2026-09-06T06:54:06.905761+00:00",
+      "git_sha": "08f7d1eba9da",
+      "blockers": [
+        "artifact desks/mt5/reports/DAILY.json absent on this host -- scheduled, but no evidence it has produced anything here"
+      ]
+    },
+    {
+      "id": "P79",
+      "name": "permanent challenge league on equal evidence, dates, costs, heat, worlds",
+      "category": "P79",
+      "description": "permanent challenge league on equal evidence, dates, costs, heat, worlds",
+      "producer": "desks/mt5/research/model_zoo.py",
+      "artifacts": [
+        "desks/mt5/reports/CHALLENGE_LEAGUE.json"
+      ],
+      "consumers": [
+        "scripts/check_absolute_ceiling.py"
+      ],
+      "scheduler": [
+        "desks/mt5/research/hourly_cycle.py"
+      ],
+      "decision_path": "capability graph reports no node -- running, but no proven route from this artifact into a decision",
+      "status": "RUNNING",
+      "code_paths": [
+        "desks/mt5/research/model_zoo.py"
+      ],
+      "tests": [
+        "tests/research/test_forecast_contract_and_league.py"
+      ],
+      "measurements": "champion changes justified by measured gain",
+      "rent_status": "UNPRICED",
+      "last_verified": "2026-09-06T06:54:06.905761+00:00",
+      "git_sha": "08f7d1eba9da",
+      "blockers": [
+        "capability graph reports no node -- running, but no proven route from this artifact into a decision"
+      ]
+    },
+    {
+      "id": "P80",
+      "name": "organisation KPIs: alpha/data/compute yield, live retention, capture",
+      "category": "P80",
+      "description": "organisation KPIs: alpha/data/compute yield, live retention, capture",
+      "producer": "desks/mt5/research/research_productivity.py",
+      "artifacts": [
+        "desks/mt5/reports/RESEARCH_PRODUCTIVITY.json"
+      ],
+      "consumers": [
+        "desks/mt5/frontier_intel/ontology.py",
+        "desks/mt5/research/conversion_ledger.py",
+        "desks/mt5/tests/test_conversion_ledger.py",
+        "libs/ops/capability_graph.py",
+        "scripts/check_absolute_ceiling.py"
+      ],
+      "scheduler": [
+        "desks/mt5/research/daily_cycle.py"
+      ],
+      "decision_path": "capability graph reports RUNNING -- running, but no proven route from this artifact into a decision",
+      "status": "RUNNING",
+      "code_paths": [
+        "desks/mt5/research/research_productivity.py"
+      ],
+      "tests": [],
+      "measurements": "the KPI set itself",
+      "rent_status": "UNPRICED",
+      "last_verified": "2026-09-06T06:54:06.905761+00:00",
+      "git_sha": "08f7d1eba9da",
+      "blockers": [
+        "capability graph reports RUNNING -- running, but no proven route from this artifact into a decision"
+      ]
+    },
+    {
+      "id": "P81",
+      "name": "quant intelligence score, reporting-only, never a capital input",
+      "category": "P81",
+      "description": "quant intelligence score, reporting-only, never a capital input",
+      "producer": "desks/mt5/research/opportunity_gap.py",
+      "artifacts": [
+        "desks/mt5/reports/OPPORTUNITY_GAP.json"
+      ],
+      "consumers": [
+        "desks/mt5/research/issue_board.py",
+        "scripts/check_absolute_ceiling.py"
+      ],
+      "scheduler": [
+        "desks/mt5/research/hourly_cycle.py"
+      ],
+      "decision_path": "capability graph reports no node -- running, but no proven route from this artifact into a decision",
+      "status": "RUNNING",
+      "code_paths": [
+        "desks/mt5/research/opportunity_gap.py"
+      ],
+      "tests": [
+        "tests/research/test_opportunity_gap.py"
+      ],
+      "measurements": "reporting only -- must never route to capital",
+      "rent_status": "UNPRICED",
+      "last_verified": "2026-09-06T06:54:06.905761+00:00",
+      "git_sha": "08f7d1eba9da",
+      "blockers": [
+        "capability graph reports no node -- running, but no proven route from this artifact into a decision"
+      ]
+    },
+    {
+      "id": "P82",
+      "name": "information provenance graph from position back to raw observation",
+      "category": "P82",
+      "description": "information provenance graph from position back to raw observation",
+      "producer": "libs/ops/input_provenance.py",
+      "artifacts": [
+        "docs/research/data_provenance.json"
+      ],
+      "consumers": [
+        "libs/ops/repair_mode.py",
+        "scripts/check_excitation.py",
+        "scripts/check_free_roster.py",
+        "scripts/check_idle_cost.py",
+        "scripts/check_input_provenance.py",
+        "scripts/check_swap_reliability.py",
+        "scripts/fit_print_impact.py",
+        "scripts/run_max_push.py",
+        "tests/execution/test_gate0_evidence.py",
+        "tests/ops/test_fresh.py",
+        "tests/ops/test_input_provenance.py",
+        "libs/ops/protected_artifacts.py",
+        "libs/research/capability_ratchet.py",
+        "scripts/check_absolute_ceiling.py",
+        "scripts/measurement_gate.py",
+        "tests/research/test_capability_ratchet.py",
+        "tests/scripts/test_provenance_gate.py"
+      ],
+      "scheduler": [
+        "ops/crontab.manifest"
+      ],
+      "decision_path": "capability graph reports no node -- running, but no proven route from this artifact into a decision",
+      "status": "RUNNING",
+      "code_paths": [
+        "libs/ops/input_provenance.py"
+      ],
+      "tests": [
+        "tests/execution/test_gate0_evidence.py",
+        "tests/governance/test_input_provenance_fence.py",
+        "tests/ops/test_fresh.py",
+        "tests/ops/test_input_provenance.py",
+        "tests/scripts/test_build_standard_contract.py"
+      ],
+      "measurements": "forecasts identified per broken feed",
+      "rent_status": "UNPRICED",
+      "last_verified": "2026-09-06T06:54:06.905761+00:00",
+      "git_sha": "08f7d1eba9da",
+      "blockers": [
+        "capability graph reports no node -- running, but no proven route from this artifact into a decision"
+      ]
+    },
+    {
+      "id": "P83",
+      "name": "P&L attribution back through forecast, model, feature, dataset",
+      "category": "P83",
+      "description": "P&L attribution back through forecast, model, feature, dataset",
+      "producer": "desks/mt5/research/allocator_attribution.py",
+      "artifacts": [
+        "desks/mt5/reports/ALLOCATOR_ATTRIBUTION.json"
+      ],
+      "consumers": [
+        "desks/mt5/tests/test_allocator_attribution.py",
+        "desks/mt5/tests/test_execution_attribution.py",
+        "desks/mt5/tests/test_flow_features_generators.py",
+        "scripts/check_absolute_ceiling.py"
+      ],
+      "scheduler": [
+        "desks/mt5/research/daily_cycle.py"
+      ],
+      "decision_path": "artifact desks/mt5/reports/ALLOCATOR_ATTRIBUTION.json absent on this host -- scheduled, but no evidence it has produced anything here",
+      "status": "SCHEDULED",
+      "code_paths": [
+        "desks/mt5/research/allocator_attribution.py"
+      ],
+      "tests": [
+        "desks/mt5/tests/test_allocator_attribution.py",
+        "desks/mt5/tests/test_execution_attribution.py",
+        "desks/mt5/tests/test_feature_roi.py",
+        "desks/mt5/tests/test_flow_features_generators.py"
+      ],
+      "measurements": "wealth earned per dataset",
+      "rent_status": "UNPRICED",
+      "last_verified": "2026-09-06T06:54:06.905761+00:00",
+      "git_sha": "08f7d1eba9da",
+      "blockers": [
+        "artifact desks/mt5/reports/ALLOCATOR_ATTRIBUTION.json absent on this host -- scheduled, but no evidence it has produced anything here"
+      ]
+    },
+    {
+      "id": "P84",
+      "name": "the complete discovery flywheel, closed continuously",
+      "category": "P84",
+      "description": "the complete discovery flywheel, closed continuously",
+      "producer": "desks/mt5/research/hourly_cycle.py",
+      "artifacts": [
+        "desks/mt5/reports/HOURLY_CYCLE.json"
+      ],
+      "consumers": [
+        "scripts/check_absolute_ceiling.py"
+      ],
+      "scheduler": [
+        "desks/mt5/ops/box_tasks.manifest",
+        "desks/mt5/research/daily_cycle.py",
+        "desks/mt5/research/hourly_cycle.py"
+      ],
+      "decision_path": "artifact desks/mt5/reports/HOURLY_CYCLE.json absent on this host -- scheduled, but no evidence it has produced anything here",
+      "status": "SCHEDULED",
+      "code_paths": [
+        "desks/mt5/research/hourly_cycle.py"
+      ],
+      "tests": [
+        "desks/mt5/tests/test_daily_cycle.py",
+        "desks/mt5/tests/test_deepening_worker.py",
+        "desks/mt5/tests/test_hourly_cycle_paths.py",
+        "tests/ops/test_compute_ledger.py",
+        "tests/ops/test_desk_module_drift_covers_the_daily_chain.py"
+      ],
+      "measurements": "cycle throughput and its dElog",
+      "rent_status": "UNPRICED",
+      "last_verified": "2026-09-06T06:54:06.905761+00:00",
+      "git_sha": "08f7d1eba9da",
+      "blockers": [
+        "artifact desks/mt5/reports/HOURLY_CYCLE.json absent on this host -- scheduled, but no evidence it has produced anything here"
+      ]
+    },
+    {
+      "id": "A1",
+      "name": "frontier allocator: which observable capability deserves replication",
+      "category": "allocator",
+      "description": "frontier allocator: which observable capability deserves replication",
+      "producer": "desks/mt5/frontier_intel/queue.py",
+      "artifacts": [
+        "desks/mt5/reports/FRONTIER_INTELLIGENCE.json"
+      ],
+      "consumers": [
+        "libs/execution/fill_corpus.py",
+        "desks/mt5/frontier_intel/frontier_supervisor.py",
+        "desks/mt5/research/nightly_catchup.py",
+        "libs/ops/allocators.py",
+        "scripts/check_absolute_ceiling.py"
+      ],
+      "scheduler": [
+        "desks/mt5/research/daily_cycle.py",
+        "desks/mt5/research/hourly_cycle.py",
+        "ops/brain_env.sh",
+        "ops/crontab.manifest",
+        "ops/qquant-shadow.timer",
+        "ops/quant-artifact-monotonic.timer",
+        "ops/quant-auto-push.timer",
+        "ops/quant-desk-module-drift.timer"
+      ],
+      "decision_path": "capability graph reports no node -- running, but no proven route from this artifact into a decision",
+      "status": "RUNNING",
+      "code_paths": [
+        "desks/mt5/frontier_intel/queue.py"
+      ],
+      "tests": [
+        "desks/mt5/tests/test_alpha_breadth_factory.py",
+        "desks/mt5/tests/test_compiler_reads_everything.py",
+        "desks/mt5/tests/test_conversion_ledger.py",
+        "desks/mt5/tests/test_deep_forest.py",
+        "desks/mt5/tests/test_deepening_worker.py",
+        "desks/mt5/tests/test_distill_memory.py",
+        "desks/mt5/tests/test_enrolment_ceiling.py",
+        "desks/mt5/tests/test_feedback_engines.py"
+      ],
+      "measurements": "dElog per replication effort",
+      "rent_status": "UNPRICED",
+      "last_verified": "2026-09-06T06:54:06.905761+00:00",
+      "git_sha": "08f7d1eba9da",
+      "blockers": [
+        "capability graph reports no node -- running, but no proven route from this artifact into a decision"
+      ]
+    },
+    {
+      "id": "A2",
+      "name": "information allocator: which data deserves acquisition",
+      "category": "allocator",
+      "description": "information allocator: which data deserves acquisition",
+      "producer": "desks/mt5/research/data_prospector.py",
+      "artifacts": [
+        "desks/mt5/reports/DATA_PROSPECTOR.json"
+      ],
+      "consumers": [
+        "desks/mt5/tests/test_research_feedback.py",
+        "libs/ops/allocators.py",
+        "libs/ops/capability_graph.py",
+        "scripts/check_absolute_ceiling.py"
+      ],
+      "scheduler": [
+        "desks/mt5/research/daily_cycle.py"
+      ],
+      "decision_path": "capability graph reports RUNNING -- running, but no proven route from this artifact into a decision",
+      "status": "RUNNING",
+      "code_paths": [
+        "desks/mt5/research/data_prospector.py"
+      ],
+      "tests": [
+        "desks/mt5/tests/test_research_feedback.py",
+        "tests/ops/test_module_rent.py"
+      ],
+      "measurements": "dElog per data cost",
+      "rent_status": "UNPRICED",
+      "last_verified": "2026-09-06T06:54:06.905761+00:00",
+      "git_sha": "08f7d1eba9da",
+      "blockers": [
+        "capability graph reports RUNNING -- running, but no proven route from this artifact into a decision"
+      ]
+    },
+    {
+      "id": "A3",
+      "name": "research allocator: which question deserves investigation",
+      "category": "allocator",
+      "description": "research allocator: which question deserves investigation",
+      "producer": "desks/mt5/research/research_bandit.py",
+      "artifacts": [
+        "desks/mt5/reports/RESEARCH_BANDIT.json"
+      ],
+      "consumers": [
+        "desks/mt5/research/daily_cycle.py",
+        "libs/ops/allocators.py",
+        "libs/ops/capability_graph.py",
+        "libs/research/bandit.py",
+        "scripts/check_absolute_ceiling.py"
+      ],
+      "scheduler": [
+        "desks/mt5/research/daily_cycle.py"
+      ],
+      "decision_path": "capability graph reports RUNNING -- running, but no proven route from this artifact into a decision",
+      "status": "RUNNING",
+      "code_paths": [
+        "desks/mt5/research/research_bandit.py"
+      ],
+      "tests": [],
+      "measurements": "survivors per research unit",
+      "rent_status": "UNPRICED",
+      "last_verified": "2026-09-06T06:54:06.905761+00:00",
+      "git_sha": "08f7d1eba9da",
+      "blockers": [
+        "capability graph reports RUNNING -- running, but no proven route from this artifact into a decision"
+      ]
+    },
+    {
+      "id": "A4",
+      "name": "compute allocator: which job deserves CPU/GPU",
+      "category": "allocator",
+      "description": "compute allocator: which job deserves CPU/GPU",
+      "producer": "libs/ops/compute_ledger.py",
+      "artifacts": [
+        "data/compute_ledger.jsonl"
+      ],
+      "consumers": [
+        "desks/mt5/research/hourly_cycle.py",
+        "tests/ops/test_compute_ledger.py",
+        "desks/mt5/research/model_zoo.py",
+        "libs/ops/allocators.py",
+        "scripts/check_absolute_ceiling.py",
+        "tests/ops/test_compute_ledger.py"
+      ],
+      "scheduler": [
+        "desks/mt5/research/hourly_cycle.py"
+      ],
+      "decision_path": "artifact data/compute_ledger.jsonl absent on this host -- scheduled, but no evidence it has produced anything here",
+      "status": "SCHEDULED",
+      "code_paths": [
+        "libs/ops/compute_ledger.py"
+      ],
+      "tests": [
+        "tests/ops/test_compute_ledger.py"
+      ],
+      "measurements": "dElog per compute hour",
+      "rent_status": "UNPRICED",
+      "last_verified": "2026-09-06T06:54:06.905761+00:00",
+      "git_sha": "08f7d1eba9da",
+      "blockers": [
+        "artifact data/compute_ledger.jsonl absent on this host -- scheduled, but no evidence it has produced anything here"
+      ]
+    },
+    {
+      "id": "A5",
+      "name": "forecast allocator: which model deserves belief weight",
+      "category": "allocator",
+      "description": "forecast allocator: which model deserves belief weight",
+      "producer": "desks/mt5/research/model_self_improvement.py",
+      "artifacts": [
+        "desks/mt5/reports/MODEL_SELF_IMPROVEMENT.json"
+      ],
+      "consumers": [
+        "scripts/check_absolute_ceiling.py"
+      ],
+      "scheduler": [
+        "desks/mt5/research/hourly_cycle.py"
+      ],
+      "decision_path": "capability graph reports no node -- running, but no proven route from this artifact into a decision",
+      "status": "RUNNING",
+      "code_paths": [
+        "desks/mt5/research/model_self_improvement.py"
+      ],
+      "tests": [],
+      "measurements": "skill-weighted belief",
+      "rent_status": "UNPRICED",
+      "last_verified": "2026-09-06T06:54:06.905761+00:00",
+      "git_sha": "08f7d1eba9da",
+      "blockers": [
+        "capability graph reports no node -- running, but no proven route from this artifact into a decision"
+      ]
+    },
+    {
+      "id": "A6",
+      "name": "capital allocator: which opportunity deserves money",
+      "category": "allocator",
+      "description": "capital allocator: which opportunity deserves money",
+      "producer": "desks/mt5/research/pf_allocator.py",
+      "artifacts": [
+        "desks/mt5/reports/ALLOCATOR_STACK.json"
+      ],
+      "consumers": [
+        "desks/mt5/tests/test_conditional_covariance.py",
+        "desks/mt5/tests/test_growth_governance.py",
+        "desks/mt5/tests/test_no_trade_binds.py",
+        "desks/mt5/tests/test_regime_transitions.py",
+        "desks/mt5/tests/test_state_admission.py",
+        "scripts/check_partition_power.py",
+        "desks/mt5/research/model_self_improvement.py",
+        "libs/ops/allocators.py",
+        "scripts/check_absolute_ceiling.py"
+      ],
+      "scheduler": [
+        "desks/mt5/research/research_supervisor.py",
+        "ops/sync_allocation_to_desk.sh"
+      ],
+      "decision_path": "producer -> artifact -> consumer -> decision",
+      "status": "PROVEN",
+      "code_paths": [
+        "desks/mt5/research/pf_allocator.py"
+      ],
+      "tests": [
+        "desks/mt5/tests/test_conditional_covariance.py",
+        "desks/mt5/tests/test_decision_core.py",
+        "desks/mt5/tests/test_effective_heat_binds.py",
+        "desks/mt5/tests/test_growth_governance.py",
+        "desks/mt5/tests/test_macro_allocator_price.py",
+        "desks/mt5/tests/test_macro_interrupt_contract.py",
+        "desks/mt5/tests/test_marginal_admission.py",
+        "desks/mt5/tests/test_measured_heat_ceiling.py"
+      ],
+      "measurements": "dElog per unit capital",
+      "rent_status": "PRICED",
+      "last_verified": "2026-09-06T06:54:06.905761+00:00",
+      "git_sha": "08f7d1eba9da",
+      "blockers": []
+    },
+    {
+      "id": "A7",
+      "name": "execution allocator: how an intended position is implemented",
+      "category": "allocator",
+      "description": "execution allocator: how an intended position is implemented",
+      "producer": "desks/mt5/research/execution_resolver.py",
+      "artifacts": [
+        "desks/mt5/reports/EXECUTION_INTELLIGENCE.json"
+      ],
+      "consumers": [
+        "scripts/check_absolute_ceiling.py"
+      ],
+      "scheduler": [],
+      "decision_path": "no scheduler surface names execution_resolver -- it is wired but nothing runs it",
+      "status": "WIRED",
+      "code_paths": [
+        "desks/mt5/research/execution_resolver.py"
+      ],
+      "tests": [],
+      "measurements": "alpha captured / alpha available",
+      "rent_status": "UNPRICED",
+      "last_verified": "2026-09-06T06:54:06.905761+00:00",
+      "git_sha": "08f7d1eba9da",
+      "blockers": [
+        "no scheduler surface names execution_resolver -- it is wired but nothing runs it"
+      ]
+    }
+  ],
+  "law": "status is DERIVED by check_absolute_ceiling.stage_of and never declared here. This module adds the mandate's linkage fields -- consumers, scheduler, tests, SHA -- from the same tree. An underivable field is EMPTY, never guessed."
+}

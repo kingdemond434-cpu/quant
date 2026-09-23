@@ -406,6 +406,16 @@ close-to-close pair samples a continuously-quoted spread twice, so a mechanism a
 arbitrage-window timescale would be invisible here whether or not one exists. That is an argument
 about RESOLUTION, not evidence of a signal, and it earns a screen on intraday data -- never a slot.
 
+**ADDENDUM 2026-08-18 (litminer run 8, R0611) -- h>1 cell numerics were computed through a
+defective target window; THE KILL IS UNCHANGED.** `backfill_kimchi.py` builds `ret` as the h-day
+return ENDING at t on daily rows, so the harness's rolled target for h=5/20 spans (t+1-h, t+1] --
+h-1 of h days already known at signal time (instrument defect proven by oracle synthetic,
+`data/carry_liq_screen.json` `instrument_finding`). Consequence: the h=5d cell's raw/-0.2064,
+same-period/-0.191, residual/-0.0522 must not be cited as forward-horizon measurements. The
+TIMING-ARTIFACT verdict itself survives on structure (the premium carries the Binance price in its
+denominator -- construction, not information), and the kill rests on the h=1d cell (correct window:
+IC +0.0148 vs floor 0.041, per-era sign flips), which is untouched.
+
 ---
 
 ### jp_mlbot_atr_limit_reversion (richmanbtc `mlbot_tutorial` lineage) — PRE-EMPTIVELY KILLED by the community's own attribution study, before the desk spent a single screen on it
@@ -976,6 +986,67 @@ as arb; the KR premium remains usable exactly as the desk uses kimchi — a sign
 
 ---
 
+### era_crossvenue_fiat_premium_arb — TENTH INSTANCE (CN 2013-12 ban window, mainland onramp workflow, primary text) — MARGINAL-ROUTE COST STACK + OKPAY-RESERVE CROSS-REGION CORROBORATION + ANNOUNCEMENT-VS-ENFORCEMENT TIMING
+
+**RECORDED 2026-08-19 (CN frontier miner s9, era-archaeology: 8btc board-2 ban-window page read
+with the OP-071 low-page selector — validated on first use; coinsbbs.com thread-120 mined all 8
+pages / 70 posts; btcicc.com article layer opened).** Sources, all primary era text via Wayback,
+GBK: 8btc thread-1983 "btc-e.com——搬砖的第一站" (2013-12-06, the day after 银发〔2013〕289号;
+btc-e framed as the cheap foreign leg, the arb as "让外盘和国盘价格拉近"); coinsbbs thread-120
+(the tutorial's full version, replies 12-06→12-15); btcicc article-237 "比特币 高级搬砖系列一"
+(captured 2013-12-13); 8btc threads 1944/1950/1951 (12-05, hours after the notice, replies to
+12-06). **DERIVES-FROM: NONE (checked)** — the btcicc tutorial is an original how-to with the
+author's own registration screenshots and referral code; coinsbbs's likewise (images hosted on
+coinsbbs itself); neither cites the EN Bitcointalk literature; the 8btc policy threads quote the
+notice text and named CN commentators (龚明/长铗), and the folk replies cite nothing.
+
+**(a) THE OKPAY-RESERVE BOTTLENECK IS NOW CORROBORATED FROM BOTH SIDES OF THE BARRIER,
+INDEPENDENTLY.** The FIRST instance (Bitcointalk 171349 #39, EN, 2013) named "Gox had low OKPAY
+reserves" as the real constraint. This CN mainland tutorial — original by construction — documents
+the complete CNY onramp (银联/UnionPay → rchange.net, a HK e-currency dealer → OKPay, a Cyprus
+PSP with real-name KYC: passport/ID + address proof, ENGLISH TRANSLATIONS required, 1–2 working
+days → BTC-e) and names the binding risk in the author's own words: "rchange人民币充值存在...
+okpay资金储备的问题" (the dealer's OKPay float can run short). Genuine cross-region convergence,
+provenance checked on both sides, on the mechanism's core: the premium is rent on PSP FLOAT +
+KYC LATENCY + jurisdiction hops, and the marginal arbitrageur queues behind one dealer's reserve.
+
+**(b) THE FREEZE BINDS AT THE RAIL CUT, NOT THE NOTICE.** The crowd read the payment-processor
+scope correctly within HOURS (thread-1950, 17:50 on 12-05: restrictions bind 银行/支付宝/财付通,
+not individuals; thread-1951 quotes 龚明: commodity-not-currency was the survival path — a
+currency ruling would have imposed financial-institution licensing = "全军覆没"). Domestic
+third-party payment rails were actually cut ~2 weeks later; the offshore stack in (a) was already
+operational and became the marginal route. The board admin's 12-08 read: "对抄币影响并不大，就是
+吓退了不少大妈" — little effect on trading, scared off retail. **Consequence for method: any
+regulatory event study keyed to ANNOUNCEMENT dates mis-times the treatment by weeks; the
+treatment is the RAIL-STATE change** (feeds card #26's venue-state design and the deferred
+regulatory-event timeline card — same lesson the KR ninth instance carries from the enforcement
+side).
+
+**(c) CROWDING TIMESCALE IN MANIA IS DAYS, AND THE TUTORIAL IS ITSELF THE CROWDING EVENT.**
+coinsbbs tutorial posted 12-06; by 12-07 a replier is already asking "貌似这几天MT大跌，说好的
+差价呢" (spread gone); 70 unlock-replies in 9 days; the 8btc cross-post appears the same day the
+tutorial does. A PUBLISHED banzhuan tutorial marks crowd arrival — the premium's decay clock
+starts at publication. Retail-speed corroboration of the bots-first prior (7th instance).
+
+**(d) NAMED-SCOPE LOOPHOLE, SPOTTED IN REAL TIME.** 289号 names ONLY Bitcoin; a 12-06 reply
+(8btc thread-1944 post 6195) calls it immediately — "通篇只针对比特币，没有涉及莱特币等一大堆
+密码学货币" — contrasting the Fed/ECB's "以比特币为代表的虚拟货币" drafting; by 12-09 altcoin
+banzhuan is discussed as standard practice (coinsbbs post #375 "众多山寨币搬砖"). **A regulatory
+action binds its NAMED instrument; the unnamed sibling inherits the flow** (routed to
+weak_signal_registry WS-014; modern analog: token-specific enforcement actions).
+
+**(e) THE ERA'S EDGE-DISTRIBUTION STRUCTURE, MEASURED — what era-archaeology can and cannot
+recover.** The tutorial payload sat behind a 回复可见 reply-gate (never served to the crawler:
+OP-088), the advanced version (thread-183, "another banzhuan site not known to people") behind a
+member-tier gate (even its intro unarchived), and 搬砖群 QQ groups were "绝密" and full (12-06
+reply). The PUBLIC layer of the era archive holds the ADVERTISEMENT of edges; the edges lived in
+closed groups. Metadata (who/when/how many/how fast) survives; payloads survive only where
+cross-posted or ungated — btcicc's article layer is the ungated exception, which is what makes it
+the next dig target. **Unreadable-named (zero Wayback captures): 8btc 1989 (TOP100/TOP1000
+holder-concentration analysis, 12-07 — era whale-watching methodology) and 1973.**
+
+---
+
 ### hijri_ramadan_calendar_axis (AR frontier miner, 2026-08-12) — `unmeasurable_by_construction`, **NOT refuted**
 
 _Filed under the `unlock_events` precedent: UNMEASURABLE and DEAD are different verdicts and only one
@@ -1246,3 +1317,626 @@ this checkout**, so the 1.54/29 figures are cited from the desk-lesson text, not
 
 **COST OF THIS KILL: one afternoon of Monte Carlo, zero desk data, zero forward slots.** Pre-emptive
 falsification of a mined artifact is free graveyard material and this is what it looks like.
+
+## `jp_gmo_tick_archive_direct_ingest` — GMO Coin free keyless tick archive (api.coin.z.com/data/trades/, 2018-09-05 →)
+
+**KILLED 2026-08-19 (EN frontier miner s-I). Mechanism of death: §13 LEGITIMACY — consent-required
+reuse clause with no consent held.** Not a technical failure: the archive is live, keyless,
+26 spot + 12 margin symbols including JP-only MONA/FCR/NAC/WILD.
+
+**THE OPERATIVE CLAUSE** (kihon-yakkan.pdf ver=20260725, read 2026-08-12 stdlib-extracted, R0309):
+customer 基本約款 **Art. 14(15) requires company consent for off-service use of service-obtained
+information**, and **Art. 7(1) deems use of the service to be assent** to the 約款. Whether the
+anonymous keyless archive sits inside 本サービス scope is the ambiguity — and §13 demands CLEAR
+permitted usage over a restrictive clause, so ambiguity resolves against ingest.
+
+**THE ASYMMETRY WITH BITBANK, measured 2026-08-19 (the decision's spine):** bitbank was cleared
+the same day on venue CONDUCT — MIT-licensed official Public-API clients, two published sample
+market-making bots, an official Discord botter community, an official historical-data
+distribution service — over a ToS with NO reuse clause. GMO has the OPPOSITE profile on both
+axes: an explicit consent-required reuse clause AND zero affirmative conduct (no GitHub org —
+gmo-coin/gmocoin/GMOcoin Not-Found/empty; archive page is a bare symbol listing in the API docs
+with no grant language; robots 404; no API-specific terms per the 08-12 search of policy index +
+API product page + archive index). A clause plus silence is not a licence.
+
+**RE-ENTRY CONDITION (L1.16a, named):** written consent from GMO Coin (support-ticket request,
+ledgered R0622, due 2026-09-02) OR a future API/archive terms document granting third-party
+reuse. Either re-opens the card at `verified-technically-clean`.
+
+**SUBSTITUTION CHAIN, so nobody re-derives it:** bitFlyer (killed 08-01, licence) → GMO was its
+named replacement (killed today, licence) → **the surviving licensed JP tape is bitbank**
+(candles WIRED 2026-08-19: data/bitbank_1day.jsonl; L2 orderbook S3 pending registration
+R0620, watchlist card 34) plus Tardis `bitflyer` free 1st-of-month. The JP-only-ticker moat
+argument transfers to bitbank's mona_jpy/xym_jpy, already in the wired tape.
+
+## `numerai_mda_feature_selection_gain` — "MDA/permutation feature selection improves models" (as published)
+
+**PRE-EMPTIVE FALSIFICATION (free graveyard material), recorded 2026-08-19 from primary-source
+community measurement.** The claim (Numerai forum thread 3170, 2021-05, from LdP's AFML MDA):
+selecting features by permutation importance gains "+0.5% CORR on validation". The measured
+decomposition (jay1100, same thread, post #21, 3-arm experiment): importance computed ON
+VALIDATION → **+0.7%**; importance averaged across 5 CV folds → **+0.5%**; importance computed
+ON TRAINING folds only (leak-free) → **+0.025%**. ~95% of the published gain is evaluation
+leakage, and the load-bearing lesson is sharper than "don't leak": **averaging a leaky statistic
+across folds DILUTES the leak, it does not remove it** — the intermediate arm still books 20×
+the true gain. The tool is not dead (leak-free permutation importance is sound; sklearn
+`permutation_importance`); the PUBLISHED GAIN is. Any desk feature-selection step that selects
+on the window it evaluates re-manufactures this artifact. DERIVES-FROM: AFML ch.8 (MDA); the
+refutation is independent community measurement. SOURCE: forum.numer.ai/t/3170 #1/#21.
+
+## `hyperparam_grid_uniqueness_as_signal_diversity` — "trillions of grid combinations = unique signals"
+
+**PRE-EMPTIVE FALSIFICATION, recorded 2026-08-19.** The claim (Numerai forum 7916, 2025-01):
+39.6 quadrillion hyperparameter combinations ⇒ "every staker could generate a completely unique
+model". The refutation, from the thread's own reply layer and the desk's own arithmetic: models
+drawn from one learner family on one dataset with one era structure are **correlated by
+construction** — "most of the resulting models will still be highly correlated also because they
+are subject to the same eras" (foolish_observer), "any automatic grid-searching thing still
+basically converges in aggregate to some form of example predictions — it will still just be
+xgboost" (wigglemuse). This is the desk's own measured law arriving from a foreign ecosystem:
+**independence comes from the DATA, not the MATH** (OP-084, 48/50 single-operator survivors),
+and N same-family variants are ~1 effective bet (demeaning-floor lesson). Genuine convergence,
+DERIVES-FROM: NONE (checked — neither side cites the other). Kill any future proposal that
+counts configuration-space cardinality as diversity; count effective bets on the desk's own
+panel instead (libs/research/panel_breadth).
+
+---
+
+### era_grid_ladder_vol_bot — THIRD INSTANCE (RU 2014, live A/B challenge + the author's rules corpus) — RE-ANCHOR MECHANICS + THE ERA'S OWN EXECUTION-ALGO REFRAMING
+
+**RECORDED 2026-08-19 (RU frontier miner s3, btcsec bot-class continuation; primary era text via
+Wayback, IPB3 UTF-8).** Sources: forum.btcsec.com topic 8150 "Купить и подождать против бота
+(btc-e bot by ezhrd)" (2014-06-02→04, 21 posts across 2 archived pages — page-2 capture EXISTS,
+first CDX probe at limit-20 missed it, re-queried per OP-069 discipline before claiming the
+negative); topic 1168 "Правила безопасного трейдинга на BTC-e" (izlevinv's rules corpus,
+2013-04, 20 posts); topic 6549 (1b bot lite vendor thread, 2014-03→06, 15 posts).
+**DERIVES-FROM: NONE (checked)** — folk challenge thread, cites nothing; the bot is ezhrd's
+hosted commercial grid bot for btc-e; izlevinv is a paying USER stating its mechanics, not the
+vendor.
+
+**(a) THE GRID'S OPERATING RULES, from users quoting the author:** buy-ladder below price,
+take-profit above; after a filled sell it CANCELS remaining buys and RE-PLACES the whole grid
+DOWNWARD from current price; deliberately NO auto-trail-up option — izlevinv: "чтобы при резком
+рывке вверх наверху не купить" (so a sharp up-move cannot make it buy the top); his settings:
+перекрытие (grid coverage) ≥15%, 1% отступ (offset). The re-anchor-down rule is the
+short-gamma economics one level deeper than instances #1/#2: the design ADDS inventory only on
+the way down BY CONSTRUCTION, and the sole anti-top-buying defence is refusing to follow price
+up — i.e. the failure mode is priced into the config vocabulary itself. #18 (sasa9): "Покупка
+наверху — это общая проблема многих бот-алгоритмов" — the era names top-buying as the CLASS
+failure, not this vendor's.
+
+**(b) THE ERA'S OWN NULL, converged from BOTH sides of the argument:** sceptic sasa9 #16 — "тут
+знать надо когда запускать и какой профит выставлять, а если знаешь — тогда зачем бот? купил и
+поставил ордер на продажу" (you must know WHEN to start it and WHAT profit to set; if you know
+that, why the bot); bot-user izlevinv #19 agrees from the pro side: its real use is EXECUTION
+AFTER A DISCRETIONARY TIMING CALL ("включать в момент, когда вы спрогнозировали, откуда
+покупать — купит со страховкой и дешевле"), and #21 closes: configure it so "прогноз и 'Отступ
+от' совпадали — и можно спать идти" (make the forecast and the offset coincide, then sleep).
+Both sides land on the same decomposition the desk already holds: THE GRID IS A LIMIT-LADDER
+EXECUTION WRAPPER; THE TIMING DECISION IS THE ALPHA AND IT STAYS HUMAN. A grid bot's backtest
+is therefore a JOINT test of an unstated discretionary entry signal + a ladder, and crediting
+the ladder is attribution error (the coin-selector/engine severance rule, era edition).
+
+**(c) THE CHALLENGE ITSELF DIED UNANSWERED:** sasa9 proposed a public live A/B (bot vs
+buy-and-wait, both $50/pair, 5-10% target, ~10 days) and repeatedly asked the vendor to run 2
+cloud instances; #14 "Что-то молчит автор" (the author stays silent); no test ever started
+before the thread died 2014-06-04. A sold-bot vendor declining a free public live test is the
+seller-signal of instance #2 ("если бот приносит прибыль, зачем его продавать?") in
+behavioural form.
+
+**(d) supporting era lore banked from the same slice (not separate entries):** topic 1168 rule
+№3: "Не смотрите на стенки — их очень редко грызут, чаще ими пугают" (walls are rarely eaten,
+mostly used to scare) — RU 2013 folk knowledge that DISPLAYED depth is intimidation, not
+liquidity (era-side sibling of the desk's L1.45 displayed-depth caveat); rule №7: plan orders
+in a table FIRST, then place ("Таблица-ордера, ни в коем случае не наоборот") — pre-registered
+mechanical execution as 2013 retail discipline; kinken (#16, 1168): crypto venues read as
+manipulated vs regulated FORTS futures — the era's own venue-quality ranking. Vendor-thread
+6549 facts routed to WS-009/WS-010 observation appends (venue FEE-endpoint lie; strategy-file
++ vendor-held-API-keys synchronization channels).
+
+**(e) THE CHALLENGED BOT'S OWN AUTHOR THREAD FOUND AND MINED (continuation, same run family:
+topic 4320 + the author's LIVE blog).** Topic 4320 "Бот для торговли на btc-e" (2013→2014-05,
+12 posts) is ezhrd's own thread — Evgeny Pozharsky = ezhrd (ezhrd.wordpress.com linked in-thread;
+blog post "btc-e bot by ezhrd", 2014-01-05); the bot was FREE with optional paid features
+("бот бесплатен? — в целом да; некоторые доп фичи по подписке"), which re-answers instance #2's
+seller-signal: this vendor's economics were distribution-first, then subscription. Author's own
+mechanism statement (May-2014 update): "покупаем при достаточно резком скачке вниз и продаем на
+отскоке" + "функция контроля ордеров по стенкам стакана" + a borrow-coins-and-trade-down
+pseudo-short. The wall-control line closes a loop with (d): by 2013-14 displayed-wall signals had
+AUTOMATED retail consumers — the walls of rule №3 were scaring BOTS, not only humans, so wall
+manipulation had algorithmic flow to harvest. Reply layer (WS-003 shape): a user ran forensics on
+the AUTHOR'S OWN SCREENSHOT — "113908816 отменяется дважды с промежутком в 10 секунд" — duplicate
+cancels in the vendor's published evidence, caught by a reader; and the era's partial-fill
+mechanics explained in-thread. Successor chain: btcsec topic 7990 → forum.bits.media topic 7990
+(the thread SURVIVED the forum's 2015 rename — btcsec topic ids carry over to bits.media).
+
+**(f) THE VENUE-POLICY KILL CHANNEL — dated, author-stated, and the class's fourth kill
+mechanism.** Blog comment 2018-01-06, ezhrd on why Bittrex was dropped: "битрикс стал предъявлять
+претензии... за малый процент заполнения ордеров (слишком много отмененных ордеров по отношению к
+выполненным) и начал требовать платить за отмененные ордера (!). Поскольку алгоритм работы бота
+основан на тягании сетки ордеров туда-сюда, такие заявления биржи делают работу данного алгоритма
+торговли невозможной." The grid's order footprint — many cancels, few fills — is structurally
+indistinguishable from the quote-stuffing footprint venues police, so fill-ratio enforcement and
+cancel fees are a class-level kill switch that NO grid backtest prices. Kill channels for this
+class now: (1) short-gamma economics + fee stack (instance #1), (2) vendor no-show under live
+test (instance #3a-c), (3) timing-is-the-alpha attribution (the era's own null), (4) VENUE POLICY
+on cancel-to-fill ratio (this — and its modern echo is every order-to-trade limit and cancel-rate
+tier on today's venues, including the ones this desk trades).
+
+**(g) FLEET FACTS from the same chain (era record, banked here, not separate entries):** bot-2
+(2015→2018+, cloudbot.uk) is a VENDOR-CLOUD subscription — the entire customer fleet executes
+from the vendor's servers ("Бот работает в облаке... из-за океана": during BTC-E's DDoS
+mitigations whole network segments lost access while the far hemisphere kept trading — a
+cross-geography LIVENESS asymmetry the era's overseas-hosted bots collected structurally). The
+fleet MIGRATED venues during the BTC-E seizure week (customer 2017-08-01: "btc-e не работает уже
+неделю... переключиться бы на полонекс"; vendor: send new keys — and WEX appears as a supported
+venue by 2017-10). Bitfinex was disabled 2016-08-04 "по понятным причинам" — two days after the
+hack — and re-enabled 08-11. EXMO named (by the vendor, against his own interest) as the venue
+with NO key-permission granularity: "У EXMO права ключа вообще никак не настраиваются – любой
+ключ может делать все." BTC-E's nonce watermark made a key single-machine-forever ("хоть один
+запрос под этим же ключем с другой машины – ключ перестанет работать навсегда"), which is the
+mechanical reason vendors demanded FRESH keys (WS-010's registry channel has an era-API cause,
+not just a business one). Author's folk sizing rail: "торговля на 100% депо – это самоубийство"
+(recommends 60-70%). NAMED GROUND, unmined: forum.bits.media topic 27623 — the bot's FREE LIVE
+real-money trading chronicle ("хроника реальных торгов", running from 2017-05): a primary P&L
+record of the grid class across the 2017 mania and crash, better evidence than any marketing
+claim on either side.
+
+**(h) topic 6475 corroborations (mined same slice):** the engine/strategy severance gets a THIRD
+independent era voice — "Прибыль зависит не от самого бота, а от стратегии - алгоритма торговли,
+который в него заложен" (profit lives in the loaded strategy, not the bot) — and the era's
+lived risk ranking puts VENUE risk above strategy risk: "Сколько не жалко потерять. (биржи
+ломают, кидают, и довольно часто)"; plus the spot-market consolation fallacy in period form
+("если не будешь специально фиксить убыток, то слить нереально" — unrealized losses read as no
+losses).
+
+### kr_bank_rail_event_study — KILLED ON MEASURED TREATMENT SCARCITY (design-level, not mechanism falsity)
+
+**RECORDED 2026-08-19 (KR frontier miner s4, R0634 — the blocking measurement s3 named).** The
+KR venue↔bank fiat-rail axis (watchlist card #35, minted as #33 on the s3 branch) proposed
+trading venue-asymmetric KRW rail transitions. s3's EV verdict was knife-edge on a HAND estimate
+(~6 transitions/yr → EV 0.0019 vs 0.002 thresh; QUEUE at ≥8/yr). **This session enumerated the
+treatment from the primary record instead of estimating it**: Upbit's complete first-party
+notice archive (776 rows, category=notice, 2017-10→2026-08, fetched whole this run —
+`data/upbit_notice_announcements.jsonl`), the desk-measured Bithumb 2025-03-24 migration, and
+press-dated rows for Coinone/Gopax/Korbit (`data/kr_bank_rail_transitions.json`, 19 rows classed
+sharp/weak/window with announce-vs-effective dates separated per the announcement≠treatment
+fence).
+
+**THE MEASURED RATE: ~0.9 sharp episodes/yr (8 episodes in 8.6y); ~2.2/yr counting every weak
+policy row.** Era structure makes it worse, not better: the mass sits in 2017-12→2021-09
+(pre-real-name freeze, launch, both big migrations, 특금법 mass cutoff); **2022+ produced ONE
+sharp episode in 4.6 years** (Bithumb NH→KB 2025-03-24). Contracts consolidated; the treatment
+is drying up, not accruing. EV re-run with measured breadth: **0.0004 (sharp) / 0.0006 (all
+rows) — 3–5× below the 0.002 threshold, REJECT with no knife-edge left** (QUEUE needed ≥8/yr =
+9× the measured sharp rate). An event study here accrues n≈9 per decade: **permanently
+underpowered by design** — the AR seat's annual-event-study lesson (retire the DESIGN, not the
+instance), arriving in KR.
+
+**WHAT SURVIVES, EXPLICITLY: the registry, as a PROVENANCE layer, not an alpha axis.** The
+mechanism is real and desk-measured (WS-011 obs 2: the 10.50h Bithumb tape hole IS a rail
+event printing as an absence). Knowing WHEN a KR venue sat in a migration/freeze window gates
+every KR premium/spread measurement the desk makes — card #35 keeps that role; what dies is
+the standing tradeable-event-study use.
+
+**RE-OPEN CONDITION (L1.16a, narrow door):** a NAMED structural change that raises rail-event
+frequency — concretely, repeal or amendment of the one-exchange-one-bank rule (Woori's CEO is
+publicly lobbying for exactly this). A repeal TRANSITION would produce a one-shot cluster of
+re-contracting migrations (tradeable as an event CLUSTER, not a standing edge) — and then end
+the exclusivity mechanism entirely. Watch the rule, not the venues.
+
+**METHOD RESIDUE (why the estimate was 6× the measurement):** s3's ~6/yr hand estimate implicitly
+counted renewal cycles and policy noise as treatments. The enumeration separates classes:
+renewals that change nothing are non-events; VASP counterparty suspensions (the ~40-row 2022+
+mass in the same archive) are CRYPTO-leg events on a different card. **A breadth estimate made
+without class definitions inflates by whatever class boundary the estimator hasn't drawn yet.**
+
+### arkham_alert_edge — practitioner-dated death of alert-vendor-driven trading (JP, stopped ~2024)   [pre-emptive falsification context, NOT a desk test]
+SOURCE: rarirure.rip/archives/1301 (2024-12-23, botter Advent Calendar 2024 d23), the bot's module
+list. The author RAN an "Arkham でエッジを見つけ Webhook アラートから売買する" module — trading
+Arkham Intelligence webhook alerts (entity-labelled on-chain flow) — and retired it:
+「市況が変わり、エッジじゃなくなったので現在は停止中」 (the market changed; it is no longer an
+edge; currently stopped). A documented ran→paid→died lifecycle with a stated cause, not a debunk
+of the data axis itself.
+MECHANISM OF DEATH (stated + inferable): a commercial alert product democratizes its own signal —
+every subscriber sees the same webhook at the same time, so the edge decays toward the vendor's
+subscriber count; "market changed" from the operator who was there. NOTE the boundary: this kills
+ALERT-FOLLOWING as an edge class for one practitioner in one era; it says nothing about raw
+entity-labelled flow as a conditioning axis (the desk's whale-activity/CEX-flow vocabulary), and
+his own replacement was to poll explorers DIRECTLY for hot-wallet inflows on chains Arkham does
+not cover — the practitioner's fix was to move UPSTREAM of the vendor, which is this desk's
+free-first doctrine arriving from the retail side. DERIVES-FROM: NONE checked (own operation;
+post-2023 so LLM-assist UNVERIFIABLE per OP-072, but the module lifecycle is his own record).
+[§33: killed -> this entry]
+
+### coingecko_category_taxonomy — vendor sector map for a cross-section the desk no longer hunts (mandate kill 2026-08-25)   [consumer removed by principal order, NOT refuted by data]
+SOURCE: docs/research/data_axis_watchlist.md card 28 (carded 2026-08-11, brain-hunter seat) —
+CoinGecko `/coins/categories/list` + per-coin categories (keyless free tier) as the mechanism-based
+ORTHOGONAL fourth grouping map for card 27's `group_rank`/`group_zscore` inputs over the 296-symbol
+crypto D1 lake.
+MECHANISM OF DEATH: the consumer was removed, not the claim disproven. The MT5 UNIVERSE MANDATE
+(2026-08-18, CLAUDE.md standing order) bans hunting the crypto-exchange cross-section outright;
+card 27's group-transform program over 296 perps was this taxonomy's SOLE consumer. The surviving
+MT5 universe carries ~10 Fusion-executable crypto CFD majors (desks/mt5/mt5desk/universe.py
+`_CRYPTO`), which the desk's own asset-class grouping already covers — a vendor taxonomy of
+thousands of alts groups nothing the desk may trade. LICENCE STATE AT DEATH: UNREAD, attempted
+twice, not skipped (WS-005 discipline): coingecko.com/en/api_terms → HTTP 403 on 2026-08-11
+(brain-seat fetcher) AND 2026-08-25 (this box, WebFetch); web.archive.org route unreachable from
+this box's fetcher the same day.
+RE-OPEN CONDITION (L1.16a, narrow door): a principal order re-opening a crypto cross-sectional
+universe AND a completed api_terms read that permits desk use (row #79: read it, never assume in
+our favour). Free fallback if ever re-opened: card 27's proprietary maps + DeFiLlama protocol
+categories (licence equally unread — same read owed). DERIVES-FROM: NONE (checked — card 28 is the
+desk's own carding of a vendor API surface, no upstream writeup).
+[§33: killed -> this entry]
+
+### retail_fx_stophunt_feed_manipulation — folk mechanism "the broker manipulates YOUR quote feed to hunt YOUR stop", insider-refuted (EN, 2020-21)   [pre-emptive falsification context, NOT a desk test — and the REAL mechanisms it obscures are execution intel for the MT5 desk]
+SOURCE: HN 25219314 comment tree (mined to full depth 2026-08-25): AdrianAvtomat 25253286 +
+25253035 (retail-FX industry, self-identified, corroborates a platform-vendor's account);
+iamacyborg 26045541 (ex-spread-betting-firm employee, London); lordnacho 25219798 (ex-FX HF).
+THE FOLK CLAIM KILLED: per-client quote-feed manipulation to trigger an individual trader's stop.
+Insider verdict verbatim: "a broker wouldn't even need a front-running bot. If they're the
+intermediary (A book) then they can just apply markups to the quotes from their maker. If they're
+the maker (B book), they're the ones quoting the prices. Front-running is moot in either case …
+manipulating the quote feed for thousands of traders just to hit one guy's stop … impractical if
+not impossible using industry standard platforms."
+WHAT IS REAL INSTEAD (the boundary, and it is desk-relevant execution reality): (1) A-book =
+routed to LPs WITH broker markup on the spread — the desk's spread is a POLICY variable, not a
+market constant; (2) B-book = internalized against the house, the broker profits from client
+losses directly (corroborated first-person: "education" funnel downstairs, B-book upstairs);
+(3) TOXIC-FLOW RE-ROUTING — consistently-winning accounts get moved B→A book ("if someone is too
+good they just send him to the market"), so a profitable desk's execution regime CHANGES as its
+edge is detected: treatment is ENDOGENOUS to desk PnL. Naming correction from the reply layer
+(depth mandate, again): B-book = against the maker, A-book = to market — the OP had it backwards.
+NOTE the class: stop CLUSTERING at round numbers is visible to any market participant and
+stop-cascade mechanics at the MARKET level remain real; what dies is only the per-client
+feed-manipulation story. FXCM's CFTC ban (undisclosed dealing-desk interest while advertising
+"No Dealing Desk") is the canonical documented case of the REAL defect class.
+DERIVES-FROM: NONE (checked — first-person industry accounts, no cited upstream).
+[§33: killed -> this entry]
+
+### cn_bucketshop_retail_loss_as_directional_signal — folk premise "retail loses ⇒ fade retail direction" refuted by the CN bucket-shop industry's own fee arithmetic (CN, 2011-2017 era; pre-emptive falsification for every retail-sentiment-contrarian hypothesis, incl. the 反向跟单 reverse-copy-trade industry built on it)
+SOURCE: 南都/凤凰财经 2014-06-18 exposé (dead link; recovered via Wayback CDX this run, 3 captures,
+2015-05-21 capture read to full depth — 6,559-char article) + 武久文 legal-mode analysis (sohu
+193763502) + CSRC Shenzhen cleanup Q&A + 2026 反向跟单 vendor/search layer (qhfgd.com 68-part
+series located, unmined).
+THE FOLK PREMISE KILLED: CN member-firm B-books (贵金属交易所 era) proved retail "always loses",
+and an entire 反向跟单 (reverse-copy-trade) software industry monetised fading aggregate retail
+direction. THE REFUTATION IS IN THE HOUSE'S OWN ARITHMETIC (insider 杨诚, quoted with worked
+numbers): one silver round-trip at ¥4000/kg, 100kg lot, 1% margin, 8bp commission, 2bp/day
+overnight, ¥8/kg spread = **¥1,528 = 38.2% of the margin posted** — "就算不亏损，仅交易中涉及到的
+手续费和点差反复倒腾几次就足以让整个保证金变为零". Client ruin was COST EXTRACTION plus churn
+(measured case: ¥500k principal → ¥40M+ turnover in 10 trading days, advisor-driven 刷单), not
+directional wrongness — so the anti-signal in retail direction is far weaker than retail LOSS
+RATES imply. Any Myfxbook/retail-positioning contrarian screen must debias for cost-driven loss
+or it manufactures a phantom edge from fee drag. Reply-layer reasons the 反向跟单 mirror-leg also
+fails (search-layer, unmined to depth — leads only): B-book internal tape ≠ market prices (the
+mirror executes on a DIFFERENT price series than the one the clients lost on), double-charged
+costs, and the churned component of retail flow carries no direction at all.
+WHAT IS REAL INSTEAD (execution intel, second independent instance of the EN entry above): the
+2014 back-office screenshots show TOXIC-FLOW SEGMENTATION AS A GUI — menu "扫描赚钱的人" (scan
+for profitable clients) with per-client 延迟 5s / 滑点 ¥10 auto-handling, 大笔入金/高频交易/
+同一局域网 scans, 净头寸超限 — plus asymmetric order-gating (book 1000 short vs 2000 long →
+"只能卖空不能买多"), engineered two-sided wicks on INTERNAL quotes (">1% dip to blow 1%-margin
+longs, then resume"), NFP-window server "outages", and the platform economics: client losses
+(头寸) rebated 100% to member firms + agents by negotiated split while the venue keeps fees —
+a LISTED company (大智慧/民泰, 天贵所 member #166) booked ¥86.57M fees + ¥219M "investment
+income" from this in ONE quarter, then sold the unit for ¥392M to the chairman's brother-in-law
+when 418 victims (~¥90M) besieged HQ. Leverage sold: silver 4-100×, FX 80-160× vs a stated 20×
+legal max. CONVERGENCE NOTE (charter §14): same segmentation structure as the EN/HN insider
+account mined TODAY by EN s-J (A/B-book, winner re-routing) — 2014 CN court-adjacent journalism
+and 2020-21 HN first-person accounts share no derivation path; this is genuine cross-ecosystem
+corroboration that broker treatment is ENDOGENOUS to account profitability. Legal-mode taxonomy
+(武久文): member-firm 对赌 mode, 邮币卡 closed-pump mode, 微盘 mode with quotes "参考国内外市场
+价格甚至虚设价格行情"; criminalised as 非法经营罪/诈骗罪/聚众赌博. Era boundary: 38号文 (2011)
+naming rule quoted in the exposé; 清理整顿办公室 est. 2014-04-11.
+DERIVES-FROM: NONE between the CN and EN source families (checked both ways: the 2014 南都 exposé
+cites CN insiders and CCTV's 天交所 coverage; the HN threads cite no CN material).
+[§33: killed -> this entry]
+
+### kr_venue_state_layer — Upbit/Bithumb venue flags + announcement archive for a KR cohort the desk no longer hunts (mandate kill 2026-08-25)   [consumer removed by principal order, NOT refuted by data]
+SOURCE: docs/research/data_axis_watchlist.md card 26 (carded 2026-08-01, KR frontier miner s1) —
+four keyless first-party surfaces: Upbit announcements (737 trade events 2017-10-27→, ingested to
+data/upbit_trade_announcements.jsonl), Upbit/Bithumb warning+caution flags, Bithumb
+deposit/withdrawal rail state (collector live 08-12→08-20, data/kr_venue_flags.jsonl, stopped in
+the crypto retirement wave).
+MECHANISM OF DEATH: consumer removed, not the claim disproven. The MT5 UNIVERSE MANDATE
+(2026-08-18) bans crypto-exchange-native opportunity ground; every consumer this layer had —
+intra-KR venue basis (R0299 family), KR premium conditioning, the listing_comparables_repricing
+screen design (R0616, disposed same day) — is banned or re-graded. The card's measured traps are
+BANKED so any re-entry inherits them: GLOBAL_PRICE_DIFFERENCES fires 22% on all markets vs 0.4%
+on KRW (quote-currency artifact — split before reading any rate); key events on first_listed_at
+never listed_at (differ on 42.5% of rows, amendments rewrite listed_at); announcements are KST
+while Upbit daily closes 24:00 UTC (window starts NEXT UTC close or it is look-ahead).
+L1.16a RE-OPEN DOOR (named enabling change): the desk gains a KRW-linked MT5 instrument (e.g. a
+USD/KRW exotic added to the Fusion universe) AND a stated mechanism linking venue/rail state to
+it — or the universe mandate itself changes. The owed screen died UNRUN: no trial charged, no
+forward clock ever minted.
+
+### dex_wallet_tape_mining — vec-operator mining program over the owned GeckoTerminal DEX tape (mandate kill 2026-08-25)   [consumer removed by principal order, NOT refuted by data]
+SOURCE: docs/research/data_axis_watchlist.md card 37 (carded 2026-08-19, BRAIN hunter s4; ledger
+R0637) — data/geckoterminal_trades.jsonl, 322,187 signed wallet-resolved DEX trades (solana/eth,
+68 pools, 93,241 wallets), collector stopped 2026-08-20 (retirement wave), file frozen at 197MB
+spanning 2026-08-11→08-20.
+MECHANISM OF DEATH: the mining program (whale/retail mix, buy/sell asymmetry, wallet-cohort
+reductions over DEX pools) targets a crypto-exchange-native cross-section the 2026-08-18 mandate
+bans. Never screened, never a candidate (the card itself declared the panel unpowered under
+L1.62); no trial charged. The 9.5-day tape stays owned on disk as provenance.
+WHAT SURVIVES (not killed — lives in R0637, owner = brain seat, split prescribed brain-s5
+2026-08-20): (a) utilisation-meter blindness to registered-but-uncatalogued collectors — a meter
+defect, universe-independent; (b) the vec_*/reduce_* vector-operator gap (desk implements 0 of
+18) — the identical per-event data shape exists on the MT5 desk's own recorded tick tape, which
+is where that capability belongs now.
+L1.16a RE-OPEN DOOR: universe mandate change only.
+
+### wctc_leader_follower_replication — "contest/leaderboard returns are follower-replicable" (structural claim-class prior, prospector 2026-08-25)   [debias prior from operator + regulator text; NOT a statistical kill]
+SOURCE (all opened this run): worldcupchampionships.com (operator site, live read); CFTC Docket
+22-R009, Morris v. Robbins Futures Inc. d/b/a Robbins Trading, Initial Decision 2025-05-06
+(primary PDF, full text extracted); trading-tournaments.com champions archive 1984–2026.
+THE CLAIM CLASS KILLED: reading WCTC/leaderboard champion returns as follower-harvestable edge.
+STRUCTURAL MECHANISM, from the operator's and regulator's own text: (1) the operator EXPLICITLY
+permits multiple contest accounts per entrant and DISCLAIMS representativeness ("WCC competitors
+may control accounts that produce results substantially different than the results achieved in
+their WCC accounts. WCC entrants may trade more than one account in the competition") — champion
+returns are order statistics over max-leverage tickets (200:1 available non-US forex; $10k/$5k
+minimums; $3,999/yr entry), not skill estimates; (2) the contest feeds a monetized funnel — top
+performers "may join the WorldCupAdvisor.com advisory team" selling autotrade subscriptions, so
+the LEADER's contest account is an option (entry fee = premium; upside = advisory annuity) while
+the FOLLOWER holds the position with full downside; (3) the CFTC decision found the broker and
+the (unregistered) WCA advisors "entangled... evidenced by the fee structure and active
+communications" — an agency relationship — while dismissing the complaint (losses ≠ wrongdoing);
+the documented follower instance: $80,000 (funded from a Roth IRA) → −$29,129.44 in ~4 months
+across four Leader-Follower AutoTrade sub-accounts. (4) MEASURED THIS RUN: champion return
+values DISAGREE across mirrors (Davey 2006: 148% vs 107%; Unger 2012: 230% vs 82%) — even the
+headline numbers are marketing artifacts.
+WHAT THIS DOES NOT KILL: WCTC is the RARE forward-scored real-money contest (unlike
+backtest-scored leaderboards, cf. era_ta_indicator_stack_crypto: "treat any leaderboard/backtest
+result as in-sample until pre-registration is proven" — here forward IS proven). The bias
+channel is SELECTION, not overfit: repeat-density (Unger 4 titles incl. 3 consecutive; 10
+multi-title winners in the 1984–2026 panel; one cross-division champion) remains weak evidence
+that learnable mechanisms exist — but it is confounded by the multiple-account rule, and the
+REPEAT WINNERS' published mechanisms (Williams vol-breakout/COT/TDOM; Unger multi-system
+short-term futures; Davey trend across 8–12 markets; Hughes premium-selling) all fall in
+families this desk already killed on its own data (price-only breakout/trend, retail calendar,
+TA stacks) or rejected (COT direction, pooled NW t=−0.64, 41y). The durable transfer is
+PROCESS: winners solve max-growth-under-a-barrier (50% intraday-DD liquidation + $1.5k floor) —
+the desk's own robust-Kelly-with-rails objective, independently converged on.
+RELATED: cn_bucketshop_retail_loss_as_directional_signal (same debias-prior shape, CN s12
+2026-08-25); master-23 selection-bias defense now carries operator-text + regulator-text
+evidence.
+
+## cot_hedging_pressure_level (upgraded to literature-convergent, litminer run 10 2026-08-25)
+The desk's own kill (COT_SCREEN_RESULT.md: pooled lagged NW t=−0.64, 41y, 6 contracts, 24 trials,
+GHR gate replicated) is now CONVERGENT with the published replication layer: Maréchal JFM 2023
+(1994–2017) finds the insurance/hedging-pressure-level premium decays 0.43→0.34, significance
+1%→10%, and "eventually vanishes" post-financialization, while GHR reject lagged predictability
+outright. Two independent methods, same verdict. Level/lagged COT direction stays DEAD; re-entry
+per L1.16a only on a construction-level enabling change (e.g. intraday positioning frequency).
+The CHANGE/liquidity channel is explicitly NOT covered by this kill — it is carded live as
+watchlist #40 (EV-queued).
+
+## gotobi_nakane_drift (new entry, litminer run 10 2026-08-25 — replicated THEN measured dead)
+USDJPY drift into the 09:55 JST Tokyo fix on gotobi days (importer USD settlement custom;
+Ito–Yamada NBER w22820; Bessho–Sugimoto–Suzuki arXiv 2301.13204). Desk's own preregistered screen
+(`data/gotobi_screen.json`, 3 trials, USDJPY H1 2018–2026, clock-corrected): **2018–2020 REPLICATES
+the literature (+5.33bp/d gotobi excess, t=2.55, p=0.006); 2021–2026 DEAD (+0.43bp, t=0.26, gross
+below the 1.02bp RT cost)** — killed by crowding (MQL5/TradingView EA productization of the exact
+pattern; drift onset already front-run to ~03:00 JST in the 2018–2020 EBS data) and/or the
+2022–2024 JPY intervention regime. NOT sent to the gauntlet: current-regime net expectancy is
+negative — a forward slot would be spent confirming a measured null. RE-OPEN TRIGGERS (named):
+(a) JPY rate-regime normalization (BoJ policy-rate path flattens, carry stabilises) AND
+(b) retail abandonment measurable via MQL5 gotobi-EA product activity/reviews going quiet.
+The MECHANISM (invoice-custom settlement demand) is not refuted — only its current-price is zero;
+the flow persists per Akiyama et al. (JAFEE 19, 2021, JP): anomaly strength tracks USD invoice
+share of JP imports.
+
+---
+
+## `tradingview_pine_agentic_mining` — KILLED 2026-08-27 on §13 legitimacy, not on yield (unified frontier dig)
+
+**What it was.** Seeds S3 and S12 (watchlist cards 43 and 52) proposed systematically mining
+TradingView's public Pine script library and idea stream as a strategy-mechanism corpus — a large,
+obvious, MT5-relevant body of published retail logic.
+
+**Why it is dead.** `https://www.tradingview.com/robots.txt` carries TWO user-agent groups. The
+`*` group bars almost nothing relevant (only `/scripts/search/`, `/ideas/search/`). A SECOND group
+enumerates 16 AI crawlers — `Google-Extended, GoogleOther, Applebot-Extended, Amazonbot,
+meta-externalagent, **ClaudeBot**, PerplexityBot, cohere-training-data-crawler, OmgiliBot, AI2Bot,
+Bytespider, TikTokspider, DeepSeekBot, ...` — and gives that group
+`Disallow: /ideas/*, /scripts/*, /script/*, /v/*, /symbols/*/minds/*, /u/*, /chat/*, /chart/*,
+/watchlists/*`. The publisher has explicitly and specifically withheld this exact ground from this
+exact class of agent. §13 is absolute; the desk does not build UA-substitution routes.
+
+**The methodological point, which is the reusable part.** A single-group robots read INVERTS this
+verdict — read only the `*` group and TradingView looks wide open. This is the false-POSITIVE twin
+of the KR-s5 lesson (a truncated read showed `Allow:` while the whole file scoped it to `yeti`).
+**Group-scope every robots read against the desk's OWN agent identity, never against `*`.**
+
+**RE-OPEN TRIGGERS (named, per L1.16a — a re-open needs an enabling change addressing the
+mechanism of death, not a fresh appetite).**
+(a) TradingView removes `ClaudeBot`/the AI-crawler group from robots, or publishes a research API
+    or licensed bulk export covering `/scripts/`; or
+(b) the desk obtains explicit written permission from TradingView for research use.
+A human reading the site in a browser is NOT a re-open trigger and does not become one at scale.
+
+**What is NOT killed.** The *mechanism families* retail Pine encodes are reachable on §13-clean
+ground the desk already holds — the Forex-TSD CDX attachment corpus (OP-096b), MQL5's own surface
+(card 41), and the FX Blue track-record layer opened the same day (card 53). Nothing about this
+kill withdraws the search space; it withdraws one route into it.
+
+---
+
+## `crypto_exchange_universe_banned_2026_08_18` — eight verified free-data sources retired by the universe mandate, not by any defect of their own
+
+**Date:** 2026-08-28 (free-data-alternatives miner). **Verdict: KILLED as huntable ground. Tier 3.**
+
+**Cards retired:** 2 (OKX official historical-data portal), 4 (Bithumb spot+futures), 5 (Coincheck),
+6 (Tardis vendor-replacement), 9 (stablecoin mint/burn self-computation), 10 (AWS Public Blockchain
+Data), 11 (eth-labels), 12 (cex-list) in `docs/research/data_axis_watchlist.md`.
+
+**Mechanism of death — and it is important that it is not a data-quality verdict.** Every one of
+these was graded **verified-clean** on its own merits, several after full first-party
+reconstruction. None of them broke. They are retired because the **principal's standing order of
+2026-08-18 (LAWS §1)** makes the crypto-exchange-native universe permanently un-huntable: *"No
+crypto-exchange-native universe (Binance/Bybit/OKX/Hyperliquid/Deribit or any successor) may ever
+be hunted again."* A source that may not be hunted cannot carry an axis, however clean it is. They
+sat untagged in the §33 backlog for weeks precisely because nothing was *wrong* with them — the
+backlog had no verb for "correct, and now out of scope."
+
+**§16a re-open condition (a NAMED enabling change, per L1.16a):** only a principal order restoring
+crypto-exchange ground. No data improvement, no new route and no regime shift re-opens these — the
+death is jurisdictional, so only the jurisdiction can reverse it. **Crypto reference data remains
+admissible where it measurably informs an MT5 instrument** (LAWS §1), which is a different use and
+is not killed here.
+
+**§38 — what replaces them.** The capability these eight carried was *forced-participant flow and
+venue microstructure observable for free*. Its MT5-universe successor is the **official-sector-flow
+class**, opened 2026-08-28 and now at three verified members: **Japan MoF intervention operations**
+(card 67), **SNB weekly sight deposits** (card 68), **CNB open API — forward points + open market
+operations** (card 69). The mechanism transfers exactly: a participant who is forced to transact,
+publishes the fact, and cannot stop. The replacement hunt is open, not closed — Banxico, RBI, CBRT,
+MNB and NBP are named and unopened.
+
+### exotic_fx_halt_reopen_gap_vol (PROSPECTOR s9, 2026-08-28) — `mechanism_refuted`, and refuted on the desk's own data
+
+**THE HYPOTHESIS.** MT5 exotic FX crosses (USDIDR, USDINR, USDBRL, USDKRW) are halted at the broker
+on their home-country holidays — 10.4–11.4% of all weekday sessions — while USD-side and global risk
+keeps trading. A position held across the halt cannot be exited and stops cannot fill; at reopen the
+price should gap to absorb accumulated global information, giving excess reopen volatility that a
+direction-agnostic vol strategy could harvest. Direction-agnostic by construction, which is the
+class the desk's own lessons say to prefer.
+
+**THE HALTS ARE REAL — that part verified, and it survives the kill.** The broker's published dated
+calendar predicts the desk's tape exactly: 5 of 5 spot-checked halt dates have **zero bars** in
+`desks/mt5/data/universe/USDIDR_H1.parquet` (2025-06-06 Eid al-Adha, 2025-06-19 Juneteenth,
+2025-06-27 Islamic New Year, 2026-01-01, 2026-01-16 Ascension of the Prophet). The refutation is of
+the *edge*, not of the *calendar*.
+
+**FIRST PASS LOOKED STRONG, AND IT WAS AN ARTIFACT.** Uncontrolled, post-halt daily return dispersion
+runs **1.34x–3.08x** normal with Levene p < 0.01 on all four symbols — the kind of result that ships
+if nobody asks what else changed. What else changed is that a post-halt return **spans more calendar
+time**, so variance scales with it mechanically. Controlling by dividing each return by
+√(weekday-sessions spanned):
+
+| symbol | n halts | raw ratio | mechanical √(sessions) | ratio AFTER control | Levene p |
+|---|---|---|---|---|---|
+| USDIDR | 56 | 1.967 | 1.923 | **0.933** | 0.913 |
+| USDINR | 73 | 1.380 | 1.712 | **0.916** | 0.529 |
+| USDBRL | 71 | 1.345 | 1.728 | **0.911** | 0.232 |
+| USDKRW | 56 | 3.080 | 1.861 | **1.052** | 0.946 |
+
+**The excess vanishes completely.** Every controlled ratio sits at or below 1.0 and every p is
+0.23–0.95 — not "weaker than hoped", but *indistinguishable from ordinary time-scaled volatility*,
+in all four symbols independently. Two of the four (USDINR, USDBRL) had raw ratios *below* their own
+mechanical expectation, i.e. reopen returns were **quieter** than √t predicts. There is no
+halt-reopen premium here.
+
+**THE EV GATE AGREED INDEPENDENTLY**, which is worth recording as a gate-calibration data point:
+scored pre-registration, `exotic_fx_halt_reopen_gap_vol` returns **ev 0.0001, p_survive 0.0112,
+"REJECT (hard economic kill)"** on `price_only + narrow_breadth` — breadth is 4 symbols, and the
+mechanism as specified was price-only. The gate and the data killed it for the same reason from
+opposite directions.
+
+**DO NOT REOPEN** by swapping the vol estimator, the horizon, or the symbol set: all three vary the
+measurement, none changes the mechanism, and the breadth ceiling (four halt-heavy exotics, ~56–73
+episodes each) is structural. The nearest live-again condition would be a genuinely different
+quantity — e.g. *spread* or *fill quality* at reopen rather than return dispersion — which is a
+different mechanism and would need its own card.
+
+**WHAT SURVIVES AND IS THE ACTUAL DELIVERABLE.** The √t model fitting almost exactly is precisely
+what makes the desk's *accounting* defect measurable: since variance really does scale with sessions
+spanned, treating a multi-session gap as one period overstates realised vol by 1.01x–1.18x and
+therefore under-sizes. That, the unwired/hardcoded/empirically-wrong `operational_calendar_miner`,
+and the working PNG-plus-Wayback-CDX route to the broker's dated halt calendar are all filed in
+`docs/research/improvement_inbox.md` (PROSPECTOR s9).
+
+**RELATION TO `hijri_ramadan_calendar_axis` (2026-08-12, `unmeasurable_by_construction`).** Different
+quantity and different universe — a broker halt/reopen event on MT5 exotics, not a seasonal return
+dummy on crypto — so this is not a re-litigation of that row. But that row's kill reason (episode-level
+n too small) applies here too and is now joined by a measured null: this one is **refuted**, not
+merely unmeasurable, and it retires the mechanism rather than a method.
+
+### `lazarus_easter_conditional_reversion_sp500` — PROSPECTOR s12, 2026-08-28 — `post_hoc_conditioning` + `n_too_small` + calendar-class match
+
+_Source: jonathankinlay.com/lazarus-trade-easter-mean-reversion-sp500-index (VERIFIED, robots
+`Allow: /`, read under an honest UA). S&P 500 weekly data from 1950._
+
+**CLAIM:** the week AFTER Easter, *conditional on the index having sold off in the week before
+Easter*, delivers a mean return more than 2x the unconditional post-Easter week and ~4x the
+average week, with less than half the standard deviation — an information ratio ~10x larger,
+an 85% win rate (22/26) against 57% unconditional, and a 58bp difference "statistically
+significant at the 0.2% level".
+
+**DISCARDED — not screened, not carded, and the author's own narrative is the reason.** He tests
+the unconditional post-Easter week FIRST, reports the t-test (unequal variances) as **not
+significant**, and only then conditions on a prior-week selloff to obtain the significant result.
+That is a second hypothesis tested after the first failed, reported as one finding: the
+garden-of-forking-paths this desk's multiplicity law names explicitly ("EVERY TRIAL IS REPORTED";
+selective reporting is indistinguishable from a real result at the point of reading, and it is the
+failure that retracted this desk's flagship signal). The published p is uncorrected for the
+conditioning choice, and the cut — "sold off in the prior week" — is itself a free parameter with
+an unreported set of alternatives (magnitude threshold, window length, index vs ETF).
+
+**And the n forecloses it regardless of the multiplicity argument: 26 events in 65 years.** No
+correction, and no amount of patience, brings a once-a-year event to the canonical ten gates'
+sufficiency bar — 65 more years buys 26 more observations. MT5-tradability is not the binding
+constraint (US500 is in the Fusion universe); the sample is.
+
+**Calendar-class graveyard match** — consistent with `TDOM` (discarded, calendar-class) and with
+`hijri_ramadan_calendar_axis` (`unmeasurable_by_construction`). Per WS-006 the significance of a
+calendar **dummy** is a different quantity from the mechanism, and no forced flow is named here:
+the post offers no answer to *who* is obliged to trade against this and why they cannot stop.
+
+**TAG:** `post_hoc_conditioning` / `n_too_small` / `no_economics`.
+**RE-OPEN CONDITION (L1.16a):** only on a named forced-flow mechanism for the Easter week
+(a settlement, hedging or mandated-rebalance obligation), tested pre-registered across MANY
+indices to buy breadth the calendar cannot buy in time — never on a re-run of this conditioning.
+
+### mt5_broker_swap_markup_asymmetry — the administered MT5 swap IS the policy differential (PROSPECTOR s14, 2026-08-28)   [universe: **MT5**, mandate-valid]
+
+**CARDED s13 2026-08-28, KILLED s14 2026-08-28 by its own pre-committed first test.** One day of
+life, which is the pipeline working: the card wrote the crowdedness decomposition as step 1 and
+declared it allowed to kill the card, and it did.
+
+**MECHANISM OF DEATH — pass-through, not residual.** The claim was that an MT5 broker's swap is an
+*administered* rate that drifts from the true rate differential, leaving a broker-specific,
+staleness-and-markup residual only this desk can see. Measured on the 29 Forex majors/crosses
+against BIS `WS_CBPOL` daily central-bank policy rates:
+**`carry_ann = 0.038 + 1.002 × (r_base − r_quote)`, R² = 0.9781, residual sd = 0.258 pp/yr.**
+A unit slope is a pass-through. The administered swap *is* the policy differential to within 26
+bp/yr, so the object the card was built on does not exist on the majors. `crowded_known` applies
+→ EV **0.0013** → REJECT, the exact branch the card pre-registered as killing.
+
+**AND THE EXOTICS' APPARENT RESIDUAL IS A COST, NOT A MISPRICING.** All-FX R² is only 0.36, which
+looks like structure until conditioned: `corr(|resid|, markup)` = **0.943** across 79 symbols and
+**−0.005** within the markup<5pp subsample. The entire exotic residual is the broker's both-sides
+wedge (USDINR **100 pp/yr**, USDBRL 36, USDIDR 33) leaking into the mid. **A markup is paid on
+either side; there is no leg that earns it.** The family dies on both halves of the universe for
+two different reasons.
+
+**TWO CARD CLAIMS ALSO FALSIFIED, recorded so they are not re-inherited:** (1) the lake does NOT
+hold `fred_ECBDFR` — and FRED's OECD-MEI international rate series are withdrawn entirely (HTTP
+400, 27/27 currencies), so the stated data route was dead as well as absent; (2) `swap_long` /
+`swap_short` are **POINTS, not currency-per-lot** — held-out test fitting 22 non-JPY majors (where
+`tick_size × contract_size` = 1 and the conventions coincide) and predicting the 7 JPY majors
+(factor 100): RMSE **0.232** vs **207.499** pp/yr, an 894× separation.
+
+**TAGS:** `crowded` + `no_economics` (on the majors) / `costs_killed_edge` (on the exotics).
+
+**L1.16a RE-ENTRY DOOR (named, narrow).** The pass-through is a property of how this broker *sets*
+the rate, not of the sample, so more data is NOT an enabling change and neither is another symbol
+set. Re-open ONLY on: a demonstrated **time-series** lag — the swap table updating on a slower
+clock than a *policy change*, measured across an actual rate decision with ≥3 months of the
+hourly `broker_swaps` panel (73 snapshots over 3 days is not a sample). That is a different
+quantity from the cross-sectional residual killed here, and it is the only version left alive.
+
+**WHAT SURVIVED AS A COST FACT, not an alpha:** the majors' markup runs **0.55 pp/yr (GBPUSD) to
+2.43 (GBPCHF)**, a 4.4× spread ordered by quote currency (CHF > JPY > commodity dollars),
+correlated 0.316 with |rate differential|. Useful for choosing where to express a carry-holding
+view; `execution_resolver` already reads the per-symbol field, so it is a measurement of an
+existing input rather than a missing one.
+
+**EVIDENCE:** `data/research/s14_swap_decomposition.json` (79 symbols, four fits, the convention
+test, 26 BIS rates with as-of dates). Derivation: `docs/research/prospector_coverage.md` s14 item 1.
+Related: **R0708** (the `execution_resolver` unit defect this test exposed), **R0709** (the BIS
+replacement source).
