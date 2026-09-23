@@ -6,6 +6,7 @@ import sys
 from pathlib import Path
 
 import pandas as pd
+import pyarrow as pa
 import pyarrow.parquet as pq
 
 DESK = Path(__file__).resolve().parents[1]
@@ -57,3 +58,23 @@ def test_empty_frames_do_not_crash():
     empty = _hourly_chunk().iloc[0:0]
     assert len(tape.merge_day(None, empty)) == 0
     assert len(tape.merge_day(empty, _hourly_chunk())) == 2
+
+
+def test_write_day_salvages_a_legacy_file_whose_derived_ts_cannot_be_read(
+    tmp_path: Path, monkeypatch,
+):
+    out = tmp_path / "XAUUSD" / "2026-09-16.parquet"
+    out.parent.mkdir(parents=True)
+    _recorder_frame().to_parquet(out, index=False)
+    real_read = tape.pd.read_parquet
+
+    def broken_full_read(path, *args, **kwargs):
+        if Path(path) == out:
+            raise pa.ArrowInvalid("Column ts expected length 2 but got length 0")
+        return real_read(path, *args, **kwargs)
+
+    monkeypatch.setattr(tape.pd, "read_parquet", broken_full_read)
+    assert tape.write_day(_hourly_chunk(), out) == 3
+    table = pq.read_table(out)
+    assert table.column("time_msc").to_pylist() == [1000, 2000, 3000]
+    assert str(table.schema.field("ts").type).startswith("timestamp[ms")

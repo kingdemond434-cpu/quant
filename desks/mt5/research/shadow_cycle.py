@@ -36,6 +36,32 @@ ENROLLED_ADMISSIONS = frozenset({
     "FULL_10_PASS",
 })
 
+SCALP_BAR_MAX_AGE_SECONDS = 30 * 60
+
+
+def _fresh_authoritative_scalp_bars(now: datetime | None = None) -> bool:
+    """True when the canonical Fusion collector already supplied the bounded scalp input.
+
+    The shadow cycle is a consumer, not a second terminal owner.  Re-attaching while the trading
+    terminal is serving another scheduled collector produces MT5 ``-10004 / No IPC connection``
+    even though all three authoritative files are already fresh.  We only skip the fallback pull
+    when provenance grants promotion authority and every required file is fresh and non-empty.
+    """
+    now = now or datetime.now(UTC)
+    universe = BASE / "data" / "universe"
+    source = _read(universe / "XAUUSD_scalp_source.json")
+    if source.get("promotion_authority") is not True:
+        return False
+    for timeframe in ("M1", "M5", "M15"):
+        path = universe / f"XAUUSD_{timeframe}.parquet"
+        try:
+            age = now.timestamp() - path.stat().st_mtime
+        except OSError:
+            return False
+        if path.stat().st_size <= 0 or age < -60 or age > SCALP_BAR_MAX_AGE_SECONDS:
+            return False
+    return True
+
 
 def _refresh_scalp_bars() -> None:
     """Refresh broker M1/M5/M15 before replay; never place or modify an order.
@@ -65,6 +91,8 @@ def _refresh_scalp_bars() -> None:
     needs no changes.
     """
     if os.name != "nt":
+        return
+    if _fresh_authoritative_scalp_bars():
         return
     import json as _json
     from datetime import UTC as _UTC
@@ -131,6 +159,22 @@ def _read(path: Path) -> dict:
         return row if isinstance(row, dict) else {}
     except (OSError, ValueError):
         return {}
+
+
+def _canonical_certificate_count() -> int | None:
+    """Count only exact-policy ten-gate certificates from the single canonical store."""
+    try:
+        from gate_policy import all_ten_pass, is_exact_policy
+        doc = _read(BASE / "reports" / "UNIVERSAL_SURVIVORS.json")
+        if not is_exact_policy(doc.get("gate_policy")):
+            return None
+        rows = doc.get("survivors")
+        if not isinstance(rows, dict):
+            return 0
+        return sum(isinstance(row, dict) and all_ten_pass(row.get("gates"))
+                   for row in rows.values())
+    except (ImportError, OSError, ValueError, TypeError):
+        return None
 
 
 def _family_of_key(key: str) -> str:
@@ -295,11 +339,13 @@ def run() -> tuple[dict, int]:
     _n_mechs = len({_family_of_key(k) for k in _active_keys if _family_of_key(k)})
     _n_hashes = len({_hash_of_key(k) for k in _active_keys if _hash_of_key(k)})
     terminal_rows = [row for row in rows if _terminal_status(row.get("status"))]
-    certified = (int(legacy.get("configured_sleeves", 0) or 0)
-                 + int(scalp.get("configured_sleeves", 0) or 0)
-                 + int(qquant.get("certified_qquant_sleeves", 0) or 0))
+    certified = _canonical_certificate_count()
     recorded = len(rows)
-    missing = [] if recorded >= certified else [f"{certified - recorded} certified sleeve(s)"]
+    if certified is None:
+        errors["certificate_census"] = "canonical exact-policy certificate store is unmeasured"
+        missing = []
+    else:
+        missing = [] if recorded >= certified else [f"{certified - recorded} certified sleeve(s)"]
     # `BLOCKED_SLEEVE_ERROR` is the per-sleeve isolation status shadow_forward writes when one
     # row cannot be evaluated (gap-wirer 2026-08-27). It MUST be counted here: the whole point of
     # isolating a failure is that the other rows keep accruing, and a failure that stops halting
@@ -323,6 +369,8 @@ def run() -> tuple[dict, int]:
         "configured_sleeves": len(active_rows),
         "represented_sleeves": len(active_rows),
         "certified_sleeves_total": certified,
+        "forward_clocks_total": len(active_rows),
+        "certificate_basis": "reports/UNIVERSAL_SURVIVORS.json exact ten-gate policy",
         # THE DASHBOARD SAID 61 AND THE TRUTH WAS ABOUT SIX (added 2026-09-14).
         #
         # A sleeve count is not a breadth measure. Measured on the live book: one parameter hash,
