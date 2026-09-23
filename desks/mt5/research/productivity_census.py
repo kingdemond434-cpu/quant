@@ -80,6 +80,13 @@ UNIVERSAL_SURVIVORS = REPORTS / "UNIVERSAL_SURVIVORS.json"
 SLEEVE_REGISTRY = DESK / "data" / "sleeve_registry.json"
 SLEEVES = DESK / "data" / "sleeves.json"
 FOREST_SOURCES = DESK / "data" / "deep_forest_sources.json"
+#: The attribution stamp's artifact (desks/mt5/research/attribution_census.py). Read for the
+#: modal region of each producer's OWN cells -- the route a producer's NAME could never give.
+ATTRIBUTION = REPORTS / "ATTRIBUTION_COVERAGE.json"
+
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+from libs.research import attribution as _attr  # noqa: E402
 
 # The window every rate in this census is computed over. Compute hours come from the compute
 # ledger, whose own window is days; funnel counts are cumulative registry state, which the JSON
@@ -148,22 +155,31 @@ def _load_json(path: Path) -> Any:
 def _region_for(token: str | None) -> str | None:
     """Map a producer name, generator prefix or source country onto one of the twelve.
 
-    Returns None rather than a default, because an unattributable producer belongs in the
-    `unattributed` bucket by name -- silently filing it under "Global" would inflate exactly the
-    row a reader is least able to check.
+    DELEGATED, NEVER RE-DERIVED (2026-09-23). The rule lives in `libs/research/attribution.py`,
+    which is also what stamps the registry at birth; a second copy here is how two organs come to
+    disagree about which region a producer belongs to. Returns None rather than a default,
+    because an unattributable producer belongs in the `unattributed` bucket by name -- silently
+    filing it under "Global" would inflate exactly the row a reader is least able to check.
     """
-    if not token:
-        return None
-    raw = str(token).strip().lower()
-    if not raw:
-        return None
-    for part in (raw.split(":")[0], raw.split("_")[0], raw.replace(" ", ""), raw):
-        if part in REGION_OF_CODE:
-            return REGION_OF_CODE[part]
-        code = NAME_TO_CODE.get(part)
-        if code:
-            return REGION_OF_CODE.get(code)
-    return None
+    return _attr.region_of(token)
+
+
+def _stamped_regions() -> dict[str, str]:
+    """producer -> the region its OWN registry rows carry, from `ATTRIBUTION_COVERAGE.json`.
+
+    THE ROUTE A NAME COULD NEVER GIVE. This organ resolved a producer's region from its NAME, so
+    1,521 of 1,586 producers holding 4,725 unique cells fell into `unattributed` and the board
+    read `Europe: 1,973 sources, 0 cells`. `desks/mt5/research/attribution_census.py` stamps every
+    cell with the region its lineage reaches and publishes the modal region per producer; this
+    reads that. An absent artifact changes nothing -- the name routes stay, and the producers it
+    could not place stay in `unattributed`, which is UNMEASURED and not a zero (L1.28a).
+    """
+    doc = _load_json(ATTRIBUTION)
+    block = doc.get("producer_region") if isinstance(doc, dict) else None
+    regions = block.get("regions") if isinstance(block, dict) else None
+    if not isinstance(regions, dict):
+        return {}
+    return {_norm(k): str(v) for k, v in regions.items() if str(v) in REGIONS}
 
 
 def _norm(name: str) -> str:
@@ -599,6 +615,7 @@ def build(window_days: float = COMPUTE_WINDOW_DAYS,
     reg = measure_registry(db)
     comp = measure_compute(window_days)
     term = measure_terminal(reg)
+    stamped = _stamped_regions()
 
     # Every key the registry has seen that no roster knows about is ITSELF a finding.
     per = reg.get("by_producer", {})
@@ -626,6 +643,13 @@ def build(window_days: float = COMPUTE_WINDOW_DAYS,
             hits = (reg.get("region_hits") or {}).get(key) or {}
             if hits:
                 region = max(hits.items(), key=lambda kv: kv[1])[0]
+        if not region:
+            # THE STAMP, LAST AND DECISIVE. A producer whose name names no ground is not
+            # regionless -- its CELLS carry the region their lineage reached, stamped at birth by
+            # libs/research/attribution.py. Read after the name routes so a declared department
+            # still wins on its own name, and before `unattributed`, which is now only for a
+            # producer whose rows reach no ground either.
+            region = stamped.get(key) or stamped.get(_norm(meta.get("producer") or key))
         funnel = {
             "sources_visited": srcs if srcs is not None else UNMEASURED,
             "documents_retained": m.get("documents_retained", UNMEASURED),
@@ -694,6 +718,20 @@ def build(window_days: float = COMPUTE_WINDOW_DAYS,
                 b[stage] += v
         if isinstance(row["compute_hours"], (int, float)):
             b["compute_hours"] += float(row["compute_hours"])
+    # THE CELL-LEVEL COUNT, BESIDE THE PRODUCER-LEVEL ONE, BECAUSE THEY ANSWER DIFFERENT
+    # QUESTIONS. `unique_cells` above rolls a producer's WHOLE output into the producer's ONE
+    # region, so a compiler that works every ground is credited entirely to its modal one and
+    # every other region reads zero -- which is exactly how Europe came to show 1,973 sources and
+    # no cells. `unique_cells_stamped` is the per-CELL count from the birth stamp
+    # (attribution_census.unique_cells_by_region), where a cell is counted under the ground its
+    # own lineage reached. UNMEASURED when the artifact is absent, never zero (L1.28a).
+    stamped_cells = _load_json(ATTRIBUTION)
+    cell_block = (stamped_cells or {}).get("unique_cells_by_region") \
+        if isinstance(stamped_cells, dict) else None
+    cells_by_region = (cell_block or {}).get("by_region") if isinstance(cell_block, dict) else None
+    for name, b in by_region.items():
+        b["unique_cells_stamped"] = (int(cells_by_region.get(name, 0))
+                                     if isinstance(cells_by_region, dict) else UNMEASURED)
     for b in by_region.values():
         b["compute_hours"] = round(b["compute_hours"], 4)
         b["survivors_per_region"] = b["cheap_survivors"]

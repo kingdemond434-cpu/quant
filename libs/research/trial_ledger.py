@@ -338,3 +338,214 @@ def trial_from_record(rec: Mapping[str, Any] | Any, *, index: int = 0) -> Trial:
 def effective_count_of_records(records: Iterable[Mapping[str, Any] | Any]) -> float:
     """N_effective of any iterable of records; 0.0 for none."""
     return census(trial_from_record(r, index=i) for i, r in enumerate(records)).n_effective
+
+
+# ------------------------------------------- THE CHARGE: effective independent tests
+# WHY A SECOND ESTIMATOR, AND WHY IT IS THE ONE THAT MAY BE CHARGED. `census` above prices a
+# family by the eigen-spectrum of a similarity matrix -- the right instrument when descriptors
+# are continuous and the question is "how redundant is this family". The multiplicity BUDGET asks
+# a coarser and more auditable question: HOW MANY DISTINCT TESTS WERE ACTUALLY RUN. Thirty-one
+# parameter variants of one rule on one instrument at one horizon are one test that was tuned,
+# not thirty-one independent looks at the data, and the desk already measures the three
+# identities that say so:
+#
+#     grid cell  (family, symbol, horizon)   -- where the test was pointed
+#     content    (descriptors + parameters)  -- what was actually evaluated
+#     mechanism  (the family/lineage group)  -- which economic claim was being tested
+#
+# The estimator is the SAME participation ratio, taken of the identity-group SIZES:
+# (sum n_i)^2 / sum n_i^2 over the distinct (grid, content) identities within one mechanism.
+# k identical clones collapse to 1; k genuinely distinct identities count k; k groups of unequal
+# size count somewhere between, weighted toward the larger. It cannot exceed the row count and it
+# cannot fall below 1, so a family can never be charged as less than one search.
+#
+# DIRECTION AND THE FLOOR. This number is only ever SMALLER than the nominal row count, so it can
+# only make a multiple-testing bar easier; that is the whole reason the floor below is not
+# negotiable. The charge is floored at the number of distinct MECHANISMS -- you cannot have run
+# fewer independent tests than you had distinct economic claims -- and any census that cannot
+# measure fails closed to the nominal count, never to the smaller one.
+GRID_AXES: tuple[str, ...] = ("family", "symbol", "horizon")
+#: Descriptor axes that carry the grid cell, in order of preference per axis.
+_GRID_SOURCES: dict[str, tuple[str, ...]] = {
+    "symbol": ("symbol", "sym"),
+    "horizon": ("horizon", "timeframe", "chart"),
+}
+
+
+def grid_key(trial: Trial) -> str:
+    """(family, symbol, horizon) -- where a test was pointed. Missing axes are `?`, never
+    invented: two rows that both fail to name a symbol are not thereby the same symbol, but they
+    ARE the same state of knowledge, and charging them apart would reward not writing it down."""
+    parts = [trial.group or "?"]
+    for axis in ("symbol", "horizon"):
+        val = ""
+        for src in _GRID_SOURCES[axis]:
+            v = trial.descriptors.get(src)
+            if v:
+                val = str(v)
+                break
+        parts.append(val or "?")
+    return "|".join(parts)
+
+
+def content_key(trial: Trial) -> str:
+    """What was actually evaluated: every descriptor and parameter, canonically ordered. Two rows
+    with the same content are the same evaluation however many ids the desk minted for them."""
+    desc = ";".join(f"{k}={trial.descriptors[k]}" for k in sorted(trial.descriptors))
+    par = ";".join(f"{k}={trial.params[k]!r}" for k in sorted(trial.params))
+    return f"{desc}#{par}"
+
+
+def mechanism_key(trial: Trial) -> str:
+    """Which economic claim was under test -- the lineage when a genome was stamped, else the
+    family. This is the identity that showed the collapse: many cells, one mechanism."""
+    return trial.group
+
+
+@dataclass(frozen=True)
+class FamilyCharge:
+    """One mechanism's nominal row count beside the effective tests it may be charged."""
+
+    family: str
+    n_nominal: int
+    n_effective: float
+    n_grid_cells: int
+    n_identities: int
+    ratio: float
+    basis: str
+
+    def to_dict(self) -> dict[str, Any]:
+        return {"family": self.family, "n_nominal": self.n_nominal,
+                "n_effective": round(self.n_effective, 3),
+                "n_grid_cells": self.n_grid_cells, "n_identities": self.n_identities,
+                "ratio": round(self.ratio, 4), "basis": self.basis}
+
+
+@dataclass(frozen=True)
+class ChargeCensus:
+    """The whole docket: nominal rows, effective independent tests, and the ratio between."""
+
+    n_nominal: int
+    n_effective: float
+    n_mechanisms: int
+    families: dict[str, FamilyCharge]
+    basis: str
+    status: str = "MEASURED"
+
+    @property
+    def ratio(self) -> float:
+        """Nominal per effective test. 1.0 when nothing was measured -- never a free discount."""
+        return self.n_nominal / self.n_effective if self.n_effective > 0 else 1.0
+
+    def to_dict(self) -> dict[str, Any]:
+        return {"status": self.status, "n_nominal": self.n_nominal,
+                "n_effective": round(self.n_effective, 3), "ratio": round(self.ratio, 4),
+                "n_mechanisms": self.n_mechanisms, "basis": self.basis,
+                "families": {k: v.to_dict() for k, v in sorted(self.families.items())}}
+
+
+def _identity_participation(sizes: Sequence[int]) -> float:
+    """(sum n)^2 / sum n^2 of identity-group sizes, clipped to [1, sum n]."""
+    total = float(sum(sizes))
+    if total <= 0.0:
+        return 0.0
+    denom = float(sum(float(n) * float(n) for n in sizes))
+    if denom <= 0.0:
+        return total
+    return float(max(1.0, min(total * total / denom, total)))
+
+
+def _grid_cell_effective(members: Sequence[Trial]) -> float:
+    """Effective independent tests INSIDE one grid cell -- one mechanism, one symbol, one horizon.
+
+    EXACT IDENTITY IS THE WRONG KNIFE HERE and measuring it said so: on the live docket every one
+    of 22,925 rows carried a distinct content key, because a sweep's rows differ in the parameter
+    it swept. `EMA(19,57)` and `EMA(20,58)` are two contents and one search. So inside the cell
+    the charge is the module's OWN similarity participation ratio -- numeric parameters decay with
+    relative distance -- which collapses a neighbourhood of tunings toward one and keeps genuinely
+    different rules apart. Across cells nothing is collapsed: a different symbol or horizon is a
+    different test of the claim, and charging those together would be the loose direction.
+    """
+    m = len(members)
+    if m <= 1:
+        return float(m)
+    sample = list(members)
+    if m > MAX_MEMBERS:
+        step = max(1, m // MAX_MEMBERS)
+        sample = sample[::step][:MAX_MEMBERS]
+    pr = participation_ratio(_similarity_matrix(sample)) * (m / len(sample))
+    return float(max(1.0, min(pr, float(m))))
+
+
+def family_charge(members: Sequence[Trial]) -> FamilyCharge:
+    """One mechanism's charge: its grid cells, each priced by within-cell participation ratio."""
+    if not members:
+        return FamilyCharge("?", 0, 0.0, 0, 0, 1.0, UNMEASURED)
+    fam = mechanism_key(members[0]) or "?"
+    cells: dict[str, list[Trial]] = {}
+    identities: set[tuple[str, str]] = set()
+    for t in members:
+        g = grid_key(t)
+        cells.setdefault(g, []).append(t)
+        identities.add((g, content_key(t)))
+    n_eff = float(sum(_grid_cell_effective(ms) for ms in cells.values()))
+    n_raw = len(members)
+    n_eff = max(1.0, min(n_eff, float(n_raw)))
+    ratio = n_raw / n_eff if n_eff > 0 else 1.0
+    biggest = max(len(ms) for ms in cells.values())
+    basis = (f"{n_raw} row(s) over {len(cells)} grid cell(s) and {len(identities)} "
+             f"(grid, content) identit(ies); sum of within-cell participation ratios "
+             f"{n_eff:.2f}; largest grid cell holds {biggest} row(s)")
+    return FamilyCharge(fam, n_raw, n_eff, len(cells), len(identities), ratio, basis)
+
+
+def effective_independent_tests(
+        records: Iterable[Mapping[str, Any] | Any]) -> ChargeCensus:
+    """Nominal rows versus effective independent tests, per mechanism and in total.
+
+    Mechanisms are independent by construction (the conservative direction: two mechanisms on one
+    symbol are two searches), so the total is the sum over mechanisms of each one's participation
+    ratio, floored at the number of distinct mechanisms.
+    """
+    by_fam: dict[str, list[Trial]] = {}
+    for i, rec in enumerate(records):
+        t = trial_from_record(rec, index=i)
+        by_fam.setdefault(mechanism_key(t) or "?", []).append(t)
+    if not by_fam:
+        return ChargeCensus(0, 0.0, 0, {}, UNMEASURED, UNMEASURED)
+    charges = {fam: family_charge(ms) for fam, ms in by_fam.items()}
+    n_nominal = sum(c.n_nominal for c in charges.values())
+    n_eff = float(sum(c.n_effective for c in charges.values()))
+    n_eff = max(n_eff, float(len(charges)))
+    return ChargeCensus(
+        n_nominal, n_eff, len(charges), charges,
+        "sum over mechanisms of the participation ratio of their (grid cell, content) identity "
+        "sizes; mechanisms independent; floored at the number of distinct mechanisms")
+
+
+def campaign_charge(nominal_campaign_trials: int, census: ChargeCensus,
+                    *, floor: int = 2) -> tuple[int, str]:
+    """Scale a standing campaign trial count by MEASURED redundancy, and fail closed upward.
+
+    The campaign charge is a policy constant so that a candidate's bar is not a property of the
+    batch it was scheduled into. What this does is correct that constant for the redundancy the
+    desk can actually measure in the tests it ran: charging thirty-one tunings of one rule as
+    thirty-one independent looks is an over-correction, and an over-correction is still a wrong
+    correction. Every failure path returns the UNCHANGED nominal count -- an unmeasurable census
+    buys no relief at all.
+    """
+    nominal = int(max(0, nominal_campaign_trials))
+    if nominal < floor:
+        return max(floor, nominal), "nominal_campaign_trials (below floor, unchanged)"
+    if census.status != "MEASURED" or census.n_nominal <= 0 or census.n_effective <= 0:
+        return nominal, f"nominal_campaign_trials({nominal}) fail_closed (census {census.status})"
+    ratio = census.n_effective / census.n_nominal
+    if not math.isfinite(ratio) or ratio <= 0.0 or ratio > 1.0:
+        return nominal, f"nominal_campaign_trials({nominal}) fail_closed (ratio {ratio:.4f})"
+    charged = math.ceil(nominal * ratio)
+    hard_floor = max(floor, census.n_mechanisms)
+    charged = max(charged, hard_floor)
+    charged = min(charged, nominal)
+    return charged, (f"effective_campaign_trials({charged}) = ceil({nominal} x "
+                     f"{census.n_effective:.2f}/{census.n_nominal}) floored at "
+                     f"{hard_floor} distinct mechanism(s)")

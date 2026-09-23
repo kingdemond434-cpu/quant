@@ -67,6 +67,27 @@ _GENERIC = frozenset({"config.json", "state.json", "index.json", "README.md", "o
 #: a working organ lands there, and calling it dead would licence deleting it.
 LIVE, BURNING, NO_CLOCK, UNREACHED = "LIVE", "BURNING", "NO_CLOCK", "UNREACHED"
 
+#: RATCHET: organs that hold a clock and whose artifact no other production file reads. It may
+#: FALL, never rise. This is the ONE population the census may fence on, because the clock half is
+#: exact -- UNREACHED and NO_CLOCK rest on a consumer heuristic that under-reports and fencing on
+#: them would licence deleting working organs. BURNING is different in kind: the desk is paying
+#: compute every hour for bytes nobody opens, which is an orphan by the principal's own definition
+#: (2026-09-23) even when the organ runs perfectly.
+#:
+#: THE NUMBER JUMPED WHEN THE CENSUS STOPPED BEING BLIND, and that is the honest direction. Before
+#: the constant-binding and one-hop-alias fixes above, the census could see 146 organs and called 5
+#: of them BURNING. After, it sees 656 -- the other 510 wrote through a module constant and were
+#: SKIPPED ENTIRELY by `if not arts: continue`, so they were never judged at all -- and 49 are
+#: BURNING. 49 is therefore not a regression from 5; 5 was a number measured over a quarter of the
+#: desk. The ratchet is set at the measured count, NOT above it: a new BURNING organ must fail this
+#: fence on the day it arrives, which is the whole point of ratcheting rather than sweeping.
+#:
+#: NOTHING HERE THROTTLES OR DISABLES ANYTHING. The two repairs are to name a consumer or to
+#: retire the organ with a reason in `docs/research/retirements.jsonl`. Lowering a budget or
+#: masking a timer is never the remedy (growth governance: a reduction needs its own E[log W]
+#: proof, and a census has none to offer).
+MAX_BURNING = 49
+
 
 def _prod_files(root: Path) -> list[Path]:
     out: list[Path] = []
@@ -86,13 +107,55 @@ def _module_name(root: Path, path: Path) -> str:
     return path.relative_to(root).as_posix()
 
 
+#: THE HOUSE STYLE BINDS THE NAME AT THE TOP AND WRITES IT FOUR HUNDRED LINES DOWN:
+#: `OUT = DESK / "reports" / "PLUMBING_WATCHDOG.json"` then `OUT.write_text(...)` in main().
+#: An eight-line window around the write call can never see that literal, so the census read the
+#: watchdog's writes as `X.json` -- a name that only ever appears in its DOCSTRING -- and then
+#: reported the organ BURNING while `scripts/check_plumbing_watchdog.py`, a law-gate fence, reads
+#: its real artifact every run. Two of the five BURNING rows of 2026-09-23 were this bug, not a
+#: dead organ, and a census that manufactures its own actionable population is worse than none.
+#: `libs/ops/control_plane`'s sibling check already solved this: when a literal is bound to a
+#: constant, search the WHOLE module for a write through that constant.
+_CONST_BIND = re.compile(r"\s*([A-Za-z_][A-Za-z0-9_]*)\s*(?::[^=]+)?=")
+_WRITE_LINE = re.compile(r"write_text|write_bytes|json\.dump\(|open\([^)]*['\"][wa]|mkstemp|"
+                         r"fh\.write\(|write_report|stamp_sidecar|os\.replace|to_parquet\(")
+
+
+#: ONE HOP OF ALIASING, because the desk's own organs take an override argument:
+#: `clock_liveness.py:1193` is `r, m = report or REPORT, markdown or DOC` and then writes through
+#: `r`, so a search for writes through `REPORT` alone finds nothing and the organ is reported
+#: BURNING while three fences read its artifact. One hop is deliberate: it covers the override
+#: idiom this repository actually uses without becoming a dataflow analysis that would start
+#: claiming writes nobody performs.
+_ALIAS = r"^([^=\n<>!+\-*/]+?)\s*=\s*([^=\n].*)$"
+
+
+def _writes_through(src: str, const: str) -> bool:
+    """Does the module ever write through the constant `const`, or a one-hop alias of it?"""
+    names = {const}
+    for line in src.splitlines():
+        m = re.match(_ALIAS, line)
+        if not m or not re.search(rf"\b{re.escape(const)}\b", m.group(2)):
+            continue
+        names |= set(re.findall(r"[A-Za-z_][A-Za-z0-9_]*", m.group(1)))
+    for name in names:
+        nm = re.escape(name)
+        if re.search(
+            rf"\b{nm}\s*\.\s*(?:write_text|write_bytes|open\(\s*['\"][wax]|parent\.mkdir)"
+            rf"|(?:write_report|stamp_sidecar|_atomic_write|os\.replace|json\.dump)\([^)]*\b{nm}\b"
+            rf"|\bto_(?:json|csv|parquet)\(\s*{nm}\b", src):
+            return True
+    return False
+
+
 def artifacts_and_reads(path: Path) -> tuple[set[str], set[str]]:
     """(artifact filenames this file appears to WRITE, filenames it appears to READ).
 
     Best effort, and the report says so: a filename literal within a few lines of a write call
-    is a write, any other filename literal is a read. The heuristic over-reports CONSUMERS on
-    purpose -- it can make an organ look more alive than it is, never mark a live one dead,
-    and a census that wrongly buries a working organ is worse than one that is generous.
+    is a write, a literal BOUND TO A CONSTANT the module later writes through is a write, and any
+    other filename literal is a read. The heuristic over-reports CONSUMERS on purpose -- it can
+    make an organ look more alive than it is, never mark a live one dead, and a census that
+    wrongly buries a working organ is worse than one that is generous.
     """
     try:
         src = path.read_text("utf-8", errors="ignore")
@@ -102,11 +165,18 @@ def artifacts_and_reads(path: Path) -> tuple[set[str], set[str]]:
     named = {n for n in _ARTIFACT.findall(src) if n not in _GENERIC}
     writes: set[str] = set()
     for i, line in enumerate(lines):
-        if not re.search(r"write_text|json\.dump\(|open\([^)]*['\"][wa]|mkstemp|fh\.write\(",
-                         line):
+        if not _WRITE_LINE.search(line):
             continue
         window = "\n".join(lines[max(0, i - 8):i + 3])
         writes |= {n for n in _ARTIFACT.findall(window) if n not in _GENERIC}
+    for m in _ARTIFACT.finditer(src):
+        name = m.group(1)
+        if name in _GENERIC or name in writes:
+            continue
+        head = src[src.rfind("\n", 0, m.start()) + 1: m.start()]
+        bind = _CONST_BIND.match(head)
+        if bind and _writes_through(src, bind.group(1)):
+            writes.add(name)
     return writes, named - writes
 
 
@@ -219,6 +289,8 @@ def census(root: Path = ROOT) -> dict[str, Any]:
         "no_clock": sorted(by_verdict[NO_CLOCK]), "unreached": sorted(by_verdict[UNREACHED]),
         "contested_artifacts": dict(sorted(contested.items())),
         "counts": {k: len(v) for k, v in sorted(by_verdict.items())},
+        "burning_ratchet": MAX_BURNING,
+        "burning_ratchet_ok": len(by_verdict[BURNING]) <= MAX_BURNING,
         "basis": ("CLOCK from check_scheduler_manifest's four planes; ARTIFACT and CONSUMER from "
                   "literal paths near a write call and everywhere else, plus module imports. The "
                   "heuristic over-reports consumers on purpose: it can make an organ look more "
@@ -238,19 +310,33 @@ def census(root: Path = ROOT) -> dict[str, Any]:
 
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--strict", action="store_true", help="exit 1 on a contested artifact")
+    ap.add_argument("--strict", action="store_true",
+                    help="exit 1 on a contested artifact or a BURNING count above the ratchet")
     ap.add_argument("--out", type=Path, default=OUT)
     args = ap.parse_args(argv)
     doc = census()
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(json.dumps(doc, indent=1, default=str), "utf-8")
-    print(f"dead architecture: {doc['n_organs']} organs that write something; {doc['counts']}")
+    n_burn = len(doc["burning"])
+    print(f"dead architecture: {doc['n_organs']} organs that write something; {doc['counts']}; "
+          f"BURNING {n_burn} (ratchet {MAX_BURNING})")
     if doc["burning"]:
         print(f"  BURNING (on a clock, no reader found): {', '.join(doc['burning'][:10])}")
     if doc["contested_artifacts"]:
         print(f"  CONTESTED artifacts: {len(doc['contested_artifacts'])}; first "
               f"{next(iter(doc['contested_artifacts'].items()))}")
-    return 1 if (args.strict and doc["contested_artifacts"]) else 0
+    if not args.strict:
+        return 0
+    if n_burn > MAX_BURNING:
+        print(f"FAIL: organs on a clock with no reader rose to {n_burn} (ratchet {MAX_BURNING}). "
+              f"Each one is an orphan the desk pays compute for every hour: give its artifact a "
+              f"named consumer, or retire the organ with a reason in "
+              f"docs/research/retirements.jsonl and lower MAX_BURNING. Never mask its timer.")
+        return 1
+    if n_burn < MAX_BURNING:
+        print(f"NOTE: BURNING fell to {n_burn}; lower MAX_BURNING in this file to {n_burn} so the "
+              f"ratchet keeps the ground that was won.")
+    return 1 if doc["contested_artifacts"] else 0
 
 
 if __name__ == "__main__":

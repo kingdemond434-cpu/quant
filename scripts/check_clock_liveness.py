@@ -10,17 +10,20 @@ and at day 14 the verdict rule fires on ancient trades. So this fence fails whil
   * the frozen count has RISEN above the ratchet floor (the lowest count ever measured here);
   * the report itself is stale (older than two hourly cadences) or absent on a host that runs
     the leg;
-  * CLOCK IMPLIES CERTIFICATE (principal 2026-09-23) is breached and has been for longer than
-    ONE JUDGING CYCLE -- a clock running with no certificate is a breach, and the remedy is to
-    JUDGE its cell, not to switch the clock off, so the fence measures how long the breach has
-    waited at the front of the judge's queue rather than how many breaches exist;
+  * ANY clock is running without a canonical certificate, at all. CLOCK IF AND ONLY IF
+    CERTIFICATE (principal 2026-09-23, strict): "allow evidence only if they pass the 10 gates
+    and are certificates, otherwise there is no point." There is no tolerance and no ageing
+    window, because an unbacked clock is retired on the pass it is found -- so a non-zero count
+    here means the organ did not run, could not write, or something else re-enrolled an
+    uncertified cell;
   * the breach count has RISEN above its own ratchet floor.
 
-WHAT IT DELIBERATELY DOES NOT DO. It never fails merely because breached clocks exist: on a desk
-that has just been told every clock must be certified, the breach count starts at almost the
-whole book, and a fence that went red on the count would pressure a future session into
-retiring clocks to get green -- destroying the evidence the law exists to gather. It fails on
-AGE, which only judging can cure, and on the ratchet, which only judging can lower.
+WHAT CHANGED, AND WHY THE OLD CLAUSE IS GONE. This fence previously tolerated breaches while
+their cells queued for judgement, failing only when one outlived a judging cycle. Under the
+strict rule that state cannot exist: an unbacked clock has no waiting period, because forward
+evidence on a cell that never certifies is evidence the desk can never cash. The cells keep
+their place at the FRONT of the judge's queue -- losing a clock is not losing priority -- they
+simply gather no evidence until they earn a certificate.
 
 IT IS A STATE FENCE. On a clean checkout, a build box or CI there is no CLOCK_LIVENESS.json and
 no forward lane to read, so the verdict is UNMEASURED -- a real answer about the HOST (L1.28a),
@@ -121,21 +124,21 @@ def judge(report: Any, ratchet: Any, *, require_state: bool,
                         f"the enforced ceiling is the lowest count ever measured on this box and "
                         f"it may fall and never rise (L1.50)")
 
-    # 3. CLOCK IMPLIES CERTIFICATE. Age, never count -- see the docstring.
+    # 3. CLOCK IF AND ONLY IF CERTIFICATE. Any unbacked clock, at all -- see the docstring.
     cert = report.get("certificate") if isinstance(report.get("certificate"), dict) else {}
     if cert:
-        cycle = float(cert.get("judging_cycle_s") or 3600.0)
-        overdue = cert.get("overdue_beyond_one_judging_cycle")
-        oldest = cert.get("oldest_breach_age_s")
-        if isinstance(overdue, int) and overdue > 0:
-            eldest = (f"; oldest breach {float(oldest) / 3600.0:.1f} h"
-                      if isinstance(oldest, (int, float)) else "")
+        live = cert.get("unbacked_live")
+        if isinstance(live, int) and live > 0:
             findings.append(
-                f"{overdue} clock(s) have been running UNCERTIFIED for longer than one judging "
-                f"cycle ({cycle / 3600.0:.1f} h){eldest}")
+                f"{live} forward clock(s) are running with NO canonical certificate. CLOCK IF "
+                f"AND ONLY IF CERTIFICATE is strict: an unbacked clock is retired on the pass it "
+                f"is found, so a non-zero count means the retirement did not take -- the organ "
+                f"did not run, could not write the lane ledger, or something re-enrolled an "
+                f"uncertified cell")
+        if cert.get("awaiting"):
             findings.append(
-                "the remedy is the judge, not the clock: their cells are queued FIRST as "
-                "`recertify` tasks and the throughput organ must be reaching them")
+                f"{cert.get('awaiting')} clock(s) are still classed AWAITING_JUDGEMENT: that "
+                f"state was abolished with the power-cure lane and must not come back")
         floor = (cert.get("ratchet") or {}).get("lowest_breached")
         n_breach = cert.get("breached")
         if isinstance(floor, int) and isinstance(n_breach, int) and n_breach > floor:

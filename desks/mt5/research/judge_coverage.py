@@ -84,6 +84,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import sys
 import time
 from datetime import UTC, datetime
@@ -284,7 +285,71 @@ def _tf_of(row: dict[str, Any]) -> str:
     return tf if tf in _BAR_COST else "H1"
 
 
-def family_priors(families: list[str]) -> dict[str, dict[str, float]]:
+def realised_pass_rates(path: Path | None = None) -> dict[str, dict[str, float]]:
+    """WHAT EACH FAMILY ACTUALLY DID AT THE JUDGE, counted from the gate ledger itself.
+
+    THE MEASUREMENT THAT MADE THIS NECESSARY (2026-09-23). The ranking below spends
+    `p_optimistic`, and every family in the published ranking carried `prior_n: 0`,
+    `prior_status: PRIOR`, `p_optimistic: 1.0` -- a flat pass probability, so the aim was being
+    set by net value and breadth alone while 3,368 verdicts across 27 families sat in
+    `gate_verdict_ledger.jsonl` saying exactly which families pass. `learn_priors` below feeds the
+    stored posterior, but its cursor advances past rows it could not charge, so a verdict lost
+    that way is lost for good. THE LEDGER IS THE EVIDENCE AND IT IS RE-READABLE: counting it here
+    every pass cannot be made stale by a cursor, and the two numbers are published side by side so
+    a disagreement between them is visible rather than silent.
+
+    Returned per family: `judged`, `passed`, `pass_rate`, and the Beta(1+passed, 1+failed)
+    posterior this evidence supports -- mean and 95% upper bound. A family with no verdicts gets
+    Beta(1,1): mean 0.5, upper bound 1.0, which is how an unjudged family stays EXPLORED rather
+    than being ranked below a family measured to fail.
+    """
+    judged: dict[str, int] = {}
+    passed: dict[str, int] = {}
+    try:
+        with (path or GATE_LEDGER).open("r", encoding="utf-8", errors="replace") as fh:
+            lines = fh.readlines()
+    except OSError:
+        return {}
+    for line in lines:
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            row = json.loads(line)
+        except ValueError:
+            continue
+        if not isinstance(row, dict):
+            continue
+        if str(row.get("downstream_status") or "").startswith(NOT_JUDGED_PREFIX):
+            continue
+        fam = str(row.get("family") or "")
+        if not fam:
+            continue
+        ok = row.get("passed")
+        gate = str(row.get("terminal_gate") or "")
+        # AN UNMEASURED CELL IS NOT A FAILURE. `UNKNOWN` is the sealed judge's unmeasured path, so
+        # it counts toward nothing here: charging it as a rejection would teach the aim that a
+        # family does not work when what happened is that nobody looked.
+        if ok is not True and gate in ("", "UNKNOWN"):
+            continue
+        judged[fam] = judged.get(fam, 0) + 1
+        if ok is True or str(ok).lower() == "true":
+            passed[fam] = passed.get(fam, 0) + 1
+    out: dict[str, dict[str, float]] = {}
+    for fam, n in judged.items():
+        k = passed.get(fam, 0)
+        a, b = 1.0 + k, 1.0 + (n - k)
+        mean = a / (a + b)
+        sd = math.sqrt(max(mean * (1.0 - mean) / (a + b + 1.0), 0.0))
+        out[fam] = {"judged": float(n), "passed": float(k),
+                    "pass_rate": (k / n) if n else 0.0,
+                    "mean": mean, "hi": min(1.0, mean + 1.96 * sd)}
+    return out
+
+
+def family_priors(families: list[str],
+                  realised: dict[str, dict[str, float]] | None = None
+                  ) -> dict[str, dict[str, float]]:
     """The desk's OWN learned pass probability per family, with its optimism kept.
 
     `libs/research/research_priors.prior_for("family", fam)` is a decayed Beta posterior whose
@@ -292,22 +357,39 @@ def family_priors(families: list[str]) -> dict[str, dict[str, float]]:
     bound, not the mean, so a family with no record yet is EXPLORED rather than buried: optimism
     under uncertainty is the only rule that can discover that a new family is good. A family with
     a long record has a tight interval and is ranked on what it actually did.
+
+    AND IT NOW USES THE EVIDENCE THAT IS ACTUALLY THERE. When the ledger holds MORE verdicts for a
+    family than the stored posterior was ever taught -- which was true of every family on the desk
+    the day this was written -- the realised counts are the better-informed posterior and they are
+    the one the ranking spends. The stored number is still published beside it, so the gap between
+    what the desk learned and what it recorded is inspectable rather than silently papered over.
+    Optimism is unchanged in both directions: an unjudged family still ranks on 1.0.
     """
     out: dict[str, dict[str, float]] = {}
+    seen = realised if realised is not None else realised_pass_rates()
     try:
         root = str(BASE.parents[1])
         if root not in sys.path:
             sys.path.insert(0, root)
         from libs.research.research_priors import prior_for
     except Exception:
-        return {f: {"p": 0.5, "p_optimistic": 1.0, "n": 0.0, "status": 0.0} for f in families}
+        def prior_for(_dim: str, _key: str) -> Any:                  # type: ignore[misc]
+            raise RuntimeError("research_priors unavailable")
     for fam in families:
+        row = {"p": 0.5, "p_optimistic": 1.0, "n": 0.0, "status": 0.0, "source": 0.0}
         try:
             pr = prior_for("family", fam)
-            out[fam] = {"p": float(pr.mean), "p_optimistic": float(pr.interval()[1]),
-                        "n": float(pr.n), "status": 1.0 if pr.status == "POSTERIOR" else 0.0}
+            row = {"p": float(pr.mean), "p_optimistic": float(pr.interval()[1]),
+                   "n": float(pr.n), "status": 1.0 if pr.status == "POSTERIOR" else 0.0,
+                   "source": 0.0}
         except Exception:
-            out[fam] = {"p": 0.5, "p_optimistic": 1.0, "n": 0.0, "status": 0.0}
+            pass
+        r = seen.get(fam)
+        if r and float(r["judged"]) > float(row["n"]):
+            row = {"p": float(r["mean"]), "p_optimistic": float(r["hi"]),
+                   "n": float(r["judged"]), "status": 1.0, "source": 1.0,
+                   "stored_n": float(row["n"]), "stored_p": float(row["p"])}
+        out[fam] = row
     return out
 
 
@@ -344,6 +426,20 @@ def learn_priors(ledger: Path | None = None, *, since: str = "",
         out.update(status="UNMEASURED", why=f"{type(exc).__name__}: {exc}")
         return out
     state = load(state_dir)
+    taught = state.get("beta") if isinstance(state, dict) else None
+    taught_fams = set((taught or {}).get("family") or {}) if isinstance(taught, dict) else set()
+    untaught: set[str] = set()
+    for ln in lines:
+        ln = ln.strip()
+        if not ln:
+            continue
+        try:
+            fam_seen = str(json.loads(ln).get("family") or "")
+        except (ValueError, AttributeError):
+            continue
+        if fam_seen and fam_seen not in taught_fams:
+            untaught.add(fam_seen)
+    out["backfilled_families"] = len(untaught)
     seen_fams: set[str] = set()
     high = since
     for line in lines:
@@ -358,7 +454,17 @@ def learn_priors(ledger: Path | None = None, *, since: str = "",
             continue
         at = str(row.get("at") or "")
         fam = str(row.get("family") or "")
-        if not fam or not at or (since and at <= since):
+        if not fam or not at:
+            continue
+        # THE CURSOR SKIPS ROWS THE POSTERIOR NEVER GOT (measured 2026-09-23). `high` only
+        # advances on a row that recorded, but a LATER row that records carries the cursor past
+        # every row before it -- so one failure loses the whole block behind it, permanently. The
+        # ledger held 3,368 verdicts across 27 families and the stored posterior held 2 families
+        # and 9 updates, with the cursor already at the ledger's last stamp: unrecoverable by
+        # `since` alone. A family with NO stored row has demonstrably never been taught, so it is
+        # backfilled whatever the cursor says. It gains a row on the first such pass and is
+        # cursor-governed from then on, so this cannot double-count a family twice.
+        if since and at <= since and fam not in untaught:
             continue
         if str(row.get("downstream_status") or "").startswith(NOT_JUDGED_PREFIX):
             continue
@@ -626,7 +732,8 @@ def rank_by_value(backlog: dict[str, int], rows: list[dict[str, Any]],
     and a family with NO record ranks on the optimistic bound, which is how it gets explored.
     """
     fams = [f for f, n in backlog.items() if n > 0]
-    priors = family_priors(fams)
+    realised = realised_pass_rates()
+    priors = family_priors(fams, realised)
     values, median = family_value()
     occ = family_breadth()
     per_cell_s = judge_seconds_per_cell(capacity)
@@ -644,10 +751,18 @@ def rank_by_value(backlog: dict[str, int], rows: list[dict[str, Any]],
         value = values.get(fam, median)
         breadth = 1.0 / (1.0 + occ.get(fam, 0.0))
         ev_cell = float(pr["p_optimistic"]) * value * (1.0 + breadth)
+        rl = realised.get(fam) or {}
         out.append({
             "family": fam, "unjudged": backlog[fam],
             "p": round(pr["p"], 6), "p_optimistic": round(pr["p_optimistic"], 6),
             "prior_n": int(pr["n"]), "prior_status": "POSTERIOR" if pr["status"] else "PRIOR",
+            # THE AIM, INSPECTABLE. What the family actually did at the judge, beside the number
+            # the ranking spent, and which of the two the spend came from.
+            "realised_judged": int(rl.get("judged", 0)),
+            "realised_passed": int(rl.get("passed", 0)),
+            "realised_pass_rate": round(float(rl.get("pass_rate", 0.0)), 6) if rl else None,
+            "prior_source": "LEDGER_REALISED" if pr.get("source") else "STORED_POSTERIOR",
+            "stored_prior_n": int(pr.get("stored_n", pr["n"])),
             "net_value_if_pass": value, "value_source": "NET_EDGE" if fam in values else "median",
             "breadth_gain": round(breadth, 4), "cluster_occupancy": occ.get(fam, 0.0),
             "bar_cost_units": round(bars, 3), "cost_s_per_cell": round(cost_s, 4),
@@ -890,6 +1005,7 @@ def build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = N
     # TEACH THE PRIOR BEFORE SPENDING IT: every verdict since the last reading updates its
     # family's posterior, so the ranking below is spending a number this desk actually learned.
     learned = learn_priors(ledger, since=str((prior or {}).get("priors_cursor") or ""))
+    realised_seen = realised_pass_rates(ledger)
     unknown = unknown_breakdown()
     named_unknowns = name_unknowns()
     unrunnable = update_unrunnable_bank(named_unknowns, at=at.isoformat(timespec="seconds"))
@@ -1069,6 +1185,22 @@ def build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = N
         # the remainder actually followed it, which is what stops a future session quietly
         # reverting this to round-robin.
         "priors_learned": learned,
+        # THE AIM, BESIDE THE PRIOR THAT SET IT. Every family the judge has actually ruled on,
+        # ordered by what it MEASURABLY did, so "the desk spent its largest block of judging on a
+        # family that certified nothing" is a line anyone can read off the artifact instead of a
+        # thing that has to be re-derived from 3,368 ledger rows.
+        "realised_pass_rate": [
+            {"family": f, "judged": int(r["judged"]), "passed": int(r["passed"]),
+             "pass_rate": round(float(r["pass_rate"]), 6),
+             "posterior_mean": round(float(r["mean"]), 6),
+             "posterior_hi": round(float(r["hi"]), 6)}
+            for f, r in sorted(realised_seen.items(),
+                               key=lambda kv: (-float(kv[1]["pass_rate"]),
+                                               -float(kv[1]["judged"]), kv[0]))],
+        "realised_pass_rate_rule": (
+            "counted from gate_verdict_ledger.jsonl every pass, so no cursor can make it stale; "
+            "terminal_gate UNKNOWN is the sealed judge's UNMEASURED path and counts toward "
+            "neither judged nor passed, because nobody looked is not a failure"),
         "unknown_reasons": unknown,
         "unrunnable": unrunnable,
         "value_ranking": ranking,

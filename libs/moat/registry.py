@@ -48,8 +48,10 @@ import re
 import shutil
 import socket
 import sqlite3
+import sys
+import time
 import uuid
-from collections.abc import Iterable, Mapping, Sequence
+from collections.abc import Iterable, Iterator, Mapping, Sequence
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -1443,22 +1445,30 @@ def _cursor_set(c: sqlite3.Connection, key: str, value: int) -> None:
               (key, str(value), now()))
 
 
-def _new_lines(c: sqlite3.Connection, key: str, p: Path, max_rows: int
-               ) -> tuple[list[dict[str, Any]], int]:
-    """JSONL rows after the byte cursor, at most max_rows; returns rows and the new offset."""
+def _iter_new_lines(c: sqlite3.Connection, key: str, p: Path, max_rows: int
+                    ) -> Iterator[tuple[dict[str, Any], int]]:
+    """(row, offset AFTER that row) for every JSONL row past the byte cursor, at most max_rows.
+
+    The generator exists so the caller can persist PARTIAL progress. `_new_lines` materialised the
+    whole batch and the cursor advanced only after every row of it had been poured, so a stream
+    that could not finish inside a leg's budget wrote no cursor at all and restarted from the same
+    byte next hour, for ever -- which is how 3,368 gauntlet verdicts sat unsynced from the
+    2026-09-17 restore to 2026-09-23 while a 28 MB `hypothesis_graph.jsonl` consumed every pass
+    ahead of them. Yield-as-you-go plus a deadline makes progress monotone.
+    """
     if not p.exists():
-        return [], 0
+        return
     start = _cursor_get(c, key)
     size = p.stat().st_size
     if start > size:
         start = 0
-    rows: list[dict[str, Any]] = []
+    n = 0
     with p.open("rb") as f:
         f.seek(start)
         pos = start
         for raw in f:
-            if len(rows) >= max_rows:
-                break
+            if n >= max_rows:
+                return
             pos += len(raw)
             line = raw.decode("utf-8", errors="replace").strip()
             if not line:
@@ -1468,8 +1478,161 @@ def _new_lines(c: sqlite3.Connection, key: str, p: Path, max_rows: int
             except json.JSONDecodeError:
                 continue
             if isinstance(obj, dict):
-                rows.append(obj)
+                n += 1
+                yield obj, pos
+
+
+def _new_lines(c: sqlite3.Connection, key: str, p: Path, max_rows: int
+               ) -> tuple[list[dict[str, Any]], int]:
+    """JSONL rows after the byte cursor, at most max_rows; returns rows and the new offset."""
+    if not p.exists():
+        return [], 0
+    rows: list[dict[str, Any]] = []
+    pos = _cursor_get(c, key)
+    size = p.stat().st_size
+    if pos > size:
+        pos = 0
+    for obj, at_pos in _iter_new_lines(c, key, p, max_rows):
+        rows.append(obj)
+        pos = at_pos
     return rows, pos
+
+
+# --------------------------------------------------------------- the streams and their receipts
+#: EVERY JSONL STREAM THIS BRIDGE POURS: cursor key -> path, relative to ROOT. The cursor key is
+#: the stream's RECEIPT -- present means "this stream has been read to byte N", absent means "this
+#: stream has never been read at all". The registry was restored from backup on 2026-09-17, which
+#: wiped every receipt, and nothing said so: `_cursor_get` reads an absent key as 0, which is
+#: indistinguishable from a stream that is merely at its start. So a missing key is now a
+#: MEASURED defect (`missing_cursor_keys`), seeded at the top of every sync and fenced by
+#: `scripts/check_conversion_debt.py`. A stream the sync knows about with no receipt fails.
+SYNC_STREAMS: tuple[tuple[str, str], ...] = (
+    ("gate_verdicts", "desks/mt5/data/hypotheses/gate_verdict_ledger.jsonl"),
+    ("hypothesis_graph", "desks/mt5/data/hypothesis_graph.jsonl"),
+    ("compute_ledger", "desks/mt5/data/compute_ledger.jsonl"),
+    ("desk_lessons", "docs/desk_lessons.jsonl"),
+)
+#: One sync cycle: the hourly leg `registry_sync`. A stream further behind than this is a backlog.
+SYNC_CYCLE_S = 3600.0
+#: The most of one pass's wall-clock budget the hypothesis graph may take. It is the biggest
+#: stream (28 MB) and it runs first because a verdict marks the candidate it enqueues -- so it is
+#: bounded by a SHARE, never by the whole pass, and the verdicts behind it can never be starved.
+GRAPH_BUDGET_SHARE = 0.4
+#: How often a stream persists its cursor mid-loop. The leg runs as a subprocess under the hour's
+#: budget and is SIGKILLed when it overruns, and a kill between the last row and the cursor write
+#: replays every row of the batch -- so progress is durable every this many rows, not once.
+CURSOR_EVERY = 200
+
+
+def stream_path(key: str, desk: Path | None = None, lessons: Path | None = None) -> Path | None:
+    """The file a stream key names, or None when the key is not one this sync knows."""
+    for name, rel in SYNC_STREAMS:
+        if name != key:
+            continue
+        if name == "desk_lessons" and lessons is not None:
+            return Path(lessons)
+        if rel.startswith("desks/mt5/") and desk is not None:
+            return Path(desk) / rel[len("desks/mt5/"):]
+        return ROOT / rel
+    return None
+
+
+def missing_cursor_keys(conn: sqlite3.Connection | None = None) -> list[str]:
+    """Streams the sync knows about that hold NO cursor row -- loud absence, never a silent 0."""
+    c = conn or connect()
+    try:
+        have = {str(r["key"]) for r in c.execute("SELECT key FROM sync_cursor")}
+        return [k for k, _ in SYNC_STREAMS if k not in have]
+    finally:
+        if conn is None:
+            c.close()
+
+
+def _seed_cursors(c: sqlite3.Connection) -> list[str]:
+    """Give every known stream a receipt at 0 so absence can never recur silently. Returns the
+    keys that were missing -- the sync reports them, which is how a lost stream becomes visible."""
+    missing = missing_cursor_keys(c)
+    for k in missing:
+        c.execute("INSERT OR IGNORE INTO sync_cursor(key, value, updated_at) VALUES(?,?,?)",
+                  (k, "0", now()))
+    if missing:
+        c.commit()
+    return missing
+
+
+def verdict_backlog(desk: Path | None = None,
+                    conn: sqlite3.Connection | None = None) -> dict[str, Any]:
+    """HOW FAR THE GAUNTLET'S VERDICTS ARE AHEAD OF THE REGISTRY, in rows and in seconds.
+
+    The gauntlet appends a verdict to `data/hypotheses/gate_verdict_ledger.jsonl`; this bridge is
+    the only thing that turns it into a trial with a candidate edge, and `cells_judged` -- per
+    source, per pack, per region -- counts nothing else. So a ledger ahead of the registry is not
+    a lag, it is the funnel's last stage reading zero. Measured here (never asserted) and fenced
+    by `scripts/check_conversion_debt.py`: missing receipt, or a row older than one sync cycle
+    still unpoured, is a BREACH.
+    """
+    d = desk or DESK
+    c = conn or connect()
+    out: dict[str, Any] = {"cycle_s": SYNC_CYCLE_S}
+    try:
+        p = d / "data" / "hypotheses" / "gate_verdict_ledger.jsonl"
+        out["ledger"] = str(p)
+        missing = missing_cursor_keys(c)
+        out["cursor_keys_missing"] = missing
+        if not p.exists():
+            out.update({"status": "UNMEASURED", "why": f"no verdict ledger at {p}"})
+            return out
+        row = c.execute("SELECT value FROM sync_cursor WHERE key='gate_verdicts'").fetchone()
+        cursor = int(row["value"]) if row is not None else None
+        size = p.stat().st_size
+        out.update({"cursor": cursor, "size_bytes": size})
+        if cursor is None:
+            out.update({"status": "BREACH", "unsynced_rows": None, "oldest_unsynced_age_s": None,
+                        "why": "the registry holds NO 'gate_verdicts' cursor key: the stream has "
+                               "never been read, or a restore wiped its receipt and nothing said "
+                               "so -- every verdict on disk is invisible to the registry"})
+            return out
+        start = 0 if cursor > size else cursor
+        n, oldest = 0, None
+        with p.open("rb") as f:
+            f.seek(start)
+            for raw in f:
+                line = raw.decode("utf-8", errors="replace").strip()
+                if not line:
+                    continue
+                try:
+                    obj = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+                if not isinstance(obj, dict):
+                    continue
+                n += 1
+                at = str(obj.get("at") or "")
+                if at and (oldest is None or at < oldest):
+                    oldest = at
+        age = None
+        if oldest:
+            try:
+                age = (datetime.now(tz=UTC) - datetime.fromisoformat(oldest)).total_seconds()
+            except ValueError:
+                age = None
+        out.update({"unsynced_rows": n, "oldest_unsynced": oldest, "oldest_unsynced_age_s": age})
+        if missing:
+            out.update({"status": "BREACH",
+                        "why": f"streams with no cursor receipt: {', '.join(missing)}"})
+        elif age is not None and age > SYNC_CYCLE_S:
+            out.update({"status": "BREACH",
+                        "why": f"{n} verdict(s) unpoured, the oldest {age/3600:.1f}h old -- the "
+                               f"ledger is ahead of the registry by more than one sync cycle "
+                               f"({SYNC_CYCLE_S/3600:.0f}h), so cells_judged is short by that "
+                               f"many cells for every source, pack and region"})
+        else:
+            out.update({"status": "OK",
+                        "why": f"{n} verdict(s) unpoured, none older than one sync cycle"})
+        return out
+    finally:
+        if conn is None:
+            c.close()
 
 
 MOAT_SOURCES: tuple[str, ...] = ("moat", "card_explosion", "lineage", "resurrect", "graveyard",
@@ -1512,6 +1675,77 @@ def graph_id_map(desk: Path) -> dict[str, str]:
     return {str(k): str(v) for k, v in raw.items() if isinstance(v, str) and v}
 
 
+def _identity_fns() -> tuple[Any, Any]:
+    """(parts, parse_clock_key) from the desk's ONE identity module, or (None, None).
+
+    Imported, never re-implemented: `desks/mt5/research/certificate_truth.py` owns the canonical
+    identity (symbol|family|selector, lowercased -- the shadow_spec the sealed gauntlet stamps and
+    the promoter matches), and a second copy of that rule here is how two stores start disagreeing
+    again. Unreachable is UNMEASURED, and the join then falls back exactly as it did before.
+    """
+    for p in (str(DESK / "research"), str(DESK)):
+        if p not in sys.path:
+            sys.path.insert(0, p)
+    try:
+        from certificate_truth import (  # type: ignore[import-not-found]
+            parse_clock_key,
+            parts,
+        )
+    except ImportError:                                                  # pragma: no cover
+        return None, None
+    return parts, parse_clock_key
+
+
+def candidate_identity_index(c: sqlite3.Connection) -> dict[str, dict[str, str]]:
+    """{'exact': identity -> candidate id, 'pair': symbol|family| -> candidate id}.
+
+    The registry's candidates are keyed `cand_<hex>`; the gate ledger names its cells
+    `EURAUD.overnight_gap_decay.p=<sha>`. Neither name can ever join the other, which is why every
+    verdict poured in before today landed with a candidate_id matching no row. The desk already
+    settled what joins them (certificate_truth.IDENTITY_RULE), so the join is made on the parts.
+    The `pair` tier exists because a verdict's third token is a PARAMS HASH, not a selector the
+    candidate can carry: `symbol|family|` is the same identity with the selector unstated, and it
+    is used only when the exact identity finds nothing.
+    """
+    parts, _ = _identity_fns()
+    out: dict[str, dict[str, str]] = {"exact": {}, "pair": {}}
+    if parts is None:
+        return out
+    for r in c.execute("SELECT id, COALESCE(symbol,'') s, COALESCE(family,'') f, "
+                       "COALESCE(session,'') w FROM research_candidates "
+                       "WHERE symbol IS NOT NULL AND symbol != '' AND family != '' "
+                       "ORDER BY seq"):
+        out["exact"].setdefault(parts(r["s"], r["f"], r["w"]), str(r["id"]))
+        out["pair"].setdefault(parts(r["s"], r["f"], None), str(r["id"]))
+    return out
+
+
+def verdict_candidate(row: Mapping[str, Any], gmap: Mapping[str, str],
+                      index: Mapping[str, Mapping[str, str]]) -> tuple[str, str]:
+    """(candidate id, how it was found) for one gate-verdict row -- the edge back to what was
+    judged. `graph_id` when the writer stamped one, the backfill map next, then the canonical
+    identity, and only then the cell's own name, which joins nothing and is recorded as such."""
+    cell = str(row.get("cell") or "")
+    gid = str(row.get("graph_id") or "")
+    if gid:
+        return gid, "graph_id"
+    mapped = gmap.get(cell, "")
+    if mapped:
+        return mapped, "graph_id_map"
+    parts, parse = _identity_fns()
+    if parts is not None:
+        sym, fam = row.get("sym"), row.get("family")
+        selector = ((parse(cell) or {}).get("selector") if parse is not None else None)
+        if sym and fam:
+            hit = index.get("exact", {}).get(parts(sym, fam, selector))
+            if hit:
+                return hit, "identity_exact"
+            hit = index.get("pair", {}).get(parts(sym, fam, None))
+            if hit:
+                return hit, "identity_pair"
+    return cell, "cell_name_unjoined"
+
+
 def _status_of_fate(fate: Any) -> str:
     f = str(fate or "").lower()
     if not f or f in ("born", "pending", "queued", "donated"):
@@ -1522,55 +1756,111 @@ def _status_of_fate(fate: Any) -> str:
 
 
 def sync_from_desk(desk: Path | None = None, *, max_rows: int = 20000,
-                   lessons: Path | None = None, conn: sqlite3.Connection | None = None
-                   ) -> dict[str, int]:
-    """Pour the desk's existing record into the chain, incrementally and idempotently."""
+                   lessons: Path | None = None, conn: sqlite3.Connection | None = None,
+                   budget_s: float | None = None) -> dict[str, Any]:
+    """Pour the desk's existing record into the chain, incrementally and idempotently.
+
+    ORDER, BUDGET AND RECEIPTS ARE THE FIX (2026-09-23). Every stream used to be read in file
+    order with its cursor written only after the whole batch had been poured, and the 28 MB
+    `hypothesis_graph.jsonl` came first: a leg that ran out of budget inside it wrote no cursor,
+    restarted at the same byte next hour, and NEVER REACHED the gate verdicts behind it. Measured
+    that day: 3,368 gauntlet verdicts on disk, no `gate_verdicts` cursor key at all, 140 trials in
+    the registry (none of them a gauntlet verdict) and `cells_judged` therefore 0 for every source,
+    pack and region. So the VERDICTS go first -- they are the funnel's last stage -- the cursor
+    advances row by row, each stream commits its own progress, and a stream that fails is recorded
+    by name in the return rather than discarding every other stream's work with it.
+    """
     d = desk or DESK
     c = conn or connect()
-    out = {"candidates": 0, "trials": 0, "runs": 0, "cards": 0, "events": 0, "memories": 0,
-           "workers": 0}
-    try:
-        rows, pos = _new_lines(c, "hypothesis_graph", d / "data" / "hypothesis_graph.jsonl",
-                               max_rows)
-        for r in rows:
-            cid = str(r.get("id") or "")
-            if not cid:
-                continue
-            src = str(r.get("source") or "")
-            _, created = enqueue_candidate(
-                family=str(r.get("family") or ""), symbol=str(r.get("symbol") or ""),
-                params=r.get("params") if isinstance(r.get("params"), dict) else {},
-                origin=origin_of(src), mechanism=str(r.get("why") or "")[:200], candidate_id=cid,
-                status=_status_of_fate(r.get("fate")), generator=src,
-                parent_ids=[r["parent"]] if r.get("parent") else [], conn=c)
-            out["candidates"] += int(created)
-        _cursor_set(c, "hypothesis_graph", pos)
+    out: dict[str, Any] = {"candidates": 0, "trials": 0, "runs": 0, "cards": 0, "events": 0,
+                           "memories": 0, "workers": 0}
+    deadline = None if budget_s is None else time.monotonic() + float(budget_s)
 
-        rows, pos = _new_lines(c, "gate_verdicts",
-                               d / "data" / "hypotheses" / "gate_verdict_ledger.jsonl", max_rows)
-        gmap = graph_id_map(d)
-        for r in rows:
-            cell = str(r.get("cell") or "")
-            if not cell:
-                continue
-            passed = r.get("passed")
-            # THE CANDIDATE THIS TRIAL JUDGED, under the id the graph enqueued it with. The
-            # trial keeps the cell's own name as its hypothesis id (that is what a reader
-            # recognises), but the CANDIDATE edge needs the graph's node id or the join is to
-            # nothing -- `enqueue_candidate` above keys every candidate by `hypothesis_graph.id`.
-            cand = str(r.get("graph_id") or "") or gmap.get(cell, "") or cell
-            record_trial(cell, family=str(r.get("family") or ""), method="gauntlet", params=None,
-                         terminal_gate=str(r.get("terminal_gate") or ""),
-                         passed=None if passed is None else bool(passed),
-                         verdict={"downstream_status": r.get("downstream_status"),
-                                  "at": r.get("at")},
-                         symbol=str(r.get("sym") or ""), candidate_id=cand, conn=c)
-            out["trials"] += 1
-            mark_candidate(cand, "survived" if passed else "judged",
-                           judged_at=str(r.get("at") or now()),
-                           terminal_gate=str(r.get("terminal_gate") or ""),
-                           survived=1 if passed else 0, conn=c)
-        _cursor_set(c, "gate_verdicts", pos)
+    def over() -> bool:
+        return deadline is not None and time.monotonic() > deadline
+    streams: dict[str, Any] = {}
+    out["streams"] = streams
+    out["cursor_keys_seeded"] = _seed_cursors(c)
+    try:
+        # ------------------------------------------------------------- 1. the hypothesis graph
+        # Bounded by a SHARE of the budget, never the whole of it. It runs first because a verdict
+        # marks the candidate the graph enqueues, and it is the stream that starved the others:
+        # 28 MB of it ahead of everything else, with a cursor that only moved if it finished.
+        try:
+            pos = _cursor_get(c, "hypothesis_graph")
+            n = 0
+            share = (None if deadline is None
+                     else time.monotonic() + float(budget_s or 0.0) * GRAPH_BUDGET_SHARE)
+            for r, at_pos in _iter_new_lines(c, "hypothesis_graph",
+                                         d / "data" / "hypothesis_graph.jsonl", max_rows):
+                pos = at_pos
+                cid = str(r.get("id") or "")
+                if not cid:
+                    continue
+                src = str(r.get("source") or "")
+                _, created = enqueue_candidate(
+                    family=str(r.get("family") or ""), symbol=str(r.get("symbol") or ""),
+                    params=r.get("params") if isinstance(r.get("params"), dict) else {},
+                    origin=origin_of(src), mechanism=str(r.get("why") or "")[:200],
+                    candidate_id=cid, status=_status_of_fate(r.get("fate")), generator=src,
+                    parent_ids=[r["parent"]] if r.get("parent") else [], conn=c)
+                out["candidates"] += int(created)
+                n += 1
+                if n % CURSOR_EVERY == 0:
+                    _cursor_set(c, "hypothesis_graph", pos)
+                    c.commit()
+                if share is not None and time.monotonic() > share:
+                    break
+            _cursor_set(c, "hypothesis_graph", pos)
+            c.commit()
+            streams["hypothesis_graph"] = {"rows": n, "cursor": pos}
+        except Exception as exc:  # a failing stream is named, never silent
+            streams["hypothesis_graph"] = {"error": f"{type(exc).__name__}: {exc}"}
+
+        # ------------------------------------------------- 2. THE VERDICTS (the starved stream)
+        try:
+            pos = _cursor_get(c, "gate_verdicts")
+            gmap = graph_id_map(d)
+            index = candidate_identity_index(c)
+            joins: dict[str, int] = {}
+            n = 0
+            for r, at_pos in _iter_new_lines(
+                    c, "gate_verdicts",
+                    d / "data" / "hypotheses" / "gate_verdict_ledger.jsonl", max_rows):
+                pos = at_pos
+                cell = str(r.get("cell") or "")
+                if not cell:
+                    continue
+                passed = r.get("passed")
+                # THE CANDIDATE THIS TRIAL JUDGED. The trial keeps the cell's own name as its
+                # hypothesis id (that is what a reader recognises), but the CANDIDATE edge needs
+                # an id the registry holds: the writer's `graph_id`, the backfill map, or the
+                # desk's canonical identity (symbol|family|selector). The cell name joins nothing.
+                cand, how = verdict_candidate(r, gmap, index)
+                joins[how] = joins.get(how, 0) + 1
+                record_trial(cell, family=str(r.get("family") or ""), method="gauntlet",
+                             params=None, terminal_gate=str(r.get("terminal_gate") or ""),
+                             passed=None if passed is None else bool(passed),
+                             verdict={"downstream_status": r.get("downstream_status"),
+                                      "at": r.get("at"), "join": how},
+                             symbol=str(r.get("sym") or ""), candidate_id=cand, conn=c)
+                out["trials"] += 1
+                n += 1
+                mark_candidate(cand, "survived" if passed else "judged",
+                               judged_at=str(r.get("at") or now()),
+                               terminal_gate=str(r.get("terminal_gate") or ""),
+                               survived=1 if passed else 0, conn=c)
+                if n % CURSOR_EVERY == 0:
+                    _cursor_set(c, "gate_verdicts", pos)
+                    c.commit()
+                if over():
+                    break
+            _cursor_set(c, "gate_verdicts", pos)
+            c.commit()
+            streams["gate_verdicts"] = {"rows": n, "cursor": pos, "joins": joins}
+            out["verdict_joins"] = joins
+        except Exception as exc:  # a failing stream is named, never silent
+            streams["gate_verdicts"] = {"error": f"{type(exc).__name__}: {exc}"}
 
         rows, pos = _new_lines(c, "compute_ledger", d / "data" / "compute_ledger.jsonl", max_rows)
         for r in rows:
@@ -1588,6 +1878,8 @@ def sync_from_desk(desk: Path | None = None, *, max_rows: int = 20000,
                                 if k in r}, conn=c)
             out["runs"] += 1
         _cursor_set(c, "compute_ledger", pos)
+        streams["compute_ledger"] = {"rows": len(rows), "cursor": pos}
+        c.commit()
 
         sl = d / "data" / "sleeves.json"
         if sl.exists():
@@ -1646,6 +1938,8 @@ def sync_from_desk(desk: Path | None = None, *, max_rows: int = 20000,
                               "learned": r.get("learned")}, conn=c)
             out["memories"] += 1
         _cursor_set(c, "desk_lessons", pos)
+        streams["desk_lessons"] = {"rows": len(rows), "cursor": pos}
+        out["cursor_keys_missing"] = missing_cursor_keys(c)
         locks = d / "data" / "locks"
         if locks.exists():
             for lk in locks.glob("dept_*.lock"):

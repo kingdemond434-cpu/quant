@@ -754,9 +754,13 @@ def check_edge_paths(root: Path | None = None) -> tuple[list[dict[str, Any]], di
     legs = leg_scripts(base)
     rows: list[dict[str, Any]] = []
     checked = 0
+    # EVERY DECLARED EDGE, NOT A SAMPLE (principal 2026-09-23). This loop used to `continue` past
+    # any edge whose `criticality` was not "required". Every edge in the registry carries the
+    # default today, so the filter changed nothing -- and that is exactly what made it dangerous:
+    # the first edge somebody declares "advisory" would have vanished from the check in silence,
+    # which is the same failure as the wire it exists to catch. A declared edge is checked; the
+    # criticality is reported beside the finding so a reader can weigh it, never used to skip one.
     for e in edg.REQUIRED_EDGES:
-        if e.criticality != "required":
-            continue
         checked += 1
         art = base / e.artifact
         name = Path(e.artifact).name
@@ -787,7 +791,18 @@ def check_edge_paths(root: Path | None = None) -> tuple[list[dict[str, Any]], di
                                f"reading {e.artifact}",
                                f"point {e.consumer} at {e.artifact}, or correct the edge",
                                key=f"path_pair:{e.edge_id}:consumer"))
-    return rows, {"edges_checked": checked}
+    # `edges_declared` is published beside `edges_checked` so the two can be COMPARED. A checker
+    # that only reports what it looked at can never tell you what it skipped.
+    declared = len(edg.REQUIRED_EDGES)
+    if checked != declared:
+        rows.append(defect("path_pair", "REQUIRED_EDGES",
+                           f"only {checked} of {declared} declared edges were checked -- the "
+                           f"{declared - checked} that were not are unfenced wires",
+                           "check every edge in libs/ops/control_plane/edges.py REQUIRED_EDGES; "
+                           "an edge nothing checks is an edge nothing keeps honest",
+                           severity="CRITICAL", key="path_pair:REQUIRED_EDGES:sampled"))
+    return rows, {"edges_checked": checked, "edges_declared": declared,
+                  "edges_covered": checked == declared}
 
 
 _JSON_LITERAL = re.compile(r'"((?:reports|data)/[A-Za-z0-9_./-]+\.(?:json|jsonl))"')

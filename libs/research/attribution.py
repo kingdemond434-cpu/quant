@@ -113,7 +113,12 @@ NAME_TO_CODE: dict[str, str] = {
 #: Producer name prefixes that are METHODS or desk organs by construction. A row from one of
 #: these is NOT_REGIONAL, which is a verdict; it is never counted as an attribution gap.
 NON_REGIONAL_PREFIXES: tuple[str, ...] = (
-    "math:", "physics:", "seat:", "engine:", "moat:", "sim:", "exe:", "lab:", "desk:")
+    "math:", "physics:", "seat:", "engine:", "moat:", "sim:", "exe:", "lab:", "desk:",
+    # the sandbox's expression families (`sandbox:alpha101`, `sandbox:alphacrafter`, ...) are a
+    # method library run by `sandbox_runner`, not a regional ground: 3,300 of their cells read as
+    # an attribution gap until they were named, which overstated the gap by more than every
+    # region put together.
+    "sandbox:")
 
 #: Whole producer names that are desk machinery: compilers, fan-outs, samplers and judges. They
 #: produce cells from other producers' evidence and belong to no region themselves.
@@ -170,10 +175,18 @@ def region_of(token: object) -> str | None:
 
 
 def is_non_regional(producer: str | None) -> bool:
-    """True when the producer belongs to no region BY CONSTRUCTION (a method or desk organ)."""
+    """True when the producer belongs to no region BY CONSTRUCTION (a method or desk organ).
+
+    The SUB-PRODUCER counts too: `discovery_compiler:interaction` is the interaction lane of the
+    compiler, not a regional department, and reporting its 3,691 cells as an attribution gap
+    would overstate the gap by more than the whole of Europe. A department that IS regional never
+    reaches this test -- `region_of()` matches its name first.
+    """
     if not producer:
         return False
-    return producer in NON_REGIONAL_NAMES or producer.startswith(NON_REGIONAL_PREFIXES)
+    base = producer.split(":")[0]
+    return (producer in NON_REGIONAL_NAMES or base in NON_REGIONAL_NAMES
+            or producer.startswith(NON_REGIONAL_PREFIXES))
 
 
 @dataclass(frozen=True)
