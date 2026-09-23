@@ -8861,6 +8861,28 @@
     "MEASURED 2026-09-23, two consecutive live passes: pass 1 targeted 400 empty cells and created 400, occupancy 1,430 -> 1,830 cells (2.4967% -> 3.1951%); pass 2 targeted 400 and created 400, 1,830 -> 2,230 cells (3.1951% -> 3.8935%). already_present 0 and failed 0 on both, by_operator cross_instrument, so the list drains rather than repeating. Occupancy ratchet best 2,230, regression_reason null",
     "desks/mt5/tests/test_independence_intake.py:202-231 the transplant carries the donor's params, stamps a cross_ operator, skips a family with no donor and counts before/after; :233-243 a cell already present creates nothing and is counted apart; :246-260 occupancy ratchets up only and a fall with no reason is named"
    ]
+  },
+  {
+   "id": "DASH1",
+   "item": "ONE JOINED STATE DOCUMENT AND A PERMANENT PAGE (principal 2026-09-23): the desk's canon, defects, live money, producers, funnel, bottlenecks and macro/news lane joined on the canonical identity into web/desk_state.json['dashboard'] and rendered by a self-contained page served 24/7 from the trading box. Every value carries its source artifact and that artifact's age; UNMEASURED, STALE and MISSING render as those words with a reason and never as a zero; a state document older than its cadence says so before any number is shown.",
+   "domain": "U",
+   "phase": 2,
+   "status": "LANDED",
+   "gate": "none",
+   "scheduled_by": "hourly_cycle:desk_dashboard_state",
+   "artifact": "desks/mt5/reports/DESK_DASHBOARD_STATE.json",
+   "evidence": [
+    "THE GAP the principal named: every number was already measured and no document joined them, so the dashboard could disagree with the desk. The join is on certificate_truth.parts(symbol, family, selector) -- the identity stamped at birth on 2026-09-23 -- so a certificate with no forward clock says so rather than being hidden.",
+    "desks/mt5/research/desk_dashboard_state.py:84-135 Src -- one artifact read once, carrying its own age and a verdict of MEASURED / STALE / MISSING / UNREADABLE, and field() which renders an absent value as UNMEASURED with its reason, never as 0",
+    "desks/mt5/research/desk_dashboard_state.py:249-345 _canon -- certificates joined to forward clocks and live sleeves through row_identity + parts, reading BOTH shapes the survivors store is written in (a list of keys and a dict of key -> judged row)",
+    "desks/mt5/research/desk_dashboard_state.py:662-800 _macro -- the macro/news lane: the macro view and state engine, the event-surprise organ's own UNMEASURED verdict with its reason, the measured event-reaction atlas, the calendar's next release windows each joined to the live book, and the captured release tail",
+    "desks/mt5/research/hourly_cycle.py -- leg desk_dashboard_state (--once --budget-s 120, department rest) with its results-dict entry; libs/research/layers.py -- 'desk_dashboard_state': 'meta'",
+    "scripts/build_zentech_state.py _dashboard_block() re-injects the join on the 15-minute publish, so web/desk_state.json is ONE file with a dashboard section rather than two files that can disagree",
+    "web/dashboard.html -- self-contained (no CDN, no build step, no external font), six headline numbers, dense tables, one column under 680px; it is READ-ONLY: no form, no POST, no parameter reaches the desk",
+    "desks/mt5/ops/box_tasks.manifest MT5-DeskDashboard + desks/mt5/scripts/install_desk_dashboard_task.ps1 -- scripts/serve_dashboard.py bound 0.0.0.0 with --require-token and a firewall rule scoped to LocalSubnet, at boot, restart-on-failure; measured on the box 2026-09-23: task Running, loopback 401 without the key and HTTP 200 with it, 28 canon rows and 14 calendar windows in the payload",
+    "desks/mt5/tests/test_desk_dashboard_state.py -- 6 tests: absent artifacts are MISSING with a reason and never zero, a stale source renders STALE and still shows its value, the identity join finds the clock and names the orphan, one observation has no Sharpe, the publish EXTENDS the existing payload, and a calendar row says whether the book is in the window"
+   ],
+   "consumer": "web/dashboard.html (served by MT5-DeskDashboard) and scripts/build_zentech_state.py, which carries the block into web/desk_state.json"
   }
  ],
  "status_vocabulary_note": "LANDED means the code exists in THIS REPOSITORY, on a named clock, with an artifact and a consumer. It does NOT mean the artifact has ever been produced on the trading box, and it does not mean the behaviour has been observed with money at risk. That distinction is what the five acceptance_properties measure, and they are measured from artifacts rather than asserted: an absent artifact reads UNMEASURED, never MET. Read the census as build coverage and the acceptance properties as operational proof. They are different questions and the second is the one that decides whether the desk works."

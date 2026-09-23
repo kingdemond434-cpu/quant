@@ -56,6 +56,8 @@ from typing import Any
 
 import numpy as np
 
+from libs.research import attribution as _attr
+
 ROOT = Path(__file__).resolve().parents[2]
 _PATH: Path = ROOT / "data" / "alpha_registry.sqlite"
 BACKUP: Path = ROOT / "backups" / "moat" / "alpha_registry"
@@ -158,7 +160,18 @@ EXTENSIONS: dict[str, tuple[tuple[str, str], ...]] = {
         # (L1.60). ALL_SURVIVED is the POSITIVE signal the queue prioritises on. ADD COLUMN.
         ("counterexample_verdict", "TEXT"), ("counterexample_broken_by", "TEXT"),
         ("counterexample_judged_at", "TEXT"),
+        # ATTRIBUTION AT BIRTH (libs/research/attribution.py, 2026-09-23). WHO produced the cell
+        # and from WHICH regional ground, stamped by `enqueue_candidate` through the one helper
+        # rather than re-derived by each reader. Measured that day: 3,663 of 3,862 unique cells
+        # were attributed to nobody and the regional scoreboard read `Europe: 1,973 sources, 0
+        # cells` -- not because Europe produced nothing but because its cells could not be traced
+        # back. `attribution_route` records HOW each was reached, so a number can be checked.
+        ("producer", "TEXT"), ("region", "TEXT"), ("attribution_route", "TEXT"),
     ),
+    #: The same three on the discovery, which is where a cell's regional ground is still visible:
+    #: the compiler that turns a discovery into candidates writes its OWN generator, so a cell
+    #: joined only to the compiler credits one pass-through with the whole desk's output.
+    "discoveries": (("producer", "TEXT"), ("region", "TEXT"), ("attribution_route", "TEXT")),
     "research_memory": (("kind", "TEXT"), ("memory_key", "TEXT"), ("payload_json", "TEXT"),
                         ("evidence_json", "TEXT"), ("updated_at", "TEXT")),
     "workers": (("kind", "TEXT"), ("beat", "TEXT"), ("department", "TEXT"),
@@ -614,6 +627,55 @@ _FIELD_TO_COLUMN: dict[str, str] = {
 }
 
 
+def _source_country(c: sqlite3.Connection, source_id: Any) -> str | None:
+    """The ground a source sits on, from the registry's own `sources` table, or None."""
+    if not source_id:
+        return None
+    try:
+        row = c.execute("SELECT country FROM sources WHERE source_id=?",
+                        (str(source_id),)).fetchone()
+    except sqlite3.Error:
+        return None
+    return str(row["country"]) if row is not None and row["country"] else None
+
+
+def _parent_attribution(c: sqlite3.Connection, discovery_id: Any) -> Any:
+    """The attribution the discovery this row was compiled from already carries, or None.
+
+    THE JOIN THAT WAS NEVER MADE. Cells reach `research_candidates` through
+    `discovery_compiler`, which writes its OWN generator; reading the candidate's stamp alone
+    credits one pass-through with the desk's whole output. The discovery is where the producer
+    and the regional ground are still visible, so the candidate INHERITS them at birth.
+    """
+    if not discovery_id:
+        return None
+    try:
+        row = c.execute("SELECT producer, region, generator, origin, source_id FROM discoveries "
+                        "WHERE discovery_id=?", (str(discovery_id),)).fetchone()
+    except sqlite3.Error:
+        return None
+    if row is None:
+        return None
+    return _attr.attribute(producer=row["producer"], region=row["region"],
+                           generator=row["generator"], origin=row["origin"],
+                           source_country=_source_country(c, row["source_id"]),
+                           source_id=row["source_id"])
+
+
+def _stamp(c: sqlite3.Connection, fields: Mapping[str, Any], *, origin: Any = None,
+           generator: Any = None) -> dict[str, str]:
+    """THE BIRTH STAMP. Every cell and discovery carries its producer and, where the producer
+    belongs to one, its region -- written here, by the creating call, through the ONE helper
+    (`libs/research/attribution.py`). A later sweep can only recover what lineage still holds."""
+    return _attr.stamp(
+        producer=fields.get("producer"), region=fields.get("region"),
+        generator=generator if generator is not None else fields.get("generator"),
+        origin=origin, department=fields.get("department"),
+        source_country=_source_country(c, fields.get("source_id")),
+        source_id=fields.get("source_id"),
+        parent=_parent_attribution(c, fields.get("discovery_id")))
+
+
 def enqueue_candidate(*, family: str, symbol: str, params: Mapping[str, Any] | None,
                       origin: str, mechanism: str = "", candidate_id: str | None = None,
                       status: str = "queued", conn: sqlite3.Connection | None = None,
@@ -659,6 +721,7 @@ def enqueue_candidate(*, family: str, symbol: str, params: Mapping[str, Any] | N
             "empty_axis_bonus": EMPTY_CELL_BONUS if empty else 0.0, "search_count": 1,
             "campaign_id": str(fields.get("campaign_id") or ""),
             "subtype": str(fields.get("transformation") or ""), "survived": 0,
+            **_stamp(c, fields, origin=origin),
         }
         allowed = set(_columns(c, "research_candidates"))
         for k, v in fields.items():
@@ -786,6 +849,7 @@ def record_discovery(*, source_id: str, source_type: str, mechanism: str, origin
             "origin": origin, "generator": generator, "state": "UNPROCESSED",
             "content_hash": h, "possible_cells": 0, "generated_cells": 0, "compiled_cells": 0,
             "queued_cells": 0, "tested_cells": 0, "blocked_cells": 0,
+            **_stamp(c, {**fields, "source_id": source_id}, origin=origin, generator=generator),
         }
         allowed = set(_columns(c, "discoveries"))
         alias = {"parent_discovery_ids": "parent_ids_json", "parent_ids": "parent_ids_json",
