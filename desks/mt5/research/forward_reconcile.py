@@ -334,7 +334,18 @@ def family_budget(enrolled: set[str] | None, rows: dict[str, dict],
         }
     return {
         "status": "MEASURED",
-        "decides": "ENROLMENT_CAP_PER_FAMILY",
+        # THE QUOTA IS GONE, PERMANENTLY (principal 2026-09-23: "remove the slots being scarce by
+        # design permanently ... no quota or scarcity ever on forward evidence slots"). These
+        # numbers are EVIDENCE -- the alpha each family has spent and what is left at today's
+        # per-seat charge -- and they are published for exactly that. They DECIDE NOTHING: no
+        # reader may refuse, defer or queue an enrolment on them, and
+        # `scripts/check_forward_enrolment.py` fails the law gate if one starts to. A forward
+        # clock gathers evidence and deploys no capital, so a cap here bought no safety and cost
+        # only hypotheses the desk could never rule on. The STATISTICS are untouched: the same
+        # Holm/BH bars are computed at the same m, and every new clock makes every bar harder.
+        "decides": "NOTHING__ENROLMENT_IS_UNCAPPED",
+        "gates_enrolment": False,
+        "quota_removed_at": "2026-09-23",
         "caps": caps,
         "cap_detail": cap_detail,
         "cap_basis": ("floor(remaining_alpha / per_candidate_charge) per census family, where "
@@ -349,8 +360,10 @@ def family_budget(enrolled: set[str] | None, rows: dict[str, dict],
                       "enrolments only; it never retires, resizes or "
                       "unseats a running clock, and an absent or stale artifact means UNCAPPED, "
                       "never zero"),
-        "consumer": ("research/promoter.py and any enrolling engine, through "
-                     "data/forward_reconcile.json only -- no import, no call"),
+        "consumer": ("NOBODY GATES ON THIS. Published as evidence for readers of "
+                     "data/forward_reconcile.json -- no import, no call, and no enrolment is "
+                     "refused, deferred or queued on it. Enrolment is decided by "
+                     "research/forward_enrolment.py, which enrols every certificate with no cap"),
         "missed_growth_lines": _cap_missed_growth(caps, cap_detail, parts),
         "flat_cohort": {
             "max_forward_slots": MAX_FORWARD_SLOTS, "m_enrolled": m_flat,

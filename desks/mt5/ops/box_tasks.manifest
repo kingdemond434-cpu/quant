@@ -157,6 +157,19 @@ TASK name="E8-Gold" trigger="every 5 minutes" runs="desks/mt5/prop/e8_gold.py" i
 TASK name="MT5-GatewayResident" trigger="every 10 minutes" runs="desks/mt5/research/gateway_resident.py" installer="NONE" lane="ops"
 TASK name="MT5-AdoptRelease" trigger="every 1 hour, at :12" runs="desks/mt5/scripts/Adopt-And-Seal.ps1" installer="desks/mt5/scripts/install_adopt_release_task.ps1" lane="ops"
 TASK name="MT5-IdentityHealer" trigger="every 30 minutes" runs="desks/mt5/scripts/heal_identity_broken_clocks.py" installer="NONE" lane="research"
+# THE PLUMBING WATCHDOG (principal 2026-09-23, "the plumbing must never ever permanently stop
+# silently"). Every fifteen minutes it PROVES BY OBSERVATION that the adoption task exists, is
+# enabled, runs inside the hour and did not last exit an error; that HEAD descends from the branch
+# tip it should have adopted, and by how many commits it does not; that the git-writer lock can be
+# TAKEN right now (the four-day outage was a mutex that could not be opened, logged correctly
+# every hour to a file nobody reads); that no orphaned pool worker is holding commit and headroom
+# is above a DERIVED floor; that every declared task is present and enabled; that every
+# producer/consumer pair in the control plane's edge list agrees about its path; and that every
+# fence registered in run_law_gate has actually run. Defects are raised through the reconciler's
+# own API -- never a fixer of its own -- and escalate to the dashboard, the events log and
+# docs/research/PLUMBING_ALERTS.md. scripts/check_plumbing_watchdog.py wedges the law gate while
+# one outlives its window, INCLUDING the absence of this task's own report.
+TASK name="MT5-PlumbingWatchdog" trigger="every 15 minutes" runs="desks/mt5/research/plumbing_watchdog.py" installer="desks/mt5/scripts/install_plumbing_watchdog_task.ps1" lane="ops"
 # THE CLOCK FIXER (principal 2026-09-17, permanent): every fifteen minutes every certificate and
 # every stopped clock gets a live clock and every dead resident is restarted; verification by
 # observation. SYSTEM, PT12M limit, IgnoreNew.

@@ -25,11 +25,18 @@ WHAT IT DOES, IN ONE PASS, AND WHY IN THIS ORDER.
      roots; what resolves gets its `url` filled and joins the drainable set, and what does not is
      registered as a PERMANENT REFUSAL (`NO_ROOT_KNOWN`) rather than sitting in the queue for
      another 134 hours pretending to be work.
-  3. REFUSE, PERMANENTLY AND BY NAME. A row the source registry marks
-     `machine_use_allowed=false`, a route it marks unreachable, a snippets-only search index, a
-     path `robots.txt` disallows -- each is stamped, recorded with the rule that refused it and
-     the date, and never queued again. THE REFUSAL IS THE KNOWLEDGE. Dropping the row would lose
-     the fact that the ground exists; retrying it forever would spend the hour on a wall.
+  3. LABEL, AND REFUSE ONLY THE FIVE ACTS. LAWS 5e (2026-09-23) is explicit and it is newer
+     than most of the code around this organ: licence, terms, robots and
+     `machine_use_allowed=false` are ROUTING AND PROVENANCE LABELS on the row -- they say what the
+     desk may REDISTRIBUTE, never whether it may READ. The section NAMES
+     "`machine_use_allowed=false` read as registered, never scraped" as a deleted brake that no
+     session may re-introduce in any form. So this organ mines those rows and carries the terms
+     note with them. What is refused is the principal's five ACTS -- credential theft, bypassing
+     an access control or paywall, MNPI, stolen or leaked private data, personal-data harvesting
+     -- which arrive as the three refused access labels (PRIVATE, CONFIDENTIAL_MNPI,
+     STOLEN_UNAUTHORIZED), a declared authenticated surface or declared MNPI. Those are stamped
+     with their reason and never queued again. THE REFUSAL IS STILL KNOWLEDGE: the row is kept,
+     because dropping it would lose the fact that the ground exists.
   4. DRAIN. What is left is crawled through the machinery that already exists --
      `research/moat_collectors.py`, which owns the robots probe, the media typing, the collectors,
      the point-in-time capture and the claim writer -- with the budget spent OLDEST AND HIGHEST
@@ -59,11 +66,14 @@ and `uncrawled_total` is published with its own ceiling, failing ONLY when it ri
 seeded nothing -- a rise with no new ground is a genuine regression and a rise with new ground is
 the organ working.
 
-BOUNDARIES. Public and licensed ground only. No access control is ever bypassed. A page
-registered `machine_use_allowed=false` is NEVER fetched -- it is registered and refused. No
-crypto-exchange-native ground is hunted (mandate 2026-08-18). Nothing here classifies a source
-in order to BRAKE discovery: the labels route use, they never stop a hunt (LAWS, growth
-governance Rule 1). Nothing here sizes, allocates or touches the money path.
+BOUNDARIES, AS LAWS 5e STATES THEM TODAY. Everything reachable on the open internet without
+breaking in is mined, and the label travels with the row. No access control and no paywall is
+ever bypassed; no credential is ever used; no MNPI, no stolen or leaked private data and no
+personal-data harvesting. Those five ACTS are the whole of the restriction and there is no sixth
+-- "the absence of a rule is a permission, not a reason for caution". Nothing here classifies a
+source in order to BRAKE discovery: a terms note lowers what may be republished and changes
+nothing about what may be read (growth governance Rule 1). No crypto-exchange-native ground is
+hunted (mandate 2026-08-18). Nothing here sizes, allocates or touches the money path.
 """
 from __future__ import annotations
 
@@ -99,8 +109,20 @@ SOURCE = "coverage_drain"
 LEASE_H = 24.0
 #: Refusals, as registered permanent facts. A refusal is stamped so the row leaves the pending
 #: set, and it keeps its reason forever so the knowledge that the ground EXISTS is never lost.
-REFUSAL_STATUSES: tuple[str, ...] = ("refused-machine-use", "refused-robots", "refused-no-root",
+#:
+#: TWO ONLY, AND NEITHER IS A LEGAL OPINION ABOUT CONTENT. `refused-hard-boundary` carries the
+#: principal's five refused ACTS (LAWS 5e), which reach this organ as the three refused access
+#: labels or a declared authenticated/MNPI surface. `refused-no-root` is not a legal refusal at
+#: all -- it is the factual statement that there is nothing to fetch. The statuses this organ
+#: USED to carry, `refused-machine-use` and `refused-robots`, are named in `REMOVED_BRAKES` and
+#: are kept in this tuple for ONE reason: rows stamped with them by an earlier build must still
+#: be recognised as refusals rather than read as successful crawls.
+REFUSAL_STATUSES: tuple[str, ...] = ("refused-hard-boundary", "refused-no-root",
+                                     "refused-machine-use", "refused-robots",
                                      "refused-unreachable")
+#: The refused access labels, read from the classifier when it is reachable so this organ can
+#: never drift from the law's own list.
+REFUSED_LABELS: tuple[str, ...] = ("PRIVATE", "CONFIDENTIAL_MNPI", "STOLEN_UNAUTHORIZED")
 #: The status a resolved, drainable row is cleared to. `moat_collectors.ACTIVE_STATUSES` accepts
 #: it, which is the whole point: this organ clears the path, that organ does the fetching.
 CLEARED = "candidate-cleared"
@@ -108,6 +130,10 @@ CLEARED = "candidate-cleared"
 #: the web. They can never carry a url and must not read as a lost root.
 INTERNAL_PREFIXES: frozenset[str] = frozenset({
     "world_lab", "execution_tape", "regime", "shadow", "lane", "sleeve", "forecast", "book"})
+#: The layer states in which the desk has done everything it lawfully can and SAID SO: the
+#: root was fetched, the layer was declared absent with a reason, or every declared host is
+#: a registered legal refusal. The other two -- DECLARED_UNVERIFIED and UNMAPPED -- are work.
+LAYER_SETTLED: tuple[str, ...] = ("MAPPED", "ABSENT_DECLARED", "REFUSED_HARD_BOUNDARY")
 #: The ten source layers, borrowed rather than re-declared.
 SOURCE_LAYERS: tuple[str, ...] = (
     "official", "institutional", "academic", "practitioner", "retail_ecology", "app_ecosystem",
@@ -115,7 +141,9 @@ SOURCE_LAYERS: tuple[str, ...] = (
 
 RULE = ("the uncrawled set falls every hour: overdue backlog and oldest wait ratchet DOWN, "
         "drained total ratchets UP, every refusal is a permanent registered fact with its rule "
-        "and its date, and a page registered machine_use_allowed=false is never fetched")
+        "and its date, and the only refusals are the principal's five ACTS (LAWS 5e) -- a "
+        "terms, licence, robots or machine_use_allowed label travels with the row and never "
+        "stops it being read")
 
 
 # --------------------------------------------------------------------------------- small tools
@@ -225,29 +253,63 @@ def pending_rows(conn: sqlite3.Connection) -> list[dict[str, Any]]:
 
 
 def crawled_hosts(conn: sqlite3.Connection) -> dict[str, str]:
-    """{host: newest last_crawled} over every source that was actually fetched.
+    """{host: newest last_crawled} over every source that was ACTUALLY FETCHED.
 
     This is the measurement the ten-layer verification stands on: a pack's declared root is
     VERIFIED when a row for that host carries a stamp. Nothing here reads the pack's own
     `verified` field, which is hard-coded False by every pack and always will be -- a pack that
     could verify itself would not be evidence of anything.
+
+    A REFUSAL IS STAMPED TOO, AND IT IS EXCLUDED HERE. The stamp is what stops a refused row
+    re-queueing every hour; it is not evidence that anything was read. Measured on the first live
+    pass: 113 pack sources carry `machine_use_allowed=false`, every one was registered and
+    stamped in the same step, and counting their hosts as fetched moved `layers_mapped` from 57
+    to 184 without a single page having been read. `refused_hosts` below is where they belong.
     """
     out: dict[str, str] = {}
-    if not _has_sources(conn):
-        return out
-    try:
-        cur = conn.execute("SELECT url, last_crawled FROM sources "
-                           "WHERE last_crawled IS NOT NULL AND last_crawled!=''")
-    except sqlite3.Error:
-        return out
-    for row in cur.fetchall():
-        host = host_of(row["url"] or "")
-        if not host:
+    for url, status, stamp, _why in _stamped_rows(conn):
+        if status in REFUSAL_STATUSES or not stamp:
             continue
-        stamp = str(row["last_crawled"] or "")
-        if stamp > out.get(host, ""):
+        host = host_of(url)
+        if host and stamp > out.get(host, ""):
             out[host] = stamp
     return out
+
+
+def refused_hosts(conn: sqlite3.Connection) -> dict[str, str]:
+    """{host: the refusal reason} over every source registered and lawfully refused.
+
+    A layer whose only declared hosts are refused is NOT unverified work: the desk has done
+    everything it lawfully can and the answer is a registered legal fact. That is a different
+    state from "nobody has got round to it", and conflating the two hides the one the desk can
+    actually act on.
+    """
+    out: dict[str, str] = {}
+    for url, status, _stamp, why in _stamped_rows(conn):
+        if status not in REFUSAL_STATUSES:
+            continue
+        host = host_of(url)
+        if host:
+            out.setdefault(host, why or status or "refused")
+    return out
+
+
+def _stamped_rows(conn: sqlite3.Connection) -> list[tuple[str, str, str, str]]:
+    """(url, status, last_crawled, route_reason) for every source row, partitioned in PYTHON.
+
+    The refusal statuses are a module constant, so the SQL would be a safe parameterised `IN`
+    -- but it would be BUILT by string formatting, and a fence that flags that pattern is right
+    to, because the next person to edit the line will not be formatting a row of `?` marks. The
+    table is a few thousand rows; the filter is free here and the pattern stays out of the tree.
+    """
+    if not _has_sources(conn):
+        return []
+    try:
+        cur = conn.execute("SELECT url, status, last_crawled, route_reason FROM sources")
+    except sqlite3.Error:
+        return []
+    return [(str(r["url"] or ""), str(r["status"] or ""), str(r["last_crawled"] or ""),
+             str(r["route_reason"] or "")) for r in cur.fetchall()]
 
 
 # ------------------------------------------------------------------------- the lawful grounds
@@ -397,11 +459,20 @@ def lawful_grounds() -> list[dict[str, Any]]:
 def refusal_for(row: Mapping[str, Any], shares: dict[str, Any] | None) -> tuple[str, str]:
     """(status, reason) when this row must never be fetched, else ("", "").
 
-    THREE INDEPENDENT WALLS, each read from the party entitled to raise it: the source registry's
-    own `machine_use_allowed` declaration, the host's `robots.txt`, and the absence of any root
-    at all. None of them is a judgement about the ground's VALUE -- a refused ground stays in the
-    registry at full weight, because the desk knowing that a ground exists and may not be
-    machine-read is strictly more information than the desk never having heard of it.
+    EXACTLY TWO WALLS, AND THIS IS THE PART OF THE ORGAN MOST LIKELY TO BE GOT WRONG BY THE NEXT
+    SESSION. The first is the principal's five refused ACTS (LAWS 5e), which reach a registry row
+    as one of the three refused access labels or as a declared authenticated / MNPI surface; the
+    judgement is delegated to `source_shares.machine_use_allowed`, which is the desk's one reader
+    of that law, so this organ can never drift from it. The second is not a legal refusal at all:
+    a row with no url anywhere has nothing to fetch.
+
+    WHAT IS DELIBERATELY NOT A WALL HERE: a terms page, a licence note, a robots Disallow, a
+    paywalled domain, `machine_use_allowed=false`, `route=unreachable`, snippets-only, an
+    ACCESS_UNCLEAR label, a social or user-submitted ground. Every one of those is a ROUTING
+    LABEL: it withholds redistribution and changes nothing about reading. LAWS 5e names each as a
+    deleted brake that "no session may re-introduce, in any form, under any name", so a future
+    edit that adds one back to this function is a violation of the section and of growth
+    governance, not a tightening.
     """
     url = str(row.get("url") or "").strip()
     if not url:
@@ -418,24 +489,58 @@ def refusal_for(row: Mapping[str, Any], shares: dict[str, Any] | None) -> tuple[
         return "refused-no-root", ("NO_ROOT_KNOWN: the registry row names a ground but carries "
                                    "no url, and no root resolved from the source registry, the "
                                    "deep-forest grounds or any country pack")
+    label = str(row.get("access_label") or "").strip().upper()
+    if label in _refused_labels():
+        return "refused-hard-boundary", (
+            f"HARD_BOUNDARY: access_label={label} carries one of the principal's five refused "
+            "ACTS (LAWS 5e); the row is kept so the ground is known and is never fetched")
     if shares is not None:
-        try:
+        with suppress(Exception):
             from research import source_shares
             hit = source_shares.resolve(shares, row.get("source_id"), url, host_of(url))
             reg_row = (shares.get("rows") or {}).get(hit) if hit else None
             allowed, why = source_shares.machine_use_allowed(reg_row)
             if not allowed:
-                return "refused-machine-use", f"MACHINE_USE_REFUSED: {why}"
-        except Exception:
-            pass
-    try:
-        from research import moat_collectors
-        barred = moat_collectors.robots_barred(url)
-    except Exception:
-        barred = ""
-    if barred:
-        return "refused-robots", f"ROBOTS_DISALLOW: {barred}"
+                return "refused-hard-boundary", f"HARD_BOUNDARY: {why}"
     return "", ""
+
+
+def _refused_labels() -> tuple[str, ...]:
+    """The law's own refused-label list when the classifier is reachable, else the local copy."""
+    with suppress(Exception):
+        from libs.research.access_classifier import REFUSED_LABELS as LIVE
+        return tuple(str(x) for x in LIVE)
+    return REFUSED_LABELS
+
+
+def terms_note(row: Mapping[str, Any], shares: dict[str, Any] | None = None) -> str:
+    """The provenance label that TRAVELS WITH a row, or "".
+
+    This is the half of the access law that replaced the brakes. A ground whose terms, robots
+    file or registry row says `machine_use_allowed=false` is mined exactly as hard as any other
+    and carries this sentence, which is what the desk consults before it REPUBLISHES anything
+    derived from it. Recording the note is the obligation; refusing the fetch never was.
+    """
+    notes: list[str] = []
+    if row.get("machine_use_allowed") is False:
+        notes.append("the ground declares machine_use_allowed=false")
+    if str(row.get("route") or "") == "unreachable":
+        notes.append("registry route=unreachable")
+    licence = str(row.get("licence") or row.get("licence_note") or "")
+    if "NOT FETCHABLE" in licence.upper() or "SNIPPETS ONLY" in licence.upper():
+        notes.append(f"licence note: {licence[:120]}")
+    if shares is not None:
+        with suppress(Exception):
+            from research import source_shares
+            hit = source_shares.resolve(shares, row.get("source_id"), row.get("url"))
+            reg_row = (shares.get("rows") or {}).get(hit) if hit else None
+            allowed, why = source_shares.machine_use_allowed(reg_row)
+            if allowed and "mined with its label" in why:
+                notes.append(why)
+    if not notes:
+        return ""
+    return ("MINED WITH ITS LABEL ATTACHED; REDISTRIBUTION WITHHELD BY ITS TERMS -- "
+            + "; ".join(notes) + " (LAWS 5e: a terms label routes USE, it never gates mining)")
 
 
 def register_refusal(conn: sqlite3.Connection, source_id: str, status: str, reason: str,
@@ -745,6 +850,7 @@ def verify_layers(conn: sqlite3.Connection | None) -> dict[str, Any]:
     UNMAPPED when the pack said nothing at all. Four states and no quiet zero (L1.28a).
     """
     stamped = crawled_hosts(conn) if conn is not None else {}
+    walled = refused_hosts(conn) if conn is not None else {}
     out: dict[str, Any] = {"measured": conn is not None, "packs": {}, "totals": {},
                            "why": ("layers verified against registry rows carrying a "
                                    "last_crawled stamp" if conn is not None else
@@ -755,7 +861,8 @@ def verify_layers(conn: sqlite3.Connection | None) -> dict[str, Any]:
         out["why"] = "UNMEASURED: the countries package is not importable"
         out["measured"] = False
         return out
-    tot = dict.fromkeys(("mapped", "absent_declared", "declared_unverified", "unmapped"), 0)
+    tot = dict.fromkeys(("mapped", "absent_declared", "refused_lawful",
+                         "declared_unverified", "unmapped"), 0)
     for code in pkg.codes():
         mod = _pack_module(code)
         if mod is None:
@@ -772,12 +879,17 @@ def verify_layers(conn: sqlite3.Connection | None) -> dict[str, Any]:
             roots = [str(r) for sc in declared for r in (sc.get("roots") or ())]
             hosts = {host_of(r) for r in roots} - {""}
             hit = sorted(h for h in hosts if h in stamped)
+            barred = sorted(h for h in hosts if h in walled and h not in stamped)
             if hit:
                 state = "MAPPED"
                 why = f"{len(hit)}/{len(hosts)} declared host(s) carry a last_crawled stamp"
             elif absent:
                 state = "ABSENT_DECLARED"
                 why = str(absent[0].get("notes") or "declared absent with a reason")[:220]
+            elif barred and len(barred) == len(hosts):
+                state = "REFUSED_LAWFUL"
+                why = (f"every declared host in this layer is registered and lawfully refused "
+                       f"({walled[barred[0]][:140]}); the desk has done what it lawfully can")
             elif declared:
                 state = "DECLARED_UNVERIFIED"
                 why = (f"{len(declared)} source(s) over {len(hosts)} host(s) declared and none "
@@ -786,10 +898,10 @@ def verify_layers(conn: sqlite3.Connection | None) -> dict[str, Any]:
                 state = "UNMAPPED"
                 why = "the pack names neither a source nor a declared absence for this layer"
             rows[layer] = {"state": state, "declared": len(declared), "absent": len(absent),
-                           "hosts": sorted(hosts), "verified_hosts": hit, "why": why}
+                           "hosts": sorted(hosts), "verified_hosts": hit,
+                           "refused_hosts": barred, "why": why}
             tot[state.lower()] = tot.get(state.lower(), 0) + 1
-        mapped = sum(1 for v in rows.values()
-                     if v["state"] in ("MAPPED", "ABSENT_DECLARED"))
+        mapped = sum(1 for v in rows.values() if v["state"] in LAYER_SETTLED)
         out["packs"][code] = {
             "layers": rows, "layers_mapped": mapped, "layers_total": len(SOURCE_LAYERS),
             "unverified": [k for k, v in rows.items() if v["state"] == "DECLARED_UNVERIFIED"],
@@ -1079,9 +1191,9 @@ def main(argv: Sequence[str] | None = None) -> int:
 __all__ = ["LEASE_H", "REPORT", "RULE", "SOURCE_LAYERS", "budget_seconds", "build_root_index",
            "connect", "crawled_hosts", "drain", "drain_order", "forest_grounds", "host_keys",
            "host_of", "largest_gap", "lawful_grounds", "load_ledger", "main", "measure_backlog",
-           "pack_sources", "pending_rows", "ratchet", "refusal_for", "register_refusal",
-           "registry_grounds", "resolve_root", "run", "save_ledger", "seed_grounds",
-           "verify_layers"]
+           "pack_sources", "pending_rows", "ratchet", "refusal_for", "refused_hosts",
+           "register_refusal", "registry_grounds", "resolve_root", "run", "save_ledger",
+           "seed_grounds", "verify_layers"]
 
 
 if __name__ == "__main__":                                              # pragma: no cover

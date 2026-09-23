@@ -112,6 +112,13 @@ _LAW_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     # robust forward E[log W]; every strong opportunity may raise capital above normal; the
     # 20% floor is flat and filled, growth free above it to 30%; the gateway deploys the book.
     ("check_growth_governance.py", ()),
+    # NO QUOTA ON FORWARD EVIDENCE SLOTS, EVER (principal 2026-09-23). The portable half:
+    # AST-walks the enrolment path and fails when a cap comes back -- a quota constant, a slice
+    # of the certificate roster, a `len(enrolled) >= n` gate, or `forward_reconcile.family_budget`
+    # declaring itself an enrolment cap again. A forward clock gathers evidence and deploys no
+    # capital, so a cap bought no safety; the multiplicity and trial accounting are untouched and
+    # this fence checks none of them. The state half runs in _STATE_FENCES.
+    ("check_forward_enrolment.py", ("--surfaces-only",)),
     # THE TIER-5 INSTITUTION AUDIT (principal's two blueprints, 2026-09-22): every section of
     # the COMPLETE TIER-5 BLUEPRINT (I-CII) and the FINAL MAXIMUM-AGGRESSIVE mandate (1-170),
     # classified EXISTS+WIRED+LIVE / DORMANT / PARTIAL / MISSING / DUPLICATIVE /
@@ -197,6 +204,9 @@ _STATE_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("check_excitation.py", ()),               # L1.45 -- no absorbing set, no dead experiment
     ("check_clock_provenance.py", ()),         # L1.46 -- the tape declares which clock stamped it
     ("check_heat_floor_wiring.py", ()),        # growth governance -- the 20% floor is DEPLOYED
+    # THE STATE HALF of the enrolment law: no certificate clockless past one cycle. An absent
+    # FORWARD_ENROLMENT.json is UNMEASURED, which is a real answer on a clean checkout.
+    ("check_forward_enrolment.py", ("--state-only",)),
     # LAWS 5c -- everything ingested is exploited; the exploitation floor ratchets UP, the
     # DATA STRANDING count ratchets DOWN, and no qualified datum sits in storage without a
     # defined downstream state. A STATE fence: on a clean checkout the ingestion artifact is

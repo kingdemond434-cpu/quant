@@ -472,6 +472,44 @@ def save_ledger(d: dict[str, Any], root: Path | None = None) -> None:
     tmp.replace(p)
 
 
+@contextmanager
+def ledger_lock(root: Path, timeout_s: float = 10.0) -> Iterator[None]:
+    """The SAME advisory lock `scripts/recommendations.py` takes, on the same file (R0623).
+
+    A SECOND WRITER WITHOUT THE FIRST WRITER'S LOCK IS THE RACE, NOT A SMALLER VERSION OF IT. That
+    lock exists because two sessions' interleaved add/dispose calls destroyed three rows and
+    reverted two dispositions five separate times in one day: both processes read, both write,
+    last writer wins. This organ rewrites the whole file every hour, so an unlocked pass would
+    reopen exactly that with a machine holding one end of it. It contends on `data/.recommendation
+    _ledger.lock` under the ROOT IT IS WRITING, so a pass against a tmp tree does not touch the
+    repo's lock and a pass against the repo contends with the CLI as intended.
+
+    A LOCK IT CANNOT TAKE REFUSES THE PASS. Ten seconds of contention on a millisecond write means
+    a wedged holder; writing anyway is the corruption this guards, and skipping silently would
+    leave the ledger unwritten while the leg reported success.
+    """
+    from recommendations import _flock_exclusive
+    p = root / "data" / ".recommendation_ledger.lock"
+    p.parent.mkdir(parents=True, exist_ok=True)
+    fh = p.open("w")
+    deadline = time.monotonic() + timeout_s
+    try:
+        while True:
+            try:
+                _flock_exclusive(fh)
+                break
+            except OSError:
+                if time.monotonic() > deadline:
+                    raise SystemExit(
+                        f"REFUSING: could not lock {p} within {timeout_s:g}s -- another ledger "
+                        "writer is wedged. Writing around the lock is the row loss R0623 "
+                        "records; the next pass is an hour away and loses nothing.") from None
+                time.sleep(0.2)
+        yield
+    finally:
+        fh.close()
+
+
 def priority(row: dict[str, Any]) -> tuple[float, float, float]:
     """Sort key, ascending. MEASURED ROI OUTRANKS AN OPINION, and age breaks every tie.
 
@@ -963,8 +1001,13 @@ def run(root: Path | None = None, budget_s: float = 600.0,
                 "existing fence still counts it -- a fifth status would be a better hiding "
                 "place than `scheduled` ever was."),
     }
-    OUT.parent.mkdir(parents=True, exist_ok=True)
-    (r / OUT.relative_to(ROOT)).write_text(json.dumps(doc, indent=1, default=str), "utf-8")
+    # THE DIRECTORY MUST BE MADE UNDER `r`, NOT UNDER THE MODULE'S OWN ROOT. `OUT` is absolute and
+    # points at the real tree, so `OUT.parent.mkdir` created the repo's reports/ and left the
+    # target root's missing -- a pass against any other root then wrote nowhere. Caught by the
+    # organ's own tests, which is the reason they take a root at all.
+    art_path = r / OUT.relative_to(ROOT)
+    art_path.parent.mkdir(parents=True, exist_ok=True)
+    art_path.write_text(json.dumps(doc, indent=1, default=str), "utf-8")
     _render(doc, r)
     try:
         from libs.ops.events import leg_events

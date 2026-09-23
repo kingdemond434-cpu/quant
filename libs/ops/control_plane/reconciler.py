@@ -515,6 +515,20 @@ def reconcile(*, registry: Registry | None = None, root: Path | None = None,
         reg, cen = _desk_registry(base)
     ep = epoch or epoch_id(t)
     q = _quarantined(base)
+    # THE REAPER RUNS FIRST, BEFORE ANY OTHER REPAIR (2026-09-22, measured). 72 orphaned pool
+    # workers held 147 GB of a 251 GB commit limit while 67 GB of physical memory was free; every
+    # process started after that died with STATUS_COMMITMENT_LIMIT and left no artifact. So an
+    # apply pass that reaped LAST, or reaped somewhere in the middle of the plan, would spend its
+    # budget watching every other actuator fail for a reason none of them could name. Freeing the
+    # commit limit is the precondition of every repair, which is why it is not one of them.
+    pre_pass: list[dict[str, Any]] = []
+    if apply:
+        reaper = act.desk_actuators().get("reap_orphans")
+        if reaper is not None:
+            rec = act.run_actuator(reaper, {"component_id": "component:control_plane"},
+                                   apply=True, runner=runner, sleeper=sleeper, clock=clock)
+            pre_pass.append({"actuator": "reap_orphans", "result": rec.get("result"),
+                             "repaired": rec.get("repaired"), "why": rec.get("why")})
     obs = [observe(s, now=t, root=base, locks=locks, watermark_root=watermark_root,
                    quarantine=q, lineage=lineage) for s in reg.all()]
     work = plan(obs, reg)
@@ -540,6 +554,7 @@ def reconcile(*, registry: Registry | None = None, root: Path | None = None,
         "states": by_state,
         "unhealthy": [o.to_dict() for o in obs if o.state not in ("HEALTHY", "DECLARED")][:200],
         "plan": work[:200],
+        "pre_pass": pre_pass,
         "repairs": repairs,
         "failed_required_repairs": [r.get("component_id") for r in failed_required],
         "registry_census": cen,

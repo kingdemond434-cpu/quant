@@ -7274,6 +7274,263 @@
    "landed": [
     "RD-Agent co-evolution closure 2026-09-22"
    ]
+  },
+  {
+   "id": "NE1",
+   "item": "NET IS THE CURRENCY, ONE FUNCTION: net = gross - spread/slippage at the cell's own size and state - market impact at that size - financing and swap over the holding period - commission - the multiplicity charge already owed. `libs/research/net_edge.py` returns the net figure, the full decomposition and an UNMEASURED verdict PER TERM the data cannot support. An unpriced term is never a zero: it makes the net a BOUND, and because four of the five terms can only reduce the edge while financing alone may be a credit, a negative bound with financing unpriced is COST_DEAD_UNCONFIRMED and not COST_DEAD. MEASURED 2026-09-23 on the real tree: 273 rows priced, 23 sign flips after costs (14 COST_DEAD, 9 unconfirmed), 55 net-positive.",
+   "evidence": [
+    "libs/research/net_edge.py:225",
+    "libs/research/net_edge.py:132",
+    "libs/research/net_edge.py:270",
+    "libs/research/net_edge.py:346",
+    "tests/research/test_net_edge.py:31",
+    "tests/research/test_net_edge.py:69"
+   ],
+   "scheduled_by": "hourly_cycle:net_edge",
+   "artifact": "desks/mt5/reports/NET_EDGE.json",
+   "consumer": "desks/mt5/research/net_edge_spine.py is the only caller that writes; the three doors below all read its two artifacts",
+   "domain": "E",
+   "phase": 0,
+   "status": "LANDED",
+   "gate": "none",
+   "landed": [
+    "net-edge spine 2026-09-23"
+   ]
+  },
+  {
+   "id": "NE2",
+   "item": "THE THREE DOORS RANK ON NET, NOT ON GROSS. (a) INTAKE: `miner_candidate_compiler` reads data/net_edge_ranks.json, orders its compiled candidates by net and stamps a sign-flipped cell COST_DEAD WITH ITS DECOMPOSITION instead of dropping it; the spine donates that cell's lower-turnover descendant through the `net_edge` seat, which is the `cost_dead -> lower_turnover_descendant` route libs/research/coevolution_lab.py already declares. (b) FORWARD SLOT: `forward_slot_ranker.net_of_cost` publishes net_over_gross and net_slot_value beside slot_value -- never overwriting it -- so the scarcest thing the desk owns goes to the highest NET expected E[log W]; MEASURED 2026-09-23: 35 clocks priced, 3 COST_DEAD. (c) ALLOCATOR: allocator_evidence gains a `net_of_cost` TermSpec plus net_capacity_rows, so the book sizes on net and on what it can actually carry; 214 sleeves priced, factors in [0.5, 1.6], heat-neutral.",
+   "evidence": [
+    "desks/mt5/research/miner_candidate_compiler.py:1346",
+    "desks/mt5/research/forward_slot_ranker.py:622",
+    "libs/portfolio/allocator_evidence.py:478",
+    "libs/portfolio/allocator_evidence.py:538",
+    "desks/mt5/research/financing_lab.py:399",
+    "desks/mt5/tests/test_net_edge_spine.py:142"
+   ],
+   "scheduled_by": "hourly_cycle:net_edge,hourly_cycle:forward_slot_ranker",
+   "artifact": "desks/mt5/data/net_edge_ranks.json",
+   "consumer": "miner_candidate_compiler (hypotheses ordered by net, net_ranking block), forward_slot_ranker (net_of_cost block in FORWARD_SLOT_RANKER.json), financing_lab -> data/allocator_evidence.json (net_of_cost term per sleeve)",
+   "domain": "E",
+   "phase": 0,
+   "status": "LANDED",
+   "gate": "none",
+   "landed": [
+    "net-edge spine 2026-09-23"
+   ]
+  },
+  {
+   "id": "NE3",
+   "item": "NET ATTRIBUTION BACKWARD, AND THE REFUSAL IS BILLED. Every closed live trade in COUNTERFACTUAL_ATTRIBUTION.json (consumed, never edited) is scored against what this cost model PREDICTED for its cell, so the model that prices the book is itself priced -- bias, MAE, t and a CALIBRATED / OVER_CHARGING / UNDER_CHARGING verdict; a trade no priced row joins is UNMEASURED with the reason and never a silent pass. MEASURED 2026-09-23: 151 closed trades scored, verdict CALIBRATED, bias +0.0709R. Under GROWTH GOVERNANCE every COST_DEAD refusal carries a missed_growth_line in forward log-wealth, and `reweight_preserving_heat` returns a book with exactly the heat it was given: heat 0.224999 -> 0.224999 on the real tree, preserved to 1e-9. Nothing here vetoes, caps, shrinks or sizes.",
+   "evidence": [
+    "libs/research/net_edge.py:503",
+    "libs/research/net_edge.py:416",
+    "libs/research/net_edge.py:460",
+    "desks/mt5/research/net_edge_spine.py:358",
+    "desks/mt5/research/net_edge_spine.py:460",
+    "tests/research/test_net_edge.py:176"
+   ],
+   "scheduled_by": "hourly_cycle:net_edge",
+   "artifact": "desks/mt5/reports/NET_EDGE.json",
+   "consumer": "the cost_model_calibration, prediction_errors, missed_growth_lines and heat_reallocation blocks of NET_EDGE.json; a COSTS_GROWTH verdict on a refusal is visible beside the refusal itself",
+   "domain": "E",
+   "phase": 0,
+   "status": "LANDED",
+   "gate": "none",
+   "landed": [
+    "net-edge spine 2026-09-23"
+   ]
+  },
+  {
+   "id": "NE4",
+   "item": "THE ARTIFACT AND ITS CLOCK. desks/mt5/reports/NET_EDGE.json publishes net versus gross per FAMILY and per INSTRUMENT, the sign-flip count, capacity per sleeve (the size at which net decays to zero, UNMEASURED with its reason while matched_fills is 0 -- which is not the same as unlimited), the cost model's own prediction error, and the ranked list of what the desk would trade if it ranked purely on net. Wired as leg `net_edge` in hourly_cycle.py (execution department, --once --budget-s 600, cap 700), layered `execution` in libs/research/layers.py LEG_LAYER, with the join file desks/mt5/data/net_edge_ranks.json for the three doors.",
+   "evidence": [
+    "desks/mt5/research/net_edge_spine.py:511",
+    "desks/mt5/research/hourly_cycle.py:3333",
+    "libs/research/layers.py:347",
+    "desks/mt5/tests/test_net_edge_spine.py:236"
+   ],
+   "scheduled_by": "hourly_cycle:net_edge",
+   "artifact": "desks/mt5/reports/NET_EDGE.json",
+   "consumer": "miner_candidate_compiler, forward_slot_ranker and financing_lab/allocator_evidence all read it; the layer census bills its hour to the execution layer",
+   "domain": "E",
+   "phase": 0,
+   "status": "LANDED",
+   "gate": "none",
+   "landed": [
+    "net-edge spine 2026-09-23"
+   ]
+  },
+  {
+   "id": "U66",
+   "domain": "U",
+   "phase": "U",
+   "status": "LANDED",
+   "gate": "none",
+   "item": "THE PROPOSER SEAT (principal 2026-09-23, scope widened the same day to EVERY research process, not only the factories): an OPTIONAL external-model prior that proposes CANDIDATES and NAMES and can never produce a verdict. ONE shared entry point -- proposer_seat.ask(organ, kind, ...) with kinds order / names / terms / candidates -- so a new organ gets the seat by calling one function, and every organ that has called it is listed in the artifact with its counts, which is what makes 'is it everywhere' a measurement instead of a claim. Wired into the four factories (expression_factory skeletons into the invention stage, math_lab and physics_lab mechanism names on uninterpreted objects and cards, factor_model_coevolution and model_search as an ORDER hint over the factory's own option list), the mechanism_naming_queue, the crawlers and the deep forest, the sandbox runner, archaeology, the understanding seat, the residual hunt, the data-acquisition scientist and the meta curriculum. THE HARD RULES ARE TESTS, NOT INTENTIONS: a verdict field in a reply is stripped and the strip recorded, a verdict asserted in prose is discarded, an invalid proposal is discarded with its reason, every accepted proposal carries provenance (seat, model, prompt hash, timestamp) and is charged effective trials through libs/research/trial_ledger.py, the prompt builder reads no file and every composed prompt is scanned for the sealed holdout, PIT-future language and credential material, an order hint may reorder and may never widen, and a proposed term is a SEARCH STRING that still has to pass the organ's own source registry -- it can never become a new ground by being named. With no panel every consumer runs EXACTLY as it does today and the report reads UNMEASURED. MEASURED 2026-09-23 on this build box: llm_seat resolves 0 seats (the panel file holds 24 providers with empty keys), the leg wrote PROPOSER_SEAT.json with verdict UNMEASURED and every registered organ UNMEASURED.",
+   "evidence": [
+    "libs/research/proposer_seat.py - ask(): THE shared entry point; one call gets an organ the seat, and ORGANS is the registry the artifact reports against",
+    "libs/research/proposer_seat.py - enabled(): offline, environment and roster only, so every organ can ask on its hot path",
+    "libs/research/proposer_seat.py - build_prompt(): the only composer of model-facing text; whitelisted fields, then the hygiene scan",
+    "libs/research/proposer_seat.py - strip_verdicts(): every verdict-shaped key removed recursively, the names recorded",
+    "libs/research/proposer_seat.py - charge_trials(): accepted proposals priced through libs/research/trial_ledger.py",
+    "libs/research/proposer_seat.py - order_hint(): reorders a factory's own option list and discards any name outside it",
+    "desks/mt5/research/expression_factory.py - _seat_skeleton(): drains one parked proposal, re-validates it against THIS world's terminals, else falls through to the random draw",
+    "desks/mt5/research/math_lab.py - guarded seat call; the proposal lands in notes and never touches interpretation status",
+    "desks/mt5/research/physics_lab.py - the same, for uninterpreted MathHypothesisCards",
+    "desks/mt5/research/model_search.py - order hint over MF.ORDER; an invented family is discarded",
+    "desks/mt5/research/factor_model_coevolution.py - order hint over the measured-healthy zoo; nothing the health probe set aside is re-admitted",
+    "desks/mt5/research/hourly_cycle.py - leg proposer_seat, --once --budget-s 300, department intel",
+    "libs/research/layers.py - LEG_LAYER: proposer_seat -> information (a prior, not a prediction)",
+    "tests/research/test_proposer_seat.py - no verdict field on the dataclass, a volunteered score stripped, prose verdicts discarded, the dark path, provenance, trial charging, prompt hygiene scanned on the builder's own source",
+    "desks/mt5/tests/test_proposer_seat_wiring.py - the leg, the layer, the fence registration, every call site inside a guard, and each consumer's neutral value with the seat switched off"
+   ],
+   "scheduled_by": "hourly_cycle:proposer_seat",
+   "artifact": "desks/mt5/reports/PROPOSER_SEAT.json",
+   "consumer": "desks/mt5/research/expression_factory.py drains desks/mt5/data/proposer_seat/expression_factory.json into its invention stage; the inline callers read the return value and publish it in their own reports; the naming queue's rows are read by scripts/convert_question_queues.py",
+   "landed": [
+    "proposer seat 2026-09-23"
+   ],
+   "notes": "OPTIONAL BY CONSTRUCTION. QUANT_PROPOSER_SEAT=0 switches it off with a panel present; with no panel enabled() is False and every entry point returns the neutral value its caller already used. The seat owns no transport: llm_seat resolves and caps, free_panel rotates the free roster, llm_route reports the roster."
+  },
+  {
+   "id": "U67",
+   "domain": "U",
+   "phase": "U",
+   "status": "LANDED",
+   "gate": "none",
+   "item": "THE DARK SEATS, DIAGNOSED AND CLOSED (principal 2026-09-23). Measured on the trading box: deepseek donating hourly while kimi was 240h stale and fxmerge, mql5_catalog and mql5_prospector 281h stale. The causes were NOT the same and nothing said so. kimi: scripts/kimi_hunter.py's only clock was the VPS unit quant-kimi-hunter.timer, so the box that holds the credentials ran it never -- it now has an hourly leg (kimi_hunt). The other three: NO ORGAN AND NO CLOCK ANYWHERE IN THE TREE -- the name appears only in check_producer_yield's replacement table and source_registry's vocabulary, and the directories hold one-shot crawl output from 2026-08-26 and 2026-08-27. They are retired with a reason and a live named inheritor (fxblue, mql5_signals, mql5_survivors). The fence that makes this un-repeatable is scripts/check_seat_health.py: every configured seat with its clock, its cadence and its last donation age; OVERDUE past three cadences, UNMEASURED when nothing schedules it (never a silent pass), UNMEASURED_HERE when its clock belongs to the other host, UNMEASURED when its organ needs a credential this host does not hold, RETIRED when the retirement ledger says so. The inherited debt is DECLARED by seat name in BASELINE_OVERDUE and may only shrink, so a NEWLY dark seat fails the law gate immediately. MEASURED first run 2026-09-23: 92 seats -> 83 UNMEASURED, 5 OVERDUE (all five declared), 3 RETIRED, 1 UNMEASURED_HERE.",
+   "evidence": [
+    "scripts/check_seat_health.py - clock_index(): every clock the repo declares, read from the systemd units, ops/crontab.manifest, desks/mt5/ops/box_tasks.manifest and the two cycles, preferring the clock THIS host runs",
+    "scripts/check_seat_health.py - last_donation(): newest mtime per seat across both data/intelligence roots, because a stale row's own stamp would report a dead seat alive",
+    "scripts/check_seat_health.py - audit(): FRESH / OVERDUE / UNMEASURED / UNMEASURED_HERE / RETIRED, one verdict per seat with its reason",
+    "scripts/check_seat_health.py - SEAT_NEEDS_PANEL: a seat whose organ needs a credential this host lacks is UNMEASURED, not a defect charged to the organ",
+    "scripts/check_seat_health.py - BASELINE_OVERDUE: the inherited debt, declared by name, ratcheting down only",
+    "scripts/run_law_gate.py - registered in the state-fence battery, so it runs at every law-gate boundary",
+    "desks/mt5/research/hourly_cycle.py - leg kimi_hunt: the box clock scripts/kimi_hunter.py never had",
+    "libs/research/layers.py - LEG_LAYER: kimi_hunt -> information",
+    "docs/research/retirements.jsonl - fxmerge to fxblue, mql5_catalog to mql5_signals, mql5_prospector to mql5_survivors, each with the measurement that no organ and no clock exists",
+    "desks/mt5/tests/test_proposer_seat_wiring.py - the kimi clock, the layer entry and the law-gate registration are asserted"
+   ],
+   "scheduled_by": "scripts/run_law_gate.py state fences (every law-gate boundary), hourly_cycle:kimi_hunt",
+   "artifact": "desks/mt5/reports/SEAT_HEALTH.json",
+   "consumer": "scripts/run_law_gate.py (rc=1 when an overdue seat is outside the declared debt); libs/research/proposer_seat.py folds the same audit() into PROPOSER_SEAT.json's seat_health block rather than re-implementing it",
+   "landed": [
+    "dark-seat sweep 2026-09-23"
+   ],
+   "notes": "THE FIVE DECLARED OVERDUE SEATS ARE REAL DEBT, NOT NOISE: asia, deep_forest, world, discovery_compiler and representation_forge each carry an hourly leg and had not donated for 130-160 hours (deep_forest never). They are named so the next session starts from the measurement rather than from the question, and the ratchet means the list cannot be extended to accommodate a sixth."
+  },
+  {
+   "id": "U68",
+   "domain": "U",
+   "phase": "U",
+   "status": "LANDED",
+   "gate": "none",
+   "item": "THE RECOMMENDATION LEDGER COULD NOT BE WRITTEN FROM THE BOX THAT TRADES (measured 2026-09-23). docs/research/recommendation_ledger.json held 777 rows, 219 of them OPEN, and had not moved for 281.7 hours while the CEO docket ran daily and wrote CEO_DOCKET.json beside it. TWO CAUSES, both real. (1) scripts/recommendations.py's read-modify-write lock did `import fcntl`, which is POSIX-only: every MUTATING subcommand (add / dispose / correct / repoint / claim) died with ModuleNotFoundError on Windows while `report` and `verify`, which skip the lock, worked perfectly, so the ledger looked healthy from the box and was physically unwritable there. `_flock_exclusive` now takes the same exclusive, non-blocking, closed-on-exit lock through msvcrt where fcntl is absent. (2) The only drain on any clock was ops/run_recommendation_worker.sh, a VPS cron that hands the open rows to an LLM; the VPS has published no commit since 2026-09-08, so the queue's only consumer had stopped and nothing said so.",
+   "evidence": [
+    "scripts/recommendations.py:169 - _flock_exclusive: fcntl where it exists, msvcrt.locking LK_NBLCK where it does not; same release-on-close, no stale-lock state",
+    "scripts/recommendations.py:207 - the deadline loop calls it instead of fcntl.flock",
+    "ops/run_recommendation_worker.sh:40 - the VPS-only LLM drain this replaces as the lane's only clock"
+   ],
+   "scheduled_by": "hourly_cycle:implementer",
+   "artifact": "docs/research/recommendation_ledger.json",
+   "consumer": "desks/mt5/research/implementer.py, scripts/check_recommendation_flow.py, scripts/check_conversion.py, libs/ops/ledger_reversion.py",
+   "landed": "2026-09-23",
+   "notes": "A portability fault in a LOCK is the worst place for one: the lock is what a caller reaches for when it is about to be careful."
+  },
+  {
+   "id": "U69",
+   "domain": "U",
+   "phase": "U",
+   "status": "LANDED",
+   "gate": "none",
+   "item": "THE IMPLEMENTER: the recommendation lane now DRAINS on a clock, deterministically and with no LLM in the path (principal 2026-09-23). Every pass takes the OPEN rows in priority order (a MEASURED roi_bps outranks a rank ordinal, age breaks every tie) and drives each to a recorded outcome: IMPLEMENTED only when the row's deliverable is a file that did not exist at the ask and git says it was ADDED more than a grace window later, cited by that add-commit; SCHEDULED only when the row waits on an artifact a clocked organ regenerates, with that clock named and its next firing as the due date; REJECTED for the standing order against reducing aggressiveness, retired crypto-exchange ground, or a duplicate of a NAMED terminal row; otherwise BLOCKED with an exactly named blocker, an owner and a next action. BLOCKED IS NOT A FIFTH STATUS: the row stays `open` and visible to check_conversion, check_row_atomicity, ledger_reversion and owed(), and gains owner / next_action / blocker instead, because a new status word no existing fence knows would be a better hiding place than `scheduled` ever was. Where a row asks for code it opens a build task (deterministic BT id) rather than writing speculative code. MEASURED FIRST PASS: 219 OPEN -> 216, 226 rows moved (3 implemented, 6 rejected, 1 scheduled, 216 blocked-with-owner), 0 open rows without an owner, largest blocker class needs_specification at 104.",
+   "evidence": [
+    "desks/mt5/research/implementer.py:572 - triage: the ladder, ordered by what it costs to be wrong",
+    "desks/mt5/research/implementer.py:518 - _dispose re-imposes the CLI's own bars (25-char rejection, due date, resolvable commit, `disposed` stamp)",
+    "desks/mt5/research/implementer.py:540 - _block: owner, next_action, blocker on a row that stays OPEN",
+    "desks/mt5/research/implementer.py:874 - run: the pass, its two-phase budget, the artifact and the rendered page",
+    "desks/mt5/research/hourly_cycle.py:3147 - the leg",
+    "libs/research/layers.py:249 - the layer",
+    "desks/mt5/tests/test_implementer.py:63 - every open row leaves the pass owned"
+   ],
+   "scheduled_by": "hourly_cycle:implementer",
+   "artifact": "desks/mt5/reports/IMPLEMENTER.json",
+   "consumer": "docs/research/IMPLEMENTATION.md (rendered from it), scripts/check_recommendation_flow.py, desks/mt5/research/frontier_ceo.py",
+   "landed": "2026-09-23",
+   "notes": "The first version of the IMPLEMENTED rung accepted 'the cited organ has a clock and an artifact it writes is fresh' and disposed 20 rows on a dry pass; read one by one, R0748 (a fix to the test suite's restore guard) was proved by max_audit having run and R0513 by the ledger's own mtime. A false implemented removes a live row from view permanently, so the rung was narrowed to the one claim prose cannot fake."
+  },
+  {
+   "id": "U70",
+   "domain": "U",
+   "phase": "U",
+   "status": "LANDED",
+   "gate": "none",
+   "item": "THE RECOMMENDATION-FLOW FENCE, AND THE LOOP CLOSED BACK TO THE CEO. Three fences already read this ledger -- check_conversion, check_citation_integrity, check_row_atomicity -- and all three were green through 281.7 hours of it not being written at all, because a queue that has STOPPED and a queue that is caught up look identical to a rate. check_recommendation_flow fails on three properties instead: the ledger past its own cadence (state half, --require-state, so a fresh clone is not graded on its last commit's age), any OPEN row with no owner or no next action (portable and fatal), and the OPEN count above its ratchet floor with nothing recorded to explain the rise -- the backlog ratchets DOWN only, and a rise is legal exactly when the pass NAMES what raised it. The loop closes the other way too: intake pulls the CEO docket's undecided proposals and the frontier audit's findings into THIS ledger rather than a second store (absent sources named UNMEASURED, never skipped), and frontier_ceo asks already_settled() before proposing, so a recommendation the desk has implemented or reasoned its way out of is listed as settled instead of arriving again as new work.",
+   "evidence": [
+    "scripts/check_recommendation_flow.py:85 - build_report: the three properties, each with its own failure mode and its own portability",
+    "scripts/run_law_gate.py:170 - the portable half (owner + ratchet)",
+    "scripts/run_law_gate.py:230 - the state half (--require-state: staleness)",
+    "desks/mt5/research/implementer.py:784 - intake: the docket and the frontier audit into one ledger, skipping what a terminal row already settles",
+    "desks/mt5/research/implementer.py:494 - already_settled: containment, not equality",
+    "desks/mt5/research/frontier_ceo.py:459 - settled_by_implementer on the docket itself",
+    "tests/scripts/test_check_recommendation_flow.py:56 - a stale ledger fails where the clock runs"
+   ],
+   "scheduled_by": "hourly_cycle:implementer",
+   "artifact": "desks/mt5/reports/RECOMMENDATION_FLOW.json",
+   "consumer": "scripts/run_law_gate.py (both halves)",
+   "landed": "2026-09-23",
+   "notes": "An unexplained rise is the failure a LEVEL cannot see: the desk measured its old level fence reading RED for 226 of 226 informative hours, which is a gate carrying no information."
+  },
+  {
+   "id": "U71",
+   "domain": "U",
+   "phase": "U",
+   "status": "LANDED",
+   "gate": "none",
+   "item": "THE CONVERSION MAXIMISER (principal 2026-09-23, \"permanently maximise 100 percent conversion to testable cells of all minings ... we always squeeze the life out of everything we get and have\"). MEASURED ON THE TRADING BOX THAT DAY: 66,898 discoveries of which 31,226 BLOCKED and 2,843 never processed; 305,265 research candidates of which 234,996 sat in status donated having never been offered to a judge; 31 survivors. discovery_compiler converts what ARRIVES and experiment_spine converts what the compilers' ARTIFACTS carry -- nothing attacked the residue already inside the registry. This organ does: it classifies every non-converted row in the compilers' own CompileDefect vocabulary (PROSE_ONLY / NO_INSTRUMENT / NO_FAMILY / NO_FALSIFIER / NO_DATA / OFF_UNIVERSE / UNREADABLE), publishes the histogram with the organ that OWNS each class plus the per-class count, repair rate and MEDIAN AGE, and then ACTS: the standing re-judgement falsifier, a family bound through axis_registry.FAMILY_TABLE, the instrument resolved through the MT5 universe registry in the hypothesis lane only, and BARS SUPPLIED rather than demanded (ensure_bars: a chart coarser than one the desk holds is built by exact OHLCV aggregation and written; a finer one cannot be manufactured so the cell is bound to the finest series held and the fetch is requested). Repairs are re-enqueued through registry.enqueue_candidate with provenance edges and EFFECTIVE trials charged (participation ratio, not raw count). Conversions are ordered by the EFFECTIVE BREADTH they add, so the backlog drains toward independent cells. NOTHING IS PARKED: a row this pass could not repair stays QUEUED carrying its blocker and its owner, the pass's leftover is the FIRST work of the next pass, and the oldest waiting row's age is published every pass. The only permanent refusals are OFF_UNIVERSE (the 2026-08-18 universe mandate) and EVENT_LANE (the 2026-09-06 two-lane law); a licence, robots directive or access label is provenance metadata and NEVER a blocker (principal 2026-09-23). MEASURED FIRST THREE PASSES on VMI3500897: conversion debt 5,583 -> 1,483 (-73.4%), 4,100 rows repaired, 0 refused, 0 silently dropped, effective breadth 42.44 -> 47.40",
+   "evidence": [
+    "desks/mt5/research/conversion_maximiser.py:measure_debt - the five debt components in cheap SQL over the WHOLE population: silent_discoveries, unreasoned_blocks, donated_never_cell, untestable_queued, parked_past_grace; a component that cannot be counted is UNMEASURED and makes the total unmeasured, never a zero",
+    "desks/mt5/research/conversion_maximiser.py:repair - one repair route per blocker class, every field it adds carrying a *_basis key so a derived value is never mistaken for a declared one",
+    "desks/mt5/research/conversion_maximiser.py:ensure_bars - held / resampled / rebound / request; a missing bar is work to do and never a verdict",
+    "desks/mt5/research/conversion_maximiser.py:bar_coverage - per symbol x per timeframe, hypothesis lane only, naming every series that must be fetched",
+    "desks/mt5/research/conversion_maximiser.py:participation_ratio - effective breadth as the desk's own participation ratio, pinned against libs.risk.fx_exposure.effective_rank",
+    "desks/mt5/research/conversion_maximiser.py:_keep_queued - an unrepaired row stays QUEUED with its blocker and owner; it is never parked in a siding",
+    "desks/mt5/research/conversion_maximiser.py:oldest_unconverted - the age that separates a drain from a stall, published every pass",
+    "desks/mt5/research/hourly_cycle.py:3013 - the costed leg conversion_maximiser, --once --budget-s 900, after discovery_compiler",
+    "libs/research/layers.py:240 - the prediction-layer entry, so the hour is attributable",
+    "desks/mt5/tests/test_conversion_maximiser.py - 22 tests in tmp_path against a synthetic registry, universe and bars: a planted row of every blocker class leaves with a disposition (silent_drops == 0), nothing off-universe is converted, an equity is never bound into the hypothesis lane, H4 is built from H1 while M5 is never manufactured, the leftover is the next pass's first work, and a licence label never blocks a row"
+   ],
+   "scheduled_by": "leg:conversion_maximiser (desks/mt5/research/hourly_cycle.py, hourly)",
+   "artifact": "desks/mt5/reports/CONVERSION_MAXIMISER.json",
+   "consumer": "scripts/check_conversion_debt.py (the ratchet fence, registered in scripts/run_law_gate.py state fences) reads the same measure_debt; the repaired rows are read by the gauntlet through registry.claim_candidates; the naming requests are read by desks/mt5/research/understanding_seat.py and the bar requests by the refresh_bars leg",
+   "landed": [
+    "conversion maximiser 2026-09-23"
+   ],
+   "notes": "Adds no cap, no veto, no shrink and no brake: it only moves rows from untestable to testable or to a refusal with a named reason. The pass cap is DERIVED from measured free memory (10% at 4 KB per row, floored at 2,000), never from a machine size."
+  },
+  {
+   "id": "U72",
+   "domain": "U",
+   "phase": "U",
+   "status": "LANDED",
+   "gate": "none",
+   "item": "THE CONVERSION-DEBT RATCHET (principal 2026-09-23, the harsh rule). A mined row that is neither a gauntlet cell nor a recorded, reasoned refusal is a DEFECT WITH AN OWNER, and the count of them is CONVERSION DEBT. The desk's coverage floors ratchet UP (L1.50); debt is the same quantity with the sign flipped, so it ratchets DOWN. The ceiling is seeded from the measured debt and may only fall -- and it CANNOT BE RAISED BY HAND, because the enforced ceiling is min(ceiling, lowest_ever), so an edit that raises either number is inert. There is no --force and no environment override: the only way past this gate is to convert the rows. A machine with no registry reports UNMEASURED at rc 1, which is a real answer and never a pass (L1.28a), which is why it is a STATE fence beside check_ingestion_exploitation. SEEDED 2026-09-23 on VMI3500897 at 1,483 after the first three passes took the debt down from 5,583",
+   "evidence": [
+    "scripts/check_conversion_debt.py:effective_ceiling - min(ceiling, lowest_ever): a ratchet whose only record is its current value is defeated by one json.dump",
+    "scripts/check_conversion_debt.py:measure - SEEDED / OK / BREACH / UNMEASURED, each with rc and a stated reason; a breach never lowers the ceiling into the new normal",
+    "scripts/check_conversion_debt.py:_persist - the ceiling only falls, lowest_ever is never raised, and the last 60 passes are kept so a drain can be told from a plateau",
+    "scripts/run_law_gate.py:check_conversion_debt.py - registered in the state-fence battery",
+    "docs/LAWS.md - 5b: every mined row ends as a testable cell or a recorded, reasoned refusal; unconverted rows are a defect with an owner; the ratchet only ever falls",
+    "tests/scripts/test_check_conversion_debt.py - 8 tests in tmp_path: the first measurement seeds, the ceiling falls with the debt, debt above it is rc 2, a hand-raised ceiling buys nothing, a reasoned refusal is not debt, and an absent registry is UNMEASURED and never a pass"
+   ],
+   "scheduled_by": "scripts/run_law_gate.py state fences (every law-gate boundary: the pre-commit hook, ops/gates.sh and the hourly box gate)",
+   "artifact": "data/conversion_debt_ratchet.json",
+   "consumer": "scripts/run_law_gate.py (rc 2 = the debt rose above the ratchet, rc 1 = UNMEASURED, rc 0 = at or below); desks/mt5/reports/CONVERSION_MAXIMISER.json publishes the same components so the organ and the fence can never disagree about what the number means",
+   "landed": [
+    "conversion-debt ratchet 2026-09-23"
+   ],
+   "notes": "Measured cost under 2 s: five COUNT(*) queries and one GROUP BY. It names debt and hands the repair to the organ that already owns it; it caps nothing and refuses nothing."
   }
  ],
  "status_vocabulary_note": "LANDED means the code exists in THIS REPOSITORY, on a named clock, with an artifact and a consumer. It does NOT mean the artifact has ever been produced on the trading box, and it does not mean the behaviour has been observed with money at risk. That distinction is what the five acceptance_properties measure, and they are measured from artifacts rather than asserted: an absent artifact reads UNMEASURED, never MET. Read the census as build coverage and the acceptance properties as operational proof. They are different questions and the second is the one that decides whether the desk works."

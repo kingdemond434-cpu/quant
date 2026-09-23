@@ -200,8 +200,79 @@ def test_family_budget_is_published_per_enrolled_clock_beside_the_flat_cohort(
         m = fb["families"][fam]["effective_m"]
         assert fb["clocks"][key]["family_m"] == m
         assert fb["clocks"][key]["bh_bar"] == fm.bh_bar(m, 1) == fb["families"][fam]["bh_bar_rank1"]
-    assert "NOTHING" in fb["decides"]
     assert fb["error_budget"]["n_families"] == len(fb["families"])
+    # THE BUDGET DECIDES NOTHING AGAIN, AND THAT IS THE POINT (principal 2026-09-23: "no quota or
+    # scarcity ever on forward evidence slots"). The alpha arithmetic below is unchanged and still
+    # asserted in full -- it is EVIDENCE about what each family has spent -- but no enrolment is
+    # refused, deferred or queued on it. A forward clock deploys no capital, so the cap bought no
+    # safety and cost hypotheses the desk could never rule on.
+    assert fb["decides"] == "NOTHING__ENROLMENT_IS_UNCAPPED"
+    assert fb["gates_enrolment"] is False
+    assert set(fb["caps"]) == set(fb["families"])
+    for fam, n in fb["caps"].items():
+        d = fb["cap_detail"][fam]
+        # the identity the artifact's own basis names, exact in integers
+        assert n == max(0, d["seats_at_this_charge"] - d["charged_m"])
+        assert d["seats_at_this_charge"] == MAX_FORWARD_SLOTS
+        # one clock of the cap's worth of alpha spent: the rest are still affordable
+        assert n == MAX_FORWARD_SLOTS - 1 and d["n_enrolled"] == 1
+    assert doc["missed_growth_lines"] == [], "no family is capped, so nothing is forgone"
+
+
+def test_an_over_enrolled_family_is_capped_and_carries_a_missed_growth_line(
+    tmp_path, monkeypatch,
+) -> None:
+    """A family that has already spent its own error budget may take no NEW enrolment -- and a cap
+    without its missed-growth line is exactly what the growth governance forbids, so the line is
+    written whether or not anything is waiting."""
+    from libs.research.slot_registry import MAX_FORWARD_SLOTS
+
+    keys = {f"SYM{i}.overnight_gap_decay.asia": "overnight_gap_decay"
+            for i in range(MAX_FORWARD_SLOTS + 3)}
+    keys["LONE.carry.asia"] = "carry"
+    monkeypatch.setattr(forward_reconcile, "engine_clock_families", lambda: dict(keys))
+    out = tmp_path / "forward_reconcile.json"
+    monkeypatch.setattr(forward_reconcile, "OUT", out)
+    _reconcile_tmp(tmp_path, monkeypatch, {k: {"status": "ACTIVE", "n": 1} for k in keys},
+                   enrolled=set(keys), cert_keys=set(keys))
+    doc = json.loads(out.read_text(encoding="utf-8"))
+    fb = doc["family_budget"]
+    gap_fam = fb["clocks"]["SYM0.overnight_gap_decay.asia"]["family"]
+    lone_fam = fb["clocks"]["LONE.carry.asia"]["family"]
+    assert fb["caps"][gap_fam] == 0, "15 clocks have spent more than the family's own alpha"
+    assert fb["caps"][lone_fam] == MAX_FORWARD_SLOTS - 1, "a family under budget still has seats"
+    lines = {ln["family"]: ln for ln in doc["missed_growth_lines"]}
+    assert set(lines) == {gap_fam}
+    line = lines[gap_fam]
+    assert line["rail"] == f"forward_enrolment_cap:{gap_fam}" and line["cap"] == 0
+    # no forward ranker on this tmp box: UNMEASURED, never a silent zero
+    assert line["value"] is None and line["verdict"] == "UNMEASURED"
+    assert "FORWARD_SLOT_RANKER" in line["unmeasured"]
+
+
+def test_a_capped_family_is_priced_from_the_rankers_waiting_queue(tmp_path, monkeypatch) -> None:
+    """With the ranker readable the line is MEASURED: an empty queue is a real zero, and a waiting
+    candidate of that family prices the cap in the ranker's own units."""
+    from libs.research.slot_registry import MAX_FORWARD_SLOTS
+
+    keys = {f"SYM{i}.overnight_gap_decay.asia": "overnight_gap_decay"
+            for i in range(MAX_FORWARD_SLOTS + 3)}
+    monkeypatch.setattr(forward_reconcile, "engine_clock_families", lambda: dict(keys))
+    out = tmp_path / "forward_reconcile.json"
+    monkeypatch.setattr(forward_reconcile, "OUT", out)
+    reports = tmp_path / "reports"
+    reports.mkdir(parents=True, exist_ok=True)
+    (reports / "FORWARD_SLOT_RANKER.json").write_text(json.dumps(
+        {"waiting": [{"cell": "A", "family": "overnight_gap_decay", "slot_value": 4e-5},
+                     {"cell": "B", "family": "overnight_gap_decay", "slot_value": 1e-5},
+                     {"cell": "C", "family": "carry", "slot_value": 9.0}]}), encoding="utf-8")
+    _reconcile_tmp(tmp_path, monkeypatch, {k: {"status": "ACTIVE", "n": 1} for k in keys},
+                   enrolled=set(keys), cert_keys=set(keys))
+    doc = json.loads(out.read_text(encoding="utf-8"))
+    line = doc["missed_growth_lines"][0]
+    assert line["verdict"] == "COSTS_GROWTH" and line["n_blocked"] == 2
+    assert line["value"] == -5e-05 and line["best_blocked"] == 4e-05
+    assert "carry" not in json.dumps(line), "another family's queue never prices this cap"
 
 
 def test_family_budget_is_UNMEASURED_when_enrolment_is_unknown(tmp_path, monkeypatch) -> None:
@@ -229,6 +300,22 @@ def test_family_name_resolution_prefers_exact_sources_over_the_key() -> None:
     assert forward_reconcile._family_name("k", {"cell": "AUDNZD dav SHORT"}, {}, {}) == (
         "AUDNZD dav SHORT", "row.cell")
     assert forward_reconcile._family_name("k", None, {}, {}) == ("k", "key")
+
+
+def test_an_undeclared_mechanism_buys_no_more_seats_than_a_declared_one() -> None:
+    """The floor that makes declaring never the cheaper path, carried through to the ENROLMENT
+    CAP. Charged on raw member counts, a lone undeclared clock would be handed eleven new seats
+    while a declared family of four got eight -- the partition would become opt-out on seats
+    exactly as it would have on bars."""
+    from libs.validation import family_multiplicity as fm
+
+    engine = {f"SYM{i}.overnight_gap_decay.asia": "overnight_gap_decay" for i in range(4)}
+    engine["MYSTERY.zzz"] = "zzz_no_such_mechanism"
+    fb = forward_reconcile.family_budget(set(engine), {}, engine)
+    declared = fb["clocks"]["SYM0.overnight_gap_decay.asia"]["family"]
+    assert fb["cap_detail"][fm.UNCLASSIFIED]["n_enrolled"] == 1
+    assert fb["cap_detail"][fm.UNCLASSIFIED]["charged_m"] == 4
+    assert fb["caps"][fm.UNCLASSIFIED] == fb["caps"][declared] == 8
 
 
 def test_an_undeclared_mechanism_pays_the_largest_declared_family_bar() -> None:
