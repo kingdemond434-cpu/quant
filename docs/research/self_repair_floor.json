@@ -1,0 +1,6 @@
+{
+ "schema": "self_repair_floor/1",
+ "at": "2026-09-23T17:43:04+00:00",
+ "manual": 0,
+ "note": "the count of defect classes still found by hand. It may only FALL."
+}

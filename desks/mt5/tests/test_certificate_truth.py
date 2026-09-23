@@ -538,3 +538,30 @@ def test_a_claim_older_than_one_judging_cycle_that_reached_no_queue_is_fatal(des
     CT.submit_to_judge(paths, CT.canon(paths), "2026-09-23T10:00:00+00:00")
     after = CT.audit(paths, now="2026-09-23T10:00:00+00:00")
     assert _kinds(after).get("CLAIM_NOT_SUBMITTED_TO_JUDGE", 0) == 0
+
+
+def test_one_identity_joins_every_store_and_a_broken_join_can_never_read_green(desk: Path):
+    """MEASURED 2026-09-23: 0 of 862 registry clocks joined the canon BY KEY while the breach
+    organ reported 55 backed BY SPEC, and the fence read ok=true over it. The identity is the
+    shadow_spec the sealed gauntlet stamps -- symbol|family|selector -- carried by every store."""
+    paths = CT.Paths.at(desk)
+    assert CT.canonical_identity("sleeve_registry", "CADJPY.asia",
+                                 _r(paths.registry)["sleeves"]["CADJPY.asia"]) == \
+        "cadjpy|session_range_breakout|asia"
+    doc = CT.audit(paths)
+    j = doc["one_lane"]["join"]
+    assert j["identity"] == "canonical_identity" and "shadow_spec" in j["rule"]
+    assert j["stores"]["sleeve_registry"]["rows"] == 6
+    assert j["stores"]["sleeve_registry"]["joinable"] == 6      # every clock declares it
+    assert j["stores"]["sleeve_registry"]["joined_to_lane"] >= 1
+    assert j["coverage"] == round(j["total_joinable"] / j["total_rows"], 4)
+    # the identity is CARRIED, not recomputed by each reader
+    CT.stamp_identity(paths, "2026-09-23T10:00:00+00:00")
+    assert _r(paths.registry)["sleeves"]["CADJPY.asia"]["canonical_identity"] == \
+        "cadjpy|session_range_breakout|asia"
+    # a store whose rows can declare no identity is FATAL, however green everything else is
+    _w(paths.shadow, {"nameless-one": {"status": "ACTIVE"}, "nameless-two": {"status": "ACTIVE"}})
+    bad = CT.audit(paths)
+    assert _kinds(bad)["JOIN_COVERAGE_BREACH"] == 1
+    assert "JOIN_COVERAGE_BREACH" in CT.FATAL_KINDS
+    assert bad["one_lane"]["join"]["stores"]["shadow_state"]["joinable"] == 0
