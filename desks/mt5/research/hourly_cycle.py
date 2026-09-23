@@ -778,7 +778,8 @@ CORE_LEGS: frozenset[str] = frozenset({
     # THE CLOSED-LOOP ORGANS (Tier-1 B14-B25): all cheap readers of artifacts that already exist,
     # so they belong on the core clock rather than the heavy one. `actor_pressure` and
     # `counterfactual_timeframes` read bars and stop themselves at their own budget.
-    "source_evig", "source_drain", "actor_pressure", "destroyer_pool", "quantbench",
+    "source_evig", "source_drain", "pack_cells", "timeframe_fanout", "fill_recorder",
+    "actor_pressure", "destroyer_pool", "quantbench",
     "evidence_chain",
     "clock_ledger", "shortfall_model", "counterfactual_timeframes", "meta_rnd",
     "prosecutor", "scaling_laws", "arena", "session_capital", "session_allocation",
@@ -4136,6 +4137,24 @@ def main() -> None:
     # that may only fall. It must run AFTER source_evig, whose ranking it consumes.
     sdr = _costed("source_drain", lambda: _producer(
         "source_drain", "research/source_drain.py", "--once", "--budget-s", "300"))
+    # EVERY DATA PACK PRODUCES CELLS (principal 2026-09-23). `source_drain` prices and repairs the
+    # chain and stops at a DISCOVERY; this turns each represented pack's stamped series into cells
+    # through the one registry door and publishes CELLS EMITTED / CELLS JUDGED per pack. It must
+    # run AFTER source_drain, whose chain state it reads and never edits.
+    pkc = _costed("pack_cells", lambda: _producer(
+        "pack_cells", "research/pack_cells.py", "--once", "--budget-s", "240"))
+    # THE SAME MECHANISM ON EVERY CHART (principal 2026-09-23). `counterfactual_timeframes`
+    # measured M5 paying +0.869R and M15 +0.360R over the H1 replay on 222 real decisions while
+    # the registry carried ZERO M5 and M1 cells. This re-mints every certified mechanism and every
+    # strong docket family on M1/M5/M15/H1/H4 and charges the multiplicity through trial_ledger.
+    tff = _costed("timeframe_fanout", lambda: _producer(
+        "timeframe_fanout", "research/timeframe_fanout.py", "--once", "--budget-s", "240"))
+    # THE LIVE ACCOUNT'S FILLS (principal 2026-09-23). `matched_fills` read 0 everywhere because
+    # nothing had ever written the intent/deal join down; thirty real fills were on disk. This
+    # records quote, ask, fill, latency, volume, spread and slippage (points and R) into the
+    # corpus the execution twin and the shortfall model already read. Recording only.
+    flr = _costed("fill_recorder", lambda: _producer(
+        "fill_recorder", "research/fill_recorder.py", "--once", "--budget-s", "120"))
     apr = _costed("actor_pressure", lambda: _producer(
         "actor_pressure", "research/actor_pressure.py", "--once", "--budget-s", "300"))
     dpo = _costed("destroyer_pool", lambda: _producer(
@@ -4330,7 +4349,8 @@ def main() -> None:
                     "bottleneck_attack": bka,
                     "opportunity_cost": oc, "acceptance": ac, "opportunity_forecast": ofc,
                     "cycle_pricing": cyp, "causal_invariance": civ,
-                    "source_evig": sev, "source_drain": sdr,
+                    "source_evig": sev, "source_drain": sdr, "pack_cells": pkc,
+                    "timeframe_fanout": tff, "fill_recorder": flr,
                     "actor_pressure": apr, "destroyer_pool": dpo,
                     "quantbench": qbn, "evidence_chain": evc, "clock_ledger": ckl,
                     "shortfall_model": shm, "counterfactual_timeframes": ctf, "meta_rnd": mrd,

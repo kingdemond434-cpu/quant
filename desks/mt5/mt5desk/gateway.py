@@ -986,6 +986,30 @@ def _record_intent(**row) -> str | None:
         with contextlib.suppress(Exception):
             row.setdefault("intent_id", _intent_id(row.get("symbol"), row.get("sleeve"),
                                                    row.get("side"), row["time"]))
+        # THE QUOTE AT DECISION, ON EVERY INTENT AND NOT ONLY THE BRACKET PATH.
+        # `libs/execution/fill_corpus.py` has named this handoff since it was written --
+        # "record decision_bid/decision_ask on every intent row, not only the bracket path" --
+        # and until now only `place_bracket` did. MEASURED 2026-09-23: of the thirty intents
+        # that join a real fill on this box, TWO carry a quote, so spread, slippage in points
+        # and every impact model read UNMEASURED on the other twenty-eight. Slippage without
+        # the market it was paid into averages over every situation at once and describes none.
+        # `setdefault`, so a caller that already read a tick keeps its own; a tick that cannot
+        # be read costs the fields and never the row, and never the order.
+        with contextlib.suppress(Exception):
+            if row.get("symbol") and row.get("decision_bid") is None:
+                _tk = mt5.symbol_info_tick(row["symbol"])
+                if _tk is not None:
+                    row.setdefault("decision_bid", float(_tk.bid))
+                    row.setdefault("decision_ask", float(_tk.ask))
+                    row.setdefault("spread_at_decision", float(_tk.ask) - float(_tk.bid))
+        with contextlib.suppress(Exception):
+            if row.get("symbol") and row.get("point") is None:
+                _si = mt5.symbol_info(row["symbol"])
+                if _si is not None:
+                    row.setdefault("point", float(getattr(_si, "point", 0.0) or 0.0))
+                    row.setdefault("stops_level",
+                                   int(getattr(_si, "trade_stops_level", 0) or 0))
+                    row.setdefault("digits", int(getattr(_si, "digits", 0) or 0))
         INTENTS.parent.mkdir(parents=True, exist_ok=True)
         with INTENTS.open("a", encoding="utf-8") as f:
             f.write(json.dumps(row, default=str) + "\n")
@@ -2821,6 +2845,13 @@ def run_family_sleeves(st: dict, sleeves: list[dict], equity: float) -> None:
                        intended=entry_ref, sl=float(g.stop), tp=float(g.target),
                        ticket=(getattr(res, "order", None) if res else None), retcode=rc,
                        policy_advice=policy_advice, latency_ms=_lat_ms,
+                       # A MARKET ORDER'S FILL IS KNOWN AT SEND TIME AND WAS THROWN AWAY. The
+                       # venue answers `order_send` with the price it filled at; recording it
+                       # here means slippage on this order is complete before it ever closes,
+                       # instead of waiting for a closing deal that may never come.
+                       fill_price=(float(getattr(res, "price", 0.0) or 0.0) if res else None),
+                       fill_volume=(float(getattr(res, "volume", 0.0) or 0.0) if res else None),
+                       deal_ticket=(getattr(res, "deal", None) if res else None),
                        **_sleeve_identity(s))
         log(f"[{name}] FAMILY-EXEC ORDER -> retcode={rc} "
             f"{diagnose(rc, getattr(res, 'comment', '') or '', _send_error(res))} "
@@ -3238,7 +3269,12 @@ def run_scalp_sleeves(st: dict, sleeves: list[dict], equity: float) -> None:
                        ticket=(getattr(res, "order", None) if res else None), retcode=rc,
                        policy_advice=policy_advice,
                        slice_depth=(len(plan["entries"]) if is_addon else 1),
-                       latency_ms=_lat_ms, **_sleeve_identity(s))
+                       latency_ms=_lat_ms,
+                       # As the family-market path: the venue's own fill, recorded at send.
+                       fill_price=(float(getattr(res, "price", 0.0) or 0.0) if res else None),
+                       fill_volume=(float(getattr(res, "volume", 0.0) or 0.0) if res else None),
+                       deal_ticket=(getattr(res, "deal", None) if res else None),
+                       **_sleeve_identity(s))
         log(f"[{name}] SCALP-EXEC {'ADD-ON' if is_addon else 'ORDER'} -> retcode={rc} "
             f"{diagnose(rc, getattr(res, 'comment', '') or '', _send_error(res))} | {desc}")
         if rc not in (10008, 10009):

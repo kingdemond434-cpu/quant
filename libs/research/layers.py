@@ -446,6 +446,10 @@ LEG_LAYER: dict[str, str] = {
     # prediction; the shortfall refit is how an order reaches the venue; the bench, the evidence
     # chain, the immutable clock ledger and the meta-tournament are the machine measuring itself.
     "source_evig": "information", "source_drain": "information",
+    # A pack's series IS information; re-minting a known mechanism on another chart is a claim
+    # about returns, so it is prediction; recording what a live order actually paid is execution.
+    "pack_cells": "information", "timeframe_fanout": "prediction",
+    "fill_recorder": "execution",
     "actor_pressure": "information",
     "destroyer_pool": "prediction", "counterfactual_timeframes": "prediction",
     "shortfall_model": "execution",
