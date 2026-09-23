@@ -900,7 +900,8 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "ingestion_exploitation", "coverage_tensor", "research_evolution",
                      "compute_economics", "control_plane", "attribution_reconcile",
                      "fence_battery", "organ_battery", "research_artifacts", "engine_registry",
-                     "search_paradigm_census", "producer_census"), "meta"),
+                     "search_paradigm_census", "producer_census",
+                     "runtime_attestation"), "meta"),
     # japan: the Japan research division (the principal's 47-section mandate, hourly)
     **dict.fromkeys(("japan_department",), "japan"),
     # mathlab: the AI mathematics research civilization -- twenty-eight mathematical traditions
@@ -3390,6 +3391,17 @@ def main() -> None:
     # act the coordinator runs on the box. scripts/check_certificate_truth.py fails on residue.
     ctt = _costed("certificate_truth", lambda: _producer(
         "certificate_truth", "research/certificate_truth.py", "--once", "--budget-s", "120"))
+    # THE RUNTIME ATTESTATION (a GitHub reviewer, 2026-09-23): "GitHub code is not current VPS
+    # reality ... comments in the code describe measured runs, but that is not the same as seeing
+    # runtime state." Correct, and uncloseable by committing `desks/mt5/reports/**` (~50 MB the
+    # box rewrites hourly). So this leg derives, from the component registry and the artifacts on
+    # THIS host, one small COMMITTED file -- docs/research/runtime_state.json + RUNTIME_STATE.md
+    # -- carrying every organ's clock, last run and exit, and its artifact's age, size, SHA-256
+    # and a handful of scalars the organ itself published. Hashes and scalars only, never a
+    # report body. MISSING / STALE / NEVER / UNMEASURED are states, never blanks, and the
+    # document names the one host it measured and refuses to describe any other.
+    rta = _costed("runtime_attestation", lambda: _producer(
+        "runtime_attestation", "research/runtime_attestation.py", "--once", "--budget-s", "180"))
     # THE TWO STANDING BATTERIES (principal 2026-09-22: "100 percent of everything built always
     # must be used never forgotten"). A long tail of fences, standing fixers and region organs is
     # too small to deserve a leg each and invisible the moment it stops running; each battery
@@ -4132,7 +4144,8 @@ def main() -> None:
                     "math_lab": mlb, "expression_factory": xpf, "physics_lab": phl,
                     "coevolution": cev, "model_search": mds,
                     "external_federation": xfd, "archaeology": arch, "sares": srs,
-                    "certificate_truth": ctt, "loop_liveness": llv, "clock_liveness": clk,
+                    "certificate_truth": ctt, "runtime_attestation": rta,
+                    "loop_liveness": llv, "clock_liveness": clk,
                     "fence_battery": fbt, "organ_battery": obt,
                     "federation_ops": fops, "sandbox_runner": sbr,
                     "sandbox_provision": sbp, "sandbox_roster": sbo,

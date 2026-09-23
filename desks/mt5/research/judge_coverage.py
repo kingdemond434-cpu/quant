@@ -313,7 +313,7 @@ def coverage_order(rows: list[dict[str, Any]], quota: dict[str, int],
     # it is still interleaved rather than appended in a block.
     import heapq
     heap: list[tuple[float, str, int]] = []
-    for fam, stream in streams.items():
+    for fam in streams:
         w = float(max(quota.get(fam, 0), 1))
         heapq.heappush(heap, (1.0 / w, fam, 0))
     out: list[dict[str, Any]] = []
@@ -438,12 +438,19 @@ def build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = N
             "judged_window": judged_window.get(fam, 0),
             "judged_total": judged_total.get(fam, 0),
             "unjudged": back,
-            "oldest_unjudged_age_h": (round(oldest[fam], 2)
+            "oldest_unjudged_age_h": (round(float(oldest[fam] or 0.0), 2)
                                       if oldest.get(fam) is not None else None),
             "quota": q,
             "window_h": round(window, 2),
             "carried": carried.get(fam, 0) if prior_at is not None else None,
             "prior_unjudged": was if prior_at is not None else None,
+            # The previous reading's oldest age, so the fence can ask the only question about an
+            # age that a clock cannot answer for itself: is the oldest cell FALLING. An age rises
+            # by the wall time between two readings whatever the desk does -- the coverage-drain
+            # fence failed on exactly that and the lesson is written there -- so what is ratcheted
+            # is movement, never the raw number.
+            "prior_oldest_age_h": (prior_fams.get(fam, {}).get("oldest_unjudged_age_h")
+                                   if isinstance(prior_fams.get(fam), dict) else None),
             "drained": (was - carried.get(fam, 0)) if (prior_at is not None and was) else None,
         }
         if fam in banned:
@@ -455,6 +462,11 @@ def build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = N
                 "the book even if it passes and is given no share of the scarce judge. Mining "
                 "is unrestricted; the rows are kept in data/hypotheses/study_bank.json")
 
+    # NO FIXED FAMILY SET. The table's rows come from the LIVE registry unioned with whatever the
+    # docket and the ledger name, so a family registered tomorrow has a row the same hour -- with
+    # `mined: 0` until a miner reaches it, which is a measurement of the miners and not of this
+    # organ. It is published, never failed on: intake allocates the judge, it does not mine.
+    unmined = sorted(f for f in live_families() if f and table.get(f, {}).get("mined", 0) == 0)
     covered = sum(1 for f, r in table.items() if r["unjudged"] > 0 and r["queued"] > 0)
     starved = sorted((f for f, r in table.items() if r["unjudged"] > 0 and r["queued"] == 0),
                      key=lambda f: -table[f]["unjudged"])
@@ -462,6 +474,8 @@ def build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = N
         "docket_rows": len(rows),
         "mined": sum(mined.values()),
         "families_mined": sum(1 for r in table.values() if r["mined"] > 0),
+        "families_live": len(live_families()),
+        "families_unmined": len(unmined),
         "families_with_backlog": sum(1 for r in table.values() if r["unjudged"] > 0),
         "families_queued": covered,
         "families_starved": len(starved),
@@ -490,6 +504,7 @@ def build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = N
         "totals": totals,
         "quota": quota,
         "starved": starved[:20],
+        "unmined_live_families": unmined[:40],
         "worst_backlog": [
             {"family": f, "unjudged": table[f]["unjudged"], "queued": table[f]["queued"],
              "oldest_unjudged_age_h": table[f]["oldest_unjudged_age_h"],
@@ -551,7 +566,9 @@ def write(doc: dict[str, Any], *, report: Path | None = None,
     state = {
         "at": doc.get("at"),
         "families": {f: {"unjudged": int(r.get("unjudged") or 0),
-                         "queued": int(r.get("queued") or 0)} for f, r in fams.items()},
+                         "queued": int(r.get("queued") or 0),
+                         "oldest_unjudged_age_h": r.get("oldest_unjudged_age_h")}
+                     for f, r in fams.items()},
         "unjudged_total": (doc.get("totals") or {}).get("unjudged_total"),
         "why": ("the baseline the carried-cohort ratchet is measured against: rows already in "
                 "this backlog and still unjudged at the next reading were STARVED, because a "
@@ -596,7 +613,7 @@ def main(argv: list[str] | None = None) -> int:
 
 
 __all__ = ["allocate", "banned_from_capital", "build", "coverage_order", "judged_index",
-           "live_families", "measured_capacity", "main", "order_docket", "render", "write"]
+           "live_families", "main", "measured_capacity", "order_docket", "render", "write"]
 
 
 if __name__ == "__main__":                                              # pragma: no cover

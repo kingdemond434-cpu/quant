@@ -161,6 +161,12 @@ _LAW_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     # fence fails on any divergence. Without desk state it reads UNMEASURED and passes; the
     # state half below requires the state.
     ("check_certificate_truth.py", ()),
+    # THE RUNTIME ATTESTATION IS ABOUT ONE HOST (a GitHub reviewer, 2026-09-23). The committed
+    # docs/research/runtime_state.json must name the machine it measured and be internally
+    # consistent about it -- a document claiming one host while the measurement inside it came
+    # from another is the exact lie the organ exists to prevent, so this half fails everywhere
+    # and needs no desk state. Its freshness is judged only on the host it names (below).
+    ("check_runtime_attestation.py", ()),
     # NOTHING IS RETIRED ON AN ABSENCE (LAWS 7, 2026-09-23). Every pass in this tree that REMOVES
     # rather than reports is inventoried with the reference it judges against, every guarded one
     # is proved from the AST to call `libs/ops/reference_freshness.require_live_reference`, every

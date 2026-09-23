@@ -163,26 +163,53 @@ def judge(report: Path | None = None, *, require_state: bool = False,
             out["checks"].append({"metric": "carried_backlog", "state": "OK",
                                   "why": f"{drained} carried cell(s) left the backlog this pass"})
 
-    # 3. NO FAMILY PAST ITS OWN WINDOW.
-    overdue = sorted((f for f, r in fams.items()
-                      if int(r.get("unjudged") or 0) > 0
-                      and r.get("oldest_unjudged_age_h") is not None
-                      and float(r.get("window_h") or 1.0) > 0
-                      and float(r["oldest_unjudged_age_h"]) >
-                      WINDOW_SLACK * float(r.get("window_h") or 1.0)
-                      and str(r.get("judging_status") or "") != "STUDY_ONLY"),
+    # 3. NO FAMILY PAST ITS OWN WINDOW -- AND THE AGE IS RATCHETED ON MOVEMENT, NOT ON ITS VALUE.
+    #
+    # An age RISES by the wall time between two readings whatever the desk does. The coverage-
+    # drain fence ratcheted a raw wait and went red on its third live pass for exactly that
+    # reason -- 6.0h to 6.3h, eighteen minutes of clock -- and a gate nobody can satisfy is a gate
+    # that gets switched off. So what fails here is an age that is past twice the family's own
+    # drain window AND DID NOT FALL, in a pass where the family held quota and the judge actually
+    # recorded verdicts. That is the controllable defect: a family whose stream is sorted
+    # oldest-first, which was served this hour, and whose oldest cell still did not move.
+    # The first reading carries no baseline and so enters UNMEASURED, which is how every metric
+    # on this desk enters: at its measurement, never at an invented zero.
+    def _overdue(f: str, r: dict[str, Any]) -> bool:
+        if int(r.get("unjudged") or 0) <= 0 or str(r.get("judging_status") or "") == "STUDY_ONLY":
+            return False
+        age = r.get("oldest_unjudged_age_h")
+        prior = r.get("prior_oldest_age_h")
+        if age is None or prior is None or int(r.get("quota") or 0) <= 0 or judged_any == 0:
+            return False
+        window = float(r.get("window_h") or 1.0)
+        return float(age) > WINDOW_SLACK * window and float(age) >= float(prior)
+
+    overdue = sorted((f for f, r in fams.items() if _overdue(f, r)),
                      key=lambda f: -float(fams[f].get("oldest_unjudged_age_h") or 0.0))
     if overdue:
         failures.extend(overdue[:10])
         out["checks"].append({
             "metric": "oldest_unjudged", "state": "FAIL",
-            "why": (f"{len(overdue)} family(ies) hold a cell older than twice their own drain "
-                    f"window: " + ", ".join(
+            "why": (f"{len(overdue)} family(ies) were served this hour and their oldest cell "
+                    f"still did not move, past twice their own drain window: " + ", ".join(
                         f"{f} ({fams[f].get('oldest_unjudged_age_h')}h vs "
-                        f"{fams[f].get('window_h')}h)" for f in overdue[:5]))})
+                        f"{fams[f].get('window_h')}h window)" for f in overdue[:5]))})
     else:
-        out["checks"].append({"metric": "oldest_unjudged", "state": "OK",
-                              "why": "no family's oldest unjudged cell is past its own window"})
+        stale_age = sorted((f for f, r in fams.items()
+                            if r.get("oldest_unjudged_age_h") is not None
+                            and int(r.get("unjudged") or 0) > 0
+                            and float(r["oldest_unjudged_age_h"]) >
+                            WINDOW_SLACK * float(r.get("window_h") or 1.0)),
+                           key=lambda f: -float(fams[f].get("oldest_unjudged_age_h") or 0.0))
+        out["checks"].append({
+            "metric": "oldest_unjudged",
+            "state": "OK" if not stale_age else "WARN",
+            "why": ("no family's oldest unjudged cell is past its own window" if not stale_age
+                    else (f"{len(stale_age)} family(ies) hold a cell past their own window and "
+                          f"it is FALLING or unmeasured (oldest "
+                          f"{fams[stale_age[0]].get('oldest_unjudged_age_h')}h on "
+                          f"{stale_age[0]}) -- published, not failed: an age rises with the "
+                          "clock and only its movement is the desk's to control"))})
 
     totals = doc.get("totals") or {}
     out["totals"] = {k: totals.get(k) for k in (

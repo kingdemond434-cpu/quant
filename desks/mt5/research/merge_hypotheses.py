@@ -442,6 +442,11 @@ def main() -> int:
     judged = judged_by_family()
     coverage: dict[str, Any] = {}
     try:
+        # Run as `python research/merge_hypotheses.py`, sys.path[0] is the research directory
+        # itself, so the desk root has to be on the path before a sibling package import works.
+        import sys as _sys
+        if str(BASE) not in _sys.path:
+            _sys.path.insert(0, str(BASE))
         from research.judge_coverage import order_docket
         rows_out, coverage = order_docket(rows_out)
     except Exception as exc:
