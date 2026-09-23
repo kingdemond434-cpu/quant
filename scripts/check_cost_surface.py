@@ -30,18 +30,33 @@ the XAUUSD 0.48 hardcode (engine.py's own docstring: "every gold backtest on thi
 very nearly spread-free, and the 3x cost-stress gate meant to catch exactly this was stressing 3%
 up to 9%"), and R0695 (EURUSD charged 0.05/lot against a tape truth of 12 -- 240x).
 
-  OK                  (exit 0) -- every live sleeve is charged within tolerance of its fill hour.
+THE RULER WAS REPOINTED 2026-09-23, AND THE OLD ONE WAS THIS FENCE'S OWN BLIND SPOT. It judged a
+charge against the `spread` STAMP on the H1 fill bars -- one sample of the widest instant of that
+hour. Measured against the live terminal: XAUUSD stamps 16 pts where the broker quoted 5 at the
+desk's own fill minutes, and EURUSD stamps 12 where the live book and all 44,640 M1 bars of the
+window read 0.0, because Fusion Zero is genuinely commission-only there. So it reported 159 live
+sleeves UNDERCHARGED by up to 32,000x -- and, being referenced by neither run_law_gate.py nor
+ops/gates.sh, returned rc=2 for weeks and blocked nothing. It now compares against the QUOTE in
+`reports/COST_TRUTH.json` (the terminal's M1 tape by session, the quote at the desk's own fills,
+the live tick). Thresholds unchanged, directions unchanged; only the ruler moved, and the old
+stamp is published beside every finding as `h1_stamp_p50_pts` so the repoint stays auditable.
+
+  OK                  (exit 0) -- every live sleeve is charged within tolerance of its quote.
   DISPERSED           (exit 0) -- no live sleeve is mispriced, but symbols carry material
                                   hour-to-hour dispersion; published per symbol as the queue.
-  COST-BASIS-MISMATCH (exit 2) -- a LIVE or CERTIFIED cell is charged >= MATERIAL_RATIO away from
-                                  the spread its own fill bars recorded. Either direction.
+  DECLARED-RESIDUE    (exit 0) -- every mispriced sleeve is in the shrink-only declaration
+                                  (`data/cost_basis_ratchet.json`) with a named owner. The count
+                                  may only FALL; a new one fails below.
+  COST-BASIS-MISMATCH (exit 2) -- a LIVE cell is charged >= MATERIAL_RATIO away from the spread
+                                  its broker QUOTES, and is not declared. Either direction.
   SURFACE-MISSING     (exit 2) -- no cost surface artifact. Run desks/mt5/research/cost_surface.py.
   STALE               (exit 2) -- the surface is older than MAX_AGE_DAYS; the tape has moved on.
   UNMEASURED          (exit 2) -- nothing scanned, or the surface holds no measured cell.
                                   Never OK: absence is not a clean verdict (L1.28a / WS-005).
-  NOT-READABLE-HERE   (exit 0) -- the H1 parquets are not on this box, so fill hours cannot be
-                                  resolved. Explicitly its own status, never folded into OK: a
-                                  verdict about the HOST is not a verdict about the DESK.
+  NOT-READABLE-HERE   (exit 0) -- no H1 parquets (fill hours unresolvable) or no COST_TRUTH.json
+                                  (no quote measured here). Explicitly its own status, never
+                                  folded into OK: a verdict about the HOST is not a verdict about
+                                  the DESK.
 
 The tolerance is a CONSTANT and is not re-baselined by this fence. A fence that re-measures its
 own threshold accepts every regression as the new normal, which is a gate welded open (L1.63).
@@ -54,6 +69,7 @@ import json
 import sys
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from typing import Any
 
 _ROOT = Path(__file__).resolve().parent.parent
 if str(_ROOT) not in sys.path:
@@ -67,6 +83,14 @@ _SURFACE = _DESK / "data" / "cost_surface.json"
 _SLEEVES = _DESK / "data" / "sleeve_registry.json"
 _UNIVERSE = _DESK / "data" / "universe"
 _OUT = _ROOT / "data" / "cost_surface_report.json"
+#: THE EXECUTABLE RULER (repointed 2026-09-23). `reports/COST_TRUTH.json` carries, per
+#: symbol, the spread THIS broker quoted on THIS account -- the M1 tape's own spread
+#: column bucketed by session, the quote at the desk's own fill minutes, and the live
+#: tick -- plus the realised commission and slippage from all 433 deals the account has
+#: done. Written by `desks/mt5/research/cost_truth.py` on the hourly `cost_truth` leg.
+_COST_TRUTH = _DESK / "reports" / "COST_TRUTH.json"
+#: DECLARED RESIDUE, shrink-only, exactly as `check_cost_truth.py` keeps its own.
+_RATCHET = _DESK / "data" / "cost_basis_ratchet.json"
 
 #: A charged cost this far from the tape at the fill hour is material, in EITHER direction.
 #: Undercharging manufactures survivors; overcharging kills real edges with no alert.
@@ -79,7 +103,9 @@ MAX_AGE_DAYS = 14
 #: Priced (non-zero-spread) fill bars a sleeve needs before its cost basis may be judged at all.
 MIN_FILL_OBS = 30
 
-_PASSING = frozenset({"OK", "DISPERSED", "NOT-READABLE-HERE"})
+NL = chr(10)
+
+_PASSING = frozenset({"OK", "DISPERSED", "NOT-READABLE-HERE", "DECLARED-RESIDUE"})
 
 
 def _load(p: Path) -> dict | None:
@@ -189,8 +215,89 @@ def fill_bars(symbol: str, family: str, params: dict) -> tuple[list[int], list[f
     return hours, spreads
 
 
-def scan_sleeves(surface: dict, sleeves: dict) -> tuple[list[dict], list[dict]]:
-    """Compare each live sleeve's FROZEN charged spread against its own fill-hour tape."""
+def executable_index(cost_truth: dict[str, Any] | None) -> dict[str, dict[str, Any]]:
+    """symbol -> the spread THIS broker quotes, by session bucket and pooled.
+
+    WHY THE H1 STAMP WAS THE WRONG RULER, and it is this fence's own finding turned on itself.
+    An H1 bar's `spread` field is a STAMP -- one sample of the widest instant of that hour --
+    and `cost_surface.py` says so in its own docstring. Measured against the terminal on
+    2026-09-23: XAUUSD stamps 16 pts on H1 while the broker quoted a median 5 at the desk's own
+    fill minutes; EURUSD stamps 12 while the live book and all 44,640 M1 bars of the window read
+    0.0, because Fusion Zero is genuinely commission-only there. Auditing a charge against the
+    stamp therefore reported 159 live sleeves UNDERCHARGED by up to 32,000x -- a number no book
+    can be, and a fence nobody can act on is a fence that gets switched off (L1.43).
+
+    The ruler is now the quote itself. Nothing else changes: the same MATERIAL_RATIO in the same
+    two directions, and UNDERCHARGED is still the dangerous one because it manufactures
+    survivors. Only what the charge is compared AGAINST moved, from a stamp to a quote.
+    """
+    out: dict[str, dict[str, Any]] = {}
+    doc = cost_truth if isinstance(cost_truth, dict) else {}
+    rollover = doc.get("rollover_hour_utc")
+    for row in doc.get("symbols") or []:
+        if not isinstance(row, dict) or not row.get("symbol"):
+            continue
+        cmp_ = row.get("compare") or {}
+        tape = ((row.get("quoted") or {}).get("tape") or {})
+        buckets = {k: v for k, v in (tape.get("by_session") or {}).items()
+                   if isinstance(v, dict) and v.get("status") == "MEASURED"}
+        # A ZERO MEDIAN IS A REAL READING ON THIS VENUE, but it cannot be the denominator of a
+        # ratio. The ladder is the one cost_truth already publishes: the median first, then the
+        # p90, then the live tick -- the widest reading the same tape holds, never a guess.
+        pooled = next((float(v) for v in (cmp_.get("median_reference_pts"),
+                                          cmp_.get("quoted_p90_pts"),
+                                          cmp_.get("quoted_live_pts"))
+                       if isinstance(v, (int, float)) and float(v) > 0), None)
+        out[str(row["symbol"])] = {"pooled": pooled, "buckets": buckets, "rollover": rollover}
+    return out
+
+
+def _session_of(hour: int, rollover: object) -> str:
+    """Mirrors `cost_truth.session_of` so the two never bucket the same hour differently."""
+    if isinstance(rollover, int) and int(hour) == rollover:
+        return "rollover"
+    for lo, hi, name in ((0, 7, "asia"), (7, 12, "london"), (12, 17, "ny"), (17, 24, "late")):
+        if lo <= hour < hi:
+            return name
+    return "late"
+
+
+def executable_reference(cell: dict[str, Any] | None,
+                        hours: list[int]) -> tuple[float, str, int] | None:
+    """The quoted spread on the sessions this sleeve actually fills in, or its pooled quote.
+
+    Returns None when the broker's quote for this symbol has not been taken on this box: that is
+    UNRESOLVED, never a pass. A fence that treated an absent quote as agreement would be the
+    WS-005 shape it exists to catch.
+    """
+    if not cell:
+        return None
+    buckets, rollover = cell.get("buckets") or {}, cell.get("rollover")
+    picked: list[float] = []
+    n_obs = 0
+    for hour in hours:
+        got = buckets.get(_session_of(int(hour), rollover))
+        if not got:
+            continue
+        # the same ladder, inside the session the sleeve actually trades
+        val = next((float(v) for v in (got.get("p50"), got.get("p90"))
+                    if isinstance(v, (int, float)) and float(v) > 0), None)
+        if val is not None:
+            picked.append(val)
+            n_obs += int(got.get("n") or 0)
+    if picked:
+        import statistics
+        return float(statistics.median(picked)), "quoted, this sleeve's own fill sessions", n_obs
+    pooled = cell.get("pooled")
+    if isinstance(pooled, (int, float)) and float(pooled) > 0:
+        return float(pooled), "quoted, pooled over the window", 0
+    return None
+
+
+def scan_sleeves(surface: dict[str, Any], sleeves: dict[str, Any],
+                 quotes: dict[str, dict[str, Any]] | None = None,
+                 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """Compare each live sleeve's FROZEN charged spread against the broker's own quote."""
     findings: list[dict] = []
     unresolved: list[dict] = []
     rows = (sleeves or {}).get("sleeves") or {}
@@ -212,35 +319,40 @@ def scan_sleeves(surface: dict, sleeves: dict) -> tuple[list[dict], list[dict]]:
             unresolved.append({"sleeve": key, "why": "no tick_size/contract_size to convert"})
             continue
         charged_pts = charged_lot / (ts * cs)
+        # THE FILL HOURS still come from the tape -- that is what the parquet is for -- but the
+        # SPREAD no longer does. The hours are a fact about when the sleeve trades; the stamp on
+        # those bars is not a fact about what it pays. See `executable_index`.
         got = fill_bars(sym, fam, ident.get("params") or {})
-        if got is None:
-            unresolved.append({"sleeve": key, "why": "fill bars unresolvable here"})
+        hrs = list(got[0]) if got else []
+        fill_spreads = list(got[1]) if got else []
+        cell = (quotes or {}).get(sym or "")
+        ref = executable_reference(cell, hrs)
+        if ref is None:
+            unresolved.append({"sleeve": key, "symbol": sym,
+                               "why": ("no broker quote for this symbol on this box: "
+                                       "reports/COST_TRUTH.json has not measured it yet"),
+                               "n_fills": len(hrs)})
             continue
-        hrs, fill_spreads = got
-        if len(fill_spreads) < MIN_FILL_OBS:
-            # This sleeve's own fill bars carry too few PRICED observations to state its cost.
-            # Not OK, and deliberately not backfilled from the pooled scalar: substituting the
-            # number under audit for the missing measurement is how the audit becomes circular.
-            unresolved.append({"sleeve": key, "why": "too few priced fill bars to judge",
-                               "n_priced": len(fill_spreads), "n_fills": len(hrs),
-                               "hours": sorted(set(hrs))})
-            continue
+        true_pts, basis, n_obs = ref
         import statistics
-        true_pts = float(statistics.median(fill_spreads))
         ratio = true_pts / charged_pts if charged_pts > 0 else 0.0
         meas = _hours_measured(srow)
         hour_cells = [meas[h]["p50"] for h in hrs if h in meas]
         row = {
             "sleeve": key, "symbol": sym, "family": fam,
             "charged_pts": round(charged_pts, 1),
-            "fill_bar_p50_pts": round(true_pts, 1),
+            "quoted_pts": round(true_pts, 1), "quoted_basis": basis, "quoted_n_bars": n_obs,
+            # THE OLD RULER, kept beside the new one so the repoint is auditable rather than
+            # asserted: this is the H1 stamp the fence used to judge against.
+            "h1_stamp_p50_pts": (round(float(statistics.median(fill_spreads)), 1)
+                                 if len(fill_spreads) >= MIN_FILL_OBS else None),
             # Published beside it so the SELECTION effect stays visible rather than being
             # absorbed into one number: how the hour costs on an average day, against how it
             # costs on the days this sleeve trades.
             "surface_hour_p50_pts": (round(float(statistics.median(hour_cells)), 1)
                                      if hour_cells else None),
             "ratio": round(ratio, 2), "n_fills": len(hrs), "n_priced_fills": len(fill_spreads),
-            "modal_fill_hour": max(set(hrs), key=hrs.count),
+            "modal_fill_hour": (max(set(hrs), key=hrs.count) if hrs else None),
             "direction": "UNDERCHARGED" if ratio > 1 else "OVERCHARGED",
             "severity": round(max(ratio, 1.0 / ratio), 2) if ratio > 0 else float("inf"),
         }
@@ -248,6 +360,68 @@ def scan_sleeves(surface: dict, sleeves: dict) -> tuple[list[dict], list[dict]]:
             findings.append(row)
     findings.sort(key=lambda r: -r["severity"])
     return findings, unresolved
+
+
+def ratchet_gate(rep: dict[str, Any], declared: dict[str, Any] | None) -> dict[str, Any]:
+    """The residue is DECLARED and may only shrink -- the same rule check_cost_truth uses.
+
+    THE REASON IS MEASURED. Repointing the ruler to the broker's own quote did not empty
+    this fence: it still finds live sleeves charged 0.0 pts against a book quoting 20, and
+    those are REAL undercharges in the direction that manufactures survivors. They are in
+    files this fence does not own (the frozen `cost_fields` a sleeve was promoted with),
+    so failing the tree on every one of them on day one would get the fence switched off,
+    which is how enforcement dies (L1.43). A NEW mispriced sleeve fails; a debt that falls
+    rewrites the declaration so it can never drift back up.
+    """
+    if rep.get("status") != "COST-BASIS-MISMATCH":
+        return rep
+    found = {str(r.get("sleeve")) for r in rep.get("mispriced_sleeves") or []}
+    dec = declared if isinstance(declared, dict) else {}
+    known = {str(s) for s in (dec.get("mispriced_sleeves") or [])}
+    new = sorted(found - known)
+    rep["declared"] = len(known)
+    rep["new_since_declaration"] = new
+    rep["cleared_since_declaration"] = sorted(known - found)
+    if new:
+        rep["why"] = (f"{len(new)} live sleeve(s) charged more than {MATERIAL_RATIO}x away "
+                      f"from the broker's own quote and not in the declaration: "
+                      f"{', '.join(new[:6])}")
+        return rep
+    rep["status"] = "DECLARED-RESIDUE"
+    rep["why"] = (f"{len(found)} mispriced sleeve(s), all declared in "
+                  f"{_RATCHET.name}; the count may only fall from here")
+    return rep
+
+
+def lower_ratchet(rep: dict[str, Any], declared: dict[str, Any] | None) -> bool:
+    """Rewrite the declaration when the debt shrinks. Never raised here: a growing debt is
+    the failure, and a fence that re-declared it would be a fence that agrees."""
+    if rep.get("status") != "DECLARED-RESIDUE":
+        return False
+    found = sorted({str(r.get("sleeve")) for r in rep.get("mispriced_sleeves") or []})
+    dec = declared if isinstance(declared, dict) else {}
+    if found == sorted(str(s) for s in (dec.get("mispriced_sleeves") or [])):
+        return False
+    doc = {"at": rep.get("checked_at"), "n_mispriced": len(found),
+           "mispriced_sleeves": found,
+           "reference": rep.get("reference"),
+           "rule": ("DECLARED DEBT, shrink-only. A live sleeve charged more than "
+                    f"{MATERIAL_RATIO}x from the broker's own quote and not listed here "
+                    "fails scripts/check_cost_surface.py; a debt that falls rewrites this "
+                    "file."),
+           "owners": (dec.get("owners") or {
+               "frozen_cost_fields": ("the sleeve's own promoted cost_fields.spread_per_lot "
+                                      "-- re-freezing them is research/promoter.py's act, "
+                                      "not this fence's"),
+               "registry_scalar": ("data/universe/universe.json median_spread_pts, repaired "
+                                   "symbol by symbol through repair_universe_spreads.py "
+                                   "--only-verified")})}
+    try:
+        _RATCHET.parent.mkdir(parents=True, exist_ok=True)
+        _RATCHET.write_text(json.dumps(doc, indent=1, sort_keys=True) + NL, "utf-8")
+    except OSError:
+        return False
+    return True
 
 
 def build_report() -> dict:
@@ -297,7 +471,20 @@ def build_report() -> dict:
         rep["scanned"] = measured_cells
         return rep
 
-    findings, unresolved = scan_sleeves(surface, sleeves)
+    ct = _load(_COST_TRUTH)
+    quotes = executable_index(ct)
+    rep["reference"] = ("reports/COST_TRUTH.json -- the broker's own quote"
+                        if quotes else "NONE: COST_TRUTH.json absent on this box")
+    rep["reference_symbols"] = len(quotes)
+    rep["reference_at"] = (ct or {}).get("at")
+    if not quotes:
+        rep["status"] = "NOT-READABLE-HERE"
+        rep["why"] = ("no reports/COST_TRUTH.json on this box: the executable spread "
+                      "has not been measured here, and the H1 stamp is not a "
+                      "substitute for it (see executable_index)")
+        rep["scanned"] = measured_cells
+        return rep
+    findings, unresolved = scan_sleeves(surface, sleeves, quotes)
     rep["live_sleeves_checked"] = sum(
         1 for s in (sleeves.get("sleeves") or {}).values()
         if isinstance(s, dict) and s.get("status") == "LIVE")
@@ -306,6 +493,10 @@ def build_report() -> dict:
     rep["scanned"] = measured_cells
     rep["status"] = ("COST-BASIS-MISMATCH" if findings
                      else "DISPERSED" if disp else "OK")
+    declared = _load(_RATCHET)
+    rep = ratchet_gate(rep, declared)
+    if lower_ratchet(rep, declared):
+        rep["ratchet_lowered"] = True
     return rep
 
 

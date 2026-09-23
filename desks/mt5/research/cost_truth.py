@@ -116,6 +116,10 @@ VENUE_SURFACE = REPORTS / "COST_SURFACE.json"
 #: applies a symbol only when this file says its correction moves TOWARD the quote.
 SPREAD_PROVENANCE = REPORTS / "SPREAD_PROVENANCE.json"
 VERIFIED = DATA / "spread_repair_verified.json"
+#: The live book itself. `scripts/check_cost_surface.py` audits every LIVE sleeve against
+#: the quote published here, so a sleeve whose symbol this organ never measured would be
+#: UNRESOLVED in that fence forever -- the audit must cover what it audits.
+SLEEVE_REGISTRY = DATA / "sleeve_registry.json"
 LIVE_LEDGER = DATA / "live_ledger.jsonl"
 INTENTS = DATA / "order_intents.jsonl"
 
@@ -1228,7 +1232,7 @@ def render_md(rep: dict[str, Any]) -> str:
 
 
 def symbol_universe(ranks_doc: Any, cost_to_edge: Any, ledger: list[dict[str, Any]],
-                    prov: Any = None) -> list[str]:
+                    prov: Any = None, sleeves: Any = None) -> list[str]:
     """Every symbol the desk trades or tests, from the places it says so -- PLUS every symbol
     whose registry spread has a pending correction, because a correction cannot be verified
     against a quote this organ never took."""
@@ -1245,6 +1249,12 @@ def symbol_universe(ranks_doc: Any, cost_to_edge: Any, ledger: list[dict[str, An
     for sym, row in (by_sym if isinstance(by_sym, dict) else {}).items():
         if isinstance(row, dict) and row.get("bucket") == "corrected":
             syms.add(str(sym))
+    live = ((sleeves or {}).get("sleeves") or {}) if isinstance(sleeves, dict) else {}
+    for row in live.values():
+        if isinstance(row, dict) and row.get("status") == "LIVE":
+            sym = ((row.get("identity") or {}).get("symbol"))
+            if sym:
+                syms.add(str(sym))
     return sorted(s for s in syms if s)
 
 
@@ -1268,7 +1278,8 @@ def main(argv: list[str] | None = None) -> int:
     ranks_doc = _json(RANKS)
     ledger = _jsonl(LIVE_LEDGER)
     intents = _jsonl(INTENTS)
-    symbols = symbol_universe(ranks_doc, cost_to_edge, ledger, prov)
+    sleeves_doc = _json(SLEEVE_REGISTRY)
+    symbols = symbol_universe(ranks_doc, cost_to_edge, ledger, prov, sleeves_doc)
 
     cursor = _json(CURSOR) or {}
     cached = _json(QUOTES) or {}
