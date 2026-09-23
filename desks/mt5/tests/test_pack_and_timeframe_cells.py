@@ -101,6 +101,57 @@ def test_cells_go_through_the_one_registry_door(monkeypatch: Any) -> None:
     assert all(c["origin"] == "pack_cells" for c in cells)
 
 
+# ------------------------------------------------------- pack_cells, world lane
+def test_the_country_pack_supplies_the_instruments_never_a_guess() -> None:
+    """75 country packs already declare EXECUTABLE_INSTRUMENTS and REGION_COMMAND; a country
+    with no pack is UNMAPPED, which is a reason, not a guessed currency pair."""
+    pc._PACK_CACHE.clear()
+    inst, region = pc.country_pack("cz")
+    assert inst and all(isinstance(s, str) for s in inst)
+    assert region == "EUROPE"
+    assert pc.country_pack("zz_not_a_country") == ((), "UNMAPPED")
+    assert pc.country_pack("") == ((), "UNMAPPED")
+
+
+def test_a_ground_with_no_country_pack_names_its_reason(monkeypatch: Any) -> None:
+    monkeypatch.setattr(pc, "_claims_for", lambda *a, **k: [{"claim_id": "c", "text": "t",
+                                                             "knowable_at": "", "media_type": ""}])
+    res = pc.emit_world({"id": "g", "country": "zz", "region": "UNMAPPED", "kind": "forum",
+                         "targets": [], "n_documents": 3}, dry_run=True)
+    assert res["emitted"] == 0
+    assert "research/countries/" in res["reason"]
+
+
+def test_a_ground_with_no_document_is_a_crawl_problem_not_a_conversion_one(
+        monkeypatch: Any) -> None:
+    monkeypatch.setattr(pc, "_claims_for", lambda *a, **k: [])
+    res = pc.emit_world({"id": "g", "country": "cz", "region": "EUROPE", "kind": "forum",
+                         "targets": ["EURUSD"], "n_documents": 0}, dry_run=True)
+    assert res["emitted"] == 0
+    assert "fetched nothing" in res["reason"]
+
+
+def test_held_documents_reach_both_doors(monkeypatch: Any) -> None:
+    """A claim already on disk becomes a discovery (the compiler's door) and the ground becomes
+    registry-visible cells, so neither waits on the other."""
+    calls: list[str] = []
+    import libs.moat.registry as reg
+    monkeypatch.setattr(pc, "_claims_for", lambda *a, **k: [
+        {"claim_id": "c1", "text": "the koruna fixes at 09:00",
+         "knowable_at": "", "media_type": ""}])
+    monkeypatch.setattr(reg, "record_discovery",
+                        lambda **kw: (calls.append("discovery"), ("D", True))[1])
+    monkeypatch.setattr(reg, "enqueue_candidate",
+                        lambda **kw: (calls.append(f"cell:{kw['chart']}:{kw['symbol']}"),
+                                      ("C", True))[1])
+    res = pc.emit_world({"id": "g", "country": "cz", "region": "EUROPE", "kind": "official",
+                         "targets": ["EURUSD", "EURCZK"], "n_documents": 1}, dry_run=False)
+    assert res["discoveries"] == 1
+    assert res["emitted"] == 2 * len(pc.CHARTS)
+    assert calls.count("discovery") == 1
+    assert sum(1 for c in calls if c.startswith("cell:")) == res["emitted"]
+
+
 # ------------------------------------------------------------ timeframe_fanout
 def test_the_fanout_changes_the_chart_and_nothing_else(monkeypatch: Any) -> None:
     """Breadth from work already done: same family, same symbol, same side, same session."""

@@ -239,7 +239,7 @@ def _parse_pre_text(text: str, source_id: str) -> dict[str, Any] | None:
         for reader in (lambda b: pd.read_csv(io.StringIO(b), sep=None, engine="python"),
                        lambda b: pd.read_fwf(io.StringIO(b))):
             try:
-                df = reader(body)
+                df = reader(body)  # type: ignore[no-untyped-call]
             except Exception:
                 continue
             if len(df) >= MIN_TABLE_ROWS and df.shape[1] >= 2:
@@ -503,7 +503,7 @@ def _rows_of(path: Path) -> int:
     try:
         if path.suffix == ".parquet":
             import pyarrow.parquet as pq
-            return int(pq.ParquetFile(path).metadata.num_rows)
+            return int(pq.ParquetFile(path).metadata.num_rows)  # type: ignore[no-untyped-call]
         if path.suffix == ".csv":
             with path.open(encoding="utf-8", errors="replace") as fh:
                 return max(sum(1 for _ in fh) - 1, 0)

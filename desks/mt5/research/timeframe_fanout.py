@@ -97,7 +97,8 @@ def canonical_parents() -> tuple[list[dict[str, Any]], str]:
     for key, row in surv.items():
         if not isinstance(row, dict):
             continue
-        spec = row.get("shadow_spec") if isinstance(row.get("shadow_spec"), dict) else {}
+        _spec = row.get("shadow_spec")
+        spec: dict[str, Any] = dict(_spec) if isinstance(_spec, dict) else {}
         sym = str(spec.get("symbol") or row.get("sym") or "")
         fam = str(spec.get("family") or "")
         if not sym or not fam:

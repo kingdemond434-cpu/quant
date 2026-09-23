@@ -925,6 +925,10 @@ LEG_DEPARTMENT: dict[str, str] = {
                      # measuring and scheduling itself.
                      "release_authority", "scientist_standings", "failure_prior",
                      "evig_acquisition",
+                     # INDEPENDENCE AT INTAKE: the ladder, the grid occupancy and the mutation
+                     # mix that decide whether an hour of judge buys independent ground or
+                     # another constant. The machine measuring its own breadth: meta.
+                     "independence_intake",
                      "runtime_attestation", "self_repair"), "meta"),
     # japan: the Japan research division (the principal's 47-section mandate, hourly)
     **dict.fromkeys(("japan_department",), "japan"),
@@ -1341,6 +1345,9 @@ LEG_BUDGET_SEC: dict[str, int] = {
     "replication_civilization": 1_000,
     # The dislocation lab stops itself at --budget-s 900 and writes; the cap sits above it.
     "dislocation_lab": 1_000,
+    # The intake measurement stops itself at --budget-s 240: one registry scan and three
+    # artifact reads. The cap sits above it.
+    "independence_intake": 300,
     # The coverage drain stops itself at --budget-s 900 -- and it scales that DOWN further off
     # measured free memory, because its cost is network wait on the box that also holds the
     # terminal. The cap sits above its own budget for the reason `enrol_clocks` was raised: a
@@ -3638,6 +3645,16 @@ def main() -> None:
     dsl = _costed("dislocation_lab", lambda: _producer("dislocation_lab",
                                                        "research/dislocation_lab.py",
                                                        "--once", "--budget-s", "900"))
+    # INDEPENDENCE AT INTAKE (2026-09-23). 227.5 cells an hour reach the judge and their
+    # orthogonality-weighted equivalent is 23.4: the desk emits ten times more volume than
+    # independent ground. This leg publishes the dedup ladder, the family x instrument x horizon
+    # grid's occupancy with its empty cells as ranked targets, and the declared mechanism-mutation
+    # share that `survivor_distiller` spends -- tuned by the orthogonality gain each operator
+    # class is MEASURED to open. It caps nothing and slows no producer: the levers are order,
+    # operator mix and where generation is aimed. Meta department, meta layer.
+    ind = _costed("independence_intake", lambda: _producer("independence_intake",
+                                                           "research/independence_intake.py",
+                                                           "--once", "--budget-s", "240"))
     # THE FOREST FEDERATION (principal 2026-09-17). Korea 24/7 || Japan 24/7 || China 24/7 ||
     # Russia 24/7 || ... || Global 24/7: every region its own research civilization, running the
     # eleven agent roles in parallel on its own resident, all feeding ONE registry through ONE
@@ -4300,6 +4317,7 @@ def main() -> None:
                     "sandbox_provision": sbp, "sandbox_roster": sbo,
                     "source_civilizations": svc, "evidence_watchtower": ewt,
                     "prediction_markets": pmk, "dislocation_lab": dsl,
+                    "independence_intake": ind,
                     "shadow_institutional": shi, "latent_actors": lat, "latency_lab": lab,
                     "feed_clock_lab": fcl, "impact_lab": imp, "net_edge": nee,
                     "cost_truth": ctr,

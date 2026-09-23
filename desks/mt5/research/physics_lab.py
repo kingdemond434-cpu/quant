@@ -54,6 +54,7 @@ for _p in (str(DESK), str(DESK / "research"), str(ROOT)):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
+from libs.research import set_aside as sa  # noqa: E402
 from research import math_lab as ML  # noqa: E402
 from research.mathlab import burden as B  # noqa: E402
 from research.mathlab import engines as E  # noqa: E402
@@ -351,11 +352,18 @@ def run(*, budget_s: float = 600.0, dry_run: bool = False, max_targets: int = MA
         obj, view = objects_by_card[card.card_id]
         if time.monotonic() > review_deadline:
             unreviewed += 1
-            card.status = "FAILED" if not card.passed else card.status
+            # THE BUDGET RAN OUT; THAT IS NOT A VERDICT (LAWS 7, principal 2026-09-23: only the
+            # four immutable evaluator files may refuse a cell). This line used to stamp FAILED
+            # on any card the lab's own screen disliked the moment the clock ran out, which made
+            # `card.passed` -- an internal score -- a terminal judgement and left the card
+            # indistinguishable from one the reviewers actually rejected. The card keeps the
+            # status it has (PROPOSED = UNMEASURED, which is a real answer, L1.28a); the object
+            # is QUEUED in the registry either way by `record_registry` below.
             continue
         I.pit_check(card, view)
         if not card.passed and i >= MAX_CARDS_REVIEWED:
-            card.status = "FAILED"
+            # SAME CHANGE, SAME REASON: MAX_CARDS_REVIEWED is a review budget, not a screen.
+            unreviewed += 1
             continue
         I.consequence_engine(card, view)
         if card.passed and reviewed < MAX_CARDS_REVIEWED:
@@ -371,7 +379,12 @@ def run(*, budget_s: float = 600.0, dry_run: bool = False, max_targets: int = MA
                 I.states_of(card, view, labels if view.target == first.target
                             else I.state_discovery(view))
         else:
-            card.status = "FAILED" if not card.passed else card.status
+            # The review budget is spent (`reviewed >= MAX_CARDS_REVIEWED`) or the card's own
+            # screen did not like it. Neither is a refusal this organ is allowed to make, so the
+            # card keeps its status and is counted as unreviewed rather than stamped FAILED.
+            unreviewed += 1
+    sa.note("physics_lab", "cards_reviewed", kept=reviewed, considered=len(cards),
+            ordering="-card.value (cards are sorted by value before review)")
     front = I.pareto_front([c for c in cards if c.status != "FAILED"] or cards)
     for card in [c for c in cards if c.status in ("FORWARD", "PROVISIONAL")][:MAX_CAUSAL]:
         I.causal_scientist(card, objects_by_card[card.card_id][1], seed=SEED,
