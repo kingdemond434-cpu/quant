@@ -12,6 +12,9 @@ cumulatively drained. Three of them are ratcheted here:
   * `backlog_overdue`     may FALL, never RISE.   <- the failing metric
   * `overdue_wait_h`      may FALL, never RISE.
   * `drained_total`       may RISE, never FALL.
+  * `depth_min`           may RISE, never FALL.   <- the weakest department's DEPTH
+  * `breadth_min`         may RISE, never FALL.   <- its BREADTH
+  * `ingestion_min`       may RISE, never FALL.   <- how much of what it publishes is reached
 
 `overdue_wait_h` IS `max(0, oldest_wait_h - LEASE_H)` AND NOT THE RAW WAIT, and the difference
 cost a red gate to learn. The first version of this fence ratcheted `oldest_wait_h` itself and
@@ -72,6 +75,31 @@ FLOORS: tuple[str, ...] = ("drained_total",)
 #: Published on every verdict and fenced by nothing. See the module docstring: the raw wait rises
 #: with the clock whatever the drain does, so ratcheting it made the gate unsatisfiable.
 REPORTED: tuple[str, ...] = ("oldest_wait_h", "uncrawled_total")
+
+#: THE THREE PARITY FLOORS (principal 2026-09-23): "all region and country packs have equal
+#: maximum depth ... like it's their native country's own quant desk", and then "depth AND
+#: breadth both maximum for all and equal ... and all datasets possible ingested too". Presence
+#: was already there -- 70-odd packs, every named country answered. These three were not.
+#:
+#: THE RULE, AND IT IS DELIBERATELY ASYMMETRIC. Each floor is the LOWEST score across every
+#: department on that axis. A pack below a floor FAILS the gate. Once every pack clears it the
+#: floor rises to the new lowest score -- so raising the WORST department permanently raises the
+#: standard for all of them, and no later session can let one slide back. It can never fall.
+#:
+#: WHY THE MINIMUM AND NOT THE MEAN. A mean lets a deep pack pay for a shallow one, which is
+#: exactly the "shallow country coverage" the maximum-form rule forbids (LAWS 5f, rule 1). The
+#: binding number is the department the desk understands least, because that is the one whose
+#: cells the gauntlet will never see.
+#:
+#: Three axes, three floors, one rule (principal 2026-09-23: "depth AND breadth both maximum for
+#: all and equal, as deep as deep forests for each, and all datasets possible ingested too").
+#: DEPTH is how well the desk understands one mechanism; BREADTH is how many it covers and on
+#: how many instruments, sectors, grounds and languages; INGESTION is how much of what the
+#: jurisdiction actually publishes has been reached. A pack strong on one and hollow on another
+#: is not a country desk, so each floor binds independently.
+PARITY_FLOORS: tuple[str, ...] = ("depth_min", "breadth_min", "ingestion_min")
+#: Float noise on a score, separate from EPS so the two can never be tuned together by accident.
+SCORE_EPS = 1e-4
 #: Float noise only. A ratchet is not a band: a real move of any size is the verdict.
 EPS = 1e-6
 #: How old a report may be before the fence stops treating it as this hour's measurement. The
@@ -79,8 +107,9 @@ EPS = 1e-6
 #: coverage problem, and it is named as such rather than counted as a backlog rise.
 STALE_H = 3.0
 
-RULE = ("the overdue uncrawled backlog and the oldest wait ratchet DOWN, the cumulative drained "
-        "count ratchets UP, and the headline uncrawled count may rise only in a pass that "
+RULE = ("the overdue uncrawled backlog and the oldest wait ratchet DOWN; the cumulative drained "
+        "count and the three PARITY floors -- the weakest department's depth, breadth and "
+        "ingestion -- ratchet UP; the headline uncrawled count may rise only in a pass that "
         "registered new lawful ground; every refusal is a permanent registered fact")
 
 
@@ -165,8 +194,8 @@ def judge(*, report: Path | None = None, ledger: Path | None = None,
 
     for key in CEILINGS:
         cur, old = _num(measured.get(key)), _num(prev_ceil.get(key))
-        row = {"metric": key, "direction": "may fall, never rise", "current": cur,
-               "ceiling": old}
+        row: dict[str, Any] = {"metric": key, "direction": "may fall, never rise",
+                               "current": cur, "ceiling": old}
         if cur is None:
             row["state"] = "UNMEASURED"
             row["why"] = f"{key} was not measured this pass"
@@ -201,6 +230,32 @@ def judge(*, report: Path | None = None, ledger: Path | None = None,
         else:
             row["state"] = "OK"
             row["why"] = f"{key} {cur} >= floor {old}"
+        out["checks"].append(row)
+
+    # THE THREE PARITY FLOORS. A floor here is the WEAKEST department's score, so raising the
+    # worst pack raises the standard for every pack, permanently. The asymmetry is the point:
+    # the floor rises the moment the minimum rises and never comes back down, so "equal maximum
+    # depth" becomes an invariant the desk cannot drift out of rather than one session's sprint.
+    for key in PARITY_FLOORS:
+        cur, old = _num(measured.get(key)), _num(prev_floor.get(key))
+        row = {"metric": key, "direction": "may rise, never fall",
+               "current": cur, "floor": old}
+        if cur is None:
+            row["state"] = "UNMEASURED"
+            row["why"] = f"{key} was not measured this pass"
+        elif old is None:
+            row["state"] = "SEEDED"
+            row["why"] = (f"the floor is seeded at the weakest department's measured score "
+                          f"{cur} -- never at an invented target, and it can only rise from here")
+        elif cur < old - SCORE_EPS:
+            row["state"] = "UNDER"
+            row["why"] = (f"the weakest department scored {cur} against a floor of {old}: a pack "
+                          f"fell below the parity standard every other pack has already cleared")
+            out["reasons"].append(row["why"])
+        else:
+            row["state"] = "OK" if cur <= old + SCORE_EPS else "RAISED"
+            row["why"] = (f"{key} {cur} >= floor {old}"
+                          + ("; the floor rises to it" if row["state"] == "RAISED" else ""))
         out["checks"].append(row)
 
     for key in REPORTED:

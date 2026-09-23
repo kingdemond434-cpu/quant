@@ -289,6 +289,22 @@ def clock_index() -> dict[str, dict[str, Any]]:
         except OSError:
             pass
 
+    #: ONE HOP THROUGH THE SHELL. A unit's ExecStart is usually a wrapper -- `quant-seed-miners`
+    #: runs `ops/run_seed_miners_hourly.sh`, which runs `side_channels/seed_miners.py`, which
+    #: fills fifty seats. Stopping at the wrapper left every one of those seats with no clock of
+    #: its own, so the derivation reached for whatever hourly leg happened to mention them and
+    #: attributed fifty VPS-filled seats to box legs (measured 2026-09-23: 50 false DARK rows,
+    #: each with a repair pointed at the wrong process).
+    for script in [s for s in list(idx) if s.endswith((".sh", ".cmd", ".ps1"))]:
+        row = idx[script]
+        try:
+            body = (ROOT / script).read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            continue
+        for hit in re.findall(r"([\w./-]+\.py)", body):
+            add(hit.split("quant-platform/")[-1], str(row["clock"]), str(row["host"]),
+                row.get("cadence_h"))
+
     for name, cadence in (("hourly_cycle.py", 1.0), ("daily_cycle.py", 24.0)):
         src = DESK / "research" / name
         if not src.exists():
@@ -499,8 +515,10 @@ def run_census(*, strict: bool = False, relight: bool = False, budget_s: int = 3
         #: RE-MEASURED AFTER THE REPAIR, because the verdict that matters is the one the next
         #: reader sees. A census that published its BEFORE picture beside a repair record would
         #: be exactly the "listed as dark" failure the law forbids.
+        before = {"census": doc["census"], "dark": len(doc.get("dark_silent") or []),
+                   "mapping_gaps": len(doc.get("mapping_gaps") or [])}
         doc = {**PCEN.census(root=ROOT, clocks=idx, declared_seats=SEAT_ORGANS, strict=strict),
-               "relight": doc["relight"]}
+               "relight": doc["relight"], "before_relight": before}
     doc["breach"] = PCEN.breach(doc, ratchet=ratchet)
     return doc
 
@@ -566,6 +584,10 @@ def main(argv: list[str] | None = None) -> int:
         dark_rows = [r for r in census_doc["rows"] if r["verdict"] == PCEN.DARK]
         for r in dark_rows[:14]:
             print(f"    DARK {str(r['producer'])[:34]:34} {str(r.get('why'))[:80]}")
+        if census_doc.get("before_relight"):
+            b = census_doc["before_relight"]
+            print(f"    before relight: {b['census']} | dark {b['dark']} | gaps "
+                  f"{b['mapping_gaps']}")
         for rec in census_doc.get("relight") or []:
             print(f"    {rec['result']!s:9} {str(rec['producer'])[:30]:30} "
                   f"{str(rec.get('why'))[:70]}")

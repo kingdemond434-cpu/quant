@@ -647,8 +647,9 @@ def _age_s(doc: Mapping[str, Any], now: datetime | None) -> float | None:
 def consumed_inputs(doc: Mapping[str, Any] | None, *, now: datetime | None = None,
                     max_age_s: float = MAX_AGE_S) -> tuple[dict[str, dict[str, Any]], str]:
     """What pf_allocator reads from `allocator_evidence.json`: per sleeve, the lineage factor,
-    the financing R/day (cost positive) and whether the replay charged it. Absent, malformed or
-    stale documents read as NOTHING with the reason, which the allocator treats as neutral."""
+    the net-of-cost factor, the financing R/day (cost positive) and whether the replay charged
+    it. Absent, malformed or stale documents read as NOTHING with the reason, which the
+    allocator treats as neutral."""
     if not doc or not isinstance(doc, Mapping):
         return {}, "allocator_evidence.json absent or unreadable: every term neutral"
     if doc.get("kind") != "evidence":
@@ -679,7 +680,28 @@ def consumed_inputs(doc: Mapping[str, Any] | None, *, now: datetime | None = Non
         if fin_f is not None and not math.isfinite(fin_f):
             fin_f = None
         charged = row.get("financing_charged_in_replay")
+        # DOOR (c) ACTUALLY OPENED (2026-09-23). `net_of_cost` was in TERM_SPECS and in
+        # CONSUMED_TILT_TERMS, `financing_lab` was computing it from NET_EDGE.json every hour and
+        # writing it onto the row -- and this function, which is the ONLY thing pf_allocator
+        # reads the pack through, returned lineage and financing alone. The net-of-cost tilt
+        # reached the artifact and stopped there: the allocator could not condition on the one
+        # term that prices what a sleeve keeps after its own spread, impact, financing,
+        # commission and multiplicity charge. It is heat-neutral by construction
+        # (`net_of_cost_factors` -> `_heat_neutral`), so reading it reorders the book and can
+        # never change the total -- GROWTH GOVERNANCE rule 1's two-sided direction.
+        nf = 1.0
+        terms = row.get("terms")
+        if isinstance(terms, Mapping):
+            nt = terms.get("net_of_cost")
+            if isinstance(nt, Mapping):
+                try:
+                    cand = float(nt.get("factor", 1.0))
+                except (TypeError, ValueError):
+                    cand = 1.0
+                if math.isfinite(cand) and cand > 0.0:
+                    nf = cand
         out[str(name)] = {"lineage_factor": float(min(TILT_HI, max(TILT_LO, lf))),
+                          "net_of_cost_factor": float(min(TILT_HI, max(TILT_LO, nf))),
                           "financing_cost_r_per_day": fin_f,
                           "financing_charged_in_replay": (None if charged is None
                                                           else bool(charged))}

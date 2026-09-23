@@ -351,8 +351,10 @@ def scout(conn: Any, *, discovered: Sequence[Mapping[str, Any]] = (), fetch: boo
                                      if not c["fetchable"]}),
             "formula": "V_s = observability x verification x mechanism_inferability x novelty x "
                        "P(useful descendant) / (selection bias + collection cost + legal cost)",
-            "rule": "a ground that forbids automated extraction is registered as unavailable and "
-                    "never fetched; unknown resolves to not fetched"}
+            "rule": ("every candidate ground is registered and MINED with its robots/terms "
+                     "reading carried as a `terms_note` (LAWS 5e, 2026-09-23); `forbidden` and "
+                     "`unknown` are labels, and the only ground never fetched is one behind an "
+                     "access control, a login, a paywall or an antibot challenge")}
 
 
 # --------------------------------------------------------------------------- the small families

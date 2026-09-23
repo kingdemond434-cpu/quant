@@ -477,6 +477,19 @@ def _book_key(s: dict, book: dict[str, float] | None) -> str | None:
     name = str(s.get("name") or "")
     if name in book:
         return name
+    # THE VERSION SUFFIX, measured 2026-09-23 and the reason the join was 0/7. The live rows are
+    # `gold_afternoon_v2/_v3/_v4` and `gold_london_am_v2/_v3/_v4`; the allocator prices the window
+    # itself -- `gold_afternoon`, `gold_asia`. A re-versioned row is the SAME sleeve on the same
+    # window, so the version is not part of its identity to the book, and the join emptied on a
+    # suffix. Only `_v<digits>` is stripped and only when the full name missed, so a book key that
+    # carries its own version still matches exactly first and a genuine miss stays a miss.
+    base = re.sub(r"_v\d+$", "", name)
+    if base != name:
+        if base in book:
+            return base
+        _fold = {k.lower(): k for k in book}
+        if base.lower() in _fold:
+            return _fold[base.lower()]
     sym = str(s.get("symbol") or "").upper()
     fam = str(s.get("family") or "")
     sel = str(s.get("selector") or "")

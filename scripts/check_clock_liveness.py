@@ -9,7 +9,18 @@ and at day 14 the verdict rule fires on ancient trades. So this fence fails whil
     venue-open bars, not a wall clock -- a weekend gap is not a freeze);
   * the frozen count has RISEN above the ratchet floor (the lowest count ever measured here);
   * the report itself is stale (older than two hourly cadences) or absent on a host that runs
-    the leg.
+    the leg;
+  * CLOCK IMPLIES CERTIFICATE (principal 2026-09-23) is breached and has been for longer than
+    ONE JUDGING CYCLE -- a clock running with no certificate is a breach, and the remedy is to
+    JUDGE its cell, not to switch the clock off, so the fence measures how long the breach has
+    waited at the front of the judge's queue rather than how many breaches exist;
+  * the breach count has RISEN above its own ratchet floor.
+
+WHAT IT DELIBERATELY DOES NOT DO. It never fails merely because breached clocks exist: on a desk
+that has just been told every clock must be certified, the breach count starts at almost the
+whole book, and a fence that went red on the count would pressure a future session into
+retiring clocks to get green -- destroying the evidence the law exists to gather. It fails on
+AGE, which only judging can cure, and on the ratchet, which only judging can lower.
 
 IT IS A STATE FENCE. On a clean checkout, a build box or CI there is no CLOCK_LIVENESS.json and
 no forward lane to read, so the verdict is UNMEASURED -- a real answer about the HOST (L1.28a),
@@ -103,20 +114,51 @@ def judge(report: Any, ratchet: Any, *, require_state: bool,
                             f"is in CLOCK_LIVENESS.json `frozen`")
 
     # 2. THE RATCHET MAY ONLY FALL. A defect ceiling that can be raised is not a ceiling.
-    floor = (ratchet or {}).get("lowest_frozen") if isinstance(ratchet, dict) else None
-    if isinstance(floor, int) and isinstance(frozen_n, int) and frozen_n > floor:
-        findings.append(f"the frozen count ROSE to {frozen_n} against a ratchet floor of {floor}: "
+    ratchet_floor = (ratchet or {}).get("lowest_frozen") if isinstance(ratchet, dict) else None
+    if isinstance(ratchet_floor, int) and isinstance(frozen_n, int) and frozen_n > ratchet_floor:
+        findings.append(f"the frozen count ROSE to {frozen_n} against a ratchet floor of "
+                        f"{ratchet_floor}: "
                         f"the enforced ceiling is the lowest count ever measured on this box and "
                         f"it may fall and never rise (L1.50)")
 
-    # 3. A repair that did not prove itself is not a repair (LAWS 7: A REPORT IS NOT A REMEDY).
+    # 3. CLOCK IMPLIES CERTIFICATE. Age, never count -- see the docstring.
+    cert = report.get("certificate") if isinstance(report.get("certificate"), dict) else {}
+    if cert:
+        cycle = float(cert.get("judging_cycle_s") or 3600.0)
+        overdue = cert.get("overdue_beyond_one_judging_cycle")
+        oldest = cert.get("oldest_breach_age_s")
+        if isinstance(overdue, int) and overdue > 0:
+            eldest = (f"; oldest breach {float(oldest) / 3600.0:.1f} h"
+                      if isinstance(oldest, (int, float)) else "")
+            findings.append(
+                f"{overdue} clock(s) have been running UNCERTIFIED for longer than one judging "
+                f"cycle ({cycle / 3600.0:.1f} h){eldest}")
+            findings.append(
+                "the remedy is the judge, not the clock: their cells are queued FIRST as "
+                "`recertify` tasks and the throughput organ must be reaching them")
+        floor = (cert.get("ratchet") or {}).get("lowest_breached")
+        n_breach = cert.get("breached")
+        if isinstance(floor, int) and isinstance(n_breach, int) and n_breach > floor:
+            findings.append(f"the breach count ROSE to {n_breach} against a ratchet floor of "
+                            f"{floor}: it may fall and never rise, and it falls by JUDGING "
+                            f"cells, never by switching clocks off")
+        queue = cert.get("queue") or {}
+        if isinstance(queue, dict) and queue.get("submitted") == 0                 and queue.get("already_queued") == 0 and (n_breach or 0) > 0:
+            findings.append(f"{n_breach} breached clock(s) and NOTHING was queued for judgement: "
+                            f"{queue.get('why')} -- a breach that reaches no queue is a report, "
+                            f"not a remedy")
+
+    # 4. A repair that did not prove itself is not a repair (LAWS 7: A REPORT IS NOT A REMEDY).
     for rep in report.get("repairs") or []:
         if str(rep.get("result")) in ("FAILED",):
             findings.append(f"the repair `{rep.get('actuator')}` FAILED over "
                             f"{rep.get('clocks')} clock(s): {rep.get('why')}")
 
     return {"verdict": FAIL if findings else OK, "findings": findings,
-            "frozen": frozen_n, "ratchet": floor, "report_age_s": age,
+            "certificate": {k: cert.get(k) for k in
+                            ("breached", "awaiting", "backed", "retired",
+                             "overdue_beyond_one_judging_cycle")} if cert else None,
+            "frozen": frozen_n, "ratchet": ratchet_floor, "report_age_s": age,
             "clocks_total": report.get("clocks_total"), "counts": report.get("counts"),
             "frozen_before": report.get("frozen_before"), "hostname": report.get("hostname")}
 
@@ -135,9 +177,12 @@ def main(argv: list[str] | None = None) -> int:
     if a.json:
         print(json.dumps(doc, indent=1, default=str))
     else:
+        c = doc.get("certificate") or {}
         print(f"clock liveness: {doc['verdict']} -- {doc.get('clocks_total')} clock(s), "
               f"frozen {doc.get('frozen_before')} -> {doc.get('frozen')}, "
-              f"ratchet floor {doc.get('ratchet')}")
+              f"ratchet floor {doc.get('ratchet')}; certificate: "
+              f"breached {c.get('breached')} (awaiting {c.get('awaiting')}), "
+              f"backed {c.get('backed')}, retired {c.get('retired')}")
         for f in doc["findings"]:
             print(f"  - {f}")
     return 1 if doc["verdict"] == FAIL else 0

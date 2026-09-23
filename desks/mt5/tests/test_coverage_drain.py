@@ -57,6 +57,18 @@ SOURCES_DDL = (
     "routed_at TEXT, route_reason TEXT)")
 
 
+def _backlog(db: Path) -> dict[str, Any]:
+    """One backlog reading with the connection closed behind it. `filterwarnings = error` turns
+    an unfinalised sqlite connection into a test failure attached to whichever test runs NEXT,
+    which is how three unrelated tests in this file went red at once."""
+    conn = CD.connect(db)
+    assert conn is not None
+    try:
+        return dict(CD.measure_backlog(conn))
+    finally:
+        conn.close()
+
+
 def _iso(hours_ago: float) -> str:
     return (datetime.now(tz=UTC) - timedelta(hours=hours_ago)).isoformat(timespec="seconds")
 
@@ -525,11 +537,9 @@ def test_nothing_measured_is_a_verdict_too() -> None:
 # ------------------------------------------------------------------------------- the whole pass
 def test_a_dry_run_writes_nothing_and_fetches_nothing(db: Path, tmp_path: Path) -> None:
     ledger = tmp_path / "ledger.json"
-    with closing(CD.connect(db)) as c0:
-        before = CD.measure_backlog(c0)
+    before = _backlog(db)
     report = CD.run(budget_s=5.0, max_sources=5, dry_run=True, db=db, ledger=ledger)
-    with closing(CD.connect(db)) as c1:
-        after = CD.measure_backlog(c1)
+    after = _backlog(db)
     assert not ledger.exists(), "a dry run must not write the ledger"
     assert after["uncrawled_total"] == before["uncrawled_total"]
     assert report["drain"]["collector"]["status"] in ("dry_run", "not_run", "no_budget")

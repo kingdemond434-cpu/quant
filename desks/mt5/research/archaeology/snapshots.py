@@ -19,12 +19,16 @@ contract (`moat_collectors.write_capture`, O_EXCL, refuses to overwrite). This m
 `moat_collectors.fetch_text` / `fetch_bytes` and mirrors the capture contract into the archaeology
 layout; it adds no second crawler, no second set of manners and no second robots reader.
 
-THE ACCESS BOUNDARY IS DECLARED, NOT ASSUMED. Every `Platform` carries `machine_use_allowed` in
-{allowed, forbidden, unknown}. Only `allowed` is ever fetched -- `unknown` resolves to NOT FETCHED,
-because the absence of a readable permission is not a permission, and `forbidden` is never fetched
-at all. The desk's measured walls (`side_channels/seed_miners.SOURCE_WALLS`) are READ here rather
-than restated, so a host the desk already found walled tightens this table automatically and one
-ledger owns the boundary.
+THE ACCESS BOUNDARY IS DECLARED, NOT ASSUMED -- AND SINCE LAWS 5e (2026-09-23) IT IS FIVE ACTS
+WIDE. Every `Platform` carries `machine_use_allowed` in {allowed, forbidden, unknown}, and all
+three are now PROVENANCE LABELS: the ground is mined whichever it says. The old rule -- only
+`allowed` is fetched, `unknown` resolves to NOT FETCHED because absence of a readable permission
+is not permission -- was a DISCOVERY BRAKE, and `unknown` was the expensive half of it, because a
+policy nobody could read silenced the ground forever. `may_fetch` refuses exactly one thing now:
+a reason naming something the desk would have to DEFEAT (`BOUNDARY_MARKERS` -- a login, a
+paywall, an antibot challenge, an access control). The desk's measured walls
+(`side_channels/seed_miners.SOURCE_WALLS`) are READ here rather than restated, so a host the desk
+already found walled labels this table automatically and one ledger owns the boundary.
 
     python -c "from archaeology import snapshots; print(snapshots.summary())"
 """

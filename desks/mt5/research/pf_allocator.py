@@ -82,6 +82,15 @@ from research.heat_policy import (  # noqa: E402
 
 OUT = BASE / "reports" / "pf_allocation.json"
 DONE = BASE / "reports" / "DONE_pf_allocation"
+#: THE NAMED STAND-DOWN (2026-09-23). `main` has three paths that end a pass without an
+#: allocation -- not enough memory, the lock held by another clock, and a raised exception -- and
+#: every one of them used to leave NOTHING behind but a line on stdout. A reader then finds an
+#: allocation that did not move and cannot tell "the allocator decided the previous book stands"
+#: from "the allocator is dead", which is exactly the confusion L1.28a forbids. Each of those
+#: paths now writes this file BY NAME, and a completed pass stamps it CLEARED, so the two states
+#: are distinguishable from disk alone. It is read by `research/allocator_liveness.py` and
+#: `scripts/check_allocator_liveness.py`; it sizes nothing.
+STANDDOWN = BASE / "reports" / "ALLOCATOR_STANDDOWN.json"
 #: The change-point report `research/drift_monitor.py` writes. Read by the crisis overlay below;
 #: absent or stale, the crisis-world share is exactly what it was.
 DRIFT = BASE / "reports" / "DRIFT.json"
@@ -1871,7 +1880,13 @@ def apply_allocator_evidence(ev: list[SleeveEvidence], evidence_doc: dict[str, A
         pf = float(post_terms[e.name].factor) if e.name in post_terms else 1.0
         bf = float(breadth_terms[e.name].factor) if e.name in breadth_terms else 1.0
         tf = float(tier_terms[e.name].factor) if e.name in tier_terms else 1.0
-        tilt = float(min(TILT_HI, max(TILT_LO, lf * rf * pf * bf * tf)))
+        # THE NET-OF-COST TILT (door (c) of `net_edge_spine`, wired 2026-09-23). The other five
+        # terms price the sleeve's GROSS behaviour; this one prices what is left after the
+        # spread, slippage, impact, financing, commission and multiplicity it already owes.
+        # `net_of_cost_factors` makes it heat-neutral over the funded book, so it moves capital
+        # toward the sleeves that survive their own costs and cannot change the total.
+        nf = float(row.get("net_of_cost_factor", 1.0))
+        tilt = float(min(TILT_HI, max(TILT_LO, lf * rf * pf * bf * tf * nf)))
         shift = 0.0
         fin = row.get("financing_cost_r_per_day")
         if fin is not None and row.get("financing_charged_in_replay") is False:
@@ -1892,6 +1907,7 @@ def apply_allocator_evidence(ev: list[SleeveEvidence], evidence_doc: dict[str, A
                              "forward_posterior_factor": round(pf, 6),
                              "marginal_breadth_factor": round(bf, 6),
                              "factor_tier_factor": round(tf, 6),
+                             "net_of_cost_factor": round(nf, 6),
                              "financing_r_per_day_shift": round(shift, 8),
                              "mean_before": round(mean, 8),
                              "mean_after": round(float(arr[mask].mean()), 8)}
@@ -1902,15 +1918,18 @@ def apply_allocator_evidence(ev: list[SleeveEvidence], evidence_doc: dict[str, A
         "n_posterior_tilted": sum(1 for e in ev if e.name in post_terms),
         "n_breadth_tilted": sum(1 for e in ev if e.name in breadth_terms),
         "n_tier_tilted": sum(1 for e in ev if e.name in tier_terms),
+        "n_net_of_cost_tilted": sum(
+            1 for e in ev
+            if abs(float((rows.get(e.name) or {}).get("net_of_cost_factor", 1.0)) - 1.0) >= 1e-9),
         "n_sleeves": len(ev), "n_tilted": n_tilted, "n_shifted": n_shifted,
         "n_neutral": len(ev) - len(by_sleeve),
         "bounds": [TILT_LO, TILT_HI], "by_sleeve": by_sleeve,
         "rule": ("mean += (tilt - 1) x |mean| + financing shift, dispersion unchanged; tilt = "
                  "clip(lineage_factor x roi_factor x forward_posterior x marginal_breadth x "
-                 "factor_tier); every one of the five is heat-neutral (mean 1.0 across the "
-                 "book) so they reallocate and never lever; the shift only where the replay "
-                 "charged no swap; UNMEASURED reads 1.0 / 0.0; nothing outside the E[log W] "
-                 "solve"),
+                 "factor_tier x net_of_cost); every one of the six is heat-neutral (mean 1.0 "
+                 "across the book) so they reallocate and never lever; the shift only where the "
+                 "replay charged no swap; UNMEASURED reads 1.0 / 0.0; nothing outside the "
+                 "E[log W] solve"),
         "governance": {
             "rule_1": ("a sleeve is lowered only by a measured swap cost or a measured lineage "
                        "redundancy, priced through E[log W] itself; the heat floor, gold lot "
@@ -4220,6 +4239,46 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
 _NEED_MB = {"heavy": 650, "normal": 550, "fast": 350}
 
 
+def _record_stand_down(mode: str, reason: str, why: str, **extra: Any) -> None:
+    """Leave the reason on disk, every time a pass ends without an allocation.
+
+    A STAND-DOWN IS A DECISION AND MUST LOOK LIKE ONE. `status` is STOOD_DOWN with the reason
+    named, and the age of the allocation the previous pass left is carried beside it so a reader
+    can see immediately whether the book that stands is still inside its own clock. Writing this
+    can never fail the allocator: an unwritable report is worth less than the pass that follows.
+    """
+    try:
+        age_s: float | None = None
+        with suppress(OSError):
+            age_s = round(max(0.0, time.time() - OUT.stat().st_mtime), 1)
+        STANDDOWN.parent.mkdir(parents=True, exist_ok=True)
+        STANDDOWN.write_text(json.dumps({
+            "at": datetime.now(UTC).isoformat(timespec="seconds"),
+            "status": "STOOD_DOWN", "mode": mode, "reason": reason, "why": why,
+            "previous_allocation_age_s": age_s,
+            "previous_allocation": str(OUT.relative_to(ROOT)).replace("\\", "/"),
+            "effect": ("no new allocation this pass; the previous book stands and the gateway "
+                       "goes on sizing from it until its certificate expires"),
+            **extra,
+        }, indent=1, default=str) + "\n", encoding="utf-8")
+    except Exception as exc:                                   # pragma: no cover - report only
+        _log(f"stand-down NOT recorded ({type(exc).__name__}: {exc})")
+
+
+def _clear_stand_down(mode: str) -> None:
+    """A completed pass says so in the same file, so CLEARED and STOOD_DOWN are one read."""
+    try:
+        STANDDOWN.parent.mkdir(parents=True, exist_ok=True)
+        STANDDOWN.write_text(json.dumps({
+            "at": datetime.now(UTC).isoformat(timespec="seconds"),
+            "status": "CLEARED", "mode": mode,
+            "why": "the pass completed and wrote a fresh allocation",
+            "previous_allocation": str(OUT.relative_to(ROOT)).replace("\\", "/"),
+        }, indent=1, default=str) + "\n", encoding="utf-8")
+    except Exception as exc:                                   # pragma: no cover - report only
+        _log(f"stand-down NOT cleared ({type(exc).__name__}: {exc})")
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--mode", choices=("fast", "normal", "heavy"), default="normal")
@@ -4248,6 +4307,11 @@ def main() -> int:
         if room is not None and room < need:
             _log(f"stood down: needs ~{need}MB, box has {room}MB. The next {args.mode} trigger "
                  f"retries in minutes; waiting here would BE the shortage.")
+            _record_stand_down(
+                args.mode, "MEMORY",
+                f"needs ~{need}MB, box has {room}MB free; the next {args.mode} trigger retries "
+                f"in minutes and waiting here would BE the shortage",
+                need_mb=need, free_mb=room)
             return 0
         need = 0                            # room confirmed above; do not wait a second time
 
@@ -4255,6 +4319,10 @@ def main() -> int:
         if not go:
             _log(f"stood down: another allocator pass holds the lock, or the box cannot fit "
                  f"{_NEED_MB[args.mode]}MB. The previous book stands.")
+            _record_stand_down(
+                args.mode, "LOCK",
+                f"another allocator pass holds the lock, or the box cannot fit "
+                f"{_NEED_MB[args.mode]}MB", need_mb=_NEED_MB[args.mode])
             return 0
         try:
             run(args.mode, seed=args.seed)
@@ -4262,7 +4330,9 @@ def main() -> int:
             # A crash here must never read as "no allocation was needed" (L1.28a). The artifact
             # keeps its last good content and the failure is loud and non-zero.
             _log(f"ALLOCATOR FAILED: {type(exc).__name__}: {exc}")
+            _record_stand_down(args.mode, "FAILED", f"{type(exc).__name__}: {exc}")
             raise
+        _clear_stand_down(args.mode)
         _book_generation(args.mode)
     return 0
 

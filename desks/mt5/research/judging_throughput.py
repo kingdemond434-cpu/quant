@@ -254,6 +254,11 @@ def declared_costs() -> dict[str, float]:
             "declared_need_mb": _f("declared_need_mb", FALLBACK_DECLARED_NEED_MB)}
 
 
+#: The breach docket written by `research/clock_certificate.py` every hour: the cells whose
+#: forward clocks are running with no certificate. Read here, never written here.
+BREACH_DOCKET = BASE / "reports" / "CLOCK_CERTIFICATE_BREACH.json"
+
+
 def measure_queue() -> dict[str, Any]:
     """How deep the judging queue is and how many gates an hour the judge actually achieves.
 
@@ -285,6 +290,22 @@ def measure_queue() -> dict[str, Any]:
         swept_at=meas.get("swept_at", UNMEASURED),
         gates_per_hour=float(per_hour) if isinstance(per_hour, (int, float)) else UNMEASURED,
         gates_per_hour_window="24h")
+    # CLOCK IMPLIES CERTIFICATE (principal 2026-09-23). A cell whose forward clock is running
+    # UNCERTIFIED is the desk's only currently-breached law, and `research/clock_certificate.py`
+    # queues those cells at the FRONT of the judge's queue every hour. The judge's SIZING has to
+    # honour that or the priority is decorative: a breach backlog is demand on the judge exactly
+    # as queue depth is, so it is counted here and read by `plan` below. UNMEASURED when the
+    # docket is absent -- a breach count nobody measured is never read as zero.
+    doc2 = _read_json(BREACH_DOCKET, None)
+    if isinstance(doc2, dict):
+        n_breach = doc2.get("breached")
+        out.update(clock_breach_cells=n_breach if isinstance(n_breach, int) else UNMEASURED,
+                   clock_breach_overdue=doc2.get("overdue_beyond_one_judging_cycle", UNMEASURED),
+                   clock_breach_source=str(BREACH_DOCKET.name))
+    else:
+        out.update(clock_breach_cells=UNMEASURED,
+                   clock_breach_why=f"{BREACH_DOCKET.name} absent: the breach backlog is "
+                                    f"UNMEASURED, which is never zero")
     return out
 
 
@@ -357,7 +378,15 @@ def plan(box: dict[str, Any], queue: dict[str, Any], costs: dict[str, float]) ->
 
     depth = queue.get("depth")
     deep = isinstance(depth, int) and depth > workers
-    if isinstance(depth, int) and not deep and not stood_down:
+    # A BREACHED CLOCK IS DEMAND ON THE JUDGE. Cells whose forward clocks run uncertified sit at
+    # the front of the queue by priority; if the judge is not sized to reach them, the priority
+    # buys nothing and the breach simply ages. So an overdue breach makes the queue DEEP, which
+    # is what raises workers and cadence below. It never lowers either: this is one-way.
+    breach_overdue = queue.get("clock_breach_overdue")
+    if isinstance(breach_overdue, int) and breach_overdue > 0:
+        deep = True
+        limiting = "clock_certificate_breach"
+    elif isinstance(depth, int) and not deep and not stood_down:
         limiting = "queue"
 
     budget_mb = max(float(base["memory_budget_mb"]), float(workers) * per)
@@ -393,6 +422,8 @@ def plan(box: dict[str, Any], queue: dict[str, Any], costs: dict[str, float]) ->
         "baseline": base,
         "raised_by": int(workers) - int(base["workers"]),
         "queue_deep": bool(deep),
+        "clock_breach_cells": queue.get("clock_breach_cells", UNMEASURED),
+        "clock_breach_overdue": queue.get("clock_breach_overdue", UNMEASURED),
         "gates_per_hour_before": before if before is not None else UNMEASURED,
         "gates_per_hour_projected": gates_after,
         "days_to_drain_queue": days,

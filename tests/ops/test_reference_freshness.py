@@ -51,8 +51,8 @@ def _plant(tmp_path: Path, rows: int, *, age_h: float = 0.0, name: str = "ref.js
 # --------------------------------------------------------------------------- a fake destructive
 # pass, written exactly the way a real one is, so the tests exercise the contract and not a mock.
 
-def _sweep(reference: Path, store: dict[str, dict], *, lease_s: float | None = None,
-           min_rows: int = 1) -> dict:
+def _sweep(reference: Path, store: dict[str, dict[str, object]], *,
+           lease_s: float | None = None, min_rows: int = 1) -> dict[str, object]:
     """Remove every row the reference does not back -- the certificate_truth shape, guarded."""
     state = rf.require_live_reference(
         reference, actor="test.sweep", action="remove rows the reference does not back",
@@ -73,29 +73,29 @@ def _sweep(reference: Path, store: dict[str, dict], *, lease_s: float | None = N
 
 def test_empty_reference_stands_the_pass_down_and_removes_nothing(tmp_path: Path) -> None:
     ref = _plant(tmp_path, 0)
-    store = {f"row{i}": {} for i in range(837)}          # the incident's own row count
+    store: dict[str, dict[str, object]] = {f"row{i}": {} for i in range(837)}   # the incident's n
     out = _sweep(ref, store, lease_s=7200.0)
     assert out["stood_down"] is True
     assert out["removed"] == 0
     assert len(store) == 837, "an empty reference retired the store"
     assert out["verdict"] == rf.EMPTY
-    assert "says nothing" in out["why"]
+    assert "says nothing" in str(out["why"])
 
 
 def test_stale_reference_stands_the_pass_down_and_removes_nothing(tmp_path: Path) -> None:
     # Non-empty, so ONLY the age can refuse it -- 46.7h, the measured age of the canon.
     ref = _plant(tmp_path, 7, age_h=46.7)
-    store = {"row0": {}, "k0": {}}
+    store: dict[str, dict[str, object]] = {"row0": {}, "k0": {}}
     out = _sweep(ref, store, lease_s=7200.0)
     assert out["stood_down"] is True
     assert out["verdict"] == rf.STALE
     assert len(store) == 2
-    assert out["age_s"] is not None and out["age_s"] > 7200.0
+    assert out["age_s"] is not None and float(out["age_s"]) > 7200.0  # type: ignore[arg-type]
 
 
 def test_fresh_reference_still_allows_the_removal(tmp_path: Path) -> None:
     ref = _plant(tmp_path, 3)
-    store = {"k0": {}, "k1": {}, "k2": {}, "orphan": {}}
+    store: dict[str, dict[str, object]] = {"k0": {}, "k1": {}, "k2": {}, "orphan": {}}
     out = _sweep(ref, store, lease_s=7200.0)
     assert out["stood_down"] is False
     assert out["removed"] == 1
@@ -105,7 +105,7 @@ def test_fresh_reference_still_allows_the_removal(tmp_path: Path) -> None:
 def test_unreadable_reference_is_unmeasured_and_never_a_licence(tmp_path: Path) -> None:
     ref = tmp_path / "ref.json"
     ref.write_text("{not json at all", encoding="utf-8")
-    store = {"row0": {}, "row1": {}}
+    store: dict[str, dict[str, object]] = {"row0": {}, "row1": {}}
     out = _sweep(ref, store, lease_s=7200.0)
     assert out["stood_down"] is True
     assert out["verdict"] == rf.UNREADABLE
@@ -113,7 +113,7 @@ def test_unreadable_reference_is_unmeasured_and_never_a_licence(tmp_path: Path) 
 
 
 def test_missing_reference_is_unmeasured_and_never_a_licence(tmp_path: Path) -> None:
-    store = {"row0": {}}
+    store: dict[str, dict[str, object]] = {"row0": {}}
     out = _sweep(tmp_path / "never_written.json", store, lease_s=7200.0)
     assert out["stood_down"] is True
     assert out["verdict"] == rf.MISSING
@@ -124,7 +124,7 @@ def test_stump_floor_refuses_a_truncated_reference(tmp_path: Path) -> None:
     """FRESH AND NON-EMPTY IS STILL NOT ENOUGH when the desk has declared a floor: a 23-symbol
     registry is a collector outage wearing a young mtime."""
     ref = _plant(tmp_path, 23)
-    store = {"row0": {}}
+    store: dict[str, dict[str, object]] = {"row0": {}}
     out = _sweep(ref, store, lease_s=7200.0, min_rows=50)
     assert out["stood_down"] is True
     assert out["verdict"] == rf.EMPTY and out["rows"] == 23
@@ -155,7 +155,7 @@ def test_recording_failure_never_turns_a_refusal_into_a_deletion(
                        str(tmp_path / "no_such_dir" / "x" / "log.jsonl"))
     monkeypatch.setattr(Path, "mkdir", lambda *a, **k: (_ for _ in ()).throw(OSError("read-only")))
     ref = _plant(tmp_path, 0)
-    store = {"row0": {}}
+    store: dict[str, dict[str, object]] = {"row0": {}}
     out = _sweep(ref, store, lease_s=7200.0)
     assert out["stood_down"] is True
     assert len(store) == 1
@@ -307,7 +307,8 @@ def test_screen_conversion_still_sweeps_against_a_live_conversion(
     assert "stood_down" not in result
 
 
-def _worker_registry(tmp_path: Path):  # type: ignore[no-untyped-def]
+@pytest.fixture
+def worker_registry(tmp_path: Path):  # type: ignore[no-untyped-def]
     from libs.ops import workers as w
     from libs.store.connection import Database
 
@@ -316,12 +317,15 @@ def _worker_registry(tmp_path: Path):  # type: ignore[no-untyped-def]
         conn.execute("""CREATE TABLE workers (
             worker_id TEXT PRIMARY KEY, pid INTEGER, host TEXT, status TEXT,
             current_campaign TEXT, started_at TEXT, last_seen TEXT, campaigns_done INTEGER)""")
-    return w.WorkerRegistry(db)
+    try:
+        yield w.WorkerRegistry(db)
+    finally:
+        db.connection.close()          # an unclosed handle is a ResourceWarning, i.e. a failure
 
 
-def test_workers_prune_stands_down_when_no_heartbeat_is_live(tmp_path: Path) -> None:
+def test_workers_prune_stands_down_when_no_heartbeat_is_live(worker_registry) -> None:  # type: ignore[no-untyped-def]
     """A dead stamper, a clock skew or a restore makes every row look stale at once."""
-    reg = _worker_registry(tmp_path)
+    reg = worker_registry
     reg.register("w1", pid=1, host="h")
     reg.register("w2", pid=2, host="h")
     # stale_seconds=0 makes every row stale at once -- the clock-skew / dead-stamper shape.
@@ -333,8 +337,8 @@ def test_workers_prune_stands_down_when_no_heartbeat_is_live(tmp_path: Path) -> 
     assert reg.prune(stale_seconds=0, require_live_heartbeat=False) == 2
 
 
-def test_workers_prune_still_removes_dead_rows_when_the_stamper_is_alive(tmp_path: Path) -> None:
-    reg = _worker_registry(tmp_path)
+def test_workers_prune_still_removes_dead_rows_when_the_stamper_is_alive(worker_registry) -> None:  # type: ignore[no-untyped-def]
+    reg = worker_registry
     reg.register("alive", pid=1, host="h")
     with reg.db.transaction() as conn:                      # one row stamped long ago
         conn.execute("INSERT INTO workers (worker_id, pid, host, status, started_at, last_seen,"
@@ -395,7 +399,7 @@ def test_the_fence_fails_when_a_guarded_path_stops_calling_the_guard(
     """An import is not a guard: the proof is the AST call, so removing it must fail the fence."""
     import scripts.check_no_retirement_on_absence as fence
 
-    monkeypatch.setattr(fence.rf, "guard_call_names", lambda: ("a_name_no_module_calls",))
+    monkeypatch.setattr(rf, "guard_call_names", lambda: ("a_name_no_module_calls",))
     doc = fence.audit()
     assert not doc["ok"]
     assert any("an import is not a guard" in p for p in doc["problems"])

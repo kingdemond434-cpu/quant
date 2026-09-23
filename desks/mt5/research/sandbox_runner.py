@@ -76,7 +76,20 @@ UNIVERSE_REGISTRY = UNIVERSE_DIR / "universe.json"
 #: The bundle's core: the book's instruments first, then a rotation through the hypothesis lane.
 CORE_SYMBOLS: tuple[str, ...] = ("XAUUSD", "EURUSD", "USDJPY", "GBPUSD", "US500", "XAGUSD",
                                  "AUDUSD", "USDCAD")
-ROTATION_EXTRA = 2
+#: THE BUNDLE WAS THE BREADTH CAP, NOT THE ENGINES (measured 2026-09-23). 145 instruments pass
+#: the hypothesis lane on this box and the bundle carried TEN -- eight core plus two -- so every
+#: adapter took its first MAX_SYMBOLS (2-8) frames out of the same ten and 135 tradable
+#: instruments were never offered to a single federated engine. `rotation_extra` derives the
+#: count from MEASURED free memory instead (one H1 frame at the bars cap is well under a MB),
+#: and `build_bundle` ROTATES the frame order by the hour's seed, so a three-symbol adapter sees
+#: a different three every pass and the whole lane within a day rather than the same three
+#: forever. Never sized off a machine's nominal RAM.
+def rotation_extra(free_mb: float | None) -> int:
+    """How many NON-core instruments join the bundle, from measured free physical memory."""
+    if free_mb is None:
+        return 4
+    return int(min(32, max(2, free_mb // 64)))
+
 MAX_LICENCE_READS = 3
 MAX_DISCOVERIES_PER_PACKET = 40
 #: THE FLOOR IS A MEASUREMENT, NOT A HABIT (raised 30 -> 90 on 2026-09-23). With the federation
@@ -185,10 +198,18 @@ def build_bundle(*, universe_dir: Path = UNIVERSE_DIR, registry_path: Path = UNI
     else:
         chosen = [s for s in CORE_SYMBOLS if s in available and lane_ok(s, registry)]
         pool = sorted(s for s in available if s not in chosen and lane_ok(s, registry))
+        n_extra = rotation_extra(free_phys_mb())
         if pool:
             start = seed % len(pool)
-            chosen += [pool[(start + i) % len(pool)] for i in range(min(ROTATION_EXTRA,
-                                                                        len(pool)))]
+            chosen += [pool[(start + i) % len(pool)] for i in range(min(n_extra, len(pool)))]
+        #: ROTATE THE HEAD. `frames()` preserves insertion order and every adapter slices
+        #: `[:MAX_SYMBOLS]` off the front, so a fixed order means a two-symbol engine sees the
+        #: same two instruments for ever however wide the bundle is. One turn per pass hands the
+        #: front of the queue to a different instrument each hour; the core is still always in
+        #: the bundle, it just stops monopolising the first seats.
+        if chosen:
+            k = seed % len(chosen)
+            chosen = chosen[k:] + chosen[:k]
     cutoff = datetime.now(tz=UTC).replace(minute=0, second=0, microsecond=0)
     bars: dict[str, A.BarFrame] = {}
     for s in chosen:

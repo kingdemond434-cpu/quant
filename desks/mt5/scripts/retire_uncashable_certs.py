@@ -22,6 +22,7 @@ import json
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 ROOT = Path(__file__).resolve().parents[3]
 if str(ROOT) not in sys.path:
@@ -40,7 +41,7 @@ BARS = DESK / "data" / "universe"
 UNIVERSE_FLOOR = 50
 
 
-def _reason(sym: str, meta: dict) -> str:
+def _reason(sym: str, meta: dict[str, Any]) -> str:
     """Why this symbol can never be cashed, or "" if it can."""
     if not sym:
         return "certificate carries no symbol"
@@ -55,13 +56,13 @@ def _reason(sym: str, meta: dict) -> str:
     return ""
 
 
-def retire(path: Path, meta: dict, stamp: str) -> tuple[int, list[str]]:
+def retire(path: Path, meta: dict[str, Any], stamp: str) -> tuple[int, list[str]]:
     """Move every uncashable survivor in `path` to `retired_certificates`. Returns (n, names)."""
     if not path.exists():
         return 0, []
     doc = json.loads(path.read_text("utf-8"))
     survivors = doc.get("survivors") or {}
-    moved: dict[str, dict] = {}
+    moved: dict[str, dict[str, Any]] = {}
     for key, row in list(survivors.items()):
         why = _reason(str((row or {}).get("sym") or ""), meta)
         if why:

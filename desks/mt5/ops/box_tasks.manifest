@@ -104,6 +104,15 @@ TASK name="MT5-Dept-Regions" trigger="at startup + every 10 minutes (keep-alive 
 # mathematical traditions on the world model's residual, one leg (math_lab) on its own 24/7
 # resident (HOURLY_PLAN=dept:mathlab), like the other departments.
 TASK name="MT5-Dept-Mathlab" trigger="at startup + every 10 minutes (keep-alive of a 24/7 resident)" runs="desks/mt5/research/department_resident.py" installer="NONE" lane="research"
+# THE ALLOCATOR'S 24/7 REACTION (principal 2026-09-23: "24/7 and not slow ... trades on instant
+# macro news"). The hourly `pf_allocator` leg is the BACKSTOP full solve; this resident watches
+# MACRO_VIEW / regime_state / REGIME_ROUTER / sleeve_registry / gateway_state / NET_EDGE and
+# fires `pf_allocator --mode fast` the moment one of them carries a real state change, then
+# publishes the event-to-allocation latency per trigger kind in reports/ALLOCATOR_REACTION.json.
+# NOT YET REGISTERED ON THE BOX -- declared here first, as the manifest's own rule requires, so
+# `scripts/check_box_tasks.py` reports it as drift until the task exists rather than the task
+# existing with nothing declaring it. lane=money: it is the sizing path.
+TASK name="MT5-AllocatorPulse" trigger="at startup + every 5 minutes (keep-alive of a 24/7 resident)" runs="desks/mt5/research/allocator_trigger.py" installer="NONE" lane="money"
 # THE FOREST FEDERATION (principal 2026-09-17). Eleven regional research civilizations,
 # each a 24/7 resident running the eleven agent roles of libs/research/forests.ROLES in
 # parallel through desks/mt5/research/forest_runner.py. Japan and global macro already

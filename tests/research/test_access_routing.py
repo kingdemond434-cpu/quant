@@ -215,3 +215,27 @@ def test_the_boundary_is_read_before_any_permissive_label_can_rescue_it() -> Non
                       {"claim": "combolist of trading accounts"})
     assert routed.verdict.access_label == "STOLEN_UNAUTHORIZED"
     assert routed.verdict.refused is True
+
+
+# -------------------------------------------------- the shared fetch path carries no brake
+
+def test_no_collector_still_refuses_a_fetch_on_robots() -> None:
+    """A STRUCTURAL test, because the shared fetch helper has no unit test of its own and the
+    brake lived there longest.
+
+    `asia_collector._fetch` is called by `event_surprise` and `data_acquisition_scientist`, and
+    it used to set `status = "BLOCKED_BY_ROBOTS"` and return before fetching. Nothing pinned
+    that, so nothing would have caught it coming back. The reading is still taken and still
+    recorded (`robots`, `robots_disallows`, `terms_note`) -- what must never return is the
+    ASSIGNMENT of that status, so this asserts on the assignment and not on the name, which
+    still appears in prose and in the census tuple that prints old rows.
+    """
+    from pathlib import Path
+
+    repo = Path(__file__).resolve().parents[2]
+    for rel in ("desks/mt5/research/asia_collector.py",
+                "desks/mt5/research/data_acquisition_scientist.py"):
+        src = (repo / rel).read_text("utf-8")
+        assert '"status": "BLOCKED_BY_ROBOTS"' not in src, rel
+        assert 'status="BLOCKED_BY_ROBOTS"' not in src, rel
+        assert '= "BLOCKED_BY_ROBOTS"' not in src, rel

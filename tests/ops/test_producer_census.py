@@ -304,7 +304,12 @@ def test_the_census_has_a_clock_a_layer_and_an_artifact() -> None:
     cycle = (Path(__file__).resolve().parents[2] / "desks" / "mt5" / "research"
              / "hourly_cycle.py").read_text(encoding="utf-8")
     assert '_producer(\n        "producer_census", "scripts/check_seat_health.py"' in cycle
-    assert '"producer_census": pcn' in cycle
+    assert '"producer_census": prdc' in cycle
+    #: AND ITS VARIABLE IS ITS OWN. `pcn` was already bound to the `pit_canaries` leg two
+    #: hundred lines above and its results entry is read two hundred lines below: a second
+    #: `pcn =` would have silently replaced one leg's result with another's, in a dict nothing
+    #: type-checks. Measured during this wiring, before it shipped.
+    assert cycle.count("    pcn = _costed(") == 1
     assert layers.LEG_LAYER["producer_census"] == "meta"
 
 
@@ -345,3 +350,30 @@ def test_an_older_control_plane_still_relights_and_says_so(tmp_path: Path,
 
     assert recs[0]["result"] == "RELIT"
     assert recs[0]["plane"] == "fallback"
+
+
+def test_a_dark_resident_is_repaired_by_the_reconcilers_own_actuator(tmp_path: Path,
+                                                                     monkeypatch: Any) -> None:
+    """A department restart already HAS a strong proof (a new live pid + a moved watermark).
+    Judging it by 'did an artifact appear in sixty seconds' reported nine healthy residents
+    UNPROVEN on the first pass over the trading box."""
+    _tree(tmp_path)
+    seen: dict[str, Any] = {}
+
+    def fake_restart(component_id: str, task: str, stem: str,
+                     window_s: int = 90) -> act.Actuator:
+        seen["task"] = task
+        return act.Actuator(name="r", argv=("noop",), window_s=0,
+                            postconditions=(act.PRODUCTION_RESUMED,))
+
+    monkeypatch.setattr(act, "restart_resident", fake_restart)
+    doc = {"rows": [{"producer": "resident:dept_meta", "verdict": pc.DARK,
+                     "repair": "restart:task:MT5-Dept-meta", "organ": None,
+                     "criticality": "required", "age_h": 40.0,
+                     "production_paths": ["desks/mt5/reports/X.json"]}]}
+    plans = pc.plan_relight(doc, root=tmp_path)
+    assert plans[0].action == "restart_task"
+
+    pc.apply_relight(plans, root=tmp_path, runner=lambda a, t, c: {"rc": 0, "tail": ""})
+
+    assert seen["task"] == "MT5-Dept-meta"

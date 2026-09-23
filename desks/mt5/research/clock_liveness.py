@@ -85,6 +85,8 @@ for _p in (str(ROOT), str(DESK), str(DESK / "research")):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
+import clock_certificate as cc  # type: ignore[import-not-found]  # noqa: E402
+
 REPORT = DESK / "reports" / "CLOCK_LIVENESS.json"
 DOC = ROOT / "docs" / "research" / "CLOCK_LIVENESS.md"
 RATCHET = DESK / "data" / "clock_liveness_ratchet.json"
@@ -1047,6 +1049,21 @@ def build(budget_s: float = 300.0, *, apply: bool = True) -> dict[str, Any]:
              if (repairs and apply) else before)
     counts_after = _counts(after)
     rat = ratchet_write(counts_after[FROZEN]) if apply else ratchet_read()
+    # CLOCK IMPLIES CERTIFICATE (principal 2026-09-23). Liveness and legality are two different
+    # questions about the same clock: a clock can be ACCRUING beautifully and be running on no
+    # certificate at all, which is a breach of a standing law. The audit traces every clock to
+    # its backing certificate, pushes each breached CELL to the front of the judge's queue, and
+    # takes a clock away only on the judge's own rejection -- never to make the count smaller.
+    cert = cc.audit(after, roster=roster, now=now_utc(), apply=apply)
+    if apply and cert.get("retire"):
+        cert["retired_now"] = cc.retire_rejected(cert["retire"], LANE_BY_NAME)
+        after = census(cal, roster, now_utc(), tasks, host=host, host_why=host_why)
+        counts_after = _counts(after)
+        cert = cc.audit(after, roster=roster, now=now_utc(), apply=False)
+    cert_ratchet = (cc.ratchet(int(cert["breached"])) if apply and host == "trading_box"
+                    else cc.read_ratchet())
+    if apply:
+        cc.publish_docket(cert)
     still = [c for c in after if c["verdict"] == FROZEN]
     by_cause: dict[str, int] = {}
     for c in still:
@@ -1062,6 +1079,12 @@ def build(budget_s: float = 300.0, *, apply: bool = True) -> dict[str, Any]:
         "counts_before": counts_before, "counts": counts_after,
         "frozen_before": counts_before[FROZEN], "frozen_after": counts_after[FROZEN],
         "ratchet": rat, "frozen_by_cause": by_cause, "repairs": repairs,
+        "certificate": {**{k: v for k, v in cert.items() if k != "rows"},
+                        "ratchet": cert_ratchet,
+                        "oldest_breach_age_s": cc.oldest_breach_age_s(cert),
+                        "rows": [r for r in cert["rows"]
+                                 if r.get("backing") in (cc.BREACHED, cc.AWAITING,
+                                                         cc.UNMEASURED)][:400]},
         "schedule": schedule,
         "schedule_verdicts": {v: sum(1 for r in schedule if r.get("verdict") == v)
                               for v in sorted({str(r.get("verdict")) for r in schedule})},
@@ -1122,6 +1145,20 @@ def render(doc: Mapping[str, Any]) -> str:
         lines.append(f"| `{ln.get('lane')}` | {ln.get('clocks')} | {ln.get('accruing')} | "
                      f"{ln.get('frozen')} | {ln.get('mechanism')} | "
                      f"{str(ln.get('state_mtime'))[:19]} |")
+    ct = doc.get("certificate") or {}
+    cn = ct.get("counts") or {}
+    lines += ["", "## CLOCK IMPLIES CERTIFICATE", "",
+              f"Canon: **{(ct.get('canon') or {}).get('n')}** certificate(s) -- "
+              f"{(ct.get('canon') or {}).get('why')} (read, never written).", "",
+              "| backing | clocks |", "|---|---:|"]
+    for s in cc.BACKING_STATES:
+        lines.append(f"| {s} | {cn.get(s, 0)} |")
+    lines += ["",
+              f"**breached {ct.get('breached')}** (of which awaiting judgement "
+              f"{ct.get('awaiting')}), backed {ct.get('backed')}, retired {ct.get('retired')}; "
+              f"{ct.get('overdue_beyond_one_judging_cycle')} past one judging cycle. "
+              f"Breach ratchet floor {(ct.get('ratchet') or {}).get('lowest_breached')}.",
+              "", f"Judge's queue: {(ct.get('queue') or {}).get('why')}", ""]
     lines += ["", "## 24/7: the tasks that advance clocks", "",
               "| task | verdict | repeat | last run | rc | what it advances |",
               "|---|---|---|---|---|---|"]

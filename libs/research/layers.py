@@ -382,6 +382,8 @@ LEG_LAYER: dict[str, str] = {
     "capacity": "sizing", "ensemble_optimizer": "sizing",
     # portfolio: how the book is composed
     "pf_allocator": "portfolio",
+    "allocator_liveness": "portfolio",
+    "allocator_trigger": "portfolio",
     # The balance-sheet layer and the Allocator-V2 evidence: what the book costs to carry and
     # what each sleeve is worth to it -- a question about the book's composition, not about
     # how an order reaches the venue.

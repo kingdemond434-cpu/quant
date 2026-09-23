@@ -63,15 +63,15 @@ def _report(tmp_path: Path, **measured: Any) -> Path:
 
 
 def _ledger(tmp_path: Path, **kw: Any) -> Path:
-    doc = {"at": _iso(1.0),
-           "ceilings": {"backlog_overdue": 40.0, "overdue_wait_h": 100.0,
-                        "uncrawled_total": 200.0},
-           "floors": {"drained_total": 500.0}}
+    ceilings: dict[str, float] = {"backlog_overdue": 40.0, "overdue_wait_h": 100.0,
+                                  "uncrawled_total": 200.0}
+    floors: dict[str, float] = {"drained_total": 500.0}
+    doc: dict[str, Any] = {"at": _iso(1.0), "ceilings": ceilings, "floors": floors}
     for key, value in kw.items():
         if key in ("backlog_overdue", "overdue_wait_h", "uncrawled_total"):
-            doc["ceilings"][key] = value
+            ceilings[key] = value
         else:
-            doc["floors"][key] = value
+            floors[key] = value
     path = tmp_path / "ledger.json"
     path.write_text(json.dumps(doc), encoding="utf-8")
     return path
