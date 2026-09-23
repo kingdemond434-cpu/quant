@@ -1030,6 +1030,366 @@ def _coverage_block() -> dict[str, Any]:
     }
 
 
+#: THE CEO'S ARTIFACTS. Each is read by name, each gets a present/absent verdict, and an absent
+#: one NEVER renders as a zero: the whole point of the ignorance ledger is that the board can
+#: tell "measured and small" from "nobody measured it". The leg that writes each file is named
+#: beside it so a reader can see which clock is silent rather than guess.
+CEO_ARTIFACTS: tuple[tuple[str, str, str], ...] = (
+    ("scorecard", "TIER1_SCORECARD.json", "hourly_cycle:tier1_scorecard"),
+    ("departments", "RESEARCH_DEPARTMENTS.json", "hourly_cycle:research_departments"),
+    ("unseen_frontier", "UNSEEN_FRONTIER.json", "hourly_cycle:unseen_frontier"),
+    ("wiring", "WIRING_CEO.json", "hourly_cycle:wiring_ceo"),
+    ("ignorance_ledger", "RESIDUAL_QUEUE.json", "hourly_cycle:residual_queue"),
+    ("sources", "SOURCE_REGISTRY.json", "hourly_cycle:source_registry"),
+    ("posterior", "POSTERIOR_ALPHA.json", "hourly_cycle:posterior_alpha"),
+)
+
+
+def _ceo_read(name: str) -> dict[str, Any]:
+    """One CEO artifact, read against DESK as it is NOW (so a test can point DESK elsewhere).
+
+    `utf-8-sig`, not `utf-8`: several desk organs write a BOM, and a reader that could not
+    decode one would report the artifact ABSENT while it sat on disk -- the exact failure this
+    block exists to expose.
+    """
+    try:
+        value = json.loads((DESK / "reports" / name).read_text(encoding="utf-8-sig"))
+        return value if isinstance(value, dict) else {}
+    except (OSError, json.JSONDecodeError, UnicodeDecodeError):
+        return {}
+
+
+def _ceo_sub(doc: dict[str, Any], key: str) -> dict[str, Any]:
+    """A nested block of an artifact, or {} -- typed, so a reader never has to re-check it."""
+    value = doc.get(key)
+    return value if isinstance(value, dict) else {}
+
+
+def _ceo_list(doc: dict[str, Any], key: str) -> list[Any]:
+    """A nested list of an artifact, or []."""
+    value = doc.get(key)
+    return value if isinstance(value, list) else []
+
+
+def _ceo_row(key: str, label: str, unit: str, source: str, value: Any, why: str,
+             **detail: Any) -> dict[str, Any]:
+    """One lifetime row: its VALUE, the artifact it came from, and UNMEASURED with the reason.
+
+    A row whose value is None is UNMEASURED and stays None. It is never coerced to 0, never
+    hidden, and never dropped from the list -- a metric missing from a board reads as a metric
+    nobody owes an answer for, which is how a desk stops noticing what it cannot see.
+    """
+    return {"key": key, "label": label, "unit": unit, "source": source,
+            "value": value, "status": "MEASURED" if value is not None else "UNMEASURED",
+            "why": why, "detail": {k: v for k, v in detail.items() if v is not None}}
+
+
+def _ceo_absent(name: str, leg: str) -> str:
+    return (f"desks/mt5/reports/{name} is not on this host -- the {leg} leg has not run here, "
+            f"so this number is UNMEASURED and is not a zero")
+
+
+def _unseen_grounds(doc: dict[str, Any]) -> tuple[float | None, float | None, int]:
+    """(coverage-weighted explored fraction, unseen mechanism mass, grounds counted)."""
+    grounds = doc.get("grounds")
+    if not isinstance(grounds, dict):
+        return None, None, 0
+    seen = 0.0
+    weight = 0.0
+    mass = 0.0
+    counted = 0
+    for block in grounds.values():
+        if not isinstance(block, dict):
+            continue
+        n = _number(block.get("n"))
+        cov = _number(block.get("coverage"))
+        unseen = _number(block.get("n_unseen"))
+        if unseen is not None:
+            mass += unseen
+        if cov is None or n is None or n <= 0:
+            continue
+        seen += cov * n
+        weight += n
+        counted += 1
+    explored = (seen / weight) if weight > 0 else None
+    return explored, (mass if grounds else None), counted
+
+
+def _ceo_lifetime() -> list[dict[str, Any]]:
+    """THE THIRTEEN LIFETIME ROWS -- the numbers the desk is judged on across its whole life.
+
+    None of them is a snapshot of today's P&L; every one of them is a property of the RESEARCH
+    MACHINE. They are read from the organ that owns each, never recomputed here: a dashboard
+    that derived its own version of a number the desk already measures would give the board two
+    answers and no way to tell which one the machine acted on.
+    """
+    unseen = _ceo_read("UNSEEN_FRONTIER.json")
+    sources = _ceo_read("SOURCE_REGISTRY.json")
+    pit = _ceo_read("PIT_CENSUS.json")
+    axes = _ceo_read("AXIS_REGISTRY.json")
+    novelty = _ceo_read("NOVELTY_GATE.json")
+    replen = _ceo_read("ALPHA_REPLENISHMENT.json")
+    scaling = _ceo_read("scaling_laws.json")
+    replication = _ceo_read("REPLICATION.json") or _ceo_read("LEAD_REPLICATION.json")
+    breadth = _ceo_read("EFFECTIVE_BREADTH.json")
+    posterior = _ceo_read("POSTERIOR_ALPHA.json")
+    capture = _ceo_read("ALPHA_CAPTURE.json")
+    growth = _ceo_read("GROWTH_ATTRIBUTION_WEEKLY.json")
+    productivity = _ceo_read("RESEARCH_PRODUCTIVITY.json")
+    reliability = _ceo_read("edge_reliability.json")
+
+    rows: list[dict[str, Any]] = []
+
+    explored, mass, n_grounds = _unseen_grounds(unseen)
+    rows.append(_ceo_row(
+        "frontier_explored_pct", "frontier explored", "%",
+        "desks/mt5/reports/UNSEEN_FRONTIER.json",
+        round(100.0 * explored, 2) if explored is not None else None,
+        (f"Good-Turing coverage across {n_grounds} sampled ground(s), weighted by sightings"
+         if explored is not None else _ceo_absent("UNSEEN_FRONTIER.json", "unseen_frontier")),
+        grounds=n_grounds or None, sightings=unseen.get("n_sightings"),
+        species=unseen.get("n_species")))
+
+    judged = _ceo_sub(sources, "judged")
+    yield_rate = _number(judged.get("pooled_pass_rate"))
+    top = _ceo_list(sources, "top_by_roi")
+    rows.append(_ceo_row(
+        "survivor_yield_per_source", "survivor yield per source", "survivors / judged cell",
+        "desks/mt5/reports/SOURCE_REGISTRY.json", yield_rate,
+        (str(judged.get("why") or "pooled pass rate over the gate verdict ledger")
+         if yield_rate is not None
+         else _ceo_absent("SOURCE_REGISTRY.json", "source_registry")),
+        n_sources=sources.get("n_sources"), n_judged=judged.get("n_cells_judged"),
+        n_passed=judged.get("n_passed"),
+        best_source=(top[0].get("source_id") if top and isinstance(top[0], dict) else None)))
+
+    census = _ceo_sub(pit, "census")
+    sidecars, stamped = _number(census.get("sidecars")), _number(census.get("stamped"))
+    rows.append(_ceo_row(
+        "pit_clean_axes", "PIT-clean axes", "% of declared axes stamped point-in-time",
+        "desks/mt5/reports/PIT_CENSUS.json",
+        round(100.0 * stamped / sidecars, 2) if sidecars and stamped is not None else None,
+        (f"{stamped:.0f} of {sidecars:.0f} dataset sidecars carry a point-in-time stamp"
+         if sidecars and stamped is not None
+         else _ceo_absent("PIT_CENSUS.json", "pit_canaries")),
+        sidecars=sidecars, stamped=stamped, axes_registered=axes.get("n_cells")))
+
+    achieved = _ceo_sub(replen, "achieved")
+    per_week = _number(achieved.get("certified_7d"))
+    rows.append(_ceo_row(
+        "novel_mechanisms_per_week", "novel mechanisms per week", "certified / week",
+        "desks/mt5/reports/ALPHA_REPLENISHMENT.json + NOVELTY_GATE.json", per_week,
+        (f"{per_week:.0f} certified in the replenishment window; the novelty gate screened "
+         f"{novelty.get('n_screened')} cells and called {novelty.get('n_novel')} novel"
+         if per_week is not None
+         else _ceo_absent("ALPHA_REPLENISHMENT.json", "alpha_replenishment")),
+        window_days=replen.get("window_days"), n_novel=novelty.get("n_novel"),
+        n_screened=novelty.get("n_screened"), promoted_live=achieved.get("promoted_live_7d")))
+
+    by_day = _ceo_list(scaling, "by_day")
+    hours = float(sum(_number(r.get("hours")) or 0.0
+                      for r in by_day if isinstance(r, dict)))
+    certified = float(sum(_number(r.get("certified")) or 0.0
+                          for r in by_day if isinstance(r, dict)))
+    law = _ceo_sub(scaling, "law")
+    rows.append(_ceo_row(
+        "survivors_per_compute_hour", "survivors per compute hour", "survivors / hour",
+        "desks/mt5/reports/scaling_laws.json",
+        round(certified / hours, 4) if hours > 0 else None,
+        (f"{certified:.0f} certified over {hours:.1f} recorded compute hour(s) across "
+         f"{len(by_day)} day(s); the SLOPE is {law.get('status', 'UNMEASURED')}"
+         f" ({law.get('why') or 'no reason given'})" if hours > 0
+         else _ceo_absent("scaling_laws.json", "scaling_laws")),
+        compute_hours=round(hours, 3) or None, certified=certified or None,
+        days=len(by_day) or None, slope_status=law.get("status")))
+
+    fdr = _number(_find(replication, "fdr", "fdr_rate", "false_discovery_rate"))
+    repl_rate = _number(_find(replication, "replication_rate", "replicated_share"))
+    rows.append(_ceo_row(
+        "fdr_and_replication_rate", "FDR and replication rate", "rate",
+        "desks/mt5/reports/REPLICATION.json / LEAD_REPLICATION.json",
+        fdr if fdr is not None else repl_rate,
+        ("measured false-discovery and replication rates from the replication organ"
+         if fdr is not None or repl_rate is not None else
+         "neither desks/mt5/reports/REPLICATION.json nor LEAD_REPLICATION.json is on this "
+         "host -- the replication_civilization / lead_replication legs have not run here, so "
+         "the desk's false-discovery rate is UNMEASURED and is not a zero"),
+        fdr=fdr, replication_rate=repl_rate))
+
+    eff = _ceo_sub(breadth, "effective")
+    n_eff = _number(eff.get("effective_breadth"))
+    rows.append(_ceo_row(
+        "n_eff", "independent bets (n_eff)", "effective breadth",
+        "desks/mt5/reports/EFFECTIVE_BREADTH.json", n_eff,
+        (f"{eff.get('n_nominal')} nominal sleeves behaving like {n_eff} independent bets "
+         f"({eff.get('binding_reading')})" if n_eff is not None
+         else _ceo_absent("EFFECTIVE_BREADTH.json", "breadth_sweep")),
+        nominal=eff.get("n_nominal"), ratio=eff.get("breadth_ratio"),
+        sharpe_multiplier=eff.get("sharpe_multiplier_vs_one_bet")))
+
+    sleeves = _ceo_list(posterior, "sleeves")
+    mus: list[float] = sorted(v for v in (_number(r.get("mu_mean")) for r in sleeves
+                                          if isinstance(r, dict)) if v is not None)
+    n_credible = _number(posterior.get("n_credible"))
+    rows.append(_ceo_row(
+        "posterior_edge_distribution", "posterior edge distribution", "R per trade (mu)",
+        "desks/mt5/reports/POSTERIOR_ALPHA.json",
+        round(mus[len(mus) // 2], 4) if mus else None,
+        (f"median posterior edge over {len(mus)} sleeve(s); {n_credible:.0f} clear the credible "
+         f"bar" if mus and n_credible is not None else
+         f"median posterior edge over {len(mus)} sleeve(s)" if mus
+         else _ceo_absent("POSTERIOR_ALPHA.json", "posterior_alpha")),
+        n_sleeves=posterior.get("n_sleeves"), n_credible=posterior.get("n_credible"),
+        p10=round(mus[len(mus) // 10], 4) if len(mus) >= 10 else None,
+        p90=round(mus[(9 * len(mus)) // 10], 4) if len(mus) >= 10 else None))
+
+    decay = _ceo_sub(replen, "decay")
+    half = _number(decay.get("median_half_life_days"), _find(reliability, "half_life"))
+    rows.append(_ceo_row(
+        "live_half_life_days", "live edge half-life", "days",
+        "desks/mt5/reports/ALPHA_REPLENISHMENT.json", half,
+        (f"median half-life over {decay.get('n_half_lives')} measured sleeve(s)"
+         if half is not None else
+         f"the decay block measures {decay.get('n_half_lives', 0)} half-life/-lives and leaves "
+         f"{decay.get('n_unmeasured', 0)} sleeve(s) unmeasured, so the desk's live half-life is "
+         f"UNMEASURED and is not a zero" if decay
+         else _ceo_absent("ALPHA_REPLENISHMENT.json", "alpha_replenishment")),
+        n_measured=decay.get("n_half_lives"), n_unmeasured=decay.get("n_unmeasured")))
+
+    ratio = _number(capture.get("alpha_capture_ratio"))
+    cap = _ceo_sub(capture, "capture")
+    rows.append(_ceo_row(
+        "alpha_captured_vs_theoretical", "alpha captured vs theoretical", "ratio",
+        "desks/mt5/reports/ALPHA_CAPTURE.json", ratio,
+        (f"realised edge against the backtested edge over {cap.get('n_records')} record(s)"
+         if ratio is not None else
+         f"ALPHA_CAPTURE.json reads {capture.get('status') or 'UNMEASURED'}: "
+         f"{cap.get('population') or capture.get('why') or 'no capture population'}"
+         if capture else _ceo_absent("ALPHA_CAPTURE.json", "fill_attribution")),
+        n_records=cap.get("n_records"), n_live=cap.get("n_live"),
+        artifact_status=capture.get("status")))
+
+    identity = _ceo_sub(growth, "identity")
+    realised = _number(identity.get("dlogw_per_day"))
+    predicted = _number(identity.get("terms_summed_logw_per_day"))
+    rows.append(_ceo_row(
+        "realised_vs_predicted_log_growth", "realised vs predicted log-growth",
+        "dlogW / day", "desks/mt5/reports/GROWTH_ATTRIBUTION_WEEKLY.json",
+        round(realised - predicted, 8) if realised is not None and predicted is not None
+        else None,
+        (f"realised {realised:.6f}/day against {predicted:.6f}/day explained by the priced "
+         f"terms {identity.get('terms_in_identity')}; the difference is the residual and is "
+         f"never distributed into them" if realised is not None and predicted is not None
+         else _ceo_absent("GROWTH_ATTRIBUTION_WEEKLY.json", "hourly_cycle:daily")),
+        realised=realised, predicted=predicted,
+        terms_measured=growth.get("measured"), terms_unmeasured=growth.get("unmeasured")))
+
+    conv = _ceo_sub(productivity, "conversion")
+    judged_to_cert = _number(conv.get("judged_to_certified"))
+    rows.append(_ceo_row(
+        "meta_rd_productivity", "meta-R&D productivity", "certified / judged",
+        "desks/mt5/reports/RESEARCH_PRODUCTIVITY.json", judged_to_cert,
+        (f"judged -> certified {judged_to_cert}; bottleneck: {productivity.get('bottleneck')}"
+         if judged_to_cert is not None
+         else _ceo_absent("RESEARCH_PRODUCTIVITY.json", "research_roi")),
+        intake_to_compiled=conv.get("intake_to_compiled"),
+        certified_to_forward=conv.get("certified_to_forward"),
+        bottleneck=productivity.get("bottleneck")))
+
+    rows.append(_ceo_row(
+        "unseen_mechanism_mass", "unseen mechanism mass", "estimated unseen species",
+        "desks/mt5/reports/UNSEEN_FRONTIER.json",
+        round(mass, 3) if mass is not None else None,
+        (f"Chao1 unseen mass summed over {n_grounds} ground(s): mechanisms the desk has sighted "
+         f"nowhere yet" if mass is not None
+         else _ceo_absent("UNSEEN_FRONTIER.json", "unseen_frontier")),
+        grounds=n_grounds or None,
+        most_open=next(iter(_ceo_list(unseen, "most_open")), None)))
+
+    return rows
+
+
+def _ceo_block() -> dict[str, Any]:
+    """THE CEO DASHBOARD AND THE IGNORANCE LEDGER -- what the desk knows it does not know.
+
+    THE STATE BUILDER READ NONE OF THIS. The scorecard, the departments, the unseen frontier and
+    the wiring hunter all publish every hour and nothing carried them to the board, so the one
+    view a principal actually opens showed the account and the pipeline and said nothing about
+    whether the RESEARCH MACHINE was getting better. Thirteen lifetime rows and seven artifact
+    verdicts are the answer to that.
+
+    EVERY ROW IS EITHER A NUMBER OR AN UNMEASURED WITH A REASON. An absent artifact is never
+    rendered as 0: a board that showed 0.0% frontier explored because a file was missing would
+    be indistinguishable from a desk that had explored nothing, and the difference between those
+    two is the entire point of an ignorance ledger. Nothing here can raise an error either --
+    a build that failed because one research organ had not run would take the whole board down.
+    """
+    artifacts: dict[str, Any] = {}
+    for key, name, leg in CEO_ARTIFACTS:
+        doc = _ceo_read(name)
+        artifacts[key] = {
+            "artifact": f"desks/mt5/reports/{name}",
+            "leg": leg,
+            "status": "PRESENT" if doc else "ABSENT",
+            "at": doc.get("at") or doc.get("generated_utc") if doc else None,
+            "why": "" if doc else _ceo_absent(name, leg),
+            "digest": _ceo_digest(key, doc) if doc else None,
+        }
+    rows = _ceo_lifetime()
+    measured = [r for r in rows if r["status"] == "MEASURED"]
+    present = [k for k, v in artifacts.items() if v["status"] == "PRESENT"]
+    return {
+        "status": "MEASURED" if measured else "UNMEASURED",
+        "artifacts": artifacts,
+        "artifacts_present": len(present),
+        "artifacts_total": len(CEO_ARTIFACTS),
+        "artifacts_absent": sorted(k for k in artifacts if k not in present),
+        "lifetime": rows,
+        "n_measured": len(measured),
+        "n_unmeasured": len(rows) - len(measured),
+        "why": (f"{len(measured)} of {len(rows)} lifetime metrics are measured on this host and "
+                f"{len(rows) - len(measured)} are UNMEASURED with the missing artifact named; "
+                f"{len(present)} of {len(CEO_ARTIFACTS)} CEO artifacts are present"),
+        "rule": ("every row carries its VALUE, the artifact it came from and, when that "
+                 "artifact is absent, UNMEASURED with the reason. An absent artifact is never "
+                 "a zero -- 'nobody measured it' and 'it measured zero' are different findings "
+                 "and only one of them is an emergency"),
+    }
+
+
+def _ceo_digest(key: str, doc: dict[str, Any]) -> dict[str, Any]:
+    """The few fields of each CEO artifact the board shows without opening the file."""
+    if key == "scorecard":
+        overall = _ceo_sub(doc, "overall")
+        return {"n_rows": doc.get("n_rows"), "at_or_above": overall.get("at_or_above"),
+                "below": overall.get("below"), "unmeasured": overall.get("unmeasured"),
+                "weakest": _ceo_list(overall, "weakest_measured")[:3]}
+    if key == "departments":
+        depts = _ceo_sub(doc, "departments")
+        spend = _ceo_sub(doc, "spend")
+        return {"n_departments": len(depts) or None, "binding": doc.get("binding_resource"),
+                "spend_applied": spend.get("applied"), "spend_why": spend.get("why")}
+    if key == "unseen_frontier":
+        return {"n_sightings": doc.get("n_sightings"), "n_species": doc.get("n_species"),
+                "most_open": next(iter(_ceo_list(doc, "most_open")), None)}
+    if key == "wiring":
+        floor = _ceo_sub(doc, "floor")
+        return {"n_organs": doc.get("n_organs"), "n_unwired": doc.get("n_unwired"),
+                "n_probation": doc.get("n_probation"), "floor_status": floor.get("status"),
+                "certificates_without_clocks": doc.get("certificates_without_clocks")}
+    if key == "ignorance_ledger":
+        return {"n_items": doc.get("n_items"), "n_open": doc.get("n_open"),
+                "n_donated": doc.get("n_donated"), "n_explained": doc.get("n_explained"),
+                "by_level": doc.get("by_level")}
+    if key == "sources":
+        return {"n_sources": doc.get("n_sources"), "by_kind": doc.get("by_kind"),
+                "language_gaps": _ceo_list(doc, "language_gaps")[:5]}
+    if key == "posterior":
+        return {"n_sleeves": doc.get("n_sleeves"), "n_credible": doc.get("n_credible"),
+                "counts": doc.get("counts")}
+    return {}
+
+
 def build() -> dict[str, Any]:
     gateway = _read(DESK / "data" / "gateway_state.json")
     # NEVER FALL BACK TO gateway_state FOR THE ACCOUNT (2026-09-04). On a box with no MT5
@@ -1219,6 +1579,7 @@ def build() -> dict[str, Any]:
     payload["organs"] = _organs(now)
     payload["wiring"] = _wiring_block()
     payload["coverage"] = _coverage_block()
+    payload["ceo"] = _ceo_block()
     payload["breadth"] = _read(ROOT / "data" / "miner_conversion.json") or {}
     payload["clocks"] = _clocks_block()
     # EVERY PROCESS, NOT A CURATED FEW (principal 2026-09-12: "genuinely every single built

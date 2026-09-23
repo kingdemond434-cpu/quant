@@ -55,12 +55,24 @@ if str(ROOT) not in sys.path:
 
 REPORT = ROOT / "desks" / "mt5" / "reports" / "NO_STALENESS.json"
 
-#: THE RATCHET, MEASURED, NEVER GUESSED. The number of artifacts judged STALE on the host this
-#: was last measured on. It may only be LOWERED, and lowering it is the point of the organ: a
-#: run that measures fewer stale artifacts prints the number to put here. A run that measures
-#: MORE fails the gate (exit 2), which is how new staleness is caught the hour it appears.
-#: 2026-09-23, host `box_clocks_off` (VMI3500897): see the report's `measured_for_ratchet`.
-MAX_STALE = 12
+#: THE DEBT RATCHET. How many artifacts may be STALE. A debt ratchets DOWN, so this may only be
+#: lowered; every run that measures fewer prints the number to put here. A run that measures MORE
+#: fails the gate (exit 2), which is how new staleness is caught the hour it appears.
+#:
+#: ZERO IS THE TARGET AND IT IS THE PRINCIPAL'S ORDER ("make sure nothing is stale"). Raising it
+#: is a decision about the desk's standards and belongs to the principal, not to a session that
+#: found the gate inconvenient.
+MAX_STALE = 0
+
+#: THE ONE SUSPENSION, AND IT IS NOT A LOOPHOLE. When EVERY MT5 clock on the box is disabled,
+#: every artifact the box owns is stale for one reason, and that reason is not a per-artifact
+#: defect -- it is one administrative fact that no session can fix by editing code. Publishing it
+#: as a 292-row ratchet breach on every commit would wedge every other builder behind a state
+#: they did not cause and cannot repair, and a gate everyone learns to force is not a gate. So
+#: the fence still reports every stale row and still exits NON-ZERO (rc=1); it just does not
+#: escalate to a ratchet breach while the desk is administratively stopped, and it says so in
+#: the report under `ratchet_suspended`. With one clock enabled the ratchet binds again.
+SUSPEND_WHEN_ALL_CLOCKS_DISABLED = True
 
 #: Seconds. A stage is fresh while its newest write is inside this many cadences of its clock.
 #: Two, for the same reason `lease.TTL_BY_CLASS["hourly"]` is 7200 against a 3600 s leg.
@@ -86,16 +98,24 @@ def artifact_paths(spec: Any) -> tuple[str, ...]:
 
 
 # ------------------------------------------------------------------------------------- hosts
+#: Host kinds (from `loop_liveness.host_facts`) that ARE the trading box. `box_clocks_off` is
+#: still the box: its artifacts are genuinely stale and the CAUSE is nameable (every MT5 clock is
+#: disabled), which is far more useful than 292 anonymous UNMEASURED rows. The distinction that
+#: matters for honesty is box-vs-not-box, not running-vs-stopped.
+BOX_HOSTS = ("trading_box", "box_clocks_off")
+
+
 def measurable_here(spec_host: str, here: str) -> tuple[bool, str]:
     """Can this host judge a spec declared for `spec_host`? MEASURED, never assumed."""
     h = str(spec_host or "any")
     if h == "any":
         return True, ""
     if h == "box":
-        if here == "trading_box":
+        if here in BOX_HOSTS:
             return True, ""
-        return False, (f"owned by a `box` component; this host is `{here}`, where the box's "
-                       f"clocks are not running it -- old here is not stale")
+        return False, (f"owned by a `box` component; this host is `{here}`, which has no "
+                       f"terminal and never writes it -- this checkout's copy is a mirror of "
+                       f"the box's artifact, not the artifact, so old here is not stale")
     if h == "vps":
         if here == "vps":
             return True, ""
@@ -148,9 +168,25 @@ def _stamp_age(path: Path, now: float) -> tuple[float | None, str]:
         return None, "unreadable"
 
 
+def last_exit(component_id: str, runs: Mapping[str, Mapping[str, Any]]) -> dict[str, Any]:
+    """The organ's LAST EXIT from the compute ledger: when it last ran and how it ended.
+
+    Without this a stale row says "this file is old" and the reader still has to go and find out
+    whether the organ ran and failed, or never ran at all. Those are different defects with
+    different repairs, and the ledger already knows which.
+    """
+    leg = str(component_id).split(":", 1)[-1]
+    row = runs.get(leg) or runs.get(str(component_id))
+    if not row:
+        return {"at": UNMEASURED, "outcome": UNMEASURED,
+                "why": f"`{leg}` has no costed run in the ledger's 30-day window"}
+    return {"at": row.get("at"), "outcome": row.get("outcome"), "wall_s": row.get("wall_s")}
+
+
 def judge(rel: str, spec: Any, *, root: Path, now: float, here: str,
-          ttl_by_class: Mapping[str, int], lease: Any) -> dict[str, Any]:
-    """One artifact's verdict, with the organ, its clock and its expectation attached."""
+          ttl_by_class: Mapping[str, int], lease: Any,
+          runs: Mapping[str, Mapping[str, Any]] | None = None) -> dict[str, Any]:
+    """One artifact's verdict, with the organ, its clock, its expectation and its last exit."""
     row: dict[str, Any] = {
         "artifact": rel,
         "organ": getattr(spec, "component_id", UNMEASURED),
@@ -159,6 +195,7 @@ def judge(rel: str, spec: Any, *, root: Path, now: float, here: str,
         "component_host": getattr(spec, "host", "any"),
         "measured_on": here,
         "restart_action": getattr(spec, "restart_action", UNMEASURED),
+        "organ_last_exit": last_exit(getattr(spec, "component_id", ""), runs or {}),
     }
     ok_here, why_host = measurable_here(row["component_host"], here)
     exp_s, exp_why = expectation(spec, ttl_by_class)
@@ -244,6 +281,14 @@ def raise_repairs(stale: Sequence[Mapping[str, Any]], registry: Any, *, apply: b
             }
 
 
+def _tally(states: Any) -> dict[str, int]:
+    out: dict[str, int] = {}
+    if isinstance(states, Mapping):
+        for v in states.values():
+            out[str(v)] = out.get(str(v), 0) + 1
+    return dict(sorted(out.items(), key=lambda kv: -kv[1]))
+
+
 # ------------------------------------------------------------------------------------ audit
 def audit(root: Path | None = None, *, now: float | None = None, here: str | None = None,
           registry: Any = None, apply: bool = False, budget_s: float = 300.0,
@@ -251,14 +296,16 @@ def audit(root: Path | None = None, *, now: float | None = None, here: str | Non
     base = root or ROOT
     t = now if now is not None else time.time()
     t0 = time.monotonic()
+    from desks.mt5.research.loop_liveness import _last_runs, host_facts
+
     from libs.ops.control_plane import lease
 
-    if here is None:
-        from desks.mt5.research.loop_liveness import host_facts
-        facts = host_facts()
-    else:
-        facts = {"kind": here, "why": "host supplied by the caller"}
+    facts = host_facts() if here is None else {"kind": here,
+                                               "why": "host supplied by the caller"}
     where = str(facts["kind"])
+    # WHEN EACH ORGAN LAST RAN AND HOW IT ENDED, read once for the whole sweep. The prover's
+    # reader is reused rather than reimplemented: one ledger, one parse, one answer.
+    runs = _last_runs(base)
 
     if registry is None:
         from desks.mt5.ops import components as comp
@@ -273,7 +320,7 @@ def audit(root: Path | None = None, *, now: float | None = None, here: str | Non
                 continue
             seen.add(key)
             rows.append(judge(rel, spec, root=base, now=t, here=where,
-                              ttl_by_class=lease.TTL_BY_CLASS, lease=lease))
+                              ttl_by_class=lease.TTL_BY_CLASS, lease=lease, runs=runs))
 
     by_verdict: dict[str, int] = {}
     for r in rows:
@@ -293,21 +340,43 @@ def audit(root: Path | None = None, *, now: float | None = None, here: str | Non
         except Exception as exc:  # the fence must report, never crash the law gate
             repairs = {"mode": "error", "why": f"{type(exc).__name__}: {exc}"}
 
-    breach = len(stale) > MAX_STALE or bool(required_stale)
+    # THE RATCHET COUNTS ARTIFACTS, NOT ROWS. Three legs declare `desks/mt5/data/cost_surface.json`
+    # as an output, so one stale file would otherwise read as three breaches and the number would
+    # drift with the registry's shape rather than with the desk's freshness.
+    distinct_stale = sorted({str(r["artifact"]) for r in stale})
+    clocks = facts.get("enabled_box_clocks")
+    stopped = bool(SUSPEND_WHEN_ALL_CLOCKS_DISABLED and where in BOX_HOSTS and clocks == 0)
+    breach = (len(distinct_stale) > MAX_STALE or bool(required_stale)) and not stopped
     return {
         "at": datetime.fromtimestamp(t, tz=UTC).isoformat(timespec="seconds"),
         "host": where, "host_why": facts.get("why"),
+        "enabled_box_clocks": clocks,
         "artifacts_judged": len(rows),
+        "distinct_artifacts": len({str(r["artifact"]) for r in rows}),
         "verdicts": by_verdict,
-        "measured_for_ratchet": len(stale),
+        "measured_for_ratchet": len(distinct_stale),
+        "stale_artifacts": distinct_stale,
         "ratchet": MAX_STALE,
         "ratchet_breach": breach,
+        "ratchet_suspended": (None if not stopped else
+                              "every MT5 clock on this box is DISABLED: the whole box's artifact "
+                              "set is stale for one administrative reason, which is reported as "
+                              "one defect (rc=1) rather than escalated per artifact. Enable a "
+                              "clock and the ratchet binds again."),
         "required_stale": [r["artifact"] for r in required_stale],
         "stale": stale[:200],
         "unmeasured": [{"artifact": r["artifact"], "organ": r["organ"], "why": r["why"]}
                        for r in rows if r["verdict"] == UNMEASURED][:200],
+        # AN ARTIFACT ITS OWN REGISTRY DECLARES AND NOTHING EVER WROTE. Not stale -- never born,
+        # which is III.16 ("unwired or idle is a defect") with a file name attached.
+        "missing": [{"artifact": r["artifact"], "organ": r["organ"], "clock": r["clock"]}
+                    for r in rows if r["verdict"] == MISSING][:200],
         "derived_expectations": derived,
         "repairs": repairs,
+        # WHAT THE RECONCILER MADE OF THEM. Its own verdict, not this fence's: DEGRADED means
+        # unwired (no watermark, no ack), which a restart cannot repair, so it plans no actuator.
+        # Published because "100 stale, 2 repairable" is the useful sentence, not "100 stale".
+        "reconciler_states": _tally(repairs.get("states")),
         "elapsed_s": round(time.monotonic() - t0, 2),
         "rule": ("every published artifact has an expected refresh interval -- from its lease, "
                  "else its declared class, else DERIVED from its clock's cadence and recorded "
@@ -319,12 +388,15 @@ def audit(root: Path | None = None, *, now: float | None = None, here: str | Non
 
 def _print(doc: Mapping[str, Any], limit: int = 12) -> None:
     v = doc.get("verdicts") or {}
-    print(f"no-staleness on {doc.get('host')}: {doc.get('artifacts_judged')} artifacts -- "
+    print(f"no-staleness on {doc.get('host')}: {doc.get('artifacts_judged')} owned artifacts -- "
           f"{v.get(FRESH, 0)} FRESH, {v.get(STALE, 0)} STALE, {v.get(MISSING, 0)} MISSING, "
-          f"{v.get(UNMEASURED, 0)} UNMEASURED (ratchet {doc.get('ratchet')})")
+          f"{v.get(UNMEASURED, 0)} UNMEASURED; {doc.get('measured_for_ratchet')} distinct stale "
+          f"file(s) against ratchet {doc.get('ratchet')}")
     for r in (doc.get("stale") or [])[:limit]:
+        ex = r.get("organ_last_exit") or {}
         print(f"  STALE [{r['criticality']}] {r['artifact']} <- {r['organ']} "
-              f"(clock {r['clock']}): {r['why']}")
+              f"(clock {r['clock']}, last exit {ex.get('outcome')} @ {ex.get('at')}): "
+              f"{r['why']}")
     extra = len(doc.get("stale") or []) - limit
     if extra > 0:
         print(f"  ... and {extra} more in {REPORT.name}")
@@ -332,6 +404,10 @@ def _print(doc: Mapping[str, Any], limit: int = 12) -> None:
     if rep.get("planned"):
         print(f"  reconciler {rep.get('mode')}: {len(rep['planned'])} repair(s) planned for "
               f"{', '.join(str(w.get('component_id')) for w in rep['planned'][:5])}")
+    elif rep.get("mode") not in (None, "skipped"):
+        print(f"  reconciler {rep.get('mode')}: {rep.get('why')}")
+    if doc.get("ratchet_suspended"):
+        print(f"  ONE DEFECT, NOT {v.get(STALE, 0)}: {doc['ratchet_suspended']}")
     n = doc.get("measured_for_ratchet")
     if isinstance(n, int) and n < MAX_STALE:
         print(f"  RATCHET: lower MAX_STALE to {n} in scripts/check_no_staleness.py")

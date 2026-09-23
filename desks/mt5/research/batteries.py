@@ -316,11 +316,14 @@ def run_battery(battery: str, budget_s: float, *, root: Path | None = None,
     t0 = time.time()
     ran: list[str] = []
     skipped: list[dict[str, str]] = []
+    # THE CURSOR IS READ ONCE. Advancing it inside the loop while also indexing from it skips
+    # every second organ, which is how a rotation silently exercises half a roster forever.
+    start = cursor
     for i in range(len(entries)):
         remaining = budget_s - (time.time() - t0)
         if remaining < MIN_SLICE_S:
             break
-        entry = entries[(cursor + i) % len(entries)]
+        entry = entries[(start + i) % len(entries)]
         free_now, _ = free_memory()
         if floor_mb is not None and free_now is not None and free_now < floor_mb:
             skipped.append({"path": entry.path,
@@ -331,7 +334,7 @@ def run_battery(battery: str, budget_s: float, *, root: Path | None = None,
         res = run_one(entry, min(per, remaining), base)
         runs[entry.path] = {**res, "at": _now()}
         ran.append(entry.path)
-        cursor = (cursor + i + 1) % len(entries)
+        cursor = (start + i + 1) % len(entries)
 
     state[battery] = {"cursor": cursor, "runs": runs, "at": _now()}
     _atomic(sp, state)

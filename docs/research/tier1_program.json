@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-09-22",
+ "updated": "2026-09-23",
  "source": "Two external blueprints pasted by the principal 2026-09-08 (65 + ~55 items) and five acceptance properties; statuses from six repository sweeps with file:line evidence, checked by scripts/check_tier1_program.py.",
  "heat_policy": "20% portfolio heat is the ceiling AND the floor of the book; never reduced. Tier-1 means more independent positive-Elog bets inside the same heat.",
  "phases": {
@@ -25,7 +25,8 @@
   "N": "News as a first-class event stream (principal 2026-09-17): fast router + deep reasoning, event ontology, source confidence, entity graph, novelty, surprise, analogues, cross-asset reaction, liquidity and portfolio shock, allocator re-solve, event-conditioned sleeves validated beforehand",
   "S": "The free shadow-institutional stack (principal 2026-09-17): public proxy ensembles for private capabilities, free crypto L2 / Deribit as sensors, the latency laboratory, retail positioning ecology, latent actor inference, synthetic proprietary datasets, the disagreement dataset, the capability gap map",
   "X": "The L1vsun and bl888m extraction (principal 2026-09-17): forced flow, funding/OI crowding, narrative lifecycle, thesis staleness, evidence watchtower; prediction-market calibration, crowd disagreement, smart-participant archaeology with provenance, resolution truth, refusal attribution, bounded LLM",
-  "U": "The data-utilization law (LAWS 5c) and the world information coverage (principal 2026-09-17): PIT truth layer, representation forge, world model posteriors, frequency matching, regional state vectors, allocator conditional distributions, counterfactual attribution, delayed ROI, the data-utilization audit, world exhaust coverage, latency map, missing-information hunter, coverage tensor"
+  "U": "The data-utilization law (LAWS 5c) and the world information coverage (principal 2026-09-17): PIT truth layer, representation forge, world model posteriors, frequency matching, regional state vectors, allocator conditional distributions, counterfactual attribution, delayed ROI, the data-utilization audit, world exhaust coverage, latency map, missing-information hunter, coverage tensor",
+  "RD": "The RD-Agent closure programme (principal 2026-09-22): make every research civilization behave like one experiment directly changing the next -- one canonical ExperimentSpec, world-miner conversion to the campaign queue, the experiment memory graph, credit assignment end to end, priors updated by every completed experiment, and the funnel metric that settles it"
  },
  "acceptance_properties": [
   {
@@ -2695,18 +2696,30 @@
    "item": "Actual causal discovery wired to promotion",
    "domain": "B",
    "phase": "B",
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
-    "desks/mt5/research/causal_discovery.py",
-    "desks/mt5/research/world_causal_graph.py"
+    "desks/mt5/research/causal_invariance.py:224 (invariance: per-environment dispersion against a permutation null)",
+    "desks/mt5/research/causal_invariance.py:262 (judge_cell: session/year/regime axes; NON_INVARIANT if any axis breaks)",
+    "desks/mt5/research/causal_invariance.py:329 (verdict_for: the consumer door, keyed symbol|family)",
+    "desks/mt5/research/miner_candidate_compiler.py:454 (_invariance) and :488 (priority + 1 at intake, never a drop)",
+    "desks/mt5/research/forward_reconcile.py:718 (_invariance_rows, published beside the certificates)",
+    "libs/portfolio/rails.py:152 Rail(causal_invariance) and desks/mt5/research/missed_growth.py:424 measure_causal_invariance",
+    "desks/mt5/research/causal_discovery.py, desks/mt5/research/world_causal_graph.py (the prior causal organs, unchanged)",
+    "desks/mt5/tests/test_causal_invariance.py (12 tests: statistic, null, wiring, and that the sealed judge is untouched)"
    ],
-   "scheduled_by": "hourly_cycle:causal_graph",
-   "artifact": "desks/mt5/reports/WORLD_CAUSAL_GRAPH.json",
-   "consumer": "reports only",
-   "gap": "a causal label changes nothing on the promotion path; no invariance-across-environments test",
-   "next_step": "an invariance gate: coefficient stability across regimes/sessions as a certificate field",
-   "landed": []
+   "scheduled_by": "hourly_cycle:causal_invariance",
+   "artifact": "desks/mt5/reports/CAUSAL_INVARIANCE.json",
+   "consumer": "miner_candidate_compiler.expand_axes (intake priority) + forward_reconcile (published field) + missed_growth (rail line)",
+   "gap": "",
+   "next_step": "price the delay in log-wealth once certification outcomes carry the invariance verdict the cell was queued under; until then missed_growth reports it UNMEASURED with the count delayed",
+   "landed": [
+    "an invariance test with a permutation null over session, year and volatility regime, per judged cell",
+    "wired BEFORE the sealed judge: the candidate compiler intake deprioritises (never refuses) a NON_INVARIANT mechanism",
+    "a missed-growth ledger line for the new refusal, as GROWTH_GOVERNANCE requires",
+    "the verdict published beside the certificate by the forward lab",
+    "first measured run on this box: 46 cells judged, 7 NON_INVARIANT (overnight_gap_decay on six FX crosses breaks on regime/year; dav_range_filter_adx on AUDNZD on session/regime)"
+   ]
   },
   {
    "id": "B17",
@@ -2876,53 +2889,83 @@
    "item": "Formal verification hierarchy for plumbing invariants",
    "domain": "B",
    "phase": "B",
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
-    "scripts/check_constitution_core.py",
-    "desks/mt5/tests/test_decision_core.py"
+    "scripts/check_plumbing_invariants.py:1 (the hierarchy ledger: invariant, level EXAMPLE/PROPERTY/PROOF, enforcing node)",
+    "scripts/check_plumbing_invariants.py:170 (collected: every enforcing node must be collected by pytest, or exit 1)",
+    "desks/mt5/tests/test_plumbing_invariants.py (8 tests, hypothesis-backed with a seeded fallback generator)",
+    "scripts/run_law_gate.py:129 (registered in _LAW_FENCES, collection probe included)",
+    "docs/research/PLUMBING_INVARIANTS.md (rendered from the ledger, never hand-edited)",
+    "desks/mt5/tests/test_decision_core.py (the EXAMPLE-level entry, honestly labelled)"
    ],
-   "scheduled_by": "",
-   "artifact": "",
-   "consumer": "the suite",
-   "gap": "invariants are pinned by example tests, not property-based or proven",
-   "next_step": "property tests for no-order-without-authority, no-forward-rebase, no-duplicate-risk",
-   "landed": []
+   "scheduled_by": "hourly_cycle:law_gate, MT5-Hourly",
+   "artifact": "docs/research/PLUMBING_INVARIANTS.md + desks/mt5/reports/PLUMBING_INVARIANTS.json",
+   "consumer": "scripts/run_law_gate.py (exit 1 on a lie) and the suite",
+   "gap": "",
+   "next_step": "raise PI-2/PI-3/PI-5 from PROPERTY to PROOF where the domain can be made finite (a bounded book, a discretised heat grid); PI-7 stays EXAMPLE because there is no meaningful generator over 'a tree'",
+   "landed": [
+    "property tests for no-order-without-authority (PROOF: all sixteen states), no-forward-rebase and no-duplicate-risk",
+    "two more invariants from LAWS 3-4 pinned the same way: no-inserted-gate (L1.60) and heat-floor-never-breached (LAWS 2a)",
+    "the immutable-core seal (L2.8a) run as a test on this box, not only in a gate nobody runs here",
+    "a checker that fails when an enforcing test is renamed, moved, deleted or stops collecting"
+   ]
   },
   {
    "id": "B27",
    "item": "One meta-controller pricing every use of research resources",
    "domain": "B",
    "phase": "B",
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
-    "desks/mt5/research/research_bandit.py",
-    "desks/mt5/research/hourly_cycle.py"
+    "desks/mt5/research/cycle_pricing.py:262 (build_plan: meta_controller board, bandit shares, compute_policy tiers, blended by rank)",
+    "desks/mt5/research/cycle_pricing.py:388 (applied_budget) and :349 (order: price-descending with a scout rotation)",
+    "desks/mt5/research/hourly_cycle.py:393 (_priced_budget) and :1305 (_producer_impl takes its budget from it)",
+    "desks/mt5/research/hourly_cycle.py:936 (run_auto_legs orders by price) and :1037 (the compute-ledger row carries applied_budget_s)",
+    "desks/mt5/research/meta_controller.py (boundary: authority over research compute only); desks/mt5/research/research_bandit.py (authority claimed by the organ that spent)",
+    "desks/mt5/data/compute_policy.json (read, never written here; compute_economics.py owns it)",
+    "desks/mt5/tests/test_cycle_pricing.py (8 tests: winners up, scout floor, never a global reduction, ties, order, wiring, the ledger row)"
    ],
-   "scheduled_by": "hourly_cycle:opportunity_cost",
-   "artifact": "desks/mt5/reports/RESEARCH_BANDIT.json",
-   "consumer": "reports only",
-   "gap": "the controller is advisory: the hourly cycle runs every leg on its own clock regardless of the bandit's prices",
-   "next_step": "let the bandit's prices set leg budgets (LEG_BUDGET_SEC) each hour",
-   "landed": []
+   "scheduled_by": "hourly_cycle:cycle_pricing",
+   "artifact": "desks/mt5/reports/CYCLE_PRICING.json",
+   "consumer": "every hourly leg's applied budget and the auto-leg order; compute_ledger rows carry applied_budget_s / price_factor / priced_by",
+   "gap": "",
+   "next_step": "the meta controller dE[log W] board is still UNMEASURED on this box (compute has no measured price until scaling_laws has seven days of ledger), so the blend runs on the bandit and the tier split; the board takes over the moment it prices",
+   "landed": [
+    "the prices set the applied value of LEG_BUDGET_SEC for every leg, not the two research_budget knew about",
+    "two-sided by construction: winners to 2.0x, a 0.60x floor and a 60 s scout minimum under every leg, and the hour total can never fall below the unpriced total",
+    "leg ORDER is the controller's too, with a scout rotation so a cheaply-priced leg is delayed and never starved",
+    "CYCLE_PRICING.json records planned versus applied per leg per hour; compute-ledger rows carry the applied budget (the named consumer)",
+    "fixed the defect underneath it: research_bandit published to data/research_budget.json while every reader read reports/RESEARCH_BANDIT.json, which nothing wrote"
+   ]
   },
   {
    "id": "B28",
    "item": "Closed three-resource loop with a generated attestation",
    "domain": "B",
    "phase": "B",
-   "status": "EXISTS-LIT",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
-    "scripts/check_closed_loop.py"
+    "scripts/check_closed_loop.py (every flag derived from another organ artifact; complete is a conjunction, never a field)",
+    "desks/mt5/research/research_bandit.py (publishes reports/RESEARCH_BANDIT.json, the path six readers name and nothing wrote)",
+    "desks/mt5/research/cycle_pricing.py (the resource loop compute half: prices -> seconds -> compute-ledger rows)",
+    "desks/mt5/tests/test_closed_loop_organs.py (6 tests, on the producers and never on a flag value)",
+    "desks/mt5/data/architecture/closed_loop_attestation.json (measured 2026-09-23: true 10, false 20, unmeasured 3, from true 7 / false 22 / unmeasured 4)"
    ],
    "scheduled_by": "hourly_cycle:closed_loop",
    "artifact": "desks/mt5/data/architecture/closed_loop_attestation.json",
-   "consumer": "the CEO cycle and this ledger",
-   "gap": "",
-   "next_step": "drive every flag in the attestation to true; complete is generated, never set",
-   "landed": []
+   "consumer": "the CEO cycle, libs/ops/control_plane (invariant closed_loop_proof) and this ledger",
+   "gap": "complete is still false, and each remaining flag names the artifact it waits on in the attestation's own _why fields. Owned by other organs, not by this row: release_authority.* waits on data/gate_attestation.json green on the running sha (no CI runner is attached to this box) and on RELEASE.json sealed sha being an ancestor of HEAD; truth.* on reports/CANDIDATE_CONSERVATION.json reaching lost=0 (315 today); forward.* on reports/shadow/shadow_health.json (4 silent clocks) and data/forward_reconcile.json unreachable_certified=0 (8 today); research.frontier_scheduler_authoritative on reports/CEO_DOCKET.json carrying an authoritative claim; research.delayed_truth_credit_live on a realised_credit block on LIVE basis; meta.controller_completed_epoch on every ranked kind's owning leg running inside one hourly pass (reports/META_CONTROLLER.json epoch.missing); control_plane.invariant_resource_loop on lease acknowledgements for data/research_allocation.json and data/forest_allocation.json; control_plane.invariant_runtime_coverage on 25 required residents holding a live lock. complete additionally requires all 28 phase-B items LANDED or EXISTS-LIT, which is the rest of this programme rather than this row.",
+   "next_step": "re-run the leg as each remaining phase-B item lands; the flags are generated, so nothing here is ever set by hand",
+   "landed": [
+    "research.evig_controller_authoritative driven true by fixing the ORGAN: the bandit now publishes where its readers look",
+    "meta.information_budget_reallocated_from_outcomes driven true (the report is written every pass rather than never)",
+    "meta.compute_reallocated_from_outcomes driven true (generator_weights.json refreshed by its own organ)",
+    "meta.controller_completed_epoch moved from UNMEASURED to a measured false, with the missing kinds named",
+    "tests that pin the PRODUCERS and never a flag value, so the suite cannot go red because the box had a quiet hour"
+   ]
   },
   {
    "id": "C1",
@@ -4115,22 +4158,28 @@
    "item": "P0 production truth: code/data/runtime provenance perfect, zero silent failures",
    "domain": "W",
    "phase": "W",
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
     "libs/ops/compute_ledger.py",
     "desks/mt5/research/live_system_state.py",
     "desks/mt5/research/wiring_ceo.py",
-    "desks/mt5/research/hourly_cycle.py",
     "scripts/check_closed_loop.py",
-    "desks/mt5/research/tier1_scorecard.py"
+    "desks/mt5/research/attribution_reconcile.py:105 (the roster: sleeves.json, survivor keys, sleeve_registry and promoter.GOLD_SLEEVE_NAMES as the gateway's own window names)",
+    "desks/mt5/research/attribution_reconcile.py:178 (three unambiguous passes: EXACT, unique PREFIX, tp/sl GEOMETRY; AMBIGUOUS publishes its candidates rather than guessing)",
+    "desks/mt5/research/tier1_scorecard.py:59 + :301 (the scorecard's live-attribution row now PREFERS the reconciled number and keeps the exact-name figure beside it)",
+    "desks/mt5/research/hourly_cycle.py:2721 (leg attribution_reconcile)",
+    "libs/research/layers.py:177 (layer meta)",
+    "desks/mt5/tests/test_attribution_reconcile.py (8 tests: truncation recovered only when unique, short labels never matched, bracket prints joined on the terminal's own price, unreachable deals published BY NAME, absent ledger UNMEASURED)"
    ],
-   "scheduled_by": "hourly_cycle:live_system_state, hourly_cycle:wiring_ceo, hourly_cycle:closed_loop, hourly_cycle:tier1_scorecard, MT5-GateAttest",
-   "artifact": "desks/mt5/data/LIVE_SYSTEM_STATE.json",
-   "consumer": "check_closed_loop; the dashboard",
-   "gap": "MEASURED 2026-09-16: provenance envelope, one canonical state, the wiring hunter with auto-clocking, core/heavy plans and the attestation on every seal LANDED today; still open: the live deadman (dry-run), >99% trade attribution (4.6% measured), the silent-failure row of the scorecard reads 10.",
-   "next_step": "Close C1's remaining two: repoint the deadman at the live MT5 book (principal-gated, LAWS 4) and reconcile live_ledger sleeves to the roster so attribution reads >99%; drive process_health FAILING/NOT_SCHEDULED to 0 by contract-naming the FrontierAudit sub-organs.",
-   "landed": []
+   "scheduled_by": "hourly_cycle:attribution_reconcile, hourly_cycle:live_system_state, hourly_cycle:wiring_ceo, hourly_cycle:closed_loop, hourly_cycle:tier1_scorecard, MT5-GateAttest",
+   "artifact": "desks/mt5/reports/ATTRIBUTION_RECONCILE.json (beside desks/mt5/data/LIVE_SYSTEM_STATE.json)",
+   "consumer": "tier1_scorecard._r06_live_attribution; check_closed_loop; the dashboard",
+   "gap": "MEASURED 2026-09-23: the 4.6% attribution was a JOIN defect, not missing provenance -- MetaTrader truncates the sleeve into the position comment at 27 characters while the roster carries names up to 60, so an exact-name match declared the desk's own trades unowned. The reconciler recovers them by unique prefix and by the tp/sl price the terminal itself wrote: 4.64% -> 71.52% on this box's 151 recorded deals (EXACT 18, PREFIX 88, GEOMETRY 2, AMBIGUOUS 0), and the 43 it still cannot reach are bracket prints whose opening deal is not in the file, each PUBLISHED BY NAME. Two things are named and deliberately not done here: the truncation's real fix belongs at the WRITER (a stable short id in the live gateway's comment, a change to a process holding live positions and not made by a research pass), and repointing the deadman at the live MT5 book is principal-gated under LAWS 4 and is carried by row C1, not by this one.",
+   "next_step": "Gateway: write a stable short sleeve id into the position comment instead of a truncated name, then the reconciler's PREFIX route falls to zero of its own accord and attribution reads >99% on new deals.",
+   "landed": [
+    "attribution_reconcile.py + its leg, layer and 8 tests; tier1_scorecard reads it"
+   ]
   },
   {
    "id": "W1",
@@ -4250,92 +4299,118 @@
    "item": "P6 diverse search algorithms feeding one intake: AlphaSchema semantic, AlphaPROBE DAG evolution, trajectory evolution, budget-aware controllers (IMPROVE/COMBINE/PIVOT/STOP), program evolution, MCTS, quality-diversity, MAPLE multi-output correlation penalty, symbolic regression, Bayesian optimisation, causal discovery, residual mining, literature-to-code, counterexample agents",
    "domain": "W",
    "phase": "W",
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
     "desks/mt5/research/axis_registry.py",
     "desks/mt5/research/qd_frontier.py",
     "libs/research/trajectory.py",
-    "libs/research/lineage_dag.py",
-    "desks/mt5/research/research_tree.py",
-    "libs/research/generators.py",
+    "libs/research/search_controller.py",
     "libs/research/search_populations.py",
-    "desks/mt5/research/alpha_evolution.py",
-    "desks/mt5/research/standing_questions.py",
-    "desks/mt5/research/causal_discovery.py",
-    "libs/research/search_controller.py"
+    "desks/mt5/research/search_paradigm_census.py:121 (PARADIGMS: every search paradigm the item names, with the organ that implements it)",
+    "desks/mt5/research/search_paradigm_census.py:552 (controller_pass: the budget-aware IMPROVE/COMBINE/PIVOT/STOP decision, on a clock at last)",
+    "desks/mt5/research/search_paradigm_census.py:637 (populations_pass: one generation of each population per pass, routed to the normal intake)",
+    "desks/mt5/research/counterexample_agent.py:85 (ATTACKS: placebo_symbol, placebo_date, sign_flip, neighbour_param, excluded_window)",
+    "desks/mt5/research/counterexample_agent.py:522 (attack: SURVIVED/BROKEN/UNMEASURED with the statistic that decided it)",
+    "desks/mt5/research/counterexample_agent.py:605 (record: evidence on the registry row, status untouched -- it judges nothing)",
+    "desks/mt5/research/hourly_cycle.py (legs search_paradigm_census and counterexample_agent)",
+    "libs/research/layers.py (both layers: meta)",
+    "desks/mt5/tests/test_search_paradigm_census.py + desks/mt5/tests/test_counterexample_agent.py (24 tests)"
    ],
-   "scheduled_by": "hourly_cycle:axis_registry, hourly_cycle:alpha_evolution, MT5-AuditLane, hourly_cycle:standing_questions, MT5-FrontierAudit",
-   "artifact": "desks/mt5/data/research_queue.json",
-   "consumer": "miner_candidate_compiler",
-   "gap": "MEASURED 2026-09-16: nine of the paradigms exist as organs; trajectory evolution, the search controller and the populations are on no clock; no paradigm-level redundancy measure; no counterexample agent.",
-   "next_step": "Same as Q18 plus: run_research_loop.py on the heavy plan (trajectory/DAG/controller), a counterexample agent (evaluator lab attacks per hypothesis), and the paradigm column in the engine registry.",
-   "landed": []
+   "scheduled_by": "hourly_cycle:search_paradigm_census, hourly_cycle:counterexample_agent, hourly_cycle:axis_registry, hourly_cycle:alpha_evolution, hourly_cycle:trajectory_evolution, hourly_cycle:standing_questions, hourly_cycle:qd_frontier",
+   "artifact": "desks/mt5/reports/SEARCH_PARADIGMS.json; desks/mt5/reports/COUNTEREXAMPLE_AGENT.json; desks/mt5/data/research_queue.json",
+   "consumer": "miner_candidate_compiler (the donations); wiring_ceo (the NOT_SCHEDULED rows); the queue's own ordering (the all-survived list)",
+   "gap": "MEASURED 2026-09-23: the three named holes are closed. The search controller and the populations now RUN on a clock instead of existing; the paradigms carry a REDUNDANCY measure -- pairwise overlap of the (symbol, family, params) cells each proposed and an effective-paradigm count from the inverse Herfindahl -- so 'diverse search' is a number; and the counterexample agent attacks a hypothesis with five counterexamples BEFORE a trial is spent on it, recording evidence on the registry row and changing no status. The sealed gauntlet and promoter remain the only judges and nothing here vetoes.",
+   "next_step": "",
+   "landed": [
+    "search_paradigm_census.py + counterexample_agent.py, both on legs, 24 tests"
+   ]
   },
   {
    "id": "W7",
    "item": "P7 PIT macro/cross-asset world model: country state vectors, global factors, dynamic cross-asset graph G_t whose edge changes are themselves hunted, per-trade risk decomposition so five long-USD trades read as one bet",
    "domain": "W",
    "phase": "W",
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
     "desks/mt5/research/state_vector_build.py",
     "libs/portfolio/macro_state.py",
-    "desks/mt5/research/world_causal_graph.py",
     "desks/mt5/research/exposure_decomposition.py",
-    "desks/mt5/research/futures_lead_lag.py"
+    "desks/mt5/research/macro_state_engine.py:352 (region_blocks: the block set is DERIVED from what the universe registry classifies to each region, not a hard-coded country list)",
+    "desks/mt5/research/macro_state_engine.py:653 (build_blocks: growth, inflation, policy, liquidity, risk appetite and external balance PER REGION, each with its own coverage and UNMEASURED verdict)",
+    "desks/mt5/research/macro_state_engine.py:689 (global_factors across the blocks)",
+    "desks/mt5/research/macro_state_engine.py:799 (changepoint: a rolling-beta break with a permutation p-value, strictly PIT -- a change point at t may only use data up to t)",
+    "desks/mt5/research/macro_state_engine.py:931 (hunt_edges: every graph pair scanned, so a link that turned on, flipped sign or died is a DATED ROW)",
+    "desks/mt5/research/macro_state_engine.py:1009 (donation_candidates: the top edge CHANGES donated as hypotheses through the shared proposer contract)",
+    "desks/mt5/research/hourly_cycle.py (leg macro_state_engine, macro department)",
+    "libs/research/layers.py (layer information)",
+    "desks/mt5/tests/test_macro_state_engine.py (a planted beta flip is found at its date and a stationary control does not fire; a single-name equity is measured and never donated; an absent graph is UNMEASURED)"
    ],
-   "scheduled_by": "hourly_cycle:state_vector, hourly_cycle:causal_graph, hourly_cycle:exposure_decomposition",
-   "artifact": "desks/mt5/reports/EXPOSURE_DECOMPOSITION.json",
-   "consumer": "pf_allocator; standing_questions",
-   "gap": "MEASURED 2026-09-16: exposure decomposition landed today (twelve named factors, duplicate heat); the state vector is single-country; the causal graph does not publish edge CHANGES as hunted objects.",
-   "next_step": "C7's macro_state_engine (country blocks) and an edge-change hunter in world_causal_graph (rolling-beta / lead-lag change points donated as hypotheses).",
-   "landed": []
+   "scheduled_by": "hourly_cycle:macro_state_engine, hourly_cycle:state_vector, hourly_cycle:causal_graph, hourly_cycle:exposure_decomposition",
+   "artifact": "desks/mt5/reports/MACRO_STATE_ENGINE.json; desks/mt5/reports/EXPOSURE_DECOMPOSITION.json",
+   "consumer": "the compiler (the donated edge-change hypotheses); pf_allocator and standing_questions (exposure decomposition)",
+   "gap": "MEASURED 2026-09-23: both halves of the gap are closed. The state vector is no longer single-country -- every region the universe registry can populate gets its own block of the same named states with its own coverage -- and the cross-asset graph's EDGE CHANGES are now first-class hunted objects rather than an implicit property of a graph nobody differenced: each pair carries a rolling beta, a change-point score and a permutation p-value, and the top ones leave as hypotheses through the same door as every other proposal.",
+   "next_step": "",
+   "landed": [
+    "macro_state_engine.py (country blocks + the edge-change hunter) on a leg, with tests"
+   ]
   },
   {
    "id": "W8",
    "item": "P8 the four laboratories on clocks: residual lab (queues by magnitude x frequency x unexplained fraction), forced-flow/event factory, event-response atlas (reaction distributions per event x asset x horizon x regime), execution intelligence command (Cost(asset, time, size, state, order) and NetAlpha = RawAlpha - ExpectedExecutionCost)",
    "domain": "W",
    "phase": "W",
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
     "desks/mt5/research/standing_questions.py",
+    "desks/mt5/research/residual_queue.py",
     "desks/mt5/research/forced_flow_calendar.py",
-    "desks/mt5/mt5desk/family_forced_flow.py",
-    "desks/mt5/research/cost_surface.py",
-    "desks/mt5/research/fill_attribution.py",
-    "desks/mt5/mt5desk/family_event_reaction.py"
+    "desks/mt5/research/event_response_atlas.py",
+    "desks/mt5/research/cost_surface.py:320 (DIMENSIONS = asset, time, size, state, order -- the five the item names)",
+    "desks/mt5/research/cost_surface.py:414 (every cell at every depth, shrunk toward its own parent margin with n_eff published)",
+    "desks/mt5/research/cost_surface.py:533 (the lookup falls back UP the hierarchy and STOPS at the asset: a desk-wide average is the pooled scalar this module exists to end)",
+    "desks/mt5/research/cost_surface.py:586 (NetAlpha = RawAlpha - ExpectedExecutionCost and the sign-flip list)",
+    "desks/mt5/research/cost_surface.py:624 (build_execution_surface, written every run with a verdict per input)",
+    "desks/mt5/tests/test_cost_surface_execution.py (10 tests: a planted size-dependent cost is recovered and a flat one is not invented, a thin cell shrinks and states n_eff, an untraded cell is UNMEASURED and falls back to the MODELLED spread and never to 0, a sub-cost edge lands in the sign-flip list)"
    ],
-   "scheduled_by": "hourly_cycle:standing_questions, hourly_cycle:forced_flow_calendar, MT5-CostState, hourly_cycle:fill_attribution",
-   "artifact": "desks/mt5/data/forced_flow_calendar.json",
-   "consumer": "breadth_sweep (forced_flow family); gauntlet costs",
-   "gap": "MEASURED 2026-09-16: the forced-flow calendar and family and the standing questions landed today; the residual queue (Q11), the event-response atlas (C11) and the multi-dimensional cost surface (C12) are still open.",
-   "next_step": "residual_queue.py (wave 4), event_response_atlas.py (price reactions around every calendar event by horizon and regime, no consensus needed), cost_surface dimensions (C12).",
-   "landed": []
+   "scheduled_by": "MT5-CostState, hourly_cycle:residual_queue, hourly_cycle:forced_flow_calendar, hourly_cycle:event_response_atlas, hourly_cycle:standing_questions, hourly_cycle:fill_attribution",
+   "artifact": "desks/mt5/reports/COST_SURFACE.json (five-dimensional cost + NetAlpha) beside desks/mt5/data/cost_surface.json (the symbol x hour spread surface, unchanged)",
+   "consumer": "the gauntlet's cost model and pf_allocator read the surface; the sign-flip list is the execution command's own output",
+   "gap": "MEASURED 2026-09-23 on this box: 151 priceable deals -> 140 cells over the five dimensions, 275 RawAlpha rows, 70 candidates whose sign flips once execution cost is charged. The size, state and order dimensions are thin BY CONSTRUCTION and say so -- they can only be measured from the desk's own recorded execution, so most cells shrink to their (asset, time) parent and an untraded asset reads UNMEASURED and falls back to the modelled spread. That is the honest shape of the evidence, not a hole in the organ.",
+   "next_step": "",
+   "landed": [
+    "cost_surface.py extended with Cost(asset,time,size,state,order) + NetAlpha; 10 tests"
+   ]
   },
   {
    "id": "W9",
    "item": "P9 immutable research artifacts + independent adversarial replication: SOURCE -> CLAIM -> HYPOTHESIS -> CODE -> DATA HASH -> CONFIG HASH -> RESULTS -> REVIEW frozen and hash-linked; a new experiment is a new artifact; the blind reviewer re-executes with minimal context and can veto",
    "domain": "W",
    "phase": "W",
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
     "libs/research/artifact_chain.py",
     "tests/research/test_artifact_chain.py",
     "scripts/verify_artifact_chain.py",
-    "libs/research/artifacts.py",
-    "libs/ops/compute_ledger.py",
-    "desks/mt5/research/blind_reviewer.py"
+    "desks/mt5/research/blind_reviewer.py",
+    "desks/mt5/research/research_artifacts.py:539 (_spine_head: SOURCE -> CLAIM -> HYPOTHESIS -> CODE -> DATA -> CONFIG, each record carrying the sha256 of its predecessor and of its own payload)",
+    "desks/mt5/research/research_artifacts.py:595 (_harvest_spines) and :668 (_harvest_certificates: the RESULTS link) and :745 (_harvest_reviews: the REVIEW link)",
+    "desks/mt5/research/research_artifacts.py:502 (_data_payload: the bars' sha256, cached in a digest sidecar so a pass never re-hashes the universe)",
+    "desks/mt5/research/research_artifacts.py:153 (max_records_for: the pass's cap DERIVED from measured free memory, never from a machine size)",
+    "desks/mt5/research/hourly_cycle.py (leg research_artifacts, meta department)",
+    "desks/mt5/tests/test_research_artifacts.py (a full synthetic spine appends once and a second pass appends nothing; a tampered payload is DETECTED and reported, never repaired)"
    ],
-   "scheduled_by": "hourly_cycle:artifact_chain (verify), hourly_cycle:blind_reviewer",
-   "artifact": "desks/mt5/reports/ARTIFACT_CHAIN.json",
-   "consumer": "promoter (veto)",
-   "gap": "PARTIAL 2026-09-16: the hash-linked chain library and its hourly verifier LANDED (33 tests); the writers (compiler, gauntlet, reviewer, promoter appends) are not wired yet, so the chain is empty and verifies ok at n=0.",
-   "next_step": "research_artifacts.py (wave 4b): an append-only chain data/research_artifacts.jsonl where each record carries the sha256 of its predecessor and of its own payload (source lead -> claim -> hypothesis card -> code identity (behaviour_hash) -> data hash (bars parquet digests) -> config hash -> gauntlet result -> blind review), written by the compiler, the gauntlet, the reviewer and the promoter; a verifier walks the chain hourly.",
-   "landed": []
+   "scheduled_by": "hourly_cycle:research_artifacts, hourly_cycle:artifact_chain, hourly_cycle:blind_reviewer",
+   "artifact": "desks/mt5/data/research_artifacts.jsonl (append-only) + desks/mt5/reports/RESEARCH_ARTIFACTS.json",
+   "consumer": "scripts/verify_artifact_chain.py (hourly leg artifact_chain); the promoter's veto reads the blind review at the chain's tail",
+   "gap": "MEASURED 2026-09-23: the chain was EMPTY and therefore verified clean at n=0, which is the failure mode a hash chain is supposed to make impossible. It is now WRITTEN: this box's first pass built 40 spines with 120 records already present and 0 orphans. The writer is a HARVESTER by necessity -- external_gauntlet.py and promoter.py are sealed and may not be edited, so the organ appends the records the artifacts they already leave behind imply, idempotently on the payload hash. It never rewrites or deletes a record and it REPORTS a broken link rather than repairing one.",
+   "next_step": "",
+   "landed": [
+    "research_artifacts.py on a leg; the chain is populated and verified hourly"
+   ]
   },
   {
    "id": "W10",
@@ -4362,22 +4437,27 @@
    "item": "P11 posterior E[log W] allocator whose live allocations update from forward evidence, with effective-breadth admission (incremental P&L independence and mechanism novelty, not profit alone)",
    "domain": "W",
    "phase": "W",
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
     "desks/mt5/research/pf_allocator.py",
     "libs/portfolio/robust_elog.py",
-    "desks/mt5/research/posterior_alpha.py",
-    "desks/mt5/research/alpha_breadth.py",
-    "libs/research/breadth_credit.py",
-    "desks/mt5/research/exposure_decomposition.py"
+    "libs/portfolio/allocator_evidence.py:106 (the three W11 TermSpecs, all priced_inside_allocator=False)",
+    "libs/portfolio/allocator_evidence.py:346 (posterior_prior_factors: posterior_alpha's family-shrunk forward posterior as a heat-neutral rank tilt, shrunk by forward n)",
+    "libs/portfolio/allocator_evidence.py:397 (marginal_breadth_factors: incremental P&L independence from rho_book, the desk's only date-aligned sleeve-to-book correlation)",
+    "libs/portfolio/allocator_evidence.py:430 (factor_tier_factors: the cosine with exposure_decomposition's book exposure)",
+    "desks/mt5/research/pf_allocator.py:1786 (read_research_evidence: both reports, never raising)",
+    "desks/mt5/research/pf_allocator.py:3049 (apply_allocator_evidence(..., posterior_doc, exposure_doc) on the live pass, before the solve)",
+    "tests/portfolio/test_allocator_evidence_w11.py (7 tests: each tilt is two-sided, the mean tilt across the book is exactly 1.0, a book that shares everything is not moved at all, a thin forward count shrinks toward 1.0, absent reports are exactly neutral and say why)"
    ],
-   "scheduled_by": "hourly_cycle:pf_allocator, MT5-AllocatorFast, hourly_cycle:alpha_breadth",
-   "artifact": "desks/mt5/reports/pf_allocation.json",
+   "scheduled_by": "hourly_cycle:pf_allocator, MT5-AllocatorFast, hourly_cycle:alpha_breadth, hourly_cycle:posterior_alpha, hourly_cycle:exposure_decomposition",
+   "artifact": "desks/mt5/reports/pf_allocation.json (allocator_evidence block: forward_posterior, marginal_breadth, factor_tier and their per-sleeve factors)",
    "consumer": "mt5desk/gateway.py",
-   "gap": "MEASURED 2026-09-16: the allocator maximises robust E[log W] over sampled worlds and the forward-evidence override now runs (live ledger present); posterior_alpha and exposure_decomposition are published but not yet read by the world sampler; the marginal-breadth admission is a research credit, not an allocator tier.",
-   "next_step": "C16/C17/C18 next steps: the world sampler takes posterior_alpha's per-sleeve prior and exposure_decomposition's factor tier; a breadth-admission term (marginal k_eff) enters the objective two-sided inside the heat floor/ceiling.",
-   "landed": []
+   "gap": "MEASURED 2026-09-23: posterior_alpha and exposure_decomposition were published for months and read by nothing. All three now enter the SAME posterior the worlds are drawn from, as tilts that are HEAT-NEUTRAL by construction (the raw factors are divided by their own mean, so the mean tilt across the book is exactly 1.0): they reallocate between sleeves and cannot move the total the heat law resolved. Every one is two-sided -- the stronger forward posterior, the more orthogonal exposure and the more independent return stream are tilted UP by exactly what their peers are tilted down. Nothing here caps, shrinks or vetoes, and the 20% heat floor, the gold lot floor and the daily-loss parameters are untouched.",
+   "next_step": "",
+   "landed": [
+    "allocator_evidence.py + pf_allocator hook + 7 tests"
+   ]
   },
   {
    "id": "W12",
@@ -4447,22 +4527,27 @@
    "item": "Hierarchical bandits with a protected exploration floor at every node: Score_j = E[delta g_j] + beta sqrt(ln N / n_j) + lambda Novelty_j over a tree GLOBAL -> {Explore: languages, datasets, mechanisms, alien} / {Exploit: macro, forced flow, residual, carry, microstructure} / {Transfer: assets, horizons, regimes, execution}; discovery temperatures T0..T5 run concurrently; a permanent cold/alien exploration budget",
    "domain": "W",
    "phase": "W",
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
-    "libs/research/bandit.py",
-    "desks/mt5/research/research_budget.py",
-    "desks/mt5/research/breadth_ladder.py",
-    "desks/mt5/research/qd_frontier.py",
-    "desks/mt5/research/standing_questions.py",
-    "ops/research_allocation_policy.json"
+    "libs/research/bandit.py:746 (allocate_tree: GLOBAL -> {exploit, adjacent, cold} -> arms, two levels)",
+    "libs/research/bandit.py:534 (node_floors: every policy floor from ops/research_allocation_policy.json kept, and an arm floor a policy can only RAISE)",
+    "libs/research/bandit.py:583 (_split_with_floors: the residual goes to the highest-score node, so the budget is always fully allocated)",
+    "libs/research/bandit.py:707 (tree_scores: Score_j = E[dg_j] + beta*sqrt(ln N / n_j) + lambda*Novelty_j, all three terms published per arm)",
+    "libs/research/bandit.py:622 (novelty_by_arm <- desks/mt5/reports/NOVELTY_GATE.json, UNMEASURED-neutral when the gate publishes no attribution)",
+    "libs/research/bandit.py:263 (TEMPERATURES T0..T5) and :1115 (temperature_ladder: proposals and MEASURED compute seconds per temperature, RUNNING/IDLE each)",
+    "ops/research_allocation_policy.json",
+    "desks/mt5/research/research_bandit.py",
+    "tests/research/test_bandit.py (18 tests: every floor respected at both levels, 100% allocated, a higher-novelty arm with the same expected gain gets more, a never-pulled arm gets the UCB bonus, all six temperatures appear)"
    ],
-   "scheduled_by": "daily_cycle:research_bandit, hourly_cycle:breadth_ladder, hourly_cycle:qd_frontier (wave 3), hourly_cycle:standing_questions",
-   "artifact": "desks/mt5/reports/RESEARCH_BANDIT.json",
-   "consumer": "research_budget",
-   "gap": "MEASURED 2026-09-16: one flat eleven-arm bandit with exploit/adjacent/cold group floors (research_allocation_policy.json); the ladder adds an exploration floor from UNMEASURED cells; the QD workers are the temperatures T0-T3 (exploiter, connector, explorer) and standing questions/unseen frontier are T4-T5; no tree of bandits and no explicit UCB novelty term.",
-   "next_step": "bandit gains a two-level tree (group -> arm) with a UCB term beta*sqrt(ln N/n) and a novelty term from novelty_gate per arm, each node with its floor from the policy; the temperature ladder is published per proposal source so the exchange can see T0..T5 all running.",
-   "landed": []
+   "scheduled_by": "daily_cycle:research_bandit, hourly_cycle:breadth_ladder, hourly_cycle:qd_frontier, hourly_cycle:standing_questions",
+   "artifact": "desks/mt5/reports/RESEARCH_BANDIT.json (gains tree, novelty and temperatures; the shares block is unchanged in shape)",
+   "consumer": "desks/mt5/research/research_budget.py (a test drives budget_s off the new document and it still applies)",
+   "gap": "MEASURED 2026-09-23: the flat eleven-arm bandit is now a two-level tree with a protected floor at EVERY node, the score is the item's own formula with all three terms published, and the six discovery temperatures are MEASURED per proposal source rather than asserted -- this box's live run reads all six RUNNING over 14,911 compute seconds with 0 unclassified sources. Declared upper bounds are reported in ceilings_declared_not_enforced and applied nowhere: no new cap was added, and floors only ratchet up (L1.50).",
+   "next_step": "",
+   "landed": [
+    "bandit.py: the tree, the UCB+novelty score, the T0-T5 ladder; 18 tests"
+   ]
   },
   {
    "id": "W16",
@@ -4490,59 +4575,81 @@
    "item": "Exploit sources and methods: a productive source triggers SourceExpansion (authors, linked forums, archives, citations, code, terminology, adjacent topics); a method's yield is tracked per domain P(method works | domain) and compute follows it; an under-covered region gets a temporary swarm until its marginal novelty falls",
    "domain": "W",
    "phase": "W",
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
+    "desks/mt5/research/source_registry.py",
     "desks/mt5/research/model_role_benchmark.py",
-    "libs/research/bandit.py"
+    "desks/mt5/research/source_shares.py:136 (load: the registry's ROI shares, with an absent or stale report leaving today's behaviour untouched and saying so)",
+    "desks/mt5/research/source_shares.py:252 (weight_grounds: the crawl budget IS the shares)",
+    "desks/mt5/research/source_shares.py:365 (expand: a productive source's neighbourhood -- authors, linked forums, archives, citations, code, adjacent terminology -- appended to the registered grounds, never hard-coded)",
+    "desks/mt5/research/deep_forest_miner.py:1378 (the deep forest reads the shares) and :1416 (and expands)",
+    "desks/mt5/side_channels/world_crawler.py:88 (the crawler's slice handed to source_shares.expand)",
+    "desks/mt5/research/engine_registry.py:206 (posterior: P(certified | method, domain) as a Beta-Binomial with its credible interval, never a raw ratio at n=1)",
+    "desks/mt5/research/engine_registry.py (the expected yield per COMPUTE HOUR per cell, and a normalised weight vector research_budget can read)",
+    "desks/mt5/tests/test_crawler_source_shares.py + desks/mt5/tests/test_engine_registry.py (the crawl order follows the shares, an absent artifact leaves it unchanged, and the Beta posterior behaves at n=0 and at n large)"
    ],
-   "scheduled_by": "hourly_cycle:source_registry (wave 4b), hourly_cycle:unseen_frontier (wave 4b), hourly_cycle:model_role_benchmark",
-   "artifact": "desks/mt5/reports/SOURCE_REGISTRY.json",
-   "consumer": "world_crawler crawl shares (next)",
-   "gap": "MEASURED 2026-09-16: the source registry (reputation + intel ROI shares) and the unseen-frontier estimator are being built; the crawler does not yet read the shares; no per-(method, domain) yield table.",
-   "next_step": "world_crawler and deep_forest read SOURCE_REGISTRY shares as their crawl budget and expand a source's neighbourhood when its ROI share rises; engine_registry (C6/Q18) publishes P(certified | method, asset_class) so research_budget can weight by domain.",
-   "landed": []
+   "scheduled_by": "hourly_cycle:engine_registry, hourly_cycle:source_registry, hourly_cycle:unseen_frontier, hourly_cycle:deep_forest, hourly_cycle:model_role_benchmark",
+   "artifact": "desks/mt5/reports/ENGINE_REGISTRY.json; desks/mt5/reports/SOURCE_REGISTRY.json",
+   "consumer": "deep_forest_miner and world_crawler (crawl budget + source expansion); research_budget (the per-(method, domain) weights)",
+   "gap": "MEASURED 2026-09-23: both halves closed. The crawlers now READ the ROI shares as their crawl budget and expand a source's neighbourhood when its share rises, degrading to today's order when the artifact is absent or stale; and P(certified | method, domain) exists as a posterior with its interval, with 314 never-tried cells keeping a positive prior weight so the table RANKS and never vetoes -- an under-covered region keeps its exploration budget by construction.",
+   "next_step": "",
+   "landed": [
+    "engine_registry.py on a leg + source_shares.py read by both crawlers, with tests"
+   ]
   },
   {
    "id": "W18",
    "item": "The ignorance ledger and the CEO dashboard: every unexplained thing scored magnitude x recurrence x unexplained fraction x potential value and sent back through the scientists; a dashboard answering coverage, frontier, research, discovery, validation, forward, breadth, growth and health with lifetime metrics (frontier explored %, survivor yield per source, PIT-clean axes, novel mechanisms/week, survivors/compute, FDR/replication rates, n_eff, posterior edge distribution, live half-life, alpha captured / theoretical, realised vs predicted log-growth, meta-R&D productivity, unseen mechanism mass)",
    "domain": "W",
    "phase": "W",
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
     "desks/mt5/research/tier1_scorecard.py",
     "desks/mt5/research/research_departments.py",
-    "desks/mt5/research/live_system_state.py",
-    "scripts/build_zentech_state.py"
+    "desks/mt5/research/residual_queue.py",
+    "scripts/build_zentech_state.py:1037 (CEO_ARTIFACTS: the seven reports, each with the leg that writes it)",
+    "scripts/build_zentech_state.py:1118 (_ceo_lifetime: the thirteen lifetime rows the principal named, each with value + source artifact)",
+    "scripts/build_zentech_state.py:1312 (_ceo_block) and :1582 (payload['ceo'])",
+    "tests/scripts/test_build_zentech_state_ceo.py (7 tests: an absent artifact renders UNMEASURED with its reason and value None, NEVER 0; a measured zero stays 0 and stays MEASURED)"
    ],
-   "scheduled_by": "hourly_cycle:residual_queue (wave 4), hourly_cycle:tier1_scorecard, hourly_cycle:research_departments, MT5-DeskState",
-   "artifact": "desks/mt5/reports/TIER1_SCORECARD.json",
-   "consumer": "the dashboard (web/desk_state.json)",
-   "gap": "MEASURED 2026-09-16: the residual queue (ignorance ledger) is being built; the scorecard carries fourteen rows; the dashboard state builder does not yet read the scorecard, the departments, the unseen frontier or the wiring hunter.",
-   "next_step": "build_zentech_state.py gains a `ceo` block reading TIER1_SCORECARD, RESEARCH_DEPARTMENTS, UNSEEN_FRONTIER, WIRING_CEO, RESIDUAL_QUEUE, SOURCE_REGISTRY and POSTERIOR_ALPHA into the thirteen lifetime rows the principal named.",
-   "landed": []
+   "scheduled_by": "MT5-DeskState, hourly_cycle:tier1_scorecard, hourly_cycle:research_departments, hourly_cycle:residual_queue, hourly_cycle:unseen_frontier, hourly_cycle:wiring_ceo",
+   "artifact": "web/desk_state.json (ceo block) beside desks/mt5/reports/TIER1_SCORECARD.json",
+   "consumer": "the dashboard (web/desk.html) reads desk_state.json",
+   "gap": "MEASURED 2026-09-23: the dashboard state builder now reads the scorecard, the departments, the unseen frontier, the wiring hunter, the residual queue (the ignorance ledger), the source registry and the posterior alpha, and publishes the thirteen lifetime rows -- 8 MEASURED and 5 UNMEASURED on this host, with 4 of the 7 artifacts absent here and named as absent. NAMED AND NOT DONE: web/desk.html does not yet RENDER the ceo block; the payload carries it and the renderer is another builder's file.",
+   "next_step": "web/desk.html renders the ceo block it is now handed.",
+   "landed": [
+    "build_zentech_state.py ceo block; 7 tests"
+   ]
   },
   {
    "id": "W19",
    "item": "The immutable constitution as code: PIT rules, complete search accounting, the multiple-testing ledger, sealed holdouts, preregistered forward clocks, actual execution records, actual costs and the research lineage are never modified by any self-improving organ; new tests may be added, old failed tests never deleted; sealed data never reaches a generator",
    "domain": "W",
    "phase": "W",
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
-    "scripts/check_immutable_evaluator.py",
+    "scripts/check_immutable_evaluator.py:63 (APPEND_ONLY: the live ledger, the hash-linked research chain, the forward clocks' ledgers and the measured cost surface -- the four path families the item named and the wall did not list)",
+    "scripts/check_immutable_evaluator.py:120 (append_only_seal: an append-only path is checked differently from a frozen one -- the existing PREFIX must be unchanged and only new records may appear)",
+    "scripts/check_immutable_evaluator.py:253 (generator isolation: a file is a generator if it imports the donation door, AST-confirmed, not grepped)",
+    "scripts/check_immutable_evaluator.py:353 (generator_isolation: 49 generators scanned; a proposer that reaches for the lockbox, the sealed vault or a holdout path fails with the offending file and line)",
+    "scripts/check_immutable_evaluator.py:436 (sign: a change to a judge must arrive with a re-signed manifest -- a human act, and the organ never signs itself)",
+    "scripts/run_law_gate.py:131 (the checker IS on the law gate)",
     "ops/principal_doctrine.txt",
-    "scripts/check_constitution_core.py",
     "libs/validation/lockbox.py",
-    "desks/mt5/research/evidence_vault.py"
+    "desks/mt5/research/evidence_vault.py",
+    "tests/scripts/test_check_immutable_evaluator_wall.py (10 tests: an append-only prefix change is caught, a new record is not, an absent path on this host is UNMEASURED and never reads as verified, and a generator that imports the vault fails with its line)"
    ],
-   "scheduled_by": "ops/gates.sh (law gates), MT5-GateAttest, MT5-FrontierAudit (evidence_vault)",
-   "artifact": "desks/mt5/data/IMMUTABLE_MANIFEST.json",
-   "consumer": "every self-improving organ (meta_rnd, research_os_archive, evaluator_lab)",
-   "gap": "MEASURED 2026-09-16: check_immutable_evaluator pins 18 files and the doctrine core is sealed; the wall does not yet list the forward clocks' ledgers, the live ledger, the cost surface or the artifact chain as immutable paths, and no organ asserts that a generator never reads sealed windows.",
-   "next_step": "Extend IMMUTABLE to the forward ledgers, live_ledger.jsonl, cost_surface.json and research_artifacts.jsonl (append-only checked by artifact_chain.verify); add a generator-isolation test that greps every proposer for lockbox/holdout reads; the evaluator lab and research_os_archive refuse variants naming any IMMUTABLE path.",
-   "landed": []
+   "scheduled_by": "scripts/run_law_gate.py, ops/gates.sh, MT5-GateAttest, MT5-FrontierAudit",
+   "artifact": "desks/mt5/data/IMMUTABLE_MANIFEST.json (files + the new append_only seals)",
+   "consumer": "the law gate; every self-improving organ (meta_rnd, research_os_archive, evaluator_lab)",
+   "gap": "MEASURED 2026-09-23: the wall grew from 18 frozen files to 18 frozen files PLUS 195 append-only records across the live ledger, the research artifact chain, the forward clocks' ledgers and the cost surface, and it now proves by AST what was previously only assumed -- that none of the desk's 49 generators can read sealed data. A NAMED, DELIBERATE RED: the run reports 7 breaches, six of them judges edited on 2026-09-16 and 2026-09-22 without a re-signed manifest and the seventh this checker's own edit. The organ does NOT sign itself out of them -- re-signing is a human act by the manifest's own rule ('research organs may change the hypothesis, never the judge'), so the gate stays red until the principal runs --sign. That is the wall working, not a defect in it.",
+   "next_step": "The principal runs `python scripts/check_immutable_evaluator.py --sign` once, after reviewing the six judge diffs, to clear the standing red.",
+   "landed": [
+    "the wall over the four named path families + generator isolation; 10 tests"
+   ]
   },
   {
    "id": "M1",
@@ -5165,55 +5272,77 @@
    "item": "The ingestion-exploitation contract and checker (every ingested unit gets a disposition; stranded units become discoveries; the ratchet floor) and the macro intelligence fusion (posteriors, nowcasts, news lane, two-sided suggestions through the router contract)",
    "domain": "U",
    "phase": "U",
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
-    "libs/moat/registry.py"
+    "desks/mt5/research/ingestion_ledger.py:1058 (the disposition per ingested unit)",
+    "desks/mt5/research/ingestion_ledger.py:1095 (a stranded unit becomes a DISCOVERY the compiler closes)",
+    "scripts/check_ingestion_exploitation.py (the contract's checker: the exploitation floor ratchets UP, the stranding count ratchets DOWN, UNMEASURED is neither a pass nor a failure)",
+    "scripts/run_law_gate.py:170 (the checker IS on the law gate)",
+    "desks/mt5/research/macro_intelligence.py:19 (nowcasts and next-event expectations)",
+    "desks/mt5/research/macro_intelligence.py:28 (decision suggestions through the regime_router contract, TWO-SIDED BY CONSTRUCTION: a posterior at 0.5 produces a tilt of exactly 0)",
+    "desks/mt5/research/macro_intelligence.py:730 (P(alpha > 0 | fused state) per sleeve under the router's own by_state posteriors)",
+    "tests/test_ingestion_exploitation.py (the fence's semantics pinned without a database)"
    ],
-   "scheduled_by": "hourly_cycle:ingestion_ledger (core; pending); hourly_cycle:macro_intelligence (macro; pending)",
-   "artifact": "desks/mt5/reports/INGESTION_EXPLOITATION.json",
-   "consumer": "the daily research OS; the allocator (router contract)",
-   "gap": "builder cut off while writing the ledger",
-   "next_step": "resume the builder; wire both legs; add the checker to the law gate",
-   "landed": []
+   "scheduled_by": "hourly_cycle:ingestion_ledger, hourly_cycle:ingestion_exploitation, hourly_cycle:macro_intelligence",
+   "artifact": "desks/mt5/reports/INGESTION_EXPLOITATION.json; desks/mt5/reports/MACRO_INTELLIGENCE.json",
+   "consumer": "the law gate (scripts/run_law_gate.py:170); the daily research OS; pf_allocator through the router contract",
+   "gap": "VERIFIED 2026-09-23: the builder that was cut off finished. Both legs exist and run (ingestion_ledger in the data department, ingestion_exploitation as a core leg every pass, macro_intelligence in macro), the checker is the 170th line of the law gate's fence list, and the macro fusion's suggestions are two-sided by construction rather than by assertion.",
+   "next_step": "",
+   "landed": [
+    "verified wired: both legs, the law-gate checker and the two-sided router contract"
+   ]
   },
   {
    "id": "U2",
    "item": "The representation forge over every dataset (level, delta, acceleration, surprise, percentile, z, relative-to-history, cross-country spread, residual, revision surprise, diffusion, rolling beta, regime transition, abnormality, embedding, interactions) writing representation series with PIT stamps for the compiler and the world model",
    "domain": "U",
    "phase": "U",
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
     "desks/mt5/research/representation_forge.py",
-    "libs/research/representations.py",
-    "desks/mt5/research/representation_discovery.py"
+    "desks/mt5/research/representation_discovery.py",
+    "libs/research/representations.py:665 (cross_country_spread: the pairing is derived from each series' own region tag, never a hard-coded pair list)",
+    "libs/research/representations.py:690 (diffusion: the share of a panel above its own trailing level, strictly backward-looking)",
+    "libs/research/representations.py:722 (rolling_beta: the rolling OLS beta to a named benchmark with the window stated)",
+    "libs/research/representations.py:865 (embedding: a rolling truncated-SVD over the panel's standardized history, fitted only on data up to t, with components and explained variance published -- no LLM and no new heavy dependency)",
+    "libs/research/representations.py:947 (the four are registered in TRANSFORMS and reachable from the composition grammar)",
+    "tests/research/test_representations.py:242 (24 tests, each new transform carrying a PIT check: the value at t is identical when the series is truncated at t)"
    ],
-   "scheduled_by": "hourly_cycle:representation_forge (data department resident)",
+   "scheduled_by": "hourly_cycle:representation_forge",
    "artifact": "desks/mt5/reports/REPRESENTATION_FORGE.json",
    "consumer": "discovery_compiler; macro_intelligence",
-   "gap": "the forge LANDED 2026-09-17 as U7 (15 transforms plus a composition grammar, PIT-stamped, stored, registry ROI). Still absent from the grammar: cross-country spread, diffusion, rolling beta and learned embeddings",
-   "next_step": "add the four named transforms to libs/research/representations.TRANSFORMS",
-   "landed": []
+   "gap": "MEASURED 2026-09-23: the four transforms the grammar was missing -- cross-country spread, diffusion, rolling beta and a learned embedding -- are registered, composable and PIT-checked. The embedding is a rolling truncated SVD fitted only on history up to t, because a lookahead in a learned representation poisons every hypothesis downstream of it, and its explained variance is published rather than assumed.",
+   "next_step": "",
+   "landed": [
+    "four transforms in libs/research/representations.TRANSFORMS, PIT-tested"
+   ]
   },
   {
    "id": "U3",
    "item": "The 24/7 world model: regional state vectors and the global posterior over liquidity, rates, inflation, growth, China demand, industrial cycle, commodity supply, carry, funding stress, risk appetite, volatility, positioning, regional risk and event proximity, with frequency/horizon matching; conditional sleeve distributions for the allocator; counterfactual attribution of every live trade; the data-utilization audit",
    "domain": "U",
    "phase": "U",
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
     "desks/mt5/research/world_model.py",
     "desks/mt5/research/regime_router.py",
-    "desks/mt5/research/regime_monitor.py"
+    "desks/mt5/research/counterfactual_attribution.py:632 (global_posterior: the fourteen named macro states fused in LOGIT space with each source's own uncertainty; a state no source measures is UNMEASURED, never 0.5 dressed as knowledge)",
+    "desks/mt5/research/counterfactual_attribution.py:899 (attribute: every live trade's realised R decomposed into unconditional, conditional-state, expected-cost, execution, financing and residual terms)",
+    "desks/mt5/research/counterfactual_attribution.py (the three counterfactuals the desk can actually measure: the opposite state bucket, the modelled cost, and not taken at all)",
+    "desks/mt5/research/hourly_cycle.py (leg counterfactual_attribution, forward department)",
+    "desks/mt5/tests/test_counterfactual_attribution.py (a planted state-dependent edge shows in the conditional bucket and a state-independent one does not; a trade whose realised cost exceeded the model is attributed to the execution term)"
    ],
-   "scheduled_by": "hourly_cycle:world_model (macro department resident)",
-   "artifact": "desks/mt5/reports/WORLD_MODEL.json",
-   "consumer": "pf_allocator (through the router contract); the gateway's counterfactual ledger",
-   "gap": "the world model LANDED 2026-09-17 as U5 (per-instrument conditional distributions, per-dataset contribution, regime forecast, residual store). Still absent: the fused GLOBAL posterior over the named macro states, conditional SLEEVE distributions for the allocator, and counterfactual attribution of every live trade",
-   "next_step": "build counterfactual_attribution.py and the sleeve-conditional layer on top of world_model.py; P1 keeps the allocator's routing refused until the principal revisits it",
-   "landed": []
+   "scheduled_by": "hourly_cycle:counterfactual_attribution, hourly_cycle:world_model, hourly_cycle:regime_router",
+   "artifact": "desks/mt5/reports/COUNTERFACTUAL_ATTRIBUTION.json; desks/mt5/reports/WORLD_MODEL.json",
+   "consumer": "the residual queue (the unexplained residual is routed to it as a producer row); pf_allocator may read the conditional sleeve distributions as evidence",
+   "gap": "MEASURED 2026-09-23 on this box's own book: 151 live trades attributed, 141 with R reconstructed, net -20.924 R decomposed as unconditional +6.844, conditional +0.455, expected cost -3.296, execution -0.517, financing 0.000 and residual -24.410 -- and the residual, which is the number that matters, is ROUTED to the ignorance queue rather than printed. The counterfactuals read: opposite state bucket -22.084 R, at modelled cost -20.407 R, not taken 0.000 R. It allocates nothing: P1 keeps the gold book's routing through the allocator REFUSED by the principal's standing order and this organ does not touch it.",
+   "next_step": "",
+   "landed": [
+    "counterfactual_attribution.py on a leg (global posterior + sleeve-conditional + per-trade counterfactual)"
+   ]
   },
   {
    "id": "N1",
@@ -5255,18 +5384,27 @@
    "item": "Browser agents for non-API data (event actual-vs-consensus for the event-surprise cluster) and the core-plus-sleeve book: a trend-following core across the multi-asset universe beside the tactical sleeves, from the factor model",
    "domain": "W",
    "phase": "W",
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
     "desks/mt5/research/event_response_atlas.py",
-    "libs/risk/fx_exposure.py"
+    "libs/risk/fx_exposure.py",
+    "desks/mt5/research/event_surprise.py:366 (collect: lawful registered pages only; no fetcher on this host records UNMEASURED-NO-FETCHER and the organ still runs on the calendar pairs the desk already holds -- it never invents a consensus)",
+    "desks/mt5/research/event_surprise.py:838 (build: z = (actual - consensus) / sd of that release's OWN historical surprises, and the reaction per bucket is MEASURED rather than derived from the sign of z)",
+    "desks/mt5/research/trend_core.py:257 (ts_momentum at several speeds) and :323 (cross_sectional) and :353 (correlation_structure: the core reads as ONE bet through the participation ratio of its own legs)",
+    "desks/mt5/research/trend_core.py:293 (vol_scale: positions scaled to a target volatility so two instruments of different vol carry the same risk)",
+    "desks/mt5/research/hourly_cycle.py (legs event_surprise in macro and trend_core in discovery)",
+    "libs/research/layers.py (information and prediction)",
+    "desks/mt5/tests/test_event_surprise.py + desks/mt5/tests/test_trend_core.py (a planted trend is found and a random walk is not, the vol scaling equalises risk, a planted surprise produces the planted reaction and a placebo does not, a single-name equity is never donated)"
    ],
-   "scheduled_by": "pending",
-   "artifact": "desks/mt5/reports/EVENT_SURPRISE.json",
-   "consumer": "event_reaction family; the allocator (core sleeve)",
-   "gap": "not started",
-   "next_step": "build the browser-agent event scraper (lawful pages only) and the trend core family + its certificate path",
-   "landed": []
+   "scheduled_by": "hourly_cycle:event_surprise, hourly_cycle:trend_core, hourly_cycle:event_response_atlas",
+   "artifact": "desks/mt5/reports/EVENT_SURPRISE.json; desks/mt5/reports/TREND_CORE.json",
+   "consumer": "the event_reaction family and the compiler (the donated clearing cells); the ten gates (the trend core is donated as a candidate like anything else)",
+   "gap": "MEASURED 2026-09-23: the row read 'not started'. Both halves now exist. The event-surprise half deliberately does NOT use browser automation -- no LLM and no automated browser is available to a research pass, and bypassing an access control is forbidden -- so the collector is a registered table of lawful public pages that degrades to UNMEASURED when it cannot reach one, which is a verdict and not a gap. The trend core is ADDITIVE ONLY: it is a new independent bet that reaches capital through the ten gates and the allocator's own arithmetic, with no privileged path and no mechanism that could cap, shrink or reallocate an existing sleeve.",
+   "next_step": "",
+   "landed": [
+    "event_surprise.py + trend_core.py, both on legs, with tests"
+   ]
   },
   {
    "id": "W22",
@@ -5772,6 +5910,101 @@
    ]
   },
   {
+   "id": "U52",
+   "item": "THE PHYSICS WING of the mathematics civilization (the principal's 2026-09-22 mandate): nineteen PHYSICAL traditions that read the world model's residual as a physical system -- statistical mechanics and ensembles, nonequilibrium entropy production and time asymmetry, diffusion and anomalous-diffusion exponents, multiscale renormalisation with scaling laws fitted in logs, criticality and avalanche statistics, dynamical systems by Takens reconstruction and Lyapunov exponents, the chaos tests (surrogate, determinism, BDS-style), linear response and the fluctuation-dissipation theorem, field/continuum models of order-book density, turbulence and intermittency by structure functions, network physics (spectral, percolation on the cross-asset graph), information physics (transfer entropy, mutual information), dimensional analysis with Buckingham-pi groups, symmetry and invariance tests, conservation-law tests, stochastic physics (first passage, Kramers escape), Monte Carlo and agent-based mini-simulators, inverse problems by Tikhonov deconvolution, and eigenmodes with Marchenko-Pastur cleaning -- each a `Scientist` subclass producing the same five outputs (relationships, representations, mechanisms, laws, search methods) into the same burden screen and the same canonical registry, with NO LLM anywhere in the path (numpy only; every optional library behind a guard that records UNMEASURED instead of crashing)",
+   "domain": "U",
+   "phase": "U",
+   "status": "LANDED",
+   "gate": "none",
+   "evidence": [
+    "desks/mt5/research/mathlab/physics.py:131",
+    "desks/mt5/research/mathlab/physics.py:809",
+    "desks/mt5/research/mathlab/physics.py:1104",
+    "desks/mt5/research/mathlab/physics_ext.py:78",
+    "desks/mt5/research/mathlab/physics_ext.py:751",
+    "desks/mt5/research/mathlab/physics_ext.py:936",
+    "desks/mt5/research/math_lab.py:65",
+    "desks/mt5/research/math_lab.py:82",
+    "desks/mt5/research/physics_lab.py:180",
+    "desks/mt5/tests/test_mathlab_physics.py",
+    "desks/mt5/research/hourly_cycle.py:3192",
+    "libs/research/layers.py:201"
+   ],
+   "scheduled_by": "hourly_cycle:math_lab (mathlab department resident, MT5-Dept-Mathlab) AND hourly_cycle:physics_lab (--once --budget-s 600, layer prediction)",
+   "artifact": "desks/mt5/reports/PHYSICS_LAB.json (and the physics half of desks/mt5/reports/MATH_LAB.json)",
+   "consumer": "the canonical registry through libs.moat.registry.enqueue_candidate (candidates with provenance: tradition, civilization, seed, residual target, lineage) and the mathlab donation path data/intelligence/mathlab/ read by miner_candidate_compiler; scripts/external_gauntlet.py judges every donated object against the ten gates",
+   "gap": "LANDED 2026-09-23: 68 pytest cases in test_mathlab_physics.py show each tradition recovering ITS OWN planted structure on a synthetic market and naming UNMEASURED on a 120-row panel. Three recoveries were wrong when first measured and the physics, not the test, was fixed: a 1-D sinusoid IS time-reversible (the estimator must not read periodicity as an arrow of time -- a ratchet separates by 470x, the sinusoid does not separate at all), and both LinearResponse and InverseProblems were selecting their driver by a CONTEMPORANEOUS correlation over RAW columns, which is the spurious-regression trap: a near-unit-root price level beat the column carrying the planted impulse, which ranked last of thirteen. Drivers are now stationary fluctuations (`_fluct`, differencing anything with |acf(1)| > 0.98) and are chosen by the scientist's own question -- the strongest LAGGED correlation for linear response, the same validation slice that picks the ridge for deconvolution. WIRED IN BOTH LEGS AND MEASURED: physics_lab --budget-s 600 runs 601 s (was 846 s at a 420 s budget before the judge and the reviewers were put on the same wall clock) inside its 700 s cap, and math_lab with the physics wing runs 543 s at --budget-s 600 inside the 720 s default timeout -- the leg asked for 3,000 s, which `_producer_impl` could only ever kill before MATH_LAB.json was written. Both artifacts are on disk with 23 scientists and 15 engines in the wiring proof, 6/6 planted nulls rejected, 106 registry discoveries and an MATH_CARDS_JUDGED event row.",
+   "next_step": "the field/continuum tradition reads order-book density from the bar proxies it has; a real book snapshot feed would let it fit the continuity equation rather than its bar-level analogue",
+   "landed": [
+    "physics wing 2026-09-23"
+   ]
+  },
+  {
+   "id": "U53",
+   "item": "THE FIFTEEN SCIENTIFIC ENGINES under the physics wing (2026-09-22 mandate): law discovery by sparse regression (SINDy-style STLSQ in numpy, pysindy through libs/research/adapters/pysindy.py when it imports); ODE and PDE discovery; ABC and simulation-based inference (rejection ABC in numpy, sbi optional); MDL scoring; probabilistic model competition by evidence, BIC and cross-validation; latent-to-symbolic (fit a latent factor, then symbolically regress it); counterfactual simulators; experimental discrimination (choose the data slice or test that maximises model disagreement); synthetic calibration and ADVERSARIAL SYNTHETIC WORLDS (a fake law planted in synthetic data must be rejected); independent civilizations (two isolated scientist populations with disjoint seeds, compared only by the judge); method tournaments ranked by a Wilson lower bound on survivors per trial and per compute hour; distributed science (one budget split across departments, two-sided by measured ROI with a floor); formal mathematics through optional sympy; differentiable science through optional JAX with a numpy fallback; and primitive invention (new operators proposed from recurring subexpressions) -- every engine returning an EngineResult that records what it could NOT measure rather than raising",
+   "domain": "U",
+   "phase": "U",
+   "status": "LANDED",
+   "gate": "none",
+   "evidence": [
+    "desks/mt5/research/mathlab/engines.py:134",
+    "desks/mt5/research/mathlab/engines.py:259",
+    "desks/mt5/research/mathlab/engines.py:376",
+    "desks/mt5/research/mathlab/engines.py:615",
+    "desks/mt5/research/mathlab/engines.py:652",
+    "desks/mt5/research/mathlab/engines.py:729",
+    "desks/mt5/research/mathlab/engines.py:885",
+    "desks/mt5/research/mathlab/engines.py:924",
+    "desks/mt5/research/mathlab/engines.py:945",
+    "libs/research/adapters/pysindy.py",
+    "libs/research/adapters/sbi.py",
+    "desks/mt5/tests/test_mathlab_physics.py",
+    "desks/mt5/research/hourly_cycle.py:3192"
+   ],
+   "scheduled_by": "hourly_cycle:physics_lab (--once --budget-s 600, mathlab department, layer prediction); the subset that fits the math_lab budget also runs in hourly_cycle:math_lab",
+   "artifact": "desks/mt5/reports/PHYSICS_LAB.json (`engines` block: one row per engine with status, trials, findings, unmeasured and compute_s)",
+   "consumer": "physics_lab itself -- the discrimination engine sets the next experiment, the tournament sets the method allocation written to desks/mt5/data/method_allocation.json and read back next pass, primitive invention feeds the grammar's operator proposals; the wiring proof counts every engine that ran",
+   "gap": "LANDED 2026-09-23: the adversarial world is the acceptance test that matters (acceptance J) -- synthetic_calibration plants a law in synthetic data and the same judge that admits the true one must reject it. The tournament raised a domain error on its first real pass (a tradition whose trials counter under-reported its own survivors drove p above 1 inside the Wilson square root, and run_engine recorded the engine FAILED rather than crashing the leg, which is how it was found); trials are now floored at the number of passes, which is the conservative reading. pysindy, sbi, sympy and JAX are all absent on this box and each is recorded absent by name, never crashed around.",
+   "next_step": "differentiable science falls back to numpy finite differences here; a JAX build on the trading box would let the same engine take gradients through the simulator instead of around it",
+   "landed": [
+    "engines 2026-09-23"
+   ]
+  },
+  {
+   "id": "U54",
+   "item": "THE INSTITUTION around the scientists (2026-09-22 mandate), and the `physics_lab` leg that runs it: the MathHypothesisCard (claim, domain, mechanism, units, predicted consequences, FALSIFIER, cost, multiplicity charge, lineage); a consequence engine that derives testable consequences from a card; peer review with a DISCOVERER and a DESTROYER role on independent random streams; a null factory; theorem memory and a knowledge graph persisted as jsonl under desks/mt5/data/mathlab/ (proven, failed, NEGATIVE knowledge, lineage); a failure scientist that mines repeated failure into exhausted regions read before the next search spends there; the multiplicity ledger through libs/research/trial_ledger.py; a LOCKBOX of sealed holdout rows never read by any scientist; PIT discipline; search-method evolution with credit flowing back to the methods; REPLICATION -- a second independent run on a shifted split, or the same form found by the other civilization, before any card may reach FORWARD; a simplicity/Pareto front; cross-market transfer; state discovery; causal scientists through libs/research/causal_adjudicator.py; experiment design and active selection; event rows through libs/ops/events.py; and a WIRING PROOF naming every scientist and engine that ran this hour with its counts",
+   "domain": "U",
+   "phase": "U",
+   "status": "LANDED",
+   "gate": "none",
+   "evidence": [
+    "desks/mt5/research/mathlab/institution.py:61",
+    "desks/mt5/research/mathlab/institution.py:140",
+    "desks/mt5/research/mathlab/institution.py:272",
+    "desks/mt5/research/mathlab/institution.py:286",
+    "desks/mt5/research/mathlab/institution.py:331",
+    "desks/mt5/research/mathlab/institution.py:403",
+    "desks/mt5/research/mathlab/institution.py:436",
+    "desks/mt5/research/mathlab/institution.py:485",
+    "desks/mt5/research/mathlab/institution.py:600",
+    "desks/mt5/research/mathlab/institution.py:631",
+    "desks/mt5/research/mathlab/institution.py:764",
+    "desks/mt5/research/physics_lab.py:489",
+    "desks/mt5/tests/test_mathlab_institution.py",
+    "desks/mt5/research/hourly_cycle.py:3192",
+    "libs/research/layers.py:201"
+   ],
+   "scheduled_by": "hourly_cycle:physics_lab (mathlab department, --once --budget-s 600, layer prediction)",
+   "artifact": "desks/mt5/reports/PHYSICS_LAB.json (cards with falsifiers, nulls, multiplicity, pareto_front, lockbox, theorem_memory, method_credit, method_allocation, wiring_proof) plus desks/mt5/data/mathlab/{proven,failed,negative,lineage}.jsonl",
+   "consumer": "the canonical registry (FORWARD cards only, with lineage and civilization provenance); the next pass of physics_lab itself, which reads negative knowledge before searching and the method allocation before splitting its budget; libs/ops/events.py for the hourly event log",
+   "gap": "LANDED 2026-09-23: acceptance A-J are pytest cases in test_mathlab_institution.py and test_mathlab_physics.py -- a no-LLM end-to-end run on synthetic data, a falsifier on every card, the null factory rejecting planted nulls, multiplicity charged through the desk's own ledger, the lockbox untouched, replication required before FORWARD, credit flowing back to methods, the Pareto front computed, the wiring proof listing every scientist, and the adversarial world rejecting a fake law. Two defects surfaced in the first full pass and were fixed in the organ, not the test: a method allocation whose rounded shares summed to 0.999999 (an allocation sums to one; the residual goes to the largest share) and a failure scientist that needed a region to fail twice before it would write negative knowledge.",
+   "next_step": "FORWARD cards reach the ten-gate external gauntlet as registry candidates; the gauntlet, not this organ, certifies anything, and no card here allocates capital",
+   "landed": [
+    "institution 2026-09-23",
+    "physics_lab leg 2026-09-23"
+   ]
+  },
+  {
    "id": "U22",
    "domain": "U",
    "phase": "U",
@@ -6034,23 +6267,21 @@
    "phase": "U",
    "status": "LANDED",
    "gate": "none",
-   "item": "THE STEALABLE CELLS (LAWS 5h): five REBUILT research mechanisms as sandboxed cells under desks/mt5/research/sandboxes/, each driven by the sandbox runner and each carrying a numpy fallback so it runs on this box TODAY rather than waiting for a wheel -- (a) the PATH-SIGNATURE LAB (roughpy when present; otherwise truncated iterated integrals to level <= 3 as features, every window a charged trial); (b) ADAPTIVE CONFORMAL CALIBRATION (MAPIE's mechanism rebuilt) whose measured coverage gap feeds dislocation_lab through a GUARDED hook -- a missing, stale or symbol-absent calibration changes nothing and reads UNMEASURED; (c) RD-Agent-style FACTOR <-> MODEL COEVOLUTION, a factor population and a model population evolved against each other with survivors leaving as candidates carrying generation and parents, extending the existing factor_model_coevolution.py rather than duplicating it; (d) the EDGAR FILING COMPILER to CROSS-ASSET TRANSMISSION, event lane only, where the filer is metadata and no equity symbol ever leaves -- outputs are transmission hypotheses on index CFDs, the dollar index and gold, network only under an explicit allow plus the access classifier's machine_use_allowed, otherwise cached filings and otherwise UNMEASURED with the fetch task that would fill it; (e) the RL EXECUTION CHALLENGER, sandbox only and NEVER live, a tabular Q-learning policy over the execution twin's own fill/slippage distributions with a QUBO order-slicing schedule solved by simulated annealing as a CHALLENGER to the twin's baseline",
+   "item": "THE STEALABLE CELLS (LAWS 5h): four REBUILT research mechanisms as sandboxed cells under desks/mt5/research/sandboxes/, each driven by the sandbox runner and each carrying a numpy fallback so it runs on this box TODAY rather than waiting for a wheel -- (a) the PATH-SIGNATURE LAB (roughpy when present; otherwise truncated iterated integrals to level <= 3 as features, every window a charged trial); (b) ADAPTIVE CONFORMAL CALIBRATION (MAPIE's mechanism rebuilt) which exposes the calibrated interval IN THE PACKET (confidence_level, last_interval, mean_width, coverage_measured, coverage_gap on every conformal_interval representation) so any later consumer including the allocator path can read it, and additionally feeds dislocation_lab its measured coverage gap through a GUARDED hook -- a missing, stale or symbol-absent calibration changes nothing and reads UNMEASURED; (c) the EDGAR FILING COMPILER to CROSS-ASSET TRANSMISSION, event lane only, where the filer is metadata and no equity symbol ever leaves -- outputs are transmission hypotheses on index CFDs, the dollar index and gold, network only under an explicit allow plus the access classifier's machine_use_allowed, otherwise cached filings and otherwise UNMEASURED with the fetch task that would fill it; (d) the RL EXECUTION CHALLENGER, sandbox only and NEVER live, a tabular Q-learning policy over the execution twin's own fill/slippage distributions with a QUBO order-slicing schedule solved by simulated annealing as a CHALLENGER to the twin's baseline",
    "evidence": [
     "desks/mt5/research/sandboxes/__init__.py",
     "desks/mt5/research/sandboxes/path_signature_lab.py",
     "desks/mt5/research/sandboxes/conformal_calibration.py:40",
-    "desks/mt5/research/sandboxes/coevolution_cell.py:298",
     "desks/mt5/research/sandboxes/edgar_transmission.py",
     "desks/mt5/research/sandboxes/rl_execution_challenger.py",
     "desks/mt5/research/dislocation_lab.py:942",
-    "desks/mt5/research/factor_model_coevolution.py",
     "desks/mt5/research/sandbox_runner.py:464",
     "libs/research/layers.py:270"
    ],
    "scheduled_by": "hourly_cycle:sandbox_runner (intel department, 900 s, layer information)",
    "artifact": "desks/mt5/reports/SANDBOX_RUNNER.json (packets, per-cell ROI) and desks/mt5/reports/SANDBOX_CONFORMAL.json (the calibration table)",
    "consumer": "desks/mt5/research/dislocation_lab.py:942 _conformal_gap (the calibrated interval tightens or widens the ensemble's own term, guarded); libs/moat/registry.py research_candidates -> the ten gates; desks/mt5/research/federation_ops.py",
-   "gap": "LANDED 2026-09-22 with all five cells RUNNABLE and four PRODUCED on the first pass, measured: coevolution_cell 12 candidates + 4 representations at 115 trials (ROI 3.26, the best on the board); path_signature_lab 3 candidates + 5 representations at 247 trials; conformal_calibration 18 representations at 18 trials, writing the calibration table dislocation_lab reads; rl_execution_challenger 4 research_methods at 3003 trials and, by its own law, zero candidates -- an execution challenger never donates a price hypothesis. edgar_transmission is UNMEASURED and that is the correct verdict, not a defect: the pass allowed no network and data/edgar_cache/ is empty, while the 4,799 rows the desk already holds under data/intelligence/sec_edgar/ are undated 13F stubs of a single form carrying no filing date, so NO burst series is derivable from them and manufacturing one would be the lie the law forbids.",
+   "gap": "LANDED 2026-09-22 with all four cells RUNNABLE and three PRODUCED on the first pass, measured: path_signature_lab 3 candidates + 5 representations at 247 trials; conformal_calibration 18 representations at 18 trials, each carrying the calibrated interval itself so a later allocator consumer needs no new plumbing, plus the calibration table dislocation_lab reads; rl_execution_challenger 4 research_methods at 3003 trials and, by its own law, zero candidates -- an execution challenger never donates a price hypothesis, and nothing it produces may ever reach the live path. SCOPE NOTE: sandboxes/coevolution_cell.py also sits on this runner's roster and produced 12 candidates at 115 trials, but the factor<->model coevolution PROGRAM (including desks/mt5/research/factor_model_coevolution.py) is owned and ledgered by its own builder, so it is deliberately not claimed here. edgar_transmission is UNMEASURED and that is the correct verdict, not a defect: the pass allowed no network and data/edgar_cache/ is empty, while the 4,799 rows the desk already holds under data/intelligence/sec_edgar/ are undated 13F stubs of a single form carrying no filing date, so NO burst series is derivable from them and manufacturing one would be the lie the law forbids.",
    "next_step": "give edgar_transmission a dated corpus -- either a network-allowed pass with QUANT_EDGAR_UA set (the classifier already passes the endpoint) or a fetch that populates data/edgar_cache/ with filed dates -- and it turns its fetch task into transmission hypotheses without another line of code",
    "landed": [
     "stealable cells 2026-09-22"
@@ -6422,6 +6653,374 @@
    "artifact": "desks/mt5/reports/CERTIFICATE_TRUTH.json",
    "consumer": "scripts/run_law_gate.py (_LAW_FENCES and _STATE_FENCES); data/certificate_history.jsonl is the migration's record",
    "gap": "LANDED 2026-09-22: fence in both halves of the law gate; LAWS 5j and 7 bullets; desk lesson recorded via scripts/learn.py (enforced by test_the_fence_fails_on_residue_and_passes_once_the_lane_is_the_truth); the box migration command is `python desks/mt5/research/certificate_truth.py --once --apply`"
+  },
+  {
+   "id": "T5-1",
+   "domain": "U",
+   "phase": "D",
+   "status": "LANDED",
+   "gate": "none",
+   "item": "PORTFOLIO BOUNTY / MISSING-PAYOFF REQUESTS (Tier-5 mandate 90): the allocator publishes the payoff shapes and regimes the BOOK lacks -- a positive payoff inside the book's own drawdown windows, the states no sleeve has traded, the factor the book is concentrated in, the sessions that are dark, the asset classes absent -- and each becomes an open research request routed to the department that can fill it. A bounty is a REQUEST with a reading attached; it caps nothing and retires nothing",
+   "evidence": [
+    "desks/mt5/research/portfolio_bounty.py:92 — bounties(): the five bounty kinds, each with the measurement that raised it; an absent input is named UNMEASURED and never a zero",
+    "desks/mt5/research/portfolio_bounty.py:201 — missions(): each bounty enters the registry as a research request through the canonical enqueue path",
+    "tests/research/test_tier5_organs.py:31 — the payoff the book lacks is named, and absence is a verdict"
+   ],
+   "scheduled_by": "hourly_cycle:portfolio_bounty (forward department)",
+   "artifact": "desks/mt5/reports/PORTFOLIO_BOUNTY.json",
+   "consumer": "research_auction.bids() (a department that addresses open bounties bids higher); the registry's research requests; research_dashboard",
+   "landed": "2026-09-23 (Tier-5 residual organs: bounty, auction, bottleneck law, drawdown alpha, autopsies, latency, replenishment, dashboard)"
+  },
+  {
+   "id": "T5-2",
+   "domain": "U",
+   "phase": "D",
+   "status": "LANDED",
+   "gate": "none",
+   "item": "RESEARCH AUCTION (Tier-5 mandate 110): the departments bid compute for the open bounties and the bottleneck, the market clears on the geometric mean of the bids, and the winners are funded next epoch through the meta_controller's proposals. Two-sided by construction: a winner is funded ABOVE par and the clip's floor keeps a quiet department fundable, so the auction can re-fund what it just demoted (GROWTH_GOVERNANCE Rule 2)",
+   "evidence": [
+    "desks/mt5/research/research_auction.py:117 — bids(): measured yield per hour, the bounty bonus, the bottleneck shift and the replenishment gap, each with its basis",
+    "desks/mt5/research/research_auction.py:154 — clear(): bid over the geometric mean, clipped to the consumer's [FLOOR, CEIL] -- never to zero",
+    "tests/research/test_tier5_organs.py:50 — no department clears to zero and an unmeasured world is par everywhere",
+    "desks/mt5/research/research_budget.py:92 — _auction_factor(): the auction's price for this leg's department, read never written, 1.0 when unpriced (MEASURED: discovery cleared x1.57 on the 2026-09-22T21 epoch)"
+   ],
+   "scheduled_by": "hourly_cycle:research_auction (meta department)",
+   "artifact": "desks/mt5/reports/RESEARCH_AUCTION.json",
+   "consumer": "desks/mt5/research/research_budget.py:92 _auction_factor() -- the cleared factor for a leg's department multiplies its hourly seconds, under the same [0.5, 2.0] clip the bandit already lived under; the proposals are also written to the registry's research memory (kind='proposal', key auction:<department>); research_dashboard",
+   "landed": "2026-09-23 (Tier-5 residual organs: bounty, auction, bottleneck law, drawdown alpha, autopsies, latency, replenishment, dashboard)"
+  },
+  {
+   "id": "T5-3",
+   "domain": "U",
+   "phase": "D",
+   "status": "LANDED",
+   "gate": "none",
+   "item": "THE FACTORY BOTTLENECK LAW (Tier-5 mandate 131/132): the funnel's slowest stage measured hourly from the canonical registry's own counts and the desk's sleeve roster -- seven transitions from discovered to live -- the binding one named with the department that owns it, and a compute shift published TOWARD it. The shift is >= 1.0 for the binding department and exactly 1.0 for every other: compute moves toward the constraint, never away from anyone",
+   "evidence": [
+    "desks/mt5/research/bottleneck_law.py:117 — transitions(): the seven stage ratios and backlogs, each marked measured or not",
+    "desks/mt5/research/bottleneck_law.py:147 — compute_shift(): 1 + (1 - ratio), capped, for the binding department only",
+    "tests/research/test_tier5_organs.py:71 — the shift only adds, and an empty funnel is UNMEASURED not a bottleneck"
+   ],
+   "scheduled_by": "hourly_cycle:bottleneck_law (meta department)",
+   "artifact": "desks/mt5/reports/BOTTLENECK_LAW.json",
+   "consumer": "research_auction.bids() (the bottleneck department's bid rises); research_dashboard",
+   "landed": "2026-09-23 (Tier-5 residual organs: bounty, auction, bottleneck law, drawdown alpha, autopsies, latency, replenishment, dashboard)"
+  },
+  {
+   "id": "T5-4",
+   "domain": "U",
+   "phase": "D",
+   "status": "LANDED",
+   "gate": "none",
+   "item": "DRAWDOWN-ALPHA MINER (Tier-5 mandate 136): what PAYS while the book itself is losing. Peak-to-recovery drawdown episodes are reconstructed from the live ledger and the forward ledgers, every sleeve's return is split inside vs outside those windows, and the t-statistic is charged the expected maximum of the search (Bailey/Lopez de Prado) so a crisis payer is not a survivor of the number of windows tried. Candidates become bounty-backed requests",
+   "evidence": [
+    "desks/mt5/research/drawdown_alpha_miner.py:131 — episodes(): peak-to-recovery windows on the cumulative R path, deepest first",
+    "desks/mt5/research/drawdown_alpha_miner.py:191 — mine(): inside/outside split per sleeve with the multiplicity charge and an explicit UNMEASURED verdict under the n floor",
+    "tests/research/test_tier5_organs.py:89 — the episodes and the charge on the search"
+   ],
+   "scheduled_by": "hourly_cycle:drawdown_alpha_miner (forward department)",
+   "artifact": "desks/mt5/reports/DRAWDOWN_ALPHA_MINER.json",
+   "consumer": "portfolio_bounty (the drawdown_positive bounty cites its windows and candidates); the registry's research requests; research_dashboard",
+   "landed": "2026-09-23 (Tier-5 residual organs: bounty, auction, bottleneck law, drawdown alpha, autopsies, latency, replenishment, dashboard)"
+  },
+  {
+   "id": "T5-5",
+   "domain": "U",
+   "phase": "D",
+   "status": "LANDED",
+   "gate": "none",
+   "item": "WIN / LOSS AUTOPSIES (Tier-5 mandate 97/98): every closed live deal gets an autopsy row -- attribution (gross R, cost R, slippage R against the price the decision intended, net R), counterfactual (no-cost, opposite side, held to target, stopped out, excess over the sleeve's forward expectancy) and a named lesson -- appended once, idempotently, to data/autopsies.jsonl. A win is autopsied exactly as a loss is",
+   "evidence": [
+    "desks/mt5/research/trade_autopsy.py:116 — autopsy(): the three blocks per deal, each field UNMEASURED by name when the deal cannot support it",
+    "desks/mt5/research/trade_autopsy.py:262 — publish(): append-once by deal id, so a re-run adds nothing and the journal is the history",
+    "tests/research/test_tier5_organs.py:105 — attribution, counterfactual and lesson, including the unreconstructible deal that still gets a row"
+   ],
+   "scheduled_by": "hourly_cycle:trade_autopsy (forward department)",
+   "artifact": "desks/mt5/data/autopsies.jsonl; desks/mt5/reports/TRADE_AUTOPSY.json",
+   "consumer": "research_dashboard; the lesson histogram and per-sleeve root causes are read back by the forward lane's own review",
+   "landed": "2026-09-23 (Tier-5 residual organs: bounty, auction, bottleneck law, drawdown alpha, autopsies, latency, replenishment, dashboard)"
+  },
+  {
+   "id": "T5-6",
+   "domain": "U",
+   "phase": "D",
+   "status": "LANDED",
+   "gate": "none",
+   "item": "RESEARCH-LATENCY METRICS (Tier-5 mandate 133): idea -> cell -> verdict -> forward -> live, timed from the registry's own stamps and the roster's, with median/p90/max per stage and the COUNT OF UNTIMED rows beside each -- a stage whose stamps do not exist reads UNMEASURED with the reason, never a fast zero",
+   "evidence": [
+    "desks/mt5/research/research_latency.py:77 — summarise(): percentiles plus the untimed count and the basis; an empty stage carries `why`",
+    "desks/mt5/research/research_latency.py:205 — build(): the five stages joined from the registry, the forward ledgers and the sleeve roster",
+    "tests/research/test_tier5_organs.py:137 — percentiles, and what is untimed is named"
+   ],
+   "scheduled_by": "hourly_cycle:research_latency (meta department)",
+   "artifact": "desks/mt5/reports/RESEARCH_LATENCY.json",
+   "consumer": "research_dashboard; bottleneck_law reads the same funnel from the count side",
+   "landed": "2026-09-23 (Tier-5 residual organs: bounty, auction, bottleneck law, drawdown alpha, autopsies, latency, replenishment, dashboard)"
+  },
+  {
+   "id": "T5-7",
+   "domain": "U",
+   "phase": "D",
+   "status": "LANDED",
+   "gate": "none",
+   "item": "ALPHA REPLENISHMENT TARGET (Tier-5 mandate 134): the REQUIRED number of new survivors per week derived from the live book's own measured decay (median half-life -> the fraction of the book that expires in the window), compared with what actually arrived -- certified, promoted, retired, net. A book whose decay is unmeasured gets an UNMEASURED target, never a target of zero, and nothing here retires or caps anything",
+   "evidence": [
+    "desks/mt5/research/alpha_replenishment.py:80 — half_lives(): half-life from half_life_days, a per-day hazard or a per-trade survival, with the unmeasured count kept",
+    "desks/mt5/research/alpha_replenishment.py:116 — build(): required vs achieved with the gap and a MET/SHORT/UNMEASURED verdict",
+    "tests/research/test_tier5_organs.py:152 — the target follows the measured decay and is UNMEASURED without it"
+   ],
+   "scheduled_by": "hourly_cycle:alpha_replenishment (meta department)",
+   "artifact": "desks/mt5/reports/ALPHA_REPLENISHMENT.json",
+   "consumer": "research_auction.bids() (a replenishment gap raises the discovery and validate bids); research_dashboard",
+   "landed": "2026-09-23 (Tier-5 residual organs: bounty, auction, bottleneck law, drawdown alpha, autopsies, latency, replenishment, dashboard)"
+  },
+  {
+   "id": "T5-8",
+   "domain": "U",
+   "phase": "D",
+   "status": "LANDED",
+   "gate": "none",
+   "item": "THE FINAL RESEARCH DASHBOARD (Tier-5 mandate 162) and the Tier-5 acceptance tests as pytest (154-156, 161): one artifact joining the hour's organs -- registry funnel, compute, survivors, live and forward rosters, effective breadth, lineage concentration, the auction's clearing, the bottleneck, latency and replenishment -- published as JSON and rendered to docs/research/RESEARCH_DASHBOARD.md. Lineage concentration is REPORTED and never capped. The acceptance tests pin the no-LLM research path, parallel capacity, anti-homogenisation and the aggression floors (20% heat, 0.02-lot gold) as constants no organ of this lane lowers",
+   "evidence": [
+    "desks/mt5/research/research_dashboard.py:187 — build(): the joined metrics, each MEASURED or UNMEASURED by name",
+    "desks/mt5/research/research_dashboard.py:142 — lineage_concentration(): the monoculture HHI, reported with `capped` false",
+    "tests/research/test_tier5_acceptance.py:40 — the four acceptance tests",
+    "tests/research/test_tier5_organs.py:160 — the dashboard reports the monoculture and never caps the leader"
+   ],
+   "scheduled_by": "hourly_cycle:research_dashboard (meta department, placed last so it joins the pass that just ran)",
+   "artifact": "desks/mt5/reports/RESEARCH_DASHBOARD.json; docs/research/RESEARCH_DASHBOARD.md",
+   "consumer": "the principal and every session's desk-state read; docs/research/TIER5_AUDIT.md section 162 cites it",
+   "landed": "2026-09-23 (Tier-5 residual organs: bounty, auction, bottleneck law, drawdown alpha, autopsies, latency, replenishment, dashboard)"
+  },
+  {
+   "id": "RD1",
+   "domain": "RD",
+   "phase": "RD",
+   "status": "LANDED",
+   "gate": "none",
+   "item": "THE CANONICAL EXPERIMENT OBJECT: one `ExperimentSpec` every factor, model, world-miner lead, physics law, macro idea, country mechanism and sandbox hypothesis compiles into -- lineage (parents/children/method/source), data snapshot identity (PIT vintage + content hash), model, features/representation, target, state and regime conditioning, costs, falsifier, trial family, novelty axes and status. `from_discovery` / `from_candidate` / `from_claim` are the constructors and `to_campaign()` produces the registry candidate (registry.enqueue_candidate) with full provenance. NO PROSE-ONLY RESEARCH: a row that cannot compile returns a `CompileDefect` naming the reason (PROSE_ONLY, NO_INSTRUMENT, NO_FAMILY, NO_FALSIFIER, NO_DATA, OFF_UNIVERSE, UNREADABLE) and the missing fields, which the sweep records as conversion debt rather than dropping",
+   "evidence": [
+    "libs/research/experiment_spec.py:313",
+    "libs/research/experiment_spec.py:420",
+    "libs/research/experiment_spec.py:475",
+    "libs/research/experiment_spec.py:525",
+    "libs/research/experiment_spec.py:578",
+    "libs/research/experiment_spec.py:633",
+    "tests/research/test_experiment_spec.py:1",
+    "desks/mt5/research/experiment_spine.py:301"
+   ],
+   "scheduled_by": "hourly_cycle:experiment_spine",
+   "artifact": "desks/mt5/reports/EXPERIMENT_SPINE.json",
+   "consumer": "desks/mt5/research/experiment_spine.py conversion sweep; libs/research/experiment_graph.py nodes; the coevolution builder imports ExperimentSpec",
+   "gap": "LANDED 2026-09-22: 12 tests in tests/research/test_experiment_spec.py pin the three constructors, the compile contract, each named blocker and the campaign row's provenance"
+  },
+  {
+   "id": "RD11",
+   "domain": "RD",
+   "phase": "RD",
+   "status": "LANDED",
+   "gate": "none",
+   "item": "WORLD-MINER TO EXPERIMENT CONVERSION (the desk's biggest edge): source -> mechanism -> variables -> ExperimentSpec -> CampaignQueue, automatic. The sweep reads the registry's discoveries and candidates and the existing organs' own artifacts (DISCOVERY_COMPILER.json, miner_candidates.json, external_survivors.json, TRANSMISSION_GRAPH.json, GLOBAL_RESEARCH_OS.json -- none of them rewritten), enriches the two derivable fields with a NAMED basis (the desk's own bar file for the instrument, and the standing re-judgement falsifier), enqueues through registry.enqueue_candidate and gives every row that still cannot convert a named blocker in the CONVERSION_DEBT block. A spec already in the graph is skipped so every pass reaches new rows instead of re-converting the same prefix",
+   "evidence": [
+    "desks/mt5/research/experiment_spine.py:236",
+    "desks/mt5/research/experiment_spine.py:301",
+    "libs/research/experiment_spec.py:633",
+    "desks/mt5/tests/test_experiment_spine.py:72",
+    "desks/mt5/research/hourly_cycle.py:3028"
+   ],
+   "scheduled_by": "hourly_cycle:experiment_spine",
+   "artifact": "desks/mt5/reports/EXPERIMENT_SPINE.json",
+   "consumer": "data/alpha_registry.sqlite research_candidates (the campaign queue the gauntlet and external_gauntlet claim from); the CONVERSION_DEBT block is the standing ledger",
+   "gap": "LANDED 2026-09-22: measured on this tree's backlog -- 29,114 rows read, 26,660 converted, 1,584 with a named blocker (NO_FALSIFIER 1,224, OFF_UNIVERSE 162, NO_FAMILY 83, NO_DATA 39, NO_INSTRUMENT 38, PROSE_ONLY 38)"
+  },
+  {
+   "id": "RD16",
+   "domain": "RD",
+   "phase": "RD",
+   "status": "LANDED",
+   "gate": "none",
+   "item": "THE EXPERIMENT MEMORY GRAPH, not result storage: parents, children, failed assumptions, model, data, representation, regime and verdict per experiment, held in the REGISTRY (`experiments` in MOAT_TABLES, edges in `provenance` under the new node kind `experiment`) and never in a store beside it. `never_tried(mechanism=, axes=)` is the first-class query the proposers read -- the complement of what has been run, enumerated over the axis values this desk has ACTUALLY used, with an axis holding no observed value reported UNMEASURED and dropped rather than contributing a blank cell. `refresh()` copies the gauntlet's own verdict onto the node and counts nodes with no cell as orphans",
+   "evidence": [
+    "libs/research/experiment_graph.py:86",
+    "libs/research/experiment_graph.py:148",
+    "libs/research/experiment_graph.py:256",
+    "libs/research/experiment_graph.py:359",
+    "libs/moat/registry.py:250",
+    "tests/research/test_experiment_graph.py:1"
+   ],
+   "scheduled_by": "hourly_cycle:experiment_spine",
+   "artifact": "desks/mt5/reports/EXPERIMENT_SPINE.json",
+   "consumer": "the never_tried_frontier block of EXPERIMENT_SPINE.json; proposers call libs.research.experiment_graph.never_tried directly; the credit ledger walks these nodes",
+   "gap": "LANDED 2026-09-22: 8 tests pin the registry-only storage, idempotent upsert, lineage edges, the complement query, the UNMEASURED axis and the orphan count"
+  },
+  {
+   "id": "RD5",
+   "domain": "RD",
+   "phase": "RD",
+   "status": "LANDED",
+   "gate": "none",
+   "item": "RESEARCH CREDIT ASSIGNMENT MEASURED END TO END: source or search method -> hypothesis -> cell -> survivor -> forward -> live dE[log W], in ONE ledger keyed by ancestry (`research_credit` in the registry). Each experiment credits its attribute ancestors (method, source, miner, mechanism, discovery) and every DAG ancestor of its cell, ONCE per experiment -- crediting each path separately multiplied the same forward R by the number of edges (measured x3 and fixed). Independence is the effective breadth of each ancestor's survivors via libs/research/trial_ledger.py, never the raw count; forward R and the allocator's dE[log W] are carried separately with their bases named",
+   "evidence": [
+    "desks/mt5/research/experiment_spine.py:491",
+    "desks/mt5/research/experiment_spine.py:646",
+    "libs/moat/registry.py:264",
+    "libs/research/trial_ledger.py:338",
+    "desks/mt5/tests/test_experiment_spine.py:114"
+   ],
+   "scheduled_by": "hourly_cycle:experiment_spine",
+   "artifact": "desks/mt5/reports/EXPERIMENT_SPINE.json",
+   "consumer": "data/alpha_registry.sqlite research_credit rows; desks/mt5/research/research_roi.py and the federation's source ROI join on them; the funnel's dE[log W] term",
+   "gap": "LANDED 2026-09-22: the test seeds one survivor with a forward clock and asserts the source and the miner are each credited exactly once with measured independence"
+  },
+  {
+   "id": "RD4",
+   "domain": "RD",
+   "phase": "RD",
+   "status": "LANDED",
+   "gate": "none",
+   "item": "PRIORS UPDATED BY EVERY COMPLETED EXPERIMENT: P(family works), P(operator works), P(source yields value), P(model works with representation) as Beta posteriors plus a Dirichlet over the outcome classes (survived / rejected_no_edge / rejected_cost / rejected_unstable / blocked / unmeasured), persisted under desks/mt5/data/research_priors/ and CONSUMED by the next allocation. Stable API: record_outcome(...), prior_for(...), posterior_mean, rank, thompson, snapshot. An unseen key is the uniform Beta(1,1) -- ignorance, never a measured failure -- and rank keeps every key: the posterior orders a draw and never vetoes one. A verdict is charged ONCE, tracked by a cursor",
+   "evidence": [
+    "libs/research/research_priors.py:222",
+    "libs/research/research_priors.py:284",
+    "libs/research/research_priors.py:331",
+    "libs/research/research_priors.py:316",
+    "desks/mt5/research/experiment_spine.py:661",
+    "desks/mt5/research/meta_controller.py:471",
+    "tests/research/test_research_priors.py:1"
+   ],
+   "scheduled_by": "hourly_cycle:experiment_spine",
+   "artifact": "desks/mt5/reports/EXPERIMENT_SPINE.json",
+   "consumer": "desks/mt5/research/meta_controller.py:605 (_attach_priors ranks every proposal by the prior-adjusted information gain, two-sided); any search organ drawing families or operators through research_priors.rank / thompson",
+   "gap": "LANDED 2026-09-22: 10 tests pin the movement, the unseen-key prior, the failure classes, persistence, decay and the charge-once cursor"
+  },
+  {
+   "id": "RD20",
+   "domain": "RD",
+   "phase": "RD",
+   "status": "LANDED",
+   "gate": "none",
+   "item": "THE ONLY FUNNEL METRIC THAT SETTLES IT: independent forward-valid discoveries per (compute + data + time) and the dE[log W] attributable to research, computed hourly into desks/mt5/reports/RESEARCH_FUNNEL.json from the compute ledger, the registry and the forward/live ledgers. The INDEPENDENCE TERM IS MEASURED -- effective breadth over the forward-valid experiments' own descriptors, not a raw count -- and the three rates (per compute hour, per data unit, per day) are the measurement while the geometric-mean composite is declared a dimensionless index. An absent numerator reads UNMEASURED/PARTIAL with the reason, never a clean zero",
+   "evidence": [
+    "desks/mt5/research/experiment_spine.py:717",
+    "libs/research/trial_ledger.py:338",
+    "libs/ops/compute_ledger.py:245",
+    "desks/mt5/tests/test_experiment_spine.py:172",
+    "desks/mt5/research/hourly_cycle.py:3028"
+   ],
+   "scheduled_by": "hourly_cycle:experiment_spine",
+   "artifact": "desks/mt5/reports/RESEARCH_FUNNEL.json",
+   "consumer": "desks/mt5/reports/RESEARCH_FUNNEL.json read by the research dashboard and the Tier-1 acceptance properties; the funnel block is also carried in EXPERIMENT_SPINE.json",
+   "gap": "LANDED 2026-09-22: the test asserts each rate equals numerator/denominator exactly and that both artifacts are written"
+  },
+  {
+   "id": "U60",
+   "domain": "U",
+   "phase": "U",
+   "status": "LANDED",
+   "gate": "none",
+   "item": "REGIONAL PARITY AT EQUAL DEPTH (LAWS 5n, principal 2026-09-19): every world region receives the same depth of civilization -- the ten source layers in the native language, its own mechanics, its own calendars, its own rule states, its own transmission map -- and compute follows Priority = P(useful) x Orthogonality x InformationGain x CoverageDebt / (Compute + DataCost + TrialBurden). The pure half (libs/research/regional_parity.py) measures every term against the framework's own ruler rather than a pack's claim; the fence (scripts/check_regional_parity.py) asserts NO REGION ABSENT, publishes depth/debt/priority per forest and the country coverage the machinery's own roster names, and CAPS NO COMPUTE; the consumer (research_roi.parity_overlay) folds the coverage debt into forest_allocation.json as a BONUS that raises a neglected region's workers and seconds and lowers nobody's. The country packs lk, ma, cee_balkans and pacific (new, each with its OWN mechanisms, native-language query territories, data plane, interaction miners and transmission candidates) and the miners.py for us and ca complete the packs that had none, each measured at depth 1.0 with zero coercion notes, zero unmapped layers, zero untagged sources and every declared custom miner resolving",
+   "evidence": [
+    "libs/research/regional_parity.py:224 - pack_depth(): the framework's verdict, not the pack's; UNMAPPED and UNTAGGED layers named",
+    "libs/research/regional_parity.py:465 - coverage_debt(): four weighted terms, an UNMEASURED one held at the MIDDLE by name (L1.28a)",
+    "libs/research/regional_parity.py:515 - priority_of(): the law's formula, the debt entering as (1 + debt) and every cost against a unit floor",
+    "libs/research/regional_parity.py:581 - parity_report(): every declared forest present; flags raised on MEASURED absence only",
+    "scripts/check_regional_parity.py:174 - measure(): the one hard assertion (NO REGION ABSENT) plus caps_compute=false as a machine-readable promise",
+    "scripts/check_regional_parity.py:97 - country_coverage(): every country libs/research/forests.py names, and which pack answers for it (principal 2026-09-22)",
+    "scripts/run_law_gate.py:165 - registered in _LAW_FENCES (portable half, every commit)",
+    "scripts/run_law_gate.py:201 - registered in _STATE_FENCES with --strict (live half)",
+    "desks/mt5/research/research_roi.py:879 - parity_overlay(): the debt folded in as a BONUS only, workers_before/budget_before_s carried beside every row",
+    "desks/mt5/research/research_roi.py:1065 - called in run(), so forest_allocation.json carries the parity block every pass",
+    "desks/mt5/research/countries/lk/pack.py:1 - Sri Lanka: the Poya full-moon closure clock, the CBSL overnight policy rate, the Colombo tea auction, the CPC fuel formula",
+    "desks/mt5/research/countries/lk/miners.py:1 - its own five miners on the shared event-study kit",
+    "desks/mt5/research/countries/ma/pack.py:1 - Morocco: the 60/40 basket and its widening band, OCP phosphates, the soft-wheat duty switch, the Ramadan UTC+0 clock shift",
+    "desks/mt5/research/countries/ma/miners.py:1 - its own six miners",
+    "desks/mt5/research/countries/cee_balkans/pack.py:487 - JURISDICTIONS: the eight jurisdictions the pack declares it answers for",
+    "desks/mt5/research/countries/cee_balkans/miners.py:1 - the CNB floor exit, the MNB quick-tender era, the Orthodox/Western Easter divergence",
+    "desks/mt5/research/countries/pacific/pack.py:1 - the Pacific Islands: PNG LNG and the kina's FX rationing, New Caledonia and Solomon nickel, the Fiji crushing season, the PNA tuna cartel, and the dateline Monday open -- the earliest-opening ground on earth",
+    "desks/mt5/research/countries/pacific/miners.py:1 - its own five miners, each naming the country the mechanism belongs to",
+    "desks/mt5/research/countries/us/miners.py:1 - the FOMC window against its non-FOMC Wednesday control, NFP/CPI with placebo weeks, the auction ladder, the plumbing calendar, COT with the look-ahead control run FIRST, the expiry ladder split at 2022, the EIA and WASDE reports",
+    "desks/mt5/research/countries/ca/miners.py:1 - the BoC fixed dates, the LFS split by NFP collision BEFORE measuring, the WCS takeaway gate, the tariff announcement/effective split, the TSX/NYSE divergence",
+    "tests/research/test_regional_parity.py:1 - 21 tests: UNMEASURED holds the middle, the fence asserts exactly one thing, caps_compute is pinned, the overlay lowers nobody",
+    "desks/mt5/tests/test_country_packs_parity_batch.py:1 - 54 tests: pk/bd/us/ca at EQUAL depth (the same number, not four above a bar), zero coercion, ten layers, every miner resolves, every symbol is the broker's and none is a single-name equity",
+    "desks/mt5/research/countries/pk/pack.py:413 - the sibling holiday schema DERIVED from market_holidays() on import, so pk and bd stop being the only two packs whose calendar research.countries.check_pack could not read"
+   ],
+   "scheduled_by": "run_law_gate:check_regional_parity (portable, every commit and push) and the hourly box gate with --strict; hourly_cycle:research_roi consumes the priority",
+   "artifact": "desks/mt5/reports/regional_parity.json; the parity block inside desks/mt5/data/forest_allocation.json",
+   "consumer": "desks/mt5/research/research_roi.py parity_overlay() -> forest_allocation.json, read by libs/research/forests.allocation_for and desks/mt5/research/forest_runner.py",
+   "landed": [
+    "regional parity 2026-09-23"
+   ],
+   "notes": "Measured on landing: 17 of 17 forests reported, NO_PACK=0, median depth 0.9, and all eight packs of this pass (pk bd lk ma us ca cee_balkans pacific) at depth 1.0 with zero coercion notes, zero unmapped layers, zero untagged sources and every declared custom miner resolving. 50 of 76 named countries are answered by a pack. The fence REPORTS the 26 unanswered and the one multi-jurisdiction pack that declares no JURISDICTIONS tuple (ea, which covers eleven euro-area members and declares none) rather than failing on them -- an unanswered country is work, not a breach, and failing would make every honest expansion of a forest's roster a red gate (L1.43). That one tuple in ea/pack.py is the single largest closable line in the coverage block and the fence names it every run."
+  },
+  {
+   "id": "U61",
+   "domain": "U",
+   "phase": "U",
+   "status": "LANDED",
+   "gate": "none",
+   "item": "THE ANYTIME-VALID SCIENCE CONTRACT, VERIFIED AND REPAIRED (LAWS 5k; U19's consumer half): science_controller.continuation_of decides campaign continuation from two e-processes -- each a mixture of Bernoulli likelihood ratios against the sealed gate level, hence a test martingale whose chance of EVER reaching 1/alpha is bounded by Ville's inequality -- plus a time-uniform confidence sequence on the excess pass rate, which is what makes optional stopping legal; the trial stream it prices is the registry's trials_ledger and the desk's gate_verdict_ledger through libs/research/trial_ledger, and the genome and quality-diversity archive come from libs/research/research_genome. THE DEFECT FOUND AND FIXED: meta_controller read continuation['anytime_p'], a key neither the continuation block (anytime_p_discovery / anytime_p_futility) nor the family row (anytime_p) emits, so EVERY anytime-valid DISCOVERY reached the one controller ranked at p_success = 0.0 and sorted below every speculative empty cell. The existing unit test passed throughout because its fixture was typed by hand with the key the consumer wanted; the new contract test builds the row with the PRODUCER, which is the only arrangement in which a renamed key fails a test instead of silently zeroing a ranking",
+   "evidence": [
+    "desks/mt5/research/science_controller.py:188 - _log_mixture_lr(): the mixture of Bernoulli likelihood ratios, a test martingale under the sealed level",
+    "desks/mt5/research/science_controller.py:207 - continuation_of(): CONTINUE / STOP_DISCOVERED / STOP_FUTILE, the first boundary crossed and final, with the confidence sequence beside it",
+    "desks/mt5/research/meta_controller.py:364 - _anytime_p(): reads the key the PRODUCER emits, then the family row, then the legacy flat key; unreadable is 1.0, which scores the action at zero rather than inventing confidence",
+    "desks/mt5/tests/test_science_controller_contract.py:1 - 9 tests built from the producer: a discovery reaches the controller with a real p_success, optional stopping never reverses a verdict, the null does not fire at n=400, the confidence sequence brackets the observed excess rate"
+   ],
+   "scheduled_by": "hourly_cycle:science_controller (validate department, meta layer) -> hourly_cycle:meta_controller",
+   "artifact": "desks/mt5/reports/SCIENCE_CONTROLLER.json; desks/mt5/reports/META_CONTROLLER.json",
+   "consumer": "desks/mt5/research/meta_controller.py _science_actions(); research/cycle_pricing.py turns the board into every leg's seconds",
+   "landed": [
+    "anytime-valid contract 2026-09-23"
+   ],
+   "notes": "VERIFIED, not rebuilt: the controller already read the trial ledger and already decided with e-values and confidence sequences. Only the consumer's key was wrong, and only that was changed."
+  },
+  {
+   "id": "U62",
+   "domain": "U",
+   "phase": "U",
+   "status": "LANDED",
+   "gate": "none",
+   "item": "THE LOOP LIVENESS PROVER: every organ in the research loop reports on ITSELF, so the loop can break at one arrow while fifty-odd reports stay individually truthful and nothing names WHICH arrow. loop_liveness proves the ten arrows -- sources -> discoveries -> conversion (conversion debt) -> compiled cells -> the sealed judge's TEN GATES -> certificates -> forward-clock enrolment -> accrual -> promoter -> allocator -- from the canonical registry (ROOT data/alpha_registry.sqlite, opened READ-ONLY so the prover never creates what it measures) and from each organ's own artifact, publishing per stage the count in the last hour and in 24h, the age of the newest row, the age of the OLDEST UNPROCESSED input, and ALIVE / SLOW / STALLED / UNMEASURED with the owning organ and its last costed run. A stage with INPUT WAITING AND NO OUTPUT inside two cadences is STALLED and is published as a DEFECT; a stage idle for want of input is SLOW, because the defect is upstream and is named there. Gate names come from gate_policy.GATES and verdicts from the gate ledger the sealed judge writes -- external_gauntlet is read, never re-implemented and never edited. MEASURED FIRST RUN 2026-09-23 on VMI3500897: 3 ALIVE, 3 SLOW, 2 STALLED, 2 UNMEASURED, first stalled stage ten_gates_judged with 4,082 queued cells waiting on external_gauntlet against a newest verdict 154 h old",
+   "evidence": [
+    "desks/mt5/research/loop_liveness.py:STAGES - the ten arrows, each declaring the organ that owns it, what waits on its input and what it produces",
+    "desks/mt5/research/loop_liveness.py:judge - the ONE place a verdict is decided: input waiting and no output is STALLED, idle for want of input is SLOW, an absent source is UNMEASURED and never zero",
+    "desks/mt5/research/loop_liveness.py:host_facts - trading_box / box_clocks_off / vps / build_box, MEASURED. 2026-09-23 this host carried the MetaTrader5 package and 26 MT5-* tasks with every one DISABLED, so a package check alone would have blamed shadow_forward for clocks nothing was scheduled to advance",
+    "desks/mt5/research/loop_liveness.py:m_conversion - conversion debt is discoveries with no research_candidate carrying their discovery_id, with the oldest waiting row's age",
+    "desks/mt5/research/loop_liveness.py:m_gauntlet - the ten gate names from gate_policy.GATES and the verdict rows from desks/mt5/data/hypotheses/gate_verdict_ledger.jsonl, the sealed judge's own ledger",
+    "desks/mt5/research/hourly_cycle.py:loop_liveness - the costed leg, --once --budget-s 240; LEG_DEPARTMENT validate, LEG_BUDGET_SEC 300, and its results-dict row",
+    "libs/research/layers.py:loop_liveness - LEG_LAYER entry, meta",
+    "desks/mt5/tests/test_loop_liveness.py:test_stalled_when_input_waits_and_no_output - 21 tests in tmp_path: a planted stalled stage is STALLED, a healthy one is ALIVE, an absent artifact is UNMEASURED not zero, a box-only stage is UNMEASURED off the box and STALLED on it"
+   ],
+   "scheduled_by": "hourly_cycle:loop_liveness (validate department, meta layer)",
+   "artifact": "desks/mt5/reports/LOOP_LIVENESS.json; docs/research/LOOP_LIVENESS.md",
+   "consumer": "docs/research/LOOP_LIVENESS.md (rendered every pass); libs/ops/events.py loop_liveness rows; scripts/check_no_staleness.py imports its host detector so the two organs can never disagree about which machine they are on",
+   "landed": [
+    "loop liveness prover 2026-09-23"
+   ],
+   "notes": "Reads only. It judges no hypothesis, sizes nothing and repairs nothing -- it names the stalled arrow and its organ, which is what no other report did."
+  },
+  {
+   "id": "U63",
+   "domain": "U",
+   "phase": "U",
+   "status": "LANDED",
+   "gate": "none",
+   "item": "THE ANTI-STALENESS FENCE (principal 2026-09-22, make sure nothing is stale): the desk publishes ~300 artifacts from ~1,200 components and nothing read the whole set and asked whether it is still true. check_no_staleness derives every artifact's expected refresh interval in a declared order -- the artifact's own LEASE, else the component registry's artifact_class through lease.TTL_BY_CLASS, else DERIVED as two cadences of the organ's clock and RECORDED in the report's derived_expectations, else UNMEASURED, which is listed and counted and never a pass -- then fails with every artifact past its expectation, naming the organ, its clock and its last exit. REPAIRS ARE RAISED THROUGH THE RECONCILER THAT ALREADY EXISTS (the principal's stop adding independent fixers): observe then plan then apply_plan on libs/ops/control_plane/reconciler.py, which already treats an expired output lease as STALE and STALE as a BROKEN_STATE. The fence holds no repair logic and restarts nothing itself. MEASURED FIRST RUN 2026-09-23 on VMI3500897: 292 owned artifacts -- 43 FRESH, 100 STALE, 149 MISSING, 0 UNMEASURED; the reconciler judged 97 of the stale owners DEGRADED (unwired, which a restart cannot repair) and planned actuators for the 2 it judged STALE",
+   "evidence": [
+    "scripts/check_no_staleness.py:expectation - the declared class through TTL_BY_CLASS, else DERIVED from the cadence, else UNMEASURED named as a governance hole",
+    "scripts/check_no_staleness.py:judge - FRESH / STALE / MISSING / UNMEASURED per artifact with its organ, clock, expectation and where the stamp came from",
+    "scripts/check_no_staleness.py:measurable_here - a box artifact is judged only on a box and a vps artifact only on the VPS; elsewhere this checkout holds a mirror, not the artifact, so old is not stale",
+    "scripts/check_no_staleness.py:raise_repairs - the ONLY repair path: reconciler.observe on the stale artifacts' owners, reconciler.plan over those observations, reconciler.apply_plan under --apply",
+    "scripts/check_no_staleness.py:MAX_STALE - 0, a debt ratchet that only falls; SUSPEND_WHEN_ALL_CLOCKS_DISABLED keeps a whole-box stop as ONE rc=1 defect instead of a 100-row breach that every builder would learn to force",
+    "scripts/run_law_gate.py:check_no_staleness.py - registered in the state-fence battery",
+    "tests/ops/test_no_staleness.py:test_the_reconciler_receives_the_repair - 35 tests in tmp_path against a fake registry and a fake reconciler: fresh passes, a planted stale artifact fails, UNMEASURED is never counted fresh, an absent artifact is MISSING, and the reconciler RECEIVES the repair (observe/plan, and apply_plan only under --apply)"
+   ],
+   "scheduled_by": "scripts/run_law_gate.py state fences (every law-gate boundary: the pre-commit hook, ops/gates.sh and CI)",
+   "artifact": "desks/mt5/reports/NO_STALENESS.json",
+   "consumer": "scripts/run_law_gate.py (rc 2 = ratchet breach or a stale REQUIRED artifact, rc 1 = stale optional artifacts, rc 0 = clean); libs/ops/control_plane/reconciler.py receives the repair plan",
+   "landed": [
+    "anti-staleness fence 2026-09-23"
+   ],
+   "notes": "Measured cost 212 s, dominated by building the component registry; the law gate allows 600 s per fence. Adds no fixer, no cap and no veto -- it names debt and hands the repair to the plane that already owns repairs."
   }
  ],
  "status_vocabulary_note": "LANDED means the code exists in THIS REPOSITORY, on a named clock, with an artifact and a consumer. It does NOT mean the artifact has ever been produced on the trading box, and it does not mean the behaviour has been observed with money at risk. That distinction is what the five acceptance_properties measure, and they are measured from artifacts rather than asserted: an absent artifact reads UNMEASURED, never MET. Read the census as build coverage and the acceptance properties as operational proof. They are different questions and the second is the one that decides whether the desk works."

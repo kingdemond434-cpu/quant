@@ -53,10 +53,20 @@ if str(ROOT) not in sys.path:
 REPORT = ROOT / "desks" / "mt5" / "reports" / "COMPONENT_REGISTRY.json"
 
 #: RATCHET: executables with a `main()` and no clock in this repository. It may FALL, never rise.
-#: Measured 2026-09-17 on this tree. Every one of these is a file the desk can run and does not;
-#: the control plane reports each by name (kind `executable`, schedule UNMEASURED) so the number
-#: is a worklist rather than a mood.
-MAX_UNCLOCKED = 700
+#: 684 on 2026-09-17, 700 as the ratchet, 200 on 2026-09-22 after nine builders wired their own
+#: organs, and ONE on 2026-09-23 after the wiring sweep (principal: "100 percent of everything
+#: built always must be used never forgotten"): 85 dated one-shots, demo executors and seat-only
+#: tools retired to `_retired/` with a row in `docs/research/retirements.jsonl`, 82 fences,
+#: standing fixers and region organs rostered on the two standing batteries
+#: (`desks/mt5/research/batteries.py`, hourly legs `fence_battery` and `organ_battery`), and two
+#: classifier blind spots closed -- the country packs `forest_runner` imports by f-string, and
+#: the 85 SYSTEMD units `ops/crontab.manifest` declares beside its cron lines.
+#:
+#: THE ONE THAT REMAINS is `desks/mt5/scripts/arm_and_pass.py`: it restores the money path to
+#: HEAD and runs one gateway pass, an operator recovery tool named by `ops/migrate_to_new_box.
+#: ps1`. No clock may arm the money path unattended, so it stays unclocked ON PURPOSE and the
+#: ratchet is set to exactly one so the next unclocked executable turns this fence red.
+MAX_UNCLOCKED = 1
 
 
 def _load(path: Path, name: str) -> Any:

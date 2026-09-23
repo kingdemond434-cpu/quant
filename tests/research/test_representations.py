@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import math
 import sys
+from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
@@ -203,3 +204,111 @@ def test_every_registered_transform_declares_a_known_family_and_runs() -> None:
                       events=[raw.points[40].available_time])
         assert isinstance(out, R.Series)
         assert all(math.isfinite(p.value) for p in out.points), name
+
+
+# ------------------------------------------------- the four transforms the forge was missing
+def _mk(values: list[float], *, dataset: str, region: str = "US",
+        start_day: int = 1) -> R.Series:
+    base = datetime(2026, 1, 1, tzinfo=UTC) + timedelta(days=start_day)
+    points = tuple(R.Point(available_time=(base + timedelta(days=i)).isoformat(),
+                           period_time=(base + timedelta(days=i)).isoformat(), value=v)
+                   for i, v in enumerate(values))
+    return R.Series(series_id=f"raw:{dataset}:{region}", points=points, dataset=dataset,
+                    region=region, information_type="macro_state")
+
+
+def _cut(series: R.Series, when: str) -> R.Series:
+    """The same series as a desk standing at `when` would have had it."""
+    return R.Series(series_id=series.series_id,
+                    points=tuple(p for p in series.points if p.available_time <= when),
+                    dataset=series.dataset, region=series.region,
+                    information_type=series.information_type)
+
+
+def _pit_identical(fn: Callable[..., R.Series], inputs: list[R.Series], *, back: int = 3) -> None:
+    """THE ONE INVARIANT, tested the only way that actually proves it: the value stamped t must
+    be IDENTICAL -- not close, identical -- when every input is truncated at t. A transform that
+    peeks produces a different number the moment the future is taken away, and nothing else in a
+    report would show it."""
+    full = fn(*inputs)
+    assert len(full.points) > back, "the fixture produced too few points to test"
+    point = full.points[-back]
+    truncated = fn(*[_cut(s, point.available_time) for s in inputs])
+    seen = {p.available_time: p.value for p in truncated.points}
+    assert point.available_time in seen, "truncating at t lost the point stamped t"
+    assert seen[point.available_time] == point.value
+
+
+def test_cross_country_spread_pairs_on_the_declared_region_and_never_a_hard_coded_list() -> None:
+    us = _mk([10.0 + i for i in range(40)], dataset="cpi", region="US")
+    de = _mk([4.0 + 0.5 * i for i in range(40)], dataset="cpi", region="DE")
+    out = R.cross_country_spread(us, de)
+    assert out.region == "US-DE" and "US-DE" in out.series_id
+    assert out.points[0].value == pytest.approx(6.0)
+    assert out.points[-1].value == pytest.approx(10.0 + 39 - (4.0 + 0.5 * 39))
+
+    # No pairing can be DERIVED when both sides are the same place: UNMEASURED, said in the id.
+    same = R.cross_country_spread(us, _mk([1.0] * 40, dataset="cpi", region="US"))
+    assert same.points == () and "undeclared" in same.series_id
+    _pit_identical(R.cross_country_spread, [us, de])
+
+
+def test_diffusion_is_the_share_of_the_panel_above_its_own_trailing_level() -> None:
+    up = _mk([float(i) for i in range(40)], dataset="a")
+    down = _mk([float(40 - i) for i in range(40)], dataset="b")
+    flat = _mk([5.0] * 40, dataset="c")
+    out = R.diffusion(up, down, flat)
+    assert out.points, "a three-member panel produced no breadth reading"
+    # One member rising, one falling, one flat and never strictly above its own mean: 1 of 3.
+    assert all(p.value == pytest.approx(1.0 / 3.0) for p in out.points)
+    assert R.diffusion(up, up).points[-1].value == pytest.approx(1.0)
+    with pytest.raises(ValueError, match="at least two"):
+        R.diffusion(up)
+    _pit_identical(R.diffusion, [up, down, flat])
+
+
+def test_rolling_beta_recovers_a_planted_slope_and_states_its_window() -> None:
+    bench = _mk([100.0 + (i % 7) * 1.3 for i in range(60)], dataset="spx")
+    levels = [0.0]
+    for i in range(1, 60):
+        levels.append(levels[-1] + 2.0 * ((100.0 + (i % 7) * 1.3) - (100.0 + ((i - 1) % 7) * 1.3)))
+    target = _mk(levels, dataset="sleeve")
+    out = R.rolling_beta(target, bench, window=20)
+    assert out.points[-1].value == pytest.approx(2.0)
+    assert "window=20" in out.series_id and "sleevexspx" in out.series_id
+    _pit_identical(lambda a, b: R.rolling_beta(a, b, window=20), [target, bench])
+
+
+def test_embedding_is_fitted_only_on_the_past_and_publishes_its_explained_variance() -> None:
+    twin_a = _mk([float((i * 7) % 11) for i in range(80)], dataset="a")
+    twin_b = _mk([float((i * 7) % 11) * 2.0 + 1.0 for i in range(80)], dataset="b")
+    lone = _mk([float((i * 5) % 3) for i in range(80)], dataset="c")
+    panel = [twin_a, twin_b, lone]
+    out = R.embedding(*panel, window=30)
+    assert out.points, "the panel produced no embedding"
+    assert "components=2" in out.series_id and "window=30" in out.series_id
+
+    fit = R.embedding_fit(*panel, window=30)
+    assert fit["status"] == "measured" and fit["components"] == 2
+    assert len(fit["explained_variance"]) == 2
+    # Two collinear members out of three: the leading component must carry most of the variance.
+    assert fit["explained_variance"][0] > 0.5
+    assert fit["explained_variance"][0] >= fit["explained_variance"][1]
+    assert fit["n_fits"] >= 1 and "up to, and not including" in fit["fitted_on"]
+    assert R.embedding_fit(twin_a)["status"] == "unmeasured"
+
+    # The test that matters: a learned representation is exactly where a leak hides.
+    _pit_identical(lambda *s: R.embedding(*s, window=30), panel)
+
+
+def test_the_grammar_hands_a_panel_transform_the_whole_panel() -> None:
+    a = _mk([float(i) for i in range(40)], dataset="a")
+    b = _mk([float(40 - i) for i in range(40)], dataset="b")
+    c = _mk([float((i * 3) % 5) for i in range(40)], dataset="c")
+    through_grammar = R.apply(R.Transform("diffusion", {}), a, b, c)
+    assert through_grammar.points == R.diffusion(a, b, c).points
+    # ... and NOT the two-member reading, which is what a non-variadic dispatch would have run.
+    assert through_grammar.points != R.diffusion(a, b).points
+    assert R.TRANSFORMS["diffusion"].variadic and R.TRANSFORMS["embedding"].variadic
+    for name in ("cross_country_spread", "diffusion", "rolling_beta", "embedding"):
+        assert R.TRANSFORMS[name].family in R.FAMILIES

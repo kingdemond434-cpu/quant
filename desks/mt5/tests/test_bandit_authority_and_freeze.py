@@ -23,6 +23,12 @@ ARMS = ["new_mechanism", "mutate_survivor", "combine_survivors", "conditional_st
 def _point(monkeypatch, tmp_path: Path) -> None:
     monkeypatch.setattr(rb, "BANDIT", tmp_path / "RESEARCH_BANDIT.json")
     monkeypatch.setattr(rb, "OUT", tmp_path / "RESEARCH_BUDGET.json")
+    # THE AUCTION IS AN INPUT TOO (Tier-5 mandate 110, wired 2026-09-23): `budget_s` multiplies
+    # the research auction's cleared factor for the leg's department. These assertions are about
+    # the BANDIT's share alone, so the auction is pointed at an absent file and reads par --
+    # the same isolation the two lines above already give the other inputs. Every assertion
+    # below is unchanged; without this line the box's live auction leaked into the arithmetic.
+    monkeypatch.setattr(rb, "AUCTION", tmp_path / "RESEARCH_AUCTION.json")
 
 
 def test_budget_is_base_when_bandit_unreadable(monkeypatch, tmp_path):
@@ -36,20 +42,20 @@ def test_budget_is_base_when_bandit_unreadable(monkeypatch, tmp_path):
 
 def test_budget_scales_by_share_and_clips(monkeypatch, tmp_path):
     _point(monkeypatch, tmp_path)
-    shares = {a: 1 / 11 for a in ARMS}
+    shares = dict.fromkeys(ARMS, 1 / 11)
     shares["mutate_survivor"] = 0.30
     shares["new_mechanism"] = 0.02
     rb.BANDIT.write_text(json.dumps({"shares": shares}), encoding="utf-8")
     s, rec = rb.budget_s("alpha_evolution", 240)
     assert rec["applied"] is True and 1.4 < rec["factor"] < 1.6 and s == round(240 * rec["factor"])
     # a share of zero floors at 0.5x, never starves the leg
-    shares = {a: 0.0 for a in ARMS}
+    shares = dict.fromkeys(ARMS, 0.0)
     shares["model_architecture"] = 1.0
     rb.BANDIT.write_text(json.dumps({"shares": shares}), encoding="utf-8")
     s, rec = rb.budget_s("alpha_evolution", 240)
     assert rec["factor"] == rb.FLOOR and s == 120
     # a runaway share caps at 2x
-    shares = {a: 0.0 for a in ARMS}
+    shares = dict.fromkeys(ARMS, 0.0)
     shares["mutate_survivor"] = 1.0
     rb.BANDIT.write_text(json.dumps({"shares": shares}), encoding="utf-8")
     s, rec = rb.budget_s("alpha_evolution", 240)
@@ -57,6 +63,50 @@ def test_budget_scales_by_share_and_clips(monkeypatch, tmp_path):
     rb.record(rec)
     ok, why = rb.authority()
     assert ok is True and "alpha_evolution=480s" in why
+
+
+def test_the_budget_records_whether_the_department_factor_decided(monkeypatch, tmp_path):
+    """THE EXCHANGE'S NUMBER MULTIPLIES EITHER WAY (review R4). `research_departments` publishes a
+    reporting factor and an allocating one; only the second is authoritative, and only when every
+    input behind it is measured. RESEARCH_BUDGET.json must show which of the two set the seconds --
+    a leg scaled by an unmeasured exchange and one scaled by a measured allocation are not the
+    same claim and used to be the same record."""
+    import research_departments as rd
+
+    _point(monkeypatch, tmp_path)
+    monkeypatch.setattr(rd, "OUT", tmp_path / "RESEARCH_DEPARTMENTS.json")
+    # the leg's department is hourly_cycle's to decide, so it is READ, never typed here
+    dept = rd.department_of("alpha_evolution")
+    rb.BANDIT.write_text(json.dumps({"shares": dict.fromkeys(ARMS, 1 / 11)}), encoding="utf-8")
+    s0, rec0 = rb.budget_s("alpha_evolution", 240)
+    assert rec0["department_factor"] == 1.0 and rec0["department_authoritative"] is False
+    assert "no `spend` block" in rec0["department_why"]
+
+    rd.OUT.write_text(json.dumps({
+        "factors": {dept: 1.1},
+        "spend": {"authoritative": True, "resource": "compute", "factors": {dept: 2.0},
+                  "why": "every input measured"}}), encoding="utf-8")
+    s1, rec1 = rb.budget_s("alpha_evolution", 240)
+    assert rec1["department_factor"] == 2.0 and rec1["department_authoritative"] is True
+    assert "compute" in rec1["department_why"] and "AUTHORITATIVE" in rec1["why"]
+    # the allocation is what moved the seconds, bounded by the same clip as everything else
+    assert abs(rec1["factor"] - min(rb.CEIL, rec0["factor"] * 2.0)) < 0.002
+    assert s1 >= s0 and rec1["factor"] <= rb.CEIL
+    rb.record(rec1)
+    doc = json.loads(rb.OUT.read_text(encoding="utf-8"))
+    assert doc["n_department_authoritative"] == 1
+    assert doc["legs"]["alpha_evolution"]["department_authoritative"] is True
+
+    # a NON-authoritative block falls back to the reporting factor, and says that it did
+    rd.OUT.write_text(json.dumps({
+        "factors": {dept: 1.1},
+        "spend": {"authoritative": False, "resource": "compute", "factors": {dept: 2.0},
+                  "why": "2 department(s) recorded no compute in the window"}}), encoding="utf-8")
+    _, rec2 = rb.budget_s("alpha_evolution", 240)
+    assert rec2["department_factor"] == 1.1 and rec2["department_authoritative"] is False
+    assert "no compute in the window" in rec2["department_why"]
+    rb.record(rec2)
+    assert json.loads(rb.OUT.read_text(encoding="utf-8"))["n_department_authoritative"] == 0
 
 
 def test_epoch_reads_ledger_since_previous_board(monkeypatch, tmp_path):

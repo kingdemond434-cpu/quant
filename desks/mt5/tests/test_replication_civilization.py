@@ -24,22 +24,29 @@ META = {"contract_size": 100000.0, "tick_size": 0.00001, "median_spread_pts": 12
         "tick_value": 0.86}
 
 
-def _gap_bars(seed: int = 5, fade: float = 0.0009) -> rc.Bars:
-    """Hourly bars with a planted overnight gap that decays over the next eight bars."""
+def _gap_bars(seed: int = 5, fade: float = 0.0009, gap: float = 0.002) -> rc.Bars:
+    """Hourly bars with a planted overnight gap that decays over the next eight bars.
+
+    THE GAP IS IN THE PATH, NOT ONLY IN THE OPEN. An earlier draft gapped `open_` alone and
+    left `close` on the un-gapped cumulative path, so every gap was fully reversed INSIDE its
+    own signal bar: the fade rule's entry (the next bar's open = the signal bar's close) already
+    sat past its own target, every trade exited at the target for a LOSS, and the honest
+    certificate read Sharpe -12. Real data gaps the whole bar, so the gap enters `step`."""
     rng = np.random.default_rng(seed)
     n = N_DAYS * 24
     t0 = np.datetime64("2024-01-01T00:00:00", "ns").astype("int64")
     t = t0 + np.arange(n, dtype="int64") * 3_600_000_000_000
     hours = np.arange(n) % 24
     day_no = np.arange(n) // 24
-    step = rng.normal(0.0, 0.0002, n)
     gap_sign = np.where(rng.random(N_DAYS) < 0.5, 1.0, -1.0)
+    jump = np.zeros(n)
+    jump[hours == 0] = gap * gap_sign
+    step = rng.normal(0.0, 0.0002, n) + jump
     fade_mask = (hours >= 1) & (hours <= 8)
     step[fade_mask] -= fade * gap_sign[day_no[fade_mask]]
     close = 1.2 * np.exp(np.cumsum(step))
-    open_ = np.concatenate([[1.2], close[:-1]])
-    first = np.nonzero(hours == 0)[0]
-    open_[first] = close[np.maximum(first - 1, 0)] * np.exp(0.002 * gap_sign)
+    prev = np.concatenate([[1.2], close[:-1]])
+    open_ = prev * np.exp(jump)                 # the open jumps, then the bar trades on from it
     high = np.maximum(open_, close) * 1.0002
     low = np.minimum(open_, close) * 0.9998
     return rc.bars_from_arrays(t, open_, high, low, close)
@@ -71,12 +78,12 @@ def test_an_honest_certificate_is_replicated_and_a_misspecified_one_is_quarantin
                                         "gates": {}}, meta=META, bars=bars)
     assert unknown["verdict"] == rc.UNMEASURED and "spec book" in unknown["why"][0]
 
-    kw: dict[str, Any] = dict(certificates=[_certificate(-ours)], forward=[],
-                              universe_meta={"TESTFX": META},
-                              bars_loader=lambda s, t: bars,
-                              cursor_path=tmp_path / "cursor.json",
-                              quarantine_path=tmp_path / "quarantine.json",
-                              report=tmp_path / "REPLICATION.json")
+    kw: dict[str, Any] = {"certificates": [_certificate(-ours)], "forward": [],
+                          "universe_meta": {"TESTFX": META},
+                          "bars_loader": lambda s, t: bars,
+                          "cursor_path": tmp_path / "cursor.json",
+                          "quarantine_path": tmp_path / "quarantine.json",
+                          "report": tmp_path / "REPLICATION.json"}
     dry = rc.build(budget_s=60, dry_run=True, conn=None, **kw)
     assert dry["counts"][rc.MISMATCH] == 1 and dry["recorded"]["quarantined"] == 0
     assert not list(tmp_path.iterdir())                     # dry-run writes nothing

@@ -128,3 +128,42 @@ def test_absent_inputs_are_unmeasured_not_zero(desk: dict[str, Path]) -> None:
     assert rep["trials"]["stream"]["raw"] == 0 and rep["blocked"]["count"] == 0
     assert rep["families"]["count"] == 2 and rep["families"]["exhausted"] == 0
     assert all(r["verdict"] == "UNMEASURED" for r in rep["families"]["top"])
+
+
+
+def test_campaign_continuation_is_anytime_valid_and_a_report_only(desk: dict[str, Path]) -> None:
+    """Every family carries a continuation decision read off two Bernoulli mixture e-processes
+    (discovery above the sealed level, futility below it). The clone family's sixty fails push
+    the futility process and never the discovery one; the healthy family CONTINUES; the block
+    is a report; and a decision, once reached, is the same whenever the stream is read."""
+    rep = sc.build(budget_s=30.0)
+    fams = {r["families"][0]: r for r in rep["families"]["top"]}
+    clone, healthy = fams["clone_fam"]["continuation"], fams["healthy_fam"]["continuation"]
+    assert clone["n"] == EXHAUSTED_LAUNCHES and clone["passes"] == 0
+    assert clone["futility_e"] > 1.0 > clone["discovery_e"]
+    assert clone["decision"] in (sc.CONTINUE, sc.STOP_FUTILE)
+    assert clone["excess_pass_rate_cs"][0] < 0.0 and clone["wealth_state"] == "EXHAUSTED"
+    assert healthy["decision"] == sc.CONTINUE and healthy["n"] == 2 and healthy["passes"] == 1
+    camp = rep["campaigns"]
+    assert sum(camp["decisions"].values()) == 2 and camp["judged_families"] == 2
+    assert camp["decisions"][sc.STOP_DISCOVERED] == 0
+    assert "never a brake" in camp["rule"] and "report" in camp["boundary"]
+    level = float(rep["parameters"]["gate_level"])
+    # futility: a long run of fails crosses 1/alpha; the crossing index is a stopping time and
+    # the decision is fixed there, whatever arrives afterwards (optional stopping legal)
+    fails = [False] * 400
+    fut = sc.continuation_of(fails, level, 0.05)
+    assert fut["decision"] == sc.STOP_FUTILE and fut["futility_max_e"] >= 20.0
+    at = int(fut["decided_at"])
+    assert sc.continuation_of(fails[:at], level, 0.05)["decision"] == sc.STOP_FUTILE
+    assert sc.continuation_of(fails[:at - 1], level, 0.05)["decision"] == sc.CONTINUE
+    later = sc.continuation_of(fails + [True] * 40, level, 0.05)
+    assert later["decision"] == sc.STOP_FUTILE and later["decided_at"] == at
+    # discovery: passes at many times the sealed level cross the other boundary
+    won = sc.continuation_of([True] * 6, level, 0.05)
+    assert won["decision"] == sc.STOP_DISCOVERED and won["discovery_e"] >= 20.0
+    assert won["anytime_p_discovery"] <= 0.05
+    # the Ville bound is a real bound: under the null, most fail-runs never cross by n=25
+    assert sc.continuation_of([False] * 25, level, 0.05)["futility_e"] < 20.0
+    empty = sc.continuation_of([], level, 0.05)
+    assert empty["decision"] == sc.CONTINUE and empty["n"] == 0 and "UNMEASURED" in empty["why"]

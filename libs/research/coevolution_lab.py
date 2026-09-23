@@ -308,9 +308,23 @@ def compatibility_matrix(cells: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
     grid: dict[str, dict[str, Any]] = {}
     for c in cells:
         rep, mod = str(c.get("representation")), str(c.get("model"))
-        grid.setdefault(rep, {})[mod] = {
-            "net_gain": c.get("net_gain"), "verdict": c.get("verdict"), "n": c.get("n"),
-            "backend": c.get("backend"), "heavy_verdict": c.get("heavy_verdict")}
+        row = {"net_gain": c.get("net_gain"), "verdict": c.get("verdict"), "n": c.get("n"),
+               "backend": c.get("backend"), "heavy_verdict": c.get("heavy_verdict"),
+               "best_on": c.get("symbol"), "pooled": 1}
+        prior = grid.setdefault(rep, {}).get(mod)
+        if prior is None:
+            grid[rep][mod] = row
+            continue
+        # THE SAME (R, M) CELL SEEN ON SEVERAL INSTRUMENTS KEEPS ITS BEST, not its last. Taking
+        # the last silently made the whole grid a report on whichever symbol happened to be swept
+        # last -- measured 2026-09-22, when six earning cells sat in the winners list while every
+        # representation read DEAD because a later instrument's negative cell had overwritten the
+        # positive one at the same key.
+        row["pooled"] = int(prior.get("pooled") or 1) + 1
+        keep = prior if (prior.get("net_gain") is not None
+                         and (row["net_gain"] is None
+                              or float(prior["net_gain"]) >= float(row["net_gain"]))) else row
+        grid[rep][mod] = {**keep, "pooled": row["pooled"]}
     reps = sorted(grid)
     models = sorted({m for row in grid.values() for m in row})
     return {"representations": reps, "models": models, "grid": grid,

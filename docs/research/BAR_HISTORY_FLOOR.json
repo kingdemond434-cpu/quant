@@ -1,110 +1,1227 @@
 {
  "breaches": [
   {
-   "days_now": 20,
+   "days_now": 71,
    "kind": "STUMP_VS_PEERS",
-   "peer_median_days": 2246,
-   "rows_now": 479,
+   "peer_median_days": 1507,
+   "rows_now": 1691,
+   "symbol": "AAOIUSD"
+  },
+  {
+   "days_now": 134,
+   "kind": "STUMP_VS_PEERS",
+   "peer_median_days": 1507,
+   "rows_now": 3199,
+   "symbol": "AAPLUSD"
+  },
+  {
+   "days_now": 68,
+   "kind": "STUMP_VS_PEERS",
+   "peer_median_days": 1507,
+   "rows_now": 1619,
+   "symbol": "ADBEUSD"
+  },
+  {
+   "days_now": 33,
+   "kind": "STUMP_VS_PEERS",
+   "peer_median_days": 1507,
+   "rows_now": 785,
    "symbol": "AUDNZD"
   }
  ],
  "measured": {
+  "3M": {
+   "days": 1403,
+   "rows": 9838
+  },
+  "A": {
+   "days": 1066,
+   "rows": 7431
+  },
+  "AA": {
+   "days": 1066,
+   "rows": 7431
+  },
+  "AAL": {
+   "days": 999,
+   "rows": 8920
+  },
+  "AALB": {
+   "days": 1004,
+   "rows": 8981
+  },
+  "AALG": {
+   "days": 1416,
+   "rows": 9827
+  },
+  "AAOI": {
+   "days": 520,
+   "rows": 4121
+  },
+  "AAOIUSD": {
+   "days": 71,
+   "rows": 1691
+  },
+  "AAPL": {
+   "days": 2165,
+   "rows": 16328
+  },
+  "AAPL.24H": {
+   "days": 396,
+   "rows": 6462
+  },
+  "AAPLUSD": {
+   "days": 134,
+   "rows": 3199
+  },
+  "ABBV.24H": {
+   "days": 1418,
+   "rows": 16822
+  },
+  "ABBVIE": {
+   "days": 2166,
+   "rows": 15109
+  },
+  "ABDN": {
+   "days": 1074,
+   "rows": 9589
+  },
+  "ABF": {
+   "days": 1000,
+   "rows": 8929
+  },
+  "ABN": {
+   "days": 1004,
+   "rows": 8981
+  },
+  "ABNB": {
+   "days": 1066,
+   "rows": 7431
+  },
+  "ABT": {
+   "days": 1116,
+   "rows": 7777
+  },
+  "AC": {
+   "days": 1004,
+   "rows": 8981
+  },
+  "ACA": {
+   "days": 1004,
+   "rows": 8981
+  },
+  "ACN": {
+   "days": 1066,
+   "rows": 7431
+  },
+  "ADAJPY": {
+   "days": 733,
+   "rows": 17358
+  },
+  "ADAUSD": {
+   "days": 2924,
+   "rows": 48269
+  },
+  "ADBE": {
+   "days": 1066,
+   "rows": 7431
+  },
+  "ADBE.24H": {
+   "days": 1419,
+   "rows": 17046
+  },
+  "ADBEUSD": {
+   "days": 68,
+   "rows": 1619
+  },
+  "ADI": {
+   "days": 1065,
+   "rows": 7424
+  },
+  "ADM": {
+   "days": 1066,
+   "rows": 7431
+  },
+  "ADP": {
+   "days": 1387,
+   "rows": 9728
+  },
+  "ADPR": {
+   "days": 961,
+   "rows": 8596
+  },
+  "ADS": {
+   "days": 1004,
+   "rows": 8981
+  },
+  "ADSK": {
+   "days": 1066,
+   "rows": 7431
+  },
+  "ADYEN": {
+   "days": 966,
+   "rows": 8639
+  },
+  "AENA": {
+   "days": 961,
+   "rows": 8592
+  },
+  "AEP": {
+   "days": 1066,
+   "rows": 7431
+  },
+  "AFG": {
+   "days": 1066,
+   "rows": 7431
+  },
+  "AFL": {
+   "days": 1066,
+   "rows": 7431
+  },
+  "AFX": {
+   "days": 1080,
+   "rows": 9665
+  },
+  "AGG": {
+   "days": 1128,
+   "rows": 7852
+  },
+  "AGN": {
+   "days": 1046,
+   "rows": 9359
+  },
+  "AGNC": {
+   "days": 1066,
+   "rows": 7431
+  },
+  "AI": {
+   "days": 1931,
+   "rows": 17241
+  },
+  "AIG": {
+   "days": 1116,
+   "rows": 7777
+  },
+  "AIR": {
+   "days": 1936,
+   "rows": 17291
+  },
+  "AKAM": {
+   "days": 1116,
+   "rows": 7777
+  },
+  "AKZA": {
+   "days": 1110,
+   "rows": 9929
+  },
+  "ALAB": {
+   "days": 520,
+   "rows": 4116
+  },
+  "ALB": {
+   "days": 1116,
+   "rows": 7777
+  },
+  "ALGN": {
+   "days": 1116,
+   "rows": 7777
+  },
+  "ALGUSD": {
+   "days": 2599,
+   "rows": 61467
+  },
+  "ALIBABA": {
+   "days": 2166,
+   "rows": 16334
+  },
+  "ALIBABA.24H": {
+   "days": 396,
+   "rows": 6146
+  },
+  "ALK": {
+   "days": 1116,
+   "rows": 7777
+  },
+  "ALLC": {
+   "days": 1116,
+   "rows": 7777
+  },
+  "AMD": {
+   "days": 1387,
+   "rows": 9732
+  },
+  "AT&T": {
+   "days": 2186,
+   "rows": 8989
+  },
   "AUDCAD": {
-   "days": 2246,
-   "rows": 53864
+   "days": 2259,
+   "rows": 54170
+  },
+  "AUDCHF": {
+   "days": 2260,
+   "rows": 43509
+  },
+  "AUDHUF": {
+   "days": 2342,
+   "rows": 43555
   },
   "AUDJPY": {
-   "days": 2246,
-   "rows": 53864
+   "days": 2259,
+   "rows": 54170
   },
   "AUDNZD": {
-   "days": 20,
-   "rows": 479
+   "days": 33,
+   "rows": 785
+  },
+  "AUDSGD": {
+   "days": 2255,
+   "rows": 43438
   },
   "AUDUSD": {
-   "days": 2246,
-   "rows": 53864
+   "days": 2259,
+   "rows": 54170
+  },
+  "AUS200": {
+   "days": 2239,
+   "rows": 40412
+  },
+  "AVAXUSD": {
+   "days": 1658,
+   "rows": 39651
+  },
+  "Accenture": {
+   "days": 2186,
+   "rows": 8990
+  },
+  "Adobe": {
+   "days": 1380,
+   "rows": 9673
+  },
+  "Airbnb": {
+   "days": 1444,
+   "rows": 8251
+  },
+  "AlibabaGroup": {
+   "days": 2186,
+   "rows": 8991
+  },
+  "Alphabet-A": {
+   "days": 1351,
+   "rows": 9441
+  },
+  "Alphabet-C": {
+   "days": 1375,
+   "rows": 9624
+  },
+  "Amazon": {
+   "days": 1296,
+   "rows": 9044
+  },
+  "AmericanExpress": {
+   "days": 1382,
+   "rows": 9687
+  },
+  "Amgen": {
+   "days": 1385,
+   "rows": 9715
+  },
+  "Apple": {
+   "days": 1387,
+   "rows": 9733
+  },
+  "AppliedMaterials": {
+   "days": 1384,
+   "rows": 9704
+  },
+  "Atlassian": {
+   "days": 1353,
+   "rows": 9385
+  },
+  "BCHUSD": {
+   "days": 2739,
+   "rows": 54397
+  },
+  "BNBUSD": {
+   "days": 2966,
+   "rows": 46885
   },
   "BTCUSD": {
-   "days": 2757,
-   "rows": 63246
+   "days": 2776,
+   "rows": 63707
+  },
+  "Baidu": {
+   "days": 2186,
+   "rows": 8943
+  },
+  "BankofAmericaCorp": {
+   "days": 2186,
+   "rows": 8990
+  },
+  "Berkshire": {
+   "days": 1507,
+   "rows": 8312
+  },
+  "BlackRock": {
+   "days": 1507,
+   "rows": 8309
+  },
+  "Boeing": {
+   "days": 1381,
+   "rows": 9685
+  },
+  "Booking": {
+   "days": 1366,
+   "rows": 9381
+  },
+  "Broadcom": {
+   "days": 1379,
+   "rows": 9669
+  },
+  "CA60": {
+   "days": 1508,
+   "rows": 21046
+  },
+  "CADCHF": {
+   "days": 1560,
+   "rows": 37414
   },
   "CADJPY": {
-   "days": 2246,
-   "rows": 53864
+   "days": 2259,
+   "rows": 54170
+  },
+  "CHFDKK": {
+   "days": 1560,
+   "rows": 37409
+  },
+  "CHFHUF": {
+   "days": 1560,
+   "rows": 37377
   },
   "CHFJPY": {
-   "days": 2247,
-   "rows": 53865
+   "days": 2260,
+   "rows": 54171
+  },
+  "CHFNOK": {
+   "days": 1560,
+   "rows": 37399
+  },
+  "CHFPLN": {
+   "days": 1560,
+   "rows": 37408
+  },
+  "CHFSEK": {
+   "days": 1559,
+   "rows": 37400
+  },
+  "CHFSGD": {
+   "days": 1559,
+   "rows": 36922
+  },
+  "CHINAH": {
+   "days": 1476,
+   "rows": 24361
+  },
+  "COFARA": {
+   "days": 1292,
+   "rows": 12739
+  },
+  "COFROB": {
+   "days": 1302,
+   "rows": 11641
+  },
+  "CORN": {
+   "days": 1510,
+   "rows": 24274
+  },
+  "COTTON": {
+   "days": 1281,
+   "rows": 22750
+  },
+  "CVSHealth": {
+   "days": 1507,
+   "rows": 8311
+  },
+  "Caterpillar": {
+   "days": 1384,
+   "rows": 9709
+  },
+  "CharlesSchwab": {
+   "days": 1507,
+   "rows": 8312
+  },
+  "Charter": {
+   "days": 1390,
+   "rows": 9741
+  },
+  "Chevron": {
+   "days": 1404,
+   "rows": 9848
+  },
+  "Cisco": {
+   "days": 1414,
+   "rows": 9918
+  },
+  "Citigroup": {
+   "days": 1507,
+   "rows": 8312
+  },
+  "Coca-Cola": {
+   "days": 1383,
+   "rows": 9698
+  },
+  "Coinbase": {
+   "days": 1361,
+   "rows": 8167
+  },
+  "Comcast": {
+   "days": 1413,
+   "rows": 9910
+  },
+  "CostcoWholesale": {
+   "days": 1398,
+   "rows": 9805
+  },
+  "DOGEUSD": {
+   "days": 2169,
+   "rows": 47520
+  },
+  "DOTUSD": {
+   "days": 2181,
+   "rows": 47510
+  },
+  "DocuSign": {
+   "days": 1507,
+   "rows": 8312
+  },
+  "Doordash": {
+   "days": 1444,
+   "rows": 8237
+  },
+  "Dow": {
+   "days": 1389,
+   "rows": 9743
+  },
+  "E35": {
+   "days": 1535,
+   "rows": 18358
+  },
+  "EOSUSD": {
+   "days": 1874,
+   "rows": 40136
   },
   "ETHUSD": {
-   "days": 2758,
-   "rows": 63268
+   "days": 2777,
+   "rows": 63729
   },
   "EURAUD": {
-   "days": 2246,
-   "rows": 53864
+   "days": 2259,
+   "rows": 54170
+  },
+  "EURCAD": {
+   "days": 1560,
+   "rows": 37416
   },
   "EURCHF": {
-   "days": 2246,
-   "rows": 53900
+   "days": 2259,
+   "rows": 54206
+  },
+  "EURCZK": {
+   "days": 1559,
+   "rows": 37360
+  },
+  "EURDKK": {
+   "days": 1560,
+   "rows": 37304
   },
   "EURGBP": {
-   "days": 2246,
-   "rows": 53864
+   "days": 2259,
+   "rows": 54170
+  },
+  "EURHKD": {
+   "days": 1560,
+   "rows": 37409
+  },
+  "EURHUF": {
+   "days": 1560,
+   "rows": 37340
+  },
+  "EURILS": {
+   "days": 1559,
+   "rows": 37240
   },
   "EURJPY": {
-   "days": 2246,
-   "rows": 53900
+   "days": 2259,
+   "rows": 54206
+  },
+  "EURMXN": {
+   "days": 1560,
+   "rows": 37403
+  },
+  "EURNOK": {
+   "days": 1561,
+   "rows": 37402
+  },
+  "EURNZD": {
+   "days": 1559,
+   "rows": 37311
+  },
+  "EURPLN": {
+   "days": 1561,
+   "rows": 37407
+  },
+  "EURRUB": {
+   "days": 1117,
+   "rows": 15199
+  },
+  "EURSEK": {
+   "days": 1562,
+   "rows": 37415
+  },
+  "EURSGD": {
+   "days": 1560,
+   "rows": 36910
+  },
+  "EURTRY": {
+   "days": 1561,
+   "rows": 37363
   },
   "EURUSD": {
-   "days": 2246,
-   "rows": 53899
+   "days": 2259,
+   "rows": 54205
+  },
+  "EURZAR": {
+   "days": 1560,
+   "rows": 37407
+  },
+  "EUSTX50": {
+   "days": 1536,
+   "rows": 31745
+  },
+  "ElectronicArts": {
+   "days": 1377,
+   "rows": 9663
+  },
+  "ExxonMobil": {
+   "days": 1507,
+   "rows": 8314
+  },
+  "FRA40": {
+   "days": 1540,
+   "rows": 25341
+  },
+  "Ford": {
+   "days": 1507,
+   "rows": 8310
   },
   "GBPAUD": {
-   "days": 2246,
-   "rows": 53899
+   "days": 2259,
+   "rows": 54205
+  },
+  "GBPCAD": {
+   "days": 1560,
+   "rows": 37386
+  },
+  "GBPCHF": {
+   "days": 1561,
+   "rows": 37370
+  },
+  "GBPDKK": {
+   "days": 1559,
+   "rows": 37403
+  },
+  "GBPHUF": {
+   "days": 1559,
+   "rows": 37375
   },
   "GBPJPY": {
-   "days": 2246,
-   "rows": 53899
+   "days": 2259,
+   "rows": 54205
+  },
+  "GBPMXN": {
+   "days": 1560,
+   "rows": 37399
+  },
+  "GBPNOK": {
+   "days": 1560,
+   "rows": 37395
+  },
+  "GBPNZD": {
+   "days": 1559,
+   "rows": 37187
+  },
+  "GBPPLN": {
+   "days": 1560,
+   "rows": 37409
+  },
+  "GBPSEK": {
+   "days": 1559,
+   "rows": 37405
+  },
+  "GBPSGD": {
+   "days": 1559,
+   "rows": 37027
+  },
+  "GBPTRY": {
+   "days": 1560,
+   "rows": 37300
   },
   "GBPUSD": {
-   "days": 2246,
-   "rows": 53900
+   "days": 2259,
+   "rows": 54206
+  },
+  "GBPZAR": {
+   "days": 1560,
+   "rows": 37403
+  },
+  "GER40": {
+   "days": 1531,
+   "rows": 29482
+  },
+  "GeneralElectric": {
+   "days": 1507,
+   "rows": 8311
+  },
+  "GeneralMotors": {
+   "days": 1507,
+   "rows": 8310
+  },
+  "GileadSciences": {
+   "days": 1412,
+   "rows": 9904
+  },
+  "GoldmanSachs": {
+   "days": 1395,
+   "rows": 9779
+  },
+  "HK50": {
+   "days": 1478,
+   "rows": 26132
+  },
+  "HKDJPY": {
+   "days": 1560,
+   "rows": 37408
+  },
+  "HomeDepot": {
+   "days": 1398,
+   "rows": 9804
+  },
+  "Honeywell": {
+   "days": 1389,
+   "rows": 9730
+  },
+  "IBM": {
+   "days": 1405,
+   "rows": 9854
+  },
+  "Intel": {
+   "days": 1409,
+   "rows": 9884
+  },
+  "Intuit": {
+   "days": 1507,
+   "rows": 8311
+  },
+  "IntuitiveSurgical": {
+   "days": 1507,
+   "rows": 8312
+  },
+  "JPMorganChase": {
+   "days": 1403,
+   "rows": 9840
+  },
+  "JPN225": {
+   "days": 1554,
+   "rows": 35527
+  },
+  "Johnson&Johnson": {
+   "days": 1405,
+   "rows": 9852
+  },
+  "LNKUSD": {
+   "days": 2149,
+   "rows": 44847
+  },
+  "LTCUSD": {
+   "days": 2079,
+   "rows": 49768
+  },
+  "LucidGroup": {
+   "days": 1503,
+   "rows": 8302
+  },
+  "Lyft": {
+   "days": 1507,
+   "rows": 8312
+  },
+  "MATICUSD": {
+   "days": 1656,
+   "rows": 39584
+  },
+  "MXNJPY": {
+   "days": 1529,
+   "rows": 36646
+  },
+  "Mastercard": {
+   "days": 1507,
+   "rows": 8312
+  },
+  "McDonalds": {
+   "days": 1403,
+   "rows": 9840
+  },
+  "Medtronic": {
+   "days": 1507,
+   "rows": 8311
+  },
+  "Merck": {
+   "days": 1382,
+   "rows": 9692
+  },
+  "Meta": {
+   "days": 1391,
+   "rows": 9753
+  },
+  "MicronTechnology": {
+   "days": 1507,
+   "rows": 8314
+  },
+  "Microsoft": {
+   "days": 1398,
+   "rows": 9804
+  },
+  "MorganStanley": {
+   "days": 1507,
+   "rows": 8311
+  },
+  "NAS100": {
+   "days": 1554,
+   "rows": 35517
+  },
+  "NETH25": {
+   "days": 1539,
+   "rows": 21282
+  },
+  "NIO": {
+   "days": 1507,
+   "rows": 8306
+  },
+  "NOKJPY": {
+   "days": 1559,
+   "rows": 37402
+  },
+  "NOKSEK": {
+   "days": 1559,
+   "rows": 37387
+  },
+  "NVIDIA": {
+   "days": 1507,
+   "rows": 8313
   },
   "NZDCAD": {
-   "days": 2246,
-   "rows": 53899
+   "days": 2259,
+   "rows": 54205
+  },
+  "NZDCHF": {
+   "days": 1560,
+   "rows": 37403
+  },
+  "NZDHUF": {
+   "days": 1559,
+   "rows": 37374
   },
   "NZDJPY": {
-   "days": 2246,
-   "rows": 53898
+   "days": 2259,
+   "rows": 54204
+  },
+  "NZDSGD": {
+   "days": 1559,
+   "rows": 37334
   },
   "NZDUSD": {
-   "days": 2246,
-   "rows": 53899
+   "days": 2259,
+   "rows": 54205
+  },
+  "Netflix": {
+   "days": 1389,
+   "rows": 9743
+  },
+  "Nike": {
+   "days": 1403,
+   "rows": 9835
+  },
+  "OJ": {
+   "days": 1509,
+   "rows": 8751
+  },
+  "Oracle": {
+   "days": 1507,
+   "rows": 8311
+  },
+  "PayPal": {
+   "days": 1394,
+   "rows": 9772
+  },
+  "Pepsi": {
+   "days": 1405,
+   "rows": 9853
+  },
+  "Pfizer": {
+   "days": 1507,
+   "rows": 8309
+  },
+  "PhilipMorrisInternational": {
+   "days": 1507,
+   "rows": 8311
+  },
+  "Pinterest": {
+   "days": 1507,
+   "rows": 8310
+  },
+  "Procter&Gamble": {
+   "days": 1406,
+   "rows": 9859
+  },
+  "Qualcomm": {
+   "days": 1507,
+   "rows": 8313
+  },
+  "RobinhoodMarkets": {
+   "days": 1287,
+   "rows": 8094
+  },
+  "Roku": {
+   "days": 1507,
+   "rows": 8312
+  },
+  "S&PGlobal": {
+   "days": 1507,
+   "rows": 8311
+  },
+  "SEKJPY": {
+   "days": 1559,
+   "rows": 37405
+  },
+  "SGDJPY": {
+   "days": 1560,
+   "rows": 37330
+  },
+  "SOLUSD": {
+   "days": 1654,
+   "rows": 39538
+  },
+  "SOYBEAN": {
+   "days": 1280,
+   "rows": 24080
+  },
+  "SUGAR": {
+   "days": 1513,
+   "rows": 14962
+  },
+  "SUGARRAW": {
+   "days": 1298,
+   "rows": 12768
+  },
+  "Salesforce": {
+   "days": 1385,
+   "rows": 9709
+  },
+  "ServiceNow": {
+   "days": 1507,
+   "rows": 8309
+  },
+  "Shopify": {
+   "days": 1476,
+   "rows": 8091
+  },
+  "Snapchat": {
+   "days": 1507,
+   "rows": 8311
+  },
+  "Snowflake": {
+   "days": 1505,
+   "rows": 8306
+  },
+  "Spotify": {
+   "days": 1507,
+   "rows": 8311
+  },
+  "Starbucks": {
+   "days": 1507,
+   "rows": 8312
+  },
+  "TMEGroup": {
+   "days": 1507,
+   "rows": 8307
+  },
+  "TSMC": {
+   "days": 1507,
+   "rows": 8311
+  },
+  "Target": {
+   "days": 1507,
+   "rows": 8309
+  },
+  "Tesla": {
+   "days": 1382,
+   "rows": 9690
+  },
+  "TexasInstruments": {
+   "days": 1507,
+   "rows": 8314
+  },
+  "ThermoFisherScientific": {
+   "days": 1507,
+   "rows": 8310
+  },
+  "Toyota": {
+   "days": 1507,
+   "rows": 8311
+  },
+  "Travelers": {
+   "days": 1377,
+   "rows": 9644
+  },
+  "Twilio": {
+   "days": 1507,
+   "rows": 8309
+  },
+  "UK100": {
+   "days": 1518,
+   "rows": 30915
+  },
+  "UKCOCOA": {
+   "days": 1322,
+   "rows": 10500
+  },
+  "UKGILT": {
+   "days": 647,
+   "rows": 6432
+  },
+  "US2000": {
+   "days": 749,
+   "rows": 17097
+  },
+  "US30": {
+   "days": 1554,
+   "rows": 35512
+  },
+  "USCOCOA": {
+   "days": 1296,
+   "rows": 12777
+  },
+  "USDBRL": {
+   "days": 1258,
+   "rows": 10219
   },
   "USDCAD": {
-   "days": 2246,
-   "rows": 53900
+   "days": 2259,
+   "rows": 54206
   },
   "USDCHF": {
-   "days": 2246,
-   "rows": 53899
+   "days": 2259,
+   "rows": 54205
+  },
+  "USDCNH": {
+   "days": 1563,
+   "rows": 37419
+  },
+  "USDCZK": {
+   "days": 1559,
+   "rows": 37397
+  },
+  "USDDKK": {
+   "days": 1560,
+   "rows": 37407
+  },
+  "USDHKD": {
+   "days": 1561,
+   "rows": 37407
+  },
+  "USDHUF": {
+   "days": 1560,
+   "rows": 37380
+  },
+  "USDIDR": {
+   "days": 1247,
+   "rows": 23406
+  },
+  "USDILS": {
+   "days": 1559,
+   "rows": 37116
+  },
+  "USDINR": {
+   "days": 1256,
+   "rows": 23107
   },
   "USDJPY": {
-   "days": 2246,
-   "rows": 53899
+   "days": 2390,
+   "rows": 54336
+  },
+  "USDKRW": {
+   "days": 1262,
+   "rows": 24274
+  },
+  "USDMXN": {
+   "days": 1562,
+   "rows": 37418
+  },
+  "USDNOK": {
+   "days": 1562,
+   "rows": 37422
+  },
+  "USDPLN": {
+   "days": 1561,
+   "rows": 37410
+  },
+  "USDRUB": {
+   "days": 1182,
+   "rows": 19484
+  },
+  "USDSEK": {
+   "days": 1561,
+   "rows": 37427
+  },
+  "USDSGD": {
+   "days": 1561,
+   "rows": 37394
+  },
+  "USDTHB": {
+   "days": 1560,
+   "rows": 37380
+  },
+  "USDTRY": {
+   "days": 1561,
+   "rows": 37394
+  },
+  "USDX": {
+   "days": 1556,
+   "rows": 30037
+  },
+  "USDZAR": {
+   "days": 1562,
+   "rows": 37433
+  },
+  "UST05Y": {
+   "days": 478,
+   "rows": 10905
+  },
+  "UST10Y": {
+   "days": 478,
+   "rows": 10903
+  },
+  "Uber": {
+   "days": 1507,
+   "rows": 8311
+  },
+  "UnionPacific": {
+   "days": 1507,
+   "rows": 8311
+  },
+  "UnitedHealth": {
+   "days": 1397,
+   "rows": 9787
+  },
+  "UnitedParcelService": {
+   "days": 1507,
+   "rows": 8312
+  },
+  "Verizon": {
+   "days": 1417,
+   "rows": 9934
+  },
+  "Visa": {
+   "days": 1401,
+   "rows": 9822
+  },
+  "WHEAT": {
+   "days": 1508,
+   "rows": 26401
+  },
+  "Walmart": {
+   "days": 1407,
+   "rows": 9864
+  },
+  "WaltDisney": {
+   "days": 1400,
+   "rows": 9817
+  },
+  "WellsFargo": {
+   "days": 1507,
+   "rows": 8311
+  },
+  "XAGEUR": {
+   "days": 1551,
+   "rows": 35538
   },
   "XAGUSD": {
-   "days": 2181,
-   "rows": 49963
+   "days": 2194,
+   "rows": 50254
+  },
+  "XALUSD": {
+   "days": 1516,
+   "rows": 27185
+  },
+  "XAUAUD": {
+   "days": 1551,
+   "rows": 35538
+  },
+  "XAUEUR": {
+   "days": 1551,
+   "rows": 35538
   },
   "XAUUSD": {
-   "days": 2181,
-   "rows": 49964
+   "days": 2194,
+   "rows": 50255
+  },
+  "XBRUSD": {
+   "days": 1552,
+   "rows": 29428
+  },
+  "XCUUSD": {
+   "days": 1516,
+   "rows": 27184
+  },
+  "XLMUSD": {
+   "days": 2150,
+   "rows": 44766
+  },
+  "XNGUSD": {
+   "days": 1551,
+   "rows": 31937
+  },
+  "XNIUSD": {
+   "days": 1507,
+   "rows": 22864
+  },
+  "XPBUSD": {
+   "days": 1516,
+   "rows": 27179
+  },
+  "XPDUSD": {
+   "days": 1549,
+   "rows": 35068
+  },
+  "XPTUSD": {
+   "days": 1550,
+   "rows": 35490
+  },
+  "XTIUSD": {
+   "days": 1551,
+   "rows": 31933
+  },
+  "XZNUSD": {
+   "days": 1516,
+   "rows": 27183
+  },
+  "ZARJPY": {
+   "days": 1560,
+   "rows": 37404
+  },
+  "eBay": {
+   "days": 1407,
+   "rows": 9867
   }
  },
- "symbols": 24
+ "symbols": 298
 }
