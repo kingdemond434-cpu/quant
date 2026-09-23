@@ -1094,6 +1094,34 @@ packs name has no resident, no discovery in its trailing window, or no candidate
   on the wrong machine, a seat retired without an inheritor, an environment provisioned on the
   wrong box, a mapping table never filled in, and an executable that landed without a leg.
 
+- **EVERY PRODUCER OWES CELLS (2026-09-23, principal's standing order: "make every research thing
+  we have produce maximum orthogonal strong cells for the gauntlet every hour, 24/7").** A
+  research organ exists to put testable, ORTHOGONAL cells in front of the one judge. An organ that
+  runs on a clock, consumes compute and emits no cell inside its own declared window is a defect
+  with an owner, exactly as a dark organ is: "it ran" is not production, and neither is a report.
+  An organ that is exploratory by design and produces no cell must DECLARE that — what it produces
+  instead and which consumer reads it — in `docs/research/productivity_blockers.json`, so the
+  exemption is stated rather than assumed; a broken one declares a blocker with an owner. The
+  fence is `scripts/check_producer_yield.py` (law gate), which derives its producer set from the
+  component registry and the census rather than a hand list and fails on three things: a producer
+  owing with no declaration, the OWING COUNT RISING, or throughput to the judge falling below its
+  own best with no stated reason. Ratchets fall only. **The column that matters is the last one:
+  cells emitted, unique cells after dedup, cells that reached the judge, and THE ORTHOGONALITY
+  EACH ADDED** — the marginal effective rank of the producer × (family|symbol|horizon) matrix
+  (`libs/risk/fx_exposure.effective_rank` via `libs/research/sandbox_rotation.breadth`), so a
+  hundred copies of one momentum rule score as one cell's worth of breadth and volume alone can
+  never move the number. The remedy for a barren organ is to make it produce or to retire it with
+  a reason — NEVER to throttle a productive one, and nothing in this law caps any producer.
+  MEASURED the day it landed: 227.5 cells/h reached the judge but only 23.4/h orthogonal
+  equivalent (effective rank 5.15 across 1,132 distinct cells — the producers are working the same
+  ground), and attributing cells by `research_candidates.generator` alone credited one
+  pass-through (`discovery_compiler`) with 103.5 cells/h while reporting real producers as barren;
+  the causing producer is on the JOINED `discoveries.generator`, and reading the stamp alone is
+  the false accusation this fence must never make. Two binding reasons found and recorded: 236
+  math_lab discoveries in 24h all left `UNPROCESSED` so the compiler never saw one, and twelve
+  japan miners keyed under their class name in `generator_yield` and their short name in the
+  lineage — one organ, two keys, which is a defect in the mapping, not a barren producer.
+
 - `ops/brain_env.sh` injects `ops/principal_doctrine.txt` (sealed core + universe mandate) AND
   this file into every organ's appended system prompt; research organs additionally open
   `docs/RESEARCH.md` (their prompt's first standing order).

@@ -257,13 +257,44 @@ def stamp_frame(df: Any, *, lag_days: int, observed_at: str | datetime | None,
         if alt is not None and alt_parsed is not None:
             col, parsed, basis = alt, alt_parsed, "column values"
             share = float(parsed.notna().mean()) if len(parsed) else 0.0
-    if col is None or parsed is None:
-        meta.update({"status": "UNSTAMPED", "why": "no column names a period (date/period/...) "
-                     "and no column's values parse as periods", "period_column": None})
-        return df, meta
-    if share < 0.8:
-        meta.update({"status": "UNSTAMPED", "period_column": col,
-                     "why": f"only {share:.0%} of {col!r} parses as a date"})
+    why_no_period = ("no column names a period (date/period/...) and no column's values parse "
+                     "as periods" if col is None or parsed is None
+                     else f"only {share:.0%} of {col!r} parses as a date")
+    if col is None or parsed is None or share < 0.8:
+        # A CROSS-SECTION IS NOT AN UNSTAMPABLE FRAME; IT IS A SNAPSHOT WITH ONE PERIOD.
+        # Measured 2026-09-23: a futures exchange's daily open-interest-by-participant table, a
+        # central bank's current-rates page and a customs dashboard all carry no date column --
+        # the date is the page's own. Refusing to stamp them kept the whole collected lake out
+        # of the gauntlet. Stamping them at the FETCH INSTANT claims nothing that is not true:
+        # this is what the source said when the desk read it, so `available_time` == the fetch
+        # time and no row is ever visible before it was fetched. It is strictly CONSERVATIVE --
+        # the real publication was at or before the fetch -- and repeated fetches make a series
+        # out of snapshots. `event_time` carries the same instant and `period_basis` says so, so
+        # no consumer can mistake it for a declared period.
+        if vintage_fallback and meta["ingested_time"]:
+            try:
+                fetched = pd.to_datetime(meta["ingested_time"], utc=True, format="ISO8601")
+            except Exception:
+                fetched = None
+            if fetched is not None:
+                out = df.copy()
+                out["event_time"] = fetched
+                out["available_time"] = fetched
+                out["ingested_time"] = meta["ingested_time"]
+                out["published_time"] = fetched
+                out["retrieval_time"] = meta["ingested_time"]
+                out["revision_time"] = meta["revision_time"]
+                out["source_id"] = meta["source_id"]
+                out["vintage_id"] = meta["vintage_id"]
+                meta.update({"status": "STAMPED", "period_column": None, "n": len(out),
+                             "fields": list(PIT_FIELDS), "parsed_share": 0.0,
+                             "period_basis": "fetch vintage (cross-section snapshot)",
+                             "first_period": str(fetched)[:19], "last_period": str(fetched)[:19],
+                             "why": (f"{why_no_period}; stamped at the fetch instant as a "
+                                     "cross-section snapshot, which is conservative: no row is "
+                                     "visible before the desk read it")})
+                return out, meta
+        meta.update({"status": "UNSTAMPED", "period_column": col, "why": why_no_period})
         return df, meta
     meta["period_basis"] = basis
     out = df.copy()

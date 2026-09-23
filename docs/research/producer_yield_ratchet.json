@@ -1,0 +1,7 @@
+{
+ "owing_max": 18,
+ "cells_to_judge_per_hour_best": 227.5,
+ "orthogonal_cells_to_judge_per_hour_best": 23.4138,
+ "updated_utc": "2026-09-23T18:23:52+00:00",
+ "law": "LAWS 7 -- EVERY PRODUCER OWES CELLS. This ratchet falls only."
+}

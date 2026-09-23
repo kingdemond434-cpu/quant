@@ -276,10 +276,27 @@ def _parse_json(body: bytes, source_id: str) -> dict[str, Any]:
     except ValueError as exc:
         return {"status": "PARSE_ERROR", "kind": "json", "why": str(exc)[:80]}
     SERIES.mkdir(parents=True, exist_ok=True)
+    # A JSON DUMP IS NOT A SERIES. This wrote the decoded document back out verbatim, so a
+    # central bank's API answer landed as one 400 kB `.json` blob that stamped as one row and
+    # emitted no cell. The rows are inside it -- `_record_lists` finds the largest list of
+    # like-shaped records at any depth -- so the frame is written beside the blob and IS the
+    # series. The blob stays because it is the payload the vintage refers to.
     out = SERIES / f"{source_id}.json"
     out.write_text(json.dumps(doc, indent=1)[:4_000_000], encoding="utf-8")
     n = len(doc) if isinstance(doc, (list, dict)) else 1
-    return {"status": "PARSED", "kind": "json", "n": n, "files": [out.name]}
+    best: list[dict[str, Any]] = []
+    for rows in _record_lists(doc):
+        if len(rows) > len(best):
+            best = rows
+    if len(best) >= MIN_TABLE_ROWS:
+        import pandas as pd
+        df = pd.json_normalize(best[:200_000])
+        if not df.empty and df.shape[1] >= 1:
+            return {"status": "PARSED", "kind": "json_records", "n": n, "n_tables": 1,
+                    "rows": [len(df)], "files": [_write_frame(df, source_id, "__records")],
+                    "blob": out.name}
+    return {"status": "PARSED", "kind": "json", "n": n, "files": [out.name],
+            "why": "no list of 3+ like-shaped records inside the document; the blob is the frame"}
 
 
 
@@ -530,7 +547,9 @@ def _stamp_pit(rec: dict[str, Any], source_id: str, meta: dict[str, Any],
         path = SERIES / name
         try:
             df = pd.read_parquet(path) if name.endswith(".parquet") else pd.read_csv(path)
-            out, m = pit_stamp.stamp_frame(df, lag_days=lag, observed_at=meta.get("fetched_utc"))
+            out, m = pit_stamp.stamp_frame(df, lag_days=lag,
+                                           observed_at=meta.get("fetched_utc"),
+                                           source_id=source_id, vintage_fallback=True)
             if m.get("status") == "STAMPED":
                 if name.endswith(".parquet"):
                     out.to_parquet(path)

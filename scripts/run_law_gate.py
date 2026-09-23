@@ -176,6 +176,15 @@ _LAW_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     # no named blocker -- and deliberately NOT on low productivity, because cutting the tail of
     # the search distribution is exactly the reduction in aggressiveness the desk refuses.
     ("check_productivity_census.py", ()),
+    # EVERY PRODUCER OWES CELLS (LAWS 7, principal 2026-09-23). The census above asks whether a
+    # producer ever paid; this asks what reached the ONE JUDGE in the last day and HOW ORTHOGONAL
+    # it was -- cells emitted, unique after dedup, cells to the judge, and the marginal effective
+    # rank each producer added, so a hundred copies of one momentum rule score as one cell's worth
+    # of breadth. Fails on a producer owing with no declared exemption and no named blocker, on
+    # the owing count RISING, and on throughput to the judge falling below its own best with no
+    # stated reason. Ratchets fall only and nothing here caps a producer: the remedy for a barren
+    # organ is to make it produce or retire it with a reason, never to throttle a working one.
+    ("check_producer_yield.py", ("--cells-only",)),
     # ONE CERTIFICATE TRUTH (principal 2026-09-22). One writer (external_gauntlet.py), one
     # authority file (UNIVERSAL_SURVIVORS.json), one consumer (promoter.py); every derived store
     # -- survivors ledger, sleeve registry, shadow/lane states, sleeves.json, forward_reconcile --
