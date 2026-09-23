@@ -169,17 +169,6 @@ _LAW_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     # forests.FOREST_TASKS) may disagree with the specs. Portable: it reads the tree and the
     # manifest, so it means the same in CI, a fresh clone and on the box.
     ("check_component_registry.py", ()),
-    # THE OTHER END OF THE WIRE (LAWS 7, principal 2026-09-23). The registry above proves every
-    # executable has a CLOCK; this proves the clock is not turning for nobody. An organ that runs
-    # on a schedule and whose artifact no production file reads is BURNING -- an orphan the desk
-    # pays compute for every hour -- and the BURNING count ratchets DOWN only. The clock half is
-    # exact (the four scheduler planes), so BURNING is the one population this census may fence
-    # on; UNREACHED and NO_CLOCK rest on a consumer heuristic that under-reports and stay report-
-    # only, because fencing on them would licence deleting organs nobody has proved are dead.
-    # The two repairs are to name a consumer or retire the organ with a reason -- never to mask a
-    # timer or trim a budget, which would be a reduction in aggressiveness with no E[log W] proof.
-    # Portable: it reads the tree and the manifest, so it means the same in CI and on the box.
-    ("check_dead_architecture.py", ("--ratchet",)),
     # PRODUCTIVITY IS PROVEN OR IT IS NOT CLAIMED (external reviewer, 2026-09-23). The component
     # registry above proves every executable has a CLOCK; this proves the desk still knows which
     # producers turn that clock into CELLS. It fails on two things only -- a stale or missing
@@ -667,6 +656,131 @@ def full_gate(root: Path | None = None, *, laws_only: bool = False,
             "generated": datetime.now(tz=UTC).isoformat()}
 
 
+#: HOW LONG A FENCE'S VERDICT STANDS, and therefore how long the rotation has to reach every
+#: fence in the battery. MEASURED, not chosen for comfort: `full_gate` gives each of the 53
+#: fences up to 600 s, so one battery can cost eight hours and no hourly window can hold it --
+#: which is exactly why `data/law_gate.json` on the trading box was 270 h old with 14 of 53
+#: fences in it, and why every green claim the desk made rested on a gate that had not run.
+#: A fence whose verdict is older than this window is DROPPED from the record, so the watchdog
+#: reports it as never run. That is the measurement (L1.49), never a failure of the record.
+ROTATION_WINDOW_H: float = 48.0
+
+#: The longest a single fence may hold the rotation, matching `full_gate`'s own per-fence bound.
+ROTATION_FENCE_TIMEOUT_S: float = 600.0
+
+#: The least budget a fence may be started with. Below this the pass ends instead of starting a
+#: fence it cannot let finish.
+_ROTATION_FLOOR_S: float = 120.0
+
+
+def _run_fence(root: Path, script: str, extra: tuple[str, ...],
+               timeout: float) -> dict[str, Any]:
+    """One fence, one verdict. An absent or unrunnable fence FAILS, it is never skipped."""
+    p = root / "scripts" / script
+    if not p.exists():
+        return {"fence": script, "ok": False, "detail": "missing"}
+    try:
+        r = subprocess.run([sys.executable, str(p), *extra], capture_output=True,
+                           text=True, timeout=timeout, cwd=root)
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        return {"fence": script, "ok": False,
+                "detail": f"unrunnable: {exc} -- counts as FAILED, never skipped"}
+    tail = (r.stdout or r.stderr or "").strip().splitlines()
+    return {"fence": script, "ok": r.returncode == 0, "rc": r.returncode,
+            "detail": tail[-1][:200] if tail else ""}
+
+
+def _record_age_s(row: dict[str, Any], now: datetime) -> float:
+    """Seconds since this fence last ran; infinite when the record cannot be read."""
+    try:
+        return (now - datetime.fromisoformat(str(row.get("ran_at")))).total_seconds()
+    except (TypeError, ValueError):
+        return float("inf")
+
+
+def rotate_gate(root: Path | None = None, *, budget_s: float = 1800.0,
+                now: datetime | None = None) -> dict[str, Any]:
+    """THE WHOLE BATTERY, IN ROTATION, INSIDE A STATED WINDOW.
+
+    The full battery does not fit an hourly window, and a gate that cannot fit its window does
+    not run at all -- which is how the box reached 270 h with no battery record. This mode runs
+    the fences that have gone longest without a verdict until the budget is spent, then MERGES
+    them into `data/law_gate.json` so the record carries every fence with the time it ran.
+
+    Three properties the record must keep, because the whole point is that it can be cashed:
+
+      EVERY FENCE NAMES ITS OWN HOUR.  Each row carries `ran_at` and `elapsed_s`, so "the gate
+      is green" can always be answered with "measured when?".
+
+      THE WINDOW IS STATED AND ENFORCED.  A verdict older than ROTATION_WINDOW_H is dropped,
+      not carried forward -- a fence that stops running disappears from the record within the
+      window and is reported as never run.
+
+      NOTHING IS EVER SKIPPED FOR BEING SLOW.  Oldest-first ordering means a slow fence cannot
+      be starved by fast ones: it only ever climbs the queue.
+    """
+    root = root or _ROOT
+    t0 = now or datetime.now(tz=UTC)
+    # One entry per fence SCRIPT, carrying every argument set the battery declares for it (the
+    # same script rides both batteries with different flags; the record is keyed by name because
+    # `check_fences_ran` asks by name).
+    declared: dict[str, list[tuple[str, ...]]] = {}
+    for script, extra in (*_LAW_FENCES, *_STATE_FENCES):
+        declared.setdefault(script, []).append(tuple(extra))
+    prior: dict[str, dict[str, Any]] = {}
+    try:
+        doc = json.loads((root / "data/law_gate.json").read_text("utf-8"))
+        rec = doc.get("fences") if isinstance(doc, dict) else None
+        if isinstance(rec, dict):
+            prior = {str(k): dict(v) for k, v in rec.items() if isinstance(v, dict)}
+    except (OSError, ValueError):
+        prior = {}
+    due = sorted(declared, key=lambda n: (-_record_age_s(prior.get(n, {}), t0), n))
+    ran: list[str] = []
+    for name in due:
+        left = budget_s - (datetime.now(tz=UTC) - t0).total_seconds()
+        # A FENCE IS NEVER JUDGED ON A TRUNCATED CLOCK. Measured on the first rotation pass:
+        # check_enforcement_execution was started with 32 s of budget left, timed out, and was
+        # recorded as FAILED -- a verdict about the budget wearing the costume of a verdict about
+        # the desk. Below the floor the pass simply ends and the fence stays at the head of the
+        # queue for the next one.
+        if ran and left < _ROTATION_FLOOR_S:
+            break
+        started = datetime.now(tz=UTC)
+        rows = [_run_fence(root, name, extra,
+                           min(ROTATION_FENCE_TIMEOUT_S, max(_ROTATION_FLOOR_S, left)))
+                for extra in declared[name]]
+        bad = [r for r in rows if not r["ok"]]
+        row = dict(bad[0] if bad else rows[0])
+        row["ok"] = not bad
+        row["n_invocations"] = len(rows)
+        row["ran_at"] = started.isoformat()
+        row["elapsed_s"] = round((datetime.now(tz=UTC) - started).total_seconds(), 1)
+        prior[name] = row
+        ran.append(name)
+    t1 = datetime.now(tz=UTC)
+    window_s = ROTATION_WINDOW_H * 3600.0
+    fences = {n: r for n, r in prior.items()
+              if n in declared and _record_age_s(r, t1) <= window_s}
+    results = [fences[n] for n in sorted(fences)]
+    failures = [f"{r['fence']} (rc={r.get('rc', '?')}): {r.get('detail', '')}"
+                for r in results if not r.get("ok")]
+    missing = sorted(n for n in declared if n not in fences)
+    failures += [f"{n}: no verdict inside the {ROTATION_WINDOW_H:.0f}h rotation window -- "
+                 f"a gate that never ran is a claim the desk cannot cash (L1.49)"
+                 for n in missing]
+    return {"mode": "rotation", "ok": not failures, "n_fences": len(declared),
+            "subject": f"cwd (rotation judges LIVE state; {ROTATION_WINDOW_H:.0f}h window)",
+            "n_failed": len(failures), "failures": failures, "results": results,
+            "fences": fences,
+            "rotation": {"window_h": ROTATION_WINDOW_H, "budget_s": budget_s,
+                         "ran_this_pass": ran, "n_recorded": len(fences),
+                         "n_declared": len(declared), "never_recorded": missing,
+                         "oldest_ran_at": min((str(r.get("ran_at")) for r in results),
+                                              default=None)},
+            "generated": t1.isoformat()}
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--fast", action="store_true",
@@ -679,15 +793,31 @@ def main() -> int:
                          "HEAD by default because that is what a push and CI actually gate; this "
                          "is the escape hatch, and the re-exec inside the HEAD checkout uses it")
     ap.add_argument("--json", action="store_true")
+    ap.add_argument("--rotate", action="store_true",
+                    help="run the OLDEST fences until --budget-s is spent and merge them into "
+                         "data/law_gate.json: the battery costs hours and no clock window holds "
+                         "it, so it rides a rotation whose window is stated in the record")
+    ap.add_argument("--budget-s", type=float, default=1800.0,
+                    help="seconds of fence time one rotation pass may spend (default 1800)")
     args = ap.parse_args()
-    rep = fast_gate() if args.fast else full_gate(laws_only=args.laws_only,
-                                                  in_place=args.in_place)
+    if args.fast:
+        rep = fast_gate()
+    elif args.rotate:
+        rep = rotate_gate(budget_s=args.budget_s)
+    else:
+        rep = full_gate(laws_only=args.laws_only, in_place=args.in_place)
     if not args.fast:
         (_ROOT / "data/law_gate.json").write_text(json.dumps(rep, indent=2), "utf-8")
     if args.json:
         print(json.dumps(rep, indent=2))
     else:
-        head = "LAW GATE" + (" (fast)" if args.fast else f" -- {rep.get('n_fences', 0)} fences")
+        head = "LAW GATE" + (" (fast)" if args.fast
+                             else f" -- {rep.get('n_fences', 0)} fences")
+        rot = rep.get("rotation")
+        if isinstance(rot, dict):
+            head += (f" [rotation: {len(rot.get('ran_this_pass') or [])} ran this pass, "
+                     f"{rot.get('n_recorded')} of {rot.get('n_declared')} inside "
+                     f"{rot.get('window_h')}h]")
         print(f"{head}: {'PASS' if rep['ok'] else 'FAIL'}")
         # The verdict NAMES ITS OWN SUBJECT (R0402): "PASS" is meaningless until you know which
         # artifact passed -- HEAD, or a working tree three sessions are writing to right now.

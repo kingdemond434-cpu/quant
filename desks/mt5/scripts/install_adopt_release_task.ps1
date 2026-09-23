@@ -51,7 +51,7 @@ $trigger.Repetition = (New-ScheduledTaskTrigger -Once -At ((Get-Date).Date.AddMi
 $settings = New-ScheduledTaskSettingsSet `
     -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable `
     -RestartCount 2 -RestartInterval (New-TimeSpan -Minutes 2) `
-    -ExecutionTimeLimit (New-TimeSpan -Minutes 20) -MultipleInstances IgnoreNew
+    -ExecutionTimeLimit (New-TimeSpan -Minutes 50) -MultipleInstances IgnoreNew
 
 # The same principal shape as MT5-ShadowSync, the task whose commits this one follows: the
 # logged-on user, interactive, limited. Adoption writes files and runs git; it needs nothing
