@@ -35,6 +35,7 @@ sys.path.insert(0, str(BASE / "research"))
 UNI = BASE / "data" / "universe"
 SHADOW_DIR = BASE / "reports" / "shadow"
 SHADOW_DIR.mkdir(parents=True, exist_ok=True)
+(BASE / "logs").mkdir(parents=True, exist_ok=True)
 LOG = open(BASE / "logs" / "shadow.log", "a", encoding="utf-8")  # noqa: SIM115
 
 SHADOW_START = datetime(2026, 8, 16, tzinfo=UTC)
