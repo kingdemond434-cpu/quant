@@ -605,17 +605,20 @@ $dirty = @(Invoke-Git @("status", "--porcelain", "--untracked-files=no") |
            Where-Object { "$_" -match '\S' })
 if ($dirty.Count -gt 0) {
     # `XY path`, or `R  old -> new` for a rename: the destination is what to stage.
-    $dirtyPaths = @($dirty | ForEach-Object {
+    $dirtyAtStart = @($dirty | ForEach-Object {
         $p = "$_".Substring(3)
         if ($p -match ' -> ') { $p = ($p -split ' -> ')[-1] }
         $p.Trim().Trim('"')
+    })
+    $dirtyPaths = @($dirtyAtStart | Where-Object {
     } | Where-Object {
         # The intelligence corpus has its own data-only ship and may contain tens of thousands
         # of tracked rows. Capturing it here one path at a time made code adoption take longer
         # than the hourly cadence. Leave those rows to MT5-IntelShip, exactly as step 2 does.
         $q = ($_ -replace '\\', '/').TrimStart('.', '/')
         -not ($q.StartsWith("data/intelligence/") -or
-              $q.StartsWith("desks/mt5/data/intelligence/"))
+              $q.StartsWith("desks/mt5/data/intelligence/") -or
+              $q.StartsWith("desks/mt5/data/universe/"))
     })
     Write-Host ("  committing {0} uncommitted state path(s) first" -f $dirtyPaths.Count)
     # One git process per path is O(paths * index-size) and measured at 12+ minutes for 723 rows.
@@ -660,6 +663,13 @@ if ($mergeBase) {
         $boxTouched[$p] = $true
         if ($cols[0] -match '^A') { $boxAdded[$p] = $true }
     }
+}
+# State that was dirty when adoption began is box-owned even when it is intentionally not staged
+# here. In particular, live parquet bars are frequently held open by MT5 and can make `git add`
+# block past the task deadline. The normal state-sync route checkpoints them; adoption only needs
+# to know that origin must not overwrite them while landing code.
+foreach ($p in @($dirtyAtStart)) {
+    if (Test-StatePath $p) { $boxTouched[$p] = $true }
 }
 function Test-KeptByBox {
     param([string] $Rel)
