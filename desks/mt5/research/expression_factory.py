@@ -477,7 +477,23 @@ class Lake:
         have = sorted(p.stem.removesuffix("_H1")
                       for p in self.paths.universe_dir.glob("*_H1.parquet"))
         have += [s for s in self.injected if s not in have]
-        return [s for s in have if allowed(s) or s in self.injected]
+        out = [s for s in have if allowed(s) or s in self.injected]
+        # AIM AT THE EMPTY GROUND (2026-09-23). `load_worlds` takes a PREFIX of this list, and a
+        # sorted list means the same alphabetical prefix loads every pass while 56,386 cells of
+        # the family x instrument x horizon grid have never been touched. So the instruments
+        # carrying the most reachable EMPTY cells sort first. Nothing is dropped and no symbol is
+        # excluded -- the list is the same list, in an order that spends the pass on new ground.
+        try:
+            from research.independence_intake import empty_pairs
+            load: dict[str, int] = {}
+            for pair in empty_pairs():
+                sym = pair.split("|", 1)[-1]
+                load[sym] = load.get(sym, 0) + 1
+        except Exception:
+            return out
+        if not load:
+            return out
+        return sorted(out, key=lambda s: (-load.get(s.lower(), 0), s))
 
     def asset_class(self, sym: str) -> str:
         row = self.meta.get(sym.upper()) or {}

@@ -8696,9 +8696,9 @@
    "artifact": "desks/mt5/reports/INDEPENDENCE_INTAKE.json",
    "evidence": [
     "THE DEFECT: every operator survivor_distiller mints except condition_on_state nudges a CONSTANT (step_<param>_up/down, swap_<param>, drop_<param>). Ranked on raw score against each other at the MAX_TASKS truncation they crowded out the one move that changes the mechanism, which is how 18,201 raw cells came to hold 583 mechanisms",
-    "desks/mt5/research/independence_intake.py:90-106 MECHANISM_OPERATORS + mechanism_class -- condition_on_state and cross_* change the mechanism; step_*/swap_*/drop_* are parameter moves",
-    "desks/mt5/research/independence_intake.py:246-271 orthogonality_gain -- distinct grid cells opened per cell emitted, per operator class, read from the operator stamp the distiller already writes into the mechanism text; unmeasured when neither class has emitted (L1.28a)",
-    "desks/mt5/research/independence_intake.py:273-297 declared_mechanism_share + empty_pairs, :299-329 tune_mix -- next = gain(mechanism)/(gain(mechanism)+gain(parameter)), moved halfway from the standing share and clipped to SHARE_BOUNDS (0.2, 0.8); two-sided (Rule 2) and NEVER a cap on output, because it moves slots between classes inside a truncation that was already there. An unmeasured gain leaves the share exactly where it was",
+    "desks/mt5/research/independence_intake.py:97-113 MECHANISM_OPERATORS + mechanism_class -- condition_on_state and cross_* change the mechanism; step_*/swap_*/drop_* are parameter moves",
+    "desks/mt5/research/independence_intake.py:253-278 orthogonality_gain -- distinct grid cells opened per cell emitted, per operator class, read from the operator stamp the distiller already writes into the mechanism text; unmeasured when neither class has emitted (L1.28a)",
+    "desks/mt5/research/independence_intake.py:280-304 declared_mechanism_share + empty_pairs, :306-336 tune_mix -- next = gain(mechanism)/(gain(mechanism)+gain(parameter)), moved halfway from the standing share and clipped to SHARE_BOUNDS (0.2, 0.8); two-sided (Rule 2) and NEVER a cap on output, because it moves slots between classes inside a truncation that was already there. An unmeasured gain leaves the share exactly where it was",
     "desks/mt5/research/survivor_distiller.py:583-648 mix_by_mechanism -- the two classes interleave on virtual clocks at the declared share (the same weighted fair queue the docket uses), empty grid cells first inside the mechanism arm; every pair passed in comes back out, :726 the call, :736 mechanism_mix in the report",
     "MEASURED 2026-09-23: the share stands at the 0.35 default and is UNMEASURED rather than tuned, because no candidate in the registry yet carries an operator stamp -- a verdict, published in mutation_mix.gain.why, not a zero",
     "desks/mt5/tests/test_independence_intake.py:86-121 the tuning is two-sided, bounded and unchanged when unmeasured; :129-166 the mix realises the declared share, empty cells go first in the mechanism arm, and no move is dropped"
@@ -8714,11 +8714,12 @@
    "scheduled_by": "hourly_cycle:independence_intake",
    "artifact": "desks/mt5/reports/INDEPENDENCE_INTAKE.json",
    "evidence": [
-    "desks/mt5/research/independence_intake.py:157-194 hypothesis_instruments + _axes -- the instrument axis is universe_policy.may_hypothesise (route by ASSET CLASS, the two-lane order of 2026-09-06; an unclassified symbol is not counted as available ground because absence is not a permission), the family axis is judge_coverage.live_families and the horizon axis is axis_registry.HORIZONS",
-    "desks/mt5/research/independence_intake.py:196-244 grid_occupancy -- occupied from the registry's own rows; empties ranked by how much of their own row and column is already productive, so a reachable empty cell is a generation target and an empty cell on an axis nothing has ever minted is published as a family-module question instead",
-    "desks/mt5/research/independence_intake.py:284-297 empty_pairs -- the target list read by desks/mt5/research/survivor_distiller.py:583-648, which puts a move onto an empty (family|symbol) pair first inside the mechanism arm; libs/moat/registry.py:653-659 already pays EMPTY_CELL_BONUS to a cell that lands on an empty grid cell, so the reward for finding one existed and the map did not",
+    "desks/mt5/research/independence_intake.py:164-201 hypothesis_instruments + _axes -- the instrument axis is universe_policy.may_hypothesise (route by ASSET CLASS, the two-lane order of 2026-09-06; an unclassified symbol is not counted as available ground because absence is not a permission), the family axis is judge_coverage.live_families and the horizon axis is axis_registry.HORIZONS",
+    "desks/mt5/research/independence_intake.py:203-251 grid_occupancy -- occupied from the registry's own rows; empties ranked by how much of their own row and column is already productive, so a reachable empty cell is a generation target and an empty cell on an axis nothing has ever minted is published as a family-module question instead",
+    "desks/mt5/research/independence_intake.py:291-304 empty_pairs -- the target list read by desks/mt5/research/survivor_distiller.py:583-648, which puts a move onto an empty (family|symbol) pair first inside the mechanism arm; libs/moat/registry.py:653-659 already pays EMPTY_CELL_BONUS to a cell that lands on an empty grid cell, so the reward for finding one existed and the map did not",
     "MEASURED 2026-09-23: 79 live families x 145 hypothesis-lane instruments x 5 horizons = 57,275 nominal cells, 889 occupied (1.55%), 12,835 of the empties reachable today on axes that are already productive",
-    "desks/mt5/tests/test_independence_intake.py:73-83 occupancy and targets; :145-166 the empty-cell move outranks a higher-scoring occupied one inside the mechanism arm and nothing is displaced from the list"
+    "desks/mt5/tests/test_independence_intake.py:73-83 occupancy and targets; :145-166 the empty-cell move outranks a higher-scoring occupied one inside the mechanism arm and nothing is displaced from the list",
+    "AIM, NOT A LIST (2026-09-23): the ranked targets are now CONSUMED by desks/mt5/research/independence_intake.py:390-470 fill_empty_cells, which mints cells in them every pass, and by desks/mt5/research/expression_factory.py:469-499, which loads the instruments holding the most empty cells first. See IND5 for the measured occupancy movement."
    ]
   },
   {
@@ -8734,7 +8735,7 @@
     "scripts/check_producer_yield.py:460-501 -- orthogonal_cells_to_judge_per_hour is cells_to_judge_per_hour times the orthogonality weight (the participation ratio of the producer x (family|symbol|horizon) indicator matrix over the producers that reached the judge), and a fall below the ratchet's best with no regression_reason is a FAILURE: the desk is still emitting volume but the producers have collapsed onto each other's cells",
     "scripts/check_producer_yield.py:525-575 tighten_ratchet -- the two throughput bests may only RISE and the owing count may only fall; docs/research/producer_yield_ratchet.json holds orthogonal_cells_to_judge_per_hour_best and the regression_reason slot",
     "THE FLOOR IS A FLOOR AND NEVER A CAP (scripts/check_producer_yield.py:320-326): the remedy for a breach is to make the barren producer produce, never to slow a working one; nothing in this item throttles any producer or reduces the raw cell count",
-    "desks/mt5/research/independence_intake.py:331-349 headline -- the figure is READ from the fence that ratchets it and republished in context, never re-derived, because two implementations of one number are two numbers",
+    "desks/mt5/research/independence_intake.py:338-356 headline -- the figure is READ from the fence that ratchets it and republished in context, never re-derived, because two implementations of one number are two numbers",
     "MEASURED 2026-09-23: cells_to_judge_per_hour 227.5, orthogonal equivalent 23.4138, weight 0.1029, effective rank 5.1459 over 1,132 family-symbol-horizon columns; best = current, regression_reason null"
    ]
   },
@@ -8832,6 +8833,26 @@
    "consumer": "desks/mt5/data/fill_corpus.jsonl -- execution_twin, execution_intelligence, execution_alpha_miner, cost_surface, feed_clock_lab, shadow_institutional and libs/execution/alpha_capture all read it",
    "tests": [
     "desks/mt5/tests/test_fill_recorder.py"
+   ]
+  },
+  {
+   "id": "IND5",
+   "item": "FILL the empty grid, do not merely rank it: each pass transplants a family's own most recent rule onto the empty (instrument, horizon) cells it has never reached, through the one registry door, and publishes empty cells targeted, cells created in them, and grid occupancy before and after. Occupancy is a ratcheting metric that may only rise.",
+   "domain": "U",
+   "phase": 2,
+   "status": "LANDED",
+   "gate": "none",
+   "scheduled_by": "hourly_cycle:independence_intake",
+   "artifact": "desks/mt5/reports/INDEPENDENCE_INTAKE.json",
+   "evidence": [
+    "THE DEFECT the principal named 2026-09-23: publishing ranked targets is not filling the grid. 889 of 57,275 cells occupied (1.55%) with 12,835 reachable empties changed nothing on its own, and the distiller's mechanism arm could not reach them either -- its moves step from a certificate that ALREADY occupies its (family|symbol) pair, so an empty-cell preference can never fire there. What reaches an empty cell is a CROSS move.",
+    "desks/mt5/research/independence_intake.py:347-388 _donors + _symbol_case -- one param-carrying donor per family (SQLite's bare-column rule returns the row holding max(seq), so it is the family's most recent), and lower(symbol) -> the registry's own spelling so a transplant names a real instrument",
+    "desks/mt5/research/independence_intake.py:390-470 fill_empty_cells -- the family's rule is enqueued UNCHANGED on the empty (symbol, horizon) the grid names: cross_instrument when the instrument differs, cross_horizon when only the horizon does. Both are mechanism-class operators (MECHANISM_OPERATORS), stamped into the mechanism text so orthogonality_gain bills them and the declared mix learns what they bought",
+    "NOTHING IS CAPPED, DROPPED OR THROTTLED: every cell goes through libs/moat/registry.py:617-640 enqueue_candidate, the one door, which de-duplicates on content hash -- a rule already present raises search_count and creates nothing, so a re-run cannot inflate the count. MAX_FILLS_PER_PASS (desks/mt5/research/independence_intake.py:98-100) is the size of a PASS, not a ceiling: the ranked list is re-derived every hour and a filled cell leaves it, so the next pass continues down the same list",
+    "desks/mt5/research/independence_intake.py:472-504 ratchet_occupancy -- docs/research/grid_occupancy_ratchet.json holds occupied_cells_best and occupancy_best, rises only, and a fall below the best with no regression_reason is named as a REGRESSION. It is a FLOOR and never a cap: the remedy for a breach is to fill more cells, never to mint fewer",
+    "desks/mt5/research/expression_factory.py:469-499 hypothesis_symbols -- load_worlds takes a PREFIX of this list and a sorted list loaded the same alphabetical prefix every pass, so the instruments carrying the most reachable empty cells now sort first. The list is the same list in a different order: no symbol is dropped or excluded",
+    "MEASURED 2026-09-23, two consecutive live passes: pass 1 targeted 400 empty cells and created 400, occupancy 1,430 -> 1,830 cells (2.4967% -> 3.1951%); pass 2 targeted 400 and created 400, 1,830 -> 2,230 cells (3.1951% -> 3.8935%). already_present 0 and failed 0 on both, by_operator cross_instrument, so the list drains rather than repeating. Occupancy ratchet best 2,230, regression_reason null",
+    "desks/mt5/tests/test_independence_intake.py:202-231 the transplant carries the donor's params, stamps a cross_ operator, skips a family with no donor and counts before/after; :233-243 a cell already present creates nothing and is counted apart; :246-260 occupancy ratchets up only and a fall with no reason is named"
    ]
   }
  ],

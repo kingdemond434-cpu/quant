@@ -64,6 +64,7 @@ for _p in (str(DESK), str(DESK / "research"), str(ROOT)):
 from libs.execution import fill_corpus as fc  # noqa: E402
 
 INTENTS = DESK / "data" / "order_intents.jsonl"
+E8_INTENTS = DESK / "data" / "e8_intents.jsonl"
 LEDGER = DESK / "data" / "live_ledger.jsonl"
 DECISIONS = DESK / "data" / "decision_ledger.jsonl"
 CORPUS = DESK / "data" / "fill_corpus.jsonl"
@@ -79,7 +80,9 @@ PAIR_WINDOW_S = 90.0
 REQUIRED_FIELDS: tuple[str, ...] = (
     "quote_bid", "quote_ask", "quote_mid_at_decision", "requested_price", "fill_price",
     "latency_decision_to_send_ms", "lots", "spread_frac_at_decision",
-    "spread_points_at_decision", "slip_points", "slip_r")
+    "spread_points_at_decision", "slip_points", "slip_r",
+    # the three the size term, the impact model and the shortfall model actually consume
+    "realized_r", "commission_r", "latency_send_to_ack_ms")
 
 
 def _read_jsonl(p: Path) -> list[dict[str, Any]]:
@@ -235,7 +238,6 @@ def build_row(it: dict[str, Any], deal: dict[str, Any], how: str,
     if spread is None and bid is not None and ask is not None:
         spread = ask - bid
     lots = _f(deal.get("volume")) or _f(it.get("lot"))
-    risk_quote = _f(deal.get("risk_quote"))
     contract = _f(deal.get("contract_size"))
 
     # THE POINT SIZE, FROM THE INTENT OR FROM THE QUOTES THEMSELVES. `point` was only added to
@@ -260,15 +262,7 @@ def build_row(it: dict[str, Any], deal: dict[str, Any], how: str,
     # `r_multiple` is written against and is computable from the row, so it is what is used; the
     # ledger's own figure is the fallback in absolute value, and a position whose stop sits on
     # its entry has NO R denominator -- that row's slip_r is None, which is a real answer.
-    stop = _f(deal.get("sl"))
-    entry = _f(deal.get("entry_price"))
-    denom = None
-    denom_basis = ""
-    if None not in (stop, entry) and contract and lots and abs(entry - stop) > 0:  # type: ignore[operator]
-        denom = abs(entry - stop) * contract * lots  # type: ignore[operator]
-        denom_basis = "|entry - stop| x contract_size x lots"
-    elif risk_quote and abs(risk_quote) > 0:
-        denom, denom_basis = abs(risk_quote), "abs(live_ledger.risk_quote)"
+    denom, denom_basis = r_denominator(deal)
     slip_r = None
     if slip_quote is not None and denom and contract and lots:
         slip_r = (slip_quote * contract * lots) / denom
@@ -312,9 +306,12 @@ def build_row(it: dict[str, Any], deal: dict[str, Any], how: str,
         "slip_frac": slip_frac, "slip_r": slip_r, "slip_points": slip_points,
         "spread_frac_at_decision": spread_frac,
         "spread_points_at_decision": spread_points, "point": point,
-        "commission_r": ((_f(deal.get("commission")) or 0.0) / risk_quote) if risk_quote else None,
+        # COMMISSION IN R DIVIDED BY THE BARE STOP DISTANCE UNTIL NOW. `risk_quote` is price units
+        # on 141 of 151 rows, so this read (contract x lots) times too large -- 100x on gold.
+        "commission_r": (((_f(deal.get("commission")) or 0.0) / denom) if denom else None),
         "latency_decision_to_send_ms": _f(it.get("latency_ms")),
-        "realized_r": _f(deal.get("r_multiple")),
+        "latency_send_to_ack_ms": _f(it.get("latency_send_to_ack_ms")),
+        "realized_r": realized_r(deal, denom),
         "status": "FILLED" if fill is not None else "UNRESOLVED",
     }
 
@@ -389,14 +386,197 @@ def unfilled_row(it: dict[str, Any]) -> dict[str, Any]:
         "spread_points_at_decision": (spread / point) if (spread is not None and point) else None,
         "point": point,
         "latency_decision_to_send_ms": _f(it.get("latency_ms")),
+        "latency_send_to_ack_ms": _f(it.get("latency_send_to_ack_ms")),
+        "account_kind": str(it.get("account_kind") or "unknown"),
         "status": "UNRESOLVED",
     }
+
+
+def r_denominator(deal: dict[str, Any]) -> tuple[float | None, str]:
+    """The position's risk in QUOTE CURRENCY, and how it was derived.
+
+    MEASURED 2026-09-23 over this box's 151 closed deals: `live_ledger.risk_quote` equals the RAW
+    STOP DISTANCE in price units on 141 of them -- neither contract size nor lots are in it -- and
+    the geometric risk on the other 10. Dividing P&L by it therefore produced a mean "realised R"
+    of -449 with a worst row of -12,461 R. `|entry - stop| x contract_size x lots` is computable
+    on all 151 and gives mean -0.123 R, median -0.037 R, range [-1.39, +1.75]: the shape a real
+    book has. So geometry is the definition, `risk_quote` is used ONLY when it agrees with it
+    (i.e. when the writer had already multiplied), and a stop sitting on the entry has no
+    denominator at all -- that row's R is None, which is a real answer and not a zero.
+    """
+    entry, stop = _f(deal.get("entry_price")), _f(deal.get("sl"))
+    contract, lots = _f(deal.get("contract_size")), _f(deal.get("volume"))
+    if None not in (entry, stop, contract, lots) and abs(entry - stop) > 0:  # type: ignore[operator]
+        geo = abs(entry - stop) * contract * lots  # type: ignore[operator]
+        if geo > 0:
+            return geo, "|entry - stop| x contract_size x lots"
+    rq = _f(deal.get("risk_quote"))
+    # only when it is already the geometric figure, never when it is the bare stop distance
+    if (rq and abs(rq) > 0 and entry is not None and stop is not None
+            and abs(abs(rq) - abs(entry - stop)) > 1e-9):
+        return abs(rq), "abs(live_ledger.risk_quote)"
+    return None, ""
+
+
+def realized_r(deal: dict[str, Any], denom: float | None) -> float | None:
+    """Net realised R for a closed deal: (P&L + commission + swap) / risk.
+
+    THE LEDGER'S OWN `r_multiple` IS 0.0 ON 141 OF 151 ROWS (measured 2026-09-23) -- it is not a
+    measured zero, it is a field nothing fills in. Any consumer keyed on it reads an empty book,
+    and any join that required it dropped the row. The deal carries everything the number needs,
+    so it is derived here and the ledger's figure is used only when it is actually present.
+    """
+    given = _f(deal.get("r_multiple"))
+    if given:
+        return given
+    pl = _f(deal.get("pl_quote"))
+    if pl is None or not denom:
+        return None
+    return (pl + (_f(deal.get("commission")) or 0.0) + (_f(deal.get("swap")) or 0.0)) / denom
+
+
+def deal_row(deal: dict[str, Any]) -> dict[str, Any]:
+    """A REALISED FILL BUILT FROM THE CLOSED DEAL ALONE -- no intent required.
+
+    THIS IS THE JOIN'S REAL LOSS. `match()` walks INTENTS, so a deal the desk actually executed
+    was invisible unless an intent row survived beside it, and 121 of this box's 151 deals have
+    none: `order_intents.jsonl` only starts at 2026-08-24 and holds 59 distinct tickets, of which
+    30 equal a deal's `entry_order`. Those 121 are not missing data. Every one of them carries a
+    positive entry price, a positive fill price, a volume, a stop away from the entry and a
+    non-zero commission -- size, realised R and realised cost, which is exactly what capacity,
+    market impact and the shortfall model were starved of. What they genuinely lack is the QUOTE
+    THE DESK DECIDED AGAINST, so `requested_price` and every slippage column stay None here
+    rather than being invented; slippage is measured only where an intent exists.
+    """
+    denom, denom_basis = r_denominator(deal)
+    lots = _f(deal.get("volume"))
+    entry = _f(deal.get("entry_price"))
+    if entry is not None and entry <= 0.0:
+        entry = None
+    exit_px = _f(deal.get("fill_price"))
+    stamp = str(deal.get("time") or "")
+    comm = _f(deal.get("commission")) or 0.0
+    return {
+        "record_id": f"deal:{deal.get('deal')}|{stamp}",
+        "intent_id": "", "ticket": _i(deal.get("entry_order")), "deal": _i(deal.get("deal")),
+        "schema_version": fc.SCHEMA_VERSION,
+        "account_kind": str(deal.get("account_kind") or "unknown"),
+        "join_keys": {"basis": "deal_only", "entry_order": str(deal.get("entry_order") or ""),
+                      "position_id": str(deal.get("position_id") or ""),
+                      "r_denominator": denom_basis,
+                      "why": "an executed deal with no surviving intent row; price-at-decision "
+                             "is unrecorded, so slippage is None and never zero"},
+        "sources": ["live_ledger.jsonl"],
+        "symbol": str(deal.get("symbol") or ""), "sleeve": str(deal.get("sleeve") or ""),
+        "decided_at": "", "sent_at": "", "filled_at": stamp, "exit_at": stamp,
+        "side": str(deal.get("side") or ""), "direction": _direction(deal.get("side")),
+        "order_type": "market", "execution_style": "market",
+        "lots": lots, "requested_price": None,
+        "quote_bid": None, "quote_ask": None, "quote_mid_at_decision": None,
+        "fill_price": entry, "filled_frac": (1.0 if entry is not None else 0.0),
+        "retcode": None, "rejected": False,
+        "slip_frac": None, "slip_r": None, "slip_points": None,
+        "spread_frac_at_decision": None, "spread_points_at_decision": None,
+        "point": _point_from(entry, exit_px, _f(deal.get("sl")), _f(deal.get("tp"))),
+        "commission_r": ((comm / denom) if denom else None),
+        "realized_r": realized_r(deal, denom),
+        "status": "FILLED" if entry is not None else "UNRESOLVED",
+    }
+
+
+def e8_intents(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """The PROP account's orders, in the live account's intent shape.
+
+    Both accounts place real orders and only one of them was ever read. `e8_intents.jsonl` holds
+    23 rows, 18 of them SENT with a venue order id, and the recorder never opened the file -- so
+    every prop fill was outside the corpus and outside `matched_fills`. The translation is
+    mechanical (`at`->time, `entry_ref`->intended, `stop`->sl, `target`->tp, `order_id`->ticket)
+    and the row is stamped `account_kind: prop` so no consumer mixes the two books by accident.
+    """
+    out: list[dict[str, Any]] = []
+    for r in rows:
+        if not r.get("symbol"):
+            continue
+        sent = str(r.get("status") or "").strip().upper() == "SENT"
+        out.append({
+            "time": r.get("at"), "symbol": r.get("symbol"), "sleeve": str(r.get("tag") or "e8"),
+            "side": r.get("side"), "lot": _f(r.get("lot")), "intended": _f(r.get("entry_ref")),
+            "sl": _f(r.get("stop")), "tp": _f(r.get("target")),
+            "ticket": _i(r.get("order_id")), "order_type": "market",
+            "spread_at_decision": _f(r.get("spread")),
+            "decision_bid": _f(r.get("decision_bid") or r.get("quote_bid")),
+            "decision_ask": _f(r.get("decision_ask") or r.get("quote_ask")),
+            "latency_send_to_ack_ms": _f(r.get("latency_send_to_ack_ms")),
+            "sent_at": r.get("sent_at"), "acked_at": r.get("acked_at"),
+            "retcode": (10009 if sent else None),
+            # NO FILL PRICE IS INVENTED. `e8_intents.jsonl` records what was SENT and never what
+            # came back, so copying `entry_ref` here would write slippage 0.0 on 18 prop orders
+            # and drag the book's mean toward "no slippage" with rows that measured nothing.
+            # These land as UNRESOLVED until `e8_book` records the venue's answer.
+            "fill_price": None,
+            "intent_id": f"e8|{r.get('tag') or ''}|{r.get('at') or ''}",
+            "account_kind": "prop", "source_file": "e8_intents.jsonl",
+        })
+    return out
+
+
+def impact_block(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    """Market impact: the slope of realised slippage against the size that paid it.
+
+    THE REASON IT READ UNMEASURED WAS WRITTEN AS "matched_fills is 0" IN TWO ARTIFACTS, and that
+    was a claim, not a measurement. With fills in hand the question becomes answerable or it does
+    not, and which one is itself a measurement: impact is a SLOPE, so it needs size DISPERSION,
+    and a book whose every order is the same 0.01 lot cannot show one however many fills it has.
+    The verdict below names whichever wall is actually in front of it -- no fills, no slippage
+    column, or no size dispersion -- so the next reader argues with a number.
+
+    Ordinary least squares on (lots, slip_points). No cap, no veto, no size is set here.
+    """
+    pts = [(r["lots"], r["slip_points"]) for r in rows
+           if r.get("status") == "FILLED" and r.get("lots") and r.get("slip_points") is not None]
+    n = len(pts)
+    lots = sorted({round(float(x), 4) for x, _ in pts})
+    if n < 3:
+        return {"status": "UNMEASURED", "n": n, "distinct_lot_sizes": len(lots),
+                "why": (f"{n} fill(s) carry both a size and a measured slippage; a slope needs "
+                        "at least three. Fills without a recorded decision price cannot "
+                        "contribute -- they have no slippage, which is not a zero")}
+    if len(lots) < 2:
+        return {"status": "UNMEASURED", "n": n, "distinct_lot_sizes": len(lots),
+                "lot_range": [lots[0], lots[-1]] if lots else [],
+                "why": (f"{n} fills but ONE size ({lots[0]} lot): impact is the slope of cost "
+                        "against size and a single size has no slope. This is a size-dispersion "
+                        "wall, not a fill-count wall, and it is what the account's own floor "
+                        "produces -- it resolves when the book trades more than one size")}
+    mx = sum(x for x, _ in pts) / n
+    my = sum(y for _, y in pts) / n
+    sxx = sum((x - mx) ** 2 for x, _ in pts)
+    if sxx <= 0:
+        return {"status": "UNMEASURED", "n": n, "distinct_lot_sizes": len(lots),
+                "why": "no variance in size"}
+    slope = sum((x - mx) * (y - my) for x, y in pts) / sxx
+    resid = [y - (my + slope * (x - mx)) for x, y in pts]
+    sse = sum(r * r for r in resid)
+    sst = sum((y - my) ** 2 for _, y in pts)
+    se = ((sse / (n - 2)) / sxx) ** 0.5 if n > 2 and sse > 0 else None
+    return {"status": "MEASURED", "n": n, "distinct_lot_sizes": len(lots),
+            "lot_range": [lots[0], lots[-1]],
+            "slope_points_per_lot": round(slope, 4),
+            "intercept_points": round(my - slope * mx, 4),
+            "slope_se": (round(se, 4) if se else None),
+            "slope_t": (round(slope / se, 3) if se else None),
+            "r2": (round(1.0 - sse / sst, 4) if sst > 0 else None),
+            "unit": "venue points of slippage per lot",
+            "boundary": "A COST TERM. It prices impact; it sets no size and caps nothing."}
 
 
 def build(budget_s: float = 120.0, *, dry_run: bool = False) -> dict[str, Any]:
     t0 = time.monotonic()
     now = datetime.now(tz=UTC).isoformat(timespec="seconds")
     intents = _read_jsonl(INTENTS)
+    # BOTH ACCOUNTS PLACE REAL ORDERS. The prop book was never opened by this organ.
+    prop = e8_intents(_read_jsonl(E8_INTENTS))
+    intents += prop
     deals = [d for d in _read_jsonl(LEDGER) if _i(d.get("deal")) is not None]
     decisions = {str(d.get("intent_id") or ""): d for d in _read_jsonl(DECISIONS)
                  if d.get("intent_id")}
@@ -410,6 +590,10 @@ def build(budget_s: float = 120.0, *, dry_run: bool = False) -> dict[str, Any]:
     pairs, unfilled, unmatched, census = match(intents, deals)
     rows = [build_row(it, d, how, decisions) for it, d, how in pairs]
     rows += [unfilled_row(it) for it in unfilled]
+    # THE DEALS THE OLD JOIN THREW AWAY. Every executed deal is a realised fill whether or not an
+    # intent row survived beside it; only its slippage needs one.
+    rows += [deal_row(d) for d in unmatched]
+    census["deal_only"] = len(unmatched)
 
     existing = {fc.record_from_row(r).key: fc.record_from_row(r).resolution
                 for r in fc.read_rows(CORPUS)}
@@ -436,7 +620,21 @@ def build(budget_s: float = 120.0, *, dry_run: bool = False) -> dict[str, Any]:
         "join_census": census,
         "join_rule": ("ticket == entry_order first (the bridge MT5 offers), then "
                       "ticket == position_id, then same symbol / same direction within "
-                      f"{PAIR_WINDOW_S:.0f}s -- the tier is stamped on every row's join_keys"),
+                      f"{PAIR_WINDOW_S:.0f}s -- the tier is stamped on every row's join_keys. "
+                      "A DEAL WITH NO SURVIVING INTENT IS STILL A REALISED FILL and is recorded "
+                      "from the ledger alone (basis deal_only) with slippage None, never zero: "
+                      "that is the 121 rows the intent-keyed walk used to drop."),
+        "n_prop_intents": len(prop),
+        "impact": impact_block(rows),
+        "realized_r": {
+            "n": sum(1 for r in rows if r.get("realized_r") is not None),
+            "mean": (round(sum(r["realized_r"] for r in rows
+                               if r.get("realized_r") is not None)
+                           / max(1, sum(1 for r in rows if r.get("realized_r") is not None)), 5)),
+            "basis": ("derived (pl_quote + commission + swap) / (|entry - stop| x contract_size "
+                      "x lots); live_ledger.r_multiple is 0.0 on 141 of 151 deals and is used "
+                      "only where it is actually populated"),
+        },
         "rows_written": appended, "rows_considered": len(rows),
         "corpus": str(CORPUS), "corpus_rows_after": len(fc.read_rows(CORPUS)),
         "completeness": completeness,
@@ -444,7 +642,8 @@ def build(budget_s: float = 120.0, *, dry_run: bool = False) -> dict[str, Any]:
         "mean_slip_points": (round(sum(slip_pts) / len(slip_pts), 3) if slip_pts else None),
         "worst_slip_points": (round(max(slip_pts), 3) if slip_pts else None),
         "accounts": sorted({str(d.get("account")) for d in deals if d.get("account")}),
-        "account_kinds": sorted({str(d.get("account_kind") or "unknown") for d in deals}),
+        "account_kinds": sorted({str(r.get("account_kind") or "unknown")
+                                 for r in (*deals, *prop)}),
         "dry_run": bool(dry_run),
         "consumers": [
             "desks/mt5/data/fill_corpus.jsonl -> execution_twin, execution_intelligence, "

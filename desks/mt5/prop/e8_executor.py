@@ -37,6 +37,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+import time
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
@@ -452,7 +453,7 @@ def _quantise(lot: float, venue: Any, symbol: str) -> float:
     try:
         d = venue.details(symbol)
         vmin = float(venue.min_lot(symbol))
-    except Exception:                                               # noqa: BLE001
+    except Exception:
         return float(lot)
     step = None
     for k in ("lotStep", "volumeStep", "step"):
@@ -523,7 +524,7 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None) -> dict
 
     class _Pos:
         """The shape `leg_balance.book_exposures` reads: symbol, volume, MT5-style type."""
-        __slots__ = ("symbol", "volume", "type")
+        __slots__ = ("symbol", "type", "volume")
 
         def __init__(self, symbol: str, volume: float, typ: int) -> None:
             self.symbol, self.volume, self.type = symbol, volume, typ
@@ -674,6 +675,11 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None) -> dict
             doc["sleeves"].append(row)
             continue
         entry = ask if side == "buy" else bid
+        # THE QUOTE AT DECISION, ON THE ROW. It was read here and discarded, so every prop order
+        # reached `fill_corpus` with `spread` alone and no market to price the fill against --
+        # `matched_fills` could not rise from this book even once it was read. Recording only.
+        row["quote_bid"], row["quote_ask"] = float(bid), float(ask)
+        row["decision_bid"], row["decision_ask"] = float(bid), float(ask)
         # THE BRACKET IS LAID FROM THIS ENTRY, NOT FROM THE SIGNAL BAR'S CLOSE (2026-09-16): the
         # MT5 lane's `family_bracket`, same rule for the same reason (L0352). The family's levels
         # sit around its bar's close; this pass reaches the sleeve minutes later at a quote that
@@ -744,12 +750,12 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None) -> dict
                 _mm, _mw = macro_view.multiplier(sym, 1 if side == "buy" else -1,
                                                  family=str(fam or ""),
                                                  ttl_bars=getattr(g, "ttl_bars", None))
-            except Exception as _exc:                          # noqa: BLE001
+            except Exception as _exc:
                 _mm, _mw = 1.0, f"macro UNMEASURED ({type(_exc).__name__})"
             lot = _quantise(lot * _lm * _mm, venue, sym)
             row["leg_mult"], row["leg_why"] = float(_lm), _lw
             row["macro_mult"], row["macro_why"] = float(_mm), _mw
-        except Exception as exc:                                    # noqa: BLE001
+        except Exception as exc:
             # UNMEASURED IS 1.0. A decomposition that cannot be trusted must never become a
             # silent reason to trade smaller.
             row["leg_mult"], row["leg_why"] = 1.0, f"UNMEASURED ({type(exc).__name__}: {exc})"
@@ -767,10 +773,19 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None) -> dict
             doc["sleeves"].append(row)
             continue
         if armed:
+            # SEND-TO-ACK, MEASURED AROUND THE ONE CALL THAT CROSSES THE WIRE. Without it a prop
+            # order carried no latency at all, so the shortfall model had nothing to price waiting
+            # with on this book. `perf_counter` for the duration, wall clocks for the two ends.
+            _t0 = time.perf_counter()
+            _sent_at = datetime.now(tz=UTC)
             try:
                 row["order_id"] = venue.place(sym, side, lot, stop=float(g.stop),
                                               take_profit=float(g.target))
                 row["status"] = "SENT"
+                row["sent_at"] = _sent_at.isoformat()
+                row["acked_at"] = datetime.now(tz=UTC).isoformat()
+                row["latency_send_to_ack_ms"] = round(
+                    (time.perf_counter() - _t0) * 1000.0, 3)
                 _pending_legs[sym] = (_pending_legs.get(sym, 0.0)
                                       + (1.0 if side == "buy" else -1.0) * float(lot))
             except Exception as exc:

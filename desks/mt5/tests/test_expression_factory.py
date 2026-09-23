@@ -288,7 +288,17 @@ def test_end_to_end_pass_on_synthetic_bars_writes_the_artifact_and_queues_with_p
     assert camp["SCREENED"] == doc["cheap_layer"]["passed"]
     assert camp["QUEUED"] == doc["registry"]["queued"] + doc["registry"]["queued_existing"]
     assert camp["QUEUED"] >= 1, doc["cells"]
-    assert camp["QUEUED"] == doc["cells"]["survivors"]
+    # THERE IS ONE JUDGE (LAWS 7). This used to read `== doc["cells"]["survivors"]`, which pinned
+    # the OLD behaviour: only cells the factory's own tier1/tier2 liked ever reached the
+    # registry. The factory now queues the cells its screens disliked too -- ordered by the tier
+    # statistic, never gated on it -- so QUEUED covers survivors PLUS the deferred rows whose
+    # executor exists. A deferred cell with no executor is recorded BLOCKED, which is a fact
+    # about this desk's executors, not a verdict on the edge.
+    assert doc["cells"]["deferred_to_judge"] > 0, "the factory's screens disliked nothing at all?"
+    assert camp["QUEUED"] > doc["cells"]["survivors"], doc["cells"]
+    assert camp["QUEUED"] + doc["registry"]["blocked"] == (
+        doc["cells"]["survivors"] + doc["cells"]["deferred_to_judge"]
+        + doc["cells"]["blocked_survivors"])
     rows = R.candidates(origin=None, limit=500)
     mine = [r for r in rows if r.get("generator") == XF.SOURCE]
     assert len(mine) == camp["QUEUED"]
@@ -301,7 +311,9 @@ def test_end_to_end_pass_on_synthetic_bars_writes_the_artifact_and_queues_with_p
         assert r["family"] == "formula" and r["status"] == "queued"
         assert r["department"] == "mathlab" and r["trial_family"]
         assert json.loads(r["params_json"])["expr"]
-    assert doc["registry"]["cells"] == doc["cells"]["survivors"] + doc["cells"]["blocked_survivors"]
+    assert doc["registry"]["cells"] == (doc["cells"]["survivors"]
+                                        + doc["cells"]["deferred_to_judge"]
+                                        + doc["cells"]["blocked_survivors"])
     klass = META["AAA"]["asset_class"].lower()          # the lake lower-cases the registry's class
     assert doc["qd_archive"]["cells_filled"] > 0 and doc["population"]["islands"][klass] > 0
     assert doc["migration"]["island"] == klass
