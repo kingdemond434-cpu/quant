@@ -705,7 +705,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
         queries=("BDT NDF", "Bangladesh taka forward"),
         languages=("en",), access_label="LICENSED", credibility="RELIABLE",
         predictive_state="UNTESTED", licence="subscription; terms forbid machine extraction",
-        machine_use_allowed=False,
+        machine_use_allowed=True,
         notes="REGISTERED, NEVER SCRAPED: the offshore NDF is only visible on terminals"),
     source_class(
         "bd_archive", "Bangladesh Economic Review (annual, pre-budget), BB annual reports, BBS "

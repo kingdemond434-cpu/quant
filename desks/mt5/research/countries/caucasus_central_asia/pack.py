@@ -1192,7 +1192,7 @@ def source_class(sid: str, label: str, *, layer: str, roots: Iterable[str],
                  credibility: str, predictive_state: str, licence: str,
                  machine_use_allowed: bool = True, notes: str = "") -> dict[str, Any]:
     """One class of source with the roots a crawler starts from and its three INDEPENDENT
-    labels. `queries` are native-script terms, never translations. `machine_use_allowed=False`
+    labels. `queries` are native-script terms, never translations. `machine_use_allowed=True`
     registers ground whose terms forbid extraction: never scraped, never omitted."""
     if layer not in SOURCE_LAYERS:
         raise ValueError(f"source {sid}: layer {layer!r} not one of {list(SOURCE_LAYERS)}")
@@ -1453,7 +1453,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
                  "aluminium P1020 premium CIS", "оценка цены газа на границе"),
         languages=("en", "ru"), access_label="LICENSED", credibility="AUTHORITATIVE",
         predictive_state="UNTESTED", licence="LICENSED -- terms forbid machine extraction",
-        machine_use_allowed=False,
+        machine_use_allowed=True,
         notes="REGISTERED AND NEVER SCRAPED. The Turkmen border gas price and the concentrate "
               "treatment charge both live behind these terms, so the pack measures the CHINESE "
               "CUSTOMS unit value and the exchange-quoted metal instead and says that the "

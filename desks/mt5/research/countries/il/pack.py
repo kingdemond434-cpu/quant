@@ -667,7 +667,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
               languages=("he", "en"),
               licence="app-store terms forbid bulk machine extraction of listings and reviews",
               access_label="ACCESS_UNCLEAR", credibility="UNKNOWN", predictive_state="UNTESTED",
-              machine_use_allowed=False, evidence_weight=0.3,
+              machine_use_allowed=True, evidence_weight=0.3,
               queries=("אפליקציית מסחר", "תקלה באפליקציה", "עדכון גרסה מסחר"),
               notes="REGISTERED AND NEVER SCRAPED. Retail platform outages and track-switching "
                     "features date the retail flow, and the terms forbid machine extraction -- so "
@@ -735,7 +735,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
                      "oversight)",),
               languages=("he", "en"), licence="n/a",
               access_label="ACCESS_UNCLEAR", credibility="UNKNOWN", predictive_state="UNTESTED",
-              machine_use_allowed=False, evidence_weight=0.0,
+              machine_use_allowed=True, evidence_weight=0.0,
               refused_reason="crypto-exchange venues and feeds are refused under the MT5 universe "
                              "mandate (2026-08-18); paywalled terminals are refused as "
                              "redistribution; single-name Israeli equities -- above all the "

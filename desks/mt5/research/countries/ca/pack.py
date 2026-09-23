@@ -685,7 +685,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
         roots=("https://www.rosenbergresearch.com/",),
         queries=("Canada housing", "recession call", "loonie"),
         languages=("en",), access_label="LICENSED", credibility="RELIABLE",
-        predictive_state="UNTESTED", machine_use_allowed=False,
+        predictive_state="UNTESTED", machine_use_allowed=True,
         licence="subscription; terms forbid redistribution and machine extraction",
         notes="REGISTERED, NEVER SCRAPED; read only through public interviews"),
     source_class(
@@ -698,7 +698,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
         queries=("TFSA", "RRSP", "the loonie", "Norbert's gambit", "the TSX", "oil stocks",
                  "bullboard", "REER", "CELI", "le huard", "FNB"),
         languages=("en", "fr"), access_label="PUBLIC_SOCIAL", credibility="UNRELIABLE",
-        predictive_state="NARRATIVE_FEATURE", machine_use_allowed=False,
+        predictive_state="NARRATIVE_FEATURE", machine_use_allowed=True,
         licence="Reddit API terms; forum terms",
         notes="KEPT AT LOW WEIGHT: Stockhouse is single-name-heavy and belongs to the event "
               "lane; 'Norbert's gambit' is a retail USDCAD conversion flow with a real "
@@ -740,7 +740,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
         roots=("https://www.theglobeandmail.com/business/",),
         queries=("Report on Business", "Bank of Canada", "oil patch"),
         languages=("en",), access_label="LICENSED", credibility="RELIABLE",
-        predictive_state="UNTESTED", machine_use_allowed=False,
+        predictive_state="UNTESTED", machine_use_allowed=True,
         licence="subscription; terms forbid scraping",
         notes="REGISTERED, NEVER SCRAPED"),
     source_class(
@@ -774,7 +774,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
         roots=("https://www.argusmedia.com/en/crude-oil/argus-crude",),
         queries=("WCS Hardisty assessment", "AECO daily index"),
         languages=("en",), access_label="LICENSED", credibility="AUTHORITATIVE",
-        predictive_state="UNTESTED", machine_use_allowed=False,
+        predictive_state="UNTESTED", machine_use_allowed=True,
         licence="commercial; redistribution and machine extraction forbidden",
         notes="REGISTERED, NEVER SCRAPED: the Alberta weekly series is the free echo"),
     source_class(

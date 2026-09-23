@@ -8344,6 +8344,29 @@
    "gap": "MT5-AllocatorPulse is DECLARED in the manifest and not yet registered on the box, so the reaction latency is currently measured at the hourly floor rather than in seconds; scripts/check_box_tasks.py reports it as drift until the task exists",
    "next_step": "register MT5-AllocatorPulse on the trading box (at startup + every 5 minutes, running allocator_trigger.py --resident) and re-read the per-kind latency",
    "landed": []
+  },
+  {
+   "id": "CT8",
+   "domain": "C",
+   "phase": "C",
+   "status": "LANDED",
+   "gate": "none",
+   "item": "ONE CANONISED LANE (principal 2026-09-23: 'all certificates and clocks must be ONE canonised lane, not separate; all other claimed ones must be tested canonically -- the splits on the research system are the problem'). The lane is NAMED in code: ONE certificate store (reports/UNIVERSAL_SURVIVORS.json) and ONE clock store (data/sleeve_registry.json); the seal and forward_reconcile are DERIVED VIEWS regenerated from them, and a row a view holds that its source does not is the fatal DERIVED_STORE_WRITTEN_DIRECTLY. No store certifies by declaring -- the scalp lane's self-declaration included: every claim the canon does not hold is SUBMITTED to the one judge (the sealed gauntlet) on the hourly clock, and a claim older than one judging cycle that reached no queue is the fatal CLAIM_NOT_SUBMITTED_TO_JUDGE. A ban is a decision, never re-judged; an unstamped claim is UNMEASURED, never a stale verdict.",
+   "evidence": [
+    "desks/mt5/research/certificate_truth.py:116 - CANONICAL_CERTIFICATE_STORE, CANONICAL_CLOCK_STORE, DERIVED_VIEWS, CLAIM_STORES, JUDGING_CYCLE_S",
+    "desks/mt5/research/certificate_truth.py:906 - lane_census(), the comparison nothing made before",
+    "desks/mt5/research/certificate_truth.py:944 - submit_to_judge(), append-only and idempotent",
+    "desks/mt5/research/certificate_truth.py:875 - _stale_claims(), one judging cycle, unstamped is UNMEASURED",
+    "desks/mt5/research/certificate_truth.py:700 - the three fatal re-split kinds raised in audit()",
+    "desks/mt5/tests/test_certificate_truth.py:487 - 4 one-lane tests of the 19 in the file"
+   ],
+   "scheduled_by": "hourly_cycle:certificate_truth (desks/mt5/research/hourly_cycle.py:3306, hourly, --once --budget-s 120)",
+   "artifact": "desks/mt5/reports/CERTIFICATE_TRUTH.json one_lane block + desks/mt5/data/hypotheses/certification_queue.jsonl",
+   "consumer": "scripts/check_certificate_truth.py (run_law_gate.py:163 and :272)",
+   "landed": [
+    "measured on the box 2026-09-23: 8 named stores, 2 canonical / 2 derived (0 independent rows) / 4 claim; 1,288 claims submitted to the judge; 0 stale unjudged; canon 28, 0 fatal"
+   ],
+   "notes": "The judge is sealed, so the queue is the contract with it rather than a call into it; the gauntlet's docket reads the queue's specs."
   }
  ],
  "status_vocabulary_note": "LANDED means the code exists in THIS REPOSITORY, on a named clock, with an artifact and a consumer. It does NOT mean the artifact has ever been produced on the trading box, and it does not mean the behaviour has been observed with money at risk. That distinction is what the five acceptance_properties measure, and they are measured from artifacts rather than asserted: an absent artifact reads UNMEASURED, never MET. Read the census as build coverage and the acceptance properties as operational proof. They are different questions and the second is the one that decides whether the desk works."

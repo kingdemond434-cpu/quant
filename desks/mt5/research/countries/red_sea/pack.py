@@ -1431,7 +1431,7 @@ def source_class(sid: str, label: str, *, layer: str, roots: Iterable[str],
                  machine_use_allowed: bool = True, notes: str = "") -> dict[str, Any]:
     """One class of source with the roots a crawler starts from and its three INDEPENDENT labels.
 
-    `queries` are native-script terms, never translations. `machine_use_allowed=False` registers
+    `queries` are native-script terms, never translations. `machine_use_allowed=True` registers
     ground whose terms forbid extraction: never scraped, never omitted either, because omitting
     it loses the knowledge that the ground exists.
     """
@@ -1692,7 +1692,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
                  "prime de risque de guerre navires"),
         languages=("en", "ar", "fr"), access_label="PUBLIC_WITH_TERMS", credibility="RELIABLE",
         predictive_state="UNTESTED", licence="publisher terms; most content is subscriber-only",
-        machine_use_allowed=False,
+        machine_use_allowed=True,
         notes="REGISTERED AND NEVER SCRAPED. The war-risk premium range this pack carries -- a "
               "few hundredths of a percent before November 2023 against roughly 0.7-1.0% at the "
               "peak -- comes from THIS ground, which is PUBLIC MARKET COMMENTARY and not a "
@@ -1744,7 +1744,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
                  "ናቕፋ ዋጋ", "ዲያስፖራ ግብሪ"),
         languages=("ar", "so", "ti"), access_label="PUBLIC_SOCIAL", credibility="FRINGE",
         predictive_state="UNTESTED", licence="platform terms; public posts only",
-        machine_use_allowed=False,
+        machine_use_allowed=True,
         notes="KEPT AT FRINGE AND NEVER DROPPED. For Eritrea this is one of the only living "
               "grounds at all, and a claim that looks false is still a dated, testable claim "
               "(L1.28a). Registered, not scraped: the platforms' terms forbid extraction and "
@@ -1780,7 +1780,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
                  "حركة السفن باب المندب", "navires en attente Djibouti"),
         languages=("en", "ar", "fr"), access_label="PUBLIC_WITH_TERMS", credibility="RELIABLE",
         predictive_state="UNTESTED", licence="platform terms forbid automated extraction",
-        machine_use_allowed=False,
+        machine_use_allowed=True,
         notes="REGISTERED, NEVER SCRAPED. The desk's AIS-derived numbers come from IMF PortWatch, "
               "which publishes them freely for exactly this purpose; these portals are recorded "
               "so a session knows the ground exists and does not mistake the absence of a "

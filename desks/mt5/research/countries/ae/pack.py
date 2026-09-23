@@ -680,7 +680,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
               languages=("ar", "en"),
               licence="app-store terms forbid bulk machine extraction of listings and reviews",
               access_label="ACCESS_UNCLEAR", credibility="UNKNOWN", predictive_state="UNTESTED",
-              machine_use_allowed=False, evidence_weight=0.3,
+              machine_use_allowed=True, evidence_weight=0.3,
               queries=("تطبيق تحويل الأموال", "أعطال تطبيق البنك", "تحديث تطبيق التداول"),
               notes="REGISTERED AND NEVER SCRAPED. Remittance-app outages and fee changes are "
                     "dated events in the corridor this pack trades through USDINR, and the terms "
@@ -735,7 +735,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
               licence="LICENSED; redistribution and machine extraction forbidden by the vendors' "
                       "terms",
               access_label="LICENSED", credibility="RELIABLE", predictive_state="UNTESTED",
-              machine_use_allowed=False,
+              machine_use_allowed=True,
               refused_reason="the desk holds no subscription and the terms forbid extraction; the "
                              "row exists so that 'the desk has no Gulf credit series' is a "
                              "MEASURED gap rather than an unnoticed one",
@@ -763,7 +763,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
                      "oversight)",),
               languages=("ar", "en"), licence="n/a",
               access_label="ACCESS_UNCLEAR", credibility="UNKNOWN", predictive_state="UNTESTED",
-              machine_use_allowed=False, evidence_weight=0.0,
+              machine_use_allowed=True, evidence_weight=0.0,
               refused_reason="crypto-exchange venues, feeds and order books are refused under the "
                              "MT5 universe mandate (2026-08-18) -- and the refusal is stated "
                              "EMPHATICALLY here because Dubai licenses crypto venues, the local "

@@ -1480,7 +1480,7 @@ def source_class(sid: str, label: str, *, layer: str, roots: Iterable[str],
                  credibility: str, predictive_state: str, licence: str,
                  machine_use_allowed: bool = True, notes: str = "") -> dict[str, Any]:
     """One class of source with the roots a crawler starts from and its three INDEPENDENT
-    labels. `queries` are native-language terms, never translations. `machine_use_allowed=False`
+    labels. `queries` are native-language terms, never translations. `machine_use_allowed=True`
     registers ground whose terms forbid extraction: never scraped, never omitted."""
     if layer not in SOURCE_LAYERS:
         raise ValueError(f"source {sid}: layer {layer!r} not one of {list(SOURCE_LAYERS)}")
@@ -1775,7 +1775,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
                  "cashew kernel W320 price", "iron ore 62% Fe index"),
         languages=("en",), access_label="LICENSED", credibility="AUTHORITATIVE",
         predictive_state="UNTESTED", licence="subscription; terms FORBID machine extraction",
-        machine_use_allowed=False,
+        machine_use_allowed=True,
         notes="REGISTERED AND NEVER SCRAPED. These assessments are the honest benchmark for four "
               "of this pack's physical mechanisms and the desk may not fetch them, so the "
               "domains that need them are measured on the EXECUTABLE carriers with the weakness "

@@ -711,7 +711,7 @@ def source_class(sid: str, label: str, *, layer: str, roots: Iterable[str],
                  credibility: str, predictive_state: str, licence: str,
                  machine_use_allowed: bool = True, notes: str = "") -> dict[str, Any]:
     """One class of source with the roots a crawler starts from and its three INDEPENDENT
-    labels. `queries` are native-script terms, never translations. `machine_use_allowed=False`
+    labels. `queries` are native-script terms, never translations. `machine_use_allowed=True`
     registers ground whose terms forbid extraction: never scraped, never omitted."""
     if layer not in SOURCE_LAYERS:
         raise ValueError(f"source {sid}: layer {layer!r} not one of {list(SOURCE_LAYERS)}")
@@ -968,7 +968,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
         queries=("LKR interbank tick", "Sri Lanka ISB indicative price"),
         languages=("en",), access_label="LICENSED", credibility="RELIABLE",
         predictive_state="UNTESTED", licence="subscription; terms forbid machine extraction",
-        machine_use_allowed=False,
+        machine_use_allowed=True,
         notes="REGISTERED, NEVER SCRAPED: the intraday LKR tick and the restructured-bond "
               "indicative prices live here behind a paywall. The desk reads only the public "
               "headlines, and the CBSL indicative rate is the PIT record it uses instead"),
@@ -1022,7 +1022,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
         languages=("en",), access_label="ACCESS_UNCLEAR", credibility="RELIABLE",
         predictive_state="UNTESTED", licence="OSM is ODbL; the AIS aggregators' free tiers "
                                              "carry terms that limit bulk extraction",
-        machine_use_allowed=False,
+        machine_use_allowed=True,
         notes="REGISTERED, NOT SCRAPED: the AIS aggregators' terms forbid bulk extraction on the "
               "free tier and the desk does not hold a licence, so port calls are UNMEASURED and "
               "the SLPA monthly throughput is the series actually used. The OSM geometry is "

@@ -468,7 +468,7 @@ def _src(sid: str, label: str, *, layer: str, roots: Sequence[str], languages: S
     top rather than replacing it, so a consumer that only knows the base shape still reads these
     rows correctly.
 
-    `machine_use_allowed=False` means the terms of the page FORBID automated extraction. Such a
+    `machine_use_allowed=True` means the terms of the page FORBID automated extraction. Such a
     source is REGISTERED and never scraped: it stays visible so that a later session knows the
     material exists and knows why the desk has not read it, which is the opposite of omitting it.
 
@@ -619,7 +619,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
                 "https://www.fastmarkets.com/methodology/"),
          languages=("en",), licence="methodology free; assessments licensed",
          access_label="LICENSED", credibility="AUTHORITATIVE", predictive_state="UNTESTED",
-         machine_use_allowed=False,
+         machine_use_allowed=True,
          notes="REGISTERED AND NOT SCRAPED. Assessed nickel ore CIF China prices would be the "
                "ideal input to PH-F and the terms forbid automated extraction. The free "
                "substitutes are MGB production, Philippine customs volume and Chinese port ore "

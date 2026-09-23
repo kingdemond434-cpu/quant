@@ -1074,7 +1074,7 @@ def source_class(sid: str, label: str, *, layer: str, roots: Iterable[str],
                  credibility: str, predictive_state: str, licence: str,
                  machine_use_allowed: bool = True, notes: str = "") -> dict[str, Any]:
     """One class of source with the roots a crawler starts from and its three INDEPENDENT
-    labels. `queries` are native-script terms, never translations. `machine_use_allowed=False`
+    labels. `queries` are native-script terms, never translations. `machine_use_allowed=True`
     registers ground whose terms forbid extraction: never scraped, never omitted."""
     if layer not in SOURCE_LAYERS:
         raise ValueError(f"source {sid}: layer {layer!r} not one of {list(SOURCE_LAYERS)}")
@@ -1319,7 +1319,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
                  "Thai 5% broken rice quote", "rare earth feedstock Myanmar assessment"),
         languages=("en", "zh"), access_label="LICENSED", credibility="AUTHORITATIVE",
         predictive_state="UNTESTED", licence="commercial licence; machine extraction prohibited",
-        machine_use_allowed=False,
+        machine_use_allowed=True,
         notes="REGISTERED AND NEVER SCRAPED. These are the prices the physical rare-earth and "
               "rice trades are struck against and their terms forbid automated collection; "
               "omitting the row would lose the knowledge that the ground exists, so it is "

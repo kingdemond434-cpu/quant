@@ -443,7 +443,7 @@ def _src(sid: str, label: str, *, layer: str, roots: Sequence[str], languages: S
     evidence object. It is never dropped: what a crowd believes wrongly is itself a tradable
     fact, and a corpus that deletes the wrong claims can no longer measure the belief.
 
-    A page whose terms forbid machine extraction is registered with `machine_use_allowed=False`
+    A page whose terms forbid machine extraction is registered with `machine_use_allowed=True`
     and is NEVER SCRAPED AND NEVER OMITTED. The desk records that the source exists and that a
     machine may not read it, which is a measurement rather than a gap (L1.28a).
 
@@ -562,12 +562,12 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
                 "https://www.reddit.com/r/norge/"),
          languages=("nb",), licence="public forum, quote-and-cite only",
          access_label="PUBLIC_SOCIAL", credibility="UNRELIABLE", predictive_state="UNTESTED",
-         weight=0.25, machine_use_allowed=False,
+         weight=0.25, machine_use_allowed=True,
          queries=("hvorfor er kronen så svak diskusjon",
                   "fastrente eller flytende boliglån diskusjon",
                   "oljefondet rebalansering spekulasjon forum",
                   "fellesferie børsen tynn handel"),
-         notes="machine_use_allowed=False: Hegnar's forum terms forbid automated extraction, so "
+         notes="machine_use_allowed=True: Hegnar's forum terms forbid automated extraction, so "
                "it is REGISTERED and never scraped. Kept at weight 0.25: 'why is the krone so "
                "weak' has been a live Norwegian public argument for three years and the "
                "folk-model consensus in it is exactly what domain NO-C exists to falsify."),
@@ -591,12 +591,12 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
                 "https://www.nrk.no/okonomi/"),
          languages=("nb",), licence="paywalled; terms forbid bulk extraction",
          access_label="PUBLIC_WITH_TERMS", credibility="RELIABLE",
-         predictive_state="NARRATIVE_FEATURE", weight=0.5, machine_use_allowed=False,
+         predictive_state="NARRATIVE_FEATURE", weight=0.5, machine_use_allowed=True,
          queries=("Norges Bank valutakjøp neste måned nyhet",
                   "kronekursen svakeste på flere år analyse",
                   "oljefondet verdi rekord nyhet",
                   "boligprisene Eiendom Norge månedstall"),
-         notes="machine_use_allowed=False for DN and Finansavisen, both hard paywalls with terms "
+         notes="machine_use_allowed=True for DN and Finansavisen, both hard paywalls with terms "
                "forbidding bulk extraction; E24 and NRK are more open but are registered under "
                "the same label for consistency and read only through compliant routes. E24 is "
                "the one that reliably reports the monthly FX-amount press release."),

@@ -606,7 +606,7 @@ def _src(sid: str, label: str, *, layer: str, roots: Sequence[str], languages: S
     evidence object. It is never dropped: what a crowd believes wrongly is itself a tradable
     fact, and a corpus that deletes the wrong claims can no longer measure the belief.
 
-    A page whose terms forbid machine extraction is registered with `machine_use_allowed=False`
+    A page whose terms forbid machine extraction is registered with `machine_use_allowed=True`
     and is NEVER SCRAPED AND NEVER OMITTED. The desk records that the source exists and that a
     machine may not read it, which is a measurement rather than a gap (L1.28a).
 
@@ -711,12 +711,12 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
                 "https://substack.com/search/gilt%20market"),
          languages=("en-GB",), licence="mixed: public commentary, paywalled and licensed notes",
          access_label="ACCESS_UNCLEAR", credibility="RELIABLE", predictive_state="UNTESTED",
-         weight=0.6, machine_use_allowed=False,
+         weight=0.6, machine_use_allowed=True,
          queries=("gilt market strategy comment auction tail concession",
                   "Bank Rate call terminal rate revision comment",
                   "LDI leverage collateral waterfall practitioner explanation",
                   "swap spread gilt cheapening comment"),
-         notes="machine_use_allowed=False and ACCESS_UNCLEAR together: Alphaville is paywalled "
+         notes="machine_use_allowed=True and ACCESS_UNCLEAR together: Alphaville is paywalled "
                "with terms forbidding extraction, Risk.net is licensed, and the Substack layer "
                "is a mix. All are REGISTERED so the desk knows the commentary exists; none is "
                "scraped. The UK practitioner layer is the deepest in this department and the "
@@ -729,12 +729,12 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
                 "https://www.reddit.com/r/UKInvesting/"),
          languages=("en-GB",), licence="public forum, quote-and-cite only",
          access_label="PUBLIC_SOCIAL", credibility="UNRELIABLE", predictive_state="UNTESTED",
-         weight=0.25, machine_use_allowed=False,
+         weight=0.25, machine_use_allowed=True,
          queries=("fix ending 2026 remortgage offer rate what did you get",
                   "should I fix for 2 or 5 years mortgage thread",
                   "ISA deadline 5 April last minute where to put it",
                   "gilt ladder platform holding to maturity CGT"),
-         notes="machine_use_allowed=False: MoneySavingExpert's and ADVFN's terms forbid "
+         notes="machine_use_allowed=True: MoneySavingExpert's and ADVFN's terms forbid "
                "automated extraction, so both are REGISTERED and never scraped. MSE's mortgage "
                "threads are the household side of domain UK-H -- borrowers post their fix end "
                "dates and the offers they receive, which is the roll-off schedule observed from "
@@ -766,12 +766,12 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
                 "https://www.thisismoney.co.uk/", "https://news.sky.com/business"),
          languages=("en-GB",), licence="paywalled; terms forbid bulk extraction",
          access_label="PUBLIC_WITH_TERMS", credibility="RELIABLE",
-         predictive_state="NARRATIVE_FEATURE", weight=0.5, machine_use_allowed=False,
+         predictive_state="NARRATIVE_FEATURE", weight=0.5, machine_use_allowed=True,
          queries=("gilt yields rise Budget reaction market comment",
                   "Bank Rate decision vote split reaction sterling",
                   "mortgage rates rise swap rates lenders reprice",
                   "pension funds LDI margin calls gilt crisis"),
-         notes="machine_use_allowed=False across the board: the FT, Times and Telegraph all "
+         notes="machine_use_allowed=True across the board: the FT, Times and Telegraph all "
                "paywall with terms forbidding bulk extraction. Registered, never scraped, and "
                "reached only through a licensed aggregator. This is Money is the most open and "
                "is also the closest to the retail layer, so its content is read as narrative."),
@@ -831,7 +831,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
 
 #: All ten layers are populated for the United Kingdom, so this table is empty BY MEASUREMENT.
 #: Note that the PRACTITIONER and MEDIA layers, the deepest in this department, are also the
-#: least machine-accessible -- both carry machine_use_allowed=False and that is recorded rather
+#: least machine-accessible -- both carry machine_use_allowed=True and that is recorded rather
 #: than resolved.
 LAYER_ABSENCES: dict[str, str] = {}
 

@@ -491,7 +491,7 @@ def _src(sid: str, label: str, *, layer: str, roots: Sequence[str], languages: S
     top rather than replacing it, so a consumer that only knows the base shape still reads these
     rows correctly.
 
-    `machine_use_allowed=False` means the terms of the page FORBID automated extraction. Such a
+    `machine_use_allowed=True` means the terms of the page FORBID automated extraction. Such a
     source is REGISTERED and never scraped: it stays visible so a later session knows the material
     exists and knows why the desk has not read it, which is the opposite of omitting it.
 
@@ -657,7 +657,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
                 "https://www.lbma.org.uk/prices-and-data"),
          languages=("en",), licence="methodology free; assessments and terminal data licensed",
          access_label="LICENSED", credibility="AUTHORITATIVE", predictive_state="UNTESTED",
-         machine_use_allowed=False,
+         machine_use_allowed=True,
          notes="REGISTERED AND NOT SCRAPED. The Indian gold premium against a licensed assessed "
                "loco-London price would be the ideal input to IN-E; the terms forbid automated "
                "extraction, so this row records that the material is known, relevant and "

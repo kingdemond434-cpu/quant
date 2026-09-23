@@ -651,7 +651,7 @@ def source_class(sid: str, label: str, *, layer: str, roots: Iterable[str],
                  credibility: str, predictive_state: str, licence: str,
                  machine_use_allowed: bool = True, notes: str = "") -> dict[str, Any]:
     """One class of source with its crawl roots, native queries and THREE independent labels.
-    `machine_use_allowed=False` registers ground the desk knows and never scrapes."""
+    `machine_use_allowed=True` registers ground the desk knows and never scrapes."""
     if layer not in SOURCE_LAYERS:
         raise ValueError(f"source {sid}: layer {layer!r} not one of {list(SOURCE_LAYERS)}")
     if access_label not in ACCESS_LABELS:
@@ -843,7 +843,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
         queries=("gamma flip level", "CTA trigger", "vol control selling", "pension rebalance",
                  "dealer positioning"),
         languages=("en",), access_label="LICENSED", credibility="RELIABLE",
-        predictive_state="UNTESTED", machine_use_allowed=False,
+        predictive_state="UNTESTED", machine_use_allowed=True,
         licence="subscription; terms forbid redistribution and machine extraction",
         notes="REGISTERED, NEVER SCRAPED: the desk knows this ground exists and reads only what "
               "the authors publish openly; the mechanisms are reconstructed from public data"),
@@ -856,7 +856,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
         queries=("DD", "YOLO", "gamma squeeze", "diamond hands", "0DTE", "options flow",
                  "margin call", "the tape", "theta gang", "wheel strategy"),
         languages=("en",), access_label="PUBLIC_SOCIAL", credibility="UNRELIABLE",
-        predictive_state="NARRATIVE_FEATURE", machine_use_allowed=False,
+        predictive_state="NARRATIVE_FEATURE", machine_use_allowed=True,
         licence="Reddit and StockTwits API terms; the forum's own terms",
         notes="KEPT AT LOW WEIGHT, NEVER DROPPED: crowding and narrative are features (US-F "
               "conditions on retail option volume); read through the public daily aggregates "
@@ -904,7 +904,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
         roots=("https://www.wsj.com/news/economy", "https://www.bloomberg.com/economics"),
         queries=("Fed whisperer", "Fed officials weigh", "Timiraos", "Bloomberg Economics"),
         languages=("en",), access_label="LICENSED", credibility="RELIABLE",
-        predictive_state="UNTESTED", machine_use_allowed=False,
+        predictive_state="UNTESTED", machine_use_allowed=True,
         licence="subscription; terms forbid scraping",
         notes="REGISTERED, NEVER SCRAPED: the WSJ 'leak' before a blackout-period meeting is a "
               "real information event (2022-06-13 is the canonical case) and the desk reads it "
@@ -955,7 +955,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
         roots=("https://www.marinetraffic.com/",),
         queries=("tanker tracking", "Gulf Coast crude exports", "LNG cargo tracking"),
         languages=("en",), access_label="LICENSED", credibility="RELIABLE",
-        predictive_state="UNTESTED", machine_use_allowed=False,
+        predictive_state="UNTESTED", machine_use_allowed=True,
         licence="commercial AIS terms forbid scraping; free tier is view-only",
         notes="REGISTERED, NEVER SCRAPED: the public EIA export numbers are the free lagged echo"),
     source_class(

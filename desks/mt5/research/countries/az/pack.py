@@ -549,7 +549,7 @@ def source_class(sid: str, label: str, *, layer: str, roots: Iterable[str],
     finds the small English-speaking corner of that ground and then reports the result as if it
     were the ground.
 
-    `machine_use_allowed=False` registers a source whose terms forbid machine extraction. It is
+    `machine_use_allowed=True` registers a source whose terms forbid machine extraction. It is
     NEVER scraped and NEVER omitted: the row stays so the desk knows the ground exists, knows it
     was considered, and knows exactly why it is not being read.
     """
@@ -743,7 +743,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
         queries=("neft gəlirləri", "büdcə gəlirləri", "manatın sabitliyi", "hərrac həcmi",
                  "нефтяные доходы", "стабильность маната", "объём аукциона"),
         languages=("az", "ru"), access_label="PUBLIC_WITH_TERMS", credibility="UNRELIABLE",
-        predictive_state="NARRATIVE_FEATURE", machine_use_allowed=False,
+        predictive_state="NARRATIVE_FEATURE", machine_use_allowed=True,
         licence="public web; automated extraction restricted",
         notes="Azerbaijani market commentary is thin and close to official framing; treated as a "
               "conditioning variable rather than as independent analysis, and labelled honestly"),
@@ -754,7 +754,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
         queries=("manat devalvasiya", "devalvasiya olacaq", "neft qiyməti büdcə",
                  "девальвация маната", "нефть и бюджет", "аукцион ЦБА"),
         languages=("az", "ru"), access_label="PUBLIC_SOCIAL", credibility="FRINGE",
-        predictive_state="NARRATIVE_FEATURE", machine_use_allowed=False,
+        predictive_state="NARRATIVE_FEATURE", machine_use_allowed=True,
         licence="public channels; automated extraction restricted",
         notes="DEVALUATION RUMOUR IS THE MECHANISM HERE. With a pegged rate there is no price to "
               "express the belief, so it shows up as auction demand instead -- and the rumour is "
@@ -767,7 +767,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
         queries=("əmanət faizi", "dollar almaq", "manatı dollara çevirmək", "bank depoziti",
                  "ставка по депозиту", "купить доллары", "перевести в доллары", "смартлаб"),
         languages=("az", "ru"), access_label="PUBLIC_SOCIAL", credibility="UNRELIABLE",
-        predictive_state="UNTESTED", machine_use_allowed=False,
+        predictive_state="UNTESTED", machine_use_allowed=True,
         licence="public forums; automated extraction restricted",
         notes="household currency substitution under a peg has nowhere to show except in "
               "conversion behaviour, and this is where it is discussed. Low weight, never zero"),
@@ -778,7 +778,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
         queries=("qızıl külçə", "qızıl sikkə", "zərgərlik", "qızıl qiyməti",
                  "золотой слиток", "цена золота", "ювелирный"),
         languages=("az", "ru"), access_label="PUBLIC_SOCIAL", credibility="FRINGE",
-        predictive_state="UNTESTED", machine_use_allowed=False,
+        predictive_state="UNTESTED", machine_use_allowed=True,
         licence="public listings and channels; automated extraction restricted",
         notes="A PEGGED CURRENCY OFFERS HOUSEHOLDS NO DEVALUATION HEDGE, so the hedge is "
               "physical. Retail bullion premia are the closest thing to a market-priced "
@@ -790,7 +790,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
         queries=("investisiya hesabı", "broker komissiyası", "mobil tətbiq",
                  "инвестиционный счёт", "комиссия брокера", "мобильное приложение"),
         languages=("az", "ru"), access_label="PUBLIC_WITH_TERMS", credibility="RELIABLE",
-        predictive_state="UNTESTED", machine_use_allowed=False,
+        predictive_state="UNTESTED", machine_use_allowed=True,
         licence="public product pages; account data is PRIVATE and is never sought",
         notes="a thin domestic investment-app layer; what exists is mostly deposit and FX "
               "conversion rather than securities. NO ACCOUNT-LEVEL DATA is sought"),
@@ -844,7 +844,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
         queries=("arxiv", "2015 devalvasiya", "tarixi statistika", "архив",
                  "девальвация 2015", "историческая статистика"),
         languages=("az", "ru"), access_label="PUBLIC_ARCHIVE", credibility="AUTHORITATIVE",
-        predictive_state="UNTESTED", machine_use_allowed=False,
+        predictive_state="UNTESTED", machine_use_allowed=True,
         licence="public archive; reading-room and site terms govern reuse",
         notes="the two 2015 devaluations are the only period in the modern series where the rate "
               "moved, and the contemporaneous record is how the household reflex behind AZ-L is "

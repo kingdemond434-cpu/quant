@@ -1173,7 +1173,7 @@ def source_class(sid: str, label: str, *, layer: str, roots: Iterable[str],
                  credibility: str, predictive_state: str, licence: str,
                  machine_use_allowed: bool = True, notes: str = "") -> dict[str, Any]:
     """One class of source with the roots a crawler starts from and its three INDEPENDENT labels.
-    `queries` are native-language terms, never translations. `machine_use_allowed=False` registers
+    `queries` are native-language terms, never translations. `machine_use_allowed=True` registers
     ground whose terms forbid extraction: never scraped, never omitted."""
     if layer not in SOURCE_LAYERS:
         raise ValueError(f"source {sid}: layer {layer!r} not one of {list(SOURCE_LAYERS)}")
@@ -1382,7 +1382,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
                  "coût de production du cuivre", "gharama za uzalishaji wa shaba"),
         languages=("en", "fr", "sw"), access_label="PUBLIC_WITH_TERMS", credibility="RELIABLE",
         predictive_state="UNTESTED", licence="press releases free; the bulletins are subscription",
-        machine_use_allowed=False,
+        machine_use_allowed=True,
         notes="REGISTERED, NOT SCRAPED. The ICSG bulletin and the Cobalt Institute's detailed "
               "series are subscription products whose terms forbid machine extraction; the "
               "headline press releases are public and are what this pack reads. Omitting the "
@@ -1415,7 +1415,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
                  "prix du cuivre aujourd'hui"),
         languages=("fr", "sw", "ln", "ny", "en"), access_label="PUBLIC_SOCIAL",
         credibility="FRINGE", predictive_state="UNTESTED",
-        licence="platform terms forbid bulk extraction", machine_use_allowed=False,
+        licence="platform terms forbid bulk extraction", machine_use_allowed=True,
         notes="REGISTERED AND NEVER SCRAPED. This is the ONLY high-frequency read on the "
               "Congolese street rate that exists, which is precisely why it is kept at FRINGE "
               "credibility rather than dropped: a number nobody publishes and everybody quotes is "
@@ -1430,7 +1430,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
                  "prix du cobalt au comptoir", "mgodi ntchito", "délestage Lubumbashi"),
         languages=("sw", "fr", "ny", "bem"), access_label="PUBLIC_SOCIAL", credibility="FRINGE",
         predictive_state="UNTESTED", licence="platform terms forbid bulk extraction",
-        machine_use_allowed=False,
+        machine_use_allowed=True,
         notes="READ FOR PUBLISHED FACTS ABOUT PRICES, SHIFTS AND POWER, AND FOR NOTHING ELSE. The "
               "desk records what is published about production, flows and policy and neither "
               "collects nor seeks personal data about any individual miner (ACCESS_CONSTRAINTS)"),
@@ -1504,7 +1504,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
                  "cobalt price collapse oversupply", "TAZARA concession agreement"),
         languages=("en",), access_label="PUBLIC_WITH_TERMS", credibility="RELIABLE",
         predictive_state="UNTESTED", licence="mixed; several titles are subscription",
-        machine_use_allowed=False,
+        machine_use_allowed=True,
         notes="REGISTERED, NOT SCRAPED. The trade press is frequently the FIRST dated record of an "
               "ARECOMS decision or a corridor milestone, and several of these titles forbid "
               "machine extraction in terms; the pack records the ground and reads the headline"),

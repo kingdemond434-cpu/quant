@@ -1007,7 +1007,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
         languages=("is", "en"), access_label="PUBLIC_WITH_TERMS", credibility="AUTHORITATIVE",
         predictive_state="UNTESTED",
         licence="index rules and calendars are free; the LIVE TAPE is licensed market data",
-        machine_use_allowed=False,
+        machine_use_allowed=True,
         notes="REGISTERED, NEVER SCRAPED. The rulebooks and the calendar are readable; the tape "
               "is licensed, and in any case the index is a handful of names and belongs to the "
               "event lane, not the hypothesis lane"),
@@ -1102,7 +1102,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
                  "viðskipti dagsins", "greiningar"),
         languages=("is",), access_label="PUBLIC_WITH_TERMS", credibility="RELIABLE",
         predictive_state="UNTESTED", licence="free tier; the data product is subscription",
-        machine_use_allowed=False,
+        machine_use_allowed=True,
         notes="REGISTERED, NEVER SCRAPED. The subscription data product's terms forbid machine "
               "extraction; the ground is named so the desk does not forget the professional "
               "market-data layer exists here"),

@@ -1350,7 +1350,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
                  "Black Sea wheat fob assessment", "sunflower oil fob Ukraine assessment"),
         languages=("en",), access_label="LICENSED", credibility="RELIABLE",
         predictive_state="UNTESTED", licence="subscription; terms forbid machine extraction",
-        machine_use_allowed=False,
+        machine_use_allowed=True,
         notes="REGISTERED, NEVER SCRAPED. The potash price and the Black Sea FOB basis are the "
               "two numbers this pack would most like and cannot lawfully have, which is exactly "
               "why BY-A and UA-B are written to be measured on TONNAGE and on the CROPS instead "

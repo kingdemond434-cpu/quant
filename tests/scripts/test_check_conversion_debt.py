@@ -22,6 +22,7 @@ from __future__ import annotations
 import importlib.util
 import json
 import sys
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -56,14 +57,22 @@ def registry(tmp_path: Path):
         R.set_path(None)
 
 
-def _donate(conn, n: int, prefix: str = "d") -> list[str]:
-    """`n` candidates in status `donated` -- the debt component the mandate targets."""
+def _donate(conn, n: int, prefix: str = "d", age_h: float = 9.0) -> list[str]:
+    """`n` candidates in status `donated` -- the debt component the mandate targets.
+
+    BACK-DATED past the in-flight grace, because a row minted this second is work-in-progress and
+    the ratchet deliberately does not count it (`conversion_maximiser.IN_FLIGHT_GRACE_H`). These
+    tests are about the ratchet, so they plant rows that have already missed their turn.
+    """
+    old = (datetime.now(tz=UTC) - timedelta(hours=age_h)).isoformat()
     out = []
     for i in range(n):
         cid, _ = R.enqueue_candidate(family="range_reversion", symbol="TESTFX",
                                      params={"k": f"{prefix}{i}"}, origin="DESK",
                                      status="donated", candidate_id=f"{prefix}_{i}", conn=conn)
+        conn.execute("UPDATE research_candidates SET created_at=? WHERE id=?", (old, cid))
         out.append(cid)
+    conn.commit()
     return out
 
 

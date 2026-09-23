@@ -39,6 +39,7 @@ __all__ = [
     "get_all_family_names",
     "get_family_func",
     "get_param_grid",
+    "live_family_names",
 ]
 
 
@@ -121,6 +122,41 @@ def get_family_func(name: str) -> Callable[..., Any] | None:
 
 def get_all_family_names() -> list[str]:
     return sorted(FAMILY_REGISTRY.keys())
+
+
+def live_family_names() -> list[str]:
+    """EVERY family the desk can actually resolve, across all populations -- the live set.
+
+    `get_all_family_names` returns the 27 DECORATED families, which is the right answer to "what
+    carries a param grid" and the wrong one to "what may be hunted or judged". The orthogonal
+    sweep's families and the hunt16 population are equally real code that `get_family_func` and
+    `executables.resolve_family` both resolve, so a caller that hunts or judges "all families"
+    off the decorated set silently omits them -- the same defect `get_family_func`'s own
+    docstring was written to fix, one caller up.
+
+    THIS IS THE ANSWER TO "NOT FIXED LIKE THESE SIX, EVERY TIME" (the principal, 2026-09-23).
+    Any organ whose subject is "the families" reads THIS, so a family added tomorrow is hunted
+    and judged the hour it is registered, with no edit anywhere. A population that fails to
+    import contributes nothing and narrows nothing: absence of an import is not absence of a
+    family, and this function never returns fewer names than the registry it can read.
+    """
+    names = set(FAMILY_REGISTRY.keys())
+    try:
+        from mt5desk.executables import hunt16_families
+        names |= set(hunt16_families().keys())
+    except Exception:
+        pass
+    try:
+        from mt5desk import families_orthogonal as fo
+        names |= set(fo.ORTHOGONAL_FAMILIES.keys())
+    except Exception:
+        pass
+    try:
+        from mt5desk.families_edge_queue import EDGE_QUEUE_FAMILIES
+        names |= set(EDGE_QUEUE_FAMILIES.keys())
+    except Exception:
+        pass
+    return sorted(names)
 
 
 def get_param_grid(name: str) -> dict[str, list]:

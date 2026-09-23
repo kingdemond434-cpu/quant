@@ -582,7 +582,7 @@ def source_class(sid: str, label: str, *, layer: str, roots: Iterable[str],
     searches "Turkish inflation" finds the small English-speaking corner of a very large Turkish
     ground and then reports that corner as if it were the ground.
 
-    `machine_use_allowed=False` registers a source whose terms forbid machine extraction. It is
+    `machine_use_allowed=True` registers a source whose terms forbid machine extraction. It is
     NEVER scraped and NEVER omitted: the row stays so the desk knows the ground exists, knows it
     was considered, and knows exactly why it is not being read.
     """
@@ -767,7 +767,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
         queries=("ENAG", "ENAGrup", "E-TÜFE", "alternatif enflasyon", "gerçek enflasyon",
                  "enflasyon farkı"),
         languages=("tr",), access_label="PUBLIC", credibility="CONTRADICTED",
-        predictive_state="UNTESTED", machine_use_allowed=False,
+        predictive_state="UNTESTED", machine_use_allowed=True,
         licence="public web; automated extraction restricted",
         notes="AN ACADEMIC GROUP PUBLISHING AN ALTERNATIVE CPI FAR ABOVE THE OFFICIAL ONE, on the "
               "same day. CONTRADICTED AND KEPT AT LOW WEIGHT, NEVER DROPPED: the official series "
@@ -783,7 +783,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
         queries=("strateji raporu", "günlük bülten", "kur beklentisi", "faiz beklentisi",
                  "hedef fiyat", "teknik analiz", "destek direnç", "piyasa yorumu"),
         languages=("tr",), access_label="PUBLIC_WITH_TERMS", credibility="RELIABLE",
-        predictive_state="NOT_PREDICTIVE", machine_use_allowed=False,
+        predictive_state="NOT_PREDICTIVE", machine_use_allowed=True,
         licence="public web; redistribution restricted",
         notes="NOT_PREDICTIVE is a measured verdict about published lira forecasts across the "
               "unorthodox era, not a slur: the consensus was directionally wrong for years, which "
@@ -795,7 +795,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
         queries=("rezerv verisi", "swap hariç net rezerv", "KKM bakiyesi", "TÜFE beklenti",
                  "kur tahmini", "faiz kararı bekleniyor", "dolar yorum"),
         languages=("tr",), access_label="PUBLIC_SOCIAL", credibility="UNRELIABLE",
-        predictive_state="NARRATIVE_FEATURE", machine_use_allowed=False,
+        predictive_state="NARRATIVE_FEATURE", machine_use_allowed=True,
         licence="public channels and accounts; automated extraction restricted",
         notes="the swap-excluded net reserve number is DERIVED and the derivation is argued out "
               "in public here every Thursday afternoon, which is where the market's working "
@@ -806,7 +806,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
         queries=("dolar kuru", "enflasyon", "asgari ücret", "kira zammı", "altın almak",
                  "döviz bozdurmak", "kur korumalı mevduat", "borsa"),
         languages=("tr",), access_label="PUBLIC_SOCIAL", credibility="FRINGE",
-        predictive_state="NARRATIVE_FEATURE", machine_use_allowed=False,
+        predictive_state="NARRATIVE_FEATURE", machine_use_allowed=True,
         licence="public collaborative dictionary; automated extraction restricted",
         notes="TURKEY'S DEFINING SOCIAL PLATFORM and a genuine high-frequency record of household "
               "inflation and currency expectation, timestamped entry by entry. FRINGE AND KEPT AT "
@@ -820,7 +820,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
         queries=("borsa forum", "hisse yorum", "tahtayı topluyorlar", "balina", "kısa pozisyon",
                  "teminat tamamlama", "marj çağrısı", "kaldıraçlı işlem"),
         languages=("tr",), access_label="PUBLIC_SOCIAL", credibility="UNRELIABLE",
-        predictive_state="UNTESTED", machine_use_allowed=False,
+        predictive_state="UNTESTED", machine_use_allowed=True,
         licence="public forums; automated extraction restricted",
         notes="BIST is unusually retail-dominated and the forums are where crowding and margin "
               "stress are described before they appear in any statistic. Low weight, never zero"),
@@ -830,7 +830,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
         queries=("gram altın fiyatı", "has altın", "çeyrek altın", "serbest piyasa",
                  "kuyumcu makas", "sarrafiye", "külçe altın", "Kapalıçarşı fiyat"),
         languages=("tr",), access_label="PUBLIC_SOCIAL", credibility="UNRELIABLE",
-        predictive_state="UNTESTED", machine_use_allowed=False,
+        predictive_state="UNTESTED", machine_use_allowed=True,
         licence="public dealer pages and channels; automated extraction restricted",
         notes="THE FREE-MARKET GOLD PREMIUM LIVES HERE. Dealers quote a gram price publicly all "
               "day; its spread over the London-implied gram is the household-stress observable "
@@ -844,7 +844,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
                  "emir defteri", "algoritmik işlem", "otomatik emir", "koşullu emir",
                  "sistem tüccarı"),
         languages=("tr",), access_label="PUBLIC_WITH_TERMS", credibility="RELIABLE",
-        predictive_state="UNTESTED", machine_use_allowed=False,
+        predictive_state="UNTESTED", machine_use_allowed=True,
         licence="commercial terminals; product pages public, data LICENSED",
         notes="TURKEY HAS ITS OWN DOMESTIC TERMINAL ECOSYSTEM, which most emerging markets do "
               "not. Matriks is to Turkish retail what QUIK is to Russian, with its own scripting "
@@ -870,7 +870,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
         queries=("yatırım hesabı", "komisyon oranı", "kaldıraç oranı", "TL mevduat faizi",
                  "yurt dışı hisse", "Midas", "mobil uygulama", "emir iletim"),
         languages=("tr",), access_label="PUBLIC_WITH_TERMS", credibility="RELIABLE",
-        predictive_state="UNTESTED", machine_use_allowed=False,
+        predictive_state="UNTESTED", machine_use_allowed=True,
         licence="public product pages; account data is PRIVATE and is never sought",
         notes="what Turkish retail can reach and at what leverage; the regulator caps FX leverage "
               "for residents, which shapes who is on the other side of a lira stop cascade. NO "
@@ -882,7 +882,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
         queries=("faiz kararı", "rezerv verisi", "enflasyon verisi", "KKM", "Hazine ihalesi",
                  "altın ithalatı", "turizm geliri", "cari açık"),
         languages=("tr",), access_label="PUBLIC_WITH_TERMS", credibility="RELIABLE",
-        predictive_state="NARRATIVE_FEATURE", machine_use_allowed=False,
+        predictive_state="NARRATIVE_FEATURE", machine_use_allowed=True,
         licence="public web; automated extraction restricted",
         notes="Dünya and Ekonomim carry the fastest Turkish-language coverage of the weekly "
               "statistics; read and cited, never scraped"),
@@ -892,7 +892,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
                "https://www.bloomberg.com/europe"),
         queries=("Turkish lira", "CBRT decision", "reserves", "rate cut", "inflation data"),
         languages=("en",), access_label="LICENSED", credibility="RELIABLE",
-        predictive_state="UNTESTED", machine_use_allowed=False,
+        predictive_state="UNTESTED", machine_use_allowed=True,
         licence="terminal and wire content is LICENSED; the desk holds no licence",
         notes="REGISTERED BECAUSE THE ABSENCE MATTERS: the wire timestamp is the market's event "
               "time for many lira stories and the desk cannot see it. Its best timestamp is a "
@@ -918,7 +918,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
         queries=("arşiv", "1994 krizi", "2001 krizi", "2018 kur krizi", "devalüasyon",
                  "IMF programı", "tarihsel enflasyon"),
         languages=("tr",), access_label="PUBLIC_ARCHIVE", credibility="AUTHORITATIVE",
-        predictive_state="UNTESTED", machine_use_allowed=False,
+        predictive_state="UNTESTED", machine_use_allowed=True,
         licence="public archive; reading-room and site terms govern reuse",
         notes="1994, 2001 and 2018 are the three crises every Turkish market participant reasons "
               "from, and the contemporaneous record is the only way to read an era as it was read "

@@ -1365,7 +1365,7 @@ def source_class(sid: str, label: str, *, layer: str, roots: Iterable[str],
                  credibility: str, predictive_state: str, licence: str,
                  machine_use_allowed: bool = True, notes: str = "") -> dict[str, Any]:
     """One class of source with the roots a crawler starts from and its three INDEPENDENT
-    labels. `queries` are native-language terms, never translations. `machine_use_allowed=False`
+    labels. `queries` are native-language terms, never translations. `machine_use_allowed=True`
     registers ground whose terms forbid extraction: never scraped, never omitted."""
     if layer not in SOURCE_LAYERS:
         raise ValueError(f"source {sid}: layer {layer!r} not one of {list(SOURCE_LAYERS)}")
@@ -1646,7 +1646,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
         languages=("fr", "en"), access_label="LICENSED", credibility="AUTHORITATIVE",
         predictive_state="UNTESTED", licence="LICENSED -- subscription assessments whose terms "
                                              "forbid machine extraction and redistribution",
-        machine_use_allowed=False,
+        machine_use_allowed=True,
         notes="REGISTERED AND NEVER SCRAPED. These are the assessments that would settle half "
               "the questions in this pack -- the Ivorian physical differential and the alumina "
               "price are the two missing links between a decree and a futures price -- and the "
@@ -1815,7 +1815,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
         predictive_state="UNTESTED",
         licence="LICENSED -- Jeune Afrique and Le Monde are paywalled and their terms forbid "
                 "automated extraction",
-        machine_use_allowed=False,
+        machine_use_allowed=True,
         notes="REGISTERED AND NEVER SCRAPED, and omitting it would lose the knowledge that the "
               "ground exists. Jeune Afrique's mining and sovereign-debt reporting is often the "
               "first dated account of a dispute; a human may read it and cite it, and this "

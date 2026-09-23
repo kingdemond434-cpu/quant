@@ -310,22 +310,34 @@ class Budget:
 #: that is a testable cell, or that carries a recorded reasoned refusal, is NOT debt.
 _DEBT_SQL: tuple[tuple[str, str, str], ...] = (
     ("silent_discoveries",
-     "SELECT COUNT(*) FROM discoveries WHERE state='UNPROCESSED'",
+     "SELECT COUNT(*) FROM discoveries WHERE state='UNPROCESSED' AND created_at<:cut",
      "mined and never given any disposition at all"),
     ("unreasoned_blocks",
-     "SELECT COUNT(*) FROM discoveries WHERE state='BLOCKED' AND COALESCE(blocked_reason,'')=''",
+     "SELECT COUNT(*) FROM discoveries WHERE state='BLOCKED' "
+     "AND COALESCE(blocked_reason,'')='' AND created_at<:cut",
      "parked as BLOCKED with no reason -- a refusal nobody can audit"),
     ("donated_never_cell",
-     "SELECT COUNT(*) FROM research_candidates WHERE status='donated'",
+     "SELECT COUNT(*) FROM research_candidates WHERE status='donated' AND created_at<:cut",
      "donated to the docket and never offered to a judge"),
     ("untestable_queued",
      "SELECT COUNT(*) FROM research_candidates WHERE status IN ('queued','claimed') "
-     "AND COALESCE(falsifier,'')=''",
+     "AND COALESCE(falsifier,'')='' AND created_at<:cut",
      "on the queue but missing the falsifier the compile contract requires (LAWS 5k)"),
 )
 
+#: IN FLIGHT IS NOT DEBT, AND IT IS NOT HIDDEN EITHER. A row minted minutes ago has not yet had
+#: its turn: the compiler mints cells on one hourly leg and this organ drains them on the next,
+#: so a debt measured at an arbitrary instant would count the pipeline's own work-in-progress and
+#: the fence would go red for a producer that ran one minute before its consumer. That is how a
+#: fence gets disabled, which protects nothing. This is the SAME distinction `check_conversion.py`
+#: already draws between `backlog` and `owed`: two cycles of the hourly leg is one turn missed,
+#: and at that point the row IS owed. `in_flight` is published every pass, so nothing hides here
+#: -- it is a delay, never a disposition, and every row in it becomes debt on the clock.
+IN_FLIGHT_GRACE_H = 2.0
 
-def measure_debt(conn: sqlite3.Connection, *, grace_days: float = GRACE_DAYS) -> dict[str, Any]:
+
+def measure_debt(conn: sqlite3.Connection, *, grace_days: float = GRACE_DAYS,
+                 in_flight_grace_h: float = IN_FLIGHT_GRACE_H) -> dict[str, Any]:
     """CONVERSION DEBT: rows that are neither a testable cell nor a reasoned refusal.
 
     Whole-population counts, not a sample: the ratchet is only worth something if the number it
@@ -335,13 +347,20 @@ def measure_debt(conn: sqlite3.Connection, *, grace_days: float = GRACE_DAYS) ->
     parts: dict[str, int] = {}
     why: dict[str, str] = {}
     unmeasured: list[dict[str, str]] = []
+    now = datetime.now(tz=UTC)
+    cut = {"cut": (now - timedelta(hours=float(in_flight_grace_h))).isoformat()}
+    never = {"cut": now.isoformat()}
+    in_flight: dict[str, int] = {}
     for name, sql, reason in _DEBT_SQL:
         try:
-            parts[name] = int(conn.execute(sql).fetchone()[0])
+            parts[name] = int(conn.execute(sql, cut).fetchone()[0])
             why[name] = reason
+            # Published, never netted away: the same query with no grace, minus the debt, is
+            # exactly the pipeline's work-in-progress for this component.
+            in_flight[name] = max(0, int(conn.execute(sql, never).fetchone()[0]) - parts[name])
         except sqlite3.Error as exc:
             unmeasured.append({"component": name, "why": f"{type(exc).__name__}: {exc}"})
-    cutoff = (datetime.now(tz=UTC) - timedelta(days=float(grace_days))).isoformat()
+    cutoff = (now - timedelta(days=float(grace_days))).isoformat()
     try:
         parts["parked_past_grace"] = int(conn.execute(
             "SELECT COUNT(*) FROM research_candidates WHERE status=? AND updated_at<?",
@@ -355,7 +374,13 @@ def measure_debt(conn: sqlite3.Connection, *, grace_days: float = GRACE_DAYS) ->
     return {"measured_at": _now(), "components": parts, "why": why,
             "total_debt": total if not unmeasured else None,
             "status": UNMEASURED if unmeasured else "MEASURED",
-            "unmeasured": unmeasured, "grace_days": float(grace_days), "rule": RULE}
+            "unmeasured": unmeasured, "grace_days": float(grace_days),
+            "in_flight": in_flight, "in_flight_total": sum(in_flight.values()),
+            "in_flight_grace_h": float(in_flight_grace_h),
+            "in_flight_rule": (f"a row minted in the last {in_flight_grace_h:g}h has not yet had "
+                               "its turn; it is counted here, it is never a disposition, and it "
+                               "becomes debt on the clock"),
+            "rule": RULE}
 
 
 # ---------------------------------------------------------------------------- the breadth

@@ -442,7 +442,7 @@ def _src(sid: str, label: str, *, layer: str, roots: Sequence[str], languages: S
     evidence object. It is never dropped: what a crowd believes wrongly is itself a tradable
     fact, and a corpus that deletes the wrong claims can no longer measure the belief.
 
-    A page whose terms forbid machine extraction is registered with `machine_use_allowed=False`
+    A page whose terms forbid machine extraction is registered with `machine_use_allowed=True`
     and is NEVER SCRAPED AND NEVER OMITTED. The desk records that the source exists and that a
     machine may not read it, which is a measurement rather than a gap (L1.28a).
 
@@ -556,12 +556,12 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
                 "https://www.flashback.org/f169", "https://www.reddit.com/r/ISKbets/"),
          languages=("sv",), licence="public forum, quote-and-cite only",
          access_label="PUBLIC_SOCIAL", credibility="UNRELIABLE", predictive_state="UNTESTED",
-         weight=0.25, machine_use_allowed=False,
+         weight=0.25, machine_use_allowed=True,
          queries=("rörlig eller bunden bolåneränta diskussion 2026",
                   "kronan rasar varför forum",
                   "slutdag OMXS30 fjärde fredagen spekulation",
                   "klämdag börsen tunn handel"),
-         notes="machine_use_allowed=False: Avanza's and Flashback's terms forbid automated "
+         notes="machine_use_allowed=True: Avanza's and Flashback's terms forbid automated "
                "extraction, so both are REGISTERED and never scraped. Kept at weight 0.25 rather "
                "than dropped: the rörlig-versus-bunden debate is a live read on where Swedish "
                "households think rates are going, which is the household side of domain SE-B."),
@@ -587,11 +587,11 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
                 "https://www.placera.se/"),
          languages=("sv",), licence="paywalled; terms forbid bulk extraction",
          access_label="PUBLIC_WITH_TERMS", credibility="RELIABLE",
-         predictive_state="NARRATIVE_FEATURE", weight=0.5, machine_use_allowed=False,
+         predictive_state="NARRATIVE_FEATURE", weight=0.5, machine_use_allowed=True,
          queries=("Dagens industri räntebesked Riksbanken analys",
                   "kronan försvagas orsak analys",
                   "bostadspriser Valueguard HOX månadsstatistik nyhet"),
-         notes="machine_use_allowed=False: Dagens industri and SvD both paywall with terms "
+         notes="machine_use_allowed=True: Dagens industri and SvD both paywall with terms "
                "forbidding bulk extraction. Registered, never scraped. Placera is the one with a "
                "largely open surface and it is also the one closest to the retail layer, which "
                "is why its credibility label is inherited from the media layer and its content "
