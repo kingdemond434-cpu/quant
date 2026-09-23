@@ -214,7 +214,21 @@ function Invoke-Git {
     }) -join " "
     $psi = New-Object System.Diagnostics.ProcessStartInfo
     $psi.FileName               = "git"
-    $psi.Arguments              = ('-C "{0}" {1}' -f $RepoRoot, $quoted)
+    # AUTOSTASH IS BANNED HERE AND THE BAN IS CARRIED ON THE COMMAND LINE, NOT IN CONFIG
+    # (2026-09-23). `merge.autoStash` / `rebase.autoStash` make git run `git stash` IMPLICITLY
+    # before a merge -- no script names the command, so nothing in this file would show it. R0423
+    # forbids `git stash` in this tree for a measured reason: the box's working tree carried
+    # 21,884 modified/untracked paths when this was found, including the bars, the intelligence
+    # corpora and every live ledger. An autostash over that either takes minutes under the index
+    # lock this script already fights, or fails halfway and leaves the live research state parked
+    # in a stash no organ knows to pop. The `-s ours` merge below is the one that would have done
+    # it, and it does not need the working tree at all: the adoption has ALREADY proven the code
+    # tree equals the target before it records the merge.
+    # Config was measured UNSET in every scope on both boxes and is now pinned false in each repo,
+    # but config is exactly what drifted, so the flags travel with the call -- a `-c` on the
+    # command line outranks system, global and local config, and cannot be re-enabled by anything
+    # that edits a gitconfig later.
+    $psi.Arguments              = ('-C "{0}" -c merge.autoStash=false -c rebase.autoStash=false {1}' -f $RepoRoot, $quoted)
     $psi.UseShellExecute        = $false
     $psi.RedirectStandardOutput = $true
     $psi.RedirectStandardError  = $true
@@ -279,7 +293,9 @@ function Invoke-GitBytes {
     param([string] $ArgLine)
     $psi = New-Object System.Diagnostics.ProcessStartInfo
     $psi.FileName               = "git"
-    $psi.Arguments              = ('-C "{0}" {1}' -f $RepoRoot, $ArgLine)
+    # Same autostash ban as Invoke-Git, for the same reason -- see the comment there. Both
+    # wrappers carry it so no future call site can reach git through the quiet one.
+    $psi.Arguments              = ('-C "{0}" -c merge.autoStash=false -c rebase.autoStash=false {1}' -f $RepoRoot, $ArgLine)
     $psi.UseShellExecute        = $false
     $psi.RedirectStandardOutput = $true
     $psi.RedirectStandardError  = $true
@@ -605,33 +621,14 @@ $dirty = @(Invoke-Git @("status", "--porcelain", "--untracked-files=no") |
            Where-Object { "$_" -match '\S' })
 if ($dirty.Count -gt 0) {
     # `XY path`, or `R  old -> new` for a rename: the destination is what to stage.
-    $dirtyAtStart = @($dirty | ForEach-Object {
+    $dirtyPaths = @($dirty | ForEach-Object {
         $p = "$_".Substring(3)
         if ($p -match ' -> ') { $p = ($p -split ' -> ')[-1] }
         $p.Trim().Trim('"')
     })
-    $dirtyPaths = @($dirtyAtStart | Where-Object {
-    } | Where-Object {
-        # The intelligence corpus has its own data-only ship and may contain tens of thousands
-        # of tracked rows. Capturing it here one path at a time made code adoption take longer
-        # than the hourly cadence. Leave those rows to MT5-IntelShip, exactly as step 2 does.
-        $q = ($_ -replace '\\', '/').TrimStart('.', '/')
-        -not ($q.StartsWith("data/intelligence/") -or
-              $q.StartsWith("desks/mt5/data/intelligence/") -or
-              $q.StartsWith("desks/mt5/data/universe/"))
-    })
     Write-Host ("  committing {0} uncommitted state path(s) first" -f $dirtyPaths.Count)
-    # One git process per path is O(paths * index-size) and measured at 12+ minutes for 723 rows.
-    # Bounded pathspec batches preserve the exact named-path safety property while reducing that
-    # to a handful of index transactions. Invoke-Git's lock retry still protects every batch.
-    for ($i = 0; $i -lt $dirtyPaths.Count; $i += 128) {
-        $last = [Math]::Min($i + 127, $dirtyPaths.Count - 1)
-        $batch = @($dirtyPaths[$i..$last])
-        Invoke-Git (@("add", "--") + $batch) -AllowFail | Out-Null
-    }
-    if ($dirtyPaths.Count -gt 0) {
-        Invoke-Git @("commit", "-m", "Box state captured before release adoption") -AllowFail | Out-Null
-    }
+    foreach ($p in $dirtyPaths) { Invoke-Git @("add", "--", $p) -AllowFail | Out-Null }
+    Invoke-Git @("commit", "-m", "Box state captured before release adoption") -AllowFail | Out-Null
 }
 
 # ---- 2. WRITE EVERY CHANGED PATH IN PLACE ------------------------------------
@@ -663,13 +660,6 @@ if ($mergeBase) {
         $boxTouched[$p] = $true
         if ($cols[0] -match '^A') { $boxAdded[$p] = $true }
     }
-}
-# State that was dirty when adoption began is box-owned even when it is intentionally not staged
-# here. In particular, live parquet bars are frequently held open by MT5 and can make `git add`
-# block past the task deadline. The normal state-sync route checkpoints them; adoption only needs
-# to know that origin must not overwrite them while landing code.
-foreach ($p in @($dirtyAtStart)) {
-    if (Test-StatePath $p) { $boxTouched[$p] = $true }
 }
 function Test-KeptByBox {
     param([string] $Rel)
@@ -1067,11 +1057,7 @@ if ($drift.Count -gt 0) {
 # later `Sync-Pull` sees itself behind, tries to merge, and dies on the same
 # entry again -- an adoption that has to be repeated every hour is not an
 # adoption. `-s ours` touches no file, which is why it survives the corruption.
-# The repository enables merge.autoStash for interactive work. Here that launches `git stash
-# create` over the entire dirty live-state tree (bars, ledgers and corpus) even though `-s ours`
-# cannot write any of it. The tree has already been verified above; autostash adds no safety and
-# can exceed the task deadline. Disable it for this bookkeeping-only merge invocation.
-Invoke-Git @("-c", "merge.autoStash=false", "merge", "-s", "ours", $target, "-m",
+Invoke-Git @("merge", "-s", "ours", $target, "-m",
              "Record the release merge; tree adopted in place by Adopt-Release") | Out-Null
 
 Write-Host ""
