@@ -328,6 +328,15 @@ _STATE_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     # other host is UNMEASURED_HERE and named; the overdue debt is DECLARED by seat name and may
     # only shrink, so a newly dark seat fails this immediately.
     ("check_seat_health.py", ()),
+    # L1.49, THE LEG HALF -- every leg of the hourly cycle actually REACHES its own clock.
+    # Measured 2026-09-23 from the compute ledger: 19 of 112 CORE_LEGS had never executed once,
+    # because `main()` is a 325-leg straight line inside a 40-minute task and the tail was
+    # structurally unreachable -- `clock_liveness`, `clock_ledger`, `fill_recorder` and
+    # `evidence_chain` among them. A leg that never runs raises no error and writes no artifact,
+    # so it is indistinguishable from a leg with nothing to do; this fails on `never_run` and on
+    # `outside_window` by NAME rather than letting either be inferred from silence. It can only
+    # ever demand that more legs run: there is no threshold here that attempting less can satisfy.
+    ("check_leg_rotation.py", ()),
     ("check_promotion_gate.py", ()),           # L1.6 -- expansion is bought with evidence
     ("check_excitation.py", ()),               # L1.45 -- no absorbing set, no dead experiment
     ("check_clock_provenance.py", ()),         # L1.46 -- the tape declares which clock stamped it

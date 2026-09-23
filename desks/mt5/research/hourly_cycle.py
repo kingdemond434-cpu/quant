@@ -24,6 +24,7 @@ import time
 from contextlib import suppress
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 BASE = Path(__file__).resolve().parent.parent
 #: The REPOSITORY root, two levels above the desk. Legs live under both: the research organs under
@@ -996,10 +997,10 @@ def in_plan(name: str, plan: str | None = None) -> bool:
 #: decides MEMBERSHIP only -- legs still execute in file order, so every "must run after" comment
 #: below still holds -- and it never shrinks the work: a deferred leg leads the next pass, and
 #: the budget it is charged against is the scheduler's own limit, which rotation did not create.
-_ROTATION: dict[str, object] = {}
+_ROTATION: dict[str, Any] = {}
 
 
-def _rotation() -> object | None:
+def _rotation() -> Any:
     """This pass's membership decision, built once on the first leg and reused by every later one.
 
     NEVER FAILS THE PASS, for the same reason `_costed` does not: a scheduler that can be taken
@@ -1044,7 +1045,7 @@ def _rotation_publish() -> None:
     if dec is None or lr is None or att is None:
         return
     with suppress(Exception):
-        doc = lr.record(dec, att, list(_ROTATION.get("ran") or []),      # type: ignore[attr-defined]
+        doc = lr.record(dec, att, list(_ROTATION.get("ran") or []),
                         started=_ROTATION.get("started"))
         print(f"leg rotation recorded: ran={len(doc.get('ran_this_pass') or [])} "
               f"deferred={doc.get('n_deferred')} never_run={len(doc.get('never_run') or [])} "
@@ -1212,9 +1213,8 @@ def _costed(name: str, fn):
     # the meta-controller's epoch must read that truth rather than a phantom run.
     _rot = _rotation()
     if _rot is not None:
-        _ok, _why = _rot.should_run(name, _ROTATION.get("attendance"),   # type: ignore[attr-defined]
-                                    (datetime.now(UTC)
-                                     - _ROTATION["started"]).total_seconds())   # type: ignore[operator]
+        _elapsed = (datetime.now(UTC) - _ROTATION["started"]).total_seconds()
+        _ok, _why = _rot.should_run(name, _ROTATION.get("attendance"), _elapsed)
         if not _ok:
             return {"status": "ROTATED_OUT", "plan": HOURLY_PLAN, "why": _why,
                     "at": datetime.now(UTC).isoformat(timespec="seconds")}
@@ -1462,6 +1462,16 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # the gauntlet leg it sizes, which is the other reason it is cheap by design.
     "judging_throughput": 400,
     "forward_enrolment": 400,
+    # THE JUDGE WAS BEING KILLED AT 27% OF ITS OWN BUDGET (measured 2026-09-23). The sealed
+    # gauntlet builds cells under `FRESH_BUILD_BUDGET_SEC = 2700` and stops ITSELF at that mark
+    # to write `universal_gates_external.json`. This leg had no entry here, so it fell through to
+    # SEARCH_BUDGET_SEC = 720 and `_run_tree` SIGKILLed it after twelve minutes -- past the point
+    # where verdicts had already been appended to `gate_verdict_ledger.jsonl` but before the
+    # report was written, which is why the ledger carries judged hours the desk has no sweep
+    # report for. It is the `enrol_clocks` defect in the highest-value leg on the cycle: work
+    # done, thrown away, and reported as scheduled. Nothing about the judge's evaluation changes;
+    # only the cap that stops it finishing, which is exactly the "how work is fed to it" half.
+    "external_gauntlet": 3_000,
     # THE FOUR ACTIVATION LEGS ARE SEARCHES, NOT RENDERERS. `weak_signals` rebuilds member
     # signals for up to 24 members across 67 symbols and its own `run()` already self-limits at
     # 2400s; a cycle budget below that would kill it at the same prefix every hour, which is the
