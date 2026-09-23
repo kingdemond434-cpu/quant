@@ -128,6 +128,25 @@ def _epoch(stamp: Any) -> float | None:
         return None
 
 
+def _point_from(*prices: float | None) -> float | None:
+    """The venue's point size, read off the precision of the quotes on this row.
+
+    A price is quoted to the venue's own point: 0.85613 to five places is a 1e-5 point, 4340.57
+    to two is 1e-2. The deepest precision among the row's prices wins, because a rounded value
+    (0.94400) understates it. None when no price is on the row -- never a default.
+    """
+    best = 0
+    seen = False
+    for p in prices:
+        if p is None:
+            continue
+        seen = True
+        txt = f"{p:.10f}".rstrip("0")
+        dec = len(txt.split(".")[1]) if "." in txt else 0
+        best = max(best, min(dec, 8))
+    return (10.0 ** -best) if seen and best else None
+
+
 def _direction(side: Any) -> int:
     """+1 for a buy of any shape, -1 for a sell. The ledger stores MT5's integer type (0 = buy,
     1 = sell); the intent stores the desk's own word."""
@@ -203,6 +222,12 @@ def build_row(it: dict[str, Any], deal: dict[str, Any], how: str,
     fill = _f(deal.get("entry_price"))
     if fill is not None and fill <= 0.0:
         fill = None
+    if fill is None:
+        # THE VENUE'S OWN ANSWER TO `order_send`, recorded on the intent since 2026-09-23 for
+        # every market order. It is the same fill the entry deal carries and it arrives first.
+        fill = _f(it.get("fill_price"))
+        if fill is not None and fill <= 0.0:
+            fill = None
     bid, ask = _f(it.get("decision_bid")), _f(it.get("decision_ask"))
     mid = ((bid + ask) / 2.0) if (bid is not None and ask is not None) else None
     point = _f(it.get("point"))
@@ -213,17 +238,40 @@ def build_row(it: dict[str, Any], deal: dict[str, Any], how: str,
     risk_quote = _f(deal.get("risk_quote"))
     contract = _f(deal.get("contract_size"))
 
+    # THE POINT SIZE, FROM THE INTENT OR FROM THE QUOTES THEMSELVES. `point` was only added to
+    # the intent row on 2026-09-08, so 28 of this box's 30 matched fills carry none and every
+    # per-point number would have read UNMEASURED for them. The venue's point is the last place
+    # of the quote, and the quote is on the row: 0.85613 is quoted to five places, 4340.57 to
+    # two. Derived, never assumed, and the basis is published beside the number.
+    point_basis = "intent"
+    if point is None or point <= 0:
+        point = _point_from(asked, fill, bid, ask)
+        point_basis = "derived from the quoted precision of this row's own prices"
+
     slip_quote = ((fill - asked) * direction) if (fill is not None and asked is not None) else None
     ref = mid or asked or fill
     slip_frac = (slip_quote / ref) if (slip_quote is not None and ref) else None
     slip_points = (slip_quote / point) if (slip_quote is not None and point) else None
-    # SLIP IN R IS THE ONLY UNIT THIS DESK SIZES IN. The ledger already carries the position's
-    # own risk in quote currency (stop distance x contract size x lots), so the entry slippage in
-    # R is the slip in quote currency on the SAME position divided by that risk -- the identical
-    # denominator `r_multiple` uses, which is what makes the two comparable on one row.
+    # SLIP IN R IS THE ONLY UNIT THIS DESK SIZES IN, AND ITS DENOMINATOR IS THE POSITION'S OWN
+    # STOP GEOMETRY. The ledger's `risk_quote` is NOT a stable unit across rows: on this box it
+    # arrives negative (-40.07 on a gold position), and on some rows it is the stop distance
+    # alone with neither contract size nor lots in it. Dividing by it gave +5384 R of "slippage"
+    # on a fourteen-pip EURGBP fill. |entry - stop| x contract size x lots is the definition
+    # `r_multiple` is written against and is computable from the row, so it is what is used; the
+    # ledger's own figure is the fallback in absolute value, and a position whose stop sits on
+    # its entry has NO R denominator -- that row's slip_r is None, which is a real answer.
+    stop = _f(deal.get("sl"))
+    entry = _f(deal.get("entry_price"))
+    denom = None
+    denom_basis = ""
+    if None not in (stop, entry) and contract and lots and abs(entry - stop) > 0:  # type: ignore[operator]
+        denom = abs(entry - stop) * contract * lots  # type: ignore[operator]
+        denom_basis = "|entry - stop| x contract_size x lots"
+    elif risk_quote and abs(risk_quote) > 0:
+        denom, denom_basis = abs(risk_quote), "abs(live_ledger.risk_quote)"
     slip_r = None
-    if slip_quote is not None and risk_quote and lots and contract:
-        slip_r = (slip_quote * contract * lots) / risk_quote
+    if slip_quote is not None and denom and contract and lots:
+        slip_r = (slip_quote * contract * lots) / denom
     spread_frac = (spread / ref) if (spread is not None and ref) else None
     spread_points = (spread / point) if (spread is not None and point) else None
 
@@ -238,8 +286,13 @@ def build_row(it: dict[str, Any], deal: dict[str, Any], how: str,
         "release_id": str(it.get("release_id") or ""),
         "state_vector_id": str(it.get("state_vector_id") or ""),
         "account_kind": str(deal.get("account_kind") or "unknown"),
+        # EVERY DERIVED NUMBER CARRIES HOW IT WAS DERIVED. `join_keys` is the row's own audit
+        # slot, so a reader can tell a point size read off the intent from one read off the
+        # quote's precision, and a stop-geometry R denominator from the ledger's own figure,
+        # without re-deriving either.
         "join_keys": {"basis": how, "entry_order": str(deal.get("entry_order") or ""),
-                      "position_id": str(deal.get("position_id") or "")},
+                      "position_id": str(deal.get("position_id") or ""),
+                      "point_basis": point_basis, "r_denominator": denom_basis},
         "sources": ["order_intents.jsonl", "live_ledger.jsonl"]
         + (["decision_ledger.jsonl"] if dec else []),
         "schema_version": fc.SCHEMA_VERSION,
@@ -267,11 +320,59 @@ def build_row(it: dict[str, Any], deal: dict[str, Any], how: str,
 
 
 def unfilled_row(it: dict[str, Any]) -> dict[str, Any]:
-    """An order that never traded. Recorded, so the denominator is honest; never a zero slip."""
+    """An intent with no closed deal beside it.
+
+    TWO DIFFERENT THINGS LIVE HERE AND THEY ARE NOT COLLAPSED. An order that never traded is
+    UNRESOLVED and gets no slippage -- writing 0.0 would drag every mean toward "no slippage"
+    using orders that never filled. But a MARKET order that filled and has not yet CLOSED has a
+    fill: the venue answered `order_send` with its price and the gateway records it on the intent
+    from 2026-09-23. That row is FILLED, its slippage is measured against the price the desk
+    asked for, and its R denominator is the intent's own stop distance -- no closing deal needed.
+    """
     bid, ask = _f(it.get("decision_bid")), _f(it.get("decision_ask"))
     mid = ((bid + ask) / 2.0) if (bid is not None and ask is not None) else None
     spread = _f(it.get("spread_at_decision"))
     point = _f(it.get("point"))
+    asked, stop = _f(it.get("intended")), _f(it.get("sl"))
+    lots = _f(it.get("lot"))
+    fill = _f(it.get("fill_price"))
+    if fill is not None and fill <= 0.0:
+        fill = None
+    direction = _direction(it.get("side"))
+    if point is None or point <= 0:
+        point = _point_from(asked, fill, bid, ask)
+    slip_quote = ((fill - asked) * direction) if (fill is not None and asked is not None) else None
+    ref = mid or asked or fill
+    stop_dist = abs(asked - stop) if (asked is not None and stop is not None) else None
+    if fill is not None:
+        return {
+            "record_id": f"{it.get('intent_id') or it.get('ticket')}|{it.get('time')}",
+            "intent_id": str(it.get("intent_id") or ""), "ticket": _i(it.get("ticket")),
+            "deal": _i(it.get("deal_ticket")), "schema_version": fc.SCHEMA_VERSION,
+            "join_keys": {"basis": "intent_fill",
+                          "why": "the venue's own order_send answer; no closing deal yet"},
+            "sources": ["order_intents.jsonl"],
+            "symbol": str(it.get("symbol") or ""), "sleeve": str(it.get("sleeve") or ""),
+            "release_id": str(it.get("release_id") or ""),
+            "state_vector_id": str(it.get("state_vector_id") or ""),
+            "decided_at": str(it.get("time") or ""), "sent_at": str(it.get("time") or ""),
+            "filled_at": str(it.get("time") or ""),
+            "side": str(it.get("side") or ""), "direction": direction,
+            "order_type": str(it.get("order_type") or ""),
+            "lots": _f(it.get("fill_volume")) or lots, "requested_price": asked,
+            "quote_bid": bid, "quote_ask": ask, "quote_mid_at_decision": mid,
+            "fill_price": fill, "filled_frac": 1.0, "retcode": _i(it.get("retcode")),
+            "slip_frac": (slip_quote / ref) if (slip_quote is not None and ref) else None,
+            "slip_points": (slip_quote / point) if (slip_quote is not None and point) else None,
+            "slip_r": ((slip_quote / stop_dist) if (slip_quote is not None and stop_dist)
+                       else None),
+            "spread_frac_at_decision": (spread / ref) if (spread is not None and ref) else None,
+            "spread_points_at_decision": ((spread / point) if (spread is not None and point)
+                                          else None),
+            "point": point,
+            "latency_decision_to_send_ms": _f(it.get("latency_ms")),
+            "status": "FILLED",
+        }
     return {
         "record_id": f"{it.get('intent_id') or it.get('ticket')}|unfilled",
         "intent_id": str(it.get("intent_id") or ""), "ticket": _i(it.get("ticket")),

@@ -710,8 +710,67 @@ def allocate(backlog: dict[str, int], capacity: int,
     return quota
 
 
+def grid_cell(row: dict[str, Any]) -> str:
+    """(family|symbol|horizon) -- THE SAME KEY the yield fence weighs orthogonality on.
+
+    `scripts/check_producer_yield.py` measures the desk's orthogonality as the participation
+    ratio of the producer x (family|symbol|horizon) indicator matrix, and `libs/moat/registry.py`
+    pays its empty-cell bonus on the same key. Ordering intake on any other key would order it
+    on something the desk is not paid for, so this is that key, spelled the same way.
+    """
+    params = row.get("params") or {}
+    fam = str(row.get("family") or "?").strip().lower() or "?"
+    sym = str(row.get("symbol") or row.get("sym") or "?").strip().lower() or "?"
+    hor = str(row.get("horizon") or params.get("horizon") or "?").strip().lower() or "?"
+    return f"{fam}|{sym}|{hor}"
+
+
+def variant_split(rows: list[dict[str, Any]],
+                  unjudged_ids: set[str] | None = None) -> dict[str, Any]:
+    """Mark each docket row UNSEEN MECHANISM or VARIANT, and say how many of each there are.
+
+    CHARGE A VARIANT AGAINST ITS PARENT (2026-09-23). 18,201 raw cells collapse to 2,844 grid
+    cells and 583 mechanisms: most of what reaches the judge is a parameter variant of a rule
+    already in the same queue on the same symbol and horizon, and a variant adds almost no
+    independent ground. The FIRST row to claim a grid cell is that cell's mechanism; every later
+    row on it is a variant OF that row and is charged against it.
+
+    NOTHING IS DROPPED AND NOTHING IS CAPPED. The queue stays whole and uncapped; the variant is
+    marked `_variant = 1` and ranks below an unseen mechanism inside its own family stream, after
+    the never-judged test, so the family floors, the value ranking and the interleave are all
+    untouched. First-claim is decided by the same (never-judged, oldest-first) order the stream
+    itself uses, so the row that would have gone first still goes first.
+    """
+    ids = unjudged_ids or set()
+
+    def _fresh(row: dict[str, Any]) -> int:
+        cid = str(row.get("_cell") or "")
+        return 0 if (not ids or cid in ids) else 1
+
+    order = sorted(range(len(rows)),
+                   key=lambda i: (_fresh(rows[i]), str(rows[i].get("first_seen") or "9999"), i))
+    seen: set[str] = set()
+    variants = 0
+    for i in order:
+        cell = grid_cell(rows[i])
+        is_variant = 1 if cell in seen else 0
+        seen.add(cell)
+        rows[i]["_variant"] = is_variant
+        variants += is_variant
+    return {"rows": len(rows), "unseen_mechanisms": len(rows) - variants, "variants": variants,
+            "distinct_grid_cells": len(seen),
+            "variant_share": round(variants / len(rows), 4) if rows else None,
+            "collapse_raw_per_grid_cell": round(len(rows) / len(seen), 3) if seen else None}
+
+
+def _unseen_in_prefix(rows: list[dict[str, Any]], n: int) -> int:
+    """How many of the first `n` rows the judge will reach are unseen mechanisms."""
+    return sum(1 for r in rows[:max(int(n), 0)] if not int(r.get("_variant") or 0))
+
+
 def coverage_order(rows: list[dict[str, Any]], quota: dict[str, int],
-                   unjudged_ids: set[str] | None = None) -> list[dict[str, Any]]:
+                   unjudged_ids: set[str] | None = None, *,
+                   demote_variants: bool = True) -> list[dict[str, Any]]:
     """Weighted interleave of the families, so EVERY PREFIX of the docket is family-balanced.
 
     Each family is emitted on its own virtual clock ticking at 1/quota, and the family whose next
@@ -728,10 +787,14 @@ def coverage_order(rows: list[dict[str, Any]], quota: dict[str, int],
         return []
     ids = unjudged_ids or set()
 
-    def rank(row: dict[str, Any]) -> tuple[int, str]:
+    def rank(row: dict[str, Any]) -> tuple[int, int, str]:
         cid = str(row.get("_cell") or "")
         fresh = 0 if (not ids or cid in ids) else 1
-        return (fresh, str(row.get("first_seen") or "9999"))
+        # A parameter variant of a rule already claiming this grid cell ranks below an unseen
+        # mechanism -- inside the family stream, after the never-judged test. It is never
+        # dropped and the stream is never shortened; only the order changes.
+        variant = int(row.get("_variant") or 0) if demote_variants else 0
+        return (fresh, variant, str(row.get("first_seen") or "9999"))
 
     streams: dict[str, list[dict[str, Any]]] = {}
     for row in rows:
