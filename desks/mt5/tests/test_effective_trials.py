@@ -131,13 +131,47 @@ gates:
 def test_apply_to_spec_rewrites_the_charge_and_keeps_the_comments(tmp_path: Path) -> None:
     spec = tmp_path / "gate_spec.yaml"
     spec.write_text(_SPEC, encoding="utf-8")
-    res = et.apply_to_spec(109, variance=0.014863, path=spec)
+    res = et.apply_to_spec(109, variance=0.014863, path=spec, authorised=True)
     assert res["status"] == "APPLIED"
     text = spec.read_text("utf-8")
     assert "fixed_trial_count: 109" in text
     assert "a comment that must survive the write" in text
     assert et.spec_fixed_trial_count(spec) == 109
     assert "effective_campaign_trials(109)" in text
+
+
+def test_the_bar_never_moves_without_a_deliberate_act(tmp_path: Path) -> None:
+    """Principal's standing order 2026-09-23: bars never move unless one of us decides.
+
+    The scheduled pass measures and publishes; it does not write. If this test ever goes green
+    with `authorised` absent, the evidentiary standard a live certificate was issued under has
+    become a function of the hour's docket shape, and no two certificates were judged alike.
+    """
+    spec = tmp_path / "gate_spec.yaml"
+    spec.write_text(_SPEC, encoding="utf-8")
+    res = et.apply_to_spec(109, variance=0.014863, path=spec)
+    assert res["status"] == "REFUSED_UNAUTHORISED"
+    assert res["charged"] == 109 and res["standing"] == 597
+    assert et.spec_fixed_trial_count(spec) == 597, "the wall moved without authorisation"
+    assert "fixed_trial_count: 597" in spec.read_text("utf-8")
+
+
+def test_the_scheduled_build_measures_but_never_writes_the_wall(tmp_path: Path) -> None:
+    spec = tmp_path / "gate_spec.yaml"
+    spec.write_text(_SPEC, encoding="utf-8")
+    doc = et.build(spec=spec, apply=True, budget_s=5.0)
+    assert doc["applied"]["status"] == "REFUSED_UNAUTHORISED"
+    assert et.spec_fixed_trial_count(spec) == 597
+
+
+def test_an_unmeasurable_census_falls_back_to_the_standing_wall(tmp_path: Path) -> None:
+    """Fail-closed means fail towards the HARDER bar; this once wrote the easier one."""
+    spec = tmp_path / "gate_spec.yaml"
+    spec.write_text(_SPEC, encoding="utf-8")
+    et.apply_to_spec(109, variance=0.014863, path=spec, authorised=True)
+    text = spec.read_text("utf-8")
+    assert f"fixed_campaign_trials({et.NOMINAL_CAMPAIGN_TRIALS})" in text
+    assert "effective_campaign_trials(109)" not in text.split("fail_closed_to:")[1]
 
 
 def test_apply_to_spec_never_raises_the_charge(tmp_path: Path) -> None:

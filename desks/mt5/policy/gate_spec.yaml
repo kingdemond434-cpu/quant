@@ -69,7 +69,7 @@ gates:
       # actually operated under when its 23 standing certificates were issued.
       fixed_variance_of_sharpes: 0.014863
       trial_count_basis: "effective_campaign_trials(109) + fixed_variance_of_sharpes(0.014863): the campaign charge is measured in EFFECTIVE independent tests -- the participation ratio of (grid cell, content) identities within each mechanism -- not in docket rows; both inputs remain constants, so the bar is identical for every cell regardless of how many others share its sweep"
-      fail_closed_to: "effective_campaign_trials(109)"
+      fail_closed_to: "fixed_campaign_trials(597): the charge when the census cannot be computed is the standing wall, never the measured relief -- an unmeasurable hour earns nothing"
     fail_closed: true
     cure_by_forward: true
     forward_cure_threshold: "exp_r > 0.05R, n >= 50, maxDD > -25R, days >= 14"
