@@ -195,3 +195,31 @@ def test_market_closed_matches_the_sealed_rule() -> None:
     assert jt.market_closed(datetime(2026, 9, 20, 20, 0, tzinfo=UTC)) is True    # Sunday 20:00
     assert jt.market_closed(datetime(2026, 9, 20, 22, 0, tzinfo=UTC)) is False   # Sunday 22:00
     assert jt.market_closed(datetime(2026, 9, 23, 12, 0, tzinfo=UTC)) is False   # Wednesday
+
+
+# ------------------------------------------- one box never sizes another (the oldest defect)
+def test_a_plan_that_only_matches_the_baseline_writes_an_empty_env(tmp_path) -> None:
+    """A build box measures four cores. Its env file must be able to say NOTHING, not '1 worker'.
+
+    `desks/mt5/data/` travels with the release, so an env file written here lands on the judging
+    box. Writing the baseline into it would hand an 18-core judge `GAUNTLET_WORKERS=1` -- the
+    desk's oldest recurring defect, a floor sized off the wrong machine, with extra steps.
+    """
+    small = _box(cores=4, total_phys_mb=8_186, free_phys_mb=3_900, commit_free_mb=28_000,
+                 is_judging_box=False)
+    decision = jt.plan(small, DEEP_QUEUE, COSTS)
+    assert decision["raised_by"] == 0
+    path = tmp_path / "env.json"
+    doc = jt.write_env(decision, path, box=small)
+    assert doc["env"] == {}, "nothing to raise means nothing is written, never a cut"
+    assert doc["measured_on"] == {"cores": 4, "total_phys_mb": 8_186}
+    assert "never that the judge should be cut" in doc["why"]
+
+
+def test_an_env_measured_on_another_machine_is_refused(tmp_path) -> None:
+    decision = jt.plan(BIG_BOX, DEEP_QUEUE, COSTS)
+    path = tmp_path / "env.json"
+    jt.write_env(decision, path, box=BIG_BOX)          # 18 cores / 98 GB, not this machine
+    target: dict[str, str] = {}
+    assert jt.apply_env(path, target) == {}
+    assert target == {}, "an env from a box of another shape is ignored, never applied"
