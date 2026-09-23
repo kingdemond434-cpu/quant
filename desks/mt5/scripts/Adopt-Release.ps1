@@ -609,10 +609,26 @@ if ($dirty.Count -gt 0) {
         $p = "$_".Substring(3)
         if ($p -match ' -> ') { $p = ($p -split ' -> ')[-1] }
         $p.Trim().Trim('"')
+    } | Where-Object {
+        # The intelligence corpus has its own data-only ship and may contain tens of thousands
+        # of tracked rows. Capturing it here one path at a time made code adoption take longer
+        # than the hourly cadence. Leave those rows to MT5-IntelShip, exactly as step 2 does.
+        $q = ($_ -replace '\\', '/').TrimStart('.', '/')
+        -not ($q.StartsWith("data/intelligence/") -or
+              $q.StartsWith("desks/mt5/data/intelligence/"))
     })
     Write-Host ("  committing {0} uncommitted state path(s) first" -f $dirtyPaths.Count)
-    foreach ($p in $dirtyPaths) { Invoke-Git @("add", "--", $p) -AllowFail | Out-Null }
-    Invoke-Git @("commit", "-m", "Box state captured before release adoption") -AllowFail | Out-Null
+    # One git process per path is O(paths * index-size) and measured at 12+ minutes for 723 rows.
+    # Bounded pathspec batches preserve the exact named-path safety property while reducing that
+    # to a handful of index transactions. Invoke-Git's lock retry still protects every batch.
+    for ($i = 0; $i -lt $dirtyPaths.Count; $i += 128) {
+        $last = [Math]::Min($i + 127, $dirtyPaths.Count - 1)
+        $batch = @($dirtyPaths[$i..$last])
+        Invoke-Git (@("add", "--") + $batch) -AllowFail | Out-Null
+    }
+    if ($dirtyPaths.Count -gt 0) {
+        Invoke-Git @("commit", "-m", "Box state captured before release adoption") -AllowFail | Out-Null
+    }
 }
 
 # ---- 2. WRITE EVERY CHANGED PATH IN PLACE ------------------------------------
