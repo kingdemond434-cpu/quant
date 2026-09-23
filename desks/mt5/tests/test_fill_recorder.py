@@ -21,7 +21,10 @@ from research import fill_recorder as fr  # noqa: E402
 _INTENT: dict[str, Any] = {
     "time": "2026-09-16T09:00:00+00:00", "intent_id": "i1", "sleeve": "s", "symbol": "EURGBP",
     "side": "buy_stop", "lot": 0.1, "intended": 0.85613, "sl": 0.85513, "tp": 0.85813,
-    "ticket": 111, "retcode": 10009, "latency_ms": 12.5,
+    # `latency_send_to_ack_ms` is the wall the gateway now stamps beside `latency_ms`: the same
+    # round trip under the name the corpus reads it by, so send-to-fill stops being a field the
+    # shortfall model finds empty on every row.
+    "ticket": 111, "retcode": 10009, "latency_ms": 12.5, "latency_send_to_ack_ms": 12.5,
     "decision_bid": 0.85610, "decision_ask": 0.85614, "spread_at_decision": 0.00004,
     "point": 0.00001,
 }

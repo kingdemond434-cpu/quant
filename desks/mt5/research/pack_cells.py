@@ -212,7 +212,39 @@ def judged_registers() -> dict[str, Any]:
                          "NULL AND terminal_gate != ''")
         n_cands = one("SELECT COUNT(*) FROM research_candidates")
         total = max(n_with_cand, 0) + max(n_judged_at, 0) + max(n_terminal, 0)
+        # WHERE THE VERDICTS ACTUALLY ARE. The gauntlet does not write the registry: it appends to
+        # `data/hypotheses/gate_verdict_ledger.jsonl`, and `libs.moat.registry.sync_from_desk`
+        # (hourly leg `registry_sync`) is the organ that pours those rows in as trials WITH a
+        # candidate_id and marks the candidate judged. Both halves are measured here because the
+        # difference between "no verdict exists" and "the verdict never crossed" is the whole job.
+        ledger = DESK / "data" / "hypotheses" / "gate_verdict_ledger.jsonl"
+        try:
+            with ledger.open(encoding="utf-8", errors="ignore") as fh:
+                n_verdicts = sum(1 for _ in fh)
+        except OSError:
+            n_verdicts = -1
+        cursor_row = None
+        try:
+            cursor_row = conn.execute("SELECT value FROM sync_cursor WHERE key = 'gate_verdicts'"
+                                      ).fetchone()
+        except Exception:
+            cursor_row = None
         return {
+            "verdicts_on_disk": n_verdicts,
+            "verdict_ledger": str(ledger),
+            "sync_cursor_gate_verdicts": (str(cursor_row[0]) if cursor_row else None),
+            "the_verdicts_never_crossed": (
+                f"{n_verdicts} gauntlet verdicts sit in {ledger.name} and the registry's "
+                "sync_cursor holds NO 'gate_verdicts' key, so libs.moat.registry.sync_from_desk "
+                "(hourly leg `registry_sync`, desks/mt5/research/registry_sync.py:42) has not "
+                "poured a single one in since the registry was restored from backup on "
+                "2026-09-17. That is the first half of the job and it is a RUN, not a build. The "
+                "second half is measured and still open: the sampled verdict rows carry "
+                "graph_id=None, so sync_from_desk falls back to the cell NAME as the candidate "
+                "edge, which joins to no research_candidates.id (those are cand_<hex>) -- the "
+                "verdict would land as a trial with a candidate_id that matches nothing. Both "
+                "halves belong to registry_sync/sync_from_desk, neither to this organ."
+                if n_verdicts > 0 and not cursor_row else ""),
             "status": "OPEN" if total <= 0 else "OK",
             "trials_ledger_rows": n_trials,
             "trials_ledger_rows_carrying_a_candidate_id": n_with_cand,
@@ -480,6 +512,15 @@ def resolve_ground(row: dict[str, Any]) -> dict[str, Any]:
     unknown = sorted({c for c in codes if c and c not in idx})
     return {"targets": [], "region": "UNMAPPED", "mapped_by": "none",
             "hosts": sorted(set(hosts))[:6], "code": "", "pack": "",
+            # THE NEXT JOB, WITH AN OWNER, so the backlog is a work order and not a mystery.
+            "next_job": (
+                f"WRITE A PACK: research/countries/{unknown[0]}/pack.py with "
+                "EXECUTABLE_INSTRUMENTS and REGION_COMMAND; this ground converts on the next pass"
+                if unknown else
+                "CRAWL DEPTH (owner: the crawler that fetched it -- world_crawler / "
+                "deep_forest_miner): the documents held are landing or navigation pages that "
+                "name no MT5 symbol. Fetching the data page this ground actually publishes "
+                "closes it; no pack and no code here can"),
             "reason": (
                 "no rung resolves it: its documents come from "
                 + (", ".join(sorted(set(hosts))[:4]) or "no recorded host")
@@ -542,6 +583,8 @@ def world_rows() -> tuple[list[dict[str, Any]], str]:
         res = resolve_ground(w)
         w["mapped_by"] = res["mapped_by"]
         w["hosts"] = res["hosts"]
+        if res.get("next_job"):
+            w["next_job"] = res["next_job"]
         if res["targets"]:
             w["targets"] = res["targets"]
             w["region"] = res["region"]
@@ -918,7 +961,8 @@ def build(budget_s: float = 240.0, *, dry_run: bool = False) -> dict[str, Any]:
         mapped_by[str(w.get("mapped_by") or "none")] = \
             mapped_by.get(str(w.get("mapped_by") or "none"), 0) + 1
     still_unmapped = [{"id": w["id"], "n_documents": w["n_documents"], "kind": w["kind"],
-                       "hosts": w.get("hosts") or [], "reason": w.get("reason") or ""}
+                       "hosts": w.get("hosts") or [], "reason": w.get("reason") or "",
+                       "next_job": w.get("next_job") or ""}
                       for w in sorted(wrows_after, key=lambda x: -x["n_documents"])
                       if not w.get("targets") and w["n_documents"] > 0]
     mapping = {

@@ -403,6 +403,11 @@ def over_risked(rows: list[dict[str, Any]],
 def measure(sleeves: list[dict[str, Any]] | None = None,
             equity: float | None = None) -> dict[str, Any]:
     """The whole capability, in one call."""
+    # A CALLER-SUPPLIED EQUITY HAD NO SOURCE AND CRASHED THE ORGAN. `equity_source` was only bound
+    # inside the `equity is None` branch, so `measure(equity=...)` -- how every test and every
+    # in-process caller reaches this -- raised UnboundLocalError at the return, and the report was
+    # never written at all. The caller IS the source, and saying so is the fix.
+    equity_source = "caller"
     if equity is None:
         # THE EQUITY A SIZING VERDICT USES MUST NOT COME FROM A DASHBOARD (measured 2026-09-13).
         #

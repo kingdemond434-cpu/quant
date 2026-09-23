@@ -943,6 +943,10 @@ LEG_DEPARTMENT: dict[str, str] = {
     **dict.fromkeys(("global_research_os", *GLOBAL_FOREST_LEGS), "regions"),
     # the forest federation: one department per regional civilization, each its own resident
     **{f"forest_{_fid}": _fid for _fid in FOREST_DEPARTMENTS},
+    # the read-only join behind the 24/7 dashboard: it measures nothing new, it only puts what
+    # the desk already measured into one document with each value's source and age. `rest`
+    # because it must never compete with a producing department for the hour's compute.
+    "desk_dashboard_state": "rest",
 }
 
 
@@ -4120,6 +4124,15 @@ def main() -> None:
     # consumes the peer organs' artifacts and writes none of theirs.
     bka = _costed("bottleneck_attack", lambda: _producer(
         "bottleneck_attack", "research/bottleneck_attack.py", "--once", "--budget-s", "300"))
+    # THE DASHBOARD'S ONE JOINED DOCUMENT (principal 2026-09-23). Canon, defects, live money,
+    # producers, funnel, bottlenecks and the macro/news lane joined on the canonical identity
+    # (symbol|family|selector) into `DESK_DASHBOARD_STATE.json` and merged into the payload the
+    # page already fetches. Read-only: it writes no registry row and sizes nothing, so it cannot
+    # change what the desk trades. Every value carries its source artifact and that artifact's
+    # age; an absent measurement is UNMEASURED with its reason, never a zero.
+    dds = _costed("desk_dashboard_state", lambda: _producer(
+        "desk_dashboard_state", "research/desk_dashboard_state.py",
+        "--once", "--budget-s", "120"))
     lc = _costed("layer_census", lambda: _producer("layer_census", "libs/research/layers.py"))
     oc = _costed("opportunity_cost", lambda: _producer(
         "opportunity_cost", "research/opportunity_cost.py"))
@@ -4364,7 +4377,7 @@ def main() -> None:
                     "proposer_seat": prs, "kimi_hunt": kh,
                     "release_identity": ri, "burn_in": bi, "layer_census": lc,
                     "control_plane": cp, "plumbing_watchdog": pwd_,
-                    "bottleneck_attack": bka,
+                    "bottleneck_attack": bka, "desk_dashboard_state": dds,
                     "opportunity_cost": oc, "acceptance": ac, "opportunity_forecast": ofc,
                     "cycle_pricing": cyp, "causal_invariance": civ,
                     "source_evig": sev, "source_drain": sdr, "pack_cells": pkc,
