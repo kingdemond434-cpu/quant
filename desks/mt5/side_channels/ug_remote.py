@@ -365,12 +365,55 @@ def main() -> int:
         (REPORTS / f"DONE_universal_{rp.stem}").write_text(
             datetime.now(timezone.utc).isoformat(), encoding="utf-8")
 
-    (REPORTS / "UNIVERSAL_SURVIVORS.json").write_text(
-        json.dumps({"n": len(survivors_all), "survivors": survivors_all,
-                    "note": "UNIVERSAL 10-GATE PASS ONLY. Placebo null + fragility "
-                            "apply before portfolio entry.",
-                    "swept_at": datetime.now(timezone.utc).isoformat()},
-                   indent=2, default=str), encoding="utf-8")
+    # THE CERTIFIER WIPE, THE SECOND COPY (2026-09-23). `universal_gate.py` -- the sealed twin
+    # this file was forked from -- was taught on 2026-08-25 to re-read the authority file, retain
+    # every exact ten-gate row and stamp the current attestation, because a sweep that starts
+    # `survivors_all` from an empty dict and then writes it DELETES the whole certificate
+    # library. That graft was never applied here, and this copy kept running: as the hourly leg
+    # `auto_ug_remote` it overwrote reports/UNIVERSAL_SURVIVORS.json every hour with n=0 and NO
+    # `gate_policy` key. MEASURED on the trading box: the authority file held 56 certificates at
+    # 2026-09-17 08:44 and 0 at 09:52, and was still being re-wiped at 08:39:16 on 2026-09-23 --
+    # 183 bytes, no attestation -- while thirteen sleeves traded live and 855 forward clocks ran.
+    # Losing the attestation is the worse half: `is_exact_policy` then fails closed, so every
+    # reader treats the file as UNMEASURED and falls through to the seal, and the gauntlet's own
+    # restore branch (which re-asks each retired row's reason) finds no `retired_certificates` to
+    # restore from, because this write dropped that key too.
+    #
+    # Three guards, the same three the sealed writer applies, and the retention rule is IMPORTED
+    # from the twin rather than copied so the two can never drift again:
+    survivor_path = REPORTS / "UNIVERSAL_SURVIVORS.json"
+    try:
+        from research.universal_gate import retained_exact_survivors
+    except ImportError:                                   # desk-root sys.path (box layout)
+        from universal_gate import retained_exact_survivors   # type: ignore[no-redef]
+    try:
+        from research.gate_policy import ATTESTATION
+    except ImportError:
+        from gate_policy import ATTESTATION               # type: ignore[no-redef]
+    prior = retained_exact_survivors(survivor_path)
+    n_before = len(prior)
+    prior.update(survivors_all)                           # merge; this sweep only ever adds
+    survivors_all = prior
+    if len(survivors_all) < n_before:
+        print(f"ug_remote: REFUSING to write: merge would shrink {n_before} -> "
+              f"{len(survivors_all)}", flush=True)
+        return 0
+    if not survivors_all:
+        # An empty authority file is never a verdict: re-running a gauntlet is not revoking a
+        # pass, and 0 survivors is a missing input. Leave what stands untouched.
+        print("ug_remote: REFUSING to write an EMPTY authority file; canon unchanged", flush=True)
+        return 0
+    doc: dict = {}
+    try:
+        doc = json.loads(survivor_path.read_text("utf-8"))
+    except (OSError, ValueError):
+        doc = {}
+    doc.update({"n": len(survivors_all), "survivors": survivors_all,
+                "gate_policy": ATTESTATION,
+                "note": "UNIVERSAL 10-GATE PASS ONLY. Placebo null + fragility "
+                        "apply before portfolio entry.",
+                "swept_at": datetime.now(timezone.utc).isoformat()})
+    survivor_path.write_text(json.dumps(doc, indent=2, default=str), encoding="utf-8")
     ledger_path = REPORTS / "SURVIVORS_LEDGER.json"
     ledger: dict = {}
     if ledger_path.exists():
