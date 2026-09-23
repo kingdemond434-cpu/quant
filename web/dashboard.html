@@ -1,0 +1,917 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<title>QUANT DESK</title>
+<style>
+/* Self-contained: no CDN, no external font, no external script, no build step. The box serves
+   this over plain HTTP and may have no internet route, so everything is inline.
+
+   DARK EDITORIAL TERMINAL. Black page, near-black cards, amber for section voice and scores,
+   green for live money and health, coral for negative and breach. Monospace throughout so
+   columns line up on a phone.
+
+   THE STYLE NEVER EATS THE CONTRACT. Every value still carries the artifact it came from and
+   that artifact's age; an absent measurement still renders as the WORD with its reason and never
+   as a zero or a dash; a document older than its cadence still says so before any number. The
+   restyle moved those to small muted monospace. It did not delete one of them. */
+:root{
+  --bg:#000000;
+  --card:#0d0d0d; --card2:#111111; --line:#1e1e1e; --track:#1a1a1a;
+  --amber:#d4a256;      /* eyebrow / section voice */
+  --amber-n:#d9a441;    /* large metric numerals, and CAUTION */
+  --green:#35d07f;      /* measured, healthy, live, positive money */
+  --red:#e5484d;        /* negative money, breach, missing artifact */
+  --ink:#f2f2f2;        /* headlines and values */
+  --body:#8a8a8a;       /* prose */
+  --tiny:#6a6a6a;       /* field labels, provenance */
+  --ghost:#555555;      /* ribbon counterpart */
+  --empty:#7f9e8f;      /* MEASURED_EMPTY: a measured nothing, not an absence */
+  --mono:ui-monospace,"SF Mono","JetBrains Mono",SFMono-Regular,Menlo,Consolas,"DejaVu Sans Mono",monospace;
+}
+*{box-sizing:border-box;min-width:0}
+html{overflow-x:hidden}
+html,body{margin:0;background:var(--bg);color:var(--ink);
+  font:13px/1.5 var(--mono);-webkit-text-size-adjust:100%}
+body{padding:16px 16px 64px;max-width:1460px;margin:0 auto}
+a{color:var(--green)}
+
+/* ---------- window chrome ---------- */
+.chrome{display:flex;align-items:center;gap:10px;padding:9px 14px;border-bottom:1px solid var(--line);
+  background:var(--card2);border-radius:8px 8px 0 0;flex-wrap:wrap}
+.dots{display:inline-flex;gap:5px;flex:none}
+.dots i{width:9px;height:9px;border-radius:50%;display:block;background:#2a2a2a}
+.dots i:nth-child(1){background:#4a2b2d}
+.dots i:nth-child(2){background:#4a3c22}
+.dots i:nth-child(3){background:#23402f}
+.ctitle{font-size:10.5px;letter-spacing:.06em;color:var(--tiny);white-space:nowrap;overflow:hidden;
+  text-overflow:ellipsis;flex:1 1 140px}
+
+/* ---------- panels ---------- */
+.panel{background:var(--card);border:1px solid var(--line);border-radius:8px;margin:22px 0 0;overflow:hidden}
+.pbody{padding:18px 16px 16px}
+.eyebrow{font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:var(--amber);font-weight:600}
+.headline{font-size:30px;line-height:1.12;margin:10px 0 0;color:var(--ink);font-weight:700;
+  text-transform:lowercase;letter-spacing:-.01em}
+.deck{margin:9px 0 0;color:var(--body);font-size:12.5px;line-height:1.55;max-width:74ch}
+.srcs{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+.why{margin-top:10px;font-size:11.5px;line-height:1.5;color:var(--body)}
+.why.stale{color:var(--amber-n)} .why.bad{color:var(--red)} .why.unm{color:var(--tiny)}
+
+/* ---------- status chips ---------- */
+.chip{font-size:9.5px;letter-spacing:.11em;text-transform:uppercase;padding:2px 7px;border-radius:3px;
+  border:1px solid var(--line);color:var(--tiny);white-space:nowrap;display:inline-block}
+.chip.ok{color:var(--green);border-color:#1d4634}
+.chip.stale{color:var(--amber-n);border-color:#4b3a1a}
+.chip.bad{color:var(--red);border-color:#4d2022}
+.chip.unm{color:var(--tiny);border-color:var(--line)}
+.chip.empty{color:var(--empty);border-color:#2a3a33}
+.chip.plain{color:var(--body)}
+
+/* ---------- banner ---------- */
+#banner{display:none;margin:16px 0 0;padding:13px 15px;border-radius:8px;
+  border:1px solid #4d2022;background:#120809;color:var(--red);font-size:12.5px;line-height:1.55}
+#banner.show{display:block}
+#banner.warn{border-color:#4b3a1a;background:#120e05;color:var(--amber-n)}
+
+/* ---------- top bar ---------- */
+.topbar{border:1px solid var(--line);border-radius:8px;background:var(--card);overflow:hidden}
+.tb2{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:baseline;justify-content:space-between;
+  padding:14px 16px}
+.brand{font-size:13px;letter-spacing:.34em;color:var(--ink);font-weight:700;margin:0}
+.brandsub{font-size:10px;letter-spacing:.15em;color:var(--amber);text-transform:uppercase;margin-top:4px}
+#stamps{display:flex;flex-wrap:wrap;gap:6px}
+
+/* ---------- metric cells ---------- */
+/* One column on a phone, two on a tablet, three on a laptop: predictable, and 3/6/9-cell
+   sections fill their rows instead of orphaning one cell on a line of its own. */
+.grid{display:grid;gap:10px;grid-template-columns:minmax(0,1fr);margin-top:16px}
+@media (min-width:640px){ .grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .grid.tight{grid-template-columns:repeat(3,minmax(0,1fr))} }
+@media (min-width:1040px){ .grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .grid.tight{grid-template-columns:repeat(4,minmax(0,1fr))} }
+.cell{background:var(--card2);border:1px solid var(--line);border-radius:8px;padding:12px 13px;
+  border-left:2px solid var(--line)}
+.cell.s-STALE{border-left-color:var(--amber-n)}
+.cell.s-MISSING,.cell.s-UNREADABLE{border-left-color:var(--red)}
+.cell.s-UNMEASURED{border-left-color:#2b2b2b}
+.cell.s-MEASURED{border-left-color:#1d3a2c}
+.k{font-size:9.5px;letter-spacing:.1em;color:var(--tiny);text-transform:uppercase;display:flex;
+  gap:7px;align-items:center;flex-wrap:wrap}
+.v{font-size:36px;line-height:1.08;margin-top:8px;font-variant-numeric:tabular-nums;
+  word-break:break-word;color:var(--amber-n);font-weight:600;letter-spacing:-.02em}
+.v.money{color:var(--green)}
+.v.neg{color:var(--red)}
+.v.ok{color:var(--green)}
+.v.bad{color:var(--red);font-size:20px}
+.v.stale{color:var(--amber-n)}
+.v.unm{color:var(--tiny);font-size:15px;font-weight:500;letter-spacing:.06em}
+.v.word{font-size:19px;color:var(--ink);font-weight:600;letter-spacing:0}
+.sub{font-size:11.5px;color:var(--body);margin-top:6px;font-variant-numeric:tabular-nums;line-height:1.45}
+.m{margin-top:7px;font-size:10px;color:var(--tiny);word-break:break-word;line-height:1.45}
+.grid.tight .v{font-size:24px}
+.grid.tight .v.unm{font-size:13px}
+
+/* ---------- score block ---------- */
+.score{display:flex;gap:14px;align-items:stretch;background:var(--card2);border:1px solid var(--line);
+  border-radius:8px;padding:13px;margin-top:16px;flex-wrap:wrap}
+.score .box{border:1px solid #33291a;border-radius:6px;padding:10px 16px;display:flex;
+  flex-direction:column;justify-content:center;align-items:center;min-width:120px}
+.score .box .n{font-size:40px;line-height:1;color:var(--amber-n);font-weight:700;
+  font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.score .box .n.unm{font-size:14px;color:var(--tiny);font-weight:500;letter-spacing:.08em}
+.score .box .u{font-size:9px;letter-spacing:.12em;color:var(--tiny);text-transform:uppercase;margin-top:6px}
+.score .txt{flex:1 1 220px;display:flex;flex-direction:column;justify-content:center;gap:5px}
+.score .txt .lab{font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--tiny)}
+.score .txt .sent{font-size:12.5px;color:var(--body);line-height:1.5}
+.score .txt .prov{font-size:10px;color:var(--tiny)}
+
+/* ---------- donut gauge ---------- */
+.gauges{display:grid;gap:10px;justify-content:start;margin-top:16px;
+  grid-template-columns:repeat(auto-fit,minmax(min(100%,210px),260px))}
+.gauge{background:var(--card2);border:1px solid var(--line);border-radius:8px;padding:14px 12px;
+  display:flex;flex-direction:column;align-items:center;text-align:center}
+.gauge svg{display:block}
+.gauge .gl{font-size:9.5px;letter-spacing:.11em;text-transform:uppercase;color:var(--tiny);margin-bottom:10px}
+.gauge .gs{font-size:11px;color:var(--body);margin-top:9px;line-height:1.45}
+.gauge .gp{font-size:10px;color:var(--tiny);margin-top:5px;line-height:1.45;word-break:break-word}
+.gc{font:600 22px/1 var(--mono);fill:var(--green);letter-spacing:-.02em}
+.gc.unmv{font:500 9px/1 var(--mono);fill:var(--tiny);letter-spacing:.06em}
+.gw{font:9px/1 var(--mono);fill:var(--tiny);letter-spacing:.11em}
+
+/* ---------- horizontal bars ---------- */
+.bars{margin-top:16px;display:flex;flex-direction:column;gap:9px}
+.bar .bl{display:flex;justify-content:space-between;gap:12px;font-size:10.5px;color:var(--body);
+  margin-bottom:5px;align-items:baseline}
+.bar .bl .bn{color:var(--ink);font-variant-numeric:tabular-nums;white-space:nowrap}
+.bar .bl .bn.neg{color:var(--red)}
+.bar .bl .bk{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;letter-spacing:.06em;
+  text-transform:uppercase;font-size:9.5px;color:var(--tiny)}
+.bar .bt{height:3px;background:var(--track);border-radius:2px;overflow:hidden}
+.bar .bt i{display:block;height:3px;border-radius:2px;background:var(--green)}
+.bar .bt i.neg{background:var(--red)}
+
+/* ---------- no-series strip (a component with no data is said, never faked) ---------- */
+.nochart{margin-top:16px;border:1px dashed #2a2a2a;border-radius:8px;padding:12px 13px;
+  font-size:10.5px;color:var(--tiny);line-height:1.55;letter-spacing:.02em}
+.nochart b{color:var(--body);font-weight:600;letter-spacing:.11em}
+
+/* ---------- equity area curve ---------- */
+.eq{margin-top:16px;border:1px solid var(--line);border-radius:8px;background:var(--card2);padding:14px 13px}
+.eq svg{display:block;width:100%;height:170px}
+.eqmeta{display:flex;flex-wrap:wrap;gap:6px 18px;margin-top:11px;font-size:9.5px;color:var(--tiny);
+  letter-spacing:.11em;text-transform:uppercase}
+.eqmeta b{color:var(--ink);font-weight:600;font-variant-numeric:tabular-nums;letter-spacing:0;
+  text-transform:none;margin-left:6px}
+.eqprov{margin-top:9px;font-size:10px;color:var(--tiny);line-height:1.5;word-break:break-word}
+.eqnone{padding:26px 4px;text-align:center}
+.eqnone .w{font-size:15px;letter-spacing:.1em;color:var(--tiny)}
+.eqnone .w.stale{color:var(--amber-n)} .eqnone .w.bad{color:var(--red)}
+.eqnone .r{margin:9px auto 0;font-size:11.5px;color:var(--body);line-height:1.55;max-width:72ch}
+
+/* ---------- ribbon ---------- */
+.ribbon{display:flex;flex-wrap:wrap;gap:6px 14px;justify-content:space-between;align-items:baseline;
+  padding:9px 16px;border-top:1px solid var(--line);background:#0a0a0a}
+.ribbon .rl{font-size:10px;letter-spacing:.11em;text-transform:uppercase;color:var(--green)}
+.ribbon .rr{font-size:10px;letter-spacing:.06em;color:var(--ghost);word-break:break-word}
+
+/* ---------- tables ---------- */
+.wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--line);border-radius:8px;
+  background:var(--card2);margin-top:16px;max-width:100%}
+table{border-collapse:collapse;width:100%;font-size:12px;min-width:560px}
+th,td{text-align:left;padding:8px 11px;border-bottom:1px solid var(--track);white-space:nowrap;
+  font-variant-numeric:tabular-nums;vertical-align:top;border-right:0;border-left:0}
+th{color:var(--tiny);font-weight:600;font-size:9.5px;letter-spacing:.11em;text-transform:uppercase;
+  position:sticky;top:0;background:#141414;border-bottom:1px solid var(--line)}
+tbody tr:last-child td{border-bottom:none}
+td.n{text-align:right}
+td.w{white-space:normal;min-width:230px;max-width:520px;color:var(--body)}
+.norows{margin-top:16px;font-size:11px;color:var(--tiny);border:1px dashed #2a2a2a;border-radius:8px;
+  padding:11px 13px;line-height:1.5}
+.ok{color:var(--green)} .bad{color:var(--red)} .stale{color:var(--amber-n)}
+.unm{color:var(--tiny)} .live{color:var(--green)} .empty{color:var(--empty)}
+.subhead{margin-top:20px;font-size:9.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--amber);
+  display:flex;gap:9px;align-items:baseline;flex-wrap:wrap}
+.subhead .n{color:var(--tiny);letter-spacing:.06em;text-transform:none}
+
+details{margin-top:14px;border:1px solid var(--line);border-radius:8px;background:#0a0a0a}
+summary{cursor:pointer;color:var(--amber);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;
+  padding:10px 13px;list-style:none}
+summary::-webkit-details-marker{display:none}
+summary::before{content:"+ ";color:var(--tiny)}
+details[open]>summary::before{content:"\2212 "}
+details>*:not(summary){padding:0 13px 13px}
+details .wrap,details .grid{margin-top:0}
+
+footer{margin-top:30px;padding-top:14px;border-top:1px solid var(--line);color:var(--tiny);
+  font-size:10px;line-height:1.7;word-break:break-word}
+
+@media (max-width:560px){
+  body{padding:12px 12px 52px}
+  .headline{font-size:23px}
+  .grid,.grid.tight,.gauges{grid-template-columns:minmax(0,1fr)}
+  .v{font-size:31px}
+  .score .box{min-width:0;width:100%}
+}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="chrome"><span class="dots"><i></i><i></i><i></i></span>
+    <span class="ctitle">quant@desk — web/desk_state.json["dashboard"] — read-only</span></div>
+  <div class="tb2">
+    <div><h1 class="brand">QUANT DESK</h1><div class="brandsub">surveillance</div></div>
+    <div id="stamps"><span class="chip">loading&hellip;</span></div>
+  </div>
+</header>
+<div id="banner"></div>
+<section class="panel" id="hero">
+  <div class="chrome"><span class="dots"><i></i><i></i><i></i></span>
+    <span class="ctitle">headline — the six numbers the desk is judged on</span></div>
+  <div class="pbody">
+    <div class="eyebrow">the desk</div>
+    <h2 class="headline">every number here carries the file it came from.</h2>
+    <p class="deck">The six figures the desk is judged on, joined on the identity it trades on. Each
+      one states the artifact it was read from and how old that artifact is; a measurement the desk
+      does not hold says UNMEASURED and why, never a zero.</p>
+    <div id="big" class="grid"></div>
+  </div>
+</section>
+<main id="main"></main>
+<footer id="foot"></footer>
+<script>
+"use strict";
+/* READ-ONLY. This page fetches one document and renders it. It has no control of any kind:
+   no form, no POST, no parameter that reaches the desk. Nothing here can change what is traded.
+   The token gate is the server's (cookie or ?k=), so this same-origin fetch is unchanged. */
+var SRC = "desk_state.json";
+var doc = null, raw = null, lastFetch = null, lastErr = null;
+
+function esc(s){ return String(s === null || s === undefined ? "" : s)
+  .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+function cls(st){
+  if(st === "MEASURED") return "ok";
+  if(st === "MEASURED_EMPTY") return "empty";
+  if(st === "STALE") return "stale";
+  if(st === "MISSING" || st === "UNREADABLE") return "bad";
+  return "unm";
+}
+function num(v){
+  if(v === null || v === undefined) return null;
+  if(typeof v !== "number") return String(v);
+  if(Math.abs(v) >= 1000) return v.toLocaleString(undefined,{maximumFractionDigits:2});
+  return String(Math.round(v*10000)/10000);
+}
+/* A field is {value,status,age,why,source}. UNMEASURED renders as the WORD with its reason. */
+function fieldText(f){
+  if(!f || typeof f !== "object") return {txt:"UNMEASURED", st:"UNMEASURED", why:"no field"};
+  var st = f.status || (f.value === null || f.value === undefined ? "UNMEASURED" : "MEASURED");
+  if(f.value === null || f.value === undefined) return {txt:st==="MEASURED"?"UNMEASURED":st, st:st==="MEASURED"?"UNMEASURED":st, why:f.why||"", age:f.age, source:f.source};
+  var v = f.value;
+  if(typeof v === "object") v = JSON.stringify(v);
+  else v = num(v);
+  return {txt:v, st:st, why:f.why||"", age:f.age, source:f.source};
+}
+/* PROVENANCE IS NOT DECORATION. Every cell prints the artifact and its age underneath; a cell
+   that is not MEASURED prints the reason instead, and the status rides a chip beside the label
+   so STALE can never be mistaken for a healthy value. */
+function bigCell(label, f, opts){
+  opts = opts || {};
+  var t = fieldText(f);
+  var v = f && typeof f === "object" ? f.value : null;
+  var colour;
+  if(t.st === "MEASURED"){
+    if(opts.money) colour = (typeof v === "number" && v < 0) ? "neg" : "money";
+    else if(typeof v !== "number") colour = "word";
+    else colour = "";
+  } else {
+    colour = cls(t.st) === "ok" ? "" : cls(t.st) === "empty" ? "unm" : cls(t.st);
+    if(t.st === "UNMEASURED" || t.st === "MEASURED_EMPTY") colour = "unm";
+  }
+  var val = t.txt;
+  if(opts.prefix && t.st === "MEASURED") val = opts.prefix + val;
+  var sub = opts.sub ? '<div class="sub">'+esc(opts.sub)+'</div>' : "";
+  var meta = [];
+  if(t.age) meta.push("age " + t.age);
+  if(t.source) meta.push(String(t.source).split("/").pop());
+  if(t.st !== "MEASURED" && t.why) meta = [t.why];
+  var chip = t.st === "MEASURED" ? "" : ' <span class="chip '+cls(t.st)+'">'+esc(t.st)+'</span>';
+  return '<div class="cell s-'+esc(t.st)+'"><div class="k"><span>'+esc(label)+'</span>'+chip+'</div>'
+    + '<div class="v '+colour+'">'+esc(val)+'</div>'
+    + sub + '<div class="m">'+esc(meta.join(" · "))+'</div></div>';
+}
+/* A DONUT IS A PICTURE OF TWO PUBLISHED NUMBERS, never a number of its own. Both sides must be
+   MEASURED and the denominator positive; otherwise the ring is empty and says UNMEASURED. */
+/* A status word that arrives as a plain string value must not be painted like a measurement. */
+var STATUS_WORDS = {UNMEASURED:1, STALE:1, MISSING:1, UNREADABLE:1, MEASURED_EMPTY:1};
+function word(v){
+  var s = (v === null || v === undefined) ? "" : String(v);
+  return STATUS_WORDS[s] ? '<span class="'+cls(s)+'">'+esc(s)+'</span>' : esc(s);
+}
+function donut(numF, denF, label, capt, sub, bad){
+  var a = fieldText(numF), b = fieldText(denF);
+  var nv = numF && typeof numF === "object" ? numF.value : null;
+  var dv = denF && typeof denF === "object" ? denF.value : null;
+  var R = 33, C = 2 * Math.PI * R, SZ = 92, cx = SZ/2;
+  var ok = a.st === "MEASURED" && b.st === "MEASURED"
+        && typeof nv === "number" && typeof dv === "number" && dv > 0;
+  var prov = [];
+  if(a.source) prov.push(String(a.source).split("/").pop() + (a.age ? " " + a.age : ""));
+  var body, sentence;
+  if(ok){
+    var p = nv/dv, pc = Math.max(0, Math.min(1, p));
+    var pct = (p*100);
+    var txt = (pct >= 99.95 || pct === 0 || pct % 1 === 0) ? String(Math.round(pct)) : pct.toFixed(1);
+    var hue = bad ? "#e5484d" : "#35d07f";
+    body = '<circle cx="'+cx+'" cy="'+cx+'" r="'+R+'" fill="none" stroke="#1a1a1a" stroke-width="11"/>'
+      + '<circle cx="'+cx+'" cy="'+cx+'" r="'+R+'" fill="none" stroke="'+hue+'" stroke-width="11"'
+      + ' stroke-linecap="round" stroke-dasharray="'+C.toFixed(2)+'"'
+      + ' stroke-dashoffset="'+(C*(1-pc)).toFixed(2)+'"'
+      + ' transform="rotate(-90 '+cx+' '+cx+')"/>'
+      + '<text class="gc" style="fill:'+hue+'" x="'+cx+'" y="'+(cx-3)+'" text-anchor="middle" dominant-baseline="middle">'+esc(txt)+'%</text>'
+      + '<text class="gw" x="'+cx+'" y="'+(cx+16)+'" text-anchor="middle">'+esc(capt||"")+'</text>';
+    sentence = num(nv) + " of " + num(dv);
+  } else {
+    var whyT = (a.st !== "MEASURED" ? a.why : b.why)
+      || ((a.st !== "MEASURED" ? a.st : b.st) + ": the pair this ring needs is not both measured");
+    body = '<circle cx="'+cx+'" cy="'+cx+'" r="'+R+'" fill="none" stroke="#1a1a1a" stroke-width="11"'
+      + ' stroke-dasharray="4 6"/>'
+      + '<text class="gc unmv" x="'+cx+'" y="'+(cx-3)+'" text-anchor="middle" dominant-baseline="middle">UNMEASURED</text>'
+      + '<text class="gw" x="'+cx+'" y="'+(cx+16)+'" text-anchor="middle">'+esc(capt||"")+'</text>';
+    sentence = (a.st !== "MEASURED" ? a.st : b.st);
+    prov = [whyT];
+  }
+  return '<div class="gauge"><div class="gl">'+esc(label)+'</div>'
+    + '<svg width="'+SZ+'" height="'+SZ+'" viewBox="0 0 '+SZ+' '+SZ+'" role="img" aria-label="'+esc(label)+'">'
+    + body + '</svg>'
+    + '<div class="gs">'+esc(sentence)+(sub?' · '+esc(sub):"")+'</div>'
+    + '<div class="gp">'+esc(prov.join(" · "))+'</div></div>';
+}
+/* A large amber numeral beside a label and one sentence of interpretation. */
+function scoreBlock(f, unit, label, sentence){
+  var t = fieldText(f);
+  var n = t.st === "MEASURED" ? '<div class="n">'+esc(t.txt)+'</div>'
+                              : '<div class="n unm">'+esc(t.txt)+'</div>';
+  var prov = [];
+  if(t.st === "MEASURED"){
+    if(t.age) prov.push("age " + t.age);
+    if(t.source) prov.push(String(t.source).split("/").pop());
+  } else if(t.why) prov.push(t.why);
+  return '<div class="score"><div class="box">'+n+'<div class="u">'+esc(unit)+'</div></div>'
+    + '<div class="txt"><div class="lab">'+esc(label)+'</div>'
+    + '<div class="sent">'+esc(sentence)+'</div>'
+    + '<div class="prov">'+esc(prov.join(" · "))+'</div></div></div>';
+}
+/* Bars encode values that are ALREADY printed beside them. Width is a picture of the printed
+   number, scaled to the largest magnitude in the same list; it is never a new measurement. */
+function bars(rows){
+  var vals = rows.map(function(r){ return typeof r.value === "number" ? Math.abs(r.value) : 0; });
+  var mx = Math.max.apply(null, vals.concat([0])) || 1;
+  return '<div class="bars">' + rows.map(function(r){
+    var meas = typeof r.value === "number";
+    var w = meas ? Math.max(1.5, (Math.abs(r.value)/mx)*100) : 0;
+    var neg = meas && r.value < 0;
+    var shown = meas ? (r.text !== undefined ? r.text : num(r.value))
+                     : '<span class="unm">'+esc(r.text || "UNMEASURED")+'</span>';
+    return '<div class="bar"><div class="bl"><span class="bk">'+esc(r.label)+'</span>'
+      + '<span class="bn'+(neg?" neg":"")+'">'+shown+'</span></div>'
+      + '<div class="bt"><i class="'+(neg?"neg":"")+'" style="width:'+w.toFixed(2)+'%"></i></div></div>';
+  }).join("") + '</div>';
+}
+function ribbon(l, r){
+  return '<div class="ribbon"><span class="rl">'+esc(l)+'</span><span class="rr">'+esc(r)+'</span></div>';
+}
+function panelOpen(eyebrow, headline, deck, sec, chromeTitle){
+  var st = (sec && sec.status) || "UNMEASURED";
+  var srcs = ((sec && sec.sources) || []).map(function(s){
+    return '<span class="chip '+cls(s.status)+'" title="'+esc(s.why||"")+'">'
+      + esc(String(s.source||"").split("/").pop()) + ' ' + esc(s.age||"") + '</span>';
+  }).join("");
+  var why = "";
+  if(st !== "MEASURED"){
+    var bad = ((sec && sec.sources) || []).filter(function(s){return s.status !== "MEASURED";});
+    if(bad.length && bad[0].why) why = '<div class="why '+cls(st)+'">'+esc(bad[0].why)+'</div>';
+  }
+  return '<section class="panel"><div class="chrome"><span class="dots"><i></i><i></i><i></i></span>'
+    + '<span class="ctitle">'+esc(chromeTitle)+'</span>'
+    + '<span class="chip '+cls(st)+'">'+esc(st)+'</span></div>'
+    + '<div class="pbody"><div class="eyebrow">'+esc(eyebrow)+'</div>'
+    + '<h2 class="headline">'+esc(headline)+'</h2>'
+    + '<p class="deck">'+esc(deck)+'</p>'
+    + (srcs ? '<div class="srcs">'+srcs+'</div>' : "")
+    + why;
+}
+function panelClose(l, r){ return '</div>' + ribbon(l, r) + '</section>'; }
+function subhead(t, n){
+  return '<div class="subhead"><span>'+esc(t)+'</span>'+(n?'<span class="n">'+esc(n)+'</span>':"")+'</div>';
+}
+function tbl(cols, rows, render){
+  if(!rows || !rows.length) return '<div class="norows">NO ROWS — the source published none. '
+    + 'That is what the artifact says, not a value this page chose.</div>';
+  var h = "<thead><tr>" + cols.map(function(c){return "<th>"+esc(c)+"</th>";}).join("") + "</tr></thead>";
+  var b = "<tbody>" + rows.map(render).join("") + "</tbody>";
+  return '<div class="wrap"><table>'+h+b+'</table></div>';
+}
+/* THE ONE FIELD READ FROM OUTSIDE THE DASHBOARD BLOCK.
+   `equity_curve` is a top-level array in the same document the page already fetches, published
+   with `equity_curve_source`. It is drawn ONLY when it is a series: absent, unreadable, shorter
+   than the two points a line needs, or carried by a document past its own cadence, and the panel
+   says the word and the reason instead of drawing a partial line. The source string rides the
+   panel exactly as every other value's artifact does, so the reader can see it came from outside
+   the joined block. */
+function equitySeries(j, d){
+  var src = (j && j.equity_curve_source) ? String(j.equity_curve_source) : "";
+  var ser = j ? j.equity_curve : null;
+  var cad = (d && d.cadence_s) || 3600;
+  var r = {src:src, cad:cad, st:"UNMEASURED", why:"", pts:[], age:"", ageS:null, n:0};
+  if(!j){ r.st = "MISSING"; r.why = "no state document was fetched"; return r; }
+  if(Object.prototype.toString.call(ser) !== "[object Array]"){
+    r.st = "MISSING";
+    r.why = "web/desk_state.json carries no top-level equity_curve array; the publisher of the "
+          + "enclosing payload has not written one on this host";
+    return r;
+  }
+  r.n = ser.length;
+  var bad = 0, pts = [];
+  for(var i = 0; i < ser.length; i++){
+    var v = ser[i];
+    if(typeof v === "number" && isFinite(v)) pts.push(v); else bad++;
+  }
+  if(bad){
+    r.st = "UNREADABLE";
+    r.why = bad + " of " + ser.length + " points in equity_curve are not finite numbers, so the "
+          + "series is not a series; nothing is drawn from a partial one";
+    return r;
+  }
+  if(pts.length < 2){
+    r.st = "UNMEASURED";
+    r.why = "a line needs two points and equity_curve carries " + pts.length
+          + "; the sampler has not accumulated a series yet";
+    return r;
+  }
+  var ts = j.generated_at ? Date.parse(j.generated_at) : NaN;
+  if(!isFinite(ts)){
+    r.st = "UNMEASURED";
+    r.why = "the enclosing document carries no readable generated_at, so the age of this series "
+          + "is not measured and it is not shown as current";
+    return r;
+  }
+  r.ageS = (Date.now() - ts) / 1000;
+  var m = Math.round(r.ageS / 60);
+  r.age = m < 60 ? (m + "m") : (Math.floor(m/60) + "h " + (m % 60) + "m");
+  if(r.ageS > cad){
+    r.st = "STALE";
+    r.why = "equity_curve rides web/desk_state.json, generated " + r.age + " ago, past the "
+          + Math.round(cad/60) + " min cadence this document publishes; a stale series is not "
+          + "drawn as a current curve";
+    return r;
+  }
+  r.pts = pts;
+  r.st = "MEASURED";
+  return r;
+}
+function equityPanel(j, d){
+  var r = equitySeries(j, d);
+  var provLine = "web/desk_state.json[equity_curve] · source " + (r.src || "UNDECLARED")
+    + " · read from outside the dashboard block"
+    + (r.age ? " · age " + r.age : "");
+  var sec = {status:r.st, sources:[{source:"web/desk_state.json[equity_curve]", status:r.st,
+                                    age:r.age || r.st, why:r.why}]};
+  var body;
+  if(r.st === "MEASURED"){
+    var pts = r.pts, n = pts.length, W = 1000, H = 200, PAD = 7;
+    var mn = Math.min.apply(null, pts), mx = Math.max.apply(null, pts);
+    var span = (mx - mn) || 1, line = "";
+    for(var i = 0; i < n; i++){
+      var x = (i/(n-1))*W, y = PAD + (1 - (pts[i]-mn)/span)*(H - 2*PAD);
+      line += (i ? " L" : "M") + x.toFixed(2) + "," + y.toFixed(2);
+    }
+    var area = line + " L" + W + "," + H + " L0," + H + " Z";
+    body = '<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" role="img"'
+      + ' aria-label="account equity, '+n+' sampled points">'
+      + '<defs><linearGradient id="eqfill" x1="0" y1="0" x2="0" y2="1">'
+      + '<stop offset="0" stop-color="#35d07f" stop-opacity="0.30"/>'
+      + '<stop offset="1" stop-color="#35d07f" stop-opacity="0"/></linearGradient></defs>'
+      + '<path d="'+area+'" fill="url(#eqfill)" stroke="none"/>'
+      + '<path d="'+line+'" fill="none" stroke="#35d07f" stroke-width="1.5"'
+      + ' stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/></svg>'
+      + '<div class="eqmeta"><span>points<b>'+esc(String(n))+'</b></span>'
+      + '<span>first<b>'+esc(num(pts[0]))+'</b></span>'
+      + '<span>last<b>'+esc(num(pts[n-1]))+'</b></span>'
+      + '<span>low<b>'+esc(num(mn))+'</b></span>'
+      + '<span>high<b>'+esc(num(mx))+'</b></span></div>';
+  } else {
+    body = '<div class="eqnone"><div class="w '+cls(r.st)+'">'+esc(r.st)+'</div>'
+      + '<div class="r">'+esc(r.why)+'</div></div>';
+  }
+  return panelOpen("EQUITY",
+      "they can show the account's whole path, not just its last print.",
+      "Sampled account equity, the only series this document carries. It is drawn only when it is "
+      + "a series and the document carrying it is inside its cadence; otherwise the panel says the "
+      + "word and the reason rather than drawing a partial line.",
+      sec, "equity — web/desk_state.json[equity_curve]")
+    + '<div class="eq">' + body + '<div class="eqprov">' + esc(provLine) + '</div></div>'
+    + panelClose(r.st === "MEASURED" ? (r.n + " sampled points · " + (r.src || "undeclared source"))
+                                     : r.st,
+                 "outside the dashboard block · " + (r.src || "source undeclared"));
+}
+function firstSrc(sec){
+  var s = ((sec && sec.sources) || [])[0];
+  return s && s.source ? String(s.source) : "no source published";
+}
+
+function render(){
+  var d = doc;
+  var banner = document.getElementById("banner");
+  if(!d){
+    banner.className = "show";
+    banner.textContent = "NO STATE DOCUMENT: " + (lastErr || "web/desk_state.json carries no 'dashboard' block. "
+      + "The organ desks/mt5/research/desk_dashboard_state.py has not published on this host.");
+    document.getElementById("stamps").innerHTML = '<span class="chip unm">unmeasured</span>';
+    return;
+  }
+  var ageS = (Date.now()/1000) - (d.generated_epoch || 0);
+  var cad = d.cadence_s || 3600;
+  if(ageS > cad){
+    banner.className = "show" + (ageS > cad*3 ? "" : " warn");
+    banner.textContent = "STALE STATE DOCUMENT — generated " + Math.round(ageS/60)
+      + " min ago on " + (d.host||"?") + ", past its " + Math.round(cad/60)
+      + " min cadence. Every number below is that old. The publisher is the hourly leg "
+      + "desk_dashboard_state; if it stopped, nothing below is current.";
+  } else {
+    banner.className = "";
+  }
+  document.getElementById("stamps").innerHTML =
+    '<span class="chip '+(ageS>cad?"stale":"ok")+'">state '+Math.round(ageS/60)+'m old</span>'
+    + '<span class="chip plain">host '+esc(d.host||"?")+'</span>'
+    + '<span class="chip plain">'+esc(d.generated_at||"")+'</span>'
+    + '<span class="chip '+(d.status==="MEASURED"?"ok":"stale")+'">'+esc(d.status||"")+'</span>'
+    + '<span class="chip plain">fetched '+(lastFetch?lastFetch.toISOString().slice(11,19):"?")+'Z</span>';
+
+  var h = d.headline || {}, s = d.sections || {};
+  var live = s.live || {}, canon = s.canon || {}, defects = s.defects || {},
+      prod = s.producers || {}, funnel = s.funnel || {}, bott = s.bottlenecks || {}, mac = s.macro || {};
+
+  var dayPnl = fieldText(h.day_pnl);
+  document.getElementById("big").innerHTML =
+      bigCell("Equity (live)", h.equity, {money:true, prefix:"$",
+        sub: (dayPnl.st==="MEASURED" ? "day P&L " + dayPnl.txt : "day P&L " + dayPnl.st)})
+    + bigCell("Day P&L", h.day_pnl, {money:true, prefix:"$",
+        sub: fieldText(live.day_trades).txt + " deals today"})
+    + bigCell("Certificates in canon", h.certificates, {
+        sub: fieldText(canon.n_backed_by_clock).txt + " backed by a clock, "
+             + fieldText(canon.n_live).txt + " live"})
+    + bigCell("Defects open", h.defects_open, {
+        sub: fieldText(defects.n_escalated).txt + " escalated, "
+             + fieldText(defects.n_fences_failing).txt + " fences failing"})
+    + bigCell("Cells to judge / hour", h.cells_per_hour, {
+        sub: "orthogonality-weighted: " + fieldText(h.cells_per_hour_orthogonal).txt})
+    + bigCell("Forward clocks accruing", h.clocks_accruing, {
+        sub: "binding bottleneck: " + fieldText(h.binding_bottleneck).txt})
+  ;
+
+  var out = "";
+
+  /* ---- LIVE ---- */
+  out += panelOpen("LIVE",
+    "they know what the book is worth right now.",
+    "Equity, the ledger's own P&L and every sleeve that has traded, read from the gateway and the "
+    + "live ledger rather than from any research artifact. A sleeve whose Sharpe the desk cannot "
+    + "compute says UNMEASURED and carries the reason.",
+    live, "live — " + firstSrc(live));
+  out += '<div class="grid">'
+    + bigCell("Equity", live.equity, {money:true, prefix:"$"})
+    + bigCell("Book P&L (ledger)", live.pnl_total, {money:true, prefix:"$"})
+    + bigCell("Book Sharpe / trade", live.book_sharpe, {sub:"mean(R)/sd(R)"})
+    + bigCell("Trades in ledger", live.trades_total, {})
+    + bigCell("Gateway armed", live.armed, {})
+    + bigCell("E8 equity", (live.e8||{}).equity, {money:true, prefix:"$",
+        sub:"guard: " + fieldText((live.e8||{}).guard_verdict).txt})
+    + '</div>';
+  /* NO PER-SLEEVE SPARKLINE IS DRAWN. The sleeve rows carry summary statistics (n, mean R, sd R)
+     and no per-sleeve series exists anywhere in desk_state.json -- the equity curve below is the
+     document's only numeric series. A coral sparkline synthesised from summary numbers would be
+     a line the data does not contain, so the slot stays unbuilt and says so. */
+  out += '<div class="nochart"><b>PER-SLEEVE SPARKLINE · UNBUILT</b> — '
+    + 'the sleeve rows carry n, mean R and sd R but no per-sleeve series, and none is published '
+    + 'anywhere else in this document. Nothing is drawn rather than a line synthesised from '
+    + 'summary statistics.</div>';
+  var sl = live.sleeves || [];
+  if(sl.length){
+    out += subhead("Sleeve P&L", sl.length + " sleeves in the live ledger");
+    out += bars(sl.slice(0, 12).map(function(r){
+      return {label:(r.sleeve||"?") + " · " + (r.symbol||"?") + " · n=" + r.n,
+              value:(typeof r.pnl === "number" ? r.pnl : null),
+              text:(typeof r.pnl === "number" ? num(r.pnl) : "UNMEASURED")};
+    }));
+  }
+  out += tbl(["sleeve","symbol","n","P&L","mean R","sd R","Sharpe","last","age"],
+    sl, function(r){
+      return "<tr><td>"+esc(r.sleeve)+"</td><td>"+esc(r.symbol)+"</td>"
+        + '<td class="n">'+esc(r.n)+"</td>"
+        + '<td class="n '+(r.pnl>=0?"ok":"bad")+'">'+esc(num(r.pnl))+"</td>"
+        + '<td class="n">'+esc(r.r_mean===null?"":num(r.r_mean))+"</td>"
+        + '<td class="n">'+esc(r.r_sd===null?"":num(r.r_sd))+"</td>"
+        + '<td class="n">'+(r.sharpe===null?'<span class="unm" title="'+esc(r.sharpe_why)+'">UNMEASURED</span>':esc(num(r.sharpe)))+"</td>"
+        + "<td>"+esc((r.last||"").slice(0,16))+"</td><td>"+word(r.age)+"</td></tr>";
+    });
+  var e8 = live.e8 || {};
+  out += '<details><summary>E8 guard detail</summary><div class="grid tight">'
+    + bigCell("Day start", e8.day_start, {prefix:"$"})
+    + bigCell("Peak equity", e8.peak_equity, {prefix:"$"})
+    + bigCell("Day P&L", e8.guard_day_pnl, {money:true, prefix:"$"})
+    + bigCell("Room to daily floor", e8.room_to_daily_floor, {prefix:"$"})
+    + bigCell("May open", e8.may_open, {})
+    + bigCell("Stood down", e8.stood_down, {})
+    + '</div></details>';
+  out += panelClose(fieldText(live.trades_total).txt + " trades in ledger · "
+      + sl.length + " sleeves",
+    firstSrc(live));
+
+  /* ---- EQUITY (the one field read from outside the dashboard block) ---- */
+  out += equityPanel(raw, d);
+
+  /* ---- CANON ---- */
+  out += panelOpen("CANON",
+    "they can't show a certificate the promoter doesn't hold.",
+    "Certificates, forward clocks and live sleeves joined on the identity stamped at birth, never "
+    + "by string-matching a name. A certificate with no clock says so; a clock with no certificate "
+    + "says so; neither is hidden.",
+    canon, "canon — " + firstSrc(canon));
+  out += '<div class="gauges">'
+    + donut(canon.join_coverage, canon.join_denominator, "Join coverage", "JOINED",
+            "rows joined on identity", false)
+    + '</div>';
+  out += '<div class="grid">'
+    + bigCell("Certificates", canon.n_certificates, {})
+    + bigCell("Canon status", canon.canon_status, {})
+    + bigCell("Backed by a clock", canon.n_backed_by_clock, {})
+    + bigCell("Divergences (fatal)", canon.divergences_fatal, {sub:"total " + fieldText(canon.divergences).txt})
+    + bigCell("Join coverage", canon.join_coverage, {sub:"of " + fieldText(canon.join_denominator).txt + " rows"})
+    + bigCell("Certificate age", canon.certificate_age, {})
+    + '</div>';
+  out += subhead("The canon", (canon.rows||[]).length + " certificate rows");
+  out += tbl(["certificate","symbol","family","selector","backing clock","clock status","clock age","live"],
+    canon.rows || [], function(r){
+      return "<tr><td>"+esc(r.certificate)+"</td><td>"+esc(r.symbol)+"</td><td>"+esc(r.family)+"</td>"
+        + "<td>"+(r.selector===null?'<span class="unm">—</span>':esc(r.selector))+"</td>"
+        + "<td>"+(r.clocks && r.clocks.length ? esc(r.clocks.join(", "))
+                  : '<span class="unm" title="'+esc(r.clock_why)+'">UNMEASURED</span>')+"</td>"
+        + "<td>"+(r.clock_status ? esc([].concat(r.clock_status).join(",")) : '<span class="unm">UNMEASURED</span>')+"</td>"
+        + "<td>"+word(r.clock_age)+"</td>"
+        + '<td class="'+(r.live?"live":"unm")+'">'+(r.live?"LIVE":"no")+"</td></tr>";
+    });
+  out += panelClose(fieldText(canon.n_live).txt + " live · "
+      + fieldText(canon.n_backed_by_clock).txt + " clock-backed",
+    firstSrc(canon));
+
+  /* ---- DEFECTS ---- */
+  out += panelOpen("DEFECTS",
+    "they tell me what's broken before i ask.",
+    "Open plumbing defects and the standing fence roster. A fence that has never run is its own "
+    + "row, because a gate that never ran is a claim the desk cannot cash.",
+    defects, "defects — " + firstSrc(defects));
+  out += '<div class="gauges">'
+    + donut(defects.n_fences_failing, defects.n_fences_rostered, "Fences failing", "FAILING",
+            "rostered fences reporting FAILING", true)
+    + '</div>';
+  out += '<div class="grid">'
+    + bigCell("Open", defects.n_open, {})
+    + bigCell("Escalated", defects.n_escalated, {})
+    + bigCell("Past window", defects.n_past_window, {})
+    + bigCell("Fences failing", defects.n_fences_failing, {sub:"of " + fieldText(defects.n_fences_rostered).txt + " rostered"})
+    + bigCell("Fences never run", defects.n_fences_never_run, {})
+    + bigCell("Plumbing moving", defects.plumbing_moving, {})
+    + '</div>';
+  out += subhead("Open defects", (defects.rows||[]).length + " rows"
+    + (defects.rows_truncated ? " · " + defects.rows_truncated + " more the producer did not publish" : ""));
+  out += tbl(["check","owner","severity","age","past window","evidence"],
+    defects.rows || [], function(r){
+      var sev = String(r.severity||"").toUpperCase();
+      return "<tr><td>"+esc(r.check)+"</td><td>"+esc(r.owner)+"</td>"
+        + '<td class="'+(sev==="MAJOR"||sev==="CRITICAL"?"bad":"stale")+'">'+esc(sev)+"</td>"
+        + "<td>"+word(r.age)+"</td>"
+        + "<td>"+(r.past_window===null?'<span class="unm">UNMEASURED</span>':(r.past_window?'<span class="bad">yes</span>':"no"))+"</td>"
+        + '<td class="w">'+esc(r.evidence)+"</td></tr>";
+    });
+  out += '<details><summary>Fence verdicts ('+((defects.fences||[]).length)+')</summary>'
+    + tbl(["fence","verdict","age","why"], defects.fences || [], function(r){
+        return "<tr><td>"+esc(r.fence)+"</td>"
+          + '<td class="'+(r.verdict==="FAILING"?"bad":(r.verdict==="PASSING"?"ok":"unm"))+'">'+esc(r.verdict)+"</td>"
+          + "<td>"+word(r.age)+'</td><td class="w">'+esc(r.why)+"</td></tr>";
+      }) + '</details>';
+  out += panelClose(fieldText(defects.n_open).txt + " open · "
+      + fieldText(defects.n_escalated).txt + " escalated",
+    firstSrc(defects));
+
+  /* ---- PRODUCERS ---- */
+  out += panelOpen("PRODUCERS",
+    "they count who produced, not who ran.",
+    "Each producer's cells, unique cells, judged cells and certificates over the census window, "
+    + "beside the compute it spent. A producer the census cannot attribute reads UNMEASURED per "
+    + "column rather than zero.",
+    prod, "producers — " + (prod.table_source || firstSrc(prod)));
+  out += '<div class="gauges">'
+    + donut(prod.n_productive, prod.n_producers, "Productive", "ACTIVE",
+            "produced at least one cell in the window", false)
+    + '</div>';
+  if(prod.why) out += '<div class="why '+cls(prod.status)+'">'+esc(prod.why)+'</div>';
+  out += '<div class="grid">'
+    + bigCell("Producers", prod.n_producers, {})
+    + bigCell("Productive in window", prod.n_productive, {sub:"window " + fieldText(prod.window_days).txt + "d"})
+    + bigCell("Compute, zero cells", prod.n_zero_cell_with_compute, {})
+    + '</div>';
+  out += subhead("The census", (prod.rows||[]).length + " producer rows"
+    + (prod.rows_truncated ? " · " + prod.rows_truncated + " more the producer did not publish" : ""));
+  out += tbl(["producer","region","cells","unique cells","cells judged","certificates","orthogonality added","compute h"],
+    prod.rows || [], function(r){
+      function c(v){ return (v === "UNMEASURED" || v === null || v === undefined)
+        ? '<td class="n unm">UNMEASURED</td>' : '<td class="n">'+esc(num(v))+"</td>"; }
+      return "<tr><td>"+esc(r.producer)+"</td><td>"+esc(r.region||"")+"</td>"
+        + c(r.cells)+c(r.unique_cells)+c(r.cells_judged)+c(r.certificates)
+        + c(r.orthogonality_added)+c(r.compute_hours)+"</tr>";
+    });
+  out += panelClose(fieldText(prod.n_productive).txt + " productive of "
+      + fieldText(prod.n_producers).txt,
+    prod.table_source || firstSrc(prod));
+
+  /* ---- FUNNEL ---- */
+  out += panelOpen("FUNNEL",
+    "they know how much of the world becomes a trade.",
+    "Sources visited, discoveries, candidates, cells judged, certificates, clocks and live sleeves "
+    + "— the whole conversion, with the backlog that has not been judged yet and the age of the "
+    + "oldest thing in it.",
+    funnel, "funnel — " + firstSrc(funnel));
+  var stage = [
+    {label:"Sources visited", f:funnel.sources_visited},
+    {label:"Discoveries",     f:funnel.discoveries},
+    {label:"Candidates",      f:funnel.candidates},
+    {label:"Judged",          f:funnel.judged},
+    {label:"Certificates",    f:funnel.certificates},
+    {label:"Clocks accruing", f:funnel.clocks_accruing},
+    {label:"Live sleeves",    f:funnel.live}
+  ].map(function(x){
+    var t = fieldText(x.f);
+    var v = x.f && typeof x.f === "object" ? x.f.value : null;
+    return {label:x.label, value:(t.st === "MEASURED" && typeof v === "number") ? v : null,
+            text:(t.st === "MEASURED" ? t.txt : t.st)};
+  });
+  out += subhead("The funnel", "each stage as the artifact published it — no stage is inferred from another");
+  out += bars(stage);
+  out += '<div class="grid">'
+    + bigCell("Sources visited", funnel.sources_visited, {})
+    + bigCell("Discoveries", funnel.discoveries, {})
+    + bigCell("Candidates", funnel.candidates, {})
+    + bigCell("Judged", funnel.judged, {sub:"unmeasured cells " + fieldText(funnel.judged_unmeasured).txt})
+    + bigCell("Certificates", funnel.certificates, {})
+    + bigCell("Clocks accruing", funnel.clocks_accruing, {})
+    + bigCell("Live sleeves", funnel.live, {money:false})
+    + bigCell("Unjudged backlog", funnel.unjudged_backlog, {
+        sub:"deepening queue " + fieldText(funnel.unjudged_backlog_deepening).txt})
+    + bigCell("Oldest unjudged", funnel.unjudged_oldest, {})
+    + '</div>';
+  out += panelClose(fieldText(funnel.certificates).txt + " certificates · "
+      + fieldText(funnel.live).txt + " live",
+    firstSrc(funnel));
+
+  /* ---- BOTTLENECKS ---- */
+  out += panelOpen("BOTTLENECKS",
+    "they name the one thing holding the desk back.",
+    "The binding constraint and its owner, with every candidate constraint scored, trended against "
+    + "the previous window, and carrying the basis it was scored on.",
+    bott, "bottlenecks — " + firstSrc(bott));
+  out += scoreBlock(bott.binding_value, fieldText(bott.binding_unit).txt,
+    "Binding constraint · " + fieldText(bott.binding).txt,
+    fieldText(bott.binding_why).st === "MEASURED"
+      ? fieldText(bott.binding_why).txt
+      : "Owned by " + fieldText(bott.binding_owner).txt
+        + ". This is the constraint the desk's next hour of compute should attack.");
+  out += '<div class="grid tight">'
+    + bigCell("Binding", bott.binding, {})
+    + bigCell("Owner", bott.binding_owner, {})
+    + bigCell("Value", bott.binding_value, {sub:fieldText(bott.binding_unit).txt})
+    + '</div>';
+  var brows = bott.rows || [];
+  if(brows.length){
+    out += subhead("Severity", "0 to 1, as the attack report scored it");
+    out += bars(brows.map(function(r){
+      return {label:(r.bottleneck||"?") + " · " + (r.owner||"?"),
+              value:(typeof r.severity === "number" ? r.severity : null),
+              text:(typeof r.severity === "number" ? num(r.severity) : "UNMEASURED")};
+    }));
+  }
+  out += tbl(["bottleneck","owner","severity","value","unit","trend","delta","basis"],
+    brows, function(r){
+      var t = String(r.trend||"");
+      var tc = t === "worsening" ? "bad" : (t === "improving" ? "ok" : (t === "flat" ? "" : "unm"));
+      return "<tr><td>"+esc(r.bottleneck)+"</td><td>"+esc(r.owner)+"</td>"
+        + '<td class="n">'+esc(num(r.severity))+'</td><td class="n">'+esc(num(r.value))+"</td>"
+        + "<td>"+esc(r.unit)+'</td><td class="'+tc+'">'+esc(t)+"</td>"
+        + '<td class="n">'+esc(r.trend_delta===null||r.trend_delta===undefined?"":num(r.trend_delta))+"</td>"
+        + '<td class="w">'+esc(r.basis || r.trend_why)+"</td></tr>";
+    });
+  var tw = fieldText(bott.trend_window_h);
+  out += panelClose("binding: " + fieldText(bott.binding).txt,
+    firstSrc(bott) + " · trend window " + tw.txt + (tw.st === "MEASURED" ? "h" : ""));
+
+  /* ---- MACRO ---- */
+  var view = mac.view || {}, se = mac.state_engine || {}, sup = mac.surprise || {},
+      reac = mac.reactions || {}, cal = mac.calendar || {}, news = mac.news || {}, reg = mac.regime || {};
+  out += panelOpen("MACRO",
+    "they know what the calendar will do to the book.",
+    "The regime the router is in, the macro lean and its confidence, what the calendar holds next "
+    + "and which instruments it touches — and, separately, what actually happened. Event "
+    + "surprise is UNMEASURED until a consensus pair exists to measure it against.",
+    mac, "macro — " + firstSrc(mac));
+  out += '<div class="grid">'
+    + bigCell("Regime state", reg.current_state, {})
+    + bigCell("Last transition", reg.last_transition, {})
+    + bigCell("Macro confidence", view.confidence, {sub:"newest print " + fieldText(view.newest_print).txt
+        + " (" + fieldText(view.print_age_days).txt + "d)"})
+    + bigCell("Surprise z-scores", sup.status, {sub:"consensus pairs: " + fieldText(sup.with_consensus_pair).txt})
+    + bigCell("Calendar events ahead", cal.n_events, {})
+    + bigCell("Routers active", reg.router_active, {})
+    + '</div>';
+  if(sup.reading) out += '<div class="why unm">'+esc(sup.reading)+'</div>';
+  out += subhead("Next releases", "window, instruments, and whether the book is positioned for it");
+  out += tbl(["window (UTC)","in","kind","event","instruments","desk"],
+    cal.next || [], function(r){
+      return "<tr><td>"+esc(String(r.window_start_utc||"").slice(0,16))+"</td>"
+        + "<td>"+esc(r["in"]||"")+"</td>"
+        + "<td>"+esc(r.kind)+"</td><td>"+esc(r.name)+"</td>"
+        + "<td>"+esc((r.instruments||[]).join(" "))+(r.n_instruments>8?(" +"+(r.n_instruments-8)):"")+"</td>"
+        + '<td class="w '+(r.acted?"live":"unm")+'">'+esc(r.desk)+"</td></tr>";
+    });
+  out += subhead("What happened", "captured releases and speeches ("+esc(news.age||"")+" old)");
+  out += tbl(["when","source","headline","surprise"], news.rows || [], function(r){
+      return "<tr><td>"+esc(String(r.happened_at||r.received_at||"").slice(0,22))+"</td>"
+        + "<td>"+esc(r.source)+'</td><td class="w">'+esc(r.title)+"</td>"
+        + '<td class="unm" title="'+esc(r.surprise_why)+'">UNMEASURED</td></tr>';
+    });
+  out += '<details><summary>Measured event reactions (basis points, the desk’s own bars)</summary>'
+    + tbl(["cell","kind","symbol","horizon","n","mean bp","hit rate","in the book"],
+      reac.rows || [], function(r){
+        return "<tr><td>"+esc(r.cell)+"</td><td>"+esc(r.kind)+"</td><td>"+esc(r.symbol)+"</td>"
+          + "<td>"+esc(r.horizon)+'</td><td class="n">'+esc(r.n)+"</td>"
+          + '<td class="n '+(r.mean_bp>=0?"ok":"bad")+'">'+esc(num(r.mean_bp))+"</td>"
+          + '<td class="n">'+esc(num(r.hit_rate))+"</td>"
+          + '<td class="'+(r.live_symbol?"live":"unm")+'">'+(r.live_symbol?"LIVE":"no")+"</td></tr>";
+      }) + '</details>';
+  out += '<details><summary>Macro lean and state engine</summary><div class="grid tight">'
+    + bigCell("Lean", view.lean, {})
+    + bigCell("Blocks", se.blocks, {})
+    + bigCell("Block coverage", se.blocks_summary, {})
+    + bigCell("Global factors", se.global_factors, {})
+    + '</div></details>';
+  out += panelClose(fieldText(cal.n_events).txt + " events ahead · "
+      + (news.rows||[]).length + " captured",
+    firstSrc(mac));
+
+  /* ---- UNMEASURED & STALE LEDGER ---- */
+  out += '<section class="panel"><div class="chrome"><span class="dots"><i></i><i></i><i></i></span>'
+    + '<span class="ctitle">unmeasured — what the desk does not hold, and why</span>'
+    + '<span class="chip unm">'+(d.n_unmeasured||0)+'</span></div><div class="pbody">'
+    + '<div class="eyebrow">unmeasured</div>'
+    + '<h2 class="headline">they say what they don’t know, by name.</h2>'
+    + '<p class="deck">Every field above that is not MEASURED, gathered with the artifact that '
+    + 'should have carried it and the reason it does not. An absence never resolves to a clean '
+    + 'verdict, so it is listed here rather than rounded to zero.</p>';
+  out += tbl(["where","status","source","reason"], d.unmeasured || [], function(r){
+      return "<tr><td>"+esc(r.where)+'</td><td class="'+cls(r.status)+'">'+esc(r.status)+"</td>"
+        + "<td>"+esc((r.source||"").split("/").pop())+'</td><td class="w">'+esc(r.why)+"</td></tr>";
+    });
+  out += panelClose((d.n_unmeasured||0) + " unmeasured or stale fields",
+    "absence is a verdict, not a zero · L1.28a");
+
+  document.getElementById("main").innerHTML = out;
+  document.getElementById("foot").textContent =
+    "Measured on " + (d.host||"?") + " · joined document desks/mt5/reports/DESK_DASHBOARD_STATE.json "
+    + "published into web/desk_state.json[dashboard] by the hourly leg desk_dashboard_state · "
+    + "read-only: this page cannot change what the desk trades · auto-refresh 60s · "
+    + d.rule;
+}
+
+function load(){
+  var url = SRC + "?t=" + Date.now();
+  fetch(url, {cache:"no-store"}).then(function(r){
+    if(!r.ok) throw new Error("HTTP " + r.status + " fetching " + SRC);
+    return r.json();
+  }).then(function(j){
+    lastFetch = new Date();
+    raw = j || null;
+    if(j && j.dashboard){ doc = j.dashboard; lastErr = null; }
+    else { doc = null; lastErr = "web/desk_state.json has no 'dashboard' block: the joined state "
+      + "document has never been published on this host."; }
+    render();
+  }).catch(function(e){
+    lastErr = String(e && e.message ? e.message : e);
+    render();
+  });
+}
+load();
+setInterval(load, 60000);
+</script>
+</body>
+</html>
