@@ -96,6 +96,15 @@ SHADOW_DIR = BASE / "reports" / "shadow"
 SHADOW_STATE = SHADOW_DIR / "shadow_state.json"
 UNI = BASE / "data" / "universe"
 OUT = BASE / "reports" / "REGIME_ROUTER.json"
+#: THE STATE'S OWN HISTORY, and it did not exist until 2026-09-24. This organ published the
+#: CURRENT state every pass and kept nothing, so the desk that trades regime switches could not
+#: say when the regime last switched -- the one question a switch-trader asks. The sidecar is
+#: append-only and holds a row per OBSERVED CHANGE, never one per pass: a file that grows by
+#: 24 identical rows a day is a log, and the transition time is what a reader actually needs.
+HISTORY = BASE / "data" / "regime_state_history.jsonl"
+#: Rows kept. At one row per change and a handful of changes a day, this is months of history
+#: and a file small enough to read whole on every pass.
+HISTORY_KEEP = 4000
 
 #: Bars per symbol per timeframe. 6,000 H1 is ~8 months: the whole live/forward trade span with
 #: months of pre-trade tape left over for the causal tercile cut.
@@ -649,16 +658,34 @@ def run(write: bool = True, now: datetime | None = None) -> dict[str, Any]:
         published.append(_sleeve_row(sleeve, states, when, counts))
     published.sort(key=lambda r: (not r["router"]["active"], -float(r["p_alpha_positive_now"]),
                                   str(r["name"])))
+    # WHAT THIS NOTE USED TO SAY WHEN NOTHING HAD BEEN JUDGED, AND WHY IT HAD TO CHANGE.
+    # "no sleeve's router beats its unrouted model out of sample after tax" fired on `active`
+    # alone -- so it fired identically whether forty-eight routers were scored and lost, or
+    # ZERO were scored because every sleeve was under the fold minimum. MEASURED on the box
+    # 2026-09-24: 48 published, 0 scored, 34 short of trades and 14 with no varying state
+    # feature. The desk was publishing a negative OOS RESULT for a test that had never run,
+    # which is the exact shape of a claim the desk cannot cash (L1.49).
+    n_scored = sum(1 for r in published if isinstance(r.get("router"), dict)
+                   and r["router"].get("net") is not None)
     if not published:
         notes.append("no live sleeve and no running forward clock has a measured trade: the "
                      "router is UNMEASURED, which is a verdict and not a zero")
+    elif not n_scored:
+        notes.append(f"no router was SCORED on this host: {len(published)} sleeve(s) reached the "
+                     f"router and none produced a walk-forward net, so `router_active: 0` is a "
+                     f"DARK ROUTER and not a judgement -- see router_census.not_scored_reasons")
     elif not any(r["router"]["active"] for r in published):
-        notes.append("no sleeve's router beats its unrouted model out of sample after tax")
+        notes.append(f"none of the {n_scored} SCORED router(s) beats its unrouted model out of "
+                     f"sample after tax; this is a measured zero")
+    current = {k: v for k, v in states.read("", when, None)[0].items() if k != "vol"}
+    transition = _record_state(current, when, write=write)
     payload = {
         "at": when.isoformat(),
         "rule": RULE,
         "n_sleeves": len(published),
-        "current_state": {k: v for k, v in states.read("", when, None)[0].items() if k != "vol"},
+        "current_state": current,
+        "last_transition": transition,
+        "router_census": _router_census(published, counts),
         "state_sources": {"vol": f"trailing {VOL_LOOKBACK}-bar H1 realised vol, terciles cut on "
                                  "pre-trade tape", "usd": states.usd_symbol,
                           "risk": states.risk_symbol, "session": "mt5desk.family_call.SESSIONS"},
@@ -677,6 +704,150 @@ def run(write: bool = True, now: datetime | None = None) -> dict[str, Any]:
     if write:
         _write_atomic(OUT, payload)
     return payload
+
+
+def _history_rows() -> list[dict[str, Any]]:
+    """The observed state changes, oldest first. An unreadable or absent sidecar is empty, and
+    that emptiness is reported as "never observed", never as "never changed"."""
+    out: list[dict[str, Any]] = []
+    try:
+        text = HISTORY.read_text("utf-8-sig", errors="replace")
+    except OSError:
+        return out
+    for line in text.splitlines()[-HISTORY_KEEP:]:
+        if not line.strip():
+            continue
+        try:
+            row = json.loads(line)
+        except ValueError:
+            continue
+        if isinstance(row, dict) and row.get("at"):
+            out.append(row)
+    return out
+
+
+def _record_state(current: dict[str, Any], when: datetime, *, write: bool) -> dict[str, Any]:
+    """Append this pass's state IF IT CHANGED, and report when the last change was.
+
+    THE DISTINCTION THIS FUNCTION EXISTS TO DRAW. "The regime has not changed" and "nobody was
+    watching" are different facts and used to render the same -- UNMEASURED. They are separated
+    here by the OBSERVATION WINDOW: the sidecar's first row is when this desk started watching,
+    so a state that has held since then is MEASURED-and-unchanged with its watch start beside it,
+    and only a desk that has never watched at all reads UNMEASURED.
+
+    A state with an UNMEASURED axis is still recorded. Dropping it would make the history lie by
+    omission -- the axis going dark IS a change in what the desk can see, and a later reader
+    comparing two rows across the gap would measure a transition that never happened.
+    """
+    rows = _history_rows()
+    previous = rows[-1] if rows else None
+    prev_state = previous.get("state") if isinstance(previous, dict) else None
+    changed = prev_state != current
+    if changed and write:
+        try:
+            HISTORY.parent.mkdir(parents=True, exist_ok=True)
+            with HISTORY.open("a", encoding="utf-8") as handle:
+                handle.write(json.dumps({"at": when.isoformat(), "state": current,
+                                         "from": prev_state}) + "\n")
+        except OSError:                          # pragma: no cover - a read-only sidecar
+            changed = False
+        else:
+            rows.append({"at": when.isoformat(), "state": current, "from": prev_state})
+    if not rows:
+        return {"status": UNMEASURED, "at": None, "age_s": None, "from": None, "to": current,
+                "n_transitions": 0, "observed_since": None,
+                "why": ("no state has ever been recorded on this host, so the time of the last "
+                        "regime change is genuinely unknown rather than long ago")}
+    last = rows[-1]
+    first = rows[0]
+    last_at, first_at = _as_utc(str(last.get("at"))), _as_utc(str(first.get("at")))
+    age = (when - last_at).total_seconds() if last_at is not None else None
+    watched = (when - first_at).total_seconds() if first_at is not None else None
+    # ONE ROW AND NO `from` IS THE FIRST OBSERVATION, NOT A TRANSITION. Counting it as one would
+    # date the desk's last regime change to the day it started looking.
+    n_trans = sum(1 for r in rows if r.get("from"))
+    return {
+        "status": "MEASURED",
+        "at": last.get("at"),
+        "age_s": round(age, 1) if age is not None else None,
+        "from": last.get("from"),
+        "to": last.get("state"),
+        "n_transitions": n_trans,
+        "observed_since": first.get("at"),
+        "observed_s": round(watched, 1) if watched is not None else None,
+        "changed_this_pass": bool(changed),
+        "source": str(HISTORY),
+        "why": ("" if n_trans else
+                f"the state has not changed since this desk began watching it at "
+                f"{first.get('at')}: a MEASURED steady state over that window, which is a "
+                f"different fact from an unmeasured one"),
+    }
+
+
+def _as_utc(stamp: str) -> datetime | None:
+    try:
+        parsed = datetime.fromisoformat(stamp.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    return parsed if parsed.tzinfo else parsed.replace(tzinfo=UTC)
+
+
+def _router_census(published: list[dict[str, Any]], counts: dict[str, Any]) -> dict[str, Any]:
+    """WHY `router_active` IS ZERO -- judged and rejected, or never judged at all.
+
+    A dashboard reading `router_active: 0` cannot tell a router that ran on every sleeve and
+    found none worth its tax from a router that never scored anything, and those are opposite
+    facts: the first is a measurement the desk should trust, the second is a dark organ. The
+    difference is already in each sleeve's own `router` block -- a SCORED row carries `net`, an
+    unscored one carries only its `why` -- so this counts it rather than inventing anything.
+    """
+    scored = [r for r in published if isinstance(r.get("router"), dict)
+              and r["router"].get("net") is not None]
+    unscored = [r for r in published if isinstance(r.get("router"), dict)
+                and r["router"].get("net") is None]
+    reasons: dict[str, int] = {}
+    for row in unscored:
+        why = str(row["router"].get("why") or UNMEASURED)
+        # The trade-count reason names the count, so a thousand sleeves would make a thousand
+        # keys; the shape of the reason is what a reader needs, not each sleeve's n.
+        key = ("fewer trades than the router's fold minimum"
+               if "trades <" in why else
+               "no state feature varies over this sleeve's trades"
+               if "no state feature" in why else why[:90])
+        reasons[key] = reasons.get(key, 0) + 1
+    nets = [float(r["router"]["net"]) for r in scored]
+    active = sum(1 for r in scored if r["router"].get("active"))
+    if not published:
+        verdict, why = UNMEASURED, ("no sleeve reached the router at all: the zero is an absence "
+                                    "of subjects, not a judgement about routing")
+    elif not scored:
+        verdict, why = UNMEASURED, (f"{len(published)} sleeve(s) published and NONE was scored: "
+                                    f"the router is dark on this host and its zero carries no "
+                                    f"judgement. Reasons: {reasons}")
+    elif active:
+        verdict, why = "MEASURED", f"{active} of {len(scored)} scored router(s) earn their tax"
+    else:
+        verdict, why = "MEASURED", (
+            f"a MEASURED ZERO: all {len(scored)} scored router(s) were judged out of sample and "
+            f"none beat its unrouted model after tax (best net {max(nets):+.4f} nats/trade "
+            f"against a tax of {float(TAX['soft_moe']):.4f}). This is the router working, not "
+            f"the router missing")
+    return {
+        "status": verdict, "why": why,
+        "n_sleeves_in_registry": int(counts.get("sleeves_without_trades", 0)) + len(published),
+        "n_without_trades": int(counts.get("sleeves_without_trades", 0)),
+        "n_published": len(published),
+        "n_scored": len(scored),
+        "n_not_scored": len(unscored),
+        "not_scored_reasons": reasons,
+        "n_active": active,
+        "best_net": round(max(nets), 6) if nets else None,
+        "median_net": round(float(np.median(nets)), 6) if nets else None,
+        "tax": float(TAX["soft_moe"]),
+        "min_trades": int(MIN_ROUTER_TRADES),
+        "basis": ("a sleeve is SCORED when walk-forward produced a net OOS log-score; it is "
+                  "ACTIVE when that net beats the tax with fold t >= the spec's minimum"),
+    }
 
 
 def _write_atomic(path: Path, payload: dict[str, Any]) -> None:

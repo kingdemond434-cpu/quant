@@ -99,6 +99,8 @@ def _e(path: str, why: str, *argv: str) -> Entry:
 #: THE FENCE ROSTER -- read-only verdicts, each measured runnable with no arguments 2026-09-22.
 FENCES: tuple[Entry, ...] = (
     _e("scripts/check_bar_coverage.py", "every symbol the desk claims to trade has bars"),
+    _e("scripts/check_bar_coverage_ratchet.py",
+       "instruments-by-timeframe goes UP and never down, per host"),
     _e("scripts/check_bar_history_floor.py", "H1 history may never silently collapse"),
     _e("scripts/check_blueprint_coverage.py", "a capability's claim may not outrun its evidence"),
     _e("scripts/check_breadth_mandate.py", "an alpha cluster that received NO attempt is a defect"),
@@ -168,6 +170,13 @@ FENCES: tuple[Entry, ...] = (
 
 #: THE ORGAN ROSTER -- standing fixers, region organs and report builders. Production mode.
 ORGANS: tuple[Entry, ...] = (
+    # THE ONLY CLOCK A COVERAGE GAP HAS. `refresh_bars` -> `refresh_tail.py` extends charts that
+    # EXIST and returns `no-cache` for one that does not, and `expand_universe.py` (which can
+    # create one) is on no clock at all -- so until this entry, a missing (symbol, timeframe)
+    # stayed missing until somebody ran a script by hand. Bounded per pass by the organ's own
+    # cap, so it shares the hour rather than owning it.
+    _e("desks/mt5/scripts/fill_bar_gaps.py", "a missing (symbol, timeframe) is fetched or "
+       "carries a named venue verdict"),
     _e("desks/mt5/scripts/heal_orphaned_clocks.py", "resume clocks retired as ORPHAN"),
     _e("desks/mt5/scripts/heal_silent_demotions.py", "restore sleeves demoted with no reason"),
     _e("scripts/heal_forward_lane.py", "every certificate gathers forward evidence"),

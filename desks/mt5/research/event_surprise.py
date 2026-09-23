@@ -148,9 +148,15 @@ def _f(value: Any) -> float | None:
 #: measured print into a missing one. Scaling them is READING the published number, not guessing:
 #: the suffix is the publisher's own declared unit.
 _SCALE: dict[str, float] = {"k": 1e3, "m": 1e6, "b": 1e9, "t": 1e12}
-#: Symbols that decorate a printed value and carry no magnitude: currency marks, the thin spaces
-#: a calendar renders between number and unit, and the thousands separator.
-_STRIP = "​   $€£¥₣₹₽₩$,"
+#: Characters that decorate a printed value and carry no magnitude: currency marks, the thin
+#: spaces a calendar renders between number and unit, and the thousands separator. Built from
+#: code points on purpose -- a zero-width space and a narrow no-break space are INVISIBLE in a
+#: source file, and a character a reader cannot see is a character nobody can check.
+_STRIP: str = "".join(chr(c) for c in (
+    0x200B, 0x00A0, 0x2009, 0x202F, 0x2007,   # zero-width, nbsp, thin, narrow-nbsp, figure
+    0x0024, 0x20AC, 0x00A3, 0x00A5, 0x20A3,   # dollar, euro, pound, yen, franc
+    0x20B9, 0x20BD, 0x20A9, 0x002C,           # rupee, rouble, won, thousands separator
+))
 
 
 def _num(value: Any) -> float | None:
