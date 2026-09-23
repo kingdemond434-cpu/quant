@@ -220,9 +220,10 @@ REGIONAL_FORESTS: tuple[Forest, ...] = (
        packs=("ru", "kz", "az", "ge", "black_sea", "caucasus_central_asia"),
        grounds=("ru", "ua", "by"),
        mission="Habr, smart-lab, the RU failure vocabulary, the CBR and the CIS commodity plane"),
-    _f("south_asia", "South Asia", "regional", countries=("IN", "PK", "BD", "LK", "NP"),
+    _f("south_asia", "South Asia", "regional",
+       countries=("IN", "PK", "BD", "LK", "NP", "MV", "BT", "AF"),
        languages=("en", "hi", "ur", "bn", "si", "ta", "ne"),
-       packs=("ind", "pk", "bd", "lk", "np"),
+       packs=("ind", "pk", "bd", "lk", "np", "maritime_asia"),
        grounds=("in", "pk", "bd", "lk", "np"),
        mission="the Indian derivatives ecology and the South Asian trade/energy plane; "
                "Pakistan, Bangladesh and Sri Lanka as remittance, IMF-programme and "
