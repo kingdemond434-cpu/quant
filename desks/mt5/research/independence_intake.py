@@ -36,6 +36,32 @@ generators are aimed at ground they have not touched. Three levers, all of them 
                 already pays `EMPTY_CELL_BONUS` to a cell that lands on an empty grid cell; this
                 is what lets a generator find one on purpose rather than by accident.
 
+EIGHT CELLS AN HOUR, AND NONE OF THE OBVIOUS SUSPECTS DID IT (measured on the trading box,
+2026-09-23). The pass reported `8 empty cells aimed at, 8 cells created` against a 400 cap and
+8,418 reachable empty cells. Not the cap: the loop never reached 400. Not the donors: all 400
+published targets had one. Not reachability: 8,410 cells were reachable. It was the TIME BUDGET,
+and the time went into the registry door -- `enqueue_candidate` asks whether a breadth cell is
+empty with `WHERE grid_cell=?`, that column carried no index, and EXPLAIN answered
+`SCAN research_candidates` over 321,168 rows. One cell cost 0.927 s, the fill holds a 75 s slice,
+75 / 0.927 = 8. The index (`ix_candidates_gridcell`, in `libs/moat/registry._evolve`) takes the
+same call to 0.0012 s: a 772x fall, and the same 75 s now buys sixty thousand cells.
+
+THE SHAPE TO RECOGNISE, because it will happen again somewhere else. An organ that prints
+`8 of 400` looks throttled by its own cap, every reading of its code agrees, and raising the cap
+would have changed nothing. The limit was a table scan two modules away that no artifact named.
+When a bound does not bind, the thing to measure is SECONDS PER UNIT, not the bound -- which is
+why `fill` now publishes `seconds_per_cell`, `targets_available` and `stopped_because`.
+
+TWO MORE BOUNDS FELL WITH IT, both of them the same confusion between a REPORT and the WORK.
+`MAX_TARGETS` truncated the published target list to 400 and the filler read that published
+slice, so a JSON size limit was silently a ceiling on the grid; the filler is now handed the
+whole in-memory list and the artifact is truncated afterwards. And `grid_occupancy` called a
+family or an instrument with zero load UNREACHABLE -- but what a transplant needs is a rule to
+carry, which is a DONOR, so a family holding one whose cells all sat outside the hypothesis lane
+was skipped while being a whole empty ROW of the grid. Ranking was backwards for the same
+reason: it put the BUSIEST family-symbol pairs first, adding mass to directions the spectrum
+already spanned. Frontier first, then ascending load.
+
 WHAT THIS FILE DOES NOT OWN. The headline throughput number belongs to the yield fence, which
 ratchets it (`docs/research/producer_yield_ratchet.json`: the orthogonality-weighted figure may
 not fall below its own best without a stated reason). It is READ here and republished in
@@ -88,17 +114,22 @@ DEFAULT_MECHANISM_SHARE = 0.35
 #: are measured to open more ground and fall when they are not. Never 0 and never 1, because a
 #: class with no slots at all can never be measured again.
 SHARE_BOUNDS = (0.2, 0.8)
-#: How many empty grid cells are published as targets. The generators read the head of the list;
-#: the count and the occupancy are the measurement, the list is the instruction.
-MAX_TARGETS = 400
+#: How many empty grid cells are published IN THE ARTIFACT as targets. This bounds one JSON file
+#: and NOTHING ELSE -- the filler is handed the whole in-memory list and never this slice. It used
+#: to be both, which is how a 400-row report became a 400-cell ceiling on the grid (measured
+#: 2026-09-23: 8,410 reachable empties, 400 published, 8 filled). `targets_total` publishes the
+#: full count beside the slice so the truncation is never mistaken for the frontier.
+MAX_TARGETS = 5_000
 #: Rows read from the registry for the ladder. The ladder is a count of DISTINCT keys, which
 #: saturates long before this; the bound keeps the scan off an 8 GB box's memory.
 MAX_ROWS = 400_000
 
-#: How many empty cells one PASS transplants a rule onto. Not a ceiling on the grid and not a cap
-#: on any producer: the ranked list is re-derived every hour and a cell that fills leaves it, so
-#: the next pass continues down the same list. It bounds one hour's registry writes, nothing else.
-MAX_FILLS_PER_PASS = 400
+#: A BOUND THAT CANNOT BIND, kept only so a runaway grid has a named stop. The nominal grid is
+#: families x instruments x horizons -- 20,935 cells on the box that measured this -- so a pass
+#: that filled EVERY empty cell on the board would use a fifth of this. The real stop is the time
+#: budget, and with the `ix_candidates_gridcell` index one cell costs 0.0012 s, so 75 s buys
+#: sixty thousand. A test pins this above the nominal grid: if it ever binds it is a throttle.
+MAX_FILLS_PER_PASS = 100_000
 #: Occupancy rises only. A floor, never a cap -- the remedy for a breach is to fill more cells.
 OCCUPANCY_RATCHET = ROOT / "docs" / "research" / "grid_occupancy_ratchet.json"
 #: What the filled cells are stamped with, so the census and the yield fence can bill this organ.
@@ -210,14 +241,31 @@ def _axes() -> tuple[list[str], list[str], list[str], dict[str, str]]:
     return instruments, families, horizons, why
 
 
-def grid_occupancy(rows: list[tuple[str, str, str, str, str]]) -> dict[str, Any]:
+def grid_occupancy(rows: list[tuple[str, str, str, str, str]],
+                   *, mintable: set[str] | None = None) -> dict[str, Any]:
     """The family x instrument x horizon grid: how much of it is occupied, and what is empty.
 
-    The occupied set is the registry's own, so a cell counts as held the moment one candidate
-    sits on it. The empty set is ranked by how much of its OWN row and column is already
-    working: an empty cell whose family and whose symbol are both already productive is reachable
-    today, and an empty cell on an axis nothing has ever touched is a family module question, not
-    a generation target. Both are published; only the first is aimed at.
+    TWO THINGS WERE CONFUSED HERE AND BOTH COST THE DESK ITS BREADTH (measured 2026-09-23).
+
+    REACHABILITY IS A DONOR QUESTION, NOT A CROWDING QUESTION. This used to skip any family or
+    any instrument with zero load, on the reading that an untouched axis is "a family module
+    question, not a generation target". But a transplant carries a family's OWN rule onto another
+    instrument: what it needs is a rule to carry, which is a DONOR, and nothing else. A family
+    holding a donor whose registry cells all sit outside the hypothesis lane scored zero load and
+    was skipped -- and it is a whole empty ROW of the grid, the single most orthogonal thing on
+    the board. Same for an instrument: the lane router already decided it may be hypothesised on,
+    and that IS the permission (absence from the router's answer is still not one). So a cell is
+    reachable when its family can be minted and its symbol is in the lane. `mintable` is the set
+    of families holding a transplantable donor; passing None keeps the old load-only reading, so
+    a caller with no donor census loses nothing.
+
+    ORDER AIMS AT THE SPARSE FRONTIER, NOT THE DENSE MIDDLE. The old sort put the empty cells
+    whose family AND symbol were ALREADY the busiest at the head -- exactly backwards for
+    effective rank, because a cell added to a crowded row adds mass to a direction the spectrum
+    already spans. Cells are now ranked FRONTIER FIRST (a family or an instrument with zero load:
+    a new row or column), then by ASCENDING load, so the sparsest reachable ground is aimed at
+    first. Reachability was never what the old ranking measured; it measured crowding, and
+    preferred it.
     """
     instruments, families, horizons, why = _axes()
     if not instruments or not families or not horizons:
@@ -229,22 +277,29 @@ def grid_occupancy(rows: list[tuple[str, str, str, str, str]]) -> dict[str, Any]
     fam_load = Counter(c.split("|")[0] for c in in_grid)
     sym_load = Counter(c.split("|")[1] for c in in_grid)
     nominal = len(families) * len(instruments) * len(horizons)
+    can_mint = set(mintable or ())
     targets: list[dict[str, Any]] = []
+    frontier = 0
     for fam in families:
-        if not fam_load.get(fam):
-            continue                       # a family nothing has ever minted is a wiring gap
+        if not fam_load.get(fam) and fam not in can_mint:
+            continue                       # nothing to carry: no load and no donor to transplant
         for sym in instruments:
-            if not sym_load.get(sym):
-                continue
             for hor in horizons:
                 if hor == "unknown":
                     continue               # UNKNOWN is a verdict on a cell, not a cell to fill
                 cell = f"{fam}|{sym}|{hor}"
                 if cell in in_grid:
                     continue
+                fl, sl = fam_load.get(fam, 0), sym_load.get(sym, 0)
+                is_frontier = not fl or not sl
+                frontier += int(is_frontier)
                 targets.append({"cell": cell, "family": fam, "symbol": sym, "horizon": hor,
-                                "family_load": fam_load[fam], "symbol_load": sym_load[sym]})
-    targets.sort(key=lambda t: (-min(int(t["family_load"]), int(t["symbol_load"])), t["cell"]))
+                                "family_load": fl, "symbol_load": sl,
+                                "frontier": is_frontier})
+    # Frontier first, then the sparsest reachable ground: ascending min-load, ascending total.
+    targets.sort(key=lambda t: (not t["frontier"],
+                                min(int(t["family_load"]), int(t["symbol_load"])),
+                                int(t["family_load"]) + int(t["symbol_load"]), t["cell"]))
     return {
         "available": True, "why": why,
         "axes": {"instruments": len(instruments), "families": len(families),
@@ -254,9 +309,13 @@ def grid_occupancy(rows: list[tuple[str, str, str, str, str]]) -> dict[str, Any]
         "occupancy": round(len(in_grid) / nominal, 6) if nominal else None,
         "empty_cells": nominal - len(in_grid),
         "reachable_empty_cells": len(targets),
+        "frontier_empty_cells": frontier,
+        "mintable_families": len(can_mint),
         "families_never_minted": sorted(f for f in families if not fam_load.get(f))[:40],
         "instruments_never_minted": sorted(s for s in instruments if not sym_load.get(s))[:40],
-        "targets": targets[:MAX_TARGETS],
+        "targets_total": len(targets),
+        "targets_published": min(len(targets), MAX_TARGETS),
+        "targets": targets,
     }
 
 
@@ -349,8 +408,23 @@ def _donors(db: Path | None = None) -> dict[str, dict[str, Any]]:
     """One real, param-carrying candidate per family: the rule a transplant carries with it.
 
     SQLite's bare-column rule returns the row holding `max(seq)`, so this is the family's most
-    recent candidate rather than an arbitrary one. A family with no params has no donor and is
-    simply not transplanted -- there is nothing to move.
+    recent candidate rather than an arbitrary one.
+
+    THIS ORGAN'S OWN TRANSPLANTS ARE EXCLUDED, and the day it was written without that exclusion
+    is the reason the line exists. `max(seq)` means the most recent row, a fill pass writes tens
+    of thousands of rows, and on the very next pass 62 of 76 families had one of THIS ORGAN'S
+    copies as their donor. The params survive that (a transplant carries the rule unchanged) but
+    the lineage does not: the desk would have been transplanting copies of copies and crediting
+    itself for every one. A donor must be somebody else's work.
+
+    THE DONOR'S ATTRIBUTION TRAVELS WITH THE RULE. `generator`, `producer` and `discovery_id`
+    come back with the params because the transplanted cell IS that producer's rule on new
+    ground -- `scripts/check_producer_yield.py` states the law in its own words ("CREDIT THE
+    PRODUCER THAT CAUSED THE CELL, NOT THE COMPILER THAT STAMPED IT ... reading the candidate's
+    stamp alone credits one pass-through with the desk's whole output"), and a filler that
+    carries other people's rules is exactly such a pass-through. `origin` stays this organ, so
+    the aim is still billed here and the two questions -- who wrote the rule, who chose the
+    ground -- keep separate columns.
     """
     path = db or REGISTRY
     if not path.exists():
@@ -362,19 +436,26 @@ def _donors(db: Path | None = None) -> dict[str, dict[str, Any]]:
     try:
         cur = con.execute(
             "select lower(coalesce(nullif(family,''),'?')), family, symbol, "
-            "lower(coalesce(nullif(horizon,''),'?')), params_json, mechanism, max(seq) "
+            "lower(coalesce(nullif(horizon,''),'?')), params_json, mechanism, "
+            "generator, producer, discovery_id, region, max(seq) "
             "from research_candidates "
             "where params_json is not null and params_json not in ('', '{}') "
-            "and family is not null and family != '' group by 1")
+            "and family is not null and family != '' "
+            "and lower(coalesce(origin,'')) != ? "
+            "and lower(coalesce(generator,'')) != ? group by 1", (SOURCE, SOURCE))
         out: dict[str, dict[str, Any]] = {}
-        for key, fam, sym, hor, params, mech, _seq in cur:
+        for key, fam, sym, hor, params, mech, gen, prod, disc, reg, _seq in cur:
             try:
                 parsed = json.loads(params)
             except (TypeError, ValueError):
                 continue
             if isinstance(parsed, dict) and parsed:
                 out[str(key)] = {"family": str(fam), "symbol": str(sym), "horizon": str(hor),
-                                 "params": parsed, "mechanism": str(mech or "")}
+                                 "params": parsed, "mechanism": str(mech or ""),
+                                 "generator": str(gen or "") or None,
+                                 "producer": str(prod or "") or None,
+                                 "discovery_id": str(disc or "") or None,
+                                 "region": str(reg or "") or None}
         return out
     except sqlite3.Error:
         return {}
@@ -405,9 +486,24 @@ def fill_empty_cells(grid: dict[str, Any], *, budget_s: float = 120.0,
 
     NOTHING IS CAPPED, DROPPED OR THROTTLED. Every cell goes through `enqueue_candidate`, the one
     registry door, which de-duplicates on content hash: a rule already present raises its search
-    count and creates nothing, so a re-run cannot inflate the count. `MAX_FILLS_PER_PASS` is the
-    size of a PASS, not a ceiling on the grid -- the ranked list is re-derived every hour and the
-    cells filled leave it, so the next pass continues down the same list.
+    count and creates nothing, so a re-run cannot inflate the count.
+
+    WHAT ACTUALLY BOUND THIS TO EIGHT CELLS AN HOUR, and it was none of the things anyone would
+    look at (measured on the trading box, 2026-09-23). Not the cap: 400 was never reached. Not
+    the donors: all 400 published targets had one. Not reachability: 8,410 cells were reachable.
+    It was the TIME BUDGET, spent inside the registry door -- `enqueue_candidate` asks whether a
+    breadth cell is empty with `WHERE grid_cell=?`, that column had no index, and EXPLAIN read
+    `SCAN research_candidates` over 321,168 rows. One cell cost 0.927 s, the fill gets a 75 s
+    slice, 75 / 0.927 = 8. With `ix_candidates_gridcell` (added to `libs/moat/registry._evolve`)
+    the same call costs 0.0012 s and the same 75 s buys sixty thousand.
+
+    THE SHAPE TO RECOGNISE: an organ that reports `8 of 400` looks throttled by its cap, and
+    every reading of the code agrees, because the real limit was a table scan two modules away
+    that no artifact named. The cap was innocent and raising it would have changed nothing.
+
+    ONE CONNECTION, not one per cell: `enqueue_candidate` opens, evolves and closes the registry
+    on every call it is not handed a connection for. That is cheap here (4 ms) and it is still
+    four seconds over a full grid, so the pass holds one open and hands it down.
     """
     started = time.monotonic()
     targets = [t for t in (grid.get("targets") or []) if isinstance(t, dict)]
@@ -417,7 +513,7 @@ def fill_empty_cells(grid: dict[str, Any], *, budget_s: float = 120.0,
     try:
         if str(ROOT) not in sys.path:
             sys.path.insert(0, str(ROOT))
-        from libs.moat.registry import enqueue_candidate
+        from libs.moat.registry import connect, enqueue_candidate
     except Exception as exc:                                             # pragma: no cover
         return {"available": False,
                 "why": f"{UNMEASURED}: registry door unimportable ({type(exc).__name__})"}
@@ -426,32 +522,52 @@ def fill_empty_cells(grid: dict[str, Any], *, budget_s: float = 120.0,
     occupied_before = int(grid.get("occupied_cells") or 0)
     nominal = int(grid.get("nominal_cells") or 0)
     created: set[str] = set()
-    targeted = existing = failed = 0
+    created_rows: list[tuple[str, str, str, str]] = []
+    targeted = existing = failed = frontier_hits = 0
     by_operator: Counter[str] = Counter()
-    for t in targets[:MAX_FILLS_PER_PASS]:
-        if time.monotonic() - started > budget_s:
-            break
-        donor = donors.get(str(t.get("family") or ""))
-        if not donor:
-            continue
-        sym = case.get(str(t.get("symbol") or ""), str(t.get("symbol") or "").upper())
-        hor = str(t.get("horizon") or "")
-        op = "cross_instrument" if sym.lower() != donor["symbol"].lower() else "cross_horizon"
-        targeted += 1
-        try:
-            _id, made = enqueue_candidate(
-                family=donor["family"], symbol=sym, params=donor["params"],
-                origin=SOURCE, generator=SOURCE, horizon=hor,
-                mechanism=(f"{donor['mechanism'] or donor['family']} carried to {sym} at {hor} "
-                           f"(mutation: {op})"))
-        except Exception:                                                # pragma: no cover
-            failed += 1
-            continue
-        by_operator[op] += 1
-        if made:
-            created.add(str(t.get("cell") or f"{t.get('family')}|{sym.lower()}|{hor}"))
-        else:
-            existing += 1
+    by_producer: Counter[str] = Counter()
+    stopped = "list exhausted"
+    try:
+        con = connect()
+    except Exception as exc:                                             # pragma: no cover
+        return {"available": False,
+                "why": f"{UNMEASURED}: registry unopenable ({type(exc).__name__}: {exc})"}
+    try:
+        for t in targets[:MAX_FILLS_PER_PASS]:
+            if time.monotonic() - started > budget_s:
+                stopped = f"time budget {budget_s:g}s reached after {targeted} cells"
+                break
+            donor = donors.get(str(t.get("family") or ""))
+            if not donor:
+                continue
+            sym = case.get(str(t.get("symbol") or ""), str(t.get("symbol") or "").upper())
+            hor = str(t.get("horizon") or "")
+            op = "cross_instrument" if sym.lower() != donor["symbol"].lower() else "cross_horizon"
+            targeted += 1
+            extra = {k: donor[k] for k in ("generator", "producer", "discovery_id", "region")
+                     if donor.get(k)}
+            try:
+                _id, made = enqueue_candidate(
+                    family=donor["family"], symbol=sym, params=donor["params"],
+                    origin=SOURCE, horizon=hor, conn=con,
+                    mechanism=(f"{donor['mechanism'] or donor['family']} carried to {sym} at "
+                               f"{hor} (mutation: {op})"),
+                    **extra)
+            except Exception:                                            # pragma: no cover
+                failed += 1
+                continue
+            by_producer[str(extra.get("generator") or extra.get("producer") or SOURCE)] += 1
+            by_operator[op] += 1
+            if made:
+                created.add(str(t.get("cell") or f"{t.get('family')}|{sym.lower()}|{hor}"))
+                created_rows.append((
+                    str(extra.get("generator") or extra.get("producer") or SOURCE).lower(),
+                    str(t.get("family") or ""), sym.lower(), hor))
+                frontier_hits += int(bool(t.get("frontier")))
+            else:
+                existing += 1
+    finally:
+        con.close()
     after = occupied_before + len(created)
     return {
         "available": True,
@@ -459,15 +575,83 @@ def fill_empty_cells(grid: dict[str, Any], *, budget_s: float = 120.0,
                 "de-duplicates on content hash. Nothing is capped, dropped or slowed"),
         "empty_cells_targeted": targeted,
         "cells_created_in_empty_cells": len(created),
+        "frontier_cells_created": frontier_hits,
         "already_present": existing, "failed": failed,
         "by_operator": dict(by_operator),
+        # WHOSE RULE WENT WHERE. The transplant carries the donor's attribution because the cell
+        # is that producer's rule on new ground; this organ keeps `origin`. A single key here
+        # means the fill is crediting itself, which is the pass-through defect, not a measurement.
+        "by_donor_producer": dict(by_producer.most_common(40)),
+        "donor_producers": len(by_producer),
+        "targets_available": len(targets),
+        "stopped_because": stopped,
         "occupied_cells_before": occupied_before, "occupied_cells_after": after,
         "occupancy_before": round(occupied_before / nominal, 6) if nominal else None,
         "occupancy_after": round(after / nominal, 6) if nominal else None,
         "newly_occupied_cells": len(created),
         "reachable_empty_after": max(int(grid.get("reachable_empty_cells") or 0) - len(created), 0),
+        "orthogonality": fill_orthogonality(created_rows),
         "elapsed_s": round(time.monotonic() - started, 3),
+        "seconds_per_cell": (round((time.monotonic() - started) / targeted, 5)
+                             if targeted else None),
     }
+
+
+def fill_orthogonality(created: list[tuple[str, str, str, str]]) -> dict[str, Any]:
+    """The effective rank of what THIS PASS minted, on the desk's own breadth machinery.
+
+    NOT THE HEADLINE. The yield fence owns the desk-wide orthogonality-weighted throughput and
+    ratchets it; that figure is read here, never re-derived (see `headline`). This measures only
+    the cells this filler just created, and it answers the one question raw volume cannot: did
+    the hour's fill spread across independent ground, or pile onto one direction?
+
+    TWO MATRICES, BECAUSE THEY ANSWER DIFFERENT QUESTIONS AND ONE OF THEM IS A TRAP.
+    `by_producer` is the fence's own shape -- producer x (family|symbol|horizon) -- and its
+    participation ratio measures PRODUCER CONCENTRATION: one organ covering all the ground reads
+    ~1.0 no matter how much ground that is, which is the number that caught this filler crediting
+    itself for 32,585 cells. `by_family` is the same arithmetic over families and measures how
+    many independent MECHANISMS the fill touched. Raw count moves neither; both are published so
+    a pass that bought volume and no independence says so in its own artifact.
+
+    Effective rank is the participation ratio of the singular-value spectrum,
+    (sum s^2)^2 / sum s^4 (`libs.risk.fx_exposure.effective_rank`, reached through
+    `sandbox_rotation.breadth`).
+    """
+    if not created:
+        return {"available": False, "why": f"{UNMEASURED}: this pass created no cell to measure"}
+    by_family: dict[str, list[str]] = {}
+    by_producer: dict[str, list[str]] = {}
+    for prod, fam, sym, hor in created:
+        cell = f"{fam}|{sym}|{hor}"
+        by_family.setdefault(fam or "?", []).append(cell)
+        by_producer.setdefault(prod or "?", []).append(cell)
+    try:
+        if str(ROOT) not in sys.path:
+            sys.path.insert(0, str(ROOT))
+        from libs.research.sandbox_rotation import breadth
+    except Exception as exc:                                             # pragma: no cover
+        return {"available": False,
+                "why": f"{UNMEASURED}: breadth machinery unimportable ({type(exc).__name__})"}
+    try:
+        fam_b = breadth(by_family)
+        prod_b = breadth(by_producer)
+    except Exception as exc:                                             # pragma: no cover
+        return {"available": False,
+                "why": f"{UNMEASURED}: breadth failed ({type(exc).__name__}: {exc})"}
+    cells = len({c for cs in by_family.values() for c in cs})
+    return {"available": True,
+            "effective_rank": fam_b.get("total"),
+            "producer_effective_rank": prod_b.get("total"),
+            "cells": cells,
+            "families": len(by_family), "producers": len(by_producer),
+            "symbols": len({s for _p, _f, s, _h in created}),
+            "horizons": len({h for _p, _f, _s, h in created}),
+            "rank_per_cell": (round(float(fam_b.get("total") or 0.0) / cells, 5)
+                              if cells else None),
+            "basis": ("participation ratio of the singular-value spectrum of the family x and "
+                      "producer x (family|symbol|horizon) indicator matrices of the cells THIS "
+                      "PASS created; the desk-wide figure belongs to "
+                      "scripts/check_producer_yield.py and is read, never re-derived")}
 
 
 def ratchet_occupancy(fill: dict[str, Any], path: Path | None = None) -> dict[str, Any]:
@@ -541,7 +725,13 @@ def run(budget_s: float = 240.0, *, db: Path | None = None) -> dict[str, Any]:
     started = time.monotonic()
     rows, why = _rows(db)
     ladder = dedup_ladder(rows)
-    grid = grid_occupancy(rows) if rows else {"available": False, "why": why or UNMEASURED}
+    # THE DONOR CENSUS COMES FIRST because it is what makes a cell reachable. A family holding a
+    # transplantable rule can be carried onto any lane instrument whether or not the grid already
+    # shows load for it, and those zero-load families are whole empty ROWS -- the most orthogonal
+    # ground on the board. Reading donors after the grid is what hid them.
+    donors = _donors(db)
+    grid = (grid_occupancy(rows, mintable=set(donors)) if rows
+            else {"available": False, "why": why or UNMEASURED})
     gain = orthogonality_gain(rows)
     mix = tune_mix(gain)
     head = headline()
@@ -551,6 +741,11 @@ def run(budget_s: float = 240.0, *, db: Path | None = None) -> dict[str, Any]:
             if grid.get("available") else
             {"available": False, "why": f"{UNMEASURED}: no measured grid to aim at"})
     occupancy_ratchet = ratchet_occupancy(fill)
+    # THE REPORT IS TRUNCATED, THE WORK IS NOT. The filler above was handed every target; the
+    # artifact carries the head of the same list so a consumer pays one bounded file read.
+    published = grid.get("targets")
+    if isinstance(published, list):
+        grid["targets"] = published[:MAX_TARGETS]
     doc: dict[str, Any] = {
         "generated_utc": datetime.now(tz=UTC).isoformat(timespec="seconds"),
         "law": ("RAISE THE ORTHOGONALITY-WEIGHTED FIGURE, NOT THE RAW ONE. Nothing here caps, "
@@ -601,16 +796,26 @@ def render(doc: dict[str, Any]) -> list[str]:
              f"  ladder  raw {lad.get('raw_cells')} -> hashes {lad.get('content_hashes')} -> "
              f"grid {lad.get('grid_cells')} -> mechanisms {lad.get('mechanisms')}",
              f"  grid    {grid.get('occupied_cells')}/{grid.get('nominal_cells')} occupied "
-             f"({grid.get('occupancy')}), {grid.get('reachable_empty_cells')} reachable empty",
+             f"({grid.get('occupancy')}), {grid.get('reachable_empty_cells')} reachable empty "
+             f"({grid.get('frontier_empty_cells')} frontier)",
              f"  mix     mechanism share "
              f"{(doc.get('mutation_mix') or {}).get('declared_mechanism_share')}"]
     fill = doc.get("fill") or {}
     if fill.get("available"):
         lines.append(f"  fill    {fill.get('empty_cells_targeted')} empty cells aimed at, "
-                     f"{fill.get('cells_created_in_empty_cells')} cells created; occupancy "
+                     f"{fill.get('cells_created_in_empty_cells')} cells created "
+                     f"({fill.get('frontier_cells_created')} frontier); occupancy "
                      f"{fill.get('occupancy_before')} -> {fill.get('occupancy_after')} "
                      f"({fill.get('occupied_cells_before')} -> "
                      f"{fill.get('occupied_cells_after')} cells)")
+        orth = fill.get("orthogonality") or {}
+        lines.append(f"  rank    fill effective rank {orth.get('effective_rank')} (family) / "
+                     f"{orth.get('producer_effective_rank')} (producer) over "
+                     f"{orth.get('cells')} cells, {orth.get('families')} families, "
+                     f"{orth.get('producers')} producers, {orth.get('symbols')} symbols")
+        lines.append(f"  stop    {fill.get('stopped_because')} at "
+                     f"{fill.get('seconds_per_cell')}s per cell, "
+                     f"{fill.get('targets_available')} targets available")
     intake = doc.get("intake") or {}
     if intake.get("available"):
         lines.append(f"  intake  {intake.get('unseen_mechanisms')} unseen / "

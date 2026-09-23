@@ -194,6 +194,15 @@ _LAW_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     # stated reason. Ratchets fall only and nothing here caps a producer: the remedy for a barren
     # organ is to make it produce or retire it with a reason, never to throttle a working one.
     ("check_producer_yield.py", ("--cells-only",)),
+    # THE GRID FILLS, AND ONLY AN EXHAUSTED LIST MAY STOP IT (principal 2026-09-23). The yield
+    # fence above asks how orthogonal what reached the judge was; this asks whether the desk is
+    # still CLAIMING ground it has never tested. Occupied cells of the family x instrument x
+    # horizon grid ratchet up, and the filler must end a pass because the targets ran out --
+    # never because a clock or a count did. Measured cause: `independence_intake` minted 8 cells
+    # an hour into 8,418 reachable empty ones under a cap of 400, and the limit was an unindexed
+    # `WHERE grid_cell=?` scan in libs/moat/registry.py, 0.927 s per cell, which no artifact
+    # named. Every number here is a floor; nothing caps, and no bar moves.
+    ("check_grid_occupancy.py", ()),
     # ONE CERTIFICATE TRUTH (principal 2026-09-22). One writer (external_gauntlet.py), one
     # authority file (UNIVERSAL_SURVIVORS.json), one consumer (promoter.py); every derived store
     # -- survivors ledger, sleeve registry, shadow/lane states, sleeves.json, forward_reconcile --
@@ -224,6 +233,14 @@ _LAW_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     # (resident, discovery window, lattice) reads UNMEASURED without the registry rather than
     # failing. `--strict` promotes the live flags and belongs in the hourly box gate, not here.
     ("check_regional_parity.py", ()),
+    # EVERY REGION'S CELLS AND JUDGED CELLS RATCHET UP (principal 2026-09-23: equal maximum depth
+    # per region, "like it's their native country quants"). `check_regional_parity` asserts the
+    # federation has no absent region; this asserts the OUTPUT of those regions never falls back.
+    # It fails on a region that once held cells and now holds none, on a fall in the count of
+    # regions the desk NAMES, and on a fall in a measure's total -- never on a non-zero dip, which
+    # is reported. Portable: it reads `REGION_RATCHET.json` and an absent artifact is UNMEASURED
+    # here; the state half rides in _STATE_FENCES with --require-state.
+    ("check_region_ratchet.py", ()),
     # THE RECOMMENDATION LANE MUST DRAIN (principal 2026-09-23). Every OPEN ledger row names an
     # owner and a next action, and the OPEN backlog ratchets DOWN only. Portable: the ledger and
     # the ratchet are tracked, so both halves mean the same in CI, a fresh clone and on the box.
@@ -248,6 +265,24 @@ _LAW_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     # and a fence that punished it would be switched off inside a week. Portable: without the
     # report it reads UNMEASURED and passes; the box half rides in _STATE_FENCES.
     ("check_judge_coverage.py", ()),
+    # THE WRITE-OR-EXPLAIN CONTRACT IS STILL WIRED (2026-09-23). Eight failures in one day shared
+    # one shape: an organ that produced nothing was indistinguishable from an organ with nothing
+    # to produce. `libs/ops/write_or_explain.py` stats each leg's DECLARED artifact either side of
+    # the leg at the one boundary every leg passes through, and names the three outcomes --
+    # LEG_FAILED (loud, with the exit code and stderr), SILENT_NO_OP (exited 0, wrote nothing,
+    # said nothing) and DECLARED_NO_OP (nothing to write, and said so). PORTABLE HALF: this reads
+    # the cycle source and fails if the two call sites are gone, so an edit that quietly removes
+    # the contract reddens CI on a fresh clone. A contract nothing calls is the same defect one
+    # layer up. The live half rides in _STATE_FENCES.
+    ("check_write_or_explain.py", ("--wiring-only",)),
+    # NO WRITE FAILS IN SILENCE (2026-09-23 swallowed-write audit). A handler that is BLIND (no
+    # `as exc`) and MUTE (body is only `pass`) around a call that puts bytes on disk discards the
+    # only evidence the artifact is missing -- the registry verdict sync stranded 3,368 verdicts
+    # exactly this way, and `donate` swallowing `register` is why 0 of 107 sampled donation rows
+    # carry a prereg hash. RATCHETED TO FILE WRITES, which the audit took from 10 to 0: the class
+    # is fenced at zero so it cannot regress, while the 25 pre-existing DONATION findings stay
+    # reported rather than dumped red into another lane (L1.43).
+    ("check_bare_excepts.py", ("--file-writes-only",)),
 )
 
 #: STATE FENCES -- box-only. They measure LIVE STATE (artifacts, ledgers, organ freshness) that
@@ -356,6 +391,10 @@ _STATE_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     # in the lattice" are measured absences and the law calls each one a defect. It still caps no
     # compute -- it fails the gate and publishes the debt; the allocator does the rest.
     ("check_regional_parity.py", ("--strict",)),
+    # the live half of THE REGION RATCHET: on the box the registry IS open and
+    # `attribution_census` runs hourly, so an ABSENT `REGION_RATCHET.json` is an organ that did
+    # not run (L1.49) rather than a fresh clone, and it fails here.
+    ("check_region_ratchet.py", ("--require-state",)),
     # NOTHING IS STALE (principal 2026-09-22). Every artifact the desk publishes has an expected
     # refresh interval -- its lease, else its declared artifact_class, else DERIVED from its
     # organ's cadence and recorded -- and one past it is a DEFECT named with its organ, its clock
@@ -408,6 +447,22 @@ _STATE_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     # concluded the allocator was dead while both real artifacts were minutes old. A STATE fence:
     # a host that has never run the allocator reads UNMEASURED, which is a fact about the host.
     ("check_allocator_liveness.py", ()),
+    # THE WRITE-OR-EXPLAIN CONTRACT, LIVE HALF (2026-09-23). Reads the contract ledger every leg
+    # boundary appends to and sentences the desk on the latest row per leg: SILENT_NO_OP (exited
+    # clean, wrote nothing, named no reason), LEG_FAILED/LEG_TIMEOUT, and NEVER_OBSERVED -- a leg
+    # that declares an artifact and produced no row at all, which is how `ground_depth` and
+    # `independence_intake` sat at ZERO ledger rows on the trading box while both ran perfectly by
+    # hand. It also publishes `desks/mt5/reports/WRITE_OR_EXPLAIN.json`. State, because an absent
+    # ledger means "no cycle has run here", not "a law was broken" -- and --require-state makes
+    # that absence fail on the box, where a missing ledger means the contract never ran at all.
+    ("check_write_or_explain.py", ("--require-state",)),
+    # WHAT THE HOURLY ADOPTION IS ABOUT TO EAT (failure 8 of 2026-09-23). `MT5-AdoptRelease` lands
+    # the branch's tree in place at :12 and keeps only STATE paths, so an uncommitted CODE edit --
+    # or one committed here but never pushed -- is reverted with no error and a tree that looks
+    # like nobody ever edited it. This names those paths while they can still be saved. It never
+    # touches the tree: committing on a builder's behalf, with four builders live, would be a
+    # worse failure than the one it reports. State, because it measures a working tree.
+    ("check_box_reversion.py", ("--require-git",)),
 )
 
 

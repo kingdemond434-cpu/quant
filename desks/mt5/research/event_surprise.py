@@ -108,7 +108,13 @@ MAX_DONATIONS = 10
 DAYS = 1200
 #: Sources fetched in one pass, and the share of the budget the collector may spend. The rest of
 #: the pass is the measurement, which is the part that produces evidence.
-MAX_SOURCES_PER_PASS = 6
+#:
+#: RAISED FROM 6 TO 16 (2026-09-24). A windowed calendar endpoint answers one bounded window per
+#: call, so a registry that covers two years of history is a dozen-odd rows and SIX per pass made
+#: the desk wait three hours for a history it could hold in one. The budget share below still
+#: bounds the pass in seconds; this bounds only how many of them it may spend, and a cap that
+#: makes the desk wait for evidence it can already reach is a brake, not a guard.
+MAX_SOURCES_PER_PASS = 16
 COLLECT_BUDGET_SHARE = 0.4
 #: A source is re-fetched no more often than this. These are monthly and quarterly publications;
 #: hammering them hourly is three wasted requests and one rate-limit away from a ban.
@@ -135,6 +141,43 @@ def _f(value: Any) -> float | None:
     except (TypeError, ValueError):
         return None
     return x if math.isfinite(x) else None
+
+
+#: Multipliers a calendar prints beside a number. A release value is published for a human --
+#: "348K", "15.2B", "-0.1%" -- and `float()` reads every one of them as an absence, which turns a
+#: measured print into a missing one. Scaling them is READING the published number, not guessing:
+#: the suffix is the publisher's own declared unit.
+_SCALE: dict[str, float] = {"k": 1e3, "m": 1e6, "b": 1e9, "t": 1e12}
+#: Symbols that decorate a printed value and carry no magnitude: currency marks, the thin spaces
+#: a calendar renders between number and unit, and the thousands separator.
+_STRIP = "​   $€£¥₣₹₽₩$,"
+
+
+def _num(value: Any) -> float | None:
+    """A published release value as a number, or None -- and None only when there is no number.
+
+    `_f` is the desk's strict float and stays strict: it is used wherever a JSON field is already
+    numeric. This is the parser for the OTHER kind of field, the one a calendar prints for a
+    reader. A dash is the publisher saying there is no consensus, and it stays an absence.
+    """
+    if isinstance(value, (int, float)) and not isinstance(value, bool):
+        return _f(value)
+    if not isinstance(value, str):
+        return None
+    text = value.strip()
+    if not text or text in ("-", "--", "n/a", "N/A"):
+        return None
+    for ch in _STRIP:
+        text = text.replace(ch, "")
+    text = text.strip()
+    mult = 1.0
+    if text.endswith("%"):
+        text = text[:-1].strip()
+    elif text and text[-1].lower() in _SCALE:
+        mult = _SCALE[text[-1].lower()]
+        text = text[:-1].strip()
+    got = _f(text)
+    return None if got is None else got * mult
 
 
 def _read_json(path: Path) -> Any:
@@ -295,6 +338,13 @@ def _records_from(doc: Any, fields: dict[str, Any], source_id: str) -> list[dict
     `fields` names four keys -- `release`, `date`, `actual`, `consensus` -- and optionally a
     `path` (a dotted route to the list inside a JSON document) and a constant `release_const`
     for a single-series endpoint. Anything the map does not name is not read.
+
+    `release_keys` IS THE FIFTH, AND IT EXISTS BECAUSE ONE NAME IS NOT AN IDENTITY. A world
+    calendar prints "CPI m/m" for the euro area and "CPI m/m" for Britain, and a store that keys
+    a release on the title alone pools two countries' surprises into one sigma -- which is not a
+    thin history, it is a WRONG one, and it would be invisible. A source may therefore declare an
+    ORDERED LIST of keys whose values compose the release identity (`["CurrencyCode",
+    "EventName"]` -> "EUR CPI m/m"). Every key is still declared; nothing is guessed.
     """
     node = doc
     for step in str(fields.get("path") or "").split("."):
@@ -313,25 +363,57 @@ def _records_from(doc: Any, fields: dict[str, Any], source_id: str) -> list[dict
     need_consensus = provides in ("both", "consensus")
     out: list[dict[str, Any]] = []
     const = fields.get("release_const")
+    compose = [str(k) for k in (fields.get("release_keys") or []) if isinstance(k, str)]
     for raw in node:
         if not isinstance(raw, dict):
             continue
         when = _parse_time(raw.get(str(fields.get("date") or "")))
-        actual = _f(raw.get(str(fields.get("actual") or ""))) if need_actual else None
-        consensus = _f(raw.get(str(fields.get("consensus") or ""))) if need_consensus else None
-        release = str(raw.get(str(fields.get("release") or "")) or const or "").strip()
+        actual = _num(raw.get(str(fields.get("actual") or ""))) if need_actual else None
+        consensus = _num(raw.get(str(fields.get("consensus") or ""))) if need_consensus else None
+        if compose:
+            release = " ".join(str(raw.get(k) or "").strip() for k in compose).strip()
+        else:
+            release = str(raw.get(str(fields.get("release") or "")) or const or "").strip()
         if when is None or not release:
             continue
         if (need_actual and actual is None) or (need_consensus and consensus is None):
             continue
-        period = str(raw.get(str(fields.get("period") or "")) or "").strip() or f"{when:%Y-%m}"
+        # THE REFERENCE PERIOD IS THE JOIN KEY, AND A MONTH IS THE WRONG GRAIN FOR A WEEKLY
+        # RELEASE. `join_sides` keeps ONE pair per (release, period), so a month-grained period
+        # silently collapses the four EIA crude prints of a month into one and throws three
+        # measured surprises away. A source whose document carries BOTH sides needs no coarse
+        # join at all -- the release INSTANT identifies the occurrence exactly -- so it declares
+        # `period_grain: "instant"`. Default stays "month": every source written before this
+        # keeps the behaviour it had.
+        grain = str(fields.get("period_grain") or "month").lower()
+        default_period = (f"{when:%Y-%m-%dT%H:%M}" if grain == "instant" else f"{when:%Y-%m}")
+        period = str(raw.get(str(fields.get("period") or "")) or "").strip() or default_period
         out.append({"release": release, "at": when.isoformat(timespec="seconds"),
                     "period": period, "actual": actual, "consensus": consensus,
                     "source_id": source_id, "provides": provides,
-                    "instruments": [str(s) for s in (fields.get("instruments") or [])
-                                    if isinstance(s, str)],
+                    "instruments": _instruments_for(raw, fields),
                     "kind": str(fields.get("kind") or "macro_release")})
     return out
+
+
+def _instruments_for(raw: dict[str, Any], fields: dict[str, Any]) -> list[str]:
+    """The instruments a row's release bears on -- a constant list, or a DECLARED routing map.
+
+    `measure()` only reaches an instrument an event NAMES, so a world calendar registered as one
+    source with one constant list would measure every currency's release against the same tape
+    and every reaction cell would be noise. The alternative -- one registered source per currency
+    -- multiplies the registry by seven for a routing decision that is one lookup. So a source may
+    declare `instruments_by`: the KEY whose value routes the row, and the MAP from that value to
+    instruments. Both are written in the registry; neither is inferred from the row.
+    """
+    by = fields.get("instruments_by")
+    if isinstance(by, dict) and isinstance(by.get("map"), dict):
+        value = str(raw.get(str(by.get("key") or "")) or "").strip()
+        got = by["map"].get(value)
+        if isinstance(got, list):
+            return [str(s) for s in got if isinstance(s, str)]
+        return []
+    return [str(s) for s in (fields.get("instruments") or []) if isinstance(s, str)]
 
 
 def join_sides(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:

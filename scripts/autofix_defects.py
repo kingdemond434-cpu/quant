@@ -77,8 +77,12 @@ def fix_calibration_forecasts() -> dict[str, Any]:
                 f["outcome"] = "AUTO_GRADED_NEUTRAL"
             cal_file.write_text(json.dumps(data, indent=2))
             return {"fixed": True, "message": f"Auto-graded {len(overdue)} overdue forecasts"}
-    except Exception:
-        pass
+    except Exception as exc:
+        # LOUD, NOT SILENT (2026-09-23 swallowed-write audit). The message below said "no overdue
+        # forecasts" whether there were none or the write had just failed -- the two are opposite
+        # facts and they read identically to every consumer.
+        return {"fixed": False,
+                "message": f"grading NOT written ({type(exc).__name__}: {exc})"}
     return {"fixed": False, "message": "No overdue forecasts or unable to grade"}
 
 

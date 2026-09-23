@@ -35,7 +35,7 @@ if str(BASE) not in sys.path:
     sys.path.insert(0, str(BASE))
 try:
     from macro import interrupt as _macro_interrupt
-except Exception:                                                        # noqa: BLE001
+except Exception:
     _macro_interrupt = None                                              # type: ignore[assignment]
 
 LOGS = BASE / "logs"
@@ -181,7 +181,7 @@ def tick_periodic(state: dict, now: float, spawn) -> list[str]:
                 req = _macro_interrupt.pending(
                     now=now,
                     consumed_at=float(state.get("macro_interrupt_consumed_at", 0) or 0))
-            except Exception:                                            # noqa: BLE001
+            except Exception:
                 req = None                    # a broken event layer must not stop the clock
             if req is not None:
                 mode = "fast"
@@ -285,8 +285,11 @@ def main() -> int:
                 state["last_verify"] = now
                 try:
                     STATE.write_text(json.dumps(state), encoding="utf-8")
-                except Exception:
-                    pass
+                except Exception as exc:
+                    # LOUD, NOT SILENT (2026-09-23 swallowed-write audit). `last_verify` not
+                    # landing means the verify re-runs every pass, forever, saying nothing.
+                    print(f"supervisor: state NOT written ({type(exc).__name__}: {exc})",
+                          flush=True)
             except Exception as e:
                 log(f"universal-state verify failed: {e!r}")
         for t in TARGETS:

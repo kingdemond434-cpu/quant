@@ -41,6 +41,7 @@ the universe mandate (2026-08-18); their events stay, because events are immutab
 """
 from __future__ import annotations
 
+import contextlib
 import hashlib
 import json
 import os
@@ -348,8 +349,92 @@ def _j(obj: Any) -> str | None:
     return None if obj is None else json.dumps(obj, sort_keys=True, default=str)
 
 
+#: Column lists keyed by (connection, table, schema_version). `PRAGMA table_info` cost 0.121 ms
+#: and the write door asked for it TWICE per row (measured on the box 2026-09-23: 1,200 calls =
+#: 0.142 s of a 4.35 s 600-row write). The schema_version in the key is what makes the cache
+#: safe: SQLite bumps it on every DDL, so an ALTER or a table rebuild in `_evolve` invalidates
+#: every entry for that table by construction -- a cache that can never serve a stale column.
+_COLUMNS_CACHE: dict[tuple[int, str, int], list[str]] = {}
+
+
+def _schema_version(conn: sqlite3.Connection) -> int:
+    return int(conn.execute("PRAGMA schema_version").fetchone()[0])
+
+
 def _columns(conn: sqlite3.Connection, table: str) -> list[str]:
-    return [str(r[1]) for r in conn.execute(f'PRAGMA table_info("{table}")')]
+    key = (id(conn), table, _schema_version(conn))
+    hit = _COLUMNS_CACHE.get(key)
+    if hit is not None:
+        return hit
+    cols = [str(r[1]) for r in conn.execute(f'PRAGMA table_info("{table}")')]
+    if len(_COLUMNS_CACHE) > 4096:          # never a leak across long-lived processes
+        _COLUMNS_CACHE.clear()
+    _COLUMNS_CACHE[key] = cols
+    return cols
+
+
+#: Connections inside a `batch(...)`: THE COMMIT THAT COST THE DESK ITS THROUGHPUT.
+#: `proposer_common._record_in_registry` calls record_discovery + set_discovery_state +
+#: enqueue_candidate per donated row, and each one committed -- three commits a row. Measured on
+#: the box 2026-09-23 over 600 rows: 1,800 commits took 3.643 s of the 4.351 s total, 84% of the
+#: write path, because a commit in WAL mode writes and syncs the frames for discoveries,
+#: research_candidates, provenance and every index they carry. A commit per CHUNK instead of per
+#: row is not a queue and not a weaker guarantee: a crash between the discovery commit and the
+#: candidate commit used to leave a discovery with no cell, and now cannot.
+_BATCHED: dict[int, dict[str, int]] = {}
+
+
+def _begin_immediate(c: sqlite3.Connection) -> None:
+    """Take the write lock UP FRONT. Python's sqlite3 opens a DEFERRED transaction on the first
+    INSERT, so two producers that both read first and then write race to UPGRADE a read lock --
+    and SQLite cannot make either wait for the other, so one dies instantly with `database is
+    locked` no matter how long the busy timeout is. Measured on the box 2026-09-23: four
+    concurrent writers on one registry file, 30 s timeout, killed in under a second. With the
+    lock taken at BEGIN there is nothing to upgrade, so the busy timeout does its job and the
+    loser WAITS. `_record_in_registry` swallows its exception, so every one of those deaths was
+    a silently unrecorded donation, not an error anybody saw."""
+    if c.in_transaction:
+        return
+    with contextlib.suppress(sqlite3.OperationalError):
+        c.execute("BEGIN IMMEDIATE")
+
+
+def _commit(c: sqlite3.Connection) -> None:
+    """Commit, unless the caller opened a `batch()` -- then once per chunk, never per row."""
+    st = _BATCHED.get(id(c))
+    if st is None:
+        c.commit()
+        return
+    st["n"] += 1
+    if st["n"] % st["every"] == 0:
+        c.commit()
+        _begin_immediate(c)
+
+
+@contextlib.contextmanager
+def batch(conn: sqlite3.Connection, every: int = 500) -> Iterator[None]:
+    """Write many rows through the registry's own doors with ONE commit per `every` writes.
+
+    The chunk bounds how long the writer holds SQLite's write lock (at ~1,000 rows/s a 500-row
+    chunk is half a second), so other producers are never shut out by one large donation. On the
+    way out the remainder is committed; on an exception the incomplete chunk is rolled back, so
+    no half-written row survives an abort.
+    """
+    key = id(conn)
+    prev = _BATCHED.get(key)
+    _BATCHED[key] = {"n": 0, "every": max(1, int(every))}
+    _begin_immediate(conn)
+    try:
+        yield
+        conn.commit()
+    except BaseException:
+        conn.rollback()
+        raise
+    finally:
+        if prev is None:
+            _BATCHED.pop(key, None)
+        else:
+            _BATCHED[key] = prev
 
 
 def _tables(conn: sqlite3.Connection) -> set[str]:
@@ -421,6 +506,28 @@ def _evolve(conn: sqlite3.Connection) -> dict[str, int]:
                  "(content_hash)")
     conn.execute("CREATE INDEX IF NOT EXISTS ix_candidates_disc ON research_candidates"
                  "(discovery_id)")
+    # THE INDEX THAT COST THE DESK ITS GRID (measured on the box 2026-09-23). Every
+    # `enqueue_candidate` asks "is this breadth cell empty?" -- `SELECT 1 FROM research_candidates
+    # WHERE grid_cell=? LIMIT 1` -- and that column had no index, so EXPLAIN read
+    # `SCAN research_candidates` over 321,168 rows for every single write. One enqueue cost
+    # 0.927 s of which ~0.93 s was this scan; with the index it costs 0.0012 s, a 772x fall.
+    # What it bought: `independence_intake`'s grid filler has a 75 s slice of its budget, so it
+    # minted EIGHT cells an hour into 8,410 reachable empty ones -- a thousand hours to fill a
+    # grid it can now fill in a single ten-second pass. The lesson generalises past this organ:
+    # a write door that scans the whole table on every write is a throttle on every producer
+    # that uses it, and it is invisible because nothing reports it as a limit.
+    conn.execute("CREATE INDEX IF NOT EXISTS ix_candidates_gridcell ON research_candidates"
+                 "(grid_cell)")
+    # THE SECOND SCAN, AND THE ONE THAT SET THE DESK'S WHOLE MINT RATE (measured on the box
+    # 2026-09-23). `record_discovery` asks "have I seen this discovery?" -- `SELECT discovery_id
+    # FROM discoveries WHERE content_hash=?` -- and `discoveries.content_hash` carried no index,
+    # so EXPLAIN read `SCAN discoveries` over 78,115 rows for every donated row at 231.9 ms a
+    # call. That is 4.3 rows/second, which is exactly the rate the desk measured end to end: a
+    # 10,005-row donation still writing forty minutes later. With the index the same write path
+    # runs at 149.6 rows/s, a 24x lift, and the lookup is a SEARCH. The pattern is now twice
+    # proven on this one file: a write door that scans a table on every write is a throttle on
+    # every producer behind it, and nothing reports it as a limit.
+    conn.execute("CREATE INDEX IF NOT EXISTS ix_disc_hash ON discoveries(content_hash)")
     conn.execute("CREATE INDEX IF NOT EXISTS ix_events_alpha ON alpha_events(alpha_id)")
     conn.execute("CREATE INDEX IF NOT EXISTS ix_trials_hyp ON trials_ledger(hypothesis_id)")
     conn.execute("CREATE INDEX IF NOT EXISTS ix_disc_state ON discoveries(state)")
@@ -701,7 +808,7 @@ def enqueue_candidate(*, family: str, symbol: str, params: Mapping[str, Any] | N
                 # and verdicts keyed by the cell id land on it.
                 c.execute("UPDATE research_candidates SET donated_cell=COALESCE(donated_cell, ?) "
                           "WHERE id=?", (candidate_id, row["id"]))
-            c.commit()
+            _commit(c)
             return str(row["id"]), False
         cid = candidate_id or new_id("cand")
         if candidate_id and c.execute("SELECT 1 FROM research_candidates WHERE id=?",
@@ -737,7 +844,7 @@ def enqueue_candidate(*, family: str, symbol: str, params: Mapping[str, Any] | N
         if fields.get("discovery_id"):
             _link(c, "discovery", str(fields["discovery_id"]), "cell", cid,
                   str(fields.get("transformation") or "compiled"))
-        c.commit()
+        _commit(c)
         return cid, True
     finally:
         if conn is None:
@@ -871,7 +978,7 @@ def record_discovery(*, source_id: str, source_type: str, mechanism: str, origin
         _link(c, "source", source_id, "discovery", did, "produced")
         for pid in fields.get("parent_discovery_ids") or fields.get("parent_ids") or []:
             _link(c, "discovery", str(pid), "discovery", did, "derived")
-        c.commit()
+        _commit(c)
         return did, True
     finally:
         if conn is None:
@@ -901,7 +1008,7 @@ def set_discovery_state(discovery_id: str, state: str, *, reason: str | None = N
                 sets[k] = int(counters[k])
         cur = c.execute("UPDATE discoveries SET " + ", ".join(f"{k}=?" for k in sets)  # noqa: S608
                         + " WHERE discovery_id=?", [*sets.values(), discovery_id])
-        c.commit()
+        _commit(c)
         return cur.rowcount > 0
     finally:
         if conn is None:

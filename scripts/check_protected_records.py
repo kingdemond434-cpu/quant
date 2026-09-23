@@ -34,15 +34,25 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import re
 import subprocess
 import sys
+from datetime import UTC, datetime
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 OVERRIDE = "ALLOW_PROTECTED_RECORD_LOSS"
+
+#: THE EVIDENCE THIS DETECTOR LEAVES BEHIND. Until 2026-09-23 this guard printed its verdict and
+#: wrote nothing, so `self_repair_registry`'s `store_emptied_by_second_writer` class read its own
+#: detector as having never produced and parked the class in MANUAL for ever -- a class found "by
+#: hand" whose detector in fact fires on every commit. A detector with no artifact is
+#: indistinguishable from a detector that stopped (L1.28a), which is the exact failure the
+#: registry exists to make impossible, so the verdict is now recorded every run.
+REPORT = ROOT / "desks" / "mt5" / "reports" / "PROTECTED_RECORDS.json"
 
 #: `| 197 | **Gap title** | ...` -- the GAP_REGISTER row shape.
 _MD_ROW = re.compile(r"^\|\s*(\d+)\s*\|")
@@ -51,7 +61,14 @@ _ID_KEYS = ("id", "rowid", "row_id", "name", "slug", "key")
 
 
 def _git(*args: str) -> str:
+    # UTF-8 EXPLICITLY, NEVER THE LOCALE. `text=True` alone decodes with the system locale --
+    # cp1252 on the Windows trading box -- while git emits UTF-8. An unmappable byte (0x81,
+    # 0x8d, 0x8f, 0x90, 0x9d) raises inside subprocess's reader THREAD, which the caller cannot
+    # catch: the capture is lost and this hook exits non-zero having explained nothing. A
+    # pre-commit hook that cannot decode blocks every commit on the box, including the
+    # adoption's -- measured 2026-09-14, same defect in all three hook scripts.
     r = subprocess.run(["git", *args], cwd=ROOT, capture_output=True, text=True,
+                       encoding="utf-8", errors="replace",
                        check=False, timeout=120)
     return r.stdout
 
@@ -116,6 +133,31 @@ def records(rel: str, text: str) -> set[str]:
     return set()
 
 
+def _bodies(rel: str, text: str) -> dict[str, str]:
+    """id -> a fingerprint of the record's SUBSTANCE, for .jsonl ledgers that carry ids.
+
+    Empty for every other shape, which keeps this check narrow on purpose.
+    """
+    if not rel.endswith(".jsonl") or not text.strip():
+        return {}
+    out: dict[str, str] = {}
+    for line in text.splitlines():
+        if not line.strip():
+            continue
+        try:
+            d = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if not isinstance(d, dict) or "id" not in d:
+            continue
+        # The substance, not the bookkeeping: a record may gain tags, an enforcer or a recurrence
+        # count without being a different record. What must not change under a fixed id is what
+        # the record ASSERTS.
+        body = "\u0000".join(str(d.get(k, "")) for k in ("lesson", "evidence", "text", "claim"))
+        out[str(d["id"])] = hashlib.sha256(body.encode("utf-8")).hexdigest()[:16]
+    return out
+
+
 def compare(rel: str, before: str, after: str) -> dict[str, object] | None:
     """None when nothing was lost; otherwise the finding, with the lost ids NAMED."""
     if before.strip() and not after.strip():
@@ -127,7 +169,69 @@ def compare(rel: str, before: str, after: str) -> dict[str, object] | None:
         return {"file": rel, "kind": "RECORDS_LOST", "lost": lost,
                 "detail": f"{len(lost)} record(s) present in the old version and absent from the "
                           f"new one"}
+
+    # A RECORD CAN BE DESTROYED WITHOUT ITS ID EVER GOING MISSING (added 2026-09-14).
+    #
+    # Identity here is the id ALONE, so a commit that keeps every id and replaces what they say
+    # passes this fence completely. That is not a hypothetical gap; it is how the desk's two
+    # machines nearly lost eleven lessons in one night.
+    #
+    # `scripts/learn.py` mints the next id from the LOCAL ledger. The trading box and this
+    # checkout were both sitting at L0293, so both minted L0294 onward, and eleven ids came to
+    # name two entirely different lessons depending on which machine you asked. Adopting either
+    # copy would have silently overwritten the other's eleven -- with every id present, every
+    # count unchanged, and this guard reporting OK. The three ids that happened NOT to collide
+    # (L0305-L0307) were caught, which is the only reason any of it was noticed.
+    #
+    # A ledger's promise is that a record, once written, keeps saying what it said. Deletion and
+    # substitution break that promise equally, and substitution is the more dangerous of the two
+    # precisely because it leaves the counts intact.
+    #
+    # Deliberate edits remain possible -- a typo, a sharpened evidence line -- through the same
+    # named override the loss rule uses. What is refused is doing it SILENTLY.
+    b_before, b_after = _bodies(rel, before), _bodies(rel, after)
+    rewritten = sorted(
+        (k for k in b_before if k in b_after and b_before[k] != b_after[k]),
+        key=lambda s: (len(s), s))
+    if rewritten and not os.environ.get("ALLOW_PROTECTED_RECORD_REWRITE"):
+        return {"file": rel, "kind": "RECORDS_REWRITTEN", "lost": rewritten,
+                "detail": f"{len(rewritten)} record(s) keep their id and now assert something "
+                          f"different. Set ALLOW_PROTECTED_RECORD_REWRITE=1 to allow a "
+                          f"deliberate edit, naming the records in the commit message"}
     return None
+
+
+def _write_report(prot: dict[str, str], compared: list[str],
+                  findings: list[dict[str, object]], rng: list[str] | None) -> None:
+    """Record what this run actually compared, so a vacuous pass cannot read as a clean one.
+
+    `n` IS THE NUMBER OF FILES COMPARED, never the number guarded. A staged-vs-HEAD run with an
+    empty index compares nothing and is a real measurement of nothing: it publishes n=0 and says
+    so in `scope`, so a reader (and `self_repair_registry`) can tell "no protected artifact
+    changed" from "this detector did not look".
+    """
+    doc = {
+        "schema": "protected_records/1",
+        "generated_at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
+        "scope": f"range {rng[0]}..{rng[1]}" if rng else "staged vs HEAD",
+        "protected": len(prot),
+        "n": len(compared),
+        "losses": len(findings),
+        "compared": compared,
+        "findings": findings,
+        "rule": "a protected artifact may not lose records; a record that vanishes reads exactly "
+                "like a record resolved",
+    }
+    try:
+        REPORT.parent.mkdir(parents=True, exist_ok=True)
+        tmp = REPORT.with_suffix(REPORT.suffix + f".tmp{os.getpid()}")
+        tmp.write_text(json.dumps(doc, indent=1, default=str), encoding="utf-8")
+        os.replace(tmp, REPORT)
+    except OSError:
+        # THE GUARD OUTRANKS ITS OWN EVIDENCE. This runs as a pre-commit hook on a box where the
+        # reports directory may be read-only or held by another writer; failing the commit
+        # because the audit trail could not be written would block the money path over a log.
+        pass
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -138,6 +242,7 @@ def main(argv: list[str] | None = None) -> int:
 
     prot = _protected()
     findings: list[dict[str, object]] = []
+    compared: list[str] = []
     for rel in sorted(prot):
         if args.range:
             before = _git("show", f"{args.range[0]}:{rel}")
@@ -150,9 +255,12 @@ def main(argv: list[str] | None = None) -> int:
             after = _git("show", f":{rel}")          # the staged blob, not the working tree
         if not before.strip():
             continue                                  # nothing to lose
+        compared.append(rel)
         finding = compare(rel, before, after)
         if finding:
             findings.append(finding)
+
+    _write_report(prot, compared, findings, args.range)
 
     if not findings:
         print(f"protected records: OK over {len(prot)} guarded artifact(s)")

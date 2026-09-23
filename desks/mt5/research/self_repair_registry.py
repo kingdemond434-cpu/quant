@@ -139,8 +139,14 @@ CLASSES: tuple[DefectClass, ...] = (
         "scripts/check_claim_consistency.py",
         "",
         "scripts/check_claim_consistency.py",
-        "desks/mt5/reports/CLAIM_CONSISTENCY.json",
-        counts=("conflicts", "claims", "n"),
+        # THE PATH THE DETECTOR ACTUALLY WRITES, not the one this row wished for. Until
+        # 2026-09-23 this named desks/mt5/reports/CLAIM_CONSISTENCY.json, which
+        # check_claim_consistency.py has never written on any host: its _OUT is
+        # data/claim_consistency.json. A row that names an artifact its own detector cannot
+        # produce pins the class in MANUAL for ever -- the registry reporting the registry's
+        # own typo as a defect the desk still finds by hand.
+        "data/claim_consistency.json",
+        counts=("status", "n_compared", "n_contradicted", "n_unresolved"),
         owner="builder",
         notes="repair is a rename, which is a code change: detected automatically, closed by "
               "hands, and that is the honest bucket"),
