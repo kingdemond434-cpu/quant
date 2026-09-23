@@ -23,6 +23,13 @@ distribution, which is where the uncorrelated mechanisms live. A genuinely explo
 allowed to be unproductive for as long as it likes PROVIDED IT SAYS SO. What is forbidden is
 unproductive AND silent, which is indistinguishable from broken.
 
+WITHOUT DESK STATE IT READS UNMEASURED AND PASSES. The census artifact lives under
+`desks/mt5/reports/`, which no clean checkout and no CI runner has; a fence that reported FAIL on
+every pull request would be switched off inside a week and would then protect nothing (L1.43,
+and the same split `check_certificate_truth.py` and `check_scheduler_manifest.py` already make).
+`--require-state` is the half that runs where the state exists -- the box and the VPS -- and it
+turns an absent census back into the failure it is there.
+
 Exit 0 pass, 1 fail. `--json` prints the verdict for a machine reader.
 """
 
@@ -104,10 +111,10 @@ def _named(entry: Any) -> bool:
     return False
 
 
-def check() -> dict[str, Any]:
+def check(require_state: bool = False) -> dict[str, Any]:
     out: dict[str, Any] = {
         "at": datetime.now(UTC).isoformat(timespec="seconds"),
-        "artifact": str(CENSUS.relative_to(ROOT)),
+        "artifact": str(CENSUS.relative_to(ROOT) if CENSUS.is_relative_to(ROOT) else CENSUS),
         "stale_hours": STALE_HOURS,
         "silent_window_hours": SILENT_WINDOW_HOURS,
         "min_compute_hours": MIN_COMPUTE_HOURS,
@@ -121,6 +128,15 @@ def check() -> dict[str, Any]:
     failures: list[str] = out["failures"]
 
     if not CENSUS.exists():
+        # NO DESK STATE IS NOT A BROKEN LAW. A clean checkout has no reports directory at all;
+        # saying so is the verdict, and only the state half treats it as a failure.
+        if not require_state and not CENSUS.parent.exists():
+            out["ok"] = True
+            out["verdict"] = "UNMEASURED"
+            out["why"] = (f"no desk state on this host ({CENSUS.parent} does not exist): the "
+                          "census cannot be judged here, which is a verdict and not a pass. Run "
+                          "with --require-state on the box or the VPS, where the state lives")
+            return out
         failures.append(
             f"no census artifact at {out['artifact']}: the leg `productivity_census` has never "
             "written one on this host, so which organs earn their compute is UNMEASURED and "
@@ -175,10 +191,15 @@ def check() -> dict[str, Any]:
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__ and __doc__.splitlines()[0])
     ap.add_argument("--json", action="store_true")
+    ap.add_argument("--require-state", action="store_true",
+                    help="treat an absent census as the failure it is: for the box and the VPS, "
+                         "where the desk state exists")
     args = ap.parse_args(argv)
-    verdict = check()
+    verdict = check(require_state=args.require_state)
     if args.json:
         print(json.dumps(verdict, indent=2, default=str))
+    elif verdict.get("verdict") == "UNMEASURED":
+        print(f"PRODUCTIVITY CENSUS FENCE: UNMEASURED -- {verdict.get('why')}")
     elif verdict.get("failures"):
         print("PRODUCTIVITY CENSUS FENCE: FAIL")
         for f in verdict["failures"]:

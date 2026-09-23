@@ -148,9 +148,105 @@ def _parse_html(body: bytes, source_id: str, url: str) -> dict[str, Any]:
                 "endpoints_found": len(endpoints), "endpoints": endpoints[:40],
                 "why": ("no table of 3+ rows, and the page links data files. Its payload is those "
                         "addresses -- they are handed back to the collector, not discarded")}
+    # THE SHAPE THE DESK HAD NEVER READ (2026-09-23). 67 of 101 vaulted payloads came back
+    # NO_TABLE with "No tables found matching regex '.+'". A modern statistics portal does not
+    # ship a `<table>`: it ships an empty div and the series inside a script -- `__NEXT_DATA__`,
+    # a `window.X = {...}` assignment, a `<script type="application/json">` island or a JSONP
+    # callback -- and the page renders it in the browser. The bytes carry the series either way,
+    # so the reader that finds it is the difference between a pack that emits cells and one that
+    # reports a portal. Tried only after tables and links, so nothing that parsed before changes.
+    emb = _parse_embedded(text, source_id)
+    if emb is not None:
+        return {**emb, "endpoints_found": len(endpoints), "endpoints": endpoints[:20]}
+    pre = _parse_pre_text(text, source_id)
+    if pre is not None:
+        return {**pre, "endpoints_found": len(endpoints), "endpoints": endpoints[:20]}
     return {"status": "NO_TABLE", "kind": "html", "n_tables": 0, "endpoints_found": 0,
             "why": (why_tables or "no table of 3+ rows and no data links: this page carries "
                                   "navigation or prose, not a series")}
+
+
+#: Script islands and assignments that carry a page's data, in the order they are tried.
+_EMBED_PATTERNS: tuple[str, ...] = (
+    r'<script[^>]+type=["\']application/(?:ld\+)?json["\'][^>]*>(.*?)</script>',
+    r'<script[^>]+id=["\']__NEXT_DATA__["\'][^>]*>(.*?)</script>',
+    r'(?:window|self|globalThis)\.\w+\s*=\s*(\{.*?\}|\[.*?\])\s*;',
+    r'(?:var|let|const)\s+\w+\s*=\s*(\{.*?\}|\[.*?\])\s*;',
+    r'^\s*\w+\s*\(\s*(\{.*\}|\[.*\])\s*\)\s*;?\s*$',            # JSONP callback({...})
+)
+
+
+def _record_lists(doc: Any, depth: int = 0) -> list[list[dict[str, Any]]]:
+    """Every list of like-shaped mappings anywhere in a decoded JSON document.
+
+    A portal's payload buries its series under `data.result.records` or `Series[0].Obs`; the
+    useful thing is not the top-level shape but any list of >= MIN_TABLE_ROWS dicts sharing keys.
+    Bounded by depth so a pathological document cannot walk forever.
+    """
+    out: list[list[dict[str, Any]]] = []
+    if depth > 6:
+        return out
+    if isinstance(doc, list):
+        rows = [r for r in doc if isinstance(r, dict)]
+        if len(rows) >= MIN_TABLE_ROWS and len(set(map(len, (r.keys() for r in rows[:20])))) <= 3:
+            out.append(rows)
+        for item in doc[:40]:
+            out.extend(_record_lists(item, depth + 1))
+    elif isinstance(doc, dict):
+        for v in list(doc.values())[:60]:
+            out.extend(_record_lists(v, depth + 1))
+    return out
+
+
+def _parse_embedded(text: str, source_id: str) -> dict[str, Any] | None:
+    """The largest list of records embedded in the page's scripts, as a frame. None when none."""
+    import pandas as pd
+    best: list[dict[str, Any]] = []
+    for pat in _EMBED_PATTERNS:
+        for m in re.finditer(pat, text, re.S | re.I | re.M):
+            blob = m.group(1).strip()
+            if len(blob) < 32 or len(blob) > 8_000_000:
+                continue
+            try:
+                doc = json.loads(blob)
+            except ValueError:
+                continue
+            for rows in _record_lists(doc):
+                if len(rows) > len(best):
+                    best = rows
+        if len(best) >= MIN_TABLE_ROWS:
+            break
+    if len(best) < MIN_TABLE_ROWS:
+        return None
+    df = pd.json_normalize(best[:200_000])
+    if df.empty or df.shape[1] < 1:
+        return None
+    return {"status": "PARSED", "kind": "html_embedded_json", "n_tables": 1, "rows": [len(df)],
+            "files": [_write_frame(df, source_id, "")],
+            "why": "the page ships an empty container and its series inside a script"}
+
+
+def _parse_pre_text(text: str, source_id: str) -> dict[str, Any] | None:
+    """A `<pre>` block of fixed-width or delimited columns -- how central banks still publish."""
+    import io
+
+    import pandas as pd
+    blocks = re.findall(r"<pre[^>]*>(.*?)</pre>", text, re.S | re.I)
+    for raw in sorted(blocks, key=len, reverse=True)[:3]:
+        body = re.sub(r"<[^>]+>", "", raw).strip()
+        if body.count("\n") < MIN_TABLE_ROWS:
+            continue
+        for reader in (lambda b: pd.read_csv(io.StringIO(b), sep=None, engine="python"),
+                       lambda b: pd.read_fwf(io.StringIO(b))):
+            try:
+                df = reader(body)
+            except Exception:
+                continue
+            if len(df) >= MIN_TABLE_ROWS and df.shape[1] >= 2:
+                return {"status": "PARSED", "kind": "html_pre_text", "n_tables": 1,
+                        "rows": [len(df)], "files": [_write_frame(df, source_id, "")],
+                        "why": "a preformatted text block, read as fixed-width or delimited"}
+    return None
 
 
 def _parse_pdf(body: bytes, source_id: str) -> dict[str, Any]:
@@ -351,6 +447,56 @@ def _dispatch(body: bytes, ctype: str, url: str, source_id: str) -> dict[str, An
     return _parse_html(body, source_id, url)
 
 
+def _canonicalise(rec: dict[str, Any], source_id: str) -> int:
+    """Write the source's LARGEST frame under its own bare name, and return the row count.
+
+    THE BREAK THIS CLOSES, measured 2026-09-23. `source_drain.chain_for` looks for
+    `series/<id>.parquet|.json|.csv` and nothing else, while an HTML table lands as
+    `<id>__t0.parquet` and a zip member as `<id>__s1.parquet`. So a source could be collected,
+    parsed into five good frames and PIT-stamped, and still read as `stops_at: collected` --
+    40 of 85 sources did. The suffixed frames stay exactly where they are (they are the whole
+    table set); this adds the one bare-named alias the chain, the drain and every downstream
+    reader address the source by. Never raises: a copy that fails costs the alias, not the parse.
+    """
+    files = [f for f in (rec.get("files") or []) if isinstance(f, str)]
+    if not files:
+        return 0
+    if any(f in (f"{source_id}.parquet", f"{source_id}.csv", f"{source_id}.json",
+                 f"{source_id}.txt") for f in files):
+        return _rows_of(SERIES / files[0])
+    best, best_n = None, -1
+    for name in files:
+        n = _rows_of(SERIES / name)
+        if n > best_n:
+            best, best_n = name, n
+    if best is None:
+        return 0
+    src = SERIES / best
+    dst = SERIES / f"{source_id}{src.suffix}"
+    try:
+        dst.write_bytes(src.read_bytes())
+        rec["canonical_file"] = dst.name
+    except OSError as exc:
+        rec["canonical_file_error"] = f"{type(exc).__name__}: {str(exc)[:60]}"
+    return max(best_n, 0)
+
+
+def _rows_of(path: Path) -> int:
+    """Rows in a written frame, 0 when it cannot be read. Cheap: parquet metadata, not a load."""
+    try:
+        if path.suffix == ".parquet":
+            import pyarrow.parquet as pq
+            return int(pq.ParquetFile(path).metadata.num_rows)
+        if path.suffix == ".csv":
+            with path.open(encoding="utf-8", errors="replace") as fh:
+                return max(sum(1 for _ in fh) - 1, 0)
+        if path.suffix in (".json", ".txt"):
+            return 1 if path.stat().st_size > 64 else 0
+    except Exception:
+        return 0
+    return 0
+
+
 def _registry_rows() -> dict[str, dict[str, Any]]:
     doc = _read(BASE / "data" / "asia_sources.json", {})
     rows = doc.get("sources") if isinstance(doc, dict) else None
@@ -394,11 +540,18 @@ def _stamp_pit(rec: dict[str, Any], source_id: str, meta: dict[str, Any],
         except Exception as exc:
             stamped.append({"file": name, "status": "UNSTAMPED",
                             "why": f"{type(exc).__name__}: {str(exc)[:60]}"})
+    # THE ALIAS AND THE ROW COUNT, both AFTER stamping so the canonical frame carries the
+    # envelope. `n_rows` is published in the pit doc because `source_drain.chain_for` reads it
+    # there to decide REPRESENTED; without it a stamped series with ten thousand rows counted as
+    # zero rows and the chain stopped one stage short of emitting a cell.
+    n_rows = _canonicalise(rec, source_id)
     doc = {"source_id": source_id, "lag_days": lag, "lag_basis": lag_why, "frames": stamped,
+           "n_rows": int(n_rows), "canonical_file": rec.get("canonical_file"),
            "stamped_at": datetime.now(UTC).isoformat(timespec="seconds")}
     (SERIES / f"{source_id}.pit.json").write_text(json.dumps(doc, indent=1), encoding="utf-8")
     statuses = [f.get("status") for f in stamped]
-    rec["pit"] = {"lag_days": lag, "lag_basis": lag_why,
+    rec["n_rows"] = int(n_rows)
+    rec["pit"] = {"lag_days": lag, "lag_basis": lag_why, "n_rows": int(n_rows),
                   "status": ("STAMPED" if all(x == "STAMPED" for x in statuses)
                              else "PARTIAL" if any(x == "STAMPED" for x in statuses)
                              else "UNSTAMPED")}

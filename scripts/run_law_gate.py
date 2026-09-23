@@ -169,6 +169,13 @@ _LAW_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     # forests.FOREST_TASKS) may disagree with the specs. Portable: it reads the tree and the
     # manifest, so it means the same in CI, a fresh clone and on the box.
     ("check_component_registry.py", ()),
+    # PRODUCTIVITY IS PROVEN OR IT IS NOT CLAIMED (external reviewer, 2026-09-23). The component
+    # registry above proves every executable has a CLOCK; this proves the desk still knows which
+    # producers turn that clock into CELLS. It fails on two things only -- a stale or missing
+    # census, and a producer that burned compute past the stated window with no unique cell and
+    # no named blocker -- and deliberately NOT on low productivity, because cutting the tail of
+    # the search distribution is exactly the reduction in aggressiveness the desk refuses.
+    ("check_productivity_census.py", ()),
     # ONE CERTIFICATE TRUTH (principal 2026-09-22). One writer (external_gauntlet.py), one
     # authority file (UNIVERSAL_SURVIVORS.json), one consumer (promoter.py); every derived store
     # -- survivors ledger, sleeve registry, shadow/lane states, sleeves.json, forward_reconcile --
@@ -316,6 +323,11 @@ _STATE_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("check_conversion_debt.py", ()),
     # the live half of ONE CERTIFICATE TRUTH: on the box an absent authority file is a defect
     ("check_certificate_truth.py", ("--require-state",)),
+    # the live half of THE PRODUCTIVITY CENSUS: on a host with desk state, NO census is the leg
+    # not running, and a census older than its window is the same fact arriving late. The
+    # portable half above passes with UNMEASURED on a clean checkout, where there is nothing to
+    # judge; here there is, and an absent scoreboard is the defect it looks like.
+    ("check_productivity_census.py", ("--require-state",)),
     # the live half of THE RUNTIME ATTESTATION: on the host that publishes it, an attestation
     # older than its own cadence means the hourly leg has stopped and the committed file has
     # quietly become a photograph of the past -- which is worse than no file, because it still
