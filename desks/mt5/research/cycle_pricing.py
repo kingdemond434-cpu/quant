@@ -259,6 +259,19 @@ def _rank01(values: dict[str, float]) -> dict[str, float]:
     return out
 
 
+def _evig_prices() -> tuple[dict[str, float], str]:
+    """The unified EVIG acquisition's per-leg factors (Tier-1 B11), or an empty map and why.
+
+    ONE-SIDED AT THE SOURCE AND HERE. `evig_acquisition` publishes factors >= 1.0; this converts
+    them to a price by rank, so a leg the frontier says nothing about contributes nothing rather
+    than a zero -- the same rule the other three sources follow."""
+    try:
+        from evig_acquisition import leg_factors
+        return leg_factors()
+    except Exception as exc:
+        return {}, f"evig_acquisition unavailable ({type(exc).__name__}: {exc})"
+
+
 def build_plan(bases: dict[str, int] | None = None) -> dict[str, Any]:
     """The hour's plan: a price, a factor and a planned budget for every leg with a base."""
     if bases is None:
@@ -275,7 +288,17 @@ def build_plan(bases: dict[str, int] | None = None) -> dict[str, Any]:
     # work and is the weakest claim of the three. A source that has nothing to say about a leg
     # contributes nothing rather than a zero, and the weights of the sources that DID speak are
     # renormalised -- otherwise "no opinion" would read as "priced lowest".
-    W = {"meta_controller": 0.55, "research_bandit": 0.30, "compute_policy": 0.15}
+    # THE FRONTIER JOINS THE PRICE STACK (Tier-1 B11, 2026-09-23). `evig_acquisition` ranks the
+    # bandit's ARMS, the docket's CELLS, the research tree's NODES and the frontier map's
+    # REGIONS on one percentile scale and hands back a per-leg factor. Until it existed the
+    # frontier ranked cells nobody could fund: three rankings in three currencies, none of which
+    # reached a budget. Its weight sits below the meta controller's (which speaks in the
+    # objective's own units) and beside the bandit's, because a percentile across families is a
+    # weaker claim than log-wealth per day and a stronger one than a tier prior.
+    evig, evig_why = _evig_prices()
+    e01 = _rank01(evig)
+    W = {"meta_controller": 0.45, "research_bandit": 0.25, "evig_acquisition": 0.20,
+         "compute_policy": 0.10}
     legs: dict[str, dict[str, Any]] = {}
     for leg, base in sorted(bases.items()):
         parts: list[tuple[str, float, float]] = []
@@ -283,6 +306,8 @@ def build_plan(bases: dict[str, int] | None = None) -> dict[str, Any]:
             parts.append(("meta_controller", W["meta_controller"], m01[leg]))
         if leg in b01:
             parts.append(("research_bandit", W["research_bandit"], b01[leg]))
+        if leg in e01:
+            parts.append(("evig_acquisition", W["evig_acquisition"], e01[leg]))
         if leg in p01:
             parts.append(("compute_policy", W["compute_policy"], p01[leg]))
         if parts:
@@ -331,7 +356,8 @@ def build_plan(bases: dict[str, int] | None = None) -> dict[str, Any]:
         "at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
         "sources": {"meta_controller": bool(meta), "meta_why": meta_why,
                     "research_bandit": bool(bandit), "compute_policy": bool(policy),
-                    "compute_policy_applied": policy_applied},
+                    "compute_policy_applied": policy_applied,
+                    "evig_acquisition": bool(evig), "evig_why": evig_why},
         "weights": W, "floor": FLOOR, "ceiling": CEIL, "scout_min_s": SCOUT_MIN_S,
         "scout_stale_h": SCOUT_STALE_H,
         "median_score": round(median, 6), "rescale": round(rescale, 4),

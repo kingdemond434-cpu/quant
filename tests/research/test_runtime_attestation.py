@@ -137,3 +137,88 @@ def test_the_leg_the_layer_and_the_committed_artifact_are_wired() -> None:
     from libs.ops.release import is_state_path
     for rel in ("docs/research/runtime_state.json", "docs/research/RUNTIME_STATE.md"):
         assert is_state_path(rel), f"{rel} must be a state path the box owns and pushes"
+
+
+# ------------------------------------------------------- the declaration, parsed and resolved
+def test_a_prose_artifact_declaration_yields_every_path_in_it() -> None:
+    """35 organs on the trading box read MISSING because their declaration had a word after the
+    path. The declaration was never wrong; it was never parsed."""
+    from desks.mt5.ops.components import artifact_paths
+    assert artifact_paths("desks/mt5/reports/ADVERSARY.json gate_detail") == (
+        "desks/mt5/reports/ADVERSARY.json",)
+    assert artifact_paths("a/A.json; b/B.jsonl + c/C.md") == ("a/A.json", "b/B.jsonl", "c/C.md")
+    assert artifact_paths("a/A.json (see a/A.json)") == ("a/A.json",)          # de-duplicated
+    # a bare filename is a word in a sentence, not a repo path -- but the declaration still
+    # COUNTS, because an organ that vanishes from the census is a hole in the ratchet
+    assert artifact_paths("registry rows") == ("registry rows",)
+    assert artifact_paths("") == ()
+
+
+def test_resolve_prefers_the_freshest_declared_output_then_names_the_relocation(
+        tmp_path: Path) -> None:
+    (tmp_path / "desks" / "mt5" / "reports").mkdir(parents=True)
+    (tmp_path / "desks" / "mt5" / "data").mkdir(parents=True)
+    old = tmp_path / "desks" / "mt5" / "reports" / "A.json"
+    new = tmp_path / "desks" / "mt5" / "reports" / "B.json"
+    old.write_text("{}", encoding="utf-8")
+    new.write_text("{}", encoding="utf-8")
+    import os
+    os.utime(old, (time.time() - 9000, time.time() - 9000))
+    rel, how, age, size = ra.resolve_artifact(
+        tmp_path, ("desks/mt5/reports/A.json", "desks/mt5/reports/B.json"))
+    assert rel == "desks/mt5/reports/B.json" and how == "declared" and age is not None
+    assert size > 0
+    # nothing declared exists, but the same basename does: a DECLARATION defect, named as one
+    (tmp_path / "desks" / "mt5" / "data" / "C.json").write_text("{}", encoding="utf-8")
+    rel, how, age, _ = ra.resolve_artifact(tmp_path, ("desks/mt5/reports/C.json",))
+    assert rel == "desks/mt5/data/C.json" and how.startswith("relocated") and age is not None
+    # and when it exists nowhere, the row stays absent rather than being invented
+    rel, how, age, _ = ra.resolve_artifact(tmp_path, ("desks/mt5/reports/NOPE.json",))
+    assert how == "absent" and age is None and rel == "desks/mt5/reports/NOPE.json"
+
+
+# ------------------------------------------------------------------------------ the ratchet
+def test_the_ratchet_only_ever_falls_and_is_per_host(tmp_path: Path) -> None:
+    paths = ra.Paths.at(tmp_path)
+    ra.ratchet_update(paths, "box-a", {"STALE": 10, "MISSING": 5, "NEVER": 3})
+    ra.ratchet_update(paths, "box-a", {"STALE": 4, "MISSING": 5, "NEVER": 9})
+    doc = json.loads(paths.ratchet.read_text(encoding="utf-8"))
+    floor = doc["hosts"]["box-a"]
+    assert (floor["STALE"], floor["MISSING"], floor["NEVER"]) == (4, 5, 3)
+    ra.ratchet_update(paths, "box-b", {"STALE": 99, "MISSING": 99, "NEVER": 99})
+    doc = json.loads(paths.ratchet.read_text(encoding="utf-8"))
+    assert doc["hosts"]["box-a"]["STALE"] == 4 and doc["hosts"]["box-b"]["STALE"] == 99
+
+
+def test_the_fence_fails_when_a_count_rises_above_its_floor(tmp_path: Path) -> None:
+    here = socket.gethostname()
+    census = dict.fromkeys(ra.STATES, 0)
+    census.update({"LIVE": 300, "STALE": 5, "MISSING": 2, "NEVER": 1})
+    _write(tmp_path, _doc(census=census))
+    ra.ratchet_update(ra.Paths.at(tmp_path), here, census)
+    assert fence.main(["--root", str(tmp_path)]) == 0           # at the floor: held
+    worse = dict(census)
+    worse["MISSING"] = 4
+    _write(tmp_path, _doc(census=worse))
+    v = fence.measure(tmp_path)
+    assert v["ratchet_regressions"] == ["MISSING rose 2 -> 4"]
+    assert any("RATCHET BROKEN" in f for f in v["failures"])
+    assert fence.main(["--root", str(tmp_path)]) == 2
+    better = dict(census)
+    better["STALE"] = 0
+    _write(tmp_path, _doc(census=better))
+    assert fence.main(["--root", str(tmp_path)]) == 0           # below the floor: fine
+
+
+def test_a_leg_with_a_producer_is_repaired_by_running_the_leg(tmp_path: Path) -> None:
+    """A department restart cannot relight a leg that has never fired inside a healthy
+    department. The leg's own repair is the leg, proved by its artifact moving."""
+    from desks.mt5.ops import components as comp
+
+    from libs.ops.control_plane import reconciler as rec
+    legs = [s for s in comp.hourly_leg_specs() if s.restart_action.startswith("run_once:")]
+    assert legs, "no leg carries a run_once repair: the plane cannot relight a dark leg"
+    a = rec._actuator_for(legs[0])
+    assert a is not None and a.name.startswith("run_once:leg:")
+    assert a.argv[0] and a.argv[-1]
+    assert a.postconditions == (rec.act.PRODUCTION_RESUMED,)
