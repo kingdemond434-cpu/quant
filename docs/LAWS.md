@@ -1028,6 +1028,19 @@ packs name has no resident, no discovery in its trailing window, or no candidate
   RAM was free, and every new leg died of STATUS_COMMITMENT_LIMIT. When legs die with RAM free,
   measure COMMIT, never RAM.
 
+- **EVERY OBLIGATION IS INHERITED, NOT REMEMBERED (2026-09-23, principal: "all this is always, as
+  the quant grows, not just now").** Every invariant this desk wins must bind the things that do
+  not exist yet, or it is a sweep rather than a property. So: a new EXECUTABLE arrives with a
+  clock, an artifact, a named consumer and a row in the runtime attestation; a new SOURCE arrives
+  with a collection obligation and a place in the chain from collected to cells judged; a new
+  FAMILY arrives already inside the judge's coverage, because the family set is derived from the
+  registry and never typed; a new COUNTRY or REGION arrives at the current depth, breadth and
+  ingestion floors, which rise and never fall; a new DESTRUCTIVE PATH arrives guarded against
+  acting on an absence. The mechanism is always the same and is never a checklist a session has to
+  recall: the set is DERIVED from what the tree holds, the floor RATCHETS in the safe direction
+  only, and the fence fails on the thing that got worse. A number that has to be re-swept by hand
+  next month was not fixed, it was tidied.
+
 - **NOTHING IS RETIRED ON AN ABSENCE (2026-09-23, measured the hard way).** No organ may retire,
   purge, demote, delete or refuse anything on the authority of a reference store that is EMPTY,
   STALE BEYOND ITS LEASE, or UNREADABLE. Such a store is UNMEASURED, and UNMEASURED is a verdict

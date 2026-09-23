@@ -117,6 +117,47 @@ def alpha_rl_family_values(path: Path | None = None) -> tuple[dict[str, float], 
     return out, f"{p.name}: {len(out)} family value(s), best {best}"
 
 
+#: C9's artifact. Read, never written, here.
+RESIDUAL_GATE = BASE / "reports" / "RESIDUAL_GATE.json"
+
+
+def residual_family_values(path: Path | None = None) -> tuple[dict[str, float], str]:
+    """Per-FAMILY best residual t from `reports/RESIDUAL_GATE.json`, and the basis. C9.
+
+    THE STATISTIC IS INCREMENTAL ALPHA AFTER NEUTRALISATION: `residual_gate_mount` regresses each
+    candidate the desk records a daily series for on the funded book's latent factors and on its
+    survivor series, and publishes the t of the intercept -- the alpha the book cannot explain.
+    C9's `next_step` asked for that as a stage inside `external_gauntlet`; that file is sealed, so
+    the statistic is mounted beside it and READ HERE, which is what makes it an admission
+    statistic rather than a report.
+
+    IT ORDERS, IT NEVER REMOVES. The value is a TIE-BREAK inside `breadth_order` between families
+    that have been judged equally often per docket row; no row is dropped, delayed or shrunk by
+    it. A family the mount has not measured is absent from the mapping and sorts at 0.0, the
+    neutral point of a signed t -- an unmeasured family loses nothing to a measured negative one.
+    `status` other than MEASURED returns nothing: ordering the docket by an unrun measurement is
+    worse than not ordering it.
+    """
+    p = RESIDUAL_GATE if path is None else path
+    try:
+        doc = json.loads(p.read_text("utf-8"))
+    except (OSError, ValueError):
+        return {}, f"{p.name} absent or unreadable"
+    if not isinstance(doc, dict) or str(doc.get("status") or "") != "MEASURED":
+        return {}, (f"{p.name} status="
+                    f"{(doc.get('status') if isinstance(doc, dict) else None)!r}: "
+                    "no measured residual cell")
+    out: dict[str, float] = {}
+    for fam, row in (doc.get("by_family") or {}).items():
+        t = row.get("best_residual_t") if isinstance(row, dict) else None
+        if fam and isinstance(t, (int, float)):
+            out[str(fam)] = float(t)
+    if not out:
+        return {}, f"{p.name} MEASURED but no candidate mapped to a registered family"
+    best = max(out.items(), key=lambda kv: kv[1])[0]
+    return out, f"{p.name}: {len(out)} family residual t(s), best {best}"
+
+
 def breadth_order(rows: list[dict], judged: dict[str, int]) -> list[dict]:
     """ORDER THE DOCKET SO UNTESTED FAMILIES REACH THE GATES.
 
@@ -145,8 +186,15 @@ def breadth_order(rows: list[dict], judged: dict[str, int]) -> list[dict]:
     # the agent has never valued sorts at 0.0, which is the NEUTRAL point of a signed dE[log W]
     # value, so an unvalued family loses nothing to one the agent dislikes.
     rl, _rl_why = alpha_rl_family_values()
+    # C9's CONSUMER, one rung below G4's. When breadth and the RL value both tie, the family
+    # whose candidate the CURRENT BOOK cannot explain is judged first -- incremental alpha after
+    # neutralisation, which is exactly what C9 asks an admission statistic to be. It still only
+    # re-orders: no family is removed from the docket by a residual t, and an unmeasured one
+    # sorts at the neutral 0.0.
+    res, _res_why = residual_family_values()
     order = {fam: i for i, fam in
-             enumerate(sorted(docket, key=lambda f: (spend(f), -rl.get(f, 0.0), f)))}
+             enumerate(sorted(docket, key=lambda f: (spend(f), -rl.get(f, 0.0),
+                                                     -res.get(f, 0.0), f)))}
     return sorted(rows, key=lambda r: order.get(str(r.get("family") or ""), len(order)))
 
 #: Every producer, and how to reach the rows inside it. Adding a producer means adding a line

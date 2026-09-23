@@ -92,6 +92,19 @@ def _family_of(name: str, families: list[str]) -> str:
     for fam in families:
         if fam.lower() in low:
             return fam
+    # ABBREVIATED SLEEVE NAMES. The forward lanes shorten a family in the sleeve key --
+    # `CADJPY_asia_FAILED_BREAK` is `failed_breakout`, and a plain substring test misses it and
+    # returns "", which drops a real family out of the table silently. A contiguous run of the
+    # name's tokens each of which PREFIXES the corresponding family token is the same family
+    # abbreviated; requiring the run to be contiguous and in order keeps `break` from matching
+    # `breakout_reversal` through an unrelated middle token.
+    tokens = [t for t in low.split("_") if t]
+    for fam in families:
+        want = fam.lower().split("_")
+        for start in range(len(tokens) - len(want) + 1):
+            run = tokens[start:start + len(want)]
+            if all(w.startswith(r) and len(r) >= 3 for r, w in zip(run, want, strict=True)):
+                return fam
     return ""
 
 
@@ -118,7 +131,7 @@ def _record_events(rows: list[dict[str, Any]]) -> dict[str, Any]:
     `record_event` appends; it changes no status and carries no verdict. This is the door that
     makes the statistic reachable from a row's own provenance rather than only from a JSON file.
     """
-    out = {"attempted": 0, "recorded": 0, "why": ""}
+    out: dict[str, Any] = {"attempted": 0, "recorded": 0, "why": ""}
     try:
         from libs.moat import registry as reg
     except Exception as exc:
@@ -127,15 +140,16 @@ def _record_events(rows: list[dict[str, Any]]) -> dict[str, Any]:
     for row in rows:
         if row.get("status") != "MEASURED":
             continue
-        out["attempted"] += 1
+        out["attempted"] = int(out["attempted"]) + 1
         with contextlib.suppress(Exception):
             reg.record_event(str(row.get("name") or "?"), "residual_alpha",
-                             evidence={"residual_t": row.get("residual_t"),
-                                       "raw_t": row.get("raw_t"),
-                                       "t_retained": row.get("t_retained"),
-                                       "n": row.get("n_overlap"),
-                                       "authority": "published, never a veto"})
-            out["recorded"] += 1
+                             actor="residual_gate",
+                             detail={"residual_t": row.get("residual_t"),
+                                     "raw_t": row.get("raw_t"),
+                                     "t_retained": row.get("t_retained"),
+                                     "n": row.get("n_overlap"),
+                                     "authority": "published, never a veto"})
+            out["recorded"] = int(out["recorded"]) + 1
     if out["attempted"] and not out["recorded"]:
         out["why"] = "every record_event call was refused by the registry; report-only this pass"
     return out
@@ -145,7 +159,8 @@ def run(budget_s: float = DEFAULT_BUDGET_S) -> dict[str, Any]:
     started = time.monotonic()
     frame, frame_why = _load_frame()
     art = _read_json(ALLOCATION)
-    heats = art.get("book") if isinstance(art.get("book"), dict) else {}
+    raw_book = art.get("book")
+    heats: dict[str, Any] = raw_book if isinstance(raw_book, dict) else {}
     doc: dict[str, Any] = {
         "at": _now(), "organ": "residual_gate", "source": frame_why,
         "budget_s": round(float(budget_s), 1),
@@ -234,8 +249,9 @@ def main(argv: list[str] | None = None) -> int:
     args = ap.parse_args(argv)
     doc = run(budget_s=max(1.0, float(args.budget_s)))
     _write(doc)
+    tail = f" -- {doc['why']}" if doc.get("why") else ""
     print(f"residual_gate: {doc['status']} -- {doc.get('n_measured', 0)} measured, "
-          f"{doc.get('n_unmeasured', 0)} unmeasured{(' -- ' + doc['why']) if doc.get('why') else ''}")
+          f"{doc.get('n_unmeasured', 0)} unmeasured{tail}")
     print(f"-> {OUT}")
     return 0
 

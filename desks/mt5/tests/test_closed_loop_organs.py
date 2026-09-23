@@ -311,3 +311,58 @@ def test_every_new_leg_is_declared_and_wired(leg: str) -> None:
     src = (_DESK / "research" / "hourly_cycle.py").read_text(encoding="utf-8", errors="replace")
     assert f'_costed("{leg}"' in src, f"{leg} has no leg in the hourly cycle"
     assert f'"{leg}":' in src, f"{leg} is missing from the cycle's results dict"
+
+
+# ----------------------------------------------------------------- B14 drain guarantee
+def test_the_chain_names_the_stage_a_source_stops_at(tmp_path: Path, monkeypatch) -> None:
+    from research import source_drain as sd
+    monkeypatch.setattr(sd, "VAULT", tmp_path / "vault")
+    monkeypatch.setattr(sd, "SERIES", tmp_path / "series")
+    (tmp_path / "series").mkdir()
+    never = sd.chain_for({"id": "a", "cadence": "daily"}, {}, {})
+    assert never["stage_reached"] == "none" and never["stops_at"] == "collected"
+    assert never["collected"] is False and "never collected" in never["why"]
+    bytes_only = sd.chain_for({"id": "b"}, {"b": {"last_status": "COLLECTED"}}, {})
+    assert bytes_only["stage_reached"] == "collected"
+    assert bytes_only["stops_at"] == "ingested", "a source that stops at bytes must say so"
+    (tmp_path / "series" / "c.json").write_text("[" + "0," * 40 + "0]", encoding="utf-8")
+    (tmp_path / "series" / "c.pit.json").write_text('{"n_rows": 12, "vintage": "2026-09-01"}',
+                                                    encoding="utf-8")
+    judged = sd.chain_for({"id": "c"}, {"c": {"last_status": "COLLECTED"}},
+                          {"c": {"leads": 3, "testable": 3, "judged": 2}})
+    assert judged["stage_reached"] == "cells_judged" and judged["stops_at"] is None
+    assert judged["cells_judged"] == 2
+
+
+def test_an_unreached_source_is_recorded_never_silent(tmp_path: Path, monkeypatch) -> None:
+    from research import source_drain as sd
+    monkeypatch.setattr(sd, "REGISTRY", tmp_path / "sources.json")
+    monkeypatch.setattr(sd, "STATE", tmp_path / "state.json")
+    monkeypatch.setattr(sd, "VAULT", tmp_path / "vault")
+    monkeypatch.setattr(sd, "SERIES", tmp_path / "series")
+    monkeypatch.setattr(sd, "SOURCE_REGISTRY", tmp_path / "registry.json")
+    monkeypatch.setattr(sd, "RATCHET", tmp_path / "ratchet.json")
+    monkeypatch.setattr(sd, "TASKS", tmp_path / "tasks.jsonl")
+    (tmp_path / "sources.json").write_text(json.dumps({"sources": [
+        {"id": "unreachable", "url": "https://example.invalid/x", "cadence": "daily"}]}),
+        encoding="utf-8")
+    monkeypatch.setattr(sd, "drain", lambda pending, budget, fetch=True, oldest_first=None: {
+        "attempted": list(pending), "n_attempted": len(pending), "seconds": 0.0, "why": "test"})
+    doc = sd.build(budget_s=5.0, fetch=True)
+    assert doc["uncollected_before"] == 1 and doc["uncollected_after"] == 1
+    assert [r["id"] for r in doc["not_reached"]] == ["unreachable"]
+    assert doc["n_collected_but_unconverted"] == 0
+
+
+def test_the_two_ratchets_fail_only_when_a_backlog_rises() -> None:
+    import importlib
+    cs = importlib.import_module("scripts.check_source_drain")
+    ok, _ = cs.check({"uncollected": 5, "best_uncollected": 9, "unconverted": 2,
+                      "best_unconverted": 4, "oldest_never_collected": "x",
+                      "oldest_age_h": 10.0, "oldest_window_h": 144.0})
+    assert ok == [], "a falling backlog is never a breach"
+    rose, _ = cs.check({"uncollected": 12, "best_uncollected": 9, "unconverted": 9,
+                        "best_unconverted": 4, "oldest_never_collected": "x",
+                        "oldest_age_h": 900.0, "oldest_window_h": 144.0})
+    assert len(rose) == 3, "both ratchets and the stale window must each speak"
+    assert cs.check({})[0], "an absent artifact is UNMEASURED and fails"

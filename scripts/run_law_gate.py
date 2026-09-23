@@ -217,6 +217,13 @@ _LAW_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
 #: They run in the hourly box gate, where their verdict is real.
 _STATE_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("check_conversion.py", ()),               # L1.28b -- FLATLINE fails
+    # EVERY SOURCE COLLECTED AND CONVERTED (principal 2026-09-23, "make sure they are always
+    # collected, 100% exploited and converted"). Two ratchets that may only fall -- sources never
+    # collected, and sources collected whose cells never reached the gauntlet -- plus the oldest
+    # never-collected source against its own cadence window. A FALLING backlog is never a breach;
+    # this fails on the direction, never on the size, so it can never be an argument for
+    # collecting less. State, because it reads the drain ledger the box writes.
+    ("check_source_drain.py", ()),
     # NOTHING IS PARKED (principal 2026-09-23, "nothing should be queued in the research system,
     # all immediate tested"). Fails when any queue's oldest row is older than ONE CYCLE of the
     # organ that owns it, when a queue has open rows and no drainer at all, or when rows carry no

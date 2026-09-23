@@ -63,6 +63,7 @@ for _p in (str(DESK), str(DESK / "research"), str(ROOT)):
 
 REGISTRY = DESK / "data" / "asia_sources.json"
 STATE = DESK / "data" / "lake" / "collector_state.json"
+VAULT = DESK / "data" / "lake" / "vault"
 FOUND = DESK / "data" / "intelligence" / "asia_endpoints"
 POSTERIOR = DESK / "reports" / "POSTERIOR_ALPHA.json"
 OUT = DESK / "reports" / "SOURCE_EVIG.json"
@@ -140,11 +141,18 @@ def _posterior_sd() -> tuple[dict[str, float], str]:
 
 
 def _history(state: dict[str, Any], sid: str) -> tuple[int, int, float | None]:
-    """(ok, fail, measured seconds) from the collector's own state row."""
+    """(ok, fail, measured seconds) from the collector's own state row.
+
+    THE VAULT COUNTS AS A COLLECTION (2026-09-23). The state row holds only the LAST attempt, so
+    a source whose bytes are in `lake/vault/<id>` and whose last attempt happened to fail read as
+    never-collected here while `source_drain`'s chain read it as collected. Two organs disagreeing
+    about the same word is how a backlog gets mis-ranked, so both now count the vault."""
+    vaulted = 1 if (VAULT / sid).exists() else 0
     row = state.get(sid)
     if not isinstance(row, dict):
-        return 0, 0, None
-    ok = int(row.get("ok_count") or (1 if str(row.get("last_status")) in OK_STATUSES else 0))
+        return vaulted, 0, None
+    ok = int(row.get("ok_count")
+             or (1 if str(row.get("last_status")) in OK_STATUSES else 0)) or vaulted
     fail = int(row.get("fail_count")
                or (1 if str(row.get("last_status") or "") not in (*OK_STATUSES, "") else 0))
     secs = row.get("seconds", row.get("ms"))

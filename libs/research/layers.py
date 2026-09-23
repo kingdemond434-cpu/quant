@@ -169,6 +169,18 @@ LEG_LAYER: dict[str, str] = {
     "candidate_conservation": "meta",
     # Planted point-in-time canaries measure whether the desk can read the future: meta.
     "pit_canaries": "meta",
+    # THE TIER-1 CLOSED-LOOP B ROWS (2026-09-23).
+    # Whether the running code may create new exposure, which scientist earned what, which
+    # structures have started surviving again, and one EVIG price over every research resource
+    # are all the machine measuring and scheduling itself: meta.
+    "release_authority": "meta", "scientist_standings": "meta", "failure_prior": "meta",
+    "evig_acquisition": "meta",
+    # The per-asset regime hierarchy and the learned representation lane say what the market IS
+    # before anything predicts it -- the information layer, like the crawlers and the miners.
+    "regime_hierarchy": "information", "representation_discovery": "information",
+    # The residual map turns the desk's own errors into search targets, and the research tree
+    # and the CEO docket decide which question is asked next: information.
+    "residual_map": "information", "research_tree": "information", "frontier_ceo": "information",
     # Certification fate joined back to the generators that proposed each cell reweights the
     # predictor search itself: prediction.
     "mutation_yield": "prediction",
@@ -212,6 +224,10 @@ LEG_LAYER: dict[str, str] = {
     # features themselves from ingested series -- also information, and for the same reason
     # `unused_information` is: it decides what inputs exist, not what they imply.
     "world_model": "prediction", "residual_hunt": "information",
+    # C9. `residual_gate` measures what a candidate adds to the book the desk ALREADY holds, and
+    # that is a statement about the portfolio, not about the market: it is the same layer as the
+    # allocator's own evidence work, one rung above a prediction.
+    "residual_gate": "portfolio",
     "representation_forge": "information",
     # THE MATHEMATICS CIVILIZATION (2026-09-17): every object it invents is a claim about the
     # residual -- E[eps | f(x)] -- which is a claim about returns, so the hour is billed to
@@ -427,7 +443,8 @@ LEG_LAYER: dict[str, str] = {
     # destroyer pool and the multi-chart counterfactual are claims about returns, so they are
     # prediction; the shortfall refit is how an order reaches the venue; the bench, the evidence
     # chain, the immutable clock ledger and the meta-tournament are the machine measuring itself.
-    "source_evig": "information", "actor_pressure": "information",
+    "source_evig": "information", "source_drain": "information",
+    "actor_pressure": "information",
     "destroyer_pool": "prediction", "counterfactual_timeframes": "prediction",
     "shortfall_model": "execution",
     "quantbench": "meta", "evidence_chain": "meta", "clock_ledger": "meta",
