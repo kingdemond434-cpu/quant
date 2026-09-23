@@ -1028,6 +1028,20 @@ packs name has no resident, no discovery in its trailing window, or no candidate
   RAM was free, and every new leg died of STATUS_COMMITMENT_LIMIT. When legs die with RAM free,
   measure COMMIT, never RAM.
 
+- **THERE IS ONE JUDGE, AND NO ORGAN MAY SCREEN ITS OWN OUTPUT BEFORE IT (2026-09-23).** A
+  producer PROPOSES; the sealed gauntlet DISPOSES. An organ that filters its own candidates on its
+  own score before queueing them has appointed itself a second judge, and every cell it silently
+  withheld is evidence the desk never got to weigh. An internal score is PROVENANCE and an
+  ORDERING HINT, never a gate: rank by it, publish it, charge the trials it implies -- and queue
+  the row regardless. MEASURED: the mathematics lab queued only objects that had passed its own
+  screen, so 236 discoveries in one day sat UNPROCESSED and twenty-three traditions burned compute
+  for zero cells while reading as barren producers. The same shape is a defect wherever it appears
+  -- a miner that drops its weak rows, a compiler that keeps only its best, a seat that sends its
+  favourites. Only the four immutable evaluator files may refuse a cell; anything else that
+  refuses one is a bug with an owner. The corollary binds too: a producer's output is credited to
+  the producer, under ONE derived key, because one organ wearing two identities reads as two
+  organs, one of them barren.
+
 - **FIX THE CLASS, ON A CLOCK, OR IT IS NOT FIXED (2026-09-23, principal: "fixes should always be
   permanent and automated so it never needs builders again").** A defect is not closed when the
   instance is repaired. It is closed when an organ DETECTS every instance of its class, REPAIRS

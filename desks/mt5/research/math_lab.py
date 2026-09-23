@@ -892,6 +892,10 @@ def record_registry(objects: list[MathObject], per_tradition: dict[str, dict[str
     """
     out: dict[str, Any] = {"discoveries": 0, "new": 0, "links": 0, "representations": 0,
                            "generator_yield": 0, "trials": []}
+    #: What each tradition actually put in front of the judge this pass. The trial charge is
+    #: taken off THIS, not off the lab's internal pass count: charging fewer trials than were
+    #: queued would understate the multiplicity the gauntlet now has to deflate.
+    queued_by_tradition: dict[str, int] = {}
     try:
         from libs.moat import registry as reg
     except Exception as exc:
@@ -921,9 +925,19 @@ def record_registry(objects: list[MathObject], per_tradition: dict[str, dict[str
                 continue
             out["discoveries"] += 1
             out["new"] += int(created)
+            # THE LAB PROPOSES; THE ONE JUDGE DECIDES (principal, 2026-09-23: "make all maths and
+            # physics discoveries reach the gauntlet as testable cells"). This line used to read
+            # `"QUEUED" if obj.passed else "UNPROCESSED"`, which made the lab's own internal
+            # screen a SECOND JUDGE -- and the desk has exactly one. Measured the day it changed:
+            # all 236 discoveries minted in 24h sat UNPROCESSED, so discovery_compiler never saw
+            # one and twenty-three traditions burned compute for zero cells. Every minted object
+            # is now QUEUED through the normal door; `obj.passed` and `obj.value` survive as
+            # PROVENANCE on the discovery payload and as the donation ORDERING hint below, never
+            # as a gate. More cells means more multiplicity, and the trial charge below counts
+            # what was queued rather than what the lab liked.
             with contextlib.suppress(Exception):
-                reg.set_discovery_state(did, "QUEUED" if obj.passed else "UNPROCESSED",
-                                        conn=conn)
+                reg.set_discovery_state(did, "QUEUED", conn=conn)
+            queued_by_tradition[obj.tradition] = queued_by_tradition.get(obj.tradition, 0) + 1
             if obj.provenance.residual_discovery_id:
                 try:
                     reg.link("discovery", obj.provenance.residual_discovery_id, "discovery", did,
@@ -955,7 +969,9 @@ def record_registry(objects: list[MathObject], per_tradition: dict[str, dict[str
                 **B.record_trials(tradition, distinct_forms=int(row.get("distinct", 0)),
                                   evaluated=int(row.get("evaluated", 0)),
                                   target=str(row.get("target") or ""),
-                                  passed=int(row.get("passed", 0)), conn=conn)})
+                                  passed=max(int(row.get("passed", 0)),
+                                             queued_by_tradition.get(tradition, 0)),
+                                  conn=conn)})
         return out
     finally:
         with contextlib.suppress(Exception):
@@ -1105,8 +1121,12 @@ def run(*, budget_s: float = 3000.0, dry_run: bool = False,
         seat_named = 0
         del _exc
 
-    survivors = [o for o in admitted if o.passed]
-    survivors.sort(key=lambda o: -(o.value or -9e9))
+    # THE SAME CHANGE ON THE DONATION SIDE. `[o for o in admitted if o.passed]` was the second
+    # half of the lab's second judge: an object the internal screen disliked could never be
+    # donated, however cheap it would have been for the one gauntlet to reject it. The screen now
+    # ORDERS the queue -- passed first, then by value -- so the best-regarded objects still go
+    # first under MAX_DONATIONS, and a disliked one goes when there is room instead of never.
+    survivors = sorted(admitted, key=lambda o: (0 if o.passed else 1, -(o.value or -9e9)))
 
     already = set((_read_json(DONATED) or {}).get("object_ids") or [])
     rows, refused = donation_rows(survivors[:MAX_DONATIONS], already)
