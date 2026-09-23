@@ -176,11 +176,14 @@ EXTENSIONS: dict[str, tuple[tuple[str, str], ...]] = {
     "alpha_cards": (("desk_ref", "TEXT"), ("lane", "TEXT"), ("symbol", "TEXT"),
                     ("family", "TEXT"), ("params_json", "TEXT"), ("chart", "TEXT"),
                     ("mechanism", "TEXT")),
-    # THE ACCESS ROUTING LAW (LAWS 5e, 2026-09-17): three INDEPENDENT dimensions on every source
-    # -- access label, credibility, predictive state -- written by research/evidence_router.py
-    # through libs/research/access_classifier.py. `quarantine` is 1 for ACCESS_UNCLEAR (metadata
-    # kept, content not consumed); a refused label (PRIVATE, CONFIDENTIAL_MNPI,
-    # STOLEN_UNAUTHORIZED) keeps its reason in `route_reason`. ADD COLUMN, never a rewrite.
+    # THE ACCESS ROUTING LAW (LAWS 5e, rewritten 2026-09-23): three INDEPENDENT dimensions on
+    # every source -- access label, credibility, predictive state -- written by
+    # research/evidence_router.py through libs/research/access_classifier.py. The labels ROUTE
+    # REDISTRIBUTION and WEIGHT; they never stop a source being mined or tested. `quarantine` is
+    # now 0 on every row: the ACCESS_UNCLEAR quarantine was deleted and the column is kept only
+    # so old readers find a 0 rather than a missing field. Only a refused label (PRIVATE,
+    # CONFIDENTIAL_MNPI, STOLEN_UNAUTHORIZED -- the five acts) withholds use, with its reason in
+    # `route_reason`. ADD COLUMN, never a rewrite.
     "sources": (("access_label", "TEXT"), ("credibility", "TEXT"),
                 ("predictive_state", "TEXT"), ("quarantine", "INTEGER"),
                 ("routed_at", "TEXT"), ("route_reason", "TEXT")),

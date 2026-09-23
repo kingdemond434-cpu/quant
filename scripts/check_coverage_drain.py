@@ -10,8 +10,17 @@ the oldest has waited, how many are past the organ's own 24-hour lease, and how 
 cumulatively drained. Three of them are ratcheted here:
 
   * `backlog_overdue`     may FALL, never RISE.   <- the failing metric
-  * `oldest_wait_h`       may FALL, never RISE.
+  * `overdue_wait_h`      may FALL, never RISE.
   * `drained_total`       may RISE, never FALL.
+
+`overdue_wait_h` IS `max(0, oldest_wait_h - LEASE_H)` AND NOT THE RAW WAIT, and the difference
+cost a red gate to learn. The first version of this fence ratcheted `oldest_wait_h` itself and
+failed on the third live pass -- 6.0h to 6.3h -- because eighteen minutes of wall time had
+passed. Nothing a drain does inside a pass can make a clock run backwards, so that metric was
+unfailable-in-the-right-direction and unavoidable-in-the-wrong one: a gate nobody could satisfy
+is a gate that gets switched off. A wait UNDER the lease is the queue working exactly as
+designed; only the part ABOVE the lease is neglect, and that part is zero while the drain keeps
+up. `oldest_wait_h` is still published and still printed -- it just does not fail anything.
 
 `uncrawled_total` is ALSO ratcheted, but it fails only when it rises in a pass that seeded no new
 ground. That exception is the whole design and it is not a loophole. The drain's FIRST duty is to
@@ -58,8 +67,11 @@ LEDGER = DESK / "data" / "coverage_drain_ledger.json"
 AUDIT = DESK / "reports" / "coverage_drain_fence.json"
 
 #: The three ratcheted quantities and the direction each is allowed to move.
-CEILINGS: tuple[str, ...] = ("backlog_overdue", "oldest_wait_h")
+CEILINGS: tuple[str, ...] = ("backlog_overdue", "overdue_wait_h")
 FLOORS: tuple[str, ...] = ("drained_total",)
+#: Published on every verdict and fenced by nothing. See the module docstring: the raw wait rises
+#: with the clock whatever the drain does, so ratcheting it made the gate unsatisfiable.
+REPORTED: tuple[str, ...] = ("oldest_wait_h", "uncrawled_total")
 #: Float noise only. A ratchet is not a band: a real move of any size is the verdict.
 EPS = 1e-6
 #: How old a report may be before the fence stops treating it as this hour's measurement. The
@@ -190,6 +202,15 @@ def judge(*, report: Path | None = None, ledger: Path | None = None,
             row["state"] = "OK"
             row["why"] = f"{key} {cur} >= floor {old}"
         out["checks"].append(row)
+
+    for key in REPORTED:
+        if key == "uncrawled_total":
+            continue
+        out["checks"].append({
+            "metric": key, "state": "REPORTED", "current": _num(measured.get(key)),
+            "direction": "published, fenced by nothing",
+            "why": (f"{key} is {measured.get(key)}; it rises with the clock whatever the drain "
+                    f"does, so `overdue_wait_h` above is what the ratchet reads")})
 
     cur, old = _num(measured.get("uncrawled_total")), _num(prev_ceil.get("uncrawled_total"))
     row = {"metric": "uncrawled_total", "current": cur, "ceiling": old, "seeded": seeded,

@@ -33,6 +33,7 @@ import argparse
 import json
 import os
 import re
+import sys
 import time
 from collections import Counter
 from collections.abc import Callable
@@ -41,8 +42,14 @@ from pathlib import Path
 from typing import Any
 
 ROOT = Path(__file__).resolve().parent.parent
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from libs.ops import producer_census as PCEN  # noqa: E402
+
 DESK = ROOT / "desks" / "mt5"
 OUT = DESK / "reports" / "SEAT_HEALTH.json"
+CENSUS_OUT = DESK / "reports" / "PRODUCER_CENSUS.json"
 RETIREMENTS = ROOT / "docs" / "research" / "retirements.jsonl"
 
 INTEL_ROOTS = (ROOT / "data" / "intelligence", DESK / "data" / "intelligence")
@@ -61,11 +68,16 @@ WINDOW_CADENCES = 3.0
 #: would fail on one slow crawl; the floor buys the same tolerance a slower seat gets for free.
 MIN_WINDOW_H = 6.0
 
-#: seat directory under data/intelligence -> the organ that fills it. DECLARED, because the
-#: mapping is not inferable: `asia_plane` donates into `asia/`, `deepseek_cycle` into
-#: `deepseek/`, and a checker that guessed would report a working seat as dead on a rename.
-#: A seat absent from here is still measured -- it is discovered from its own directory -- but
-#: it has no organ to look a clock up for, and therefore reads UNMEASURED with that said.
+#: seat directory under data/intelligence -> the organ that fills it. The DECLARED OVERRIDES
+#: only: the rest is DERIVED from the source tree by `producer_census.derive_seat_organs`.
+#:
+#: THIS TABLE WAS THE DEFECT, measured on the trading box 2026-09-23. Fourteen seats were typed
+#: here and NINETY-TWO real donation directories were not, so the fence answered "no organ
+#: declared in SEAT_ORGANS, so no clock can be looked up" for `aaii`, `academic`, `arxiv_qfin`,
+#: `central_banks` and sixty more that were producing inside the hour. A hand table is a copy of
+#: the tree that rots the day a miner lands; a blind spot the size of the census is worse than a
+#: red fence, because it reports health it never looked at. So the table now holds only the
+#: mappings the derivation cannot reach, and a new seat is covered the day its writer lands.
 SEAT_ORGANS: dict[str, str] = {
     "kimi": "scripts/kimi_hunter.py",
     "deepseek": "ops/run_deepseek_factory.sh",
@@ -73,10 +85,12 @@ SEAT_ORGANS: dict[str, str] = {
     "world": "desks/mt5/side_channels/world_crawler.py",
     "asia": "desks/mt5/research/asia_plane.py",
     "deep_forest": "desks/mt5/research/deep_forest_miner.py",
-    "github": "desks/mt5/research/github_miner.py",
-    "mql5_signals": "desks/mt5/research/mql5_signals.py",
-    "mql5_survivors": "desks/mt5/research/mql5_survivors.py",
-    "fxblue": "desks/mt5/research/fxblue_harvest.py",
+    #: `github`, `mql5_signals`, `mql5_survivors` and `fxblue` WERE declared here, each pointing
+    #: at `desks/mt5/research/<name>.py` -- four paths that have never existed in this tree (the
+    #: miners live under `side_channels/`). Four live seats therefore read "declared organ does
+    #: not exist", which is the hand table failing in the other direction: not a missing entry
+    #: but a wrong one, and a wrong entry SHADOWS the derivation that would have got it right.
+    #: They are deliberately absent now and derived instead.
     "understanding_seat": "desks/mt5/research/understanding_seat.py",
     "discovery_compiler": "desks/mt5/research/discovery_compiler.py",
     "representation_forge": "desks/mt5/research/representation_forge.py",
@@ -221,7 +235,11 @@ def clock_index() -> dict[str, dict[str, Any]]:
             idx[script] = {**row, "also": also if isinstance(also, list) else []}
 
     ops = ROOT / "ops"
-    for unit in sorted(ops.glob("quant-*.service")) if ops.is_dir() else []:
+    #: EVERY UNIT, NOT JUST `quant-*`. Measured 2026-09-23: `ops/hourly-controller.service` is a
+    #: real VPS unit that fills `data/intelligence/hypotheses`, and a glob that only matched the
+    #: desk's own prefix reported that seat as having no clock at all. Five units in this
+    #: directory carry no prefix; a clock index that cannot see them invents darkness.
+    for unit in sorted(ops.glob("*.service")) if ops.is_dir() else []:
         try:
             svc = unit.read_text(encoding="utf-8", errors="replace")
         except OSError:
@@ -333,16 +351,39 @@ def last_donation() -> dict[str, float]:
     return out
 
 
-def audit(*, strict: bool = False, window_cadences: float = WINDOW_CADENCES) -> dict[str, Any]:
+def seat_organs(clocks: dict[str, dict[str, Any]] | None = None) -> dict[str, str]:
+    """seat -> organ: the DECLARED overrides first, then everything the tree itself says.
+
+    A DERIVED MAPPING IS THE ONLY KIND THAT STAYS TRUE. The declared table holds fourteen seats
+    and the tree holds a hundred; `derive_seat_organs` reads the writers out of the source, so a
+    seat that lands tomorrow is mapped tomorrow rather than when somebody remembers to type it.
+    """
+    idx = clocks if clocks is not None else clock_index()
+    out: dict[str, str] = {}
+    for seat, row in PCEN.derive_seat_organs(ROOT, clocked=idx).items():
+        organ = row.get("organ")
+        if organ:
+            out[seat] = str(organ)
+    out.update(SEAT_ORGANS)
+    return out
+
+
+def audit(*, strict: bool = False, window_cadences: float = WINDOW_CADENCES,
+          organs: dict[str, str] | None = None) -> dict[str, Any]:
     clocks = clock_index()
+    mapping = organs if organs is not None else seat_organs(clocks)
     ages = last_donation()
     retired = retired_seats()
     here = _host()
+    #: MEASURED, not inferred from `os.name`. A build box is Windows too, and its
+    #: data/intelligence is a git mirror whose newest file is as old as the last pull -- judging
+    #: it reported a hundred healthy seats as dead for work happening correctly elsewhere.
+    runs_here = PCEN.runs_clocks_here(ROOT)
     lit = panel_is_lit()
     rows: list[dict[str, Any]] = []
 
-    for seat in sorted(set(SEAT_ORGANS) | set(ages) | set(retired)):
-        organ = SEAT_ORGANS.get(seat, "")
+    for seat in sorted(set(mapping) | set(ages) | set(retired)):
+        organ = mapping.get(seat, "")
         clock = clocks.get(organ) if organ else None
         age = ages.get(seat)
         rec: dict[str, Any] = {
@@ -393,12 +434,10 @@ def audit(*, strict: bool = False, window_cadences: float = WINDOW_CADENCES) -> 
         window = max(MIN_WINDOW_H, float(cadence) * float(window_cadences))
         rec["window_h"] = round(window, 2)
         owner = str(clock.get("host"))
-        if not strict and owner in ("box", "vps") and owner != here:
+        skip = PCEN.mirror_reason(owner, here, runs_here, str(clock.get("clock")))
+        if not strict and skip:
             rec.update({"verdict": "UNMEASURED_HERE",
-                        "why": (f"clock {clock['clock']} runs on the {owner}; this checkout on "
-                                f"the {here} holds a mirror of what that host wrote, so an old "
-                                "file here is not a stale seat. Run with --strict to judge it "
-                                "anyway")})
+                        "why": f"{skip}. Run with --strict to judge it anyway"})
             rows.append(rec)
             continue
         if age is None:
@@ -427,7 +466,8 @@ def audit(*, strict: bool = False, window_cadences: float = WINDOW_CADENCES) -> 
                 "no clock is UNMEASURED and counted, never a pass; a seat whose clock belongs "
                 "to the other host is UNMEASURED_HERE and named; a retired seat carries its "
                 "reason."),
-        "host": here, "strict": bool(strict), "window_cadences": float(window_cadences),
+        "host": here, "runs_clocks_here": runs_here,
+        "strict": bool(strict), "window_cadences": float(window_cadences),
         "min_window_h": MIN_WINDOW_H,
         "n_seats": len(rows), "census": dict(census),
         "overdue": [r["seat"] for r in overdue],
@@ -440,6 +480,31 @@ def audit(*, strict: bool = False, window_cadences: float = WINDOW_CADENCES) -> 
     }
 
 
+def run_census(*, strict: bool = False, relight: bool = False, budget_s: int = 300,
+               max_repairs: int = 6, ratchet: int | None = None,
+               clocks: dict[str, dict[str, Any]] | None = None) -> dict[str, Any]:
+    """The whole-tree producer census, and -- in the SAME pass -- the repair for every dark row.
+
+    A REPORT IS NOT A REMEDY (LAWS 7). The principal's standing order is that an organ which can
+    close a gap closes it on its own clock, so `--relight` is not a separate tool: the census
+    plans the repair for every DARK producer, runs it, and judges it by the producer's output
+    being newer than it was -- never by a zero exit code.
+    """
+    idx = clocks if clocks is not None else clock_index()
+    doc = PCEN.census(root=ROOT, clocks=idx, declared_seats=SEAT_ORGANS, strict=strict)
+    if relight:
+        plans = PCEN.plan_relight(doc, root=ROOT, budget_s=budget_s, max_repairs=max_repairs)
+        doc["relight"] = PCEN.apply_relight(plans, root=ROOT,
+                                            budget_s=float(budget_s) * float(max_repairs))
+        #: RE-MEASURED AFTER THE REPAIR, because the verdict that matters is the one the next
+        #: reader sees. A census that published its BEFORE picture beside a repair record would
+        #: be exactly the "listed as dark" failure the law forbids.
+        doc = {**PCEN.census(root=ROOT, clocks=idx, declared_seats=SEAT_ORGANS, strict=strict),
+               "relight": doc["relight"]}
+    doc["breach"] = PCEN.breach(doc, ratchet=ratchet)
+    return doc
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=(__doc__ or "").splitlines()[0])
     ap.add_argument("--strict", action="store_true",
@@ -447,9 +512,34 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--window-cadences", type=float, default=WINDOW_CADENCES)
     ap.add_argument("--report-only", action="store_true",
                     help="write the artifact and always exit 0")
+    ap.add_argument("--once", action="store_true",
+                    help="one pass (the cycle-leg contract); implies --census")
+    ap.add_argument("--census", action="store_true",
+                    help="also measure EVERY producer the component registry knows")
+    ap.add_argument("--relight", action="store_true",
+                    help="run the repair for every DARK producer and prove it by production")
+    ap.add_argument("--budget-s", type=float, default=300.0,
+                    help="seconds one relight repair may take")
+    ap.add_argument("--max-repairs", type=int, default=6)
+    ap.add_argument("--dark-ratchet", type=int, default=None,
+                    help="override the dark ratchet (it may only FALL)")
     args = ap.parse_args(argv)
 
     doc = audit(strict=bool(args.strict), window_cadences=float(args.window_cadences))
+
+    census_doc: dict[str, Any] | None = None
+    if args.census or args.once or args.relight:
+        census_doc = run_census(strict=bool(args.strict), relight=bool(args.relight),
+                                budget_s=int(args.budget_s),
+                                max_repairs=int(args.max_repairs),
+                                ratchet=args.dark_ratchet)
+        doc["producer_census"] = {k: v for k, v in census_doc.items() if k != "rows"}
+        try:
+            CENSUS_OUT.parent.mkdir(parents=True, exist_ok=True)
+            CENSUS_OUT.write_text(json.dumps(census_doc, indent=1), encoding="utf-8")
+        except OSError as exc:
+            print(f"producer census: artifact NOT written ({type(exc).__name__}: {exc})")
+
     try:
         OUT.parent.mkdir(parents=True, exist_ok=True)
         OUT.write_text(json.dumps(doc, indent=1), encoding="utf-8")
@@ -469,8 +559,24 @@ def main(argv: list[str] | None = None) -> int:
               f"{len(BASELINE_OVERDUE)}; outside it: "
               f"{doc['overdue_outside_the_declared_debt'] or 'none'}")
     print(f"  -> {OUT}")
+
+    if census_doc is not None:
+        print(f"\nproducer census [{census_doc['host']}]: {census_doc['n_producers']} "
+              f"producer(s) -> {census_doc['census']}")
+        dark_rows = [r for r in census_doc["rows"] if r["verdict"] == PCEN.DARK]
+        for r in dark_rows[:14]:
+            print(f"    DARK {str(r['producer'])[:34]:34} {str(r.get('why'))[:80]}")
+        for rec in census_doc.get("relight") or []:
+            print(f"    {rec['result']!s:9} {str(rec['producer'])[:30]:30} "
+                  f"{str(rec.get('why'))[:70]}")
+        for b in census_doc["breach"]:
+            print(f"    FATAL: {b}")
+        print(f"  -> {CENSUS_OUT}")
+
     if args.report_only:
         return 0
+    if census_doc is not None and census_doc["breach"]:
+        return 1
     return 1 if doc["breach"] else 0
 
 

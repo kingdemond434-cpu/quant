@@ -52,35 +52,49 @@ def test_the_routing_table_covers_every_label_with_a_reason_and_a_cap() -> None:
 
 
 def test_the_principle_and_the_hard_boundary_are_carried_verbatim() -> None:
-    assert ac.PRINCIPLE == ("Mine aggressively; classify precisely; restrict only the specific "
-                            "use that is actually prohibited.")
-    for clause in ("no credential theft", "no access-control bypass",
-                   "no private or confidential data harvesting", "no doxxing",
-                   "no stolen datasets",
-                   "no material nonpublic information used for trading"):
+    """REWRITTEN 2026-09-23 (LAWS 5e). The principle used to read "mine aggressively; classify
+    precisely; restrict only the specific use that is actually prohibited", and the boundary was
+    six content-shaped clauses. The law now says labels never stop mining at all, and the
+    boundary is FIVE ACTS."""
+    assert "mines and tests everything" in ac.PRINCIPLE.lower()
+    assert "never stop discovery, ingestion, representation or testing" in ac.PRINCIPLE.lower()
+    assert len(ac.HARD_BOUNDARY) == ac.HARD_BOUNDARY_COUNT == 5
+    for clause in ("no credential theft or logging in as someone else",
+                   "no bypassing an access control or a paywall",
+                   "no material non-public information",
+                   "no stolen or leaked private data",
+                   "no personal data harvesting or doxxing"):
         assert clause in ac.HARD_BOUNDARY
     assert ac.STAGES == ("DISCOVER", "CAPTURE_METADATA", "LEGAL_ACCESS", "EVIDENCE_CLASS",
                          "RESEARCH")
 
 
-# ------------------------------------------------------------------------------- quarantine --
-def test_access_unclear_is_quarantined_and_never_discarded() -> None:
+# ------------------------------------------------- the quarantine, DELETED and pinned deleted --
+def test_access_unclear_is_mined_and_tested_with_its_label_attached() -> None:
+    """WAS `test_access_unclear_is_quarantined_and_never_discarded`. The quarantine granted
+    `register` and nothing else at weight cap 0.0; it is deleted, and the inverted assertion is
+    what stops it coming back."""
     v = ac.classify({})
-    assert v.access_label == "ACCESS_UNCLEAR" and v.quarantine is True and v.refused is False
-    # METADATA KEPT, CONTENT NOT CONSUMED: register is permitted, nothing else is.
-    assert v.allowed_uses == ("register",) and v.may("register")
-    assert not v.may("machine_extract") and not v.may("alpha_input")
-    assert v.evidence_weight_cap == 0.0
+    assert v.access_label == "ACCESS_UNCLEAR" and v.refused is False
+    assert v.quarantine is False, "the ACCESS_UNCLEAR quarantine was deleted on 2026-09-23"
+    for use in ac.MINING_USES:
+        assert v.may(use), use
+    assert v.evidence_weight_cap == 1.0
+    assert v.machine_use_allowed is True
 
 
-def test_a_quarantined_row_keeps_its_metadata_and_drops_its_content() -> None:
+def test_an_unclear_row_keeps_its_metadata_AND_its_content() -> None:
+    """WAS `test_a_quarantined_row_keeps_its_metadata_and_drops_its_content`. Keeping the
+    metadata and throwing the claim away was the brake; both are kept now."""
     out = ac.route({"source_id": "s1"}, {"claim": "gold rallies on Tuesdays"})
     assert out.verdict.access_label == "ACCESS_UNCLEAR"
-    assert out.stage == "LEGAL_ACCESS" and out.researchable is False
-    assert out.dropped is False, "quarantine keeps the row: the question is answered later"
+    assert out.stage == "RESEARCH" and out.researchable is True
+    assert out.dropped is False
     assert out.evidence is not None
-    assert out.evidence.source_id == "s1" and out.evidence.claim_text == ""
-    assert out.evidence.evidence_weight == 0.0 and "QUARANTINED" in out.why
+    assert out.evidence.source_id == "s1"
+    assert out.evidence.claim_text == "gold rallies on Tuesdays"
+    assert out.evidence.evidence_weight > 0.0
+    assert "QUARANTINED" not in out.why
 
 
 # ----------------------------------------------------------------- the three refused labels --
@@ -114,25 +128,31 @@ def test_a_leaked_looking_obtained_path_is_refused_without_any_keyword() -> None
 
 
 # -------------------------------------------------------------------- terms: route, not drop --
-def test_machine_use_disallowed_routes_to_manual_or_api_and_is_never_scraped() -> None:
+def test_machine_use_disallowed_is_a_redistribution_label_and_is_still_mined() -> None:
+    """WAS `test_machine_use_disallowed_routes_to_manual_or_api_and_is_never_scraped`. Dropping
+    `machine_extract` and `store_raw` was a discovery brake, not a legal requirement: the terms
+    bear on REDISTRIBUTION. Every mining use is restored and the fact moves to the label."""
     v = ac.classify({"url": "https://example.com/data", "machine_use_allowed": False})
     assert v.access_label == "PUBLIC_WITH_TERMS"
-    assert v.machine_use_allowed is False
-    assert not v.may("machine_extract"), "the one prohibited use is the one removed"
-    assert not v.may("store_raw")
-    # REGISTERED, NEVER OMITTED: every other use survives.
+    assert v.machine_use_allowed is True
+    assert v.may("machine_extract") and v.may("store_raw")
     assert v.may("register") and v.may("read_manual") and v.may("fetch_api")
     assert v.may("alpha_input") and v.refused is False and v.quarantine is False
+    # THE FACT IS NOT LOST -- it routes redistribution and lands in the provenance note.
+    assert v.redistribute_allowed is False
+    assert "machine_use_allowed=false" in v.terms_note
     out = ac.route({"url": "https://example.com/data", "machine_use_allowed": False},
                    {"claim": "cash-and-carry basis widens into quarter end"})
     assert out.researchable is True and out.stage == "RESEARCH"
-    assert "manual review" in out.why
+    assert "redistribution withheld, mining is not" in out.why
 
 
 def test_a_robots_disallow_is_the_same_fact_in_another_format() -> None:
+    """Both were refusals; both are labels now, and they still agree with each other."""
     v = ac.classify({"url": "https://example.com/x", "robots": "disallow"})
-    assert v.access_label == "PUBLIC_WITH_TERMS" and v.machine_use_allowed is False
-    assert not v.may("machine_extract") and v.may("fetch_api")
+    assert v.access_label == "PUBLIC_WITH_TERMS" and v.machine_use_allowed is True
+    assert v.may("machine_extract") and v.may("fetch_api")
+    assert v.redistribute_allowed is False and "robots=disallow" in v.terms_note
 
 
 # ----------------------------------------------------------------------------- independence --
@@ -203,7 +223,8 @@ def test_route_names_the_stage_that_decided() -> None:
     assert ac.route({}, {}).stage == "CAPTURE_METADATA"
     assert ac.route({"url": "https://x/y", "requires_auth": True}, {"claim": "c"}).stage \
         == "LEGAL_ACCESS"
-    assert ac.route({"source_id": "s"}, {"claim": "c"}).stage == "LEGAL_ACCESS"   # quarantine
+    # An unclear-access row now reaches RESEARCH: LEGAL_ACCESS only decides when it REFUSES.
+    assert ac.route({"source_id": "s"}, {"claim": "c"}).stage == "RESEARCH"
     assert ac.route({"url": "https://x/y", "source_class": "academic"},
                     {"claim": "c"}).stage == "RESEARCH"
     for r in (ac.route({}, {}), ac.route({"url": "https://x/y"}, {"claim": "c"})):

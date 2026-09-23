@@ -39,12 +39,18 @@ from pathlib import Path
 from typing import Any
 
 BASE = Path(__file__).resolve().parent.parent
-for _p in (str(BASE), str(BASE / "scripts")):
+ROOT = BASE.parent.parent
+for _p in (str(ROOT), str(BASE), str(BASE / "scripts")):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
+from libs.ops.reference_freshness import require_live_reference  # noqa: E402
+
 SURVIVORS = BASE / "reports" / "UNIVERSAL_SURVIVORS.json"
 UNIVERSE = BASE / "data" / "universe" / "universe.json"
+
+#: STUMP FLOOR, the same number `scripts/purge_untradeable_certs.py` carries.
+UNIVERSE_FLOOR = 50
 
 
 def _symbol_of(row: dict[str, Any]) -> str:
@@ -66,6 +72,17 @@ def retire(dry_run: bool = False) -> dict[str, Any]:
         # what this module refuses to do.
         return {"error": f"cannot import the gate-0 predicate ({type(exc).__name__})",
                 "retired": 0}
+
+    # NOTHING IS RETIRED ON AN ABSENCE (LAWS 7). The predicate below already demands POSITIVE
+    # venue evidence, but it reads that evidence OUT OF `universe.json`, so an empty, truncated,
+    # stale or unparseable registry is still a reference that cannot answer -- and the unguarded
+    # `json.loads` here would either raise mid-job or judge the book against a stump.
+    ref = require_live_reference(
+        UNIVERSE, actor="retire_untradeable.retire",
+        action="retire certificates on venue-restricted symbols", min_rows=UNIVERSE_FLOOR)
+    if not ref.live:
+        return {"error": f"universe registry {ref.verdict}: {ref.why}", "retired": 0,
+                "stood_down": True, "reference": ref.path, "verdict": ref.verdict}
 
     doc = json.loads(SURVIVORS.read_text(encoding="utf-8"))
     meta = json.loads(UNIVERSE.read_text(encoding="utf-8"))

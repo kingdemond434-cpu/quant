@@ -24,11 +24,20 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from libs.ops.reference_freshness import require_live_reference  # noqa: E402
+
 DESK = ROOT / "desks" / "mt5"
 AUTHORITY = DESK / "reports" / "UNIVERSAL_SURVIVORS.json"
 CANON = DESK / "data" / "UNIVERSAL_SURVIVORS.canon.json"
 UNIVERSE = DESK / "data" / "universe" / "universe.json"
 BARS = DESK / "data" / "universe"
+
+#: STUMP FLOOR. The same number `scripts/purge_untradeable_certs.py` carries: a registry this
+#: short is a collector outage, and retiring the book against it is the incident LAWS 7 names.
+UNIVERSE_FLOOR = 50
 
 
 def _reason(sym: str, meta: dict) -> str:
@@ -76,12 +85,20 @@ def retire(path: Path, meta: dict, stamp: str) -> tuple[int, list[str]]:
 
 
 def main() -> int:
-    meta = json.loads(UNIVERSE.read_text("utf-8")) if UNIVERSE.exists() else {}
-    if not meta:
-        # UNMEASURED is a real answer (L1.28a). An empty registry would mark EVERY certificate
-        # uncashable, which is a registry outage, not a revocation. Refuse rather than retire.
-        print("registry is empty or unreadable -- refusing to judge any certificate uncashable")
+    # NOTHING IS RETIRED ON AN ABSENCE (LAWS 7). `if not meta` caught the empty registry but not
+    # the two cases that kill just as many certificates: a TRUNCATED registry (23 symbols passes
+    # `not meta` and retires the whole book -- the floor `purge_untradeable_certs.py:43` already
+    # carries) and a STALE one (the collector died and the symbols it has not re-listed since look
+    # absent). One call answers all three and records the refusal where an operator sees it.
+    state = require_live_reference(
+        UNIVERSE, actor="retire_uncashable_certs.main",
+        action="retire certificates whose symbol the registry does not carry",
+        min_rows=UNIVERSE_FLOOR)
+    if not state.live:
+        print(f"registry UNMEASURED ({state.verdict}) -- refusing to judge any certificate "
+              f"uncashable: {state.why}")
         return 1
+    meta = json.loads(UNIVERSE.read_text("utf-8"))
     stamp = datetime.now(UTC).isoformat()
     total = 0
     for path in (AUTHORITY, CANON):

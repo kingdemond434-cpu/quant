@@ -387,7 +387,11 @@ def classify(meta: dict[str, Any]) -> AccessVerdict:
       requires_auth, paywalled, is_open_data, credibility.
     """
     url = _text(meta, "url", "domain", "source_id")
-    blob = _text(meta, "title", "text", "description", "note", "licence_note", "terms",
+    # `claim` IS THE ROUTER'S OWN PRIMARY CONTENT KEY and was missing from this list until
+    # 2026-09-23, so a credential dump or an MNPI line arriving as {"claim": ...} -- the shape
+    # `route()` itself builds -- reached none of the marker scans below and was labelled on its
+    # url alone. Widening the boundary's reach is the one direction this module may move.
+    blob = _text(meta, "claim", "title", "text", "description", "note", "licence_note", "terms",
                  "how_obtained", "provenance")
     licence = _text(meta, "licence", "license", "licence_note")
     obtained_raw = str(meta.get("obtained") or meta.get("how_obtained") or "UNKNOWN")

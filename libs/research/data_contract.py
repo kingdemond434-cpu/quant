@@ -187,8 +187,10 @@ class DatasetContract:
     timestamp_semantics: str = UNMEASURED
     vintage: Vintage | None = None
     notes: str = ""
-    #: False when the terms forbid machine extraction: registered, read by API or by hand, never
-    #: scraped. None is UNMEASURED, which `may("machine_extract")` reads as NOT permitted.
+    #: A PROVENANCE LABEL SINCE 2026-09-23 (LAWS 5e), no longer a brake. False records that the
+    #: source's terms restrict REDISTRIBUTION; it has never bound what the desk may read, extract
+    #: or test for its own research, and `may("machine_extract")` no longer consults it. None is
+    #: UNMEASURED and is equally not a refusal: absence is not a prohibition.
     machine_use_allowed: bool | None = None
     #: The freshness lease: how long a held value may be trusted before re-acquisition, seconds.
     freshness_lease_s: float | None = None
@@ -255,13 +257,15 @@ class DatasetContract:
         return self.admission().admitted
 
     def may(self, use: str) -> bool:
-        """Is `use` permitted? Machine extraction needs the terms to allow a machine EXPLICITLY:
-        an unmeasured `machine_use_allowed` is not permission (L1.28a)."""
-        if use not in self.permitted_uses:
-            return False
-        if use == "machine_extract":
-            return self.machine_use_allowed is True
-        return True
+        """Is `use` permitted? The contract's declared `permitted_uses` is the whole answer.
+
+        THE MACHINE-EXTRACTION VETO IS DELETED (LAWS 5e, 2026-09-23). This method used to demand
+        `machine_use_allowed is True` before `machine_extract`, so an UNMEASURED flag read as a
+        refusal and a dataset nobody had classified was never extracted. That was a discovery
+        brake, not a legal requirement: the terms bear on REDISTRIBUTION, and redistribution has
+        its own use name. The flag survives as provenance on the row.
+        """
+        return use in self.permitted_uses
 
     def fresh(self, now: str) -> bool | None:
         """Is the held copy inside its freshness lease at `now`? None when the lease or the last
@@ -330,8 +334,14 @@ def contract_state_of(contract: DatasetContract | None) -> str:
     return CONTRACT_MISSING if contract is None else contract.contract_state()
 
 
-def provenance_from_verdict(*, refused: bool, quarantine: bool) -> str:
-    """The access router's verdict in this contract's vocabulary."""
+def provenance_from_verdict(*, refused: bool, quarantine: bool = False) -> str:
+    """The access router's verdict in this contract's vocabulary.
+
+    QUARANTINED IS UNREACHABLE SINCE 2026-09-23 (LAWS 5e): `AccessVerdict.quarantine` is False on
+    every row, so only the five refused acts produce anything but CLEAR. The branch is kept and
+    the parameter defaulted rather than deleted, so a caller still passing the old keyword keeps
+    working and anyone who reads this function learns which way the law moved.
+    """
     if refused:
         return "BLOCKED"
     if quarantine:

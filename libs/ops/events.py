@@ -56,6 +56,11 @@ KINDS = (
     # measured cost restored, so "the cost model was re-measured" is a transition with a time
     # on it and not a file that quietly changed.
     "COST_TRUTH_MEASURED",
+    # A destructive pass REFUSED to remove because its reference was empty, stale beyond its lease
+    # or unreadable (LAWS 7, `libs/ops/reference_freshness.py`). It carries the reference, the
+    # verdict and the why, so a refusal is a transition with a time on it rather than a quiet
+    # no-op -- which is the only way an operator learns that a writer upstream has gone silent.
+    "REFERENCE_STAND_DOWN",
 )
 
 #: Legs whose completion IS a domain transition. Every other leg emits only LEG_DONE.

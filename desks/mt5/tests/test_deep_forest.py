@@ -142,8 +142,13 @@ def test_off_box_every_ground_records_no_network_and_nothing_raises(monkeypatch,
     doc = dfm.run(budget_s=30, fetch=True)
     assert doc["network"] is False
     statuses = {g["ground"]: g["status"] for g in doc["grounds"]}
-    assert statuses["D"] == "UNREACHABLE"
-    assert set(statuses.values()) <= {"BLOCKED", "NO_NETWORK", "UNREACHABLE"}
+    # LAWS 5e (2026-09-23): `route: unreachable` was recorded for a paywall or a robots
+    # Disallow, which are LABELS. It is no longer a refusal -- `work()` re-routes such a ground
+    # to the route its own fields support. Ground D names neither a site nor a url, so what is
+    # actually missing is an ADDRESS, and that is what the status now says.
+    assert statuses["D"] == "NO_ADDRESS"
+    assert "paywall" in next(g for g in doc["grounds"] if g["ground"] == "D")["why"]
+    assert set(statuses.values()) <= {"BLOCKED", "NO_NETWORK", "NO_ADDRESS"}
     assert doc["claims_new"] == 0 and doc["tasks_queued"] == 0
 
 
@@ -511,8 +516,13 @@ def test_scheduling_rotates_across_clusters_and_resumes_from_the_cursor() -> Non
     assert [g["name"] for g in dfm.schedule(grounds, 0, only={"latam"})] == ["br0"]
 
 
-def test_search_runs_in_the_ground_s_locale_and_snippets_only_never_fetches_the_site(monkeypatch,
-                                                                                   tmp_path) -> None:
+def test_search_runs_in_the_ground_s_locale_and_a_snippets_only_label_still_fetches_the_site(
+        monkeypatch, tmp_path) -> None:
+    """LAWS 5e (2026-09-23). This test asserted the opposite until then: `snippets_only` read the
+    search index and REFUSED to fetch the site, because the ground's robots.txt named this agent
+    family. That was a discovery brake, not a legal requirement -- robots routes REDISTRIBUTION
+    and provenance, never reading -- so the site is fetched now and the flag survives only as a
+    `terms_note` carried on every claim the ground produces."""
     queued = _offline(monkeypatch, tmp_path)
     urls: list[str] = []
 
@@ -525,8 +535,10 @@ def test_search_runs_in_the_ground_s_locale_and_snippets_only_never_fetches_the_
          "queries": ["ドル円 仲値 手法"], "kind": "blog", "snippets_only": True}])
     assert any("setlang=ja" in u and "cc=JP" in u for u in urls)
     from urllib.parse import urlparse
-    assert not any(urlparse(u).netloc.endswith("note.com") for u in urls), \
-        "snippets_only must not fetch the site"
+    assert any(urlparse(u).netloc.endswith("note.com") for u in urls), \
+        "a snippets_only label must not stop the site being fetched"
+    label = dfm.terms_label({"snippets_only": True, "why": "robots names this agent family"})
+    assert "MINED IN FULL" in label and "redistribution withheld" in label
     assert doc["claims_new"] >= 1 and queued
     task = queued[0]
     assert task["source"] == "deep_forest_jp" and task["symbols"] == ["USDJPY"] and task["lang"] == "ja"

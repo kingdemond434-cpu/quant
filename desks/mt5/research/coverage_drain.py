@@ -59,7 +59,12 @@ quantities are ratcheted and each is the honest one for its job:
 
   * `backlog_overdue` -- rows pending LONGER THAN THE LEASE. May fall, never rise. A newly seeded
     root is not overdue; a root that has waited a day is. This is the failing metric.
-  * `oldest_wait_h` -- the age of the oldest uncrawled row. May fall, never rise.
+  * `overdue_wait_h` -- how far the oldest wait EXCEEDS the lease, `max(0, oldest - LEASE_H)`.
+    May fall, never rise. NOT `oldest_wait_h` itself, and the difference cost a red gate to
+    learn: the raw wait rises by 0.3 when eighteen minutes pass, so the fence failed on
+    arithmetic that no amount of draining can reverse inside a pass. A wait UNDER the lease is
+    the queue working as designed; only the part ABOVE it is neglect, and that part is zero
+    while the drain keeps up. `oldest_wait_h` is still published, just not fenced.
   * `drained_total` -- cumulative rows moved out of the uncrawled set. May rise, never fall.
 
 and `uncrawled_total` is published with its own ceiling, failing ONLY when it rises in a pass that
@@ -651,6 +656,49 @@ def _read_json_text(text: str) -> Any:
 
 
 # ------------------------------------------------------------------------------------ seeding
+#: Refusal statuses whose RULE NO LONGER EXISTS. LAWS 5e deleted the brakes that wrote them, so
+#: a row still carrying one is not a refusal -- it is a ground the desk stopped reading because
+#: of a law that was repealed, and leaving it stamped would make the repeal cosmetic.
+DELETED_BRAKE_STATUSES: tuple[str, ...] = ("refused-machine-use", "refused-robots")
+
+
+def reopen_deleted_brakes(conn: sqlite3.Connection) -> dict[str, Any]:
+    """Return to the queue every row refused under a rule that has since been deleted.
+
+    WHY THIS RUNS EVERY PASS AND NOT ONCE. A repealed brake leaves its damage in the DATA, not in
+    the code: the stamp on the row is indistinguishable from a successful crawl to anything that
+    only reads `last_crawled`, so the ground stays unread forever and the backlog looks healthy.
+    Measured on this tree the morning the law changed: 113 pack sources had been stamped
+    `refused-machine-use` by this organ's own first build, inside an hour of LAWS 5e deleting
+    that exact brake. Reopening is idempotent -- a reopened row that is genuinely at the
+    five-act hard boundary is refused again on the same pass, with the reason the law actually
+    gives, and a row that is not is simply crawled.
+
+    THE ORIGINAL REASON IS KEPT, prefixed, never overwritten: the fact that the desk once refused
+    this ground is part of its history, and a ledger that quietly rewrites its own past is worth
+    less than one that says what it changed and when.
+    """
+    out: dict[str, Any] = {"reopened": 0, "statuses": {}}
+    rows = [r for r in _stamped_rows(conn) if r[1] in DELETED_BRAKE_STATUSES]
+    if not rows:
+        return out
+    stamp = _now()
+    for url, status, _crawled, why in rows:
+        out["statuses"][status] = int(out["statuses"].get(status, 0)) + 1
+        with suppress(sqlite3.Error):
+            conn.execute(
+                "UPDATE sources SET last_crawled=NULL, status=?, route_reason=? "
+                "WHERE url=? AND status=?",
+                (CLEARED,
+                 (f"REOPENED {stamp} by {SOURCE}: the rule that refused this row was DELETED by "
+                  f"LAWS 5e (2026-09-23) and the ground returns to the queue. Original: {why}"
+                  )[:900], url, status))
+            out["reopened"] += 1
+    with suppress(sqlite3.Error):
+        conn.commit()
+    return out
+
+
 def seed_grounds(conn: sqlite3.Connection, grounds: Sequence[Mapping[str, Any]],
                  *, limit: int = 4000) -> dict[str, Any]:
     """Write every lawful ground the registry has never heard of into `sources`.
@@ -916,20 +964,108 @@ def verify_layers(conn: sqlite3.Connection | None) -> dict[str, Any]:
             "layers": rows, "layers_mapped": mapped, "layers_total": len(SOURCE_LAYERS),
             "unverified": [k for k, v in rows.items() if v["state"] == "DECLARED_UNVERIFIED"],
             "unmapped": [k for k, v in rows.items() if v["state"] == "UNMAPPED"],
+            "cells": pack_cells(mod), "no_lawful_ground": no_lawful_ground(mod),
             "jurisdictions": [str(c).lower()
                               for c in (getattr(mod, "JURISDICTIONS", None) or (code,))]}
     out["totals"] = tot
     out["packs_full_depth"] = sorted(c for c, v in out["packs"].items()
                                      if v["layers_mapped"] == len(SOURCE_LAYERS))
+    counted = [v["cells"] for v in out["packs"].values() if isinstance(v["cells"], int)]
+    out["cells_total"] = sum(counted)
+    out["cells_unmeasured"] = sorted(c for c, v in out["packs"].items()
+                                     if not isinstance(v["cells"], int))
+    out["no_lawful_ground_total"] = sum(len(v["no_lawful_ground"])
+                                        for v in out["packs"].values())
+    out["jurisdictions_total"] = len({j for v in out["packs"].values()
+                                      for j in v["jurisdictions"]})
+    return out
+
+
+def pack_cells(mod: Any) -> int | str:
+    """How many testable cells this pack mints, or UNMEASURED naming why.
+
+    THE NUMBER THE PRINCIPAL ASKED TO BE MAXIMISED (2026-09-23): "the point of every pack is
+    cells reaching the ONE gauntlet 24/7 ... report cells emitted per pack and make that number
+    the thing you maximise." A pack that does not expose `cells()` is not counted as zero -- it
+    is named in `cells_unmeasured`, because a pack written before the convention landed has not
+    minted nothing, it has simply not been asked.
+    """
+    fn = getattr(mod, "cells", None)
+    if not callable(fn):
+        return "UNMEASURED: the pack exposes no cells() function"
+    try:
+        return len(tuple(fn()))
+    except Exception as exc:                                        # pragma: no cover
+        return f"UNMEASURED: cells() raised {type(exc).__name__}"
+
+
+def no_lawful_ground(mod: Any) -> list[dict[str, str]]:
+    """Every layer this pack declares the jurisdiction genuinely does not have, with its reason.
+
+    Read from whichever of the three shapes the pack used -- `NO_LAWFUL_GROUND` rows, the
+    per-jurisdiction `JURISDICTION_LAYER_GAPS` map, or the pack-wide `LAYER_ABSENCES` mapping --
+    because the packs were written by many hands and a reader that only understood one of them
+    would report the other two as silence. THIS IS THE MANDATE'S OTHER ANSWER: a country pack
+    either covers a layer or records a MEASURED refusal naming the layer that does not exist for
+    that jurisdiction, and both are coverage. Only a blank layer is work.
+    """
+    out: list[dict[str, str]] = []
+    rows = getattr(mod, "NO_LAWFUL_GROUND", None)
+    if isinstance(rows, (list, tuple)):
+        for row in rows:
+            if isinstance(row, Mapping):
+                out.append({"jurisdiction": str(row.get("jurisdiction") or row.get("code") or ""),
+                            "layer": str(row.get("layer") or ""),
+                            "why": str(row.get("why") or row.get("reason") or "")[:400],
+                            "substitute": str(row.get("substitute") or "")[:300]})
+    gaps = getattr(mod, "JURISDICTION_LAYER_GAPS", None)
+    if isinstance(gaps, Mapping):
+        for key, why in gaps.items():
+            code, _, layer = str(key).partition("/")
+            out.append({"jurisdiction": code, "layer": layer or str(key),
+                        "why": str(why)[:400], "substitute": ""})
+    absences = getattr(mod, "LAYER_ABSENCES", None)
+    if isinstance(absences, Mapping):
+        for layer, why in absences.items():
+            out.append({"jurisdiction": "", "layer": str(layer), "why": str(why)[:400],
+                        "substitute": ""})
     return out
 
 
 # ----------------------------------------------------------------------------- the daily verdict
+#: Words that identify a refusal raised under a rule LAWS 5e DELETED. Matched against the
+#: reasons other organs hand back, never against anything this organ decides itself.
+_DELETED_BRAKE_WORDS: tuple[str, ...] = ("robots", "machine_use", "machine use", "disallow",
+                                         "snippets", "unreachable")
+
+
+def deleted_brake_refusals(collector: Mapping[str, Any]) -> list[dict[str, str]]:
+    """Refusals handed back by ANOTHER organ under a rule this desk repealed on 2026-09-23.
+
+    This organ cannot fix `moat_collectors.robots_barred` -- that file has its own owner and a
+    drain that edited every organ it touched would be a second desk. What it CAN do is refuse to
+    let the loss go unnamed: a ground the collector declined on a robots Disallow is ground the
+    desk is lawfully entitled to read and is not reading, and the only reason it stays invisible
+    is that nobody counts it. So it is counted, named with the organ that raised it, and offered
+    as a gap family in its own right.
+    """
+    out: list[dict[str, str]] = []
+    for row in list(collector.get("refused") or ()):
+        if not isinstance(row, Mapping):
+            continue
+        why = str(row.get("why") or "").lower()
+        if any(word in why for word in _DELETED_BRAKE_WORDS):
+            out.append({"source": str(row.get("source") or ""), "why": str(row.get("why") or ""),
+                        "organ": "research/moat_collectors.py"})
+    return out
+
+
 def largest_gap(backlog: Mapping[str, Any], layers: Mapping[str, Any],
-                grounds: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
+                grounds: Sequence[Mapping[str, Any]],
+                collector: Mapping[str, Any] | None = None) -> dict[str, Any]:
     """THE ONE LARGEST INFORMATION GAP, by expected value, named so a person reads it at 08:00.
 
-    EV is the desk's own priority form (LAWS 5n): value x reach / cost. Three candidate families
+    EV is the desk's own priority form (LAWS 5n): value x reach / cost. Five candidate families
     compete on one scale and the winner is printed with its arithmetic, because a bottleneck
     nobody can check is a bottleneck nobody fixes:
 
@@ -941,6 +1077,15 @@ def largest_gap(backlog: Mapping[str, Any], layers: Mapping[str, Any],
       * UNMAPPED LAYERS -- a layer with no source AND no declared absence. Reach is the count,
         value 1.0 (it is the only family where the desk does not even know what it is missing),
         cost is a human-scale research act, charged at ten crawls.
+      * DELETED BRAKE STILL ENFORCED -- ground another organ declined under a rule LAWS 5e
+        repealed. Reach is the count, value 1.0, and the cost is 0.5 because the fix is one
+        edit in one function rather than a crawl each: this is the CHEAPEST family on the board
+        and it should win the morning whenever it is non-empty, which is the point of listing it.
+      * PACKS MINTING NO CELLS -- a department with ten mapped source layers that hands the
+        gauntlet nothing. Reach is the count, value 1.0, cost 5 (a `cells()` function is real
+        work). This family exists because the principal named the number to maximise: "the point
+        of every pack is cells reaching the ONE gauntlet 24/7". Depth that never becomes a cell
+        is depth the desk paid for and cannot test.
     """
     cands: list[dict[str, Any]] = []
     overdue = int(backlog.get("backlog_overdue") or 0)
@@ -974,6 +1119,31 @@ def largest_gap(backlog: Mapping[str, Any], layers: Mapping[str, Any],
                      f"{[f'{c}:{n}' for n, c in top]}"),
             "fix": ("the pack's author names a source in that layer or declares it ABSENT with "
                     "the reason (a measured NO_LAWFUL_GROUND row)")})
+    silent = list(layers.get("cells_unmeasured") or ())
+    if silent:
+        cands.append({
+            "gap": "PACKS_MINTING_NO_CELLS", "reach": len(silent), "value": 1.0, "cost": 5.0,
+            "ev": round(len(silent) / 5.0, 3),
+            "what": (f"{len(silent)} pack(s) expose no `cells()` and therefore mint nothing the "
+                     f"gauntlet can be handed, however deep their source layers are; the desk "
+                     f"has measured {layers.get('cells_total')} cells from the rest. "
+                     f"First: {silent[:8]}"),
+            "fix": ("each pack's author adds `cells()` -- its domains x its executable "
+                    "instruments x its named conditions -- so the department's depth reaches "
+                    "the one gauntlet instead of sitting in a data structure")})
+    stale_brakes = deleted_brake_refusals(collector or {})
+    if stale_brakes:
+        organs = sorted({r["organ"] for r in stale_brakes})
+        cands.append({
+            "gap": "DELETED_BRAKE_STILL_ENFORCED", "reach": len(stale_brakes), "value": 1.0,
+            "cost": 0.5, "ev": round(len(stale_brakes) / 0.5, 3),
+            "what": (f"{len(stale_brakes)} ground(s) declined this pass under a rule LAWS 5e "
+                     f"REPEALED on 2026-09-23 (robots Disallow, machine_use_allowed=false, "
+                     f"snippets-only, route=unreachable). Raised by {organs}. The desk is "
+                     f"lawfully entitled to read every one of them."),
+            "fix": (f"the owner of {organs} makes those labels travel with the row instead of "
+                    "refusing the fetch, as `coverage_drain.refusal_for` does"),
+            "named": stale_brakes[:12]})
     known = {str(g.get("source_id")) for g in grounds}
     if not cands:
         return {"gap": "NONE_MEASURED", "ev": 0.0,
@@ -994,14 +1164,14 @@ def largest_gap(backlog: Mapping[str, Any], layers: Mapping[str, Any],
 def ratchet(previous: Mapping[str, Any] | None, current: Mapping[str, Any]) -> dict[str, Any]:
     """The three ratchets, each in the direction that is honest for its own quantity.
 
-    `backlog_overdue` and `oldest_wait_h` may FALL and never rise; `drained_total` may RISE and
+    `backlog_overdue` and `overdue_wait_h` may FALL and never rise; `drained_total` may RISE and
     never fall. A quantity with no previous reading ENTERS at its measured value rather than at
     zero -- the desk has broken this exact rule before by inventing a floor it had not measured
     (L1.50, and the 8 GB/96 GB memory floor in CLAUDE.md).
     """
     prev = dict(previous or {})
     out: dict[str, Any] = {"ceilings": {}, "floors": {}, "over": {}, "under": {}, "first": []}
-    for key in ("backlog_overdue", "oldest_wait_h", "uncrawled_total"):
+    for key in ("backlog_overdue", "overdue_wait_h", "uncrawled_total"):
         cur = current.get(key)
         if cur is None:
             continue
@@ -1046,7 +1216,8 @@ def measure_backlog(conn: sqlite3.Connection | None,
     """The uncrawled set, its oldest wait and how much of it is past the lease."""
     if conn is None:
         return {"measured": False, "uncrawled_total": None, "backlog_overdue": None,
-                "oldest_wait_h": None, "total_sources": None, "by_kind": {},
+                "oldest_wait_h": None, "overdue_wait_h": None,
+                "total_sources": None, "by_kind": {},
                 "why": "UNMEASURED: data/alpha_registry.sqlite is absent or unreadable"}
     rows = pending_rows(conn)
     ages = [(_age_h(r.get("first_seen"), now) or 0.0) for r in rows]
@@ -1058,8 +1229,15 @@ def measure_backlog(conn: sqlite3.Connection | None,
     total = 0
     with suppress(sqlite3.Error):
         total = int(conn.execute("SELECT COUNT(*) FROM sources").fetchone()[0])
+    oldest = round(max(ages), 1) if ages else 0.0
     return {"measured": True, "uncrawled_total": len(rows), "backlog_overdue": overdue,
-            "oldest_wait_h": round(max(ages), 1) if ages else 0.0,
+            "oldest_wait_h": oldest,
+            # THE FENCED HALF OF THE WAIT. `oldest_wait_h` rises with the clock whatever the
+            # drain does -- eighteen minutes of wall time moved it 6.0 -> 6.3 and failed the law
+            # gate on the third live pass, for a queue that was entirely inside its own lease.
+            # Only the part ABOVE the lease is neglect, and that part is zero while the drain
+            # keeps up. Both numbers are published; this is the one the ratchet reads.
+            "overdue_wait_h": round(max(0.0, oldest - LEASE_H), 1),
             "total_sources": total, "by_kind": dict(sorted(by_kind.items())),
             "no_url": sum(1 for r in rows
                           if not str(r.get("url") or "").startswith(("http://", "https://"))),
@@ -1068,7 +1246,29 @@ def measure_backlog(conn: sqlite3.Connection | None,
                     f"{overdue} past the {LEASE_H:.0f}h lease")}
 
 
-def run(*, budget_s: float = 900.0, max_sources: int = 60, dry_run: bool = False,
+def pass_size(backlog: Mapping[str, Any], *, floor: int = 60, ceiling: int = 400) -> int:
+    """How many rows THIS pass must take to clear the backlog inside the organ's own lease.
+
+    DERIVED FROM THE OBLIGATION, NOT TYPED. The lease says a registered source may wait at most
+    `LEASE_H` hours; the leg runs hourly; so a backlog of N rows obliges N / LEASE_H rows per
+    pass, and anything less is a fence the organ cannot satisfy no matter how long it runs. The
+    first live seed made this concrete: 1,594 rows registered in one pass against a typed cap of
+    60 would have drained 1,440 a day and fallen behind by 154 every day, failing its own ratchet
+    forever while doing exactly what it was built to do.
+
+    The FLOOR keeps a small backlog from shrinking the pass to nothing (a drain that takes three
+    rows an hour is not a drain); the CEILING is politeness, not memory -- these are other
+    people's servers and `moat_collectors` spaces its own requests per host, so a pass that
+    planned two thousand fetches would simply spend its whole clock on the first few hundred.
+    """
+    rows = backlog.get("uncrawled_total")
+    if not isinstance(rows, (int, float)) or rows <= 0:
+        return int(floor)
+    per_pass = int(float(rows) / max(1.0, LEASE_H)) + 1
+    return max(int(floor), min(int(ceiling), per_pass))
+
+
+def run(*, budget_s: float = 900.0, max_sources: int | None = None, dry_run: bool = False,
         seed: bool = True, db: Path | None = None, ledger: Path | None = None,
         now: datetime | None = None) -> dict[str, Any]:
     """One coverage-drain pass. Returns the report it writes; never raises."""
@@ -1093,6 +1293,8 @@ def run(*, budget_s: float = 900.0, max_sources: int = 60, dry_run: bool = False
     with closing(conn):
         before = measure_backlog(conn, now)
         report["before"] = before
+        report["reopened"] = ({"reopened": 0, "statuses": {}, "why": "dry run"} if dry_run
+                              else reopen_deleted_brakes(conn))
         if seed and not dry_run:
             report["seed"] = seed_grounds(conn, grounds)
         else:
@@ -1104,8 +1306,18 @@ def run(*, budget_s: float = 900.0, max_sources: int = 60, dry_run: bool = False
             report["seed"] = {"status": "skipped" if not seed else "dry_run",
                               "considered": len(grounds), "already": known, "inserted": 0}
         spent = time.monotonic() - started
+        # SIZE THE PASS AFTER SEEDING, not before: the rows this pass just registered are part
+        # of the obligation the lease puts on it, and a pass sized off the pre-seed backlog would
+        # be systematically too small on exactly the passes that widened the ground.
+        mid = measure_backlog(conn, now)
+        take = int(max_sources) if max_sources is not None else pass_size(mid)
+        report["pass_size"] = {"took": take, "derived": max_sources is None,
+                               "backlog": mid.get("uncrawled_total"), "lease_h": LEASE_H,
+                               "why": (f"{mid.get('uncrawled_total')} uncrawled / {LEASE_H:.0f}h "
+                                       f"lease = {take} per hourly pass" if max_sources is None
+                                       else f"--max-sources {take} given on the command line")}
         report["drain"] = drain(conn, budget_s=max(5.0, budget - spent),
-                                max_sources=max_sources, dry_run=dry_run, now=now)
+                                max_sources=take, dry_run=dry_run, now=now)
         after = measure_backlog(conn, now)
         report["backlog"] = after
         report["layers"] = verify_layers(conn)
@@ -1117,12 +1329,14 @@ def run(*, budget_s: float = 900.0, max_sources: int = 60, dry_run: bool = False
     drained_now = drained_before + float(report["drain"].get("crawled") or 0.0) \
         + float(len(report["drain"].get("refused") or ()))
     current = {"backlog_overdue": after.get("backlog_overdue"),
+               "overdue_wait_h": after.get("overdue_wait_h"),
                "oldest_wait_h": after.get("oldest_wait_h"),
                "uncrawled_total": after.get("uncrawled_total"),
                "drained_total": drained_now}
     report["measured"] = current
     report["ratchet"] = ratchet({**prev, **prev_floors}, current)
-    report["verdict"] = largest_gap(after, report["layers"], grounds)
+    report["verdict"] = largest_gap(after, report["layers"], grounds,
+                                    (report["drain"] or {}).get("collector") or {})
     report["seeded_this_pass"] = int((report["seed"] or {}).get("inserted") or 0)
     report["status"] = "MEASURED"
     report["elapsed_s"] = round(time.monotonic() - started, 1)
@@ -1152,13 +1366,19 @@ def _summary(report: Mapping[str, Any]) -> list[str]:
         f"oldest {after.get('oldest_wait_h')}h)",
         f"seeded {report.get('seeded_this_pass')} lawful ground(s) of "
         f"{report.get('lawful_grounds_known')} known; resolved "
-        f"{drain_r.get('resolved_roots')} rootless row(s)",
+        f"{drain_r.get('resolved_roots')} rootless row(s); reopened "
+        f"{(report.get('reopened') or {}).get('reopened')} refused under a DELETED brake",
         f"crawled {drain_r.get('crawled')}, refused "
         f"{len(drain_r.get('refused') or ())} permanently "
         f"({drain_r.get('collector', {}).get('status')})",
         f"layers mapped {tot.get('mapped', 0)} / absent {tot.get('absent_declared', 0)} / "
+        f"refused {tot.get('refused_hard_boundary', 0)} / "
         f"declared-unverified {tot.get('declared_unverified', 0)} / "
         f"unmapped {tot.get('unmapped', 0)} over {len(layers.get('packs') or {})} pack(s)",
+        f"cells {layers.get('cells_total')} over "
+        f"{layers.get('jurisdictions_total')} jurisdiction(s); "
+        f"{layers.get('no_lawful_ground_total')} measured NO_LAWFUL_GROUND row(s); "
+        f"{len(layers.get('cells_unmeasured') or ())} pack(s) expose no cells()",
         f"LARGEST GAP: {verdict.get('gap')} (EV {verdict.get('ev')}) -- {verdict.get('what')}",
     ]
 
@@ -1170,8 +1390,9 @@ def main(argv: Sequence[str] | None = None) -> int:
                     help="one pass and exit; the hourly leg always passes this")
     ap.add_argument("--budget-s", type=float, default=900.0,
                     help="wall budget; scaled down when the box is short of memory")
-    ap.add_argument("--max-sources", type=int, default=60,
-                    help="how many pending rows this pass may take")
+    ap.add_argument("--max-sources", type=int, default=None,
+                    help="how many pending rows this pass may take; DERIVED from the backlog "
+                         "and the lease when omitted, which is what the hourly leg does")
     ap.add_argument("--no-seed", action="store_true",
                     help="measure and drain without registering new lawful ground")
     ap.add_argument("--dry-run", action="store_true",
@@ -1179,7 +1400,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     ap.add_argument("--out", default=str(REPORT))
     args = ap.parse_args(list(argv) if argv is not None else None)
 
-    report = run(budget_s=float(args.budget_s), max_sources=int(args.max_sources),
+    report = run(budget_s=float(args.budget_s),
+                 max_sources=None if args.max_sources is None else int(args.max_sources),
                  dry_run=bool(args.dry_run), seed=not bool(args.no_seed))
     for line in report.get("summary") or [f"status {report.get('status')}"]:
         print(f"  {line}")
@@ -1198,13 +1420,15 @@ def main(argv: Sequence[str] | None = None) -> int:
     return 0
 
 
-__all__ = ["CLEARED", "INTERNAL_PREFIXES", "LAYER_SETTLED", "LEASE_H", "REFUSAL_STATUSES",
-           "REFUSED_LABELS", "REPORT", "RULE", "SOURCE_LAYERS", "budget_seconds",
-           "build_root_index", "connect", "crawled_hosts", "drain", "drain_order",
-           "forest_grounds", "host_keys", "host_of", "largest_gap", "lawful_grounds",
-           "load_ledger", "main", "measure_backlog", "pack_sources", "pending_rows", "ratchet",
-           "refusal_for", "refused_hosts", "register_refusal", "registry_grounds",
-           "resolve_root", "run", "save_ledger", "seed_grounds", "terms_note", "verify_layers"]
+__all__ = ["CLEARED", "DELETED_BRAKE_STATUSES", "INTERNAL_PREFIXES", "LAYER_SETTLED", "LEASE_H",
+           "REFUSAL_STATUSES", "REFUSED_LABELS", "REPORT", "RULE", "SOURCE_LAYERS",
+           "budget_seconds", "build_root_index", "connect", "crawled_hosts",
+           "deleted_brake_refusals", "drain", "drain_order", "forest_grounds", "host_keys",
+           "host_of", "largest_gap", "lawful_grounds", "load_ledger", "main", "measure_backlog",
+           "no_lawful_ground", "pack_cells", "pack_sources", "pass_size", "pending_rows",
+           "ratchet", "refusal_for", "refused_hosts", "register_refusal", "registry_grounds",
+           "reopen_deleted_brakes", "resolve_root", "run", "save_ledger", "seed_grounds",
+           "terms_note", "verify_layers"]
 
 
 if __name__ == "__main__":                                              # pragma: no cover

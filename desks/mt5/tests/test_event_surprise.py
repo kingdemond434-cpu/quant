@@ -16,9 +16,12 @@ for both is measuring the calendar, not the news.
 REAL `universe_policy` deciding against a synthetic registry -- a fence that is stubbed out in
 its own test proves nothing.
 
-`test_the_collector_refuses_ground_it_is_not_allowed_to_fetch` proves the policy is executable:
-a row registered `machine_use_allowed: false` and a row declaring key access are never handed to
-the fetcher at all, and both refusals are recorded with a reason.
+`test_the_collector_fetches_labelled_ground_and_stops_only_for_a_missing_shape` proves the policy
+is executable, and the policy CHANGED on 2026-09-23 (LAWS 5e): a row registered
+`machine_use_allowed: false` and a row declaring key access are both FETCHED now, carrying their
+terms as a label, and the only rows that never reach the fetcher are the ones with no address or
+no field map. `test_the_hard_boundary_is_the_only_thing_the_collector_still_refuses` pins what
+survived.
 
 `test_a_half_row_waits_for_its_partner` proves an unpaired consensus is never completed with a
 guess, a previous value or a zero -- the one failure mode that would silently manufacture
@@ -243,8 +246,12 @@ def _grounds(rows: list[dict[str, Any]]) -> None:
     Path(es.GROUNDS).write_text(json.dumps({"sources": rows}), "utf-8")
 
 
-def test_the_collector_refuses_ground_it_is_not_allowed_to_fetch(desk):
-    """Registered-but-forbidden ground never reaches the fetcher, and says why it did not."""
+def test_the_collector_fetches_labelled_ground_and_stops_only_for_a_missing_shape(desk):
+    """LAWS 5e (2026-09-23): `machine_use_allowed=false` and `access != "public"` used to be
+    refusals here; both were discovery brakes and both are deleted. Those two rows are FETCHED
+    now with their terms carried as a label, and the only rows that still do not reach the
+    fetcher are the ones with no address or no declared field map -- facts about shape, not
+    about permission."""
     asked: list[str] = []
 
     def fetcher(src, timeout=25.0, validators=None):
@@ -266,17 +273,45 @@ def test_the_collector_refuses_ground_it_is_not_allowed_to_fetch(desk):
     ])
     out = es.collect(budget_s=10.0, now=START, fetch=fetcher)
 
-    assert asked == ["allowed"], "only the admissible row may be fetched"
+    assert asked == ["forbidden", "keyed", "allowed"], (
+        "a terms note and a key-access label are LABELS, not doors: both are fetched")
     by_id = {row["id"]: row for row in out["sources"]}
-    assert by_id["forbidden"]["status"] == "REFUSED_BY_POLICY"
-    assert "never scrapes" in by_id["forbidden"]["why"]
-    assert by_id["keyed"]["status"] == "REFUSED_BY_POLICY"
-    assert "never reads a key" in by_id["keyed"]["why"]
+    assert "machine_use_allowed=false" in by_id["forbidden"]["terms_note"]
+    assert "redistribution withheld" in by_id["forbidden"]["terms_note"]
+    assert "open surface" in by_id["keyed"]["terms_note"]
+    assert by_id["no_map"]["status"] == "NOT_FETCHABLE"
     assert "NO_FIELD_MAP" in by_id["no_map"]["why"]
 
 
-def test_the_registered_grounds_file_on_this_tree_is_lawful():
-    """The shipped source table itself: every fetchable row is public, licensed and mapped."""
+def test_the_hard_boundary_is_the_only_thing_the_collector_still_refuses(desk):
+    """Five acts, and access strings that name one of them. A `private` row never reaches the
+    fetcher; a `paid` one does, with no credential, because its open surface is readable."""
+    asked: list[str] = []
+
+    def fetcher(src, timeout=25.0, validators=None):
+        asked.append(str(src.get("id")))
+        return {"status": "COLLECTED", "parse": {"parsed": False}}
+
+    _grounds([
+        {"id": "private", "url": "https://example.invalid/a", "access": "private",
+         "machine_use_allowed": True, "licence": "behind a login",
+         "fields": {"release": "r", "date": "d", "actual": "a", "consensus": "c"}},
+        {"id": "paid", "url": "https://example.invalid/b", "access": "paid",
+         "machine_use_allowed": True, "licence": "subscription",
+         "fields": {"release": "r", "date": "d", "actual": "a", "consensus": "c"}},
+    ])
+    out = es.collect(budget_s=10.0, now=START, fetch=fetcher)
+    assert asked == ["paid"]
+    by_id = {row["id"]: row for row in out["sources"]}
+    assert by_id["private"]["status"] == "NOT_FETCHABLE"
+    assert "HARD BOUNDARY" in by_id["private"]["why"]
+
+
+def test_the_registered_grounds_file_on_this_tree_is_mined_and_labelled():
+    """The shipped source table itself. Since LAWS 5e (2026-09-23) every row carries
+    `machine_use_allowed: true` -- the terms fact moved into the licence line as a redistribution
+    note -- and a row that is not fetched is not fetched for a reason that is NOT about access:
+    no http(s) address, or no declared field map."""
     doc = json.loads(Path(es.DESK / "data" / "event_consensus_sources.json")
                      .read_text("utf-8-sig"))
     rows = doc["sources"]
@@ -284,13 +319,15 @@ def test_the_registered_grounds_file_on_this_tree_is_lawful():
     for row in rows:
         ok, why = es.admissible(row)
         assert row.get("licence"), f"{row['id']} carries no licence line"
+        assert row.get("machine_use_allowed") is True, (
+            f"{row['id']}: machine_use_allowed=false is not a brake any more; the terms fact "
+            f"belongs in the licence line as a redistribution note")
         if ok:
-            assert row["access"] == "public" and row["machine_use_allowed"] is True, row["id"]
             assert row["url"].startswith("https://"), row["id"]
         else:
-            assert why, row["id"]
-    assert any(r.get("machine_use_allowed") is False for r in rows), (
-        "ground the desk knows and refuses must be registered, so the gap has a name")
+            assert "NO_ADDRESS" in why or "NO_FIELD_MAP" in why, (row["id"], why)
+    assert any(str(r.get("access")) != "public" for r in rows), (
+        "a key/licensed row must stay registered so the route's cost has a name")
 
 
 def test_the_collector_never_invents_a_consensus(desk):

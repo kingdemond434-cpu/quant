@@ -183,13 +183,19 @@ REGIONAL_FORESTS: tuple[Forest, ...] = (
        packs=("kr",), grounds=("kr",),
        mission="the Korean economic system to exhaustion, expressed through JPY crosses, the "
                "indices, gold and energy -- KRW is not quoted by this broker"),
-    _f("china", "Greater China", "regional", countries=("CN", "HK", "TW", "MO"),
-       languages=("zh", "zh-Hant", "yue"), packs=("cn", "hk", "tw"), grounds=("cn", "hk", "tw"),
+    # MONGOLIA JOINS THIS FOREST (2026-09-23), not russia_cis and not asean. Roughly nine tenths
+    # of Mongolian exports cross one land border into China, the coking coal is priced off the
+    # Dalian curve, the trade is invoiced in renminbi, and the MIRROR of the whole flow is
+    # published by 海关总署 -- which is this forest's own official plane, named in its mission
+    # below. The `mn` pack declares it in JURISDICTIONS and was UNANSWERED before it.
+    _f("china", "Greater China", "regional", countries=("CN", "HK", "TW", "MO", "MN"),
+       languages=("zh", "zh-Hant", "yue", "mn"), packs=("cn", "hk", "tw", "mo", "mn"),
+       grounds=("cn", "hk", "tw", "mo", "mn"),
        mission="the deep Chinese web mined to exhaustion (期货日报实盘大赛, 蓝海密剑, 七禾网, "
                "聚宽/优矿/米筐/BigQuant, 知乎/雪球/CSDN, Gitee, Bilibili, 搜狗微信) plus the "
                "official plane: PBoC, SAFE, 海关总署, the three futures exchanges"),
     _f("russia_cis", "Russia and the CIS", "regional",
-       countries=("RU", "UA", "KZ", "BY", "AZ", "GE", "AM", "UZ", "KG"),
+       countries=("RU", "UA", "KZ", "BY", "AZ", "GE", "AM", "UZ", "KG", "TJ", "TM"),
        # UKRAINE AND BELARUS JOIN THE ANSWERED SET (2026-09-23) through the `black_sea`
        # pack, which declares both in its own JURISDICTIONS tuple. Both were NAMED on
        # this roster and answered by nothing, so the parity fence counted them as gaps
@@ -202,16 +208,22 @@ REGIONAL_FORESTS: tuple[Forest, ...] = (
        # nothing: the post-2022 re-export and remittance corridor is a mechanism of its own
        # -- monthly transfers by origin, mirror statistics, sovereign gold sales and Turkmen
        # gas volumes readable only in Chinese customs data -- and none of it is a copy of the
-       # Russian budget rule or of the Kazakh National Fund's FX sales. Tajikistan and
-       # Turkmenistan are answered by that pack and are NOT added to `countries` here: naming
-       # a country on the roster is the forest owner's call, and the pack says so itself.
+       # Russian budget rule or of the Kazakh National Fund's FX sales.
+       # TAJIKISTAN AND TURKMENISTAN JOINED THE ROSTER 2026-09-23, after their pack declared
+       # them. The pack was right to leave the call to the forest owner and this is that call:
+       # Tajik aluminium on stranded hydropower is an XALUSD supply observable, and Turkmen gas
+       # volumes -- unreadable in Turkmen statistics and fully readable in Chinese customs
+       # imports-by-origin -- are the desk's cleanest standing example of a jurisdiction whose
+       # only lawful ground is a mirror statistic. A country answered by a pack and absent from
+       # the roster is coverage the parity fence cannot see.
        languages=("ru", "uk", "be", "kk", "az", "ka", "hy", "uz", "ky", "tg", "tk"),
        packs=("ru", "kz", "az", "ge", "black_sea", "caucasus_central_asia"),
        grounds=("ru", "ua", "by"),
        mission="Habr, smart-lab, the RU failure vocabulary, the CBR and the CIS commodity plane"),
     _f("south_asia", "South Asia", "regional", countries=("IN", "PK", "BD", "LK", "NP"),
-       languages=("en", "hi", "ur", "bn", "si", "ta"), packs=("ind", "pk", "bd", "lk"),
-       grounds=("in", "pk", "bd", "lk"),
+       languages=("en", "hi", "ur", "bn", "si", "ta", "ne"),
+       packs=("ind", "pk", "bd", "lk", "np"),
+       grounds=("in", "pk", "bd", "lk", "np"),
        mission="the Indian derivatives ecology and the South Asian trade/energy plane; "
                "Pakistan, Bangladesh and Sri Lanka as remittance, IMF-programme and "
                "textile/tea economies transmitting into USDINR, oil, gold and the US indices"),
@@ -226,10 +238,15 @@ REGIONAL_FORESTS: tuple[Forest, ...] = (
                "the Pacific island economies (PNG LNG/gold/copper, Fiji tourism/remittances, "
                "cyclones) as one pack transmitting into Australia, China and New Zealand"),
     _f("europe", "Europe", "regional",
+       # ICELAND JOINED THE ROSTER 2026-09-23 with its pack, not before it. It is on the roster
+       # for a reason that is about price rather than size: Iceland smelts ~2% of world primary
+       # aluminium on stranded hydro and geothermal power, so its reservoir levels are an
+       # XALUSD supply observable the desk can execute against. The euro-area members below are
+       # answered by `ea`'s own JURISDICTIONS tuple, which is why they are not listed one by one.
        countries=("GB", "DE", "FR", "IT", "ES", "NL", "SE", "NO", "DK", "FI", "PL", "CZ", "HU",
-                  "CH", "PT", "AT", "BE", "IE", "GR", "RO", "BG", "RS"),
+                  "CH", "PT", "AT", "BE", "IE", "GR", "RO", "BG", "RS", "IS"),
        languages=("en", "de", "fr", "it", "es", "nl", "sv", "no", "da", "fi", "pl", "cs", "hu",
-                  "pt", "ro", "bg", "sr"),
+                  "pt", "ro", "bg", "sr", "is"),
        packs=("ea", "uk", "ch", "se", "no", "pl", "dk", "is", "cee_balkans"),
        grounds=("de", "fr", "it", "es", "nl", "se", "dk", "no", "fi", "pl", "cz", "hu", "gb",
                 "ro", "bg", "rs"),
@@ -246,9 +263,11 @@ REGIONAL_FORESTS: tuple[Forest, ...] = (
                "Treasury/TIC, BLS/BEA/Census, the CFTC COT as the positioning spine, EIA, USDA, "
                "NOAA, the ports and the regional Feds; the BoC, StatCan, CBSA and the oil sands",
        notes="the `us` and `ca` packs landed 2026-09-22 under the regional-parity law (LAWS 5n)"),
-    _f("latam", "Latin America", "regional", countries=("BR", "MX", "CL", "CO", "PE", "AR"),
-       languages=("pt", "es"), packs=("br", "mx", "cl", "co", "ar"),
-       grounds=("br", "mx", "cl", "co", "pe", "ar"),
+    _f("latam", "Latin America", "regional",
+       countries=("BR", "MX", "CL", "CO", "PE", "AR", "BO", "GY", "TT", "VE", "SR"),
+       languages=("pt", "es", "qu", "ay", "gn"),
+       packs=("br", "mx", "cl", "co", "ar", "pe", "bo", "atlantic_energy"),
+       grounds=("br", "mx", "cl", "co", "pe", "ar", "bo"),
        mission="the Brazilian, Andean and Southern-Cone commodity and FX planes"),
     _f("mena", "Middle East and North Africa", "regional",
        # QATAR, KUWAIT, OMAN AND BAHRAIN JOIN THE ANSWERED SET (2026-09-23) through the `gulf`
@@ -272,9 +291,24 @@ REGIONAL_FORESTS: tuple[Forest, ...] = (
        # ET and TZ were named here and unanswered, UG was on no forest's roster at all, and one
        # pack now answers all three (EACOP makes UG and TZ one physical system, so splitting
        # them would split a mechanism).
-       countries=("EG", "ZA", "NG", "KE", "GH", "ET", "TZ", "UG"),
-       languages=("en", "ar", "fr", "sw", "am", "af"),
-       packs=("eg", "za", "ng", "ke", "gh", "east_africa"),
+       # THE COPPERBELT JOINS THE ROSTER (2026-09-23) with the `copperbelt` pack that answers
+       # for both CD and ZM: neither was on any forest's roster, and the DRC is the world's
+       # SECOND-LARGEST COPPER PRODUCER and the source of ~70% of world cobalt while Zambia is
+       # Africa's second producer. One pack answers both because the Katangan orebody crosses
+       # the border at Kasumbalesa and the Zambian smelters treat Congolese concentrate, so
+       # splitting them would split a mechanism.
+       # WEST AFRICA JOINS THE ROSTER (2026-09-23) with the `west_africa` pack that answers
+       # for CI, GN, ML, BF and SN: none of the five was on any forest's roster, and one pack
+       # answers all five because four of them share ONE central bank, ONE currency pegged at
+       # 655.957 and ONE exchange, while Guinea floats and is the control that makes the peg
+       # measurable. Cote d'Ivoire is ~40% of world cocoa and sets the Living Income
+       # Differential JOINTLY with Ghana, so `west_africa` is `gh`'s complement and not a
+       # repeat of it.
+       countries=("EG", "ZA", "NG", "KE", "GH", "ET", "TZ", "UG", "CD", "ZM",
+                  "CI", "GN", "ML", "BF", "SN"),
+       languages=("en", "ar", "fr", "sw", "am", "af", "ln", "bem", "ny", "dyu", "bm",
+                  "ff", "mos", "wo"),
+       packs=("eg", "za", "ng", "ke", "gh", "east_africa", "copperbelt", "west_africa"),
        grounds=("eg", "za", "ng", "ke"),
        mission="the South African, Nigerian, Kenyan and North African planes: metals, energy, "
                "agriculture and the frontier-FX ecology"),

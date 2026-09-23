@@ -63,8 +63,30 @@ class WorkerRegistry:
         ).fetchall()
         return [dict(r) for r in rows]
 
-    def prune(self, *, stale_seconds: int = 3600) -> int:
+    def prune(self, *, stale_seconds: int = 3600, require_live_heartbeat: bool = True) -> int:
+        """Delete workers whose heartbeat has gone quiet.
+
+        NOTHING IS RETIRED ON AN ABSENCE (LAWS 7). `last_seen` is only evidence about a worker if
+        the STAMPER is working: when the heartbeat writer dies, a clock skews, or the table is
+        restored from a backup, every row looks stale at once and this DELETE erases the live
+        fleet along with the dead one. The reference here is therefore not the cutoff but the
+        existence of at least one row inside it -- proof that something is still stamping. Zero
+        live rows is UNMEASURED, not "the fleet is gone", so the prune stands down and the rows
+        stay for `dead()` to report. A caller that genuinely wants an unconditional sweep (a
+        teardown, a test fixture) asks for it BY NAME with require_live_heartbeat=False.
+        """
         cutoff = _iso(datetime.now(tz=UTC) - timedelta(seconds=stale_seconds))
+        if require_live_heartbeat:
+            total = len(self.all())
+            alive = len(self.active(stale_seconds=stale_seconds))
+            if total and not alive:
+                from libs.ops.reference_freshness import require_live_rows
+                require_live_rows(
+                    "workers.last_seen heartbeats", alive,
+                    actor="workers.WorkerRegistry.prune",
+                    action=f"delete workers whose last_seen precedes {cutoff}",
+                    source=f"{total} rows, 0 inside the {stale_seconds}s window")
+                return 0
         with self.db.transaction() as conn:
             cur = conn.execute("DELETE FROM workers WHERE last_seen < ?", (cutoff,))
             return int(cur.rowcount)

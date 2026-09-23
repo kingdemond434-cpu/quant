@@ -231,8 +231,13 @@ def test_a_technique_is_recorded_with_a_method_spec(reg, monkeypatch):
 def test_the_runner_names_the_boundary_it_keeps(reg, monkeypatch):
     _fake_roles(monkeypatch)
     doc = fr.run_pass("russia_cis", budget_s=60, workers=2, dry_run=True)
-    assert "opens no socket" in doc["boundary"] and "robots" in doc["boundary"]
-    assert "never fetched" in doc["boundary"] and "secret" in doc["boundary"]
+    # LAWS 5e (2026-09-23): the boundary the runner names changed from "a ground whose machine
+    # use is not allowed is registered and never fetched" to "every registered ground is MINED
+    # with its terms/robots note carried as a routing label". The five acts are what is left.
+    assert "opens no socket" in doc["boundary"] and "routing label" in doc["boundary"]
+    assert "MINED" in doc["boundary"] and "secret" in doc["boundary"]
+    assert "never fetched" not in doc["boundary"]
+    assert "HARD_BOUNDARY" in doc["boundary"]
     assert doc["department"] == "forest_russia_cis" and doc["leg"] == "forest_russia_cis"
 
 

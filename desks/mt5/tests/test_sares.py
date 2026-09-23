@@ -303,8 +303,12 @@ def _population() -> list[dict]:
 def test_a_pass_records_graded_discoveries_and_donates_what_the_compiler_reads(desk):
     got = sares.run(budget_s=60.0, conn=desk["conn"], population=_population(),
                     universe=UNIVERSE, grounds=GROUNDS, texts=[], at="2026-09-01T00:00:00")
-    assert got["population"] == {"n": 5, "usable": 3, "refused": 1, "quarantined": 1}
-    assert {s["system_id"] for s in got["systems"]} == {"grid1", "honest1", "stats1"}
+    # LAWS 5e (2026-09-23): the ACCESS_UNCLEAR row used to be dropped here (usable 3,
+    # quarantined 1). The quarantine is deleted, so it is one of the USABLE population and
+    # reaches the agents with its label; only the PRIVATE row -- one of the five refused acts --
+    # is still removed.
+    assert got["population"] == {"n": 5, "usable": 4, "refused": 1, "quarantined": 0}
+    assert {s["system_id"] for s in got["systems"]} == {"grid1", "honest1", "stats1", "unclear"}
     assert got["agents_ran"] == 10, got["unmeasured"]
     assert got["illusions_detected"]["martingale"] >= 1
     assert got["cells"]["n"] >= 20 and set(got["cells"]["by_grade"]) <= set("ABCDEF")

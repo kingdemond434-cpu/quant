@@ -1052,6 +1052,21 @@ packs name has no resident, no discovery in its trailing window, or no candidate
   while the organ that fed it ran green every hour, and a certificate canon reached n=0 while the
   desk kept trading and every store reported its own view without reconciling.
 
+- **NO PRODUCER IS DARK, AND DARKNESS IS NEVER A SILENT STATE (2026-09-23, principal's standing
+  order: "ensure no seat, miner, anything is dark now; if there is, fix it ... fix all five
+  permanently").** Every seat, miner and research organ has a DECLARED CLOCK and a PRODUCTION
+  EXPECTATION. Producing nothing for longer than that expectation is a DEFECT with an owner --
+  never "unmeasured", never "no cadence to miss". A producer the mapping cannot resolve to an
+  organ is a defect IN THE MAPPING, not a licence to report UNMEASURED: the mapping is DERIVED
+  from the tree (`libs/ops/producer_census.py`), so a seat that lands today is covered today. The
+  census covers EVERY producer the component registry knows, publishes LIVE / SLOW / DARK /
+  RETIRED / UNMEASURED with the reason, RELIGHTS every dark row in the same pass, and its
+  ratchet of dark producers may only FALL. Measured on the trading box the day it landed: 92 of
+  105 seats read UNMEASURED for the single reason that a hand table had never been filled in --
+  sixty of them producing inside the hour. Five distinct causes, five distinct remedies: a clock
+  on the wrong machine, a seat retired without an inheritor, an environment provisioned on the
+  wrong box, a mapping table never filled in, and an executable that landed without a leg.
+
 - `ops/brain_env.sh` injects `ops/principal_doctrine.txt` (sealed core + universe mandate) AND
   this file into every organ's appended system prompt; research organs additionally open
   `docs/RESEARCH.md` (their prompt's first standing order).

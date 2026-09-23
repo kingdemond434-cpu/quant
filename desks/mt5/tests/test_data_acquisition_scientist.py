@@ -129,10 +129,17 @@ def test_legality_is_a_hard_gate_never_a_term(desk: Any) -> None:
     ranked = {r["dataset"]: r for r in doc["ranked"]}
     assert ranked["kr_leaked_broker_book"]["ev"] == 0.0
     assert "kr_leaked_broker_book" not in doc["requests"]["datasets"]
-    assert "kr_layer_app_ecosystem" in doc["legality"]["registered_no_machine_extraction"]
-    assert "kr_layer_app_ecosystem" in blocked                    # unresolved review: shut
+    # LAWS 5e (2026-09-23): a pack source class declaring `machine_use_allowed: false` used to
+    # land in `registered_no_machine_extraction` and be blocked for an unresolved MNPI review.
+    # Both were access brakes. Only the five refused acts land there now, and the leaked book is
+    # exactly one of them.
+    assert doc["legality"]["refused_hard_boundary"] == ["kr_leaked_broker_book"]
+    assert "kr_layer_app_ecosystem" not in doc["legality"]["refused_hard_boundary"]
     assert all("dump.example" not in u for u in desk["calls"]["fetch"])
     assert doc["legality"]["gate"] == DC.LEGALITY_RULE
+    assert doc["legality"]["hard_boundary"] == list(das.AC.HARD_BOUNDARY)
+    assert len(doc["legality"]["hard_boundary"]) == das.AC.HARD_BOUNDARY_COUNT == 5
+    assert doc["legality"]["removed_brakes"], "the deleted brakes are named, not forgotten"
 
 
 def test_the_sample_goes_through_the_lawful_route_and_the_request_carries_the_contract(

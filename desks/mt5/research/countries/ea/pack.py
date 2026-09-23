@@ -40,9 +40,42 @@ NAME = "Euro area"
 REGION_COMMAND = "EUROPE"
 CURRENCY = "EUR"
 
+#: EVERY MEMBER OF THE MONETARY UNION THIS PACK ANSWERS FOR (added 2026-09-23).
+#:
+#: `scripts/check_regional_parity.py::jurisdictions_of` reads this tuple and credits the pack
+#: with every country in it; a multi-jurisdiction pack that declares nothing is credited with
+#: exactly ONE, which is why eleven euro-area members sat on the fence's UNANSWERED list while
+#: this pack was already the department that covers them. The fence said so in its own words --
+#: "the euro-area pack covers eleven members and declares none of them" -- and the fix it named
+#: is this tuple.
+#:
+#: DECLARING ALL TWENTY IS THE HONEST READING, not an inflation, and the distinction that makes
+#: it honest is `JURISDICTION_DEPTH` below. The ECB's single monetary policy, the single
+#: settlement system, the single HICP construction, the single Governing Council calendar and
+#: the single currency ARE the mechanism for all twenty members equally: a rate decision binds
+#: Malta exactly as it binds Germany, and there is no second euro. What differs is the FISCAL
+#: and political plane, which is national -- and this pack carries a sub-lab for the five that
+#: move the price and says plainly that the other fifteen are covered by the monetary plane
+#: alone. A reader who needs to know which is which reads one dict rather than guessing.
+JURISDICTIONS: tuple[str, ...] = (
+    "at", "be", "cy", "de", "ee", "es", "fi", "fr", "gr", "hr",
+    "ie", "it", "lt", "lu", "lv", "mt", "nl", "pt", "si", "sk")
+
 #: The sub-labs this pack carries inside it. The euro area is one monetary authority and four
 #: fiscal ones that matter for price; each keeps its own calendar, agency and language.
 SUB_LAB_CODES: tuple[str, ...] = ("de", "fr", "it", "es", "nl")
+
+#: WHAT EACH DECLARED JURISDICTION ACTUALLY GETS FROM THIS PACK. `SUB_LAB` means a national
+#: fiscal plane of its own -- debt agency, auction calendar, political clock, national language
+#: terminology. `MONETARY_PLANE` means the ECB's single policy, settlement, HICP and calendar and
+#: nothing national: an honest statement that the country is covered where the mechanism is
+#: common and NOT covered where it is national. A member that later earns a sub-lab moves rows
+#: here rather than appearing from nowhere.
+JURISDICTION_DEPTH: dict[str, str] = {
+    **dict.fromkeys(("de", "fr", "it", "es", "nl"), "SUB_LAB"),
+    **dict.fromkeys(("at", "be", "cy", "ee", "fi", "gr", "hr", "ie",
+                     "lt", "lu", "lv", "mt", "pt", "si", "sk"), "MONETARY_PLANE"),
+}
 
 #: The six point-in-time stamps every dataset row must be able to answer (region mandate s21).
 PIT_STAMPS: tuple[str, ...] = ("event_time", "period_time", "publication_time", "available_time",

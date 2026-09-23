@@ -97,9 +97,18 @@ the data nobody else can buy. Every owned dataset below 100% explored is a stand
 - **Information value over source prestige.** The comment/reply layer is first-class. Extreme
   claims are mined for their mechanism and screened like everything else — social proof is NEVER
   evidence, in any language, from any source.
-- **§13 LEGITIMACY GATE, absolute in every language:** a licence forbidding the use is a HARD
-  STOP; the access boundary is a hard limit, not a preference. No credential walls, no scraping
-  behind auth that terms forbid, no gray-area "it's public enough".
+- **§13 THE ACCESS ROUTER, NOT A LEGITIMACY GATE (rewritten 2026-09-23 — LAWS §5e).** The desk
+  MINES AND TESTS EVERYTHING it can see on the open internet. A licence, a robots note, a source
+  class or an unclear access path is a ROUTING AND PROVENANCE LABEL: it says what may be
+  REDISTRIBUTED and how much weight the evidence carries, and it never stops discovery,
+  ingestion, representation or testing. There is no ACCESS_UNCLEAR quarantine and no
+  "public/licensed sources only" pre-filter; fringe, retail, forum, archive and machine-translated
+  ground are first-class inputs. The former "a licence forbidding the use is a HARD STOP" was a
+  discovery brake the desk imposed on itself and is deleted. What remains refused is about ACTS
+  and is exactly five: no credential theft or logging in as someone else; no bypassing an access
+  control or a paywall; no material non-public information; no stolen or leaked private data; no
+  personal data harvesting or doxxing. If a page sits behind a login or a paywall the desk does
+  not break in — and the open surface of that same domain is mined like any other.
 - **The search engine is a self-optimizing asset:** operators, lexicons and diaspora expand every
   dig; digger parity — every upgrade propagates to ALL diggers (no digger left behind);
   search-space expansion is a standing rule; canary searches and the information-ecology monitor
@@ -693,7 +702,8 @@ lineage and observation latency, path-signature specification, borrow availabili
 hazard where an instrument can be shorted, settlement cash flows and margin/collateral
 requirements, the sequential-test family and statistical wealth spent, compute/data/wall-clock
 cost, and the missed-trade parent that prompted it. Every dataset carries a DatasetContract
-(source, owner, acquisition method, public or licensed, licence version, permitted uses,
+(source, owner, acquisition method, access label, licence version, permitted uses,
 redistribution rights, personal-data status, MNPI review status, jurisdiction, PIT timestamp,
-revision policy, retention policy, compliance owner); legality is a hard gate on the acquisition
-scientist, never a term traded against profitability.
+revision policy, retention policy, compliance owner); those fields ROUTE the dataset's use per
+§5e — what may be republished, and how much weight it carries — and never gate its acquisition or
+its testing. The acquisition scientist is stopped only by the five refused acts.
