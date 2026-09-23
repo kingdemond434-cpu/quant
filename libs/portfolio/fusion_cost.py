@@ -79,9 +79,30 @@ for _p in (str(_DESK), str(_DESK / "research")):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-#: Fusion Zero's published contract, USD per lot PER SIDE. Cited at `mt5desk/engine.py:39` and
-#: used as `validate_fusion.FUSION_COMMISSION`. Contractual: it does not widen under stress.
-COMMISSION_PER_LOT_PER_SIDE = 2.25
+#: WHAT THIS ACCOUNT ACTUALLY PAYS, IN THE ACCOUNT'S OWN CURRENCY, per lot PER SIDE.
+#:
+#: THE UNIT WAS THE BUG AND IT IS NAMED HERE ON PURPOSE. This was 2.25 and was documented as USD
+#: -- but every consumer feeds it to `Costs.from_symbol(commission_per_lot=...)`, which converts
+#: it through `quote_per_account` as an ACCOUNT-CURRENCY amount. Account 495044 is denominated in
+#: EUR, so the desk was charging 2.25 EUR per side for a figure it believed was 2.25 USD.
+#:
+#: MEASURED 2026-09-23 (`reports/COST_TRUTH.json`, `scripts/check_cost_truth.py`) over all 433
+#: deals the account has ever done, on all twelve symbols it has traded and gold among them:
+#: commission is EXACTLY 2.00 per lot per side in account currency, with p10 = p50 = p90 = 2.00
+#: and no exception anywhere in the history. Not a rate that varies with the FX of the day, which
+#: is what a converted USD figure would look like: a flat account-currency contract.
+#:
+#: SO THE NAME OF THE UNIT IS "ACCOUNT CURRENCY", not USD and not EUR. A desk that re-denominates
+#: its account must re-measure this rather than convert it -- `cost_truth.py` publishes the
+#: measurement every hour and `check_cost_truth.py` fails when the charge drifts above it.
+#: Contractual: it does not widen under stress (see `Costs.stressed`).
+COMMISSION_PER_LOT_PER_SIDE = 2.00
+
+#: The unit, spelled out, because the previous value carried a currency in a comment that no
+#: consumer could read and every consumer contradicted.
+COMMISSION_UNIT = "account currency per lot per side"
+#: What the venue publishes, kept only so the gap between the brochure and the ledger is visible.
+COMMISSION_PUBLISHED_USD_PER_SIDE = 2.25
 
 #: Mirrors `research/run_edges_macro_fusion_sweep.COST_REGIMES` exactly. A test pins the equality
 #: so the two cannot drift into two different accounts.

@@ -137,6 +137,23 @@ REQUIRED_EDGES: tuple[Edge, ...] = (
     Edge("leg:control_plane", "task:MT5-ClockFixer",
          "desks/mt5/reports/CONTROL_PLANE.json", "reconciler->actuators",
          "the fifteen-minute apply pass acts on the observe pass's plan, not on its own guesses"),
+    # THE COST WIRE, declared after it was found broken (2026-09-23). `net_edge_spine` read
+    # `reports/EXECUTION_COST_SURFACE.json` and NOTHING wrote that name -- `cost_surface.py`
+    # writes `reports/COST_SURFACE.json` -- so the spine's own inputs block said "absent" and
+    # 212 of 273 priced rows carried no measured spread at all. Exactly the RESEARCH_BANDIT.json
+    # shape this check exists for: both ends green, the wire absent. Declaring the pair is what
+    # makes the next one fail loudly instead of silently pricing on a model.
+    Edge("leg:cost_truth", "leg:net_edge",
+         "desks/mt5/reports/EXECUTION_COST_SURFACE.json", "cost->net",
+         "the spread the spine charges must be the one the broker quoted at the desk's own "
+         "fills, or a real edge dies on a cost it would never have paid"),
+    # And the OTHER half of the same defect: the venue-cost surface had no reader at all. It
+    # carries commission and swap per (asset, time, size, state, order) -- NOT the crossing --
+    # so its consumer is cost_truth, which publishes it beside the measurement and never feeds
+    # it to the spine's spread slot, where it would charge commission twice.
+    Edge("task:MT5-CostState", "leg:cost_truth",
+         "desks/mt5/reports/COST_SURFACE.json", "venue-cost->cost-truth",
+         "a surface nothing reads is a measurement the desk paid for and never spent"),
 )
 
 

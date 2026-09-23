@@ -122,6 +122,32 @@ if (-not (Test-Path (Join-Path $RepoRoot ".git"))) {
     throw "not a repository root: $RepoRoot"
 }
 
+# An index.lock younger than this may belong to a writer between two of its own git calls; older
+# than this with no git process alive anywhere, it is debris from one the scheduler killed.
+# `libs/ops/git_writer_lock.DEFAULT_STALE_S` is the same number in the language the Python
+# writers read it in, and a test pins the two to each other.
+$StaleIndexLockS = 120
+
+function Clear-StaleIndexLock {
+    # Returns the SENTENCE describing what was done, or "" when nothing was. Never silent about
+    # a lock it left alone: "there was no lock" and "there was one and it was somebody's" must
+    # not render identically (L1.28a), because the remedies are opposite.
+    $lock = Join-Path $RepoRoot ".git\index.lock"
+    if (-not (Test-Path -LiteralPath $lock)) { return "" }
+    try { $age = ((Get-Date) - (Get-Item -LiteralPath $lock).LastWriteTime).TotalSeconds }
+    catch { return "" }
+    if ($age -le $StaleIndexLockS) {
+        return ("index.lock is {0:N0}s old (<= {1}s): a live writer between two of its own git calls looks exactly like this" -f $age, $StaleIndexLockS)
+    }
+    $live = @(Get-Process -Name "git" -ErrorAction SilentlyContinue)
+    if ($live.Count -gt 0) {
+        return ("index.lock is {0:N0}s old but {1} git process(es) are alive; removing it could corrupt that writer's index" -f $age, $live.Count)
+    }
+    try { Remove-Item -LiteralPath $lock -Force -ErrorAction Stop }
+    catch { return ("index.lock is debris ({0:N0}s, no git alive) but could not be removed: {1}" -f $age, $_.Exception.Message) }
+    return ("REMOVED a stale index.lock {0:N0}s old with no git process alive -- debris from a writer killed mid-index" -f $age)
+}
+
 function Invoke-Git {
     # Captures stdout as text and THROWS on a non-zero exit, so a failed plumbing
     # call can never be mistaken for an empty result -- which is how a bad diff
@@ -193,16 +219,50 @@ function Invoke-Git {
     $psi.RedirectStandardOutput = $true
     $psi.RedirectStandardError  = $true
     $psi.CreateNoWindow         = $true
-    $proc = [System.Diagnostics.Process]::Start($psi)
-    # STDOUT IS READ TO THE END BEFORE WaitForExit. A pipe has a finite buffer, and a diff of
-    # several thousand paths fills it -- git then blocks writing while this blocks waiting, and
-    # the adoption hangs with no output, which is the one failure mode an operator cannot tell
-    # from a crash.
-    $stdout = $proc.StandardOutput.ReadToEnd()
-    $stderr = $proc.StandardError.ReadToEnd()
-    $proc.WaitForExit()
-    $code = $proc.ExitCode
+    # THE INDEX IS CONTENDED ON THIS BOX AND HOLDING THE MUTEX DOES NOT CHANGE THAT (2026-09-23).
+    #
+    #     fatal: Unable to create 'C:/opt/quant/.git/index.lock': File exists.
+    #
+    # arrived in the middle of a chunked `git add`, and Invoke-Git throws on it, which is
+    # Adopt-Release exiting 1, which is Adopt-And-Seal refusing to seal, which is the gateway on
+    # stale code for another hour. Adopt-And-Seal holds Global\MT5-GitWriter-v2 for the whole
+    # pass, but a writer running code from BEFORE that lock existed, an operator's shell, and a
+    # hook inside somebody else's commit all still take the index -- so the adoption has to
+    # survive losing a race it cannot prevent.
+    #
+    # Bounded, because an index that never clears is a defect to publish, not a loop to sit in:
+    # five attempts, 1s doubling to 16s. Between attempts a GENUINELY STALE lock -- older than
+    # two minutes with no git.exe alive anywhere on the box -- is removed, and the removal is
+    # printed. That combination is the only safe one: a lock a live git holds is that writer's
+    # index and removing it corrupts the tree, while a lock left by a task the scheduler killed
+    # mid-index never clears itself and wedges every writer after it.
+    $attempt = 0
+    $delayMs = 1000
+    while ($true) {
+        $attempt++
+        $proc = [System.Diagnostics.Process]::Start($psi)
+        # STDOUT IS READ TO THE END BEFORE WaitForExit. A pipe has a finite buffer, and a diff of
+        # several thousand paths fills it -- git then blocks writing while this blocks waiting, and
+        # the adoption hangs with no output, which is the one failure mode an operator cannot tell
+        # from a crash.
+        $stdout = $proc.StandardOutput.ReadToEnd()
+        $stderr = $proc.StandardError.ReadToEnd()
+        $proc.WaitForExit()
+        $code = $proc.ExitCode
+        if ($code -eq 0 -or $stderr -notmatch 'index\.lock' -or $attempt -ge 5) { break }
+        Write-Host ("  index.lock contended on `git {0}` (attempt {1}/5)" -f
+                    (($GitArgs | Select-Object -First 2) -join " "), $attempt)
+        $cleared = Clear-StaleIndexLock
+        if ($cleared) { Write-Host ("    {0}" -f $cleared) }
+        Start-Sleep -Milliseconds $delayMs
+        $delayMs = [Math]::Min($delayMs * 2, 16000)
+    }
     $global:LASTEXITCODE = $code
+    # GIT'S OWN LAST WORDS, KEPT FOR THE CALLER (2026-09-23). Every -AllowFail call used to
+    # throw the reason away and the script then GUESSED one: thirteen paths that failed to
+    # stage were reported as "match nothing on disk or in the index", when the measured cause
+    # was a lost index.lock race. A wrong reason sends the next session to look for a phantom.
+    $script:LastGitError = $stderr.Trim()
     $out = @($stdout -split "`r?`n" | Where-Object { $_ -ne "" })
     if ($code -ne 0 -and -not $AllowFail) {
         throw ("git {0} failed rc={1}: {2}" -f ($GitArgs -join " "), $code, $stderr.Trim())
@@ -363,6 +423,76 @@ function Test-StatePath {
     return $false
 }
 
+# ---- STATE THAT ARRIVES BY ITS OWN HOURLY ROUTE IS NOT THIS SCRIPT'S WORK -------------------
+#
+# MEASURED ON THE BOX 2026-09-23. One adoption's diff against the branch tip:
+#
+#     total diff records 23270   ->   INTEL 22910, STATE 235, CODE 125
+#
+# Twenty-two thousand nine hundred and ten of the twenty-three thousand two hundred and seventy
+# paths were the miner discovery corpus under data/intelligence/ and desks/mt5/data/intelligence/.
+# Each one costs this script a `git cat-file` CHILD PROCESS to read and a pathspec in a chunked
+# `git add`, so the adoption ran for upwards of half an hour holding the git-writer mutex -- and
+# a half-hour window on a box whose git is never idle is not a window, it is a collision. That is
+# where the `fatal: Unable to create '.git/index.lock': File exists` came from, and with it the
+# hourly "Adopt-Release exited 1 -- partial adoption".
+#
+# THOSE PATHS ARE NOT THIS SCRIPT'S TO DELIVER. `MT5-IntelShip` runs `intel_ship_adopt.ps1` every
+# hour at :01 and lands exactly those two trees from the dedicated data-only branch
+# intel-ship/send -- the route the VPS swarm actually ships on. Step 4 below ALREADY refuses to
+# let a state path block the seal, precisely because the box's own organs rewrite them while the
+# adoption runs. So this script was spending 98.5% of its time, and all of its lock window, on
+# files that could never block it and that another organ delivers anyway.
+#
+# Skipping them is not a gap in coverage: it is the same corpus arriving by the one route that
+# was built for it. Nothing is hidden -- the count is printed, and it is in ADOPTION_STATE.json.
+$ShippedPrefixes = @("data/intelligence/", "desks/mt5/data/intelligence/")
+
+function Test-ShippedByOwnOrgan {
+    param([string] $Rel)
+    $p = ($Rel -replace '\\', '/').TrimStart('.', '/')
+    foreach ($prefix in $ShippedPrefixes) { if ($p.StartsWith($prefix)) { return $true } }
+    return $false
+}
+
+# ---- THE EXECUTABLE BIT IS PART OF THE TREE, AND WRITING CONTENT CANNOT LAND IT -------------
+#
+# THIS WAS THE ACTUAL FOUR-DAY BLOCKER, and it is invisible until you look for it. Measured on
+# the box 2026-09-23, on the two paths that refused every hourly adoption:
+#
+#     ops/gates.sh               HEAD 100755  TARGET 100644  blob 50c2d034...  (IDENTICAL)
+#     scripts/recommendations.py HEAD 100755  TARGET 100644  blob 1596a179...  (IDENTICAL)
+#     core.fileMode = false
+#
+# The CONTENT was already right -- byte for byte, the same blob sha on both sides. Only the
+# executable bit differed. `git diff --name-only HEAD <target>` reports a path whose MODE
+# differs, so step 4 saw drift and refused; `Write-InPlace` rewrites bytes and never touches a
+# mode; and `git add` under `core.fileMode=false` (which is correct on Windows -- NTFS has no
+# executable bit to read) re-stages the mode ALREADY IN THE INDEX. So every pass wrote the same
+# correct bytes, staged the same wrong mode, and refused for the same reason, forever. No number
+# of retries could ever have fixed it, which is why it survived every repair the desk tried.
+#
+# `git update-index --chmod` is the one operation that sets the recorded mode directly, without
+# consulting the filesystem. It is exact, it is reversible, and it applies only where the target
+# and the index actually disagree.
+function Sync-IndexMode {
+    param([string] $Rel, [string] $Rev)
+    $t = @(Invoke-Git @("ls-tree", $Rev, "--", $Rel) -AllowFail)
+    if ($LASTEXITCODE -ne 0 -or $t.Count -eq 0) { return "" }
+    $targetMode = ($t[0] -split '\s+')[0]
+    $i = @(Invoke-Git @("ls-files", "-s", "--", $Rel) -AllowFail)
+    if ($LASTEXITCODE -ne 0 -or $i.Count -eq 0) { return "" }
+    $indexMode = ($i[0] -split '\s+')[0]
+    if ($targetMode -eq $indexMode) { return "" }
+    $flag = if ($targetMode -eq "100755") { "+x" } elseif ($targetMode -eq "100644") { "-x" } else { "" }
+    if (-not $flag) { return "" }   # a gitlink or symlink: not this script's to rewrite
+    $null = Invoke-Git @("update-index", "--chmod=$flag", "--", $Rel) -AllowFail
+    if ($LASTEXITCODE -ne 0) {
+        return ("mode {0} -> {1} REFUSED (rc={2})" -f $indexMode, $targetMode, $LASTEXITCODE)
+    }
+    return ("mode {0} -> {1}" -f $indexMode, $targetMode)
+}
+
 # THE PRE-COMMIT GUARD WAS REVERTING THIS SCRIPT'S OWN CODE WRITES, AND THAT IS WHY THE BOX RAN
 # STALE PYTHON WHILE REPORTING A SUCCESSFUL ADOPTION (measured 2026-09-14).
 #
@@ -513,7 +643,7 @@ function Test-KeptByBox {
     return $boxTouched.ContainsKey($Rel)
 }
 
-$written = 0; $added = 0; $removed = 0; $untracked = 0
+$written = 0; $added = 0; $removed = 0; $untracked = 0; $shipped = 0
 $kept      = New-Object System.Collections.ArrayList
 $unremoved = New-Object System.Collections.ArrayList
 $staged    = New-Object System.Collections.ArrayList
@@ -540,6 +670,14 @@ foreach ($rec in $records) {
     foreach ($op in $ops) {
         $rel  = $op.Path
         $full = Join-Path $RepoRoot ($rel -replace '/', '\')
+        if (Test-ShippedByOwnOrgan $rel) {
+            # The discovery corpus. MT5-IntelShip lands it hourly from intel-ship/send, step 4
+            # can never let it block a seal, and reading 22,910 of them through one child process
+            # each is what turned this script's lock window into a collision. Counted, not hidden.
+            $shipped++
+            $seen++
+            continue
+        }
         if ($op.Kind -eq "D" -and (Test-StatePath $rel) -and -not $boxAdded.ContainsKey($rel)) {
             # ORIGIN STOPPED TRACKING A STATE PATH, so it leaves the INDEX and only the index.
             # a4bd8663 (2026-09-06) untracked desks/mt5/logs/ -- seventeen console logs and the
@@ -617,6 +755,9 @@ foreach ($rec in $records) {
     }
 }
 Write-Host ("  wrote {0} modified, {1} added, {2} deleted in place; {3} state path(s) origin no longer tracks untracked here (left on disk)" -f $written, $added, $removed, $untracked)
+if ($shipped -gt 0) {
+    Write-Host ("  left {0} discovery path(s) to MT5-IntelShip (intel_ship_adopt.ps1, hourly at :01, branch intel-ship/send)" -f $shipped)
+}
 if ($kept.Count -gt 0) {
     Write-Host ("  kept {0} state path(s) this box wrote since it diverged (the box's evidence wins; origin's copy is reverted by the next push):" -f $kept.Count)
     $kept | Select-Object -First 12 | ForEach-Object { Write-Host ("    {0}" -f $_) }
@@ -652,12 +793,35 @@ if ($staged.Count -gt 0) {
         if ($LASTEXITCODE -ne 0) {
             Write-Host ("  chunk add failed; retrying {0} path(s) individually" -f $chunk.Count)
             $skipped = 0
+            # THE REASON IS MEASURED, NOT ASSUMED (2026-09-23). "match nothing on disk or in the
+            # index" was written for the phantom-rename case and then printed for EVERY failure.
+            # Measured on the box: thirteen paths failed here and two of them -- ops/gates.sh and
+            # scripts/recommendations.py -- were ordinary files that existed, were tracked, and
+            # staged perfectly by hand a minute later. They had lost the index.lock race. The
+            # adoption refused on them, named a cause that was not true, and the next session was
+            # sent to look for a pathspec that did not exist.
+            $reasons = @{}
             foreach ($p in $chunk) {
                 $null = Invoke-Git @("add", "--all", "--", $p) -AllowFail
-                if ($LASTEXITCODE -ne 0) { $skipped++ }
+                if ($LASTEXITCODE -ne 0) {
+                    $skipped++
+                    $why = if ($script:LastGitError -match 'index\.lock') { "lost the index.lock race" }
+                           elseif ($script:LastGitError -match 'did not match any files') { "matches nothing on disk or in the index" }
+                           elseif ($script:LastGitError -match 'ignored by one of your .gitignore') { "ignored by .gitignore" }
+                           else { ($script:LastGitError -split "`r?`n" | Select-Object -First 1) }
+                        if (-not $why) { $why = "rc=$LASTEXITCODE with no message" }
+                    if (-not $reasons.ContainsKey($why)) { $reasons[$why] = New-Object System.Collections.ArrayList }
+                    [void]$reasons[$why].Add($p)
+                }
             }
             if ($skipped -gt 0) {
-                Write-Host ("  skipped {0} pathspec(s) that match nothing on disk or in the index" -f $skipped)
+                Write-Host ("  {0} path(s) did not stage:" -f $skipped)
+                foreach ($why in $reasons.Keys) {
+                    $names = @($reasons[$why])
+                    Write-Host ("    {0} -- {1}: {2}{3}" -f $names.Count, $why,
+                                (($names | Select-Object -First 4) -join ", "),
+                                $(if ($names.Count -gt 4) { " ..." } else { "" }))
+                }
             }
         }
     }
@@ -709,23 +873,157 @@ if ($pending.Count -gt 0) {
 # drift that would genuinely block a seal is reported exactly as before.
 $allDiff = @(Invoke-Git @("-c", "core.quotePath=false", "diff", "--name-only", "HEAD", $target) |
              ForEach-Object { "$_" } | Where-Object { $_ -match '\S' })
-$stateDrift = @($allDiff | Where-Object { Test-StatePath $_ })
+$shippedDrift = @($allDiff | Where-Object { Test-ShippedByOwnOrgan $_ })
+$stateDrift = @($allDiff | Where-Object { (Test-StatePath $_) -and -not (Test-ShippedByOwnOrgan $_) })
 $drift      = @($allDiff | Where-Object { -not (Test-StatePath $_) })
+
+# ---- 4a. THE REPAIR PASS: A LOST LOCK RACE IS NOT A REASON TO REFUSE ------------------------
+#
+# MEASURED 2026-09-23, and it is the whole reason the box sat behind its branch. The adoption
+# wrote every code path in place correctly, and then THIRTEEN of them failed to stage in one
+# chunk because a foreign writer held `.git/index.lock` for longer than the add's retry window.
+# Two were code -- `ops/gates.sh` and `scripts/recommendations.py` -- so step 4 found a tree that
+# did not match the target and refused, the seal never happened, and the gateway ran yesterday's
+# engines for another hour. Both files existed, were tracked, and staged by hand without
+# complaint a minute later: NOTHING WAS WRONG WITH THEM. The adoption simply lost a race and had
+# no way to try again.
+#
+# So it tries again, on exactly the residual set and nothing else: re-write those paths in place,
+# stage them (each `git add` carries Invoke-Git's own index.lock backoff), commit, and re-measure.
+# Two passes, because a third that changes nothing is a loop, and a path that will not land twice
+# in a row is a real defect that belongs in the artifact below rather than in a retry.
+#
+# THIS IS NOT A WEAKENING OF THE VERIFY GATE. The gate is unchanged and still decides: the repair
+# runs BEFORE it and the tree is re-measured after, so a path that genuinely cannot be written
+# still refuses the merge exactly as before -- it is only a path that could have been written
+# that no longer costs the desk an hour of stale code.
+$repairPasses = 0
+while ($drift.Count -gt 0 -and $repairPasses -lt 2) {
+    $repairPasses++
+    Write-Host ("  repair pass {0}: {1} code path(s) did not land on the previous pass; re-landing them" -f
+                $repairPasses, $drift.Count)
+    $residual = @{}
+    foreach ($d in $drift) { $residual[$d] = $true }
+    $fixed = New-Object System.Collections.ArrayList
+    foreach ($rec in @(Invoke-Git @("-c", "core.quotePath=false", "diff", "--name-status", "HEAD", $target) |
+                       ForEach-Object { "$_" } | Where-Object { $_ -match '\S' })) {
+        $cols = $rec -split "`t"
+        if ($cols[0] -match '^[RC]') {
+            $ops = @(@{ Kind = "D"; Path = $cols[1] }, @{ Kind = "A"; Path = $cols[2] })
+        } else {
+            $ops = @(@{ Kind = $cols[0].Substring(0, 1); Path = $cols[1] })
+        }
+        foreach ($op in $ops) {
+            $rel = $op.Path
+            if (-not $residual.ContainsKey($rel)) { continue }
+            $full = Join-Path $RepoRoot ($rel -replace '/', '\')
+            try {
+                if ($op.Kind -eq "D") {
+                    if (Test-Path -LiteralPath $full) { [System.IO.File]::Delete($full) }
+                } else {
+                    Write-InPlace -Full $full -Bytes (Get-WorktreeBytes -Rev $target -Path $rel)
+                }
+            } catch {
+                Write-Host ("    [FAIL] {0}: {1}" -f $rel, $_.Exception.Message)
+                continue
+            }
+            $null = Invoke-Git @("add", "--all", "--", $rel) -AllowFail
+            if ($LASTEXITCODE -ne 0) {
+                Write-Host ("    [FAIL] {0}: git add rc={1}: {2}" -f $rel, $LASTEXITCODE,
+                            (($script:LastGitError -split "`r?`n" | Select-Object -First 1)))
+                continue
+            }
+            # THE MODE, AFTER THE CONTENT. A path whose bytes already match and whose executable
+            # bit does not is drift that no write can clear, and it is what refused this box's
+            # adoption for four days.
+            if ($op.Kind -ne "D") {
+                $modeNote = Sync-IndexMode -Rel $rel -Rev $target
+                if ($modeNote) { Write-Host ("    {0}: {1}" -f $rel, $modeNote) }
+            }
+            [void]$fixed.Add($rel)
+        }
+    }
+    $pendingRepair = @(Invoke-Git @("diff", "--cached", "--name-only") |
+                       ForEach-Object { "$_" } | Where-Object { $_ -match '\S' })
+    if ($pendingRepair.Count -gt 0) {
+        Invoke-Git @("commit", "-m",
+            ("Adopt {0} in place (repair pass {1}); paths that lost an index.lock race" -f
+             $target.Substring(0, 12), $repairPasses)) | Out-Null
+        Write-Host ("    committed {0} path(s) on the repair pass" -f $pendingRepair.Count)
+    }
+    $allDiff = @(Invoke-Git @("-c", "core.quotePath=false", "diff", "--name-only", "HEAD", $target) |
+                 ForEach-Object { "$_" } | Where-Object { $_ -match '\S' })
+    $shippedDrift = @($allDiff | Where-Object { Test-ShippedByOwnOrgan $_ })
+    $stateDrift = @($allDiff | Where-Object { (Test-StatePath $_) -and -not (Test-ShippedByOwnOrgan $_) })
+    $drift      = @($allDiff | Where-Object { -not (Test-StatePath $_) })
+    if ($fixed.Count -eq 0) {
+        # Nothing moved. Another identical pass cannot move it either, and the refusal below is
+        # the honest outcome -- with the paths named.
+        Write-Host "    nothing could be re-landed; the remaining paths are a real defect"
+        break
+    }
+}
+if ($shippedDrift.Count -gt 0) {
+    Write-Host ("  {0} discovery path(s) differ and are MT5-IntelShip's to land, not this script's" -f $shippedDrift.Count)
+}
 if ($stateDrift.Count -gt 0) {
     Write-Host ("  {0} state path(s) differ and are NOT blocking: the box's organs own them and " -f $stateDrift.Count)
     Write-Host  "  the next push carries the box's version up. First few:"
     $stateDrift | Select-Object -First 6 | ForEach-Object { Write-Host ("    {0}" -f $_) }
 }
+
+# ---- 4b. PUBLISH WHAT REMAINS, ALWAYS -------------------------------------------------------
+# A HALF-ADOPTED REPOSITORY MUST NEVER BE LEFT WITHOUT SAYING WHICH PATHS REMAIN (2026-09-23).
+# For four days `adopt_and_seal.log` carried one line an hour -- "Adopt-Release exited 1 --
+# partial adoption" -- and the paths that caused it were on a console nobody captured. A status
+# with no subject cannot be acted on and cannot be watched: `plumbing_watchdog.check_adoption_partial`
+# reads this artifact and raises the offending paths BY NAME.
+$adoptionState = [ordered]@{
+    measured_at   = (Get-Date).ToUniversalTime().ToString("o")
+    branch        = $Branch
+    head          = (Invoke-Git @("rev-parse", "HEAD")).Trim()   # AFTER this pass's commits
+    head_before   = $head
+    target        = $target
+    sealed        = $false   # this script never seals; Adopt-And-Seal does, after this exits 0
+    ok            = ($drift.Count -eq 0)
+    counts        = [ordered]@{
+        written = $written; added = $added; removed = $removed; untracked = $untracked
+        shipped_elsewhere = $shipped; kept_state = $kept.Count; repair_passes = $repairPasses
+        code_drift = $drift.Count; state_drift = $stateDrift.Count
+        discovery_drift = $shippedDrift.Count; unwritable = $unremoved.Count
+    }
+    code_drift    = @($drift)
+    unwritable    = @($unremoved)
+    state_drift   = @($stateDrift | Select-Object -First 200)
+    shipped_by    = "MT5-IntelShip / desks/mt5/scripts/intel_ship_adopt.ps1 (intel-ship/send)"
+}
+$reportDir = Join-Path $RepoRoot "desks\mt5\reports"
+if (-not (Test-Path -LiteralPath $reportDir)) {
+    New-Item -ItemType Directory -Force -Path $reportDir | Out-Null
+}
+# An unwritable report is a lost diagnostic, never a reason to stop delivering code.
+try {
+    [System.IO.File]::WriteAllText(
+        (Join-Path $reportDir "ADOPTION_STATE.json"),
+        ($adoptionState | ConvertTo-Json -Depth 6),
+        (New-Object System.Text.UTF8Encoding($false)))
+} catch {
+    Write-Host ("  could not write ADOPTION_STATE.json: {0}" -f $_.Exception.Message)
+}
+
 if ($drift.Count -gt 0) {
     Write-Host ""
     Write-Host ("REFUSING to record the merge: {0} CODE path(s) still differ from the target." -f $drift.Count)
-    $drift | Select-Object -First 20 | ForEach-Object { Write-Host ("    {0}" -f $_) }
+    # EVERY ONE OF THEM, not the first twenty. The list IS the diagnosis, and a truncated list
+    # sends the next session to re-run a half-hour adoption to see what it already knew.
+    $drift | ForEach-Object { Write-Host ("    {0}" -f $_) }
     if ($unremoved.Count -gt 0) {
         Write-Host ""
         Write-Host ("{0} path(s) could not be written or unlinked -- the corrupt entries:" -f $unremoved.Count)
         $unremoved | ForEach-Object { Write-Host ("    {0}" -f $_) }
         Write-Host "Repair with:  chkdsk C: /F   (then reboot), and run this again."
     }
+    Write-Host "Named in desks/mt5/reports/ADOPTION_STATE.json; plumbing_watchdog raises them hourly."
     exit 1
 }
 

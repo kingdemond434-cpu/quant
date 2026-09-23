@@ -544,6 +544,17 @@ def calibration(errors: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
     return {"n": n, "status": MEASURED, "bias": round(bias, 8), "mae": round(mae, 8),
             "sd": round(math.sqrt(var), 8),
             "t": (round(bias / math.sqrt(var / n), 4) if var > 0 and n > 1 else UNMEASURED),
+            # THE SIGN WAS INVERTED (found 2026-09-23 when the commission fix moved this verdict).
+            # `error` is predicted_net MINUS realised_net. A model that charges TOO MUCH cost
+            # predicts too LITTLE net, so it shows a NEGATIVE bias -- the old mapping called that
+            # UNDER_CHARGING and called an optimistic model OVER_CHARGING, which is backwards in
+            # the one direction this desk has no other alarm for.
+            #
+            # AND THE ESTIMATOR IS NET-LEVEL, which the name cannot hide: a certificate whose
+            # GROSS edge is optimistic lands here too, so a positive bias is "the model promised
+            # more than the book delivered" and the cost half is only one of its two causes.
             "verdict": ("CALIBRATED" if abs(bias) <= mae * 0.25 else
-                        "OVER_CHARGING" if bias > 0 else "UNDER_CHARGING"),
-            "why": "predicted net minus realised net over every closed trade both could price"}
+                        "UNDER_CHARGING" if bias > 0 else "OVER_CHARGING"),
+            "why": ("predicted net minus realised net over every closed trade both could price; "
+                    "positive means the model promised more than the book delivered (too little "
+                    "cost charged, or too much gross edge believed)")}

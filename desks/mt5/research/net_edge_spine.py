@@ -212,14 +212,44 @@ def financing_term(cost_row: dict[str, Any] | None) -> NE.CostTerm:
                        f"worse side {cost_row.get('swap_pts_worse_side')} pts")
 
 
+def raw_regime_mult() -> tuple[float, str]:
+    """The RAW regime's SPREAD MULTIPLIER, from the desk's own table rather than a copy.
+
+    A fallback is stated, never silent: the 0.2 below is the value COST_TRUTH.json measured the
+    5x overcharge against, and its source string says the table could not be read.
+    """
+    try:
+        from libs.portfolio.fusion_cost import COST_REGIMES
+        mult = _f(COST_REGIMES.get("RAW"))
+        if mult and mult > 0:
+            return float(mult), "fusion_cost.COST_REGIMES"
+    except Exception:
+        pass
+    return 0.2, "fallback 0.2: fusion_cost.COST_REGIMES unreadable"
+
+
 def commission_term(cost_row: dict[str, Any] | None,
                     fusion_row: dict[str, Any] | None) -> NE.CostTerm:
     """Commission as its OWN term, from the venue's round-trip split.
 
-    `fusion_cost` publishes the round trip per lot under RAW (spread + commission) and ZERO
-    (commission only), so commission/spread = ZERO/(RAW - ZERO) is exact and needs no lot-to-R
-    conversion: it rides on the spread term already in R. A symbol charged ZERO spread has no
-    spread to ride on, and its commission is UNMEASURED rather than invented.
+    `fusion_cost` publishes the round trip per lot under RAW, WIDE and ZERO, so commission can be
+    expressed as a multiple of the spread term already in R and needs no lot-to-R conversion. A
+    symbol charged ZERO spread has no spread to ride on, and its commission is UNMEASURED rather
+    than invented.
+
+    RAW IS NOT "SPREAD + COMMISSION", AND ASSUMING IT WAS CHARGED THIS DESK 5x (measured
+    2026-09-23, `reports/COST_TRUTH.json`). `fusion_cost.COST_REGIMES` is a table of SPREAD
+    MULTIPLIERS -- {"WIDE": 2.0, "RAW": 0.2, "ZERO": 0.0} -- so RAW - ZERO is one FIFTH of the
+    spread, not the spread, and `zero / (raw - zero)` overstated the ratio by exactly
+    1 / COST_REGIMES["RAW"]. On AUDCAD it billed 48.45x the spread term where the arithmetic
+    gives 9.69x; on AUDNZD 59.64x against 11.93x. Commission is a median 98% of the charged cost
+    on this account, so the error WAS the cost model: eight EURCHF cells were billed 0.72R of
+    commission against a 1R stop and died COST_DEAD, and four of the fourteen COST_DEAD rows
+    turn net-positive once the regime multiplier is divided back out.
+
+    The multiplier is READ from the table rather than copied, so a change to the regimes moves
+    this with it; an unreadable table falls back to the value the measurement was taken against
+    and SAYS SO in the term's note rather than silently pricing on a guess.
     """
     if cost_row is None or fusion_row is None:
         return NE.unpriced("commission", "no fusion round-trip reading joins this cell")
@@ -231,10 +261,12 @@ def commission_term(cost_row: dict[str, Any] | None,
                            f"{fusion_row.get('symbol')} is charged no separable spread "
                            f"(RAW={raw}, ZERO={zero}): its commission cannot be expressed as a "
                            "multiple of the spread term and is unmeasured, not zero")
-    ratio = zero / (raw - zero)
+    mult, mult_src = raw_regime_mult()
+    ratio = mult * zero / (raw - zero)
     return NE.modelled("commission", spread_r * ratio, "reports/FUSION_COST.json",
-                       f"commission is {zero:.4f}/{raw:.4f} of the raw round trip -> "
-                       f"{ratio:.4f}x the spread term")
+                       f"commission is {zero:.4f} per lot against a full spread of "
+                       f"{(raw - zero) / mult:.4f} ({mult_src} RAW={mult}) -> {ratio:.4f}x the "
+                       f"spread term")
 
 
 def multiplicity_term(gates: dict[str, Any] | None, sigma_r: float | None) -> NE.CostTerm:

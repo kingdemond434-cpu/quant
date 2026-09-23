@@ -183,6 +183,17 @@ def build(*, state_path: Path = RUNNER_STATE, report_path: Path = RUNNER_REPORT,
             "produced": bool(int(st.get("candidates") or 0)
                              or float(st.get("information_gain") or 0.0) > 0),
         })
+        #: A ROSTER SEED WITH NO ADAPTER IS THE OTHER HALF OF "are they all there". It is not
+        #: refused, not unavailable and not idle -- there is simply no code that can run it yet,
+        #: and saying so by name is the whole point of a generated table. Never silent.
+        if row.get("kind") not in ("cell",) and not row.get("has_adapter"):
+            row["needs_adapter"] = True
+            row["planned_why"] = (
+                f"NO ADAPTER: libs/research/adapters/{sid}.py does not exist, so nothing can "
+                f"run this seed. The task is to write the adapter (run(bundle) -> "
+                f"ExternalResearchPacket) and pin its requirement in adapters.SPECS")
+        else:
+            row["needs_adapter"] = False
     ordered = sorted(rows.values(), key=lambda r: (not r["runs_here"],
                                                    -float(r["breadth_marginal"]),
                                                    -int(r["candidates"]), r["system_id"]))
@@ -201,6 +212,7 @@ def build(*, state_path: Path = RUNNER_STATE, report_path: Path = RUNNER_REPORT,
         "licence_read": sum(1 for r in ordered
                             if r["licence"] not in ("UNVERIFIED", "", "UNMEASURED")),
         "candidates_total": sum(int(r["candidates"]) for r in ordered),
+        "needs_adapter": sum(1 for r in ordered if r.get("needs_adapter")),
     }
     by_disposition: dict[str, int] = {}
     for r in ordered:
@@ -241,6 +253,8 @@ def render(doc: dict[str, Any]) -> str:
         f"**no wheel pinned:** {c['no_distribution_pinned']}  |  "
         f"**not yet attempted:** {c['not_attempted']}",
         f"- **Licence read at a pin:** {c['licence_read']} / {c['rows']}",
+        f"- **Roster seeds still waiting for an adapter:** {c['needs_adapter']} (named in the "
+        f"table; nothing can run them until one exists)",
         f"- **Federation effective rank (independent cells spanned):** "
         f"{doc['breadth']['total_effective_rank']} over {doc['breadth']['columns']} cells",
         "",

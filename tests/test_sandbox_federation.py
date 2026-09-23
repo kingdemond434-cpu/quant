@@ -32,14 +32,13 @@ for _p in (str(ROOT), str(DESK)):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
+from desks.mt5.research import sandbox_provision as PROV  # noqa: E402
+from desks.mt5.research import sandbox_roster as ROSTER  # noqa: E402
+
 from libs.research import adapters as A  # noqa: E402
 from libs.research import external_federation as fed  # noqa: E402
 from libs.research import sandbox_rotation as ROT  # noqa: E402
-from research import sandbox_provision as PROV  # noqa: E402
-from research import sandbox_roster as ROSTER  # noqa: E402
-
-sys.path.insert(0, str(ROOT / "scripts"))
-import check_sandbox_liveness as FENCE  # noqa: E402
+from scripts import check_sandbox_liveness as FENCE  # noqa: E402
 
 
 def _stamp(hours_ago: float) -> str:
@@ -281,7 +280,7 @@ def test_the_roster_names_every_seed_every_adapter_and_every_cell(tmp_path: Path
     ids = {r["system_id"] for r in doc["systems"]}
     assert set(fed.SEED_BY_ID) <= ids
     assert set(A.SPECS) <= ids
-    from research import sandboxes as CELLS
+    from desks.mt5.research import sandboxes as CELLS
     assert {CELLS.system_id(c) for c in CELLS.CELLS} <= ids
     assert len(ids) == len(doc["systems"]), "one row per system, never a duplicate"
     assert doc["counts"]["seeds"] == 123
@@ -319,3 +318,55 @@ def test_the_markdown_is_rendered_from_the_json_and_names_every_row(tmp_path: Pa
     assert "DERIVED ARTIFACT" in text
     for row in doc["systems"]:
         assert f"`{row['system_id']}`" in text
+
+
+def test_every_seed_without_an_adapter_says_so_by_name(tmp_path: Path) -> None:
+    """The other half of "are they all there": a rostered seed nothing can run is NEVER silent."""
+    doc = ROSTER.build(state_path=tmp_path / "s.json", report_path=tmp_path / "r.json",
+                       ledger_path=tmp_path / "l.json", fed_state_path=tmp_path / "f.json")
+    orphans = [r for r in doc["systems"] if r.get("needs_adapter")]
+    assert orphans, "the roster holds seeds with no adapter; they must be counted"
+    assert doc["counts"]["needs_adapter"] == len(orphans)
+    for row in orphans:
+        assert "NO ADAPTER" in row["planned_why"]
+        assert row["system_id"] not in A.SPECS
+
+
+def test_scout_slots_come_from_the_leg_cadence_not_the_pass_budget() -> None:
+    """A shorter budget means fewer systems per pass, never fewer passes per day."""
+    big = ROT.scout_slots(900.0, floor_s=90, n_runnable=48, cadence_s=3600.0)
+    small = ROT.scout_slots(450.0, floor_s=90, n_runnable=48, cadence_s=3600.0)
+    assert big == 2, big                       # 48 systems / (24h / 1h) passes
+    assert small == 2, small                   # the roster is the same size; so is the need
+    hourly = ROT.scout_slots(900.0, floor_s=90, n_runnable=48, cadence_s=6 * 3600.0)
+    assert hourly > big, "four passes a day must carry more of the roster per pass"
+
+
+def test_the_import_target_is_what_the_adapter_reaches_for() -> None:
+    """kymatio installs and `kymatio.numpy` does not import: the ledger must verify the latter."""
+    assert PROV.import_target("kymatio") == "kymatio.numpy"
+    assert PROV.import_target("ruptures") == A.SPECS["ruptures"].module
+
+
+def test_a_settled_system_gets_a_rebuilt_task_not_another_install_task(tmp_path: Path) -> None:
+    """Once the host has PROVED it cannot run a library, "install it" is a task nobody can do."""
+    from desks.mt5.research import sandbox_runner as RUN
+    sid = "botorch"
+    plan = RUN.plan_adapter(
+        sid, {}, root=tmp_path, allow_fetch=False, licence_reads=[], deadline_left=10.0,
+        shared={}, settled={sid: {"status": "PERMANENTLY_UNAVAILABLE",
+                                  "why": "a native dependency's DLL refuses to initialise",
+                                  "error": "OSError: [WinError 1114] ... c10.dll",
+                                  "cover": "UNCOVERED: needs a REBUILT cell"}})
+    assert plan.status == "UNMEASURED"
+    assert (plan.task or {}).get("kind") == "rebuilt"
+    assert (plan.task or {}).get("cover")
+    assert "c10.dll" in str((plan.task or {}).get("error"))
+
+
+def test_an_unsettled_system_still_gets_its_install_task(tmp_path: Path) -> None:
+    from desks.mt5.research import sandbox_runner as RUN
+    plan = RUN.plan_adapter("botorch", {}, root=tmp_path, allow_fetch=False, licence_reads=[],
+                            deadline_left=10.0, shared={}, settled={})
+    assert (plan.task or {}).get("kind") == "install"
+    assert "sandbox_provision" in str((plan.task or {}).get("how"))

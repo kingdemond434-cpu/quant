@@ -489,8 +489,12 @@ def national_holidays(year: int) -> dict[date, str]:
     for day, name, status in LUNAR_GENERAL.get(year, ()):
         out[day.isoformat()] = f"{name} [{status}]"
     for day, name in DECLARED_CLOSURES.items():
+        # APPENDED, NEVER OVERWRITTEN: a one-off note about a day the recurring rules already
+        # produce is extra information about that closure, and replacing the name would delete
+        # the festival a study is trying to align on.
         if day.year == year:
-            out[day.isoformat()] = name
+            prior = out.get(day.isoformat())
+            out[day.isoformat()] = f"{prior} -- {name}" if prior else name
     return {date.fromisoformat(k): v for k, v in sorted(out.items())}
 
 

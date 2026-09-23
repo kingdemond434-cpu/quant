@@ -12,8 +12,14 @@ from __future__ import annotations
 
 import re
 import subprocess
+import sys
 from datetime import UTC, datetime
 from pathlib import Path
+
+_ROOT = Path(__file__).resolve().parents[1]
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
+from libs.ops.git_writer_lock import git_writer_lock  # noqa: E402
 
 
 def _git(*args: str) -> subprocess.CompletedProcess[str]:
@@ -44,9 +50,30 @@ def _drop_accidental_gitlinks() -> list[str]:
 
 
 def main() -> None:
+    """THE REPOSITORY-WIDE `git add -A` TAKES THE DESK'S GIT-WRITER LOCK FIRST (2026-09-23).
+
+    This is the single widest index write on either machine, and on the trading box it used to
+    run beside an hourly adoption that stages thousands of paths of its own. Whichever of the two
+    lost `.git/index.lock` died on `fatal: Unable to create ... index.lock: File exists` -- and
+    when the loser was the adoption, the box ran unshipped code for another hour. The four
+    PowerShell writers already serialise on this lock; there was no Python half until now.
+
+    A lock that could not be TAKEN is a reason to skip this pass, not to write anyway: a forensic
+    snapshot is worth exactly one cycle of delay and never worth a corrupted index.
+    """
     if _git("rev-parse", "--git-dir").returncode != 0:
         print("git-snapshot: not a git repo -- skipped (run git init once)")
         return
+    with git_writer_lock() as lock:
+        if not lock.held:
+            print(f"git-snapshot: skipped this pass -- {lock.why} ({lock.mechanism})")
+            return
+        for note in lock.notes:
+            print(f"git-snapshot: {note}")
+        _snapshot()
+
+
+def _snapshot() -> None:
     _git("add", "-A")
     for path in _drop_accidental_gitlinks():
         print(f"git-snapshot: refused to track gitlink {path} (worktree/clone, not a submodule)")
@@ -80,7 +107,7 @@ def _head_is_on_remote() -> bool:
     return _git("merge-base", "--is-ancestor", "HEAD", remote_sha).returncode == 0
 
 
-def _report_push(pr) -> None:
+def _report_push(pr: subprocess.CompletedProcess[str]) -> None:
     """Judge the push from the REMOTE, never from git's exit code.
 
     `git push` EXITS 0 ON A REMOTE REJECT: the pre-receive hook declines, the transport

@@ -123,10 +123,19 @@ if ($dirtyCode) {
 # SHORT WAIT BY DESIGN. Adopt-And-Seal waits 9 minutes and is starved anyway; at a 10 minute
 # cadence the right move when the lock is busy is to leave and come back, not to queue behind
 # the writer that starved it.
+$mutexHandle = $null
 $mutex = $null
 . (Join-Path $PSScriptRoot "GitWriterMutex.ps1")
-try { $mutex = (Open-GitWriterMutex).Mutex }
-catch { Log "cannot open Local\MT5-GitWriter ($($_.Exception.GetType().Name)); not sealing"; exit 5 }
+# THE WHOLE HANDLE (2026-09-23): `.Mutex` alone drops the legacy name, and a $null from a name
+# that could not be opened made `$mutex.WaitOne()` fail non-terminating -- "git writer busy" for
+# a writer that was never measured.
+try { $mutexHandle = Open-GitWriterMutex; $mutex = $mutexHandle.Mutex }
+catch { Log "cannot open the git-writer lock ($($_.Exception.GetType().Name)); not sealing"; exit 5 }
+if ($null -eq $mutex) {
+    Log ("could not OPEN the git-writer lock (" + $mutexHandle.Why +
+         ") -- this is not evidence that another writer holds it; not sealing")
+    exit 5
+}
 
 $got = $false
 try { $got = $mutex.WaitOne(20000) }
@@ -145,6 +154,5 @@ try {
     exit 0
 }
 finally {
-    try { $mutex.ReleaseMutex() } catch { }
-    try { $mutex.Dispose() } catch { }
+    Close-GitWriterMutex $mutexHandle
 }

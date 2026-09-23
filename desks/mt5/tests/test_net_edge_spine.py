@@ -284,3 +284,55 @@ def test_both_doors_read_the_join_file_this_organ_writes() -> None:
     assert "net_edge_ranks.json" in ranker and "net_slot_value" in ranker
     lab = (_DESK / "research" / "financing_lab.py").read_text("utf-8")
     assert "net_of_cost_factors" in lab
+
+
+# ---------------------------------------------------------------- the commission term's unit
+
+
+def test_commission_rides_on_the_FULL_spread_not_on_the_raw_regimes_fifth() -> None:
+    """THE 5x THAT KILLED EIGHT EURCHF CELLS (measured 2026-09-23, reports/COST_TRUTH.json).
+
+    `fusion_cost.COST_REGIMES` is a table of SPREAD MULTIPLIERS -- RAW is 0.2 -- so the published
+    round trips satisfy RAW - ZERO = 0.2 x spread, NOT spread. The old ratio zero/(raw-zero)
+    therefore billed commission at 1/0.2 = 5x the truth, on the term that is ~98% of this
+    account's charged cost.
+    """
+    from libs.portfolio.fusion_cost import COST_REGIMES
+    mult = COST_REGIMES["RAW"]
+    # a venue charging 2.00 per lot of commission against a full spread of 10.0 per lot
+    full_spread, commission = 10.0, 2.00
+    row = {"symbol": "X", "round_trip_per_lot": {"ZERO": commission,
+                                                 "RAW": commission + mult * full_spread,
+                                                 "WIDE": commission + 2.0 * full_spread}}
+    term = S.commission_term({"spread_r": 0.01}, row)
+    # commission is 2.00/10.0 = 0.2 of ONE crossing of the spread, so 0.2 x spread_r
+    assert term.value == pytest.approx(0.01 * commission / full_spread)
+    # and the pre-fix arithmetic would have been exactly 1/mult times larger
+    assert term.value == pytest.approx(0.01 * (commission / (mult * full_spread)) * mult)
+
+
+def test_a_one_R_stop_can_no_longer_be_billed_a_majority_of_its_risk_in_commission() -> None:
+    """EIGHT EURCHF CELLS DIED COST_DEAD ON A COMMISSION THAT ATE MOST OF THEIR 1R STOP.
+
+    EURCHF's own published numbers, from the artifacts this organ reads: spread_r 0.0084 over a
+    118.8 pt stop, round trip ZERO 7.2670 against RAW 7.4170 -- so RAW - ZERO is 0.15, which is
+    one FIFTH of the 0.75 full spread and not the spread. Old ratio 48.4464x -> 0.4069R of
+    commission on a 1R stop; corrected ratio 9.6893x -> 0.0814R. Re-generating FUSION_COST.json
+    at the MEASURED 2.00 per side (it was built at 2.25) takes it to ~0.0723R.
+    """
+    row = {"symbol": "EURCHF", "round_trip_per_lot": {"RAW": 7.4170, "ZERO": 7.2670,
+                                                      "WIDE": 8.7670}}
+    term = S.commission_term({"spread_r": 0.0084}, row)
+    assert term.value == pytest.approx(0.0814, abs=5e-4)
+    # the arithmetic it replaced, pinned so the regression is visible and not just described
+    as_charged_before = 0.0084 * (7.2670 / (7.4170 - 7.2670))
+    assert as_charged_before == pytest.approx(0.4069, abs=5e-4)
+    assert term.value * 5.0 == pytest.approx(as_charged_before, rel=1e-6)
+    assert term.value < 0.5, "commission may not eat a majority of a 1R stop"
+    assert term.status == NE.MODELLED
+
+
+def test_an_unreadable_regime_table_still_prices_and_says_so() -> None:
+    mult, src = S.raw_regime_mult()
+    assert 0 < mult <= 1.0
+    assert "fusion_cost.COST_REGIMES" in src

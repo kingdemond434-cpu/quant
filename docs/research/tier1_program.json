@@ -7818,6 +7818,48 @@
     "cost-truth fence on the law gate 2026-09-23"
    ],
    "notes": "The biggest single overcharge is not new work: repair_universe_spreads.py already computed GBPCHF 165->3 and CADCHF 98->3 on 2026-09-16 and has sat at apply_mode=report_only ever since. The declaration names that as the owner and the one command."
+  },
+  {
+   "id": "CT4",
+   "domain": "C",
+   "phase": "C",
+   "status": "LANDED",
+   "gate": "none",
+   "item": "THE THREE COST DEFECTS COST_TRUTH NAMED ARE FIXED, each with a test that pins the corrected arithmetic. (1) net_edge_spine.commission_term derived commission/spread as zero/(raw-zero), but fusion_cost.COST_REGIMES is a table of SPREAD MULTIPLIERS and RAW is 0.2 -- so raw-zero is one FIFTH of the spread and commission, ~98% of this account's charged cost, was billed at 5x. It now carries the multiplier, read from the table rather than copied. (2) COMMISSION_PER_LOT_PER_SIDE was the brochure's USD 2.25 fed to a field Costs.from_symbol converts as ACCOUNT currency; the account pays 2.00 flat in EUR on all 433 deals it has ever done. It is now 2.00 with COMMISSION_UNIT naming the unit, and the five mirrors, the engine default and check_cost_construction's ceiling moved with it. (3) cost_surface.py wrote COST_SURFACE.json while the spine read EXECUTION_COST_SURFACE.json: one writer and one reader per path now, both declared as edges the plumbing watchdog checks. cost_surface's own cost_r was ALSO dividing by live_ledger.risk_quote -- 85 of its 151 priced deals carry a risk_quote disagreeing with their own stop distance by more than 10x -- and now divides by the stop distance through tick_value. RE-RUN: sign flips 23 -> 19, COST_DEAD 14 -> 10, net-positive 55 -> 59.",
+   "evidence": [
+    "desks/mt5/research/net_edge_spine.py:215 - raw_regime_mult, and commission_term below it",
+    "libs/portfolio/fusion_cost.py:99 - the measured constant and COMMISSION_UNIT",
+    "desks/mt5/research/cost_surface.py:408 - deal_costs on the stop-distance denominator, with cost_terms and excludes on every row",
+    "libs/ops/control_plane/edges.py:146 - the cost->net and venue-cost->cost-truth edges",
+    "desks/mt5/tests/test_net_edge_spine.py:292 - the commission arithmetic, both numbers pinned"
+   ],
+   "scheduled_by": "hourly_cycle:net_edge (desks/mt5/research/hourly_cycle.py:3339, hourly)",
+   "artifact": "desks/mt5/reports/NET_EDGE.json + desks/mt5/reports/COST_SURFACE.json",
+   "consumer": "desks/mt5/research/miner_candidate_compiler.py and forward_slot_ranker.py, through desks/mt5/data/net_edge_ranks.json",
+   "landed": [
+    "the three cost fixes and the re-run 2026-09-23"
+   ],
+   "notes": "libs/research/net_edge.calibration had its verdict SIGN inverted -- bias is predicted minus realised net, so a positive bias is a model promising more than the book delivered, which it labelled OVER_CHARGING. Fixed in the same pass because the commission correction is what moved the verdict and made it visible."
+  },
+  {
+   "id": "CT5",
+   "domain": "C",
+   "phase": "C",
+   "status": "LANDED",
+   "gate": "none",
+   "item": "NOTHING ON THE CAPITAL PATH READS A SPREAD NOBODY JUST VERIFIED. repair_universe_spreads.py computed 136 registry corrections on 2026-09-16 -- GBPCHF 165->3, CADCHF 98->3 among them -- and left them in apply_mode=report_only, so every gate on the desk kept dividing by the wrong number for a week. They are not applied on the strength of the same bars that produced them: cost_truth pulls THIS broker's own quote for every corrected symbol and judges each correction TOWARD / NEUTRAL / AWAY / UNVERIFIED, writes only the improvements to data/spread_repair_verified.json, and repair_universe_spreads --only-verified applies no other. An unreadable gate file applies NOTHING, which is the direction a gate must fail in.",
+   "evidence": [
+    "desks/mt5/research/cost_truth.py:965 - repair_verification, the four verdicts",
+    "desks/mt5/scripts/repair_universe_spreads.py:119 - _verified, and the skip in run()",
+    "tests/research/test_cost_truth.py:430 - TOWARD verified, AWAY refused, UNVERIFIED not applied, and an unreadable gate applying nothing"
+   ],
+   "scheduled_by": "hourly_cycle:cost_truth (desks/mt5/research/hourly_cycle.py:3353, hourly)",
+   "artifact": "desks/mt5/data/spread_repair_verified.json + the spread_repair block of desks/mt5/reports/COST_TRUTH.json + docs/research/COST_TRUTH.md",
+   "consumer": "desks/mt5/scripts/repair_universe_spreads.py --only-verified (task MT5-CostState)",
+   "landed": [
+    "the verified registry repair 2026-09-23"
+   ],
+   "notes": "The verification needs a live terminal, so a symbol whose quote this box has not taken yet reads UNVERIFIED and keeps its old charge rather than being corrected on an argument."
   }
  ],
  "status_vocabulary_note": "LANDED means the code exists in THIS REPOSITORY, on a named clock, with an artifact and a consumer. It does NOT mean the artifact has ever been produced on the trading box, and it does not mean the behaviour has been observed with money at risk. That distinction is what the five acceptance_properties measure, and they are measured from artifacts rather than asserted: an absent artifact reads UNMEASURED, never MET. Read the census as build coverage and the acceptance properties as operational proof. They are different questions and the second is the one that decides whether the desk works."

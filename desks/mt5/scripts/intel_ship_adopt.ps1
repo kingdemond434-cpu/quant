@@ -49,11 +49,21 @@ while ((Get-ScheduledTask -TaskName "MT5-ShadowSync" -ErrorAction SilentlyContin
 
 # 2. the mutex every git writer on this box takes
 . (Join-Path $PSScriptRoot "GitWriterMutex.ps1")
-$script:GitWriterMutex = (Open-GitWriterMutex).Mutex
+# THE WHOLE HANDLE (2026-09-23): `.Mutex` alone drops the legacy name the helper also takes, and
+# a $null from a name that could not be OPENED then failed non-terminating and was reported as
+# another writer holding it -- a refusal with an invented reason, which is the shape of the
+# four-day adoption outage.
+$script:GitWriterHandle = Open-GitWriterMutex
+$script:GitWriterMutex = $script:GitWriterHandle.Mutex
+if ($null -eq $script:GitWriterMutex) {
+    Log ("could not OPEN the git-writer lock (" + $script:GitWriterHandle.Why + ") -- this is " +
+         "not evidence that another writer holds it; the lock could not be examined at all")
+    exit 6
+}
 $gotLock = $false
 try { $gotLock = $script:GitWriterMutex.WaitOne(540000) }
 catch [System.Threading.AbandonedMutexException] { $gotLock = $true }
-if (-not $gotLock) { Log "another git writer holds Local\MT5-GitWriter after 9 min; not adopting under it"; exit 6 }
+if (-not $gotLock) { Log ("another git writer held " + $script:GitWriterHandle.Name + " for the full 9 min; not adopting under it"); exit 6 }
 
 try {
     # 3. fetch the transport branch into FETCH_HEAD, then land ONLY the two discovery trees
@@ -70,5 +80,5 @@ try {
     exit 0
 }
 finally {
-    $script:GitWriterMutex.ReleaseMutex()
+    Close-GitWriterMutex $script:GitWriterHandle
 }

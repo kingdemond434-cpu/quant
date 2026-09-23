@@ -116,8 +116,29 @@ def measured_spread(sym: str) -> tuple[float | None, str, dict[str, Any]]:
     }
 
 
+def _verified(path: Path | None) -> set[str] | None:
+    """The symbols whose correction was SHOWN to move the charge toward the broker's own
+    quote, from `desks/mt5/research/cost_truth.py`. None means "no gate asked for".
+
+    NOTHING ON THE CAPITAL PATH MAY READ A SPREAD NOBODY JUST VERIFIED. These corrections
+    were computed 2026-09-16 and sat in report_only for a week; applying 136 of them at
+    once on the strength of the same bars that produced them would be a re-pricing by
+    argument. `cost_truth` compares each one to the LIVE terminal's own quote and writes
+    only the improvements here. An unreadable file yields an EMPTY set, not None: a gate
+    that cannot be read must block, never wave through.
+    """
+    if path is None:
+        return None
+    try:
+        doc = json.loads(path.read_text("utf-8"))
+    except (OSError, ValueError):
+        return set()
+    syms = doc.get("verified_symbols") if isinstance(doc, dict) else None
+    return {str(s) for s in syms} if isinstance(syms, list) else set()
+
+
 def run(apply: bool = False, write: bool = True,
-        widening_only: bool = False) -> dict[str, Any]:
+        widening_only: bool = False, only_verified: Path | None = None) -> dict[str, Any]:
     try:
         doc = json.loads(REGISTRY.read_text("utf-8"))
     except (OSError, ValueError) as exc:
@@ -137,6 +158,9 @@ def run(apply: bool = False, write: bool = True,
     #: measurement with an inference, and a reviewer must be able to find every instance.
     fills_overridden: list[dict[str, Any]] = []
     unmeasured: dict[str, str] = {}
+    #: Corrections refused because no live quote verified them. Named, never silent.
+    skipped_unverified: list[str] = []
+    verified = _verified(only_verified)
     now = datetime.now(tz=UTC).isoformat(timespec="seconds")
 
     for sym in sorted(rows):
@@ -210,6 +234,13 @@ def run(apply: bool = False, write: bool = True,
         # `--apply-widening-only` lets the conservative half be taken WITHOUT the half that needs
         # a person to look at each row. It is not a lesser `--apply`; it is the half whose
         # direction of error is knowable in advance.
+        # ONLY A PENDING CORRECTION CAN BE SKIPPED. A symbol whose stored value already
+        # equals the measurement has nothing to apply, and counting it here would report
+        # a refusal that never happened.
+        if verified is not None and sym not in verified:
+            if old_f is None or abs(old_f - got) >= 1e-9:
+                skipped_unverified.append(sym)
+            continue
         if apply and (not widening_only or old_f is None or got > old_f):
             row["median_spread_pts"] = got
             prov = row.setdefault("_provenance", {})
@@ -225,6 +256,9 @@ def run(apply: bool = False, write: bool = True,
         "apply_mode": ("widening_only" if (apply and widening_only) else
                        "full" if apply else "report_only"),
         "n_applied": len(applied_syms),
+        "verified_gate": None if verified is None else sorted(verified),
+        "n_skipped_unverified": len(skipped_unverified),
+        "skipped_unverified": sorted(skipped_unverified)[:60],
         "n_zero_registry_spread": sum(
             1 for e in corrected if (e.get("old") or 0) == 0),
         "n_symbols": len(rows),
@@ -281,9 +315,15 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--apply", action="store_true",
                     help="write the registry (default: report only)")
     ap.add_argument("--no-write", action="store_true", help="do not write the report either")
+    ap.add_argument("--only-verified", type=Path, default=None,
+                    help="apply ONLY the symbols listed in this file's verified_symbols "
+                         "(desks/mt5/data/spread_repair_verified.json, written by "
+                         "research/cost_truth.py after comparing each correction to the "
+                         "live terminal's own quote). Every other correction is skipped "
+                         "and named. An unreadable file applies NOTHING.")
     a = ap.parse_args(argv)
     r = run(apply=a.apply or a.apply_widening_only, write=not a.no_write,
-            widening_only=a.apply_widening_only)
+            widening_only=a.apply_widening_only, only_verified=a.only_verified)
     if r.get("status") != "MEASURED":
         print(f"REFUSED: {r.get('why')}")
         return 1

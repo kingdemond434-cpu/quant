@@ -29,7 +29,11 @@ def run(bundle: A.ResearchBundle) -> ExternalResearchPacket:
     trials = 0
     cands: list[dict[str, Any]] = []
     try:
-        ray.init(local_mode=True, ignore_reinit_error=True, include_dashboard=False, num_cpus=2,
+        # `local_mode` was REMOVED in ray 2.58 and raised RuntimeError here on every
+        # pass ("no longer supported"), so this adapter never ran once the library was
+        # provisioned. A local cluster with a measured CPU cap is what local_mode was
+        # standing in for; the sandbox still owns the boundary.
+        ray.init(ignore_reinit_error=True, include_dashboard=False, num_cpus=2,
                  logging_level="ERROR", log_to_driver=False)
     except Exception as exc:
         return A.unmeasured(SYSTEM, bundle, f"ray.init failed: {type(exc).__name__}: {exc}"[:200])

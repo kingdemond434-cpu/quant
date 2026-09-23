@@ -67,6 +67,9 @@ REPORT = DESK / "reports" / "SANDBOX_RUNNER.json"
 STATE = DESK / "data" / "sandbox_runner_state.json"
 TRIALS = DESK / "data" / "sandbox_trials.jsonl"
 FED_STATE = DESK / "data" / "external_federation.json"
+#: The supply line's lifetime ledger (`research/sandbox_provision.py`): what installed, what this
+#: interpreter can never host and with which exact error.
+INSTALL_LEDGER = DESK / "data" / "sandbox_install_ledger.json"
 PROCESSED = DESK / "data" / "external_packets" / "processed"
 UNIVERSE_DIR = DESK / "data" / "universe"
 UNIVERSE_REGISTRY = UNIVERSE_DIR / "universe.json"
@@ -76,7 +79,18 @@ CORE_SYMBOLS: tuple[str, ...] = ("XAUUSD", "EURUSD", "USDJPY", "GBPUSD", "US500"
 ROTATION_EXTRA = 2
 MAX_LICENCE_READS = 3
 MAX_DISCOVERIES_PER_PACKET = 40
-FLOOR_S = 30
+#: THE FLOOR IS A MEASUREMENT, NOT A HABIT (raised 30 -> 90 on 2026-09-23). With the federation
+#: provisioned, SIX of the systems that finally became runnable -- aeon, pymc, pysr, ruptures,
+#: scikit_mine, stumpy -- wrote NO packet and reported "timed out after 30s", every one of them
+#: at exactly its floor share: the 30 seconds were spent starting an interpreter and importing
+#: numba/pytensor/julia, with nothing left for the engine. A floor below a system's measured
+#: cost of merely STARTING is a floor that funds a timeout.
+FLOOR_S = 90
+#: The sandboxed process gets its compute share PLUS this, because the share is the ENGINE's
+#: budget (the adapter's own `A.Deadline`) and the process also has to start python and import
+#: the library first. Before this the hard timeout equalled the compute budget, so an adapter
+#: that obeyed its deadline perfectly was still killed by the clock it was obeying.
+STARTUP_ALLOWANCE_S = 60
 MIN_BARS_FOR_SYSTEM = 300
 LAW = ("LAWS 5h: run research code aggressively in sandboxes; never give it live authority. An "
        "external engine is a researcher, never a validator, never a capital authority.")
@@ -249,7 +263,8 @@ class Plan:
 
 def plan_adapter(sid: str, row: dict[str, Any], *, root: Path, allow_fetch: bool,
                  licence_reads: list[dict[str, Any]], deadline_left: float,
-                 shared: dict[str, str] | None = None) -> Plan:
+                 shared: dict[str, str] | None = None,
+                 settled: dict[str, Any] | None = None) -> Plan:
     spec = A.SPECS[sid]
     shared = SB.shared_modules(root) if shared is None else shared
     system = _system(sid, row)
@@ -284,6 +299,24 @@ def plan_adapter(sid: str, row: dict[str, Any], *, root: Path, allow_fetch: bool
     in_shared = sid in shared
     available = (A.library(spec.module) is not None) if spec.module else False
     if not available and not in_shared and not venv.exists():
+        #: A SETTLED SUPPLY-LINE ROW ENDS THE INSTALL TASK. Once `sandbox_provision` has proved
+        #: this interpreter can never host the library -- with the exact pip or import error --
+        #: telling the next hour to "install it" is a task nobody can execute. The row becomes a
+        #: REBUILT task naming the cover the ledger recorded, which is the only route left.
+        settled_row = (settled or {}).get(sid) or {}
+        if str(settled_row.get("status")) == "PERMANENTLY_UNAVAILABLE":
+            return Plan(sid, "adapter", "UNMEASURED", disposition, system.licence, version,
+                        spec.requirement,
+                        f"PERMANENTLY_UNAVAILABLE on this host: {settled_row.get('why')}",
+                        {"kind": "rebuilt", "system": sid,
+                         "what": f"{spec.module or sid} cannot be hosted on this interpreter "
+                                 f"({settled_row.get('why')}); reproduce the mechanism as a cell "
+                                 f"under research/sandboxes/",
+                         "error": str(settled_row.get("error") or "")[:300],
+                         "cover": settled_row.get("cover"),
+                         "covered_by": [c for c in CELLS.CELLS if sid in tuple(getattr(
+                             CELLS.load_cell(c), "UPSTREAM", ()))]},
+                        module=module, system=system)
         cmd = (f"python desks/mt5/research/sandbox_provision.py --once --only {sid}"
                if spec.version
                else f"pin {sid}'s commit/wheel first (no wheel resolved on this interpreter)")
@@ -375,7 +408,7 @@ def run_adapter(plan: Plan, bundle: A.ResearchBundle, *, root: Path, timeout_s: 
                                               else sys.executable)
     argv = [python, "-m", f"libs.research.adapters.{sid}", "--bundle", str(manifest),
             "--out", str(out)]
-    res = SB.run(box, argv, timeout_s=max(10, timeout_s))
+    res = SB.run(box, argv, timeout_s=max(10, timeout_s) + STARTUP_ALLOWANCE_S)
     meta.update({"seconds": res.seconds, "returncode": res.returncode, "run": res.why,
                  "stdout_tail": list(res.stdout_tail[-5:]), "staged": staged,
                  "python": python, "out": str(out)})
@@ -545,13 +578,27 @@ def run_pass(*, budget_s: float = 900.0, dry_run: bool = False, allow_fetch: boo
                           n_bars=bars_cap(free_mb), seed=seed, budget_s=int(budget_s),
                           symbols=symbols)
     licence_reads: list[dict[str, Any]] = []
+    #: Read ONCE per pass, not once per system: the shared venv's manifest (what imports) and
+    #: the supply line's ledger (what this host has already proved it can never host).
+    shared_mods = SB.shared_modules(root)
+    settled_rows = {str(k): v for k, v in
+                    ((_read(INSTALL_LEDGER, {}) or {}).get("systems") or {}).items()
+                    if isinstance(v, dict)}
     plans: list[Plan] = []
     for sid in adapter_systems():
         if only and sid not in only:
             continue
         row = rows.setdefault(sid, {})
+        #: THIS LEG IS THE SCHEDULE, so the roster row says so. `check_external_federation`
+        #: counts a DIRECT/WRAPPED/REBUILT worker with no `scheduled` field as unscheduled, and
+        #: every adapter the runner plans is planned again on the next hourly pass -- leaving
+        #: the field empty recorded 33 systems as having no clock while the rotation was
+        #: running them. Only this field is written here: `executed`, `produced` and
+        #: `progressed` belong to `research/federation_ops.py`, which measures them.
+        row["scheduled"] = "leg:sandbox_runner (desks/mt5/research/hourly_cycle.py, hourly)"
         plans.append(plan_adapter(sid, row, root=root, allow_fetch=allow_fetch and not dry_run,
-                                  licence_reads=licence_reads, deadline_left=deadline.left()))
+                                  licence_reads=licence_reads, deadline_left=deadline.left(),
+                                  shared=shared_mods, settled=settled_rows))
     plans.extend(p for p in plan_cells() if not only or p.system_id in only
                  or p.system_id[len(A.CELL_PREFIX):] in only)
     runnable = [p for p in plans if p.status == "RUNNABLE"]
@@ -716,7 +763,7 @@ def run_pass(*, budget_s: float = 900.0, dry_run: bool = False, allow_fetch: boo
         state["at"] = doc["at"]
         state["last_bundle"] = doc["bundle"]
         _write(state_path, state)
-        if licence_reads and isinstance(fed_state, dict):
+        if rows and isinstance(fed_state, dict):
             fed_state["systems"] = {**fed_rows(fed_state), **rows}
             fed_state.setdefault("at", doc["at"])
             with contextlib.suppress(OSError):

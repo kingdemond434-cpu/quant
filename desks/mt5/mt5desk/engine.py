@@ -36,8 +36,13 @@ class Costs:
     Use from_symbol() rather than hand-rolling the arithmetic at the call site.
     """
     spread_per_lot: float = 16.0
-    # Fusion Zero's published contract is USD 2.25 per lot per side ($4.50 round turn).
-    commission_per_lot: float = 2.25
+    # MEASURED, not published: 2.00 in ACCOUNT CURRENCY per lot per side, over all 433
+    # deals account 495044 has ever done (reports/COST_TRUTH.json 2026-09-23, with
+    # p10 = p50 = p90 = 2.00 and no exception on any of the twelve traded symbols, gold
+    # included). The 2.25 here was the brochure's USD figure sitting in a field this
+    # class converts as ACCOUNT currency through `quote_per_account` -- the same unit
+    # trap the comment below describes, one level up. See fusion_cost.COMMISSION_UNIT.
+    commission_per_lot: float = 2.00
     contract_oz: float = 100.0
     #: PRICE UNITS PER UNIT OF ACCOUNT CURRENCY, per lot -- the second unit trap, found
     #: 2026-08-26. `spread_per_lot` round-trips correctly because it was built as
@@ -116,7 +121,7 @@ class Costs:
 
     @classmethod
     def from_symbol(cls, meta: dict, mult: float = 1.0,
-                    commission_per_lot: float = 2.25, *,
+                    commission_per_lot: float = 2.00, *,
                     spread_pts: float | None = None) -> Costs:
         """Costs for one symbol from its universe.json metadata.
 

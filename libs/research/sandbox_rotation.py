@@ -44,6 +44,11 @@ from libs.risk.fx_exposure import effective_rank
 ROTATION_WINDOW_S: float = 24 * 3600.0
 #: The scout lane never takes more than this share of a pass; the rest is ROI x breadth.
 MAX_SCOUT_SHARE: float = 0.5
+#: How often the leg that calls this runs. `sandbox_runner` is an hourly leg of
+#: `desks/mt5/research/hourly_cycle.py`, so a rotation window holds `window_s / CADENCE_S`
+#: passes; the scout lane is sized off THAT, never off the pass's own budget (a shorter budget
+#: means fewer systems per pass, not fewer passes per day).
+CADENCE_S: float = 3600.0
 #: How many cells of a system's donations are kept for the breadth matrix. A cap, not a filter:
 #: the columns are de-duplicated anyway, so more rows would change the spectrum by dust.
 MAX_CELLS = 400
@@ -69,17 +74,19 @@ def cell_key(family: Any, symbol: Any, horizon: Any) -> str:
 
 
 def scout_slots(budget_s: float, *, floor_s: int, n_runnable: int,
-                window_s: float = ROTATION_WINDOW_S) -> int:
+                window_s: float = ROTATION_WINDOW_S, cadence_s: float = CADENCE_S) -> int:
     """How many overdue systems this pass must run to keep the whole roster inside the window.
 
-    The pass rate is `window_s / budget_s` passes per window when the leg runs back to back; the
-    honest planning number is the leg's own cadence, so the requirement is simply
-    `n_runnable / passes_per_window`, rounded up, and capped at half the pass.
+    Derived from the leg's CADENCE, not from its budget: the caller runs once an hour, so the
+    window holds `window_s / cadence_s` passes and each must carry `n_runnable / passes` of the
+    roster, rounded up. The cap is the room a pass has -- half its seconds at the floor share --
+    because a scout lane that ate the whole pass would starve the exploit lane it exists beside.
+    A budget that cannot afford even one scout still gets one: the floor is the point.
     """
     if n_runnable <= 0 or budget_s <= 0 or floor_s <= 0:
         return 0
-    passes = max(1.0, window_s / max(1.0, budget_s * 4.0))  # hourly leg: one pass per hour
-    need = int(-(-n_runnable // int(passes))) if passes >= 1 else n_runnable
+    passes = max(1.0, window_s / max(1.0, cadence_s))
+    need = int(-(-n_runnable // int(passes)))
     room = int(budget_s * MAX_SCOUT_SHARE // floor_s)
     return max(1, min(need, max(1, room), n_runnable))
 
@@ -128,7 +135,8 @@ def breadth(cells: Mapping[str, Sequence[str]]) -> dict[str, Any]:
 
 def plan(runnable: Sequence[str], state_rows: Mapping[str, Any], *, budget_s: float,
          floor_s: int, at: float | None = None,
-         window_s: float = ROTATION_WINDOW_S) -> dict[str, Any]:
+         window_s: float = ROTATION_WINDOW_S,
+         cadence_s: float = CADENCE_S) -> dict[str, Any]:
     """The pass's order and its shares: scouts by age, then ROI x breadth for the rest.
 
     `runnable` is the runner's own list of plannable system ids; `state_rows` is
@@ -141,7 +149,8 @@ def plan(runnable: Sequence[str], state_rows: Mapping[str, Any], *, budget_s: fl
             for sid in ids}
     b = breadth(cells_of({sid: state_rows.get(sid) or {} for sid in ids}))
     marginal = b["marginal"]
-    n_scouts = scout_slots(budget_s, floor_s=floor_s, n_runnable=len(ids), window_s=window_s)
+    n_scouts = scout_slots(budget_s, floor_s=floor_s, n_runnable=len(ids),
+                           window_s=window_s, cadence_s=cadence_s)
     overdue = sorted((s for s in ids if ages[s] >= window_s * 0.5),
                      key=lambda s: (-ages[s], s))
     scouts = overdue[:n_scouts] if overdue else sorted(ids, key=lambda s: (-ages[s], s))[
@@ -166,7 +175,7 @@ def plan(runnable: Sequence[str], state_rows: Mapping[str, Any], *, budget_s: fl
                             key=lambda s: (-shares.get(s, 0), -float(marginal.get(s, 0.0)), s))
     return {
         "order": order, "shares": shares, "scouts": scouts, "n_scout_slots": n_scouts,
-        "window_s": window_s, "scout_budget_s": round(scout_cost, 1),
+        "window_s": window_s, "cadence_s": cadence_s, "scout_budget_s": round(scout_cost, 1),
         "exploit_budget_s": round(exploit_budget, 1),
         "ages_s": {sid: (None if ages[sid] == float("inf") else round(ages[sid], 1))
                    for sid in ids},

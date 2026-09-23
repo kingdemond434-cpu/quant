@@ -20,11 +20,22 @@ for _p in (str(DESK / "research"), str(DESK), str(DESK.parents[1])):
 
 import cost_surface as CS  # noqa: E402
 
+#: The registry the R denominator is built from. `risk_quote` is no longer the divisor:
+#: it holds a price distance on some ledger rows and a money amount on others (measured
+#: 2026-09-23, reports/COST_TRUTH.json), which billed EURCHF 45R of commission. The
+#: denominator is the deal's OWN stop distance carried into account currency.
+_META: dict[str, Any] = {"EURUSD": {"tick_size": 1e-5, "tick_value": 1.0},
+                         "GBPUSD": {"tick_size": 1e-5, "tick_value": 1.0}}
+
 
 def _deal(symbol: str, hour: int, volume: float, commission: float, *, risk: float = 100.0,
           sleeve: str = "s1", swap: float = 0.0) -> dict[str, Any]:
+    # a stop distance that carries EXACTLY `risk` of account currency at this lot size
+    entry = 1.20000
+    stop_px = risk * _META[symbol]["tick_size"] / volume
     return {"time": f"2026-09-0{1 + hour % 9}T{hour:02d}:30:00+00:00", "symbol": symbol,
             "sleeve": sleeve, "volume": volume, "commission": -commission, "swap": swap,
+            "entry_price": entry, "sl": round(entry - stop_px, 8),
             "risk_quote": -risk}
 
 
@@ -39,8 +50,8 @@ def test_a_planted_size_dependent_cost_is_recovered_by_the_size_dimension() -> N
     deals = ([_deal("EURUSD", 3, 0.01, 10.0) for _ in range(12)]
              + [_deal("EURUSD", 3, 0.10, 100.0) for _ in range(12)]
              + [_deal("EURUSD", 3, 1.00, 1000.0) for _ in range(12)])
-    rows, notes = CS.deal_costs(deals)
-    assert len(rows) == 36 and not any("risk_quote" in n for n in notes)
+    rows, notes = CS.deal_costs(deals, _META)
+    assert len(rows) == 36 and not any("cannot be expressed in R" in n for n in notes)
     assert {r["size"] for r in rows} == {"small", "medium", "large"}
     cells = CS.cells(rows)
     small = cells["EURUSD|asia|small"]["cost_r_measured"]
@@ -53,7 +64,7 @@ def test_a_size_independent_cost_is_not_invented_by_the_size_dimension() -> None
     deals = ([_deal("EURUSD", 3, 0.01, 10.0) for _ in range(12)]
              + [_deal("EURUSD", 3, 0.10, 10.0) for _ in range(12)]
              + [_deal("EURUSD", 3, 1.00, 10.0) for _ in range(12)])
-    cells = CS.cells(CS.deal_costs(deals)[0])
+    cells = CS.cells(CS.deal_costs(deals, _META)[0])
     per_size = [cells[f"EURUSD|asia|{b}"]["cost_r_measured"] for b in ("small", "medium", "large")]
     assert max(per_size) - min(per_size) < 1e-9     # flat in, flat out
 
@@ -61,7 +72,7 @@ def test_a_size_independent_cost_is_not_invented_by_the_size_dimension() -> None
 def test_a_thin_cell_is_shrunk_toward_its_parent_and_states_its_n_eff() -> None:
     fat = [_deal("EURUSD", 3, 0.01, 10.0, sleeve="fat") for _ in range(40)]
     thin = [_deal("EURUSD", 3, 0.01, 1000.0, sleeve="thin")]
-    rows, _ = CS.deal_costs(fat + thin)
+    rows, _ = CS.deal_costs(fat + thin, _META)
     for r in rows:
         r["order"] = "market" if r["sleeve"] == "fat" else "limit"
     cells = CS.cells(rows)
@@ -76,7 +87,7 @@ def test_a_thin_cell_is_shrunk_toward_its_parent_and_states_its_n_eff() -> None:
 
 
 def test_an_untraded_cell_is_UNMEASURED_and_falls_back_to_the_modelled_cost_not_zero() -> None:
-    surf = {"cells": CS.cells(CS.deal_costs([_deal("EURUSD", 3, 0.01, 10.0)] * 4)[0])}
+    surf = {"cells": CS.cells(CS.deal_costs([_deal("EURUSD", 3, 0.01, 10.0)] * 4, _META)[0])}
     hit = CS.lookup(surf, asset="XAUUSD", time="ny", size="large", state="dear", order="market")
     assert hit["status"] == "UNMEASURED" and hit["cost_r"] is None and hit["why"]
     spread = _spread_surface("XAUUSD")
@@ -87,7 +98,7 @@ def test_an_untraded_cell_is_UNMEASURED_and_falls_back_to_the_modelled_cost_not_
 
 
 def test_the_hierarchy_answers_from_the_deepest_level_that_has_evidence() -> None:
-    rows, _ = CS.deal_costs([_deal("EURUSD", 3, 0.01, 10.0) for _ in range(6)])
+    rows, _ = CS.deal_costs([_deal("EURUSD", 3, 0.01, 10.0) for _ in range(6)], _META)
     surf = {"cells": CS.cells(rows)}
     deep = CS.lookup(surf, asset="EURUSD", time="asia", size="UNMEASURED",
                      state="UNMEASURED", order="UNMEASURED")
@@ -111,7 +122,7 @@ def test_the_state_dimension_is_the_symbols_own_spread_regime() -> None:
 
 
 def test_a_candidate_whose_edge_is_smaller_than_its_cost_lands_in_the_sign_flip_list() -> None:
-    rows, _ = CS.deal_costs([_deal("EURUSD", 23, 0.01, 50.0) for _ in range(6)])
+    rows, _ = CS.deal_costs([_deal("EURUSD", 23, 0.01, 50.0) for _ in range(6)], _META)
     surf = {"cells": CS.cells(rows)}
     spread = _spread_surface("EURUSD")
     raws = [{"id": "rich", "asset": "EURUSD", "family": "f", "selector": "",
@@ -128,8 +139,9 @@ def test_a_candidate_whose_edge_is_smaller_than_its_cost_lands_in_the_sign_flip_
 def test_a_deal_with_no_recorded_risk_is_counted_and_never_assumed_free() -> None:
     bad = [{"time": "2026-09-01T03:00:00+00:00", "symbol": "EURUSD", "volume": 0.01,
             "commission": -10.0, "swap": 0.0}]
-    rows, notes = CS.deal_costs(bad)
-    assert rows == [] and any("risk_quote" in n for n in notes)
+    rows, notes = CS.deal_costs(bad, _META)
+    assert rows == [] and any("cannot be" in n and "never assumed free" in n
+                              for n in notes)
 
 
 def test_the_report_is_written_with_a_verdict_per_input_even_with_nothing_on_the_host(
@@ -145,6 +157,6 @@ def test_the_report_is_written_with_a_verdict_per_input_even_with_nothing_on_the
 
 
 def test_a_swap_credit_lowers_the_cost_rather_than_raising_it() -> None:
-    debit = CS.deal_costs([_deal("EURUSD", 3, 0.01, 10.0, swap=-5.0)])[0][0]["cost_r"]
-    credit = CS.deal_costs([_deal("EURUSD", 3, 0.01, 10.0, swap=+5.0)])[0][0]["cost_r"]
+    debit = CS.deal_costs([_deal("EURUSD", 3, 0.01, 10.0, swap=-5.0)], _META)[0][0]["cost_r"]
+    credit = CS.deal_costs([_deal("EURUSD", 3, 0.01, 10.0, swap=+5.0)], _META)[0][0]["cost_r"]
     assert credit < debit

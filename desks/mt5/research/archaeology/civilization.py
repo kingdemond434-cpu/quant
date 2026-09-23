@@ -23,9 +23,11 @@ Every pass scores candidate grounds by
     V_s = observability x verification x mechanism_inferability x novelty x P(useful descendant)
           / (selection bias + collection cost + legal/access cost)
 
-and registers them with a `machine_use_allowed` decided from robots or terms WHEN READABLE and
-`unknown` otherwise -- and unknown resolves to NOT FETCHED. A ground that forbids automated
-extraction is registered as unavailable and is never fetched, on this pass or any later one.
+and registers them with a `machine_use_allowed` LABEL decided from robots or terms when readable
+and `unknown` otherwise. SINCE LAWS 5e (2026-09-23) NONE OF THOSE READINGS IS A DOOR: `forbidden`
+and `unknown` are provenance carried in `terms_note`, every candidate is registered and mined, and
+the only refusal is one of the five acts of the hard boundary -- an access control, a login, a
+paywall or an antibot challenge, which reading would mean DEFEATING.
 
     python desks/mt5/research/archaeology/civilization.py --budget-s 600
     python desks/mt5/research/archaeology/civilization.py --dry-run --no-fetch
@@ -205,24 +207,31 @@ def platform_budgets(platforms: Sequence[snap.Platform], budget_s: float, conn: 
 
 # --------------------------------------------------------------------------- the source scout
 def _machine_use_from_robots(url: str, *, fetch: bool) -> tuple[str, str]:
-    """Read the operator's own policy when it is readable -- reading robots.txt is always
-    permitted and is what it is for -- and answer `unknown` otherwise. Unknown is NOT FETCHED."""
+    """READ THE OPERATOR'S POLICY AS A LABEL (LAWS 5e, 2026-09-23), never as a door.
+
+    Reading robots.txt is always permitted and is what it is for, so the desk still reads it and
+    still records exactly what it said. What changed is the consequence: `forbidden` and `unknown`
+    used to mean NOT FETCHED, which is how the desk talked itself out of most of the deep forest.
+    They are provenance now -- `scout` registers and mines every candidate either way.
+    """
     host = urlparse(url).netloc
     if not host:
         return snap.UNKNOWN, "no host in the candidate url"
     if not fetch:
-        return snap.UNKNOWN, ("--no-fetch: the operator's policy was not read, so automated use "
-                              "is unknown and this ground is not fetched")
+        return snap.UNKNOWN, ("--no-fetch: the operator's policy was not read, so the label is "
+                              "unknown; the ground is mined all the same")
     body, status, err = mc.fetch_text(f"https://{host}/robots.txt")
     if not body:
         return snap.UNKNOWN, (f"robots.txt unreadable (status {status}{', ' + err if err else ''})"
-                              ": absence of a readable permission is not permission")
+                              ": UNMEASURED policy, recorded as a label and mined")
     low = body.lower()
     for agent in ("claudebot", "anthropic", "gptbot", "ccbot"):
         if agent in low:
-            return snap.FORBIDDEN, f"robots.txt names the agent family ({agent}) on {host}"
+            return snap.FORBIDDEN, (f"robots.txt names the agent family ({agent}) on {host}: "
+                                    f"recorded as a routing label, redistribution withheld")
     if "user-agent: *" in low and "disallow: /\n" in low.replace("\r", ""):
-        return snap.FORBIDDEN, f"robots.txt carries a wildcard Disallow: / on {host}"
+        return snap.FORBIDDEN, (f"robots.txt carries a wildcard Disallow: / on {host}: recorded "
+                                f"as a routing label, redistribution withheld")
     return snap.ALLOWED, f"robots.txt on {host} is readable and refuses neither this agent nor all"
 
 
@@ -298,9 +307,15 @@ def scout(conn: Any, *, discovered: Sequence[Mapping[str, Any]] = (), fetch: boo
         score = v_s({**cand, "machine_use_allowed": access},
                     known_on_host=hosts.get(host, 0),
                     host_yield=ys.get(sid))
+        # FETCHABLE IS NOW ABOUT THE FIVE ACTS, NOT THE POLICY LABEL (LAWS 5e, 2026-09-23). A
+        # `forbidden` or `unknown` robots reading is provenance; only an access control, a login,
+        # a paywall or an antibot challenge -- which reading would mean DEFEATING -- refuses.
+        boundary = snap.boundary_hit(f"{why} {cand.get('note') or ''}")
         candidates.append({**dict(cand), "source_id": sid, "host": host,
                            "machine_use_allowed": access, "access_why": why[:240],
-                           "registered": False, "fetchable": access == snap.ALLOWED, **score})
+                           "terms_note": "" if access == snap.ALLOWED else why[:240],
+                           "hard_boundary": boundary,
+                           "registered": False, "fetchable": not boundary, **score})
     candidates.sort(key=lambda c: -float(c["v_s"]))
     registered = 0
     for cand in candidates[:limit]:
@@ -316,9 +331,10 @@ def scout(conn: Any, *, discovered: Sequence[Mapping[str, Any]] = (), fetch: boo
                 status=("active" if cand["fetchable"] else "candidate"),
                 licence_note=("WEB-PUBLIC; concept reimplemented, provenance cited, nothing "
                               "copied" if cand["fetchable"] else
-                              f"NOT FETCHED ({cand['machine_use_allowed']}): "
+                              f"REFUSED on the hard boundary ({cand['hard_boundary']}): "
                               f"{cand['access_why']}"),
                 meta={"machine_use_allowed": cand["machine_use_allowed"],
+                      "terms_note": cand["terms_note"],
                       "verification_class": cand.get("verification_class"),
                       "v_s": cand["v_s"], "factors": cand["factors"], "costs": cand["costs"],
                       "family": cand.get("family")},
@@ -646,9 +662,10 @@ def run(*, budget_s: float = BUDGET_S, dry_run: bool = False, fetch: bool = True
                 key = str(r.get(axis) or UNMEASURED)
                 census[axis][key] = census[axis].get(key, 0) + 1
         report["labels"] = census
-        # QUARANTINED ROWS ARE KEPT AND EXCLUDED. They stay in the population file as evidence
-        # objects and leave the pipeline here: nothing downstream fingerprints, clusters,
-        # decompiles or donates an ACCESS_UNCLEAR row until its terms are resolved.
+        # EVERY ROW OFF THE FIVE REFUSED ACTS IS USABLE (LAWS 5e, 2026-09-23). The quarantine
+        # that used to drop ACCESS_UNCLEAR rows here -- kept in the population file but excluded
+        # from fingerprinting, clustering, decompiling and donation -- is deleted, so an unclear
+        # access path now travels downstream as a label instead of ending the row's life.
         usable_rows = [r for r in rows_all if r.get("usable", True)]
         report["population"]["usable"] = len(usable_rows)
         for name in ("performance_archaeology", "competition_archaeology", "product_archaeology",

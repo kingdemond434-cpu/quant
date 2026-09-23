@@ -23,12 +23,17 @@ from __future__ import annotations
 import json
 import re
 import subprocess
+import sys
 import time
 import urllib.request
 from datetime import UTC, datetime
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+from libs.ops.git_writer_lock import git_writer_lock  # noqa: E402
+
 OUT = ROOT / "data" / "unit_health.json"
 
 #: Never auto-restarted, whatever state they are in. Reported instead.
@@ -58,7 +63,7 @@ def probe_dashboard() -> bool:
     try:
         with urllib.request.urlopen("http://localhost:8788/research_pulse.json",
                                     timeout=10) as r:
-            return r.status == 200
+            return bool(r.status == 200)
     except OSError:
         return False
 
@@ -184,11 +189,20 @@ def track_tunnel_url() -> str | None:
     if current == url:
         return None
     url_file.write_text(url + "\n", "utf-8")
-    _run(["git", "-C", str(ROOT), "add", "-f", "data/desk_url.txt"], timeout=30)
-    _run(["git", "-C", str(ROOT), "commit", "--no-verify", "-m",
-          f"desk dashboard URL rotated -> {url}\n\n"
-          f"Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>"], timeout=30)
-    _run(["git", "-C", str(ROOT), "push", "--quiet"], timeout=60)
+    # UNDER THE DESK'S GIT-WRITER LOCK, like every other writer (2026-09-23). This stages and
+    # commits while the trading box's hourly adoption may be staging thousands of paths of its
+    # own; the loser of `.git/index.lock` dies, and when that loser was the adoption the box ran
+    # unshipped code for another hour -- four days of it. A lock this pass could not take defers
+    # the commit to the next pass: the URL is already on disk, so nothing is lost but one cycle.
+    with git_writer_lock(ROOT, timeout_s=120.0) as lock:
+        if not lock.held:
+            return (f"TUNNEL URL rotated -> {url} on disk; NOT committed this pass "
+                    f"({lock.why}) -- the next pass commits it")
+        _run(["git", "-C", str(ROOT), "add", "-f", "data/desk_url.txt"], timeout=30)
+        _run(["git", "-C", str(ROOT), "commit", "--no-verify", "-m",
+              f"desk dashboard URL rotated -> {url}\n\n"
+              f"Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>"], timeout=30)
+        _run(["git", "-C", str(ROOT), "push", "--quiet"], timeout=60)
     return f"TUNNEL URL rotated -> {url} (committed + pushed so the repo carries the live link)"
 
 

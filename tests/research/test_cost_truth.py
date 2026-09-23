@@ -55,11 +55,12 @@ def test_charged_reading_divides_out_the_raw_regime_multiplier() -> None:
         "AUDCAD", {"median_spread_pts": 1.0, "tick_size": 1e-5, "contract_size": 1e5},
         {"round_trip_per_lot": {"RAW": 7.416965, "ZERO": 7.266965, "WIDE": 9.216965}},
         {"spread_r": 0.0067, "swap_r": 0.0, "stop_pts": 150.2})
-    # the spine's own arithmetic
-    assert got["spine_commission_ratio"] == pytest.approx(48.4464, rel=1e-3)
-    # and the same two numbers with the 0.2x regime divided back out
+    # the corrected arithmetic the spine now applies: the 0.2x regime divided back out
+    assert got["spine_commission_ratio"] == pytest.approx(9.6893, rel=1e-3)
     assert got["true_commission_ratio"] == pytest.approx(9.6893, rel=1e-3)
-    assert got["commission_ratio_overcharge"] == pytest.approx(5.0)
+    # the ratio it replaced is kept so the 5x regression stays visible
+    assert got["ratio_before_fix"] == pytest.approx(48.4464, rel=1e-3)
+    assert got["commission_ratio_overcharge"] == pytest.approx(1.0)
 
 
 def test_charged_reading_without_a_fusion_row_reports_none_not_a_guess() -> None:
@@ -112,12 +113,25 @@ def test_no_terminal_reading_is_unmeasured_not_ok() -> None:
 
 
 def test_commission_overcharge_is_the_rate_times_the_regime() -> None:
-    got = CT.compare({"charged_pts": 1.0, "commission_ratio_overcharge": 5.0},
+    """Both halves are fixed, so both read 1.0 -- and this is what holds them there: the rate
+    comes from the module the desk actually prices with, not from a literal here."""
+    got = CT.compare({"charged_pts": 1.0, "commission_ratio_overcharge": 1.0},
                      _quoted(1.0, 2.0), {"commission_per_lot_per_side":
                                          {"status": CT.MEASURED, "p50": 2.0}},
                      {"status": CT.MEASURED, "p50": 1.0})
-    assert got["commission_rate_overcharge"] == pytest.approx(2.25 / 2.0)
-    assert got["commission_total_overcharge"] == pytest.approx(5.625)
+    assert got["commission_model_per_side"] == pytest.approx(2.00)
+    assert got["commission_rate_overcharge"] == pytest.approx(1.0)
+    assert got["commission_total_overcharge"] == pytest.approx(1.0)
+
+
+def test_an_overcharged_rate_and_regime_still_multiply() -> None:
+    """The instrument must still be able to SEE the defect it was built for."""
+    got = CT.compare({"charged_pts": 1.0, "commission_ratio_overcharge": 5.0},
+                     _quoted(1.0, 2.0), {"commission_per_lot_per_side":
+                                         {"status": CT.MEASURED, "p50": 1.6}},
+                     {"status": CT.MEASURED, "p50": 1.0})
+    assert got["commission_rate_overcharge"] == pytest.approx(2.00 / 1.6)
+    assert got["commission_total_overcharge"] == pytest.approx(6.25)
 
 
 # ------------------------------------------------------------------------------ the realised
@@ -303,6 +317,9 @@ def test_main_publishes_without_a_terminal_and_never_crashes(
     monkeypatch.setattr(CT, "CURSOR", tmp_path / "cursor.json")
     monkeypatch.setattr(CT, "MISSED", tmp_path / "missed.jsonl")
     monkeypatch.setattr(CT, "EXEC_SURFACE", tmp_path / "EXECUTION_COST_SURFACE.json")
+    monkeypatch.setattr(CT, "VENUE_SURFACE", tmp_path / "COST_SURFACE.json")
+    monkeypatch.setattr(CT, "SPREAD_PROVENANCE", tmp_path / "SPREAD_PROVENANCE.json")
+    monkeypatch.setattr(CT, "VERIFIED", tmp_path / "spread_repair_verified.json")
     (tmp_path / "universe.json").write_text(json.dumps(
         {"EURCHF": {"median_spread_pts": 0.5, "tick_size": 1e-5, "contract_size": 1e5}}), "utf-8")
     (tmp_path / "live_ledger.jsonl").write_text(
@@ -393,3 +410,78 @@ def test_fence_never_raises_the_ratchet_itself(tmp_path: Path) -> None:
     assert verdict["exit"] == 2
     assert FENCE.rewrite_ratchet(path, verdict, declared) is False
     assert json.loads(path.read_text("utf-8"))["overcharged_symbols"] == []
+
+
+# ------------------------------------------------- the registry repair, verified symbol by symbol
+
+
+def _prov(old: float, new: float, symbol: str = "GBPCHF") -> dict[str, object]:
+    return {"by_symbol": {symbol: {"old": old, "new": new, "bucket": "corrected"}},
+            "applied": False}
+
+
+def _quoted_row(symbol: str, p50: float, p90: float,
+                live: float | None = None) -> dict[str, object]:
+    return {"symbol": symbol,
+            "compare": {"median_reference_pts": p50, "quoted_p50_pts": p50,
+                        "quoted_p90_pts": p90, "quoted_live_pts": live}}
+
+
+def test_a_correction_that_moves_toward_the_quote_is_verified() -> None:
+    got = CT.repair_verification(_prov(165.0, 3.0), [_quoted_row("GBPCHF", 1.0, 3.0)])
+    assert got["n_toward"] == 1 and got["verified_symbols"] == ["GBPCHF"]
+    assert got["rows"][0]["err_before"] == pytest.approx(164.0)
+    assert got["rows"][0]["err_after"] == pytest.approx(2.0)
+
+
+def test_a_correction_that_moves_away_from_the_quote_is_refused() -> None:
+    """The gate has to be able to say no, or it is a rubber stamp with a measurement attached."""
+    got = CT.repair_verification(_prov(3.0, 90.0), [_quoted_row("GBPCHF", 2.0, 4.0)])
+    assert got["n_away"] == 1 and got["verified_symbols"] == []
+    assert got["away_symbols"] == ["GBPCHF"]
+
+
+def test_a_symbol_with_no_measured_quote_is_unverified_and_not_applied() -> None:
+    got = CT.repair_verification(_prov(165.0, 3.0), [])
+    assert got["n_unverified"] == 1 and got["verified_symbols"] == []
+    assert got["rows"][0]["verdict"] == "UNVERIFIED"
+
+
+def test_the_complete_map_is_read_not_the_truncated_list() -> None:
+    """`SPREAD_PROVENANCE.corrected` is capped at 60 rows and the report says so itself."""
+    prov = {"by_symbol": {f"S{i}": {"old": 10.0, "new": 1.0, "bucket": "corrected"}
+                          for i in range(70)},
+            "corrected": [{"symbol": "S0", "old": 10.0, "new": 1.0}]}
+    rows = [_quoted_row(f"S{i}", 1.0, 2.0) for i in range(70)]
+    assert CT.repair_verification(prov, rows)["n_pending"] == 70
+
+
+def test_the_repair_gate_blocks_when_its_input_cannot_be_read(tmp_path: Path) -> None:
+    """A gate that cannot be read must block, never wave through."""
+    import importlib.util
+    spec = importlib.util.spec_from_file_location(
+        "repair_universe_spreads",
+        ROOT / "desks" / "mt5" / "scripts" / "repair_universe_spreads.py")
+    assert spec and spec.loader
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    assert mod._verified(None) is None                      # no gate asked for
+    assert mod._verified(tmp_path / "absent.json") == set()  # unreadable -> applies nothing
+    good = tmp_path / "v.json"
+    good.write_text(json.dumps({"verified_symbols": ["GBPCHF", "CADCHF"]}), "utf-8")
+    assert mod._verified(good) == {"GBPCHF", "CADCHF"}
+
+
+def test_the_cost_wire_is_a_declared_edge_the_watchdog_checks() -> None:
+    """The spine read a path nothing wrote for weeks. A declared edge is what ends that class."""
+    from libs.ops.control_plane import edges as edg
+    arts = {e.artifact: e for e in edg.REQUIRED_EDGES}
+    exec_edge = arts["desks/mt5/reports/EXECUTION_COST_SURFACE.json"]
+    assert exec_edge.producer == "leg:cost_truth" and exec_edge.consumer == "leg:net_edge"
+    venue = arts["desks/mt5/reports/COST_SURFACE.json"]
+    assert venue.consumer == "leg:cost_truth"
+    # and both ends must actually name the path, which is what check_edge_paths verifies
+    organ = (ROOT / "desks" / "mt5" / "research" / "cost_truth.py").read_text("utf-8")
+    spine = (ROOT / "desks" / "mt5" / "research" / "net_edge_spine.py").read_text("utf-8")
+    assert "EXECUTION_COST_SURFACE.json" in organ and "EXECUTION_COST_SURFACE.json" in spine
+    assert "COST_SURFACE.json" in organ

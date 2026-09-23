@@ -46,8 +46,11 @@ _ROOT = Path(__file__).resolve().parents[1]
 TREES = ("desks/mt5", "libs", "scripts")
 
 #: Fusion Zero's contract, USD per lot PER SIDE. A larger value in that field is a round-turn
-#: figure in a per-side slot. Mirrors `libs.portfolio.fusion_cost.COMMISSION_PER_LOT_PER_SIDE`.
-COMMISSION_PER_SIDE = 2.25
+#: figure in a per-side slot. Mirrors `libs.portfolio.fusion_cost.COMMISSION_PER_LOT_PER_SIDE`,
+#: which is now the MEASURED 2.00 in ACCOUNT CURRENCY per lot per side (433 deals, reports/COST_TRUTH.json
+#: 2026-09-23) rather than the brochure's USD 2.25. A site charging more than the account
+#: pays is the same defect class as a round-turn figure in a per-side slot, only smaller.
+COMMISSION_PER_SIDE = 2.00
 
 OUT_REL = "desks/mt5/reports/COST_CONSTRUCTION.json"
 

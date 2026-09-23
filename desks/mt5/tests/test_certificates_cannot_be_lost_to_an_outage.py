@@ -129,7 +129,13 @@ def test_adopt_and_seal_stages_exactly_one_path_and_never_stashes() -> None:
     assert 'git add -- "desks/mt5/data/RELEASE.json"' in ADOPT_CODE
     assert "git add -A" not in ADOPT_CODE
     assert "stash" not in ADOPT_CODE
-    assert "--force" not in ADOPT_CODE and " -f " not in ADOPT_CODE
+    # THE FLAG, NOT THE FORMAT OPERATOR (2026-09-23). `" -f "` matched every PowerShell format
+    # expression in the file, so adding one line of logging failed a test about forcing git.
+    # What must never appear is a FORCED git operation; `"{0}" -f $x` is string interpolation.
+    git_lines = [ln for ln in ADOPT_CODE.splitlines()
+                 if "git " in ln
+                 and (" -f " in f" {ln.strip()} " or "--force" in ln)]
+    assert not git_lines, f"a forced git operation: {git_lines[:3]}"
 
 
 def test_adopt_and_seal_guards_native_stderr() -> None:

@@ -33,8 +33,13 @@ import subprocess
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 ROOT = Path(__file__).resolve().parent.parent
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+from libs.ops.git_writer_lock import git_writer_lock, run_git  # noqa: E402
+
 OUT = ROOT / "data" / "doc_replay_fence.json"
 LOG = ROOT / "data" / "doc_replay_fence.log"
 
@@ -48,6 +53,28 @@ GUARDED = (
     "docs/recommendations.md",
 )
 HISTORY_DEPTH = 200
+
+
+def _restore_from_head(rel: str) -> list[str]:
+    """`git checkout HEAD -- <rel>`, under the desk's git-writer lock.
+
+    A checkout of one path TAKES `.git/index.lock`, and on the trading box this healer runs on a
+    clock beside an hourly adoption that stages thousands of paths of its own. Whichever of the
+    two lost the lock died -- and when the loser was the adoption, the box ran unshipped code for
+    another hour (measured 2026-09-23, four days of it). So the healer queues behind the same
+    lock every other writer takes, and `run_git` retries a contended index with a bounded backoff.
+
+    A lock this pass could not TAKE is reported and the heal is left for the next pass: a
+    document rolled back for fifteen more minutes is recoverable, a corrupted index is not.
+    Returns the notes worth printing, never raises.
+    """
+    with git_writer_lock(ROOT, timeout_s=120.0) as lock:
+        if not lock.held:
+            return [f"could not heal {rel} this pass: {lock.why} ({lock.mechanism})"]
+        rc, out, notes = run_git(ROOT, ["checkout", "HEAD", "--", rel], timeout=120)
+        if rc != 0:
+            notes.append(f"git checkout HEAD -- {rel} rc={rc}: {out.strip()[:160]}")
+        return notes
 
 
 def _git(*args: str) -> str:
@@ -115,10 +142,10 @@ def _lost_records(rel: str) -> list[str]:
 def main() -> int:
     now = datetime.now(tz=UTC).isoformat(timespec="seconds")
     healed: list[dict[str, str]] = []
-    emptied: list[dict[str, str]] = []
+    emptied: list[dict[str, Any]] = []
     edited: list[str] = []
     clean: list[str] = []
-    failed: list[dict[str, str]] = []
+    failed: list[dict[str, Any]] = []
     for rel in GUARDED:
         if not (ROOT / rel).exists():
             continue
@@ -139,8 +166,8 @@ def main() -> int:
             lost_ids = _lost_records(rel)
             if lost_ids or ((ROOT / rel).stat().st_size == 0
                             and _git("cat-file", "-s", f"HEAD:{rel}") != "0"):
-                subprocess.run(["git", "checkout", "HEAD", "--", rel], cwd=ROOT,
-                               capture_output=True, text=True, timeout=120)
+                for note in _restore_from_head(rel):
+                    print(f"doc-replay-fence: {note}")
                 emptied_ok = _git("hash-object", rel) == head
                 what = (f"lost {len(lost_ids)} record(s) present in HEAD ("
                         + ", ".join(lost_ids[:8])
@@ -166,8 +193,8 @@ def main() -> int:
             continue
         # HEAL: restore the working copy from HEAD. Nothing is lost -- the replayed content is a
         # historical blob, still reachable at the commit named in the finding.
-        subprocess.run(["git", "checkout", "HEAD", "--", rel], cwd=ROOT,
-                       capture_output=True, text=True, timeout=120)
+        for note in _restore_from_head(rel):
+            print(f"doc-replay-fence: {note}")
         if _git("hash-object", rel) != finding["head_blob"]:
             finding["outcome"] = "HEAL_FAILED"
             failed.append(finding)
