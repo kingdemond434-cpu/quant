@@ -7899,8 +7899,8 @@
     "scripts/run_law_gate.py:286 - the --require-state half in the box gate",
     "desks/mt5/research/hourly_cycle.py:3083 - the costed leg",
     "libs/research/layers.py:266 - LEG_LAYER: information",
-    "desks/mt5/tests/test_coverage_drain.py:1 - 38 tests",
-    "tests/scripts/test_check_coverage_drain.py:1 - 23 tests, both failure directions pinned"
+    "desks/mt5/tests/test_coverage_drain.py:1 - 48 tests",
+    "tests/scripts/test_check_coverage_drain.py:1 - 24 tests, both failure directions pinned"
    ],
    "scheduled_by": "hourly_cycle:coverage_drain (desks/mt5/research/hourly_cycle.py:3083, hourly)",
    "artifact": "desks/mt5/reports/COVERAGE_DRAIN.json + desks/mt5/data/coverage_drain_ledger.json",
@@ -8101,6 +8101,62 @@
    "gap": "",
    "next_step": "MT5-Shadow and MT5-QQuantShadow both exit 1 every pass for reasons upstream of the clocks (a stale bar-source error and the missing gate-policy attestation); the exit codes are carried in the report but are not yet a fence.",
    "landed": []
+  },
+  {
+   "id": "PCN1",
+   "domain": "PCN",
+   "phase": "D",
+   "status": "LANDED",
+   "gate": "none",
+   "scheduled_by": "hourly_cycle:producer_census",
+   "artifact": "desks/mt5/reports/PRODUCER_CENSUS.json",
+   "item": "ONE CENSUS OF EVERY PRODUCER THE TREE CONTAINS -- seat, miner, research organ and federated sandbox system -- each with its clock, its production expectation, its last production and a verdict of LIVE / SLOW / DARK / RETIRED / UNMEASURED with the reason. The population is DERIVED from the component registry and the two intelligence roots, never a hand list, so an organ that lands today is covered today; the seat->organ mapping is derived from the source tree in three tiers (the clocked organ named for the seat, the file that writes its literal path, the roster file that names it beside a variable intelligence path)",
+   "evidence": [
+    "libs/ops/producer_census.py:757 -- census(): seats + every ComponentSpec + the sandbox roster in one document",
+    "libs/ops/producer_census.py:301 -- derive_seat_organs(): the three tiers, replacing the hand table that left 92 of 105 seats UNMEASURED on the trading box",
+    "libs/ops/producer_census.py:550 -- seat_rows(); libs/ops/producer_census.py:626 -- component_rows(); libs/ops/producer_census.py:695 -- sandbox_rows()",
+    "libs/ops/producer_census.py:109 -- runs_clocks_here(): whether THIS checkout holds the clocks is MEASURED (box tasks / systemd user units), not inferred from os.name, so a build box's git-mirrored seats read UNMEASURED_HERE instead of a hundred false DARK rows",
+    "scripts/check_seat_health.py:483 -- run_census(), the fence half; scripts/check_seat_health.py:354 -- seat_organs() merges the derived mapping under the declared overrides",
+    "desks/mt5/research/hourly_cycle.py:3963 -- the leg; desks/mt5/research/hourly_cycle.py:715 -- CORE_LEGS; desks/mt5/research/hourly_cycle.py:846 -- LEG_DEPARTMENT meta; libs/research/layers.py:74 -- LEG_LAYER",
+    "MEASURED on the trading box 2026-09-23: 1,480 producers censused where the previous fence saw 105 seats, of which 92 read UNMEASURED for the single reason that a table had never been filled in",
+    "tests/ops/test_producer_census.py:1 -- 24 tests, one per failure mode including the fence-never-wins-the-organ-slot rule"
+   ]
+  },
+  {
+   "id": "PCN2",
+   "domain": "PCN",
+   "phase": "D",
+   "status": "LANDED",
+   "gate": "none",
+   "scheduled_by": "hourly_cycle:producer_census",
+   "artifact": "desks/mt5/reports/PRODUCER_CENSUS.json",
+   "item": "A REPORT IS NOT A REMEDY: every DARK row is RELIT in the same pass, through the existing control plane, and the postcondition is the producer's own output being strictly newer than before the repair -- never a zero exit code. A repair that exits 0 and produces nothing is recorded UNPROVEN with the organ named. Repairs that are CODE changes (give an organ a leg, retire it to an inheritor) are deliberately not run: an hourly leg that edited the cycle to heal itself would be a loop nobody could review, so those rows are named and handed back instead",
+   "evidence": [
+    "libs/ops/producer_census.py:833 -- plan_relight(): run the organ, provision the sandbox system on THIS host, restart the resident through its keep-alive",
+    "libs/ops/producer_census.py:934 -- apply_relight(): each repair becomes a real Actuator and runs through actuators.run_actuator",
+    "libs/ops/control_plane/actuators.py:285 -- producer_actuator(); libs/ops/control_plane/actuators.py:233 -- PRODUCTION_RESUMED, the postcondition; libs/ops/control_plane/actuators.py:164 -- newest_production()",
+    "libs/ops/producer_census.py:891 -- _relight_without_plane(): a box that has not yet adopted the actuator still relights, with the SAME proof, and the record names the fallback",
+    "MEASURED on the trading box 2026-09-23: kimi ran to rc=0 and donated nothing -- its own frontier gate declined the pass ('all 130 known territories are picked over ... next opens in 34d'), which the census records as UNPROVEN with that reason rather than as a healthy seat",
+    "tests/ops/test_producer_census.py:246 -- a repair that exits zero and produces nothing is UNPROVEN"
+   ]
+  },
+  {
+   "id": "PCN3",
+   "domain": "PCN",
+   "phase": "D",
+   "status": "LANDED",
+   "gate": "none",
+   "scheduled_by": "hourly_cycle:producer_census",
+   "artifact": "desks/mt5/reports/PRODUCER_CENSUS.json",
+   "item": "THE FIVE CAUSES OF DARKNESS, CLOSED BY NAME, because each has a different remedy: (1) a clock on the wrong machine -- the clock index now reads EVERY ops/*.service, not only quant-*, which was hiding hourly-controller.service and the hypotheses seat; (2) a seat retired without an inheritor -- mql5_reputation retired with its replacement named, the fourth of four; (3) an environment provisioned on the wrong box -- the sandbox venv built on the TRADING box, where the data and the compute are; (4) a mapping table never filled in -- derived instead, and four declared overrides that pointed at files which never existed removed; (5) an executable that landed without a leg -- counted separately and routed to the birth fence's own ratchet so one number never carries two ratchets that can disagree",
+   "evidence": [
+    "scripts/check_seat_health.py:222 -- the unit glob widened to ops/*.service; five units in that directory carry no quant- prefix",
+    "docs/research/retirements.jsonl:92 -- mql5_reputation, retired with its inheritor and the measured reason its __main__ may never be clocked (it feeds five SIMULATED rows into the seat the desk reads as evidence)",
+    "desks/mt5/research/sandbox_provision.py:1 -- MEASURED on the trading box 2026-09-23: importable systems rose 13 -> 30 of 58 after provisioning there (+17 in one pass), against 13 before",
+    "scripts/check_seat_health.py:71 -- SEAT_ORGANS is now the declared OVERRIDES only, with the four entries that named desks/mt5/research/{github_miner,mql5_signals,mql5_survivors,fxblue_harvest}.py -- four paths that have never existed -- removed",
+    "libs/ops/producer_census.py:995 -- breach(): the dark ratchet judges producers that HAVE a clock and stopped; an executable with no clock is the birth fence's ratchet (scripts/check_component_registry.py)",
+    "docs/LAWS.md:1055 -- the standing law: no producer is dark, and darkness is never a silent state"
+   ]
   }
  ],
  "status_vocabulary_note": "LANDED means the code exists in THIS REPOSITORY, on a named clock, with an artifact and a consumer. It does NOT mean the artifact has ever been produced on the trading box, and it does not mean the behaviour has been observed with money at risk. That distinction is what the five acceptance_properties measure, and they are measured from artifacts rather than asserted: an absent artifact reads UNMEASURED, never MET. Read the census as build coverage and the acceptance properties as operational proof. They are different questions and the second is the one that decides whether the desk works."
