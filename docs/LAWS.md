@@ -361,7 +361,8 @@ orthogonality, independent survivor yield and marginal contribution to effective
 
 ## 5c. THE DATA-UTILIZATION LAW (principal's standing order, 2026-09-17, permanent)
 
-No dataset is collected to sit in storage. Every qualified public or licensed source has
+No dataset is collected to sit in storage. Every source the desk can see (§5e: no licence,
+robots, source-class or access pre-filter stands between a source and this law) has
 explicit paths into research breadth, macro and world-state intelligence, regime inference,
 live decision context, execution intelligence and portfolio allocation, where its information
 is relevant. Maximum useful exploitation, never brute force: controlled candidate generation,
@@ -411,7 +412,8 @@ experiments or retires with evidence. (`scripts/check_ingestion_exploitation.py`
 
 ## 5d. THE GLOBAL 24/7 INTELLIGENCE LAW (principal's standing order, 2026-09-17, permanent)
 
-Continuously observe every lawfully accessible public or licensed information surface that
+Continuously observe EVERY information surface the desk can see on the open internet (§5e: no
+licence, robots, source-class or access pre-filter, and no quarantine) that
 can describe the global economy, markets, physical activity, positioning, behaviour or market
 structure; convert it into PIT-safe world-state intelligence and the largest statistically
 defensible set of novel orthogonal candidate cells; route those cells through the canonical
@@ -428,13 +430,17 @@ news is a first-class event stream into the world model and the allocator, never
 bot; no stranded data. Capital is deployed whenever the posterior says deployment improves
 geometric growth, never forced into a position every second.
 
-## 5e. THE ACCESS ROUTING LAW (principal's standing order, 2026-09-17, permanent)
+## 5e. THE ACCESS ROUTING LAW (principal's standing order, 2026-09-23, permanent — REPLACES the 2026-09-17 text in full)
 
-**Mine aggressively; classify precisely; restrict only the specific use that is actually
-prohibited.** Legality is a surgical routing system sitting beside the research system, never a
-timid global filter that throws away half the internet because something looks unusual. The
-pipeline on every source is DISCOVER -> CAPTURE METADATA -> LEGAL/ACCESS CLASSIFICATION ->
-EVIDENCE CLASSIFICATION -> RESEARCH, never "looks risky -> discard".
+**THE DESK MINES AND TESTS EVERYTHING IT CAN SEE ON THE OPEN INTERNET.** Things published on the
+open internet are lawful to read. Licence, robots, source class and credibility are **ROUTING AND
+PROVENANCE LABELS on the row**: they describe what the desk may **REDISTRIBUTE or publish**, and
+**how much weight the evidence carries**. They **NEVER** stop discovery, ingestion, representation
+or testing. Classification routes USE; it never gates MINING.
+
+The pipeline on every source is DISCOVER -> CAPTURE METADATA -> ACCESS/PROVENANCE LABELLING ->
+EVIDENCE CLASSIFICATION -> RESEARCH, and every source walks all five. There is no "looks risky ->
+discard" and no "unclear -> park".
 
 Every source carries THREE INDEPENDENT labels, never collapsed into one:
 
@@ -443,27 +449,55 @@ Every source carries THREE INDEPENDENT labels, never collapsed into one:
 - `credibility`: AUTHORITATIVE, RELIABLE, UNRELIABLE, FRINGE, CONTRADICTED, UNKNOWN.
 - `predictive_state`: UNTESTED, PREDICTIVE, NOT_PREDICTIVE, NARRATIVE_FEATURE.
 
-Behaviour by access label: a public source of questionable reliability is researchable and simply
-carries low evidence weight; PUBLIC_WITH_TERMS whose terms forbid machine extraction is reached
-through an allowed API or a manual-review path and is registered `machine_use_allowed=false`,
-never scraped and never omitted; LICENSED is used per its licence; ACCESS_UNCLEAR is QUARANTINED
-(metadata kept, content not consumed) until access rights are resolved; PRIVATE,
-CONFIDENTIAL_MNPI and STOLEN_UNAUTHORIZED never become an alpha input and are recorded as refused
-with the reason.
+Behaviour by access label: **every label but the refused three is mined, ingested, represented and
+tested in full.** PUBLIC_WITH_TERMS (terms present, a robots Disallow, a declared
+`machine_use_allowed=false`, or a paywalled domain) is **mined and tested in full**; the label
+withholds `redistribute` and nothing else, and the fact is carried on the row as `terms_note`.
+LICENSED is used per its licence and its licence bears on republication, not on reading.
+**ACCESS_UNCLEAR IS MINED AND TESTED WITH ITS LABEL ATTACHED — there is no quarantine.**
+PUBLIC_SOCIAL, USER_SUBMITTED, PUBLIC_ARCHIVE and machine-translated ground are **first-class
+inputs**: fringe, retail, forum and archive rows are mined exactly as hard as an official release
+and simply carry a lower EVIDENCE weight, which is a statement about truth and never about
+permission.
+
+**THE BRAKES THAT ARE DELETED, NAMED SO A LATER SESSION CANNOT RE-DERIVE THEM FROM SILENCE**
+(`libs.research.access_classifier.REMOVED_BRAKES` carries the same list as data): the
+ACCESS_UNCLEAR quarantine; the machine-extraction veto on PUBLIC_WITH_TERMS; robots.txt Disallow
+read as a refusal; `machine_use_allowed=false` read as "registered, never scraped"; any
+"public/licensed sources only" pre-filter on discovery; and source class or credibility used to
+DROP a row rather than WEIGHT it. None of these was ever a legal requirement. Each was a discovery
+brake the desk imposed on itself, and each cost it ground it never measured. **No session may
+re-introduce one, in any form, under any name.** A new cap, veto, gate or refusal on research
+input is a violation of this section and of the growth governance rules (§ GROWTH GOVERNANCE).
 
 **Legality, credibility and predictive value are independent dimensions.** An anonymous forum post
-can be perfectly lawful and unreliable; a government release can be lawful, authoritative and
+is perfectly lawful and unreliable; a government release is lawful, authoritative and frequently
 useless for alpha; a public rumour can be lawful, false as a factual claim and still predictive as
 a crowding or narrative feature. The system never says "this claim is probably false, therefore
-delete it"; it asks "can we lawfully observe it, what does it represent, and does its existence
-predict anything". Strange, low-confidence, contradictory and fringe PUBLIC information is
-preserved as an evidence object. **Do not over-normalise the world.**
+delete it"; it asks "what does it represent, and does its existence predict anything". Strange,
+low-confidence, contradictory and fringe information is preserved as an evidence object.
+**Do not over-normalise the world.**
 
-The hard boundary is specific and unchanged: no credential theft, no access-control bypass, no
-private or confidential data harvesting, no doxxing, no stolen datasets, and no material nonpublic
-information used for trading. Everything else is classified narrowly and exploited as far as its
-lawful use permits. Enforced by `libs/research/access_classifier.py`, the evidence router and the
-ingestion law (§5c).
+**WHAT REMAINS REFUSED IS ABOUT ACTS, NOT ABOUT CONTENT, AND IT IS EXACTLY FIVE.** These are the
+principal's own recorded hard boundary; they describe things the desk does not **DO**, never
+subjects it may not read:
+
+1. **no credential theft or logging in as someone else**
+2. **no bypassing an access control or a paywall**
+3. **no material non-public information**
+4. **no stolen or leaked private data**
+5. **no personal data harvesting or doxxing**
+
+If a page is behind a login or a paywall the desk does not break in — and the **open surface of
+that same domain is mined like any other**. Everything reachable without breaking in is mined.
+Those five acts are the whole of the restriction: **there is no sixth, and the absence of a rule
+is a permission, not a reason for caution.** The labels PRIVATE, CONFIDENTIAL_MNPI and
+STOLEN_UNAUTHORIZED carry these five acts, are refused with the reason recorded, and are the only
+refusals in the desk.
+
+Enforced by `libs/research/access_classifier.py` (`PRINCIPLE`, `HARD_BOUNDARY`,
+`HARD_BOUNDARY_COUNT`, `REMOVED_BRAKES`, `ROUTING`), `desks/mt5/research/evidence_router.py`, the
+ingestion law (§5c) and `tests/research/test_access_routing.py`.
 
 ## 5f. THE MAXIMUM FORM (principal's standing order, 2026-09-17, permanent)
 
@@ -565,8 +599,9 @@ tomorrow reopens it.
 ## 5h. THE OPEN-SOURCE RESEARCH FEDERATION LAW (principal 2026-09-17, permanent; supersedes NO
 THIRD-PARTY TOOLING)
 
-Every lawfully usable, security-qualified, positive-ROI public or open-source research system the
-desk discovers — autonomous research agents, alpha-mining frameworks, mathematical discovery
+Every security-qualified, positive-ROI research system the desk can fetch — its licence routes
+what may be REDISTRIBUTED, never whether it may be run or tested (§5e) — autonomous research
+agents, alpha-mining frameworks, mathematical discovery
 engines, representation-learning systems, experiment schedulers, evolutionary search systems,
 causal-discovery systems, execution-research engines, portfolio-research systems, data-discovery
 tools, academic implementations and every future equivalent — receives EXACTLY ONE disposition:
@@ -740,7 +775,7 @@ until the principal says otherwise.
 
 The research organism never idles. It continuously discovers new information sources,
 mechanisms, representations, mathematical operators, regional behaviours, execution effects and
-strategy descendants across every lawful public or licensed market-relevant source worldwide.
+strategy descendants across EVERY market-relevant source it can see worldwide (§5e).
 **Raw candidate count is never the objective.** The objective is maximum expected future
 independent portfolio value per unit of compute, data and statistical trial budget:
 

@@ -386,6 +386,13 @@ LEG_LAYER: dict[str, str] = {
     # THE CONTROL PLANE is meta by construction: it measures whether the machine that runs the
     # machine is doing what desired state says, and it predicts, sizes and times nothing.
     "control_plane": "meta",
+    # THE PLUMBING WATCHDOG and THE BOTTLENECK ATTACKER are meta for the same reason: neither
+    # predicts a price, sizes a bet or times an entry. One proves the pipes between the organs
+    # are open (the adoption clock, the git-writer lock, commit headroom, producer/consumer path
+    # agreement, fences that actually ran); the other names which of the desk's four standing
+    # bottlenecks is binding this hour and moves compute toward it. They are the machine looking
+    # at the machine, which is what `meta` means here.
+    "plumbing_watchdog": "meta", "bottleneck_attack": "meta",
     "session_capital": "portfolio",
 }
 

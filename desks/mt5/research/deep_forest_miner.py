@@ -1384,6 +1384,24 @@ def run(budget_s: float = 900.0, fetch: bool = True, only: list[str] | None = No
     r = _Run(budget_s, fetch, set(only or []) or None, region)
     cursor = int(r.seen.get("cursor") or 0) if not (only or region) else 0
     order = schedule(grounds, cursor, only=r.only, region=region)
+    # THE PROPOSER SEAT, OPTIONAL: which registered GROUND is worth this pass's seconds first.
+    # An ORDER over the grounds the registry already holds -- the seat may reorder the crawl and
+    # may never widen it, so a name it invents is discarded and no unregistered ground can be
+    # reached by being named. Unchanged order, and no call at all, on a box with no panel.
+    seat_hint: dict[str, Any] = {"verdict": "UNMEASURED"}
+    try:
+        from libs.research import proposer_seat as _ps
+        _names = [str(g.get("name") or "") for g in order if g.get("name")]
+        _reply = _ps.ask("deep_forest_miner", "order", options=_names,
+                         task=("Order these practitioner-forest grounds by which is most likely "
+                               "to yield a NEW testable market mechanism this pass. Return the "
+                               "full list, best first."))
+        seat_hint = _reply.to_row()
+        if _reply.measured and _reply.ordered != _names:
+            _rank = {n: i for i, n in enumerate(_reply.ordered)}
+            order = sorted(order, key=lambda g: _rank.get(str(g.get("name") or ""), 10 ** 6))
+    except Exception as _exc:                             # pragma: no cover - optional seat
+        seat_hint = {"verdict": "UNMEASURED", "why": f"{type(_exc).__name__}: {_exc}"}
     total_w = sum(float(g.get("weight") or 1.0) for g in order) or 1.0
     worked = 0
     for g in order:
@@ -1509,6 +1527,7 @@ def run(budget_s: float = 900.0, fetch: bool = True, only: list[str] | None = No
                for src in sorted({str(t.get("source")) for t in tasks})},
            "frontier_added": frontier_added,
            "source_shares": share_meta,
+           "proposer_seat": seat_hint,
            "source_expansion": expansion,
            "fetch_notes": [s for s in r.status if "url" in s][:40],
            "top_claims": [{k: t.get(k) for k in ("title", "symbols", "channel", "mechanism_class",

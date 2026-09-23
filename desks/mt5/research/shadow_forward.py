@@ -467,9 +467,26 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
         if key in seen:
             continue
         seen.add(key)
+        # ENROLMENT IS STAMPED, AND THE STAMP IS THE MEASUREMENT (principal 2026-09-23: "make all
+        # certis always receive immediate clocks at the same time when certified ... no quota or
+        # scarcity ever on forward evidence slots"). There is no cap, no waiting queue and no
+        # ranking gate between a certificate and this line -- `certified_sleeves()` above returns
+        # the WHOLE canon and the loop enrols all of it -- so the only honest way to hold the desk
+        # to "immediately" is to record WHEN each clock started and publish the gap from the
+        # certificate's `gated_at`. `research/forward_enrolment.py` reads this field and
+        # `scripts/check_forward_enrolment.py` fails when the gap exceeds one cycle.
+        #
+        # A forward clock GATHERS EVIDENCE AND DEPLOYS NO CAPITAL, so enrolling every certificate
+        # raises evidence throughput without touching risk; the multiplicity and trial accounting
+        # are unchanged, and more clocks make every clock's bar HARDER, automatically.
         st = state.get(key, {"n": 0, "cum_r": 0.0, "max_dd_r": 0.0,
                              "first_entry": None, "last_entry": None,
-                             "status": "ACTIVE"})
+                             "status": "ACTIVE",
+                             "enrolled_at": datetime.now(UTC).isoformat(timespec="seconds")})
+        # Backfilled once for rows written before the stamp existed, and never overwritten after:
+        # a re-stamp on every pass would report every clock as freshly enrolled forever.
+        st.setdefault("enrolled_at",
+                      datetime.now(UTC).isoformat(timespec="seconds"))
         if key in breached and not st.get("quarantine_reason"):
             st["quarantine_reason"] = breached[key]
 

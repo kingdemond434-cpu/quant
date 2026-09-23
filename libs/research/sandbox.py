@@ -14,18 +14,23 @@ the code does, because a boundary nobody can name is a boundary nobody can check
   ENFORCED HERE          a scrubbed environment (every secret-shaped variable removed, and
                          `MT5_*`, `QUANT_*`, broker and API variables with them), a working
                          directory OUTSIDE the desk tree, a per-system virtual environment, a hard
-                         timeout, an output size cap, a read-only view of the desk (inputs are
-                         COPIED into the sandbox, never mounted), and refusal to start at all
-                         unless the licence has been read and the commit pinned.
+                         timeout, an output size cap, and a read-only view of the desk (inputs are
+                         COPIED into the sandbox, never mounted). NOT the licence: since
+                         2026-09-23 an unread licence is a recorded label, not a refusal to start.
   DECLARED, NOT ENFORCED network egress. Windows offers no per-process firewall this desk can set
                          without administrator rules, so `network="allowlist"` is a STATEMENT OF
                          INTENT on this host and is reported as UNENFORCED_ON_THIS_HOST on every
                          run. Saying it is enforced would be the exact lie the law exists to stop.
 
-THE REFUSAL PATH IS THE PRODUCT. `provision()` refuses an unread licence, a missing pin, a
-non-allowlisted host and a system whose disposition is not DIRECT or WRAPPED; `run()` refuses a
-sandbox that was never provisioned. Each refusal names what would lift it, so a blocked system is
-a task rather than a dead end.
+WHAT IS ENFORCED HERE IS ABOUT ACTS, NOT ABOUT CONTENT (LAWS 5e, 2026-09-23). The isolation is
+the boundary: no credentials, no live authority, no write into the desk tree. That is the desk
+refusing to DO something, and it stays. What went was the CONTENT filtering that used to sit in
+the same function: `provision()` refused an unread licence, a licence off a runnable list, and any
+host outside an eight-domain allowlist. Those were discovery brakes -- they left every seed
+UNDISPOSED on an unread LICENSE file -- and they are deleted. `provenance_notes()` records exactly
+what they recorded, as labels that route REDISTRIBUTION and never stop a run. `refuse_reason()`
+now answers only "there is nothing here to run": a non-executing disposition, or an upstream that
+names no host. `run()` still refuses a sandbox that was never provisioned.
 """
 from __future__ import annotations
 
@@ -47,16 +52,22 @@ from libs.research import external_federation as fed
 #: Sandboxes live OUTSIDE the desk tree, so nothing a third-party process writes can land in the
 #: repository the gateway imports from. Overridable for tests only.
 SANDBOX_ROOT = Path(os.environ.get("QUANT_SANDBOX_ROOT", r"C:\opt\quant-sandbox"))
-#: Hosts a provisioning run may clone from. Anything else is refused by name, which keeps a
-#: "public research system" from quietly becoming an arbitrary URL.
+#: Hosts the desk has code for and knows the raw-file shape of. A PROVENANCE LIST, NOT A GATE
+#: (LAWS 5e, 2026-09-23): a host that is not on it is provisioned anyway and RECORDED as
+#: off-roster. The old version refused every other host by name, so a research system published
+#: anywhere but eight domains was never tested -- a discovery brake, deleted.
 ALLOWED_HOSTS: frozenset[str] = frozenset({
     "github.com", "gitlab.com", "gitee.com", "codeberg.org", "bitbucket.org",
     "huggingface.co", "pypi.org", "files.pythonhosted.org"})
-#: Licences that permit running and modifying the code for research. Anything else -- including an
-#: unread licence -- refuses DIRECT execution and leaves REBUILT as the route.
+#: SPDX ids whose terms permit REDISTRIBUTING the code and derived work. A ROUTING LABEL on what
+#: the desk may publish, NOT a permission to run: the desk runs anything it can fetch, inside the
+#: isolated sandbox, for its own research. An unread licence is recorded UNVERIFIED and the run
+#: happens regardless -- reading somebody's public code is not one of the five refused acts.
 RUNNABLE_LICENCES: frozenset[str] = frozenset({
     "MIT", "BSD-2-Clause", "BSD-3-Clause", "Apache-2.0", "MPL-2.0", "ISC", "Unlicense",
     "GPL-3.0", "GPL-2.0", "AGPL-3.0", "LGPL-3.0"})
+#: The alias that says what the set now MEANS. Both names point at one object on purpose.
+REDISTRIBUTABLE_LICENCES: frozenset[str] = RUNNABLE_LICENCES
 #: Environment variables a sandboxed process may keep. Everything else is dropped, and anything
 #: whose NAME looks like a secret is dropped even if it is on this list.
 ENV_KEEP: frozenset[str] = frozenset({
@@ -141,25 +152,43 @@ def _host_of(upstream: str) -> str:
     return body.split("/")[0]
 
 
+def provenance_notes(system: fed.ExternalSystem, disposition: str) -> tuple[str, ...]:
+    """The LABELS this system carries, none of which stop it being provisioned or run.
+
+    Every one of these was a refusal before 2026-09-23 (LAWS 5e). An off-roster host and an
+    unread or non-redistributable licence are now PROVENANCE, recorded on the sandbox row and
+    carried into the research packet, so the desk knows what it may republish and still tests
+    every system it can fetch.
+    """
+    notes: list[str] = []
+    host = _host_of(system.upstream)
+    if host and host not in ALLOWED_HOSTS:
+        notes.append(f"off-roster host {host!r}: provisioned and recorded, never refused")
+    if system.licence in ("UNVERIFIED", "", "UNMEASURED"):
+        notes.append("licence UNVERIFIED at the pin: the run happens and the reading stays a task")
+    elif system.licence not in REDISTRIBUTABLE_LICENCES:
+        notes.append(f"licence {system.licence!r} withholds redistribution: research use only, "
+                     f"nothing derived from it is republished")
+    if disposition == "WRAPPED":
+        notes.append("WRAPPED: upstream runs behind the desk's own adapter")
+    return tuple(notes)
+
+
 def refuse_reason(system: fed.ExternalSystem, disposition: str) -> str | None:
-    """Why this system may not be provisioned, or None. Every refusal names its remedy."""
+    """Why this system CANNOT be provisioned, or None.
+
+    ONLY TWO THINGS ANSWER THIS NOW, and neither is a policy brake: a disposition that does not
+    run upstream code at all, and an upstream string that names no host to fetch from. The host
+    allowlist and the licence gates that used to live here were DISCOVERY BRAKES -- they left
+    every seed UNDISPOSED on an unread LICENSE file -- and they are deleted; what they recorded
+    now lands in `provenance_notes()`.
+    """
     if disposition not in ("DIRECT", "WRAPPED"):
         return (f"disposition is {disposition}: only DIRECT and WRAPPED run upstream code "
                 f"(REBUILT reproduces the mechanism in canonical infrastructure instead)")
-    host = _host_of(system.upstream)
-    if not host:
-        return (f"upstream {system.upstream!r} names no resolvable host: pin the real repository "
-                f"URL and commit before provisioning")
-    if host not in ALLOWED_HOSTS:
-        return (f"host {host!r} is not in the provisioning allowlist {sorted(ALLOWED_HOSTS)}: "
-                f"add it deliberately or route the system through REBUILT")
-    if system.licence in ("UNVERIFIED", "", "UNMEASURED"):
-        return ("the licence has not been read at the pinned commit: read LICENSE, record it on "
-                "the roster row, and provisioning becomes possible (this is the single reason "
-                "every seed is UNDISPOSED today)")
-    if system.licence not in RUNNABLE_LICENCES:
-        return (f"licence {system.licence!r} is not on the runnable list "
-                f"{sorted(RUNNABLE_LICENCES)}: REBUILT is the lawful route for this one")
+    if not _host_of(system.upstream):
+        return (f"upstream {system.upstream!r} names no resolvable host: there is nothing to "
+                f"fetch. Pin the real repository URL and commit")
     return None
 
 
@@ -172,15 +201,17 @@ def provision(system: fed.ExternalSystem, disposition: str, *, root: Path | None
     why = refuse_reason(system, disposition)
     if why:
         return Sandbox(system.system_id, base, licence=system.licence, provisioned=False, why=why)
+    labels = provenance_notes(system, disposition)
+    note = ("; " + "; ".join(labels)) if labels else ""
     if dry_run:
         return Sandbox(system.system_id, base, licence=system.licence, provisioned=False,
-                       why="dry run: the sandbox is eligible and was not created")
+                       why="dry run: the sandbox is eligible and was not created" + note)
     base.mkdir(parents=True, exist_ok=True)
     (base / "work").mkdir(exist_ok=True)
     (base / "out").mkdir(exist_ok=True)
     return Sandbox(system.system_id, base, licence=system.licence, provisioned=True,
                    why="provisioned; the upstream checkout and its dependencies are the "
-                       "operator's next step and are recorded when they land")
+                       "operator's next step and are recorded when they land" + note)
 
 
 def run(sandbox: Sandbox, argv: list[str], *, timeout_s: int = 600,
@@ -267,6 +298,33 @@ def venv_python(sandbox: Sandbox) -> Path:
     venv = sandbox.root / "venv"
     win = venv / "Scripts" / "python.exe"
     return win if (win.exists() or os.name == "nt") else venv / "bin" / "python"
+
+
+#: ONE environment for every adapter whose upstream is provisionable. Per-system venvs would
+#: each re-install the scientific core (measured ~500 MB apiece), so the supply line would stop
+#: on free disk long before it stopped on capability. `sandbox_provision.py` builds this one with
+#: `--system-site-packages` over the desk's own interpreter and records what imports in it.
+SHARED_ID = "_shared"
+
+
+def shared_python(root: Path | None = None) -> Path:
+    """The shared sandbox interpreter (it may not exist; the provisioner creates it)."""
+    return venv_python(Sandbox(SHARED_ID, (root or SANDBOX_ROOT) / SHARED_ID))
+
+
+def shared_modules(root: Path | None = None) -> dict[str, str]:
+    """system_id -> the version the provisioner MEASURED importable in the shared venv.
+
+    An absent or unreadable manifest is an empty mapping, never an exception: availability is a
+    measurement the runner reports, and a missing file means it has not been measured yet.
+    """
+    path = (root or SANDBOX_ROOT) / SHARED_ID / "modules.json"
+    try:
+        doc = json.loads(path.read_text(encoding="utf-8-sig"))
+    except (OSError, ValueError):
+        return {}
+    rows = doc.get("modules") if isinstance(doc, dict) else None
+    return {str(k): str(v) for k, v in (rows or {}).items()} if isinstance(rows, dict) else {}
 
 
 def install(sandbox: Sandbox, requirement: str, *, timeout_s: int = 900,

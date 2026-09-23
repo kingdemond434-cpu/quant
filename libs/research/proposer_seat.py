@@ -76,6 +76,49 @@ FACTORIES: tuple[str, ...] = (
     "model_search", "mechanism_naming_queue",
 )
 
+#: EVERY RESEARCH PROCESS THAT CAN CONSUME A PROPOSAL (principal 2026-09-23, widening the seat
+#: from the four factories: "the proposer seat should be for all miners, crawlers etc, all
+#: research processes there, not just factories -- rather everything, even sandboxed").
+#:
+#: organ -> what a proposal MEANS to it, in one line. The registry exists so that "is the seat
+#: everywhere?" is answerable by MEASUREMENT: `run()` reports every name here with its counts,
+#: and an organ that has never called reads UNMEASURED rather than being invisible. Adding an
+#: organ is one line here plus one `ask(...)` call -- which is the whole point of having a
+#: single entry point instead of five copies of a routing block.
+ORGANS: dict[str, str] = {
+    "expression_factory": "expression skeletons in alpha_grammar, drained into the invention "
+                          "stage and screened like any other invention",
+    "math_lab": "candidate mechanism names for objects no tradition could interpret",
+    "physics_lab": "candidate mechanism names for uninterpreted MathHypothesisCards",
+    "factor_model_coevolution": "an ORDER over the measured-healthy model zoo",
+    "model_search": "an ORDER over the registered model families",
+    "mechanism_naming_queue": "candidate causes for measured effects with no named mechanism",
+    "forest_runner": "native-script query terms for a forest's own source scouts",
+    "seed_miners": "query terms and source NAMES for the miner fleet to look up in its registry",
+    "world_crawler": "what to look for next, and which neighbourhoods are worth expanding",
+    "deep_forest_miner": "which forest neighbourhoods and practitioner vocabularies to expand",
+    "sandbox_runner": "which system to run against which data, and what to extract from it",
+    "archaeology": "mechanism names for relations the dig found",
+    "understanding_seat": "candidate explanations for what the desk has measured and not named",
+    "residual_hunt": "what might explain a world-model residual",
+    "data_acquisition_scientist": "which dataset to seek next, by NAME, for the registry to vet",
+    "meta_controller": "an ORDER over the curriculum the controller already holds",
+    "standing_questions": "candidate phrasings of the questions the desk has not answered",
+}
+
+#: What an `ask` may ask for. Four kinds, and the difference between them is what the organ is
+#: allowed to do with the answer -- which is the whole safety argument:
+#:
+#:   order       reorder the organ's OWN option list. Never adds, never removes.
+#:   names       a candidate cause for something already measured. Never a status, never a gate.
+#:   terms       new SEARCH STRINGS (a query, a vocabulary item, a dataset name). Additive, and
+#:               therefore the one that needs a rule: a term is not a permission. The organ's own
+#:               source registry and legality router still decide what may be fetched, so a
+#:               proposed term can never become a new ground by being named -- `_valid_term`
+#:               refuses anything shaped like a URL or a host for exactly that reason.
+#:   candidates  free-form JSON in the ORGAN'S own grammar, validated by the organ's own callable.
+KINDS: tuple[str, ...] = ("order", "names", "terms", "candidates")
+
 #: THE KILL LIST. Any of these keys in a model's reply is a VERDICT, and a verdict is the one
 #: thing this seat may never produce. They are stripped rather than rejected: the model is
 #: competent at shape and at naming, incompetent at judging, and throwing away the shape because
@@ -299,8 +342,8 @@ def build_prompt(factory: str, task: str, *, grammar: str, context: Sequence[str
     reads a file, so there is no path by which a sealed slice or a secret can arrive by accident:
     a leak would have to be handed in by the caller, and `scrub` then refuses it.
     """
-    if factory not in FACTORIES:
-        raise PromptRefused(f"unknown factory {factory!r}; nothing would judge its proposals")
+    if factory not in ORGANS:
+        raise PromptRefused(f"unknown organ {factory!r}; nothing would judge its proposals")
     lines = [
         f"You are proposing CANDIDATES for the {factory} of a quantitative research desk.",
         "",
@@ -637,6 +680,9 @@ def order_hint(factory: str, options: Sequence[str], *, question: str,
     unknown = [w for w in wanted if w not in opts]
     ordered = known + [o for o in opts if o not in known]
     return ordered, {"verdict": "ORDERED", "hint": known, "discarded_unknown": unknown,
+                     "trials_charged": charge_trials(props),
+                     "discarded": sum(1 for p in props if not p.accepted),
+                     "reasons": _reasons(props),
                      "why": ("names outside the factory's own option set are discarded: a seat "
                              "may reorder a search, never widen it"),
                      "proposals": [p.to_row() for p in props]}
@@ -718,6 +764,162 @@ def names_for(factory: str, records: Sequence[dict[str, Any]], *, n: int = 6
                            "interpretation, not evidence, and clears nothing"),
         }
     return out
+
+
+# --------------------------------------------------------------------- THE SHARED ENTRY POINT
+@dataclass(frozen=True)
+class SeatReply:
+    """What one `ask` returned. Every field has a NEUTRAL value, and that is the design.
+
+    A consumer writes `reply = ask(...)` and then uses `reply.ordered` / `reply.names` /
+    `reply.terms` / `reply.items` unconditionally. When the seat is dark every one of those is
+    exactly what the organ would have used anyway -- the option list it passed in, and nothing
+    else -- so the absent path needs no branch at the call site and therefore cannot be got
+    wrong by the next organ to be wired.
+
+    NOTE WHAT IS NOT HERE, again: no score, no rank, no confidence, no verdict. `trials_charged`
+    is a COST, not a judgement.
+    """
+
+    organ: str
+    kind: str
+    verdict: str
+    ordered: list[str] = field(default_factory=list)
+    names: dict[str, dict[str, Any]] = field(default_factory=dict)
+    terms: list[str] = field(default_factory=list)
+    items: list[Any] = field(default_factory=list)
+    trials_charged: float = 0.0
+    discarded: int = 0
+    reasons: list[str] = field(default_factory=list)
+    why: str = ""
+
+    @property
+    def measured(self) -> bool:
+        return self.verdict == "RAN"
+
+    def to_row(self) -> dict[str, Any]:
+        row = asdict(self)
+        row["measured"] = self.measured
+        return row
+
+
+def ask(organ: str, kind: str, *, options: Sequence[str] = (),
+        records: Sequence[dict[str, Any]] = (), task: str = "", grammar: str = "",
+        context: Sequence[str] = (), n: int = 6,
+        validate: Callable[[Any], str | None] | None = None,
+        timeout: float = 120.0) -> SeatReply:
+    """THE ONE CALL. Any research process gets the proposer seat by calling this and nothing else.
+
+    WHY ONE FUNCTION AND NOT A PATTERN TO COPY. The seat is meant to reach every miner, crawler,
+    sandbox, dig and controller on this desk, and the desk has already paid for the alternative:
+    `llm_route`'s own docstring records eleven organs that each resolved a model their own way,
+    of which one was dead for weeks with no artifact and no complaint. A prior that is wired by
+    copy-paste is a prior that is wired eleven slightly different ways, and the differences will
+    all be in the guard.
+
+    So the guard lives here, once: an unknown organ, a dark panel, a refused prompt, an
+    unparseable reply and an invalid proposal all return a SeatReply whose fields are the neutral
+    values the caller already had. A consumer needs no try/except of its own for correctness --
+    it keeps one only because an import of this module must not be able to break it either.
+
+    Every ask is logged to the inline census, so `run()` can report which organs actually used
+    the seat and how much they charged. An organ registered in ORGANS that never appears in that
+    census reads UNMEASURED, which is the honest answer to "is it wired?" when nothing ran.
+    """
+    opts = [str(o) for o in options]
+    if kind not in KINDS:
+        return SeatReply(organ, kind, UNMEASURED, ordered=opts,
+                         why=f"unknown kind {kind!r}; expected one of {KINDS}")
+    if organ not in ORGANS:
+        return SeatReply(organ, kind, UNMEASURED, ordered=opts,
+                         why=(f"{organ!r} is not in ORGANS. Register it with one line saying "
+                              "what a proposal MEANS to it, so the artifact can report it"))
+    if not enabled():
+        return SeatReply(organ, kind, UNMEASURED, ordered=opts,
+                         why=("no panel resolves on this host (or QUANT_PROPOSER_SEAT=0). The "
+                              "organ runs exactly as it does without the seat"))
+
+    if kind == "order":
+        ordered, hint = order_hint(organ, opts, question=task or "Order these, best first.",
+                                   timeout=timeout)
+        return SeatReply(organ, kind, str(hint.get("verdict") or UNMEASURED), ordered=ordered,
+                         items=list(hint.get("hint") or []),
+                         trials_charged=float(hint.get("trials_charged") or 0.0),
+                         discarded=int(hint.get("discarded") or 0),
+                         reasons=list(hint.get("reasons") or []),
+                         why=str(hint.get("why") or ""))
+
+    if kind == "names":
+        got = names_for(organ, records, n=n)
+        return SeatReply(organ, kind, "RAN" if got else UNMEASURED, ordered=opts, names=got,
+                         trials_charged=float(len(got)),
+                         why="" if got else "the seat named nothing this pass")
+
+    if kind == "terms":
+        props = _asked(organ, role="hunt",
+                       task=task or "Propose search terms worth trying.",
+                       grammar=grammar or (
+                           '{"term": "<a query string or a source NAME, <=80 chars>", '
+                           '"why": "<what you expect it to surface, <=120 chars>"}'),
+                       context=context, n=n, label="term",
+                       validate=validate or _valid_term, timeout=timeout)
+        terms = [str(p.payload["term"]) for p in props
+                 if p.accepted and isinstance(p.payload, dict)]
+        return SeatReply(organ, kind, "RAN" if props else UNMEASURED, ordered=opts, terms=terms,
+                         trials_charged=charge_trials(props),
+                         discarded=sum(1 for p in props if not p.accepted),
+                         reasons=_reasons(props),
+                         why=("a term is a SEARCH STRING, never a permission: the organ's own "
+                              "source registry and legality router still decide what may be "
+                              "fetched"))
+
+    props = _asked(organ, role="generation", task=task, grammar=grammar, context=context, n=n,
+                   label="candidate", validate=validate, timeout=timeout)
+    return SeatReply(organ, kind, "RAN" if props else UNMEASURED, ordered=opts,
+                     items=[p.payload for p in props if p.accepted],
+                     trials_charged=charge_trials(props),
+                     discarded=sum(1 for p in props if not p.accepted),
+                     reasons=_reasons(props))
+
+
+def _asked(organ: str, *, role: str, task: str, grammar: str, context: Sequence[str], n: int,
+           label: str, validate: Callable[[Any], str | None] | None,
+           timeout: float) -> list[Proposal]:
+    """propose(), logged to the inline census on the way past, so `run()` can report the organ."""
+    props = propose(organ, role=role, task=task, grammar=grammar, context=context, n=n,
+                    kind=label, validate=validate, timeout=timeout)
+    if props:
+        _log_inline(organ, props)
+    return props
+
+
+def _reasons(props: Sequence[Proposal]) -> list[str]:
+    return sorted({p.reason[:140] for p in props if p.reason})[:6]
+
+
+def _valid_term(payload: Any) -> str | None:
+    """A proposed term is a STRING TO SEARCH FOR, and never an address to fetch.
+
+    THE RULE THAT MATTERS. Terms are the one additive kind -- an order hint cannot widen a search
+    and a mechanism name cannot open a door, but a term names something new. So a term that looks
+    like a URL, a host or a path is refused outright: the desk's grounds live in its own source
+    registry, which vets machine_use_allowed and the legality router before anything is fetched,
+    and a model must not be able to route a crawler by typing an address into a field.
+    """
+    if not isinstance(payload, dict):
+        return "not a JSON object"
+    term = str(payload.get("term") or "").strip()
+    if len(term) < 2:
+        return "empty term"
+    if len(term) > 120:
+        return "term longer than 120 characters is a sentence, not a query"
+    low = term.lower()
+    if re.search(r"https?://|www\.|\.com|\.org|\.net|\.cn|\.ru|\.io|/", low):
+        return ("looks like an address: a term is a search string, never a ground. New grounds "
+                "are added to the source registry, which vets them")
+    if any(tok in low for tok in FORBIDDEN_PROMPT_TOKENS):
+        return "term names sealed data or a credential"
+    return None
 
 
 def _valid_mechanism(payload: Any) -> str | None:
@@ -848,6 +1050,7 @@ def run(*, budget_s: float = 300.0, max_proposals: int = 8) -> dict[str, Any]:
         doc["why"] = str(status.get("why") or "seat switched off")
         doc["factories"] = {f: {"verdict": UNMEASURED, "requested": 0, "accepted": 0,
                                 "discarded": 0, "trials_charged": 0.0} for f in FACTORIES}
+        doc["organs"] = _organ_census({})
         doc["queue_depth"] = queue_depth()
         doc["seat_health"] = _seat_health()
         doc["seconds"] = round(time.time() - started, 2)
@@ -881,6 +1084,7 @@ def run(*, budget_s: float = 300.0, max_proposals: int = 8) -> dict[str, Any]:
 
     landed = enqueue(all_props)
     doc["factories"] = per
+    doc["organs"] = _organ_census(inline, per)
     doc["queued_for_factories"] = landed
     doc["queue_depth"] = queue_depth()
     doc["trials_charged_total"] = charge_trials(all_props)
@@ -889,6 +1093,35 @@ def run(*, budget_s: float = 300.0, max_proposals: int = 8) -> dict[str, Any]:
     doc["seconds"] = round(time.time() - started, 2)
     _atomic(REPORT, doc)
     return doc
+
+
+def _organ_census(inline: dict[str, dict[str, Any]],
+                  per: dict[str, dict[str, Any]] | None = None) -> dict[str, Any]:
+    """EVERY registered organ with its proposal counts -- which is how "is it everywhere?" is
+    answered by measurement rather than by a claim.
+
+    An organ that has never called the seat is listed with zeros and UNMEASURED. That is the
+    honest state of a newly wired organ whose clock has not come round yet, and it is what makes
+    a REGRESSION visible: an organ that used to appear and stops is a wiring that broke, not an
+    organ that had nothing to say.
+    """
+    rows: dict[str, Any] = {}
+    for organ, consumes in ORGANS.items():
+        row = dict((per or {}).get(organ) or inline.get(organ) or {})
+        rows[organ] = {
+            "consumes": consumes,
+            "verdict": str(row.get("verdict") or UNMEASURED),
+            "requested": int(row.get("requested") or 0),
+            "accepted": int(row.get("accepted") or 0),
+            "discarded": int(row.get("discarded") or 0),
+            "trials_charged": float(row.get("trials_charged") or 0.0),
+            "last_utc": row.get("last_utc") or None,
+        }
+    wired = sum(1 for r in rows.values() if r["verdict"] != UNMEASURED)
+    return {"n_registered": len(ORGANS), "n_with_proposals_this_window": wired,
+            "rule": ("an organ is WIRED when it calls proposer_seat.ask(); it is MEASURED when "
+                     "that call produced proposals. Zero is UNMEASURED, never a pass"),
+            "by_organ": rows}
 
 
 def _inline_census(limit: int = 500) -> dict[str, dict[str, Any]]:
@@ -906,7 +1139,7 @@ def _inline_census(limit: int = 500) -> dict[str, dict[str, Any]]:
         except ValueError:
             continue
         f = str(row.get("factory") or "")
-        if f not in FACTORIES:
+        if f not in ORGANS:
             continue
         acc = out.setdefault(f, {"verdict": "RAN", "requested": 0, "accepted": 0,
                                  "discarded": 0, "trials_charged": 0.0, "calls": 0,
@@ -980,9 +1213,13 @@ def main(argv: list[str] | None = None) -> int:
     print(f"proposer seat: {doc['verdict']}  seat={doc['seat'].get('n_seats', 0)} "
           f"queued={doc.get('queued_for_factories', 0)} "
           f"trials={doc.get('trials_charged_total', 0.0)}")
-    for name, row in sorted(doc["factories"].items()):
-        print(f"  {name:26} {row.get('verdict')!s:10} "
-              f"accepted {row.get('accepted', 0)}/{row.get('requested', 0)}")
+    organs = doc.get("organs") or {}
+    print(f"  organs registered {organs.get('n_registered', 0)}, with proposals this window "
+          f"{organs.get('n_with_proposals_this_window', 0)}")
+    for name, row in sorted((organs.get("by_organ") or doc["factories"]).items()):
+        print(f"  {name:28} {row.get('verdict')!s:10} "
+              f"accepted {row.get('accepted', 0)}/{row.get('requested', 0)} "
+              f"trials {row.get('trials_charged', 0.0)}")
     print(f"  -> {REPORT}")
     return 0
 

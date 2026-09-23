@@ -247,8 +247,10 @@ class Plan:
 
 
 def plan_adapter(sid: str, row: dict[str, Any], *, root: Path, allow_fetch: bool,
-                 licence_reads: list[dict[str, Any]], deadline_left: float) -> Plan:
+                 licence_reads: list[dict[str, Any]], deadline_left: float,
+                 shared: dict[str, str] | None = None) -> Plan:
     spec = A.SPECS[sid]
+    shared = SB.shared_modules(root) if shared is None else shared
     system = _system(sid, row)
     version = spec.version or UNMEASURED
     try:
@@ -276,9 +278,13 @@ def plan_adapter(sid: str, row: dict[str, Any], *, root: Path, allow_fetch: bool
                     module=module, system=system)
     box = SB.Sandbox(sid, root / sid)
     venv = SB.venv_python(box)
+    #: Three ways the upstream can be reachable, cheapest first: importable in THIS process, the
+    #: shared venv the provisioner filled (`sandbox_provision.py`), or a per-system venv.
+    in_shared = sid in shared
     available = (A.library(spec.module) is not None) if spec.module else False
-    if not available and not venv.exists():
-        cmd = (f"python -m libs.research.sandbox install {sid}" if spec.version
+    if not available and not in_shared and not venv.exists():
+        cmd = (f"python desks/mt5/research/sandbox_provision.py --once --only {sid}"
+               if spec.version
                else f"pin {sid}'s commit/wheel first (no wheel resolved on this interpreter)")
         return Plan(sid, "adapter", "UNMEASURED", disposition, system.licence, version,
                     spec.requirement, f"{spec.module or sid} is not importable here and no "
@@ -361,7 +367,11 @@ def run_adapter(plan: Plan, bundle: A.ResearchBundle, *, root: Path, timeout_s: 
     stamp = datetime.now(tz=UTC).strftime("%Y%m%dT%H%M%SZ")
     out = box.out / f"{sid}-{stamp}.json"
     venv = SB.venv_python(box)
-    python = str(venv) if venv.exists() else sys.executable
+    shared = SB.shared_python(root)
+    #: The system's own venv wins; then the shared one the provisioner fills; the desk's
+    #: interpreter is the last resort (it is the right answer only for a pure-stdlib adapter).
+    python = str(venv) if venv.exists() else (str(shared) if shared.exists()
+                                              else sys.executable)
     argv = [python, "-m", f"libs.research.adapters.{sid}", "--bundle", str(manifest),
             "--out", str(out)]
     res = SB.run(box, argv, timeout_s=max(10, timeout_s))
@@ -557,6 +567,25 @@ def run_pass(*, budget_s: float = 900.0, dry_run: bool = False, allow_fetch: boo
     alloc = fed.allocation(roi_rows(state, runnable), int(deadline.left()), floor_s=FLOOR_S) \
         if runnable else {}
     order = sorted(runnable, key=lambda p: (-alloc.get(p.system_id, 0), p.system_id))
+    # THE PROPOSER SEAT, OPTIONAL: which sandboxed SYSTEM is worth this pass's seconds first.
+    # An ORDER over the systems the federation already holds and the allocator already funded --
+    # the seat may reorder what runs, never add a system, never change an allocation and never
+    # judge a packet. Every cell still runs in the same sandbox under the same licence reads,
+    # and a name the model invents is discarded. No panel, no call, order unchanged.
+    seat_hint: dict[str, Any] = {"verdict": "UNMEASURED"}
+    try:
+        from libs.research import proposer_seat as _ps
+        _ids = [p.system_id for p in order]
+        _reply = _ps.ask("sandbox_runner", "order", options=_ids,
+                         task=("Order these external research systems by which is most likely to "
+                               "produce a NEW testable candidate against hourly FX, metals and "
+                               "index bars this pass. Return the full list, best first."))
+        seat_hint = _reply.to_row()
+        if _reply.measured and _reply.ordered != _ids:
+            _rank = {n: i for i, n in enumerate(_reply.ordered)}
+            order = sorted(order, key=lambda p: _rank.get(p.system_id, 10 ** 6))
+    except Exception as _exc:                             # pragma: no cover - optional seat
+        seat_hint = {"verdict": "UNMEASURED", "why": f"{type(_exc).__name__}: {_exc}"}
     if max_systems:
         order = order[:max_systems]
     conn = None if dry_run else R.connect()
@@ -636,7 +665,8 @@ def run_pass(*, budget_s: float = 900.0, dry_run: bool = False, allow_fetch: boo
                    "n_frames": len(bundle.bars), "watermark": bundle.watermark(),
                    "digest": bundle.digest(), "n_bars_cap": bars_cap(free_mb),
                    "free_phys_mb": free_mb, "provenance": dict(bundle.provenance)},
-        "allocation_s": alloc, "systems_tried": tried, "packets": packets,
+        "allocation_s": alloc, "proposer_seat": seat_hint,
+        "systems_tried": tried, "packets": packets,
         "candidates": totals, "effective_trials": census,
         "text_only": text_only, "skipped_budget": skipped_budget,
         "unmeasured": unmeasured_list,

@@ -34,9 +34,13 @@ principal's deep-forest order named, never a hard-coded list in a crawler. The n
 `source_registry` pass prices them like any other ground, and the next crawl spends on them by
 their own measured share.
 
-NEVER SCRAPED: a row the registry marks `machine_use_allowed=false`, a route it marks
-`unreachable`, or a ground whose licence note says search-index snippets only. Those are read as
-refusals here and no neighbour is ever minted from them.
+EVERYTHING IS MINED (LAWS 5e, 2026-09-23). A row the registry marks `machine_use_allowed=false`,
+`route=unreachable` or "snippets only" used to be DROPPED from the pass and from expansion. Those
+were the desk's own discovery brakes, not legal requirements, and they are deleted: the registry's
+note is now a ROUTING LABEL carried on the row (`terms_note`), never a skip. The ONLY refusal left
+is one of the five acts of `libs.research.access_classifier.HARD_BOUNDARY` -- a credential dump, an
+authenticated surface, MNPI, stolen data, personal-data harvesting -- and the registry declares
+those with an access label, not with a licence note.
 """
 from __future__ import annotations
 
@@ -191,21 +195,55 @@ def _index(state: dict[str, Any]) -> dict[str, str]:
     return idx
 
 
+#: Access labels that carry the five refused ACTS of `HARD_BOUNDARY`. Kept as a literal tuple so
+#: this module stays importable with no dependency on `libs/` from inside a crawler subprocess;
+#: `_refused_label()` prefers the classifier's own list when it can be imported.
+_REFUSED_LABELS: tuple[str, ...] = ("PRIVATE", "CONFIDENTIAL_MNPI", "STOLEN_UNAUTHORIZED")
+
+
+def _refused_labels() -> tuple[str, ...]:
+    """The classifier's refused-label list when reachable, else the literal copy above."""
+    try:
+        from libs.research.access_classifier import REFUSED_LABELS
+        return tuple(str(x) for x in REFUSED_LABELS)
+    except Exception:
+        return _REFUSED_LABELS
+
+
 def machine_use_allowed(row: Any) -> tuple[bool, str]:
-    """May this source be fetched by a machine at all? A refusal is honoured, never routed
-    around -- this is the registry's own declaration and it is the whole answer."""
+    """IS THIS ROW MINED? Yes, unless it carries one of the five refused acts.
+
+    LAWS 5e (2026-09-23): licence, terms, robots, `machine_use_allowed=false`, `route=unreachable`
+    and "snippets only" are ROUTING AND PROVENANCE LABELS -- they say what the desk may
+    REDISTRIBUTE and how the row is provenanced, never whether it may be read, extracted or
+    tested. The four refusals this function used to return were discovery brakes the desk imposed
+    on itself; they are deleted and the note travels with the row instead.
+
+    The name and the `(bool, str)` signature are unchanged because other organs import this
+    (`coverage_drain.machine_use_allowed(reg_row)` among them); what changed is that the bool is
+    True for everything off the hard boundary, and the string is the LABEL rather than an excuse.
+    """
     if not isinstance(row, dict):
-        return True, "no registry row; the crawler's own policy decides as it always has"
+        return True, "no registry row: mined, with no terms label to carry"
+    label = str(row.get("access_label") or row.get("access") or "").strip().upper()
+    if label in _refused_labels():
+        return False, f"hard boundary: access_label={label}"
+    if row.get("requires_auth") is True or row.get("is_mnpi") is True:
+        return False, "hard boundary: authenticated surface or declared MNPI"
+    notes: list[str] = []
     if row.get("machine_use_allowed") is False:
-        return False, "registry: machine_use_allowed=false"
+        notes.append("registry declares machine_use_allowed=false")
     if str(row.get("route") or "") == "unreachable":
-        return False, "registry: route=unreachable"
+        notes.append("registry route=unreachable")
     if row.get("snippets_only"):
-        return False, "registry: search-index snippets only"
-    note = str(row.get("licence_note") or "").upper()
-    if "NOT FETCHABLE" in note or "SNIPPETS ONLY" in note:
-        return False, f"registry licence note: {row.get('licence_note')}"
-    return True, "public/licensed"
+        notes.append("registry: search-index snippets only")
+    note = str(row.get("licence_note") or "")
+    if "NOT FETCHABLE" in note.upper() or "SNIPPETS ONLY" in note.upper():
+        notes.append(f"registry licence note: {note}")
+    if notes:
+        return True, ("mined with its label attached [" + "; ".join(notes)
+                      + "]; redistribution withheld by its terms")
+    return True, "mined"
 
 
 def resolve(state: dict[str, Any], *keys: Any) -> str | None:
@@ -261,7 +299,7 @@ def weight_grounds(grounds: list[dict[str, Any]], state: dict[str, Any] | None =
     st = state if state is not None else load()
     meta: dict[str, Any] = {"status": st.get("status"), "why": st.get("why"),
                             "at": st.get("at"), "age_h": st.get("age_h"),
-                            "n_reweighted": 0, "n_unknown": 0, "n_refused": 0,
+                            "n_reweighted": 0, "n_unknown": 0, "n_refused": 0, "n_labelled": 0,
                             "clip": [MIN_FACTOR, MAX_FACTOR]}
     if st.get("status") != "present":
         return list(grounds), meta
@@ -274,10 +312,16 @@ def weight_grounds(grounds: list[dict[str, Any]], state: dict[str, Any] | None =
         row = rows.get(sid) if sid else None
         allowed, why = machine_use_allowed(row)
         if not allowed:
+            # THE ONLY DROP LEFT: one of the five refused acts. A licence, robots or
+            # "snippets only" note is a label on the ground below, never a skip (LAWS 5e).
             meta["n_refused"] += 1
             meta.setdefault("refused", []).append({"ground": g.get("name"), "why": why})
             continue
         copy = dict(g)
+        if why != "mined":
+            copy["_terms_note"] = why
+            meta["n_labelled"] += 1
+            meta.setdefault("labelled", []).append({"ground": g.get("name"), "terms_note": why})
         if sid is None:
             meta["n_unknown"] += 1
         else:
@@ -299,12 +343,14 @@ def order_picked(picked: list[Any], state: dict[str, Any] | None = None
     The run stops on its clock, so the head of this list is the budget. A source the registry
     does not know keeps the mean factor of 1.0 and therefore keeps its original position among
     its equals -- python's sort is stable, so an unknown source is never pushed to the back and
-    never dropped. A source the registry refuses is removed from THIS pass and counted.
+    never dropped. A source carrying a licence, robots or "snippets only" note is CRAWLED with
+    that note recorded as its label (LAWS 5e); the only removal left is one of the five refused
+    acts of the hard boundary.
     """
     st = state if state is not None else load()
     meta: dict[str, Any] = {"status": st.get("status"), "why": st.get("why"),
                             "at": st.get("at"), "age_h": st.get("age_h"),
-                            "n_ranked": 0, "n_unknown": 0, "n_refused": 0}
+                            "n_ranked": 0, "n_unknown": 0, "n_refused": 0, "n_labelled": 0}
     if st.get("status") != "present" or not picked:
         return list(picked), meta
     rows: dict[str, Any] = st.get("rows") or {}
@@ -318,6 +364,9 @@ def order_picked(picked: list[Any], state: dict[str, Any] | None = None
             meta["n_refused"] += 1
             meta.setdefault("refused", []).append({"url": url, "why": why})
             continue
+        if why != "mined":
+            meta["n_labelled"] += 1
+            meta.setdefault("labelled", []).append({"url": url, "terms_note": why})
         if sid is None:
             meta["n_unknown"] += 1
         else:
@@ -370,13 +419,14 @@ def expand(observations: dict[str, list[tuple[str, str]]], state: dict[str, Any]
     `observations` maps a source key (its id, name, url or host -- whatever the crawler had in
     hand) to the `(url, anchor)` links that source actually served this pass. Nothing is invented:
     a neighbour must have been SEEN on a page the desk fetched, and its parent must be a source
-    the registry both prices and permits.
+    the registry prices. A parent carrying a terms/robots label mints its neighbours WITH that
+    label copied onto them (LAWS 5e); only a parent on the hard boundary mints none.
     """
     gpath, spath = grounds_path or GROUNDS, state_path or STATE
     st = state if state is not None else load()
     meta: dict[str, Any] = {"status": st.get("status"), "why": st.get("why"),
                             "n_risen": 0, "n_candidates": 0, "n_appended": 0,
-                            "n_refused": 0, "added": []}
+                            "n_refused": 0, "n_labelled": 0, "added": []}
     if st.get("status") != "present":
         return meta
     prior_doc = _read_json(spath, {}) or {}
@@ -404,6 +454,9 @@ def expand(observations: dict[str, list[tuple[str, str]]], state: dict[str, Any]
             meta["n_refused"] += 1
             meta.setdefault("refused", []).append({"source_id": sid, "why": why})
             continue
+        if why != "mined":
+            meta["n_labelled"] += 1
+            meta.setdefault("labelled", []).append({"source_id": sid, "terms_note": why})
         taken = 0
         for url, anchor in links or ():
             if len(fresh) >= MAX_NEW_PER_PASS or taken >= MAX_NEW_PER_SOURCE:
@@ -426,6 +479,7 @@ def expand(observations: dict[str, list[tuple[str, str]]], state: dict[str, Any]
                         f"source_registry like any other, never privileged for its parent."),
                 "url": str(url),
                 "neighbourhood": kind, "discovered_from": sid,
+                "terms_note": "" if why == "mined" else why,
                 "candidate": True,
                 "added_at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
             })

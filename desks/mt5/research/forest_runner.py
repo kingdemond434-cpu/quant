@@ -486,6 +486,35 @@ def role_source_scouts(run: Run, res: RoleResult, budget_s: float) -> None:
             res.note("native_seeds", f"{UNMEASURED}: no pack and no native vocabulary for "
                                      f"{list(run.spec.languages)}; the scout is working from the "
                                      f"mandate's own terms, which is the floor, not coverage")
+        # THE PROPOSER SEAT, OPTIONAL: more NATIVE-SCRIPT search terms for this forest.
+        # This is the additive kind, and the rule that makes it safe is in the seat: a term is a
+        # SEARCH STRING and never a ground, so anything shaped like a URL, a host or a path is
+        # discarded before it gets here and no crawler can be routed by a model naming an
+        # address. Everything a term surfaces still enters through `source_frontier` as a
+        # CANDIDATE and is fetched only by the organ that owns its robots/terms check. No panel,
+        # no call, and the scout works from exactly the seeds it has today.
+        try:
+            from libs.research import proposer_seat as _ps
+            _reply = _ps.ask(
+                "forest_runner", "terms",
+                task=(f"Propose additional native-script search terms a {run.spec.name} retail "
+                      f"or professional trader would actually type when discussing market "
+                      f"mechanics. Native script only -- a translated English phrase reaches the "
+                      f"corpus everybody has already read."),
+                context=[f"languages: {list(run.spec.languages)}",
+                         f"layers: {list(LAYERS)}"],
+                n=8)
+            for _t in _reply.terms[:8]:
+                seeds.append({"country": run.forest, "layer": "all", "query": _t,
+                              "languages": list(run.spec.languages), "domain": "proposer_seat"})
+            if _reply.terms:
+                used.append(f"proposer_seat:{len(_reply.terms)}")
+            if _reply.verdict != "RAN":
+                res.note("proposer_seat", f"{UNMEASURED}: {_reply.why[:160]}")
+        except Exception as _exc:                          # pragma: no cover - optional seat
+            res.note("proposer_seat",
+                     f"{UNMEASURED}: {type(_exc).__name__}: {str(_exc)[:120]}")
+
         registered = 0
         try:
             from research import source_frontier as sf

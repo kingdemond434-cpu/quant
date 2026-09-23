@@ -28,7 +28,7 @@ _DESK = Path(__file__).resolve().parents[1]
 if str(_DESK) not in sys.path:
     sys.path.insert(0, str(_DESK))
 
-from research import implementer as I  # noqa: E402  # type: ignore[attr-defined]
+from research import implementer as I  # noqa: E402
 
 
 def _ledger(root: Path, rows: list[dict[str, Any]]) -> Path:

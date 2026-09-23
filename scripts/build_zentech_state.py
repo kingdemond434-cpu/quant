@@ -1502,6 +1502,13 @@ def build() -> dict[str, Any]:
         # check_* scripts already worked. What was missing was one surface showing the
         # aggregate, so a real breach could be detected correctly and read by nobody.
         "issues": _read(DESK / "reports" / "ISSUE_BOARD.json"),
+        # THE PLUMBING, ON THE BOARD (principal 2026-09-23). Every plumbing failure measured on
+        # this box was already being logged correctly, once an hour, to a file nobody reads: a
+        # mutex that could not be opened for four days, an expired adoption trigger, 72 orphaned
+        # workers holding the commit limit. A defect the watchdog has seen on more than one pass
+        # escalates HERE, where a human meets it without asking for it -- the third of three
+        # surfaces, beside the events log and docs/research/PLUMBING_ALERTS.md.
+        "plumbing": _read(DESK / "reports" / "PLUMBING_WATCHDOG.json"),
         "health": {
             "newest_h1_file": newest_bar_file, "midnight": midnight,
             "daily_cycle": daily, "status": live_state,

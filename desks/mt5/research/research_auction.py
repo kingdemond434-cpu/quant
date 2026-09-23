@@ -26,6 +26,7 @@ Proposals are also written in the meta-controller's action shape so the board ca
 from __future__ import annotations
 
 import argparse
+import contextlib
 import importlib
 import json
 import math
@@ -45,6 +46,10 @@ R = BASE / "reports"
 OUT = R / "RESEARCH_AUCTION.json"
 BOUNTY = R / "PORTFOLIO_BOUNTY.json"
 BOTTLENECK = R / "BOTTLENECK_LAW.json"
+#: The 24/7 maximiser's demand signal (desks/mt5/research/bottleneck_attack.py). Read here rather
+#: than in `bids()` so that function stays pure and injectable; absent until that leg has run,
+#: which leaves the auction exactly as it was.
+ATTACK = R / "BOTTLENECK_ATTACK.json"
 REPLENISH = R / "ALPHA_REPLENISHMENT.json"
 FLOOR, CEIL = 0.5, 2.0          # research_budget.FLOOR / CEIL, the consumer's clip
 WINDOW_DAYS = 7.0
@@ -182,6 +187,21 @@ def build(now: datetime | None = None, conn: Any | None = None,
             unmeasured.append(f"registry unavailable: {type(exc).__name__}: {exc}")
     bounty = bounty if bounty is not None else _read(BOUNTY)
     bottleneck = bottleneck if bottleneck is not None else _read(BOTTLENECK)
+    # THE BOTTLENECK ATTACKER'S SHIFT, BLENDED IN (principal 2026-09-23). `bottleneck_law` names
+    # the binding FUNNEL STAGE from registry counts; `bottleneck_attack` names the binding
+    # OPERATIONAL constraint from rates and queues -- conversion debt, judging throughput,
+    # enrolment latency and plumbing defects. Both are demand signals for the same auction, so
+    # the MAXIMUM per department is taken and never the minimum: a department two organs both
+    # call starved is not funded less because one of them is more cautious about it, and neither
+    # organ can cut, because both emit factors at or above 1.0 by construction.
+    _attack = _read(ATTACK)
+    if _attack.get("compute_shift"):
+        _merged = dict(_dct(bottleneck.get("compute_shift")))
+        for _d, _f in _dct(_attack.get("compute_shift")).items():
+            with contextlib.suppress(TypeError, ValueError):
+                _merged[_d] = max(float(_merged.get(_d, 1.0) or 1.0), float(_f))
+        bottleneck = {**bottleneck, "compute_shift": _merged,
+                      "blended_from": ["BOTTLENECK_LAW.json", "BOTTLENECK_ATTACK.json"]}
     replenish = replenish if replenish is not None else _read(REPLENISH)
     for name, d in (("PORTFOLIO_BOUNTY", bounty), ("BOTTLENECK_LAW", bottleneck),
                     ("ALPHA_REPLENISHMENT", replenish)):

@@ -774,6 +774,24 @@ def settle(book: Book, clusters: dict[str, Cluster], datasets_now: set[str]
 
 
 # ---------------------------------------------------------------------------- the pass
+def _seat_names(clusters: list[Any]) -> dict[str, Any]:
+    """THE PROPOSER SEAT, OPTIONAL: what might EXPLAIN a residual the world model could not.
+
+    A persistent residual cluster is a measured relation with no named cause, which is the one
+    shape this seat is for. The proposal is a CANDIDATE explanation attached to the report -- it
+    opens no target, closes none, sets no status and carries no number, and the cluster is
+    judged exactly as it would be with the seat dark. {} on a box with no panel.
+    """
+    try:
+        from libs.research import proposer_seat as ps
+        reply = ps.ask("residual_hunt", "names",
+                       records=[{"key": c.cluster_id, "claim": c.key,
+                                 "target": getattr(c, "target", "")} for c in clusters])
+        return reply.to_row()
+    except Exception as exc:                              # pragma: no cover - optional seat
+        return {"verdict": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"}
+
+
 def run(*, budget_s: float = 600.0, dry_run: bool = False,
         permutations: int = PERMUTATIONS, max_targets: int = MAX_TARGETS) -> dict[str, Any]:
     started = time.monotonic()
@@ -882,6 +900,7 @@ def run(*, budget_s: float = 600.0, dry_run: bool = False,
         "unmeasured": [{"cluster_id": c.cluster_id, "cell": c.key, "n": c.n, "why": c.why}
                        for c in clusters if c.status == "UNMEASURED"][:40],
         "registry": registry,
+        "proposer_seat": _seat_names(persistent[:12]),
     }
     if not dry_run:
         _atomic(OUT, report)

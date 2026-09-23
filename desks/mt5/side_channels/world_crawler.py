@@ -570,7 +570,8 @@ def read_page(raw: bytes, url: str) -> dict[str, Any]:
     }
 
 
-def to_discovery(url: str, page: dict[str, Any], digest: str) -> dict[str, Any] | None:
+def to_discovery(url: str, page: dict[str, Any], digest: str, terms_note: str = ""
+                 ) -> dict[str, Any] | None:
     """A page as a miner-contract row, or None when it claims nothing worth carrying.
 
     NOTHING IS INVENTED HERE. `symbols` are tokens the page actually contains and the compiler
@@ -627,6 +628,11 @@ def to_discovery(url: str, page: dict[str, Any], digest: str) -> dict[str, Any] 
                                           "instruments", "claimed_performance", "claim_hash")}
                    for c in claims[:8]],
         "n_claims": len(claims),
+        # THE ROUTING LABEL, NOT A BRAKE (LAWS 5e, 2026-09-23). A robots Disallow, a terms note
+        # or a registry `machine_use_allowed=false` lands HERE, on the crawled row, and the page
+        # is crawled exactly as any other. What the label withholds is REDISTRIBUTION; it has
+        # never had anything to say about whether the desk may read and test the page.
+        "terms_note": str(terms_note or ""),
     }
 
 
@@ -935,18 +941,42 @@ def crawl(budget: int = DEFAULT_FETCHES, run_budget_s: int = RUN_BUDGET_S,
     # so the HEAD of this list is what actually gets fetched -- re-ranking it by the registry's
     # published share IS spending the budget by measured intel ROI. Guarded: an absent, empty or
     # stale SOURCE_REGISTRY.json returns the list untouched and says which, so a report that did
-    # not regenerate leaves today's order exactly as it was. A source the registry refuses
-    # (machine_use_allowed=false, unreachable, snippets-only) is dropped from this pass and
-    # counted -- never routed around.
+    # not regenerate leaves today's order exactly as it was. NOTHING IS DROPPED FOR LICENCE,
+    # TERMS, ROBOTS OR `machine_use_allowed` ANY MORE (LAWS 5e, 2026-09-23): a source carrying
+    # any of those notes is CRAWLED, with the note recorded as `terms_note` on every row it
+    # produces. The only removal left is one of the five refused acts of the hard boundary.
     share_meta: dict[str, Any] = {"status": "unavailable", "why": "source_shares not importable"}
     share_state: dict[str, Any] | None = None
+    terms_labels: dict[str, str] = {}
     try:
         sys.path.insert(0, str(BASE))
         from research import source_shares
         share_state = source_shares.load()
         picked, share_meta = source_shares.order_picked(picked, share_state)
+        terms_labels = {str(r.get("url") or ""): str(r.get("terms_note") or "")
+                        for r in (share_meta.get("labelled") or []) if r.get("url")}
     except Exception as exc:
         share_meta = {"status": "unavailable", "why": f"{type(exc).__name__}: {exc}"}
+    # THE PROPOSER SEAT, OPTIONAL: what is worth LOOKING FOR next, as search strings.
+    # The crawler's frontier is a set of URLs it already holds; the seat proposes TERMS, and the
+    # seat itself refuses anything shaped like an address, so nothing here can route a fetch. A
+    # term reaches the world only through `to_discovery`, which every row already passes, and
+    # the hard boundary's five refused acts still apply unchanged. No panel, no call, no change.
+    seat_hint: dict[str, Any] = {"verdict": "UNMEASURED"}
+    try:
+        from libs.research import proposer_seat as _ps
+        seat_hint = _ps.ask(
+            "world_crawler", "terms",
+            task=("Propose search phrases that would surface a market mechanism this desk has "
+                  "probably not read: obscure venue microstructure, a scheduled flow nobody "
+                  "models, a participant constraint. Phrases only, no sites."),
+            context=[f"hosts already on the frontier: "
+                     f"{len({s.host for s in sources.values()})}",
+                     f"sources already held: {len(sources)}"],
+            n=8).to_row()
+    except Exception as _exc:                             # pragma: no cover - optional seat
+        seat_hint = {"verdict": "UNMEASURED", "why": f"{type(_exc).__name__}: {_exc}"}
+
     log(f"frontier {len(sources)} source(s) across "
         f"{len({s.host for s in sources.values()})} host(s); crawling {len(picked)} this pass "
         f"| shares {share_meta.get('status')}: {share_meta.get('why')}")
@@ -993,7 +1023,7 @@ def crawl(budget: int = DEFAULT_FETCHES, run_budget_s: int = RUN_BUDGET_S,
             src.lang = page["lang"]
         langs[src.lang or "??"] += 1
 
-        row = to_discovery(src.url, page, digest)
+        row = to_discovery(src.url, page, digest, terms_note=terms_labels.get(src.url, ""))
         if row:
             rows.append(row)
             src.leads += 1
@@ -1029,6 +1059,7 @@ def crawl(budget: int = DEFAULT_FETCHES, run_budget_s: int = RUN_BUDGET_S,
         "planned": len(picked),
         "fetched": sum(1 for s in picked if s.last_fetched),
         "rows_emitted": len(rows),
+        "proposer_seat": seat_hint,
         "new_sources_discovered": discovered,
         "frontier_size": len(sources),
         "frontier_hosts": len({s.host for s in sources.values()}),
