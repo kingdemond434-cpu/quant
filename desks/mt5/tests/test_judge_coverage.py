@@ -279,3 +279,101 @@ def test_fence_fails_a_remainder_that_ignored_the_ranking(tmp_path: Path) -> Non
     assert doc["verdict"] == "FAIL"
     assert any(c["metric"] == "remainder_follows_ranking" and c["state"] == "FAIL"
                for c in doc["checks"])
+
+
+def _gates(tmp_path: Path, *verdicts: dict) -> Path:
+    p = tmp_path / "universal_gates_external.json"
+    p.write_text(json.dumps({"verdicts": list(verdicts)}), "utf-8")
+    return p
+
+
+def test_every_unknown_gets_a_named_reason(tmp_path: Path) -> None:
+    """The UNKNOWN class stops existing as a category: an unnamed terminal state IS the defect."""
+    gates = _gates(
+        tmp_path,
+        {"cell": "A.f.p=1", "sym": "NOSUCHSYM", "family": "f", "days": 0, "unmeasured": True,
+         "stages": {"observations": {"why": "no daily series"}}},
+        {"cell": "B.f.p=2", "sym": "XAUUSD", "family": "f", "days": 0, "unmeasured": True,
+         "stages": {"observations": {"why": "no daily series"}}},
+        {"cell": "C.f.p=3", "sym": "XAUUSD", "family": "f", "days": 20, "unmeasured": True,
+         "stages": {"observations": {"why": "only 20 daily observations"}}},
+        {"cell": "D.f.p=4", "sym": "XAUUSD", "family": "f", "days": 900, "passed": True})
+    named = jc.name_unknowns(gates)
+    assert set(named) == {"A.f.p=1", "B.f.p=2", "C.f.p=3"}, "a judged cell is not an UNKNOWN"
+    assert named["A.f.p=1"]["reason"] == "missing_bars"
+    assert named["B.f.p=2"]["reason"] == "never_fires"
+    assert named["C.f.p=3"]["reason"] == "too_rare"
+    assert all(n["route"] for n in named.values()), "a named reason without an owner is a bucket"
+    doc = jc.unknown_breakdown(gates)
+    assert doc["unknown_total"] == 3 and doc["named_cells"] == 3
+    assert doc["by_reason"] == {"missing_bars": 1, "never_fires": 1, "too_rare": 1}
+
+
+def test_missing_bars_are_not_filtered_but_routed(tmp_path: Path) -> None:
+    """A missing bar file is the conversion organ's gap to close, never a spec to park."""
+    named = {"A": {"reason": "missing_bars", "sym": "NOSUCHSYM", "bar_bytes": 0},
+             "B": {"reason": "never_fires", "sym": "NOSUCHSYM", "bar_bytes": 0}}
+    bank = tmp_path / "bank.json"
+    out = jc.update_unrunnable_bank(named, at="2026-09-23T12:00:00", path=bank)
+    assert out["parked_this_pass"] == 1
+    assert set(jc.unrunnable_bank(bank)) == {"B"}
+
+
+def test_a_parked_cell_is_readmitted_when_its_bars_grow(tmp_path: Path) -> None:
+    """A spec that never fired on a short history can fire on a longer one: a filter, not a ban."""
+    bank = tmp_path / "bank.json"
+    bank.write_text(json.dumps({"B": {"reason": "never_fires", "sym": "XAUUSD",
+                                      "bar_bytes": -1}}), "utf-8")
+    out = jc.update_unrunnable_bank({}, at="2026-09-23T13:00:00", path=bank)
+    assert out["readmitted_on_bar_growth"] == 1
+    assert jc.unrunnable_bank(bank) == {}
+
+
+def test_fence_fails_an_unnamed_unknown(tmp_path: Path) -> None:
+    report = tmp_path / "JUDGE_COVERAGE.json"
+    report.write_text(json.dumps({
+        "at": NOW.isoformat(),
+        "families": {"a": {"unjudged": 1, "queued": 1, "judged_window": 1, "quota": 1,
+                           "window_h": 1.0}},
+        "totals": {"unknown_total": 100, "unknown_share": 0.5, "unknown_unnamed": 7}}), "utf-8")
+    doc = fence.judge(report, now=NOW)
+    assert doc["verdict"] == "FAIL"
+    assert any(c["metric"] == "unknown_ratchet" and c["state"] == "FAIL" for c in doc["checks"])
+
+
+def test_fence_fails_an_unknown_share_that_stalled(tmp_path: Path) -> None:
+    report = tmp_path / "JUDGE_COVERAGE.json"
+    report.write_text(json.dumps({
+        "at": NOW.isoformat(),
+        "families": {"a": {"unjudged": 1, "queued": 1, "judged_window": 1, "quota": 1,
+                           "window_h": 1.0}},
+        "totals": {"unknown_total": 100, "unknown_share": 0.5, "unknown_unnamed": 0,
+                   "prior_unknown_share": 0.5, "unrunnable_bank": 40}}), "utf-8")
+    doc = fence.judge(report, now=NOW)
+    assert doc["verdict"] == "FAIL"
+    assert any("stalled" in str(c.get("why")) for c in doc["checks"])
+
+
+def test_fence_passes_an_unknown_share_that_fell(tmp_path: Path) -> None:
+    report = tmp_path / "JUDGE_COVERAGE.json"
+    report.write_text(json.dumps({
+        "at": NOW.isoformat(),
+        "families": {"a": {"unjudged": 1, "queued": 1, "judged_window": 1, "quota": 1,
+                           "window_h": 1.0}},
+        "totals": {"unknown_total": 10, "unknown_share": 0.1, "unknown_unnamed": 0,
+                   "prior_unknown_share": 0.5, "unrunnable_bank": 40}}), "utf-8")
+    assert fence.judge(report, now=NOW)["verdict"] == "PASS"
+
+
+def test_an_unmeasured_verdict_moves_no_pass_probability(tmp_path: Path) -> None:
+    """UNKNOWN is 'nobody looked', never evidence against the family (research_priors' own rule)."""
+    ledger = tmp_path / "gate.jsonl"
+    ledger.write_text(json.dumps({
+        "at": "2026-09-23T01:00:00+00:00", "cell": "c1", "family": "alpha", "passed": False,
+        "terminal_gate": "UNKNOWN"}) + "\n", "utf-8")
+    jc.learn_priors(ledger, since="", state_dir=tmp_path)
+    sys.path.insert(0, str(ROOT))
+    from libs.research.research_priors import prior_for
+    pr = prior_for("family", "alpha", state_dir=tmp_path)
+    assert pr.mean == 0.5, "an unmeasured cell must not move the Beta"
+    assert pr.outcomes.get("unmeasured", 0) > 0, "but it is recorded in the Dirichlet"

@@ -272,13 +272,27 @@ def freeze(key: str, ident: dict[str, Any], *, forward_start: str | None = None,
             reg["updated_at"] = rows[key]["forward_start_backfilled_at"]
             _write(reg)
         return dict(rows[key]["identity"])
-    rows[key] = {
+    # STAMPED AT BIRTH, NEVER BACKFILLED (2026-09-23, the principal). A clock that is born
+    # without the canonical identity can only be joined by a later sweep that re-parses its key,
+    # and 0 of 862 registry clocks joined the canon that way. `certificate_truth.parts()` is the
+    # ONE implementation -- imported, never a second parse -- so a row is joinable from the
+    # instant it exists and the backfill becomes a one-time repair rather than a standing chore.
+    born = {
         "identity": ident,
         "identity_schema": IDENTITY_SCHEMA,
         "frozen_at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
         "forward_start": forward_start,
         "status": "LIVE",
     }
+    from certificate_truth import (  # type: ignore[import-not-found]
+        IDENTITY_RULE,
+        canonical_identity,
+    )
+    stamped = canonical_identity("sleeve_registry", key, born)
+    if stamped:
+        born["canonical_identity"] = stamped
+        born["canonical_identity_rule"] = IDENTITY_RULE
+    rows[key] = born
     if cost_fields:
         rows[key]["cost_fields"] = {k: round(float(v), 6) for k, v in cost_fields.items()
                                     if isinstance(v, (int, float)) and not isinstance(v, bool)}

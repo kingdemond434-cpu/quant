@@ -252,12 +252,59 @@ def judge(report: Path | None = None, *, require_state: bool = False,
                 "why": (f"remainder spent down the ranking, top {top.get('family')} at "
                         f"{top.get('ev_per_judge_second')} ev/judge-s")})
 
+    # 5. THE UNKNOWN CLASS RATCHETS DOWN AND MAY NOT STALL (principal 2026-09-23). MEASURED on
+    #    the box: 44,432 of 60,000 recent verdicts terminated with no named gate -- three
+    #    quarters of the judge returning neither a pass nor a reason, the largest single waste on
+    #    the desk. `judge_coverage.name_unknowns` gives every one of them a NAMED reason and
+    #    `update_unrunnable_bank` filters the unrunnable ones out of intake, so the count must
+    #    fall. It FAILS on a rise, and on a STALL while the bank still had cells to filter --
+    #    a count that stops falling with work left is how this silently returns. A count already
+    #    at zero stalls at zero and passes; the first reading has no baseline and is UNMEASURED.
+    tot = doc.get("totals") or {}
+    now_unknown = tot.get("unknown_total")
+    was_unknown = tot.get("prior_unknown_share")
+    unnamed = int(tot.get("unknown_unnamed") or 0)
+    share_now = tot.get("unknown_share")
+    if now_unknown is None or share_now is None:
+        out["checks"].append({"metric": "unknown_ratchet", "state": "UNMEASURED",
+                              "why": "no UNKNOWN census in this report"})
+    elif unnamed > 0:
+        failures.append("unknown_unnamed")
+        out["checks"].append({
+            "metric": "unknown_ratchet", "state": "FAIL",
+            "why": (f"{unnamed} UNKNOWN verdict(s) carry no named reason -- an unnamed terminal "
+                    "state is the defect, whatever the cause turns out to be")})
+    elif was_unknown is None:
+        out["checks"].append({
+            "metric": "unknown_ratchet", "state": "UNMEASURED",
+            "why": (f"UNKNOWN share enters at its measurement ({float(share_now):.1%}, "
+                    f"{now_unknown} cells, all named); no previous reading to ratchet against")})
+    else:
+        parked = int(tot.get("unrunnable_bank") or 0)
+        rose = float(share_now) > float(was_unknown) + 1e-9
+        has_stalled = (abs(float(share_now) - float(was_unknown)) <= 1e-9
+                       and float(share_now) > 0 and parked > 0)
+        if rose or has_stalled:
+            failures.append("unknown_share")
+            out["checks"].append({
+                "metric": "unknown_ratchet", "state": "FAIL",
+                "why": (f"UNKNOWN share {'rose' if rose else 'stalled at'} "
+                        f"{float(was_unknown):.1%} -> {float(share_now):.1%} with {parked} "
+                        "cell(s) in the unrunnable bank: the filter is not reaching the judge")})
+        else:
+            out["checks"].append({
+                "metric": "unknown_ratchet", "state": "OK",
+                "why": (f"UNKNOWN share {float(was_unknown):.1%} -> {float(share_now):.1%}, "
+                        f"{now_unknown} cells, every one named")})
+
     totals = doc.get("totals") or {}
     out["totals"] = {k: totals.get(k) for k in (
         "families_mined", "families_with_backlog", "families_queued", "families_starved",
         "unjudged_total", "carried_total", "study_only_total", "capacity_measured",
         "oldest_unjudged_age_h", "value_at_risk", "value_deferred", "value_forgone_per_hour",
-        "hours_to_drain", "capacity_short")}
+        "hours_to_drain", "capacity_short", "unknown_total", "unknown_share",
+        "unknown_unnamed", "never_fires_cells", "unrunnable_parked", "unrunnable_bank")}
+    out["unknown_reasons"] = (doc.get("unknown_reasons") or {}).get("by_reason") or {}
     out["top_value"] = [{k: r.get(k) for k in ("rank", "family", "ev_per_judge_second",
                                                "p_optimistic", "prior_status", "quota",
                                                "floor", "remainder", "value_at_risk")}
@@ -276,6 +323,10 @@ def render(doc: Mapping[str, Any]) -> list[str]:
     for row in doc.get("checks") or ():
         lines.append(f"  [{row.get('state')}] {row.get('metric')}: {row.get('why')}")
     t = doc.get("totals") or {}
+    if t.get("unknown_total") is not None:
+        lines.append(f"  UNKNOWN {t.get('unknown_total')} ({t.get('unknown_share')}) "
+                     f"reasons {doc.get('unknown_reasons')} unnamed {t.get('unknown_unnamed')} "
+                     f"bank {t.get('unrunnable_bank')}")
     if t.get("value_at_risk") is not None:
         lines.append(f"  value at risk {t.get('value_at_risk')} / deferred "
                      f"{t.get('value_deferred')} / forgone {t.get('value_forgone_per_hour')}/h"

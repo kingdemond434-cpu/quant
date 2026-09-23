@@ -554,7 +554,7 @@ def test_one_identity_joins_every_store_and_a_broken_join_can_never_read_green(d
     assert j["stores"]["sleeve_registry"]["rows"] == 6
     assert j["stores"]["sleeve_registry"]["joinable"] == 6      # every clock declares it
     assert j["stores"]["sleeve_registry"]["joined_to_lane"] >= 1
-    assert j["coverage"] == round(j["total_joinable"] / j["total_rows"], 4)
+    assert j["coverage"] == round(j["total_joinable"] / j["total_denominator"], 4)
     # the identity is CARRIED, not recomputed by each reader
     CT.stamp_identity(paths, "2026-09-23T10:00:00+00:00")
     assert _r(paths.registry)["sleeves"]["CADJPY.asia"]["canonical_identity"] == \
@@ -565,3 +565,34 @@ def test_one_identity_joins_every_store_and_a_broken_join_can_never_read_green(d
     assert _kinds(bad)["JOIN_COVERAGE_BREACH"] == 1
     assert "JOIN_COVERAGE_BREACH" in CT.FATAL_KINDS
     assert bad["one_lane"]["join"]["stores"]["shadow_state"]["joinable"] == 0
+
+
+def test_identity_is_stamped_at_birth_and_the_last_rows_are_named_not_silent(desk: Path):
+    """(1) A clock cannot be BORN unjoinable -- sleeve_registry.register stamps through the one
+    implementation. (2) A row nothing can identify SAYS so, with the reason, and leaves the
+    denominator by declaration. (3) The fence fails on a row created after the obligation with
+    no identity, so the property is permanent rather than a number that decays."""
+    paths = CT.Paths.at(desk)
+    src = (_DESK / "research" / "sleeve_registry.py").read_text(encoding="utf-8")
+    assert "from certificate_truth import" in src and "canonical_identity(" in src
+    assert "STAMPED AT BIRTH" in src            # one implementation, never a second parse
+    sl = _r(paths.sleeves)
+    sl["sleeves"].append({"name": "orphan_no_fields", "status": "RETIRED", "risk_frac": 0.0})
+    _w(paths.sleeves, sl)
+    out = CT.stamp_identity(paths, "2026-09-23T10:00:00+00:00")
+    assert out["declared_unidentifiable"] >= 1 and out["stamped"] >= 6
+    rows = {r["name"]: r for r in _r(paths.sleeves)["sleeves"]}
+    assert rows["orphan_no_fields"]["canonical_identity"] == CT.UNIDENTIFIABLE
+    assert "declares no symbol or family" in rows["orphan_no_fields"]["canonical_identity_why"]
+    j = CT.audit(paths)["one_lane"]["join"]
+    assert j["declared_unidentifiable"] >= 1
+    assert j["total_denominator"] == j["total_rows"] - j["declared_unidentifiable"]
+    assert j["coverage"] == 1.0                 # honest 1.0 with named exclusions
+    # a row born after the obligation with no identity is fatal
+    reg = _r(paths.registry)
+    reg["sleeves"]["born-late-nameless"] = {"status": "LIVE",
+                                            "frozen_at": "2026-09-24T00:00:00+00:00"}
+    _w(paths.registry, reg)
+    bad = CT.audit(paths)
+    assert _kinds(bad)["IDENTITY_NOT_STAMPED_AT_BIRTH"] == 1
+    assert "IDENTITY_NOT_STAMPED_AT_BIRTH" in CT.FATAL_KINDS

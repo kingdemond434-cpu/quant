@@ -150,6 +150,7 @@ FATAL_KINDS = frozenset({"BANNED_CERTIFICATE", "BANNED_CLAIM", "BANNED_CLOCK", "
                          "CANON_EMPTY_WITH_RESTORABLE_EVIDENCE",
                          "SECOND_CERTIFICATE_STORE", "DERIVED_STORE_WRITTEN_DIRECTLY",
                          "JOIN_COVERAGE_BREACH",
+                         "IDENTITY_NOT_STAMPED_AT_BIRTH",
                          "CLAIM_NOT_SUBMITTED_TO_JUDGE",
                          "RECONCILE_CERTIFIED_CLOCKS_ON_EMPTY_CANON"})
 
@@ -838,7 +839,14 @@ def audit(paths: Paths, now: str | None = None) -> dict[str, Any]:
     # exact state measured on 2026-09-23, when the fence read ok=true over a wholly broken join.
     joins = join_coverage(paths, lane)
     for name, v in joins["stores"].items():
-        if v["rows"] and not v["joinable"]:
+        if int(v.get("born_without_identity") or 0):
+            add("IDENTITY_NOT_STAMPED_AT_BIRTH", name,
+                ",".join(v["born_without_identity_keys"][:6]),
+                f"{v['born_without_identity']} row(s) in {name} were created after "
+                f"{BIRTH_OBLIGATION_FROM} carrying no {IDENTITY_FIELD}: a writer that does not "
+                f"stamp at birth leaves a row that only a later sweep can join, which is the "
+                f"chore this ended", born_without_identity=v["born_without_identity"])
+        if v["denominator"] and not v["joinable"]:
             add("JOIN_COVERAGE_BREACH", name, IDENTITY_FIELD,
                 f"{name} holds {v['rows']} row(s) and NONE can declare the canonical identity "
                 f"({IDENTITY_RULE}); a store that cannot be joined is a separate lane whatever "
@@ -904,6 +912,17 @@ def audit(paths: Paths, now: str | None = None) -> dict[str, Any]:
 #: NAME and never by KEY, so every observer got a different number (28 / 152 / 215 / 862) and the
 #: fence read green because it was joining on the spec and nothing checked that anyone else was.
 IDENTITY_FIELD = "canonical_identity"
+#: A row that genuinely cannot declare an identity is EXCLUDED BY DECLARATION, never by silence:
+#: an honest 1,449 of 1,449 with ten named exclusions beats an unexplained 99.3%.
+UNIDENTIFIABLE = "UNIDENTIFIABLE"
+UNIDENTIFIABLE_REASON = ("row declares no symbol or family, its key has no shape this desk "
+                         "writes, and no other store declares one for its name; recorded so it "
+                         "is auditable later and excluded from the join denominator by "
+                         "declaration rather than by silence")
+#: Rows created from this moment must carry the identity at birth (sleeve_registry.register and
+#: certificate_truth.stamp_identity are the ONE implementation). Rows older than this are the
+#: one-time backfill, not a standing breach.
+BIRTH_OBLIGATION_FROM = "2026-09-23T00:00:00+00:00"
 IDENTITY_RULE = ("symbol|family|selector lowercased, from the shadow_spec the sealed gauntlet "
                  "stamps and the promoter matches (desks/mt5/scripts/external_gauntlet.py -> "
                  "desks/mt5/research/promoter.py); a key is local, this is the join")
@@ -956,13 +975,31 @@ def join_coverage(paths: Paths, lane: dict[str, Any]) -> dict[str, Any]:
     declared = declared_identities(paths)
 
     def measure(name: str, rows: list[tuple[str, dict[str, Any]]]) -> None:
-        joinable = [canonical_identity(name, k, r, declared) for k, r in rows]
-        ids = [i for i in joinable if i]
+        ids: list[str] = []
+        excluded: list[str] = []
+        unstamped_born: list[str] = []
+        for k, r in rows:
+            got = canonical_identity(name, k, r, declared)
+            if got:
+                ids.append(got)
+                continue
+            if r.get(IDENTITY_FIELD) == UNIDENTIFIABLE:
+                excluded.append(str(k))       # declared, auditable, out of the denominator
+                continue
+            born = _parse(str(r.get("frozen_at") or r.get("created_at") or
+                              r.get("forward_start") or ""))
+            cut = _parse(BIRTH_OBLIGATION_FROM)
+            if born is not None and cut is not None and born >= cut:
+                unstamped_born.append(str(k))
+        denom = len(rows) - len(excluded)
         out["stores"][name] = {
-            "rows": len(rows), "joinable": len(ids),
-            "unjoinable": len(rows) - len(ids),
+            "rows": len(rows), "joinable": len(ids), "denominator": denom,
+            "unjoinable": denom - len(ids), "declared_unidentifiable": len(excluded),
+            "unidentifiable_keys": excluded[:20],
+            "born_without_identity": len(unstamped_born),
+            "born_without_identity_keys": unstamped_born[:20],
             "joined_to_lane": sum(1 for i in ids if i in backed),
-            "coverage": round(len(ids) / len(rows), 4) if rows else None}
+            "coverage": round(len(ids) / denom, 4) if denom else None}
 
     certs = lane["certificates"]
     measure("UNIVERSAL_SURVIVORS", [(k, {"symbol": c.get("symbol"), "family": c.get("family"),
@@ -979,11 +1016,17 @@ def join_coverage(paths: Paths, lane: dict[str, Any]) -> dict[str, Any]:
     sl = _read(paths.sleeves) or {}
     measure("sleeves", [(str(r.get("name") or ""), r) for r in (sl.get("sleeves") or [])
                         if isinstance(r, dict)])
-    total = sum(v["rows"] for v in out["stores"].values())
+    total = sum(v["denominator"] for v in out["stores"].values())
     joinable = sum(v["joinable"] for v in out["stores"].values())
-    out["total_rows"] = total
+    out["total_rows"] = sum(v["rows"] for v in out["stores"].values())
+    out["total_denominator"] = total
     out["total_joinable"] = joinable
+    out["declared_unidentifiable"] = sum(v["declared_unidentifiable"]
+                                         for v in out["stores"].values())
+    out["born_without_identity"] = sum(v["born_without_identity"]
+                                       for v in out["stores"].values())
     out["coverage"] = round(joinable / total, 4) if total else None
+    out["birth_obligation_from"] = BIRTH_OBLIGATION_FROM
     return out
 
 
@@ -991,30 +1034,51 @@ def stamp_identity(paths: Paths, stamp: str) -> dict[str, Any]:
     """CARRY the identity, do not recompute it: every clock row keeps `canonical_identity`
     alongside whatever local key it needs, so the join is a field lookup and not a parse that
     each reader reinvents (which is how four observers got four numbers)."""
-    out: dict[str, Any] = {"stamped": 0, "unjoinable": 0,
-                           "store": CANONICAL_CLOCK_STORE}
-    doc = _read(paths.registry)
-    rows = (doc or {}).get("sleeves")
-    if doc is None or not isinstance(rows, dict):
-        return out
-    changed = False
+    out: dict[str, Any] = {"stamped": 0, "declared_unidentifiable": 0, "wrote": [],
+                           "stores": [CANONICAL_CLOCK_STORE, "data/sleeves.json"]}
     declared = declared_identities(paths)
-    for key, row in rows.items():
-        if not isinstance(row, dict):
-            continue
-        ident = canonical_identity("sleeve_registry", str(key), row, declared)
-        if ident is None:
-            out["unjoinable"] += 1
-            continue
-        if row.get(IDENTITY_FIELD) != ident:
-            row[IDENTITY_FIELD] = ident
-            row[IDENTITY_FIELD + "_rule"] = IDENTITY_RULE
-            changed = True
-        out["stamped"] += 1
-    if changed:
-        doc["identity_stamped_at"] = stamp
-        _atomic(paths.registry, doc, indent=2)
-        out["wrote"] = _rel(paths, paths.registry)
+
+    def do(store: str, path: Path, doc: dict[str, Any], rows: Any) -> None:
+        changed = False
+        for key, row in rows:
+            if not isinstance(row, dict):
+                continue
+            ident = canonical_identity(store, str(key), row, declared)
+            if ident is None:
+                # NAMED, NOT SILENT. A retired row still needs an identity or it can never be
+                # audited; when no store can supply one, the row SAYS so, with the reason, and
+                # leaves the denominator by declaration.
+                if row.get(IDENTITY_FIELD) != UNIDENTIFIABLE:
+                    row[IDENTITY_FIELD] = UNIDENTIFIABLE
+                    row[IDENTITY_FIELD + "_why"] = UNIDENTIFIABLE_REASON
+                    row[IDENTITY_FIELD + "_declared_at"] = stamp
+                    changed = True
+                out["declared_unidentifiable"] += 1
+                continue
+            if row.get(IDENTITY_FIELD) != ident:
+                row[IDENTITY_FIELD] = ident
+                row[IDENTITY_FIELD + "_rule"] = IDENTITY_RULE
+                changed = True
+            out["stamped"] += 1
+        if changed:
+            doc["identity_stamped_at"] = stamp
+            _atomic(path, doc, indent=2)
+            out["wrote"].append(_rel(paths, path))
+
+    doc = _read(paths.registry)
+    if doc is not None and isinstance(doc.get("sleeves"), dict):
+        do("sleeve_registry", paths.registry, doc, list(doc["sleeves"].items()))
+    doc = _read(paths.sleeves)
+    if doc is not None and isinstance(doc.get("sleeves"), list):
+        do("sleeves", paths.sleeves, doc,
+           [(str(r.get("name") or ""), r) for r in doc["sleeves"] if isinstance(r, dict)])
+    # every shadow lane too: a clock lane that cannot join is a separate lane by another name
+    for lane_path in paths.lanes:      # the per-lane states; the main shadow_state is
+                                      # owned by shadow_forward and stamped at birth there
+        doc = _read(lane_path)
+        if doc is not None:
+            out["stores"].append(_rel(paths, lane_path))
+            do(lane_path.stem, lane_path, doc, _rows_of_state(doc))
     return out
 
 
