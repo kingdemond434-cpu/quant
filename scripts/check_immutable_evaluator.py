@@ -19,6 +19,8 @@ import argparse
 import ast
 import hashlib
 import json
+import platform
+import re
 import sys
 from collections.abc import Mapping, Sequence
 from datetime import UTC, datetime
@@ -154,6 +156,98 @@ def _prefix_sha(records: Sequence[str], n: int) -> str:
     return h.hexdigest()[:16]
 
 
+# ------------------------------------------------------- WHICH record, and WHICH field (2026-09-24)
+#: A PREFIX HASH CANNOT NAME ITS OWN BREACH, AND THAT COST THE DESK A FULL FORENSIC ESCALATION.
+#:
+#: Until today this fence could say only "the sealed prefix of 151 record(s) changed". `151` is the
+#: SEALED PREFIX LENGTH -- the number of records the hash covers -- and it was read, reasonably, as
+#: "151 execution records were rewritten". It was escalated in those words: the live ledger, the
+#: file every realised-R, gold-P&L and matched-fills claim rests on, apparently edited after
+#: sealing on 151 rows. The measured answer (2026-09-24, keyed on the MT5 deal ticket) was that
+#: **not one traded quantity had moved**: pl_quote, volume, side, symbol, entry_price, fill_price,
+#: sl, tp, commission, swap, contract_size and order were byte-identical on all 151 deals, and what
+#: differed was `time` (the gateway's own append stamp, `now()`), `sleeve` (a broker close label
+#: corrected to the opening tag), `risk_quote` and `r_multiple` (the documented backfill in
+#: `scripts/backfill_live_ledger_r.py`). Four completely different severities, and the fence wore
+#: one word for all of them.
+#:
+#: SO THE SEAL NOW CARRIES WHAT THE VERDICT NEEDS. A per-record digest localises the change to an
+#: INDEX, and a per-field digest names the FIELDS that moved without ever storing a value -- so the
+#: fence answers "did a price or a volume change?" itself, in one line, instead of costing a
+#: session. Digests only: the manifest never becomes a second copy of the ledger, and an account
+#: number cannot leak through a SHA-256.
+#:
+#: Both are additive. A seal written before today has neither, and is judged exactly as it was --
+#: the old verdict is preserved, and the message now says plainly that it cannot localise.
+_DETAIL_MAX_RECORDS = 20_000
+_DETAIL_MAX_FIELDS = 96
+#: The host that took the seal. A record file is written by ONE box; another box's copy arrives by
+#: git and is routinely a different derivation of the same account history. Naming the sealing host
+#: is what lets a reader tell "a record was rewritten" from "this is not the box that writes it".
+_HOST = platform.node() or "unknown"
+
+
+def _row_digest(rec: str) -> str:
+    return hashlib.sha256(rec.encode("utf-8", "replace")).hexdigest()[:12]
+
+
+def _field_digests(rec: str) -> dict[str, str] | None:
+    """{field: digest} for a record that is a JSON object, else None. Values are never stored."""
+    try:
+        doc = json.loads(rec)
+    except ValueError:
+        return None
+    if not isinstance(doc, dict) or len(doc) > _DETAIL_MAX_FIELDS:
+        return None
+    out: dict[str, str] = {}
+    for k, v in doc.items():
+        blob = json.dumps(v, sort_keys=True, separators=(",", ":"), default=str)
+        out[str(k)] = hashlib.sha256(blob.encode("utf-8", "replace")).hexdigest()[:8]
+    return out
+
+
+def _detail(records: Sequence[str]) -> tuple[list[str], list[dict[str, str] | None]]:
+    head = list(records[:_DETAIL_MAX_RECORDS])
+    return [_row_digest(r) for r in head], [_field_digests(r) for r in head]
+
+
+def localise(records: Sequence[str], rec: Mapping[str, Any], at: int) -> dict[str, Any]:
+    """WHICH of the sealed records differ here, and WHICH fields moved inside them.
+
+    Returns `{"localised": False, ...}` when the seal predates per-record digests: the fence says
+    so rather than implying it checked. Field names are reported, values never are.
+    """
+    rows = rec.get("rows")
+    if not isinstance(rows, list) or not rows:
+        return {"localised": False,
+                "why": "this seal carries no per-record digests, so the fence cannot say WHICH "
+                       "of those records moved; re-seal to localise"}
+    raw_fields = rec.get("fields")
+    fields: list[Any] = raw_fields if isinstance(raw_fields, list) else []
+    n = min(at, len(rows), len(records))
+    changed = [i for i in range(n) if _row_digest(records[i]) != str(rows[i])]
+    moved: dict[str, int] = {}
+    held: set[str] = set()
+    unparsed = 0
+    for i in changed:
+        was = fields[i] if i < len(fields) and isinstance(fields[i], dict) else None
+        now = _field_digests(records[i])
+        if was is None or now is None:
+            unparsed += 1
+            continue
+        for k in set(was) | set(now):
+            if was.get(k) != now.get(k):
+                moved[k] = moved.get(k, 0) + 1
+            else:
+                held.add(k)
+    return {"localised": True, "n_sealed": n, "n_changed": len(changed),
+            "first_changed": changed[0] if changed else None,
+            "changed_index_sample": changed[:20],
+            "fields_moved": dict(sorted(moved.items(), key=lambda kv: -kv[1])),
+            "fields_unchanged": sorted(held - set(moved)),
+            "records_not_json": unparsed}
+
+
 def append_only_seal() -> dict[str, dict[str, Any]]:
     """{rel: {records, prefix_sha, mode}} for every append-only record file present HERE.
 
@@ -168,8 +262,10 @@ def append_only_seal() -> dict[str, dict[str, Any]]:
             if recs is None:
                 continue
             half = len(recs) // 2
+            rows, fields = _detail(recs)
             out[name] = {"records": len(recs), "prefix_sha": _prefix_sha(recs, len(recs)),
-                         "half": half, "half_sha": _prefix_sha(recs, half), "mode": mode}
+                         "half": half, "half_sha": _prefix_sha(recs, half), "mode": mode,
+                         "host": _HOST, "rows": rows, "fields": fields}
     return out
 
 
@@ -245,9 +341,30 @@ def _append_only_rows(sealed: Mapping[str, Any]) -> list[dict[str, Any]]:
                 continue
             here = _prefix_sha(recs, at)
             if here != want:
+                # NAME THE DAMAGE, NEVER THE PREFIX LENGTH. `at` is how many records the seal
+                # COVERS; saying "the sealed prefix of 151 records changed" reads as "151 records
+                # were rewritten" and was escalated in exactly those words (see `localise`).
+                loc = localise(recs, rec, at)
+                host = str(rec.get("host") or "")
+                where = (f"; sealed on host {host!r}, checked here on {_HOST!r} -- a record file "
+                         "is written by ONE box and another box's copy is a different derivation, "
+                         "so judge this on the writing host"
+                         if host and host != _HOST else "")
+                if loc["localised"]:
+                    moved = loc["fields_moved"]
+                    named = ", ".join(f"{k} x{v}" for k, v in moved.items()) or "none nameable"
+                    why = (f"{loc['n_changed']} of the {at} sealed record(s) were rewritten "
+                           f"(first at index {loc['first_changed']}); prefix {want} -> {here}. "
+                           f"FIELDS MOVED: {named}. FIELDS UNCHANGED: "
+                           f"{', '.join(loc['fields_unchanged']) or 'none'}{where}")
+                else:
+                    why = (f"the sealed prefix over {at} record(s) no longer hashes the same "
+                           f"({want} -> {here}): at least one of those records was rewritten. "
+                           f"{at} IS THE SEALED PREFIX LENGTH, NOT THE NUMBER OF RECORDS THAT "
+                           f"CHANGED -- {loc['why']}{where}")
                 rows.append({"path": name, "kind": "append_only", "status": "breach",
-                             "why": f"the sealed prefix of {at} record(s) changed "
-                                    f"({want} -> {here}): a record was rewritten"})
+                             "why": why, "localisation": loc,
+                             "sealed_host": host or None, "host": _HOST})
             elif n_now < n_was:
                 rows.append({"path": name, "kind": "append_only", "status": "behind",
                              "why": f"{n_now} record(s) here against {n_was} sealed; the first "
@@ -433,6 +550,263 @@ def generator_isolation() -> dict[str, Any]:
                     "(LockedHoldout.research) but may never open one"}
 
 
+# --------------------------------------------------- the rewrite PATH, not only the rewrite (2026-09-24)
+#: APPEND-ONLY MUST BE TRUE OF THE CODE, NOT ONLY OF THE FILE. The seal above catches a rewrite
+#: AFTER it has happened, on whichever host next runs the fence -- and the 2026-09-24 forensic
+#: showed how long that can take and how easily one real rewrite hides among benign ones. This
+#: scan catches the CAPABILITY: a module that both names a sealed record file and contains a
+#: truncating write is a module that can rewrite history, and it must be declared.
+#:
+#: Declaring is the point. `backfill_live_ledger_r.py` is a REAL whole-file rewriter and a correct
+#: one -- it repaired an R multiple the writer had floored at zero on 141 of 151 live rows -- and
+#: the desk should be able to name every such organ on demand. An undeclared one is the finding.
+#: PRECISION IS THE WHOLE FENCE. A first cut flagged any module that MENTIONED a sealed file and
+#: contained any truncating call anywhere: 157 findings, nearly all of them an organ that READS the
+#: live ledger and writes its own report. That is the permanently-red shape this file's own
+#: `_hashes` docstring was written about, and it would have been worse than nothing. So the target
+#: of the write must be the sealed path: a truncating call is a finding only when the thing being
+#: truncated, replaced or removed textually resolves to a sealed record file.
+_TRUNCATING_ON_TARGET = ("write_text", "unlink", "truncate", "write_bytes")
+_TRUNCATING_ON_DEST = {"replace": 1, "rename": 1, "move": 1, "copy": 1, "copyfile": 1}
+INPLACE_DECLARED: dict[str, str] = {
+    "scripts/backfill_live_ledger_r.py":
+        "DECLARED whole-file rewriter (2026-09-16): repairs `r_multiple` on rows the writer "
+        "floored at zero, stamping r_backfilled / r_basis / r_multiple_before. It recomputes from "
+        "numbers already on the row and touches no traded quantity.",
+}
+
+
+def _sealed_basenames() -> tuple[str, ...]:
+    """The sealed record files this scan can name UNAMBIGUOUSLY, and only those.
+
+    Globbed entries are deliberately excluded and the exclusion is the honest part. The shadow
+    ledgers' pattern reduces to the prefix `ledger_`, which is a substring of dozens of unrelated
+    identifiers and paths in this repo (`clock_ledger`, `ingestion_ledger`, `throughput_ledger`);
+    admitting it produced 65 findings that were all an organ writing its own report. A scan that
+    cries wolf on 65 files is a scan nobody reads, so this one covers the two record files whose
+    basenames are unique and SAYS SO in `scanned`, rather than covering everything badly.
+    """
+    return tuple(rel.rsplit("/", 1)[-1] for rel, _mode, _why in APPEND_ONLY if "*" not in rel)
+
+
+#: Expression shapes that can carry a PATH. Propagating through anything else turned `rows =
+#: _read(LEDGER)` into a sealed path, and then -- because the match was a bare substring -- every
+#: one-letter variable in the module, and then every write in it. Word boundaries and path shapes
+#: are what keep this scan to the writes that are actually aimed at a sealed record file.
+_PATH_CALLS = frozenset({"Path", "resolve", "with_suffix", "with_name", "joinpath", "absolute",
+                         "expanduser"})
+
+
+def _path_shaped(value: ast.expr) -> bool:
+    if isinstance(value, ast.BinOp) and isinstance(value.op, ast.Div):
+        return True
+    if isinstance(value, ast.Call):
+        fn = value.func
+        return (fn.attr if isinstance(fn, ast.Attribute) else
+                getattr(fn, "id", "")) in _PATH_CALLS
+    if isinstance(value, ast.Attribute):
+        return value.attr in {"parent", "path"}
+    return isinstance(value, ast.Name | ast.Constant)
+
+
+def _mentions(text: str, tokens: Sequence[str], attrs: Sequence[str] = ()) -> bool:
+    if any(re.search(rf"(?<![\w.]){re.escape(t)}(?![\w])", text) for t in tokens):
+        return True
+    return any(re.search(rf"\.{re.escape(a)}(?![\w])", text) for a in attrs)
+
+
+def _sealed_attrs(tree: ast.AST, names: Sequence[str], sealed: set[str]) -> set[str]:
+    """CLI option names whose DEFAULT is a sealed record path.
+
+    The desk's one real whole-file rewriter takes the ledger as `--ledger`, defaulted to the
+    sealed constant, and then works on `Path(a.ledger)`. Without this hop the scan cannot see the
+    rewriter it exists to see, and `INPLACE_DECLARED` would be a hand-entered claim no
+    enumeration backs -- the shape of a gate that never ran (L1.49).
+    """
+    out: set[str] = set()
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+        fn = node.func
+        if not (isinstance(fn, ast.Attribute) and fn.attr == "add_argument"):
+            continue
+        flag = next((a.value for a in node.args
+                     if isinstance(a, ast.Constant) and isinstance(a.value, str)), "")
+        default = next((k.value for k in node.keywords if k.arg == "default"), None)
+        if not flag.startswith("--") or default is None:
+            continue
+        try:
+            text = ast.unparse(default)
+        except (AttributeError, ValueError):
+            continue
+        if any(n in text for n in names) or _mentions(text, sorted(sealed)):
+            out.add(flag.lstrip("-").replace("-", "_"))
+    return out
+
+
+_Scope = ast.Module | ast.FunctionDef | ast.AsyncFunctionDef
+
+
+def _own_body(scope: ast.AST) -> list[ast.AST]:
+    """Every node inside `scope` that is not inside a NESTED function -- the scope's own code.
+
+    SCOPE IS NOT COSMETIC HERE. Without it, `path = DESK / "data" / "live_ledger.jsonl"` in one
+    function sealed the NAME `path` for the whole module, and the generic `_atomic_write(path,
+    doc)` helper three hundred lines away became "rewrites the live ledger". Both remaining
+    findings on the real desk were that, and both were wrong.
+    """
+    out: list[ast.AST] = []
+    stack: list[ast.AST] = list(ast.iter_child_nodes(scope))
+    while stack:
+        node = stack.pop()
+        out.append(node)
+        if not isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef | ast.Lambda):
+            stack.extend(ast.iter_child_nodes(node))
+    return out
+
+
+def _binds(nodes: Sequence[ast.AST]) -> list[tuple[str, ast.expr, str]]:
+    binds: list[tuple[str, ast.expr, str]] = []
+    for node in nodes:
+        targets: list[ast.expr] = []
+        if isinstance(node, ast.Assign):
+            targets = list(node.targets)
+        elif isinstance(node, ast.AnnAssign) and node.value is not None:
+            targets = [node.target]
+        value = getattr(node, "value", None)
+        if not targets or value is None:
+            continue
+        try:
+            text = ast.unparse(value)
+        except (AttributeError, ValueError):
+            continue
+        for t in targets:
+            if isinstance(t, ast.Name):
+                binds.append((t.id, value, text))
+    return binds
+
+
+def _seal_from(binds: Sequence[tuple[str, ast.expr, str]], names: Sequence[str],
+               base: set[str], attrs: Sequence[str] = ()) -> set[str]:
+    sealed = set(base) | {v for v, _n, text in binds if any(n in text for n in names)}
+    for _ in range(2):                                  # one hop, then settle
+        for var, value, text in binds:
+            if var not in sealed and _path_shaped(value)                     and _mentions(text, sorted(sealed), attrs):
+                sealed.add(var)
+    return sealed
+
+
+def _sealed_vars(tree: ast.AST, names: Sequence[str]) -> set[str]:
+    """Module-level variables that resolve to a sealed record PATH (module scope only)."""
+    return _seal_from(_binds(_own_body(tree)), names, set())
+
+
+def _targets_sealed(expr: ast.expr | None, names: Sequence[str], sealed: set[str],
+                    attrs: Sequence[str] = ()) -> bool:
+    if expr is None:
+        return False
+    try:
+        text = ast.unparse(expr)
+    except (AttributeError, ValueError):
+        return False
+    return any(n in text for n in names) or _mentions(text, sorted(sealed), attrs)
+
+
+def _rewrite_sites(tree: ast.AST, names: Sequence[str]) -> list[tuple[int, str]]:
+    """Truncating writes AIMED AT a sealed record file, judged one lexical scope at a time."""
+    module_sealed = _sealed_vars(tree, names)
+    attrs = sorted(_sealed_attrs(tree, names, module_sealed))
+    scopes: list[tuple[list[ast.AST], set[str]]] = [(_own_body(tree), module_sealed)]
+    for node in ast.walk(tree):
+        if isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef):
+            body = _own_body(node)
+            scopes.append((body, _seal_from(_binds(body), names, module_sealed, attrs)))
+    hits: list[tuple[int, str]] = []
+    for body, sealed in scopes:
+        hits.extend(_scope_sites(body, names, sealed, attrs))
+    return sorted(set(hits))
+
+
+def _scope_sites(nodes: Sequence[ast.AST], names: Sequence[str], sealed: set[str],
+                 attrs: Sequence[str] = ()) -> list[tuple[int, str]]:
+    hits: list[tuple[int, str]] = []
+    for node in nodes:
+        if not isinstance(node, ast.Call):
+            continue
+        fn = node.func
+        attr = fn.attr if isinstance(fn, ast.Attribute) else ""
+        bare = fn.id if isinstance(fn, ast.Name) else ""
+        line = getattr(node, "lineno", 0)
+        args = list(node.args)
+        if attr == "open" or bare == "open":
+            target = fn.value if attr == "open" and isinstance(fn, ast.Attribute) else (
+                args[0] if args else None)
+            mode = ""
+            pos = args if attr == "open" else args[1:]
+            for arg in pos + [k.value for k in node.keywords if k.arg == "mode"]:
+                if isinstance(arg, ast.Constant) and isinstance(arg.value, str):
+                    mode = arg.value
+                    break
+            if mode[:1] in ("w", "x") and _targets_sealed(target, names, sealed, attrs):
+                hits.append((line, f"open(..., {mode!r}) truncates a sealed record file"))
+        elif attr in _TRUNCATING_ON_TARGET and isinstance(fn, ast.Attribute) \
+                and _targets_sealed(fn.value, names, sealed, attrs):
+            hits.append((line, f".{attr}() rewrites or removes a sealed record file"))
+        elif attr in _TRUNCATING_ON_DEST:
+            idx = _TRUNCATING_ON_DEST[attr]
+            if len(args) > idx and _targets_sealed(args[idx], names, sealed, attrs):
+                hits.append((line, f"{attr}(..., <sealed record file>) replaces it wholesale"))
+    return hits
+
+
+def inplace_rewrite_scan() -> dict[str, Any]:
+    """Every module that can rewrite a sealed record file IN PLACE, declared or not.
+
+    Reports what it enumerated as well as what it found: a wall that scanned nothing would also
+    be green (L1.49).
+    """
+    names = _sealed_basenames()
+    scanned: list[str] = []
+    findings: list[dict[str, str]] = []
+    declared_seen: list[str] = []
+    stale = [rel for rel in INPLACE_DECLARED if not (ROOT / rel).is_file()]
+    for root in ("scripts", "desks/mt5", "libs", "ops"):
+        base = ROOT / root
+        if not base.is_dir():
+            continue
+        for path in sorted(base.rglob("*.py")):
+            rel = path.relative_to(ROOT).as_posix()
+            if "/tests/" in rel or "__pycache__" in rel \
+                    or rel.rsplit("/", 1)[-1].startswith("test_"):
+                continue
+            try:
+                src = path.read_text("utf-8", errors="replace")
+            except OSError:
+                continue
+            if not any(n in src for n in names):
+                continue
+            scanned.append(rel)
+            try:
+                tree = ast.parse(src, filename=rel)
+            except (SyntaxError, ValueError):
+                continue
+            sites = _rewrite_sites(tree, names)
+            if not sites:
+                continue
+            if rel in INPLACE_DECLARED:
+                declared_seen.append(rel)
+                continue
+            line, what = sites[0]
+            findings.append({"file": rel, "line": str(line),
+                             "what": f"{what} ({len(sites)} site(s)) and is NOT declared: a "
+                                     "sealed record is append-only in code as well as on disk -- "
+                                     "append instead, or declare it in INPLACE_DECLARED"})
+    return {"scanned": scanned, "n_scanned": len(scanned), "declared": sorted(declared_seen),
+            "declared_missing": sorted(stale), "undeclared": findings,
+            "rule": "a module that can rewrite a sealed record file in place must be declared by "
+                    "name with its reason; an undeclared one is the finding"}
+
+
 def _hashes() -> dict[str, str]:
     """SHA-256 of each guarded file, over LINE-ENDING-NORMALISED bytes.
 
@@ -523,6 +897,9 @@ def check() -> list[dict[str, str]]:
     for hit in generator_isolation()["findings"]:
         out.append({"file": f"{hit['file']}:{hit['line']}",
                     "why": f"GENERATOR READS SEALED DATA -- {hit['what']}"})
+    for hit in inplace_rewrite_scan()["undeclared"]:
+        out.append({"file": f"{hit['file']}:{hit['line']}",
+                    "why": f"UNDECLARED IN-PLACE REWRITE OF A SEALED RECORD -- {hit['what']}"})
     return out
 
 
@@ -566,17 +943,20 @@ def main() -> int:
     findings = check()
     rows = wall_rows()
     gen = generator_isolation()
+    inplace = inplace_rewrite_scan()
     tally: dict[str, int] = {}
     for row in rows:
         tally[str(row["status"])] = tally.get(str(row["status"]), 0) + 1
     if a.json:
         print(json.dumps({"ok": not findings, "findings": findings, "wall": rows,
-                          "generator_isolation": gen}, indent=1))
+                          "generator_isolation": gen, "inplace_rewrite": inplace}, indent=1))
     else:
         print(f"immutable evaluator: {'OK' if not findings else f'{len(findings)} breach(es)'}")
         print(f"  frozen files {len(IMMUTABLE)}  records {len(rows)} "
               f"({', '.join(f'{k}={v}' for k, v in sorted(tally.items())) or 'none'})  "
-              f"generators scanned {gen['n_scanned']}")
+              f"generators scanned {gen['n_scanned']}  "
+              f"rewrite scan {inplace['n_scanned']} module(s), "
+              f"{len(inplace['declared'])} declared rewriter(s)")
         for f in findings:
             print(f"  BREACH {f['file']}: {f['why']}")
     return 1 if findings else 0
