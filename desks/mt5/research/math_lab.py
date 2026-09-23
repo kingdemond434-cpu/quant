@@ -56,6 +56,7 @@ for _p in (str(DESK), str(DESK / "research"), str(ROOT)):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
+from libs.research import set_aside as sa  # noqa: E402
 from research.mathlab import burden as B  # noqa: E402
 from research.mathlab import engines as E  # noqa: E402
 from research.mathlab import grammar as G  # noqa: E402
@@ -1129,7 +1130,14 @@ def run(*, budget_s: float = 3000.0, dry_run: bool = False,
     survivors = sorted(admitted, key=lambda o: (0 if o.passed else 1, -(o.value or -9e9)))
 
     already = set((_read_json(DONATED) or {}).get("object_ids") or [])
-    rows, refused = donation_rows(survivors[:MAX_DONATIONS], already)
+    # MAX_DONATIONS IS A BATCH BUDGET, NOT A SCREEN (LAWS 7: only the four immutable evaluator
+    # files may refuse a cell). Every admitted object is already QUEUED in the registry above, so
+    # nothing here decides whether the judge sees it -- only how many ride the donation channel
+    # this pass. The remainder is now NAMED in reports/SET_ASIDE_LEDGER.json with the ordering
+    # key, so "the lab donated 40" can never be read as "the lab had 40".
+    rows, refused = donation_rows(
+        sa.take(survivors, MAX_DONATIONS, organ="math_lab", stage="donations",
+                ordering="internal screen first (passed), then -value"), already)
     donation: dict[str, Any] = {"donated": 0, "path": None, "refused_untradeable": len(refused),
                                 "refusals": refused[:20],
                                 "already_donated_in_a_previous_pass":

@@ -776,8 +776,11 @@ def coverage_order(rows: list[dict[str, Any]], quota: dict[str, int],
     Each family is emitted on its own virtual clock ticking at 1/quota, and the family whose next
     tick is earliest goes next -- classic weighted fair queueing. The result: in any first N rows
     the gauntlet's budget reaches, family f holds about N * quota[f] / sum(quota) of them. Within
-    a family, NEVER-JUDGED rows go first and the oldest of those first, so the head of a family's
-    stream is exactly the backlog the ratchet measures.
+    a family, NEVER-JUDGED rows go first, then UNSEEN MECHANISMS before parameter variants of a
+    rule already claiming the same (family|symbol|horizon) cell, then the oldest first -- so the
+    head of a family's stream is exactly the backlog the ratchet measures, spent on independent
+    ground rather than on the same rule's constants. `demote_variants=False` reproduces the
+    pre-2026-09-23 order, which is how the freed-slot count below is measured.
 
     No row is dropped. A family with no quota still ships, after the quota'd stream, because the
     docket this returns is the whole docket and the judge's budget -- not this order -- decides
@@ -894,6 +897,9 @@ def build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = N
     quota = allocate(backlog, capacity, ranking=ranking)
     judgeable = [r for r in rows if str(r.get("family") or "") not in banned]
     study_rows = [r for r in rows if str(r.get("family") or "") in banned]
+    # Mark the variants BEFORE the order is taken, so the head this table reports is the head
+    # that actually ships (`order_docket` re-derives the same marks and measures what they freed).
+    variant_split(judgeable, unjudged_ids)
     ordered = coverage_order(judgeable, quota, unjudged_ids) + study_rows
     head = ordered[:capacity]
     queued: dict[str, int] = {}
@@ -1120,12 +1126,30 @@ def order_docket(rows: list[dict[str, Any]], *, publish: bool = True,
         rows = [r for r in rows if str(r.get("_cell") or "") not in bank]
         judgeable = [r for r in rows if str(r.get("family") or "") not in banned]
         study = [r for r in rows if str(r.get("family") or "") in banned]
-        ordered = coverage_order(judgeable, quota, ids) + study
+        # CHARGE VARIANTS AGAINST THEIR PARENT. The split marks the rows; the two orders below
+        # differ ONLY in whether that mark is read, so the difference in unseen mechanisms
+        # inside the judge's measured capacity is exactly what the demotion freed. Nothing is
+        # dropped in either order: both hold every row.
+        split = variant_split(judgeable, ids)
+        cap = int((doc.get("totals") or {}).get("capacity_measured") or 0)
+        before = coverage_order(judgeable, quota, ids, demote_variants=False)
+        ordered_j = coverage_order(judgeable, quota, ids)
+        ordered = ordered_j + study
+        was, now_ = _unseen_in_prefix(before, cap), _unseen_in_prefix(ordered_j, cap)
+        doc["variant_demotion"] = {
+            **split, "capacity": cap,
+            "unseen_in_capacity_before": was, "unseen_in_capacity_after": now_,
+            "slots_freed": now_ - was,
+            "rule": ("a parameter variant of a rule already queued on the same family, symbol "
+                     "and horizon ranks below an unseen mechanism inside its own family stream. "
+                     "The queue is uncapped and no row is dropped; only the order changes"),
+        }
         doc["unrunnable_filtered_from_docket"] = len(blocked)
         for _b in blocked:
             _b.pop("_cell", None)
         for row in ordered:
             row.pop("_cell", None)
+            row.pop("_variant", None)
         if publish:
             write(doc)
         return ordered, doc
@@ -1215,6 +1239,7 @@ __all__ = [
     "family_breadth",
     "family_priors",
     "family_value",
+    "grid_cell",
     "judge_seconds_per_cell",
     "judged_index",
     "learn_priors",
@@ -1228,6 +1253,7 @@ __all__ = [
     "unknown_breakdown",
     "unrunnable_bank",
     "update_unrunnable_bank",
+    "variant_split",
     "write",
 ]
 

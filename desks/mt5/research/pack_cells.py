@@ -192,6 +192,181 @@ def _registry_counts() -> tuple[dict[str, dict[str, int]], str]:
     return out, ""
 
 
+# ============================================================ the world lane (regional grounds)
+#: The world crawler's grounds are a SECOND pack population and a much larger zero. Measured
+#: 2026-09-23: `sources` holds 2,214 registered grounds, 621 crawled, and 121 of them hold 963
+#: verbatim claims -- documents already fetched, on disk, costing nothing more to read. Every one
+#: of those 121 has ZERO cells, and not one claim carries a mechanism_id. The ground is there;
+#: nothing walked it to the door.
+_PACK_CACHE: dict[str, tuple[tuple[str, ...], str]] = {}
+#: Claims read per source per pass. A ground with three hundred documents is not more important
+#: than one with three; the cursor advances so the rest are read next pass.
+CLAIMS_PER_SOURCE = 4
+
+
+def country_pack(code: str) -> tuple[tuple[str, ...], str]:
+    """(the country's MT5-executable instruments, its command region) from its own pack module.
+
+    The 75 country packs under `research/countries/` already declare `EXECUTABLE_INSTRUMENTS` and
+    `REGION_COMMAND`; nothing here re-types either. A country with no pack returns an empty tuple
+    and "UNMAPPED", which is the honest reason its grounds cannot yet name an instrument -- never
+    a guessed currency pair.
+    """
+    key = (code or "").strip().lower()
+    if not key:
+        return (), "UNMAPPED"
+    if key in _PACK_CACHE:
+        return _PACK_CACHE[key]
+    try:
+        mod = __import__(f"countries.{key}.pack", fromlist=["pack"])
+        instruments = tuple(str(s) for s in (getattr(mod, "EXECUTABLE_INSTRUMENTS", ()) or ()))
+        region = str(getattr(mod, "REGION_COMMAND", "") or "UNMAPPED").strip().upper()
+    except Exception:
+        instruments, region = (), "UNMAPPED"
+    _PACK_CACHE[key] = (instruments, region)
+    return instruments, region
+
+
+def world_rows() -> tuple[list[dict[str, Any]], str]:
+    """Every registered world ground with the documents it already holds and the cells it owes.
+
+    `n_documents` is the crawler's own claim count for that ground -- documents ALREADY FETCHED,
+    which is the ranking the next pass (or the next session) should start from.
+    """
+    try:
+        from libs.moat.registry import connect
+        conn = connect()
+    except Exception as exc:
+        return [], f"registry unavailable: {type(exc).__name__}: {exc}"
+    try:
+        docs = {str(sid): int(n) for sid, n in
+                conn.execute("SELECT source_id, COUNT(*) FROM claims GROUP BY source_id")}
+        cells = {str(sid): int(n) for sid, n in
+                 conn.execute("SELECT source_id, COUNT(*) FROM research_candidates "
+                              "WHERE source_id IS NOT NULL AND source_id != '' "
+                              "GROUP BY source_id")}
+        disc = {str(sid): int(n) for sid, n in
+                conn.execute("SELECT source_id, COUNT(*) FROM discoveries "
+                             "WHERE source_id IS NOT NULL AND source_id != '' "
+                             "GROUP BY source_id")}
+        judged = {str(sid): int(n) for sid, n in
+                  conn.execute("SELECT c.source_id, COUNT(DISTINCT t.candidate_id) "
+                               "FROM research_candidates c JOIN trials_ledger t "
+                               "ON t.candidate_id = c.id WHERE c.source_id IS NOT NULL "
+                               "GROUP BY c.source_id")}
+        out: list[dict[str, Any]] = []
+        for r in conn.execute("SELECT source_id, country, kind, url, status, last_crawled "
+                              "FROM sources"):
+            sid = str(r["source_id"])
+            instruments, region = country_pack(str(r["country"] or ""))
+            out.append({"id": sid, "lane": "world", "country": str(r["country"] or ""),
+                        "region": region, "kind": str(r["kind"] or ""),
+                        "url": str(r["url"] or ""), "status": str(r["status"] or ""),
+                        "crawled": bool(str(r["last_crawled"] or "")),
+                        "targets": list(instruments[:8]),
+                        "n_documents": docs.get(sid, 0),
+                        "cells_emitted": cells.get(sid, 0),
+                        "discoveries": disc.get(sid, 0),
+                        "cells_judged": judged.get(sid, 0)})
+        return out, ""
+    except Exception as exc:
+        return [], f"registry query failed: {type(exc).__name__}: {exc}"
+    finally:
+        with contextlib.suppress(Exception):
+            conn.close()
+
+
+def _claims_for(source_id: str, limit: int, offset: int) -> list[dict[str, Any]]:
+    try:
+        from libs.moat.registry import connect
+        conn = connect()
+    except Exception:
+        return []
+    try:
+        return [{"claim_id": str(r["claim_id"]), "text": str(r["text"] or ""),
+                 "knowable_at": str(r["knowable_at"] or ""),
+                 "media_type": str(r["media_type"] or "")}
+                for r in conn.execute(
+                    "SELECT claim_id, text, knowable_at, media_type FROM claims "
+                    "WHERE source_id = ? ORDER BY created_at LIMIT ? OFFSET ?",
+                    (source_id, int(limit), int(offset)))]
+    except Exception:
+        return []
+    finally:
+        with contextlib.suppress(Exception):
+            conn.close()
+
+
+def emit_world(row: dict[str, Any], *, dry_run: bool = False,
+               offset: int = 0) -> dict[str, Any]:
+    """A ground's already-held documents, walked to the one door.
+
+    One DISCOVERY per claim, keyed by the ground and carrying the country pack's executable
+    instruments as its assets, so `miner_candidate_compiler` mints the cells on its own clock --
+    the desk's documented path from a verbatim claim to a testable rule. Plus one cell per
+    (instrument x chart) so the ground has a registry-visible presence even before the compiler
+    reaches it. Nothing is judged here and no claim is filtered.
+    """
+    sid = str(row["id"])
+    claims = _claims_for(sid, CLAIMS_PER_SOURCE, offset)
+    if not claims:
+        return {"id": sid, "emitted": 0, "created": 0, "discoveries": 0,
+                "reason": ("no document is held for this ground: the crawler has fetched "
+                           "nothing from it yet" if not row["n_documents"]
+                           else "every held document has already been walked to the door")}
+    targets = list(row.get("targets") or [])
+    if not targets:
+        return {"id": sid, "emitted": 0, "created": 0, "discoveries": 0,
+                "reason": (f"country {row['country']!r} has no pack under "
+                           "research/countries/, so the ground names no MT5 instrument; add "
+                           "the pack (EXECUTABLE_INSTRUMENTS) and it converts on the next pass")}
+    made = created = n_disc = 0
+    errors: list[str] = []
+    for cl in claims:
+        text = " ".join(cl["text"].split())[:600]
+        mech = (f"{row['region']} ground {sid} ({row['kind']}) reports: {text}" if text
+                else f"{row['region']} ground {sid} ({row['kind']}) holds an unparsed document")
+        if dry_run:
+            n_disc += 1
+            continue
+        try:
+            from libs.moat.registry import record_discovery
+            _did, _new = record_discovery(
+                source_id=sid, source_type="world_ground", mechanism=mech,
+                origin="pack_cells", generator="pack_cells.world",
+                assets=targets, exact_rule_if_known="", horizons=list(CHARTS),
+                note=(f"claim {cl['claim_id']} held since the crawl; knowable_at "
+                      f"{cl['knowable_at'] or 'UNMEASURED'}"))
+            n_disc += 1
+        except Exception as exc:
+            errors.append(f"{sid}: {type(exc).__name__}: {str(exc)[:50]}")
+            break
+    mech_src = (f"the {row['region']} ground {sid} publishes information about "
+                f"{', '.join(targets[:4])} that price alone does not carry")
+    for sym in targets:
+        for chart in CHARTS:
+            made += 1
+            if dry_run:
+                continue
+            try:
+                from libs.moat.registry import enqueue_candidate
+                _cid, was_new = enqueue_candidate(
+                    family="regional_information", symbol=sym,
+                    params={"source": sid, "region": row["region"],
+                            "country": row["country"], "kind": row["kind"]},
+                    origin="pack_cells", mechanism=mech_src, chart=chart, horizon=chart,
+                    source_id=sid, generator="pack_cells.world", department="information",
+                    transformation="world_ground", pit_status="UNMEASURED",
+                    causal_rationale=mech_src,
+                    falsifier=(f"documents from {sid} have no measurable relation to {sym} "
+                               f"at {chart} out of sample"))
+                created += int(bool(was_new))
+            except Exception as exc:
+                errors.append(f"{sid}/{sym}/{chart}: {type(exc).__name__}: {str(exc)[:40]}")
+    return {"id": sid, "emitted": made, "created": created, "discoveries": n_disc,
+            "claims_read": len(claims), "errors": errors[:3]}
+
+
 def emit_for(pack: dict[str, Any], signals: list[str], targets: list[str], *,
              dry_run: bool = False, offset: int = 0) -> dict[str, Any]:
     """Every (signal x transform x target x chart) cell for one pack, through the one door."""
@@ -317,6 +492,36 @@ def build(budget_s: float = 240.0, *, dry_run: bool = False) -> dict[str, Any]:
                                  "offset, so every pack and every column is reached; a pack not "
                                  "reached this pass leads the next one")})
 
+    # ---------------------------------------------------------------- the world lane
+    # DOCUMENTS ALREADY HELD, HIGHEST FIRST. A ground the crawler has already paid to fetch and
+    # that has never produced a cell is the cheapest cell on the desk; one that holds nothing is
+    # a crawl problem, not a conversion one. The order IS the ranking, so a pass cut short leaves
+    # the next one starting at the top of the list rather than searching for it.
+    wrows, world_why = world_rows()
+    woffsets: dict[str, int] = dict(cursor.get("world_offsets") or {})
+    backlog = sorted([w for w in wrows if w["n_documents"] > 0 and w["cells_emitted"] <= 0],
+                     key=lambda w: (-w["n_documents"], w["id"]))
+    world_emitted = world_created = world_disc = 0
+    world_reached: list[str] = []
+    for w in backlog:
+        if time.monotonic() - t0 > budget_s:
+            break
+        res = emit_world(w, dry_run=dry_run, offset=woffsets.get(w["id"], 0))
+        world_reached.append(w["id"])
+        world_emitted += int(res.get("emitted") or 0)
+        world_created += int(res.get("created") or 0)
+        world_disc += int(res.get("discoveries") or 0)
+        woffsets[w["id"]] = woffsets.get(w["id"], 0) + int(res.get("claims_read") or 0)
+        if res.get("reason"):
+            w["reason"] = res["reason"]
+
+    if not dry_run:
+        _write(CURSOR, {"at": now, "offsets": offsets, "world_offsets": woffsets,
+                        "next_pack": (start + len(reached)) % max(len(eligible), 1),
+                        "rule": ("a round robin over eligible packs and a per-pack signal "
+                                 "offset, so every pack and every column is reached; the world "
+                                 "lane is ordered by documents already held, highest first")})
+
     counts, counts_why = _registry_counts()
     for r in rows:
         c = counts.get(r["id"]) or {}
@@ -325,12 +530,70 @@ def build(budget_s: float = 240.0, *, dry_run: bool = False) -> dict[str, Any]:
         if r["cells_emitted"] > 0 and r["cells_judged"] == 0 and not r.get("reason"):
             r["reason"] = ("cells are in the registry and the one gauntlet has not reached them "
                            "yet; trials_ledger holds no trial for this pack's candidates")
+    # re-read the world lane after emission, so its numbers are POST-pass like the packs'
+    wrows_after, _ = world_rows() if not dry_run else (wrows, "")
+    for w in wrows_after:
+        prev = next((x for x in wrows if x["id"] == w["id"]), None)
+        if prev is not None and prev.get("reason"):
+            w["reason"] = prev["reason"]
+        if w["cells_emitted"] <= 0 and not w.get("reason"):
+            w["reason"] = ("no document held: the crawler has not fetched this ground yet"
+                           if w["n_documents"] <= 0 else
+                           "documents held and not yet walked to the door; it leads the backlog")
+
+    by_region: dict[str, dict[str, int]] = {}
+    for w in wrows_after:
+        reg = by_region.setdefault(str(w["region"] or "UNMAPPED"),
+                                   {"grounds": 0, "with_documents": 0, "documents": 0,
+                                    "grounds_with_cells": 0, "cells_emitted": 0,
+                                    "cells_judged": 0, "discoveries": 0})
+        reg["grounds"] += 1
+        reg["with_documents"] += int(w["n_documents"] > 0)
+        reg["documents"] += int(w["n_documents"])
+        reg["grounds_with_cells"] += int(w["cells_emitted"] > 0)
+        reg["cells_emitted"] += int(w["cells_emitted"])
+        reg["cells_judged"] += int(w["cells_judged"])
+        reg["discoveries"] += int(w["discoveries"])
+    # EUROPE IS REPORTED BY NAME because it is the biggest zero: the region's grounds are the
+    # largest block in the registry and carried no cell at all when this lane was written.
+    europe = {k: v for k, v in by_region.items()
+              if "EUROPE" in k or k in ("CEE", "CEE_BALKANS", "EA", "NORDIC", "BLACK_SEA")}
+    europe_total = {k: sum(int(v.get(k) or 0) for v in europe.values())
+                    for k in ("grounds", "with_documents", "documents", "grounds_with_cells",
+                              "cells_emitted", "cells_judged", "discoveries")}
 
     n_emit = sum(1 for r in rows if r["cells_emitted"] > 0)
     n_judged = sum(1 for r in rows if r["cells_judged"] > 0)
     zero = [{"id": r["id"], "stage": r["stage"], "reason": r.get("reason") or "unexplained"}
             for r in rows if r["cells_emitted"] <= 0]
+    remaining = [{"id": w["id"], "region": w["region"], "country": w["country"],
+                  "n_documents": w["n_documents"], "kind": w["kind"],
+                  "reason": w.get("reason") or ""}
+                 for w in sorted(wrows_after, key=lambda x: (-x["n_documents"], x["id"]))
+                 if w["n_documents"] > 0 and w["cells_emitted"] <= 0][:200]
     return {
+        "world": {
+            "n_grounds": len(wrows_after),
+            "n_with_documents": sum(1 for w in wrows_after if w["n_documents"] > 0),
+            "n_documents": sum(int(w["n_documents"]) for w in wrows_after),
+            "grounds_with_cells": sum(1 for w in wrows_after if w["cells_emitted"] > 0),
+            "grounds_with_a_judged_cell": sum(1 for w in wrows_after if w["cells_judged"] > 0),
+            "cells_emitted_total": sum(int(w["cells_emitted"]) for w in wrows_after),
+            "cells_judged_total": sum(int(w["cells_judged"]) for w in wrows_after),
+            "cells_emitted_this_pass": world_emitted,
+            "cells_created_this_pass": world_created,
+            "discoveries_this_pass": world_disc,
+            "grounds_reached_this_pass": len(world_reached),
+            "backlog_with_documents_and_no_cell": len(backlog),
+            "why": world_why or "",
+            "by_region": dict(sorted(by_region.items(),
+                                     key=lambda kv: -kv[1]["documents"])),
+            "europe": {"regions": sorted(europe), **europe_total},
+            "remaining_ranked_by_documents_held": remaining,
+            "rule": ("ordered by documents ALREADY FETCHED, highest first: a ground the crawler "
+                     "has paid for and that has never produced a cell is the cheapest cell on "
+                     "the desk. A pass cut short leaves this list for the next one."),
+        },
         "at": now,
         "status": "OK" if rows else "UNMEASURED",
         "n_packs": len(rows),
@@ -384,6 +647,25 @@ def main(argv: list[str] | None = None) -> int:
           f"with a judged cell {doc['packs_with_a_judged_cell']}")
     for r in doc["packs_at_zero"][:8]:
         print(f"   ZERO {str(r['id'])[:28]:<28} stage={r['stage']:<14} {r['reason'][:58]}")
+    w = doc.get("world") or {}
+    if w:
+        print(f"  world grounds {w['n_grounds']}, {w['n_with_documents']} holding "
+              f"{w['n_documents']} document(s); with cells {w['grounds_with_cells']}, with a "
+              f"judged cell {w['grounds_with_a_judged_cell']}")
+        print(f"   this pass: {w['grounds_reached_this_pass']} ground(s), "
+              f"{w['cells_emitted_this_pass']} cell(s) ({w['cells_created_this_pass']} new), "
+              f"{w['discoveries_this_pass']} discovery(ies); backlog "
+              f"{w['backlog_with_documents_and_no_cell']}")
+        eu = w.get("europe") or {}
+        print(f"   EUROPE {eu.get('regions')}: grounds {eu.get('grounds')}, documents "
+              f"{eu.get('documents')}, cells emitted {eu.get('cells_emitted')}, judged "
+              f"{eu.get('cells_judged')}")
+        for reg, row in list((w.get("by_region") or {}).items())[:8]:
+            print(f"    {reg:<18} grounds {row['grounds']:<5} docs {row['documents']:<6} "
+                  f"cells {row['cells_emitted']:<6} judged {row['cells_judged']}")
+        for row in (w.get("remaining_ranked_by_documents_held") or [])[:6]:
+            print(f"    NEXT {str(row['id'])[:38]:<38} docs {row['n_documents']:<4} "
+                  f"{row['region']}")
     print(f"written: {OUT}")
     return 0
 

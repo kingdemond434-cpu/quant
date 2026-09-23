@@ -281,6 +281,21 @@ def declared_mechanism_share(path: Path | None = None) -> float:
     return DEFAULT_MECHANISM_SHARE
 
 
+def empty_pairs(report: Path | None = None) -> set[str]:
+    """The (family|symbol) pairs holding a reachable EMPTY horizon -- the generation targets.
+
+    Read from the published artifact, so a generator pays one file read rather than a grid scan
+    it would have to repeat every pass. An absent artifact returns an empty set and nothing is
+    preferred over anything, which is what an unmeasured target list is worth (L1.28a).
+    """
+    doc = _read(report or OUT, default={})
+    grid = doc.get("grid") if isinstance(doc, dict) else None
+    if not isinstance(grid, dict):
+        return set()
+    return {f"{t.get('family')}|{t.get('symbol')}".lower()
+            for t in (grid.get("targets") or []) if isinstance(t, dict)}
+
+
 def tune_mix(gain: dict[str, Any], path: Path | None = None) -> dict[str, Any]:
     """Move the declared share toward the class that is measured to open more ground.
 
@@ -393,7 +408,9 @@ def write(doc: dict[str, Any], *, report: Path | None = None) -> None:
 
 
 def render(doc: dict[str, Any]) -> list[str]:
-    head, lad, grid = doc.get("headline") or {}, doc.get("dedup_ladder") or {}, doc.get("grid") or {}
+    head = doc.get("headline") or {}
+    lad = doc.get("dedup_ladder") or {}
+    grid = doc.get("grid") or {}
     lines = [f"INDEPENDENCE INTAKE  {doc.get('verdict')}",
              f"  orthogonal cells/h {head.get('orthogonal_cells_to_judge_per_hour')} of "
              f"{head.get('cells_to_judge_per_hour')} raw  (weight "

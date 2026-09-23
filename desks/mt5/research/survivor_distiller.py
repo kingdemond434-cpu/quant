@@ -580,6 +580,77 @@ _STATE_WHY = ("state conditioning is applied by the shadow harness (selector/con
               "the family function, so a bar screen cannot see it")
 
 
+def mix_by_mechanism(
+        pairs: list[tuple[dict[str, Any], str]],
+) -> tuple[list[tuple[dict[str, Any], str]], dict[str, Any]]:
+    """MUTATE MECHANISMS, NOT ONLY PARAMETERS: the declared share of the task slots.
+
+    Every operator this file mints except `condition_on_state` nudges a CONSTANT --
+    `step_<param>_up`, `step_<param>_down`, `swap_<param>`, `drop_<param>`. Ranked on raw score
+    against each other they crowd out the one move that changes the mechanism, and the desk
+    spends its judge-hours on parameter variants of rules it already holds (the dedup ladder,
+    2026-09-23: 18,201 raw cells over 583 mechanisms).
+
+    So the two classes are interleaved on their own virtual clocks -- the weighted fair queue the
+    docket already uses -- at the share `independence_intake` DECLARES, which is itself tuned by
+    the measured orthogonality gain of each class. Inside the mechanism arm, a move onto a
+    (family|symbol) pair the grid shows EMPTY goes first: that is where independent ground is.
+
+    NOTHING IS DROPPED AND NOTHING IS CAPPED. Every pair passed in comes back out; only the order
+    changes, and the truncation at MAX_TASKS is the one that was already there. An unimportable
+    or unmeasured mix returns the list untouched.
+    """
+    try:
+        from research.independence_intake import (
+            declared_mechanism_share,
+            empty_pairs,
+            mechanism_class,
+        )
+    except Exception as exc:                                             # pragma: no cover
+        return pairs, {"available": False,
+                       "why": f"UNMEASURED: mix unimportable ({type(exc).__name__})"}
+    share = float(declared_mechanism_share())
+    if not pairs or not 0.0 < share < 1.0:
+        return pairs, {"available": False, "why": "UNMEASURED: no proposal or no usable share"}
+    targets = empty_pairs()
+    mech = [p for p in pairs if mechanism_class(p[0].get("operator")) == "mechanism"]
+    param = [p for p in pairs if mechanism_class(p[0].get("operator")) != "mechanism"]
+
+    def _empty_first(p: tuple[dict[str, Any], str]) -> tuple[int, float, str]:
+        key = f"{p[0].get('family')}|{p[0].get('symbol')}".lower()
+        return (0 if key in targets else 1, -float(p[0].get("score") or 0.0), str(p[0]["id"]))
+
+    mech.sort(key=_empty_first)
+    step_m, step_p = 1.0 / share, 1.0 / (1.0 - share)
+    v_m, v_p = step_m, step_p
+    out: list[tuple[dict[str, Any], str]] = []
+    i = j = 0
+    while i < len(mech) or j < len(param):
+        if j >= len(param) or (i < len(mech) and v_m <= v_p):
+            out.append(mech[i])
+            i += 1
+            v_m += step_m
+        else:
+            out.append(param[j])
+            j += 1
+            v_p += step_p
+    head = out[:MAX_TASKS]
+    n_head_mech = sum(1 for p in head if mechanism_class(p[0].get("operator")) == "mechanism")
+    return out, {
+        "available": True, "declared_share": round(share, 4),
+        "mechanism_moves": len(mech), "parameter_moves": len(param),
+        "slots": len(head),
+        "realised_share": round(n_head_mech / len(head), 4) if head else None,
+        "mechanism_in_slots": n_head_mech,
+        "empty_cell_targets_hit": sum(
+            1 for p in head
+            if f"{p[0].get('family')}|{p[0].get('symbol')}".lower() in targets),
+        "rule": ("mechanism-changing and parameter moves interleave on virtual clocks at the "
+                 "declared share; empty grid cells go first inside the mechanism arm. No move "
+                 "is dropped and no total is capped -- only the order of the same list changes"),
+    }
+
+
 def run(budget_s: float = 900.0, symbols: list[str] | None = None,
         write: bool = True) -> dict[str, Any]:
     started = time.monotonic()
@@ -652,12 +723,17 @@ def run(budget_s: float = 900.0, symbols: list[str] | None = None,
                   "parent": r["parent"], "operator": r["operator"]}) for r in proposals]
     unscreened.extend((m, _STATE_WHY) for m in conditioned)
     unscreened.sort(key=lambda x: (-x[0]["score"], x[0]["id"]))
+    unscreened, mix = mix_by_mechanism(unscreened)
     tasks = [_task(m, why) for m, why in unscreened[:MAX_TASKS]]
     rep: dict[str, Any] = {
         "generated_at": datetime.now(tz=UTC).isoformat(), "graph_rows": len(rows),
         "certified_cells": len(certified), "certified_swept": len(todo),
         "prior": prior, "motifs": mot, "motifs_by_state": by_state,
         "state_neighbours": len(conditioned), "weights": weights_note,
+        # WHICH MOVES BOUGHT THE SLOTS: the declared mechanism share, what it realised, and how
+        # many of the slots landed on an empty grid cell. `independence_intake` tunes the share
+        # from the orthogonality gain this mix goes on to produce.
+        "mechanism_mix": mix,
         "neighbours_generated": len(neighbours),
         # The parsimony arm, counted apart: a simpler certificate is a different kind of finding
         # from a neighbour of one, and a run that generated no simplification at all is a fact

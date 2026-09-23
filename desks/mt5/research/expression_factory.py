@@ -1256,6 +1256,10 @@ class Factory:
             "cheap": {"passed": 0, "rejected": {}},
             "tier1": {"evaluated": 0, "passed": 0, "rejected": {}},
             "tier2": {"evaluated": 0, "passed": 0, "rejected": {}},
+            #: Cells the factory's OWN tier1/tier2 screens disliked. They are queued to the one
+            #: judge exactly like a survivor (LAWS 7); the tier statistics ride along as
+            #: PROVENANCE and as the ORDERING key, never as a gate.
+            "deferred": [],
             "survivors": [], "blocked": [], "transfers_held": 0, "transfer_cells": 0,
             "mutations": {"by_move": {}, "by_trial_family": {}, "noop": {}}, "migrants": 0,
         }
@@ -1470,9 +1474,17 @@ class Factory:
             parent.recent = parent.recent[-EXHAUST_TAIL:]
             parent.orth.append(1.0 - rho_max)
         if not t1.passed:
+            # THE FACTORY PROPOSES; THE ONE JUDGE DISPOSES (LAWS 7, principal 2026-09-23). This
+            # branch used to END the cell: `_reject` + `campaign.fail` + return, so a cell the
+            # factory's own tier1 disliked never reached `counts["survivors"]` and therefore
+            # never reached the registry, the docket or the gauntlet. That is a second judge, and
+            # the desk has exactly one. The tier1 statistic is kept -- as the rejection counter
+            # that orders the report, and as the QUEUE ORDERING below -- but the cell is now
+            # queued. Tier2 is still not run on it: that is a COMPUTE budget, not a verdict, and
+            # the judge does not need the factory's second opinion to test a spec.
             self._reject("tier1", t1.reason)
-            self.campaign.fail(cell.key, f"tier1: {t1.reason}")
-            return {"tier": 1, "why": t1.reason, "t1": t1.metrics()}
+            self._defer(cell, t1, None, rho_max, f"tier1: {t1.reason}")
+            return {"tier": 1, "why": t1.reason, "t1": t1.metrics(), "queued": True}
         self.counts["tier1"]["passed"] += 1
         if parent is not None:
             parent.tier1_pass += 1
@@ -1492,9 +1504,12 @@ class Factory:
             self.archive[desc] = {"score": round(score, 4), "cell": cell.as_dict(),
                                   "net_oos": round(t1.net_oos, 7), "at": now_iso()}
         if not t2.passed:
+            # SAME LAW, SECOND HALF. Tier2 has already RUN here, so its metrics are free
+            # provenance; what may not happen is the cell dying on them.
             self._reject("tier2", t2.reason)
-            self.campaign.fail(cell.key, f"tier2: {t2.reason}")
-            return {"tier": 2, "why": t2.reason, "t1": t1.metrics(), "t2": t2.metrics()}
+            self._defer(cell, t1, t2, rho_max, f"tier2: {t2.reason}")
+            return {"tier": 2, "why": t2.reason, "t1": t1.metrics(), "t2": t2.metrics(),
+                    "queued": True}
         self.counts["tier2"]["passed"] += 1
         self.families.survivor(cell.expr)
         self.credits.survivor(cell.expr, cell.generator, cell.asset_class)
@@ -1507,14 +1522,30 @@ class Factory:
         (self.counts["blocked"] if blocked else self.counts["survivors"]).append(row)
         return {"tier": 3, "why": "survivor", **row}
 
+    def _defer(self, cell: Cell, t1: Tier1, t2: Tier2 | None, rho_max: float,
+               why: str) -> None:
+        """Queue a cell the factory's own screens disliked. Same row shape as a survivor, so the
+        registry write treats it identically; the internal verdict survives as provenance and as
+        the ordering key (`score`), never as a gate."""
+        world = self.lake.worlds.get(cell.symbol)
+        blocked = executable_by_formula_family(cell.expr, cell.state)
+        row = {"cell": cell.as_dict(), "t1": t1.metrics(),
+               "t2": t2.metrics() if t2 is not None else {},
+               "orthogonality": round(1.0 - rho_max, 3), "executor_block": blocked,
+               "internal_screen": why, "score": round(t1.t_oos * (1.0 - rho_max), 4),
+               "falsifier": self._falsifier(cell, t1, t2, world)}
+        self.counts["deferred"].append(row)
+
     @staticmethod
-    def _falsifier(cell: Cell, t1: Tier1, t2: Tier2, world: World) -> str:
+    def _falsifier(cell: Cell, t1: Tier1, t2: Tier2 | None, world: World | None) -> str:
         side = "follow" if t1.side > 0 else "fade"
+        cost = f"{world.cost:.2e}" if world is not None else "UNMEASURED"
         return (f"{ag.to_str(cell.expr)} on {cell.symbol}, {side}, hold {cell.hold} bars, "
                 f"state {cell.state}: abandon if the gauntlet's net per trade at this hold is "
                 f"<= 0 or its deflated t <= 2 over the pre-registered spec, or if 60 forward "
-                f"trades net <= the round-trip cost ({world.cost:.2e}); expected failure "
-                f"regime: {t2.worst_split or 'UNMEASURED'} (the weakest split in sample)")
+                f"trades net <= the round-trip cost ({cost}); expected failure "
+                f"regime: {(t2.worst_split if t2 is not None else None) or 'UNMEASURED'} "
+                f"(the weakest split in sample)")
 
     # ---- the four stages
     def worlds_for(self, expr: Expr, hold: int, states: Iterable[str] = ("none",)) -> list[Cell]:
@@ -1856,6 +1887,9 @@ class Factory:
                            "transfer_cells": self.counts["transfer_cells"],
                            "transfers_held": self.counts["transfers_held"],
                            "survivors": len(self.counts["survivors"]),
+                           #: Cells the factory's own tier1/tier2 disliked and queued anyway.
+                           #: The number the desk lost every pass before LAWS 7 was enforced.
+                           "deferred_to_judge": len(self.counts["deferred"]),
                            "blocked_survivors": len(self.counts["blocked"]),
                            "cap_reached": self.cells_done >= self.caps.max_cells}
         report["families"] = self.families.summary()
@@ -2028,7 +2062,15 @@ class Factory:
         except Exception:
             origin = "EXPRESSION_FACTORY"
         parent_ids: dict[str, str] = {}
+        # ORDER, NOT GATE (LAWS 7). The factory's own screens no longer decide WHETHER a cell
+        # reaches the one judge, only the ORDER it arrives in: survivors first, then the cells
+        # tier1/tier2 disliked by descending internal score (t_oos * orthogonality), then the
+        # blocked ones. A deferred cell whose executor is missing is still recorded BLOCKED --
+        # that is the executor's absence, a fact about this desk, not a verdict on the edge.
+        deferred = sorted(self.counts["deferred"],
+                          key=lambda r: -float(r.get("score") or -9e9))
         rows = [(r, False) for r in self.counts["survivors"]] + \
+            [(r, bool(r["executor_block"])) for r in deferred] + \
             [(r, True) for r in self.counts["blocked"]]
         try:
             conn = reg.connect()

@@ -46,6 +46,8 @@ for _p in (str(DESK), str(DESK / "research"), str(ROOT)):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
+from libs.research import set_aside as sa  # noqa: E402
+
 OUT = DESK / "reports" / "ALPHA_RL.json"
 
 #: Wall-clock budget for one pass. The hourly cycle bills every leg, and a search that cannot say
@@ -139,7 +141,11 @@ def run(*, episodes: int = DEFAULT_EPISODES, budget_s: float = DEFAULT_BUDGET_S,
         # a family-level mean. A table learned mostly at `family` depth is a coarser claim.
         "match_depths": dict(res.match_depths),
         "n_ranked": len(ranked),
-        "top": ranked[:TOP_N],
+        # TOP_N IS A PUBLICATION BUDGET, NOT A SCREEN (LAWS 7). The tail is still ranked and
+        # still counted in `n_ranked`; what it may not be is dropped without a name, so the
+        # remainder is recorded in reports/SET_ASIDE_LEDGER.json with the ordering key.
+        "top": sa.take(ranked, TOP_N, organ="alpha_rl_run", stage="ranked_prefixes",
+                       ordering="rank order from run_episodes (value of the decision prefix)"),
         "rule": ("the state is a PREFIX of construction decisions, so a reward earned by one "
                  "completed spec moves the value of a decision several layers above it -- this "
                  "ranks DECISIONS the book's marginals paid for, not specs"),
