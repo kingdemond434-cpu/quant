@@ -3109,48 +3109,50 @@
    "item": "Production truth: live-MT5 deadman, mandatory runtime build hash, verified box/VPS relationship, per-organ provenance envelope, one LIVE_SYSTEM_STATE.json, >99% trade attribution",
    "domain": "C",
    "phase": "C",
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
-    "desks/mt5/research/live_system_state.py",
-    "libs/ops/compute_ledger.py",
-    "desks/mt5/tests/test_live_system_state.py",
-    "tests/ops/test_compute_ledger_envelope.py",
-    "desks/mt5/proposals/fusion_deadman.py",
-    "desks/mt5/mt5desk/release_identity.py",
-    "libs/ops/release.py",
-    "scripts/check_desk_code_parity.py"
+    "desks/mt5/research/live_system_state.py:71 OUT = data/LIVE_SYSTEM_STATE.json and :635 main -- ONE joined state: release identity, risk, sleeves, allocator, promotion, execution, attestation, E8, box and every source it could not read (MEASURED; produced on this host 2026-09-23)",
+    "desks/mt5/data/LIVE_SYSTEM_STATE.json -- envelope / release / risk / sleeves / allocator / promotion / execution / attestation / e8 / box / sources / unmeasured / changes_since_previous (MEASURED)",
+    "libs/ops/compute_ledger.py open_run/close_run -- the per-run provenance envelope: commit_sha, config_hash, input_hash, output_hash, started_at, finished_at (MEASURED)",
+    "desks/mt5/mt5desk/markout.py:91-102 `attributed_deals` / `attributed_share` -- trade attribution is MEASURED per pass, not asserted; the live figure is whatever the ledger joins, published rather than rounded up (MEASURED)",
+    "desks/mt5/research/hourly_cycle.py live_system_state, release_identity and runtime_attestation legs (MEASURED)",
+    "Box tasks MT5-FusionDeadman, MT5-FusionDeadmanDryRun, MT5-ReleaseAuthority (MEASURED)"
    ],
-   "scheduled_by": "hourly_cycle:live_system_state, hourly_cycle:release_identity, MT5-FusionDeadman, MT5-FusionDeadmanDryRun, MT5-ReleaseAuthority",
+   "scheduled_by": "hourly_cycle:live_system_state, hourly_cycle:release_identity, hourly_cycle:runtime_attestation, hourly_cycle:markout, MT5-FusionDeadman, MT5-FusionDeadmanDryRun, MT5-ReleaseAuthority",
    "artifact": "desks/mt5/data/LIVE_SYSTEM_STATE.json",
-   "consumer": "mt5desk/gateway.py release gate; scripts/check_closed_loop.py",
+   "consumer": "desks/mt5/mt5desk/gateway.py release gate; scripts/check_closed_loop.py; desks/mt5/research/tier1_scorecard.py",
    "gap": "PARTIAL 2026-09-16: LIVE_SYSTEM_STATE.json and the per-run provenance envelope (commit_sha, config_hash, input_hash, output_hash, started_at, finished_at) LANDED; the deadman is dry-run on both tasks and live attribution reads 4.6% (live_ledger sleeves not in sleeves.json/survivors), so >99% attribution and the live deadman remain open.",
    "next_step": "libs/ops/compute_ledger.open_run/close_run gain commit_sha, config_hash (hash of the leg's declared inputs), input_hash, output_hash; a new organ live_system_state.py joins release_identity, sleeves, gateway_state, pf_allocation, promoter state and RELEASE.json into desks/mt5/data/LIVE_SYSTEM_STATE.json hourly (core plan); the deadman's --live path is principal-gated (LAWS §4).",
-   "landed": []
+   "landed": [
+    "LIVE_SYSTEM_STATE produced on the box 2026-09-23"
+   ],
+   "note": "TWO THINGS ARE MEASUREMENTS, NOT MISSING BUILDS, AND ONE IS PRINCIPAL-GATED. The attributed share is whatever the live ledger joins this hour and the organ publishes it; raising it is trading work, not building work. ARMING THE DEADMAN ON THE LIVE ACCOUNT IS THE PRINCIPAL'S CALL: LAWS s4 and CLAUDE.md say the Tier-3 deadman rail is never modified autonomously, and its standing defect (it watches retired crypto-testnet endpoints) is queued principal-gated work. Both tasks run dry-run and say so."
   },
   {
    "id": "C2",
    "item": "Point-in-time information lake: published/retrieval/vintage stamps, as-of joins only, macro releases with initial/consensus/prior/revised/surprise, ALFRED/BIS/CFTC/EDGAR ingest on clocks",
    "domain": "C",
    "phase": "C",
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
-    "libs/data/pit_stamp.py",
-    "scripts/check_pit_canaries.py",
-    "tests/data/test_pit_stamp.py",
-    "libs/data/pit.py",
-    "libs/data/lake.py",
-    "libs/research/vintage.py",
-    "desks/mt5/research/fetch_alfred.py",
-    "desks/mt5/research/fetch_tff.py"
+    "libs/data/pit.py -- the stamp carries published_time, retrieval_time, revision_time, source_id and vintage_id, and the PIT canary asserts all of them (MEASURED)",
+    "desks/mt5/research/event_surprise.py:947 main -> reports/EVENT_SURPRISE.json -- ACTUAL AGAINST CONSENSUS, the column the row said was missing. The collector reads registered public pages only (machine_use_allowed true, robots honoured), and the rule is stated on the artifact: z = (actual - consensus) / sd(that release's own historical surprises) (MEASURED)",
+    "desks/mt5/reports/EVENT_SURPRISE.json -- status UNMEASURED with its reason in full ('0 pair(s) and none with 10 prior surprises of the same release: z is UNMEASURED, which is a verdict'). The mechanism exists and refuses to invent a consensus, which is the only honest state for a collector whose grounds registry refuses 2 of its 7 sources (MEASURED)",
+    "desks/mt5/research/lake_promote.py -- bronze -> silver promotion on a clock, refusals published (MEASURED)",
+    "desks/mt5/reports/PIT_CENSUS.json + desks/mt5/data/event_consensus_sources.json (7 grounds, 5 machine-use-allowed, 2 refused, each with its licence_url) (MEASURED)",
+    "hourly_cycle:pit_canaries, hourly_cycle:time_joins, hourly_cycle:lake_promote, hourly_cycle:fred_macro, hourly_cycle:event_surprise, quant-cot-fetch.timer (MEASURED)"
    ],
-   "scheduled_by": "hourly_cycle:pit_canaries, hourly_cycle:time_joins, hourly_cycle:lake_promote, hourly_cycle:fred_macro, quant-cot-fetch.timer",
-   "artifact": "desks/mt5/reports/PIT_CENSUS.json",
-   "consumer": "libs/features/pit.py readers; scripts/check_closed_loop.py truth.pit_canaries_green",
+   "scheduled_by": "hourly_cycle:pit_canaries, hourly_cycle:time_joins, hourly_cycle:lake_promote, hourly_cycle:fred_macro, hourly_cycle:event_surprise, quant-cot-fetch.timer",
+   "artifact": "desks/mt5/reports/PIT_CENSUS.json + desks/mt5/reports/EVENT_SURPRISE.json + desks/mt5/reports/LAKE_PROMOTION.json",
+   "consumer": "libs/features/pit.py readers; scripts/check_closed_loop.py truth.pit_canaries_green; desks/mt5/research/event_response_atlas.py and desks/mt5/research/macro_intelligence.py read the surprise cells",
    "gap": "PARTIAL 2026-09-16: the stamp now carries published_time, retrieval_time, revision_time, source_id, vintage_id and the canary asserts them (LANDED); still open: ALFRED/EDGAR/macro-revision ingest on a clock and an `actual` column so surprise is computable.",
    "next_step": "Extend pit_stamp with published_time, retrieval_time, source_id, vintage_id (defaulting to the existing fields, never inventing); put fetch_alfred.py and macro_revision_miner.py on the daily cycle; add an `actual` column to the macro calendar vintages from the release feed so surprise = (actual - consensus)/sigma is computable; PIT canaries assert the four new fields.",
-   "landed": []
+   "landed": [
+    "surprise collector on a clock, UNMEASURED published honestly 2026-09-23"
+   ],
+   "note": "`actual` is COLLECTED, not fabricated: on this host no release pair has ten prior surprises of its own kind, so z reads UNMEASURED with the count that made it so. That is the verdict the row asked for (L1.28a); a consensus guessed from a headline would have made every downstream reaction cube confidently wrong."
   },
   {
    "id": "C3",
@@ -3209,111 +3211,127 @@
    "item": "Mechanism genome: every alpha as a composition of economic primitives (actor, constraint, observable, trigger, catalyst, transmission, entry, exit, holding, capacity, decay_risk); alpha_evolution recombines at mechanism level",
    "domain": "C",
    "phase": "C",
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
-    "libs/research/mechanism_ontology.py",
-    "libs/research/mechanism_fingerprint.py",
-    "desks/mt5/research/alpha_genome.py",
-    "desks/mt5/research/alpha_evolution.py",
-    "libs/research/alpha_grammar.py"
+    "libs/research/mechanism_genome.py -- the ELEVEN SLOTS as a declared table: actor, constraint, observable, trigger, catalyst, transmission, entry, exit, holding, capacity, decay_risk, for 40 families (all 28 in mt5desk.families.FAMILY_REGISTRY plus the 12 the certified canon actually uses) (MEASURED)",
+    "libs/research/mechanism_genome.py TRANSMISSION_TRIGGERS / HOLDING_EXITS -- the compatibility table: which triggers a transmission channel admits, which exits a holding period admits. It filters NONSENSE CHILDREN, never an existing alpha; an UNDECLARED slot is UNJUDGED rather than incompatible (MEASURED)",
+    "libs/research/mechanism_genome.py `recombine` -- one slot crossed per child, so a verdict on a child is attributable to that slot; incoherent children are not minted, because the trial budget is shared and a cell that cannot be true still charges the deflated-Sharpe and SPA bar every other cell must clear (MEASURED)",
+    "desks/mt5/research/alpha_genome.py:150 -- every certified sleeve's row now carries `mechanism_genome`, declared per family and never inferred from the family's NAME (MEASURED)",
+    "desks/mt5/research/alpha_genome.py `recombinations` + the donation block -- MEASURED 2026-09-23: 24 slot-level children minted, 0 undeclared families, 0 incoherent, donated to desks/mt5/data/intelligence/mechanism_genome/discoveries_20260923_1135.json with 0 refused unstamped and 0 refused wrong-lane (MEASURED)",
+    "tests/research/test_mechanism_genome.py -- eleven slots, every registered family declared and coherent, an unknown family UNDECLARED rather than guessed, incoherent children not minted, a child differing in exactly one slot (MEASURED, 6 cases green)"
    ],
-   "scheduled_by": "hourly_cycle:alpha_evolution, hourly_cycle:compile_candidates",
-   "artifact": "desks/mt5/reports/ALPHA_GENOME.json",
-   "consumer": "libs/research/alpha_clusters.py; alpha_breadth clusters",
+   "scheduled_by": "daily_cycle:alpha_genome, hourly_cycle:alpha_evolution, hourly_cycle:compile_candidates",
+   "artifact": "desks/mt5/reports/ALPHA_GENOME.json (`mechanism_genome` block: slots, census, recombinations, donated) + desks/mt5/data/intelligence/mechanism_genome/discoveries_*.json",
+   "consumer": "desks/mt5/research/miner_candidate_compiler.py walks data/intelligence/** and compiles the donated children -> merge_hypotheses -> the sealed gauntlet; desks/mt5/research/pf_allocator.py:2184 reads ALPHA_GENOME.json for the mechanism-cluster tier; libs/research/alpha_clusters.py",
    "gap": "MEASURED 2026-09-16: alpha_evolution mutates and crosses grammar expressions (operators + parameters); no schema carries the eleven primitives as composable slots; alpha_genome is a post-hoc structural fingerprint.",
    "next_step": "libs/research/mechanism_genome.py: the eleven-slot Genome dataclass with a compatibility table (which transmissions admit which triggers/exits), `from_family(family, params)` for every registered family, `recombine(a, b)` producing only compatible children; alpha_evolution gains a `genome` population that recombines at slot level and donates through proposer_common.donate.",
-   "landed": []
+   "landed": [
+    "eleven-slot genome declared, crossed and donated 2026-09-23"
+   ],
+   "note": "THE FIRST COMPATIBILITY TABLE WAS TOO TIGHT AND THE CENSUS CAUGHT IT: it declared `overnight_drift` (the desk's canonical earn-it-overnight premium), the two mean-reversion families and `momentum_volgate` INCOHERENT, because it refused a risk premium triggered by a clock, inventory pressure revealed by price extension, and vol-targeting flow triggered by a vol state. A table written to catch nonsense was catching the desk's own live sleeves. Fixed, with the reason recorded beside each channel, and the test now fails if any registered family is incoherent."
   },
   {
    "id": "C6",
    "item": "Ten permanent hypothesis engines feeding one canonical intake, each LLM hypothesis carrying cause->actor->constraint->observable->rule->horizon->capacity->decay->falsifier->cheapest test",
    "domain": "C",
    "phase": "C",
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
-    "libs/research/edge_intake.py",
-    "libs/research/hypothesis_graph.py",
-    "desks/mt5/research/miner_candidate_compiler.py",
-    "desks/mt5/research/factor_residual_engine.py",
-    "desks/mt5/research/world_causal_graph.py",
-    "desks/mt5/research/carry_state.py",
-    "desks/mt5/research/macro_desk.py",
-    "desks/mt5/research/hour_surface.py",
-    "desks/mt5/research/deep_forest_miner.py",
-    "desks/mt5/side_channels/hypothesis_schema.py"
+    "desks/mt5/research/engine_registry.py:655 main -> reports/ENGINE_REGISTRY.json -- the engines as a MEASURED table: 443 cells of P(certified | method, domain) as a Beta-Binomial posterior with its credible interval, plus a yield per compute hour, methods, domains, weights, shares and an exploration floor (MEASURED)",
+    "desks/mt5/reports/ENGINE_REGISTRY.json -- n_cells 443, with `growth_governance` and `exploration` blocks: it reweights compute and CAPS NOTHING, so an engine that has not converted keeps its exploration floor (MEASURED)",
+    "hourly_cycle:engine_registry, and the ten engines' own legs: search, sweep, mine, deepen, compile_candidates, causal_graph, residual_factors, deep_forest, macro_state_engine, trend_core, event_surprise, execution_alpha (MEASURED)",
+    "desks/mt5/research/carry_state.py on MT5-CostState -- the carry/term-structure engine has a daily clock (MEASURED)",
+    "desks/mt5/data/research_queue.json -> desks/mt5/scripts/external_gauntlet.py -- one canonical intake for every engine (MEASURED)",
+    "desks/mt5/side_channels/hypothesis_schema.py -- the ten-field hypothesis contract (cause, actor, constraint, observable, rule, horizon, capacity, decay, falsifier, cheapest test) (MEASURED)"
    ],
-   "scheduled_by": "hourly_cycle:search, hourly_cycle:sweep, hourly_cycle:mine, hourly_cycle:deepen, hourly_cycle:compile_candidates, hourly_cycle:causal_graph, hourly_cycle:residual_factors, hourly_cycle:deep_forest, MT5-CostState",
-   "artifact": "desks/mt5/data/research_queue.json",
-   "consumer": "desks/mt5/scripts/external_gauntlet.py",
+   "scheduled_by": "hourly_cycle:engine_registry, hourly_cycle:search, hourly_cycle:sweep, hourly_cycle:mine, hourly_cycle:deepen, hourly_cycle:compile_candidates, hourly_cycle:causal_graph, hourly_cycle:residual_factors, hourly_cycle:deep_forest, MT5-CostState",
+   "artifact": "desks/mt5/reports/ENGINE_REGISTRY.json + desks/mt5/data/research_queue.json",
+   "consumer": "desks/mt5/research/research_budget.py reads ENGINE_REGISTRY.json to weight each engine's compute; desks/mt5/scripts/external_gauntlet.py drains research_queue.json",
    "gap": "MEASURED 2026-09-16: the ten engines exist as organs but are not a registered set with per-engine yield; carry/term-structure and seasonality have no hourly organ (carry_state runs daily on MT5-CostState since 2026-09-16); LLM seats emit free-form claims -- the ten-field contract lives only in the unread hypothesis_schema.py.",
    "next_step": "engine_registry.py: the ten engines as a table {engine, organ, leg/task, intake path}, measured yield per engine from hypothesis_graph.jsonl (born/certified per engine) into reports/ENGINE_REGISTRY.json hourly; miner_candidate_compiler refuses an LLM hypothesis row lacking cause/actor/observable/rule/horizon/falsifier (disposition INCOMPLETE_HYPOTHESIS) and the seat prompts (libs/ops/deepseek_cycle.py, kimi) demand the ten fields.",
-   "landed": []
+   "landed": [
+    "per-engine yield measured and priced 2026-09-23"
+   ],
+   "note": "Per-engine yield is a POSTERIOR with a credible interval, not a league table: an engine with two attempts is wide and keeps its exploration floor, because failure to convert is never evidence there is nothing there (L1.25)."
   },
   {
    "id": "C7",
    "item": "Global macro state engine: per-country state vectors and global factors, dynamic sensitivities r = a + b'G + g'M + e, residual and beta-change research",
    "domain": "C",
    "phase": "C",
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
-    "libs/portfolio/macro_state.py",
-    "desks/mt5/research/state_vector_build.py",
-    "libs/regime/state_vector.py",
-    "desks/mt5/macro/factors.py",
-    "desks/mt5/macro/schema.py",
-    "desks/mt5/research/growth_now.py"
+    "desks/mt5/research/macro_state_engine.py:1169 main -> reports/MACRO_STATE_ENGINE.json -- status OK on this host, publishing `blocks` (per-country state vectors), `blocks_summary`, `global_factors` G, `registry_census`, `edge_changes` and `donations` (MEASURED)",
+    "desks/mt5/reports/MACRO_STATE_ENGINE.json `edge_changes` -- the EDGE-CHANGE HUNTER: a link that turned on, flipped sign or died is a dated row with a change-point p-value, which is the beta-change monitor the row asked for (MEASURED)",
+    "desks/mt5/research/hourly_cycle.py `macro_state_engine` leg, 600 s budget (MEASURED)",
+    "desks/mt5/reports/MACRO_STATE_ENGINE.json `consumer` -- stated on the artifact itself: donated rows land in data/intelligence/macro_state_engine/ and are read by desks/mt5/research/miner_candidate_compiler.py as STRUCTURED_HYPOTHESIS with family defaults and a declared instrument, on the same hourly cycle (MEASURED)",
+    "desks/mt5/research/state_vector_build.py + desks/mt5/data/state_vector.json -- the single global state the country blocks extend, still published (MEASURED)",
+    "libs/research/layers.py `macro_state_engine: information` (MEASURED)"
    ],
-   "scheduled_by": "hourly_cycle:state_vector, hourly_cycle:fred_macro, hourly_cycle:regime_monitor",
-   "artifact": "desks/mt5/data/state_vector.json",
-   "consumer": "libs/portfolio/pf_allocator conditioning; desks/mt5/research/macro_desk.py",
+   "scheduled_by": "hourly_cycle:macro_state_engine, hourly_cycle:state_vector, hourly_cycle:fred_macro, hourly_cycle:regime_monitor",
+   "artifact": "desks/mt5/reports/MACRO_STATE_ENGINE.json + desks/mt5/data/state_vector.json + desks/mt5/data/intelligence/macro_state_engine/",
+   "consumer": "desks/mt5/research/miner_candidate_compiler.py (the donated macro_residual rows); libs/portfolio/pf_allocator conditioning; desks/mt5/research/macro_desk.py",
    "gap": "MEASURED 2026-09-16: one global US-centric state (six FRED series as rank percentiles); no per-country blocks; no published beta estimation or beta-change monitor.",
    "next_step": "macro_state_engine.py: country blocks (US, EA, UK, JP, CA, AU, CH, CN) from FRED/ALFRED/ECB axes already in data/axes/*.json, global factors G, rolling OLS betas per MT5 instrument on G and M with change-point flags, published to reports/MACRO_STATE_ENGINE.json hourly; residuals donated as `macro_residual` hypotheses.",
-   "landed": []
+   "landed": [
+    "country blocks, global factors and the edge-change hunter on a clock 2026-09-23"
+   ],
+   "note": "A country block with no readable axis publishes UNMEASURED with the axis named, never an imputed level: a state vector that fills its own gaps would move the allocator's conditioning on a number nobody measured."
   },
   {
    "id": "C8",
    "item": "Cross-asset causal graph whose edges carry direction, lag distribution, rolling beta, conditional/partial correlation, event-conditioned transmission, stability, regime dependence and explanation",
    "domain": "C",
    "phase": "C",
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
-    "desks/mt5/research/world_causal_graph.py",
-    "desks/mt5/research/cross_asset_graph.py",
-    "libs/research/causal_graph.py",
-    "libs/research/lead_lag.py",
-    "desks/mt5/research/futures_lead_lag.py"
+    "libs/research/causal_graph.py:673-700 `lag_distribution` -- THE FIRST NAMED GAP CLOSED. An edge carried the argmax lag alone, so a relation living on a broad six-hour plateau and one living entirely at lag 3 reached every reader looking identical. The profile now publishes its mass, its peak and `n_significant` (how many lags carry a deflated interval excluding zero) (MEASURED)",
+    "libs/research/causal_graph.py:1146-1153 `ev['regime_dependence']` -- THE SECOND: the per-state strengths stated explicitly, with MEASURED only when two regime buckets clear MIN_STATE_N and the reason in full when they do not, instead of one spread scalar a reader had to infer from (MEASURED)",
+    "desks/mt5/research/world_causal_graph.py:569 + :251-282 `_partial_vs_factors` -- THE THIRD: conditional/partial correlation with the dollar and the risk bid projected out of both legs, on the SAME inner join and clock the pairwise test used. libs/research/causal_graph.py:1155-1158 records it UNMEASURED by default so the field exists on every edge and never reads as a zero (MEASURED)",
+    "libs/research/causal_graph.py:1130-1140 -- each edge also carries incremental information against Y's own lags, stability, nonlinearity and a directed information_flow reading published beside the linear one and never gating it (MEASURED)",
+    "desks/mt5/reports/WORLD_CAUSAL_GRAPH.json -- chains, candidate_edges, admitted_edges, recorded_not_admitted, conditioning and conditioning_hints; this pass measured 0 admissible edges and says so, which is the pass's verdict (MEASURED)",
+    "desks/mt5/research/event_graph_lab.py:296-330 -- identification -> estimation -> counterfactual -> refutation per edge, anti-lookahead (x_t against y_(t+lag), lag >= 1 day, controls read at t), verdicts recorded on registry rows with status untouched and edge-derived seeds donated to the compiler (MEASURED)"
    ],
-   "scheduled_by": "hourly_cycle:causal_graph, hourly_cycle:futures_lead_lag",
-   "artifact": "desks/mt5/reports/WORLD_CAUSAL_GRAPH.json",
-   "consumer": "desks/mt5/research/factor_residual_engine.py; frontier_ceo",
+   "scheduled_by": "hourly_cycle:causal_graph, hourly_cycle:event_graph_lab, hourly_cycle:futures_lead_lag",
+   "artifact": "desks/mt5/reports/WORLD_CAUSAL_GRAPH.json (per-edge lag_distribution, regime_dependence, partial_correlation) + desks/mt5/reports/EVENT_GRAPH.json",
+   "consumer": "desks/mt5/research/state_vector_build.py (conditioning_hints), desks/mt5/research/macro_state_engine.py, desks/mt5/research/unused_information.py, desks/mt5/research/tier1_scorecard.py; event_graph_lab donates edge-derived seeds to miner_candidate_compiler",
    "gap": "MEASURED 2026-09-16: edges carry lag, t, state dependence, stability, OOS value and event propagation; they lack a lag distribution, conditional/partial correlation controlling for a third market, and an explicit regime-dependence field; ledger B16 says the graph is not wired to promotion.",
    "next_step": "world_causal_graph gains per-edge lag_distribution (bootstrap over lags), partial_correlation (given USD/risk factors), regime_dependence (edge strength by regime_state), and the residual-after-graph series is donated to the residual engine; the gauntlet's economic_prior stage reads the edge for cross-asset cells.",
-   "landed": []
+   "landed": [
+    "lag distribution, regime dependence and partial correlation on every edge 2026-09-23"
+   ],
+   "note": "The graph still ADMITS and never promotes: an edge that a common factor fully explains keeps whatever status the admission rule gave it, and the reading is published beside it. Wiring an edge directly into promotion would put a correlation on the money path without the ten gates, which is the firewall (LAWS)."
   },
   {
    "id": "C9",
    "item": "Factor-neutral / residual research everywhere: s = Bf + e for every candidate; residual families across classes; incremental alpha after neutralisation as an admission statistic",
    "domain": "C",
    "phase": "C",
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
-    "desks/mt5/research/factor_residual_engine.py",
-    "desks/mt5/research/residual_alpha.py",
-    "desks/mt5/research/orthogonality.py",
-    "libs/portfolio/latent_factors.py",
-    "desks/mt5/scripts/external_gauntlet.py"
+    "libs/validation/residual_gate.py -- the LIBRARY, no side effects: s = Bf + e against the CURRENT book, where the regressors are the book's latent factors (PCA scores through libs.portfolio.latent_factors.factor_model, so the desk has one convention) AND every funded sleeve, because a candidate can be orthogonal to every component and still be a re-spelling of one live sleeve (MEASURED)",
+    "libs/validation/residual_gate.py `residual_alpha` -- the admission statistic is the t of the INTERCEPT, the alpha the book cannot explain. NOT the t of the residual mean: a least-squares residual against a design carrying an intercept has mean exactly zero by construction, so that t is identically 0 and would report every candidate as explained. The first pass measured exactly that and the docstring records it (MEASURED)",
+    "libs/validation/residual_gate.py `independent_columns` -- when the book has k sleeves and k factors are extracted, the two halves of C9's own specification are the same subspace written twice; a ridge inverse of that singular Gram inverted a 1e-8 eigenvalue into 1e8 and inflated the intercept's standard error fourfold in orders of magnitude. Collinear controls are dropped and NAMED on the row (MEASURED)",
+    "desks/mt5/research/residual_gate_mount.py -- the MOUNT, in the shape the desk already proved with hostile -> blind_reviewer, because the row's next_step asked for a stage inside the SEALED external_gauntlet. It reads data/pf_allocator_cache/daily_r.parquet joined to the allocator's own `book`, so 'funded' means what the allocator says this hour (MEASURED)",
+    "desks/mt5/reports/RESIDUAL_GATE.json -- MEASURED 2026-09-23: book = [gold_asia, USDJPY_asia_FAILED_BREAK], 4 candidates, CADJPY_asia_FAILED_BREAK residual t = 3.29 on 429 overlapping days while the three gold windows fall to -1.0..-1.9, and 4 registry residual_alpha events recorded (MEASURED)",
+    "desks/mt5/research/merge_hypotheses.py `residual_family_values` + `breadth_order` -- THE CONSUMER: the family-level residual t breaks the tie between families judged equally often per docket row. It re-orders and REMOVES NOTHING (MEASURED)",
+    "desks/mt5/research/hourly_cycle.py `residual_gate` leg (180 s) and libs/research/layers.py `residual_gate: portfolio` (MEASURED)",
+    "tests/validation/test_residual_gate.py -- a re-spelling of the book keeps almost no alpha, an orthogonal edge keeps its t, collinear controls are dropped rather than inverted, a short overlap is UNMEASURED and not zero, run_all never blocks (MEASURED, 8 cases green)"
    ],
-   "scheduled_by": "hourly_cycle:residual_factors, hourly_cycle:orthogonality",
-   "artifact": "desks/mt5/reports/factor_residual.json",
-   "consumer": "external_gauntlet stages",
+   "scheduled_by": "hourly_cycle:residual_gate, hourly_cycle:residual_factors, hourly_cycle:orthogonality",
+   "artifact": "desks/mt5/reports/RESIDUAL_GATE.json + desks/mt5/reports/factor_residual.json + registry `residual_alpha` events",
+   "consumer": "desks/mt5/research/merge_hypotheses.py residual_family_values -> breadth_order (the judging docket's family order); the registry rows are reachable from each cell's own provenance",
    "gap": "MEASURED 2026-09-16: residualisation is a proposer over declared driver sets, not a pre-processing step for every candidate; incremental alpha after neutralisation is not a gauntlet gate (stages: in_sample_screen, deflated_sharpe, pbo, reality_check_spa, cpcv, walk_forward, stress_costs, lockbox, expected_value, swap_cost, economic_prior).",
    "next_step": "libs/validation/residual_gate.py: regress a cell's trade R on the latent factors of the current book (latent_factors.py) and on the survivors' returns; admission statistic = t of the residual mean; external_gauntlet adds stage `residual_alpha` after `expected_value`, recorded per cell in the verdict ledger.",
-   "landed": []
+   "landed": [
+    "residual gate library + publishing mount on a clock 2026-09-23"
+   ],
+   "note": "IT PUBLISHES AND NEVER VETOES, and `blocking` is False at every level with a test pinning it. Turning an incremental-alpha statistic into a refusal would be a new gate on research, which the standing order of 2026-09-08 forbids without a proof that robust forward E[log W] rises. The sealed gauntlet and the promoter remain the only judges."
   },
   {
    "id": "C10",
@@ -3344,86 +3362,98 @@
    "item": "Event-reaction surfaces: response = f(surprise, revision, positioning, prior trend, vol, liquidity, regime) as reaction cubes across instruments x horizons x regimes",
    "domain": "C",
    "phase": "C",
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
-    "desks/mt5/mt5desk/family_event_reaction.py",
-    "desks/mt5/macro/surprise.py",
-    "libs/regime/event_state.py",
-    "libs/validation/event_study.py",
-    "desks/mt5/research/hour_surface.py"
+    "desks/mt5/research/event_response_atlas.py -> reports/EVENT_RESPONSE_ATLAS.json -- MEASURED: 2,010 cells across the declared `horizons` and `conditioners`, with per-kind event and placement counts, a threshold t, the clearing set and the donated rows (MEASURED)",
+    "desks/mt5/reports/EVENT_RESPONSE_ATLAS.json -- the reaction CUBE the row asked for: response by release family x instrument x horizon x conditioner, with `unmeasured` naming every cell it could not fill (MEASURED)",
+    "desks/mt5/research/event_surprise.py -> reports/EVENT_SURPRISE.json -- the conditioning variable itself: surprise z per calendar event with `by_bucket`, `regime_timeline`, `cells` and `n_clearing`; UNMEASURED on this host with the pair count that made it so (MEASURED)",
+    "desks/mt5/research/hourly_cycle.py:2947 event_surprise leg, :2978 event_response_atlas leg, daily_cycle:hour_surface (MEASURED)",
+    "desks/mt5/reports/hour_surface.json -- the hour-of-day surface the family lane reads (MEASURED)"
    ],
-   "scheduled_by": "hourly_cycle:sweep (family), daily_cycle:hour_surface",
-   "artifact": "desks/mt5/reports/hour_surface.json",
-   "consumer": "family_event_reaction",
+   "scheduled_by": "hourly_cycle:event_response_atlas, hourly_cycle:event_surprise, hourly_cycle:news_event_stream, hourly_cycle:event_sleeves, daily_cycle:hour_surface",
+   "artifact": "desks/mt5/reports/EVENT_RESPONSE_ATLAS.json + desks/mt5/reports/EVENT_SURPRISE.json + desks/mt5/reports/hour_surface.json",
+   "consumer": "desks/mt5/research/event_sleeves.py (turns clearing cells into sleeve candidates), desks/mt5/research/macro_intelligence.py, desks/mt5/research/news_event_stream.py, family_event_reaction",
    "gap": "MEASURED 2026-09-16: no reaction cube exists and surprise.py records that `actual` is missing from the calendar vintages, so the primary conditioning variable cannot be computed today.",
    "next_step": "After C2 lands `actual`: event_reaction_cube.py builds, per release family x instrument x horizon (5m..4h) x regime, the conditional response distribution on surprise z, revision z, positioning percentile (COT), prior 3-day trend, vol percentile and spread state; publishes reports/EVENT_REACTION_CUBE.json daily and donates cells whose conditional mean clears cost as `event_reaction` hypotheses.",
-   "landed": []
+   "landed": [
+    "reaction cube measured at 2,010 cells 2026-09-23"
+   ],
+   "note": "Surprise z is UNMEASURED on this host and the cube is measured anyway, on the conditioners that ARE readable (positioning, prior trend, vol state, spread state, regime). That is the right order: a cube that waited for one conditioner would have published nothing for months."
   },
   {
    "id": "C12",
    "item": "Execution intelligence: full order/fill/rejection/latency recording, Cost(instrument, time, size, regime, session, order_type), a learned now/wait/market/limit/split/skip policy, per-alpha execution distributions",
    "domain": "C",
    "phase": "C",
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
-    "desks/mt5/research/cost_surface.py",
-    "libs/execution/execution_choice_model.py",
-    "libs/execution/fill_corpus.py",
-    "desks/mt5/research/execution_twin.py",
-    "desks/mt5/research/fill_attribution.py",
-    "libs/costs/model.py"
+    "desks/mt5/research/cost_truth.py:90 OUT = reports/COST_TRUTH.json and :1261 main -- the cost surface built from the venue's own tape, publishing COST_TRUTH.json, the rendered page and EXECUTION_COST_SURFACE.json, which nothing on this desk had ever written. A box with no terminal reads UNMEASURED rather than failing (MEASURED)",
+    "desks/mt5/reports/EXECUTION_COST_SURFACE.json -- Cost(instrument, time, size, regime, session, order_type) cells with `deferred` and `n_deferred` explicit, so an UNMEASURED cell is visible as one (MEASURED)",
+    "desks/mt5/reports/execution_quality.json -- decisions / filled / unfilled / rejection_rate / unfilled_reasons / by_symbol_session / by_phase: the full order / fill / rejection / latency recording the row asked for (MEASURED)",
+    "desks/mt5/reports/EXECUTION_ALPHA.json -- per-instrument adverse-move and delayed-vs-immediate distributions over a declared grid, with `per_instrument` rows: the per-alpha execution distribution (MEASURED)",
+    "desks/mt5/reports/execution_resolver.json -- the learned now/wait/market/limit/split/skip competition, ranked per intent, with `candidates_scored` and `best` (MEASURED)",
+    "scripts/check_cost_truth.py -- the fence; hourly_cycle:cost_truth, hourly_cycle:execution_twin, hourly_cycle:fill_attribution, hourly_cycle:execution_resolver, hourly_cycle:cost_to_edge, MT5-CostState, MT5-TickRecorder (MEASURED)"
    ],
-   "scheduled_by": "MT5-CostState, hourly_cycle:execution_twin, hourly_cycle:fill_attribution, hourly_cycle:execution_resolver, hourly_cycle:cost_to_edge, MT5-TickRecorder",
-   "artifact": "desks/mt5/data/cost_surface.json",
-   "consumer": "external_gauntlet stress_costs; mt5desk/gateway.py",
+   "scheduled_by": "hourly_cycle:cost_truth, hourly_cycle:execution_twin, hourly_cycle:fill_attribution, hourly_cycle:execution_resolver, hourly_cycle:cost_to_edge, MT5-CostState, MT5-TickRecorder, daily_cycle:execution",
+   "artifact": "desks/mt5/reports/COST_TRUTH.json + desks/mt5/reports/EXECUTION_COST_SURFACE.json + desks/mt5/reports/execution_quality.json + desks/mt5/data/cost_surface.json",
+   "consumer": "desks/mt5/research/net_edge_spine.py:184-270 (spread, financing and commission terms of every net edge), desks/mt5/mt5desk/engine.py, desks/mt5/research/exit_study.py, desks/mt5/research/book_reality.py, external_gauntlet stress_costs, libs/ops/control_plane/edges.py",
    "gap": "MEASURED 2026-09-16: cost_surface is symbol x hour only; execution_choice_model refuses a policy until the thinnest arm clears its power gate; no alpha carries its own execution distribution.",
    "next_step": "cost_surface gains size, regime, session and order_type dimensions from fill_corpus + order_intents (UNMEASURED cells stay explicit); per-alpha execution distribution = the fill corpus filtered by sleeve, published beside each live sleeve in reports/EXECUTION_DISTRIBUTIONS.json; the gauntlet's stress_costs draws from the alpha's own distribution when n >= 30.",
-   "landed": []
+   "landed": [
+    "cost truth and the execution cost surface published and read 2026-09-23"
+   ],
+   "note": "execution_choice_model still refuses to publish a POLICY until its thinnest arm clears its power gate, and that refusal stays: a routing policy fitted on an underpowered arm would be believed. What it refuses is a policy, never a measurement -- every distribution above is published regardless."
   },
   {
    "id": "C13",
    "item": "Execution as alpha: a fitted post-signal path model (MAE/MFE) and one objective E[alpha captured - spread - slippage - miss cost] the entry/exit chooser optimises",
    "domain": "C",
    "phase": "C",
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
-    "desks/mt5/research/excursions.py",
-    "desks/mt5/research/unfilled_fork.py",
-    "desks/mt5/research/counterfactual_markout.py",
-    "libs/execution/alpha_capture.py",
-    "desks/mt5/research/exit_study.py"
+    "desks/mt5/research/execution_alpha_miner.py:828 main -> reports/EXECUTION_ALPHA.json -- the post-signal path model: P(adverse | spread, state, time) and delayed-vs-immediate entry from the tape and the fills, over a declared grid, with `discoveries` recorded in the canonical registry (MEASURED)",
+    "desks/mt5/reports/EXECUTION_ALPHA.json -- instruments, days, instrument_days, grid, adverse_move, delayed_vs_immediate, fills, discoveries, per_instrument, unmeasured, next_gate (MEASURED)",
+    "desks/mt5/data/excursions.jsonl + daily_cycle:excursions -- the MFE/MAE dataset the path model is fitted on (MEASURED)",
+    "desks/mt5/research/net_edge_spine.py:184-286 -- ONE objective the four terms meet in: gross edge minus spread, financing, commission and the multiplicity charge, per cell, ranked (MEASURED)",
+    "desks/mt5/reports/execution_resolver.json -- entry/exit mode chosen per intent under that objective, with the ranking published (MEASURED)",
+    "desks/mt5/research/hourly_cycle.py:3306 execution_alpha leg, :3543 net_edge leg, hourly_cycle:exit_study, hourly_cycle:markout, hourly_cycle:cost_to_edge (MEASURED)"
    ],
-   "scheduled_by": "hourly_cycle:exit_study, hourly_cycle:markout, hourly_cycle:cost_to_edge, daily_cycle:excursions",
-   "artifact": "desks/mt5/reports/ALPHA_CAPTURE.json",
-   "consumer": "mt5desk/family_call (brackets); execution_resolver",
+   "scheduled_by": "hourly_cycle:execution_alpha, hourly_cycle:net_edge, hourly_cycle:exit_study, hourly_cycle:markout, hourly_cycle:cost_to_edge, daily_cycle:excursions",
+   "artifact": "desks/mt5/reports/EXECUTION_ALPHA.json + desks/mt5/reports/NET_EDGE.json + desks/mt5/reports/ALPHA_CAPTURE.json",
+   "consumer": "desks/mt5/research/algorithm_db.py, desks/mt5/research/news_event_stream.py, desks/mt5/research/unused_information.py and libs/execution/fill_corpus.py read EXECUTION_ALPHA.json; desks/mt5/research/execution_resolver.py chooses the bracket; mt5desk/family_call reads the resolver",
    "gap": "MEASURED 2026-09-16: the four terms live in four artifacts; no organ optimises them as one objective and no fitted path model exists -- excursions.py is an empirical dataset no chooser consumes.",
    "next_step": "execution_alpha.py: fit the post-signal excursion path per family x symbol x session from data/excursions.jsonl (MFE/MAE quantiles by bar offset), evaluate entry modes (now/wait k bars/limit at -x ATR) and exit modes under one objective with spread/slippage/miss from the fill corpus, publish the chosen mode per sleeve in reports/EXECUTION_ALPHA.json; family_call reads it for bracket placement when the evidence has n >= 30.",
-   "landed": []
+   "landed": [
+    "path model measured and the four terms joined in one objective 2026-09-23"
+   ]
   },
   {
    "id": "C14",
    "item": "Hostile validation: timestamp permutation, sign inversion, random-entry matched-exit, regime permutation, nearby-instrument placebo, cost shocks, delayed entry 1/5/15, parameter neighbourhood, subperiod removal, worst-year removal, transfer, source substitution, dual-engine -- mandatory and blocking",
    "domain": "C",
    "phase": "C",
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
-    "libs/validation/hostile.py",
-    "tests/validation/test_hostile.py",
-    "libs/validation/redteam.py",
-    "libs/validation/falsifiers.py",
-    "libs/validation/knob_sensitivity.py",
-    "desks/mt5/research/placebo_test.py"
+    "libs/validation/hostile.py -- eight adversaries behind ONE interface with a declared blocking set (timestamp_permutation, delayed_entry(1), subperiod sign flip, worst_year), plus `stats_from_r` as the desk's single constructor for a t from a return series (MEASURED)",
+    "desks/mt5/research/blind_reviewer.py:407-413 -- THE MOUNT, and the reason C14 is not a gauntlet stage: external_gauntlet is SEALED. The reviewer rebuilds the cell's evaluate closure, replays it, and injects that closure into hostile.run_all (MEASURED)",
+    "desks/mt5/research/blind_reviewer.py:420-438 -- the verdict: a reproduction whose t falls below half the certified t, OR a hostile roster that BLOCKS, is recorded as such with `blocked_by` naming which adversaries fired (MEASURED)",
+    "desks/mt5/research/blind_reviewer.py:95 OUT = reports/BLIND_REVIEW.json and :655-684 main (MEASURED)",
+    "desks/mt5/research/hourly_cycle.py:2880 blind_reviewer leg; hourly_cycle:adversaries and hourly_cycle:falsifier_run for the independent roster (MEASURED)",
+    "desks/mt5/reports/ADVERSARY.json -- the adversary lab's own artifact (MEASURED)"
    ],
-   "scheduled_by": "hourly_cycle:external_gauntlet, hourly_cycle:adversaries, hourly_cycle:falsifier_run, MT5-Gauntlet",
-   "artifact": "desks/mt5/reports/ADVERSARY.json",
-   "consumer": "external_gauntlet stages",
+   "scheduled_by": "hourly_cycle:blind_reviewer, hourly_cycle:adversaries, hourly_cycle:falsifier_run, hourly_cycle:external_gauntlet, MT5-Gauntlet",
+   "artifact": "desks/mt5/reports/BLIND_REVIEW.json + desks/mt5/reports/ADVERSARY.json",
+   "consumer": "desks/mt5/research/promoter.py reads BLIND_REVIEW.json (the sealed promoter is the consumer, which is what makes the roster blocking in the only place it can be); desks/mt5/research/research_artifacts.py harvests it into the hash-linked chain",
    "gap": "PARTIAL 2026-09-16: libs/validation/hostile.py LANDED (eight tests, one interface, blocking set: timestamp_permutation, delayed_entry(1), subperiod sign flip, worst_year); not yet mounted as a gauntlet stage -- the cell evaluate closure must be built from external_gauntlet's harness.",
    "next_step": "libs/validation/hostile.py (built 2026-09-16, wave 1): the eight tests behind one interface with a blocking set; external_gauntlet adds stage `hostile` after `stress_costs` that runs run_all on the cell's evaluate closure and refuses certification when `blocking` is true; verdicts land in the gate verdict ledger.",
-   "landed": []
+   "landed": [
+    "hostile roster mounted on a clock and read by the promoter 2026-09-23"
+   ],
+   "note": "MOUNTED BESIDE THE SEALED GAUNTLET, NOT INSIDE IT. The row's next_step asked for a `hostile` stage in external_gauntlet; that file is one of the four never-touch files, so the roster runs in blind_reviewer and its verdict reaches the money path through the promoter, which reads BLIND_REVIEW.json. Same blocking effect, no edit to a sealed judge."
   },
   {
    "id": "C15",
@@ -3476,22 +3506,25 @@
    "item": "Posterior E[log W] allocator: max E[log(1+w'r)] - C(w) - U(w) with hierarchical constraints (trade, sleeve, mechanism, factor, instrument, asset class, portfolio)",
    "domain": "C",
    "phase": "C",
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
-    "desks/mt5/research/pf_allocator.py",
-    "libs/portfolio/robust_elog.py",
-    "libs/risk/heat.py",
-    "libs/risk/factor_caps.py",
-    "libs/risk/fx_factors.py",
-    "libs/portfolio/allocator_proof.py"
+    "desks/mt5/research/pf_allocator.py:1454-1540 `_objective_terms` -- C(w) and U(w) as EXPLICIT terms of max E[log(1+w'r)] - C(w) - U(w). C(w) = sum_i w_i * cost_bias_r_i (the R per trade the replay did not charge); U(w) = sum_i w_i * sd(mean_i) (the posterior standard error of each sleeve's daily mean, heat-weighted). Both were already being paid and neither was written down (MEASURED)",
+    "desks/mt5/research/pf_allocator.py:1520-1535 `tiers` -- the instrument and mechanism tiers as DECOMPOSITIONS of the heat already resolved: they redistribute within the resolved total and lower nothing (MEASURED)",
+    "desks/mt5/reports/pf_allocation.json `objective_terms` -- MEASURED 2026-09-23 on the box: cost_of_w total 0.008184 over 10 priced sleeves and 0 unpriced, uncertainty_of_w total 0.004191, tiers.instrument and tiers.mechanism against total_heat, `binding: false` (MEASURED)",
+    "desks/mt5/research/pf_allocator.py:4449 -- the block reaches the artifact every allocator pass (MEASURED)",
+    "libs/portfolio/allocator_proof.py (SEALED) certifies the decomposition; hourly_cycle:pf_allocator, hourly_cycle:allocator_join, MT5-AllocatorFast (MEASURED)",
+    "desks/mt5/reports/pf_allocation.json -- heat, asset-class and currency tiers still bind; effective heat, n_eff by covariance/factor/tail, and the mechanism mix published beside them (MEASURED)"
    ],
    "scheduled_by": "hourly_cycle:pf_allocator, hourly_cycle:allocator_join, MT5-AllocatorFast",
-   "artifact": "desks/mt5/reports/pf_allocation.json",
-   "consumer": "mt5desk/gateway.py fractions",
+   "artifact": "desks/mt5/reports/pf_allocation.json (`objective_terms`: cost_of_w, uncertainty_of_w, tiers)",
+   "consumer": "desks/mt5/mt5desk/gateway.py deploys the allocator's fractions un-re-shrunk; libs/portfolio/allocator_proof.py; desks/mt5/research/net_edge_spine.py:492 heat_reallocation reads the book",
    "gap": "MEASURED 2026-09-16: heat, asset-class and currency tiers bind; the mechanism cluster reaches the artifact and stops; no per-trade/instrument tier; C(w) and U(w) are folded into the world sampler rather than explicit terms. The standing order NEVER REDUCE AGGRESSIVENESS bounds every change: new tiers may only redistribute inside the resolved heat, never lower it.",
    "next_step": "pf_allocator publishes C(w) (spread+commission+slippage+financing from the cost surface) and U(w) (posterior-sd penalty) as explicit terms of the objective and adds mechanism-cluster and instrument tiers that REDISTRIBUTE within the heat floor/ceiling (Rule 2 two-sided); allocator_proof certifies the decomposition.",
-   "landed": []
+   "landed": [
+    "C(w), U(w) and the instrument/mechanism tiers published 2026-09-23"
+   ],
+   "note": "PUBLISHED, NOT SUBTRACTED, and the artifact says so in `binding: false` and in the term's own `why`. Turning either into a live deduction would shrink the book, and the principal's standing order of 2026-09-08 is that a growth cut needs a proof that robust forward E[log W] RISES -- which a penalty term is not. A sleeve the desk cannot price contributes UNMEASURED to the count and 0 to the sum, and the count is published beside the total so a small C(w) built on ignorance is visible as such."
   },
   {
    "id": "C18",
@@ -3568,21 +3601,25 @@
    "item": "LLM research organisation with ten specialised roles bound to real seats; no voting; adversary destroys; replicator reproduces",
    "domain": "C",
    "phase": "C",
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
-    "desks/mt5/research/research_org.py",
-    "libs/research/agents.py",
-    "desks/mt5/research/scientist_tournament.py",
-    "libs/ops/llm_seat.py",
-    "libs/research/free_panel.py"
+    "desks/mt5/research/model_role_benchmark.py -> reports/MODEL_ROLE_BENCHMARK.json -- THE TEN ROLES, measured: data_scout, mechanism_miner, hypothesis_scientist, adversarial_researcher, statistical_validator, cross_asset_analyst, macro_analyst, execution_researcher, portfolio_researcher, replicator, each allocated to a seat by weighted Wilson lower bound over nine measured skills (MEASURED)",
+    "desks/mt5/research/research_org.py:235-240 ROLE_SEAT_SKILL -- the declared join between the four ADVERSARIAL POSITIONS on one claim and the benchmark's ten COMPETENCES. Two vocabularies for the same staff, joined once here rather than re-guessed by every reader (MEASURED)",
+    "desks/mt5/research/research_org.py:244-292 `seat_bindings` -- THE GAP CLOSED: the roles were held by agent_a..agent_d, which are not seats. Bindings are now read from the real benchmark, and a role whose counterparts are all UNASSIGNED stays UNASSIGNED with the reason carried through -- never filled by rotation (MEASURED)",
+    "desks/mt5/reports/RESEARCH_ORG.json `seat_bindings` -- MEASURED 2026-09-23: ADVOCATE = seat `external` via hypothesis_scientist, REPLICATOR = seat `anomalies` via data_scout, SKEPTIC and VALIDATOR UNASSIGNED with 'no seat is measured on any of [...]; the benchmark refuses to assign an unearned role and so does this', conflict_free false and the reason published (MEASURED)",
+    "desks/mt5/research/research_org.py:283-292 -- the separation law applied to the BINDING itself: a seat holding two positions on one claim is reported, never silently reassigned (MEASURED)",
+    "desks/mt5/research/blind_reviewer.py (the REPLICATOR: reproduces a certified cell and attacks the reproduction with the hostile roster) and desks/mt5/research/counterexample_agent.py (the ADVERSARY: placebo symbol, placebo date, sign flip, neighbouring parameter, excluded window, before a trial is spent) (MEASURED)"
    ],
-   "scheduled_by": "hourly_cycle:research_org, MT5-ScientistTournament, quant-deepseek.timer, quant-kimi-hunter.timer",
-   "artifact": "desks/mt5/reports/RESEARCH_ORG.json",
-   "consumer": "audit_intake.classify",
+   "scheduled_by": "hourly_cycle:research_org, hourly_cycle:model_role_benchmark, hourly_cycle:blind_reviewer, hourly_cycle:counterexample_agent, MT5-ScientistTournament, quant-deepseek.timer, quant-kimi-hunter.timer",
+   "artifact": "desks/mt5/reports/RESEARCH_ORG.json (`seat_bindings`) + desks/mt5/reports/MODEL_ROLE_BENCHMARK.json",
+   "consumer": "desks/mt5/research/audit_intake.classify; desks/mt5/research/research_org.py seat_records reads each bound seat's own data/intelligence/<seat>/ donations and the hypothesis graph's verdicts on rows carrying that source",
    "gap": "MEASURED 2026-09-16: four generic roles; RESEARCH_ORG.json publishes demo agents (agent_a..d) and synthetic reputations -- no real seat is bound to a role; the replicator is the gauntlet re-run.",
    "next_step": "research_org.run reads the real seat ledgers (data/intelligence/<seat>/, model_skill_track.jsonl, tournament dissents) and binds the ten roles to seats by measured competence (D9's benchmark); the replicator role re-implements a certified cell from its hypothesis text through the program-alpha lane (D4) and the dual_engine test (C14) compares.",
-   "landed": []
+   "landed": [
+    "ten benchmarked roles bound to real seats by measured competence 2026-09-23"
+   ],
+   "note": "NO VOTING, AND NO UNEARNED ROLE. Two of the four adversarial positions are UNASSIGNED today because no seat is measured on their competences, and that is published rather than rotated away -- the exact failure the benchmark exists to end. The organisation cannot staff a conflict-free review from two bound seats and says so in `conflict_free: false`."
   },
   {
    "id": "C22",
@@ -3638,21 +3675,25 @@
    "item": "Failures as training data: a declared failure-stage taxonomy on every rejection and P(survival | hypothesis features incl. mechanism, axis, information source) steering compute with an exploration floor",
    "domain": "C",
    "phase": "C",
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
-    "libs/research/graveyard_model.py",
-    "libs/research/hypothesis_graph.py",
-    "desks/mt5/research/mutation_yield.py",
-    "libs/research/bandit.py",
-    "desks/mt5/research/research_bandit.py"
+    "libs/research/graveyard_model.py:65-75 STAGES -- THE DECLARED FAILURE-STAGE TAXONOMY: idea, data, pit, statistics, cost, capacity, execution, forward, decay. A failure CLASS says what killed the cell; a STAGE says how far it got before dying (MEASURED)",
+    "libs/research/graveyard_model.py:76-85 CLASS_STAGE -- the declared map from gate verdict to stage, with UNKNOWN deliberately given NO stage: a cell judged FAILED with no gate detail is `failure_stage_unattributed`, not assigned to `idea` (MEASURED)",
+    "desks/mt5/reports/GRAVEYARD_MODEL.json -- status, n_judged, survivors, failure_classes, failure_stages (all nine named), failure_stage_unattributed, stage_taxonomy, survival_by, consumer, authority (MEASURED)",
+    "desks/mt5/reports/GRAVEYARD_MODEL.json `survival_by` -- P(survival | features) now keyed on family, symbol, source, asset_class, n_params AND the AXIS_REGISTRY features the row asked for: mechanism, information_source, session, chart (MEASURED)",
+    "desks/mt5/research/research_budget.py:136-160 `_graveyard_factor` and :308 its use -- THE CONSUMER: a per-arm compute factor with an exploration floor, so a low-survival arm is spent less on and NEVER silenced (L1.25) (MEASURED)",
+    "desks/mt5/reports/MUTATION_YIELD.json + hourly_cycle:graveyard_model, hourly_cycle:mutation_yield, hourly_cycle:deepen (VOI order) (MEASURED)"
    ],
-   "scheduled_by": "hourly_cycle:graveyard_model, hourly_cycle:mutation_yield, hourly_cycle:deepen (VOI order)",
-   "artifact": "desks/mt5/reports/MUTATION_YIELD.json",
-   "consumer": "deepening_worker.voi_order; research_budget",
+   "scheduled_by": "hourly_cycle:graveyard_model, hourly_cycle:mutation_yield, hourly_cycle:deepen",
+   "artifact": "desks/mt5/reports/GRAVEYARD_MODEL.json + desks/mt5/reports/MUTATION_YIELD.json",
+   "consumer": "desks/mt5/research/research_budget.py `_graveyard_factor` (per-arm compute factor with an exploration floor), deepening_worker.voi_order, miner_candidate_compiler, falsifier_run, revival_engine",
    "gap": "MEASURED 2026-09-16: failure classes are derived from which gate failed, not a declared stage taxonomy; P(survival|features) uses family/symbol/source/parameter region only.",
    "next_step": "graveyard_model gains a stage taxonomy {idea, data, pit, statistics, cost, capacity, execution, forward, decay} written into every gate verdict and hypothesis_graph row, and features from AXIS_REGISTRY (mechanism, information_source, actor, session, chart); its P(survival) feeds research_budget as a per-arm factor with the exploration floor from C4.",
-   "landed": []
+   "landed": [
+    "stage taxonomy declared and steering compute with a floor 2026-09-23"
+   ],
+   "note": "Every `failure_stages` count reads 0 on this host and that is the measurement: the stage is written onto verdicts from here on, and back-attributing the existing graveyard would be inventing stages for cells nobody recorded one for. `failure_stage_unattributed` carries the remainder in the open."
   },
   {
    "id": "C25",

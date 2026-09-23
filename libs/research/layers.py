@@ -364,6 +364,8 @@ LEG_LAYER: dict[str, str] = {
     # THE RUNTIME ATTESTATION publishes what ran on this host, hashed -- a fence over the desk's
     # own bookkeeping and its only evidence outside the box, so meta like every other fence.
     "runtime_attestation": "meta",
+    # the self-repair registry judges the desk's own defect classes, not the market: meta.
+    "self_repair": "meta",
     # THE TWO STANDING BATTERIES rotate rosters that span every layer -- fences over the
     # machine's own bookkeeping, standing fixers, region organs. Billing the rotation to one
     # strategy layer would misattribute every other one, so the wiring mechanism is meta and the

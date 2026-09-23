@@ -924,7 +924,7 @@ LEG_DEPARTMENT: dict[str, str] = {
                      # measuring and scheduling itself.
                      "release_authority", "scientist_standings", "failure_prior",
                      "evig_acquisition",
-                     "runtime_attestation"), "meta"),
+                     "runtime_attestation", "self_repair"), "meta"),
     # japan: the Japan research division (the principal's 47-section mandate, hourly)
     **dict.fromkeys(("japan_department",), "japan"),
     # mathlab: the AI mathematics research civilization -- twenty-eight mathematical traditions
@@ -3473,6 +3473,12 @@ def main() -> None:
     # document names the one host it measured and refuses to describe any other.
     rta = _costed("runtime_attestation", lambda: _producer(
         "runtime_attestation", "research/runtime_attestation.py", "--once", "--budget-s", "180"))
+    # FIX THE CLASS, ON A CLOCK, OR IT IS NOT FIXED (LAWS 7, principal 2026-09-23). The twin of
+    # the birth fence: that one stops a NEW thing arriving incomplete, this one proves every
+    # KNOWN defect class carries a detector, a repair, a fence and fresh evidence -- and names
+    # the classes still found by hand, which is the count that must reach zero.
+    slf = _costed("self_repair", lambda: _producer(
+        "self_repair", "research/self_repair_registry.py", "--once", "--budget-s", "120"))
     # THE TWO STANDING BATTERIES (principal 2026-09-22: "100 percent of everything built always
     # must be used never forgotten"). A long tail of fences, standing fixers and region organs is
     # too small to deserve a leg each and invisible the moment it stops running; each battery
@@ -4256,6 +4262,7 @@ def main() -> None:
                     "coevolution": cev, "model_search": mds,
                     "external_federation": xfd, "archaeology": arch, "sares": srs,
                     "certificate_truth": ctt, "runtime_attestation": rta,
+                    "self_repair": slf,
                     "loop_liveness": llv, "clock_liveness": clk,
                     "fence_battery": fbt, "organ_battery": obt,
                     "federation_ops": fops, "sandbox_runner": sbr,
