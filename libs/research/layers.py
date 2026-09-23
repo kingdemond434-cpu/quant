@@ -79,7 +79,7 @@ LEG_LAYER: dict[str, str] = {
     "edges_macro_fusion_sweep": "prediction", "alpha_breadth": "prediction",
     "alpha_periodic_table": "prediction", "regime_coverage": "prediction",
     "arena": "meta", "prosecutor": "meta", "scaling_laws": "meta", "dead_architecture": "meta",
-    "producer_census": "meta",
+    "producer_census": "meta", "productivity_census": "meta",
     # timing: when a claim becomes a trade
     "enrol_clocks": "timing", "heal_clocks": "timing", "promoter": "timing",
     "rebalance_trigger": "timing", "entry_timing": "timing",

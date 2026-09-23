@@ -4,14 +4,14 @@
 > `reports/SANDBOX_ROSTER.json`. Never edit this file: edit the organs that write the
 > artifacts it reads.
 
-Generated 2026-09-23T09:51:41+00:00. 128 rows: 123 roster seeds, 58 adapters, 5 rebuilt cells.
+Generated 2026-09-23T18:06:45+00:00. 128 rows: 123 roster seeds, 58 adapters, 5 rebuilt cells.
 
 - **Runs on this host:** 38 / 128
-- **Has ever run:** 40  |  **has produced:** 31  |  **candidates donated:** 413
+- **Has ever run:** 40  |  **has produced:** 32  |  **candidates donated:** 528
 - **Library installed and imported:** 32  |  **permanently unavailable (with evidence):** 15  |  **no wheel pinned:** 11  |  **not yet attempted:** 65
 - **Licence read at a pin:** 38 / 128
 - **Roster seeds still waiting for an adapter:** 65 (named in the table; nothing can run them until one exists)
-- **Federation effective rank (independent cells spanned):** 4.8781 over 97 cells
+- **Federation effective rank (independent cells spanned):** 5.9835 over 142 cells
 
 Disposition census: DIRECT 82, REBUILT 29, WRAPPED 17
 
@@ -19,44 +19,44 @@ Disposition census: DIRECT 82, REBUILT 29, WRAPPED 17
 
 | system | disposition | licence | capability family | runs here | last run (h) | runs | candidates | breadth | status / why |
 |---|---|---|---|---|---|---|---|---|---|
-| `pyextremes` | DIRECT | MIT | extreme_value | yes | 0.05 | 6 | 34 | 0.979 | PRODUCED: already importable in the shared venv |
-| `numerai_method` | REBUILT | UNVERIFIED | portfolio_research | yes | 0.07 | 8 | 18 | 0.841 | PRODUCED: no wheel was resolved on this interpreter: pin a commit or a wheel before a sandbox may install it (LAWS 5m forbids a floating pin) |
-| `ray` | DIRECT | Apache-2.0 | distributed_compute | yes | 0.01 | 5 | 48 | 0.551 | PRODUCED: already importable in the shared venv |
-| `cell:coevolution_cell` | REBUILT | desk (own code; mechanism rebuilt from alphagen, openevolve, pyribs) | factor_model_coevolution | yes | 0.03 | 8 | 93 | 0.516 | PRODUCED: fallback: numpy factor grammar x numpy model zoo, alternating coevolution, walk-forward; upstream available: [] |
-| `cell:path_signature_lab` | REBUILT | desk (own code; mechanism rebuilt from roughpy) | rough_paths | yes | 0.07 | 8 | 26 | 0.507 | PRODUCED: fallback: numpy truncated signature (Chen's identity, level <= 3) over discrete increments; upstream available: [] |
-| `nevergrad` | DIRECT | MIT | evolutionary_search | yes | 0.06 | 6 | 54 | 0.464 | PRODUCED: already importable in the shared venv |
-| `pymoo` | DIRECT | Apache-2.0 | multiobjective_search | yes | 5.04 | 5 | 65 | 0.216 | PRODUCED: already importable in the shared venv |
-| `ripser` | DIRECT | MIT | topology | yes | 5.08 | 5 | 5 | 0.089 | PRODUCED: already importable in the shared venv |
-| `ruptures` | DIRECT | BSD-2-Clause | change_point | yes | 5.04 | 4 | 3 | 0.089 | PRODUCED: already importable in the shared venv |
-| `aeon` | DIRECT | BSD-3-Clause | time_series_mining | yes | 0.02 | 6 | 67 | 0.000 | PRODUCED: already importable in the shared venv |
-| `causal_learn` | DIRECT | MIT | causal_discovery | yes | 5.03 | 5 | 0 | 0.000 | PRODUCED: already importable in the shared venv |
-| `cell:conformal_calibration` | REBUILT | desk (own code; mechanism rebuilt from mapie) | conformal_uncertainty | yes | 5.02 | 7 | 0 | 0.000 | PRODUCED:  |
-| `cell:edgar_transmission` | REBUILT | desk (own code; mechanism rebuilt from the desk's own method) | financial_nlp | yes | 5.02 | 7 | 0 | 0.000 | UNMEASURED:  |
-| `cell:rl_execution_challenger` | REBUILT | desk (own code; mechanism rebuilt from ray, openspiel) | execution_engine | yes | 5.02 | 7 | 0 | 0.000 | PRODUCED:  |
-| `dowhy` | DIRECT | MIT | causal_discovery | yes | 5.02 | 5 | 0 | 0.000 | UNMEASURED: already importable in the shared venv |
-| `dspy` | DIRECT | MIT | prompt_optimization | yes | 5.02 | 5 | 0 | 0.000 | TEXT_ONLY: already importable in the shared venv |
-| `easytpp` | DIRECT | Apache-2.0 | point_process | yes | 5.02 | 5 | 0 | 0.000 | PRODUCED: already importable in the shared venv |
-| `featuretools` | DIRECT | BSD-3-Clause | feature_synthesis | yes | 5.02 | 5 | 0 | 0.000 | PRODUCED: installed and imported |
-| `mapie` | DIRECT | BSD-3-Clause | conformal_uncertainty | yes | 5.01 | 5 | 0 | 0.000 | PRODUCED: already importable in the shared venv |
-| `openevolve` | DIRECT | Apache-2.0 | program_evolution | yes | 5.01 | 5 | 0 | 0.000 | TEXT_ONLY: already importable in the shared venv |
-| `pgmpy` | DIRECT | MIT | graphical_models | yes | 5.01 | 5 | 0 | 0.000 | PRODUCED: already importable in the shared venv |
-| `pydmd` | DIRECT | MIT | dynamical_systems | yes | 5.0 | 5 | 0 | 0.000 | PRODUCED: already importable in the shared venv |
-| `pymc` | DIRECT | Apache-2.0 | probabilistic_programming | yes | 5.16 | 4 | 0 | 0.000 | PRODUCED: already importable in the shared venv |
-| `pysindy` | DIRECT | MIT | dynamical_systems | yes | 5.16 | 4 | 0 | 0.000 | PRODUCED: already importable in the shared venv |
-| `pysr` | DIRECT | Apache-2.0 | symbolic_regression | yes | 5.13 | 4 | 0 | 0.000 | UNMEASURED: installed and imported |
-| `pyvinecopulib` | DIRECT | MIT | copula_dependence | yes | 5.35 | 2 | 0 | 0.000 | PRODUCED: already importable in the shared venv |
-| `quantconnect_cloud` | WRAPPED | Apache-2.0 | research_reliability | yes | 5.35 | 2 | 0 | 0.000 | PRODUCED: already importable in the shared venv |
-| `quantrocket` | WRAPPED | Apache-2.0 | data_tooling | yes | 5.35 | 2 | 0 | 0.000 | TEXT_ONLY: already importable in the shared venv |
-| `reservoirpy` | DIRECT | MIT | reservoir_computing | yes | 5.34 | 2 | 0 | 0.000 | PRODUCED: already importable in the shared venv |
-| `river` | DIRECT | BSD-3-Clause | online_learning | yes | 5.34 | 2 | 0 | 0.000 | PRODUCED: already importable in the shared venv |
-| `roughpy` | DIRECT | BSD-3-Clause | rough_paths | yes | 5.34 | 2 | 0 | 0.000 | PRODUCED: already importable in the shared venv |
-| `sbi` | DIRECT | Apache-2.0 | simulation_based_inference | yes | 5.1 | 2 | 0 | 0.000 | UNMEASURED: installed and imported |
-| `scikit_mine` | DIRECT | BSD-3-Clause | pattern_mining | yes | 0.07 | 2 | 0 | 0.000 | PRODUCED: already importable in the shared venv |
-| `stumpy` | DIRECT | BSD-3-Clause | time_series_mining | yes | 5.64 | 1 | 0 | 0.000 | UNMEASURED: already importable in the shared venv |
-| `tensorly` | DIRECT | BSD-3-Clause | tensor_methods | yes | 5.59 | 1 | 0 | 0.000 | PRODUCED: already importable in the shared venv |
-| `tigramite` | DIRECT | GPL-3.0 | causal_discovery | yes | 5.43 | 1 | 0 | 0.000 | PRODUCED: already importable in the shared venv |
-| `tsfresh` | DIRECT | MIT | feature_synthesis | yes | 5.42 | 1 | 0 | 0.000 | PRODUCED: already importable in the shared venv |
-| `tslearn` | DIRECT | BSD-2-Clause | time_series_mining | yes | 5.25 | 1 | 0 | 0.000 | UNMEASURED: already importable in the shared venv |
+| `pyextremes` | DIRECT | MIT | extreme_value | yes | 0.08 | 7 | 56 | 0.985 | PRODUCED: already importable in the shared venv |
+| `numerai_method` | REBUILT | UNVERIFIED | portfolio_research | yes | 0.08 | 9 | 21 | 0.795 | PRODUCED: no wheel was resolved on this interpreter: pin a commit or a wheel before a sandbox may install it (LAWS 5m forbids a floating pin) |
+| `aeon` | DIRECT | BSD-3-Clause | time_series_mining | yes | 8.27 | 6 | 67 | 0.593 | PRODUCED: already importable in the shared venv |
+| `cell:coevolution_cell` | REBUILT | desk (own code; mechanism rebuilt from alphagen, openevolve, pyribs) | factor_model_coevolution | yes | 0.06 | 9 | 105 | 0.569 | PRODUCED: fallback: numpy factor grammar x numpy model zoo, alternating coevolution, walk-forward; upstream available: [] |
+| `ray` | DIRECT | Apache-2.0 | distributed_compute | yes | 0.07 | 6 | 60 | 0.519 | PRODUCED: already importable in the shared venv |
+| `nevergrad` | DIRECT | MIT | evolutionary_search | yes | 0.05 | 7 | 63 | 0.484 | PRODUCED: already importable in the shared venv |
+| `cell:path_signature_lab` | REBUILT | desk (own code; mechanism rebuilt from roughpy) | rough_paths | yes | 0.06 | 9 | 27 | 0.465 | PRODUCED: fallback: numpy truncated signature (Chen's identity, level <= 3) over discrete increments; upstream available: [] |
+| `stumpy` | DIRECT | BSD-3-Clause | time_series_mining | yes | 0.08 | 2 | 40 | 0.450 | PRODUCED: already importable in the shared venv |
+| `pymoo` | DIRECT | Apache-2.0 | multiobjective_search | yes | 0.05 | 6 | 80 | 0.261 | PRODUCED: already importable in the shared venv |
+| `ripser` | DIRECT | MIT | topology | yes | 0.05 | 6 | 6 | 0.137 | PRODUCED: already importable in the shared venv |
+| `ruptures` | DIRECT | BSD-2-Clause | change_point | yes | 0.0 | 5 | 3 | 0.070 | UNMEASURED: already importable in the shared venv |
+| `causal_learn` | DIRECT | MIT | causal_discovery | yes | 13.29 | 5 | 0 | 0.000 | PRODUCED: already importable in the shared venv |
+| `cell:conformal_calibration` | REBUILT | desk (own code; mechanism rebuilt from mapie) | conformal_uncertainty | yes | 13.28 | 7 | 0 | 0.000 | PRODUCED:  |
+| `cell:edgar_transmission` | REBUILT | desk (own code; mechanism rebuilt from the desk's own method) | financial_nlp | yes | 13.28 | 7 | 0 | 0.000 | UNMEASURED:  |
+| `cell:rl_execution_challenger` | REBUILT | desk (own code; mechanism rebuilt from ray, openspiel) | execution_engine | yes | 13.27 | 7 | 0 | 0.000 | PRODUCED:  |
+| `dowhy` | DIRECT | MIT | causal_discovery | yes | 13.27 | 5 | 0 | 0.000 | UNMEASURED: already importable in the shared venv |
+| `dspy` | DIRECT | MIT | prompt_optimization | yes | 13.27 | 5 | 0 | 0.000 | TEXT_ONLY: already importable in the shared venv |
+| `easytpp` | DIRECT | Apache-2.0 | point_process | yes | 13.27 | 5 | 0 | 0.000 | PRODUCED: already importable in the shared venv |
+| `featuretools` | DIRECT | BSD-3-Clause | feature_synthesis | yes | 13.27 | 5 | 0 | 0.000 | PRODUCED: installed and imported |
+| `mapie` | DIRECT | BSD-3-Clause | conformal_uncertainty | yes | 13.26 | 5 | 0 | 0.000 | PRODUCED: already importable in the shared venv |
+| `openevolve` | DIRECT | Apache-2.0 | program_evolution | yes | 13.26 | 5 | 0 | 0.000 | TEXT_ONLY: already importable in the shared venv |
+| `pgmpy` | DIRECT | MIT | graphical_models | yes | 13.26 | 5 | 0 | 0.000 | PRODUCED: already importable in the shared venv |
+| `pydmd` | DIRECT | MIT | dynamical_systems | yes | 13.26 | 5 | 0 | 0.000 | PRODUCED: already importable in the shared venv |
+| `pymc` | DIRECT | Apache-2.0 | probabilistic_programming | yes | 13.41 | 4 | 0 | 0.000 | PRODUCED: already importable in the shared venv |
+| `pysindy` | DIRECT | MIT | dynamical_systems | yes | 13.41 | 4 | 0 | 0.000 | PRODUCED: already importable in the shared venv |
+| `pysr` | DIRECT | Apache-2.0 | symbolic_regression | yes | 13.39 | 4 | 0 | 0.000 | UNMEASURED: installed and imported |
+| `pyvinecopulib` | DIRECT | MIT | copula_dependence | yes | 13.6 | 2 | 0 | 0.000 | PRODUCED: already importable in the shared venv |
+| `quantconnect_cloud` | WRAPPED | Apache-2.0 | research_reliability | yes | 13.6 | 2 | 0 | 0.000 | PRODUCED: already importable in the shared venv |
+| `quantrocket` | WRAPPED | Apache-2.0 | data_tooling | yes | 13.6 | 2 | 0 | 0.000 | TEXT_ONLY: already importable in the shared venv |
+| `reservoirpy` | DIRECT | MIT | reservoir_computing | yes | 13.59 | 2 | 0 | 0.000 | PRODUCED: already importable in the shared venv |
+| `river` | DIRECT | BSD-3-Clause | online_learning | yes | 13.59 | 2 | 0 | 0.000 | PRODUCED: already importable in the shared venv |
+| `roughpy` | DIRECT | BSD-3-Clause | rough_paths | yes | 13.59 | 2 | 0 | 0.000 | PRODUCED: already importable in the shared venv |
+| `sbi` | DIRECT | Apache-2.0 | simulation_based_inference | yes | 13.35 | 2 | 0 | 0.000 | UNMEASURED: installed and imported |
+| `scikit_mine` | DIRECT | BSD-3-Clause | pattern_mining | yes | 8.32 | 2 | 0 | 0.000 | PRODUCED: already importable in the shared venv |
+| `tensorly` | DIRECT | BSD-3-Clause | tensor_methods | yes | 13.84 | 1 | 0 | 0.000 | PRODUCED: already importable in the shared venv |
+| `tigramite` | DIRECT | GPL-3.0 | causal_discovery | yes | 13.68 | 1 | 0 | 0.000 | PRODUCED: already importable in the shared venv |
+| `tsfresh` | DIRECT | MIT | feature_synthesis | yes | 13.67 | 1 | 0 | 0.000 | PRODUCED: already importable in the shared venv |
+| `tslearn` | DIRECT | BSD-2-Clause | time_series_mining | yes | 13.5 | 1 | 0 | 0.000 | UNMEASURED: already importable in the shared venv |
 | `abides` | DIRECT | UNVERIFIED | market_simulation | NO | - | 0 | 0 | 0.000 | NEVER_RUN: no wheel was resolved on this interpreter: pin a commit or a wheel before a sandbox may install it (LAWS 5m forbids a floating pin) |
 | `agonalpha` | DIRECT | UNVERIFIED | artifact_search | NO | - | 0 | 0 | 0.000 | NEVER_RUN: NO ADAPTER: libs/research/adapters/agonalpha.py does not exist, so nothing can run this seed. The task is to write the adapter (run(bundle) -> Externa |
 | `ai_berkshire` | DIRECT | UNVERIFIED | multi_agent_debate | NO | - | 0 | 0 | 0.000 | NEVER_RUN: NO ADAPTER: libs/research/adapters/ai_berkshire.py does not exist, so nothing can run this seed. The task is to write the adapter (run(bundle) -> Exte |
@@ -80,7 +80,7 @@ Disposition census: DIRECT 82, REBUILT 29, WRAPPED 17
 | `autohypothesis` | DIRECT | UNVERIFIED | evolutionary_search | NO | - | 0 | 0 | 0.000 | NEVER_RUN: NO ADAPTER: libs/research/adapters/autohypothesis.py does not exist, so nothing can run this seed. The task is to write the adapter (run(bundle) -> Ex |
 | `bl888m` | REBUILT | UNVERIFIED | information_acquisition | NO | - | 0 | 0 | 0.000 | NEVER_RUN: NO ADAPTER: libs/research/adapters/bl888m.py does not exist, so nothing can run this seed. The task is to write the adapter (run(bundle) -> ExternalRe |
 | `botorch` | DIRECT | UNVERIFIED | bayesian_optimization | NO | - | 0 | 0 | 0.000 | NEVER_RUN: the wheel installed but the module does not import on this host: a native dependency's DLL refuses to initialise on this host -- covered by: UNCOVERED |
-| `bridgewater_pat_aia` | REBUILT | UNVERIFIED | institutional_capability | NO | 5.04 | 7 | 0 | 0.000 | PRODUCED: no wheel was resolved on this interpreter: pin a commit or a wheel before a sandbox may install it (LAWS 5m forbids a floating pin) |
+| `bridgewater_pat_aia` | REBUILT | UNVERIFIED | institutional_capability | NO | 13.29 | 7 | 0 | 0.000 | PRODUCED: no wheel was resolved on this interpreter: pin a commit or a wheel before a sandbox may install it (LAWS 5m forbids a floating pin) |
 | `chronos2` | DIRECT | UNVERIFIED | foundation_model | NO | - | 0 | 0 | 0.000 | NEVER_RUN: the wheel installed but the module does not import on this host: a native dependency's DLL refuses to initialise on this host -- covered by: UNCOVERED |
 | `contesttrade` | WRAPPED | UNVERIFIED | multi_agent_debate | NO | - | 0 | 0 | 0.000 | NEVER_RUN: NO ADAPTER: libs/research/adapters/contesttrade.py does not exist, so nothing can run this seed. The task is to write the adapter (run(bundle) -> Exte |
 | `cvxportfolio` | DIRECT | UNVERIFIED | portfolio_optimization | NO | - | 0 | 0 | 0.000 | NEVER_RUN: the wheel installed but the module does not import on this host: importing the module crashes the interpreter on this host -- covered by: UNCOVERED: c |
@@ -108,7 +108,7 @@ Disposition census: DIRECT 82, REBUILT 29, WRAPPED 17
 | `inst_xtx` | REBUILT | UNVERIFIED | institutional_capability | NO | - | 0 | 0 | 0.000 | NEVER_RUN: NO ADAPTER: libs/research/adapters/inst_xtx.py does not exist, so nothing can run this seed. The task is to write the adapter (run(bundle) -> External |
 | `kats` | DIRECT | UNVERIFIED | change_point | NO | - | 0 | 0 | 0.000 | NEVER_RUN: the distribution's build backend does not run on this interpreter -- a source-only dependency pinned to a numpy this Python has no wheel for -- covere |
 | `kronos` | DIRECT | UNVERIFIED | foundation_model | NO | - | 0 | 0 | 0.000 | NEVER_RUN: NO ADAPTER: libs/research/adapters/kronos.py does not exist, so nothing can run this seed. The task is to write the adapter (run(bundle) -> ExternalRe |
-| `kymatio` | DIRECT | BSD-3-Clause | signal_scattering | NO | 5.72 | 1 | 0 | 0.000 | UNMEASURED: the wheel installed but the module does not import on this host: the distribution calls an API the desk's own scientific core has removed (measured on |
+| `kymatio` | DIRECT | BSD-3-Clause | signal_scattering | NO | 13.97 | 1 | 0 | 0.000 | UNMEASURED: the wheel installed but the module does not import on this host: the distribution calls an API the desk's own scientific core has removed (measured on |
 | `l1vsun` | REBUILT | UNVERIFIED | information_acquisition | NO | - | 0 | 0 | 0.000 | NEVER_RUN: NO ADAPTER: libs/research/adapters/l1vsun.py does not exist, so nothing can run this seed. The task is to write the adapter (run(bundle) -> ExternalRe |
 | `lean` | DIRECT | UNVERIFIED | replay_parity | NO | - | 0 | 0 | 0.000 | NEVER_RUN: NO ADAPTER: libs/research/adapters/lean.py does not exist, so nothing can run this seed. The task is to write the adapter (run(bundle) -> ExternalRese |
 | `merlion` | DIRECT | UNVERIFIED | anomaly_detection | NO | - | 0 | 0 | 0.000 | NEVER_RUN: the source build failed on this host -- covered by: UNCOVERED: capability family 'anomaly_detection' needs a REBUILT cell under research/sandboxes/ wh |
