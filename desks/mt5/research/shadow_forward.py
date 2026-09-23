@@ -562,6 +562,36 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
             state[key] = st
             slog(f"REFUSED_BY_UNIVERSE_POLICY {key}: {st['last_error']}")
             continue
+        # AND IT MUST CLEAR ITSELF THE MOMENT THE LANE ADMITS THE SYMBOL (2026-09-23).
+        #
+        # The refusal above was written TERMINAL -- it is in `_TERMINAL_STATUSES` -- on the
+        # reasoning that "a symbol's lane changes only when the registry learns its asset class,
+        # and at that point the certificate can be re-enrolled DELIBERATELY rather than drifting
+        # back in". The premise was wrong in the way that matters: the lane also changes when the
+        # LANE CODE is repaired, and "deliberately" is a human act, which the desk's standing
+        # order (principal 2026-09-04, restated 2026-09-23: forward clocks must "permanently
+        # always work never blocked unmeasured stale or broken") does not allow to exist.
+        #
+        # MEASURED, AND THIS IS WHY IT IS NOT THEORETICAL. `universe_policy` declared its FX class
+        # names in a spelling its own normaliser could never produce, so all 96 FX symbols read
+        # UNCLASSIFIED and 92 clocks -- including 24 of the desk's 28 certificates -- were refused
+        # here. When that defect was fixed, the symbols were admitted and the rows were evaluated
+        # end to end again (`n` resumed climbing) while the STATUS stayed pinned at a refusal that
+        # no longer held: an always-red detector describing a cause that had been repaired, which
+        # is the exact shape L1.37 retires on sight, and which the identical clause at
+        # `BLOCKED_SLEEVE_ERROR` below already exists to prevent.
+        #
+        # Fires ONLY on this one status, only once the policy has affirmatively ADMITTED the
+        # symbol on this pass, and touches nothing else -- never a KILL, never a PROMOTION
+        # CANDIDATE, and never `forward_start`, so no day is credited that was not observed.
+        if str(st.get("status") or "").upper() == "REFUSED_BY_UNIVERSE_POLICY":
+            slog(f"{key}: REFUSED_BY_UNIVERSE_POLICY CLEARED -- {sym} is now in the "
+                 f"{_lane or 'hypothesis'} lane and may be hunted; the refusal described a lane "
+                 f"verdict that no longer holds. forward_start unchanged "
+                 f"({st.get('forward_start')}).")
+            st["status"] = "ACTIVE"
+            st["last_error_seen_at"] = st.pop("last_error_at", None)
+            st["last_error_cleared"] = st.pop("last_error", None)
 
         # BLAST RADIUS: ONE SLEEVE, NEVER THE BOOK (gap-wirer 2026-08-27). This loop had no
         # per-sleeve guard and `state_path.write_text` sits AFTER it, so ANY exception raised for
@@ -927,7 +957,14 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
             # repaired 251-row map, and still reported blocked. The error text is dropped WITH
             # the status -- keeping it would leave the row reading as failing while it accrues --
             # and `last_error_seen_at` preserves that it once did, so the history is not erased.
-            if st.get("status") == "BLOCKED_SLEEVE_ERROR":
+            # EVERY BLOCK, NOT JUST THAT ONE. `BLOCKED_NO_BARS` and `BLOCKED_INPUTS_UNAVAILABLE`
+            # are the same kind of thing -- a statement that this pass could not evaluate -- and
+            # reaching this line disproves all three of them equally. Measured 2026-09-23: the
+            # four XAUUSD certificates read BLOCKED_NO_BARS from a pass that caught the H1 parquet
+            # mid-rewrite, and kept reading it while every later pass fetched 41,811 bars and
+            # evaluated them, because only the one status name was in this clause.
+            if str(st.get("status") or "").upper() in (
+                    "BLOCKED_SLEEVE_ERROR", "BLOCKED_NO_BARS", "BLOCKED_INPUTS_UNAVAILABLE"):
                 st["status"] = "ACTIVE"
                 st["last_error_seen_at"] = st.pop("last_error_at", None)
                 st["last_error_cleared"] = st.pop("last_error", None)

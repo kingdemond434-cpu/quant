@@ -39,6 +39,7 @@ from __future__ import annotations
 
 import json
 import sys
+from collections.abc import Iterable
 from functools import lru_cache
 from pathlib import Path
 from typing import Any
@@ -51,10 +52,37 @@ HYPOTHESIS = "hypothesis"       # statistical discovery: the gauntlet, the miner
 EVENT = "event"                 # news, financial reports, earnings reaction
 UNCLASSIFIED = "unclassified"   # class unknown -- routed to NEITHER, and reported
 
+def _norm(value: Any) -> str:
+    return " ".join(str(value or "").strip().lower().replace("_", " ").split())
+
+
+def _norm_set(names: Iterable[Any]) -> frozenset[str]:
+    """The declared class names, put through the SAME normaliser the values are.
+
+    THE DEFECT THIS CLOSES, measured on the box 2026-09-23. `_norm` maps `_` to a space, so
+    `asset_class_of` returns `'fx major'`, `'fx cross'`, `'fx exotic'` -- while the literals in
+    `HYPOTHESIS_CLASSES` were spelled `fx_major`, `fx_cross`, `fx_exotic` and could therefore
+    never match anything. Those three are the ONLY underscore-bearing entries in either set, so
+    the casualty was exactly and only FX: 96 of the 251 symbols in MetaTrader's registry (68
+    exotics, 21 crosses, 7 majors) read UNCLASSIFIED, and `may_hypothesise` was False for every
+    one of them from the day this module landed (2026-09-07) until this was fixed.
+
+    WHAT IT COST. FX is the FIRST thing named in the MT5 universe mandate, and `shadow_forward`
+    asks this question before it will replay a forward clock: 24 of the desk's 28 ten-gate
+    certificates sat at `REFUSED_BY_UNIVERSE_POLICY`, and 92 of its 148 enrolled clocks with
+    them -- certified, clocked, and accruing nothing, because of a space.
+
+    Normalising the DECLARATION rather than editing the three strings is the fix that keeps
+    working: a later reader who adds `soft_commodity` or `precious_metals` in the spelling this
+    file's own docstrings use gets a set entry that matches, instead of a silent hole.
+    """
+    return frozenset(_norm(name) for name in names)
+
+
 #: Asset classes whose edge is sought through announcements rather than through price statistics.
 #: Matched case- and separator-insensitively against both the registry's `asset_class` string and
 #: the desk's pattern classifier, so "Equities", "equity" and "US Shares" all land here.
-EVENT_DRIVEN_CLASSES = frozenset({
+EVENT_DRIVEN_CLASSES = _norm_set({
     "equities", "equity", "equities us", "shares", "share", "stock", "stocks",
 })
 
@@ -62,17 +90,20 @@ EVENT_DRIVEN_CLASSES = frozenset({
 #: neither set is UNCLASSIFIED and is hunted by nothing until somebody decides where it belongs.
 #: An unknown instrument quietly joining the discovery universe is how a vocabulary from another
 #: broker got 3,839 cells onto this docket in the first place.
-HYPOTHESIS_CLASSES = frozenset({
+#:
+#: SPELLED HOWEVER THE WRITER LIKES, because `_norm_set` puts every entry through the same
+#: normaliser the registry's and the classifier's answers go through. Before that, `fx_major`,
+#: `fx_cross` and `fx_exotic` were dead letters and all 96 FX symbols were UNCLASSIFIED -- see
+#: `_norm_set`. The underscore spellings are KEPT rather than rewritten: they are what
+#: `mt5desk.universe.asset_class` actually returns, and a reader comparing the two files should
+#: see the same words.
+HYPOTHESIS_CLASSES = _norm_set({
     "forex", "forex majors", "forex crosses", "forex exotics",
     "fx", "fx_major", "fx_cross", "fx_exotic",
     "commodity", "commodities", "soft commodity", "soft commodities", "soft",
     "metal", "metals", "precious metals",
     "energy", "indices", "index", "bond", "bonds", "crypto", "cryptocurrency",
 })
-
-
-def _norm(value: Any) -> str:
-    return " ".join(str(value or "").strip().lower().replace("_", " ").split())
 
 
 @lru_cache(maxsize=1)
@@ -111,7 +142,7 @@ def asset_class_of(symbol: str) -> str:
         sys.path.insert(0, str(BASE))
         from mt5desk.universe import asset_class as _pattern_class
         return _norm(_pattern_class(symbol))
-    except Exception:                                                   # noqa: BLE001
+    except Exception:
         return ""
 
 

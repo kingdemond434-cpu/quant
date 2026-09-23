@@ -403,6 +403,62 @@ def _lane_filtered(candidates: list[dict]) -> tuple[list[dict], list[dict]]:
     return ok, refused
 
 
+def _preregister(source: str, candidates: list[dict]) -> dict[str, Any]:
+    """PRE-REGISTERED BEFORE THE VERDICT, AND LOUD WHEN IT IS NOT.
+
+    Each candidate's hypothesis card -- mechanism, direction, variables, universe, horizon,
+    parameters allowed, acceptance criterion, falsifier -- is hashed and appended to the
+    pre-registration ledger before the row leaves, and the hash rides on the candidate. A verdict
+    that later names a different card is a reinterpretation after the fact.
+
+    THIS PATH WAS SILENTLY DEAD FROM 2026-09-04 TO 2026-09-23 and nothing anywhere complained.
+    Three faults compounded, and all three are fixed here rather than one:
+
+      1. `from_candidate` derived `horizon` from `hold_bars`/`ttl_bars`/`horizon_days`, and
+         `horizon_days` occurs zero times in the corpus while `horizon` (616 rows) and
+         `hold_days` (110) were never read. So `register` raised on 58.8% of rows.
+      2. The whole LOOP sat in one try, so the first raising row took every later row in the
+         batch with it -- 30.9% of unregistered rows had a complete card and failed only
+         because of where they stood in the list.
+      3. `except Exception: pass`. A bare except on a registration path is how a defect stays
+         invisible for its entire life: a thing that fails silently is indistinguishable from a
+         thing that had nothing to do.
+
+    Measured result: 2,908 of 537,933 donated rows (0.54%) carried a `prereg_hash`.
+
+    Registration NEVER blocks or drops a donation -- that would answer a measurement defect by
+    mining less. A row that cannot be pre-registered is donated anyway and STAMPED `prereg_status`
+    so the absence is a positive, named record that the census and the ratchet both count.
+    """
+    out: dict[str, Any] = {"preregistered": 0, "failed": 0, "already": 0, "reasons": {},
+                           "failures": []}
+    try:
+        from libs.research.preregistration import PREREG_FAILED, register_candidate
+    except ImportError as exc:                      # named, never swallowed
+        out["failed"] = len(candidates)
+        out["reasons"] = {f"import failed: {type(exc).__name__}: {exc}": len(candidates)}
+        for c in candidates:
+            c["prereg_status"] = "PREREG_FAILED"
+        return out
+    for c in candidates:
+        if c.get("prereg_hash"):
+            out["already"] += 1
+            continue
+        h, why = register_candidate(c, source=source)
+        if h:
+            c["prereg_hash"] = h
+            out["preregistered"] += 1
+            continue
+        c["prereg_status"] = PREREG_FAILED
+        c["prereg_failure"] = why
+        out["failed"] += 1
+        out["reasons"][str(why)] = out["reasons"].get(str(why), 0) + 1
+        if len(out["failures"]) < 20:
+            out["failures"].append({"symbol": c.get("symbol"), "family": c.get("family"),
+                                    "why": why})
+    return out
+
+
 def donate(source: str, candidates: list[dict], tests_run: int) -> Path | None:
     """Write the discovery contract. A control run must NEVER call this.
 
@@ -431,16 +487,8 @@ def donate(source: str, candidates: list[dict], tests_run: int) -> Path | None:
         # Nothing survived the door. Writing an empty contract would put a file into the intake
         # that says a proposer produced nothing, when it produced rows the door turned away.
         return None
-    # PRE-REGISTERED BEFORE THE VERDICT. Each candidate's hypothesis card -- mechanism,
-    # direction, variables, universe, horizon, parameters allowed, acceptance criterion,
-    # falsifier -- is hashed and appended to the pre-registration ledger, and the hash rides on
-    # the candidate. A verdict that later names a different card is a reinterpretation.
-    try:
-        from libs.research.preregistration import from_candidate, register
-        for c in candidates:
-            c.setdefault("prereg_hash", register(from_candidate(c), source=source))
-    except Exception:
-        pass
+    prereg = _preregister(source, candidates)
+    LAST_DONATION["prereg"] = prereg
     out = INTEL / source
     out.mkdir(parents=True, exist_ok=True)
     stamp = datetime.now(tz=UTC).strftime("%Y%m%d_%H%M")
@@ -452,7 +500,10 @@ def donate(source: str, candidates: list[dict], tests_run: int) -> Path | None:
                                 "tests_run": tests_run, "discoveries": candidates,
                                 "counts": {"donated": len(candidates),
                                            "refused_unstamped": len(refused),
-                                           "refused_wrong_lane": len(lane_refused)},
+                                           "refused_wrong_lane": len(lane_refused),
+                                           "preregistered": prereg["preregistered"],
+                                           "prereg_failed": prereg["failed"]},
+                                "prereg": prereg,
                                 "refusals": refused[:20],
                                 "rule": ("a candidate without a point-in-time stamp is refused "
                                          "here and counted, never written: absence of an "
@@ -467,36 +518,76 @@ def _record_in_registry(source: str, candidates: list[dict]) -> None:
     one DiscoveryObject in state QUEUED (it is compiled and in the docket's intake) and one
     candidate in research_candidates with the discovery -> cell provenance edge. The graph's
     cell id joins later through the registry bridge as an alias of the same content hash.
-    Never blocks a donation: the intake file is the contract, the registry is the record."""
+    Never blocks a donation: the intake file is the contract, the registry is the record.
+
+    THE SWALLOW IS NARROW ON PURPOSE (measured 2026-09-23). This handler used to catch bare
+    `Exception`, and when instrumentation was added here that referenced two names nobody had
+    imported, the NameError went straight into it: every donation's registry write aborted
+    before its first row, the desk recorded a `registry_error` string nothing reads, and the
+    write path reported no failure while running at ZERO rows per second. A bug in the code that
+    measures throughput is not a database problem and must never be absorbed as one -- so the
+    programming errors (NameError, AttributeError, TypeError, ImportError) are re-raised and
+    only the storage failures this clause was written for stay caught."""
+    import sys
+    import time as _time
+    root = str(Path(__file__).resolve().parents[3])
+    if root not in sys.path:
+        sys.path.insert(0, root)
+    from libs.moat import registry as reg
+    from libs.ops import throughput
     try:
-        import sys
-        root = str(Path(__file__).resolve().parents[3])
-        if root not in sys.path:
-            sys.path.insert(0, root)
-        from libs.moat import registry as reg
         origin = reg.origin_of(source)
         conn = reg.connect()
+        t0 = _time.perf_counter()
         try:
-            for c in candidates:
-                symbol = str(c.get("symbol") or "")
-                family = str(c.get("family") or "")
-                params = c.get("params") if isinstance(c.get("params"), dict) else {}
-                mechanism = str(c.get("mechanism") or "")
-                did, _ = reg.record_discovery(
-                    source_id=source, source_type=origin.lower(), mechanism=mechanism,
-                    origin=origin, generator=source, assets=[symbol],
-                    exact_rule=json.dumps({"family": family, "params": params}, sort_keys=True,
-                                          default=str),
-                    economic_rationale=str(c.get("title") or "")[:300], conn=conn)
-                reg.set_discovery_state(did, "QUEUED", possible_cells=1, generated_cells=1,
-                                        compiled_cells=1, queued_cells=1, conn=conn)
-                reg.enqueue_candidate(
-                    family=family, symbol=symbol, params=params, origin=origin,
-                    mechanism=mechanism, status="donated", generator=source, source_id=source,
-                    discovery_id=did, transformation="compiled",
-                    chart=str(c.get("chart") or c.get("timeframe") or ""), conn=conn)
+            # ONE COMMIT PER CHUNK, NOT THREE PER ROW. Measured on the box 2026-09-23: this loop
+            # ran at 4 rows/second, so a 10,005-row donation was still writing forty minutes
+            # later and the desk could mint at most ~345k rows a day at a 100% duty cycle. Two
+            # causes, both here: `discoveries.content_hash` had no index (a 231.9 ms table scan
+            # per row) and each row paid three WAL commits (84% of what was left). Neither
+            # changes a single row that is written, so nothing is minted or judged less.
+            with reg.batch(conn, every=500):
+                for c in candidates:
+                    symbol = str(c.get("symbol") or "")
+                    family = str(c.get("family") or "")
+                    params = c.get("params") if isinstance(c.get("params"), dict) else {}
+                    mechanism = str(c.get("mechanism") or "")
+                    did, _ = reg.record_discovery(
+                        source_id=source, source_type=origin.lower(), mechanism=mechanism,
+                        origin=origin, generator=source, assets=[symbol],
+                        exact_rule=json.dumps({"family": family, "params": params},
+                                              sort_keys=True, default=str),
+                        economic_rationale=str(c.get("title") or "")[:300], conn=conn)
+                    reg.set_discovery_state(did, "QUEUED", possible_cells=1, generated_cells=1,
+                                            compiled_cells=1, queued_cells=1, conn=conn)
+                    reg.enqueue_candidate(
+                        family=family, symbol=symbol, params=params, origin=origin,
+                        mechanism=mechanism, status="donated", generator=source, source_id=source,
+                        discovery_id=did, transformation="compiled",
+                        chart=str(c.get("chart") or c.get("timeframe") or ""), conn=conn)
         finally:
             conn.close()
+        el = _time.perf_counter() - t0
+        LAST_DONATION["registry_seconds"] = round(el, 3)
+        LAST_DONATION["registry_rows_per_s"] = round(len(candidates) / el, 1) if el > 0 else None
+        # THE INSTRUMENTATION MUST NOT BE ABLE TO KILL THE THING IT MEASURES (2026-09-23).
+        # This line and the two `time.perf_counter()` calls above arrived with NEITHER name
+        # imported, and the `except Exception` below swallowed the resulting NameError -- so
+        # every donation's registry write aborted before inserting a single row, and the only
+        # symptom was a `registry_error` string nobody was reading. A throughput probe took the
+        # throughput to zero and reported nothing. `import time` is now at the top of the file,
+        # and the recorder is resolved defensively because its module is still being written by
+        # another lane: a measurement that is not ready yet must cost the write path nothing.
+        try:
+            from libs.ops import throughput
+        except ImportError:
+            pass
+        else:
+            throughput.record("registry_write", len(candidates), el, detail={"source": source})
+    except (NameError, AttributeError, TypeError, ImportError):
+        # A defect in this function, not a storage failure. Loud, every time: the bare handler
+        # that used to stand here turned one undefined name into a silent total outage.
+        raise
     except Exception as exc:  # the registry never blocks the intake; the miss is visible
         LAST_DONATION["registry_error"] = f"{type(exc).__name__}: {exc}"
 

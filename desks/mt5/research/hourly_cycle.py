@@ -773,7 +773,7 @@ CORE_LEGS: frozenset[str] = frozenset({
     "release_authority", "residual_map", "failure_prior", "scientist_standings",
     "frontier_ceo", "evig_acquisition",
     "stamp_freshness", "time_joins", "layer_census", "opportunity_cost", "dead_architecture",
-    "producer_census", "productivity_census",
+    "producer_census", "productivity_census", "preregistration",
     "cycle_pricing", "causal_invariance",
     # THE CLOSED-LOOP ORGANS (Tier-1 B14-B25): all cheap readers of artifacts that already exist,
     # so they belong on the core clock rather than the heavy one. `actor_pressure` and
@@ -850,7 +850,7 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "cost_construction", "swap_rejudge", "sge_premium", "moat_series",
                      "unused_information", "ingestion_ledger", "representation_forge",
                      "feature_compiler", "data_acquisition_scientist", "coverage_drain",
-                     "judge_coverage", "effective_trials"), "data"),
+                     "judge_coverage", "orthogonality_yield", "effective_trials"), "data"),
     # intel: the global intelligence agency -- crawlers, forests, frontier scouts
     **dict.fromkeys(("world_crawler", "deep_forest", "moat_miner", "market_intel", "mine",
                      "moat_candidate_compiler", "algorithm_db",
@@ -865,7 +865,10 @@ LEG_DEPARTMENT: dict[str, str] = {
                      # search, and the docket the sealed gauntlet orders its sweep by.
                      "research_tree", "residual_map", "frontier_ceo",
                      "federation_ops", "sandbox_runner", "sandbox_provision",
-                     "sandbox_roster", "proposer_seat", "kimi_hunt"),
+                     "sandbox_roster", "proposer_seat", "kimi_hunt",
+                     # Derives each instrument's own session from its own bars and mints the
+                     # breakout aimed at it, instead of porting gold's hours everywhere.
+                     "session_structure"),
                     "intel"),
     # discovery: the candidate pipeline, in order, plus the evolutionary generators
     **dict.fromkeys(("search", "sweep", "breadth_sweep", "compile_candidates", "merge_docket",
@@ -979,6 +982,75 @@ def in_plan(name: str, plan: str | None = None) -> bool:
     return True
 
 
+#: POSITION DECIDED WHETHER A LEG RAN, AND NINETEEN LEGS LOST (measured 2026-09-23).
+#: `main()` is a straight line of ~325 `_costed` calls and `MT5-HourlyCore` gives it 40 minutes
+#: (ExecutionTimeLimit=PT40M). A pass out of clock is killed WHERE IT STANDS and the next trigger
+#: restarts at the top, so the legs past the kill point are not late -- they are unreachable, and
+#: they are the same legs every hour. The compute ledger (89,986 rows) measured the result: 19 of
+#: 112 CORE_LEGS had NEVER executed once, and the reach was COLLAPSING as organs were wired into
+#: the head -- head legs last ran 21:15, the middle 11:15, and everything past `residual_queue`
+#: had not run since the previous day at 23:05.
+#:
+#: The cure is the law-gate battery's (`run_law_gate.rotate_gate`): rotate the roster across
+#: passes inside a stated window and publish by name what the window did not reach. Rotation
+#: decides MEMBERSHIP only -- legs still execute in file order, so every "must run after" comment
+#: below still holds -- and it never shrinks the work: a deferred leg leads the next pass, and
+#: the budget it is charged against is the scheduler's own limit, which rotation did not create.
+_ROTATION: dict[str, object] = {}
+
+
+def _rotation() -> object | None:
+    """This pass's membership decision, built once on the first leg and reused by every later one.
+
+    NEVER FAILS THE PASS, for the same reason `_costed` does not: a scheduler that can be taken
+    down by the thing measuring it is removed within a week, correctly. An unavailable rotation
+    module means every leg runs exactly as it did before this file learned to rotate.
+    """
+    if "built" in _ROTATION:
+        return _ROTATION.get("decision")
+    _ROTATION["built"] = True
+    _ROTATION["decision"] = None
+    try:
+        from libs.ops import leg_rotation as _lr
+        full = _lr.legs_in_order(Path(__file__).resolve())
+        roster = [leg for leg in full if in_plan(leg)]
+        att = _lr.read_attendance(
+            prior=_lr.Attendance.from_json(_lr.load_record().get("attendance")))
+        dec = _lr.plan_pass(roster, att, plan=HOURLY_PLAN, full_roster=full)
+        _ROTATION.update({"decision": dec, "attendance": att, "lr": _lr,
+                          "started": datetime.now(UTC), "ran": []})
+        print(f"leg rotation plan={HOURLY_PLAN} roster={len(roster)}/{len(full)} "
+              f"admitted={len(dec.admitted)} deferred={len(dec.deferred)} "
+              f"budget={dec.budget_s:.0f}s planned={dec.planned_s:.0f}s "
+              f"never_run={len(dec.never_run)}", flush=True)
+        if dec.never_run:
+            print(f"  NEVER RUN ({len(dec.never_run)}): {', '.join(dec.never_run[:40])}",
+                  flush=True)
+        # PUBLISHED BEFORE THE FIRST LEG RUNS. A pass killed at its 40-minute limit never reaches
+        # its own epilogue, which is precisely how the cycle came to hold no record of what it
+        # could not reach. `never_run` is known here, so it is on disk here.
+        _lr.record(dec, att, [], started=_ROTATION.get("started"), complete=False)
+    except Exception as exc:
+        print(f"leg rotation UNAVAILABLE ({type(exc).__name__}: {exc}); "
+              "every leg runs in file order as before", flush=True)
+    return _ROTATION.get("decision")
+
+
+def _rotation_publish() -> None:
+    """Publish what this pass ran, what it deferred, and what has NEVER run -- by name."""
+    dec = _ROTATION.get("decision")
+    lr = _ROTATION.get("lr")
+    att = _ROTATION.get("attendance")
+    if dec is None or lr is None or att is None:
+        return
+    with suppress(Exception):
+        doc = lr.record(dec, att, list(_ROTATION.get("ran") or []),      # type: ignore[attr-defined]
+                        started=_ROTATION.get("started"))
+        print(f"leg rotation recorded: ran={len(doc.get('ran_this_pass') or [])} "
+              f"deferred={doc.get('n_deferred')} never_run={len(doc.get('never_run') or [])} "
+              f"outside_{doc.get('window_h')}h={len(doc.get('outside_window') or [])}", flush=True)
+
+
 AUTO_LEGS_FILE = BASE / "data" / "auto_legs.json"
 
 
@@ -1001,7 +1073,13 @@ def _auto_leg(entry: dict, leg: str | None = None) -> dict:
                        *[str(a) for a in (entry.get("argv") or [])]],
                            capture_output=True, text=True, cwd=str(cwd), timeout=budget,
                            check=False)
+        # STDERR IS KEPT SEPARATELY, and that is not cosmetic. `tail` is `stdout or stderr`, so a
+        # leg that printed ANYTHING to stdout before dying lost its traceback entirely -- which is
+        # why `coverage_tensor` exiting 1 on 199 of its last 204 passes never told anyone WHY.
+        # The write-or-explain contract reports the last lines of stderr on a failure, and it can
+        # only do that if they survive to here.
         return {"exit_code": r.returncode, "tail": (r.stdout or r.stderr or "")[-300:],
+                "stderr_tail": (r.stderr or "")[-1200:],
                 "budget_s": budget, "at": datetime.now(UTC).isoformat()}
     except subprocess.TimeoutExpired:
         return {"exit_code": None, "timeout_s": budget, "status": "TIMEOUT",
@@ -1125,6 +1203,24 @@ def _costed(name: str, fn):
         # Not this clock's leg: no ledger row, no verdict -- the other plan owns it.
         return {"status": "SKIPPED_BY_PLAN", "plan": HOURLY_PLAN,
                 "at": datetime.now(UTC).isoformat(timespec="seconds")}
+    # THE ROTATION, AND WHY IT IS HERE RATHER THAN AT THE CALL SITES. Every leg passes through
+    # this one boundary, so membership can be decided for all 325 of them without moving a line
+    # of `main()` -- which means the dependency order every leg comment states is untouched. A
+    # ROTATED_OUT leg returns in microseconds, so the pass races past it and the 40-minute clock
+    # actually reaches the tail; it is the FIRST thing admitted next pass. No ledger row, for the
+    # same reason SKIPPED_BY_PLAN writes none: it did not run here, and `opportunity_cost` and
+    # the meta-controller's epoch must read that truth rather than a phantom run.
+    _rot = _rotation()
+    if _rot is not None:
+        _ok, _why = _rot.should_run(name, _ROTATION.get("attendance"),   # type: ignore[attr-defined]
+                                    (datetime.now(UTC)
+                                     - _ROTATION["started"]).total_seconds())   # type: ignore[operator]
+        if not _ok:
+            return {"status": "ROTATED_OUT", "plan": HOURLY_PLAN, "why": _why,
+                    "at": datetime.now(UTC).isoformat(timespec="seconds")}
+        _ran = _ROTATION.get("ran")
+        if isinstance(_ran, list):
+            _ran.append(name)
     try:
         from libs.ops.compute_ledger import close_run, open_run
     except Exception as exc:
@@ -1149,6 +1245,13 @@ def _costed(name: str, fn):
     except Exception:
         _meta = {}
     run = open_run(name, kind="hourly_cycle", **_meta) if open_run else None
+    # THE WRITE-OR-EXPLAIN CONTRACT (2026-09-23). Stat the leg's DECLARED artifact before and
+    # after, at the one boundary every leg passes through, so the check covers every leg at once
+    # instead of organ by organ. See `libs/ops/write_or_explain.py` for the eight silent failures
+    # of one day that this exists to end; the short version is that a leg exiting 0 having written
+    # nothing was, until this line, indistinguishable from a leg with nothing to write.
+    _woe = _woe_before(name)
+    _woe_t0 = time.monotonic()
     try:
         out = fn()
     except (KeyboardInterrupt, SystemExit):
@@ -1168,6 +1271,7 @@ def _costed(name: str, fn):
             close_run(run, outcome=detail[:200])
         print(f"  LEG FAILED {name}: {detail}", flush=True)
         _emit_leg(name, detail[:200])
+        _woe_after(name, _woe, None, raised=detail, wall_s=time.monotonic() - _woe_t0)
         return {"error": detail[:300], "status": "LEG_FAILED",
                 "at": datetime.now(UTC).isoformat()}
     # A LEG THAT FAILS WITHOUT RAISING WAS RECORDED AS "ok" (theirs, 2026-09-10 -- and it is the
@@ -1212,7 +1316,44 @@ def _costed(name: str, fn):
         close_run(run, outcome=outcome, outputs=_leg_artifacts(name))
     _emit_leg(name, outcome)
     _advance_watermark(name, outcome)
+    _woe_after(name, _woe, out, wall_s=time.monotonic() - _woe_t0,
+               verdict_exits=VERDICT_EXITS.get(name, ()))
     return out
+
+
+def _woe_before(name: str) -> dict:
+    """Stat leg `name`'s DECLARED artifact(s) before it runs. Never fails the leg."""
+    try:
+        from libs.ops.write_or_explain import before_leg
+        return before_leg(name)
+    except Exception:
+        return {}
+
+
+def _woe_after(name: str, before: dict, out: object, *, raised: str = "",
+               wall_s: float | None = None, verdict_exits: tuple = ()) -> None:
+    """THE WRITE-OR-EXPLAIN VERDICT: did the leg write what it declared, or say why not?
+
+    PRINTS THE DEFECT, which is the entire point -- SILENT_NO_OP had no name and no line of
+    output anywhere on this desk until today, and an organ producing nothing looked exactly like
+    an organ with nothing to produce. A leg that wrote, or that named its reason, says nothing
+    here: the noise belongs to the failures.
+
+    Never fails the leg, for the reason the compute ledger and the event log do not: an organ
+    that dies because its telemetry failed is worse than one that runs untelemetered.
+    """
+    try:
+        from libs.ops.write_or_explain import DEFECTS, observe
+        rec = observe(name, before, out, raised=raised, wall_s=wall_s,
+                      verdict_exits=tuple(verdict_exits))
+        if str(rec.get("verdict")) in DEFECTS:
+            print(f"  {rec['verdict']} {rec.get('detail', '')}", flush=True)
+            tail = str(rec.get("stderr_tail") or "").strip()
+            for line in tail.splitlines()[-5:]:
+                print(f"      stderr| {line[:160]}", flush=True)
+    except Exception as exc:
+        print(f"  write-or-explain not recorded for {name}: {type(exc).__name__}: {exc}",
+              flush=True)
 
 
 def _advance_watermark(name: str, outcome: str) -> None:
@@ -1372,6 +1513,11 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # Judge coverage stops itself at --budget-s 120; it reads two files and sorts. The cap sits
     # above its own budget for the reason every other leg's does.
     "judge_coverage": 300,
+    # Orthogonality yield is one indexed scan of the candidate registry, one pass over the gate
+    # ledger and 79 leave-one-out SVDs of a 79 x ~1000 indicator matrix. Measured 2026-09-23 on
+    # the trading box against 323,313 registry rows and 146,359 ledger rows: under a minute. The
+    # cap sits above that for the reason every other leg's does.
+    "orthogonality_yield": 300,
     # Effective trials stops itself at --budget-s 300; its cost is one O(m^2) similarity matrix
     # per grid cell, and grid cells are small (the live docket's largest holds ~470 rows). The cap
     # sits above its own budget for the reason every other leg's does.
@@ -1478,7 +1624,13 @@ def _producer_impl(name: str, script: str, args: tuple[str, ...] = ()) -> dict:
         r = _run_tree([sys.executable, "-u", "-W", "ignore", str(target), *args],
                            capture_output=True, text=True, cwd=str(root),
                            timeout=budget, check=False)
+        # STDERR IS KEPT SEPARATELY, and that is not cosmetic. `tail` is `stdout or stderr`, so a
+        # leg that printed ANYTHING to stdout before dying lost its traceback entirely -- which is
+        # why `coverage_tensor` exiting 1 on 199 of its last 204 passes never told anyone WHY.
+        # The write-or-explain contract reports the last lines of stderr on a failure, and it can
+        # only do that if they survive to here.
         return {"exit_code": r.returncode, "tail": (r.stdout or r.stderr or "")[-300:],
+                "stderr_tail": (r.stderr or "")[-1200:],
                 "budget_s": budget, "at": datetime.now(UTC).isoformat()}
     except subprocess.TimeoutExpired:
         return {"exit_code": None, "timeout_s": budget,
@@ -2169,6 +2321,21 @@ def deep_forest() -> dict:
     quiet pass still advances the queue (mandate section 70, never idle).
     """
     return _producer("deep_forest_miner", "research/deep_forest_miner.py")
+
+
+def session_structure() -> dict:
+    """Derive every instrument's own session from its own bars, and aim the breakout at it.
+
+    WHY IT IS ON A CLOCK AND NOT A ONE-OFF. A venue changes its hours, a CFD's liquidity moves
+    with its underlying, and a new instrument arrives in the registry -- all of which change where
+    the quiet run sits. A window derived once is right on the day it is written and silently
+    wrong afterwards, which is the same failure mode as a hand-kept symbol list.
+
+    Measured 2026-09-23: 1,174 of 2,248 `session_range_breakout` verdicts NEVER FIRED, because
+    their range window was inherited from gold rather than derived. Cheap on repeat -- it reads
+    parquet already on disk and donates through the ordinary EXACT_RECIPE door.
+    """
+    return _producer("session_structure_miner", "research/session_structure_miner.py")
 
 
 def publish_survivors() -> dict:
@@ -3269,6 +3436,18 @@ def main() -> None:
     # family. `merge_hypotheses` calls the same allocator when it writes the docket, so this leg
     # is the standing MEASUREMENT of what shipped; `scripts/check_judge_coverage.py` ratchets the
     # carried backlog DOWN. Data department, information layer.
+    #
+    # ORTHOGONALITY YIELD RUNS FIRST, because judge_coverage's ranking reads its artifact. The
+    # principal's order of 2026-09-23 is that compute go to producers that yield ORTHOGONALITY and
+    # to those that yield CERTIFICATES, both, so this leg measures both per producer -- the
+    # leave-one-out drop in the candidate grid's effective rank when that producer's cells are
+    # removed, and certificates per judge-hour from the gate ledger -- and publishes one factor
+    # per axis. Both factors are one-sided at or above par, so this can lift a producer's
+    # priority and can never lower it, and the 25% floor below is untouched. Data department.
+    oyz = _costed("orthogonality_yield",
+                  lambda: _producer("orthogonality_yield",
+                                    "research/orthogonality_yield.py",
+                                    "--once", "--budget-s", "120"))
     jcv = _costed("judge_coverage", lambda: _producer("judge_coverage",
                                                       "research/judge_coverage.py",
                                                       "--once", "--budget-s", "120"))
@@ -4000,6 +4179,7 @@ def main() -> None:
     ad = _costed("adversaries", adversaries)
     fr = _costed("frontier", frontier)
     df = _costed("deep_forest", deep_forest)
+    ssm_leg = _costed("session_structure", session_structure)
     mm = _costed("maintain_miners", maintain_miners)
     # MEASURE THE CONVERSION WHERE THE DISCOVERIES ARE, AND ON THIS HOUR'S CODE. Nothing on this
     # box regenerated `data/miner_conversion.json`. It has one scheduled caller -- a systemd unit
@@ -4248,6 +4428,14 @@ def main() -> None:
         "meta_rnd", "research/meta_rnd.py", "--once", "--budget-s", "180"))
     ac = _costed("acceptance", lambda: _producer(
         "acceptance", "scripts/check_acceptance_properties.py"))
+    # PRE-REGISTRATION COVERAGE (2026-09-23). The donation path pre-registered NOTHING for its
+    # whole life -- 2,908 of 537,933 rows (0.54%) carried a hash -- because `register` raised on
+    # a horizon it could not derive and a bare except swallowed it. The fix is upstream in
+    # `proposer_common._preregister`; this is the leg that makes the coverage VISIBLE every hour,
+    # feeds the `prereg_coverage` ratchet, and fails loudly on a row donated after the cutover
+    # with no card. ~12 s over 8.9k contract files, so it belongs on the core clock.
+    prg = _costed("preregistration", lambda: _producer(
+        "preregistration", "scripts/check_preregistration.py"))
     # TWO FORECASTS THE DESK NEVER MADE (Tier-1 P15, P6; 2026-09-09), both reports:
     #   opportunity_forecast  where alpha is likely to EMERGE next, the graph read forward
     #   edge_reliability      P(this sleeve works now), one fused column per sleeve
@@ -4347,7 +4535,7 @@ def main() -> None:
                     "mining_objective": mob, "research_gap_map": rgm,
                     "evidence_router": evr, "research_roi": rroi,
                     "coverage_tensor": cov, "coverage_drain": cdr, "judge_coverage": jcv,
-                    "effective_trials": eft,
+                    "orthogonality_yield": oyz, "effective_trials": eft,
                     "gauntlet_backpressure": gbp, "miner_specialisation": msp,
                     "portfolio_bounty": pbt, "research_auction": rau,
                     "bottleneck_law": btl, "drawdown_alpha_miner": dam,
@@ -4409,6 +4597,7 @@ def main() -> None:
                     "forward_reconcile": fwr,
                     "model_skill": ms,
                     "frontier": fr, "refresh_bars": rb, "deep_forest": df,
+                    "session_structure": ssm_leg,
                     "maintain_miners": mm, "publish_survivors": ps,
                     "forecast_contract": fcx, "model_league": mz, "adversaries": ad,
                     "publish_dashboard": pd_, "opportunity_gap": og, "experiment_cache": xc,
@@ -4424,6 +4613,7 @@ def main() -> None:
                     "control_plane": cp, "plumbing_watchdog": pwd_,
                     "bottleneck_attack": bka, "desk_dashboard_state": dds,
                     "opportunity_cost": oc, "acceptance": ac, "opportunity_forecast": ofc,
+                    "preregistration": prg,
                     "cycle_pricing": cyp, "causal_invariance": civ,
                     "source_evig": sev, "source_drain": sdr, "pack_cells": pkc,
                     "ground_depth": gdp,
@@ -4457,6 +4647,10 @@ def main() -> None:
                     "frontier_implementer": fi,
                     "smoke_release": smoke},
                    indent=1), encoding="utf-8")
+    # THE PASS'S OWN ATTENDANCE RECORD, re-published now that the pass is complete: what actually
+    # ran, what was rotated out (and therefore leads the next pass), and -- by name -- every leg
+    # that has NEVER run. `scripts/check_leg_rotation.py` fences both lists.
+    _rotation_publish()
     print("cycle done", flush=True)
 
 
