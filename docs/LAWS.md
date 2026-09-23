@@ -1028,6 +1028,18 @@ packs name has no resident, no discovery in its trailing window, or no candidate
   RAM was free, and every new leg died of STATUS_COMMITMENT_LIMIT. When legs die with RAM free,
   measure COMMIT, never RAM.
 
+- **A REPORT IS NOT A REMEDY (2026-09-23, principal's standing order: "don't just report").** An
+  organ that CAN close a gap must close it on its own clock: the conversion organ repairs the row
+  rather than classifying it, the watchdog raises a repair through the reconciler rather than
+  listing a defect, the clock lane advances a frozen clock rather than publishing its lag, the
+  seat census relights a dark seat rather than naming it. Publishing a defect an organ had the
+  means to fix is itself a defect, and the fence that owns that defect fails while it stands. The
+  only things a producer may leave for a human are the acts reserved to the principal by name --
+  re-signing the immutable evaluator, a change to the live book, and anything the sealed judge
+  owns. Measured cost of the opposite: a recommendation ledger sat eleven days with 219 open rows
+  while the organ that fed it ran green every hour, and a certificate canon reached n=0 while the
+  desk kept trading and every store reported its own view without reconciling.
+
 - `ops/brain_env.sh` injects `ops/principal_doctrine.txt` (sealed core + universe mandate) AND
   this file into every organ's appended system prompt; research organs additionally open
   `docs/RESEARCH.md` (their prompt's first standing order).
