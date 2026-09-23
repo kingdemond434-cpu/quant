@@ -100,6 +100,40 @@ CADENCE: tuple[tuple[str, str, int, str], ...] = (
     # is the failure this table exists to notice. No producer command: it is a Windows task on the
     # box, and inventing a repair here would be a task that reports success and runs nothing.
     ("reboot_drill", "desks/mt5/reports/REBOOT_DRILL.json", 86400, None),
+    # THE FIVE ORGANS THAT RAN NOWHERE (measured on the box 2026-09-23). Each of these is a leg
+    # of `hourly_cycle`, each is listed in CORE_LEGS or a department, and each has a working
+    # producer that exits 0 by hand -- and NONE of them had ever written its artifact on the
+    # trading box. `compute_ledger.jsonl` is the proof: 89,652 rows, 501 distinct runs, and
+    # `ground_depth`, `pack_cells`, `independence_intake`, `attribution_census` and
+    # `productivity_census` appear in it ZERO times, while `coverage_tensor` appears 18 times in
+    # 26h and is exit_code=1 on all 18.
+    #
+    # THE CAUSE IS THE ONE THIS TABLE WAS BUILT FOR, exactly as the comment above it says: an
+    # organ reachable only by finishing forty-seven other legs first is an organ that stops the
+    # first time an earlier leg is slow. These sit at lines 4208-4290 of a 4,400-line cycle whose
+    # core pass is front-loaded with tick capture (161.5M ticks in the pass measured), so the hour
+    # expires and the next trigger restarts the pass from the top. Nineteen of the 112 CORE_LEGS
+    # have never appeared in the ledger for this reason; these are the five with a clean argless
+    # producer, so they are the five that this clock can fix today.
+    #
+    # ARGLESS IS A REQUIREMENT, NOT AN ACCIDENT. `run_research_reports.refresh` invokes the
+    # producer with NO arguments, and every one of these declares `--once` as a no-op flag
+    # ("one pass -- the only mode"); `a.once` is read nowhere in any of the five, so the bare
+    # invocation is byte-for-byte the pass the cycle leg runs. `producer_census` is deliberately
+    # NOT here: its writer is `scripts/check_seat_health.py`, which needs `--census` to write the
+    # artifact at all, so an argless clock would run it and produce nothing.
+    ("ground_depth", "desks/mt5/reports/GROUND_DEPTH.json", 3600,
+     "research/ground_depth.py"),
+    ("pack_cells", "desks/mt5/reports/PACK_CELLS.json", 3600,
+     "research/pack_cells.py"),
+    ("independence_intake", "desks/mt5/reports/INDEPENDENCE_INTAKE.json", 3600,
+     "research/independence_intake.py"),
+    ("attribution_census", "desks/mt5/reports/ATTRIBUTION_COVERAGE.json", 3600,
+     "research/attribution_census.py"),
+    ("coverage_tensor", "desks/mt5/reports/COVERAGE_TENSOR.json", 3600,
+     "research/coverage_tensor.py"),
+    ("productivity_census", "desks/mt5/reports/PRODUCTIVITY_CENSUS.json", 3600,
+     "research/productivity_census.py"),
 )
 
 #: Alarm files any detector on this tree may raise. Presence IS the issue; the file's first line
@@ -176,7 +210,7 @@ def _clockless_by_join() -> list[str] | None:
             if sf.sleeve_key(sym, win, params, fam, side) not in rows:
                 missing.append(f"{sym}.{fam}")
         return sorted(set(missing))
-    except Exception:                                                   # noqa: BLE001
+    except Exception:
         return None
 
 
@@ -361,7 +395,8 @@ def repair(issues: list[Issue], apply: bool = False,
         try:
             r = subprocess.run([sys.executable, "-u", str(target)], cwd=str(base),
                                capture_output=True, text=True, timeout=timeout_s, check=False)
-            done.append({"key": i.key, "action": "RAN" if r.returncode == 0 else "FAILED", "cmd": i.repair,
+            done.append({"key": i.key, "cmd": i.repair,
+                         "action": "RAN" if r.returncode == 0 else "FAILED",
                          "exit_code": r.returncode,
                          "tail": (r.stdout or r.stderr or "").strip().splitlines()[-2:]})
         except subprocess.TimeoutExpired:
@@ -395,7 +430,8 @@ def run(apply: bool = False) -> dict[str, Any]:
                 if verification_error:
                     action.update(action="UNVERIFIED", why=verification_error)
                 elif defect_identity(action["key"]) in remaining_keys:
-                    action.update(action="UNRESOLVED", why="producer exited successfully but issue remains")
+                    action.update(action="UNRESOLVED",
+                                  why="producer exited successfully but issue remains")
                 else:
                     action.update(action="REPAIRED", verified=True)
         issues = remaining
