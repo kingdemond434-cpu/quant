@@ -62,6 +62,16 @@ WRITE_METHODS: frozenset[str] = frozenset({
 #: `f(..., path, ...)` forms where a path argument is the destination.
 WRITE_FUNCS: frozenset[str] = frozenset({
     "savefig", "copyfile", "copy2", "save", "savez", "imwrite", "connect",
+    # THE DESK'S OWN ATOMIC WRITERS (2026-09-23). The house style is `OUT = DESK / "reports" /
+    # "X.json"` at the top of a module and `_atomic(OUT, doc)` at the bottom, and every one of
+    # those modules was reported as a READER of a file nothing writes -- fill_recorder.py on
+    # reports/FILL_RECORDER.json, prediction_markets.py on reports/PREDICTION_MARKETS.json,
+    # source_health.py on data/source_health.jsonl. The binding is resolved and the destination
+    # is a plain argument; only the verb was missing from this list. Names are deliberately
+    # unambiguous writers: a wrong name here HIDES a real phantom, which is the one failure this
+    # module may not have.
+    "_atomic", "_atomic_write", "atomic_write", "_write_json", "write_json", "write_report",
+    "_write_report", "dump_json", "_dump_json", "stamp_sidecar", "_save_json", "save_report",
 })
 
 
@@ -315,7 +325,12 @@ def scan(root: Path, subdirs: tuple[str, ...] = ("scripts", "libs")) -> Scan:
         if not base.is_dir():
             continue
         for py in sorted(base.rglob("*.py")):
-            rel = str(py.relative_to(root))
+            # POSIX SEPARATORS, ON EVERY HOST. The module ids this Scan reports are compared
+            # against repo-relative paths written with "/" everywhere else in the desk, and on
+            # Windows `relative_to` hands back backslashes -- so every caller on the trading box
+            # was comparing "scripts/reader.py" against "scripts\\reader.py" and finding nothing.
+            # The test that pins this behaviour has been failing on the box for exactly that.
+            rel = str(py.relative_to(root)).replace("\\", "/")
             reads, writes, labels = scan_file(py)
             for p in reads:
                 out.reads.setdefault(p, set()).add(rel)
