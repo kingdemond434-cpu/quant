@@ -41,6 +41,7 @@ import json
 import os
 import re
 import subprocess
+import time
 from dataclasses import asdict, dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
@@ -184,13 +185,40 @@ class Identity:
 DIFF_TIMEOUT_S = 90.0
 
 
+#: HOW MANY TIMES A GIT CALL IS TRIED BEFORE "git is absent" IS BELIEVED (2026-09-24).
+#:
+#: This function gave up after ONE attempt, and on the trading box that turned a busy moment into
+#: a refusal to trade. Measured across 2026-09-24: TWENTY-FIVE gateway passes recorded
+#:
+#:     RELEASE IDENTITY refuses NEW risk: running <sha> != sealed <sha> and the diff cannot be
+#:     taken (git absent, or the sealed commit is not in this clone)
+#:
+#: and the words are self-diagnosing -- `verdict` writes "git absent" only when `source != "git"`,
+#: which means `git rev-parse HEAD` itself returned nothing and the SHA had to be recovered by
+#: reading `.git` directly. git was installed and the sealed commit was present every single
+#: time; with 118 python processes and a dozen git processes on the box, the spawn simply lost.
+#: One failed spawn then skipped the diff entirely and the pass refused.
+#:
+#: RETRYING MEASURES MORE, IT DOES NOT PERMIT MORE. An identity that genuinely cannot be measured
+#: is still not a licence and still refuses -- three failures in a row on a machine where git
+#: works is a real fault worth refusing on. What changes is that a single lost spawn no longer
+#: counts as one. The cost is bounded: three attempts, 0.4s then 0.8s apart, once per pass.
+_GIT_ATTEMPTS = 3
+_GIT_BACKOFF_S = 0.4
+
+
 def _git(args: list[str], root: Path, timeout: float = 10.0) -> str | None:
-    try:
-        r = subprocess.run(["git", "-c", "core.quotepath=off", *args], cwd=str(root),
-                           capture_output=True, text=True, timeout=timeout)
-    except (OSError, subprocess.SubprocessError):
-        return None
-    return r.stdout if r.returncode == 0 else None
+    for attempt in range(_GIT_ATTEMPTS):
+        try:
+            r = subprocess.run(["git", "-c", "core.quotepath=off", *args], cwd=str(root),
+                               capture_output=True, text=True, timeout=timeout)
+        except (OSError, subprocess.SubprocessError):
+            r = None
+        if r is not None and r.returncode == 0:
+            return r.stdout
+        if attempt < _GIT_ATTEMPTS - 1:
+            time.sleep(_GIT_BACKOFF_S * (2 ** attempt))
+    return None
 
 
 def _is_sha(s: str) -> bool:
