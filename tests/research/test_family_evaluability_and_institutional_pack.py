@@ -148,3 +148,16 @@ def test_the_fence_is_wired_into_the_law_gate() -> None:
     """Built is not done: a check nothing runs is a claim the desk cannot cash (III.16, L1.49)."""
     src = (ROOT / "scripts" / "run_law_gate.py").read_text("utf-8")
     assert '("check_family_evaluability.py", ())' in src
+
+
+def test_an_unimportable_registry_is_unmeasured_not_ninety_false_alarms(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    """The failure mode that would make this fence useless: a host where numpy or pandas is
+    missing cannot import either registry, and reading that as "nothing is registered" marks
+    every minted name unevaluable. Loudest where it knows least is the shape to refuse."""
+    monkeypatch.setattr(FE, "registered", set)
+    monkeypatch.setattr(FE, "minted", lambda: ({"momentum": 10, "carry": 5}, "test"))
+    out = FE.survey()
+    assert out["status"] == "UNMEASURED"
+    assert "not empty" in out["why"]
+    assert "unevaluable" not in out
