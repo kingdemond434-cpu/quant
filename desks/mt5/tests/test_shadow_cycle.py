@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import json
+import os
 import sys
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pytest
@@ -10,6 +12,15 @@ DESK = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(DESK / "research"))
 
 import shadow_cycle  # noqa: E402
+
+
+def _canonical(reports: Path, n: int) -> None:
+    import gate_policy
+    gates = {name: {"passed": True} for name in gate_policy.GATES}
+    (reports.parent / "UNIVERSAL_SURVIVORS.json").write_text(json.dumps({
+        "gate_policy": gate_policy.ATTESTATION,
+        "survivors": {f"cert-{i}": {"gates": gates} for i in range(n)},
+    }))
 
 
 def test_cycle_counts_only_certified_shadow_books_before_promoter(
@@ -30,6 +41,7 @@ def test_cycle_counts_only_certified_shadow_books_before_promoter(
     monkeypatch.setattr(shadow_cycle, "_refresh_scalp_bars", lambda: calls.append("refresh"))
     reports = tmp_path / "reports" / "shadow"
     reports.mkdir(parents=True)
+    _canonical(reports, 3)
     (reports / "shadow_state.json").write_text(json.dumps({
         "configured_sleeves": 1, "gate_blocked_sleeves": 36,
         "XAUUSD.asia": {"n": 0, "gate_admission": "ORIGINAL_UNIVERSAL_10_PASS"},
@@ -67,6 +79,7 @@ def test_terminal_shadow_verdict_is_retained_but_not_active(
     monkeypatch.setattr(shadow_cycle, "_refresh_scalp_bars", lambda: None)
     reports = tmp_path / "reports" / "shadow"
     reports.mkdir(parents=True)
+    _canonical(reports, 1)
     (reports / "shadow_state.json").write_text(json.dumps({"configured_sleeves": 0}))
     (reports / "scalp_shadow_state.json").write_text(json.dumps({
         "configured_sleeves": 0, "sleeves": {},
@@ -99,6 +112,7 @@ def test_missing_sleeve_fails_loud(tmp_path: Path, monkeypatch: pytest.MonkeyPat
     monkeypatch.setattr(shadow_cycle, "_refresh_scalp_bars", lambda: None)
     reports = tmp_path / "reports" / "shadow"
     reports.mkdir(parents=True)
+    _canonical(reports, 1)
     (reports / "shadow_state.json").write_text(json.dumps({"configured_sleeves": 1}))
     (reports / "scalp_shadow_state.json").write_text(json.dumps({
         "configured_sleeves": 0, "sleeves": {},
@@ -109,7 +123,28 @@ def test_missing_sleeve_fails_loud(tmp_path: Path, monkeypatch: pytest.MonkeyPat
     monkeypatch.setattr(shadow_cycle, "BASE", tmp_path)
     monkeypatch.setattr(shadow_cycle, "OUT", tmp_path / "health.json")
     health, rc = shadow_cycle.run()
-    assert rc == 1 and health["missing_sleeves"] == ["1 certified sleeve(s)"]
+    assert rc == 3 and health["missing_sleeves"] == ["1 certified sleeve(s)"]
+
+
+def test_fresh_authoritative_scalp_bars_avoid_a_second_terminal_connection(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    universe = tmp_path / "data" / "universe"
+    universe.mkdir(parents=True)
+    (universe / "XAUUSD_scalp_source.json").write_text(json.dumps({
+        "promotion_authority": True, "source_server": "FusionMarkets-Live",
+    }))
+    now = datetime.now(UTC)
+    for timeframe in ("M1", "M5", "M15"):
+        path = universe / f"XAUUSD_{timeframe}.parquet"
+        path.write_bytes(b"canonical-bars")
+        os.utime(path, (now.timestamp(), now.timestamp()))
+    monkeypatch.setattr(shadow_cycle, "BASE", tmp_path)
+    assert shadow_cycle._fresh_authoritative_scalp_bars(now) is True
+    stale = universe / "XAUUSD_M1.parquet"
+    old = now - timedelta(seconds=shadow_cycle.SCALP_BAR_MAX_AGE_SECONDS + 1)
+    os.utime(stale, (old.timestamp(), old.timestamp()))
+    assert shadow_cycle._fresh_authoritative_scalp_bars(now) is False
 
 
 def test_nonzero_step_result_fails_loud(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -127,6 +162,7 @@ def test_nonzero_step_result_fails_loud(tmp_path: Path, monkeypatch: pytest.Monk
     monkeypatch.setattr(shadow_cycle, "_refresh_scalp_bars", lambda: None)
     reports = tmp_path / "reports" / "shadow"
     reports.mkdir(parents=True)
+    _canonical(reports, 0)
     (reports / "shadow_state.json").write_text(json.dumps({"configured_sleeves": 0}))
     (reports / "scalp_shadow_state.json").write_text(json.dumps({
         "configured_sleeves": 0, "sleeves": {},

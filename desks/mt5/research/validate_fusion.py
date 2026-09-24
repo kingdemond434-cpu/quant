@@ -52,7 +52,8 @@ FUSION_COMMISSION = 2.25
 def connect() -> bool:
     import MetaTrader5 as mt5  # noqa: PLC0415
     if mt5.terminal_info() is None:
-        if not mt5.initialize(path=terminal_path()):
+        from mt5_session import attach_or_initialize
+        if not attach_or_initialize(mt5, path=terminal_path()):
             print(f"init failed: {mt5.last_error()} (is the Fusion terminal logged in?)")
             return False
     ti = mt5.terminal_info()

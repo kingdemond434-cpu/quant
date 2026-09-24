@@ -16,6 +16,55 @@ from pathlib import Path
 BASE = Path(__file__).resolve().parent.parent
 OUT = BASE / "reports" / "shadow" / "shadow_health.json"
 
+#: EVERY BASIS ON WHICH THIS DESK ENROLS A FORWARD CLOCK. One place, because the alternative is
+#: an `==` against one member scattered through the readers -- which is how the cure lane's 86
+#: clocks came to be reported as missing for a day.
+#:
+#:   ORIGINAL_UNIVERSAL_10_PASS   all ten gates; the only basis that carries promotion authority
+#:                                on its own, and what every clock held before 2026-09-13
+#:   VALIDITY_PASS_POWER_DEFICIENT  all five VALIDITY gates pass, one or more POWER gates fail.
+#:                                The deficiency is `cure_by_forward: true` BY DESIGN -- forward
+#:                                evidence is the thing that cures a power shortfall -- so the
+#:                                clock exists precisely to earn what the gate withheld. It
+#:                                enrols with `promotion_authority: false` and stays there until
+#:                                `pipeline/promote.py` applies the cure thresholds.
+#:   FULL_10_PASS                 promote.py's own spelling of the ten-gate basis; accepted here
+#:                                so the two vocabularies cannot disagree about who is enrolled.
+ENROLLED_ADMISSIONS = frozenset({
+    "ORIGINAL_UNIVERSAL_10_PASS",
+    "VALIDITY_PASS_POWER_DEFICIENT",
+    "FULL_10_PASS",
+})
+
+# The canonical bar producer runs hourly. Allow one cadence plus 15 minutes of scheduler jitter;
+# the replay is idempotent and catches every intervening M1/M5/M15 bar at the next snapshot.
+# A 30-minute consumer threshold made the second half of every healthy producer hour look failed.
+SCALP_BAR_MAX_AGE_SECONDS = 75 * 60
+
+
+def _fresh_authoritative_scalp_bars(now: datetime | None = None) -> bool:
+    """True when the canonical Fusion collector already supplied the bounded scalp input.
+
+    The shadow cycle is a consumer, not a second terminal owner.  Re-attaching while the trading
+    terminal is serving another scheduled collector produces MT5 ``-10004 / No IPC connection``
+    even though all three authoritative files are already fresh.  We only skip the fallback pull
+    when provenance grants promotion authority and every required file is fresh and non-empty.
+    """
+    now = now or datetime.now(UTC)
+    universe = BASE / "data" / "universe"
+    source = _read(universe / "XAUUSD_scalp_source.json")
+    if source.get("promotion_authority") is not True:
+        return False
+    for timeframe in ("M1", "M5", "M15"):
+        path = universe / f"XAUUSD_{timeframe}.parquet"
+        try:
+            age = now.timestamp() - path.stat().st_mtime
+        except OSError:
+            return False
+        if path.stat().st_size <= 0 or age < -60 or age > SCALP_BAR_MAX_AGE_SECONDS:
+            return False
+    return True
+
 
 def _refresh_scalp_bars() -> None:
     """Refresh broker M1/M5/M15 before replay; never place or modify an order.
@@ -46,6 +95,8 @@ def _refresh_scalp_bars() -> None:
     """
     if os.name != "nt":
         return
+    if _fresh_authoritative_scalp_bars():
+        return
     import json as _json
     from datetime import UTC as _UTC
     from datetime import datetime as _datetime
@@ -61,7 +112,8 @@ def _refresh_scalp_bars() -> None:
     for terminal in h1_source._terminal_candidates():
         if not Path(terminal).exists():
             continue
-        if not mt5.initialize(path=terminal, timeout=15_000):
+        from mt5_session import attach_or_initialize
+        if not attach_or_initialize(mt5, path=terminal, timeout=15_000):
             failures.append(f"{terminal}: initialize failed: {mt5.last_error()}")
             continue
         try:
@@ -110,6 +162,65 @@ def _read(path: Path) -> dict:
         return row if isinstance(row, dict) else {}
     except (OSError, ValueError):
         return {}
+
+
+def _canonical_certificate_count() -> int | None:
+    """Count only exact-policy ten-gate certificates from the single canonical store."""
+    try:
+        from gate_policy import all_ten_pass, is_exact_policy
+        doc = _read(BASE / "reports" / "UNIVERSAL_SURVIVORS.json")
+        if not is_exact_policy(doc.get("gate_policy")):
+            return None
+        rows = doc.get("survivors")
+        if not isinstance(rows, dict):
+            return 0
+        return sum(isinstance(row, dict) and all_ten_pass(row.get("gates"))
+                   for row in rows.values())
+    except (ImportError, OSError, ValueError, TypeError):
+        return None
+
+
+def _family_of_key(key: str) -> str:
+    """The mechanism a shadow key names. Keys are minted, so this reads a field, not a guess."""
+    k = str(key)
+    if "." in k:                       # SYMBOL.family.selector#params
+        parts = k.split("#", 1)[0].split(".")
+        return parts[1] if len(parts) > 1 else ""
+    parts = k.split("_p_", 1)[0].split("_")   # symbol_family_selector_p_hash
+    return "_".join(parts[1:-1]) if len(parts) > 2 else ""
+
+
+def _hash_of_key(key: str) -> str:
+    """The parameter signature a shadow key carries, or "" when it is unparameterised."""
+    import re as _re
+    m = _re.search(r"_p_([0-9a-f]{8,})$", str(key))
+    if m:
+        return m.group(1)
+    if "#" in str(key):
+        import hashlib as _h
+        return _h.sha256(str(key).split("#", 1)[1].encode("utf-8")).hexdigest()[:16]
+    return ""
+
+
+def _param_hash(row: object) -> str:
+    """The parameter signature a forward row carries, or "" when it has none.
+
+    A ROW'S IDENTITY IS ITS PARAMETERS, NOT ITS SYMBOL. Two sleeves on different instruments with
+    the same parameter set are one hypothesis tested twice, and counting them as two is how a
+    dashboard reports four times the breadth the book actually holds.
+    """
+    if not isinstance(row, dict):
+        return ""
+    for k in ("param_hash", "params_hash", "p"):
+        v = row.get(k)
+        if isinstance(v, str) and v:
+            return v
+    params = row.get("params")
+    if isinstance(params, dict) and params:
+        import hashlib
+        return hashlib.sha256(
+            json.dumps(params, sort_keys=True, default=str).encode("utf-8")).hexdigest()[:16]
+    return ""
 
 
 def _terminal_status(value: object) -> bool:
@@ -170,10 +281,44 @@ def run() -> tuple[dict, int]:
     legacy = _read(BASE / "reports" / "shadow" / "shadow_state.json")
     scalp = _read(BASE / "reports" / "shadow" / "scalp_shadow_state.json")
     qquant = _read(BASE / "reports" / "shadow" / "qquant_shadow_state.json")
+    # THE CENSUS COUNTED ONE ADMISSION STRING AND CALLED THE REST MISSING (fixed 2026-09-13).
+    #
+    # This matched `gate_admission == "ORIGINAL_UNIVERSAL_10_PASS"` exactly, which was complete
+    # while that was the only basis any clock could hold. The power-cure lane ended that: a cell
+    # that passes all five VALIDITY gates and fails only POWER gates now enrols carrying
+    # `VALIDITY_PASS_POWER_DEFICIENT`, because `pipeline/promote.py` branches on that exact
+    # string to apply the forward-cure thresholds instead of the ten-gate ones.
+    #
+    # So every cure clock became INVISIBLE HERE the moment the lane opened. Measured on the box
+    # tonight: shadow_state.json held 230 rows with 218 ACTIVE, this set matched 95, and the
+    # difference was published as `missing_sleeves: ["86 certified sleeve(s)"]` -- 86 clocks that
+    # exist, are enrolled, are accruing forward evidence, and were being reported as never having
+    # been created. The lane I opened to cure power deficiency is the lane this reported as a
+    # hole, every hour, with an exit code.
+    #
+    # THE DEFECT IS THE EQUALITY, NOT THE VALUE. An `== <one enum member>` filter over a field
+    # that is designed to grow new members fails silently and in the safe-looking direction: it
+    # UNDER-counts, which reads as a shortfall rather than an error, so it survives review. Same
+    # shape as `live: 0` (a reader that handled one JSON shape) and the `min_volume` /
+    # `volume_min` spelling -- all three answered confidently with a number that meant "I did not
+    # recognise this".
+    #
+    # A row is represented if it is a clock this desk knowingly enrolled. Membership is now the
+    # test, the bases are named in one place, and an UNRECOGNISED basis is surfaced rather than
+    # silently dropped -- because the next basis added will otherwise reproduce this exactly.
     represented_legacy = {
         key for key, row in legacy.items()
-        if isinstance(row, dict) and row.get("gate_admission") == "ORIGINAL_UNIVERSAL_10_PASS"
+        if isinstance(row, dict) and str(row.get("gate_admission") or "") in ENROLLED_ADMISSIONS
     }
+    _unrecognised = sorted({
+        str(row.get("gate_admission") or "")
+        for key, row in legacy.items()
+        if isinstance(row, dict) and ("status" in row or "n" in row)
+        and str(row.get("gate_admission") or "") not in ENROLLED_ADMISSIONS
+    } - {""})
+    if _unrecognised:
+        print("UNRECOGNISED gate_admission basis (not counted, and that is a defect here, "
+              f"not in the row): {_unrecognised}")
     represented_scalp = set((scalp.get("sleeves") or {}).keys())
     represented_qquant = {
         key for key, row in qquant.items()
@@ -183,12 +328,27 @@ def run() -> tuple[dict, int]:
     rows += [(scalp.get("sleeves") or {})[key] for key in represented_scalp]
     rows += [qquant[key] for key in represented_qquant]
     active_rows = [row for row in rows if not _terminal_status(row.get("status"))]
+    # THE FAMILY AND THE PARAMETER HASH LIVE IN THE KEY, NOT IN THE ROW (fixed 2026-09-14).
+    #
+    # The first version of these fields read `row.get("family")` and `row.get("params")` and
+    # reported n_mechanisms 0 and n_distinct_param_hashes 0 against 183 live rows -- a confident
+    # zero, which is the precise failure these fields were added to expose. Shadow keys are minted
+    # as `SYMBOL.family.selector#params` or `symbol_family_selector_p_<hash>`, so the identity is
+    # in the key and the row carries only the accrued evidence.
+    _active_keys = [k for k in (list(represented_legacy) + list(represented_scalp)
+                                + list(represented_qquant))
+                    if not _terminal_status((legacy.get(k) or (scalp.get("sleeves") or {}).get(k)
+                                             or qquant.get(k) or {}).get("status"))]
+    _n_mechs = len({_family_of_key(k) for k in _active_keys if _family_of_key(k)})
+    _n_hashes = len({_hash_of_key(k) for k in _active_keys if _hash_of_key(k)})
     terminal_rows = [row for row in rows if _terminal_status(row.get("status"))]
-    certified = (int(legacy.get("configured_sleeves", 0) or 0)
-                 + int(scalp.get("configured_sleeves", 0) or 0)
-                 + int(qquant.get("certified_qquant_sleeves", 0) or 0))
+    certified = _canonical_certificate_count()
     recorded = len(rows)
-    missing = [] if recorded >= certified else [f"{certified - recorded} certified sleeve(s)"]
+    if certified is None:
+        errors["certificate_census"] = "canonical exact-policy certificate store is unmeasured"
+        missing = []
+    else:
+        missing = [] if recorded >= certified else [f"{certified - recorded} certified sleeve(s)"]
     # `BLOCKED_SLEEVE_ERROR` is the per-sleeve isolation status shadow_forward writes when one
     # row cannot be evaluated (gap-wirer 2026-08-27). It MUST be counted here: the whole point of
     # isolating a failure is that the other rows keep accruing, and a failure that stops halting
@@ -212,6 +372,26 @@ def run() -> tuple[dict, int]:
         "configured_sleeves": len(active_rows),
         "represented_sleeves": len(active_rows),
         "certified_sleeves_total": certified,
+        "forward_clocks_total": len(active_rows),
+        "certificate_basis": "reports/UNIVERSAL_SURVIVORS.json exact ten-gate policy",
+        # THE DASHBOARD SAID 61 AND THE TRUTH WAS ABOUT SIX (added 2026-09-14).
+        #
+        # A sleeve count is not a breadth measure. Measured on the live book: one parameter hash,
+        # `44136fa355b3678a`, held FOUR sleeves -- chfdkk, eurnok, gbpmxn, gbpnok -- the identical
+        # overnight_gap_decay parameter set on four exotics in the same session. Earlier, twelve.
+        # That is one bet counted four times, and `certified_sleeves_total` reports it as four.
+        #
+        # `n_eff` already measures this properly (5.59 against a 1/rho ceiling of 6.1) but it
+        # lives in portfolio_evidence, which nothing on the health tile reads. So the number the
+        # principal sees on the board grew from 23 to 61 while effective breadth stayed flat --
+        # a number that looks maintained while carrying no usable information, which is the exact
+        # defect class `check_stamp_freshness` was written for.
+        #
+        # Three counts, because they answer three different questions and collapsing them is how
+        # the confusion started: how many ROWS, how many distinct PARAMETERISATIONS, how many
+        # distinct MECHANISMS. The gap between the first and the last is the replication factor.
+        "n_distinct_param_hashes": _n_hashes,
+        "n_mechanisms": _n_mechs,
         "retired_shadow_sleeves": len(terminal_rows),
         "quarantined_uncertified_candidates": (
             int(legacy.get("gate_blocked_sleeves", 0) or 0)
@@ -227,8 +407,33 @@ def run() -> tuple[dict, int]:
         "gateway_armed": bool(gw.get("armed", False)),
         "promoted_live_sleeves": live_sleeves,
     }
-    if missing or errors:
+    # AN ENROLMENT GAP IS A CENSUS, NOT A CRASH (fixed 2026-09-13, WS-005).
+    #
+    # `missing` and `errors` were collapsed into one FAILED verdict and one exit code 1. Measured
+    # on the box tonight: the cycle ran for 2,667 seconds, saved 183 sleeves, resolved the
+    # allocation FRESH, applied four demotions and a resize, rewrote sleeves.json -- and then
+    # exited 1, because 187 certificates hold 95 clocks and the other 86 have none. Every part of
+    # that run worked. The number it reported was TRUE. It was rendered as the same event as a
+    # traceback.
+    #
+    # THE COST IS NOT COSMETIC. `ops/never_stale.py` keys its remedy table on the exit code, so
+    # the healer that exists to end staleness read code 1, found nothing keyed to it -- 1 is too
+    # generic to key globally -- and published "NEEDS HUMAN / no standing remedy for this shape"
+    # every hour about a lane that was working. An operator who checks twice and finds the desk
+    # healthy both times stops checking (L0296), and the one time it IS a traceback it will look
+    # exactly the same.
+    #
+    # So the two alarms now render differently, and the gap gets an exit code of its own:
+    #   errors   -> FAILED         1   something threw; the run is not trustworthy
+    #   missing  -> ENROLMENT_GAP  3   the run is trustworthy AND says N certificates lack clocks
+    #   blocked  -> EVIDENCE_BLOCKED 2 (unchanged)
+    # A non-zero code is kept for the gap ON PURPOSE: 86 unenrolled certificates is a real
+    # deficiency the desk must not be allowed to call OK. It is simply a DIFFERENT deficiency,
+    # and `ENROLMENT_GAP` carries its own remedy in never_stale's task table.
+    if errors:
         health["status"] = "FAILED"
+    elif missing:
+        health["status"] = "ENROLMENT_GAP"
     elif blocked:
         health["status"] = "EVIDENCE_BLOCKED"
     else:
@@ -236,7 +441,8 @@ def run() -> tuple[dict, int]:
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps(health, indent=2), "utf-8")
     print(json.dumps(health, indent=2))
-    return health, {"OPERATING": 0, "EVIDENCE_BLOCKED": 2}.get(health["status"], 1)
+    return health, {"OPERATING": 0, "EVIDENCE_BLOCKED": 2,
+                    "ENROLMENT_GAP": 3}.get(health["status"], 1)
 
 
 def main() -> int:

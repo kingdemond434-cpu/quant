@@ -67,11 +67,7 @@ if ! command -v codex >/dev/null 2>&1; then
     echo "midnight-codex: CLI unavailable; deterministic machinery remains active" | tee -a "$LOG"
     exit 3
 fi
-# The CLI has hung indefinitely here in production (7h observed on 2026-09-21), preventing both
-# controller work and the service's bounded retry policy. Authentication probing is diagnostic,
-# not the work itself, so bound it and fail visibly instead of occupying the nightly lease.
-if ! timeout --signal=TERM --kill-after=5 "${CODEX_LOGIN_STATUS_TIMEOUT_SECONDS:-30}" \
-    codex login status >>"$LOG" 2>&1; then
+if ! codex login status >>"$LOG" 2>&1; then
     write_status "AUTH_REQUIRED" "Run codex login --device-auth once on the VPS; no repository state reset" 126
     echo "midnight-codex: authentication unavailable; deterministic machinery remains active" | tee -a "$LOG"
     exit 3
@@ -156,8 +152,6 @@ write_status "RUNNING_CONTROLLER" "Codex holds the fenced lease and is processin
     printf 'It remains authoritative; inspect only the relevant clauses on demand.\n'
     printf '\n=== SINGLE MT5-ONLY MIDNIGHT OPERATING BRIEF ===\n'
     cat ops/midnight_codex_prompt.txt
-    printf '\n=== CANONICAL BREADTH MACHINERY DUTY (SUPERSEDES PROPOSE-ONLY) ===\n'
-    cat docs/research/BREADTH_MACHINERY_MANDATE.md
     printf '\nRUNTIME STATE: deterministic pipeline exit code=%s; controller epoch=%s.\n' \
         "$PIPELINE_RC" "$QUANT_CONTROLLER_EPOCH"
 } >"$PROMPT_FILE"
@@ -175,7 +169,7 @@ HEARTBEAT_PID=$!
 # exports, then the pinned default. The pre-merge form read ONLY _OVERRIDE, which
 # silently discarded the Environment= lines in quant-midnight-frontier.service --
 # the unit's model pin had no effect on the process the unit itself started.
-CODEX_NIGHTLY_MODEL="${CODEX_NIGHTLY_MODEL_OVERRIDE:-${CODEX_NIGHTLY_MODEL:-gpt-5.6-sol}}"
+CODEX_NIGHTLY_MODEL="${CODEX_NIGHTLY_MODEL_OVERRIDE:-${CODEX_NIGHTLY_MODEL:-gpt-5.6-terra}}"
 CODEX_NIGHTLY_REASONING_EFFORT="${CODEX_NIGHTLY_REASONING_EFFORT_OVERRIDE:-${CODEX_NIGHTLY_REASONING_EFFORT:-medium}}"
 # The unattended controller is explicitly authorized to edit the complete checkout.
 # workspace-write is not viable on this VPS: bubblewrap can start but denies every

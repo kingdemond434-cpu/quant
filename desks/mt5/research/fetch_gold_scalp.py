@@ -37,7 +37,8 @@ def _paged_rates(mt5, symbol: str, timeframe: int, bars: int):  # type: ignore[n
 def fetch(terminal: str, symbol: str, out_dir: Path, bars: int = 90_000) -> dict[str, int]:
     import MetaTrader5 as mt5
 
-    if not mt5.initialize(path=terminal, timeout=15_000):
+    from mt5_session import attach_or_initialize
+    if not attach_or_initialize(mt5, path=terminal, timeout=15_000):
         raise RuntimeError(f"MT5 initialize failed: {mt5.last_error()}")
     try:
         account = mt5.account_info()

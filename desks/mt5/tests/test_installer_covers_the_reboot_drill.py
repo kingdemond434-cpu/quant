@@ -113,15 +113,20 @@ def test_every_required_task_is_registered_or_explicitly_excluded() -> None:
     )
 
 
-def test_the_two_documented_exclusions_are_the_only_ones() -> None:
-    # Pinned deliberately. Both are unresolved work, not permanent policy: MT5-TerminalBoot needs
-    # an interactive logon (ops/box-repair.ps1 documents the schtasks fix) and MT5-Universe names
-    # no script in this checkout. If either becomes registerable this test fails and asks for the
-    # comment to go with it -- which is the point. What it must never do is grow quietly.
-    assert sorted(_required_names() - _registered_names()) == [
-        "MT5-TerminalBoot",
-        "MT5-Universe",
-    ]
+def test_the_documented_exclusion_is_the_only_one() -> None:
+    # TerminalBoot still needs an interactive/elevated repair. Universe is now registered in a
+    # dedicated block because broker IPC cannot run as SYSTEM.
+    assert sorted(_required_names() - _registered_names()) == ["MT5-TerminalBoot"]
+
+
+def test_universe_collector_uses_the_interactive_terminal_session() -> None:
+    text = _installer_text()
+    assert 'Register-ScheduledTask -TaskName "MT5-Universe"' in text
+    assert 'Join-Path $RepoRoot "ops\\run_universe.cmd"' in text
+    assert '-Argument ("/d /c {0}" -f $universeCmd)' in text
+    assert '-LogonType Interactive' in text
+    assert '-MultipleInstances IgnoreNew' in text
+    assert 'New-TimeSpan -Hours 1' in text
 
 
 @pytest.mark.parametrize(("name", "script"), _table_entries())

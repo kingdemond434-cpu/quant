@@ -135,7 +135,8 @@ def main(argv: list[str] | None = None) -> int:
               "terminal -- it is the only place that can be asked what the broker offers.")
         return 2
 
-    if mt5.terminal_info() is None and not mt5.initialize(path=terminal_path()):
+    from mt5_session import attach_or_initialize
+    if not attach_or_initialize(mt5, path=terminal_path()):
         print(f"REFUSED: terminal initialize failed: {mt5.last_error()}")
         return 2
 

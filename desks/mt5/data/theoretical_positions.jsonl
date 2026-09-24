@@ -1,0 +1,23 @@
+{"kind": "target", "sleeve": "xau_m5_anti_momentum_ny", "symbol": "XAUUSD", "lots": -0.01, "reason": "scalp_market/anti_three_bar_momentum", "at": "2026-09-07T12:15:59.280103+00:00", "price": 4391.83}
+{"kind": "target", "sleeve": "xau_m15_anti_breakout", "symbol": "XAUUSD", "lots": 0.01, "reason": "scalp_market/anti_donchian_breakout", "at": "2026-09-11T03:31:34.920549+00:00", "price": 4307.4}
+{"kind": "target", "sleeve": "xau_m15_anti_breakout", "symbol": "XAUUSD", "lots": -0.01, "reason": "scalp_market/anti_donchian_breakout", "at": "2026-09-11T05:46:29.603434+00:00", "price": 4344.42}
+{"kind": "fill", "sleeve": "gold_asia", "symbol": "XAUUSD", "lots": 0.02, "price": 4340.76, "at": "2026-09-11T05:46:29.607278+00:00"}
+{"kind": "target", "sleeve": "gold_asia", "symbol": "XAUUSD", "lots": 0.02, "reason": "bracket_fill", "at": "2026-09-11T05:46:29.608303+00:00", "price": 4340.76}
+{"kind": "fill", "sleeve": "gold_asia", "symbol": "XAUUSD", "lots": 0.02, "price": 4340.76, "at": "2026-09-11T06:05:33.325106+00:00"}
+{"kind": "fill", "sleeve": "gold_asia", "symbol": "XAUUSD", "lots": 0.02, "price": 4340.76, "at": "2026-09-11T06:37:26.511256+00:00"}
+{"kind": "fill", "sleeve": "gold_asia", "symbol": "XAUUSD", "lots": 0.02, "price": 4340.76, "at": "2026-09-11T07:56:32.224758+00:00"}
+{"kind": "fill", "sleeve": "gold_asia", "symbol": "XAUUSD", "lots": 0.02, "price": 4340.76, "at": "2026-09-11T07:59:11.718929+00:00"}
+{"kind": "target", "sleeve": "xau_m5_anti_breakout_overlap", "symbol": "XAUUSD", "lots": 0.01, "reason": "scalp_market/anti_donchian_breakout", "at": "2026-09-11T11:19:27.612440+00:00", "price": 4337.8}
+{"kind": "target", "sleeve": "xau_m15_anti_breakout", "symbol": "XAUUSD", "lots": 0.01, "reason": "scalp_market/anti_donchian_breakout", "at": "2026-09-11T11:19:27.619200+00:00", "price": 4337.95}
+{"kind": "target", "sleeve": "xau_m5_anti_momentum_ny", "symbol": "XAUUSD", "lots": 0.01, "reason": "scalp_market/anti_three_bar_momentum", "at": "2026-09-11T11:19:34.146990+00:00", "price": 4337.98}
+{"kind": "fill", "sleeve": "gold_asia", "symbol": "XAUUSD", "lots": -0.02, "price": 4298.87, "at": "2026-09-11T12:36:05.292606+00:00"}
+{"kind": "fill", "sleeve": "gold_asia", "symbol": "XAUUSD", "lots": -0.02, "price": 4298.87, "at": "2026-09-11T12:36:05.295413+00:00"}
+{"kind": "target", "sleeve": "gold_asia", "symbol": "XAUUSD", "lots": -0.02, "reason": "bracket_fill", "at": "2026-09-11T12:36:05.296368+00:00", "price": 4298.87}
+{"kind": "fill", "sleeve": "gold_asia", "symbol": "XAUUSD", "lots": 0.02, "price": 4340.68, "at": "2026-09-11T12:37:54.017383+00:00"}
+{"kind": "target", "sleeve": "gold_asia", "symbol": "XAUUSD", "lots": 0.0, "reason": "bracket_flat", "at": "2026-09-11T12:37:54.020743+00:00"}
+{"kind": "target", "sleeve": "xau_m5_anti_breakout_overlap", "symbol": "XAUUSD", "lots": -0.01, "reason": "scalp_market/anti_donchian_breakout", "at": "2026-09-11T12:43:00.135229+00:00", "price": 4358.79}
+{"kind": "target", "sleeve": "xau_m5_anti_momentum_ny", "symbol": "XAUUSD", "lots": -0.01, "reason": "scalp_market/anti_three_bar_momentum", "at": "2026-09-11T12:43:00.143334+00:00", "price": 4356.61}
+{"kind": "target", "sleeve": "xau_m15_anti_breakout", "symbol": "XAUUSD", "lots": -0.01, "reason": "scalp_market/anti_donchian_breakout", "at": "2026-09-11T13:01:35.942056+00:00", "price": 4388.3}
+{"kind": "target", "sleeve": "xau_m15_anti_breakout", "symbol": "XAUUSD", "lots": 0.01, "reason": "scalp_market/anti_donchian_breakout", "at": "2026-09-11T18:19:15.839331+00:00", "price": 4351.47}
+{"kind": "fill", "sleeve": "xau_m15_anti_breakout", "symbol": "XAUUSD", "lots": 0.01, "price": 4351.47, "at": "2026-09-11T18:19:15.987654+00:00"}
+{"kind": "target", "sleeve": "xau_m15_anti_breakout", "symbol": "XAUUSD", "lots": 0.0, "reason": "bracket_exit", "at": "2026-09-11T18:20:03.348856+00:00"}

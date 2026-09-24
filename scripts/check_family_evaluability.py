@@ -56,7 +56,6 @@ something real.
 from __future__ import annotations
 
 import argparse
-import importlib
 import json
 import re
 import sys
@@ -82,18 +81,12 @@ def registered() -> set[str]:
         if sp not in sys.path:
             sys.path.insert(0, sp)
     try:
-        families = importlib.import_module("mt5desk.families")
-        orthogonal = importlib.import_module("mt5desk.families_orthogonal")
-    except Exception:              # an unimportable registry is UNMEASURED, never zero
-        # NOT JUST ImportError. These two modules pull numpy and pandas in at import, and a fresh
-        # checkout or a CI image without them raises something else entirely. An empty set here
-        # would make EVERY minted family look unevaluable and turn this fence into a 90-name
-        # false alarm, which is worse than the defect it watches -- so `survey` refuses to read an
-        # empty result as a measurement.
+        from mt5desk import families, families_orthogonal
+    except ImportError:
         return names
     names |= {a[len("family_"):] for a in dir(families)
               if a.startswith("family_") and callable(getattr(families, a, None))}
-    names |= set(getattr(orthogonal, "ORTHOGONAL_FAMILIES", {}) or {})
+    names |= set(getattr(families_orthogonal, "ORTHOGONAL_FAMILIES", {}) or {})
     return names
 
 
@@ -111,14 +104,6 @@ def minted() -> tuple[dict[str, int], str]:
 
 def survey() -> dict[str, Any]:
     reg = registered()
-    if not reg:
-        # AN EMPTY REGISTRY IS NOT "NOTHING IS REGISTERED". It is a registry this host could not
-        # import, and taking it at face value would mark all 90 minted names unevaluable -- a
-        # fence that is loudest exactly where it knows least (L1.28a).
-        return {"status": "UNMEASURED", "at": datetime.now(tz=UTC).isoformat(),
-                "why": "neither family registry could be imported on this host, so 'registered' "
-                       "is unknown, not empty; UNMEASURED is a verdict, never a pass (L1.28a)",
-                "n_registered": 0}
     try:
         mint, source = minted()
     except Exception as exc:                        # reported as UNMEASURED, never raised

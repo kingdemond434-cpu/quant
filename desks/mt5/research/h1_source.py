@@ -312,7 +312,8 @@ def from_mt5(sym: str, start: datetime, timeframe: str = "H1") -> Bars | None:
         try:
             if terminal is not None:
                 mt5.shutdown()
-                if not mt5.initialize(path=terminal, timeout=15_000):
+                from mt5_session import attach_or_initialize
+                if not attach_or_initialize(mt5, path=terminal, timeout=15_000):
                     continue
             account = mt5.account_info()
             server = str(getattr(account, "server", "unknown"))

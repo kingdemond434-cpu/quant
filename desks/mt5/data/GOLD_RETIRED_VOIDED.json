@@ -1,0 +1,12 @@
+{
+  "gold_asia": {
+    "retired_at": "2026-09-02T23:38:34+00:00",
+    "reason": "roll20 exp -0.834R <= 0",
+    "n": 30,
+    "exp": -0.8420000000000001,
+    "roll20_exp": -0.8335000000000001,
+    "max_dd": -24.26,
+    "voided_at": "2026-09-12T06:08:33+00:00",
+    "voided_why": "every one of 3 r_multiples is exactly +0.000 -- a constant series is a computation defect, not performance; refusing to retire on it"
+  }
+}

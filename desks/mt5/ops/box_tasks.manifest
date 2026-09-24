@@ -60,7 +60,14 @@ TASK name="MT5-CostState"          trigger="daily 04:20"         runs="desks/mt5
 TASK name="MT5-FrontierAudit"      trigger="daily 05:10"         runs="ops/run_frontier_audit.cmd"            installer="NONE" lane="research"
 TASK name="MT5-AuditLane"          trigger="every 1 hour"        runs="ops/run_audit_lane.cmd"                installer="NONE" lane="research"
 TASK name="MT5-ScientistTournament" trigger="daily 02:30 local (00:30 UTC)" runs="ops/run_scientist_tournament.cmd" installer="NONE" lane="research"
-TASK name="MT5-Gateway"            trigger="continuous loop"      runs="desks/mt5/research/run_gateway_loop.py" installer="NONE" lane="money"
+# MT5-Gateway IS RETIRED FROM THIS MANIFEST, AND THE GATEWAY IS NOT (2026-09-23). The gateway
+# runs as MT5-GatewayResident, declared below: MEASURED this hour, the resident task last ran
+# with result 0 and desks/mt5/data/gateway_state.json was 32 seconds old. MT5-Gateway itself has
+# been Disabled since 2026-09-16 and its last run was seven days ago; it is the superseded
+# registration, not a dark money path. Declaring it kept `check_declared_tasks` reporting a
+# CRITICAL disabled clock the desk does not want. The DISABLED task is left on the box rather
+# than deleted -- removing a money-path registration is not a thing to do from a defect sweep --
+# but this file no longer claims it.
 TASK name="MT5-FusionDeadman"      trigger="UNDECLARED"           runs="scripts/run_deadman_switch.py"         installer="NONE" lane="money"
 # THE MT5 RAIL, DRY-RUN ONLY (2026-09-08). A separate task from MT5-FusionDeadman above, which runs
 # the Tier-3 crypto rail and is not touched. This one evaluates the live MT5 account's rails every
@@ -150,7 +157,7 @@ TASK name="MT5-CacheWarm"          trigger="every 30 minutes"      runs="UNKNOWN
 TASK name="MT5-StallWatch"         trigger="every 10 minutes" runs="desks/mt5/scripts/stall_watch.ps1"        installer="NONE" lane="ops"
 # The post-reboot drill (2026-09-08): read-only apart from re-enabling a Disabled task; records
 # PASS/FAIL to desks/mt5/reports/REBOOT_DRILL.json and raises data/REBOOT_DRILL_ALARM.txt on FAIL.
-TASK name="MT5-RebootDrill"        trigger="daily at 06:30"   runs="ops/reboot_drill.ps1"                     installer="desks/mt5/scripts/Install-QuantWindows.ps1" lane="ops"
+TASK name="MT5-RebootDrill"        trigger="daily at 06:30"   runs="ops/reboot_drill.ps1"                     installer="desks/mt5/scripts/register_absent_box_tasks.ps1" lane="ops"
 TASK name="MT5-DeskState"          trigger="every 15 minutes, at :05"       runs="scripts/build_zentech_state.py" installer="NONE" lane="ops"
 TASK name="MT5-LocalDashboard"     trigger="at startup"       runs="scripts/serve_dashboard.py"         installer="desks/mt5/scripts/install_local_dashboard.ps1" lane="ops"
 # THE 24/7 DASHBOARD (principal 2026-09-23). MT5-LocalDashboard binds 127.0.0.1 and is therefore
@@ -159,7 +166,7 @@ TASK name="MT5-LocalDashboard"     trigger="at startup"       runs="scripts/serv
 # permanent rather than a process someone started. It serves web/dashboard.html, which renders
 # web/desk_state.json["dashboard"] -- the join written hourly by the desk_dashboard_state leg.
 TASK name="MT5-DeskDashboard"      trigger="at startup"       runs="scripts/serve_dashboard.py --port 8080 --host 0.0.0.0 --require-token" installer="desks/mt5/scripts/install_desk_dashboard_task.ps1" lane="ops"
-TASK name="MT5-ShadowSync"         trigger="UNDECLARED"       runs="desks/mt5/scripts/MT5Sync.cmd"            installer="NONE" lane="ops"
+TASK name="MT5-ShadowSync"         trigger="every 15 minutes at :05" runs="desks/mt5/scripts/sync_shadow_to_git.ps1" installer="desks/mt5/scripts/register_absent_box_tasks.ps1" lane="ops"
 
 # --- MEASURED ON THE BOX 2026-09-16 (schtasks /Query) so the DR floor knows them. MT5-HourlyCore
 # runs hourly_cycle.py under HOURLY_PLAN=core (the cheap governance/forward/publication legs,
@@ -219,13 +226,17 @@ TASK name="MT5-GoldHourSweep" trigger="UNDECLARED" runs="ops/run_gold_hour_sweep
 # ops/organ_contract.py names it; not installed on the box 2026-09-16.
 TASK name="MT5-CertHygiene" trigger="UNDECLARED" runs="UNKNOWN" installer="NONE" lane="research"
 # desks/mt5/scripts/Install-QuantWindows.ps1 registers it; not installed on the box 2026-09-16.
-TASK name="MT5-CycleMidnight" trigger="UNDECLARED" runs="desks/mt5/research/hourly_cycle.py" installer="NONE" lane="research"
+TASK name="MT5-CycleMidnight" trigger="hourly 00:00-11:00" runs="desks/mt5/scripts/Run-DeskCycle.ps1 -Lane midnight" installer="desks/mt5/scripts/register_absent_box_tasks.ps1" lane="research"
 # desks/mt5/scripts/Install-QuantWindows.ps1 registers it; not installed on the box 2026-09-16.
-TASK name="MT5-CycleNoon" trigger="UNDECLARED" runs="desks/mt5/research/hourly_cycle.py" installer="NONE" lane="research"
+TASK name="MT5-CycleNoon" trigger="hourly 12:00-23:00" runs="desks/mt5/scripts/Run-DeskCycle.ps1 -Lane noon" installer="desks/mt5/scripts/register_absent_box_tasks.ps1" lane="research"
 # scripts/check_scheduled_tasks.py names it; not installed on the box 2026-09-16.
 TASK name="MT5-DashMirror" trigger="UNDECLARED" runs="UNKNOWN" installer="NONE" lane="ops"
 # desks/mt5/scripts/Install-QuantWindows.ps1 registers it; not installed on the box 2026-09-16.
-TASK name="MT5-ArtifactSync" trigger="UNDECLARED" runs="UNKNOWN" installer="desks/mt5/scripts/Install-QuantWindows.ps1" lane="ops"
+# MT5-ArtifactSync IS RETIRED FROM THIS MANIFEST (2026-09-23). Install-QuantWindows.ps1 does not
+# register it: it UNREGISTERS it on purpose ("Hetzner decommissioned", 2026-08-23), because its
+# whole job was pushing artifacts to a VPS that no longer takes them. The manifest went on
+# declaring it, so `check_declared_tasks` reported it absent every pass -- a defect generated by
+# the declaration, not by the box. The installer's own line is the authority here.
 
 # THE DEPARTMENTS (2026-09-16): each research mission on its own hourly clock at full throughput
 # (HOURLY_PLAN=dept:<name>) as 24/7 RESIDENTS (department_resident.py: singleton lock, a pass
@@ -240,3 +251,11 @@ TASK name="MT5-Dept-Execution" trigger="at startup + every 10 minutes (keep-aliv
 TASK name="MT5-Dept-Forward" trigger="at startup + every 10 minutes (keep-alive of a 24/7 resident)" runs="desks/mt5/research/department_resident.py" installer="NONE" lane="research"
 TASK name="MT5-Dept-Meta" trigger="at startup + every 10 minutes (keep-alive of a 24/7 resident)" runs="desks/mt5/research/department_resident.py" installer="NONE" lane="research"
 TASK name="MT5-Dept-Rest" trigger="at startup + every 10 minutes (keep-alive of a 24/7 resident)" runs="desks/mt5/research/department_resident.py" installer="NONE" lane="research"
+
+# THE LAW BATTERY'S OWN CLOCK (2026-09-23). data/law_gate.json was 270 h old with 14 of 56
+# fences in it, which made forty "fence_ran" defects and, by L1.49, every green claim resting on
+# them uncashable. The battery does not fit an hourly window -- 56 fences at up to 600 s each --
+# so it rides a ROTATION: oldest fences first until the budget is spent, merged into the record
+# with each fence's own `ran_at`, and a fence whose verdict ages past the stated 48 h window is
+# dropped from the record and reported as never run. No fence is disabled to make this pass.
+TASK name="MT5-LawGate" trigger="hourly at :40" runs="scripts/run_law_gate.py --rotate --budget-s 1800" installer="desks/mt5/scripts/install_law_gate_task.ps1" lane="ops"

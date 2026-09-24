@@ -1,0 +1,1 @@
+{"at": "2026-09-11T18:19:15.988357+00:00", "algo": "market", "symbol": "XAUUSD", "side": "buy", "lots": 0.01, "filled_lots": 0.01, "expected_cost": 1.264e-05, "realised_cost": 0.0, "filled_frac": 1.0, "expected_p_fill": 1.0, "utility": 0.29525, "n_fills": 1}

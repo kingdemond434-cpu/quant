@@ -323,8 +323,32 @@ def step_gauntlet(survivors):
     min_len = min(len(a) for a in cols)
     matrix = np.column_stack([a[-min_len:] for a in cols])
 
-    n_trials = max(2, math.ceil(matrix.shape[1] * TRIALS_MULTIPLIER))
+    # THE TRIAL CHARGE IS FIXED AND DOES NOT SCALE WITH THE SWEEP (principal 2026-07-23,
+    # restated 2026-09-11), and this line taxed breadth exactly as the law forbids:
+    # `ceil(cells * TRIALS_MULTIPLIER)` makes every additional cell raise the bar every other
+    # cell has to clear, so widening a sweep punishes the hypotheses already in it. The canonical
+    # copy at side_channels/full_pipeline.py was routed through `charged_trial_count` and these
+    # two under scripts/ were missed; `test_the_trial_charge_is_fixed_and_never_taxes_breadth`
+    # has been naming them ever since.
+    #
+    # The fail-closed branch matters as much as the happy one: it falls back to the FIXED campaign
+    # count, never to the batch tax, because a census error must not quietly reintroduce the thing
+    # the wall exists to remove. Mirrors external_gauntlet.py, which is the reference site.
     sharpes = np.array([sharpe_ratio(matrix[:, k]) for k in range(matrix.shape[1])])
+    try:
+        from research.gate_policy import (
+            calibrated_census_report,
+            charged_trial_count,
+        )
+        _census = calibrated_census_report(
+            [matrix[:, k] for k in range(matrix.shape[1])],
+            sd_sharpe=float(sharpes.std(ddof=1)) if len(sharpes) > 1 else 0.0)
+        n_trials, _trial_basis = charged_trial_count(
+            matrix.shape[1], _census.get("n_effective"), _census.get("method"))
+    except Exception as _exc:
+        from research.gate_policy import fail_closed_trial_count
+        n_trials = fail_closed_trial_count(matrix.shape[1])
+        _trial_basis = f"raw_cells_fail_closed ({type(_exc).__name__})"
     sh_var = float(sharpes.var(ddof=1))
 
     pbo = probability_backtest_overfitting(matrix)
@@ -407,7 +431,8 @@ def step_certify(gauntlet_result):
     print("\n" + "=" * 60)
     print("STEP 5: CERTIFY + SHADOW ADMISSION")
     print("=" * 60)
-    surv_path = REPORTS / "UNIVERSAL_SURVIVORS.json"
+    # Legacy diagnostic only. The external gauntlet is the sole certificate authority.
+    surv_path = REPORTS / "LEGACY_FULL_PIPELINE_CANDIDATES.json"
     survivors = {}
     if surv_path.exists():
         try:

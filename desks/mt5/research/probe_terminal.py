@@ -14,7 +14,8 @@ import MetaTrader5 as mt5
 
 allow_send = "allow_send=1" in " ".join(sys.argv[1:])
 
-ok = mt5.initialize(path=terminal_path())
+from mt5_session import attach_or_initialize
+ok = attach_or_initialize(mt5, path=terminal_path())
 print("init:", ok, mt5.last_error())
 if not ok:
     sys.exit(2)

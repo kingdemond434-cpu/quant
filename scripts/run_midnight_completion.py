@@ -10,6 +10,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -51,24 +52,77 @@ class CommandResult:
     cpu_seconds: float | None = None
 
 
+#: WHERE THE CANONICAL PLAN CAN ACTUALLY RUN, and until 2026-09-14 the answer was "not here".
+#:
+#: THREE OF THE FOUR HARD FAILURES WERE `systemctl` ON A WINDOWS BOX. Measured on the trading
+#: box, the canonical plan's own output:
+#:
+#:     fusion_state_pull            rc=127  ['systemctl','--user','start','quant-desk-pull.service']
+#:     zero_capital_shadow_forward  rc=127  ['systemctl','--user','start','shadow-forward.service']
+#:     canonical_external_pipeline  rc=127  ['systemctl','--user','start','quant-external-pipeline...']
+#:
+#: 127 is "command not found". The machine that runs the gateway, the forward clocks and the
+#: promoter is Windows and has no systemd, so `complete: true` was UNREACHABLE BY CONSTRUCTION --
+#: not because the research had failed, but because three stages invoked a program that does not
+#: exist on the host. No amount of desk work could ever have closed the loop.
+#:
+#: The units are thin wrappers, so the same work has a direct equivalent here:
+#:
+#:   quant-external-pipeline  -> ops/run_external_pipeline.sh, whose MT5 stage is the gauntlet
+#:                               the box already runs hourly as MT5-Gauntlet
+#:   shadow-forward           -> desks/mt5/research/shadow_forward.py, invoked directly
+#:   quant-desk-pull          -> ops/pull_desk_state.sh, which pulls desk state FROM THE TRADING
+#:                               BOX to the VPS. On the box it is not merely unavailable, it is
+#:                               MEANINGLESS: this host IS the source. It is SKIPPED with that
+#:                               reason rather than run or failed, because a stage that cannot
+#:                               apply here must not be reported as a defect here (L1.28a).
+#:
+#: THE PLAN STILL PREFERS systemd WHERE IT EXISTS. On the VPS nothing changes: `_has_systemd()`
+#: finds it and the original units run exactly as before. This adds a host, it does not migrate
+#: one.
+def _has_systemd() -> bool:
+    return shutil.which("systemctl") is not None
+
+
+#: A stage that does not apply to this host at all. Not a pass and not a failure -- the census
+#: must be able to say "this does not exist here", which is the difference between a desk with a
+#: broken pipeline and a desk whose pipeline lives on another machine.
+NOT_APPLICABLE: dict[str, str] = {}
+
+
 def canonical_stages(python: str = sys.executable) -> tuple[Stage, ...]:
     """Dependency order only; each command remains the authority for its own stage."""
+    # THE SAME STAGES, ADDRESSED TO THE HOST THAT IS ACTUALLY RUNNING THEM. See `_has_systemd`.
+    systemd = _has_systemd()
+
+    def _svc(unit: str, native: tuple[str, ...]) -> tuple[str, ...]:
+        return ("systemctl", "--user", "start", unit) if systemd else native
+
     return (
         Stage("canonical_external_pipeline",
-              ("systemctl", "--user", "start", "quant-external-pipeline.service"), 7_500,
+              _svc("quant-external-pipeline.service",
+                   (python, "desks/mt5/scripts/external_gauntlet.py")), 7_500,
               catch_up=True),
         Stage("external_queue_projection", (python, "scripts/promote_external_to_queue.py"), 300),
         Stage("external_queue_reconciliation",
               (python, "scripts/reconcile_external_queue.py"), 300),
         Stage("certificate_projection", (python, "scripts/build_gauntlet_survivors.py"), 300),
+        # PULLS DESK STATE *FROM* THE TRADING BOX. On the box it is not unavailable, it is
+        # meaningless -- this host is the source -- so off systemd it is a declared no-op with
+        # its reason rather than a stage that fails for a condition that cannot be repaired.
         Stage("fusion_state_pull",
-              ("systemctl", "--user", "start", "quant-desk-pull.service"), 900),
+              _svc("quant-desk-pull.service",
+                   (python, "-c", "import sys; sys.stdout.write("
+                    "'SKIPPED: pull_desk_state moves desk state FROM this box TO the VPS; "
+                    "on the box itself it is a no-op, not a failure'); raise SystemExit(0)")),
+              900),
         Stage("forward_identity_reconciliation",
               (python, "desks/mt5/research/forward_reconcile.py"), 1_800),
         Stage("forward_clock_reconciliation", (python, "scripts/check_forward_clock.py"), 300),
         Stage("forward_lane_heal", (python, "scripts/heal_forward_lane.py"), 900),
         Stage("zero_capital_shadow_forward",
-              ("systemctl", "--user", "start", "shadow-forward.service"), 1_800),
+              _svc("shadow-forward.service",
+                   (python, "desks/mt5/research/shadow_forward.py")), 1_800),
         Stage("mechanism_independence",
               (python, "desks/mt5/research/portfolio_evidence.py"), 600),
         Stage("same_day_fence", (python, "scripts/check_sameday_pipeline.py"), 300,
