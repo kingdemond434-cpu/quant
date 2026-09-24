@@ -1021,7 +1021,18 @@ def mark_candidate(candidate_id: str, status: str, conn: sqlite3.Connection | No
         cur = c.execute("UPDATE research_candidates SET "  # noqa: S608
                         + ", ".join(f"{k}=?" for k in sets) + " WHERE id=? OR donated_cell=?",
                         [*sets.values(), candidate_id, candidate_id])
-        c.commit()
+        # THROUGH `_commit`, NOT `c.commit()` (measured 2026-09-24). `batch()` was written for
+        # the DONATION path and bound only the three doors that path uses --
+        # `enqueue_candidate`, `record_discovery`, `set_discovery_state` -- so it worked
+        # perfectly for its one caller and was inert for everybody else. This door and `link`
+        # committed directly, so no batch could ever bind them. The conversion DRAIN repairs a
+        # row with three writes (enqueue, link, mark): two of the three could not be batched at
+        # any chunk size, which is why its pass spent 99.95% of an hour waiting for the write
+        # lock. What a batch buys that caller is FEWER LOCK ACQUISITIONS, not cheaper commits --
+        # measured 2026-09-24, an uncontended three-write repair runs at 322 rows/s per-row and
+        # 276 rows/s batched, while the live box runs it at 0.72 rows/s. Outside a batch
+        # `_commit` IS `c.commit()`, so nothing changes for every other caller.
+        _commit(c)
         return cur.rowcount > 0
     finally:
         if conn is None:
@@ -1217,7 +1228,10 @@ def link(from_kind: str, from_id: str, to_kind: str, to_id: str, relation: str,
     c = conn or connect()
     try:
         _link(c, from_kind, from_id, to_kind, to_id, relation)
-        c.commit()
+        # See `mark_candidate`: `_commit` honours an open `batch()` and is a plain commit without
+        # one. A provenance edge is written once per repaired row, so this door carried a third
+        # of the conversion drain's write-lock traffic on its own and no batch could reach it.
+        _commit(c)
     finally:
         if conn is None:
             c.close()

@@ -1258,6 +1258,13 @@ class _Waves:
 LOCK_WAIT_MS = 180_000
 ENQUEUE_RETRIES = 3
 
+#: How many registry writes share one commit while this pass drains. `registry.batch`'s own
+#: default, kept rather than invented: it is the number that door was measured against, and it
+#: bounds how long this writer holds the write lock so other producers are never shut out. A
+#: repaired row costs three writes, so a chunk is ~167 rows -- long enough that the fsync is
+#: amortised, short enough that the lock is handed back ~120 times in a 900 s pass.
+BATCH_WRITES = 500
+
 
 def _widen_lock_window(conn: sqlite3.Connection) -> int | None:
     """Give this pass's writes a long busy window. Returns the ms set, or None if it would not."""
@@ -1429,126 +1436,158 @@ def run(*, budget: Budget, conn: sqlite3.Connection, max_rows: int, dry_run: boo
     # bounds are the wall clock and the (now genuinely derived) row cap; running out of DRAWN rows
     # is not a bound, it is a reason to draw the next wave.
     supply = _Waves(_draw, population, pool)
-    while True:
-        row = supply.next_row()
-        if row is None:
-            break
-        if examined >= max_rows or not budget.ok("convert", reserve=5.0):
-            leftover = [str(row.get("id") or ""), *supply.remaining()]
-            break
-        examined += 1
-        cid = str(row.get("id") or "")
-        handled.add(cid)
-        origin = str(row.get("origin") or row.get("generator") or "unknown")
-        stat = per_source.setdefault(origin, {"examined": 0, "repaired": 0, "refused": 0,
-                                              "still_blocked": 0})
-        stat["examined"] += 1
-        reason, obj = classify(row)
-        histogram[reason] = histogram.get(reason, 0) + 1
-        age = _age_days(row)
-        cls = _class(reason)
-        cls["seen"] += 1
-        if age is not None:
-            cls["ages_days"].append(age)
-        wanted_symbols.append(str(row.get("symbol") or ""))
-        if reason == "OFF_UNIVERSE":
-            detail = getattr(obj, "detail", "") or DEFECT_OWNER["OFF_UNIVERSE"]
-            refusals.append({"id": cid, "reason": "OFF_UNIVERSE", "detail": detail,
-                             "owner": DEFECT_OWNER["OFF_UNIVERSE"]})
-            stat["refused"] += 1
-            cls["refused"] += 1
-            if not dry_run:
-                _park(conn, cid, RETIRED, f"OFF_UNIVERSE: {detail}")
-            continue
-        if reason == "OK":
-            # Already compiles: it was debt because it sat in `donated` and nobody offered it to
-            # a judge. Enqueueing IS the repair.
-            fixed, actions, note = dict(row), ["already compiled -- never offered to a judge"], ""
-        else:
-            fixed, actions, note = repair(row, reason, universe_dir=universe_dir)
-            reason2, obj = classify(fixed)
-            if reason2 != "OK":
-                owner = DEFECT_OWNER.get(reason2, "unassigned")
-                detail = note or getattr(obj, "detail", "") or reason2
-                if detail.startswith("EVENT_LANE"):
-                    reason2, owner = "EVENT_LANE", DEFECT_OWNER["EVENT_LANE"]
-                entry = {"id": cid, "reason": reason2, "detail": detail[:400], "owner": owner,
-                         "actions_taken": actions, "age_days": age}
-                if reason2 in REFUSAL_CLASSES:
-                    # THE ONLY ADMISSIBLE PERMANENT REFUSALS (principal's addendum 2026-09-23):
-                    # ground the desk is forbidden to hunt, and an instrument the venue does not
-                    # quote for this lane. Everything else is work, not a verdict.
-                    refusals.append(entry)
-                    stat["refused"] += 1
-                    cls["refused"] += 1
-                    if not dry_run:
-                        _park(conn, cid, RETIRED, f"{reason2}: {detail}"[:400])
-                    continue
-                # NOT PARKED, EVER (principal's addendum). A row this pass could not repair stays
-                # QUEUED carrying its named blocker and its owner, so the next pass sees it again
-                # and the unrepaired backlog ratchets down instead of quietly becoming "blocked".
-                parked.append(entry)
-                stat["still_blocked"] += 1
-                cls["still_blocked"] += 1
-                if reason2 in ("PROSE_ONLY", "NO_INSTRUMENT"):
-                    naming.append({"id": cid, "mechanism": str(row.get("mechanism") or "")[:400],
-                                   "origin": origin, "needs": "an instrument and a family",
-                                   "detail": detail[:400]})
-                elif reason2 == "NO_DATA":
-                    acquisitions.append({"id": cid, "symbol": str(fixed.get("symbol") or ""),
-                                         "chart": str(fixed.get("chart") or ""),
-                                         "origin": origin, "detail": detail[:400]})
+    # ONE COMMIT PER CHUNK, NOT THREE PER ROW (measured on the trading box 2026-09-24). The
+    # pass examined 613 rows in 855 s of its 900 s budget while classify+repair cost 0.7 ms a
+    # row, so 99.95% of the loop was not thinking, it was waiting for SQLite's write lock.
+    # Every repaired row commits three times (enqueue, provenance link, mark), seven processes
+    # hold this registry open, and a no-op `BEGIN IMMEDIATE` probe measured p50 0.1 ms with a
+    # 53.5 s tail -- so the pass paid a full lock acquisition 1,839 times an hour to land 613
+    # rows against 16,967 debt arrivals. `registry.batch` already existed for exactly this, but
+    # it had one caller (the donation path in `proposer_common`) and bound only that path's
+    # three doors; this organ never opened one, and `mark_candidate` and `link` committed
+    # outside `_commit` so two of a repair's three writes could not be batched at any chunk
+    # size. Both halves are fixed.
+    #
+    # THE WIN IS LOCK ACQUISITIONS, NOT FSYNCS, and the distinction was measured rather than
+    # assumed. With no other writer in the way this same three-write repair runs at 322 rows/s
+    # committing per row and 276 rows/s batched -- batching is slightly SLOWER when nothing
+    # contends, because WAL at synchronous=NORMAL does not fsync on commit, so there is no fsync
+    # to amortise. The live box runs that identical code at 0.72 rows/s. So batching does not
+    # make a commit cheaper: it takes the write lock about a dozen times a pass instead of
+    # 1,839, and the 53.5 s tail stops being drawn against once per row. The batch's exit also
+    # checkpoints the WAL, which is cheap insurance rather than a standing emergency: the live
+    # WAL measured 864 MB at 12:30 and 16.7 MB an hour later, so it swings by two orders of
+    # magnitude and a number read off it has a shelf life. This is not a cap, a throttle or a
+    # refusal: it converts MORE rows in the same budget and discards none.
+    writes: contextlib.AbstractContextManager[None] = (
+        contextlib.nullcontext() if dry_run else R.batch(conn, every=BATCH_WRITES))
+    with writes:
+        while True:
+            row = supply.next_row()
+            if row is None:
+                break
+            if examined >= max_rows or not budget.ok("convert", reserve=5.0):
+                leftover = [str(row.get("id") or ""), *supply.remaining()]
+                break
+            examined += 1
+            cid = str(row.get("id") or "")
+            handled.add(cid)
+            origin = str(row.get("origin") or row.get("generator") or "unknown")
+            stat = per_source.setdefault(origin, {"examined": 0, "repaired": 0, "refused": 0,
+                                                  "still_blocked": 0})
+            stat["examined"] += 1
+            reason, obj = classify(row)
+            histogram[reason] = histogram.get(reason, 0) + 1
+            age = _age_days(row)
+            cls = _class(reason)
+            cls["seen"] += 1
+            if age is not None:
+                cls["ages_days"].append(age)
+            wanted_symbols.append(str(row.get("symbol") or ""))
+            if reason == "OFF_UNIVERSE":
+                detail = getattr(obj, "detail", "") or DEFECT_OWNER["OFF_UNIVERSE"]
+                refusals.append({"id": cid, "reason": "OFF_UNIVERSE", "detail": detail,
+                                 "owner": DEFECT_OWNER["OFF_UNIVERSE"]})
+                stat["refused"] += 1
+                cls["refused"] += 1
                 if not dry_run:
-                    _keep_queued(conn, cid, reason2, owner, detail)
+                    _park(conn, cid, RETIRED, f"OFF_UNIVERSE: {detail}")
                 continue
-        spec = obj if not isinstance(obj, XS.CompileDefect) else None
-        if spec is None:
-            spec_or_defect = XS.compile_row(fixed)
-            if isinstance(spec_or_defect, XS.CompileDefect):             # pragma: no cover
+            if reason == "OK":
+                # Already compiles: it was debt because it sat in `donated` and nobody offered it to
+                # a judge. Enqueueing IS the repair.
+                fixed, actions, note = (
+                    dict(row), ["already compiled -- never offered to a judge"], "")
+            else:
+                fixed, actions, note = repair(row, reason, universe_dir=universe_dir)
+                reason2, obj = classify(fixed)
+                if reason2 != "OK":
+                    owner = DEFECT_OWNER.get(reason2, "unassigned")
+                    detail = note or getattr(obj, "detail", "") or reason2
+                    if detail.startswith("EVENT_LANE"):
+                        reason2, owner = "EVENT_LANE", DEFECT_OWNER["EVENT_LANE"]
+                    entry = {"id": cid, "reason": reason2, "detail": detail[:400], "owner": owner,
+                             "actions_taken": actions, "age_days": age}
+                    if reason2 in REFUSAL_CLASSES:
+                        # THE ONLY ADMISSIBLE PERMANENT REFUSALS (principal's addendum 2026-09-23):
+                        # ground the desk is forbidden to hunt, and an instrument the venue does not
+                        # quote for this lane. Everything else is work, not a verdict.
+                        refusals.append(entry)
+                        stat["refused"] += 1
+                        cls["refused"] += 1
+                        if not dry_run:
+                            _park(conn, cid, RETIRED, f"{reason2}: {detail}"[:400])
+                        continue
+                    # NOT PARKED, EVER (principal's addendum). A row this pass could not
+                    # repair stays QUEUED carrying its named blocker and its owner, so the
+                    # next pass sees it again and the unrepaired backlog ratchets down
+                    # instead of quietly becoming "blocked".
+                    parked.append(entry)
+                    stat["still_blocked"] += 1
+                    cls["still_blocked"] += 1
+                    if reason2 in ("PROSE_ONLY", "NO_INSTRUMENT"):
+                        naming.append({"id": cid,
+                                       "mechanism": str(row.get("mechanism") or "")[:400],
+                                       "origin": origin, "needs": "an instrument and a family",
+                                       "detail": detail[:400]})
+                    elif reason2 == "NO_DATA":
+                        acquisitions.append({"id": cid, "symbol": str(fixed.get("symbol") or ""),
+                                             "chart": str(fixed.get("chart") or ""),
+                                             "origin": origin, "detail": detail[:400]})
+                    if not dry_run:
+                        _keep_queued(conn, cid, reason2, owner, detail)
+                    continue
+            spec = obj if not isinstance(obj, XS.CompileDefect) else None
+            if spec is None:
+                spec_or_defect = XS.compile_row(fixed)
+                if isinstance(spec_or_defect, XS.CompileDefect):             # pragma: no cover
+                    continue
+                spec = spec_or_defect
+            if spec.family in banned_families:
+                # REPAIRED, AND STILL NOT PUT IN FRONT OF THE JUDGE. The row is
+                # complete and stays --
+                # mining is unrestricted -- but its family is refused at both live doors, so a
+                # gate-second spent on it buys an outcome the desk has already forbidden.
+                studied.append({"id": cid, "family": spec.family, "reason": reason,
+                                "detail": STUDY_REASON.format(family=spec.family)})
+                stat["studied"] = stat.get("studied", 0) + 1
+                cls["studied"] = int(cls.get("studied") or 0) + 1
+                if not dry_run:
+                    _park(conn, cid, STUDY, STUDY_REASON.format(family=spec.family))
                 continue
-            spec = spec_or_defect
-        if spec.family in banned_families:
-            # REPAIRED, AND STILL NOT PUT IN FRONT OF THE JUDGE. The row is complete and stays --
-            # mining is unrestricted -- but its family is refused at both live doors, so a
-            # gate-second spent on it buys an outcome the desk has already forbidden.
-            studied.append({"id": cid, "family": spec.family, "reason": reason,
-                            "detail": STUDY_REASON.format(family=spec.family)})
-            stat["studied"] = stat.get("studied", 0) + 1
-            cls["studied"] = int(cls.get("studied") or 0) + 1
-            if not dry_run:
-                _park(conn, cid, STUDY, STUDY_REASON.format(family=spec.family))
-            continue
-        repaired.append({"id": cid, "reason": reason, "actions": actions,
-                         "family": spec.family, "symbol": spec.symbols[0] if spec.symbols else "",
-                         "grid_cell_before": str(row.get("grid_cell") or ""), "age_days": age})
-        stat["repaired"] += 1
-        cls["repaired"] += 1
-        if dry_run:
-            continue
-        try:
-            new_id, was_new = _enqueue(spec, conn)
-            enqueued += 1
-            created += int(was_new)
-            if cid and new_id != cid:
-                # Binding a family or an instrument CHANGES the content hash, so the repair is a
-                # NEW cell and the original row is its ancestor, not a second copy of it. Marking
-                # the ancestor `queued` too would put one rule on the queue twice and charge the
-                # desk two trials for one look at the tape.
-                R.link("cell", cid, "cell", new_id, "conversion_repair", conn=conn)
-                R.mark_candidate(cid, RETIRED, conn=conn,
-                                 rejection_reason=f"superseded: repaired by {SEAT} into cell "
-                                                  f"{new_id} ({', '.join(actions)})"[:400])
-            elif cid:
-                R.mark_candidate(cid, "queued", conn=conn, falsifier=spec.falsifier,
-                                 required_data_json=json.dumps(list(spec.data_snapshot.datasets)),
-                                 family=spec.family or str(row.get("family") or ""))
-        except (sqlite3.Error, ValueError) as exc:                       # pragma: no cover
-            parked.append({"id": cid, "reason": "ENQUEUE_FAILED",
-                           "detail": f"{type(exc).__name__}: {exc}",
-                           "owner": "libs/moat/registry.py enqueue_candidate"})
-            repaired.pop()
-            stat["repaired"] -= 1
-            cls["repaired"] -= 1
+            repaired.append({"id": cid, "reason": reason, "actions": actions,
+                             "family": spec.family,
+                             "symbol": spec.symbols[0] if spec.symbols else "",
+                             "grid_cell_before": str(row.get("grid_cell") or ""), "age_days": age})
+            stat["repaired"] += 1
+            cls["repaired"] += 1
+            if dry_run:
+                continue
+            try:
+                new_id, was_new = _enqueue(spec, conn)
+                enqueued += 1
+                created += int(was_new)
+                if cid and new_id != cid:
+                    # Binding a family or an instrument CHANGES the content hash, so the repair is a
+                    # NEW cell and the original row is its ancestor, not a second
+                    # copy of it. Marking
+                    # the ancestor `queued` too would put one rule on the queue twice and charge the
+                    # desk two trials for one look at the tape.
+                    R.link("cell", cid, "cell", new_id, "conversion_repair", conn=conn)
+                    R.mark_candidate(cid, RETIRED, conn=conn,
+                                     rejection_reason=f"superseded: repaired by {SEAT} into cell "
+                                                      f"{new_id} ({', '.join(actions)})"[:400])
+                elif cid:
+                    R.mark_candidate(cid, "queued", conn=conn, falsifier=spec.falsifier,
+                                     required_data_json=json.dumps(list(spec.data_snapshot.datasets)),
+                                     family=spec.family or str(row.get("family") or ""))
+            except (sqlite3.Error, ValueError) as exc:                       # pragma: no cover
+                parked.append({"id": cid, "reason": "ENQUEUE_FAILED",
+                               "detail": f"{type(exc).__name__}: {exc}",
+                               "owner": "libs/moat/registry.py enqueue_candidate"})
+                repaired.pop()
+                stat["repaired"] -= 1
+                cls["repaired"] -= 1
 
     # EFFECTIVE TRIALS, not raw count: re-enqueued work pays the multiple-testing bill it owes,
     # and 500 mutations of one rule are not 500 independent looks at the tape.

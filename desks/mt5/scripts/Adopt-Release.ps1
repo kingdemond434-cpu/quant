@@ -1074,10 +1074,45 @@ if ($drift.Count -gt 0) {
 #
 # It is exactly the failure the autostash ban was written for: this worktree carries ~21,884
 # modified paths, and `git stash create` over it has to hash every one while the merge waits.
-# The flag is the stronger form of the same ban: config can be outranked, a flag cannot, and if a
-# future git refuses the flag the merge fails LOUDLY instead of hanging silently.
-Invoke-Git @("merge", "--no-autostash", "-s", "ours", $target, "-m",
-             "Record the release merge; tree adopted in place by Adopt-Release") | Out-Null
+#
+# THE FLAG DID NOT HOLD EITHER, AND THAT IS MEASURED, NOT FEARED (2026-09-24, second sighting).
+# The run above shipped `--no-autostash` on the command line and the deadlock came back
+# unchanged. Caught live at 13:27 with the flag plainly in the process's own cmdline:
+#
+#   powershell Adopt-And-Seal.ps1
+#     git -C C:\opt\quant -c merge.autoStash=false -c rebase.autoStash=false \
+#         merge --no-autostash -s ours 9886699d5300 -m "Record the release merge..."
+#       git stash create
+#         git update-index --ignore-skip-worktree-entries -z --add --remove --stdin
+#
+# and over a 60 s window ALL FOUR processes showed dCPU 0.00 s, dIO_ops 0 and dIO_bytes 0. It had
+# been that way for 26 minutes, holding the git-writer mutex, with `merge.autostash=false` and
+# `rebase.autostash=false` both pinned in `.git/config`. So the ban cannot be enforced through
+# `git merge` at all: config was outranked, the flag was ignored, and each fix reproduced the
+# same hang one layer further in.
+#
+# SO THE MERGE IS RECORDED WITH PLUMBING INSTEAD, WHICH HAS NO WORKING TREE TO STASH.
+# `commit-tree` reads no index and touches no file; it writes one commit object whose tree is
+# HEAD's own tree and whose parents are HEAD and the target. `update-ref` then moves the branch,
+# and the old value is passed so the move is atomic -- if another writer advanced HEAD while this
+# ran, it fails loudly instead of clobbering. The RESULT is byte-identical to what `merge -s
+# ours` produces (same tree, same two parents, same message); only the route differs, and this
+# route cannot invoke `git stash`, cannot take the index lock and runs no hook. It is the desk's
+# standing answer for a repository whose worktree is too large to touch: ship via plumbing.
+$mergeMsg = "Record the release merge; tree adopted in place by Adopt-Release"
+$headSha  = (Invoke-Git @("rev-parse", "HEAD")).Trim()
+# `log -1 --format=%T` rather than `rev-parse HEAD^{tree}`: same answer, and it carries neither
+# `^` nor braces through PowerShell's parser and the argument quoter.
+$headTree = (Invoke-Git @("log", "-1", "--format=%T", $headSha)).Trim()
+$mergeSha = (Invoke-Git @("commit-tree", $headTree, "-p", $headSha, "-p", $target,
+                          "-m", $mergeMsg)).Trim()
+if ($mergeSha -notmatch '^[0-9a-f]{40}$') {
+    Write-Host ""
+    Write-Host ("REFUSING to record the merge: commit-tree returned '{0}' instead of a commit id." -f $mergeSha)
+    Write-Host ("  git said: {0}" -f $script:LastGitError)
+    exit 1
+}
+Invoke-Git @("update-ref", "-m", $mergeMsg, "HEAD", $mergeSha, $headSha) | Out-Null
 
 Write-Host ""
 Write-Host ("ADOPTED. HEAD is now {0} and descends from {1}; code == target, {2} state path(s) kept as the box's." -f `
