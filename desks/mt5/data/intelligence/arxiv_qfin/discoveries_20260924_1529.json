@@ -1,0 +1,227 @@
+[
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "FedIncome: Federated Learning for Income Estimation in Digital Lending Under Data Sovereignty Constraints",
+  "url": "http://arxiv.org/abs/2609.27654v1",
+  "text": "Verified income is often unavailable in digital loan applications, forcing lenders to rely on reported income and potentially leading to over-lending, overly conservative offers, or rejection of creditworthy applicants. Cross-institutional data-sharing constraints make this problem especially difficult for smaller lenders with limited training data. We introduce FedIncome, a federated learning framework for income estimation that enables institutions to train a shared model without pooling raw borrower records. Using more than one million LendingClub loans partitioned into $50$ state-level clients, we simulate a heterogeneous lending consortium. The best federated model achieves out-of-time $R^2=0.608$, compared with $0.619$ for a pooled centralised benchmark. Small-sample clients obtain a",
+  "symbols": [],
+  "found_at": "2026-09-24T15:49:14+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "Model-agnostic noise reduction for high-dimensional time series data",
+  "url": "http://arxiv.org/abs/2609.27614v1",
+  "text": "We develop a model-agnostic framework for noise reduction in high-dimensional time series that explicitly targets optimal recovery of a low-dimensional latent dynamic component contaminated by observational white noise. Under the assumption that the latent dynamics live in a low-dimensional linear dynamic subspace, we characterize the optimal linear projection onto the dynamic subspace and provide a geometric description of the residual error in terms of the relative orientation of the signal and noise spaces. We propose estimators for the dynamic subspace and the optimal projection based on lagged covariance matrices, bootstrap dimension selection, and a low-rank representation of the structured noise. Under mild conditions, the resulting denoised series is shown to converge to its popula",
+  "symbols": [],
+  "found_at": "2026-09-24T15:49:14+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "Active Portfolio Management in Concentrated Equity Markets",
+  "url": "http://arxiv.org/abs/2609.27113v1",
+  "text": "The equal-weighted portfolio is a passive, rule-based strategy that has historically been difficult to outperform, delivering higher returns than the capitalization-weighted \"market\" benchmark across many markets and periods. Stochastic portfolio theory (SPT) reveals that this relative performance is regime dependent, with the equal-weighted portfolio underperforming during periods of increasing market concentration and high correlations, particularly market bubbles. These observations have motivated us to formulate and solve a stochastic control problem in which an investor actively allocates between the equal-weighted and market portfolios. The investor bases their allocation decisions on forecasts made under a flexible stochastic diversity--dispersion (SDD) model. Using a quadratic surr",
+  "symbols": [],
+  "found_at": "2026-09-24T15:49:14+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "Propose, Don't Judge: An Anytime-Valid Referee for LLM Agents That Mine Investment Factors",
+  "url": "http://arxiv.org/abs/2609.27051v1",
+  "text": "Language-model agents now run the whole of quantitative factor research: they propose investment factors, backtest them, select the survivors and retire them. We ask which of those jobs an agent should keep. Our answer is governed self-evolution: the agent may propose, and a frozen statistical referee that the agent cannot touch must judge. The referee scores each candidate only on market outcomes revealed after submission, by betting, so its false-discovery guarantee holds at every stopping time for any proposal policy. We cross three proposers (a script, a bandit and a language model) with this referee and with three deliberately leaky ones, in a synthetic world with planted truth, a probe-authoring environment and a ten-year walk-forward on the CSI 500. Who judges sets the number of fal",
+  "symbols": [],
+  "found_at": "2026-09-24T15:49:14+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "Optimal Investment and Consumption in Financial Markets with Integrated Variance Clocks",
+  "url": "http://arxiv.org/abs/2609.26349v1",
+  "text": "We study the infinite-horizon optimal investment and consumption problem in a general class of continuous financial markets, where uncertainty is driven by a continuous non-decreasing stochastic clock representing accumulated variance. This framework encompasses classical Markovian and non-Markovian stochastic volatility models as well as singular realized-variance models in which no spot volatility process exists. We characterize the value process and optimal investment and consumption strategies in terms of a non-linear infinite-horizon backward stochastic differential equation driven jointly by calendar time and the stochastic clock. We develop a general well-posedness theory for this new class of IVC-BSDEs based on the method of sub- and supersolutions, establishing existence, uniquene",
+  "symbols": [],
+  "found_at": "2026-09-24T15:49:14+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "Target alignment, dilution and forecast selection when cross-sectional forecasts share a common target",
+  "url": "http://arxiv.org/abs/2609.26303v1",
+  "text": "Forecasters often score the same units per date against one standardized realized outcome. We show that every standardized forecast splits exactly into a component aligned with this common target and a component uncorrelated with it. Three consequences follow: forecast-error correlation largely mirrors forecast correlation and is therefore a poor measure of diversity; an equally weighted combination beats a no-information forecast only when average alignment is large relative to the combination's dispersion; and the gain from adding a forecaster separates into genuine improvement and mere dilution, which equal-weight admission can mistakenly reward. We develop a cautious selection rule, study it in simulations, and apply it to language-model forecasts of US equity rankings and mechanical s",
+  "symbols": [],
+  "found_at": "2026-09-24T15:49:14+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "Modeling interest rate swap volatility with GARCH processes",
+  "url": "http://arxiv.org/abs/2609.25965v1",
+  "text": "We examine the conditional volatility dynamics of the USD 1Yx10Y forward swap rate using GARCH(1,1), GJR-GARCH(1,1), and a two-regime Markov-switching GARCH (MSGARCH) model. The analysis uses daily data from 2007 to 2023 and incorporates market-implied measures (ATM swaption volatility and the SRVIX in- dex) together with a broad set of diagnostic tests. Standard GARCH and GJR- GARCH models show stable short-run parameters, but the intercept \u03c9 varies markedly across rolling windows, causing instability in the implied long-run vari- ance. This pattern, confirmed by the Nyblom test, motivates adopting a regime- switching specification. MSGARCH mitigates this issue by keeping regime-specific parameters stable and capturing time variation through filtered regime probabili- ties. It delivers th",
+  "symbols": [],
+  "found_at": "2026-09-24T15:49:14+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "Financial Language Models as Applied Artificial Intelligence Systems for News-Based Trading under Market Frictions",
+  "url": "http://arxiv.org/abs/2609.23703v1",
+  "text": "Financial language models can transform unstructured firm-specific news into structured decision signals, but financial AI research lacks an integrated deployment framework for evaluating whether those signals remain useful in financial decision systems. Computer science research has developed strong methods for time-series forecasting, text classification, multimodal stock prediction, graph-based market modeling, and machine-learning operations, yet these streams do not provide a domain-specific protocol that jointly tests financial language-model outputs under event-time observability, probability calibration, execution timing, transaction costs, liquidity constraints, capacity limits, operational diagnostics, and statistical inference. We introduce MFAST, a Market-Friction-Aware Sentime",
+  "symbols": [],
+  "found_at": "2026-09-24T15:49:14+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "Stealing profits: Spread-based temporal hierarchy forecasting for day-ahead electricity markets",
+  "url": "http://arxiv.org/abs/2609.23223v1",
+  "text": "Day-ahead electricity price forecasts support trading and storage decisions, but for battery arbitrage predicting intraday price spreads is more relevant than predicting individual hourly prices. Here we show that a temporal hierarchy forecasting (THieF) framework that jointly reconciles forecasts of hourly electricity prices and all intraday price spreads consistently improves performance across two major European electricity markets and three different forecasting architectures. Using five years of out-of-sample data from Germany and Spain, we obtain accuracy improvements of up to 19.7% and profit gains of up to 10.4% relative to unreconciled hourly price forecasts. The gains persist even for a highly accurate pretrained TabPFN foundation model. Our results demonstrate that exploiting co",
+  "symbols": [],
+  "found_at": "2026-09-24T15:49:14+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "Adapting Pairs Trading to Gambling Markets A Case Study of the U.S. Presidential Election",
+  "url": "http://arxiv.org/abs/2609.22639v1",
+  "text": "Pairs trading exploits mean reversion in the relationship between related assets. We adapt this idea to political betting markets by modelling the combined implied probability of the two major-party nominees with a latent Ornstein-Uhlenbeck process whose mean-reversion level varies over time and whose observations contain additive noise. Model parameters are estimated from regularly sampled odds data using a state-space likelihood, with consecutive repeated values represented by a single retained observation and the elapsed number of sampling intervals preserved in the continuous-time transition. Parametric-bootstrap upper prediction bounds identify signal times at which the combined implied probability is likely to decline, and a no-intercept Bradley-Terry-type model selects the candidate",
+  "symbols": [],
+  "found_at": "2026-09-24T15:49:14+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "Nested Clustered Optimization Is One End of a Schur Bridge, and the Interior Is Sometimes Provably Better",
+  "url": "http://arxiv.org/abs/2609.21271v1",
+  "text": "Nested clustered optimization allocates within each cluster from the cluster's own covariance block and then across the resulting cluster portfolios. Block inversion says the unconstrained minimum-variance portfolio has the same two-tier shape, with each block replaced by its Schur complement against every other asset. Conditioning instead on one knot from each other cluster truncates the conditioning set in the manner of a Vecchia approximation, and we give the rank-one model of cross-cluster dependence under which it is exact. Damping the complement by $\u03b3\\in[0,1]$ then gives a bridge with nested clustered optimization at $\u03b3=0$ and the global optimum at $\u03b3=1$, with no linear solve larger than a cluster or the number of clusters. Under estimation error the optimal $\u03b3$ can be strictly inter",
+  "symbols": [],
+  "found_at": "2026-09-24T15:49:14+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "Adapting the Actor Model of Concurrency for High-Frequency Trading: Synchronous Message Delivery (fast_send) and a Tick-to-Book Latency Study",
+  "url": "http://arxiv.org/abs/2609.21173v1",
+  "text": "The actor model - state isolation, data-race freedom, deadlock resistance, and sequential single-message reasoning - has long been dismissed as unsuitable for high-frequency trading (HFT): actors seem to imply many threads, a mailbox per actor, and a heap-allocated message plus a context switch per interaction, overhead incompatible with a microsecond budget. This paper argues the dismissal is wrong for co-located actors, and supports it both analytically and with a deployed, measured implementation: kaspar-hft, an open-source C++20 framework. Four extensions adapt the model for HFT: fast_send, a synchronous delivery mechanism in which the sending thread runs the receiver's handler inline and returns the reply as a value; actor groups, which co-schedule actors on one thread behind a shared",
+  "symbols": [],
+  "found_at": "2026-09-24T15:49:14+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "Principal component error in high-dimensional factor models",
+  "url": "http://arxiv.org/abs/2609.20550v1",
+  "text": "In a statistical factor model, principal components (or eigenvectors) of a sample covariance matrix serve as estimates of {\\it principal directions}, the true drivers of co-movement of a collection of observed variables. We write the often substantial error in these estimates as a sum of two interpretable terms, which we show have almost sure asymptotic limits as the number of variables grows with sample size bounded. This scenario is commonplace in financial economics, genomics, machine learning and signal processing. {\\it Out-of-subspace error} measures the distance from an estimate to the subspace spanned by population factor exposures. It can be expressed in terms of data, providing an estimable floor for error. {\\it In-subspace error} arises from the fixed sample size of the latent fa",
+  "symbols": [],
+  "found_at": "2026-09-24T15:49:14+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "Model-Free Passive Execution via Order-Level Shadowing",
+  "url": "http://arxiv.org/abs/2609.18019v1",
+  "text": "Automated execution algorithms are organized into schedule-based and liquidity-seeking families. This paper concerns the first, whose members -- Time-Weighted Average Price (TWAP), Volume-Weighted Average Price (VWAP), Percentage of Volume (POV) and Implementation Shortfall -- are all model-based: each derives its decisions from an explicit model, forecast, schedule or control rule. We introduce Shadow-PPOV, a passive POV whose order-placement rate is set from observed order flow rather than from traded volume. Placing a passive order to fill efficiently conventionally involves an order-book model and a fill prediction. Shadow-PPOV replaces that prediction with tracking: on observing a third-party add, it may transmit its own limit order at the same price on the same venue, recording a sin",
+  "symbols": [],
+  "found_at": "2026-09-24T15:49:14+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "SAiFE-gym: Model-based Environments for Automated Market Making with Concentrated Liquidity",
+  "url": "http://arxiv.org/abs/2609.17788v1",
+  "text": "We present SAiFE_gym, a Python module that provides a collection of simulation environments for studying trading problems in Constant Product Markets (CPMs) with Concentrated Liquidity (CL). These markets give Liquidity Providers (LPs) granular control over how their capital is allocated and enable them to adjust their range of liquidity provision dynamically based on market conditions, which in turn, dictates how they earn fees. We decompose the microstructure of CPMs with CL in interactive components that allow researchers and practitioners to capture various economic settings. We employ a vectorized approach to optimize our environments, making them scalable for high dimensional Reinforcement Learning (RL) workflows that best describe sequential decision problems. We demonstrate the ben",
+  "symbols": [],
+  "found_at": "2026-09-24T15:49:14+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "From Public Evidence to Contractual Outcome: First and Stable Decidability on Kalshi",
+  "url": "http://arxiv.org/abs/2609.16642v1",
+  "text": "Public evidence can become sufficient to settle a prediction-market contract before the venue records its first determination, but the relevant boundary depends on the applicable rule version, exact release object, source hierarchy, correction history, and unfinished contract conditions. This paper defines two Kalshi clocks: first decidability, the earliest contemporaneous singleton in the rule-evidence mapping, and stable decidability, the retrospective earliest time after which the same singleton remains unchanged through finalization. A completed retrospective identification test establishes a narrow feasibility result. In a frozen blind pilot, all 25 identities and blinding checks passed and current rule text was recovered for all 25; no exact or bounded historical rule version and no",
+  "symbols": [],
+  "found_at": "2026-09-24T15:49:14+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "Strategic Index Reconstitution: Differential Games, Closed-Loop Equilibria and Mean-Field Dynamics",
+  "url": "http://arxiv.org/abs/2609.15901v1",
+  "text": "We study strategic trading around index reconstitution in a continuous-time, multiasset game with transient cross-asset price impact and heterogeneous beliefs about future index membership. Opportunistic traders position before a public announcement, adjust to the revealed composition, and trade around an indexer following a prescribed execution schedule. Under a no-price-manipulation condition, we construct a subgame-perfect Nash equilibrium on every finite horizon. The affine feedback policies are computed from a non-standard matrix Riccati equation and linear ordinary differential equations whose number and dimensions do not grow with the number of traders. Aggregate inventories and price impact depend on beliefs only through the population-average belief, while differences in beliefs a",
+  "symbols": [],
+  "found_at": "2026-09-24T15:49:14+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "On-Demand Combinatorial Event Markets on Kalshi: Instantiation, Concentration, and Effective Market Breadth",
+  "url": "http://arxiv.org/abs/2609.17610v1",
+  "text": "Kalshi's multivariate-event architecture produces market objects on demand from exact selected legs. Across a registered seven-day interval, 190 independently validated temporal shards yield 7,611,594 unique REST MVE market tickers after excluding 5,777 boundary-overlap observations; the population was created at an average rate of 1.087 million objects per day, with strong hourly burstiness.\n  The hierarchy is sharply compressed relative to the market-object count: 5,262,526 exact event keys, three collection keys, 83,701 selected-leg primitives, and 66,344,938 selected-leg occurrences. The largest collection accounts for 7,217,085 objects (94.82 percent), with an effective collection count of 1.11; the effective primitive count is approximately 720. REST and WebSocket are distinct observ",
+  "symbols": [],
+  "found_at": "2026-09-24T15:49:14+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "Resolution Is Not Settlement, Part II: Protocol Finality and Observed Redemption on Polymarket",
+  "url": "http://arxiv.org/abs/2609.15373v1",
+  "text": "An Oracle result is not yet a protocol payout, a redeemable position is not yet collateral in a holder's account, and a redemption event is not a complete measure of economic entitlement. This companion paper develops an event-sourced framework for Polymarket conditions from preparation through protocol finality and observed holder realization.\n  The empirical design uses three Conditional Tokens Framework event families derived from a pinned contract application binary interface (ABI): ConditionPreparation, ConditionResolution, and PayoutRedemption. It separates the contract-wide acquisition universe from the frozen Polymarket adapter-question cohort. The exact bridge contains 108,638 linked conditions. Of these, 99,283 have an observed protocol-resolution event by the fixed snapshot at P",
+  "symbols": [],
+  "found_at": "2026-09-24T15:49:14+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "Resolution Is Not Settlement, Part I: Oracle Adjudication and Semantic Governance on Polymarket",
+  "url": "http://arxiv.org/abs/2609.15368v1",
+  "text": "Prediction-market resolution is often reduced to a terminal outcome and one timestamp. That representation is inadequate for leveraged event claims because rule versioning, request creation, proposal, dispute, reset, Oracle finality, and adapter terminality are distinct states with different observation precision and balance-sheet consequences. We reconstruct those states for Polymarket using Oracle request generations as the unit of adjudication.\n  The population is frozen at Polygon block 79,721,080 and contains 185,550 initialized adapter-question instances and 350,703 decoded adapter logs. Exact requester-filtered extraction yields 504,332 decoded Oracle lifecycle events: 184,148 request creations, 159,447 proposals, 1,604 disputes, and 159,133 settlements. The accounting closes as 182",
+  "symbols": [],
+  "found_at": "2026-09-24T15:49:14+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "Separated Signal Libraries: Packing, Saturation, and Joint Spectral Limits",
+  "url": "http://arxiv.org/abs/2609.17609v1",
+  "text": "We study libraries of cross-sectional signals: at each date, a forecast vector over $d$ assets intended to predict the next period's cross-sectional return. Demeaned and unit-normalized, a signal is a point on a sphere and its $T$-date history a point on a product of $T$ spheres. A pairwise correlation cap on histories is a minimum angular separation on that product, so growing a library under such a cap is a packing problem. If a large library is not too pairwise correlated and is equally weighted, does the equally weighted sum (EWS) tend to a known principal-component quantity as it grows? We answer this under explicit assumptions on how the library is filled.\n  Separation alone guarantees nothing: it fixes no limiting distribution; a saturated library covers the sphere yet can carry a b",
+  "symbols": [],
+  "found_at": "2026-09-24T15:49:14+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "Gate Design and Stage-Dependent Incentives in Retail Proprietary-Trading Evaluations: Why Passing Is Not Standalone Evidence of Skill, and Why the Product Fails to Pay Under Measured Trading Constraints",
+  "url": "http://arxiv.org/abs/2609.14859v1",
+  "text": "Retail proprietary-trading firms sell a two-stage product: a paid evaluation that must reach a profit target before breaching a trailing drawdown, then a funded account that must survive a minimum window and a consistency rule before a payout. We show the geometry of this contract creates incentives that differ by stage and make passing a poor standalone signal of skill. Under end-of-day trailing the evaluation rewards a fast, lumpy cadence while the funded account punishes it, by a factor of nine in the joint gate. The evaluation is defeatable at zero skill: position sizing alone yields a pass probability near 0.40, against a measured cohort rate of 0.168. Pass probability rises with skill, but a real edge and aggressive sizing move it by nearly the same amount, so a pass rate confounds t",
+  "symbols": [],
+  "found_at": "2026-09-24T15:49:14+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "WaVeFuse: Regime-Adaptive Equity Index Forecasting via Channel-Wise Wavelet Denoising and Vertical Attention Fusion",
+  "url": "http://arxiv.org/abs/2609.14733v1",
+  "text": "Hybrid Deep Learning for equity index forecasting is limited by three problems: propagation of OHLCV noise into derived technical indicators (TIs), channel-indiscriminate multi-scale decomposition that conflates heterogeneous frequency signatures, and static multi-branch fusion that cannot adapt to market regime shifts. WaVeFuse addresses these limitations through a unified dual-branch architecture. Symlet-4 wavelet denoising (level 2, MAD soft threshold) suppresses microstructure noise in OHLCV. Seven low-lag TIs computed from denoised prices are encoded by a causal channel-wise continuous wavelet transform (Morlet, 32 scales) into a per-timestep scale-space matrix. A CNN-BiLSTM branch captures temporal dynamics, while a dual-layer Transformer (heads=4, dk in {16, 32}) models inter-scale",
+  "symbols": [],
+  "found_at": "2026-09-24T15:49:14+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "Public Opinion as an Option: Leveraging Prediction Markets to Hedge Exposure to Spot Crypto Volatility",
+  "url": "http://arxiv.org/abs/2609.14267v1",
+  "text": "This paper proposes an investment strategy through resource allocation into Kalshi Crypto Event Contracts in order to effectively hedge exposure to spot asset volatility. Using Bitcoin as a proof of concept, we treat corresponding Kalshi markets on the asset's future price as option contracts, and through construction of different portfolio allocations present a framework for which event contracts can be effectively utilized by retail investors in order to control risk framework without reducing underlying exposure to spot volatility. We showcase this information through analysis of three separate Kalshi event contracts, all relating to a different underlying market regime (i.e bullish, bearish, flat), and provide a comprehensive risk profile for each regime. Results show that a dynamic Ka",
+  "symbols": [],
+  "found_at": "2026-09-24T15:49:14+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "Special Markowitz: Thermodynamic Formalism for the Joint Regularisation of Returns and Covariance",
+  "url": "http://arxiv.org/abs/2609.14029v3",
+  "text": "Special Markowitz (SM) regularises returns and covariance jointly, relative to a reference state (mu_ref, Sigma_ref). Each eigendirection of the whitened relative operator carries a signed spectral potential Phi_k, with persistence factor psi_k = exp(-Phi_k) &gt; 0. Positive potentials attenuate empirical deviations from the reference geometry, zero potential preserves them, and negative potentials amplify them. The persistence factor psi_k governs both the return signal and the covariance deviation: the regularised deviation from the reference is psi_k times the empirical deviation. The logarithmic potential coordinate is characterised by a multiplicative composition law on the multiplicative group of positive real numbers; the Stein loss is characterised as the unique free-energy density",
+  "symbols": [],
+  "found_at": "2026-09-24T15:49:14+00:00"
+ }
+]
