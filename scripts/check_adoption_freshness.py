@@ -345,11 +345,19 @@ def judge(doc: dict[str, Any]) -> None:
         # BREACH (c), AND IT NO LONGER HIDES BEHIND BREACH (a). This clause used to read
         # `behind > 0 and age > grace`, so it could only fire in the one case where the STALE
         # branch above had already failed the check -- which made the end that matters
-        # unreachable on its own. Measured on the trading box 2026-09-24: adoption logged a
-        # success every hour ("nothing to seal"), `last_success_age_s` stayed at ~0.6h inside a
-        # 3h grace, the merge base stayed pinned at b8ab5342 all morning, and the box drifted
-        # from 1 to 3 commits behind with the fence reading FRESH the whole time. That is
-        # exactly "succeeding by refusing", which the docstring says this clause exists for.
+        # unreachable on its own.
+        #
+        # MEASURED ON THE TRADING BOX, 2026-09-24, and the numbers are the argument. Merge
+        # records that actually landed came 1.4 h, 2.4 h and 2.3 h apart overnight and then
+        # STOPPED FOR 7.4 HOURS (05:41 -> 13:03 box local). Through the whole of that gap
+        # `adopt_and_seal.log` kept recording successes -- "HEAD ... is the sealed release ...
+        # nothing to seal" at 06:51, 07:34, 08:49 and 09:17 UTC -- and `_SUCCESS_LINE` counts
+        # those, correctly, because an already-current box says exactly that. So at 09:55:39Z
+        # this fence measured `last_success_age_s` = 2295 s (0.6 h) against a 3 h grace and
+        # published verdict FRESH, while the last merge to land was 6.2 h old and the merge base
+        # had been pinned at b8ab5342 since 11:17. The box drifted from 1 to 9 commits behind
+        # with the gate green. That is "succeeding by refusing", which the docstring says this
+        # clause exists for, and the old form could not see it.
         doc["ok"] = False
         problems.append(
             f"HEAD is {behind} commit(s) behind origin/{doc['lag'].get('branch')} and the merge "
