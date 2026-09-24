@@ -126,24 +126,61 @@ LASTDAY = DESK / "data" / "hypotheses" / "warm_last_day.json"
 REPORT = DESK / "reports" / "WARM_GAUNTLET.json"
 
 
-def _workers() -> int:
-    """The judge's own measured worker count, unless `WARM_WORKERS` says otherwise.
+#: The count this file shipped with for a year, and the one it may never fall below. Two workers
+#: was measured safe on a FOUR-core, 8GB box with a 12,756MB page file; any box that can run this
+#: job at all can run two, so a momentary memory reading can slow the warmer down and can never
+#: stop it dead. Without this floor the derivation below is a single point of failure.
+HISTORIC_FLOOR = 2
 
-    ONE BUILDER FOR THIS NUMBER. `external_gauntlet._worker_count` already sizes itself from the
-    cores this box has, the memory the box has free and the cores the live terminal is owed
-    (`SESSION_RESERVED_CORES`), and it already runs that many processes of the identical
-    `_warm_one` every sweep. A second arithmetic here could only disagree with it, and this file
-    has already been wrong once by carrying a constant measured on a different machine.
+#: THIS JOB'S OWN declared memory need, per worker -- the same 900MB it is admitted on at the
+#: foot of this file. One cell plus the bounded frame cache, released on return.
+NEED_MB = float(os.environ.get("WARM_NEED_MB", "900"))
+
+
+def _workers() -> int:
+    """The judge's own arithmetic, RE-MEASURED at the start of each round.
+
+    ONE BUILDER FOR THIS NUMBER, and it is `external_gauntlet`: the cores this box has, the cores
+    the live terminal is owed (`SESSION_RESERVED_CORES`), the weekend maximum, its measured memory
+    budget and its per-worker figure. Every input below is read from that module; none is invented
+    here. What this does NOT inherit is the judge's TIMING.
+
+    WHY THE TIMING MATTERS, MEASURED 2026-09-24. `external_gauntlet.WORKERS` is evaluated once, at
+    module import, from `MEMORY_BUDGET_MB`, which is itself evaluated once at import from
+    `free_mb()` -- the MINIMUM of free physical memory and free COMMIT. On a box shared with a
+    dozen other research processes that reading swings hard: measured minutes apart, `free_mb()`
+    read 46,785MB (budget 11,520MB, fifteen workers) and, at the instant this job happened to
+    start, low enough that the budget fell to its 1,200MB declaration -- 1200 // 768 == ONE
+    worker, pinned for the whole life of a process that then ran for hours on an eighteen-core
+    box. The log line reads `1 worker(s)` and nothing about it looks like a fault.
+
+    So the CORE bound is the judge's, re-read each round, and the MEMORY bound is this job's own
+    `NEED_MB` rather than the sweep's `PER_WORKER_MB`. That is not a second builder: they are
+    bounds on two different shapes, and the sweep's own comment says its 768 is "headroom over
+    that shape, not a measured peak". A sweep worker lives inside a process that also holds the
+    whole docket's verdicts; a warm worker holds ONE cell and releases it on return, and this
+    job's declared admission need is the 900MB already written into `exclusive_job` at the foot
+    of this file. Using the sweep's figure here made the warmer inherit a bound that is not about
+    it, and on a crowded box that bound reads ONE.
+
+    Memory safety does not rest on this estimate. `FLOOR_MB` is checked against live free memory
+    every `REPORT_EVERY` cells DURING the round and stands the whole job down when the box gets
+    tight -- a measurement, not a guess, and the reason a generous start is safe.
     """
     override = os.environ.get("WARM_WORKERS")
     if override:
         return max(1, int(float(override)))
     try:
         import external_gauntlet as G
-        return max(1, int(G.WORKERS))
+        from research.job_lock import free_mb
+        cores = os.cpu_count() or 1
+        by_cores = cores if G.market_closed() else cores - G.SESSION_RESERVED_CORES
+        free = free_mb()
+        by_mem = int(free // NEED_MB) if free else by_cores
+        return max(HISTORIC_FLOOR, min(by_cores, by_mem))
     except Exception:
         # An unreadable judge leaves the historic figure, never unlimited and never zero.
-        return 2
+        return HISTORIC_FLOOR
 
 
 #: Set once per worker process by `_init`, so the universe registry is not pickled per cell.

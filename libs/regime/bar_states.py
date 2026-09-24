@@ -43,7 +43,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 import numpy as np
-from scipy.special import logsumexp
 
 from libs.regime.hmm import GaussianHMM
 
@@ -58,6 +57,13 @@ MIN_TRAIN_BARS = 300
 #: fewer, which is a speed choice and is declared rather than hidden.
 SELECT_ITERS = 25
 FIT_ITERS = 60
+#: Most recent bars used to FIT, when more are available. `GaussianHMM._forward_backward` is a
+#: Python loop over bars, so cost is linear in the tape and an unbounded fit on a 6,000-bar H1
+#: tape, repeated over the k-grid and the book, does not fit in an hourly leg. This is a COMPUTE
+#: bound and nothing else: 2,500 H1 bars is over 100 trading days, which identifies a handful of
+#: volatility states many times over, and the bound is declared here rather than hidden in a
+#: caller. Raise it if a leg has the budget; never size it off a claim, measure the leg.
+MAX_TRAIN_BARS = 2500
 
 #: Volatility-ordered names, so a label means the same thing at every k and every symbol.
 STATE_NAMES: dict[int, tuple[str, ...]] = {
@@ -117,6 +123,17 @@ class BarStates:
         return self.index_at(ns) >= self.n_train
 
 
+def _lse0(a: np.ndarray) -> np.ndarray:
+    """logsumexp along axis 0, without scipy's per-call dispatch overhead.
+
+    The recursion below runs once per bar, and on a few-thousand-bar tape `scipy.special.logsumexp`
+    spends more time being called than computing. The arrays here are (k,) and (k, k); the
+    max-shift is the same numerical trick scipy uses.
+    """
+    m = a.max(axis=0)
+    return m + np.log(np.exp(a - m).sum(axis=0))
+
+
 def predictive_log_density(hmm: GaussianHMM, x: np.ndarray, start: int) -> float:
     """Mean one-step-ahead predictive log-density over ``x[start:]``, nats per bar.
 
@@ -135,10 +152,10 @@ def predictive_log_density(hmm: GaussianHMM, x: np.ndarray, start: int) -> float
     la = np.log(hmm.startprob + 1e-300) + le[0]
     total, count = 0.0, 0
     for t in range(1, n):
-        step = logsumexp(la[:, None] + lt, axis=0)
+        step = _lse0(la[:, None] + lt)
         if t >= start:
-            pred = step - logsumexp(step)
-            total += float(logsumexp(pred + le[t]))
+            pred = step - _lse0(step)
+            total += float(_lse0(pred + le[t]))
             count += 1
         la = le[t] + step
     return total / count if count else float("nan")
@@ -190,7 +207,8 @@ def _vol_order(labels: np.ndarray, x: np.ndarray, k: int) -> np.ndarray:
 
 def fit_states(times_ns: np.ndarray, x: np.ndarray, *, symbol: str, timeframe: str = "H1",
                train_end_ns: int | None = None, k: int | None = None, seed: int = 0,
-               grid: tuple[int, ...] = K_GRID) -> BarStates | None:
+               grid: tuple[int, ...] = K_GRID,
+               max_train_bars: int = MAX_TRAIN_BARS) -> BarStates | None:
     """Fit the state model on bars before `train_end_ns` and label the WHOLE tape causally.
 
     Returns None when the tape cannot support a fit; that is UNMEASURED, and the caller must
@@ -212,27 +230,32 @@ def fit_states(times_ns: np.ndarray, x: np.ndarray, *, symbol: str, timeframe: s
     if n_train < MIN_TRAIN_BARS:
         return None
 
+    # The FIT window is the most recent `max_train_bars` of the training material; the LABELLED
+    # window is still the whole tape, and `n_train` still marks where out-of-sample begins.
+    fit_lo = max(0, n_train - int(max_train_bars)) if max_train_bars else 0
+    xtr = x[fit_lo:n_train]
+
     scores: dict[int, float] = {}
     if k is None:
-        k, scores = choose_k(x[:n_train], grid=grid, seed=seed)
+        k, scores = choose_k(xtr, grid=grid, seed=seed)
     k = int(max(1, min(k, 5)))
     try:
-        hmm = GaussianHMM(n_states=k, seed=seed, n_iter=FIT_ITERS).fit(x[:n_train])
+        hmm = GaussianHMM(n_states=k, seed=seed, n_iter=FIT_ITERS).fit(xtr)
         post = hmm.filter_posterior(x)          # CAUSAL. Never `predict` -- see L0307.
     except (ValueError, np.linalg.LinAlgError, FloatingPointError):
         return None
     labels = post.argmax(axis=1)
 
-    remap = _vol_order(labels[:n_train], x[:n_train], k)
+    remap = _vol_order(labels[fit_lo:n_train], xtr, k)
     order = np.argsort(remap, kind="stable")    # new index -> old index
     post = post[:, order]
     labels = remap[labels]
     transmat = np.asarray(hmm.transmat, dtype="float64")[np.ix_(order, order)]
 
-    inner = int(n_train * TRAIN_FRAC)
+    inner = int(xtr.shape[0] * TRAIN_FRAC)
     heldout = scores.get(k)
-    if heldout is None and inner >= MIN_TRAIN_BARS and inner < n_train:
-        heldout = predictive_log_density(hmm, x[:n_train], inner)
+    if heldout is None and inner >= MIN_TRAIN_BARS and inner < xtr.shape[0]:
+        heldout = predictive_log_density(hmm, xtr, inner)
 
     return BarStates(
         symbol=symbol, timeframe=timeframe, k=k, times_ns=times_ns, labels=labels,
