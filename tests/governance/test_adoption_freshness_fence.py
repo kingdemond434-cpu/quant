@@ -101,11 +101,18 @@ def test_breach_b_tolerates_a_run_still_inside_its_execution_limit() -> None:
 
 
 def test_breach_c_fires_when_the_merge_base_is_frozen_though_every_hour_succeeded() -> None:
-    """THE TRADING BOX, 2026-09-24. Adoption logged `nothing to seal` every hour, so the last
-    success was always fresh, while the merge base stayed pinned and the box drifted behind."""
+    """THE TRADING BOX, 2026-09-24, with its own numbers.
+
+    Merge records that actually landed came 1.4 h, 2.4 h and 2.3 h apart overnight and then
+    stopped for 7.4 h. Through that gap `adopt_and_seal.log` kept saying "nothing to seal",
+    which IS a success line and is counted as one, so at 09:55:39Z the fence read
+    last_success_age_s = 2295 s against a 3 h grace and published FRESH -- while the last merge
+    to land was 6.2 h old, the merge base had been pinned since 11:17, and the box drifted from
+    1 to 9 commits behind. The old clause could not reach this case.
+    """
     doc = _doc(last_success_age_s=0.6 * HOUR,
-               lag={"branch": "b", "behind": 3, "merge_base": "b8ab5342",
-                    "merge_base_age_s": 5 * HOUR})
+               lag={"branch": "b", "behind": 9, "merge_base": "b8ab5342",
+                    "merge_base_age_s": 6.2 * HOUR})
     FENCE.judge(doc)
     assert doc["ok"] is False, (
         "a success that never moves the merge base is a refusal with a green light; this is "
