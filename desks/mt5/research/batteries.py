@@ -177,6 +177,13 @@ ORGANS: tuple[Entry, ...] = (
     # cap, so it shares the hour rather than owning it.
     _e("desks/mt5/scripts/fill_bar_gaps.py", "a missing (symbol, timeframe) is fetched or "
        "carries a named venue verdict"),
+    # THE HTF-ANCHOR MINER LANDED UNCLOCKED (measured 2026-09-24): it mints the video-derived
+    # anchor/exit mechanism as ordinary docket cells on the hypothesis lane, it is bounded by
+    # its own MINT_ROWS_PER_PASS and a rotating cursor, and it ran rc=0 in 25 s minting 1200
+    # rows -- a working miner that no clock visited, which is III.16 exactly. The census budget
+    # is passed so the organ's own bind census finishes inside one battery slice (MAX_SLICE_S).
+    _e("desks/mt5/research/htf_anchor_proposer.py", "the HTF-anchor/ATR-exit mechanism minted "
+       "as docket cells at legal breadth", "--census-budget=60"),
     _e("desks/mt5/scripts/heal_orphaned_clocks.py", "resume clocks retired as ORPHAN"),
     _e("desks/mt5/scripts/heal_silent_demotions.py", "restore sleeves demoted with no reason"),
     _e("scripts/heal_forward_lane.py", "every certificate gathers forward evidence"),

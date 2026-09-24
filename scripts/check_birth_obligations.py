@@ -198,7 +198,17 @@ def _families(root: Path) -> tuple[set[str], set[str], str]:
     for k, row in items:
         if not k or not isinstance(row, dict):
             continue
-        judged = row.get("judged", row.get("n_judged"))
+        # THE KEYS ARE THE WRITER'S, NOT A GUESS (measured 2026-09-24). This read was
+        # `row.get("judged", row.get("n_judged"))` and `row.get("reached", row.get("judge"))`.
+        # `judge_coverage.py` has never emitted any of those four names -- its row schema is
+        # mined/queued/judged_window/judged_total/unjudged/quota/window_h/... -- so `ok` was
+        # EMPTY on every run since the fence was written and the axis reported
+        # "0/168 families are reached by the judge" whatever the judge actually did.
+        # It was not measuring a defect, it was measuring a typo: `htf_anchor_trend`, one of the
+        # two names this fence was failing on, carries `judged_total: 63`. The legacy names are
+        # kept as fallbacks so an older artifact still reads, but the writer's names win.
+        judged = next((row[key] for key in ("judged_total", "judged_window", "judged", "n_judged")
+                       if isinstance(row.get(key), (int, float))), None)
         reached = row.get("reached", row.get("judge"))
         if (isinstance(judged, (int, float)) and judged > 0) or bool(reached):
             ok.add(k)

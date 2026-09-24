@@ -6,7 +6,7 @@ A census is only evidence while it is current, and a producer that burns compute
 returns no unique cell is either exploring on purpose or broken -- and the difference is a
 SENTENCE somebody wrote, not something a checker can infer.
 
-SO THIS FENCE FAILS ON EXACTLY TWO THINGS:
+SO THIS FENCE FAILS ON EXACTLY THREE THINGS:
 
   1. STALENESS. No artifact, or an artifact older than the staleness window: a census nobody has
      re-run is a claim the desk cannot cash (L1.49). The leg runs hourly, so the window is
@@ -15,6 +15,15 @@ SO THIS FENCE FAILS ON EXACTLY TWO THINGS:
      while producing NO unique cell and carrying NO named blocker. The blocker lives in
      `docs/research/productivity_blockers.json` and is a sentence with an owner; adding one is
      how an exploratory organ declares itself and passes.
+  3. MEASUREMENT COVERAGE FALLING (added 2026-09-24). Per-producer coverage of the six columns
+     the producers panel renders -- cells, unique cells, cells judged, certificates,
+     orthogonality added, compute hours -- is a RATCHET that rises and never falls, and
+     `n_producers` rides with it so a share can never be improved by dropping producers out of
+     the bottom (L1.50). This clause exists because the panel once published 1,981 producers with
+     a compute cost on every row and UNMEASURED in all five columns beside it: the desk knew
+     exactly what each organ COST and nothing about what it MADE, which is the wrong half of the
+     pair to have, and nothing measured it so nothing could fail on it. Seeding an empty ratchet
+     is not an improvement claim; it is the baseline the next run is judged against.
 
 IT DOES NOT FAIL ON LOW PRODUCTIVITY, and that restraint is the design, not a gap. The principal's
 standing order is that this desk never reduces its own aggressiveness, and a checker that killed
@@ -45,6 +54,17 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[1]
 CENSUS = ROOT / "desks" / "mt5" / "reports" / "PRODUCTIVITY_CENSUS.json"
 BLOCKERS = ROOT / "docs" / "research" / "productivity_blockers.json"
+
+#: THE MEASUREMENT-COVERAGE RATCHET. Rises only. Its denominator (`n_producers`) is part of it,
+#: because a coverage share improved by publishing fewer producers is a regression wearing an
+#: improvement's number -- and the producer count on this desk only ever goes UP.
+RATCHET = ROOT / "docs" / "research" / "productivity_census_ratchet.json"
+
+#: The columns this fence ratchets are NOT listed here. They are the union of what the census
+#: published this hour and what the ratchet has already recorded -- so a column added to the
+#: census is fenced the same hour without anybody editing this file, and a column REMOVED from the
+#: census still fails against its own recorded best instead of quietly leaving the gate. A
+#: hand-copied list is how a new column comes to be published and never checked.
 
 # The leg runs hourly. Six hours of slack absorbs a slow cycle, a reboot and a pass the pricer
 # deferred; beyond that the leg is not running and that is what the fence is for.
@@ -101,17 +121,178 @@ def _blockers() -> dict[str, Any]:
 
 
 def _named(entry: Any) -> bool:
-    """A blocker counts only if it actually says something with an owner behind it."""
+    """A declaration counts only if it actually says something with an owner behind it.
+
+    TWO SHAPES, AND THIS FENCE ONLY READ ONE (measured 2026-09-24). `productivity_blockers.json`
+    declares its own law -- "a BLOCKER (`why` of 20+ chars and an `owner`) says the production is
+    broken and who owns the fix; an EXEMPTION (`exempt: true` with `produces` and `consumer`)
+    says the organ makes something other than cells by design" -- and the sibling reader
+    `scripts/check_producer_yield.py` honours both. This function accepted only the BLOCKER
+    shape, so the EXEMPTION half of the desk's own remedy was uncashable HERE: a report builder
+    that declared itself exactly as the law says still failed this fence, and the only way to
+    pass was to call a by-design report builder "broken" and name an owner for a fix that is not
+    needed. The 15 EXEMPTION rows already in the file pass today only because every one of them
+    sits under MIN_COMPUTE_HOURS and is filtered out before this is ever called.
+
+    Nothing is relaxed: an EXEMPTION must still NAME what it produces and NAME who reads it, the
+    same evidence `check_producer_yield` requires, and silence is still a defect.
+    """
     if isinstance(entry, str):
         return len(entry.strip()) >= 20
     if isinstance(entry, dict):
         why = str(entry.get("why") or entry.get("reason") or entry.get("blocker") or "").strip()
         who = str(entry.get("owner") or entry.get("by") or "").strip()
+        produces = str(entry.get("produces") or "").strip()
+        consumer = str(entry.get("consumer") or entry.get("read_by") or "").strip()
+        if entry.get("exempt") and len(produces) >= 3 and len(consumer) >= 3:
+            return True
         return len(why) >= 20 and bool(who)
     return False
 
 
-def check(require_state: bool = False) -> dict[str, Any]:
+def _ratchet_doc() -> dict[str, Any]:
+    """The recorded bests. An absent or unreadable file is an empty ratchet, never an error."""
+    try:
+        with RATCHET.open(encoding="utf-8") as fh:
+            doc = json.load(fh)
+    except Exception:
+        return {}
+    return doc if isinstance(doc, dict) else {}
+
+
+def _coverage_clause(census: dict[str, Any], out: dict[str, Any],
+                     failures: list[str]) -> dict[str, Any] | None:
+    """Judge per-producer measurement coverage against the ratchet. Returns the new doc, if moved.
+
+    THREE STATES AND THEY ARE NOT THE SAME (L1.28a). A census that publishes no coverage block at
+    all when the ratchet has never recorded one is UNMEASURED -- the code that publishes it has
+    not reached this host yet, which is a fact about the deployment and not a broken law. Once the
+    ratchet HOLDS a best, an absent or lower coverage is a REGRESSION and fails: the measurement
+    existed, somebody stopped publishing it, and that is exactly the silence this clause is for.
+    """
+    rat = _ratchet_doc()
+    raw_best = rat.get("columns_best")
+    best_cols: dict[str, Any] = dict(raw_best) if isinstance(raw_best, dict) else {}
+    best_n = rat.get("n_producers_best")
+    best_region = rat.get("region_coverage_best")
+    had_ratchet = bool(best_cols) or isinstance(best_n, (int, float))
+    reason = str(rat.get("regression_reason") or "").strip()
+
+    cov = census.get("measurement_coverage")
+    if not isinstance(cov, dict):
+        out["coverage"] = {
+            "verdict": "UNMEASURED",
+            "why": ("the census on this host publishes no `measurement_coverage` block: the "
+                    "organ that measures per-producer coverage has not reached it yet. That is a "
+                    "deployment fact, not a passed gate."),
+        }
+        if had_ratchet and not reason:
+            failures.append(
+                "the census stopped publishing `measurement_coverage` while the ratchet holds "
+                f"{best_cols} and n_producers {best_n}: a measurement that existed and is now "
+                f"absent is a REGRESSION, not a fresh start. Restore it or state why in "
+                f"{RATCHET.relative_to(ROOT)}")
+        return None
+
+    raw_cols = cov.get("columns")
+    cols: dict[str, Any] = raw_cols if isinstance(raw_cols, dict) else {}
+    raw_counts = rat.get("measured_best")
+    best_counts: dict[str, Any] = dict(raw_counts) if isinstance(raw_counts, dict) else {}
+    judged = sorted(set(cols) | set(best_cols) | set(best_counts))
+    n_prod = cov.get("n_producers")
+    raw_region = cov.get("region")
+    rblock: dict[str, Any] = raw_region if isinstance(raw_region, dict) else {}
+    region = rblock.get("coverage")
+    region_n = ((rblock.get("regional") or 0) + (rblock.get("not_regional") or 0)
+                if rblock else None)
+    best_region_n = rat.get("region_measured_best")
+    grew = (isinstance(n_prod, (int, float)) and isinstance(best_n, (int, float))
+            and n_prod > best_n)
+    out["coverage"] = {
+        "n_producers": n_prod,
+        "columns": {c: (cols.get(c) or {}).get("coverage") for c in judged},
+        "measured": {c: (cols.get(c) or {}).get("measured") for c in judged},
+        "region_coverage": region,
+        "region_measured": region_n,
+        "roster_grew": bool(grew),
+        "fully_measured_rows": cov.get("fully_measured_rows"),
+        "ratchet": {"n_producers_best": best_n, "columns_best": best_cols,
+                    "measured_best": best_counts, "region_coverage_best": best_region,
+                    "region_measured_best": best_region_n,
+                    "regression_reason": reason or None},
+    }
+
+    # THE DENOMINATOR CLAUSE, FIRST, because it is the one a well-meaning pass breaks. Coverage
+    # improved by publishing fewer producers is not an improvement; the producer count on this
+    # desk only ever rises, and a fall here is a defect whatever the shares did.
+    if isinstance(best_n, (int, float)) and isinstance(n_prod, (int, float)) and n_prod < best_n:
+        failures.append(
+            f"the census published {n_prod} producers against a recorded best of {best_n:g}: "
+            "coverage may NEVER be improved by removing producers from the denominator. Whatever "
+            "the column shares say, a smaller roster is a regression (L1.50)")
+
+    # TWO RATCHETS, BECAUSE A SHARE ALONE IS THE WRONG GATE ON A GROWING DESK. The registry gained
+    # five producers between two runs of this census while it was being written; a share-only
+    # ratchet would have failed on the arrival of new work, which trains a reader to disable the
+    # gate. So the COUNT of producers measured may never fall -- that is un-measuring, always a
+    # defect -- and the SHARE may only be diluted by genuine growth in the roster. When the roster
+    # did not grow, a falling share is a regression exactly as before. Neither clause can be
+    # satisfied by publishing less of anything.
+    def _num(v: Any) -> float | None:
+        return float(v) if isinstance(v, (int, float)) and not isinstance(v, bool) else None
+
+    def _judge(what: str, share: Any, share_best: Any, count: Any, count_best: Any) -> None:
+        """One axis, both ratchets. Appends at most one failure -- the count one wins."""
+        now_n, prev_n, now, prev = _num(count), _num(count_best), _num(share), _num(share_best)
+        if reason:
+            return
+        if prev_n is not None and now_n is not None and now_n < prev_n:
+            failures.append(
+                f"{what} fell from {prev_n:g} producers to {now_n:g}: measuring FEWER producers "
+                "is a regression however the share moved. Find what stopped reporting, or state "
+                f"why in {RATCHET.relative_to(ROOT)} -- never raise a share by publishing less")
+        elif prev is not None and now is not None and now + 1e-9 < prev and not grew:
+            failures.append(
+                f"{what} fell to {now:.4f} from a recorded best of {prev:.4f} over {n_prod} "
+                "producers, with no growth in the roster to dilute it: this ratchet rises only")
+
+    def _raise(store: dict[str, Any], key: str, value: Any) -> bool:
+        """Record a new best. Returns True when the bar moved up."""
+        now, prev = _num(value), _num(store.get(key))
+        if now is None or (prev is not None and now <= prev):
+            return False
+        store[key] = round(now, 6) if isinstance(value, float) else int(now)
+        return True
+
+    moved = False
+    for col in judged:
+        raw_entry = cols.get(col)
+        entry: dict[str, Any] = raw_entry if isinstance(raw_entry, dict) else {}
+        share, count = entry.get("coverage"), entry.get("measured")
+        if _num(share) is None and _num(best_cols.get(col)) is not None and not reason:
+            failures.append(
+                f"column `{col}` is no longer published while the ratchet holds "
+                f"{best_cols[col]}: a measured column that vanished is a regression")
+            continue
+        _judge(f"per-producer coverage of `{col}`", share, best_cols.get(col), count,
+               best_counts.get(col))
+        moved |= _raise(best_cols, col, share)
+        moved |= _raise(best_counts, col, count)
+    _judge("region coverage", region, best_region, region_n, best_region_n)
+    moved |= _raise(rat, "region_coverage_best", region)
+    moved |= _raise(rat, "region_measured_best", region_n)
+    moved |= _raise(rat, "n_producers_best", n_prod)
+    rat["measured_best"] = best_counts
+    if not moved:
+        return None
+    rat["columns_best"] = best_cols
+    rat.setdefault("law", "PER-PRODUCER MEASUREMENT COVERAGE RATCHETS UP ONLY.")
+    rat.setdefault("seeded", datetime.now(UTC).isoformat(timespec="seconds"))
+    rat["updated_utc"] = datetime.now(UTC).isoformat(timespec="seconds")
+    return rat
+
+
+def check(require_state: bool = False, tighten: bool = False) -> dict[str, Any]:
     out: dict[str, Any] = {
         "at": datetime.now(UTC).isoformat(timespec="seconds"),
         "artifact": str(CENSUS.relative_to(ROOT) if CENSUS.is_relative_to(ROOT) else CENSUS),
@@ -160,6 +341,15 @@ def check(require_state: bool = False) -> dict[str, Any]:
             "`productivity_census` is not running, so every productivity number the desk would "
             "quote is stale (L1.49 -- a gate that never ran is a claim the desk cannot cash)")
 
+    moved = _coverage_clause(census, out, failures)
+    if moved is not None and tighten:
+        try:
+            RATCHET.parent.mkdir(parents=True, exist_ok=True)
+            RATCHET.write_text(json.dumps(moved, indent=1) + "\n", encoding="utf-8")
+            out["ratchet_tightened"] = True
+        except OSError as exc:                       # a read-only checkout is not a broken law
+            out["ratchet_tightened"] = f"UNMEASURED: {type(exc).__name__}: {exc}"
+
     blockers = _blockers()
     out["n_blockers"] = len(blockers)
     for row in census.get("zero_cell_compute") or []:
@@ -194,8 +384,13 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--require-state", action="store_true",
                     help="treat an absent census as the failure it is: for the box and the VPS, "
                          "where the desk state exists")
+    ap.add_argument("--tighten", action="store_true",
+                    help="record any improvement in per-producer measurement coverage into "
+                         "docs/research/productivity_census_ratchet.json. Judging always happens; "
+                         "this only decides whether a NEW BEST is written down, so a dry read "
+                         "from a shared worktree never moves the bar under another session")
     args = ap.parse_args(argv)
-    verdict = check(require_state=args.require_state)
+    verdict = check(require_state=args.require_state, tighten=args.tighten)
     if args.json:
         print(json.dumps(verdict, indent=2, default=str))
     elif verdict.get("verdict") == "UNMEASURED":
@@ -207,6 +402,14 @@ def main(argv: list[str] | None = None) -> int:
     else:
         print(f"PRODUCTIVITY CENSUS FENCE: ok (age {verdict.get('age_hours')}h, "
               f"{len(verdict.get('declared_producers') or [])} declared exploratory)")
+    cov = verdict.get("coverage")
+    if isinstance(cov, dict) and not args.json:
+        if cov.get("verdict") == "UNMEASURED":
+            print(f"  coverage: UNMEASURED -- {cov.get('why')}")
+        else:
+            print(f"  coverage over {cov.get('n_producers')} producers: "
+                  + "  ".join(f"{k}={v}" for k, v in (cov.get("columns") or {}).items())
+                  + f"  region={cov.get('region_coverage')}")
     return 1 if verdict.get("failures") else 0
 
 
