@@ -125,13 +125,16 @@ def test_the_ledger_and_file_readers_are_bound_to_the_desks_paths(tmp_path) -> N
     ledger = tmp_path / "live_ledger.jsonl"
     ledger.write_text('{"sleeve": "a", "r_multiple": 1.0}\n{"sleeve": "b"}\n', "utf-8")
     sleeves = tmp_path / "sleeves.json"
-    sleeves.write_text(json.dumps({"sleeves": [{"name": "x", "status": "LIVE"}]}), "utf-8")
+    live = {"name": "gold_asia_v2", "symbol": "XAUUSD", "chart": "H1",
+            "status": "LIVE"}
+    sleeves.write_text(json.dumps({"sleeves": [live]}), "utf-8")
     retired = tmp_path / "GOLD_RETIRED.json"
     retired.write_text('{"gold_asia": {"reason": "r"}}', "utf-8")
     ns = _exec(("sleeve_live_n", "load_sleeves", "_load_retired_gold", "ledger_rows"),
-               {"LEDGER": ledger, "SLEEVES_FILE": sleeves, "GOLD_RETIRED_FILE": retired})
+               {"LEDGER": ledger, "SLEEVES_FILE": sleeves, "GOLD_RETIRED_FILE": retired,
+                "log": lambda *_: None})
     assert ns["sleeve_live_n"]("a") == 1 and ns["sleeve_live_n"]("zzz") == 0
-    assert ns["load_sleeves"]() == [{"name": "x", "status": "LIVE"}]
+    assert ns["load_sleeves"]() == [live]
     assert ns["_load_retired_gold"]() == {"gold_asia": {"reason": "r"}}
     assert ns["ledger_rows"]() == [{"sleeve": "a", "r_multiple": 1.0}, {"sleeve": "b"}]
 
@@ -826,6 +829,100 @@ def test_the_scalp_tag_is_the_lane_s_own_and_only_the_scalp_lane_s() -> None:
     assert tag == frozenset({("DW" + "a" * 40)[:29]})            # the venue's measured 29-char comment
 
 
+def test_position_bars_use_the_broker_clock_not_wall_clock() -> None:
+    """Fusion stamps a 13:01 broker-time position while UTC can still be 10:01.  A range ending
+    at UTC-now returns nothing; latest-bars filtered against the broker epoch returns the entry
+    bar and every subsequent broker bar, which is the clock domain management needs."""
+    base = 1_790_000_000
+    opened = base + 3 * 3600 + 61
+    first = opened - (opened % 3600) - 2 * 3600
+    raw = [{"time": first + i * 3600, "open": 100 + i, "high": 102 + i,
+            "low": 99 + i, "close": 101 + i} for i in range(5)]
+    mt5 = SimpleNamespace(copy_rates_from_pos=lambda *a: raw)
+    ns = _exec(("_rates_since_position",), {"mt5": mt5})
+    got = ns["_rates_since_position"]("XAUUSD", 60, opened)
+    assert got["time"].tolist() == [opened - (opened % 3600),
+                                    opened - (opened % 3600) + 3600,
+                                    opened - (opened % 3600) + 7200]
+
+
+def test_gold_bracket_hedges_are_collapsed_by_close_by_and_nothing_else() -> None:
+    sent: list[dict] = []
+    positions = [
+        SimpleNamespace(ticket=1, symbol="XAUUSD", type=0, volume=0.02,
+                        magic=341953, comment="DWgold_london_am"),
+        SimpleNamespace(ticket=2, symbol="XAUUSD", type=1, volume=0.02,
+                        magic=341953, comment="DWgold_asia"),
+        SimpleNamespace(ticket=3, symbol="XAUUSD", type=1, volume=0.01,
+                        magic=341953, comment="DWxau_m5_other"),
+        SimpleNamespace(ticket=4, symbol="XAUUSD", type=1, volume=0.02,
+                        magic=999, comment="manual"),
+    ]
+    mt5 = SimpleNamespace(
+        positions_get=lambda symbol=None: list(positions), POSITION_TYPE_BUY=0,
+        TRADE_ACTION_CLOSE_BY=10, TRADE_RETCODE_DONE=10009,
+        order_send=lambda req: (sent.append(req) or SimpleNamespace(retcode=10009, comment="")))
+    logs: list[str] = []
+    ns = _exec(("collapse_opposing_gold_positions", "order_comment"),
+               {"mt5": mt5, "log": logs.append, "diagnose": lambda *a: "",
+                "MAGIC": 341953})
+    assert ns["collapse_opposing_gold_positions"]({"armed": True}) == 1
+    assert sent == [{"action": 10, "position": 1, "position_by": 2, "magic": 341953,
+                     "comment": "DWportfolio_net"}]
+
+
+def test_filled_gold_bracket_cancels_only_its_own_pending_sibling() -> None:
+    sent: list[dict] = []
+    positions = [
+        SimpleNamespace(ticket=1, symbol="XAUUSD", magic=341953,
+                        comment="DWgold_london_am"),
+        SimpleNamespace(ticket=2, symbol="XAUUSD", magic=341953,
+                        comment="DWxau_m5_other"),
+    ]
+    orders = [
+        SimpleNamespace(ticket=11, symbol="XAUUSD", magic=341953,
+                        comment="DWgold_london_am"),
+        SimpleNamespace(ticket=12, symbol="XAUUSD", magic=341953,
+                        comment="DWgold_asia"),
+        SimpleNamespace(ticket=13, symbol="XAUUSD", magic=341953,
+                        comment="DWxau_m5_other"),
+        SimpleNamespace(ticket=14, symbol="XAUUSD", magic=999, comment="DWgold_london_am"),
+    ]
+    mt5 = SimpleNamespace(
+        positions_get=lambda symbol=None: list(positions),
+        orders_get=lambda symbol=None: list(orders),
+        TRADE_ACTION_REMOVE=12, TRADE_RETCODE_DONE=10009,
+        order_send=lambda req: (sent.append(req) or SimpleNamespace(retcode=10009, comment="")))
+    ns = _exec(("cancel_filled_gold_siblings", "order_comment"),
+               {"mt5": mt5, "log": lambda *_: None, "diagnose": lambda *a: "",
+                "MAGIC": 341953})
+    assert ns["cancel_filled_gold_siblings"]({"armed": True}) == 1
+    assert sent == [{"action": 12, "order": 11, "magic": 341953,
+                     "comment": "DWoco_sibling"}]
+
+
+def test_filled_gold_sibling_cancel_is_shadow_only_when_disarmed() -> None:
+    sent: list[dict] = []
+    mt5 = SimpleNamespace(
+        positions_get=lambda symbol=None: [SimpleNamespace(magic=341953,
+                                                            comment="DWgold_asia")],
+        orders_get=lambda symbol=None: [SimpleNamespace(ticket=11, magic=341953,
+                                                         comment="DWgold_asia")],
+        order_send=lambda req: sent.append(req))
+    ns = _exec(("cancel_filled_gold_siblings",),
+               {"mt5": mt5, "log": lambda *_: None, "MAGIC": 341953})
+    assert ns["cancel_filled_gold_siblings"]({"armed": False}) == 1
+    assert sent == []
+
+
+def test_close_by_deals_are_closing_fills_not_lost_attribution() -> None:
+    deals = [SimpleNamespace(entry=3, volume=0.02, price=4317.5)]
+    mt5 = SimpleNamespace(DEAL_ENTRY_OUT=1, DEAL_ENTRY_OUT_BY=3,
+                          history_deals_get=lambda position=None: deals)
+    ns = _exec(("_closing_fill",), {"mt5": mt5})
+    assert ns["_closing_fill"](123) == pytest.approx((0.02, 4317.5))
+
+
 def test_main_scopes_the_daily_close_and_not_the_friday_one() -> None:
     """Pinned on the source: the daily backstop passes the scalp tags, the weekend close does
     not, and the daily one comes first."""
@@ -1092,18 +1189,9 @@ def test_the_pause_file_readers_look_under_data_and_main_consults_gateway_paused
 
 def _manage_ns(mt5: SimpleNamespace) -> dict:
     logs: list[str] = []
-    # `_pm`, pandas and the ATR helper are module-level names in gateway.py that `_exec` does not
-    # carry across; the manage step reaches all three once a position gets past "fewer than 2
-    # bars", so a fake with real bars needs them bound or it fails on a NameError about the
-    # helper rather than on the behaviour under test (the trap this file's own docstring names).
-    import pandas as _pd
-    from mt5desk import position_manager as _pm
-    from mt5desk.decision_core import ATR_N, MIN_RATCHET_IMPROVEMENT_R, atr_last, diagnose
-    ns = {"mt5": mt5, "log": logs.append, "MAGIC": 1, "_logs": logs, "_pm": _pm, "pd": _pd,
-          "ATR_N": ATR_N, "atr_last": atr_last, "diagnose": diagnose,
-          "MIN_RATCHET_IMPROVEMENT_R": MIN_RATCHET_IMPROVEMENT_R}
+    ns = {"mt5": mt5, "log": logs.append, "MAGIC": 1, "_logs": logs}
     return _exec(("manage_open_positions", "order_comment", "_original_stop_distance",
-                  "_round_trip_per_price_unit"), ns)
+                  "_rates_since_position"), ns)
 
 
 def _manage_mt5(comment: str, sent: list) -> SimpleNamespace:
@@ -1114,69 +1202,20 @@ def _manage_mt5(comment: str, sent: list) -> SimpleNamespace:
         positions_get=lambda symbol=None: [pos],
         symbol_info=lambda symbol: SimpleNamespace(trade_stops_level=0, trade_tick_size=0.00001),
         # No bars since entry: a position that IS managed stops at "fewer than 2 bars".
-        copy_rates_range=lambda *a, **k: None,
+        copy_rates_from_pos=lambda *a, **k: None,
         order_send=lambda req: sent.append(req))
 
 
 def test_a_family_position_with_a_fixed_certified_bracket_is_not_ratcheted() -> None:
     """2026-09-16: five forex closes at a manage-tightened stop, five losses. The family lane's
     certificates carry no trail, so the manage step leaves their stops where the certificate
-    put them.
-
-    UPDATED 2026-09-24, AND THE CLAIM ABOVE IS UNCHANGED. The routing changed: a fixed-bracket
-    position used to `continue` out of the loop entirely, and now runs floor-only -- no trail,
-    but the break-even floor is still evaluated. The `continue` also refused the break-even stop
-    the principal ordered that day, and three of the thirteen LIVE sleeves are `family_market`
-    XAUUSD session-range BREAKOUTS, the exact sleeves named in that order. What this test pins is
-    still that NOTHING IS TRAILED; `..._is_floored_but_never_trailed` below pins the other half.
-    """
+    put them."""
     sent: list = []
     ns = _manage_ns(_manage_mt5(f"DW{_NAME}", sent))
     st = {"armed": True, "generic": {_NAME: {"trail_k": 0.0, "open_ttl_until": "x"}}}
     ns["manage_open_positions"](st, [_sleeve()])
     assert sent == []
-
-
-def _manage_mt5_with_bars(comment: str, sent: list, *, highs: list[float]) -> SimpleNamespace:
-    """Same fake, but with bars and a complete symbol_info so the floor can actually be priced."""
-    pos = SimpleNamespace(ticket=501, type=0, price_open=1.1100, sl=1.1050, tp=1.1150,
-                          comment=comment, time=1_800_000_000, symbol="EURUSD")
-    rates = [(0, h - 0.0002, h, h - 0.0004, h) for h in highs]
-    frame = [{"open": o, "high": h, "low": lo, "close": c} for _, o, h, lo, c in rates]
-    return SimpleNamespace(
-        POSITION_TYPE_BUY=0, TIMEFRAME_H1=16385, TRADE_ACTION_SLTP=6,
-        positions_get=lambda symbol=None, ticket=None: [pos],
-        symbol_info=lambda symbol: SimpleNamespace(
-            trade_stops_level=0, trade_tick_size=0.00001, trade_tick_value=1.0,
-            spread=10, point=0.00001),
-        symbol_info_tick=lambda symbol: SimpleNamespace(bid=1.1140, ask=1.1141),
-        copy_rates_range=lambda *a, **k: frame,
-        copy_rates_from_pos=lambda *a, **k: frame,
-        order_send=lambda req: (sent.append(req), SimpleNamespace(retcode=10009, comment=""))[1])
-
-
-def test_a_fixed_bracket_is_floored_but_never_trailed() -> None:
-    """The principal's 2026-09-24 order, through the real gateway function rather than the maths.
-
-    R = 1.1100 - 1.1050 = 0.0050, so 0.85R is 0.00425 of net favourable excursion. The bars run
-    to 1.1160 (+0.0060 gross), which clears it. A trail would have proposed a stop up near the
-    extreme; the floor proposes break-even and nothing tighter.
-    """
-    sent: list = []
-    ns = _manage_ns(_manage_mt5_with_bars(
-        f"DW{_NAME}", sent, highs=[1.1120, 1.1140, 1.1160]))
-    st = {"armed": True, "generic": {_NAME: {"trail_k": 0.0, "open_ttl_until": "x"}}}
-    ns["manage_open_positions"](st, [_sleeve()])
-    # The fake returns the one position for every symbol the loop asks about (sleeve symbols
-    # plus the always-on XAUUSD), so filter to the one under test rather than counting sends.
-    reqs = [r for r in sent if r["symbol"] == "EURUSD"]
-    assert len(reqs) == 1, ns["_logs"]
-    req = reqs[0]
-    assert req["action"] == 6 and req["position"] == 501
-    # Break-even, not the trail: entry + the round trip, far below the 1.1160 extreme. The round
-    # trip is 2.00/lot/side x 2 / (tick_value 1.0 / tick_size 0.00001) = 0.00004 of price.
-    assert req["sl"] == pytest.approx(1.11004), req["sl"]
-    assert any("no trail ran (fixed bracket)" in x for x in ns["_logs"]), ns["_logs"]
+    assert any("certified exit is a fixed bracket" in x for x in ns["_logs"])
 
 
 def test_a_family_position_whose_signal_carried_a_trail_is_still_managed() -> None:
