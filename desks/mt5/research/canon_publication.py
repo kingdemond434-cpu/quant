@@ -445,6 +445,23 @@ def recover_from_gate_output(gates: Path = GATE_OUTPUT, report: Path = REPORT,
                    why=f"{gates.name} is absent: this box has no completed gate evaluation to "
                        f"recover from. That is not a claim that nothing passed.")
         return out
+
+    # THE CHEAP QUESTION FIRST. The gate output is 88 MB on the box and `json.loads` on it is a
+    # gigabyte of objects and most of a minute -- worth paying to rescue a sweep, and pure waste
+    # on an hour where the judge finished. A report whose sweep stamp is LATER than the moment
+    # the gate file was written is positive evidence that the judge got past it, so the parse is
+    # skipped. Only positive evidence skips: an unreadable stamp, an unreadable mtime or a report
+    # older than the file all fall through and read it (L1.28a).
+    gate_mtime = _mtime(gates)
+    out["gate_mtime"] = gate_mtime
+    doc_report_head = _read(report)
+    if gate_mtime and str(doc_report_head.get("swept_at") or "") > str(gate_mtime):
+        out.update(status="JUDGE_REPUBLISHED", report_swept_at=doc_report_head.get("swept_at"),
+                   why=f"the survivor report's sweep stamp ({doc_report_head.get('swept_at')}) is "
+                       f"later than the moment {gates.name} was written ({gate_mtime}), so the "
+                       f"judge got past its own gate write and nothing is stranded")
+        return out
+
     doc = _read(gates)
     if not doc:
         out.update(status="UNREADABLE_GATE_OUTPUT",
@@ -453,14 +470,14 @@ def recover_from_gate_output(gates: Path = GATE_OUTPUT, report: Path = REPORT,
         return out
 
     swept = doc.get("swept_at")
-    out.update(gate_swept_at=swept, gate_mtime=_mtime(gates),
+    out.update(gate_swept_at=swept,
                gate_survivors_passing_all=doc.get("survivors_passing_all"),
                gate_n_judged=doc.get("n_judged"), gate_n_cells=doc.get("n_cells"))
-    doc_report = _read(report)
+    doc_report = doc_report_head
     report_swept = doc_report.get("swept_at")
     out["report_swept_at"] = report_swept
     # THE JUDGE FINISHED. Its own write is the authority and there is nothing stranded; running
-    # a 440 MB scan on an ordinary pass would be the cost with none of the benefit.
+    # a 440 MB docket scan on an ordinary pass would be the cost with none of the benefit.
     if report_swept and swept and str(report_swept) >= str(swept):
         out.update(status="JUDGE_REPUBLISHED", why="the survivor report is at least as new as the "
                                                    "gate output, so no evaluation is stranded")
