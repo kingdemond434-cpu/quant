@@ -616,9 +616,15 @@ def classify(ident: dict[str, Any], lane: dict[str, Any]) -> tuple[str, str]:
     hits = lane["by_parts"].get(p)
     if hits:
         return "BACKED", f"certificate {hits[0]} names these parts"
-    cure = lane.get("cure_by_parts", {}).get(p)
-    if cure:
-        return "CURE", f"{CURE_REASON} ({cure})"
+    # THE POWER-CURE ESCAPE STOOD HERE AND IS DELETED (principal 2026-09-24, "delete the other").
+    # It read `lane["cure_by_parts"]` and returned CURE -- "backed by the lane without being a
+    # certificate" -- for any clock whose parts appeared in POWER_CURE_CANDIDATES.json. That is
+    # the same split `authorized_runs` carried, recorded one module downstream: it is what made
+    # an unbacked clock count as `cure_backed` INSTEAD OF as a divergence, so the audit whose
+    # whole purpose is to find clocks the canon does not back was the organ hiding 120 of them.
+    # Measured 2026-09-24: 0 of 1,240 eligible cure cells pass all ten gates; all 1,240 fail
+    # `deflated_sharpe`. A cell that is close to certifying is EVIDENCE and is still published
+    # here as a candidate; what it no longer gets is a verdict that reads like backing.
     return "UNBACKED", UNBACKED_REASON
 
 
@@ -1004,7 +1010,11 @@ def join_coverage(paths: Paths, lane: dict[str, Any]) -> dict[str, Any]:
     coincidence are the split the principal named; counts that agree BY CONSTRUCTION need one
     identity, carried by every store, and a fence that fails when a store cannot produce it."""
     out: dict[str, Any] = {"identity": IDENTITY_FIELD, "rule": IDENTITY_RULE, "stores": {}}
-    backed = set(lane["by_parts"]) | set(lane.get("cure_by_parts") or {})
+    # BACKED MEANS THE CANONICAL LANE, AND NOTHING ELSE. This used to union `cure_by_parts` in,
+    # so a row joining only the power-cure store counted as joining the canon -- the same split
+    # deleted from `classify` above and from `shadow_admission.authorized_runs`, arriving here as
+    # a coverage number that could never fall. One canonical lane: `by_parts` is the whole of it.
+    backed = set(lane["by_parts"])
     declared = declared_identities(paths)
 
     def measure(name: str, rows: list[tuple[str, dict[str, Any]]]) -> None:

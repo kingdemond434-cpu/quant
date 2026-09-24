@@ -158,24 +158,38 @@ def test_audit_names_every_divergence_by_store_key_and_kind(desk: Path):
         "BANNED_CURE_CANDIDATE": 1,
         "BANNED_CLAIM": 1, "CLAIM_NOT_IN_CANON": 1,
         "BANNED_CLOCK": 3,                # registry, shadow, scalp lane
-        "UNBACKED_CLOCK": 2,              # CHFNOK carry, NZDCAD carry
+        # FOUR, NOT TWO, SINCE THE POWER-CURE LANE WAS DELETED (principal 2026-09-24).
+        # CHFNOK carry and NZDCAD carry were always unbacked. The two that JOINED them are the
+        # power-cure rows -- `classify` used to return CURE for a clock whose parts appeared in
+        # POWER_CURE_CANDIDATES.json and count it as `cure_backed`, "backed by the lane without
+        # being a certificate". Measured on the box that day: 0 of 1,240 eligible cure cells pass
+        # all ten gates and every one fails `deflated_sharpe`, so that verdict was laundering an
+        # unbacked clock through the very audit that exists to find one.
+        "UNBACKED_CLOCK": 4,
         "LIVE_BOOK_UNBACKED_CLOCK": 1,    # XAUUSD.london_am: the gold book's symbol
         "UNPARSED_CLOCK": 1,              # the scalp row with a name-shaped key
         "BANNED_SLEEVE": 1,
         "SLEEVE_CERTIFICATE_NOT_IN_CANON": 1,
     }
+    # `cure_backed` is now structurally zero on every store: nothing can reach that verdict.
+    # The counter itself stays so the artifact keeps a shape readers already parse, and so a
+    # non-zero value is immediately legible as the lane having come back.
     reg = doc["stores"]["sleeve_registry"]
     assert (reg["live_rows"], reg["backed"], reg["cure_backed"], reg["unbacked"],
-            reg["banned"], reg["protected"]) == (5, 1, 1, 2, 1, 1)
+            reg["banned"], reg["protected"]) == (5, 1, 0, 3, 1, 1)
     sh = doc["stores"]["shadow_state"]
     assert (sh["live_rows"], sh["backed"], sh["cure_backed"], sh["unbacked"], sh["banned"]) == (
-        4, 1, 1, 1, 1)
+        4, 1, 0, 2, 1)
     assert doc["stores"]["sleeves"]["protected_symbols"] == ["XAUUSD"]
     assert doc["stores"]["sleeves"]["live_book"] == 1
     prot = [d for d in doc["divergences"] if d["kind"] == "LIVE_BOOK_UNBACKED_CLOCK"]
     assert prot[0]["key"] == "XAUUSD.london_am" and prot[0]["protected"] is True
-    assert doc["ok"] is False and doc["n_fatal"] == 11
-    assert doc["migration"]["planned"]["unbacked_clocks_to_retire"] == 2
+    # 13, not 11: the two power-cure clocks are fatal divergences now that no verdict launders
+    # them as `cure_backed`. The lane that issued them is deleted (principal 2026-09-24).
+    assert doc["ok"] is False and doc["n_fatal"] == 13
+    # 4, not 2: the two power-cure clocks join the plan. `classify` no longer returns CURE for
+    # a clock whose parts sit only in POWER_CURE_CANDIDATES.json (principal 2026-09-24).
+    assert doc["migration"]["planned"]["unbacked_clocks_to_retire"] == 4
     assert doc["migration"]["planned"]["unbacked_clocks_protected"] == 1
     # the unparsed lane row and the live-book row are published, never fatal
     assert "UNPARSED_CLOCK" not in CT.FATAL_KINDS
@@ -200,10 +214,12 @@ def test_main_writes_the_report_and_an_event_and_never_applies_without_the_flag(
 def test_apply_migrates_banned_rows_to_history_and_retires_unbacked_clocks(desk: Path):
     paths = CT.Paths.at(desk)
     out = CT.apply(paths, now="2026-09-22T12:00:00+00:00")
-    assert out["moved"] == 11 and out["lane_status"] == "EXACT"
+    # 13, NOT 11: the two power-cure clocks are retired with the rest now that no verdict calls
+    # them backed. They were never certificates -- the lane that issued them is deleted.
+    assert out["moved"] == 13 and out["lane_status"] == "EXACT"
     assert out["by_store"] == {"UNIVERSAL_SURVIVORS": 1, "UNIVERSAL_SURVIVORS.canon": 1,
                                "POWER_CURE_CANDIDATES": 1, "SURVIVORS_LEDGER": 2,
-                               "sleeve_registry": 2, "shadow_state": 2,
+                               "sleeve_registry": 3, "shadow_state": 3,
                                "scalp_shadow_state": 1, "sleeves": 1}
     # the canon and its seal: the banned certificate is gone, the other rows stand, n is honest
     for p in (paths.canon, paths.seal):
@@ -219,22 +235,39 @@ def test_apply_migrates_banned_rows_to_history_and_retires_unbacked_clocks(desk:
     assert claims["external.EURCHF.discovered.p=1"]["retire_reason"] == CT.BAN_REASON
     assert claims["external.GBPJPY.session_range_breakout"]["retire_reason"] == CT.HISTORY_REASON
     assert claims["external.CADJPY.session_range_breakout"]["status"] == "UNIVERSAL"
-    # the registry: banned and unbacked retired with their reasons; backed, cure and the live
-    # book's symbol untouched
+    # the registry: banned and unbacked retired with their reasons; backed and the live book's
+    # symbol untouched.
+    #
+    # USDSGD LEFT THIS LIST ON 2026-09-24. It is the power-cure row, and it stayed LIVE only
+    # because `classify` returned CURE for it -- "backed by the lane without being a
+    # certificate". It holds no ten-gate certificate (0 of 1,240 eligible cure cells do; all
+    # 1,240 fail deflated_sharpe), so under CLOCK IF AND ONLY IF CERTIFICATE it is retired with
+    # every other unbacked clock. XAUUSD.london_am still stands, and for an unrelated and still
+    # valid reason: its symbol is traded by the live book under a principal override (LAWS 5j).
     reg = _r(paths.registry)["sleeves"]
     banned = reg["EURCHF.discovered.asia#band=[0.9, 1.0]_feature=ru_24"]
     assert banned["status"] == "RETIRED" and banned["status_why"] == CT.BAN_REASON
     assert reg["CHFNOK.carry.asia#input_symbol=CHFNOK"]["status_why"] == CT.UNBACKED_REASON
     assert reg["CHFNOK.carry.asia#input_symbol=CHFNOK"]["retired_by"] == "certificate_truth"
-    for key in ("CADJPY.asia", "USDSGD.overnight_gap_decay.continuous", "XAUUSD.london_am"):
+    for key in ("CADJPY.asia", "XAUUSD.london_am"):
         assert reg[key]["status"] == "LIVE", key
+    cured = reg["USDSGD.overnight_gap_decay.continuous"]
+    assert cured["status"] == "RETIRED" and cured["status_why"] == CT.UNBACKED_REASON, (
+        "the power-cure clock is still LIVE: the CURE escape in `classify` has come back, and "
+        "with it the split that let 120 non-certificates accrue forward evidence")
     # the shadow state: same rule, the engine's own vocabulary, promotion authority withdrawn
     sh = _r(paths.shadow)
     assert sh["EURCHF.discovered.asia#band=[0.9, 1.0]_feature=ru_24"]["status"] == "RETIRED"
     assert sh["NZDCAD.carry.continuous#x=1"]["retire_reason"] == CT.UNBACKED_REASON
     assert sh["NZDCAD.carry.continuous#x=1"]["promotion_authority"] is False
-    assert sh["CADJPY.asia"]["status"] == "ACTIVE"
-    assert sh["AUDNZD.dav_range_filter_adx.afternoon.SHORT"]["status"] == "ACTIVE"
+    assert sh["CADJPY.asia"]["status"] == "ACTIVE"                # a real ten-gate certificate
+    # THE QQUANT CURE ROW IS RETIRED NOW. It survived on the QQUANT_GATES half of the same
+    # power-cure escape -- a verdict that passed every validity gate and failed a POWER one,
+    # counted as "backed by the lane without being a certificate". It never held a ten-gate
+    # attestation, so CLOCK IF AND ONLY IF CERTIFICATE retires it with the rest.
+    assert sh["AUDNZD.dav_range_filter_adx.afternoon.SHORT"]["status"] == "RETIRED"
+    assert sh["AUDNZD.dav_range_filter_adx.afternoon.SHORT"]["retire_reason"] == (
+        CT.UNBACKED_REASON)
     assert sh["GBPJPY.asia"]["status"] == "RETIRED_ORPHAN"        # terminal rows untouched
     # a lane owns its rows: only the banned one leaves, the unparsed one is untouched
     scalp = _r(paths.lanes[1])
@@ -249,7 +282,7 @@ def test_apply_migrates_banned_rows_to_history_and_retires_unbacked_clocks(desk:
     assert sl["xau_asia_gold"]["status"] == "LIVE" and sl["gbpjpy_srb_asia"]["status"] == "LIVE"
     # history holds one row per move, each with store, key, reason and the statuses
     hist = [json.loads(x) for x in paths.history.read_text("utf-8").splitlines() if x.strip()]
-    assert len(hist) == 11
+    assert len(hist) == 13               # +2: the two power-cure clocks
     assert {h["store"] for h in hist} == set(out["by_store"])
     assert all(h["to_status"] == "RETIRED" and h["reason"] for h in hist)
     # after: only the published, non-fatal rows remain
@@ -262,9 +295,9 @@ def test_apply_is_idempotent(desk: Path):
     paths = CT.Paths.at(desk)
     first = CT.apply(paths)
     second = CT.apply(paths)
-    assert first["moved"] == 11 and second["moved"] == 0 and second["by_store"] == {}
+    assert first["moved"] == 13 and second["moved"] == 0 and second["by_store"] == {}
     hist = paths.history.read_text("utf-8").splitlines()
-    assert len([x for x in hist if x.strip()]) == 11
+    assert len([x for x in hist if x.strip()]) == 13     # +2: the power-cure clocks
 
 
 def test_an_unmeasured_canon_retires_only_banned_rows(desk: Path):
@@ -304,15 +337,22 @@ def test_an_empty_canon_is_unmeasured_and_never_the_ground_for_retiring_a_clock(
     assert doc["canon"]["status"] == "EMPTY"
     kinds = _kinds(doc)
     assert kinds["RECONCILE_CERTIFIED_CLOCKS_ON_EMPTY_CANON"] == 1
-    assert kinds["UNBACKED_CLOCK"] == 4            # CADJPY's clock is unbacked now, on both stores
+    # 6: CADJPY's clock is unbacked now on both stores (+2 over the baseline), and the two
+    # power-cure clocks are unbacked permanently since the cure escape in `classify` was deleted.
+    assert kinds["UNBACKED_CLOCK"] == 6
     out = CT.apply(paths, doc)
     reg = _r(paths.registry)["sleeves"]
     assert out["lane_settled"] is False
     assert reg["CADJPY.asia"]["status"] == "LIVE"              # withheld, not retired
     assert reg["USDSGD.overnight_gap_decay.continuous"]["status"] == "LIVE"
-    assert out["retirement_withheld"]["unbacked_clocks_not_retired"] == 4
+    # 6: the four of the baseline plus the two power-cure clocks, which are unbacked
+    # permanently now. An EMPTY canon still withholds retirement from all of them -- an
+    # unreadable authority is not evidence that a clock is unbacked (L1.28a).
+    assert out["retirement_withheld"]["unbacked_clocks_not_retired"] == 6
     assert "UNMEASURED" in out["retirement_withheld"]["reason"]
-    assert out["skipped"]["unbacked_on_unmeasured_canon"] == 4
+    # 6: an UNMEASURED canon still withholds retirement from every unbacked clock, the two
+    # former cure rows included. An unreadable authority is not evidence (L1.28a).
+    assert out["skipped"]["unbacked_on_unmeasured_canon"] == 6
     # the ban is a decision, not a measurement: banned rows still leave on an empty canon
     assert reg["EURCHF.discovered.asia#band=[0.9, 1.0]_feature=ru_24"]["status"] == "RETIRED"
 

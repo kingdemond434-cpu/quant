@@ -318,11 +318,30 @@ def per_symbol_costs(meta: dict, sym: str):
     `Costs.from_symbol` is where both fixes live. Hand-rolling here is what kept the money path
     from ever receiving them, which is why this now calls it and a test forbids the hand-roll.
 
-    The commission stays at 3.50 rather than the class default 2.25: it is the higher number and
-    nothing here may lower a cost.
+    AND THE THIRD TRAP WAS THE OVERRIDE ITSELF, removed 2026-09-24. The rule written here was
+    "the commission stays at 3.50 ... it is the higher number and nothing here may lower a cost",
+    which is a reason to prefer a number rather than a measurement of one. THE ACCOUNT'S OWN
+    DEALS SAY 2.00 PER LOT PER SIDE: 427 deals on 13 symbols, p10 = p50 = p90 = 2.00, no
+    exception anywhere in the history, across FX majors, crosses, exotics AND gold -- so it is
+    not a gold rate and not an average, it is a flat account-currency contract. 3.50 was a
+    ROUND-TURN figure sitting in a PER-SIDE field, so `per_oz_roundtrip` billed EUR 7.00 against
+    a measured EUR 4.00: 1.75x, on the term that is a median 93% of the whole charge
+    (`reports/FUSION_COST.json:median_commission_share_of_raw_cost`).
+
+    THAT IS NOT A COST REDUCTION BY FIAT AND IT IS NOT A RISK CHANGE. It is the same act as
+    correcting a spread: the desk was charging itself a price its broker does not charge, and an
+    overcharged cost kills real edges silently -- there is no alert, the cell simply never
+    appears again. 342 LIVE sleeves carried the 3.50 in their frozen `cost_fields`;
+    `sleeve_registry.rebase_cost` fires on `cost_hash` alone, keeps `forward_start` because a
+    cost correction does not un-observe a day, and sets `cost_rebase_cheaper` so the direction
+    is named rather than discovered.
+
+    `fusion_cost.COMMISSION_PER_LOT_PER_SIDE` is read rather than copied, so the desk has ONE
+    commission number and a re-measurement reaches this call site without an edit.
     """
+    from libs.portfolio.fusion_cost import COMMISSION_PER_LOT_PER_SIDE
     from mt5desk.engine import Costs
-    return Costs.from_symbol(meta[sym], commission_per_lot=3.50)
+    return Costs.from_symbol(meta[sym], commission_per_lot=COMMISSION_PER_LOT_PER_SIDE)
 
 
 def frozen_costs(key: str):

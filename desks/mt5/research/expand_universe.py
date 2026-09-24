@@ -212,6 +212,36 @@ def _pull_bars(mt5, sym: str, code, want: int, start, now):
     return np.unique(out)
 
 
+#: What this collector's `median_spread_pts` IS, so the stamp can never mean something else.
+MEDIAN_SPREAD_SOURCE = "h1_spread_median"
+
+
+def _median_spread_write(prev: dict, h1_rates, info, now) -> dict:
+    """The `median_spread_pts` fields this collector may write for one symbol, if any.
+
+    Returns an EMPTY dict when a better-ranked producer owns the field, which leaves both the
+    value and its stamp exactly as they were -- the merge below is a union, so an absent key
+    survives rather than being blanked.
+    """
+    import pandas as pd
+
+    from mt5desk.universe_registry import may_write_median_spread
+
+    allowed, _why = may_write_median_spread(prev if isinstance(prev, dict) else {},
+                                            MEDIAN_SPREAD_SOURCE)
+    if not allowed:
+        return {}
+    try:
+        spreads = pd.Series(h1_rates["spread"], dtype="float64")
+        value = float(spreads.median())
+    except (KeyError, TypeError, ValueError, IndexError):
+        value = float(getattr(info, "spread", 0) or 0)
+    prov = dict((prev or {}).get("_provenance") or {})
+    prov["median_spread_pts"] = {"source": MEDIAN_SPREAD_SOURCE,
+                                 "at": now.isoformat(timespec="seconds")}
+    return {"median_spread_pts": value, "_provenance": prov}
+
+
 def min_bars(timeframe: str) -> int:
     """`MIN_BARS` re-expressed as the SAME MARKET TIME on `timeframe`.
 
@@ -230,18 +260,6 @@ def min_bars(timeframe: str) -> int:
     return min_bars_for(timeframe, h1_floor=MIN_BARS)
 
 
-def _explain(err: object) -> str:
-    """Explain an MT5 attach failure without allowing diagnostics to mask it."""
-    try:
-        from research.h1_source import explain_init_failure
-    except ImportError:
-        try:
-            from h1_source import explain_init_failure  # type: ignore[no-redef]
-        except ImportError:
-            return f"{err}"
-    return explain_init_failure(err)
-
-
 
 
 def main() -> int:
@@ -250,8 +268,7 @@ def main() -> int:
     from mt5desk.universe_registry import cost_fields_from_symbol_info
 
     now = datetime.now(tz=UTC)
-    from mt5_session import attach_or_initialize
-    if not attach_or_initialize(mt5):
+    if not mt5.initialize():
         print(f"MT5 initialize failed: {_explain(mt5.last_error())}")
         return 1
 
@@ -377,8 +394,26 @@ def main() -> int:
                 # so the median is free and identical in meaning to the other producer's.
                 # The point-in-time reading is KEPT, under its own name, because it is real data
                 # about the moment -- it just is not a median.
-                "median_spread_pts": float(df["spread"].median())
-                if "spread" in df.columns else float(getattr(info, "spread", 0) or 0),
+                # AND THE COMMENT ABOVE WAS RIGHT AND STILL LOST THE FIELD (2026-09-24).
+                #
+                # Two defects, both measured on the trading box, both on the money path:
+                #
+                #  * `df` here is whatever chart the timeframe loop wrote LAST, not H1. The
+                #    number every candidate is priced against was the median of an arbitrary
+                #    chart. `h1_rates` is already in hand and is the admission timeframe, so the
+                #    median is taken from it explicitly.
+                #  * this ran HOURLY (`MT5-Universe`, PT1H) and re-wrote the field without
+                #    touching `_provenance`, so the registry's 245 rows still read
+                #    `download_all_symbols` against values this collector had replaced. A stale
+                #    stamp is worse than none: it is a false claim about which measurement a
+                #    reader is holding, and it is how a corrected spread silently reverted.
+                #
+                # `may_write_median_spread` is the ranking, in the module that already owns the
+                # merge rules. It refuses to overwrite a strictly better producer -- the desk's
+                # own fills, or the M1 tape -- and this collector stamps its own name whenever it
+                # does write. An H1 median on THIS broker reads a pre-2021 fixed-spread era, so
+                # it ranks below the tape by measurement and not by preference.
+                **_median_spread_write(registry.get(name, {}), h1_rates, info, now),
                 "spread_pts_at_collection": float(getattr(info, "spread", 0) or 0),
                 "swap_long": float(getattr(info, "swap_long", 0) or 0),
                 "swap_short": float(getattr(info, "swap_short", 0) or 0),
@@ -425,3 +460,19 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
+
+def _explain(err: object) -> str:
+    """Route the raw MT5 error through the shared explanation -- see h1_source.
+
+    Imported lazily and falling back to the bare error: a diagnostic helper must never be the
+    reason a producer cannot start.
+    """
+    try:
+        from research.h1_source import explain_init_failure
+    except ImportError:
+        try:
+            from h1_source import explain_init_failure  # type: ignore[no-redef]
+        except ImportError:
+            return f"{err}"
+    return explain_init_failure(err)

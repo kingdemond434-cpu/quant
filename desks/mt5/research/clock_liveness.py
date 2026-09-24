@@ -118,6 +118,21 @@ MAX_LOOKBACK_DAYS = 45
 
 
 # ------------------------------------------------------------------------------------- utils
+#: The scheduler read succeeded. Any other value is a REASON the task list is short or empty,
+#: and `host_kind` must not turn any of them into a claim about the tasks themselves.
+TASKS_OK = "OK"
+
+#: Why the last `scheduled_tasks()` returned what it did. Module state rather than a return
+#: field because `scheduled_tasks()` has callers that only want the mapping; the status is read
+#: through `scheduled_tasks_status()` by the one caller that decides what kind of host this is.
+_TASKS_STATUS: str = TASKS_OK
+
+
+def scheduled_tasks_status() -> str:
+    """`TASKS_OK`, or why the last scheduler read came back short."""
+    return _TASKS_STATUS
+
+
 def now_utc() -> datetime:
     return datetime.now(UTC)
 
@@ -132,18 +147,44 @@ def mt5_installed() -> bool:
         return False
 
 
-def host_kind(tasks: Mapping[str, dict[str, Any]]) -> tuple[str, str]:
-    """`trading_box` / `box_clocks_off` / `build_box`, and why -- the same three cases
-    `loop_liveness` measures, for the same reason.
+def host_kind(tasks: Mapping[str, dict[str, Any]],
+              read_status: str = TASKS_OK) -> tuple[str, str]:
+    """`trading_box` / `box_clocks_off` / `host_unmeasured` / `build_box`, and why.
 
     A HOST WITH NOTHING SCHEDULED TO ADVANCE A CLOCK CANNOT HAVE A FROZEN ONE. Calling this
     build box's ledger copies FROZEN would blame `shadow_forward` for not running where nothing
     was ever going to run it, and would train the desk to ignore the report. A host with MT5
     tasks of which one is DISABLED is the opposite case: that IS the defect, and it is repaired.
+
+    `read_status` IS THE HALF THAT WAS MISSING, AND ITS ABSENCE SILENTLY DISABLED A LAW.
+    `scheduled_tasks()` returned `{}` both when this host has no scheduler and when the
+    `schtasks` call FAILED -- and `subprocess.TimeoutExpired` is a subclass of `SubprocessError`,
+    so a timeout took the same silent path. An empty mapping then made `enabled` empty, and this
+    function announced `box_clocks_off` because "all 0 MT5-* scheduled task(s) are disabled" --
+    a VACUOUS TRUTH, true of every host in the world, printed as a measurement.
+
+    MEASURED ON THE TRADING BOX 2026-09-24, and the cost was not cosmetic. `CLOCK_LIVENESS.json`
+    carried `host: box_clocks_off`, `host_why: "... all 0 MT5-* scheduled task(s) are disabled"`
+    on `vmi3571445`, a host running 98 enabled MT5/E8 tasks. Every one of its 153 clocks was
+    stamped UNMEASURED, so `clock_certificate.audit` took its "the clock itself is UNMEASURED on
+    this host" branch for all 153 and reported `BACKED 0, BREACHED 0, RETIRED 0`. CLOCK IF AND
+    ONLY IF CERTIFICATE -- the law that retired 95 unbacked clocks the day before -- was
+    enforcing nothing at all, and the artifact said so in a field nobody reads as an outage.
+    The read takes 8-9 s idle and was measured at 121 s under load against a 90 s timeout.
+
+    An unreadable scheduler is UNMEASURED (L1.28a): a real answer, never a pass, and never the
+    claim that the host's clocks are switched off.
     """
     if not mt5_installed():
         return "build_box", ("no MetaTrader5 package here: no terminal, no bars, nothing "
                              "scheduled to advance a forward clock")
+    if read_status != TASKS_OK:
+        return "host_unmeasured", (
+            f"the scheduler could not be read on this host ({read_status}), so whether anything "
+            f"advances a clock here is UNMEASURED. This is NOT `box_clocks_off`: an unreadable "
+            f"task list is not evidence that the tasks are disabled, and reading it as one "
+            f"stamped every clock UNMEASURED and left CLOCK IF AND ONLY IF CERTIFICATE "
+            f"enforcing nothing")
     enabled = [n for n, t in tasks.items()
                if str(t.get("state", "")).strip().lower() == "enabled"]
     if not enabled:
@@ -580,16 +621,33 @@ def diagnose(clock: Mapping[str, Any], uni: Mapping[str, Any], uni_known: bool,
 
 # ------------------------------------------------------------------------------- lane health
 def scheduled_tasks() -> dict[str, dict[str, Any]]:
-    """Every MT5-* scheduled task with its state and last result. Windows only; elsewhere {}."""
+    """Every MT5-* scheduled task with its state and last result. Windows only; elsewhere {}.
+
+    THE STATUS IS PUBLISHED, NOT SWALLOWED. `_TASKS_STATUS` records why this returned few or no
+    rows, because `{}` used to mean three different things -- no scheduler, a failed call, and a
+    genuinely empty task list -- and `host_kind` read all three as "every task is disabled".
+    A timeout is the case that actually fires: `TimeoutExpired` subclasses `SubprocessError`, the
+    read costs 8-9 s idle and was measured at 121 s under load, and the ceiling here is 90 s.
+    """
+    global _TASKS_STATUS
+    _TASKS_STATUS = TASKS_OK
     if os.name != "nt":
+        _TASKS_STATUS = "NOT_WINDOWS"
         return {}
     try:
         raw = subprocess.run(["schtasks", "/Query", "/FO", "CSV", "/V"], capture_output=True,
                              text=True, timeout=90, check=False).stdout
-    except (OSError, subprocess.SubprocessError):
+    except subprocess.TimeoutExpired:
+        # NAMED SEPARATELY BECAUSE IT IS THE ONE THAT HAPPENS. Caught before the broader clause
+        # below, which would otherwise absorb it -- that inheritance is the whole defect.
+        _TASKS_STATUS = "TIMEOUT after 90s: the scheduler query did not return in time"
+        return {}
+    except (OSError, subprocess.SubprocessError) as exc:
+        _TASKS_STATUS = f"READ_FAILED: {type(exc).__name__}: {exc}"
         return {}
     rows = list(csv.reader(io.StringIO(raw)))
     if not rows:
+        _TASKS_STATUS = "EMPTY_OUTPUT: schtasks returned no rows at all"
         return {}
     head = [c.strip().lower() for c in rows[0]]
 
@@ -1031,7 +1089,10 @@ def build(budget_s: float = 300.0, *, apply: bool = True) -> dict[str, Any]:
     now = now_utc()
     cal = SessionCalendar()
     tasks = scheduled_tasks()
-    host, host_why = host_kind(tasks)
+    # THE READ'S STATUS TRAVELS WITH THE ROWS. Without it an unreadable scheduler became the
+    # claim "all 0 MT5-* tasks are disabled", which stamped every clock UNMEASURED and left the
+    # certificate law judging nothing on the box that trades. See `host_kind`.
+    host, host_why = host_kind(tasks, scheduled_tasks_status())
     roster, roster_why = engine_roster()
     # THE MACHINE FIRST. A frozen clock behind a disabled task cannot be repaired by re-enrolment,
     # and a lane that fires once a day is a lane whose clocks stop for 23 hours at a time -- so

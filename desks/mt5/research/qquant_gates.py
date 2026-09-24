@@ -83,6 +83,8 @@ def _init_worker() -> None:
                    "meta": json.loads((BASE / "data" / "universe" / "universe.json")
                                       .read_text("utf-8"))}
 
+    from libs.portfolio.fusion_cost import COMMISSION_PER_LOT_PER_SIDE
+
     def costs_for(sym: str, mult: float = 1.0) -> Costs:
         # WAS: a hand-rolled hardcoded 0.48 special-case for XAUUSD -- the EXACT bug diagnosed
         # and fixed in Costs' own class docstring (engine.py) and in portfolio_projection.py
@@ -94,11 +96,18 @@ def _init_worker() -> None:
         # gold included, from the same universe.json metadata formula -- no special case.
         m = _worker_ctx["meta"].get(sym, {})
         # `mult` STILL SCALES THE COMMISSION, which `from_symbol`'s docstring argues against (a
-        # contractual fee does not widen). Changing it here would LOWER a stressed cost, which is
-        # the one direction that can manufacture a survivor; the hand-roll this replaced charged
-        # 3.50 x mult, so every component of this cost stays >= what it was (desk-sync-clean,
-        # 2026-08-29). The commission-stress question is a separate decision with its own evidence.
-        return Costs.from_symbol(m, mult=mult, commission_per_lot=3.50 * mult)
+        # contractual fee does not widen). Changing that is a SEPARATE decision with its own
+        # evidence and is deliberately not taken here.
+        #
+        # THE RATE IS NOT THAT DECISION, and it was wrong. 3.50 is a ROUND-TURN figure in a field
+        # the engine charges PER SIDE, against the account's own measured 2.00 (427 deals, 13
+        # symbols, p10 = p50 = p90 = 2.00, FX majors/crosses/exotics and gold alike). Keeping a
+        # wrong number because it is the larger one is not conservatism: commission is a median
+        # 93% of the charged round trip here, so a 1.75x rate error is most of every refusal this
+        # lane makes, and an overcharged cost kills real edges with no alert at all. Read from
+        # `fusion_cost` rather than copied, so one re-measurement reaches every lane.
+        return Costs.from_symbol(m, mult=mult,
+                                 commission_per_lot=COMMISSION_PER_LOT_PER_SIDE * mult)
 
     _worker_ctx["costs_for"] = costs_for
 
