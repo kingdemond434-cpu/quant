@@ -83,6 +83,13 @@ FOREST_SOURCES = DESK / "data" / "deep_forest_sources.json"
 #: The attribution stamp's artifact (desks/mt5/research/attribution_census.py). Read for the
 #: modal region of each producer's OWN cells -- the route a producer's NAME could never give.
 ATTRIBUTION = REPORTS / "ATTRIBUTION_COVERAGE.json"
+#: THE ORTHOGONALITY COLUMN'S ONE SOURCE (scripts/check_producer_yield.py). Breadth is the
+#: participation ratio of a singular-value spectrum over the producer x cell matrix, and that
+#: machinery already runs on a clock and already publishes a marginal contribution per producer.
+#: This census READS it and never re-derives it: a second SVD here would cost the box an hour it
+#: does not have and would give a reader two different answers to one question. An absent or
+#: stale artifact makes the column UNMEASURED WITH ITS REASON, never zero (L1.28a).
+PRODUCER_YIELD = REPORTS / "PRODUCER_YIELD.json"
 
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
@@ -93,55 +100,53 @@ from libs.research import attribution as _attr  # noqa: E402
 # says plainly so nobody divides a lifetime count by a three-day hour budget without knowing it.
 COMPUTE_WINDOW_DAYS = 7.0
 
-# THE TWELVE THE PRINCIPAL NAMED. `deep_forest_sources.json` carries fifty-one ground codes; this
-# is the only mapping in the file and it exists because the question was asked about regions, not
-# about countries. `global`/`institutional` grounds are NOT forced into a region -- they get their
-# own bucket, because pretending a BIS working paper is "Europe" would corrupt the one table this
-# organ exists to publish.
-REGION_OF_CODE: dict[str, str] = {
-    "jp": "Japan",
-    "kr": "Korea",
-    "cn": "China", "tw": "China", "hk": "China",
-    "sg": "SEA", "vn": "SEA", "th": "SEA", "id": "SEA", "my": "SEA", "ph": "SEA",
-    "ru": "Russia/CIS", "ua": "Russia/CIS",
-    "in": "India", "pk": "India", "bd": "India", "lk": "India",
-    "gb": "Europe", "de": "Europe", "fr": "Europe", "it": "Europe", "es": "Europe",
-    "nl": "Europe", "se": "Europe", "dk": "Europe", "no": "Europe", "fi": "Europe",
-    "pl": "Europe", "cz": "Europe", "hu": "Europe", "ch": "Europe", "at": "Europe",
-    "us": "North America", "ca": "North America",
-    "br": "LatAm", "mx": "LatAm", "cl": "LatAm", "co": "LatAm", "pe": "LatAm", "ar": "LatAm",
-    "au": "Oceania", "nz": "Oceania",
-    "sa": "MENA", "ae": "MENA", "tr": "MENA", "il": "MENA", "eg": "MENA", "ma": "MENA",
-    "qa": "MENA", "kw": "MENA",
-    "za": "Africa", "ng": "Africa", "ke": "Africa", "gh": "Africa", "tz": "Africa",
-    "global": "Global/institutional", "institutional": "Global/institutional",
-}
-REGIONS = ("Japan", "Korea", "China", "SEA", "Russia/CIS", "India", "Europe",
-           "North America", "LatAm", "Oceania", "MENA", "Africa", "Global/institutional")
+# THE REGION TABLES ARE NOT KEPT HERE. They were, in a copy that had already drifted 29 country
+# codes behind `libs/research/attribution.py` -- the module that STAMPS the registry at birth --
+# so this file could read `Europe` for a ground the stamp called `Russia/CIS`. One rule, one table:
+# the names stay bound so an outside importer still resolves, and the values come from the helper.
+REGION_OF_CODE: dict[str, str] = _attr.REGION_OF_CODE
+NAME_TO_CODE: dict[str, str] = _attr.NAME_TO_CODE
+REGIONS: tuple[str, ...] = _attr.REGIONS
 
-# Long-form names a producer or a source may carry instead of the two-letter ground code. Derived
-# names only -- `japan:JapanDataScout` is a real generator in `generator_yield` right now.
-NAME_TO_CODE: dict[str, str] = {
-    "japan": "jp", "japanese": "jp", "nikkei": "jp",
-    "korea": "kr", "korean": "kr",
-    "china": "cn", "chinese": "cn", "taiwan": "tw", "hongkong": "hk",
-    "russia": "ru", "russian": "ru", "cis": "ru", "ukraine": "ua",
-    "india": "in", "indian": "in",
-    "europe": "gb", "european": "gb", "uk": "gb", "britain": "gb", "germany": "de",
-    "usa": "us", "america": "us", "american": "us", "canada": "ca",
-    "brazil": "br", "mexico": "mx", "latam": "br",
-    "australia": "au", "newzealand": "nz",
-    "singapore": "sg", "vietnam": "vn", "thailand": "th", "indonesia": "id",
-    "malaysia": "my", "philippines": "ph", "sea": "sg", "asean": "sg",
-    "turkey": "tr", "israel": "il", "saudi": "sa", "uae": "ae", "mena": "ae", "egypt": "eg",
-    "africa": "za", "southafrica": "za", "nigeria": "ng", "kenya": "ke",
-}
+#: THE VERDICT THAT IS NOT A GAP. A method, a desk organ, a compiler or a declared seat belongs to
+#: no region BY CONSTRUCTION, and `libs/research/attribution.py` names that state rather than
+#: leaving it blank. It gets its own roll-up bucket beside the twelve: filing desk machinery under
+#: `unattributed` is what made 1,940 of 1,981 producers read as an attribution gap when the real
+#: gap was a tenth of that.
+NOT_REGIONAL = _attr.NOT_REGIONAL
+UNATTRIBUTED = "unattributed"
+#: Every bucket the region roll-up publishes, in the order it renders. The denominator is always
+#: every bucket the desk NAMES -- a ratio improved by dropping a region is a lie (L1.50).
+ROLLUP_BUCKETS: tuple[str, ...] = (*REGIONS, NOT_REGIONAL, UNATTRIBUTED)
 
 UNMEASURED = "UNMEASURED"
+
+#: THE SIX COLUMNS THE PRODUCERS PANEL RENDERS, published at the TOP LEVEL of every producer row.
+#: They lived inside `funnel` alone, and `desk_dashboard_state._producers` reads the row's top
+#: level -- so `compute_hours` (the one field that was already top-level) was the ONLY column that
+#: ever rendered, and all five measurements beside it read UNMEASURED for 1,981 of 1,981 rows.
+#: The desk therefore published exactly what each producer COST and nothing about what it MADE.
+#: Named here so the contract is one list a test can pin rather than five scattered writes.
+PANEL_COLUMNS: tuple[str, ...] = ("cells", "unique_cells", "cells_judged", "certificates",
+                                  "orthogonality_added", "compute_hours")
 
 
 def _now() -> str:
     return datetime.now(UTC).isoformat(timespec="seconds")
+
+
+def _age_hours(stamp: Any) -> float | None:
+    """Hours since an ISO stamp, or None when it cannot be read. Never raises: a census that
+    crashed while dating another organ's artifact would report nothing at all."""
+    if not stamp:
+        return None
+    try:
+        when = datetime.fromisoformat(str(stamp))
+    except (TypeError, ValueError):
+        return None
+    if when.tzinfo is None:
+        when = when.replace(tzinfo=UTC)
+    return round((datetime.now(UTC) - when).total_seconds() / 3600.0, 3)
 
 
 def _load_json(path: Path) -> Any:
@@ -179,7 +184,13 @@ def _stamped_regions() -> dict[str, str]:
     regions = block.get("regions") if isinstance(block, dict) else None
     if not isinstance(regions, dict):
         return {}
-    return {_norm(k): str(v) for k, v in regions.items() if str(v) in REGIONS}
+    # NOT_REGIONAL IS AN ANSWER AND WAS BEING THROWN AWAY. This filter read `in REGIONS`, so a
+    # producer the stamp had positively judged to belong to no region -- a compiler, a method, a
+    # declared seat -- was dropped here and fell through to `unattributed`, which says the desk
+    # could not tell. Those are opposite facts (L1.28a). UNATTRIBUTABLE is still refused: it is
+    # the stamp saying it does not know, and this ladder has further routes to try.
+    keep = (*REGIONS, NOT_REGIONAL)
+    return {_norm(k): str(v) for k, v in regions.items() if str(v) in keep}
 
 
 def _norm(name: str) -> str:
@@ -341,16 +352,48 @@ def measure_registry(db: Path) -> dict[str, Any]:
         #   mechanism     -- the economic claim. The collapse a reader was asking about.
         # `coalesce` makes an absent identity its OWN row rather than merging every unstamped
         # candidate into one: absence never manufactures a duplicate (L1.28a).
+        #
+        # AND THE CREDIT GOES TO THE PRODUCER THAT CAUSED THE CELL, NOT THE COMPILER THAT STAMPED
+        # IT. That is not a new opinion -- `scripts/check_producer_yield._window_cells` already
+        # ruled it, and this census disagreeing with the desk's own fence about who made a cell is
+        # itself the defect. Cells reach `research_candidates` through `discovery_compiler`, which
+        # writes its OWN generator; reading the candidate's stamp alone credits one pass-through
+        # with the desk's whole output and reports every real producer as barren. The link that
+        # survives the compiler is `discovery_id`. Measured 2026-09-24 on the trading box: the
+        # candidate stamp knows 143 producers, the lineage knows 200 -- credit is ADDED, never
+        # moved off anybody, and the stamped count is published beside it so the pass-through
+        # remains visible.
+        lineage = ("lower(coalesce(nullif(d.generator,''), nullif(c.generator,''),"
+                   "'_unattributed_generator'))")
+        joined = ("research_candidates c left join discoveries d "
+                  "on d.discovery_id = c.discovery_id")
         for gen, raw, uniq_h, uniq_c, uniq_m in _rows(
-                cur, "select generator, count(*), count(distinct content_hash), "
-                     "count(distinct coalesce(nullif(grid_cell,''), content_hash)), "
-                     "count(distinct coalesce(nullif(mechanism,''), content_hash)) "
-                     "from research_candidates group by 1"):
+                cur, f"select {lineage}, count(*), count(distinct c.content_hash), "  # noqa: S608
+                     "count(distinct coalesce(nullif(c.grid_cell,''), c.content_hash)), "
+                     "count(distinct coalesce(nullif(c.mechanism,''), c.content_hash)) "
+                     f"from {joined} group by 1"):
             key = _norm(str(gen or "")) or "_unattributed_generator"
             per[key]["raw_cells"] += int(raw or 0)
             per[key]["unique_cells"] += int(uniq_c or 0)
             per[key]["unique_by_content_hash"] += int(uniq_h or 0)
             per[key]["unique_mechanisms"] += int(uniq_m or 0)
+        for gen, raw in _rows(
+                cur, "select generator, count(*) from research_candidates group by 1"):
+            per[_norm(str(gen or "")) or "_unattributed_generator"][
+                "raw_cells_stamped_on_candidate"] += int(raw or 0)
+
+        # CELLS JUDGED -- the stage the panel names and the census never had. `gauntlet_submitted`
+        # below is the judge's DOOR (donated, claimed, retired, queued for judging); this is the
+        # count that came back out of it carrying a verdict, which is a different and smaller
+        # number: 1,228 of 356,085 on the trading box. Both are published, because reading one as
+        # the other is how a desk believes it has judged what it has only queued.
+        judged_expr = ("(c.judged_at is not null and c.judged_at != '') or "
+                       "(c.terminal_gate is not null and c.terminal_gate != '')")
+        for gen, n in _rows(
+                cur, f"select {lineage}, count(*) from {joined} "  # noqa: S608
+                     f"where {judged_expr} group by 1"):
+            per[_norm(str(gen or "")) or "_unattributed_generator"][
+                "cells_judged"] += int(n or 0)
 
         # STAGE 6-7: submitted to the gauntlet, and what cleared the cheap stages.
         for gen, n in _rows(
@@ -418,6 +461,24 @@ def measure_registry(db: Path) -> dict[str, Any]:
             if reg:
                 reg_by_producer[key][reg] += 1
         out["region_hits"] = {k: dict(v) for k, v in reg_by_producer.items()}
+
+        # THE BIRTH STAMP, READ WHERE IT IS WRITTEN. `libs/research/attribution.attribute()` now
+        # stamps `region` on every row at both registry doors, and on the trading box 356,946 of
+        # 356,946 candidates and 79,634 of 79,634 discoveries carry one. The modal stamp over a
+        # producer's own rows is the region its evidence actually reached -- an answer no producer
+        # NAME could ever give. UNATTRIBUTABLE is deliberately not selectable here: it is the stamp
+        # saying it does not know, and the ladder in `build()` has further routes to try.
+        stamp_hits: dict[str, dict[str, int]] = defaultdict(lambda: defaultdict(int))
+        for gen, where, n in _rows(
+                cur, f"select {lineage}, "  # noqa: S608
+                     "coalesce(nullif(c.region,''), nullif(d.region,'')), count(*) "
+                     f"from {joined} where coalesce(nullif(c.region,''), nullif(d.region,'')) "
+                     "is not null group by 1, 2"):
+            if str(where) in (*REGIONS, NOT_REGIONAL):
+                stamp_hits[_norm(str(gen or "")) or "_unattributed_generator"][
+                    str(where)] += int(n or 0)
+        out["region_stamp"] = {k: max(v.items(), key=lambda kv: kv[1])[0]
+                               for k, v in stamp_hits.items() if v}
 
         # THE LINEAGE A CERTIFICATE IS JOINED BY. A certificate names a cell
         # (`external.XAUUSD.session_range_breakout`), not a producer; the only non-guess route
@@ -493,6 +554,72 @@ def measure_compute(window_days: float) -> dict[str, Any]:
     if not out["hours"]:
         out["why"] = (f"{UNMEASURED}: compute ledger holds no costed run in the last "
                       f"{window_days:g} days on this host")
+    return out
+
+
+# -------------------------------------------------------------------------------- orthogonality
+
+def measure_orthogonality(path: Path | None = None) -> dict[str, Any]:
+    """Marginal breadth each producer ADDED, reused from `scripts/check_producer_yield.py`.
+
+    THE COLUMN VOLUME CANNOT MOVE. `libs.research.sandbox_rotation.breadth` is the participation
+    ratio of the singular-value spectrum of the producer x (family|symbol|horizon) matrix, and a
+    producer's score is the drop when its row is removed -- so a hundred copies of one momentum
+    rule score as one cell's worth and the census cannot be gamed by emitting more of the same.
+
+    READ, NEVER RE-DERIVED. That SVD already runs on a clock and already publishes a number per
+    producer; computing a second one here would cost the 8 GB box an hour it does not have and
+    would hand a reader two answers to one question. The artifact's age travels with the number,
+    because a breadth figure from last week is a different claim from one from this hour, and an
+    absent artifact is UNMEASURED WITH ITS REASON rather than a zero for every organ (L1.28a).
+    """
+    # RESOLVED AT CALL TIME, NEVER BOUND AS A DEFAULT. A default argument freezes the path at
+    # import and quietly ignores every later reconfiguration -- the same trap
+    # `check_producer_yield._window_cells` already names, and the reason a probe of this census
+    # read `C:\Users\Administrator\desks\...` while measuring the desk's real registry.
+    path = PRODUCER_YIELD if path is None else path
+    out: dict[str, Any] = {"available": False, "why": "", "added": {}, "source": str(
+        path.relative_to(ROOT) if path.is_relative_to(ROOT) else path)}
+    doc = _load_json(path)
+    if not isinstance(doc, dict):
+        out["why"] = (f"{UNMEASURED}: {path.name} is absent or unreadable on this host, so the "
+                      "orthogonality each producer added has no source. The fence that writes it "
+                      "is `scripts/check_producer_yield.py`; run it and this column fills in.")
+        return out
+    inner = doc.get("cells_owed")
+    block: dict[str, Any] = inner if isinstance(inner, dict) else doc
+    rows = block.get("producers") if isinstance(block.get("producers"), list) else None
+    if not rows:
+        out["why"] = (f"{UNMEASURED}: {path.name} carries no per-producer row under "
+                      "`cells_owed.producers`, so no producer's marginal breadth can be read")
+        return out
+    raw_breadth = block.get("breadth")
+    breadth: dict[str, Any] = raw_breadth if isinstance(raw_breadth, dict) else {}
+    if not breadth.get("available"):
+        out["why"] = (f"{UNMEASURED}: the yield fence reports its breadth matrix unavailable "
+                      f"({breadth.get('why') or 'no reason recorded'}), so every marginal it "
+                      "published would be a zero standing in for an unmeasured spectrum")
+        return out
+    added: dict[str, float] = {}
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        key = _norm(str(row.get("key") or row.get("producer") or ""))
+        val = row.get("orthogonality_added")
+        if key and isinstance(val, (int, float)) and not isinstance(val, bool):
+            added[key] = float(val)
+    out["available"] = bool(added)
+    out["added"] = added
+    out["n_producers"] = len(added)
+    out["at"] = doc.get("generated_utc")
+    out["window_hours"] = block.get("window_hours")
+    out["age_hours"] = _age_hours(doc.get("generated_utc"))
+    out["basis"] = ("marginal effective rank from libs.research.sandbox_rotation.breadth over the "
+                    "producer x (family|symbol|horizon) matrix of the yield fence's own window, "
+                    "published by scripts/check_producer_yield.py")
+    if not added:
+        out["why"] = (f"{UNMEASURED}: {path.name} holds {len(rows)} producer row(s) and none "
+                      "carries a numeric `orthogonality_added`")
     return out
 
 
@@ -599,23 +726,177 @@ def measure_terminal(reg: dict[str, Any]) -> dict[str, Any]:
 
 # ---------------------------------------------------------------------------------------- build
 
-def _ratio(num: float | None, den: float | None) -> float | str:
-    if num is None or den is None:
+def _ratio(num: Any, den: Any) -> float | str:
+    """A ratio, or UNMEASURED -- and it must survive being handed the WORD `UNMEASURED`.
+
+    It used to take only numbers or None, because an unmeasured stage arrived here as None. Now
+    that an unmeasured stage carries the word itself, a bare `float()` on it raised ValueError and
+    took the whole census down on any host whose registry will not open -- a clean checkout, CI,
+    and the box on the day the registry is locked. A measurement organ that crashes when a
+    measurement is missing reports nothing at all, which is the one outcome worse than UNMEASURED.
+    """
+    if not isinstance(num, (int, float)) or isinstance(num, bool):
         return UNMEASURED
-    if not den:
+    if not isinstance(den, (int, float)) or isinstance(den, bool) or not den:
         return UNMEASURED
     return round(float(num) / float(den), 4)
 
 
+#: Roster kinds that name a way the DESK RUNS SOMETHING rather than a place evidence came from.
+#: DERIVED, never a producer list: `PRODUCER_CENSUS.json` and `COMPONENT_REGISTRY.json` assign
+#: these kinds themselves, so an organ that lands next month inherits the verdict. A producer
+#: filed under one of them whose name, ground, sources and birth stamp ALL reach no region is desk
+#: machinery -- `executable:scripts/acquire_data.py` is a script on this desk, not a country --
+#: and NOT_REGIONAL is that verdict (L1.28a). It is consulted LAST, so a regional department filed
+#: as a `leg` still wins on its own name: 1,279 of the 1,624 producers that had no region at all
+#: were executables, libraries, timers, legs, tasks and batteries of this repository.
+DESK_EXECUTION_KINDS: frozenset[str] = frozenset({
+    "executable", "library", "leg", "timer", "task", "battery", "component", "seat",
+    "daily_step", "resident", "federation_worker", "service", "script", "producer", "organ",
+    "fence", "check", "hook", "cron", "worker", "step", "job",
+})
+
+
+def measurement_coverage(rows: list[dict[str, Any]],
+                         ortho: dict[str, Any] | None = None) -> dict[str, Any]:
+    """PER-PRODUCER MEASUREMENT COVERAGE: the share of rows on which each column is a number.
+
+    THE DEFECT THIS NUMBER EXISTS TO MAKE IMPOSSIBLE AGAIN. On 2026-09-24 the producers panel
+    listed 1,981 producers with compute hours on every row and UNMEASURED in all five columns
+    beside them -- the desk knew exactly what each organ COST and nothing about what it MADE,
+    which is precisely the wrong half of the pair to have. Nothing measured that, so nothing
+    could fail on it.
+
+    IT IS A RATCHET AND THE DENOMINATOR IS PART OF IT. `n_producers` travels with every ratio so
+    coverage can never be improved by dropping producers out of the bottom: a census of the twelve
+    organs that happen to be measurable is not a census (L1.50, and the standing order that the
+    producer count only ever goes up). `region_coverage` counts a NOT_REGIONAL verdict as covered
+    -- it is an answer about desk machinery -- and `unattributed` as not, because that is the
+    state where the desk genuinely does not know.
+    """
+    total = len(rows)
+    per: dict[str, Any] = {}
+    for col in PANEL_COLUMNS:
+        n = sum(1 for r in rows
+                if isinstance(r.get(col), (int, float)) and not isinstance(r.get(col), bool))
+        per[col] = {"measured": n, "of": total,
+                    "coverage": round(n / total, 4) if total else UNMEASURED,
+                    "nonzero": sum(1 for r in rows if isinstance(r.get(col), (int, float))
+                                   and not isinstance(r.get(col), bool) and r[col])}
+    regional = sum(1 for r in rows if r.get("region") in REGIONS)
+    not_regional = sum(1 for r in rows if r.get("region") == NOT_REGIONAL)
+    unattributed = sum(1 for r in rows if r.get("region") == UNATTRIBUTED)
+    routes: dict[str, int] = defaultdict(int)
+    for r in rows:
+        routes[str(r.get("region_route") or "none").split(":")[0]] += 1
+    worst = min((v["coverage"] for v in per.values()
+                 if isinstance(v["coverage"], float)), default=UNMEASURED)
+    return {
+        "n_producers": total,
+        "columns": per,
+        "worst_column_coverage": worst,
+        "fully_measured_rows": sum(
+            1 for r in rows
+            if all(isinstance(r.get(c), (int, float)) and not isinstance(r.get(c), bool)
+                   for c in PANEL_COLUMNS)),
+        "region": {
+            "regional": regional, "not_regional": not_regional,
+            "unattributed": unattributed, "of": total,
+            "coverage": round((regional + not_regional) / total, 4) if total else UNMEASURED,
+            "routes": dict(sorted(routes.items(), key=lambda kv: -kv[1])),
+            "rule": ("a NOT_REGIONAL verdict is COVERED -- it is the answer for a method, a "
+                     "compiler or a declared seat. Only `unattributed` counts as a gap, and it "
+                     "is a gap the desk can name rather than a silence."),
+        },
+        "orthogonality_source": (ortho or {}).get("source"),
+        "orthogonality_age_hours": (ortho or {}).get("age_hours"),
+        "law": ("COVERAGE RATCHETS UP ONLY, AND NEVER BY SHRINKING THE DENOMINATOR. "
+                "`n_producers` is published with every ratio; a pass that raises a share by "
+                "dropping producers is a regression wearing an improvement's number (L1.50)."),
+    }
+
+
+def _resolve_region(key: str, name: str, meta: dict[str, Any], reg: dict[str, Any],
+                    stamped: dict[str, str]) -> tuple[str, str]:
+    """The producer's region and the ROUTE that reached it. Every rule delegated to the helper.
+
+    SIX ROUTES, TRIED IN THE ORDER THE EVIDENCE DESERVES, and the route rides along so a reader
+    can see how a row got its answer instead of taking it on faith:
+
+        name              `libs.research.attribution.region_of` on the producer's own name
+        namespace         the same rule on each COLON SEGMENT of a filed name. `forest_runner:
+                          china:academic` is the China lane of the forest runner, and neither the
+                          whole string nor its head is a region token -- so 243 registry-seen
+                          generators, the whole forest federation among them, read `unattributed`
+                          while their middle segment named the ground outright.
+        sources           the modal country of the sources the producer actually crawled
+        ground            `region_of_ground`: the producer's OWN declared source in the desk's
+                          source registry (`rba_tables` -> rba.gov.au -> Oceania)
+        birth stamp       the modal region its own registry rows carry, written at the two
+                          registry doors by `attribution.attribute()` -- the route a NAME can
+                          never give, and the reason `attribution_census` exists
+        desk machinery    `is_non_regional`, then the roster's own execution kind -> NOT_REGIONAL
+
+    Only then `unattributed`, which now means what it says: nothing about this producer, its
+    filing, its sources, its ground, its cells or its kind reaches a region. That is a real
+    verdict and it is UNMEASURED, never a zero for any region (L1.28a).
+    """
+    for token in (name, key):
+        hit = _region_for(token)
+        if hit:
+            return hit, "name"
+    # THE NAMESPACE LADDER, applied to the segments the helper's own prefix table cannot peel.
+    # The RULE stays in the helper -- this only decides which tokens to offer it -- and a segment
+    # of two characters or fewer is never offered, because `is`, `na`, `no` and `in` are ISO codes
+    # AND ordinary lane names, and a false Iceland is worse than an honest gap.
+    for token in (name, key):
+        for seg in str(token).split(":"):
+            seg = seg.strip()
+            if len(seg) <= 2:
+                continue
+            hit = _attr.region_of_command(seg) or _region_for(seg)
+            if hit:
+                return hit, "namespace"
+    hits = (reg.get("region_hits") or {}).get(key) or {}
+    if hits:
+        return max(hits.items(), key=lambda kv: kv[1])[0], "sources"
+    for token in (name, key):
+        hit = _attr.region_of_ground(token)
+        if hit:
+            return hit, "ground"
+    hit = (reg.get("region_stamp") or {}).get(key)
+    if hit:
+        return hit, "birth_stamp_registry"
+    hit = stamped.get(key) or stamped.get(_norm(name))
+    if hit:
+        return hit, "birth_stamp_census"
+    if _attr.is_non_regional(name) or _attr.is_non_regional(key):
+        return NOT_REGIONAL, "method_or_desk_organ"
+    if str(meta.get("kind") or "").strip().lower() in DESK_EXECUTION_KINDS:
+        return NOT_REGIONAL, f"roster_kind:{meta.get('kind')}"
+    return UNATTRIBUTED, "none"
+
+
 def build(window_days: float = COMPUTE_WINDOW_DAYS,
-          db: Path = REGISTRY_DB) -> dict[str, Any]:
+          db: Path | None = None) -> dict[str, Any]:
     """The whole census: roster x funnel x ratios, rolled up by region, with the zero list."""
     t0 = time.time()
+    # Resolved here, not in the signature: a default argument freezes the registry path at import.
+    db = REGISTRY_DB if db is None else db
     roster, roster_notes = build_roster()
     reg = measure_registry(db)
     comp = measure_compute(window_days)
     term = measure_terminal(reg)
+    ortho = measure_orthogonality()
     stamped = _stamped_regions()
+    scanned = bool(reg.get("available"))
+    # THE ZERO THAT IS A MEASUREMENT. When the registry opened, every GROUP BY below ran over the
+    # WHOLE table -- so a producer missing from a result is a producer with no row, which is a
+    # measured zero and a finding, not an absence. Publishing UNMEASURED there said the desk had
+    # not looked, when it had looked at all 356,946 candidates and found none of this producer's.
+    # The distinction is the whole of L1.28a and it runs both ways: when the registry could NOT be
+    # opened, every one of these stages stays UNMEASURED, which the block further down enforces.
+    zero_if_scanned: Any = 0 if scanned else UNMEASURED
 
     # Every key the registry has seen that no roster knows about is ITSELF a finding.
     per = reg.get("by_producer", {})
@@ -634,62 +915,71 @@ def build(window_days: float = COMPUTE_WINDOW_DAYS,
         ledger_h = float(hours_row.get("hours") or 0.0)
         reg_h = float(m.get("registry_compute_s") or 0.0) / 3600.0
         total_h = round(ledger_h + reg_h, 4)
-        raw = m.get("raw_cells")
-        uniq = m.get("unique_cells")
-        srcs = m.get("sources_visited")
-        certs = term["certificates"].get(key)
-        region = _region_for(meta.get("producer") or key) or _region_for(key)
-        if not region:
-            hits = (reg.get("region_hits") or {}).get(key) or {}
-            if hits:
-                region = max(hits.items(), key=lambda kv: kv[1])[0]
-        if not region:
-            # THE STAMP, LAST AND DECISIVE. A producer whose name names no ground is not
-            # regionless -- its CELLS carry the region their lineage reached, stamped at birth by
-            # libs/research/attribution.py. Read after the name routes so a declared department
-            # still wins on its own name, and before `unattributed`, which is now only for a
-            # producer whose rows reach no ground either.
-            region = stamped.get(key) or stamped.get(_norm(meta.get("producer") or key))
+        name = str(meta.get("producer") or key)
+        raw = m.get("raw_cells", zero_if_scanned)
+        uniq = m.get("unique_cells", zero_if_scanned)
+        srcs = m.get("sources_visited", zero_if_scanned)
+        judged_cells = m.get("cells_judged", zero_if_scanned)
+        certs = term["certificates"].get(key, 0)
+        region, region_route = _resolve_region(key, name, meta, reg, stamped)
         funnel = {
-            "sources_visited": srcs if srcs is not None else UNMEASURED,
-            "documents_retained": m.get("documents_retained", UNMEASURED),
-            "raw_mechanism_claims": m.get("raw_mechanism_claims", UNMEASURED),
+            "sources_visited": srcs,
+            "documents_retained": m.get("documents_retained", zero_if_scanned),
+            "raw_mechanism_claims": m.get("raw_mechanism_claims", zero_if_scanned),
             "canonical_mechanisms": (
                 m.get("canonical_mechanisms")
                 if "canonical_mechanisms" in m
                 else {"verdict": UNMEASURED,
                       "why": reg.get("unmeasured", {}).get("canonical_mechanisms", ""),
                       "proxy_distinct_mechanism_ids": m.get("canonical_mechanisms_proxy", 0)}),
-            "raw_cells": raw if raw is not None else UNMEASURED,
-            "unique_cells": uniq if uniq is not None else UNMEASURED,
-            "gauntlet_submitted": m.get("gauntlet_submitted", UNMEASURED),
+            "raw_cells": raw,
+            "raw_cells_stamped_on_candidate": m.get("raw_cells_stamped_on_candidate",
+                                                    zero_if_scanned),
+            "unique_cells": uniq,
+            "gauntlet_submitted": m.get("gauntlet_submitted", zero_if_scanned),
+            "cells_judged": judged_cells,
             "cheap_survivors": (
-                m.get("cheap_survivors", 0)
+                m.get("cheap_survivors", zero_if_scanned)
                 if "cheap_survivors" not in reg.get("unmeasured", {})
                 else {"verdict": UNMEASURED,
                       "why": reg["unmeasured"]["cheap_survivors"],
                       "proxy_yield_survivors": m.get("yield_survivors", 0)}),
-            "certificates": certs if certs is not None else 0,
+            "certificates": certs,
             "forward_enrolled": term["forward"].get(key, 0),
             "live_contribution": term["live"].get(key, 0),
         }
-        if not reg.get("available"):
+        if not scanned:
             for stage in ("sources_visited", "documents_retained", "raw_mechanism_claims",
-                          "raw_cells", "unique_cells", "gauntlet_submitted", "cheap_survivors"):
+                          "raw_cells", "raw_cells_stamped_on_candidate", "unique_cells",
+                          "gauntlet_submitted", "cells_judged", "cheap_survivors"):
                 funnel[stage] = UNMEASURED
         surv_v = funnel["cheap_survivors"]
         surv = surv_v if isinstance(surv_v, (int, float)) else (m.get("yield_survivors") or 0)
+        added = ortho.get("added", {}).get(key)
         rows.append({
-            "producer": meta.get("producer") or key,
+            "producer": name,
             "key": key,
             "kind": meta.get("kind"),
             "clock": meta.get("clock"),
             "roster_source": meta.get("roster_source"),
-            "region": region or "unattributed",
+            "region": region,
+            "region_route": region_route,
             "funnel": funnel,
-            "discoveries": m.get("discoveries", 0),
+            "discoveries": m.get("discoveries", zero_if_scanned),
             "dedup_collapse": (round(float(raw) / float(uniq), 3)
-                               if raw and uniq else UNMEASURED),
+                               if isinstance(raw, (int, float)) and isinstance(uniq, (int, float))
+                               and raw and uniq else UNMEASURED),
+            # ---------------------------------------------------------- THE SIX PANEL COLUMNS
+            # Top level, beside `compute_hours`, because that is where every reader of this
+            # artifact looks -- `desk_dashboard_state._producers` reads `row.get(<name>)` and
+            # nothing nested, so five of the six rendered UNMEASURED for every producer while
+            # the funnel below held four of them all along. `cells` is the name the panel falls
+            # through to; the funnel keeps every stage it had. Nothing is renamed or removed.
+            "cells": raw,
+            "unique_cells": uniq,
+            "cells_judged": judged_cells,
+            "certificates": certs,
+            "orthogonality_added": added if added is not None else UNMEASURED,
             "compute_hours": total_h if (ledger_h or reg_h) else (
                 UNMEASURED if not comp.get("available") else 0.0),
             "compute_hours_ledger": ledger_h,
@@ -704,15 +994,16 @@ def build(window_days: float = COMPUTE_WINDOW_DAYS,
 
     # ----------------------------------------------------------------- region roll-up
     by_region: dict[str, dict[str, Any]] = {}
-    for name in (*REGIONS, "unattributed"):
-        by_region[name] = {"producers": 0, "sources_visited": 0, "documents_retained": 0,
-                           "raw_cells": 0, "unique_cells": 0, "gauntlet_submitted": 0,
-                           "cheap_survivors": 0, "certificates": 0, "compute_hours": 0.0}
+    for bucket in ROLLUP_BUCKETS:
+        by_region[bucket] = {"producers": 0, "sources_visited": 0, "documents_retained": 0,
+                             "raw_cells": 0, "unique_cells": 0, "gauntlet_submitted": 0,
+                             "cells_judged": 0, "cheap_survivors": 0, "certificates": 0,
+                             "compute_hours": 0.0}
     for row in rows:
-        b = by_region.setdefault(row["region"], dict(by_region["unattributed"]))
+        b = by_region.setdefault(row["region"], dict(by_region[UNATTRIBUTED]))
         b["producers"] += 1
         for stage in ("sources_visited", "documents_retained", "raw_cells", "unique_cells",
-                      "gauntlet_submitted", "cheap_survivors", "certificates"):
+                      "gauntlet_submitted", "cells_judged", "cheap_survivors", "certificates"):
             v = row["funnel"].get(stage)
             if isinstance(v, (int, float)):
                 b[stage] += v
@@ -812,6 +1103,7 @@ def build(window_days: float = COMPUTE_WINDOW_DAYS,
     top_certs = [r for r in sorted(rows, key=lambda r: (-_certs(r), -_cells(r), r["key"]))
                  if _certs(r) or _cells(r)][:10]
     productive = [r for r in rows if _cells(r) > 0]
+    coverage = measurement_coverage(rows, ortho)
 
     census = {
         "at": _now(),
@@ -837,6 +1129,11 @@ def build(window_days: float = COMPUTE_WINDOW_DAYS,
         "compute_ledger_matched_producers": matched_ledger,
         "compute_ledger_note": ledger_note,
         "unmeasured_stages": reg.get("unmeasured", {}),
+        # THE RATCHET'S SOURCE OF TRUTH: how much of each published column is actually measured.
+        # A compute cost with no output measurement beside it is the one number a reader cannot
+        # act on, so the share of rows carrying each is itself published and may only rise.
+        "measurement_coverage": coverage,
+        "orthogonality": {k: v for k, v in ortho.items() if k != "added"},
         "totals": {
             "sources_visited": sum(v for r in rows
                                    if isinstance(v := r["funnel"]["sources_visited"], int)),
@@ -881,18 +1178,36 @@ def build(window_days: float = COMPUTE_WINDOW_DAYS,
             "raw_mechanism_claims": "data/alpha_registry.sqlite: count(claims) per source",
             "canonical_mechanisms": "data/alpha_registry.sqlite: mechanisms (empty -> UNMEASURED,"
                                     " proxy = distinct discoveries.mechanism_id)",
-            "raw_cells": "data/alpha_registry.sqlite: count(research_candidates) per generator",
-            "unique_cells": "data/alpha_registry.sqlite: count(distinct content_hash)",
+            "raw_cells": "data/alpha_registry.sqlite: count(research_candidates) per producer, "
+                         "credited through discoveries.discovery_id so the compiler that stamped "
+                         "a cell is never credited with the producer that caused it (the same "
+                         "rule scripts/check_producer_yield._window_cells already applies)",
+            "raw_cells_stamped_on_candidate": "the same count read off research_candidates."
+                                              "generator alone, published so the pass-through "
+                                              "share stays visible",
+            "unique_cells": "count(distinct coalesce(grid_cell, content_hash)) per producer",
             "gauntlet_submitted": "research_candidates where donated_cell not null or status in "
-                                  "(donated, claimed, retired, judged)",
+                                  "(donated, claimed, retired, judged) -- the judge's DOOR",
+            "cells_judged": "research_candidates carrying a verdict stamp (judged_at non-empty "
+                            "or terminal_gate non-empty) -- what came back OUT of that door",
             "cheap_survivors": "research_candidates where survived = 1",
             "certificates": "desks/mt5/reports/UNIVERSAL_SURVIVORS.json survivors map",
             "forward_enrolled": "desks/mt5/data/sleeve_registry.json",
             "live_contribution": "desks/mt5/data/sleeves.json rows with status LIVE",
+            "orthogonality_added": "desks/mt5/reports/PRODUCER_YIELD.json cells_owed.producers[]."
+                                   "orthogonality_added -- marginal effective rank from "
+                                   "libs.research.sandbox_rotation.breadth, READ and never "
+                                   "re-derived here",
             "compute_hours": "libs/ops/compute_ledger.cost_by_run + registry generator_yield/"
                              "source_yield compute_s",
-            "region": "desks/mt5/data/deep_forest_sources.json region codes, mapped by "
-                      "REGION_OF_CODE in this file; producers fall back to sources.country",
+            "region": "libs/research/attribution.py, delegated in full: producer name -> colon "
+                      "namespace segment -> modal sources.country -> the producer's own declared "
+                      "ground -> the birth stamp on its registry rows -> NOT_REGIONAL for a "
+                      "method, desk organ or declared execution kind. `region_route` on each row "
+                      "names which of those answered.",
+            "measured_zero": "when the registry opened, every per-producer GROUP BY ran over the "
+                             "whole table, so a producer absent from a result has a MEASURED "
+                             "zero. When it did not open, every registry stage is UNMEASURED.",
         },
     }
     return census
@@ -947,18 +1262,40 @@ def render(census: dict[str, Any]) -> str:
                  f"and no family lineage reaches a producer. That is a lineage-stamping gap, not "
                  f"a zero for any organ.")
     L.append("")
+    cov = census.get("measurement_coverage") or {}
+    if cov:
+        L.append("")
+        L.append("## Per-producer measurement coverage -- THE RATCHET")
+        L.append("")
+        L.append(f"_Denominator is **{cov.get('n_producers')} producers** and travels with every "
+                 "ratio: coverage improved by dropping producers is a regression wearing an "
+                 "improvement's number (L1.50)._")
+        L.append("")
+        L.append("| column | measured | of | coverage | non-zero |")
+        L.append("|---|--:|--:|--:|--:|")
+        for col, v in (cov.get("columns") or {}).items():
+            L.append(f"| `{col}` | {v['measured']} | {v['of']} | {v['coverage']} | "
+                     f"{v['nonzero']} |")
+        rg = cov.get("region") or {}
+        L.append("")
+        L.append(f"**Region:** {rg.get('regional')} regional + {rg.get('not_regional')} "
+                 f"NOT_REGIONAL = {rg.get('coverage')} of {rg.get('of')}; "
+                 f"{rg.get('unattributed')} still `unattributed`. Routes: "
+                 + ", ".join(f"{k} {v}" for k, v in (rg.get("routes") or {}).items()))
+    L.append("")
     L.append("## By region")
     L.append("")
-    L.append("| region | prod | sources | docs | raw cells | uniq | submitted | surv | certs "
-             "| cpu h | cells/src | surv/src | certs/h |")
-    L.append("|---|--:|--:|--:|--:|--:|--:|--:|--:|--:|--:|--:|--:|")
-    for name in (*REGIONS, "unattributed"):
+    L.append("| region | prod | sources | docs | raw cells | uniq | submitted | judged | surv "
+             "| certs | cpu h | cells/src | surv/src | certs/h |")
+    L.append("|---|--:|--:|--:|--:|--:|--:|--:|--:|--:|--:|--:|--:|--:|")
+    for name in ROLLUP_BUCKETS:
         b = census["by_region"].get(name)
         if not b:
             continue
         L.append(f"| {name} | {b['producers']} | {b['sources_visited']} | "
                  f"{b['documents_retained']} | {b['raw_cells']} | {b['unique_cells']} | "
-                 f"{b['gauntlet_submitted']} | {b['cheap_survivors']} | {b['certificates']} | "
+                 f"{b['gauntlet_submitted']} | {b.get('cells_judged', 0)} | "
+                 f"{b['cheap_survivors']} | {b['certificates']} | "
                  f"{b['compute_hours']:.2f} | {b['cells_per_source']} | "
                  f"{b['survivors_per_source']} | {b['certificates_per_compute_hour']} |")
     L.append("")
@@ -1026,6 +1363,9 @@ def main(argv: list[str] | None = None) -> int:
                  n_producers=census["n_producers"],
                  n_productive=census["n_productive"],
                  n_zero_cell_with_compute=census["n_zero_cell_with_compute"],
+                 worst_column_coverage=census["measurement_coverage"][
+                     "worst_column_coverage"],
+                 region_coverage=census["measurement_coverage"]["region"]["coverage"],
                  dedup_collapse=census["dedup"]["collapse"])
         except Exception:
             pass  # the events log is a convenience; the artifact is the record
@@ -1033,10 +1373,17 @@ def main(argv: list[str] | None = None) -> int:
     if args.json:
         print(json.dumps(census, indent=2, default=str))
     else:
+        cov = census["measurement_coverage"]
         print(f"productivity_census: {census['n_producers']} producers, "
               f"{census['n_productive']} productive, "
               f"{census['n_zero_cell_with_compute']} burning compute for no cell, "
               f"dedup collapse {census['dedup']['collapse']}x -> {OUT}")
+        print("  column coverage: " + "  ".join(
+            f"{c}={v['coverage']}" for c, v in cov["columns"].items()))
+        print(f"  region coverage: {cov['region']['coverage']} "
+              f"({cov['region']['regional']} regional + {cov['region']['not_regional']} "
+              f"NOT_REGIONAL, {cov['region']['unattributed']} unattributed of "
+              f"{cov['region']['of']})")
     return 0
 
 

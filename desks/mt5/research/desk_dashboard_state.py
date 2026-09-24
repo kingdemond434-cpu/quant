@@ -691,8 +691,18 @@ def _producers(deadline: float) -> dict[str, Any]:
                         break
                 out[label] = value if value is not None else UNMEASURED
             rows.append(out)
-        rows.sort(key=lambda r: -(r["certificates"] if isinstance(r["certificates"], (int, float))
-                                  else -1))
+        # CERTIFICATES, THEN CELLS, THEN COMPUTE SPENT. Ordering on certificates alone left every
+        # producer that holds none -- which is almost all of them, and always will be -- in
+        # whatever order the census emitted, so the top of the table was alphabetical and said
+        # nothing. The tie-breaks put the producers that made something first, and after them the
+        # ones that spent the most compute making nothing, which is the row a reader must see.
+        def _n(r: dict[str, Any], field: str) -> float:
+            v = r.get(field)
+            return float(v) if isinstance(v, (int, float)) and not isinstance(v, bool) else -1.0
+
+        rows.sort(key=lambda r: (-_n(r, "certificates"), -_n(r, "unique_cells"),
+                                 -_n(r, "cells"), -_n(r, "compute_hours"),
+                                 str(r.get("producer") or "")))
 
     return {
         "status": pc.status,
@@ -725,8 +735,16 @@ def _producers(deadline: float) -> dict[str, Any]:
                                     "PRODUCER_CENSUS.json carries no census block"),
         "liveness_basis": ("PRODUCER_CENSUS measures whether a producer RUNS (LIVE/DARK/SLOW), "
                            "which is a different question from what it PRODUCED"),
-        "rows": rows[:60],
-        "rows_truncated": max(0, len(rows) - 60) if rows else 0,
+        # EVERY PRODUCER, NOT THE FIRST SIXTY. This published `rows[:60]` of 1,981 and named the
+        # other 1,921 as "more the producer did not publish" -- so the one panel that answers
+        # "which producers contribute and how much" withheld 97% of its own answer, and a reader
+        # asking about the 1,921 had nowhere to look. A cap here is not a display concern: the
+        # HTML renders whatever this hands it, so this IS the data. The rows are eight scalar
+        # fields each (~160 bytes), which is a few hundred kilobytes for the whole desk -- the
+        # cost of publishing a producer is far below the cost of hiding one.
+        "rows": rows,
+        "rows_truncated": 0,
+        "n_rows": len(rows),
         "why": (pc.why if pc.status != MEASURED else
                 ("" if rows else
                  "PRODUCTIVITY_CENSUS.json holds no per-producer row this organ could read")),

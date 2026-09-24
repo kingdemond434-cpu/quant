@@ -194,6 +194,19 @@ _LAW_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     # stated reason. Ratchets fall only and nothing here caps a producer: the remedy for a barren
     # organ is to make it produce or retire it with a reason, never to throttle a working one.
     ("check_producer_yield.py", ("--cells-only",)),
+    # NO EXEMPTION WITHOUT A FALSIFIER (2026-09-24). The two fences above let a producer pass by
+    # DECLARING itself exempt -- and until this landed, an exemption was a sentence with no
+    # condition under which it stops being true. `module_rent`'s 21 rows (plus two borrowed
+    # registries) could excuse an organ from the rent ledger forever, and the neighbouring
+    # ledger, docs/research/productivity_blockers.json, carried `retire_if` on every exemption
+    # with nothing reading the field. So the structure whose whole purpose is that no module
+    # exists for free was the one structure that could never be wrong. This holds both
+    # registries to the same rule: every exemption names the MEASURED condition that deletes it.
+    # --schema-only is the PORTABLE half -- it reads the module source and the docs ledger, so it
+    # means the same in CI, in a fresh clone and on the box; which declarations have actually
+    # expired needs desk artifacts and is published every day by the module_rent leg instead.
+    # It disables nothing and caps nothing: the point is to delete stale excuses, not work.
+    ("check_exemption_falsifiers.py", ("--schema-only",)),
     # THE GRID FILLS, AND ONLY AN EXHAUSTED LIST MAY STOP IT (principal 2026-09-23). The yield
     # fence above asks how orthogonal what reached the judge was; this asks whether the desk is
     # still CLAIMING ground it has never tested. Occupied cells of the family x instrument x
@@ -446,6 +459,20 @@ _STATE_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     # watchdog report is itself such a defect, because a watchdog that stopped is the quietest
     # failure the desk can have: no defects reported, because nothing looked.
     ("check_plumbing_watchdog.py", ()),
+    # THE ADOPTION ITSELF, JUDGED DIRECTLY (2026-09-24). The watchdog above reaches the same
+    # defect, but only through three hops -- it must be RUNNING, it must re-stamp `age_s`, and
+    # `adoption_lag` must then sit past a six-hour escalation window before the gate arm reddens.
+    # Measured the night the box fell 443 commits behind: every one of those hops held, and the
+    # gate was still green while a full night of shipped work sat on origin unexecuted. This one
+    # reads the adoption's OWN heartbeat -- `started_at` with no `finished_at` is a run the
+    # scheduler killed, which is a positive fact rather than an inferred silence -- and fails on
+    # no success within three cadences, on a run that outlived the task's execution limit, and on
+    # HEAD behind origin past the same grace. It caps nothing and gates no capital; it fails when
+    # the machine that trades is not running the code that was shipped to it. A host with neither
+    # the task nor any adoption artifact is NOT_APPLICABLE and passes saying so, so CI, a fresh
+    # clone and the VPS stay green (L1.43) -- but on the box, no evidence is UNMEASURED and
+    # UNMEASURED fails, because no evidence is exactly what the outage looked like (L1.28a).
+    ("check_adoption_freshness.py", ()),
     # on a schedule and whose artifact no production file reads is BURNING -- an orphan the desk
     # pays compute for every hour -- and the BURNING count ratchets DOWN only. The clock half is
     # exact (the four scheduler planes), so BURNING is the one population this census may fence

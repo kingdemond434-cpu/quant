@@ -39,13 +39,16 @@ and the same split `check_certificate_truth.py` and `check_scheduler_manifest.py
 `--require-state` is the half that runs where the state exists -- the box and the VPS -- and it
 turns an absent census back into the failure it is there.
 
-Exit 0 pass, 1 fail. `--json` prints the verdict for a machine reader.
+Exit 0 pass, 1 fail. `--json` prints the verdict for a machine reader. The coverage ratchet is
+tightened on every run (`--no-ratchet` to suppress) because the law gate calls this fence with no
+arguments, and a bar that only moves under an extra flag never moves.
 """
 
 from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
@@ -170,13 +173,34 @@ def _coverage_clause(census: dict[str, Any], out: dict[str, Any],
     ratchet HOLDS a best, an absent or lower coverage is a REGRESSION and fails: the measurement
     existed, somebody stopped publishing it, and that is exactly the silence this clause is for.
     """
-    rat = _ratchet_doc()
+    doc = _ratchet_doc()
+    # PER HOST, BECAUSE A BAR MEASURED ON ONE MACHINE IS NOT A BAR FOR ANOTHER. This file is in
+    # the repository and both machines read it, and they do not hold the same registry: the
+    # trading box censused 1,998 producers on the day this landed and the build box 1,653. A
+    # single shared `n_producers_best` would have the box raise the bar to 1,998 and the build
+    # box fail the denominator clause for being a different computer -- the same mistake as
+    # sizing a memory floor off the other box, which this desk has already paid for once. Each
+    # host ratchets against its own history; nothing is ever lowered, and a legacy flat document
+    # is migrated into this host's block rather than discarded.
+    host = str(census.get("host") or os.environ.get("COMPUTERNAME") or "UNKNOWN_HOST").strip()
+    hosts = doc.get("hosts")
+    if not isinstance(hosts, dict):
+        hosts = {}
+        doc["hosts"] = hosts
+    legacy = {k: doc[k] for k in ("n_producers_best", "columns_best", "measured_best",
+                                  "region_coverage_best", "region_measured_best")
+              if isinstance(doc.get(k), (int, float, dict))}
+    raw_host = hosts.get(host)
+    rat: dict[str, Any] = raw_host if isinstance(raw_host, dict) else dict(legacy)
+    hosts[host] = rat
+    out["ratchet_host"] = host
+
     raw_best = rat.get("columns_best")
     best_cols: dict[str, Any] = dict(raw_best) if isinstance(raw_best, dict) else {}
     best_n = rat.get("n_producers_best")
     best_region = rat.get("region_coverage_best")
     had_ratchet = bool(best_cols) or isinstance(best_n, (int, float))
-    reason = str(rat.get("regression_reason") or "").strip()
+    reason = str(rat.get("regression_reason") or doc.get("regression_reason") or "").strip()
 
     cov = census.get("measurement_coverage")
     if not isinstance(cov, dict):
@@ -285,11 +309,19 @@ def _coverage_clause(census: dict[str, Any], out: dict[str, Any],
     rat["measured_best"] = best_counts
     if not moved:
         return None
+    now = datetime.now(UTC).isoformat(timespec="seconds")
     rat["columns_best"] = best_cols
-    rat.setdefault("law", "PER-PRODUCER MEASUREMENT COVERAGE RATCHETS UP ONLY.")
-    rat.setdefault("seeded", datetime.now(UTC).isoformat(timespec="seconds"))
-    rat["updated_utc"] = datetime.now(UTC).isoformat(timespec="seconds")
-    return rat
+    if not rat.get("seeded"):                    # `setdefault` keeps an existing null forever
+        rat["seeded"] = now
+    rat["updated_utc"] = now
+    doc["hosts"][host] = rat
+    doc["updated_utc"] = now
+    doc.setdefault("law", "PER-PRODUCER MEASUREMENT COVERAGE RATCHETS UP ONLY.")
+    # The flat legacy bests are now the host block's; leaving copies at the top level would let a
+    # second host read them as its own bar, which is the cross-host failure this split removes.
+    for key in legacy:
+        doc.pop(key, None)
+    return doc
 
 
 def check(require_state: bool = False, tighten: bool = False) -> dict[str, Any]:
@@ -384,13 +416,15 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--require-state", action="store_true",
                     help="treat an absent census as the failure it is: for the box and the VPS, "
                          "where the desk state exists")
-    ap.add_argument("--tighten", action="store_true",
-                    help="record any improvement in per-producer measurement coverage into "
-                         "docs/research/productivity_census_ratchet.json. Judging always happens; "
-                         "this only decides whether a NEW BEST is written down, so a dry read "
-                         "from a shared worktree never moves the bar under another session")
+    # TIGHTENED BY DEFAULT, exactly as `scripts/check_producer_yield.py` does, and for the reason
+    # that decides it: this fence is already wired into `scripts/run_law_gate.py` with no
+    # arguments, so a ratchet that only moved under an extra flag would never move at all -- an
+    # unwired gate is a defect (III.16). The bar only ever rises, and it is recorded per HOST, so
+    # a tighten from one machine can neither lower anything nor raise the bar on the other.
+    ap.add_argument("--no-ratchet", action="store_true",
+                    help="judge measurement coverage without recording a new best on disk")
     args = ap.parse_args(argv)
-    verdict = check(require_state=args.require_state, tighten=args.tighten)
+    verdict = check(require_state=args.require_state, tighten=not args.no_ratchet)
     if args.json:
         print(json.dumps(verdict, indent=2, default=str))
     elif verdict.get("verdict") == "UNMEASURED":

@@ -495,19 +495,35 @@ def deepen() -> dict:
     productivity report names `deepening` as the bottleneck every single run -- correctly, for a
     reason no one had traced to a missing schedule.
 
-    Hourly, not daily, and with the worker's own default limit rather than a bigger one: each task
-    costs a seat call, so the drain rate is a spend decision the worker already owns. 25/hour
-    clears a 908-task backlog in about a day and a half of uptime while leaving the budget the
-    worker's own accounting controls. It self-guards on `worked_ids()`, so a re-run inside the same
-    hour decides nothing twice and costs nothing.
+    Hourly, not daily, and with the worker's own default limit rather than a bigger one: the drain
+    rate is a spend decision the worker already owns. It self-guards on `worked_ids()`, so a
+    re-run inside the same hour decides nothing twice and costs nothing.
+
+    THE LIMIT IS NOW THE WORKER'S SENTINEL, UNSCALED (2026-09-24). The docstring here used to say
+    "25/hour", which was true when `DEFAULT_LIMIT` was 25; it became 0 ("the whole queue") and
+    this leg went on scaling it as a count, so the bandit multiplied the sentinel to zero and
+    `max(1, ...)` floored it at ONE TASK PER HOUR. Not every task costs a seat call any more
+    either -- the worker routes by the compiler's own label and decides the majority of rows with
+    no request at all -- so a count-shaped budget is the wrong instrument for this leg entirely.
     """
     try:
         import deepening_worker
         # THE BANDIT HAS AUTHORITY HERE (2026-09-16): the drain limit is the worker's default
         # scaled by the bandit's share of the deepening arms (research_budget), recorded.
-        _lim, _rec = _bandit_budget("deepen", int(getattr(deepening_worker, "DEFAULT_LIMIT", 25)))
-        return {"exit_code": deepening_worker.main(["--limit", str(max(1, _lim))]),
-                "limit": int(max(1, _lim)), "bandit_factor": _rec.get("factor"),
+        #
+        # AND 0 IS A SENTINEL, NOT A COUNT (fixed 2026-09-24, measured on the trading box).
+        # `DEFAULT_LIMIT` became 0 meaning "work the WHOLE queue" when the monetary cap was
+        # removed. This line went on treating it as a count: `budget_s("deepen", 0)` returns
+        # 0 x 0.274 = 0, and `max(1, _lim)` then turned "unlimited" into `--limit 1`. Verified
+        # live -- the leg passed exactly one task per hour against an 18,128-row backlog, so the
+        # desk's whole mining operation converted one row an hour through this door. A sentinel
+        # must survive being multiplied: scale it only when there is something to scale.
+        _base = int(getattr(deepening_worker, "DEFAULT_LIMIT", 0))
+        _lim, _rec = _bandit_budget("deepen", _base)
+        _limit = 0 if _base <= 0 else max(1, int(_lim))
+        return {"exit_code": deepening_worker.main(["--limit", str(_limit)]),
+                "limit": _limit, "limit_is_sentinel": _base <= 0,
+                "bandit_factor": _rec.get("factor"),
                 "at": datetime.now(UTC).isoformat(timespec="seconds")}
     except SystemExit as exc:                       # argparse exits rather than returning
         return {"exit_code": int(exc.code or 0),
@@ -768,6 +784,10 @@ CORE_LEGS: frozenset[str] = frozenset({
     "forward_reconcile", "clock_liveness",
     "closed_loop", "acceptance", "candidate_conservation", "pit_canaries",
     "mutation_yield", "credit_assignment", "publish_survivors", "publish_dashboard",
+    # CANON PUBLICATION IS CORE. `MT5-Gauntlet` is the judge's own hourly task, so a sweep can
+    # complete on a pass this cycle never ran; if the seal were only refreshed on the heavy plan
+    # a certificate minted by that task would wait for one. It reads two small JSON files.
+    "canon_publication",
     # The cheap half of the Tier-1 B rows: each reads artifacts and writes one, in well under a
     # minute, and the closed-loop attestation that runs in this same plan reads three of them.
     # `regime_hierarchy` and `representation_discovery` fit models and stay on the heavy plan.
@@ -887,7 +907,8 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "evaluator_lab", "lead_replication", "science_controller",
                      "replication_civilization", "certificate_truth", "model_search",
                      "loop_liveness", "counterexample_agent", "judging_throughput",
-                     "forward_enrolment", "residual_gate"),
+                     "duty_cycle", "forward_enrolment", "residual_gate",
+                     "fast_admission", "canon_publication"),
                     "validate"),
     # macro: the cross-asset / macro brain
     **dict.fromkeys(("fred_macro", "futures_lead_lag", "causal_graph", "residual_factors",
@@ -937,6 +958,10 @@ LEG_DEPARTMENT: dict[str, str] = {
                      # mix that decide whether an hour of judge buys independent ground or
                      # another constant. The machine measuring its own breadth: meta.
                      "independence_intake",
+                     # RANK RECOVERY: the production effective rank measured exactly, and the
+                     # least-credited producers' rules carried onto ground the desk already
+                     # reached. The machine widening its own independence: meta.
+                     "rank_recovery",
                      # ATTRIBUTION AT BIRTH: who produced every cell and from which
                      # region, stamped at the registry doors. The machine measuring its
                      # own lineage: meta.
@@ -1461,6 +1486,10 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # truncates it at the same prefix every hour. `judging_throughput` must also finish BEFORE
     # the gauntlet leg it sizes, which is the other reason it is cheap by design.
     "judging_throughput": 400,
+    # DUTY CYCLE stops itself at --budget-s 400 and writes; the cap sits above it. Most of that
+    # budget is one `schtasks /query /v` over every task on the box, which is how it finds the
+    # clocks that have stopped firing -- the defect that left the judge idle for 22 of 24 hours.
+    "duty_cycle": 480,
     "forward_enrolment": 400,
     # THE JUDGE WAS BEING KILLED AT 27% OF ITS OWN BUDGET (measured 2026-09-23). The sealed
     # gauntlet builds cells under `FRESH_BUILD_BUDGET_SEC = 2700` and stops ITSELF at that mark
@@ -1472,6 +1501,14 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # done, thrown away, and reported as scheduled. Nothing about the judge's evaluation changes;
     # only the cap that stops it finishing, which is exactly the "how work is fed to it" half.
     "external_gauntlet": 3_000,
+    # THE ADMISSION SCREEN reads a 155 MB bank, folds it into cells and runs the judge's own
+    # gate 0 over it. Measured end to end on the box 2026-09-24: 16.5 s (load 1.5, group 3.3,
+    # gate 0 11.7). The cap is the usual order of magnitude above the measurement, so a bank that
+    # has doubled still finishes rather than being killed at the same prefix every hour.
+    "fast_admission": 300,
+    # CANON PUBLICATION reads two JSON files of ~140 KB and writes one. It is seconds; the cap is
+    # here so it has an entry rather than falling through to SEARCH_BUDGET_SEC by accident.
+    "canon_publication": 240,
     # THE FOUR ACTIVATION LEGS ARE SEARCHES, NOT RENDERERS. `weak_signals` rebuilds member
     # signals for up to 24 members across 67 symbols and its own `run()` already self-limits at
     # 2400s; a cycle budget below that would kill it at the same prefix every hour, which is the
@@ -1511,6 +1548,9 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # The intake measurement stops itself at --budget-s 240: one registry scan and three
     # artifact reads. The cap sits above it.
     "independence_intake": 300,
+    # Rank recovery stops itself at --budget-s 240: one registry scan, one donor census and a
+    # plan walked inside 60% of that. The cap sits above it and must never bind.
+    "rank_recovery": 300,
     # The attribution census stops itself at --budget-s 240: two registry scans and one
     # bounded backfill that commits per chunk and resumes. The cap sits above it.
     "attribution_census": 300,
@@ -3872,6 +3912,19 @@ def main() -> None:
     ind = _costed("independence_intake", lambda: _producer("independence_intake",
                                                            "research/independence_intake.py",
                                                            "--once", "--budget-s", "240"))
+    # RANK RECOVERY (2026-09-24). The production effective rank is a PRODUCER-CONCENTRATION
+    # measure -- on the box's own window, effective rank 8.0995 against a participation ratio of
+    # the per-producer cell counts of 8.1395 -- so volume moves it only through that ratio. The
+    # grid filler took occupancy 7.25% -> 61.25% with 32,739 transplants that carry 50 parameter
+    # sets from 20 producers (32% to one), a participation ratio of 7.01, and the reported fall
+    # to 7.1562 was the window converging on it. This leg carries the LEAST-credited producers'
+    # own rules onto coordinates the desk already reached: every cell an addition through the one
+    # de-duplicating registry door, nothing removed, no denominator narrowed. Measured on the
+    # box's registry, one donor-depth round is rank 11.1789 -> 25.4388. Meta department, meta
+    # layer.
+    rkr = _costed("rank_recovery", lambda: _producer("rank_recovery",
+                                                     "research/rank_recovery.py",
+                                                     "--once", "--budget-s", "240"))
     # ATTRIBUTION AT BIRTH (2026-09-23). Every cell and discovery carries WHO produced it and,
     # where the producer belongs to one, from WHICH region -- stamped by the two registry doors
     # through libs/research/attribution.py. This leg measures the coverage, recovers from lineage
@@ -4000,8 +4053,50 @@ def main() -> None:
         _apply_judging_env()
     except Exception as _exc:
         print(f"judging_throughput env not applied: {type(_exc).__name__}: {_exc}", flush=True)
+    # DUTY CYCLE, and it runs BEFORE the sweep for the same reason `judging_throughput` does: the
+    # thing it repairs is the judge's own clock. Measured 2026-09-23/24, `MT5-Gauntlet`'s five-
+    # minute trigger had run out its repetition window -- Enabled, a real Last Run Time, and no
+    # next run -- so the judge produced verdicts in TWO hours of twenty-four while every liveness
+    # check in the tree reported a healthy task. This leg measures what each stage produced
+    # against the best hour the box has ever produced, accounts for every idle hour, and re-arms
+    # any lane clock that has stopped. It only ever re-opens a window; it can slow nothing.
+    dcy = _costed("duty_cycle", lambda: _producer(
+        "duty_cycle", "research/duty_cycle.py", "--once", "--budget-s", "400"))
+    # THE FAST ADMISSION SCREEN, AND IT RUNS BEFORE THE JUDGE BECAUSE IT DESCRIBES THE JUDGE'S
+    # INPUT. `data/hypotheses/external_survivors.json` is a BANK, not a queue: measured
+    # 2026-09-24 it held 244,275 rows, of which 30,331 can NEVER pass -- 12,562 untradeable
+    # symbols, 17,769 with no economic prior, 1,020 single-name equities the two-lane standing
+    # order forbids hunting. Published as one number, that bank reads as a 244k backlog the
+    # gates are failing to clear. It is not: the ADMISSIBLE population is 212,924, and those are
+    # two different things the desk had exactly one number for.
+    #
+    # IT IS NOT A SECOND JUDGE AND CANNOT BECOME ONE. It carries no score, rank or threshold;
+    # tradeability and the economic prior are `external_gauntlet.partition_at_economic_prior`
+    # -- the sealed judge's own gate 0, called rather than re-spelled -- so it can only ever
+    # refuse what the judge itself refuses terminally before a bar is read. It deletes nothing.
+    fa = _costed("fast_admission", lambda: _producer(
+        "fast_admission", "research/fast_admission.py"))
     gt = _costed("external_gauntlet", lambda: _producer(
         "external_gauntlet", "scripts/external_gauntlet.py"))
+    # THE CANON'S LAST MISSING LINK, IMMEDIATELY AFTER THE JUDGE. `external_gauntlet.py` is a
+    # faithful republisher -- every completed sweep rewrites reports/UNIVERSAL_SURVIVORS.json
+    # with a fresh swept_at -- and NOTHING carried that into the sealed canon that every other
+    # organ reads. Measured on the box 2026-09-24: data/UNIVERSAL_SURVIVORS.canon.json carried
+    # `swept_at 2026-09-03T08:45:17` while the judge had appended 146,359 verdicts since. Its
+    # MTIME was recent, because `certificate_truth` heals it and the retirement scripts prune it,
+    # so every freshness check that looked at the file rather than its sweep stamp saw a live
+    # store. Twenty-one days.
+    #
+    # `recertify_canon` below is NOT this step and the names are close enough to have hidden it:
+    # that leg re-judges the standing library under the current cost model and only runs when the
+    # queue holds a recertify task, which a newly minted certificate never raises.
+    #
+    # Atomic (tempfile + fsync + os.replace beside the target), mints nothing, never shrinks,
+    # never overturns a retirement, and when the judge did NOT republish it leaves the seal alone
+    # and publishes a derived view from the verdict ledger, labelled derived and carrying no
+    # promotion authority.
+    cpub = _costed("canon_publication", lambda: _producer(
+        "canon_publication", "research/canon_publication.py"))
     # EVERY CERTIFICATE GETS ITS CLOCK THE MOMENT IT EXISTS, with no quota and no waiting queue
     # (principal 2026-09-23: forward evidence is never rationed; forward clocks gather evidence
     # and deploy no capital, so the only thing a slot cap bought was a slower desk). AFTER the
@@ -4573,7 +4668,8 @@ def main() -> None:
                     "sandbox_provision": sbp, "sandbox_roster": sbo,
                     "source_civilizations": svc, "evidence_watchtower": ewt,
                     "prediction_markets": pmk, "dislocation_lab": dsl,
-                    "independence_intake": ind, "attribution_census": att,
+                    "independence_intake": ind, "rank_recovery": rkr,
+                    "attribution_census": att,
                     "shadow_institutional": shi, "latent_actors": lat, "latency_lab": lab,
                     "feed_clock_lab": fcl, "impact_lab": imp, "net_edge": nee,
                     "cost_truth": ctr,
@@ -4639,8 +4735,10 @@ def main() -> None:
                     "enrol_clocks": ecl, "requeue_unrunnable": rq, "reclaim_disk": dd,
                     "miner_conversion": mc, "moat_miner": mo, "archive_tape": ta,
                     "moat_candidate_compiler": mcp, "algorithm_db": adb,
-                    "judging_throughput": jth, "forward_enrolment": fen,
-                    "external_gauntlet": gt, "falsifier_run": fz, "merge_docket": mh,
+                    "judging_throughput": jth, "duty_cycle": dcy, "forward_enrolment": fen,
+                    "external_gauntlet": gt, "fast_admission": fa,
+                    "canon_publication": cpub,
+                    "falsifier_run": fz, "merge_docket": mh,
                     "backtest": bt,
                     "wiring_audit": wa, "brain_ab": ab, "alpha_breadth": cm,
                     "alpha_evolution": aev, "closed_loop": clp,
