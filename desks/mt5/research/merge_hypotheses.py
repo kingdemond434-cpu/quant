@@ -33,6 +33,12 @@ TARGET = HYP / "external_survivors.json"
 #: judge, because a cell that cannot reach the book cannot repay a gate-second however it scores.
 STUDY_BANK = HYP / "study_bank.json"
 
+#: THE EVENT LANE'S OWN DOCKET. The principal's two-lane order of 2026-09-06: single-name equities
+#: are traded on news, financial reports and earnings reaction, and are NEVER hunted for
+#: statistical hypotheses. Rows whose instrument is not in the hypothesis lane are routed HERE --
+#: kept, counted and named, exactly as the study bank keeps a live-banned family's rows.
+EVENT_LANE = HYP / "event_lane_docket.json"
+
 #: The gate ledger, read ONLY to count how much of the judge each family has already consumed.
 GATE_LEDGER = HYP / "gate_verdict_ledger.jsonl"
 GATE_LEDGER_TAIL = 200_000
@@ -314,6 +320,122 @@ def tradeable_universe() -> dict[str, str]:
     return out
 
 
+def lane_router(tradeable: dict[str, str]) -> tuple[Any, str]:
+    """`(refusal(symbol) -> verdict or "", why)`: the two-lane door, PROVED before it is used.
+
+    `refusal` returns the EMPTY STRING for an instrument the statistical judge may hunt and the
+    lane's own verdict (`event`, `unclassified`) for one it may not. The hypothesis token is never
+    re-spelled here: it is read from `universe_policy` itself, because a second spelling of a rule
+    is how four pens came to have four different ones on this desk before. `None` is returned when
+    the router cannot be trusted, and the caller then routes NOTHING.
+
+    THE STANDING ORDER THIS ENFORCES AT THE DOOR (principal, 2026-09-06). Single-name equities are
+    traded on news, financial reports and earnings reaction and are NEVER hunted for statistical
+    hypotheses; forex, metals, energy, softs, indices, bonds and Fusion's crypto CFDs are the
+    hypothesis-discovery universe. `research/universe_policy.lane` decides by MetaTrader's own
+    ASSET CLASS, never by a symbol list, so a share CFD listed tomorrow is routed the day it
+    appears and no edit here is required.
+
+    WHY THE DOOR IS HERE AND NOT ONLY IN THE PRODUCERS (measured 2026-09-24). `route_by_lane` in
+    `side_channels/run_external_backtest.py` keeps equities out of NEW dockets, and `fast_admission`
+    counts the ones that got in -- but this merge is the one funnel every producer flows through,
+    and its own bank loop RE-ADMITS every row ever minted on every hourly run. So the residue
+    banked before the two-lane order was re-minted into the judge's docket hour after hour: 932
+    rows across 103 single names on this tree, 1,020 on the trading box. A screen that names a
+    population whose writer never removes it is a queue with extra steps.
+
+    THIS IS NOT A REDUCTION AND MUST NEVER BE READ AS ONE. The equities stay in the desk's
+    universe, stay tradable, keep their bars and ticks, and their edge is sought in the event lane;
+    what stops is spending the statistical judge on them. Trial count is a SHARED cost -- the
+    deflated-Sharpe charge and the program-level SPA/PBO tests divide one family-wise error budget
+    across every cell tested -- so each equity cell raised the bar every FX and metals cell had to
+    clear. Routing them out RAISES the power of the classes best suited to the method inside the
+    same budget; it caps, shrinks and vetoes nothing.
+
+    THE ROUTER IS PROVED, NEVER ASSUMED. `lane()` answers UNCLASSIFIED for a symbol MetaTrader's
+    registry does not carry, so a registry THIS process cannot read would call the entire docket
+    UNCLASSIFIED and route every row away from the judge -- the identical failure mode
+    `tradeable_universe` already guards by filtering nothing when it comes back empty (L1.28a).
+    The router therefore has to place at least one symbol of the universe in a real lane before it
+    is trusted to place any row, and an unproved router filters NOTHING and says so.
+    """
+    if not tradeable:
+        return None, ("universe registry unreadable: the lane router cannot be proved, so NOTHING "
+                      "was routed by lane this run (UNMEASURED, not clean)")
+    try:
+        import sys as _sys
+        if str(BASE) not in _sys.path:
+            _sys.path.insert(0, str(BASE))
+        from research.universe_policy import HYPOTHESIS, UNCLASSIFIED, lane
+    except Exception as exc:
+        return None, (f"universe_policy unavailable ({type(exc).__name__}: {exc}): NOTHING was "
+                      f"routed by lane this run (UNMEASURED, not clean)")
+    placed = sum(1 for canon in tradeable.values() if lane(canon) != UNCLASSIFIED)
+    if not placed:
+        return None, (f"the lane router placed 0 of {len(tradeable)} tradeable symbol(s) in a "
+                      f"lane -- it cannot see the registry from here, so NOTHING was routed by "
+                      f"lane this run (UNMEASURED, not clean)")
+
+    def refusal(symbol: str) -> str:
+        verdict = lane(symbol)
+        return "" if verdict == HYPOTHESIS else verdict
+
+    return refusal, (f"universe_policy.lane, proved on {placed} of {len(tradeable)} tradeable "
+                     f"symbol(s); only lane={HYPOTHESIS!r} reaches the judge")
+
+
+def split_by_lane(rows: list[dict[str, Any]], refusal: Any, stamp: str
+                  ) -> tuple[list[dict[str, Any]], list[dict[str, Any]],
+                             dict[str, int], dict[str, int]]:
+    """`(judged, event_lane, by_lane, by_instrument)` -- the two-lane door applied to a docket.
+
+    KEPT, NEVER DELETED. A refused row is not dropped: it is stamped with the lane's own verdict
+    and the reason, and returned so the caller can bank it beside the docket. The event lane can
+    then pick its population up by name instead of re-deriving it, and nothing the desk has ever
+    mined leaves the tree.
+
+    `refusal is None` means the router could not be proved, and then NOTHING is routed -- every
+    row is returned as judged, which is the same fail-open the tradeability filter takes when the
+    registry is unreadable. Losing a registry must never be able to empty the judge's docket.
+    """
+    judged: list[dict[str, Any]] = []
+    off_lane: list[dict[str, Any]] = []
+    by_lane: dict[str, int] = {}
+    by_symbol: dict[str, int] = {}
+    if refusal is None:
+        return list(rows), off_lane, by_lane, by_symbol
+    for row in rows:
+        symbol = str(row.get("symbol") or row.get("sym") or "")
+        # ABSENCE IS NOT A VERDICT (L1.28a), and this is the SAME rule the donation door keeps
+        # (`proposer_common._lane_filtered`): a row that names no instrument has not been shown to
+        # be in the wrong lane, and refusing it would turn a missing field into a policy breach.
+        # A row that DOES name one and whose class the desk has never seen is a different thing --
+        # that is UNCLASSIFIED, and absence of a rule about a real instrument is not a permission.
+        verdict = refusal(symbol) if symbol else ""
+        if not verdict:
+            judged.append(row)
+            continue
+        # UNCLASSIFIED LANDS HERE TOO. A class the desk has never seen is hunted by nothing until
+        # somebody decides where it belongs: absence of a rule is not a permission, and defaulting
+        # an unknown vocabulary into the discovery lane is how 3,839 cells from another broker's
+        # tickers came to spend this desk's trial budget.
+        row["lane"] = verdict
+        row["judging_status"] = "EVENT_LANE"
+        row["judging_reason"] = (
+            f"universe_policy.lane({symbol!r}) = {verdict!r}, not the hypothesis lane. The "
+            "principal's two-lane order of 2026-09-06: single-name equities are traded on news, "
+            "financial reports and earnings reaction and are never hunted for statistical "
+            "hypotheses. The instrument stays tradable, its bars and ticks are still collected "
+            "and its edge is sought in the event lane; only the statistical judge's SHARED trial "
+            "budget is withheld, which raises the power of every cell that remains")
+        row["routed_to_event_lane_at"] = stamp
+        off_lane.append(row)
+        by_lane[verdict] = by_lane.get(verdict, 0) + 1
+        if symbol:
+            by_symbol[symbol] = by_symbol.get(symbol, 0) + 1
+    return judged, off_lane, by_lane, by_symbol
+
+
 def _ack(path: Path) -> None:
     """LINEAGE IS ACKNOWLEDGED, NEVER INFERRED (LAWS 7): the merge names every source docket it
     read by that docket's producer run id, so `compile_candidates -> merge_docket` is an observed
@@ -563,8 +685,24 @@ def main() -> int:
     study: list[dict[str, Any]] = []
     for row in merged.values():
         (study if str(row.get("family") or "") in banned_families else rows_out).append(row)
+
+    # THE TWO-LANE DOOR (principal 2026-09-06). Proved before it is used; an unproved router
+    # routes nothing, so losing the registry can never empty the judge's docket.
+    lane_refusal, lane_why = lane_router(tradeable)
+    stamp = now.isoformat(timespec="seconds")
+    rows_out, off_lane, off_lane_counts, off_lane_syms = split_by_lane(
+        rows_out, lane_refusal, stamp)
+    print(f"   lane router: {lane_why}")
+    if off_lane:
+        EVENT_LANE.parent.mkdir(parents=True, exist_ok=True)
+        EVENT_LANE.write_text(json.dumps(off_lane, indent=1, default=str), "utf-8")
+        top = sorted(off_lane_syms.items(), key=lambda kv: -kv[1])[:8]
+        print(f"   event lane: {len(off_lane)} row(s) across {len(off_lane_syms)} instrument(s) "
+              f"routed OUT of the judging docket {off_lane_counts} (kept, never deleted) -> "
+              f"{EVENT_LANE.name}: {dict(top)}")
+    elif lane_refusal is not None:
+        print("   event lane: 0 row(s) -- every docket instrument is in the hypothesis lane")
     if study:
-        stamp = now.isoformat(timespec="seconds")
         for row in study:
             row["judging_status"] = "STUDY_ONLY"
             row["judging_reason"] = (
@@ -642,6 +780,21 @@ def main() -> int:
         # path nobody can see from the outside.
         "alpha_rl": {"values": {k: round(v, 6) for k, v in _rl_fam.items()}, "basis": _rl_why,
                      "used_by": "breadth_order tie-break within a spend tier"},
+        # THE TWO-LANE DOOR, MEASURED. `routed` is 0 AND `router` names the reason when the
+        # router could not be proved, so "nothing was equity-routed this hour" never reads the
+        # same as "the registry was unreadable" (L1.28a).
+        "event_lane": {"rows": len(off_lane), "by_lane": off_lane_counts,
+                       "instruments": len(off_lane_syms),
+                       "router": lane_why, "proved": lane_refusal is not None,
+                       "path": str(EVENT_LANE),
+                       "why": ("the principal's two-lane order of 2026-09-06: single-name "
+                               "equities are traded on news, financial reports and earnings "
+                               "reaction and are never hunted for statistical hypotheses. Routing "
+                               "is by MetaTrader's own asset class, never a symbol list; an "
+                               "unclassified class is hunted by nothing until it is classified. "
+                               "The instruments stay tradable and keep their bars and ticks -- "
+                               "only the judge's SHARED trial budget is withheld, which raises "
+                               "the power of every cell that remains")},
         "study_bank": {"rows": len(study), "families": sorted(banned_families),
                        "path": str(STUDY_BANK),
                        "why": "banned from live capital, so a gate-second spent here buys an "

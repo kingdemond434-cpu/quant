@@ -315,3 +315,53 @@ def test_the_spread_floors_are_only_the_two_that_cannot_reward_a_cut() -> None:
     assert SPREAD_FLOORS == ("min", "regions_holding")
     for banned in ("evenness", "median", "max", "ratio"):
         assert banned not in SPREAD_FLOORS
+
+
+# ------------------------------------------- the declared region POSITION (added 2026-09-24)
+def test_a_forest_or_pack_id_resolves_the_region_it_declares_in_segment_one() -> None:
+    """`region_of` split on the colon and took the HEAD, which is the word "forest" or "pack".
+
+    MEASURED over the 2,456 grounds in `data/alpha_registry.sqlite`: 1,661 ids carry one of these
+    two namespaces and NOT ONE resolved by name -- the 28 `pack:ru:*` grounds holding 43 claims
+    among them.
+    """
+    assert A.region_of("forest:us:www.aaii.com") == "North America"
+    assert A.region_of("forest:ke:www.centralbank.go.ke") == "Africa"
+    assert A.region_of("forest:institutional:data.worldbank.org") == "Global/institutional"
+    assert A.region_of("pack:ru:official:ru_cbr") == "Russia/CIS"
+    assert A.region_of("pack:in:media:in_press") == "India"
+    assert A.region_of("forest:japan") == "Japan"          # the two-segment shape resolves too
+
+
+def test_the_region_position_is_read_as_a_COUNTRY_never_as_a_region_command() -> None:
+    """A multi-country pack must NOT overwrite its own rows' precise countries.
+
+    `attribute()` consults `region_of(producer)` BEFORE `source_country`. `black_sea` declares
+    REGION_COMMAND=EUROPE while 28 of its 48 grounds are Ukrainian and Belarusian, which this
+    module calls Russia/CIS -- so admitting the crosswalk in the position would have replaced 28
+    precise per-row answers with one coarse wrong one. A wrong region is worse than a named gap.
+    """
+    assert A.region_of_command("BLACK_SEA") == "Europe"        # the crosswalk itself is unchanged
+    assert A.region_of("pack:black_sea:official:ua_nbu") is None
+    assert A.region_of("pack:mekong:media:mm_press") is None
+    # and the row's own declared country still answers, one route later
+    assert A.attribute(generator="pack:black_sea:official:ua_nbu",
+                       source_country="ua").region == "Russia/CIS"
+    assert A.attribute(generator="pack:mekong:media:x", source_country="mm").region == "SEA"
+
+
+def test_the_position_is_a_declared_slot_and_never_a_fragment_search() -> None:
+    """Nothing but segment 1 of a declared namespace may reach the region table through this door.
+
+    The two-letter reasoning above is untouched: this never splits on `_`, `-` or `.`, so a host,
+    a layer name or any part of an ordinary producer name cannot resolve here.
+    """
+    assert A.region_of_position("forest_runner") is None      # not the namespace, just a word
+    assert A.region_of_position("packet_capture") is None
+    assert A.region_of_position("discovery_compiler") is None
+    assert A.region_of_position("forest:") is None            # an empty position is not an answer
+    assert A.region_of_position("pack:official:ru_cbr") is None   # a layer is not a country
+    # the host and the layer are never consulted, only the declared segment
+    assert A.region_of_position("forest:zz:www.rba.gov.au") is None
+    for name in ("is_regional", "in_sample", "at_risk", "no_trade", "by_symbol"):
+        assert A.region_of(name) is None, name

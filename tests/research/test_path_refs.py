@@ -148,3 +148,98 @@ def go():
     return FORENSICS.read_text()
 ''', "utf-8")
     assert pr.scan(tmp_path).phantoms(tmp_path) == ["data/trade_forensics.json"]
+
+
+# ---------------------------------------------- BLIND SPOT 5: the rotted writer name list
+def test_an_atomic_wrapper_is_seen_whatever_it_is_called(tmp_path):
+    """MEASURED 2026-09-24. `WRITE_FUNCS` named `_atomic` and `_atomic_write`; the same house
+    helper is also spelled `_atomic_json` and `_write_atomic`, and neither was in the list. So
+    `market_constitution.py` (which writes reports/MARKET_CONSTITUTION.json and
+    data/market_constraints.json through `_atomic_json`) resolved to ZERO writes and was reported
+    as a reader of two files nothing writes -- with macro_intelligence.py, synthetic_regimes.py
+    and transmission_engine.py beside it. Four of eighteen orphan rows were one rotted list.
+    """
+    body = '''
+import os, json, tempfile
+from pathlib import Path
+DESK = Path("/desk")
+OUT = DESK / "reports" / "NEVER_HEARD_OF_IT.json"
+def _a_name_nobody_will_ever_guess(path, value):
+    tmp = path.with_name(path.name + ".tmp")
+    tmp.write_text(json.dumps(value), "utf-8")
+    os.replace(tmp, path)
+def main():
+    _a_name_nobody_will_ever_guess(OUT, {"a": 1})
+'''
+    _, writes, _ = _mod(tmp_path, body)
+    assert "reports/NEVER_HEARD_OF_IT.json" in writes
+
+
+def test_the_written_PARAMETER_is_identified_not_merely_the_first_argument(tmp_path):
+    """`_dump(doc, path)` writes `path` and not `doc`: the index is measured, never assumed."""
+    body = '''
+from pathlib import Path
+DESK = Path("/desk")
+SRC = DESK / "data" / "input.json"
+DST = DESK / "reports" / "output.json"
+def _dump(doc, path):
+    path.write_text(str(doc), "utf-8")
+def main():
+    _dump(SRC, DST)
+'''
+    _, writes, _ = _mod(tmp_path, body)
+    assert "reports/output.json" in writes
+    assert "data/input.json" not in writes
+
+
+def test_a_wrapper_that_writes_nothing_never_invents_a_writer(tmp_path):
+    """THE ERROR DIRECTION THAT MATTERS. A helper that only READS its parameter must not make
+    its caller a producer -- inventing a writer is the one failure this module may not have."""
+    body = '''
+from pathlib import Path
+DESK = Path("/desk")
+IN = DESK / "data" / "only_ever_read.json"
+def _load(path):
+    return path.read_text("utf-8")
+def main():
+    return _load(IN)
+'''
+    reads, writes, _ = _mod(tmp_path, body)
+    assert "data/only_ever_read.json" in reads
+    assert writes == set()
+
+
+def test_one_wrapper_calling_another_still_resolves(tmp_path):
+    body = '''
+import os, json
+from pathlib import Path
+DESK = Path("/desk")
+OUT = DESK / "reports" / "TWO_HOPS.json"
+def _inner(path, body):
+    path.write_text(body, "utf-8")
+def _outer(path, doc):
+    _inner(path, json.dumps(doc))
+def main():
+    _outer(OUT, {"a": 1})
+'''
+    _, writes, _ = _mod(tmp_path, body)
+    assert "reports/TWO_HOPS.json" in writes
+
+
+def test_the_desks_real_atomic_writers_all_resolve_now():
+    """Against the tree itself: the four modules the rotted list missed."""
+    import pytest
+
+    root = Path(__file__).resolve().parents[2]
+    cases = {
+        "desks/mt5/research/market_constitution.py": "reports/MARKET_CONSTITUTION.json",
+        "desks/mt5/research/macro_intelligence.py": "reports/MACRO_INTELLIGENCE.json",
+        "desks/mt5/research/synthetic_regimes.py": "reports/SYNTHETIC_REGIMES.json",
+        "desks/mt5/research/transmission_engine.py": "reports/TRANSMISSION_GRAPH.json",
+    }
+    for rel, artifact in cases.items():
+        src = root / rel
+        if not src.exists():
+            pytest.skip(f"UNMEASURED: {rel} is absent from this tree")
+        _, writes, _ = pr.scan_file(src)
+        assert artifact in writes, f"{rel} writes {artifact} and the resolver cannot see it"

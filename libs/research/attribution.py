@@ -172,6 +172,21 @@ REGION_COMMAND_TO_REGION: dict[str, str] = {
 #: UNATTRIBUTABLE instead of Oceania. One prefix, two thirds of the desk's output.
 NAMESPACE_PREFIXES: tuple[str, ...] = ("miner:", "seat:", "src:", "ground:", "exe:", "author:")
 
+#: NAMESPACES WHOSE SECOND SEGMENT IS A DECLARED REGION POSITION, not a name fragment.
+#: `forest_runner` files its grounds as `forest:<region>:<host>` (`forest:us:www.aaii.com`,
+#: `forest:institutional:data.worldbank.org`) and `coverage_drain` files a country pack's grounds
+#: as `pack:<cc>:<layer>:<id>` (`pack:ru:official:ru_cbr`). In BOTH the region the desk already
+#: knows sits in segment 1 -- and `region_of` only ever read segment 0, which is the literal word
+#: "forest" or "pack" and names no region at all. MEASURED 2026-09-24 over the 2,456 grounds in
+#: `data/alpha_registry.sqlite`: 1,661 ids carry one of these two namespaces and NOT ONE of them
+#: resolved by name, the 28 `pack:ru:*` grounds holding 43 claims among them.
+#:
+#: A DECLARED POSITION IS NOT A FRAGMENT SEARCH, which is why the two-letter rule in `region_of`
+#: stays exactly as strict as it was. The segment is offered WHOLE to the country tables and
+#: nothing is split on `_`, `-` or `.` here, so a host (`www.aaii.com`), a layer (`official`) or
+#: any part of an ordinary producer name can never reach the region table through this door.
+REGION_POSITION_NAMESPACES: tuple[str, ...] = ("forest:", "pack:")
+
 #: Producer name prefixes that are METHODS or desk organs by construction. A row from one of
 #: these is NOT_REGIONAL, which is a verdict; it is never counted as an attribution gap.
 NON_REGIONAL_PREFIXES: tuple[str, ...] = (
@@ -233,6 +248,32 @@ def strip_namespace(name: object) -> list[str]:
     return out
 
 
+def region_of_position(token: object) -> str | None:
+    """The COUNTRY a `forest:`/`pack:` id declares in its own region segment, else None.
+
+    READ AS A COUNTRY, NEVER AS A REGION COMMAND, and that restriction is the whole correctness
+    argument. 17 of the 73 country packs are filed under a MULTI-COUNTRY name -- `pack:black_sea:*`,
+    `pack:mekong:*`, `pack:west_africa:*` -- whose own `REGION_COMMAND` is coarser than its
+    members. Measured 2026-09-24: `black_sea` declares EUROPE while 28 of its 48 grounds are
+    Ukrainian and Belarusian, which this module calls Russia/CIS. `attribute()` consults
+    `region_of(producer)` BEFORE `source_country`, so admitting the crosswalk here would have
+    OVERWRITTEN 28 precise per-row answers with one coarse wrong one -- and a wrong region corrupts
+    the one table the regional scoreboard exists to publish, which is worse than a named gap.
+
+    So a pack filed under a name that is not a country returns None ON PURPOSE, and the row's own
+    declared country answers one route later. Over the segments that ARE country codes the two
+    agree 1,169 times out of 1,169, with no disagreement anywhere.
+    """
+    raw = str(token or "").strip().lower()
+    if not any(raw.startswith(prefix) for prefix in REGION_POSITION_NAMESPACES):
+        return None
+    parts = raw.split(":")
+    segment = parts[1].strip() if len(parts) > 1 else ""
+    if not segment or segment in NULL_PRODUCERS:
+        return None
+    return REGION_OF_CODE.get(segment) or REGION_OF_CODE.get(NAME_TO_CODE.get(segment, ""))
+
+
 def region_of(token: object) -> str | None:
     """The region a producer name, generator prefix or source country names, else None.
 
@@ -242,6 +283,12 @@ def region_of(token: object) -> str | None:
     raw = str(token or "").strip().lower()
     if not raw or raw in NULL_PRODUCERS:
         return None
+    # THE DECLARED REGION POSITION FIRST, because it is the producer answering about ITSELF.
+    # `forest:us:www.aaii.com` and `pack:ru:official:ru_cbr` both name their region in segment 1,
+    # and the loop below only ever looked at segment 0 -- the literal word "forest" or "pack".
+    declared = region_of_position(raw)
+    if declared:
+        return declared
     seen: list[str] = []
     for base in strip_namespace(raw) or [raw]:
         # A TWO-LETTER MATCH IS NEVER TAKEN FROM AN UNDERSCORE SPLIT. `is`, `na`, `no` and `in`
