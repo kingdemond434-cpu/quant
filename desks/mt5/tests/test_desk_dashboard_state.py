@@ -82,7 +82,72 @@ def test_certificate_joins_its_clock_on_the_canonical_identity(desk: Path) -> No
     orphan = rows["XAUUSD.session_range_breakout.london"]
     assert orphan["clocks"] == []
     assert "sleeve_registry" in orphan["clock_why"]
-    assert canon["certificate_age"]["status"] == "UNMEASURED"   # never faked from swept_at
+    # THE STORE'S `swept_at` IS NEVER A BIRTH. These survivors are written in the LIST shape and
+    # carry no `gated_at` of their own, so each gets a FLOOR -- "no younger than when this host
+    # first saw it" -- and the block says so by name rather than claiming an age it cannot date.
+    age = canon["certificate_age"]
+    assert age["status"] == "MEASURED"
+    assert age["value"]["n_dated"] == 2 and age["value"]["n_undated"] == 0
+    assert sorted(age["floored"]) == sorted(rows), "a floored certificate must be named"
+    assert all(r["age_basis"] == "FLOOR" for r in canon["rows"])
+    assert all(r["born_at"] for r in canon["rows"])
+    assert "no earlier evidence" in age["why"]
+
+
+def test_a_certificate_is_dated_from_its_own_gated_at(desk: Path) -> None:
+    """THE BIRTH WAS ALWAYS IN THE STORE. Every survivor row carries `gated_at` -- the instant it
+    passed the tenth gate -- and the dashboard used to read `days`, the BACKTEST span, instead."""
+    _write(desk / "desks/mt5/reports/UNIVERSAL_SURVIVORS.json",
+           {"n": 1, "swept_at": "2026-09-23T18:00:00+00:00", "survivors": {
+               "external.CADJPY.session_range_breakout": {
+                   "cell": "CADJPY.session_range_breakout", "sym": "CADJPY", "days": 658,
+                   "gated_at": "2026-08-26T01:44:33.109395+00:00",
+                   "restored_at": "2026-09-23T09:04:07+00:00"}}})
+    _write(desk / "desks/mt5/data/sleeve_registry.json", {"sleeves": {}})
+    _write(desk / "desks/mt5/data/sleeves.json", {"sleeves": []})
+    canon = DDS._canon(time.time() + 20)
+    row = canon["rows"][0]
+    assert row["age_basis"] == "GATED_AT"
+    assert row["born_at"] == "2026-08-26T01:44:33.109395+00:00", (
+        "a restored certificate must keep its ORIGINAL birth; `restored_at` three weeks later "
+        "would make it younger, and an age that can fall is not an age")
+    assert row["age_s"] > 20 * 86400
+    assert canon["certificate_age"]["value"]["n_dated"] == 1
+    assert canon["certificate_age"]["floored"] == []
+
+
+def test_a_birth_only_ever_moves_earlier(desk: Path) -> None:
+    """The ledger is a ratchet on truth: older evidence wins, a re-stamp never does."""
+    _write(desk / "desks/mt5/reports/CERTIFICATE_BIRTHS.json",
+           {"certificates": {"k": {"born_at": "2026-07-01T00:00:00+00:00",
+                                   "basis": "prior ledger row",
+                                   "first_seen_here": "2026-07-01T00:00:00+00:00"}}})
+    got = DDS._births([("k", {"gated_at": "2026-09-01T00:00:00+00:00", "cell": "c"})], DDS._now())
+    assert got["certificates"]["k"]["born_at"] == "2026-07-01T00:00:00+00:00", (
+        "a later gated_at must never overwrite an earlier recorded birth")
+    older = DDS._births([("k", {"gated_at": "2026-05-01T00:00:00+00:00", "cell": "c"})],
+                        DDS._now())
+    assert older["certificates"]["k"]["born_at"] == "2026-05-01T00:00:00+00:00", (
+        "older evidence must move the birth earlier")
+
+
+def test_a_measured_emptiness_is_not_an_unmeasured_row(desk: Path) -> None:
+    """THE WORD UNMEASURED HAS TO MEAN ONE THING. A gateway that reconciled and holds nothing is
+    a FLAT BOOK -- a real answer -- and must never sit in the same list as a hole."""
+    _write(desk / "desks/mt5/data/gateway_state.json",
+           {"equity": 771.62, "armed": True, "position": None})
+    live = DDS._live(time.time() + 20)
+    assert live["open_position"]["status"] == "MEASURED_EMPTY"
+    assert "FLAT" in live["open_position"]["why"]
+    holes: list[dict[str, Any]] = []
+    empties: list[dict[str, Any]] = []
+    DDS._collect_unmeasured({"live": live}, "", holes, empties)
+    assert any(r["where"] == "live.open_position" for r in empties)
+    assert not any(r["where"] == "live.open_position" for r in holes), (
+        "a measured emptiness on the worklist is how the word UNMEASURED stops working")
+    # ...and a gateway that never reported a book is still a hole, which is the whole point.
+    _write(desk / "desks/mt5/data/gateway_state.json", {"equity": 771.62, "armed": True})
+    assert DDS._live(time.time() + 20)["open_position"]["status"] == "UNMEASURED"
 
 
 def test_one_observation_has_no_sharpe(desk: Path) -> None:
