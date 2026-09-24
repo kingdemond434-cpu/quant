@@ -355,6 +355,77 @@ def breakeven_armed(*, entry: float, extreme: float, stop_distance: float,
     return net >= trigger_r * stop_distance
 
 
+def stop_rests_at_venue(*, stop: float, side: Literal[1, -1], bid: float, ask: float,
+                        min_distance: float = 0.0) -> tuple[bool, str]:
+    """Would this level REST at the venue as a stop, or fire the instant it arrives?
+
+    THE 24-POINT LESSON, MEASURED ON THE MONEY PATH (2026-09-24, E8 position
+    360287970193246861). A short filled at 4272.36 with a 29.55 stop distance sat unmanaged for
+    four and three-quarter hours while price ran to 4244.21. When the ratchet finally reached it
+    at 13:03:08 the extreme was three H1 bars old, so `is_stalled` collapsed k to 1 and the
+    chandelier came out at 4244.21 + 1 x 15.57 = 4259.78 -- a perfectly correct trail level for a
+    market that was still near its low, and 23.8 points BELOW a market that had already rallied
+    back to 4283.5. The venue accepted the modification, the protective buy stop was instantly
+    through its trigger, and it filled at market: 4283.91. The desk's own log recorded the move
+    as "protected -1.000R -> +0.407R" while the account booked -0.391R, and the 24.13 points
+    between the level and the fill cost 386.08 USD -- 97.6% of every point of adverse slippage
+    this account has ever paid, in one send.
+
+    NOTHING UPSTREAM CATCHES IT, AND THAT IS THE POINT. `ratchet` compares its candidate against
+    the CURRENT STOP and against the protected-R invariant; both tests passed, because moving a
+    short's stop from 4303.25 to 4259.78 genuinely does protect more -- IF it is ever reached
+    from below. Neither test knows where the market is. A trail computed off an extreme is only a
+    stop while price is still on the extreme's side of it; once price retraces past k x ATR, the
+    same arithmetic yields a level that is no longer protection but a market order wearing a
+    stop's name.
+
+    THE TWO VENUES FAIL DIFFERENTLY, WHICH IS WHY THIS LIVES HERE AND NOT IN AN ADAPTER.
+    MetaTrader refuses the request (retcode 10016, "Invalid stops") and the position keeps the
+    stop it had -- 92 such refusals are in this desk's own gateway log, harmless every time.
+    TradeLocker accepts it and executes it. The same defect is free on one account and expensive
+    on the other, so the guard belongs where both lanes already agree: here, in the arithmetic,
+    beside the never-widen rule it sits next to.
+
+    THIS REFUSES A SEND; IT NEVER CLOSES, CAPS OR SHRINKS ANYTHING. A refused ratchet leaves the
+    position exactly as the account already holds it, under a stop that is still valid, and the
+    next pass re-proposes against a fresh quote -- the module's own stateless design doing the
+    work. Growth Governance rule 1 is satisfied by construction rather than by argument: the
+    refused alternative is an unintended market exit at an arbitrary price, so declining it
+    cannot lower forward E[log W].
+
+    A protective stop for a LONG is a sell stop and triggers on the BID falling to it, so it must
+    sit strictly below the bid. For a SHORT it is a buy stop triggering on the ASK rising to it,
+    so it must sit strictly above the ask. `min_distance` carries a venue's own minimum stop
+    distance where it states one (MetaTrader's `trade_stops_level` x `trade_tick_size`); zero
+    means the venue states none, not that none applies.
+
+    An unreadable or degenerate quote REFUSES. The position keeps a stop that is known good; a
+    send made blind is the one case where being wrong costs the whole giveback.
+    """
+    if side not in (1, -1):
+        raise ValueError(f"side must be 1 or -1, got {side}")
+    if min_distance < 0:
+        raise ValueError(f"min_distance cannot be negative, got {min_distance}")
+    if not (bid > 0 and ask > 0 and ask >= bid):
+        return False, (f"refusing a stop against a degenerate quote bid={bid} ask={ask}; the "
+                       f"position keeps the stop the account already holds")
+    if side == 1:
+        limit = bid - min_distance
+        if stop < limit:
+            return True, f"stop {stop:.5f} rests below the bid {bid:.5f}"
+        return False, (f"stop {stop:.5f} is at or above the bid {bid:.5f} for a long"
+                       + (f" (venue minimum distance {min_distance:.5f})" if min_distance else "")
+                       + "; a stop there is not protection, it is a market exit at whatever the "
+                         "book pays, so it is NOT sent and the current stop stands")
+    limit = ask + min_distance
+    if stop > limit:
+        return True, f"stop {stop:.5f} rests above the ask {ask:.5f}"
+    return False, (f"stop {stop:.5f} is at or below the ask {ask:.5f} for a short"
+                   + (f" (venue minimum distance {min_distance:.5f})" if min_distance else "")
+                   + "; a stop there is not protection, it is a market exit at whatever the "
+                     "book pays, so it is NOT sent and the current stop stands")
+
+
 def ratchet(*, entry: float, current_stop: float, stop_distance: float,
             extreme: float, atr: float, side: Literal[1, -1],
             bars_since_extreme: int,

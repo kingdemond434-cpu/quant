@@ -609,6 +609,26 @@ def manage_breakeven(venue: Any, *, armed: bool = False) -> list[dict[str, Any]]
                                 f"{level:.5f}; a stop is never widened"})
             continue
 
+        # AND IT MUST STILL BE A STOP WHEN IT GETS THERE. The floor level is derived from the
+        # ENTRY, so a position whose price has already retraced through its own entry produces a
+        # break-even level on the wrong side of the market -- and this venue does not refuse such
+        # a modification, it fills it. Measured on this account the same day (E8 position
+        # 360287970193246861, the gold lane's ratchet): a level 23.8 points behind the market was
+        # accepted and executed at market for 386.08 USD of give-back, while MetaTrader would
+        # have answered 10016 and changed nothing.
+        #
+        # THE REFUSAL IS NOT A SMALLER BOOK. The position keeps the stop it already has and the
+        # next pass re-proposes; what is declined is an unintended market exit at whatever the
+        # book pays, which is not the exit the 0.85R measurement covers. A floor missed because
+        # the 15-minute cadence stepped over it is a cadence measurement, and it is published
+        # here as one rather than paid for at market.
+        rests, why_rest = _pm.stop_rests_at_venue(
+            stop=level, side=side, bid=bid, ask=ask)  # type: ignore[arg-type]
+        if not rests:
+            rows.append({"id": key, "symbol": symbol, "action": "HOLD",
+                         "stop_was": stop, "stop_wanted": level, "why": why_rest})
+            continue
+
         row = {"id": key, "symbol": symbol, "side": "buy" if side == 1 else "sell",
                "entry": entry, "stop_was": stop, "stop_now": level,
                "trigger_r": _pm.BREAKEVEN_TRIGGER_R, "stop_distance": dist}

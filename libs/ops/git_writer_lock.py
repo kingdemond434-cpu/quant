@@ -508,6 +508,53 @@ HUNG_SAMPLE_S = 15.0
 #: `sshd` is excluded on purpose -- see note 1 above.
 _WRITER_NAMES = frozenset({"git", "git.exe", "ssh", "ssh.exe"})
 
+#: GIT'S OWN HELPER EXECUTABLES, AND WHY THEY HAD TO BE ADDED (measured 2026-09-24 on the
+#: trading box). Two `git push` chains had been stopped for 6.9 h and 6.0 h. Each was SIX
+#: processes, not one::
+#:
+#:     git.exe -C C:\opt\quant push origin <branch>
+#:       git remote-https origin https://github.com/...
+#:         git-remote-https.exe origin https://github.com/...
+#:           sh.exe -c git credential-manager get
+#:             git.exe credential-manager get
+#:               git-credential-manager.exe get
+#:
+#: The leaf is a credential prompt in a session with no console, so it waits for an answer that
+#: cannot arrive, and everything above it waits on the leaf. `_WRITER_NAMES` matched only the
+#: three `git.exe` frames of each chain, so a reap freed the mutex holder and left the credential
+#: helper, the remote helper and the shell resident forever -- twelve processes examined, seven
+#: named, five invisible. These names are git's OWN helper binaries: nothing else on this box is
+#: called `git-credential-manager.exe` or `git-remote-https.exe`, so matching them by name is as
+#: specific as matching `git.exe` is.
+_HELPER_NAMES = frozenset({"git-credential-manager.exe", "git-credential-manager",
+                           "git-remote-https.exe", "git-remote-https",
+                           "git-remote-http.exe", "git-remote-http"})
+
+#: NAMES TOO GENERIC TO MATCH ON THEIR OWN. `sh.exe` is Git-for-Windows' bundled shell and is
+#: also every hook, every `!alias` and anything an operator is running; killing one because it is
+#: quiet would be the "a live holder and a wedged one look identical" mistake in a new place. It
+#: is a candidate ONLY when its own command line names a git credential or remote helper -- the
+#: `sh -c git credential-manager get` frame above -- and it still has to clear the age threshold
+#: and the zero-CPU, zero-I/O proof like everything else.
+_AMBIGUOUS_NAMES = frozenset({"sh.exe", "sh", "bash.exe", "bash"})
+_HELPER_CMD_MARKERS = ("credential-manager", "credential-helper", "git-remote-http",
+                       "git credential")
+
+
+def _is_writer(name: str, cmd: str) -> bool:
+    """Is this process a git writer or one of git's own helper frames?
+
+    Split out so the widening above is one testable predicate rather than a condition buried in
+    the sampler, and so a future name can be added with a test rather than with a guess.
+    """
+    low = (name or "").lower()
+    if low in _WRITER_NAMES or low in _HELPER_NAMES:
+        return True
+    if low in _AMBIGUOUS_NAMES:
+        c = (cmd or "").lower()
+        return any(marker in c for marker in _HELPER_CMD_MARKERS)
+    return False
+
 
 def _psutil() -> Any:
     try:
@@ -533,8 +580,8 @@ def _writer_sample(psutil_mod: Any) -> dict[int, dict[str, Any]]:
     out: dict[int, dict[str, Any]] = {}
     for proc in psutil_mod.process_iter(["pid", "name", "create_time", "cmdline"]):
         try:
-            name = (proc.info["name"] or "").lower()
-            if name not in _WRITER_NAMES:
+            cmdline = " ".join(proc.info["cmdline"] or [])
+            if not _is_writer(proc.info["name"] or "", cmdline):
                 continue
             times = proc.cpu_times()
             try:
@@ -549,7 +596,7 @@ def _writer_sample(psutil_mod: Any) -> dict[int, dict[str, Any]]:
                 "cpu_s": float(times.user) + float(times.system),
                 "read_b": read_b,
                 "write_b": write_b,
-                "cmd": " ".join(proc.info["cmdline"] or [])[:200],
+                "cmd": cmdline[:200],
             }
         except Exception:  # a process that exits mid-iteration is not an error
             continue
@@ -612,7 +659,7 @@ def hung_writers(*, min_age_s: float = HUNG_MIN_AGE_S, sample_s: float = HUNG_SA
                            "the index and the writer mutex that every ship step serialises on.")})
     rec["status"] = "MEASURED"
     rec["why"] = (f"{len(rec['hung'])} stopped and {len(rec['spared'])} spared of "
-                  f"{len(first)} git/ssh process(es) examined")
+                  f"{len(first)} git/ssh/helper process(es) examined")
     return rec
 
 
