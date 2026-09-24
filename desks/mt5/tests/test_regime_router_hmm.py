@@ -71,7 +71,11 @@ def test_a_state_that_carries_nothing_is_a_measured_zero_not_a_dark_one() -> Non
     assert book["verdict"] == "TAXED_OUT"
     assert book["active"] is False
     assert book["net"] <= 0 or book["t_gain"] < rr.MIN_T_GAIN
-    assert "MEASURED zero" in book["why"]
+    # The MEASURED/UNMEASURED distinction lives in `status`, which is what a reader keys on;
+    # the prose must NOT overclaim it as a settled zero, because the grid says it is not.
+    assert "the unrouted model explains it" in book["why"]
+    assert "AT THIS CONFIGURATION" in book["why"]
+    assert book["robustness"]["status"] == rr.UNMEASURED
     assert rows, "a measured book must still publish its per-sleeve rows"
 
 
@@ -88,6 +92,27 @@ def test_a_state_that_really_moves_returns_is_found() -> None:
     assert book["verdict"] == "EARNS_ITS_PLACE", book
     assert book["active"] is True
     assert book["net"] > 0 and book["t_gain"] >= rr.MIN_T_GAIN
+
+
+def test_every_measured_verdict_carries_its_own_caveat() -> None:
+    """A verdict whose sign depends on a nuisance choice must publish that, not hide it.
+
+    Measured on the box 2026-09-24: the sign of `net` flipped between k=3 and k=4 at an IDENTICAL
+    fit window, and no cell of the grid reached |t| 1.4 on 288 trades over 17 days. An organ that
+    printed whichever cell ran this hour as "the" answer would be repeating the fault it was just
+    fixed for, so the caveat travels with the number.
+    """
+    rng = np.random.RandomState(7)
+    obs = [_obs(f"s{i % 6}", "fam", ["quiet", "stress"][i % 2], float(rng.randn()), i)
+           for i in range(140)]
+    book, _rows = rr._pooled_router(obs)
+    assert book["status"] == "MEASURED"
+    r = book["robustness"]
+    assert r["status"] == rr.UNMEASURED
+    assert "hmm.state_count.k" in r["conditional_on"]
+    assert "UNDERPOWERED" in r["why"]
+    assert r["what_would_settle_it"]
+    assert "AT THIS CONFIGURATION" in book["why"]
 
 
 def test_routed_and_unrouted_are_judged_on_the_same_trades_and_the_same_tax() -> None:
