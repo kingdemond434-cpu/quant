@@ -34,6 +34,7 @@ reading through the same engine can only faithfully reproduce twice.
 from __future__ import annotations
 
 import argparse
+import contextlib
 import json
 import os
 import sys
@@ -654,7 +655,8 @@ def judge_forward(ledger: Sequence[Mapping[str, Any]], fills: Sequence[Fill], ba
     if not theirs:
         return UNMEASURED, ["the forward ledger holds no trade with an R to compare"], div
     if not fills:
-        return MISMATCH, [f"the rebuild produced NO fill against {len(theirs)} ledger trade(s)"], div
+        return MISMATCH, [f"the rebuild produced NO fill against {len(theirs)} ledger "
+                          f"trade(s)"], div
     why: list[str] = []
     tol = MATCH_BARS * bar_minutes * 60_000_000_000
     ours_t = np.asarray([f.entry_t for f in fills], dtype="int64")
@@ -876,10 +878,8 @@ def record(rows: Sequence[Mapping[str, Any]], *, conn: Any, dry_run: bool,
                     out["candidates"] += 1
     finally:
         if opened and c is not None:
-            try:
+            with contextlib.suppress(Exception):
                 c.close()
-            except Exception:
-                pass
     return out
 
 
