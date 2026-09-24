@@ -121,7 +121,6 @@ def measured_spread(sym: str) -> tuple[float | None, str, dict[str, Any]]:
     try:
         import numpy as np
         import pandas as pd
-
         from research.cost_surface import MIN_OBS, MIN_SESSION_BARS, SESSION_SHARE, session_bars
     except ImportError as exc:
         return None, f"cannot import the shared exclusions ({exc})", {}

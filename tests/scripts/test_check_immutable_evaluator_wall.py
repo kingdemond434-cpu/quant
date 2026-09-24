@@ -370,3 +370,100 @@ def test_the_real_desk_has_exactly_one_declared_rewriter_and_no_undeclared_one()
     assert out["declared"] == ["scripts/backfill_live_ledger_r.py"], out["declared"]
     assert out["declared_missing"] == []
     assert out["undeclared"] == [], out["undeclared"]
+
+
+# ------------------------------------------------- THE RULER THE SEAL WAS TAKEN WITH (2026-09-24)
+#: The fence changed its own canonical form 23 hours AFTER the standing record seal was taken and
+#: then reported 152 of 192 forward ledgers as rewritten. 151 of them had not moved a byte: their
+#: sealed prefixes reproduce exactly under the pre-change form. These tests pin both halves --
+#: the ruler change must NOT read as a rewrite, and a rewrite must still read as one.
+
+
+def _legacy_seal(box: Path) -> None:
+    """A seal in the shape taken before 2026-09-24: every field hashed, no `ruler`, no digests."""
+    entry = {}
+    for rel, mode, _why in M.APPEND_ONLY:
+        for name, path in M._expand(rel):
+            recs = M._records(path, mode, drop=frozenset())
+            if recs is None:
+                continue
+            half = len(recs) // 2
+            entry[name] = {"records": len(recs), "prefix_sha": M._prefix_sha(recs, len(recs)),
+                           "half": half, "half_sha": M._prefix_sha(recs, half), "mode": mode}
+    (box / "manifest.json").write_text(
+        json.dumps({"files": {}, "append_only": entry, "vintage": M.vintage_seal()}), "utf-8")
+
+
+def _rows_with_stamps(n: int, r: float = 1.5) -> str:
+    return json.dumps([{"entry_time": f"2026-08-1{i} 05:00:00+00:00", "side": -1, "entry": 1.0,
+                        "exit": 1.1, "r_multiple": r, "reason": "ttl", "phase": "historical",
+                        "bars_fetched_utc": "2026-09-23T02:34:28+00:00",
+                        "bars_freshest": "2026-09-23T02:00:00+00:00", "bars_stale": False}
+                       for i in range(n)])
+
+
+def test_a_pass_stamp_rederivation_under_an_old_seal_is_verified_not_breached(box: Path) -> None:
+    """The 151. The derivation stamps moved because every pass re-stamps them, and the seal that
+    covered them was taken before the fence learned to drop them. The bytes still reproduce the
+    sealed hash under the ruler it was taken with, so nothing was rewritten and the fence must
+    say exactly that instead of 'a record was rewritten'."""
+    led = box / "reports" / "shadow" / "ledger_AUDCAD_asia.json"
+    led.write_text(_rows_with_stamps(6), "utf-8")
+    _legacy_seal(box)
+    row = _status("reports/shadow/ledger_AUDCAD_asia.json")
+    assert row["status"] == "ruler_change", row
+    assert row["sealed_ruler"] == M._LEGACY_RULER
+    assert "not one byte of evidence moved" in row["why"]
+    assert not [f for f in M.check() if "ledger_AUDCAD_asia" in f["file"]]
+
+
+def test_an_evidence_field_rewritten_is_a_breach_under_every_ruler(box: Path) -> None:
+    """The 1. `r_multiple` is evidence, not a fact about the pass, so no ruler forgives it: the
+    file must reproduce NEITHER canonical form and the verdict must stay BREACH."""
+    led = box / "reports" / "shadow" / "ledger_AUDCAD_asia.json"
+    led.write_text(_rows_with_stamps(6, r=1.5), "utf-8")
+    _legacy_seal(box)
+    led.write_text(_rows_with_stamps(6, r=9.9), "utf-8")
+    row = _status("reports/shadow/ledger_AUDCAD_asia.json")
+    assert row["status"] == "breach", row
+    assert [f for f in M.check() if "ledger_AUDCAD_asia" in f["file"]]
+
+
+def test_a_breach_on_a_seal_that_names_no_host_says_it_cannot_attribute(box: Path) -> None:
+    """These ledgers are untracked per-box derivations. A seal with no host cannot tell 'rewritten'
+    from 'another box's copy', and a verdict that cannot name its subject must say so (L1.28a)."""
+    led = box / "reports" / "shadow" / "ledger_AUDCAD_asia.json"
+    led.write_text(_rows_with_stamps(6, r=1.5), "utf-8")
+    _legacy_seal(box)
+    led.write_text(_rows_with_stamps(6, r=9.9), "utf-8")
+    assert "names NO host" in _status("reports/shadow/ledger_AUDCAD_asia.json")["why"]
+
+
+def test_every_new_seal_records_the_ruler_it_was_taken_with(box: Path) -> None:
+    """The structural half: a measurement whose units are not written down cannot be re-checked,
+    and that is the whole defect this class of breach came from."""
+    led = box / "reports" / "shadow" / "ledger_AUDCAD_asia.json"
+    led.write_text(_rows_with_stamps(3), "utf-8")
+    (box / "data" / "live_ledger.jsonl").write_text('{"deal": 1}\n', "utf-8")
+    seal = M.append_only_seal()
+    assert seal, "the seal enumerated nothing"
+    for name, rec in seal.items():
+        assert rec["ruler"] == M._RULER, name
+        assert rec["host"] == M._HOST, name
+
+
+def test_sign_files_leaves_the_record_seals_untouched(box: Path, capsys: pytest.CaptureFixture[str],
+                                                      monkeypatch: pytest.MonkeyPatch) -> None:
+    """Re-signing the judge must never erase the records. `--sign` rewrites `append_only` in the
+    same act, which would destroy the only evidence that can answer 'was this record rewritten'
+    -- so the maintenance act the desk actually needs has to be separable, and this pins it."""
+    led = box / "reports" / "shadow" / "ledger_AUDCAD_asia.json"
+    led.write_text(_rows_with_stamps(3), "utf-8")
+    _legacy_seal(box)
+    before = json.loads((box / "manifest.json").read_text("utf-8"))["append_only"]
+    monkeypatch.setattr(sys, "argv", ["check", "--sign-files", "--by", "test"])
+    assert M.main() == 0
+    after = json.loads((box / "manifest.json").read_text("utf-8"))
+    assert after["append_only"] == before
+    assert after["signed_by"] == "test"
+    capsys.readouterr()

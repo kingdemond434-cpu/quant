@@ -177,6 +177,29 @@ def check_cure_lane(now: datetime) -> tuple[list[str], list[str]]:
     """If the sweep found validity-pass cells, the cure lane must be publishing them."""
     breaches: list[str] = []
     fixes: list[str] = []
+    # THE ROSTER AND THE ROUTE, MEASURED ON THIS CLOCK (2026-09-24). Two facts this check could
+    # not see before. First, POWER_CURE_CANDIDATES.json is a SNAPSHOT of one sweep's verdicts,
+    # so when the judge goes hours between batches every cell that qualified in an earlier one
+    # silently leaves the list -- `accumulate` keeps them, retiring only on positive evidence
+    # (certified, or a later VALIDITY failure). Second, the route is four links and a policy that
+    # declares it proves nothing about whether any of them are connected; `measure` publishes a
+    # verdict per link so "the desk permits a forward cure" stops being a claim it cannot cash.
+    # Neither call touches a threshold, promotes anything, or confers authority on a row.
+    try:
+        sys.path.insert(0, str(DESK / "research"))
+        import forward_cure_route as FCR
+        census = FCR.accumulate()
+        route = FCR.measure()
+        if route.get("broken_links"):
+            breaches.append(
+                f"FORWARD CURE ROUTE BROKEN at {', '.join(route['broken_links'])}: "
+                f"{census['n_roster']} cell(s) on the roster (oldest "
+                f"{census['oldest_hours']}h) cleared every validity gate and can only certify on "
+                f"forward evidence, and the link named has nothing on the other end. The bar is "
+                f"unchanged; what is missing is the route the policy already grants")
+    except Exception as exc:
+        breaches.append(f"FORWARD CURE ROUTE UNMEASURED ({type(exc).__name__}: {exc}) -- "
+                        f"absence is not a clean verdict (L1.28a)")
     gates = _read(DESK / "reports" / "universal_gates_external.json")
     if not gates:
         return breaches, fixes

@@ -406,28 +406,149 @@ def distil(close: np.ndarray, student_k: int = 3) -> Verdict:
 
 
 # --------------------------------------------------------------------------- runner
-def _closes(limit: int = 6) -> dict[str, np.ndarray]:
-    out: dict[str, np.ndarray] = {}
+#: Where the rotation stands. A count per pass is a COMPUTE budget, never a statement about
+#: where the universe ends (LAWS 6c-bis: coverage is a cycle, not a sweep).
+CURSOR = BASE / "data" / "ml_layer_cursor.json"
+SERIES_PER_PASS = 6
+
+
+def _pairs() -> list[tuple[str, str]]:
+    """Every `(symbol, timeframe)` on this host, ordered symbol-major so a pass of the rotation
+    reaches DISTINCT INSTRUMENTS rather than six timeframes of one name."""
+    seen: set[tuple[str, str]] = set()
+    for p in UNIVERSE.glob("*.parquet"):
+        sym, _, tf = p.stem.rpartition("_")
+        if sym and tf:
+            seen.add((sym, tf))
+    return sorted(seen)
+
+
+def _hypothesis_lane(pairs: list[tuple[str, str]]) -> tuple[list[tuple[str, str]], str]:
+    """The pairs this lab may hunt statistically, and how that was decided.
+
+    Routing is by ASSET CLASS from MetaTrader's own registry (two-lane order, 2026-09-06):
+    single-name equities are traded on news and earnings, never mined for statistical
+    hypotheses. If the router classifies NOTHING -- no registry on this host -- the lab reads
+    every series and SAYS SO, because a router that silently empties its own input is the defect
+    this function exists to remove, not a safety feature.
+    """
+    try:
+        from research.universe_policy import may_hypothesise
+    except Exception:
+        try:
+            from universe_policy import may_hypothesise  # type: ignore[no-redef]
+        except Exception as exc:
+            return pairs, (f"UNMEASURED: the lane router did not import "
+                           f"({type(exc).__name__}); every series is read and none is routed")
+    kept = [(s, tf) for s, tf in pairs if may_hypothesise(s)]
+    if not kept:
+        return pairs, ("UNMEASURED: the router admitted no symbol on this host (an empty or "
+                       "unreadable registry); every series is read rather than none")
+    return kept, (f"universe_policy.may_hypothesise admitted {len({s for s, _ in kept})} of "
+                  f"{len({s for s, _ in pairs})} symbol(s); single-name equities are the event "
+                  f"lane's and are not mined here")
+
+
+def _slice(pairs: list[tuple[str, str]], start: int, limit: int
+           ) -> tuple[list[tuple[str, str]], int]:
+    """`limit` pairs from `start` -- at most one per symbol, so the pass spends its budget on
+    breadth of instrument rather than on seven timeframes of one name -- and where the cursor
+    lands next.
+
+    The cursor advances PAST the pairs this pass consumed, not by the number it kept. Advancing
+    by the kept count would step six places into a list where each symbol owns seven, so the
+    same handful of symbols would be re-read for many passes before the walk moved on; the walk
+    then covers every symbol in `passes_to_cover_the_lane` passes, and the timeframe each symbol
+    is read at drifts between cycles, which is coverage of the (symbol, timeframe) grid rather
+    than of a column of it.
+    """
+    out: list[tuple[str, str]] = []
+    taken: set[str] = set()
+    nxt = start
+    for k in range(len(pairs)):
+        idx = (start + k) % len(pairs)
+        sym, tf = pairs[idx]
+        nxt = (idx + 1) % len(pairs)
+        if sym in taken:
+            continue
+        taken.add(sym)
+        out.append((sym, tf))
+        if len(out) >= limit:
+            break
+    return out, nxt
+
+
+def _read_closes(sym: str, tf: str) -> np.ndarray | None:
     try:
         import pandas as pd
     except ImportError:
-        return out
-    for p in sorted(UNIVERSE.glob("*.parquet"))[:limit]:
+        return None
+    try:
+        df = pd.read_parquet(UNIVERSE / f"{sym}_{tf}.parquet")
+    except Exception:
+        return None
+    col = next((c for c in df.columns if str(c).lower() == "close"), None)
+    if col is None:
+        return None
+    try:
+        arr = np.asarray(df[col], dtype=float)
+    except Exception:
+        return None
+    return arr if len(arr) >= MIN_OOS_ROWS * 2 else None
+
+
+def _closes(limit: int = SERIES_PER_PASS) -> tuple[dict[str, np.ndarray], dict[str, Any]]:
+    """The pass's series, and the selection record that makes the choice auditable.
+
+    THE ALPHABET IS NOT A UNIVERSE (measured 2026-09-24). This read
+    `sorted(UNIVERSE.glob("*.parquet"))[:6]`, which on this host is `3M_D1, 3M_H1, 3M_H4,
+    3M_M1, 3M_M15, 3M_M30` -- six timeframes of ONE single-name equity CFD. The machine-learning
+    laboratory had therefore never seen gold, an FX pair or an index in its entire life, and its
+    `admissions` count was six verdicts about 3M. It now rotates a cursor over the whole
+    hypothesis lane, so every instrument is reached across passes and none is reached twice
+    before the rest are reached once.
+    """
+    pairs = _pairs()
+    lane, why = _hypothesis_lane(pairs)
+    state = {}
+    try:
+        state = json.loads(CURSOR.read_text("utf-8"))
+    except (OSError, ValueError):
+        state = {}
+    start = int(state.get("cursor") or 0) % max(1, len(lane)) if lane else 0
+    chosen, nxt = _slice(lane, start, max(1, int(limit))) if lane else ([], 0)
+    out: dict[str, np.ndarray] = {}
+    skipped: list[str] = []
+    for sym, tf in chosen:
+        arr = _read_closes(sym, tf)
+        if arr is None:
+            skipped.append(f"{sym}_{tf}: unreadable, or fewer than {MIN_OOS_ROWS * 2} closes")
+        else:
+            out[f"{sym}_{tf}"] = arr
+    record = {
+        "rule": ("a rotation cursor over the hypothesis lane, at most one timeframe per symbol "
+                 "per pass; the per-pass count is a compute budget, never a universe"),
+        "routing": why,
+        "pairs_on_host": len(pairs), "pairs_in_lane": len(lane),
+        "symbols_in_lane": len({s for s, _ in lane}),
+        "cursor_before": start, "cursor_after": nxt,
+        "chosen": [f"{s}_{t}" for s, t in chosen], "skipped": skipped,
+        "passes_to_cover_the_lane": (
+            -(-len({s for s, _ in lane}) // max(1, int(limit))) if lane else 0),
+    }
+    if not CURSOR.parent.exists():
+        record["cursor_state"] = f"UNMEASURED: {CURSOR.parent} does not exist"
+    else:
         try:
-            df = pd.read_parquet(p)
-            col = next((c for c in df.columns if str(c).lower() == "close"), None)
-            if col is None:
-                continue
-            arr = np.asarray(df[col], dtype=float)
-            if len(arr) >= MIN_OOS_ROWS * 2:
-                out[p.stem] = arr
-        except Exception:
-            continue
-    return out
+            CURSOR.write_text(json.dumps({"cursor": nxt, "at": datetime.now(UTC).isoformat(
+                timespec="seconds"), "last": record["chosen"]}, indent=1), "utf-8")
+        except OSError as exc:
+            record["cursor_state"] = f"UNMEASURED: cursor not written ({type(exc).__name__})"
+    return out, record
 
 
 def run() -> dict[str, Any]:
-    series = _closes()
+    series, selection = _closes()
     per: dict[str, Any] = {}
     for name, close in series.items():
         rep = representation(close)
@@ -445,6 +566,7 @@ def run() -> dict[str, Any]:
         "series": len(per), "admissions": admitted,
         "horizons": list(HORIZONS), "train_fraction": TRAIN_FRACTION,
         "min_admit_gain": MIN_ADMIT_GAIN, "min_oos_rows": MIN_OOS_ROWS,
+        "selection": selection,
         "per_series": per,
         "challenger_only": True,
         "owns_no_position": ("Every model here publishes beliefs through the P4 forecast "
@@ -458,7 +580,11 @@ def main(argv: list[str] | None = None) -> int:
     doc = run()
     REPORT.parent.mkdir(parents=True, exist_ok=True)
     REPORT.write_text(json.dumps(doc, indent=1, default=str), "utf-8")
-    print(f"ml layer: {doc['series']} series, {doc['admissions']} admission(s)")
+    sel = doc.get("selection") or {}
+    print(f"ml layer: {doc['series']} series, {doc['admissions']} admission(s); "
+          f"cursor {sel.get('cursor_before')} -> {sel.get('cursor_after')} over "
+          f"{sel.get('symbols_in_lane')} symbol(s) in the hypothesis lane "
+          f"({sel.get('passes_to_cover_the_lane')} passes to cover it)")
     for name, v in list(doc["per_series"].items())[:8]:
         r, mx, ds = v["representation"], v["mixture"], v["distillation"]
         print(f"   {name:22} rep={r.get('status'):12} "

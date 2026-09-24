@@ -93,8 +93,14 @@ def _expand(rel: str) -> list[tuple[str, Path]]:
     return sorted((f"{head}/{p.name}", p) for p in parent.glob(pattern) if p.is_file())
 
 
-def _records(path: Path, mode: str) -> list[str] | None:
-    """The file's records as canonical strings, or None when it cannot be read as records."""
+def _records(path: Path, mode: str, drop: frozenset[str] | None = None) -> list[str] | None:
+    """The file's records as canonical strings, or None when it cannot be read as records.
+
+    `drop` is the RULER: which keys the canonical form leaves out. Default is the ruler in force
+    (`_PASS_STAMPS`); `frozenset()` reproduces the ruler that was in force before 2026-09-24, and
+    that is what lets a seal taken under the old one be verified instead of re-taken (see
+    `_LEGACY_RULER`).
+    """
     try:
         raw = path.read_text("utf-8", errors="replace")
     except OSError:
@@ -108,7 +114,8 @@ def _records(path: Path, mode: str) -> list[str] | None:
     rows = doc if isinstance(doc, list) else (doc.get("rows") if isinstance(doc, dict) else None)
     if not isinstance(rows, list):
         return None
-    return [json.dumps(_evidence(r), sort_keys=True, separators=(",", ":")) for r in rows]
+    keys = _PASS_STAMPS if drop is None else drop
+    return [json.dumps(_evidence(r, keys), sort_keys=True, separators=(",", ":")) for r in rows]
 
 
 #: FACTS ABOUT THE PASS, NOT ABOUT THE RECORD (measured on the trading box 2026-09-23).
@@ -141,11 +148,39 @@ _PASS_STAMPS: frozenset[str] = frozenset({
 })
 
 
-def _evidence(row: object) -> object:
+def _evidence(row: object, drop: frozenset[str] = _PASS_STAMPS) -> object:
     """A record's sealed form: everything it claims, minus the stamps of the run that derived it."""
     if not isinstance(row, dict):
         return row
-    return {k: v for k, v in row.items() if k not in _PASS_STAMPS}
+    return {k: v for k, v in row.items() if k not in drop}
+
+
+# -------------------------------------------- A SEAL MUST CARRY THE RULER IT WAS TAKEN WITH (2026-09-24)
+#: THE FENCE CHANGED ITS OWN RULER AND THEN CALLED THE OLD MEASUREMENTS A CRIME. Measured today:
+#: 152 of the 192 shadow ledgers on the sealing box reported BREACH -- "a record was rewritten" --
+#: and 151 of them had not moved a byte. `_PASS_STAMPS` (the three derivation stamps above) landed
+#: 2026-09-24T00:20:57 in d94dfb16a21; the standing record seal was taken 2026-09-23T01:17:54, 23
+#: hours EARLIER, under the canonical form that hashed every field including those three. So the
+#: seal and the check were measuring with two different rulers, and every difference between the
+#: rulers was charged to the record.
+#:
+#: The proof is exact and it is why this is a verification, not a relaxation: recompute the sealed
+#: prefix under the OLD canonical form and all 151 reproduce byte for byte -- same hash, same order,
+#: same length. A file whose bytes reproduce a hash taken before it was allegedly rewritten was not
+#: rewritten. The 152nd (`ledger_AUDCAD_discovered_asia.json`) reproduces under NEITHER ruler and
+#: stays a BREACH, which is the whole point: the reclassification is evidence-driven per file, not
+#: a blanket amnesty.
+#:
+#: RE-SEALING WOULD HAVE "FIXED" THIS AND DESTROYED THE ANSWER. `--seal-records` overwrites
+#: `prefix_sha` with today's bytes, after which no one can ever ask whether those 151 ledgers
+#: changed -- the question becomes unanswerable, and the one real difference disappears into the
+#: same act. The seal is evidence; the ruler is the thing that was wrong.
+#:
+#: So every seal from now on RECORDS ITS RULER, and a seal that carries none is judged under the
+#: ruler that predates the field -- the only honest reading of a measurement whose units were not
+#: written down.
+_RULER = "2026-09-24/pass-stamps-excluded"
+_LEGACY_RULER = "pre-2026-09-24/every-field-hashed"
 
 
 def _prefix_sha(records: Sequence[str], n: int) -> str:
@@ -221,7 +256,10 @@ def localise(records: Sequence[str], rec: Mapping[str, Any], at: int) -> dict[st
     if not isinstance(rows, list) or not rows:
         return {"localised": False,
                 "why": "this seal carries no per-record digests, so the fence cannot say WHICH "
-                       "of those records moved; re-seal to localise"}
+                       "of those records moved. RE-SEALING IS NOT THE ANSWER HERE: --seal-records "
+                       "overwrites prefix_sha with today's bytes, which is the only evidence that "
+                       "could ever settle whether this file was rewritten. Read the file against "
+                       "the writer's history first; a future seal localises by itself"}
     raw_fields = rec.get("fields")
     fields: list[Any] = raw_fields if isinstance(raw_fields, list) else []
     n = min(at, len(rows), len(records))
@@ -265,7 +303,7 @@ def append_only_seal() -> dict[str, dict[str, Any]]:
             rows, fields = _detail(recs)
             out[name] = {"records": len(recs), "prefix_sha": _prefix_sha(recs, len(recs)),
                          "half": half, "half_sha": _prefix_sha(recs, half), "mode": mode,
-                         "host": _HOST, "rows": rows, "fields": fields}
+                         "host": _HOST, "ruler": _RULER, "rows": rows, "fields": fields}
     return out
 
 
@@ -297,7 +335,11 @@ def _append_only_rows(sealed: Mapping[str, Any]) -> list[dict[str, Any]]:
         identical there, and longer   -> `grew`      the only change these files may make
         identical there, and equal    -> `verified`
         identical there, and shorter  -> `behind`    UNMEASURED, named, never a pass
-        DIFFERENT there               -> BREACH      a record was rewritten, and that is the
+        identical under the SEAL's
+        own ruler, not today's        -> `ruler_change`  the fence's canonical form moved after
+                                                     the seal was taken; the bytes reproduce the
+                                                     sealed hash exactly, so nothing was rewritten
+        DIFFERENT under BOTH          -> BREACH      a record was rewritten, and that is the
                                                      one thing an append-only record cannot do
     """
     rows: list[dict[str, Any]] = []
@@ -340,16 +382,51 @@ def _append_only_rows(sealed: Mapping[str, Any]) -> list[dict[str, Any]]:
                              "records": n_now})
                 continue
             here = _prefix_sha(recs, at)
+            # THE RULER THE SEAL WAS TAKEN WITH, BEFORE THE RECORD IS ACCUSED (2026-09-24).
+            # A seal with no `ruler` predates `_PASS_STAMPS`, so its hash covered EVERY field.
+            # Recomputing the same prefix under that canonical form is not a second chance for a
+            # tampered file -- it is the only arithmetic that answers the question actually asked,
+            # "are these bytes the bytes that were sealed". If they are, the hash reproduces
+            # exactly, and the difference lives in the fence, not in the record. If they are not,
+            # neither form reproduces and the BREACH below stands untouched.
+            if here != want and mode != "lines" and not rec.get("ruler"):
+                legacy = _records(path, mode, drop=frozenset()) or []
+                if _prefix_sha(legacy, at) == want:
+                    rows.append({"path": name, "kind": "append_only", "status": "ruler_change",
+                                 "records": n_now, "sealed_ruler": _LEGACY_RULER,
+                                 "ruler": _RULER,
+                                 "why": f"{at} sealed record(s) reproduce EXACTLY under the "
+                                        f"ruler the seal was taken with ({_LEGACY_RULER}): not "
+                                        f"one byte of evidence moved. The current ruler "
+                                        f"({_RULER}) drops {', '.join(sorted(_PASS_STAMPS))}, "
+                                        "which landed AFTER this seal, so the two forms hash "
+                                        "differently on a record nobody touched. Verified, not "
+                                        "excused -- a rewritten record reproduces NEITHER form. "
+                                        "The seal is evidence: re-sealing would erase the proof "
+                                        "instead of recording it."})
+                    continue
             if here != want:
                 # NAME THE DAMAGE, NEVER THE PREFIX LENGTH. `at` is how many records the seal
                 # COVERS; saying "the sealed prefix of 151 records changed" reads as "151 records
                 # were rewritten" and was escalated in exactly those words (see `localise`).
                 loc = localise(recs, rec, at)
                 host = str(rec.get("host") or "")
-                where = (f"; sealed on host {host!r}, checked here on {_HOST!r} -- a record file "
-                         "is written by ONE box and another box's copy is a different derivation, "
-                         "so judge this on the writing host"
-                         if host and host != _HOST else "")
+                if host and host != _HOST:
+                    where = (f"; sealed on host {host!r}, checked here on {_HOST!r} -- a record "
+                             "file is written by ONE box and another box's copy is a different "
+                             "derivation, so judge this on the writing host")
+                elif not host:
+                    # AND SAY IT WHEN THE SEAL NAMES NOBODY. Measured 2026-09-24: this same
+                    # manifest reads 151 ruler-changes and 1 breach on the box that took the seal,
+                    # and 74 breaches with 93 files absent on the other box -- because the forward
+                    # ledgers are untracked per-box derivations and nothing in the seal said which
+                    # box's they were. A verdict that cannot name its subject must say so.
+                    where = (f"; this seal names NO host and was checked on {_HOST!r} -- these "
+                             "record files are untracked per-box derivations, so a copy on a box "
+                             "that did not take the seal is expected to differ and this row is "
+                             "UNMEASURED there rather than evidence of a rewrite")
+                else:
+                    where = ""
                 if loc["localised"]:
                     moved = loc["fields_moved"]
                     named = ", ".join(f"{k} x{v}" for k, v in moved.items()) or "none nameable"
@@ -912,9 +989,34 @@ def main() -> int:
     # `files` section exactly as it was, so a stale judge hash stays red while the ledgers,
     # forward clocks and cost surface start being watched today.
     ap.add_argument("--seal-records", action="store_true")
+    # RE-SIGN THE JUDGE WITHOUT ERASING THE RECORDS. The mirror of `--seal-records`, and the
+    # reason it is needed was measured today: eight frozen files had drifted since the
+    # 2026-09-12 signing, and the ONLY way to re-sign them was `--sign`, which also rewrites
+    # `append_only` -- overwriting the sealed prefix hashes of 192 forward ledgers with today's
+    # bytes in the same act. That is not a re-sign, it is the destruction of the only evidence
+    # that can answer "was this record rewritten", performed as a side effect of an unrelated
+    # housekeeping step. A fence whose maintenance act destroys its own evidence has a design
+    # defect, not a policy problem. This flag writes ONLY `files`.
+    ap.add_argument("--sign-files", action="store_true")
     ap.add_argument("--by", default="principal")
     ap.add_argument("--json", action="store_true")
     a = ap.parse_args()
+    if a.sign_files:
+        try:
+            doc = json.loads(MANIFEST.read_text("utf-8"))
+        except (OSError, ValueError):
+            doc = {}
+        if not isinstance(doc, dict):
+            doc = {}
+        files = _hashes()
+        doc["files"] = files
+        doc["signed_utc"] = datetime.now(tz=UTC).isoformat()
+        doc["signed_by"] = a.by
+        MANIFEST.parent.mkdir(parents=True, exist_ok=True)
+        MANIFEST.write_text(json.dumps(doc, indent=1), "utf-8")
+        print(f"judge files signed by {a.by}: {len(files)} files "
+              "(the record seals were NOT touched)")
+        return 0
     if a.sign:
         d = sign(a.by)
         print(f"immutable manifest signed by {a.by}: {len(d['files'])} files")  # type: ignore[arg-type]
