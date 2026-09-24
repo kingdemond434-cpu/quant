@@ -449,6 +449,11 @@ LEG_LAYER: dict[str, str] = {
     # sizing: how much
     "capacity": "sizing", "ensemble_optimizer": "sizing",
     # portfolio: how the book is composed
+    # `state_admission` judges WHICH STATE DIMENSIONS the allocator may condition capital on -- a
+    # statement about the book's composition rather than about the market, so it bills to the same
+    # layer as the allocator it feeds and not to `prediction`. It is the allocator's first input
+    # and runs immediately before it.
+    "state_admission": "portfolio",
     "pf_allocator": "portfolio",
     "allocator_liveness": "portfolio",
     "allocator_trigger": "portfolio",

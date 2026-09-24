@@ -930,7 +930,8 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "net_edge", "cost_truth"),
                     "execution"),
     # forward: forward evidence, promotion and the allocator
-    **dict.fromkeys(("enrol_clocks", "pf_allocator", "daily", "hunt12_forward", "regime_router",
+    **dict.fromkeys(("enrol_clocks", "state_admission", "pf_allocator",
+                     "daily", "hunt12_forward", "regime_router",
                      "forward_slot_ranker", "forward_exploitation", "shadow_discovery",
                      "missed_trade_archaeologist", "portfolio_bounty",
                      "drawdown_alpha_miner", "trade_autopsy", "counterfactual_attribution",
@@ -1506,6 +1507,11 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # gate 0 11.7). The cap is the usual order of magnitude above the measurement, so a bank that
     # has doubled still finishes rather than being killed at the same prefix every hour.
     "fast_admission": 300,
+    # STATE ADMISSION reads the shadow ledgers and the live ledger and judges six dimensions; the
+    # daily cycle measured it at 2.1 s. The cap is here so it HAS an entry rather than inheriting
+    # SEARCH_BUDGET_SEC by accident, and it is set well above the measurement so a box with more
+    # accrued trades is never truncated mid-judgement.
+    "state_admission": 180,
     # CANON PUBLICATION reads two JSON files of ~140 KB and writes one. It is seconds; the cap is
     # here so it has an entry rather than falling through to SEARCH_BUDGET_SEC by accident.
     "canon_publication": 240,
@@ -4183,6 +4189,27 @@ def main() -> None:
     # pass for want of a file nothing produced. `hunt12` runs first, and only when the sweep is
     # absent, unfinished or a week old.
     h12 = _costed("hunt12", hunt12)
+    # AND ITS STATE GATE HAD NO CLOCK OF ITS OWN (measured 2026-09-24). `pf_allocator` refuses to
+    # condition on any dimension `reports/STATE_ADMISSION.json` sends to the graveyard, and reads
+    # it through `state_admission_run.read_graveyard()` -- an import of the READER, which never
+    # reaches the write path. `state_admission_run.run()` is the file's ONLY writer and fifteen
+    # modules read what it writes.
+    #
+    # IT LOOKED SCHEDULED AND WAS NOT. Its one clock is `daily_cycle.STEPS` -- but that chain is
+    # resumable, runs once a day behind a `proposers` step this box last measured at 9,056 s, and
+    # `data/daily_cycle_state.json` here still says `last_run: 2026-09-08`. So the artifact stood
+    # at 2026-09-09 while the allocator kept reading it: `read_graveyard` FAILS OPEN to "nothing is
+    # barred", which is the safe direction and also the silent one -- a dimension measured worse
+    # months ago keeps conditioning capital and no artifact says so.
+    #
+    # IT COSTS 2.1 SECONDS (the daily cycle's own measured step time), it is the allocator's first
+    # input, and it runs IMMEDIATELY BEFORE the solve so the verdicts the book conditions on are
+    # the verdicts this pass measured. It judges dimensions and bars none by fiat: the gates,
+    # thresholds and k_state shrinkage all live in the sealed `libs/regime/state_admission.py`,
+    # which this leg does not touch. Giving a reader's sole writer a clock adds evidence; it caps,
+    # shrinks and vetoes nothing.
+    sad = _costed("state_admission", lambda: _producer(
+        "state_admission", "research/state_admission_run.py"))
     pa = _costed("pf_allocator", lambda: _producer(
         "pf_allocator", "research/pf_allocator.py", "--mode", _allocator_mode_for_the_hour()))
     # DID THE MONEY BRAIN ACTUALLY PRODUCE, PROVE AND PUBLISH -- and on what? (2026-09-23.) Runs
@@ -4750,6 +4777,7 @@ def main() -> None:
                     "fusion_cost": fzc, "cost_construction": cxc,
                     "edges_macro_fusion_sweep": emf,
                     "recertify_canon": rc, "hunt12": h12,
+                    "state_admission": sad,
                     "pf_allocator": pa, "allocator_liveness": alv, "allocator_trigger": atg,
                     "promoter": pr,
                     "frontier_implementer": fi,
