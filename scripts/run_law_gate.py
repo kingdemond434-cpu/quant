@@ -381,6 +381,18 @@ _STATE_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     # against a live and 44,640-bar-M1 median of 0.0). Thresholds unchanged. A STATE fence: with
     # no COST_TRUTH.json it reads NOT-READABLE-HERE, which is a real answer about the HOST.
     ("check_cost_surface.py", ()),
+    # L1.5 / L1.28a, THE THIRD DIRECTION AND THE SILENT ONE. The two fences above compare a
+    # charge against a quote; both need a charge to EXIST. Measured on the trading box
+    # 2026-09-24: 13 of 355 LIVE clocks carried NO cost_fields AT ALL -- 8 of them XAUUSD,
+    # covering the asia, london_am and afternoon gold windows, which are essentially the desk's
+    # entire realised P&L. A null cost is not a zero cost: shadow_forward line 758 falls through
+    # to LIVE re-measured costs, so the basis moves under the clock every pass and nothing says
+    # so. One more LIVE row had its family and selector TRANSPOSED, which breaks every join the
+    # canonical identity (symbol|family|selector) exists to make. Both came from the one
+    # freeze() caller that omitted cost_fields. NO RATCHET, deliberately -- the defect is a LIVE
+    # row on the money path and the residue is thirteen rows, not a debt in someone else's file.
+    # A STATE fence: no registry on this host reads NOT-READABLE-HERE, a verdict about the HOST.
+    ("check_live_sleeve_cost.py", ()),
     # THE STATE HALF of the enrolment law: no certificate clockless past one cycle. An absent
     # FORWARD_ENROLMENT.json is UNMEASURED, which is a real answer on a clean checkout.
     ("check_forward_enrolment.py", ("--state-only",)),
