@@ -144,6 +144,19 @@ def test_scheduler_kill_codes_are_explained_rather_than_hunted(code: str) -> Non
     assert any("SCHEDULER stopped the run" in n for n in doc["notes"])
 
 
+def test_the_scripts_own_exit_code_is_not_blamed_on_the_scheduler() -> None:
+    """Measured 2026-09-24: the task read `lastresult = 3`, which is `Adopt-And-Seal.ps1`
+    exiting on its own after refusing to seal a dirty code path. The fence explained it as a
+    scheduler kill and told the reader to raise ExecutionTimeLimit -- the opposite of where the
+    defect was. A wrong reason costs a session."""
+    doc = _doc(task={"present": True, "cadence_s": 3600, "limit_s": 7200, "lastresult": "3"})
+    FENCE.judge(doc)
+    assert not any("SCHEDULER stopped the run" in n for n in doc["notes"]), (
+        "exit 3 is the adoption script's own status, not one of the scheduler's codes")
+    assert any("script's own exit status" in n for n in doc["notes"])
+    assert any("adopt_and_seal.log" in n for n in doc["notes"])
+
+
 def test_the_fence_reduces_nothing() -> None:
     """It caps no risk and gates no capital: it reports whether the box runs the shipped code."""
     text = (ROOT / "scripts" / "check_adoption_freshness.py").read_text(encoding="utf-8")
