@@ -1456,6 +1456,34 @@ def _original_stop_distance(st: dict, ticket: int, price_open: float, sl: float)
     return float(store[key])
 
 
+def _round_trip_per_price_unit(info: object, symbol: str) -> float | None:
+    """The round-trip commission expressed in PRICE units, or None if it cannot be derived.
+
+    THE UNIT TRAP THIS EXISTS TO AVOID. Commission is quoted in ACCOUNT currency per lot
+    (`fusion_cost.COMMISSION_PER_LOT_PER_SIDE = 2.00`, measured -- p10 = p50 = p90 over all 433
+    deals on 495044); a break-even stop is a PRICE. Converting between them by hand is where a
+    EUR-denominated account trading a USD-quoted instrument quietly books a small loss on every
+    scratch. `trade_tick_value / trade_tick_size` is the venue's own answer to "how much account
+    currency is one price unit worth, per lot", so the quote-currency conversion is the broker's
+    rather than ours, and the position's volume cancels out of both sides.
+
+    Returns None rather than a guess when the venue reports a degenerate tick value. A stop is
+    then left to the trail alone, which is the existing behaviour -- absence is never permission
+    to invent the number that decides where protection sits.
+    """
+    # Imported here rather than at module scope to match every other `libs` use in this file.
+    from libs.portfolio.fusion_cost import COMMISSION_PER_LOT_PER_SIDE
+
+    tick_value = float(getattr(info, "trade_tick_value", 0.0) or 0.0)
+    tick_size = float(getattr(info, "trade_tick_size", 0.0) or 0.0)
+    if not (tick_value > 0 and tick_size > 0):
+        log(f"MANAGE {symbol}: tick value/size degenerate "
+            f"({tick_value}/{tick_size}); break-even floor unavailable this pass")
+        return None
+    per_price_unit_per_lot = tick_value / tick_size
+    return (2.0 * COMMISSION_PER_LOT_PER_SIDE) / per_price_unit_per_lot
+
+
 def manage_open_positions(st: dict, sleeves: list[dict]) -> None:
     """Ratchet the stop on every open position. SHADOW UNLESS `st["armed"]`.
 
@@ -1491,14 +1519,21 @@ def manage_open_positions(st: dict, sleeves: list[dict]) -> None:
             # -4.25 EUR, on holds the certificate would have carried to their time exit. Only a
             # position whose own signal carried a trail (`trail_k` recorded at the send) is
             # managed here; the gold and scalp lanes are unchanged.
+            #
+            # THE SKIP BECAME A FLOOR-ONLY PASS (2026-09-24) RATHER THAN A `continue`, because a
+            # `continue` here also refused the break-even stop the principal ordered that day --
+            # and three of the thirteen LIVE sleeves are `family_market` XAUUSD session-range
+            # BREAKOUTS, exactly the sleeves named in the order. The 2026-09-16 finding is
+            # preserved in full: no TRAIL runs on a fixed-bracket certificate. What now runs is
+            # the floor alone, which cannot tighten inside the bracket and can only refuse to
+            # leave a stop under water after the trade has already run 0.85R.
+            _floor_only = False
             _fam_name = _fixed_tags.get(str(getattr(p, "comment", "") or ""))
             if _fam_name is not None:
                 _trail = float(((st.get("generic") or {}).get(_fam_name) or {})
                                .get("trail_k") or 0.0)
                 if not _trail > 0.0:
-                    log(f"MANAGE ticket {p.ticket} ({symbol}): certified exit is a fixed "
-                        f"bracket and the time exit; not ratcheted")
-                    continue
+                    _floor_only = True
             dist = _original_stop_distance(st, p.ticket, p.price_open, p.sl)
             if dist is None:
                 log(f"MANAGE ticket {p.ticket} ({symbol}): no stop on the position; "
@@ -1517,27 +1552,48 @@ def manage_open_positions(st: dict, sleeves: list[dict]) -> None:
 
             # ATR on a longer window than the holding period, because a young position has too
             # few bars of its own to characterise volatility with.
-            h1 = mt5.copy_rates_from_pos(symbol, mt5.TIMEFRAME_H1, 0, 400)
-            if h1 is None or len(h1) < ATR_N + 1:
-                log(f"MANAGE ticket {p.ticket} ({symbol}): ATR unavailable; skipped")
-                continue
-            atr = atr_last(pd.DataFrame(h1))
-            if not (atr > 0):
-                log(f"MANAGE ticket {p.ticket} ({symbol}): ATR non-positive; skipped")
-                continue
+            # THE FLOOR MUST NOT DEPEND ON A NUMBER IT NEVER READS. ATR scales the chandelier and
+            # nothing else; in floor-only mode no chandelier is computed, so requiring 21 hours
+            # of H1 history would refuse the break-even stop on exactly the young position that
+            # has just run 0.85R in a fast tape -- a protection withheld for an input the
+            # decision does not consume.
+            atr = 0.0
+            if not _floor_only:
+                h1 = mt5.copy_rates_from_pos(symbol, mt5.TIMEFRAME_H1, 0, 400)
+                if h1 is None or len(h1) < ATR_N + 1:
+                    log(f"MANAGE ticket {p.ticket} ({symbol}): ATR unavailable; skipped")
+                    continue
+                atr = atr_last(pd.DataFrame(h1))
+                if not (atr > 0):
+                    log(f"MANAGE ticket {p.ticket} ({symbol}): ATR non-positive; skipped")
+                    continue
 
             extreme, stall = _pm.extreme_and_stall(
                 highs=[float(x) for x in bars["high"]],
                 lows=[float(x) for x in bars["low"]], side=side)
+            # THE BREAK-EVEN FLOOR'S TWO INPUTS, BOTH READ FROM THE VENUE THIS PASS. `spread` is
+            # charged only on the short leg, because these are bid bars; `position_manager`
+            # owns that asymmetry and this only supplies the number.
+            cost_unit = _round_trip_per_price_unit(info, symbol)
+            spread_price = (float(getattr(info, "spread", 0) or 0)
+                            * float(getattr(info, "point", 0.0) or 0.0))
             decision = _pm.ratchet(
                 entry=float(p.price_open), current_stop=float(p.sl), stop_distance=dist,
-                extreme=extreme, atr=atr, side=side, bars_since_extreme=stall)
+                extreme=extreme, atr=atr, side=side, bars_since_extreme=stall,
+                cost_per_unit=cost_unit, spread=spread_price, floor_only=_floor_only)
 
             tag = f"MANAGE ticket {p.ticket} ({symbol})"
             if not decision.moves:
                 log(f"{tag}: {decision.reason}")
                 continue
-            if decision.improvement_r < MIN_RATCHET_IMPROVEMENT_R:
+            # THE IMPROVEMENT FLOOR IS FOR THE TRAIL, NOT FOR BREAK-EVEN. 0.05R exists so the
+            # chandelier does not spend a network round trip nudging a stop that is already
+            # roughly right. The break-even move is a different question -- it is the one move
+            # the principal asked for by name, and a position sitting 0.04R below break-even is
+            # exactly the position that turns a winner into a loser. Skipping it to save a
+            # modify would defeat the mechanism at the only moment it matters.
+            if (decision.improvement_r < MIN_RATCHET_IMPROVEMENT_R
+                    and not decision.breakeven_floor):
                 log(f"{tag}: improvement {decision.improvement_r:+.3f}R below the "
                     f"{MIN_RATCHET_IMPROVEMENT_R:.2f}R floor; not worth a modify")
                 continue
@@ -1568,10 +1624,15 @@ def manage_open_positions(st: dict, sleeves: list[dict]) -> None:
                 "magic": MAGIC,
             })
             rc = res.retcode if res else None
-            log(f"{tag}: MODIFY sl {p.sl:.5f} -> {decision.new_stop:.5f} "
+            # THE REASON TRAVELS WITH THE SEND, not only with the refusals. Until 2026-09-24 the
+            # armed path logged the level and the retcode but never `decision.reason`, so the
+            # log could not answer which mechanism moved the stop -- trail or break-even floor --
+            # which is the first question any audit of this change asks.
+            log(f"{tag}: MODIFY{' [BREAK-EVEN FLOOR]' if decision.breakeven_floor else ''} "
+                f"sl {p.sl:.5f} -> {decision.new_stop:.5f} "
                 f"(protected {decision.protected_r_before:+.3f}R -> "
                 f"{decision.protected_r_after:+.3f}R) retcode={rc} "
-                f"{diagnose(rc, res.comment if res else '')}")
+                f"{diagnose(rc, res.comment if res else '')} | {decision.reason}")
 
             # CONFIRM FROM THE BROKER, not from the return code. A retcode is an answer about
             # the request; the position is the answer about the account.

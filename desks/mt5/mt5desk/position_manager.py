@@ -18,10 +18,15 @@ WHAT THIS EXISTS TO FIX, AND IT IS NOT A REFINEMENT
 and `trail_stall_bars`. Every backtest expectancy figure on this desk is computed WITH that
 management applied.
 
-`mt5desk/gateway.py` -- the only code that sends an order -- issues exactly two actions:
+`mt5desk/gateway.py` -- the only code that sends an order -- issued exactly two actions:
 `TRADE_ACTION_PENDING` (open, with a stop fixed at entry) and `TRADE_ACTION_DEAL` (close the
-whole position). A repo-wide search for `TRADE_ACTION_SLTP` returns NOTHING. No stop on this
-desk has ever moved after the order was placed.
+whole position). A repo-wide search for `TRADE_ACTION_SLTP` returned NOTHING. No stop on this
+desk had ever moved after the order was placed.
+
+(STATUS, 2026-09-24: that gap is CLOSED and the paragraph above is history, not a live defect.
+`gateway.manage_open_positions` calls `ratchet` every pass and sends `TRADE_ACTION_SLTP`. Left
+standing because the reasoning is what justifies the module, and because a reader who finds the
+claim and checks it will now find two call sites rather than none.)
 
 So the backtest and the live account are running DIFFERENT STRATEGIES, and the difference is
 the entire runner architecture. A live winner can round-trip to its opening stop, which the
@@ -107,6 +112,46 @@ K_STALLED = 1.0
 #: Bars without a new extreme before the move counts as stalled.
 STALL_BARS = 3
 
+#: Net open profit, in R, at which the stop may never again be worse than costed break-even.
+#:
+#: MEASURED, NOT CHOSEN (2026-09-24), on this desk's own 82 reconstructed XAUUSD trades --
+#: gold_asia, gold_london_am, gold_afternoon, xau_m15_anti_breakout,
+#: xau_m5_anti_breakout_overla, xau_m5_anti_momentum_ny -- replayed bar by bar on M1 from the
+#: MT5 entry deal to the recorded close.  Growth Governance rule 1 demands that a risk-reduction
+#: mechanism prove it raises robust forward E[log W] before it touches capital, and a break-even
+#: stop is squarely one: it converts losers into scratches AND winners into scratches, and only
+#: the arithmetic says which dominates.
+#:
+#: At 0.85R, on the realised sequence: 37 of 82 positions scratch -- 26 losers avoided
+#: (+330.66) against 11 winners given up (-222.72), net +107.94 on a +227.90 base (+47.4%),
+#: E[log W] +0.25883 -> +0.36139 (terminal wealth x1.108).  Under the pessimistic intrabar
+#: ordering (favourable extreme first, so a bar may arm AND scratch) it is +90.25 / x1.090.
+#:
+#: THE VALUE IS THE CENTRE OF A SHELF, NOT AN ARGMAX.  Swept on a 0.05R grid the net effect is
+#: positive under BOTH intrabar orderings everywhere from 0.30R to 1.10R, and 0.80R/0.85R/0.90R
+#: select the identical trade set (+107.94 / +90.25) -- 0.85R is the midpoint of the widest band
+#: that stays positive within +/-0.15R of itself.  Below 0.30R the stop sits inside ordinary
+#: noise and scratches winners for nothing (-46.71 at 0.25R); above 1.10R it arms too late to
+#: catch the losers (-97.32 at 2.00R).  Because the shelf is wide, this is not a number fitted
+#: to a knife edge.
+#:
+#: THE SAME TRIGGER WAS RE-MEASURED ON THE NON-GOLD LANE, because E8's book is 7/8 forex and
+#: applying a gold number to it would be borrowed evidence.  125 reconstructed forex trades
+#: (12 symbols, the discovered-asia and overnight-gap-decay families) replayed identically:
+#: +23.99 on a -86.20 base at 0.85R, E[log W] +0.03441, and POSITIVE AT EVERY TRIGGER from 0.25R
+#: to 1.50R under both intrabar orderings.  The bootstrap there is far stronger than gold's --
+#: P(net > 0) = 0.996, 90% interval [+7.70, +42.86], entirely above zero -- because that lane was
+#: a LOSING one, so the floor converts losses to scratches with almost no winners to give up.
+#: Combined evidence base: n = 207 positions on the desk's own account.
+#:
+#: WHAT THE EVIDENCE DOES NOT SAY.  The 20,000-resample bootstrap puts P(net > 0) at 0.776, with
+#: a 90% interval of [-123.72, +350.94]: the sign is not established at conventional
+#: significance and n=82 over 17 days is thin.  Per-sleeve the effect is NOT uniform --
+#: gold_london_am (n=9) is -46.76 and xau_m5_anti_momentum_ny (n=23) is -1.21 -- but n<25 per
+#: sleeve is noise, so the book-level number is the one that decides and no per-sleeve trigger
+#: is fitted.  Leave-one-out: removing the single most favourable trade still leaves +30.26.
+BREAKEVEN_TRIGGER_R = 0.85
+
 
 @dataclass(frozen=True)
 class RatchetDecision:
@@ -118,6 +163,7 @@ class RatchetDecision:
     k_used: float
     stalled: bool
     reason: str
+    breakeven_floor: bool = False   # the move is the costed break-even floor, not the trail
 
     @property
     def moves(self) -> bool:
@@ -237,12 +283,87 @@ def chandelier_stop(*, extreme: float, atr: float, side: Literal[1, -1],
     return extreme - side * k * atr
 
 
+def breakeven_level(*, entry: float, side: Literal[1, -1],
+                    cost_per_unit: float) -> float:
+    """The stop price at which closing nets EXACTLY zero after the full round trip.
+
+    "BREAK EVEN" IS NOT "AT THE ENTRY PRICE", AND THE DIFFERENCE IS THE WHOLE POINT. A stop
+    parked on `price_open` still pays commission on both legs, so every scratch it produces is a
+    small LOSS -- on every single trade, scaling linearly with size. Here `cost_per_unit` is the
+    round-trip commission expressed in PRICE units (account currency per lot, divided by the
+    account currency one price unit is worth per lot), so the level clears the round trip by
+    construction.
+
+    THE SPREAD IS ALREADY IN THE LEVEL AND MUST NOT BE ADDED AGAIN. MetaTrader compares a long's
+    stop against the BID and a short's against the ASK -- the same sides the position is closed
+    on. A long filled at the ask has therefore already paid the spread at entry, and a bid
+    returning to `price_open` means the ask has risen by one spread. Charging the spread a second
+    time here would place the stop a spread too far into profit, which is not conservatism: it is
+    a level the market has to reach twice.
+
+    Symmetric in `side`: +1 puts it above the entry, -1 below, because the cost is paid in the
+    direction the position must travel to escape it.
+    """
+    if cost_per_unit < 0:
+        raise ValueError(f"cost_per_unit cannot be negative, got {cost_per_unit}")
+    if side not in (1, -1):
+        raise ValueError(f"side must be 1 or -1, got {side}")
+    return entry + side * cost_per_unit
+
+
+def net_open_excursion(*, entry: float, extreme: float, side: Literal[1, -1],
+                       cost_per_unit: float, spread: float = 0.0) -> float:
+    """Net profit per unit at the high-water mark, in price units, after the round trip.
+
+    THE ASYMMETRY IS REAL AND IS NOT A TYPO. `extreme` comes from BID bars, because that is what
+    a broker's bar feed is. A LONG realises at the bid, so its favourable extreme is already a
+    price it could have sold into and no spread is charged. A SHORT must buy back at the ASK, so
+    the bid low it reached is one spread better than anything it could actually have paid, and
+    that spread is charged here.
+
+    Getting this backwards would arm shorts a spread early -- which is exactly the error that
+    turns a scratch into a loss, merely relocated from the level to the trigger.
+    """
+    if side not in (1, -1):
+        raise ValueError(f"side must be 1 or -1, got {side}")
+    if spread < 0:
+        raise ValueError(f"spread cannot be negative, got {spread}")
+    gross = side * (extreme - entry)
+    return gross - cost_per_unit - (spread if side == -1 else 0.0)
+
+
+def breakeven_armed(*, entry: float, extreme: float, stop_distance: float,
+                    side: Literal[1, -1], cost_per_unit: float, spread: float = 0.0,
+                    trigger_r: float = BREAKEVEN_TRIGGER_R) -> bool:
+    """Has the thesis run far enough that its stop may never again be worse than break-even?
+
+    Measured against the HIGH-WATER MARK, not spot, and in R rather than money, for the same
+    reason the chandelier is: the question "did this trade earn the right to a free option" is a
+    question about how far it got, and R is the only scale on which a 0.01-lot gold bracket and a
+    0.27-lot forex scalp are the same question.
+
+    Arming is one-way per pass and stateless -- the extreme only ever grows, so a position that
+    armed once stays armed for as long as it is open, with no flag to persist and nothing that
+    can disagree with the account after a restart.
+    """
+    if stop_distance <= 0:
+        raise ValueError(f"stop_distance must be positive, got {stop_distance}")
+    if trigger_r <= 0:
+        raise ValueError(f"trigger_r must be positive, got {trigger_r}")
+    net = net_open_excursion(entry=entry, extreme=extreme, side=side,
+                             cost_per_unit=cost_per_unit, spread=spread)
+    return net >= trigger_r * stop_distance
+
+
 def ratchet(*, entry: float, current_stop: float, stop_distance: float,
             extreme: float, atr: float, side: Literal[1, -1],
             bars_since_extreme: int,
             banked_r: float = 0.0, remaining_fraction: float = 1.0,
             k_trend: float = K_TREND, k_stalled: float = K_STALLED,
-            stall_bars: int = STALL_BARS) -> RatchetDecision:
+            stall_bars: int = STALL_BARS,
+            cost_per_unit: float | None = None, spread: float = 0.0,
+            breakeven_trigger_r: float = BREAKEVEN_TRIGGER_R,
+            floor_only: bool = False) -> RatchetDecision:
     """Decide the new stop, guaranteeing the secured outcome never decreases.
 
     Returns a decision rather than a bare number so the caller can log WHY before anything is
@@ -252,6 +373,19 @@ def ratchet(*, entry: float, current_stop: float, stop_distance: float,
     current one is DISCARDED, not applied. Widening a stop is how a position comes to risk more
     than it was sized for, and there is no market state in which this routine should do it --
     so the guard is unconditional rather than a tunable.
+
+    THE BREAK-EVEN FLOOR (2026-09-24, principal's standing order: the gold sleeves "must carry a
+    break-even stop at the least and must never give back floating profit turning into losses").
+    Pass `cost_per_unit` to enable it. Once net open profit reaches `breakeven_trigger_r` x R the
+    costed break-even level becomes a FLOOR under the trail, and the candidate sent is whichever
+    of the two protects MORE. It is a floor and not a replacement because the chandelier at
+    k=4 is deliberately wide -- wide enough that a winner can round-trip past entry, which is the
+    giveback the principal named -- while the chandelier above break-even is the thing that lets
+    a 5R winner happen, and clamping to break-even there would be the choking this module's own
+    docstring warns against.
+
+    The floor CANNOT widen a stop: it is composed with the same unconditional never-loosen guard,
+    so a position whose trail has already climbed past break-even sees no change at all.
     """
     if stop_distance <= 0:
         raise ValueError(f"stop_distance must be positive, got {stop_distance}")
@@ -264,15 +398,54 @@ def ratchet(*, entry: float, current_stop: float, stop_distance: float,
 
     stalled = is_stalled(bars_since_extreme, stall_bars)
     k = k_stalled if stalled else k_trend
-    candidate = chandelier_stop(extreme=extreme, atr=atr, side=side, k=k)
+    if floor_only:
+        # FLOOR WITHOUT TRAIL, for a certificate earned on a FIXED bracket. Trailing such a
+        # position is a lookalike strategy under a certified name -- measured 2026-09-16, five
+        # forex closes at a manage-tightened stop for -4.25 EUR on holds the certificate would
+        # have carried to their time exit -- so the chandelier is suppressed entirely by seeding
+        # the candidate with the stop the account already holds. The break-even floor below is a
+        # different object: it never tightens INSIDE the bracket, it only refuses to let the
+        # bracket's own stop stay under water once the trade has run, which is the exit the
+        # principal ordered on 2026-09-24 and the one the 0.85R measurement covers.
+        candidate = current_stop
+        why = "fixed bracket: no trail (certified exit), break-even floor only"
+    else:
+        candidate = chandelier_stop(extreme=extreme, atr=atr, side=side, k=k)
+        why = (f"{'stalled' if stalled else 'trending'}: chandelier k={k:g} x ATR {atr:.5f} off "
+               f"extreme {extreme:.5f} -> stop {candidate:.5f}")
+
+    # THE FLOOR, COMPOSED RATHER THAN SUBSTITUTED. Whichever of trail and break-even protects
+    # more is the one sent; `max`/`min` on side is the same never-loosen rule applied between two
+    # candidates instead of between a candidate and the account.
+    on_floor = False
+    if cost_per_unit is not None and breakeven_armed(
+            entry=entry, extreme=extreme, stop_distance=stop_distance, side=side,
+            cost_per_unit=cost_per_unit, spread=spread, trigger_r=breakeven_trigger_r):
+        be = breakeven_level(entry=entry, side=side, cost_per_unit=cost_per_unit)
+        better = (be > candidate) if side == 1 else (be < candidate)
+        if better:
+            trail_was = candidate
+            candidate, on_floor = be, True
+            # NAME ONLY WHAT ACTUALLY RAN. In floor-only mode `trail_was` is the account's own
+            # stop, not a chandelier, and calling it "the k=4 trail" in the log would invent a
+            # computation nobody performed -- the exact class of fiction this module exists to
+            # keep out of the money path, merely in prose instead of arithmetic.
+            loser = ("no trail ran (fixed bracket); the current stop" if floor_only
+                     else f"the k={k:g} trail")
+            why = (f"break-even floor: net open profit passed {breakeven_trigger_r:g}R, so the "
+                   f"stop may not sit below the costed break-even {be:.5f} "
+                   f"(entry {entry:.5f} {'+' if side == 1 else '-'} round trip "
+                   f"{cost_per_unit:.5f}); {loser} at {trail_was:.5f} protects less")
+        else:
+            why += f"; already above the break-even floor {be:.5f}"
 
     # NEVER LOOSEN. For a long the stop may only rise; for a short, only fall.
     improves = (candidate > current_stop) if side == 1 else (candidate < current_stop)
     if not improves:
         return RatchetDecision(
             None, before, before, k, stalled,
-            f"hold: {'trending' if not stalled else 'stalled'} chandelier at k={k:g} sits "
-            f"{'below' if side == 1 else 'above'} the current stop, and a stop is never widened")
+            f"hold: {why}, which sits {'below' if side == 1 else 'above'} the current stop "
+            f"{current_stop:.5f}, and a stop is never widened")
 
     after = stop_protected_r(entry=entry, stop=candidate, stop_distance=stop_distance,
                          side=side, banked_r=banked_r,
@@ -289,6 +462,4 @@ def ratchet(*, entry: float, current_stop: float, stop_distance: float,
 
     return RatchetDecision(
         candidate, before, after, k, stalled,
-        f"{'stalled' if stalled else 'trending'}: chandelier k={k:g} x ATR {atr:.5f} off "
-        f"extreme {extreme:.5f} -> stop {candidate:.5f}; "
-        f"protected {before:+.3f}R -> {after:+.3f}R")
+        f"{why}; protected {before:+.3f}R -> {after:+.3f}R", on_floor)

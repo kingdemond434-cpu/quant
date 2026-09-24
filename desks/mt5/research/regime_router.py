@@ -18,13 +18,28 @@ running forward clock:
                     state features, scored WALK-FORWARD against the unrouted mean
     p_alpha_now     P(alpha > 0 | the state the desk is in this minute)
 
-THE STATE, five axes, each measured from the desk's own bars and clock -- none is a claim.
+THE STATE, six axes, each measured from the desk's own bars and clock -- none is a claim.
 `vol`: the symbol's trailing 24-bar realised vol, cut into terciles on the distribution BEFORE
 the sleeve's first trade, a causal cut so no trade helps define its own bucket (the z-score the
 gate sees is standardised on that same pre-window). `session`: `mt5desk.family_call.SESSIONS`
 server hours. `usd`: the basket's sign against its own 120-bar mean (USDX, else a signed
 major). `dow`: day of week, as sin/cos so Friday sits next to Monday. `risk`: the cross-asset
-sign, US500's 20-day trend, where the box carries US500 bars.
+sign, US500's 20-day trend, where the box carries US500 bars. `hmm`: the LATENT one, below.
+
+WHY THIS ORGAN WAS DARK, AND WHAT THE HMM AXIS FIXES (2026-09-24). Measured on the box: 258
+sleeves, 208 with no trade at all, 50 published, and ZERO SCORED -- 34 under the 24-trade fold
+minimum and 16 with no state feature that varied over their trades. The largest sleeve in the
+whole book had 23 trades, so the walk-forward path could not score ONE, and "no router beats its
+unrouted model" was a negative result for a test that had never run. The cause was architectural:
+the organ was fitting a regime model per sleeve, out of that sleeve's own trades, and most
+sleeves will never trade enough for that. A hidden Markov model describes the MARKET, not the
+sleeve. `hmm` is fitted by Baum-Welch on the symbol's OWN H1 BARS (`libs.regime.bar_states`),
+labels every hour causally, and so needs no sleeve to have traded even once. Its state count is
+chosen by held-out predictive log-density, not by taste. Alongside it, `pooled_router` scores the
+sleeves the fold minimum refuses, by PREQUENTIAL partial pooling (`libs.regime.pooling`): a thin
+sleeve borrows its family's state effect instead of being refused an answer, because small n is a
+WIDE answer, not an absent one. The bar did not move -- the same proper score and the same tax
+judge both paths, and a sleeve with nothing to predict from is still published UNMEASURED.
 
 ACTIVATION IS MEASURED AND TWO-SIDED, which is the whole point (GROWTH_GOVERNANCE 1 and 2). The
 router is ACTIVE for a sleeve only where its out-of-sample log-score beats the unrouted mean
@@ -43,9 +58,11 @@ adaptation at drift time, not on a calendar. What it adapts is the SYMBOLIC stat
 the learned lane that competes with it lives in `representation_discovery.py` and reaches the
 book the way everything else does -- through a hypothesis and the gauntlet's ten gates.
 
-NOT WIRED TO A CLOCK YET (III.16, stated rather than hidden): this ships with its test and no
-scheduler leg. `python desks/mt5/research/regime_router.py` writes the artifact; `--dry-run`
-prints the table and writes nothing. numpy only (pandas optionally, to read parquet).
+WIRED: `hourly_cycle.py` runs this as the heavy leg `regime_router` in the `forward` department.
+(This docstring claimed "NOT WIRED TO A CLOCK YET" until 2026-09-24, long after the leg landed --
+a status line that rots is worse than none, because III.16 is judged on it.)
+`python desks/mt5/research/regime_router.py` writes the artifact; `--dry-run` prints the table and
+writes nothing. numpy only (pandas optionally, to read parquet).
 """
 
 from __future__ import annotations
@@ -75,7 +92,12 @@ for _p in (str(BASE), str(BASE / "research"), str(ROOT)):
 from libs.models.router import SoftMoE  # noqa: E402
 from libs.models.zoo import TAX  # noqa: E402
 from libs.regime import pooling  # noqa: E402
-from libs.regime.bar_states import BarStates, fit_states, run_length_path  # noqa: E402
+from libs.regime.bar_states import (  # noqa: E402
+    BarStates,
+    choose_k,
+    fit_states,
+    run_length_path,
+)
 from libs.regime.features import regime_features  # noqa: E402
 from libs.regime.transitions import forecast as transition_forecast  # noqa: E402
 from research.posterior_alpha import (  # noqa: E402
@@ -140,6 +162,17 @@ MIN_POOLED_TRADES = 2
 #: The HMM's EM seed. Declared so a state path is reproducible pass to pass: a regime label that
 #: changes because EM restarted differently is not a regime change.
 HMM_SEED = 20260924
+#: H1 bars the HMM is FITTED on. `GaussianHMM._forward_backward` is a Python loop over bars, so
+#: this is the leg's cost knob and it is stated here rather than buried. 1,500 H1 bars is ~62
+#: trading days, which identifies a handful of volatility states many times over. MEASURED on the
+#: box 2026-09-24: 25 symbols at k=4 cost 730s wall on a machine already at 100% CPU.
+HMM_MAX_BARS = 1500
+#: HOW MANY STATES: asked ONCE PER PASS, on the most-traded symbols, and then used for the whole
+#: book. The state count is a book-level question -- asking it per symbol costs len(K_GRID) fits
+#: for every symbol instead of one, which is a 4x bill on an hourly leg for the same answer, and
+#: it would also give two symbols different label vocabularies that cannot be pooled.
+HMM_K_GRID = (2, 3, 4)
+HMM_K_SAMPLE = 4
 FEATURES = ("vol_z", "sess_asia", "sess_london", "sess_ny", "usd_trend", "dow_sin", "dow_cos",
             "risk_sign")
 #: Pseudo-trades a bucket is shrunk toward the UNCONDITIONAL posterior by -- the same 30 the
@@ -288,6 +321,9 @@ class States:
         #: the trade window are out of sample. `None` means "fit on everything", which is honest
         #: only for describing history and is never used by the scoring path.
         self.hmm_train_end_ns = hmm_train_end_ns
+        #: The book's state count, fixed once per pass by `choose_state_count`.
+        #: `None` means it has not been asked, and each symbol then picks its own.
+        self.hmm_k: int | None = None
         self.usd_symbol, self.risk_symbol, self._risk_tf = UNMEASURED, UNMEASURED, "D1"
         for symbol, sign in USD_PROXIES:
             found = _trend(symbol, "H1", USD_LOOKBACK)
@@ -321,6 +357,65 @@ class States:
                     self._cuts[key] = (lo, hi, float(pre.mean()), float(pre.std()))
         return self._cuts[key]
 
+    def _observations(self, symbol: str) -> np.ndarray | None:
+        """The canonical 3-column regime observation matrix for a symbol's H1 tape.
+
+        `libs.regime.features` owns those three columns; a second implementation of them is the
+        drift this desk keeps paying for, so it is imported rather than re-derived.
+        """
+        tape = bars(symbol, "H1")
+        if tape is None:
+            return None
+        try:
+            import pandas as pd
+
+            feats, _ = regime_features(pd.Series(tape[1].astype("float64")))
+        except (ValueError, ImportError) as exc:
+            self._hmm_notes.append(f"hmm axis UNMEASURED for {symbol}: "
+                                   f"{type(exc).__name__}: {exc}")
+            return None
+        return np.asarray(feats, dtype="float64")
+
+    def choose_state_count(self, symbols: list[str]) -> dict[str, Any]:
+        """Ask the EVIDENCE how many states, ONCE, on a sample -- then use it for the book.
+
+        The score is the held-out one-step-ahead predictive log-density of the chain on bars the
+        fit never saw; a k that merely fits better in sample cannot win it. Fitting the whole grid
+        per symbol would cost four times as much for the same book-level answer AND would hand two
+        symbols different label vocabularies, which cannot then be pooled across sleeves.
+        """
+        agg: dict[int, list[float]] = defaultdict(list)
+        for symbol in symbols[:HMM_K_SAMPLE]:
+            x = self._observations(symbol)
+            if x is None:
+                continue
+            x = x[np.isfinite(x).all(axis=1)]
+            tape = bars(symbol, "H1")
+            if tape is None:
+                continue
+            cut = (x.shape[0] if self.hmm_train_end_ns is None
+                   else int(np.searchsorted(tape[0][-x.shape[0]:], self.hmm_train_end_ns)))
+            xtr = x[max(0, cut - HMM_MAX_BARS):cut]
+            if xtr.shape[0] < 400:
+                continue
+            try:
+                _k, scores = choose_k(xtr, grid=HMM_K_GRID, seed=HMM_SEED)
+            except (ValueError, np.linalg.LinAlgError):
+                continue
+            for kk, vv in scores.items():
+                agg[kk].append(vv)
+        if not agg:
+            self.hmm_k = None
+            return {"status": UNMEASURED, "sample": symbols[:HMM_K_SAMPLE],
+                    "why": "no sampled symbol carried enough pre-trade tape to score a state count"}
+        means = {k: float(np.mean(v)) for k, v in agg.items() if v}
+        self.hmm_k = int(max(means, key=lambda k: means[k]))
+        return {"status": "MEASURED", "k": self.hmm_k,
+                "scores": {str(k): round(v, 5) for k, v in sorted(means.items())},
+                "sample": symbols[:HMM_K_SAMPLE], "grid": list(HMM_K_GRID),
+                "score": "held-out one-step-ahead predictive log-density on bars, nats/bar",
+                "why": "the state count is a book-level question, asked once on the sample above"}
+
     def hmm(self, symbol: str) -> BarStates | None:
         """The symbol's latent state model, fitted once per pass on its H1 tape.
 
@@ -331,15 +426,14 @@ class States:
         if symbol not in self._hmm:
             self._hmm[symbol] = None
             tape = bars(symbol, "H1")
-            if tape is not None:
+            x = self._observations(symbol) if tape is not None else None
+            if tape is not None and x is not None:
                 try:
-                    import pandas as pd
-
-                    feats, _ = regime_features(pd.Series(tape[1].astype("float64")))
                     self._hmm[symbol] = fit_states(
-                        tape[0], np.asarray(feats), symbol=symbol, timeframe="H1",
-                        train_end_ns=self.hmm_train_end_ns, seed=HMM_SEED)
-                except (ValueError, np.linalg.LinAlgError, ImportError) as exc:
+                        tape[0], x, symbol=symbol, timeframe="H1",
+                        train_end_ns=self.hmm_train_end_ns, k=self.hmm_k, seed=HMM_SEED,
+                        grid=HMM_K_GRID, max_train_bars=HMM_MAX_BARS)
+                except (ValueError, np.linalg.LinAlgError) as exc:
                     self._hmm_notes.append(f"hmm axis UNMEASURED for {symbol}: "
                                            f"{type(exc).__name__}: {exc}")
         return self._hmm[symbol]
@@ -798,7 +892,8 @@ def _pooled_router(obs: list[pooling.Obs]) -> tuple[dict[str, Any], dict[str, di
 
 
 def _hmm_block(states: States, published: list[dict[str, Any]],
-               pooled_book: dict[str, Any]) -> dict[str, Any]:
+               pooled_book: dict[str, Any],
+               k_choice: dict[str, Any] | None = None) -> dict[str, Any]:
     """THE STATE, ITS PROBABILITIES AND ITS TRANSITIONS -- published, per symbol.
 
     A regime call with no probability attached cannot be acted on proportionately, so every row
@@ -844,7 +939,9 @@ def _hmm_block(states: States, published: list[dict[str, Any]],
                  "to have traded; the labels are causal (forward filter, never Viterbi -- L0307) "
                  "and their parameters are fitted strictly before the first trade in the book"),
         "model": "libs.regime.bar_states.fit_states (libs.regime.hmm.GaussianHMM, Baum-Welch)",
-        "timeframe": "H1", "seed": HMM_SEED,
+        "timeframe": "H1", "seed": HMM_SEED, "fit_bars": HMM_MAX_BARS,
+        "state_count": k_choice or {"status": UNMEASURED,
+                                    "why": "the state count was not asked on this pass"},
         "n_symbols": len(rows), "symbols": rows, "gaps": gaps,
         "pooled_router": pooled_book,
         "pooling": {"model": "libs.regime.pooling (sleeve -> family -> book, and the state "
@@ -866,6 +963,11 @@ def run(write: bool = True, now: datetime | None = None) -> dict[str, Any]:
     # comparison below would be fitted on the window it judges, which is not a comparison.
     trade_ns = [_ns(t) for s in sleeves for t in s.times]
     states = States(notes, hmm_train_end_ns=min(trade_ns) if trade_ns else None)
+    # HOW MANY STATES, asked once, on the symbols the book actually trades most -- so the answer
+    # is paid for once and every symbol shares one label vocabulary.
+    traded = sorted({s.symbol for s in sleeves if s.r},
+                    key=lambda sy: -sum(len(s.r) for s in sleeves if s.symbol == sy))
+    k_choice = states.choose_state_count(traded)
     published: list[dict[str, Any]] = []
     for sleeve in sleeves:
         if not sleeve.r:
@@ -915,7 +1017,7 @@ def run(write: bool = True, now: datetime | None = None) -> dict[str, Any]:
                           "risk": states.risk_symbol, "session": "mt5desk.family_call.SESSIONS",
                           HMM_AXIS: "Baum-Welch Gaussian HMM on the symbol's own H1 bars; label "
                                     "is the argmax of the causal forward filter, never Viterbi"},
-        "hmm": _hmm_block(states, published, pooled_book),
+        "hmm": _hmm_block(states, published, pooled_book, k_choice),
         "router_spec": {"model": "libs.models.router.SoftMoE", "k_grid": list(K_GRID),
                         "folds": ROUTER_FOLDS, "tax": float(TAX["soft_moe"]),
                         "min_trades": MIN_ROUTER_TRADES,

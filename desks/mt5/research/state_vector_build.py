@@ -41,6 +41,7 @@ import argparse
 import json
 import sys
 import time
+from contextlib import suppress
 from datetime import UTC, datetime
 from functools import lru_cache
 from pathlib import Path
@@ -265,7 +266,8 @@ def _meta() -> dict:
         return {}
 
 
-def _event_moves(symbol: str, now: datetime, scoped: list[dict]) -> tuple[float | None, float | None]:
+def _event_moves(symbol: str, now: datetime,
+                 scoped: list[dict]) -> tuple[float | None, float | None]:
     """The instrument's log move during the last release's shock window, and since it.
 
     DRIFT and REVERSAL occupy the same minutes after the same print, so only the tape can tell
@@ -437,16 +439,43 @@ def world_conditioning(symbols: list[str]) -> tuple[dict[str, list[dict]], str]:
     return out, ""
 
 
+#: EVERY FIT THIS PASS COMPUTES IS ON DISK BEFORE THE NEXT ONE STARTS (measured 2026-09-24).
+#:
+#: `cache.flush()` used to be called ONCE, on the last line of `build()`. On the trading box
+#: `build()` has not reached that line since 2026-09-23: the hourly leg gives this process a
+#: budget it cannot finish inside, kills it, and every fit computed in that pass dies in memory.
+#: The next pass reloads the same 17-entry file and refits from scratch, so it is killed in the
+#: same place, so it saves nothing -- a self-perpetuating drought with exactly the shape of a
+#: sweep that computes ten gates and is killed before it writes its survivors.
+#:
+#: MEASURED, on the box, per fit: weekly 7.5s, daily 33.2s, H4 48.0s, H1 45.4s, M15 69.5s,
+#: M5 94.7s. The planned roster is 115 fits (1 global + 6 factors + 18 book symbols x 6 clocks)
+#: and NONE of them hit the cache -- 108 of 108 asset fits missed on a live probe, including
+#: `weekly` and `daily`, whose keys do not change within the day and therefore SHOULD hit. A
+#: full pass is 5,603 s of fitting. The leg's budget was 900.
+#:
+#: So the flush is incremental. `FitCache.flush` rewrites one small JSON file (115 entries is
+#: ~75 KB) and the cheapest unit of work it protects costs 7.5 SECONDS, so flushing after every
+#: fit is free by four orders of magnitude and makes progress monotonic: a killed pass keeps
+#: everything it paid for, the next pass starts warmer, and within a few passes the weekly and
+#: daily tiers cost nothing. The intraday tiers still refit every pass by construction -- their
+#: cache key carries the last bar's stamp, which turns over inside the hour -- and that is a
+#: REAL floor, published as one, not something this hides.
+_FLUSH_EVERY_FITS = 1
+
+
 def build(budget_s: float = 900.0, symbols: list[str] | None = None) -> StateVector:
     now = datetime.now(tz=UTC)
     cache = FitCache(path=CACHE)
     gaps: dict[str, str] = {}
     started = time.monotonic()
+    fitted = 0
 
     def _left() -> float:
         return budget_s - (time.monotonic() - started)
 
     def _fit(sym: str, clock: str, tag: str):
+        nonlocal fitted
         if _left() <= 0:
             gaps[tag] = "state-vector budget exhausted before this fit"
             return None
@@ -457,6 +486,11 @@ def build(budget_s: float = 900.0, symbols: list[str] | None = None) -> StateVec
         st, why = fit_asset_state(close, sym, clock, cache=cache)
         if st is None:
             gaps[tag] = f"{sym}@{clock}: {why}"
+        fitted += 1
+        if fitted % _FLUSH_EVERY_FITS == 0:
+            # NEVER FAILS THE BUILD. An unwritable cache is a slow pass, not a lost one.
+            with suppress(OSError, TypeError, ValueError):
+                cache.flush()
         return st
 
     global_state = _fit("XAUUSD", "daily", "global")
