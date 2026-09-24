@@ -1057,7 +1057,26 @@ if ($drift.Count -gt 0) {
 # later `Sync-Pull` sees itself behind, tries to merge, and dies on the same
 # entry again -- an adoption that has to be repeated every hour is not an
 # adoption. `-s ours` touches no file, which is why it survives the corruption.
-Invoke-Git @("merge", "-s", "ours", $target, "-m",
+# `--no-autostash` ON THE COMMAND LINE, BECAUSE `-c merge.autoStash=false` DID NOT HOLD
+# (measured 2026-09-24, git 2.47.1.windows.1). This exact call -- carrying both `-c` flags the
+# wrapper above adds -- spawned
+#
+#     git stash create
+#       git update-index --ignore-skip-worktree-entries -z --add --remove --stdin
+#
+# and the whole chain DEADLOCKED: over 120 seconds every one of the four git processes showed
+# cpu_delta 0.00s AND io_ops_delta 0, and `.git/objects` did not grow by one byte in 45s. It sat
+# that way for 31 minutes holding the git-writer mutex, so the adoption never recorded its merge,
+# `MT5-AdoptRelease` never finished inside its window, and every following hourly launch was
+# REFUSED with 0x800710E0 (TaskScheduler event 322, "an instance of the same task is already
+# running"). One hung stash is the whole outage. No hook is responsible -- `ops/githooks` contains
+# only pre-commit and pre-push and neither mentions stash -- so the stash came from the merge.
+#
+# It is exactly the failure the autostash ban was written for: this worktree carries ~21,884
+# modified paths, and `git stash create` over it has to hash every one while the merge waits.
+# The flag is the stronger form of the same ban: config can be outranked, a flag cannot, and if a
+# future git refuses the flag the merge fails LOUDLY instead of hanging silently.
+Invoke-Git @("merge", "--no-autostash", "-s", "ours", $target, "-m",
              "Record the release merge; tree adopted in place by Adopt-Release") | Out-Null
 
 Write-Host ""
