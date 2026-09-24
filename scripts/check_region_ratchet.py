@@ -21,6 +21,23 @@ WHAT FAILS, and it is deliberately the narrow set that cannot cry wolf (L1.43):
     a fall in the COUNT OF REGIONS THE DESK NAMES         -- no ratio is ever improved by
                                                              shrinking its denominator
     a fall in the TOTAL across regions, per measure       -- cells are never unmade
+    a fall in the SPREAD FLOORS, per measure              -- the tail may never get thinner
+
+THE SPREAD FLOORS, ADDED 2026-09-24, AND WHY A TOTAL WAS NOT ENOUGH. The principal's order is
+that every region hold the maximum cells possible and that all be "as equal breadth depth n
+producing as all top regions"; a tail at zero is named as unacceptable. Every fence above passes
+a desk reading LatAm 57 / Korea 2, because the total is healthy and no region fell to zero. So
+two floors ratchet UP beside them, written by the census as `measures.<name>.spread_floors`:
+
+    min                -- the WEAKEST region's own count
+    regions_holding    -- how many named regions hold anything
+
+Both are monotone in the ONLY safe direction. Evenness, the min/max ratio and min/median all
+RISE when a strong region is trimmed, so fencing any of them would teach the next session to
+level down -- the precise opposite of the order and a breach of NEVER REDUCE AGGRESSIVENESS.
+`min` cannot be moved by touching the top at all, and `regions_holding` falls if a region is
+dropped. The only way to clear either is to raise the thin region. Everything else about the
+spread stays published and fenced by nothing.
 
 WHAT IS REPORTED AND NEVER FAILS: a non-zero dip in one region. The unique-cell basis is
 `distinct grid_cell else content_hash` and a row's grid_cell can be filled in after birth, which
@@ -52,6 +69,14 @@ from libs.research import attribution as A  # noqa: E402
 
 RATCHET = ROOT / "desks" / "mt5" / "reports" / "REGION_RATCHET.json"
 MEASURES = ("unique_cells", "judged_cells")
+
+#: What each spread floor means when it breaks, in the reader's terms rather than the metric's.
+SPREAD_WHY: dict[str, str] = {
+    "min": ("`min` is the WEAKEST region's own count, so this says the desk's thinnest region got "
+            "thinner while the headline total may well have risen."),
+    "regions_holding": ("`regions_holding` is how many of the named regions hold anything at all, "
+                        "so this says a region that was producing has stopped."),
+}
 
 
 def read(path: Path) -> dict[str, Any]:
@@ -113,6 +138,23 @@ def verdict(doc: dict[str, Any], *, require_state: bool,
                     f"{name}: {dip.get('region')} {dip.get('now')} < high-water "
                     f"{dip.get('high_water')} (reported, not fatal: the unique-cell basis can "
                     "move under a row without ground being lost)")
+        raw_fl = row.get("spread_floors")
+        floors: dict[str, Any] = raw_fl if isinstance(raw_fl, dict) else {}
+        if not floors:
+            out["reported"].append(
+                f"{A.UNMEASURED}: the ratchet carries no `spread_floors` for `{name}` -- the "
+                "artifact is from a build before the spread was fenced")
+        for drop in (floors.get("fell") or []):
+            if not isinstance(drop, dict):
+                continue
+            key = str(drop.get("floor"))
+            out["failures"].append(
+                f"{name}: THE SPREAD WIDENED AT THE WEAK END -- `{key}` fell to "
+                f"{drop.get('now')} from a floor of {drop.get('was')}. "
+                + (SPREAD_WHY.get(key) or "")
+                + " Raise the thin region; a spread is never closed by trimming a strong one, "
+                  "which this floor cannot reward (NEVER REDUCE AGGRESSIVENESS).")
+        out[f"{name}_spread_floors"] = floors.get("floors") or {}
         raw_sp = row.get("spread")
         sp: dict[str, Any] = raw_sp if isinstance(raw_sp, dict) else {}
         out[f"{name}_spread"] = {k: sp.get(k) for k in
@@ -135,6 +177,10 @@ def render(v: dict[str, Any]) -> str:
             empty = sp.get("regions_empty") or []
             if empty:
                 lines.append(f"                EMPTY: {', '.join(str(e) for e in empty)}")
+        fl = v.get(f"{name}_spread_floors")
+        if fl:
+            lines.append("                floors (up only): "
+                         + ", ".join(f"{k} >= {fl[k]}" for k in sorted(fl)))
     for line in v.get("reported") or []:
         lines.append(f"  reported  {line}")
     for line in v.get("failures") or []:

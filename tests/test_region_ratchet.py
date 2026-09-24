@@ -218,3 +218,100 @@ def test_ratchet_artifact_round_trips_as_json(tmp_path: Path) -> None:
     on_disk = json.loads((tmp_path / "REGION_RATCHET.json").read_text(encoding="utf-8"))
     assert on_disk["measures"]["unique_cells"]["high_water"]["Japan"] == 3
     assert on_disk["regions"] == list(A.REGIONS) == list(doc["regions"])  # type: ignore[index]
+
+
+# ------------------------------------------------------- the spread floors (added 2026-09-24)
+def test_spread_floors_ratchet_up_and_a_thinning_tail_fails(tmp_path: Path) -> None:
+    """A total can rise while the tail stays flat. The weakest region's own count cannot."""
+    first = _ratchet(tmp_path, {"unique_cells": {"Japan": 40, "Korea": 9, "Europe": 20},
+                                "judged_cells": {"Japan": 2}})
+    fl = first["measures"]["unique_cells"]["spread_floors"]          # type: ignore[index]
+    # every named region is in the denominator, so the empty ones hold `min` at 0 honestly
+    assert fl["floors"]["min"] == 0 and fl["floors"]["regions_holding"] == 3
+    assert not fl["fell"] and first["status"] == "OK"
+
+    # fill every region: the floors rise with the tail
+    full = dict.fromkeys(A.REGIONS, 10)
+    second = _ratchet(tmp_path, {"unique_cells": full, "judged_cells": {"Japan": 2}})
+    fl = second["measures"]["unique_cells"]["spread_floors"]         # type: ignore[index]
+    assert fl["floors"]["min"] == 10
+    assert fl["floors"]["regions_holding"] == len(A.REGIONS)
+    assert second["status"] == "OK"
+
+    # now the tail thins while the TOTAL RISES -- every other fence passes and this one does not
+    thin = dict(full)
+    thin["Korea"] = 2
+    thin["Japan"] = 500
+    third = _ratchet(tmp_path, {"unique_cells": thin, "judged_cells": {"Japan": 2}})
+    m = third["measures"]["unique_cells"]                            # type: ignore[index]
+    assert m["total"] > second["measures"]["unique_cells"]["total"]  # type: ignore[index]
+    assert not m["fell_to_zero"] and not m["total_fell"]
+    assert [d["floor"] for d in m["spread_floors"]["fell"]] == ["min"]
+    assert third["status"] == "FALLEN"
+    v = F.verdict(third, require_state=True)                         # type: ignore[arg-type]
+    assert v["status"] == "BREACH"
+    assert any("SPREAD WIDENED AT THE WEAK END" in f for f in v["failures"])
+
+
+def test_trimming_a_strong_region_never_clears_a_spread_breach() -> None:
+    """NEVER REDUCE AGGRESSIVENESS: the floors are monotone in the tail and deaf to the top.
+
+    This is the whole reason `min` and `regions_holding` are the fenced quantities and evenness
+    is not: evenness IMPROVES when the strong region is cut, so fencing it would pay a session
+    for levelling down.
+    """
+    from attribution_census import spread_floors
+    base = dict.fromkeys(A.REGIONS, 10)
+    base["Japan"], base["Korea"] = 500, 2
+    wide = A.region_spread(base)
+    trimmed = dict(base)
+    trimmed["Japan"] = 10                       # cut the strong region, change nothing else
+    narrow = A.region_spread(trimmed)
+
+    # the tempting metric rewards the cut ...
+    assert narrow["evenness"] > wide["evenness"]
+    # ... and neither fenced floor moves an inch, so the cut buys exactly nothing
+    assert spread_floors(narrow)["now"]["min"] == spread_floors(wide)["now"]["min"] == 2
+    assert (spread_floors(narrow)["now"]["regions_holding"]
+            == spread_floors(wide)["now"]["regions_holding"] == len(A.REGIONS))
+
+    # only raising the thin region raises the floor
+    raised = dict(base)
+    raised["Korea"] = 30
+    assert spread_floors(A.region_spread(raised))["now"]["min"] == 10
+
+
+def test_a_region_that_stops_producing_fails_the_holding_floor(tmp_path: Path) -> None:
+    full = dict.fromkeys(A.REGIONS, 5)
+    _ratchet(tmp_path, {"unique_cells": full, "judged_cells": full})
+    lost = dict(full)
+    lost["SEA"] = 0
+    doc = _ratchet(tmp_path, {"unique_cells": lost, "judged_cells": full})
+    fell = doc["measures"]["unique_cells"]["spread_floors"]["fell"]  # type: ignore[index]
+    assert {d["floor"] for d in fell} == {"min", "regions_holding"}
+    assert F.verdict(doc, require_state=True)["status"] == "BREACH"  # type: ignore[arg-type]
+
+
+def test_a_floor_with_no_previous_reading_enters_at_what_was_measured() -> None:
+    """A fresh host can never manufacture a breach out of its own absence (L1.28a)."""
+    from attribution_census import spread_floors
+    got = spread_floors({"min": 7, "regions_holding": 11}, None)
+    assert got["floors"] == {"min": 7, "regions_holding": 11} and not got["fell"]
+    assert spread_floors({"min": 7, "regions_holding": 11}, {"floors": {}})["fell"] == []
+
+
+def test_an_older_artifact_without_spread_floors_is_unmeasured_not_a_breach() -> None:
+    doc = {"regions_named": len(A.REGIONS), "regions_named_high_water": len(A.REGIONS),
+           "measures": {m: {"fell_to_zero": [], "total": 5, "total_high_water": 5,
+                            "total_fell": False, "regressions": [], "spread": {}}
+                        for m in F.MEASURES}}
+    v = F.verdict(doc, require_state=True)
+    assert v["status"] == "OK" and not v["failures"]
+    assert sum("spread_floors" in r for r in v["reported"]) == len(F.MEASURES)
+
+
+def test_the_spread_floors_are_only_the_two_that_cannot_reward_a_cut() -> None:
+    from attribution_census import SPREAD_FLOORS
+    assert SPREAD_FLOORS == ("min", "regions_holding")
+    for banned in ("evenness", "median", "max", "ratio"):
+        assert banned not in SPREAD_FLOORS
