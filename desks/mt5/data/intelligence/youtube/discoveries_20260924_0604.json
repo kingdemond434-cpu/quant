@@ -1,0 +1,43 @@
+[
+  {
+    "source": "youtube",
+    "title": "Best Analysis of Gold Xauusd",
+    "channel": "Talib Blogs ",
+    "url": "https://youtube.com/watch?v=Zhbb5cOtZI8",
+    "published": "2026-09-21T23:09:03Z",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "timeframes": [],
+    "patterns": [],
+    "confidence": 0.2
+  },
+  {
+    "source": "youtube",
+    "title": "XAUUSD (GOLD) Live Trading Session Today | Breakout Levels &amp; Scalping Strategy \ud83d\udcc8",
+    "channel": "Talib Blogs ",
+    "url": "https://youtube.com/watch?v=SzWhdkPp8lg",
+    "published": "2026-09-21T06:00:20Z",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "timeframes": [],
+    "patterns": [
+      "breakout"
+    ],
+    "confidence": 0.35
+  },
+  {
+    "source": "youtube",
+    "title": "\ud83d\udd34 LIVE: Gold (XAUUSD), Crypto &amp; Forex Trading | Scalping &amp; Price Action Strategy #forex #crypto",
+    "channel": "Trading Edge 2016",
+    "url": "https://youtube.com/watch?v=gR3NR6oKZLU",
+    "published": "2026-09-17T06:25:58Z",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "timeframes": [],
+    "patterns": [],
+    "confidence": 0.2
+  }
+]
