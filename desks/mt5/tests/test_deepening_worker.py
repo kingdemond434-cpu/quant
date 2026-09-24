@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import json
 import sys
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pytest
@@ -43,7 +44,7 @@ def _chat(payload: dict | str):
     """A seat that returns exactly what the test dictates."""
     body = payload if isinstance(payload, str) else json.dumps(payload)
 
-    def chat(prompt, **kw):        # noqa: ARG001
+    def chat(prompt, **kw):
         return body, ""
     return chat
 
@@ -112,7 +113,7 @@ def test_a_recovered_row_goes_back_through_the_compiler(monkeypatch) -> None:
     """The reader must not be a second admission door into the candidate store."""
     seen: dict = {}
 
-    def fake_compile(source, row, universe):     # noqa: ARG001
+    def fake_compile(source, row, universe):
         seen["row"] = row
         return [{"symbol": "EURUSD", "family": "session_range_breakout"}], "EXACT_RECIPE"
 
@@ -185,7 +186,7 @@ def test_a_fenced_json_reply_is_still_read() -> None:
 
 
 def test_a_seat_error_is_reported_never_raised() -> None:
-    def chat(prompt, **kw):        # noqa: ARG001
+    def chat(prompt, **kw):
         return "", "budget exhausted"
     found, why = dw.extract(_TASK, chat=chat)
     assert found == {} and "budget exhausted" in why
@@ -383,3 +384,294 @@ class TestSingleFlight:
         monkeypatch.setattr(dw, "LOCK", tmp_path / "nope" / "deep" / ".lock")
         monkeypatch.setattr(Path, "mkdir", lambda *a, **k: (_ for _ in ()).throw(OSError("ro")))
         assert dw._single_flight() is not None
+
+
+# ---------------------------------- 6. the seat is scarce: route by what the row CONTAINS
+#
+# Measured on the trading box 2026-09-24, against 5,186 terminal decisions: EMPTY_CAPTURE rows
+# recovered 1 candidate in 1,000 seat calls (0.10%) while NEEDS_SYMBOL_EXTRACTION recovered 11 in
+# 1,114 (0.99%). EMPTY_CAPTURE was 59% of an 18,128-row backlog, and the provider's free ceiling
+# is 458 requests a day for the whole desk. Routing by the compiler's own label is therefore the
+# difference between spending that allowance where it can pay and spending it where it cannot.
+
+class TestLaneRouting:
+    """What decides a row, and the rule that it is decided EITHER WAY on the same pass."""
+
+    def test_a_row_with_no_body_never_costs_a_seat_call(self) -> None:
+        """The compiler's own source calls a seat call on one of these 'an LLM call that cannot
+        possibly succeed -- there is nothing in the row to read'."""
+        assert dw.lane({"source": "world_crawler", "disposition": "EMPTY_CAPTURE"}) == "rule"
+
+    def test_an_operational_row_and_a_banned_family_never_cost_a_seat_call(self) -> None:
+        assert dw.lane({"disposition": "OPERATIONAL_ROW"}) == "rule"
+        assert dw.lane({"disposition": "BANNED_FAMILY"}) == "rule"
+
+    def test_a_row_that_carries_text_still_gets_the_seat(self) -> None:
+        """The whole point of the routing is that the allowance MOVES here, not that it shrinks."""
+        assert dw.lane(_TASK) == "seat"
+
+    def test_a_mutation_carries_its_own_recipe_and_needs_no_seat(self) -> None:
+        assert dw.lane({"kind": "mutation", "family": "session_range_breakout",
+                        "params": {"lookback": 20}, "symbols": ["EURUSD"]}) == "rule"
+
+    def test_an_unrouted_row_defaults_to_the_seat_not_to_silence(self) -> None:
+        """A disposition nobody has classified must reach a reader, never be refused by default:
+        absence of a rule is not a verdict (L1.28a)."""
+        assert dw.lane({"disposition": "SOMETHING_INVENTED_LATER"}) == "seat"
+
+
+class TestNamedRefusal:
+    """A backlog is never cleared by discarding. A row this desk will not convert is REFUSED BY
+    NAME, with the reason it cannot be read and the remedy that would reopen it."""
+
+    def test_the_compiler_gets_a_free_retry_before_anything_is_refused(self, monkeypatch) -> None:
+        """The compiler's vocabulary grows -- aliases, family phrases, a ban the gauntlet lifted --
+        so a row it refused last month may compile today, at no cost and with no seat."""
+        monkeypatch.setattr(dw, "compile_row",
+                            lambda *a, **k: ([{"symbol": "EURUSD"}], "TEXT_EXTRACTED"))
+        cands, disposition = dw.no_seat_work({"disposition": "EMPTY_CAPTURE"}, {"EURUSD"})
+        assert disposition == "RECOVERED_TEXT_EXTRACTED"
+        assert cands and cands[0]["deepened"] is True
+
+    def test_a_refusal_names_its_reason_and_its_remedy(self, monkeypatch) -> None:
+        monkeypatch.setattr(dw, "compile_row", lambda *a, **k: ([], "EMPTY_CAPTURE"))
+        _, disposition = dw.no_seat_work({"disposition": "EMPTY_CAPTURE"}, set())
+        assert disposition.startswith("REFUSED_NO_BODY_CAPTURED:")
+        assert "remedy:" in disposition, "a refusal with no remedy is a discard with a label"
+        assert "re-fetch" in disposition
+
+    def test_every_routed_disposition_carries_a_remedy(self) -> None:
+        for label, (name, why, remedy) in dw.NO_SEAT_LANE.items():
+            assert name.startswith("REFUSED_"), label
+            assert why and remedy, f"{label} refuses without saying why or what would reopen it"
+
+    def test_a_compiler_crash_is_recorded_never_raised(self, monkeypatch) -> None:
+        """One bad row must not end a pass that is draining eighteen thousand of them."""
+        def boom(*a, **k):
+            raise RuntimeError("bad row")
+        monkeypatch.setattr(dw, "compile_row", boom)
+        cands, disposition = dw.no_seat_work({"disposition": "EMPTY_CAPTURE"}, set())
+        assert cands == [] and disposition.startswith("ERROR: RuntimeError")
+
+
+class TestOutageIsNotADecision:
+    """1,222,789 of 1,234,517 ledger rows were the same seat outage written over and over: an
+    849 MB file re-read twice at every startup. An outage is not evidence about a source row."""
+
+    def test_an_outage_is_recognised_under_both_labels(self) -> None:
+        assert dw.is_outage("BLOCKED_SEAT_UNAVAILABLE: free-tier daily request budget exhausted")
+        assert dw.is_outage("REJECTED: seat error: timeout")
+        assert not dw.is_outage("REJECTED: nothing extractable")
+        assert not dw.is_outage("REFUSED_NO_BODY_CAPTURED: no body")
+
+    def test_compaction_keeps_every_decision_and_one_outage_row_a_day(self, tmp_path) -> None:
+        p = tmp_path / "worked.jsonl"
+        rows = [{"id": "keep1", "at": "2026-09-23T01:00:00+00:00", "disposition": "REJECTED: x"},
+                {"id": "keep2", "at": "2026-09-23T02:00:00+00:00",
+                 "disposition": "RECOVERED_TEXT_EXTRACTED"}]
+        for n in range(50):
+            rows.append({"id": f"o{n}", "at": "2026-09-23T03:00:00+00:00",
+                         "disposition": "BLOCKED_SEAT_UNAVAILABLE: budget exhausted"})
+        rows.append({"id": "next_day", "at": "2026-09-24T03:00:00+00:00",
+                     "disposition": "BLOCKED_SEAT_UNAVAILABLE: budget exhausted"})
+        p.write_text("\n".join(json.dumps(r) for r in rows) + "\n", encoding="utf-8")
+        out = dw.compact_ledger(p, over_bytes=0)
+        kept = [json.loads(ln) for ln in p.read_text("utf-8").splitlines() if ln.strip()]
+        ids = {r["id"] for r in kept}
+        assert {"keep1", "keep2"} <= ids, "compaction lost a real decision"
+        assert out["outage_rows_dropped"] == 49
+        assert len([r for r in kept if dw.is_outage(r["disposition"])]) == 2, \
+            "one outage row per UTC day must survive so the outage stays readable"
+
+    def test_compaction_never_touches_a_ledger_inside_its_budget(self, tmp_path) -> None:
+        p = tmp_path / "worked.jsonl"
+        p.write_text('{"id":"a","disposition":"REJECTED: x"}\n', encoding="utf-8")
+        assert dw.compact_ledger(p, over_bytes=10_000_000)["compacted"] is False
+        assert p.read_text("utf-8").strip()
+
+    def test_an_unreadable_line_is_kept_never_silently_dropped(self, tmp_path) -> None:
+        p = tmp_path / "worked.jsonl"
+        p.write_text('{not json\n{"id":"a","disposition":"REJECTED: x"}\n', encoding="utf-8")
+        dw.compact_ledger(p, over_bytes=0)
+        assert "{not json" in p.read_text("utf-8")
+
+
+class TestBacklogIsPublished:
+    """LAWS 5e: a budget may leave work over; its AGE is published. QUEUE_CENSUS reported this
+    queue UNMEASURED because its rows carry no enqueue stamp -- UNMEASURED is a real answer, and
+    it is no longer this one."""
+
+    def _at(self, tmp_path, monkeypatch):
+        monkeypatch.setattr(dw, "BACKLOG", tmp_path / "DEEPENING_BACKLOG.json")
+        return tmp_path / "DEEPENING_BACKLOG.json"
+
+    def test_the_oldest_age_is_measured_and_survives_a_queue_rebuild(self, tmp_path,
+                                                                     monkeypatch) -> None:
+        p = self._at(tmp_path, monkeypatch)
+        t0 = datetime(2026, 9, 24, 0, 0, tzinfo=UTC)
+        dw.publish_backlog([dict(_TASK)], {"rule": 0, "seat": 1}, t0, 10.0)
+        # The compiler rewrites the queue file hourly; the row's identity, and so its first
+        # sighting, does not change. Five hours later the backlog must read five hours old.
+        doc = dw.publish_backlog([dict(_TASK)], {"rule": 0, "seat": 1},
+                                 t0 + timedelta(hours=5), 10.0)
+        assert doc["age_measurable"] is True
+        assert doc["oldest_age_h"] == 5.0, "a rebuilt queue file reset the backlog's age"
+        assert json.loads(p.read_text("utf-8"))["depth"] == 1
+
+    def test_days_to_clear_is_unmeasured_when_nothing_was_decided(self, tmp_path,
+                                                                  monkeypatch) -> None:
+        self._at(tmp_path, monkeypatch)
+        doc = dw.publish_backlog([dict(_TASK)], {}, datetime(2026, 9, 24, tzinfo=UTC), 0.0)
+        assert doc["days_to_clear"] is None, "a pass that decided nothing cannot price a clearance"
+
+
+class TestThroughputRatchet:
+    """The mark only ever rises. A pass below it is a REGRESSION in its own artifact, so the next
+    reader sees the fall without being told to look for it."""
+
+    def _at(self, tmp_path, monkeypatch):
+        monkeypatch.setattr(dw, "THROUGHPUT", tmp_path / "DEEPENING_THROUGHPUT.json")
+
+    def test_the_high_water_mark_never_falls(self, tmp_path, monkeypatch) -> None:
+        self._at(tmp_path, monkeypatch)
+        now = datetime(2026, 9, 24, tzinfo=UTC)
+        fast = dw.publish_throughput(1000, 3600.0, 5000, 4000, now, {"REFUSED_X": 1000})
+        assert fast["decisions_per_h"] == 1000.0 and fast["status"] == "RATCHET"
+        slow = dw.publish_throughput(1, 3600.0, 4000, 3999, now, {"REJECTED": 1})
+        assert slow["best_decisions_per_h"] == 1000.0, "the ratchet let the mark fall"
+        assert slow["status"] == "REGRESSION", "a fall in throughput reported itself as fine"
+
+    def test_the_pass_records_what_it_drained(self, tmp_path, monkeypatch) -> None:
+        self._at(tmp_path, monkeypatch)
+        doc = dw.publish_throughput(60, 60.0, 18128, 18068,
+                                    datetime(2026, 9, 24, tzinfo=UTC), {"REFUSED_X": 60})
+        assert doc["drained"] == 60 and doc["backlog_before"] == 18128
+
+
+class TestSeatParallelism:
+    """A seat call is 26.7s of HTTP wait, so concurrency costs neither a core nor a gigabyte --
+    and the daily ceiling is unchanged by it. The same 458 calls are made; they are made inside
+    the hour the desk is awake instead of trickling until the budget dies unspent."""
+
+    def test_the_worker_count_is_derived_from_this_box_never_a_constant(self,
+                                                                       monkeypatch) -> None:
+        monkeypatch.delenv("DEEPEN_SEAT_WORKERS", raising=False)
+        monkeypatch.setattr(dw.os, "cpu_count", lambda: 18)
+        assert dw.seat_workers() == 12
+        monkeypatch.setattr(dw.os, "cpu_count", lambda: 4)
+        assert dw.seat_workers() == 2, "a small box must keep cores for the live gateway"
+
+    def test_an_unreadable_cpu_count_still_yields_a_workable_pool(self, monkeypatch) -> None:
+        monkeypatch.delenv("DEEPEN_SEAT_WORKERS", raising=False)
+        monkeypatch.setattr(dw.os, "cpu_count", lambda: None)
+        assert dw.seat_workers() >= 2
+
+    def test_an_unmeasured_seat_budget_never_stands_the_lane_down(self, monkeypatch) -> None:
+        """An unreadable counter must not silence a lane that might be working (L1.28a)."""
+        from libs.ops import llm_seat
+
+        def boom():
+            raise RuntimeError("counter unreadable")
+        monkeypatch.setattr(llm_seat, "free_budget_left", boom)
+        left, why = dw._seat_budget()
+        assert left == -1 and "UNMEASURED" in why
+
+    def test_a_readable_budget_is_reported_with_its_ceiling(self, monkeypatch) -> None:
+        from libs.ops import llm_seat
+        monkeypatch.setattr(llm_seat, "free_budget_left", lambda: 120)
+        monkeypatch.setattr(llm_seat, "free_daily_max", lambda: 458)
+        monkeypatch.setattr(llm_seat, "calls_today", lambda: 338)
+        left, why = dw._seat_budget()
+        assert left == 120 and "458" in why and "338" in why
+
+
+class TestABurstIsNotTheDay:
+    """The provider says 'slow down for a minute' and 'come back tomorrow' with the same status
+    code. Treating the first as the second hands back most of an allowance already granted."""
+
+    def test_a_daily_refusal_ends_the_lane(self) -> None:
+        assert dw.ends_the_day(
+            "BLOCKED_SEAT_UNAVAILABLE: seat error: Rate limit exceeded: "
+            "free-models-per-day-high-balance")
+
+    def test_a_burst_refusal_ends_only_the_row(self) -> None:
+        assert not dw.ends_the_day(
+            "BLOCKED_SEAT_UNAVAILABLE: seat error: 429 too many requests, retry in 5s")
+
+    def test_an_unfamiliar_refusal_is_never_treated_as_terminal(self) -> None:
+        """Unrecognised ends one row, never the pass: the timid reading would stop the lane on
+        anything it did not recognise and call that safe."""
+        assert not dw.ends_the_day("BLOCKED_SEAT_UNAVAILABLE: seat error: connection reset")
+
+    def test_a_real_rejection_is_not_an_outage_at_all(self) -> None:
+        assert not dw.ends_the_day("REJECTED: nothing extractable: only a title was provided")
+
+
+class TestTheRatchetTellsSlowFromEmpty:
+    """Measured the night this landed: the pass that drained 11,613 rule-lane rows set a mark of
+    714,009/h, and the next pass -- rule lane empty because the first had finished it, provider
+    refusing the day -- came in at 398/h. Nothing had regressed. A ratchet that calls that a
+    regression cries wolf until nobody reads it."""
+
+    def _at(self, tmp_path, monkeypatch):
+        monkeypatch.setattr(dw, "THROUGHPUT", tmp_path / "T.json")
+
+    def test_running_out_of_work_is_not_a_regression(self, tmp_path, monkeypatch) -> None:
+        self._at(tmp_path, monkeypatch)
+        now = datetime(2026, 9, 24, tzinfo=UTC)
+        dw.publish_throughput(11613, 274.0, 18411, 6787, now, {"REFUSED_NO_BODY_CAPTURED": 11613})
+        thin = dw.publish_throughput(6, 108.0, 6783, 6777, now, {"REJECTED": 6},
+                                     work_limited=True)
+        assert thin["status"] == "WORK_LIMITED"
+        assert thin["best_decisions_per_h"] > thin["decisions_per_h"], "the mark still stands"
+
+    def test_a_pass_with_work_that_got_slower_is_still_a_regression(self, tmp_path,
+                                                                    monkeypatch) -> None:
+        self._at(tmp_path, monkeypatch)
+        now = datetime(2026, 9, 24, tzinfo=UTC)
+        dw.publish_throughput(1000, 3600.0, 9000, 8000, now, {"REFUSED_X": 1000})
+        slow = dw.publish_throughput(10, 3600.0, 8000, 7990, now, {"REFUSED_X": 10},
+                                     work_limited=False)
+        assert slow["status"] == "REGRESSION", "a real slowdown must still be named one"
+
+    def test_an_outage_is_never_counted_as_a_decision(self, tmp_path, monkeypatch) -> None:
+        """A rate that counted refusals would measure how fast this desk can be told no."""
+        self._at(tmp_path, monkeypatch)
+        doc = dw.publish_throughput(12, 3600.0, 100, 94,
+                                    datetime(2026, 9, 24, tzinfo=UTC),
+                                    {"BLOCKED_SEAT_UNAVAILABLE": 6, "REJECTED": 6})
+        assert doc["outages"] == 6 and doc["decisions"] == 6
+        assert doc["decisions_per_h"] == 6.0
+
+
+class TestAnOutageNeverEmptiesTheBacklog:
+    """Measured 2026-09-24: the published backlog read `depth: 0` while 6,674 rows were sitting
+    unread, because a pass that found no configured seat treated every outage row as decided and
+    the census inherited it. An absence reported as a clean verdict is exactly L1.28a, and a
+    backlog artifact is the last place it belongs."""
+
+    def test_the_two_sets_are_separated_in_one_read(self, tmp_path, monkeypatch) -> None:
+        led = tmp_path / "worked.jsonl"
+        led.write_text(
+            '{"id":"a","disposition":"REJECTED: nothing extractable"}\n'
+            '{"id":"b","disposition":"BLOCKED_SEAT_UNAVAILABLE: budget exhausted"}\n'
+            '{"id":"c","disposition":"RECOVERED_TEXT_EXTRACTED"}\n'
+            'not json\n', encoding="utf-8")
+        monkeypatch.setattr(dw, "WORKED", led)
+        terminal, outage = dw.ledger_ids()
+        assert terminal == {"a", "c"}
+        assert outage == {"b"}, "a blocked row is not a decision and must stay open"
+
+    def test_a_row_later_decided_leaves_the_outage_set(self, tmp_path, monkeypatch) -> None:
+        """A row blocked yesterday and decided today is DECIDED, not both."""
+        led = tmp_path / "worked.jsonl"
+        led.write_text(
+            '{"id":"b","disposition":"BLOCKED_SEAT_UNAVAILABLE: budget exhausted"}\n'
+            '{"id":"b","disposition":"REJECTED: nothing extractable"}\n', encoding="utf-8")
+        monkeypatch.setattr(dw, "WORKED", led)
+        terminal, outage = dw.ledger_ids()
+        assert terminal == {"b"} and outage == set()
+
+    def test_an_absent_ledger_is_empty_never_an_error(self, tmp_path, monkeypatch) -> None:
+        monkeypatch.setattr(dw, "WORKED", tmp_path / "nothing.jsonl")
+        assert dw.ledger_ids() == (set(), set())
