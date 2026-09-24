@@ -93,6 +93,12 @@ DEFAULT_LIMIT_S = 7200
 
 UNMEASURED = "UNMEASURED"
 
+#: Exit codes that belong to the TASK SCHEDULER, not to the adoption. 2147946720 is 0x800710E0
+#: (Win32 4320, "the operator or administrator has refused the request") and 267014 is
+#: SCHED_S_TASK_TERMINATED; both mean an instance was stopped from outside. Any OTHER non-zero
+#: code is the script's own exit and must not be explained as a scheduler kill.
+_SCHEDULER_KILL_CODES = frozenset({"2147946720", "267014"})
+
 #: Lines `Adopt-And-Seal.ps1` writes on a SUCCESSFUL pass. "nothing to seal" is a success: it is
 #: what an already-current box says, and counting it as a failure would red every healthy hour.
 _SUCCESS_LINE = re.compile(r"adopt-and-seal:\s+(sealed\s+\w+\s+from|HEAD\s+\w+\s+is\s+(already\s+the\s+sealed|the\s+sealed\s+release))")
@@ -369,12 +375,23 @@ def judge(doc: dict[str, Any]) -> None:
                      "inside the grace, so an adoption in flight still covers it")
 
     last = task.get("lastresult")
-    if last not in (None, "0", "267009", "267011"):
+    # THE SCHEDULER'S CODES AND THE SCRIPT'S OWN ARE NOT THE SAME DIAGNOSIS, and this note used
+    # to give the scheduler's explanation for BOTH. Measured 2026-09-24: `MT5-AdoptRelease` read
+    # `lastresult = 3`, which is `Adopt-And-Seal.ps1` exiting on its own after refusing to seal
+    # (`dirty-code-path`) -- and the fence explained it as "the SCHEDULER stopped the run --
+    # raise ExecutionTimeLimit, do not hunt the script", which is the exact opposite of where
+    # the defect was. A wrong reason costs a session, so the two are now separated by code.
+    if last in _SCHEDULER_KILL_CODES:
         notes.append(
             f"{TASK} last exited {last}; 2147946720 (0x800710E0, Win32 4320 'the operator or "
             "administrator has refused the request') and 267014 (SCHED_S_TASK_TERMINATED) both "
             "mean the SCHEDULER stopped the run -- raise ExecutionTimeLimit, do not hunt the "
             "script")
+    elif last not in (None, "0", "267009", "267011"):
+        notes.append(
+            f"{TASK} last exited {last}, which is not one of the scheduler's own codes -- it is "
+            "the adoption script's own exit status. Read `desks/mt5/logs/adopt_and_seal.log` and "
+            "`ADOPTION_HEARTBEAT.stage` for the reason; the scheduler did not stop this run")
 
 
 def scan(root: Path | None = None) -> dict[str, Any]:
