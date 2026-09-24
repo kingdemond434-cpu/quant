@@ -299,3 +299,59 @@ def test_an_absent_task_is_named_not_silently_passed():
     rows = cl.ensure_24x7({}, apply=False)
     assert {r["verdict"] for r in rows} == {"ABSENT"}
     assert len(rows) == len(cl.CLOCK_TASKS)
+
+
+class TestAnUnreadableSchedulerIsUnmeasuredNeverDisabled:
+    """A scheduler that cannot be READ is not a scheduler with everything switched off.
+
+    MEASURED ON THE TRADING BOX 2026-09-24. `CLOCK_LIVENESS.json` on `vmi3571445` -- a host
+    running 98 enabled MT5/E8 tasks -- carried `host: box_clocks_off` and the reason "the
+    MetaTrader5 package is installed and all 0 MT5-* scheduled task(s) are disabled". "All 0 are
+    disabled" is a VACUOUS TRUTH: it is true of every host in the world and was printed as a
+    measurement of this one.
+
+    `scheduled_tasks()` returned `{}` because its `schtasks /Query /V` call TIMED OUT --
+    `TimeoutExpired` subclasses `SubprocessError`, so the broad `except` swallowed it and the
+    empty mapping was indistinguishable from "this host has no scheduler". The read costs 8-9 s
+    idle and was measured at 121 s under load, against a 90 s ceiling.
+
+    WHAT IT COST, and this is why the test exists rather than a comment. `judge_clock` stamps
+    UNMEASURED on every clock whenever `host != "trading_box"`, so all 153 clocks went
+    UNMEASURED; `clock_certificate.audit` then took its "the clock itself is UNMEASURED on this
+    host" branch for all 153 and reported BACKED 0, BREACHED 0, RETIRED 0. CLOCK IF AND ONLY IF
+    CERTIFICATE -- the law that had retired 95 unbacked clocks the day before -- was enforcing
+    nothing, and the artifact announced it in a field that reads like a configuration choice.
+    """
+
+    def test_a_timeout_is_unmeasured_and_not_box_clocks_off(self):
+        host, why = cl.host_kind({}, "TIMEOUT after 90s: the scheduler query did not return")
+        assert host != "box_clocks_off", (
+            "an unreadable scheduler is being reported as a host whose clocks are switched off. "
+            "That is the vacuous 'all 0 tasks are disabled' claim returning, and it silently "
+            "disabled the certificate law on the box that trades.")
+        assert host == "host_unmeasured"
+        assert "TIMEOUT" in why and "UNMEASURED" in why
+
+    def test_a_genuinely_empty_task_list_still_reads_as_clocks_off(self):
+        """The real case must survive: OK status, zero tasks, is a host with nothing scheduled."""
+        host, _ = cl.host_kind({}, cl.TASKS_OK)
+        assert host in ("box_clocks_off", "build_box"), host
+
+    def test_an_enabled_task_still_reads_as_the_trading_box(self):
+        host, _ = cl.host_kind({"MT5-Hourly": {"state": "Enabled"}}, cl.TASKS_OK)
+        assert host in ("trading_box", "build_box"), host
+
+    def test_the_status_is_published_rather_than_swallowed(self):
+        """Whatever this host is, the reader must be able to say why the list looks as it does."""
+        cl.scheduled_tasks()
+        status = cl.scheduled_tasks_status()
+        assert isinstance(status, str) and status, "the scheduler read status is not reported"
+
+    def test_an_unmeasured_host_judges_no_clock_and_retires_nothing(self):
+        """Fail-safe, asserted rather than assumed: UNMEASURED acts on nothing."""
+        row = cl.judge_clock(
+            cl.LANES[0], "CADJPY.asia", {"status": "ACTIVE", "n": 3},
+            cl.SessionCalendar(), {}, None, cl.now_utc(),
+            host="host_unmeasured", host_why="the scheduler could not be read")
+        assert row["verdict"] == cl.UNMEASURED
+        assert row["expected_bars"] is None and row["actual_bars"] is None

@@ -102,6 +102,146 @@ YEARS = 6
 MIN_BARS = 3000
 
 
+#: Most bars this terminal serves in ONE call. Above it `copy_rates_from_pos` returns None with
+#: `(-2, "Terminal: Invalid params")` -- no exception, no partial result. Measured on Fusion
+#: Markets MT5 2026-09-14: 60,000 succeeds, 120,000 does not.
+MAX_BARS_PER_CALL = 50_000
+
+#: How many bars to ask for per chart. Roughly the same span on each: ~2-3 years of H1 down to a
+#: few months of M1, all clearing the 60 trading days the gates need by a wide margin.
+_WANT = {"M1": 200_000, "M5": 120_000, "M15": 60_000, "M30": 40_000,
+         "H1": 60_000, "H4": 20_000, "D1": 5_000}
+
+
+def _want_bars(tf: str) -> int:
+    return _WANT.get(str(tf).upper(), 40_000)
+
+
+
+#: Symbols whose finest charts the desk actually consumes first. See `_collection_order`.
+SLEEVES = BASE / "data" / "sleeves.json"
+
+
+def _traded_symbols() -> set[str]:
+    """Symbols the desk has live or standby risk on, read from the sleeve registry.
+
+    Absence is not an error here: a registry that cannot be read yields an EMPTY priority set, so
+    the ordering degrades to "least covered first" rather than refusing to collect.
+    """
+    try:
+        doc = json.loads(SLEEVES.read_text("utf-8"))
+    except (OSError, ValueError):
+        return set()
+    rows = doc.get("sleeves") if isinstance(doc, dict) else doc
+    out: set[str] = set()
+    for r in rows or []:
+        if not isinstance(r, dict):
+            continue
+        sym = str(r.get("symbol") or str(r.get("name") or "").split("_")[0]).upper()
+        if sym:
+            out.add(sym)
+    return out
+
+
+def _collection_order(tradable: list, traded: set[str]) -> list:
+    """Least-covered, most-needed symbol first -- never the broker's own ordering.
+
+    THE BUDGET DIED AT THE SAME PREFIX EVERY RUN. This walked `mt5.symbols_get()` in whatever
+    order the terminal returned and asked every symbol for every chart, M1's 200,000 bars
+    included -- four chunked calls each. The leg's budget expired partway down that list and the
+    NEXT run started from the same place, so the same prefix was re-collected hourly and the tail
+    was never reached at all. Measured 2026-09-14: M5, M15, M30 and H4 all hold 248 symbols and
+    D1 250, while M1 holds 25 of 299. That is not M1 being expensive; it is M1 being last.
+
+    Ordering is by what the desk would lose by not having the file:
+      1. a symbol the desk has RISK on, missing charts -- the intrabar wick that decides whether
+         an unfilled order was an execution defect or a strategy one lives in M1, and only for
+         symbols orders were actually sent to;
+      2. any symbol missing charts, fewest first, so each run extends coverage;
+      3. everything already complete, refreshed last.
+
+    This reprioritises and collects no less: the same budget, spent where it buys something.
+    """
+    def key(s):
+        name = str(getattr(s, "name", "")).upper()
+        have = sum(1 for tf in TIMEFRAMES if (UNIVERSE / f"{name}_{tf}.parquet").exists())
+        missing = len(TIMEFRAMES) - have
+        return (0 if (name in traded and missing) else 1 if missing else 2, -missing, name)
+
+    return sorted(tradable, key=key)
+
+
+def _pull_bars(mt5, sym: str, code, want: int, start, now):
+    """Up to `want` bars, walking BACKWARD in capped chunks. None when the venue serves nothing.
+
+    A RANGE CALL CANNOT BACK-FILL, AND THAT IS WHY THIS DESK HAD NO INTRADAY BARS.
+    `copy_rates_range` serves only what the terminal has already cached; it does not make the
+    terminal download anything. This loop already asked for every chart on the ladder and had
+    done for weeks -- and below M15 it got nothing back, because no chart for those symbols had
+    ever been opened. The result was recorded honestly as `tf:0/min` and read as "the broker
+    keeps far less M1 than H1", which is true in general and was not what was happening here.
+    Measured 2026-09-14: 299 H1 parquets against FOUR M15 and one M5.
+    `copy_rates_from_pos` triggers the download; the range call survives only as a fallback for
+    a terminal that refuses the positional form.
+
+    AND ONE CALL IS NOT ENOUGH FOR THE FINE CHARTS. The terminal caps a single request, so 50,000
+    M1 bars is about 42 trading days at ~7,200 a week while the gates want 60. The newest chunk is
+    taken by position, each older chunk anchored at the oldest bar already held. Progress is
+    REQUIRED to continue -- a venue that kept returning the same oldest bar would spin forever, so
+    a chunk that adds nothing new means the history is exhausted and what was gathered is what
+    exists.
+    """
+    import numpy as np
+    first = mt5.copy_rates_from_pos(sym, code, 0, min(want, MAX_BARS_PER_CALL))
+    if first is None or len(first) == 0:
+        r = mt5.copy_rates_range(sym, code, start, now)
+        return r if r is not None and len(r) else None
+    chunks, have, oldest = [first], len(first), first[0]["time"]
+    while have < want:
+        older = mt5.copy_rates_from(sym, code, datetime.fromtimestamp(int(oldest), UTC),
+                                    min(want - have, MAX_BARS_PER_CALL))
+        if older is None or len(older) == 0:
+            break
+        new_oldest = older[0]["time"]
+        if new_oldest >= oldest:
+            break                       # no progress: the venue's history ends here
+        chunks.append(older)
+        have += len(older)
+        oldest = new_oldest
+    out = np.concatenate(chunks) if len(chunks) > 1 else chunks[0]
+    return np.unique(out)
+
+
+#: What this collector's `median_spread_pts` IS, so the stamp can never mean something else.
+MEDIAN_SPREAD_SOURCE = "h1_spread_median"
+
+
+def _median_spread_write(prev: dict, h1_rates, info, now) -> dict:
+    """The `median_spread_pts` fields this collector may write for one symbol, if any.
+
+    Returns an EMPTY dict when a better-ranked producer owns the field, which leaves both the
+    value and its stamp exactly as they were -- the merge below is a union, so an absent key
+    survives rather than being blanked.
+    """
+    import pandas as pd
+
+    from mt5desk.universe_registry import may_write_median_spread
+
+    allowed, _why = may_write_median_spread(prev if isinstance(prev, dict) else {},
+                                            MEDIAN_SPREAD_SOURCE)
+    if not allowed:
+        return {}
+    try:
+        spreads = pd.Series(h1_rates["spread"], dtype="float64")
+        value = float(spreads.median())
+    except (KeyError, TypeError, ValueError, IndexError):
+        value = float(getattr(info, "spread", 0) or 0)
+    prov = dict((prev or {}).get("_provenance") or {})
+    prov["median_spread_pts"] = {"source": MEDIAN_SPREAD_SOURCE,
+                                 "at": now.isoformat(timespec="seconds")}
+    return {"median_spread_pts": value, "_provenance": prov}
+
+
 def min_bars(timeframe: str) -> int:
     """`MIN_BARS` re-expressed as the SAME MARKET TIME on `timeframe`.
 
@@ -134,7 +274,14 @@ def main() -> int:
 
     symbols = mt5.symbols_get() or ()
     tradable = [s for s in symbols if getattr(s, "trade_mode", 0) != 0]
-    print(f"Fusion exposes {len(symbols)} symbols, {len(tradable)} tradable")
+    _traded = _traded_symbols()
+    tradable = _collection_order(tradable, _traded)
+    _need = sum(1 for s in tradable
+                if any(not (UNIVERSE / f"{str(s.name).upper()}_{tf}.parquet").exists()
+                       for tf in TIMEFRAMES))
+    print(f"Fusion exposes {len(symbols)} symbols, {len(tradable)} tradable; "
+          f"{_need} missing at least one chart, {len(_traded)} carry desk risk. "
+          f"Collecting least-covered first so a budget cut does not re-walk the same prefix.")
 
     registry = {}
     if REGISTRY.exists():
@@ -177,7 +324,7 @@ def main() -> int:
             if code is None:                      # a broker/terminal without this chart
                 thin.append(f"{tf}:unsupported")
                 continue
-            rates = mt5.copy_rates_range(name, code, start, now)
+            rates = _pull_bars(mt5, name, code, _want_bars(tf), start, now)
             n = 0 if rates is None else len(rates)
             if tf == "H1":
                 h1_rates = rates
@@ -247,8 +394,26 @@ def main() -> int:
                 # so the median is free and identical in meaning to the other producer's.
                 # The point-in-time reading is KEPT, under its own name, because it is real data
                 # about the moment -- it just is not a median.
-                "median_spread_pts": float(df["spread"].median())
-                if "spread" in df.columns else float(getattr(info, "spread", 0) or 0),
+                # AND THE COMMENT ABOVE WAS RIGHT AND STILL LOST THE FIELD (2026-09-24).
+                #
+                # Two defects, both measured on the trading box, both on the money path:
+                #
+                #  * `df` here is whatever chart the timeframe loop wrote LAST, not H1. The
+                #    number every candidate is priced against was the median of an arbitrary
+                #    chart. `h1_rates` is already in hand and is the admission timeframe, so the
+                #    median is taken from it explicitly.
+                #  * this ran HOURLY (`MT5-Universe`, PT1H) and re-wrote the field without
+                #    touching `_provenance`, so the registry's 245 rows still read
+                #    `download_all_symbols` against values this collector had replaced. A stale
+                #    stamp is worse than none: it is a false claim about which measurement a
+                #    reader is holding, and it is how a corrected spread silently reverted.
+                #
+                # `may_write_median_spread` is the ranking, in the module that already owns the
+                # merge rules. It refuses to overwrite a strictly better producer -- the desk's
+                # own fills, or the M1 tape -- and this collector stamps its own name whenever it
+                # does write. An H1 median on THIS broker reads a pre-2021 fixed-spread era, so
+                # it ranks below the tape by measurement and not by preference.
+                **_median_spread_write(registry.get(name, {}), h1_rates, info, now),
                 "spread_pts_at_collection": float(getattr(info, "spread", 0) or 0),
                 "swap_long": float(getattr(info, "swap_long", 0) or 0),
                 "swap_short": float(getattr(info, "swap_short", 0) or 0),

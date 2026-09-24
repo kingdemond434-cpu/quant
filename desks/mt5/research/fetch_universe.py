@@ -26,7 +26,7 @@ Two rules now hold here, and both are the anti-hardcode law (LAWS §1) rather th
 import json
 import sys
 import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import MetaTrader5 as mt5
@@ -34,6 +34,11 @@ import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from mt5desk.config import desk_root, terminal_path
+from mt5desk.universe_registry import may_write_median_spread, merge
+
+#: What this collector's `median_spread_pts` IS: the median of the H1 spread column it just
+#: downloaded. Named so the stamp cannot mean something else, and so the ranking can place it.
+MEDIAN_SPREAD_SOURCE = "h1_spread_median"
 
 TERMINAL = terminal_path()
 # PATHS COME FROM `desk_root()`, NEVER A USERNAME (LAWS §1 anti-hardcode; the helper's own
@@ -64,7 +69,152 @@ SEED_CANDIDATES = [
 #: refuses to quote.
 MIN_BARS = 1000
 
-START = datetime(2018, 1, 1, tzinfo=timezone.utc)
+START = datetime(2018, 1, 1, tzinfo=UTC)
+
+#: INTRADAY BARS, AND WHY THE DESK HAD NONE (added 2026-09-14).
+#:
+#: This collector made exactly one call per symbol -- TIMEFRAME_H1 -- and the whole research
+#: system inherited that as a ceiling it never chose. Measured on the box: 299 H1 parquets, 250
+#: D1, 248 H4, and FOUR M15 plus a single M5 (XAUUSD). Nothing was wrong with the machinery:
+#: `external_gauntlet.timeframe_of()` already reads `params["timeframe"]` per cell, and
+#: `lvc_asia_london` is explicitly PINNED to M5. The bars simply did not exist.
+#:
+#: THREE SEPARATE SYMPTOMS, ONE LINE OF CODE:
+#:   * No intraday mechanism could ever be hunted, on any symbol, at any timeframe below H1.
+#:   * Every scalp sleeve on the desk is `xau_*` -- not a research preference, XAUUSD was the
+#:     only instrument with M5/M1 coverage, so it was the only one the scalp lane COULD hunt.
+#:   * `lvc_asia_london` produced cells the gauntlet built and never judged, because an M5-pinned
+#:     family cannot reach the 60 trading days the gates need on symbols with no M5 bars. Those
+#:     cells were routed to the deepening queue and surfaced in the conservation report as 13
+#:     LOST candidates. The family was not lost; it was starving.
+#:
+#: WINDOWS ARE PER TIMEFRAME, AND SHORTER GOING DOWN. H1 keeps its full 2018 history unchanged --
+#: nothing here reduces what already works. Intraday needs recency, not depth: the gates want 60
+#: trading days, which is ~17k M5 bars, so one year of M5 (~74k bars) and two of M15 clear the
+#: bar with room for a walk-forward split while keeping the pull to single-digit GB. Measured
+#: from the existing files, M15 across all 299 symbols is ~0.6 GB against 58 GB free.
+#:
+#: TRADEABLE ONLY. Intraday is fetched for symbols the broker lets us OPEN (trade_mode 4); the
+#: 13 CLOSE_ONLY instruments already cost the sweep budget once and there is no reason to buy
+#: them a second, finer-grained dataset the desk can never act on.
+#: (label, terminal constant, days of history). THE WHOLE LADDER BELOW H1, because a chart the
+#: desk does not collect is a chart it can never hunt, and the sweep reads the files.
+#:
+#: WINDOWS SHORTEN AS THE CHART DOES, and the reason is bar COUNT rather than taste. The gates
+#: need 60 trading days; a walk-forward split needs several multiples of that. Every window here
+#: clears it by a wide margin -- M30 730d is ~35k bars, M15 730d ~70k, M5 365d ~105k, M1 180d
+#: ~259k -- while keeping the whole pull near 2 GB against 58 GB free on the box. Taking M1 back
+#: to 2018 would buy no statistical power the gates can spend and would cost tens of GB.
+#: (label, terminal constant, bars to request).
+#:
+#: A COUNT, NOT A DATE RANGE, AND THE REASON IS A TERMINAL QUIRK THAT COSTS THE WHOLE PULL.
+#: `copy_rates_range` serves only bars the terminal has already CACHED; it does not make the
+#: terminal back-fill. Measured 2026-09-14 on the live box: a 730-day range returned 49,535 M15
+#: bars for EURUSD and ZERO M5, because nothing had ever opened an M5 chart for it. The failure
+#: is silent and reads exactly like "the broker has no M5 history for this symbol", which is the
+#: conclusion the desk would have drawn.
+#: `copy_rates_from_pos(sym, tf, 0, N)` asks for the most recent N bars and DOES trigger the
+#: download, so a count is what gets requested and the range survives only as a fallback.
+#:
+#: Counts clear the 60 trading days the gates need by a wide margin on every chart -- at ~120
+#: market hours a week that is ~2.9k M30 bars, 5.8k M15, 17k M5, 86k M1 -- while keeping the pull
+#: near 2 GB against 58 GB free. Deeper M1 buys no power the gates can spend.
+INTRADAY_TIMEFRAMES: tuple[tuple[str, str, int], ...] = (
+    ("M30", "TIMEFRAME_M30", 40_000),
+    ("M15", "TIMEFRAME_M15", 60_000),
+    ("M5", "TIMEFRAME_M5", 120_000),
+    ("M1", "TIMEFRAME_M1", 200_000),
+)
+
+#: An intraday series below this is not worth writing: it cannot carry the 60 trading days the
+#: gates need, and a short file is worse than none because it looks like coverage.
+MIN_INTRADAY_BARS = 5000
+
+
+#: Most bars this terminal will serve in ONE call. Above it `copy_rates_from_pos` returns None
+#: with `(-2, 'Terminal: Invalid params')` -- no exception, no partial result. Measured on Fusion
+#: Markets MT5 2026-09-14: 60,000 succeeds, 120,000 does not.
+#:
+#: THE SILENT SHAPE IS THE DANGER. A request over the cap looks identical to a symbol the broker
+#: has no history for, so asking for 120,000 M5 bars and getting nothing reads as "this venue
+#: does not serve M5" -- a conclusion that would have retired the whole intraday programme on a
+#: parameter mistake.
+MAX_BARS_PER_CALL = 50_000
+
+
+def _pull_bars(mt5, sym: str, tf_const, want: int, now):
+    """Up to `want` bars, walking BACKWARD in capped chunks. None when the venue serves nothing.
+
+    One call cannot reach the depth M1 needs: 50,000 M1 bars is about 42 trading days at ~7,200 a
+    week, and the gates want 60. So the newest chunk is taken by position, then each older chunk
+    is anchored at the oldest bar already held.
+
+    Progress is REQUIRED to continue. A venue that keeps returning the same oldest bar would
+    otherwise spin forever; when a chunk adds nothing new, the history is exhausted and what has
+    been gathered is what exists.
+    """
+    import numpy as np
+    first = mt5.copy_rates_from_pos(sym, tf_const, 0, min(want, MAX_BARS_PER_CALL))
+    if first is None or len(first) == 0:
+        # Only now is a range call worth trying: it cannot back-fill, but a terminal that refuses
+        # the positional form may still serve what it already holds.
+        r = mt5.copy_rates_range(sym, tf_const, now - timedelta(days=730), now)
+        return r if r is not None and len(r) else None
+    chunks = [first]
+    have = len(first)
+    oldest = first[0]["time"]
+    while have < want:
+        older = mt5.copy_rates_from(sym, tf_const, datetime.fromtimestamp(int(oldest), UTC),
+                                    min(want - have, MAX_BARS_PER_CALL))
+        if older is None or len(older) == 0:
+            break
+        new_oldest = older[0]["time"]
+        if new_oldest >= oldest:
+            break                       # no progress: the venue's history ends here
+        chunks.append(older)
+        have += len(older)
+        oldest = new_oldest
+    out = np.concatenate(chunks) if len(chunks) > 1 else chunks[0]
+    out = np.unique(out)                # chunks overlap at the anchor bar
+    return out
+
+
+def _fetch_intraday(mt5, sym: str, info) -> dict[str, dict]:
+    """Write the intraday parquets for one symbol. Returns per-timeframe coverage, always.
+
+    A timeframe that produced nothing is REPORTED with its reason rather than omitted: "the
+    broker served no M5 for this symbol" and "nobody asked for M5" are different facts, and an
+    absent key makes them identical (L1.28a).
+    """
+    out: dict[str, dict] = {}
+    if int(getattr(info, "trade_mode", -1)) != 4:
+        return {tf: {"bars": 0, "reason": "NOT_TRADEABLE"} for tf, _, _ in INTRADAY_TIMEFRAMES}
+    now = datetime.now(UTC)
+    for label, attr, want in INTRADAY_TIMEFRAMES:
+        tf_const = getattr(mt5, attr, None)
+        if tf_const is None:
+            out[label] = {"bars": 0, "reason": "TIMEFRAME_UNKNOWN_TO_TERMINAL"}
+            continue
+        try:
+            rates = _pull_bars(mt5, sym, tf_const, want, now)
+        except Exception as exc:
+            out[label] = {"bars": 0, "reason": f"FETCH_FAILED: {type(exc).__name__}"}
+            continue
+        n = 0 if rates is None else len(rates)
+        if n < MIN_INTRADAY_BARS:
+            out[label] = {"bars": n, "reason": "INSUFFICIENT_HISTORY",
+                          "min_bars": MIN_INTRADAY_BARS}
+            continue
+        d = pd.DataFrame(rates)
+        d["time"] = pd.to_datetime(d["time"], unit="s", utc=True)
+        d = d.set_index("time").sort_index()
+        d = d[["open", "high", "low", "close", "tick_volume", "spread", "real_volume"]]
+        d.to_parquet(OUT / f"{sym}_{label}.parquet")
+        out[label] = {"bars": len(d), "first": str(d.index.min()),
+                      "last": str(d.index.max()),
+                      "median_spread_pts": float(d["spread"].median())}
+    return out
+
 
 
 def _clocked_symbols() -> set[str]:
@@ -144,7 +294,7 @@ def main() -> None:
         offered = [s.name for s in (mt5.symbols_get() or ())]
         print(f"broker offers {len(offered)} symbol(s); "
               f"{sum(1 for s in mt5.symbols_get() if s.trade_mode == 4)} fully tradeable")
-    except Exception as exc:                                    # noqa: BLE001
+    except Exception as exc:
         print(f"broker symbol list unavailable ({type(exc).__name__}); "
               f"refreshing the seed and registry only")
     delisted = [s for s in registry if offered and s not in offered]
@@ -155,7 +305,7 @@ def main() -> None:
         for s in delisted:
             if isinstance(registry.get(s), dict):
                 registry[s]["tradeable"] = False
-                registry[s]["delisted_seen_at"] = datetime.now(timezone.utc).isoformat()
+                registry[s]["delisted_seen_at"] = datetime.now(UTC).isoformat()
     candidates = _refresh_order(
         list(dict.fromkeys([*SEED_CANDIDATES, *registry, *offered])))
     print(f"refreshing {len(candidates)} symbol(s): {len(SEED_CANDIDATES)} seeded, "
@@ -176,7 +326,7 @@ def main() -> None:
             skipped[sym] = {"reason": "NOT_OFFERED",
                             "detail": "the broker does not quote this symbol on this account"}
             continue
-        rates = mt5.copy_rates_range(sym, mt5.TIMEFRAME_H1, START, datetime.now(timezone.utc))
+        rates = mt5.copy_rates_range(sym, mt5.TIMEFRAME_H1, START, datetime.now(UTC))
         n_bars = 0 if rates is None else len(rates)
         if rates is None or n_bars < MIN_BARS:
             print(f"{sym:8s} insufficient history ({n_bars} bars)")
@@ -210,9 +360,46 @@ def main() -> None:
             "trade_mode": int(getattr(info, "trade_mode", -1)),
             "tradeable": bool(int(getattr(info, "trade_mode", -1)) == 4),
         }
+        # INTRADAY, on the same pass. Failures here never abort the H1 write above: an M5 gap is
+        # a coverage fact to record, not a reason to lose the hourly series the whole desk runs on.
+        try:
+            intraday = _fetch_intraday(mt5, sym, info)
+        except Exception as exc:
+            intraday = {"error": {"reason": f"{type(exc).__name__}: {exc}"}}
+        summary[sym]["bars_by_timeframe"] = {"H1": len(df), **{
+            k: int(v.get("bars", 0)) for k, v in intraday.items()}}
+        summary[sym]["intraday_coverage"] = intraday
+        # THE REGISTRY MUST CLAIM WHAT WAS ACTUALLY WRITTEN. `orthogonal_sweep.timeframes_of`
+        # reads `timeframes` to decide which charts a symbol may be hunted on, and falls back to
+        # H1 alone for a row carrying neither field. `timeframes_thin` records charts that WERE
+        # fetched and came back too short for the gates, with their bar counts -- a coverage
+        # measurement, not an absence, so a family that needs M5 can ask rather than discovering
+        # the gap at gauntlet time.
+        summary[sym]["timeframes"] = ["H1"] + [
+            k for k, v in intraday.items() if int(v.get("bars", 0)) >= MIN_INTRADAY_BARS]
+        summary[sym]["timeframes_thin"] = {
+            k: int(v.get("bars", 0)) for k, v in intraday.items()
+            if 0 < int(v.get("bars", 0)) < MIN_INTRADAY_BARS}
+        _tf = " ".join(f"{k}={v.get('bars', 0)}" for k, v in intraday.items())
         print(f"{sym:8s} {len(df):6d} bars {df.index.min().date()} -> {df.index.max().date()} "
-              f"contract={info.trade_contract_size} spread_med={med_spread:.1f}pts")
-    registry.update(summary)
+              f"contract={info.trade_contract_size} spread_med={med_spread:.1f}pts  {_tf}")
+    # A FULL ROW REPLACE IS A FIELD-LEVEL CLOBBER WEARING A FILE-LEVEL GUARD (fixed 2026-09-24).
+    #
+    # `registry.update(summary)` swaps the whole row object, so every field a different producer
+    # wrote -- `_provenance`, a repaired `tick_value`, `asset_class`, `swap_long/short` -- was
+    # deleted for each symbol this run touched, while the shrink check below passed because the
+    # KEY COUNT never fell. The check was watching the wrong dimension.
+    #
+    # `merge` is the desk's own union: a field this run measured wins, a field it did not know
+    # survives, and every write is stamped. `median_spread_pts` is then held back wherever a
+    # better-ranked producer owns it -- an H1 median on this broker reads a pre-2021 FIXED-SPREAD
+    # era, so it must not overwrite the desk's own fills or the M1 tape.
+    for sym, row in summary.items():
+        prev = registry.get(sym) if isinstance(registry.get(sym), dict) else {}
+        allowed, _why = may_write_median_spread(prev, MEDIAN_SPREAD_SOURCE)
+        if not allowed:
+            row.pop("median_spread_pts", None)
+    registry = merge(registry, summary, source=MEDIAN_SPREAD_SOURCE)
     if len(registry) < prior_n:
         # Unreachable by construction (update never removes keys); asserted anyway because the
         # whole point of this fix is that this file can never shrink the registry again.
@@ -223,7 +410,7 @@ def main() -> None:
     # this pass" and "this pass never reported" are different facts and a stale file would make
     # them look identical to the coverage watchdog.
     (OUT / "bar_coverage_skips.json").write_text(json.dumps({
-        "fetched_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "fetched_at": datetime.now(UTC).isoformat(timespec="seconds"),
         "attempted": len(candidates), "written": len(summary), "skipped": len(skipped),
         "reasons": skipped}, indent=1), encoding="utf-8")
     print(f"skip ledger: {len(skipped)} symbol(s) recorded with a reason")

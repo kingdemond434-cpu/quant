@@ -1,8 +1,36 @@
 #!/usr/bin/env python3
-"""Give `median_spread_pts` a PROVENANCE by recomputing it from the desk's own H1 bars.
+"""Give `median_spread_pts` a PROVENANCE by recomputing it from the broker's own tape.
 
     python scripts/repair_universe_spreads.py            # report only, changes nothing
     python scripts/repair_universe_spreads.py --apply     # write the registry
+    python scripts/repair_universe_spreads.py --source h1 # the superseded H1 statistic
+
+THE SOURCE CHANGED ON 2026-09-24 AND THE OLD ONE IS KEPT ONLY SO IT CAN BE NAMED. Everything
+below this paragraph is the H1 story and it remains true about the REGISTRY; it is no longer true
+about the REPAIR, because the H1 statistic it prescribes does not describe this broker:
+
+    sym      H1 nonzero median   H1 p25   M1 median   live symbol_info
+    AUDUSD          50.0          50.0       0.0            0
+    EURUSD          50.0          50.0       0.0            0
+    GBPUSD          50.0          50.0       0.0            0
+    AUDCHF         160.0           3.0       0.0            1
+    EURCAD         160.0           3.0       0.0            2
+
+Exactly 50.0 on three unrelated majors and exactly 160.0 on two unrelated crosses is not a
+spread. MEASURED on all 248 H1 parquets: every symbol carries ONE fixed spread on every bar from
+the start of its history to a single cut-over (2020-12-11 01:00 for FX, 2020-12-31 for the CFDs),
+the same constant appears in H1/H4/D1 and in no other timeframe, and 121 symbols begin it at the
+same instant. It is the BROKER'S OWN HISTORY: Fusion's server did not record a per-bar spread
+before December 2020 and serves that era at a fixed per-symbol spread. After it, this account
+quotes 0 points on 80-96% of FX bars -- so `nz = kept[kept > 0]` below DELETES the modern era and
+leaves the fixed-spread block as the majority of what survives. The exclusion selects for the
+placeholder, and applying it would have charged the majors up to eighty times their real cost.
+
+`research/fusion_spread_tape.py` is the source now: the M1 tape, ticked bars only, the same
+session filter, zero-spread bars KEPT (a 0-point quote is what a Zero account quotes) and a zero
+central value never WRITTEN. It carries the dispersion and three cross-checks per symbol. This
+file keeps what it was always right about -- the provenance stamp, the two apply directions, the
+verified gate, and the naming of every row that gets cheaper.
 
 THE BLOCKER THIS CLEARS. `libs/portfolio/execution_cost.py` prices each sleeve at the hour it
 actually fills, and on 2026-09-07 it priced ZERO of 76 sleeves. Not because the surface is
@@ -63,10 +91,18 @@ UNIVERSE = BASE / "data" / "universe"
 REGISTRY = UNIVERSE / "universe.json"
 REPORT = BASE / "reports" / "SPREAD_PROVENANCE.json"
 
-#: What the `_provenance` stamp says. A reader must be able to tell this apart from
-#: `realized_fills` (the desk's own executions, a strictly better source) and from an unstamped
-#: value (which is what this exists to eliminate).
+#: What the `_provenance` stamp says under `--source h1`. A reader must be able to tell this apart
+#: from `realized_fills` (the desk's own executions), from `fusion_zero_m1_tape` (the source of
+#: record since 2026-09-24) and from an unstamped value (which is what this exists to eliminate).
 SOURCE = "h1_spread_median"
+
+#: The source of record. Superseded `h1_spread_median` on 2026-09-24 -- see the header for the
+#: fixed-spread era that statistic was reading.
+DEFAULT_SOURCE = "tape"
+
+#: The tape artifact, so a reader of the registry can find the dispersion and the cross-checks
+#: behind any stamped value rather than only the scalar.
+TAPE_REPORT = BASE / "reports" / "SPREAD_TAPE.json"
 
 #: The ONE exception to "realised fills beat bars". A fills-derived spread more than this multiple
 #: of the symbol's own bar median is not a better measurement -- past it a cell can never clear
@@ -116,6 +152,54 @@ def measured_spread(sym: str) -> tuple[float | None, str, dict[str, Any]]:
     }
 
 
+#: The tape measurement for this pass, keyed by symbol. Populated once per `run()` because the
+#: measurement opens a terminal and 248 parquets; a per-symbol call would do both 251 times.
+_TAPE: dict[str, Any] = {}
+
+
+def load_tape(write: bool = True) -> dict[str, Any]:
+    """Run the tape measurement once, cache its rows and publish the artifact behind the scalar.
+
+    Its own function so the registry repair and the measurement stay separable: the repair is
+    about which number gets WRITTEN and to what provenance, the measurement is about what the
+    broker quotes, and a test of one should not need a terminal for the other.
+    """
+    from research.fusion_spread_tape import measure
+
+    doc = measure(ROOT)
+    _TAPE.clear()
+    _TAPE.update(doc.get("by_symbol") or {})
+    if write and doc.get("status") != "UNMEASURED":
+        TAPE_REPORT.parent.mkdir(parents=True, exist_ok=True)
+        TAPE_REPORT.write_text(json.dumps(doc, indent=1, default=str) + "\n", "utf-8")
+    return doc
+
+
+def tape_spread(sym: str) -> tuple[float | None, str, dict[str, Any]]:
+    """The broker's own quote for `sym`, from `research/fusion_spread_tape.py`.
+
+    Returns the SAME triple as `measured_spread` so the apply path, the provenance stamp and the
+    report below are shared rather than duplicated. A row the tape measured but refuses to write
+    -- a zero central value, or a cheapening every other source contradicts -- comes back as
+    None WITH ITS REASON, which lands it in `unmeasured` and leaves its old value alone.
+    """
+    row = _TAPE.get(sym)
+    if not isinstance(row, dict):
+        return None, "the tape measurement produced no row for this symbol", {}
+    from research.fusion_spread_tape import applicable
+
+    value, why = applicable(row)
+    detail: dict[str, Any] = {"dispersion": row.get("dispersion"), "window": row.get("window"),
+                              "cross_checks": row.get("cross_checks"),
+                              "disagreements": row.get("disagreements"),
+                              "corroboration": row.get("corroboration"),
+                              "corroborated_by": row.get("corroborated_by"),
+                              "hours_traded": row.get("hours_traded")}
+    # `n_priced` is what the report and the console printer below already read.
+    detail["n_priced"] = (row.get("window") or {}).get("n")
+    return value, why, detail
+
+
 def _verified(path: Path | None) -> set[str] | None:
     """The symbols whose correction was SHOWN to move the charge toward the broker's own
     quote, from `desks/mt5/research/cost_truth.py`. None means "no gate asked for".
@@ -138,7 +222,8 @@ def _verified(path: Path | None) -> set[str] | None:
 
 
 def run(apply: bool = False, write: bool = True,
-        widening_only: bool = False, only_verified: Path | None = None) -> dict[str, Any]:
+        widening_only: bool = False, only_verified: Path | None = None,
+        source: str = DEFAULT_SOURCE) -> dict[str, Any]:
     try:
         doc = json.loads(REGISTRY.read_text("utf-8"))
     except (OSError, ValueError) as exc:
@@ -146,6 +231,20 @@ def run(apply: bool = False, write: bool = True,
     rows = doc.get("symbols") if isinstance(doc, dict) and "symbols" in doc else doc
     if not isinstance(rows, dict):
         return {"status": "UNMEASURED", "why": "registry is not a symbol map"}
+
+    # THE SOURCE IS CHOSEN ONCE AND NAMED IN EVERY STAMP IT WRITES. `h1` is kept reachable so the
+    # superseded statistic can be reproduced and compared, never because it is still correct.
+    tape_doc: dict[str, Any] = {}
+    if source == "tape":
+        tape_doc = load_tape(write=write)
+        if tape_doc.get("status") == "UNMEASURED":
+            return {"status": "UNMEASURED",
+                    "why": f"the tape measurement refused: {tape_doc.get('why')}"}
+        probe_fn, stamp = tape_spread, str(tape_doc.get("source") or "fusion_zero_m1_tape")
+    elif source == "h1":
+        probe_fn, stamp = measured_spread, SOURCE
+    else:
+        return {"status": "UNMEASURED", "why": f"unknown source {source!r}"}
 
     corrected: list[dict[str, Any]] = []
     stamped_same: list[str] = []
@@ -184,7 +283,7 @@ def run(apply: bool = False, write: bool = True,
             # here: past 3x the symbol's own bars, a cell can never pass whatever its edge, so
             # the value is suppressing the instrument rather than pricing it. Inside 3x the
             # original rule stands untouched, which is where it was right.
-            probe, _why, pdetail = measured_spread(sym)
+            probe, _why, pdetail = probe_fn(sym)
             old_raw = row.get("median_spread_pts")
             old_val = float(old_raw) if isinstance(old_raw, (int, float)) else None
             implausible = (probe is not None and old_val is not None and probe > 0
@@ -201,7 +300,7 @@ def run(apply: bool = False, write: bool = True,
                                     f"{probe} is {old_val / probe:.1f}x -- past the "
                                     f"{FILLS_IMPLAUSIBLE_ABOVE_BARS}x the stress gate tests, so "
                                     "nothing on this symbol can pass. Repaired from bars")})
-        got, why, detail = measured_spread(sym)
+        got, why, detail = probe_fn(sym)
         if got is None:
             unmeasured[sym] = why
             continue
@@ -244,8 +343,21 @@ def run(apply: bool = False, write: bool = True,
         if apply and (not widening_only or old_f is None or got > old_f):
             row["median_spread_pts"] = got
             prov = row.setdefault("_provenance", {})
-            prov["median_spread_pts"] = {"at": now, "source": SOURCE, "was": old_f,
+            # THE DISPERSION RIDES WITH THE SCALAR. A reader of the registry alone cannot tell a
+            # symbol that is 2 all day from one that is 2 for twenty-three hours and 158 at the
+            # rollover, and the sleeves that fire at the rollover pay the second one. The scalar
+            # stays a MEDIAN and nothing else -- writing a p90 into a field named for a median is
+            # the producer collapse `universe_registry` exists to end -- but the band and the
+            # window it was taken over are stamped beside it, with the artifact that holds the
+            # per-hour detail named so it can be found.
+            prov["median_spread_pts"] = {"at": now, "source": stamp, "was": old_f,
                                          "mode": "widening_only" if widening_only else "full"}
+            if source == "tape":
+                prov["median_spread_pts"].update({
+                    "dispersion": detail.get("dispersion"),
+                    "window": detail.get("window"),
+                    "corroboration": detail.get("corroboration"),
+                    "detail": "desks/mt5/reports/SPREAD_TAPE.json"})
             applied_syms.append(sym)
 
     if apply and write:
@@ -253,6 +365,12 @@ def run(apply: bool = False, write: bool = True,
 
     out = {
         "status": "MEASURED", "generated_utc": now, "applied": bool(apply),
+        "source": source, "provenance_stamp": stamp,
+        "tape_summary": {k: tape_doc.get(k) for k in (
+            "at", "account", "terminal_status", "live_freshness", "n_measured", "n_unmeasured",
+            "n_dearer", "n_cheaper", "n_unchanged", "n_priced_from_zero",
+            "n_cheaper_contradicted", "n_cheaper_tape_only", "cheaper_contradicted",
+            "n_with_disagreement")} if tape_doc else None,
         "apply_mode": ("widening_only" if (apply and widening_only) else
                        "full" if apply else "report_only"),
         "n_applied": len(applied_syms),
@@ -261,6 +379,24 @@ def run(apply: bool = False, write: bool = True,
         "skipped_unverified": sorted(skipped_unverified)[:60],
         "n_zero_registry_spread": sum(
             1 for e in corrected if (e.get("old") or 0) == 0),
+        # THE NUMBER THE ZERO ARGUMENT IS ACTUALLY ABOUT, and the one the count above cannot
+        # answer. That one counts zeros this pass REPAIRED; this counts zeros it LEAVES, which is
+        # the set still priced at no cost at all. They are different facts and reporting only the
+        # first reads as "the zeros are handled".
+        #
+        # A zero survives for exactly one reason and it is not a failure to look: at this venue's
+        # integer-point resolution the symbol's median genuinely IS zero -- EURUSD quotes bid ==
+        # ask on 96% of its ticked minutes and `symbol_info.spread` reads 0 on an open market --
+        # so a Zero account carries that instrument's whole cost in the COMMISSION. Writing a
+        # fabricated positive spread there would be an invention; writing the measured zero is
+        # refused because a zero lets a non-edge certify. Naming them is the third option, and
+        # their tails are in SPREAD_TAPE.json.
+        "n_still_priced_at_zero": sum(
+            1 for s, r in rows.items()
+            if isinstance(r, dict) and r.get("median_spread_pts") == 0),
+        "still_priced_at_zero": sorted(
+            s for s, r in rows.items()
+            if isinstance(r, dict) and r.get("median_spread_pts") == 0),
         "n_symbols": len(rows),
         "n_corrected": len(corrected), "n_already_correct": len(stamped_same),
         "n_kept_realized_fills": len(kept_better), "n_unmeasured": len(unmeasured),
@@ -292,9 +428,12 @@ def run(apply: bool = False, write: bool = True,
         "kept_realized_fills": sorted(kept_better),
         "n_fills_overridden": len(fills_overridden),
         "fills_overridden": fills_overridden,
-        "rule": ("median_spread_pts is recomputed from each symbol's own H1 spread column using "
-                 "cost_surface's exclusions (full-session days, non-zero bars, MIN_OBS floor) "
-                 "and stamped with its source. `realized_fills` rows are never overwritten -- an "
+        "rule": (f"median_spread_pts is recomputed from source={source!r} and stamped "
+                 f"{stamp!r}. The tape source is the symbol's own M1 spread column over TICKED "
+                 "bars on full-session days, by cost_surface's exclusions, with zero-spread bars "
+                 "KEPT and a zero central value never written; the h1 source is the superseded "
+                 "non-zero H1 median, which on this broker reads a pre-2021 fixed-spread era. "
+                 "`realized_fills` rows are never overwritten -- an "
                  "execution beats an inference. Identity: this changes cost_hash, and "
                  "sleeve_registry.rebase_cost handles a cost-only change without losing "
                  "forward_start, because the engine replays every pass."),
@@ -321,15 +460,29 @@ def main(argv: list[str] | None = None) -> int:
                          "research/cost_truth.py after comparing each correction to the "
                          "live terminal's own quote). Every other correction is skipped "
                          "and named. An unreadable file applies NOTHING.")
+    ap.add_argument("--source", choices=("tape", "h1"), default=DEFAULT_SOURCE,
+                    help="where the number comes from. 'tape' is the broker's own M1 quote "
+                         "(research/fusion_spread_tape.py) and is the source of record. 'h1' is "
+                         "the superseded non-zero H1 median, which on this broker reads a "
+                         "pre-2021 FIXED-SPREAD era -- reachable so it can be reproduced and "
+                         "compared, never because it is still correct.")
     a = ap.parse_args(argv)
     r = run(apply=a.apply or a.apply_widening_only, write=not a.no_write,
-            widening_only=a.apply_widening_only, only_verified=a.only_verified)
+            widening_only=a.apply_widening_only, only_verified=a.only_verified,
+            source=a.source)
     if r.get("status") != "MEASURED":
         print(f"REFUSED: {r.get('why')}")
         return 1
-    print(f"spread provenance: {r['n_symbols']} symbols"
+    print(f"spread provenance: {r['n_symbols']} symbols  source={r['source']}"
           f"  corrected={r['n_corrected']}  already_correct={r['n_already_correct']}"
           f"  kept_realized_fills={r['n_kept_realized_fills']}  unmeasured={r['n_unmeasured']}")
+    if r.get("tape_summary"):
+        t = r["tape_summary"]
+        print(f"  tape: dearer={t['n_dearer']} cheaper={t['n_cheaper']} "
+              f"unchanged={t['n_unchanged']} from_zero={t['n_priced_from_zero']}  "
+              f"cheapenings contradicted by every other source={t['n_cheaper_contradicted']} "
+              f"{t['cheaper_contradicted'][:8]}  tape_only={t['n_cheaper_tape_only']}  "
+              f"symbols with a published disagreement={t['n_with_disagreement']}")
     if r.get("n_fills_overridden"):
         print(f"  FILLS OVERRULED (implausible against their own bars): "
               f"{r['n_fills_overridden']}")
@@ -344,6 +497,8 @@ def main(argv: list[str] | None = None) -> int:
         print(f"  CORRECTED: {r['n_corrected']}")
         for c in r["corrected"][:12]:
             print(f"    {c['symbol']:12s} {c['old']} -> {c['new']}  ({c['n_priced']} priced bars)")
+    print(f"  STILL priced at ZERO after this pass: {r['n_still_priced_at_zero']} "
+          f"{r['still_priced_at_zero']}")
     if not (a.apply or a.apply_widening_only):
         print(f"  {r['n_zero_registry_spread']} symbol(s) carry a registry spread of ZERO and are "
               f"therefore priced at no cost at all.")
