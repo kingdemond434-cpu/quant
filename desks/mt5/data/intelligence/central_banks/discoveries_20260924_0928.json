@@ -1,0 +1,19 @@
+[
+  {
+    "source": "central_bank",
+    "bank": "ECB",
+    "currency": "EUR",
+    "feed": "https://www.ecb.europa.eu/rss/press.html",
+    "published_utc": "2026-09-24T09:00:00+00:00",
+    "title": "Philip R. Lane: The outlook for the euro area economy",
+    "link": "https://www.ecb.europa.eu//press/key/date/2026/html/ecb.sp260924~e0eceef02c.en.pdf",
+    "policy_signals": [],
+    "instruments": [
+      "EURUSD",
+      "EURJPY",
+      "EURGBP",
+      "EURAUD",
+      "EURCHF"
+    ]
+  }
+]
