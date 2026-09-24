@@ -93,6 +93,157 @@ def test_only_this_instrument_s_open_positions_block_another_gold_window() -> No
     assert g.gold_positions(rows, 7) == []
 
 
+def test_the_book_s_direction_is_read_from_sides_and_an_unreadable_side_is_not_flat() -> None:
+    assert g.book_direction([]) == 0
+    assert g.book_direction([{"side": "buy"}, {"side": "BUY "}]) == 1
+    assert g.book_direction([{"side": "sell"}, {"Side": "Sell"}]) == -1
+    # Both directions already held: a second bracket cannot make the hedge worse.
+    assert g.book_direction([{"side": "buy"}, {"side": "sell"}]) == 0
+    # Unreadable is None, NOT 0 -- treating it as flat would unblock the opposing leg exactly
+    # when the desk cannot tell what it is holding.
+    assert g.book_direction([{"side": ""}]) is None
+    assert g.book_direction([{"qty": 1.0}]) is None
+    assert g.book_direction([{"side": "buy"}, {"side": "long"}]) is None
+    assert g.OPPOSING_LEG == {1: "sell_stop", -1: "buy_stop"}
+
+
+# ---------------------------------------------------------------- the placement pass, no venue
+
+class _Api:
+    @staticmethod
+    def get_all_orders(history: bool = False, lookback_period: str = "") -> list:
+        return []
+
+
+class _Venue:
+    """Only what `run` actually calls. It records sends instead of making them."""
+
+    _api = _Api()
+
+    def __init__(self, positions: list[dict], raise_on_positions: bool = False) -> None:
+        self._positions = positions
+        self._raise = raise_on_positions
+        self.sent: list[tuple[str, float, float]] = []
+
+    def account(self) -> dict:
+        return {"equity": 100_000.0}
+
+    def quote(self, symbol: str) -> tuple[float, float]:
+        return 4320.0, 4320.5
+
+    def instrument_id(self, symbol: str) -> int:
+        return 6102
+
+    def positions(self) -> list[dict]:
+        if self._raise:
+            raise RuntimeError("429 Too Many Requests")
+        return self._positions
+
+    def min_lot(self, symbol: str) -> float:
+        return 0.01
+
+    def details(self, symbol: str) -> dict:
+        return {"contractSize": 100.0, "currency": "USD", "lotStep": 0.01}
+
+    def orders(self, symbol: str | None = None) -> list[dict]:
+        return []
+
+    def place_stop(self, symbol: str, side: str, lot: float, *, price: float,
+                   stop: float, take_profit: float) -> int:
+        self.sent.append((side, lot, price))
+        return 7000 + len(self.sent)
+
+
+class _MT5:
+    """The two reads `run` makes of the terminal: one tick and 400 H1 bars."""
+
+    TIMEFRAME_H1 = 16385
+    _END = pd.Timestamp("2026-09-16 07:00", tz="UTC")
+
+    class _Tick:
+        time = int(pd.Timestamp("2026-09-16 07:30", tz="UTC").timestamp())
+
+    def symbol_info_tick(self, symbol: str) -> _Tick:
+        return self._Tick()
+
+    def copy_rates_from_pos(self, symbol: str, tf: int, start: int, count: int) -> list[dict]:
+        """A flat 4320 tape whose LAST day ranges 4300-4340, so the asia bracket straddles the
+        quote and both legs are legal. Deterministic: the point under test is which leg is sent,
+        and a random walk that wandered off the quote would fail for an unrelated reason."""
+        idx = pd.date_range(end=self._END, periods=120, freq="h")
+        rows = []
+        for t in idx:
+            hi, lo = (4340.0, 4300.0) if t.date() == self._END.date() else (4324.0, 4316.0)
+            rows.append({"time": int(t.timestamp()), "open": 4320.0, "high": hi,
+                         "low": lo, "close": 4320.0})
+        return rows
+
+
+def _isolate(monkeypatch, tmp_path) -> None:
+    """No test writes the desk's real state, report, intent ledger or log."""
+    for name in ("STATE", "OUT", "INTENTS", "GUARD", "LOG"):
+        monkeypatch.setattr(g, name, tmp_path / f"{name.lower()}.json")
+
+
+def _run(monkeypatch, tmp_path, positions: list[dict], **kw) -> tuple[dict, _Venue]:
+    _isolate(monkeypatch, tmp_path)
+    venue = _Venue(positions, **kw)
+    return g.run(venue, _MT5(), armed=True), venue
+
+
+def _placed_sides(doc: dict) -> set[str]:
+    return {s for p in doc["placed"] for s in (p["legs"] or {})}
+
+
+def test_a_flat_book_still_places_both_legs(monkeypatch, tmp_path) -> None:
+    doc, venue = _run(monkeypatch, tmp_path, [])
+    assert _placed_sides(doc) == {"buy_stop", "sell_stop"}
+    assert sorted(s[0] for s in venue.sent) == ["buy", "sell"]
+
+
+def test_an_open_long_keeps_the_buy_leg_and_drops_only_the_opposing_sell(
+        monkeypatch, tmp_path) -> None:
+    doc, venue = _run(monkeypatch, tmp_path,
+                      [{"id": 5, "tradableInstrumentId": 6102, "side": "buy", "qty": 0.1}])
+    # The harmless half is NOT thrown away with the opposing one.
+    assert _placed_sides(doc) == {"buy_stop"}
+    assert [s[0] for s in venue.sent] == ["buy"]
+    dropped = [s for s in doc["skipped"] if s.get("side") == "sell_stop"]
+    assert len(dropped) == 1 and "trade against" in dropped[0]["why"]
+    assert doc["state"]["windows"]["asia"]["orders"].keys() == {"buy_stop"}
+
+
+def test_an_open_short_keeps_the_sell_leg_and_drops_only_the_opposing_buy(
+        monkeypatch, tmp_path) -> None:
+    doc, venue = _run(monkeypatch, tmp_path,
+                      [{"id": 5, "tradableInstrumentId": 6102, "side": "sell", "qty": 0.1}])
+    assert _placed_sides(doc) == {"sell_stop"}
+    assert [s[0] for s in venue.sent] == ["sell"]
+
+
+def test_a_position_in_another_instrument_blocks_nothing(monkeypatch, tmp_path) -> None:
+    doc, _ = _run(monkeypatch, tmp_path,
+                  [{"id": 5, "tradableInstrumentId": 99, "side": "buy", "qty": 0.1}])
+    assert _placed_sides(doc) == {"buy_stop", "sell_stop"}
+
+
+def test_an_unreadable_position_side_still_defers_the_whole_bracket(
+        monkeypatch, tmp_path) -> None:
+    doc, venue = _run(monkeypatch, tmp_path,
+                      [{"id": 5, "tradableInstrumentId": 6102, "side": None, "qty": 0.1}])
+    assert doc["placed"] == [] and venue.sent == []
+    assert any("unreadable side" in s["why"] for s in doc["skipped"])
+    # Not marked placed: the next pass may still act once the side is readable again.
+    assert doc["state"]["windows"] == {}
+
+
+def test_an_unreadable_position_book_still_stands_the_pass_down(monkeypatch, tmp_path) -> None:
+    doc, venue = _run(monkeypatch, tmp_path, [], raise_on_positions=True)
+    assert doc["placed"] == [] and venue.sent == []
+    assert "RuntimeError" in doc["positions_unreadable"]
+    assert doc["state"]["windows"] == {}
+
+
 def test_e8_uses_the_same_profit_ratchet_as_the_fusion_gold_book() -> None:
     idx = pd.date_range("2026-09-16", periods=100, freq="h", tz="UTC")
     close = np.full(len(idx), 100.0)

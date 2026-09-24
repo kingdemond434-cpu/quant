@@ -82,7 +82,7 @@ def test_the_window_map_is_the_sealed_judge_s_window_map() -> None:
     certificate on hours it was not certified under."""
     blk = GAUNTLET[GAUNTLET.index("    WINDOWS_KNOWN = {"):]
     blk = blk[:blk.index("\n    }") + 6]
-    sealed = eval(blk.split("=", 1)[1].strip())          # noqa: S307 - a dict literal from source
+    sealed = eval(blk.split("=", 1)[1].strip())
     assert sealed == cp.WINDOWS_KNOWN
 
 
@@ -214,14 +214,28 @@ def test_a_retired_or_already_sealed_row_is_not_resurrected(desk: dict[str, Path
 def test_an_ordinary_pass_reads_no_gate_output_at_all(desk: dict[str, Path]) -> None:
     """When the judge republished, its own write is the authority and there is nothing stranded.
     A 440 MB docket scan on every healthy hour would be the whole cost with none of the value."""
-    _write(desk["report"], {"n": 0, "survivors": {}, "gate_policy": ATTESTATION,
-                            "swept_at": "2026-09-24T06:00:00+00:00"})
     _write(desk["gates"], _gate_output([
         {"cell": "EURUSD.carry.p=abc", "sym": "EURUSD", "family": "carry", "days": 900,
          "passed": True, "stages": _stages()}], swept="2026-09-24T05:00:00+00:00"))
+    _write(desk["report"], {"n": 0, "survivors": {}, "gate_policy": ATTESTATION,
+                            "swept_at": "2999-01-01T00:00:00+00:00"})
     out = cp.recover_from_gate_output(desk["gates"], desk["report"], desk["seal"], desk["docket"])
     assert out["status"] == "JUDGE_REPUBLISHED"
     assert "docket_scan" not in out
+    # THE 88 MB FILE IS NOT EVEN PARSED. A stamp later than the moment the gate file was written
+    # is positive evidence the judge got past its own gate write.
+    assert "gate_survivors_passing_all" not in out
+    assert "was written" in out["why"]
+
+
+def test_the_parse_is_skipped_only_on_positive_evidence(desk: dict[str, Path]) -> None:
+    """An unreadable or older stamp falls THROUGH to the read. Absence never skips the work."""
+    _write(desk["gates"], _gate_output([
+        {"cell": "EURUSD.carry.p=abc", "sym": "EURUSD", "family": "carry", "days": 900,
+         "passed": True, "stages": _stages()}], swept="2026-09-24T05:00:00+00:00"))
+    _write(desk["report"], {"n": 0, "survivors": {}, "gate_policy": ATTESTATION})
+    out = cp.recover_from_gate_output(desk["gates"], desk["report"], desk["seal"], desk["docket"])
+    assert out["gate_survivors_passing_all"] == 1, "no stamp must not skip the read"
 
 
 def test_an_absent_gate_output_is_unmeasured_and_never_a_verdict(desk: dict[str, Path]) -> None:
