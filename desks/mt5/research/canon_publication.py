@@ -375,7 +375,7 @@ def docket_params(wanted: set[str], docket: Path = DOCKET,
     if rules is None:
         return found, "NO_IDENTITY_RULE"
     cell_id, timeframe_of = rules
-    deadline = time.monotonic() + max(1.0, float(budget_s))
+    deadline = time.monotonic() + max(0.0, float(budget_s))
     decoder = json.JSONDecoder()
     buf = ""
     pos = 0
@@ -388,7 +388,7 @@ def docket_params(wanted: set[str], docket: Path = DOCKET,
             if ch != "[":
                 return found, "DOCKET_NOT_AN_ARRAY"
             while True:
-                if rows % 2048 == 0 and time.monotonic() > deadline:
+                if rows % 256 == 0 and time.monotonic() > deadline:
                     return found, "BUDGET_EXHAUSTED"
                 while pos < len(buf) and (buf[pos].isspace() or buf[pos] == ","):
                     pos += 1
@@ -467,20 +467,20 @@ def recover_from_gate_output(gates: Path = GATE_OUTPUT, report: Path = REPORT,
         return out
 
     # A SUPERSEDED CHARGE IS NOT THIS POLICY'S VERDICT. See the module docstring.
+    #
+    # THE CENSUS IS TAKEN FIRST AND THE REFUSAL IS APPLIED AFTER, and the order is the point. An
+    # early return here would publish "REFUSED_SUPERSEDED_CHARGE" and NOTHING ELSE -- so the
+    # measurement that the sealed judge has been stamping an ELEVENTH stage (`swap_cost`, added
+    # 2026-09-14) onto every verdict, which `all_ten_pass` refuses as an exact tuple match, would
+    # sit behind a different refusal and never be counted. A blocker hidden behind another
+    # blocker is the shape this whole file exists to end. So: everything is measured, and the
+    # charge decides only whether a measured row may be SEALED.
     spec_basis = str(ATTESTATION.get("trial_count_basis") or "")
     gate_basis = str(doc.get("trial_count_basis") or "")
     out["gate_trial_basis"] = gate_basis
     out["spec_trial_basis"] = spec_basis
     out["gate_n_trials"] = doc.get("n_trials")
-    if not gate_basis or gate_basis.split("(")[0] != spec_basis.split("(")[0] \
-            or gate_basis != spec_basis:
-        out.update(status="REFUSED_SUPERSEDED_CHARGE", rows={},
-                   why=(f"the gate output was judged under trial basis {gate_basis!r} and the "
-                        f"spec in force now reads {spec_basis!r}. Sealing those verdicts would "
-                        f"stamp the current attestation onto rows judged under a different bar. "
-                        f"They are not lost: the next completed sweep re-judges them under the "
-                        f"policy that is actually in force."))
-        return out
+    superseded = bool(not gate_basis or gate_basis != spec_basis)
 
     seal_doc = _read(seal)
     standing = seal_doc.get("survivors")
@@ -529,6 +529,17 @@ def recover_from_gate_output(gates: Path = GATE_OUTPUT, report: Path = REPORT,
     out["gate_passed_rows"] = sum(1 for v in doc.get("verdicts") or []
                                   if isinstance(v, dict) and v.get("passed") is True)
     out["extra_gates_seen"] = dict(extra_gates.most_common())
+    out["refused"] = dict(refused)
+    if superseded:
+        refused["superseded_charge"] += len(candidates)
+        out.update(status="REFUSED_SUPERSEDED_CHARGE", rows={}, refused=dict(refused),
+                   why=(f"the gate output was judged under trial basis {gate_basis!r} and the "
+                        f"spec in force now reads {spec_basis!r}. Sealing those verdicts would "
+                        f"stamp the current attestation onto rows judged under a different bar. "
+                        f"They are not lost: the next completed sweep re-judges them under the "
+                        f"policy that is actually in force. The census above is unaffected and "
+                        f"names every OTHER blocker in the same artifact."))
+        return out
     if not candidates:
         out.update(status="NOTHING_TO_RECOVER", refused=dict(refused),
                    why="every verdict the judge passed is already sealed, already retired, or "

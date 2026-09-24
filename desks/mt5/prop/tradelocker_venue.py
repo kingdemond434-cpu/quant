@@ -313,6 +313,33 @@ class TradeLockerVenue:
             raise VenueError(f"{symbol}: the venue rejected a {side} stop {qty} @ {price}")
         return int(oid)
 
+    def modify_stop(self, position_id: int, stop: float) -> bool:
+        """Move the protective stop on ONE open position. The ONLY write that is not open/close.
+
+        WHY THIS EXISTS (2026-09-24, principal's standing order that the gold sleeves "must carry
+        a break-even stop at the least and must never give back floating profit turning into
+        losses", on BOTH accounts). Until this method there was no way to satisfy that here: this
+        adapter could place a stop with an order and close a position, and nothing in between, so
+        an E8 position's stop was fixed at entry for its whole life while the MT5 book's stop
+        ratcheted every pass. The two accounts were running different exits, which is the same
+        class of defect `mt5desk/position_manager.py` was written to fix on the MT5 side.
+
+        THE DIRECTION IS NOT CHECKED HERE, DELIBERATELY. This is the adapter: it resolves and
+        sends, it decides nothing (the rule at the top of this file). Whether a level protects
+        more than the one the account already holds is `position_manager.ratchet`'s question, and
+        duplicating that test here would create a second place where the never-widen invariant
+        lives and therefore a second place it can drift. The caller passes a level it has already
+        proven; this sends it.
+
+        `stop_loss_type="absolute"` matches `place`, so the level means the same thing on both
+        paths -- an offset here against an absolute there is a stop in a different place.
+        """
+        if not (stop > 0):
+            raise VenueError(f"position {position_id}: refusing a non-positive stop {stop}")
+        return bool(self._api.modify_position(
+            position_id=int(position_id),
+            modification_params={"stopLoss": float(stop), "stopLossType": "absolute"}))
+
     def orders(self, symbol: str | None = None) -> list[dict[str, Any]]:
         """Resting orders, optionally for one symbol."""
         iid = self.instrument_id(symbol) if symbol else 0

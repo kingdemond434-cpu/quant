@@ -62,6 +62,20 @@ ARMED_MARKER = DESK / "data" / "E8_ARMED"
 #: it, so an order without it is not this lane's and is never closed or counted here.
 TAG = "E8"
 
+#: Per-position basis for the break-even floor: initial stop distance, and the high-water mark.
+#: Keyed by venue position id. See `manage_breakeven` for why this lane needs a file where the
+#: MT5 gateway needs none.
+STOP_BASIS = DESK / "data" / "e8_stop_basis.json"
+
+#: E8 IS COMMISSION-FREE AND THAT IS NOT AN ASSUMPTION -- it is the account's own pricing, noted
+#: at line 101 below and in `tradelocker_venue.quote`: "the cost sits in a WIDER QUOTE rather
+#: than a per-lot fee". So the round-trip fee in price units is genuinely zero here, and the
+#: costed break-even level collapses to the entry price itself, which is NOT the same statement
+#: as "break even means entry" on the Fusion account, where 2.00/lot/side is real and a stop at
+#: the entry would book a small loss on every scratch. The number is passed rather than assumed
+#: precisely so the two accounts can differ without either one being wrong.
+E8_ROUND_TRIP_PER_PRICE_UNIT = 0.0
+
 
 def _family_banned(family: str) -> bool:
     """research/family_policy.family_banned from this lane; unreadable reads as not banned."""
@@ -468,6 +482,158 @@ def _quantise(lot: float, venue: Any, symbol: str) -> float:
     return float(max(q, vmin))
 
 
+def _pos_field(p: dict[str, Any], *names: str) -> float | None:
+    """First of `names` present on a venue position row as a finite number, else None.
+
+    TradeLocker's row shape is not stable across SDK versions and is not documented in a way this
+    desk can pin, so every read of it is a search over spellings rather than a subscript. A
+    missing field returns None and the caller skips the position -- never a zero, which on a stop
+    price would read as "no stop" and on an entry would read as free money.
+    """
+    for n in names:
+        v = p.get(n)
+        if isinstance(v, (int, float)) and not isinstance(v, bool) and float(v) == float(v):
+            return float(v)
+    return None
+
+
+def manage_breakeven(venue: Any, *, armed: bool = False) -> list[dict[str, Any]]:
+    """Move every E8 stop to costed break-even once it has earned it. SHADOW unless armed.
+
+    THE GAP THIS CLOSES. The principal's order of 2026-09-24 is that the gold sleeves "must carry
+    a break-even stop at the least and must never give back floating profit turning into losses",
+    on the live MT5 account AND on E8. On MT5 that is `gateway.manage_open_positions`, which has
+    ratcheted stops every pass for some time. On E8 there was no such pass and no adapter method
+    to build one with: a position's stop was whatever `place` attached at entry, for the whole
+    life of the trade. Same sleeves, same instrument, two different exits.
+
+    IT IS A FLOOR ONLY, NOT THE MT5 TRAIL. The chandelier ratchet is not reproduced here. Its
+    constants (K_TREND=4, K_STALLED=1, STALL_BARS=3) were selected on other data for the MT5 book
+    and the measurement behind this change covers the break-even floor alone; running an
+    unmeasured trail on a funded prop account because it exists elsewhere is the kind of
+    borrowed-evidence move the desk's own laws exist to stop. The floor is what was measured, so
+    the floor is what ships.
+
+    WHY THIS LANE NEEDS A STATE FILE WHERE THE GATEWAY NEEDS NONE, and what it costs. MT5 reports
+    bars and an entry time, so the gateway recomputes the high-water mark from the broker every
+    pass and holds nothing. TradeLocker's position row carries no entry timestamp this code can
+    rely on, so the watermark is accumulated here across passes at the executor's 15-minute
+    cadence. Two consequences, both named rather than hidden:
+
+      * The watermark UNDER-samples -- a spike between two passes is not seen. That delays
+        arming; it can never arm early. Late protection is a cost, mis-placed protection is a
+        defect, and this trades the second for the first.
+      * A lost `e8_stop_basis.json` re-seeds the watermark from the current quote, so an
+        already-armed position is treated as freshly opened and must earn the floor again.
+
+    Neither can put a stop in the WRONG PLACE, because the level is recomputed every pass from
+    `avgPrice` -- the venue's number, not ours -- and is only ever sent when it protects more than
+    the stop the venue currently reports. The file can delay the floor. It cannot move it.
+    """
+    from mt5desk import position_manager as _pm
+
+    try:
+        basis = json.loads(STOP_BASIS.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        basis = {}
+    if not isinstance(basis, dict):
+        basis = {}
+
+    _iid_to_sym = {int(v): k for k, v in getattr(venue, "_by_key", {}).items()}
+    rows: list[dict[str, Any]] = []
+    live_ids: set[str] = set()
+
+    for p in venue.positions():
+        pid = p.get("id") or p.get("positionId")
+        iid = p.get("tradableInstrumentId") or p.get("instrumentId")
+        if pid is None or iid is None:
+            continue
+        key = str(pid)
+        live_ids.add(key)
+        symbol = _iid_to_sym.get(int(iid)) or str(iid)
+        side: int = 1 if str(p.get("side") or "").lower() == "buy" else -1
+        entry = _pos_field(p, "avgPrice", "openPrice", "price", "entryPrice")
+        stop = _pos_field(p, "stopLoss", "stopLossPrice", "sl")
+        if entry is None or entry <= 0:
+            rows.append({"id": key, "symbol": symbol, "action": "SKIP",
+                         "why": "the venue reports no usable entry price"})
+            continue
+        if stop is None or stop <= 0:
+            # Identical to the gateway's rule: no stop means no initial risk to measure the
+            # trigger against, and inventing one would invent the denominator of the decision.
+            rows.append({"id": key, "symbol": symbol, "action": "SKIP",
+                         "why": "no stop on the position; nothing to measure R against "
+                                "and none invented"})
+            continue
+
+        rec = basis.get(key) or {}
+        dist = float(rec.get("stop_distance") or 0.0)
+        if dist <= 0:
+            dist = abs(entry - stop)
+            if dist <= 0:
+                rows.append({"id": key, "symbol": symbol, "action": "SKIP",
+                             "why": "stop sits on the entry; R is zero"})
+                continue
+            rec["stop_distance"] = dist
+
+        try:
+            bid, ask = venue.quote(symbol)
+        except Exception as exc:                    # broad: any venue/SDK failure, named below
+            rows.append({"id": key, "symbol": symbol, "action": "SKIP",
+                         "why": f"no quote ({type(exc).__name__})"})
+            continue
+        # The watermark is kept in BID space, because `position_manager.net_open_excursion`
+        # charges the short leg its spread on exactly that convention.
+        seen = float(rec.get("extreme") or bid)
+        extreme = max(seen, bid) if side == 1 else min(seen, bid)
+        rec["extreme"] = extreme
+        basis[key] = rec
+
+        armed_now = _pm.breakeven_armed(
+            entry=entry, extreme=extreme, stop_distance=dist, side=side,  # type: ignore[arg-type]
+            cost_per_unit=E8_ROUND_TRIP_PER_PRICE_UNIT, spread=max(0.0, ask - bid))
+        if not armed_now:
+            rows.append({"id": key, "symbol": symbol, "action": "HOLD",
+                         "why": f"net open excursion below "
+                                f"{_pm.BREAKEVEN_TRIGGER_R:g}R of {dist:.5f}"})
+            continue
+
+        level = _pm.breakeven_level(entry=entry, side=side,  # type: ignore[arg-type]
+                                    cost_per_unit=E8_ROUND_TRIP_PER_PRICE_UNIT)
+        # NEVER LOOSEN, NEVER REMOVE. The same unconditional invariant the MT5 ratchet holds: a
+        # long's stop may only rise, a short's only fall, and equality is not an improvement.
+        improves = (level > stop) if side == 1 else (level < stop)
+        if not improves:
+            rows.append({"id": key, "symbol": symbol, "action": "HOLD",
+                         "why": f"stop {stop:.5f} already protects at least the break-even "
+                                f"{level:.5f}; a stop is never widened"})
+            continue
+
+        row = {"id": key, "symbol": symbol, "side": "buy" if side == 1 else "sell",
+               "entry": entry, "stop_was": stop, "stop_now": level,
+               "trigger_r": _pm.BREAKEVEN_TRIGGER_R, "stop_distance": dist}
+        if not armed:
+            row |= {"action": "SHADOW", "why": "would move the stop to costed break-even"}
+        else:
+            try:
+                ok = bool(venue.modify_stop(int(pid), level))
+                row |= {"action": "MODIFY" if ok else "REJECTED", "ok": ok}
+            except Exception as exc:                # broad: any venue/SDK failure, named below
+                row |= {"action": "ERROR", "why": f"{type(exc).__name__}"}
+        rows.append(row)
+
+    # A closed position's basis is dead weight and its id can be reissued; the MT5 side's
+    # equivalent store is never pruned and grows without bound, which is a defect worth not
+    # copying. Only ids the venue still reports survive the pass.
+    basis = {k: v for k, v in basis.items() if k in live_ids}
+    try:
+        STOP_BASIS.parent.mkdir(parents=True, exist_ok=True)
+        STOP_BASIS.write_text(json.dumps(basis, indent=1, sort_keys=True), encoding="utf-8")
+    except OSError as exc:
+        rows.append({"action": "WARN", "why": f"could not persist {STOP_BASIS.name} ({exc})"})
+    return rows
+
+
 def run(venue: Any, *, armed: bool = False, now: datetime | None = None) -> dict[str, Any]:
     from prop import e8_guard
 
@@ -481,6 +647,19 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None) -> dict
         "guard": decision.as_dict(),
         "sleeves": [],
     }
+    # BEFORE THE GUARD'S GATE, AND THAT ORDERING IS THE POINT. `may_open` decides whether a NEW
+    # position may be taken; a position that is already open still has floating profit to protect
+    # and a stop that should be at break-even, and a stood-down account is exactly when that
+    # matters most. The MT5 gateway runs `manage_open_positions` first for the same reason. The
+    # one case where it is skipped is a flatten, where the positions are about to cease existing.
+    if not decision.flatten:
+        try:
+            doc["breakeven"] = manage_breakeven(venue, armed=armed)
+        except Exception as exc:                    # broad on purpose: never take the pass down
+            # Management must never take the lane down: a pass that cannot ratchet a stop still
+            # has to reach the guard and the ledger. Mirrors gateway.py's own management guard.
+            doc["breakeven_error"] = f"{type(exc).__name__}: {exc}"
+
     if not decision.may_open:
         doc["status"] = decision.verdict.value
         doc["why"] = decision.why

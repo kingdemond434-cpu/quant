@@ -1092,8 +1092,18 @@ def test_the_pause_file_readers_look_under_data_and_main_consults_gateway_paused
 
 def _manage_ns(mt5: SimpleNamespace) -> dict:
     logs: list[str] = []
-    ns = {"mt5": mt5, "log": logs.append, "MAGIC": 1, "_logs": logs}
-    return _exec(("manage_open_positions", "order_comment", "_original_stop_distance"), ns)
+    # `_pm`, pandas and the ATR helper are module-level names in gateway.py that `_exec` does not
+    # carry across; the manage step reaches all three once a position gets past "fewer than 2
+    # bars", so a fake with real bars needs them bound or it fails on a NameError about the
+    # helper rather than on the behaviour under test (the trap this file's own docstring names).
+    import pandas as _pd
+    from mt5desk import position_manager as _pm
+    from mt5desk.decision_core import ATR_N, MIN_RATCHET_IMPROVEMENT_R, atr_last, diagnose
+    ns = {"mt5": mt5, "log": logs.append, "MAGIC": 1, "_logs": logs, "_pm": _pm, "pd": _pd,
+          "ATR_N": ATR_N, "atr_last": atr_last, "diagnose": diagnose,
+          "MIN_RATCHET_IMPROVEMENT_R": MIN_RATCHET_IMPROVEMENT_R}
+    return _exec(("manage_open_positions", "order_comment", "_original_stop_distance",
+                  "_round_trip_per_price_unit"), ns)
 
 
 def _manage_mt5(comment: str, sent: list) -> SimpleNamespace:
@@ -1111,13 +1121,62 @@ def _manage_mt5(comment: str, sent: list) -> SimpleNamespace:
 def test_a_family_position_with_a_fixed_certified_bracket_is_not_ratcheted() -> None:
     """2026-09-16: five forex closes at a manage-tightened stop, five losses. The family lane's
     certificates carry no trail, so the manage step leaves their stops where the certificate
-    put them."""
+    put them.
+
+    UPDATED 2026-09-24, AND THE CLAIM ABOVE IS UNCHANGED. The routing changed: a fixed-bracket
+    position used to `continue` out of the loop entirely, and now runs floor-only -- no trail,
+    but the break-even floor is still evaluated. The `continue` also refused the break-even stop
+    the principal ordered that day, and three of the thirteen LIVE sleeves are `family_market`
+    XAUUSD session-range BREAKOUTS, the exact sleeves named in that order. What this test pins is
+    still that NOTHING IS TRAILED; `..._is_floored_but_never_trailed` below pins the other half.
+    """
     sent: list = []
     ns = _manage_ns(_manage_mt5(f"DW{_NAME}", sent))
     st = {"armed": True, "generic": {_NAME: {"trail_k": 0.0, "open_ttl_until": "x"}}}
     ns["manage_open_positions"](st, [_sleeve()])
     assert sent == []
-    assert any("certified exit is a fixed bracket" in x for x in ns["_logs"])
+
+
+def _manage_mt5_with_bars(comment: str, sent: list, *, highs: list[float]) -> SimpleNamespace:
+    """Same fake, but with bars and a complete symbol_info so the floor can actually be priced."""
+    pos = SimpleNamespace(ticket=501, type=0, price_open=1.1100, sl=1.1050, tp=1.1150,
+                          comment=comment, time=1_800_000_000, symbol="EURUSD")
+    rates = [(0, h - 0.0002, h, h - 0.0004, h) for h in highs]
+    frame = [{"open": o, "high": h, "low": lo, "close": c} for _, o, h, lo, c in rates]
+    return SimpleNamespace(
+        POSITION_TYPE_BUY=0, TIMEFRAME_H1=16385, TRADE_ACTION_SLTP=6,
+        positions_get=lambda symbol=None, ticket=None: [pos],
+        symbol_info=lambda symbol: SimpleNamespace(
+            trade_stops_level=0, trade_tick_size=0.00001, trade_tick_value=1.0,
+            spread=10, point=0.00001),
+        symbol_info_tick=lambda symbol: SimpleNamespace(bid=1.1140, ask=1.1141),
+        copy_rates_range=lambda *a, **k: frame,
+        copy_rates_from_pos=lambda *a, **k: frame,
+        order_send=lambda req: (sent.append(req), SimpleNamespace(retcode=10009, comment=""))[1])
+
+
+def test_a_fixed_bracket_is_floored_but_never_trailed() -> None:
+    """The principal's 2026-09-24 order, through the real gateway function rather than the maths.
+
+    R = 1.1100 - 1.1050 = 0.0050, so 0.85R is 0.00425 of net favourable excursion. The bars run
+    to 1.1160 (+0.0060 gross), which clears it. A trail would have proposed a stop up near the
+    extreme; the floor proposes break-even and nothing tighter.
+    """
+    sent: list = []
+    ns = _manage_ns(_manage_mt5_with_bars(
+        f"DW{_NAME}", sent, highs=[1.1120, 1.1140, 1.1160]))
+    st = {"armed": True, "generic": {_NAME: {"trail_k": 0.0, "open_ttl_until": "x"}}}
+    ns["manage_open_positions"](st, [_sleeve()])
+    # The fake returns the one position for every symbol the loop asks about (sleeve symbols
+    # plus the always-on XAUUSD), so filter to the one under test rather than counting sends.
+    reqs = [r for r in sent if r["symbol"] == "EURUSD"]
+    assert len(reqs) == 1, ns["_logs"]
+    req = reqs[0]
+    assert req["action"] == 6 and req["position"] == 501
+    # Break-even, not the trail: entry + the round trip, far below the 1.1160 extreme. The round
+    # trip is 2.00/lot/side x 2 / (tick_value 1.0 / tick_size 0.00001) = 0.00004 of price.
+    assert req["sl"] == pytest.approx(1.11004), req["sl"]
+    assert any("no trail ran (fixed bracket)" in x for x in ns["_logs"]), ns["_logs"]
 
 
 def test_a_family_position_whose_signal_carried_a_trail_is_still_managed() -> None:

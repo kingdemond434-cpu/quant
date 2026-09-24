@@ -353,13 +353,23 @@ def _triangle_main() -> int:
 #: never by a number chosen off a machine size. An unreadable memory falls back to the measured
 #: need, which is the honest floor rather than the historic 45.
 _SV_MEMORY = BASE / "data" / "state_vector_budget.json"
-#: One quarter of the hourly cycle. The ceiling is the CLOCK's, not the box's: a leg that ate
-#: more than this would starve the legs after it, and the cycle is the only thing that owns that
-#: trade-off.
+#: The ceiling is the CLOCK's, not the box's: a leg that ate more than this would starve the legs
+#: after it, and the cycle is the only thing that owns that trade-off. It binds only while this
+#: leg runs INSIDE a bounded pass; on its own task (`_SV_OWN_CLOCK` below) the task's own
+#: ExecutionTimeLimit is the ceiling and this number is not consulted.
 _SV_CEILING_S = 900.0
-#: The measured cost of one full pass, 2026-09-23. The floor, so an unreadable memory cannot
-#: reinstate a budget that is known to kill the build.
+#: The floor, so an unreadable memory cannot reinstate a budget known to kill the build.
 _SV_FLOOR_S = 480.0
+
+#: A SINGLE UNIT OF THIS LEG'S WORK, MEASURED ON THE TRADING BOX 2026-09-24: weekly 7.5 s,
+#: daily 33.2 s, H4 48.0 s, H1 45.4 s, M15 69.5 s, M5 94.7 s per HMM fit. The organ checks its
+#: own remaining budget BEFORE each fit and never in the middle of one, so it can overrun by up
+#: to one whole unit -- and it was handed `timeout_s - 5`. A five-second margin against a
+#: ninety-five-second unit is not a margin: the subprocess timeout fired first on every pass,
+#: which is a KILL, which is why `cache.flush()` never ran and why `last_outcome` was `KILLED`
+#: with the budget pinned at the ceiling. The margin is the measured worst unit plus a little.
+_SV_UNIT_MAX_S = 95.0
+_SV_MARGIN_S = _SV_UNIT_MAX_S + 15.0
 
 
 def _state_vector_budget_s() -> float:
@@ -376,18 +386,36 @@ def _state_vector_budget_s() -> float:
     return float(min(_SV_CEILING_S, max(_SV_FLOOR_S, want)))
 
 
-def _state_vector_budget_learn(*, ok: bool, spent_s: float) -> None:
-    """Record what this pass cost so the next one is sized by measurement, never by guess."""
+def _state_vector_budget_learn(*, ok: bool, spent_s: float, budget_s: float | None = None) -> None:
+    """Record what this pass ACTUALLY COST so the next one is sized by measurement.
+
+    A RATCHET POINTED THE WRONG WAY (measured 2026-09-24). This function was called
+    `_state_vector_budget_learn(ok=..., spent_s=timeout_s)` -- it was handed the BUDGET, never
+    the elapsed time. A pass that completed in 470 s under a 480 s budget therefore recorded
+    `spent_s=480` and set the next budget to 720; the pass after that completed under 720 and
+    asked for 1080, clipped to the 900 ceiling; and there it stayed for good, because nothing in
+    the loop could ever report a number smaller than the budget it was given. A mechanism whose
+    stated rule is "1.5x WHAT IT TOOK" was measuring what it was ALLOWED, so it could only climb.
+    The published memory said `last_budget_s: 900.0` -- true, and not the question anyone was
+    asking it.
+
+    With the elapsed time the rule is two-sided as it always claimed to be: a pass that finishes
+    quickly lowers the next budget, a pass that is killed raises it, and the leg gives back time
+    the rest of the cycle can use. `budget_s` is recorded beside it so the two can never again be
+    confused by a reader -- or by a caller.
+    """
     nxt = min(_SV_CEILING_S, max(_SV_FLOOR_S, spent_s * (1.5 if ok else 2.0)))
     with suppress(OSError, TypeError, ValueError):
         _SV_MEMORY.parent.mkdir(parents=True, exist_ok=True)
         _SV_MEMORY.write_text(json.dumps({
             "at": datetime.now(UTC).isoformat(timespec="seconds"),
-            "last_budget_s": round(float(spent_s), 1), "last_outcome": "OK" if ok else "KILLED",
+            "last_elapsed_s": round(float(spent_s), 1),
+            "last_budget_s": round(float(budget_s if budget_s is not None else spent_s), 1),
+            "last_outcome": "OK" if ok else "KILLED",
             "next_budget_s": round(float(nxt), 1),
             "ceiling_s": _SV_CEILING_S, "floor_s": _SV_FLOOR_S,
-            "rule": ("completed -> 1.5x what it took; killed -> 2x, bounded by one quarter of "
-                     "the hourly cycle. Measured 2026-09-23: a full pass costs 470s"),
+            "rule": ("completed -> 1.5x the MEASURED ELAPSED seconds; killed -> 2x; bounded by "
+                     "the floor and the cycle's ceiling. Two-sided: a fast pass lowers it."),
         }, indent=1) + "\n", encoding="utf-8")
 
 
@@ -410,22 +438,29 @@ def state_vector() -> dict:
     # degraded input, never permission to turn one optional model into a factory-wide kill switch.
     target = BASE / "research" / "state_vector_build.py"
     timeout_s = _state_vector_budget_s()
+    # THE ORGAN MUST STOP ITSELF BEFORE THE SUBPROCESS TIMEOUT KILLS IT, and the difference has
+    # to be at least one unit of its work -- see `_SV_MARGIN_S`. Below the floor there is nothing
+    # left to give it, so the self-stop is never driven under a third of the budget.
+    self_stop_s = max(10.0, max(timeout_s - _SV_MARGIN_S, timeout_s / 3.0))
+    t0 = time.monotonic()
     try:
         r = _run_tree(
-            [sys.executable, "-u", "-W", "ignore", str(target), "--budget-s",
-             str(max(10, timeout_s - 5))],
+            [sys.executable, "-u", "-W", "ignore", str(target), "--budget-s", str(self_stop_s)],
             capture_output=True, text=True, cwd=str(BASE), timeout=timeout_s, check=False,
         )
-        _state_vector_budget_learn(ok=r.returncode == 0, spent_s=timeout_s)
+        elapsed = time.monotonic() - t0
+        _state_vector_budget_learn(ok=r.returncode == 0, spent_s=elapsed, budget_s=timeout_s)
         return {
             "exit_code": int(r.returncode),
             "status": "OK" if r.returncode == 0 else "FAILED",
             "budget_s": timeout_s,
+            "self_stop_s": round(self_stop_s, 1),
+            "elapsed_s": round(elapsed, 1),
             "tail": (r.stdout or r.stderr or "")[-500:],
             "at": datetime.now(UTC).isoformat(timespec="seconds"),
         }
     except subprocess.TimeoutExpired as exc:
-        _state_vector_budget_learn(ok=False, spent_s=timeout_s)
+        _state_vector_budget_learn(ok=False, spent_s=time.monotonic() - t0, budget_s=timeout_s)
         return {"exit_code": None, "status": "TIMEOUT", "timeout_s": exc.timeout,
                 "at": datetime.now(UTC).isoformat(timespec="seconds")}
     except OSError as exc:
@@ -780,6 +815,8 @@ VERDICT_EXITS: dict[str, tuple[int, ...]] = {
 HOURLY_PLAN = str(os.environ.get("HOURLY_PLAN", "all") or "all").strip().lower()
 CORE_LEGS: frozenset[str] = frozenset({
     "smoke_release", "health", "release_identity", "input_identity", "burn_in", "record_tape",
+    # `state_vector` is listed here for the reader's sake and runs on NEITHER plan: it is in
+    # `OWN_CLOCK_LEGS`, which `in_plan` checks first, so `MT5-StateVector` is its only clock.
     "regime_monitor", "state_vector", "heal_clocks", "wiring_audit", "promoter",
     "forward_reconcile", "clock_liveness",
     "closed_loop", "acceptance", "candidate_conservation", "pit_canaries",
@@ -993,13 +1030,51 @@ def department_of(name: str) -> str:
     return LEG_DEPARTMENT.get(name, "rest")
 
 
+#: LEGS THAT HAVE A CLOCK OF THEIR OWN, AND THEREFORE MUST NOT ALSO RUN INSIDE A PASS.
+#:
+#: MEASURED 2026-09-24 on the trading box. `state_vector` sat in `CORE_LEGS`, where
+#: `MT5-HourlyCore` gives the whole pass 40 minutes (ExecutionTimeLimit=PT40M) and the rotation
+#: plans into 1,920 s of it. That one leg held a 900 s budget -- 47% of the entire planning
+#: budget for the pass -- and produced an artifact that was 26.6 HOURS OLD, because 900 s is not
+#: enough for it and never was: its measured full cost is 5,603 s of HMM fitting (115 fits at
+#: 7.5-94.7 s each, 0 of 108 hitting the cache). It was paying nearly half the pass's budget
+#: every hour to be killed in the same place.
+#:
+#: The cure is not a smaller state vector -- nothing here fits fewer instruments or fewer clocks
+#: than before, and nothing is deleted. It is a CLOCK THAT FITS THE WORK: a producer whose
+#: artifact is read asynchronously does not belong inside a bounded pass at all, any more than
+#: the judge does. `MT5-StateVector` runs it on its own task with its own limit, so it gets MORE
+#: compute than the 900 s it was failing inside, and the core pass gets 900 s back for the legs
+#: that were being pushed past the kill point.
+#:
+#: `external_gauntlet` is here for the sister reason: it already has `MT5-Gauntlet` (every 5 min,
+#: PT4H, IgnoreNew) AND was reachable from the `validate` department resident and from
+#: `HOURLY_PLAN=all`. Two judges sweeping one docket concurrently is not two judgements -- the
+#: sweep carries a per-symbol build cursor, so the second process re-treads the first's ground
+#: while both pay for it. On a box measured at 98.7% processor saturation the sweep and its
+#: worker pool are ~457% of 1800%, so the duplicate was a quarter of the machine spent to
+#: contend with itself.
+#:
+#: A leg named here is SKIPPED_BY_PLAN in every cycle plan, exactly as a leg outside the plan
+#: already is: no ledger row, so `opportunity_cost` and the rotation read "it did not run HERE",
+#: which is true, rather than a phantom. `scripts/check_own_clock_legs.py` fails if any name
+#: here has no task on the box, so this can never become a way to silently stop a leg.
+OWN_CLOCK_LEGS: frozenset[str] = frozenset({
+    "state_vector",       # MT5-StateVector
+    "external_gauntlet",  # MT5-Gauntlet
+})
+
+
 def in_plan(name: str, plan: str | None = None) -> bool:
     """Does leg `name` run under `plan`? core = CORE_LEGS only; heavy = every non-core leg;
     dept:<d> = the non-core legs of department d; all = everything.
-    An `auto_*` leg is already filtered by its own plan in run_auto_legs and always passes."""
+    An `auto_*` leg is already filtered by its own plan in run_auto_legs and always passes.
+    A leg in `OWN_CLOCK_LEGS` runs on its own scheduled task and in no plan."""
     p = (plan if plan is not None else HOURLY_PLAN)
     if name.startswith("auto_"):
         return True
+    if name in OWN_CLOCK_LEGS:
+        return False
     if p == "core":
         return name in CORE_LEGS
     if p == "heavy":
@@ -1687,9 +1762,30 @@ LEG_BUDGET_SEC: dict[str, int] = {
 #: every power it had to give a leg MORE.
 LEG_BUDGET_FLOOR_SEC: dict[str, int] = {
     # external_gauntlet.FRESH_BUILD_BUDGET_SEC: where the sealed judge stops BUILDING and starts
-    # writing. Below this it cannot reach `universal_gates_external.json` at all.
+    # writing. Below this it cannot reach `universal_gates_external.json` at all. The literal is
+    # the SEALED DEFAULT and `_leg_floor_s` raises it to whatever `judging_throughput` actually
+    # put in the environment this hour -- a floor read off the run, not off a claim.
     "external_gauntlet": 2_700,
 }
+
+
+def _leg_floor_s(name: str) -> int:
+    """The leg's own stopping point in seconds, MEASURED where the organ publishes it.
+
+    `judging_throughput` reads `MT5-Gauntlet`'s `ExecutionTimeLimit` and exports
+    `GAUNTLET_FRESH_BUDGET_SEC` into this process's environment (8,640 on the box: 60% of PT4H).
+    The sealed judge then builds for exactly that long before it writes. A cycle cap below it is
+    the truncated-job defect with the organ's own budget as the thing being truncated -- so the
+    floor FOLLOWS the number that was actually applied, and falls back to the sealed default when
+    nothing raised it. It only ever moves up.
+    """
+    floor = int(LEG_BUDGET_FLOOR_SEC.get(name, 0))
+    if name == "external_gauntlet":
+        try:
+            floor = max(floor, int(float(os.environ["GAUNTLET_FRESH_BUDGET_SEC"])))
+        except (KeyError, TypeError, ValueError):
+            pass
+    return floor
 
 
 def _producer_impl(name: str, script: str, args: tuple[str, ...] = ()) -> dict:
@@ -1722,7 +1818,7 @@ def _producer_impl(name: str, script: str, args: tuple[str, ...] = ()) -> dict:
     # base unchanged, so this line is exactly what it was whenever the price cannot be read.
     budget, _price_rec = _priced_budget(name, LEG_BUDGET_SEC.get(name, SEARCH_BUDGET_SEC))
     # THE FLOOR IS ONE-SIDED AND IT IS THE ORGAN'S OWN STOPPING POINT -- see LEG_BUDGET_FLOOR_SEC.
-    _floor = LEG_BUDGET_FLOOR_SEC.get(name, 0)
+    _floor = _leg_floor_s(name)
     if _floor and budget < _floor:
         _price_rec = {**(_price_rec if isinstance(_price_rec, dict) else {}),
                       "floor_s": _floor, "priced_s": budget,
