@@ -40,15 +40,55 @@ protecting; the whole queue is worked in value-of-information order until `RUN_B
 spent. The append-only worked-ledger is what keeps a task from being billed twice, so re-running
 the hour is free for everything already decided and a budget that binds simply defers the least
 informative rows to the next pass.
+
+THE SEAT IS THE SCARCE THING, AND MOST ROWS MUST NOT SPEND IT (measured 2026-09-24, trading box
+vmi3571445). Three separate bounds were throttling this organ and only one of them was real:
+
+  1. ONE ITEM PER CYCLE, and it was an accident of a sentinel. `DEFAULT_LIMIT` is 0 meaning
+     "work the whole queue"; `hourly_cycle.deepen()` read it as a COUNT, scaled it by the
+     bandit's share (0 x 0.274 = 0) and floored it with `max(1, _lim)`. The leg therefore
+     passed `--limit 1` -- verified live. A sentinel for "unlimited" became "exactly one".
+
+  2. THE MODEL SEAT'S DAILY CEILING IS REAL AND CANNOT BE WISHED AWAY. All fifteen configured
+     seats are OpenRouter free models on ONE account key, and OpenRouter's free allowance is
+     per-ACCOUNT per-day, not per-model: the provider refused at 458 calls on 2026-09-23
+     (`limit_source: openrouter_free_tier_daily`). Adding models does not add budget. Measured
+     mean latency 26.7s per call, so a serial lane exhausts the day by about 07:00 UTC and then
+     has seventeen hours with no seat at all.
+
+  3. WHAT THOSE SEVENTEEN HOURS WERE SPENT ON, and this was the real collapse. With the budget
+     gone every task still entered the seat lane, took a refusal in 0.103s and appended a
+     BLOCKED_SEAT_UNAVAILABLE row. 1,222,789 of 1,234,517 ledger rows (99.05%) were that same
+     outage written over and over: an 849 MB worked-ledger and a 622 MB log, re-read TWICE at
+     every startup (`worked_ids` then `cost_by_run`).
+
+SO THE SEAT IS NOW SPENT ONLY WHERE IT CAN WIN, and the rest is decided by rule on the same pass.
+The compiler already records WHY it could not compile each row, and its own source says an
+EMPTY_CAPTURE row is "an LLM call that cannot possibly succeed -- there is nothing in the row to
+read". Measured against that label: EMPTY_CAPTURE recovered 1 candidate in 1,000 seat calls
+(0.10%) while NEEDS_SYMBOL_EXTRACTION recovered 11 in 1,114 (0.99%) -- ten times the yield per
+call, and EMPTY_CAPTURE is 59% of the backlog. Routing by the compiler's own label therefore
+moves the entire daily allowance onto rows that can pay for it.
+
+NOTHING IS CAPPED, DEFERRED OR DISCARDED BY THIS. A row the seat will not read is decided on the
+SAME pass by `no_seat_work`, which first re-runs the compiler for free (its vocabulary grows, so
+a row refused last month can compile today) and, failing that, records a NAMED REFUSAL carrying
+its reason and the remedy that would reopen it. The refusal is a terminal decision and a
+`libs.research.set_aside` row, so the backlog falls by conversion and by naming, never by
+dropping. `DEEPENING_BACKLOG.json` publishes the depth and the OLDEST AGE every pass, which is
+what the no-queues law asks of a drain that cannot finish in one hour.
 """
 from __future__ import annotations
 
 import argparse
+import contextlib
 import hashlib
 import json
 import os
 import sys
+import threading
 import time
+from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -70,6 +110,63 @@ WORKED = BASE / "data" / "hypotheses" / "deepening_worked.jsonl"
 #: Candidates recovered here, in the compiler's own contract, for the same consumers.
 OUT = BASE / "data" / "hypotheses" / "deepened_candidates.json"
 LOG = BASE / "logs" / "deepening_worker.log"
+#: THE BACKLOG, PUBLISHED. The no-queues law (LAWS §5e) allows a budget to leave work over and
+#: requires the leftover's AGE to be published; `QUEUE_CENSUS.json` reported this queue
+#: UNMEASURED because its rows carry no enqueue stamp. The worker stamps what it sees instead,
+#: which is the honest measurement anyway: the compiler rewrites the queue file every hour, so a
+#: stamp written there resets, while first-seen-by-the-drain does not.
+BACKLOG = BASE / "reports" / "DEEPENING_BACKLOG.json"
+#: THE RATCHET. Decisions per hour, and the high-water mark that only ever rises. A pass that
+#: measures below the mark is a REGRESSION and says so; `tests/test_deepening_worker.py` fences
+#: the direction so a later change cannot quietly lower it.
+THROUGHPUT = BASE / "reports" / "DEEPENING_THROUGHPUT.json"
+
+#: THE COMPILER'S OWN LABEL DECIDES THE LANE. Each entry is the disposition the compiler recorded
+#: on the row -> (terminal disposition, why the seat cannot win here, what would reopen it).
+#: These are REFUSALS WITH A NAMED REMEDY, never discards: the row keeps its identity, the reason
+#: is recorded against it, and the moment the remedy lands the row compiles or returns to the
+#: seat lane on its own.
+NO_SEAT_LANE: dict[str, tuple[str, str, str]] = {
+    "EMPTY_CAPTURE": (
+        "REFUSED_NO_BODY_CAPTURED",
+        "the miner captured a LINK, not a page: the row carries a title and a url and no body, "
+        "so there is no text for a reader to quote. Measured across 1,000 seat calls on this "
+        "label: 1 candidate recovered (0.10%)",
+        "re-fetch the page body -- this is a COLLECTOR defect, not a research backlog; a row "
+        "that gains text is compiled by the hourly compiler and returns to the seat lane"),
+    "OPERATIONAL_ROW": (
+        "REFUSED_OPERATIONAL_ROW",
+        "the compiler read this row as operational (a selector job, a fetch chore): it states no "
+        "market claim, so there is no mechanism for a reader to recover",
+        "none needed -- an operational row is not a hypothesis and never becomes one"),
+    "BANNED_FAMILY": (
+        "REFUSED_BANNED_FAMILY",
+        "the family on this row is refused upstream (the two-lane rule, or a family the gauntlet "
+        "has measured as producing zero judgeable cells). A seat cannot un-ban it",
+        "the ban is data-driven and re-derived every sweep; a family that leaves the banned set "
+        "puts its rows back in the ordinary lane with no action here"),
+}
+
+#: How many seat calls may be in flight at once. DERIVED FROM THIS BOX, never a constant sized
+#: off another machine (CLAUDE.md's standing cautionary tale). A seat call is HTTP wait -- 26.7s
+#: mean, 15.1s median, measured over 5,314 calls -- so these are threads parked on a socket and
+#: cost neither a core nor a gigabyte; the subtraction is what leaves the live terminal and the
+#: gateway their cores on the box that trades. The daily ceiling is unchanged by this: the same
+#: 458 calls are made, they are simply made inside the hour the desk is awake instead of
+#: trickling out one at a time until the budget dies unspent.
+def seat_workers() -> int:
+    raw = os.environ.get("DEEPEN_SEAT_WORKERS", "").strip()
+    if raw:
+        with contextlib.suppress(ValueError):
+            return max(1, int(raw))
+    return max(2, min(12, (os.cpu_count() or 4) - 2))
+
+
+#: Above this many bytes the worked ledger is compacted before it is read. It is read TWICE per
+#: run (`worked_ids`, then `cost_by_run`), both with `read_text().splitlines()`, so its size is
+#: startup latency spent before the first task: 849 MB measured 10.9s + 20.5s on the trading box.
+#: 64 MB holds every terminal decision this desk has ever made many times over.
+COMPACT_OVER_BYTES = int(os.environ.get("DEEPEN_COMPACT_OVER_BYTES", str(64 * 1024 * 1024)))
 
 #: A run's ceiling. It WAS a budget decision -- the original note read "the queue is 705 deep and
 #: grows hourly; working it all in one pass would spend the month's cap in an afternoon on the
@@ -226,6 +323,37 @@ def worked_ids(*, retry_seat_blocks: bool = False) -> set[str]:
         except (ValueError, KeyError):
             continue
     return out
+
+
+def ledger_ids() -> tuple[set[str], set[str]]:
+    """(terminal ids, seat-outage ids) in ONE read of the worked ledger.
+
+    THE TWO SETS ANSWER DIFFERENT QUESTIONS AND MUST NOT BE CONFLATED. Whether a seat-blocked row
+    is retried THIS PASS depends on whether a seat exists right now; whether it is still WAITING
+    does not. Measured 2026-09-24: the published backlog read `depth: 0` while 6,674 rows were
+    sitting unread, because a pass that found no configured seat treated every outage row as
+    decided and the census inherited that. An absence reported as a clean verdict is the exact
+    failure L1.28a names, and a backlog artifact is the last place it belongs.
+    """
+    terminal: set[str] = set()
+    outage: set[str] = set()
+    if not WORKED.exists():
+        return terminal, outage
+    try:
+        with WORKED.open("r", encoding="utf-8", errors="replace") as fh:
+            for line in fh:
+                if not line.strip():
+                    continue
+                try:
+                    row = json.loads(line)
+                    tid = str(row["id"])
+                except (ValueError, KeyError):
+                    continue
+                (outage if is_outage(str(row.get("disposition") or ""))
+                 else terminal).add(tid)
+    except OSError:
+        return terminal, outage
+    return terminal, outage - terminal
 
 
 def record(entry: dict) -> None:
@@ -453,6 +581,58 @@ def work_task(task: dict, universe: set[str], *, chat=None) -> tuple[list[dict],
         c["deepened"] = True
         c["evidence"] = found["evidence"][:400]
     return candidates, f"RECOVERED_{disposition}"
+
+
+def lane(task: dict) -> str:
+    """Which lane decides this row: ``"rule"`` (no seat) or ``"seat"``.
+
+    THE COMPILER ALREADY SAID WHICH. Every queued row carries the disposition the compiler
+    recorded when it refused to compile it, and that label is a statement about what the row
+    CONTAINS, not about how interesting it is. A row labelled EMPTY_CAPTURE has no body text;
+    the compiler's own source calls a seat call on one "an LLM call that cannot possibly
+    succeed". Believing that label is not a quality screen and not a cap -- the row is decided
+    on this pass either way -- it is refusing to spend a 458-a-day allowance on the one class of
+    row that measured 0.10% against another class's 0.99%.
+
+    A MUTATION ALREADY CARRIES ITS RECIPE, so it has never needed a seat either.
+    """
+    if (str(task.get("kind") or "") == "mutation" and isinstance(task.get("family"), str)
+            and isinstance(task.get("params"), dict) and task.get("symbols")):
+        return "rule"
+    return "rule" if str(task.get("disposition") or "") in NO_SEAT_LANE else "seat"
+
+
+def no_seat_work(task: dict, universe: set[str]) -> tuple[list[dict], str]:
+    """Decide a row WITHOUT a seat call: compile it if the compiler now can, else name the refusal.
+
+    THE FREE RETRY COMES FIRST, and it is not a formality. `compile_row` is the same door every
+    miner row goes through and its vocabulary GROWS -- aliases, family phrases, newly registered
+    families, a ban lifted by the gauntlet's own measurement. A row the compiler refused last
+    month can compile today at no cost and with no seat, so it is offered the door again before
+    anything else is said about it.
+
+    THE REFUSAL IS NAMED, AND IT IS NOT A DISCARD. When the compiler still refuses, the row gets
+    a terminal disposition that says WHY a reader could not have helped and WHAT would reopen it.
+    That is the difference the desk cares about: a silent drop is indistinguishable from an empty
+    search, while a named refusal is a measurement that points at the organ which can fix it --
+    for EMPTY_CAPTURE, the crawler that captured a link instead of a page.
+    """
+    try:
+        candidates, disposition = compile_row(str(task.get("source") or "unknown"),
+                                              dict(task), universe)
+    except Exception as exc:                     # the compiler must never end the pass
+        return [], f"ERROR: {type(exc).__name__}: {exc}"
+    if candidates:
+        for c in candidates:
+            c["deepened"] = True
+            c.setdefault("evidence", "recompiled without a seat: the compiler's vocabulary now "
+                                     "reads this row")
+        return candidates, f"RECOVERED_{disposition}"
+    label, why, remedy = NO_SEAT_LANE.get(
+        str(task.get("disposition") or ""),
+        ("REFUSED_NOT_CONVERTIBLE",
+         f"the compiler refused this row again as {disposition}", "none recorded"))
+    return [], f"{label}: {why}; remedy: {remedy}"
 
 
 def task_class(task: dict) -> str:
@@ -717,6 +897,226 @@ _SYSTEM_BY_KIND = {
 }
 
 
+def is_outage(disposition: str) -> bool:
+    """Is this row the seat being unavailable rather than a decision about the source?"""
+    return (disposition.startswith("BLOCKED_SEAT_UNAVAILABLE:")
+            or disposition.startswith("REJECTED: seat error:"))
+
+
+def ends_the_day(disposition: str) -> bool:
+    """Is this refusal the DAY's allowance, rather than "slow down for a minute"?
+
+    THE TWO ARE OPPOSITE INSTRUCTIONS AND LOOK IDENTICAL AT THE ORGAN. A daily refusal means
+    every further call today takes the same refusal, so continuing is pure waste; a burst refusal
+    means the next call in a few seconds succeeds, so STOPPING on one would throw away most of an
+    allowance the desk has already been granted. `llm_seat` already owns this distinction -- it
+    matches the provider's own wording rather than the status code, because a 429 alone cannot
+    tell them apart -- so this asks it rather than guessing a second time.
+
+    Unrecognised is NOT treated as terminal: an unfamiliar refusal ends one row, never the pass.
+    """
+    if not is_outage(disposition):
+        return False
+    try:
+        from libs.ops.llm_seat import _is_daily_free_refusal
+        return bool(_is_daily_free_refusal(disposition))
+    except Exception:
+        return "daily" in disposition.lower() or "per-day" in disposition.lower()
+
+
+def compact_ledger(path: Path | None = None, *, over_bytes: int | None = None) -> dict:
+    """Drop the repeated OUTAGE rows from the worked ledger, keeping every DECISION.
+
+    NOTHING DECIDED IS LOST, and that is what makes this safe rather than a deletion. A
+    BLOCKED_SEAT_UNAVAILABLE row is already NON-TERMINAL by construction -- `worked_ids` skips it
+    the moment a seat exists, precisely because an outage is not evidence about the source -- so
+    it can be re-derived at zero cost by the row simply being worked again. What cannot be
+    re-derived is a real disposition, and every one of those is kept.
+
+    ONE OUTAGE ROW PER UTC DAY SURVIVES, so the history of the outage is still readable: the desk
+    can still see that the seat was exhausted on a given day without carrying 145,814 identical
+    lines that say it. Returns the census; never raises.
+    """
+    p = path or WORKED
+    limit = COMPACT_OVER_BYTES if over_bytes is None else over_bytes
+    try:
+        size = p.stat().st_size
+    except OSError:
+        return {"compacted": False, "why": "ledger absent"}
+    if size <= limit:
+        return {"compacted": False, "why": f"{size} bytes is within the {limit}-byte budget",
+                "bytes": size}
+    kept: list[str] = []
+    outage_days: set[str] = set()
+    rows = dropped = 0
+    try:
+        with p.open("r", encoding="utf-8", errors="replace") as fh:
+            for line in fh:
+                if not line.strip():
+                    continue
+                rows += 1
+                try:
+                    row = json.loads(line)
+                except ValueError:
+                    kept.append(line.rstrip("\n"))     # unreadable is never silently dropped
+                    continue
+                disposition = str(row.get("disposition") or "")
+                if not is_outage(disposition):
+                    kept.append(line.rstrip("\n"))
+                    continue
+                day = str(row.get("at") or "")[:10]
+                if day in outage_days:
+                    dropped += 1
+                    continue
+                outage_days.add(day)
+                kept.append(line.rstrip("\n"))
+        tmp = p.with_suffix(".jsonl.compact")
+        tmp.write_text("\n".join(kept) + ("\n" if kept else ""), encoding="utf-8")
+        os.replace(tmp, p)
+    except OSError as exc:
+        return {"compacted": False, "why": f"{type(exc).__name__}: {exc}"}
+    after = p.stat().st_size
+    return {"compacted": True, "rows_before": rows, "rows_after": len(kept),
+            "outage_rows_dropped": dropped, "outage_days_kept": len(outage_days),
+            "bytes_before": size, "bytes_after": after,
+            "why": ("repeated seat-outage rows are non-terminal by construction (worked_ids "
+                    "already skips them when a seat exists) and are re-derived for free; one "
+                    "row per UTC day is kept so the outage stays readable")}
+
+
+def _first_seen(pending_ids: set[str], now: datetime) -> dict[str, str]:
+    """When this drain FIRST saw each open task, persisted across passes.
+
+    THE QUEUE FILE CANNOT CARRY THIS. `miner_candidate_compiler` rewrites
+    `miner_deepening_queue.json` from scratch every hour, so a stamp written into a task there is
+    reset every hour and would report a backlog that is permanently one hour old. The drain's own
+    first sighting is both stable and the number the no-queues law actually asks for: how long
+    has this row been waiting on the organ that owes it a decision.
+    """
+    stamp = now.isoformat(timespec="seconds")
+    prior: dict[str, str] = {}
+    with contextlib.suppress(OSError, ValueError, AttributeError):
+        doc = json.loads(BACKLOG.read_text("utf-8"))
+        raw = doc.get("first_seen")
+        if isinstance(raw, dict):
+            prior = {str(k): str(v) for k, v in raw.items()}
+    return {tid: prior.get(tid, stamp) for tid in pending_ids}
+
+
+def publish_backlog(pending: list[dict], census: dict, now: datetime,
+                    rate_per_h: float) -> dict:
+    """Publish the backlog and ITS OLDEST AGE -- the no-queues law's actual requirement.
+
+    A budget may leave work over. What it may not do is leave it over unmeasured: an 18,128-row
+    backlog with no published age is the exact shape LAWS §5e exists to prevent, and
+    `QUEUE_CENSUS.json` was reporting this queue UNMEASURED for precisely that reason ("28,450
+    rows, no per-row time"). UNMEASURED is a real answer and it is not this one any more.
+    """
+    seen = _first_seen({task_id(t) for t in pending}, now)
+    ages = []
+    for value in seen.values():
+        dt = None
+        with contextlib.suppress(ValueError):
+            dt = datetime.fromisoformat(value)
+        if dt is not None:
+            ages.append(dt if dt.tzinfo else dt.replace(tzinfo=UTC))
+    oldest = min(ages) if ages else None
+    depth = len(pending)
+    doc = {
+        "at": now.isoformat(timespec="seconds"),
+        "queue": "miner_deepening",
+        "drainer": "desks/mt5/research/deepening_worker.py",
+        "depth": depth,
+        "rows_stamped": len(seen),
+        "age_measurable": oldest is not None,
+        "oldest_age_h": (round((now - oldest).total_seconds() / 3600.0, 3)
+                         if oldest is not None else None),
+        "oldest_at": oldest.isoformat(timespec="seconds") if oldest is not None else None,
+        # A FIRST PASS CANNOT REPORT AN OLD BACKLOG AND MUST NOT PRETEND TO. Every stamp is
+        # written the first time this drain sees a row, so on the pass that creates the sidecar
+        # every age is zero -- which is a fact about the measurement, not about the queue. Saying
+        # so here stops the next reader mistaking a young ledger for a drained one.
+        "age_basis": ("nothing is waiting: there is no age to measure" if not ages else
+                      "FIRST PASS: every open row was stamped by this run, so 0.0h is the age of "
+                      "the MEASUREMENT and not of the backlog. Real ages accrue from the next "
+                      "pass onward" if not any(a < now for a in ages) else
+                      "measured from each row's first sighting by this drain"),
+        "decisions_per_h": round(rate_per_h, 2),
+        # UNMEASURED, not "never": a pass that decided nothing cannot price the clearance.
+        "days_to_clear": (round(depth / (rate_per_h * 24.0), 2) if rate_per_h > 0 else None),
+        "lanes": census,
+        "law": ("LAWS §5e: nothing is queued; a budget may leave work over and its AGE is "
+                "published. Age is FIRST SEEN BY THIS DRAIN, not a stamp in the queue file -- "
+                "the compiler rewrites that file hourly, so a stamp there would reset every hour "
+                "and report a backlog that is permanently one hour old"),
+        "first_seen": seen,
+    }
+    with contextlib.suppress(OSError):
+        BACKLOG.parent.mkdir(parents=True, exist_ok=True)
+        tmp = BACKLOG.with_suffix(".json.tmp")
+        tmp.write_text(json.dumps(doc, indent=1), encoding="utf-8")
+        os.replace(tmp, BACKLOG)
+    return doc
+
+
+def publish_throughput(decided: int, elapsed_s: float, backlog_before: int,
+                       backlog_after: int, now: datetime, counts: dict[str, int],
+                       *, work_limited: bool = False) -> dict:
+    """The ratchet: decisions per hour, and a high-water mark that only ever rises.
+
+    A THROUGHPUT NUMBER THAT CAN FALL SILENTLY IS NOT A MEASUREMENT, it is a mood. The mark here
+    only ever goes up, every pass records itself against it, and a pass that got SLOWER is
+    labelled REGRESSION in its own artifact so the next reader sees it without being told. The
+    test suite fences the direction; this file is the evidence it fences.
+
+    BUT RUNNING OUT OF WORK IS NOT GETTING SLOWER, and a ratchet that cannot tell them apart
+    cries wolf until nobody reads it. Measured the same night: the pass that drained 11,613
+    rule-lane rows set a mark of 714,009/h, and the very next pass -- with the rule lane EMPTY
+    because the first one had finished it, and the provider refusing the day's allowance -- came
+    in at 398/h. Nothing regressed; there was simply nothing left to decide. So a pass that ran
+    out of work reports WORK_LIMITED, which is a different sentence from REGRESSION and is the
+    true one.
+
+    AN OUTAGE IS NOT A DECISION EITHER, so it never enters the numerator. A pass that made six
+    calls and took six refusals decided nothing, and a rate that counted those would measure how
+    fast this desk can be told no.
+    """
+    outages = sum(v for k, v in counts.items() if k == "BLOCKED_SEAT_UNAVAILABLE")
+    decided = max(0, decided - outages)
+    rate = (decided / (elapsed_s / 3600.0)) if elapsed_s > 0 else 0.0
+    prior: dict = {}
+    with contextlib.suppress(OSError, ValueError, AttributeError):
+        loaded = json.loads(THROUGHPUT.read_text("utf-8"))
+        if isinstance(loaded, dict):
+            prior = loaded
+    best = float(prior.get("best_decisions_per_h") or 0.0)
+    mark = max(best, rate)
+    doc = {
+        "at": now.isoformat(timespec="seconds"),
+        "decisions": decided, "outages": outages, "elapsed_s": round(elapsed_s, 1),
+        "decisions_per_h": round(rate, 2),
+        "best_decisions_per_h": round(mark, 2),
+        "best_at": (now.isoformat(timespec="seconds") if rate >= best
+                    else prior.get("best_at")),
+        "backlog_before": backlog_before, "backlog_after": backlog_after,
+        "drained": backlog_before - backlog_after,
+        "dispositions": counts,
+        "work_limited": bool(work_limited),
+        "status": ("RATCHET" if rate >= best else
+                   "WORK_LIMITED" if work_limited else "REGRESSION"),
+        "rule": ("the high-water mark only ever rises. A pass that got SLOWER is a REGRESSION and "
+                 "is labelled one here; a pass that ran out of work is WORK_LIMITED, which is a "
+                 "different sentence and the true one. An outage is not a decision and never "
+                 "enters the numerator. tests/test_deepening_worker.py fences all three"),
+    }
+    with contextlib.suppress(OSError):
+        THROUGHPUT.parent.mkdir(parents=True, exist_ok=True)
+        tmp = THROUGHPUT.with_suffix(".json.tmp")
+        tmp.write_text(json.dumps(doc, indent=1), encoding="utf-8")
+        os.replace(tmp, THROUGHPUT)
+    return doc
+
+
 #: Where the single-flight lock lives, and how long a lock may be held before it is presumed dead.
 #: DERIVED FROM THE RUN BUDGET, not chosen: a run may legitimately hold this for `RUN_BUDGET_SEC`
 #: plus the last task it was already inside when the budget expired, so the stale threshold has to
@@ -799,12 +1199,28 @@ def _work(argv: list[str] | None = None) -> int:
     ap.add_argument("--dry-run", action="store_true",
                     help="report what would be worked; call no seat and write nothing")
     args = ap.parse_args(argv)
+    # THE RATE IS MEASURED OVER THE WHOLE PASS, not over the work loop. Compaction, the ledger
+    # reads and the VOI sort are seconds this organ spent and did not convert in; charging them
+    # to the rate is what makes two passes comparable and what makes the ratchet mean something.
+    # The first measurement on the trading box read 714,009/h against a work loop of 58.6s while
+    # the pass had taken 274.3s -- a number that flatters whichever pass happened to find the
+    # most rule-lane rows, which is not a throughput.
+    pass_started = time.monotonic()
 
     queue = json.loads(DEEPEN.read_text("utf-8")) if DEEPEN.exists() else {}
     tasks = [t for t in (queue.get("tasks") or []) if isinstance(t, dict)]
     if not tasks:
         dlog("queue empty or unreadable -- nothing to work")
         return 0
+
+    # COMPACT BEFORE READING, because the ledger is read twice and its size IS startup latency.
+    if not args.dry_run:
+        squeeze = compact_ledger()
+        if squeeze.get("compacted"):
+            dlog(f"worked-ledger compacted: {squeeze['rows_before']} -> {squeeze['rows_after']} "
+                 f"rows, {squeeze['bytes_before']} -> {squeeze['bytes_after']} bytes "
+                 f"({squeeze['outage_rows_dropped']} repeated outage rows, "
+                 f"{squeeze['outage_days_kept']} day(s) kept)")
 
     # A MISSING SEAT IS AN OUTAGE, NOT A VERDICT (theirs, 2026-09-10). A row blocked on an
     # unconfigured external model was buried permanently; retried every hour it would spend the
@@ -815,15 +1231,31 @@ def _work(argv: list[str] | None = None) -> int:
         retry_seat_blocks = primary_seat() is not None
     except Exception:
         retry_seat_blocks = False
-    done = worked_ids(retry_seat_blocks=retry_seat_blocks)
+    # ONE read, TWO questions: what is DECIDED (never re-worked) and what is merely BLOCKED
+    # (re-worked when a seat exists, and OPEN in the census either way).
+    terminal, outage = ledger_ids()
+    done = terminal if retry_seat_blocks else (terminal | outage)
     costs, cost_basis = task_costs()
     variant = controller_variant()
-    pending = voi_order([t for t in tasks if task_id(t) not in done], costs=costs)
+    open_tasks = [t for t in tasks if task_id(t) not in done]
+
+    # TWO LANES, SPLIT BEFORE ANYTHING IS ORDERED. The rule lane needs no ordering -- every row
+    # in it gets the same free compiler retry and, failing that, its named refusal -- and keeping
+    # it out of `voi_order` is not a nicety: scoring calls the hypothesis graph and the graveyard
+    # model per task, and ordering all 18,423 pending rows measured 245.5 SECONDS of a 2,400s
+    # budget on the trading box. The seat lane is the only lane whose order can change an outcome,
+    # because it is the only lane with a scarce resource to spend.
+    rule_tasks = [t for t in open_tasks if lane(t) == "rule"]
+    seat_tasks = voi_order([t for t in open_tasks if lane(t) == "seat"], costs=costs)
+    pending = rule_tasks + seat_tasks
+    lane_census = {"rule": len(rule_tasks), "seat": len(seat_tasks)}
     dlog(f"queue={len(tasks)} already-decided={len(done)} pending={len(pending)} "
-         f"limit={args.limit} cost_basis={cost_basis} controller_variant={variant}")
+         f"lanes={lane_census} limit={args.limit} cost_basis={cost_basis} "
+         f"controller_variant={variant}")
     if args.dry_run:
         for t in (pending if args.limit <= 0 else pending[:args.limit]):
-            dlog(f"  would work {task_id(t)} [{t.get('source')}] {str(t.get('title'))[:70]}")
+            dlog(f"  would work {task_id(t)} [{lane(t)}] [{t.get('source')}] "
+                 f"{str(t.get('title'))[:70]}")
         return 0
     if not pending:
         dlog("every queued task already has a decision -- no spend this run")
@@ -833,35 +1265,20 @@ def _work(argv: list[str] | None = None) -> int:
     recovered: list[dict] = []
     counts: dict[str, int] = {}
     started = time.monotonic()
-    for task in (pending if args.limit <= 0 else pending[:args.limit]):
-        # THE BUDGET IS TIME. Checked BEFORE each task so a run never starts work it cannot finish
-        # inside the cycle hosting it; an in-flight task always completes, because abandoning a
-        # seat call mid-flight bills it and records nothing.
-        if time.monotonic() - started > RUN_BUDGET_SEC:
-            dlog(f"run budget {RUN_BUDGET_SEC:.0f}s spent; the remaining tasks carry to the next "
-                 f"hourly pass in VOI order -- nothing is dropped")
-            break
-        tid = task_id(task)
+    backlog_before = len(pending)
+    write_lock = threading.Lock()
+    decided_ids: set[str] = set()
+
+    def commit(task: dict, candidates: list[dict], disposition: str, wall_s: float) -> None:
+        """Record one decision. Holds the lock only for the append, so the pool never serialises
+        on a seat call -- only on the few microseconds of writing a line."""
         cls = task_class(task)
-        t_task = time.monotonic()
-        try:
-            candidates, disposition = work_task(task, universe)
-        except Exception as exc:
-            # One bad row must not end the run: the rest of the batch is still worth working,
-            # and the failure is recorded so it is not silently retried forever.
-            candidates, disposition = [], f"ERROR: {type(exc).__name__}: {exc}"
         head = disposition.split(":")[0]
-        counts[head] = counts.get(head, 0) + 1
-        recovered.extend(candidates)
-        # THE ROW IS ALSO THE COST LEDGER ENTRY: `run`, `wall_s` and `at` are what
-        # `compute_ledger.cost_by_run` aggregates, so next hour's `task_costs()` reads this
-        # class's mean from here. `cost_basis` names what divided THIS task's score, and
-        # `controller_variant` names the allocation policy that queued it.
-        entry = {"id": tid, "at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
+        entry = {"id": task_id(task), "at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
                  "source": task.get("source"), "url": task.get("url"),
                  "disposition": disposition, "n_candidates": len(candidates),
-                 "run": cls, "kind": task.get("kind"),
-                 "wall_s": round(time.monotonic() - t_task, 3),
+                 "run": cls, "kind": task.get("kind"), "lane": lane(task),
+                 "wall_s": round(wall_s, 3),
                  "cost_basis": (f"measured:{cls}:{costs[cls]:.2f}s" if cls in costs
                                 else "uncosted:1.0"),
                  "controller_variant": variant}
@@ -869,8 +1286,86 @@ def _work(argv: list[str] | None = None) -> int:
         # with a remedy, not a rejection; without this the ledger records only that it stopped.
         if disposition.startswith("BLOCKED_SEAT_UNAVAILABLE:"):
             entry["retry_action"] = "retry automatically after an external-model seat is configured"
-        record(entry)
-        dlog(f"  {tid} [{task.get('source')}] {disposition} -> {len(candidates)} candidate(s)")
+        with write_lock:
+            counts[head] = counts.get(head, 0) + 1
+            recovered.extend(candidates)
+            # AN OUTAGE ROW IS NOT A DECISION, so it never counts against the backlog: the row
+            # keeps its place and its published age, which is the whole point of the distinction.
+            if not is_outage(disposition):
+                decided_ids.add(entry["id"])
+            record(entry)
+
+    def out_of_time() -> bool:
+        return time.monotonic() - started > RUN_BUDGET_SEC
+
+    # ---- THE RULE LANE, FIRST AND UNBOUNDED BY ANY QUOTA -----------------------------------
+    # It runs before the seat lane on purpose. It costs no request, it is the lane that actually
+    # moves the backlog, and running it first means a pass that dies later still drained.
+    budget = args.limit if args.limit > 0 else len(pending)
+    for task in rule_tasks[:budget]:
+        if out_of_time():
+            dlog("run budget spent in the rule lane; the rest carries to the next pass -- "
+                 "nothing is dropped and its age is published in DEEPENING_BACKLOG.json")
+            break
+        t0 = time.monotonic()
+        try:
+            candidates, disposition = no_seat_work(task, universe)
+        except Exception as exc:
+            candidates, disposition = [], f"ERROR: {type(exc).__name__}: {exc}"
+        commit(task, candidates, disposition, time.monotonic() - t0)
+    rule_done = sum(counts.values())
+    dlog(f"rule lane: {rule_done} decided with no seat call, "
+         f"{len(recovered)} candidate(s) recovered")
+    # THE NAMED REFUSAL, IN THE DESK'S OWN LEDGER. `set_aside` is where a pass records what it
+    # did not carry, so a reader can tell a principled routing from an arbitrary drop.
+    refused = sum(v for k, v in counts.items() if k.startswith("REFUSED_"))
+    if refused:
+        with contextlib.suppress(Exception):
+            from libs.research import set_aside
+            set_aside.note("deepening_worker", "no_seat_lane", kept=rule_done - refused,
+                           considered=rule_done,
+                           ordering="compiler disposition: EMPTY_CAPTURE / OPERATIONAL_ROW / "
+                                    "BANNED_FAMILY carry no text a reader could quote; each is "
+                                    "refused BY NAME with its remedy, never dropped")
+
+    # ---- THE SEAT LANE, PARALLEL, AND IT STOPS THE MOMENT THE DAY'S ALLOWANCE IS GONE -------
+    # Before this, an exhausted budget still cost one refusal per row at 0.103s each: the pass
+    # spent its whole 40 minutes appending the same outage. Asked ONCE, up front.
+    left, why_seat = _seat_budget()
+    if seat_tasks and left == 0:
+        commit(seat_tasks[0], [], f"BLOCKED_SEAT_UNAVAILABLE: {why_seat}", 0.0)
+        dlog(f"seat lane stood down: {why_seat}. ONE outage row recorded for the pass instead of "
+             f"one per row -- {len(seat_tasks)} row(s) keep their place and their published age")
+    elif seat_tasks:
+        workers = seat_workers()
+        share = seat_tasks[:min(budget, left)] if left > 0 else seat_tasks[:budget]
+        dlog(f"seat lane: {len(share)} of {len(seat_tasks)} row(s) this pass on {workers} "
+             f"worker(s); {why_seat}")
+        stop = threading.Event()
+
+        def run_one(task: dict) -> None:
+            if stop.is_set() or out_of_time():
+                return
+            t0 = time.monotonic()
+            try:
+                candidates, disposition = work_task(task, universe)
+            except Exception as exc:
+                candidates, disposition = [], f"ERROR: {type(exc).__name__}: {exc}"
+            # A DAILY REFUSAL ENDS THE LANE, not just this row: every further call today would
+            # take the same refusal and record the same nothing. A BURST refusal must NOT --
+            # stopping on "slow down for a minute" would hand back most of an allowance the desk
+            # has already been granted, which is the timid reading this house does not take.
+            if ends_the_day(disposition):
+                stop.set()
+            commit(task, candidates, disposition, time.monotonic() - t0)
+
+        with ThreadPoolExecutor(max_workers=workers,
+                                thread_name_prefix="deepen-seat") as pool:
+            list(pool.map(run_one, share))
+        if stop.is_set():
+            dlog("seat lane stopped: the provider refused the DAY's allowance, not a burst. The "
+                 "remaining rows keep their place and their published age, and the rule lane has "
+                 "already had its turn at every row it can decide")
 
     OUT.parent.mkdir(parents=True, exist_ok=True)
     prior = []
@@ -885,9 +1380,51 @@ def _work(argv: list[str] | None = None) -> int:
         "recovered_this_run": len(recovered),
         "dispositions": counts,
     }, indent=1), encoding="utf-8")
+
+    elapsed = max(1e-6, time.monotonic() - pass_started)
+    # THE CENSUS COUNTS EVERY ROW WITHOUT A TERMINAL DECISION, including the rows this pass never
+    # reached and the ones a seat outage left where they were. `pending` is what this pass was
+    # willing to work; the BACKLOG is what the desk still owes an answer on, and they differ by
+    # exactly the outage set whenever no seat is configured.
+    settled = terminal | decided_ids
+    still_open = [t for t in tasks if task_id(t) not in settled]
+    now = datetime.now(tz=UTC)
+    rate = sum(counts.values()) / (elapsed / 3600.0)
+    back = publish_backlog(still_open, lane_census, now, rate)
+    # WORK-LIMITED means the pass stopped because there was nothing left it could decide, not
+    # because it was slow: an empty rule lane plus a seat that will not answer today. Saying so
+    # is what stops one enormous drain's mark from labelling every later pass a regression.
+    work_limited = not rule_tasks or bool(counts.get("BLOCKED_SEAT_UNAVAILABLE"))
+    ratchet = publish_throughput(sum(counts.values()), elapsed, backlog_before,
+                                 len(still_open), now, counts, work_limited=work_limited)
     dlog(f"worked {sum(counts.values())} task(s): {counts}; "
          f"{len(recovered)} new candidate(s) -> {OUT.name}")
+    dlog(f"throughput {ratchet['decisions_per_h']}/h (best {ratchet['best_decisions_per_h']}/h, "
+         f"{ratchet['status']}); backlog {backlog_before} -> {len(still_open)}, oldest "
+         f"{back['oldest_age_h']}h, days_to_clear {back['days_to_clear']}")
     return 0
+
+
+def _seat_budget() -> tuple[int, str]:
+    """How many free seat requests today still has, and the sentence that explains the number.
+
+    THE CEILING IS EXTERNAL AND CANNOT BE WISHED AWAY. All fifteen configured seats are free
+    OpenRouter models on ONE account key and the provider's free allowance is per-ACCOUNT per-day
+    -- it refused at 458 calls on 2026-09-23 with `limit_source: openrouter_free_tier_daily` --
+    so adding models buys nothing. What asking here buys is the seventeen hours a day AFTER the
+    allowance is gone: they are now spent in the rule lane instead of on one refusal per row.
+
+    -1 means UNMEASURED (the seat module could not be read), which is never treated as zero: an
+    unreadable counter must not silence a lane that might be working.
+    """
+    try:
+        from libs.ops import llm_seat
+        left = int(llm_seat.free_budget_left())
+        return left, (f"{left} free request(s) left today of a {llm_seat.free_daily_max()} "
+                      f"ceiling ({llm_seat.calls_today()} used)")
+    except Exception as exc:
+        return -1, (f"seat budget UNMEASURED ({type(exc).__name__}): the lane runs rather than "
+                    f"stand down on an unreadable counter")
 
 
 if __name__ == "__main__":
