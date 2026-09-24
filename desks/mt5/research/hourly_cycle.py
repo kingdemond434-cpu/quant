@@ -1501,7 +1501,29 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # report for. It is the `enrol_clocks` defect in the highest-value leg on the cycle: work
     # done, thrown away, and reported as scheduled. Nothing about the judge's evaluation changes;
     # only the cap that stops it finishing, which is exactly the "how work is fed to it" half.
-    "external_gauntlet": 3_000,
+    #
+    # 3,000 WAS STILL SHORT, AND THE LEDGER SAYS SO (measured 2026-09-24 on the trading box).
+    # `data/compute_ledger.jsonl` over the last two days, every `external_gauntlet` row:
+    #
+    #   09-23  19:12 TIMEOUT 1,102s   20:24 TIMEOUT 1,101s   21:33 TIMEOUT 1,100s
+    #          22:50 TIMEOUT 1,100s
+    #   09-24  00:36 exit -1 2,724s   02:27 exit -1 1,569s   04:02 TIMEOUT 4,581s
+    #          06:43 exit -1   414s   08:10 exit -1   866s   09:40 exit -1   760s
+    #          11:10 exit  1  2,358s
+    #
+    # ZERO successful outcomes across 18, 19, 20, 22, 23 and 24 September. The 1,100 s rows are
+    # the base 3,000 after `cycle_pricing` scaled it by a rank factor of ~0.37 -- the PRICER was
+    # cutting the highest-value leg on the cycle to a third of a budget already below the judge's
+    # own `FRESH_BUILD_BUDGET_SEC`. That is the `enrol_clocks` defect arriving by a second route,
+    # and `LEG_BUDGET_FLOOR_SEC` below closes it: a price may lengthen this leg and may never
+    # shorten it past the point the organ stops itself.
+    #
+    # AND NO NUMBER HERE IS SUFFICIENT ON ITS OWN. A cold full pass measures ~134 minutes against
+    # a cycle that starts the judge every 90-160 minutes, so the cap buys a better chance of
+    # finishing, never a guarantee. The guarantee is `research/canon_publication.py`'s recovery:
+    # the gate output is COMPLETE when it is on disk, so a kill after it now costs an hour rather
+    # than the sweep. Budget and recovery are the two halves and neither is the whole fix.
+    "external_gauntlet": 8_640,
     # THE ADMISSION SCREEN reads a 155 MB bank, folds it into cells and runs the judge's own
     # gate 0 over it. Measured end to end on the box 2026-09-24: 16.5 s (load 1.5, group 3.3,
     # gate 0 11.7). The cap is the usual order of magnitude above the measurement, so a bank that
@@ -1512,9 +1534,12 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # SEARCH_BUDGET_SEC by accident, and it is set well above the measurement so a box with more
     # accrued trades is never truncated mid-judgement.
     "state_admission": 180,
-    # CANON PUBLICATION reads two JSON files of ~140 KB and writes one. It is seconds; the cap is
-    # here so it has an entry rather than falling through to SEARCH_BUDGET_SEC by accident.
-    "canon_publication": 240,
+    # CANON PUBLICATION reads two JSON files of ~140 KB and writes one. It is seconds on an
+    # ordinary pass -- and on the pass AFTER A KILLED SWEEP it also reads the judge's 88 MB gate
+    # output and streams the docket for the params of the cells it is recovering, under its own
+    # RECOVERY_BUDGET_SEC of 240. The cap sits above that plus the read, for the reason every
+    # other entry here gives: a cap below an organ's own budget truncates it at the same prefix.
+    "canon_publication": 600,
     # THE FOUR ACTIVATION LEGS ARE SEARCHES, NOT RENDERERS. `weak_signals` rebuilds member
     # signals for up to 24 members across 67 symbols and its own `run()` already self-limits at
     # 2400s; a cycle budget below that would kill it at the same prefix every hour, which is the
@@ -1646,6 +1671,26 @@ LEG_BUDGET_SEC: dict[str, int] = {
         "global_market_data")},
 }
 
+#: A PRICE MAY LENGTHEN A LEG AND MAY NEVER SHORTEN IT PAST ITS OWN STOPPING POINT.
+#:
+#: `LEG_BUDGET_SEC` is the BASE; `cycle_pricing.applied_budget` multiplies it by the hour's rank
+#: factor and floors the product only at `SCOUT_MIN_S`. Every comment in the table above says the
+#: same thing in different words -- "the cap sits above the organ's own budget, because a cap
+#: BELOW it truncates the organ at the same prefix every hour" -- and the pricer could undo all
+#: of them at once. MEASURED 2026-09-24: the judge's base of 3,000 was priced to 1,102 s four
+#: hours running on 2026-09-23, against its own `FRESH_BUILD_BUDGET_SEC` of 2,700. It was killed
+#: at 41% of the point where it stops itself and writes, every hour, and the leg reported
+#: TIMEOUT -- which reads as "slow" and was "structurally unable to finish".
+#:
+#: This floor is the organ's OWN self-stop budget, so it takes nothing from any other leg that
+#: the leg was not already entitled to, and it is one-sided by construction: the pricer keeps
+#: every power it had to give a leg MORE.
+LEG_BUDGET_FLOOR_SEC: dict[str, int] = {
+    # external_gauntlet.FRESH_BUILD_BUDGET_SEC: where the sealed judge stops BUILDING and starts
+    # writing. Below this it cannot reach `universal_gates_external.json` at all.
+    "external_gauntlet": 2_700,
+}
+
 
 def _producer_impl(name: str, script: str, args: tuple[str, ...] = ()) -> dict:
     """The body: resolve the script against both roots and run it under the cycle budget.
@@ -1676,6 +1721,14 @@ def _producer_impl(name: str, script: str, args: tuple[str, ...] = ()) -> dict:
     # at a scout budget, and can never reduce the hour's total. An unavailable pricer returns the
     # base unchanged, so this line is exactly what it was whenever the price cannot be read.
     budget, _price_rec = _priced_budget(name, LEG_BUDGET_SEC.get(name, SEARCH_BUDGET_SEC))
+    # THE FLOOR IS ONE-SIDED AND IT IS THE ORGAN'S OWN STOPPING POINT -- see LEG_BUDGET_FLOOR_SEC.
+    _floor = LEG_BUDGET_FLOOR_SEC.get(name, 0)
+    if _floor and budget < _floor:
+        _price_rec = {**(_price_rec if isinstance(_price_rec, dict) else {}),
+                      "floor_s": _floor, "priced_s": budget,
+                      "floor_why": f"{name} stops itself at {_floor}s; a shorter cap kills it "
+                                   f"before it writes, at the same prefix every hour"}
+        budget = _floor
     try:
         r = _run_tree([sys.executable, "-u", "-W", "ignore", str(target), *args],
                            capture_output=True, text=True, cwd=str(root),
