@@ -436,7 +436,9 @@ def _hypothesis_lane(pairs: list[tuple[str, str]]) -> tuple[list[tuple[str, str]
         from research.universe_policy import may_hypothesise
     except Exception:
         try:
-            from universe_policy import may_hypothesise  # type: ignore[no-redef]
+            from universe_policy import (  # type: ignore[no-redef,import-not-found]
+                may_hypothesise,
+            )
         except Exception as exc:
             return pairs, (f"UNMEASURED: the lane router did not import "
                            f"({type(exc).__name__}); every series is read and none is routed")
