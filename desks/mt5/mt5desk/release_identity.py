@@ -163,6 +163,27 @@ class Identity:
 
 
 # --------------------------------------------------------------------------------------- git
+#: HOW LONG TO TRY BEFORE CALLING A MEASUREMENT IMPOSSIBLE (2026-09-24).
+#:
+#: This was 10.0 for every call, and on the trading box that TURNED INTO A REFUSAL. Measured
+#: 18:05:03Z, with nine git processes contending for one repository:
+#:
+#:     running a07f3dad439e != sealed dbbbbdcc4d2f and the diff cannot be taken
+#:     (git absent, or the sealed commit is not in this clone)
+#:
+#: Neither of those things was true. git was present and the sealed commit was right there; the
+#: `git diff --name-only <seal> <head>` over a 24,000-path worktree simply did not finish inside
+#: ten seconds while the adoption, the shadow sync and three agents were all holding the index.
+#: The gateway then refused new risk for that pass on a question nobody had actually answered.
+#:
+#: RAISING THIS DOES NOT WEAKEN THE RAIL, and that distinction is the whole point: an identity
+#: that cannot be measured is still not a licence, and still refuses. All that changes is how
+#: long the desk TRIES before concluding it cannot be measured. A rail that reports UNMEASURED
+#: because it gave up early is not being careful, it is being wrong in the expensive direction.
+#: `rev-parse` keeps the short budget -- it is O(1) and a slow one really is a sick repository.
+DIFF_TIMEOUT_S = 90.0
+
+
 def _git(args: list[str], root: Path, timeout: float = 10.0) -> str | None:
     try:
         r = subprocess.run(["git", "-c", "core.quotepath=off", *args], cwd=str(root),
@@ -445,7 +466,7 @@ def verdict(root: Path | None = None, *, now: datetime | None = None,
     # 1. The SHA. Equality needs nothing; anything else is a diff between two commits.
     ok, why, changed = True, f"running the sealed commit {release_sha[:12]}", []
     if sha != release_sha:
-        out = _git(["diff", "--name-only", release_sha, sha], r)
+        out = _git(["diff", "--name-only", release_sha, sha], r, timeout=DIFF_TIMEOUT_S)
         if out is None:
             ok, why = False, (f"running {sha[:12]} != sealed {release_sha[:12]} and the diff "
                               f"cannot be taken (git {'absent' if source != 'git' else 'failed'}"
