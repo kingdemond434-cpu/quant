@@ -96,6 +96,16 @@ LEG_LAYER: dict[str, str] = {
     # Generating a mechanism's other-session and other-chart equivalents is asking WHEN it works,
     # which is a timing question even though the output is a research candidate.
     "session_chart_expansion": "timing",
+    # Deriving each instrument's OWN quiet and active hours from its own bars, so a session
+    # mechanism is not handed gold's clock and asked to work on a crypto CFD. The measurement
+    # that motivated the leg is the proof it belongs here: XAUUSD is quiet at 23, 07 and 02
+    # while BTCUSD is quiet 07 to 14, inverted, so gold's inherited window would build BTCUSD's
+    # range through its most active stretch and break out at its quietest hour. That is a
+    # question about WHEN, not about what the edge is, so it is timing.
+    # It was a costed leg in the cycle with no entry here, which failed the layer test on every
+    # run between the two commits -- the exact "every leg belongs to a layer" law this table exists
+    # to keep, broken by the table rather than by the leg.
+    "session_structure": "timing",
     # Whether an artifact's own stamp advances is a MEASUREMENT property of the desk, not a
     # property of any strategy -- it belongs with the other self-measurement legs.
     "stamp_freshness": "information",
