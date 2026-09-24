@@ -14,6 +14,12 @@ pair is sent as two resting stop orders with their stop and target attached. One
 the other leg (OCO); an unfilled pair is cancelled after BRACKET_TTL_HOURS; positions are closed
 at CLOSE_HOUR and any resting leg cancelled at CANCEL_HOUR -- the gold book's own end of day.
 
+WINDOWS RUN IN PARALLEL, AND ONLY THE OPPOSING LEG STANDS DOWN. While an XAU position is open,
+the due window still places the leg that AGREES with it and skips only the one that would trade
+against it (`book_direction` / `OPPOSING_LEG`); an unreadable position side defers the whole
+bracket, as does an unreadable position book. The measurement behind that rule, and the cost of
+deferring both legs instead, is recorded at the placement block in `run`.
+
 SIZED FOR THIS ACCOUNT, NOT COPIED FROM THE OTHER. E8 risks RISK_FRAC of equity per trade
 (`docs/PROP_FIRM_E8.md`: 0.50%) against the leg's own stop distance, through the E8 executor's
 `lot_for_risk`, which reads the venue's own contract size.
@@ -40,6 +46,7 @@ for _p in (str(DESK), str(ROOT)):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
+from mt5desk import position_manager as _pm  # noqa: E402
 from mt5desk.decision_core import (  # noqa: E402
     ATR_N,
     BRACKET_TTL_HOURS,
@@ -51,7 +58,6 @@ from mt5desk.decision_core import (  # noqa: E402
     bracket_from_bars,
     h1_frame,
 )
-from mt5desk import position_manager as _pm  # noqa: E402
 
 SYMBOL = "XAUUSD"
 #: Per-trade risk on the prop account, as a fraction of equity (docs/PROP_FIRM_E8.md).
@@ -151,6 +157,37 @@ def gold_positions(rows: list[dict], instrument_id: int) -> list[dict]:
     """The venue's open XAU positions, with no guess from comments or local state."""
     return [p for p in rows
             if int(p.get("tradableInstrumentId") or 0) == int(instrument_id)]
+
+
+def book_direction(positions: list[dict]) -> int | None:
+    """Which way the open XAU book leans: +1 all long, -1 all short, 0 flat or already two-sided.
+
+    `None` means a row's SIDE COULD NOT BE READ, which is not the same as flat and must never be
+    treated as one -- the caller falls back to deferring the whole bracket there, exactly as this
+    module did before the directional rule existed.
+
+    Only `side` is consulted, never `qty`. The question a bracket leg asks is "would this fill
+    AGAINST what the desk already holds", and that is answered by direction alone; reading a size
+    field the venue may or may not populate would add a way for the check to silently evaluate to
+    zero. `e8_executor` records the row shape this venue actually returns
+    ({id, tradableInstrumentId, routeId, side, qty, avgPrice}) and the cost of guessing at it.
+    """
+    sides = set()
+    for p in positions:
+        sd = str(p.get("side") or p.get("Side") or "").strip().lower()
+        if sd == "buy":
+            sides.add(1)
+        elif sd == "sell":
+            sides.add(-1)
+        else:
+            return None
+    if len(sides) != 1:
+        return 0                      # nothing open, or both directions already held
+    return sides.pop()
+
+
+#: The bracket leg that would trade AGAINST a book leaning this way. Keyed by `book_direction`.
+OPPOSING_LEG = {1: "sell_stop", -1: "buy_stop"}
 
 
 def _window_for_position(state: dict, position_id: int) -> tuple[str, dict] | None:
@@ -261,13 +298,34 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
         log("position book unreadable; no new E8 gold placement this pass")
     # -------------------------------------------------------------- placements
     due_now = [] if stood_down else plan(df, hour, state)
-    if xau_positions and due_now:
-        # TradeLocker can hold opposite XAU positions.  A second two-sided bracket while one
-        # window is live can therefore fill against it, paying two spreads/margin legs for a
-        # book whose net exposure is smaller or zero.  Defer, do not mark the window placed: if
-        # the earlier trade exits while this window remains valid, the next pass may still act.
+    # THE SELF-HEDGE RULE IS PER LEG, NOT PER BRACKET (principal, 2026-09-24).
+    #
+    # TradeLocker can hold opposite XAU positions, so a second two-sided bracket placed while one
+    # window is live can fill AGAINST it: two spreads and two margin legs for a book whose net
+    # exposure is smaller or zero.  That cost is real and the opposing leg still carries it.  What
+    # was wrong was throwing away the harmless half with it -- the same-direction leg only adds to
+    # a position the desk already wants, and deferring the whole bracket SERIALISES three windows
+    # that are only +0.180 correlated, which is most of a month of pass time on a prop clock.
+    #
+    # MEASURED on this account's own record before the change, off the box's XAUUSD bars, over
+    # 2026-09-17..24 (six trading days, the three windows, the live ratchet, E8's spread):
+    #   * 4 recorded deferrals (09-22 afternoon, 09-23 london_am, 09-23 afternoon, 09-24
+    #     london_am).  3 of the 4 would have filled; ALL THREE were SAME-DIRECTION, none opposing.
+    #     +257.13 USD against the -16.20 the deferred-and-replaced versions actually made.
+    #   * over the three days the deferral actually bound, +703 -> +976 USD, which is 43 -> 31 days
+    #     to the 10,000 target -- the principal's modelled 45 -> 34, reproduced.
+    #   * the only OPPOSING fill anywhere in the sample (09-21 london_am buy into an open short)
+    #     lost the full -1.000R, -480.74 USD: the single worst trade of the run, and the whole
+    #     difference between skipping the opposing leg and removing the check outright.
+    # So the opposing leg is skipped and the agreeing leg is placed.  Per-trade risk is unchanged.
+    direction = book_direction(xau_positions)
+    blocked = OPPOSING_LEG.get(direction) if direction is not None else None
+    if direction is None and due_now:
+        # A side this code could not read is NOT a flat book.  Defer wholesale, and do not mark
+        # the window placed: if the earlier trade exits while this window remains valid, the next
+        # pass may still act.
         for due in due_now:
-            why = (f"earlier XAU position(s) still open: "
+            why = (f"open XAU position(s) with an unreadable side: "
                    f"{', '.join(str(p.get('id')) for p in xau_positions)}; deferred to prevent "
                    f"self-hedging")
             doc["skipped"].append({"window": due["window"], "why": why})
@@ -277,6 +335,13 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
         name, spec = due["window"], due["spec"]
         legs: dict[str, dict] = {}
         for side in ("buy_stop", "sell_stop"):
+            if side == blocked:
+                why = (f"open XAU position(s) {', '.join(str(p.get('id')) for p in xau_positions)}"
+                       f" already lean {'long' if direction == 1 else 'short'}; this leg would "
+                       f"trade against them, so it is skipped and the agreeing leg is placed")
+                doc["skipped"].append({"window": name, "side": side, "why": why})
+                log(f"[{name}] {side} skipped: {why}")
+                continue
             s = spec[side]
             dist = abs(float(s["price"]) - float(s["sl"]))
             legal, why = leg_is_legal(side, float(s["price"]), float(bid), float(ask))
@@ -365,6 +430,28 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
         action = {"act": "ratchet_stop", "window": name, "position_id": int(p["id"]),
                   "before": current_stop, "after": float(decision.new_stop),
                   "improvement_r": round(decision.improvement_r, 6), "ok": False}
+        # THE LEVEL MUST STILL BE A STOP WHEN IT ARRIVES, and on this venue that is not free.
+        # Measured here on 2026-09-24: the first ratchet this lane ever sent moved position
+        # 360287970193246861's stop from 4303.25 to 4259.78 while the market was at 4283.5.  The
+        # venue took the modification, the buy stop was already through its trigger, and it
+        # filled at market -- 4283.91, 24.13 points and 386.08 USD worse than the level the desk
+        # had just proven protected more.  `ratchet` cannot see that: it compares the candidate
+        # to the current stop, never to the market.  MetaTrader rejects such a request; this
+        # venue executes it, so the check has to happen before the send.
+        #
+        # `bid`/`ask` are this pass's quote, read seconds earlier at the top of `run`.  Re-quoting
+        # per position would be a second venue call per pass on an API that has already returned
+        # 429 to this lane today, and a quote a few seconds stale can only make this refuse a
+        # borderline level -- which leaves the account's existing stop in place, the safe error.
+        _side = 1 if str(p.get("side") or "").lower() == "buy" else -1
+        _rests, _why_rest = _pm.stop_rests_at_venue(
+            stop=float(decision.new_stop), side=_side, bid=float(bid), ask=float(ask))
+        if not _rests:
+            action["act"] = "ratchet_refused"
+            action["why"] = _why_rest
+            log(f"[{name}] stop ratchet REFUSED: {_why_rest}")
+            doc["actions"].append(action)
+            continue
         try:
             if armed or not w.get("shadow", False):
                 action["ok"] = bool(venue.modify_stop(int(p["id"]), float(decision.new_stop)))
