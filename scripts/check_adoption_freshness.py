@@ -261,6 +261,28 @@ def read_evidence(root: Path, doc: dict[str, Any], now: datetime) -> None:
         else:
             lag["behind"] = None
             lag["why"] = f"could not count HEAD..origin/{branch}"
+        # HOW LONG THE BOX HAS BEEN REFUSING, measured by the MERGE BASE and nothing else.
+        # `behind` alone cannot answer it: origin gains commits all night, so a perfectly
+        # healthy box reads behind>0 almost always, and HEAD alone cannot either, because the
+        # box commits its own state every fifteen minutes and so moves HEAD without adopting a
+        # single line of origin's code. What a box that "succeeds by refusing" never does is
+        # ADVANCE ITS MERGE BASE: it logs `nothing to seal` every hour while the base stays
+        # pinned. That is the positive fact, so it is the one carried forward.
+        rc, out = _git(root, "merge-base", "HEAD", f"origin/{branch}")
+        base_sha = out.strip() if rc == 0 and out.strip() else ""
+        lag["merge_base"] = base_sha or None
+        prev = _read_json(OUT) or {}
+        prev_lag = prev.get("lag") if isinstance(prev.get("lag"), dict) else {}
+        prev_base = str((prev_lag or {}).get("merge_base") or "")
+        prev_since = _parse_iso(str((prev_lag or {}).get("merge_base_since") or ""))
+        if base_sha and prev_base == base_sha and prev_since is not None:
+            lag["merge_base_since"] = prev_since.isoformat()
+        elif base_sha:
+            # First sighting of this base (or the base just advanced, which is an adoption
+            # working): the clock starts now.
+            lag["merge_base_since"] = now.isoformat()
+        stuck_since = _parse_iso(str(lag.get("merge_base_since") or ""))
+        lag["merge_base_age_s"] = _age_s(stuck_since, now)
     doc["lag"] = lag
 
 
@@ -316,13 +338,24 @@ def judge(doc: dict[str, Any]) -> None:
             "report for itself")
 
     behind = doc.get("lag", {}).get("behind")
+    base_age = doc.get("lag", {}).get("merge_base_age_s")
     if behind is None:
         notes.append("commits-behind could not be counted, so the lag half is UNMEASURED")
-    elif behind > 0 and isinstance(age, (int, float)) and age > grace:
+    elif behind > 0 and isinstance(base_age, (int, float)) and base_age > grace:
+        # BREACH (c), AND IT NO LONGER HIDES BEHIND BREACH (a). This clause used to read
+        # `behind > 0 and age > grace`, so it could only fire in the one case where the STALE
+        # branch above had already failed the check -- which made the end that matters
+        # unreachable on its own. Measured on the trading box 2026-09-24: adoption logged a
+        # success every hour ("nothing to seal"), `last_success_age_s` stayed at ~0.6h inside a
+        # 3h grace, the merge base stayed pinned at b8ab5342 all morning, and the box drifted
+        # from 1 to 3 commits behind with the fence reading FRESH the whole time. That is
+        # exactly "succeeding by refusing", which the docstring says this clause exists for.
         doc["ok"] = False
         problems.append(
-            f"HEAD is {behind} commit(s) behind origin/{doc['lag'].get('branch')} and has been "
-            f"for longer than the {grace / 3600:.1f}h grace")
+            f"HEAD is {behind} commit(s) behind origin/{doc['lag'].get('branch')} and the merge "
+            f"base has not advanced for {base_age / 3600:.1f}h, past the {grace / 3600:.1f}h "
+            "grace. Adoption may be reporting success every hour and still not landing origin's "
+            "code: a success that never moves the merge base is a refusal with a green light")
     elif behind > 0:
         notes.append(f"HEAD is {behind} commit(s) behind origin/{doc['lag'].get('branch')}; "
                      "inside the grace, so an adoption in flight still covers it")
