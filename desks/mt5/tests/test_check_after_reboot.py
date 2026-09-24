@@ -103,4 +103,17 @@ def test_it_never_starts_stops_or_repairs_anything():
     for forbidden in (".terminate(", ".kill(", "taskkill", "schtasks\", \"/run",
                       "/change", "Restart-Computer", "shutdown"):
         assert forbidden not in src, f"check_after_reboot must never {forbidden}"
-    assert "Get-CimInstance" not in src, "CIM has hung on this box"
+    # CIM is reachable only through PowerShell or wmic here, and this module uses neither --
+    # asserting on the STRING would fail on the docstring that explains why it is avoided.
+    assert "powershell" not in src.lower(), "CIM has hung on this box; schtasks and psutil only"
+    assert "wmic" not in src.lower()
+
+
+def test_a_leg_that_merely_happened_to_be_running_is_not_an_inventory_item():
+    """The first real run captured two hourly legs mid-pass and then reported them missing on a
+    box that had not restarted. Only residents and the named seeds belong in the inventory."""
+    assert car.MIN_AGE_S >= 60.0
+    assert "gateway_resident.py" in car.SEED_PROCESSES
+    assert "terminal64.exe" in car.SEED_PROCESSES
+    src = Path(car.__file__).read_text(encoding="utf-8")
+    assert "if age < MIN_AGE_S and key not in SEED_PROCESSES:" in src

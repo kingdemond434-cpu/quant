@@ -36,6 +36,7 @@ import os
 import re
 import subprocess
 import sys
+import time
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -47,12 +48,21 @@ VERDICT = REPORTS / "REBOOT_VERIFY.json"
 #: Long-lived processes identified by a fragment of their command line. A resident that is
 #: restarted by its own keep-alive trigger still has to APPEAR, so absence is reportable either
 #: way; this list is only the seed, and `--capture` adds whatever else is actually running.
-SEED_PROCESSES: tuple[str, ...] = (
+SEED_PROCESSES: frozenset[str] = frozenset({
     "terminal64.exe",
     "gateway_resident.py",
     "department_resident.py",
     "external_gauntlet.py",
-)
+})
+
+#: How long a process must already have been alive to count as something that MUST come back.
+#:
+#: MEASURED THE FIRST TIME THIS RAN: the baseline captured `check_blueprint_coverage.py` and
+#: `data_vitals.py` -- two hourly legs that happened to be mid-run -- and the verify forty seconds
+#: later reported them as having failed to return, on a box that had not restarted. A verifier
+#: that cries wolf on a healthy box is worse than none, because the one time it matters nobody
+#: reads it. A leg that runs for a minute an hour is not an inventory item; a resident is.
+MIN_AGE_S = 300.0
 
 #: Task name prefixes the desk owns. Everything matching is captured; nothing is filtered by
 #: hand, because a task nobody listed is exactly the one that will not come back.
@@ -110,6 +120,9 @@ def running_processes() -> dict[str, dict]:
             if m and "opt\\quant" in cmd.replace("/", "\\"):
                 key = m.group(1)
         if not key:
+            continue
+        age = time.time() - float(info["create_time"] or 0)
+        if age < MIN_AGE_S and key not in SEED_PROCESSES:
             continue
         seen[key] = seen.get(key, 0) + 1
         prev = out.get(key)
