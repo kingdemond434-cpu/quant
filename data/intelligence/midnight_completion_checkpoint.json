@@ -3,18 +3,13 @@
  "schema_version": 1,
  "stages": {
   "canonical_external_pipeline": {
-   "command": [
-    "systemctl",
-    "--user",
-    "start",
-    "quant-external-pipeline.service"
-   ],
-   "passes_completed": 0,
-   "started_at": "2026-09-24T05:14:45.206997+00:00",
-   "status": "RUNNING"
+   "finished_at": "2026-09-24T06:51:25.016113+00:00",
+   "passes_completed": 1,
+   "returncode": 1,
+   "status": "FAILED"
   },
   "certificate_projection": {
-   "finished_at": "2026-09-24T04:53:31.888413+00:00",
+   "finished_at": "2026-09-24T06:57:29.783239+00:00",
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
@@ -26,13 +21,13 @@
    "status": "DONE"
   },
   "external_queue_projection": {
-   "finished_at": "2026-09-24T04:52:06.124704+00:00",
+   "finished_at": "2026-09-24T06:52:17.703014+00:00",
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
   },
   "external_queue_reconciliation": {
-   "finished_at": "2026-09-24T04:53:10.391617+00:00",
+   "finished_at": "2026-09-24T06:54:07.277718+00:00",
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
@@ -50,10 +45,13 @@
    "status": "FAILED"
   },
   "forward_identity_reconciliation": {
-   "finished_at": "2026-09-24T04:55:37.070098+00:00",
-   "passes_completed": 1,
-   "returncode": 0,
-   "status": "DONE"
+   "command": [
+    "/home/quant/quant-platform/.venv/bin/python",
+    "desks/mt5/research/forward_reconcile.py"
+   ],
+   "passes_completed": 0,
+   "started_at": "2026-09-24T07:25:04.947535+00:00",
+   "status": "RUNNING"
   },
   "forward_lane_heal": {
    "finished_at": "2026-09-24T04:56:16.819149+00:00",
@@ -62,7 +60,7 @@
    "status": "FAILED"
   },
   "fusion_state_pull": {
-   "finished_at": "2026-09-24T04:55:07.448531+00:00",
+   "finished_at": "2026-09-24T07:24:52.025398+00:00",
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
@@ -86,5 +84,5 @@
    "status": "DONE"
   }
  },
- "updated_at": "2026-09-24T05:14:45.206997+00:00"
+ "updated_at": "2026-09-24T07:25:04.947535+00:00"
 }
