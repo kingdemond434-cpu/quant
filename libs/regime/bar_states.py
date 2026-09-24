@@ -131,7 +131,7 @@ def _lse0(a: np.ndarray) -> np.ndarray:
     max-shift is the same numerical trick scipy uses.
     """
     m = a.max(axis=0)
-    return m + np.log(np.exp(a - m).sum(axis=0))
+    return np.asarray(m + np.log(np.exp(a - m).sum(axis=0)), dtype="float64")
 
 
 def predictive_log_density(hmm: GaussianHMM, x: np.ndarray, start: int) -> float:
