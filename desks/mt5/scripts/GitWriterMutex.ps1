@@ -104,6 +104,7 @@ function Open-GitWriterMutex {
 function Close-GitWriterMutex {
     param($Handle)
     if ($null -eq $Handle) { return }
+    Clear-GitWriterWitness
     foreach ($key in @("LegacyMutex", "Mutex")) {
         $m = $Handle[$key]
         if ($null -ne $m) {
@@ -111,4 +112,78 @@ function Close-GitWriterMutex {
             try { $m.Dispose() } catch { }
         }
     }
+}
+
+# ---- THE WITNESS: "HELD BY ANOTHER WRITER" IS NOT A DIAGNOSIS ---------------------------------
+#
+# MEASURED 2026-09-24. The dashboard read
+#
+#     git_writer_lock  Local\MT5-GitWriter-v2  CRITICAL  held by another writer (both Global and
+#                                                        Local)
+#
+# for hours, and so did this script's own refusal line, and NEITHER could say WHO. That matters
+# because the two cases need opposite responses and look identical through the mutex alone:
+#
+#   LIVE    -- an adoption is mid-`git add` on a 24,000-path worktree and simply needs its window.
+#              The right response is to wait. (This was the true case: pid 9284 was progressing
+#              through the individual-path retry, one pathspec every ~40s.)
+#   STALE   -- the writer is gone. A Windows mutex actually handles this by itself (the wait
+#              throws AbandonedMutexException and the caller treats it as a grant), so the KERNEL
+#              object is never wedged -- but every human and every probe reading "held by another
+#              writer" spent the outage hunting a phantom, exactly as the header above records
+#              happening for four days.
+#
+# So the holder WRITES ITS NAME DOWN: pid, start time, script, mutex name, host. Any reader can
+# then ask the one question the mutex cannot answer -- is that pid still alive? A witness whose
+# pid is dead is reported STALE, by name, and can never again be mistaken for a live writer.
+#
+# The witness is EVIDENCE, NEVER A LOCK. Nothing waits on it, nothing refuses because of it, and
+# a missing or unwritable witness is silence rather than a grant or a denial -- the mutex remains
+# the only thing that serialises writers. Making the file authoritative would invent a second
+# lock with no kernel behind it, which is how a stale file becomes a permanent outage.
+$script:GitWriterWitness = Join-Path $PSScriptRoot "..\reports\GIT_WRITER_LOCK.json"
+
+function Write-GitWriterWitness {
+    param([string] $Script = "unknown", [string] $Name = "")
+    try {
+        $null = New-Item -ItemType Directory -Force -Path (Split-Path $script:GitWriterWitness) -ErrorAction Stop
+        (@{
+            pid        = $PID
+            script     = $Script
+            mutex      = $Name
+            host       = $env:COMPUTERNAME
+            taken_at   = (Get-Date).ToUniversalTime().ToString('o')
+        } | ConvertTo-Json -Depth 3) | Set-Content -Path $script:GitWriterWitness -Encoding utf8 -ErrorAction Stop
+    } catch { }
+}
+
+function Clear-GitWriterWitness {
+    # ONLY OUR OWN. Clearing a witness another live process wrote would erase the one fact that
+    # names the real holder, so the pid is checked first.
+    try {
+        if (-not (Test-Path $script:GitWriterWitness)) { return }
+        $w = Get-Content $script:GitWriterWitness -Raw | ConvertFrom-Json
+        if ([int]$w.pid -eq $PID) { Remove-Item $script:GitWriterWitness -Force -ErrorAction Stop }
+    } catch { }
+}
+
+function Get-GitWriterHolder {
+    $out = @{ State = "UNMEASURED"; Summary = "no witness file; the holder did not record itself"
+              Pid = 0; Script = ""; TakenAt = ""; AgeS = -1 }
+    try {
+        if (-not (Test-Path $script:GitWriterWitness)) { return $out }
+        $w = Get-Content $script:GitWriterWitness -Raw | ConvertFrom-Json
+        $out.Pid = [int]$w.pid; $out.Script = [string]$w.script; $out.TakenAt = [string]$w.taken_at
+        try { $out.AgeS = [int]((Get-Date).ToUniversalTime() - [datetime]::Parse($w.taken_at).ToUniversalTime()).TotalSeconds } catch { }
+        $alive = $null -ne (Get-Process -Id $out.Pid -ErrorAction SilentlyContinue)
+        $out.State = if ($alive) { "LIVE" } else { "STALE" }
+        $out.Summary = "{0}: pid {1} ({2}) took {3} at {4}, {5}s ago" -f `
+            $out.State, $out.Pid, $out.Script, $w.mutex, $out.TakenAt, $out.AgeS
+        if (-not $alive) {
+            $out.Summary += " -- THAT PROCESS IS GONE; the mutex itself grants on abandonment, so this is a stale witness, not a wedge"
+        }
+    } catch {
+        $out.Summary = "witness unreadable: " + $_.Exception.GetType().Name
+    }
+    return $out
 }
