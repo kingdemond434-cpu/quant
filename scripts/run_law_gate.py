@@ -316,6 +316,12 @@ _LAW_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
 #: wolf on every PR, and a gate that cries wolf gets disabled -- which is how enforcement dies.
 #: They run in the hourly box gate, where their verdict is real.
 _STATE_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
+    # 87% OF THE DOCKET SAT UNJUDGED AND NOTHING SAID SO (2026-09-24). The evidence
+    # was in JUDGE_COVERAGE.json the whole time and no organ read it. This reads the
+    # STALL rather than its cause: a backlog is not a breach, a backlog that stops
+    # moving is. It caps nothing and rations nothing -- judging more is free in
+    # multiplicity terms. LIVE coverage state, so it belongs here, not in _LAW_FENCES.
+    ("check_judging_coverage.py", ()),
     ("check_conversion.py", ()),               # L1.28b -- FLATLINE fails
     # EVERY SOURCE COLLECTED AND CONVERTED (principal 2026-09-23, "make sure they are always
     # collected, 100% exploited and converted"). Two ratchets that may only fall -- sources never
