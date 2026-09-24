@@ -186,7 +186,8 @@ NON_REGIONAL_PREFIXES: tuple[str, ...] = (
 #: produce cells from other producers' evidence and belong to no region themselves.
 NON_REGIONAL_NAMES: frozenset[str] = frozenset({
     "discovery_compiler", "pack_cells", "pack_cells.world", "sandbox_runner",
-    "independence_intake", "timeframe_fanout", "coverage_tensor", "moat_factory",
+    "independence_intake", "rank_recovery", "timeframe_fanout", "coverage_tensor",
+    "moat_factory",
     "search_paradigm_census", "execution_alpha_miner", "missed_trade_archaeologist",
     "alpha_evolution", "representation_discovery", "math_lab", "physics_lab",
     "world_frontier", "hypothesis_factory", "combination_lab", "dislocation_lab",

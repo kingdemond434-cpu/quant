@@ -128,6 +128,8 @@ CADENCE: tuple[tuple[str, str, int, str], ...] = (
      "research/pack_cells.py"),
     ("independence_intake", "desks/mt5/reports/INDEPENDENCE_INTAKE.json", 3600,
      "research/independence_intake.py"),
+    ("rank_recovery", "desks/mt5/reports/RANK_RECOVERY.json", 3600,
+     "research/rank_recovery.py"),
     ("attribution_census", "desks/mt5/reports/ATTRIBUTION_COVERAGE.json", 3600,
      "research/attribution_census.py"),
     ("coverage_tensor", "desks/mt5/reports/COVERAGE_TENSOR.json", 3600,

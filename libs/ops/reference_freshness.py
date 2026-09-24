@@ -934,6 +934,28 @@ DESTRUCTIVE_PATHS: tuple[DestructivePath, ...] = (
              "capacity, so an empty or unreadable anything evicts nothing.",
     ),
     DestructivePath(
+        path_id="retired_clocks.evacuate",
+        module="desks/mt5/research/retired_clocks.py",
+        function="evacuate",
+        removes="rows POPped out of the five shadow clock stores after being appended, whole, to "
+                "the append-only ledger data/retired_clocks.jsonl and tombstoned in place",
+        reference="each row's OWN status field, matched against RETIREMENT_PREFIXES "
+                  "('RETIRED', 'VOID') -- no external store is consulted",
+        status="positive",
+        note="IT RETIRES NOTHING, EVER; it MOVES rows another organ already retired, and the "
+             "module's own docstring says so. Three independent reasons an absence removes "
+             "nothing here: a missing store is skipped (`if not p.exists(): continue`), an "
+             "UNREADABLE store is recorded in `unreadable` and skipped rather than treated as "
+             "empty, and the pop is reached only for a key whose own value positively declares "
+             "`is_retired(status)`. Append-before-remove means a crash duplicates a history row "
+             "rather than losing one, and the TOMBSTONE left behind keeps a retired key "
+             "distinguishable from a key that never existed. Declared (not guarded) because "
+             "there is no reference whose freshness a guard could judge -- the evidence is the "
+             "row itself. Found by the tree scan on 2026-09-23 as the seventh undeclared "
+             "candidate (`pop()` + the RETIRED state token); this row is the decision, which is "
+             "what the scan asks for, and UNDECLARED_CEILING is untouched.",
+    ),
+    DestructivePath(
         path_id="campaign_queue.cleanup",
         module="libs/ops/campaign_queue.py",
         function="cleanup",

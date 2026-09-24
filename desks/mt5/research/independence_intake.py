@@ -639,6 +639,12 @@ def fill_orthogonality(created: list[tuple[str, str, str, str]]) -> dict[str, An
         return {"available": False,
                 "why": f"{UNMEASURED}: breadth failed ({type(exc).__name__}: {exc})"}
     cells = len({c for cs in by_family.values() for c in cs})
+    prod_counts = sorted(((k, len(set(v))) for k, v in by_producer.items()),
+                         key=lambda kv: -kv[1])
+    total = sum(n for _k, n in prod_counts)
+    sq = sum(n * n for _k, n in prod_counts)
+    prod_pr = (total * total / sq) if sq else 0.0
+    prod_rank = float(prod_b.get("total") or 0.0)
     return {"available": True,
             "effective_rank": fam_b.get("total"),
             "producer_effective_rank": prod_b.get("total"),
@@ -648,6 +654,26 @@ def fill_orthogonality(created: list[tuple[str, str, str, str]]) -> dict[str, An
             "horizons": len({h for _p, _f, _s, h in created}),
             "rank_per_cell": (round(float(fam_b.get("total") or 0.0) / cells, 5)
                               if cells else None),
+            # WHAT BOUNDS THE NUMBER, PUBLISHED SO NOBODY READS VOLUME INTO IT AGAIN (2026-09-24).
+            # Producer rows here are near-disjoint, so the producer effective rank IS the
+            # participation ratio of the per-producer cell COUNTS -- measured on the box's own
+            # 24h window, 8.0995 against 8.1395, agreeing to 0.5%. That makes it a CONCENTRATION
+            # measure: it can never exceed the producer count, and a pass that lands its cells on
+            # the producers who already had the most adds volume and almost no rank. Measured the
+            # night the grid filled: 32,739 transplants, 50 distinct parameter sets, 20 producers,
+            # 32% of them one producer -- participation ratio 7.0116, which is the 7.1562 the
+            # desk saw. `desks/mt5/research/rank_recovery.py` is the organ that widens it, by
+            # carrying the LEAST-credited producers' rules onto ground already reached.
+            "producer_count_participation_ratio": round(prod_pr, 4),
+            "producer_rank_is_a_concentration_measure": (
+                abs(prod_rank - prod_pr) <= 0.02 * max(prod_pr, 1.0)),
+            "producer_headroom": round(len(by_producer) - prod_rank, 4),
+            "top_producer_share": (round(prod_counts[0][1] / total, 4)
+                                   if prod_counts and total else None),
+            "top_producers": prod_counts[:10],
+            "recovered_by": ("desks/mt5/research/rank_recovery.py -- hourly leg `rank_recovery`, "
+                             "artifact reports/RANK_RECOVERY.json. The remedy for a low reading "
+                             "is MORE producers carried onto the same ground, never fewer cells"),
             "basis": ("participation ratio of the singular-value spectrum of the family x and "
                       "producer x (family|symbol|horizon) indicator matrices of the cells THIS "
                       "PASS created; the desk-wide figure belongs to "

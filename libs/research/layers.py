@@ -72,6 +72,13 @@ LEG_LAYER: dict[str, str] = {
     "graveyard_model": "prediction", "counterfactual_world": "prediction",
     "edge_confidence": "prediction", "adversaries": "prediction",
     "recertify_canon": "prediction", "publish_survivors": "prediction",
+    # THE JUDGE'S INPUT AND ITS OUTPUT (2026-09-24). `fast_admission` describes the docket the
+    # ten gates are given -- raw intake against the admissible population -- and
+    # `canon_publication` seals the sweep the judge just completed into the canonical store that
+    # every other organ reads. Both sit in PREDICTION beside `external_gauntlet` itself: neither
+    # places an order, neither sizes one, and both exist only so the prediction layer's verdict
+    # is fed the right population and published the moment it exists.
+    "fast_admission": "prediction", "canon_publication": "prediction",
     "miner_conversion": "prediction", "opportunity_gap": "prediction",
     "research_org": "prediction", "queue_compact": "prediction",
     "requeue_unrunnable": "prediction", "falsifier_run": "prediction",
@@ -256,6 +263,10 @@ LEG_LAYER: dict[str, str] = {
     # other guarantees every certificate gets a forward clock the moment it is minted. They are
     # the machine that runs the machine -- throughput and evidence plumbing, not edge.
     "judging_throughput": "meta", "forward_enrolment": "meta",
+    # META for the same reason, and it is the one that measures whether the other two are even
+    # being reached: what fraction of the day the desk actually mints and judges, against the best
+    # hour this box has ever done. It buys no prediction; it finds the hours nothing was produced.
+    "duty_cycle": "meta",
     "analyst_pipeline": "information", "knowledge_graph": "information",
     "card_explosion": "prediction", "alpha_lineage": "prediction",
     "graveyard_resurrection": "prediction", "shadow_discovery": "information",
@@ -420,6 +431,10 @@ LEG_LAYER: dict[str, str] = {
     # moves intake order, operator mix and generation targets accordingly: the machine measuring
     # and scheduling itself, which is meta.
     "independence_intake": "meta",
+    # RANK RECOVERY measures the production effective rank exactly and carries the
+    # least-credited producers' rules onto coordinates the desk already reached: the
+    # machine measuring and widening its own independence, which is meta.
+    "rank_recovery": "meta",
     "attribution_census": "meta",
     # sizing: how much
     "capacity": "sizing", "ensemble_optimizer": "sizing",

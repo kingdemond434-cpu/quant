@@ -63,33 +63,142 @@ _INDEX = ("US500", "US30", "USTEC", "NAS", "SPX", "SP500", "DAX", "GER", "UK100"
 #: 24/5 trading -- the floor at which a symbol is worth carrying, not a claim that it is enough.
 MIN_BARS = 1000
 
+# ============================ WHERE A TICKER ROOT IS ALLOWED TO END ============================
+#
+# THE DEFECT THIS CLOSES, measured on the trading box 2026-09-23 and again 2026-09-24. The root
+# lists above were matched with a bare `startswith`/`in`, so a root that happened to be the first
+# letters of an ENGLISH WORD claimed the whole instrument:
+#
+#     UnionPacific          -> crypto   ("UNI" = Uniswap, sitting in front of "on Pacific")
+#     UnitedHealth          -> crypto   ("UNI" again)
+#     UnitedParcelService   -> crypto   ("UNI" again)
+#     GoldmanSachs          -> metal    ("GOLD" in front of "man Sachs")
+#     Nike                  -> index    ("NIK" = Nikkei, inside "Nike")
+#
+# FIVE US SHARE CFDs IN THE HYPOTHESIS-DISCOVERY LANE, which the two-lane order (principal
+# 2026-09-06) puts in the news/earnings lane instead -- and each of them spending trial budget
+# that the deflated-Sharpe charge takes off every FX and metals cell. It is also wrong where no
+# lane is involved: `libs/portfolio/robust_elog._asset_class` POOLS sleeves by this class for
+# correlation shrinkage, so UnionPacific was borrowing BTCUSD's mean and GoldmanSachs was
+# borrowing gold's -- the desk's only live book.
+#
+# The same shape had already been caught once, for bonds ("UST" inside "EUSTX50", 2026-08-28) and
+# repaired by narrowing that ONE list to a prefix test. A prefix test is not the fix: "UNI" IS a
+# prefix of "UnionPacific". The fix is a BOUNDARY: a ticker root identifies an instrument only
+# when the symbol stops being a name at the point the root ends.
+#
+# Two independent tests, both required, because they fail on different kinds of symbol:
+#
+#   (a) THE NAME TEST. Broker CODES are upper-case; share CFDs arrive as CamelCase company names.
+#       A root followed (or preceded) by a LOWER-CASE letter in the raw string is the first
+#       letters of a word, not a ticker -- "Uni|onPacific", "Gold|manSachs", "Nik|e". This is the
+#       word boundary in the literal sense, read off the case the broker already supplies.
+#   (b) THE CODE TEST. In a broker code the root is followed by the thing it is quoted against or
+#       by nothing at all: `XAU|USD`, `BTC|USD`, `GOLD`, `UST|05Y`, `GER|40`. Anything else is a
+#       longer word that merely starts with the root. Applied to the PREFIX-rooted lists only --
+#       the soft-commodity and index lists legitimately carry mid-symbol tokens (`UKCOCOA`,
+#       `USCOCOA`) and legitimate trailing words (`SUGARRAW`), and (a) is what disciplines those.
+
+#: Currency codes a broker code may be quoted against. Used ONLY to recognise the boundary at the
+#: end of a ticker root; the FX rules below own the actual pair decomposition.
+_QUOTE_CODES: tuple[str, ...] = tuple(sorted(set(_FX_MAJORS) | set(_FX_MINORS)))
+
+#: `<ROOT>USD`, `<ROOT>EUR`, plus the short venue/contract suffix brokers bolt on (`.raw`, `m`,
+#: `-ECN` -- the separators are already stripped by the time this is tested).
+_CCY_TAIL = re.compile(r"(?:" + "|".join(_QUOTE_CODES) + r")[0-9A-Z]{0,4}")
+
+#: `UST05Y`, `GER40`, `NETH25`, `US500CASH` -- a contract, expiry or index-level suffix. It must
+#: START with a digit: that is what keeps a trailing WORD ("MANSACHS", "ONPACIFIC") out.
+_CONTRACT_TAIL = re.compile(r"\d{1,4}[A-Z]{0,4}")
+
+
+def _clean(symbol: str) -> tuple[str, tuple[int, ...]]:
+    """Upper-cased alphanumerics of `symbol`, with each kept character's index in the RAW string.
+
+    The indices are the whole point: the raw string carries the CASE, and the case is what says
+    where one word ends and the next begins in a company name.
+    """
+    raw = str(symbol)
+    chars: list[str] = []
+    where: list[int] = []
+    for i, ch in enumerate(raw):
+        up = ch.upper()
+        # `len(up) == 1` guards the characters whose upper-case is longer than themselves
+        # ("ß" -> "SS"), which would desynchronise the index map it is built to keep honest.
+        if len(up) == 1 and (("A" <= up <= "Z") or ("0" <= up <= "9")):
+            chars.append(up)
+            where.append(i)
+    return "".join(chars), tuple(where)
+
+
+def _at_word_boundary(raw: str, where: tuple[int, ...], start: int, length: int) -> bool:
+    """True when the root occupying `cleaned[start:start+length]` is a WORD, not part of one.
+
+    Test (a) above: a lower-case letter on either side of the match in the raw string means the
+    root is the opening or middle of an English word -- "Uni|onPacific", "S|poi|ler" -- and a word
+    is never a ticker. Reading the case rather than a list of exceptions is what makes this work
+    for the share CFD the broker lists tomorrow.
+    """
+    before = raw[where[start] - 1] if start > 0 and where[start] > 0 else ""
+    after = raw[where[start + length - 1] + 1:][:1]
+    return not before.islower() and not after.islower()
+
+
+def _tail_is_a_boundary(tail: str) -> bool:
+    """Test (b) above: what follows a ticker root in a broker CODE, or nothing at all."""
+    if not tail:
+        return True
+    return bool(_CCY_TAIL.fullmatch(tail) or _CONTRACT_TAIL.fullmatch(tail))
+
+
+def _rooted(raw: str, cleaned: str, where: tuple[int, ...], roots: tuple[str, ...]) -> bool:
+    """A root list matched at the START of the symbol, under BOTH boundary tests."""
+    for root in roots:
+        if cleaned.startswith(root) and _at_word_boundary(raw, where, 0, len(root)) \
+                and _tail_is_a_boundary(cleaned[len(root):]):
+            return True
+    return False
+
+
+def _tokened(raw: str, cleaned: str, where: tuple[int, ...], roots: tuple[str, ...]) -> bool:
+    """A root list matched ANYWHERE in the symbol, under the word-boundary test only.
+
+    Mid-symbol matching is load-bearing for these lists -- `UKCOCOA` and `USCOCOA` are the soft
+    commodity, `EUSTX50` is the index -- so narrowing them to a prefix would delete real
+    instruments. (a) is enough: it is company NAMES that produce the false positives here.
+    """
+    for root in roots:
+        at = cleaned.find(root)
+        while at >= 0:
+            if _at_word_boundary(raw, where, at, len(root)):
+                return True
+            at = cleaned.find(root, at + 1)
+    return False
+
 
 def asset_class(symbol: str) -> str:
     """Best-effort class for `symbol`. Never raises; unknown is a REPORTED state, not a crash."""
-    s = re.sub(r"[^A-Z0-9]", "", str(symbol).upper())
+    raw = str(symbol)
+    s, where = _clean(raw)
     # Order matters: XAUUSD contains "USD" and would read as FX if FX were tested first.
-    for pat in _METALS:
-        if s.startswith(pat):
-            return "metal"
-    for pat in _CRYPTO:
-        if s.startswith(pat):
-            return "crypto"
-    for pat in _ENERGY:
-        if pat in s:
-            return "energy"
-    for pat in _SOFT:
-        if pat in s:
-            return "soft"
+    if _rooted(raw, s, where, _METALS):
+        return "metal"
+    if _rooted(raw, s, where, _CRYPTO):
+        return "crypto"
+    if _tokened(raw, s, where, _ENERGY):
+        return "energy"
+    if _tokened(raw, s, where, _SOFT):
+        return "soft"
     # PREFIX-ONLY for bonds. A substring test made EUSTX50 -- the Euro Stoxx 50 INDEX -- a
     # bond, because "UST" sits inside "E-UST-X50" (2026-08-28). Ticker roots identify an
     # instrument at the START of the symbol; a loose contains-test silently reassigns whole
     # instruments to the wrong class, and every breadth count downstream inherits the error.
-    for pat in _BOND:
-        if s.startswith(pat):
-            return "bond"
-    for pat in _INDEX:
-        if pat in s:
-            return "index"
+    # The boundary tests above extend that repair to the OTHER end of the root: `UST|05Y` is a
+    # Treasury note and `UST|EC` is the Nasdaq index, and only the tail tells them apart.
+    if _rooted(raw, s, where, _BOND):
+        return "bond"
+    if _tokened(raw, s, where, _INDEX):
+        return "index"
     base, quote = s[:3], s[3:6]
     if len(s) >= 6 and base in _FX_MAJORS and quote in _FX_MAJORS:
         return "fx_major" if "USD" in (base, quote) else "fx_cross"
@@ -106,7 +215,6 @@ def asset_class(symbol: str) -> str:
     # character ticker (IBM, AMD, 3M) that nothing above claimed. The whole-broker expansion
     # (2026-08) brought ~70 of these and every one read "unknown", which kept an entire asset
     # class out of the breadth ledger while the law says hunt EVERYTHING the broker lists.
-    raw = str(symbol)
     if re.search(r"[a-z]", raw) or "&" in raw or "-" in raw:
         return "equity"
     if re.fullmatch(r"\d?[A-Z]{1,12}", s):
