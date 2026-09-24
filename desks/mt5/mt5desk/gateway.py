@@ -1598,16 +1598,33 @@ def manage_open_positions(st: dict, sleeves: list[dict]) -> None:
                     f"{MIN_RATCHET_IMPROVEMENT_R:.2f}R floor; not worth a modify")
                 continue
 
-            # THE VENUE'S OWN MINIMUM DISTANCE. A stop inside stops_level is rejected, and a
-            # rejection every pass is a management loop that looks busy and protects nothing.
+            # THE LEVEL MUST STILL BE A STOP WHEN IT ARRIVES, and the venue's own minimum
+            # distance is only half of that question. This block asked one thing -- is the
+            # proposed level inside `stops_level` of the market -- and only when the broker
+            # states a `stops_level` at all; on a symbol reporting zero it asked nothing. It
+            # never asked the other half: WHICH SIDE of the market the level is on. A trail
+            # computed off an extreme that price has since retraced past comes out BEHIND the
+            # market, which is not a tight stop but a market exit, and `ratchet` cannot see it
+            # because it compares the candidate to the current stop and never to the quote.
+            #
+            # HERE THAT COSTS NOTHING AND THAT IS WHY IT SURVIVED: MetaTrader answers 10016
+            # ("Invalid stops") and the account keeps the stop it had -- this log holds 92 such
+            # refusals against 15 accepted modifies. The desk's OTHER account has no such
+            # backstop: on 2026-09-24 TradeLocker accepted the identical mistake on E8 position
+            # 360287970193246861 and filled it at market, 24.13 points and 386.08 USD past the
+            # level the desk had just proven protected more. One predicate now answers both
+            # halves on both venues; `min_distance` folds the old stops_level test into it.
             stops_level = int(getattr(info, "trade_stops_level", 0) or 0)
             tick_size = float(getattr(info, "trade_tick_size", 0.0) or 0.0)
             tick_now = mt5.symbol_info_tick(symbol)
-            if stops_level and tick_size and tick_now is not None:
-                ref = tick_now.bid if side == 1 else tick_now.ask
-                if abs(ref - decision.new_stop) < stops_level * tick_size:
-                    log(f"{tag}: proposed stop {decision.new_stop:.5f} is inside the venue's "
-                        f"{stops_level}-point stops level; held")
+            if tick_now is not None:
+                rests, why_rest = _pm.stop_rests_at_venue(
+                    stop=float(decision.new_stop), side=side,
+                    bid=float(tick_now.bid), ask=float(tick_now.ask),
+                    min_distance=(stops_level * tick_size
+                                  if stops_level and tick_size else 0.0))
+                if not rests:
+                    log(f"{tag}: {why_rest}")
                     continue
 
             if not st["armed"]:
