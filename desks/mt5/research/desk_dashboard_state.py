@@ -654,6 +654,11 @@ def _live(deadline: float) -> dict[str, Any]:
 _PROD_FIELDS = (
     ("cells", ("raw_cells", "cells", "cells_emitted")),
     ("unique_cells", ("unique_cells", "unique_by_content_hash")),
+    # REACHED THE JUDGE: the stage between donating and being judged, and the one the maths lab
+    # was lost in for its whole life. The panel renders it beside `cells_judged` because the two
+    # answer different questions and reading one as the other is how a desk believes it has
+    # judged what it has only queued.
+    ("cells_reached_judge", ("cells_reached_judge", "reached_judge")),
     ("cells_judged", ("cells_judged", "judged", "judged_cells")),
     ("certificates", ("certificates", "n_certificates")),
     ("orthogonality_added", ("orthogonality_added", "orthogonality", "orthogonal_cells",

@@ -95,7 +95,15 @@ MAX_TARGETS = 4
 MAX_PEERS = 10
 MAX_DATASET_COLUMNS = 12
 MAX_REPRESENTATION_COLUMNS = 8
-MAX_DONATIONS = 40
+#: DONATION IS UNCAPPED (principal 2026-09-24: "all producers cells must reach gaunlet always
+#: 100%"). This read 40 and the lab admitted 132 objects in the pass that was measured, so the
+#: batch budget was the binding constraint on a producer that had already been told its screen
+#: may not gate. There is no multiplicity reason to ration: the gauntlet's trial charge is a
+#: PINNED CONSTANT in `policy/gate_spec.yaml` and does not rise with the number of cells tested,
+#: so volume costs compute and costs no other cell a thing. `set_aside.take` treats a negative
+#: limit as "every row", and the stage still writes its ledger line with considered == kept so
+#: "the lab donated N" stays readable as "the lab had N".
+MAX_DONATIONS = -1
 #: Derived worker cap, exactly as `miner_candidate_compiler` derives its row cap: from memory
 #: ACTUALLY FREE, floored, so an unreadable counter changes nothing.
 WORKER_FLOOR = 2
@@ -1066,8 +1074,21 @@ def run(*, budget_s: float = 3000.0, dry_run: bool = False,
         charged = B.effective_trials(distinct, lifetime.get(tradition, 0))
         passed = 0
         for obj, view in objects:
+            # THE WALL CLOCK MAY NOT DELETE AN OBJECT, ONLY ITS SCORE (2026-09-24). Both branches
+            # below used to `continue`, which dropped the object out of `judged` -- so it was
+            # never deduped, never recorded QUEUED in the registry and never donated. Measured on
+            # the trading box the day this changed: 98 proposed objects a pass left by the
+            # deadline and 0 by the exception, all of them invisible to the one judge. The lab's
+            # burden is a RANK, so an object that could not be ranked rides at the back of the
+            # queue with an UNMEASURED score; it is the gauntlet's ten gates that decide it, and
+            # they measure it themselves from the spec.
             if time.monotonic() > judge_deadline:
                 unjudged += 1
+                obj.notes.append(f"{UNMEASURED}: the lab's own burden was not measured for this "
+                                 f"object (judge deadline); donated unranked -- the ten gates "
+                                 f"measure it from the spec")
+                obj.interpretation = B.interpret(obj, view)
+                judged.append(obj)
                 continue
             try:
                 B.judge(obj, view, distinct_forms=distinct,
@@ -1076,6 +1097,9 @@ def run(*, budget_s: float = 3000.0, dry_run: bool = False,
                         permutations=permutations)
             except Exception as exc:
                 obj.notes.append(f"{UNMEASURED}: burden.judge raised {type(exc).__name__}")
+                with contextlib.suppress(Exception):
+                    obj.interpretation = B.interpret(obj, view)
+                judged.append(obj)
                 continue
             passed += int(obj.passed)
             judged.append(obj)
@@ -1130,14 +1154,22 @@ def run(*, budget_s: float = 3000.0, dry_run: bool = False,
     survivors = sorted(admitted, key=lambda o: (0 if o.passed else 1, -(o.value or -9e9)))
 
     already = set((_read_json(DONATED) or {}).get("object_ids") or [])
-    # MAX_DONATIONS IS A BATCH BUDGET, NOT A SCREEN (LAWS 7: only the four immutable evaluator
-    # files may refuse a cell). Every admitted object is already QUEUED in the registry above, so
-    # nothing here decides whether the judge sees it -- only how many ride the donation channel
-    # this pass. The remainder is now NAMED in reports/SET_ASIDE_LEDGER.json with the ordering
-    # key, so "the lab donated 40" can never be read as "the lab had 40".
+    # THE BATCH BUDGET IS GONE (MAX_DONATIONS = -1). It was 40 against 132 admitted objects, and
+    # a budget that binds every pass on a producer whose screen may not gate is the screen wearing
+    # a different hat. The `sa.take` call stays so the stage keeps writing its ledger line --
+    # considered == kept now, which is the measurement saying the budget bound nothing.
     rows, refused = donation_rows(
         sa.take(survivors, MAX_DONATIONS, organ="math_lab", stage="donations",
                 ordering="internal screen first (passed), then -value"), already)
+    # AN OBJECT THAT CANNOT BE WRITTEN AS A CELL IS A NAMED REFUSAL, NOT A SILENT DROP.
+    # `G.tradeable` refuses an expression the `formula` executor cannot evaluate; that is a real
+    # reason and it is now counted in the desk's own refusal ledger rather than only in this
+    # organ's report, where nothing downstream reads it.
+    if refused:
+        sa.note("math_lab", "untradeable_expression", kept=len(rows),
+                considered=len(rows) + len(refused),
+                ordering="G.tradeable(expression) is not None -- the formula executor must be "
+                         "able to evaluate the tree")
     donation: dict[str, Any] = {"donated": 0, "path": None, "refused_untradeable": len(refused),
                                 "refusals": refused[:20],
                                 "already_donated_in_a_previous_pass":
@@ -1180,8 +1212,10 @@ def run(*, budget_s: float = 3000.0, dry_run: bool = False,
     report = _report(started, chosen, unknown, panel_status, memory, plan, roi_detail,
                      per_tradition, admitted, dedup_status, donation, representations, registry,
                      dry_run,
-                     ([f"budget: {unjudged} proposed objects were not judged this pass (judge "
-                       f"deadline {0.80 * budget_s:.0f}s of a {budget_s:.0f}s budget)"]
+                     ([f"budget: {unjudged} proposed objects carry no internal burden score this "
+                       f"pass (judge deadline {0.80 * budget_s:.0f}s of a {budget_s:.0f}s "
+                       f"budget) -- they are admitted, registered QUEUED and donated unranked "
+                       f"anyway; the ten gates measure them from the spec"]
                       if unjudged else []) +
                      ([] if seat_named else
                       ["proposer_seat: no candidate mechanism name proposed this pass (no panel "

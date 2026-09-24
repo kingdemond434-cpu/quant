@@ -140,6 +140,80 @@ def test_objects_reach_the_registry_the_ledger_and_the_compiler(lab):
         assert report["representations"]["minted"] >= 0
 
 
+def test_every_admitted_object_is_donated_and_the_burden_only_orders_the_queue(lab):
+    """ALL PRODUCERS' CELLS REACH THE GAUNTLET, 100% (principal, 2026-09-24).
+
+    Measured on the trading box the morning this landed: 132 objects admitted, `passed_burden`
+    0 -- not one object has EVER cleared the lab's internal screen -- and 1 donated. Two things
+    were rationing it and neither was a judge: `MAX_DONATIONS = 40` against 132 admitted, and a
+    wall-clock deadline that dropped 98 unjudged objects out of the admitted list entirely.
+
+    The burden survives as the ORDER of the queue and as provenance on the row. It may never
+    again decide WHETHER an object goes: the ten gates are the desk's only judge, and the trial
+    charge they apply is a pinned constant, so volume costs no other cell anything.
+    """
+    assert ML.MAX_DONATIONS < 0, "the donation batch budget is a cap on a producer's reach"
+    report = ML.run(budget_s=40.0, traditions=list(FAST), permutations=30)
+
+    admitted = report["objects"]["admitted"]
+    donated = len(lab["donated"])
+    untradeable = report["donation"]["refused_untradeable"]
+    already = report["donation"]["already_donated_in_a_previous_pass"]
+    assert donated + untradeable + already == admitted, (
+        f"{admitted} admitted, {donated} donated, {untradeable} refused as untradeable and "
+        f"{already} already donated: the difference is objects that went nowhere and were never "
+        f"named. Every admitted object is donated, or refused BY NAME for a reason the row "
+        f"carries -- {report['donation']}")
+    assert report["objects"]["passed_burden"] == 0 or donated >= 1
+    if donated:
+        # the screen still ORDERS: an object the burden liked rides ahead of one it did not
+        flags = [bool(r["evidence"]["burden"].get("passed")) for r in lab["donated"]
+                 if isinstance(r["evidence"].get("burden"), dict)]
+        assert flags == sorted(flags, reverse=True), (
+            "the burden must still order the queue -- passed first, then by value")
+
+
+def test_the_judge_deadline_costs_an_object_its_score_never_its_donation(lab, monkeypatch):
+    """A wall clock may not delete a hypothesis. It may only leave it unranked.
+
+    Both deadline branches used to `continue`, so an object the clock reached first was never
+    deduped, never QUEUED in the registry and never donated -- invisible to the one judge, and
+    reported only as a count in `unmeasured`. 98 objects a pass on the trading box.
+    """
+    real = ML.B.judge
+    calls = {"n": 0}
+
+    def _slow(*a, **k):
+        calls["n"] += 1
+        if calls["n"] > 2:                      # everything after the second object is "late"
+            raise AssertionError("the deadline should have stopped the judge before this")
+        return real(*a, **k)
+
+    monkeypatch.setattr(ML.B, "judge", _slow)
+    # a deadline already in the past for every object after the first two
+    monkeypatch.setattr(ML.time, "monotonic",
+                        _clock_that_expires_after(2, ML.time.monotonic))
+    report = ML.run(budget_s=40.0, traditions=list(FAST), permutations=20)
+
+    assert report["objects"]["admitted"] > 0, "the deadline emptied the lab"
+    unranked = [u for u in report["unmeasured"] if "carry no internal burden score" in u]
+    if unranked:
+        assert "donated unranked anyway" in unranked[0], unranked[0]
+    assert report["registry"]["discoveries"] == report["objects"]["admitted"], (
+        "an object the clock reached first must still be QUEUED in the registry")
+
+
+def _clock_that_expires_after(n_ok: int, real):
+    """A monotonic clock that jumps past any deadline once `n_ok` readings have been taken."""
+    state = {"n": 0, "t0": real()}
+
+    def _clock() -> float:
+        state["n"] += 1
+        return state["t0"] + (0.0 if state["n"] <= n_ok + 6 else 1e9)
+
+    return _clock
+
+
 def test_dry_run_writes_nothing(lab):
     report = ML.run(budget_s=25.0, traditions=list(FAST), dry_run=True, permutations=20)
     assert report["dry_run"] is True

@@ -80,7 +80,9 @@ MATHS_PER_PASS = 4
 MAX_TARGETS = 2
 MAX_CARDS_REVIEWED = 60
 MAX_CAUSAL = 6
-MAX_DONATIONS = 30
+#: UNCAPPED, for the reason `math_lab.MAX_DONATIONS` is: the gauntlet's trial charge is a pinned
+#: constant, so rationing donations buys no other cell anything and costs this one its judge.
+MAX_DONATIONS = -1
 UNMEASURED = "UNMEASURED"
 
 RULE = ("two independent civilizations with disjoint seeds over lockboxed panels; every object "
@@ -272,20 +274,35 @@ def run(*, budget_s: float = 600.0, dry_run: bool = False, max_targets: int = MA
             distinct = len(result.get("distinct") or set())
             passed = 0
             for obj, view in objects:
+                # A DEADLINE MAY COST AN OBJECT ITS SCORE, NEVER ITS CARD (2026-09-24). Both
+                # branches used to `continue`, so an object the clock or an exception reached
+                # first had no card, was never in `admitted_objects`, was never QUEUED in the
+                # registry and never donated -- invisible to the one judge. It now gets a card
+                # with an UNMEASURED burden and rides at the back of the donation queue.
+                scored = True
                 if time.monotonic() > judge_deadline:
                     unjudged += 1
-                    continue
-                try:
-                    B.judge(obj, view, distinct_forms=distinct,
-                            lifetime_trials=lifetime.get(tradition, 0), rng=rng,
-                            peers=[p for p in working if p.target != obj.target][:2],
-                            permutations=permutations)
-                except Exception as exc:
-                    obj.notes.append(f"{UNMEASURED}: burden.judge raised {type(exc).__name__}")
-                    continue
-                passed += int(obj.passed)
-                if obj.passed:
-                    passed_here.add(obj.canonical)
+                    scored = False
+                    obj.notes.append(f"{UNMEASURED}: the lab's own burden was not measured for "
+                                     f"this object (judge deadline); carded and donated unranked")
+                    with contextlib.suppress(Exception):
+                        obj.interpretation = B.interpret(obj, view)
+                else:
+                    try:
+                        B.judge(obj, view, distinct_forms=distinct,
+                                lifetime_trials=lifetime.get(tradition, 0), rng=rng,
+                                peers=[p for p in working if p.target != obj.target][:2],
+                                permutations=permutations)
+                    except Exception as exc:
+                        scored = False
+                        obj.notes.append(
+                            f"{UNMEASURED}: burden.judge raised {type(exc).__name__}")
+                        with contextlib.suppress(Exception):
+                            obj.interpretation = B.interpret(obj, view)
+                if scored:
+                    passed += int(obj.passed)
+                    if obj.passed:
+                        passed_here.add(obj.canonical)
                 card = I.card_from_object(
                     obj, domain="physics" if tradition in PHYSICS_REGISTRY else "mathematics",
                     method=tradition, civilization=civ, seed=CIVILIZATIONS[civ],
@@ -417,24 +434,44 @@ def run(*, budget_s: float = 600.0, dry_run: bool = False, max_targets: int = MA
         I.atomic_json(METHODS, allocation)
 
     # ---- registry, donation, events
-    forward_objects = [objects_by_card[c.card_id][0] for c in cards
-                       if c.status in ("FORWARD", "PROVISIONAL")]
+    # THE CARD STATUS IS A RANK, NEVER A GATE (principal 2026-09-24: "all producers cells must
+    # reach gaunlet always 100%"). This read `[c for c in cards if c.status in
+    # ("FORWARD","PROVISIONAL")]` and the status line below said the quiet part out loud: "a card
+    # on one run is never FORWARD". So on a box where this organ runs once an hour and each pass
+    # is one run, the set was EMPTY BY CONSTRUCTION -- measured 2026-09-24, the physics wing has
+    # donated nothing ever and `data/intelligence/physics_lab/` does not exist. The replication
+    # protocol, the peer review and the card status all survive as the ORDERING of the queue and
+    # as provenance on every donated row; the ten gates are what decide.
+    _rank = {"FORWARD": 0, "PROVISIONAL": 1}
     seen: set[str] = set()
     unique_forward: list[MathObject] = []
-    for obj in forward_objects:
+    for card in sorted(cards, key=lambda c: (_rank.get(str(c.status), 2), -(c.value or -9e9))):
+        pair = objects_by_card.get(card.card_id)
+        if not pair:
+            continue
+        obj = pair[0]
         if obj.object_id not in seen:
             seen.add(obj.object_id)
             unique_forward.append(obj)
     already = set((_read_json(DONATED) or {}).get("object_ids") or [])
-    donation_rows, refused = ML.donation_rows(unique_forward[:MAX_DONATIONS], already)
+    donation_rows, refused = ML.donation_rows(
+        sa.take(unique_forward, MAX_DONATIONS, organ="physics_lab", stage="donations",
+                ordering="card status (FORWARD, PROVISIONAL, then the rest), then -value"),
+        already)
     for row in donation_rows:
         row["source"] = SOURCE
         row["kind"] = "hypothesis"
+    if refused:
+        sa.note("physics_lab", "untradeable_expression", kept=len(donation_rows),
+                considered=len(donation_rows) + len(refused),
+                ordering="G.tradeable(expression) is not None -- the formula executor must be "
+                         "able to evaluate the tree")
     donation: dict[str, Any] = {"donated": 0, "path": None, "refused_untradeable": len(refused),
                                 "already_donated_in_a_previous_pass":
                                     len([o for o in unique_forward if o.object_id in already]),
-                                "rule": "only FORWARD/PROVISIONAL cards' objects are donated; "
-                                        "a card on one run is never FORWARD"}
+                                "rule": "every card's executable object is donated, ordered by "
+                                        "card status then value; the status is a RANK and the "
+                                        "ten gates are the only judge"}
     donated_by_tradition: dict[str, int] = {}
     if donation_rows and not dry_run:
         try:

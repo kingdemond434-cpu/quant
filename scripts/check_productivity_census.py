@@ -163,6 +163,86 @@ def _ratchet_doc() -> dict[str, Any]:
     return doc if isinstance(doc, dict) else {}
 
 
+def _reach_clause(census: dict[str, Any], out: dict[str, Any],
+                  failures: list[str]) -> dict[str, Any] | None:
+    """ALL PRODUCERS' CELLS MUST REACH THE GAUNTLET, 100% (principal, 2026-09-24).
+
+    A producer that minted cells, spent real compute, and has NOT ONE of them in the file the
+    sealed judge opens is a defect with a named cause -- and this is the fence that will not let
+    that count grow. It is a DEBT ratchet, the shape `check_conversion_debt` already uses: the
+    number of non-reaching producers may fall and may never rise. Failing the whole gate on
+    today's standing count would turn a permanent measurement into a permanent red light and
+    teach the next session to disable it; failing on a RISE makes every new producer prove it
+    has a path to the judge before it can land, which is the order's actual content.
+
+    THREE STATES (L1.28a). No `reach` block and no recorded ratchet is UNMEASURED -- the census
+    publishing it has not reached this host. A `reach` block that regresses to UNMEASURED once
+    the ratchet holds a number is itself a failure: the measurement existed and somebody stopped
+    publishing it.
+    """
+    doc = _ratchet_doc()
+    host = str(out.get("ratchet_host")
+               or census.get("host") or os.environ.get("COMPUTERNAME") or "UNKNOWN_HOST").strip()
+    raw_hosts = doc.get("hosts")
+    hosts: dict[str, Any] = raw_hosts if isinstance(raw_hosts, dict) else {}
+    raw_rat = hosts.get(host)
+    rat: dict[str, Any] = raw_rat if isinstance(raw_rat, dict) else {}
+    best = rat.get("not_reaching_best")
+    reason = str(rat.get("reach_regression_reason") or "").strip()
+
+    reach = census.get("reach")
+    if not isinstance(reach, dict):
+        out["reach"] = {"verdict": "UNMEASURED",
+                        "why": ("the census on this host publishes no `reach` block: the organ "
+                                "that measures whether a producer's cells reach the judge has "
+                                "not reached it yet. A deployment fact, not a passed gate.")}
+        if isinstance(best, (int, float)) and not reason:
+            failures.append(
+                f"the census stopped publishing `reach` while the ratchet holds "
+                f"not_reaching_best={best}: a measurement that existed and is now absent is a "
+                f"REGRESSION (L1.28a). Restore it or state why in {RATCHET.relative_to(ROOT)}")
+        return None
+
+    judge_input = reach.get("judge_input") or {}
+    measurable = judge_input.get("reach_measurable")
+    if measurable is None:                     # a census from before that field was published
+        measurable = (str(judge_input.get("status")) == "MEASURED"
+                      and int(judge_input.get("candidate_ids") or 0) > 0)
+    if not measurable:
+        out["reach"] = {"verdict": "UNMEASURED",
+                        "why": f"the judge's input names no registry candidate this census could "
+                               f"join on: {judge_input.get('why') or judge_input.get('path')}"}
+        return None
+
+    now = reach.get("n_not_reaching")
+    if not isinstance(now, int):
+        out["reach"] = {"verdict": "UNMEASURED", "why": "`reach.n_not_reaching` is not a count"}
+        return None
+    out["reach"] = {
+        "verdict": "MEASURED", "n_not_reaching": now, "best": best,
+        "reach_ratio": reach.get("reach_ratio"),
+        "cells_generated": reach.get("cells_generated"),
+        "cells_reached_judge": reach.get("cells_reached_judge"),
+        "cells_judged": reach.get("cells_judged"),
+        "worst": [r.get("producer") for r in (reach.get("not_reaching") or [])[:10]],
+    }
+    if isinstance(best, (int, float)) and now > best and not reason:
+        named = ", ".join(f"{r.get('producer')} ({r.get('cells')} cells)"
+                          for r in (reach.get("not_reaching") or [])[:6]) or "(none named)"
+        failures.append(
+            f"{now} producers mint cells that reach NO judge, up from the recorded best "
+            f"{int(best)}: {named}. The principal's standing order is that ALL producers' cells "
+            f"reach the gauntlet, always, 100% -- a producer with no path to the judge burns "
+            f"compute for a verdict that can never arrive. Wire it, or record why in "
+            f"{RATCHET.relative_to(ROOT)} under `reach_regression_reason`")
+        return None
+    if not isinstance(best, (int, float)) or now < best:
+        return {"not_reaching_best": now,
+                "not_reaching_measured_at": str(census.get("at") or ""),
+                "reach_ratio_at_best": reach.get("reach_ratio")}
+    return None
+
+
 def _coverage_clause(census: dict[str, Any], out: dict[str, Any],
                      failures: list[str]) -> dict[str, Any] | None:
     """Judge per-producer measurement coverage against the ratchet. Returns the new doc, if moved.
@@ -405,6 +485,25 @@ def check(require_state: bool = False, tighten: bool = False) -> dict[str, Any]:
             "NO unique cell and no discovery, and carries no named blocker: declare it in "
             f"docs/research/productivity_blockers.json (a `why` of 20+ chars and an `owner`) or "
             "fix it -- unproductive AND silent is indistinguishable from broken")
+
+    reach_moved = _reach_clause(census, out, failures)
+    if reach_moved is not None and tighten:
+        merged = _ratchet_doc()
+        hosts = merged.get("hosts")
+        if not isinstance(hosts, dict):
+            hosts = {}
+            merged["hosts"] = hosts
+        block = hosts.get(out.get("ratchet_host") or "UNKNOWN_HOST")
+        if not isinstance(block, dict):
+            block = {}
+            hosts[str(out.get("ratchet_host") or "UNKNOWN_HOST")] = block
+        block.update(reach_moved)
+        try:
+            RATCHET.parent.mkdir(parents=True, exist_ok=True)
+            RATCHET.write_text(json.dumps(merged, indent=1) + "\n", encoding="utf-8")
+            out["reach_ratchet_tightened"] = True
+        except OSError as exc:
+            out["reach_ratchet_tightened"] = f"UNMEASURED: {type(exc).__name__}: {exc}"
 
     out["ok"] = not failures
     return out

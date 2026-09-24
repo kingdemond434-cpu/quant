@@ -57,8 +57,10 @@ principal's standing order is that this desk never reduces its aggressiveness by
 from __future__ import annotations
 
 import argparse
+import contextlib
 import json
 import os
+import re
 import sqlite3
 import sys
 import time
@@ -73,6 +75,12 @@ REPORTS = DESK / "reports"
 OUT = REPORTS / "PRODUCTIVITY_CENSUS.json"
 DOC = ROOT / "docs" / "research" / "PRODUCTIVITY_CENSUS.md"
 REGISTRY_DB = ROOT / "data" / "alpha_registry.sqlite"
+
+#: THE FILE THE SEALED JUDGE OPENS. `desks/mt5/scripts/external_gauntlet.py` reads exactly this
+#: path in `main()` and nothing else -- not the registry, not the donation intake, not a docket.
+#: So "did this producer's cells REACH the judge" has one honest answer: are they in here. It is
+#: never imported or edited from this module; it is read, streamed, and counted.
+JUDGE_INPUT = DESK / "data" / "hypotheses" / "external_survivors.json"
 
 PRODUCER_CENSUS = REPORTS / "PRODUCER_CENSUS.json"
 COMPONENT_REGISTRY = REPORTS / "COMPONENT_REGISTRY.json"
@@ -127,8 +135,110 @@ UNMEASURED = "UNMEASURED"
 #: ever rendered, and all five measurements beside it read UNMEASURED for 1,981 of 1,981 rows.
 #: The desk therefore published exactly what each producer COST and nothing about what it MADE.
 #: Named here so the contract is one list a test can pin rather than five scattered writes.
-PANEL_COLUMNS: tuple[str, ...] = ("cells", "unique_cells", "cells_judged", "certificates",
-                                  "orthogonality_added", "compute_hours")
+#:
+#: `cells_reached_judge` was added 2026-09-24 on the principal's order that ALL producers' cells
+#: reach the gauntlet, always, 100%. The five stages the panel already carried could not answer
+#: it: `gauntlet_submitted` is the registry's own `status`, which a producer sets by donating,
+#: and `cells_judged` is a verdict that has come back. Between them sits the stage where the
+#: maths lab was lost -- donated, stamped, and in no file the judge opens. This column measures
+#: that stage against `JUDGE_INPUT` and nothing else.
+PANEL_COLUMNS: tuple[str, ...] = ("cells", "unique_cells", "cells_reached_judge", "cells_judged",
+                                  "certificates", "orthogonality_added", "compute_hours")
+
+
+#: `libs/moat/docket_feed._row` writes this key onto every registry candidate it feeds into the
+#: judge's input file. Matched by regex rather than by parsing, because the file is hundreds of
+#: megabytes on the trading box and `json.loads` of it would cost more RAM than the leg has --
+#: the same 8 GB that already stood `external_gauntlet` down twice.
+_CANDIDATE_ID = re.compile(r'"candidate_id"\s*:\s*"([^"]{1,200})"')
+#: Read size for that scan. A chunk boundary can split a match, so each chunk keeps the last
+#: `_CHUNK_OVERLAP` characters as a prefix of the next -- longer than any candidate id can be.
+_CHUNK = 8 << 20
+_CHUNK_OVERLAP = 256
+
+
+def _judge_input_ids(path: Path | None = None) -> tuple[set[str], dict[str, Any]]:
+    """Every registry candidate id present in the file the sealed judge opens, and the census.
+
+    NEVER RAISES and never returns a misleading empty set: an unreadable or absent input file
+    yields `(set(), {...why})` and the caller publishes UNMEASURED rather than zero, because
+    "the judge's input could not be read" and "this producer reached nobody" are opposite facts
+    and the desk has paid for confusing them before (WS-005).
+    """
+    target = path or JUDGE_INPUT
+    meta: dict[str, Any] = {"path": str(target), "status": UNMEASURED,
+                            "rule": "a producer's cell REACHED the judge when its registry "
+                                    "candidate id appears in the one file "
+                                    "scripts/external_gauntlet.py opens"}
+    found: set[str] = set()
+    try:
+        stat = target.stat()
+    except OSError as exc:
+        meta["why"] = f"{type(exc).__name__}: the judge's input file is not readable at {target}"
+        return set(), meta
+    meta["bytes"] = int(stat.st_size)
+    meta["age_hours"] = _age_hours(datetime.fromtimestamp(stat.st_mtime, tz=UTC).isoformat())
+    try:
+        with target.open("r", encoding="utf-8", errors="replace") as fh:
+            carry = ""
+            while True:
+                chunk = fh.read(_CHUNK)
+                if not chunk:
+                    break
+                blob = carry + chunk
+                found.update(_CANDIDATE_ID.findall(blob))
+                carry = blob[-_CHUNK_OVERLAP:]
+    except OSError as exc:
+        meta["why"] = f"{type(exc).__name__} while streaming {target}"
+        return set(), meta
+    meta["status"] = "MEASURED"
+    meta["candidate_ids"] = len(found)
+    if not found:
+        meta["why"] = (f"{target.name} carries no `candidate_id` key: no registry-fed row is in "
+                       f"the judge's input, so reach is UNMEASURED for every producer whose "
+                       f"cells travel that seam")
+    return found, meta
+
+
+#: A producer holding fewer than this many compute hours in the window is not yet evidence of
+#: anything; it is named REACHING_UNTESTED rather than accused. Same floor the yield fence uses.
+REACH_MIN_HOURS = 0.25
+
+
+def _reach_cause(reached: Any, raw: Any, uniq: Any, hours: float,
+                 reg: dict[str, Any]) -> str:
+    """Why this producer's cells are or are not in front of the judge. Always a NAMED answer.
+
+    The principal's order is that every producer's cells reach the gauntlet, 100%. A producer
+    that falls short is a defect, and a defect the desk can act on has a cause on its row -- not
+    a zero a reader has to go and explain. Five verdicts, and every one of them is derived:
+
+      REACHING              every cell this producer minted is in the judge's input.
+      PARTIAL_REACH         some are; the rest are newer than the last merge or were filtered.
+      NO_CELLS              nothing minted, so nothing to reach with. Not a reach defect.
+      NOT_REACHING          cells exist, compute was spent, and NONE reached. THE DEFECT.
+      UNMEASURED            the judge's input could not be read, or the registry was not scanned.
+    """
+    ji = reg.get("judge_input", {})
+    if not isinstance(reached, (int, float)) or not isinstance(raw, (int, float)):
+        return (f"{UNMEASURED}: " + str(ji.get("why")
+                                        or "the registry was not scanned this pass"))
+    if not raw and not (isinstance(uniq, (int, float)) and uniq):
+        return "NO_CELLS: this producer has minted no registry candidate, so there is nothing " \
+               "to reach the judge with -- a production question, not a reach defect"
+    if reached >= raw:
+        return "REACHING: every cell this producer minted is in the judge's input file"
+    if reached:
+        return (f"PARTIAL_REACH: {int(reached)} of {int(raw)} cells are in the judge's input; "
+                f"the remainder are newer than the last merge, or were filtered by the "
+                f"tradeable-symbol / family / unrunnable-bank rules merge_hypotheses applies")
+    if hours < REACH_MIN_HOURS:
+        return (f"REACHING_UNTESTED: {int(raw)} cell(s) and only {hours:.3f} compute hours in "
+                f"the window -- below the {REACH_MIN_HOURS} h floor at which a zero is evidence")
+    return (f"NOT_REACHING: {int(raw)} cell(s) minted, {hours:.2f} compute hours spent, and NOT "
+            f"ONE is in the file the sealed judge opens. Either the producer's rows never enter "
+            f"`research_candidates` with a symbol and a family, or they enter it with a family "
+            f"`merge_hypotheses` drops. This is the defect the reach column exists to show")
 
 
 def _now() -> str:
@@ -402,6 +512,32 @@ def measure_registry(db: Path) -> dict[str, Any]:
                      "('donated','claimed','retired','judged') group by 1"):
             per[_norm(str(gen or "_unattributed_generator"))][
                 "gauntlet_submitted"] += int(n or 0)
+
+        # STAGE 6b: REACHED THE JUDGE. The stage between the two above, and the one the maths lab
+        # was lost in -- 8,677 objects generated, 33 donated, 51 candidate rows stamped
+        # `donated`, and for a long time not one of them in any file the sealed gauntlet opens.
+        # `gauntlet_submitted` is a status a producer sets on itself; this is the judge's actual
+        # input, read from `JUDGE_INPUT` by the candidate id `libs/moat/docket_feed` writes onto
+        # every row it feeds. A producer with cells and no reach is a DEFECT WITH A NAMED CAUSE
+        # (`reach_cause` on the row), never a quiet zero.
+        reached_ids, reach_meta = _judge_input_ids()
+        out["judge_input"] = reach_meta
+        if reached_ids:
+            cur.execute("create temp table if not exists _reached (id text primary key)")
+            cur.execute("delete from _reached")
+            cur.executemany("insert or ignore into _reached(id) values (?)",
+                            ((i,) for i in reached_ids))
+            for gen, n in _rows(
+                    cur, f"select {lineage}, count(*) from {joined} "     # noqa: S608
+                         "join _reached r on r.id = c.id group by 1"):
+                per[_norm(str(gen or "")) or "_unattributed_generator"][
+                    "cells_reached_judge"] += int(n or 0)
+            with contextlib.suppress(sqlite3.Error):
+                cur.execute("drop table if exists _reached")
+        else:
+            out["unmeasured"]["cells_reached_judge"] = reach_meta.get("why") or (
+                "the judge's input file names no registry candidate id, so reach is UNMEASURED "
+                "for every producer and not zero (L1.28a)")
         # CHEAP-STAGE SURVIVORS, AND THE CASE WHERE THE COLUMN IS A LIE OF OMISSION. `survived`
         # defaults to 0, so a registry in which NOTHING has ever been judged returns 0 survivors
         # for every producer and reads exactly like a registry in which everything was judged and
@@ -757,6 +893,50 @@ DESK_EXECUTION_KINDS: frozenset[str] = frozenset({
 })
 
 
+def _reach_rollup(rows: list[dict[str, Any]], reg: dict[str, Any]) -> dict[str, Any]:
+    """Desk-wide: generated / donated / REACHED the judge / judged, and who falls short.
+
+    The four numbers the principal asked for, in one block, with the producers that are NOT
+    reaching named individually -- a count with no names is a number nobody can act on.
+    """
+    def _n(row: dict[str, Any], key: str) -> int:
+        v = row.get(key) if key in row else row.get("funnel", {}).get(key)
+        return int(v) if isinstance(v, (int, float)) else 0
+
+    not_reaching = sorted(
+        ({"producer": r["producer"], "key": r["key"], "cells": _n(r, "cells"),
+          "compute_hours": r.get("compute_hours"), "clock": r.get("clock"),
+          "cause": r.get("reach_cause")}
+         for r in rows if str(r.get("reach_cause") or "").startswith("NOT_REACHING")),
+        key=lambda r: -int(r["cells"] or 0))
+    verdicts: dict[str, int] = {}
+    for r in rows:
+        verdicts[str(r.get("reach_cause") or UNMEASURED).split(":")[0]] = verdicts.get(
+            str(r.get("reach_cause") or UNMEASURED).split(":")[0], 0) + 1
+    generated = sum(_n(r, "cells") for r in rows)
+    reached = sum(_n(r, "cells_reached_judge") for r in rows)
+    return {
+        "law": ("ALL PRODUCERS' CELLS MUST REACH THE GAUNTLET, ALWAYS, 100% (principal, "
+                "2026-09-24). A producer whose cells do not reach the judge is a DEFECT with a "
+                "named cause on its own row, never a silent zero; "
+                "scripts/check_productivity_census.py fails on a rise in the count below."),
+        # The reach numbers below are only a verdict when the judge's input actually named some
+        # registry candidate. The census restates that here so the fence never has to infer it.
+        "judge_input": {**reg.get("judge_input", {"status": UNMEASURED}),
+                        "reach_measurable": bool(
+                            reg.get("judge_input", {}).get("status") == "MEASURED"
+                            and int(reg.get("judge_input", {}).get("candidate_ids") or 0) > 0)},
+        "cells_generated": generated,
+        "cells_donated": sum(_n(r, "gauntlet_submitted") for r in rows),
+        "cells_reached_judge": reached,
+        "cells_judged": sum(_n(r, "cells_judged") for r in rows),
+        "reach_ratio": round(reached / generated, 6) if generated else UNMEASURED,
+        "verdicts": dict(sorted(verdicts.items())),
+        "n_not_reaching": len(not_reaching),
+        "not_reaching": not_reaching[:60],
+    }
+
+
 def measurement_coverage(rows: list[dict[str, Any]],
                          ortho: dict[str, Any] | None = None) -> dict[str, Any]:
     """PER-PRODUCER MEASUREMENT COVERAGE: the share of rows on which each column is a number.
@@ -920,6 +1100,16 @@ def build(window_days: float = COMPUTE_WINDOW_DAYS,
         uniq = m.get("unique_cells", zero_if_scanned)
         srcs = m.get("sources_visited", zero_if_scanned)
         judged_cells = m.get("cells_judged", zero_if_scanned)
+        # BOTH CONDITIONS, AND THE SECOND ONE IS THE ONE THAT BITES. A judge input that opened
+        # cleanly but carries NO `candidate_id` at all (the build box: 76 MB, 0 ids, because the
+        # registry feed has never run here) is not a desk where nobody reached the judge -- it is
+        # a desk where this seam cannot be measured. Reading `status == MEASURED` alone published
+        # a measured zero for 1,653 producers and a coverage of 1.00 on a column that had
+        # measured nothing, which is the exact failure mode this column exists to expose.
+        _ji = reg.get("judge_input", {})
+        reach_measured = (_ji.get("status") == "MEASURED"
+                          and int(_ji.get("candidate_ids") or 0) > 0)
+        reached = m.get("cells_reached_judge", 0 if (scanned and reach_measured) else UNMEASURED)
         certs = term["certificates"].get(key, 0)
         region, region_route = _resolve_region(key, name, meta, reg, stamped)
         funnel = {
@@ -937,6 +1127,7 @@ def build(window_days: float = COMPUTE_WINDOW_DAYS,
                                                     zero_if_scanned),
             "unique_cells": uniq,
             "gauntlet_submitted": m.get("gauntlet_submitted", zero_if_scanned),
+            "cells_reached_judge": reached,
             "cells_judged": judged_cells,
             "cheap_survivors": (
                 m.get("cheap_survivors", zero_if_scanned)
@@ -977,6 +1168,8 @@ def build(window_days: float = COMPUTE_WINDOW_DAYS,
             # through to; the funnel keeps every stage it had. Nothing is renamed or removed.
             "cells": raw,
             "unique_cells": uniq,
+            "cells_reached_judge": reached,
+            "reach_cause": _reach_cause(reached, raw, uniq, total_h, reg),
             "cells_judged": judged_cells,
             "certificates": certs,
             "orthogonality_added": added if added is not None else UNMEASURED,
@@ -985,6 +1178,10 @@ def build(window_days: float = COMPUTE_WINDOW_DAYS,
             "compute_hours_ledger": ledger_h,
             "compute_hours_registry": round(reg_h, 4),
             "ratios": {
+                # THE RATIO THE PRINCIPAL ASKED FOR: of everything this producer minted, what
+                # share is in front of the one judge. 1.0 is the standing order; anything less
+                # is a named defect on the row above and a finding in `reach` below.
+                "reach_ratio": _ratio(reached, raw),
                 "cells_per_source": _ratio(uniq, srcs),
                 "survivors_per_source": _ratio(surv, srcs),
                 "certificates_per_compute_hour": (
@@ -1133,6 +1330,10 @@ def build(window_days: float = COMPUTE_WINDOW_DAYS,
         # A compute cost with no output measurement beside it is the one number a reader cannot
         # act on, so the share of rows carrying each is itself published and may only rise.
         "measurement_coverage": coverage,
+        # DOES EVERY PRODUCER'S OUTPUT REACH THE ONE JUDGE? The principal's standing order is
+        # that it does, 100%, and this is the block that answers it for the whole desk rather
+        # than one organ at a time. `scripts/check_productivity_census.py` reads exactly this.
+        "reach": _reach_rollup(rows, reg),
         "orthogonality": {k: v for k, v in ortho.items() if k != "added"},
         "totals": {
             "sources_visited": sum(v for r in rows
