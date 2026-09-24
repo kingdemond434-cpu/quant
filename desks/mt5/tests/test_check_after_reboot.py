@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -103,10 +104,15 @@ def test_it_never_starts_stops_or_repairs_anything():
     for forbidden in (".terminate(", ".kill(", "taskkill", "schtasks\", \"/run",
                       "/change", "Restart-Computer", "shutdown"):
         assert forbidden not in src, f"check_after_reboot must never {forbidden}"
-    # CIM is reachable only through PowerShell or wmic here, and this module uses neither --
-    # asserting on the STRING would fail on the docstring that explains why it is avoided.
-    assert "powershell" not in src.lower(), "CIM has hung on this box; schtasks and psutil only"
-    assert "wmic" not in src.lower()
+    # ASSERT THE CALL SITES, NOT THE PROSE. Two earlier versions of this test asserted that the
+    # strings "Get-CimInstance" and "wmic" were absent from the file, and both failed on the
+    # docstring that NAMES them to explain why they are never used. A test that reads the
+    # comments is measuring the wrong object. CIM is reachable only by launching PowerShell or
+    # wmic, so the honest assertion is that nothing but schtasks is ever launched.
+    invocations = re.findall(r"subprocess\.run\(\s*\[([^\]]*)\]", src)
+    assert invocations, "this module reaches the box through subprocess; the check needs a target"
+    for call in invocations:
+        assert '"schtasks"' in call, f"only schtasks may be launched, found: {call[:90]}"
 
 
 def test_a_leg_that_merely_happened_to_be_running_is_not_an_inventory_item():
