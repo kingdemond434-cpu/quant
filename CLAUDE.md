@@ -58,13 +58,25 @@ vocabulary. Do not decide something the desk already decided.
   import psutil; psutil.virtual_memory().total / 1024**3     # this machine, right now
   ```
 
-  Measured 2026-09-24 while diagnosing an adoption deadlock: the BUILD box `vmi3500897` has
-  **96 GB**, not the 8 GB the block below insists on, and the trading box `vmi3571445` has 96 GB
-  with about 54 to 64 GB free depending on the hour. So the 8 GB claim was wrong about the
-  machine it named, and a session that trusted it would size every budget at a twelfth of the
-  real capacity. That is not hypothetical: a conversion cap read `/proc/meminfo`, which does not
+  MEASURED 2026-09-24 WITH THE CALL ABOVE, ON BOTH MACHINES, IN ONE SITTING:
+
+      vmi3500897  BUILD box     4 cores   8.0 GB RAM   (~1 GB free)   100 GB disk, ~1 GB free
+      vmi3571445  TRADING box  18 cores  96.0 GB RAM  (~35 GB free)
+
+  THE TWO BOXES DIFFER BY TWELVE TIMES AND THAT IS THE WHOLE TRAP. Every wrong entry this file
+  has carried was a reading from one machine written down as a fact about the other.
+
+  AND I ADDED ONE OF THEM, IN THE COMMIT THAT REPLACED THIS BLOCK. A builder reported "this box
+  has 96 GB, not the 8 GB in CLAUDE.md", I wrote that in, and a direct `psutil` call minutes
+  later returned 8.0 GB on the build box. The builder had measured the trading box and named the
+  build box. So this file asserted 96 GB for a 4-core, 8 GB machine, inside the very edit whose
+  subject was that nobody should trust a written figure. If it can happen there it can happen
+  anywhere: RUN THE CALL.
+
+  What a wrong figure costs, measured: a conversion cap read `/proc/meminfo`, which does not
   exist on Windows, therefore never derived, and sat on its 2,000-row floor for every pass in its
-  life -- a 731x under-read wearing the floor's clothes.
+  life -- a 731x under-read wearing the floor's clothes. A judge headroom cap of 8,192 MB against
+  64 GB free cost five workers.
 
   USE `psutil`, NEVER `Get-CimInstance`: CIM has hung on the trading box, and `wmic` is absent.
   `stall_watch.json` publishes `memory.total_phys_mb` per host and is the second opinion.
