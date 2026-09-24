@@ -65,8 +65,15 @@ VERDICTS = BASE / "data" / "hypotheses" / "gate_verdict_ledger.jsonl"
 #: How many queued rows one pass may price. Bounded by TIME as well (`--budget-s`); this only
 #: stops a single pass from holding the sqlite write lock for the whole hour.
 MAX_PRICE = 4000
-#: How many rows each department may claim per pass. Small on purpose: a claim is a promise to
-#: work the row, and the intake it lands in is judged by the ten gates like anything else.
+#: THE HISTORIC LEASE, KEPT ONLY AS A FLOOR. It was 12 rows per department per pass, "small on
+#: purpose", and on the trading box 2026-09-24 that was 276 rows an hour (12 x 23 departments)
+#: against 356,087 registry candidates -- the single door out of the database, sized to walk the
+#: population once every 54 days while the judge on the other side had already recorded 44,310
+#: verdicts inside one hour. A lease smaller than what the judge can drink is a throttle on the
+#: desk's whole judged-cells rate, and the principal's standing order forbids throttles.
+#: `registry.lease_size` now MEASURES the judge's own busiest recorded hour and splits it across
+#: the bidding departments, floored here so an unreadable ledger can only ever leave the door
+#: where it was.
 CLAIM_PER_DEPARTMENT = 12
 #: Departments that bid. Read from the hourly cycle's own table when it imports, so a department
 #: added there starts bidding without an edit here.
@@ -276,16 +283,25 @@ def ready(conn: Any, n: int = 25) -> dict[str, Any]:
                                  "expected_return_independence")} for row in head]}
 
 
-def claim_and_donate(conn: Any, *, per_department: int = CLAIM_PER_DEPARTMENT,
+def claim_and_donate(conn: Any, *, per_department: int | None = None,
                      dry_run: bool = False) -> dict[str, Any]:
-    """Departments bid for the head of the priority queue; the claims reach the intake (M4)."""
+    """Departments bid for the head of the priority queue; the claims reach the intake (M4).
+
+    `per_department=None` (the default, and what the hourly leg passes) means MEASURE it: the
+    judge's own busiest recorded hour split across the bidding departments, never the shipped 12.
+    """
+    depts = departments()
+    measured: dict[str, Any] | None = None
+    if per_department is None:
+        per_department, measured = R.lease_size(len(depts))
+    per_department = max(int(per_department), CLAIM_PER_DEPARTMENT)
     out: dict[str, Any] = {"per_department": int(per_department), "by_department": {},
-                           "donated": 0, "donation_path": None}
+                           "donated": 0, "donation_path": None, "lease": measured}
     if dry_run:
         out["status"] = "DRY_RUN"
         return out
     claimed: list[dict[str, Any]] = []
-    for dept in departments():
+    for dept in depts:
         rows = R.claim_candidates(dept, int(per_department), conn=conn)
         out["by_department"][dept] = len(rows)
         for r in rows:
@@ -335,7 +351,7 @@ def _read_params(blob: Any) -> dict[str, Any]:
 
 
 def run(*, budget_s: float = 240.0, limit: int = MAX_PRICE,
-        per_department: int = CLAIM_PER_DEPARTMENT, dry_run: bool = False,
+        per_department: int | None = None, dry_run: bool = False,
         out: Path | None = None) -> dict[str, Any]:
     """PRICE then CLAIM, inside a wall-clock budget. The report is the artifact either way."""
     started = time.monotonic()
@@ -378,7 +394,9 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--once", action="store_true", help="one pass (the default)")
     ap.add_argument("--budget-s", type=float, default=240.0)
     ap.add_argument("--limit", type=int, default=MAX_PRICE)
-    ap.add_argument("--per-department", type=int, default=CLAIM_PER_DEPARTMENT)
+    ap.add_argument("--per-department", type=int, default=None,
+                    help="override the measured lease (default: the judge's own busiest hour "
+                         "split across the bidding departments)")
     ap.add_argument("--dry-run", action="store_true")
     a = ap.parse_args(argv)
     doc = run(budget_s=a.budget_s, limit=a.limit, per_department=a.per_department,

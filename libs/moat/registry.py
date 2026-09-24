@@ -894,9 +894,97 @@ def enqueue_candidate(*, family: str, symbol: str, params: Mapping[str, Any] | N
             c.close()
 
 
+#: THE LEASE THE JUDGE CAN ACTUALLY DRINK FROM, measured, never a constant.
+#:
+#: WHAT IT WAS. `moat_candidate_compiler.CLAIM_PER_DEPARTMENT = 12` across the hourly cycle's
+#: departments was the ONLY door out of this database into the file the sealed gauntlet reads.
+#: Measured on the trading box 2026-09-24 it leased 276 rows an hour (12 x 23 departments)
+#: against 356,087 candidates -- 54 days to walk the population ONCE, against a population that
+#: grows faster than that. A number chosen for politeness, sitting in front of a judge that had
+#: already recorded 44,310 verdicts inside a single hour on that same box.
+#:
+#: WHAT IT IS NOW. The judge's OWN demonstrated consumption, read from the verdict ledger it
+#: writes: the busiest hour it has ever recorded. That is not an estimate of what the judge might
+#: take, it is a receipt for what it did take. The floor is the historic lease, so an unreadable
+#: or absent ledger leaves the desk exactly where it was and can never make this smaller --
+#: growth governance Rule 1: this mechanism only ever raises throughput, so it owes no
+#: missed-growth line, and a brake added here would.
+LEASE_FLOOR = 276
+#: Bytes of the ledger's tail read to find that hour. The busiest hour is recent by construction
+#: (the population and the sweep both only grow), and an unbounded read of a 34 MB ledger on
+#: every pass is a cost with no answer attached.
+LEASE_LEDGER_TAIL_BYTES = 16 * 1024 * 1024
+#: Ids per claiming UPDATE. Well under SQLite's default 32,766 host-parameter ceiling, and small
+#: enough that no single statement holds the write lock for long at a judge-sized lease.
+CLAIM_CHUNK = 500
+
+
+def judge_consumption_per_hour(path: Path | None = None,
+                               tail_bytes: int = LEASE_LEDGER_TAIL_BYTES) -> tuple[int, str]:
+    """(verdicts in the judge's busiest recorded hour, how it was measured).
+
+    UNMEASURED is a real answer (L1.28a): an absent or unreadable ledger returns 0 with the reason,
+    and the caller then keeps the historic lease rather than inventing a number.
+    """
+    p = path or (DESK / "data" / "hypotheses" / "gate_verdict_ledger.jsonl")
+    try:
+        size = p.stat().st_size
+        with p.open("rb") as fh:
+            if size > tail_bytes:
+                fh.seek(size - tail_bytes)
+                fh.readline()                      # drop the partial line the seek landed inside
+            blob = fh.read()
+    except OSError as exc:
+        return 0, f"UNMEASURED: {type(exc).__name__} reading {p}"
+    per_hour: dict[str, int] = {}
+    rows = 0
+    for line in blob.splitlines():
+        if not line.strip():
+            continue
+        try:
+            at = str(json.loads(line).get("at") or "")
+        except ValueError:
+            continue
+        rows += 1
+        if len(at) >= 13:
+            per_hour[at[:13]] = per_hour.get(at[:13], 0) + 1
+    if not per_hour:
+        return 0, f"UNMEASURED: {rows} row(s) in the tail of {p.name} carry no timestamp"
+    best = max(per_hour.values())
+    return int(best), (f"the busiest hour in the last {len(blob)} bytes of {p.name}: {best} "
+                       f"verdicts, over {len(per_hour)} hour(s) and {rows} row(s)")
+
+
+def lease_size(departments: int = 1, *, path: Path | None = None) -> tuple[int, dict[str, Any]]:
+    """(rows ONE department may lease per pass, the measurement behind it).
+
+    The judge's busiest measured hour, divided across the departments that bid, floored at the
+    historic lease so this can only ever open the door wider.
+    """
+    consumed, how = judge_consumption_per_hour(path)
+    d = max(1, int(departments))
+    want = -(-consumed // d)                       # ceil: the lease must reach the whole rate
+    floor_per_dept = -(-LEASE_FLOOR // d)
+    per_dept = max(floor_per_dept, want)
+    return per_dept, {"judge_consumption_per_hour": consumed, "how": how,
+                      "departments": d, "per_department": per_dept,
+                      "total_per_pass": per_dept * d, "floor_total": LEASE_FLOOR,
+                      "rule": ("the lease is the judge's own busiest recorded hour, split across "
+                               "the bidding departments and floored at the historic lease; it "
+                               "never shrinks, so it is a throughput mechanism and not a brake")}
+
+
 def claim_candidates(department: str, n: int, origin: str | None = None,
                      conn: sqlite3.Connection | None = None) -> list[dict[str, Any]]:
-    """A department bids compute: the best-scored queued candidates become its claims."""
+    """A department bids compute: the best-scored queued candidates become its claims.
+
+    SET-BASED ON PURPOSE. This used to issue one UPDATE per claimed row, which is invisible at a
+    12-row lease and is the whole cost at a judge-sized one: the lease below is now thousands of
+    rows a pass, and a Python loop around `UPDATE ... WHERE id=?` would hold the registry's single
+    write lock for the length of it and shut every producer out. The ids the SELECT returned are
+    claimed in chunks of one statement each -- exactly those rows, never a re-run of the query
+    against a table the first half of the update has already changed.
+    """
     c = conn or connect()
     try:
         q = "SELECT * FROM research_candidates WHERE status='queued'"
@@ -907,9 +995,13 @@ def claim_candidates(department: str, n: int, origin: str | None = None,
         q += " ORDER BY score DESC, created_at LIMIT ?"
         args.append(n)
         rows = _rows(c.execute(q, args))
-        for r in rows:
-            c.execute("UPDATE research_candidates SET status='claimed', claimed_by=?, claimed_at=?,"
-                      " updated_at=? WHERE id=?", (department, now(), now(), r["id"]))
+        ids = [str(r["id"]) for r in rows]
+        stamp = now()
+        for i in range(0, len(ids), CLAIM_CHUNK):
+            chunk = ids[i:i + CLAIM_CHUNK]
+            c.execute("UPDATE research_candidates SET status='claimed', claimed_by=?, "  # noqa: S608
+                      "claimed_at=?, updated_at=? WHERE id IN ("
+                      + ",".join("?" * len(chunk)) + ")", [department, stamp, stamp, *chunk])
         c.commit()
         return rows
     finally:
@@ -1846,42 +1938,122 @@ def _identity_fns() -> tuple[Any, Any]:
     return parts, parse_clock_key
 
 
+def _spec_key(symbol: Any, family: Any, params_json: Any) -> str | None:
+    """`hypothesis_graph.node_id(symbol, family, params)` -- THE PARAMETERS ARE IN THE KEY.
+
+    This is the same function `external_gauntlet` calls to stamp `graph_id` on every gate-verdict
+    row it writes, so a key built here and a verdict's own stamp are the SAME string by
+    construction rather than by agreement. Unreachable or unhashable is None, which costs this
+    tier and nothing else.
+    """
+    try:
+        from libs.research.hypothesis_graph import node_id
+    except ImportError:                                                  # pragma: no cover
+        return None
+    try:
+        p = json.loads(params_json) if isinstance(params_json, str) else (params_json or {})
+    except ValueError:
+        p = {}
+    if not isinstance(p, dict):
+        p = {}
+    try:
+        return str(node_id(str(symbol or ""), str(family or ""), p))
+    except Exception:
+        return None
+
+
 def candidate_identity_index(c: sqlite3.Connection) -> dict[str, dict[str, str]]:
-    """{'exact': identity -> candidate id, 'pair': symbol|family| -> candidate id}.
+    """Four tiers, widest identity first: {'ids', 'spec', 'exact', 'pair'} -> candidate id.
 
     The registry's candidates are keyed `cand_<hex>`; the gate ledger names its cells
     `EURAUD.overnight_gap_decay.p=<sha>`. Neither name can ever join the other, which is why every
     verdict poured in before today landed with a candidate_id matching no row. The desk already
     settled what joins them (certificate_truth.IDENTITY_RULE), so the join is made on the parts.
-    The `pair` tier exists because a verdict's third token is a PARAMS HASH, not a selector the
-    candidate can carry: `symbol|family|` is the same identity with the selector unstated, and it
-    is used only when the exact identity finds nothing.
+
+    WHAT WAS WRONG, AND IT WAS NOT A SLOW CLOCK (measured on the trading box 2026-09-24). This
+    index held TWO tiers, `symbol|family|session` and `symbol|family|`, and built both with
+    `setdefault` over `ORDER BY seq`. The lowest-seq row therefore OWNED its identity forever and
+    every later candidate sharing the triple was structurally unreachable by any verdict: 16,216
+    identities against 356,087 candidates, so 95.4% of the population could not be judged however
+    much compute was spent on it, and `GBPSEK|overnight_drift|` alone swallowed 3,797 cells into
+    one reachable row. An identity only its oldest holder can own is not an identity, it is a
+    first-come lock, and it capped the whole desk's judgeable population.
+
+    THE FIX IS TO PUT THE PARAMETERS IN THE KEY, which is what a parameterised cell's identity
+    has always been: `spec` is `node_id(symbol, family, params)`, the EXACT string
+    `external_gauntlet` stamps on its own verdicts as `graph_id`. Measured on the same file:
+    267,301 distinct spec keys against 16,216 triples -- a 16.5x lift in reachable identities,
+    and the tier a verdict reaches FIRST because the judge already names its cells this way.
+
+    The two coarse tiers stay, because a verdict whose params were never recorded has nothing but
+    `symbol|family|selector` to offer -- but they no longer lock: where several candidates share a
+    coarse key the UNJUDGED one is preferred, so the second verdict on a triple reaches a second
+    cell instead of landing on row #1 again. `ids` is the existence check: a `graph_id` naming no
+    row in this file is a dangling id, and recording it as a join was how 17,773 of 25,592 trials
+    came to carry a candidate_id that matched nothing.
     """
     parts, _ = _identity_fns()
-    out: dict[str, dict[str, str]] = {"exact": {}, "pair": {}}
-    if parts is None:
-        return out
+    out: dict[str, dict[str, str]] = {"ids": {}, "spec": {}, "exact": {}, "pair": {}}
+    judged: dict[str, bool] = {}          # coarse key -> is the incumbent already judged?
     for r in c.execute("SELECT id, COALESCE(symbol,'') s, COALESCE(family,'') f, "
-                       "COALESCE(session,'') w FROM research_candidates "
+                       "COALESCE(session,'') w, params_json, judged_at "
+                       "FROM research_candidates "
                        "WHERE symbol IS NOT NULL AND symbol != '' AND family != '' "
                        "ORDER BY seq"):
-        out["exact"].setdefault(parts(r["s"], r["f"], r["w"]), str(r["id"]))
-        out["pair"].setdefault(parts(r["s"], r["f"], None), str(r["id"]))
+        cid = str(r["id"])
+        out["ids"][cid] = cid
+        spec = _spec_key(r["s"], r["f"], r["params_json"])
+        if spec is not None:
+            out["spec"].setdefault(spec, cid)
+        if parts is None:
+            continue
+        is_judged = bool(r["judged_at"])
+        for tier, key in (("exact", parts(r["s"], r["f"], r["w"])),
+                          ("pair", parts(r["s"], r["f"], None))):
+            # First writer wins, EXCEPT that an unjudged row displaces a judged incumbent: a
+            # coarse key with 3,797 holders must not hand every verdict to the same one.
+            if key not in out[tier] or (judged.get(f"{tier}\x00{key}") and not is_judged):
+                out[tier][key] = cid
+                judged[f"{tier}\x00{key}"] = is_judged
     return out
 
 
 def verdict_candidate(row: Mapping[str, Any], gmap: Mapping[str, str],
                       index: Mapping[str, Mapping[str, str]]) -> tuple[str, str]:
     """(candidate id, how it was found) for one gate-verdict row -- the edge back to what was
-    judged. `graph_id` when the writer stamped one, the backfill map next, then the canonical
-    identity, and only then the cell's own name, which joins nothing and is recorded as such."""
+    judged.
+
+    THE ORDER IS NARROWEST IDENTITY FIRST, AND EVERY HIT IS CHECKED AGAINST THE FILE. A stamped
+    `graph_id` used to be returned unchecked, so a verdict on a hypothesis this registry has never
+    held was recorded as a join and updated zero rows. Measured on the trading box 2026-09-24 over
+    the last 20,000 verdicts: 19,211 were recorded as `graph_id` joins and only 2,614 of them
+    named a row that exists -- 16,611 false joins, which is why 17,773 of 25,592 trials carry a
+    candidate_id matching nothing. The same stamp is now tried first as an id and then as the
+    `spec` key, which it IS: both are `hypothesis_graph.node_id(symbol, family, params)`, so the
+    registry's own `cand_<hex>` name for that exact rule is found instead of dangling.
+
+    A DANGLING `graph_id` DOES NOT FALL THROUGH TO THE COARSE TIERS, and that refusal is the
+    point. A stamp naming a rule this file does not hold is POSITIVE evidence the registry never
+    saw the cell; joining it to a sibling that merely shares `symbol|family|selector` -- and
+    16,216 such keys cover 356,087 candidates, one of them with 3,797 holders -- would mark a
+    candidate JUDGED that no judge ever looked at, and the docket feed would then stop offering it.
+    That is manufacturing a verdict, so the row keeps the graph's own name and is recorded as
+    unjoined (L1.28a). The coarse tiers stay for verdicts that carry no stamp at all, which is the
+    only case where `symbol|family|selector` is the best identity in evidence.
+    """
     cell = str(row.get("cell") or "")
-    gid = str(row.get("graph_id") or "")
-    if gid:
-        return gid, "graph_id"
-    mapped = gmap.get(cell, "")
-    if mapped:
-        return mapped, "graph_id_map"
+    ids = index.get("ids", {})
+    spec = index.get("spec", {})
+    for gid, how in ((str(row.get("graph_id") or ""), "graph_id"),
+                     (gmap.get(cell, ""), "graph_id_map")):
+        if not gid:
+            continue
+        if not ids or gid in ids:
+            return gid, how
+        hit = spec.get(gid)
+        if hit:
+            return hit, f"{how}_spec"
+        return gid, f"{how}_unjoined"
     parts, parse = _identity_fns()
     if parts is not None:
         sym, fam = row.get("sym"), row.get("family")

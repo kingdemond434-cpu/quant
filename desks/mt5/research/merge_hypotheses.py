@@ -158,6 +158,15 @@ def residual_family_values(path: Path | None = None) -> tuple[dict[str, float], 
     return out, f"{p.name}: {len(out)} family residual t(s), best {best}"
 
 
+def _family_counts(rows: list[dict]) -> dict[str, int]:
+    """{family: rows}, in ONE pass over the docket and sorted by name for a stable report."""
+    out: dict[str, int] = {}
+    for r in rows:
+        f = str(r.get("family"))
+        out[f] = out.get(f, 0) + 1
+    return dict(sorted(out.items()))
+
+
 def breadth_order(rows: list[dict], judged: dict[str, int]) -> list[dict]:
     """ORDER THE DOCKET SO UNTESTED FAMILIES REACH THE GATES.
 
@@ -411,6 +420,49 @@ def main() -> int:
         per_source[name] = kept
         source_state[name] = "FRESH"
 
+    # ------------------------------------------------------------------ THE CANONICAL REGISTRY
+    # THE EIGHTH SOURCE, AND THE ONE THAT HAD NO DOOR (measured on the trading box 2026-09-24).
+    # The seven above are JSON files. `data/alpha_registry.sqlite` -- the desk's one canonical
+    # research registry, 356,087 candidates -- was not among them, and the sealed gauntlet does
+    # not open it either: its `main()` reads this file and nothing else. So every cell minted
+    # into the registry reached a judge only through `moat_candidate_compiler`'s 276-row hourly
+    # lease, which is 54 days per pass over the population. Read here, IN PROCESS, because this
+    # merge is the one funnel the judge's input flows through and an out-of-process producer
+    # would need a leg ahead of this one in the hourly cycle to be anything but stale.
+    #
+    # It is a source like the others: deduped by executable identity, filtered to tradeable
+    # symbols by the same rule, point-in-time stamped through the desk's one door, and judged by
+    # the sealed gauntlet's own constants. Nothing here is capped -- the gate's trial count is a
+    # pinned constant (`policy/gate_spec.yaml`), so there is no multiplicity reason to feed less.
+    registry_census: dict = {"status": "UNMEASURED"}
+    try:
+        import sys as _sys
+        _root = str(BASE.parents[1])
+        if _root not in _sys.path:
+            _sys.path.insert(0, _root)
+        from libs.moat.docket_feed import feed as _registry_feed
+        _reg_rows, registry_census = _registry_feed(tradeable=tradeable or None,
+                                                    banned=live_banned_families())
+        kept = 0
+        for row in _reg_rows:
+            ident = _identity(row)
+            if ident in merged:
+                continue
+            merged[ident] = {**row, "producer": "alpha_registry"}
+            kept += 1
+        registry_census["merged_new"] = kept
+        per_source["alpha_registry.sqlite"] = kept
+        source_state["alpha_registry.sqlite"] = str(registry_census.get("status") or "UNMEASURED")
+        print(f"   registry feed: {registry_census.get('candidates', 0)} unjudged candidate(s), "
+              f"{registry_census.get('fed', 0)} stamped, {kept} new to the docket "
+              f"({registry_census.get('refused_unstamped', 0)} refused unstamped)")
+    except Exception as exc:                       # a feed that fails is named, never silent
+        registry_census = {"status": f"FAILED: {type(exc).__name__}: {exc}"}
+        per_source["alpha_registry.sqlite"] = -1
+        source_state["alpha_registry.sqlite"] = registry_census["status"]
+        print(f"   registry feed UNAVAILABLE ({type(exc).__name__}: {exc}); the seven JSON "
+              f"sources above are unaffected")
+
     # NOTHING ABOUT SEARCH WIDTH TRAVELS WITH A ROW. An earlier revision copied the search's
     # trial count onto every hypothesis so `deflated_sharpe` would deflate against it -- making
     # the ten gates harsher than their sealed definition. That is an unsanctioned bar, merely
@@ -574,8 +626,17 @@ def main() -> int:
         "merged_at": now.isoformat(timespec="seconds"),
         "pipeline_started_at": started_at.isoformat(timespec="seconds") if started_at else None,
         "per_source": per_source, "source_state": source_state, "total": len(rows_out),
-        "families": {f: sum(1 for r in rows_out if r.get("family") == f)
-                     for f in sorted({str(r.get("family")) for r in rows_out})},
+        # THE REGISTRY'S OWN LANE, MEASURED (libs/moat/docket_feed.py). Until 2026-09-24 the
+        # sealed gauntlet had no path to `data/alpha_registry.sqlite` at all and the registry's
+        # cells reached it only through a 276-row hourly lease; this census is how many of them
+        # the docket actually carries, so the claim is checkable rather than asserted.
+        "alpha_registry": registry_census,
+        # ONE PASS, NOT ONE PASS PER FAMILY. This was a comprehension nested over the whole
+        # docket for every distinct family -- invisible at 20,000 rows and 77 families, and
+        # 34.5 MILLION comparisons once the registry's own cells reach the docket (448,391 rows
+        # measured on the box 2026-09-24). A report line must not cost more than the merge it
+        # reports on; the counts are identical.
+        "families": _family_counts(rows_out),
         # G4: what the RL agent's table said about families THIS hour, read whichever ordering
         # path won, so "the agent's opinion was consulted" is a checkable claim and not a code
         # path nobody can see from the outside.

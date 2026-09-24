@@ -2186,3 +2186,23 @@ FAMILY_INPUTS["htf_anchor_trend"] = ("price only", "data/universe/*_H1.parquet")
 ORTHOGONAL_FAMILIES["exit_operated"] = family_exit_operated
 FAMILY_INPUTS["exit_operated"] = ("price only; rebuilds its base family from bars and params",
                                   "data/universe/*_H1.parquet")
+
+# THE NAME THAT WAS BEING MINTED UNDER AND DID NOT EXIST (measured 2026-09-24). `pack_cells` has
+# minted 432 registry cells under `exogenous_conditioner`, each naming a lake series, a column and
+# a transform, and no generator implemented the name -- so every one of them exited
+# `miner_candidate_compiler.compile_row` as NEEDS_EXACT_RULE_EXTRACTION and could never reach a
+# docket. Registering it is the fix the producer's own rows were already written for: the params
+# it mints ARE this generator's arguments, and its falsifier ("the <transform> of <pack>.<column>
+# has no measurable relation to <symbol> at <chart> out of sample") is exactly what the ten gates
+# now get to answer. Its sibling `regional_information` is NOT registered here and is not minted
+# either: its cells declare no series, no column and no rule, and `pit_status: UNMEASURED` at
+# birth -- implementing a mechanism its producer never declared would be inventing one, not
+# registering it.
+from mt5desk.family_exogenous_conditioner import (  # noqa: E402
+    family_exogenous_conditioner,
+)
+
+ORTHOGONAL_FAMILIES["exogenous_conditioner"] = family_exogenous_conditioner
+FAMILY_INPUTS["exogenous_conditioner"] = (
+    "a data pack's own published series, on its own available_time clock",
+    "data/lake/series/<pack_id>.parquet")
