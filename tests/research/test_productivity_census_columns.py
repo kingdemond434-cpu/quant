@@ -35,6 +35,15 @@ fence = importlib.import_module("scripts.check_productivity_census")
 
 # --------------------------------------------------------------------------------- fixtures
 
+def _judge_input(path: Path, candidate_ids: list[str]) -> None:
+    """The file the sealed gauntlet opens, in the shape `libs/moat/docket_feed` writes it."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(
+        [{"symbol": "XAUUSD", "family": "formula", "params": {}, "timeframe": "H1",
+          "source": "moat_registry", "candidate_id": cid} for cid in candidate_ids]),
+        encoding="utf-8")
+
+
 def _registry(path: Path, rows: list[dict[str, Any]]) -> None:
     """A registry with the two tables the cell columns are derived from, and nothing else.
 
@@ -75,6 +84,7 @@ def census_env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     monkeypatch.setattr(pc, "ATTRIBUTION", reports / "ATTRIBUTION_COVERAGE.json")
     monkeypatch.setattr(pc, "PRODUCER_YIELD", reports / "PRODUCER_YIELD.json")
     monkeypatch.setattr(pc, "REGISTRY_DB", tmp_path / "alpha_registry.sqlite")
+    monkeypatch.setattr(pc, "JUDGE_INPUT", tmp_path / "external_survivors.json")
     monkeypatch.setattr(pc, "measure_compute", lambda _d: {
         "available": True, "why": "", "hours": {"alpha_evolution": {"hours": 7.83, "runs": 4}},
         "window_days": 7.0, "n_runs_priced": 1})
@@ -111,12 +121,14 @@ def test_every_row_publishes_all_six_panel_columns(census_env: Path) -> None:
         {"generator": "alpha_evolution", "grid_cell": "y"},
     ])
     _yield_artifact(census_env, {"alpha_evolution": 0.42, "quiet_organ": 0.0})
+    _judge_input(census_env / "external_survivors.json", ["c0", "c1"])
 
     census = pc.build()
     assert census["registry_available"] is True
     rows = {r["key"]: r for r in census["producers"]}
-    assert set(pc.PANEL_COLUMNS) == {"cells", "unique_cells", "cells_judged", "certificates",
-                                     "orthogonality_added", "compute_hours"}
+    assert set(pc.PANEL_COLUMNS) == {"cells", "unique_cells", "cells_reached_judge",
+                                     "cells_judged", "certificates", "orthogonality_added",
+                                     "compute_hours"}
     for key, row in rows.items():
         for col in pc.PANEL_COLUMNS:
             assert col in row, f"{key} does not publish `{col}` at the level the panel reads"
@@ -125,6 +137,8 @@ def test_every_row_publishes_all_six_panel_columns(census_env: Path) -> None:
                 "number or a measured zero, never UNMEASURED")
     assert rows["alpha_evolution"]["cells"] == 2
     assert rows["alpha_evolution"]["unique_cells"] == 2
+    assert rows["alpha_evolution"]["cells_reached_judge"] == 2
+    assert rows["alpha_evolution"]["reach_cause"].startswith("REACHING")
     assert rows["alpha_evolution"]["cells_judged"] == 1
     assert rows["alpha_evolution"]["orthogonality_added"] == 0.42
     assert rows["alpha_evolution"]["compute_hours"] == pytest.approx(7.83)
@@ -169,6 +183,141 @@ def test_orthogonality_absent_is_unmeasured_with_a_reason(census_env: Path) -> N
     why = census["orthogonality"]["why"]
     assert "PRODUCER_YIELD" in why and "UNMEASURED" in why
     assert "check_producer_yield" in why, "an UNMEASURED verdict must name its remedy"
+
+
+# ------------------------------------------------- REACHED THE JUDGE: the stage nobody measured
+
+def test_a_producer_whose_cells_reach_no_judge_is_a_named_defect(census_env: Path) -> None:
+    """THE MATHS LAB'S DEFECT, IN ONE TEST.
+
+    8,677 objects generated, 33 donated, 51 candidate rows stamped `donated` -- and for a long
+    time not one of them in any file the sealed gauntlet opens. `gauntlet_submitted` said the
+    producer had submitted, because `gauntlet_submitted` reads a status the producer sets on
+    ITSELF. Only the judge's own input file can answer whether a cell is in front of a judge, and
+    a producer that spent compute and reached it with nothing must say so by name.
+    """
+    _roster(census_env, [{"producer": "alpha_evolution", "kind": "seat", "clock": "hourly"}])
+    _registry(census_env / "alpha_registry.sqlite", [
+        {"generator": "alpha_evolution", "grid_cell": "a", "status": "donated"},
+        {"generator": "alpha_evolution", "grid_cell": "b", "status": "donated"},
+    ])
+    # the judge's input names a DIFFERENT candidate: the file is readable, so this is a measured
+    # zero for this producer and not an UNMEASURED one
+    _judge_input(census_env / "external_survivors.json", ["someone_elses_cell"])
+
+    census = pc.build()
+    row = next(r for r in census["producers"] if r["key"] == "alpha_evolution")
+    assert row["cells"] == 2, "the cells exist"
+    assert row["funnel"]["gauntlet_submitted"] == 2, "and the producer says it submitted them"
+    assert row["cells_reached_judge"] == 0, "and not one of them is in front of a judge"
+    assert row["reach_cause"].startswith("NOT_REACHING"), row["reach_cause"]
+    assert row["ratios"]["reach_ratio"] == 0.0
+
+    reach = census["reach"]
+    assert reach["cells_generated"] == 2 and reach["cells_reached_judge"] == 0
+    assert reach["reach_ratio"] == 0.0
+    assert reach["n_not_reaching"] == 1
+    assert reach["not_reaching"][0]["producer"] == "alpha_evolution"
+    assert reach["judge_input"]["status"] == "MEASURED"
+
+
+def test_an_unreadable_judge_input_is_unmeasured_and_never_zero(census_env: Path) -> None:
+    """L1.28a in the direction that matters: `nobody reached` and `we did not look` differ."""
+    _roster(census_env, [{"producer": "alpha_evolution", "kind": "seat", "clock": "hourly"}])
+    _registry(census_env / "alpha_registry.sqlite", [{"generator": "alpha_evolution"}])
+    # no judge input file written at all
+    census = pc.build()
+    row = next(r for r in census["producers"] if r["key"] == "alpha_evolution")
+    assert row["cells_reached_judge"] == "UNMEASURED"
+    assert row["reach_cause"].startswith("UNMEASURED")
+    assert census["reach"]["judge_input"]["status"] == "UNMEASURED"
+    assert "not readable" in str(census["reach"]["judge_input"].get("why"))
+
+
+def test_a_readable_judge_input_with_no_candidate_ids_is_still_unmeasured(
+        census_env: Path) -> None:
+    """THE BUG THIS COLUMN ALMOST SHIPPED WITH, caught on the build box before it landed.
+
+    `external_survivors.json` here is 76 MB and names ZERO registry candidate ids, because the
+    registry feed has never run on this host. The file opened, so `status` was MEASURED, so
+    every one of 1,653 producers got a measured zero and the coverage ratchet recorded 1.00 for
+    a column that had measured nothing. A file that opened is not a measurement; a file that
+    named something is. Both conditions, or UNMEASURED.
+    """
+    _roster(census_env, [{"producer": "alpha_evolution", "kind": "seat", "clock": "hourly"}])
+    _registry(census_env / "alpha_registry.sqlite", [{"generator": "alpha_evolution"}])
+    (census_env / "external_survivors.json").write_text(
+        json.dumps([{"sym": "XAUUSD", "family": "carry", "params": {}}]), encoding="utf-8")
+
+    census = pc.build()
+    row = next(r for r in census["producers"] if r["key"] == "alpha_evolution")
+    assert row["cells_reached_judge"] == "UNMEASURED", (
+        "a judge input that opened but named no candidate is not a desk where nobody reached")
+    assert row["reach_cause"].startswith("UNMEASURED")
+    assert census["reach"]["judge_input"]["reach_measurable"] is False
+    assert census["measurement_coverage"]["columns"]["cells_reached_judge"]["coverage"] == 0.0
+
+
+def test_the_id_scan_survives_a_chunk_boundary(tmp_path: Path,
+                                               monkeypatch: pytest.MonkeyPatch) -> None:
+    """A candidate id split across two reads must still be found, or reach silently under-counts."""
+    path = tmp_path / "judge.json"
+    _judge_input(path, [f"cand_{i:06d}" for i in range(400)])
+    monkeypatch.setattr(pc, "_CHUNK", 137)          # force many boundaries mid-record
+    found, meta = pc._judge_input_ids(path)
+    assert meta["status"] == "MEASURED"
+    assert len(found) == 400 and "cand_000399" in found
+
+
+def test_reach_rising_fails_the_fence_and_falling_ratchets(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """The order is 100%; the fence holds the line so a new producer cannot land unwired."""
+    def _census(n_not_reaching: int) -> dict[str, Any]:
+        doc = _coverage(1000, 1.0)
+        doc["reach"] = {
+            "judge_input": {"status": "MEASURED", "candidate_ids": 12},
+            "cells_generated": 100, "cells_donated": 80,
+            "cells_reached_judge": 60, "cells_judged": 10, "reach_ratio": 0.6,
+            "n_not_reaching": n_not_reaching,
+            "not_reaching": [{"producer": f"p{i}", "cells": 5} for i in range(n_not_reaching)],
+        }
+        return doc
+
+    _fence_env(tmp_path, monkeypatch, _census(9),
+               {"hosts": {"BUILDBOX": {"not_reaching_best": 4}}})
+    failures = fence.check()["failures"]
+    assert failures and "reach NO judge" in failures[0] and "up from the recorded best 4" in \
+        failures[0]
+
+    _fence_env(tmp_path, monkeypatch, _census(2),
+               {"hosts": {"BUILDBOX": {"not_reaching_best": 4}}})
+    verdict = fence.check(tighten=True)
+    assert not verdict["failures"], "an improvement is never a failure"
+    rat = json.loads((tmp_path / "ratchet.json").read_text(encoding="utf-8"))
+    assert rat["hosts"]["BUILDBOX"]["not_reaching_best"] == 2, "the debt ratchets DOWN only"
+
+
+def test_a_named_reason_is_the_only_way_past_a_reach_regression(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    doc = _coverage(1000, 1.0)
+    doc["reach"] = {"judge_input": {"status": "MEASURED"}, "cells_generated": 1,
+                    "cells_donated": 1, "cells_reached_judge": 0, "cells_judged": 0,
+                    "reach_ratio": 0.0, "n_not_reaching": 40, "not_reaching": []}
+    _fence_env(tmp_path, monkeypatch, doc,
+               {"hosts": {"BUILDBOX": {"not_reaching_best": 4,
+                                       "reach_regression_reason": "the registry was rebuilt on "
+                                                                  "2026-09-24 and the merge has "
+                                                                  "not run since"}}})
+    assert not fence.check()["failures"]
+
+
+def test_dropping_the_reach_block_after_it_existed_is_a_regression(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    _fence_env(tmp_path, monkeypatch, _coverage(1000, 1.0),
+               {"hosts": {"BUILDBOX": {"not_reaching_best": 4}}})
+    verdict = fence.check()
+    assert verdict["failures"] and "REGRESSION" in verdict["failures"][0]
+    assert verdict["reach"]["verdict"] == "UNMEASURED"
 
 
 # ---------------------------------------------------------------------------------- the region
