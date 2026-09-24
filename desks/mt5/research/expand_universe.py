@@ -224,7 +224,6 @@ def _median_spread_write(prev: dict, h1_rates, info, now) -> dict:
     survives rather than being blanked.
     """
     import pandas as pd
-
     from mt5desk.universe_registry import may_write_median_spread
 
     allowed, _why = may_write_median_spread(prev if isinstance(prev, dict) else {},

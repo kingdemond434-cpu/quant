@@ -339,8 +339,9 @@ def per_symbol_costs(meta: dict, sym: str):
     `fusion_cost.COMMISSION_PER_LOT_PER_SIDE` is read rather than copied, so the desk has ONE
     commission number and a re-measurement reaches this call site without an edit.
     """
-    from libs.portfolio.fusion_cost import COMMISSION_PER_LOT_PER_SIDE
     from mt5desk.engine import Costs
+
+    from libs.portfolio.fusion_cost import COMMISSION_PER_LOT_PER_SIDE
     return Costs.from_symbol(meta[sym], commission_per_lot=COMMISSION_PER_LOT_PER_SIDE)
 
 

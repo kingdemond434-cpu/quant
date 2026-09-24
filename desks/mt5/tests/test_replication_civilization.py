@@ -183,3 +183,50 @@ def test_the_leg_is_wired_into_the_hourly_cycle() -> None:
     assert layers.LEG_LAYER["replication_civilization"] == "meta"
     src = (DESK / "research" / "hourly_cycle.py").read_text("utf-8")
     assert '_costed("replication_civilization"' in src
+
+
+def test_load_bars_reads_a_parquet_whose_time_column_is_the_index(tmp_path: Path) -> None:
+    """THE BUG THAT COST THIS LANE ITS ENTIRE LIFE (measured 2026-09-24).
+
+    The desk writes `<SYM>_<TF>.parquet` with pandas metadata naming `time` the INDEX. Arrow's
+    `column_names` still lists it, so the loader looked it up in `frame.columns`, where
+    `to_pandas()` had not put it; the KeyError fell into a bare `except` and the lane reported
+    "<SYM> bars absent or shorter than 300 rows" for a file holding 43,655 of them. Every
+    verdict it ever published was UNMEASURED for a reason that was false. The two lanes' tests
+    all injected a `bars_loader`, so none of them ever opened a file.
+
+    This test writes the parquet the way the desk writes it -- time as the index -- and the
+    companion below writes it the other way, so neither shape can regress.
+    """
+    pd = __import__("pandas")
+    n = 512
+    date_index = pd.date_range("2024-01-01", periods=n, freq="h", tz="UTC", name="time")
+    close = np.linspace(1.10, 1.15, n)
+    frame = pd.DataFrame({"open": close, "high": close * 1.001, "low": close * 0.999,
+                          "close": close}, index=date_index)
+    path = tmp_path / "TESTFX_H1.parquet"
+    frame.to_parquet(path)
+    assert "time" in __import__("pyarrow.parquet",
+                                fromlist=["x"]).read_table(path).column_names, (
+        "the fixture must reproduce the shape that broke it: arrow lists `time` even though "
+        "pandas holds it as the index")
+
+    bars = rc.load_bars("TESTFX", "H1", universe=tmp_path)
+    assert bars is not None, "a 512-row parquet must not read as absent"
+    assert len(bars) == n
+    assert bars.minutes == 60
+    assert bars.c[0] == close[0] and bars.c[-1] == close[-1]
+    assert set(bars.hour.tolist()) == set(range(24))
+
+
+def test_load_bars_reads_a_parquet_whose_time_is_a_plain_column(tmp_path: Path) -> None:
+    pd = __import__("pandas")
+    n = 400
+    close = np.linspace(2.0, 2.2, n)
+    frame = pd.DataFrame({
+        "time": pd.date_range("2024-03-01", periods=n, freq="h", tz="UTC"),
+        "open": close, "high": close * 1.001, "low": close * 0.999, "close": close})
+    path = tmp_path / "TESTFY_H1.parquet"
+    frame.to_parquet(path, index=False)
+    bars = rc.load_bars("TESTFY", "H1", universe=tmp_path)
+    assert bars is not None and len(bars) == n and bars.minutes == 60

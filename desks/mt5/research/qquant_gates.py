@@ -29,11 +29,11 @@ Output: reports/QQUANT_GATES.json + reports/DONE_qquant_gates.
 
 from __future__ import annotations
 
-import json
 import itertools
+import json
 import math
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import numpy as np
@@ -45,20 +45,13 @@ sys.path.insert(0, str(BASE))
 sys.path.insert(0, str(BASE / "research"))
 sys.path.insert(0, str(Path(__file__).resolve().parents[3]))  # quant repo root: libs/validation lives there
 
-from libs.validation.cpcv import CPCV  # noqa: E402
-from libs.validation.dsr import deflated_sharpe_ratio, sharpe_ratio  # noqa: E402
-from mt5desk.canonical import calibrated_census_report  # noqa: E402
-from libs.validation.pbo import probability_backtest_overfitting  # noqa: E402
-from libs.validation.reality_check import hansen_spa  # noqa: E402
-from libs.validation.revalidation import WalkForwardEngine, WalkForwardStatus  # noqa: E402
-
-from mt5desk import families  # noqa: E402
-from mt5desk.engine import Costs, run_backtest  # noqa: E402
 from gate_policy import (  # noqa: E402
     ATTESTATION as GATE_POLICY,
+)
+from gate_policy import (
     COST_SCENARIO,
-    DSR_THRESHOLD,
     DONE_MARKER,
+    DSR_THRESHOLD,
     GATES,
     PBO_THRESHOLD,
     SPA_ALPHA,
@@ -67,6 +60,15 @@ from gate_policy import (  # noqa: E402
     WF_SPLITS,
     charged_trial_count,
 )
+from mt5desk import families  # noqa: E402
+from mt5desk.canonical import calibrated_census_report  # noqa: E402
+from mt5desk.engine import Costs, run_backtest  # noqa: E402
+
+from libs.validation.cpcv import CPCV  # noqa: E402
+from libs.validation.dsr import deflated_sharpe_ratio, sharpe_ratio  # noqa: E402
+from libs.validation.pbo import probability_backtest_overfitting  # noqa: E402
+from libs.validation.reality_check import hansen_spa  # noqa: E402
+from libs.validation.revalidation import WalkForwardEngine, WalkForwardStatus  # noqa: E402
 
 WORKERS = int(sys.argv[sys.argv.index("--workers") + 1]) if "--workers" in sys.argv else 8
 
@@ -76,8 +78,9 @@ _worker_ctx: dict = {}
 def _init_worker() -> None:
     """Per-process imports + caches (spawn-safe: no closures over main state)."""
     global _worker_ctx
-    from run_hunt12 import WINDOWS as W12, day_states
-    from run_hunt16 import WINDOWS as W16, FAMILIES as F16
+    from run_hunt12 import WINDOWS as W12
+    from run_hunt16 import FAMILIES as F16
+    from run_hunt16 import WINDOWS as W16
     _worker_ctx = {"W12": W12, "W16": W16, "F16": F16,
                    "h1_cache": {}, "sig_cache": {}, "states_cache": {},
                    "meta": json.loads((BASE / "data" / "universe" / "universe.json")
@@ -329,7 +332,7 @@ def main() -> int:
         # run can never be read as a full one.
         print(f"PARTIAL SWEEP: {a}; certifying from the readable hunt only", file=sys.stderr)
     n_cells = {12: len(all12), 16: len(all16)}
-    t0 = datetime.now(timezone.utc)
+    t0 = datetime.now(UTC)
 
     cells = []
     for c in all12:
@@ -343,7 +346,7 @@ def main() -> int:
         for k, r in enumerate(pool.imap_unordered(worker_cell, cells, chunksize=4)):
             results.append(r)
             if (k + 1) % 50 == 0:
-                el = (datetime.now(timezone.utc) - t0).total_seconds()
+                el = (datetime.now(UTC) - t0).total_seconds()
                 print(f"cells {k + 1}/{len(cells)} "
                       f"({el / (k + 1) * len(cells) / 60:.1f} min ETA)", flush=True)
 
@@ -357,7 +360,7 @@ def main() -> int:
         else:
             fail += 1
     print(f"cell series computed: {ok} ok, {fail} empty/failed "
-          f"in {(datetime.now(timezone.utc) - t0).total_seconds():.0f}s", flush=True)
+          f"in {(datetime.now(UTC) - t0).total_seconds():.0f}s", flush=True)
 
     # ----- original program-level stats on the full trial matrices ----------
     def build_matrix(hunt: int) -> tuple[np.ndarray | None, list]:
@@ -546,18 +549,18 @@ def main() -> int:
         # mistaken for the whole population by a reader (or a dashboard) that has no other way
         # to tell "judged and found nothing" from "never read the file".
         "hunts_absent": hunts_absent,
-        "swept_at": datetime.now(timezone.utc).isoformat(),
-        "wall_s": round((datetime.now(timezone.utc) - t0).total_seconds(), 1),
+        "swept_at": datetime.now(UTC).isoformat(),
+        "wall_s": round((datetime.now(UTC) - t0).total_seconds(), 1),
         "workers": WORKERS,
     }
     (REPORTS / "QQUANT_GATES.json").write_text(json.dumps(out, indent=2, default=str),
                                                encoding="utf-8")
     (REPORTS / "DONE_qquant_gates").write_text(
-        datetime.now(timezone.utc).isoformat(), encoding="utf-8")
+        datetime.now(UTC).isoformat(), encoding="utf-8")
     (REPORTS / DONE_MARKER).write_text(
-        datetime.now(timezone.utc).isoformat(), encoding="utf-8")
+        datetime.now(UTC).isoformat(), encoding="utf-8")
     print(f"\nUNIVERSAL GAUNTLET: {n_pass}/{len(verdicts)} survivors pass all 10 gates "
-          f"(wall {(datetime.now(timezone.utc) - t0).total_seconds() / 60:.1f} min)",
+          f"(wall {(datetime.now(UTC) - t0).total_seconds() / 60:.1f} min)",
           flush=True)
     for name, cnt in sorted(gate_fails.items()):
         print(f"  gate fail [{name}]: {cnt}", flush=True)

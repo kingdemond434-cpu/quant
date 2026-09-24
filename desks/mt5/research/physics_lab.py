@@ -364,6 +364,20 @@ def run(*, budget_s: float = 600.0, dry_run: bool = False, max_targets: int = MA
                            permutations=max(20, permutations // 4))
     multiplicity = I.multiplicity_ledger(cards, evaluated_by_method)
     cards.sort(key=lambda c: -(c.value if c.value is not None else -9e9))
+    # THE REVIEWERS HAD NEVER SEEN A CARD, AND THE ARTIFACT BLAMED THE CLOCK (2026-09-24).
+    # `by_status` on this box read {PROPOSED: 202, REVIEWED: 0, PROVISIONAL: 0, FORWARD: 0,
+    # FAILED: 0} and `unmeasured` said "202 cards did not reach the reviewers this pass (review
+    # deadline 540s)" -- of a pass that finished in 300s and never came near the deadline. The
+    # real gate was `if card.passed`: the lab's OWN burden screen scores every card, all 202
+    # scored negative, and a card it disliked was never handed to the discoverer and the
+    # destroyer. So peer review, the second-civilization replication, the cross-market transfer
+    # and the per-state reading -- the entire institution this leg exists to be -- had run zero
+    # times in the organ's life, and the one artifact that could have said so named the wrong
+    # cause. That is the same defect as the donation gate two blocks down, one layer earlier:
+    # an internal score used as a terminal refusal. The budget stands (`MAX_CARDS_REVIEWED` and
+    # the deadline, both counted as UNMEASURED when they bind); the screen does not. Review the
+    # best-valued cards the budget affords and let the REVIEWERS decide -- refusing is their
+    # job, and a card they reject is a measured rejection rather than a silent one.
     reviewed = 0
     for i, card in enumerate(cards):
         obj, view = objects_by_card[card.card_id]
@@ -378,12 +392,12 @@ def run(*, budget_s: float = 600.0, dry_run: bool = False, max_targets: int = MA
             # is QUEUED in the registry either way by `record_registry` below.
             continue
         I.pit_check(card, view)
-        if not card.passed and i >= MAX_CARDS_REVIEWED:
+        if i >= MAX_CARDS_REVIEWED:
             # SAME CHANGE, SAME REASON: MAX_CARDS_REVIEWED is a review budget, not a screen.
             unreviewed += 1
             continue
         I.consequence_engine(card, view)
-        if card.passed and reviewed < MAX_CARDS_REVIEWED:
+        if reviewed < MAX_CARDS_REVIEWED:
             reviewed += 1
             I.peer_review(card, view, seed=SEED + i, permutations=max(20, permutations // 4))
             if card.status == "REVIEWED":
@@ -396,9 +410,9 @@ def run(*, budget_s: float = 600.0, dry_run: bool = False, max_targets: int = MA
                 I.states_of(card, view, labels if view.target == first.target
                             else I.state_discovery(view))
         else:
-            # The review budget is spent (`reviewed >= MAX_CARDS_REVIEWED`) or the card's own
-            # screen did not like it. Neither is a refusal this organ is allowed to make, so the
-            # card keeps its status and is counted as unreviewed rather than stamped FAILED.
+            # The review budget is spent (`reviewed >= MAX_CARDS_REVIEWED`). That is not a
+            # refusal this organ is allowed to make, so the card keeps its status and is counted
+            # as unreviewed rather than stamped FAILED.
             unreviewed += 1
     sa.note("physics_lab", "cards_reviewed", kept=reviewed, considered=len(cards),
             ordering="-card.value (cards are sorted by value before review)")
@@ -510,9 +524,12 @@ def run(*, budget_s: float = 600.0, dry_run: bool = False, max_targets: int = MA
         unmeasured.append(f"budget: {unjudged} proposed objects were not judged this pass "
                           f"(judge deadline {0.72 * budget_s:.0f}s of a {budget_s:.0f}s budget)")
     if unreviewed:
-        unmeasured.append(f"budget: {unreviewed} cards did not reach the reviewers this pass "
-                          f"(review deadline {0.90 * budget_s:.0f}s); a card that misses review "
-                          f"stays PROPOSED and cannot be FORWARD")
+        unmeasured.append(f"budget: {unreviewed} of {len(cards)} cards did not reach the "
+                          f"reviewers this pass -- the review budget is {MAX_CARDS_REVIEWED} "
+                          f"cards and the deadline {0.90 * budget_s:.0f}s of a {budget_s:.0f}s "
+                          f"pass, and one of the two bound. A card that misses review stays "
+                          f"PROPOSED, which is UNMEASURED and not a refusal; it is still carded, "
+                          f"registered and donated, and the ten gates judge it like any other")
     if not seat_named:
         unmeasured.append("proposer_seat: no candidate mechanism name was proposed this pass "
                           "(no panel resolves, or no card was uninterpreted) -- UNMEASURED, and "

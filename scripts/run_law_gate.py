@@ -194,6 +194,18 @@ _LAW_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     # stated reason. Ratchets fall only and nothing here caps a producer: the remedy for a barren
     # organ is to make it produce or retire it with a reason, never to throttle a working one.
     ("check_producer_yield.py", ("--cells-only",)),
+    # A FAMILY A PRODUCER MINTS THAT NO REGISTRY IMPLEMENTS (2026-09-24). The two fences above ask
+    # whether a producer is producing and whether what it produced was orthogonal. Neither can see
+    # the failure one level lower: a producer minting HARD under a family name that
+    # `miner_candidate_compiler._registered_family` refuses, so every cell it makes exits as
+    # NEEDS_EXACT_RULE_EXTRACTION and never reaches a docket, a gate or a verdict. Measured today:
+    # 32 such names, 7,122 cells, of which `regional_information` alone is 6,336 -- the desk's
+    # third-largest family, ranked #1 by JUDGE_COVERAGE's own value model, with judged_at NULL on
+    # every row. It read as healthy production in every yield number the desk publishes.
+    # RATCHET, NOT VETO: the unjudgeable population may shrink and may not grow, and nothing here
+    # caps, throttles or refuses a producer -- the remedy is a rule for the name or an end to
+    # minting under it, never less mining.
+    ("check_family_evaluability.py", ()),
     # NO EXEMPTION WITHOUT A FALSIFIER (2026-09-24). The two fences above let a producer pass by
     # DECLARING itself exempt -- and until this landed, an exemption was a sentence with no
     # condition under which it stops being true. `module_rent`'s 21 rows (plus two borrowed
