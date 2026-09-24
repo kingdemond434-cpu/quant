@@ -41,13 +41,17 @@ for _p in (str(DESK), str(ROOT)):
         sys.path.insert(0, _p)
 
 from mt5desk.decision_core import (  # noqa: E402
+    ATR_N,
     BRACKET_TTL_HOURS,
     CANCEL_HOUR,
     CLOSE_HOUR,
     GOLD_WINDOWS,
+    MIN_RATCHET_IMPROVEMENT_R,
+    atr_last,
     bracket_from_bars,
     h1_frame,
 )
+from mt5desk import position_manager as _pm  # noqa: E402
 
 SYMBOL = "XAUUSD"
 #: Per-trade risk on the prop account, as a fraction of equity (docs/PROP_FIRM_E8.md).
@@ -143,6 +147,51 @@ def manage_actions(state: dict, hour: float, open_ids: set[int],
     return acts
 
 
+def gold_positions(rows: list[dict], instrument_id: int) -> list[dict]:
+    """The venue's open XAU positions, with no guess from comments or local state."""
+    return [p for p in rows
+            if int(p.get("tradableInstrumentId") or 0) == int(instrument_id)]
+
+
+def _window_for_position(state: dict, position_id: int) -> tuple[str, dict] | None:
+    for name, row in {**(state.get("carried") or {}), **(state.get("windows") or {})}.items():
+        if row.get("position_id") is not None and int(row["position_id"]) == int(position_id):
+            return str(name), row
+    return None
+
+
+def trail_decision(position: dict, window: dict, bars: Any, current_stop: float
+                   ) -> _pm.RatchetDecision | None:
+    """The same H1 stop ratchet the Fusion gold gateway runs, pure for tests.
+
+    TradeLocker and Fusion timestamps are both broker-clock epochs.  Filtering the already-read
+    positional bar history against ``openDate`` therefore avoids the UTC/server offset bug that
+    disabled Fusion management for whole trades.
+    """
+    import pandas as pd
+    side = 1 if str(position.get("side") or "").lower() == "buy" else -1
+    leg_name = "buy_stop" if side == 1 else "sell_stop"
+    leg = (window.get("orders") or {}).get(leg_name) or {}
+    entry = float(position.get("avgPrice") or leg.get("price") or 0.0)
+    original_sl = float(leg.get("sl") or 0.0)
+    dist = abs(entry - original_sl)
+    opened_ms = int(position.get("openDate") or 0)
+    if not (entry > 0 and current_stop > 0 and dist > 0 and opened_ms > 0):
+        return None
+    opened = pd.Timestamp(opened_ms, unit="ms", tz="UTC").floor("h")
+    since = bars[bars.index >= opened]
+    if len(since) < 2 or len(bars) < ATR_N + 1:
+        return None
+    atr = atr_last(bars)
+    if not (atr > 0):
+        return None
+    extreme, stalled = _pm.extreme_and_stall(
+        highs=[float(x) for x in since["high"]],
+        lows=[float(x) for x in since["low"]], side=side)
+    return _pm.ratchet(entry=entry, current_stop=float(current_stop), stop_distance=dist,
+                       extreme=extreme, atr=atr, side=side, bars_since_extreme=stalled)
+
+
 # ------------------------------------------------------------------ the pass
 
 def _read_json(p: Path, default: Any) -> Any:
@@ -198,8 +247,33 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
         log("guard stood down; managing open exposure only")
 
     bid, ask = venue.quote(SYMBOL)
+    try:
+        iid = venue.instrument_id(SYMBOL)
+        venue_positions = venue.positions()
+        xau_positions = gold_positions(venue_positions, iid)
+    except Exception as exc:
+        # An unreadable position book must fail CLOSED for new placements.  Otherwise the one
+        # check intended to prevent a second/opposite XAU leg disappears precisely when the API
+        # is unhealthy.
+        iid, venue_positions, xau_positions = 0, [], []
+        stood_down = True
+        doc["positions_unreadable"] = f"{type(exc).__name__}: {exc}"[:160]
+        log("position book unreadable; no new E8 gold placement this pass")
     # -------------------------------------------------------------- placements
-    for due in ([] if stood_down else plan(df, hour, state)):
+    due_now = [] if stood_down else plan(df, hour, state)
+    if xau_positions and due_now:
+        # TradeLocker can hold opposite XAU positions.  A second two-sided bracket while one
+        # window is live can therefore fill against it, paying two spreads/margin legs for a
+        # book whose net exposure is smaller or zero.  Defer, do not mark the window placed: if
+        # the earlier trade exits while this window remains valid, the next pass may still act.
+        for due in due_now:
+            why = (f"earlier XAU position(s) still open: "
+                   f"{', '.join(str(p.get('id')) for p in xau_positions)}; deferred to prevent "
+                   f"self-hedging")
+            doc["skipped"].append({"window": due["window"], "why": why})
+            log(f"[{due['window']}] DEFERRED: {why}")
+        due_now = []
+    for due in due_now:
         name, spec = due["window"], due["spec"]
         legs: dict[str, dict] = {}
         for side in ("buy_stop", "sell_stop"):
@@ -247,8 +321,10 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
 
     # -------------------------------------------------------------- management
     try:
-        open_ids = {int(o.get("id")) for o in venue.orders(SYMBOL) if o.get("id") is not None}
+        open_orders = venue.orders(SYMBOL)
+        open_ids = {int(o.get("id")) for o in open_orders if o.get("id") is not None}
     except Exception as exc:
+        open_orders = []
         open_ids = set()
         doc["orders_unreadable"] = f"{type(exc).__name__}: {exc}"[:160]
     filled: dict[int, int] = {}
@@ -261,12 +337,51 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
     except Exception as exc:
         doc["history_unreadable"] = f"{type(exc).__name__}: {exc}"[:160]
     try:
-        iid = venue.instrument_id(SYMBOL)
-        position_ids = {int(p["id"]) for p in venue.positions()
-                        if int(p.get("tradableInstrumentId") or 0) == int(iid)}
+        venue_positions = venue.positions()
+        xau_positions = gold_positions(venue_positions, iid)
+        position_ids = {int(p["id"]) for p in xau_positions}
     except Exception as exc:
+        xau_positions = []
         position_ids = set()
         doc["positions_unreadable"] = f"{type(exc).__name__}: {exc}"[:160]
+
+    # The Fusion gold book and this E8 port are the same bracket strategy.  Both therefore use
+    # the same measured stop ratchet.  Until this block existed E8 left every winner at its
+    # opening stop until the fixed target or close hour, recreating the exact giveback path fixed
+    # in Fusion.  Broker stop orders are re-read on every pass; local state advances only after
+    # the venue acknowledges the PATCH.
+    order_by_id = {int(o["id"]): o for o in open_orders if o.get("id") is not None}
+    for p in xau_positions:
+        mapped = _window_for_position(state, int(p["id"]))
+        stop_order = order_by_id.get(int(p.get("stopLossId") or 0))
+        current_stop = float((stop_order or {}).get("stopPrice") or 0.0)
+        if mapped is None or not (current_stop > 0):
+            continue
+        name, w = mapped
+        decision = trail_decision(p, w, df, current_stop)
+        if decision is None or not decision.moves \
+                or decision.improvement_r < MIN_RATCHET_IMPROVEMENT_R:
+            continue
+        action = {"act": "ratchet_stop", "window": name, "position_id": int(p["id"]),
+                  "before": current_stop, "after": float(decision.new_stop),
+                  "improvement_r": round(decision.improvement_r, 6), "ok": False}
+        try:
+            if armed or not w.get("shadow", False):
+                action["ok"] = bool(venue.modify_stop(int(p["id"]), float(decision.new_stop)))
+            else:
+                action["ok"] = True
+                action["shadow"] = True
+            if action["ok"]:
+                log(f"[{name}] {'SHADOW would ratchet' if action.get('shadow') else 'RATCHET'} "
+                    f"position {p['id']} stop {current_stop:.2f} -> "
+                    f"{float(decision.new_stop):.2f}; {decision.reason}")
+            else:
+                action["why"] = "venue did not acknowledge the stop modification"
+                log(f"[{name}] stop ratchet NOT acknowledged; broker state remains authoritative")
+        except Exception as exc:
+            action["why"] = f"{type(exc).__name__}: {exc}"[:160]
+            log(f"[{name}] stop ratchet FAILED: {action['why']}")
+        doc["actions"].append(action)
     # Positions carried from a previous day are closed at the close hour like today's.
     for name, w in list((state.get("carried") or {}).items()):
         state["windows"].setdefault(f"carried:{name}",

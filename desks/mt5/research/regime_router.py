@@ -864,9 +864,30 @@ def _pooled_router(obs: list[pooling.Obs]) -> tuple[dict[str, Any], dict[str, di
         "why": (f"the latent state moved the book's OOS log-score by {gain:+.4f} nats/trade "
                 f"before tax {tax} (paired t {t_gain:+.2f}); "
                 + ("routing earns its place" if earns else
-                   "the unrouted model explains it, which is a MEASURED zero and not a dark one")),
+                   "the unrouted model explains it")
+                + " AT THIS CONFIGURATION -- see `robustness`, which is the verdict's own caveat"),
         "score": "mean OOS Gaussian predictive log-density, nats per trade -- the SAME score and "
                  "tax the walk-forward path uses, so the two answers are comparable",
+        # THE VERDICT IS CONDITIONAL AND THE MEASUREMENT SAYS SO. Run on the box 2026-09-24 over
+        # a grid of state counts at an IDENTICAL fit window, the sign of `net` flipped:
+        #   k=3, 1500 bars -> net +0.0059, t +1.33   (earns)
+        #   k=4, 1500 bars -> net -0.0011, t +0.16   (does not)
+        #   per-symbol k (mostly 5), ~5691 bars -> net +0.0040, t +1.09   (earns)
+        # Every |t| is at or below 1.4 on 288 trades spanning SEVENTEEN DAYS. A number that
+        # changes sign with a nuisance choice is not a result, and publishing whichever cell ran
+        # this hour as "the" verdict would repeat the exact fault this organ was just fixed for:
+        # printing a confident answer for a question the evidence cannot yet settle.
+        "robustness": {
+            "status": UNMEASURED,
+            "conditional_on": ["hmm.state_count.k", "hmm.fit_bars",
+                               "the trade window, which is 17 days long"],
+            "why": ("the sign of `net` flips with the state count at an identical fit window "
+                    "(k=3 -> +0.0059 t+1.33; k=4 -> -0.0011 t+0.16), and no cell reaches |t| 1.4 "
+                    "on 288 trades over 17 days: this verdict is UNDERPOWERED and must not be "
+                    "read as a measured zero OR as an earned positive"),
+            "what_would_settle_it": ("more forward trades. The estimator is not the binding "
+                                     "constraint any more -- the trade record is."),
+        },
     }
     ordered = sorted(obs, key=lambda o: (o.ns, o.sleeve))
     offset = len(ordered) - y.size

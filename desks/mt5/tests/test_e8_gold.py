@@ -84,3 +84,26 @@ def test_the_position_is_closed_at_the_close_hour_and_only_while_it_exists() -> 
     assert g.manage_actions(_state(7.1, position_id=900), CLOSE_HOUR, set(), {}, set()) == []
     # Before the close hour a live position is left to its stop and target.
     assert g.manage_actions(_state(7.1, position_id=900), CLOSE_HOUR - 0.5, set(), {}, {900}) == []
+
+
+def test_only_this_instrument_s_open_positions_block_another_gold_window() -> None:
+    rows = [{"id": 1, "tradableInstrumentId": 6102, "side": "buy"},
+            {"id": 2, "tradableInstrumentId": 99, "side": "sell"}]
+    assert g.gold_positions(rows, 6102) == [rows[0]]
+    assert g.gold_positions(rows, 7) == []
+
+
+def test_e8_uses_the_same_profit_ratchet_as_the_fusion_gold_book() -> None:
+    idx = pd.date_range("2026-09-16", periods=100, freq="h", tz="UTC")
+    close = np.full(len(idx), 100.0)
+    bars = pd.DataFrame({"open": close, "high": close + 1.0, "low": close - 1.0,
+                         "close": close}, index=idx)
+    # A profitable move after entry with a small live ATR must lift this stop; using openDate in
+    # the broker clock is what selects the post-entry bars without a UTC conversion mismatch.
+    bars.loc[idx[-4]:, "high"] = [106.0, 108.0, 110.0, 110.0]
+    pos = {"id": 9, "side": "buy", "avgPrice": 100.0,
+           "openDate": int(idx[-4].timestamp() * 1000)}
+    window = {"orders": {"buy_stop": {"price": 100.0, "sl": 90.0}}}
+    decision = g.trail_decision(pos, window, bars, current_stop=90.0)
+    assert decision is not None and decision.moves
+    assert decision.new_stop > 90.0 and decision.protected_r_after > decision.protected_r_before
