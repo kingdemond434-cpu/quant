@@ -217,6 +217,55 @@ RATCHET_LAW = (
     "fall to zero cannot.")
 
 
+#: THE SPREAD FLOORS, and why these two quantities and no others.
+#:
+#: The principal's order is that every region hold the maximum cells possible and that all be
+#: "as equal breadth depth n producing as all top regions". A total can rise while the tail stays
+#: flat, so the total is not the measurement; and a spread can be improved by CUTTING a strong
+#: region, so most spread statistics are the wrong thing to fence. Evenness, the min/max ratio
+#: and min/median all rise when the top is trimmed, which would teach the next session to level
+#: DOWN -- the exact opposite of the order and a breach of NEVER REDUCE AGGRESSIVENESS.
+#:
+#: These two are monotone in the only safe direction. `min` is the weakest region's own count:
+#: the ONLY way to raise it is to raise the weakest region, and cutting a strong one does not
+#: move it at all. `regions_holding` is how many regions hold anything: cutting a region lowers
+#: it. A desk with one region at 500 and one at 2 therefore fails on `min`, and can only clear
+#: the failure by raising the 2. Everything else about the spread is PUBLISHED and never fenced.
+SPREAD_FLOORS: tuple[str, ...] = ("min", "regions_holding")
+
+
+def spread_floors(spread: dict[str, Any],
+                  previous: Any = None) -> dict[str, Any]:
+    """The level-up floors under one measure's spread. Monotone by construction.
+
+    A floor with no previous reading enters at what was measured, never at an invented zero, so
+    the first pass on a fresh host can never manufacture a breach out of its own absence.
+    """
+    prev: dict[str, Any] = previous if isinstance(previous, dict) else {}
+    prev_floors = prev.get("floors")
+    prev_floors = prev_floors if isinstance(prev_floors, dict) else {}
+    floors: dict[str, int] = {}
+    now: dict[str, int] = {}
+    fell: list[dict[str, Any]] = []
+    for key in SPREAD_FLOORS:
+        try:
+            value = int(spread.get(key) or 0)
+        except (TypeError, ValueError):
+            value = 0
+        now[key] = value
+        before = prev_floors.get(key)
+        floor = value if before is None else max(int(before), value)
+        floors[key] = floor
+        if before is not None and value < int(before):
+            fell.append({"floor": key, "now": value, "was": int(before)})
+    return {"floors": floors, "now": now, "fell": fell,
+            "rule": ("the weakest region's count and the number of regions holding cells RATCHET "
+                     "UP ONLY. Both can be satisfied only by raising the tail: trimming a strong "
+                     "region leaves `min` where it was and lowers `regions_holding`, so a spread "
+                     "is never closed by levelling down (NEVER REDUCE AGGRESSIVENESS). Evenness "
+                     "and the max are published beside them and fenced by nothing.")}
+
+
 def ratchet(current: dict[str, dict[str, int]], *, path: Path | None = None) -> dict[str, Any]:
     """Update and return the per-region high-water marks. Monotone by construction."""
     out_path = path if path is not None else RATCHET
@@ -247,12 +296,15 @@ def ratchet(current: dict[str, dict[str, int]], *, path: Path | None = None) -> 
                                                        sum(now.values()))
         fallen_any = fallen_any or bool(to_zero) or total_now < int(old.get(
             "total_high_water") or 0)
+        spread = A.region_spread(now)
+        floors = spread_floors(spread, old.get("spread_floors"))
+        fallen_any = fallen_any or bool(floors["fell"])
         doc["measures"][name] = {
             "current": dict(sorted(now.items(), key=lambda kv: -kv[1])),
             "high_water": high, "fell_to_zero": to_zero, "regressions": dips,
             "total": total_now, "total_high_water": total_high,
             "total_fell": total_now < int(old.get("total_high_water") or 0),
-            "spread": A.region_spread(now),
+            "spread": spread, "spread_floors": floors,
         }
     doc["status"] = "FALLEN" if fallen_any else "OK"
     _atomic(out_path, doc)

@@ -1,6 +1,389 @@
 {
- "built_at": "2026-09-23T11:30:10+00:00",
+ "built_at": "2026-09-23T20:47:54+00:00",
  "tasks": [
+  {
+   "source": "asia_endpoints",
+   "disposition": "EMPTY_CAPTURE",
+   "title": "",
+   "url": "https://download.terminal.free/cdn/web/metaquotes.ltd/mt5/MetaTrader5.pkg.zip?utm_source=www.mql5.com&amp;utm_campaign=download",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "asia_endpoints",
+   "disposition": "EMPTY_CAPTURE",
+   "title": "",
+   "url": "https://www.sge.com.cn/upload/file/202312/29/bbb98080f11843668e2cc4188236e051.zip",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "asia_endpoints",
+   "disposition": "EMPTY_CAPTURE",
+   "title": "",
+   "url": "https://www.sge.com.cn/upload/file/202312/28/78e4cddda06b4a67a0cd0abd84e04ef7.zip",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "asia_endpoints",
+   "disposition": "EMPTY_CAPTURE",
+   "title": "",
+   "url": "https://www.sge.com.cn/upload/file/202312/26/b3d205028fac4dd396a2890ea610ea2e.zip",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "asia_endpoints",
+   "disposition": "EMPTY_CAPTURE",
+   "title": "",
+   "url": "https://www.sge.com.cn/upload/file/202312/20/9d4c3d81ef8d4c1b836e0673ce68e4bf.zip",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "asia_endpoints",
+   "disposition": "EMPTY_CAPTURE",
+   "title": "",
+   "url": "https://www.sge.com.cn/upload/file/202312/19/1a402454cb6f46c69363d7fa2377b7a6.zip",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "discovery_compiler",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "asset_transfer of XAUUSD -> XAGEUR H1 all",
+   "url": "",
+   "symbols": [
+    "XAGEUR"
+   ],
+   "mechanism_tags": [],
+   "contested": true
+  },
+  {
+   "source": "discovery_compiler",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "session of XAUUSD -> XAUUSD H1 london",
+   "url": "",
+   "symbols": [
+    "XAUUSD"
+   ],
+   "mechanism_tags": [],
+   "contested": true
+  },
+  {
+   "source": "discovery_compiler",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "regime of XAUUSD -> XAUUSD H1 all",
+   "url": "",
+   "symbols": [
+    "XAUUSD"
+   ],
+   "mechanism_tags": [],
+   "contested": true
+  },
+  {
+   "source": "discovery_compiler",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "interaction of XAUUSD -> XAUUSD H1 all",
+   "url": "",
+   "symbols": [
+    "XAUUSD"
+   ],
+   "mechanism_tags": [],
+   "contested": true
+  },
+  {
+   "source": "discovery_compiler",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "cross_asset of XAUUSD -> CHFHUF H1 all",
+   "url": "",
+   "symbols": [
+    "CHFHUF"
+   ],
+   "mechanism_tags": [],
+   "contested": true
+  },
+  {
+   "source": "discovery_compiler",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "residual of EURUSD -> EURUSD H1 all",
+   "url": "",
+   "symbols": [
+    "EURUSD"
+   ],
+   "mechanism_tags": [],
+   "contested": true
+  },
+  {
+   "source": "discovery_compiler",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "interaction of EURUSD -> EURUSD H1 all",
+   "url": "",
+   "symbols": [
+    "EURUSD"
+   ],
+   "mechanism_tags": [],
+   "contested": true
+  },
+  {
+   "source": "discovery_compiler",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "regime of USDJPY -> USDJPY H1 all",
+   "url": "",
+   "symbols": [
+    "USDJPY"
+   ],
+   "mechanism_tags": [],
+   "contested": true
+  },
+  {
+   "source": "discovery_compiler",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "interaction of USDJPY -> USDJPY H1 all",
+   "url": "",
+   "symbols": [
+    "USDJPY"
+   ],
+   "mechanism_tags": [],
+   "contested": true
+  },
+  {
+   "source": "discovery_compiler",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "regime of GBPUSD -> GBPUSD H1 all",
+   "url": "",
+   "symbols": [
+    "GBPUSD"
+   ],
+   "mechanism_tags": [],
+   "contested": true
+  },
+  {
+   "source": "discovery_compiler",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "interaction of GBPUSD -> GBPUSD H1 all",
+   "url": "",
+   "symbols": [
+    "GBPUSD"
+   ],
+   "mechanism_tags": [],
+   "contested": true
+  },
+  {
+   "source": "discovery_compiler",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "session of EURCHF -> EURCHF H1 asia",
+   "url": "",
+   "symbols": [
+    "EURCHF"
+   ],
+   "mechanism_tags": [],
+   "contested": true
+  },
+  {
+   "source": "discovery_compiler",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "regime of EURCHF -> EURCHF H1 all",
+   "url": "",
+   "symbols": [
+    "EURCHF"
+   ],
+   "mechanism_tags": [],
+   "contested": true
+  },
+  {
+   "source": "discovery_compiler",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "session of AUDUSD -> AUDUSD H1 asia",
+   "url": "",
+   "symbols": [
+    "AUDUSD"
+   ],
+   "mechanism_tags": [],
+   "contested": true
+  },
+  {
+   "source": "discovery_compiler",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "regime of XBRUSD -> XBRUSD H1 all",
+   "url": "",
+   "symbols": [
+    "XBRUSD"
+   ],
+   "mechanism_tags": [],
+   "contested": true
+  },
+  {
+   "source": "discovery_compiler",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "execution of XBRUSD -> XBRUSD H1 all",
+   "url": "",
+   "symbols": [
+    "XBRUSD"
+   ],
+   "mechanism_tags": [],
+   "contested": true
+  },
+  {
+   "source": "discovery_compiler",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "asset_transfer of EURCZK -> GBPDKK H1 all",
+   "url": "",
+   "symbols": [
+    "GBPDKK"
+   ],
+   "mechanism_tags": [],
+   "contested": true
+  },
+  {
+   "source": "discovery_compiler",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "asset_transfer of EURCZK -> USDSEK H1 all",
+   "url": "",
+   "symbols": [
+    "USDSEK"
+   ],
+   "mechanism_tags": [],
+   "contested": true
+  },
+  {
+   "source": "discovery_compiler",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "interaction of EURCZK -> EURCZK H1 all",
+   "url": "",
+   "symbols": [
+    "EURCZK"
+   ],
+   "mechanism_tags": [],
+   "contested": true
+  },
+  {
+   "source": "discovery_compiler",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "regime of XCUUSD -> XCUUSD H1 all",
+   "url": "",
+   "symbols": [
+    "XCUUSD"
+   ],
+   "mechanism_tags": [],
+   "contested": true
+  },
+  {
+   "source": "discovery_compiler",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "residual of XCUUSD -> XCUUSD H1 all",
+   "url": "",
+   "symbols": [
+    "XCUUSD"
+   ],
+   "mechanism_tags": [],
+   "contested": true
+  },
+  {
+   "source": "discovery_compiler",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "interaction of XCUUSD -> XCUUSD H1 all",
+   "url": "",
+   "symbols": [
+    "XCUUSD"
+   ],
+   "mechanism_tags": [],
+   "contested": true
+  },
+  {
+   "source": "discovery_compiler",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "regime of USDTRY -> USDTRY H1 all",
+   "url": "",
+   "symbols": [
+    "USDTRY"
+   ],
+   "mechanism_tags": [],
+   "contested": true
+  },
+  {
+   "source": "discovery_compiler",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "interaction of USDTRY -> USDTRY H1 all",
+   "url": "",
+   "symbols": [
+    "USDTRY"
+   ],
+   "mechanism_tags": [],
+   "contested": true
+  },
+  {
+   "source": "discovery_compiler",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "session of USDINR -> USDINR H1 ny",
+   "url": "",
+   "symbols": [
+    "USDINR"
+   ],
+   "mechanism_tags": [],
+   "contested": true
+  },
+  {
+   "source": "discovery_compiler",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "regime of USDINR -> USDINR H1 all",
+   "url": "",
+   "symbols": [
+    "USDINR"
+   ],
+   "mechanism_tags": [],
+   "contested": true
+  },
+  {
+   "source": "discovery_compiler",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "interaction of USDINR -> USDINR H1 all",
+   "url": "",
+   "symbols": [
+    "USDINR"
+   ],
+   "mechanism_tags": [],
+   "contested": true
+  },
+  {
+   "source": "discovery_compiler",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "asset_transfer of SOYBEAN -> SUGARRAW H1 all",
+   "url": "",
+   "symbols": [
+    "SUGARRAW"
+   ],
+   "mechanism_tags": [],
+   "contested": true
+  },
+  {
+   "source": "discovery_compiler",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "interaction of SOYBEAN -> SOYBEAN H1 all",
+   "url": "",
+   "symbols": [
+    "SOYBEAN"
+   ],
+   "mechanism_tags": [],
+   "contested": true
+  },
+  {
+   "source": "asia_endpoints",
+   "disposition": "EMPTY_CAPTURE",
+   "title": "",
+   "url": "https://www.norges-bank.no/globalassets/marketdata/moa/valutahandel/publtab.xlsx?v=16092026100156",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "asia_endpoints",
+   "disposition": "EMPTY_CAPTURE",
+   "title": "",
+   "url": "https://www.norges-bank.no/contentassets/fb698cb231f6423da0df0b357b02ee6f/publtab_tom2009.xls?v=09032017123543",
+   "symbols": [],
+   "mechanism_tags": []
+  },
   {
    "source": "moat_factory",
    "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
@@ -42,7 +425,8 @@
    "symbols": [
     "USDX"
    ],
-   "mechanism_tags": []
+   "mechanism_tags": [],
+   "contested": true
   },
   {
    "source": "discovery_compiler",
@@ -74,7 +458,8 @@
    "symbols": [
     "USDILS"
    ],
-   "mechanism_tags": []
+   "mechanism_tags": [],
+   "contested": true
   },
   {
    "source": "discovery_compiler",
@@ -139,8 +524,7 @@
    "symbols": [
     "NZDCAD"
    ],
-   "mechanism_tags": [],
-   "contested": true
+   "mechanism_tags": []
   },
   {
    "source": "net_edge",
@@ -503,1263 +887,6 @@
    "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
    "title": "representation spectral_state over bis_policy_rates.AUDNZD.base_rate",
    "url": "",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "world_crawler",
-   "disposition": "EMPTY_CAPTURE",
-   "title": "Forex Tester Online",
-   "url": "https://app.forextester.com/?lang=en&run=basic&user_group=1",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "world_crawler",
-   "disposition": "EMPTY_CAPTURE",
-   "title": "Forex Tester Online",
-   "url": "https://app.forextester.com",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "world_crawler",
-   "disposition": "EMPTY_CAPTURE",
-   "title": "\u0e2a\u0e16\u0e34\u0e15\u0e34",
-   "url": "https://www.bot.or.th/th/statistics.html",
-   "symbols": [],
-   "mechanism_tags": [
-    "correlation",
-    "flow",
-    "momentum",
-    "orderflow",
-    "policy"
-   ]
-  },
-  {
-   "source": "world_crawler",
-   "disposition": "EMPTY_CAPTURE",
-   "title": "\u0e14\u0e31\u0e0a\u0e19\u0e35\u0e41\u0e25\u0e30\u0e40\u0e04\u0e23\u0e37\u0e48\u0e2d\u0e07\u0e0a\u0e35\u0e49\u0e40\u0e28\u0e23\u0e29\u0e10\u0e01\u0e34\u0e08\u0e01\u0e32\u0e23\u0e40\u0e07\u0e34\u0e19\u0e17\u0e31\u0e49\u0e07\u0e2b\u0e21\u0e14",
-   "url": "https://www.bot.or.th/th/statistics/economic-and-financial-index-and-indicators.html",
-   "symbols": [],
-   "mechanism_tags": [
-    "correlation",
-    "flow",
-    "momentum",
-    "orderflow",
-    "policy"
-   ]
-  },
-  {
-   "source": "world_crawler",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "What Is Gamma Scalping & Why It Matters To Trade Forex Markets | Nasdaq",
-   "url": "https://www.nasdaq.com/articles/what-gamma-scalping-why-it-matters-trade-forex-markets-2019-01-04",
-   "symbols": [
-    "EURJPY",
-    "EURUSD",
-    "NAS100",
-    "USDCHF"
-   ],
-   "mechanism_tags": [
-    "basis",
-    "breakout",
-    "orderflow",
-    "policy",
-    "positioning",
-    "volatility"
-   ],
-   "contested": true
-  },
-  {
-   "source": "world_crawler",
-   "disposition": "EMPTY_CAPTURE",
-   "title": "\u9999\u6e2f\u91d1\u878d\u7ba1\u7406\u5c40 - \u6578\u64da\u8207\u7d71\u8a08\u8cc7\u6599",
-   "url": "https://www.hkma.gov.hk/chi/data-publications-and-research/data-and-statistics/",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "world_crawler",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "\u671f\u8d27\u9891\u9053 - \u4e1c\u65b9\u8d22\u5bcc\u7f51",
-   "url": "https://futures.eastmoney.com/",
-   "symbols": [
-    "CORN",
-    "COTTON",
-    "HK50",
-    "SOYBEAN",
-    "SUGAR",
-    "US500",
-    "USDCNH",
-    "USDX",
-    "UST10Y",
-    "WHEAT",
-    "XAGUSD",
-    "XALUSD",
-    "XAUUSD",
-    "XCUUSD",
-    "XNIUSD",
-    "XPBUSD",
-    "XPDUSD",
-    "XPTUSD",
-    "XTIUSD",
-    "XZNUSD"
-   ],
-   "mechanism_tags": [
-    "basis",
-    "flow",
-    "inventory",
-    "momentum",
-    "night_session",
-    "policy",
-    "positioning"
-   ],
-   "contested": true
-  },
-  {
-   "source": "world_crawler",
-   "disposition": "EMPTY_CAPTURE",
-   "title": "Challenge Validation",
-   "url": "https://www.balticexchange.com/en/data-services/market-information0/dry-services.html",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "world_crawler",
-   "disposition": "EMPTY_CAPTURE",
-   "title": "NuGet Gallery | Package Downloads for QuantLib",
-   "url": "https://www.nuget.org/stats/packages/QuantLib?groupby=Version",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "world_crawler",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "We\u2019re All Backtesters Now | The Capital Spectator",
-   "url": "https://www.capitalspectator.com/were-all-backtesters-now/",
-   "symbols": [
-    "US2000",
-    "US30",
-    "US500",
-    "XAGUSD"
-   ],
-   "mechanism_tags": [
-    "basis"
-   ],
-   "contested": true
-  },
-  {
-   "source": "world_crawler",
-   "disposition": "EMPTY_CAPTURE",
-   "title": "G\u00f6del's Market: Interviewing the Quants: Marco Simioni and Nightly Patterns",
-   "url": "http://godelsmarket.blogspot.com/2015/02/interviewing-quants-marco-simioni-and.html?showComment=1424301749352",
-   "symbols": [],
-   "mechanism_tags": [
-    "basis",
-    "correlation",
-    "momentum",
-    "night_session",
-    "policy",
-    "positioning",
-    "volatility"
-   ]
-  },
-  {
-   "source": "world_crawler",
-   "disposition": "EMPTY_CAPTURE",
-   "title": "G\u00f6del's Market: Simple Automated Trading System",
-   "url": "http://godelsmarket.blogspot.com/2012/12/simple-automated-trading-system.html?showComment=1404717414399",
-   "symbols": [],
-   "mechanism_tags": [
-    "basis",
-    "correlation",
-    "policy",
-    "volatility"
-   ]
-  },
-  {
-   "source": "world_crawler",
-   "disposition": "EMPTY_CAPTURE",
-   "title": "G\u00f6del's Market: Simple Automated Trading System",
-   "url": "http://godelsmarket.blogspot.com/2012/12/simple-automated-trading-system.html?showComment=1416562509793",
-   "symbols": [],
-   "mechanism_tags": [
-    "basis",
-    "correlation",
-    "policy",
-    "volatility"
-   ]
-  },
-  {
-   "source": "world_crawler",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "G\u00f6del's Market: Gap Trading",
-   "url": "http://godelsmarket.blogspot.com/2012/08/gap-trading.html",
-   "symbols": [
-    "EURUSD",
-    "US500",
-    "WHEAT"
-   ],
-   "mechanism_tags": [
-    "basis",
-    "correlation",
-    "gap",
-    "policy",
-    "volatility"
-   ],
-   "contested": true
-  },
-  {
-   "source": "world_crawler",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "G\u00f6del's Market: TICK Backtest",
-   "url": "http://godelsmarket.blogspot.com/2012/08/tick-backtest.html",
-   "symbols": [
-    "US500"
-   ],
-   "mechanism_tags": [
-    "basis",
-    "correlation",
-    "gap",
-    "policy",
-    "volatility"
-   ],
-   "contested": true
-  },
-  {
-   "source": "world_crawler",
-   "disposition": "EMPTY_CAPTURE",
-   "title": "G\u00f6del's Market: backtest",
-   "url": "http://godelsmarket.blogspot.com/search/label/backtest?updated-max=2012-07-31T23:10:00-07:00&max-results=20&start=20&by-date=false",
-   "symbols": [],
-   "mechanism_tags": [
-    "basis",
-    "correlation",
-    "policy",
-    "volatility"
-   ]
-  },
-  {
-   "source": "world_crawler",
-   "disposition": "EMPTY_CAPTURE",
-   "title": "G\u00f6del's Market: forex",
-   "url": "http://godelsmarket.blogspot.com/search/label/forex?updated-max=2013-02-05T21:45:00-08:00&max-results=20&start=20&by-date=false",
-   "symbols": [],
-   "mechanism_tags": [
-    "basis",
-    "correlation",
-    "policy",
-    "volatility"
-   ]
-  },
-  {
-   "source": "world_crawler",
-   "disposition": "EMPTY_CAPTURE",
-   "title": "G\u00f6del's Market: quantifiable edges",
-   "url": "http://godelsmarket.blogspot.com/search/label/quantifiable%20edges?updated-max=2012-08-15T16:23:00-07:00&max-results=20&start=20&by-date=false",
-   "symbols": [],
-   "mechanism_tags": [
-    "basis",
-    "correlation",
-    "policy",
-    "volatility"
-   ]
-  },
-  {
-   "source": "world_crawler",
-   "disposition": "EMPTY_CAPTURE",
-   "title": "G\u00f6del's Market: strategy",
-   "url": "http://godelsmarket.blogspot.com/search/label/strategy?updated-max=2012-07-09T18:49:00-07:00&max-results=20&start=20&by-date=false",
-   "symbols": [],
-   "mechanism_tags": [
-    "basis",
-    "correlation",
-    "policy",
-    "volatility"
-   ]
-  },
-  {
-   "source": "world_crawler",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "Implied vs. Realized Volatility in Delta Hedging Strategies &#8211; Relative Value Arbitrage",
-   "url": "https://blog.harbourfronts.com/2026/01/15/implied-vs-realized-volatility-in-delta-hedging-strategies/",
-   "symbols": [
-    "NAS100"
-   ],
-   "mechanism_tags": [
-    "arbitrage",
-    "correlation",
-    "policy",
-    "volatility"
-   ],
-   "contested": true
-  },
-  {
-   "source": "world_crawler",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "Effectiveness of Covered Call Strategy in Developed and Emerging Markets &#8211; Relative Value Arbitrage",
-   "url": "https://blog.harbourfronts.com/2025/10/20/effectiveness-of-covered-call-strategy-in-developed-and-emerging-markets/",
-   "symbols": [
-    "US500",
-    "USDINR",
-    "XAUUSD"
-   ],
-   "mechanism_tags": [
-    "arbitrage",
-    "correlation",
-    "policy",
-    "volatility"
-   ],
-   "contested": true
-  },
-  {
-   "source": "world_crawler",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "options trading strategies &#8211; Page 2 &#8211; Relative Value Arbitrage",
-   "url": "https://blog.harbourfronts.com/category/options-trading-strategies/page/2/",
-   "symbols": [
-    "GBPUSD",
-    "US500",
-    "USDINR",
-    "UST10Y"
-   ],
-   "mechanism_tags": [
-    "arbitrage",
-    "auction",
-    "basis",
-    "carry",
-    "correlation",
-    "gap",
-    "inventory",
-    "mean_reversion",
-    "momentum",
-    "night_session",
-    "orderflow",
-    "policy",
-    "positioning",
-    "seasonality",
-    "volatility"
-   ],
-   "contested": true
-  },
-  {
-   "source": "world_crawler",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "options trading strategies &#8211; Page 4 &#8211; Relative Value Arbitrage",
-   "url": "https://blog.harbourfronts.com/category/options-trading-strategies/page/4/",
-   "symbols": [
-    "UK100",
-    "US500",
-    "USDTRY"
-   ],
-   "mechanism_tags": [
-    "arbitrage",
-    "basis",
-    "correlation",
-    "momentum",
-    "policy",
-    "volatility"
-   ],
-   "contested": true
-  },
-  {
-   "source": "world_crawler",
-   "disposition": "EMPTY_CAPTURE",
-   "title": "Free Point-in-Time Fundamentals Sample and Colab | Tradevo Data",
-   "url": "https://tradevodata.com/sample?ref=alt&cta_location=alternatives-quantconnect-data-inline",
-   "symbols": [],
-   "mechanism_tags": [
-    "gap"
-   ]
-  },
-  {
-   "source": "world_crawler",
-   "disposition": "EMPTY_CAPTURE",
-   "title": "Point-in-Time Fundamentals for Python Backtests | Tradevo Data",
-   "url": "https://tradevodata.com/?ref=alt&utm_content=alt-quantconnect-data",
-   "symbols": [],
-   "mechanism_tags": [
-    "gap"
-   ]
-  },
-  {
-   "source": "world_crawler",
-   "disposition": "EMPTY_CAPTURE",
-   "title": "Free Point-in-Time Fundamentals Sample and Colab | Tradevo Data",
-   "url": "https://tradevodata.com/sample?cta_location=alternatives-quantconnect-data",
-   "symbols": [],
-   "mechanism_tags": [
-    "gap"
-   ]
-  },
-  {
-   "source": "world_crawler",
-   "disposition": "EMPTY_CAPTURE",
-   "title": "GitHub - christianpichichero-max/pit-fundamentals: Free point-in-time US fundamentals sample (40 large caps, 3,280 rows) \u2014 every value stamped with the date it became public. No lookahead bias. From S",
-   "url": "https://tradevodata.com/go/github-sample?cta_location=alternatives-quantconnect-data",
-   "symbols": [],
-   "mechanism_tags": [
-    "gap",
-    "momentum"
-   ]
-  },
-  {
-   "source": "world_crawler",
-   "disposition": "EMPTY_CAPTURE",
-   "title": "As-Reported vs Restated Financial Data: Why It Matters",
-   "url": "https://tradevodata.com/blog/as-reported-vs-restated-fundamentals",
-   "symbols": [],
-   "mechanism_tags": [
-    "carry",
-    "gap"
-   ]
-  },
-  {
-   "source": "world_crawler",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "The Market Rank Indicator: Measuring Financial Risk, Part 3 | Portfolio Optimizer",
-   "url": "https://portfoliooptimizer.io/blog/the-market-rank-indicator-measuring-financial-risk-part-3/",
-   "symbols": [
-    "GER40",
-    "US500"
-   ],
-   "mechanism_tags": [
-    "basis",
-    "correlation",
-    "positioning"
-   ],
-   "contested": true
-  },
-  {
-   "source": "world_crawler",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "Trading Strategy Monitoring: Modeling the PnL as a Geometric Brownian Motion | Portfolio Optimizer",
-   "url": "https://portfoliooptimizer.io/blog/trading-strategy-monitoring-modeling-the-pnl-as-a-geometric-brownian-motion/",
-   "symbols": [
-    "US500"
-   ],
-   "mechanism_tags": [
-    "momentum",
-    "volatility"
-   ],
-   "contested": true
-  },
-  {
-   "source": "world_crawler",
-   "disposition": "EMPTY_CAPTURE",
-   "title": "072 - Interview w Wayne Klump of EnvironmentalTradingEdge.com Consistent Profits Podcast | iHeart",
-   "url": "https://www.iheart.com/podcast/269-consistent-profits-podcast-109844703/episode/072-interview-w-wayne-klump-of-environmentaltradingedgecom-220535210",
-   "symbols": [],
-   "mechanism_tags": [
-    "volatility"
-   ]
-  },
-  {
-   "source": "world_crawler",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "071 - Interview w Louise Bedford of TradingGame.com.au Consistent Profits Podcast | iHeart",
-   "url": "https://www.iheart.com/podcast/269-consistent-profits-podcast-109844703/episode/071-interview-w-louise-bedford-of-tradinggamecomau-217854056",
-   "symbols": [
-    "NAS100",
-    "US500",
-    "XAUUSD"
-   ],
-   "mechanism_tags": [
-    "positioning",
-    "volatility"
-   ],
-   "contested": true
-  },
-  {
-   "source": "world_crawler",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "Whole Brain Trading Expert - Zvi Benyamini \u2013 Episode 070 Consistent Profits Podcast | iHeart",
-   "url": "https://www.iheart.com/podcast/269-consistent-profits-podcast-109844703/episode/whole-brain-trading-expert-zvi-benyamini-episode-070-210277286",
-   "symbols": [
-    "NAS100",
-    "US500",
-    "XAUUSD"
-   ],
-   "mechanism_tags": [
-    "positioning",
-    "volatility"
-   ],
-   "contested": true
-  },
-  {
-   "source": "world_crawler",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "069 \u2013 Wyckoff and Volume Trading Specialist \u2013 Interview w Tim Ord Consistent Profits Podcast | iHeart",
-   "url": "https://www.iheart.com/podcast/269-consistent-profits-podcast-109844703/episode/069-wyckoff-and-volume-trading-specialist-interview-w-tim-ord-199091038",
-   "symbols": [
-    "NAS100",
-    "US500",
-    "XAUUSD"
-   ],
-   "mechanism_tags": [
-    "positioning",
-    "volatility"
-   ],
-   "contested": true
-  },
-  {
-   "source": "world_crawler",
-   "disposition": "EMPTY_CAPTURE",
-   "title": "065 - Trading Psychology specific to Prop Firm Trading \u2013 Interview w Norman Hallett Consistent Profits Podcast | iHeart",
-   "url": "https://www.iheart.com/podcast/269-consistent-profits-podcast-109844703/episode/065-trading-psychology-specific-to-prop-firm-trading-interview-w-norman-hallett-185249912",
-   "symbols": [],
-   "mechanism_tags": [
-    "breakout",
-    "policy"
-   ]
-  },
-  {
-   "source": "world_crawler",
-   "disposition": "EMPTY_CAPTURE",
-   "title": "064 - Robust Algo Trader Mr Breakouts \u2013 Interview w Tomas Nesnidal Consistent Profits Podcast | iHeart",
-   "url": "https://www.iheart.com/podcast/269-consistent-profits-podcast-109844703/episode/064-robust-algo-trader-mr-breakouts-interview-w-tomas-nesnidal-183136921",
-   "symbols": [],
-   "mechanism_tags": [
-    "breakout",
-    "policy"
-   ]
-  },
-  {
-   "source": "world_crawler",
-   "disposition": "EMPTY_CAPTURE",
-   "title": "Excel and the TWS API | Trading Course | Traders&#039; Academy",
-   "url": "https://ibkrcampus.com/trading-course/excel-and-the-tws-api/",
-   "symbols": [],
-   "mechanism_tags": [
-    "basis"
-   ]
-  },
-  {
-   "source": "world_crawler",
-   "disposition": "EMPTY_CAPTURE",
-   "title": "Neutral Option Market Strategies | Trading Course",
-   "url": "https://ibkrcampus.com/trading-course/neutral-market-strategies/",
-   "symbols": [],
-   "mechanism_tags": [
-    "volatility"
-   ]
-  },
-  {
-   "source": "world_crawler",
-   "disposition": "EMPTY_CAPTURE",
-   "title": "Directional Trading Archives - Theta Trend",
-   "url": "https://www.thetatrend.com/category/directional-trading/",
-   "symbols": [],
-   "mechanism_tags": [
-    "volatility"
-   ]
-  },
-  {
-   "source": "world_crawler",
-   "disposition": "EMPTY_CAPTURE",
-   "title": "Donchian Channel System Archives - Theta Trend",
-   "url": "https://www.thetatrend.com/category/directional-trading/donchian-channel-system/",
-   "symbols": [],
-   "mechanism_tags": [
-    "breakout",
-    "momentum",
-    "policy",
-    "volatility"
-   ]
-  },
-  {
-   "source": "world_crawler",
-   "disposition": "EMPTY_CAPTURE",
-   "title": "Investing Archives - Theta Trend",
-   "url": "https://www.thetatrend.com/category/directional-trading/investing/",
-   "symbols": [],
-   "mechanism_tags": [
-    "policy",
-    "volatility"
-   ]
-  },
-  {
-   "source": "world_crawler",
-   "disposition": "EMPTY_CAPTURE",
-   "title": "Monthly Rotation System Archives - Theta Trend",
-   "url": "https://www.thetatrend.com/category/directional-trading/monthly-rotation-system/",
-   "symbols": [],
-   "mechanism_tags": [
-    "momentum",
-    "volatility"
-   ]
-  },
-  {
-   "source": "world_crawler",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "Naked Options Archives - Theta Trend",
-   "url": "https://www.thetatrend.com/category/directional-trading/naked-options/",
-   "symbols": [
-    "XAUUSD"
-   ],
-   "mechanism_tags": [
-    "momentum",
-    "volatility"
-   ],
-   "contested": true
-  },
-  {
-   "source": "world_crawler",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "Naked Put Selling Archives - Theta Trend",
-   "url": "https://www.thetatrend.com/category/directional-trading/naked-put-selling/",
-   "symbols": [
-    "XAUUSD"
-   ],
-   "mechanism_tags": [
-    "volatility"
-   ],
-   "contested": true
-  },
-  {
-   "source": "world_crawler",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "Weekly Options Archives - Theta Trend",
-   "url": "https://www.thetatrend.com/category/directional-trading/weekly-options/",
-   "symbols": [
-    "US500"
-   ],
-   "mechanism_tags": [
-    "volatility"
-   ],
-   "contested": true
-  },
-  {
-   "source": "world_crawler",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "Schwab Commission Free ETF Rotation System Backtest $SPY, $TLO, $PCY, $RWO, $SHY - Theta Trend",
-   "url": "https://www.thetatrend.com/schwab-commission-free-etf-rotation-system-backtest-spy-tlo-pcy-rwo-shy/",
-   "symbols": [
-    "USDCHF"
-   ],
-   "mechanism_tags": [
-    "basis",
-    "momentum",
-    "policy",
-    "positioning",
-    "volatility"
-   ],
-   "contested": true
-  },
-  {
-   "source": "world_crawler",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "Donchian Channel Breakout Trend Following Trading System - Theta Trend",
-   "url": "http://www.thetatrend.com/donchian-channel-breakout-trend-following-trading-system/",
-   "symbols": [
-    "COFARA",
-    "COTTON",
-    "EURUSD",
-    "SUGAR",
-    "US500",
-    "USDCHF",
-    "USDJPY",
-    "XAUUSD"
-   ],
-   "mechanism_tags": [
-    "breakout",
-    "momentum",
-    "volatility"
-   ],
-   "contested": true
-  },
-  {
-   "source": "world_crawler",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "Paper Trading for Systematic Strategies | TradeLock",
-   "url": "https://tradelock.net/blog/paper-trading-platform-systematic-strategies",
-   "symbols": [
-    "US500",
-    "USDTRY"
-   ],
-   "mechanism_tags": [
-    "gap",
-    "momentum",
-    "orderflow",
-    "volatility"
-   ],
-   "contested": true
-  },
-  {
-   "source": "world_crawler",
-   "disposition": "EMPTY_CAPTURE",
-   "title": "Before Collective2 or Darwinex: How to Build a Trading Track Record You Actually Own | TradeLock",
-   "url": "https://tradelock.net/blog/before-collective2-darwinex-build-track-record",
-   "symbols": [],
-   "mechanism_tags": [
-    "gap"
-   ]
-  },
-  {
-   "source": "world_crawler",
-   "disposition": "EMPTY_CAPTURE",
-   "title": "https://systematicedge.wordpress.com/2015/02/22/automated-trading-system-internal-order-matching/?share=twitter",
-   "url": "https://systematicedge.wordpress.com/2015/02/22/automated-trading-system-internal-order-matching/?share=twitter",
-   "symbols": [],
-   "mechanism_tags": [
-    "flow"
-   ]
-  },
-  {
-   "source": "world_crawler",
-   "disposition": "EMPTY_CAPTURE",
-   "title": "A Simple Tactical Asset Allocation Portfolio with Percentile Channels | CSSA",
-   "url": "https://cssanalytics.wordpress.com/2015/01/26/a-simple-tactical-asset-allocation-portfolio-with-percentile-channels/",
-   "symbols": [],
-   "mechanism_tags": [
-    "basis",
-    "correlation",
-    "momentum",
-    "volatility"
-   ]
-  },
-  {
-   "source": "world_crawler",
-   "disposition": "EMPTY_CAPTURE",
-   "title": "https://cssanalytics.wordpress.com/2015/02/16/percentile-channel-strategy-replication/?share=twitter",
-   "url": "https://cssanalytics.wordpress.com/2015/02/16/percentile-channel-strategy-replication/?share=twitter",
-   "symbols": [],
-   "mechanism_tags": [
-    "flow"
-   ]
-  },
-  {
-   "source": "world_crawler",
-   "disposition": "EMPTY_CAPTURE",
-   "title": "Percentile Channel Strategy Replication | CSSA",
-   "url": "https://cssanalytics.wordpress.com/2015/02/16/percentile-channel-strategy-replication/?replytocom=7198",
-   "symbols": [],
-   "mechanism_tags": [
-    "correlation",
-    "momentum",
-    "volatility"
-   ]
-  },
-  {
-   "source": "world_crawler",
-   "disposition": "EMPTY_CAPTURE",
-   "title": "Percentile Channel Strategy Replication | CSSA",
-   "url": "https://cssanalytics.wordpress.com/2015/02/16/percentile-channel-strategy-replication/?replytocom=7199",
-   "symbols": [],
-   "mechanism_tags": [
-    "correlation",
-    "momentum",
-    "volatility"
-   ]
-  },
-  {
-   "source": "world_crawler",
-   "disposition": "EMPTY_CAPTURE",
-   "title": "Percentile Channel Strategy Replication | CSSA",
-   "url": "https://cssanalytics.wordpress.com/2015/02/16/percentile-channel-strategy-replication/?replytocom=7203",
-   "symbols": [],
-   "mechanism_tags": [
-    "correlation",
-    "momentum",
-    "volatility"
-   ]
-  },
-  {
-   "source": "world_crawler",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "Research, Backtest and Live Trade Your Strategies - QuantConnect.com",
-   "url": "http://quantconnect.com/",
-   "symbols": [
-    "BTCUSD",
-    "NAS100",
-    "NVIDIA",
-    "Tesla",
-    "US500",
-    "XAUUSD"
-   ],
-   "mechanism_tags": [
-    "basis",
-    "carry",
-    "flow",
-    "mean_reversion",
-    "momentum",
-    "night_session",
-    "orderflow",
-    "volatility"
-   ],
-   "contested": true
-  },
-  {
-   "source": "world_crawler",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "Online Stock Trading &amp; Demat Account in India | ATS",
-   "url": "http://www.adityatrading.in",
-   "symbols": [
-    "NAS100",
-    "US500",
-    "USDINR",
-    "XAGUSD",
-    "XAUUSD",
-    "XTIUSD",
-    "XZNUSD"
-   ],
-   "mechanism_tags": [],
-   "contested": true
-  },
-  {
-   "source": "world_crawler",
-   "disposition": "EMPTY_CAPTURE",
-   "title": "Option Trading Service - SteadyOptions",
-   "url": "https://steadyoptions.com/",
-   "symbols": [],
-   "mechanism_tags": [
-    "carry",
-    "orderflow",
-    "volatility"
-   ]
-  },
-  {
-   "source": "world_crawler",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "Home - Trading Game",
-   "url": "https://www.tradinggame.com.au/",
-   "symbols": [
-    "USDKRW",
-    "USDTRY"
-   ],
-   "mechanism_tags": [],
-   "contested": true
-  },
-  {
-   "source": "world_crawler",
-   "disposition": "EMPTY_CAPTURE",
-   "title": "What is Trading? &#8211; Trading Blog",
-   "url": "https://stocksinvestor12.finance.blog/2019/12/17/what-is-trading/",
-   "symbols": [],
-   "mechanism_tags": [
-    "positioning"
-   ]
-  },
-  {
-   "source": "world_crawler",
-   "disposition": "EMPTY_CAPTURE",
-   "title": "Business - Webflow HTML website template",
-   "url": "https://online-trading.webflow.io/",
-   "symbols": [],
-   "mechanism_tags": [
-    "positioning"
-   ]
-  },
-  {
-   "source": "world_crawler",
-   "disposition": "EMPTY_CAPTURE",
-   "title": "Beginner&#039;s Guide To Building Trading Systems - The Chartist",
-   "url": "https://www.thechartist.com.au/beginners-guide-to-building-trading-systems",
-   "symbols": [],
-   "mechanism_tags": [
-    "momentum",
-    "positioning"
-   ]
-  },
-  {
-   "source": "world_crawler",
-   "disposition": "EMPTY_CAPTURE",
-   "title": "Trading System Mentor Course - The Chartist",
-   "url": "https://www.thechartist.com.au/trading-system-mentor-course",
-   "symbols": [],
-   "mechanism_tags": [
-    "mean_reversion",
-    "momentum"
-   ]
-  },
-  {
-   "source": "world_crawler",
-   "disposition": "EMPTY_CAPTURE",
-   "title": "Free RealTest Course | Learn Backtesting &amp; System Trading Basics",
-   "url": "https://enlightenedstocktrading.com/realtest-course",
-   "symbols": [],
-   "mechanism_tags": [
-    "momentum"
-   ]
-  },
-  {
-   "source": "world_crawler",
-   "disposition": "EMPTY_CAPTURE",
-   "title": "Enlightened Stock Trading: Master Proven Trading Systems",
-   "url": "https://www.enlightenedstocktrading.com",
-   "symbols": [],
-   "mechanism_tags": [
-    "basis",
-    "mean_reversion",
-    "momentum",
-    "positioning"
-   ]
-  },
-  {
-   "source": "world_crawler",
-   "disposition": "EMPTY_CAPTURE",
-   "title": "Quant Traders - Academy, Courses, Software, Research + Podcast!",
-   "url": "https://www.algoadvantage.io",
-   "symbols": [],
-   "mechanism_tags": [
-    "policy",
-    "volatility"
-   ]
-  },
-  {
-   "source": "world_crawler",
-   "disposition": "EMPTY_CAPTURE",
-   "title": "Stats Edge Trading",
-   "url": "https://statsedgetrading.com",
-   "symbols": [],
-   "mechanism_tags": [
-    "carry",
-    "momentum",
-    "night_session",
-    "orderflow",
-    "positioning"
-   ]
-  },
-  {
-   "source": "world_crawler",
-   "disposition": "EMPTY_CAPTURE",
-   "title": "024 \u2013 Trading Think Tank 02 \u2013 \u2026 - The Algorithmic Advantage - Apple Podcasts",
-   "url": "https://podcasts.apple.com/us/podcast/024-trading-think-tank-02-battle-of-the-back-testers/id1703013320?i=1000666313383",
-   "symbols": [],
-   "mechanism_tags": [
-    "policy"
-   ]
-  },
-  {
-   "source": "world_crawler",
-   "disposition": "EMPTY_CAPTURE",
-   "title": "183: Overcoming Broken Strateg\u2026\u2013Better System Trader \u2013 Apple Podcasts",
-   "url": "https://podcasts.apple.com/ca/podcast/183-overcoming-broken-strategies-marsten-parker/id985870258?i=1000514198848",
-   "symbols": [],
-   "mechanism_tags": [
-    "mean_reversion",
-    "policy"
-   ]
-  },
-  {
-   "source": "world_crawler",
-   "disposition": "EMPTY_CAPTURE",
-   "title": "Intelligent Trading",
-   "url": "http://intelligenttradingtech.blogspot.co.uk/",
-   "symbols": [],
-   "mechanism_tags": [
-    "gap",
-    "momentum",
-    "night_session",
-    "policy"
-   ]
-  },
-  {
-   "source": "world_crawler",
-   "disposition": "EMPTY_CAPTURE",
-   "title": "Quant Savvy Reviews - Read Reviews on Quantsavvy.com Before You Buy | www.quantsavvy.com",
-   "url": "https://www.reviews.io/company-reviews/store/quant-savvy",
-   "symbols": [],
-   "mechanism_tags": [
-    "mean_reversion",
-    "night_session"
-   ]
-  },
-  {
-   "source": "world_crawler",
-   "disposition": "EMPTY_CAPTURE",
-   "title": "Quant Savvy Reviews - Read Reviews on Quantsavvy.com Before You Buy | www.quantsavvy.com",
-   "url": "https://www.reviews.io/company-reviews/store/quant-savvy?order=highest_rated",
-   "symbols": [],
-   "mechanism_tags": [
-    "mean_reversion",
-    "night_session"
-   ]
-  },
-  {
-   "source": "world_crawler",
-   "disposition": "EMPTY_CAPTURE",
-   "title": "Quant Savvy Reviews - Read Reviews on Quantsavvy.com Before You Buy | www.quantsavvy.com",
-   "url": "https://www.reviews.io/company-reviews/store/quant-savvy?filters%5B0%5D=",
-   "symbols": [],
-   "mechanism_tags": [
-    "mean_reversion",
-    "night_session"
-   ]
-  },
-  {
-   "source": "world_crawler",
-   "disposition": "EMPTY_CAPTURE",
-   "title": "Quant Savvy Reviews - Read Reviews on Quantsavvy.com Before You Buy | www.quantsavvy.com",
-   "url": "https://www.reviews.io/company-reviews/store/quant-savvy?filters%5Brating%5D%5B0%5D=5",
-   "symbols": [],
-   "mechanism_tags": [
-    "mean_reversion",
-    "night_session"
-   ]
-  },
-  {
-   "source": "world_crawler",
-   "disposition": "EMPTY_CAPTURE",
-   "title": "Quant Savvy Reviews - Read Reviews on Quantsavvy.com Before You Buy | www.quantsavvy.com",
-   "url": "https://www.reviews.io/company-reviews/store/quant-savvy?filters%5Brating%5D%5B0%5D=4",
-   "symbols": [],
-   "mechanism_tags": [
-    "volatility"
-   ]
-  },
-  {
-   "source": "world_crawler",
-   "disposition": "EMPTY_CAPTURE",
-   "title": "Quant Savvy Reviews - Read Reviews on Quantsavvy.com Before You Buy | www.quantsavvy.com",
-   "url": "https://www.reviews.io/company-reviews/store/quant-savvy?filters%5Bhelpful%5D%5B0%5D=",
-   "symbols": [],
-   "mechanism_tags": [
-    "mean_reversion",
-    "momentum",
-    "volatility"
-   ]
-  },
-  {
-   "source": "world_crawler",
-   "disposition": "EMPTY_CAPTURE",
-   "title": "Page 2 of 2 for Quant Savvy Reviews",
-   "url": "https://www.reviews.io/company-reviews/store/quant-savvy/Qr",
-   "symbols": [],
-   "mechanism_tags": [
-    "momentum",
-    "volatility"
-   ]
-  },
-  {
-   "source": "world_crawler",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "Algo Trading Strategies",
-   "url": "https://www.reviews.io/exit/31386",
-   "symbols": [
-    "NAS100",
-    "US500",
-    "USDJPY"
-   ],
-   "mechanism_tags": [
-    "auction",
-    "basis",
-    "carry",
-    "correlation",
-    "gap",
-    "momentum",
-    "night_session",
-    "orderflow",
-    "volatility"
-   ],
-   "contested": true
-  },
-  {
-   "source": "asia_endpoints",
-   "disposition": "EMPTY_CAPTURE",
-   "title": "",
-   "url": "https://www.cbr.ru/vfs/eng/statistics/credit_statistics/ex_rate_ind/exchange_rate_e.xlsx",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "asia_endpoints",
-   "disposition": "EMPTY_CAPTURE",
-   "title": "",
-   "url": "https://www.cbr.ru/vfs/analytics/finflows/stat_finflows.xlsx",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "asia_endpoints",
-   "disposition": "EMPTY_CAPTURE",
-   "title": "",
-   "url": "https://www.cbr.ru/vfs/eng/statistics/debt_securities/67e-debt_securities.xlsx",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "asia_endpoints",
-   "disposition": "EMPTY_CAPTURE",
-   "title": "",
-   "url": "https://www.cbr.ru/vfs/eng/statistics/credit_statistics/trade/trade_monthly_e.xlsx",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "asia_endpoints",
-   "disposition": "EMPTY_CAPTURE",
-   "title": "",
-   "url": "http://download.ccgp.gov.cn/2018/tousushufanben.zip",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "asia_endpoints",
-   "disposition": "EMPTY_CAPTURE",
-   "title": "",
-   "url": "http://download.ccgp.gov.cn/2018/zhiyihanfanben.zip",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "asia_endpoints",
-   "disposition": "EMPTY_CAPTURE",
-   "title": "",
-   "url": "https://trends.google.com/trends/_/TrendsUi/manifest.json",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "asia_endpoints",
-   "disposition": "EMPTY_CAPTURE",
-   "title": "",
-   "url": "https://www.customs.go.jp/toukei/shinbun/trade-st_e/2026/2026082e.xml",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "asia_endpoints",
-   "disposition": "EMPTY_CAPTURE",
-   "title": "",
-   "url": "https://download.terminal.free/cdn/web/metaquotes.ltd/mt5/MetaTrader5.pkg.zip?utm_source=www.mql5.com&amp;utm_campaign=download",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "asia_endpoints",
-   "disposition": "EMPTY_CAPTURE",
-   "title": "",
-   "url": "https://www.mql5.com/manifest.json",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "asia_endpoints",
-   "disposition": "EMPTY_CAPTURE",
-   "title": "",
-   "url": "https://www.norges-bank.no/globalassets/marketdata/moa/valutahandel/publtab.xlsx?v=16092026100156",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "asia_endpoints",
-   "disposition": "EMPTY_CAPTURE",
-   "title": "",
-   "url": "https://www.norges-bank.no/contentassets/fb698cb231f6423da0df0b357b02ee6f/publtab_tom2009.xls?v=09032017123543",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "asia_endpoints",
-   "disposition": "EMPTY_CAPTURE",
-   "title": "",
-   "url": "https://www.sge.com.cn/upload/file/202312/29/bbb98080f11843668e2cc4188236e051.zip",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "asia_endpoints",
-   "disposition": "EMPTY_CAPTURE",
-   "title": "",
-   "url": "https://www.sge.com.cn/upload/file/202312/28/78e4cddda06b4a67a0cd0abd84e04ef7.zip",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "asia_endpoints",
-   "disposition": "EMPTY_CAPTURE",
-   "title": "",
-   "url": "https://www.sge.com.cn/upload/file/202312/26/b3d205028fac4dd396a2890ea610ea2e.zip",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "asia_endpoints",
-   "disposition": "EMPTY_CAPTURE",
-   "title": "",
-   "url": "https://www.sge.com.cn/upload/file/202312/20/9d4c3d81ef8d4c1b836e0673ce68e4bf.zip",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "asia_endpoints",
-   "disposition": "EMPTY_CAPTURE",
-   "title": "",
-   "url": "https://www.sge.com.cn/upload/file/202312/19/1a402454cb6f46c69363d7fa2377b7a6.zip",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "asia_endpoints",
-   "disposition": "EMPTY_CAPTURE",
-   "title": "",
-   "url": "https://www.sgx.com/research-education/manifest.1a6f59a55e9070c5cf005525fd157a68.json",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "asia_endpoints",
-   "disposition": "EMPTY_CAPTURE",
-   "title": "",
-   "url": "https://smart-lab.ru/manifest.json",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "asia_endpoints",
-   "disposition": "EMPTY_CAPTURE",
-   "title": "",
-   "url": "https://www.tfx.co.jp/kawase/document/PRT-010-CSV-003-20260915.CSV",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "asia_endpoints",
-   "disposition": "EMPTY_CAPTURE",
-   "title": "",
-   "url": "https://www.tfx.co.jp/kawase/document/PRT-010-CSV-003-20260914.CSV",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "asia_endpoints",
-   "disposition": "EMPTY_CAPTURE",
-   "title": "",
-   "url": "https://www.tfx.co.jp/kawase/document/PRT-010-CSV-003-20260911.CSV",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "asia_endpoints",
-   "disposition": "EMPTY_CAPTURE",
-   "title": "",
-   "url": "https://www.tfx.co.jp/kawase/document/PRT-010-CSV-003-20260910.CSV",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "asia_endpoints",
-   "disposition": "EMPTY_CAPTURE",
-   "title": "",
-   "url": "https://www.tfx.co.jp/kawase/document/PRT-010-CSV-003-20260909.CSV",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "asia_endpoints",
-   "disposition": "EMPTY_CAPTURE",
-   "title": "",
-   "url": "https://s3.tradingview.com/conversions_en.json",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "asia_endpoints",
-   "disposition": "EMPTY_CAPTURE",
-   "title": "",
-   "url": "https://static.tradingview.com/static/images/favicon/manifest.json",
    "symbols": [],
    "mechanism_tags": []
   },

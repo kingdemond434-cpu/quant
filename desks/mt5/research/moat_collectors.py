@@ -774,14 +774,29 @@ def record_claims(conn: Any, rows: Sequence[Mapping[str, Any]]) -> tuple[int, in
 
 
 # --------------------------------------------------------------------------- the pass
-def choose_sources(conn: Any, max_sources: int) -> list[dict[str, Any]]:
+def choose_sources(conn: Any, max_sources: int,
+                   source_ids: Sequence[str] | None = None) -> list[dict[str, Any]]:
     """The pass's grounds: active/candidate-cleared, best `source_yield` ROI first, ties broken
     by the OLDEST last_crawled -- so a ground the desk has never touched (no stamp at all) sorts
-    ahead of one it has already mined to nothing."""
+    ahead of one it has already mined to nothing.
+
+    `source_ids` NAMES THE PASS'S ROWS instead of leaving this function to pick them, and it
+    exists because a caller that has ALREADY chosen was being ignored. `coverage_drain` deals its
+    hourly pass round-robin across the regions so a starved region advances with the rest, then
+    handed the result here as a COUNT -- and this function re-picked by pure ROI, which is a
+    yield-maximising order that had put five whole regions at zero crawled grounds. Measured
+    2026-09-24: the drain cleared 35 Global/institutional grounds in one pass and `last_crawled`
+    on that region stayed at 0, twice, because the choice never arrived. The ROI order still
+    governs WITHIN the named set, so nothing about how a ground earns its rank has changed; what
+    changed is that a caller with a reason can say which rows, and this is still the only crawler.
+    """
     rows = [dict(r) for r in conn.execute("SELECT * FROM sources")]
     yields = {str(r["source_id"]): dict(r)
               for r in conn.execute("SELECT * FROM source_yield")}
     live = [r for r in rows if str(r.get("status") or "").strip().lower() in ACTIVE_STATUSES]
+    if source_ids is not None:
+        want = {str(s) for s in source_ids}
+        live = [r for r in live if str(r.get("source_id")) in want]
     for r in live:
         r["_roi"] = source_roi(yields.get(str(r.get("source_id"))))
     live.sort(key=lambda r: (tuple(-v for v in r["_roi"]),
@@ -811,8 +826,12 @@ def source_roi(y: Mapping[str, Any] | None) -> tuple[float, float, float]:
 
 
 def run(*, budget_s: float = 300.0, max_sources: int = 20, dry_run: bool = False,
-        conn: Any = None) -> dict[str, Any]:
-    """One pass: choose, capture, normalise, claim. Returns the report payload."""
+        conn: Any = None, source_ids: Sequence[str] | None = None) -> dict[str, Any]:
+    """One pass: choose, capture, normalise, claim. Returns the report payload.
+
+    `source_ids`, when given, is the exact set of grounds this pass may visit -- see
+    `choose_sources`. Omitted, the pass chooses by ROI exactly as it always has.
+    """
     started = time.monotonic()
     close_after = conn is None
     c = conn if conn is not None else reg.connect()
@@ -826,7 +845,7 @@ def run(*, budget_s: float = 300.0, max_sources: int = 20, dry_run: bool = False
         "budget_stopped": False, "rule": RULE,
     }
     try:
-        chosen = choose_sources(c, max_sources)
+        chosen = choose_sources(c, max_sources, source_ids)
         claims: list[dict[str, Any]] = []
         knowable_measured = 0
         for row in chosen:

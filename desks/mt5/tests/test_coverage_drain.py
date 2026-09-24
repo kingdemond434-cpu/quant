@@ -579,6 +579,24 @@ def test_the_pass_size_is_derived_from_the_lease_and_not_typed() -> None:
     assert CD.pass_size({"uncrawled_total": None}) == 60, "unmeasured falls back to the floor"
 
 
+def test_rows_already_past_the_lease_are_owed_now_not_spread_over_another_one() -> None:
+    """THE STEADY-STATE SHARE CANNOT CATCH UP, MEASURED 2026-09-23 ON THE TRADING BOX.
+
+    `uncrawled_total / LEASE_H` holds a backlog that is already INSIDE its lease inside it, and
+    says nothing about rows already PAST it. The box read 3,569 uncrawled with 1,726 overdue,
+    took 149, and `overdue_wait_h` rose 128.0 -> 139.5 through its own ratchet -- while the pass
+    spent 124.1 s of a 900 s budget, so the derived cap was binding, not the clock. The overdue
+    population is therefore added: catch-up PLUS the rate that stops the queue growing meanwhile.
+    """
+    steady = int(3569 / CD.LEASE_H) + 1
+    assert CD.pass_size({"uncrawled_total": 3569}) == steady, "the old formula, unchanged"
+    # the measured box reading: the overdue population pushes the pass to its politeness ceiling
+    assert CD.pass_size({"uncrawled_total": 3569, "backlog_overdue": 1726}) == 400
+    # and it can only ever ADD -- no input takes fewer rows than the steady-state share alone
+    for overdue in (0, None, -5, "unmeasured"):
+        assert CD.pass_size({"uncrawled_total": 3569, "backlog_overdue": overdue}) >= steady
+
+
 def test_the_pass_is_sized_after_seeding_not_before(db: Path, tmp_path: Path) -> None:
     """The rows a pass just registered are part of the obligation the lease puts on it; sizing
     off the pre-seed backlog would be systematically too small on exactly the passes that

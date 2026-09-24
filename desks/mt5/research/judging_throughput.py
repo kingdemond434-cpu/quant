@@ -477,18 +477,74 @@ def plan(box: dict[str, Any], queue: dict[str, Any], costs: dict[str, float]) ->
 
 
 ENV_KEYS = ("GAUNTLET_WORKERS", "GAUNTLET_MEMORY_BUDGET_MB", "GAUNTLET_HEADROOM_CAP_MB",
-            "GAUNTLET_PER_WORKER_MB", "WARM_WORKERS")
+            "GAUNTLET_PER_WORKER_MB", "GAUNTLET_FRESH_BUDGET_SEC", "WARM_WORKERS")
+
+#: The sealed file's own default for the FIRST-TIME build, and the share of the judge's real wall
+#: clock the build may have. `_prewarm_cache` is given the SAME deadline as the build loop
+#: (`_build_t0 + FRESH_BUILD_BUDGET_SEC`), so when the docket outgrows the budget the warm eats all
+#: of it and the gate phase gets what was already cached. MEASURED 2026-09-24 on a docket of
+#: 250,992 cells: "PRE-WARM: 15 worker(s) warmed 13993 cell(s) in 2874s ... 67910 NOT REACHED
+#: BEFORE THE BUILD BUDGET" -- 2,874 seconds spent against a 2,700-second budget, with a quarter
+#: of the docket never built. The judge is not being asked to decide anything different; it is
+#: being given the wall clock its own task already allows.
+SEALED_FRESH_BUDGET_SEC = 2700.0
+FRESH_BUDGET_SHARE_OF_LIMIT = 0.6
+
+
+def task_time_limit_s(task: str = GAUNTLET_TASK) -> float | None:
+    """The judge task's own ExecutionTimeLimit in seconds, read off the box. None if unreadable.
+
+    THE CEILING IS THE SCHEDULER'S, NOT THIS MODULE'S. `MT5-Gauntlet` carries
+    `<ExecutionTimeLimit>PT4H</ExecutionTimeLimit>`: a build budget above that is time the sweep
+    is killed before it can use, and one far below it is the gauntlet stopping itself while the
+    task would happily have let it finish. An unreadable limit writes NOTHING and the sealed
+    default stands (L1.28a) -- never a number invented here.
+    """
+    if sys.platform != "win32":
+        return None
+    try:
+        proc = subprocess.run(["schtasks", "/query", "/tn", task, "/xml"],
+                              capture_output=True, text=True, timeout=60, check=False)
+    except Exception:
+        return None
+    import re
+    m = re.search(r"<ExecutionTimeLimit>PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?</ExecutionTimeLimit>",
+                  proc.stdout or "")
+    if not m:
+        return None
+    h, mi, s = (float(g or 0) for g in m.groups())
+    total = h * 3600.0 + mi * 60.0 + s
+    return total or None
+
+
+def fresh_budget_s(limit_s: float | None) -> tuple[float | None, str]:
+    """The build seconds to publish, or None to leave the sealed default alone. ONE WAY: the
+    figure is floored at the sealed default, so this can only ever give the judge MORE time."""
+    if limit_s is None:
+        return None, ("the judge task's ExecutionTimeLimit is unreadable, so the sealed "
+                      f"{SEALED_FRESH_BUDGET_SEC:.0f}s build budget stands unchanged")
+    want = max(SEALED_FRESH_BUDGET_SEC, limit_s * FRESH_BUDGET_SHARE_OF_LIMIT)
+    if want <= SEALED_FRESH_BUDGET_SEC:
+        return None, (f"{FRESH_BUDGET_SHARE_OF_LIMIT:.0%} of the task's {limit_s:.0f}s limit is "
+                      f"not more than the sealed default; nothing is raised")
+    return want, (f"{want:.0f}s = {FRESH_BUDGET_SHARE_OF_LIMIT:.0%} of the task's own "
+                  f"{limit_s:.0f}s ExecutionTimeLimit, leaving {limit_s - want:.0f}s for the "
+                  f"gate phase")
 
 
 def env_for(decision: dict[str, Any]) -> dict[str, str]:
     """The environment the sealed gauntlet and the cache warmer read, as strings."""
-    return {
+    env = {
         "GAUNTLET_WORKERS": str(int(decision["workers"])),
         "GAUNTLET_MEMORY_BUDGET_MB": str(int(decision["memory_budget_mb"])),
         "GAUNTLET_HEADROOM_CAP_MB": str(int(decision["headroom_cap_mb"])),
         "GAUNTLET_PER_WORKER_MB": str(int(decision["per_worker_mb"])),
         "WARM_WORKERS": str(int(decision["warm_workers"])),
     }
+    fresh = decision.get("fresh_budget_s")
+    if isinstance(fresh, (int, float)) and float(fresh) > SEALED_FRESH_BUDGET_SEC:
+        env["GAUNTLET_FRESH_BUDGET_SEC"] = str(int(fresh))
+    return env
 
 
 def write_env(decision: dict[str, Any], path: Path | None = None,
@@ -505,7 +561,10 @@ def write_env(decision: dict[str, Any], path: Path | None = None,
     reader can refuse an env measured on a machine of a different shape.
     """
     p = Path(path or ENV_FILE)
-    raising = int(decision.get("raised_by", 0)) > 0
+    fresh = decision.get("fresh_budget_s")
+    raising = (int(decision.get("raised_by", 0)) > 0
+               or (isinstance(fresh, (int, float))
+                   and float(fresh) > SEALED_FRESH_BUDGET_SEC))
     payload = {"at": _now().isoformat(timespec="seconds"),
                "env": env_for(decision) if raising else {},
                "raised_by": int(decision.get("raised_by", 0)),
@@ -584,23 +643,71 @@ def apply_machine_env(decision: dict[str, Any], box: dict[str, Any]) -> dict[str
     return {"status": status, "set": done, "failed": failed}
 
 
+def _next_run(task: str) -> str:
+    """The task's next run time as the box reports it; empty when it cannot be read.
+
+    THE ONLY PROOF A CADENCE WAS APPLIED. `schtasks /Change` returns SUCCESS against a trigger
+    whose repetition window has already closed, so the return code says nothing about whether the
+    judge will ever fire again. This re-reads the one field that does.
+    """
+    try:
+        proc = subprocess.run(["schtasks", "/query", "/tn", task, "/fo", "csv", "/v"],
+                              capture_output=True, text=True, timeout=60, check=False)
+    except Exception:
+        return ""
+    import csv
+    import io
+    for row in csv.DictReader(io.StringIO(proc.stdout)):
+        if (row.get("TaskName") or "").strip():
+            return (row.get("Next Run Time") or "").strip()
+    return ""
+
+
+#: The repetition WINDOW the judge's trigger is given, in `schtasks` `HHHH:MM`. 9999:59 is the
+#: maximum the tool accepts (~416 days) and this organ re-applies it every hour, so the window can
+#: never close again. It bounds EXPIRY, never work.
+CADENCE_DURATION = "9999:59"
+
+
 def apply_cadence(minutes: int, box: dict[str, Any]) -> dict[str, Any]:
-    """Raise the gauntlet task's repetition interval on the judging box.
+    """Raise the gauntlet task's repetition interval on the judging box, and KEEP ITS WINDOW OPEN.
 
     CADENCE IS THROUGHPUT. The gauntlet's cache is content-addressed and cumulative, so halving
     the period roughly doubles the cells that reach a verdict in an hour; `MT5-StallWatch` already
     keeps the oldest parent when two passes overlap, so a shorter period costs a kill at worst.
+
+    THE INTERVAL WAS NEVER THE WHOLE STORY, and it cost the desk a day of judging (measured
+    2026-09-23/24). `MT5-Gauntlet`'s trigger carried `<Interval>PT5M</Interval>` inside a
+    `<Duration>P7DT1H35M</Duration>` with `StopAtDurationEnd`. THE WINDOW CLOSED. The task stayed
+    Enabled with a real Last Run Time and its Next Run Time went to `N/A`, so nothing in the tree
+    noticed: `stall_watch` heals tasks that are missing or disabled and this one was neither. The
+    judge last fired at 06:51 and produced verdicts in TWO of the day's twenty-four hours, while
+    this organ went on writing five-minute intervals onto a trigger that had already stopped --
+    `/RI` sets the interval and leaves the duration exactly where it was.
+
+    So the duration is now pushed out with the interval, and the result is VERIFIED by re-reading
+    the next run time rather than trusting the exit code. Both are one-way: the interval only ever
+    comes from `plan()`, which is floored at the sealed baseline, and the duration only ever grows.
     """
     if not box.get("is_judging_box") or sys.platform != "win32":
         return {"status": "NOT_APPLIED", "minutes": int(minutes),
                 "why": "not the judging box, or not Windows: cadence is published, not applied"}
+    before = _next_run(GAUNTLET_TASK)
     try:
-        subprocess.run(["schtasks", "/Change", "/TN", GAUNTLET_TASK, "/RI", str(int(minutes))],
-                       check=True, capture_output=True, timeout=30)
+        subprocess.run(["schtasks", "/Change", "/TN", GAUNTLET_TASK, "/RI", str(int(minutes)),
+                        "/DU", CADENCE_DURATION],
+                       check=True, capture_output=True, timeout=60)
     except Exception as exc:
         return {"status": "FAILED", "minutes": int(minutes), "task": GAUNTLET_TASK,
-                "why": f"{type(exc).__name__}: {exc}"}
-    return {"status": "APPLIED", "minutes": int(minutes), "task": GAUNTLET_TASK}
+                "next_run_before": before, "why": f"{type(exc).__name__}: {exc}"}
+    after = _next_run(GAUNTLET_TASK)
+    alive = bool(after) and after.lower() not in ("", "n/a")
+    return {"status": "APPLIED" if alive else "APPLIED_BUT_STOPPED",
+            "minutes": int(minutes), "task": GAUNTLET_TASK, "duration": CADENCE_DURATION,
+            "next_run_before": before, "next_run_after": after,
+            "why": ("" if alive else
+                    "the command succeeded and the task still has no next run time -- its trigger "
+                    "is not a repetition this organ can re-arm, and the judge is idle")}
 
 
 def run(write: bool = True, now: datetime | None = None, apply: bool = True) -> dict[str, Any]:
@@ -609,6 +716,15 @@ def run(write: bool = True, now: datetime | None = None, apply: bool = True) -> 
     costs = declared_costs()
     queue = measure_queue()
     decision = plan(box, queue, costs)
+    # THE BUILD BUDGET, FROM THE TASK'S OWN LIMIT. Measured 2026-09-24: the pre-warm shares the
+    # build deadline and spent 2,874 s of a 2,700 s budget on a 250,992-cell docket, leaving
+    # 67,910 cells never built. This gives the judge the wall clock its own scheduled task already
+    # allows and floors it at the sealed default, so it can only ever add time.
+    _limit = task_time_limit_s() if box.get("is_judging_box") else None
+    _fresh, _fresh_why = fresh_budget_s(_limit)
+    decision["fresh_budget_s"] = _fresh
+    decision["fresh_budget_why"] = _fresh_why
+    decision["task_time_limit_s"] = _limit if _limit is not None else UNMEASURED
     applied: dict[str, Any] = {"env_file": UNMEASURED, "machine_env": UNMEASURED,
                                "cadence": UNMEASURED, "process_env": {}}
     if write:

@@ -124,21 +124,106 @@ def backfill_behaviour(registry_path: Path, *, apply: bool) -> int:
     return changed
 
 
+def is_registered_family(name: str) -> bool:
+    """True when `name` is a family the forward engine can actually construct.
+
+    THE ONE AUTHORITY, NEVER A SECOND LIST. `shadow_forward._family_fn` is the resolver the
+    engine itself uses (`mt5desk.families.family_<name>` then
+    `families_orthogonal.ORTHOGONAL_FAMILIES`). A hardcoded window list here would be a second
+    vocabulary that rots away from the first, which is the producer collapse this desk keeps
+    paying for. Unreachable resolver reads FALSE -- the caller then falls back to the historic
+    behaviour, so an import failure cannot invent a family that is not there.
+    """
+    try:
+        from shadow_forward import _family_fn  # type: ignore[import-not-found]
+    except ImportError:                                # pragma: no cover - packaged import
+        try:
+            from research.shadow_forward import _family_fn  # type: ignore[no-redef]
+        except ImportError:
+            return False
+    try:
+        return _family_fn(str(name)) is not None
+    except Exception:
+        return False
+
+
 def legacy_identity(key: str, row: dict) -> dict | None:
     """The identity a legacy clock key names: `SYM.window[.STATE]` is the hunt16 lane's
     session_range_breakout at that window, LONG unless the row says otherwise. A key with the
-    modern dotted family form is left to the engine's own enrolment."""
+    modern dotted family form is left to the engine's own enrolment.
+
+    SLOT 1 IS NOT ALWAYS A WINDOW, AND ASSUMING IT WAS SWAPPED FAMILY WITH SELECTOR ON EVERY
+    MODERN KEY THAT CARRIES NO PARAMS. The guard below used to reject only keys containing `=`
+    or `#`, so `XAUUSD.multi_speed_trend.continuous@D1` -- a modern `SYM.family.selector@TF` key
+    whose params happen to be empty -- fell through to the hunt16 branch and froze as
+    `family=session_range_breakout, selector=multi_speed_trend`: exactly backwards. Measured on
+    the trading box 2026-09-24: 1 LIVE row and 20+ RETIRED rows carry that swap, every one of
+    them `family=session_range_breakout` beside a selector that is itself a registered family
+    name.
+
+    The canonical identity is `symbol|family|selector` lowercased -- what the sealed gauntlet
+    stamps and what the promoter matches on -- so a swap there is not cosmetic: it is a row that
+    can never join its own certificate, its allocator cell or its ledger. Slot 1 is therefore
+    tested against the engine's own family resolver before the window assumption is applied.
+    """
     parts = str(key).split(".")
     if len(parts) < 2 or "=" in key or "#" in key:
         return None
-    sym, window = parts[0], parts[1]
-    if not sym.isupper() or not window:
+    sym, slot1 = parts[0], parts[1]
+    if not sym.isupper() or not slot1:
         return None
-    ident = {"symbol": sym, "selector": window, "family": "session_range_breakout",
+    if is_registered_family(slot1):
+        # `SYM.family.selector[@TF]` -- the modern form with empty params. The timeframe rides
+        # on the selector as `@TF` and is split out, because it is an identity field in its own
+        # right and leaving it glued to the selector breaks the same join the swap broke.
+        selector, _, timeframe = (parts[2] if len(parts) > 2 else "continuous").partition("@")
+        ident = {"symbol": sym, "selector": selector or "continuous", "family": slot1,
+                 "side": str(row.get("side") or "LONG").upper(), "params": {}}
+        if timeframe:
+            ident["timeframe"] = timeframe
+        return ident
+    ident = {"symbol": sym, "selector": slot1, "family": "session_range_breakout",
              "side": str(row.get("side") or "LONG").upper(), "params": {}}
     if len(parts) > 2:
         ident["state"] = parts[2]
     return ident
+
+
+def cost_fields_for(symbol: str) -> dict[str, float] | None:
+    """The cost basis a clock on `symbol` must freeze with, or None when it cannot be measured.
+
+    A LIVE CLOCK WITH NO COST BASIS IS THE DEFECT THIS EXISTS TO STOP. `freeze()` stores
+    `cost_fields` so the forward engine keeps replaying the window on the basis it was admitted
+    on; `shadow_forward` line 758 falls through to LIVE re-measured costs when they are absent,
+    so a null does not read as free -- it reads as a clock whose cost moves under it every pass,
+    which is the identity churn the frozen basis exists to prevent. Measured on the trading box
+    2026-09-24: 13 LIVE rows carried no cost_fields at all, 8 of them XAUUSD, every one frozen
+    by THIS script -- the only `freeze()` caller that omitted the argument.
+
+    `Costs.from_symbol` is the only correct constructor (engine.py documents three separate unit
+    traps that hand-rolling it at a call site has already cost this desk), so it is what builds
+    the basis here. None on an unreadable registry or an unknown symbol: UNMEASURED is a real
+    answer and a guessed cost basis is worse than an absent one.
+    """
+    try:
+        from mt5desk.engine import Costs
+    except ImportError:                                # pragma: no cover - packaged import
+        return None
+    uni = DESK / "data" / "universe" / "universe.json"
+    try:
+        reg_syms = json.loads(uni.read_text("utf-8"))
+    except (OSError, ValueError):
+        return None
+    meta = (reg_syms.get("symbols") or reg_syms).get(str(symbol))
+    if not isinstance(meta, dict):
+        return None
+    try:
+        costs = Costs.from_symbol(meta)
+    except (TypeError, ValueError, KeyError):
+        return None
+    out = {f: float(getattr(costs, f)) for f in
+           ("spread_per_lot", "commission_per_lot", "contract_oz", "quote_per_account")}
+    return out if all(v == v and abs(v) != float("inf") for v in out.values()) else None
 
 
 def engine_identities() -> dict[str, dict]:
@@ -181,10 +266,16 @@ def freeze_unfrozen(registry: dict, *, apply: bool, identities: dict | None = No
         n += 1
         if apply:
             try:
-                reg.freeze(key, ident, forward_start=row.get("forward_start"))
+                # THE COST BASIS IS PART OF THE CLOCK, NOT AN EXTRA. `shadow_forward` has always
+                # passed `cost_fields=vars(costs)` here; this caller did not, and every LIVE row
+                # it minted was born with a null cost on the money path.
+                fields = cost_fields_for(str(ident.get("symbol") or ""))
+                reg.freeze(key, ident, forward_start=row.get("forward_start"),
+                           cost_fields=fields)
                 print(f"  FROZEN {key}: {ident.get('symbol')} {ident.get('selector')} "
                       f"{ident.get('family')} {ident.get('side')} "
-                      f"forward_start={row.get('forward_start')}")
+                      f"forward_start={row.get('forward_start')} "
+                      f"cost={'MEASURED' if fields else 'UNMEASURED'}")
             except Exception as exc:
                 print(f"  FREEZE FAILED {key}: {type(exc).__name__}: {exc}")
         else:
