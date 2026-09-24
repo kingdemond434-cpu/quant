@@ -127,7 +127,9 @@ def test_totals_without_the_unjudged_count_is_unmeasured_not_zero(tmp_path):
 def test_the_fence_is_registered_in_the_law_gate_and_cannot_be_quietly_removed():
     """The property that makes the rest of this file worth anything. Modelled on the placement
     interlock's own test: a fence nobody runs is a claim the desk cannot cash (L1.49)."""
-    from scripts import run_law_gate as rlg
+    # `tests/scripts/__init__.py` shadows the top-level `scripts` package, so the gate is
+    # imported by module name off sys.path -- the way every sibling fence test does it.
+    import run_law_gate as rlg
     names = {n for n, _a in (*rlg._LAW_FENCES, *rlg._STATE_FENCES)}
     assert "check_judging_coverage.py" in names, (
         "the judging-coverage fence was removed from the law gate; 87% of the docket once sat "
