@@ -1,0 +1,897 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Colombo Stock Exchange: Sri Lanka&#039;s Financial Heartbeat and Investment Guide | Lanka Websites",
+  "url": "https://lankawebsites.com/blog/stock-market/colombo-stock-exchange-sri-lankas-financial-heartbeat-and-investment-guide",
+  "published": "2026-09-23T06:28:38+00:00",
+  "symbols": [],
+  "timeframes": [
+   "5M"
+  ],
+  "patterns": [
+   "auction",
+   "flow",
+   "orderflow",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "en-LK",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "7dfce09c11db3ef83984",
+  "host": "lankawebsites.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Sri Lanka CSE All Share (SRILANKA_CSE) Trading Guide",
+  "url": "https://coinunited.io/en/asset/indices/sri-lanka-cse-all-share",
+  "published": "2026-09-23T06:28:45+00:00",
+  "symbols": [
+   "XAUUSD",
+   "XAGUSD",
+   "XTIUSD",
+   "NAS100",
+   "US500",
+   "US2000",
+   "UK100",
+   "USDINR",
+   "BTCUSD",
+   "NVIDIA"
+  ],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "basis",
+   "carry",
+   "correlation",
+   "flow",
+   "gap",
+   "mean_reversion",
+   "momentum",
+   "night_session",
+   "orderflow",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://coinunited.io/en/download",
+   "https://www.cse.lk/api/tradeSummary"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "4c92548e23f5815b4791",
+  "host": "coinunited.io",
+  "claims": [
+   {
+    "claim": "Falls with 30-day volume and reaches 0.",
+    "lang": "en",
+    "quantities": [
+     "volume"
+    ],
+    "direction": [
+     "falls"
+    ],
+    "horizon": [
+     "day"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XTIUSD",
+      "NAS100",
+      "US500",
+      "US2000",
+      "UK100",
+      "USDINR",
+      "BTCUSD",
+      "NVIDIA"
+     ],
+     "mentioned": [
+      "gold",
+      "silver",
+      "crude",
+      "nasdaq",
+      "s&p",
+      "russell",
+      "ftse",
+      "cse all share",
+      "rupee",
+      "bitcoin",
+      "nvidia"
+     ],
+     "transfer_only": [
+      "cse all share->indices (South Asian exchanges)"
+     ],
+     "indirect": [
+      "USDX"
+     ],
+     "channels": [
+      "federal reserve: policy: Fed -> dollar and US equities"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "93116796d847"
+   },
+   {
+    "claim": "Trading fees on SRILANKA_CSE CFDs are tiered by 30-day contract volume and are not zero at the standard tier \u2014 they reach 0.",
+    "lang": "en",
+    "quantities": [
+     "volume"
+    ],
+    "direction": [
+     "contract"
+    ],
+    "horizon": [
+     "day"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XTIUSD",
+      "NAS100",
+      "US500",
+      "US2000",
+      "UK100",
+      "USDINR",
+      "BTCUSD",
+      "NVIDIA"
+     ],
+     "mentioned": [
+      "gold",
+      "silver",
+      "crude",
+      "nasdaq",
+      "s&p",
+      "russell",
+      "ftse",
+      "cse all share",
+      "rupee",
+      "bitcoin",
+      "nvidia"
+     ],
+     "transfer_only": [
+      "cse all share->indices (South Asian exchanges)"
+     ],
+     "indirect": [
+      "USDX"
+     ],
+     "channels": [
+      "federal reserve: policy: Fed -> dollar and US equities"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "f51ecc8030ff"
+   },
+   {
+    "claim": "This negative YTD trend, combined with episodic intraday rebounds of 0.",
+    "lang": "en",
+    "quantities": [
+     "trend"
+    ],
+    "direction": [
+     "negative",
+     "rebounds"
+    ],
+    "horizon": [
+     "intraday"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XTIUSD",
+      "NAS100",
+      "US500",
+      "US2000",
+      "UK100",
+      "USDINR",
+      "BTCUSD",
+      "NVIDIA"
+     ],
+     "mentioned": [
+      "gold",
+      "silver",
+      "crude",
+      "nasdaq",
+      "s&p",
+      "russell",
+      "ftse",
+      "cse all share",
+      "rupee",
+      "bitcoin",
+      "nvidia"
+     ],
+     "transfer_only": [
+      "cse all share->indices (South Asian exchanges)"
+     ],
+     "indirect": [
+      "USDX"
+     ],
+     "channels": [
+      "federal reserve: policy: Fed -> dollar and US equities"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "d18a909b7c3a"
+   },
+   {
+    "claim": "The ASPI's characteristic short-term volatility, evidenced by frequent daily oscillations in the August 2026 data, provides sufficient intraday range for disciplined scalp and swing entries without requiring multi-day directional exposure at extreme leverage.",
+    "lang": "en",
+    "quantities": [
+     "volatility",
+     "range"
+    ],
+    "direction": [
+     "short"
+    ],
+    "horizon": [
+     "daily",
+     "intraday"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [
+      "aspi"
+     ],
+     "transfer_only": [
+      "aspi->indices (South Asian exchanges)"
+     ],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "26a8c4693bf0"
+   },
+   {
+    "claim": "This sustained foreign selling, combined with a broadly negative YTD index performance, creates a dual-strategy environment: trend-following on the broader downtrend at moderate leverage for macro-aligned positioning, and short-term mean-reversion trades on intraday swings of 0.",
+    "lang": "en",
+    "quantities": [
+     "trend",
+     "positioning"
+    ],
+    "direction": [
+     "negative",
+     "short"
+    ],
+    "horizon": [
+     "intraday"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XTIUSD",
+      "NAS100",
+      "US500",
+      "US2000",
+      "UK100",
+      "USDINR",
+      "BTCUSD",
+      "NVIDIA"
+     ],
+     "mentioned": [
+      "gold",
+      "silver",
+      "crude",
+      "nasdaq",
+      "s&p",
+      "russell",
+      "ftse",
+      "cse all share",
+      "rupee",
+      "bitcoin",
+      "nvidia"
+     ],
+     "transfer_only": [
+      "cse all share->indices (South Asian exchanges)"
+     ],
+     "indirect": [
+      "USDX"
+     ],
+     "channels": [
+      "federal reserve: policy: Fed -> dollar and US equities"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "69bfa2b3a132"
+   },
+   {
+    "claim": "40% intraday on the midday session per EconomyNext) against a negative YTD baseline is characteristic of a market offering tactical CFD opportunities without clear sustained upside momentum.",
+    "lang": "en",
+    "quantities": [
+     "session",
+     "momentum"
+    ],
+    "direction": [
+     "negative"
+    ],
+    "horizon": [
+     "intraday",
+     "session"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XTIUSD",
+      "NAS100",
+      "US500",
+      "US2000",
+      "UK100",
+      "USDINR",
+      "BTCUSD",
+      "NVIDIA"
+     ],
+     "mentioned": [
+      "gold",
+      "silver",
+      "crude",
+      "nasdaq",
+      "s&p",
+      "russell",
+      "ftse",
+      "cse all share",
+      "rupee",
+      "bitcoin",
+      "nvidia"
+     ],
+     "transfer_only": [
+      "cse all share->indices (South Asian exchanges)"
+     ],
+     "indirect": [
+      "USDX"
+     ],
+     "channels": [
+      "federal reserve: policy: Fed -> dollar and US equities"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b339cd303871"
+   },
+   {
+    "claim": "23 on the same session the ASPI rose 0.",
+    "lang": "en",
+    "quantities": [
+     "session"
+    ],
+    "direction": [
+     "rose"
+    ],
+    "horizon": [
+     "session"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [
+      "aspi"
+     ],
+     "transfer_only": [
+      "aspi->indices (South Asian exchanges)"
+     ],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "d841c528726f"
+   },
+   {
+    "claim": "11 on 3 September, and an opening surge to 21,462 points on 1 September as stocks started the month \"on a high.",
+    "lang": "en",
+    "quantities": [
+     "stocks"
+    ],
+    "direction": [
+     "surge"
+    ],
+    "horizon": [
+     "month"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XTIUSD",
+      "NAS100",
+      "US500",
+      "US2000",
+      "UK100",
+      "USDINR",
+      "BTCUSD",
+      "NVIDIA"
+     ],
+     "mentioned": [
+      "gold",
+      "silver",
+      "crude",
+      "nasdaq",
+      "s&p",
+      "russell",
+      "ftse",
+      "cse all share",
+      "rupee",
+      "bitcoin",
+      "nvidia"
+     ],
+     "transfer_only": [
+      "cse all share->indices (South Asian exchanges)"
+     ],
+     "indirect": [
+      "USDX"
+     ],
+     "channels": [
+      "federal reserve: policy: Fed -> dollar and US equities"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "4cfbfe4a0de7"
+   }
+  ],
+  "n_claims": 12
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Sri Lankan (CSE) Market Analysis &amp; Valuation - Updated Today",
+  "url": "https://simplywall.st/markets/lk",
+  "published": "2026-09-23T06:28:47+00:00",
+  "symbols": [
+   "NAS100",
+   "US500",
+   "GER40",
+   "JPN225",
+   "UK100",
+   "CA60",
+   "USDKRW",
+   "USDTRY"
+  ],
+  "timeframes": [
+   "1M",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "momentum",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://simplywall.st/static/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "ee86d0ca78f605ecdd7b",
+  "host": "simplywall.st",
+  "claims": [
+   {
+    "claim": "Continue reading Last Week Are social media stocks the new Big Tobacco?",
+    "lang": "en",
+    "quantities": [
+     "stocks"
+    ],
+    "direction": [
+     "continue"
+    ],
+    "horizon": [
+     "week"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "US500",
+      "GER40",
+      "JPN225",
+      "UK100",
+      "CA60",
+      "USDKRW",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "nasdaq",
+      "s&p",
+      "dax",
+      "nikkei",
+      "ftse",
+      "tsx",
+      "kospi",
+      "nifty",
+      "jse",
+      "won",
+      "try"
+     ],
+     "transfer_only": [
+      "kospi->indices (KRX)",
+      "nifty->indices (NSE/BSE)",
+      "jse->indices (JSE)"
+     ],
+     "indirect": [
+      "XTIUSD",
+      "XBRUSD",
+      "USDCAD",
+      "USDNOK"
+     ],
+     "channels": [
+      "strait of hormuz: energy flow: OPEC / inventories / chokepoints -> oil, CAD, NOK"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "3b252597c76c"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Appreciation of Taka against USD happens after 5 and a half years",
+  "url": "https://dailynewnation.com/news/857388",
+  "published": "2026-09-23T06:28:49+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3514bf32dcc69b6987f5",
+  "host": "dailynewnation.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Taka strengthens against dollar after five and a half years",
+  "url": "https://dailycountrytodaybd.com/story/taka-strengthens-against-dollar-after-five-and-a-half-years",
+  "published": "2026-09-23T06:28:51+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "flow",
+   "orderflow",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://dailycountrytodaybd.com/sub-category/exports"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "5f10ba46a177cf9dfa08",
+  "host": "dailycountrytodaybd.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Verizon Communications Inc. stocks CFD (VZ) | ECN | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/VZ/",
+  "published": "2026-09-23T06:28:59+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790076865",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "bbb8edf7617b67970bd1",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Intel Corporation stocks CFD (INTC) | ECN | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/INTC/",
+  "published": "2026-09-23T06:29:01+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790076865",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "f0e1b725281383e68396",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Eli Lilly and Company stocks CFD (LLY) | ECN | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/LLY/",
+  "published": "2026-09-23T06:29:03+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790076865",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "fca3be7e44a2f78b05b0",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Hewlett Packard Enterprise Company stocks CFD (HPE) | ECN | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/HPE/",
+  "published": "2026-09-23T06:29:05+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790076865",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "448c8c6608b0d0c31999",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Pfizer Inc. stocks CFD (PFE) | ECN | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/PFE/",
+  "published": "2026-09-23T06:29:07+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790076865",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "cedf8e54f9aa7b0aa974",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Johnson &amp; Johnson stocks CFD (JNJ) | ECN | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/JNJ/",
+  "published": "2026-09-23T06:29:09+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790076865",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "e6544b4c7bbe5693449c",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Electronic Arts Inc. stocks CFD (EA) | ECN | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/EA/",
+  "published": "2026-09-23T06:29:11+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790076865",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "fecd9dafed075656b588",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "The Boeing Company stocks CFD (BA) | ECN | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/BA/",
+  "published": "2026-09-23T06:29:13+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790076865",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "53d3bbeba7cd2d3a85ea",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Oracle Corporation stocks CFD (ORCL) | ECN | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/ORCL/",
+  "published": "2026-09-23T06:29:14+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790076865",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "9190a221648aae2ae3e9",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "NVIDIA Corporation stocks CFD (NVDA) | ECN | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/NVDA/",
+  "published": "2026-09-23T06:29:16+00:00",
+  "symbols": [
+   "NVIDIA"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790076865",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "87fd9b1e1a6645a98c0e",
+  "host": "roboforex.com",
+  "claims": [
+   {
+    "claim": "01 The time of trading session 16:31-22:59 Term currency USD 3-days swap Friday Accounts Markets Trading Platform MetaTrader 4 MetaTrader 5 R StocksTrader Deposits & Withdrawals Contract Specifications Open Trading Account Open Demo Account Privacy Policy Risk Warning Cookie settings Site Map Contact us RoboForex Ltd is a financial brokerage company regulated by the FSC, license No.",
+    "lang": "en",
+    "quantities": [
+     "session",
+     "swap",
+     "open"
+    ],
+    "direction": [
+     "contract"
+    ],
+    "horizon": [
+     "session",
+     "days"
+    ],
+    "instruments": {
+     "analogues": [
+      "NVIDIA"
+     ],
+     "mentioned": [
+      "nvidia"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "02da1e95eba4"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Caterpillar Inc. stocks CFD (CAT) | ECN | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/CAT/",
+  "published": "2026-09-23T06:29:18+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790076865",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "e0d9647210420147e110",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Cisco Systems, Inc. stocks CFD (CSCO) | ECN | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/CSCO/",
+  "published": "2026-09-23T06:29:21+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790076865",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "2284e48d941f5e39615c",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "3M Company stocks CFD (MMM) | ECN | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/MMM/",
+  "published": "2026-09-23T06:29:22+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790076865",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "098d98e5eb8b5e9c9332",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ }
+]

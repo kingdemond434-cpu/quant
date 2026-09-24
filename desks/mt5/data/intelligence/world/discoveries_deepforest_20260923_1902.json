@@ -1,0 +1,56 @@
+[
+ {
+  "source": "deep_forest",
+  "kind": "dataset",
+  "title": "외인 팔고 결제는 급해지고…달러-원 수급 돌아섰나",
+  "url": "https://news.einfomax.co.kr/news/articleView.html?idxno=4435583",
+  "published": "2026-09-23T19:01:58+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.4,
+  "lang": "ko",
+  "endpoints": [
+   "http://windows.microsoft.com/ko-kr/internet-explorer/download-ie"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "97561628a1e7813092fb",
+  "host": "news.einfomax.co.kr",
+  "ground": "매일경제 / 연합인포맥스 시장",
+  "region": "kr",
+  "cluster": "kr",
+  "dataset_class": null,
+  "available_time": "2026-09-23T19:01:58+00:00",
+  "ingested_time": "2026-09-23T19:01:58+00:00",
+  "source_hash": "97561628a1e7813092fb",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "deep_forest",
+  "kind": "dataset",
+  "title": "[서환-마감] 결제수요 유입에 상승…3.30원↑ < 채권/외환 < 기사 ...",
+  "url": "https://news.einfomax.co.kr/news/articleView.html?idxno=4379034",
+  "published": "2026-09-23T19:02:01+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.4,
+  "lang": "ko",
+  "endpoints": [
+   "http://windows.microsoft.com/ko-kr/internet-explorer/download-ie"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "b778c5027143cfb17c8b",
+  "host": "news.einfomax.co.kr",
+  "ground": "매일경제 / 연합인포맥스 시장",
+  "region": "kr",
+  "cluster": "kr",
+  "dataset_class": null,
+  "available_time": "2026-09-23T19:02:01+00:00",
+  "ingested_time": "2026-09-23T19:02:01+00:00",
+  "source_hash": "b778c5027143cfb17c8b",
+  "claims": [],
+  "n_claims": 0
+ }
+]

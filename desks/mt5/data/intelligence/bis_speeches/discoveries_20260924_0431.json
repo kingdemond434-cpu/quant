@@ -1,0 +1,12 @@
+[
+ {
+  "source": "bis_speeches",
+  "kind": "fetch_error",
+  "title": "HTTPSConnectionPool(host='www.bis.org', port=443): Max retries exceeded with url: /doclist/cbspeeches.rss (Caused by NewConnectionError(\"HTTPSConnection(host='www.bis.org', port=443): Failed to establ",
+  "url": "",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-24T04:37:56+00:00",
+  "needs_selector_work": true
+ }
+]

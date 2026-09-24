@@ -1,0 +1,166 @@
+[
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/1059619",
+  "symbols": [
+   "AUDCAD",
+   "AUDNZD",
+   "AUDUSD",
+   "EURCAD",
+   "EURGBP",
+   "EURUSD",
+   "GBPCAD",
+   "GBPUSD",
+   "NZDCAD",
+   "NZDUSD",
+   "UDSCAD",
+   "USDCAD"
+  ],
+  "found_at": "2026-09-24T00:28:09+00:00",
+  "platform": "mt5",
+  "phenotypes": [
+   "max_growth",
+   "low_dd_high_return",
+   "long_lived",
+   "algo_survivor",
+   "multi_fx"
+  ],
+  "ev_score": 28.618,
+  "growth_pct": 1239.94,
+  "weeks": 277.0,
+  "pf": 1.53,
+  "max_dd_pct": null,
+  "trades": 5706.0,
+  "win_pct": 3888.0,
+  "algo_pct": 99.0,
+  "subscribers": 1.0,
+  "author": "/en/users/jltvrhapsody",
+  "author_other_signals": [],
+  "hour_histogram": {
+   "11": 2,
+   "08": 4,
+   "05": 1,
+   "16": 3,
+   "19": 1,
+   "14": 2,
+   "13": 3,
+   "09": 1,
+   "18": 1,
+   "00": 1,
+   "07": 1,
+   "23": 1
+  }
+ },
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/2386818",
+  "symbols": [
+   "AUDCAD",
+   "AUDJPY",
+   "AUDUSD",
+   "BTCUSD",
+   "CADJPY",
+   "CHFJPY",
+   "EURAUD",
+   "EURJPY",
+   "EURNZD",
+   "EURUSD",
+   "GBPAUD",
+   "GBPCAD"
+  ],
+  "found_at": "2026-09-24T00:28:09+00:00",
+  "platform": "mt5",
+  "phenotypes": [
+   "max_growth",
+   "algo_survivor",
+   "multi_fx"
+  ],
+  "ev_score": 4.638,
+  "growth_pct": 405.56,
+  "weeks": 68.0,
+  "pf": 1.77,
+  "max_dd_pct": null,
+  "trades": 1358.0,
+  "win_pct": 886.0,
+  "algo_pct": 95.0,
+  "subscribers": 0.0,
+  "author": "/en/users/guenterb",
+  "author_other_signals": [],
+  "hour_histogram": {
+   "08": 1,
+   "13": 1,
+   "22": 1,
+   "09": 1
+  }
+ },
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/2360068",
+  "symbols": [
+   "AUDCAD",
+   "NZDCAD"
+  ],
+  "found_at": "2026-09-24T00:28:09+00:00",
+  "platform": "mt5",
+  "phenotypes": [
+   "max_growth",
+   "low_dd_high_return",
+   "long_lived",
+   "algo_survivor"
+  ],
+  "ev_score": 34.593,
+  "growth_pct": 2367.7,
+  "weeks": 111.0,
+  "pf": 1.95,
+  "max_dd_pct": null,
+  "trades": 1220.0,
+  "win_pct": 803.0,
+  "algo_pct": 100.0,
+  "subscribers": 0.0,
+  "author": "/en/users/mnimoos",
+  "author_other_signals": [],
+  "hour_histogram": {
+   "20": 1,
+   "11": 3,
+   "10": 1,
+   "12": 4,
+   "09": 2,
+   "01": 1,
+   "03": 1
+  }
+ },
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/2376950",
+  "symbols": [],
+  "found_at": "2026-09-24T00:28:09+00:00",
+  "platform": "mt5",
+  "phenotypes": [
+   "max_growth",
+   "long_lived",
+   "algo_survivor"
+  ],
+  "ev_score": 8.759,
+  "growth_pct": 387.98,
+  "weeks": 265.0,
+  "pf": 1.18,
+  "max_dd_pct": null,
+  "trades": 12658.0,
+  "win_pct": 8587.0,
+  "algo_pct": 97.0,
+  "subscribers": 0.0,
+  "author": "/en/users/strueli",
+  "author_other_signals": [],
+  "hour_histogram": {
+   "10": 2
+  }
+ }
+]

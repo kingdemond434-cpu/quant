@@ -1,0 +1,29 @@
+[
+ {
+  "source": "deep_forest",
+  "kind": "dataset",
+  "title": "SEC Form 4 Insider Purchases in Python: A Filing-Date Event Study with Free EDGAR Data",
+  "url": "https://blog.quantinsti.com/sec-form-4-insider-trading-python-event-study/",
+  "published": "2026-09-23T23:10:17+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.4,
+  "lang": "en",
+  "endpoints": [
+   "https://blog.quantinsti.com/download-multiple-stocks-data-python-multithreading/"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "c00a18bb40b7dbe99247",
+  "host": "blog.quantinsti.com",
+  "ground": "QuantInsti feed",
+  "region": "in",
+  "cluster": "in",
+  "dataset_class": null,
+  "available_time": "2026-09-23T23:10:17+00:00",
+  "ingested_time": "2026-09-23T23:10:17+00:00",
+  "source_hash": "c00a18bb40b7dbe99247",
+  "claims": [],
+  "n_claims": 0
+ }
+]

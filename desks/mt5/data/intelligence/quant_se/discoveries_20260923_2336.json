@@ -1,0 +1,461 @@
+[
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Market making in prediction markets (Kalshi/Polymarket): what changes in the CLOB stochastic control problem?",
+  "url": "https://quant.stackexchange.com/questions/85852/market-making-in-prediction-markets-kalshi-polymarket-what-changes-in-the-clo",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-23T23:53:40+00:00",
+  "score": 1,
+  "tags": [
+   "option-pricing",
+   "stochastic-processes",
+   "market-microstructure",
+   "market-making",
+   "stochastic-control"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Calculate implied volatility of american option on interest rate futures",
+  "url": "https://quant.stackexchange.com/questions/80125/calculate-implied-volatility-of-american-option-on-interest-rate-futures",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-23T23:53:40+00:00",
+  "score": 0,
+  "tags": [
+   "option-pricing",
+   "interest-rates",
+   "modeling"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Degrees of freedom in moving average crossover strategies with varying parameters",
+  "url": "https://quant.stackexchange.com/questions/80601/degrees-of-freedom-in-moving-average-crossover-strategies-with-varying-parameter",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-23T23:53:40+00:00",
+  "score": 0,
+  "tags": [
+   "quant-trading-strategies",
+   "statistics",
+   "backtesting",
+   "optimization",
+   "moving-average"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Fourier transform for stock price forecasting",
+  "url": "https://quant.stackexchange.com/questions/61565/fourier-transform-for-stock-price-forecasting",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-23T23:53:40+00:00",
+  "score": 3,
+  "tags": [
+   "equities",
+   "fourier-transform"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Treasury futures Net Basis / Implied Repo Rate",
+  "url": "https://quant.stackexchange.com/questions/85840/treasury-futures-net-basis-implied-repo-rate",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-23T23:53:40+00:00",
+  "score": 0,
+  "tags": [
+   "futures",
+   "treasuries",
+   "basis"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "INR OIS CURVE for valuation",
+  "url": "https://quant.stackexchange.com/questions/85849/inr-ois-curve-for-valuation",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-23T23:53:40+00:00",
+  "score": 0,
+  "tags": [
+   "fixed-income"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Why couldn\u2019t outside investors arbitrage away the Treasury mispricings during the LTCM crisis?",
+  "url": "https://quant.stackexchange.com/questions/85848/why-couldn-t-outside-investors-arbitrage-away-the-treasury-mispricings-during-th",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-23T23:53:40+00:00",
+  "score": 0,
+  "tags": [
+   "arbitrage",
+   "spread",
+   "treasuries",
+   "fed"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "What is the correct interpretation of IRR?",
+  "url": "https://quant.stackexchange.com/questions/85316/what-is-the-correct-interpretation-of-irr",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-23T23:53:40+00:00",
+  "score": 0,
+  "tags": [
+   "finance",
+   "investment"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Do i do a long/long or short/short of the trading pair when they have a negative cointegration coefficient?",
+  "url": "https://quant.stackexchange.com/questions/80421/do-i-do-a-long-long-or-short-short-of-the-trading-pair-when-they-have-a-negative",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-23T23:53:40+00:00",
+  "score": 0,
+  "tags": [
+   "quant-trading-strategies",
+   "algorithmic-trading",
+   "pairs-trading",
+   "cointegration"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Does delta-hedging change the transaction cost picture for option momentum strategies?",
+  "url": "https://quant.stackexchange.com/questions/85743/does-delta-hedging-change-the-transaction-cost-picture-for-option-momentum-strat",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-23T23:53:40+00:00",
+  "score": 1,
+  "tags": [
+   "options",
+   "delta-hedging",
+   "momentum",
+   "transaction-costs"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Understanding the Impact of Illiquidity on Equivalent Martingale Measures (EMMs) in a Simple Market",
+  "url": "https://quant.stackexchange.com/questions/79181/understanding-the-impact-of-illiquidity-on-equivalent-martingale-measures-emms",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-23T23:53:40+00:00",
+  "score": 0,
+  "tags": [
+   "risk-neutral-measure",
+   "liquidity",
+   "girsanov",
+   "equivalent-measure",
+   "radon-nikodym"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "FX Strangle Market Conventions",
+  "url": "https://quant.stackexchange.com/questions/79162/fx-strangle-market-conventions",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-23T23:53:40+00:00",
+  "score": 4,
+  "tags": [
+   "options",
+   "fx",
+   "convention"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Does an infinite asset universe imply a vanishing equity risk premium even without invoking risk aversion?",
+  "url": "https://quant.stackexchange.com/questions/85846/does-an-infinite-asset-universe-imply-a-vanishing-equity-risk-premium-even-witho",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-23T23:53:40+00:00",
+  "score": 0,
+  "tags": [
+   "risk",
+   "capm",
+   "beta",
+   "markowitz",
+   "behavioral-finance"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Why does the carry of a bond not adjust for defaults?",
+  "url": "https://quant.stackexchange.com/questions/85310/why-does-the-carry-of-a-bond-not-adjust-for-defaults",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-23T23:53:40+00:00",
+  "score": 0,
+  "tags": [
+   "bond",
+   "carry"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Extend basket analytic solution (equal weighted) to a various weight basket, also put formula",
+  "url": "https://quant.stackexchange.com/questions/70402/extend-basket-analytic-solution-equal-weighted-to-a-various-weight-basket-als",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-23T23:53:40+00:00",
+  "score": 1,
+  "tags": [
+   "option-pricing",
+   "programming",
+   "basket",
+   "weights"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Sharpe ratio with CVaR for denominator and different investor utility functions",
+  "url": "https://quant.stackexchange.com/questions/45281/sharpe-ratio-with-cvar-for-denominator-and-different-investor-utility-functions",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-23T23:53:40+00:00",
+  "score": 5,
+  "tags": [
+   "risk",
+   "sharpe-ratio",
+   "value-at-risk"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Should an uncertain volatility model option be priced higher or lower than a constant volatility model option?",
+  "url": "https://quant.stackexchange.com/questions/85669/should-an-uncertain-volatility-model-option-be-priced-higher-or-lower-than-a-con",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-23T23:53:40+00:00",
+  "score": 1,
+  "tags": [
+   "options",
+   "option-pricing",
+   "volatility",
+   "monte-carlo",
+   "codes"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Verifying if a Function is a Radon-Nikodym Derivative for changing the numeraire",
+  "url": "https://quant.stackexchange.com/questions/80396/verifying-if-a-function-is-a-radon-nikodym-derivative-for-changing-the-numeraire",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-23T23:53:40+00:00",
+  "score": 1,
+  "tags": [
+   "stochastic-calculus",
+   "bond",
+   "pricing",
+   "numeraire"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Mid price vs micro price for IV calculation",
+  "url": "https://quant.stackexchange.com/questions/85835/mid-price-vs-micro-price-for-iv-calculation",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-23T23:53:40+00:00",
+  "score": 0,
+  "tags": [
+   "volatility"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "When you have negative weights in the context of portfolio construction, what is the correct way normalize them?",
+  "url": "https://quant.stackexchange.com/questions/77432/when-you-have-negative-weights-in-the-context-of-portfolio-construction-what-is",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-23T23:53:40+00:00",
+  "score": 0,
+  "tags": [
+   "portfolio-optimization",
+   "portfolio-management",
+   "portfolio",
+   "pca",
+   "cryptocurrency"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "most accurate analytic approximation for American options with cash dividends",
+  "url": "https://quant.stackexchange.com/questions/85306/most-accurate-analytic-approximation-for-american-options-with-cash-dividends",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-23T23:53:40+00:00",
+  "score": 1,
+  "tags": [
+   "american-options",
+   "discrete-dividends"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Moving from a small prop firm/family office to a larger prop firm or hedge fund?",
+  "url": "https://quant.stackexchange.com/questions/85844/moving-from-a-small-prop-firm-family-office-to-a-larger-prop-firm-or-hedge-fund",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-23T23:53:40+00:00",
+  "score": 0,
+  "tags": [
+   "quant-trading-strategies",
+   "trading",
+   "career"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Uncertain Volatility Model - Option Pricing R code help",
+  "url": "https://quant.stackexchange.com/questions/76496/uncertain-volatility-model-option-pricing-r-code-help",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-23T23:53:40+00:00",
+  "score": 0,
+  "tags": [
+   "option-pricing",
+   "volatility",
+   "black-scholes",
+   "programming",
+   "uncertain-volatility"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Seeking data source for index constituents and changes",
+  "url": "https://quant.stackexchange.com/questions/37982/seeking-data-source-for-index-constituents-and-changes",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-23T23:53:40+00:00",
+  "score": 2,
+  "tags": [
+   "programming",
+   "index",
+   "indexes"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Optimising returns weighted by Sharpe ratio in the context of Supervised Learning",
+  "url": "https://quant.stackexchange.com/questions/60233/optimising-returns-weighted-by-sharpe-ratio-in-the-context-of-supervised-learnin",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-23T23:53:40+00:00",
+  "score": 1,
+  "tags": [
+   "optimization",
+   "sharpe-ratio",
+   "machine-learning"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Does using volatility surfaces instead of constant vol dismisses you from scaling your vol terms in d1/2?",
+  "url": "https://quant.stackexchange.com/questions/85591/does-using-volatility-surfaces-instead-of-constant-vol-dismisses-you-from-scalin",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-23T23:53:40+00:00",
+  "score": 0,
+  "tags": [
+   "options",
+   "black-scholes",
+   "derivatives",
+   "cryptocurrency"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Pairs trading/Cointegration confusion",
+  "url": "https://quant.stackexchange.com/questions/63848/pairs-trading-cointegration-confusion",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-23T23:53:40+00:00",
+  "score": 0,
+  "tags": [
+   "cointegration",
+   "pairs-trading",
+   "optimal-hedge-ratio"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "PRIIPs Stress Scenario calculation category 2",
+  "url": "https://quant.stackexchange.com/questions/57537/priips-stress-scenario-calculation-category-2",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-23T23:53:40+00:00",
+  "score": 0,
+  "tags": [
+   "priips"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Standardizing non-standard cyclical data (e.g., Luni-Solar / Panchang metrics) as features in execution &amp; signal pipelines",
+  "url": "https://quant.stackexchange.com/questions/85841/standardizing-non-standard-cyclical-data-e-g-luni-solar-panchang-metrics-a",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-23T23:53:40+00:00",
+  "score": -1,
+  "tags": [
+   "time-series",
+   "algorithmic-trading",
+   "backtesting"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Application of risk-free rate in sharpe ratio over long time periods",
+  "url": "https://quant.stackexchange.com/questions/85772/application-of-risk-free-rate-in-sharpe-ratio-over-long-time-periods",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-23T23:53:40+00:00",
+  "score": 0,
+  "tags": [
+   "sharpe-ratio",
+   "risk-free"
+  ]
+ }
+]

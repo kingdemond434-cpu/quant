@@ -1,0 +1,46 @@
+[
+  {
+    "source": "weather",
+    "type": "hurricane",
+    "name": "Fay",
+    "symbols": [
+      "USOIL",
+      "NATGAS"
+    ],
+    "confidence": 0.5,
+    "description": "Active hurricane Fay - may impact energy prices"
+  },
+  {
+    "source": "weather",
+    "type": "hurricane",
+    "name": "Odalys",
+    "symbols": [
+      "USOIL",
+      "NATGAS"
+    ],
+    "confidence": 0.5,
+    "description": "Active hurricane Odalys - may impact energy prices"
+  },
+  {
+    "source": "weather",
+    "type": "hurricane",
+    "name": "Polo",
+    "symbols": [
+      "USOIL",
+      "NATGAS"
+    ],
+    "confidence": 0.5,
+    "description": "Active hurricane Polo - may impact energy prices"
+  },
+  {
+    "source": "weather",
+    "type": "hurricane",
+    "name": "Nolo",
+    "symbols": [
+      "USOIL",
+      "NATGAS"
+    ],
+    "confidence": 0.5,
+    "description": "Active hurricane Nolo - may impact energy prices"
+  }
+]

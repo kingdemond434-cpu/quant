@@ -1,0 +1,57 @@
+[
+ {
+  "source": "deep_forest",
+  "kind": "dataset",
+  "title": "A Stock Exchange for All: CSE's Strategy for Inclusive and Sustainable ...",
+  "url": "https://www.echelon.lk/a-stock-exchange-for-all-cses-strategy-for-inclusive-and-sustainable-growth/",
+  "published": "2026-09-23T05:42:57+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.4,
+  "lang": "en",
+  "endpoints": [
+   "https://www.echelon.lk/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "7de62b9cdc5e22cb0e5a",
+  "host": "www.echelon.lk",
+  "ground": "CSE and Sri Lanka boards",
+  "region": "lk",
+  "cluster": "south_asia",
+  "dataset_class": null,
+  "available_time": "2026-09-23T05:42:57+00:00",
+  "ingested_time": "2026-09-23T05:42:57+00:00",
+  "source_hash": "7de62b9cdc5e22cb0e5a",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "deep_forest",
+  "kind": "dataset",
+  "title": "Sri Lanka CSE All Share (SRILANKA_CSE) Trading Guide",
+  "url": "https://coinunited.io/en/asset/indices/sri-lanka-cse-all-share",
+  "published": "2026-09-23T05:43:13+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.45,
+  "lang": "en",
+  "endpoints": [
+   "https://coinunited.io/en/download",
+   "https://www.cse.lk/api/tradeSummary"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "b9dcd23e3d15f047f425",
+  "host": "coinunited.io",
+  "ground": "CSE and Sri Lanka boards",
+  "region": "lk",
+  "cluster": "south_asia",
+  "dataset_class": null,
+  "available_time": "2026-09-23T05:43:13+00:00",
+  "ingested_time": "2026-09-23T05:43:13+00:00",
+  "source_hash": "b9dcd23e3d15f047f425",
+  "claims": [],
+  "n_claims": 0
+ }
+]
