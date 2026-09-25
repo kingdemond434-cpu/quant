@@ -126,7 +126,7 @@ MAGIC = 341953
 #: The bound is a property of the terminal, so it is measured here and used everywhere a tag is
 #: built -- the comment is also the tag that matches a sleeve to its open positions, and a
 #: truncation that differs between the send path and the match path would orphan positions.
-COMMENT_MAX = 29
+COMMENT_MAX = _core.COMMENT_MAX
 
 
 def order_comment(name: str) -> str:
@@ -1190,7 +1190,9 @@ def _expiry_request(symbol: str, sleeve: str = "", window: str | None = None) ->
         info = mt5.symbol_info(symbol)
         mode = int(getattr(info, "expiration_mode", 0) or 0)
         if info is not None and (mode & mt5.SYMBOL_EXPIRATION_SPECIFIED):
-            until = bracket_deadline(sleeve, window)
+            # `expiration` is read by the server on ITS clock, which is the clock the window
+            # hours are written in.
+            until = bracket_deadline(sleeve, window, now=_core.server_now())
             return {"type_time": mt5.ORDER_TIME_SPECIFIED,
                     "expiration": int(until.timestamp())}
     except Exception as exc:
@@ -1213,7 +1215,8 @@ def expire_stale_brackets(st: dict) -> int:
         log(f"TTL sweep skipped: orders_get failed ({type(exc).__name__})")
         return 0
     killed = 0
-    now_utc = datetime.now(tz=UTC)
+    # `time_setup` and the window hours are server wall time; so is this clock.
+    now_utc = _core.server_now()
     for o in orders:
         if int(getattr(o, "magic", 0) or 0) != MAGIC:
             continue
@@ -1226,7 +1229,7 @@ def expire_stale_brackets(st: dict) -> int:
         # point: it would keep an afternoon bracket alive hours past the force-close the broker
         # had already been told to kill it at.
         sleeve = sleeve_from_comment(str(getattr(o, "comment", "") or ""))
-        if bracket_deadline(sleeve) > now_utc and placed.date() == now_utc.date():
+        if bracket_deadline(sleeve, now=now_utc) > now_utc and placed.date() == now_utc.date():
             continue
         res = mt5.order_send({"action": mt5.TRADE_ACTION_REMOVE, "order": o.ticket})
         gone = not any(getattr(x, "ticket", None) == o.ticket
@@ -1541,9 +1544,12 @@ def manage_open_positions(st: dict, sleeves: list[dict]) -> None:
                 continue
 
             # Bars SINCE ENTRY only. A pre-entry extreme is a level the thesis never reached.
+            # BOTH ENDS ON THE SERVER CLOCK. `p.time` is server wall time stamped UTC; ending the
+            # range at true-UTC now asked for bars that close ~3h BEFORE entry in summer, so every
+            # position younger than ~3h read "fewer than 2 bars" and was never ratcheted.
             since = mt5.copy_rates_range(symbol, mt5.TIMEFRAME_H1,
                                          datetime.fromtimestamp(p.time, tz=UTC),
-                                         datetime.now(tz=UTC))
+                                         _core.server_now() + timedelta(hours=1))
             if since is None or len(since) < 2:
                 log(f"MANAGE ticket {p.ticket} ({symbol}): fewer than 2 bars since entry; "
                     f"too early to locate an extreme")
@@ -2831,7 +2837,9 @@ def run_family_sleeves(st: dict, sleeves: list[dict], equity: float) -> None:
         return
     armed = bool(st.get("armed")) and GENERIC_EXEC_ENABLED.exists() and NEW_RISK_OK
     gstate = st.setdefault("generic", {})
-    now_utc = datetime.now(tz=UTC)
+    # `open_ttl_until` is a bar label plus the hold: server wall time. Compared with true UTC it
+    # held every position ~3h past its certified exit.
+    now_utc = _core.server_now()
     for s in fam_sleeves:
         name, family, selector = s["name"], s.get("family"), s.get("selector")
         plan = s.get("pending_order")
@@ -2995,6 +3003,12 @@ def run_family_sleeves(st: dict, sleeves: list[dict], equity: float) -> None:
                 # for nothing, every night" -- and `close_sleeve_positions` was written for it.
                 # The family lane was never moved over. It is now.
                 close_sleeve_positions(st, s["symbol"], s["name"])
+                # THE EXIT IS DONE WHEN THE POSITION IS GONE, not when a close was attempted. A
+                # missing tick or a refused close used to drop the deadline anyway, and the
+                # position then ran to its stop or target with no time exit at all.
+                if _sleeve_positions(s["symbol"], s["name"]):
+                    log(f"[{s['name']}] TTL close incomplete; the time exit stays armed")
+                    continue
             else:
                 log(f"[{s['name']}] SHADOW would TTL-close open position(s)")
             srec.pop("open_ttl_until", None)
@@ -3114,7 +3128,7 @@ def manage_scalp_baskets(st: dict, sleeves: list[dict]) -> None:
         return
     armed = bool(st.get("armed")) and GENERIC_EXEC_ENABLED.exists() and NEW_RISK_OK
     gstate = st.setdefault("scalp", {})
-    now_iso = datetime.now(tz=UTC).isoformat()
+    now_iso = _core.server_now().isoformat()  # TTLs are bar labels: server wall time
     for s in sc_sleeves:
         name = s["name"]
         srec = gstate.get(name)
@@ -3130,6 +3144,10 @@ def manage_scalp_baskets(st: dict, sleeves: list[dict]) -> None:
         if ttl_expired(srec.get("open_ttl_until"), now_iso):
             _book_target(name, s["symbol"], 0.0, "ttl")
             close_sleeve_positions(st, s["symbol"], name)
+            if st.get("armed") and _sleeve_positions(s["symbol"], name):
+                # Not closed (no tick, refused): keep the exit armed for the next pass.
+                log(f"[{name}] TTL close incomplete; the time exit stays armed")
+                continue
             srec.pop("open_ttl_until", None)
             srec.pop("basket", None)
 
@@ -3325,7 +3343,13 @@ def run_scalp_sleeves(st: dict, sleeves: list[dict], equity: float) -> None:
     sc_sleeves = [s for s in sleeves if s.get("exec") == "scalp_market"]
     if not sc_sleeves:
         return
-    armed = bool(st.get("armed")) and GENERIC_EXEC_ENABLED.exists() and NEW_RISK_OK
+    # A STALE DESK OPENS NOTHING, IN EVERY LANE. The bracket and family lanes refused on
+    # `_DESK_STALE`; this one did not, so in the "flatten" state the book was flattened at the
+    # top of the pass and the scalp lane re-opened it in the same pass, paying spread every pass.
+    armed = (bool(st.get("armed")) and GENERIC_EXEC_ENABLED.exists() and NEW_RISK_OK
+             and _DESK_STALE is None)
+    if _DESK_STALE is not None and sc_sleeves:
+        log(f"SCALP-EXEC: desk stale ({_DESK_STALE['verdict']}), no new scalp risk this pass")
     gstate = st.setdefault("scalp", {})
     for s in sc_sleeves:
         name = s["name"]
@@ -3520,9 +3544,15 @@ def bracket_lane_lot(s: dict, equity: float, dist: float | None,
 
 
 def main() -> None:
-    if gateway_paused():
-        log("gateway paused (data/GATEWAY_PAUSED present); no trading this pass")
-        return
+    # A PAUSE REFUSES NEW RISK; IT NEVER ABANDONS OPEN RISK. This returned before connecting,
+    # so the auto-pause `note_placement` writes after two all-rejected passes also stopped the
+    # stop manager, every time exit, the 19:30 and Friday closes and the trade ledger -- leaving
+    # whatever was on the book unmanaged until a human deleted the file. Management now runs;
+    # the release gate below is forced shut for the whole pass, so no lane can open anything.
+    _paused = gateway_paused()
+    if _paused:
+        log("gateway paused (data/GATEWAY_PAUSED present): managing open positions only, "
+            "no new risk this pass")
     if not connect():
         return
     st = load_state()
@@ -3569,7 +3599,8 @@ def main() -> None:
     st["placement_pass"] = tnow.isoformat()
 
     # stale tick (weekend/holiday/terminal dead): never trade a closed market
-    age_sec = (datetime.now(tz=UTC) - tnow).total_seconds()
+    # `tick.time` is server wall time; against true UTC a feed frozen 3.5h still read fresh.
+    age_sec = (_core.server_now() - tnow).total_seconds()
     if age_sec > 1800:
         st = reconcile(st)
         save_state(st)
@@ -3609,6 +3640,8 @@ def main() -> None:
     # git sync; the reason is logged every pass it refuses so it never reads as a quiet day.
     global NEW_RISK_OK
     NEW_RISK_OK, _ident_why = release_gate()
+    if _paused:
+        NEW_RISK_OK, _ident_why = False, "gateway paused (data/GATEWAY_PAUSED present)"
     if not NEW_RISK_OK:
         log(f"RELEASE IDENTITY refuses NEW risk: {_ident_why} -- managing open positions only")
 
@@ -3696,6 +3729,21 @@ def main() -> None:
     # both take the full fresh-leg boost. That is precisely the doubled EURCHF 0.05 and USDCHF
     # 0.02 pairs that went out in the same second on 2026-09-15 and lost together.
     _pending_legs: dict[str, float] = {}
+    # WHAT THE VENUE IS ACTUALLY HOLDING, by this desk's own tag. A `brackets` row only says a
+    # bracket was attempted today: it stays after the bracket expired, after both legs were
+    # refused, after a margin-guard skip and after a "recovery" that matched another sleeve's
+    # order -- and every one of those was billed as placed heat for the rest of the day,
+    # deferring legs that could have traded. Unreadable venue -> None, and the old rule stands.
+    _live_tags: frozenset[str] | None
+    try:
+        _live_tags = frozenset(
+            str(getattr(x, "comment", "") or "")
+            for x in list(mt5.orders_get() or ()) + list(mt5.positions_get() or ())
+            if int(getattr(x, "magic", 0) or 0) == MAGIC)
+    except Exception as _exc:
+        _live_tags = None
+        log(f"heat billing: venue book unreadable ({type(_exc).__name__}); "
+            f"billing today's bracket rows as placed")
     for _s in sleeves:
         _spec = (st.get("brackets", {}).get(_s["name"]) or {}).get("spec")
         _d = stop_distance(_spec) if _spec else None
@@ -3733,7 +3781,12 @@ def main() -> None:
             #
             # So the resolution moves in front of the cap for the whole lane, and the cap sees
             # `realised_q` at the resolved stop, the live symbol_info and the final lot.
-            if _spec and _d:
+            if _spec and _d and _live_tags is not None \
+                    and order_comment(_s["name"]) not in _live_tags:
+                # ATTEMPTED TODAY, HOLDING NOTHING: charged zero, never re-sent today.
+                _pend = {"ok": False, "stage": "done_today",
+                         "why": "today's bracket is no longer on the venue's book"}
+            elif _spec and _d:
                 # ALREADY ON THE BOOK. The leg the cap must price is the one the venue is
                 # holding -- its recorded stop and, since 2026-09-09, its recorded LOT -- not a
                 # fresh range built from bars that have moved since.
@@ -4069,10 +4122,15 @@ def main() -> None:
                 save_state(st)
                 continue
             pend = mt5.orders_get(symbol=s["symbol"]) or []
+            # RECOVERY IS BY THIS SLEEVE'S OWN TAG. A price match alone "recovered" a sleeve onto
+            # another sleeve's identical bracket (the window's versioned rows build the same
+            # one), so it was billed and never sent.
+            _tag = order_comment(s["name"])
             matches = [
                 o for o in pend
-                if abs(o.price_open - spec["buy_stop"]["price"]) < 0.5
-                or abs(o.price_open - spec["sell_stop"]["price"]) < 0.5
+                if str(getattr(o, "comment", "") or "") == _tag
+                and (abs(o.price_open - spec["buy_stop"]["price"]) < 0.5
+                     or abs(o.price_open - spec["sell_stop"]["price"]) < 0.5)
             ]
             if matches:
                 st["brackets"][s["name"]] = {"date": day_key, "recovered": True, "lot": lot,
@@ -4142,7 +4200,18 @@ def main() -> None:
         # no target tag, -20.60 EUR of pure spread and commission (EURCHF, AUDUSD, CHFNOK at
         # 21:11 and 21:16 UTC alike). The certified behaviour of a family sleeve is its own
         # `ttl_bars` exit; the gold windows' day-trade backstop is not part of its certificate.
-        keep = scalp_position_tags(sleeves) | family_position_tags(sleeves)
+        #
+        # THE EXEMPTION COMES FROM THE WHOLE ROSTER, not this pass's survivors. `sleeves` here is
+        # what the heat cap and the regime monitor LEFT; a scalp or family sleeve either of them
+        # dropped this pass still has its open basket, and lost its exemption with its seat --
+        # the same "closed by another sleeve's rule" defect as above, one filter later.
+        _roster = list(sleeves)
+        try:
+            _roster += [r for r in sleeve_set() if isinstance(r, dict)]
+        except Exception as exc:
+            log(f"19:30 exemption: full roster unreadable ({type(exc).__name__}); "
+                f"exempting this pass's sleeves only")
+        keep = scalp_position_tags(_roster) | family_position_tags(_roster)
         for s in sleeves:
             close_positions(st, s["symbol"], keep_tags=keep)
     if tnow.dayofweek == 4 and hour >= CLOSE_HOUR:  # Friday: weekend close, EVERY lane
