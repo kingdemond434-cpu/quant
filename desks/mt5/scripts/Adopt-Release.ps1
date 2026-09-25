@@ -625,7 +625,8 @@ $ReleaseCodePaths = @(
 # On the live box it spent minutes re-stat'ing parquet while the release mutex was held.  This
 # release only needs to protect executable code from an unknown local edit, so inspect those
 # pathspecs directly and leave the mutable data tree to MT5-ShadowSync.
-$dirty = @(Invoke-Git @("diff", "--name-only", "--no-ext-diff", "HEAD", "--") + $ReleaseCodePaths |
+$dirtyArgs = @("diff", "--name-only", "--no-ext-diff", "HEAD", "--") + $ReleaseCodePaths
+$dirty = @(Invoke-Git $dirtyArgs |
            Where-Object { "$_" -match '\S' })
 if ($dirty.Count -gt 0) {
     $dirtyPaths = @($dirty | ForEach-Object { "$_".Trim().Trim('"') })
