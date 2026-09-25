@@ -8683,6 +8683,26 @@ def check_unwired_modules(defects) -> None:
     # libs/ directly, and leaving them out reported ~90 libs modules the trading desk actually
     # uses as orphans. Its tests/ trees are excluded for the same reason tests/ is: a test
     # importing a module proves it works, not that anything uses it.
+    # A LEG THAT RUNS A libs FILE BY PATH IS A CALLER TOO. The desk's cycles run organs as
+    # subprocesses -- `_producer("input_identity", "libs/data/input_identity.py")` -- and box
+    # tasks name scripts in manifests, so neither leaves an import edge. Only scheduler surfaces
+    # count: `_producer(...)` calls in desk code, and the desk's task manifests and shells.
+    desk_root = ROOT / "desks"
+    if desk_root.is_dir():
+        for f in desk_root.rglob("*"):
+            if "__pycache__" in f.parts or "tests" in f.parts or not f.is_file():
+                continue
+            if f.suffix == ".py":
+                pat = r"_producer\(\s*[^)]*?[\"'](libs/[A-Za-z0-9_/]+)\.py[\"']"
+            elif f.suffix in (".manifest", ".ps1", ".sh"):
+                pat = r"(libs/[A-Za-z0-9_/]+)\.py"
+            else:
+                continue
+            with contextlib.suppress(OSError):
+                for hit in re.findall(pat, f.read_text("utf-8", errors="ignore"), re.S):
+                    parts = hit.split("/")
+                    for i in range(2, len(parts) + 1):
+                        imported.add(".".join(parts[:i]))
     for area in ("scripts", "libs", "ops", "desks"):
         base = ROOT / area
         if not base.exists():
@@ -8790,8 +8810,11 @@ def check_unwired_modules(defects) -> None:
     # searching a blob that includes the file being judged makes every script look invoked. The
     # candidate's own text is excluded from its own haystack -- the same self-discard bug that
     # inverted the orphan check above, in a different costume.
+    # The desk's own task manifests and installers name scripts too (its .py cycles are added
+    # below). Leaving those out called scripts the box runs "invoked by nothing".
     invoker_files = [
-        f for pat in ("ops/*", "scripts/*.py", ".github/workflows/*", "docs/*.md")
+        f for pat in ("ops/*", "scripts/*.py", ".github/workflows/*", "docs/*.md",
+                      "desks/mt5/ops/*", "desks/mt5/scripts/*.ps1", "desks/mt5/scripts/*.sh")
         for f in ROOT.glob(pat) if f.is_file()
     ]
     # The MT5 desk's cycle is a scheduler too: desks/mt5/research/hourly_cycle.py runs scripts as
