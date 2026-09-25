@@ -170,9 +170,11 @@ def test_the_generic_and_scalp_lanes_carry_identity_too(desk, monkeypatch) -> No
     desk.allocation([key, "xau_m5_test"])
     view = promoter.allocation_view()
     sleeves: list[dict] = []
+    # The certificate stands in today's authority set; a lapsed one is held, not promoted.
+    authority = {("EURZAR", "asia", None, "overnight_gap_decay", False)}
     assert promoter.promote_generic(sleeves, {key: {"status": "PROMOTION_CANDIDATE",
                                                     "exp_r": 0.2, "n": 55}},
-                                    set(), set(), regrade={}, view=view)
+                                    set(), authority, regrade={}, view=view)
     (g,) = sleeves
     assert g["certificate"] == key and g["sleeve_id"] == "1903a4cc90212b4c29d5"
     scalp = {"sleeves": {"xau_m5_test": {
