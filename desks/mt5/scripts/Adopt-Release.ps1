@@ -617,15 +617,18 @@ if ($head -eq $target) { Write-Host "  already at target -- nothing to adopt"; e
 # Only TRACKED modifications are staged, each named. Untracked files are left
 # untouched -- a bare `git add -A` here would sweep logs, caches and secrets into
 # the branch, and no adoption is worth that.
-$dirty = @(Invoke-Git @("status", "--porcelain", "--untracked-files=no") |
+$ReleaseCodePaths = @(
+    "desks/mt5/mt5desk", "desks/mt5/prop", "desks/mt5/research",
+    "desks/mt5/policy", "desks/mt5/scripts", "libs", "ops", "scripts"
+)
+# `git status` refreshes every tracked file before it can answer, including the evidence lake.
+# On the live box it spent minutes re-stat'ing parquet while the release mutex was held.  This
+# release only needs to protect executable code from an unknown local edit, so inspect those
+# pathspecs directly and leave the mutable data tree to MT5-ShadowSync.
+$dirty = @(Invoke-Git @("diff", "--name-only", "--no-ext-diff", "HEAD", "--") + $ReleaseCodePaths |
            Where-Object { "$_" -match '\S' })
 if ($dirty.Count -gt 0) {
-    # `XY path`, or `R  old -> new` for a rename: the destination is what to stage.
-    $dirtyPaths = @($dirty | ForEach-Object {
-        $p = "$_".Substring(3)
-        if ($p -match ' -> ') { $p = ($p -split ' -> ')[-1] }
-        $p.Trim().Trim('"')
-    })
+    $dirtyPaths = @($dirty | ForEach-Object { "$_".Trim().Trim('"') })
     # A release must never spend its lock window indexing the desk's evidence lake.  The
     # box's dedicated state synchronizer owns state paths; on 2026-09-25 this preflight tried
     # to add 87 files including H1 parquet, held the release mutex indefinitely, and prevented
