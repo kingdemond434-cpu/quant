@@ -818,7 +818,7 @@ CORE_LEGS: frozenset[str] = frozenset({
     # `state_vector` is listed here for the reader's sake and runs on NEITHER plan: it is in
     # `OWN_CLOCK_LEGS`, which `in_plan` checks first, so `MT5-StateVector` is its only clock.
     "regime_monitor", "state_vector", "heal_clocks", "wiring_audit", "promoter",
-    "forward_reconcile", "clock_liveness",
+    "forward_reconcile", "clock_liveness", "certificate_clock_law",
     "closed_loop", "acceptance", "candidate_conservation", "pit_canaries",
     "mutation_yield", "credit_assignment", "publish_survivors", "publish_dashboard",
     # CANON PUBLICATION IS CORE. `MT5-Gauntlet` is the judge's own hourly task, so a sweep can
@@ -1567,6 +1567,9 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # clocks that have stopped firing -- the defect that left the judge idle for 22 of 24 hours.
     "duty_cycle": 480,
     "forward_enrolment": 400,
+    # Reads canon, five lane state files and its own history, then writes two files. No market
+    # data, no venue, no terminal call -- it is arithmetic over rows the enrolment leg just wrote.
+    "certificate_clock_law": 180,
     # THE JUDGE WAS BEING KILLED AT 27% OF ITS OWN BUDGET (measured 2026-09-23). The sealed
     # gauntlet builds cells under `FRESH_BUILD_BUDGET_SEC = 2700` and stops ITSELF at that mark
     # to write `universal_gates_external.json`. This leg had no entry here, so it fell through to
@@ -4259,6 +4262,15 @@ def main() -> None:
     # pass rather than the next one, which is what "immediately" has to mean on an hourly clock.
     fen = _costed("forward_enrolment", lambda: _producer(
         "forward_enrolment", "research/forward_enrolment.py", "--once", "--budget-s", "300"))
+    # L1.102 -- AND DID THE CLOCK IT JUST GAVE OUT ACTUALLY START TICKING? Immediately after
+    # enrolment, deliberately: the leg above hands every fresh certificate a clock, and this one
+    # measures whether that clock is ACCUMULATING, by diffing each clock's observation COUNT
+    # against `data/certificate_clock_history.json` -- which is why it must run on a clock of its
+    # own, because a history with one sample can never show that a row count failed to move. It
+    # writes reports/CERTIFICATE_CLOCK_LAW.json and appends this hour's counts; it enrols,
+    # promotes, sizes and retires nothing.
+    ccl = _costed("certificate_clock_law", lambda: _producer(
+        "certificate_clock_law", "scripts/check_certificate_clock_law.py"))
     # THE FALSIFIERS RUN AGAINST THE FRESH CANON (Tier-1 item V4, 2026-09-09). libs/validation/
     # falsifiers.py had zero callers; every certificate was minted and never attacked. The
     # producer budgets itself (600 s default) under this leg's timeout and writes
@@ -4925,6 +4937,7 @@ def main() -> None:
                     "miner_conversion": mc, "moat_miner": mo, "archive_tape": ta,
                     "moat_candidate_compiler": mcp, "algorithm_db": adb,
                     "judging_throughput": jth, "duty_cycle": dcy, "forward_enrolment": fen,
+                    "certificate_clock_law": ccl,
                     "external_gauntlet": gt, "fast_admission": fa,
                     "canon_publication": cpub,
                     "falsifier_run": fz, "merge_docket": mh,

@@ -334,6 +334,41 @@ def test_the_fence_runs_on_a_clock() -> None:
     assert "certificate_clock_law" in src
 
 
+def test_a_tree_with_no_readable_clock_row_is_unmeasured_not_a_mass_conviction(monkeypatch,
+                                                                              tmp_path) -> None:
+    """A THINNER TREE MUST NEVER CONVICT, and this exact shape bit a sibling fence tonight.
+
+    `check_fallback_constants` scanned a tree briefly missing four files, counted 5 sites where
+    there were 7, and its down-only ratchet locked on the thin reading -- going permanently red
+    on a population it could not reduce. Here the same shape would be a lane state file caught
+    mid-write: every certificate would read NO_CLOCK and the fence would report a total breach
+    of a desk whose clocks are all fine. Measuring zero and failing to measure are different
+    answers and only the first is evidence.
+    """
+    monkeypatch.setattr(law, "host_runs_clocks", lambda desk=None: (True, "test host"))
+    monkeypatch.setattr(law, "certificates", lambda p=None: ([_cert(name="c1")], []))
+    monkeypatch.setattr(law, "clock_keys", lambda c, d=None: ({"c1": "K"}, []))
+    monkeypatch.setattr(law, "clock_rows", lambda d=None: ({}, ["state file unreadable"]))
+    doc = law.scan(root=tmp_path, now=NOW, record=False)
+    assert doc["verdict"] == law.UNMEASURED and doc["ok"] is True
+    assert doc["problems"] == [], "a tree that could not be read convicts nobody"
+    assert any("failure to MEASURE" in n for n in doc["notes"])
+
+
+def test_a_genuine_no_clock_still_breaches_when_other_rows_are_readable(monkeypatch,
+                                                                       tmp_path) -> None:
+    """The other half: the UNMEASURED escape above must not become a way to dodge the law. A real
+    clockless certificate always coexists with clocks that DO have rows."""
+    monkeypatch.setattr(law, "host_runs_clocks", lambda desk=None: (True, "test host"))
+    monkeypatch.setattr(law, "certificates",
+                        lambda p=None: ([_cert(name="has"), _cert(name="hasnt")], []))
+    monkeypatch.setattr(law, "clock_keys", lambda c, d=None: ({"has": "K", "hasnt": "J"}, []))
+    monkeypatch.setattr(law, "clock_rows", lambda d=None: ({"K": _row(n=3)}, []))
+    doc = law.scan(root=tmp_path, now=NOW, record=False)
+    assert doc["verdict"] == "BREACH" and doc["ok"] is False
+    assert any("NO_CLOCK" in p and "hasnt" in p for p in doc["problems"])
+
+
 def test_an_absent_artifact_reads_unmeasured_not_pass(tmp_path) -> None:
     """A host with nothing scheduled to advance a clock cannot have a stalled one."""
     doc = law.scan(root=tmp_path, now=NOW, record=False)

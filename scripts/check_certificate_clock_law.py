@@ -496,6 +496,27 @@ def scan(root: Path | None = None, *, now: datetime | None = None,
                 "certificates": [], "problems": [], "notes": notes or ["canon UNMEASURED"],
                 "counts": {}, "law": "L1.102", "alert_id": ALERT_ID}
 
+    # A THINNER TREE MUST NEVER CONVICT. If NOT ONE lane row was readable -- the state file is
+    # mid-write, the checkout is momentarily incomplete, a path moved -- then every certificate
+    # would judge NO_CLOCK and this fence would report a total breach of a desk whose clocks are
+    # all fine. That failure has a name on this desk and it bit a sibling fence tonight:
+    # `check_fallback_constants` scanned a tree that was briefly missing four files, counted 5
+    # sites instead of 7, and its down-only ratchet locked on the thin reading. The distinction
+    # is between MEASURING ZERO and FAILING TO MEASURE, and only the first is evidence.
+    #
+    # An empty lane set is therefore UNMEASURED, not a mass conviction (L1.28a). This cannot be
+    # used to dodge the law: a real NO_CLOCK population always coexists with the clocks that DO
+    # have rows, so the only state it excuses is the one where nothing at all could be read.
+    if certs and not rows:
+        return {"at": t.isoformat(), "ok": True, "verdict": UNMEASURED, "host_why": why_host,
+                "n_certificates": len(certs), "n_clock_rows": 0, "certificates": [],
+                "problems": [], "counts": {},
+                "notes": [*notes, f"{len(certs)} certificate(s) and NOT ONE readable clock row: "
+                                  f"that is a failure to MEASURE, not a measurement of zero. "
+                                  f"Reported {UNMEASURED} rather than convicting every "
+                                  f"certificate of NO_CLOCK on a tree that was briefly thin"],
+                "law": "L1.102", "alert_id": ALERT_ID}
+
     key_family = {keys[c["name"]]: c["family"] for c in certs if c["name"] in keys}
     gaps = family_gap_hours(rows, key_family)
     samples = load_history(desk / "data" / "certificate_clock_history.json")
