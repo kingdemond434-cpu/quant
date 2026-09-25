@@ -1744,51 +1744,6 @@ def _position_entry(pid) -> dict:
     return out
 
 
-def repair_ledger_once(st: dict) -> None:
-    """Once per day, repair the rows written before the 2026-09-16 R fix and the attribution
-    fix: R recomputed from the row's own prices (`decision_core.repair_ledger_row`), and a
-    broker-exit tag (`[sl 4300.69]`) replaced by the sleeve the position's opening order names.
-
-    141 of 151 ledger rows read R = 0.0 (measured 2026-09-25), so the promoter, the decay
-    monitor and the independence measurement all saw zero edge on every gold trade. The box's
-    own organ rewrites the box's own ledger; nothing on origin hand-edits it.
-    """
-    day = datetime.now(tz=UTC).date().isoformat()
-    if st.get("ledger_repaired_on") == day or not LEDGER.exists():
-        return
-    try:
-        lines = LEDGER.read_text(encoding="utf-8").splitlines()
-        out, changed = [], 0
-        for line in lines:
-            if not line.strip():
-                out.append(line)
-                continue
-            try:
-                row = json.loads(line)
-            except ValueError:
-                out.append(line)
-                continue
-            new = _core.repair_ledger_row(row)
-            if str(new.get("sleeve", "")).startswith("[") and new.get("position_id"):
-                _cm = _position_entry(new.get("position_id")).get("comment") or ""
-                if _cm.startswith("DW"):
-                    new = {**new, "sleeve": sleeve_from_comment(_cm),
-                           "sleeve_recovered_from": "position_entry_order"}
-            if new != row:
-                changed += 1
-                out.append(json.dumps(new, default=str))
-            else:
-                out.append(line)
-        if changed:
-            tmp = LEDGER.with_suffix(".jsonl.repair")
-            tmp.write_text("\n".join(out) + "\n", encoding="utf-8")
-            os.replace(tmp, LEDGER)
-        log(f"ledger repair: {changed} row(s) corrected of {len(lines)}")
-        st["ledger_repaired_on"] = day
-    except Exception as exc:
-        log(f"ledger repair skipped ({type(exc).__name__}: {exc}); rows left as written")
-
-
 def record_trades(st: dict, sleeves: list[dict]) -> None:
     """Append closed trades (deal OUT with DW comment) to the live ledger.
 
@@ -4277,7 +4232,6 @@ def main() -> None:
             close_positions(st, s["symbol"])
 
     record_trades(st, sleeves)
-    repair_ledger_once(st)
     st = reconcile(st)
     save_state(st)
     log(f"state: armed={st['armed']} pos={len(st['position'] or [])} "
