@@ -492,7 +492,29 @@ def observed_free_ceiling(now: datetime | None = None) -> int | None:
         n = int(doc.get("ceiling"))
     except (TypeError, ValueError):
         return None
-    return n if n >= 0 else None
+    # A CEILING OF ZERO IS THE MIDNIGHT RACE, NOT A MEASUREMENT (fixed 2026-09-25, caught live).
+    #
+    # WHAT HAPPENED, to the second. At 00:00:03 UTC an organ made a free call. The desk's ledger
+    # had no rows for the new day yet, so `calls_today()` was 0. OpenRouter's own daily counter
+    # had NOT rolled -- the 429 body carried `X-RateLimit-Remaining: 0` with a reset stamp still
+    # in the future -- so the call was refused. `note_free_limit_hit` duly recorded
+    # `ceiling: 0` against the NEW date, and `free_daily_max()` then returned min(900, 0) = 0.
+    #
+    # THE DESK THEN LOCKED ITSELF OUT OF A WORKING BUDGET FOR TWENTY-FOUR HOURS. Every organ was
+    # refused by `free_budget_left()` before any HTTP request was made, reporting "free-tier
+    # daily request budget exhausted: 0 call(s) today against a 0 ceiling" -- which reads exactly
+    # like a provider limit. Measured eleven minutes later, the provider said `remaining: 987`.
+    # A three-second race at midnight costs the entire day's novel-mechanism discovery, silently,
+    # and it would have recurred every night.
+    #
+    # ZERO COMPLETIONS IS NOT EVIDENCE ABOUT TODAY. It says the refusal arrived before this desk
+    # had successfully called anything, which is a fact about YESTERDAY's exhaustion observed
+    # through a counter that had not yet rolled. So it is UNMEASURED rather than zero (L1.28a),
+    # and the configured default governs. If the provider really is still refusing, the next call
+    # takes its own 429 and records a ceiling that means something.
+    if n <= 0:
+        return None
+    return n
 
 
 #: The provider states its own limit in the 429 body's headers. Reading it is strictly better than
@@ -552,7 +574,13 @@ def free_daily_max() -> int:
     # The MEASURED ceiling wins whenever it is lower, and only for the UTC day it was measured
     # on. It never raises the budget: a day that happened to stop early is not evidence the
     # provider will allow more tomorrow.
-    return min(configured, seen) if seen is not None else configured
+    resolved = min(configured, seen) if seen is not None else configured
+    # NEVER ZERO, BY THE SAME LAW THAT ALREADY GOVERNS THE CONFIGURED PATH. `QUANT_FREE_DAILY_MAX=0`
+    # floors at one because "a ceiling of zero would be a permanently dark desk"; a MEASURED zero
+    # is the same desk, equally dark, arrived at by a different road. `observed_free_ceiling`
+    # refuses zero outright now, so this is the belt to that braces -- a later change that
+    # reintroduces a zero from anywhere still cannot take the seat dark for a whole day.
+    return max(1, resolved)
 
 
 def calls_today(now: datetime | None = None) -> int:

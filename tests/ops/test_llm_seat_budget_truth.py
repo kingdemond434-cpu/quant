@@ -121,6 +121,48 @@ def test_limit_hit_without_a_header_still_records_our_count(tmp_path, monkeypatc
     assert "provider_limit" not in doc, "absence is UNMEASURED, never a guessed number"
 
 
+def test_a_zero_ceiling_is_unmeasured_not_a_dark_day(tmp_path, monkeypatch, ledger):
+    """THE MIDNIGHT RACE, caught live 2026-09-25 at 00:00:03 UTC.
+
+    An organ called three seconds into the new UTC day. The desk's ledger had no rows yet, so
+    `calls_today()` was 0; OpenRouter's counter had not rolled, so the call took a 429; and
+    `note_free_limit_hit` recorded `ceiling: 0` against the NEW date. `free_daily_max()` returned
+    min(900, 0) = 0 and every organ was refused for the next twenty-four hours BEFORE any request
+    was made -- while the provider reported 987 requests still available.
+
+    Zero completions says the refusal landed before this desk had successfully called anything,
+    which is a fact about yesterday seen through a stale counter. UNMEASURED, not zero.
+    """
+    monkeypatch.setattr(llm_seat, "FREE_CEILING", tmp_path / "ceiling.json")
+    monkeypatch.delenv("QUANT_FREE_DAILY_MAX", raising=False)
+    import datetime as _dt
+    today = _dt.datetime.now(_dt.UTC).strftime("%Y-%m-%d")
+    (tmp_path / "ceiling.json").write_text(
+        json.dumps({"date": today, "ceiling": 0}), encoding="utf-8")
+    assert llm_seat.observed_free_ceiling() is None
+    assert llm_seat.free_daily_max() == llm_seat.DEFAULT_FREE_DAILY_MAX
+    assert llm_seat.free_budget_left() > 0, "the desk must not be dark for the day"
+
+
+def test_free_daily_max_is_never_zero_from_any_road(tmp_path, monkeypatch):
+    """Belt to the brace above: whatever a ceiling file says, the seat never floors at zero."""
+    monkeypatch.setattr(llm_seat, "FREE_CEILING", tmp_path / "ceiling.json")
+    monkeypatch.setenv("QUANT_FREE_DAILY_MAX", "0")
+    assert llm_seat.free_daily_max() >= 1
+
+
+def test_a_real_measured_ceiling_is_still_believed(tmp_path, monkeypatch):
+    """The fix must not throw away the measurement it was built to keep."""
+    monkeypatch.setattr(llm_seat, "FREE_CEILING", tmp_path / "ceiling.json")
+    monkeypatch.delenv("QUANT_FREE_DAILY_MAX", raising=False)
+    import datetime as _dt
+    today = _dt.datetime.now(_dt.UTC).strftime("%Y-%m-%d")
+    (tmp_path / "ceiling.json").write_text(
+        json.dumps({"date": today, "ceiling": 789}), encoding="utf-8")
+    assert llm_seat.observed_free_ceiling() == 789
+    assert llm_seat.free_daily_max() == 789
+
+
 def test_free_daily_max_never_rises_above_the_configured_ceiling(tmp_path, monkeypatch):
     """A measured refusal may only LOWER the day's belief, never raise it."""
     monkeypatch.setattr(llm_seat, "FREE_CEILING", tmp_path / "ceiling.json")
