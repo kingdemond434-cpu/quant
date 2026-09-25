@@ -863,6 +863,10 @@ CORE_LEGS: frozenset[str] = frozenset({
     # THE INGESTION-EXPLOITATION GATE (LAWS 5c): an artifact read and two ratchets, every pass.
     # The LEDGER it reads is heavy and stays in the data department; the gate is not.
     "ingestion_exploitation",
+    # THE REFUSED-CLOCK RE-ENROLMENT (2026-09-25): one small JSON read and write, every pass.
+    "universe_reenrol",
+    # THE LIVE-DESK LIVENESS PAGE (2026-09-25): reads a handful of artifacts and pages; every pass.
+    "live_alive",
 })
 
 
@@ -908,7 +912,10 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "cost_construction", "swap_rejudge", "sge_premium", "moat_series",
                      "unused_information", "ingestion_ledger", "representation_forge",
                      "feature_compiler", "data_acquisition_scientist", "coverage_drain",
-                     "judge_coverage", "orthogonality_yield", "effective_trials"), "data"),
+                     "judge_coverage", "orthogonality_yield", "effective_trials",
+                     # the slow sources, each gated by its own clock (LEG_CADENCE_S)
+                     "cot_fetch", "broker_clock", "fetch_universe", "refresh_cost_fields"),
+                    "data"),
     # intel: the global intelligence agency -- crawlers, forests, frontier scouts
     **dict.fromkeys(("world_crawler", "deep_forest", "moat_miner", "market_intel", "mine",
                      "moat_candidate_compiler", "algorithm_db",
@@ -936,7 +943,9 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "experiment_cache", "probation", "axis_proposer", "program_alpha_lane",
                      "trajectory_evolution", "descendants", "card_explosion", "alpha_lineage",
                      "alpha_recombination", "graveyard_resurrection", "discovery_compiler",
-                     "conversion_maximiser", "trend_core"),
+                     "conversion_maximiser", "trend_core",
+                     # the orthogonal frontier's rows, compiled by compile_candidates next
+                     "orthogonal_frontier"),
                     "discovery"),
     # validate: the adversarial evidence lab
     **dict.fromkeys(("external_gauntlet", "backtest", "falsifier_run", "adversaries",
@@ -945,7 +954,7 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "replication_civilization", "certificate_truth", "model_search",
                      "loop_liveness", "counterexample_agent", "judging_throughput",
                      "duty_cycle", "forward_enrolment", "residual_gate",
-                     "fast_admission", "canon_publication"),
+                     "fast_admission", "canon_publication", "certificate_hygiene"),
                     "validate"),
     # macro: the cross-asset / macro brain
     **dict.fromkeys(("fred_macro", "futures_lead_lag", "causal_graph", "residual_factors",
@@ -2897,6 +2906,191 @@ def fred_macro() -> dict:
     return out
 
 
+#: WHEN EACH SLOW-SOURCE LEG LAST COMPLETED. Written only on a completed run, so a failed
+#: fetch is retried on the next pass instead of being counted as fresh for a day.
+LEG_CADENCE_FILE = BASE / "data" / "leg_cadence.json"
+
+#: Seconds between runs of the legs whose SOURCE moves slower than the hour. Each is the
+#: source's own clock, not a throttle: COT is published weekly (Friday, for Tuesday), so three
+#: and a half days catches every release within half a week of it; the broker's UTC offset, the
+#: unrunnable-certificate census, the registry's cost model and the terminal's tick values move
+#: at most daily.
+LEG_CADENCE_S: dict[str, int] = {
+    "cot_fetch": int(3.5 * 86400),
+    "broker_clock": 86400,
+    "certificate_hygiene": 86400,
+    "fetch_universe": 86400,
+    "refresh_cost_fields": 86400,
+}
+
+
+def _cadence_age_s(name: str, path: Path | None = None) -> float | None:
+    """Seconds since leg `name` last COMPLETED, or None when it never has (or the file is
+    unreadable -- which reads as "never", the direction that runs the leg rather than skips it)."""
+    try:
+        doc = json.loads((path or LEG_CADENCE_FILE).read_text("utf-8"))
+        at = datetime.fromisoformat(str((doc.get(name) or {}).get("completed_at")))
+    except (OSError, ValueError, TypeError, AttributeError):
+        return None
+    if at.tzinfo is None:
+        at = at.replace(tzinfo=UTC)
+    return (datetime.now(UTC) - at).total_seconds()
+
+
+def _cadence_mark(name: str, path: Path | None = None) -> None:
+    p = path or LEG_CADENCE_FILE
+    try:
+        doc = json.loads(p.read_text("utf-8"))
+        if not isinstance(doc, dict):
+            doc = {}
+    except (OSError, ValueError):
+        doc = {}
+    doc[name] = {"completed_at": datetime.now(UTC).isoformat(timespec="seconds")}
+    try:
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_text(json.dumps(doc, indent=1, sort_keys=True), encoding="utf-8")
+    except OSError as exc:
+        print(f"  cadence for {name} not recorded ({exc}); it re-runs next pass", flush=True)
+
+
+def _cadenced(name: str, run: Any, path: Path | None = None) -> dict:
+    """Run `run()` only when leg `name` is due by `LEG_CADENCE_S`; mark it on completion.
+
+    A NOT-DUE LEG NAMES WHY IT WROTE NOTHING (`noop_reason`), so the write-or-explain contract
+    reads "fresh by its own source clock" rather than a silent no-op. Completion is exit code 0
+    (or an in-process result without one): a timeout, a crash or a non-zero exit leaves the
+    cadence where it was and the leg runs again on the next pass.
+    """
+    period = int(LEG_CADENCE_S.get(name, 3600))
+    age = _cadence_age_s(name, path)
+    if age is not None and age < period:
+        return {"status": "FRESH", "age_h": round(age / 3600.0, 2),
+                "period_h": round(period / 3600.0, 2),
+                "noop_reason": f"{name} completed {age / 3600.0:.1f}h ago; its source moves "
+                               f"every {period / 3600.0:.0f}h",
+                "at": datetime.now(UTC).isoformat(timespec="seconds")}
+    out = run()
+    code = out.get("exit_code", 0) if isinstance(out, dict) else None
+    if isinstance(out, dict) and code == 0 and out.get("status") not in ("MISSING", "SKIPPED"):
+        _cadence_mark(name, path)
+    return out if isinstance(out, dict) else {"result": out}
+
+
+def _terminal_available() -> bool:
+    """Is the MetaTrader5 package importable here? Only the trading box has a terminal."""
+    import importlib.util
+    try:
+        return importlib.util.find_spec("MetaTrader5") is not None
+    except (ImportError, ValueError):
+        return False
+
+
+def _module_leg(name: str, modules: tuple[str, ...]) -> dict:
+    """Run each `python -m <module>` from the desk root, bounded, and report every exit code.
+
+    `-m` FROM `BASE`, NOT A SCRIPT PATH, because these fetchers do `from mt5desk.config import
+    DATA` at import: run as `python mt5desk/fetch_cot.py`, Python puts `mt5desk/` itself on the
+    path and `mt5desk` is not importable -- the same ModuleNotFoundError `ops/run_universe.cmd`
+    records killing MT5-Universe on every run.
+    """
+    budget, _rec = _priced_budget(name, LEG_BUDGET_SEC.get(name, SEARCH_BUDGET_SEC))
+    per = max(60, int(budget // max(1, len(modules))))
+    runs: dict[str, dict] = {}
+    worst = 0
+    for mod in modules:
+        try:
+            r = _run_tree([sys.executable, "-u", "-W", "ignore", "-m", mod],
+                          capture_output=True, text=True, cwd=str(BASE), timeout=per,
+                          check=False)
+            runs[mod] = {"exit_code": r.returncode, "tail": (r.stdout or r.stderr or "")[-200:],
+                         "stderr_tail": (r.stderr or "")[-600:]}
+            worst = worst or int(r.returncode or 0)
+        except subprocess.TimeoutExpired:
+            runs[mod] = {"exit_code": None, "timeout_s": per}
+            worst = worst or 124
+        except Exception as exc:
+            runs[mod] = {"exit_code": None, "error": f"{type(exc).__name__}: {exc}"}
+            worst = worst or 1
+    return {"exit_code": worst, "runs": runs, "budget_s": budget,
+            "at": datetime.now(UTC).isoformat(timespec="seconds")}
+
+
+def cot_fetch() -> dict:
+    """THE THREE CFTC POSITIONING FETCHERS, ON A CLOCK (2026-09-25).
+
+    `mt5desk.fetch_cot` (legacy), `fetch_tff` (Traders in Financial Futures) and
+    `fetch_cot_disagg` (disaggregated) write `data/cot*/` -- read by `orthogonal_sweep._cot_frame`
+    for every `cot_positioning` cell and by the COT fade/follow families -- and NOTHING scheduled
+    them on the box: the data stopped at 2026-08-11, so every positioning cell since has been
+    judged against a frame six weeks stale. Weekly source, `LEG_CADENCE_S` clock.
+    """
+    return _cadenced("cot_fetch", lambda: _module_leg(
+        "cot_fetch", ("mt5desk.fetch_cot", "mt5desk.fetch_tff", "mt5desk.fetch_cot_disagg")))
+
+
+def broker_clock() -> dict:
+    """The venue's UTC offset measured from the desk's own H1 bars (`measure_broker_clock`):
+    the session dimension `state_admission` reports as unlabelled. Written to
+    `data/broker_clock_measured.json`, the third tier after the live terminal's reading."""
+    return _cadenced("broker_clock", lambda: _producer(
+        "broker_clock", "research/measure_broker_clock.py"))
+
+
+def certificate_hygiene() -> dict:
+    """Moves certificates that can never be enrolled (no recorded params) out of the canon,
+    into their own file -- never fixed by guessing and never deleted. Daily."""
+    return _cadenced("certificate_hygiene", lambda: _producer(
+        "certificate_hygiene", "research/certificate_hygiene.py", "--apply"))
+
+
+def fetch_universe() -> dict:
+    """The registry's per-symbol cost model and H1 history, refreshed from the terminal and
+    MERGED into universe.json (never truncated). Needs MetaTrader5: off the trading box it
+    names why it wrote nothing instead of failing an import every pass."""
+    if not _terminal_available():
+        return {"status": "SKIPPED", "noop_reason": "MetaTrader5 is not importable on this host "
+                                                    "-- fetch_universe runs on the trading box",
+                "at": datetime.now(UTC).isoformat(timespec="seconds")}
+    return _cadenced("fetch_universe", lambda: _producer(
+        "fetch_universe", "research/fetch_universe.py"))
+
+
+def refresh_cost_fields() -> dict:
+    """`tick_value` for every registry symbol from the live terminal -- the one field that prices
+    a spread in account currency, without which gate 8 cannot judge a cell. Merge, never clobber;
+    needs MetaTrader5 like `fetch_universe`, and runs after it so it merges into its result."""
+    if not _terminal_available():
+        return {"status": "SKIPPED",
+                "noop_reason": "MetaTrader5 is not importable on this host -- "
+                               "refresh_cost_fields runs on the trading box",
+                "at": datetime.now(UTC).isoformat(timespec="seconds")}
+    return _cadenced("refresh_cost_fields", lambda: _producer(
+        "refresh_cost_fields", "scripts/refresh_cost_fields.py"))
+
+
+def universe_reenrol() -> dict:
+    """THE DELIBERATE RE-ENROLMENT `shadow_forward` ASKS FOR, ON A CLOCK (2026-09-25).
+
+    `research/reenrol_universe_refused.py` existed and NOTHING called it. `shadow_forward` clears
+    a REFUSED_BY_UNIVERSE_POLICY row itself only for cells still in the canon it iterates; the
+    43 FX clocks frozen by the `fx_major`/`fx major` vocabulary defect (fixed in
+    `universe_policy._norm_set`) sat outside that loop and stayed refused. This returns to ACTIVE
+    exactly the rows whose symbol `may_hypothesise` admits TODAY -- equities stay refused -- and
+    restores no authority: the promoter still decides. Cheap and idempotent: hourly.
+    """
+    return _producer("universe_reenrol", "research/reenrol_universe_refused.py", "--apply")
+
+
+def orthogonal_frontier() -> dict:
+    """Structured hypotheses for the orthogonal cells nothing emitted
+    (`research/orthogonal_frontier`): D1/H4 trend on indices, bonds, energy, softs and metals;
+    FX cross-sectional rank; style premia; index overnight and Monday-gap effects; four
+    economic RV pairs; month-turn flow.
+    Runs BEFORE `compile_candidates` so its rows are compiled in the same pass; it donates only
+    when its grid changes or its last donation nears the compiler's seven-day window."""
+    return _producer("orthogonal_frontier", "research/orthogonal_frontier.py", "--apply")
+
+
 def allocator_join() -> dict:
     """DOES THE ALLOCATOR'S BOOK REACH THE SLEEVES IT FUNDS? It did not, and nothing said so.
 
@@ -3113,11 +3307,19 @@ def main() -> None:
     rb = _costed("refresh_bars", refresh_bars)
     smoke = _costed("smoke_release", smoke_release)
     h = _costed("health", health)
+    # IS THE LIVE DESK ALIVE -- gateway state, clocks and orders read from their own artifacts,
+    # paged through `libs.ops.alert_channels` when not; writes reports/live_alive.json. Light,
+    # every pass, right behind `health`, so a dead desk is known at the top of the hour.
+    lal = _costed("live_alive", lambda: _producer(
+        "live_alive", "scripts/check_live_desk_alive.py"))
     t = _costed("record_tape", record_tape)
     s = _costed("state_vector", state_vector)
     rg = _costed("regime_monitor", refresh_regime)
     d = _costed("daily", daily)
     hc = _costed("heal_clocks", heal_clocks)
+    # BESIDE heal_clocks: both return stopped forward clocks to work. This one clears the
+    # universe-policy refusals the lane-vocabulary defect froze (see `universe_reenrol`).
+    ure = _costed("universe_reenrol", universe_reenrol)
     wa = _costed("wiring_audit", wiring_audit)
     ab = _costed("brain_ab", brain_ab)
     cm = _costed("alpha_breadth", coverage_map)
@@ -3143,6 +3345,13 @@ def main() -> None:
     aj = _costed("allocator_join", allocator_join)
     # BEFORE pf_allocator, which conditions on the state this refreshes.
     fm = _costed("fred_macro", fred_macro)
+    # THE SLOW SOURCES, EACH ON ITS OWN SOURCE CLOCK (`LEG_CADENCE_S`): weekly CFTC positioning,
+    # the venue's UTC offset, and the terminal's registry cost model then its tick values --
+    # built, correct, and scheduled by nothing on the box until 2026-09-25.
+    cot = _costed("cot_fetch", cot_fetch)
+    bkc = _costed("broker_clock", broker_clock)
+    fun = _costed("fetch_universe", fetch_universe)
+    rcf = _costed("refresh_cost_fields", refresh_cost_fields)
     fzc = _costed("fusion_cost", fusion_cost)
     cxc = _costed("cost_construction", cost_construction)
     emf = _costed("edges_macro_fusion_sweep", edges_macro_fusion_sweep)
@@ -3150,6 +3359,8 @@ def main() -> None:
     ety = _costed("entry_timing", entry_timing)
     # AFTER the coverage legs: the governor aims the search from the map they just published.
     qcy = _costed("queue_cycle", queue_cycle)
+    # Unrunnable certificates out of the canon, daily, before anything below counts the canon.
+    chy = _costed("certificate_hygiene", certificate_hygiene)
     # THE OTHER HALF OF THE SAME LEDGER. A certificate whose `shadow_spec.params` is None passed
     # all ten gates and can never be run: the parameterisation that passed was never recorded, so
     # there is nothing to replay. The issue board offers `survivor_publication` as the repair and
@@ -4157,6 +4368,8 @@ def main() -> None:
     # EVERY BUILD ON A CLOCK: the auto-clocked organs of this plan (data/auto_legs.json).
     auto = run_auto_legs()
     sw = _costed("sweep", sweep)
+    # BEFORE compile_candidates, so the orthogonal frontier's rows compile in this same pass.
+    bfr = _costed("orthogonal_frontier", orthogonal_frontier)
     cc = _costed("compile_candidates", compile_candidates)
     dp = _costed("deepen", deepen)
     # THE GAUNTLET, ON A CLOCK. It was on NO schedule -- not this roster's fifty legs, not the
@@ -4949,6 +5162,10 @@ def main() -> None:
                     "spread_provenance": sp, "tape_features": tf,
                     "futures_lead_lag": fll, "time_joins": tj, "allocator_join": aj,
                     "fred_macro": fm,
+                    "cot_fetch": cot, "broker_clock": bkc, "fetch_universe": fun,
+                    "refresh_cost_fields": rcf, "certificate_hygiene": chy,
+                    "universe_reenrol": ure, "orthogonal_frontier": bfr,
+                    "live_alive": lal,
                     "fusion_cost": fzc, "cost_construction": cxc,
                     "edges_macro_fusion_sweep": emf,
                     "recertify_canon": rc, "hunt12": h12,
