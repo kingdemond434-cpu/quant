@@ -417,6 +417,23 @@ _STATE_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     # CLOCK_LIVENESS.json is stale. A STATE fence: off the trading box the report is absent and
     # the verdict is UNMEASURED, which is a real answer about the host and not a pass.
     ("check_clock_liveness.py", ()),
+    # L1.102 -- A CERTIFICATE WITHOUT AN ACCUMULATING CLOCK IS A BREACH (principal 2026-09-24:
+    # "they must all automatically be on forward clocks live immediate upon certification, in
+    # future all -- this not happening is a breach"). The third clock fence, and the two above
+    # are why it is needed rather than another clause in one of them. `check_forward_enrolment`
+    # asks whether a clock EXISTS and reads `accruing` off the STATUS STRING -- on 2026-09-24 it
+    # called 171 clocks accruing while 116 of them held zero observations. `check_clock_liveness`
+    # asks whether the last ADVANCE has fallen behind the venue's bars, which a clock that never
+    # advanced at all answers vacuously. This one diffs each clock's OBSERVATION COUNT across
+    # passes out of `data/certificate_clock_history.json`, so no status, no mtime and no re-run
+    # of the engine can satisfy it -- only real forward observations. It fences the LATENCY too,
+    # because "immediate" is the principal's word: a clock arriving more than one promoter cycle
+    # after certification is a breach, not a statistic. WARMING is compliant -- forward time
+    # passing is the mechanism -- and the threshold is DERIVED per family from measured rows, so
+    # the five families that have never traded are judged by the same code path as the two that
+    # have. A STATE fence: off the trading box nothing advances a clock and the verdict is
+    # NOT_APPLICABLE, a real answer about the host and not a pass.
+    ("check_certificate_clock_law.py", ()),
     # LAWS 5c -- everything ingested is exploited; the exploitation floor ratchets UP, the
     # DATA STRANDING count ratchets DOWN, and no qualified datum sits in storage without a
     # defined downstream state. A STATE fence: on a clean checkout the ingestion artifact is

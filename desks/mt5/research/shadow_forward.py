@@ -140,7 +140,65 @@ def certified_sleeves() -> list[tuple[str, str, dict]]:
     except Exception as exc:
         slog(f"certified_sleeves FAILED ({type(exc).__name__}: {exc}); "
              f"running grandfathered sleeves only this pass")
-    return rows
+    return _one_clock_per_identity(rows)
+
+
+def _one_clock_per_identity(rows: list[tuple]) -> list[tuple]:
+    """Collapse certified rows that the engine cannot tell apart into ONE sleeve.
+
+    TWO ROWS THAT SHARE A `sleeve_key` ARE ONE STRATEGY, and keeping both does not give the desk
+    two clocks -- it gives it one clock with two owners that overwrite each other's parameters
+    every pass. `shadow_forward`'s identity guard then reads exactly what it is built to catch,
+    `params changed after the clock froze`, and freezes the row at IDENTITY_BROKEN. The
+    certificate can never mature, so it can never be promoted, which is the breach L1.102 names.
+
+    MEASURED ON THE TRADING BOX 2026-09-24. Canon held 174 certificates and the engine produced
+    172 distinct keys. The four strays were two pairs of CHFNOK carry rows differing ONLY by a
+    default written out explicitly -- `{}` against `{"timeframe": "H1"}`, and `{input_symbol}`
+    against `{input_symbol, timeframe: "H1"}`. `sleeve_key` drops a param equal to its window or
+    family default precisely so that a clock is never renamed when someone writes the default
+    down, which is right; the defect is that canon then carries the same strategy twice. One of
+    those two keys had been stuck at IDENTITY_BROKEN for 168.5 hours with zero observations,
+    and it was the only certificate on the box in that state.
+
+    GENERIC BY CONSTRUCTION, AND DELIBERATELY NOT A CHECK FOR `timeframe`. The rule is "if the
+    engine's own key cannot separate two rows, they are one sleeve" -- whatever made them
+    collide. A fix that special-cased the default it happened to be tonight would be silent the
+    next time two rows collide on a window default, a side alias, or a param the desk has not
+    invented yet, and five of the seven certificate families have never had a live sleeve for
+    their collisions to have surfaced at all.
+
+    THE MORE EXPLICIT ROW WINS, and the choice is only about STABILITY, never about meaning:
+    rows that collide are already behaviourally identical (the key drops exactly those params
+    that do not change what runs). Picking deterministically is the whole point -- an arbitrary
+    winner that varies by pass is how the identity flip-flopped in the first place.
+    """
+    best: dict[str, tuple] = {}
+    for row in rows:
+        r = [*list(row), "LONG"]
+        try:
+            key = sleeve_key(r[0], r[1], r[2], r[3], r[4])
+        except Exception:
+            continue
+        prior = best.get(key)
+        if prior is None:
+            best[key] = row
+            continue
+        cur_params, prior_params = dict(row[2] or {}), dict(prior[2] or {})
+        rank = (len(cur_params), json.dumps(cur_params, sort_keys=True, default=str))
+        prank = (len(prior_params), json.dumps(prior_params, sort_keys=True, default=str))
+        keep, drop = (row, prior) if rank > prank else (prior, row)
+        best[key] = keep
+        dropped = json.dumps(dict(drop[2] or {}), sort_keys=True, default=str)
+        kept = json.dumps(dict(keep[2] or {}), sort_keys=True, default=str)
+        slog(f"ONE-CLOCK: certified rows {dropped} and {kept} both key to `{key}` -- the same "
+             f"strategy written twice. Enrolling the more explicit one; two owners of one clock "
+             f"is what freezes it at IDENTITY_BROKEN (L1.102)")
+    if len(best) != len(rows):
+        slog(f"ONE-CLOCK: {len(rows)} certified row(s) -> {len(best)} distinct clock "
+             f"identit(ies); {len(rows) - len(best)} duplicate(s) collapsed")
+    return [best[k] for k in sorted(best)]
+
 
 
 def _accepts_side(fn) -> bool:
