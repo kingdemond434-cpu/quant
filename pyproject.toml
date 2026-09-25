@@ -80,9 +80,11 @@ crosscheck = [
 ]
 # Battle-tested statistics for cointegration/stationarity (stat-arb cards) and GARCH volatility.
 # Optional: libs/research/stationarity import-guards these; hand-rolling ADF/GARCH is banned.
+# Capped one minor/major above what requirements-vps.txt pins (statsmodels 0.15.1, arch 7.3.0),
+# the same rule tests/test_dependency_caps.py holds every other production pin to.
 stats = [
-    "statsmodels>=0.14",
-    "arch>=6.3",
+    "statsmodels>=0.14,<0.16",
+    "arch>=6.3,<8",
 ]
 
 [tool.hatch.build.targets.wheel]
