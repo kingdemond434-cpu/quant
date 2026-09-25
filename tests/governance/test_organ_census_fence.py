@@ -191,6 +191,29 @@ def test_a_stalled_input_is_a_broken_link_even_when_the_organ_runs(tmp_path: Pat
     assert "stopped updating" in stale["input"]["why"]
 
 
+def test_a_lock_file_is_never_convicted_of_being_empty(tmp_path: Path) -> None:
+    """A LIVENESS TOKEN IS NOT A PRODUCT. The first payload rule put all thirteen department
+    residents on the list of organs that "run, write and donate nothing", because the registry
+    declares their only output as `data/locks/dept_<x>.lock` -- a file that is SUPPOSED to be a
+    few bytes. The organs were working and the census was wrong; a census that convicts thirteen
+    departments on a category error is worth exactly as much as one that flatters them."""
+    (tmp_path / "desks" / "mt5" / "data" / "locks").mkdir(parents=True)
+    lock = tmp_path / "desks" / "mt5" / "data" / "locks" / "dept_africa.lock"
+    lock.write_text("4711", encoding="utf-8")
+    organ = oc.Organ("resident:dept_africa",
+                     artifacts={"desks/mt5/data/locks/dept_africa.lock"})
+    chain = oc.chain_for(organ, root=tmp_path, now=lock.stat().st_mtime + 60.0, mirror=False)
+    assert chain["artifact"]["verdict"] == oc.UNMEASURED, (
+        "a four-byte lock file was judged as an empty product. It is a heartbeat: it proves the "
+        "organ RUNS and says nothing about whether it PRODUCED")
+    assert chain["artifact"]["declares_no_product"] is True
+    stale = oc.chain_for(organ, root=tmp_path, now=lock.stat().st_mtime + 40 * 3600,
+                         mirror=False)
+    assert stale["artifact"]["verdict"] == oc.BROKEN, (
+        "a heartbeat is still judged on AGE -- a resident whose lock has not moved in forty "
+        "hours is not running")
+
+
 def test_an_undeclared_input_reads_unmeasured_never_healthy(tmp_path: Path) -> None:
     """UNMEASURED IS A REAL ANSWER (L1.28a). 2,580 of 2,657 organs declare no input at all, and
     reporting that as a pass would be the census flattering the desk about its worst blind spot."""

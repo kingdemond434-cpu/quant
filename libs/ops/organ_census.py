@@ -88,6 +88,24 @@ _METADATA_KEYS = frozenset({
 #: artifact. This is the whole trick that lets a path-keyed roster meet a name-keyed one.
 _CODE_SUFFIXES = (".py", ".sh", ".ps1", ".cmd", ".bat")
 
+#: A LIVENESS TOKEN IS NOT A PRODUCT, and judging one by its payload is a false accusation.
+#:
+#: MEASURED 2026-09-25: the first payload rule put all thirteen department residents --
+#: `resident:dept_africa` through `resident:dept_mena` -- on the list of organs that "run, write
+#: and donate nothing", because the registry declares their only output as
+#: `desks/mt5/data/locks/dept_<x>.lock`. A lock file is SUPPOSED to be a few bytes. The organs
+#: were working; the census was wrong, and a census that convicts thirteen departments on a
+#: category error is worth exactly as much as one that flatters them.
+#:
+#: So a lock is judged on AGE alone, and the finding is moved to where it belongs: the organ
+#: declares a heartbeat as its product and no product at all, which is a gap in the DECLARATION.
+_LIVENESS_SUFFIXES = (".lock", ".pid", ".heartbeat")
+
+
+def _is_liveness_token(path: str) -> bool:
+    p = path.lower()
+    return p.endswith(_LIVENESS_SUFFIXES) or "/locks/" in f"/{p}"
+
 #: THE EXPLORATION FLOOR (principal's growth governance, Rule 2 read the right way round). The
 #: share of research compute that may never be taken from producers with no track record. A
 #: producer starves; it is never eliminated, and a producer that has NEVER been measured is not
@@ -687,8 +705,35 @@ def chain_for(organ: Organ, *, root: Path, now: float,
     elif mirror:
         out["artifact"] = _link(UNMEASURED, "this checkout holds none of the clocks, so an old "
                                             "artifact here is a stale mirror, not a dark organ")
+    elif all(_is_liveness_token(a) for a in organ.artifacts):
+        #: EVERY DECLARED ARTIFACT IS A HEARTBEAT. Age is the only honest question here, and the
+        #: real finding is the declaration: this organ has told the desk how to see that it is
+        #: ALIVE and never how to see that it PRODUCED.
+        mtime, path, _size = _newest(root, organ.artifacts)
+        if mtime <= 0:
+            out["artifact"] = _link(BROKEN, "its liveness token has never been written: "
+                                            f"{sorted(organ.artifacts)[:3]}",
+                                    liveness_only=True)
+        elif now - mtime > budget:
+            out["artifact"] = _link(BROKEN,
+                                    f"its liveness token {path} last moved "
+                                    f"{(now - mtime) / 3600.0:.1f}h ago, past the "
+                                    f"{budget / 3600.0:.0f}h budget",
+                                    artifact=path,
+                                    artifact_age_h=round((now - mtime) / 3600.0, 2),
+                                    liveness_only=True)
+        else:
+            out["artifact"] = _link(UNMEASURED,
+                                    f"every artifact it declares is a liveness token ({path}, "
+                                    f"{(now - mtime) / 3600.0:.1f}h old). That proves it is "
+                                    "RUNNING and says nothing about whether it PRODUCED -- a gap "
+                                    "in the declaration, not evidence either way",
+                                    artifact=path,
+                                    artifact_age_h=round((now - mtime) / 3600.0, 2),
+                                    liveness_only=True, declares_no_product=True)
     else:
-        newest, payload, n_trivial = _newest_payload(root, organ.artifacts)
+        newest, payload, n_trivial = _newest_payload(
+            root, [a for a in organ.artifacts if not _is_liveness_token(a)])
         if newest is None:
             out["artifact"] = _link(BROKEN,
                                     "it has NEVER produced: no declared artifact exists anywhere "
@@ -1010,6 +1055,12 @@ def census(*, root: Path | None = None, feeders: Mapping[str, Any] | None = None
         "n_produces_but_reaches_nothing": len(emits_nothing_reaches),
         "writes_only_receipts": [r["organ"] for r in receipts][:40],
         "n_writes_only_receipts": len(receipts),
+        "declares_only_a_heartbeat": [
+            r["organ"] for r in rows
+            if (r["evidence"].get("artifact") or {}).get("declares_no_product")][:40],
+        "n_declares_only_a_heartbeat": sum(
+            1 for r in rows
+            if (r["evidence"].get("artifact") or {}).get("declares_no_product")),
         "yield_ledger": ledger,
         "rows": rows,
     }
