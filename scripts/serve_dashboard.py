@@ -86,16 +86,21 @@ class _Handler(SimpleHTTPRequestHandler):
     _last_refresh = 0.0
     token = ""
 
-    require_token = False
+    #: TOKEN ON EVERY REQUEST IS THE DEFAULT (2026-09-25). It used to be opt-in via
+    #: --require-token, and an entrypoint started without the flag trusted loopback -- which is
+    #: every request a tunnel or proxy forwards. A missing flag must never be the thing that
+    #: publishes equity, so the safe shape is the default and the exemption has to be named
+    #: (--trust-loopback) just as the no-gate decision has to be named (--no-auth).
+    require_token = True
 
     def _authorised(self) -> bool:
-        """Loopback is trusted UNLESS --require-token; everything else needs the token.
+        """Every request needs the token unless --trust-loopback exempts loopback clients.
 
         THE HOLE THIS CLOSES. A Cloudflare tunnel connects to its origin over 127.0.0.1, so every
         request from the public internet arrives here with a LOOPBACK client address. Trusting
         loopback would have published live equity, P&L and open positions to anyone who knew the
-        hostname -- with the token bypassed for exactly the traffic it exists to protect. Any
-        deployment reachable from outside MUST pass --require-token, which drops the exemption.
+        hostname -- with the token bypassed for exactly the traffic it exists to protect. So the
+        exemption is off unless --trust-loopback is passed, and no tunnelled deployment may pass it.
 
         Three carriers because three devices: a header for scripts, a query string so a phone can
         be enrolled from a single pasted link, and a cookie so it stays enrolled afterwards.
@@ -178,6 +183,13 @@ class _Handler(SimpleHTTPRequestHandler):
         return
 
 
+def _auth_banner(no_auth: bool, require_token: bool) -> str:
+    if no_auth:
+        return "DISABLED (--no-auth)"
+    scope = "on every request" if require_token else "off-loopback (--trust-loopback)"
+    return f"token required {scope}; key in {_TOKEN_FILE}"
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--port", type=int, default=8080)
@@ -185,11 +197,16 @@ def main() -> None:
     ap.add_argument("--no-auth", action="store_true",
                     help="serve without a token (loopback-only deployments)")
     ap.add_argument("--require-token", action="store_true",
-                    help="require the token even from loopback -- MANDATORY behind a tunnel or "
-                         "proxy, whose requests reach this origin as 127.0.0.1")
+                    help="require the token even from loopback. This is now the DEFAULT; the "
+                         "flag is kept so existing task and unit definitions keep parsing")
+    ap.add_argument("--trust-loopback", action="store_true",
+                    help="exempt 127.0.0.0/8 and ::1 from the token. NEVER behind a tunnel or "
+                         "proxy, whose requests reach this origin as loopback")
     args = ap.parse_args()
+    if args.require_token and args.trust_loopback:
+        ap.error("--require-token and --trust-loopback contradict each other")
     _Handler.token = "" if args.no_auth else _token()
-    _Handler.require_token = bool(args.require_token) and not args.no_auth
+    _Handler.require_token = not args.no_auth and not args.trust_loopback
     _WEB.mkdir(parents=True, exist_ok=True)
     # Build once before serving so localhost never opens on a missing/stale state file. The daily
     # MT5 cycle refreshes it thereafter; this best-effort call cannot mutate trading state.
@@ -200,7 +217,7 @@ def main() -> None:
     print(f"dashboard serving {_WEB} on {args.host}:{args.port}\n"
           f"  local   : http://127.0.0.1:{args.port}/desk.html\n"
           f"  network : http://{_lan_ip()}:{args.port}/desk.html\n"
-          f"  auth    : {'DISABLED (--no-auth)' if args.no_auth else 'token required off-loopback; key in ' + str(_TOKEN_FILE)}")
+          f"  auth    : {_auth_banner(args.no_auth, _Handler.require_token)}")
     try:
         httpd.serve_forever()
     except KeyboardInterrupt:
