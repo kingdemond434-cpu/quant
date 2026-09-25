@@ -264,8 +264,10 @@ def _tape_series(symbol: str, index, timeframe: str = "H1"):
 #: `data/vintages/` (ALFRED, revision-aware), which currently covers three series.
 DAILY_MACRO_SERIES = ("DTWEXBGS", "DGS10", "DGS2", "T10Y2Y", "VIXCLS", "SOFR", "DFF",
                       "BAMLH0A0HYM2", "DCOILWTICO")
-#: One day between a print and a bar that may condition on it. Never zero.
-MACRO_PUBLICATION_LAG_D = 1
+#: Business days between a value's date and a bar that may condition on it. Two, not one: a
+#: FRED daily dated D is published during D+1 (16:15 ET), and a broker-clock bar at 00:00 is
+#: 21:00-22:00 UTC the day BEFORE, so one calendar day leaked ~20h (and ~70h over weekends).
+MACRO_PUBLICATION_LAG_D = 2
 #: Observations before a trailing rank means anything. A rank over 20 points is noise wearing a
 #: percentile.
 MACRO_RANK_MIN_OBS = 250
@@ -312,7 +314,8 @@ def _macro_series(index, name: str | None = None):
         rank = s.expanding(min_periods=MACRO_RANK_MIN_OBS).rank(pct=True).dropna()
         if rank.empty:
             continue
-        rank.index = rank.index + pd.Timedelta(days=MACRO_PUBLICATION_LAG_D)
+        rank.index = rank.index + pd.offsets.BDay(MACRO_PUBLICATION_LAG_D)
+        rank = rank[~rank.index.duplicated(keep="last")]  # weekend rows share a business day
         out = rank.reindex(rank.index.union(index)).ffill().reindex(index)
         return out if out.notna().sum() >= MACRO_RANK_MIN_OBS else None
     return None

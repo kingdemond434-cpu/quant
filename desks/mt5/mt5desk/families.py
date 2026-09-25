@@ -2006,7 +2006,7 @@ def family_macro_swing(
     atr_n: int = 20,
     sign: int = -1,
     min_gap_bars: int = 120,
-    pub_lag_days: int = 1,
+    pub_lag_days: int = 2,
 ) -> list[Signal]:
     """Macro AS the signal, held for swing length -- not macro as a filter.
 
@@ -2053,7 +2053,14 @@ def family_macro_swing(
     if change.empty:
         return []
     # Publication lag, applied BEFORE the join. See the docstring.
-    change.index = pd.to_datetime(change.index) + pd.Timedelta(days=pub_lag_days)
+    # BUSINESS DAYS, AND TWO (2026-09-25). A value dated D is published during D+1 (H.15 at
+    # 16:15 ET) and bars are on the broker clock, whose 00:00 is 21:00-22:00 UTC the day
+    # before. One calendar day made D visible from 21:00 UTC on D -- ~20h before it existed,
+    # and ~70h early over a weekend. Two business days lands after publication in both.
+    change.index = pd.to_datetime(change.index) + pd.offsets.BDay(pub_lag_days)
+    # Weekend-dated rows land on the same business day as Friday's; the latest one is what a
+    # reader on that day would have seen, and a duplicated index would break the join.
+    change = change[~change.index.duplicated(keep="last")]
 
     idx = h1.index
     if change.index.tz is None and idx.tz is not None:
