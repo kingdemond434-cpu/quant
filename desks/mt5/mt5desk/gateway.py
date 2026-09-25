@@ -1192,7 +1192,7 @@ def _expiry_request(symbol: str, sleeve: str = "", window: str | None = None) ->
         if info is not None and (mode & mt5.SYMBOL_EXPIRATION_SPECIFIED):
             # `expiration` is read by the server on ITS clock, which is the clock the window
             # hours are written in.
-            until = bracket_deadline(sleeve, window, now=_core.server_now())
+            until = bracket_deadline(sleeve, window, now=_core.server_now(datetime.now(tz=UTC)))
             return {"type_time": mt5.ORDER_TIME_SPECIFIED,
                     "expiration": int(until.timestamp())}
     except Exception as exc:
@@ -1216,7 +1216,7 @@ def expire_stale_brackets(st: dict) -> int:
         return 0
     killed = 0
     # `time_setup` and the window hours are server wall time; so is this clock.
-    now_utc = _core.server_now()
+    now_utc = _core.server_now(datetime.now(tz=UTC))
     for o in orders:
         if int(getattr(o, "magic", 0) or 0) != MAGIC:
             continue
@@ -1549,7 +1549,7 @@ def manage_open_positions(st: dict, sleeves: list[dict]) -> None:
             # position younger than ~3h read "fewer than 2 bars" and was never ratcheted.
             since = mt5.copy_rates_range(symbol, mt5.TIMEFRAME_H1,
                                          datetime.fromtimestamp(p.time, tz=UTC),
-                                         _core.server_now() + timedelta(hours=1))
+                                         _core.server_now(datetime.now(tz=UTC)) + timedelta(hours=1))
             if since is None or len(since) < 2:
                 log(f"MANAGE ticket {p.ticket} ({symbol}): fewer than 2 bars since entry; "
                     f"too early to locate an extreme")
@@ -2839,7 +2839,7 @@ def run_family_sleeves(st: dict, sleeves: list[dict], equity: float) -> None:
     gstate = st.setdefault("generic", {})
     # `open_ttl_until` is a bar label plus the hold: server wall time. Compared with true UTC it
     # held every position ~3h past its certified exit.
-    now_utc = _core.server_now()
+    now_utc = _core.server_now(datetime.now(tz=UTC))
     for s in fam_sleeves:
         name, family, selector = s["name"], s.get("family"), s.get("selector")
         plan = s.get("pending_order")
@@ -3128,7 +3128,7 @@ def manage_scalp_baskets(st: dict, sleeves: list[dict]) -> None:
         return
     armed = bool(st.get("armed")) and GENERIC_EXEC_ENABLED.exists() and NEW_RISK_OK
     gstate = st.setdefault("scalp", {})
-    now_iso = _core.server_now().isoformat()  # TTLs are bar labels: server wall time
+    now_iso = _core.server_now(datetime.now(tz=UTC)).isoformat()  # TTLs are bar labels: server wall time
     for s in sc_sleeves:
         name = s["name"]
         srec = gstate.get(name)
@@ -3600,7 +3600,7 @@ def main() -> None:
 
     # stale tick (weekend/holiday/terminal dead): never trade a closed market
     # `tick.time` is server wall time; against true UTC a feed frozen 3.5h still read fresh.
-    age_sec = (_core.server_now() - tnow).total_seconds()
+    age_sec = (_core.server_now(datetime.now(tz=UTC)) - tnow).total_seconds()
     if age_sec > 1800:
         st = reconcile(st)
         save_state(st)

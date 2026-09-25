@@ -125,7 +125,7 @@ def test_the_ledger_and_file_readers_are_bound_to_the_desks_paths(tmp_path) -> N
     ledger = tmp_path / "live_ledger.jsonl"
     ledger.write_text('{"sleeve": "a", "r_multiple": 1.0}\n{"sleeve": "b"}\n', "utf-8")
     sleeves = tmp_path / "sleeves.json"
-    live = {"name": "gold_asia_v2", "symbol": "XAUUSD", "chart": "H1",
+    live = {"name": "gold_asia_breakout", "symbol": "XAUUSD", "chart": "H1",
             "status": "LIVE"}
     sleeves.write_text(json.dumps({"sleeves": [live]}), "utf-8")
     retired = tmp_path / "GOLD_RETIRED.json"
@@ -929,7 +929,11 @@ def test_main_scopes_the_daily_close_and_not_the_friday_one() -> None:
     daily = _GW_SRC.index('close_positions(st, s["symbol"], keep_tags=keep)')
     friday = _GW_SRC.index("Friday: weekend close, EVERY lane")
     assert daily < friday
-    assert "keep = scalp_position_tags(sleeves)" in _GW_SRC[:daily]
+    # The exemption is built from the whole roster (a sleeve the heat cap dropped this pass
+    # still owns its basket), never from this pass's survivors alone.
+    assert "keep = scalp_position_tags(_roster) | family_position_tags(_roster)" in \
+        _GW_SRC[:daily]
+    assert "_roster += [r for r in sleeve_set()" in _GW_SRC[:daily]
     after = _GW_SRC[friday:friday + 200]
     assert 'close_positions(st, s["symbol"])' in after and "keep_tags" not in after
 
@@ -959,9 +963,14 @@ _DAY = "2026-09-08"
 
 
 class _Clock(datetime):
+    """TRUE UTC. `_WHEN` is the venue's SERVER wall clock -- the clock the fake terminal's tick
+    and bar labels are on, as MT5's are -- so the real clock runs the venue offset behind it.
+    This fixture used to make the two equal, which is the defect the gateway had: it compared
+    server times with UTC and was right only on a box where they coincide."""
     @classmethod
     def now(cls, tz=None):
-        return _WHEN.astimezone(tz) if tz else _WHEN.replace(tzinfo=None)
+        utc = _WHEN - timedelta(hours=dc.broker_offset_hours(_WHEN))
+        return utc.astimezone(tz) if tz else utc.replace(tzinfo=None)
 
 
 def _gold_rows(n: int = 400) -> list[dict]:
@@ -1111,17 +1120,22 @@ def _main_ns(tmp_path: Path, monkeypatch, mt5: _Terminal, *, paused: bool,
 
 def test_main_with_the_pause_file_present_sends_nothing_and_writes_no_state(
         tmp_path, monkeypatch) -> None:
-    """The pause is consulted before the terminal is touched: no connect, no read, no order,
-    no state file, one log line saying why."""
+    """A PAUSE REFUSES NEW RISK AND KEEPS MANAGING OPEN RISK (2026-09-25). The pass connects,
+    so stops, time exits and the closes still run on whatever the book holds, but no order is
+    sent and no bracket intent is written -- the asia bracket this same fixture places when
+    unpaused (see the second-pass test) is refused. It used to return before connecting, which
+    left open positions unmanaged until a human deleted the file."""
     rows = _gold_rows()
     mt5 = _Terminal(rows, *_quote(rows))
-    ns = _main_ns(tmp_path, monkeypatch, mt5, paused=True, state=None)
+    ns = _main_ns(tmp_path, monkeypatch, mt5, paused=True, state={"armed": True})
     assert _cfg.gateway_paused() is True
     ns["main"]()
-    assert mt5.sent == [] and ns["_calls"] == []
-    assert not ns["_state_file"].exists()
-    assert ns["_decisions"] == [] and ns["_intents"] == []
-    assert ns["_logs"] == ["gateway paused (data/GATEWAY_PAUSED present); no trading this pass"]
+    assert mt5.sent == [], "a paused gateway sent an order"
+    assert ns["_calls"] == ["connect"], "management needs the terminal"
+    assert ns["_intents"] == []
+    assert ns["_logs"][0].startswith("gateway paused (data/GATEWAY_PAUSED present): managing")
+    assert any("gateway paused" in line and "no new risk" in line.lower()
+               or "refuses NEW risk" in line for line in ns["_logs"])
 
 
 def test_a_second_pass_in_one_day_recovers_the_bracket_the_terminal_holds_and_sends_nothing(
@@ -1144,7 +1158,10 @@ def test_a_second_pass_in_one_day_recovers_the_bracket_the_terminal_holds_and_se
     ns["main"]()                                          # same day, state intact: the guard
     assert len(mt5.sent) == 2
 
-    mt5.pending = [SimpleNamespace(ticket=i + 1, symbol="XAUUSD", price_open=r["price"])
+    # Resting orders carry the tag they were sent with, as the venue's do: recovery matches the
+    # sleeve's own tag, never merely an order at a nearby price.
+    mt5.pending = [SimpleNamespace(ticket=i + 1, symbol="XAUUSD", price_open=r["price"],
+                                   comment=r["comment"], magic=r.get("magic", 0))
                    for i, r in enumerate(mt5.sent)]
     ns["_state_file"].write_text(json.dumps({"armed": True, "brackets": {},
                                              "last_bracket_date": None}), "utf-8")
@@ -1175,9 +1192,12 @@ def test_the_pause_file_readers_look_under_data_and_main_consults_gateway_paused
     assert "from mt5desk.config import desk_root, gateway_paused, terminal_path" in _GW_SRC
     main = next(n for n in _GW_TREE.body if isinstance(n, ast.FunctionDef) and n.name == "main")
     first = main.body[0]
-    assert isinstance(first, ast.If) and isinstance(first.test, ast.Call)
-    assert first.test.func.id == "gateway_paused" and first.test.args == []
-    assert any(isinstance(s, ast.Return) for s in first.body)
+    # Consulted FIRST, before the terminal is touched -- and now bound, not returned on: a pause
+    # refuses new risk for the whole pass while open positions are still managed.
+    assert isinstance(first, ast.Assign) and isinstance(first.value, ast.Call)
+    assert first.value.func.id == "gateway_paused" and first.value.args == []
+    assert first.targets[0].id == "_paused"
+    assert "if _paused:\n        NEW_RISK_OK, _ident_why = False," in _GW_SRC
     # The reader's path is under data/, and it is not the desk root the stale file sits at.
     assert _cfg.PAUSE_FILE.parent.name == "data"
     assert _cfg.PAUSE_FILE != _DESK / "GATEWAY_PAUSED"
