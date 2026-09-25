@@ -28,7 +28,6 @@ import sys
 from pathlib import Path
 
 import pytest
-
 import scripts.kimi_hunter as K
 
 _SRC = Path("scripts/kimi_hunter.py")

@@ -13,7 +13,6 @@ import json
 from pathlib import Path
 
 import pytest
-
 import scripts.acquire_data as A
 
 NOW = "2026-09-08T12:00:00+00:00"

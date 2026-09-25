@@ -4,8 +4,9 @@ import json
 import sqlite3
 from pathlib import Path
 
-from libs.research.alpha_state import AlphaStateLedger
 from scripts.run_conversion_control import build, weakest_transition
+
+from libs.research.alpha_state import AlphaStateLedger
 
 
 def test_weakest_transition_is_dynamic_and_unknown_is_not_zero() -> None:

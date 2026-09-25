@@ -21,7 +21,6 @@ import json
 from pathlib import Path
 
 import pytest
-
 import scripts.research_allocator as ra
 
 

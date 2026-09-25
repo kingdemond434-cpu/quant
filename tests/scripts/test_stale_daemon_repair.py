@@ -9,8 +9,9 @@ systemd mock is needed and no refactor can silently widen the repair set.
 
 from __future__ import annotations
 
-from libs.ops.deploy_plan import TIER_RUIN
 from scripts.run_stale_daemon_repair import _money_path, decide
+
+from libs.ops.deploy_plan import TIER_RUIN
 
 _MONEY = ("scripts/run_cashcarry_executor.py", "libs/execution/",
           "scripts/run_deadman_switch.py")

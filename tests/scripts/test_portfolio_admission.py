@@ -14,7 +14,6 @@ from pathlib import Path
 
 import numpy as np
 import pytest
-
 import scripts.run_portfolio_admission as PA
 
 

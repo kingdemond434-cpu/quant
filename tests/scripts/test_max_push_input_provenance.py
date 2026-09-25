@@ -24,7 +24,6 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-
 import scripts.run_max_push as MP
 
 

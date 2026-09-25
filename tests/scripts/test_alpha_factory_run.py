@@ -7,8 +7,8 @@ from __future__ import annotations
 import json
 
 import pytest
-
 import scripts.run_alpha_factory as af
+
 from libs.alpha_factory.models import AlphaCategory
 
 

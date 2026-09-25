@@ -16,6 +16,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 import scripts.mechanism_board as mb
+
 from libs.research.mechanism_census import TAXONOMY
 
 _GRAVE = """# graveyard
