@@ -729,6 +729,33 @@ function Test-KeptByBox {
     return $boxTouched.ContainsKey($Rel)
 }
 
+# ---- 1b. NEVER ADOPT OVER CODE ONLY THIS BOX HOLDS --------------------------------------------
+# `Test-KeptByBox` protects STATE. Code the box committed since the merge base was protected by
+# nothing: a path the target lacks was unlinked below and a path the target differs on was
+# overwritten with origin's copy. That is how an adoption deleted 104 organs on the box they were
+# authored on (restored by hand in b2895adca). The rule: a CODE path this box changed since the
+# merge base, whose bytes the target does not carry, means the box is AHEAD on code -- the
+# adoption refuses and says which paths, so the box pushes first and the next adoption carries
+# them. Paths the target already contains (the box's commits reached origin) differ by nothing
+# and never trigger this. The one-shot recovery permit above still overrides, deliberately.
+if ($mergeBase -and -not $permitAccepted) {
+    $aheadArgs = @("-c", "core.quotePath=false", "diff", "--name-only", $target, "HEAD", "--") +
+                 $ReleaseCodePaths
+    $boxAheadCode = @(Invoke-Git $aheadArgs -AllowFail | ForEach-Object { "$_".Trim() } |
+                      Where-Object { $_ -match '\S' -and $boxTouched.ContainsKey($_) -and
+                                     -not (Test-StatePath $_) })
+    if ($boxAheadCode.Count -gt 0) {
+        $refuseMsg = "  REFUSING: {0} code path(s) this box committed are not in the target; " +
+                     "adopting would revert or delete them. Push the box's branch first."
+        Write-Host ($refuseMsg -f $boxAheadCode.Count)
+        $boxAheadCode | Select-Object -First 40 | ForEach-Object { Write-Host ("    {0}" -f $_) }
+        exit 1
+    }
+} elseif (-not $mergeBase) {
+    Write-Host ("  WARNING: no merge base with the target; box-authored code cannot be told " +
+                "apart from origin's, so none is protected on this adoption")
+}
+
 $written = 0; $added = 0; $removed = 0; $untracked = 0; $shipped = 0
 $kept      = New-Object System.Collections.ArrayList
 $unremoved = New-Object System.Collections.ArrayList
