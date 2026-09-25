@@ -13,7 +13,6 @@ from pathlib import Path
 from typing import Any
 
 import scripts.check_pit as P
-
 from libs.data.pit import is_stamped, stamp
 
 ROOT = Path(__file__).resolve().parents[2]
