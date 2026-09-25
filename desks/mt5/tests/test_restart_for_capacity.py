@@ -124,9 +124,17 @@ def test_the_pagefile_target_is_the_authorised_one():
     assert rfc.PAGEFILE_VALUE == r"C:\pagefile.sys 262144 393216"
 
 
-def test_the_order_is_stated_because_the_terminal_rewrites_the_file_at_shutdown():
+def test_staging_stops_the_terminal_before_it_edits_the_ini():
+    """MetaTrader rewrites common.ini at shutdown, so an edit made while it is up is discarded.
+
+    ASSERT THE ORDER, NOT THE PROSE. Three earlier tests in this session failed on a docstring
+    phrase that wrapped across a line; the sentence is not the property, the sequence is.
+    """
     src = Path(rfc.__file__).read_text(encoding="utf-8")
-    assert "REWRITES it at shutdown" in src
-    # staging must stop the terminal before touching the ini
     body = src.split("if a.stage and", 1)[1]
-    assert body.index("stop_terminal") < body.index("set_maxbars")
+    assert body.index("stop_terminal") < body.index("set_maxbars"), (
+        "common.ini must not be edited until the terminal is down")
+    # and the edit is gated on the stop actually having worked
+    assert 'if doc["stop_terminal"]["ok"]:' in body
+    # the restart is gated on staging having succeeded
+    assert 'if a.restart and doc["staged"]' in src
