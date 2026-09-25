@@ -626,9 +626,22 @@ if ($dirty.Count -gt 0) {
         if ($p -match ' -> ') { $p = ($p -split ' -> ')[-1] }
         $p.Trim().Trim('"')
     })
-    Write-Host ("  committing {0} uncommitted state path(s) first" -f $dirtyPaths.Count)
-    foreach ($p in $dirtyPaths) { Invoke-Git @("add", "--", $p) -AllowFail | Out-Null }
-    Invoke-Git @("commit", "-m", "Box state captured before release adoption") -AllowFail | Out-Null
+    # A release must never spend its lock window indexing the desk's evidence lake.  The
+    # box's dedicated state synchronizer owns state paths; on 2026-09-25 this preflight tried
+    # to add 87 files including H1 parquet, held the release mutex indefinitely, and prevented
+    # a fully tested gold gateway from receiving its seal.  Leave state unstaged and visible to
+    # its owner.  Only local *code* edits can make an adoption ambiguous, so they still stop
+    # here rather than being silently overwritten.
+    $dirtyCode = @($dirtyPaths | Where-Object { -not (Test-StatePath $_) })
+    $dirtyState = @($dirtyPaths | Where-Object { Test-StatePath $_ })
+    if ($dirtyState.Count -gt 0) {
+        Write-Host ("  deferring {0} uncommitted state path(s) to MT5-ShadowSync; they do not block code adoption" -f $dirtyState.Count)
+    }
+    if ($dirtyCode.Count -gt 0) {
+        Write-Host ("  REFUSING: {0} local code path(s) are dirty; a release may not overwrite unknown code" -f $dirtyCode.Count)
+        $dirtyCode | ForEach-Object { Write-Host ("    {0}" -f $_) }
+        exit 1
+    }
 }
 
 # ---- 2. WRITE EVERY CHANGED PATH IN PLACE ------------------------------------
