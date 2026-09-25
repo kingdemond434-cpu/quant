@@ -91,6 +91,10 @@ def test_policy_signals_read_the_description_too(miner) -> None:  # type: ignore
 
 def test_seeded_feeds_are_a_seed_not_a_boundary(miner) -> None:  # type: ignore[no-untyped-def]
     """LAWS §1 anti-hardcode: adding a bank must be adding a row, never editing logic."""
-    assert set(miner.FEEDS) >= {"Fed", "ECB", "BoJ", "BoE", "BoC", "BIS"}
+    assert set(miner.FEEDS) >= {"Fed", "ECB", "BoJ", "BoE", "BoC"}
+    # BIS was REMOVED 2026-08-28: its speech RSS sits under `Disallow: /doclist/` in bis.org's
+    # robots.txt, and the access boundary is a hard limit. Its speeches are mined from the allowed
+    # full-text download by side_channels/bis_speech_tone.py instead, so it must not come back here.
+    assert "BIS" not in miner.FEEDS
     for info in miner.FEEDS.values():
         assert info["url"].startswith("https://") and info["currency"]
