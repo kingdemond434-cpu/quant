@@ -11,6 +11,8 @@ import sys
 from datetime import UTC, datetime
 from pathlib import Path
 
+import pytest
+
 _DESK = Path(__file__).resolve().parents[1]
 if str(_DESK) not in sys.path:
     sys.path.insert(0, str(_DESK))
@@ -82,3 +84,36 @@ def test_a_timeframe_carried_only_in_params_is_still_banned() -> None:
     why = lp.refuse({"name": "x", "symbol": "XAUUSD", "params": {"timeframe": "M15"}},
                     lp.Policy())
     assert why and "M15" in why
+
+
+def _row(**kw):
+    base = {"r_multiple": 0.0, "r_unreconstructible": False, "side": 0, "entry_price": 4427.6,
+            "sl": 4461.71, "fill_price": 4360.63, "pl_quote": 57.75, "commission": -0.02,
+            "swap": 0.0}
+    base.update(kw)
+    return base
+
+
+def test_a_pre_fix_zero_r_row_is_recomputed_from_its_own_prices() -> None:
+    # The first row of the live ledger: a short (closed by a buy) from 4427.60, stop 4461.71,
+    # closed at 4360.63 -- 66.97 over a 34.11 stop, i.e. ~+1.96R, which the ledger held as 0.0.
+    out = dc.repair_ledger_row(_row())
+    assert out["r_multiple"] == pytest.approx(1.963, abs=1e-3)
+    assert out["r_repaired"]
+
+
+def test_repair_never_touches_a_measured_or_unreconstructible_row() -> None:
+    r = _row(r_multiple=0.42)
+    assert dc.repair_ledger_row(r) is r
+    r = _row(r_unreconstructible=True)
+    assert dc.repair_ledger_row(r) is r
+    r = _row(sl=0.0)
+    assert dc.repair_ledger_row(r) is r
+    r = _row(fill_price=4427.6, pl_quote=-0.02)       # a scratch: R genuinely ~0 stays put
+    assert dc.repair_ledger_row(r)["r_multiple"] == 0.0 or dc.repair_ledger_row(r) is r
+
+
+def test_a_long_closed_by_a_sell_is_signed_long() -> None:
+    out = dc.repair_ledger_row(_row(side=1, entry_price=4336.08, sl=4282.26,
+                                    fill_price=4365.11, pl_quote=25.03))
+    assert out["r_multiple"] > 0

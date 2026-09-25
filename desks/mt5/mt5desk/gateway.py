@@ -1720,7 +1720,8 @@ def _position_entry(pid) -> dict:
     records every other fill.
     """
     out = {"entry_price": 0.0, "sl": 0.0, "tp": 0.0, "comment": "",
-           "entry_order": None, "entry_deal": None, "position_id": pid}
+           "entry_order": None, "entry_deal": None, "position_id": pid,
+           "entry_commission": 0.0, "entry_volume": 0.0}
     if not pid:
         return out
     try:
@@ -1735,10 +1736,57 @@ def _position_entry(pid) -> dict:
                 out["entry_price"] = float(getattr(x, "price", 0.0) or 0.0)
                 out["entry_order"] = getattr(x, "order", None)
                 out["entry_deal"] = getattr(x, "ticket", None)
+                out["entry_commission"] = float(getattr(x, "commission", 0.0) or 0.0)
+                out["entry_volume"] = float(getattr(x, "volume", 0.0) or 0.0)
                 break
     except Exception as exc:
         log(f"position {pid}: context unreadable ({type(exc).__name__}); R left unmeasured")
     return out
+
+
+def repair_ledger_once(st: dict) -> None:
+    """Once per day, repair the rows written before the 2026-09-16 R fix and the attribution
+    fix: R recomputed from the row's own prices (`decision_core.repair_ledger_row`), and a
+    broker-exit tag (`[sl 4300.69]`) replaced by the sleeve the position's opening order names.
+
+    141 of 151 ledger rows read R = 0.0 (measured 2026-09-25), so the promoter, the decay
+    monitor and the independence measurement all saw zero edge on every gold trade. The box's
+    own organ rewrites the box's own ledger; nothing on origin hand-edits it.
+    """
+    day = datetime.now(tz=UTC).date().isoformat()
+    if st.get("ledger_repaired_on") == day or not LEDGER.exists():
+        return
+    try:
+        lines = LEDGER.read_text(encoding="utf-8").splitlines()
+        out, changed = [], 0
+        for line in lines:
+            if not line.strip():
+                out.append(line)
+                continue
+            try:
+                row = json.loads(line)
+            except ValueError:
+                out.append(line)
+                continue
+            new = _core.repair_ledger_row(row)
+            if str(new.get("sleeve", "")).startswith("[") and new.get("position_id"):
+                _cm = _position_entry(new.get("position_id")).get("comment") or ""
+                if _cm.startswith("DW"):
+                    new = {**new, "sleeve": sleeve_from_comment(_cm),
+                           "sleeve_recovered_from": "position_entry_order"}
+            if new != row:
+                changed += 1
+                out.append(json.dumps(new, default=str))
+            else:
+                out.append(line)
+        if changed:
+            tmp = LEDGER.with_suffix(".jsonl.repair")
+            tmp.write_text("\n".join(out) + "\n", encoding="utf-8")
+            os.replace(tmp, LEDGER)
+        log(f"ledger repair: {changed} row(s) corrected of {len(lines)}")
+        st["ledger_repaired_on"] = day
+    except Exception as exc:
+        log(f"ledger repair skipped ({type(exc).__name__}: {exc}); rows left as written")
 
 
 def record_trades(st: dict, sleeves: list[dict]) -> None:
@@ -1835,7 +1883,16 @@ def record_trades(st: dict, sleeves: list[dict]) -> None:
         if sym_info is None:
             continue
         # risk per lot at entry: SL distance x contract (quote units)
-        pl_quote = float(d.profit) + float(d.commission or 0.0) + float(d.swap or 0.0)
+        # BOTH SIDES' COMMISSION. The venue charges per side and books the opening side on the
+        # ENTRY deal; only the closing deal's was counted, so every trade's cost read half its
+        # real size (EURGBP: -1.11 in the ledger, -2.22 at the broker, measured 2026-09-25). A
+        # partial close carries its pro-rata share of the entry commission, never all of it.
+        _entry_vol = float(ctx.get("entry_volume") or 0.0)
+        _close_vol = float(getattr(d, "volume", 0.0) or 0.0)
+        entry_commission = (float(ctx.get("entry_commission") or 0.0)
+                            * min(1.0, _close_vol / _entry_vol) if _entry_vol > 0 else 0.0)
+        pl_quote = (float(d.profit) + float(d.commission or 0.0) + entry_commission
+                    + float(d.swap or 0.0))
         # UNRECONSTRUCTIBLE IS RECORDED, NEVER GUESSED -- `decision_core.closed_trade_r` returns
         # zeros without both the entry and the stop, and the row below says so.
         # THE POSITION'S OWN VOLUME AND THE VENUE'S TICK VALUE (2026-09-16): see
@@ -1850,7 +1907,8 @@ def record_trades(st: dict, sleeves: list[dict]) -> None:
         rec = {"time": now(), "sleeve": sleeve, "symbol": d.symbol,
                "side": d.type, "pl_quote": round(pl_quote, 2),
                "r_multiple": round(r, 4), "volume": d.volume,
-               "commission": d.commission, "swap": d.swap, "deal": d.ticket,
+               "commission": d.commission, "commission_entry": round(entry_commission, 4),
+               "swap": d.swap, "deal": d.ticket,
                # THE FILL, so it can be compared with the intent. price_open was already read
                # here to size `risk_quote` and then thrown away, which is why no markout was
                # possible: the one number that reveals execution quality was computed and
@@ -4219,6 +4277,7 @@ def main() -> None:
             close_positions(st, s["symbol"])
 
     record_trades(st, sleeves)
+    repair_ledger_once(st)
     st = reconcile(st)
     save_state(st)
     log(f"state: armed={st['armed']} pos={len(st['position'] or [])} "

@@ -1978,6 +1978,40 @@ def closed_trade_r(entry_price: float, sl_price: float, is_buy: bool, contract_s
     return risk, float(pl_quote) / risk
 
 
+def repair_ledger_row(row: dict) -> dict:
+    """The row with its R recomputed when it was written by the pre-2026-09-16 zero.
+
+    Pure: returns a new dict, or `row` itself when nothing applies. Only a row that says
+    `r_multiple == 0.0`, is NOT stamped unreconstructible, and carries an entry, a stop and a
+    closing fill is repaired -- so a genuine scratch trade written after the fix (R computed and
+    exactly 0) is never touched, because its fill equals its entry and the recomputation agrees.
+
+    CURRENCY-FREE BY CONSTRUCTION. Those rows' `risk_quote` is in the QUOTE currency while
+    `pl_quote` is in the account currency, so their ratio is not an R. The price move over the
+    stop distance is, and the net/gross ratio of the row's own P&L carries its costs into it:
+        R = side * (fill - entry) / |entry - stop| * pl_quote / (pl_quote - commission - swap)
+    The position is long when the CLOSING deal is a sell (`side == 1`).
+    """
+    try:
+        if float(row.get("r_multiple", 1.0) or 0.0) != 0.0 or row.get("r_unreconstructible"):
+            return row
+        entry = float(row.get("entry_price") or 0.0)
+        stop = float(row.get("sl") or 0.0)
+        fill = float(row.get("fill_price") or 0.0)
+        if entry <= 0 or stop <= 0 or fill <= 0 or entry == stop:
+            return row
+        sign = 1.0 if int(row.get("side", -1)) == 1 else -1.0
+        r_price = sign * (fill - entry) / abs(entry - stop)
+        pl = float(row.get("pl_quote") or 0.0)
+        gross = pl - float(row.get("commission") or 0.0) - float(row.get("swap") or 0.0)
+        r = r_price * (pl / gross) if gross else r_price
+        if not math.isfinite(r) or r == 0.0:
+            return row
+        return {**row, "r_multiple": round(r, 4), "r_repaired": "price_move_over_stop_2026_09_25"}
+    except (TypeError, ValueError):
+        return row
+
+
 # --------------------------------------------------------------------- execution context and gate
 
 def exec_context(symbol: str, side: int, entry_ref: float, tick: object, dist: float,
