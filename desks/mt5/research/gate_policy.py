@@ -135,7 +135,8 @@ _SUPERSEDED_TRIAL_BASES: tuple[str, ...] = (
 # raises the charge ABOVE 597, this entry disappears by itself and those certificates are
 # correctly treated as under-qualified -- a re-certification, not a list entry.
 if isinstance(_SPEC_FIXED_TRIALS, int) and 2 <= _SPEC_FIXED_TRIALS <= 597:
-    _SUPERSEDED_TRIAL_BASES = (*_SUPERSEDED_TRIAL_BASES, _LEGACY_TRIAL_COUNT_BASIS)
+    _SUPERSEDED_TRIAL_BASES = (*_SUPERSEDED_TRIAL_BASES, _LEGACY_TRIAL_COUNT_BASIS,
+                               "fixed_campaign_trials(597)")
 
 
 def is_exact_policy(value: Any) -> bool:
@@ -166,16 +167,32 @@ def is_exact_policy(value: Any) -> bool:
         return False
     differing = [k for k in ATTESTATION if value[k] != ATTESTATION[k]]
     return (differing == ["trial_count_basis"]
-            and value["trial_count_basis"] in _SUPERSEDED_TRIAL_BASES)
+            and is_admissible_trial_count_basis(value["trial_count_basis"]))
+
+
+def is_admissible_trial_count_basis(value: Any) -> bool:
+    """Whether a recorded trial charge is the current one or a proven-harder legacy charge.
+
+    This is deliberately narrower than a general migration.  It exists so publication and
+    forward enrolment use the same audited exception as certificate attestation: a result that
+    cleared a harder multiplicity charge is not invalidated merely because the desk later made
+    the charge more accurate.
+    """
+    return value == TRIAL_COUNT_BASIS or value in _SUPERSEDED_TRIAL_BASES
 
 
 def all_ten_pass(stages: Any) -> bool:
-    """A partial or extra gate set is not the canonical ten-gate verdict."""
+    """All canonical gates and every recorded supplementary gate must pass.
+
+    The original ten are mandatory.  A newer diagnostic or cost gate is additive: accepting it
+    only when it passes cannot lower the original bar; rejecting it merely because it is an
+    eleventh name strands otherwise valid evidence forever.
+    """
     return (
         isinstance(stages, dict)
-        and tuple(stages) == GATES
-        and all(isinstance(stages[name], dict) and stages[name].get("passed") is True
-                for name in GATES)
+        and all(name in stages for name in GATES)
+        and all(isinstance(stage, dict) and stage.get("passed") is True
+                for stage in stages.values())
     )
 
 

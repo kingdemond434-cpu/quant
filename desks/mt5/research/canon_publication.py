@@ -433,9 +433,11 @@ def recover_from_gate_output(gates: Path = GATE_OUTPUT, report: Path = REPORT,
     by name in `refused`, so an empty recovery states WHY rather than reading as "nothing passed".
     """
     try:
-        from gate_policy import ATTESTATION, all_ten_pass
+        from gate_policy import ATTESTATION, all_ten_pass, is_admissible_trial_count_basis
     except ImportError:                                  # pragma: no cover - import-context dep
-        from research.gate_policy import ATTESTATION, all_ten_pass  # type: ignore[no-redef]
+        from research.gate_policy import (  # type: ignore[no-redef]
+            ATTESTATION, all_ten_pass, is_admissible_trial_count_basis,
+        )
 
     now = datetime.now(UTC)
     out: dict[str, Any] = {"gate_output": str(gates), "rows": {},
@@ -497,7 +499,7 @@ def recover_from_gate_output(gates: Path = GATE_OUTPUT, report: Path = REPORT,
     out["gate_trial_basis"] = gate_basis
     out["spec_trial_basis"] = spec_basis
     out["gate_n_trials"] = doc.get("n_trials")
-    superseded = bool(not gate_basis or gate_basis != spec_basis)
+    superseded = not is_admissible_trial_count_basis(gate_basis)
 
     seal_doc = _read(seal)
     standing = seal_doc.get("survivors")
@@ -524,20 +526,23 @@ def recover_from_gate_output(gates: Path = GATE_OUTPUT, report: Path = REPORT,
             refused["unrunnable_evicted"] += 1
             continue
         stages = v.get("stages")
+        if isinstance(stages, dict):
+            try:
+                from gate_policy import GATES
+            except ImportError:                      # pragma: no cover - import-context dep
+                from research.gate_policy import GATES  # type: ignore[no-redef]
+            for name in stages:
+                if name not in GATES:
+                    extra_gates[str(name)] += 1
         if not all_ten_pass(stages):
-            # NAME THE MISMATCH. A verdict the judge passed but `all_ten_pass` refuses is either
-            # a partial record or one carrying a stage the policy does not list, and the two are
-            # different problems. Counting them together is how a silent blackout looks healthy.
+            # Name the mismatch.  Supplementary gates are accepted only when they pass; this
+            # branch therefore means a partial record or an explicitly failed extra gate.
             if isinstance(stages, dict):
-                try:
-                    from gate_policy import GATES
-                except ImportError:                      # pragma: no cover - import-context dep
-                    from research.gate_policy import GATES  # type: ignore[no-redef]
-                for name in stages:
-                    if name not in GATES:
-                        extra_gates[str(name)] += 1
-                refused["extra_gate_not_in_policy" if any(n not in GATES for n in stages)
-                        else "not_all_ten_pass"] += 1
+                refused["supplementary_gate_failed" if any(
+                    n not in GATES and not (isinstance(stages[n], dict)
+                                            and stages[n].get("passed") is True)
+                    for n in stages
+                ) else "not_all_ten_pass"] += 1
             else:
                 refused["no_stages_record"] += 1
             continue

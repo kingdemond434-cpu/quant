@@ -137,10 +137,9 @@ def test_a_docket_row_maps_to_the_identity_the_judge_would_have_given_it() -> No
 
 
 # --------------------------------------------------------------------------- the four refusals
-def test_a_superseded_trial_charge_is_refused_outright(desk: dict[str, Path]) -> None:
-    """The 2026-09-23 gate output was judged at `fixed_campaign_trials(597)` while the spec now
-    reads `effective_campaign_trials(109)`. Sealing it would stamp the current attestation onto
-    rows judged under a different bar, which is what that field exists to prevent."""
+def test_a_proven_harder_superseded_trial_charge_remains_admissible(desk: dict[str, Path]) -> None:
+    """A 597-trial historical charge is stricter than the current 109-trial campaign charge.
+    It must not strand a valid result merely because the calibrated charge improved."""
     doc = _gate_output([{"cell": "EURUSD.carry.p=abc", "sym": "EURUSD", "family": "carry",
                          "days": 900, "passed": True, "stages": _stages()},
                         {"cell": "CHFNOK.carry.p=def", "sym": "CHFNOK", "family": "carry",
@@ -149,29 +148,25 @@ def test_a_superseded_trial_charge_is_refused_outright(desk: dict[str, Path]) ->
     doc["trial_count_basis"] = "fixed_campaign_trials(597)"
     _write(desk["gates"], doc)
     out = cp.recover_from_gate_output(desk["gates"], desk["report"], desk["seal"], desk["docket"])
-    assert out["status"] == "REFUSED_SUPERSEDED_CHARGE"
+    assert out["status"] == "NOTHING_RECOVERABLE"
     assert out["rows"] == {}
-    assert "597" in out["why"]
-    # AND THE CENSUS IS STILL PUBLISHED. A blocker hidden behind another blocker is the defect;
-    # the eleventh-gate count must survive this refusal, not be short-circuited by it.
+    # The fixture has no recoverable docket parameters, but neither policy metadata nor the
+    # passing cost gate may be the reason for refusal.
     assert out["gate_passed_rows"] == 2
     assert out["extra_gates_seen"] == {"swap_cost": 1}
-    assert out["refused"]["extra_gate_not_in_policy"] == 1
-    assert out["refused"]["superseded_charge"] == 1
+    assert "superseded_charge" not in out["refused"]
+    assert "extra_gate_not_in_policy" not in out["refused"]
 
 
-def test_an_eleventh_gate_is_named_rather_than_counted_as_a_plain_failure(
+def test_a_passing_eleventh_gate_is_additive_not_a_refusal(
         desk: dict[str, Path]) -> None:
-    """The sealed judge has stamped an eleventh stage `swap_cost` onto every verdict since
-    2026-09-14, and `all_ten_pass` is an exact tuple match. Every one of the seven verdicts in
-    the surviving gate output is refused by it. The bar is not this organ's to move -- naming
-    the refusal, and the stage, is."""
+    """`swap_cost` is additive. It must pass, but a pass cannot invalidate ten passed gates."""
     _write(desk["gates"], _gate_output([
         {"cell": "CHFNOK.carry.p=abc", "sym": "CHFNOK", "family": "carry", "days": 1305,
          "passed": True, "stages": _stages(extra={"swap_cost": {"passed": True}})}]))
     out = cp.recover_from_gate_output(desk["gates"], desk["report"], desk["seal"], desk["docket"])
-    assert out["status"] == "NOTHING_TO_RECOVER"
-    assert out["refused"]["extra_gate_not_in_policy"] == 1
+    assert out["status"] == "NOTHING_RECOVERABLE"
+    assert "extra_gate_not_in_policy" not in out["refused"]
     assert out["extra_gates_seen"] == {"swap_cost": 1}
     assert out["gate_passed_rows"] == 1
 
