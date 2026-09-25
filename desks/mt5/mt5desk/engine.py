@@ -80,6 +80,23 @@ class Costs:
     #: silently -- the same discipline `quote_per_account` and `spread_pts` document above, and
     #: for the same reason: this class is on the money path.
     swap_per_lot_per_night: float = 0.0
+    #: ADVERSE SLIPPAGE ON EVERY STOP EXIT, IN POINTS (2026-09-25). Until this field the engine
+    #: paid every stop at exactly its level -- a stop is a MARKET order once touched, and it fills
+    #: at whatever the book offers next. Measured on the live gold book the median is 13 points
+    #: (see `MEASURED_STOP_SLIPPAGE_PTS`), charged here on top of the gap-through rule in
+    #: `run_backtest` (a bar that OPENS beyond the stop exits at that open, never at the stop).
+    #:
+    #: Defaults to 0.0 with `point` 0.0 so a hand-built `Costs(...)` re-prices nothing silently --
+    #: the same discipline as the fields above. `from_symbol()` is where the measured value lands.
+    #: A symbol with no measurement is charged 0 slippage, which is an UNMEASURED cost and not a
+    #: free one: the gap-through rule still applies to it, only the extra points are missing.
+    stop_slippage_pts: float = 0.0
+    #: One point in PRICE UNITS (the symbol's tick_size); converts `stop_slippage_pts` to price.
+    point: float = 0.0
+
+    def stop_slippage_px(self) -> float:
+        """Adverse stop-exit slippage in price units (0 when either factor is unknown)."""
+        return max(float(self.stop_slippage_pts), 0.0) * max(float(self.point), 0.0)
 
     def per_oz_roundtrip(self) -> float:
         """Round-trip cost per lot, in the convention the engine divides by `contract_oz`.
@@ -122,7 +139,8 @@ class Costs:
     @classmethod
     def from_symbol(cls, meta: dict, mult: float = 1.0,
                     commission_per_lot: float = 2.00, *,
-                    spread_pts: float | None = None) -> Costs:
+                    spread_pts: float | None = None,
+                    stop_slippage_pts: float | None = None) -> Costs:
         """Costs for one symbol from its universe.json metadata.
 
         `mult` scales the SPREAD ONLY. Commission is contractual and does not
@@ -152,6 +170,10 @@ class Costs:
         exactly where it is today rather than inventing a number. `check_cost_surface.py` is
         what stops that fallback becoming invisible: it reports the cell UNMEASURED rather than
         OK (L1.28a), so an unpriced hour is a named gap and not a clean verdict.
+
+        `stop_slippage_pts` resolves in this order: the argument, then a `stop_slippage_pts` key
+        on the symbol's metadata (the per-symbol override), then `MEASURED_STOP_SLIPPAGE_PTS`
+        for the symbol, then 0 -- unmeasured, see the field's comment.
         """
         cs = float(meta.get("contract_size", 1e5))
         ts = float(meta.get("tick_size", 0.0))
@@ -174,10 +196,23 @@ class Costs:
         # `scripts/check_swap_pricing.py` is what stops that silence becoming a clean verdict.
         swap_pts = max(abs(float(meta.get("swap_long", 0.0) or 0.0)),
                        abs(float(meta.get("swap_short", 0.0) or 0.0)))
+        if stop_slippage_pts is None:
+            raw = meta.get("stop_slippage_pts")
+            if raw is None:
+                raw = MEASURED_STOP_SLIPPAGE_PTS.get(str(meta.get("symbol") or ""), 0.0)
+            stop_slippage_pts = float(raw or 0.0)
         return cls(spread_per_lot=max(spread * mult, 0.05),
                    commission_per_lot=commission_per_lot, contract_oz=cs,
                    quote_per_account=qpa,
-                   swap_per_lot_per_night=swap_pts * ts * cs)
+                   swap_per_lot_per_night=swap_pts * ts * cs,
+                   stop_slippage_pts=float(stop_slippage_pts), point=ts)
+
+
+#: MEASURED ADVERSE STOP SLIPPAGE, IN POINTS, per broker symbol. XAUUSD: 13 points median on the
+#: live gold book's stop exits (audit of 2026-09-25). Only measured symbols belong here; every
+#: other symbol falls to 0 in `Costs.from_symbol` and can be overridden per symbol with a
+#: `stop_slippage_pts` key on its universe metadata or the argument of the same name.
+MEASURED_STOP_SLIPPAGE_PTS: dict[str, float] = {"XAUUSD": 13.0}
 
 
 @dataclass
@@ -235,6 +270,18 @@ class Signal:
     # every add, which is how a pyramid turns into the thing it is not supposed
     # to be. Set False only to MEASURE that difference, never to trade it.
     add_ratchets_stop: bool = True
+    #: WHAT KIND OF RESTING ORDER `trigger` IS: "stop" (beyond the market in the trade's
+    #: direction -- a breakout), "limit" (on the far side), or None to INFER it from where the
+    #: trigger sits against the open of the bar the order is armed on (the rule every family
+    #: predating this field relied on). Inference cannot see a gap: a buy stop whose arming bar
+    #: already opens ABOVE it reads as a buy limit and used to fill on the pullback, an order the
+    #: live venue refuses (retcode 10015, `decision_core.entry_is_legal`). A family whose trigger
+    #: is a breakout level declares "stop" so the engine can refuse that fill the way live does.
+    entry_type: str | None = None
+
+
+#: How legs of one BRACKET (trigger signals sharing a timestamp) interact; see `run_backtest`.
+BRACKET_MODES = ("independent", "oco")
 
 
 @dataclass
@@ -323,13 +370,49 @@ def run_backtest(
     signals: list[Signal],
     costs: Costs,
     max_hold_bars: int | None = None,
+    *,
+    bracket_mode: str = "independent",
 ) -> BacktestResult:
     """Simulate trades from signals against an OHLC frame (index = UTC).
 
     Entries fill at the open of the first bar strictly after the signal time.
     Stops checked intrabar via low/high; targets similarly. TTL and max-hold
     force exits. Position closed at next bar open if no stop/target hit.
+
+    FILLS ARE RESOLVED IN TIME ORDER, NEVER LIST ORDER (2026-09-25). The loop used to walk the
+    signal list and take each one if the book was flat at its placement bar, then block every
+    later signal until that trade exited. `family_session_range_breakout` emits a long and a short
+    at the SAME timestamp, each a resting stop alive for `wait_bars` bars: the long was evaluated
+    over its whole window first, and the short was only ever taken when the long had NOT filled
+    anywhere in that window -- a short selected by bars that come after its own fill. On a
+    driftless random walk at zero cost that manufactured +0.09R a trade out of nothing.
+
+    Now every signal's fill bar is resolved first, with no position constraint, and the
+    single-position discipline is applied in fill order (ties: list order, which is data-blind).
+    A signal's acceptance depends only on trades that filled at or before it.
+
+    `bracket_mode` says how the legs of ONE bracket -- trigger signals sharing a timestamp -- treat
+    each other:
+
+      "independent" (default) -- how the live gateway trades them: two pending orders, no
+          one-cancels-other. Each leg may fill and is simulated on its own; a sibling's position
+          never blocks it. Positions from OTHER signals still do.
+      "oco" -- one-cancels-other: the earliest-filling leg is taken and its siblings are
+          cancelled (a same-bar tie goes to the leg listed first, which uses no bar data).
+
+    Three further live-fidelity rules, applied to every family:
+
+      * A STOP entry (declared `entry_type="stop"`) whose arming bar already OPENS beyond its
+        trigger is skipped -- live refuses it (10015). A resting stop that a LATER bar gaps
+        through fills at that bar's open, not at the trigger.
+      * A stop exit on a bar that opens beyond the stop is paid at that open, and every stop exit
+        pays `costs.stop_slippage_px()` adversely.
+      * A trade whose stop is on the wrong side of its actual fill (long: stop >= entry; short:
+        stop <= entry) is skipped: it has no risk unit, and the engine used to book it as a
+        "stop" at about +1R.
     """
+    if bracket_mode not in BRACKET_MODES:
+        raise ValueError(f"bracket_mode must be one of {BRACKET_MODES}, got {bracket_mode!r}")
     o = df["open"].to_numpy()
     h = df["high"].to_numpy()
     l = df["low"].to_numpy()
@@ -357,39 +440,83 @@ def run_backtest(
     )
     locs = np.searchsorted(idx_ns, sig_ns)
     trades: list[Trade] = []
-    filled = 0
     per_oz_cost = costs.per_oz_roundtrip() / costs.contract_oz
-    last_exit_idx = -1  # single-position discipline: no overlapping trades
+    slip = costs.stop_slippage_px()
+    n_bars = len(idx)
 
-    for sig, i0 in zip(signals, locs):
-        i = i0 + 1
-        if i <= 0 or i >= len(idx) - 1:
-            continue
-        if i <= last_exit_idx:
+    # --- PASS 1: every signal's own fill, with NO position constraint. Nothing here reads
+    # another signal, so no signal's fill can depend on a sibling's future.
+    # (fill_bar, list position, entry price, limit_entry, bracket group)
+    cands: list[tuple[int, int, float, bool, int]] = []
+    for pos, (sig, i0) in enumerate(zip(signals, locs, strict=True)):
+        i = int(i0) + 1
+        if i <= 0 or i >= n_bars - 1:
             continue
         entry = float(o[i])
         if entry != entry or not (entry > 0):
             continue
-        # intrabar trigger fill: a resting stop order that lives `wait_bars` bars
         fill_bar = i
         limit_entry = False
         if sig.trigger is not None:
-            tgt = sig.trigger
+            tgt = float(sig.trigger)
             # A LIMIT entry sits on the far side of the market from the trade's
             # direction (buy below, sell above); a STOP entry sits beyond it.
-            # The distinction is inferred rather than declared so it also covers
-            # the families that predate this field.
-            limit_entry = ((sig.side > 0 and tgt < entry)
-                           or (sig.side < 0 and tgt > entry))
+            # Declared by `entry_type`, else inferred against the arming bar's
+            # open so it also covers the families that predate that field.
+            if sig.entry_type == "stop":
+                limit_entry = False
+            elif sig.entry_type == "limit":
+                limit_entry = True
+            else:
+                limit_entry = ((sig.side > 0 and tgt < entry)
+                               or (sig.side < 0 and tgt > entry))
             hit = -1
-            for j in range(i, min(i + sig.wait_bars, len(idx))):
+            for j in range(i, min(i + sig.wait_bars, n_bars)):
+                oj = float(o[j])
+                if not limit_entry and ((sig.side > 0 and oj > tgt)
+                                        or (sig.side < 0 and oj < tgt)):
+                    # THE BAR OPENED BEYOND A STOP TRIGGER. On the arming bar the order is
+                    # unplaceable -- a buy stop below the ask is refused (10015) -- so the
+                    # signal is SKIPPED, never re-read as a limit filled on the pullback.
+                    # Once resting, a stop the market gaps through fills at the open.
+                    if j == i:
+                        hit = -2
+                    else:
+                        hit, entry = j, oj
+                    break
                 if float(h[j]) >= tgt >= float(l[j]):
-                    hit = j
+                    hit, entry = j, tgt
                     break
             if hit < 0:
                 continue
             fill_bar = hit
-            entry = float(tgt)
+        # WRONG-SIDE STOP: a stop at or beyond the actual fill carries no risk unit. The
+        # engine booked these as a "stop" exit at about +1R (overnight_gap_decay sizes its stop
+        # off the signal bar's open and fills at the next one). No venue trade looks like it.
+        if (sig.side > 0 and not (sig.stop < entry)) or (sig.side < 0 and not (sig.stop > entry)):
+            continue
+        # One group per bracket: trigger signals sharing a timestamp. Every other signal is
+        # its own group, so the grouping cannot change a non-bracket family.
+        grp = int(sig_ns[pos]) if sig.trigger is not None else -(pos + 1)
+        cands.append((fill_bar, pos, entry, limit_entry, grp))
+
+    # --- PASS 2: single-position discipline, in FILL order. Only trades that filled at or
+    # before a candidate's own fill bar can block it. `best` / `second` hold the latest exit
+    # among accepted trades and the latest from any OTHER group, so "flat, ignoring my own
+    # bracket" is O(1).
+    cands.sort(key=lambda c: (c[0], c[1]))
+    best_exit, best_grp, second_exit = -1, None, -1
+    taken_groups: set[int] = set()
+    for fill_bar, pos, entry, limit_entry, grp in cands:
+        sig = signals[pos]
+        if bracket_mode == "oco":
+            if grp in taken_groups:
+                continue        # a sibling leg filled first: this one was cancelled
+            last_exit_idx = best_exit
+        else:
+            last_exit_idx = best_exit if best_grp != grp else second_exit
+        if fill_bar <= last_exit_idx:
+            continue
         side = sig.side
         stop = sig.stop
         target = sig.target
@@ -416,6 +543,15 @@ def run_backtest(
         for j in range(fill_bar, last):
             bars_held = j - fill_bar + 1
             hi, lo = float(h[j]), float(l[j])
+            # A BAR THAT OPENS THROUGH THE STOP EXITS AT THE OPEN. The open is the first price
+            # of the bar, so it is checked before anything else the bar can do, against the
+            # stop in force from the previous bar. Paying the stop level here is a fill the
+            # book never gets. The fill bar is exempt: its open precedes an intrabar entry.
+            if j > fill_bar:
+                oj = float(o[j])
+                if (side > 0 and oj <= stop) or (side < 0 and oj >= stop):
+                    exit_price, reason = oj - side * slip, "bank" if banked else "stop"
+                    break
             # THE STOP IS EVALUATED FIRST, against the level in force at bar
             # open, and an add can only fill on a bar the stop survived. Within
             # one OHLC bar the path is unknown, so this denies the pyramid a
@@ -441,7 +577,7 @@ def run_backtest(
                 # the engine would have scored the policy better than the study
                 # that justified it, which is how a t = 9.16 gets born.
                 if lo <= stop:
-                    exit_price, reason = stop, "bank" if banked else "stop"
+                    exit_price, reason = stop - slip, "bank" if banked else "stop"
                     break
                 # Trail with no bank leg is now expressible: `bank_frac == 0`
                 # used to mean no trail at all, which made a pure runner
@@ -486,7 +622,7 @@ def run_backtest(
                     banked_at = target
                     stop = min(stop, entry - sd0 * bank_protect_k)
                 if hi >= stop:            # stop first — see the long side
-                    exit_price, reason = stop, "bank" if banked else "stop"
+                    exit_price, reason = stop + slip, "bank" if banked else "stop"
                     break
                 if banked or bank_frac <= 0:
                     if lo < trail_ext:
@@ -515,10 +651,20 @@ def run_backtest(
             exit_price = float(o[exit_idx])
             reason = "ttl"
             bars_held = exit_idx - fill_bar + 1
-        last_exit_idx = min(fill_bar + bars_held - 1, len(idx) - 1)
+        exit_idx = min(fill_bar + bars_held - 1, len(idx) - 1)
         stop_dist = abs(entry - sig.stop)
         if stop_dist <= 0:
             continue
+        # The trade is accepted: record its exit for the discipline above.
+        taken_groups.add(grp)
+        if grp == best_grp:
+            best_exit = max(best_exit, exit_idx)
+        elif exit_idx > best_exit:
+            if best_grp is not None:
+                second_exit = max(second_exit, best_exit)
+            best_exit, best_grp = exit_idx, grp
+        else:
+            second_exit = max(second_exit, exit_idx)
         if banked:
             r = bank_frac * (banked_at - entry) / stop_dist * side \
                 + (1.0 - bank_frac) * (exit_price - entry) / stop_dist * side
@@ -552,7 +698,6 @@ def run_backtest(
                 units=float(units), adds=len(adds),
             )
         )
-        filled += 1
 
     return BacktestResult(trades=trades, signal_count=len(signals))
 
