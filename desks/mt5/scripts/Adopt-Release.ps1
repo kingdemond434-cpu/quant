@@ -560,7 +560,7 @@ Write-Host ("  branch {0}" -f $Branch)
 # pass to use the already-fetched FETCH_HEAD.  Service-account Git can lack the interactive
 # network credential while the verified operator fetch immediately before launch succeeds; a
 # second fetch must not strand the repair.  Normal releases always fetch.
-$preflightRecoveryPermit = Join-Path $desk "data\RELEASE_BOOTSTRAP_ONCE.json"
+$preflightRecoveryPermit = Join-Path $RepoRoot "desks\mt5\data\RELEASE_BOOTSTRAP_ONCE.json"
 if (Test-Path $preflightRecoveryPermit) {
     $NoFetch = $true
     Write-Host "  one-shot recovery permit present; using pre-fetched FETCH_HEAD"
