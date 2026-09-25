@@ -435,6 +435,34 @@ _STATE_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     # portable half above passes with UNMEASURED on a clean checkout, where there is nothing to
     # judge; here there is, and an absent scoreboard is the defect it looks like.
     ("check_productivity_census.py", ("--require-state",)),
+    # THE ORGAN CENSUS (2026-09-25). The fence above joins "it ran" to "its output moved" for the
+    # 242 organs the Tier-1 ledger declares a contract for. This one asks the question three
+    # external reviews closed on, for EVERY claimed organ: real code -> a clock -> a fresh real
+    # input -> a NON-TRIVIAL artifact -> the canonical pipeline -> a measured survivor yield -> an
+    # allocation that follows that yield. It could not be asked before, because the desk's three
+    # censuses shared ZERO producers -- PRODUCER_CENSUS (1,568 names), PRODUCTIVITY_CENSUS (2,124)
+    # and DEAD_ARCHITECTURE (711, keyed by CODE PATH) had an empty intersection, so every total
+    # the desk published about itself was a total in one roster's private vocabulary. Seven
+    # rosters, 6,033 claims, 2,657 organs after the join.
+    #
+    # IT FAILS ON THE STALL, NOT ON A CAUSE: an organ that was producing a real artifact at the
+    # last census and produces none now. It does not ask why -- a timeout, a broken donation
+    # door, a credential on the wrong machine, or the next failure nobody has met yet -- because
+    # "it worked and now it does not" is the only question that survives an unknown cause. The
+    # previous artifact IS the baseline, so it needs no new state path and reports UNMEASURED on
+    # its first pass rather than inventing one. Today's residue is declared by name in
+    # `docs/research/organ_census_debt.json` on a list that may only shrink.
+    #
+    # It also measures the two links nothing else did: whether an organ's INPUT is still moving
+    # (77 of 2,657 organs declare one at all; 1 of 1,409 registry specs fills the field, which is
+    # why `fred.json` could refresh every 30 minutes and land 893 bytes with every fence green),
+    # and whether an artifact carries a PAYLOAD rather than only a fresh timestamp -- every other
+    # fence on this desk measures age, so a leg rewriting an empty report every hour reads healthy
+    # forever. And it publishes survivor yield per compute hour per generator with an EXPLORATION
+    # FLOOR, so a weak generator starves and is never eliminated by a run of bad luck.
+    # It caps nothing, retires nothing, gates no capital, and never rations what reaches the
+    # judge: multiplicity is pinned at fixed_trial_count 109, so judging one more cell is free.
+    ("check_organ_census.py", ("--require-state",)),
     # the live half of THE RUNTIME ATTESTATION: on the host that publishes it, an attestation
     # older than its own cadence means the hourly leg has stopped and the committed file has
     # quietly become a photograph of the past -- which is worse than no file, because it still

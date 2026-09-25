@@ -4709,6 +4709,19 @@ def main() -> None:
         "meta_rnd", "research/meta_rnd.py", "--once", "--budget-s", "180"))
     ac = _costed("acceptance", lambda: _producer(
         "acceptance", "scripts/check_acceptance_properties.py"))
+    # THE ORGAN CENSUS (2026-09-25). Three external reviews asked one closing question -- does
+    # every claimed department run, on real data, into the canonical pipeline, with its compute
+    # following its survivor yield -- and the desk could not answer it, because its three
+    # censuses shared ZERO producers: PRODUCER_CENSUS (1,568 names), PRODUCTIVITY_CENSUS (2,124)
+    # and DEAD_ARCHITECTURE (711, keyed by CODE PATH) had an empty intersection. This leg joins
+    # the seven rosters onto one identity and measures the two links nothing else did -- whether
+    # an organ's INPUT is still moving, and whether its artifact carries a PAYLOAD rather than
+    # only a fresh timestamp (the `fred.json` shape: refreshed every 30 minutes, 893 bytes). It
+    # also publishes survivor yield per compute hour per generator, with an exploration floor so
+    # a weak generator STARVES and is never eliminated. It reports and orders research compute;
+    # it caps nothing, retires nothing, and never rations what reaches the judge.
+    ogc = _costed("organ_census", lambda: _producer(
+        "organ_census", "scripts/check_organ_census.py", "--report-only"))
     # PRE-REGISTRATION COVERAGE (2026-09-23). The donation path pre-registered NOTHING for its
     # whole life -- 2,908 of 537,933 rows (0.54%) carried a hash -- because `register` raised on
     # a horizon it could not derive and a bare except swallowed it. The fix is upstream in
@@ -4895,7 +4908,7 @@ def main() -> None:
                     "control_plane": cp, "plumbing_watchdog": pwd_,
                     "bottleneck_attack": bka, "desk_dashboard_state": dds,
                     "opportunity_cost": oc, "acceptance": ac, "opportunity_forecast": ofc,
-                    "preregistration": prg,
+                    "preregistration": prg, "organ_census": ogc,
                     "cycle_pricing": cyp, "causal_invariance": civ,
                     "source_evig": sev, "source_drain": sdr, "pack_cells": pkc,
                     "ground_depth": gdp,

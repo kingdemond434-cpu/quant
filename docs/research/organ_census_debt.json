@@ -1,0 +1,37 @@
+{
+  "law": "THE ORGAN CENSUS' DECLARED RESIDUE. Every name and every number here is a debt the desk owes itself, measured on the trading box the day the census landed. It may only SHRINK (L1.50). A fence shipped against a clean tree passes forever; one shipped red on a backlog nobody in the session created is switched off within a day (L1.43). So today's residue is named, the ratchet points down, and tomorrow's first NEW silent stop fails on the day it appears.",
+  "measured_at": "2026-09-24T23:47:00+00:00",
+  "measured_on": "vmi3571445 (trading box, 18 cores / 96 GB)",
+  "measured_by": "python scripts/check_organ_census.py --require-state",
+
+  "silent_stops": [],
+  "silent_stops_why": "EMPTY ON PURPOSE, and it is not an optimistic reading. The silent-stop test compares this census against the PREVIOUS one, and on two consecutive passes under the same rule the trading box produced NO organ that had been producing and stopped. The excuse list therefore starts empty and the first organ that was producing an hour ago and produces nothing now fails the gate. A name may be added here only with a reason and an owner, and only ever removed.",
+
+  "max_ambiguous_code_paths": 177,
+  "max_ambiguous_code_paths_why": "MEASURED 2026-09-24: 177 code paths are claimed by more than one organ, so `dead_architecture`'s reading of those files cannot be credited to any single producer. That is not a bug in the join -- a shared runner like `full_pipeline.py` really does fill forty seats -- but it is resolution the census does not have, and crediting one seat's liveness to forty is exactly the flattery that would make the artifact worthless. The number may only fall: it falls when an organ declares its own code path, never by loosening the join.",
+
+  "baseline": {
+    "organs_claimed": 2658,
+    "rosters": 7,
+    "claims_read": 6045,
+    "organs_seen_by_one_roster_only": 1057,
+    "organs_in_all_three_censuses": 373,
+    "real_code": 1917,
+    "clocked": 1561,
+    "fresh_real_input": 70,
+    "producing": 549,
+    "reaching_pipeline": 230,
+    "with_measured_yield": 30,
+    "allocation_follows_yield": 0,
+    "writes_only_receipts": 61,
+    "produces_but_reaches_nothing": 411,
+    "sandboxes_reaching_pipeline": "19 of 129",
+    "note": "Before this join the three censuses shared ZERO producers: PRODUCER_CENSUS (1,568 names), PRODUCTIVITY_CENSUS (2,124) and DEAD_ARCHITECTURE (711, keyed by code path) had an empty intersection, so every total the desk published about itself was a total in one roster's private vocabulary. This row is the first count of the desk's organs that all three can be compared against."
+  },
+
+  "gaps_reported_not_built": {
+    "input_contract": "2,581 of 2,658 organs declare NO input at all. 1 of 1,409 ComponentSpecs fills the `inputs` field; only `libs/ops/capability_graph.NODES` declares `reads`, and it covers 139 organs. Until an organ declares what it eats, nothing can tell one reading a dead file from one reading a live one -- which is how `fred.json` refreshed every thirty minutes and landed 893 bytes with every fence green. THIS IS A GAP, REPORTED WITH ITS EVIDENCE, NOT A DEPARTMENT TO BUILD: the remedy is the `inputs` field on the specs that already exist.",
+    "allocation_by_yield": "0 of 2,658 organs have an allocation that follows a measured yield. `COMPUTE_ECONOMICS.by_department` reports `survivors_per_wall_hour: null` for all 23 departments, and `BUDGET_MARKET.json` lists `compute` under `unmeasured` and states in its own boundary that it 'does not move capital, start a job or change a budget'. The rate now exists per producer in this census's `yield_ledger`; nothing consumes it yet.",
+    "certificate_to_generator": "The attribution lane named 174 of 174 certificates by producer on 2026-09-24. Joined to compute, exactly 5 producers have a measured survivors-per-compute-hour, against 103 that spent compute with no yield reading at all. The nine search populations in `libs/research/search_populations.py` count their draws only as far as `donated` and none of them appears in the certificate table by name, so which search METHOD works is still unmeasured."
+  }
+}
