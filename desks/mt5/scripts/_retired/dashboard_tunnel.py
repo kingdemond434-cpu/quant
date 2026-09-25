@@ -145,4 +145,7 @@ def main(argv: list[str] | None = None) -> int:
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    # ARCHIVE ONLY (2026-09-25): this tunnelled an UNAUTHENTICATED http.server to the internet.
+    # Kept for the record; it must never run. The live path was deleted on live (7401f7690).
+    sys.stderr.write("REFUSING: archived dashboard_tunnel.py exposed an ungated dashboard\n")
+    raise SystemExit(2)
