@@ -214,6 +214,34 @@ def test_a_lock_file_is_never_convicted_of_being_empty(tmp_path: Path) -> None:
         "hours is not running")
 
 
+def test_a_deferred_leg_is_judged_against_the_rotation_window(tmp_path: Path) -> None:
+    """A DEFERRAL IS NOT A STOP. Legs are deferred on purpose -- `LEG_ROTATION.json` declares a
+    24-hour window -- so judging one against three times its nominal hourly cadence convicts it
+    of stopping when the rotation simply has not reached it. A fence that cannot tell a
+    scheduling decision from a defect is noise, and noise gets switched off."""
+    reports = tmp_path / "desks" / "mt5" / "reports"
+    reports.mkdir(parents=True)
+    (reports / "LEG_ROTATION.json").write_text(json.dumps({"window_h": 24.0}), encoding="utf-8")
+    (reports / "THING.json").write_text(json.dumps({"rows": list(range(400))}), encoding="utf-8")
+    art = reports / "THING.json"
+    feeders = {"leg_rotation": {"window_h": 24.0},
+               "producer_census": {"rows": [{"producer": "leg:thing", "kind": "leg",
+                                             "clock": "hourly_cycle:thing", "cadence_s": 3600,
+                                             "production_paths": [
+                                                 "desks/mt5/reports/THING.json"]}]}}
+    ten_hours = art.stat().st_mtime + 10 * 3600
+    doc = oc.census(root=tmp_path, feeders=feeders, now=ten_hours, mirror=False)
+    row = next(r for r in doc["rows"] if r["organ"] == "leg:thing")
+    assert row["chain"]["artifact"] == oc.REAL, (
+        "a leg silent for 10h was called stopped, but the rotation gives every leg 24h")
+
+    thirty = art.stat().st_mtime + 30 * 3600
+    late = oc.census(root=tmp_path, feeders=feeders, now=thirty, mirror=False)
+    row = next(r for r in late["rows"] if r["organ"] == "leg:thing")
+    assert row["chain"]["artifact"] == oc.BROKEN, (
+        "past the rotation's own window a leg really has stopped, and the fence must still say so")
+
+
 def test_an_undeclared_input_reads_unmeasured_never_healthy(tmp_path: Path) -> None:
     """UNMEASURED IS A REAL ANSWER (L1.28a). 2,580 of 2,657 organs declare no input at all, and
     reporting that as a pass would be the census flattering the desk about its worst blind spot."""

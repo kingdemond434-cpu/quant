@@ -918,6 +918,7 @@ def load_feeders(root: Path | None = None) -> dict[str, Any]:
         "component_registry": "COMPONENT_REGISTRY.json",
         "sandbox": "SANDBOX_LIVENESS.json",
         "sandbox_roster": "SANDBOX_ROSTER.json",
+        "leg_rotation": "LEG_ROTATION.json",
         "attribution": "ATTRIBUTION_COVERAGE.json",
         "compute_economics": "COMPUTE_ECONOMICS.json",
     }
@@ -980,6 +981,23 @@ def census(*, root: Path | None = None, feeders: Mapping[str, Any] | None = None
         organ = organs.get(name)
         if organ is not None:
             organ.detail["certificates_attributed"] = n
+    #: A LEG'S SILENCE BUDGET IS THE ROTATION'S OWN WINDOW, not three nominal cadences.
+    #:
+    #: MEASURED 2026-09-25, and it is the third time this census accused a working organ. Legs
+    #: are DEFERRED on purpose: `LEG_ROTATION.json` declares `window_h: 24.0`, so the desk gives
+    #: every leg a whole day to come round. Judging one against three times its nominal hourly
+    #: cadence -- six hours -- convicted `leg:causal_invariance`, `leg:fence_battery`,
+    #: `leg:research_api_status` and `leg:residual_queue` of stopping when the rotation had
+    #: simply not reached them yet, and the list grew every pass. A deferral is a scheduling
+    #: decision; a stop is a defect; a fence that cannot tell them apart is noise.
+    window_h = (feed.get("leg_rotation") or {}).get("window_h")
+    if window_h:
+        window_s = int(float(window_h) * 3600)
+        for oid, organ in organs.items():
+            if organ.kind == "leg" or oid.startswith("leg:"):
+                current = organ.detail.get("max_silence_s")
+                organ.detail["max_silence_s"] = max(int(current or 0), window_s)
+                organ.detail["budget_from"] = "leg_rotation.window_h"
     rates = ((feed.get("compute_economics") or {}).get("by_department") or {})
     for dept, rec in rates.items():
         if not isinstance(rec, dict):
