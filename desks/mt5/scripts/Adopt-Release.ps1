@@ -556,6 +556,16 @@ Write-Host ("  repo   {0}" -f $RepoRoot)
 if (-not $Branch) { $Branch = (Invoke-Git @("rev-parse", "--abbrev-ref", "HEAD")).Trim() }
 Write-Host ("  branch {0}" -f $Branch)
 
+# The same one-shot, target-bound recovery permit used below also allows this direct recovery
+# pass to use the already-fetched FETCH_HEAD.  Service-account Git can lack the interactive
+# network credential while the verified operator fetch immediately before launch succeeds; a
+# second fetch must not strand the repair.  Normal releases always fetch.
+$preflightRecoveryPermit = Join-Path $desk "data\RELEASE_BOOTSTRAP_ONCE.json"
+if (Test-Path $preflightRecoveryPermit) {
+    $NoFetch = $true
+    Write-Host "  one-shot recovery permit present; using pre-fetched FETCH_HEAD"
+}
+
 # FETCH_HEAD, NOT origin/<branch>. A `git fetch origin <branch>` with an explicit
 # branch argument does not necessarily update the remote-tracking ref, and this
 # box has already produced "unknown revision origin/claude/..." immediately after
