@@ -1028,17 +1028,25 @@ def silent_stops(doc: Mapping[str, Any], previous: Mapping[str, Any] | None) -> 
     if not previous:
         return []
     before = {str(r.get("organ")): r for r in previous.get("rows", []) or []}
+    #: AND IT MUST NOT BLINK. A stop reported only at the instant of the transition fails the
+    #: gate for exactly one pass: the NEXT census compares broken against broken, sees no
+    #: transition, and goes green over an organ that is still dark. That is the silence this file
+    #: exists to end, re-entering through the comparison itself. So an unresolved stop is CARRIED
+    #: FORWARD from the previous census's own list until the organ produces again or somebody
+    #: names it in the debt -- fix it or declare it, never wait it out.
+    carried = {str(s.get("organ")) for s in (previous.get("silent_stops") or ())
+               if isinstance(s, dict)}
     out: list[dict[str, Any]] = []
     for row in doc.get("rows", []) or []:
         oid = str(row.get("organ"))
-        was = before.get(oid)
-        if was is None:
-            continue
-        if (was.get("chain") or {}).get("artifact") != REAL:
-            continue
         if (row.get("chain") or {}).get("artifact") != BROKEN:
             continue
+        was = before.get(oid)
+        transition = was is not None and (was.get("chain") or {}).get("artifact") == REAL
+        if not transition and oid not in carried:
+            continue
         out.append({"organ": oid,
+                    "since": ("this pass" if transition else "an earlier pass, still unresolved"),
                     "why": str((row.get("why") or {}).get("artifact") or "")[:240]})
     return sorted(out, key=lambda r: r["organ"])
 

@@ -228,6 +228,27 @@ def test_an_organ_that_never_produced_is_not_a_silent_stop() -> None:
     assert oc.silent_stops(_doc(oc.UNMEASURED), _doc(oc.REAL)) == []
 
 
+def test_an_unresolved_stop_is_carried_forward_and_does_not_blink() -> None:
+    """A stop reported only at the instant of the transition fails the gate for ONE pass, and the
+    next census -- comparing broken against broken -- goes green over an organ that is still
+    dark. That is the same silence wearing the comparison's clothes."""
+    first = _doc(oc.BROKEN)
+    first["silent_stops"] = oc.silent_stops(first, _doc(oc.REAL))
+    assert [s["organ"] for s in first["silent_stops"]] == ["dept_x"]
+
+    second = _doc(oc.BROKEN)
+    still = oc.silent_stops(second, first)
+    assert [s["organ"] for s in still] == ["dept_x"], (
+        "the stop vanished on the next pass while the organ was still producing nothing")
+    assert "unresolved" in still[0]["since"]
+    assert oc.breach(second, previous=first, debt={})
+
+    recovered = _doc(oc.REAL)
+    assert oc.silent_stops(recovered, first) == [], (
+        "an organ that resumed producing must clear: a fence that cannot be satisfied by the "
+        "repair it asks for is a fence that gets switched off")
+
+
 def test_declared_debt_excuses_a_named_organ_and_nothing_else() -> None:
     assert oc.breach(_doc(oc.BROKEN), previous=_doc(oc.REAL),
                      debt={"silent_stops": ["dept_x"]}) == []
