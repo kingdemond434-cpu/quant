@@ -20,6 +20,7 @@ import importlib.util
 from pathlib import Path
 
 import pytest
+
 from scripts.seats import resolve_ids
 
 ROOT = Path(__file__).resolve().parents[2]

@@ -103,7 +103,7 @@ def tmpfs_used_mb(path: str = "/tmp") -> int | None:  # noqa: S108 -- read-only:
         # Windows target still resolves `os` to the Windows stub, where statvfs
         # does not exist. The ignore records that this is a PLATFORM fact, not a
         # missing attribute.
-        st = os.statvfs(path)  # type: ignore[attr-defined]
+        st = os.statvfs(path)  # type: ignore[attr-defined,unused-ignore]
     except OSError:
         return None
     return int((st.f_blocks - st.f_bfree) * st.f_frsize) // (1024 * 1024)

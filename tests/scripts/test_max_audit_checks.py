@@ -9,7 +9,6 @@ import time
 from pathlib import Path
 
 import scripts.max_audit as m
-
 from libs.risk import capital_events
 
 

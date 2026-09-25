@@ -17,9 +17,9 @@ import os
 import time
 
 import pytest
-from scripts.max_audit import ORGANS
 
 from scripts import check_miner_runway as runway
+from scripts.max_audit import ORGANS
 
 
 @pytest.fixture
