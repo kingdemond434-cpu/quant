@@ -1,9 +1,15 @@
 """The live-desk pager: silence, drawdown, pause and release refusal each raise a condition."""
 from __future__ import annotations
 
+import importlib.util
 from datetime import UTC, datetime
+from pathlib import Path
 
-import scripts.check_live_desk_alive as A
+_SRC = Path(__file__).resolve().parents[2] / "scripts" / "check_live_desk_alive.py"
+_spec = importlib.util.spec_from_file_location("check_live_desk_alive", _SRC)
+assert _spec and _spec.loader
+A = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(A)
 
 WED = datetime(2026, 9, 23, 12, 0, tzinfo=UTC)
 
