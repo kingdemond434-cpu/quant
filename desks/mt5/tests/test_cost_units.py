@@ -112,7 +112,9 @@ def test_money_path_uses_the_sanctioned_constructor_not_a_hand_roll() -> None:
             and isinstance(body[0].value.value, str):
         body = body[1:]
     code = "\n".join(ast.unparse(node) for node in body)
-    assert "Costs.from_symbol" in code, "money path stopped using the sanctioned constructor"
+    # `fill_hour_costs` is the certificate's own constructor and calls `Costs.from_symbol`.
+    assert "Costs.from_symbol" in code or "fill_hour_costs" in code, \
+        "money path stopped using the sanctioned constructor"
     assert "0.48" not in code, "the gold per-ounce hardcode came back"
     assert "median_spread_pts" not in code, "the spread arithmetic was hand-rolled again"
 

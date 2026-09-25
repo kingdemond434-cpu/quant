@@ -178,7 +178,8 @@ def test_apply_to_spec_never_raises_the_charge(tmp_path: Path) -> None:
     spec = tmp_path / "gate_spec.yaml"
     spec.write_text(_SPEC, encoding="utf-8")
     res = et.apply_to_spec(900, variance=0.014863, path=spec)
-    assert res["status"] == "UNCHANGED"
+    # A RAISE is a bar change too: only a deliberate authorised act makes it (2026-09-25).
+    assert res["status"] == "REFUSED_UNAUTHORISED"
     assert et.spec_fixed_trial_count(spec) == 597
 
 

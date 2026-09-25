@@ -59,6 +59,11 @@ SPA_ALPHA = 0.05
 WF_SPLITS = 4
 WF_MIN_STABILITY = 0.5
 COST_SCENARIO = 3.0
+#: CPCV purge (samples each side of a test block) and embargo (fraction after it), per the spec's
+#: `purge_embargo: true`. One day of purge covers the daily series' own label (a day's trades
+#: settle within it or the next); 1% embargo is the conventional default.
+CPCV_PURGE_DAYS = 1
+CPCV_EMBARGO = 0.01
 
 #: SECONDS THIS SWEEP MAY SPEND BUILDING *FRESH* CELLS. Cached cells are free and are ALWAYS all
 #: loaded; only first-time computation is bounded.
@@ -269,31 +274,11 @@ def _modal_fill_hour(sigs, timeframe: str = "H1") -> int | None:
 
     A cell is charged the spread of the hour it TRADES, not the median of hours it does not. The
     signal time plus `wait_bars` is the fill bar, and `wait_bars` is counted in bars of the
-    CELL'S OWN CHART: on H1 one bar is the hour this used to add, on M5 it is five minutes, and
-    on D1 a whole day. Adding 1 to the hour for an M5 cell would charge it the spread of an hour
-    it never trades in -- and the fill-hour surface exists precisely because that difference is
-    worth thousands of points on the exotic crosses.
+    CELL'S OWN CHART. The arithmetic lives in `research.cell_costs.modal_fill_hour`, the one copy
+    the forward clock also calls.
     """
-    from mt5desk.universe_registry import timeframe_minutes
-    try:
-        minutes = timeframe_minutes(timeframe)
-    except KeyError:
-        minutes = 60
-    hours: dict[int, int] = {}
-    for s in sigs or ():
-        ts = getattr(s, "time", None)
-        if ts is None:
-            continue
-        h = int(getattr(ts, "hour", -1))
-        if h < 0:
-            continue
-        offset_minutes = int(getattr(ts, "minute", 0) or 0) + \
-            int(getattr(s, "wait_bars", 0) or 0) * minutes
-        h = (h + offset_minutes // 60) % 24
-        hours[h] = hours.get(h, 0) + 1
-    if not hours:
-        return None
-    return max(hours.items(), key=lambda kv: kv[1])[0]
+    from research.cell_costs import modal_fill_hour
+    return modal_fill_hour(sigs, timeframe)
 
 
 def costs_for(sym: str, meta: dict, mult: float = 1.0) -> Costs:
@@ -336,6 +321,65 @@ def costs_for(sym: str, meta: dict, mult: float = 1.0) -> Costs:
     invalidated -- the bar moves to the true one, it does not drop below it.
     """
     return Costs.from_symbol(meta.get(sym, {}), mult=mult)
+
+
+def stress_costs_for(cell: dict, meta: dict, mult: float = COST_SCENARIO) -> Costs:
+    """The x`mult` stress arm of a built cell: the SAME cost basis as its base arm, spread x`mult`.
+
+    THE TWO ARMS WERE PRICED ON DIFFERENT SPREADS (found 2026-09-25). `build_cell` prices the base
+    arm at the cell's FILL-HOUR spread when the cost surface has measured it, and the 3x arm was
+    rebuilt through `costs_for(sym, meta, mult=3)` -- the POOLED median. Where the fill hour is the
+    thin one (EURZAR: 1,918 pts at its fill against a 310 pooled median) the "3x stress" was
+    CHEAPER than the base arm it is meant to stress: 930 against 1,918. A stress gate below its
+    own baseline tests nothing. Both arms now share the one spread the cell was built with, and a
+    cell with no measured fill-hour spread keeps the pooled basis on both.
+    """
+    from research.cell_costs import fill_hour_costs
+    sym = str(cell.get("sym") or "")
+    spread = cell.get("_spread_pts")
+    costs, _basis, _spread = fill_hour_costs(
+        meta.get(sym, {}), sym, hour=cell.get("_fill_hour"), surface=None, mult=mult,
+        spread_pts=None if spread is None else float(spread))
+    return costs
+
+
+#: The shortest calendar overlap the program-level matrix accepts before it widens to the union.
+MIN_ALIGNED_DAYS = 60
+
+
+def calendar_matrix(series: list) -> np.ndarray:
+    """The cells' daily R series stacked ON THE SAME CALENDAR DATES, for PBO and SPA.
+
+    THE ROWS WERE POSITIONS, NOT DAYS (found 2026-09-25). Each series holds one value per day on
+    which that cell TRADED, and the matrix was `a[-min_len:]` per column -- the last N trading
+    days of each cell, stacked side by side. Row k of one column and row k of another were
+    different dates, often months apart for a sparse cell. PBO ranks strategies within a
+    calendar partition and SPA compares them on common days; on positional rows both were
+    comparing returns that never coexisted.
+
+    Now the columns are joined on their dates; a day a cell did not trade is 0R for that cell
+    (it held nothing), which is what its equity actually did. The rows are the window every cell
+    was live in -- latest first date to earliest last date -- and when that overlap is shorter
+    than `MIN_ALIGNED_DAYS` the union of dates is used instead, still date-aligned.
+    """
+    frames = []
+    for d in series:
+        s = pd.Series(d, dtype=float)
+        s.index = pd.to_datetime(pd.Index(s.index)).normalize()
+        frames.append(s.groupby(level=0).sum())
+    if not frames:
+        return np.empty((0, 0))
+    joined = pd.concat(frames, axis=1, join="outer").sort_index()
+    starts = [f.index.min() for f in frames if len(f)]
+    ends = [f.index.max() for f in frames if len(f)]
+    window = joined
+    if starts and ends:
+        lo, hi = max(starts), min(ends)
+        if lo <= hi:
+            overlap = joined.loc[lo:hi]
+            if len(overlap) >= MIN_ALIGNED_DAYS:
+                window = overlap
+    return window.fillna(0.0).to_numpy(float)
 
 
 def daily_series(df: pd.DataFrame, sigs: list, costs: Costs) -> pd.Series:
@@ -591,17 +635,6 @@ def build_cell(sym: str, family: str, params: dict, meta: dict,
     # recorded, so an undercharge stays visible instead of becoming the silent default.
     hour = _modal_fill_hour(sigs, timeframe)
     surf = _surface()
-    spread_at_hour = None
-    cost_basis = "pooled_median_spread"
-    if surf is not None and hour is not None:
-        try:
-            from research.cost_surface import spread_pts as _sp
-
-            spread_at_hour = _sp(surf, sym, hour)
-        except Exception:
-            spread_at_hour = None
-        if spread_at_hour is not None:
-            cost_basis = f"fill_hour_{hour:02d}_spread"
     # `meta.get(sym, {})`, NOT `meta`. THE WHOLE UNIVERSE DICT WAS BEING PASSED HERE and
     # `from_symbol` reads `contract_size`, `tick_size`, `tick_value` and `median_spread_pts` off
     # the mapping it is given -- a 251-symbol registry has none of those at the top level, so
@@ -621,14 +654,20 @@ def build_cell(sym: str, family: str, params: dict, meta: dict,
     # This is the same shape as the three defects `costs_for` lists above -- a value handed to a
     # constructor in the wrong shape, defaulting quietly, in the survivor-manufacturing
     # direction, on the one call site that decides who gets a certificate.
-    costs = (Costs.from_symbol(meta.get(sym, {}), spread_pts=spread_at_hour)
-             if spread_at_hour is not None else costs_for(sym, meta))
+    #
+    # ONE CONSTRUCTOR (2026-09-25): `research.cell_costs.fill_hour_costs` is the same call the
+    # forward clock makes, so a certificate and the clock that tests it forward price the cell on
+    # the same spread and the same measured commission.
+    from research.cell_costs import fill_hour_costs
+    costs, cost_basis, spread_at_hour = fill_hour_costs(meta.get(sym, {}), sym, hour=hour,
+                                                        surface=surf)
     # `timeframe` ON THE CELL, not only inside params. `cell_id` reads it from either, and a
     # caller that builds a cell without params (the recertification audit rebuilds from
     # `authorized_runs`) would otherwise lose the chart between here and its own verdict lookup.
     return {"sym": sym, "family": family, "params": params, "timeframe": timeframe,
             "df": h1, "sigs": sigs,
-            "costs": costs, "_cost_basis": cost_basis, "_fill_hour": hour}
+            "costs": costs, "_cost_basis": cost_basis, "_fill_hour": hour,
+            "_spread_pts": spread_at_hour}
 
 
 def canonical_symbol(sym: str, meta: dict) -> str:
@@ -1492,7 +1531,8 @@ def _warm_one(spec: dict, meta: dict) -> dict:
         ds1 = _series_trim_partial(daily_series(obj["df"], obj["sigs"], obj["costs"]), last_day)
         try:
             ds3 = _series_trim_partial(
-                daily_series(obj["df"], obj["sigs"], costs_for(sym, meta, mult=COST_SCENARIO)),
+                daily_series(obj["df"], obj["sigs"],
+                             stress_costs_for(obj, meta, mult=COST_SCENARIO)),
                 last_day)
         except Exception as exc3:
             out["status"], out["why"] = "FAIL_3X", f"{type(exc3).__name__}: {exc3}"
@@ -2217,7 +2257,7 @@ def run_gauntlet(cells: list, hunt_name: str, meta: dict) -> dict:
             # verdict changes; only the peak does.
             if c.get("_cached_ds3") is None:
                 try:
-                    costs3 = costs_for(c["sym"], meta, mult=COST_SCENARIO)
+                    costs3 = stress_costs_for(c, meta, mult=COST_SCENARIO)
                     c["_fresh_ds3"] = _series_trim_partial(
                         daily_series(c["df"], c["sigs"], costs3), last_day)
                 except Exception as exc3:
@@ -2260,9 +2300,7 @@ def run_gauntlet(cells: list, hunt_name: str, meta: dict) -> dict:
         print("  NO cells with >= 60 days")
         return {"hunt": hunt_name, "error": "no valid cells", "verdicts": []}
 
-    cols = [d.to_numpy(float) for _, d in valid]
-    min_len = min(len(a) for a in cols)
-    matrix = np.column_stack([a[-min_len:] for a in cols])
+    matrix = calendar_matrix([d for _, d in valid])
 
     # Program-level tests
     # THE CANONICAL TRIAL BASIS, AND NOTHING ELSE (principal 2026-08-26: "we don't count trials
@@ -2385,7 +2423,12 @@ def run_gauntlet(cells: list, hunt_name: str, meta: dict) -> dict:
         stages["reality_check_spa"] = {"passed": spa_ok, "p_value": round(spa_p, 4)}
 
         # CPCV
-        cpcv = CPCV(n_groups=6, n_test_groups=2)
+        # PURGE AND EMBARGO PER SPEC (`gate_spec.yaml` cpcv.params.purge_embargo: true), which
+        # this ran at 0/0. Stated honestly: this gate scores the TEST groups only and fits nothing
+        # on the train side, so purge/embargo -- which remove TRAIN samples adjacent to a test
+        # block -- cannot move its OOS Sharpe. They are set so the splitter is the one the spec
+        # names, and so any future use of `split.train` here inherits the leakage guard.
+        cpcv = CPCV(n_groups=6, n_test_groups=2, purge=CPCV_PURGE_DAYS, embargo=CPCV_EMBARGO)
         oos = []
         for split in cpcv.split(len(arr)):
             te = np.asarray(split.test)
@@ -2393,7 +2436,8 @@ def run_gauntlet(cells: list, hunt_name: str, meta: dict) -> dict:
                 oos.append(sharpe_ratio(arr[te]))
         cpcv_mean = float(np.mean(oos)) if oos else 0.0
         stages["cpcv"] = {"passed": bool(cpcv_mean > 0.0),
-                          "mean_oos_sharpe": round(cpcv_mean, 4), "folds": len(oos)}
+                          "mean_oos_sharpe": round(cpcv_mean, 4), "folds": len(oos),
+                          "purge": CPCV_PURGE_DAYS, "embargo": CPCV_EMBARGO}
 
         # Walk Forward
         try:
@@ -2417,7 +2461,9 @@ def run_gauntlet(cells: list, hunt_name: str, meta: dict) -> dict:
         stages["stress_costs"] = {"passed": bool(exp3 > 0.0), "exp_x3": round(exp3, 4)}
 
         # Lockbox
-        stages["lockbox"] = {"passed": bool(wf_oos >= 0.0),
+        # `> 0`, as the spec's threshold reads ("lockbox_sharpe > 0.0"); `>= 0` passed a
+        # holdout Sharpe of exactly zero -- no edge at all -- as a pass.
+        stages["lockbox"] = {"passed": bool(wf_oos > 0.0),
                              "lockbox_sharpe": round(wf_oos, 4)}
 
         # Expected Value

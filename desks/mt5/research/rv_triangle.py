@@ -33,7 +33,8 @@ STOP_Z = 2.5
 TTL_BARS = 192       # ~2 days
 JUMP_GUARD = 2.5     # skip entry after single-bar z jump above this
 NOTIONAL = 100_000.0
-COMMISSION = 3.5     # USD per lot per side (mirror desk convention)
+from research.cell_costs import commission_per_side  # noqa: E402
+COMMISSION = commission_per_side()  # account ccy per lot per side
 SLIPPAGE = 0.2       # x spread per leg
 
 

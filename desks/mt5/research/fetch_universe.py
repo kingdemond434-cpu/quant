@@ -351,6 +351,12 @@ def main() -> None:
             "min_volume": float(info.volume_min),
             "volume_step": float(info.volume_step),
             "median_spread_pts": med_spread,
+            # The UNIT of swap_long/swap_short (MT5 ENUM_SYMBOL_SWAP_MODE: 1 points, 5 annual
+            # percent) and the broker's triple-swap day; `engine.swap_terms_from_meta` reads both.
+            "swap_long": float(getattr(info, "swap_long", 0) or 0),
+            "swap_short": float(getattr(info, "swap_short", 0) or 0),
+            **{k: int(getattr(info, k)) for k in ("swap_mode", "swap_rollover3days")
+               if getattr(info, k, None) is not None},
             # WHAT THE BROKER WILL ACTUALLY LET US DO. Measured 2026-09-03: Fusion offers 250
             # symbols of which only 237 are SYMBOL_TRADE_MODE_FULL; the other 13 (DocuSign,
             # EOSUSD, EURRUB, EURTRY, GBPTRY, OJ, SUGAR, UKCOCOA, UKGILT, USDRUB, USDTRY,

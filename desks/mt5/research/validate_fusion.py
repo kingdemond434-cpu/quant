@@ -46,7 +46,8 @@ GOLD_WINDOWS = {
 }
 E_MAX_9 = 1.49
 # Fusion Zero published contract: USD 2.25/lot/side, USD 4.50 round turn.
-FUSION_COMMISSION = 2.25
+from research.cell_costs import commission_per_side  # noqa: E402
+FUSION_COMMISSION = commission_per_side()
 
 
 def connect() -> bool:

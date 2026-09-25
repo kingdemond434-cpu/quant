@@ -28,6 +28,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from mt5desk import families  # noqa: E402
 from mt5desk.engine import Costs, run_backtest  # noqa: E402
+from research.cell_costs import commission_per_side  # noqa: E402
 
 BASE = Path(__file__).resolve().parent.parent
 UNI = BASE / "data" / "universe"
@@ -41,7 +42,7 @@ WINDOWS = {
     "ny_open": dict(range_start=13, range_end=14, signal_at=14, wait_bars=12, rr=2.0, ttl_bars=12),
     "afternoon": dict(range_start=14, range_end=17, signal_at=17, wait_bars=8, rr=2.0, ttl_bars=12),
 }
-BASE_COSTS = Costs(spread_per_lot=0.48, commission_per_lot=3.50, contract_oz=100)
+BASE_COSTS = Costs(spread_per_lot=0.48, commission_per_lot=commission_per_side(), contract_oz=100)
 
 
 def null_market(h1: pd.DataFrame, rng: np.random.Generator) -> pd.DataFrame:
