@@ -22,7 +22,24 @@ BASE = Path(__file__).resolve().parent.parent
 OUT = BASE / "data" / "intelligence" / "youtube"
 OUT.mkdir(parents=True, exist_ok=True)
 
-API_KEY = os.environ.get("YOUTUBE_API_KEY", "")
+
+def _load_api_key() -> str:
+    """The YouTube Data API key: env YOUTUBE_API_KEY, else data/secrets/youtube.json.
+
+    Never hard-code the key in source (it leaked that way once).
+    The secrets file is ``{"api_key": "..."}`` and lives only on the box that runs this.
+    """
+    env = os.environ.get("YOUTUBE_API_KEY", "").strip()
+    if env:
+        return env
+    secret = BASE.parent.parent / "data" / "secrets" / "youtube.json"
+    try:
+        return str(json.loads(secret.read_text(encoding="utf-8")).get("api_key", "")).strip()
+    except (OSError, ValueError, AttributeError):
+        return ""
+
+
+API_KEY = _load_api_key()
 SEARCH_URL = "https://www.googleapis.com/youtube/v3/search"
 
 # Trading-related search queries
