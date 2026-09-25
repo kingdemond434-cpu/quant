@@ -628,6 +628,17 @@ $ReleaseCodePaths = @(
 $dirtyArgs = @("diff", "--name-only", "--no-ext-diff", "HEAD", "--") + $ReleaseCodePaths
 $dirty = @(Invoke-Git $dirtyArgs |
            Where-Object { "$_" -match '\S' })
+# The adoption script may be bootstrapped from the verified target specifically to recover a
+# broken delivery lane.  It is not an unknown local code edit when its bytes already equal that
+# target; without this exception the repair script rejects itself before it can repair anything.
+$bootstrapScript = "desks/mt5/scripts/Adopt-Release.ps1"
+if ($dirty -contains $bootstrapScript) {
+    & git -C $RepoRoot diff --quiet $target -- $bootstrapScript
+    if ($LASTEXITCODE -eq 0) {
+        $dirty = @($dirty | Where-Object { $_ -ne $bootstrapScript })
+        Write-Host "  verified bootstrap delivery script equals target; it does not block adoption"
+    }
+}
 if ($dirty.Count -gt 0) {
     $dirtyPaths = @($dirty | ForEach-Object { "$_".Trim().Trim('"') })
     # A release must never spend its lock window indexing the desk's evidence lake.  The
