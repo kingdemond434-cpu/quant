@@ -574,6 +574,22 @@ def build_cell(sym: str, family: str, params: dict, meta: dict,
         elif family == "event_reaction":
             call_params.pop("input_source", None)
             call_params["events"] = inputs._event_index()
+        elif family in {"style_premia", "cross_sectional"}:
+            # THE ONE MAPPING, NOT A THIRD COPY (2026-09-25). Both families need inputs this
+            # function never built -- style_premia's swap differential and risk driver (its carry
+            # and defensive styles returned [] here, silently, while the forward engine supplied
+            # them), cross_sectional's whole peer panel (it had no emitter and no builder, so it
+            # was judged zero times). `family_inputs.resolve` is what the forward clock and the
+            # backtest already use; the gauntlet now asks it too, so a certificate is judged on
+            # exactly the inputs it will be clocked on.
+            from mt5desk.family_inputs import resolve as _resolve_inputs
+            from mt5desk.family_inputs import strip_identity_keys as _strip_ids
+            _extra, _why = _resolve_inputs(sym, family, params or {}, h1)
+            if _extra is None:
+                print(f"  INPUT-FAIL {sym}.{family}: {_why}")
+                return None
+            call_params = _strip_ids(family, call_params)
+            call_params.update(_extra)
         elif family == "discovered":
             # Price-native discoveries need no external feature universe. Loading all peers for
             # every dd/hour/ru cell caused OOM without changing the selected signal.
@@ -1215,6 +1231,33 @@ def allocate_by_yield(specs: list[dict]) -> tuple[list[dict], dict[str, dict]]:
     # nobody: it appends.
     orthogonal, ortho_record = _orthogonality_floor(specs, keep)
     keep.extend(orthogonal)
+    # THE ORDER IS THE ALLOCATION, AND THE LINES ABOVE USED TO THROW IT AWAY (2026-09-25).
+    # `keep` is built family by family, so the priority sort the caller made (never-judged
+    # first, intraday first, least-covered bucket first) survived only INSIDE each family block,
+    # and the build budget -- seconds, binding at a few hundred cells an hour -- reached the first
+    # two or three families in dict order every hour. Measured on the live docket: the first
+    # 1,500 cells of this list held four families, and every family with no intraday row
+    # (exit_operated, htf_anchor_trend, dow_effect, overnight_drift, monday_gap ...) was judged
+    # zero times. `sweep_breadth.shape` restores the caller's order and makes the shares hold on
+    # EVERY PREFIX: half to under-tested (asset class, chart) strata, least-tested first and
+    # family-round-robin inside each; half to the families by the yield shares derived above.
+    # It removes nothing `keep` holds and floors each under-tested stratum at a real sample.
+    breadth: dict = {}
+    try:
+        try:
+            from research import sweep_breadth as _sb
+        except ImportError:
+            import sweep_breadth as _sb  # type: ignore[no-redef]
+        keep, breadth = _sb.shape(
+            specs, keep, {f: float(r["share_of_budget"]) for f, r in report.items()},
+            _seen_cells().keys(),
+            chart_of=lambda s: timeframe_of(s.get("params"), str(s.get("family") or "")))
+    except Exception as exc:
+        # The family-grouped list still judges correctly; it is only worse-ordered. Named, so a
+        # breadth shape that silently stopped applying reads as what it is.
+        breadth = {"status": f"UNAVAILABLE ({type(exc).__name__}: {exc})"}
+        print(f"  sweep breadth shape unavailable ({type(exc).__name__}: {exc}); "
+              f"family-grouped order kept")
     # PUBLISHED, because an allocation nobody can read is not an allocation anyone can argue with
     # -- the capital side has pf_allocation.json for exactly this and the research side had
     # nothing. Best effort: a research sweep must never die because a report file is unwritable.
@@ -1245,6 +1288,9 @@ def allocate_by_yield(specs: list[dict]) -> tuple[list[dict], dict[str, dict]]:
                 "n_cells_added": len(explored),
                 "by_axis": axes,
             },
+            # THE SWEEP'S SHAPE: which (asset class, chart) strata were under-tested, what the
+            # floor added, and how the first few hundred / thousand builds split across them.
+            "breadth": breadth,
         }, indent=1), encoding="utf-8")
     except OSError:
         pass
@@ -2849,6 +2895,38 @@ def main():
                   f"({'; '.join(ban_reason(f) for f in _fams)})")
     except Exception as _exc:
         print(f"  banned families: policy unreadable ({type(_exc).__name__}); nothing set aside")
+    # UNEXECUTABLE ROWS ARE NAMED BEFORE ANYTHING IS ORDERED (2026-09-25). A row carrying a key
+    # its family function does not take (`conditioner`, `regime`, `entry_timing`, ...) raised
+    # TypeError inside `build_cell` on EVERY sweep and came back NOT_RUN_BUILD_FAILED -- not a
+    # verdict, so never stamped judged, so it sorted to the front of the never-judged queue again
+    # and spent the next hour's build budget the same way. Measured on the live docket: ~25,000
+    # such rows, among them 1,560 of style_premia's 1,695. They are recorded by name with the
+    # keys that make them unrunnable and cost no build second; nothing is stripped to make them
+    # run, because the undecorated parent is a different claim from the one the row names.
+    try:
+        try:
+            from research.sweep_breadth import unexecutable_reason as _unexec_why
+        except ImportError:
+            from sweep_breadth import unexecutable_reason as _unexec_why  # type: ignore[no-redef]
+        _runnable: list[dict] = []
+        _unexec_by_fam: dict[str, int] = {}
+        for _sp in eligible_specs:
+            _why = _unexec_why(str(_sp.get("family") or ""), _sp.get("params") or {})
+            if _why is None:
+                _runnable.append(_sp)
+                continue
+            _unexec_by_fam[str(_sp.get("family") or "")] = (
+                _unexec_by_fam.get(str(_sp.get("family") or ""), 0) + 1)
+            blocked_build.append({**_sp, "downstream_status": "NOT_RUN_UNEXECUTABLE_PARAMS",
+                                  "why": _why})
+        if _unexec_by_fam:
+            eligible_specs = _runnable
+            _top = sorted(_unexec_by_fam.items(), key=lambda kv: -kv[1])[:8]
+            print(f"  unexecutable params: {sum(_unexec_by_fam.values())} cell(s) named and set "
+                  f"aside before ordering (no build second spent): {_top}")
+    except Exception as _exc:
+        print(f"  unexecutable-param screen unavailable ({type(_exc).__name__}: {_exc}); "
+              f"every row goes to the build as before")
     # BREADTH FIRST AMONG THE NEVER-JUDGED (2026-09-16, principal: "all sessions, all charts,
     # not tons of H1 Asia"). Never-judged cells are ordered by how many cells of the same
     # (chart, session) bucket the desk has already judged, fewest first, so the least-covered
