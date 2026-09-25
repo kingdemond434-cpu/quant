@@ -89,7 +89,7 @@ def evaluate(now: datetime, state: dict[str, Any], *, gw_state: dict[str, Any] |
     eq = None
     if gw_state is not None:
         try:
-            eq = float(gw_state.get("equity"))
+            eq = float(gw_state.get("equity") or 0.0)
         except (TypeError, ValueError):
             eq = None
     if eq is not None and eq > 0:
