@@ -96,7 +96,30 @@ for _p in (str(_DESK), str(_DESK / "research")):
 #: its account must re-measure this rather than convert it -- `cost_truth.py` publishes the
 #: measurement every hour and `check_cost_truth.py` fails when the charge drifts above it.
 #: Contractual: it does not widen under stress (see `Costs.stressed`).
+#:
+#: IT IS NOT A GOLD RATE, WHICH IS THE OBVIOUS WAY TO BE WRONG ABOUT IT. Gold is 181 of the 427
+#: priced deals, so a flat 2.00 could have been gold's contract averaged over a thin tail. It is
+#: not: re-measured per symbol 2026-09-24 from `history_deals_get`, EVERY symbol reads
+#: p10 = p50 = p90 = min = 2.00, across four asset classes --
+#:     FX majors    AUDUSD 38, USDCHF 16, EURUSD 2
+#:     FX crosses   EURCHF 88, AUDCAD 22, AUDNZD 16, EURGBP 14, NZDCAD 2
+#:     FX exotics   CHFNOK 38, GBPSEK 4, GBPMXN 4, USDMXN 2
+#:     metals       XAUUSD 181
+#: with one deal at 2.037 (EURGBP, a part-lot rounding) as the only value anywhere that is not
+#: exactly 2.00.
+#:
+#: WHAT IS THEREFORE STILL UNMEASURED, and it is named because absence is not a permission
+#: (L1.28a): this account has never traded an INDEX, ENERGY, SOFT COMMODITY, SHARE CFD or CRYPTO
+#: CFD, so the rate on those five classes is inferred from the account-wide contract and not
+#: observed. Share CFDs are the one where a venue most often prices differently (a percentage of
+#: notional rather than a per-lot fee); the first deal on any of them re-measures this and
+#: `cost_truth.py` publishes the per-symbol distribution every hour.
 COMMISSION_PER_LOT_PER_SIDE = 2.00
+
+#: The classes the flat rate above was OBSERVED on, and the ones it is only inherited on. Read by
+#: the test that pins the claim, so the coverage cannot rot into a sentence nobody re-checks.
+COMMISSION_MEASURED_CLASSES = ("fx_major", "fx_cross", "fx_exotic", "metal")
+COMMISSION_INHERITED_CLASSES = ("index", "energy", "soft", "share_cfd", "crypto_cfd")
 
 #: The unit, spelled out, because the previous value carried a currency in a comment that no
 #: consumer could read and every consumer contradicted.

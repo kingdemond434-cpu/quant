@@ -525,3 +525,212 @@ def test_the_pass_cap_is_derived_from_measured_memory_not_a_machine_size(monkeyp
     assert cm.max_rows_per_pass() > cm.MAX_ROWS_FLOOR
     monkeypatch.setattr(cm, "_free_bytes", lambda: 64 * 1024 ** 2)
     assert cm.max_rows_per_pass() == cm.MAX_ROWS_FLOOR
+
+
+# --------------------------------------------- the drain: what stopped the debt from falling
+def test_the_memory_probe_falls_back_when_proc_meminfo_cannot_answer(monkeypatch) -> None:
+    """THE CAP WAS NEVER DERIVED ON THE BOX THAT RUNS THIS ORGAN (measured 2026-09-23).
+
+    `libs.ops.host_resources.mem_available_mb` reads `/proc/meminfo` and is deliberately pure
+    stdlib, so on Windows -- which is BOTH desk boxes -- it returns None on every call. The cap
+    therefore sat at `MAX_ROWS_FLOOR` forever while the docstring above it claimed the cap was
+    derived from measured memory. On the trading box the honest reading was 57,132 MB available:
+    a cap of 1,462,579 rows read as 2,000. This pins the second probe, because a floor and a
+    blind instrument are opposite defects that produced an identical number.
+    """
+    import libs.ops.host_resources as hr
+    monkeypatch.setattr(hr, "mem_available_mb", lambda: None)
+    monkeypatch.setattr("psutil.virtual_memory",
+                        lambda: type("M", (), {"available": 40 * 1024 ** 3})())
+    free = cm._free_bytes()
+    assert free == 40 * 1024 ** 3, "psutil answers when /proc cannot"
+    assert cm.max_rows_per_pass() > cm.MAX_ROWS_FLOOR, "a readable box is never at the floor"
+    basis = cm.max_rows_basis()
+    assert basis["derived_rows"] is not None and "derived" in basis["basis"]
+
+
+def test_the_whole_carry_is_re_read_and_never_truncated_to_its_head(desk) -> None:
+    """A CARRY THAT DROPS ITS TAIL IS NOT A CARRY (LAWS 5e).
+
+    The read was `carry[:900]` -- one statement's worth of bound variables -- while the write
+    stored the CURRENT population's tail, so every carried id past the 900th fell out of the hand
+    silently. Measured the same day: 2,904 carried here and 6,016 on the trading box, so 69% and
+    85% of each hand was being dropped every pass while the report said the leftover went first.
+    """
+    conn = desk["conn"]
+    ids = [_plant(conn, f"c_carry{i}", family="range_reversion", symbol="TESTFX",
+                  mechanism="mean reversion after an overnight gap")
+           for i in range(cm._ID_CHUNK + 25)]
+    assert len(ids) > cm._ID_CHUNK, "the fixture must exceed one chunk or it proves nothing"
+    rows = cm._debt_rows(conn, pool=4, carry=ids)
+    got = {str(r.get("id") or "") for r in rows}
+    assert set(ids) <= got, f"{len(set(ids) - got)} carried rows were never re-read"
+
+
+def test_the_backlog_is_drawn_oldest_first_so_the_tail_cannot_starve(desk) -> None:
+    """NEWEST-FIRST IS A STARVED DRAIN, NOT A SLOW ONE.
+
+    Both draws were `ORDER BY updated_at DESC`, so once arrivals exceeded the pass cap the pass
+    re-read this hour's arrivals forever. The organ's own stall detector was already saying so:
+    `oldest_unconverted` read 6.68 days on the trading box and rises one day per day under
+    exactly this ordering.
+    """
+    conn = desk["conn"]
+    old = _plant(conn, "c_old", family="range_reversion", symbol="TESTFX", mechanism="m")
+    new = _plant(conn, "c_new", family="range_reversion", symbol="TESTXAU", mechanism="m")
+    stamp = (datetime.now(UTC) - timedelta(days=30)).isoformat()
+    conn.execute("UPDATE research_candidates SET created_at=?, updated_at=? WHERE id=?",
+                 (stamp, stamp, old))
+    conn.commit()
+    order = [str(r.get("id") or "") for r in cm._debt_rows(conn, pool=8)]
+    assert order.index(old) < order.index(new), f"the 30-day-old row must be drawn first: {order}"
+
+
+def test_a_pass_with_budget_left_draws_the_next_wave() -> None:
+    """RUNNING OUT OF DRAWN ROWS IS NOT A BOUND. The bounds are the clock and the row cap."""
+    calls: list[int] = []
+
+    def _draw(offset: int) -> list[dict[str, Any]]:
+        calls.append(offset)
+        return [{"id": f"w{offset}_{i}"} for i in range(2)] if offset <= 4 else []
+
+    supply = cm._Waves(_draw, _draw(0), pool=2)
+    seen = []
+    while True:
+        row = supply.next_row()
+        if row is None:
+            break
+        seen.append(row["id"])
+    assert len(seen) == 6, f"three waves of two rows, got {seen}"
+    assert supply.waves == 3 and supply.drawn == 6
+    assert calls[1:] == [2, 4, 6], f"each wave asks at the next offset: {calls}"
+
+
+def test_the_unreached_rows_of_the_current_wave_are_the_leftover() -> None:
+    supply = cm._Waves(lambda _o: [], [{"id": "a"}, {"id": "b"}, {"id": "c"}], pool=3)
+    assert supply.next_row()["id"] == "a"
+    assert supply.remaining() == ["b", "c"], "everything unreached is handed on, never dropped"
+
+
+def test_a_locked_registry_is_contention_and_never_a_disposition(monkeypatch) -> None:
+    """MEASURED ON THE TRADING BOX 2026-09-23: 1,957 of 2,000 repairs in one pass died on
+    `OperationalError: database is locked`, so the pass landed 43 rows -- a 2.15% repair rate that
+    named no defect in any row. A lock is another organ writing this second; waiting for it
+    converts MORE, which is why the remedy is a retry and never a smaller batch."""
+    import sqlite3 as _s
+    tries = {"n": 0}
+
+    def _flaky(spec, conn=None):
+        tries["n"] += 1
+        if tries["n"] < 3:
+            raise _s.OperationalError("database is locked")
+        return ("cell_ok", True)
+
+    monkeypatch.setattr(cm.XS, "enqueue", _flaky)
+    monkeypatch.setattr(cm.time, "sleep", lambda _s: None)
+    assert cm._enqueue(object(), None) == ("cell_ok", True)
+    assert tries["n"] == 3, "the lock is retried, not filed as a blocker class"
+    assert "ENQUEUE_FAILED" in cm.DEFECT_OWNER, "and the residue still has a named owner"
+
+
+def test_a_real_error_is_never_swallowed_by_the_lock_retry(monkeypatch) -> None:
+    import sqlite3 as _s
+
+    def _broken(spec, conn=None):
+        raise _s.OperationalError("no such table: research_candidates")
+
+    monkeypatch.setattr(cm.XS, "enqueue", _broken)
+    with pytest.raises(_s.OperationalError, match="no such table"):
+        cm._enqueue(object(), None)
+
+
+def test_the_drain_verdict_is_measured_pass_over_pass_and_never_modelled() -> None:
+    """THE NUMBER NOTHING MEASURED. A debt total says how far behind the desk is and never
+    whether the gap is closing, and an ARRIVAL RATE cannot supply the difference: it would have
+    to guess which arrivals were ever debt, and a guess in the numerator of "are we winning" is
+    how a plateau gets read as progress. The trend is this pass's debt against the LAST pass's --
+    every arrival, converted or not, is already inside both numbers.
+
+    Measured on the build box 2026-09-23: 5,191 at the end of one pass and 4,011 at the end of
+    the next, so the gap closed by 1,180 a pass with 4,011 left -- four more passes.
+    """
+    winning = cm.drain_verdict({"total_debt": 5191}, {"total_debt": 4011},
+                               {"rows_per_hour": 4365.8, "debt_rows_per_hour": 900.0},
+                               previous={"debt_after": 5191, "at": "2026-09-23T21:09:16+00:00"})
+    assert winning["verdict"] == "DRAINING"
+    assert winning["net_since_last_pass"] == 1180
+    assert winning["passes_to_clear"] == 4, "4011 / 1180 rounded up"
+    assert winning["arrivals_per_hour_all"] == 4365.8, "both arrival bounds are still published"
+    assert winning["arrivals_per_hour_still_debt"] == 900.0
+    losing = cm.drain_verdict({"total_debt": 3000}, {"total_debt": 2800},
+                              {"rows_per_hour": 10.0}, previous={"debt_after": 2000})
+    assert losing["verdict"] == "LOSING" and losing["passes_to_clear"] is None
+    assert losing["net_since_last_pass"] == -800
+    assert losing["drained_this_pass"] == 200, "gross work is still reported, it is just not net"
+    first = cm.drain_verdict({"total_debt": 10}, {"total_debt": 5}, {"rows_per_hour": 1.0})
+    assert first["verdict"] == cm.UNMEASURED, "one reading is a level, never a direction"
+    blind = cm.drain_verdict({"total_debt": None}, {"total_debt": 10}, {"rows_per_hour": 1.0})
+    assert blind["status"] == cm.UNMEASURED, "an absence is never a clean verdict (L1.28a)"
+
+
+def test_the_previous_pass_is_read_from_this_organs_own_artifact(tmp_path) -> None:
+    art = tmp_path / "CONVERSION_MAXIMISER.json"
+    assert cm.previous_pass(art) == {}, "no artifact is no trend, never a zero"
+    art.write_text(json.dumps({"generated_utc": "2026-09-23T21:09:16+00:00",
+                               "debt_after": {"total_debt": 5191}}), encoding="utf-8")
+    prior = cm.previous_pass(art)
+    assert prior == {"at": "2026-09-23T21:09:16+00:00", "debt_after": 5191}
+
+
+def test_the_arrival_rate_is_measured_from_the_registrys_own_stamps(desk) -> None:
+    conn = desk["conn"]
+    for i in range(4):
+        _plant(conn, f"c_arr{i}", family="range_reversion", symbol="TESTFX", mechanism="m")
+    rate = cm.arrival_rate(conn, hours=2.0)
+    assert rate["status"] == "MEASURED" and rate["window_h"] == 2.0
+    assert rate["counts"]["research_candidates"] >= 4
+    assert rate["rows_per_hour"] == pytest.approx(rate["counts"]["research_candidates"] / 2.0
+                                                  + rate["counts"]["discoveries"] / 2.0)
+    # BOTH BOUNDS, NEITHER PASSED OFF AS THE RATE. Every arrival is the upper bound on conversion
+    # work; the arrivals still in a debt class are the lower bound.
+    assert rate["debt_rows_per_hour"] <= rate["rows_per_hour"]
+    assert rate["debt_counts"]["research_candidates"] <= rate["counts"]["research_candidates"]
+
+
+def test_the_leftover_is_a_named_refusal_in_the_set_aside_ledger(desk, monkeypatch) -> None:
+    """RULE 4: a row the budget could not reach is NAMED, never silently skipped. The ledger
+    keeps the organ, the stage, what was considered, what was kept and the ORDERING that chose
+    them, so a reader can tell a principled drain from an arbitrary top-N (LAWS 7)."""
+    ledger = desk["root"] / "set_aside.json"
+    monkeypatch.setattr(cm.sa, "PATH", ledger)
+    conn = desk["conn"]
+    for i in range(12):
+        _plant(conn, f"c_aside{i}", family="range_reversion", symbol="TESTFX",
+               mechanism="mean reversion after an overnight gap")
+    _run(desk, max_rows=3, budget_s=30.0)
+    doc = json.loads(ledger.read_text(encoding="utf-8"))
+    key = "conversion_maximiser/unconverted_leftover"
+    assert key in doc["totals"], doc["totals"]
+    row = doc["totals"][key]
+    assert row["kept"] == 3 and row["considered"] > row["kept"]
+    assert row["set_aside"] == row["considered"] - row["kept"] > 0
+    assert "oldest created_at" in row["ordering"], "the ordering key is part of the record"
+
+
+def test_every_debt_component_names_the_organ_that_drains_it(desk) -> None:
+    """THE LARGEST CLASS MUST HAVE AN ADDRESS, AND SOMETIMES IT IS NOT THIS ONE.
+
+    `_debt_rows` reads `research_candidates` and nothing else, so `silent_discoveries` and
+    `unreasoned_blocks` -- both rows of the `discoveries` table -- are counted by this organ and
+    drained by `discovery_compiler`. The fence points a reader at this organ's artifact for "the
+    owner of the largest class", and until now the artifact could not say the largest class
+    belonged elsewhere. Measured 2026-09-23 after four passes: 691 of a 1,203 debt, 57% of what
+    remained, none of it this organ's population.
+    """
+    debt = cm.measure_debt(desk["conn"])
+    assert set(debt["component_owner"]) == set(debt["components"]), \
+        "every counted component names an owner, or the fence points at nobody"
+    assert set(debt["drained_here"]) == {"donated_never_cell", "untestable_queued"}
+    for name in ("silent_discoveries", "unreasoned_blocks"):
+        assert "NOT this organ" in debt["component_owner"][name]
+        assert "discovery_compiler" in debt["component_owner"][name]

@@ -1,52 +1,52 @@
-"""F25 -- THE RESEARCH SYSTEM MAY CHANGE ITSELF, and must beat itself to do it.
+"""META-R&D -- the research PROCESS as an experimental subject, judged on recorded outcomes.
 
-THE PRINCIPAL, 2026-09-12:
+THE GAP THE LEDGER NAMED (Tier-1 B25): *"seats are A/B tested; gauntlet thresholds, mutation
+operators and test ordering are not themselves experimental subjects."* `brain_ab` randomises
+which SEAT proposes a hypothesis. Everything downstream of the proposal -- the order objections
+are tried in, the mix of mutation operators that breeds the next candidate, the bars the judge
+applies -- is a set of constants that no experiment has ever been run on. A desk that A/B tests
+its scientists and never its method is optimising the smaller half of its own machine.
 
-    The system may modify researcher prompts, role structures, grammar primitives, search
-    operators, experiment schedulers, representations and search algorithms -- but every
-    meta-version competes against the incumbent on sealed historical traps + synthetic benchmarks
-    + prospective campaigns, and only an objectively better research system becomes champion.
+THREE SUBJECTS, AND THEY ARE DELIBERATELY NOT EQUAL IN WHAT THEY MAY CHANGE.
 
-THE ARENAS EXIST NOW, WHICH IS WHY THIS IS LAST. It could not be built before today because it
-has nothing to judge with otherwise:
+  1. TEST ORDERING          APPLIED. Four ordering policies are replayed against the recorded
+                            falsifier battery: the catalogue's declared prior, the MEASURED kill
+                            rate per class from the evolved destroyer pool, the pre-mortem's own
+                            class first, and cheapest-first. Each is scored by the SECONDS IT
+                            WOULD HAVE SPENT to reach the first kill on rows the desk already
+                            ran, using each test's own recorded seconds. The winner's kill rates
+                            are what `falsifier_run` asks for. Ordering is not a threshold: every
+                            objection still runs and nothing passes or fails differently, so this
+                            is free speed and L1.60 is untouched.
 
-    sealed historical traps   `quantbench` -- eleven defects this desk actually survived, each an
-                              executable probe against the current tree
-    synthetic benchmarks      `adversary_evolution` -- a population of attacks with declared
-                              ground truth, plus a reserved control arm that measures the gates'
-                              OTHER error
-    prospective campaigns     `credit_assignment` -- realised forward R attributed back to the
-                              scientist that proposed it
+  2. MUTATION OPERATORS     MEASURED, NOT APPLIED. Three operator mixes -- the weights
+                            `mutation_yield` publishes, a uniform mix, and greedy-on-top-k --
+                            are scored on the recorded certify-per-operator posterior as
+                            expected survivors per 100 trials. Not applied because
+                            `mutation_yield` OWNS `data/mutation_operator_weights.json` and a
+                            second writer would fight it every hour; the comparison is published
+                            so that owner (or a person) can act on evidence rather than habit.
 
-THE ONE RULE THAT MAKES SELF-MODIFICATION SAFE. A system allowed to change itself and graded on
-its own score will lower its own bar -- that is not a risk, it is the shortest path to a better
-number. So the synthetic arena is the ADVERSARY, and a meta-version that weakens a gate fails it
-BY CONSTRUCTION: breaches rise, or the control arm's false rejections fall for the wrong reason.
-The judge cannot be improved into agreement with the thing it judges.
+  3. GAUNTLET THRESHOLDS    MEASURED, AND REFUSED AS AN ACTION, in both directions and for two
+                            different reasons. LOWERING a bar to let more cells through would
+                            manufacture the evidence the bar exists to demand -- that is the one
+                            thing a desk may never do to its own judge. RAISING one would size
+                            the book smaller, which the principal's standing order forbids. And
+                            the four files that hold those bars are sealed. So the counterfactual
+                            counts are published and nothing is fed anywhere.
 
-AND THE KNOBS IT MAY NOT TOUCH ARE ENUMERATED, not left to taste. Gate thresholds, heat, the
-minimum-lot floor and every sizing parameter are REFUSED -- listed by name, with the refusal
-recorded on the run. The principal's standing order is that risk is never reduced by fiat, and its
-mirror is equally binding here: a research system must not be permitted to raise its own scores by
-moving the bar it is scored against.
+VERDICTS COME FROM THE ARENA'S OWN JUDGE (`libs.research.arena.judge`), so a process arm is
+recorded in exactly the vocabulary AP5 counts, and an arm below the floor reads UNMEASURED rather
+than losing.
 
-THE CHAMPION HOLDS BY DEFAULT. A challenger becomes champion only when it is strictly better on a
-measurable arena and WORSE ON NONE. Ties go to the incumbent, because the cost of churn in a
-research system is paid in every downstream comparison that now spans two regimes -- which is
-exactly what F19 found the certificate registry doing.
-
-THE PROSPECTIVE ARM CANNOT BE SETTLED IN ONE RUN and is not pretended otherwise. A challenger is
-REGISTERED with the forward evidence it awaits, and the report says what would settle it. A
-meta-tournament that declared a winner on two arenas out of three would be doing what the desk's
-forward lane is criticised for.
-
-    python desks/mt5/research/meta_rnd.py [--apply] [--propose KNOB=VALUE]
+    python desks/mt5/research/meta_rnd.py --once --budget-s 180
 """
 from __future__ import annotations
 
 import argparse
 import json
 import sys
+import time
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -57,262 +57,262 @@ for _p in (str(DESK), str(DESK / "research"), str(ROOT)):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-CHAMPION = DESK / "data" / "meta_champion.json"
+from libs.research import arena  # noqa: E402
+from libs.validation import falsifiers  # noqa: E402
+
+FALSIFIER_REPORT = DESK / "reports" / "FALSIFIER_VERDICTS.json"
+FALSIFIERS_ALT = DESK / "reports" / "FALSIFIERS.json"
+MUTATION_YIELD = DESK / "reports" / "MUTATION_YIELD.json"
+SURVIVORS = DESK / "reports" / "UNIVERSAL_SURVIVORS.json"
 OUT = DESK / "reports" / "META_RND.json"
 
-#: The knobs a meta-version MAY move. Every one is a property of how the desk SEARCHES -- never of
-#: what it will risk, and never of the bar it is judged against.
-META_KNOBS: dict[str, dict[str, Any]] = {
-    "research_tree.BEAM": {
-        "module": "research.research_tree", "attr": "BEAM", "lo": 4, "hi": 48,
-        "changes": "how many tree nodes are expanded per pass -- the rate at which reach is "
-                   "bought"},
-    "research_tree.INHERIT": {
-        "module": "research.research_tree", "attr": "INHERIT", "lo": 0.0, "hi": 0.9,
-        "changes": "how strongly a child node inherits its parent's posterior; 0 flattens the "
-                   "tree into a list, 1 makes a cross-market analogue as likely as its parent"},
-    "joint_evolution.DRAWS": {
-        "module": "research.joint_evolution", "attr": "DRAWS", "lo": 40, "hi": 400,
-        "changes": "genomes sampled per surface -- the resolution of the interaction measurement"},
-    "representation_discovery.BEAM": {
-        "module": "research.representation_discovery", "attr": "BEAM", "lo": 2, "hi": 16,
-        "changes": "composite search width, and therefore the trial count it charges the desk"},
-    "adversary_evolution.MUT": {
-        "module": "research.adversary_evolution", "attr": "MUT", "lo": 0.05, "hi": 0.6,
-        "changes": "how far an attack's child moves from its parent -- the adversary's own "
-                   "exploration rate"},
-    "negative_knowledge.EXPLORE_FLOOR": {
-        "module": "research.negative_knowledge", "attr": "EXPLORE_FLOOR", "lo": 0.10, "hi": 0.50,
-        "changes": "the share of admissions reserved for the cells the model scores worst"},
-}
-
-#: Knobs a meta-version may NEVER move, and why. Enumerated rather than left to judgement: a
-#: system graded on its own output will find these if they are merely discouraged.
-FORBIDDEN_KNOBS: dict[str, str] = {
-    "any gate threshold": (
-        "the gates are what a meta-version is JUDGED by. A system permitted to move them would "
-        "improve its score by lowering its bar, which is the shortest path to a better number "
-        "and the least useful one."),
-    "heat floor, heat ceiling, per-sleeve caps": (
-        "the principal's standing order: risk is never reduced by fiat, and its mirror binds "
-        "equally -- research must not raise its scores by moving what the desk will risk."),
-    "minimum lot, daily loss, sizing parameters": (
-        "money-path constants. A research tournament has no business near them, and F26's "
-        "invariant says exactly one authority sizes."),
-    "the trial charge": (
-        "F19 measured what happens when it moves: the registry now holds two regimes and 15 of "
-        "61 certificates cleared a standard the desk no longer applies. A meta-version moving it "
-        "would make every comparison in this report span two worlds."),
-}
+POLICIES = ("catalogue_prior", "measured_kill_rates", "premortem_first", "cheapest_first")
+MIN_ROWS = 5              # replayed certificates below this: the tournament is UNMEASURED
 
 
-def _read(p: Path) -> Any:
+def _read(p: Path) -> dict[str, Any]:
     try:
-        return json.loads(p.read_text(encoding="utf-8"))
+        doc = json.loads(p.read_text(encoding="utf-8"))
     except (OSError, ValueError):
-        return None
+        return {}
+    return doc if isinstance(doc, dict) else {}
 
 
-def _current_value(knob: str) -> Any:
-    spec = META_KNOBS.get(knob)
-    if not spec:
-        return None
-    try:
-        mod = __import__(spec["module"], fromlist=["*"])
-        return getattr(mod, str(spec["attr"]), None)
-    except Exception:
-        return None
+def _battery_rows() -> tuple[list[dict[str, Any]], str]:
+    for path in (FALSIFIER_REPORT, FALSIFIERS_ALT):
+        doc = _read(path)
+        per = doc.get("per_certificate")
+        if isinstance(per, dict) and per:
+            rows = [dict(v, cert_id=k) for k, v in per.items()
+                    if isinstance(v, dict) and v.get("results")]
+            if rows:
+                return rows, str(path)
+    return [], "no falsifier report with per-certificate results on this host"
 
 
-def _arena_traps() -> dict[str, Any]:
-    """Sealed historical traps: the bench must not regress. A FAIL here refuses the challenger."""
-    try:
-        from research.quantbench import build as bench
-    except ImportError as exc:
-        return {"status": "UNMEASURED", "why": f"quantbench not importable ({exc})"}
-    d = bench()
-    return {"status": "OK", "n_cases": d.get("n_cases"),
-            "n_failed": d.get("n_failed"), "n_unmeasurable": d.get("n_unmeasurable"),
-            "verdict": d.get("status"),
-            "score": -int(d.get("n_failed") or 0),
-            "rule": ("a returned defect is disqualifying, not a deduction. A research system "
-                     "that scores better while re-breaking something the desk already paid for "
-                     "is not better.")}
+def _order_for(policy: str, row: dict[str, Any], measured: dict[str, float]) -> list[str]:
+    pre = {"failure_class": row.get("premortem_class")} if row.get("premortem_class") else None
+    if policy == "catalogue_prior":
+        return falsifiers.schedule(None)
+    if policy == "measured_kill_rates":
+        return falsifiers.schedule(None, kill_rates=measured or None)
+    if policy == "premortem_first":
+        return falsifiers.schedule(pre)
+    return sorted(falsifiers.CATALOGUE, key=lambda n: falsifiers.CATALOGUE[n][0])
 
 
-def _arena_synthetic() -> dict[str, Any]:
-    """Synthetic benchmarks: the adversary. This is the arena that makes self-modification safe."""
-    p = DESK / "reports" / "ADVERSARY_EVOLUTION.json"
-    d = _read(p)
-    if not isinstance(d, dict) or d.get("status") == "BLOCKED":
+def replay_orderings(rows: list[dict[str, Any]],
+                     measured: dict[str, float]) -> dict[str, dict[str, Any]]:
+    """Seconds each policy WOULD have spent to reach the first kill, on rows already run.
+
+    Nothing is re-executed: every test's own recorded seconds and verdict are replayed in a
+    different order, which is exactly what an ordering policy changes and all it changes."""
+    out: dict[str, dict[str, Any]] = {}
+    for policy in POLICIES:
+        secs: list[float] = []
+        kills = 0
+        for row in rows:
+            results = row.get("results") or {}
+            order = [n for n in _order_for(policy, row, measured) if n in results]
+            spent = 0.0
+            killed = False
+            for name in order:
+                res = results.get(name) or {}
+                spent += float(res.get("seconds") or 0.0)
+                if str(res.get("verdict")) == "FAIL":
+                    killed = True
+                    break
+            secs.append(spent)
+            kills += 1 if killed else 0
+        n = len(secs)
+        out[policy] = {
+            "n_rows": n, "n_killed": kills,
+            "mean_seconds_to_verdict": round(sum(secs) / n, 4) if n else None,
+            "total_seconds": round(sum(secs), 3),
+            "verdict": "MEASURED" if n >= MIN_ROWS else "UNMEASURED",
+            "why": (None if n >= MIN_ROWS else
+                    f"{n} replayed certificate(s), under the floor of {MIN_ROWS}"),
+        }
+    return out
+
+
+def ordering_kill_rates() -> dict[str, float]:
+    """THE CONSUMER'S DOOR. `falsifier_run` asks for the winning policy's kill rates and passes
+    them to `falsifiers.schedule`. An empty dict leaves the catalogue's declared prior in place,
+    which is exactly the behaviour before this organ existed."""
+    doc = _read(OUT)
+    _block = doc.get("ordering")
+    block: dict[str, Any] = dict(_block) if isinstance(_block, dict) else {}
+    if str(block.get("applied_policy")) != "measured_kill_rates":
+        return {}
+    rates = block.get("measured_kill_rates")
+    out: dict[str, float] = {}
+    for k, v in (rates or {}).items():
+        try:
+            out[str(k)] = float(v)
+        except (TypeError, ValueError):
+            continue
+    return out
+
+
+def operator_mixes() -> dict[str, Any]:
+    """Three mixes scored on the certify-per-operator posterior mutation_yield already fits."""
+    doc = _read(MUTATION_YIELD)
+    _per = doc.get("per_operator")
+    per: dict[str, Any] = dict(_per) if isinstance(_per, dict) else {}
+    ops: dict[str, dict[str, float]] = {}
+    for name, row in per.items():
+        if not isinstance(row, dict):
+            continue
+        try:
+            cert = float(row.get("certified") or 0.0)
+            trials = float(row.get("n") or row.get("trials") or 0.0)
+        except (TypeError, ValueError):
+            continue
+        if trials <= 0:
+            continue
+        ops[str(name)] = {"p": (1.0 + cert) / (2.0 + trials), "n": trials}
+    if not ops:
         return {"status": "UNMEASURED",
-                "why": (f"no usable adversary report at {p.name}; the synthetic arena is the one "
-                        f"that stops a meta-version improving its score by weakening a gate, so "
-                        f"a challenger cannot be judged without it")}
-    ctl = d.get("controls") or {}
+                "why": ("no reports/MUTATION_YIELD.json per-operator rows on this host: the "
+                        "operator posterior this compares mixes on does not exist yet"),
+                "mixes": {}}
+    names = sorted(ops)
+    uniform = {n: 1.0 / len(names) for n in names}
+    published = {n: float(ops[n]["p"]) for n in names}
+    tot = sum(published.values()) or 1.0
+    published = {n: v / tot for n, v in published.items()}
+    top = sorted(names, key=lambda n: -ops[n]["p"])[:max(1, len(names) // 3)]
+    greedy = {n: (1.0 / len(top) if n in top else 0.0) for n in names}
+    mixes = {"uniform": uniform, "yield_weighted": published, "greedy_top_third": greedy}
+    scored: dict[str, dict[str, Any]] = {
+        name: {"expected_survivors_per_100_trials":
+               round(100.0 * sum(w * ops[n]["p"] for n, w in mix.items()), 4),
+               "weights": {n: round(w, 4) for n, w in mix.items() if w > 0}}
+        for name, mix in mixes.items()}
+    best = max(scored, key=lambda k: float(scored[k]["expected_survivors_per_100_trials"]))
+    return {"status": "MEASURED", "n_operators": len(names), "mixes": scored, "best": best,
+            "applied": False,
+            "why_not_applied": (
+                "`mutation_yield` owns data/mutation_operator_weights.json and writes it every "
+                "hour; a second writer would fight it. The comparison is published for that "
+                "owner and for a person, and nothing here writes the weights file.")}
+
+
+def threshold_variants() -> dict[str, Any]:
+    """How many judged cells each counterfactual bar WOULD have passed -- published, never fed."""
+    doc = _read(SURVIVORS)
+    _sv = doc.get("survivors")
+    survivors: dict[str, Any] = dict(_sv) if isinstance(_sv, dict) else {}
+    counts: dict[str, int] = {}
+    n_gates_seen = 0
+    for rec in survivors.values():
+        gates = rec.get("gates") if isinstance(rec, dict) else None
+        if not isinstance(gates, dict):
+            continue
+        n_gates_seen += 1
+        passed = sum(1 for v in gates.values()
+                     if isinstance(v, dict) and bool(v.get("passed")))
+        for need in (8, 9, 10):
+            key = f"pass_at_least_{need}_of_10"
+            counts[key] = counts.get(key, 0) + (1 if passed >= need else 0)
     return {
-        "status": "OK",
-        "n_breach": d.get("n_breach"),
-        "n_controls": ctl.get("n"), "n_false_rejection": ctl.get("n_false_rejection"),
-        "controls_status": ctl.get("status"),
-        # A BREACH IS THE DISQUALIFIER. False rejections are reported and do NOT score, because a
-        # meta-version could reduce them by making the gates permissive -- which is the failure
-        # this arena exists to prevent.
-        "score": -int(d.get("n_breach") or 0),
-        "rule": ("breaches score; false rejections are REPORTED and do not. A meta-version can "
-                 "always cut false rejections by making the gates permissive, and rewarding that "
-                 "would hand the system the exact lever it must not have."),
+        "status": "MEASURED" if n_gates_seen else "UNMEASURED",
+        "n_certificates_with_gate_rows": n_gates_seen,
+        "counterfactual_counts": counts,
+        "applied": False,
+        "why_not_applied": (
+            "REFUSED IN BOTH DIRECTIONS, on two different grounds. Lowering a bar would "
+            "manufacture the evidence the bar exists to demand; raising one would size the book "
+            "smaller, which the principal's standing order forbids. The gauntlet, the promoter, "
+            "the allocator proof and the state-admission judge are sealed and are not imported "
+            "here -- this counts what the record says and stops."),
     }
 
 
-def _arena_prospective() -> dict[str, Any]:
-    """Prospective campaigns: realised forward R per scientist. Cannot be settled in one run."""
-    d = _read(DESK / "reports" / "CREDIT_ASSIGNMENT.json")
-    if not isinstance(d, dict) or d.get("status") != "OK":
-        return {"status": "UNMEASURED", "why": "no credit assignment report to read"}
-    lanes = d.get("by_representation_lane") or []
-    total = round(sum(float(r.get("realised_r") or 0.0) for r in lanes), 4)
+def build(budget_s: float = 180.0) -> dict[str, Any]:
+    t0 = time.monotonic()
+    rows, source = _battery_rows()
+    measured: dict[str, float] = {}
+    try:
+        from research.destroyer_pool import kill_rates
+        measured = kill_rates()
+    except Exception:
+        measured = {}
+    orderings = replay_orderings(rows, measured) if rows else {}
+    eligible = {k: v for k, v in orderings.items() if v["verdict"] == "MEASURED"
+                and v["mean_seconds_to_verdict"] is not None}
+    winner = min(eligible, key=lambda k: float(eligible[k]["mean_seconds_to_verdict"])) \
+        if eligible else None
+    # The arena's own judge, in its own vocabulary: an arm is "born" per replayed certificate and
+    # "certified" when its order reached a kill, so a faster policy that finds nothing does not
+    # win by being fast at nothing.
+    arms = {k: {"born": int(v["n_rows"]), "certified": int(v["n_killed"]),
+                "alpha": 1.0 + int(v["n_killed"]),
+                "beta": 1.0 + max(int(v["n_rows"]) - int(v["n_killed"]), 0),
+                "group": "test_ordering",
+                "cost_basis": f"mean {v['mean_seconds_to_verdict']}s to first verdict"}
+            for k, v in orderings.items()}
+    verdicts = arena.judge(arms) if arms else {"arms": {}, "leader": None, "recorded": 0,
+                                               "trails": []}
+    applied = winner if (winner and measured) else (winner or None)
     return {
-        "status": "OPEN",
-        "total_realised_r_now": total,
-        "evidence_source": d.get("evidence_source"),
-        "silent_certificates": (d.get("silent_certificates") or {}).get("n"),
-        "why_open": (
-            "a prospective campaign is settled by TIME, not by a run. A challenger is registered "
-            "with the forward record as it stands and judged when the record moves; declaring a "
-            "winner on two arenas out of three would be doing exactly what this desk criticises "
-            "its own forward lane for."),
-        "what_would_settle_it": (
-            "realised forward R per scientist, measured over a window that begins AFTER the "
-            "challenger is seated, against the same window for the incumbent. The credit chain "
-            "already produces it; what it needs is elapsed time."),
-    }
-
-
-def build(propose: str | None = None) -> dict[str, Any]:
-    now = datetime.now(tz=UTC)
-    champ = _read(CHAMPION) or {}
-    incumbent = champ.get("knobs") or {k: _current_value(k) for k in META_KNOBS}
-
-    traps, synth, pros = _arena_traps(), _arena_synthetic(), _arena_prospective()
-
-    challenger: dict[str, Any] | None = None
-    refusal: str | None = None
-    if propose:
-        if "=" not in propose:
-            refusal = f"proposal {propose!r} is not KNOB=VALUE"
-        else:
-            knob, raw = propose.split("=", 1)
-            knob = knob.strip()
-            spec = META_KNOBS.get(knob)
-            if spec is None:
-                refusal = (f"{knob!r} is not a meta knob. The movable set is "
-                           f"{sorted(META_KNOBS)}; everything else is refused, and the "
-                           f"forbidden classes are enumerated in the report.")
-            else:
-                try:
-                    val: Any = float(raw)
-                    if float(val).is_integer() and isinstance(spec["lo"], int):
-                        val = int(val)
-                except ValueError:
-                    refusal = f"{raw!r} is not a number"
-                    val = None
-                if refusal is None and val is not None:
-                    if not (spec["lo"] <= val <= spec["hi"]):
-                        refusal = (f"{knob}={val} is outside its declared range "
-                                   f"[{spec['lo']}, {spec['hi']}]")
-                    else:
-                        challenger = {"knob": knob, "from": _current_value(knob), "to": val,
-                                      "changes": spec["changes"]}
-
-    # THE CHAMPION HOLDS BY DEFAULT, and a challenger must be strictly better on a measurable
-    # arena and worse on none. Ties go to the incumbent: churn in a research system is paid in
-    # every downstream comparison that then spans two regimes.
-    measurable = [a for a in (traps, synth) if a.get("status") == "OK"]
-    verdict = "CHAMPION_HOLDS"
-    why = ("no challenger proposed this run" if not challenger else
-           "a challenger must be RUN under its own configuration to be scored; this run records "
-           "the arena state it must beat")
-    if refusal:
-        verdict = "CHALLENGER_REFUSED"
-        why = refusal
-
-    return {
-        "at": now.isoformat(timespec="seconds"),
-        "status": "OK",
-        "verdict": verdict,
-        "why": why,
-        "incumbent": {"knobs": incumbent,
-                      "seated_at": champ.get("seated_at"),
-                      "note": ("the values in force. On the first run these are read from the "
-                               "modules themselves, so the champion IS the code as written.")},
-        "challenger": challenger,
-        "arenas": {"sealed_traps": traps, "synthetic": synth, "prospective": pros},
-        "arena_baseline": {a: (v.get("score") if isinstance(v, dict) else None)
-                           for a, v in (("sealed_traps", traps), ("synthetic", synth))},
-        "movable_knobs": {k: {**{kk: v[kk] for kk in ("lo", "hi", "changes")},
-                              "current": _current_value(k)}
-                          for k, v in META_KNOBS.items()},
-        "forbidden_knobs": FORBIDDEN_KNOBS,
-        "champion_rule": (
-            "the incumbent holds unless a challenger is STRICTLY BETTER on a measurable arena and "
-            "WORSE ON NONE. A returned bench defect or a new adversary breach is disqualifying "
-            "rather than a deduction -- a research system that scores better while re-breaking "
-            "something the desk already paid for is not better."),
-        "why_the_adversary_is_the_safety": (
-            "a system allowed to change itself and graded on its own score will lower its own "
-            "bar; that is the shortest path to a better number. The synthetic arena is the "
-            "adversary, so weakening a gate FAILS by construction -- breaches rise. And false "
-            "rejections are reported but never scored, because cutting them by making the gates "
-            "permissive is the same lever wearing a friendlier name."),
+        "at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
+        "status": "OK" if rows else "UNMEASURED",
+        "source": source, "n_replayed": len(rows),
+        "ordering": {
+            "policies": orderings, "winner": winner,
+            "applied_policy": applied,
+            "measured_kill_rates": measured,
+            "applied": bool(applied == "measured_kill_rates" and measured),
+            "rule": ("scored by the seconds each policy WOULD have spent to reach the first kill "
+                     "on rows the desk already ran; nothing is re-executed and every objection "
+                     "still runs, so no cell passes or fails differently for the order"),
+        },
+        "arena": verdicts,
+        "operators": operator_mixes(),
+        "thresholds": threshold_variants(),
+        "consumers": [
+            "desks/mt5/research/falsifier_run.py falsify() -> ordering_kill_rates(): the winning "
+            "policy's kill rates are what `falsifiers.schedule` is given",
+            "reports/META_RND.json -> the operator-mix and threshold-variant comparisons, "
+            "published for their owners and explicitly not fed anywhere",
+        ],
         "boundary": (
-            "NOTHING HERE EDITS A MODULE. It records the arena a challenger must beat and the "
-            "knobs it may move. Seating a champion is a decision, and an autonomous research "
-            "system that rewrote its own constants between passes is precisely the thing this "
-            "enumerated knob list exists to prevent."),
-        "measurable_arenas_this_run": len(measurable),
+            "ONE SUBJECT IS APPLIED AND TWO ARE NOT, on purpose. Ordering costs nothing and "
+            "changes no verdict. Operator weights belong to `mutation_yield`. Thresholds are "
+            "sealed and refused in both directions -- lower manufactures evidence, higher sizes "
+            "the book smaller."),
+        "seconds": round(time.monotonic() - t0, 3),
     }
 
 
 def main(argv: list[str] | None = None) -> int:
-    ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--apply", action="store_true")
-    ap.add_argument("--propose", default=None, help="KNOB=VALUE, from the movable set only")
+    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap.add_argument("--once", action="store_true")
+    ap.add_argument("--budget-s", type=float, default=180.0)
     a = ap.parse_args(argv)
-    doc = build(a.propose)
-    print(f"meta R&D: {doc['verdict']}   {doc['measurable_arenas_this_run']} measurable arena(s)")
-    print(f"  {doc['why'][:160]}")
-    for name, arena in doc["arenas"].items():
-        st = arena.get("status")
-        if name == "sealed_traps" and st == "OK":
-            print(f"  {name:<14} {st}  {arena['n_cases']} case(s), {arena['n_failed']} failed, "
-                  f"{arena['n_unmeasurable']} unmeasurable  score {arena['score']}")
-        elif name == "synthetic" and st == "OK":
-            print(f"  {name:<14} {st}  {arena['n_breach']} breach(es), "
-                  f"{arena['n_false_rejection']} false rejection(s) of "
-                  f"{arena['n_controls']} control(s)  score {arena['score']}")
-        elif name == "prospective":
-            print(f"  {name:<14} {st}  realised {arena.get('total_realised_r_now')}R so far, "
-                  f"{arena.get('silent_certificates')} certificate(s) still silent")
-        else:
-            print(f"  {name:<14} {st}  {str(arena.get('why'))[:90]}")
-    if doc.get("challenger"):
-        c = doc["challenger"]
-        print(f"  challenger: {c['knob']} {c['from']} -> {c['to']}  ({c['changes'][:70]})")
-    print(f"  movable: {sorted(doc['movable_knobs'])}")
-    print(f"  forbidden: {sorted(doc['forbidden_knobs'])}")
-    if not a.apply:
-        print("  --apply not given; nothing written")
-        return 0
-    CHAMPION.parent.mkdir(parents=True, exist_ok=True)
-    if not CHAMPION.exists():
-        CHAMPION.write_text(json.dumps(
-            {"seated_at": doc["at"], "knobs": doc["incumbent"]["knobs"],
-             "why": "the first champion is the code as written; nothing has beaten it because "
-                    "nothing has run against it yet"}, indent=1, default=str), encoding="utf-8")
-    OUT.parent.mkdir(parents=True, exist_ok=True)
-    OUT.write_text(json.dumps(doc, indent=1, default=str), encoding="utf-8")
-    print(f"-> {OUT}")
+    doc = build(budget_s=a.budget_s)
+    try:
+        OUT.parent.mkdir(parents=True, exist_ok=True)
+        OUT.write_text(json.dumps(doc, indent=1, default=str), encoding="utf-8")
+    except OSError as exc:
+        print(f"meta rnd: could not write {OUT}: {exc}")
+        return 1
+    o = doc["ordering"]
+    print(f"meta rnd: {doc['n_replayed']} certificate batter(ies) replayed under "
+          f"{len(POLICIES)} ordering policies; winner={o['winner']} "
+          f"applied={o['applied_policy']}")
+    for name, row in (o["policies"] or {}).items():
+        print(f"   {name:<22} {row['verdict']:<10} n={row['n_rows']:<4} "
+              f"kills={row['n_killed']:<4} mean_s={row['mean_seconds_to_verdict']}")
+    ops = doc["operators"]
+    print(f"   operators: {ops.get('status')} best={ops.get('best')} "
+          f"(applied={ops.get('applied')})")
+    th = doc["thresholds"]
+    print(f"   thresholds: {th.get('status')} {th.get('counterfactual_counts')} "
+          f"(applied={th.get('applied')})")
+    print(f"written: {OUT}")
     return 0
 
 

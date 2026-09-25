@@ -486,7 +486,18 @@ def expand_axes(cands: list[dict]) -> list[dict]:
         sym, fam = str(c.get("symbol") or ""), str(c.get("family") or "")
         inv = _invariance(sym, fam)
         demote = 1 if (inv or {}).get("verdict") == "NON_INVARIANT" else 0
-        for tf in [*_charts_with_bars(sym), "H1"]:
+        # WHICH CHART FIRST, MEASURED (Tier-1 B23). The chart order here was fixed and no
+        # measurement ever informed it. `counterfactual_timeframes` re-prices the desk's OWN
+        # trades on M1/M5/M15/H1 with the same pricer and publishes which resolution actually
+        # paid; the charts that paid are expanded first. Every chart is still expanded -- this
+        # is queue order, never a refusal (L1.60), and an absent artifact leaves the old order.
+        _charts = _charts_with_bars(sym)
+        try:
+            from research.counterfactual_timeframes import chart_order
+            _charts = [c for c in chart_order(sym, _charts) if c in _charts]
+        except Exception:
+            pass
+        for tf in [*_charts, "H1"]:
             for sess in SESSION_AXIS:
                 p = dict(base)
                 if tf != "H1":
@@ -1314,6 +1325,35 @@ def main() -> int:
             if pf["n_failed"]:
                 c["prior_failures_in_region"] = pf["n_failed"]
                 c["region"] = pf["region"]
+        # THE LEARNED FAILURE PRIOR, AND THE ONE DIRECTION IT MAY ACT IN (Tier-1 B10).
+        #
+        # `prior_failures_in_region` counts what died HERE; the graveyard model says what a
+        # structure like this usually dies OF. Neither can change its mind: both average every
+        # era of this desk's history together, so a region buried under conditions that have
+        # since ended stays buried, and every generator quietly learns not to propose it.
+        # `failure_prior` fits the same survival model twice -- lifetime and recent -- and
+        # publishes the odds ratio per declared feature. A candidate whose structure has begun
+        # to survive again carries a multiplier above 1 and a `reopen` flag.
+        #
+        # STAMPED, NEVER FILTERED. No candidate is removed by this, here or anywhere: the field
+        # travels with the row and the queue's ordering may read it. A negative prior that could
+        # delete a candidate would make the desk's own history a cage (L1.25).
+        try:
+            from research.failure_prior import multiplier_for
+            reopen_levels = {
+                (str(r.get("feature")), str(r.get("level")))
+                for r in (json.loads((BASE / "data" / "failure_prior.json")
+                                     .read_text("utf-8-sig")).get("reopen") or [])
+                if isinstance(r, dict)}
+            for c in candidates.values():
+                mult, why = multiplier_for(c)
+                c["failure_prior"] = mult
+                c["failure_prior_why"] = why
+                c["reopen"] = bool(reopen_levels & {("family", str(c.get("family"))),
+                                                    ("source", str(c.get("source")))})
+            graph_note["failure_prior"] = True
+        except Exception as exc:
+            graph_note["failure_prior_why"] = f"{type(exc).__name__}: {exc}"[:300]
         # THE PRE-MORTEM: which failure class this candidate most resembles dying of, and the
         # cheap falsifier that implies. Annotation only -- the gauntlet still decides.
         try:

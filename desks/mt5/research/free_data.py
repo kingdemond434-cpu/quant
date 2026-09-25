@@ -53,8 +53,10 @@ def _cache_get(name: str):
 def _cache_put(name: str, obj) -> None:
     try:
         _cache_file(name).write_text(json.dumps(obj), "utf-8")
-    except Exception:
-        pass
+    except Exception as exc:
+        # LOUD, NOT SILENT (2026-09-23 swallowed-write audit). A cache that silently never writes
+        # re-fetches every call forever and looks exactly like a cache that is working.
+        print(f"free_data: cache {name!r} NOT written ({type(exc).__name__}: {exc})", flush=True)
 
 
 # ----------------------------------------------------------------- FRED ----

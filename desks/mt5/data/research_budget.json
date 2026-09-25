@@ -1,9 +1,9 @@
 {
- "generated_utc": "2026-09-23T01:42:05.011340+00:00",
+ "generated_utc": "2026-09-23T10:41:50.360520+00:00",
  "controller_variant": "A",
  "shares": {
-  "new_mechanism": 0.0798,
-  "mutate_survivor": 0.082,
+  "new_mechanism": 0.0805,
+  "mutate_survivor": 0.0813,
   "combine_survivors": 0.0827,
   "conditional_state_edge": 0.0888,
   "execution_improvement": 0.085,
@@ -14,6 +14,6 @@
   "model_architecture": 0.0827,
   "external_screen": 0.0182
  },
- "authoritative": true,
- "authority_evidence": "1 leg(s) spent by the controller's prices this hour (deepen); no RESEARCH_BUDGET.json: no leg has asked the bandit for its budget"
+ "authoritative": false,
+ "authority_evidence": "no RESEARCH_BUDGET.json: no leg has asked the bandit for its budget; cycle_pricing: every leg ran on its base budget (no price moved a leg's seconds)"
 }

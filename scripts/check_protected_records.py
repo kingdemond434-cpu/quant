@@ -40,10 +40,19 @@ import os
 import re
 import subprocess
 import sys
+from datetime import UTC, datetime
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 OVERRIDE = "ALLOW_PROTECTED_RECORD_LOSS"
+
+#: THE EVIDENCE THIS DETECTOR LEAVES BEHIND. Until 2026-09-23 this guard printed its verdict and
+#: wrote nothing, so `self_repair_registry`'s `store_emptied_by_second_writer` class read its own
+#: detector as having never produced and parked the class in MANUAL for ever -- a class found "by
+#: hand" whose detector in fact fires on every commit. A detector with no artifact is
+#: indistinguishable from a detector that stopped (L1.28a), which is the exact failure the
+#: registry exists to make impossible, so the verdict is now recorded every run.
+REPORT = ROOT / "desks" / "mt5" / "reports" / "PROTECTED_RECORDS.json"
 
 #: `| 197 | **Gap title** | ...` -- the GAP_REGISTER row shape.
 _MD_ROW = re.compile(r"^\|\s*(\d+)\s*\|")
@@ -192,6 +201,39 @@ def compare(rel: str, before: str, after: str) -> dict[str, object] | None:
     return None
 
 
+def _write_report(prot: dict[str, str], compared: list[str],
+                  findings: list[dict[str, object]], rng: list[str] | None) -> None:
+    """Record what this run actually compared, so a vacuous pass cannot read as a clean one.
+
+    `n` IS THE NUMBER OF FILES COMPARED, never the number guarded. A staged-vs-HEAD run with an
+    empty index compares nothing and is a real measurement of nothing: it publishes n=0 and says
+    so in `scope`, so a reader (and `self_repair_registry`) can tell "no protected artifact
+    changed" from "this detector did not look".
+    """
+    doc = {
+        "schema": "protected_records/1",
+        "generated_at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
+        "scope": f"range {rng[0]}..{rng[1]}" if rng else "staged vs HEAD",
+        "protected": len(prot),
+        "n": len(compared),
+        "losses": len(findings),
+        "compared": compared,
+        "findings": findings,
+        "rule": "a protected artifact may not lose records; a record that vanishes reads exactly "
+                "like a record resolved",
+    }
+    try:
+        REPORT.parent.mkdir(parents=True, exist_ok=True)
+        tmp = REPORT.with_suffix(REPORT.suffix + f".tmp{os.getpid()}")
+        tmp.write_text(json.dumps(doc, indent=1, default=str), encoding="utf-8")
+        os.replace(tmp, REPORT)
+    except OSError:
+        # THE GUARD OUTRANKS ITS OWN EVIDENCE. This runs as a pre-commit hook on a box where the
+        # reports directory may be read-only or held by another writer; failing the commit
+        # because the audit trail could not be written would block the money path over a log.
+        pass
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--range", nargs=2, metavar=("BEFORE", "AFTER"),
@@ -200,6 +242,7 @@ def main(argv: list[str] | None = None) -> int:
 
     prot = _protected()
     findings: list[dict[str, object]] = []
+    compared: list[str] = []
     for rel in sorted(prot):
         if args.range:
             before = _git("show", f"{args.range[0]}:{rel}")
@@ -212,9 +255,12 @@ def main(argv: list[str] | None = None) -> int:
             after = _git("show", f":{rel}")          # the staged blob, not the working tree
         if not before.strip():
             continue                                  # nothing to lose
+        compared.append(rel)
         finding = compare(rel, before, after)
         if finding:
             findings.append(finding)
+
+    _write_report(prot, compared, findings, args.range)
 
     if not findings:
         print(f"protected records: OK over {len(prot)} guarded artifact(s)")

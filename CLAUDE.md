@@ -49,14 +49,37 @@ vocabulary. Do not decide something the desk already decided.
   check. One-time: `desks\mt5\scripts\install_adopt_release_task.ps1` registers it AND runs the
   first adoption immediately (re-running the whole installer on a live box has failed with
   "Access is denied" on the S4U principals; this touches one task).
-- **THE TRADING BOX THIS TREE RUNS ON HAS 8 GB (re-measured 2026-09-15). The 96 GB note below
-  is about a machine that is no longer the one trading, and it is left in place only so the
-  next session recognises it rather than trusting it.** Measured on the box running the gateway
-  today: hostname `VMI3500897`, QEMU VM, IP `169.58.159.142`, ONE 8 GB DIMM.
-  `Win32_ComputerSystem.TotalPhysicalMemory` = 7.99 GB, `Win32_OperatingSystem` = 8,186 MB
-  visible, and the desk's own `stall_watch.json` agrees: `memory.total_phys_mb: 8186`. The
-  96 GB box in the note below is the Contabo machine at `62.171.172.249`; this is a different
-  host, so a floor sized for 96 GB is sized for a machine the code is not on.
+- **DO NOT READ A MEMORY FIGURE OUT OF THIS FILE. MEASURE IT. Every number written here has
+  been wrong within a fortnight, three times running, and the third time was written by the
+  session that added the warning against doing it.** The two blocks below are kept ONLY as the
+  cautionary case; both of their headline figures are stale.
+
+  ```python
+  import psutil; psutil.virtual_memory().total / 1024**3     # this machine, right now
+  ```
+
+  MEASURED 2026-09-24 WITH THE CALL ABOVE, ON BOTH MACHINES, IN ONE SITTING:
+
+      vmi3500897  BUILD box     4 cores   8.0 GB RAM   (~1 GB free)   100 GB disk, ~1 GB free
+      vmi3571445  TRADING box  18 cores  96.0 GB RAM  (~35 GB free)
+
+  THE TWO BOXES DIFFER BY TWELVE TIMES AND THAT IS THE WHOLE TRAP. Every wrong entry this file
+  has carried was a reading from one machine written down as a fact about the other.
+
+  AND I ADDED ONE OF THEM, IN THE COMMIT THAT REPLACED THIS BLOCK. A builder reported "this box
+  has 96 GB, not the 8 GB in CLAUDE.md", I wrote that in, and a direct `psutil` call minutes
+  later returned 8.0 GB on the build box. The builder had measured the trading box and named the
+  build box. So this file asserted 96 GB for a 4-core, 8 GB machine, inside the very edit whose
+  subject was that nobody should trust a written figure. If it can happen there it can happen
+  anywhere: RUN THE CALL.
+
+  What a wrong figure costs, measured: a conversion cap read `/proc/meminfo`, which does not
+  exist on Windows, therefore never derived, and sat on its 2,000-row floor for every pass in its
+  life -- a 731x under-read wearing the floor's clothes. A judge headroom cap of 8,192 MB against
+  64 GB free cost five workers.
+
+  USE `psutil`, NEVER `Get-CimInstance`: CIM has hung on the trading box, and `wmic` is absent.
+  `stall_watch.json` publishes `memory.total_phys_mb` per host and is the second opinion.
 
   THE IRONY IS THE LESSON, and it is why the old text stays visible. The note below ends with
   "NEVER SIZE A FLOOR OFF A CLAIM, AND NEVER OFF THE OTHER BOX EITHER -- measure the machine the

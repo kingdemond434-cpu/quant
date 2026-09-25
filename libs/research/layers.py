@@ -37,6 +37,14 @@ LAYERS = ("information", "prediction", "timing", "sizing", "portfolio", "executi
 LEG_LAYER: dict[str, str] = {
     # information: what the desk knows before it predicts anything
     "mine": "information", "moat_miner": "information", "world_crawler": "information",
+    # The moat exchange prices candidates the desk already holds -- novelty against the
+    # canon and the graveyard, independence against the book. That is information about the
+    # desk's own stock of hypotheses, not a new prediction (Tier-1 M6/M4).
+    "moat_candidate_compiler": "information",
+    # The program database evolves the desk's own SEARCH ALGORITHMS and scores each
+    # class against its own organ. That is the meta layer: it changes how the desk looks,
+    # not what it predicts (Tier-1 Q3).
+    "algorithm_db": "meta",
     # The proposer seat and the kimi hunter both buy the desk a PRIOR it did not have -- which
     # skeleton, which mechanism name, which territory -- before any claim about returns is made.
     # That is information, not prediction: neither one scores anything.
@@ -64,6 +72,13 @@ LEG_LAYER: dict[str, str] = {
     "graveyard_model": "prediction", "counterfactual_world": "prediction",
     "edge_confidence": "prediction", "adversaries": "prediction",
     "recertify_canon": "prediction", "publish_survivors": "prediction",
+    # THE JUDGE'S INPUT AND ITS OUTPUT (2026-09-24). `fast_admission` describes the docket the
+    # ten gates are given -- raw intake against the admissible population -- and
+    # `canon_publication` seals the sweep the judge just completed into the canonical store that
+    # every other organ reads. Both sit in PREDICTION beside `external_gauntlet` itself: neither
+    # places an order, neither sizes one, and both exist only so the prediction layer's verdict
+    # is fed the right population and published the moment it exists.
+    "fast_admission": "prediction", "canon_publication": "prediction",
     "miner_conversion": "prediction", "opportunity_gap": "prediction",
     "research_org": "prediction", "queue_compact": "prediction",
     "requeue_unrunnable": "prediction", "falsifier_run": "prediction",
@@ -71,7 +86,7 @@ LEG_LAYER: dict[str, str] = {
     "edges_macro_fusion_sweep": "prediction", "alpha_breadth": "prediction",
     "alpha_periodic_table": "prediction", "regime_coverage": "prediction",
     "arena": "meta", "prosecutor": "meta", "scaling_laws": "meta", "dead_architecture": "meta",
-    "producer_census": "meta",
+    "producer_census": "meta", "productivity_census": "meta",
     # timing: when a claim becomes a trade
     "enrol_clocks": "timing", "heal_clocks": "timing", "promoter": "timing",
     "rebalance_trigger": "timing", "entry_timing": "timing",
@@ -81,6 +96,16 @@ LEG_LAYER: dict[str, str] = {
     # Generating a mechanism's other-session and other-chart equivalents is asking WHEN it works,
     # which is a timing question even though the output is a research candidate.
     "session_chart_expansion": "timing",
+    # Deriving each instrument's OWN quiet and active hours from its own bars, so a session
+    # mechanism is not handed gold's clock and asked to work on a crypto CFD. The measurement
+    # that motivated the leg is the proof it belongs here: XAUUSD is quiet at 23, 07 and 02
+    # while BTCUSD is quiet 07 to 14, inverted, so gold's inherited window would build BTCUSD's
+    # range through its most active stretch and break out at its quietest hour. That is a
+    # question about WHEN, not about what the edge is, so it is timing.
+    # It was a costed leg in the cycle with no entry here, which failed the layer test on every
+    # run between the two commits -- the exact "every leg belongs to a layer" law this table exists
+    # to keep, broken by the table rather than by the leg.
+    "session_structure": "timing",
     # Whether an artifact's own stamp advances is a MEASUREMENT property of the desk, not a
     # property of any strategy -- it belongs with the other self-measurement legs.
     "stamp_freshness": "information",
@@ -161,6 +186,18 @@ LEG_LAYER: dict[str, str] = {
     "candidate_conservation": "meta",
     # Planted point-in-time canaries measure whether the desk can read the future: meta.
     "pit_canaries": "meta",
+    # THE TIER-1 CLOSED-LOOP B ROWS (2026-09-23).
+    # Whether the running code may create new exposure, which scientist earned what, which
+    # structures have started surviving again, and one EVIG price over every research resource
+    # are all the machine measuring and scheduling itself: meta.
+    "release_authority": "meta", "scientist_standings": "meta", "failure_prior": "meta",
+    "evig_acquisition": "meta",
+    # The per-asset regime hierarchy and the learned representation lane say what the market IS
+    # before anything predicts it -- the information layer, like the crawlers and the miners.
+    "regime_hierarchy": "information", "representation_discovery": "information",
+    # The residual map turns the desk's own errors into search targets, and the research tree
+    # and the CEO docket decide which question is asked next: information.
+    "residual_map": "information", "research_tree": "information", "frontier_ceo": "information",
     # Certification fate joined back to the generators that proposed each cell reweights the
     # predictor search itself: prediction.
     "mutation_yield": "prediction",
@@ -204,6 +241,10 @@ LEG_LAYER: dict[str, str] = {
     # features themselves from ingested series -- also information, and for the same reason
     # `unused_information` is: it decides what inputs exist, not what they imply.
     "world_model": "prediction", "residual_hunt": "information",
+    # C9. `residual_gate` measures what a candidate adds to the book the desk ALREADY holds, and
+    # that is a statement about the portfolio, not about the market: it is the same layer as the
+    # allocator's own evidence work, one rung above a prediction.
+    "residual_gate": "portfolio",
     "representation_forge": "information",
     # THE MATHEMATICS CIVILIZATION (2026-09-17): every object it invents is a claim about the
     # residual -- E[eps | f(x)] -- which is a claim about returns, so the hour is billed to
@@ -232,6 +273,10 @@ LEG_LAYER: dict[str, str] = {
     # other guarantees every certificate gets a forward clock the moment it is minted. They are
     # the machine that runs the machine -- throughput and evidence plumbing, not edge.
     "judging_throughput": "meta", "forward_enrolment": "meta",
+    # META for the same reason, and it is the one that measures whether the other two are even
+    # being reached: what fraction of the day the desk actually mints and judges, against the best
+    # hour this box has ever done. It buys no prediction; it finds the hours nothing was produced.
+    "duty_cycle": "meta",
     "analyst_pipeline": "information", "knowledge_graph": "information",
     "card_explosion": "prediction", "alpha_lineage": "prediction",
     "graveyard_resurrection": "prediction", "shadow_discovery": "information",
@@ -268,6 +313,12 @@ LEG_LAYER: dict[str, str] = {
     # Which families the scarce judge actually spends itself on, measured per family as unjudged
     # backlog. It buys INFORMATION about the mined population, not a signal or a position.
     "judge_coverage": "information",
+    # How much ORTHOGONALITY and how many CERTIFICATES each producer actually returns per hour of
+    # compute. It buys INFORMATION about the producers themselves -- which of them opens ground
+    # nothing else covers, and which of them converts the judge's hour into a certificate.
+    "orthogonality_yield": "information",
+    # What the multiplicity budget is charged in: nominal rows vs effective independent tests.
+    "effective_trials": "information",
     "gauntlet_backpressure": "meta", "miner_specialisation": "meta",
     # THE TIER-5 RESIDUALS (mandate 90, 110, 131/132, 133, 134, 136, 97/98, 162). The bounty
     # board and the drawdown-alpha miner are PORTFOLIO: both ask what the BOOK lacks -- a payoff
@@ -337,6 +388,11 @@ LEG_LAYER: dict[str, str] = {
     # ONE CERTIFICATE TRUTH: the audit of every certificate/clock store against the one lane is a
     # fence over the machine's own bookkeeping -- meta, like every other fence.
     "certificate_truth": "meta",
+    # THE RUNTIME ATTESTATION publishes what ran on this host, hashed -- a fence over the desk's
+    # own bookkeeping and its only evidence outside the box, so meta like every other fence.
+    "runtime_attestation": "meta",
+    # the self-repair registry judges the desk's own defect classes, not the market: meta.
+    "self_repair": "meta",
     # THE TWO STANDING BATTERIES rotate rosters that span every layer -- fences over the
     # machine's own bookkeeping, standing fixers, region organs. Billing the rotation to one
     # strategy layer would misattribute every other one, so the wiring mechanism is meta and the
@@ -381,9 +437,23 @@ LEG_LAYER: dict[str, str] = {
     # against the instrument's own market-implied state: a claim about returns, prediction.
     "dislocation_lab": "prediction",
     "ingestion_exploitation": "meta",
+    # INDEPENDENCE AT INTAKE measures how much independent ground an hour of judge bought, and
+    # moves intake order, operator mix and generation targets accordingly: the machine measuring
+    # and scheduling itself, which is meta.
+    "independence_intake": "meta",
+    # RANK RECOVERY measures the production effective rank exactly and carries the
+    # least-credited producers' rules onto coordinates the desk already reached: the
+    # machine measuring and widening its own independence, which is meta.
+    "rank_recovery": "meta",
+    "attribution_census": "meta",
     # sizing: how much
     "capacity": "sizing", "ensemble_optimizer": "sizing",
     # portfolio: how the book is composed
+    # `state_admission` judges WHICH STATE DIMENSIONS the allocator may condition capital on -- a
+    # statement about the book's composition rather than about the market, so it bills to the same
+    # layer as the allocator it feeds and not to `prediction`. It is the allocator's first input
+    # and runs immediately before it.
+    "state_admission": "portfolio",
     "pf_allocator": "portfolio",
     "allocator_liveness": "portfolio",
     "allocator_trigger": "portfolio",
@@ -404,6 +474,13 @@ LEG_LAYER: dict[str, str] = {
     "publish_state": "meta", "release_identity": "meta", "smoke_release": "meta",
     "burn_in": "meta", "maintain_miners": "meta", "reclaim_disk": "meta", "daily": "meta",
     "layer_census": "meta", "opportunity_cost": "meta", "acceptance": "meta",
+    # The organ census is meta by construction: it measures the desk's own organs against the
+    # seven-link chain and orders research compute by survivor yield. It generates no hypothesis.
+    "organ_census": "meta",
+    # PRE-REGISTRATION is meta: it measures whether the desk's own evidence was specified before
+    # it was seen. It predicts nothing and sizes nothing -- it grades the epistemics of every
+    # other layer's output.
+    "preregistration": "meta",
     # CYCLE PRICING is meta for the same reason the control plane is: it decides how much of the
     # hour each of the other layers gets, and predicts, sizes and times nothing itself.
     "cycle_pricing": "meta",
@@ -411,6 +488,24 @@ LEG_LAYER: dict[str, str] = {
     # year or volatility regime. That is a property of the PREDICTION -- whether the claim about
     # returns holds outside the environment it was fitted in -- so it is billed there.
     "causal_invariance": "prediction",
+    # THE CLOSED-LOOP ORGANS (Tier-1 B14-B25, 2026-09-23), each billed where its work lands.
+    # Acquisition and the actor populations describe the world, so they are information; the
+    # destroyer pool and the multi-chart counterfactual are claims about returns, so they are
+    # prediction; the shortfall refit is how an order reaches the venue; the bench, the evidence
+    # chain, the immutable clock ledger and the meta-tournament are the machine measuring itself.
+    "source_evig": "information", "source_drain": "information",
+    # A pack's series IS information; re-minting a known mechanism on another chart is a claim
+    # about returns, so it is prediction; recording what a live order actually paid is execution.
+    "pack_cells": "information", "timeframe_fanout": "prediction",
+    # Walking inside a registered ground's own front door is COLLECTION: it fetches documents and
+    # files them as that ground's claims. It mints nothing and predicts nothing.
+    "ground_depth": "information",
+    "fill_recorder": "execution",
+    "actor_pressure": "information",
+    "destroyer_pool": "prediction", "counterfactual_timeframes": "prediction",
+    "shortfall_model": "execution",
+    "quantbench": "meta", "evidence_chain": "meta", "clock_ledger": "meta",
+    "meta_rnd": "meta",
     "wiring_audit": "meta", "queue_cycle": "meta", "time_joins": "meta", "brain_ab": "meta",
     # THE CONTROL PLANE is meta by construction: it measures whether the machine that runs the
     # machine is doing what desired state says, and it predicts, sizes and times nothing.
@@ -422,6 +517,10 @@ LEG_LAYER: dict[str, str] = {
     # bottlenecks is binding this hour and moves compute toward it. They are the machine looking
     # at the machine, which is what `meta` means here.
     "plumbing_watchdog": "meta", "bottleneck_attack": "meta",
+    # the joined document the 24/7 dashboard renders: the machine reporting on itself, in one
+    # place, with every value's source and age attached. It measures nothing new and trades
+    # nothing, which is exactly what `meta` covers.
+    "desk_dashboard_state": "meta",
     "session_capital": "portfolio",
 }
 

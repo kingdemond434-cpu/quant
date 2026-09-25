@@ -1296,6 +1296,14 @@ def run(seed: int = 0, write: bool = True,
                                                                    if a not in marginal]),
            "breadth_credit": bc,
            "realised_credit": rcred,
+           # THE JOINT ARMS (Tier-1 D3). `shares` above prices research VERBS; this prices the
+           # five-tuple (data axis, factor, model, regime representation, portfolio use) from the
+           # co-evolution grid's measured marginal OOS log score. Additive: no existing consumer
+           # of `shares` sees any change.
+           "joint_arms": joint_shares(),
+           # THE PARADIGM VIEW (Tier-1 Q18). The ten search paradigms priced by volume x
+           # independence, from the census's own redundancy measure. Additive, like `joint_arms`.
+           "paradigms": paradigm_shares(),
            "rule": ("score = E[dElogW] x P(survivor) x breadth_credit / cost, where the credit is "
                     "the marginal dk_eff this arm's output buys the CURRENT book -- dE[log W] is "
                     "proportional to k_eff for a Kelly book, so a duplicate scores below a weaker "
@@ -1312,6 +1320,234 @@ def run(seed: int = 0, write: bool = True,
         REPORT.parent.mkdir(parents=True, exist_ok=True)
         REPORT.write_text(json.dumps(doc, indent=1), "utf-8")
     return doc
+
+
+# ===================================================================== THE JOINT ARMS (D3)
+#: THE ARM IS A TUPLE, NOT A VERB (Tier-1 D3). `ARMS` above prices research ACTIONS -- mutate a
+#: survivor, screen an external claim. That answers "what shall the desk do next" and never
+#: answers "over which (data axis, factor, model, regime representation, portfolio use)", which
+#: is the question RD-Agent's factor x model co-evolution actually asks. A joint arm names all
+#: five, so the bandit can prefer `residual x state_space` over `session x tree` on measured
+#: evidence rather than on which verb happened to be cheap.
+#:
+#: (name, data_axis, factor tokens, model family, regime representation, portfolio use). The
+#: factor tokens are matched against COEVOLUTION.json's `compatibility_matrix.grid` REPRESENTATION
+#: keys (which are `+`-joined feature names), and the model family against that grid's model keys.
+JOINT_ARMS: tuple[tuple[str, str, tuple[str, ...], str, str, str], ...] = (
+    ("crossasset_linear", "cross_asset", ("swap_diff", "log_return"), "linear",
+     "unconditional", "diversifier"),
+    ("macro_mixture", "macro", ("cot_z", "realised_vol"), "mixture",
+     "macro_state", "carry_overlay"),
+    ("event_hazard", "event", ("session_participation", "tick_imbalance"), "hazard",
+     "event_window", "event_sleeve"),
+    ("residual_state_space", "residual", ("ts_rank", "log_return"), "state_space",
+     "latent_state", "residual_sleeve"),
+    ("session_tree", "session", ("hour", "realised_vol"), "tree",
+     "session_state", "intraday_sleeve"),
+    ("microstructure_sequence", "microstructure", ("tick_imbalance", "realised_vol"), "sequence",
+     "liquidity_state", "execution_overlay"),
+)
+JOINT_ARM_NAMES: tuple[str, ...] = tuple(a[0] for a in JOINT_ARMS)
+#: The co-evolution report the joint arms are priced from. Its `compatibility_matrix.grid` holds
+#: the measured OOS net log-score gain per (representation, model) cell -- nats per prediction
+#: after the model's own complexity tax, which is the marginal E[log W] this arm earned.
+COEVOLUTION_REPORT = DESK / "reports" / "COEVOLUTION.json"
+#: Pseudo-count on the joint arms' Beta prior. Smaller than PSEUDO because a joint cell carries
+#: far fewer trials than a verb arm and would otherwise never move off the prior.
+JOINT_PSEUDO = 4.0
+#: The joint arms' own protected floor, the same construction as ARM_FLOOR: exploration is a
+#: floor under every arm, never a cap on the arm the evidence likes (L1.50, growth governance).
+JOINT_FLOOR = EXPLORE / len(JOINT_ARMS)
+
+
+def _joint_grid(report: Path | None = None) -> tuple[dict[str, Any], str]:
+    """`compatibility_matrix.grid` from COEVOLUTION.json, or ({}, why)."""
+    p = report or COEVOLUTION_REPORT
+    try:
+        doc = json.loads(p.read_text("utf-8"))
+    except (OSError, ValueError) as exc:
+        return {}, f"{p.name} unreadable ({type(exc).__name__}); joint arms priced from the prior"
+    grid = ((doc.get("compatibility_matrix") or {}).get("grid")
+            if isinstance(doc.get("compatibility_matrix"), dict) else None)
+    if not isinstance(grid, dict) or not grid:
+        return {}, f"{p.name} carries no compatibility_matrix.grid; joint arms priced on the prior"
+    return grid, ""
+
+
+def joint_evidence(report: Path | None = None) -> dict[str, dict[str, Any]]:
+    """Per joint arm: the measured cells, their pooled net log-score gain and the trials behind it.
+
+    A cell counts for an arm when its representation key contains ANY of the arm's factor tokens
+    AND its model key is the arm's model family (or, when the zoo has no such family on this box,
+    the arm is UNMEASURED and falls to the prior rather than borrowing another family's number).
+    `worth` is the n-weighted mean `net_gain` in nats per prediction -- marginal OOS E[log W] --
+    floored at zero for the share draw, because a negative pairing is evidence the arm has not
+    earned MORE compute, never evidence it should be starved below its floor.
+    """
+    grid, why = _joint_grid(report)
+    out: dict[str, dict[str, Any]] = {}
+    for name, axis, tokens, model, regime, use in JOINT_ARMS:
+        num = den = 0.0
+        cells = 0
+        positive = 0
+        for rep, models in grid.items():
+            if not isinstance(models, Mapping) or not any(t in str(rep) for t in tokens):
+                continue
+            cell = models.get(model)
+            if not isinstance(cell, Mapping):
+                continue
+            n = float(cell.get("n") or 0.0)
+            gain = float(cell.get("net_gain") or 0.0)
+            if n <= 0:
+                continue
+            num += gain * n
+            den += n
+            cells += 1
+            positive += 1 if gain > 0 else 0
+        worth = (num / den) if den > 0 else None
+        out[name] = {
+            "data_axis": axis, "factors": list(tokens), "model": model,
+            "regime_representation": regime, "portfolio_use": use,
+            "cells": cells, "trials": int(den), "positive_cells": positive,
+            "net_log_score": None if worth is None else round(worth, 6),
+            "worth": 0.0 if worth is None else max(0.0, worth),
+            "status": "MEASURED" if cells else "UNMEASURED",
+            "why": why or (f"{cells} (representation x {model}) cell(s) of the co-evolution grid, "
+                           f"{int(den)} predictions pooled"),
+        }
+    return out
+
+
+def joint_shares(report: Path | None = None) -> dict[str, Any]:
+    """Thompson shares over the joint arms, floored, with the evidence that set them.
+
+    Reward is marginal OOS E[log W] (net log score per prediction, after the model tax), which is
+    the item's own objective; an arm with no measured cell keeps the prior and the floor, so a
+    region nobody has bred is never priced at zero for having been ignored (L1.28a).
+    """
+    ev = joint_evidence(report)
+    raw: dict[str, float] = {}
+    for name, row in ev.items():
+        # Beta-style posterior mean on (positive cells + prior) / (cells + prior), scaled by the
+        # arm's measured worth so an arm that wins often AND largely outranks one that wins often
+        # and barely. Both factors are >= 0 and neither can subtract from another arm's claim.
+        rate = (float(row["positive_cells"]) + JOINT_PSEUDO * 0.5) / (
+            float(row["cells"]) + JOINT_PSEUDO)
+        raw[name] = rate * (1.0 + 100.0 * float(row["worth"]))
+    total = sum(raw.values())
+    if total <= 0:
+        shares_ = {n: 1.0 / len(JOINT_ARMS) for n in JOINT_ARM_NAMES}
+    else:
+        shares_ = {n: raw[n] / total for n in JOINT_ARM_NAMES}
+    # The floor, then renormalise the remainder over what is above it.
+    lifted = {n: max(JOINT_FLOOR, v) for n, v in shares_.items()}
+    s = sum(lifted.values())
+    shares_ = {n: v / s for n, v in lifted.items()}
+    n_measured = sum(1 for r in ev.values() if r["status"] == "MEASURED")
+    return {
+        "shares": {n: round(v, 6) for n, v in shares_.items()},
+        "arms": ev, "floor": JOINT_FLOOR, "n_measured": n_measured,
+        "status": "MEASURED" if n_measured else "UNMEASURED",
+        "rule": ("a joint arm is (data axis, factor, model, regime representation, portfolio "
+                 "use); its reward is the n-weighted marginal OOS log score of the co-evolution "
+                 "grid cells it spans (nats per prediction after the model tax = marginal "
+                 "E[log W]); shares are Thompson-style with a protected floor and are never a "
+                 "cap -- an arm below par still runs at JOINT_FLOOR"),
+        "consumer": ("desks/mt5/research/factor_model_coevolution.py: `joint_order` REORDERS the "
+                     "zoo families it breeds first; it may never widen the option set"),
+    }
+
+
+def joint_order(models: Iterable[str],
+                report: Path | None = None) -> tuple[list[str], dict[str, Any]]:
+    """Reorder `models` by the joint arms' shares, best first. NEVER widens the option set.
+
+    A family no joint arm names keeps its incumbent position behind the priced ones, so this can
+    reorder and can never drop a family the zoo measured as callable on this box.
+    """
+    opts = [str(m) for m in models]
+    doc = joint_shares(report)
+    by_model: dict[str, float] = {}
+    for name, row in (doc.get("arms") or {}).items():
+        by_model[str(row.get("model"))] = max(
+            by_model.get(str(row.get("model")), 0.0), float(doc["shares"].get(name, 0.0)))
+    ordered = sorted(opts, key=lambda m: (-by_model.get(m, -1.0), opts.index(m)))
+    return ordered, {"status": doc["status"], "shares": doc["shares"],
+                     "by_model": {k: round(v, 6) for k, v in sorted(by_model.items())},
+                     "applied": ordered != opts,
+                     "why": "joint arms reorder the zoo; the option set is unchanged"}
+
+
+# ================================================================= THE PARADIGM VIEW (Q18)
+#: The paradigm census: which SEARCH PARADIGM proposed what, and how much of it another paradigm
+#: had already proposed (`search_paradigm_census`, hourly leg).
+PARADIGM_REPORT = DESK / "reports" / "SEARCH_PARADIGMS.json"
+#: Pseudo-count on a paradigm's volume, so one lucky proposal is not a mandate.
+PARADIGM_PSEUDO = 5.0
+PARADIGM_FLOOR_SHARE = 0.02
+
+
+def paradigm_shares(report: Path | None = None) -> dict[str, Any]:
+    """Shares over SEARCH PARADIGMS, rewarding the ones whose proposals are INDEPENDENT (Q18).
+
+    The desk runs ten-odd paradigms -- symbolic regression, MCTS, GFlowNet, MAP-Elites, Bayesian
+    optimisation, causal discovery, residual mining, literature extraction -- on different clocks,
+    and `ARMS` above prices research VERBS, not paradigms. `search_paradigm_census` measures what
+    each one proposed and `duplicated_share`: the share of its cells some other paradigm also
+    proposed. Independence is 1 - that, and a paradigm's claim on the budget is its volume x its
+    independence: two paradigms that keep finding each other's cells are one paradigm with two
+    bills. A paradigm that proposed nothing is UNMEASURED and keeps the floor, because "produced
+    nothing this window" is a measurement about the window, not about the paradigm (L1.28a).
+    """
+    p = report or PARADIGM_REPORT
+    try:
+        doc = json.loads(p.read_text("utf-8"))
+    except (OSError, ValueError) as exc:
+        return {"status": "UNMEASURED", "shares": {}, "arms": {},
+                "why": f"{p.name} unreadable ({type(exc).__name__}); no paradigm can be priced"}
+    rows = doc.get("paradigms")
+    if not isinstance(rows, list) or not rows:
+        return {"status": "UNMEASURED", "shares": {}, "arms": {},
+                "why": f"{p.name} carries no paradigm rows"}
+    arms: dict[str, dict[str, Any]] = {}
+    raw: dict[str, float] = {}
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        name = str(row.get("paradigm") or "")
+        if not name:
+            continue
+        proposals = float(row.get("proposals") or 0.0)
+        dup = row.get("duplicated_share")
+        independence = 1.0 - float(dup) if isinstance(dup, (int, float)) else None
+        arms[name] = {
+            "legs": list(row.get("legs") or ()), "proposals": int(proposals),
+            "distinct_cells": int(row.get("distinct_cells") or 0),
+            "duplicated_share": dup,
+            "independence": None if independence is None else round(independence, 4),
+            "status": "MEASURED" if proposals > 0 else "UNMEASURED",
+            "why": str(row.get("why") or "")[:240],
+        }
+        ind = 1.0 if independence is None else max(0.0, independence)
+        raw[name] = (proposals + PARADIGM_PSEUDO) * ind
+    total = sum(raw.values())
+    shares_ = ({n: v / total for n, v in raw.items()} if total > 0
+               else {n: 1.0 / max(1, len(raw)) for n in raw})
+    lifted = {n: max(PARADIGM_FLOOR_SHARE, v) for n, v in shares_.items()}
+    s = sum(lifted.values()) or 1.0
+    shares_ = {n: v / s for n, v in lifted.items()}
+    n_measured = sum(1 for r in arms.values() if r["status"] == "MEASURED")
+    return {
+        "status": "MEASURED" if n_measured else "UNMEASURED",
+        "shares": {n: round(v, 6) for n, v in sorted(shares_.items())},
+        "arms": arms, "n_measured": n_measured, "floor": PARADIGM_FLOOR_SHARE,
+        "redundancy": doc.get("redundancy"),
+        "rule": ("share = (proposals + prior) x (1 - duplicated_share), normalised, with a floor "
+                 "-- the budget rewards the paradigms whose survivors are INDEPENDENT, and the "
+                 "floor means a quiet window never prices a paradigm at zero"),
+        "consumer": ("desks/mt5/research/research_budget.py `_paradigm_factor` -> the leg's "
+                     "seconds (one-sided: above par only)"),
+    }
 
 
 _CACHE: dict[str, Any] = {"mtime": None, "shares": None}

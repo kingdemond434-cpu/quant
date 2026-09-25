@@ -123,7 +123,11 @@ def _record_broker_clock(off: int) -> None:
         BROKER_CLOCK.write_text(json.dumps({"utc_offset_hours": off, "measured_at":
                                             now.isoformat(), "source": "live_terminal"},
                                            indent=1), "utf-8")
-    except Exception:
+    except Exception as exc:
+        # LOUD, NOT SILENT (2026-09-23 swallowed-write audit). An unwritten broker clock leaves
+        # every session-phase decision on the LAST measured offset with nothing saying so.
+        print(f"session_phase: broker clock NOT written ({type(exc).__name__}: {exc})",
+              flush=True)
         return
 
 #: Session phases in broker stamp-hours as [start, end) over a 24h clock. Deliberately finer than

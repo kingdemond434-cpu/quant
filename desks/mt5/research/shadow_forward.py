@@ -140,7 +140,65 @@ def certified_sleeves() -> list[tuple[str, str, dict]]:
     except Exception as exc:
         slog(f"certified_sleeves FAILED ({type(exc).__name__}: {exc}); "
              f"running grandfathered sleeves only this pass")
-    return rows
+    return _one_clock_per_identity(rows)
+
+
+def _one_clock_per_identity(rows: list[tuple]) -> list[tuple]:
+    """Collapse certified rows that the engine cannot tell apart into ONE sleeve.
+
+    TWO ROWS THAT SHARE A `sleeve_key` ARE ONE STRATEGY, and keeping both does not give the desk
+    two clocks -- it gives it one clock with two owners that overwrite each other's parameters
+    every pass. `shadow_forward`'s identity guard then reads exactly what it is built to catch,
+    `params changed after the clock froze`, and freezes the row at IDENTITY_BROKEN. The
+    certificate can never mature, so it can never be promoted, which is the breach L1.102 names.
+
+    MEASURED ON THE TRADING BOX 2026-09-24. Canon held 174 certificates and the engine produced
+    172 distinct keys. The four strays were two pairs of CHFNOK carry rows differing ONLY by a
+    default written out explicitly -- `{}` against `{"timeframe": "H1"}`, and `{input_symbol}`
+    against `{input_symbol, timeframe: "H1"}`. `sleeve_key` drops a param equal to its window or
+    family default precisely so that a clock is never renamed when someone writes the default
+    down, which is right; the defect is that canon then carries the same strategy twice. One of
+    those two keys had been stuck at IDENTITY_BROKEN for 168.5 hours with zero observations,
+    and it was the only certificate on the box in that state.
+
+    GENERIC BY CONSTRUCTION, AND DELIBERATELY NOT A CHECK FOR `timeframe`. The rule is "if the
+    engine's own key cannot separate two rows, they are one sleeve" -- whatever made them
+    collide. A fix that special-cased the default it happened to be tonight would be silent the
+    next time two rows collide on a window default, a side alias, or a param the desk has not
+    invented yet, and five of the seven certificate families have never had a live sleeve for
+    their collisions to have surfaced at all.
+
+    THE MORE EXPLICIT ROW WINS, and the choice is only about STABILITY, never about meaning:
+    rows that collide are already behaviourally identical (the key drops exactly those params
+    that do not change what runs). Picking deterministically is the whole point -- an arbitrary
+    winner that varies by pass is how the identity flip-flopped in the first place.
+    """
+    best: dict[str, tuple] = {}
+    for row in rows:
+        r = [*list(row), "LONG"]
+        try:
+            key = sleeve_key(r[0], r[1], r[2], r[3], r[4])
+        except Exception:
+            continue
+        prior = best.get(key)
+        if prior is None:
+            best[key] = row
+            continue
+        cur_params, prior_params = dict(row[2] or {}), dict(prior[2] or {})
+        rank = (len(cur_params), json.dumps(cur_params, sort_keys=True, default=str))
+        prank = (len(prior_params), json.dumps(prior_params, sort_keys=True, default=str))
+        keep, drop = (row, prior) if rank > prank else (prior, row)
+        best[key] = keep
+        dropped = json.dumps(dict(drop[2] or {}), sort_keys=True, default=str)
+        kept = json.dumps(dict(keep[2] or {}), sort_keys=True, default=str)
+        slog(f"ONE-CLOCK: certified rows {dropped} and {kept} both key to `{key}` -- the same "
+             f"strategy written twice. Enrolling the more explicit one; two owners of one clock "
+             f"is what freezes it at IDENTITY_BROKEN (L1.102)")
+    if len(best) != len(rows):
+        slog(f"ONE-CLOCK: {len(rows)} certified row(s) -> {len(best)} distinct clock "
+             f"identit(ies); {len(rows) - len(best)} duplicate(s) collapsed")
+    return [best[k] for k in sorted(best)]
+
 
 
 def _accepts_side(fn) -> bool:
@@ -318,11 +376,31 @@ def per_symbol_costs(meta: dict, sym: str):
     `Costs.from_symbol` is where both fixes live. Hand-rolling here is what kept the money path
     from ever receiving them, which is why this now calls it and a test forbids the hand-roll.
 
-    The commission stays at 3.50 rather than the class default 2.25: it is the higher number and
-    nothing here may lower a cost.
+    AND THE THIRD TRAP WAS THE OVERRIDE ITSELF, removed 2026-09-24. The rule written here was
+    "the commission stays at 3.50 ... it is the higher number and nothing here may lower a cost",
+    which is a reason to prefer a number rather than a measurement of one. THE ACCOUNT'S OWN
+    DEALS SAY 2.00 PER LOT PER SIDE: 427 deals on 13 symbols, p10 = p50 = p90 = 2.00, no
+    exception anywhere in the history, across FX majors, crosses, exotics AND gold -- so it is
+    not a gold rate and not an average, it is a flat account-currency contract. 3.50 was a
+    ROUND-TURN figure sitting in a PER-SIDE field, so `per_oz_roundtrip` billed EUR 7.00 against
+    a measured EUR 4.00: 1.75x, on the term that is a median 93% of the whole charge
+    (`reports/FUSION_COST.json:median_commission_share_of_raw_cost`).
+
+    THAT IS NOT A COST REDUCTION BY FIAT AND IT IS NOT A RISK CHANGE. It is the same act as
+    correcting a spread: the desk was charging itself a price its broker does not charge, and an
+    overcharged cost kills real edges silently -- there is no alert, the cell simply never
+    appears again. 342 LIVE sleeves carried the 3.50 in their frozen `cost_fields`;
+    `sleeve_registry.rebase_cost` fires on `cost_hash` alone, keeps `forward_start` because a
+    cost correction does not un-observe a day, and sets `cost_rebase_cheaper` so the direction
+    is named rather than discovered.
+
+    `fusion_cost.COMMISSION_PER_LOT_PER_SIDE` is read rather than copied, so the desk has ONE
+    commission number and a re-measurement reaches this call site without an edit.
     """
     from mt5desk.engine import Costs
-    return Costs.from_symbol(meta[sym], commission_per_lot=3.50)
+
+    from libs.portfolio.fusion_cost import COMMISSION_PER_LOT_PER_SIDE
+    return Costs.from_symbol(meta[sym], commission_per_lot=COMMISSION_PER_LOT_PER_SIDE)
 
 
 def frozen_costs(key: str):
@@ -467,6 +545,25 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
         if key in seen:
             continue
         seen.add(key)
+        # THE BANNED FAMILY DOOR, on the shadow clock store (principal 2026-09-22: "Discovered is
+        # banned now btw remember permanently banned ... N clocks of discovery"). The state row is
+        # created three lines below by `state.get(key, {...})`, so THIS is the line at which a
+        # banned family stops being able to own a shadow clock -- before the row exists, not by a
+        # sweep that retires it an hour later once every downstream organ has read it. It is also
+        # a REFUSAL OF NOTHING VALUABLE: `certified_sleeves()` returns the canon, the sealed
+        # gauntlet already sets banned specs aside before judging, so the only rows this can catch
+        # are grandfathered ones and residue. Never a cap and never a quota -- the one thing it
+        # withholds is a clock the principal banned outright.
+        try:
+            from family_policy import family_banned
+            _is_banned = family_banned(fam)
+        except Exception:
+            _is_banned = False              # no policy module: enrol exactly as before
+        if _is_banned:
+            if key in state:
+                continue                    # residue: apply()/promoter retire it with a reason
+            slog(f"REFUSED_BANNED_FAMILY {key}: family {fam!r} is banned; no clock is created")
+            continue
         # ENROLMENT IS STAMPED, AND THE STAMP IS THE MEASUREMENT (principal 2026-09-23: "make all
         # certis always receive immediate clocks at the same time when certified ... no quota or
         # scarcity ever on forward evidence slots"). There is no cap, no waiting queue and no
@@ -543,6 +640,36 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
             state[key] = st
             slog(f"REFUSED_BY_UNIVERSE_POLICY {key}: {st['last_error']}")
             continue
+        # AND IT MUST CLEAR ITSELF THE MOMENT THE LANE ADMITS THE SYMBOL (2026-09-23).
+        #
+        # The refusal above was written TERMINAL -- it is in `_TERMINAL_STATUSES` -- on the
+        # reasoning that "a symbol's lane changes only when the registry learns its asset class,
+        # and at that point the certificate can be re-enrolled DELIBERATELY rather than drifting
+        # back in". The premise was wrong in the way that matters: the lane also changes when the
+        # LANE CODE is repaired, and "deliberately" is a human act, which the desk's standing
+        # order (principal 2026-09-04, restated 2026-09-23: forward clocks must "permanently
+        # always work never blocked unmeasured stale or broken") does not allow to exist.
+        #
+        # MEASURED, AND THIS IS WHY IT IS NOT THEORETICAL. `universe_policy` declared its FX class
+        # names in a spelling its own normaliser could never produce, so all 96 FX symbols read
+        # UNCLASSIFIED and 92 clocks -- including 24 of the desk's 28 certificates -- were refused
+        # here. When that defect was fixed, the symbols were admitted and the rows were evaluated
+        # end to end again (`n` resumed climbing) while the STATUS stayed pinned at a refusal that
+        # no longer held: an always-red detector describing a cause that had been repaired, which
+        # is the exact shape L1.37 retires on sight, and which the identical clause at
+        # `BLOCKED_SLEEVE_ERROR` below already exists to prevent.
+        #
+        # Fires ONLY on this one status, only once the policy has affirmatively ADMITTED the
+        # symbol on this pass, and touches nothing else -- never a KILL, never a PROMOTION
+        # CANDIDATE, and never `forward_start`, so no day is credited that was not observed.
+        if str(st.get("status") or "").upper() == "REFUSED_BY_UNIVERSE_POLICY":
+            slog(f"{key}: REFUSED_BY_UNIVERSE_POLICY CLEARED -- {sym} is now in the "
+                 f"{_lane or 'hypothesis'} lane and may be hunted; the refusal described a lane "
+                 f"verdict that no longer holds. forward_start unchanged "
+                 f"({st.get('forward_start')}).")
+            st["status"] = "ACTIVE"
+            st["last_error_seen_at"] = st.pop("last_error_at", None)
+            st["last_error_cleared"] = st.pop("last_error", None)
 
         # BLAST RADIUS: ONE SLEEVE, NEVER THE BOOK (gap-wirer 2026-08-27). This loop had no
         # per-sleeve guard and `state_path.write_text` sits AFTER it, so ANY exception raised for
@@ -774,8 +901,20 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
             # and only
             # makes it visible to the freeze. The later block remains as the fallback for rows that
             # never reach the registry branch (import failure), where it is still the only stamper.
-            if not st.get("forward_start"):
-                st["forward_start"] = datetime.now(UTC).isoformat()
+            # THE START IS THE LEDGER'S, NOT THIS LINE'S (Tier-1 B20). `clock_ledger.stamp`
+            # returns min(recorded, proposed) for an unchanged identity and opens a NEW clock
+            # beside the old one when the identity changes, so a later start is IMPOSSIBLE at the
+            # writer rather than detected afterwards by the ratchet fence. An earlier start is
+            # always accepted -- the window is then older than this line thought, which can only
+            # move a sleeve toward its bar. Nothing is capped or refused: every row that would
+            # have been enrolled is still enrolled.
+            _proposed = st.get("forward_start") or datetime.now(UTC).isoformat()
+            try:
+                from research.clock_ledger import stamp as _stamp
+                st["forward_start"] = _stamp(key, str(st.get("identity") or ""),
+                                             _proposed)["start"]
+            except Exception:                              # the ledger is never a reason not to
+                st["forward_start"] = _proposed            # enrol; the fence still reports churn
             # CANONICAL IDENTITY, frozen at the clock and verified every cycle. Params alone do not
             # identify a sleeve: the signal function's SOURCE and the COST MODEL change what it does
             # while leaving every name and number intact, and a forward series that splices two of
@@ -896,7 +1035,14 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
             # repaired 251-row map, and still reported blocked. The error text is dropped WITH
             # the status -- keeping it would leave the row reading as failing while it accrues --
             # and `last_error_seen_at` preserves that it once did, so the history is not erased.
-            if st.get("status") == "BLOCKED_SLEEVE_ERROR":
+            # EVERY BLOCK, NOT JUST THAT ONE. `BLOCKED_NO_BARS` and `BLOCKED_INPUTS_UNAVAILABLE`
+            # are the same kind of thing -- a statement that this pass could not evaluate -- and
+            # reaching this line disproves all three of them equally. Measured 2026-09-23: the
+            # four XAUUSD certificates read BLOCKED_NO_BARS from a pass that caught the H1 parquet
+            # mid-rewrite, and kept reading it while every later pass fetched 41,811 bars and
+            # evaluated them, because only the one status name was in this clause.
+            if str(st.get("status") or "").upper() in (
+                    "BLOCKED_SLEEVE_ERROR", "BLOCKED_NO_BARS", "BLOCKED_INPUTS_UNAVAILABLE"):
                 st["status"] = "ACTIVE"
                 st["last_error_seen_at"] = st.pop("last_error_at", None)
                 st["last_error_cleared"] = st.pop("last_error", None)
@@ -964,8 +1110,17 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
             # gauntlet screens, only pre-registered forward evidence promotes). `forward_start` is
             # stamped once, the first time a row is seen, and never moved.
             now = datetime.now(UTC)
-            if not st.get("forward_start"):
-                st["forward_start"] = now.isoformat()
+            # THE FALLBACK STAMPER, THROUGH THE SAME IMMUTABLE DOOR (Tier-1 B20). This branch is
+            # the only stamper for rows that never reach the registry (import failure), and it
+            # was the second place a start could move. It cannot now: the ledger hands back
+            # min(recorded, proposed) and keeps the old clock when an identity changes.
+            _proposed = st.get("forward_start") or now.isoformat()
+            try:
+                from research.clock_ledger import stamp as _stamp
+                st["forward_start"] = _stamp(key, str(st.get("identity") or ""),
+                                             _proposed)["start"]
+            except Exception:
+                st["forward_start"] = _proposed
             days_active = (now - pd.Timestamp(st["forward_start"]).to_pydatetime()
                            .replace(tzinfo=UTC)).days
             st["days_active"] = days_active

@@ -520,9 +520,30 @@ def main(argv: list[str] | None = None) -> int:
                   f"({rep['undercharged_cells']} undercharged, "
                   f"{rep['overcharged_cells']} OVERCHARGED -- the direction with no alert)")
         for f in rep.get("mispriced_sleeves", []):
-            print(f"  MISMATCH {f['sleeve']}: charged {f['charged_pts']} pts, "
-                  f"fill-bar (h{f['modal_fill_hour']:02d}) {f['fill_bar_p50_pts']} pts "
-                  f"= {f['ratio']}x {f['direction']} over {f['n_fills']} fills")
+            # A SLEEVE WITH NO MODAL FILL HOUR IS STILL A MISPRICED SLEEVE (box, 2026-09-23).
+            # `modal_fill_hour` is None whenever the sleeve's fills carry no hour to take a mode
+            # of -- and `{None:02d}` raises TypeError, which killed this fence INSIDE its own
+            # report loop: the run died after printing the headline and before `fence_exit`, so
+            # the 1 the law gate recorded was the traceback's exit, not this fence's verdict, and
+            # every remaining MISMATCH and every UNRESOLVED row went unprinted. The measured
+            # state it hid was 2065 dispersed cells, 1731 of them OVERCHARGED -- the direction
+            # Rule 1 says has no other alarm. An unknown hour is reported as unknown (L1.28a);
+            # nothing about what this fence judges changes.
+            # AND IT MUST SPEAK THE RULER IT ACTUALLY USES. `scan_sleeves` was repointed on
+            # 2026-09-23 from the H1 bar-spread STAMP to the broker's own quote, and the row it
+            # builds was renamed with it -- `fill_bar_p50_pts` became `quoted_pts` beside an
+            # audit copy of the old stamp in `h1_stamp_p50_pts`. This line was not repointed, so
+            # it asked for a key the row no longer carries and raised KeyError. Both faults land
+            # in the same place: the FIRST mispriced sleeve killed the report, so since the
+            # repoint this fence has never once delivered its verdict while it had a finding --
+            # a gate that never ran (L1.49) wearing the exit code of a gate that failed.
+            hour = f.get("modal_fill_hour")
+            hour_s = f"h{hour:02d}" if isinstance(hour, int) else "h??"
+            print(f"  MISMATCH {f['sleeve']}: charged {f['charged_pts']} pts vs quoted "
+                  f"{f.get('quoted_pts')} pts ({f.get('quoted_basis')}, "
+                  f"n={f.get('quoted_n_bars')}) = {f['ratio']}x {f['direction']} over "
+                  f"{f['n_fills']} fills (modal {hour_s}, old H1 stamp "
+                  f"{f.get('h1_stamp_p50_pts')} pts)")
         for u in rep.get("unresolved_sleeves", []):
             print(f"  UNRESOLVED {u['sleeve']}: {u['why']}")
     return fence_exit(rep["status"], _PASSING, scanned=rep.get("scanned"),

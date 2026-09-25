@@ -272,13 +272,44 @@ def freeze(key: str, ident: dict[str, Any], *, forward_start: str | None = None,
             reg["updated_at"] = rows[key]["forward_start_backfilled_at"]
             _write(reg)
         return dict(rows[key]["identity"])
-    rows[key] = {
+    # THE BANNED FAMILY DOOR (principal 2026-09-22: "Discovered is banned now btw remember
+    # permanently banned ... N clocks of discovery"). This is the canonical clock store, so this
+    # line is where a banned family stops being able to own a clock AT ALL -- not a sweep that
+    # retires one after it has existed for an hour, been read by every downstream organ and been
+    # reported as a divergence. Measured on the box 2026-09-23: 23 banned clocks, every one of
+    # them a row that every organ agreed should never have been created.
+    #
+    # REFUSED AT CREATION ONLY. A key already frozen returns above, untouched: raising for an
+    # existing row would stop a clock by exception, and stopping a clock is `promoter.retire_banned`
+    # and `certificate_truth.apply`'s job, done with a reason and a history row. `shadow_forward`
+    # wraps every registry call in `except Exception` and skips the row, which is precisely the
+    # refusal this wants -- no state row, no evidence, no divergence.
+    try:
+        from family_policy import refuse_if_banned  # type: ignore[import-not-found]
+    except ImportError:                                   # pragma: no cover - packaged import
+        from research.family_policy import refuse_if_banned
+    refuse_if_banned(ident.get("family"), what="clock", key=key)
+    # STAMPED AT BIRTH, NEVER BACKFILLED (2026-09-23, the principal). A clock that is born
+    # without the canonical identity can only be joined by a later sweep that re-parses its key,
+    # and 0 of 862 registry clocks joined the canon that way. `certificate_truth.parts()` is the
+    # ONE implementation -- imported, never a second parse -- so a row is joinable from the
+    # instant it exists and the backfill becomes a one-time repair rather than a standing chore.
+    born = {
         "identity": ident,
         "identity_schema": IDENTITY_SCHEMA,
         "frozen_at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
         "forward_start": forward_start,
         "status": "LIVE",
     }
+    from certificate_truth import (  # type: ignore[import-not-found]
+        IDENTITY_RULE,
+        canonical_identity,
+    )
+    stamped = canonical_identity("sleeve_registry", key, born)
+    if stamped:
+        born["canonical_identity"] = stamped
+        born["canonical_identity_rule"] = IDENTITY_RULE
+    rows[key] = born
     if cost_fields:
         rows[key]["cost_fields"] = {k: round(float(v), 6) for k, v in cost_fields.items()
                                     if isinstance(v, (int, float)) and not isinstance(v, bool)}

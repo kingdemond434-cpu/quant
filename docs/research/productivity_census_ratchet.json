@@ -1,0 +1,40 @@
+{
+ "law": "PER-PRODUCER MEASUREMENT COVERAGE RATCHETS UP ONLY, AND NEVER BY SHRINKING THE DENOMINATOR. Every column the producers panel renders must be a number on a rising count of producers, and `n_producers` is recorded beside the shares so a pass that raises a ratio by dropping producers out of the bottom fails instead of scoring (L1.50).",
+ "why": "Measured 2026-09-24 on the trading box: the producers panel listed 1,981 producers with a compute cost on every row and UNMEASURED in all five columns beside it -- the desk knew exactly what each organ COST and nothing about what it MADE. Nothing measured that, so nothing could fail on it. This file is what makes the repair permanent.",
+ "written_by": "scripts/check_productivity_census.py --tighten, from desks/mt5/reports/PRODUCTIVITY_CENSUS.json measurement_coverage",
+ "hosts": {
+  "VMI3500897": {
+   "region_coverage_best": 0.9812,
+   "region_measured_best": 1622,
+   "n_producers_best": 1653,
+   "measured_best": {
+    "cells": 1653,
+    "cells_judged": 1653,
+    "certificates": 1653,
+    "compute_hours": 1653,
+    "orthogonality_added": 1620,
+    "unique_cells": 1653
+   },
+   "columns_best": {
+    "cells": 1.0,
+    "cells_judged": 1.0,
+    "certificates": 1.0,
+    "compute_hours": 1.0,
+    "orthogonality_added": 0.98,
+    "unique_cells": 1.0
+   },
+   "seeded": "2026-09-24T00:12:37+00:00",
+   "updated_utc": "2026-09-24T00:12:37+00:00"
+  }
+ },
+ "regression_reason": null,
+ "notes": [
+  "PER HOST. The two machines do not hold the same registry -- the trading box censused 1,998 producers on the day this landed and the build box 1,653 -- so a single shared bar would have the larger host raise it and the smaller one fail the denominator clause for being a different computer. Same mistake as sizing a memory floor off the other box.",
+  "TWO RATCHETS PER AXIS. `measured_best` is the COUNT of producers on which a column was a number, and it may never fall -- un-measuring a producer is a defect however the share moved. `columns_best` is the SHARE, and it may only be diluted by genuine growth in `n_producers`; with a flat roster a falling share is a regression.",
+  "A share-only ratchet would fail on the arrival of new work: the registry gained five producers between two runs of this census on the day it was written. A gate that fires when the desk grows is a gate somebody switches off.",
+  "A NOT_REGIONAL verdict counts as region coverage: it is the answer for a method, a compiler or a declared seat. Only `unattributed` is a gap.",
+  "Seeding is not an improvement claim -- it is the baseline the NEXT run is measured against.",
+  "`regression_reason` is the ONLY way past a breach, and it is a sentence. The remedy is always to measure more producers, never to publish fewer."
+ ],
+ "updated_utc": "2026-09-24T00:12:37+00:00"
+}

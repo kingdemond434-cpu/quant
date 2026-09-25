@@ -1,5 +1,5 @@
 {
- "at": "2026-09-12T12:20:17.234190+00:00",
+ "at": "2026-09-24T15:21:36.057816+00:00",
  "min_source_n": 12,
  "min_tier_sources": 4,
  "note": "Tier priors are a starting ordering; both levels re-fit from measured verification outcomes written by attribution.py. Speed is reported SEPARATELY from reliability -- a reliable source that arrives after the move has an unpriced fraction of zero and is worth nothing to trade on.",
@@ -21,7 +21,29 @@
    "n_speed": 0,
    "n_verified": 0,
    "p_true": 0.9756,
+   "source": "EIA",
+   "status": "UNMEASURED",
+   "tier": "OFFICIAL",
+   "verdict": "speed UNMEASURED"
+  },
+  {
+   "lead_s": null,
+   "n_falsified": 0,
+   "n_speed": 0,
+   "n_verified": 0,
+   "p_true": 0.9756,
    "source": "FED",
+   "status": "UNMEASURED",
+   "tier": "OFFICIAL",
+   "verdict": "speed UNMEASURED"
+  },
+  {
+   "lead_s": null,
+   "n_falsified": 0,
+   "n_speed": 0,
+   "n_verified": 0,
+   "p_true": 0.9756,
+   "source": "SEC",
    "status": "UNMEASURED",
    "tier": "OFFICIAL",
    "verdict": "speed UNMEASURED"

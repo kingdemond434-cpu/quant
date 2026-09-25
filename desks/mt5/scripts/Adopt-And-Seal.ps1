@@ -99,6 +99,81 @@ function Log([string] $m) {
     $line
 }
 
+# ---- THE HEARTBEAT: A RUN THAT WAS KILLED MUST NOT READ LIKE A RUN THAT NEVER STARTED --------
+#
+# MEASURED 2026-09-24, and it is the whole reason this file gained an artifact.
+#
+# `MT5-AdoptRelease` runs HOURLY with `MultipleInstances = IgnoreNew` and carried
+# `ExecutionTimeLimit = PT50M`. A cold adoption does not fit in fifty minutes: the individual-path
+# retry below re-scans a 24,000-path worktree per pathspec, and the run waits on MT5-ShadowSync
+# and the git-writer mutex before it even begins. So the box lived in a loop with two codes and
+# no diagnosis:
+#
+#     2147946720 == 0x800710E0 == Win32 4320, "The operator or administrator has refused the
+#                   request"  -- recorded with TaskScheduler event id 322, "did not launch ...
+#                   because an instance of the same task is already running". The `operator` is
+#                   the scheduler's own IgnoreNew policy refusing the NEXT hour.
+#     267014     == 0x41306, SCHED_S_TASK_TERMINATED -- the PT50M limit killing the run that
+#                   was still working.
+#
+# Every run long enough to finish was killed, and every run that might have replaced it was
+# refused. Neither code is produced by a line of this script, and the kill lands BETWEEN
+# statements: `Log` had written "waiting for MT5-ShadowSync" and nothing else, so the log of a
+# killed run is INDISTINGUISHABLE from the log of a run still in progress.
+#
+# (The obvious reading was wrong and cost time, so it is written down: 0x800710E0 is NOT
+# 0x80070520/1312 "a specified logon session does not exist". 0x80070520 is 2147943712, a
+# different number, and ZERO tasks on this box carried it. Of the 31 tasks showing 0x800710E0,
+# thirty ran as SYSTEM/ServiceAccount, which has no logon session to lose.)
+#
+# The fix is the cheapest possible: stamp `started_at` when the run begins and `finished_at` when
+# it ends. A run that was killed or refused leaves the first and never the second, which is a
+# POSITIVE fact an hourly fence can read (`scripts/check_adoption_freshness.py`) instead of
+# inferring absence. Failing to write the heartbeat NEVER fails the adoption -- an unwritable
+# artifact is a lost diagnostic, not a reason to stop delivering code to a live trading box.
+$script:Heartbeat = Join-Path $desk "reports\ADOPTION_HEARTBEAT.json"
+$script:StartedAt = (Get-Date).ToUniversalTime().ToString('o')
+$script:HeadBefore = ""
+try { $script:HeadBefore = (git -C $RepoRoot rev-parse HEAD 2>$null | Out-String).Trim() } catch { }
+
+function Write-Heartbeat([hashtable] $fields) {
+    try {
+        $null = New-Item -ItemType Directory -Force -Path (Split-Path $script:Heartbeat) -ErrorAction Stop
+        $base = @{
+            started_at  = $script:StartedAt
+            head_before = $script:HeadBefore
+            branch      = $Branch
+            pid         = $PID
+            host        = $env:COMPUTERNAME
+        }
+        foreach ($k in $fields.Keys) { $base[$k] = $fields[$k] }
+        ($base | ConvertTo-Json -Depth 4) | Set-Content -Path $script:Heartbeat -Encoding utf8 -ErrorAction Stop
+    } catch { }
+}
+
+# EVERY EXIT GOES THROUGH HERE. `exit` inside a scheduled PowerShell run leaves no trace of its
+# own; a stage name and a code do. `stage` is the answer to "how far did it get", which is the
+# question the days of silence actually needed answered.
+function Done([int] $code, [string] $stage) {
+    $headAfter = ""
+    try { $headAfter = (git -C $RepoRoot rev-parse HEAD 2>$null | Out-String).Trim() } catch { }
+    # OUR OWN WITNESS ONLY, and only once the helper has been dotted -- the early exits happen
+    # before that. A witness left behind by THIS pid would read STALE the moment we exit, which
+    # is true but noisy; one left by anybody else is the evidence that names the real holder.
+    if (Get-Command Clear-GitWriterWitness -ErrorAction SilentlyContinue) { Clear-GitWriterWitness }
+    Write-Heartbeat @{
+        finished_at = (Get-Date).ToUniversalTime().ToString('o')
+        exit_code   = $code
+        stage       = $stage
+        ok          = ($code -eq 0)
+        head_after  = $headAfter
+    }
+    exit $code
+}
+
+Write-Heartbeat @{ finished_at = $null; exit_code = $null; stage = "started"; ok = $false }
+
+
 # ------------------------------------------- 0. never adopt under a ShadowSync that is running
 # TWO GIT WRITERS IN ONE REPOSITORY IN THE SAME SECOND (2026-09-08). MT5-ShadowSync repeats every
 # fifteen minutes from :05 -- :05, :20, :35, :50 -- and this task was registered at :20 on the
@@ -113,7 +188,7 @@ function Log([string] $m) {
 # is read-only and answers from a Limited token. Nine minutes: the sync's own limit is ten.
 $waited = 0
 while ((Get-ScheduledTask -TaskName "MT5-ShadowSync" -ErrorAction SilentlyContinue).State -eq "Running") {
-    if ($waited -ge 540) { Log "MT5-ShadowSync still running after 9 min; not adopting under it"; exit 6 }
+    if ($waited -ge 540) { Log "MT5-ShadowSync still running after 9 min; not adopting under it"; Done 6 "wait-shadowsync" }
     if ($waited -eq 0) { Log "MT5-ShadowSync is running; waiting for it before adopting" }
     Start-Sleep -Seconds 5
     $waited += 5
@@ -151,14 +226,21 @@ $gotLock = $false
 if ($null -eq $script:GitWriterMutex) {
     Log ("could not OPEN Local\MT5-GitWriter (" + $mutexWhy + ") -- this is not evidence that " +
          "another writer holds it; the lock could not be examined at all. Not adopting.")
-    exit 6
+    Done 6 "mutex-unopenable"
 }
 try { $gotLock = $script:GitWriterMutex.WaitOne(540000) }
 catch [System.Threading.AbandonedMutexException] { $gotLock = $true }
 if (-not $gotLock) {
-    Log "another git writer held Local\MT5-GitWriter for the full 9 min; not adopting under it"
-    exit 6
+    # NAME THE HOLDER, OR SAY THAT IT COULD NOT BE NAMED (2026-09-24). "another git writer held
+    # it" was the whole message, and it is not a diagnosis: it cannot distinguish a live adoption
+    # making progress from a witness left by a process that is gone. The witness file carries the
+    # pid and the start time; `Get-GitWriterHolder` reports whether that pid is ALIVE. A dead
+    # holder is now impossible to mistake for a live one, in the log and in the fence.
+    $holder = Get-GitWriterHolder
+    Log ("another git writer held the lock for the full 9 min; not adopting under it -- " + $holder.Summary)
+    Done 6 "mutex-held"
 }
+Write-GitWriterWitness -Script "Adopt-And-Seal.ps1" -Name $mutexHandle.Name
 
 # ---------------------------------------------------------------- 1. adopt the branch's tree
 # NEXT TO THIS SCRIPT FIRST, then the repository's copy. The two ship together and the mutex
@@ -169,7 +251,7 @@ if (-not $gotLock) {
 # committing that change into the very repository the adoption is about to overwrite.
 $adoptScript = Join-Path $PSScriptRoot "Adopt-Release.ps1"
 if (-not (Test-Path $adoptScript)) { $adoptScript = Join-Path $desk "scripts\Adopt-Release.ps1" }
-if (-not (Test-Path $adoptScript)) { Log "Adopt-Release.ps1 missing at $adoptScript"; exit 2 }
+if (-not (Test-Path $adoptScript)) { Log "Adopt-Release.ps1 missing at $adoptScript"; Done 2 "adopt-script-missing" }
 # THE CONSOLE IS KEPT, BECAUSE THE ONE LINE BELOW IS NOT A DIAGNOSIS (2026-09-23). For four days
 # this log said "Adopt-Release exited 1 -- partial adoption" once an hour and named nothing; the
 # paths, the index.lock fatals and the chunk retries all went to a scheduled task's stdout, which
@@ -212,19 +294,19 @@ if ($adoptExit -ne 0) {
         Log ("    " + $line.Trim())
     }
     Log "full console: desks/mt5/logs/adopt_release_console.log; paths: desks/mt5/reports/ADOPTION_STATE.json"
-    exit $adoptExit
+    Done $adoptExit "adopt-release-partial"
 }
 
 # ------------------------------------------------------ 2. seal, only if HEAD is not sealed
 $head = (git rev-parse HEAD 2>$null | Out-String).Trim()
-if (-not $head) { Log "cannot read HEAD"; exit 2 }
+if (-not $head) { Log "cannot read HEAD"; Done 2 "head-unreadable" }
 $sealed = ""
 if (Test-Path $release) {
     try { $sealed = [string](Get-Content $release -Raw | ConvertFrom-Json).code_sha } catch { $sealed = "" }
 }
 if ($sealed -eq $head) {
     Log "HEAD $($head.Substring(0,12)) is already the sealed code; nothing to do"
-    exit 0
+    Done 0 "already-sealed"
 }
 # A SEAL COMMIT OR A STATE-SYNC COMMIT ON TOP OF THE SEALED CODE IS THE SAME RELEASE. After the
 # first seal HEAD is the seal commit itself, and every quarter-hour sync moves it again, so
@@ -235,7 +317,7 @@ if ($sealed) {
     $acc = & $py @pyArgs -c "import sys; from libs.ops import release; ok, why, _ = release.accepts(sys.argv[1], release.load() or {}); print('OK' if ok else 'NO'); print(why)" $head 2>$null
     if ("$acc" -match '^OK') {
         Log "HEAD $($head.Substring(0,12)) is the sealed release $($sealed.Substring(0,12)) plus seal/state commits only; nothing to seal"
-        exit 0
+        Done 0 "accepts-nothing-to-seal"
     }
 }
 # `release.seal` refuses a tree with a dirty CODE path. Say so HERE, with the paths, rather than
@@ -247,24 +329,36 @@ if ($sealed) {
 $statePrefixes = @("desks/mt5/data/", "desks/mt5/reports/", "desks/mt5/logs/",
                    "desks/mt5/frontier_intel/data/", "desks/mt5/side_channels/data/",
                    "data/", "reports/", "logs/", "web/", "docs/")  # mirror libs/ops/release.py STATE_PREFIXES
+# A BUILD ARTIFACT IS NOT CODE DRIFT, AND COUNTING IT REFUSED EVERY SEAL FOREVER (2026-09-24).
+# `dist/quant-platform.zip` is REGENERATED by the build, so it differs from HEAD on every pass by
+# construction. Measured on the box: Adopt-Release's own `code_drift` reads 0 while this check
+# counted that one path, so every run adopted the tree, landed its merge, and then exited 3 with
+# "refusing to seal: 1 tracked code path(s) differ". TWO DEFINITIONS OF CODE DRIFT IN ONE
+# PIPELINE, disagreeing on exactly one file, and the disagreement was permanent.
+#
+# It is listed here rather than added to the state prefixes on purpose: `dist/` is not desk STATE
+# and must not start being treated as such by `release.seal` too. It is build output, which is a
+# third category -- neither code to protect nor state to carry.
+$buildArtifacts = @("dist/")
 $dirty = @(git status --porcelain --untracked-files=no 2>$null | Where-Object { $_ } | ForEach-Object {
     $p = ("$_".Substring(3) -split ' -> ')[-1].Trim().Trim('"') -replace '\\', '/'
     $isState = $false
     foreach ($prefix in $statePrefixes) { if ($p.StartsWith($prefix)) { $isState = $true; break } }
+    foreach ($prefix in $buildArtifacts) { if ($p.StartsWith($prefix)) { $isState = $true; break } }
     if (-not $isState) { $p }
 })
 if ($dirty.Count -gt 0) {
     Log "refusing to seal: $($dirty.Count) tracked code path(s) differ from HEAD after adoption:"
     $dirty | Select-Object -First 12 | ForEach-Object { Log "    $_" }
-    exit 3
+    Done 3 "dirty-code-path"
 }
 & $py @pyArgs -c "from libs.ops import release; d=release.seal(by='Adopt-And-Seal'); print(d.get('code_sha') or d.get('live_sha'))"
-if ($LASTEXITCODE -ne 0) { Log "release.seal failed (exit $LASTEXITCODE)"; exit 4 }
+if ($LASTEXITCODE -ne 0) { Log "release.seal failed (exit $LASTEXITCODE)"; Done 4 "seal-failed" }
 
 # --------------------------------------------- 3. RELEASE.json alone -- the pure-seal commit
 git add -- "desks/mt5/data/RELEASE.json"
 git commit -q -m "Seal release $($head.Substring(0,12)) (Adopt-And-Seal, unattended)"
-if ($LASTEXITCODE -ne 0) { Log "seal commit failed (exit $LASTEXITCODE)"; exit 5 }
+if ($LASTEXITCODE -ne 0) { Log "seal commit failed (exit $LASTEXITCODE)"; Done 5 "seal-commit-failed" }
 
 # ---------------------------------------- 4. the gateway reads the seal at start; restart it
 # THE RESIDENT IS ASKED, NOT KILLED (2026-09-16). MT5-Gateway is disabled; the sole pass runner
@@ -274,5 +368,20 @@ if ($LASTEXITCODE -ne 0) { Log "seal commit failed (exit $LASTEXITCODE)"; exit 5
 New-Item -ItemType File -Path (Join-Path $desk "data\GATEWAY_RECYCLE") -Force | Out-Null
 Start-ScheduledTask -TaskName "MT5-GatewayResident" -ErrorAction SilentlyContinue
 Start-ScheduledTask -TaskName "MT5-GateAttest" -ErrorAction SilentlyContinue
+
+# ------------------------------------------- 5. THE ONE BIT, RECORDED BY THE ACT THAT SEALS
+# Tier-1 B1: "may this code create new exposure". The seal, the gate attestation and the runtime
+# drift check each held a piece and nothing joined them, so `tested_sha` read UNMEASURED for
+# weeks while the gates were green. `release_authority` joins all three on the CODE TREE -- the
+# only subject that survives a box committing its own ledgers on top of the code it runs -- and
+# publishing it HERE makes the seal and the bit one act rather than two hopes.
+#
+# IT REPORTS, IT DOES NOT REFUSE. Refusing to seal without a green attestation was the obvious
+# next step and it is the wrong one: the tree is already adopted in place by the time this runs,
+# so an unsealed tree means `release_identity` refuses NEW risk on every gateway pass -- a halt
+# bought from a slow or unrelated-red gate. That reduces the book by fiat, which the principal's
+# standing order (2026-09-08) forbids. The bit is measured, logged and published; turning it
+# into a veto is the principal's call, not this script's.
+& $py @pyArgs (Join-Path $desk "research\release_authority.py") --once 2>&1 | ForEach-Object { Log "  $_" }
 Log "sealed $($head.Substring(0,12)) from $Branch; resident asked to recycle; gate attestation triggered"
-exit 0
+Done 0 "sealed"

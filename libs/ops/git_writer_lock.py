@@ -447,3 +447,255 @@ def run_git(repo: Path | str, args: Sequence[str], *, timeout: float = 300.0,
         sleep(delay + _jitter_s())
         delay = min(delay * 2, 30.0)
     return rc, out, notes
+
+
+# ------------------------------------------------------------------ reaping a hung writer
+#
+# THE HALF THAT WAS MISSING, MEASURED 2026-09-24 01:10Z ON THE TRADING BOX.
+#
+# Four git processes had been alive since 2026-09-23 22:03:53Z:
+#
+#     git -C C:\opt\quant -c merge.autoStash=false merge -s ours d97d2d592a9f ...
+#     git stash create
+#     git update-index --ignore-skip-worktree-entries -z --add --remove --stdin
+#
+# `git update-index --stdin` was blocked on a pipe that nobody was ever going to write to, so
+# `git stash create` never returned, so the release merge never returned. Over a 20 s window all
+# four moved 0.000 s of CPU and 0 bytes of I/O: not slow, STOPPED. They held `.git/index.lock`
+# and the `MT5-GitWriter` mutex, and because of that:
+#
+#   * `Adopt-And-Seal.ps1` logged "another git writer held Local\MT5-GitWriter for the full
+#     9 min; not adopting under it" at 22:41, 22:53 and 23:00 and shipped nothing;
+#   * `MT5-IntelShip`, `MT5-ShadowSync` and `MT5-SealIfClean` serialise on the same object and
+#     refused too;
+#   * the box sat 7 commits behind origin running code that was not the shipped code.
+#
+# The desk already SAW this. `scripts/check_scheduled_tasks.py::stuck_writers` names the pids and
+# says in its own text that "a hung ssh from 2026-09-12 held it for THREE DAYS and refused every
+# adopt" -- and then nothing kills them. Detection with no reaper is III.16's defect exactly: an
+# organ that reports forever and changes nothing.
+#
+# `clear_stale_index_lock` above cannot cover this either, and deliberately so: it refuses while
+# ANY git process is alive, machine-wide. That guard is right for a quiet machine. THIS MACHINE IS
+# NEVER QUIET -- the intelligence shipper runs `git status --porcelain` continuously, so
+# `git_processes_alive()` is true essentially always and the stale-lock path can never fire here.
+# The fix is not to weaken that guard. It is to remove the hung writer FIRST, so that afterwards
+# the remaining git processes are real ones and the existing guard means what it says.
+#
+# WHAT THIS WILL AND WILL NOT KILL. A process is reaped only when all four hold:
+#   1. it is a `git` or `ssh` executable -- never `sshd` (the SSH SERVER is long-lived by design,
+#      and matching it once reported a healthy 3.9-day-old service as a stuck writer);
+#   2. it is older than `HUNG_MIN_AGE_S`, which is past every legitimate writer's OWN timeout
+#      (the adoption waits 540 s, the shadow sync 600 s), so a slow writer is never a candidate;
+#   3. it moved NO CPU and NO I/O across a sampling window -- this is the proof, and it is the
+#      one thing an age threshold alone cannot give. A `git gc` on this repository is slow and
+#      burns CPU the whole time; it will never be reaped by this;
+#   4. it is not this process, and not one of this process's own ancestors.
+#
+# Everything examined is reported, including what was SPARED and why, because "nothing was hung"
+# and "nothing could be measured" must never render identically (L1.28a). Without psutil the
+# verdict is UNMEASURED and nothing is killed.
+
+#: Past every legitimate writer's own timeout: Adopt-And-Seal waits 540 s for the mutex, the
+#: shadow sync's limit is 600 s. Anything still alive at 30 minutes has already outlived every
+#: bound the desk's own writers respect.
+HUNG_MIN_AGE_S = 1800.0
+
+#: How long to watch a candidate before calling it stopped. Long enough that a writer between two
+#: syscalls still registers, short enough to sit inside the adoption's window.
+HUNG_SAMPLE_S = 15.0
+
+#: `sshd` is excluded on purpose -- see note 1 above.
+_WRITER_NAMES = frozenset({"git", "git.exe", "ssh", "ssh.exe"})
+
+#: GIT'S OWN HELPER EXECUTABLES, AND WHY THEY HAD TO BE ADDED (measured 2026-09-24 on the
+#: trading box). Two `git push` chains had been stopped for 6.9 h and 6.0 h. Each was SIX
+#: processes, not one::
+#:
+#:     git.exe -C C:\opt\quant push origin <branch>
+#:       git remote-https origin https://github.com/...
+#:         git-remote-https.exe origin https://github.com/...
+#:           sh.exe -c git credential-manager get
+#:             git.exe credential-manager get
+#:               git-credential-manager.exe get
+#:
+#: The leaf is a credential prompt in a session with no console, so it waits for an answer that
+#: cannot arrive, and everything above it waits on the leaf. `_WRITER_NAMES` matched only the
+#: three `git.exe` frames of each chain, so a reap freed the mutex holder and left the credential
+#: helper, the remote helper and the shell resident forever -- twelve processes examined, seven
+#: named, five invisible. These names are git's OWN helper binaries: nothing else on this box is
+#: called `git-credential-manager.exe` or `git-remote-https.exe`, so matching them by name is as
+#: specific as matching `git.exe` is.
+_HELPER_NAMES = frozenset({"git-credential-manager.exe", "git-credential-manager",
+                           "git-remote-https.exe", "git-remote-https",
+                           "git-remote-http.exe", "git-remote-http"})
+
+#: NAMES TOO GENERIC TO MATCH ON THEIR OWN. `sh.exe` is Git-for-Windows' bundled shell and is
+#: also every hook, every `!alias` and anything an operator is running; killing one because it is
+#: quiet would be the "a live holder and a wedged one look identical" mistake in a new place. It
+#: is a candidate ONLY when its own command line names a git credential or remote helper -- the
+#: `sh -c git credential-manager get` frame above -- and it still has to clear the age threshold
+#: and the zero-CPU, zero-I/O proof like everything else.
+_AMBIGUOUS_NAMES = frozenset({"sh.exe", "sh", "bash.exe", "bash"})
+_HELPER_CMD_MARKERS = ("credential-manager", "credential-helper", "git-remote-http",
+                       "git credential")
+
+
+def _is_writer(name: str, cmd: str) -> bool:
+    """Is this process a git writer or one of git's own helper frames?
+
+    Split out so the widening above is one testable predicate rather than a condition buried in
+    the sampler, and so a future name can be added with a test rather than with a guess.
+    """
+    low = (name or "").lower()
+    if low in _WRITER_NAMES or low in _HELPER_NAMES:
+        return True
+    if low in _AMBIGUOUS_NAMES:
+        c = (cmd or "").lower()
+        return any(marker in c for marker in _HELPER_CMD_MARKERS)
+    return False
+
+
+def _psutil() -> Any:
+    try:
+        import psutil  # type: ignore[import-untyped,unused-ignore]
+    except ImportError:
+        return None
+    return psutil
+
+
+def _ancestor_pids(psutil_mod: Any) -> set[int]:
+    """This process and every parent of it -- never reaped, whatever they look like."""
+    pids = {os.getpid()}
+    try:
+        proc = psutil_mod.Process(os.getpid())
+        for parent in proc.parents():
+            pids.add(parent.pid)
+    except Exception:  # psutil raises a family of its own errors here
+        pass
+    return pids
+
+
+def _writer_sample(psutil_mod: Any) -> dict[int, dict[str, Any]]:
+    out: dict[int, dict[str, Any]] = {}
+    for proc in psutil_mod.process_iter(["pid", "name", "create_time", "cmdline"]):
+        try:
+            cmdline = " ".join(proc.info["cmdline"] or [])
+            if not _is_writer(proc.info["name"] or "", cmdline):
+                continue
+            times = proc.cpu_times()
+            try:
+                counters = proc.io_counters()
+                read_b, write_b = int(counters.read_bytes), int(counters.write_bytes)
+            except Exception:  # not every platform exposes per-process I/O
+                read_b = write_b = -1
+            out[int(proc.info["pid"])] = {
+                "pid": int(proc.info["pid"]),
+                "name": proc.info["name"],
+                "age_s": max(0.0, time.time() - float(proc.info["create_time"] or 0.0)),
+                "cpu_s": float(times.user) + float(times.system),
+                "read_b": read_b,
+                "write_b": write_b,
+                "cmd": cmdline[:200],
+            }
+        except Exception:  # a process that exits mid-iteration is not an error
+            continue
+    return out
+
+
+def hung_writers(*, min_age_s: float = HUNG_MIN_AGE_S, sample_s: float = HUNG_SAMPLE_S,
+                 sleep: Any = time.sleep) -> dict[str, Any]:
+    """Which git/ssh processes are PROVEN stopped, and which were spared and why.
+
+    Returns `{"status": "MEASURED"|"UNMEASURED", "hung": [...], "spared": [...], "why": str}`.
+    Measurement only: this function never signals anything.
+    """
+    rec: dict[str, Any] = {"status": "UNMEASURED", "hung": [], "spared": [],
+                           "sample_s": sample_s, "min_age_s": min_age_s, "why": ""}
+    psutil_mod = _psutil()
+    if psutil_mod is None:
+        rec["why"] = ("psutil is not importable here, so no process can be shown to be stopped; "
+                      "nothing is reaped on a guess")
+        return rec
+
+    protected = _ancestor_pids(psutil_mod)
+    first = _writer_sample(psutil_mod)
+    old = {pid: row for pid, row in first.items()
+           if float(row["age_s"]) >= min_age_s and pid not in protected}
+    for pid, row in first.items():
+        if pid in protected:
+            rec["spared"].append({**row, "why": "this process or one of its own ancestors"})
+        elif float(row["age_s"]) < min_age_s:
+            rec["spared"].append({
+                **row, "why": f"{float(row['age_s']):.0f}s old (< {min_age_s:.0f}s): still "
+                              "inside the window a legitimate writer is allowed"})
+    if not old:
+        rec["status"] = "MEASURED"
+        rec["why"] = (f"no git/ssh process is older than {min_age_s:.0f}s, so none can be the "
+                      "writer that is holding the lock open")
+        return rec
+
+    sleep(sample_s)
+    second = _writer_sample(psutil_mod)
+    for pid, before in old.items():
+        after = second.get(pid)
+        if after is None:
+            rec["spared"].append({**before, "why": "exited during the sample; it was working"})
+            continue
+        d_cpu = float(after["cpu_s"]) - float(before["cpu_s"])
+        d_io = 0
+        if int(before["read_b"]) >= 0 and int(after["read_b"]) >= 0:
+            d_io = ((int(after["read_b"]) - int(before["read_b"]))
+                    + (int(after["write_b"]) - int(before["write_b"])))
+        row = {**after, "d_cpu_s": round(d_cpu, 4), "d_io_b": d_io}
+        if d_cpu > 0.0 or d_io > 0:
+            rec["spared"].append({
+                **row, "why": f"moved {d_cpu:.3f}s of CPU and {d_io}B of I/O in {sample_s:.0f}s: "
+                              "slow, not stopped"})
+            continue
+        rec["hung"].append({
+            **row, "why": (f"{float(after['age_s']) / 3600.0:.2f}h old and moved 0.000s of CPU "
+                           f"and 0B of I/O across {sample_s:.0f}s: stopped, not slow. It holds "
+                           "the index and the writer mutex that every ship step serialises on.")})
+    rec["status"] = "MEASURED"
+    rec["why"] = (f"{len(rec['hung'])} stopped and {len(rec['spared'])} spared of "
+                  f"{len(first)} git/ssh/helper process(es) examined")
+    return rec
+
+
+def reap_hung_writers(*, apply: bool = False, min_age_s: float = HUNG_MIN_AGE_S,
+                      sample_s: float = HUNG_SAMPLE_S, sleep: Any = time.sleep,
+                      repo: Path | str | None = None) -> dict[str, Any]:
+    """Kill the writers `hung_writers` proved stopped, then clear the debris they left.
+
+    `apply=False` (the default) measures and reports and signals nothing, so the decision can
+    always be read before it is taken. Returns the measurement plus `killed`, `failed` and the
+    `index_lock` record, and it NEVER reports a kill it did not make.
+    """
+    rec = hung_writers(min_age_s=min_age_s, sample_s=sample_s, sleep=sleep)
+    rec["applied"] = apply
+    rec["killed"] = []
+    rec["failed"] = []
+    rec["index_lock"] = {"present": False, "removed": False, "age_s": None,
+                         "why": "not attempted"}
+    if rec["status"] != "MEASURED" or not rec["hung"] or not apply:
+        if rec["status"] == "MEASURED" and rec["hung"] and not apply:
+            rec["why"] += "; --apply was not given, so nothing was signalled"
+        return rec
+
+    psutil_mod = _psutil()
+    if psutil_mod is None:  # pragma: no cover -- hung_writers would already be UNMEASURED
+        return rec
+    for row in rec["hung"]:
+        pid = int(row["pid"])
+        try:
+            proc = psutil_mod.Process(pid)
+            proc.kill()
+            proc.wait(timeout=10)
+            rec["killed"].append({"pid": pid, "name": row["name"], "cmd": row["cmd"]})
+        except Exception as exc:  # the reason matters here, the type does not
+            rec["failed"].append({"pid": pid, "name": row["name"],
+                                  "why": f"{type(exc).__name__}: {exc}"})
+    # Only now is the remaining git population real, so the existing guard means what it says.
+    rec["index_lock"] = clear_stale_index_lock(repo if repo is not None else _repo_root())
+    return rec

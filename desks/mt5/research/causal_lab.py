@@ -52,6 +52,8 @@ for _p in (str(DESK), str(DESK / "research"), str(ROOT)):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
+from libs.research import set_aside as sa  # noqa: E402
+
 UNI, AXES = DESK / "data" / "universe", DESK / "data" / "axes"
 OUT = DESK / "reports" / "CAUSAL_LAB.json"
 
@@ -514,7 +516,11 @@ def notears_lite(panel: Panel, *, lam: float = 0.25, threshold: float = DAG_THRE
               "to_kind": kinds[names[j]], "weight": round(float(w[i, j]), 4)}
              for i in range(d) for j in range(d) if w[i, j] != 0.0]
     edges.sort(key=lambda e: -abs(float(e["weight"])))
-    return {"edges": edges[:MAX_EDGES], "n_edges": len(edges), "threshold": threshold,
+    # MAX_EDGES IS A BATCH BUDGET, NOT A SCREEN (LAWS 7). `n_edges` already publishes the true
+    # count; the named refusal below says which ones were carried and by what ordering.
+    return {"edges": sa.take(edges, MAX_EDGES, organ="causal_lab", stage="dag_edges",
+                             ordering="-abs(weight)"),
+            "n_edges": len(edges), "threshold": threshold,
             "acyclicity_h": round(h_raw, 9), "iterations": t, "n_vars": d, "blocked": blocked,
             "noise_floor": round(float(floor), 4),
             "n_above_2x_noise_floor": sum(1 for e in edges if abs(float(e["weight"])) >= 2 * floor),
@@ -675,7 +681,8 @@ def find_chains(edges: list[dict[str, Any]], max_edges: int = 3) -> list[dict[st
     for e in edges:
         walk([e], {str(e["from"]), str(e["to"])})
     out.sort(key=lambda c: (-CLASS_RANK[str(c["klass"])], -len(c["nodes"]), -float(c["min_abs_r"])))
-    return out[:MAX_CHAINS]
+    return sa.take(out, MAX_CHAINS, organ="causal_lab", stage="mechanism_chains",
+                   ordering="-class_rank, -len(nodes), -min_abs_r")
 
 
 # ------------------------------------------------------------------ the artifact

@@ -250,3 +250,66 @@ def test_the_event_dimension_is_reconstructed_at_the_trades_own_moment():
     assert isinstance(label, str)
     # A trade from 2020 cannot be inside a 2026 release's shock window.
     assert label in {"", "NORMAL"}, label
+
+
+# ------------------------------------------ THE WRITER'S OWN CLOCK (added 2026-09-24)
+def test_the_sole_writer_of_the_admission_report_has_an_hourly_leg() -> None:
+    """UNWIRED OR IDLE IS A DEFECT (III.16), and this one looked scheduled and was not.
+
+    `state_admission_run.run()` is the ONLY writer of `reports/STATE_ADMISSION.json`, which the
+    allocator and fourteen other readers consume. Its one clock was `daily_cycle.STEPS` -- a
+    resumable once-a-day chain sitting behind a `proposers` step this box last measured at 9,056 s
+    -- so the artifact stood while `pf_allocator` kept reading it through `read_graveyard()`, an
+    import of the READER that never reaches the write path. `read_graveyard` fails open to
+    "nothing is barred", which is the safe direction and also the silent one.
+    """
+    src = (_DESK / "research" / "hourly_cycle.py").read_text(encoding="utf-8")
+    assert '_costed("state_admission"' in src, "the writer has no hourly leg"
+    # the leg must run the RUNNER, which writes -- not the sealed judge, which does not
+    assert '"state_admission", "research/state_admission_run.py"' in src
+    assert '"state_admission": sad,' in src, "the leg is missing from the cycle's results dict"
+
+
+def test_the_admission_leg_runs_before_the_allocator_that_conditions_on_it() -> None:
+    """The verdicts the book conditions on must be the verdicts THIS pass measured."""
+    src = (_DESK / "research" / "hourly_cycle.py").read_text(encoding="utf-8")
+    assert src.index('_costed("state_admission"') < src.index('_costed("pf_allocator"')
+
+
+def test_the_admission_leg_is_billed_to_a_layer_and_priced() -> None:
+    from libs.research.layers import LAYERS, LEG_LAYER, unassigned
+
+    assert LEG_LAYER["state_admission"] == "portfolio"
+    assert LEG_LAYER["state_admission"] in LAYERS
+    assert unassigned() == [], "a leg without a layer: opportunity_cost cannot attribute its hour"
+    from research.hourly_cycle import LEG_BUDGET_SEC
+    assert LEG_BUDGET_SEC["state_admission"] >= 60
+
+
+def test_the_leg_passes_only_arguments_the_runner_actually_accepts() -> None:
+    """`state_admission_run` takes --dimension and --basis and nothing else; anything else is an
+    argparse exit 2, which would make the leg fail silently every hour."""
+    src = (_DESK / "research" / "hourly_cycle.py").read_text(encoding="utf-8")
+    call = src[src.index('_costed("state_admission"'):]
+    call = call[:call.index("pf_allocator")]
+    for banned in ("--once", "--budget-s"):
+        assert banned not in call, f"{banned} is not in the runner's argument parser"
+
+
+def test_the_daily_step_is_kept_as_well_as_the_hourly_leg() -> None:
+    """Two clocks, one idempotent writer. The daily chain still refreshes the verdicts before
+    shadow runs; the hourly leg is what stops a stalled chain from freezing them."""
+    from research import daily_cycle
+
+    assert "state_admission" in [n for n, _ in daily_cycle.STEPS]
+
+
+def test_the_sealed_judge_is_not_touched_by_any_of_this() -> None:
+    """`libs/regime/state_admission.py` owns every gate, bar and shrinkage and stays sealed: the
+    leg schedules the RUNNER beside it and changes no admission rule."""
+    import inspect
+
+    import libs.regime.state_admission as sealed
+
+    assert "hourly_cycle" not in inspect.getsource(sealed)
+    assert runner.OUT.name == "STATE_ADMISSION.json"

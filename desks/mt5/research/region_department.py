@@ -921,6 +921,24 @@ def _ingest_verdicts(p: Pass, budget_s: float) -> dict[str, Any]:
             "why": "" if rows else "no region candidate has been judged since the last pass"}
 
 
+def _miner_generator(rec: Mapping[str, Any], tag: str) -> str:
+    """THE one key a miner is credited under, derived in ONE place.
+
+    A miner stamps its own generator on every discovery and candidate it writes (the region's
+    `_envelope`/`_record` pair). That stamp is what the registry will be joined on, so it is the
+    identity -- and the class name in the mandate is only how the pass FINDS the function. Typing
+    the key a second time here is what let one organ wear two identities and read barren under
+    one of them. The class-name form remains the fallback for a miner that publishes no stamp,
+    and it is a fallback, never a second convention.
+    """
+    result = rec.get("result")
+    if isinstance(result, Mapping):
+        stamped = str(result.get("generator") or "").strip()
+        if stamped.lower().startswith(tag.lower()):
+            return stamped
+    return f"{tag}{rec['name']}"
+
+
 def _update_priors(p: Pass, budget_s: float) -> dict[str, Any]:
     """Step 18. Pay the miners and the sources by what the gauntlet actually said.
 
@@ -932,7 +950,14 @@ def _update_priors(p: Pass, budget_s: float) -> dict[str, Any]:
     tag = RM.tag(p.mandate)
     gen_inc: dict[str, dict[str, float]] = {}
     for rec in p.miner_rows:
-        g = f"{tag}{rec['name']}"
+        # ONE ORGAN, ONE KEY, AND IT IS DERIVED (principal 2026-09-23). This used to be
+        # `f"{tag}{rec['name']}"` -- the miner's CLASS name -- while every discovery and candidate
+        # the same miner writes carries the SHORT name it stamps itself (`japan:data_scout`, not
+        # `japan:JapanDataScout`). Two identities for one organ: `generator_yield` showed twelve
+        # Japan miners with compute and no cells while the lineage held their 135 gotobi and 20
+        # data_scout discoveries under the other name, so the yield fence read them as barren.
+        # The miner's OWN stamp is the single source: it is what the registry will be joined on.
+        g = _miner_generator(rec, tag)
         gen_inc.setdefault(g, {}).update({"compute_s": _f(rec.get("seconds"))})
         gen_inc[g]["generated"] = gen_inc[g].get("generated", 0.0) + _f(rec.get("discoveries"))
     for r in p.verdicts:

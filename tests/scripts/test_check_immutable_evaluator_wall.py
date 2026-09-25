@@ -202,3 +202,268 @@ def test_the_real_desk_is_scanned_and_is_clean_today() -> None:
     assert "desks/mt5/research/expression_factory.py" in out["scanned"]
     assert out["unparsed"] == []
     assert out["findings"] == [], out["findings"]
+
+
+# ------------------------------------- WHICH record, WHICH field, WHICH host (2026-09-24)
+def test_a_breach_names_the_records_and_the_fields_that_moved(box: Path) -> None:
+    """THE ESCALATION THIS PREVENTS. "the sealed prefix of 151 record(s) changed" was read as
+    "151 execution records were rewritten"; it meant "at least one of 151". The fence must say
+    WHICH -- and because a re-rounded float and a changed price wore the same word, WHICH FIELDS
+    moved, so "did a traded quantity change?" is answered by the fence, not by a session.
+    """
+    led = box / "data" / "live_ledger.jsonl"
+    rows = [{"deal": i, "pl_quote": 1.5 * i, "volume": 0.02, "sleeve": "gold_asia",
+             "r_multiple": 0.0} for i in range(6)]
+    led.write_text("\n".join(json.dumps(r) for r in rows), "utf-8")
+    _seal(box)
+    assert _status("data/live_ledger.jsonl")["status"] == "verified"
+
+    rows[2]["r_multiple"] = 1.9547            # the documented backfill: an inert field, one row
+    led.write_text("\n".join(json.dumps(r) for r in rows), "utf-8")
+    bad = _status("data/live_ledger.jsonl")
+    loc = bad["localisation"]
+    assert bad["status"] == "breach"
+    assert loc["localised"] is True
+    assert loc["n_changed"] == 1 and loc["first_changed"] == 2
+    assert loc["fields_moved"] == {"r_multiple": 1}
+    assert "pl_quote" in loc["fields_unchanged"] and "volume" in loc["fields_unchanged"]
+    assert "1 of the 6 sealed record(s) were rewritten" in bad["why"]
+    assert "r_multiple x1" in bad["why"]
+
+    rows[4]["pl_quote"] = -999.0              # the serious one: a traded quantity
+    led.write_text("\n".join(json.dumps(r) for r in rows), "utf-8")
+    worse = _status("data/live_ledger.jsonl")["localisation"]
+    assert worse["n_changed"] == 2
+    assert worse["fields_moved"] == {"r_multiple": 1, "pl_quote": 1}
+
+
+def test_a_seal_without_per_record_digests_says_so_rather_than_implying_a_count(
+        box: Path) -> None:
+    """An OLD seal must not read as though it had localised. It states the limit in words."""
+    led = box / "data" / "live_ledger.jsonl"
+    led.write_text("\n".join(f'{{"deal": {i}}}' for i in range(4)), "utf-8")
+    seal = M.append_only_seal()
+    for entry in seal.values():                          # a pre-2026-09-24 manifest
+        entry.pop("rows", None)
+        entry.pop("fields", None)
+    (box / "manifest.json").write_text(
+        json.dumps({"files": {}, "append_only": seal, "vintage": {}}), "utf-8")
+    led.write_text('{"deal": 0, "pl_quote": 9}\n'
+                   + "\n".join(f'{{"deal": {i}}}' for i in range(1, 4)), "utf-8")
+    bad = _status("data/live_ledger.jsonl")
+    assert bad["status"] == "breach"
+    assert bad["localisation"]["localised"] is False
+    assert "SEALED PREFIX LENGTH, NOT THE NUMBER OF RECORDS THAT CHANGED" in bad["why"]
+
+
+def test_a_seal_taken_on_another_host_is_named_as_such_and_stays_red(
+        box: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """A record file is written by ONE box; another box's copy is a different derivation of the
+    same history. That is a sync fact, not proof a record was rewritten -- and it stays red."""
+    led = box / "data" / "live_ledger.jsonl"
+    led.write_text("\n".join(f'{{"deal": {i}}}' for i in range(4)), "utf-8")
+    monkeypatch.setattr(M, "_HOST", "the-trading-box")
+    _seal(box)
+    monkeypatch.setattr(M, "_HOST", "some-build-box")
+    led.write_text('{"deal": 0, "pl_quote": 9}\n'
+                   + "\n".join(f'{{"deal": {i}}}' for i in range(1, 4)), "utf-8")
+    bad = _status("data/live_ledger.jsonl")
+    assert bad["status"] == "breach" and bad["sealed_host"] == "the-trading-box"
+    assert "judge this on the writing host" in bad["why"]
+    assert [f for f in M.check() if "live_ledger" in f["file"]]
+
+
+# ---------------------------------------- the rewrite PATH, not only the rewrite (2026-09-24)
+def _module(path: Path, body: str) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(body, "utf-8")
+
+
+@pytest.fixture
+def repo(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    monkeypatch.setattr(M, "ROOT", tmp_path)
+    monkeypatch.setattr(M, "APPEND_ONLY", (
+        ("desks/mt5/data/live_ledger.jsonl", "lines", "the live ledger"),
+        ("desks/mt5/reports/shadow/ledger_*.json", "rows", "the forward clocks"),
+    ))
+    monkeypatch.setattr(M, "INPLACE_DECLARED", {})
+    (tmp_path / "scripts").mkdir()
+    return tmp_path
+
+
+def test_an_undeclared_in_place_rewrite_of_the_live_ledger_is_a_finding(repo: Path) -> None:
+    _module(repo / "scripts" / "helpful.py",
+            'from pathlib import Path\n'
+            'LEDGER = Path("desks/mt5/data/live_ledger.jsonl")\n\n'
+            'def fix(rows):\n'
+            '    LEDGER.write_text("".join(rows), "utf-8")\n')
+    out = M.inplace_rewrite_scan()
+    assert [f["file"] for f in out["undeclared"]] == ["scripts/helpful.py"]
+    assert out["undeclared"][0]["line"] == "5"
+    assert any("UNDECLARED IN-PLACE REWRITE" in f["why"] for f in M.check())
+
+
+def test_the_atomic_tmp_then_replace_dance_is_caught_too(repo: Path) -> None:
+    """The real shape: write a sibling .tmp, then os.replace it over the sealed file."""
+    _module(repo / "scripts" / "sneaky.py",
+            'import os\nfrom pathlib import Path\n'
+            'LEDGER = Path("desks/mt5/data/live_ledger.jsonl")\n\n'
+            'def fix(rows):\n'
+            '    tmp = LEDGER.with_suffix(".tmp")\n'
+            '    with tmp.open("w") as f:\n'
+            '        f.write(rows)\n'
+            '    os.replace(tmp, LEDGER)\n')
+    found = M.inplace_rewrite_scan()["undeclared"]
+    assert [f["file"] for f in found] == ["scripts/sneaky.py"]
+    assert "2 site(s)" in found[0]["what"]
+
+
+def test_appending_is_not_a_finding_and_neither_is_writing_your_own_report(repo: Path) -> None:
+    """The precision that makes this fence readable: the first cut produced 157 findings and
+    every one of them was an organ that READS the ledger and writes its own report."""
+    _module(repo / "scripts" / "honest.py",
+            'import json\nfrom pathlib import Path\n'
+            'LEDGER = Path("desks/mt5/data/live_ledger.jsonl")\n'
+            'OUT = Path("desks/mt5/reports/mine.json")\n\n'
+            'def run():\n'
+            '    rows = LEDGER.read_text("utf-8").splitlines()\n'
+            '    with LEDGER.open("a", encoding="utf-8") as f:\n'
+            '        f.write("{}\\n")\n'
+            '    OUT.write_text(json.dumps({"n": len(rows)}), "utf-8")\n')
+    assert M.inplace_rewrite_scan()["undeclared"] == []
+
+
+def test_one_functions_local_path_does_not_seal_that_name_module_wide(repo: Path) -> None:
+    """Scope, measured: without it a generic `_atomic_write(path, doc)` helper was reported as a
+    live-ledger rewriter because another function had a local called `path`."""
+    _module(repo / "scripts" / "scoped.py",
+            'import json\nfrom pathlib import Path\n'
+            'DESK = Path("desks/mt5")\n\n'
+            'def read_ledger():\n'
+            '    path = DESK / "data" / "live_ledger.jsonl"\n'
+            '    return path.read_text("utf-8")\n\n'
+            'def write_state(doc):\n'
+            '    path = DESK / "data" / "equity_series.json"\n'
+            '    path.write_text(json.dumps(doc), "utf-8")\n')
+    assert M.inplace_rewrite_scan()["undeclared"] == []
+
+
+def test_a_declared_rewriter_is_named_rather_than_hidden(
+        repo: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    _module(repo / "scripts" / "backfill.py",
+            'from pathlib import Path\n'
+            'LEDGER = Path("desks/mt5/data/live_ledger.jsonl")\n\n'
+            'def fix(rows):\n'
+            '    LEDGER.write_text("".join(rows), "utf-8")\n')
+    monkeypatch.setattr(M, "INPLACE_DECLARED", {"scripts/backfill.py": "the declared backfill"})
+    out = M.inplace_rewrite_scan()
+    assert out["undeclared"] == [] and out["declared"] == ["scripts/backfill.py"]
+
+
+def test_the_real_desk_has_exactly_one_declared_rewriter_and_no_undeclared_one() -> None:
+    """The enumeration is the claim (L1.49). `backfill_live_ledger_r.py` is a REAL whole-file
+    rewriter -- it repaired `r_multiple` on 141 of 151 live rows the writer had floored at zero,
+    reaching it through `--ledger`, which is why the scan follows a CLI default -- and the desk
+    must be able to name every such organ on demand."""
+    out = M.inplace_rewrite_scan()
+    assert out["n_scanned"] >= 40, out["n_scanned"]
+    assert out["declared"] == ["scripts/backfill_live_ledger_r.py"], out["declared"]
+    assert out["declared_missing"] == []
+    assert out["undeclared"] == [], out["undeclared"]
+
+
+# ------------------------------------------------- THE RULER THE SEAL WAS TAKEN WITH (2026-09-24)
+#: The fence changed its own canonical form 23 hours AFTER the standing record seal was taken and
+#: then reported 152 of 192 forward ledgers as rewritten. 151 of them had not moved a byte: their
+#: sealed prefixes reproduce exactly under the pre-change form. These tests pin both halves --
+#: the ruler change must NOT read as a rewrite, and a rewrite must still read as one.
+
+
+def _legacy_seal(box: Path) -> None:
+    """A seal in the shape taken before 2026-09-24: every field hashed, no `ruler`, no digests."""
+    entry = {}
+    for rel, mode, _why in M.APPEND_ONLY:
+        for name, path in M._expand(rel):
+            recs = M._records(path, mode, drop=frozenset())
+            if recs is None:
+                continue
+            half = len(recs) // 2
+            entry[name] = {"records": len(recs), "prefix_sha": M._prefix_sha(recs, len(recs)),
+                           "half": half, "half_sha": M._prefix_sha(recs, half), "mode": mode}
+    (box / "manifest.json").write_text(
+        json.dumps({"files": {}, "append_only": entry, "vintage": M.vintage_seal()}), "utf-8")
+
+
+def _rows_with_stamps(n: int, r: float = 1.5) -> str:
+    return json.dumps([{"entry_time": f"2026-08-1{i} 05:00:00+00:00", "side": -1, "entry": 1.0,
+                        "exit": 1.1, "r_multiple": r, "reason": "ttl", "phase": "historical",
+                        "bars_fetched_utc": "2026-09-23T02:34:28+00:00",
+                        "bars_freshest": "2026-09-23T02:00:00+00:00", "bars_stale": False}
+                       for i in range(n)])
+
+
+def test_a_pass_stamp_rederivation_under_an_old_seal_is_verified_not_breached(box: Path) -> None:
+    """The 151. The derivation stamps moved because every pass re-stamps them, and the seal that
+    covered them was taken before the fence learned to drop them. The bytes still reproduce the
+    sealed hash under the ruler it was taken with, so nothing was rewritten and the fence must
+    say exactly that instead of 'a record was rewritten'."""
+    led = box / "reports" / "shadow" / "ledger_AUDCAD_asia.json"
+    led.write_text(_rows_with_stamps(6), "utf-8")
+    _legacy_seal(box)
+    row = _status("reports/shadow/ledger_AUDCAD_asia.json")
+    assert row["status"] == "ruler_change", row
+    assert row["sealed_ruler"] == M._LEGACY_RULER
+    assert "not one byte of evidence moved" in row["why"]
+    assert not [f for f in M.check() if "ledger_AUDCAD_asia" in f["file"]]
+
+
+def test_an_evidence_field_rewritten_is_a_breach_under_every_ruler(box: Path) -> None:
+    """The 1. `r_multiple` is evidence, not a fact about the pass, so no ruler forgives it: the
+    file must reproduce NEITHER canonical form and the verdict must stay BREACH."""
+    led = box / "reports" / "shadow" / "ledger_AUDCAD_asia.json"
+    led.write_text(_rows_with_stamps(6, r=1.5), "utf-8")
+    _legacy_seal(box)
+    led.write_text(_rows_with_stamps(6, r=9.9), "utf-8")
+    row = _status("reports/shadow/ledger_AUDCAD_asia.json")
+    assert row["status"] == "breach", row
+    assert [f for f in M.check() if "ledger_AUDCAD_asia" in f["file"]]
+
+
+def test_a_breach_on_a_seal_that_names_no_host_says_it_cannot_attribute(box: Path) -> None:
+    """These ledgers are untracked per-box derivations. A seal with no host cannot tell 'rewritten'
+    from 'another box's copy', and a verdict that cannot name its subject must say so (L1.28a)."""
+    led = box / "reports" / "shadow" / "ledger_AUDCAD_asia.json"
+    led.write_text(_rows_with_stamps(6, r=1.5), "utf-8")
+    _legacy_seal(box)
+    led.write_text(_rows_with_stamps(6, r=9.9), "utf-8")
+    assert "names NO host" in _status("reports/shadow/ledger_AUDCAD_asia.json")["why"]
+
+
+def test_every_new_seal_records_the_ruler_it_was_taken_with(box: Path) -> None:
+    """The structural half: a measurement whose units are not written down cannot be re-checked,
+    and that is the whole defect this class of breach came from."""
+    led = box / "reports" / "shadow" / "ledger_AUDCAD_asia.json"
+    led.write_text(_rows_with_stamps(3), "utf-8")
+    (box / "data" / "live_ledger.jsonl").write_text('{"deal": 1}\n', "utf-8")
+    seal = M.append_only_seal()
+    assert seal, "the seal enumerated nothing"
+    for name, rec in seal.items():
+        assert rec["ruler"] == M._RULER, name
+        assert rec["host"] == M._HOST, name
+
+
+def test_sign_files_leaves_the_record_seals_untouched(box: Path, capsys: pytest.CaptureFixture[str],
+                                                      monkeypatch: pytest.MonkeyPatch) -> None:
+    """Re-signing the judge must never erase the records. `--sign` rewrites `append_only` in the
+    same act, which would destroy the only evidence that can answer 'was this record rewritten'
+    -- so the maintenance act the desk actually needs has to be separable, and this pins it."""
+    led = box / "reports" / "shadow" / "ledger_AUDCAD_asia.json"
+    led.write_text(_rows_with_stamps(3), "utf-8")
+    _legacy_seal(box)
+    before = json.loads((box / "manifest.json").read_text("utf-8"))["append_only"]
+    monkeypatch.setattr(sys, "argv", ["check", "--sign-files", "--by", "test"])
+    assert M.main() == 0
+    after = json.loads((box / "manifest.json").read_text("utf-8"))
+    assert after["append_only"] == before
+    assert after["signed_by"] == "test"
+    capsys.readouterr()

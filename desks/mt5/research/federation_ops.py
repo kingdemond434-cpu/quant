@@ -74,7 +74,13 @@ REGISTRY_PATH = DESK / "data" / "federation_registry.json"
 REPORT = DESK / "reports" / "FEDERATION.json"
 DONATIONS = DESK / "data" / "intelligence" / "federation_ops"
 ROI_REPORT = DESK / "reports" / "RESEARCH_ROI.json"
-MINER_CANDIDATES = DESK / "data" / "miner_candidates.json"
+# THE COMPILER'S OWN PATH, RE-POINTED (measured 2026-09-24). `miner_candidate_compiler` writes
+# `data/hypotheses/miner_candidates.json` -- the path ten other readers use -- and this constant
+# named `data/miner_candidates.json`, which NOTHING in the tree writes and which has never existed.
+# So `seat_consumption()` opened an absent file every pass, took the `None` branch and reported the
+# federation seats as UNMEASURED forever: the exact defect the plumbing watchdog's orphan check was
+# built to find, sitting inside a function whose docstring promises the compiler's own measurement.
+MINER_CANDIDATES = DESK / "data" / "hypotheses" / "miner_candidates.json"
 SLEEVES = DESK / "data" / "sleeves.json"
 FORWARD = DESK / "data" / "forward_reconcile.json"
 CLAIMS_JSONL = DESK / "data" / "deep_forest_claims.jsonl"

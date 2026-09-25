@@ -153,12 +153,19 @@ PARADIGMS: tuple[dict[str, Any], ...] = (
      "sources": ("orthogonality", "alpha_fitness")},
     {"paradigm": "symbolic_regression",
      "organ": "libs/research/search_populations.py:symreg",
-     "legs": ("search", SOURCE),
+     # `alpha_evolution` IS a leg of this paradigm: `search_populations.symreg` runs inside it
+     # (Tier-1 Q18). It was absent, so the paradigm factor could never reach the one hourly leg
+     # that actually runs the population, and the leg read `belongs to no paradigm`.
+     "legs": ("search", SOURCE, "alpha_evolution"),
      "sources": ("search_populations", SOURCE, "symreg")},
     {"paradigm": "bayesian_optimisation",
      "organ": "libs/research/search_populations.py:bayesian",
-     "legs": ("search", SOURCE),
+     "legs": ("search", SOURCE, "alpha_evolution"),
      "sources": ("search_populations", SOURCE, "bayesian")},
+    {"paradigm": "gflownet_flow_matching",
+     "organ": "libs/research/generators.py:GFlowNet via libs/research/search_populations.py",
+     "legs": ("alpha_evolution",),
+     "sources": ("alpha_evolution", "gflownet")},
     {"paradigm": "causal_discovery",
      "organ": "desks/mt5/research/causal_discovery.py",
      "legs": ("causal_graph", "causal_lab", "event_graph_lab"),

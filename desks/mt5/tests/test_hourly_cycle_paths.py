@@ -8,10 +8,36 @@ nobody recorded is GONE: unlike a bar, it cannot be re-downloaded.
 """
 from __future__ import annotations
 
+import re
+import sys
 from pathlib import Path
 
 DESK = Path(__file__).resolve().parents[1]
+# THE DESK ON THE PATH, AT MODULE LEVEL, because this file imports the cycle for real.
+# `test_one_leg_failure_cannot_terminate_later_independent_legs` does `import hourly_cycle`, and
+# that only ever resolved because some OTHER test module in the same session had already inserted
+# these two directories -- so this file passed inside a sweep and died with
+# `ModuleNotFoundError: No module named 'hourly_cycle'` whenever it ran alone or the random order
+# put it first. A test whose verdict depends on which neighbours ran before it enforces nothing.
+for _p in (str(DESK), str(DESK / "research")):
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
 SRC = (DESK / "research" / "hourly_cycle.py").read_text("utf-8")
+
+#: The names under which this cycle launches a CHILD PROCESS.
+#:
+#: `_run_tree` (`libs/ops/proctree.run`) replaced the bare `subprocess.run` on 2026-09-22
+#: (c56c66f6d02). The stdlib runner's timeout kills the child it started AND NOTHING ELSE, so a
+#: leg that had opened a worker pool left the pool behind: measured that day, 72 orphaned workers
+#: held 147 GB of the box's 251 GB commit limit until every new leg died of
+#: STATUS_COMMITMENT_LIMIT. `_run_tree` is a drop-in -- same return type, same `TimeoutExpired`,
+#: same `capture_output`/`text`/`cwd`/`check` -- that kills the whole tree first.
+#:
+#: The law these two tests enforce is the ISOLATION: the native/terminal work happens in a child
+#: process, never in the controller's own. That law is indifferent to WHICH child-process runner
+#: carries it, so they accept either name and keep the teeth where they always were -- on the
+#: ABSENCE of the in-process call (`state_vector_build.main()`, `daily_cycle.main(`).
+CHILD_RUNNERS = ("_run_tree(", "subprocess.run(")
 
 
 def test_base_is_on_sys_path_before_any_function_runs() -> None:
@@ -67,19 +93,47 @@ def test_the_two_recorders_do_not_share_a_verdict() -> None:
         "the two recorders are not invoked through separately-guarded calls"
 
 
+def test_the_child_process_runner_is_a_subprocess_runner() -> None:
+    """`CHILD_RUNNERS` is only honest while `_run_tree` really is a `subprocess.run` drop-in.
+
+    Pinned here so the two isolation tests below cannot be satisfied by some future `_run_tree`
+    that runs the work in-process: the module must bind the name to the tree-killing runner, and
+    fall back to the stdlib one when `libs.ops.proctree` cannot be imported (this file also runs
+    from the desk root on the box, where the repository root is not always importable).
+    """
+    setup = SRC.split("def ", 1)[0]
+    assert "_run_tree = _proctree.run" in setup, "_run_tree is not bound to the tree-killing runner"
+    assert "_run_tree = subprocess.run" in setup, "_run_tree has no subprocess fallback"
+
+
 def test_state_vector_cannot_terminate_the_hourly_controller() -> None:
-    """Native model failure is contained in a subprocess, not the factory process."""
+    """Native model failure is contained in a CHILD PROCESS, not the factory process."""
     body = SRC.split("def state_vector()", 1)[1].split("\ndef ", 1)[0]
-    assert "subprocess.run(" in body
+    assert any(r in body for r in CHILD_RUNNERS), \
+        "the state-vector fit is no longer launched as a child process"
     assert '"state_vector_build.py"' in body
-    assert "STATE_VECTOR_HOURLY_BUDGET_SEC" in body
+    assert "_state_vector_budget_s()" in body, "the leg no longer runs under a budget"
     assert "state_vector_build.main()" not in body
     assert '"status": "OK" if r.returncode == 0 else "FAILED"' in body
 
 
+def test_the_state_vector_budget_is_still_operator_overridable() -> None:
+    """The env override moved, and moving is not the same as losing it.
+
+    `STATE_VECTOR_HOURLY_BUDGET_SEC` used to be read inline in `state_vector()`; on 2026-09-23
+    (527039beb53) the leg learned its own budget and the constant moved into
+    `_state_vector_budget_s`, which the leg now calls. The law the old assertion carried -- an
+    operator can still bound this leg from the environment -- is asserted where it now lives, so
+    it goes on being enforced instead of quietly lapsing with the line that used to hold it.
+    """
+    body = SRC.split("def _state_vector_budget_s", 1)[1].split("\ndef ", 1)[0]
+    assert "STATE_VECTOR_HOURLY_BUDGET_SEC" in body
+
+
 def test_daily_promotion_chain_cannot_terminate_hourly_discovery() -> None:
     body = SRC.split("def daily()", 1)[1].split("\ndef ", 1)[0]
-    assert "subprocess.run(" in body
+    assert any(r in body for r in CHILD_RUNNERS), \
+        "the daily chain is no longer launched as a child process"
     assert '"daily_cycle.py"' in body
     assert "DAILY_CYCLE_HOURLY_BUDGET_SEC" in body
     assert "daily_cycle.main(" not in body
@@ -117,7 +171,7 @@ def test_one_leg_failure_cannot_terminate_later_independent_legs(tmp_path, monke
     try:
         from libs.ops import compute_ledger as _cl
         monkeypatch.setattr(_cl, "LEDGER", tmp_path / "compute_ledger.jsonl")
-    except Exception:                                                   # noqa: BLE001
+    except Exception:
         pass
 
     ran: list[str] = []
@@ -156,7 +210,15 @@ def test_a_leg_that_fails_without_raising_is_not_recorded_as_ok():
         assert shape in body, (
             f"_costed no longer inspects {shape!r}, so a leg that fails by RETURNING a failure "
             f"is recorded as a success again")
-    assert 'close_run(run, outcome=outcome)' in body
+    # THE DERIVED OUTCOME IS WHAT MUST REACH THE LEDGER, and `outcome` is the name of the variable
+    # the block above computes. `close_run` grew keyword arguments after this line was written --
+    # `outputs=` on 2026-09-16 (f4cb30fc239, the provenance envelope: every closed run publishes
+    # an output_hash over the files it declares) -- and the exact-string form of this assertion
+    # read that ADDITION as the removal of the thing it was guarding. So it is pinned as a regex:
+    # extra keywords are welcome, a different first argument or a literal in place of `outcome`
+    # is the defect (`close_run(run, outcome="ok")` is exactly the bug this test exists for).
+    assert re.search(r"close_run\(run, outcome=outcome[,)]", body), \
+        "the derived outcome is no longer what `_costed` writes to the compute ledger"
 
 
 # ------------------------------------------------------- the loop that has to never stop, 24/7

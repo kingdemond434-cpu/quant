@@ -52,6 +52,7 @@ queue when the hour runs short.
 from __future__ import annotations
 
 import argparse
+import contextlib
 import json
 import statistics
 import sys
@@ -259,6 +260,19 @@ def _rank01(values: dict[str, float]) -> dict[str, float]:
     return out
 
 
+def _evig_prices() -> tuple[dict[str, float], str]:
+    """The unified EVIG acquisition's per-leg factors (Tier-1 B11), or an empty map and why.
+
+    ONE-SIDED AT THE SOURCE AND HERE. `evig_acquisition` publishes factors >= 1.0; this converts
+    them to a price by rank, so a leg the frontier says nothing about contributes nothing rather
+    than a zero -- the same rule the other three sources follow."""
+    try:
+        from evig_acquisition import leg_factors
+        return leg_factors()
+    except Exception as exc:
+        return {}, f"evig_acquisition unavailable ({type(exc).__name__}: {exc})"
+
+
 def build_plan(bases: dict[str, int] | None = None) -> dict[str, Any]:
     """The hour's plan: a price, a factor and a planned budget for every leg with a base."""
     if bases is None:
@@ -275,7 +289,17 @@ def build_plan(bases: dict[str, int] | None = None) -> dict[str, Any]:
     # work and is the weakest claim of the three. A source that has nothing to say about a leg
     # contributes nothing rather than a zero, and the weights of the sources that DID speak are
     # renormalised -- otherwise "no opinion" would read as "priced lowest".
-    W = {"meta_controller": 0.55, "research_bandit": 0.30, "compute_policy": 0.15}
+    # THE FRONTIER JOINS THE PRICE STACK (Tier-1 B11, 2026-09-23). `evig_acquisition` ranks the
+    # bandit's ARMS, the docket's CELLS, the research tree's NODES and the frontier map's
+    # REGIONS on one percentile scale and hands back a per-leg factor. Until it existed the
+    # frontier ranked cells nobody could fund: three rankings in three currencies, none of which
+    # reached a budget. Its weight sits below the meta controller's (which speaks in the
+    # objective's own units) and beside the bandit's, because a percentile across families is a
+    # weaker claim than log-wealth per day and a stronger one than a tier prior.
+    evig, evig_why = _evig_prices()
+    e01 = _rank01(evig)
+    W = {"meta_controller": 0.45, "research_bandit": 0.25, "evig_acquisition": 0.20,
+         "compute_policy": 0.10}
     legs: dict[str, dict[str, Any]] = {}
     for leg, base in sorted(bases.items()):
         parts: list[tuple[str, float, float]] = []
@@ -283,6 +307,8 @@ def build_plan(bases: dict[str, int] | None = None) -> dict[str, Any]:
             parts.append(("meta_controller", W["meta_controller"], m01[leg]))
         if leg in b01:
             parts.append(("research_bandit", W["research_bandit"], b01[leg]))
+        if leg in e01:
+            parts.append(("evig_acquisition", W["evig_acquisition"], e01[leg]))
         if leg in p01:
             parts.append(("compute_policy", W["compute_policy"], p01[leg]))
         if parts:
@@ -331,7 +357,8 @@ def build_plan(bases: dict[str, int] | None = None) -> dict[str, Any]:
         "at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
         "sources": {"meta_controller": bool(meta), "meta_why": meta_why,
                     "research_bandit": bool(bandit), "compute_policy": bool(policy),
-                    "compute_policy_applied": policy_applied},
+                    "compute_policy_applied": policy_applied,
+                    "evig_acquisition": bool(evig), "evig_why": evig_why},
         "weights": W, "floor": FLOOR, "ceiling": CEIL, "scout_min_s": SCOUT_MIN_S,
         "scout_stale_h": SCOUT_STALE_H,
         "median_score": round(median, 6), "rescale": round(rescale, 4),
@@ -346,15 +373,72 @@ def build_plan(bases: dict[str, int] | None = None) -> dict[str, Any]:
     }
 
 
-def order(names: list[str], legs: dict[str, dict[str, Any]] | None = None) -> list[str]:
-    """`names` in the order this hour should run them: scouts first, then price-descending."""
-    table = legs if legs is not None else plan().get("legs", {})
+def declare_spec(leg: str, rec: dict[str, Any]) -> None:
+    """Write this leg's JOB SPEC where `job_lock` reads it. I3's producer half. Never raises.
 
-    def key(n: str) -> tuple[int, float, str]:
+    I3'S GAP, IN THE LEDGER'S OWN WORDS: *"a job's spec carries a memory floor but no CPU count,
+    no deadline and no EVSI, so no scheduler can rank two competing jobs."* `job_lock.record_spec`
+    has accepted all four fields since the row's first half and NOTHING EVER CALLED IT -- the
+    declaration existed and no job ever declared. Every leg of the hourly cycle passes through
+    `applied_budget`, so this is the one place where all four are known at once:
+
+        mb          the leg's own measured high-water RSS, corrected upward by what it has
+                    actually used (`job_lock.measured_need_mb`) -- never a constant, and never
+                    sized off a machine (CLAUDE.md: measure the box the code runs on)
+        cpu         1, declared rather than assumed: every cycle leg is a single subprocess
+        deadline_s  the seconds this leg was actually granted this hour, which is exactly how
+                    long it may hold the box before pre-empting it is worth considering
+        evsi        the board's dE[log W] price for this leg -- what the desk expects to LEARN
+                    from the hour, which is the field a scheduler must rank on
+
+    It declares; it admits nothing and refuses nothing.
+    """
+    try:
+        from research.job_lock import measured_need_mb, record_spec
+    except Exception:                                          # pragma: no cover - import env
+        try:
+            from job_lock import (  # type: ignore[import-not-found,no-redef]
+                measured_need_mb,
+                record_spec,
+            )
+        except Exception:
+            return
+    try:
+        base_mb = int(rec.get("base_mb") or 0) or 256
+        need, _why = measured_need_mb(str(leg), base_mb)
+        score = rec.get("score")
+        record_spec(str(leg), mb=int(need), cpu=1,
+                    deadline_s=float(rec.get("applied_s") or rec.get("base_s") or 0.0) or None,
+                    evsi=float(score) if isinstance(score, (int, float)) else None)
+    except Exception:                                          # a declaration never costs a leg
+        return
+
+
+def order(names: list[str], legs: dict[str, dict[str, Any]] | None = None) -> list[str]:
+    """`names` in the order this hour should run them: scouts first, then price-descending.
+
+    I3's CONSUMER. Two legs the board prices identically -- which is common, because most legs
+    are priced by the same tier factor -- were separated by their own SPELLING. They are now
+    separated by what they DECLARED: `job_lock.admission_order` ranks by EVSI, then by the
+    shorter deadline, then by the smaller memory need. That is the "no scheduler can rank two
+    competing jobs" half of I3, cashed. It re-orders and refuses nothing: every named leg is
+    still returned, and the scout tier (a leg unrun for six hours) still outranks every price.
+    """
+    table = legs if legs is not None else plan().get("legs", {})
+    declared: dict[str, int] = {}
+    try:
+        from research.job_lock import admission_order
+    except Exception:                                          # pragma: no cover - import env
+        admission_order = None                                 # type: ignore[assignment]
+    if admission_order is not None:
+        with contextlib.suppress(Exception):
+            declared = {n: i for i, (n, _spec) in enumerate(admission_order(names))}
+
+    def key(n: str) -> tuple[int, float, int, str]:
         row = table.get(n) or {}
         st = row.get("stale_h")
         scout = 0 if (st is None or float(st) >= SCOUT_STALE_H) else 1
-        return (scout, -float(row.get("score") or 0.0), n)
+        return (scout, -float(row.get("score") or 0.0), declared.get(n, len(names)), n)
 
     return sorted(names, key=key)
 
@@ -409,6 +493,7 @@ def applied_budget(leg: str, base: float) -> tuple[int, dict[str, Any]]:
         rec["at"] = datetime.now(tz=UTC).isoformat(timespec="seconds")
         record(rec)
         out_s = rec["applied_s"]
+        declare_spec(leg, rec)
         return (int(out_s) if isinstance(out_s, (int, float)) else base_i), rec
     except Exception as exc:                                   # never stall a leg on a price
         return base_i, {"leg": leg, "base_s": base_i, "applied_s": base_i, "factor": 1.0,

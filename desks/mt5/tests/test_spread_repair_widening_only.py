@@ -19,6 +19,7 @@ from __future__ import annotations
 import json
 import sys
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -30,8 +31,15 @@ for _p in (str(_DESK), str(_DESK / "scripts")):
 rus = pytest.importorskip("repair_universe_spreads")
 
 
-@pytest.fixture()
-def registry(tmp_path, monkeypatch):
+#: BOTH SOURCES, BECAUSE THE PROPERTY IS THE APPLY PATH'S AND NOT THE STATISTIC'S. The default
+#: source moved from `h1` to `tape` on 2026-09-24 (the H1 statistic was reading a pre-2021
+#: fixed-spread era). A widening-only guarantee that is only tested on the retired source is a
+#: guarantee about code nothing runs.
+SOURCES = ("h1", "tape")
+
+
+@pytest.fixture(params=SOURCES)
+def registry(request, tmp_path, monkeypatch):
     doc = {"WIDENS": {"median_spread_pts": 10.0},
            "NARROWS": {"median_spread_pts": 500.0},
            "ZEROED": {"median_spread_pts": 0.0}}
@@ -39,15 +47,22 @@ def registry(tmp_path, monkeypatch):
     p.write_text(json.dumps(doc), encoding="utf-8")
     monkeypatch.setattr(rus, "REGISTRY", p)
     monkeypatch.setattr(rus, "REPORT", tmp_path / "SPREAD_PROVENANCE.json")
+    monkeypatch.setattr(rus, "TAPE_REPORT", tmp_path / "SPREAD_TAPE.json")
     measured = {"WIDENS": 200.0, "NARROWS": 7.0, "ZEROED": 39.0}
-    monkeypatch.setattr(rus, "measured_spread",
+    probe = "measured_spread" if request.param == "h1" else "tape_spread"
+    monkeypatch.setattr(rus, probe,
                         lambda sym: (measured[sym], "measured", {"n_priced": 10_000}))
-    return p
+    # the tape path would otherwise open a terminal and read 248 parquets
+    monkeypatch.setattr(rus, "load_tape",
+                        lambda write=True: {"status": "MEASURED", "source": "fusion_zero_m1_tape",
+                                            "by_symbol": {}})
+    return SimpleNamespace(path=p, source=request.param,
+                           read_text=lambda: p.read_text(encoding="utf-8"))
 
 
 def test_widening_only_never_lowers_a_charge(registry):
-    rus.run(apply=True, write=True, widening_only=True)
-    doc = json.loads(registry.read_text("utf-8"))
+    rus.run(apply=True, write=True, widening_only=True, source=registry.source)
+    doc = json.loads(registry.read_text())
     assert doc["WIDENS"]["median_spread_pts"] == 200.0, "a wider measurement must be taken"
     assert doc["ZEROED"]["median_spread_pts"] == 39.0, "a zero-priced symbol must be repaired"
     assert doc["NARROWS"]["median_spread_pts"] == 500.0, (
@@ -55,29 +70,48 @@ def test_widening_only_never_lowers_a_charge(registry):
 
 
 def test_full_apply_still_takes_both_directions(registry):
-    rus.run(apply=True, write=True, widening_only=False)
-    doc = json.loads(registry.read_text("utf-8"))
+    rus.run(apply=True, write=True, widening_only=False, source=registry.source)
+    doc = json.loads(registry.read_text())
     assert doc["NARROWS"]["median_spread_pts"] == 7.0
     assert doc["WIDENS"]["median_spread_pts"] == 200.0
 
 
 def test_report_only_writes_nothing(registry):
-    before = registry.read_text("utf-8")
-    r = rus.run(apply=False, write=True)
-    assert registry.read_text("utf-8") == before
+    before = registry.read_text()
+    r = rus.run(apply=False, write=True, source=registry.source)
+    assert registry.read_text() == before
     assert r["apply_mode"] == "report_only"
     assert r["n_applied"] == 0
 
 
 def test_the_zero_spread_count_is_published(registry):
     """74 symbols priced at zero is the number that justifies the whole change; publish it."""
-    r = rus.run(apply=False, write=True)
+    r = rus.run(apply=False, write=True, source=registry.source)
     assert r["n_zero_registry_spread"] >= 1
     assert r["apply_mode"] == "report_only"
 
 
 def test_the_mode_is_recorded_in_provenance(registry):
-    rus.run(apply=True, write=True, widening_only=True)
-    doc = json.loads(registry.read_text("utf-8"))
+    rus.run(apply=True, write=True, widening_only=True, source=registry.source)
+    doc = json.loads(registry.read_text())
     assert doc["WIDENS"]["_provenance"]["median_spread_pts"]["mode"] == "widening_only"
     assert doc["WIDENS"]["_provenance"]["median_spread_pts"]["was"] == 10.0
+
+
+def test_the_source_is_stamped_so_a_reader_can_tell_them_apart(registry):
+    """An unstamped number and a number from a retired statistic must not read the same.
+
+    The registry carried 245 rows stamped `download_all_symbols` -- a `symbol_info.spread`
+    SNAPSHOT, all 245 taken at one instant -- beside rows from the H1 median and rows from the
+    desk's own fills, and nothing in the file distinguished them. The stamp is the fix.
+    """
+    rus.run(apply=True, write=True, source=registry.source)
+    doc = json.loads(registry.read_text())
+    stamp = doc["WIDENS"]["_provenance"]["median_spread_pts"]["source"]
+    assert stamp == ("h1_spread_median" if registry.source == "h1" else "fusion_zero_m1_tape")
+
+
+def test_an_unknown_source_refuses_rather_than_defaulting(registry):
+    r = rus.run(apply=True, write=True, source="whatever")
+    assert r["status"] == "UNMEASURED" and "unknown source" in r["why"]
+    assert json.loads(registry.read_text())["WIDENS"]["median_spread_pts"] == 10.0

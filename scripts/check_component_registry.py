@@ -138,6 +138,43 @@ def _task_registry_drift(comp: Any) -> list[str]:
     return out
 
 
+def _unlanded_retirements(unclocked: list[str]) -> list[str]:
+    """Which unclocked executables are RETIRED organs whose removal never landed on this host.
+
+    THE 2 -> 88 STEP OF 2026-09-23, AND WHY A BARE NUMBER COULD NOT EXPLAIN IT. The wiring sweep
+    retired 92 dated one-shots and demo executors with `git mv <path> _retired/<path>` and a row
+    in docs/research/retirements.jsonl. The build box carries the result: only the `_retired/`
+    copy, 3 unclocked. Origin -- and therefore the trading box that adopts it -- carries BOTH
+    copies, because the shipping path between them moves file CONTENT and not file REMOVAL: the
+    add of `_retired/x.py` lands, the delete of `x.py` never does. So 87 organs that were retired
+    are still sitting at their original paths on that host, each still carrying a `main()` and
+    still, correctly, counted here as an executable nobody clocks.
+
+    This does not except them and does not move the ratchet: an unclocked executable is unclocked
+    wherever it sits, and the remedy is to land the removals, never to widen the fence. It names
+    them, because "88 with no clock" and "87 retirements whose delete half never shipped" send an
+    operator to two different places, and only one of them is the defect.
+    """
+    ledger = ROOT / "docs" / "research" / "retirements.jsonl"
+    retired: set[str] = set()
+    try:
+        for line in ledger.read_text(encoding="utf-8", errors="replace").splitlines():
+            if not line.strip():
+                continue
+            try:
+                row = json.loads(line)
+            except ValueError:
+                continue
+            # Only where the replacement copy is actually present: a retirement row whose
+            # `_retired/` copy never arrived either is a plain missing file, not a duplicate.
+            if (isinstance(row, dict) and row.get("path") and row.get("retired_to")
+                    and (ROOT / str(row["retired_to"])).exists()):
+                retired.add(str(row["path"]).replace("\\", "/"))
+    except OSError:
+        return []
+    return sorted(set(unclocked) & retired)
+
+
 def measure() -> dict[str, Any]:
     comp = _load(ROOT / "desks" / "mt5" / "ops" / "components.py", "_cp_components_fence")
     census = comp.census(ROOT)
@@ -151,9 +188,17 @@ def measure() -> dict[str, Any]:
     if unclaimed:
         fatal.append(f"{len(unclaimed)} executable(s) carry no ComponentSpec: {unclaimed[:8]}")
     fatal += problems
+    unlanded = _unlanded_retirements(list(census.get("unclocked") or []))
     if unclocked > MAX_UNCLOCKED:
         fatal.append(f"executables with no clock rose to {unclocked} (ratchet "
                      f"{MAX_UNCLOCKED}): a new executable must arrive with a clock")
+        if unlanded:
+            fatal.append(f"{len(unlanded)} of those {unclocked} are RETIRED organs still present "
+                         f"at their original path ({unlanded[:3]}...): docs/research/"
+                         f"retirements.jsonl records them moved to _retired/, and the _retired/ "
+                         f"copy is here, so the delete half of the move never landed on this "
+                         f"host. Land the removals -- do not clock them and do not raise the "
+                         f"ratchet")
 
     return {
         "at": __import__("datetime").datetime.now(
@@ -165,6 +210,7 @@ def measure() -> dict[str, Any]:
         "unscheduled": census.get("unscheduled"),
         "executables_without_clock": unclocked,
         "unclocked_ratchet": MAX_UNCLOCKED,
+        "unclocked_unlanded_retirements": unlanded,
         "by_kind": census.get("by_kind"),
         "registry_problems": problems,
         "second_registry_drift": drift,

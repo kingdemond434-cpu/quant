@@ -34,6 +34,7 @@ reading through the same engine can only faithfully reproduce twice.
 from __future__ import annotations
 
 import argparse
+import contextlib
 import json
 import os
 import sys
@@ -188,7 +189,18 @@ def load_bars(symbol: str, timeframe: str = "H1", universe: Path | None = None) 
     try:
         import pandas as pd
         frame = table.to_pandas()
+        # THE TIME COLUMN IS USUALLY THE INDEX, AND THAT COST THIS LANE ITS ENTIRE LIFE
+        # (measured 2026-09-24). `pq.read_table().column_names` lists `time`, because the file
+        # stores it as a column; but the desk writes these parquets with pandas metadata naming
+        # `time` the index, so `to_pandas()` moves it to the DatetimeIndex and DROPS it from
+        # `frame.columns`. `frame["time"]` then raised KeyError, the bare `except` below turned
+        # that into `return None`, and the caller reported "<SYM> bars absent or shorter than 300
+        # rows" -- of a file holding 43,655 of them. Every verdict this lane has ever published
+        # was UNMEASURED with a reason that was false, which is worse than an error: an organ
+        # that says "no data" is believed. Look in `columns` first, and fall back to the index.
         tcol = cols.get("time")
+        if tcol is not None and tcol not in frame.columns:
+            tcol = None
         raw = frame[tcol] if tcol is not None else frame.index.to_series()
         stamps = pd.to_datetime(raw, utc=True, errors="coerce")
         keep = ~stamps.isna().to_numpy()
@@ -643,7 +655,8 @@ def judge_forward(ledger: Sequence[Mapping[str, Any]], fills: Sequence[Fill], ba
     if not theirs:
         return UNMEASURED, ["the forward ledger holds no trade with an R to compare"], div
     if not fills:
-        return MISMATCH, [f"the rebuild produced NO fill against {len(theirs)} ledger trade(s)"], div
+        return MISMATCH, [f"the rebuild produced NO fill against {len(theirs)} ledger "
+                          f"trade(s)"], div
     why: list[str] = []
     tol = MATCH_BARS * bar_minutes * 60_000_000_000
     ours_t = np.asarray([f.entry_t for f in fills], dtype="int64")
@@ -865,10 +878,8 @@ def record(rows: Sequence[Mapping[str, Any]], *, conn: Any, dry_run: bool,
                     out["candidates"] += 1
     finally:
         if opened and c is not None:
-            try:
+            with contextlib.suppress(Exception):
                 c.close()
-            except Exception:
-                pass
     return out
 
 

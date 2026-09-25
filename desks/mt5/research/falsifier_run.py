@@ -195,7 +195,18 @@ def falsify(inputs: dict, deadline: float,
     The FIRST killer in schedule order is still named -- it is the cheapest objection that
     settled the question, which is what a re-test should start with.
     """
-    order = falsifiers.schedule(premortem)
+    # THE ORDER IS ITSELF AN EXPERIMENTAL SUBJECT (Tier-1 B25). `meta_rnd` replays recorded
+    # battery outcomes under competing ordering policies -- the catalogue's declared prior, the
+    # measured kill rate per class from the evolved destroyer pool, and the pre-mortem's own
+    # class first -- and returns the kill rates of whichever reached the first killer in the
+    # least measured time. Ordering is not a threshold: nothing passes or fails differently for
+    # it (L1.60), the battery is the same battery, and an absent artifact leaves the catalogue's
+    # own schedule untouched.
+    try:
+        from research.meta_rnd import ordering_kill_rates
+        order = falsifiers.schedule(premortem, kill_rates=ordering_kill_rates() or None)
+    except Exception:
+        order = falsifiers.schedule(premortem)
     results: dict[str, Any] = {}
     run: list[str] = []
     not_reached: list[str] = []
@@ -341,6 +352,17 @@ def run(*, certs_path: Path = CERTS, fallback: Path = CANON, report_path: Path =
             continue
         out = falsify(inputs, deadline, pre.get(cid))
         entry.update(out)
+        # THE EVOLVED PREDATORS ATTACK IN THE SAME PASS (Tier-1 B17). The pool's genomes are the
+        # catalogue's own objections asked about a SLICE of this certificate's evidence, in
+        # fitness order, inside the same deadline. The verdict is published under `evolved` and
+        # is ADVISORY: no sleeve is retired and no gate moves on it -- `destroyer_pool` scores
+        # these records next pass and breeds the genomes that found what the battery missed.
+        try:
+            from research.destroyer_pool import attack as _attack
+            entry["evolved"] = _attack(inputs, deadline, catalogue_status=str(out.get("status")))
+        except Exception as exc:                          # a pool defect never costs the battery
+            entry["evolved"] = {"kills": [], "n_attempted": 0,
+                                "why": f"{type(exc).__name__}: {exc}"}
         entry.update({"n_signals": len(inputs["signals"]), "timeframe": inputs.get("timeframe"),
                       "cost_fraction": (round(inputs["cost"], 8) if inputs["cost"] is not None
                                         else None),

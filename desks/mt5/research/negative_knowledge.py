@@ -513,6 +513,16 @@ def build() -> dict[str, Any]:
     }
 
 
+def run(budget_s: float = 600.0) -> dict[str, Any]:
+    """The daily-cycle entry point (Tier-1 Q17). `build()` reads ledgers and fits a small model;
+    the budget is accepted for the cycle's uniform signature and the pass is bounded by the
+    ledgers themselves, not by a wall clock. The report is the artifact either way -- a build
+    that could not train writes its status rather than nothing."""
+    doc = build()
+    doc.setdefault("budget_s", float(budget_s))
+    return doc
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--apply", action="store_true", help="write the report and the model")

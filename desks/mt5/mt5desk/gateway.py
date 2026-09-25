@@ -986,6 +986,59 @@ def _record_intent(**row) -> str | None:
         with contextlib.suppress(Exception):
             row.setdefault("intent_id", _intent_id(row.get("symbol"), row.get("sleeve"),
                                                    row.get("side"), row["time"]))
+        # THE QUOTE AT DECISION, ON EVERY INTENT AND NOT ONLY THE BRACKET PATH.
+        # `libs/execution/fill_corpus.py` has named this handoff since it was written --
+        # "record decision_bid/decision_ask on every intent row, not only the bracket path" --
+        # and until now only `place_bracket` did. MEASURED 2026-09-23: of the thirty intents
+        # that join a real fill on this box, TWO carry a quote, so spread, slippage in points
+        # and every impact model read UNMEASURED on the other twenty-eight. Slippage without
+        # the market it was paid into averages over every situation at once and describes none.
+        # `setdefault`, so a caller that already read a tick keeps its own; a tick that cannot
+        # be read costs the fields and never the row, and never the order.
+        with contextlib.suppress(Exception):
+            if row.get("symbol") and row.get("decision_bid") is None:
+                _tk = mt5.symbol_info_tick(row["symbol"])
+                if _tk is not None:
+                    row.setdefault("decision_bid", float(_tk.bid))
+                    row.setdefault("decision_ask", float(_tk.ask))
+                    row.setdefault("spread_at_decision", float(_tk.ask) - float(_tk.bid))
+        # THE SEND-TO-ACK CLOCK, UNDER ITS OWN NAME, AND THE BOOK THE ORDER WENT TO.
+        # `latency_ms` is measured with `perf_counter` around `order_send` alone, so it IS the
+        # send-to-ack round trip -- but the fill corpus read it into
+        # `latency_decision_to_send_ms` and `latency_send_to_ack_ms` stayed empty on every row,
+        # which is the half of the shortfall model that prices WAITING. Both names are written
+        # now (the old one unchanged, so nothing that reads it moves) and the two wall clocks the
+        # round trip sits between are stamped, so send-to-fill is a fact and not a subtraction a
+        # reader has to guess at. `account` separates the live book from the prop book: until now
+        # an intent row named neither, and the two accounts' fills could only be told apart after
+        # the deal closed. RECORDING ONLY -- no branch below this changes an order.
+        with contextlib.suppress(Exception):
+            _lat = row.get("latency_ms")
+            if _lat is not None:
+                row.setdefault("latency_send_to_ack_ms", float(_lat))
+                row.setdefault("acked_at", row["time"])
+                with contextlib.suppress(Exception):
+                    _ack = datetime.fromisoformat(str(row["time"]).replace("Z", "+00:00"))
+                    row.setdefault(
+                        "sent_at",
+                        (_ack - timedelta(milliseconds=float(_lat))).isoformat())
+        with contextlib.suppress(Exception):
+            if row.get("account") is None:
+                _ai = mt5.account_info()
+                if _ai is not None:
+                    row.setdefault("account", int(getattr(_ai, "login", 0) or 0))
+                    row.setdefault("server", str(getattr(_ai, "server", "") or ""))
+                    from mt5desk.provenance import account_kind as _akind
+                    row.setdefault(
+                        "account_kind", _akind(getattr(_ai, "trade_mode", None)))
+        with contextlib.suppress(Exception):
+            if row.get("symbol") and row.get("point") is None:
+                _si = mt5.symbol_info(row["symbol"])
+                if _si is not None:
+                    row.setdefault("point", float(getattr(_si, "point", 0.0) or 0.0))
+                    row.setdefault("stops_level",
+                                   int(getattr(_si, "trade_stops_level", 0) or 0))
+                    row.setdefault("digits", int(getattr(_si, "digits", 0) or 0))
         INTENTS.parent.mkdir(parents=True, exist_ok=True)
         with INTENTS.open("a", encoding="utf-8") as f:
             f.write(json.dumps(row, default=str) + "\n")
@@ -1403,6 +1456,34 @@ def _original_stop_distance(st: dict, ticket: int, price_open: float, sl: float)
     return float(store[key])
 
 
+def _round_trip_per_price_unit(info: object, symbol: str) -> float | None:
+    """The round-trip commission expressed in PRICE units, or None if it cannot be derived.
+
+    THE UNIT TRAP THIS EXISTS TO AVOID. Commission is quoted in ACCOUNT currency per lot
+    (`fusion_cost.COMMISSION_PER_LOT_PER_SIDE = 2.00`, measured -- p10 = p50 = p90 over all 433
+    deals on 495044); a break-even stop is a PRICE. Converting between them by hand is where a
+    EUR-denominated account trading a USD-quoted instrument quietly books a small loss on every
+    scratch. `trade_tick_value / trade_tick_size` is the venue's own answer to "how much account
+    currency is one price unit worth, per lot", so the quote-currency conversion is the broker's
+    rather than ours, and the position's volume cancels out of both sides.
+
+    Returns None rather than a guess when the venue reports a degenerate tick value. A stop is
+    then left to the trail alone, which is the existing behaviour -- absence is never permission
+    to invent the number that decides where protection sits.
+    """
+    # Imported here rather than at module scope to match every other `libs` use in this file.
+    from libs.portfolio.fusion_cost import COMMISSION_PER_LOT_PER_SIDE
+
+    tick_value = float(getattr(info, "trade_tick_value", 0.0) or 0.0)
+    tick_size = float(getattr(info, "trade_tick_size", 0.0) or 0.0)
+    if not (tick_value > 0 and tick_size > 0):
+        log(f"MANAGE {symbol}: tick value/size degenerate "
+            f"({tick_value}/{tick_size}); break-even floor unavailable this pass")
+        return None
+    per_price_unit_per_lot = tick_value / tick_size
+    return (2.0 * COMMISSION_PER_LOT_PER_SIDE) / per_price_unit_per_lot
+
+
 def manage_open_positions(st: dict, sleeves: list[dict]) -> None:
     """Ratchet the stop on every open position. SHADOW UNLESS `st["armed"]`.
 
@@ -1438,14 +1519,21 @@ def manage_open_positions(st: dict, sleeves: list[dict]) -> None:
             # -4.25 EUR, on holds the certificate would have carried to their time exit. Only a
             # position whose own signal carried a trail (`trail_k` recorded at the send) is
             # managed here; the gold and scalp lanes are unchanged.
+            #
+            # THE SKIP BECAME A FLOOR-ONLY PASS (2026-09-24) RATHER THAN A `continue`, because a
+            # `continue` here also refused the break-even stop the principal ordered that day --
+            # and three of the thirteen LIVE sleeves are `family_market` XAUUSD session-range
+            # BREAKOUTS, exactly the sleeves named in the order. The 2026-09-16 finding is
+            # preserved in full: no TRAIL runs on a fixed-bracket certificate. What now runs is
+            # the floor alone, which cannot tighten inside the bracket and can only refuse to
+            # leave a stop under water after the trade has already run 0.85R.
+            _floor_only = False
             _fam_name = _fixed_tags.get(str(getattr(p, "comment", "") or ""))
             if _fam_name is not None:
                 _trail = float(((st.get("generic") or {}).get(_fam_name) or {})
                                .get("trail_k") or 0.0)
                 if not _trail > 0.0:
-                    log(f"MANAGE ticket {p.ticket} ({symbol}): certified exit is a fixed "
-                        f"bracket and the time exit; not ratcheted")
-                    continue
+                    _floor_only = True
             dist = _original_stop_distance(st, p.ticket, p.price_open, p.sl)
             if dist is None:
                 log(f"MANAGE ticket {p.ticket} ({symbol}): no stop on the position; "
@@ -1464,41 +1552,79 @@ def manage_open_positions(st: dict, sleeves: list[dict]) -> None:
 
             # ATR on a longer window than the holding period, because a young position has too
             # few bars of its own to characterise volatility with.
-            h1 = mt5.copy_rates_from_pos(symbol, mt5.TIMEFRAME_H1, 0, 400)
-            if h1 is None or len(h1) < ATR_N + 1:
-                log(f"MANAGE ticket {p.ticket} ({symbol}): ATR unavailable; skipped")
-                continue
-            atr = atr_last(pd.DataFrame(h1))
-            if not (atr > 0):
-                log(f"MANAGE ticket {p.ticket} ({symbol}): ATR non-positive; skipped")
-                continue
+            # THE FLOOR MUST NOT DEPEND ON A NUMBER IT NEVER READS. ATR scales the chandelier and
+            # nothing else; in floor-only mode no chandelier is computed, so requiring 21 hours
+            # of H1 history would refuse the break-even stop on exactly the young position that
+            # has just run 0.85R in a fast tape -- a protection withheld for an input the
+            # decision does not consume.
+            atr = 0.0
+            if not _floor_only:
+                h1 = mt5.copy_rates_from_pos(symbol, mt5.TIMEFRAME_H1, 0, 400)
+                if h1 is None or len(h1) < ATR_N + 1:
+                    log(f"MANAGE ticket {p.ticket} ({symbol}): ATR unavailable; skipped")
+                    continue
+                atr = atr_last(pd.DataFrame(h1))
+                if not (atr > 0):
+                    log(f"MANAGE ticket {p.ticket} ({symbol}): ATR non-positive; skipped")
+                    continue
 
             extreme, stall = _pm.extreme_and_stall(
                 highs=[float(x) for x in bars["high"]],
                 lows=[float(x) for x in bars["low"]], side=side)
+            # THE BREAK-EVEN FLOOR'S TWO INPUTS, BOTH READ FROM THE VENUE THIS PASS. `spread` is
+            # charged only on the short leg, because these are bid bars; `position_manager`
+            # owns that asymmetry and this only supplies the number.
+            cost_unit = _round_trip_per_price_unit(info, symbol)
+            spread_price = (float(getattr(info, "spread", 0) or 0)
+                            * float(getattr(info, "point", 0.0) or 0.0))
             decision = _pm.ratchet(
                 entry=float(p.price_open), current_stop=float(p.sl), stop_distance=dist,
-                extreme=extreme, atr=atr, side=side, bars_since_extreme=stall)
+                extreme=extreme, atr=atr, side=side, bars_since_extreme=stall,
+                cost_per_unit=cost_unit, spread=spread_price, floor_only=_floor_only)
 
             tag = f"MANAGE ticket {p.ticket} ({symbol})"
             if not decision.moves:
                 log(f"{tag}: {decision.reason}")
                 continue
-            if decision.improvement_r < MIN_RATCHET_IMPROVEMENT_R:
+            # THE IMPROVEMENT FLOOR IS FOR THE TRAIL, NOT FOR BREAK-EVEN. 0.05R exists so the
+            # chandelier does not spend a network round trip nudging a stop that is already
+            # roughly right. The break-even move is a different question -- it is the one move
+            # the principal asked for by name, and a position sitting 0.04R below break-even is
+            # exactly the position that turns a winner into a loser. Skipping it to save a
+            # modify would defeat the mechanism at the only moment it matters.
+            if (decision.improvement_r < MIN_RATCHET_IMPROVEMENT_R
+                    and not decision.breakeven_floor):
                 log(f"{tag}: improvement {decision.improvement_r:+.3f}R below the "
                     f"{MIN_RATCHET_IMPROVEMENT_R:.2f}R floor; not worth a modify")
                 continue
 
-            # THE VENUE'S OWN MINIMUM DISTANCE. A stop inside stops_level is rejected, and a
-            # rejection every pass is a management loop that looks busy and protects nothing.
+            # THE LEVEL MUST STILL BE A STOP WHEN IT ARRIVES, and the venue's own minimum
+            # distance is only half of that question. This block asked one thing -- is the
+            # proposed level inside `stops_level` of the market -- and only when the broker
+            # states a `stops_level` at all; on a symbol reporting zero it asked nothing. It
+            # never asked the other half: WHICH SIDE of the market the level is on. A trail
+            # computed off an extreme that price has since retraced past comes out BEHIND the
+            # market, which is not a tight stop but a market exit, and `ratchet` cannot see it
+            # because it compares the candidate to the current stop and never to the quote.
+            #
+            # HERE THAT COSTS NOTHING AND THAT IS WHY IT SURVIVED: MetaTrader answers 10016
+            # ("Invalid stops") and the account keeps the stop it had -- this log holds 92 such
+            # refusals against 15 accepted modifies. The desk's OTHER account has no such
+            # backstop: on 2026-09-24 TradeLocker accepted the identical mistake on E8 position
+            # 360287970193246861 and filled it at market, 24.13 points and 386.08 USD past the
+            # level the desk had just proven protected more. One predicate now answers both
+            # halves on both venues; `min_distance` folds the old stops_level test into it.
             stops_level = int(getattr(info, "trade_stops_level", 0) or 0)
             tick_size = float(getattr(info, "trade_tick_size", 0.0) or 0.0)
             tick_now = mt5.symbol_info_tick(symbol)
-            if stops_level and tick_size and tick_now is not None:
-                ref = tick_now.bid if side == 1 else tick_now.ask
-                if abs(ref - decision.new_stop) < stops_level * tick_size:
-                    log(f"{tag}: proposed stop {decision.new_stop:.5f} is inside the venue's "
-                        f"{stops_level}-point stops level; held")
+            if tick_now is not None:
+                rests, why_rest = _pm.stop_rests_at_venue(
+                    stop=float(decision.new_stop), side=side,
+                    bid=float(tick_now.bid), ask=float(tick_now.ask),
+                    min_distance=(stops_level * tick_size
+                                  if stops_level and tick_size else 0.0))
+                if not rests:
+                    log(f"{tag}: {why_rest}")
                     continue
 
             if not st["armed"]:
@@ -1515,10 +1641,15 @@ def manage_open_positions(st: dict, sleeves: list[dict]) -> None:
                 "magic": MAGIC,
             })
             rc = res.retcode if res else None
-            log(f"{tag}: MODIFY sl {p.sl:.5f} -> {decision.new_stop:.5f} "
+            # THE REASON TRAVELS WITH THE SEND, not only with the refusals. Until 2026-09-24 the
+            # armed path logged the level and the retcode but never `decision.reason`, so the
+            # log could not answer which mechanism moved the stop -- trail or break-even floor --
+            # which is the first question any audit of this change asks.
+            log(f"{tag}: MODIFY{' [BREAK-EVEN FLOOR]' if decision.breakeven_floor else ''} "
+                f"sl {p.sl:.5f} -> {decision.new_stop:.5f} "
                 f"(protected {decision.protected_r_before:+.3f}R -> "
                 f"{decision.protected_r_after:+.3f}R) retcode={rc} "
-                f"{diagnose(rc, res.comment if res else '')}")
+                f"{diagnose(rc, res.comment if res else '')} | {decision.reason}")
 
             # CONFIRM FROM THE BROKER, not from the return code. A retcode is an answer about
             # the request; the position is the answer about the account.
@@ -2821,6 +2952,13 @@ def run_family_sleeves(st: dict, sleeves: list[dict], equity: float) -> None:
                        intended=entry_ref, sl=float(g.stop), tp=float(g.target),
                        ticket=(getattr(res, "order", None) if res else None), retcode=rc,
                        policy_advice=policy_advice, latency_ms=_lat_ms,
+                       # A MARKET ORDER'S FILL IS KNOWN AT SEND TIME AND WAS THROWN AWAY. The
+                       # venue answers `order_send` with the price it filled at; recording it
+                       # here means slippage on this order is complete before it ever closes,
+                       # instead of waiting for a closing deal that may never come.
+                       fill_price=(float(getattr(res, "price", 0.0) or 0.0) if res else None),
+                       fill_volume=(float(getattr(res, "volume", 0.0) or 0.0) if res else None),
+                       deal_ticket=(getattr(res, "deal", None) if res else None),
                        **_sleeve_identity(s))
         log(f"[{name}] FAMILY-EXEC ORDER -> retcode={rc} "
             f"{diagnose(rc, getattr(res, 'comment', '') or '', _send_error(res))} "
@@ -3238,7 +3376,12 @@ def run_scalp_sleeves(st: dict, sleeves: list[dict], equity: float) -> None:
                        ticket=(getattr(res, "order", None) if res else None), retcode=rc,
                        policy_advice=policy_advice,
                        slice_depth=(len(plan["entries"]) if is_addon else 1),
-                       latency_ms=_lat_ms, **_sleeve_identity(s))
+                       latency_ms=_lat_ms,
+                       # As the family-market path: the venue's own fill, recorded at send.
+                       fill_price=(float(getattr(res, "price", 0.0) or 0.0) if res else None),
+                       fill_volume=(float(getattr(res, "volume", 0.0) or 0.0) if res else None),
+                       deal_ticket=(getattr(res, "deal", None) if res else None),
+                       **_sleeve_identity(s))
         log(f"[{name}] SCALP-EXEC {'ADD-ON' if is_addon else 'ORDER'} -> retcode={rc} "
             f"{diagnose(rc, getattr(res, 'comment', '') or '', _send_error(res))} | {desc}")
         if rc not in (10008, 10009):

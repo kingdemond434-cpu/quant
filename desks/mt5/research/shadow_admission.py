@@ -361,99 +361,15 @@ def partition_work(
         (admitted if spec in authority else blocked).append(spec)
     return admitted, blocked
 
-def power_cure_specs(base: Path = BASE) -> set[tuple[str, str, str | None, str, bool]]:
-    """Specs that failed ONLY power gates -- admissible once forward evidence cures them.
+#: `power_cure_specs` STOOD HERE AND IS DELETED (principal 2026-09-24, "delete the other").
+#: It was the five-tuple twin of the power-cure lane removed from `authorized_runs`, admitting
+#: validity-pass / power-DEFICIENT cells as though they were certified. It had NO CALLERS on any
+#: tree -- which is the condition this module's own `run_key` docstring names as the dangerous
+#: one: "an orphaned function is not harmless; it is a wrong answer waiting for its first
+#: caller". Its answer was wrong: 0 of 1,240 eligible cure cells pass all ten gates and every
+#: one of them fails `deflated_sharpe`. One canonical lane, and the other stops existing.
 
-    THE POLICY HAD NO INSTRUMENT (L1.46). gate_spec.yaml states `power_cure_via_forward: true`
-    and classifies five gates as POWER (in_sample_screen, deflated_sharpe, cpcv, walk_forward,
-    expected_value) versus five as VALIDITY (economic_prior, pbo, reality_check_spa,
-    stress_costs, lockbox), with VALIDITY a hard fail. That is the whole reason 36 sleeves sit
-    on forward clocks: they cleared every validity gate and missed on deflated Sharpe, which
-    forward evidence is explicitly allowed to settle.
 
-    But `authorized_specs` only ever admitted EXACT ten-gate certificates -- so a sleeve could
-    complete the cure the policy promised and still be refused at the door, forever. The cure
-    was unreachable, which makes it a wish rather than a rule. This function is the missing
-    instrument: it returns the power-cure-eligible specs, and the PROMOTER (not this file)
-    applies the forward thresholds before anything is promoted.
-    """
-    from gate_policy import is_exact_policy
-    reports = base / "reports"
-    out: set[tuple[str, str, str | None, str, bool]] = set()
-    # CLASSIFICATIONS FROM THE SPEC, WITH FALLBACKS. The desk box runs a different branch whose
-    # gate_policy predates get_validity_gates/get_power_gates, so importing them unconditionally
-    # turned a policy improvement into an ImportError that killed the entire promoter run. A
-    # capability that works only on one box's revision is not deployed. Read the spec when the
-    # helpers are missing, the canonical literal when even the spec cannot be read, and FAIL
-    # SOFT: a promoter that cannot classify skips the cure path, never aborts promotion.
-    try:
-        from gate_policy import get_power_gates, get_validity_gates
-        validity, power = get_validity_gates(), get_power_gates()
-    except ImportError:
-        try:
-            import yaml
-            spec = yaml.safe_load((base / "policy" / "gate_spec.yaml").read_text("utf-8"))
-            cls = spec.get("gate_classifications", {})
-            validity = frozenset(cls.get("validity", ()))
-            power = frozenset(cls.get("power", ()))
-        except Exception:
-            validity = frozenset({"economic_prior", "pbo", "reality_check_spa",
-                                  "stress_costs", "lockbox"})
-            power = frozenset({"in_sample_screen", "deflated_sharpe", "cpcv",
-                               "walk_forward", "expected_value"})
-    if not validity or not power:
-        return out
-    qq = _read(reports / "QQUANT_GATES.json")
-    if not is_exact_policy(qq.get("gate_policy")):
-        return out
-    for r in qq.get("verdicts", []):
-        stages = r.get("stages") if isinstance(r, dict) else None
-        if not isinstance(stages, dict):
-            continue
-        # VALIDITY IS ABSOLUTE: one validity miss and the cell is DEAD, never cured.
-        if not all(isinstance(stages.get(g), dict) and stages[g].get("passed") is True
-                   for g in validity):
-            continue
-        # and it must actually be a POWER failure -- a full pass belongs to authorized_specs.
-        failed_power = [g for g in power
-                        if not (isinstance(stages.get(g), dict)
-                                and stages[g].get("passed") is True)]
-        if not failed_power:
-            continue
-        parts = str(r.get("id") or "").split()
-        if len(parts) != 5:
-            continue
-        symbol, family, _side, selector, condition = parts
-        # No whitelist here either -- the cure lane must be open to every mechanism that clears
-        # the validity gates, which is the entire point of curing by forward evidence.
-        state = None if condition.upper() in {"NONE", "ALL", "UNCONDITIONED"} else condition
-        out.add((symbol, selector, state, _exec_family(family), False))
-
-    # THE EXTERNAL LANE, which had no route at all. The qquant report above is one producer; the
-    # gauntlet publishes its own validity-pass, power-deficient cells to POWER_CURE_CANDIDATES
-    # with an EXACT executable shadow_spec (never a guessed selector). Certificates stay in
-    # UNIVERSAL_SURVIVORS; these rows carry no promotion authority, and the promoter still
-    # applies the forward cure thresholds before anything is promoted.
-    # Measured 2026-08-29 -- 615 candidates across EIGHT families (cross_asset_residual 140,
-    # session_range_breakout 96, overnight_gap_decay 79, relative_value 73, carry 72, ...), 598
-    # of them failing deflated_sharpe alone. Without this block admission saw 68, all of one
-    # family, which is what a cure lane looks like when only one producer can reach it.
-    cure = _read(reports / "POWER_CURE_CANDIDATES.json")
-    if is_exact_policy(cure.get("gate_policy")):
-        for row in (cure.get("candidates") or {}).values():
-            if not isinstance(row, dict) or row.get("validity_pass") is not True:
-                continue
-            if not row.get("failed_power_gates"):
-                continue
-            spec = row.get("shadow_spec")
-            if not isinstance(spec, dict):
-                continue
-            if not {"symbol", "selector", "family", "is_universe"} <= set(spec):
-                continue
-            out.add((str(spec["symbol"]), str(spec["selector"]),
-                     spec.get("condition") or None, _exec_family(spec["family"]),
-                     spec["is_universe"] is True))
-    return out
 
 
 #: Certificates that passed all ten gates and were still dropped before enrolment, with the
@@ -529,32 +445,57 @@ def _canon(base: Path) -> tuple[dict, str]:
     return first, CANON_SOURCES[0][0]
 
 
-#: How many power-cure clocks may be live at once. A cure lane is a SEARCH: forward-testing
-#: every eligible cell and keeping the winners is precisely what the deflated Sharpe charges for,
-#: so an unbounded cure would move the multiple-testing defect rather than fix it. 120 roughly
-#: doubles the engine's current 129 clocks, which is a load it can carry and a number a reader
-#: can hold in mind; the rows are ranked so the cap always spends on the strongest candidates.
-CURE_BUDGET = 120
-
-#: What the last `authorized_runs` decided about the cure lane, exposed because the count IS the
-#: forward trial count and a cure nobody can audit is a cure nobody should trust.
-_CURE_CENSUS: dict[str, object] = {}
-
-
-def cure_census() -> dict[str, object]:
-    """The cure lane's last decision: eligible, enrolled, budget, and the trials it owes."""
-    return dict(_CURE_CENSUS)
+#: THE POWER-CURE LANE IS DELETED. It used to live here as `CURE_BUDGET = 120`, and this comment
+#: is its headstone rather than its documentation -- kept only so the next session recognises the
+#: shape and does not reinvent it for a third time.
+#:
+#: THE PRINCIPAL'S ORDER, 2026-09-23 and restated 2026-09-24: "allow evidence only if they pass
+#: the 10 gates and are certificates, otherwise there is no point. No power-cure lane, no
+#: validity-pass enrolment, no lane self-declaring its way onto a clock" -- then, on the split
+#: this lane created: "all certis clocks must be one canonised lane not seperate ... if the 148
+#: really are certificates then make them canon, stop, delete the other, and unify the whole
+#: pipeline."
+#:
+#: SO THE QUESTION WAS SETTLED BY MEASUREMENT, NOT BY PREFERENCE (2026-09-24, trading box):
+#:     canon survivors                      28, of which all_ten_pass  28/28
+#:     cure candidates eligible          1,240, of which all_ten_pass   0/1,240
+#:     failed_power_gates over those 1,240: deflated_sharpe 1,240, cpcv 54,
+#:                                          expected_value 41, in_sample_screen 41,
+#:                                          walk_forward 14
+#: EVERY eligible cure row fails `deflated_sharpe` -- the multiple-testing charge, which is the
+#: one gate whose entire purpose is to stop a wide search from minting false positives. A lane
+#: that enrolled 120 of them and called them certificates was not curing the charge; it was
+#: running the exact search the charge exists to price, and then reporting the result under the
+#: word "certificate". `forward_enrolment` published `n_certificates: 148` on that basis, and 120
+#: of those 148 had passed no ten-gate attestation at any point in their lives.
+#:
+#: WHAT REPLACES IT: nothing. A power-deficient cell is re-judged by the gauntlet when its cell
+#: comes up; `reports/POWER_CURE_CANDIDATES.json` is still written by the sealed writer and is
+#: still honest EVIDENCE about which cells are close, but it confers no clock and no authority.
+#: The relief valve for a cell that cannot pass on its history is MORE HISTORY or a better
+#: hypothesis, never a forward clock issued on the strength of having nearly passed.
+#:
+#: AND THIS IS NOT A RESTRAINT (Rule 1, growth governance). Forward clocks deploy no capital, so
+#: deleting 120 of them lowers no risk and forgoes no bet. It RAISES the desk's throughput: the
+#: 120 were in the same multiplicity cohort as the 28 real certificates, so every one of them was
+#: making the bar harder for a certificate that had actually earned its place.
 
 
 def authorized_runs(base: Path = BASE,
-                    lanes: tuple[str, ...] = ("h1", "scalp", "cure")) -> list[dict]:
+                    lanes: tuple[str, ...] = ("h1", "scalp")) -> list[dict]:
     """Exactly-specified RUNNABLE certificates: symbol, selector, family AND certified params.
+
+    EVERY ROW THIS RETURNS HOLDS A TEN-GATE CERTIFICATE IN THE CANONICAL STORE. That is now the
+    whole contract, and it is what makes `len(authorized_runs())` a certificate count rather than
+    a roster size -- the two were the same word and different numbers (148 against 28) until the
+    power-cure lane was deleted above, and a caller may once again read this length as "how many
+    certificates does the desk hold".
 
     `lanes` names which engines' rows to return. H1 rows are what `shadow_forward` enrols; scalp
     rows (`scalp.*` keys, `exec == "scalp_market"`) carry the recipe `mt5desk.scalp_exec` trades
-    and belong to `scalp_shadow`'s clock. Both are returned by default so a reader that counts
-    certificates counts all of them; an H1-only consumer passes `lanes=("h1",)`, or skips rows
-    whose `exec` names an executor it is not.
+    and belong to `scalp_shadow`'s clock. Both come from the SAME canonical store and both are
+    certificates; an H1-only consumer passes `lanes=("h1",)`, or skips rows whose `exec` names an
+    executor it is not.
 
     WHY THIS EXISTS ALONGSIDE `authorized_specs`. That function answers "is this cell allowed?"
     and its five-tuple deliberately has no params -- every existing consumer depends on that
@@ -659,86 +600,13 @@ def authorized_runs(base: Path = BASE,
             "side": (str(spec["side"]).upper() if spec.get("side") else None),
             "side_basis": "declared" if spec.get("side") else "undeclared",
         })
-    # ---- THE POWER-CURE LANE, WHICH WAS PERMITTED EVERYWHERE AND ENROLLED NOWHERE -------------
-    #
-    # THE BOTTLENECK, MEASURED 2026-09-13. The gate spec classifies five gates as POWER and says
-    # in its own header "POWER failures = SHADOW (forward evidence can cure)"; `deflated_sharpe`
-    # carries `cure_by_forward: true`. `external_gauntlet` duly publishes every validity-pass,
-    # power-deficient cell to POWER_CURE_CANDIDATES.json -- 2,150 of them, refreshed hourly, all
-    # 2,150 failing deflated_sharpe and most failing nothing else. `authorized_specs` admits them.
-    # `pipeline/promote.py` implements the cure end to end and promotes on
-    # VALIDITY_PASS_FORWARD_CURE.
-    #
-    # And `authorized_runs` -- the ONLY function that produces a clock -- read `universal
-    # ["survivors"]` and nothing else. So 2,150 cells were permitted by one door, cured by
-    # another, and never walked through the one in between. The funnel ran 21,667 discovered ->
-    # 61 certified, and the designed relief valve was a file nothing opened.
-    #
-    # THEY ARE NOT CERTIFICATES AND CARRY NO AUTHORITY. `promotion_authority` is False, the
-    # admission basis says exactly what they are, and the promoter still applies the forward cure
-    # thresholds (n >= 50, exp_r > 0.05R, maxDD > -25R, days >= 14) before anything is promoted.
-    # A cure row that never meets them simply accrues evidence forever, which is the correct
-    # outcome for a cell that could not pass on its history.
-    #
-    # BOUNDED, BECAUSE A CURE LANE IS ITSELF A MULTIPLE-TESTING PROBLEM. Forward-testing 2,150
-    # cells and keeping the winners is exactly the search the deflated Sharpe exists to charge
-    # for -- enrolling all of them would move the defect rather than fix it, and would swamp an
-    # engine currently carrying 129 clocks. `CURE_BUDGET` caps how many are live at once and the
-    # rows are ranked by the evidence they DID earn, so the strongest validity-passing cells get
-    # the clocks first and the count is reported for the charge to be made against.
-    if "cure" in lanes:
-        cure_doc = _read(base / "reports" / "POWER_CURE_CANDIDATES.json")
-        if is_exact_policy(cure_doc.get("gate_policy")):
-            rows_in = [r for r in (cure_doc.get("candidates") or {}).values()
-                       if isinstance(r, dict) and r.get("validity_pass") is True
-                       and r.get("failed_power_gates")
-                       and isinstance(r.get("shadow_spec"), dict)]
-
-            def _cure_rank(r: dict) -> tuple:
-                g = r.get("gates") or {}
-                # FEWEST POWER GATES FAILED FIRST: a cell whose only obstacle is the multiplicity
-                # charge has cleared every other test this desk applies. Then the walk-forward
-                # OOS Sharpe it actually earned, then its expected value -- all measured numbers
-                # from gates it PASSED, never the in-sample Sharpe that the charge is correcting.
-                wf = (g.get("walk_forward") or {}).get("oos_sharpe")
-                ev = (g.get("expected_value") or {}).get("ev")
-                return (len(r.get("failed_power_gates") or []),
-                        -(float(wf) if isinstance(wf, (int, float)) else -9.0),
-                        -(float(ev) if isinstance(ev, (int, float)) else -9.0))
-
-            ranked = sorted(rows_in, key=_cure_rank)
-            for row in ranked[:CURE_BUDGET]:
-                spec = row["shadow_spec"]
-                params = spec.get("params")
-                if not isinstance(params, dict):
-                    continue
-                if not {"symbol", "selector", "family"} <= set(spec):
-                    continue
-                runs.append({
-                    "certificate": str(row.get("cell") or ""),
-                    "symbol": str(spec["symbol"]), "selector": str(spec["selector"]),
-                    "family": str(spec.get("family") or "session_range_breakout"),
-                    "condition": spec.get("condition") or None,
-                    "params": dict(params),
-                    "side": (str(spec["side"]).upper() if spec.get("side") else None),
-                    "side_basis": "declared" if spec.get("side") else "undeclared",
-                    # WHAT THIS ROW IS, said where the engine reads it. `promote.py` branches on
-                    # exactly this string and cures only rows carrying it.
-                    "gate_admission": "VALIDITY_PASS_POWER_DEFICIENT",
-                    "power_deficiencies": list(row.get("failed_power_gates") or []),
-                    "promotion_authority": False,
-                    "lane": "cure",
-                })
-            _CURE_CENSUS.clear()
-            _CURE_CENSUS.update({
-                "eligible": len(rows_in), "enrolled": min(len(ranked), CURE_BUDGET),
-                "budget": CURE_BUDGET,
-                "forward_trials_outstanding": min(len(ranked), CURE_BUDGET),
-                "why": ("validity-pass, power-deficient cells gathering forward evidence. The "
-                        "cure lane is itself a search, so the enrolled count is the trial count "
-                        "the cure owes and is reported for the charge to be made against"),
-            })
-
+    # THE POWER-CURE LANE STOOD HERE AND IS DELETED (principal 2026-09-24: "delete the other,
+    # and unify the whole pipeline"). It read `reports/POWER_CURE_CANDIDATES.json` and appended
+    # up to CURE_BUDGET=120 validity-pass, power-DEFICIENT cells to this list carrying
+    # `promotion_authority: False`. They were not certificates -- 0 of 1,240 passed all ten
+    # gates, all 1,240 failed `deflated_sharpe` -- but every organ downstream counted the length
+    # of this list and called the answer "certificates". The headstone above `authorized_runs`
+    # carries the measurement. One lane, one number: this function returns certificates only.
     if "scalp" in lanes:
         for candidate, row in scalp_certificates(universal).items():
             spec = row["shadow_spec"]

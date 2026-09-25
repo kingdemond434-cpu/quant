@@ -325,11 +325,21 @@ def test_every_seed_without_an_adapter_says_so_by_name(tmp_path: Path) -> None:
     doc = ROSTER.build(state_path=tmp_path / "s.json", report_path=tmp_path / "r.json",
                        ledger_path=tmp_path / "l.json", fed_state_path=tmp_path / "f.json")
     orphans = [r for r in doc["systems"] if r.get("needs_adapter")]
-    assert orphans, "the roster holds seeds with no adapter; they must be counted"
     assert doc["counts"]["needs_adapter"] == len(orphans)
     for row in orphans:
         assert "NO ADAPTER" in row["planned_why"]
         assert row["system_id"] not in A.SPECS
+    #: THE BACKLOG WAS CLEARED ON 2026-09-23 (65 seeds, from 65 to 0). The invariant that
+    #: survives it is the two-sided one: a seed with no adapter says so by name, and a seed the
+    #: roster calls adapted must have BOTH a spec and an importable module -- otherwise "0
+    #: orphans" would be a counting trick rather than a measurement.
+    adapted = [r for r in doc["systems"]
+               if r.get("kind") == "adapter" and not r.get("needs_adapter")]
+    for row in adapted:
+        sid = row["system_id"]
+        assert sid in A.SPECS, f"{sid} is counted as adapted with no spec"
+        assert (Path(A.__file__).parent / f"{sid}.py").exists(), \
+            f"{sid} is counted as adapted with no libs/research/adapters/{sid}.py"
 
 
 def test_scout_slots_come_from_the_leg_cadence_not_the_pass_budget() -> None:

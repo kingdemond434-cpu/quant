@@ -37,6 +37,7 @@ corpus at once, to fix an ambiguity that a new field fixes at zero blast radius.
 """
 from __future__ import annotations
 
+from collections.abc import Iterable
 from pathlib import Path
 from typing import Any
 
@@ -99,6 +100,86 @@ CONFIGURED_PERIOD_S: dict[tuple[str, str], float] = {
     ("spot", "d"): 5.0,                # run_recorder_spot.py  _DEPTH_EVERY_S
     ("bybit", "depth"): 4.0,           # run_recorder_bybit.py _DEPTH_EVERY_S
 }
+
+
+# =============================================================================================
+# THE MT5 TICK TAPE -- the same law, on the corpus this desk actually records today.
+#
+# WHY THIS SECTION EXISTS. Everything above describes the crypto venue tape under `data/moat/`,
+# which the MT5 universe mandate (2026-08-18) retired: the recorders were stopped permanently,
+# `data/RECORDERS_OFF` has been set since 2026-08-25, and `data/moat/` now holds the world
+# crawler's intel corpus (raw_intel / normalized_intel / sources) and not one tape row. L1.46 did
+# not retire with them. The desk records a tape every minute -- the Fusion tick tape at
+# `desks/mt5/data/tape/ticks/<SYMBOL>/<DAY>.parquet`, 249 symbol directories and ~11.7k day
+# files measured 2026-09-23 -- and that corpus has exactly the property the law is about.
+#
+# THE ONE STRUCTURAL DIFFERENCE, and it changes where the marker lives rather than what is
+# checked. The venue tape is JSONL: one row, one `t` field, so the row has to declare its own
+# clock in a `c` marker. The MT5 tape is COLUMNAR: a file carries `time_msc` (the BROKER's own
+# stamp on the tick) and `recv_utc`/`recv_mono` (the instant OUR box received the pull) as
+# SEPARATE, NAMED COLUMNS. The column name IS the marker, and it is a better one -- it cannot be
+# dropped from a row without changing the schema. So the question "which clock stamped this" is
+# answered by the file's column set, and `mt5_writer_of` is the same knowledge table as
+# `_HISTORICAL`, keyed on columns instead of on (venue, kind).
+#
+# Delta = recv_utc - time_msc is the same unbuyable series and is measurable wherever both
+# columns ride the same file. MEASURED 2026-09-23 on XAUUSD/20260923.parquet: p50 30,164 ms,
+# p95 57,887 ms, 0.37% negative (the box's clock ahead of the broker's, KEPT and counted, never
+# filtered -- dropping them would turn a clock offset into a flattering one-sided delay).
+# =============================================================================================
+
+#: The MT5 tick tape, relative to the repo root.
+MT5_TICKS_REL = "desks/mt5/data/tape/ticks"
+
+#: The BROKER's own stamp on an MT5 tick (MetaTrader5 `copy_ticks_range`, milliseconds).
+MT5_VENUE_COL = "time_msc"
+#: OUR receipt wall clock, stamped once per `copy_ticks_range` call onto every row it returned
+#: (tick_recorder / moat_recorder.py:170). A per-fetch receipt is honest; see the wiring test.
+MT5_RECV_COL = "recv_utc"
+
+#: Columns that carry a TIME on the MT5 tape. A file's intersection with this set is its writer
+#: signature -- the columnar analogue of (venue, kind).
+MT5_TIME_COLUMNS: frozenset[str] = frozenset({
+    "time", "time_msc", "ts", "recv_utc", "recv_mono"})
+
+#: WHICH WRITER PRODUCED A FILE WITH THIS TIME-COLUMN SET, and which clocks it therefore declares.
+#: Read off the writers' own source, exactly like `_HISTORICAL` above; nothing here is inferred,
+#: and a shape this table has never been taught reads UNKNOWN rather than defaulting to the
+#: common case (see `mt5_writer_of`). The desk has THREE tape writers and only one of them keeps
+#: both clocks -- measured 2026-09-23 across all 249 symbol directories.
+_MT5_WRITERS: dict[frozenset[str], tuple[str, tuple[str, ...]]] = {
+    # desks/mt5/recorders/tick_recorder.py + desks/mt5/moat/moat_recorder.py:168-171 -- the live
+    # recorder. `time_msc` is the broker's stamp, `recv_utc`/`recv_mono` ours. Delta measurable.
+    frozenset({"time", "time_msc", "recv_utc", "recv_mono"}):
+        ("tick_recorder", (CLOCK_VENUE, CLOCK_RECV)),
+    # desks/mt5/mt5desk/tape.py:merge_day -- the day-file merger. It keeps `time_msc` and DERIVES
+    # `ts` from it after the merge, and carries no receipt column: every row it writes has lost
+    # the instant we saw it, permanently and unbackfillably.
+    frozenset({"time", "time_msc", "ts"}): ("mt5desk_tape", (CLOCK_VENUE,)),
+    # The derived per-tick feature files (`ts`, mid, spread_pts, microprice, ofi_proxy). `ts` is
+    # a broker instant by construction, but the file keeps NEITHER a named venue column NOR a
+    # receipt, so Delta is unrecoverable for every row in it.
+    frozenset({"ts"}): ("mt5desk_features", (CLOCK_VENUE,)),
+}
+
+#: CONFIGURED cycle of the writer that stamps a receipt, seconds, read off its own source. Held
+#: here for the same reason as `CONFIGURED_PERIOD_S`: a constant a consumer reads instead of
+#: measuring is inherited as truth, and the futures depth stream was 64% wrong about its own.
+MT5_CONFIGURED_CYCLE_S: dict[str, float] = {
+    "tick_recorder": 60.0,     # desks/mt5/recorders/tick_recorder.py:114 DEFAULT_CYCLE_S
+}
+
+
+def mt5_writer_of(columns: Iterable[str]) -> tuple[str, tuple[str, ...]]:
+    """Which MT5 tape writer produced a file with these columns, and which clocks it declares.
+
+    Returns ("unknown", (CLOCK_UNKNOWN,)) for a shape this module has never been taught -- the
+    same refusal as `clock_of`, and for the same reason: a new writer must read UNKNOWN so the
+    fence reports it, rather than being silently attributed to the common case on exactly the
+    file that is new.
+    """
+    sig = frozenset(columns) & MT5_TIME_COLUMNS
+    return _MT5_WRITERS.get(sig, ("unknown", (CLOCK_UNKNOWN,)))
 
 
 def venue_of_path(path: Path | str) -> str:

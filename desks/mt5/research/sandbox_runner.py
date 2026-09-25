@@ -559,6 +559,68 @@ def ingest(pkt: ExternalResearchPacket, plan: Plan, *, compute_s: float, conn: A
     return out
 
 
+#: Research-method and dataset yields that ARE production even with zero candidates: a system
+#: whose declared job is a representation has done its job when it donates one. Used only to
+#: name the REASON for a zero, never to excuse one.
+NON_CANDIDATE_YIELDS = ("representations", "mechanisms", "datasets", "research_methods")
+
+
+def production_rows(plans: list[Plan], tried: list[dict[str, Any]],
+                    state_rows: dict[str, Any], *, window_h: float) -> list[dict[str, Any]]:
+    """ONE ROW PER PLANNED SYSTEM, every pass: did it run, did it produce, how many candidates
+    and how many UNIQUE cells after dedup -- and for every zero, the reason by name.
+
+    The principal's order (2026-09-23) is that all of them produce, not nine of them, and a
+    claim of "all producing" is worth nothing unless the zeros are counted and named every hour.
+    A system is PRODUCING when it put a candidate in the registry queue this pass or has cells
+    on its lifetime row; anything else is a zero WITH A REASON, and `n_zero` is the number this
+    desk is trying to ratchet down.
+    """
+    by_id = {str(r.get("system_id")): r for r in tried}
+    out: list[dict[str, Any]] = []
+    for plan in plans:
+        sid = plan.system_id
+        row = by_id.get(sid) or {}
+        st = state_rows.get(sid) or {}
+        ing = row.get("ingested") or {}
+        counts = row.get("counts") or {}
+        cands = int(ing.get("candidates") or 0)
+        cells = sorted(set(st.get("cells") or []))
+        ran = bool(row.get("seconds")) and plan.status == "RUNNABLE"
+        produced = bool(cands or cells)
+        if produced:
+            reason = ""
+        elif plan.status != "RUNNABLE":
+            reason = f"NOT RUNNABLE ({plan.status}): {plan.why}"[:300]
+        elif not ran:
+            reason = (f"RUNNABLE but not reached this pass: the rotation window is {window_h:.0f}h "
+                      f"and this system is queued behind higher-ROI and more overdue systems")
+        elif str(row.get("run_status")) == "UNMEASURED":
+            why = str(row.get("why_unmeasured") or "empty packet")
+            reason = f"RAN AND MEASURED NOTHING: {why}"[:300]
+        elif str(row.get("run_status")) == "TEXT_ONLY":
+            reason = "RAN AND DONATED TEXT ONLY: it carries a REBUILT task on this same pass"
+        elif any(int(counts.get(k) or 0) for k in NON_CANDIDATE_YIELDS):
+            got = ", ".join(f"{k} {counts[k]}" for k in NON_CANDIDATE_YIELDS if counts.get(k))
+            reason = (f"NO CANDIDATE, but it donated {got}: this adapter's declared yield is "
+                      f"{list(plan_yields(sid)) or 'unstated'} -- to reach the gauntlet it needs "
+                      f"a candidate exit, which is a REBUILT/binding task, not an absence")
+        else:
+            reason = "RAN AND THE PACKET WAS EMPTY: no candidate, representation or dataset"
+        out.append({"system_id": sid, "kind": plan.kind, "status": plan.status,
+                    "runnable": plan.status == "RUNNABLE", "ran": ran, "produced": produced,
+                    "candidates_this_pass": cands,
+                    "candidates_lifetime": int(st.get("candidates") or 0),
+                    "unique_cells": len(cells), "seconds": float(row.get("seconds") or 0.0),
+                    "zero_reason": reason})
+    return out
+
+
+def plan_yields(sid: str) -> tuple[str, ...]:
+    spec = A.SPECS.get(sid)
+    return tuple(spec.yields) if spec else ()
+
+
 def charge_trials(trials: list[Any], *, apply: bool) -> dict[str, Any]:
     if not trials:
         return {"n_raw": 0, "n_effective": 0.0}
@@ -743,6 +805,22 @@ def run_pass(*, budget_s: float = 900.0, dry_run: bool = False, allow_fetch: boo
             tried.append({**plan.record(), "run_status": plan.status, "seconds": 0.0,
                           "counts": {}, "ingested": {}, "budget_share_s": 0})
     census = charge_trials(all_trials, apply=not dry_run)
+    #: THE PRODUCTION CENSUS (principal 2026-09-23: "make them all produce, not just nine").
+    #: Published every pass so the number of systems at zero is a measurement with a named
+    #: reason per row, and can be ratcheted down instead of asserted away.
+    production = production_rows(plans, tried, state["systems"],
+                                 window_h=float(rotation.get("window_s")
+                                                or ROT.ROTATION_WINDOW_S) / 3600.0)
+    production_counts = {
+        "planned": len(production),
+        "runnable": sum(1 for r in production if r["runnable"]),
+        "ran": sum(1 for r in production if r["ran"]),
+        "producing": sum(1 for r in production if r["produced"]),
+        "zero": sum(1 for r in production if not r["produced"]),
+        "candidates_this_pass": sum(int(r["candidates_this_pass"]) for r in production),
+        "unique_cells": len({c for s in state["systems"].values()
+                             if isinstance(s, dict) for c in (s.get("cells") or [])}),
+    }
     unmeasured_list = [{"system_id": r["system_id"], "why": r.get("why_unmeasured") or r["why"],
                         "task": r.get("task")} for r in tried
                        if r["run_status"] in ("UNMEASURED", "REFUSED", "REBUILT_ROUTE",
@@ -755,6 +833,8 @@ def run_pass(*, budget_s: float = 900.0, dry_run: bool = False, allow_fetch: boo
                    "digest": bundle.digest(), "n_bars_cap": bars_cap(free_mb),
                    "free_phys_mb": free_mb, "provenance": dict(bundle.provenance)},
         "allocation_s": alloc, "proposer_seat": seat_hint,
+        "production": production, "production_counts": production_counts,
+        "zeros": [r for r in production if not r["produced"]],
         "rotation": rotation,
         "systems_tried": tried, "packets": packets,
         "candidates": totals, "effective_trials": census,

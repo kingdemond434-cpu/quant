@@ -62,7 +62,34 @@ WRITE_METHODS: frozenset[str] = frozenset({
 #: `f(..., path, ...)` forms where a path argument is the destination.
 WRITE_FUNCS: frozenset[str] = frozenset({
     "savefig", "copyfile", "copy2", "save", "savez", "imwrite", "connect",
+    # THE DESK'S OWN ATOMIC WRITERS (2026-09-23). The house style is `OUT = DESK / "reports" /
+    # "X.json"` at the top of a module and `_atomic(OUT, doc)` at the bottom, and every one of
+    # those modules was reported as a READER of a file nothing writes -- fill_recorder.py on
+    # reports/FILL_RECORDER.json, prediction_markets.py on reports/PREDICTION_MARKETS.json,
+    # source_health.py on data/source_health.jsonl. The binding is resolved and the destination
+    # is a plain argument; only the verb was missing from this list. Names are deliberately
+    # unambiguous writers: a wrong name here HIDES a real phantom, which is the one failure this
+    # module may not have.
+    "_atomic", "_atomic_write", "atomic_write", "_write_json", "write_json", "write_report",
+    "_write_report", "dump_json", "_dump_json", "stamp_sidecar", "_save_json", "save_report",
 })
+
+#: BLIND SPOT 5, AND IT IS THE ONE THE LIST ABOVE CANNOT CLOSE (measured 2026-09-24). A hand-typed
+#: roster of writer names is right on the day it is written and silently wrong afterwards, which is
+#: the exact failure mode this module exists to catch in other people's code. `WRITE_FUNCS` names
+#: `_atomic` and `_atomic_write`; the house also spells the same helper `_atomic_json` and
+#: `_write_atomic`, and NEITHER is in the list. So `market_constitution.py` -- which writes
+#: `reports/MARKET_CONSTITUTION.json` and `data/market_constraints.json` through `_atomic_json` --
+#: resolved to ZERO writes and was reported as a reader of two files nothing writes, and
+#: `macro_intelligence.py`, `synthetic_regimes.py` and `transmission_engine.py` with it. Four of
+#: the eighteen orphan read paths on this tree were this one rotted list.
+#:
+#: The repair is to stop typing the names. A module-local function that WRITES THROUGH ONE OF ITS
+#: PARAMETERS is a write wrapper by construction, whatever it is called, and `_write_wrappers()`
+#: finds it in the syntax tree. These are the move/copy verbs whose DESTINATION is an argument
+#: rather than the receiver -- `os.replace(tmp, path)` is how every atomic writer on this desk
+#: lands its file, and the receiver there is `os`.
+MOVE_FUNCS: frozenset[str] = frozenset({"replace", "rename", "move", "copyfile", "copy2"})
 
 
 @dataclass
@@ -112,6 +139,9 @@ class _Module:
         self.names: dict[str, str] = {}          # module/function-local name -> path
         self.attrs: dict[str, str] = {}          # "self.x" -> path
         self.funcs: dict[str, ast.FunctionDef] = {}
+        #: function name -> the positional parameter INDICES its body writes through. Derived,
+        #: never typed -- see MOVE_FUNCS.
+        self.write_params: dict[str, set[int]] = {}
         self.reads: set[str] = set()
         self.writes: set[str] = set()
         self.label_only: set[str] = set()
@@ -196,8 +226,67 @@ class _Module:
                         got = self._resolve(kwdflt) if kwdflt is not None else None
                         if got is not None and is_store(got):
                             self.names[kwarg.arg] = got
+        self._write_wrappers()
         self._propagate_into_callees()
         self._collect()
+
+    def _write_wrappers(self) -> None:
+        """BLIND SPOT 5: which local functions write through which of their own parameters.
+
+        STRUCTURAL, NOT A NAME LIST. A function whose body calls a WRITE_METHOD on a parameter,
+        opens one for writing, or hands one to a move/copy verb as a destination, writes that
+        parameter -- `_atomic_json`, `_write_atomic`, `_atomic` and whatever the next module calls
+        its own helper. The INDEX is recorded rather than "the first argument", so a helper shaped
+        `_dump(doc, path)` is read correctly too.
+
+        IT CANNOT INVENT A WRITER, which is the one error this module may not make. The evidence
+        is a write on the parameter itself inside the callee's own body; nothing is inferred from a
+        name, and a helper this pass cannot understand simply is not recorded, leaving the path
+        REPORTED -- the safe direction. Two rounds, so a wrapper that lands its file by calling
+        another wrapper is seen; the one-hop limit on ARGUMENT propagation below is untouched.
+        """
+        for _ in range(2):
+            for fname, fn in self.funcs.items():
+                params = [a.arg for a in fn.args.args]
+                if not params:
+                    continue
+                index_of = {p: i for i, p in enumerate(params)}
+                found = self.write_params.setdefault(fname, set())
+                for node in ast.walk(fn):
+                    if not isinstance(node, ast.Call):
+                        continue
+                    func = node.func
+                    name = getattr(func, "id", None) or getattr(func, "attr", None)
+                    # `param.write_text(...)`, `param.unlink()`, `param.to_parquet(...)`
+                    if (isinstance(func, ast.Attribute) and func.attr in WRITE_METHODS
+                            and isinstance(func.value, ast.Name)
+                            and func.value.id in index_of):
+                        found.add(index_of[func.value.id])
+                    # `os.replace(tmp, param)` / `shutil.move(tmp, param)`: the DESTINATION is an
+                    # argument, so the receiver-based rule above can never see it.
+                    if name in MOVE_FUNCS or name in WRITE_FUNCS:
+                        for arg in node.args:
+                            if isinstance(arg, ast.Name) and arg.id in index_of:
+                                found.add(index_of[arg.id])
+                    # `open(param, "w")`
+                    if name == "open" and node.args:
+                        mode = ""
+                        if len(node.args) > 1:
+                            mode = self._resolve(node.args[1]) or ""
+                        for kw in node.keywords:
+                            if kw.arg == "mode":
+                                mode = self._resolve(kw.value) or mode
+                        target = node.args[0]
+                        if (isinstance(target, ast.Name) and target.id in index_of
+                                and any(c in mode for c in "wax+")):
+                            found.add(index_of[target.id])
+                    # one wrapper calling another wrapper with its own parameter
+                    if isinstance(func, ast.Name):
+                        for i in self.write_params.get(func.id, ()):
+                            if i < len(node.args) and isinstance(node.args[i], ast.Name):
+                                inner = node.args[i]
+                                if isinstance(inner, ast.Name) and inner.id in index_of:
+                                    found.add(index_of[inner.id])
 
     def _propagate_into_callees(self) -> None:
         """BLIND SPOT 2: a path handed to a local helper that writes through the parameter.
@@ -258,6 +347,16 @@ class _Module:
                         if got is not None and is_store(got):
                             self.writes.add(got)
                             non_label.add(got)
+                # THE DERIVED WRAPPERS (blind spot 5). Only the parameter positions the callee was
+                # MEASURED to write are marked, so a `_dump(doc, path)` never records `doc`.
+                if isinstance(fn, ast.Name):
+                    for i in self.write_params.get(fn.id, ()):
+                        if i >= len(node.args):
+                            continue
+                        got = self._resolve(node.args[i])
+                        if got is not None and is_store(got):
+                            self.writes.add(got)
+                            non_label.add(got)
                 # Any path used as a call ARGUMENT is genuinely in play, not a label.
                 for a in [*node.args, *(k.value for k in node.keywords)]:
                     got = self._resolve(a)
@@ -315,7 +414,12 @@ def scan(root: Path, subdirs: tuple[str, ...] = ("scripts", "libs")) -> Scan:
         if not base.is_dir():
             continue
         for py in sorted(base.rglob("*.py")):
-            rel = str(py.relative_to(root))
+            # POSIX SEPARATORS, ON EVERY HOST. The module ids this Scan reports are compared
+            # against repo-relative paths written with "/" everywhere else in the desk, and on
+            # Windows `relative_to` hands back backslashes -- so every caller on the trading box
+            # was comparing "scripts/reader.py" against "scripts\\reader.py" and finding nothing.
+            # The test that pins this behaviour has been failing on the box for exactly that.
+            rel = str(py.relative_to(root)).replace("\\", "/")
             reads, writes, labels = scan_file(py)
             for p in reads:
                 out.reads.setdefault(p, set()).add(rel)

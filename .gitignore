@@ -130,6 +130,15 @@ data/*
 web/*
 !web/index.html
 !web/zentech.html
+# THE DESK DASHBOARD IS CODE, NOT STATE, AND IT COULD NEVER REACH THE BOX (2026-09-24).
+# `web/*` ignored it, so the page the principal actually reads has only ever travelled by hand.
+# The cost was measured the day it was restyled: this box's copy carried a mismatched quote in
+# the news table -- an unterminated string that killed the whole script, so it rendered nothing
+# but "loading" -- while the trading box ran a correct copy nobody could diff it against. Two
+# divergent hand-carried versions of the desk's only window onto itself, with no way to tell
+# which was right. The generated STATE beside it (desk_state.json and the rest) stays ignored;
+# this is the hand-written page and it belongs on the branch like any other source file.
+!web/dashboard.html
 # shadow_health.json is the ONE reports/ artifact allowlisted through, at any depth (so this
 # covers desks/mt5/reports/shadow/ too, where the live file actually is): Hetzner (the prior
 # cross-brain sync destination) was fully decommissioned 2026-08-23, so this file now reaches
@@ -382,3 +391,8 @@ tmp_*.py
 data/alpha_registry.sqlite
 data/alpha_registry.sqlite-wal
 data/alpha_registry.sqlite-shm
+
+# The registry's import-reach cache (2026-09-23): content-keyed stems, reconstructible from the
+# tree in one parse. Machine-rewritten on every registry build, so it is a cache by this file's
+# own definition above and belongs nowhere near git.
+desks/mt5/data/import_stems_cache.json

@@ -159,7 +159,7 @@ def refresh(row: dict[str, Any]) -> dict[str, Any]:
                     "tail": (proc.stdout or proc.stderr or "")[-300:]}
         except subprocess.TimeoutExpired:
             return {**row, "status": "TIMEOUT", "budget_s": BUDGET_S}
-        except Exception as exc:                                        # noqa: BLE001
+        except Exception as exc:
             return {**row, "status": "ERROR", "error": f"{type(exc).__name__}: {exc}"}
 
 
@@ -171,6 +171,14 @@ def main(argv: list[str] | None = None) -> int:
 
     rows = due()
     pending = [r for r in rows if r.get("due")]
+    # I3's CONSUMER: the due list is ORDERED by what each producer declared about itself
+    # (evsi, then deadline_s, then declared mb) instead of by the order the table happens to
+    # list them in. Nothing is dropped, delayed or refused -- every due row still runs on this
+    # pass; what changes is which one runs while the box still has room, which is the whole
+    # point of a job declaring a spec at all.
+    order = {name: i for i, (name, _) in
+             enumerate(job_lock.admission_order([r["name"] for r in pending]))}
+    pending.sort(key=lambda r: order.get(r["name"], len(order)))
     results = [] if args.report else [refresh(r) for r in pending]
 
     payload = {
@@ -183,6 +191,10 @@ def main(argv: list[str] | None = None) -> int:
                       if r.get("status") in {"TIMEOUT", "ERROR", "MISSING"}),
         "verdicts": rows,
         "results": results,
+        # The rank itself is published, so "which job the desk thought was worth the box" is
+        # auditable after the fact rather than an ordering nobody can see (I3).
+        "admission_order": [{"name": n, "declared": d}
+                            for n, d in job_lock.admission_order([r["name"] for r in pending])],
         "why": ("these producers declare an hourly cadence and are otherwise reachable only as "
                 "legs of a 55-leg cycle that now exceeds an hour, so their freshness was a "
                 "function of how long the cycle took rather than of their own clock"),

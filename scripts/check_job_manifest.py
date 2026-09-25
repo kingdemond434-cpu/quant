@@ -183,6 +183,14 @@ JOBS: dict[str, tuple[float, str] | tuple[float, str, EmptyFn]] = {
     # still reading as authoritative. If this artifact goes stale the rollback detector has
     # stopped and the desk's record of its own live book can regress unnoticed again.
     "data/artifact_monotonic.json": (0.5, "artifact rollback fence (stamp went backward)"),
+    # I8 (2026-09-23). THE TICK TAPE HAD NO ALARM WITH A CONSUMER ON IT. The macro/text half of
+    # the moat is 67 live source directories; the microstructure half the strategies actually
+    # trade is this one directory, and a tick recorder that dies writes nothing and says nothing
+    # -- it was visible only by listing the directory by hand. A DIRECTORY row (trailing "/") is
+    # judged on the freshest file beneath it, because a recorder that writes one file per
+    # instrument-day has no single artifact and the directory's own mtime is NTFS bookkeeping.
+    "desks/mt5/data/tape/": (2.0, "tape_features (hourly_cycle:tape_features), execution_twin, "
+                                  "execution_alpha_miner (hourly_cycle:execution_alpha)"),
 }
 
 
@@ -198,6 +206,46 @@ def _hash(path: Path) -> str | None:
         return hashlib.sha256(path.read_bytes()).hexdigest()[:16]
     except OSError:
         return None
+
+
+def _newest_under(root: Path) -> Path | None:
+    """The freshest file anywhere beneath `root`, or None when the tree holds no file.
+
+    I8. A recorder that writes `<SYM>/<day>.parquet` has no single artifact to age, and the
+    directory's own mtime moves only when an ENTRY is created -- appends to an existing day
+    leave it untouched on NTFS, so a directory mtime is a statement about bookkeeping and not
+    about the tape. The newest file under it is the recorder's last act, which is the thing the
+    freshness question is actually asking about.
+    """
+    best: Path | None = None
+    best_m = -1.0
+    try:
+        for p in root.rglob("*"):
+            try:
+                if not p.is_file():
+                    continue
+                m = p.stat().st_mtime
+            except OSError:
+                continue
+            if m > best_m:
+                best, best_m = p, m
+    except OSError:
+        return None
+    return best
+
+
+def _resolve_job_path(rel: str) -> Path:
+    """The file a row is judged on: itself, or -- for a `dir/` row -- the freshest file under it.
+
+    A directory row with nothing beneath it resolves to the directory path, which does not
+    exist as a file, so the ordinary MISSING branch reports it exactly as it would a never
+    produced artifact.
+    """
+    path = ROOT / rel.rstrip("/")
+    if not rel.endswith("/"):
+        return path
+    newest = _newest_under(path) if path.is_dir() else None
+    return newest if newest is not None else path / "<no file under this directory>"
 
 
 def _job_row(value: tuple) -> tuple[float, str, EmptyFn | None]:
@@ -362,7 +410,7 @@ def main() -> int:
 
     for rel, spec in JOBS.items():
         max_age_h, consumer, empty_fn = _job_row(spec)
-        path = ROOT / rel
+        path = _resolve_job_path(rel)
         prior = jobs.get(rel, {})
         if not path.exists():
             rows[rel] = {"status": "MISSING", "consumer": consumer}

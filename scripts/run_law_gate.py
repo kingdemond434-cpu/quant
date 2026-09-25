@@ -54,6 +54,15 @@ if str(_ROOT) not in sys.path:
 #: and every push: a breach here is a breach anywhere.
 _LAW_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("check_constitution_core.py", ()),        # L2.8a -- the sealed core is intact
+    # the index lock `Adopt-Release.ps1` already contends for: it either costs the adoption
+    # window or parks the desk's state in an entry no organ pops. This fails on either key being
+    # TRUE IN ANY SCOPE (not merely the effective one: a `true` a narrower scope happens to
+    # override is one fresh clone away from winning) and on any stash entry existing at all.
+    # UNSET is git's own default of false, so it passes and is reported UNPINNED rather than
+    # failed -- a gate red on every clean clone is a gate that gets switched off (L1.43).
+    # Portable: it reads git's own config and ref state, so it means the same in CI, a fresh
+    # clone, on the VPS and on the box.
+    ("check_autostash.py", ()),
     # PRODUCER BEFORE CONSUMER. build_enforcement_matrix WRITES data/enforcement_matrix.json and
     # check_law_families READS it; the matrix is gitignored (data/*), so on a VIRGIN tree the
     # consumer ran first against a file that did not exist yet. That is why this gate was green
@@ -108,6 +117,21 @@ _LAW_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     # construction -- it reads docs/, scripts/ and the tracked decision ledger, and judges only
     # what git TRACKS, so it means the same in CI, a fresh clone and on the box.
     ("check_birth_properties.py", ()),
+    # EVERY OBLIGATION IS INHERITED, NOT REMEMBERED (LAWS 7, principal 2026-09-23). The same
+    # shape as the line above, widened from documents and scripts to the five axes on which this
+    # desk keeps acquiring obligations: an executable needs a clock, an artifact, a named consumer
+    # and a row in the runtime attestation; a source needs a position in the collection chain; a
+    # family needs to be inside the judge's derived coverage; a region arrives at the CURRENT
+    # depth and breadth floors, never at zero; a destructive path arrives guarded against acting
+    # on an absence. It derives each set from the tree and fails on the axis that REGRESSED,
+    # naming the thing that arrived incomplete -- so a thing created next month inherits the
+    # obligation instead of waiting for a session to remember it.
+    ("check_birth_obligations.py", ()),
+    # FIX THE CLASS, ON A CLOCK, OR IT IS NOT FIXED (LAWS 7, principal 2026-09-23). The twin of
+    # the line above: that one stops a new thing arriving incomplete, this one proves every KNOWN
+    # defect class still carries a detector, a repair, a fence and fresh evidence -- and ratchets
+    # down the count of classes a human still has to find.
+    ("check_self_repair.py", ()),
     # GROWTH GOVERNANCE (principal 2026-09-04): every risk-reduction mechanism proves it raises
     # robust forward E[log W]; every strong opportunity may raise capital above normal; the
     # 20% floor is flat and filled, growth free above it to 30%; the gateway deploys the book.
@@ -154,6 +178,56 @@ _LAW_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     # forests.FOREST_TASKS) may disagree with the specs. Portable: it reads the tree and the
     # manifest, so it means the same in CI, a fresh clone and on the box.
     ("check_component_registry.py", ()),
+    # PRODUCTIVITY IS PROVEN OR IT IS NOT CLAIMED (external reviewer, 2026-09-23). The component
+    # registry above proves every executable has a CLOCK; this proves the desk still knows which
+    # producers turn that clock into CELLS. It fails on two things only -- a stale or missing
+    # census, and a producer that burned compute past the stated window with no unique cell and
+    # no named blocker -- and deliberately NOT on low productivity, because cutting the tail of
+    # the search distribution is exactly the reduction in aggressiveness the desk refuses.
+    ("check_productivity_census.py", ()),
+    # EVERY PRODUCER OWES CELLS (LAWS 7, principal 2026-09-23). The census above asks whether a
+    # producer ever paid; this asks what reached the ONE JUDGE in the last day and HOW ORTHOGONAL
+    # it was -- cells emitted, unique after dedup, cells to the judge, and the marginal effective
+    # rank each producer added, so a hundred copies of one momentum rule score as one cell's worth
+    # of breadth. Fails on a producer owing with no declared exemption and no named blocker, on
+    # the owing count RISING, and on throughput to the judge falling below its own best with no
+    # stated reason. Ratchets fall only and nothing here caps a producer: the remedy for a barren
+    # organ is to make it produce or retire it with a reason, never to throttle a working one.
+    ("check_producer_yield.py", ("--cells-only",)),
+    # A FAMILY A PRODUCER MINTS THAT NO REGISTRY IMPLEMENTS (2026-09-24). The two fences above ask
+    # whether a producer is producing and whether what it produced was orthogonal. Neither can see
+    # the failure one level lower: a producer minting HARD under a family name that
+    # `miner_candidate_compiler._registered_family` refuses, so every cell it makes exits as
+    # NEEDS_EXACT_RULE_EXTRACTION and never reaches a docket, a gate or a verdict. Measured today:
+    # 32 such names, 7,122 cells, of which `regional_information` alone is 6,336 -- the desk's
+    # third-largest family, ranked #1 by JUDGE_COVERAGE's own value model, with judged_at NULL on
+    # every row. It read as healthy production in every yield number the desk publishes.
+    # RATCHET, NOT VETO: the unjudgeable population may shrink and may not grow, and nothing here
+    # caps, throttles or refuses a producer -- the remedy is a rule for the name or an end to
+    # minting under it, never less mining.
+    ("check_family_evaluability.py", ()),
+    # NO EXEMPTION WITHOUT A FALSIFIER (2026-09-24). The two fences above let a producer pass by
+    # DECLARING itself exempt -- and until this landed, an exemption was a sentence with no
+    # condition under which it stops being true. `module_rent`'s 21 rows (plus two borrowed
+    # registries) could excuse an organ from the rent ledger forever, and the neighbouring
+    # ledger, docs/research/productivity_blockers.json, carried `retire_if` on every exemption
+    # with nothing reading the field. So the structure whose whole purpose is that no module
+    # exists for free was the one structure that could never be wrong. This holds both
+    # registries to the same rule: every exemption names the MEASURED condition that deletes it.
+    # --schema-only is the PORTABLE half -- it reads the module source and the docs ledger, so it
+    # means the same in CI, in a fresh clone and on the box; which declarations have actually
+    # expired needs desk artifacts and is published every day by the module_rent leg instead.
+    # It disables nothing and caps nothing: the point is to delete stale excuses, not work.
+    ("check_exemption_falsifiers.py", ("--schema-only",)),
+    # THE GRID FILLS, AND ONLY AN EXHAUSTED LIST MAY STOP IT (principal 2026-09-23). The yield
+    # fence above asks how orthogonal what reached the judge was; this asks whether the desk is
+    # still CLAIMING ground it has never tested. Occupied cells of the family x instrument x
+    # horizon grid ratchet up, and the filler must end a pass because the targets ran out --
+    # never because a clock or a count did. Measured cause: `independence_intake` minted 8 cells
+    # an hour into 8,418 reachable empty ones under a cap of 400, and the limit was an unindexed
+    # `WHERE grid_cell=?` scan in libs/moat/registry.py, 0.927 s per cell, which no artifact
+    # named. Every number here is a floor; nothing caps, and no bar moves.
+    ("check_grid_occupancy.py", ()),
     # ONE CERTIFICATE TRUTH (principal 2026-09-22). One writer (external_gauntlet.py), one
     # authority file (UNIVERSAL_SURVIVORS.json), one consumer (promoter.py); every derived store
     # -- survivors ledger, sleeve registry, shadow/lane states, sleeves.json, forward_reconcile --
@@ -161,6 +235,12 @@ _LAW_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     # fence fails on any divergence. Without desk state it reads UNMEASURED and passes; the
     # state half below requires the state.
     ("check_certificate_truth.py", ()),
+    # THE RUNTIME ATTESTATION IS ABOUT ONE HOST (a GitHub reviewer, 2026-09-23). The committed
+    # docs/research/runtime_state.json must name the machine it measured and be internally
+    # consistent about it -- a document claiming one host while the measurement inside it came
+    # from another is the exact lie the organ exists to prevent, so this half fails everywhere
+    # and needs no desk state. Its freshness is judged only on the host it names (below).
+    ("check_runtime_attestation.py", ()),
     # NOTHING IS RETIRED ON AN ABSENCE (LAWS 7, 2026-09-23). Every pass in this tree that REMOVES
     # rather than reports is inventoried with the reference it judges against, every guarded one
     # is proved from the AST to call `libs/ops/reference_freshness.require_live_reference`, every
@@ -178,6 +258,14 @@ _LAW_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     # (resident, discovery window, lattice) reads UNMEASURED without the registry rather than
     # failing. `--strict` promotes the live flags and belongs in the hourly box gate, not here.
     ("check_regional_parity.py", ()),
+    # EVERY REGION'S CELLS AND JUDGED CELLS RATCHET UP (principal 2026-09-23: equal maximum depth
+    # per region, "like it's their native country quants"). `check_regional_parity` asserts the
+    # federation has no absent region; this asserts the OUTPUT of those regions never falls back.
+    # It fails on a region that once held cells and now holds none, on a fall in the count of
+    # regions the desk NAMES, and on a fall in a measure's total -- never on a non-zero dip, which
+    # is reported. Portable: it reads `REGION_RATCHET.json` and an absent artifact is UNMEASURED
+    # here; the state half rides in _STATE_FENCES with --require-state.
+    ("check_region_ratchet.py", ()),
     # THE RECOMMENDATION LANE MUST DRAIN (principal 2026-09-23). Every OPEN ledger row names an
     # owner and a next action, and the OPEN backlog ratchets DOWN only. Portable: the ledger and
     # the ratchet are tracked, so both halves mean the same in CI, a fresh clone and on the box.
@@ -202,6 +290,24 @@ _LAW_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     # and a fence that punished it would be switched off inside a week. Portable: without the
     # report it reads UNMEASURED and passes; the box half rides in _STATE_FENCES.
     ("check_judge_coverage.py", ()),
+    # THE WRITE-OR-EXPLAIN CONTRACT IS STILL WIRED (2026-09-23). Eight failures in one day shared
+    # one shape: an organ that produced nothing was indistinguishable from an organ with nothing
+    # to produce. `libs/ops/write_or_explain.py` stats each leg's DECLARED artifact either side of
+    # the leg at the one boundary every leg passes through, and names the three outcomes --
+    # LEG_FAILED (loud, with the exit code and stderr), SILENT_NO_OP (exited 0, wrote nothing,
+    # said nothing) and DECLARED_NO_OP (nothing to write, and said so). PORTABLE HALF: this reads
+    # the cycle source and fails if the two call sites are gone, so an edit that quietly removes
+    # the contract reddens CI on a fresh clone. A contract nothing calls is the same defect one
+    # layer up. The live half rides in _STATE_FENCES.
+    ("check_write_or_explain.py", ("--wiring-only",)),
+    # NO WRITE FAILS IN SILENCE (2026-09-23 swallowed-write audit). A handler that is BLIND (no
+    # `as exc`) and MUTE (body is only `pass`) around a call that puts bytes on disk discards the
+    # only evidence the artifact is missing -- the registry verdict sync stranded 3,368 verdicts
+    # exactly this way, and `donate` swallowing `register` is why 0 of 107 sampled donation rows
+    # carry a prereg hash. RATCHETED TO FILE WRITES, which the audit took from 10 to 0: the class
+    # is fenced at zero so it cannot regress, while the 25 pre-existing DONATION findings stay
+    # reported rather than dumped red into another lane (L1.43).
+    ("check_bare_excepts.py", ("--file-writes-only",)),
 )
 
 #: STATE FENCES -- box-only. They measure LIVE STATE (artifacts, ledgers, organ freshness) that
@@ -211,6 +317,13 @@ _LAW_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
 #: They run in the hourly box gate, where their verdict is real.
 _STATE_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("check_conversion.py", ()),               # L1.28b -- FLATLINE fails
+    # EVERY SOURCE COLLECTED AND CONVERTED (principal 2026-09-23, "make sure they are always
+    # collected, 100% exploited and converted"). Two ratchets that may only fall -- sources never
+    # collected, and sources collected whose cells never reached the gauntlet -- plus the oldest
+    # never-collected source against its own cadence window. A FALLING backlog is never a breach;
+    # this fails on the direction, never on the size, so it can never be an argument for
+    # collecting less. State, because it reads the drain ledger the box writes.
+    ("check_source_drain.py", ()),
     # NOTHING IS PARKED (principal 2026-09-23, "nothing should be queued in the research system,
     # all immediate tested"). Fails when any queue's oldest row is older than ONE CYCLE of the
     # organ that owns it, when a queue has open rows and no drainer at all, or when rows carry no
@@ -240,6 +353,23 @@ _STATE_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     # other host is UNMEASURED_HERE and named; the overdue debt is DECLARED by seat name and may
     # only shrink, so a newly dark seat fails this immediately.
     ("check_seat_health.py", ()),
+    # L1.49, THE LEG HALF -- every leg of the hourly cycle actually REACHES its own clock.
+    # Measured 2026-09-23 from the compute ledger: 19 of 112 CORE_LEGS had never executed once,
+    # because `main()` is a 325-leg straight line inside a 40-minute task and the tail was
+    # structurally unreachable -- `clock_liveness`, `clock_ledger`, `fill_recorder` and
+    # `evidence_chain` among them. A leg that never runs raises no error and writes no artifact,
+    # so it is indistinguishable from a leg with nothing to do; this fails on `never_run` and on
+    # `outside_window` by NAME rather than letting either be inferred from silence. It can only
+    # ever demand that more legs run: there is no threshold here that attempting less can satisfy.
+    ("check_leg_rotation.py", ()),
+    # THROUGHPUT IS A RATCHET (2026-09-23). The desk's canonical write door was measured at FOUR
+    # rows a second -- 345,600 a day at a 100% duty cycle against a target of millions -- and it
+    # broke nothing: every row landed, every gate passed, a 231.9 ms table scan per write simply
+    # set the desk's whole mint rate. A ceiling is invisible because it is not a failure, so this
+    # fails on its behalf when any stage of mint -> judge falls below its own high-water mark.
+    # It can only ever demand MORE rows per second; there is no threshold here that minting or
+    # judging less can satisfy. State, because it reads the hourly THROUGHPUT.json.
+    ("check_throughput_ratchet.py", ()),
     ("check_promotion_gate.py", ()),           # L1.6 -- expansion is bought with evidence
     ("check_excitation.py", ()),               # L1.45 -- no absorbing set, no dead experiment
     ("check_clock_provenance.py", ()),         # L1.46 -- the tape declares which clock stamped it
@@ -263,6 +393,18 @@ _STATE_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     # against a live and 44,640-bar-M1 median of 0.0). Thresholds unchanged. A STATE fence: with
     # no COST_TRUTH.json it reads NOT-READABLE-HERE, which is a real answer about the HOST.
     ("check_cost_surface.py", ()),
+    # L1.5 / L1.28a, THE THIRD DIRECTION AND THE SILENT ONE. The two fences above compare a
+    # charge against a quote; both need a charge to EXIST. Measured on the trading box
+    # 2026-09-24: 13 of 355 LIVE clocks carried NO cost_fields AT ALL -- 8 of them XAUUSD,
+    # covering the asia, london_am and afternoon gold windows, which are essentially the desk's
+    # entire realised P&L. A null cost is not a zero cost: shadow_forward line 758 falls through
+    # to LIVE re-measured costs, so the basis moves under the clock every pass and nothing says
+    # so. One more LIVE row had its family and selector TRANSPOSED, which breaks every join the
+    # canonical identity (symbol|family|selector) exists to make. Both came from the one
+    # freeze() caller that omitted cost_fields. NO RATCHET, deliberately -- the defect is a LIVE
+    # row on the money path and the residue is thirteen rows, not a debt in someone else's file.
+    # A STATE fence: no registry on this host reads NOT-READABLE-HERE, a verdict about the HOST.
+    ("check_live_sleeve_cost.py", ()),
     # THE STATE HALF of the enrolment law: no certificate clockless past one cycle. An absent
     # FORWARD_ENROLMENT.json is UNMEASURED, which is a real answer on a clean checkout.
     ("check_forward_enrolment.py", ("--state-only",)),
@@ -275,6 +417,23 @@ _STATE_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     # CLOCK_LIVENESS.json is stale. A STATE fence: off the trading box the report is absent and
     # the verdict is UNMEASURED, which is a real answer about the host and not a pass.
     ("check_clock_liveness.py", ()),
+    # L1.102 -- A CERTIFICATE WITHOUT AN ACCUMULATING CLOCK IS A BREACH (principal 2026-09-24:
+    # "they must all automatically be on forward clocks live immediate upon certification, in
+    # future all -- this not happening is a breach"). The third clock fence, and the two above
+    # are why it is needed rather than another clause in one of them. `check_forward_enrolment`
+    # asks whether a clock EXISTS and reads `accruing` off the STATUS STRING -- on 2026-09-24 it
+    # called 171 clocks accruing while 116 of them held zero observations. `check_clock_liveness`
+    # asks whether the last ADVANCE has fallen behind the venue's bars, which a clock that never
+    # advanced at all answers vacuously. This one diffs each clock's OBSERVATION COUNT across
+    # passes out of `data/certificate_clock_history.json`, so no status, no mtime and no re-run
+    # of the engine can satisfy it -- only real forward observations. It fences the LATENCY too,
+    # because "immediate" is the principal's word: a clock arriving more than one promoter cycle
+    # after certification is a breach, not a statistic. WARMING is compliant -- forward time
+    # passing is the mechanism -- and the threshold is DERIVED per family from measured rows, so
+    # the five families that have never traded are judged by the same code path as the two that
+    # have. A STATE fence: off the trading box nothing advances a clock and the verdict is
+    # NOT_APPLICABLE, a real answer about the host and not a pass.
+    ("check_certificate_clock_law.py", ()),
     # LAWS 5c -- everything ingested is exploited; the exploitation floor ratchets UP, the
     # DATA STRANDING count ratchets DOWN, and no qualified datum sits in storage without a
     # defined downstream state. A STATE fence: on a clean checkout the ingestion artifact is
@@ -288,11 +447,53 @@ _STATE_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("check_conversion_debt.py", ()),
     # the live half of ONE CERTIFICATE TRUTH: on the box an absent authority file is a defect
     ("check_certificate_truth.py", ("--require-state",)),
+    # the live half of THE PRODUCTIVITY CENSUS: on a host with desk state, NO census is the leg
+    # not running, and a census older than its window is the same fact arriving late. The
+    # portable half above passes with UNMEASURED on a clean checkout, where there is nothing to
+    # judge; here there is, and an absent scoreboard is the defect it looks like.
+    ("check_productivity_census.py", ("--require-state",)),
+    # THE ORGAN CENSUS (2026-09-25). The fence above joins "it ran" to "its output moved" for the
+    # 242 organs the Tier-1 ledger declares a contract for. This one asks the question three
+    # external reviews closed on, for EVERY claimed organ: real code -> a clock -> a fresh real
+    # input -> a NON-TRIVIAL artifact -> the canonical pipeline -> a measured survivor yield -> an
+    # allocation that follows that yield. It could not be asked before, because the desk's three
+    # censuses shared ZERO producers -- PRODUCER_CENSUS (1,568 names), PRODUCTIVITY_CENSUS (2,124)
+    # and DEAD_ARCHITECTURE (711, keyed by CODE PATH) had an empty intersection, so every total
+    # the desk published about itself was a total in one roster's private vocabulary. Seven
+    # rosters, 6,033 claims, 2,657 organs after the join.
+    #
+    # IT FAILS ON THE STALL, NOT ON A CAUSE: an organ that was producing a real artifact at the
+    # last census and produces none now. It does not ask why -- a timeout, a broken donation
+    # door, a credential on the wrong machine, or the next failure nobody has met yet -- because
+    # "it worked and now it does not" is the only question that survives an unknown cause. The
+    # previous artifact IS the baseline, so it needs no new state path and reports UNMEASURED on
+    # its first pass rather than inventing one. Today's residue is declared by name in
+    # `docs/research/organ_census_debt.json` on a list that may only shrink.
+    #
+    # It also measures the two links nothing else did: whether an organ's INPUT is still moving
+    # (77 of 2,657 organs declare one at all; 1 of 1,409 registry specs fills the field, which is
+    # why `fred.json` could refresh every 30 minutes and land 893 bytes with every fence green),
+    # and whether an artifact carries a PAYLOAD rather than only a fresh timestamp -- every other
+    # fence on this desk measures age, so a leg rewriting an empty report every hour reads healthy
+    # forever. And it publishes survivor yield per compute hour per generator with an EXPLORATION
+    # FLOOR, so a weak generator starves and is never eliminated by a run of bad luck.
+    # It caps nothing, retires nothing, gates no capital, and never rations what reaches the
+    # judge: multiplicity is pinned at fixed_trial_count 109, so judging one more cell is free.
+    ("check_organ_census.py", ("--require-state",)),
+    # the live half of THE RUNTIME ATTESTATION: on the host that publishes it, an attestation
+    # older than its own cadence means the hourly leg has stopped and the committed file has
+    # quietly become a photograph of the past -- which is worse than no file, because it still
+    # reads as current runtime state to anyone on GitHub.
+    ("check_runtime_attestation.py", ("--require-state",)),
     # the live half of REGIONAL PARITY (LAWS 5n): on the box the registry IS open and the forest
     # reports DO exist, so "no resident", "no discovery in the trailing window" and "no candidate
     # in the lattice" are measured absences and the law calls each one a defect. It still caps no
     # compute -- it fails the gate and publishes the debt; the allocator does the rest.
     ("check_regional_parity.py", ("--strict",)),
+    # the live half of THE REGION RATCHET: on the box the registry IS open and
+    # `attribution_census` runs hourly, so an ABSENT `REGION_RATCHET.json` is an organ that did
+    # not run (L1.49) rather than a fresh clone, and it fails here.
+    ("check_region_ratchet.py", ("--require-state",)),
     # NOTHING IS STALE (principal 2026-09-22). Every artifact the desk publishes has an expected
     # refresh interval -- its lease, else its declared artifact_class, else DERIVED from its
     # organ's cadence and recorded -- and one past it is a DEFECT named with its organ, its clock
@@ -327,6 +528,29 @@ _STATE_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     # watchdog report is itself such a defect, because a watchdog that stopped is the quietest
     # failure the desk can have: no defects reported, because nothing looked.
     ("check_plumbing_watchdog.py", ()),
+    # THE ADOPTION ITSELF, JUDGED DIRECTLY (2026-09-24). The watchdog above reaches the same
+    # defect, but only through three hops -- it must be RUNNING, it must re-stamp `age_s`, and
+    # `adoption_lag` must then sit past a six-hour escalation window before the gate arm reddens.
+    # Measured the night the box fell 443 commits behind: every one of those hops held, and the
+    # gate was still green while a full night of shipped work sat on origin unexecuted. This one
+    # reads the adoption's OWN heartbeat -- `started_at` with no `finished_at` is a run the
+    # scheduler killed, which is a positive fact rather than an inferred silence -- and fails on
+    # no success within three cadences, on a run that outlived the task's execution limit, and on
+    # HEAD behind origin past the same grace. It caps nothing and gates no capital; it fails when
+    # the machine that trades is not running the code that was shipped to it. A host with neither
+    # the task nor any adoption artifact is NOT_APPLICABLE and passes saying so, so CI, a fresh
+    # clone and the VPS stay green (L1.43) -- but on the box, no evidence is UNMEASURED and
+    # UNMEASURED fails, because no evidence is exactly what the outage looked like (L1.28a).
+    ("check_adoption_freshness.py", ()),
+    # on a schedule and whose artifact no production file reads is BURNING -- an orphan the desk
+    # pays compute for every hour -- and the BURNING count ratchets DOWN only. The clock half is
+    # exact (the four scheduler planes), so BURNING is the one population this census may fence
+    # on; UNREACHED and NO_CLOCK rest on a consumer heuristic that under-reports and stay report-
+    # only, because fencing on them would licence deleting organs nobody has proved are dead.
+    # The two repairs are to name a consumer or retire the organ with a reason -- never to mask a
+    # timer or trim a budget, which would be a reduction in aggressiveness with no E[log W] proof.
+    # Portable: it reads the tree and the manifest, so it means the same in CI and on the box.
+    ("check_dead_architecture.py", ("--ratchet",)),
     # THE MONEY BRAIN PRODUCED, PROVED AND PUBLISHED THIS CYCLE (principal 2026-09-23). The heat
     # fence above asks whether the FLOOR is deployed; this one asks whether the allocator RAN at
     # all, whether its certificate is still alive, whether each input it conditioned on is inside
@@ -336,6 +560,22 @@ _STATE_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     # concluded the allocator was dead while both real artifacts were minutes old. A STATE fence:
     # a host that has never run the allocator reads UNMEASURED, which is a fact about the host.
     ("check_allocator_liveness.py", ()),
+    # THE WRITE-OR-EXPLAIN CONTRACT, LIVE HALF (2026-09-23). Reads the contract ledger every leg
+    # boundary appends to and sentences the desk on the latest row per leg: SILENT_NO_OP (exited
+    # clean, wrote nothing, named no reason), LEG_FAILED/LEG_TIMEOUT, and NEVER_OBSERVED -- a leg
+    # that declares an artifact and produced no row at all, which is how `ground_depth` and
+    # `independence_intake` sat at ZERO ledger rows on the trading box while both ran perfectly by
+    # hand. It also publishes `desks/mt5/reports/WRITE_OR_EXPLAIN.json`. State, because an absent
+    # ledger means "no cycle has run here", not "a law was broken" -- and --require-state makes
+    # that absence fail on the box, where a missing ledger means the contract never ran at all.
+    ("check_write_or_explain.py", ("--require-state",)),
+    # WHAT THE HOURLY ADOPTION IS ABOUT TO EAT (failure 8 of 2026-09-23). `MT5-AdoptRelease` lands
+    # the branch's tree in place at :12 and keeps only STATE paths, so an uncommitted CODE edit --
+    # or one committed here but never pushed -- is reverted with no error and a tree that looks
+    # like nobody ever edited it. This names those paths while they can still be saved. It never
+    # touches the tree: committing on a builder's behalf, with four builders live, would be a
+    # worse failure than the one it reports. State, because it measures a working tree.
+    ("check_box_reversion.py", ("--require-git",)),
 )
 
 
@@ -602,6 +842,131 @@ def full_gate(root: Path | None = None, *, laws_only: bool = False,
             "generated": datetime.now(tz=UTC).isoformat()}
 
 
+#: HOW LONG A FENCE'S VERDICT STANDS, and therefore how long the rotation has to reach every
+#: fence in the battery. MEASURED, not chosen for comfort: `full_gate` gives each of the 53
+#: fences up to 600 s, so one battery can cost eight hours and no hourly window can hold it --
+#: which is exactly why `data/law_gate.json` on the trading box was 270 h old with 14 of 53
+#: fences in it, and why every green claim the desk made rested on a gate that had not run.
+#: A fence whose verdict is older than this window is DROPPED from the record, so the watchdog
+#: reports it as never run. That is the measurement (L1.49), never a failure of the record.
+ROTATION_WINDOW_H: float = 48.0
+
+#: The longest a single fence may hold the rotation, matching `full_gate`'s own per-fence bound.
+ROTATION_FENCE_TIMEOUT_S: float = 600.0
+
+#: The least budget a fence may be started with. Below this the pass ends instead of starting a
+#: fence it cannot let finish.
+_ROTATION_FLOOR_S: float = 120.0
+
+
+def _run_fence(root: Path, script: str, extra: tuple[str, ...],
+               timeout: float) -> dict[str, Any]:
+    """One fence, one verdict. An absent or unrunnable fence FAILS, it is never skipped."""
+    p = root / "scripts" / script
+    if not p.exists():
+        return {"fence": script, "ok": False, "detail": "missing"}
+    try:
+        r = subprocess.run([sys.executable, str(p), *extra], capture_output=True,
+                           text=True, timeout=timeout, cwd=root)
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        return {"fence": script, "ok": False,
+                "detail": f"unrunnable: {exc} -- counts as FAILED, never skipped"}
+    tail = (r.stdout or r.stderr or "").strip().splitlines()
+    return {"fence": script, "ok": r.returncode == 0, "rc": r.returncode,
+            "detail": tail[-1][:200] if tail else ""}
+
+
+def _record_age_s(row: dict[str, Any], now: datetime) -> float:
+    """Seconds since this fence last ran; infinite when the record cannot be read."""
+    try:
+        return (now - datetime.fromisoformat(str(row.get("ran_at")))).total_seconds()
+    except (TypeError, ValueError):
+        return float("inf")
+
+
+def rotate_gate(root: Path | None = None, *, budget_s: float = 1800.0,
+                now: datetime | None = None) -> dict[str, Any]:
+    """THE WHOLE BATTERY, IN ROTATION, INSIDE A STATED WINDOW.
+
+    The full battery does not fit an hourly window, and a gate that cannot fit its window does
+    not run at all -- which is how the box reached 270 h with no battery record. This mode runs
+    the fences that have gone longest without a verdict until the budget is spent, then MERGES
+    them into `data/law_gate.json` so the record carries every fence with the time it ran.
+
+    Three properties the record must keep, because the whole point is that it can be cashed:
+
+      EVERY FENCE NAMES ITS OWN HOUR.  Each row carries `ran_at` and `elapsed_s`, so "the gate
+      is green" can always be answered with "measured when?".
+
+      THE WINDOW IS STATED AND ENFORCED.  A verdict older than ROTATION_WINDOW_H is dropped,
+      not carried forward -- a fence that stops running disappears from the record within the
+      window and is reported as never run.
+
+      NOTHING IS EVER SKIPPED FOR BEING SLOW.  Oldest-first ordering means a slow fence cannot
+      be starved by fast ones: it only ever climbs the queue.
+    """
+    root = root or _ROOT
+    t0 = now or datetime.now(tz=UTC)
+    # One entry per fence SCRIPT, carrying every argument set the battery declares for it (the
+    # same script rides both batteries with different flags; the record is keyed by name because
+    # `check_fences_ran` asks by name).
+    declared: dict[str, list[tuple[str, ...]]] = {}
+    for script, extra in (*_LAW_FENCES, *_STATE_FENCES):
+        declared.setdefault(script, []).append(tuple(extra))
+    prior: dict[str, dict[str, Any]] = {}
+    try:
+        doc = json.loads((root / "data/law_gate.json").read_text("utf-8"))
+        rec = doc.get("fences") if isinstance(doc, dict) else None
+        if isinstance(rec, dict):
+            prior = {str(k): dict(v) for k, v in rec.items() if isinstance(v, dict)}
+    except (OSError, ValueError):
+        prior = {}
+    due = sorted(declared, key=lambda n: (-_record_age_s(prior.get(n, {}), t0), n))
+    ran: list[str] = []
+    for name in due:
+        left = budget_s - (datetime.now(tz=UTC) - t0).total_seconds()
+        # A FENCE IS NEVER JUDGED ON A TRUNCATED CLOCK. Measured on the first rotation pass:
+        # check_enforcement_execution was started with 32 s of budget left, timed out, and was
+        # recorded as FAILED -- a verdict about the budget wearing the costume of a verdict about
+        # the desk. Below the floor the pass simply ends and the fence stays at the head of the
+        # queue for the next one.
+        if ran and left < _ROTATION_FLOOR_S:
+            break
+        started = datetime.now(tz=UTC)
+        rows = [_run_fence(root, name, extra,
+                           min(ROTATION_FENCE_TIMEOUT_S, max(_ROTATION_FLOOR_S, left)))
+                for extra in declared[name]]
+        bad = [r for r in rows if not r["ok"]]
+        row = dict(bad[0] if bad else rows[0])
+        row["ok"] = not bad
+        row["n_invocations"] = len(rows)
+        row["ran_at"] = started.isoformat()
+        row["elapsed_s"] = round((datetime.now(tz=UTC) - started).total_seconds(), 1)
+        prior[name] = row
+        ran.append(name)
+    t1 = datetime.now(tz=UTC)
+    window_s = ROTATION_WINDOW_H * 3600.0
+    fences = {n: r for n, r in prior.items()
+              if n in declared and _record_age_s(r, t1) <= window_s}
+    results = [fences[n] for n in sorted(fences)]
+    failures = [f"{r['fence']} (rc={r.get('rc', '?')}): {r.get('detail', '')}"
+                for r in results if not r.get("ok")]
+    missing = sorted(n for n in declared if n not in fences)
+    failures += [f"{n}: no verdict inside the {ROTATION_WINDOW_H:.0f}h rotation window -- "
+                 f"a gate that never ran is a claim the desk cannot cash (L1.49)"
+                 for n in missing]
+    return {"mode": "rotation", "ok": not failures, "n_fences": len(declared),
+            "subject": f"cwd (rotation judges LIVE state; {ROTATION_WINDOW_H:.0f}h window)",
+            "n_failed": len(failures), "failures": failures, "results": results,
+            "fences": fences,
+            "rotation": {"window_h": ROTATION_WINDOW_H, "budget_s": budget_s,
+                         "ran_this_pass": ran, "n_recorded": len(fences),
+                         "n_declared": len(declared), "never_recorded": missing,
+                         "oldest_ran_at": min((str(r.get("ran_at")) for r in results),
+                                              default=None)},
+            "generated": t1.isoformat()}
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--fast", action="store_true",
@@ -614,15 +979,31 @@ def main() -> int:
                          "HEAD by default because that is what a push and CI actually gate; this "
                          "is the escape hatch, and the re-exec inside the HEAD checkout uses it")
     ap.add_argument("--json", action="store_true")
+    ap.add_argument("--rotate", action="store_true",
+                    help="run the OLDEST fences until --budget-s is spent and merge them into "
+                         "data/law_gate.json: the battery costs hours and no clock window holds "
+                         "it, so it rides a rotation whose window is stated in the record")
+    ap.add_argument("--budget-s", type=float, default=1800.0,
+                    help="seconds of fence time one rotation pass may spend (default 1800)")
     args = ap.parse_args()
-    rep = fast_gate() if args.fast else full_gate(laws_only=args.laws_only,
-                                                  in_place=args.in_place)
+    if args.fast:
+        rep = fast_gate()
+    elif args.rotate:
+        rep = rotate_gate(budget_s=args.budget_s)
+    else:
+        rep = full_gate(laws_only=args.laws_only, in_place=args.in_place)
     if not args.fast:
         (_ROOT / "data/law_gate.json").write_text(json.dumps(rep, indent=2), "utf-8")
     if args.json:
         print(json.dumps(rep, indent=2))
     else:
-        head = "LAW GATE" + (" (fast)" if args.fast else f" -- {rep.get('n_fences', 0)} fences")
+        head = "LAW GATE" + (" (fast)" if args.fast
+                             else f" -- {rep.get('n_fences', 0)} fences")
+        rot = rep.get("rotation")
+        if isinstance(rot, dict):
+            head += (f" [rotation: {len(rot.get('ran_this_pass') or [])} ran this pass, "
+                     f"{rot.get('n_recorded')} of {rot.get('n_declared')} inside "
+                     f"{rot.get('window_h')}h]")
         print(f"{head}: {'PASS' if rep['ok'] else 'FAIL'}")
         # The verdict NAMES ITS OWN SUBJECT (R0402): "PASS" is meaningless until you know which
         # artifact passed -- HEAD, or a working tree three sessions are writing to right now.

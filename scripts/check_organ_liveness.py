@@ -53,13 +53,30 @@ if not _ROOT.exists():
     _ROOT = Path(__file__).resolve().parent.parent
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
+from libs.ops import producer_census as PCEN  # noqa: E402
 from libs.ops.fence_exit import fence_exit  # noqa: E402
 from libs.ops.lawful import guard as _law_guard  # noqa: E402
 
 #: Only a MEASURED clean sweep passes. UNMEASURED (manifest unreadable, or no organ declared an
 #: artifact at all) used to fall down the `else 0` branch and report green while this fence had
-#: audited nothing whatsoever -- L1.28a: unmeasured counts as zero, never as fine.
+#: audited nothing whatsoever -- L1.28a: unmeasured counts as zero, never as fine. UNMEASURED_HERE
+#: is deliberately NOT in the set either: a host that cannot see the plane has not cleared it.
 _PASSING = frozenset({"OK"})
+
+#: WHICH MACHINE OWNS EVERY ROW THIS FENCE READS. `ops/crontab.manifest` is the VPS cron plane and
+#: nothing else: root cron died 2026-08-20, and since then its rows fire only through
+#: `scripts/run_manifest_dispatch.py` under `quant-manifest-dispatch.timer`, a systemd USER unit
+#: (crontab.manifest:3357). The Windows trading box runs its organs from
+#: `desks/mt5/ops/box_tasks.manifest` and the two cycles, and it holds no line of this plane.
+#:
+#: THE FALSE ALARM THIS ENDS, measured on VMI3571445 2026-09-23: 41 of 62 rows read NEVER-PRODUCED
+#: on the box. Every one of the 41 artifacts is a gitignored `data/*.json` -- so the box cannot
+#: run the producer AND cannot receive the file by pull, which means the absence here was never
+#: evidence about the organ. Forty-one rows of wiring diagnosis, all pointed at this machine,
+#: none of them repairable on it. Same defect and same remedy as `check_seat_health.py`, whose
+#: `mirror_reason` is imported rather than restated so a future reclassification lands in both.
+_PLANE_HOST = "vps"
+_PLANE_CLOCK = "ops/crontab.manifest via quant-manifest-dispatch.timer"
 
 #: 3 consecutive missed cadences before an organ is called dead. One miss is a hiccup; three is a
 #: pattern. Loose on purpose -- a board that is red most mornings is a board nobody reads.
@@ -85,7 +102,11 @@ def cadence_hours(cron: str) -> float | None:
         if field == "*":
             return span
         return len([x for x in field.split(",") if x])
-    per_day = count(m, 60) * count(h, 24)
+    # FLOAT FROM THE START. The three narrowing statements below (a weekday fraction, a
+    # day-of-month divisor, a monthly one) all assign a float back into what the counter made an
+    # int, and an int-typed accumulator is a silent invitation to floor a cadence -- which would
+    # hand every consumer a wrong tolerance in the dangerous direction.
+    per_day: float = float(count(m, 60) * count(h, 24))
     if dow != "*":
         per_day *= len([x for x in dow.split(",") if x]) / 7.0
     if dom != "*" and dom.startswith("*/"):
@@ -154,7 +175,8 @@ def parse_manifest(text: str) -> list[dict[str, Any]]:
     return out
 
 
-def audit(root: Path | None = None, *, now: float | None = None) -> dict[str, Any]:
+def audit(root: Path | None = None, *, now: float | None = None,
+          strict: bool = False) -> dict[str, Any]:
     root = root or _ROOT
     now = now if now is not None else time.time()
     try:
@@ -162,6 +184,12 @@ def audit(root: Path | None = None, *, now: float | None = None) -> dict[str, An
     except OSError as exc:
         return {"status": "UNMEASURED", "detail": f"manifest unreadable: {exc}", "organs": []}
     rows = parse_manifest(text)
+    # WHOSE CLOCKS ARE THESE, AND DOES THIS CHECKOUT HOLD THEM? Measured, never inferred from
+    # os.name -- `runs_clocks_here` reads the host's own scheduler, so a build box, CI and a
+    # fresh clone all answer honestly too. `--strict` judges the plane anyway.
+    here = PCEN.host()
+    runs_here = PCEN.runs_clocks_here(root)
+    skip = None if strict else PCEN.mirror_reason(_PLANE_HOST, here, runs_here, _PLANE_CLOCK)
     organs: list[dict[str, Any]] = []
     #: Organs this fence CANNOT watch, kept apart from organs that declared nothing at all.
     #: Same `continue` until now, and the two demand opposite repairs: one is a missing EVIDENCE
@@ -189,7 +217,12 @@ def audit(root: Path | None = None, *, now: float | None = None) -> dict[str, An
         # one, was invisible. Same fact, opposite verdict, decided by a neighbour.
         missing = [a for a, v in per_artifact.items() if v is None]
         fresh = [x for x in per_artifact.values() if x is not None]
-        if not fresh:
+        if skip:
+            # COUNTED, LISTED AND NAMED -- never dropped and never a pass. The ages stay in the
+            # row so a reader sees exactly what WOULD have been said, with the reason this host
+            # is not entitled to say it.
+            state, age = "UNMEASURED_HERE", (min(fresh) if fresh else None)
+        elif not fresh:
             state, age = "NEVER-PRODUCED", None
         else:
             age = min(fresh)
@@ -215,12 +248,21 @@ def audit(root: Path | None = None, *, now: float | None = None) -> dict[str, An
                        "age_h_stalest": round(max(fresh), 2) if fresh else None,
                        "artifact_age_h": {a: (None if v is None else round(v, 2))
                                           for a, v in per_artifact.items()},
+                       "clock_host": _PLANE_HOST, "clock": _PLANE_CLOCK,
+                       "why": skip or None,
+                       "would_be_here": (("NEVER-PRODUCED" if not fresh else
+                                          "STALE" if min(fresh) > tol else
+                                          "PARTIAL" if missing else "FRESH") if skip else None),
                        "state": state})
     dead = [o for o in organs if o["state"] == "NEVER-PRODUCED"]
     stale = [o for o in organs if o["state"] == "STALE"]
     partial = [o for o in organs if o["state"] == "PARTIAL"]
+    elsewhere = [o for o in organs if o["state"] == "UNMEASURED_HERE"]
+    # A ROW THIS HOST CAN JUDGE AND FOUND DARK OUTRANKS ONE IT CANNOT JUDGE AT ALL: the first is
+    # a defect with an address, the second is a fact about the checkout. Neither passes.
     status = ("UNMEASURED" if not organs else
-              "DARK" if dead or stale or partial else "OK")
+              "DARK" if dead or stale or partial else
+              "UNMEASURED_HERE" if elsewhere else "OK")
     return {
         "generated": datetime.now(tz=UTC).isoformat(),
         "law": "L1.28a/L1.28c -- a scheduled line that produces nothing is not a running organ. "
@@ -231,7 +273,10 @@ def audit(root: Path | None = None, *, now: float | None = None) -> dict[str, An
         # test caught it: an organ could be reported PARTIAL, drive the status to DARK, and still
         # be counted in n_fresh -- the skip laundered into a pass one field over (L1.60).
         "n_checked": len(organs),
-        "n_fresh": len(organs) - len(dead) - len(stale) - len(partial),
+        # UNMEASURED_HERE IS SUBTRACTED FROM THE NUMERATOR FOR THE SAME REASON PARTIAL IS: a row
+        # nobody judged is not a row that passed, and letting it ride in n_fresh would launder
+        # the whole plane into a health number on the one host that cannot see it.
+        "n_fresh": len(organs) - len(dead) - len(stale) - len(partial) - len(elsewhere),
         "n_partial": len(partial),
         "partial": [{"script": o["script"], "missing": o["missing_artifacts"]} for o in partial],
         # THE DENOMINATOR'S ATTRITION (L1.60). n_checked alone reads as full coverage of the
@@ -251,15 +296,31 @@ def audit(root: Path | None = None, *, now: float | None = None) -> dict[str, An
         "never_produced": [o["script"] for o in dead],
         "stale": [{"script": o["script"], "age_h": o["age_h"], "tolerance_h": o["tolerance_h"]}
                   for o in stale],
+        "host": here, "runs_clocks_here": runs_here, "strict": bool(strict),
+        "clock_plane": _PLANE_CLOCK, "clock_plane_host": _PLANE_HOST,
+        "n_unmeasured_here": len(elsewhere),
+        "unmeasured_here_why": skip,
+        "unmeasured_here": [{"script": o["script"], "would_be_here": o["would_be_here"],
+                             "age_h": o["age_h"], "tolerance_h": o["tolerance_h"]}
+                            for o in elsewhere],
         "organs": organs,
         "diagnosis": ("NEVER-PRODUCED means WIRING (path, venv, lock) -- it was never working. "
-                      "STALE means it STOPPED (auth, quota, upstream 451). Different repairs, so "
-                      "they are never collapsed into one state."),
-        "detail": (f"{len(organs) - len(dead) - len(stale)}/{len(organs)} scheduled organs with "
-                   f"declared evidence produced within their own cadence"
+                      "STALE means it STOPPED (auth, quota, upstream 451). UNMEASURED_HERE means "
+                      "THIS CHECKOUT DOES NOT HOLD THE CLOCK: the row belongs to the other "
+                      "machine's plane and its artifact is gitignored, so an absent file here is "
+                      "not evidence about the organ. Three different repairs, so they are never "
+                      "collapsed -- and none of the three is a pass."),
+        # THE DENOMINATOR IS WHAT THIS HOST COULD JUDGE, never the whole plane. "0/62 produced
+        # within their own cadence" would read as sixty-two dead organs when the true statement
+        # is that this checkout judged none of them.
+        "detail": (f"{len(organs) - len(dead) - len(stale) - len(partial) - len(elsewhere)}/"
+                   f"{len(organs) - len(elsewhere)} judged here produced within their own cadence"
+                   + (f" ({len(organs)} scheduled rows seen)" if elsewhere else "")
                    + (f"; NEVER PRODUCED: {', '.join(o['script'] or '?' for o in dead)}"
                       if dead else "")
-                   + (f"; STALE: {', '.join(o['script'] or '?' for o in stale)}" if stale else "")),
+                   + (f"; STALE: {', '.join(o['script'] or '?' for o in stale)}" if stale else "")
+                   + (f"; {len(elsewhere)} row(s) UNMEASURED_HERE -- {skip}. Run with --strict to "
+                      f"judge them anyway" if elsewhere else "")),
     }
 
 
@@ -268,19 +329,31 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--report-only", action="store_true")
     ap.add_argument("--json", action="store_true")
+    ap.add_argument("--strict", action="store_true",
+                    help="judge every row, including the plane this host does not run")
     args = ap.parse_args()
-    rep = audit()
+    rep = audit(strict=bool(args.strict))
     out = _ROOT / "data/organ_liveness.json"
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(rep, indent=2), "utf-8")
     if args.json:
         print(json.dumps(rep, indent=2))
     else:
-        print(f"organ liveness (L1.28c): {rep['status']} -- {rep['detail'][:200]}")
+        print(f"organ liveness (L1.28c): {rep['status']} -- {rep['detail'][:260]}")
         for o in rep["organs"]:
-            if o["state"] != "FRESH":
+            if o["state"] not in ("FRESH", "UNMEASURED_HERE"):
                 print(f"  {o['state']:<16}{o['script']!s:<38}"
                       f"age={o['age_h']} tol={o['tolerance_h']}h")
+        # THE SKIPPED PLANE IS SUMMARISED, NEVER SILENT -- and the rows it WOULD have flagged are
+        # named, because "this host cannot judge them" must not turn into "nobody mentions them".
+        if rep.get("n_unmeasured_here"):
+            would = [r for r in rep["unmeasured_here"] if r["would_be_here"] != "FRESH"]
+            print(f"  UNMEASURED_HERE {rep['n_unmeasured_here']} row(s) on the "
+                  f"{rep['clock_plane_host']} plane ({rep['clock_plane']}): "
+                  f"{rep['unmeasured_here_why']}")
+            print(f"    {len(would)} of them would read dark if judged here: "
+                  f"{', '.join(str(r['script']) for r in would[:6])}"
+                  f"{' ...' if len(would) > 6 else ''}")
     if args.report_only:
         return 0
     return fence_exit(rep["status"], _PASSING)

@@ -61,3 +61,98 @@ def test_the_filter_never_takes_the_intake_dark() -> None:
                                   {"symbol": "GBPUSD", "family": "f"}])
     assert [c["symbol"] for c in ok] == ["XAUUSD", "GBPUSD"]
     assert len(refused) == 1
+
+
+# ------------------------------------------------------------------ THE DOCKET'S LAST FUNNEL
+# THE DOOR THE MANDATE STILL LEAKED THROUGH (measured 2026-09-24). `_lane_filtered` above stands
+# at the DONATION door and `route_by_lane` at the BACKTEST's -- but `merge_hypotheses` is the one
+# funnel EVERY producer flows through, and its bank loop re-admits every row ever minted on every
+# hourly run. So the residue banked before the two-lane order was re-minted into the judge's
+# docket hour after hour: 932 rows across 103 single names on this tree (1,020 on the trading
+# box), which `fast_admission` counted as `off_hypothesis_lane` while naming a removal owner that
+# had no limb to remove them. A screen that names a population its writer never removes is a
+# queue with extra steps.
+from research.merge_hypotheses import lane_router, split_by_lane, tradeable_universe  # noqa: E402
+
+
+def _refuse_equities(symbol: str) -> str:
+    """A stand-in router: the shape `lane_router` returns, without the registry."""
+    return "event" if symbol in ("Apple", "GoldmanSachs") else ""
+
+
+def test_the_merge_routes_equities_out_of_the_judging_docket() -> None:
+    rows = [{"symbol": "XAUUSD", "family": "f"}, {"symbol": "Apple", "family": "f"},
+            {"sym": "GoldmanSachs", "family": "f"}, {"symbol": "EURUSD", "family": "f"}]
+    judged, off, by_lane, by_symbol = split_by_lane(rows, _refuse_equities, "now")
+    assert [r.get("symbol") or r.get("sym") for r in judged] == ["XAUUSD", "EURUSD"]
+    assert by_lane == {"event": 2}
+    assert by_symbol == {"Apple": 1, "GoldmanSachs": 1}
+    assert len(off) == 2
+
+
+def test_a_routed_row_is_KEPT_and_carries_its_verdict_and_reason() -> None:
+    """Never deleted. The event lane picks its population up by name instead of re-deriving it."""
+    judged, off, _, _ = split_by_lane([{"symbol": "Apple", "family": "f"}],
+                                      _refuse_equities, "2026-09-24T00:00:00")
+    assert judged == []
+    row = off[0]
+    assert row["symbol"] == "Apple" and row["family"] == "f"     # the row itself survives intact
+    assert row["lane"] == "event" and row["judging_status"] == "EVENT_LANE"
+    assert row["routed_to_event_lane_at"] == "2026-09-24T00:00:00"
+    why = row["judging_reason"]
+    assert "2026-09-06" in why and "never hunted" in why
+    # and it says what did NOT happen, so a later reader cannot mistake this for a reduction
+    assert "stays tradable" in why and "bars and ticks are still collected" in why
+
+
+def test_an_unprovable_router_routes_NOTHING() -> None:
+    """Losing the registry must never empty the judge's docket (L1.28a).
+
+    `lane()` answers UNCLASSIFIED for every symbol when it cannot read MetaTrader's registry, so a
+    door that trusted it blindly would route the WHOLE docket away from the judge the first hour
+    the file was unreadable. This is the same fail-open `tradeable_universe` already takes.
+    """
+    refusal, why = lane_router({})
+    assert refusal is None
+    assert "UNMEASURED" in why and "NOTHING" in why
+    rows = [{"symbol": "Apple", "family": "f"}, {"symbol": "XAUUSD", "family": "f"}]
+    judged, off, by_lane, _ = split_by_lane(rows, refusal, "now")
+    assert len(judged) == 2 and off == [] and by_lane == {}
+
+
+def test_a_row_that_names_no_instrument_is_not_routed_out() -> None:
+    """The same rule the donation door keeps: a missing field is not a policy breach."""
+    judged, off, _, _ = split_by_lane([{"family": "macro_conditional"}], _refuse_equities, "now")
+    assert len(judged) == 1 and off == []
+
+
+def test_the_router_is_proved_against_the_registry_before_it_routes_anything() -> None:
+    """Against the real universe: FX and gold reach the judge, a share CFD does not."""
+    universe = tradeable_universe()
+    if not universe:
+        import pytest
+        pytest.skip("UNMEASURED: no universe registry on this host")
+    refusal, why = lane_router(universe)
+    assert refusal is not None and "proved on" in why
+    assert refusal("XAUUSD") == "" and refusal("EURUSD") == ""
+    equities = [s for s in universe.values() if refusal(s)]
+    assert equities, "the registry carries share CFDs and none was routed out"
+
+
+def test_unclassified_is_routed_out_because_absence_is_not_a_permission() -> None:
+    """A real instrument whose class the desk has never seen is hunted by nothing."""
+    judged, off, by_lane, _ = split_by_lane(
+        [{"symbol": "NOTREAL", "family": "f"}],
+        lambda s: "unclassified" if s == "NOTREAL" else "", "now")
+    assert judged == [] and by_lane == {"unclassified": 1}
+    assert off[0]["lane"] == "unclassified"
+
+
+def test_the_door_is_wired_into_the_merge_and_publishes_its_verdict() -> None:
+    """UNWIRED IS A DEFECT (III.16): a door nothing calls is a claim the desk cannot cash."""
+    src = (DESK / "research" / "merge_hypotheses.py").read_text(encoding="utf-8")
+    assert "lane_refusal, lane_why = lane_router(tradeable)" in src
+    assert "split_by_lane(" in src
+    # the merge report must carry the verdict AND whether the router could be proved, so
+    # "nothing was routed this hour" never reads the same as "the registry was unreadable"
+    assert '"event_lane": {' in src and '"proved": lane_refusal is not None' in src

@@ -1,12 +1,12 @@
-"""CLOCK IMPLIES CERTIFICATE -- and the law RAISES testing rather than cutting evidence.
+"""CLOCK IF AND ONLY IF CERTIFICATE -- strict, and these tests pin what that does and does not mean.
 
-The tests that matter here are the ones that stop the obvious wrong implementation. A breach is
-easy to "fix" by switching the clock off; doing that would shrink the forward book to the size
-of the canon, destroy the evidence that would have settled each cell, and reintroduce exactly
-the scarcity the principal abolished. So: a breached clock KEEPS accruing and its cell goes to
-the FRONT of the judge's queue; only the judge's own rejection takes a clock away, and only when
-that rejection cannot belong to a sibling parameterization; an empty canon declares no breach at
-all; and the fence fails on breach AGE, never on breach COUNT.
+The rule: a forward clock exists only while a canonical certificate backs it, and an unbacked
+clock is retired on the pass it is found. The tests that matter are the ones that stop the two
+wrong implementations. It must not keep an unbacked clock alive "until the judge gets to it" --
+that was the power-cure lane the principal abolished, and it bought forward evidence the desk can
+never cash. And it must not quietly drop the cell: losing a clock is NOT losing priority, so the
+cell stays at the FRONT of the judge's queue. An empty canon still declares nothing, because a
+canon that cannot be read cannot convict.
 """
 from __future__ import annotations
 
@@ -60,10 +60,12 @@ def test_a_clock_on_the_roster_is_backed(tmp_path, canon):
     assert out["breached"] == 0
 
 
-def test_a_clock_with_no_certificate_is_a_breach_naming_its_cell(tmp_path, canon):
+def test_a_clock_with_no_certificate_is_retired_naming_its_cell(tmp_path, canon):
     out = _audit([_clock("EURUSD.carry.continuous")], set(), tmp_path, canon)
     assert out["breached"] == 1
     assert out["rows"][0]["cell"] == "EURUSD.carry"
+    assert out["retire"][0]["retired_reason"] == "NO_CERTIFICATE"
+    assert out["awaiting"] == 0
 
 
 def test_an_intraday_clock_names_its_chart_in_the_cell(tmp_path, canon):
@@ -80,7 +82,9 @@ def test_an_already_terminal_clock_breaches_nothing(tmp_path, canon):
 
 
 # ------------------------------------------------------------- the remedy is the judge, not the axe
-def test_a_breached_clock_is_queued_first_and_keeps_its_clock(tmp_path, canon):
+def test_a_cell_that_loses_its_clock_keeps_the_front_of_the_judges_queue(tmp_path, canon):
+    """Losing a clock is not losing priority: judging the cell is the only thing that can give
+    it a clock back, so it is still submitted at the maximum priority in the queue."""
     out = _audit([_clock("EURUSD.carry.continuous")], set(), tmp_path, canon, apply=True)
     assert out["queue"]["submitted"] == 1
     from libs.ops.task_queue import TaskQueue
@@ -88,7 +92,16 @@ def test_a_breached_clock_is_queued_first_and_keeps_its_clock(tmp_path, canon):
     assert tasks[0].kind == "recertify"
     assert tasks[0].priority == cc.BREACH_PRIORITY
     assert tasks[0].dedupe_key == "clock_breach:EURUSD.carry"
-    assert out["rows"][0]["backing"] == cc.AWAITING       # the clock keeps running
+
+
+def test_there_is_no_awaiting_judgement_state_left(tmp_path, canon):
+    """The power-cure lane is abolished: no clock may wait for the judge while accruing."""
+    out = _audit([_clock("EURUSD.carry.continuous"),
+                  _clock("GBPUSD.carry.continuous")], set(), tmp_path, canon)
+    assert out["awaiting"] == 0
+    assert out["counts"][cc.AWAITING] == 0
+    assert len(out["retire"]) == 2
+    assert "restarts from zero" in out["cost"]
 
 
 def test_a_cell_already_waiting_in_the_queue_is_not_requeued_every_hour(tmp_path, canon):
@@ -121,41 +134,44 @@ def _verdict(gate, status="REJECTED", passed=False):
              "downstream_status": status}]
 
 
-def test_a_parameter_independent_reject_takes_the_clock_with_the_verdict_as_its_reason(tmp_path,
-                                                                                       canon):
+def test_a_parameter_independent_reject_is_recorded_as_the_reason(tmp_path, canon):
+    """The clock goes either way under the strict rule; what the judge's own verdict buys is a
+    truthful REASON on the retired row -- rejected at a named gate, not merely uncertified."""
     out = _audit([_clock("EURUSD.carry.continuous")], set(), tmp_path, canon,
                  verdicts=_verdict("economic_prior", "NOT_RUN_TERMINAL_GATE_1_REJECT"))
-    assert out["counts"][cc.RETIRED] == 1
-    assert out["breached"] == 0
+    assert out["retire"][0]["retired_reason"] == "JUDGE_REJECTED"
     assert "economic_prior" in out["retire"][0]["why"]
 
 
-def test_a_parameter_dependent_reject_never_takes_a_sibling_cells_clock(tmp_path, canon):
-    """`deflated_sharpe` rules on ONE parameterization, and the ledger cannot be joined to a
-    clock below (symbol, family, chart) -- so acting on it would retire an unjudged cell."""
+def test_a_parameter_dependent_reject_is_not_used_as_the_reason(tmp_path, canon):
+    """The clock goes either way now -- what the sibling verdict must not do is be RECORDED as
+    this cell's rejection, because the judge never ruled on this parameterization."""
     out = _audit([_clock("EURUSD.carry.continuous")], set(), tmp_path, canon,
                  verdicts=_verdict("deflated_sharpe"))
-    assert out["counts"][cc.RETIRED] == 0
-    assert out["rows"][0]["backing"] == cc.AWAITING
-    assert "not this clock" in out["rows"][0]["why"]
+    assert out["retire"][0]["retired_reason"] == "NO_CERTIFICATE"
+    assert "deflated_sharpe" not in str(out["retire"][0]["why"])
 
 
-def test_a_cell_the_judge_stamped_but_never_ran_is_awaiting_not_rejected(tmp_path, canon):
+def test_a_cell_the_judge_never_ran_loses_its_clock_for_want_of_a_certificate(tmp_path, canon):
     out = _audit([_clock("EURUSD.carry.continuous")], set(), tmp_path, canon,
                  verdicts=_verdict("", "NOT_RUN_BUILD_BUDGET_DEFERRED"))
-    assert out["rows"][0]["backing"] == cc.AWAITING
-    assert out["counts"][cc.RETIRED] == 0
+    assert out["retire"][0]["retired_reason"] == "NO_CERTIFICATE"
+    assert out["queue"]["applied"] is False      # dry run here; the live pass queues it first
 
 
-def test_a_pass_the_canon_has_not_caught_up_with_keeps_the_clock(tmp_path, canon):
+def test_only_the_canon_grants_a_clock_never_a_lane_declaring_its_own_pass(tmp_path, canon):
+    """A gate ledger row saying `passed` is not a certificate. Only entry into the canonical
+    store creates a clock -- that is what `if and only if` forbids."""
     out = _audit([_clock("EURUSD.carry.continuous")], set(), tmp_path, canon,
                  verdicts=_verdict("expected_value", "PASSED", passed=True))
-    assert out["rows"][0]["backing"] == cc.AWAITING
-    assert "certificate lane" in out["rows"][0]["why"]
+    assert out["backed"] == 0
+    assert out["retire"][0]["retired_reason"] == "NO_CERTIFICATE"
 
 
 # ------------------------------------------------------------------------------- the ageing
-def test_breach_age_is_measured_from_the_ledger_not_from_this_pass(tmp_path, canon):
+def test_breach_age_is_still_published_from_the_ledger_for_the_record(tmp_path, canon):
+    """The age no longer gates anything -- nothing survives to age -- but a cell that keeps
+    coming back uncertified is worth seeing, so the first-seen ledger is still published."""
     led = tmp_path / "breach.json"
     old = (datetime.now(UTC) - timedelta(hours=5)).isoformat()
     led.write_text(json.dumps({"first_seen": {"EURUSD.carry": old}}), encoding="utf-8")
@@ -165,7 +181,7 @@ def test_breach_age_is_measured_from_the_ledger_not_from_this_pass(tmp_path, can
                    canon_path=canon, verdict_path=v, ledger_path=led,
                    queue_path=tmp_path / "q.jsonl")
     assert out["rows"][0]["breach_age_s"] > 4 * 3600
-    assert out["overdue_beyond_one_judging_cycle"] == 1
+    assert out["overdue_beyond_one_judging_cycle"] == 0      # no tolerance to outlive
 
 
 def test_the_breach_ratchet_only_falls(tmp_path):
@@ -177,21 +193,27 @@ def test_the_breach_ratchet_only_falls(tmp_path):
 
 
 # --------------------------------------------------------------------------------- the fence
-_CERT = {"breached": 400, "awaiting": 400, "backed": 5, "retired": 10,
+_CERT = {"breached": 95, "awaiting": 0, "backed": 55, "retired": 434, "unbacked_live": 0,
          "overdue_beyond_one_judging_cycle": 0, "judging_cycle_s": 3600.0,
-         "ratchet": {"lowest_breached": 400}, "queue": {"submitted": 400, "already_queued": 0}}
+         "ratchet": {"lowest_breached": 95}, "queue": {"submitted": 71, "already_queued": 0}}
 
 
-def test_the_fence_fails_on_breach_age_and_never_on_breach_count():
-    """A fence that went red on the COUNT would pressure a session into retiring clocks to get
-    green -- destroying the evidence the law exists to gather."""
+def test_the_fence_fails_on_any_unbacked_clock_at_all():
+    """Strict: there is no tolerance and no ageing window, because an unbacked clock is retired
+    on the pass it is found. A clean pass leaves zero, so anything else is the law broken."""
     ok = fence.judge(_report(_CERT), {"lowest_frozen": 0}, require_state=True)
     assert ok["verdict"] == fence.OK, ok["findings"]
-    overdue = {**_CERT, "overdue_beyond_one_judging_cycle": 3, "oldest_breach_age_s": 20000.0}
-    out = fence.judge(_report(overdue), {"lowest_frozen": 0}, require_state=True)
+    live = {**_CERT, "unbacked_live": 1}
+    out = fence.judge(_report(live), {"lowest_frozen": 0}, require_state=True)
     assert out["verdict"] == fence.FAIL
-    assert any("UNCERTIFIED" in f for f in out["findings"])
-    assert any("the remedy is the judge, not the clock" in f for f in out["findings"])
+    assert any("NO canonical certificate" in f for f in out["findings"])
+
+
+def test_the_fence_rejects_the_return_of_the_awaiting_lane():
+    out = fence.judge(_report({**_CERT, "awaiting": 4}), {"lowest_frozen": 0},
+                      require_state=True)
+    assert out["verdict"] == fence.FAIL
+    assert any("must not come back" in f for f in out["findings"])
 
 
 def test_the_fence_fails_when_the_breach_ratchet_rises():

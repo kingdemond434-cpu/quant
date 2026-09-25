@@ -16,6 +16,12 @@ WHAT THIS ASSERTS, against `desks/mt5/reports/JUDGE_COVERAGE.json`, which
     reading and STILL unjudged now are the carried cohort. A cell leaves it exactly one way -- by
     being judged -- so it can only fall, and a family whose carried count did not fall while it
     held backlog and held quota was starved in fact if not in the queue.
+  * THE REMAINDER FOLLOWS THE PUBLISHED RANKING.  The floor is the breadth mandate and is
+    covered by the starvation check; the remainder is where the return is, and it is spent
+    strictly down expected value per judge-second. A family given remainder while a HIGHER-ranked
+    family still held undrained backlog means the allocation stopped following its own ranking --
+    which is exactly how a future session would quietly revert this to round-robin with the
+    report still claiming value ordering.
   * NO FAMILY'S OLDEST UNJUDGED CELL EXCEEDS ITS OWN WINDOW.  A family's window is the hours its
     own quota needs to drain its own backlog, floored at the hour. A family of 55,190 cells is
     not failed for being large and a family of nine is not excused for being small.
@@ -67,7 +73,9 @@ STALE_H = 6.0
 WINDOW_SLACK = 2.0
 
 RULE = ("no family holding unjudged cells is absent from the hour's queue; each family's carried "
-        "backlog falls; no family's oldest unjudged cell sits past twice its own drain window")
+        "backlog falls; no family's oldest unjudged cell sits past twice its own drain window "
+        "without moving; and the remainder after every floor follows the published "
+        "expected-value-per-judge-second ranking")
 
 
 def _read(path: Path) -> Any:
@@ -163,32 +171,152 @@ def judge(report: Path | None = None, *, require_state: bool = False,
             out["checks"].append({"metric": "carried_backlog", "state": "OK",
                                   "why": f"{drained} carried cell(s) left the backlog this pass"})
 
-    # 3. NO FAMILY PAST ITS OWN WINDOW.
-    overdue = sorted((f for f, r in fams.items()
-                      if int(r.get("unjudged") or 0) > 0
-                      and r.get("oldest_unjudged_age_h") is not None
-                      and float(r.get("window_h") or 1.0) > 0
-                      and float(r["oldest_unjudged_age_h"]) >
-                      WINDOW_SLACK * float(r.get("window_h") or 1.0)
-                      and str(r.get("judging_status") or "") != "STUDY_ONLY"),
+    # 3. NO FAMILY PAST ITS OWN WINDOW -- AND THE AGE IS RATCHETED ON MOVEMENT, NOT ON ITS VALUE.
+    #
+    # An age RISES by the wall time between two readings whatever the desk does. The coverage-
+    # drain fence ratcheted a raw wait and went red on its third live pass for exactly that
+    # reason -- 6.0h to 6.3h, eighteen minutes of clock -- and a gate nobody can satisfy is a gate
+    # that gets switched off. So what fails here is an age that is past twice the family's own
+    # drain window AND DID NOT FALL, in a pass where the family held quota and the judge actually
+    # recorded verdicts. That is the controllable defect: a family whose stream is sorted
+    # oldest-first, which was served this hour, and whose oldest cell still did not move.
+    # The first reading carries no baseline and so enters UNMEASURED, which is how every metric
+    # on this desk enters: at its measurement, never at an invented zero.
+    def _overdue(f: str, r: dict[str, Any]) -> bool:
+        if int(r.get("unjudged") or 0) <= 0 or str(r.get("judging_status") or "") == "STUDY_ONLY":
+            return False
+        age = r.get("oldest_unjudged_age_h")
+        prior = r.get("prior_oldest_age_h")
+        if age is None or prior is None or int(r.get("quota") or 0) <= 0 or judged_any == 0:
+            return False
+        window = float(r.get("window_h") or 1.0)
+        return float(age) > WINDOW_SLACK * window and float(age) >= float(prior)
+
+    overdue = sorted((f for f, r in fams.items() if _overdue(f, r)),
                      key=lambda f: -float(fams[f].get("oldest_unjudged_age_h") or 0.0))
     if overdue:
         failures.extend(overdue[:10])
         out["checks"].append({
             "metric": "oldest_unjudged", "state": "FAIL",
-            "why": (f"{len(overdue)} family(ies) hold a cell older than twice their own drain "
-                    f"window: " + ", ".join(
+            "why": (f"{len(overdue)} family(ies) were served this hour and their oldest cell "
+                    f"still did not move, past twice their own drain window: " + ", ".join(
                         f"{f} ({fams[f].get('oldest_unjudged_age_h')}h vs "
-                        f"{fams[f].get('window_h')}h)" for f in overdue[:5]))})
+                        f"{fams[f].get('window_h')}h window)" for f in overdue[:5]))})
     else:
-        out["checks"].append({"metric": "oldest_unjudged", "state": "OK",
-                              "why": "no family's oldest unjudged cell is past its own window"})
+        stale_age = sorted((f for f, r in fams.items()
+                            if r.get("oldest_unjudged_age_h") is not None
+                            and int(r.get("unjudged") or 0) > 0
+                            and float(r["oldest_unjudged_age_h"]) >
+                            WINDOW_SLACK * float(r.get("window_h") or 1.0)),
+                           key=lambda f: -float(fams[f].get("oldest_unjudged_age_h") or 0.0))
+        out["checks"].append({
+            "metric": "oldest_unjudged",
+            "state": "OK" if not stale_age else "WARN",
+            "why": ("no family's oldest unjudged cell is past its own window" if not stale_age
+                    else (f"{len(stale_age)} family(ies) hold a cell past their own window and "
+                          f"it is FALLING or unmeasured (oldest "
+                          f"{fams[stale_age[0]].get('oldest_unjudged_age_h')}h on "
+                          f"{stale_age[0]}) -- published, not failed: an age rises with the "
+                          "clock and only its movement is the desk's to control"))})
+
+    # 4. THE REMAINDER FOLLOWED THE PUBLISHED RANKING. The floor is the breadth mandate and is
+    #    checked above by starvation; this checks the part that carries the return. Remainder is
+    #    spent strictly down expected value per judge-second, so a family that received remainder
+    #    while a HIGHER-ranked family still held undrained backlog means the allocation stopped
+    #    following its own ranking -- which is exactly how a future session would quietly revert
+    #    this to round-robin, with the report still claiming value ordering.
+    ranking = [r for r in (doc.get("value_ranking") or ()) if isinstance(r, dict)]
+    if not ranking:
+        out["checks"].append({"metric": "remainder_follows_ranking", "state": "UNMEASURED",
+                              "why": "the report publishes no value ranking"})
+    else:
+        starved_higher: list[str] = []
+        for i, row in enumerate(ranking):
+            if int(row.get("remainder") or 0) <= 0:
+                continue
+            for higher in ranking[:i]:
+                room = int(higher.get("unjudged") or 0) - int(higher.get("quota") or 0)
+                if int(higher.get("remainder") or 0) == 0 and room > 0:
+                    starved_higher.append(f"{row.get('family')} over {higher.get('family')}")
+                    break
+        if starved_higher:
+            failures.extend(starved_higher[:10])
+            out["checks"].append({
+                "metric": "remainder_follows_ranking", "state": "FAIL",
+                "why": ("the remainder did not follow the published expected-value-per-judge-"
+                        "second ranking: " + ", ".join(starved_higher[:5]))})
+        else:
+            top = ranking[0]
+            out["checks"].append({
+                "metric": "remainder_follows_ranking", "state": "OK",
+                "why": (f"remainder spent down the ranking, top {top.get('family')} at "
+                        f"{top.get('ev_per_judge_second')} ev/judge-s")})
+
+    # 5. THE UNKNOWN CLASS RATCHETS DOWN AND MAY NOT STALL (principal 2026-09-23). MEASURED on
+    #    the box: 44,432 of 60,000 recent verdicts terminated with no named gate -- three
+    #    quarters of the judge returning neither a pass nor a reason, the largest single waste on
+    #    the desk. `judge_coverage.name_unknowns` gives every one of them a NAMED reason and
+    #    `update_unrunnable_bank` filters the unrunnable ones out of intake, so the count must
+    #    fall. It FAILS on a rise, and on a STALL while the bank still had cells to filter --
+    #    a count that stops falling with work left is how this silently returns. A count already
+    #    at zero stalls at zero and passes; the first reading has no baseline and is UNMEASURED.
+    tot = doc.get("totals") or {}
+    now_unknown = tot.get("unknown_total")
+    was_unknown = tot.get("prior_unknown_share")
+    unnamed = int(tot.get("unknown_unnamed") or 0)
+    share_now = tot.get("unknown_share")
+    if now_unknown is None or share_now is None:
+        out["checks"].append({"metric": "unknown_ratchet", "state": "UNMEASURED",
+                              "why": "no UNKNOWN census in this report"})
+    elif unnamed > 0:
+        failures.append("unknown_unnamed")
+        out["checks"].append({
+            "metric": "unknown_ratchet", "state": "FAIL",
+            "why": (f"{unnamed} UNKNOWN verdict(s) carry no named reason -- an unnamed terminal "
+                    "state is the defect, whatever the cause turns out to be")})
+    elif was_unknown is None:
+        out["checks"].append({
+            "metric": "unknown_ratchet", "state": "UNMEASURED",
+            "why": (f"UNKNOWN share enters at its measurement ({float(share_now):.1%}, "
+                    f"{now_unknown} cells, all named); no previous reading to ratchet against")})
+    else:
+        parked = int(tot.get("unrunnable_bank") or 0)
+        rose = float(share_now) > float(was_unknown) + 1e-9
+        # A STALL IS ONLY A STALL IF THE JUDGE RAN. The share is read from the sealed judge's own
+        # verdict file, which does not move between its sweeps -- so without this guard the fence
+        # would go red for the crime of being asked twice in one hour, which is precisely how the
+        # coverage-drain fence learned that an unsatisfiable gate gets switched off. A RISE still
+        # fails unguarded: a share cannot rise without new verdicts arriving.
+        has_stalled = (abs(float(share_now) - float(was_unknown)) <= 1e-9
+                       and float(share_now) > 0 and parked > 0 and judged_any > 0)
+        if rose or has_stalled:
+            failures.append("unknown_share")
+            out["checks"].append({
+                "metric": "unknown_ratchet", "state": "FAIL",
+                "why": (f"UNKNOWN share {'rose' if rose else 'stalled at'} "
+                        f"{float(was_unknown):.1%} -> {float(share_now):.1%} with {parked} "
+                        "cell(s) in the unrunnable bank: the filter is not reaching the judge")})
+        else:
+            out["checks"].append({
+                "metric": "unknown_ratchet", "state": "OK",
+                "why": (f"UNKNOWN share {float(was_unknown):.1%} -> {float(share_now):.1%}, "
+                        f"{now_unknown} cells, every one named"
+                        + ("" if judged_any else
+                           " (unchanged because the judge recorded no verdict this window --"
+                           " a stall is only a stall if the judge ran)"))})
 
     totals = doc.get("totals") or {}
     out["totals"] = {k: totals.get(k) for k in (
         "families_mined", "families_with_backlog", "families_queued", "families_starved",
         "unjudged_total", "carried_total", "study_only_total", "capacity_measured",
-        "oldest_unjudged_age_h")}
+        "oldest_unjudged_age_h", "value_at_risk", "value_deferred", "value_forgone_per_hour",
+        "hours_to_drain", "capacity_short", "unknown_total", "unknown_share",
+        "unknown_unnamed", "never_fires_cells", "unrunnable_parked", "unrunnable_bank")}
+    out["unknown_reasons"] = (doc.get("unknown_reasons") or {}).get("by_reason") or {}
+    out["top_value"] = [{k: r.get(k) for k in ("rank", "family", "ev_per_judge_second",
+                                               "p_optimistic", "prior_status", "quota",
+                                               "floor", "remainder", "value_at_risk")}
+                        for r in ranking[:5]]
     out["worst_backlog"] = (doc.get("worst_backlog") or [])[:5]
     out["verdict"] = "FAIL" if failures else "PASS"
     out["why"] = (f"{len(set(failures))} family(ies) failed a coverage rule: "
@@ -202,6 +330,19 @@ def render(doc: Mapping[str, Any]) -> list[str]:
     lines = [f"judge coverage: {doc.get('verdict')} -- {doc.get('why')}"]
     for row in doc.get("checks") or ():
         lines.append(f"  [{row.get('state')}] {row.get('metric')}: {row.get('why')}")
+    t = doc.get("totals") or {}
+    if t.get("unknown_total") is not None:
+        lines.append(f"  UNKNOWN {t.get('unknown_total')} ({t.get('unknown_share')}) "
+                     f"reasons {doc.get('unknown_reasons')} unnamed {t.get('unknown_unnamed')} "
+                     f"bank {t.get('unrunnable_bank')}")
+    if t.get("value_at_risk") is not None:
+        lines.append(f"  value at risk {t.get('value_at_risk')} / deferred "
+                     f"{t.get('value_deferred')} / forgone {t.get('value_forgone_per_hour')}/h"
+                     + ("  CAPACITY SHORT -> judging_throughput" if t.get("capacity_short")
+                        else ""))
+    for row in doc.get("top_value") or ():
+        lines.append(f"  #{row.get('rank')} {row.get('family')} ev/judge-s "
+                     f"{row.get('ev_per_judge_second')} quota {row.get('quota')}")
     for row in doc.get("worst_backlog") or ():
         lines.append(f"  worst: {row.get('family')} unjudged {row.get('unjudged')} "
                      f"queued {row.get('queued')} oldest {row.get('oldest_unjudged_age_h')}h")

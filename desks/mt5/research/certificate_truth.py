@@ -109,8 +109,20 @@ LIVE_SLEEVE = frozenset({"LIVE", "STANDBY"})
 LIVE_REGISTRY = frozenset({"LIVE"})
 #: Shadow-clock statuses that are NOT a live claim (forward_reconcile.TERMINAL plus the policy
 #: verdict, which is a decision elsewhere and is never counted here).
+#:
+#: KEPT AS THE NAMED SET, READ THROUGH A PREFIX RULE. As an exact-match membership test this set
+#: was the whole of the 2026-09-23 divergence report: `clock_certificate.retire_unbacked` writes
+#: `RETIRED_NO_CERTIFICATE`, which is in no line below, so every clock THIS DESK HAD ALREADY
+#: RETIRED was re-judged here as a running clock -- 23 BANNED_CLOCK and 12 UNBACKED_CLOCK, 35
+#: fatal rows that no evidence could ever close because they were not about evidence. Worse, the
+#: count flapped: `forward_reconcile` re-stamps some of the same rows `RETIRED_ORPHAN`, which IS
+#: below, and the box measured 35 fatal at 19:59:17 and 0 at 20:09:59 on the same rows. The
+#: membership test is now `retired_clocks.is_terminal`, the PREFIX rule `shadow_forward` and
+#: `clock_liveness` always used, so a retirement word an organ invents tomorrow is understood by
+#: every reader the day it ships.
 TERMINAL = frozenset({"KILL", "KILLED", "PROMOTED", "DEAD", "REJECTED", "RETIRED",
                       "RETIRED_ORPHAN", "RETIRED_GATE_FAIL", "RETIRED_UNRECONSTRUCTIBLE",
+                      "RETIRED_NO_CERTIFICATE",
                       "QUARANTINED_UNCERTIFIED", "REFUSED_BY_UNIVERSE_POLICY"})
 SESSION_WINDOWS = ("asia", "london_am", "ny_open", "afternoon")
 SRB = "session_range_breakout"
@@ -149,6 +161,8 @@ FATAL_KINDS = frozenset({"BANNED_CERTIFICATE", "BANNED_CLAIM", "BANNED_CLOCK", "
                          "CANON_UNMEASURED_WITH_LIVE_CLOCKS",
                          "CANON_EMPTY_WITH_RESTORABLE_EVIDENCE",
                          "SECOND_CERTIFICATE_STORE", "DERIVED_STORE_WRITTEN_DIRECTLY",
+                         "JOIN_COVERAGE_BREACH",
+                         "IDENTITY_NOT_STAMPED_AT_BIRTH",
                          "CLAIM_NOT_SUBMITTED_TO_JUDGE",
                          "RECONCILE_CERTIFIED_CLOCKS_ON_EMPTY_CANON"})
 
@@ -602,9 +616,15 @@ def classify(ident: dict[str, Any], lane: dict[str, Any]) -> tuple[str, str]:
     hits = lane["by_parts"].get(p)
     if hits:
         return "BACKED", f"certificate {hits[0]} names these parts"
-    cure = lane.get("cure_by_parts", {}).get(p)
-    if cure:
-        return "CURE", f"{CURE_REASON} ({cure})"
+    # THE POWER-CURE ESCAPE STOOD HERE AND IS DELETED (principal 2026-09-24, "delete the other").
+    # It read `lane["cure_by_parts"]` and returned CURE -- "backed by the lane without being a
+    # certificate" -- for any clock whose parts appeared in POWER_CURE_CANDIDATES.json. That is
+    # the same split `authorized_runs` carried, recorded one module downstream: it is what made
+    # an unbacked clock count as `cure_backed` INSTEAD OF as a divergence, so the audit whose
+    # whole purpose is to find clocks the canon does not back was the organ hiding 120 of them.
+    # Measured 2026-09-24: 0 of 1,240 eligible cure cells pass all ten gates; all 1,240 fail
+    # `deflated_sharpe`. A cell that is close to certifying is EVIDENCE and is still published
+    # here as a candidate; what it no longer gets is a verdict that reads like backing.
     return "UNBACKED", UNBACKED_REASON
 
 
@@ -616,6 +636,27 @@ def _rows_of_state(doc: dict[str, Any]) -> list[tuple[str, dict[str, Any]]]:
     if isinstance(sub, dict):
         rows += [(k, v) for k, v in sub.items() if isinstance(v, dict) and "status" in v]
     return rows
+
+
+def _terminal(status: object) -> bool:
+    """True when the row makes no live claim -- ONE implementation, the prefix rule.
+
+    Imported from `research/retired_clocks.py` rather than re-spelled here: a second copy of a
+    vocabulary is exactly how `RETIRED_NO_CERTIFICATE` ended up meaning "running" to this module
+    and "stopped" to the two organs that wrote it. The named set above is the fallback when the
+    module cannot be reached, which is strictly the old behaviour and never worse."""
+    try:
+        from retired_clocks import (  # type: ignore[import-not-found,unused-ignore]
+            is_terminal,
+        )
+    except ImportError:                                       # pragma: no cover - packaged import
+        try:
+            from research.retired_clocks import (  # type: ignore[no-redef,unused-ignore]
+                is_terminal,
+            )
+        except ImportError:
+            return str(status or "").strip().upper() in TERMINAL
+    return bool(is_terminal(status))
 
 
 def _protected_symbols(sleeves_doc: dict[str, Any] | None) -> set[str]:
@@ -750,7 +791,7 @@ def audit(paths: Paths, now: str | None = None) -> dict[str, Any]:
     shadow = _read(paths.shadow)
     judge_clocks("shadow_state", paths.shadow,
                  [(k, v) for k, v in _rows_of_state(shadow or {})
-                  if str(v.get("status") or "").upper() not in TERMINAL],
+                  if not _terminal(v.get("status"))],
                  shadow is not None, "UNBACKED_CLOCK")
     for p in paths.lanes:
         doc = _read(p)
@@ -758,7 +799,7 @@ def audit(paths: Paths, now: str | None = None) -> dict[str, Any]:
             stores[p.stem] = {"path": _rel(paths, p), "readable": False, "rows": 0}
             continue
         judge_clocks(p.stem, p, [(k, v) for k, v in _rows_of_state(doc)
-                                 if str(v.get("status") or "").upper() not in TERMINAL],
+                                 if not _terminal(v.get("status"))],
                      True, "LANE_UNBACKED_CLOCK")
 
     # the live book: banned rows are the residue the live policy already refuses at both doors
@@ -832,6 +873,24 @@ def audit(paths: Paths, now: str | None = None) -> dict[str, Any]:
             f"claim is {age/3600:.1f}h old, older than one judging cycle "
             f"({JUDGING_CYCLE_S/3600:.0f}h), the canon does not hold it and it reached no "
             f"judge: {QUEUE_REASON}", age_s=round(age))
+    # JOIN COVERAGE: a store nobody can join to the one identity is a split, whatever its
+    # name says. Fatal when a store holds rows and NONE of them can declare the identity -- the
+    # exact state measured on 2026-09-23, when the fence read ok=true over a wholly broken join.
+    joins = join_coverage(paths, lane)
+    for name, v in joins["stores"].items():
+        if int(v.get("born_without_identity") or 0):
+            add("IDENTITY_NOT_STAMPED_AT_BIRTH", name,
+                ",".join(v["born_without_identity_keys"][:6]),
+                f"{v['born_without_identity']} row(s) in {name} were created after "
+                f"{BIRTH_OBLIGATION_FROM} carrying no {IDENTITY_FIELD}: a writer that does not "
+                f"stamp at birth leaves a row that only a later sweep can join, which is the "
+                f"chore this ended", born_without_identity=v["born_without_identity"])
+        if v["denominator"] and not v["joinable"]:
+            add("JOIN_COVERAGE_BREACH", name, IDENTITY_FIELD,
+                f"{name} holds {v['rows']} row(s) and NONE can declare the canonical identity "
+                f"({IDENTITY_RULE}); a store that cannot be joined is a separate lane whatever "
+                f"it is called", rows=v["rows"], joinable=0)
+    census["join"] = joins
     census["queued"] = len(queued)
     census["stale_unjudged"] = len(stale)
 
@@ -882,6 +941,190 @@ def audit(paths: Paths, now: str | None = None) -> dict[str, Any]:
 
 
 # ----------------------------------------------------------------------------- the repair
+#: THE ONE CANONICAL IDENTITY of a judged thing. Not a key -- keys are local and every store
+#: invents its own (`CADJPY.asia`, `external.CADJPY.session_range_breakout.rr=1.5_wb=12`,
+#: `xau_m5_anti_breakout_overlap`, `qquant.hunt16.json.AUDNZD dav ... NORMAL_DAY`). The sealed
+#: gauntlet stamps `shadow_spec` on every certificate it mints, and `promoter.py` admits a row by
+#: matching that spec -- so the identity the desk already runs on is (symbol, family, selector),
+#: lowercased, which `parts()` computes. MEASURED 2026-09-23: 0 of 862 registry clocks joined the
+#: canon BY KEY while the breach organ reported 55 backed BY SPEC; the stores had been unified by
+#: NAME and never by KEY, so every observer got a different number (28 / 152 / 215 / 862) and the
+#: fence read green because it was joining on the spec and nothing checked that anyone else was.
+IDENTITY_FIELD = "canonical_identity"
+#: A row that genuinely cannot declare an identity is EXCLUDED BY DECLARATION, never by silence:
+#: an honest 1,449 of 1,449 with ten named exclusions beats an unexplained 99.3%.
+UNIDENTIFIABLE = "UNIDENTIFIABLE"
+UNIDENTIFIABLE_REASON = ("row declares no symbol or family, its key has no shape this desk "
+                         "writes, and no other store declares one for its name; recorded so it "
+                         "is auditable later and excluded from the join denominator by "
+                         "declaration rather than by silence")
+#: Rows created from this moment must carry the identity at birth (sleeve_registry.register and
+#: certificate_truth.stamp_identity are the ONE implementation). Rows older than this are the
+#: one-time backfill, not a standing breach.
+BIRTH_OBLIGATION_FROM = "2026-09-23T00:00:00+00:00"
+IDENTITY_RULE = ("symbol|family|selector lowercased, from the shadow_spec the sealed gauntlet "
+                 "stamps and the promoter matches (desks/mt5/scripts/external_gauntlet.py -> "
+                 "desks/mt5/research/promoter.py); a key is local, this is the join")
+
+
+def declared_identities(paths: Paths) -> dict[str, str]:
+    """name -> canonical identity, from the stores that DECLARE a lane's identity for it.
+
+    The scalp lane's clocks are keyed by a name with no grammar (`xau_m5_anti_breakout_overlap`),
+    so no parse can ever join them -- but their own sleeve row declares symbol and family, and
+    that declaration is the identity. Reading it is how a lane joins instead of being reported
+    unjoinable for ever."""
+    out: dict[str, str] = {}
+    sl = _read(paths.sleeves) or {}
+    for row in (sl.get("sleeves") or []):
+        if not isinstance(row, dict) or not row.get("symbol") or not row.get("family"):
+            continue
+        name = str(row.get("name") or "")
+        if name:
+            out[name] = parts(row["symbol"], row["family"],
+                              row.get("selector") or row.get("window") or row.get("session"))
+    return out
+
+
+def canonical_identity(store: str, key: str, row: dict[str, Any],
+                       declared: dict[str, str] | None = None) -> str | None:
+    """The ONE identity for any row in any store, or None when the row cannot declare one.
+
+    A row that already CARRIES the identity is taken at its word; then the row's own fields and
+    its key; then the declaration another store makes for that name. None is UNMEASURED, not
+    zero: a row whose identity cannot be derived is REPORTED as unjoinable, never joined to
+    something by guesswork (L1.28a)."""
+    carried = row.get(IDENTITY_FIELD)
+    if isinstance(carried, str) and carried.count("|") == 2:
+        return carried
+    ident = row_identity(store, key, row)
+    if not ident.get("symbol") or not ident.get("family"):
+        return (declared or {}).get(str(key))
+    return parts(ident["symbol"], ident["family"], ident.get("selector"))
+
+
+def join_coverage(paths: Paths, lane: dict[str, Any]) -> dict[str, Any]:
+    """Per store: rows, rows that can declare the canonical identity, rows that JOIN the lane.
+
+    This is the clause that makes "ok=true with a broken join" impossible. Counts that agree by
+    coincidence are the split the principal named; counts that agree BY CONSTRUCTION need one
+    identity, carried by every store, and a fence that fails when a store cannot produce it."""
+    out: dict[str, Any] = {"identity": IDENTITY_FIELD, "rule": IDENTITY_RULE, "stores": {}}
+    # BACKED MEANS THE CANONICAL LANE, AND NOTHING ELSE. This used to union `cure_by_parts` in,
+    # so a row joining only the power-cure store counted as joining the canon -- the same split
+    # deleted from `classify` above and from `shadow_admission.authorized_runs`, arriving here as
+    # a coverage number that could never fall. One canonical lane: `by_parts` is the whole of it.
+    backed = set(lane["by_parts"])
+    declared = declared_identities(paths)
+
+    def measure(name: str, rows: list[tuple[str, dict[str, Any]]]) -> None:
+        ids: list[str] = []
+        excluded: list[str] = []
+        unstamped_born: list[str] = []
+        for k, r in rows:
+            got = canonical_identity(name, k, r, declared)
+            if got:
+                ids.append(got)
+                continue
+            if r.get(IDENTITY_FIELD) == UNIDENTIFIABLE:
+                excluded.append(str(k))       # declared, auditable, out of the denominator
+                continue
+            born = _parse(str(r.get("frozen_at") or r.get("created_at") or
+                              r.get("forward_start") or ""))
+            cut = _parse(BIRTH_OBLIGATION_FROM)
+            if born is not None and cut is not None and born >= cut:
+                unstamped_born.append(str(k))
+        denom = len(rows) - len(excluded)
+        out["stores"][name] = {
+            "rows": len(rows), "joinable": len(ids), "denominator": denom,
+            "unjoinable": denom - len(ids), "declared_unidentifiable": len(excluded),
+            "unidentifiable_keys": excluded[:20],
+            "born_without_identity": len(unstamped_born),
+            "born_without_identity_keys": unstamped_born[:20],
+            "joined_to_lane": sum(1 for i in ids if i in backed),
+            "coverage": round(len(ids) / denom, 4) if denom else None}
+
+    certs = lane["certificates"]
+    measure("UNIVERSAL_SURVIVORS", [(k, {"symbol": c.get("symbol"), "family": c.get("family"),
+                                         "selector": c.get("selector")})
+                                    for k, c in certs.items()])
+    out["stores"]["UNIVERSAL_SURVIVORS"]["joined_to_lane"] = len(certs)
+    reg = _read(paths.registry) or {}
+    measure("sleeve_registry", [(k, v) for k, v in (reg.get("sleeves") or {}).items()
+                                if isinstance(v, dict)])
+    for p in (paths.shadow, *paths.lanes):
+        doc = _read(p)
+        if doc is not None:
+            measure(p.stem, _rows_of_state(doc))
+    sl = _read(paths.sleeves) or {}
+    measure("sleeves", [(str(r.get("name") or ""), r) for r in (sl.get("sleeves") or [])
+                        if isinstance(r, dict)])
+    total = sum(v["denominator"] for v in out["stores"].values())
+    joinable = sum(v["joinable"] for v in out["stores"].values())
+    out["total_rows"] = sum(v["rows"] for v in out["stores"].values())
+    out["total_denominator"] = total
+    out["total_joinable"] = joinable
+    out["declared_unidentifiable"] = sum(v["declared_unidentifiable"]
+                                         for v in out["stores"].values())
+    out["born_without_identity"] = sum(v["born_without_identity"]
+                                       for v in out["stores"].values())
+    out["coverage"] = round(joinable / total, 4) if total else None
+    out["birth_obligation_from"] = BIRTH_OBLIGATION_FROM
+    return out
+
+
+def stamp_identity(paths: Paths, stamp: str) -> dict[str, Any]:
+    """CARRY the identity, do not recompute it: every clock row keeps `canonical_identity`
+    alongside whatever local key it needs, so the join is a field lookup and not a parse that
+    each reader reinvents (which is how four observers got four numbers)."""
+    out: dict[str, Any] = {"stamped": 0, "declared_unidentifiable": 0, "wrote": [],
+                           "stores": [CANONICAL_CLOCK_STORE, "data/sleeves.json"]}
+    declared = declared_identities(paths)
+
+    def do(store: str, path: Path, doc: dict[str, Any], rows: Any) -> None:
+        changed = False
+        for key, row in rows:
+            if not isinstance(row, dict):
+                continue
+            ident = canonical_identity(store, str(key), row, declared)
+            if ident is None:
+                # NAMED, NOT SILENT. A retired row still needs an identity or it can never be
+                # audited; when no store can supply one, the row SAYS so, with the reason, and
+                # leaves the denominator by declaration.
+                if row.get(IDENTITY_FIELD) != UNIDENTIFIABLE:
+                    row[IDENTITY_FIELD] = UNIDENTIFIABLE
+                    row[IDENTITY_FIELD + "_why"] = UNIDENTIFIABLE_REASON
+                    row[IDENTITY_FIELD + "_declared_at"] = stamp
+                    changed = True
+                out["declared_unidentifiable"] += 1
+                continue
+            if row.get(IDENTITY_FIELD) != ident:
+                row[IDENTITY_FIELD] = ident
+                row[IDENTITY_FIELD + "_rule"] = IDENTITY_RULE
+                changed = True
+            out["stamped"] += 1
+        if changed:
+            doc["identity_stamped_at"] = stamp
+            _atomic(path, doc, indent=2)
+            out["wrote"].append(_rel(paths, path))
+
+    doc = _read(paths.registry)
+    if doc is not None and isinstance(doc.get("sleeves"), dict):
+        do("sleeve_registry", paths.registry, doc, list(doc["sleeves"].items()))
+    doc = _read(paths.sleeves)
+    if doc is not None and isinstance(doc.get("sleeves"), list):
+        do("sleeves", paths.sleeves, doc,
+           [(str(r.get("name") or ""), r) for r in doc["sleeves"] if isinstance(r, dict)])
+    # every shadow lane too: a clock lane that cannot join is a separate lane by another name
+    for lane_path in paths.lanes:      # the per-lane states; the main shadow_state is
+                                      # owned by shadow_forward and stamped at birth there
+        doc = _read(lane_path)
+        if doc is not None:
+            out["stores"].append(_rel(paths, lane_path))
+            do(lane_path.stem, lane_path, doc, _rows_of_state(doc))
+    return out
+
+
 def _stale_claims(paths: Paths, lane: dict[str, Any], queued: set[str],
                   stamp: str) -> list[tuple[str, str, float]]:
     """Claims older than one judging cycle that the canon does not hold and no queue carries."""
@@ -1105,6 +1348,12 @@ def repair(paths: Paths, now: str | None = None) -> dict[str, Any]:
       3. SEAL FROM AUTHORITY -- `check_authority_ratchet.heal_canon`'s rule: the seal may never be
          worse than the authority file, since it exists purely as the known-good copy of it.
 
+      4. THE RETIRED LEAVE THE LIVE STORE -- `retired_clocks.evacuate`'s rule: a clock ANOTHER
+         organ already retired is moved, whole, to the append-only `data/retired_clocks.jsonl`
+         with the forward evidence its retirement discarded, and out of the shadow clock stores.
+         It retires nothing; it relocates what is already retired, so the audit stops re-judging
+         a closed decision as a live divergence every hour.
+
     WHAT IT WILL NOT DO, ever, on any clock. It never retires a certificate, a clock or a sleeve;
     it never lowers a count; it never writes a row the lane does not back; and it never touches
     `sleeves.json`, the registry or the gateway. Retirement stays in `apply()` behind --apply, and
@@ -1224,7 +1473,25 @@ def repair(paths: Paths, now: str | None = None) -> dict[str, Any]:
     # ---- 4. every claim the canon does not hold goes to the ONE judge -------------------
     # Not honoured and not discarded: TESTED. This is the act that ends the split -- a
     # store may propose for ever, but only the sealed gauntlet's ten gates admit anything.
+    acts["identity"] = stamp_identity(paths, stamp)
     acts["judge"] = submit_to_judge(paths, canon(paths), stamp)
+
+    # ---- 5. a clock some other organ ALREADY retired leaves the live store ------------------
+    # A retired clock accrues no forward evidence, so it is not a live divergence -- and while it
+    # sat among the live rows this audit could not tell "a clock that is wrongly unbacked" from
+    # "one the desk already correctly retired". It moves, whole, to the append-only ledger
+    # `data/retired_clocks.jsonl` with the accrued evidence the retirement discarded, and leaves a
+    # tombstone behind. Nothing is retired by this call and nothing is destroyed, which is why it
+    # belongs on the clock beside the other three repairs rather than behind --apply.
+    try:
+        from retired_clocks import (  # type: ignore[import-not-found,unused-ignore]
+            evacuate,
+        )
+    except ImportError:                                       # pragma: no cover - packaged import
+        from research.retired_clocks import (  # type: ignore[no-redef,unused-ignore]
+            evacuate,
+        )
+    acts["retired_evacuation"] = evacuate(paths.base, stamp)
     acts["canon_n"] = len(a_rows)
     acts["restored_keys"] = acts["restored_keys"][:200]
     return acts

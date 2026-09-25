@@ -34,6 +34,11 @@ import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from mt5desk.config import desk_root, terminal_path
+from mt5desk.universe_registry import may_write_median_spread, merge
+
+#: What this collector's `median_spread_pts` IS: the median of the H1 spread column it just
+#: downloaded. Named so the stamp cannot mean something else, and so the ranking can place it.
+MEDIAN_SPREAD_SOURCE = "h1_spread_median"
 
 TERMINAL = terminal_path()
 # PATHS COME FROM `desk_root()`, NEVER A USERNAME (LAWS §1 anti-hardcode; the helper's own
@@ -258,8 +263,7 @@ def _refresh_order(candidates: list[str]) -> list[str]:
 
 def main() -> None:
     if mt5.terminal_info() is None:
-        from mt5_session import attach_or_initialize
-        if not attach_or_initialize(mt5, path=TERMINAL):
+        if not mt5.initialize(path=TERMINAL):
             print(f"initialize failed: {mt5.last_error()}")
             return
     print(f"terminal: {mt5.terminal_info().name} | account {mt5.account_info().login}")
@@ -379,7 +383,23 @@ def main() -> None:
         _tf = " ".join(f"{k}={v.get('bars', 0)}" for k, v in intraday.items())
         print(f"{sym:8s} {len(df):6d} bars {df.index.min().date()} -> {df.index.max().date()} "
               f"contract={info.trade_contract_size} spread_med={med_spread:.1f}pts  {_tf}")
-    registry.update(summary)
+    # A FULL ROW REPLACE IS A FIELD-LEVEL CLOBBER WEARING A FILE-LEVEL GUARD (fixed 2026-09-24).
+    #
+    # `registry.update(summary)` swaps the whole row object, so every field a different producer
+    # wrote -- `_provenance`, a repaired `tick_value`, `asset_class`, `swap_long/short` -- was
+    # deleted for each symbol this run touched, while the shrink check below passed because the
+    # KEY COUNT never fell. The check was watching the wrong dimension.
+    #
+    # `merge` is the desk's own union: a field this run measured wins, a field it did not know
+    # survives, and every write is stamped. `median_spread_pts` is then held back wherever a
+    # better-ranked producer owns it -- an H1 median on this broker reads a pre-2021 FIXED-SPREAD
+    # era, so it must not overwrite the desk's own fills or the M1 tape.
+    for sym, row in summary.items():
+        prev = registry.get(sym) if isinstance(registry.get(sym), dict) else {}
+        allowed, _why = may_write_median_spread(prev, MEDIAN_SPREAD_SOURCE)
+        if not allowed:
+            row.pop("median_spread_pts", None)
+    registry = merge(registry, summary, source=MEDIAN_SPREAD_SOURCE)
     if len(registry) < prior_n:
         # Unreachable by construction (update never removes keys); asserted anyway because the
         # whole point of this fix is that this file can never shrink the registry again.

@@ -107,6 +107,22 @@ def check(report: Path | None = None, now: datetime | None = None) -> dict[str, 
                          "repair": ("Get-ScheduledTask MT5-PlumbingWatchdog -- it runs every "
                                     "15 minutes and is also hourly cycle leg "
                                     "`plumbing_watchdog`")})
+    # EVERY DECLARED EDGE, OR THE FENCE IS A SAMPLE (principal 2026-09-23). The watchdog publishes
+    # `edges_declared` beside `edges_checked`; if they differ, some hop of the mandatory path was
+    # never examined and this gate must not pass on the strength of the hops that were. A watchdog
+    # that silently narrows its own scope is the third orphan shape applied to the checker itself.
+    ep = (doc.get("facts") or {}).get("edge_paths") or {}
+    if isinstance(ep, dict) and ep.get("edges_declared") is not None:
+        checked, declared = ep.get("edges_checked"), ep.get("edges_declared")
+        if checked != declared:
+            breaches.append({
+                "organ": "plumbing_watchdog", "check": "edge_coverage", "age_s": None,
+                "why": (f"the watchdog checked {checked} of {declared} declared pipeline edges; "
+                        f"the rest are unfenced wires, and an unchecked edge is exactly how a "
+                        f"producer and its consumer came to name two different files"),
+                "repair": ("check every edge in libs/ops/control_plane/edges.py REQUIRED_EDGES -- "
+                           "never filter the loop in check_edge_paths"),
+            })
     rows = doc.get("defects") or []
     for r in rows if isinstance(rows, list) else []:
         if not isinstance(r, dict) or not r.get("past_escalation_window"):

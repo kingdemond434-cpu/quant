@@ -111,12 +111,26 @@ _KIND_HINTS = (
 _LAKE = BASE / "data" / "lake"
 
 
-def _have_data() -> set[str]:
-    """Source ids with bytes on disk: a parsed series, or vaulted raw content."""
+def _have_data(as_of: Any = None) -> set[str]:
+    """Source ids with bytes on disk THE DESK COULD ALREADY HAVE KNOWN: a parsed series whose
+    `available_time` has arrived, or vaulted raw content.
+
+    THE JOIN ON available_time IS THE POINT (Tier-1 B2). This asked only whether a FILE existed,
+    so a series stamped with an available_time in the future counted as data in hand -- the exact
+    lookahead the five PIT stamps exist to refuse, in the one place a consumer actually decides
+    something. `libs.data.lake_pit.usable_series` performs the join; a series with no sidecar or
+    an unreadable stamp stays VISIBLE and is counted as unstamped, because withholding data on
+    the strength of a missing file would be a reduction bought with no evidence.
+    """
     out: set[str] = set()
     series = _LAKE / "series"
     if series.is_dir():
-        out |= {f.stem for f in series.iterdir() if f.is_file()}
+        try:
+            from libs.data.lake_pit import usable_series
+            out |= usable_series(series, as_of).visible
+        except ImportError:
+            out |= {f.stem for f in series.iterdir()
+                    if f.is_file() and not f.name.endswith(".pit.json")}
     vault = _LAKE / "vault"
     if vault.is_dir():
         out |= {d.name for d in vault.iterdir()

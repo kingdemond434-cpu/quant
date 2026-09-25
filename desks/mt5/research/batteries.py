@@ -99,6 +99,8 @@ def _e(path: str, why: str, *argv: str) -> Entry:
 #: THE FENCE ROSTER -- read-only verdicts, each measured runnable with no arguments 2026-09-22.
 FENCES: tuple[Entry, ...] = (
     _e("scripts/check_bar_coverage.py", "every symbol the desk claims to trade has bars"),
+    _e("scripts/check_bar_coverage_ratchet.py",
+       "instruments-by-timeframe goes UP and never down, per host"),
     _e("scripts/check_bar_history_floor.py", "H1 history may never silently collapse"),
     _e("scripts/check_blueprint_coverage.py", "a capability's claim may not outrun its evidence"),
     _e("scripts/check_breadth_mandate.py", "an alpha cluster that received NO attempt is a defect"),
@@ -141,10 +143,47 @@ FENCES: tuple[Entry, ...] = (
     _e("scripts/check_seat_health.py", "every configured seat donates, or it is named"),
     _e("scripts/check_recommendation_flow.py", "the lane from recommendation to implementation "
        "must DRAIN"),
+    # --- THE THREE DETECTORS `self_repair_registry` NAMES AND NOTHING RAN (2026-09-23).
+    # Each is the declared detector of a defect class, and each had no clock on either box, so
+    # its class read MANUAL or UNMEASURED -- "found by a person" -- when in fact the detector
+    # existed, worked, and was simply never fired. That is the registry measuring the absence of
+    # a clock and reporting it as the absence of a detector.
+    #   check_box_tasks     BOX_TASKS.json was 168.7h old on the trading box against a 24h
+    #                       window. Its only "schedule" was `invoked:libs/research/forests.py`,
+    #                       which the registry derived from forests.py naming it in PROSE: a
+    #                       comment is not a clock. Measured rc=2 there (5 UNDECLARED triggers),
+    #                       so the silence was hiding a live breach, not a clean class.
+    #   check_claim_consistency  writes data/claim_consistency.json. Its only callers are
+    #                       autofix_defects/blindspot_autofix, which invoke it through
+    #                       `.venv/bin/python` -- a POSIX path that does not exist on either
+    #                       Windows box, so it had never run on either.
+    #   check_protected_records  ran ONLY from ops/githooks/pre-commit. `--range HEAD~1 HEAD`
+    #                       makes the clocked pass audit the commit that just landed, which is a
+    #                       real measurement; with no argument it would compare an empty index
+    #                       against HEAD and publish a vacuous OK.
+    _e("scripts/check_box_tasks.py", "a scheduled task that expired, was disabled, or was never "
+       "registered at all"),
+    _e("scripts/check_claim_consistency.py", "L1.61 -- two organs, one word, two measurements"),
+    _e("scripts/check_protected_records.py", "a ledger may not lose records to a second writer",
+       "--range", "HEAD~1", "HEAD"),
 )
 
 #: THE ORGAN ROSTER -- standing fixers, region organs and report builders. Production mode.
 ORGANS: tuple[Entry, ...] = (
+    # THE ONLY CLOCK A COVERAGE GAP HAS. `refresh_bars` -> `refresh_tail.py` extends charts that
+    # EXIST and returns `no-cache` for one that does not, and `expand_universe.py` (which can
+    # create one) is on no clock at all -- so until this entry, a missing (symbol, timeframe)
+    # stayed missing until somebody ran a script by hand. Bounded per pass by the organ's own
+    # cap, so it shares the hour rather than owning it.
+    _e("desks/mt5/scripts/fill_bar_gaps.py", "a missing (symbol, timeframe) is fetched or "
+       "carries a named venue verdict"),
+    # THE HTF-ANCHOR MINER LANDED UNCLOCKED (measured 2026-09-24): it mints the video-derived
+    # anchor/exit mechanism as ordinary docket cells on the hypothesis lane, it is bounded by
+    # its own MINT_ROWS_PER_PASS and a rotating cursor, and it ran rc=0 in 25 s minting 1200
+    # rows -- a working miner that no clock visited, which is III.16 exactly. The census budget
+    # is passed so the organ's own bind census finishes inside one battery slice (MAX_SLICE_S).
+    _e("desks/mt5/research/htf_anchor_proposer.py", "the HTF-anchor/ATR-exit mechanism minted "
+       "as docket cells at legal breadth", "--census-budget=60"),
     _e("desks/mt5/scripts/heal_orphaned_clocks.py", "resume clocks retired as ORPHAN"),
     _e("desks/mt5/scripts/heal_silent_demotions.py", "restore sleeves demoted with no reason"),
     _e("scripts/heal_forward_lane.py", "every certificate gathers forward evidence"),

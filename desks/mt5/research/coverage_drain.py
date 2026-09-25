@@ -106,7 +106,15 @@ LEDGER = DESK / "data" / "coverage_drain_ledger.json"
 REGISTRY_DB = ROOT / "data" / "alpha_registry.sqlite"
 DEEP_FOREST = DESK / "data" / "deep_forest_sources.json"
 SOURCE_REGISTRY = DESK / "data" / "source_registry.json"
+#: The hard-data plane: official, exchange, physical and flow grounds, one row per declared MT5
+#: transmission path. The THIRD registry, and the one this organ was not reading.
+PLANE_REGISTRY = DESK / "data" / "asia_sources.json"
 SOURCE = "coverage_drain"
+
+#: The bucket for a ground whose country is blank and whose host is on a generic TLD. It is a
+#: NAMED bucket and never a region, because folding an unknown jurisdiction into one would make
+#: that region read deeper than it is -- the exact error that hid five empty regions for a week.
+UNMAPPED_REGION = "UNMAPPED"
 
 #: How long a registered source may sit uncrawled before it is a DEFECT rather than a queue.
 #: One day: the crawl clock is hourly, so a row that has survived twenty-four passes was not
@@ -452,12 +460,52 @@ def registry_grounds(path: Path | None = None) -> list[dict[str, Any]]:
     return out
 
 
+def plane_grounds(path: Path | None = None) -> list[dict[str, Any]]:
+    """The HARD-DATA plane's own grounds, as candidate registry rows.
+
+    `desks/mt5/data/asia_sources.json` is the third registry and it was not being read here. It
+    is the half of the desk's ground that carries OFFICIAL, EXCHANGE, PHYSICAL AND FLOW data --
+    where the number itself is the observation and a hypothesis can be SETTLED rather than only
+    minted -- while `deep_forest_sources.json` holds the practitioner forest. `source_drain.py`
+    collects from it, but nothing seeded it into the `sources` table, so these grounds never
+    entered the uncrawled census, never appeared in the backlog, and never took a slot in an
+    hourly drain pass. A registry the coverage organ cannot see is a registry whose coverage is
+    unmeasured, which is how a region could read 0 with sixteen declared grounds behind it.
+
+    The file's `country` is the ground's declared jurisdiction and the region vocabulary is
+    `libs/research/attribution`'s, so a ground seeded here lands in the same region the
+    attribution census will later file its cells under.
+    """
+    doc = _read_json(path or PLANE_REGISTRY, {})
+    rows = doc.get("sources") if isinstance(doc, Mapping) else None
+    out: list[dict[str, Any]] = []
+    for row in rows or []:
+        if not isinstance(row, Mapping):
+            continue
+        url = str(row.get("url") or "")
+        if not url.startswith(("http://", "https://")):
+            continue
+        sid = str(row.get("id") or "")
+        if not sid:
+            continue
+        out.append({
+            "source_id": f"plane:{sid}", "url": url, "alt": (),
+            "kind": str(row.get("plane") or "official"), "pack": "",
+            "country": str(row.get("country") or ""),
+            "language": str(row.get("language") or ""),
+            "access_label": "PUBLIC", "credibility": "UNKNOWN",
+            "machine_use_allowed": True,
+            "licence": str(row.get("access") or "public"),
+            "label": str(row.get("name") or sid)})
+    return out
+
+
 def lawful_grounds() -> list[dict[str, Any]]:
-    """Every ground the desk could lawfully hold, from both of its own registries, deduplicated
-    by source_id. This is the numerator of the whole organ: coverage is what fraction of THIS
-    the registry has actually fetched."""
+    """Every ground the desk could lawfully hold, from all THREE of its own registries,
+    deduplicated by source_id. This is the numerator of the whole organ: coverage is what
+    fraction of THIS the registry has actually fetched."""
     seen: dict[str, dict[str, Any]] = {}
-    for row in [*pack_sources(), *forest_grounds(), *registry_grounds()]:
+    for row in [*pack_sources(), *forest_grounds(), *registry_grounds(), *plane_grounds()]:
         seen.setdefault(str(row["source_id"]), row)
     return list(seen.values())
 
@@ -771,17 +819,52 @@ def seed_grounds(conn: sqlite3.Connection, grounds: Sequence[Mapping[str, Any]],
 
 
 # ------------------------------------------------------------------------------- the drain pass
+def region_of_row(row: Mapping[str, Any]) -> str:
+    """The region a pending source stands in, from its own declared jurisdiction.
+
+    `libs/research/attribution` owns the vocabulary and this module only READS it, so the drain
+    and the attribution census can never disagree about what "North America" means. A row whose
+    country is blank and whose host is on a generic TLD is UNMAPPED -- a named bucket, never a
+    guess and never silently folded into a region that would then read as deeper than it is.
+    """
+    with suppress(Exception):
+        from libs.research import attribution as _A
+        where = (_A.region_of(row.get("country")) or _A.region_of_command(row.get("region"))
+                 or _A.region_of_url(row.get("url")))
+        if where:
+            return str(where)
+    return UNMAPPED_REGION
+
+
 def drain_order(rows: Sequence[Mapping[str, Any]], shares: dict[str, Any] | None,
-                now: datetime | None = None) -> list[dict[str, Any]]:
-    """The pending set, oldest-and-highest-ROI first.
+                now: datetime | None = None,
+                held: Mapping[str, int] | None = None) -> list[dict[str, Any]]:
+    """The pending set, oldest-and-highest-ROI first, DEALT ROUND-ROBIN ACROSS THE REGIONS.
 
     LEXICOGRAPHIC, not a weighted sum, for the reason `moat_collectors.source_roi` gives: any
-    single number lets a prolific ground buy rank with volume. Here the first key is the
-    published crawl share (the registry's own measured intel ROI, absent = 0.0, which puts an
+    single number lets a prolific ground buy rank with volume. Within one region the first key is
+    the published crawl share (the registry's own measured intel ROI, absent = 0.0, which puts an
     unmeasured ground behind a measured payer but AHEAD of a measured dud) and the second is
     age descending, so the 134-hour row at the front of the queue leaves it first.
+
+    WHY THE REGION KEY EXISTS (measured 2026-09-24 on the build box). 1,593 of 2,214 registered
+    grounds had never been fetched, and the never-fetched set was not a random sample of them: it
+    was every ground in five whole regions. `us` 69 grounds, `institutional` 72, `cn` 41, `ru` 41,
+    `sg` 26 -- ZERO crawled between them, while `cz`, `az` and `kz` were fully drained. The cause
+    was here. Every one of those rows was seeded in a single batch with one `first_seen` stamp
+    and no measured share, so both sort keys tied for all 1,593 and the order collapsed to
+    whatever order SQLite returned rows in. The pass took the first 70 of that, every hour, and
+    the same regions lost every hour. A region cannot contribute an edge from a ground nothing
+    ever fetched, however deep the mining downstream of it goes.
+
+    THIS CAPS NOTHING AND THROTTLES NOTHING. The pass size, the budget and the set of drainable
+    rows are exactly what they were; only the ORDER changes, so no region is ever drained less
+    than it is today and the regions that were being starved advance with the rest. `held` is the
+    count of grounds each region has ALREADY had crawled -- the region holding the fewest takes
+    the next slot, which is a floor that can only be satisfied by raising the weakest region and
+    never by lowering a strong one.
     """
-    scored: list[tuple[float, float, dict[str, Any]]] = []
+    scored: dict[str, list[tuple[float, float, dict[str, Any]]]] = {}
     for row in rows:
         share = 0.0
         if shares is not None:
@@ -791,9 +874,38 @@ def drain_order(rows: Sequence[Mapping[str, Any]], shares: dict[str, Any] | None
                                               host_of(str(row.get("url") or "")))
                 share = float(got or 0.0)
         age = _age_h(row.get("first_seen"), now) or 0.0
-        scored.append((share, age, dict(row)))
-    scored.sort(key=lambda t: (-t[0], -t[1]))
-    return [r for _, _, r in scored]
+        scored.setdefault(region_of_row(row), []).append((share, age, dict(row)))
+    for bucket in scored.values():
+        bucket.sort(key=lambda t: (-t[0], -t[1]))
+
+    taken: dict[str, int] = {r: int((held or {}).get(r, 0)) for r in scored}
+    out: list[dict[str, Any]] = []
+    while True:
+        live = [r for r, b in scored.items() if b]
+        if not live:
+            return out
+        # The hungriest region first; ties broken by the head row's own (share, age) rank, so
+        # the existing order is preserved exactly wherever the regions are already level.
+        live.sort(key=lambda r: (taken[r], -scored[r][0][0], -scored[r][0][1], r))
+        pick = live[0]
+        out.append(scored[pick].pop(0)[2])
+        taken[pick] += 1
+
+
+def crawled_by_region(conn: sqlite3.Connection) -> dict[str, int]:
+    """How many grounds each region has ALREADY had fetched -- the drain's fairness basis.
+
+    UNMEASURED (an empty mapping) is a real answer: the round-robin still deals one slot per
+    region per turn, which is fair, just not starvation-weighted.
+    """
+    out: dict[str, int] = {}
+    with suppress(sqlite3.Error):
+        for row in conn.execute(
+                "SELECT country, url FROM sources WHERE last_crawled IS NOT NULL "
+                "AND last_crawled <> ''").fetchall():
+            where = region_of_row({"country": row[0], "url": row[1]})
+            out[where] = 1 + out.get(where, 0)
+    return out
 
 
 def drain(conn: sqlite3.Connection, *, budget_s: float, max_sources: int,
@@ -809,7 +921,14 @@ def drain(conn: sqlite3.Connection, *, budget_s: float, max_sources: int,
     index = build_root_index(grounds)
     pending = pending_rows(conn)
     out["planned"] = len(pending)
-    ordered = drain_order(pending, shares, now)[:max(0, int(max_sources))]
+    held = crawled_by_region(conn)
+    out["held_by_region"] = dict(sorted(held.items(), key=lambda kv: -kv[1]))
+    ordered = drain_order(pending, shares, now, held=held)[:max(0, int(max_sources))]
+    take: dict[str, int] = {}
+    for row in ordered:
+        where = region_of_row(row)
+        take[where] = 1 + take.get(where, 0)
+    out["pass_by_region"] = dict(sorted(take.items(), key=lambda kv: -kv[1]))
 
     drainable: list[str] = []
     for row in ordered:
@@ -848,7 +967,8 @@ def drain(conn: sqlite3.Connection, *, budget_s: float, max_sources: int,
 
     left = budget_s - (time.monotonic() - started)
     if drainable and left > 5.0 and not dry_run:
-        out["collector"] = _run_collectors(conn, budget_s=left, max_sources=len(drainable))
+        out["collector"] = _run_collectors(conn, budget_s=left, max_sources=len(drainable),
+                                           source_ids=drainable)
         out["crawled"] = int(out["collector"].get("sources_visited") or 0)
     elif drainable and dry_run:
         out["collector"] = {"status": "dry_run",
@@ -860,13 +980,19 @@ def drain(conn: sqlite3.Connection, *, budget_s: float, max_sources: int,
     return out
 
 
-def _run_collectors(conn: sqlite3.Connection, *, budget_s: float,
-                    max_sources: int) -> dict[str, Any]:
+def _run_collectors(conn: sqlite3.Connection, *, budget_s: float, max_sources: int,
+                    source_ids: Sequence[str] | None = None) -> dict[str, Any]:
     """The existing capture machinery, driven on the rows this organ just cleared.
 
     `research/moat_collectors.py` owns the robots probe, the media typing, the point-in-time
     capture, the normaliser and the claim writer. Writing a second crawler here would be a second
     set of manners against the same hosts, which is how a desk gets blocked.
+
+    THE ROWS ARE NAMED, NOT COUNTED (2026-09-24). This used to pass only `max_sources`, so the
+    collector re-chose the pass by pure ROI and the region-fair order above was discarded before
+    a single byte was fetched. The drain cleared 35 Global/institutional grounds in one pass and
+    that region's crawled count stayed at 0 -- twice -- because the choice never reached the
+    crawler. The ROI order still decides rank WITHIN the named set.
     """
     try:
         from research import moat_collectors
@@ -874,7 +1000,7 @@ def _run_collectors(conn: sqlite3.Connection, *, budget_s: float,
         return {"status": "unavailable", "why": f"{type(exc).__name__}: {exc}"}
     try:
         report = moat_collectors.run(budget_s=float(budget_s), max_sources=int(max_sources),
-                                     conn=conn)
+                                     conn=conn, source_ids=source_ids)
     except Exception as exc:
         return {"status": "failed", "why": f"{type(exc).__name__}: {str(exc)[:160]}"}
     return {"status": "ran", "why": f"{report.get('sources_visited')} ground(s) visited",
@@ -1534,6 +1660,21 @@ def pass_size(backlog: Mapping[str, Any], *, floor: int = 60, ceiling: int = 400
     60 would have drained 1,440 a day and fallen behind by 154 every day, failing its own ratchet
     forever while doing exactly what it was built to do.
 
+    THE STEADY-STATE SHARE ALONE CANNOT CATCH UP, AND THAT IS MEASURED (2026-09-23, trading box).
+    `uncrawled_total / LEASE_H` is the rate that keeps a backlog ALREADY INSIDE its lease inside
+    it. It says nothing about rows that are already PAST the lease, and those rows are owed NOW,
+    not spread over another lease. On the box the pass read 3,569 uncrawled -> took 149, while
+    1,726 rows were already overdue; `overdue_wait_h` rose 128.0 -> 139.5 and breached its own
+    ratchet, and `check_coverage_drain.py` failed the law gate with "fix: this organ's own drain
+    pass, with a larger --budget-s or more passes". The budget was NOT the binding constraint --
+    the pass spent 124.1 s of a 900 s budget and stopped because `take` ran out, not the clock.
+    So the derived cap was the fence the organ could not satisfy no matter how long it ran, which
+    is the exact defect the paragraph above it was written about, one population over.
+
+    The overdue count is therefore ADDED to the steady-state share: the pass owes the catch-up
+    plus the rate that stops the queue growing while it catches up. This can only ever make a
+    pass take MORE rows; there is no path here that takes fewer than the old formula did.
+
     The FLOOR keeps a small backlog from shrinking the pass to nothing (a drain that takes three
     rows an hour is not a drain); the CEILING is politeness, not memory -- these are other
     people's servers and `moat_collectors` spaces its own requests per host, so a pass that
@@ -1542,8 +1683,10 @@ def pass_size(backlog: Mapping[str, Any], *, floor: int = 60, ceiling: int = 400
     rows = backlog.get("uncrawled_total")
     if not isinstance(rows, (int, float)) or rows <= 0:
         return int(floor)
-    per_pass = int(float(rows) / max(1.0, LEASE_H)) + 1
-    return max(int(floor), min(int(ceiling), per_pass))
+    steady = int(float(rows) / max(1.0, LEASE_H)) + 1
+    overdue = backlog.get("backlog_overdue")
+    owed_now = int(overdue) if isinstance(overdue, (int, float)) and overdue > 0 else 0
+    return max(int(floor), min(int(ceiling), steady + owed_now))
 
 
 def run(*, budget_s: float = 900.0, max_sources: int | None = None, dry_run: bool = False,
@@ -1590,9 +1733,12 @@ def run(*, budget_s: float = 900.0, max_sources: int | None = None, dry_run: boo
         mid = measure_backlog(conn, now)
         take = int(max_sources) if max_sources is not None else pass_size(mid)
         report["pass_size"] = {"took": take, "derived": max_sources is None,
-                               "backlog": mid.get("uncrawled_total"), "lease_h": LEASE_H,
-                               "why": (f"{mid.get('uncrawled_total')} uncrawled / {LEASE_H:.0f}h "
-                                       f"lease = {take} per hourly pass" if max_sources is None
+                               "backlog": mid.get("uncrawled_total"),
+                               "overdue": mid.get("backlog_overdue"), "lease_h": LEASE_H,
+                               "why": (f"{mid.get('backlog_overdue')} overdue (owed now) + "
+                                       f"{mid.get('uncrawled_total')} uncrawled / "
+                                       f"{LEASE_H:.0f}h lease = {take} per hourly pass"
+                                       if max_sources is None
                                        else f"--max-sources {take} given on the command line")}
         report["drain"] = drain(conn, budget_s=max(5.0, budget - spent),
                                 max_sources=take, dry_run=dry_run, now=now)

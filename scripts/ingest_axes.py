@@ -204,8 +204,11 @@ def ingest_crossasset() -> None:
             if len(raw) > 500:
                 (out / f"ust_curve_{yr}.csv").write_bytes(raw)
                 got += 1
-        except Exception:
-            pass
+        except Exception as exc:
+            # LOUD, NOT SILENT (2026-09-23 swallowed-write audit). `got` counts only successes,
+            # so a year that failed to land was indistinguishable from a year with no data.
+            print(f"  crossasset/UST curve {yr}: NOT written ({type(exc).__name__}: {exc})",
+                  flush=True)
     print(f"  crossasset/UST curve: {got} yearly files")
 
 

@@ -69,11 +69,28 @@ REGIME_CONTROL = (
 # Re-stamping costs a window: certificates carry the OLD attestation until a sweep rewrites them,
 # and is_exact_policy is an exact dict match, so admission sees nothing until then. The gauntlet
 # republishes with the current attestation every sweep, and sweeps now finish in ~20 minutes.
-TRIAL_COUNT_BASIS = (
+#
+# AND IT IS READ FROM THE SPEC, NOT RETYPED HERE (2026-09-23). `research/effective_trials.py`
+# corrects the campaign charge for MEASURED redundancy -- thirty-one tunings of one rule on one
+# instrument at one horizon are one independent test, not thirty-one -- and it does so by writing
+# `fixed_trial_count` and `trial_count_basis` into `policy/gate_spec.yaml`, the one input the
+# SEALED gauntlet reads for this number. If the description stayed a literal here it would go on
+# saying 597 while the judge charged something else, and every certificate would attest to a basis
+# it was not judged under: exactly the failure the comment above says this field exists to
+# prevent. So the string follows the spec, and the literal it used to be is carried in the
+# superseded list below -- admissible there only because the correction lowers the charge, which
+# makes the old bar the HARDER one.
+_LEGACY_TRIAL_COUNT_BASIS = (
     "fixed_campaign_trials(597) + fixed_variance_of_sharpes(0.014863): BOTH inputs to the "
     "deflated-Sharpe hurdle are constants, so the bar is identical for every cell regardless of "
     "how many others share its sweep or how dispersed their Sharpes are"
 )
+_SPEC_TRIAL_COUNT_BASIS = next(
+    (g.get("params", {}).get("trial_count_basis")
+     for g in _SPEC.get("gates", []) if g.get("name") == "deflated_sharpe"), None)
+TRIAL_COUNT_BASIS = (_SPEC_TRIAL_COUNT_BASIS
+                     if isinstance(_SPEC_TRIAL_COUNT_BASIS, str) and _SPEC_TRIAL_COUNT_BASIS
+                     else _LEGACY_TRIAL_COUNT_BASIS)
 
 ATTESTATION = {
     "version": VERSION,
@@ -106,10 +123,20 @@ ATTESTATION = {
 #: shown to have charged at least as many trials as the current one, for every cell it certified.
 #: If a future policy change TIGHTENS the bar, the old certificates are genuinely under-qualified
 #: and must be re-run -- that is a re-certification, not a list entry.
-_SUPERSEDED_TRIAL_BASES = (
+_SUPERSEDED_TRIAL_BASES: tuple[str, ...] = (
     "ceil(null_calibrated_participation_ratio_effective_cells * 7); fail closed to "
     "ceil(raw_cells * 7) when dependence is unmeasurable",
 )
+# THE FIXED-597 BASIS JOINS THAT LIST ONLY WHILE THE SPEC CHARGES 597 OR FEWER. The admissibility
+# rule above is not a formality: an entry may exist only when the superseded basis charged AT
+# LEAST as many trials as the current one, so a certificate minted under it cleared a hurdle at
+# least as high. `sr0` grows with sqrt(2 ln N), so 597 >= the current charge is exactly that
+# condition, and it is evaluated against the spec rather than assumed. If a future policy ever
+# raises the charge ABOVE 597, this entry disappears by itself and those certificates are
+# correctly treated as under-qualified -- a re-certification, not a list entry.
+if isinstance(_SPEC_FIXED_TRIALS, int) and 2 <= _SPEC_FIXED_TRIALS <= 597:
+    _SUPERSEDED_TRIAL_BASES = (*_SUPERSEDED_TRIAL_BASES, _LEGACY_TRIAL_COUNT_BASIS,
+                               "fixed_campaign_trials(597)")
 
 
 def is_exact_policy(value: Any) -> bool:
@@ -140,16 +167,32 @@ def is_exact_policy(value: Any) -> bool:
         return False
     differing = [k for k in ATTESTATION if value[k] != ATTESTATION[k]]
     return (differing == ["trial_count_basis"]
-            and value["trial_count_basis"] in _SUPERSEDED_TRIAL_BASES)
+            and is_admissible_trial_count_basis(value["trial_count_basis"]))
+
+
+def is_admissible_trial_count_basis(value: Any) -> bool:
+    """Whether a recorded trial charge is the current one or a proven-harder legacy charge.
+
+    This is deliberately narrower than a general migration.  It exists so publication and
+    forward enrolment use the same audited exception as certificate attestation: a result that
+    cleared a harder multiplicity charge is not invalidated merely because the desk later made
+    the charge more accurate.
+    """
+    return value == TRIAL_COUNT_BASIS or value in _SUPERSEDED_TRIAL_BASES
 
 
 def all_ten_pass(stages: Any) -> bool:
-    """A partial or extra gate set is not the canonical ten-gate verdict."""
+    """All canonical gates and every recorded supplementary gate must pass.
+
+    The original ten are mandatory.  A newer diagnostic or cost gate is additive: accepting it
+    only when it passes cannot lower the original bar; rejecting it merely because it is an
+    eleventh name strands otherwise valid evidence forever.
+    """
     return (
         isinstance(stages, dict)
-        and tuple(stages) == GATES
-        and all(isinstance(stages[name], dict) and stages[name].get("passed") is True
-                for name in GATES)
+        and all(name in stages for name in GATES)
+        and all(isinstance(stage, dict) and stage.get("passed") is True
+                for stage in stages.values())
     )
 
 

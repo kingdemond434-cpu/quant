@@ -29,6 +29,7 @@ is COUNTABLE (`scripts/check_component_registry.py` ratchets that count down) in
 from __future__ import annotations
 
 import ast
+import hashlib
 import importlib.util
 import json
 import re
@@ -167,15 +168,48 @@ def _producer_calls() -> dict[str, tuple[str, tuple[str, ...]]]:
     return out
 
 
+#: A ledger `artifact` field is PROSE written by humans: "A.json; B.json", "A.json gate_detail",
+#: "A.json (append-only) + B.json". Reading it whole as one path was the single largest source of
+#: false MISSING rows in the runtime attestation -- 35 organs on the trading box (2026-09-23) whose
+#: artifact was present and fresh, declared alongside a word. The declaration is not wrong; it was
+#: never parsed. This extracts every repo-relative path token from it and keeps the rest as prose.
+_ARTIFACT_TOKEN = re.compile(
+    r"[A-Za-z0-9_][A-Za-z0-9_./-]*\.(?:json|jsonl|md|csv|parquet|sqlite|txt|npz|lock|db)\b")
+
+
+def artifact_paths(declared: str) -> tuple[str, ...]:
+    """Every path token in a prose artifact declaration, in declaration order, de-duplicated.
+
+    A token with no directory separator ("x.json" on its own) is NOT a repo path and is dropped:
+    it is a filename inside someone's sentence, and promoting it to an output would make the
+    registry claim a file at the repo root that nothing writes.
+    """
+    seen: dict[str, None] = {}
+    for tok in _ARTIFACT_TOKEN.findall(declared or ""):
+        tok = tok.replace("\\", "/").strip("/")
+        if "/" in tok:
+            seen.setdefault(tok, None)
+    if not seen and (declared or "").strip():
+        # A declaration with no path in it at all ("data/lake/series", "registry rows"). It is
+        # UNUSABLE, and the honest rendering of that is an output nothing can satisfy -- which
+        # reads MISSING in the attestation and keeps the organ COUNTED. Dropping it to "declares
+        # no artifact" would quietly remove the organ from the census, and a ratchet with a hole
+        # in it is not a ratchet.
+        return (declared.strip()[:200],)
+    return tuple(seen)
+
+
 @lru_cache(maxsize=1)
-def _ledger_outputs() -> dict[str, dict[str, str]]:
-    """leg -> {artifact, consumer}, from the Tier-1 ledger's own `scheduled_by` claims.
+def _ledger_outputs() -> dict[str, dict[str, Any]]:
+    """leg -> {artifacts, declared, consumer}, from the Tier-1 ledger's own `scheduled_by` claims.
 
     The ledger is already the desk's declaration of what a leg OWNS and who reads it (the same
     source `hourly_cycle._leg_artifacts` uses for the provenance envelope), so reading it here
-    keeps one declaration instead of minting a second that can disagree with it.
+    keeps one declaration instead of minting a second that can disagree with it. `artifacts` is
+    the parsed path tuple; `declared` keeps the sentence verbatim so a reader can see what the
+    ledger actually said when a path in it turns out not to exist.
     """
-    out: dict[str, dict[str, str]] = {}
+    out: dict[str, dict[str, Any]] = {}
     try:
         doc = json.loads(LEDGER.read_text(encoding="utf-8-sig"))
     except (OSError, ValueError):
@@ -188,7 +222,7 @@ def _ledger_outputs() -> dict[str, dict[str, str]]:
             tok = tok.strip()
             if tok.startswith("hourly_cycle:"):
                 leg = tok.split(":", 1)[1].split()[0]
-                out.setdefault(leg, {"artifact": art,
+                out.setdefault(leg, {"artifacts": artifact_paths(art), "declared": art,
                                      "consumer": str(it.get("consumer") or UNMEASURED)})
     return out
 
@@ -211,26 +245,37 @@ def hourly_leg_specs() -> list[ComponentSpec]:
         department = dept.get(leg, "rest")
         script, args = producers.get(leg, ("", ()))
         code = ["desks/mt5/research/hourly_cycle.py"]
+        producer_file = ""
         if script:
             for root in (DESK, ROOT):
                 cand = root / script
                 if cand.exists():
                     code.append(cand.resolve().relative_to(ROOT).as_posix())
+                    producer_file = str(cand.resolve())
                     break
         timeout = int(budget.get(leg, default_budget))
         decl = ledger.get(leg, {})
         specs.append(ComponentSpec(
             component_id=f"leg:{leg}",
             kind="leg", host="box", code_paths=tuple(dict.fromkeys(code)),
-            outputs=(str(decl["artifact"]),) if decl.get("artifact") else (),
+            outputs=tuple(decl.get("artifacts") or ()),
             consumers=(str(decl["consumer"]),) if decl.get("consumer") else (),
             dependencies=(f"resident:dept_{department}",),
             cadence_s=3600, timeout_s=timeout,
             progress_metric="leg_completions",
             production_args=args,
-            expected_artifact_schema=decl.get("artifact") or UNMEASURED,
+            expected_artifact_schema=str(decl.get("declared") or UNMEASURED),
             owner=f"department:{department}",
-            restart_action=f"restart:resident:dept_{department}",
+            # A LEG'S REPAIR IS THE LEG. Restarting the whole department was the only action this
+            # plane knew, and it cannot fix a leg that has never fired inside a department that is
+            # running fine -- six legs on the trading box (math_lab, physics_lab,
+            # expression_factory, causal_invariance, queue_census and their resident) sat NEVER
+            # through healthy departments for exactly that reason. `run_once:` runs the leg's own
+            # producer and proves it by the artifact moving; a leg with no producer script of its
+            # own still falls back to its department.
+            restart_action=(
+                "run_once:" + "\x1f".join([sys.executable, "-W", "ignore", producer_file, *args])
+                if producer_file else f"restart:resident:dept_{department}"),
             criticality="optional",
             resource_budget={"budget_s": timeout, "cpu": "below_normal"},
             schedule=f"hourly_cycle:{leg}",
@@ -567,7 +612,14 @@ def federation_worker_specs() -> list[ComponentSpec]:
             component_id=f"federation:{sid}",
             kind="federation_worker", host="box",
             code_paths=("desks/mt5/research/external_federation.py",),
-            outputs=(f"desks/mt5/data/intelligence/external_federation/{sid}.json",),
+            # NOT `.../external_federation/{sid}.json`: nothing has ever written a per-system
+            # file. `external_federation.py` writes ONE state document with a row per system, one
+            # report, and timestamped donation batches -- so the worker's evidence is its row in
+            # that state, and `expected_artifact_schema` names the row. Declaring a file no organ
+            # writes read as 19 MISSING workers on the box while the federation was running fine.
+            outputs=("desks/mt5/data/external_federation.json",
+                     "desks/mt5/reports/EXTERNAL_FEDERATION.json"),
+            expected_artifact_schema=f"systems.{sid}",
             consumers=("leg:compile_candidates",),
             cadence_s=3_600, timeout_s=getattr(fed, "FEDERATION_BUDGET_S", 3_600),
             progress_metric="packets_drained",
@@ -876,13 +928,79 @@ def _area_files(root: Path | None = None) -> dict[str, Path]:
     return _AREA_FILES[key]
 
 
+#: THE REGISTRY'S HOT SPOT, MEASURED (2026-09-23). `producer_census` -- the leg that proves no
+#: producer is dark -- took 163 s, and 128 s of that was `build_registry`, and 110 s of THAT was
+#: this one function: `reach_specs` parses all 1,511 python files in the tree and walks 4.5 M AST
+#: nodes, every run. The census leg runs it TWICE (before and after its relight), so one pass cost
+#: over 245 s against a leg budget it then overran -- which is how the census came to be published
+#: once and then left 680 minutes stale.
+#:
+#: CONTENT-KEYED, so the cache cannot be wrong. The key is the SHA-256 of the file's own text and
+#: the value is what this pure function returns for that text; a file that changes by one byte
+#: gets a new key and is re-parsed. There is no mtime, no path and no invalidation rule to get
+#: wrong -- a stale entry is unreachable rather than merely unlikely.
+#:
+#: A CACHE IS NEVER LOAD-BEARING. Every read and write is best-effort: an unreadable, corrupt or
+#: unwritable cache costs the parse it would have saved and changes no answer. It is gitignored
+#: for the reason the .gitignore already states -- a cache is reconstructible from its source, and
+#: tracking machine-rewritten files made both hosts unpullable.
+_STEMS_CACHE_FILE = ROOT / "desks" / "mt5" / "data" / "import_stems_cache.json"
+_STEMS_CACHE: dict[str, list[str]] = {}
+_STEMS_STATE: dict[str, bool] = {"loaded": False, "dirty": False}
+#: Entries are ~60 bytes each and the tree holds ~1,500 files; the bound is here so a long-lived
+#: box cannot accumulate a cache of every version of every file it ever held.
+_STEMS_CACHE_MAX = 20_000
+
+
+def _stems_cache_load() -> None:
+    """Best-effort read of the content-keyed stem cache. Any failure leaves it empty."""
+    if _STEMS_STATE["loaded"]:
+        return
+    _STEMS_STATE["loaded"] = True
+    try:
+        doc = json.loads(_STEMS_CACHE_FILE.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return
+    if isinstance(doc, dict):
+        for k, v in doc.items():
+            if isinstance(k, str) and isinstance(v, list):
+                _STEMS_CACHE[k] = [str(x) for x in v]
+
+
+def stems_cache_flush() -> None:
+    """Best-effort write-back, called once the registry is built. Never raises."""
+    if not _STEMS_STATE["dirty"]:
+        return
+    _STEMS_STATE["dirty"] = False
+    try:
+        items = list(_STEMS_CACHE.items())[-_STEMS_CACHE_MAX:]
+        _STEMS_CACHE_FILE.parent.mkdir(parents=True, exist_ok=True)
+        tmp = _STEMS_CACHE_FILE.with_suffix(".json.tmp")
+        tmp.write_text(json.dumps(dict(items)), encoding="utf-8")
+        tmp.replace(_STEMS_CACHE_FILE)
+    except OSError:
+        return
+
+
 def _import_stems(text: str) -> set[str]:
     """Module stems a file imports: `import x`, `from pkg.x import y` (both `x` and `y`, since
-    `from research import x` binds a module) -- the wide form, because the question is REACH."""
+    `from research import x` binds a module) -- the wide form, because the question is REACH.
+
+    Memoised on the SHA-256 of `text`; see `_STEMS_CACHE_FILE` for why that key and not a path.
+    """
+    _stems_cache_load()
+    key = hashlib.sha256(text.encode("utf-8", "replace")).hexdigest()
+    hit = _STEMS_CACHE.get(key)
+    if hit is not None:
+        return set(hit)
     out: set[str] = set()
     try:
         tree = ast.parse(text)
     except (SyntaxError, ValueError):
+        # Cached too: an unparseable file is unparseable every time, and re-proving it each run
+        # is the same wasted second as re-parsing a good one.
+        _STEMS_CACHE[key] = []
+        _STEMS_STATE["dirty"] = True
         return out
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
@@ -891,6 +1009,8 @@ def _import_stems(text: str) -> set[str]:
             if node.module:
                 out.add(node.module.split(".")[-1])
             out |= {a.name.split(".")[0] for a in node.names}
+    _STEMS_CACHE[key] = sorted(out)
+    _STEMS_STATE["dirty"] = True
     return out
 
 
@@ -1064,6 +1184,9 @@ def build_registry(root: Path | None = None) -> Registry:
             reg.add(s, replace=True)
     reg.add_all(reach_specs(reg, root, dynamic_reach_roots(root)), replace=True)
     reg.add_all(discovered_specs(reg.claimed_paths(), root), replace=True)
+    # The reach walk just parsed every python file it had not seen before; write what it learned
+    # so the next build -- including the census's own second pass -- does not repeat the work.
+    stems_cache_flush()
     return reg
 
 

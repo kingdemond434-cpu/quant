@@ -96,6 +96,16 @@ def test_department_plans_partition_the_heavy_legs():
     assert hc.department_of("some_unknown_leg") == "rest"
     for n in heavy:
         depts = [d for d in hc.DEPARTMENTS if hc.in_plan(n, f"dept:{d}")]
+        if n in hc.OWN_CLOCK_LEGS:
+            # A LEG WITH ITS OWN TASK IS IN NO DEPARTMENT PLAN, AND STILL HAS A DEPARTMENT.
+            # `external_gauntlet` keeps `department_of() == "validate"` -- that is what the leg
+            # IS, and every report that groups by department still places it correctly. What
+            # changed 2026-09-24 is where it RUNS: `MT5-Gauntlet` is its clock, so the validate
+            # resident must not start a second concurrent sweep of the same docket behind the
+            # first. The partition invariant below is about legs the cycle schedules, and this
+            # leg is no longer one of them.
+            assert depts == [], f"{n} has its own clock and must be in no department plan"
+            continue
         assert depts == [hc.department_of(n)]                   # exactly one department
     assert not hc.in_plan("health", "dept:meta")                # core legs never in a department
     assert hc.in_plan("auto_x", "dept:rest")

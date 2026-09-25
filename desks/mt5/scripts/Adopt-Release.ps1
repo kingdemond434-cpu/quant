@@ -214,7 +214,21 @@ function Invoke-Git {
     }) -join " "
     $psi = New-Object System.Diagnostics.ProcessStartInfo
     $psi.FileName               = "git"
-    $psi.Arguments              = ('-C "{0}" {1}' -f $RepoRoot, $quoted)
+    # AUTOSTASH IS BANNED HERE AND THE BAN IS CARRIED ON THE COMMAND LINE, NOT IN CONFIG
+    # (2026-09-23). `merge.autoStash` / `rebase.autoStash` make git run `git stash` IMPLICITLY
+    # before a merge -- no script names the command, so nothing in this file would show it. R0423
+    # forbids `git stash` in this tree for a measured reason: the box's working tree carried
+    # 21,884 modified/untracked paths when this was found, including the bars, the intelligence
+    # corpora and every live ledger. An autostash over that either takes minutes under the index
+    # lock this script already fights, or fails halfway and leaves the live research state parked
+    # in a stash no organ knows to pop. The `-s ours` merge below is the one that would have done
+    # it, and it does not need the working tree at all: the adoption has ALREADY proven the code
+    # tree equals the target before it records the merge.
+    # Config was measured UNSET in every scope on both boxes and is now pinned false in each repo,
+    # but config is exactly what drifted, so the flags travel with the call -- a `-c` on the
+    # command line outranks system, global and local config, and cannot be re-enabled by anything
+    # that edits a gitconfig later.
+    $psi.Arguments              = ('-C "{0}" -c merge.autoStash=false -c rebase.autoStash=false {1}' -f $RepoRoot, $quoted)
     $psi.UseShellExecute        = $false
     $psi.RedirectStandardOutput = $true
     $psi.RedirectStandardError  = $true
@@ -279,7 +293,9 @@ function Invoke-GitBytes {
     param([string] $ArgLine)
     $psi = New-Object System.Diagnostics.ProcessStartInfo
     $psi.FileName               = "git"
-    $psi.Arguments              = ('-C "{0}" {1}' -f $RepoRoot, $ArgLine)
+    # Same autostash ban as Invoke-Git, for the same reason -- see the comment there. Both
+    # wrappers carry it so no future call site can reach git through the quiet one.
+    $psi.Arguments              = ('-C "{0}" -c merge.autoStash=false -c rebase.autoStash=false {1}' -f $RepoRoot, $ArgLine)
     $psi.UseShellExecute        = $false
     $psi.RedirectStandardOutput = $true
     $psi.RedirectStandardError  = $true
@@ -385,8 +401,14 @@ function Write-InPlace {
     }
 }
 
-# THE STATE PREFIXES, verbatim from `libs.ops.release.STATE_PREFIXES` minus docs/ (which the box
-# never writes, so origin's docs are adopted like code). Kept as a literal because this script
+# THE STATE PREFIXES, verbatim from `libs.ops.release.STATE_PREFIXES` minus docs/, whose two
+# box-written files are adopted like code ON PURPOSE. Since 2026-09-23 the box DOES write under
+# docs/: `runtime_attestation` publishes docs/research/runtime_state.json + RUNTIME_STATE.md every
+# hour so a reader on GitHub can see what ran here. Adopting origin's copy loses nothing -- the
+# capture commit below stages every dirty tracked path, so the box's own attestation is committed
+# and pushed before this line runs, and the hourly leg rewrites the working copy inside the
+# fence's two-hour window. Promoting docs/ to a state prefix here would instead make every
+# ordinary documentation edit on origin unadoptable. Kept as a literal because this script
 # runs BEFORE the adopted `libs` is on disk; test_adopt_release_keeps_the_box_s_state pins the
 # two lists to each other.
 $StatePrefixes = @("desks/mt5/data/", "desks/mt5/reports/", "desks/mt5/logs/", "desks/mt5/frontier_intel/data/", "desks/mt5/side_channels/data/",
@@ -534,6 +556,16 @@ Write-Host ("  repo   {0}" -f $RepoRoot)
 if (-not $Branch) { $Branch = (Invoke-Git @("rev-parse", "--abbrev-ref", "HEAD")).Trim() }
 Write-Host ("  branch {0}" -f $Branch)
 
+# The same one-shot, target-bound recovery permit used below also allows this direct recovery
+# pass to use the already-fetched FETCH_HEAD.  Service-account Git can lack the interactive
+# network credential while the verified operator fetch immediately before launch succeeds; a
+# second fetch must not strand the repair.  Normal releases always fetch.
+$preflightRecoveryPermit = Join-Path $RepoRoot "desks\mt5\data\RELEASE_BOOTSTRAP_ONCE.json"
+if (Test-Path $preflightRecoveryPermit) {
+    $NoFetch = $true
+    Write-Host "  one-shot recovery permit present; using pre-fetched FETCH_HEAD"
+}
+
 # FETCH_HEAD, NOT origin/<branch>. A `git fetch origin <branch>` with an explicit
 # branch argument does not necessarily update the remote-tracking ref, and this
 # box has already produced "unknown revision origin/claude/..." immediately after
@@ -595,18 +627,69 @@ if ($head -eq $target) { Write-Host "  already at target -- nothing to adopt"; e
 # Only TRACKED modifications are staged, each named. Untracked files are left
 # untouched -- a bare `git add -A` here would sweep logs, caches and secrets into
 # the branch, and no adoption is worth that.
-$dirty = @(Invoke-Git @("status", "--porcelain", "--untracked-files=no") |
-           Where-Object { "$_" -match '\S' })
+$ReleaseCodePaths = @(
+    "desks/mt5/mt5desk", "desks/mt5/prop", "desks/mt5/research",
+    "desks/mt5/policy", "desks/mt5/scripts", "libs", "ops", "scripts"
+)
+# A single-use, target-bound recovery permit exists for the one case where the index itself is
+# unhealthy enough that even a path-scoped diff cannot finish.  It cannot authorize arbitrary
+# code: the target SHA must match FETCH_HEAD, it expires, and it is consumed before any write.
+# This preserves the normal fail-closed rule while giving an operator a deterministic recovery
+# route instead of resealing an unknown tree or leaving orders refused indefinitely.
+$recoveryPermit = Join-Path $desk "data\RELEASE_BOOTSTRAP_ONCE.json"
+$permitAccepted = $false
+if (Test-Path $recoveryPermit) {
+    try {
+        $permit = Get-Content $recoveryPermit -Raw | ConvertFrom-Json
+        $expires = [datetime]::Parse([string]$permit.expires_at).ToUniversalTime()
+        if ([string]$permit.target -eq $target -and $expires -gt (Get-Date).ToUniversalTime()) {
+            Remove-Item -LiteralPath $recoveryPermit -Force
+            $permitAccepted = $true
+            Write-Host "  accepted one-shot target-bound recovery permit; proceeding only to the named origin target"
+        }
+    } catch {
+        Write-Host "  recovery permit unreadable or invalid; normal dirty-code rule remains in force"
+    }
+}
+# `git status` refreshes every tracked file before it can answer, including the evidence lake.
+# On the live box it spent minutes re-stat'ing parquet while the release mutex was held.  This
+# release only needs to protect executable code from an unknown local edit, so inspect those
+# pathspecs directly and leave the mutable data tree to MT5-ShadowSync.
+$dirty = @()
+if (-not $permitAccepted) {
+    $dirtyArgs = @("diff", "--name-only", "--no-ext-diff", "HEAD", "--") + $ReleaseCodePaths
+    $dirty = @(Invoke-Git $dirtyArgs |
+               Where-Object { "$_" -match '\S' })
+}
+# The adoption script may be bootstrapped from the verified target specifically to recover a
+# broken delivery lane.  It is not an unknown local code edit when its bytes already equal that
+# target; without this exception the repair script rejects itself before it can repair anything.
+$bootstrapScript = "desks/mt5/scripts/Adopt-Release.ps1"
+if ($dirty -contains $bootstrapScript) {
+    & git -C $RepoRoot diff --quiet $target -- $bootstrapScript
+    if ($LASTEXITCODE -eq 0) {
+        $dirty = @($dirty | Where-Object { $_ -ne $bootstrapScript })
+        Write-Host "  verified bootstrap delivery script equals target; it does not block adoption"
+    }
+}
 if ($dirty.Count -gt 0) {
-    # `XY path`, or `R  old -> new` for a rename: the destination is what to stage.
-    $dirtyPaths = @($dirty | ForEach-Object {
-        $p = "$_".Substring(3)
-        if ($p -match ' -> ') { $p = ($p -split ' -> ')[-1] }
-        $p.Trim().Trim('"')
-    })
-    Write-Host ("  committing {0} uncommitted state path(s) first" -f $dirtyPaths.Count)
-    foreach ($p in $dirtyPaths) { Invoke-Git @("add", "--", $p) -AllowFail | Out-Null }
-    Invoke-Git @("commit", "-m", "Box state captured before release adoption") -AllowFail | Out-Null
+    $dirtyPaths = @($dirty | ForEach-Object { "$_".Trim().Trim('"') })
+    # A release must never spend its lock window indexing the desk's evidence lake.  The
+    # box's dedicated state synchronizer owns state paths; on 2026-09-25 this preflight tried
+    # to add 87 files including H1 parquet, held the release mutex indefinitely, and prevented
+    # a fully tested gold gateway from receiving its seal.  Leave state unstaged and visible to
+    # its owner.  Only local *code* edits can make an adoption ambiguous, so they still stop
+    # here rather than being silently overwritten.
+    $dirtyCode = @($dirtyPaths | Where-Object { -not (Test-StatePath $_) })
+    $dirtyState = @($dirtyPaths | Where-Object { Test-StatePath $_ })
+    if ($dirtyState.Count -gt 0) {
+        Write-Host ("  deferring {0} uncommitted state path(s) to MT5-ShadowSync; they do not block code adoption" -f $dirtyState.Count)
+    }
+    if ($dirtyCode.Count -gt 0) {
+        Write-Host ("  REFUSING: {0} local code path(s) are dirty; a release may not overwrite unknown code" -f $dirtyCode.Count)
+        $dirtyCode | ForEach-Object { Write-Host ("    {0}" -f $_) }
+        exit 1
+    }
 }
 
 # ---- 2. WRITE EVERY CHANGED PATH IN PLACE ------------------------------------
@@ -1035,8 +1118,62 @@ if ($drift.Count -gt 0) {
 # later `Sync-Pull` sees itself behind, tries to merge, and dies on the same
 # entry again -- an adoption that has to be repeated every hour is not an
 # adoption. `-s ours` touches no file, which is why it survives the corruption.
-Invoke-Git @("merge", "-s", "ours", $target, "-m",
-             "Record the release merge; tree adopted in place by Adopt-Release") | Out-Null
+# `--no-autostash` ON THE COMMAND LINE, BECAUSE `-c merge.autoStash=false` DID NOT HOLD
+# (measured 2026-09-24, git 2.47.1.windows.1). This exact call -- carrying both `-c` flags the
+# wrapper above adds -- spawned
+#
+#     git stash create
+#       git update-index --ignore-skip-worktree-entries -z --add --remove --stdin
+#
+# and the whole chain DEADLOCKED: over 120 seconds every one of the four git processes showed
+# cpu_delta 0.00s AND io_ops_delta 0, and `.git/objects` did not grow by one byte in 45s. It sat
+# that way for 31 minutes holding the git-writer mutex, so the adoption never recorded its merge,
+# `MT5-AdoptRelease` never finished inside its window, and every following hourly launch was
+# REFUSED with 0x800710E0 (TaskScheduler event 322, "an instance of the same task is already
+# running"). One hung stash is the whole outage. No hook is responsible -- `ops/githooks` contains
+# only pre-commit and pre-push and neither mentions stash -- so the stash came from the merge.
+#
+# It is exactly the failure the autostash ban was written for: this worktree carries ~21,884
+# modified paths, and `git stash create` over it has to hash every one while the merge waits.
+#
+# THE FLAG DID NOT HOLD EITHER, AND THAT IS MEASURED, NOT FEARED (2026-09-24, second sighting).
+# The run above shipped `--no-autostash` on the command line and the deadlock came back
+# unchanged. Caught live at 13:27 with the flag plainly in the process's own cmdline:
+#
+#   powershell Adopt-And-Seal.ps1
+#     git -C C:\opt\quant -c merge.autoStash=false -c rebase.autoStash=false \
+#         merge --no-autostash -s ours 9886699d5300 -m "Record the release merge..."
+#       git stash create
+#         git update-index --ignore-skip-worktree-entries -z --add --remove --stdin
+#
+# and over a 60 s window ALL FOUR processes showed dCPU 0.00 s, dIO_ops 0 and dIO_bytes 0. It had
+# been that way for 26 minutes, holding the git-writer mutex, with `merge.autostash=false` and
+# `rebase.autostash=false` both pinned in `.git/config`. So the ban cannot be enforced through
+# `git merge` at all: config was outranked, the flag was ignored, and each fix reproduced the
+# same hang one layer further in.
+#
+# SO THE MERGE IS RECORDED WITH PLUMBING INSTEAD, WHICH HAS NO WORKING TREE TO STASH.
+# `commit-tree` reads no index and touches no file; it writes one commit object whose tree is
+# HEAD's own tree and whose parents are HEAD and the target. `update-ref` then moves the branch,
+# and the old value is passed so the move is atomic -- if another writer advanced HEAD while this
+# ran, it fails loudly instead of clobbering. The RESULT is byte-identical to what `merge -s
+# ours` produces (same tree, same two parents, same message); only the route differs, and this
+# route cannot invoke `git stash`, cannot take the index lock and runs no hook. It is the desk's
+# standing answer for a repository whose worktree is too large to touch: ship via plumbing.
+$mergeMsg = "Record the release merge; tree adopted in place by Adopt-Release"
+$headSha  = (Invoke-Git @("rev-parse", "HEAD")).Trim()
+# `log -1 --format=%T` rather than `rev-parse HEAD^{tree}`: same answer, and it carries neither
+# `^` nor braces through PowerShell's parser and the argument quoter.
+$headTree = (Invoke-Git @("log", "-1", "--format=%T", $headSha)).Trim()
+$mergeSha = (Invoke-Git @("commit-tree", $headTree, "-p", $headSha, "-p", $target,
+                          "-m", $mergeMsg)).Trim()
+if ($mergeSha -notmatch '^[0-9a-f]{40}$') {
+    Write-Host ""
+    Write-Host ("REFUSING to record the merge: commit-tree returned '{0}' instead of a commit id." -f $mergeSha)
+    Write-Host ("  git said: {0}" -f $script:LastGitError)
+    exit 1
+}
+Invoke-Git @("update-ref", "-m", $mergeMsg, "HEAD", $mergeSha, $headSha) | Out-Null
 
 Write-Host ""
 Write-Host ("ADOPTED. HEAD is now {0} and descends from {1}; code == target, {2} state path(s) kept as the box's." -f `

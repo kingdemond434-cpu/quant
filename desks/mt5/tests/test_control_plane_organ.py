@@ -13,7 +13,7 @@ for p in (str(ROOT), str(DESK), str(DESK / "research")):
         sys.path.insert(0, p)
 
 from libs.ops.control_plane import edges, scheduler_gen  # noqa: E402
-from libs.ops.control_plane.specs import UNMEASURED  # noqa: E402
+from libs.ops.control_plane.specs import UNMEASURED, derive_max_silence  # noqa: E402
 
 
 def _load(path: Path, name: str):
@@ -47,7 +47,14 @@ def test_specs_are_derived_from_every_declared_clock():
     assert REG.get("task:MT5-Gateway").criticality == "required"
     assert REG.get("component:control_plane").schedule == "MT5-ClockFixer"
     gauntlet = REG.get("leg:external_gauntlet")
-    assert gauntlet is not None and gauntlet.max_silence_s == 2 * 3600
+    # DERIVED, NEVER ASSERTED. This read `== 2 * 3600` -- a literal that happened to equal the
+    # derivation only while the judge's cycle budget was under 3,600 s. When the budget was
+    # raised to 8,640 (2026-09-24: measured full pass ~134 min, and the leg had recorded ZERO
+    # successful outcomes on six separate days) the freshness window correctly widened to
+    # timeout + cadence, and a correct widening failed a test. The rule is what is pinned.
+    assert gauntlet is not None
+    assert gauntlet.max_silence_s == derive_max_silence(gauntlet.cadence_s, gauntlet.timeout_s)
+    assert gauntlet.max_silence_s >= 2 * 3600
 
 
 def test_residents_are_derived_and_silence_is_per_family():

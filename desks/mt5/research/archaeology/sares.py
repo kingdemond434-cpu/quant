@@ -74,6 +74,7 @@ from archaeology import snapshots as snap  # noqa: E402
 from libs.moat import registry as reg  # noqa: E402
 from libs.research import access_classifier as ac  # noqa: E402
 from libs.research import polyglot as pg  # noqa: E402
+from libs.research import set_aside as sa  # noqa: E402
 
 UNMEASURED = "UNMEASURED"
 REPORT: Path = _DESK / "reports" / "SARES.json"
@@ -1650,7 +1651,11 @@ def run(*, budget_s: float = BUDGET_S, dry_run: bool = False, conn: Any = None,
     trees: dict[str, dict[str, Any]] = {}
     cap_left, mut_left = MAX_CELLS_PER_PASS, MAX_MUTATIONS
     try:
-        systems = usable[:MAX_SYSTEMS]
+        # MAX_SYSTEMS IS A BATCH BUDGET, NOT A SCREEN (LAWS 7). `systems_not_reached` already
+        # counted the remainder in this report; the named refusal puts it where a reader
+        # comparing organs can see it, with the ordering key that chose the survivors.
+        systems = sa.take(usable, MAX_SYSTEMS, organ="sares", stage="usable_systems",
+                          ordering="the order `usable` was assembled in (fetch/rank order)")
         report["systems_not_reached"] = max(0, len(usable) - len(systems))
         for k, row in enumerate(systems):
             if time.monotonic() - started > budget_s * 0.8:

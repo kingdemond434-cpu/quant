@@ -718,7 +718,73 @@ def global_factors(blocks: dict[str, dict[str, Any]]) -> dict[str, Any]:
             "status": "measured" if clean else "UNMEASURED",
             "why": "" if clean else f"no region publishes a measured {name}",
         }
+    out["scalars"] = _global_scalars(out)
     return out
+
+
+def _global_scalars(factors: dict[str, Any]) -> dict[str, Any]:
+    """THE SAME CROSS-SECTION AS ONE NUMBER PER FACT, because a reader needs a number.
+
+    Every value above is a dict -- the honest shape, because each carries its own status and its
+    own reason. But a reader that wants THE global factor finds no scalar anywhere in the block
+    and can only render UNMEASURED, which was the desk dashboard's verdict on this organ while
+    the organ was measuring six dispersions perfectly well. A structure nothing can read is a
+    measurement nobody has.
+
+    So the scalars are DERIVED FROM THE BLOCK ABOVE and never recomputed: each dispersion's mean,
+    stdev and high-share flattened to `<state>_mean` etc., plus the two facts about the world the
+    six of them make -- how many states the regions agree on at all (`n_states_measured`), and
+    the mean dispersion across the states that ARE measured (`cross_state_dispersion`), which is
+    the one number that says whether the world is moving together or apart.
+
+    A state no region measures contributes NOTHING here -- not a zero. An absent scalar is absent
+    with the same reason the dict above carries (L1.28a).
+    """
+    flat: dict[str, Any] = {}
+    stdevs: list[float] = []
+    measured_states: list[str] = []
+    unmeasured: dict[str, str] = {}
+    for name in STATES:
+        row = factors.get(f"dispersion_{name}")
+        if not isinstance(row, dict):
+            continue
+        if str(row.get("status")) != "measured":
+            unmeasured[name] = str(row.get("why") or "")
+            continue
+        measured_states.append(name)
+        for field in ("mean", "stdev", "share_high"):
+            value = row.get(field)
+            if isinstance(value, (int, float)) and not isinstance(value, bool):
+                flat[f"{name}_{field}"] = float(value)
+        flat[f"{name}_n_blocks"] = int(row.get("n_blocks_measured") or 0)
+        if isinstance(row.get("stdev"), (int, float)):
+            stdevs.append(float(row["stdev"]))
+    raw_fred = factors.get("fred")
+    fred: dict[str, Any] = raw_fred if isinstance(raw_fred, dict) else {}
+    fresh = fred.get("freshness")
+    if isinstance(fresh, (int, float)) and not isinstance(fresh, bool):
+        flat["fred_freshness"] = float(fresh)
+    flat["fred_status"] = str(fred.get("status") or "absent")
+    flat["fred_as_of"] = fred.get("as_of")
+    flat["n_states_measured"] = len(measured_states)
+    flat["states_measured"] = measured_states
+    # A DISPERSION OF ONE BLOCK HAS NO SPREAD, AND THAT IS NOT A SPREAD OF ZERO. `stdev` is None
+    # at n=1 by construction above, so this mean is taken over the states that HAVE a spread and
+    # says how many they were; with none, it is UNMEASURED with its reason.
+    flat["cross_state_dispersion"] = (_r(float(np.mean(stdevs))) if stdevs else None)
+    flat["cross_state_dispersion_n"] = len(stdevs)
+    flat["cross_state_dispersion_why"] = (
+        "" if stdevs else
+        "no state has two or more regions measured, so no cross-region spread exists to average; "
+        "this is UNMEASURED and never a dispersion of zero")
+    flat["status"] = "measured" if measured_states else "UNMEASURED"
+    flat["why"] = ("" if measured_states else
+                   "no region publishes a measured state, so the world has no scalar factor on "
+                   "this host: " + "; ".join(f"{k}: {v}" for k, v in unmeasured.items())[:400])
+    flat["unmeasured_states"] = unmeasured
+    flat["basis"] = ("derived from the dispersion_* rows above and the FRED snapshot; nothing is "
+                     "recomputed here, so a scalar can never disagree with the block it came from")
+    return flat
 
 
 # --------------------------------------------------------------------------- the edge hunter

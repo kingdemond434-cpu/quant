@@ -1,6 +1,6 @@
 {
  "note": "The ASIA HARD-DATA PLANE. `deep_forest_sources.json` holds the PRACTITIONER forest -- 502 grounds where people say what they believe, which are hypothesis generators and never evidence. This file holds the other half: official, exchange, physical and flow data, where the number itself is the observation. The two are kept apart on purpose. A forum post and an SHFE warehouse receipt are both public Chinese information and they earn completely different treatment: one mints a hypothesis, the other can settle one. Adding a source here means declaring an MT5 transmission path for it -- a dataset with no path into a tradable instrument is not collected, however interesting, because trial count is a shared cost (LAWS: TWO LANES) and an unroutable feed spends it for nothing. REGION ROUTING RULE (principal, 2026-09-15), which has now held for China, Japan, SE Asia, MENA and LatAm: mine a region for DATA when it PRODUCES OR TRANSITS something the desk trades; mine it for STRATEGIES only when it TRADES what the desk trades, legally, with mandatory disclosure. Japan is the only region scoring on both columns -- retail FX is legal, enormous, MT5-native, and TFX publishes exchange data. China, Chile, Peru, Brazil, Dubai and Turkey are PRODUCERS: take the data, never the strategies, because nothing there trades this desk's venue. Russia/CIS is the one corpus worth mining for mechanisms without a data claim, because it is the largest MT5 corpus in the world and its authors trade this same terminal. SE Asian and MENA retail crowds have no disclosure: mechanisms only, claims never. NO_TABLE IS A ROUTE PROBLEM, NOT A PARSER PROBLEM. A JavaScript-rendered statistics portal serves an empty shell to a fetcher; its data lives at a JSON endpoint the page calls. Auto-discovery from the saved HTML does not find these -- the endpoints are in JS bundles, not the page -- so the remedy is a DECLARED url per source, verified once with a real request. cfets_fixing was fixed this way on 2026-09-15; abs_trade, boj_timeseries and krx_open_api were probed and returned 404/404/403, so they stay NO_TABLE rather than carrying an invented address.",
- "boundary": "PUBLIC OR LICENSED ONLY, and this is a hard line rather than a preference. Nothing here bypasses authentication, a paywall, a robots directive, a private group or an access control; nothing impersonates a user; no source is material non-public information. `access` declares what each needs, and a keyed or paid source that has no key configured reports UNCONFIGURED -- never a failed probe, and never a silent skip.",
+ "boundary": "THE FIVE REFUSED ACTS, AND NOTHING ELSE (LAWS 5e, principal 2026-09-23). Nothing here steals a credential or logs in as somebody else, bypasses an access control or a paywall, carries material non-public information, uses stolen or leaked private data, or harvests personal data. Everything else publicly visible is mined and tested. Licence, terms, robots and source class are ROUTING AND PROVENANCE LABELS -- they say what the desk may REDISTRIBUTE and how much weight the evidence carries, never whether it may be read. THIS LINE REPLACED A `PUBLIC OR LICENSED ONLY` BOUNDARY that predated the law and was a discovery brake of exactly the kind LAWS 5e names as deleted. `access` still declares what each ground needs, and a keyed or paid source with no key configured reports UNCONFIGURED -- never a failed probe, and never a silent skip.",
  "planes": {
   "cn_hard": {
    "name": "China official, exchange and physical",
@@ -127,12 +127,49 @@
    "region": "au",
    "priority": 1,
    "why": "Fusion Markets is ASIC-regulated, so it is legally REQUIRED to publish how it fills this account. The desk has been inferring execution semantics from 52 fill records that its counterparty had already written down in English. This is the densest unread document about the desk's actual trading environment and it outranks every dataset in the registry."
+  },
+  "india": {
+   "name": "India -- the second gold consumer and a live USD cross",
+   "region": "in",
+   "priority": 2,
+   "why": "India held ZERO grounds in the attribution index while being the world's second largest physical gold consumer and the source of a USDINR the venue quotes. It is a PRODUCER/CONSUMER region under the routing rule: take the customs, central-bank and exchange data, never the retail strategy corpus, because offshore FX is not legal there and nothing in that crowd trades this venue."
+  },
+  "north_america": {
+   "name": "North America -- the jurisdiction the desk's own quote currency belongs to",
+   "region": "us",
+   "priority": 1,
+   "why": "THE HIGHEST-PRIORITY DATA REGION AND IT HELD ZERO GROUNDS. Every symbol in the book is quoted against USD or hedged through it; the CFTC positioning report, the Fed's own balance sheet and rate releases, EIA inventories, COMEX warehouse stocks and USDA supply/demand are the primary observations behind gold, oil, gas, the softs and every FX cross the desk trades. This is a DATA region of the first rank and a strategy region of none -- US retail commentary is not mined for mechanisms here, the hard releases are."
+  },
+  "institutional": {
+   "name": "Global / institutional -- the cross-jurisdiction observers",
+   "region": "global",
+   "priority": 1,
+   "why": "Bodies with no jurisdiction of their own that measure ALL of them: BIS policy rates and effective exchange rates, IMF reserves and commodity prices, the World Gold Council's demand and ETF flows, OPEC and IEA oil balances, the World Bank commodity sheet. These are the only series that are point-in-time comparable ACROSS regions, which is what makes a cross-regional mechanism testable at all. The index could not name this region."
+  },
+  "mena": {
+   "name": "MENA -- the marginal barrel and two live USD crosses",
+   "region": "ae",
+   "priority": 2,
+   "why": "A PRODUCER region under the routing rule: Aramco's official selling prices and JODI's submissions are the supply side of the oil the desk trades, and CBRT's reserve and rate series drive a USDTRY the venue quotes. The retail crowds here carry no disclosure, so this is mechanisms and data only, claims never."
+  },
+  "sea": {
+   "name": "South-East Asia -- palm, coffee, coal and the ASEAN crosses",
+   "region": "sg",
+   "priority": 2,
+   "why": "SE Asia held one ground. It PRODUCES palm oil (Malaysia/Indonesia), robusta coffee (Vietnam), thermal coal and LNG, and its central banks publish the series behind USDSGD, USDTHB, USDMYR and USDIDR. Data region, never a strategy region: no disclosure regime covers its retail crowds."
+  },
+  "africa": {
+   "name": "Africa -- cocoa, PGMs and the gold-linked currencies",
+   "region": "za",
+   "priority": 2,
+   "why": "Africa held one ground while supplying about two thirds of the world's cocoa (Cote d'Ivoire and Ghana), nearly all of its platinum and palladium, and the gold behind a ZAR the book holds sleeves in. Pure producer data."
   }
  },
  "sources": [
   {
    "id": "safe_fx_settlement",
    "plane": "cn_hard",
+   "country": "cn",
    "name": "SAFE bank FX settlement and sales",
    "url": "https://www.safe.gov.cn/safe/whxsdsj/index.html",
    "expect": "any",
@@ -154,6 +191,7 @@
   {
    "id": "safe_cross_border",
    "plane": "cn_hard",
+   "country": "cn",
    "name": "SAFE cross-border receipts and payments",
    "url": "https://www.safe.gov.cn/safe/kjszsfk/index.html",
    "expect": "any",
@@ -173,6 +211,7 @@
   {
    "id": "safe_reserves",
    "plane": "cn_hard",
+   "country": "cn",
    "name": "SAFE / PBOC official reserve assets",
    "url": "https://www.safe.gov.cn/safe/whcb/index.html",
    "expect": "any",
@@ -191,6 +230,7 @@
   {
    "id": "pboc_open_market",
    "plane": "cn_hard",
+   "country": "cn",
    "name": "PBOC open market operations and announcements",
    "url": "http://www.pbc.gov.cn/zhengcehuobisi/125207/125213/125431/index.html",
    "expect": "any",
@@ -210,6 +250,7 @@
   {
    "id": "pboc_survey_stats",
    "plane": "cn_hard",
+   "country": "cn",
    "name": "PBOC survey and statistics (credit, aggregate financing)",
    "url": "http://www.pbc.gov.cn/diaochatongjisi/116219/index.html",
    "expect": "any",
@@ -230,6 +271,7 @@
   {
    "id": "cfets_fixing",
    "plane": "cn_hard",
+   "country": "cn",
    "name": "CFETS / ChinaMoney RMB central parity and index",
    "url": "https://www.chinamoney.com.cn/r/cms/www/chinamoney/data/fx/ccpr.json",
    "expect": "json",
@@ -250,6 +292,7 @@
   {
    "id": "chinabond_curve",
    "plane": "cn_hard",
+   "country": "cn",
    "name": "ChinaBond yield curve",
    "url": "https://yield.chinabond.com.cn/",
    "expect": "any",
@@ -268,6 +311,7 @@
   {
    "id": "nbs_pmi",
    "plane": "cn_hard",
+   "country": "cn",
    "name": "NBS PMI with every sub-index",
    "url": "https://data.stats.gov.cn/english/",
    "expect": "any",
@@ -289,6 +333,7 @@
   {
    "id": "nbs_industrial",
    "plane": "cn_hard",
+   "country": "cn",
    "name": "NBS industrial production, PPI/CPI, property, retail",
    "url": "https://data.stats.gov.cn/english/easyquery.htm?cn=A01",
    "expect": "any",
@@ -308,6 +353,7 @@
   {
    "id": "china_customs",
    "plane": "cn_hard",
+   "country": "cn",
    "name": "China Customs commodity-level import/export",
    "url": "http://www.customs.gov.cn/customs/302249/zfxxgk/2799825/302274/302277/index.html",
    "expect": "any",
@@ -328,6 +374,7 @@
   {
    "id": "sge_benchmark",
    "plane": "cn_hard",
+   "country": "cn",
    "name": "Shanghai Gold Exchange benchmark and Au(T+D)",
    "url": "https://www.sge.com.cn/sjzx/mrhq",
    "expect": "any",
@@ -345,6 +392,7 @@
   {
    "id": "sge_silver",
    "plane": "cn_hard",
+   "country": "cn",
    "name": "Shanghai Gold Exchange silver benchmark and Ag(T+D)",
    "url": "https://www.sge.com.cn/sjzx/yjstjb",
    "expect": "any",
@@ -362,6 +410,7 @@
   {
    "id": "shfe_daily",
    "plane": "cn_hard",
+   "country": "cn",
    "name": "SHFE daily market data",
    "url": "https://www.shfe.com.cn/statements/dataview.html?paramid=kx",
    "expect": "any",
@@ -382,6 +431,7 @@
   {
    "id": "shfe_warehouse",
    "plane": "cn_hard",
+   "country": "cn",
    "name": "SHFE warehouse receipts and inventory",
    "url": "https://www.shfe.com.cn/statements/dataview.html?paramid=kxQ",
    "expect": "any",
@@ -401,6 +451,7 @@
   {
    "id": "shfe_member_rank",
    "plane": "cn_hard",
+   "country": "cn",
    "name": "SHFE top-20 member volume and long/short rankings",
    "url": "https://www.shfe.com.cn/statements/dataview.html?paramid=pm",
    "expect": "any",
@@ -422,6 +473,7 @@
   {
    "id": "ine_crude",
    "plane": "cn_hard",
+   "country": "cn",
    "name": "INE crude, and the Shanghai crude benchmark",
    "url": "https://www.ine.cn/statements/daily/",
    "expect": "any",
@@ -441,6 +493,7 @@
   {
    "id": "dce_daily",
    "plane": "cn_hard",
+   "country": "cn",
    "name": "DCE daily market, inventory and delivery (iron ore, coal, ag)",
    "url": "http://www.dce.com.cn/dalianshangpin/xqsj/tjsj26/index.html",
    "expect": "any",
@@ -459,6 +512,7 @@
   {
    "id": "czce_daily",
    "plane": "cn_hard",
+   "country": "cn",
    "name": "CZCE daily market and warehouse (PTA, methanol, ag)",
    "url": "http://www.czce.com.cn/cn/jysj/mrhq/H770301index_1.htm",
    "expect": "any",
@@ -477,6 +531,7 @@
   {
    "id": "gfex_daily",
    "plane": "cn_hard",
+   "country": "cn",
    "name": "GFEX daily market (lithium, polysilicon, industrial silicon)",
    "url": "http://www.gfex.com.cn/gfex/rihq/hqsj_tjsj.shtml",
    "expect": "any",
@@ -495,6 +550,7 @@
   {
    "id": "cffex_daily",
    "plane": "cn_hard",
+   "country": "cn",
    "name": "CFFEX financial futures daily and positioning",
    "url": "http://www.cffex.com.cn/sj/hqsj/rtj/{yyyymm}/{dd}/index.xml",
    "expect": "xml",
@@ -516,6 +572,7 @@
   {
    "id": "akshare",
    "plane": "cn_aggregator",
+   "country": "cn",
    "name": "AKShare",
    "url": "https://akshare.akfamily.xyz/",
    "expect": "any",
@@ -545,6 +602,7 @@
   {
    "id": "tushare",
    "plane": "cn_aggregator",
+   "country": "cn",
    "name": "Tushare Pro",
    "url": "https://api.tushare.pro",
    "expect": "json",
@@ -569,6 +627,7 @@
   {
    "id": "rqdata",
    "plane": "cn_aggregator",
+   "country": "cn",
    "name": "RQData / RiceQuant",
    "url": "https://www.ricequant.com/doc/rqdata/",
    "expect": "any",
@@ -590,6 +649,7 @@
   {
    "id": "wind",
    "plane": "cn_aggregator",
+   "country": "cn",
    "name": "Wind API",
    "url": "https://www.wind.com.cn/",
    "expect": "any",
@@ -612,6 +672,7 @@
   {
    "id": "boj_timeseries",
    "plane": "jp",
+   "country": "jp",
    "name": "BOJ time-series API",
    "url": "https://www.stat-search.boj.or.jp/",
    "expect": "any",
@@ -633,6 +694,7 @@
   {
    "id": "mof_japan_flows",
    "plane": "jp",
+   "country": "jp",
    "name": "MOF Japan portfolio and intervention data",
    "url": "https://www.mof.go.jp/english/policy/international_policy/reference/feio/index.htm",
    "expect": "any",
@@ -651,6 +713,7 @@
   {
    "id": "jpx_jquants",
    "plane": "jp",
+   "country": "jp",
    "name": "JPX J-Quants",
    "url": "https://jpx-jquants.com/",
    "expect": "any",
@@ -666,6 +729,7 @@
   {
    "id": "bok_ecos",
    "plane": "kr",
+   "country": "kr",
    "name": "Bank of Korea ECOS",
    "url": "https://ecos.bok.or.kr/api/",
    "expect": "any",
@@ -681,6 +745,7 @@
   {
    "id": "krx_open_api",
    "plane": "kr",
+   "country": "kr",
    "name": "KRX Open API",
    "url": "http://data.krx.co.kr/",
    "expect": "any",
@@ -700,6 +765,7 @@
   {
    "id": "kr_exports_20d",
    "plane": "kr",
+   "country": "kr",
    "name": "Korea 20-day exports (KCS)",
    "url": "https://unipass.customs.go.kr/ets/",
    "expect": "any",
@@ -720,6 +786,7 @@
   {
    "id": "hkma_open_api",
    "plane": "hk_sg",
+   "country": "hk",
    "name": "HKMA Open API",
    "url": "https://api.hkma.gov.hk/public/market-data-and-statistics/daily-monetary-statistics/daily-figures-interbank-liquidity",
    "expect": "json",
@@ -740,6 +807,7 @@
   {
    "id": "hkex_data",
    "plane": "hk_sg",
+   "country": "hk",
    "name": "HKEX market and reference data",
    "url": "https://www.hkex.com.hk/Market-Data/Statistics",
    "expect": "any",
@@ -758,6 +826,7 @@
   {
    "id": "mas_api",
    "plane": "hk_sg",
+   "country": "sg",
    "name": "MAS Singapore statistics API",
    "url": "https://eservices.mas.gov.sg/api/action/datastore/search.json",
    "expect": "json",
@@ -776,6 +845,7 @@
   {
    "id": "sgx_derivatives",
    "plane": "hk_sg",
+   "country": "sg",
    "name": "SGX derivatives daily",
    "url": "https://www.sgx.com/research-education/derivatives",
    "expect": "any",
@@ -791,6 +861,7 @@
   {
    "id": "twse_taifex",
    "plane": "tw",
+   "country": "tw",
    "name": "TWSE / TAIFEX daily and institutional flow",
    "url": "https://www.taifex.com.tw/enl/eng3/futContractsDate",
    "expect": "any",
@@ -805,6 +876,7 @@
   {
    "id": "myfxbook_outlook",
    "plane": "genome",
+   "country": "global",
    "name": "Myfxbook Community Outlook",
    "url": "https://www.myfxbook.com/api/get-community-outlook.json",
    "expect": "json",
@@ -829,6 +901,7 @@
   {
    "id": "collective2",
    "plane": "genome",
+   "country": "us",
    "name": "Collective2 strategy history",
    "url": "https://api.collective2.com/",
    "expect": "json",
@@ -853,6 +926,7 @@
   {
    "id": "darwinex",
    "plane": "genome",
+   "country": "gb",
    "name": "Darwinex DARWIN quotes and attributes",
    "url": "https://api.darwinex.com/",
    "expect": "json",
@@ -876,6 +950,7 @@
   {
    "id": "fxblue_public",
    "plane": "genome",
+   "country": "gb",
    "name": "FX Blue public accounts",
    "url": "https://www.fxblue.com/",
    "expect": "any",
@@ -898,6 +973,7 @@
   {
    "id": "mql5_signals",
    "plane": "genome",
+   "country": "global",
    "name": "MQL5 Signals",
    "url": "https://www.mql5.com/en/signals",
    "expect": "any",
@@ -920,6 +996,7 @@
   {
    "id": "tradingview_ideas",
    "plane": "genome",
+   "country": "global",
    "name": "TradingView public ideas and scripts",
    "url": "https://www.tradingview.com/ideas/",
    "expect": "any",
@@ -942,6 +1019,7 @@
   {
    "id": "stocktwits_macro",
    "plane": "alt",
+   "country": "us",
    "name": "StockTwits message volume and sentiment, MACRO TICKERS ONLY",
    "url": "https://api.stocktwits.com/api/2/streams/symbol/GLD.json",
    "expect": "json",
@@ -973,6 +1051,7 @@
   {
    "id": "google_trends",
    "plane": "alt",
+   "country": "global",
    "name": "Google Trends (BigQuery international)",
    "url": "https://trends.google.com/trends/",
    "expect": "any",
@@ -988,6 +1067,7 @@
   {
    "id": "baltic_freight",
    "plane": "alt",
+   "country": "gb",
    "name": "Dry bulk freight and shipping activity",
    "url": "https://www.balticexchange.com/en/data-services/market-information.html",
    "expect": "any",
@@ -1002,6 +1082,7 @@
   {
    "id": "eia_energy",
    "plane": "alt",
+   "country": "us",
    "name": "EIA weekly petroleum status",
    "url": "https://api.eia.gov/v2/petroleum/stoc/wstk/data/",
    "expect": "json",
@@ -1022,6 +1103,7 @@
   {
    "id": "mot_port_throughput",
    "plane": "physical",
+   "country": "cn",
    "name": "China MOT port cargo and container throughput",
    "url": "https://www.mot.gov.cn/tongjishuju/",
    "expect": "any",
@@ -1041,6 +1123,7 @@
   {
    "id": "cn_rail_freight",
    "plane": "physical",
+   "country": "cn",
    "name": "China rail freight volume",
    "url": "https://www.stats.gov.cn/sj/",
    "expect": "any",
@@ -1059,6 +1142,7 @@
   {
    "id": "cn_power_output",
    "plane": "physical",
+   "country": "cn",
    "name": "China electricity generation and consumption",
    "url": "https://www.stats.gov.cn/sj/",
    "expect": "any",
@@ -1078,6 +1162,7 @@
   {
    "id": "shfe_delivery",
    "plane": "physical",
+   "country": "cn",
    "name": "SHFE delivery and settlement notices",
    "url": "https://www.shfe.com.cn/news/notice/",
    "expect": "any",
@@ -1097,6 +1182,7 @@
   {
    "id": "cffex_member_rank",
    "plane": "participant",
+   "country": "cn",
    "name": "CFFEX member transaction and position rankings",
    "url": "http://www.cffex.com.cn/sj/ccpm/{yyyymm}/{dd}/index.xml",
    "expect": "xml",
@@ -1118,6 +1204,7 @@
   {
    "id": "cffex_option_stats",
    "plane": "participant",
+   "country": "cn",
    "name": "CFFEX options statistics and implied volatility",
    "url": "http://www.cffex.com.cn/ssqq/",
    "expect": "any",
@@ -1137,6 +1224,7 @@
   {
    "id": "dce_member_rank",
    "plane": "participant",
+   "country": "cn",
    "name": "DCE member position rankings",
    "url": "http://www.dce.com.cn/dalianshangpin/xqsj/tjsj26/rtj/",
    "expect": "any",
@@ -1155,6 +1243,7 @@
   {
    "id": "czce_member_rank",
    "plane": "participant",
+   "country": "cn",
    "name": "CZCE member position rankings",
    "url": "http://www.czce.com.cn/cn/jysj/ccpm/H770304index_1.htm",
    "expect": "any",
@@ -1173,6 +1262,7 @@
   {
    "id": "estat_jp_customs",
    "plane": "customs_micro",
+   "country": "jp",
    "name": "Japan e-Stat customs microdata (commodity x country x office x mode)",
    "url": "https://www.e-stat.go.jp/",
    "expect": "any",
@@ -1193,6 +1283,7 @@
   {
    "id": "cn_customs_detail",
    "plane": "customs_micro",
+   "country": "cn",
    "name": "China Customs detailed query (commodity x country x port)",
    "url": "http://stats.customs.gov.cn/",
    "expect": "any",
@@ -1212,6 +1303,7 @@
   {
    "id": "sse_freight_indices",
    "plane": "logistics",
+   "country": "cn",
    "name": "Shanghai Shipping Exchange index family (SCFI, CCFI, bulk, tanker)",
    "url": "https://www.sse.net.cn/index/singleIndex",
    "expect": "any",
@@ -1232,6 +1324,7 @@
   {
    "id": "port_congestion",
    "plane": "logistics",
+   "country": "institutional",
    "name": "Global port call and congestion statistics",
    "url": "https://unctadstat.unctad.org/",
    "expect": "any",
@@ -1250,6 +1343,7 @@
   {
    "id": "ccgp_procurement",
    "plane": "supply_chain",
+   "country": "cn",
    "name": "China government procurement notices and awards",
    "url": "http://www.ccgp.gov.cn/",
    "expect": "any",
@@ -1268,6 +1362,7 @@
   {
    "id": "tianyancha_supply",
    "plane": "supply_chain",
+   "country": "cn",
    "name": "Corporate registry: supplier/customer graph, tenders, hiring, land, permits",
    "url": "https://open.tianyancha.com/",
    "expect": "json",
@@ -1286,6 +1381,7 @@
   {
    "id": "copernicus_s5p",
    "plane": "geospatial",
+   "country": "institutional",
    "name": "Copernicus Sentinel-5P atmospheric (NO2, SO2, CO)",
    "url": "https://catalogue.dataspace.copernicus.eu/stac",
    "expect": "json",
@@ -1307,6 +1403,7 @@
   {
    "id": "nasa_firms",
    "plane": "geospatial",
+   "country": "us",
    "name": "NASA FIRMS thermal anomalies",
    "url": "https://firms.modaps.eosdis.nasa.gov/api/",
    "expect": "csv",
@@ -1327,6 +1424,7 @@
   {
    "id": "baidu_index",
    "plane": "search",
+   "country": "cn",
    "name": "Baidu Index keyword attention",
    "url": "https://index.baidu.com/",
    "expect": "any",
@@ -1348,6 +1446,7 @@
   {
    "id": "tfx_swap_points",
    "plane": "jp",
+   "country": "jp",
    "name": "TFX Click365 swap points (exchange-published)",
    "url": "https://www.tfx.co.jp/en/historical/fx/",
    "expect": "any",
@@ -1372,6 +1471,7 @@
   {
    "id": "tfx_open_interest",
    "plane": "jp",
+   "country": "jp",
    "name": "TFX Click365 daily open interest and volume",
    "url": "https://www.tfx.co.jp/en/retail/click365.html",
    "expect": "any",
@@ -1392,6 +1492,7 @@
   {
    "id": "mof_10day_trade",
    "plane": "jp",
+   "country": "jp",
    "name": "MOF Japan 10-day provisional trade statistics",
    "url": "https://www.customs.go.jp/toukei/latest/index_e.htm",
    "expect": "any",
@@ -1410,7 +1511,8 @@
   },
   {
    "id": "nse_option_chain",
-   "plane": "tw",
+   "plane": "india",
+   "country": "in",
    "name": "NSE India option chain with open interest",
    "url": "https://www.nseindia.com/api/option-chain-indices",
    "expect": "json",
@@ -1426,11 +1528,13 @@
     "USDJPY"
    ],
    "mechanism": "OI-AT-STRIKE as a METHOD, not as a signal about India. Offshore retail FX is illegal under FEMA so nothing here is tradable and nothing is meant to be: this is the cheapest free dataset anywhere for learning whether strike-level open interest conditions next-session behaviour AT ALL, before the desk spends attention on CME's FX and metals OI where it would actually trade it",
-   "boundary": "METHOD SOURCE ONLY. No Indian instrument is tradable on this account and none is targeted; the targets above are the MT5 instruments the METHOD would be carried to if it survives. Nothing here mints a cell claiming an Indian edge"
+   "boundary": "METHOD SOURCE ONLY. No Indian instrument is tradable on this account and none is targeted; the targets above are the MT5 instruments the METHOD would be carried to if it survives. Nothing here mints a cell claiming an Indian edge",
+   "why_targets": "refiled from the `tw` plane, which is Taiwan: nseindia.com is the National Stock Exchange of INDIA and this row was the only India ground the desk held, sitting in another region's plane"
   },
   {
    "id": "norges_fx_dailies",
    "plane": "scheduled_flow",
+   "country": "no",
    "name": "Norges Bank NOK daily purchase amounts, PRE-ANNOUNCED for the following month",
    "url": "https://www.norges-bank.no/en/topics/Statistics/Foreign-exchange-transactions/",
    "expect": "any",
@@ -1452,6 +1556,7 @@
   {
    "id": "index_rebalance_calendar",
    "plane": "scheduled_flow",
+   "country": "us",
    "name": "Index rebalance, futures roll and option expiry calendar",
    "url": "https://www.cmegroup.com/tools-information/calendars.html",
    "expect": "any",
@@ -1474,6 +1579,7 @@
   {
    "id": "riksbank_series",
    "plane": "scheduled_flow",
+   "country": "se",
    "name": "Sveriges Riksbank rates and FX",
    "url": "https://api.riksbank.se/swea/v1/Observations/Latest/SEKUSDPMI",
    "expect": "json",
@@ -1494,6 +1600,7 @@
   {
    "id": "nationalbanken_dkk",
    "plane": "scheduled_flow",
+   "country": "dk",
    "name": "Danmarks Nationalbank intervention and the EUR peg",
    "url": "https://api.statbank.dk/v1/tableinfo/DNVALD?format=JSON",
    "expect": "json",
@@ -1515,6 +1622,7 @@
   {
    "id": "banxico_series",
    "plane": "scheduled_flow",
+   "country": "mx",
    "name": "Banco de Mexico series",
    "url": "https://www.banxico.org.mx/SieAPIRest/service/v1/",
    "expect": "json",
@@ -1534,6 +1642,7 @@
   {
    "id": "sarb_series",
    "plane": "scheduled_flow",
+   "country": "za",
    "name": "South African Reserve Bank series",
    "url": "https://www.resbank.co.za/en/home/what-we-do/statistics",
    "expect": "any",
@@ -1552,6 +1661,7 @@
   {
    "id": "mql5_ru_community",
    "plane": "ru",
+   "country": "ru",
    "name": "mql5.com Russian-language articles and forum",
    "url": "https://www.mql5.com/ru/articles",
    "expect": "any",
@@ -1569,6 +1679,7 @@
   {
    "id": "smartlab_ru",
    "plane": "ru",
+   "country": "ru",
    "name": "smart-lab.ru algo and futures community",
    "url": "https://smart-lab.ru/",
    "expect": "any",
@@ -1584,6 +1695,7 @@
   {
    "id": "cbr_series",
    "plane": "ru",
+   "country": "ru",
    "name": "Bank of Russia statistics",
    "url": "https://www.cbr.ru/eng/statistics/",
    "expect": "any",
@@ -1602,6 +1714,7 @@
   {
    "id": "swiss_customs_gold",
    "plane": "physical_gold",
+   "country": "ch",
    "name": "Swiss customs monthly gold trade by counterparty",
    "url": "https://www.gate.ezv.admin.ch/swissimpex/",
    "expect": "any",
@@ -1621,6 +1734,7 @@
   {
    "id": "lbma_vault",
    "plane": "physical_gold",
+   "country": "gb",
    "name": "LBMA vault holdings and the London fix",
    "url": "https://www.lbma.org.uk/prices-and-data/lbma-vault-holdings-data",
    "expect": "any",
@@ -1640,6 +1754,7 @@
   {
    "id": "cochilco_copper",
    "plane": "latam",
+   "country": "cl",
    "name": "Cochilco / Codelco copper production and exports",
    "url": "https://www.cochilco.cl/Paginas/Estadisticas/",
    "expect": "any",
@@ -1659,6 +1774,7 @@
   {
    "id": "minem_peru",
    "plane": "latam",
+   "country": "pe",
    "name": "MINEM Peru copper, silver and gold production",
    "url": "https://www.gob.pe/minem",
    "expect": "any",
@@ -1678,6 +1794,7 @@
   {
    "id": "conab_brazil",
    "plane": "latam",
+   "country": "br",
    "name": "CONAB Brazilian crop estimates",
    "url": "https://www.conab.gov.br/info-agro/safras",
    "expect": "any",
@@ -1697,6 +1814,7 @@
   {
    "id": "b3_investor_flow",
    "plane": "latam",
+   "country": "br",
    "name": "B3 daily foreign investor flow and USDBRL futures OI",
    "url": "https://www.b3.com.br/en_us/market-data-and-indices/",
    "expect": "any",
@@ -1716,6 +1834,7 @@
   {
    "id": "fusion_pds",
    "plane": "venue",
+   "country": "au",
    "name": "Fusion Markets Product Disclosure Statement",
    "url": "https://fusionmarkets.com/static_images/V2_FM_PDS_VFSC_89bcbfeb60.pdf",
    "expect": "binary",
@@ -1738,6 +1857,7 @@
   {
    "id": "fusion_hedging_policy",
    "plane": "venue",
+   "country": "au",
    "name": "Fusion Markets Hedging Counterparty Policy (ASIC)",
    "url": "https://fusionmarkets.com.au/static_images/FM_ASIC_Hedging_Counterparty_Policy_September_2023_1_2_a0de1ce931.pdf",
    "expect": "binary",
@@ -1754,6 +1874,7 @@
   {
    "id": "fusion_fsg_terms",
    "plane": "venue",
+   "country": "au",
    "name": "Fusion Markets FSG and Financial Product Service Terms",
    "url": "https://fusionmarkets.com/static_images/FM_ASIC_FSG_August_2024_c2582c33c3.pdf",
    "expect": "binary",
@@ -1768,6 +1889,7 @@
   {
    "id": "gdt_auction",
    "plane": "oceania",
+   "country": "nz",
    "name": "GlobalDairyTrade auction results",
    "url": "https://www.globaldairytrade.info/",
    "expect": "any",
@@ -1788,6 +1910,7 @@
   {
    "id": "rba_tables",
    "plane": "oceania",
+   "country": "au",
    "name": "RBA statistical tables and FX operations",
    "url": "https://www.rba.gov.au/statistics/tables/",
    "expect": "any",
@@ -1809,6 +1932,7 @@
   {
    "id": "rbnz_series",
    "plane": "oceania",
+   "country": "nz",
    "name": "RBNZ statistics",
    "url": "https://www.rbnz.govt.nz/statistics",
    "expect": "any",
@@ -1828,6 +1952,7 @@
   {
    "id": "abs_trade",
    "plane": "oceania",
+   "country": "au",
    "name": "ABS Australian international trade",
    "url": "https://data.api.abs.gov.au/rest/dataflow/ABS?format=jsondata",
    "expect": "any",
@@ -1848,6 +1973,7 @@
   {
    "id": "sydney_week_open",
    "plane": "oceania",
+   "country": "au",
    "name": "The Sunday reopen: Sydney starts the FX week",
    "url": "https://www.asx.com.au/markets/trading-information/trading-hours",
    "expect": "any",
@@ -1864,6 +1990,2954 @@
     "XAUUSD"
    ],
    "mechanism": "Monday 07:00 AEST is Sunday 21:00 UTC and it is the first price of the FX week, printed into a thin book that has absorbed two days of news. The weekend gap and its decay is a clock, not a pattern -- and the desk's Asia sleeves run through the Sydney/Tokyo overlap without ever conditioning on where the week started"
+  },
+  {
+   "id": "rbi_wss",
+   "plane": "india",
+   "country": "in",
+   "name": "RBI Weekly Statistical Supplement",
+   "url": "https://www.rbi.org.in/Scripts/BS_ViewWSS.aspx",
+   "expect": "any",
+   "access": "public",
+   "cadence": "weekly",
+   "pit": {
+    "event_time": "week end",
+    "publication_lag_days": 7
+   },
+   "targets": [
+    "USDINR",
+    "XAUUSD"
+   ],
+   "mechanism": "the RBI's weekly reserve line and forward book are the two public series that show whether the central bank is absorbing or supplying dollars; the gold tranche inside reserves is a price-insensitive official bid on the same page"
+  },
+  {
+   "id": "rbi_database",
+   "plane": "india",
+   "country": "in",
+   "name": "RBI Database on the Indian Economy",
+   "url": "https://data.rbi.org.in/",
+   "expect": "any",
+   "access": "public",
+   "cadence": "monthly",
+   "pit": {
+    "event_time": "publication",
+    "publication_lag_days": 1
+   },
+   "targets": [
+    "USDINR",
+    "XAUUSD"
+   ],
+   "mechanism": "policy rate, OIS, forward premia and the money market series behind the INR carry that is the whole reason a USDINR position is held or not held"
+  },
+  {
+   "id": "nsdl_fpi_flows",
+   "plane": "india",
+   "country": "in",
+   "name": "NSDL foreign portfolio investor flows",
+   "url": "https://www.fpi.nsdl.co.in/web/Reports/Latest.aspx",
+   "expect": "any",
+   "access": "public",
+   "cadence": "daily",
+   "pit": {
+    "event_time": "trade date",
+    "publication_lag_days": 1
+   },
+   "targets": [
+    "USDINR",
+    "IN50"
+   ],
+   "mechanism": "daily FPI debt and equity flow is the single largest scheduled cross-border dollar flow into the rupee; it is published with a one-day lag and moves USDINR before the fixing"
+  },
+  {
+   "id": "india_tradestat",
+   "plane": "india",
+   "country": "in",
+   "name": "Ministry of Commerce import/export statistics",
+   "url": "https://tradestat.commerce.gov.in/",
+   "expect": "any",
+   "access": "public",
+   "cadence": "monthly",
+   "pit": {
+    "event_time": "reference month",
+    "publication_lag_days": 15
+   },
+   "targets": [
+    "XAUUSD",
+    "XAGUSD",
+    "USOIL"
+   ],
+   "mechanism": "monthly gold and silver import tonnage from the world's second largest physical consumer, plus the crude import bill that is the rupee's largest structural short"
+  },
+  {
+   "id": "mcx_bhavcopy",
+   "plane": "india",
+   "country": "in",
+   "name": "MCX India daily bhavcopy",
+   "url": "https://www.mcxindia.com/market-data/bhavcopy",
+   "expect": "csv",
+   "access": "public",
+   "cadence": "daily",
+   "pit": {
+    "event_time": "trade date",
+    "publication_lag_days": 0
+   },
+   "targets": [
+    "XAUUSD",
+    "XAGUSD",
+    "USOIL",
+    "NATGAS"
+   ],
+   "mechanism": "MCX settles gold and silver against a rupee-landed price; the local premium or discount to the LBMA equivalent is the Indian physical bid measured directly rather than inferred"
+  },
+  {
+   "id": "ppac_crude",
+   "plane": "india",
+   "country": "in",
+   "name": "PPAC petroleum consumption and import statistics",
+   "url": "https://www.ppac.gov.in/",
+   "expect": "any",
+   "access": "public",
+   "cadence": "monthly",
+   "pit": {
+    "event_time": "reference month",
+    "publication_lag_days": 20
+   },
+   "targets": [
+    "USOIL",
+    "UKOIL"
+   ],
+   "mechanism": "India is the third largest crude importer; PPAC publishes the monthly import volume and sourcing split that is one of the three demand legs in the Brent balance"
+  },
+  {
+   "id": "nse_india_fo",
+   "plane": "india",
+   "country": "in",
+   "name": "NSE India derivatives participant-wise open interest",
+   "url": "https://www.nseindia.com/reports/fii-derivative-statistics",
+   "expect": "csv",
+   "access": "public",
+   "cadence": "daily",
+   "pit": {
+    "event_time": "trade date",
+    "publication_lag_days": 0
+   },
+   "targets": [
+    "USDINR",
+    "IN50"
+   ],
+   "mechanism": "participant-category open interest separates the FPI book from the domestic one, which is the same member-positioning observation the desk already mines on SHFE and CFFEX"
+  },
+  {
+   "id": "india_cpi_mospi",
+   "plane": "india",
+   "country": "in",
+   "name": "MoSPI CPI and IIP releases",
+   "url": "https://www.mospi.gov.in/web/mospi/download-reports",
+   "expect": "any",
+   "access": "public",
+   "cadence": "monthly",
+   "pit": {
+    "event_time": "reference month",
+    "publication_lag_days": 12
+   },
+   "targets": [
+    "USDINR"
+   ],
+   "mechanism": "the scheduled inflation print that sets the RBI's next move and therefore the INR carry; the release calendar is the point-in-time anchor"
+  },
+  {
+   "id": "india_gold_gjepc",
+   "plane": "india",
+   "country": "in",
+   "name": "GJEPC gems and jewellery export/import data",
+   "url": "https://gjepc.org/statistics.php",
+   "expect": "any",
+   "access": "public",
+   "cadence": "monthly",
+   "pit": {
+    "event_time": "reference month",
+    "publication_lag_days": 10
+   },
+   "targets": [
+    "XAUUSD",
+    "XAGUSD"
+   ],
+   "mechanism": "the trade-body series runs ahead of the customs release and separates re-export from domestic absorption, which the headline import tonnage cannot"
+  },
+  {
+   "id": "sebi_bulletin",
+   "plane": "india",
+   "country": "in",
+   "name": "SEBI monthly bulletin",
+   "url": "https://www.sebi.gov.in/sebiweb/other/OtherAction.do?doPubBulletin=yes",
+   "expect": "any",
+   "access": "public",
+   "cadence": "monthly",
+   "pit": {
+    "event_time": "reference month",
+    "publication_lag_days": 25
+   },
+   "targets": [
+    "IN50",
+    "USDINR"
+   ],
+   "mechanism": "turnover, participant composition and the currency-derivatives segment that is the only on-exchange INR hedging venue"
+  },
+  {
+   "id": "india_wholesale_price",
+   "plane": "india",
+   "country": "in",
+   "name": "Office of the Economic Adviser WPI",
+   "url": "https://eaindustry.nic.in/",
+   "expect": "any",
+   "access": "public",
+   "cadence": "monthly",
+   "pit": {
+    "event_time": "reference month",
+    "publication_lag_days": 14
+   },
+   "targets": [
+    "USOIL",
+    "XAUUSD"
+   ],
+   "mechanism": "the WPI fuel and metals sub-indices are a domestic pass-through read on imported commodity prices, which is the transmission this desk is testing in the other direction"
+  },
+  {
+   "id": "iea_india_balance",
+   "plane": "india",
+   "country": "in",
+   "name": "Indian Energy Exchange market snapshot",
+   "url": "https://www.iexindia.com/marketdata/areaprice.aspx",
+   "expect": "any",
+   "access": "public",
+   "cadence": "daily",
+   "pit": {
+    "event_time": "trade date",
+    "publication_lag_days": 0
+   },
+   "targets": [
+    "NATGAS",
+    "USOIL"
+   ],
+   "mechanism": "clearing price and volume for a grid whose marginal unit is imported coal and gas, so the price is a demand signal for the seaborne market the desk trades"
+  },
+  {
+   "id": "cftc_cot",
+   "plane": "north_america",
+   "country": "us",
+   "name": "CFTC Commitments of Traders",
+   "url": "https://www.cftc.gov/dea/futures/deacmesf.htm",
+   "expect": "csv",
+   "access": "public",
+   "cadence": "weekly",
+   "pit": {
+    "event_time": "Tuesday close",
+    "publication_lag_days": 3
+   },
+   "targets": [
+    "XAUUSD",
+    "XAGUSD",
+    "USOIL",
+    "EURUSD",
+    "GBPUSD",
+    "USDJPY",
+    "AUDUSD",
+    "USDCAD"
+   ],
+   "mechanism": "THE positioning observation for every instrument in the book: non-commercial net length in gold, silver, crude and every major FX contract, weekly, free, point-in-time by release date. The desk mines member positioning on SHFE and CFFEX and had never registered the American equivalent"
+  },
+  {
+   "id": "fed_h41",
+   "plane": "north_america",
+   "country": "us",
+   "name": "Federal Reserve H.4.1 factors affecting reserve balances",
+   "url": "https://www.federalreserve.gov/releases/h41/",
+   "expect": "any",
+   "access": "public",
+   "cadence": "weekly",
+   "pit": {
+    "event_time": "Wednesday close",
+    "publication_lag_days": 1
+   },
+   "targets": [
+    "XAUUSD",
+    "EURUSD",
+    "US500"
+   ],
+   "mechanism": "the weekly balance-sheet line is the cleanest public read on dollar liquidity, which is the common factor behind gold and every USD cross the desk holds"
+  },
+  {
+   "id": "fed_h15",
+   "plane": "north_america",
+   "country": "us",
+   "name": "Federal Reserve H.15 selected interest rates",
+   "url": "https://www.federalreserve.gov/releases/h15/",
+   "expect": "any",
+   "access": "public",
+   "cadence": "daily",
+   "pit": {
+    "event_time": "trade date",
+    "publication_lag_days": 1
+   },
+   "targets": [
+    "USDJPY",
+    "EURUSD",
+    "XAUUSD"
+   ],
+   "mechanism": "the daily official rate curve that sets the USD leg of every carry the allocator prices"
+  },
+  {
+   "id": "nyfed_sofr",
+   "plane": "north_america",
+   "country": "us",
+   "name": "New York Fed reference rates (SOFR, EFFR)",
+   "url": "https://markets.newyorkfed.org/api/rates/all/latest.json",
+   "expect": "json",
+   "access": "public",
+   "cadence": "daily",
+   "pit": {
+    "event_time": "trade date",
+    "publication_lag_days": 1
+   },
+   "targets": [
+    "USDJPY",
+    "EURUSD",
+    "XAUUSD"
+   ],
+   "mechanism": "the realised funding rate and its percentiles; a SOFR spike is a dollar-scarcity event that shows in the FX forward points before it shows in spot"
+  },
+  {
+   "id": "treasury_auctions",
+   "plane": "north_america",
+   "country": "us",
+   "name": "TreasuryDirect auction announcements and results",
+   "url": "https://www.treasurydirect.gov/auctions/announcements-data-results/",
+   "expect": "any",
+   "access": "public",
+   "cadence": "weekly",
+   "pit": {
+    "event_time": "auction date",
+    "publication_lag_days": 0
+   },
+   "targets": [
+    "USDJPY",
+    "EURUSD",
+    "XAUUSD"
+   ],
+   "mechanism": "a SCHEDULED, pre-announced flow: size and date are known in advance and the tail or stop-through is a rate shock with a timestamp, which is exactly the shape the desk's scheduled-flow plane is for"
+  },
+  {
+   "id": "eia_wpsr",
+   "plane": "north_america",
+   "country": "us",
+   "name": "EIA Weekly Petroleum Status Report",
+   "url": "https://ir.eia.gov/wpsr/wpsrsummary.pdf",
+   "expect": "any",
+   "access": "public",
+   "cadence": "weekly",
+   "pit": {
+    "event_time": "Friday close",
+    "publication_lag_days": 5
+   },
+   "targets": [
+    "USOIL",
+    "UKOIL"
+   ],
+   "mechanism": "the weekly crude, gasoline and distillate inventory change, released at a fixed time on a fixed day -- the single most reliably price-moving scheduled release in energy"
+  },
+  {
+   "id": "eia_natgas_storage",
+   "plane": "north_america",
+   "country": "us",
+   "name": "EIA weekly natural gas storage report",
+   "url": "https://ir.eia.gov/ngs/ngs.html",
+   "expect": "any",
+   "access": "public",
+   "cadence": "weekly",
+   "pit": {
+    "event_time": "Friday close",
+    "publication_lag_days": 6
+   },
+   "targets": [
+    "NATGAS"
+   ],
+   "mechanism": "the injection/withdrawal print against the five-year band is the gas market's whole weekly information event"
+  },
+  {
+   "id": "cme_settlements",
+   "plane": "north_america",
+   "country": "us",
+   "name": "CME Group daily settlements and volume/OI",
+   "url": "https://www.cmegroup.com/market-data/delayed-quotes/",
+   "expect": "any",
+   "access": "public",
+   "cadence": "daily",
+   "pit": {
+    "event_time": "trade date",
+    "publication_lag_days": 0
+   },
+   "targets": [
+    "XAUUSD",
+    "USOIL",
+    "NATGAS",
+    "US500"
+   ],
+   "mechanism": "the settlement and open-interest series behind the futures the desk's CFDs are priced from; an OI build against a flat price is a positioning observation"
+  },
+  {
+   "id": "comex_warehouse",
+   "plane": "north_america",
+   "country": "us",
+   "name": "CME COMEX metals depository stocks",
+   "url": "https://www.cmegroup.com/delivery_reports/Gold_Stocks.xls",
+   "expect": "csv",
+   "access": "public",
+   "cadence": "daily",
+   "pit": {
+    "event_time": "trade date",
+    "publication_lag_days": 1
+   },
+   "targets": [
+    "XAUUSD",
+    "XAGUSD"
+   ],
+   "mechanism": "registered versus eligible warehouse tonnage is the deliverable float; the desk already mines the SHFE warehouse receipt and the LBMA vault and had no COMEX leg to compare them against"
+  },
+  {
+   "id": "usda_wasde",
+   "plane": "north_america",
+   "country": "us",
+   "name": "USDA World Agricultural Supply and Demand Estimates",
+   "url": "https://www.usda.gov/oce/commodity/wasde",
+   "expect": "any",
+   "access": "public",
+   "cadence": "monthly",
+   "pit": {
+    "event_time": "release date",
+    "publication_lag_days": 0
+   },
+   "targets": [
+    "WHEAT",
+    "CORN",
+    "SOYBEAN"
+   ],
+   "mechanism": "the scheduled global balance sheet for the softs; the release time is fixed and the surprise versus the trade estimate is the tradable quantity"
+  },
+  {
+   "id": "bls_release_schedule",
+   "plane": "north_america",
+   "country": "us",
+   "name": "BLS release schedule (CPI, PPI, employment)",
+   "url": "https://www.bls.gov/schedule/news_release/",
+   "expect": "any",
+   "access": "public",
+   "cadence": "monthly",
+   "pit": {
+    "event_time": "release date",
+    "publication_lag_days": 0
+   },
+   "targets": [
+    "EURUSD",
+    "USDJPY",
+    "XAUUSD",
+    "US500"
+   ],
+   "mechanism": "the calendar itself is the point-in-time anchor: it says WHEN the dollar's largest scheduled repricings happen, which is what a session or event study needs before it can be run at all"
+  },
+  {
+   "id": "boc_valet",
+   "plane": "north_america",
+   "country": "ca",
+   "name": "Bank of Canada Valet API",
+   "url": "https://www.bankofcanada.ca/valet/docs",
+   "expect": "json",
+   "access": "public",
+   "cadence": "daily",
+   "pit": {
+    "event_time": "trade date",
+    "publication_lag_days": 0
+   },
+   "targets": [
+    "USDCAD",
+    "CADJPY"
+   ],
+   "mechanism": "policy rate, the daily FX series and the commodity price index for a currency the book holds two crosses in"
+  },
+  {
+   "id": "statcan_trade",
+   "plane": "north_america",
+   "country": "ca",
+   "name": "Statistics Canada merchandise trade and CPI",
+   "url": "https://www150.statcan.gc.ca/t1/wet/sm/data/api",
+   "expect": "json",
+   "access": "public",
+   "cadence": "monthly",
+   "pit": {
+    "event_time": "reference month",
+    "publication_lag_days": 35
+   },
+   "targets": [
+    "USDCAD",
+    "USOIL"
+   ],
+   "mechanism": "the energy export line is the CAD's terms-of-trade in one series"
+  },
+  {
+   "id": "baker_hughes_rigs",
+   "plane": "north_america",
+   "country": "us",
+   "name": "Baker Hughes North America rig count",
+   "url": "https://rigcount.bakerhughes.com/na-rig-count",
+   "expect": "any",
+   "access": "public",
+   "cadence": "weekly",
+   "pit": {
+    "event_time": "Friday",
+    "publication_lag_days": 0
+   },
+   "targets": [
+    "USOIL",
+    "NATGAS"
+   ],
+   "mechanism": "the weekly rig count is the supply-response signal that leads US production by roughly two quarters and is released at a fixed time every Friday"
+  },
+  {
+   "id": "bis_cbpol",
+   "plane": "institutional",
+   "country": "institutional",
+   "name": "BIS central bank policy rates (WS_CBPOL)",
+   "url": "https://data.bis.org/topics/CBPOL/data",
+   "expect": "csv",
+   "access": "public",
+   "cadence": "monthly",
+   "pit": {
+    "event_time": "effective date",
+    "publication_lag_days": 5
+   },
+   "targets": [
+    "EURUSD",
+    "USDJPY",
+    "AUDUSD",
+    "USDCHF"
+   ],
+   "mechanism": "every policy rate on one comparable basis is the carry leg of every FX cross at once; the desk cannot test a cross-regional carry mechanism from thirteen national pages"
+  },
+  {
+   "id": "bis_eer",
+   "plane": "institutional",
+   "country": "institutional",
+   "name": "BIS effective exchange rate indices",
+   "url": "https://data.bis.org/topics/EER/data",
+   "expect": "csv",
+   "access": "public",
+   "cadence": "monthly",
+   "pit": {
+    "event_time": "reference month",
+    "publication_lag_days": 10
+   },
+   "targets": [
+    "EURUSD",
+    "USDJPY",
+    "GBPUSD",
+    "AUDUSD"
+   ],
+   "mechanism": "the trade-weighted basket is the only way to tell a dollar move from a euro move; a bilateral rate cannot distinguish them and every single-cross mechanism is confounded by it"
+  },
+  {
+   "id": "imf_ifs",
+   "plane": "institutional",
+   "country": "institutional",
+   "name": "IMF International Financial Statistics",
+   "url": "https://data.imf.org/",
+   "expect": "json",
+   "access": "public",
+   "cadence": "monthly",
+   "pit": {
+    "event_time": "reference month",
+    "publication_lag_days": 45
+   },
+   "targets": [
+    "XAUUSD",
+    "EURUSD",
+    "USDJPY"
+   ],
+   "mechanism": "official reserve assets, gold holdings and the money series on one comparable basis; central bank gold buying is the persistent price-insensitive bid the desk's gold book trades into"
+  },
+  {
+   "id": "imf_cofer",
+   "plane": "institutional",
+   "country": "institutional",
+   "name": "IMF COFER reserve currency composition",
+   "url": "https://data.imf.org/regular.aspx?key=41175",
+   "expect": "any",
+   "access": "public",
+   "cadence": "quarterly",
+   "pit": {
+    "event_time": "quarter end",
+    "publication_lag_days": 90
+   },
+   "targets": [
+    "EURUSD",
+    "USDJPY",
+    "XAUUSD"
+   ],
+   "mechanism": "the quarterly reserve-share series is the slowest and most persistent flow in FX; a shift out of dollar reserves is a multi-quarter bid under EUR and gold"
+  },
+  {
+   "id": "wgc_demand_trends",
+   "plane": "institutional",
+   "country": "institutional",
+   "name": "World Gold Council Gold Demand Trends",
+   "url": "https://www.gold.org/goldhub/research/gold-demand-trends",
+   "expect": "any",
+   "access": "public",
+   "cadence": "quarterly",
+   "pit": {
+    "event_time": "quarter end",
+    "publication_lag_days": 30
+   },
+   "targets": [
+    "XAUUSD"
+   ],
+   "mechanism": "the quarterly split of central bank, jewellery, bar-and-coin and ETF demand is the only public decomposition of who is actually buying the metal the book is heaviest in"
+  },
+  {
+   "id": "wgc_etf_flows",
+   "plane": "institutional",
+   "country": "institutional",
+   "name": "World Gold Council gold ETF holdings and flows",
+   "url": "https://www.gold.org/goldhub/data/gold-etfs-holdings-and-flows",
+   "expect": "csv",
+   "access": "public",
+   "cadence": "daily",
+   "pit": {
+    "event_time": "trade date",
+    "publication_lag_days": 1
+   },
+   "targets": [
+    "XAUUSD"
+   ],
+   "mechanism": "daily tonnage in the listed gold ETFs is a same-day, price-insensitive flow observation and the fastest of the four demand legs"
+  },
+  {
+   "id": "worldbank_pinksheet",
+   "plane": "institutional",
+   "country": "institutional",
+   "name": "World Bank Commodity Price Pink Sheet",
+   "url": "https://www.worldbank.org/en/research/commodity-markets",
+   "expect": "csv",
+   "access": "public",
+   "cadence": "monthly",
+   "pit": {
+    "event_time": "reference month",
+    "publication_lag_days": 3
+   },
+   "targets": [
+    "USOIL",
+    "COCOA",
+    "COFFEE",
+    "WHEAT"
+   ],
+   "mechanism": "one monthly sheet carrying every commodity the desk trades on a consistent basis, which is what a cross-commodity regime classifier needs and cannot build from venue quotes"
+  },
+  {
+   "id": "iea_omr_public",
+   "plane": "institutional",
+   "country": "institutional",
+   "name": "IEA Oil Market Report public summary",
+   "url": "https://www.iea.org/topics/oil-market-report",
+   "expect": "any",
+   "access": "public",
+   "cadence": "monthly",
+   "pit": {
+    "event_time": "release date",
+    "publication_lag_days": 0
+   },
+   "targets": [
+    "USOIL",
+    "UKOIL"
+   ],
+   "mechanism": "the demand-side global balance; OPEC publishes the other one and the SPREAD between the two agencies' balances is itself a tradable disagreement"
+  },
+  {
+   "id": "opec_momr",
+   "plane": "institutional",
+   "country": "institutional",
+   "name": "OPEC Monthly Oil Market Report",
+   "url": "https://www.opec.org/opec_web/en/publications/338.htm",
+   "expect": "any",
+   "access": "public",
+   "cadence": "monthly",
+   "pit": {
+    "event_time": "release date",
+    "publication_lag_days": 0
+   },
+   "targets": [
+    "USOIL",
+    "UKOIL"
+   ],
+   "mechanism": "secondary-source production estimates per member, which is the compliance measurement the market prices rather than the announced quota"
+  },
+  {
+   "id": "jodi_oil_global",
+   "plane": "institutional",
+   "country": "institutional",
+   "name": "JODI World Oil Database",
+   "url": "https://www.jodidata.org/oil/",
+   "expect": "csv",
+   "access": "public",
+   "cadence": "monthly",
+   "pit": {
+    "event_time": "reference month",
+    "publication_lag_days": 60
+   },
+   "targets": [
+    "USOIL",
+    "UKOIL"
+   ],
+   "mechanism": "self-reported production, refinery intake, stocks and trade from ~100 countries -- the only public inventory series that covers the producers outside the OECD, where the EIA and IEA cannot see"
+  },
+  {
+   "id": "oecd_cli",
+   "plane": "institutional",
+   "country": "institutional",
+   "name": "OECD composite leading indicators",
+   "url": "https://data-explorer.oecd.org/",
+   "expect": "csv",
+   "access": "public",
+   "cadence": "monthly",
+   "pit": {
+    "event_time": "reference month",
+    "publication_lag_days": 40
+   },
+   "targets": [
+    "AUDUSD",
+    "USOIL",
+    "US500"
+   ],
+   "mechanism": "the turning-point indicator on one basis across every economy, which is the regime label a cross-regional mechanism needs to be conditioned on"
+  },
+  {
+   "id": "swift_rmb_tracker",
+   "plane": "institutional",
+   "country": "institutional",
+   "name": "SWIFT RMB Tracker",
+   "url": "https://www.swift.com/our-solutions/compliance-and-shared-services/business-intelligence/renminbi/rmb-tracker",
+   "expect": "any",
+   "access": "public",
+   "cadence": "monthly",
+   "pit": {
+    "event_time": "reference month",
+    "publication_lag_days": 20
+   },
+   "targets": [
+    "USDCNH",
+    "XAUUSD"
+   ],
+   "mechanism": "the monthly payment-share series is the settlement-side measurement of the same cross-border flow SAFE reports from the Chinese side; the two disagreeing is information"
+  },
+  {
+   "id": "unctad_maritime",
+   "plane": "institutional",
+   "country": "institutional",
+   "name": "UNCTADstat maritime and commodity series",
+   "url": "https://unctadstat.unctad.org/",
+   "expect": "csv",
+   "access": "public",
+   "cadence": "monthly",
+   "pit": {
+    "event_time": "reference year",
+    "publication_lag_days": 180
+   },
+   "targets": [
+    "USOIL",
+    "WHEAT",
+    "COPPER"
+   ],
+   "mechanism": "seaborne trade volumes and freight, which is the physical transit of everything the producer regions ship to the consumer regions"
+  },
+  {
+   "id": "aramco_ospd",
+   "plane": "mena",
+   "country": "sa",
+   "name": "Saudi Aramco crude official selling prices",
+   "url": "https://www.aramco.com/en/what-we-do/energy-products/crude-oil",
+   "expect": "any",
+   "access": "public",
+   "cadence": "monthly",
+   "pit": {
+    "event_time": "announcement",
+    "publication_lag_days": 0
+   },
+   "targets": [
+    "USOIL",
+    "UKOIL"
+   ],
+   "mechanism": "the monthly OSP differential to the benchmark is the largest producer's own read on regional demand, announced on a schedule and ahead of the cargoes it prices"
+  },
+  {
+   "id": "sama_monthly",
+   "plane": "mena",
+   "country": "sa",
+   "name": "Saudi Central Bank monthly statistical bulletin",
+   "url": "https://www.sama.gov.sa/en-US/EconomicReports/",
+   "expect": "any",
+   "access": "public",
+   "cadence": "monthly",
+   "pit": {
+    "event_time": "reference month",
+    "publication_lag_days": 30
+   },
+   "targets": [
+    "USOIL",
+    "XAUUSD"
+   ],
+   "mechanism": "net foreign assets in the kingdom's reserves move with the oil price and the fiscal breakeven; a reserve drawdown is a petrodollar recycling signal"
+  },
+  {
+   "id": "tcmb_evds",
+   "plane": "mena",
+   "country": "tr",
+   "name": "CBRT EVDS electronic data delivery system",
+   "url": "https://evds2.tcmb.gov.tr/",
+   "expect": "json",
+   "access": "public",
+   "cadence": "weekly",
+   "pit": {
+    "event_time": "week end",
+    "publication_lag_days": 5
+   },
+   "targets": [
+    "USDTRY",
+    "EURTRY",
+    "XAUUSD"
+   ],
+   "mechanism": "the policy rate, the weekly reserve series and the residents' FX-deposit line are the three public numbers that move a lira the venue quotes, and Turkish households hold gold as the domestic hedge"
+  },
+  {
+   "id": "tcmb_reserves",
+   "plane": "mena",
+   "country": "tr",
+   "name": "CBRT weekly international reserves",
+   "url": "https://www.tcmb.gov.tr/wps/wcm/connect/EN/TCMB+EN/Main+Menu/Statistics/",
+   "expect": "any",
+   "access": "public",
+   "cadence": "weekly",
+   "pit": {
+    "event_time": "week end",
+    "publication_lag_days": 7
+   },
+   "targets": [
+    "USDTRY",
+    "XAUUSD"
+   ],
+   "mechanism": "gross versus net-of-swaps reserves is the intervention capacity measured directly; the gold tranche inside it is a sovereign bid on the desk's heaviest instrument"
+  },
+  {
+   "id": "cbuae_statistics",
+   "plane": "mena",
+   "country": "ae",
+   "name": "Central Bank of the UAE monetary and banking bulletin",
+   "url": "https://www.centralbank.ae/en/our-operations/monetary-policy/",
+   "expect": "any",
+   "access": "public",
+   "cadence": "monthly",
+   "pit": {
+    "event_time": "reference month",
+    "publication_lag_days": 45
+   },
+   "targets": [
+    "USOIL",
+    "XAUUSD"
+   ],
+   "mechanism": "a hard USD peg means the UAE's monetary series is a pure oil-revenue and dollar-liquidity read with the FX channel switched off"
+  },
+  {
+   "id": "dgcx_settlements",
+   "plane": "mena",
+   "country": "ae",
+   "name": "Dubai Gold and Commodities Exchange settlements",
+   "url": "https://www.dgcx.ae/market-data",
+   "expect": "csv",
+   "access": "public",
+   "cadence": "daily",
+   "pit": {
+    "event_time": "trade date",
+    "publication_lag_days": 0
+   },
+   "targets": [
+    "XAUUSD",
+    "XAGUSD",
+    "USDINR"
+   ],
+   "mechanism": "the Dubai gold contract and its INR quanto sit exactly on the physical route between London, Zurich and the Indian consumer; the DGCX premium is that route priced"
+  },
+  {
+   "id": "qcb_statistics",
+   "plane": "mena",
+   "country": "qa",
+   "name": "Qatar Central Bank monetary statistics",
+   "url": "https://www.qcb.gov.qa/en/publications/",
+   "expect": "any",
+   "access": "public",
+   "cadence": "monthly",
+   "pit": {
+    "event_time": "reference month",
+    "publication_lag_days": 40
+   },
+   "targets": [
+    "NATGAS",
+    "USOIL"
+   ],
+   "mechanism": "the largest LNG exporter's monetary and trade series is the revenue side of the seaborne gas market the desk trades"
+  },
+  {
+   "id": "boi_israel",
+   "plane": "mena",
+   "country": "il",
+   "name": "Bank of Israel statistics and intervention",
+   "url": "https://www.boi.org.il/en/economic-roles/statistics/",
+   "expect": "any",
+   "access": "public",
+   "cadence": "monthly",
+   "pit": {
+    "event_time": "reference month",
+    "publication_lag_days": 15
+   },
+   "targets": [
+    "USDILS",
+    "XAUUSD"
+   ],
+   "mechanism": "a central bank that publishes its FX purchase programme in advance is a scheduled, pre-announced flow of exactly the kind the desk's scheduled-flow plane exists for"
+  },
+  {
+   "id": "egypt_cbe",
+   "plane": "mena",
+   "country": "eg",
+   "name": "Central Bank of Egypt monthly statistical bulletin",
+   "url": "https://www.cbe.org.eg/en/economic-research/statistics",
+   "expect": "any",
+   "access": "public",
+   "cadence": "monthly",
+   "pit": {
+    "event_time": "reference month",
+    "publication_lag_days": 45
+   },
+   "targets": [
+    "XAUUSD",
+    "WHEAT"
+   ],
+   "mechanism": "the world's largest wheat importer and a country whose households hold gold through devaluations; the reserve and import-cover lines lead both"
+  },
+  {
+   "id": "kuwait_cbk",
+   "plane": "mena",
+   "country": "ae",
+   "name": "Central Bank of Kuwait economic reports",
+   "url": "https://www.cbk.gov.kw/en/statistics-and-publication/",
+   "expect": "any",
+   "access": "public",
+   "cadence": "monthly",
+   "pit": {
+    "event_time": "reference month",
+    "publication_lag_days": 45
+   },
+   "targets": [
+    "USOIL"
+   ],
+   "mechanism": "the sovereign fund's home monetary data, on a basket peg rather than a hard dollar peg, which makes it the control case against the UAE and Saudi pegs"
+  },
+  {
+   "id": "jodi_gas_mena",
+   "plane": "mena",
+   "country": "qa",
+   "name": "JODI World Gas Database",
+   "url": "https://www.jodidata.org/gas/",
+   "expect": "csv",
+   "access": "public",
+   "cadence": "monthly",
+   "pit": {
+    "event_time": "reference month",
+    "publication_lag_days": 60
+   },
+   "targets": [
+    "NATGAS"
+   ],
+   "mechanism": "the only public monthly gas production, stocks and trade series covering the Gulf exporters, which the EIA and the European reporting cannot see"
+  },
+  {
+   "id": "bnm_api",
+   "plane": "sea",
+   "country": "my",
+   "name": "Bank Negara Malaysia open API",
+   "url": "https://api.bnm.gov.my/",
+   "expect": "json",
+   "access": "public",
+   "cadence": "daily",
+   "pit": {
+    "event_time": "trade date",
+    "publication_lag_days": 0
+   },
+   "targets": [
+    "USDMYR",
+    "PALMOIL"
+   ],
+   "mechanism": "policy rate, the daily FX turnover series and the interbank rates behind a ringgit whose terms of trade are palm oil and LNG"
+  },
+  {
+   "id": "mpob_palm",
+   "plane": "sea",
+   "country": "my",
+   "name": "Malaysian Palm Oil Board monthly statistics",
+   "url": "https://bepi.mpob.gov.my/",
+   "expect": "any",
+   "access": "public",
+   "cadence": "monthly",
+   "pit": {
+    "event_time": "reference month",
+    "publication_lag_days": 10
+   },
+   "targets": [
+    "PALMOIL",
+    "SOYBEAN"
+   ],
+   "mechanism": "closing stocks, production and exports for half the world's palm supply, on the tenth of each month -- a scheduled release whose surprise versus the survey is the tradable quantity, and palm substitutes directly against soybean oil"
+  },
+  {
+   "id": "bot_thailand",
+   "plane": "sea",
+   "country": "th",
+   "name": "Bank of Thailand statistical API",
+   "url": "https://apiportal.bot.or.th/",
+   "expect": "json",
+   "access": "public",
+   "cadence": "daily",
+   "pit": {
+    "event_time": "trade date",
+    "publication_lag_days": 1
+   },
+   "targets": [
+    "USDTHB",
+    "XAUUSD"
+   ],
+   "mechanism": "Thailand runs one of the largest retail gold trading markets in Asia and the baht is quoted against it; BOT publishes the reserve and flow series that move both"
+  },
+  {
+   "id": "bi_indonesia",
+   "plane": "sea",
+   "country": "id",
+   "name": "Bank Indonesia statistics",
+   "url": "https://www.bi.go.id/en/statistik/",
+   "expect": "any",
+   "access": "public",
+   "cadence": "monthly",
+   "pit": {
+    "event_time": "reference month",
+    "publication_lag_days": 20
+   },
+   "targets": [
+    "USDIDR",
+    "COAL",
+    "PALMOIL"
+   ],
+   "mechanism": "the rupiah's terms of trade are thermal coal, palm and nickel; BI publishes reserves, the policy rate and the balance of payments that price them"
+  },
+  {
+   "id": "bsp_philippines",
+   "plane": "sea",
+   "country": "ph",
+   "name": "Bangko Sentral ng Pilipinas statistics",
+   "url": "https://www.bsp.gov.ph/SitePages/Statistics/Statistics.aspx",
+   "expect": "any",
+   "access": "public",
+   "cadence": "monthly",
+   "pit": {
+    "event_time": "reference month",
+    "publication_lag_days": 45
+   },
+   "targets": [
+    "USDPHP"
+   ],
+   "mechanism": "remittance inflow is a large, seasonal, scheduled dollar supply into one currency -- the cleanest calendar flow in the ASEAN complex"
+  },
+  {
+   "id": "sbv_vietnam",
+   "plane": "sea",
+   "country": "vn",
+   "name": "State Bank of Vietnam statistics",
+   "url": "https://www.sbv.gov.vn/",
+   "expect": "any",
+   "access": "public",
+   "cadence": "daily",
+   "pit": {
+    "event_time": "trade date",
+    "publication_lag_days": 0
+   },
+   "targets": [
+    "COFFEE",
+    "USDVND"
+   ],
+   "mechanism": "Vietnam is the world's largest robusta producer and the central reference rate is set daily against a basket; the two meet in the coffee export revenue line"
+  },
+  {
+   "id": "vn_customs_coffee",
+   "plane": "sea",
+   "country": "vn",
+   "name": "Vietnam General Department of Customs monthly trade",
+   "url": "https://www.customs.gov.vn/",
+   "expect": "any",
+   "access": "public",
+   "cadence": "monthly",
+   "pit": {
+    "event_time": "reference month",
+    "publication_lag_days": 12
+   },
+   "targets": [
+    "COFFEE"
+   ],
+   "mechanism": "monthly robusta export tonnage from the dominant producer, published ahead of the ICO aggregate -- the supply side of a soft the desk trades"
+  },
+  {
+   "id": "mas_statistics",
+   "plane": "sea",
+   "country": "sg",
+   "name": "MAS monetary and financial statistics",
+   "url": "https://www.mas.gov.sg/statistics",
+   "expect": "any",
+   "access": "public",
+   "cadence": "monthly",
+   "pit": {
+    "event_time": "reference month",
+    "publication_lag_days": 20
+   },
+   "targets": [
+    "USDSGD",
+    "EURUSD"
+   ],
+   "mechanism": "Singapore runs monetary policy THROUGH the exchange rate band, so the MAS statement is a direct, scheduled FX policy event rather than a rate decision that transmits to FX"
+  },
+  {
+   "id": "sgx_commodity_oi",
+   "plane": "sea",
+   "country": "sg",
+   "name": "SGX commodity derivatives volume and open interest",
+   "url": "https://www.sgx.com/derivatives/market-statistics",
+   "expect": "csv",
+   "access": "public",
+   "cadence": "daily",
+   "pit": {
+    "event_time": "trade date",
+    "publication_lag_days": 1
+   },
+   "targets": [
+    "IRONORE",
+    "PALMOIL",
+    "USDSGD"
+   ],
+   "mechanism": "SGX clears the seaborne iron ore swap and the freight contracts; the open interest there is the hedging demand of the physical trade the desk reads elsewhere as tonnage"
+  },
+  {
+   "id": "idx_indonesia_coal",
+   "plane": "sea",
+   "country": "id",
+   "name": "Indonesian Ministry of Energy coal reference price",
+   "url": "https://www.esdm.go.id/en/",
+   "expect": "any",
+   "access": "public",
+   "cadence": "monthly",
+   "pit": {
+    "event_time": "reference month",
+    "publication_lag_days": 5
+   },
+   "targets": [
+    "COAL",
+    "NATGAS"
+   ],
+   "mechanism": "the monthly HBA reference price is administratively set and published on a schedule; it anchors the seaborne thermal contracts gas competes against"
+  },
+  {
+   "id": "asean_matrade",
+   "plane": "sea",
+   "country": "my",
+   "name": "MATRADE monthly trade statistics",
+   "url": "https://www.matrade.gov.my/en/malaysian-exporters/trade-statistics",
+   "expect": "any",
+   "access": "public",
+   "cadence": "monthly",
+   "pit": {
+    "event_time": "reference month",
+    "publication_lag_days": 30
+   },
+   "targets": [
+    "PALMOIL",
+    "USDMYR"
+   ],
+   "mechanism": "the export-destination split says WHERE the palm went, which separates a Chinese restocking cycle from an Indian one -- the MPOB headline cannot"
+  },
+  {
+   "id": "ccc_cotedivoire",
+   "plane": "africa",
+   "country": "ci",
+   "name": "Conseil du Cafe-Cacao arrivals and farmgate price",
+   "url": "https://www.conseilcafecacao.ci/",
+   "expect": "any",
+   "access": "public",
+   "cadence": "weekly",
+   "pit": {
+    "event_time": "week end",
+    "publication_lag_days": 5
+   },
+   "targets": [
+    "COCOA"
+   ],
+   "mechanism": "weekly port arrivals from the world's largest cocoa producer are the supply series the London contract is priced off; the administratively fixed farmgate price is the other leg"
+  },
+  {
+   "id": "cocobod_ghana",
+   "plane": "africa",
+   "country": "gh",
+   "name": "Ghana Cocoa Board purchases and export data",
+   "url": "https://cocobod.gh/",
+   "expect": "any",
+   "access": "public",
+   "cadence": "monthly",
+   "pit": {
+    "event_time": "reference month",
+    "publication_lag_days": 30
+   },
+   "targets": [
+    "COCOA"
+   ],
+   "mechanism": "the second producer, and the one whose smuggling differential against Cote d'Ivoire explains arrivals that neither country's own series can"
+  },
+  {
+   "id": "minerals_council_sa",
+   "plane": "africa",
+   "country": "za",
+   "name": "Minerals Council South Africa production statistics",
+   "url": "https://www.mineralscouncil.org.za/work/statistics",
+   "expect": "any",
+   "access": "public",
+   "cadence": "monthly",
+   "pit": {
+    "event_time": "reference month",
+    "publication_lag_days": 40
+   },
+   "targets": [
+    "XPTUSD",
+    "XPDUSD",
+    "XAUUSD"
+   ],
+   "mechanism": "South Africa supplies roughly three quarters of the world's platinum; production and the electricity constraint on it is the supply side of the PGM complex"
+  },
+  {
+   "id": "eskom_dataportal",
+   "plane": "africa",
+   "country": "za",
+   "name": "Eskom data portal -- generation and load shedding",
+   "url": "https://www.eskom.co.za/dataportal/",
+   "expect": "csv",
+   "access": "public",
+   "cadence": "daily",
+   "pit": {
+    "event_time": "trade date",
+    "publication_lag_days": 0
+   },
+   "targets": [
+    "XPTUSD",
+    "XPDUSD",
+    "USDZAR"
+   ],
+   "mechanism": "a mine cannot run on a curtailed grid: the load-shedding stage series is a HIGH-FREQUENCY leading indicator of PGM and gold output that the monthly production number confirms six weeks later"
+  },
+  {
+   "id": "jse_commodity_derivatives",
+   "plane": "africa",
+   "country": "za",
+   "name": "JSE commodity derivatives daily data",
+   "url": "https://www.jse.co.za/market-data",
+   "expect": "csv",
+   "access": "public",
+   "cadence": "daily",
+   "pit": {
+    "event_time": "trade date",
+    "publication_lag_days": 0
+   },
+   "targets": [
+    "CORN",
+    "WHEAT",
+    "USDZAR"
+   ],
+   "mechanism": "the white maize contract is the only exchange-traded price for a staple whose parity is the Chicago contract plus freight plus the rand -- a clean three-leg basis"
+  },
+  {
+   "id": "cbn_nigeria",
+   "plane": "africa",
+   "country": "ng",
+   "name": "Central Bank of Nigeria rates and statistics",
+   "url": "https://www.cbn.gov.ng/rates/",
+   "expect": "any",
+   "access": "public",
+   "cadence": "daily",
+   "pit": {
+    "event_time": "trade date",
+    "publication_lag_days": 1
+   },
+   "targets": [
+    "USOIL",
+    "USDNGN"
+   ],
+   "mechanism": "reserves, the official window rate and the parallel spread in Africa's largest crude exporter; the spread widening is the country's oil revenue failing to arrive"
+  },
+  {
+   "id": "nnpc_crude",
+   "plane": "africa",
+   "country": "ng",
+   "name": "NNPC monthly financial and operations report",
+   "url": "https://www.nnpcgroup.com/",
+   "expect": "any",
+   "access": "public",
+   "cadence": "monthly",
+   "pit": {
+    "event_time": "reference month",
+    "publication_lag_days": 60
+   },
+   "targets": [
+    "USOIL",
+    "UKOIL"
+   ],
+   "mechanism": "Nigerian production, terminal liftings and the pipeline-loss line -- the OPEC compliance number for one member, from the member itself, against OPEC's secondary sources"
+  },
+  {
+   "id": "eatta_tea_auction",
+   "plane": "africa",
+   "country": "ke",
+   "name": "East African Tea Trade Association Mombasa auction",
+   "url": "https://eatta.co.ke/",
+   "expect": "any",
+   "access": "public",
+   "cadence": "weekly",
+   "pit": {
+    "event_time": "auction date",
+    "publication_lag_days": 2
+   },
+   "targets": [
+    "COFFEE",
+    "SUGAR"
+   ],
+   "mechanism": "a weekly physical auction with published clearing prices is a rare direct observation of soft-commodity demand, and it leads the coffee and sugar sentiment in the same window"
+  },
+  {
+   "id": "za_sars_trade",
+   "plane": "africa",
+   "country": "za",
+   "name": "SARS South African merchandise trade statistics",
+   "url": "https://www.sars.gov.za/about/sars-trade-statistics/",
+   "expect": "any",
+   "access": "public",
+   "cadence": "monthly",
+   "pit": {
+    "event_time": "reference month",
+    "publication_lag_days": 30
+   },
+   "targets": [
+    "USDZAR",
+    "XPTUSD"
+   ],
+   "mechanism": "the monthly trade balance is dominated by PGM and gold exports; it is the rand's terms of trade measured directly"
+  },
+  {
+   "id": "za_statssa",
+   "plane": "africa",
+   "country": "za",
+   "name": "Statistics South Africa CPI, PPI and mining production",
+   "url": "https://www.statssa.gov.za/",
+   "expect": "any",
+   "access": "public",
+   "cadence": "monthly",
+   "pit": {
+    "event_time": "reference month",
+    "publication_lag_days": 40
+   },
+   "targets": [
+    "USDZAR",
+    "XPTUSD",
+    "XAUUSD"
+   ],
+   "mechanism": "the official mining production index by metal, which is the only audited series behind the Minerals Council's own numbers"
+  },
+  {
+   "id": "boz_copper_zambia",
+   "plane": "africa",
+   "country": "za",
+   "name": "Bank of Zambia statistics and copper export series",
+   "url": "https://www.boz.zm/statistics.htm",
+   "expect": "any",
+   "access": "public",
+   "cadence": "monthly",
+   "pit": {
+    "event_time": "reference month",
+    "publication_lag_days": 40
+   },
+   "targets": [
+    "COPPER"
+   ],
+   "mechanism": "Zambia is Africa's largest copper producer and the kwacha is a pure copper currency; the export tonnage is a supply leg Chile and Peru do not cover"
+  },
+  {
+   "id": "kita_trade_stats",
+   "plane": "kr",
+   "country": "kr",
+   "name": "KITA Korea trade statistics",
+   "url": "https://stat.kita.net/",
+   "expect": "any",
+   "access": "public",
+   "cadence": "weekly",
+   "pit": {
+    "event_time": "20-day period",
+    "publication_lag_days": 1
+   },
+   "targets": [
+    "KS11",
+    "USDKRW",
+    "COPPER"
+   ],
+   "mechanism": "Korea's export series is the highest-frequency read on global trade there is; the 20-day print lands before every other economy's monthly number"
+  },
+  {
+   "id": "motie_20day_exports",
+   "plane": "kr",
+   "country": "kr",
+   "name": "MOTIE 20-day export and import releases",
+   "url": "https://www.motie.go.kr/",
+   "expect": "any",
+   "access": "public",
+   "cadence": "weekly",
+   "pit": {
+    "event_time": "20-day period",
+    "publication_lag_days": 1
+   },
+   "targets": [
+    "KS11",
+    "USDKRW",
+    "AUDUSD"
+   ],
+   "mechanism": "the canonical global-trade nowcast: published three times a month with a one-day lag, it leads the Chinese and German trade releases by weeks and moves the commodity currencies"
+  },
+  {
+   "id": "kores_komis",
+   "plane": "kr",
+   "country": "kr",
+   "name": "KOMIS Korea mineral resource information",
+   "url": "https://www.kores.net/",
+   "expect": "any",
+   "access": "public",
+   "cadence": "monthly",
+   "pit": {
+    "event_time": "reference month",
+    "publication_lag_days": 20
+   },
+   "targets": [
+    "COPPER",
+    "XAGUSD",
+    "IRONORE"
+   ],
+   "mechanism": "import tonnage and the domestic price series for the metals a manufacturing economy consumes, which is demand measured at the point of use"
+  },
+  {
+   "id": "kdi_outlook",
+   "plane": "kr",
+   "country": "kr",
+   "name": "KDI economic outlook and monthly bulletin",
+   "url": "https://www.kdi.re.kr/",
+   "expect": "any",
+   "access": "public",
+   "cadence": "monthly",
+   "pit": {
+    "event_time": "release date",
+    "publication_lag_days": 0
+   },
+   "targets": [
+    "KS11",
+    "USDKRW"
+   ],
+   "mechanism": "the state institute's own nowcast, published on a schedule, against which the BOK's decision surprise can be measured"
+  },
+  {
+   "id": "kr_customs_gold",
+   "plane": "kr",
+   "country": "kr",
+   "name": "Korea Customs Service commodity import detail",
+   "url": "https://unipass.customs.go.kr/ets/",
+   "expect": "any",
+   "access": "public",
+   "cadence": "monthly",
+   "pit": {
+    "event_time": "reference month",
+    "publication_lag_days": 15
+   },
+   "targets": [
+    "XAUUSD",
+    "USOIL",
+    "NATGAS"
+   ],
+   "mechanism": "the same customs-micro observation the desk already mines for Japan and China, for the third large Asian importer -- the three together are the Asian physical bid"
+  },
+  {
+   "id": "krx_derivatives_stats",
+   "plane": "kr",
+   "country": "kr",
+   "name": "KRX derivatives market statistics",
+   "url": "http://data.krx.co.kr/contents/MDC/MDI/mdiLoader/index.cmd",
+   "expect": "csv",
+   "access": "public",
+   "cadence": "daily",
+   "pit": {
+    "event_time": "trade date",
+    "publication_lag_days": 0
+   },
+   "targets": [
+    "KS11",
+    "USDKRW"
+   ],
+   "mechanism": "investor-category trading value separates the foreign book from the domestic retail one, the same member-positioning observation mined on SHFE, CFFEX and now CFTC"
+  },
+  {
+   "id": "moex_derivatives",
+   "plane": "ru",
+   "country": "ru",
+   "name": "MOEX derivatives market data",
+   "url": "https://www.moex.com/en/derivatives/",
+   "expect": "csv",
+   "access": "public",
+   "cadence": "daily",
+   "pit": {
+    "event_time": "trade date",
+    "publication_lag_days": 0
+   },
+   "targets": [
+    "USOIL",
+    "XAUUSD",
+    "NATGAS"
+   ],
+   "mechanism": "the venue where the Urals-linked and gold contracts clear for the CIS; open interest and settlement there is the local hedging demand for barrels the desk trades as Brent"
+  },
+  {
+   "id": "minfin_urals",
+   "plane": "ru",
+   "country": "ru",
+   "name": "Russian Ministry of Finance Urals price and NWF statements",
+   "url": "https://minfin.gov.ru/ru/perfomance/nationalwealthfund/",
+   "expect": "any",
+   "access": "public",
+   "cadence": "monthly",
+   "pit": {
+    "event_time": "reference month",
+    "publication_lag_days": 5
+   },
+   "targets": [
+    "USOIL",
+    "UKOIL"
+   ],
+   "mechanism": "the official Urals assessment sets the export duty and the sovereign fund's FX operations, which are a SCHEDULED, pre-announced monthly flow"
+  },
+  {
+   "id": "rosstat_prices",
+   "plane": "ru",
+   "country": "ru",
+   "name": "Rosstat price and production statistics",
+   "url": "https://rosstat.gov.ru/statistics/price",
+   "expect": "any",
+   "access": "public",
+   "cadence": "monthly",
+   "pit": {
+    "event_time": "reference month",
+    "publication_lag_days": 20
+   },
+   "targets": [
+    "USOIL",
+    "WHEAT"
+   ],
+   "mechanism": "producer prices for crude, gas and grain from the largest wheat exporter; the wheat export tax formula is published against this series"
+  },
+  {
+   "id": "kase_kazakhstan",
+   "plane": "ru",
+   "country": "kz",
+   "name": "Kazakhstan Stock Exchange market data",
+   "url": "https://kase.kz/en/",
+   "expect": "any",
+   "access": "public",
+   "cadence": "daily",
+   "pit": {
+    "event_time": "trade date",
+    "publication_lag_days": 0
+   },
+   "targets": [
+    "USOIL",
+    "COPPER"
+   ],
+   "mechanism": "the tenge and the CIS oil complex clear here; Kazakhstan's CPC exports are a Brent-grade supply leg outside Russian pipeline politics"
+  },
+  {
+   "id": "cbr_reserves_weekly",
+   "plane": "ru",
+   "country": "ru",
+   "name": "Bank of Russia weekly international reserves",
+   "url": "https://www.cbr.ru/eng/hd_base/mrrf/mrrf_7d/",
+   "expect": "csv",
+   "access": "public",
+   "cadence": "weekly",
+   "pit": {
+    "event_time": "week end",
+    "publication_lag_days": 7
+   },
+   "targets": [
+    "XAUUSD",
+    "USOIL"
+   ],
+   "mechanism": "the CBR's gold tranche is one of the largest official holdings on earth and it is reported weekly -- a faster read on sovereign gold accumulation than the IMF series"
+  },
+  {
+   "id": "ru_gas_transit",
+   "plane": "ru",
+   "country": "ru",
+   "name": "Gazprom and CIS pipeline export nominations",
+   "url": "https://www.gazprom.com/press/",
+   "expect": "any",
+   "access": "public",
+   "cadence": "daily",
+   "pit": {
+    "event_time": "gas day",
+    "publication_lag_days": 0
+   },
+   "targets": [
+    "NATGAS"
+   ],
+   "mechanism": "daily nominated transit volumes are the supply side of the European gas balance; a nomination cut is a same-day gas event with a public timestamp"
+  },
+  {
+   "id": "armstat_ge_nbg",
+   "plane": "ru",
+   "country": "ge",
+   "name": "National Bank of Georgia and CIS statistical services",
+   "url": "https://nbg.gov.ge/en/monetary-policy",
+   "expect": "any",
+   "access": "public",
+   "cadence": "monthly",
+   "pit": {
+    "event_time": "reference month",
+    "publication_lag_days": 25
+   },
+   "targets": [
+    "USOIL",
+    "XAUUSD"
+   ],
+   "mechanism": "the smaller CIS central banks publish reserve and remittance series that are a transmission read on Russian oil revenue reaching the region"
+  },
+  {
+   "id": "ecb_sdw",
+   "plane": "scheduled_flow",
+   "country": "de",
+   "name": "ECB Data Portal (SDW) -- EXR, BSI, MIR, policy rates",
+   "url": "https://data.ecb.europa.eu/",
+   "expect": "csv",
+   "access": "public",
+   "cadence": "daily",
+   "pit": {
+    "event_time": "trade date",
+    "publication_lag_days": 1
+   },
+   "targets": [
+    "EURUSD",
+    "EURJPY",
+    "EURGBP"
+   ],
+   "mechanism": "the euro leg of every EUR cross the book holds, on the issuer's own basis rather than a vendor's"
+  },
+  {
+   "id": "boe_database",
+   "plane": "scheduled_flow",
+   "country": "gb",
+   "name": "Bank of England statistical database",
+   "url": "https://www.bankofengland.co.uk/boeapps/database/",
+   "expect": "csv",
+   "access": "public",
+   "cadence": "daily",
+   "pit": {
+    "event_time": "trade date",
+    "publication_lag_days": 1
+   },
+   "targets": [
+    "GBPUSD",
+    "EURGBP",
+    "XAUUSD"
+   ],
+   "mechanism": "Bank Rate, the gilt curve and the custodial gold holdings that are the London float's official share"
+  },
+  {
+   "id": "entsog_flows",
+   "plane": "scheduled_flow",
+   "country": "de",
+   "name": "ENTSOG transparency platform gas flows",
+   "url": "https://transparency.entsog.eu/",
+   "expect": "csv",
+   "access": "public",
+   "cadence": "daily",
+   "pit": {
+    "event_time": "gas day",
+    "publication_lag_days": 0
+   },
+   "targets": [
+    "NATGAS"
+   ],
+   "mechanism": "physical entry and exit nominations across every European interconnection point, hourly -- the highest-frequency physical flow series the desk can reach for any commodity"
+  },
+  {
+   "id": "gie_agsi_storage",
+   "plane": "scheduled_flow",
+   "country": "de",
+   "name": "GIE AGSI+ European gas storage",
+   "url": "https://agsi.gie.eu/",
+   "expect": "json",
+   "access": "public",
+   "cadence": "daily",
+   "pit": {
+    "event_time": "gas day",
+    "publication_lag_days": 1
+   },
+   "targets": [
+    "NATGAS"
+   ],
+   "mechanism": "daily percentage-full by country, which is the European equivalent of the EIA storage report and lands a day sooner"
+  },
+  {
+   "id": "lme_warehouse",
+   "plane": "physical",
+   "country": "gb",
+   "name": "LME warehouse stocks and cancelled warrants",
+   "url": "https://www.lme.com/en/Market-data/Reports-and-data/",
+   "expect": "csv",
+   "access": "public",
+   "cadence": "daily",
+   "pit": {
+    "event_time": "trade date",
+    "publication_lag_days": 1
+   },
+   "targets": [
+    "COPPER",
+    "XAGUSD"
+   ],
+   "mechanism": "cancelled warrants are metal already spoken for; the ratio to live tonnage is the deliverable float for the base complex, matching the COMEX and SHFE observations"
+  },
+  {
+   "id": "eurostat_trade",
+   "plane": "scheduled_flow",
+   "country": "de",
+   "name": "Eurostat Comext trade statistics",
+   "url": "https://ec.europa.eu/eurostat/web/international-trade-in-goods/data/database",
+   "expect": "csv",
+   "access": "public",
+   "cadence": "monthly",
+   "pit": {
+    "event_time": "reference month",
+    "publication_lag_days": 45
+   },
+   "targets": [
+    "EURUSD",
+    "NATGAS",
+    "USOIL"
+   ],
+   "mechanism": "the energy import bill is the euro area's terms of trade, and it is the channel through which a gas price shock becomes an EURUSD move"
+  },
+  {
+   "id": "bcb_brazil_sgs",
+   "plane": "latam",
+   "country": "br",
+   "name": "Banco Central do Brasil SGS time series",
+   "url": "https://www3.bcb.gov.br/sgspub/",
+   "expect": "json",
+   "access": "public",
+   "cadence": "daily",
+   "pit": {
+    "event_time": "trade date",
+    "publication_lag_days": 0
+   },
+   "targets": [
+    "USDBRL",
+    "COFFEE",
+    "SUGAR"
+   ],
+   "mechanism": "policy rate, reserves and the FX swap auction programme -- the swap auctions are a scheduled, pre-announced intervention flow in a currency the venue quotes"
+  },
+  {
+   "id": "bcch_chile",
+   "plane": "latam",
+   "country": "cl",
+   "name": "Banco Central de Chile statistics database",
+   "url": "https://si3.bcentral.cl/",
+   "expect": "json",
+   "access": "public",
+   "cadence": "daily",
+   "pit": {
+    "event_time": "trade date",
+    "publication_lag_days": 0
+   },
+   "targets": [
+    "COPPER",
+    "USDCLP"
+   ],
+   "mechanism": "the peso is the purest copper currency traded; the central bank publishes the copper price it uses and the reserve position built on it"
+  },
+  {
+   "id": "bcrp_peru",
+   "plane": "latam",
+   "country": "pe",
+   "name": "Banco Central de Reserva del Peru statistics",
+   "url": "https://estadisticas.bcrp.gob.pe/estadisticas/series/",
+   "expect": "json",
+   "access": "public",
+   "cadence": "monthly",
+   "pit": {
+    "event_time": "reference month",
+    "publication_lag_days": 25
+   },
+   "targets": [
+    "COPPER",
+    "XAGUSD",
+    "XAUUSD"
+   ],
+   "mechanism": "Peru is the second copper producer and a large silver and gold producer; the terms of trade index published here is those three in one series"
+  },
+  {
+   "id": "inegi_mexico",
+   "plane": "latam",
+   "country": "mx",
+   "name": "INEGI Mexico economic indicators API",
+   "url": "https://www.inegi.org.mx/servicios/api_indicadores.html",
+   "expect": "json",
+   "access": "public",
+   "cadence": "monthly",
+   "pit": {
+    "event_time": "reference month",
+    "publication_lag_days": 30
+   },
+   "targets": [
+    "USDMXN",
+    "USOIL"
+   ],
+   "mechanism": "the remittance and oil-export lines behind a peso the book holds two crosses in"
+  },
+  {
+   "id": "pemex_exports",
+   "plane": "latam",
+   "country": "mx",
+   "name": "PEMEX crude export volumes and prices",
+   "url": "https://www.pemex.com/en/investors/publications/",
+   "expect": "any",
+   "access": "public",
+   "cadence": "monthly",
+   "pit": {
+    "event_time": "reference month",
+    "publication_lag_days": 35
+   },
+   "targets": [
+    "USOIL",
+    "USDMXN"
+   ],
+   "mechanism": "Maya crude liftings and the hedging programme; the Mexican oil hedge is the largest single scheduled options flow in the crude market"
+  },
+  {
+   "id": "abares_australia",
+   "plane": "oceania",
+   "country": "au",
+   "name": "ABARES agricultural commodities and crop report",
+   "url": "https://www.agriculture.gov.au/abares/research-topics/agricultural-outlook",
+   "expect": "any",
+   "access": "public",
+   "cadence": "quarterly",
+   "pit": {
+    "event_time": "release date",
+    "publication_lag_days": 0
+   },
+   "targets": [
+    "WHEAT",
+    "AUDUSD"
+   ],
+   "mechanism": "Australian wheat production and export forecasts -- the southern-hemisphere supply leg that offsets the northern crop the USDA covers"
+  },
+  {
+   "id": "dcceew_lng",
+   "plane": "oceania",
+   "country": "au",
+   "name": "Australian resources and energy quarterly (LNG, iron ore, coal)",
+   "url": "https://www.industry.gov.au/publications/resources-and-energy-quarterly",
+   "expect": "any",
+   "access": "public",
+   "cadence": "quarterly",
+   "pit": {
+    "event_time": "release date",
+    "publication_lag_days": 0
+   },
+   "targets": [
+    "IRONORE",
+    "NATGAS",
+    "COAL",
+    "AUDUSD"
+   ],
+   "mechanism": "export volume and price forecasts for the three commodities that ARE the Australian dollar's terms of trade"
+  },
+  {
+   "id": "nz_dairy_fonterra",
+   "plane": "oceania",
+   "country": "nz",
+   "name": "Fonterra milk price and GDT event results",
+   "url": "https://www.fonterra.com/nz/en/investors/farmgate-milk-prices.html",
+   "expect": "any",
+   "access": "public",
+   "cadence": "monthly",
+   "pit": {
+    "event_time": "announcement",
+    "publication_lag_days": 0
+   },
+   "targets": [
+    "NZDUSD",
+    "AUDNZD"
+   ],
+   "mechanism": "the farmgate forecast is set against the GDT auction the desk already reads; the REVISION to the forecast is the scheduled event, not the auction itself"
+  },
+  {
+   "id": "jp_mof_intervention",
+   "plane": "jp",
+   "country": "jp",
+   "name": "Japan MOF foreign exchange intervention records",
+   "url": "https://www.mof.go.jp/english/policy/international_policy/reference/feint/",
+   "expect": "any",
+   "access": "public",
+   "cadence": "monthly",
+   "pit": {
+    "event_time": "reference month",
+    "publication_lag_days": 30
+   },
+   "targets": [
+    "USDJPY",
+    "EURJPY"
+   ],
+   "mechanism": "the monthly intervention disclosure names the exact amount and the daily detail follows quarterly -- a confirmed, dated official flow in the desk's most-traded JPY cross"
+  },
+  {
+   "id": "jp_jsda_bonds",
+   "plane": "jp",
+   "country": "jp",
+   "name": "JSDA public transaction volumes and JGB trading by investor",
+   "url": "https://www.jsda.or.jp/en/statistics/",
+   "expect": "any",
+   "access": "public",
+   "cadence": "monthly",
+   "pit": {
+    "event_time": "reference month",
+    "publication_lag_days": 25
+   },
+   "targets": [
+    "USDJPY",
+    "JP225"
+   ],
+   "mechanism": "the investor-category JGB flow is the domestic side of the carry trade whose unwind is the largest single risk to a JPY short"
+  },
+  {
+   "id": "jp_tocom_settlements",
+   "plane": "jp",
+   "country": "jp",
+   "name": "TOCOM / OSE commodity settlements and open interest",
+   "url": "https://www.jpx.co.jp/english/markets/derivatives/",
+   "expect": "csv",
+   "access": "public",
+   "cadence": "daily",
+   "pit": {
+    "event_time": "trade date",
+    "publication_lag_days": 0
+   },
+   "targets": [
+    "XAUUSD",
+    "XAGUSD",
+    "USOIL"
+   ],
+   "mechanism": "the yen-denominated gold contract is the Japanese physical bid priced in the currency that moves it; its basis to the dollar price is a pure FX-hedging observation"
+  },
+  {
+   "id": "cn_mysteel_inventory",
+   "plane": "physical",
+   "country": "cn",
+   "name": "China port and mill inventory weeklies",
+   "url": "https://www.mysteel.net/",
+   "expect": "any",
+   "access": "public",
+   "cadence": "weekly",
+   "pit": {
+    "event_time": "week end",
+    "publication_lag_days": 2
+   },
+   "targets": [
+    "IRONORE",
+    "COPPER"
+   ],
+   "mechanism": "port iron-ore inventory and mill utilisation are the weekly demand series behind the Australian export tonnage the desk reads at the other end of the same voyage"
+  },
+  {
+   "id": "bok_policy_minutes",
+   "plane": "kr",
+   "country": "kr",
+   "name": "Bank of Korea monetary policy decisions and minutes",
+   "url": "https://www.bok.or.kr/eng/main/contents.do?menuNo=400069",
+   "expect": "any",
+   "access": "public",
+   "cadence": "monthly",
+   "pit": {
+    "event_time": "meeting date",
+    "publication_lag_days": 0
+   },
+   "targets": [
+    "USDKRW",
+    "KS11"
+   ],
+   "mechanism": "the decision and the dissent count in the minutes are a scheduled rate event in an economy whose currency is the Asian risk proxy"
+  },
+  {
+   "id": "kr_fss_foreign_flow",
+   "plane": "kr",
+   "country": "kr",
+   "name": "FSS foreign investor securities investment trend",
+   "url": "https://www.fss.or.kr/fss/eng/main/main.do",
+   "expect": "any",
+   "access": "public",
+   "cadence": "monthly",
+   "pit": {
+    "event_time": "reference month",
+    "publication_lag_days": 12
+   },
+   "targets": [
+    "USDKRW",
+    "KS11"
+   ],
+   "mechanism": "monthly net foreign buying of Korean bonds and equities is the cross-border dollar flow behind the won"
+  },
+  {
+   "id": "kr_customs_20day",
+   "plane": "kr",
+   "country": "kr",
+   "name": "Korea Customs Service 20-day trade release",
+   "url": "https://www.customs.go.kr/english/main.do",
+   "expect": "any",
+   "access": "public",
+   "cadence": "weekly",
+   "pit": {
+    "event_time": "20-day period",
+    "publication_lag_days": 1
+   },
+   "targets": [
+    "KS11",
+    "AUDUSD",
+    "COPPER"
+   ],
+   "mechanism": "the fastest global trade nowcast published anywhere: chip, auto and ship export growth with a one-day lag, three times a month"
+  },
+  {
+   "id": "kr_kpx_power",
+   "plane": "kr",
+   "country": "kr",
+   "name": "KPX Korea electricity market data",
+   "url": "https://www.kpx.or.kr/eng/",
+   "expect": "any",
+   "access": "public",
+   "cadence": "daily",
+   "pit": {
+    "event_time": "trade date",
+    "publication_lag_days": 1
+   },
+   "targets": [
+    "NATGAS",
+    "COAL"
+   ],
+   "mechanism": "generation mix and system marginal price for an economy that imports every unit of its fuel; the LNG share is seaborne demand measured at the burner tip"
+  },
+  {
+   "id": "kr_kosis",
+   "plane": "kr",
+   "country": "kr",
+   "name": "KOSIS Korean statistical information service",
+   "url": "https://kosis.kr/eng/",
+   "expect": "json",
+   "access": "public",
+   "cadence": "monthly",
+   "pit": {
+    "event_time": "reference month",
+    "publication_lag_days": 30
+   },
+   "targets": [
+    "USDKRW",
+    "KS11"
+   ],
+   "mechanism": "CPI, industrial production and inventory-to-shipment, which is the cycle indicator the semiconductor complex turns on"
+  },
+  {
+   "id": "kr_kiep_outlook",
+   "plane": "kr",
+   "country": "kr",
+   "name": "KIEP world economy and trade outlook",
+   "url": "https://www.kiep.go.kr/eng/",
+   "expect": "any",
+   "access": "public",
+   "cadence": "quarterly",
+   "pit": {
+    "event_time": "release date",
+    "publication_lag_days": 0
+   },
+   "targets": [
+    "KS11",
+    "AUDUSD"
+   ],
+   "mechanism": "the trade-institute forecast against which the 20-day export surprise is measured; a surprise needs a published expectation to be a surprise at all"
+  },
+  {
+   "id": "kr_shipbuilding_orders",
+   "plane": "kr",
+   "country": "kr",
+   "name": "Korea Offshore and Shipbuilding orderbook releases",
+   "url": "https://www.koshipa.or.kr/eng/",
+   "expect": "any",
+   "access": "public",
+   "cadence": "monthly",
+   "pit": {
+    "event_time": "reference month",
+    "publication_lag_days": 20
+   },
+   "targets": [
+    "IRONORE",
+    "COAL",
+    "USDKRW"
+   ],
+   "mechanism": "new-build orders lead steel plate demand by quarters and are one of the few forward series in the dry bulk complex"
+  },
+  {
+   "id": "jp_boj_decisions",
+   "plane": "jp",
+   "country": "jp",
+   "name": "Bank of Japan policy decisions and Outlook Report",
+   "url": "https://www.boj.or.jp/en/mopo/mpmdeci/",
+   "expect": "any",
+   "access": "public",
+   "cadence": "monthly",
+   "pit": {
+    "event_time": "meeting date",
+    "publication_lag_days": 0
+   },
+   "targets": [
+    "USDJPY",
+    "EURJPY",
+    "JP225"
+   ],
+   "mechanism": "the yield-curve and rate decision is the single largest scheduled repricing of the desk's most-traded cross, on a published calendar"
+  },
+  {
+   "id": "jp_estat_cpi",
+   "plane": "jp",
+   "country": "jp",
+   "name": "e-Stat Japan CPI and industrial production",
+   "url": "https://www.e-stat.go.jp/en",
+   "expect": "json",
+   "access": "public",
+   "cadence": "monthly",
+   "pit": {
+    "event_time": "reference month",
+    "publication_lag_days": 18
+   },
+   "targets": [
+    "USDJPY",
+    "JP225"
+   ],
+   "mechanism": "the inflation print that determines whether the BOJ's exit continues; Tokyo CPI lands three weeks ahead of the national number and is the tradable leg"
+  },
+  {
+   "id": "jp_mof_bond_auctions",
+   "plane": "jp",
+   "country": "jp",
+   "name": "Japan MOF JGB auction calendar and results",
+   "url": "https://www.mof.go.jp/english/policy/jgbs/",
+   "expect": "any",
+   "access": "public",
+   "cadence": "weekly",
+   "pit": {
+    "event_time": "auction date",
+    "publication_lag_days": 0
+   },
+   "targets": [
+    "USDJPY",
+    "JP225"
+   ],
+   "mechanism": "a SCHEDULED flow with a published calendar: the tail on a 20- or 30-year auction is a global duration event because Japanese yields anchor the carry trade"
+  },
+  {
+   "id": "jp_gpif_allocation",
+   "plane": "jp",
+   "country": "jp",
+   "name": "GPIF quarterly asset allocation disclosure",
+   "url": "https://www.gpif.go.jp/en/performance/",
+   "expect": "any",
+   "access": "public",
+   "cadence": "quarterly",
+   "pit": {
+    "event_time": "quarter end",
+    "publication_lag_days": 45
+   },
+   "targets": [
+    "USDJPY",
+    "EURJPY"
+   ],
+   "mechanism": "the world's largest pension fund publishes its foreign-asset share quarterly; a shift is a multi-quarter, price-insensitive yen flow"
+  },
+  {
+   "id": "jp_meti_production",
+   "plane": "jp",
+   "country": "jp",
+   "name": "METI indices of industrial production and inventory",
+   "url": "https://www.meti.go.jp/english/statistics/",
+   "expect": "any",
+   "access": "public",
+   "cadence": "monthly",
+   "pit": {
+    "event_time": "reference month",
+    "publication_lag_days": 30
+   },
+   "targets": [
+    "USOIL",
+    "COPPER",
+    "JP225"
+   ],
+   "mechanism": "the inventory cycle of a large manufacturing importer, which is the demand side of the metals and energy the desk trades"
+  },
+  {
+   "id": "jp_jodi_ldc",
+   "plane": "jp",
+   "country": "jp",
+   "name": "Japan petroleum association weekly stocks",
+   "url": "https://www.paj.gr.jp/english/statis/",
+   "expect": "any",
+   "access": "public",
+   "cadence": "weekly",
+   "pit": {
+    "event_time": "week end",
+    "publication_lag_days": 5
+   },
+   "targets": [
+    "USOIL",
+    "NATGAS"
+   ],
+   "mechanism": "weekly crude and product inventory for the fourth largest importer -- the Asian leg the EIA and IEA series cannot see at weekly frequency"
+  },
+  {
+   "id": "cbr_policy_rate",
+   "plane": "ru",
+   "country": "ru",
+   "name": "Bank of Russia key rate decisions and calendar",
+   "url": "https://www.cbr.ru/eng/dkp/",
+   "expect": "any",
+   "access": "public",
+   "cadence": "monthly",
+   "pit": {
+    "event_time": "meeting date",
+    "publication_lag_days": 0
+   },
+   "targets": [
+    "USOIL",
+    "XAUUSD"
+   ],
+   "mechanism": "a scheduled rate decision in an economy whose entire external account is the oil price; the rate path is the oil revenue's transmission"
+  },
+  {
+   "id": "ru_energy_ministry",
+   "plane": "ru",
+   "country": "ru",
+   "name": "Russian Ministry of Energy production statistics",
+   "url": "https://minenergo.gov.ru/",
+   "expect": "any",
+   "access": "public",
+   "cadence": "monthly",
+   "pit": {
+    "event_time": "reference month",
+    "publication_lag_days": 15
+   },
+   "targets": [
+    "USOIL",
+    "NATGAS"
+   ],
+   "mechanism": "production by month against the OPEC+ quota -- the compliance number from the second largest producer, published by the producer"
+  },
+  {
+   "id": "ru_customs_exports",
+   "plane": "ru",
+   "country": "ru",
+   "name": "Federal Customs Service export statistics",
+   "url": "https://customs.gov.ru/statistic",
+   "expect": "any",
+   "access": "public",
+   "cadence": "monthly",
+   "pit": {
+    "event_time": "reference month",
+    "publication_lag_days": 40
+   },
+   "targets": [
+    "USOIL",
+    "WHEAT",
+    "NATGAS"
+   ],
+   "mechanism": "export tonnage for crude, wheat and gas; Russia and Ukraine together are about a quarter of world wheat exports and the tonnage is the supply leg"
+  },
+  {
+   "id": "ua_agri_ministry",
+   "plane": "ru",
+   "country": "ua",
+   "name": "Ukrainian Ministry of Agrarian Policy export data",
+   "url": "https://minagro.gov.ua/en",
+   "expect": "any",
+   "access": "public",
+   "cadence": "weekly",
+   "pit": {
+    "event_time": "week end",
+    "publication_lag_days": 5
+   },
+   "targets": [
+    "WHEAT",
+    "CORN"
+   ],
+   "mechanism": "grain corridor volumes are a supply series with a political clock; the weekly export pace is the observable"
+  },
+  {
+   "id": "az_socar_ge",
+   "plane": "ru",
+   "country": "az",
+   "name": "SOCAR and Azerbaijani state statistics",
+   "url": "https://www.stat.gov.az/?lang=en",
+   "expect": "any",
+   "access": "public",
+   "cadence": "monthly",
+   "pit": {
+    "event_time": "reference month",
+    "publication_lag_days": 30
+   },
+   "targets": [
+    "USOIL",
+    "NATGAS"
+   ],
+   "mechanism": "BTC pipeline throughput and Shah Deniz gas are the Caspian supply leg into the European balance, outside Russian transit"
+  },
+  {
+   "id": "kz_energy_stats",
+   "plane": "ru",
+   "country": "kz",
+   "name": "Kazakhstan Bureau of National Statistics energy series",
+   "url": "https://stat.gov.kz/en/",
+   "expect": "any",
+   "access": "public",
+   "cadence": "monthly",
+   "pit": {
+    "event_time": "reference month",
+    "publication_lag_days": 35
+   },
+   "targets": [
+    "USOIL",
+    "COPPER"
+   ],
+   "mechanism": "Tengiz and Kashagan production and the CPC export volume -- a Brent-grade supply leg and a large copper producer in one statistical office"
+  },
+  {
+   "id": "ibge_brazil",
+   "plane": "latam",
+   "country": "br",
+   "name": "IBGE Brazilian statistics -- CPI, production, agriculture",
+   "url": "https://sidra.ibge.gov.br/",
+   "expect": "json",
+   "access": "public",
+   "cadence": "monthly",
+   "pit": {
+    "event_time": "reference month",
+    "publication_lag_days": 15
+   },
+   "targets": [
+    "USDBRL",
+    "COFFEE",
+    "SUGAR",
+    "SOYBEAN"
+   ],
+   "mechanism": "the crop survey is the production forecast CONAB is measured against, and IPCA is the rate the central bank responds to"
+  },
+  {
+   "id": "unica_sugar",
+   "plane": "latam",
+   "country": "br",
+   "name": "UNICA sugarcane crush and sugar/ethanol mix",
+   "url": "https://unicadata.com.br/",
+   "expect": "any",
+   "access": "public",
+   "cadence": "weekly",
+   "pit": {
+    "event_time": "fortnight end",
+    "publication_lag_days": 10
+   },
+   "targets": [
+    "SUGAR",
+    "USOIL"
+   ],
+   "mechanism": "the fortnightly crush report names the sugar-versus-ethanol allocation, which is the single largest swing factor in world sugar supply and ties it to the oil price"
+  },
+  {
+   "id": "cecafe_coffee",
+   "plane": "latam",
+   "country": "br",
+   "name": "CECAFE Brazilian green coffee export statistics",
+   "url": "https://www.cecafe.com.br/en/",
+   "expect": "any",
+   "access": "public",
+   "cadence": "monthly",
+   "pit": {
+    "event_time": "reference month",
+    "publication_lag_days": 12
+   },
+   "targets": [
+    "COFFEE"
+   ],
+   "mechanism": "monthly arabica export tonnage from the dominant producer, published ahead of the ICO aggregate"
+  },
+  {
+   "id": "secex_brazil_trade",
+   "plane": "latam",
+   "country": "br",
+   "name": "SECEX weekly Brazilian trade balance",
+   "url": "https://balanca.economia.gov.br/",
+   "expect": "any",
+   "access": "public",
+   "cadence": "weekly",
+   "pit": {
+    "event_time": "week end",
+    "publication_lag_days": 3
+   },
+   "targets": [
+    "USDBRL",
+    "SOYBEAN",
+    "IRONORE"
+   ],
+   "mechanism": "a WEEKLY trade balance is unusual and valuable: it prices the real's terms of trade four times a month instead of once"
+  },
+  {
+   "id": "colombia_banrep",
+   "plane": "latam",
+   "country": "co",
+   "name": "Banco de la Republica Colombia statistics",
+   "url": "https://www.banrep.gov.co/en/statistics",
+   "expect": "json",
+   "access": "public",
+   "cadence": "monthly",
+   "pit": {
+    "event_time": "reference month",
+    "publication_lag_days": 25
+   },
+   "targets": [
+    "USOIL",
+    "COFFEE"
+   ],
+   "mechanism": "a coffee and crude exporter's reserve and rate series; the Colombian coffee federation's price is set against this FX"
+  },
+  {
+   "id": "argentina_indec",
+   "plane": "latam",
+   "country": "ar",
+   "name": "INDEC Argentina trade and agricultural exports",
+   "url": "https://www.indec.gob.ar/",
+   "expect": "any",
+   "access": "public",
+   "cadence": "monthly",
+   "pit": {
+    "event_time": "reference month",
+    "publication_lag_days": 30
+   },
+   "targets": [
+    "SOYBEAN",
+    "CORN"
+   ],
+   "mechanism": "Argentina is the largest soybean-meal exporter; the export-tax regime makes farmer selling lumpy and the registration data shows it"
+  },
+  {
+   "id": "au_rba_decisions",
+   "plane": "oceania",
+   "country": "au",
+   "name": "RBA monetary policy decisions and minutes",
+   "url": "https://www.rba.gov.au/monetary-policy/",
+   "expect": "any",
+   "access": "public",
+   "cadence": "monthly",
+   "pit": {
+    "event_time": "meeting date",
+    "publication_lag_days": 0
+   },
+   "targets": [
+    "AUDUSD",
+    "AUDJPY",
+    "AUDNZD"
+   ],
+   "mechanism": "the scheduled rate event in the desk's own broker's jurisdiction and the currency the book holds the most crosses in"
+  },
+  {
+   "id": "au_abs_cpi",
+   "plane": "oceania",
+   "country": "au",
+   "name": "ABS consumer price index and labour force",
+   "url": "https://www.abs.gov.au/statistics",
+   "expect": "json",
+   "access": "public",
+   "cadence": "monthly",
+   "pit": {
+    "event_time": "quarter end",
+    "publication_lag_days": 25
+   },
+   "targets": [
+    "AUDUSD",
+    "AUDNZD"
+   ],
+   "mechanism": "the quarterly CPI is the single largest scheduled AUD repricing; the monthly indicator now lands between them"
+  },
+  {
+   "id": "au_port_hedland",
+   "plane": "oceania",
+   "country": "au",
+   "name": "Pilbara Ports / Port Hedland monthly throughput",
+   "url": "https://www.pilbaraports.com.au/ports/port-hedland/port-information/statistics",
+   "expect": "any",
+   "access": "public",
+   "cadence": "monthly",
+   "pit": {
+    "event_time": "reference month",
+    "publication_lag_days": 10
+   },
+   "targets": [
+    "IRONORE",
+    "AUDUSD"
+   ],
+   "mechanism": "roughly half the world's seaborne iron ore leaves through one port, and it publishes the tonnage monthly -- the supply side the Chinese port inventory reads at the other end"
+  },
+  {
+   "id": "nz_stats_trade",
+   "plane": "oceania",
+   "country": "nz",
+   "name": "Stats NZ overseas merchandise trade",
+   "url": "https://www.stats.govt.nz/",
+   "expect": "any",
+   "access": "public",
+   "cadence": "monthly",
+   "pit": {
+    "event_time": "reference month",
+    "publication_lag_days": 25
+   },
+   "targets": [
+    "NZDUSD",
+    "AUDNZD"
+   ],
+   "mechanism": "dairy is roughly a quarter of New Zealand's exports; the monthly trade release is the kiwi's terms of trade with a two-week lag on the GDT auction"
+  },
+  {
+   "id": "au_aemo_gas",
+   "plane": "oceania",
+   "country": "au",
+   "name": "AEMO gas and electricity market data",
+   "url": "https://aemo.com.au/energy-systems/",
+   "expect": "csv",
+   "access": "public",
+   "cadence": "daily",
+   "pit": {
+    "event_time": "trade date",
+    "publication_lag_days": 1
+   },
+   "targets": [
+    "NATGAS",
+    "COAL",
+    "AUDUSD"
+   ],
+   "mechanism": "east-coast gas prices and LNG netbacks; Australian LNG competes directly with Qatari and US cargoes into the same Asian buyers"
+  },
+  {
+   "id": "adnoc_murban",
+   "plane": "mena",
+   "country": "ae",
+   "name": "ADNOC Murban crude and IFAD exchange data",
+   "url": "https://www.adnoc.ae/en/",
+   "expect": "any",
+   "access": "public",
+   "cadence": "daily",
+   "pit": {
+    "event_time": "trade date",
+    "publication_lag_days": 0
+   },
+   "targets": [
+    "USOIL",
+    "UKOIL"
+   ],
+   "mechanism": "Murban is now an exchange-traded benchmark; its spread to Brent and Dubai is the Gulf's own light-sour pricing signal"
+  },
+  {
+   "id": "iraq_somo",
+   "plane": "mena",
+   "country": "sa",
+   "name": "Iraq SOMO export volumes and official selling prices",
+   "url": "https://somooil.gov.iq/",
+   "expect": "any",
+   "access": "public",
+   "cadence": "monthly",
+   "pit": {
+    "event_time": "reference month",
+    "publication_lag_days": 10
+   },
+   "targets": [
+    "USOIL",
+    "UKOIL"
+   ],
+   "mechanism": "OPEC's second largest producer publishes its liftings monthly, which is compliance measured at the loading terminal rather than by secondary sources"
+  },
+  {
+   "id": "tr_tuik_trade",
+   "plane": "mena",
+   "country": "tr",
+   "name": "TurkStat trade, CPI and gold import statistics",
+   "url": "https://data.tuik.gov.tr/",
+   "expect": "any",
+   "access": "public",
+   "cadence": "monthly",
+   "pit": {
+    "event_time": "reference month",
+    "publication_lag_days": 25
+   },
+   "targets": [
+    "USDTRY",
+    "XAUUSD"
+   ],
+   "mechanism": "Turkish gold imports spike when the lira devalues -- the two series in one office, which is a mechanism the desk can test directly"
+  },
+  {
+   "id": "borsa_istanbul_gold",
+   "plane": "mena",
+   "country": "tr",
+   "name": "Borsa Istanbul precious metals market data",
+   "url": "https://www.borsaistanbul.com/en/sayfa/1938/precious-metals-and-diamond-market",
+   "expect": "any",
+   "access": "public",
+   "cadence": "daily",
+   "pit": {
+    "event_time": "trade date",
+    "publication_lag_days": 0
+   },
+   "targets": [
+    "XAUUSD",
+    "USDTRY"
+   ],
+   "mechanism": "the lira-gold quote and its premium to the dollar price is the domestic hedging bid measured directly instead of inferred from imports"
+  },
+  {
+   "id": "gecf_gas",
+   "plane": "mena",
+   "country": "qa",
+   "name": "Gas Exporting Countries Forum monthly gas market report",
+   "url": "https://www.gecf.org/insights/monthly-gas-market-report",
+   "expect": "any",
+   "access": "public",
+   "cadence": "monthly",
+   "pit": {
+    "event_time": "release date",
+    "publication_lag_days": 0
+   },
+   "targets": [
+    "NATGAS"
+   ],
+   "mechanism": "the LNG exporters' own balance, which is the supply-side counterpart to the European storage and Asian import series the desk already reads"
+  },
+  {
+   "id": "icco_cocoa",
+   "plane": "africa",
+   "country": "ci",
+   "name": "ICCO quarterly bulletin of cocoa statistics",
+   "url": "https://www.icco.org/statistics/",
+   "expect": "any",
+   "access": "public",
+   "cadence": "quarterly",
+   "pit": {
+    "event_time": "quarter end",
+    "publication_lag_days": 45
+   },
+   "targets": [
+    "COCOA"
+   ],
+   "mechanism": "the global grind and the surplus/deficit estimate that the West African arrivals series is measured against; the two disagreeing is the tradable signal"
+  },
+  {
+   "id": "gh_bank_ghana",
+   "plane": "africa",
+   "country": "gh",
+   "name": "Bank of Ghana monetary and cocoa export series",
+   "url": "https://www.bog.gov.gh/economic-data/",
+   "expect": "any",
+   "access": "public",
+   "cadence": "monthly",
+   "pit": {
+    "event_time": "reference month",
+    "publication_lag_days": 30
+   },
+   "targets": [
+    "COCOA",
+    "XAUUSD"
+   ],
+   "mechanism": "Ghana is the second cocoa producer AND a large gold producer; the reserve series carries both and its gold-for-oil programme is an explicit official flow"
+  },
+  {
+   "id": "af_egyptian_wheat_gasc",
+   "plane": "africa",
+   "country": "eg",
+   "name": "GASC Egyptian wheat tender results",
+   "url": "https://www.cbe.org.eg/en/economic-research",
+   "expect": "any",
+   "access": "public",
+   "cadence": "weekly",
+   "pit": {
+    "event_time": "tender date",
+    "publication_lag_days": 0
+   },
+   "targets": [
+    "WHEAT"
+   ],
+   "mechanism": "the world's largest wheat buyer tenders publicly; the awarded price and origin is a direct, dated demand observation that the futures market trades around"
+  },
+  {
+   "id": "af_kenya_cbk",
+   "plane": "africa",
+   "country": "ke",
+   "name": "Central Bank of Kenya statistics and horticulture exports",
+   "url": "https://www.centralbank.go.ke/statistics/",
+   "expect": "any",
+   "access": "public",
+   "cadence": "weekly",
+   "pit": {
+    "event_time": "week end",
+    "publication_lag_days": 7
+   },
+   "targets": [
+    "COFFEE",
+    "SUGAR"
+   ],
+   "mechanism": "tea and coffee export earnings and the shilling; the Mombasa auction clears against this FX and the two together are the East African soft complex"
+  },
+  {
+   "id": "india_dgcis_gold",
+   "plane": "india",
+   "country": "in",
+   "name": "DGCIS monthly commodity-wise import detail",
+   "url": "https://ftddp.dgciskol.gov.in/",
+   "expect": "any",
+   "access": "public",
+   "cadence": "monthly",
+   "pit": {
+    "event_time": "reference month",
+    "publication_lag_days": 40
+   },
+   "targets": [
+    "XAUUSD",
+    "XAGUSD",
+    "USOIL"
+   ],
+   "mechanism": "the audited customs line behind the headline trade number, split by commodity -- the gold tonnage the GJEPC and press numbers are estimates of"
+  },
+  {
+   "id": "india_ibja_rates",
+   "plane": "india",
+   "country": "in",
+   "name": "IBJA daily domestic bullion reference rates",
+   "url": "https://www.ibja.co/",
+   "expect": "any",
+   "access": "public",
+   "cadence": "daily",
+   "pit": {
+    "event_time": "trade date",
+    "publication_lag_days": 0
+   },
+   "targets": [
+    "XAUUSD",
+    "XAGUSD",
+    "USDINR"
+   ],
+   "mechanism": "the domestic rate versus the landed import parity is the Indian physical premium or discount, which is the demand signal at daily frequency rather than monthly"
+  },
+  {
+   "id": "india_nse_fpi_debt",
+   "plane": "india",
+   "country": "in",
+   "name": "NSDL FPI debt utilisation and limits",
+   "url": "https://www.fpi.nsdl.co.in/web/Reports/ReportDetail.aspx",
+   "expect": "any",
+   "access": "public",
+   "cadence": "daily",
+   "pit": {
+    "event_time": "trade date",
+    "publication_lag_days": 1
+   },
+   "targets": [
+    "USDINR"
+   ],
+   "mechanism": "the debt-limit utilisation is a capacity constraint on the largest scheduled inflow; it caps how much of an index-inclusion flow can actually arrive"
+  },
+  {
+   "id": "sea_gapki_palm",
+   "plane": "sea",
+   "country": "id",
+   "name": "GAPKI Indonesian palm oil production and stocks",
+   "url": "https://gapki.id/en/",
+   "expect": "any",
+   "access": "public",
+   "cadence": "monthly",
+   "pit": {
+    "event_time": "reference month",
+    "publication_lag_days": 40
+   },
+   "targets": [
+    "PALMOIL",
+    "SOYBEAN"
+   ],
+   "mechanism": "the Indonesian half of world palm supply, which MPOB's Malaysian series cannot see; the export-levy and domestic-obligation policy moves it in steps"
+  },
+  {
+   "id": "sea_thai_rubber_rice",
+   "plane": "sea",
+   "country": "th",
+   "name": "Thai Ministry of Commerce rice and rubber exports",
+   "url": "https://www.moc.go.th/en/",
+   "expect": "any",
+   "access": "public",
+   "cadence": "monthly",
+   "pit": {
+    "event_time": "reference month",
+    "publication_lag_days": 30
+   },
+   "targets": [
+    "SUGAR",
+    "USDTHB"
+   ],
+   "mechanism": "Thailand is a top sugar and rice exporter; the export-price series is the baht's soft commodity terms of trade"
+  },
+  {
+   "id": "sea_singapore_bunkers",
+   "plane": "sea",
+   "country": "sg",
+   "name": "MPA Singapore bunker sales and vessel arrivals",
+   "url": "https://www.mpa.gov.sg/port-marine-ops/",
+   "expect": "any",
+   "access": "public",
+   "cadence": "monthly",
+   "pit": {
+    "event_time": "reference month",
+    "publication_lag_days": 12
+   },
+   "targets": [
+    "USOIL",
+    "NATGAS"
+   ],
+   "mechanism": "the world's largest bunkering port publishes monthly fuel sales -- marine fuel demand measured at the pump, which is the residual leg of the crude balance"
+  },
+  {
+   "id": "eu_snb_switzerland",
+   "plane": "scheduled_flow",
+   "country": "ch",
+   "name": "Swiss National Bank data portal",
+   "url": "https://data.snb.ch/en",
+   "expect": "csv",
+   "access": "public",
+   "cadence": "weekly",
+   "pit": {
+    "event_time": "week end",
+    "publication_lag_days": 3
+   },
+   "targets": [
+    "USDCHF",
+    "EURCHF",
+    "XAUUSD"
+   ],
+   "mechanism": "sight deposits are the SNB's intervention footprint published weekly, and Switzerland is the refining chokepoint the desk already reads through customs"
+  },
+  {
+   "id": "eu_destatis_trade",
+   "plane": "scheduled_flow",
+   "country": "de",
+   "name": "Destatis German trade, CPI and production",
+   "url": "https://www-genesis.destatis.de/",
+   "expect": "json",
+   "access": "public",
+   "cadence": "monthly",
+   "pit": {
+    "event_time": "reference month",
+    "publication_lag_days": 35
+   },
+   "targets": [
+    "EURUSD",
+    "NATGAS"
+   ],
+   "mechanism": "German industrial production is the euro area's cycle and its gas intensity is the channel a European energy shock takes into EURUSD"
+  },
+  {
+   "id": "eu_ons_uk",
+   "plane": "scheduled_flow",
+   "country": "gb",
+   "name": "ONS UK CPI, labour market and trade",
+   "url": "https://www.ons.gov.uk/economy",
+   "expect": "json",
+   "access": "public",
+   "cadence": "monthly",
+   "pit": {
+    "event_time": "reference month",
+    "publication_lag_days": 16
+   },
+   "targets": [
+    "GBPUSD",
+    "EURGBP"
+   ],
+   "mechanism": "the scheduled inflation and wage prints that set Bank Rate and therefore the sterling carry the book holds crosses in"
+  },
+  {
+   "id": "af_ivory_coast_ins",
+   "plane": "africa",
+   "country": "ci",
+   "name": "Institut National de la Statistique Cote d'Ivoire trade series",
+   "url": "https://www.ins.ci/",
+   "expect": "any",
+   "access": "public",
+   "cadence": "monthly",
+   "pit": {
+    "event_time": "reference month",
+    "publication_lag_days": 45
+   },
+   "targets": [
+    "COCOA"
+   ],
+   "mechanism": "the audited export value behind the Conseil Cafe-Cacao's weekly arrivals; the two series disagreeing is a smuggling or grading signal the London contract prices"
+  },
+  {
+   "id": "af_tanzania_gold",
+   "plane": "africa",
+   "country": "ke",
+   "name": "Bank of Tanzania and East African mineral export statistics",
+   "url": "https://www.bot.go.tz/Publications/",
+   "expect": "any",
+   "access": "public",
+   "cadence": "monthly",
+   "pit": {
+    "event_time": "reference month",
+    "publication_lag_days": 35
+   },
+   "targets": [
+    "XAUUSD"
+   ],
+   "mechanism": "East African artisanal and mine gold exports are a supply leg outside South Africa, and the central bank's own purchase programme is an official bid on it"
   }
  ],
  "miners": {
