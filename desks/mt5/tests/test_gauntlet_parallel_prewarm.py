@@ -105,7 +105,8 @@ def test_the_worker_is_the_fresh_path_extracted_and_nothing_else() -> None:
     for step in ("_bars_for(sym, tf)", "_cache_key(sym, family, params, str(last_day.date()), tf)",
                  "build_cell(sym, family, params, meta)",
                  "daily_series(obj[\"df\"], obj[\"sigs\"], obj[\"costs\"])",
-                 "costs_for(sym, meta, mult=COST_SCENARIO)", "cache_save(ckey, ds1, ds3)"):
+                 # 2026-09-25: the 3x arm is priced on the base arm's own fill-hour spread.
+                 "stress_costs_for(obj, meta, mult=COST_SCENARIO)", "cache_save(ckey, ds1, ds3)"):
         assert step in w, step
     assert "run_gauntlet(" not in w               # no verdict logic crosses into the worker
 

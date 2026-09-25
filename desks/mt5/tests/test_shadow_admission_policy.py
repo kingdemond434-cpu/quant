@@ -139,7 +139,8 @@ def test_production_path_has_no_harsher_prefilter() -> None:
     admission = (DESK / "research" / "shadow_admission.py").read_text(encoding="utf-8")
     assert "all_ten_pass" in admission and "is_exact_policy" in admission, (
         "the admission door itself must verify the certificate, not trust the file")
-    assert "gate_spec not in gate_authority" in promoter, (
+    # 2026-09-25: the check became `certificate_lapsed`, and it now HOLDS the promotion.
+    assert "certificate_lapsed(gate_spec, gate_authority)" in promoter, (
         "live promotion must still independently require a real certificate")
     supervisor = (DESK / "research" / "research_supervisor.py").read_text(encoding="utf-8")
     assert DONE_MARKER in supervisor

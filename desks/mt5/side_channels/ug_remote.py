@@ -57,10 +57,13 @@ from libs.validation.revalidation import WalkForwardEngine, WalkForwardStatus  #
 from mt5desk import families  # noqa: E402
 from mt5desk.engine import Costs, run_backtest  # noqa: E402
 
-#: Fusion Zero's published contract, USD per lot PER SIDE ($4.50 round turn). Mirrors
-#: `libs.portfolio.fusion_cost.COMMISSION_PER_LOT_PER_SIDE`. The 3.50 this replaced was a
-#: ROUND-TURN figure sitting in a PER-SIDE field, billing $7.00 a round trip against $4.50.
-FUSION_COMMISSION_PER_SIDE = 2.25
+#: The account's MEASURED commission per lot PER SIDE, read from its single source
+#: (`libs.portfolio.fusion_cost.COMMISSION_PER_LOT_PER_SIDE`, 2.00 in account currency over every
+#: deal the account has done). The 2.25 this replaced was the brochure's USD figure, and the 3.50
+#: before it a ROUND-TURN figure in a PER-SIDE field.
+from research.cell_costs import commission_per_side  # noqa: E402
+
+FUSION_COMMISSION_PER_SIDE = commission_per_side()
 
 TRIALS_MULTIPLIER = 7.0
 DSR_THRESHOLD = 0.95

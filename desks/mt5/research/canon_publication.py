@@ -499,7 +499,7 @@ def recover_from_gate_output(gates: Path = GATE_OUTPUT, report: Path = REPORT,
     out["gate_trial_basis"] = gate_basis
     out["spec_trial_basis"] = spec_basis
     out["gate_n_trials"] = doc.get("n_trials")
-    superseded = not is_admissible_trial_count_basis(gate_basis)
+    superseded = not is_admissible_trial_count_basis(gate_basis, doc.get("n_trials"))
 
     seal_doc = _read(seal)
     standing = seal_doc.get("survivors")
@@ -538,11 +538,20 @@ def recover_from_gate_output(gates: Path = GATE_OUTPUT, report: Path = REPORT,
             # Name the mismatch.  Supplementary gates are accepted only when they pass; this
             # branch therefore means a partial record or an explicitly failed extra gate.
             if isinstance(stages, dict):
-                refused["supplementary_gate_failed" if any(
-                    n not in GATES and not (isinstance(stages[n], dict)
-                                            and stages[n].get("passed") is True)
-                    for n in stages
-                ) else "not_all_ten_pass"] += 1
+                try:
+                    from gate_policy import SUPPLEMENTARY_GATES, supplementary_stage_ok
+                except ImportError:                  # pragma: no cover - import-context dep
+                    from research.gate_policy import (  # type: ignore[no-redef]
+                        SUPPLEMENTARY_GATES, supplementary_stage_ok,
+                    )
+                extras = [n for n in stages if n not in GATES]
+                if any(n not in SUPPLEMENTARY_GATES for n in extras):
+                    reason = "extra_gate_not_in_policy"
+                elif any(not supplementary_stage_ok(stages[n]) for n in extras):
+                    reason = "supplementary_gate_failed"
+                else:
+                    reason = "not_all_ten_pass"
+                refused[reason] += 1
             else:
                 refused["no_stages_record"] += 1
             continue

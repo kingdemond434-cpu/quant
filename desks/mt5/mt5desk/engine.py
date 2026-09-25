@@ -80,6 +80,29 @@ class Costs:
     #: silently -- the same discipline `quote_per_account` and `spread_pts` document above, and
     #: for the same reason: this class is on the money path.
     swap_per_lot_per_night: float = 0.0
+    #: PER-SIDE, SIGNED FINANCING (2026-09-25). MT5's convention: a POSITIVE swap is PAID TO the
+    #: position, a negative one is charged. The worse-side magnitude above charged a carry sleeve
+    #: that is PAID +39.11 short on GBPMXN as though it paid 324.72 -- the one family whose whole
+    #: edge is the credit was judged with its credit turned into the biggest cost it has. A
+    #: trade's side is fixed by its signal before entry, so charging THAT side's own rate with
+    #: its sign is not "picking the cheaper financing afterwards"; it is the rate the broker
+    #: applies to that position.
+    #:
+    #: `swap_mode` is MT5's ENUM_SYMBOL_SWAP_MODE and says what the numbers MEAN:
+    #:   1 POINTS            -> `swap_long/short_per_lot` are already `pts x tick_size x contract`
+    #:   5/6 INTEREST        -> `swap_long/short_pct` are ANNUAL PERCENT of notional on a 360-day
+    #:                          year: rate/100/360 x price x contract_size per lot-night
+    #:   0 DISABLED          -> no financing
+    #: None on every field keeps the legacy worse-side charge above, so an unclassified symbol is
+    #: priced exactly as before rather than guessed.
+    swap_mode: int | None = None
+    swap_long_per_lot: float | None = None
+    swap_short_per_lot: float | None = None
+    swap_long_pct: float | None = None
+    swap_short_pct: float | None = None
+    #: Python weekday (Monday=0) whose rollover carries three nights, from the broker's per-symbol
+    #: `swap_rollover3days`. None = the engine default (`TRIPLE_SWAP_WEEKDAY`, Wednesday).
+    swap_triple_weekday: int | None = None
 
     def per_oz_roundtrip(self) -> float:
         """Round-trip cost per lot, in the convention the engine divides by `contract_oz`.
@@ -96,8 +119,50 @@ class Costs:
                 + self.commission_per_lot * 2.0 * float(self.quote_per_account))
 
     def financing(self, nights: float) -> float:
-        """Overnight financing for `nights` rollovers, in the `per_oz_roundtrip` convention."""
+        """Overnight financing for `nights` rollovers, in the `per_oz_roundtrip` convention.
+
+        The LEGACY side-blind charge (worse side, as a cost). `financing_for` is the per-side,
+        signed, mode-aware charge the engine uses when the symbol's swap mode is known.
+        """
         return float(self.swap_per_lot_per_night) * float(nights)
+
+    def charges_financing(self) -> bool:
+        """Whether any financing (cost or credit) can apply to a held position."""
+        if self.swap_mode == SWAP_MODE_DISABLED:
+            return False
+        return bool(self.swap_per_lot_per_night or self.swap_long_per_lot
+                    or self.swap_short_per_lot or self.swap_long_pct or self.swap_short_pct)
+
+    def night_cost(self, side: int, price: float) -> float:
+        """COST of one rollover for one lot on `side` at `price`, `per_oz_roundtrip` convention.
+
+        Positive is a charge, NEGATIVE IS A CREDIT (a carry position paid to hold). Falls back to
+        the legacy side-blind charge when the mode or the side's rate is unknown.
+        """
+        mode = self.swap_mode
+        if mode == SWAP_MODE_DISABLED:
+            return 0.0
+        long_side = int(side) > 0
+        if mode == SWAP_MODE_POINTS:
+            rate = self.swap_long_per_lot if long_side else self.swap_short_per_lot
+            if rate is not None:
+                return -float(rate)
+        elif mode in SWAP_MODES_INTEREST:
+            pct = self.swap_long_pct if long_side else self.swap_short_pct
+            px = float(price or 0.0)
+            if pct is not None and px > 0 and self.contract_oz > 0:
+                return -(float(pct) / 100.0 / 360.0) * px * float(self.contract_oz)
+        return float(self.swap_per_lot_per_night)
+
+    def financing_for(self, side: int, price: float, t0: pd.Timestamp,
+                      t1: pd.Timestamp) -> float:
+        """Signed financing for a position held `t0 -> t1`: nights x `night_cost`. Negative = paid."""
+        if not self.charges_financing():
+            return 0.0
+        nights = rollovers_between(t0, t1, triple_weekday=self.swap_triple_weekday)
+        if not nights:
+            return 0.0
+        return self.night_cost(side, price) * float(nights)
 
     def stressed(self, spread_mult: float) -> Costs:
         """A cost-stress variant of THIS cost model -- widen the spread, keep everything else.
@@ -174,10 +239,80 @@ class Costs:
         # `scripts/check_swap_pricing.py` is what stops that silence becoming a clean verdict.
         swap_pts = max(abs(float(meta.get("swap_long", 0.0) or 0.0)),
                        abs(float(meta.get("swap_short", 0.0) or 0.0)))
+        swap = swap_terms_from_meta(meta)
         return cls(spread_per_lot=max(spread * mult, 0.05),
                    commission_per_lot=commission_per_lot, contract_oz=cs,
                    quote_per_account=qpa,
-                   swap_per_lot_per_night=swap_pts * ts * cs)
+                   swap_per_lot_per_night=swap_pts * ts * cs, **swap)
+
+
+#: MT5 ENUM_SYMBOL_SWAP_MODE values this engine prices. 0 is DISABLED (not POINTS).
+SWAP_MODE_DISABLED = 0
+SWAP_MODE_POINTS = 1
+SWAP_MODES_INTEREST = (5, 6)     # INTEREST_CURRENT, INTEREST_OPEN: annual % on a 360-day year
+
+#: WHEN THE REGISTRY CARRIES NO `swap_mode`, THE ASSET CLASS DECIDES -- and only for the classes
+#: the desk's own contract-terms tape resolves unambiguously. Measured there
+#: (`mt5desk/families_orthogonal.swap_money_per_lot`, `research/carry_state`): 110 symbols at
+#: mode 1 POINTS and 138 at mode 5 INTEREST_CURRENT, none at 0. The registry's classes split the
+#: same way to within the three unclassified rows: FX, FX exotics, metals ("Commodities"), softs
+#: and energy = 112 (POINTS); equities, indices, crypto and bonds = 136 (INTEREST). A class
+#: outside both lists, or a row with no class, stays UNCLASSIFIED and keeps the legacy worse-side
+#: points charge -- nothing is guessed, and nothing is credited.
+_POINTS_CLASSES = frozenset({"forex", "forexexotics", "commodities", "softcommodity", "energy",
+                             "metals"})
+_INTEREST_CLASSES = frozenset({"equities", "indices", "crypto", "bonds"})
+#: MT5 ENUM_DAY_OF_WEEK (0=Sunday) -> Python weekday (0=Monday), for `swap_rollover3days`.
+_MT5_DAY_TO_PYTHON = {0: 6, 1: 0, 2: 1, 3: 2, 4: 3, 5: 4, 6: 5}
+
+
+def infer_swap_mode(meta: dict) -> int | None:
+    """The row's `swap_mode`, else the mode its asset class resolves to, else None."""
+    raw = meta.get("swap_mode")
+    if raw is not None:
+        try:
+            mode = int(raw)
+        except (TypeError, ValueError):
+            return None
+        return mode if mode >= 0 else None
+    cls_ = "".join(ch for ch in str(meta.get("asset_class") or "").lower() if ch.isalnum())
+    if cls_ in _POINTS_CLASSES:
+        return SWAP_MODE_POINTS
+    if cls_ in _INTEREST_CLASSES:
+        return SWAP_MODES_INTEREST[0]
+    return None
+
+
+def swap_terms_from_meta(meta: dict) -> dict:
+    """The per-side, signed swap fields for `Costs`, from one universe.json row.
+
+    Returns only fields it could establish; an empty dict leaves `Costs` on its legacy charge.
+    """
+    out: dict = {}
+    mode = infer_swap_mode(meta)
+    try:
+        lo = float(meta["swap_long"]) if meta.get("swap_long") is not None else None
+        sh = float(meta["swap_short"]) if meta.get("swap_short") is not None else None
+    except (TypeError, ValueError):
+        lo = sh = None
+    cs = float(meta.get("contract_size", 1e5) or 0.0)
+    ts = float(meta.get("tick_size", 0.0) or 0.0)
+    if mode == SWAP_MODE_DISABLED:
+        out["swap_mode"] = mode
+    elif mode == SWAP_MODE_POINTS and lo is not None and sh is not None and ts > 0 and cs > 0:
+        out.update(swap_mode=mode, swap_long_per_lot=lo * ts * cs,
+                   swap_short_per_lot=sh * ts * cs)
+    elif mode in SWAP_MODES_INTEREST and lo is not None and sh is not None:
+        out.update(swap_mode=mode, swap_long_pct=lo, swap_short_pct=sh)
+    r3 = meta.get("swap_rollover3days")
+    if r3 is not None:
+        try:
+            wd = _MT5_DAY_TO_PYTHON.get(int(r3))
+        except (TypeError, ValueError):
+            wd = None
+        if wd is not None:
+            out["swap_triple_weekday"] = wd
+    return out
 
 
 @dataclass
@@ -274,46 +409,68 @@ class BacktestResult:
         }
 
 
-#: UTC hour of the broker's rollover. Fusion's server runs UTC+2 in winter and UTC+3 in summer,
-#: so server midnight is 22:00 UTC or 21:00 UTC. 21 is used and the choice is deliberately the
-#: EARLIER one: it can only count a rollover a position did not quite reach, never miss one it
-#: paid. A cost model that errs must err expensive.
+#: THE ROLLOVER IS MIDNIGHT ON THE BAR LABEL'S OWN CLOCK (2026-09-25). The universe parquets are
+#: stamped in the BROKER SERVER's wall clock (Fusion: New-York-close, UTC+3 in US summer and UTC+2
+#: otherwise), and the broker rolls positions at 00:00 on that clock. This constant used to be
+#: `ROLLOVER_HOUR_UTC = 21` -- a UTC hour -- applied to those broker-clock labels, so the engine
+#: charged the night at 21:00 BROKER time, three hours before the broker does: a position opened
+#: at 21:00-23:59 and closed before midnight paid a night it never held, and one opened then and
+#: held into the next session was charged on the wrong weekday. Midnight of the label is the
+#: broker's own instant, and it needs no daylight-saving guess at all, because the labels already
+#: carry the broker's DST.
+ROLLOVER_HOUR_BROKER = 0
+#: Retained ONLY so existing importers keep resolving; the engine no longer uses it. It was the
+#: UTC hour of the broker's midnight in US summer, and the labels it was applied to are not UTC.
 ROLLOVER_HOUR_UTC = 21
-#: Weekday whose rollover carries three days' financing, because its value date spans the
-#: weekend. Monday=0, so 2 is Wednesday -- the standard FX convention on every retail venue.
+#: Weekday whose NIGHT carries three days' financing, because its value date spans the weekend.
+#: Monday=0, so 2 is Wednesday -- the standard FX convention. The triple night is charged at the
+#: midnight that ENDS it (00:00 Thursday on the broker clock for a Wednesday triple).
 TRIPLE_SWAP_WEEKDAY = 2
 
 
-def rollovers_between(t0: pd.Timestamp, t1: pd.Timestamp) -> float:
-    """Financing nights charged for a position held from `t0` to `t1`.
+def rollovers_between(t0: pd.Timestamp, t1: pd.Timestamp,
+                      triple_weekday: int | None = None) -> float:
+    """Financing nights charged for a position held from `t0` to `t1` (broker-clock bar labels).
 
-    WHY THIS IS NOT `(t1 - t0).days`. A trade opened 20:00 and closed 22:00 crosses ONE rollover
-    and pays a full night on two hours of exposure; a trade opened 22:00 and closed the next
-    18:00 crosses NONE and pays nothing on twenty hours. Financing is charged at an INSTANT, not
-    pro rata, and a duration-based charge gets both of those backwards.
+    WHY THIS IS NOT `(t1 - t0).days`. A trade opened 23:00 and closed 01:00 crosses ONE rollover
+    and pays a full night on two hours of exposure; a trade opened 01:00 and closed 23:00 the same
+    day crosses NONE and pays nothing on twenty-two hours. Financing is charged at an INSTANT --
+    00:00 on the broker's clock, which is the clock the bars are labelled in -- not pro rata.
 
-    Wednesday's rollover counts three, which is not a detail: it is 43% of a week's financing on
-    one instant, and the families that hold through a Wednesday night pay it every week.
+    Half-open: a midnight exactly at the entry is not charged, one exactly at the exit is.
 
-    A naive timestamp is read as UTC. That is the same assumption the rest of this engine makes
-    of the universe parquets, and stating it here keeps it from being made twice differently.
+    Each midnight charges the NIGHT that ends there, named by the weekday before it. Nights Monday
+    to Friday are charged (the Friday night at 00:00 Saturday); the Saturday and Sunday nights are
+    not -- the weekend is exactly what the triple night pays for, so a week is five charged
+    nights, one of them triple: seven. Counting the weekend stamps as well charged a week-long
+    hold NINE nights and every weekend hold two it never owed.
+
+    `triple_weekday` is the symbol's own triple NIGHT (Python weekday, from the broker's
+    `swap_rollover3days`); None means the engine default, Wednesday. 150 of the broker's symbols
+    triple on FRIDAY (`mt5desk/financing.py`).
+
+    A tz-aware timestamp is read on its OWN wall clock (the zone is dropped, not converted): the
+    rollover is a broker-clock instant, and converting to UTC is the defect this replaced.
     """
+    triple = TRIPLE_SWAP_WEEKDAY if triple_weekday is None else int(triple_weekday)
     if t0 is None or t1 is None:
         return 0.0
     a, b = pd.Timestamp(t0), pd.Timestamp(t1)
     if a.tzinfo is not None:
-        a = a.tz_convert("UTC").tz_localize(None)
+        a = a.tz_localize(None)
     if b.tzinfo is not None:
-        b = b.tz_convert("UTC").tz_localize(None)
+        b = b.tz_localize(None)
     if not (b > a):
         return 0.0
     nights = 0.0
-    # The first rollover instant at or after the entry.
-    cur = a.normalize() + pd.Timedelta(hours=ROLLOVER_HOUR_UTC)
+    # The first rollover instant strictly after the entry.
+    cur = a.normalize() + pd.Timedelta(hours=ROLLOVER_HOUR_BROKER)
     if cur <= a:
         cur = cur + pd.Timedelta(days=1)
     while cur <= b:
-        nights += 3.0 if cur.weekday() == TRIPLE_SWAP_WEEKDAY else 1.0
+        night = (cur - pd.Timedelta(days=1)).weekday()
+        if night < 5:
+            nights += 3.0 if night == triple else 1.0
         cur = cur + pd.Timedelta(days=1)
     return nights
 
@@ -536,12 +693,13 @@ def run_backtest(
         # FINANCING, PER NIGHT ACTUALLY CROSSED. Zero for every intraday sleeve, which is why
         # this changes nothing for the scalp lane and is decisive for the overnight one. It is
         # charged on the whole stack (`units`), the same size the spread is charged on.
-        if costs.swap_per_lot_per_night:
-            nights = rollovers_between(pd.Timestamp(idx[fill_bar]),
-                                       pd.Timestamp(idx[min(fill_bar + bars_held - 1,
-                                                            len(idx) - 1)]))
-            if nights:
-                r -= (costs.financing(nights) / costs.contract_oz) * units / stop_dist
+        # Per side and signed: a carry position PAID to hold is credited (`Costs.financing_for`).
+        if costs.charges_financing():
+            fin = costs.financing_for(side, entry, pd.Timestamp(idx[fill_bar]),
+                                      pd.Timestamp(idx[min(fill_bar + bars_held - 1,
+                                                           len(idx) - 1)]))
+            if fin:
+                r -= (fin / costs.contract_oz) * units / stop_dist
         trades.append(
             Trade(
                 entry_time=pd.Timestamp(idx[fill_bar]),

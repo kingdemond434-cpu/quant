@@ -145,8 +145,11 @@ PARTIAL_FRACTION: float = 0.5
 #: `Costs.from_symbol`'s own words: "mult=2.0 is the honest baseline rather than a stress -- a
 #: round trip crosses the spread on the way in and again on the way out, and a median is a median".
 HONEST_SPREAD_MULT: float = 2.0
-#: Fusion Zero's published contract, per lot per side.
-COMMISSION_PER_LOT: float = 2.25
+#: The account's MEASURED commission per lot per side, from its single source (2.00 in account
+#: currency; the 2.25 this replaced was the brochure's USD figure).
+from libs.portfolio.fusion_cost import COMMISSION_PER_LOT_PER_SIDE as _COMMISSION  # noqa: E402
+
+COMMISSION_PER_LOT: float = float(_COMMISSION)
 #: The risk fraction one trade carries when the allocator's book does not name the sleeve. The
 #: desk's heat target is 20% across the book; one sleeve's trade is a per-cent of wealth, not a
 #: tenth. Used only as a stated fallback and reported as such on the row.
