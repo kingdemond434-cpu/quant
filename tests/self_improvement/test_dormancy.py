@@ -62,7 +62,11 @@ def test_a_HEAVILY_IMPORTED_module_is_never_dormant(report: D.DormancyReport) ->
     importer detection is broken, and every other row in the report is noise."""
     paths = {d.path for d in report.dormant}
     assert "libs/research/capacity_policy.py" not in paths
-    assert "libs/execution/protective_stops.py" not in paths
+    # libs/portfolio/fusion_cost.py, not libs/execution/protective_stops.py: the stops module's
+    # only importers were the crypto executors the 2026-08-18 MT5 mandate retired, so it is
+    # GENUINELY dormant now and naming it here asserted a fact that stopped being true. The cost
+    # model is imported by the gateway and the engine on every pass.
+    assert "libs/portfolio/fusion_cost.py" not in paths
 
 
 def test_every_finding_carries_a_PROVING_COMMAND(report: D.DormancyReport) -> None:

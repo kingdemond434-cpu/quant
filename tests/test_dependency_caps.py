@@ -119,11 +119,10 @@ _OPTIONAL_BY_DESIGN = {
     "backtrader",       # cross-engine extra
     "vectorbt",         # cross-engine extra
     "streamlit",        # dashboard, not importable from any library path
-    # plotting only. scripts/run_intraday_rotation.py:276-281 imports it INSIDE _plots(), behind
-    # try/except ImportError, and on absence writes doc["plots"] = "matplotlib absent -- data
-    # tables in JSON only" and returns. The JSON tables -- the actual research output -- are
-    # unaffected, so this is a cosmetic degradation, never a silent one.
-    "matplotlib",
+    # headless-browser fetch. libs/data/render_fetch.py imports it inside a probe guarded by
+    # `except ImportError` and reports "playwright not importable" rather than raising; the box
+    # ships its own browser build, so it is deliberately not a pip dependency of the package.
+    "playwright",
     "hypothesis", "pytest", "_pytest",   # test-only, declared in the dev extra
 }
 
@@ -141,6 +140,16 @@ def _third_party_imports() -> dict[str, list[str]]:
     # sys.path -- it is a LOCAL module, and reading it as an undeclared package would be a false
     # accusation that trains the reader to ignore this test.
     roots |= {p.stem for p in Path("scripts").rglob("*.py")}
+    # THE DESK TREE IS LOCAL TOO, reached the same way. libs/ and scripts/ import desk organs
+    # (`certificate_truth`, `shadow_forward`, `mt5desk`, `research`, ...) by bare name after a
+    # sys.path insert of desks/mt5 or desks/mt5/research; they are modules of this repository,
+    # and reading them as undeclared packages would bury a real missing dependency among 24
+    # false ones.
+    if Path("desks").is_dir():
+        roots.add("desks")
+        roots |= {p.stem for p in Path("desks").rglob("*.py") if "__pycache__" not in p.parts}
+        roots |= {p.name for p in Path("desks").rglob("*") if p.is_dir()
+                  and "__pycache__" not in p.parts}
     out: dict[str, list[str]] = {}
     for f in [*Path("libs").rglob("*.py"), *Path("scripts").rglob("*.py"),
               *Path("app").rglob("*.py")]:

@@ -48,6 +48,10 @@ CATCHUP_CAP_MIN = 20
 #: leaving them would have made this allowlist read longer than the set of organs it can actually
 #: wake, which is the drift it exists to prevent.
 ALLOWLIST: dict[str, str] = {
+    # 2026-09-25: check_idle_cost, check_excitation, check_mechanism_attribution,
+    # run_reality_gap and run_execution_intel LEFT THIS LIST. Their manifest rows were
+    # RETIRED on 2026-09-08 under the MT5 mandate (each read the retired cash-carry book),
+    # so they were allowlisted with no row to fire -- counted as covered, never run.
     "scripts/run_law_gate.py": "hourly law gate -- the enforcement entry point for every organ",
     "scripts/check_conversion.py": "hourly §33 conversion fence",
     "scripts/check_ratchets.py": "daily ratchet raiser (its death caused the L1.50 floor stall)",
@@ -86,7 +90,6 @@ ALLOWLIST: dict[str, str] = {
     "scripts/check_claim_consistency.py": "daily cross-organ claim contradiction detector",
     "scripts/check_input_provenance.py": "hourly artifact input-provenance declarations",
     "scripts/check_denominators.py": "hourly denominator-declaration fence",
-    "scripts/check_idle_cost.py": "hourly idle-capital/timidity meter (LAWS §2a)",
     "scripts/run_stale_daemon_repair.py": "twice-daily stale-daemon actuator",
     "scripts/build_gauntlet_survivors.py": "the eight-gate barrier's MISSING producer -- it had judged zero candidates ever",
     "scripts/promotion_gate.py": "eight-gate screen-side record (capacity+fragility, which the canonical ten do not cover)",
@@ -119,13 +122,8 @@ ALLOWLIST: dict[str, str] = {
     "scripts/check_law_families.py": "L1.36; live rc=2 -- 0/6 families fully enforced, failing "
                                      "aggression and exploration",
     "scripts/check_exploration.py": "L1.32; live rc=2 STALE -- 4/5 exploration organs in cadence",
-    "scripts/check_excitation.py": "L1.45; live rc=2 ABSORBING -- an execution exclusion with NO "
-                                   "re-entry condition. A controller that never perturbs cannot "
-                                   "identify the surface it sits on",
     "scripts/check_capital_basis.py": "live rc=2 UNDECLARED-RETURNS -- 16 return-reporting "
                                       "artifacts of 198 scanned declare no capital basis",
-    "scripts/check_mechanism_attribution.py": "L1.6; live rc=2 UNMEASURED -- names the blindness "
-                                              "rather than passing over it",
     "scripts/check_llm_routing.py": "L1.54 compute maximisation; live rc=0 reporting 2/22 organs "
                                     "routed (0.091) -- a throughput gap nothing was watching",
     "scripts/check_cross_section_floor.py": "live rc=0 PARTIAL -- 18/52 collapse sites floored "
@@ -183,10 +181,6 @@ ALLOWLIST: dict[str, str] = {
                                       "the dispatcher detaches and its manifest row holds a flock, "
                                       "so a slow run blocks nothing. Listed with that measured "
                                       "runtime rather than an assumed one",
-    "scripts/run_reality_gap.py": "L2.10 backtest->shadow->paper->live->venue-truth comparison; "
-                                  "live rc=0, currently NO-DATA on two links and saying so",
-    "scripts/run_execution_intel.py": "execution intel roll-up; live rc=0 DEGRADED "
-                                      "(cost_drift=NO-DATA, fee_attribution=DEGRADED)",
     "scripts/score_forecasts.py": "L1.29 calibration; live rc=0. max_audit reports 20 forecasts "
                                   "past their grading deadline and this is what grades them",
     "scripts/run_organ_er.py": "the organ emergency room -- on a box with 36 abnormal unit stops "
