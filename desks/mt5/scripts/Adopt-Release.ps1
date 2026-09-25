@@ -621,13 +621,36 @@ $ReleaseCodePaths = @(
     "desks/mt5/mt5desk", "desks/mt5/prop", "desks/mt5/research",
     "desks/mt5/policy", "desks/mt5/scripts", "libs", "ops", "scripts"
 )
+# A single-use, target-bound recovery permit exists for the one case where the index itself is
+# unhealthy enough that even a path-scoped diff cannot finish.  It cannot authorize arbitrary
+# code: the target SHA must match FETCH_HEAD, it expires, and it is consumed before any write.
+# This preserves the normal fail-closed rule while giving an operator a deterministic recovery
+# route instead of resealing an unknown tree or leaving orders refused indefinitely.
+$recoveryPermit = Join-Path $desk "data\RELEASE_BOOTSTRAP_ONCE.json"
+$permitAccepted = $false
+if (Test-Path $recoveryPermit) {
+    try {
+        $permit = Get-Content $recoveryPermit -Raw | ConvertFrom-Json
+        $expires = [datetime]::Parse([string]$permit.expires_at).ToUniversalTime()
+        if ([string]$permit.target -eq $target -and $expires -gt (Get-Date).ToUniversalTime()) {
+            Remove-Item -LiteralPath $recoveryPermit -Force
+            $permitAccepted = $true
+            Write-Host "  accepted one-shot target-bound recovery permit; proceeding only to the named origin target"
+        }
+    } catch {
+        Write-Host "  recovery permit unreadable or invalid; normal dirty-code rule remains in force"
+    }
+}
 # `git status` refreshes every tracked file before it can answer, including the evidence lake.
 # On the live box it spent minutes re-stat'ing parquet while the release mutex was held.  This
 # release only needs to protect executable code from an unknown local edit, so inspect those
 # pathspecs directly and leave the mutable data tree to MT5-ShadowSync.
-$dirtyArgs = @("diff", "--name-only", "--no-ext-diff", "HEAD", "--") + $ReleaseCodePaths
-$dirty = @(Invoke-Git $dirtyArgs |
-           Where-Object { "$_" -match '\S' })
+$dirty = @()
+if (-not $permitAccepted) {
+    $dirtyArgs = @("diff", "--name-only", "--no-ext-diff", "HEAD", "--") + $ReleaseCodePaths
+    $dirty = @(Invoke-Git $dirtyArgs |
+               Where-Object { "$_" -match '\S' })
+}
 # The adoption script may be bootstrapped from the verified target specifically to recover a
 # broken delivery lane.  It is not an unknown local code edit when its bytes already equal that
 # target; without this exception the repair script rejects itself before it can repair anything.
