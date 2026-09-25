@@ -346,10 +346,18 @@ def test_routing_actually_routes():
 
 
 def test_routing_reaches_more_than_the_global_ranking():
-    """The measured claim, asserted rather than remembered: routing is why reach is not 25."""
-    _, dropped = dm.corpus()
+    """The measured claim, asserted rather than remembered: routing is why reach is not 25.
+
+    MEASURED AT A BINDING BUDGET (2026-09-25). BUDGET_CHARS was raised to fit the whole corpus
+    (190,000), so at the default the single global ranking already keeps ~88% of the ledger and
+    no routing could double it -- the assertion stopped measuring routing and started measuring
+    the budget. The claim is about what routing buys when the budget BINDS, so it is asserted at
+    the 12,000-char budget it was first measured at (global ~27, routed ~174 on 386 lessons).
+    """
+    budget = 12_000
+    _, dropped = dm.corpus(budget=budget)
     globally_kept = len(dm.load()) - len(dropped)
-    assert len(dm.reach()["reached"]) > globally_kept * 2, (
+    assert len(dm.reach(budget=budget)["reached"]) > globally_kept * 2, (
         "routed reach is no better than the single global corpus, so the routing is costing "
         "complexity and buying nothing")
 

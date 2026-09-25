@@ -23,7 +23,6 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 import scripts.rerank_gaps as R
-
 from libs.research.finding_registry import register_health
 
 HEADER = (

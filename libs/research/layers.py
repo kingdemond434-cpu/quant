@@ -522,6 +522,22 @@ LEG_LAYER: dict[str, str] = {
     # nothing, which is exactly what `meta` covers.
     "desk_dashboard_state": "meta",
     "session_capital": "portfolio",
+    # THE SLOW SOURCES ON THEIR OWN CLOCKS (2026-09-25): CFTC positioning, the venue's UTC offset,
+    # the registry's cost model and the terminal's tick values are what the desk KNOWS before it
+    # predicts anything -- information.
+    "cot_fetch": "information", "broker_clock": "information",
+    "fetch_universe": "information", "refresh_cost_fields": "information",
+    # The orthogonal frontier writes exact recipes for the ten gates: a predictor search.
+    "orthogonal_frontier": "prediction",
+    # Moving unrunnable certificates out of the canon and returning refused clocks to ACTIVE are
+    # the machine keeping its own records honest: meta.
+    "certificate_hygiene": "meta", "universe_reenrol": "meta",
+    # Found unassigned the same day (the fence was red before this change): the law that every
+    # certificate has a running clock is the machine auditing its own wiring -- meta.
+    "certificate_clock_law": "meta",
+    # Whether the live desk is alive (gateway, clocks, orders) and paging when it is not is the
+    # machine watching the machine, like `acceptance`: meta.
+    "live_alive": "meta",
 }
 
 _LEG_RE = re.compile(r'_costed\("([^"]+)"')

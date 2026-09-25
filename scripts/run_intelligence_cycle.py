@@ -60,6 +60,16 @@ def _read(rel: str) -> Any:
         return None
 
 
+def _absent(*rels: str) -> list[str]:
+    """Which of these artifacts do not exist on this box.
+
+    `_read` returns None for a missing file exactly as for an unreadable one, and callers spend
+    that None through `or {}` -- so absence has to be asked separately, or a missing input reads
+    as a valid empty default and the capability reports a verdict built on nothing (R0228).
+    """
+    return [r for r in rels if not (_ROOT / r).exists()]
+
+
 def _cap(name: str, status: str, detail: str, **extra: Any) -> dict[str, Any]:
     return {"capability": name, "status": status, "detail": detail, **extra}
 
@@ -84,8 +94,18 @@ def _meta_learning() -> dict[str, Any]:
         return _cap("meta_learning", "NO-INPUT",
                     "needs a per-alpha return series (web/cashcarry_shadow.json returns[]); "
                     "0 validated alphas means there is genuinely little to learn affinity over")
-    regime = _read("web/regime.json") or {}
-    label = str(regime.get("regime") or regime.get("state") or "unlabelled")
+    # R0228: the regime engine writes web/regime_engine.json. This read `web/regime.json`, which
+    # nothing writes, so every run labelled its series with a regime literally named
+    # "unlabelled" and reported ACTIVE. An absent label is an absent input.
+    regime_rel = "web/regime_engine.json"
+    missing = _absent(regime_rel)
+    regime = _read(regime_rel) if not missing else None
+    label = str((regime or {}).get("regime") or (regime or {}).get("state") or "")
+    if missing or not label:
+        return _cap("meta_learning", "NO-INPUT",
+                    f"no regime label: {regime_rel} is "
+                    f"{'absent' if missing else 'unlabelled'} on this box, and a series tagged "
+                    "with a made-up regime is not an affinity measurement")
     # One regime label per observation: with a single current label this is a degenerate but HONEST
     # run -- it records the affinity of the only regime the desk can name today.
     insight = MetaLearningEngine().learn_regime_affinity(
@@ -142,19 +162,35 @@ def _research_priority() -> dict[str, Any]:
         return _cap("research_priority", "ERROR", f"import failed: {e}")
     brief = _read("data/executive_kpis.json") or {}
     # Decay pressure per mechanism family, from the desk's own family-kill record when present.
-    decay = {}
+    decay: dict[str, float] = {}
+    source = ""
     fams = brief.get("family_survival") if isinstance(brief, dict) else None
     if isinstance(fams, dict):
         for fam, st in fams.items():
             if isinstance(st, dict) and isinstance(st.get("rate"), (int, float)):
                 decay[str(fam)] = max(0.0, 1.0 - float(st["rate"]))
+        source = "executive_kpis family_survival" if decay else ""
     if not decay:
-        # Fall back to the DESK_BRIEF family kills, which are always present in the repo.
-        decay = {"price_only": 1.0, "attention_social": 1.0, "trader_behavioural": 1.0,
-                 "funding_positioning": 0.5, "onchain_flow": 0.8, "regional_premium": 0.9}
+        # The mechanism board's verdicts are the desk's other measured family record: a killed
+        # family carries full decay pressure, an untested one half, a live one little.
+        board = _read("data/mechanism_board.json") or {}
+        verdicts = board.get("verdicts") if isinstance(board, dict) else None
+        if isinstance(verdicts, dict):
+            for fam, verdict in verdicts.items():
+                v = str(verdict).upper()
+                decay[str(fam)] = (1.0 if "KILL" in v or "DEAD" in v
+                                   else 0.1 if "ALIVE" in v or "LIVE" in v else 0.5)
+            source = "mechanism_board verdicts" if decay else ""
+    if not decay:
+        # NO HARDCODED FALLBACK. This used to rank six constants and report ACTIVE ("ranked 6
+        # research categories by decay pressure"), indistinguishable from a measured ranking.
+        return _cap("research_priority", "NO-INPUT",
+                    "DATA-FREE: neither data/executive_kpis.json family_survival nor "
+                    "data/mechanism_board.json verdicts is readable, so there is no measured "
+                    "decay record to rank -- constants are not a ranking")
     ranked = ResearchPriorityEngine().prioritize(decaying_by_category=decay)
     return _cap("research_priority", "ACTIVE",
-                f"ranked {len(ranked)} research categories by decay pressure",
+                f"ranked {len(ranked)} research categories by decay pressure from {source}",
                 top=[{"category": p.category, "score": round(p.priority_score, 3),
                       "reason": p.reason} for p in ranked[:5]])
 
@@ -178,8 +214,19 @@ def _health_monitor() -> dict[str, Any]:
         import libs.self_improvement.health_monitor  # noqa: F401
     except ImportError as e:
         return _cap("health_monitor", "ERROR", f"import failed: {e}")
-    cards = _read("data/alpha_registry.json") or _read("web/alpha_lifecycle.json")
-    n = len(cards.get("alphas", [])) if isinstance(cards, dict) else 0
+    # data/alpha_registry.json was read first and NOTHING writes it (R0228's second instance);
+    # the lifecycle organ writes web/alpha_lifecycle.json. And an absent registry is a claim
+    # about THIS BOX, never a measured alpha count of 0.
+    reg = "web/alpha_lifecycle.json"
+    if _absent(reg):
+        return _cap("health_monitor", "NO-INPUT",
+                    f"{reg} is absent on this box -- that is NOT a measurement of the desk's "
+                    "alpha count, only that the lifecycle artifact has not reached here")
+    cards = _read(reg)
+    if not isinstance(cards, dict):
+        return _cap("health_monitor", "NO-INPUT",
+                    f"{reg} is unreadable -- NOT a measurement of the desk's alpha count")
+    n = len(cards.get("alphas", []))
     if not n:
         return _cap("health_monitor", "NO-INPUT",
                     "needs >=1 alpha card with live metrics; registry holds 0 -- the binding "
@@ -205,7 +252,9 @@ def _subprocess_cap(name: str, script: str, timeout_s: float = 240.0,
     except subprocess.TimeoutExpired:
         return _cap(name, "ERROR", f"{script} exceeded {timeout_s:.0f}s")
     tail = (p.stdout or p.stderr or "").strip().splitlines()
-    return _cap(name, "ACTIVE" if p.returncode == 0 else "NO-INPUT",
+    # A NONZERO EXIT IS AN ERROR. This labelled every crash NO-INPUT, and the label factory
+    # crashed daily for weeks while the cycle reported an absent-input condition (R0095).
+    return _cap(name, "ACTIVE" if p.returncode == 0 else "ERROR",
                 f"{script} exit={p.returncode}: {tail[-1][:180] if tail else 'no output'}")
 
 

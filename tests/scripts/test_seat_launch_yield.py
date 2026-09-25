@@ -20,7 +20,11 @@ def test_classify_separates_the_reasons_a_launch_produced_nothing() -> None:
     assert fence.classify("=== x attempt ===\n... DEFERRED -- brain mutex held", 90) == \
         "MUTEX_DEFERRED"
     assert fence.classify("=== x attempt ===\n=== x start ===", 118) == "DIED_AFTER_START"
-    assert fence.classify("=== x attempt ===\n", 58) == "DIED_AT_ATTEMPT"
+    # A header-only log (<=200 bytes) is the SILENT death the fence names separately (2026-08-28,
+    # the OOM-killed gap-wirer); a longer log that never reached `start` died at the attempt.
+    assert fence.classify("=== x attempt ===\n", 58) == "DIED_SILENT_NO_OUTPUT"
+    assert fence.classify("=== x attempt ===\n" + "launcher noise\n" * 20, 318) == \
+        "DIED_AT_ATTEMPT"
 
 
 def _write(logs, name: str, body: str) -> None:

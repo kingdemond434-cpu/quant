@@ -43,7 +43,7 @@ import json
 import os
 from collections.abc import Callable
 from dataclasses import dataclass, field
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pandas as pd
@@ -207,12 +207,32 @@ def broker_utc_offset_hours(mt5_mod) -> float:
     therefore measuring *tick age*, not timezone: over a weekend it wrote offsets such as -29h,
     shifted a forward boundary backwards, and counted historical trades as forward evidence.
 
-    The bar reader uses the same UTC epoch conversion.  There is consequently no conversion to
-    apply at this API boundary.  Keep this named function so callers declare the comparison, but
-    return the only honest value rather than turning a stale quote into a clock transform.
+    WHAT THAT REASONING GOT WRONG (2026-09-25). MT5's numbers LOOK like Unix epochs but encode
+    the server's WALL CLOCK: the 04:29-vs-01:29 measurement above is exactly that, and the
+    gateway's own comments record deal times as "the server's clock stamped as UTC". Returning
+    0.0 therefore told every caller the clocks agreed. `session_phase` recorded it as a
+    live-terminal measurement that outranked the bar-inferred +2, the allocator labelled the
+    current session three hours early, and forward boundaries mixed three hours of selection-era
+    trades into forward evidence.
+
+    The half that WAS right stands: a stale tick must never become a clock transform. So the
+    offset is not derived from any tick at all. Fusion runs the New-York-close convention --
+    server 00:00 is 17:00 New York -- which is UTC+3 while the US is on daylight time and UTC+2
+    otherwise, a deterministic rule that also switches itself on the right weekend
+    (`decision_core.broker_offset_hours` is the gateway's copy of the same rule).
     """
     del mt5_mod
-    return 0.0
+    return float(_ny_close_offset_hours(datetime.now(UTC)))
+
+
+def _ny_close_offset_hours(now: datetime) -> int:
+    """UTC+3 from the second Sunday of March to the first Sunday of November, else UTC+2."""
+    d = now.date()
+    mar = d.replace(month=3, day=1)
+    start = mar + timedelta(days=(6 - mar.weekday()) % 7 + 7)
+    nov = d.replace(month=11, day=1)
+    end = nov + timedelta(days=(6 - nov.weekday()) % 7)
+    return 3 if start <= d < end else 2
 
 
 def _terminal_candidates() -> list[str]:

@@ -740,11 +740,11 @@ def family_session_range_breakout(
         if allow_long and (trend_filter != "aligned" or slope >= 0):
             signals.append(Signal(time=ts, side=1, stop=hi - dist, target=hi + dist * rr,
                                   ttl_bars=ttl_bars, tag="session_range_breakout",
-                                  trigger=hi, wait_bars=wait_bars))
+                                  trigger=hi, wait_bars=wait_bars, entry_type="stop"))
         if allow_short and (trend_filter != "aligned" or slope < 0):
             signals.append(Signal(time=ts, side=-1, stop=lo + dist, target=lo - dist * rr,
                                   ttl_bars=ttl_bars, tag="session_range_breakout",
-                                  trigger=lo, wait_bars=wait_bars))
+                                  trigger=lo, wait_bars=wait_bars, entry_type="stop"))
     return signals
 
 
@@ -914,10 +914,10 @@ def family_level_breakout(
         dist = max(1.2 * ai, span)
         signals.append(Signal(time=ts, side=1, stop=hi - dist, target=hi + dist * rr,
                               ttl_bars=ttl_bars, tag=f"level_breakout.{level}",
-                              trigger=hi, wait_bars=wait_bars))
+                              trigger=hi, wait_bars=wait_bars, entry_type="stop"))
         signals.append(Signal(time=ts, side=-1, stop=lo + dist, target=lo - dist * rr,
                               ttl_bars=ttl_bars, tag=f"level_breakout.{level}",
-                              trigger=lo, wait_bars=wait_bars))
+                              trigger=lo, wait_bars=wait_bars, entry_type="stop"))
     return signals
 
 
@@ -2006,7 +2006,7 @@ def family_macro_swing(
     atr_n: int = 20,
     sign: int = -1,
     min_gap_bars: int = 120,
-    pub_lag_days: int = 1,
+    pub_lag_days: int = 2,
 ) -> list[Signal]:
     """Macro AS the signal, held for swing length -- not macro as a filter.
 
@@ -2053,7 +2053,14 @@ def family_macro_swing(
     if change.empty:
         return []
     # Publication lag, applied BEFORE the join. See the docstring.
-    change.index = pd.to_datetime(change.index) + pd.Timedelta(days=pub_lag_days)
+    # BUSINESS DAYS, AND TWO (2026-09-25). A value dated D is published during D+1 (H.15 at
+    # 16:15 ET) and bars are on the broker clock, whose 00:00 is 21:00-22:00 UTC the day
+    # before. One calendar day made D visible from 21:00 UTC on D -- ~20h before it existed,
+    # and ~70h early over a weekend. Two business days lands after publication in both.
+    change.index = pd.to_datetime(change.index) + pd.offsets.BDay(pub_lag_days)
+    # Weekend-dated rows land on the same business day as Friday's; the latest one is what a
+    # reader on that day would have seen, and a duplicated index would break the join.
+    change = change[~change.index.duplicated(keep="last")]
 
     idx = h1.index
     if change.index.tz is None and idx.tz is not None:
@@ -2171,6 +2178,9 @@ def apply_layers(sigs: list[Signal], h1: pd.DataFrame, *,
         out.append(dataclasses.replace(
             s,
             trigger=trig,
+            # The resting order here is this axis's OWN (an ATR offset against the trade, a
+            # limit); a base family's declared stop type does not describe it.
+            entry_type=None if trig is not None else s.entry_type,
             wait_bars=max(1, int(rest_bars)) if trig is not None else 1,
             ttl_bars=max(1, round(int(s.ttl_bars) * float(ttl_mult))),
             target=float(entry_ref + s.side * stop_dist * base_rr * float(rr_mult)),

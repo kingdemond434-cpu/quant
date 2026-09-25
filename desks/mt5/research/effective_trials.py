@@ -29,9 +29,13 @@ IT NEVER REMOVES A CELL, CAPS A PRODUCER OR LOWERS A GATE. The ten gates run exa
 the raw cell count is untouched, and the miners are unrestricted. The only thing that changes is
 that the multiplicity charge stops counting one search thirty-one times.
 
-DIRECTION, FLOORS AND FAILING CLOSED. The corrected charge is only ever LOWER than the nominal
-campaign count, which is the direction that makes a bar easier, so every safeguard here points the
-other way:
+THE CHARGE IS OWED ON THE LIFETIME (2026-09-25). The docket census measures REDUNDANCY; the
+number proposed for the wall is the effective count over every cell the judge has EVER judged
+(`data/hypotheses/gauntlet_seen_cells.json`), because the deflated Sharpe corrects for the tests
+the desk ran, not for the ones in this hour's file. Scaling a month-old constant (597) by the
+docket's ratio produced 109 while the lifetime held 20,900 judged cells (~3,200 effective).
+
+DIRECTION, FLOORS AND FAILING CLOSED. Every safeguard points towards the harder bar:
 
   * the charge is floored at the number of DISTINCT MECHANISMS in the docket -- you cannot have
     run fewer independent tests than you had distinct economic claims;
@@ -76,6 +80,10 @@ REPORTS = BASE / "reports"
 DOCKET = BASE / "data" / "hypotheses" / "external_survivors.json"
 SPEC_PATH = BASE / "policy" / "gate_spec.yaml"
 REPORT = REPORTS / "EFFECTIVE_TRIALS.json"
+#: Every cell the sealed judge has EVER judged (cell id -> first-judged time), written by
+#: `external_gauntlet._save_seen_cells`. This is the lifetime trial ledger the campaign charge is
+#: owed against -- not the docket in hand this hour.
+SEEN_CELLS = BASE / "data" / "hypotheses" / "gauntlet_seen_cells.json"
 
 #: The standing campaign charge is rewritten only when the measurement moves this much. A bar
 #: that moved every hour would be a property of the hour again, which is the whole defect the
@@ -186,6 +194,87 @@ def charge(census_dict: dict[str, Any], *, nominal: int = NOMINAL_CAMPAIGN_TRIAL
     return campaign_charge(nominal, census)
 
 
+def read_seen_cells(path: Path | None = None) -> dict[str, str]:
+    """cell id -> first-judged time, the judge's own lifetime record. Unreadable is EMPTY, which
+    downstream is UNMEASURED -- never a small lifetime."""
+    try:
+        doc = json.loads((path or SEEN_CELLS).read_text("utf-8"))
+    except (OSError, ValueError):
+        return {}
+    return {str(k): str(v) for k, v in doc.items()} if isinstance(doc, dict) else {}
+
+
+def lifetime_records(rows: list[dict[str, Any]], seen: dict[str, str]) -> list[dict[str, Any]]:
+    """One trial record per cell the judge has EVER judged.
+
+    Where the cell is still on the docket its full row is used (descriptors and parameters, so
+    the similarity census can collapse neighbouring tunings). Where it has left the docket only
+    the id is known -- `<sym>[@tf].<family>.<params digest>` -- and the record carries the digest
+    as its only parameter: the census cannot see how close two digests' parameters were, so it
+    cannot collapse them, which is the CONSERVATIVE direction (more independent tests, a higher
+    hurdle), never an invented relief.
+    """
+    try:
+        from research.frontier_identity import cell_id
+    except ImportError:                                   # pragma: no cover - import context
+        from frontier_identity import cell_id  # type: ignore[no-redef]
+    joined: dict[str, dict[str, Any]] = {}
+    for r in rows:
+        cell = dict(r)
+        cell.setdefault("sym", r.get("symbol"))
+        try:
+            cid = cell_id(cell)
+        except (KeyError, TypeError, ValueError):
+            continue
+        if cid in seen and cid not in joined:
+            joined[cid] = r
+    out: list[dict[str, Any]] = list(joined.values())
+    for cid in seen:
+        if cid in joined:
+            continue
+        sym, _, rest = cid.partition(".")
+        fam, _, digest = rest.partition(".")
+        if not fam:
+            continue
+        sym, _, tf = sym.partition("@")
+        rec: dict[str, Any] = {"symbol": sym, "family": fam, "params": {"cell": digest}}
+        if tf:
+            rec["timeframe"] = tf
+        out.append(rec)
+    return out
+
+
+def lifetime_charge(rows: list[dict[str, Any]], seen: dict[str, str]) -> dict[str, Any]:
+    """The campaign charge owed on the LIFETIME of judged cells, in EFFECTIVE independent tests.
+
+    MEASURED 2026-09-25: the spec charged 109 trials -- `ceil(597 x docket effective/nominal)`,
+    the redundancy ratio of this hour's docket applied to a campaign constant fixed a month
+    earlier -- while the judge's own lifetime record held 20,900 distinct judged cells whose
+    effective count is ~3,200. The deflated Sharpe corrects for every test the desk RAN; charging
+    it for a fraction of them is a hurdle below the one the evidence owes.
+
+    Returns `{"status", "charged", "basis", "n_nominal", "n_effective", "n_mechanisms"}`. The
+    charge is `ceil(effective)`, floored at the number of distinct mechanisms and at 2. An empty
+    or unreadable lifetime is UNMEASURED and carries no charge -- the caller falls back to the
+    documented conservative wall, never to the docket's relief.
+    """
+    if not seen:
+        return {"status": UNMEASURED, "charged": None,
+                "why": "no lifetime judged-cell record (gauntlet_seen_cells.json absent/empty)"}
+    from libs.research.trial_ledger import effective_independent_tests
+    census = effective_independent_tests(lifetime_records(rows, seen))
+    if census.status != "MEASURED" or census.n_nominal <= 0 or not (
+            math.isfinite(census.n_effective) and census.n_effective > 0):
+        return {"status": UNMEASURED, "charged": None, "why": f"census {census.status}"}
+    charged = max(2, census.n_mechanisms, math.ceil(census.n_effective))
+    return {"status": "MEASURED", "charged": int(charged),
+            "n_nominal": census.n_nominal, "n_effective": round(census.n_effective, 3),
+            "n_mechanisms": census.n_mechanisms,
+            "basis": (f"lifetime_effective_trials({charged}) = ceil(effective independent tests "
+                      f"{census.n_effective:.2f} over {census.n_nominal} lifetime judged cells), "
+                      f"floored at {census.n_mechanisms} distinct mechanism(s)")}
+
+
 _COUNT_RE = re.compile(r"^(\s*fixed_trial_count:\s*)(\d+)(.*)$", re.M)
 _BASIS_RE = re.compile(r'^(\s*trial_count_basis:\s*")([^"]*)(".*)$', re.M)
 _FAILCLOSED_RE = re.compile(r'^(\s*fail_closed_to:\s*")([^"]*)(".*)$', re.M)
@@ -221,9 +310,13 @@ def apply_to_spec(charged: int, *, variance: float, path: Path | None = None,
     if m is None:
         return {"status": UNMEASURED, "why": "fixed_trial_count not found in spec"}
     standing = int(m.group(2))
-    if charged >= standing:
+    # EITHER DIRECTION, BUT ONLY BY A DELIBERATE ACT. Until 2026-09-25 this refused every RAISE
+    # outright, so the charge could only ever fall -- and it fell to 109 against a lifetime of
+    # ~3,200 effective judged cells. A hurdle that can move down and never up is not a fixed bar,
+    # it is a ratchet towards the loose side. The unauthorised pass still writes nothing.
+    if charged == standing:
         return {"status": "UNCHANGED", "standing": standing, "charged": charged,
-                "why": "the corrected charge is not lower than the standing one; the bar stands"}
+                "why": "the measured charge equals the standing one; the bar stands"}
     if standing > 0 and abs(standing - charged) / standing < MIN_CHANGE_FRAC:
         return {"status": "UNCHANGED", "standing": standing, "charged": charged,
                 "why": f"change {abs(standing - charged) / standing:.4f} below "
@@ -237,9 +330,9 @@ def apply_to_spec(charged: int, *, variance: float, path: Path | None = None,
                        f"{charged} against the standing {standing} and published it, and only a "
                        "deliberate authorised act changes the spec"}
     basis = (f"effective_campaign_trials({charged}) + fixed_variance_of_sharpes({variance}): "
-             f"the campaign charge is measured in EFFECTIVE independent tests -- the "
-             f"participation ratio of (grid cell, content) identities within each mechanism -- "
-             f"not in docket rows; both inputs remain constants, so the bar is identical for "
+             f"the campaign charge is the LIFETIME count of EFFECTIVE independent tests -- "
+             f"every cell the judge has ever judged, priced by the participation ratio of "
+             f"(grid cell, content) identities within each mechanism -- not docket rows; both inputs remain constants, so the bar is identical for "
              f"every cell regardless of how many others share its sweep")
     new = _COUNT_RE.sub(lambda mm: f"{mm.group(1)}{charged}{mm.group(3)}", text, count=1)
     new = _BASIS_RE.sub(lambda mm: f"{mm.group(1)}{basis}{mm.group(3)}", new, count=1)
@@ -250,8 +343,9 @@ def apply_to_spec(charged: int, *, variance: float, path: Path | None = None,
     # not be generous. NOMINAL_CAMPAIGN_TRIALS is the standing wall the desk's certificates were
     # issued under, so an unreadable census costs a candidate nothing it was ever promised and
     # grants it nothing it has not earned.
+    wall = max(NOMINAL_CAMPAIGN_TRIALS, int(charged))
     new = _FAILCLOSED_RE.sub(
-        lambda mm: (f"{mm.group(1)}fixed_campaign_trials({NOMINAL_CAMPAIGN_TRIALS}): the charge "
+        lambda mm: (f"{mm.group(1)}fixed_campaign_trials({wall}): the charge "
                     f"when the census cannot be computed is the standing wall, never the "
                     f"measured relief -- an unmeasurable hour earns nothing{mm.group(3)}"),
         new, count=1)
@@ -293,7 +387,7 @@ def judge_reads(expected: int) -> dict[str, Any]:
 
 
 def build(*, docket: Path | None = None, spec: Path | None = None,
-          apply: bool = True, authorise: bool = False,
+          seen: Path | None = None, apply: bool = True, authorise: bool = False,
           budget_s: float = 120.0) -> dict[str, Any]:
     """Measure, publish, feed the judge's input, and measure that the judge reads it.
 
@@ -309,7 +403,19 @@ def build(*, docket: Path | None = None, spec: Path | None = None,
     variance = 0.014863 if variance is None else variance
     standing = spec_fixed_trial_count(spec)
     nominal = NOMINAL_CAMPAIGN_TRIALS if standing is None else standing
-    charged, basis = charge(census, nominal=NOMINAL_CAMPAIGN_TRIALS)
+    docket_charged, docket_basis = charge(census, nominal=NOMINAL_CAMPAIGN_TRIALS)
+    # THE CHARGE IS OWED ON THE LIFETIME, NOT ON THE HOUR'S DOCKET (2026-09-25). The docket
+    # census above is still published -- it is the redundancy measurement -- but the wall the
+    # organ proposes is the lifetime EFFECTIVE count. When the lifetime cannot be measured the
+    # documented conservative number is the harder of the standing wall and the nominal 597 the
+    # desk's certificates were issued under: an unmeasurable hour earns no relief.
+    life = lifetime_charge(rows, read_seen_cells(seen))
+    if life.get("status") == "MEASURED" and isinstance(life.get("charged"), int):
+        charged, basis = int(life["charged"]), str(life["basis"])
+    else:
+        charged = max(NOMINAL_CAMPAIGN_TRIALS, standing or 0)
+        basis = (f"fixed_campaign_trials({charged}) fail_closed: lifetime judged-cell census "
+                 f"{life.get('status')} ({life.get('why')})")
     # `--apply` alone is no longer enough to move the wall. Passing `authorised` is a deliberate
     # act, and the hourly leg does not pass it: on a clock this organ measures and publishes,
     # and the bar a certificate was judged under stays the bar until someone decides otherwise.
@@ -336,6 +442,8 @@ def build(*, docket: Path | None = None, spec: Path | None = None,
             "nominal_campaign_trials": NOMINAL_CAMPAIGN_TRIALS,
             "standing_spec_trial_count": standing,
             "charged": charged, "charge_basis": basis,
+            "docket_charged": docket_charged, "docket_charge_basis": docket_basis,
+            "lifetime": life,
             "variance_of_sharpes": variance,
             "sr0_before": None if math.isnan(before) else round(before, 6),
             "sr0_after": None if math.isnan(after) else round(after, 6),
@@ -396,12 +504,15 @@ def main(argv: list[str] | None = None) -> int:
                     help="measure and publish, but do not write the spec")
     ap.add_argument("--docket", type=Path, default=None)
     ap.add_argument("--spec", type=Path, default=None)
+    ap.add_argument("--seen", type=Path, default=None,
+                    help="lifetime judged-cell record (default data/hypotheses/"
+                         "gauntlet_seen_cells.json)")
     ap.add_argument("--authorise-bar-change", action="store_true",
                     help="deliberately move the standing multiplicity wall. The scheduled pass "
                          "NEVER passes this: the bar stays the bar until the principal, or a "
                          "session acting on the principal's decision, changes it on purpose.")
     args = ap.parse_args(argv)
-    doc = build(docket=args.docket, spec=args.spec, apply=not args.no_apply,
+    doc = build(docket=args.docket, spec=args.spec, seen=args.seen, apply=not args.no_apply,
                 authorise=args.authorise_bar_change, budget_s=args.budget_s)
     write(doc)
     for line in render(doc):

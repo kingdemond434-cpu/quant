@@ -1034,7 +1034,8 @@ def breadth_channels(ev: Sequence[SleeveEvidence]) -> dict[str, Any]:
 
 
 def _corr_abs(ev: Sequence[SleeveEvidence]) -> np.ndarray:
-    """|correlation| between sleeves: realised where measured, factor-structured where not.
+    """Duplication between sleeves: realised POSITIVE correlation where measured (a hedge is
+    charged nothing), factor-structured where not.
 
     THE REALISED NUMBER NEEDS COMMON DAYS AND A NEW SLEEVE HAS NONE. Measured 2026-09-16: the
     gateway reported `k_eff UNMEASURED: no sleeve pair has 20 overlapping trading days yet` on
@@ -1060,7 +1061,12 @@ def _corr_abs(ev: Sequence[SleeveEvidence]) -> np.ndarray:
     c = np.zeros((n, n))
     if live.sum() > 1:
         sub = np.corrcoef(m[:, live], rowvar=False)
-        c[np.ix_(live, live)] = np.abs(np.nan_to_num(sub, nan=0.0))
+        # POSITIVE CO-MOVEMENT ONLY (2026-09-25). This took |corr|, so a measured HEDGE -- two
+        # sleeves that lose on different days -- was charged as duplicated risk exactly like
+        # two copies of one bet, and the optimiser was paid to hold less of the pair that makes
+        # the book's growth smoother. Duplication is a positive-correlation property; a
+        # negative one is diversification the worlds already credit, never a cost to charge.
+        c[np.ix_(live, live)] = np.clip(np.nan_to_num(sub, nan=0.0), 0.0, None)
     np.fill_diagonal(c, 1.0)
     target, _meta = _structured_corr(ev)
     if not np.any(target - np.eye(n)):

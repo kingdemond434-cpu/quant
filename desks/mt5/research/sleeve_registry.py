@@ -284,10 +284,16 @@ def freeze(key: str, ident: dict[str, Any], *, forward_start: str | None = None,
     # and `certificate_truth.apply`'s job, done with a reason and a history row. `shadow_forward`
     # wraps every registry call in `except Exception` and skips the row, which is precisely the
     # refusal this wants -- no state row, no evidence, no divergence.
+    # Two import contexts, as everywhere else in the desk: desks/mt5/research on sys.path (the
+    # cycle's entry points) or only desks/mt5 (`import research.sleeve_registry`). mypy sees
+    # neither root, so both carry the ignore; `unused-ignore` keeps an environment that DOES
+    # resolve them from reading the ignore itself as an error.
     try:
-        from family_policy import refuse_if_banned  # type: ignore[import-not-found]
+        from family_policy import refuse_if_banned  # type: ignore[import-not-found,unused-ignore]
     except ImportError:                                   # pragma: no cover - packaged import
-        from research.family_policy import refuse_if_banned
+        from research.family_policy import (  # type: ignore[import-not-found,unused-ignore]
+            refuse_if_banned,
+        )
     refuse_if_banned(ident.get("family"), what="clock", key=key)
     # STAMPED AT BIRTH, NEVER BACKFILLED (2026-09-23, the principal). A clock that is born
     # without the canonical identity can only be joined by a later sweep that re-parses its key,
@@ -301,10 +307,16 @@ def freeze(key: str, ident: dict[str, Any], *, forward_start: str | None = None,
         "forward_start": forward_start,
         "status": "LIVE",
     }
-    from certificate_truth import (  # type: ignore[import-not-found]
-        IDENTITY_RULE,
-        canonical_identity,
-    )
+    try:
+        from certificate_truth import (  # type: ignore[import-not-found,unused-ignore]
+            IDENTITY_RULE,
+            canonical_identity,
+        )
+    except ImportError:                                   # pragma: no cover - packaged import
+        from research.certificate_truth import (  # type: ignore[import-not-found,unused-ignore]
+            IDENTITY_RULE,
+            canonical_identity,
+        )
     stamped = canonical_identity("sleeve_registry", key, born)
     if stamped:
         born["canonical_identity"] = stamped

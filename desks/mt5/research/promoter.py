@@ -1717,6 +1717,29 @@ def reconcile_capital(sleeves: list[dict], view: dict, *, now: datetime | None =
     return changed
 
 
+def certificate_lapsed(spec: tuple, gate_authority: set | None) -> bool:
+    """True when `spec`'s certificate is NOT in today's authority set (or the set is empty).
+
+    THE DOOR THIS CLOSES (2026-09-25). A certificate that has fallen out of the authority set --
+    retired, re-judged and failed, or judged under a bar the policy no longer honours -- was
+    "recorded as drift, promotion proceeds on the clock's own certificate". So a sleeve could be
+    NEWLY funded on a certificate the desk no longer stands behind. Promotion is automatic
+    precisely because the certificate is the authority; with the certificate gone there is no
+    authority to be automatic about.
+
+    `is_universe` is IGNORED in the comparison: the main shadow lane builds its tuple with
+    `False` for every clock, so a universe certificate (flag `True`) would otherwise read as
+    lapsed when it is standing. AN EMPTY AUTHORITY SET IS NOT A PASS (L1.28a): it means no
+    certificate could be confirmed this pass, so nothing is newly promoted on one. Retirement is
+    untouched -- this only withholds a NEW promotion; the clock keeps running and is re-judged.
+    """
+    if not gate_authority:
+        return True
+    head = tuple(spec[:4])
+    return not any(tuple(t[:4]) == head for t in gate_authority
+                   if isinstance(t, tuple) and len(t) >= 4)
+
+
 def load_cert_specs() -> dict[str, dict]:
     """Certificate key -> published shadow_spec, exact policy only (fail closed)."""
     from gate_policy import all_ten_pass, is_exact_policy
@@ -1797,12 +1820,18 @@ def promote_generic(sleeves: list[dict], qshadow: dict, existing: set,
             continue
         tup = (str(spec["symbol"]), str(spec["selector"]), spec.get("condition") or None,
                str(spec["family"]), spec.get("is_universe") is True)
-        row["certificate_drift"] = bool(gate_authority) and tup not in gate_authority
+        row["certificate_drift"] = certificate_lapsed(tup, gate_authority)
         if row["certificate_drift"]:
-            # The ten gates gated this clock's enrolment; a spec missing from TODAY's authority
-            # set is registry drift, recorded here and blocking nothing (principal 2026-09-05).
-            plog(f"{key}: spec not in the current authority set -- recorded as drift, "
-                 f"promotion proceeds on the clock's own certificate")
+            # A LAPSED CERTIFICATE IS NOT AUTHORITY (2026-09-25; see `certificate_lapsed`). The
+            # candidate is HELD, not retired and not re-statused: its status stays a candidate so
+            # the pass that finds its certificate back in the authority set promotes it.
+            row["certificate_lapsed_reason"] = (
+                "certificate not in the current authority set"
+                + ("" if gate_authority else " (authority set empty)"))
+            plog(f"{key}: candidate held -- {row['certificate_lapsed_reason']}")
+            changed = True
+            continue
+        row.pop("certificate_lapsed_reason", None)
         cap = capital_verdict(view or {}, key, symbol=tup[0], family=tup[3], selector=tup[1])
         sleeves.append({"name": key, "symbol": tup[0], "selector": tup[1],
                         "state": tup[2], "family": tup[3],
@@ -1905,15 +1934,24 @@ def main() -> None:
                 changed = True
                 continue
         gate_spec = (sym, win, cond, family, False)
-        # THE TEN GATES GATE ENROLMENT, NOT PROMOTION. A clock exists only because a certificate
-        # enrolled it (grandfathering ended 2026-08-26), so re-checking the authority set here
-        # could only refuse on registry DRIFT -- a renamed or re-keyed certificate -- and that is
-        # how matured clocks were held out of the book. Drift is recorded on the row; it blocks
-        # nothing. The one measured refusal is a fresh cost re-grade failure (rule 1: stricter).
-        st["certificate_drift"] = gate_spec not in gate_authority if gate_authority else False
+        # THE CERTIFICATE MUST STILL STAND AT PROMOTION (2026-09-25). This used to record drift
+        # and block nothing, on the argument that a clock exists only because a certificate
+        # enrolled it. But a certificate can LAPSE after enrolment -- retired, or re-judged under
+        # a bar it no longer clears -- and a lapsed certificate funding a NEW sleeve is capital
+        # on evidence the desk has withdrawn. The re-keying false positive that argument feared
+        # is handled in `certificate_lapsed` (the is_universe flag is not compared).
+        st["certificate_drift"] = certificate_lapsed(gate_spec, gate_authority)
         if st["certificate_drift"]:
-            plog(f"{key}: certificate not in the current authority set -- recorded as drift, "
-                 f"promotion proceeds on the clock's own enrolment")
+            # A LAPSED CERTIFICATE IS NOT AUTHORITY (2026-09-25; see `certificate_lapsed`). The
+            # clock is HELD, not retired and not re-statused: it stays a PROMOTION CANDIDATE, so
+            # the pass that finds its certificate back in the authority set promotes it.
+            st["certificate_lapsed_reason"] = (
+                "certificate not in the current authority set"
+                + ("" if gate_authority else " (authority set empty)"))
+            plog(f"{key}: live promotion held -- {st['certificate_lapsed_reason']}")
+            changed = True
+            continue
+        st.pop("certificate_lapsed_reason", None)
         bad = regrade_block(key, regrade_fails)
         if bad:
             st["status"] = "BLOCKED_COST_REGRADE"

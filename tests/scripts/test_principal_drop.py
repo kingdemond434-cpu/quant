@@ -24,6 +24,7 @@ import json
 from pathlib import Path
 
 import pytest
+
 import scripts.ingest_principal_drop as D
 
 # FULLWIDTH PUNCTUATION IS DELIBERATE and RUF001 is silenced rather than obeyed: these are

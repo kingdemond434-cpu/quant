@@ -40,6 +40,7 @@ account at 3am.
 from __future__ import annotations
 
 import json
+import re
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -119,7 +120,9 @@ def refuse(row: Mapping[str, Any], pol: Policy | None = None) -> str | None:
         return "row carries no symbol; it cannot be admitted to the live account"
     if sym not in p.live_symbols:
         return (f"{sym} is outside the live sleeve universe {sorted(p.live_symbols)} -- {p.by}")
-    tf = str(row.get("timeframe") or row.get("chart") or "").strip().upper()
+    _params = row.get("params") if isinstance(row.get("params"), Mapping) else {}
+    tf = str(row.get("timeframe") or row.get("chart") or _params.get("timeframe")
+             or "").strip().upper()
     banned_tf = p.banned_timeframes.get(sym, frozenset()) | p.banned_timeframes.get(
         "*", frozenset())
     if tf and tf in banned_tf:
@@ -127,7 +130,33 @@ def refuse(row: Mapping[str, Any], pol: Policy | None = None) -> str | None:
     fam = str(row.get("family") or "").strip().lower()
     if fam and fam in p.banned_families:
         return f"family {fam!r} is banned from live capital -- {p.by}"
+    alias = gold_window_alias(row)
+    if alias:
+        return (f"folded into {alias}: a versioned copy of the same gold window places the same "
+                f"bracket on the same range, so it is one bet sized as several -- the window's "
+                f"own leg carries its risk ({FOLD_BY})")
     return None
+
+
+#: Who ordered the fold, carried on every refusal so the log says it was not a session's taste.
+FOLD_BY = "principal, 2026-09-25, session 01TdyfpvAgTRnPCvgFBZzfNw"
+
+_GOLD_WINDOW_VERSION = re.compile(r"^(gold_(?:asia|london_am|afternoon))_v\d+$")
+
+
+def gold_window_alias(row: Mapping[str, Any]) -> str | None:
+    """The parent window a versioned gold row duplicates (`gold_london_am_v3` -> `gold_london_am`).
+
+    ONE WINDOW, ONE LEG (principal, 2026-09-25). The v2/v3/v4 rows of each gold window trade the
+    same range breakout on the same bars as the window itself: on 2026-09-11 `gold_london_am_v2`
+    carried the parent's exact entry prices with a 25.1 stop against 28.4. Stacked, three to four
+    legs put 16-21% of a EUR 650 account on ONE gold-direction signal -- measured E[log] per trade
+    goes from +6.8e-4 at one leg to -131e-4 at 21% once the forward edge is half the backtest's.
+    Removing the copies RAISES robust E[log W] (Rule 1); the parent windows' 0.02-lot floor and
+    every allocator fraction are untouched.
+    """
+    m = _GOLD_WINDOW_VERSION.match(str(row.get("name") or "").strip())
+    return m.group(1) if m else None
 
 
 def admit(rows: Iterable[Mapping[str, Any]], pol: Policy | None = None

@@ -360,7 +360,7 @@ def slog(*a) -> None:
     LOG.flush()
 
 
-def per_symbol_costs(meta: dict, sym: str):
+def per_symbol_costs(meta: dict, sym: str, sigs=None, timeframe: str = "H1"):
     """Costs for `sym` from the registry, via the ONE sanctioned constructor.
 
     THIS FUNCTION HAND-ROLLED THE ARITHMETIC AND CARRIED BOTH DOCUMENTED UNIT BUGS (2026-08-26).
@@ -396,11 +396,21 @@ def per_symbol_costs(meta: dict, sym: str):
 
     `fusion_cost.COMMISSION_PER_LOT_PER_SIDE` is read rather than copied, so the desk has ONE
     commission number and a re-measurement reaches this call site without an edit.
-    """
-    from mt5desk.engine import Costs
 
-    from libs.portfolio.fusion_cost import COMMISSION_PER_LOT_PER_SIDE
-    return Costs.from_symbol(meta[sym], commission_per_lot=COMMISSION_PER_LOT_PER_SIDE)
+    THE CERTIFICATE'S OWN CONSTRUCTOR (2026-09-25). Given the clock's signals, the cell is priced
+    at its FILL-HOUR spread through `research.cell_costs.fill_hour_costs` -- the exact call
+    `external_gauntlet.build_cell` makes -- so the forward clock tests the strategy at the cost
+    it was certified at, not at the pooled median (EURZAR: 310 pooled vs 1,918 at its fill).
+    Without signals, or where the surface has not measured the hour, the pooled median applies on
+    both sides alike. `meta[sym]` still raises KeyError for an absent symbol, which the caller
+    turns into its frozen-basis fallback.
+    """
+    from research.cell_costs import fill_hour_costs, load_surface, modal_fill_hour
+
+    row = meta[sym]
+    hour = modal_fill_hour(sigs, timeframe) if sigs else None
+    costs, _basis, _spread = fill_hour_costs(row, sym, hour=hour, surface=load_surface())
+    return costs
 
 
 def frozen_costs(key: str):
@@ -419,9 +429,16 @@ def frozen_costs(key: str):
     if not isinstance(fields, dict) or not required.issubset(fields):
         return None
     try:
-        return Costs(**{name: float(fields[name]) for name in required})
+        values = {name: float(fields[name]) for name in required}
     except (TypeError, ValueError):
         return None
+    # THE FROZEN COMMISSION IS NOT A MEASUREMENT. Rows frozen before 2026-09-24 carry 3.50 -- a
+    # round-turn figure in a per-side field -- and the account's own deals say 2.00. The frozen
+    # SPREAD and contract stand in for a catalogue that lost the symbol; the commission comes
+    # from its single source.
+    from research.cell_costs import commission_per_side
+    values["commission_per_lot"] = commission_per_side()
+    return Costs(**values)
 
 
 def fetch_h1(sym: str, timeframe: str = "H1"):
@@ -814,7 +831,7 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
             # terminally broke every clock mid-window -- 15 clocks in one afternoon, none of them
             # about a real strategy change. A re-measured cost is a NEW identity at the NEXT window.
             try:
-                costs = per_symbol_costs(meta, sym)
+                costs = per_symbol_costs(meta, sym, sigs=sigs, timeframe=timeframe_of(params))
             except KeyError as exc:
                 # The desk box can temporarily carry a narrower pulled catalogue than the
                 # certificate's Fusion snapshot.  A live lookup would then turn an existing,
@@ -829,18 +846,14 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
                     # unrelated replay faults.
                     raise KeyError(sym) from exc
                 slog(f"{key}: current universe lacks {sym}; using its frozen cost basis")
-            try:
-                import dataclasses as _dc
-
-                import sleeve_registry as _reg
-                _ff = _reg.frozen_cost_fields(key)
-                if _ff:
-                    _known = {f.name for f in _dc.fields(costs)}
-                    costs = _dc.replace(costs, **{k: float(v) for k, v in _ff.items()
-                                                  if k in _known})
-            except Exception as exc:
-                slog(f"{key}: frozen-cost lookup failed ({type(exc).__name__}: {exc}); "
-                     f"running on live costs this pass")
+            # THE FROZEN FIELDS NO LONGER OVERWRITE THE PRICE (2026-09-25). They were replaced
+            # into every pass, so a clock frozen with `commission_per_lot: 3.5` and a POOLED spread
+            # kept both forever: its cost_hash then always matched, `rebase_cost` could never
+            # fire, and the clock tested the strategy at a price the certificate did not use.
+            # The clock now runs on the certificate's own fill-hour constructor; a cost that
+            # differs from the frozen one is a cost-only drift, which `rebase_cost` below
+            # re-freezes WITHOUT touching forward_start (the engine replays the whole series at
+            # the new cost every pass, so no observation keeps a stale price).
             res = run_backtest(h1, sigs, costs)
             # HISTORY IS KEPT, BUT IT IS NOT FORWARD EVIDENCE. `res.trades` runs from SHADOW_START
             # (2026-08-16); this parameterization's clock was frozen at `forward_start`.

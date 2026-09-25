@@ -185,6 +185,26 @@ def resolve(sym: str, family: str, params: dict[str, Any],
                 pass
             return extra, "ok"
 
+        if family == "cross_sectional":
+            # THE PEER PANEL IS PART OF THE CELL'S IDENTITY (2026-09-25). A rank is a claim about
+            # where this instrument stands against a NAMED set, so the set rides on the row as
+            # `peer_symbols` and is rebuilt here on the cell's own chart -- never "whatever is on
+            # disk today", which would let the panel, and therefore the rank, drift under a
+            # certificate that did not change. The traded instrument is always in its own panel.
+            names = [str(s) for s in (call.get("peer_symbols") or []) if s]
+            if not names:
+                return None, "no peer_symbols on the candidate"
+            peers: dict[str, Any] = {}
+            for s in dict.fromkeys([sym, *names]):
+                b = h1 if s == sym else inputs._bars(s, tf)
+                if b is not None:
+                    peers[s] = b
+            if sym not in peers or len(peers) < 2:
+                return None, f"peer bars unavailable ({len(peers)} of {len(names) + 1} named)"
+            extra["peers"] = peers
+            extra["symbol"] = sym
+            return extra, "ok"
+
         # pca_residual TAKES THE SAME `factors` ARGUMENT and was never listed here, so it was
         # handed factors=None on every sweep and every one of its 301 cells failed to build with
         # "parquet missing or build failed" -- a message that names the wrong cause, because the
@@ -304,6 +324,9 @@ def strip_identity_keys(family: str, params: dict[str, Any]) -> dict[str, Any]:
 #: One definition, because a filter and its exception list drifting apart is exactly this bug.
 IDENTITY_KEYS = frozenset({"peer_symbol", "factor_symbols", "input_symbol",
                            "input_source", "timeframe",
+                           # cross_sectional's named peer panel: it is LOADED (as `peers`), and
+                           # no family takes the list of names as an argument.
+                           "peer_symbols",
                            # The fill surface's vintage: it identifies WHICH map selected the
                            # cell's windows and is not an argument any family accepts.
                            "surface_generated_at"})

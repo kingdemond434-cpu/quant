@@ -9,6 +9,7 @@ This file is the single source of truth for gate definitions, thresholds, and cl
 from __future__ import annotations
 
 import math
+import re
 from pathlib import Path
 from typing import Any
 
@@ -170,30 +171,117 @@ def is_exact_policy(value: Any) -> bool:
             and is_admissible_trial_count_basis(value["trial_count_basis"]))
 
 
-def is_admissible_trial_count_basis(value: Any) -> bool:
-    """Whether a recorded trial charge is the current one or a proven-harder legacy charge.
+_BASIS_COUNT_RE = re.compile(
+    r"^(?:fixed|effective)_campaign_trials\((\d+)\)"
+    r"(?:\s*\+\s*fixed_variance_of_sharpes\(([0-9.eE+-]+)\))?")
+
+
+def basis_charge(value: Any) -> tuple[int, float | None] | None:
+    """(trials, variance-or-None) a fixed-charge basis string declares, or None if it is not one.
+
+    Reads both the long attestation form (`effective_campaign_trials(N) + fixed_variance_of_
+    sharpes(V): ...`) and the short form the gauntlet stamps on its gate output
+    (`fixed_campaign_trials(N)`, from `charged_trial_count`).
+    """
+    if not isinstance(value, str):
+        return None
+    m = _BASIS_COUNT_RE.match(value.strip())
+    if m is None:
+        return None
+    try:
+        var = float(m.group(2)) if m.group(2) else None
+    except ValueError:
+        return None
+    return int(m.group(1)), var
+
+
+def is_admissible_trial_count_basis(value: Any, n_trials: Any = None) -> bool:
+    """Whether a recorded trial charge is the current one or one PROVABLY at least as hard.
 
     This is deliberately narrower than a general migration.  It exists so publication and
     forward enrolment use the same audited exception as certificate attestation: a result that
     cleared a harder multiplicity charge is not invalidated merely because the desk later made
     the charge more accurate.
+
+    THE SHORT FORM OF THE CURRENT CHARGE WAS ITSELF REFUSED (2026-09-25). The gauntlet stamps its
+    gate output with the basis `charged_trial_count` returns -- `fixed_campaign_trials(N)` -- while
+    this predicate knew only the long attestation string and the audited legacy list. So a sweep
+    judged at EXACTLY the charge in force was recovered as `superseded_charge`. A fixed-charge
+    basis is now read for its number: admissible iff it charged at least the current trials, at
+    the current dispersion when it names one (sr0 rises with both, so N >= current at the same
+    variance is a hurdle at least as high). A charge BELOW the current one stays refused -- that
+    certificate cleared a lower bar and must be re-judged.
+
+    `n_trials` (the gate output's own `n_trials`) admits the fail-closed stamp
+    (`raw_cells_x7_fail_closed (...)`), whose string carries no number, when the count it
+    actually charged is at least the current one.
     """
-    return value == TRIAL_COUNT_BASIS or value in _SUPERSEDED_TRIAL_BASES
+    if value == TRIAL_COUNT_BASIS or value in _SUPERSEDED_TRIAL_BASES:
+        return True
+    current = _SPEC_FIXED_TRIALS
+    if not (isinstance(current, int) and current >= 2):
+        return False
+    parsed = basis_charge(value)
+    if parsed is not None:
+        trials, var = parsed
+        if var is not None and (not isinstance(FIXED_VARIANCE_OF_SHARPES, (int, float))
+                                or abs(var - float(FIXED_VARIANCE_OF_SHARPES)) > 1e-12):
+            return False
+        return trials >= current
+    if (isinstance(value, str) and value.startswith("raw_cells_x7_fail_closed")
+            and isinstance(n_trials, int) and not isinstance(n_trials, bool)):
+        return n_trials >= current
+    return False
+
+
+#: SUPPLEMENTARY STAGES THE JUDGE MAY STAMP BESIDE THE TEN, AND THE ONLY ONES (audited list).
+#:
+#: `external_gauntlet` added an eleventh stage, `swap_cost`, on 2026-09-14. `all_ten_pass` then
+#: demanded `tuple(stages) == GATES`, so every verdict the judge reached after that day was
+#: refused as `extra_gate_not_in_policy` -- the canon could not admit a single new certificate.
+#: The fix is NOT "any extra name that says passed": an unknown stage is a judge this policy has
+#: never read, and admitting it by name would let any writer attach a self-passing gate. So an
+#: extra stage is admissible only when it is on this list. Adding a name here is a policy change
+#: and belongs in a re-signed commit, exactly like the ten.
+SUPPLEMENTARY_GATES: frozenset[str] = frozenset({"swap_cost"})
+
+
+def supplementary_stage_ok(stage: Any) -> bool:
+    """An audited extra stage clears when it PASSED, or was honestly UNMEASURED without failing.
+
+    `swap_cost` needs a live terminal to price a swap. Where there is none the judge records
+    `{"passed": True, "measured": False}` -- a reading, not a verdict -- and refusing that would
+    halt certification on every host without MT5 rather than charge a cost. So:
+
+      * `passed is True`                        -> clears (measured or not);
+      * `measured is False` and no `passed: False` -> clears (UNMEASURED is not a failure);
+      * anything that says `passed: False`       -> REFUSES, measured or not -- a measured
+        swap cost that eats the edge is exactly what this stage exists to catch.
+    """
+    if not isinstance(stage, dict):
+        return False
+    if stage.get("passed") is True:
+        return True
+    return stage.get("measured") is False and stage.get("passed") is not False
 
 
 def all_ten_pass(stages: Any) -> bool:
-    """All canonical gates and every recorded supplementary gate must pass.
+    """All ten canonical gates present and passed; any EXTRA stage audited and not failed.
 
-    The original ten are mandatory.  A newer diagnostic or cost gate is additive: accepting it
-    only when it passes cannot lower the original bar; rejecting it merely because it is an
-    eleventh name strands otherwise valid evidence forever.
+    The original ten are mandatory and each must carry `passed is True`. A stage outside the ten
+    is admissible only when it is named in `SUPPLEMENTARY_GATES` and `supplementary_stage_ok`
+    holds on it. An unknown extra stage still refuses: the policy cannot vouch for a judge it has
+    never read.
     """
-    return (
-        isinstance(stages, dict)
-        and all(name in stages for name in GATES)
-        and all(isinstance(stage, dict) and stage.get("passed") is True
-                for stage in stages.values())
-    )
+    if not isinstance(stages, dict):
+        return False
+    if not all(name in stages for name in GATES):
+        return False
+    if not all(isinstance(stages[name], dict) and stages[name].get("passed") is True
+               for name in GATES):
+        return False
+    return all(name in SUPPLEMENTARY_GATES and supplementary_stage_ok(stages[name])
+               for name in stages if name not in GATES)
 
 
 def charged_trial_count(raw_cells: int, effective_cells: Any,
