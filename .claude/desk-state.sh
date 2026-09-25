@@ -88,9 +88,14 @@ if os.path.exists(p):
 else:
     print("  oi/ls clock  archive ABSENT on this clone (data/ is gitignored -> it is on the VPS)")
 
+# RETIRED UNDER THE MT5 MANDATE (2026-08-18), NOT A GAP. The failed-breakout study is a
+# crypto-PERPS hypothesis (OI collapse, liquidation prints, funding) and crypto-exchange ground is
+# never hunted again (LAWS / CLAUDE.md). Printing "0 of 16,200 trials executed" every session
+# advertised banned work as owed. The pre-registration stays on disk, unedited, as the record.
 st = j("data/failed_breakout_study.json")
-if st: print(f"  study        failed_breakout: {str(st.get('verdict','?'))[:60]}")
-else:  print("  study        failed_breakout: NO ARTIFACT -- 0 of 16,200 trials executed")
+_fb = "RETIRED under the MT5 mandate (crypto-perps study; prereg kept as record, not a gap)"
+if st: print(f"  study        failed_breakout: {_fb}; last verdict {str(st.get('verdict','?'))[:40]}")
+else:  print(f"  study        failed_breakout: {_fb}")
 
 # REASONING DEPTH. `libs.llm.effort.coverage()` existed with ZERO non-test callers, so the one
 # number it computes -- how many seats run on the 'high' FALLBACK instead of the deepest rung they
