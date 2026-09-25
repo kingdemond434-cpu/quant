@@ -116,7 +116,10 @@ _STEPS = [
     # (cycle memory 2026-08-11), so the old 1800s budget tripped on every HONEST run -- the
     # marker read "HUNG >1800s" nightly and the gate was a wall no run could pass (L1.49).
     # 2h keeps the wide "wedged, never busy" margin over the 80min observation.
-    ("tests (pytest)", [_PY, "-m", "pytest", "tests/", "-q"], 7200),
+    # NO `-q` HERE: pyproject's addopts already carries -q, and a second one reaches pytest as
+    # -qq, which drops the per-test failure summary the suite record parses (pinned by
+    # tests/scripts/test_record_suite_run.py; the flag came back once in a bulk sync commit).
+    ("tests (pytest)", [_PY, "-m", "pytest", "tests/"], 7200),
     # TYPES (2026-07-25): mypy --strict was configured in pyproject and run by NOBODY -- the
     # strictest tool in the repo was not in the gate, so nothing stopped a type regression
     # landing. Added the same day scripts/ entered its `files` list, because a type gate that
