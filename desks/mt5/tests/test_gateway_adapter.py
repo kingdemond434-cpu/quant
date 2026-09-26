@@ -1214,16 +1214,15 @@ def _manage_mt5(comment: str, sent: list) -> SimpleNamespace:
         order_send=lambda req: sent.append(req))
 
 
-def test_a_family_position_with_a_fixed_certified_bracket_is_not_ratcheted() -> None:
-    """2026-09-16: five forex closes at a manage-tightened stop, five losses. The family lane's
-    certificates carry no trail, so the manage step leaves their stops where the certificate
-    put them."""
+def test_a_fixed_family_position_uses_only_the_fast_floor_not_the_trail() -> None:
+    """A fixed certificate keeps its fixed exit but may still receive the universal profit floor."""
     sent: list = []
     ns = _manage_ns(_manage_mt5(f"DW{_NAME}", sent))
     st = {"armed": True, "generic": {_NAME: {"trail_k": 0.0, "open_ttl_until": "x"}}}
     ns["manage_open_positions"](st, [_sleeve()])
     assert sent == []
-    assert any("certified exit is a fixed bracket" in x for x in ns["_logs"])
+    assert any("fewer than 1 M1 bars since entry" in x for x in ns["_logs"])
+    assert not any("ATR unavailable" in x for x in ns["_logs"])
 
 
 def test_a_family_position_whose_signal_carried_a_trail_is_still_managed() -> None:
@@ -1232,7 +1231,7 @@ def test_a_family_position_whose_signal_carried_a_trail_is_still_managed() -> No
     st = {"armed": True, "generic": {_NAME: {"trail_k": 4.0}}}
     ns["manage_open_positions"](st, [_sleeve()])
     assert not any("fixed bracket" in x for x in ns["_logs"])
-    assert any("fewer than 2 bars since entry" in x for x in ns["_logs"])
+    assert any("fewer than 2 H1 bars since entry" in x for x in ns["_logs"])
 
 
 def test_the_family_send_records_whether_its_signal_carried_a_trail(tmp_path,
