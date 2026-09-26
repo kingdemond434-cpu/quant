@@ -42,6 +42,16 @@ WINDOWS = {
 }
 CELLS = [("XAUUSD", w, None) for w in WINDOWS] + [("AUDCAD", "asia", "TREND_DAY")]
 
+# Small, preregistered structural grid. These are not arbitrary P&L stops: a candidate fires
+# only after a completed M5 bar has reclaimed the breakout level, adverse excursion has become
+# material, and favourable follow-through has remained weak. Every arm is reported as a trial.
+FAST_FAIL_VARIANTS = {
+    "ff2_bal": dict(max_bars=2, min_mae_r=0.15, max_mfe_r=0.10, reclaim_closes=1),
+    "ff4_bal": dict(max_bars=4, min_mae_r=0.20, max_mfe_r=0.20, reclaim_closes=1),
+    "ff4_confirm": dict(max_bars=4, min_mae_r=0.15, max_mfe_r=0.20, reclaim_closes=2),
+    "ff6_slow": dict(max_bars=6, min_mae_r=0.25, max_mfe_r=0.25, reclaim_closes=2),
+}
+
 
 def apply_trail(h1: pd.DataFrame, trades: list, k: float | None) -> list[float]:
     """Breakeven-trail approximation over real backtest trades: if price
@@ -77,10 +87,90 @@ def apply_trail(h1: pd.DataFrame, trades: list, k: float | None) -> list[float]:
     return out
 
 
+def apply_fast_fail(m5: pd.DataFrame, trades: list, **rule: float | int) -> dict:
+    """Replay a structural failed-breakout exit on completed M5 bars without lookahead.
+
+    The first M5 bar that crosses the exact baseline entry locates the fill. Decisions begin on
+    the following completed bar and exit at the *next* M5 open. A hard stop/target touched first
+    keeps the baseline outcome because intrabar ordering is unknowable. Trades without adequate
+    M5 coverage are excluded rather than silently assigned the baseline result.
+    """
+    base_r: list[float] = []
+    test_r: list[float] = []
+    triggered = 0
+    for trade in trades:
+        risk = abs(float(trade.entry) - float(trade.stop))
+        if not risk > 0:
+            continue
+        start = pd.Timestamp(trade.entry_time)
+        finish = pd.Timestamp(trade.exit_time)
+        hour = m5[(m5.index >= start) & (m5.index < start + pd.Timedelta(hours=1))]
+        crossed = (hour["high"] >= trade.entry) if trade.side > 0 else (hour["low"] <= trade.entry)
+        if not bool(crossed.any()):
+            continue
+        fill_at = crossed[crossed].index[0]
+        # Strictly before the baseline exit bar: observing that bar and then choosing a better
+        # exit would use information the baseline trade had already exited on.
+        path = m5[(m5.index > fill_at) & (m5.index < finish)]
+        need = int(rule["max_bars"]) + 1       # the +1 bar supplies an executable next open
+        if len(path) < 2:
+            continue
+        window = path.iloc[:need]
+        gross_base = ((float(trade.exit) - float(trade.entry)) * int(trade.side) / risk)
+        cost_r = gross_base - float(trade.r_multiple)
+        candidate = float(trade.r_multiple)
+        mfe_r = 0.0
+        mae_r = 0.0
+        adverse_closes = 0
+        bars_seen = 0
+        for j in range(min(int(rule["max_bars"]), len(window) - 1)):
+            bar = window.iloc[j]
+            # Preserve pessimism when the certified hard exit and a fast-fail condition are
+            # both possible in one bar: the hard exit owns the ambiguous ordering.
+            if trade.side > 0:
+                if float(bar["low"]) <= trade.stop or float(bar["high"]) >= trade.target:
+                    break
+                mfe_r = max(mfe_r, (float(bar["high"]) - trade.entry) / risk)
+                mae_r = max(mae_r, (trade.entry - float(bar["low"])) / risk)
+                reclaimed = float(bar["close"]) < trade.entry
+            else:
+                if float(bar["high"]) >= trade.stop or float(bar["low"]) <= trade.target:
+                    break
+                mfe_r = max(mfe_r, (trade.entry - float(bar["low"])) / risk)
+                mae_r = max(mae_r, (float(bar["high"]) - trade.entry) / risk)
+                reclaimed = float(bar["close"]) > trade.entry
+            adverse_closes = adverse_closes + 1 if reclaimed else 0
+            bars_seen += 1
+            if (mae_r >= float(rule["min_mae_r"])
+                    and mfe_r <= float(rule["max_mfe_r"])
+                    and adverse_closes >= int(rule["reclaim_closes"])):
+                exit_price = float(window.iloc[j + 1]["open"])
+                candidate = ((exit_price - trade.entry) * trade.side / risk) - cost_r
+                triggered += 1
+                break
+        base_r.append(float(trade.r_multiple))
+        test_r.append(float(candidate))
+    return {"baseline": base_r, "variant": test_r, "triggered": triggered,
+            "eligible": len(base_r), "bars_rule": int(rule["max_bars"])}
+
+
+def _stats(rs: list[float]) -> dict:
+    arr = np.asarray(rs, dtype=float)
+    if not len(arr):
+        return {"n": 0, "exp": None, "pf": None, "maxdd": None}
+    losses = arr[arr < 0]
+    pf = float(arr[arr > 0].sum() / abs(losses.sum())) if len(losses) else float("inf")
+    cum = np.cumsum(arr)
+    maxdd = float(min(cum[i] - cum[:i + 1].max() for i in range(len(arr))))
+    return {"n": len(arr), "exp": round(float(arr.mean()), 4),
+            "pf": round(pf, 3), "maxdd": round(maxdd, 1)}
+
+
 def main() -> None:
     meta = json.loads((UNI / "universe.json").read_text(encoding="utf-8"))
     variants = {"ttl": None, "trail+1R": 1.0, "trail+0.5R": 0.5}
-    out = {"cells": {}}
+    out = {"cells": {}, "fast_fail": {"trial_count_per_cell": len(FAST_FAIL_VARIANTS),
+                                         "cells": {}}}
     print(f"{'cell':<28} {'variant':<10} {'n':>5} {'exp':>7} {'PF':>5} {'maxDD':>7}")
     for sym, win, state in CELLS:
         h1 = families._h1(pd.read_parquet(UNI / f"{sym}_H1.parquet"))
@@ -121,6 +211,19 @@ def main() -> None:
             print(f"{sym+'_'+win+('_'+state if state else ''):<28} {vname:<10} "
                   f"{n:5d} {exp:+7.3f} {pf:5.2f} {maxdd:7.1f}")
         out["cells"][f"{sym}.{win}.{state or 'base'}"] = rows
+        if sym == "XAUUSD" and (UNI / f"{sym}_M5.parquet").exists():
+            m5 = pd.read_parquet(UNI / f"{sym}_M5.parquet").sort_index()
+            ff_rows = []
+            for name, rule in FAST_FAIL_VARIANTS.items():
+                result = apply_fast_fail(m5, base.trades, **rule)
+                before, after = _stats(result["baseline"]), _stats(result["variant"])
+                delta = (None if before["exp"] is None or after["exp"] is None
+                         else round(float(after["exp"]) - float(before["exp"]), 4))
+                ff_rows.append({"variant": name, "rule": rule, "eligible": result["eligible"],
+                                "triggered": result["triggered"], "baseline": before,
+                                "result": after, "delta_expectancy_r": delta,
+                                "status": "SCREEN_ONLY_NOT_PROMOTED"})
+            out["fast_fail"]["cells"][f"{sym}.{win}.{state or 'base'}"] = ff_rows
     (BASE / "reports" / "exit_study.json").write_text(
         json.dumps(out, indent=2), encoding="utf-8")
     print("\n-> reports/exit_study.json")

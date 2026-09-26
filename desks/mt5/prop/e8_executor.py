@@ -543,7 +543,26 @@ def manage_breakeven(venue: Any, *, armed: bool = False) -> list[dict[str, Any]]
     rows: list[dict[str, Any]] = []
     live_ids: set[str] = set()
 
-    for p in venue.positions():
+    positions = venue.positions()
+    # Live TradeLocker positions commonly carry only stopLossId. Resolve those ids against the
+    # protective-order book once per pass, and only when a live row needs it: an unnecessary
+    # order-book request consumes the same rate budget that already returned HTTP 429 in live.
+    order_by_id: dict[int, dict[str, Any]] = {}
+    order_read_error: str | None = None
+    needs_order_join = any(
+        _pos_field(p, "stopLoss", "stopLossPrice", "sl") is None
+        and (p.get("stopLossId") or p.get("stopOrderId")) is not None
+        for p in positions)
+    if needs_order_join:
+        try:
+            for order in venue.orders():
+                oid = order.get("id") or order.get("orderId")
+                if oid is not None:
+                    order_by_id[int(oid)] = order
+        except Exception as exc:
+            order_read_error = f"{type(exc).__name__}: {exc}"
+
+    for p in positions:
         pid = p.get("id") or p.get("positionId")
         iid = p.get("tradableInstrumentId") or p.get("instrumentId")
         if pid is None or iid is None:
@@ -554,6 +573,14 @@ def manage_breakeven(venue: Any, *, armed: bool = False) -> list[dict[str, Any]]
         side: int = 1 if str(p.get("side") or "").lower() == "buy" else -1
         entry = _pos_field(p, "avgPrice", "openPrice", "price", "entryPrice")
         stop = _pos_field(p, "stopLoss", "stopLossPrice", "sl")
+        if stop is None:
+            stop_id = p.get("stopLossId") or p.get("stopOrderId")
+            try:
+                stop_order = order_by_id.get(int(stop_id)) if stop_id is not None else None
+            except (TypeError, ValueError):
+                stop_order = None
+            if stop_order is not None:
+                stop = _pos_field(stop_order, "stopPrice", "price", "stopLoss", "triggerPrice")
         if entry is None or entry <= 0:
             rows.append({"id": key, "symbol": symbol, "action": "SKIP",
                          "why": "the venue reports no usable entry price"})
@@ -561,9 +588,10 @@ def manage_breakeven(venue: Any, *, armed: bool = False) -> list[dict[str, Any]]
         if stop is None or stop <= 0:
             # Identical to the gateway's rule: no stop means no initial risk to measure the
             # trigger against, and inventing one would invent the denominator of the decision.
-            rows.append({"id": key, "symbol": symbol, "action": "SKIP",
-                         "why": "no stop on the position; nothing to measure R against "
-                                "and none invented"})
+            why = "no stop on the position; nothing to measure R against and none invented"
+            if order_read_error and (p.get("stopLossId") or p.get("stopOrderId")) is not None:
+                why += f"; protective-order read failed ({order_read_error})"
+            rows.append({"id": key, "symbol": symbol, "action": "SKIP", "why": why})
             continue
 
         rec = basis.get(key) or {}
