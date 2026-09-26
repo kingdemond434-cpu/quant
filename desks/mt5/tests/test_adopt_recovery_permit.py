@@ -18,3 +18,9 @@ def test_the_desk_path_exists_before_either_recovery_permit_uses_it() -> None:
     init = SCRIPT.index('$desk = Join-Path $RepoRoot "desks\\mt5"')
     use = SCRIPT.index('$recoveryPermit = Join-Path $desk')
     assert init < use
+
+
+def test_target_enumerated_paths_can_land_even_when_locally_ignored() -> None:
+    assert '@("add", "-f", "--all", "--") + $chunk' in SCRIPT
+    assert '@("add", "-f", "--all", "--", $p)' in SCRIPT
+    assert '@("add", "-f", "--all", "--", $rel)' in SCRIPT

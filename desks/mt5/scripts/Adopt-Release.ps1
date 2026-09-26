@@ -887,7 +887,11 @@ if ($kept.Count -gt 0) {
 if ($staged.Count -gt 0) {
     for ($c = 0; $c -lt $staged.Count; $c += 200) {
         $chunk = @($staged.GetRange($c, [Math]::Min(200, $staged.Count - $c)))
-        $addArgs = @("add", "--all", "--") + $chunk
+        # Every path in this list was enumerated from the signed target diff. Some target-tracked
+        # audit artifacts are ignored on the live box to prevent local generators re-adding
+        # scratch copies; without -f Git refuses those legitimate incoming paths and strands the
+        # entire release. Force applies only to these exact, already-enumerated pathspecs.
+        $addArgs = @("add", "-f", "--all", "--") + $chunk
         $null = Invoke-Git $addArgs -AllowFail
         if ($LASTEXITCODE -ne 0) {
             Write-Host ("  chunk add failed; retrying {0} path(s) individually" -f $chunk.Count)
@@ -901,7 +905,7 @@ if ($staged.Count -gt 0) {
             # sent to look for a pathspec that did not exist.
             $reasons = @{}
             foreach ($p in $chunk) {
-                $null = Invoke-Git @("add", "--all", "--", $p) -AllowFail
+                $null = Invoke-Git @("add", "-f", "--all", "--", $p) -AllowFail
                 if ($LASTEXITCODE -ne 0) {
                     $skipped++
                     $why = if ($script:LastGitError -match 'index\.lock') { "lost the index.lock race" }
@@ -1026,7 +1030,7 @@ while ($drift.Count -gt 0 -and $repairPasses -lt 2) {
                 Write-Host ("    [FAIL] {0}: {1}" -f $rel, $_.Exception.Message)
                 continue
             }
-            $null = Invoke-Git @("add", "--all", "--", $rel) -AllowFail
+            $null = Invoke-Git @("add", "-f", "--all", "--", $rel) -AllowFail
             if ($LASTEXITCODE -ne 0) {
                 Write-Host ("    [FAIL] {0}: git add rc={1}: {2}" -f $rel, $LASTEXITCODE,
                             (($script:LastGitError -split "`r?`n" | Select-Object -First 1)))
