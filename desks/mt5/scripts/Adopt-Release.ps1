@@ -562,8 +562,20 @@ Write-Host ("  branch {0}" -f $Branch)
 # second fetch must not strand the repair.  Normal releases always fetch.
 $preflightRecoveryPermit = Join-Path $RepoRoot "desks\mt5\data\RELEASE_BOOTSTRAP_ONCE.json"
 if (Test-Path $preflightRecoveryPermit) {
-    $NoFetch = $true
-    Write-Host "  one-shot recovery permit present; using pre-fetched FETCH_HEAD"
+    try {
+        $preflightPermit = Get-Content $preflightRecoveryPermit -Raw | ConvertFrom-Json
+        $preflightExpires = [datetime]::Parse([string]$preflightPermit.expires_at).ToUniversalTime()
+        $preflightFetch = (Invoke-Git @("rev-parse", "FETCH_HEAD")).Trim()
+        if ([string]$preflightPermit.target -eq $preflightFetch -and
+            $preflightExpires -gt (Get-Date).ToUniversalTime()) {
+            $NoFetch = $true
+            Write-Host "  valid one-shot recovery permit; using its pre-fetched FETCH_HEAD"
+        } else {
+            Write-Host "  stale or target-mismatched recovery permit ignored; fetching origin"
+        }
+    } catch {
+        Write-Host "  unreadable recovery permit ignored; fetching origin"
+    }
 }
 
 # FETCH_HEAD, NOT origin/<branch>. A `git fetch origin <branch>` with an explicit
