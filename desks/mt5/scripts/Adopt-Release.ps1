@@ -121,6 +121,7 @@ if (-not $RepoRoot) {
 if (-not (Test-Path (Join-Path $RepoRoot ".git"))) {
     throw "not a repository root: $RepoRoot"
 }
+$desk = Join-Path $RepoRoot "desks\mt5"
 
 # An index.lock younger than this may belong to a writer between two of its own git calls; older
 # than this with no git process alive anywhere, it is debris from one the scheduler killed.

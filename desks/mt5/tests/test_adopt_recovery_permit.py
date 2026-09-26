@@ -12,3 +12,9 @@ def test_recovery_permit_does_not_suppress_fetch_by_existence_alone() -> None:
     assert "$preflightPermit.target -eq $preflightFetch" in block
     assert "stale or target-mismatched recovery permit ignored; fetching origin" in block
     assert block.index("$NoFetch = $true") > block.index("$preflightExpires -gt")
+
+
+def test_the_desk_path_exists_before_either_recovery_permit_uses_it() -> None:
+    init = SCRIPT.index('$desk = Join-Path $RepoRoot "desks\\mt5"')
+    use = SCRIPT.index('$recoveryPermit = Join-Path $desk')
+    assert init < use
