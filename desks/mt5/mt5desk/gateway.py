@@ -1884,7 +1884,9 @@ def record_trades(st: dict, sleeves: list[dict]) -> None:
         return
     written = 0
     for d in deals:
-        if d.entry != mt5.DEAL_ENTRY_OUT:
+        # OUT_BY is a closing fill too: a CLOSE_BY pair (collapse_opposing_gold_positions) books its
+        # deals as DEAL_ENTRY_OUT_BY, and those closes were never written to the ledger.
+        if d.entry not in {mt5.DEAL_ENTRY_OUT, getattr(mt5, "DEAL_ENTRY_OUT_BY", object())}:
             continue
         if getattr(d, "ticket", None) in seen_deals:
             continue
@@ -2213,7 +2215,8 @@ def _closing_fill(ticket: int) -> tuple[float, float] | None:
     `_position_entry` makes; never raises past its caller's guard."""
     lots = notional = 0.0
     for x in (mt5.history_deals_get(position=ticket) or ()):
-        if getattr(x, "entry", None) == mt5.DEAL_ENTRY_OUT:
+        if getattr(x, "entry", None) in {mt5.DEAL_ENTRY_OUT,
+                                         getattr(mt5, "DEAL_ENTRY_OUT_BY", object())}:
             v = float(getattr(x, "volume", 0.0) or 0.0)
             lots += v
             notional += v * float(getattr(x, "price", 0.0) or 0.0)
