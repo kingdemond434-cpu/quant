@@ -1293,6 +1293,89 @@ def cancel_pending(st: dict, symbol: str) -> None:
             f"confirmed absent from orders_get")
 
 
+def cancel_filled_gold_siblings(st: dict) -> int:
+    """Cancel the unfilled half of every filled gold bracket and verify it is absent.
+
+    MT5 pending stops are not OCO. A live ``DWgold_*`` position and a pending order with the
+    same MAGIC, symbol and comment therefore identify the still-resting sibling without relying
+    on local state. The predicate deliberately excludes manual, scalp and family orders.
+    """
+    positions = [p for p in (mt5.positions_get(symbol=GOLD_SYMBOL) or [])
+                 if int(getattr(p, "magic", 0) or 0) == MAGIC
+                 and str(getattr(p, "comment", "") or "").startswith("DWgold_")]
+    open_tags = {str(getattr(p, "comment", "") or "") for p in positions}
+    if not open_tags:
+        return 0
+    siblings = [o for o in (mt5.orders_get(symbol=GOLD_SYMBOL) or [])
+                if int(getattr(o, "magic", 0) or 0) == MAGIC
+                and str(getattr(o, "comment", "") or "") in open_tags]
+    removed = 0
+    for order in siblings:
+        if not st.get("armed"):
+            log(f"SHADOW would cancel filled gold bracket sibling {order.ticket} "
+                f"({order.comment})")
+            removed += 1
+            continue
+        try:
+            res = mt5.order_send({
+                "action": mt5.TRADE_ACTION_REMOVE,
+                "order": int(order.ticket),
+                "magic": MAGIC,
+                "comment": order_comment("oco_sibling"),
+            })
+        except Exception as exc:
+            log(f"OCO cancel FAILED for gold sibling {order.ticket}: "
+                f"{type(exc).__name__}: {exc}; order may still be live")
+            continue
+        rc = getattr(res, "retcode", None) if res is not None else None
+        still = any(int(getattr(x, "ticket", 0) or 0) == int(order.ticket)
+                    for x in (mt5.orders_get(symbol=GOLD_SYMBOL) or []))
+        if still:
+            log(f"OCO cancel NOT CONFIRMED for gold sibling {order.ticket} "
+                f"({order.comment}) retcode={rc}; order remains live")
+            continue
+        removed += 1
+        log(f"OCO cancelled gold bracket sibling {order.ticket} ({order.comment}) "
+            f"retcode={rc}; confirmed absent")
+    return removed
+
+
+def collapse_opposing_gold_positions(st: dict) -> int:
+    """Close-by redundant opposing gold-bracket positions while preserving net exposure."""
+    positions = [p for p in (mt5.positions_get(symbol=GOLD_SYMBOL) or [])
+                 if int(getattr(p, "magic", 0) or 0) == MAGIC
+                 and str(getattr(p, "comment", "") or "").startswith("DWgold_")]
+    buys = sorted((p for p in positions if p.type == mt5.POSITION_TYPE_BUY),
+                  key=lambda p: int(p.ticket))
+    sells = sorted((p for p in positions if p.type != mt5.POSITION_TYPE_BUY),
+                   key=lambda p: int(p.ticket))
+    paired = 0
+    while buys and sells:
+        buy, sell = buys.pop(0), sells.pop(0)
+        lots = min(float(buy.volume), float(sell.volume))
+        if lots <= 0:
+            continue
+        if not st.get("armed"):
+            log(f"SHADOW would CLOSE_BY gold hedge buy {buy.ticket} / sell {sell.ticket} "
+                f"({lots:.2f} lots each; net exposure unchanged)")
+            paired += 1
+            continue
+        res = mt5.order_send({
+            "action": mt5.TRADE_ACTION_CLOSE_BY,
+            "position": int(buy.ticket),
+            "position_by": int(sell.ticket),
+            "magic": MAGIC,
+            "comment": order_comment("portfolio_net"),
+        })
+        rc = getattr(res, "retcode", None) if res is not None else None
+        log(f"CLOSE_BY gold hedge buy {buy.ticket} / sell {sell.ticket} "
+            f"({lots:.2f} lots each) -> retcode={rc} "
+            f"{diagnose(rc, getattr(res, 'comment', '') if res is not None else '')}")
+        if rc == getattr(mt5, "TRADE_RETCODE_DONE", 10009):
+            paired += 1
+    return paired
+
+
 #: How many positions the DESK may hold on one symbol in one direction across EVERY sleeve.
 #: MEASURED 2026-09-16 on EURCHF: seven parameterisations of one discovered mechanism shorted a
 #: 12-pip box ~40 times in twelve hours, re-entering every bar while the pair drifted into their
@@ -1484,6 +1567,21 @@ def _round_trip_per_price_unit(info: object, symbol: str) -> float | None:
     return (2.0 * COMMISSION_PER_LOT_PER_SIDE) / per_price_unit_per_lot
 
 
+def _rates_since_position(symbol: str, timeframe: int, opened_at: int,
+                          *, count: int = 2000) -> pd.DataFrame:
+    """Return terminal bars from the position's containing bar in broker-clock space."""
+    raw = mt5.copy_rates_from_pos(symbol, timeframe, 0, int(count))
+    if raw is None or len(raw) == 0:
+        return pd.DataFrame()
+    bars = pd.DataFrame(raw)
+    if "time" not in bars:
+        return pd.DataFrame()
+    ts = sorted({int(x) for x in bars["time"]})
+    step = min((b - a for a, b in zip(ts, ts[1:]) if b > a), default=60)
+    start = int(opened_at) - (int(opened_at) % max(1, step))
+    return bars[bars["time"].astype("int64") >= start].reset_index(drop=True)
+
+
 def manage_open_positions(st: dict, sleeves: list[dict]) -> None:
     """Ratchet the stop on every open position. SHADOW UNLESS `st["armed"]`.
 
@@ -1540,15 +1638,17 @@ def manage_open_positions(st: dict, sleeves: list[dict]) -> None:
                     f"nothing to ratchet against and none invented")
                 continue
 
-            # Bars SINCE ENTRY only. A pre-entry extreme is a level the thesis never reached.
-            since = mt5.copy_rates_range(symbol, mt5.TIMEFRAME_H1,
-                                         datetime.fromtimestamp(p.time, tz=UTC),
-                                         datetime.now(tz=UTC))
-            if since is None or len(since) < 2:
-                log(f"MANAGE ticket {p.ticket} ({symbol}): fewer than 2 bars since entry; "
-                    f"too early to locate an extreme")
+            # The floor consumes only the post-entry extreme, so it reads M1 and can protect a
+            # fast winner on the first completed minute. The certified chandelier remains H1.
+            timeframe = (getattr(mt5, "TIMEFRAME_M1", mt5.TIMEFRAME_H1)
+                         if _floor_only else mt5.TIMEFRAME_H1)
+            bars = _rates_since_position(symbol, timeframe, int(p.time))
+            minimum = 1 if _floor_only else 2
+            if len(bars) < minimum:
+                log(f"MANAGE ticket {p.ticket} ({symbol}): fewer than {minimum} "
+                    f"{'M1' if _floor_only else 'H1'} bars since entry; too early to locate "
+                    f"an extreme (broker-clock positional read)")
                 continue
-            bars = pd.DataFrame(since)
 
             # ATR on a longer window than the holding period, because a young position has too
             # few bars of its own to characterise volatility with.
@@ -3596,6 +3696,14 @@ def main() -> None:
         # degraded; a desk that cannot place or reconcile anything because management raised is
         # broken, and the second is strictly worse than the first.
         log(f"MANAGE FAILED (positions left untouched): {type(exc).__name__}: {exc}")
+    # MT5 brackets are not native OCO. Remove the unfilled sibling immediately after a fill,
+    # then repair any legacy opposite pair by CLOSE_BY without changing net exposure.
+    try:
+        cancel_filled_gold_siblings(st)
+        collapse_opposing_gold_positions(st)
+    except Exception as exc:
+        log(f"GOLD OCO/HEDGE REPAIR FAILED (positions left untouched): "
+            f"{type(exc).__name__}: {exc}")
     # A sleeve that left the roster leaves the book: retired names queued by the decay monitor
     # have their open positions closed here, one pass at a time, never from inside management.
     try:

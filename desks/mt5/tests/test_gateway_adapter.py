@@ -888,11 +888,17 @@ def test_filled_gold_bracket_cancels_only_its_own_pending_sibling() -> None:
                         comment="DWxau_m5_other"),
         SimpleNamespace(ticket=14, symbol="XAUUSD", magic=999, comment="DWgold_london_am"),
     ]
+    def send(req: dict) -> SimpleNamespace:
+        sent.append(req)
+        if req.get("action") == 12:
+            orders[:] = [o for o in orders if o.ticket != req["order"]]
+        return SimpleNamespace(retcode=10009, comment="")
+
     mt5 = SimpleNamespace(
         positions_get=lambda symbol=None: list(positions),
         orders_get=lambda symbol=None: list(orders),
         TRADE_ACTION_REMOVE=12, TRADE_RETCODE_DONE=10009,
-        order_send=lambda req: (sent.append(req) or SimpleNamespace(retcode=10009, comment="")))
+        order_send=send)
     ns = _exec(("cancel_filled_gold_siblings", "order_comment"),
                {"mt5": mt5, "log": lambda *_: None, "diagnose": lambda *a: "",
                 "MAGIC": 341953})
@@ -1076,6 +1082,8 @@ def _main_ns(tmp_path: Path, monkeypatch, mt5: _Terminal, *, paused: bool,
         "_record_vetoed_bracket": lambda *a, **k: False,
         "_expiry_request": lambda symbol, sleeve="", window=None: {"type_time": 0},
         "expire_stale_brackets": lambda st: 0,
+        "cancel_filled_gold_siblings": lambda st: 0,
+        "collapse_opposing_gold_positions": lambda st: 0,
         "cancel_pending": lambda st, symbol: None,
         "close_positions": lambda st, symbol, keep_tags=frozenset(): None,
         "scalp_position_tags": lambda sleeves: frozenset(),

@@ -29,14 +29,19 @@ from prop.tradelocker_venue import TradeLockerVenue, VenueError
 class FakeVenue:
     """The shape `manage_breakeven` reads, and a record of every write it attempts."""
 
-    def __init__(self, positions: list[dict[str, Any]], bid: float, ask: float) -> None:
+    def __init__(self, positions: list[dict[str, Any]], bid: float, ask: float,
+                 orders: list[dict[str, Any]] | None = None) -> None:
         self._positions = positions
+        self._orders = orders or []
         self._bid, self._ask = bid, ask
         self._by_key = {"XAUUSD": 101}
         self.modified: list[tuple[int, float]] = []
 
     def positions(self) -> list[dict[str, Any]]:
         return self._positions
+
+    def orders(self) -> list[dict[str, Any]]:
+        return self._orders
 
     def quote(self, symbol: str) -> tuple[float, float]:
         return self._bid, self._ask
@@ -139,6 +144,15 @@ def test_a_position_with_no_stop_is_skipped_rather_than_given_an_invented_one() 
     assert v.modified == []
     assert rows[0]["action"] == "SKIP"
     assert "none invented" in rows[0]["why"]
+
+
+def test_live_tradelocker_stop_id_is_resolved_from_the_protective_order() -> None:
+    p = _pos(stopLoss=None, stopLossId=55)
+    v = FakeVenue([p], bid=4309.0, ask=4309.2,
+                  orders=[{"id": 55, "stopPrice": 4290.0}])
+    rows = e8_executor.manage_breakeven(v, armed=True)
+    assert v.modified == [(7, 4300.0)], rows
+    assert rows[0]["stop_distance"] == pytest.approx(10.0)
 
 
 def test_a_position_with_no_entry_price_is_skipped() -> None:
