@@ -176,6 +176,34 @@ def test_capacity_reads_the_declared_constants_and_the_measured_sweep(organ):
     assert cap["measured"]["n_judged"] == 1395 and cap["measured"]["age_h"] == 2.0
 
 
+def test_capacity_streams_root_metrics_when_verdict_report_exceeds_memory_cap(
+        organ, monkeypatch: pytest.MonkeyPatch):
+    """A large verdict array must not make queue capacity disappear as UNMEASURED."""
+    organ["GAUNTLET_SOURCE"].parent.mkdir(parents=True, exist_ok=True)
+    organ["GAUNTLET_SOURCE"].write_text(
+        "FRESH_BUILD_BUDGET_SEC = 2700\nDECLARED_NEED_MB = 1200\nPER_WORKER_MB = 768\n",
+        encoding="utf-8")
+    organ["GAUNTLET_REPORT"].parent.mkdir(parents=True, exist_ok=True)
+    organ["GAUNTLET_REPORT"].write_text(json.dumps({
+        "hunt": "fixture", "n_cells": 7144,
+        "verdicts": [{"cell": f"cell-{i}", "workers": 999} for i in range(20)],
+        "swept_at": (NOW - timedelta(hours=1)).isoformat(),
+        "n_judged": 4896, "n_unmeasured": 2248, "n_cells_discovered": 63513,
+        "n_cells_deferred_build_budget": 0, "n_cells_deferred_memory_budget": 0,
+        "memory_budget_mb": 13824.0, "workers": 18,
+    }, indent=2), encoding="utf-8")
+    monkeypatch.setattr(gb, "MAX_INPUT_BYTES", 64)
+    _plant(organ, _baseline_born(), _baseline_verdicts())
+
+    doc = gb.build(now=NOW)
+    measured = doc["capacity"]["measured"]
+    assert measured["n_cells_discovered"] == 63513
+    assert measured["n_judged"] == 4896
+    assert measured["workers"] == 18       # not the nested verdict's decoy value
+    assert measured["age_h"] == 1.0
+    assert organ["GAUNTLET_REPORT"].name not in doc["unmeasured"]
+
+
 def test_every_terminal_gate_lands_in_its_declared_failure_class(organ):
     v = [_verdict("EURUSD", "carry", n=1, gate="stress_costs"),
          _verdict("EURUSD", "carry", n=2, gate="swap_cost"),

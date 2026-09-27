@@ -160,6 +160,78 @@ def _read_json(path: Path, note: dict[str, str]) -> Any:
     return doc
 
 
+_CAPACITY_SCALARS = frozenset({
+    "swept_at", "n_cells", "n_judged", "n_unmeasured", "n_cells_discovered",
+    "n_cells_deferred_build_budget", "n_cells_deferred_memory_budget",
+    "memory_budget_mb", "workers",
+})
+
+
+def _read_root_scalars(path: Path, note: dict[str, str],
+                       keys: frozenset[str]) -> dict[str, Any] | None:
+    """Read selected top-level scalar fields without loading a giant verdict array.
+
+    ``universal_gates_external.json`` grows with the number of judged cells.  Refusing to read it
+    above 64 MiB made the throughput controller blind precisely when the queue was busiest.  The
+    writer pretty-prints one JSON member per line, so identify the root indentation from the first
+    member and decode only wanted scalar lines at that exact depth.  Nested verdict fields can
+    never be mistaken for root metrics.  Memory stays constant regardless of verdict count.
+
+    A compact oversized JSON document cannot be streamed safely by this deliberately small
+    parser; it remains UNMEASURED rather than guessed.
+    """
+    try:
+        size = path.stat().st_size
+        fh = path.open(encoding="utf-8-sig", errors="replace")
+    except OSError:
+        note[path.name] = "ABSENT"
+        return None
+    found: dict[str, Any] = {}
+    root_indent: int | None = None
+    member = re.compile(r'^(\s*)"([^"\\]+)"\s*:\s*(.*?)\s*,?\s*$')
+    try:
+        with fh:
+            for raw in fh:
+                match = member.match(raw)
+                if match is None:
+                    continue
+                indent = len(match.group(1))
+                if root_indent is None:
+                    root_indent = indent
+                if indent != root_indent:
+                    continue
+                key = match.group(2)
+                if key not in keys:
+                    continue
+                value = match.group(3).rstrip().removesuffix(",").rstrip()
+                if value.startswith(("{", "[")):
+                    continue
+                try:
+                    found[key] = json.loads(value)
+                except ValueError:
+                    continue
+                if keys.issubset(found):
+                    break
+    except OSError as exc:
+        note[path.name] = f"UNREADABLE({type(exc).__name__})"
+        return None
+    if not found:
+        note[path.name] = f"TOO_LARGE_UNSTREAMABLE({size})"
+        return None
+    note[path.name] = f"STREAMED_ROOT_SCALARS({size})"
+    return found
+
+
+def _read_capacity_report(path: Path, note: dict[str, str]) -> Any:
+    """Read a normal gauntlet report, or stream its root metrics when it is large."""
+    try:
+        large = path.stat().st_size > MAX_INPUT_BYTES
+    except OSError:
+        large = False
+    return (_read_root_scalars(path, note, _CAPACITY_SCALARS) if large
+            else _read_json(path, note))
+
+
 def _read_jsonl(path: Path, note: dict[str, str]) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     try:
@@ -260,7 +332,7 @@ def capacity(note: dict[str, str], now: datetime | None = None) -> dict[str, Any
             "per_worker_mb": _declared_constant(src, "PER_WORKER_MB"),
             "why": "seconds of FIRST-TIME cell building one sweep may spend; cached cells are "
                    "free and are always all loaded"}
-    doc = _read_json(GAUNTLET_REPORT, note)
+    doc = _read_capacity_report(GAUNTLET_REPORT, note)
     if not isinstance(doc, dict):
         out["measured"] = {"status": "UNMEASURED",
                            "why": f"{GAUNTLET_REPORT.name} {note.get(GAUNTLET_REPORT.name)}"}
@@ -686,7 +758,8 @@ def build(now: datetime | None = None) -> dict[str, Any]:
             queue = {"status": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"}
     primary["backlog"]["registry_queue_depth"] = queue
     primary["backlog"]["registry_grid_cells"] = grid_cells
-    unmeasured = {k: v for k, v in note.items() if v != "READ"}
+    unmeasured = {k: v for k, v in note.items()
+                  if v != "READ" and not v.startswith("STREAMED_ROOT_SCALARS(")}
     if not born:
         unmeasured["hypothesis_graph"] = "NO_BORN_CELLS"
     if not vers:
