@@ -1,0 +1,1905 @@
+{
+ "renaissance": [
+  {
+   "url": "https://www.hsgac.senate.gov/wp-content/uploads/imo/media/doc/STMT%20-%20Renaissance%20(July%2022%202014)2.pdf",
+   "title": "Joint Statement of Peter F. Brown, Mark Silber, Jonathan Mayers on behalf of Renaissance Technologies, Senate PSI hearing",
+   "type": "sworn_testimony_primary",
+   "date": "2014-07-22"
+  },
+  {
+   "url": "https://www.hsgac.senate.gov/wp-content/uploads/imo/media/doc/REPORT-Abuse%20of%20Structured%20Financial%20Products%20(Basket%20Options)%20(7-22-14,%20updated%209-30-14).pdf",
+   "title": "US Senate PSI staff report: Abuse of Structured Financial Products: Misusing Basket Options to Avoid Taxes and Leverage Limits",
+   "type": "government_report_primary",
+   "date": "2014-07-22 (updated 2014-09-30)"
+  },
+  {
+   "url": "https://www.govinfo.gov/content/pkg/CHRG-113shrg89882/html/CHRG-113shrg89882.htm",
+   "title": "Senate Hearing 113-422 transcript (oral testimony of Peter Brown et al.)",
+   "type": "hearing_transcript_primary",
+   "date": "2014-07-22"
+  },
+  {
+   "url": "https://math.berkeley.edu/~berlek/research_interests/business.html",
+   "title": "Elwyn Berlekamp - Business (own homepage)",
+   "type": "first_person_primary",
+   "date": "n.d."
+  },
+  {
+   "url": "https://math.berkeley.edu/~berlek/biographies.html",
+   "title": "Elwyn Berlekamp - Biographies (own homepage)",
+   "type": "first_person_primary",
+   "date": "n.d."
+  },
+  {
+   "url": "https://news.ycombinator.com/item?id=19065226",
+   "title": "HN comment transcribing Nick Patterson on Talking Machines (Renaissance process)",
+   "type": "transcript_secondary",
+   "date": "2019-02"
+  },
+  {
+   "url": "https://news.ycombinator.com/item?id=29147100",
+   "title": "HN thread: Nick Patterson on simple regression at RenTec",
+   "type": "forum_secondary",
+   "date": "2021-11"
+  },
+  {
+   "url": "https://robohub.org/talking-machines-ai-safety-and-the-legacy-of-bletchley-park-with-nick-patterson/",
+   "title": "Talking Machines: AI safety and the legacy of Bletchley Park, with Nick Patterson",
+   "type": "podcast_primary_listing",
+   "date": "2016-02-29"
+  },
+  {
+   "url": "https://www.institutionalinvestor.com/article/2btfwtg2jyu7f6oj3i6f4/home/the-secret-world-of-jim-simons",
+   "title": "The Secret World of Jim Simons (Hal Lux, Institutional Investor) - on-record Simons interview",
+   "type": "interview_primary",
+   "date": "2000-11-01"
+  },
+  {
+   "url": "https://www.institutionalinvestor.com/article/2bswabr234orjmebrnbb4/culture/bitter-lawsuits-epic-meltdowns-vicious-arguments-jim-simons-renaissance-made-him-billions-but-it-came-at-a-price",
+   "title": "Bitter Lawsuits. Epic Meltdowns... (Zuckerman book excerpt, Institutional Investor)",
+   "type": "book_excerpt",
+   "date": "2019-11"
+  },
+  {
+   "url": "https://infoproc.blogspot.com/2007/07/algorithm-wars.html",
+   "title": "Information Processing: Algorithm wars (Belopolsky/Volfbeyn filings quoted)",
+   "type": "blog_citing_court_filings",
+   "date": "2007-07"
+  },
+  {
+   "url": "https://infoproc.blogspot.com/2014/07/james-simons-mathematics-common-sense.html",
+   "title": "Information Processing: James Simons: Mathematics, Common Sense, and Good Luck (MIT 2010 talk notes)",
+   "type": "talk_notes",
+   "date": "2014-07"
+  },
+  {
+   "url": "https://www.josherich.me/podcast/jim-simons-full-length-interview-numberphile",
+   "title": "Jim Simons (full length interview) - Numberphile, transcript",
+   "type": "interview_transcript_primary",
+   "date": "2015-05-13"
+  },
+  {
+   "url": "https://ritholtz.com/2019/11/transcript-greg-zuckerman/",
+   "title": "Transcript: Greg Zuckerman - Masters in Business (Barry Ritholtz)",
+   "type": "author_interview_transcript",
+   "date": "2019-11"
+  },
+  {
+   "url": "https://rationalreminder.ca/podcast/97",
+   "title": "Rational Reminder Ep. 97: Greg Zuckerman: Did Jim Simons Solve the Market?",
+   "type": "author_interview",
+   "date": "2020"
+  },
+  {
+   "url": "https://podcastnotes.org/crypto/the-investors-podcast-tip/jim-simons-the-greatest-investor-on-wall-street-gregory-zuckerman-on-the-investors-podcast-ep-273/",
+   "title": "Podcast Notes: Gregory Zuckerman on The Investor's Podcast Ep. 273",
+   "type": "author_interview_notes",
+   "date": "2019-2020"
+  },
+  {
+   "url": "https://calvinrosser.com/notes/the-man-who-solved-the-market-jim-simons/",
+   "title": "The Man Who Solved the Market: Summary & Notes (Calvin Rosser)",
+   "type": "book_notes",
+   "date": "n.d."
+  },
+  {
+   "url": "https://bagerbach.com/books/the-man-who-solved-the-market/",
+   "title": "The Man Who Solved the Market - Notes (Christian B. B. Houmann)",
+   "type": "book_notes",
+   "date": "n.d."
+  },
+  {
+   "url": "https://novelinvestor.com/notes/the-man-who-solved-the-market-by-gregory-zuckerman/",
+   "title": "The Man Who Solved the Market - Novel Investor notes",
+   "type": "book_notes",
+   "date": "n.d."
+  },
+  {
+   "url": "https://twoquants.com/the-man-who-solved-the-market-part-1/",
+   "title": "Takeaways From The Man Who Solved the Market - Part 1 (Twoquants)",
+   "type": "book_notes",
+   "date": "n.d."
+  },
+  {
+   "url": "https://twoquants.com/the-man-who-solved-the-market-part-2/",
+   "title": "Takeaways From The Man Who Solved the Market - Part 2 (Twoquants)",
+   "type": "book_notes",
+   "date": "n.d."
+  },
+  {
+   "url": "https://mleverything.substack.com/p/how-renaissance-technologies-solved-the-market-part-1-2814eb271dc3",
+   "title": "How Renaissance Technologies Solved the Market: Part 1 - Pipeline",
+   "type": "book_analysis",
+   "date": "n.d."
+  },
+  {
+   "url": "https://scottlocklin.wordpress.com/2021/11/29/a-review-of-the-man-who-solved-the-market-and-the-captain/",
+   "title": "A review of The Man Who Solved the Market (Scott Locklin, practitioner)",
+   "type": "practitioner_review_speculative",
+   "date": "2021-11-29"
+  },
+  {
+   "url": "https://breakingthemarket.com/the-greatest-geometric-balancers-renaissance-technologies-part-i/",
+   "title": "The Greatest Geometric Balancers: Renaissance Technologies, Part I",
+   "type": "blog_analysis_speculative",
+   "date": "n.d."
+  },
+  {
+   "url": "https://www.econlib.org/library/Columns/y2020/Klingmysteries.html",
+   "title": "Wall Street Mysteries (Arnold Kling, Econlib)",
+   "type": "review",
+   "date": "2020"
+  },
+  {
+   "url": "https://community.portfolio123.com/uploads/short-url/wZJco8G9Xd3diZqEN2YNc3RdaH.pdf",
+   "title": "Bradford Cornell, Medallion Fund: The Ultimate Counterexample? (JPM 46(4); SSRN 3504766)",
+   "type": "academic_paper",
+   "date": "2019-12-02"
+  },
+  {
+   "url": "https://arxiv.org/abs/2405.10917",
+   "title": "Shuxin Guo, Is the annualized compounded return of Medallion over 35%?",
+   "type": "academic_paper",
+   "date": "2024-05"
+  },
+  {
+   "url": "https://www.institutionalinvestor.com/article/2bswms7wco7as686o8ikg/portfolio/renaissances-medallion-fund-surged-76-in-2020-but-funds-open-to-outsiders-tanked",
+   "title": "Renaissance's Medallion Fund Surged 76% in 2020. But Funds Open to Outsiders Tanked.",
+   "type": "press",
+   "date": "2021-01"
+  },
+  {
+   "url": "https://patents.google.com/patent/US20160035027",
+   "title": "US20160035027A1 System and method for executing synchronized trades in multiple exchanges (Renaissance Technologies LLC; Mercer, Brown)",
+   "type": "patent_primary",
+   "date": "2014-08-04 filed"
+  },
+  {
+   "url": "https://aclanthology.org/J92-4003/",
+   "title": "Brown, deSouza, Mercer, Della Pietra, Lai - Class-Based n-gram Models of Natural Language, Computational Linguistics 18(4)",
+   "type": "academic_paper_by_rentec_staff",
+   "date": "1992"
+  },
+  {
+   "url": "https://aclanthology.org/J96-1002/",
+   "title": "Berger, Della Pietra, Della Pietra (Renaissance Technologies) - A Maximum Entropy Approach to Natural Language Processing, CL 22(1)",
+   "type": "academic_paper_by_rentec_staff",
+   "date": "1996-03"
+  },
+  {
+   "url": "https://projecteuclid.org/euclid.aoms/1177697196",
+   "title": "Baum, Petrie, Soules, Weiss - A Maximization Technique Occurring in the Statistical Analysis of Probabilistic Functions of Markov Chains, Ann. Math. Stat. 41(1)",
+   "type": "academic_paper",
+   "date": "1970-02"
+  },
+  {
+   "url": "https://www.semanticscholar.org/paper/Interpolated-estimation-of-Markov-source-parameters-Jelinek/6a923c9f89ed53b6e835b3807c0c1bd8d532687b",
+   "title": "Jelinek & Mercer - Interpolated estimation of Markov source parameters from sparse data (metadata only; full text not fetched)",
+   "type": "academic_paper",
+   "date": "1980"
+  },
+  {
+   "url": "https://www.aclweb.org/portal/node/2502",
+   "title": "Robert L. Mercer receives the 2014 ACL Lifetime Achievement Award",
+   "type": "award_page",
+   "date": "2014-06-25"
+  },
+  {
+   "url": "https://math.nyu.edu/faculty/avellane/AvellanedaLeeStatArb071108.pdf",
+   "title": "Avellaneda & Lee - Statistical Arbitrage in the U.S. Equities Market (cited by Senate PSI fn.160 to define RenTec's StatArb)",
+   "type": "academic_paper",
+   "date": "2008-07-11"
+  },
+  {
+   "url": "https://en.wikipedia.org/wiki/Renaissance_Technologies",
+   "title": "Renaissance Technologies - Wikipedia",
+   "type": "encyclopedia",
+   "date": "accessed 2026-09-27"
+  },
+  {
+   "url": "https://en.wikipedia.org/wiki/Henry_Laufer",
+   "title": "Henry Laufer - Wikipedia",
+   "type": "encyclopedia",
+   "date": "accessed 2026-09-27"
+  },
+  {
+   "url": "https://en.wikipedia.org/wiki/Leonard_E._Baum",
+   "title": "Leonard E. Baum - Wikipedia",
+   "type": "encyclopedia",
+   "date": "accessed 2026-09-27"
+  },
+  {
+   "url": "https://en.wikipedia.org/wiki/Robert_J._Frey",
+   "title": "Robert J. Frey - Wikipedia",
+   "type": "encyclopedia",
+   "date": "accessed 2026-09-27"
+  },
+  {
+   "url": "https://www.simonsfoundation.org/2012/09/28/simons-foundation-chair-jim-simons-on-his-career-in-mathematics/",
+   "title": "Simons Foundation Chair Jim Simons on His Career in Mathematics",
+   "type": "foundation_page",
+   "date": "2012-09-28"
+  },
+  {
+   "url": "https://novelinvestor.com/wise-words-from-jim-simons/",
+   "title": "Wise Words from Jim Simons (quote collection)",
+   "type": "quote_collection",
+   "date": "n.d."
+  },
+  {
+   "url": "https://www.acquired.fm/episodes/renaissance-technologies",
+   "title": "Acquired: Renaissance Technologies",
+   "type": "podcast_page",
+   "date": "2024"
+  }
+ ],
+ "systematic_macro": [
+  {
+   "url": "https://w4.stern.nyu.edu/facdir/lpederse/papers/TimeSeriesMomentum.pdf",
+   "title": "Time Series Momentum (Moskowitz, Ooi, Pedersen), JFE",
+   "type": "journal_article",
+   "date": "2012"
+  },
+  {
+   "url": "https://www.aqr.com/Insights/Research/Journal-Article/Time-Series-Momentum",
+   "title": "AQR: Time Series Momentum (landing page)",
+   "type": "firm_page",
+   "date": "2012"
+  },
+  {
+   "url": "https://www.aqr.com/Insights/Datasets/Time-Series-Momentum-Factors-Monthly",
+   "title": "AQR dataset: Time Series Momentum Factors, Monthly",
+   "type": "dataset",
+   "date": "ongoing"
+  },
+  {
+   "url": "https://www.chesler.us/resources/academia/A_Century_of_Evidence_on_Trend_Following.pdf",
+   "title": "A Century of Evidence on Trend-Following Investing (Hurst, Ooi, Pedersen), AQR",
+   "type": "white_paper",
+   "date": "2012/2017"
+  },
+  {
+   "url": "https://www.aqr.com/Insights/Research/Journal-Article/A-Century-of-Evidence-on-Trend-Following-Investing",
+   "title": "AQR: A Century of Evidence on Trend-Following Investing (landing, JPM 2017)",
+   "type": "firm_page",
+   "date": "2017"
+  },
+  {
+   "url": "https://www.trendfollowing.com/whitepaper/Century_Evidence_Trend_Following.pdf",
+   "title": "A Century of Evidence on Trend-Following Investing (mirror copy)",
+   "type": "white_paper",
+   "date": "2014"
+  },
+  {
+   "url": "https://w4.stern.nyu.edu/facdir/lpederse/papers/Carry.pdf",
+   "title": "Carry (Koijen, Moskowitz, Pedersen, Vrugt), JFE",
+   "type": "journal_article",
+   "date": "2018"
+  },
+  {
+   "url": "https://www.nber.org/papers/w19325",
+   "title": "Carry, NBER WP 19325",
+   "type": "working_paper",
+   "date": "2013"
+  },
+  {
+   "url": "https://pages.stern.nyu.edu/~lpederse/papers/ValMomEverywhere.pdf",
+   "title": "Value and Momentum Everywhere (Asness, Moskowitz, Pedersen), JF",
+   "type": "journal_article",
+   "date": "2013"
+  },
+  {
+   "url": "https://pages.stern.nyu.edu/~lpederse/papers/BettingAgainstBeta.pdf",
+   "title": "Betting Against Beta (Frazzini, Pedersen), JFE",
+   "type": "journal_article",
+   "date": "2014"
+  },
+  {
+   "url": "https://www.aqr.com/-/media/AQR/Documents/Insights/Journal-Article/AQR-Trends-Everywhere_JOIM.pdf?sc_lang=en",
+   "title": "Trends Everywhere (Babu, Levine, Ooi, Pedersen, Stamelos), JOIM",
+   "type": "journal_article",
+   "date": "2020"
+  },
+  {
+   "url": "https://www.aqr.com/-/media/AQR/Documents/Insights/White-Papers/A-Half-Century-of-Macro-Momentum.pdf",
+   "title": "A Half Century of Macro Momentum (Jordan Brooks), AQR",
+   "type": "white_paper",
+   "date": "2017-08"
+  },
+  {
+   "url": "https://www.aqr.com/-/media/AQR/Documents/Insights/Journal-Article/JOIM-Investing-With-Style.pdf",
+   "title": "Investing With Style (Asness, Ilmanen, Israel, Moskowitz), JOIM",
+   "type": "journal_article",
+   "date": "2015"
+  },
+  {
+   "url": "https://www.nber.org/system/files/working_papers/w22793/w22793.pdf",
+   "title": "Commodities for the Long Run (Levine, Ooi, Richardson, Sasseville), NBER/FAJ",
+   "type": "working_paper",
+   "date": "2016/2018"
+  },
+  {
+   "url": "https://www.belmontinvestments.com/cimg/file/articles/53/pdf/190425aqrtrendfollowing.pdf",
+   "title": "You Can't Always Trend When You Want (Babu, Brooks, Levine, Ooi et al.), AQR",
+   "type": "white_paper",
+   "date": "2019"
+  },
+  {
+   "url": "https://images.aqr.com/-/media/AQR/Documents/Insights/White-Papers/AQR-Tail-Risk-Hedging-Contrasting-Put-and-Trend-Strategies.pdf",
+   "title": "Tail Risk Hedging: Contrasting Put and Trend Strategies, AQR",
+   "type": "white_paper",
+   "date": "2020-07"
+  },
+  {
+   "url": "https://www.aqr.com/-/media/AQR/Documents/Alternative-Thinking/AQR-Alternative-Thinking---Hold-the-Dip.pdf?sc_lang=en",
+   "title": "AQR Alternative Thinking 2025 Issue 4: Hold the Dip",
+   "type": "white_paper",
+   "date": "2025"
+  },
+  {
+   "url": "https://www.aqr.com/-/media/AQR/Documents/Insights/Interviews/AQRPAJan18Asness-31518.pdf",
+   "title": "Contrarian Factor Timing Is Deceptively Difficult - Practical Applications (Asness, Chandra, Ilmanen, Israel)",
+   "type": "practitioner_summary",
+   "date": "2018"
+  },
+  {
+   "url": "https://www.aqr.com/-/media/AQR/Documents/Insights/Working-Papers/AQR--Craftsmanship-Alpha.pdf",
+   "title": "Craftsmanship Alpha: An Application to Style Investing (Israel, Jiang, Ross), JPM",
+   "type": "journal_article",
+   "date": "2017"
+  },
+  {
+   "url": "https://www.aqr.com/-/media/AQR/Documents/Insights/Journal-Article/Demystifying-Managed-Futures.pdf",
+   "title": "Demystifying Managed Futures (Hurst, Ooi, Pedersen), JOIM",
+   "type": "journal_article",
+   "date": "2013"
+  },
+  {
+   "url": "http://docs.lhpedersen.com/CarryTradesCurrencyCrashes.pdf",
+   "title": "Carry Trades and Currency Crashes (Brunnermeier, Nagel, Pedersen), NBER Macro Annual",
+   "type": "journal_article",
+   "date": "2008"
+  },
+  {
+   "url": "https://www.nber.org/system/files/working_papers/w20439/w20439.pdf",
+   "title": "Momentum Crashes (Daniel, Moskowitz), NBER WP 20439",
+   "type": "working_paper",
+   "date": "2014"
+  },
+  {
+   "url": "https://www.lhpedersen.com/research",
+   "title": "Lasse Heje Pedersen research index (Efficiently Inefficient author; AQR)",
+   "type": "index_page",
+   "date": "2026"
+  },
+  {
+   "url": "https://www.man.com/insights/trend-following-equity-and-bond-crisis-alpha",
+   "title": "Trend Following: Equity and Bond Crisis Alpha (Hamill, Rattray, Van Hemert), Man Group",
+   "type": "firm_page",
+   "date": "2016-09"
+  },
+  {
+   "url": "https://www.man.com/insights/creating-portfolio-convexity",
+   "title": "Creating Portfolio Convexity: Trend Versus Options, Man Group",
+   "type": "firm_page",
+   "date": "n/a"
+  },
+  {
+   "url": "https://www.man.com/insights/trend-following-optimal-market-mix",
+   "title": "A Trend Following Deep Dive: The Optimal Market Mix for a Trend Follower, Man Group",
+   "type": "firm_page",
+   "date": "n/a"
+  },
+  {
+   "url": "https://www.man.com/insights/lss-trendsetters-mechanics-of-trend-following",
+   "title": "Trend Setters: The Mechanics of Trend-Following, Man Group",
+   "type": "firm_page",
+   "date": "n/a"
+  },
+  {
+   "url": "https://www.man.com/insights/need-for-speed-trend-following",
+   "title": "The Need for Speed in Trend-Following Strategies, Man Group",
+   "type": "firm_page",
+   "date": "2023"
+  },
+  {
+   "url": "https://www.man.com/insights/deep-dive-trend-following",
+   "title": "A Trend Following Deep Dive: The Dynamics of Dispersion, Man Group",
+   "type": "firm_page",
+   "date": "2024/25"
+  },
+  {
+   "url": "https://www.man.com/insights/is-this-time-different",
+   "title": "Trend Following and Drawdowns: Is This Time Different?, Man Group",
+   "type": "firm_page",
+   "date": "2025"
+  },
+  {
+   "url": "https://people.duke.edu/~charvey/Research/Published_Papers/P135_The_impact_of.pdf",
+   "title": "The Impact of Volatility Targeting (Harvey, Hoyle, Korgaonkar, Rattray, Sargaison, Van Hemert), JPM",
+   "type": "journal_article",
+   "date": "2018"
+  },
+  {
+   "url": "https://people.duke.edu/~charvey/Research/Published_Papers/P140_The_best_of.pdf",
+   "title": "The Best of Strategies for the Worst of Times: Can Portfolios Be Crisis Proofed? (Man AHL/Duke), JPM",
+   "type": "journal_article",
+   "date": "2019-07"
+  },
+  {
+   "url": "https://people.duke.edu/~charvey/Research/Published_Papers/P176_Regimes.pdf",
+   "title": "Regimes (Mulliner, Harvey, Xia, Fang, Van Hemert; Man Group), JPM",
+   "type": "journal_article",
+   "date": "2026-02"
+  },
+  {
+   "url": "https://people.duke.edu/~charvey/Research/Published_Papers/P145_Strategic_rebalancing.pdf",
+   "title": "Strategic Rebalancing (Rattray, Granger, Harvey, Van Hemert; Man Group), JPM",
+   "type": "journal_article",
+   "date": "2020"
+  },
+  {
+   "url": "https://www.nber.org/system/files/working_papers/w33554/w33554.pdf",
+   "title": "The Unintended Consequences of Rebalancing (Harvey, Mazzoleni, Melone), NBER WP 33554",
+   "type": "working_paper",
+   "date": "2025"
+  },
+  {
+   "url": "https://people.duke.edu/~charvey/Research/Published_Papers/P158_Momentum_turning_points.pdf",
+   "title": "Momentum Turning Points (Goulding, Harvey, Mazzoleni), JFE",
+   "type": "journal_article",
+   "date": "2023"
+  },
+  {
+   "url": "https://people.duke.edu/~charvey/Research/Published_Papers/P167_Breaking_bad_trends.pdf",
+   "title": "Breaking Bad Trends (Goulding, Harvey, Mazzoleni), FAJ",
+   "type": "journal_article",
+   "date": "2023"
+  },
+  {
+   "url": "https://people.duke.edu/~charvey/Research/Published_Papers/P147_Drawdowns.pdf",
+   "title": "Drawdowns (Van Hemert, Ganz, Harvey, Rattray, Sanchez Martin, Yawitch; Man AHL), JPM",
+   "type": "journal_article",
+   "date": "2020-09"
+  },
+  {
+   "url": "https://people.duke.edu/~charvey/Research/Published_Papers/P154_The_best_strategies.pdf",
+   "title": "The Best Strategies for Inflationary Times (Neville, Draaisma, Funnell, Harvey, Van Hemert; Man Group), JPM",
+   "type": "journal_article",
+   "date": "2021-08"
+  },
+  {
+   "url": "https://people.duke.edu/~charvey/Research/Published_Papers/P175_The_best_strategies.pdf",
+   "title": "The Best Strategies for FX Hedging (Castro, Hamill, Harber, Harvey, Van Hemert; Man Group), JPM",
+   "type": "journal_article",
+   "date": "2025-08"
+  },
+  {
+   "url": "https://www.trendfollowing.com/whitepaper/d.pdf",
+   "title": "Historical Performance of Trend Following, Winton Capital working paper",
+   "type": "white_paper",
+   "date": "2013"
+  },
+  {
+   "url": "https://www.belmontinvestments.com/cimg/file/articles/45/pdf/160815Wintontrendfollowingsmile.pdf",
+   "title": "Winton Research Brief: A closer look at the trend-following smile",
+   "type": "white_paper",
+   "date": "2016-08"
+  },
+  {
+   "url": "https://www.winton.com/news/what-is-trend-following",
+   "title": "Winton: What is trend following?",
+   "type": "firm_page",
+   "date": "n/a"
+  },
+  {
+   "url": "https://aspectcapital.s3.amazonaws.com/documents/Aspect_Capital_Insight__Series_-_Trend_Following_-_How.pdf",
+   "title": "Aspect Capital Insight: Trend Following: How?",
+   "type": "white_paper",
+   "date": "2023-01"
+  },
+  {
+   "url": "https://aspectcapital.s3.amazonaws.com/documents/Aspect_Capital_Insight_-_Living_With_Trend_Following_History__Lessons_From_the_8LAzOwQ.pdf",
+   "title": "Aspect Capital Insight: Living With Trend Following",
+   "type": "white_paper",
+   "date": "2025-07"
+  },
+  {
+   "url": "https://www.bridgewater.com/_document/the-all-weather-story?id=00000171-8623-d7de-affd-feaf4ee20000",
+   "title": "The All Weather Story, Bridgewater Associates",
+   "type": "white_paper",
+   "date": "2012-01"
+  },
+  {
+   "url": "https://sdcera.granicus.com/MetaViewer.php?view_id=4&clip_id=75&meta_id=9141.",
+   "title": "The All Weather Strategy 4Q09, Bridgewater (pension board copy)",
+   "type": "presentation",
+   "date": "2009"
+  },
+  {
+   "url": "https://www.trendfollowing.com/whitepaper/Transtrend_Presentation.pdf",
+   "title": "Transtrend: Potential profitability for trend following systems (Trendpot)",
+   "type": "presentation",
+   "date": "2010-04"
+  },
+  {
+   "url": "https://www.transtrend.com/en/insights/robust-versus-slow/",
+   "title": "Transtrend: The importance of being robust, not slow",
+   "type": "firm_page",
+   "date": "2018-07"
+  },
+  {
+   "url": "https://www.transtrend.com/en/insights/how-to-profit-from-trends/",
+   "title": "Transtrend: How to profit from trends?",
+   "type": "firm_page",
+   "date": "2024-02"
+  },
+  {
+   "url": "https://www.transtrend.com/en/insights/alternative-markets/",
+   "title": "Transtrend: Trading alternative markets",
+   "type": "firm_page",
+   "date": "2021-01"
+  },
+  {
+   "url": "https://www.transtrend.com/en/insights/trend-returns-copper/",
+   "title": "Transtrend: Trend returns in copper: a tale of two markets",
+   "type": "firm_page",
+   "date": "2025-08"
+  },
+  {
+   "url": "https://www.grahamcapital.com/wp-content/uploads/2026/05/Trend-Following-Primer_May-26.pdf",
+   "title": "Graham Capital: Trend-Following Primer",
+   "type": "white_paper",
+   "date": "2026-05"
+  },
+  {
+   "url": "https://www.grahamcapital.com/blog/the-trendiness-of-markets/",
+   "title": "Graham Capital: The Trendiness of Markets (Trend Ratio, Directional Indicator)",
+   "type": "firm_page",
+   "date": "2017-08"
+  },
+  {
+   "url": "https://arxiv.org/pdf/1404.3274",
+   "title": "Two centuries of trend following (Lemperiere et al., CFM)",
+   "type": "working_paper",
+   "date": "2014"
+  },
+  {
+   "url": "https://arxiv.org/pdf/1607.02410",
+   "title": "Tail protection for long investors: Trend convexity at work (Dao et al., CFM)",
+   "type": "working_paper",
+   "date": "2016"
+  }
+ ],
+ "statarb_multistrat": [
+  {
+   "url": "https://arxiv.org/pdf/1408.2217",
+   "title": "Kakushadze (2014) Mean-Reversion and Optimization, arXiv:1408.2217"
+  },
+  {
+   "url": "https://arxiv.org/pdf/1410.5513",
+   "title": "Kakushadze (2014) 4-Factor Model for Overnight Returns, arXiv:1410.5513"
+  },
+  {
+   "url": "https://arxiv.org/pdf/1509.08110",
+   "title": "Kakushadze & Tulchinsky (2015) Performance v. Turnover: A Story by 4,000 Alphas, arXiv:1509.08110"
+  },
+  {
+   "url": "https://arxiv.org/pdf/1601.00991",
+   "title": "Kakushadze (2015) 101 Formulaic Alphas, arXiv:1601.00991"
+  },
+  {
+   "url": "https://arxiv.org/pdf/1603.05937",
+   "title": "Kakushadze & Yu (2016) How to Combine a Billion Alphas, arXiv:1603.05937"
+  },
+  {
+   "url": "https://arxiv.org/pdf/1708.02984",
+   "title": "Kakushadze & Yu (2017) Decoding Stock Market with Quant Alphas, arXiv:1708.02984"
+  },
+  {
+   "url": "https://arxiv.org/pdf/2006.05632",
+   "title": "Kakushadze (2020) Quant Bust 2020, arXiv:2006.05632"
+  },
+  {
+   "url": "https://assets.bwbx.io/documents/users/iqjWHBFdfxIU/ryPXOAL8REys/v0",
+   "title": "Jane Street v. Millennium, Schadewald, Spottiswood (SDNY 2024) - Individual Defendants' Answer"
+  },
+  {
+   "url": "https://blogs.law.ox.ac.uk/oblb/blog-post/2025/07/jane-street-and-expiry-day-trap-unpacking-sebis-crackdown-algorithmic",
+   "title": "Oxford Business Law Blog: Jane Street and the Expiry Day Trap"
+  },
+  {
+   "url": "https://case-law.vlex.com/vid/citadel-inv-group-llc-892368284",
+   "title": "Citadel Inv. Group LLC v. Teza Technologies LLC, 398 Ill.App.3d 724 (2010)"
+  },
+  {
+   "url": "https://cdn.cboe.com/resources/education/research_publications/gammasqueezes.pdf",
+   "title": "Amaya, Garcia-Ares, Pearson, Vasquez (2025) 0DTE Index Options and Market Volatility: How Large is Their Impact?"
+  },
+  {
+   "url": "https://deepmomentum.substack.com/p/how-indias-sec-killed-jane-streets",
+   "title": "Deep Momentum: How India's SEC Killed Jane Street's $1B Secret Options Strategy"
+  },
+  {
+   "url": "https://github.com/Wy66wy/Jane-Street-Real-Time-Market-Data-Forecasting",
+   "title": "Jane Street Real-Time Market Data Forecasting (Kaggle 2024) - reproducible solution repo"
+  },
+  {
+   "url": "https://github.com/alexisdpc/WorldQuant-alpha-trading/blob/main/ImprovingAlphas.md",
+   "title": "WorldQuant BRAIN notes: Improving Alphas (third-party GitHub summary of BRAIN docs)"
+  },
+  {
+   "url": "https://hedgefundinterview.com/pod-shop-risk-limits",
+   "title": "Hedge Fund Interview: Pod Shop Risk Limits - Drawdown Stop-Outs Explained"
+  },
+  {
+   "url": "https://indiacorplaw.in/2025/10/10/proof-of-market-manipulation-the-jane-street-case/",
+   "title": "IndiaCorpLaw: Proof of Market Manipulation: The Jane Street Case"
+  },
+  {
+   "url": "https://math.nyu.edu/~avellane/AvellanedaLeeStatArb20090616.pdf",
+   "title": "Avellaneda & Lee (2009) Statistical Arbitrage in the U.S. Equities Market"
+  },
+  {
+   "url": "https://onlinelibrary.wiley.com/doi/book/10.1002/9781119571278",
+   "title": "Tulchinsky et al., Finding Alphas (Wiley, 2nd ed.)"
+  },
+  {
+   "url": "https://papers.ssrn.com/sol3/Delivery.cfm/4692190.pdf?abstractid=4692190",
+   "title": "Dim, Eraker, Vilkov: 0DTEs - Trading, Gamma Risk and Volatility Propagation (SSRN 4692190)"
+  },
+  {
+   "url": "https://papers.ssrn.com/sol3/papers.cfm?abstract_id=3247865",
+   "title": "Kakushadze & Serur (2018) 151 Trading Strategies, SSRN 3247865 (Springer book edition later retracted)"
+  },
+  {
+   "url": "https://people.duke.edu/~charvey/Teaching/BA453_2004/Muller_Proprietary_trading.pdf",
+   "title": "Peter Muller (PDT) - Proprietary trading: truth and fiction, Quantitative Finance 1(1)"
+  },
+  {
+   "url": "https://signalsandthreads.com/finding-signal-in-the-noise/",
+   "title": "Signals and Threads (Jane Street): Finding Signal in the Noise - ML and the Markets"
+  },
+  {
+   "url": "https://signalsandthreads.com/wrestling-the-world-into-rows/",
+   "title": "Signals and Threads (Jane Street) ep.29: Wrestling the World into Rows (Eric Mannes, alt data)"
+  },
+  {
+   "url": "https://www.citadelsecurities.com/news-and-insights/global-market-intelligence-gmi-flows-and-fundamentals/",
+   "title": "Citadel Securities GMI: Flows and Fundamentals"
+  },
+  {
+   "url": "https://www.claimsjournal.com/news/national/2024/12/09/327780.htm",
+   "title": "Claims Journal/Bloomberg: Jane Street-Millennium Trade Secrets Fight Ends in Settlement"
+  },
+  {
+   "url": "https://www.confluencegp.com/articles-and-news/millennium-s-pod-system-how-platform-design-beats-star-portfolio-managers",
+   "title": "Confluence Group: Millennium's Pod System"
+  },
+  {
+   "url": "https://www.deshaw.com/assets/articles/DESCO_Market_Insights_20190208_1.pdf",
+   "title": "D. E. Shaw Market Insights: Positively Negative - Stock-Bond Correlation (2019)"
+  },
+  {
+   "url": "https://www.deshaw.com/assets/articles/DESCO_Market_Insights_Bonds_As_Haven_Assets_20210114.pdf",
+   "title": "D. E. Shaw Market Insights: Running Low - Bonds as Hedging Assets (2021)"
+  },
+  {
+   "url": "https://www.deshaw.com/assets/articles/DESCO_Market_Insights_vol_1_no_2_20090706.pdf",
+   "title": "D. E. Shaw Market Insights: Time Portals and Other Illusions (2009)"
+  },
+  {
+   "url": "https://www.deshaw.com/assets/articles/DESCO_Market_Insights_vol_2_no_1_20100302.pdf",
+   "title": "D. E. Shaw Market Insights: Lessons from the Woodshop - Managing and Measuring Leverage (2010)"
+  },
+  {
+   "url": "https://www.deshaw.com/assets/articles/DESCO_Market_Insights_vol_3_no_1_20110224.pdf",
+   "title": "D. E. Shaw Market Insights: Diversification and Beyond - Multi-Strategy Investing (2011)"
+  },
+  {
+   "url": "https://www.deshaw.com/assets/articles/DESCO_Market_Insights_vol_5_no_1.pdf",
+   "title": "D. E. Shaw Market Insights: Shale Game - North American Natural Gas (2014)"
+  },
+  {
+   "url": "https://www.deshaw.com/library",
+   "title": "D. E. Shaw Group Library"
+  },
+  {
+   "url": "https://www.deshaw.com/library/imbalance-sheet",
+   "title": "D. E. Shaw: Imbalance Sheet - Supply, Demand, and S&P 500 Financing (2025)"
+  },
+  {
+   "url": "https://www.deshaw.com/library/machine-teaching",
+   "title": "D. E. Shaw: Machine Teaching - What I Learned From My Optimizer (2023)"
+  },
+  {
+   "url": "https://www.deshaw.com/library/worth-its-weight",
+   "title": "D. E. Shaw: Worth Its Weight? Assessing Gold's Portfolio Utility (2025)"
+  },
+  {
+   "url": "https://www.ecgi.global/publications/blog/expiry-day-and-the-governance-of-algorithmic-trading-the-jane-street-episode",
+   "title": "ECGI blog: Expiry Day and the Governance of Algorithmic Trading: The Jane Street Episode"
+  },
+  {
+   "url": "https://www.financemagnates.com/institutional-forex/xtx-markets-unveils-machine-learning-lab-blending-finance-with-technology/",
+   "title": "Finance Magnates: XTX Markets Unveils Machine Learning Lab (2024)"
+  },
+  {
+   "url": "https://www.hedgeweek.com/ex-two-sigma-quant-charged-with-model-manipulation-in-170m-fraud-case/",
+   "title": "Hedgeweek: Ex-Two Sigma quant charged with model manipulation in $170m fraud case"
+  },
+  {
+   "url": "https://www.legal500.com/developments/thought-leadership/sebi-update-interim-order-against-jane-street-group-for-alleged-index-manipulation/",
+   "title": "Legal500: SEBI update - interim order against Jane Street Group for alleged index manipulation"
+  },
+  {
+   "url": "https://www.netinterest.co/p/peak-pod",
+   "title": "Net Interest (Marc Rubinstein): Peak Pod (2023)"
+  },
+  {
+   "url": "https://www.sebi.gov.in/enforcement/orders/jul-2025/interim-order-in-the-matter-of-index-manipulation-by-jane-street-group_95040.html",
+   "title": "SEBI | Interim Order in the matter of Index manipulation by Jane Street Group (3 Jul 2025)"
+  },
+  {
+   "url": "https://www.sec.gov/Archives/edgar/data/0001592386/000104746915008425/a2226102zs-1.htm",
+   "title": "Virtu Financial, Inc. Form S-1 (2015)"
+  },
+  {
+   "url": "https://www.sec.gov/files/litigation/briefs/2025/comp26398.pdf",
+   "title": "SEC v. Jian Wu (2025) complaint - Two Sigma model manipulation"
+  },
+  {
+   "url": "https://www.sec.gov/litigation/admin/2017/33-10280.pdf",
+   "title": "SEC Order In the Matter of Citadel Securities LLC, Rel. 33-10280 (Jan 2017)"
+  },
+  {
+   "url": "https://www.sec.gov/newsroom/press-releases/2025-15",
+   "title": "SEC Press Release 2025-15: SEC Charges Two Sigma for Failing to Address Known Vulnerabilities in its Investment Models"
+  },
+  {
+   "url": "https://www.treasurers.org/system/files/XTX~LL%20paper~May%202021~Final~pblc%20.pdf",
+   "title": "XTX Markets: Last Look Myths Debunked (May 2021)"
+  },
+  {
+   "url": "https://www.twosigma.com/articles/a-machine-learning-approach-to-regime-modeling",
+   "title": "Two Sigma: A Machine Learning Approach to Regime Modeling (Botte & Bao, 2021)"
+  },
+  {
+   "url": "https://www.twosigma.com/wp-content/uploads/2021/10/Machine-Learning-Approach-to-Regime-Modeling_.pdf",
+   "title": "Two Sigma: Machine Learning Approach to Regime Modeling (PDF)"
+  },
+  {
+   "url": "https://www.xtxmarkets.com/assets/clients/whitepaper-agency.pdf",
+   "title": "XTX Markets: Liquidity & Market Structure Commentary - Agency Algorithms and ELPs (Aug 2025)"
+  },
+  {
+   "url": "https://www.xtxmarkets.com/liquidity/our-7-market-making-principles",
+   "title": "XTX Markets: Clients / market-making principles"
+  }
+ ],
+ "literature": [
+  {
+   "id": "krohn2024",
+   "title": "Foreign Exchange Fixings and Returns around the Clock",
+   "url": "https://wrap.warwick.ac.uk/id/eprint/177333/1/WRAP-foreign-exchange-fixings-returns-around-clock-Mueller-2023.pdf",
+   "authors": "Krohn, Mueller, Whelan",
+   "year": 2024,
+   "venue": "Journal of Finance 79(1)",
+   "type": "paper",
+   "evidence": "DOCUMENTED",
+   "how_read": "full text PDF read (pypdf)"
+  },
+  {
+   "id": "evans2018",
+   "title": "Forex Trading and the WMR Fix",
+   "url": "https://mpra.ub.uni-muenchen.de/81583/1/MPRA_paper_81583.pdf",
+   "authors": "Martin D.D. Evans",
+   "year": 2018,
+   "venue": "Journal of Banking & Finance",
+   "type": "paper",
+   "evidence": "DOCUMENTED",
+   "how_read": "full text PDF read (pypdf)"
+  },
+  {
+   "id": "ito2017",
+   "title": "Puzzles in the Forex Tokyo 'Fixing': Order Imbalances and Biased Pricing by Banks",
+   "url": "https://www.nber.org/papers/w22820",
+   "authors": "Ito, Yamada",
+   "year": 2017,
+   "venue": "Journal of International Economics 109",
+   "type": "paper",
+   "evidence": "DOCUMENTED",
+   "how_read": "full text PDF read (pypdf)"
+  },
+  {
+   "id": "melvin2015",
+   "title": "Equity hedging and exchange rates at the London 4 p.m. fix",
+   "url": "https://ideas.repec.org/a/eee/finmar/v22y2015icp50-72.html",
+   "authors": "Melvin, Prins",
+   "year": 2015,
+   "venue": "Journal of Financial Markets 22",
+   "type": "paper",
+   "evidence": "DOCUMENTED",
+   "how_read": "search-result abstract/summary only"
+  },
+  {
+   "id": "breedon2013",
+   "title": "Intraday Patterns in FX Returns and Order Flow",
+   "url": "https://www.snb.ch/public/asset/en/www-snb-ch/publications/research/working-papers/2011/working_paper_2011_04/publications0_en/working_paper_2011_04.n.pdf",
+   "authors": "Breedon, Ranaldo",
+   "year": 2013,
+   "venue": "Journal of Money, Credit and Banking",
+   "type": "paper",
+   "evidence": "DOCUMENTED",
+   "how_read": "full text PDF read (pypdf)"
+  },
+  {
+   "id": "ranaldo2010",
+   "title": "Safe Haven Currencies",
+   "url": "https://academic.oup.com/rof/article-abstract/14/3/385/1592162",
+   "authors": "Ranaldo, Soderlind",
+   "year": 2010,
+   "venue": "Review of Finance 14(3)",
+   "type": "paper",
+   "evidence": "DOCUMENTED",
+   "how_read": "search-result abstract/summary only"
+  },
+  {
+   "id": "evanslyons2002",
+   "title": "Order Flow and Exchange Rate Dynamics",
+   "url": "https://faculty.georgetown.edu/evansm1/wpapers_files/orderflow.pdf",
+   "authors": "Evans, Lyons",
+   "year": 2002,
+   "venue": "Journal of Political Economy 110(1)",
+   "type": "paper",
+   "evidence": "DOCUMENTED",
+   "how_read": "search-result abstract/summary only"
+  },
+  {
+   "id": "lrv2011",
+   "title": "Common Risk Factors in Currency Markets",
+   "url": "https://www.nber.org/papers/w14082",
+   "authors": "Lustig, Roussanov, Verdelhan",
+   "year": 2011,
+   "venue": "Review of Financial Studies 24(11)",
+   "type": "paper",
+   "evidence": "DOCUMENTED",
+   "how_read": "search-result abstract/summary only"
+  },
+  {
+   "id": "lrv2014",
+   "title": "Countercyclical Currency Risk Premia",
+   "url": "http://web.mit.edu/adrienv/www/LRV_JFE_2014.pdf",
+   "authors": "Lustig, Roussanov, Verdelhan",
+   "year": 2014,
+   "venue": "Journal of Financial Economics",
+   "type": "paper",
+   "evidence": "DOCUMENTED",
+   "how_read": "full text PDF read (pypdf)"
+  },
+  {
+   "id": "menkhoff2012mom",
+   "title": "Currency momentum strategies",
+   "url": "https://faculty.washington.edu/ss1110/IF/Sarno%20Currency%20Momentum%20JFE%20(1).pdf",
+   "authors": "Menkhoff, Sarno, Schmeling, Schrimpf",
+   "year": 2012,
+   "venue": "Journal of Financial Economics 106",
+   "type": "paper",
+   "evidence": "DOCUMENTED",
+   "how_read": "full text PDF read (pypdf)"
+  },
+  {
+   "id": "menkhoff2017val",
+   "title": "Currency Value",
+   "url": "https://openaccess.city.ac.uk/id/eprint/14851/13/FXVALUE_Rev3_cepr.pdf",
+   "authors": "Menkhoff, Sarno, Schmeling, Schrimpf",
+   "year": 2017,
+   "venue": "Review of Financial Studies 30(2)",
+   "type": "paper",
+   "evidence": "DOCUMENTED",
+   "how_read": "full text PDF read (pypdf)"
+  },
+  {
+   "id": "menkhoff2012vol",
+   "title": "Carry Trades and Global Foreign Exchange Volatility",
+   "url": "https://faculty.washington.edu/ss1110/IF/Sarno%20JF%20Carry%20Trade%20(1).pdf",
+   "authors": "Menkhoff, Sarno, Schmeling, Schrimpf",
+   "year": 2012,
+   "venue": "Journal of Finance 67(2)",
+   "type": "paper",
+   "evidence": "DOCUMENTED",
+   "how_read": "search-result abstract/summary only"
+  },
+  {
+   "id": "bnp2008",
+   "title": "Carry Trades and Currency Crashes",
+   "url": "https://www.nber.org/papers/w14473",
+   "authors": "Brunnermeier, Nagel, Pedersen",
+   "year": 2008,
+   "venue": "NBER Macroeconomics Annual 23",
+   "type": "paper",
+   "evidence": "DOCUMENTED",
+   "how_read": "search-result abstract/summary only"
+  },
+  {
+   "id": "dellacorte2016vrp",
+   "title": "Volatility risk premia and exchange rate predictability",
+   "url": "https://www.repository.cam.ac.uk/items/b09f6027-89c5-4b23-88ce-eae2c3fcbe68",
+   "authors": "Della Corte, Ramadorai, Sarno",
+   "year": 2016,
+   "venue": "Journal of Financial Economics 120(1)",
+   "type": "paper",
+   "evidence": "DOCUMENTED",
+   "how_read": "search-result abstract/summary only"
+  },
+  {
+   "id": "dellacorte2016nfa",
+   "title": "Currency Premia and Global Imbalances",
+   "url": "https://academic.oup.com/rfs/article-abstract/29/8/2161/2583738",
+   "authors": "Della Corte, Riddiough, Sarno",
+   "year": 2016,
+   "venue": "Review of Financial Studies 29(8)",
+   "type": "paper",
+   "evidence": "DOCUMENTED",
+   "how_read": "search-result abstract/summary only"
+  },
+  {
+   "id": "dahlquist2020",
+   "title": "Economic Momentum and Currency Returns",
+   "url": "https://www.sciencedirect.com/science/article/abs/pii/S0304405X19302211",
+   "authors": "Dahlquist, Hasseltoft",
+   "year": 2020,
+   "venue": "Journal of Financial Economics 136(1)",
+   "type": "paper",
+   "evidence": "DOCUMENTED",
+   "how_read": "search-result abstract/summary only"
+  },
+  {
+   "id": "mueller2017",
+   "title": "Exchange Rates and Monetary Policy Uncertainty",
+   "url": "https://www.kellogg.northwestern.edu/faculty/alirezat/FXAnnouncements.pdf",
+   "authors": "Mueller, Tahbaz-Salehi, Vedolin",
+   "year": 2017,
+   "venue": "Journal of Finance",
+   "type": "paper",
+   "evidence": "DOCUMENTED",
+   "how_read": "full text PDF read (pypdf)"
+  },
+  {
+   "id": "abdv2003",
+   "title": "Micro Effects of Macro Announcements: Real-Time Price Discovery in Foreign Exchange",
+   "url": "https://public.econ.duke.edu/~boller/Published_Papers/aer_03.pdf",
+   "authors": "Andersen, Bollerslev, Diebold, Vega",
+   "year": 2003,
+   "venue": "American Economic Review 93(1)",
+   "type": "paper",
+   "evidence": "DOCUMENTED",
+   "how_read": "search-result abstract/summary only"
+  },
+  {
+   "id": "ab1997",
+   "title": "Intraday periodicity and volatility persistence in financial markets",
+   "url": "https://finance.martinsewell.com/stylized-facts/volatility/AndersenBollerslev1997b.pdf",
+   "authors": "Andersen, Bollerslev",
+   "year": 1997,
+   "venue": "Journal of Empirical Finance 4",
+   "type": "paper",
+   "evidence": "DOCUMENTED",
+   "how_read": "search-result abstract/summary only"
+  },
+  {
+   "id": "lucca2015",
+   "title": "The Pre-FOMC Announcement Drift",
+   "url": "https://conference.nber.org/confer/2013/MEs13/Lucca_Moench.pdf",
+   "authors": "Lucca, Moench",
+   "year": 2015,
+   "venue": "Journal of Finance 70(1)",
+   "type": "paper",
+   "evidence": "DOCUMENTED",
+   "how_read": "full text PDF read (pypdf)"
+  },
+  {
+   "id": "cieslak2019",
+   "title": "Stock Returns over the FOMC Cycle",
+   "url": "https://faculty.haas.berkeley.edu/morse/research/papers/cycle_paper_cieslak_morse_vissingjorgensen.pdf",
+   "authors": "Cieslak, Morse, Vissing-Jorgensen",
+   "year": 2019,
+   "venue": "Journal of Finance 74(5)",
+   "type": "paper",
+   "evidence": "DOCUMENTED",
+   "how_read": "full text PDF read (pypdf)"
+  },
+  {
+   "id": "savor2013",
+   "title": "How Much Do Investors Care About Macroeconomic Risk? Evidence from Scheduled Economic Announcements",
+   "url": "https://rodneywhitecenter.wharton.upenn.edu/wp-content/uploads/2014/04/1018.pdf",
+   "authors": "Savor, Wilson",
+   "year": 2013,
+   "venue": "Journal of Financial and Quantitative Analysis 48(2)",
+   "type": "paper",
+   "evidence": "DOCUMENTED",
+   "how_read": "search-result abstract/summary only"
+  },
+  {
+   "id": "gao2018",
+   "title": "Market intraday momentum",
+   "url": "https://assets.super.so/e46b77e7-ee08-445e-b43f-4ffd88ae0a0e/files/ee7dac49-530b-4950-b5d0-e0b5eee08f2e.pdf",
+   "authors": "Gao, Han, Li, Zhou",
+   "year": 2018,
+   "venue": "Journal of Financial Economics 129(2)",
+   "type": "paper",
+   "evidence": "DOCUMENTED",
+   "how_read": "full text PDF read (pypdf)"
+  },
+  {
+   "id": "baltussen2021",
+   "title": "Hedging demand and market intraday momentum",
+   "url": "https://www3.nd.edu/~zda/intramom.pdf",
+   "authors": "Baltussen, Da, Lammers, Martens",
+   "year": 2021,
+   "venue": "Journal of Financial Economics 142",
+   "type": "paper",
+   "evidence": "DOCUMENTED",
+   "how_read": "full text PDF read (pypdf)"
+  },
+  {
+   "id": "elaut2018",
+   "title": "Intraday momentum in FX markets: Disentangling informed trading from liquidity provision",
+   "url": "https://papers.ssrn.com/sol3/papers.cfm?abstract_id=2694985",
+   "authors": "Elaut, Frommel, Lampaert",
+   "year": 2018,
+   "venue": "Journal of Financial Markets 37",
+   "type": "paper",
+   "evidence": "DOCUMENTED",
+   "how_read": "search-result abstract/summary only"
+  },
+  {
+   "id": "bondarenko2023",
+   "title": "Market Return Around the Clock: A Puzzle",
+   "url": "https://www.cambridge.org/core/journals/journal-of-financial-and-quantitative-analysis/article/abs/market-return-around-the-clock-a-puzzle/089E33AC0B4D3B9A02CBA31EDF6505B3",
+   "authors": "Bondarenko, Muravyev",
+   "year": 2023,
+   "venue": "JFQA 58(3)",
+   "type": "paper",
+   "evidence": "DOCUMENTED",
+   "how_read": "search-result abstract/summary only"
+  },
+  {
+   "id": "lou2019",
+   "title": "A tug of war: Overnight versus intraday expected returns",
+   "url": "https://personal.lse.ac.uk/polk/research/TugOfWar.pdf",
+   "authors": "Lou, Polk, Skouras",
+   "year": 2019,
+   "venue": "Journal of Financial Economics 134",
+   "type": "paper",
+   "evidence": "DOCUMENTED",
+   "how_read": "full text PDF read (pypdf)"
+  },
+  {
+   "id": "heston2010",
+   "title": "Intraday Patterns in the Cross-section of Stock Returns",
+   "url": "https://arxiv.org/abs/1005.3535",
+   "authors": "Heston, Korajczyk, Sadka",
+   "year": 2010,
+   "venue": "Journal of Finance",
+   "type": "paper",
+   "evidence": "DOCUMENTED",
+   "how_read": "search-result abstract/summary only"
+  },
+  {
+   "id": "mop2012",
+   "title": "Time series momentum",
+   "url": "https://w4.stern.nyu.edu/facdir/lpederse/papers/TimeSeriesMomentum.pdf",
+   "authors": "Moskowitz, Ooi, Pedersen (AQR)",
+   "year": 2012,
+   "venue": "Journal of Financial Economics 104",
+   "type": "paper",
+   "evidence": "DOCUMENTED",
+   "how_read": "full text PDF read (pypdf)"
+  },
+  {
+   "id": "hurst2017",
+   "title": "A Century of Evidence on Trend-Following Investing",
+   "url": "https://www.aqr.com/Insights/Research/Journal-Article/A-Century-of-Evidence-on-Trend-Following-Investing",
+   "authors": "Hurst, Ooi, Pedersen (AQR)",
+   "year": 2017,
+   "venue": "Journal of Portfolio Management 44(1)",
+   "type": "paper",
+   "evidence": "DOCUMENTED",
+   "how_read": "full text (sibling miner's extracted PDF text) + search"
+  },
+  {
+   "id": "goulding2023",
+   "title": "Momentum turning points",
+   "url": "https://people.duke.edu/~charvey/Research/Published_Papers/P158_Momentum_turning_points.pdf",
+   "authors": "Garg, Goulding, Harvey, Mazzoleni",
+   "year": 2023,
+   "venue": "Journal of Financial Economics 149",
+   "type": "paper",
+   "evidence": "DOCUMENTED",
+   "how_read": "full text PDF read (pypdf)"
+  },
+  {
+   "id": "levine2016",
+   "title": "Which Trend Is Your Friend?",
+   "url": "https://www.aqr.com/Insights/Research/Journal-Article/Which-Trend-Is-Your-Friend",
+   "authors": "Levine, Pedersen (AQR)",
+   "year": 2016,
+   "venue": "Financial Analysts Journal 72(3)",
+   "type": "paper",
+   "evidence": "DOCUMENTED",
+   "how_read": "search-result abstract/summary only"
+  },
+  {
+   "id": "amp2013",
+   "title": "Value and Momentum Everywhere",
+   "url": "https://pages.stern.nyu.edu/~lpederse/papers/ValMomEverywhere.pdf",
+   "authors": "Asness, Moskowitz, Pedersen (AQR)",
+   "year": 2013,
+   "venue": "Journal of Finance",
+   "type": "paper",
+   "evidence": "DOCUMENTED",
+   "how_read": "search-result abstract/summary only"
+  },
+  {
+   "id": "koijen2018",
+   "title": "Carry",
+   "url": "https://www.nber.org/system/files/working_papers/w19325/w19325.pdf",
+   "authors": "Koijen, Moskowitz, Pedersen, Vrugt",
+   "year": 2018,
+   "venue": "Journal of Financial Economics 127(2)",
+   "type": "paper",
+   "evidence": "DOCUMENTED",
+   "how_read": "full text PDF read (pypdf)"
+  },
+  {
+   "id": "daniel2016",
+   "title": "Momentum crashes",
+   "url": "https://www.kentdaniel.net/papers/published/jfe_16.pdf",
+   "authors": "Daniel, Moskowitz",
+   "year": 2016,
+   "venue": "Journal of Financial Economics",
+   "type": "paper",
+   "evidence": "DOCUMENTED",
+   "how_read": "search-result abstract/summary only"
+  },
+  {
+   "id": "moreira2017",
+   "title": "Volatility-Managed Portfolios",
+   "url": "https://www.nber.org/papers/w22208",
+   "authors": "Moreira, Muir",
+   "year": 2017,
+   "venue": "Journal of Finance 72(4)",
+   "type": "paper",
+   "evidence": "DOCUMENTED",
+   "how_read": "full text PDF read (pypdf)"
+  },
+  {
+   "id": "harvey2018vt",
+   "title": "The Impact of Volatility Targeting",
+   "url": "https://www.man.com/insights/the-impact-of-volatility-targeting",
+   "authors": "Harvey, Hoyle, Korgaonkar, Rattray, Sargaison, Van Hemert (Man Group)",
+   "year": 2018,
+   "venue": "Journal of Portfolio Management 45(1)",
+   "type": "paper",
+   "evidence": "DOCUMENTED",
+   "how_read": "search-result abstract/summary only"
+  },
+  {
+   "id": "nagel2012",
+   "title": "Evaporating Liquidity",
+   "url": "https://www.nber.org/system/files/working_papers/w17653/w17653.pdf",
+   "authors": "Stefan Nagel",
+   "year": 2012,
+   "venue": "Review of Financial Studies 25(7)",
+   "type": "paper",
+   "evidence": "DOCUMENTED",
+   "how_read": "full text PDF read (pypdf)"
+  },
+  {
+   "id": "lomackinlay1990",
+   "title": "When Are Contrarian Profits Due to Stock Market Overreaction?",
+   "url": "https://web.mit.edu/Alo/www/Papers/lo-mackinlay-90b.html",
+   "authors": "Lo, MacKinlay",
+   "year": 1990,
+   "venue": "Review of Financial Studies 3(2)",
+   "type": "paper",
+   "evidence": "DOCUMENTED",
+   "how_read": "search-result abstract/summary only"
+  },
+  {
+   "id": "lo2004",
+   "title": "The Adaptive Markets Hypothesis",
+   "url": "http://stat.wharton.upenn.edu/~steele/Courses/434/434Context/EfficientMarket/AndyLoJPM2004.pdf",
+   "authors": "Andrew W. Lo",
+   "year": 2004,
+   "venue": "Journal of Portfolio Management 30(5)",
+   "type": "paper",
+   "evidence": "REPORTED",
+   "how_read": "search-result abstract/summary only"
+  },
+  {
+   "id": "rapach2013",
+   "title": "International Stock Return Predictability: What Is the Role of the United States?",
+   "url": "https://onlinelibrary.wiley.com/doi/abs/10.1111/jofi.12041",
+   "authors": "Rapach, Strauss, Zhou",
+   "year": 2013,
+   "venue": "Journal of Finance 68",
+   "type": "paper",
+   "evidence": "DOCUMENTED",
+   "how_read": "search-result abstract/summary only"
+  },
+  {
+   "id": "chen2010",
+   "title": "Can Exchange Rates Forecast Commodity Prices?",
+   "url": "https://www.nber.org/papers/w13901",
+   "authors": "Chen, Rogoff, Rossi",
+   "year": 2010,
+   "venue": "Quarterly Journal of Economics 125(3)",
+   "type": "paper",
+   "evidence": "DOCUMENTED",
+   "how_read": "search-result abstract/summary only"
+  },
+  {
+   "id": "ferraro2015",
+   "title": "Can Oil Prices Forecast Exchange Rates?",
+   "url": "https://www.nber.org/papers/w17998",
+   "authors": "Ferraro, Rogoff, Rossi",
+   "year": 2015,
+   "venue": "Journal of International Money and Finance 54",
+   "type": "paper",
+   "evidence": "DOCUMENTED",
+   "how_read": "full text PDF read (pypdf)"
+  },
+  {
+   "id": "gorton2006",
+   "title": "Facts and Fantasies about Commodity Futures",
+   "url": "https://www.nber.org/papers/w10595",
+   "authors": "Gorton, Rouwenhorst",
+   "year": 2006,
+   "venue": "Financial Analysts Journal 62(2)",
+   "type": "paper",
+   "evidence": "DOCUMENTED",
+   "how_read": "search-result abstract/summary only"
+  },
+  {
+   "id": "szymanowska2014",
+   "title": "An Anatomy of Commodity Futures Risk Premia",
+   "url": "https://onlinelibrary.wiley.com/doi/abs/10.1111/jofi.12096",
+   "authors": "Szymanowska, de Roon, Nijman, van den Goorbergh",
+   "year": 2014,
+   "venue": "Journal of Finance 69(1)",
+   "type": "paper",
+   "evidence": "DOCUMENTED",
+   "how_read": "search-result abstract/summary only"
+  },
+  {
+   "id": "boons2019",
+   "title": "Basis-Momentum",
+   "url": "https://onlinelibrary.wiley.com/doi/abs/10.1111/jofi.12738",
+   "authors": "Boons, Porras Prado",
+   "year": 2019,
+   "venue": "Journal of Finance 74(1)",
+   "type": "paper",
+   "evidence": "DOCUMENTED",
+   "how_read": "search-result abstract/summary only"
+  },
+  {
+   "id": "basu2013",
+   "title": "Capturing the risk premium of commodity futures: The role of hedging pressure",
+   "url": "https://papers.ssrn.com/sol3/papers.cfm?abstract_id=1340873",
+   "authors": "Basu, Miffre",
+   "year": 2013,
+   "venue": "Journal of Banking & Finance 37(7)",
+   "type": "paper",
+   "evidence": "DOCUMENTED",
+   "how_read": "search-result abstract/summary only"
+  },
+  {
+   "id": "kang2020",
+   "title": "A Tale of Two Premiums: The Role of Hedgers and Speculators in Commodity Futures Markets",
+   "url": "https://onlinelibrary.wiley.com/doi/abs/10.1111/jofi.12845",
+   "authors": "Kang, Rouwenhorst, Tang",
+   "year": 2020,
+   "venue": "Journal of Finance 75",
+   "type": "paper",
+   "evidence": "DOCUMENTED",
+   "how_read": "search-result abstract/summary only"
+  },
+  {
+   "id": "klitgaard2004",
+   "title": "Exchange Rate Changes and Net Positions of Speculators in the Futures Market",
+   "url": "https://www.newyorkfed.org/medialibrary/media/research/epr/04v10n1/0405klitpdf.pdf",
+   "authors": "Klitgaard, Weir",
+   "year": 2004,
+   "venue": "FRBNY Economic Policy Review",
+   "type": "paper",
+   "evidence": "DOCUMENTED",
+   "how_read": "full text PDF read (pypdf)"
+  },
+  {
+   "id": "mou2011",
+   "title": "Limits to Arbitrage and Commodity Index Investment: Front-Running the Goldman Roll",
+   "url": "https://papers.ssrn.com/sol3/papers.cfm?abstract_id=1716841",
+   "authors": "Yiqun Mou",
+   "year": 2011,
+   "venue": "SSRN working paper",
+   "type": "paper",
+   "evidence": "REPORTED",
+   "how_read": "search-result abstract/summary only"
+  },
+  {
+   "id": "wen2023",
+   "title": "Intraday Return Predictability in the Crude Oil Market: The Role of EIA Inventory Announcements",
+   "url": "https://ideas.repec.org/a/sae/enejou/v44y2023i5p149-172.html",
+   "authors": "Wen, Indriawan, Lien, Xu",
+   "year": 2023,
+   "venue": "The Energy Journal 44(5)",
+   "type": "paper",
+   "evidence": "DOCUMENTED",
+   "how_read": "search-result abstract/summary only"
+  },
+  {
+   "id": "halova2014",
+   "title": "Noisy Inventory Announcements and Energy Prices",
+   "url": "https://onlinelibrary.wiley.com/doi/abs/10.1002/fut.21633",
+   "authors": "Halova, Kurov, Kucher",
+   "year": 2014,
+   "venue": "Journal of Futures Markets 34(10)",
+   "type": "paper",
+   "evidence": "DOCUMENTED",
+   "how_read": "search-result abstract/summary only"
+  },
+  {
+   "id": "lou2013",
+   "title": "Anticipated and Repeated Shocks in Liquid Markets",
+   "url": "https://personal.lse.ac.uk/loud/Shocks.pdf",
+   "authors": "Lou, Yan, Zhang",
+   "year": 2013,
+   "venue": "Review of Financial Studies 26(8)",
+   "type": "paper",
+   "evidence": "DOCUMENTED",
+   "how_read": "full text PDF read (pypdf)"
+  },
+  {
+   "id": "etula2020",
+   "title": "Dash for Cash: Monthly Market Impact of Institutional Liquidity Needs",
+   "url": "https://doi.org/10.1093/rfs/hhz054",
+   "authors": "Etula, Rinne, Suominen, Vaittinen",
+   "year": 2020,
+   "venue": "Review of Financial Studies 33(1)",
+   "type": "paper",
+   "evidence": "DOCUMENTED",
+   "how_read": "search-result abstract/summary only"
+  },
+  {
+   "id": "mcconnell2008",
+   "title": "Equity Returns at the Turn of the Month",
+   "url": "https://business.purdue.edu/faculty/mcconnell/publications/Equity-Returns-at-the-Turn-of-the-Month.pdf",
+   "authors": "McConnell, Xu",
+   "year": 2008,
+   "venue": "Financial Analysts Journal 64(2)",
+   "type": "paper",
+   "evidence": "DOCUMENTED",
+   "how_read": "search-result abstract/summary only"
+  },
+  {
+   "id": "bouman2002",
+   "title": "The Halloween Indicator, 'Sell in May and Go Away': Another Puzzle",
+   "url": "https://www.aeaweb.org/articles?id=10.1257%2F000282802762024683",
+   "authors": "Bouman, Jacobsen",
+   "year": 2002,
+   "venue": "American Economic Review",
+   "type": "paper",
+   "evidence": "DOCUMENTED",
+   "how_read": "search-result abstract/summary only"
+  },
+  {
+   "id": "keloharju2016",
+   "title": "Return Seasonalities",
+   "url": "https://onlinelibrary.wiley.com/doi/abs/10.1111/jofi.12398",
+   "authors": "Keloharju, Linnainmaa, Nyberg",
+   "year": 2016,
+   "venue": "Journal of Finance 71(4)",
+   "type": "paper",
+   "evidence": "DOCUMENTED",
+   "how_read": "search-result abstract/summary only"
+  },
+  {
+   "id": "baur2013",
+   "title": "The autumn effect of gold",
+   "url": "https://ideas.repec.org/a/eee/riibaf/v27y2013i1p1-11.html",
+   "authors": "Dirk G. Baur",
+   "year": 2013,
+   "venue": "Research in International Business and Finance 27(1)",
+   "type": "paper",
+   "evidence": "DOCUMENTED",
+   "how_read": "search-result abstract/summary only"
+  },
+  {
+   "id": "caminschi2014",
+   "title": "Fixing a Leaky Fixing: Short-Term Market Reactions to the London PM Gold Price Fixing",
+   "url": "https://onlinelibrary.wiley.com/doi/abs/10.1002/fut.21636",
+   "authors": "Caminschi, Heaney",
+   "year": 2014,
+   "venue": "Journal of Futures Markets 34(11)",
+   "type": "paper",
+   "evidence": "DOCUMENTED",
+   "how_read": "search-result abstract/summary only"
+  },
+  {
+   "id": "iwatsubo2018",
+   "title": "Intraday seasonality in efficiency, liquidity, volatility and volume: Platinum and gold futures in Tokyo and New York",
+   "url": "https://www.rieti.go.jp/jp/publications/dp/17e120.pdf",
+   "authors": "Iwatsubo, Watkins, Xu",
+   "year": 2018,
+   "venue": "Journal of Commodity Markets",
+   "type": "paper",
+   "evidence": "DOCUMENTED",
+   "how_read": "search-result abstract/summary only"
+  },
+  {
+   "id": "liu2021",
+   "title": "Risks and Returns of Cryptocurrency",
+   "url": "https://www.nber.org/papers/w24877",
+   "authors": "Liu, Tsyvinski",
+   "year": 2021,
+   "venue": "Review of Financial Studies 34(6)",
+   "type": "paper",
+   "evidence": "DOCUMENTED",
+   "how_read": "search-result abstract/summary only"
+  },
+  {
+   "id": "zarattini2023",
+   "title": "Can Day Trading Really Be Profitable?",
+   "url": "https://papers.ssrn.com/sol3/papers.cfm?abstract_id=4416622",
+   "authors": "Zarattini, Aziz",
+   "year": 2023,
+   "venue": "SSRN working paper",
+   "type": "paper",
+   "evidence": "REPORTED",
+   "how_read": "search-result abstract/summary only"
+  },
+  {
+   "id": "mql5orb2026",
+   "title": "The opening-range breakout paper, replicated on five indices: gross reproduced, net zero",
+   "url": "https://www.mql5.com/en/blogs/post/776235",
+   "authors": "MQL5 trader blog",
+   "year": 2026,
+   "venue": "MQL5 blog",
+   "type": "practitioner replication",
+   "evidence": "REPORTED",
+   "how_read": "fetched page"
+  },
+  {
+   "id": "chan2013",
+   "title": "Algorithmic Trading: Winning Strategies and Their Rationale",
+   "url": "https://www.wiley.com/en-us/Algorithmic+Trading:+Winning+Strategies+and+Their+Rationale-p-9781118460146",
+   "authors": "Ernest P. Chan",
+   "year": 2013,
+   "venue": "Wiley (book)",
+   "type": "book",
+   "evidence": "REPORTED",
+   "how_read": "search-result abstract/summary only"
+  },
+  {
+   "id": "narang2013",
+   "title": "Inside the Black Box (2nd ed.)",
+   "url": "https://www.oreilly.com/library/view/inside-the-black/9781118416990/",
+   "authors": "Rishi K. Narang",
+   "year": 2013,
+   "venue": "Wiley (book)",
+   "type": "book",
+   "evidence": "REPORTED",
+   "how_read": "search-result abstract/summary only"
+  },
+  {
+   "id": "kakushadze2018",
+   "title": "151 Trading Strategies",
+   "url": "https://papers.ssrn.com/sol3/papers.cfm?abstract_id=3247865",
+   "authors": "Kakushadze, Serur",
+   "year": 2018,
+   "venue": "Palgrave Macmillan (book) / SSRN",
+   "type": "book",
+   "evidence": "REPORTED",
+   "how_read": "search-result abstract/summary only"
+  },
+  {
+   "id": "kakushadze2016",
+   "title": "101 Formulaic Alphas",
+   "url": "https://arxiv.org/pdf/1601.00991",
+   "authors": "Zura Kakushadze (WorldQuant)",
+   "year": 2016,
+   "venue": "Wilmott / arXiv",
+   "type": "paper",
+   "evidence": "REPORTED",
+   "how_read": "search-result abstract/summary only"
+  },
+  {
+   "id": "tulchinsky2019",
+   "title": "Finding Alphas (2nd ed.)",
+   "url": "https://www.wiley.com/en-us/Finding+Alphas:+A+Quantitative+Approach+to+Building+Trading+Strategies,+2nd+Edition-p-9781119571278",
+   "authors": "Tulchinsky et al. (WorldQuant)",
+   "year": 2019,
+   "venue": "Wiley (book)",
+   "type": "book",
+   "evidence": "REPORTED",
+   "how_read": "search-result abstract/summary only"
+  },
+  {
+   "id": "grinoldkahn",
+   "title": "The Fundamental Law of Active Management (Grinold 1989; Grinold & Kahn 2000; Clarke, de Silva, Thorley 2002)",
+   "url": "https://www.cfainstitute.org/insights/professional-learning/refresher-readings/2026/analysis-active-portfolio-management",
+   "authors": "Grinold, Kahn; Clarke, de Silva, Thorley",
+   "year": 2002,
+   "venue": "CFA Institute reading / JPM",
+   "type": "book+paper",
+   "evidence": "DOCUMENTED",
+   "how_read": "search-result abstract/summary only"
+  },
+  {
+   "id": "avellaneda_fl",
+   "title": "The Fundamental Law of Active Management: Time Series Dynamics",
+   "url": "https://math.nyu.edu/inmemoriam/avellaneda/FundamentalLawFT.pdf",
+   "authors": "Avellaneda et al. (NYU)",
+   "year": null,
+   "venue": "working paper",
+   "type": "paper",
+   "evidence": "REPORTED",
+   "how_read": "search-result abstract/summary only"
+  },
+  {
+   "id": "hlz2016",
+   "title": "... and the Cross-Section of Expected Returns",
+   "url": "https://people.duke.edu/~charvey/Research/Published_Papers/P118_and_the_cross.PDF",
+   "authors": "Harvey, Liu, Zhu",
+   "year": 2016,
+   "venue": "Review of Financial Studies 29(1)",
+   "type": "paper",
+   "evidence": "DOCUMENTED",
+   "how_read": "full text PDF read (pypdf)"
+  },
+  {
+   "id": "harveyliu2015",
+   "title": "Backtesting",
+   "url": "https://papers.ssrn.com/abstract=2345489",
+   "authors": "Harvey, Liu",
+   "year": 2015,
+   "venue": "Journal of Portfolio Management 42(1)",
+   "type": "paper",
+   "evidence": "DOCUMENTED",
+   "how_read": "search-result abstract/summary only"
+  },
+  {
+   "id": "hxz2020",
+   "title": "Replicating Anomalies",
+   "url": "https://global-q.org/uploads/1/2/2/6/122679606/houxuezhang2020rfs.pdf",
+   "authors": "Hou, Xue, Zhang",
+   "year": 2020,
+   "venue": "Review of Financial Studies 33(5)",
+   "type": "paper",
+   "evidence": "DOCUMENTED",
+   "how_read": "search-result abstract/summary only"
+  },
+  {
+   "id": "chenzimmermann2022",
+   "title": "Open Source Cross-Sectional Asset Pricing",
+   "url": "https://www.openassetpricing.com/",
+   "authors": "Chen, Zimmermann",
+   "year": 2022,
+   "venue": "Critical Finance Review",
+   "type": "paper+data",
+   "evidence": "DOCUMENTED",
+   "how_read": "search-result abstract/summary only"
+  },
+  {
+   "id": "novymarx2015",
+   "title": "Backtesting Strategies Based on Multiple Signals",
+   "url": "https://www.nber.org/system/files/working_papers/w21329/w21329.pdf",
+   "authors": "Robert Novy-Marx",
+   "year": 2015,
+   "venue": "NBER WP 21329",
+   "type": "paper",
+   "evidence": "DOCUMENTED",
+   "how_read": "full text PDF read (pypdf)"
+  },
+  {
+   "id": "baileyldp2014",
+   "title": "The Deflated Sharpe Ratio: Correcting for Selection Bias, Backtest Overfitting and Non-Normality",
+   "url": "https://papers.ssrn.com/sol3/papers.cfm?abstract_id=2460551",
+   "authors": "Bailey, Lopez de Prado",
+   "year": 2014,
+   "venue": "Journal of Portfolio Management 40(5)",
+   "type": "paper",
+   "evidence": "DOCUMENTED",
+   "how_read": "full text PDF read (pypdf)search-result abstract/summary only"
+  },
+  {
+   "id": "bailey2017pbo",
+   "title": "The Probability of Backtest Overfitting",
+   "url": "https://www.davidhbailey.com/dhbpapers/backtest-prob.pdf",
+   "authors": "Bailey, Borwein, Lopez de Prado, Zhu",
+   "year": 2017,
+   "venue": "Journal of Computational Finance",
+   "type": "paper",
+   "evidence": "DOCUMENTED",
+   "how_read": "full text PDF read (pypdf)"
+  },
+  {
+   "id": "ldplewis2019",
+   "title": "Detection of false investment strategies using unsupervised learning methods",
+   "url": "https://www.tandfonline.com/doi/abs/10.1080/14697688.2019.1622311",
+   "authors": "Lopez de Prado, Lewis",
+   "year": 2019,
+   "venue": "Quantitative Finance 19(9)",
+   "type": "paper",
+   "evidence": "DOCUMENTED",
+   "how_read": "search-result abstract/summary only"
+  },
+  {
+   "id": "ldp2016hrp",
+   "title": "Building Diversified Portfolios that Outperform Out of Sample",
+   "url": "https://jpm.pm-research.com/content/42/4/59.short",
+   "authors": "Marcos Lopez de Prado",
+   "year": 2016,
+   "venue": "Journal of Portfolio Management 42(4)",
+   "type": "paper",
+   "evidence": "DOCUMENTED",
+   "how_read": "search-result abstract/summary only"
+  },
+  {
+   "id": "afml_ch3",
+   "title": "Advances in Financial Machine Learning, ch. 3 Labeling (triple barrier, meta-labeling)",
+   "url": "https://www.oreilly.com/library/view/advances-in-financial/9781119482086/c03.xhtml",
+   "authors": "Marcos Lopez de Prado",
+   "year": 2018,
+   "venue": "Wiley (book)",
+   "type": "book",
+   "evidence": "REPORTED",
+   "how_read": "search-result abstract/summary only"
+  },
+  {
+   "id": "afml_ch4",
+   "title": "Advances in Financial Machine Learning, ch. 4 Sample weights (uniqueness, sequential bootstrap) - mlfinpy docs",
+   "url": "https://mlfinpy.readthedocs.io/en/latest/Sampling.html",
+   "authors": "Lopez de Prado; mlfinpy",
+   "year": 2018,
+   "venue": "book / docs",
+   "type": "book",
+   "evidence": "REPORTED",
+   "how_read": "search-result abstract/summary only"
+  },
+  {
+   "id": "afml_ch5",
+   "title": "Fractionally Differentiated Features (AFML ch. 5) - Hudson & Thames",
+   "url": "https://hudsonthames.org/fractional-differentiation/",
+   "authors": "Lopez de Prado; Hudson & Thames",
+   "year": 2018,
+   "venue": "book / practitioner",
+   "type": "book",
+   "evidence": "REPORTED",
+   "how_read": "search-result abstract/summary only"
+  },
+  {
+   "id": "ldp2020cfi",
+   "title": "Clustered Feature Importance (presentation slides) / Machine Learning for Asset Managers",
+   "url": "https://papers.ssrn.com/sol3/papers.cfm?abstract_id=3517595",
+   "authors": "Marcos Lopez de Prado",
+   "year": 2020,
+   "venue": "SSRN / Cambridge Elements",
+   "type": "book",
+   "evidence": "REPORTED",
+   "how_read": "search-result abstract/summary only"
+  },
+  {
+   "id": "joubert2022",
+   "title": "Meta-Labeling: Theory and Framework",
+   "url": "https://papers.ssrn.com/sol3/papers.cfm?abstract_id=4032018",
+   "authors": "Jacques F. Joubert (Hudson & Thames)",
+   "year": 2022,
+   "venue": "Journal of Financial Data Science",
+   "type": "paper",
+   "evidence": "REPORTED",
+   "how_read": "search-result abstract/summary only"
+  },
+  {
+   "id": "arian2024",
+   "title": "Backtest overfitting in the machine learning era: A comparison of out-of-sample testing methods in a synthetic controlled environment",
+   "url": "https://www.sciencedirect.com/science/article/abs/pii/S0950705124011110",
+   "authors": "Arian, Norouzi, Seco",
+   "year": 2024,
+   "venue": "Knowledge-Based Systems",
+   "type": "paper",
+   "evidence": "DOCUMENTED",
+   "how_read": "search-result abstract/summary only"
+  },
+  {
+   "id": "elo2012",
+   "title": "Flow Toxicity and Liquidity in a High-frequency World",
+   "url": "https://academic.oup.com/rfs/article-abstract/25/5/1457/1569929",
+   "authors": "Easley, Lopez de Prado, O'Hara",
+   "year": 2012,
+   "venue": "Review of Financial Studies 25(5)",
+   "type": "paper",
+   "evidence": "DOCUMENTED",
+   "how_read": "search-result abstract/summary only"
+  },
+  {
+   "id": "thorp2006",
+   "title": "The Kelly Criterion in Blackjack, Sports Betting, and the Stock Market",
+   "url": "https://gwern.net/doc/statistics/decision/2006-thorp.pdf",
+   "authors": "Edward O. Thorp",
+   "year": 2006,
+   "venue": "Handbook of Asset and Liability Management",
+   "type": "paper",
+   "evidence": "DOCUMENTED",
+   "how_read": "full text PDF read (pypdf)"
+  },
+  {
+   "id": "spitznagel2021",
+   "title": "Safe Haven: Investing for Financial Storms",
+   "url": "https://www.wiley.com/en-us/Safe+Haven%3A+Investing+for+Financial+Storms-p-9781119401797",
+   "authors": "Mark Spitznagel (Universa)",
+   "year": 2021,
+   "venue": "Wiley (book)",
+   "type": "book",
+   "evidence": "REPORTED",
+   "how_read": "search-result abstract/summary only"
+  },
+  {
+   "id": "claeskens2016",
+   "title": "The forecast combination puzzle: A simple theoretical explanation",
+   "url": "https://www.janmagnus.nl/papers/JRM113a.pdf",
+   "authors": "Claeskens, Magnus, Vasnev, Wang",
+   "year": 2016,
+   "venue": "International Journal of Forecasting",
+   "type": "paper",
+   "evidence": "DOCUMENTED",
+   "how_read": "search-result abstract/summary only"
+  },
+  {
+   "id": "demiguel2009",
+   "title": "Optimal Versus Naive Diversification: How Inefficient is the 1/N Portfolio Strategy?",
+   "url": "https://academic.oup.com/rfs/article-abstract/22/5/1915/1592901",
+   "authors": "DeMiguel, Garlappi, Uppal",
+   "year": 2009,
+   "venue": "Review of Financial Studies 22(5)",
+   "type": "paper",
+   "evidence": "DOCUMENTED",
+   "how_read": "search-result abstract/summary only"
+  },
+  {
+   "id": "kelly2024",
+   "title": "The Virtue of Complexity in Return Prediction",
+   "url": "https://www.nber.org/system/files/working_papers/w30217/w30217.pdf",
+   "authors": "Kelly, Malamud, Zhou",
+   "year": 2024,
+   "venue": "Journal of Finance 79",
+   "type": "paper",
+   "evidence": "DOCUMENTED",
+   "how_read": "search-result abstract/summary only"
+  },
+  {
+   "id": "nystrup2015",
+   "title": "Regime-based versus static asset allocation: Letting the data speak / Dynamic portfolio optimization across hidden market regimes",
+   "url": "https://backend.orbit.dtu.dk/ws/files/139272081/Dynamic_Portfolio_Optimization_Across_Hidden_Market_Regimes_ACCEPTED.pdf",
+   "authors": "Nystrup, Hansen, Madsen, Lindstrom",
+   "year": 2015,
+   "venue": "JPM / Quantitative Finance",
+   "type": "paper",
+   "evidence": "DOCUMENTED",
+   "how_read": "search-result abstract/summary only"
+  },
+  {
+   "id": "ang2012",
+   "title": "Regime Changes and Financial Markets",
+   "url": "https://www.annualreviews.org/content/journals/10.1146/annurev-financial-110311-101808",
+   "authors": "Ang, Timmermann",
+   "year": 2012,
+   "venue": "Annual Review of Financial Economics 4",
+   "type": "paper",
+   "evidence": "DOCUMENTED",
+   "how_read": "search-result abstract/summary only"
+  }
+ ],
+ "practitioners_data": [
+  "https://api.gdeltproject.org/api/v2/doc/doc?query=%22gold%20price%22&mode=timelinetone&format=json",
+  "https://arxiv.org/pdf/2301.13204",
+  "https://bettersystemtrader.com/6-ways-to-detect-a-failing-trading-strategy-with-kevin-davey/",
+  "https://chatwithtraders.com/episodes-by-topic-quant-algo",
+  "https://concretumgroup.com/papers/",
+  "https://data-api.ecb.europa.eu/service/data/EXR/D.USD.EUR.SP00.A?format=csvdata",
+  "https://data.snb.ch/api/cube/snbgwdchfsgw/data/csv/en",
+  "https://datafeed.dukascopy.com/datafeed/EURUSD/2024/00/02/10h_ticks.bi5",
+  "https://dekalogblog.blogspot.com/2020/07/forex-intraday-seasonality.html",
+  "https://finance.biggo.com/podcast/57764de98bd370e7",
+  "https://finance.biggo.com/podcast/6fb6a429f599196c",
+  "https://finance.biggo.com/podcast/d6e46d535bc79bfd",
+  "https://forexdetox.substack.com/p/the-4-pm-london-fix-anomaly-at-month",
+  "https://forexdetox.substack.com/p/the-tokyo-fix-reversal-anomaly-on",
+  "https://fusionmarkets.com/posts/forex-month-end-flows",
+  "https://libertystreeteconomics.newyorkfed.org/2026/07/the-disappearing-overnight-drift/",
+  "https://markets.newyorkfed.org/api/pd/latest/SBN2022.json",
+  "https://nfs.faireconomy.media/ff_calendar_thisweek.json",
+  "https://paperswithbacktest.com/strategies/limits-to-arbitrage-and-commodity-index-investment-front-running-the-goldman-roll",
+  "https://personal.lse.ac.uk/loud/Shocks.pdf",
+  "https://pmc.ncbi.nlm.nih.gov/articles/PMC7525326/",
+  "https://prices.lbma.org.uk/json/gold_pm.json",
+  "https://publicreporting.cftc.gov/resource/gpe5-46if.json",
+  "https://quantocracy.com/",
+  "https://quantpedia.com/screener?FilterMarkets=currencies",
+  "https://quickstats.nass.usda.gov/api",
+  "https://raw.githubusercontent.com/Robot-Wealth/intraday-fx-seasonality-app/master/README.md",
+  "https://researchimpact.uwa.edu.au/research-impact-stories/fixing-a-leaky-fixing/",
+  "https://robotwealth.com/index-of-strategies/",
+  "https://robotwealth.com/overnight-and-intraday-spx-returns/",
+  "https://robotwealth.com/the-art-and-science-of-trading-carry/",
+  "https://rpc.cfainstitute.org/blogs/enterprising-investor/2026/decoding-cta-allocations-by-trend-horizon",
+  "https://signalsandthreads.com/",
+  "https://signalsandthreads.com/finding-signal-in-the-noise/",
+  "https://signalsandthreads.com/wrestling-the-world-into-rows/",
+  "https://sites.insead.edu/facultyresearch/research/file.cfm?fid=66802",
+  "https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/en.wikipedia/all-access/user/Gold/daily/20250101/20250105",
+  "https://www.algoadvantage.io/podcast/036-kevin-davey-part-1/",
+  "https://www.algoadvantage.io/podcast/050-samir-varma/",
+  "https://www.algoadvantage.io/podcast/051-samir-varma-2/",
+  "https://www.algoadvantage.io/podcast/052-martyn-tinsley-1/",
+  "https://www.algoadvantage.io/podcast/053-martyn-tinsley-2/",
+  "https://www.algoadvantage.io/podcast/055-toby-crabel/",
+  "https://www.algoadvantage.io/podcast/john-bollinger/",
+  "https://www.buysidedigest.com/podcast/rob-carver-on-trend-following-skew-and-the-total-portfolio-shift-systematic-investor-ep-375/",
+  "https://www.chinamoney.com.cn/english/bmkcpr/",
+  "https://www.cicfconf.org/sites/default/files/paper_67.pdf",
+  "https://www.deribit.com/api/v2/public/get_book_summary_by_currency?currency=BTC&kind=option",
+  "https://www.dukascopy.com/swiss/english/marketwatch/sentiment/",
+  "https://www.ecb.europa.eu/events/pdf/conferences/131216/Third_FX_Workshop_MELVIN_PRINS_Equity%20hedging%20and%20exchange%20rates%20Nov%202013.pdf",
+  "https://www.eia.gov/petroleum/supply/weekly/schedule.php",
+  "https://www.flirtingwithmodels.com/episodes",
+  "https://www.flirtingwithmodels.com/episodes/0BxaQSF0wsB",
+  "https://www.flirtingwithmodels.com/episodes/1iIqmQ7piJd",
+  "https://www.flirtingwithmodels.com/episodes/28ZRifWYdho",
+  "https://www.flirtingwithmodels.com/episodes/8V74zBaN4jN",
+  "https://www.flirtingwithmodels.com/episodes/DLtqprallYi",
+  "https://www.flirtingwithmodels.com/episodes/DUBaDWr2lL0",
+  "https://www.flirtingwithmodels.com/episodes/O2AWOMGEWHH",
+  "https://www.flirtingwithmodels.com/episodes/kN9nxF2iJ8F",
+  "https://www.flirtingwithmodels.com/episodes/mDCRKBfrVHQ",
+  "https://www.histdata.com/download-free-forex-data/",
+  "https://www.ice.com/report/122",
+  "https://www.janestreet.com/join-jane-street/interviewing/",
+  "https://www.janestreet.com/static/pdfs/trading-interview.pdf",
+  "https://www.jpx.co.jp/english/markets/statistics-equities/investor-type/index.html",
+  "https://www.lme.com/en/market-data/reports-and-data/commitments-of-traders",
+  "https://www.man.com/insights/lss-trendsetters-mechanics-of-trend-following",
+  "https://www.mof.go.jp/english/policy/international_policy/reference/feio/index.html",
+  "https://www.nature.com/articles/srep01801",
+  "https://www.nber.org/system/files/working_papers/w23327/w23327.pdf",
+  "https://www.newyorkfed.org/research/staff_reports/sr917",
+  "https://www.quantseeker.com/p/trading-the-fed-the-pre-fomc-drift",
+  "https://www.snb.ch/public/asset/en/www-snb-ch/publications/research/working-papers/2011/working_paper_2011_04/publications0_en/working_paper_2011_04.n.pdf",
+  "https://www.toptradersunplugged.com/podcast/what-happens-when-ai-starts-trading-the-markets-ft-rob-carver",
+  "https://www.treasurydirect.gov/TA_WS/securities/auctioned?format=json&type=Note",
+  "https://www.truefx.com/truefx-historical-downloads/",
+  "https://www3.nd.edu/~zda/intramom.pdf"
+ ]
+}

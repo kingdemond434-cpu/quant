@@ -1,0 +1,555 @@
+{
+ "source": "firm_mining",
+ "cluster": "renaissance",
+ "mined_at": "2026-09-27T02:00:00+00:00",
+ "discoveries": [
+  {
+   "kind": "hypothesis",
+   "family": "overnight_gap_decay",
+   "symbols": [
+    "US500",
+    "NAS100",
+    "US30",
+    "US2000",
+    "GER40",
+    "UK100",
+    "XAUUSD",
+    "XTIUSD",
+    "XBRUSD",
+    "UST10Y"
+   ],
+   "mechanism": "Laufer-era Medallion futures rule (1989-90 rebuild): when a futures contract opened unusually low versus the prior close, buy; unusually high, sell - i.e. fade the opening gap and hold into the session. Reported as part of the reversion core that drove the 1990 turnaround. On MT5 the analogue is the daily-session reopen gap on index, gold, crude and bond CFDs (and the Sunday reopen). Test gap thresholds in ATR units with the family's existing grid; condition on gap size and whether the gap is news-driven (scheduled release) vs liquidity-driven.",
+   "firm": "Renaissance",
+   "evidence": "REPORTED",
+   "source_url": "https://calvinrosser.com/notes/the-man-who-solved-the-market-jim-simons/",
+   "source_title": "The Man Who Solved the Market: Summary & Notes (Calvin Rosser)",
+   "quote": "The strategies were often based on the idea that prices tend to revert after an initial move higher or lower.",
+   "horizon": "intraday",
+   "asset_classes": [
+    "indices",
+    "metals",
+    "energy",
+    "bonds"
+   ],
+   "source": "firm_mining",
+   "cluster": "renaissance",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "session_handoff",
+   "params": {
+    "direction": "learned (+1/-1 both tested)"
+   },
+   "symbols": [
+    "EURUSD",
+    "GBPUSD",
+    "USDJPY",
+    "AUDUSD",
+    "XAUUSD",
+    "US500",
+    "GER40"
+   ],
+   "mechanism": "Laufer's five-minute-bar work: splitting the trading day into halves, quarters then 5-minute bars exposed 'nonrandom trading effects', e.g. price bands in Friday morning's action predicting bands later the same afternoon. Generalised: the return/range of an early intraday segment predicts the sign of a later segment of the same day. session_handoff already encodes 'information in source session priced in later session' with direction LEARNED; test morning(London/NY-open) -> afternoon handoffs, and a Friday-only variant.",
+   "firm": "Renaissance",
+   "evidence": "REPORTED",
+   "source_url": "https://twoquants.com/the-man-who-solved-the-market-part-1/",
+   "source_title": "Takeaways From The Man Who Solved the Market - Part 1 (Twoquants)",
+   "quote": "Certain trading bands from Friday morning's action had the uncanny ability to predict bands later that same afternoon",
+   "horizon": "intraday",
+   "asset_classes": [
+    "fx",
+    "metals",
+    "indices"
+   ],
+   "source": "firm_mining",
+   "cluster": "renaissance",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "session_handoff",
+   "symbols": [
+    "EURUSD",
+    "GBPUSD",
+    "USDJPY",
+    "AUDUSD",
+    "USDCAD",
+    "USDCHF",
+    "NZDUSD",
+    "XAUUSD",
+    "XAGUSD",
+    "US500",
+    "NAS100",
+    "US30",
+    "US2000",
+    "XTIUSD",
+    "XBRUSD"
+   ],
+   "mechanism": "The 'twenty-four-hour effect' Laufer found: the previous day's trading often predicts the next day's. The week was modelled as ten segments - five overnight and five day sessions - each with its own conditional behaviour. On a 24h CFD book this maps to handoffs between the Asia/overnight segment and the following day segment (and day->next overnight). Test each of the 10 weekly segment pairs separately with walk-forward, charging the trial count (10 segments x symbols) against the family-wise budget.",
+   "firm": "Renaissance",
+   "evidence": "REPORTED",
+   "source_url": "https://mleverything.substack.com/p/how-renaissance-technologies-solved-the-market-part-1-2814eb271dc3",
+   "source_title": "How Renaissance Technologies Solved the Market: Part 1 - Pipeline",
+   "quote": "the previous day's trading often can predict the next day's activity",
+   "horizon": "1-5d",
+   "asset_classes": [
+    "fx",
+    "metals",
+    "indices",
+    "energy"
+   ],
+   "source": "firm_mining",
+   "cluster": "renaissance",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "monday_gap",
+   "params": {
+    "mode": "momentum"
+   },
+   "symbols": [
+    "US500",
+    "NAS100",
+    "GER40",
+    "XAUUSD",
+    "EURUSD",
+    "USDJPY"
+   ],
+   "mechanism": "Weekend effect as reported from Laufer's research: Monday's price action often followed Friday's; the fund bought late Friday when the market was trending up and sold early Monday. Direction = continuation of Friday's intraday trend into the Monday open. monday_gap mode='momentum' is the nearest registered form (enter with the Friday trend, exit early Monday); test also a Friday-close entry version.",
+   "firm": "Renaissance",
+   "evidence": "REPORTED",
+   "source_url": "https://mleverything.substack.com/p/how-renaissance-technologies-solved-the-market-part-1-2814eb271dc3",
+   "source_title": "How Renaissance Technologies Solved the Market: Part 1 - Pipeline",
+   "quote": "Monday's price action often followed Friday's",
+   "horizon": "1-5d",
+   "asset_classes": [
+    "indices",
+    "metals",
+    "fx"
+   ],
+   "source": "firm_mining",
+   "cluster": "renaissance",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "dow_effect",
+   "symbols": [
+    "EURUSD",
+    "GBPUSD",
+    "USDJPY",
+    "XAUUSD",
+    "US500",
+    "XTIUSD"
+   ],
+   "mechanism": "Day-of-week recurrences were among the first 'ghost' signals the Axcom/Medallion team kept: faint, statistically significant, recurring. The desk should test per-symbol day-of-week conditional returns (dow_long/dow_short grid) but only admit cells that clear p<0.01 AND are stable across sub-periods, which is the bar the firm reportedly used.",
+   "firm": "Renaissance",
+   "evidence": "REPORTED",
+   "source_url": "https://twoquants.com/the-man-who-solved-the-market-part-1/",
+   "source_title": "Takeaways From The Man Who Solved the Market - Part 1 (Twoquants)",
+   "quote": "recurring trading sequences based on the day of the week",
+   "horizon": "1-5d",
+   "asset_classes": [
+    "fx",
+    "metals",
+    "indices",
+    "energy"
+   ],
+   "source": "firm_mining",
+   "cluster": "renaissance",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "multi_speed_trend",
+   "symbols": [
+    "XAUUSD",
+    "XAGUSD",
+    "XCUUSD",
+    "XTIUSD",
+    "XBRUSD",
+    "XNGUSD",
+    "CORN",
+    "WHEAT",
+    "SOYBEAN",
+    "SUGAR",
+    "COFARA",
+    "USCOCOA",
+    "COTTON"
+   ],
+   "mechanism": "Simons on record: commodities 'used to trend - not dramatically trend but trend', enough to win more often than not. This was the Monemetrics/early-Axcom edge. Caveat from the same history: Berlekamp found the long-term trades were the weaker part and pushed the book to short horizons, with long-term trades ~10% of activity. So test trend on commodity CFDs as a small, diversifying sleeve (multi-speed, vol-scaled) rather than the core.",
+   "firm": "Renaissance",
+   "evidence": "DOCUMENTED",
+   "source_url": "https://www.josherich.me/podcast/jim-simons-full-length-interview-numberphile",
+   "source_title": "Jim Simons (full length interview) - Numberphile, transcript",
+   "quote": "commodities especially used to trend—not dramatically trend but trend, so if you could get the trend right you'd bet on the trend",
+   "horizon": "weeks",
+   "asset_classes": [
+    "metals",
+    "energy",
+    "softs"
+   ],
+   "source": "firm_mining",
+   "cluster": "renaissance",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "pca_residual",
+   "params": {
+    "entry_z": 2.0
+   },
+   "symbols": [
+    "US500",
+    "NAS100",
+    "US30",
+    "US2000",
+    "GER40",
+    "UK100",
+    "FRA40",
+    "EUSTX50",
+    "JPN225",
+    "AUS200",
+    "HK50"
+   ],
+   "mechanism": "Frey's model (carried into the Brown/Mercer equity system) bet that relationships between clusters of instruments return to historic norms; the Senate PSI defines RenTec's approach as StatArb and cites Avellaneda-Lee (PCA residual mean reversion). The equity single-name version is out of lane, but the same mechanism applies to the cross-section of equity-index CFDs: fit rolling PCA factors across the index basket, trade the z-scored idiosyncratic residual back toward zero over days. Brown's own warning (Nasdaq positions 'hedged' by NYSE positions diverged in March 2000) says pair the entry with a correlation-break guard (correlation_regime).",
+   "firm": "Renaissance",
+   "evidence": "REPORTED",
+   "source_url": "https://twoquants.com/the-man-who-solved-the-market-part-2/",
+   "source_title": "Takeaways From The Man Who Solved the Market - Part 2 (Twoquants)",
+   "quote": "Frey's models usually just focused on whether relationships between clusters of stocks returned to their historic norms.",
+   "horizon": "1-5d",
+   "asset_classes": [
+    "indices"
+   ],
+   "source": "firm_mining",
+   "cluster": "renaissance",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "pca_residual",
+   "symbols": [
+    "EURUSD",
+    "GBPUSD",
+    "AUDUSD",
+    "NZDUSD",
+    "USDCAD",
+    "USDCHF",
+    "USDJPY",
+    "USDNOK",
+    "USDSEK",
+    "USDSGD"
+   ],
+   "mechanism": "Same cluster-reversion mechanism applied to the USD-leg FX cross-section: remove the first 2-3 principal components (USD factor, risk-on/off, commodity-bloc) and fade residual dislocations of individual currencies over 1-5 days. Zuckerman: the relationships traded are 'between groups ... to indexes ... to each other ... to factors'.",
+   "firm": "Renaissance",
+   "evidence": "REPORTED",
+   "source_url": "https://ritholtz.com/2019/11/transcript-greg-zuckerman/",
+   "source_title": "Transcript: Greg Zuckerman - Masters in Business (Barry Ritholtz)",
+   "quote": "These are mathematical relationships between groups of stocks in any relationship to indexes, relationships to each other, relationships to factors.",
+   "horizon": "1-5d",
+   "asset_classes": [
+    "fx"
+   ],
+   "source": "firm_mining",
+   "cluster": "renaissance",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "relative_value",
+   "params": {
+    "entry_z": 2.0,
+    "exit_z": 0.5
+   },
+   "symbols": [
+    "XAUUSD",
+    "XAGUSD",
+    "XPTUSD",
+    "XAUEUR",
+    "XAGEUR",
+    "XBRUSD",
+    "XTIUSD",
+    "US500",
+    "NAS100"
+   ],
+   "mechanism": "Pairwise version of the relationship-reversion core: fade z-score extremes in economically linked pairs (gold/silver, gold USD vs EUR, Brent/WTI, US500/NAS100). Medallion's average hold of ~2 days (up to two weeks) fixes the horizon. Use relative_value with the peer frame and exit_z; screen pairs by stable cointegration before trading.",
+   "firm": "Renaissance",
+   "evidence": "REPORTED",
+   "source_url": "https://ritholtz.com/2019/11/transcript-greg-zuckerman/",
+   "source_title": "Transcript: Greg Zuckerman - Masters in Business (Barry Ritholtz)",
+   "quote": "Generally speaking, on average, it's about a two-day holding period but they'll get two weeks, too.",
+   "horizon": "1-5d",
+   "asset_classes": [
+    "metals",
+    "energy",
+    "indices"
+   ],
+   "source": "firm_mining",
+   "cluster": "renaissance",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "liquidity_gamma_reversal",
+   "params": {
+    "min_displacement_atr": 1.5
+   },
+   "symbols": [
+    "EURUSD",
+    "GBPUSD",
+    "USDJPY",
+    "AUDUSD",
+    "USDCAD",
+    "USDCHF",
+    "NZDUSD",
+    "XAUUSD",
+    "US500",
+    "NAS100",
+    "GER40",
+    "XTIUSD"
+   ],
+   "mechanism": "Medallion's best years were crisis years (2008 +152% gross, 2020 +76%) and its market beta was about -1 (Cornell). Simons: 'Tumult is usually good for us'; a researcher: humans are most predictable under stress. Mechanism: short-horizon reversal of forced/panic displacements pays most when realised vol and dislocation are high. Test fading >1.5 ATR displacements that fail to continue, with the edge measured separately in top-vol-quintile regimes (expect it to be larger there). Two-sided: size up in high-vol regimes when the evidence supports it (Rule 2).",
+   "firm": "Renaissance",
+   "evidence": "REPORTED",
+   "source_url": "https://novelinvestor.com/wise-words-from-jim-simons/",
+   "source_title": "Wise Words from Jim Simons (quote collection)",
+   "quote": "Tumult is usually good for us… when everyone is running around like a chicken with its head cut off, that's pretty good for us.",
+   "horizon": "1-5d",
+   "asset_classes": [
+    "fx",
+    "metals",
+    "indices",
+    "energy"
+   ],
+   "source": "firm_mining",
+   "cluster": "renaissance",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "drawdown_conditional",
+   "symbols": [
+    "US500",
+    "NAS100",
+    "GER40",
+    "JPN225"
+   ],
+   "mechanism": "Cornell regression: Medallion excess returns vs CRSP market beta ~ -1.0 over 1988-2018 and it never lost money in the dot-com crash or 2008. A retail analogue of the reversion engine's crisis payoff: after index drawdowns beyond X% from the rolling high, short-horizon mean reversion (buy capitulation) has positive expectancy. drawdown_conditional exists; test dd_pct grid with vol-scaled stops.",
+   "firm": "Renaissance",
+   "evidence": "DOCUMENTED",
+   "source_url": "https://community.portfolio123.com/uploads/short-url/wZJco8G9Xd3diZqEN2YNc3RdaH.pdf",
+   "source_title": "Bradford Cornell, Medallion Fund: The Ultimate Counterexample? (JPM 46(4); SSRN 3504766)",
+   "quote": "a regression of Medallion's excess returns on the CRSP market index produces a beta of approximately -1.0",
+   "horizon": "1-5d",
+   "asset_classes": [
+    "indices"
+   ],
+   "source": "firm_mining",
+   "cluster": "renaissance",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "regime_transition",
+   "symbols": [
+    "EURUSD",
+    "GBPUSD",
+    "USDJPY",
+    "AUDUSD",
+    "USDCAD",
+    "USDCHF",
+    "NZDUSD"
+   ],
+   "mechanism": "Leonard Baum (co-author of the 1970 Baum-Welch/forward-backward EM paper for hidden Markov models) built Simons' first currency-trading models at Monemetrics (1979-84); Wikipedia (citing Bloomberg) says Medallion used an expanded form of Baum's models. The HMM specifics are practitioner speculation, but the desk's walk-forward HMM hazard family on daily FX regimes is the direct test of 'hidden-state' trading on currencies.",
+   "firm": "Renaissance",
+   "evidence": "SPECULATED",
+   "source_url": "https://scottlocklin.wordpress.com/2021/11/29/a-review-of-the-man-who-solved-the-market-and-the-captain/",
+   "source_title": "A review of The Man Who Solved the Market (Scott Locklin, practitioner)",
+   "quote": "they were using something like this, probably looking for trending states",
+   "horizon": "weeks",
+   "asset_classes": [
+    "fx"
+   ],
+   "source": "firm_mining",
+   "cluster": "renaissance",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "event_reaction",
+   "symbols": [
+    "XTIUSD",
+    "XBRUSD",
+    "XNGUSD"
+   ],
+   "mechanism": "Renaissance told the Senate it collects 'energy reports, crop reports, weather reports' and every other public dataset that might bear on prices. Energy: EIA Weekly Petroleum Status Report (Wed 10:30 ET) and EIA natural-gas storage (Thu 10:30 ET). Test post-release drift vs reversal on crude/gas CFDs conditioned on surprise vs consensus/5y-average, entries 1-15 minutes after release. That RenTec trades these reports profitably is not disclosed - only that it ingests them.",
+   "firm": "Renaissance",
+   "evidence": "DOCUMENTED",
+   "source_url": "https://www.hsgac.senate.gov/wp-content/uploads/imo/media/doc/STMT%20-%20Renaissance%20(July%2022%202014)2.pdf",
+   "source_title": "Joint Statement of Peter F. Brown, Mark Silber, Jonathan Mayers on behalf of Renaissance Technologies, Senate PSI hearing",
+   "quote": "news stories, analysts' reports, energy reports, crop reports, weather reports, regulatory filings, accounting data",
+   "horizon": "intraday",
+   "asset_classes": [
+    "energy"
+   ],
+   "source": "firm_mining",
+   "cluster": "renaissance",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "event_reaction",
+   "symbols": [
+    "CORN",
+    "WHEAT",
+    "SOYBEAN",
+    "SUGAR",
+    "COTTON",
+    "COFARA",
+    "USCOCOA"
+   ],
+   "mechanism": "Crop-report leg of the same documented data set: USDA WASDE (monthly), Crop Progress (Mon 16:00 ET), Grain Stocks/Acreage (quarterly/June). Test post-release drift on the agricultural CFDs conditioned on surprise vs prior estimate; plus weather anomalies (NOAA) as an exogenous conditioner during growing season.",
+   "firm": "Renaissance",
+   "evidence": "DOCUMENTED",
+   "source_url": "https://www.hsgac.senate.gov/wp-content/uploads/imo/media/doc/STMT%20-%20Renaissance%20(July%2022%202014)2.pdf",
+   "source_title": "Joint Statement of Peter F. Brown, Mark Silber, Jonathan Mayers on behalf of Renaissance Technologies, Senate PSI hearing",
+   "quote": "We collect all the publicly available data we can find that we believe might bear on the movement of the prices",
+   "horizon": "1-5d",
+   "asset_classes": [
+    "softs"
+   ],
+   "source": "firm_mining",
+   "cluster": "renaissance",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "ensemble",
+   "symbols": [
+    "EURUSD",
+    "GBPUSD",
+    "USDJPY",
+    "AUDUSD",
+    "USDCAD",
+    "USDCHF",
+    "NZDUSD",
+    "XAUUSD",
+    "XAGUSD",
+    "US500",
+    "NAS100",
+    "US30",
+    "US2000",
+    "XTIUSD",
+    "XBRUSD"
+   ],
+   "mechanism": "Simons: no single anomaly is strong enough; profit came from combining a collection of subtle anomalies into one predictor. Senate statement: model is right 'only slightly more often than not' and compensates with a very large number of bets (law of large numbers). Hypothesis: an ensemble of the desk's individually weak but independent short-horizon members (gap fade, session handoff, residual reversion, dow) has a higher deflated Sharpe than any member. Weight by out-of-sample information, not in-sample fit.",
+   "firm": "Renaissance",
+   "evidence": "DOCUMENTED",
+   "source_url": "https://www.josherich.me/podcast/jim-simons-full-length-interview-numberphile",
+   "source_title": "Jim Simons (full length interview) - Numberphile, transcript",
+   "quote": "you put together a collection of these subtle anomalies and you begin to get something that will predict pretty well",
+   "horizon": "1-5d",
+   "asset_classes": [
+    "fx",
+    "metals",
+    "indices",
+    "energy"
+   ],
+   "source": "firm_mining",
+   "cluster": "renaissance",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "execution_state",
+   "params": {
+    "mode": "cheap_deep"
+   },
+   "symbols": [
+    "EURUSD",
+    "GBPUSD",
+    "USDJPY",
+    "AUDUSD",
+    "XAUUSD",
+    "US500",
+    "NAS100"
+   ],
+   "mechanism": "Zuckerman (from 40+ staff interviews): Renaissance knows when its trades move prices and when they won't, and adjusts its signals to match. Simons stresses trading costs and market impact. Retail analogue: take the same short-horizon signal only in low-spread / deep-liquidity states and delay or skip it in wide-spread states; execution_state mode 'cheap_deep' tests exactly this.",
+   "firm": "Renaissance",
+   "evidence": "REPORTED",
+   "source_url": "https://ritholtz.com/2019/11/transcript-greg-zuckerman/",
+   "source_title": "Transcript: Greg Zuckerman - Masters in Business (Barry Ritholtz)",
+   "quote": "they know when there moving the prices and when they won't so they can play with their signals",
+   "horizon": "intraday",
+   "asset_classes": [
+    "fx",
+    "metals",
+    "indices"
+   ],
+   "source": "firm_mining",
+   "cluster": "renaissance",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "lead_lag",
+   "params": {
+    "driver_symbol": "US500",
+    "direction": "same"
+   },
+   "symbols": [
+    "JPN225",
+    "AUS200",
+    "HK50",
+    "AUDJPY",
+    "XAUUSD"
+   ],
+   "mechanism": "Relationships 'to each other' across instruments (Zuckerman) include cross-market transmission. SPECULATIVE mapping: US500 moves in the US afternoon lead the Asia-open of JPN225/AUS200/AUDJPY. Not a documented RenTec signal; included because it is the cheapest testable form of the documented 'relationships among instruments' theme.",
+   "firm": "Renaissance",
+   "evidence": "SPECULATED",
+   "source_url": "https://ritholtz.com/2019/11/transcript-greg-zuckerman/",
+   "source_title": "Transcript: Greg Zuckerman - Masters in Business (Barry Ritholtz)",
+   "quote": "relationships to each other, relationships to factors",
+   "horizon": "intraday",
+   "asset_classes": [
+    "indices",
+    "fx"
+   ],
+   "source": "firm_mining",
+   "cluster": "renaissance",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "jump",
+   "params": {
+    "mode": "continue|revert both tested"
+   },
+   "symbols": [
+    "XAUUSD",
+    "US500",
+    "EURUSD",
+    "XTIUSD"
+   ],
+   "mechanism": "Brown's March-2000 account: positions the model believed hedged diverged 'so rapidly' that it never occurred to the model. Symmetric test: jumps >4 sigma on hourly bars - does the next 1-8 bars continue or revert? The PSI record says Renaissance managers manually reduced run levels in such episodes; the desk's law requires the choice to be evidence-derived, so test both modes and let the allocator size.",
+   "firm": "Renaissance",
+   "evidence": "DOCUMENTED",
+   "source_url": "https://www.govinfo.gov/content/pkg/CHRG-113shrg89882/html/CHRG-113shrg89882.htm",
+   "source_title": "Senate Hearing 113-422 transcript (oral testimony of Peter Brown et al.)",
+   "quote": "It just never occurred to us or to our models that these markets could diverge so rapidly.",
+   "horizon": "intraday",
+   "asset_classes": [
+    "metals",
+    "indices",
+    "fx",
+    "energy"
+   ],
+   "source": "firm_mining",
+   "cluster": "renaissance",
+   "mined_at": "2026-09-27"
+  }
+ ]
+}
