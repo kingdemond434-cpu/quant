@@ -43,6 +43,7 @@ OUT = BASE / "data" / "intelligence" / SOURCE
 REPORT = BASE / "reports" / "FUND_PLAYBOOK.json"
 MEDALLION_REPORT = BASE / "reports" / "MEDALLION_PUBLIC_CORPUS.json"
 MEDALLION_COVERAGE = BASE / "reports" / "MEDALLION_COVERAGE.json"
+PUBLIC_METHOD_COVERAGE = BASE / "reports" / "PUBLIC_QUANT_METHOD_COVERAGE.json"
 
 A, B, C = "A", "B", "C"
 
@@ -107,6 +108,44 @@ MEDALLION_METHOD_OWNERS = {
         "libs/portfolio/kelly_surface.py",
         "libs/portfolio/posterior_growth.py",
     ),
+}
+
+PUBLIC_METHOD_OWNERS = {
+    "Renaissance|weak_signal_combination_regimes_flows_costs": (
+        "desks/mt5/research/weak_signal_compiler.py", "libs/regime/hmm.py",
+        "desks/mt5/research/actor_pressure.py", "desks/mt5/research/cost_truth.py"),
+    "Bridgewater|macro_surprise_quadrants_risk_balance": (
+        "desks/mt5/research/macro_state_engine.py", "libs/portfolio/risk_parity.py"),
+    "DE_Shaw|relative_value_residuals_cost_optimal_execution": (
+        "desks/mt5/research/factor_residual_engine.py",
+        "desks/mt5/research/cost_truth.py"),
+    "Two_Sigma|feature_store_pit_walk_forward_research_platform": (
+        "libs/data/feature_store.py", "libs/data/pit_certificate.py",
+        "desks/mt5/research/representation_discovery.py"),
+    "AQR|value_momentum_carry_defensive": (
+        "desks/mt5/research/institutional_cards.py",
+        "desks/mt5/research/curve_strategy_screen.py"),
+    "Man_AHL_Winton|multi_speed_trend_vol_target": (
+        "desks/mt5/research/trend_core.py", "libs/risk/vol_target.py"),
+    "Citadel_Millennium|marginal_growth_allocation_risk_budgets": (
+        "libs/research/marginal_admission.py", "libs/portfolio/posterior_growth.py"),
+    "public_data|dukascopy_and_venue_tick_truth": (
+        "desks/mt5/research/fetch_dukascopy.py", "desks/mt5/research/cost_truth.py"),
+    "volatility_risk_premium|vol_curve_as_state": (
+        "desks/mt5/research/curve_strategy_screen.py",
+        "desks/mt5/research/tail_alpha_search.py"),
+    "term_structure_roll|curves_and_swap_proxies": (
+        "desks/mt5/research/fetch_futures_curves.py",
+        "desks/mt5/research/curve_strategy_screen.py"),
+    "seasonality|calendar_and_physical_cycles": (
+        "desks/mt5/research/actor_pressure.py", "desks/mt5/research/axis_proposer.py"),
+    "tail_hedging_convexity|portfolio_crash_protection": (
+        "desks/mt5/research/tail_alpha_search.py", "libs/discovery/tail_risk.py"),
+    "capacity_decay|measure_then_retire": (
+        "desks/mt5/research/capacity.py", "desks/mt5/research/decay_monitor.py"),
+    "peer_review_and_full_test_trail": (
+        "desks/mt5/research/blind_reviewer.py", "libs/research/hypothesis_graph.py",
+        "libs/research/review_rubric.py"),
 }
 
 
@@ -269,12 +308,10 @@ CARDS: list[dict] = [
     {"fund": "AQR", "grade": A, "claim": "naive factor timing deteriorates after lags and costs",
      "family": None, "symbols": [], "params": {},
      "note": "a NEGATIVE card: multi_speed_trend does not time itself, by design"},
-    {"fund": "AQR", "grade": A, "claim": "betting-against-beta / defensive: low-beta names "
-     "outperform per unit of risk", "family": "cross_asset_residual",
-     "symbols": ["JohnsonJohnson", "ProcterGamble", "CocaCola", "Walmart", "PepsiCo"],
-     "params": {"factor_symbols": ["US500"], "lookback": 240, "beta_win": 240, "entry_z": 1.5,
-                "ttl_bars": 120, "side_mode": "continue"},
-     "why": "residual continuation in low-beta names: the defensive premium as a residual drift"},
+    {"fund": "AQR", "grade": A, "claim": "betting-against-beta / defensive: low-beta assets "
+     "outperform per unit of risk", "family": None, "symbols": [], "params": {},
+     "note": "single-name statistical mining is excluded; retain as a public factor prior for "
+             "the event-only equity lane and cross-asset style-premia research"},
     # ---------------------------------------------------------------- Man AHL
     {"fund": "Man AHL", "grade": A, "claim": "multi-speed trend; fastest speeds carry the crisis "
      "alpha", "family": "multi_speed_trend",
@@ -418,6 +455,20 @@ def run() -> dict:
         "rule": "source pedigree changes the prior and provenance, never a gate or capital authority",
     }
     MEDALLION_COVERAGE.write_text(json.dumps(coverage, indent=1, default=str), "utf-8")
+    public_methods = {
+        "generated_utc": datetime.now(tz=UTC).isoformat(),
+        "scope": "public method classes only; no claim to any firm's private implementation",
+        "owners": PUBLIC_METHOD_OWNERS,
+        "unowned": [name for name, rels in PUBLIC_METHOD_OWNERS.items()
+                    if any(not (ROOT / rel).exists() for rel in rels)],
+        "candidate_generator": "desks/mt5/research/institutional_cards.py",
+        "canonical_route": "public evidence -> named mechanism -> canonical gauntlet -> forward",
+        "single_name_equities": "EVENT_LANE_ONLY",
+        "market_making_at_retail_latency": "NON_TRANSFERABLE",
+        "terminal_state": "CURRENT_PUBLIC_FRONTIER_EXHAUSTED_NEVER_DONE_FOREVER",
+    }
+    PUBLIC_METHOD_COVERAGE.write_text(
+        json.dumps(public_methods, indent=1, default=str), "utf-8")
     return doc
 
 

@@ -238,6 +238,19 @@ def test_every_public_medallion_method_reuses_real_canonical_organs():
             assert (fund_playbook.ROOT / rel).is_file(), rel
 
 
+def test_every_cross_firm_public_method_has_real_canonical_owners():
+    assert len(fund_playbook.PUBLIC_METHOD_OWNERS) >= 14
+    for rels in fund_playbook.PUBLIC_METHOD_OWNERS.values():
+        for rel in rels:
+            assert (fund_playbook.ROOT / rel).is_file(), rel
+
+
+def test_fund_cards_never_mine_single_name_equities():
+    banned = {"JohnsonJohnson", "ProcterGamble", "CocaCola", "Walmart", "PepsiCo",
+              "Apple", "Microsoft", "Amazon", "Nvidia", "Tesla", "Meta"}
+    assert not any(banned & set(c.get("symbols") or []) for c in fund_playbook.CARDS)
+
+
 # ------------------------------------------------------------------------------------------
 # Registration
 # ------------------------------------------------------------------------------------------
