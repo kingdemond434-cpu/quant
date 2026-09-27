@@ -30,6 +30,15 @@ def test_snapshot_is_one_read_only_truthful_interface(tmp_path: Path) -> None:
             "largest_blocker": {"status": "MEASURED", "blocker": "NO_DATA", "rows": 2,
                                 "owner": "acquirer", "attack": "fetch"},
         }), 2.5),
+        "certificates": (_write(tmp_path / "certs.json", {
+            "n": 823, "survivors": {"a": {}, "b": {}},
+        }), 2.5),
+        "forward": (_write(tmp_path / "forward.json", {
+            "lane": {"n_clocks": 577, "n_active": 576, "n_eligible": 0},
+        }), 2.5),
+        "breadth": (_write(tmp_path / "breadth.json", {
+            "effective": {"effective_breadth": 2.483},
+        }), 26.0),
     }
     snap = mc.build(now=now, inputs=inputs,
                     previous={"counters": {"knowledge_nodes": 10,
@@ -38,6 +47,12 @@ def test_snapshot_is_one_read_only_truthful_interface(tmp_path: Path) -> None:
     assert snap["counters"]["knowledge_nodes"] == 12
     assert snap["since_previous_snapshot"]["knowledge_nodes"] == 2
     assert snap["since_previous_snapshot"]["new_gauntlet_cells"] == 3
+    assert snap["counters"]["certificates"] == 823
+    assert snap["counters"]["forward_clocks"] == 577
+    assert snap["counters"]["forward_active"] == 576
+    assert snap["counters"]["forward_eligible"] == 0
+    assert snap["counters"]["forward_with_evidence"] is None
+    assert snap["counters"]["effective_breadth"] == 2.483
     assert snap["blocked"][0]["status"] == "NO_DATA"
     disposition = snap["external_system_disposition"]
     assert disposition["silent_drops"] == 0

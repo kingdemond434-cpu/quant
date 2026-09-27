@@ -122,11 +122,19 @@ def build(*, now: datetime | None = None,
             docs.get("conversion"), (("debt_after", "total_debt"),)),
         "new_gauntlet_cells": _number(docs.get("conversion"), (("new_cells",),)),
         "certificates": _number(
-            docs.get("certificates"), (("certified",), ("certificates",), ("rows",))),
+            docs.get("certificates"), (("n",), ("certified",), ("certificates",),
+                                       ("rows",), ("survivors",))),
+        "forward_clocks": _number(
+            docs.get("forward"), (("lane", "n_clocks"),)),
+        "forward_active": _number(
+            docs.get("forward"), (("lane", "n_active"),)),
+        "forward_eligible": _number(
+            docs.get("forward"), (("lane", "n_eligible"),)),
         "forward_with_evidence": _number(
-            docs.get("forward"), (("with_trades",), ("measured",), ("trades",))),
+            docs.get("forward"), (("lane", "n_with_trades"), ("with_trades",))),
         "effective_breadth": _number(
-            docs.get("breadth"), (("effective_breadth",), ("n_eff",))),
+            docs.get("breadth"), (("effective", "effective_breadth"),
+                                  ("effective_breadth",), ("n_eff",))),
     }
     old = previous.get("counters", {}) if isinstance(previous, Mapping) else {}
     deltas: dict[str, int | float | None] = {}
