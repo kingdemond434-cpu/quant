@@ -9,6 +9,8 @@ zero. Discoveries go only through ``country_lab.LabCtx.record`` into the canonic
 from __future__ import annotations
 
 import argparse
+import contextlib
+import importlib
 import importlib.util
 import json
 import os
@@ -30,6 +32,7 @@ from libs.research import country_lab as CL  # noqa: E402
 PACK_ROOT = BASE / "research" / "countries"
 REPORT = BASE / "reports" / "GLOBAL_RESEARCH_OS.json"
 CURSOR = BASE / "data" / "global_research_cursor.json"
+LOCK = BASE / "data" / ".global_research_os.lock"
 DEFAULT_BUDGET_S = 3000.0
 MIN_PACK_BUDGET_S = 32.0
 # These are conversion-door packs, not CountryPack research specifications. Japan has its own
@@ -71,12 +74,8 @@ def _load_extra(code: str) -> tuple[dict[str, Any], str]:
     if not path.exists():
         return {}, "no miners.py; declarative specs use the canonical adapter"
     try:
-        spec = importlib.util.spec_from_file_location(f"global_country_{code}_miners", path)
-        if spec is None or spec.loader is None:
-            raise ImportError("no module loader")
-        mod = importlib.util.module_from_spec(spec)
-        sys.modules[spec.name] = mod
-        spec.loader.exec_module(mod)
+        # Package import first: several native modules use a relative import to their pack.
+        mod = importlib.import_module(f"research.countries.{code}.miners")
         rows = getattr(mod, "MINERS", {})
         return ({str(k): v for k, v in dict(rows).items() if callable(v)}, "")
     except Exception as exc:
@@ -159,6 +158,8 @@ def run(*, budget_s: float = DEFAULT_BUDGET_S, dry_run: bool = False,
                          "miners": len(miners), "failed_miners": failed,
                          "native_miners": max(0, len(result.get("custom_miners") or []) - adapters),
                          "spec_adapters": adapters, "unmeasured": len(result.get("unmeasured") or []),
+                         "miner_failures": [{"miner": m.get("miner"), "why": m.get("why")}
+                                            for m in miners if m.get("outcome") == CL.FAILED],
                          "coverage": coverage.get("state"), "layers_mapped": coverage.get("layers_mapped"),
                          "validation": problems, "extra_problem": extra_problem,
                          "custom_entries": list(pack.custom_miners),
@@ -188,6 +189,44 @@ def run(*, budget_s: float = DEFAULT_BUDGET_S, dry_run: bool = False,
     return doc
 
 
+@contextlib.contextmanager
+def singleton(path: Path = LOCK):
+    """A real OS lock: overlapping hourly/manual passes cannot double-spend trial budget."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    handle = path.open("a+b")
+    handle.seek(0)
+    if handle.read(1) == b"":
+        handle.seek(0)
+        handle.write(b"0")
+        handle.flush()
+    try:
+        if os.name == "nt":
+            import msvcrt
+            handle.seek(0)
+            msvcrt.locking(handle.fileno(), msvcrt.LK_NBLCK, 1)
+        else:  # pragma: no cover - production is Windows; CI may be POSIX
+            import fcntl
+            fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except (OSError, BlockingIOError):
+        handle.close()
+        yield False
+        return
+    try:
+        yield True
+    finally:
+        try:
+            if os.name == "nt":
+                import msvcrt
+                handle.seek(0)
+                msvcrt.locking(handle.fileno(), msvcrt.LK_UNLCK, 1)
+            else:  # pragma: no cover
+                import fcntl
+                fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+        except OSError:
+            pass
+        handle.close()
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--once", action="store_true")
@@ -196,8 +235,12 @@ def main() -> int:
     parser.add_argument("--report", type=Path, default=REPORT)
     parser.add_argument("--cursor", type=Path, default=CURSOR)
     args = parser.parse_args()
-    doc = run(budget_s=args.budget_s, dry_run=args.dry_run,
-              report=args.report, cursor=args.cursor)
+    with singleton() as acquired:
+        if not acquired:
+            print("global research OS: an existing pass owns the singleton; no duplicate run")
+            return 0
+        doc = run(budget_s=args.budget_s, dry_run=args.dry_run,
+                  report=args.report, cursor=args.cursor)
     print(f"global research OS: {doc['packs_run']}/{doc['packs_total']} packs; "
           f"{doc['discoveries']} discoveries; {doc['native_queries']} native queries; "
           f"next={doc['next_index']}")

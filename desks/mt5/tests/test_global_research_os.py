@@ -71,3 +71,12 @@ def test_repository_has_a_real_global_country_surface() -> None:
     codes = mod.pack_codes()
     assert "sg" in codes and "ca" in codes and "kr" in codes
     assert len(codes) >= 70
+
+
+def test_global_os_refuses_an_overlapping_pass(tmp_path: Path) -> None:
+    mod = _global_os()
+    lock = tmp_path / "country.lock"
+    with mod.singleton(lock) as first:
+        assert first is True
+        with mod.singleton(lock) as second:
+            assert second is False
