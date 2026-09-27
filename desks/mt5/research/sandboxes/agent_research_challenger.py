@@ -8,7 +8,9 @@ five claims testable against the desk's simpler baseline:
 * every loop has an explicit, composable termination contract;
 * tool traces are linted deterministically for error misuse and duplicate side effects;
 * context is disclosed progressively instead of injecting the whole institution;
-* local research credit is provisional until forward/live value exists.
+* local research credit is provisional until forward/live value exists;
+* every score-driven look at a holdout is recorded as adaptive reuse;
+* experiments compete on expected incremental log-wealth per total research cost.
 
 The patterns were independently rebuilt from public architecture described by Skywork
 DeepResearchAgent, PicoAgents/designing-multiagent-systems, DATAGEN/TraceLint, Stanford Optimas,
@@ -180,6 +182,78 @@ def aligned_local_reward(*, novel_cells: int, duplicate_cells: int, pit_defects:
             "capital_usable": False}
 
 
+def holdout_exposure(events: Iterable[dict[str, Any]]) -> dict[str, Any]:
+    """Conservatively account for adaptive holdout reuse.
+
+    A holdout is exposed when its score, rank, pass/fail result, or any derivative is used to
+    choose what to retain or try next.  Seeing no raw rows does not restore independence.
+    """
+    feedback_uses = {"SCORE", "RANK", "SELECT", "RETAIN", "REJECT", "NEXT_EXPERIMENT"}
+    exposures: list[dict[str, Any]] = []
+    by_set: dict[str, int] = {}
+    for i, event in enumerate(events):
+        holdout_id = str(event.get("holdout_id") or "")
+        use = str(event.get("use") or "").upper()
+        if not holdout_id or use not in feedback_uses:
+            continue
+        by_set[holdout_id] = by_set.get(holdout_id, 0) + 1
+        exposures.append({"event": i, "holdout_id": holdout_id, "use": use})
+    reused = {key: count for key, count in by_set.items() if count > 1}
+    return {"exposures": exposures, "exposure_count": len(exposures),
+            "adaptive_reuse": reused, "sealed": not exposures,
+            "status": "CONTAMINATED" if exposures else "SEALED"}
+
+
+def cost_edge_ratio(*, expected_cost: float | None,
+                    expected_gross_alpha: float | None) -> dict[str, Any]:
+    """Measure how much gross edge trading frictions consume; never infer missing values."""
+    if expected_cost is None or expected_gross_alpha is None:
+        return {"value": None, "status": "UNMEASURED", "capital_usable": False}
+    denominator = abs(float(expected_gross_alpha))
+    if denominator == 0:
+        return {"value": None, "status": "NO_GROSS_EDGE", "capital_usable": False}
+    value = max(0.0, float(expected_cost)) / denominator
+    return {"value": value, "status": "MEASURED", "capital_usable": False}
+
+
+def research_value(*, expected_delta_elog: float | None, survival_probability: float | None,
+                   compute_cost: float, data_cost: float, forward_slot_cost: float,
+                   independence_gain: float = 1.0) -> dict[str, Any]:
+    """Rank experiments by expected independent downstream value per all-in research cost."""
+    if expected_delta_elog is None or survival_probability is None:
+        return {"value": None, "status": "UNMEASURED", "capital_usable": False}
+    total_cost = compute_cost + data_cost + forward_slot_cost
+    if total_cost <= 0:
+        return {"value": None, "status": "INVALID_COST", "capital_usable": False}
+    probability = min(1.0, max(0.0, survival_probability))
+    independence = min(1.0, max(0.0, independence_gain))
+    return {"value": expected_delta_elog * probability * independence / total_cost,
+            "status": "MEASURED", "total_cost": total_cost, "capital_usable": False}
+
+
+def select_next_experiment(experiments: Iterable[dict[str, Any]]) -> dict[str, Any]:
+    """Choose the best measured research-value arm; unmeasured arms remain explicit."""
+    ranked: list[dict[str, Any]] = []
+    unresolved: list[str] = []
+    for row in experiments:
+        result = research_value(
+            expected_delta_elog=row.get("expected_delta_elog"),
+            survival_probability=row.get("survival_probability"),
+            compute_cost=float(row.get("compute_cost", 0)),
+            data_cost=float(row.get("data_cost", 0)),
+            forward_slot_cost=float(row.get("forward_slot_cost", 0)),
+            independence_gain=float(row.get("independence_gain", 1)),
+        )
+        item = {"experiment_id": str(row.get("experiment_id") or ""), **result}
+        if result["status"] == "MEASURED":
+            ranked.append(item)
+        else:
+            unresolved.append(item["experiment_id"])
+    ranked.sort(key=lambda item: (-float(item["value"]), item["experiment_id"]))
+    return {"selected": ranked[0] if ranked else None, "ranked": ranked,
+            "unresolved": unresolved, "objective": "INDEPENDENT_FORWARD_DELOG_PER_TOTAL_COST"}
+
+
 def blind_identity(payload: dict[str, Any]) -> dict[str, Any]:
     """Identity/date placebo transform for historical LLM experiments, preserving numbers."""
     hidden = {"ticker", "symbol", "instrument", "company", "industry", "date", "calendar_date"}
@@ -221,6 +295,19 @@ def run(bundle: A.ResearchBundle, ctx: CellContext) -> ExternalResearchPacket:
     ], requested={"role"}, char_budget=512)
     reward = aligned_local_reward(novel_cells=2, duplicate_cells=1, pit_defects=0,
                                   compute_hours=0.05, forward_delta_elog=None)
+    exposure = holdout_exposure([
+        {"holdout_id": "2025", "use": "SCORE"},
+        {"holdout_id": "2025", "use": "NEXT_EXPERIMENT"},
+    ])
+    cer = cost_edge_ratio(expected_cost=0.2, expected_gross_alpha=1.0)
+    autopilot = select_next_experiment([
+        {"experiment_id": "cheap_falsifier", "expected_delta_elog": 0.02,
+         "survival_probability": 0.4, "compute_cost": 1, "data_cost": 0,
+         "forward_slot_cost": 0.2, "independence_gain": 0.9},
+        {"experiment_id": "headline_sharpe", "expected_delta_elog": 0.03,
+         "survival_probability": 0.1, "compute_cost": 4, "data_cost": 1,
+         "forward_slot_cost": 1, "independence_gain": 0.2},
+    ])
     blind = blind_identity({"ticker": "XAUUSD", "date": "2025-01-01", "feature": 1.25})
     receipt = decision_receipt({"resource": proposed.content_hash,
                                 "evaluation": tx.evaluation_hash,
@@ -235,6 +322,15 @@ def run(bundle: A.ResearchBundle, ctx: CellContext) -> ExternalResearchPacket:
          "contracts": [asdict(v) for v in contracts.values()]},
         {"kind": "PROGRESSIVE_CONTEXT", "sources": [UPSTREAM[2]], **context},
         {"kind": "ALIGNED_LOCAL_REWARD", "sources": [UPSTREAM[3]], **reward},
+        {"kind": "ADAPTIVE_HOLDOUT_CONTAMINATION", "sources": [UPSTREAM[3]], **exposure,
+         "rule": "score feedback makes a holdout development data"},
+        {"kind": "COST_EDGE_DECAY", "sources": [UPSTREAM[4]], "cost_edge_ratio": cer,
+         "inputs": ["canonical posterior P(mu>0)", "regime expectancy", "turnover"]},
+        {"kind": "RESEARCH_AUTOPILOT", "sources": [UPSTREAM[3]], **autopilot,
+         "stages": ["unknown", "competing_hypotheses", "cheap_test", "escalate",
+                    "red_team", "gauntlet", "record", "descendants"]},
+        {"kind": "MARGINAL_BOOK_OBJECTIVE", "sources": [UPSTREAM[4]],
+         "metric": "held-out marginal independent dElogW, never incumbent Sharpe alone"},
         {"kind": "IDENTITY_BLIND_PLACEBO", "sources": [UPSTREAM[4]], "example": blind},
         {"kind": "NEGATIVE_CONTROL", "sources": [UPSTREAM[5]],
          "claim": "LLM sizing and execution remain outside research authority"},
