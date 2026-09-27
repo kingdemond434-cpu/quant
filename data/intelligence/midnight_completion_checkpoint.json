@@ -45,10 +45,13 @@
    "status": "FAILED"
   },
   "forward_identity_reconciliation": {
-   "finished_at": "2026-09-27T13:07:10.918962+00:00",
-   "passes_completed": 1,
-   "returncode": 0,
-   "status": "DONE"
+   "command": [
+    "/home/quant/quant-platform/.venv/bin/python",
+    "desks/mt5/research/forward_reconcile.py"
+   ],
+   "passes_completed": 0,
+   "started_at": "2026-09-27T16:59:19.146589+00:00",
+   "status": "RUNNING"
   },
   "forward_lane_heal": {
    "finished_at": "2026-09-27T13:13:20.256825+00:00",
@@ -57,15 +60,10 @@
    "status": "FAILED"
   },
   "fusion_state_pull": {
-   "command": [
-    "systemctl",
-    "--user",
-    "start",
-    "quant-desk-pull.service"
-   ],
-   "passes_completed": 0,
-   "started_at": "2026-09-27T16:25:50.342026+00:00",
-   "status": "RUNNING"
+   "finished_at": "2026-09-27T16:57:25.029489+00:00",
+   "passes_completed": 1,
+   "returncode": 124,
+   "status": "FAILED"
   },
   "mechanism_independence": {
    "finished_at": "2026-09-27T14:02:02.353540+00:00",
@@ -86,5 +84,5 @@
    "status": "DONE"
   }
  },
- "updated_at": "2026-09-27T16:25:50.342026+00:00"
+ "updated_at": "2026-09-27T16:59:19.146589+00:00"
 }
