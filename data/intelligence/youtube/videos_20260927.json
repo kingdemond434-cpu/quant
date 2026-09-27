@@ -26,5 +26,36 @@
   "start_verified": false,
   "end_verified": false,
   "unresolved_reason": "ACCESS_LIMIT"
+ },
+ {
+  "channel_id": "UCIZpqvFv_B9ktXvEzhaeELQ",
+  "channel": "Ryan Brown (ResponsibleForexTrading)",
+  "video_id": "VT-1Qy9k-NM",
+  "published": "2026-09-27T14:54:45Z",
+  "title": "1,011 Trades, 91.3% Wins - Would You Run This AI Trading Bot?",
+  "description": "1,011 trades and a 91.3% win rate - would you run this AI trading bot? In this quick Vigorous AI walkthrough, I review the tracked live account, discuss the risks behind the results, and show you my setup.\n\nA high win rate is only part of the picture. How much the strategy makes on winning trades, loses on losing trades, and experiences in drawdown all matter when evaluating the results.\nThis AI trading bot tutorial also shows you how to install and set up Vigorous AI on MetaTrader 5 using the Architect installer, with a brief explanation of AI trade confirmation and my sentiment settings.\n\nIn this video:\n\u2022 Vigorous AI tracked account results after 1,011 trades\n\u2022 What the 91.3% win rate does\u2014and doesn\u2019t\u2014tell you\n\u2022 How AI trade confirmation fits into the strategy\n\u2022 Sentiment filtering for new entries and grid adds\n\u2022 How to install the AI trading bot using Architect\n\n\u25b6 Explore Vigorous AI and get the installer:\nhttps://responsibleforextrading.com/\n\n\u25b6 View the tracked account:\nhttps://showmytrades.com/dashboard/account/mt5-660639-27dcfffbcd864fd095434aadc4bde62e\n\nWould you run this bot, or would you need to see more? Tell me what matters most to you: drawdown, overall return, win rate, or a longer track record.\n\nCHAPTERS\n0:00 Live Vigorous AI Results\n1:01 Vigorous AI Installation\n\nFigures reflect the account at the time of recording. Win rate alone does not establish profitability, and these results do not isolate the effect of AI confirmation. Forex and automated trading involve risk, including loss of capital. Past performance does not guarantee future results.\n#AITradingBot #VigorousAI #MT5",
+  "links": [
+   "https://responsibleforextrading.com/",
+   "https://showmytrades.com/dashboard/account/mt5-660639-27dcfffbcd864fd095434aadc4bde62e"
+  ],
+  "transcript": null,
+  "transcript_status": "UNAVAILABLE",
+  "start_verified": false,
+  "end_verified": false,
+  "unresolved_reason": "ACCESS_LIMIT"
+ },
+ {
+  "channel_id": "UCa8rgzIMKFx2uJHVsf0oqjg",
+  "channel": "IQCapital",
+  "video_id": "J6fW4CuiyVM",
+  "published": "2026-09-27T15:31:29Z",
+  "title": "This Chicken Makes More Money Trading Than You",
+  "description": "This Chicken Makes More Money Trading Than You",
+  "links": [],
+  "transcript": null,
+  "transcript_status": "UNAVAILABLE",
+  "start_verified": false,
+  "end_verified": false,
+  "unresolved_reason": "ACCESS_LIMIT"
  }
 ]
