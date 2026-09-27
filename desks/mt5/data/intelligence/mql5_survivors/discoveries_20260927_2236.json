@@ -1,0 +1,273 @@
+[
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/2362400",
+  "symbols": [
+   "XAUUSD"
+  ],
+  "found_at": "2026-09-27T22:36:28+00:00",
+  "platform": "mt5",
+  "phenotypes": [
+   "max_growth",
+   "algo_survivor",
+   "gold"
+  ],
+  "ev_score": 3.334,
+  "growth_pct": 418.49,
+  "weeks": 33.0,
+  "pf": 1.43,
+  "max_dd_pct": null,
+  "trades": 645.0,
+  "win_pct": 460.0,
+  "algo_pct": 99.0,
+  "subscribers": 0.0,
+  "author": "/en/users/krankschaft",
+  "author_other_signals": [],
+  "hour_histogram": {
+   "03": 2,
+   "13": 2,
+   "11": 2,
+   "04": 1,
+   "00": 1,
+   "01": 4,
+   "14": 3,
+   "19": 2,
+   "08": 1,
+   "16": 1,
+   "15": 1,
+   "06": 1
+  }
+ },
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/2370969",
+  "symbols": [],
+  "found_at": "2026-09-27T22:36:28+00:00",
+  "platform": "mt5",
+  "phenotypes": [
+   "max_growth",
+   "new_fast_growth",
+   "algo_survivor"
+  ],
+  "ev_score": 3.688,
+  "growth_pct": 567.0,
+  "weeks": 22.0,
+  "pf": 1.66,
+  "max_dd_pct": null,
+  "trades": 192.0,
+  "win_pct": 167.0,
+  "algo_pct": 98.0,
+  "subscribers": 1.0,
+  "author": "/en/users/nicedata",
+  "author_other_signals": [],
+  "hour_histogram": {
+   "15": 1,
+   "14": 2,
+   "12": 2,
+   "08": 2,
+   "19": 1,
+   "06": 6,
+   "09": 1,
+   "03": 1,
+   "16": 2,
+   "07": 2,
+   "05": 1
+  }
+ },
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/2376950",
+  "symbols": [],
+  "found_at": "2026-09-27T22:36:28+00:00",
+  "platform": "mt5",
+  "phenotypes": [
+   "max_growth",
+   "long_lived",
+   "algo_survivor"
+  ],
+  "ev_score": 8.834,
+  "growth_pct": 391.32,
+  "weeks": 265.0,
+  "pf": 1.18,
+  "max_dd_pct": null,
+  "trades": 12667.0,
+  "win_pct": 8594.0,
+  "algo_pct": 97.0,
+  "subscribers": 0.0,
+  "author": "/en/users/strueli",
+  "author_other_signals": [],
+  "hour_histogram": {
+   "10": 2
+  }
+ },
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/2386818",
+  "symbols": [
+   "AUDCAD",
+   "AUDJPY",
+   "AUDUSD",
+   "BTCUSD",
+   "CADJPY",
+   "CHFJPY",
+   "EURAUD",
+   "EURJPY",
+   "EURNZD",
+   "EURUSD",
+   "GBPAUD",
+   "GBPCAD"
+  ],
+  "found_at": "2026-09-27T22:36:28+00:00",
+  "platform": "mt5",
+  "phenotypes": [
+   "max_growth",
+   "algo_survivor",
+   "multi_fx"
+  ],
+  "ev_score": 4.563,
+  "growth_pct": 396.16,
+  "weeks": 69.0,
+  "pf": 1.74,
+  "max_dd_pct": null,
+  "trades": 1360.0,
+  "win_pct": 886.0,
+  "algo_pct": 95.0,
+  "subscribers": 0.0,
+  "author": "/en/users/guenterb",
+  "author_other_signals": [],
+  "hour_histogram": {
+   "08": 1,
+   "13": 1,
+   "22": 1,
+   "09": 1
+  }
+ },
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/2361673",
+  "symbols": [
+   "XAUUSD"
+  ],
+  "found_at": "2026-09-27T22:36:28+00:00",
+  "platform": "mt5",
+  "phenotypes": [
+   "max_growth",
+   "low_dd_high_return",
+   "algo_survivor",
+   "gold"
+  ],
+  "ev_score": 9.163,
+  "growth_pct": 1186.72,
+  "weeks": 31.0,
+  "pf": 1.89,
+  "max_dd_pct": null,
+  "trades": 483.0,
+  "win_pct": 296.0,
+  "algo_pct": 100.0,
+  "subscribers": 0.0,
+  "author": "/en/users/farzad.saadatinia",
+  "author_other_signals": [],
+  "hour_histogram": {
+   "21": 1,
+   "08": 2,
+   "12": 2,
+   "04": 1,
+   "14": 5,
+   "02": 1,
+   "20": 1,
+   "00": 2,
+   "01": 1,
+   "10": 2,
+   "05": 1,
+   "09": 1,
+   "23": 1
+  }
+ },
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/2376482",
+  "symbols": [
+   "EURUSD",
+   "XAUUSD"
+  ],
+  "found_at": "2026-09-27T22:36:28+00:00",
+  "platform": "mt5",
+  "phenotypes": [],
+  "ev_score": 0.0,
+  "growth_pct": 363.07,
+  "weeks": 18.0,
+  "pf": 1.37,
+  "max_dd_pct": null,
+  "trades": 75.0,
+  "win_pct": 38.0,
+  "algo_pct": 0.0,
+  "subscribers": 0.0,
+  "author": "/en/users/almunpdam",
+  "author_other_signals": [],
+  "hour_histogram": {
+   "09": 3,
+   "13": 4,
+   "14": 1,
+   "02": 1,
+   "04": 4,
+   "11": 3,
+   "03": 2,
+   "08": 1,
+   "17": 1
+  }
+ },
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/2337490",
+  "symbols": [
+   "XAUUSD"
+  ],
+  "found_at": "2026-09-27T22:36:28+00:00",
+  "platform": "mt5",
+  "phenotypes": [
+   "max_growth",
+   "algo_survivor",
+   "gold"
+  ],
+  "ev_score": 3.925,
+  "growth_pct": 331.27,
+  "weeks": 73.0,
+  "pf": 1.18,
+  "max_dd_pct": null,
+  "trades": 346.0,
+  "win_pct": 236.0,
+  "algo_pct": 98.0,
+  "subscribers": 0.0,
+  "author": "/en/users/alex33055",
+  "author_other_signals": [],
+  "hour_histogram": {
+   "19": 1,
+   "18": 2,
+   "13": 1,
+   "05": 2,
+   "01": 2,
+   "00": 3,
+   "21": 1,
+   "10": 1,
+   "08": 2,
+   "15": 1,
+   "16": 1,
+   "11": 1,
+   "07": 2
+  }
+ }
+]
