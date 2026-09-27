@@ -42,6 +42,21 @@ ENROLLED_ADMISSIONS = frozenset({
 SCALP_BAR_MAX_AGE_SECONDS = 75 * 60
 
 
+def _fusion_gold_market_open(now: datetime) -> bool:
+    """Approximate the broker's 24/5 gold session for refresh decisions.
+
+    This is the same weekly boundary used by ``h1_source`` and ``scalp_shadow``.  A consumer
+    must not attempt a second terminal attachment merely because an authoritative Friday file
+    grows older while the venue is closed: no new bar exists to fetch, and the resulting MT5
+    ``-10004 / No IPC connection`` used to turn an otherwise healthy shadow census FAILED every
+    weekend.  Market-open freshness remains strict below.
+    """
+    t = now.astimezone(UTC)
+    weekday, hour = t.weekday(), t.hour
+    return not (weekday == 5 or (weekday == 4 and hour >= 22)
+                or (weekday == 6 and hour < 22))
+
+
 def _fresh_authoritative_scalp_bars(now: datetime | None = None) -> bool:
     """True when the canonical Fusion collector already supplied the bounded scalp input.
 
@@ -55,13 +70,19 @@ def _fresh_authoritative_scalp_bars(now: datetime | None = None) -> bool:
     source = _read(universe / "XAUUSD_scalp_source.json")
     if source.get("promotion_authority") is not True:
         return False
+    market_open = _fusion_gold_market_open(now)
     for timeframe in ("M1", "M5", "M15"):
         path = universe / f"XAUUSD_{timeframe}.parquet"
         try:
             age = now.timestamp() - path.stat().st_mtime
         except OSError:
             return False
-        if path.stat().st_size <= 0 or age < -60 or age > SCALP_BAR_MAX_AGE_SECONDS:
+        if path.stat().st_size <= 0 or age < -60:
+            return False
+        # Closed-market bars cannot become fresher.  The source is still authoritative and the
+        # shadow engines account for elapsed MARKET-OPEN hours separately.  During an open
+        # session the ordinary 75-minute producer SLA remains an absolute requirement.
+        if market_open and age > SCALP_BAR_MAX_AGE_SECONDS:
             return False
     return True
 

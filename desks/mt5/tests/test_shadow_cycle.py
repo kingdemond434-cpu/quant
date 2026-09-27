@@ -134,7 +134,7 @@ def test_fresh_authoritative_scalp_bars_avoid_a_second_terminal_connection(
     (universe / "XAUUSD_scalp_source.json").write_text(json.dumps({
         "promotion_authority": True, "source_server": "FusionMarkets-Live",
     }))
-    now = datetime.now(UTC)
+    now = datetime(2026, 9, 28, 12, 0, tzinfo=UTC)  # Monday, market open
     for timeframe in ("M1", "M5", "M15"):
         path = universe / f"XAUUSD_{timeframe}.parquet"
         path.write_bytes(b"canonical-bars")
@@ -145,6 +145,40 @@ def test_fresh_authoritative_scalp_bars_avoid_a_second_terminal_connection(
     old = now - timedelta(seconds=shadow_cycle.SCALP_BAR_MAX_AGE_SECONDS + 1)
     os.utime(stale, (old.timestamp(), old.timestamp()))
     assert shadow_cycle._fresh_authoritative_scalp_bars(now) is False
+
+
+def test_closed_weekend_keeps_the_last_authoritative_bars_without_reconnecting(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A Friday close is the newest possible bar on Sunday, not a stale producer."""
+    universe = tmp_path / "data" / "universe"
+    universe.mkdir(parents=True)
+    (universe / "XAUUSD_scalp_source.json").write_text(json.dumps({
+        "promotion_authority": True, "source_server": "FusionMarkets-Live",
+    }))
+    friday = datetime(2026, 9, 25, 21, 55, tzinfo=UTC)
+    sunday = datetime(2026, 9, 27, 12, 0, tzinfo=UTC)
+    for timeframe in ("M1", "M5", "M15"):
+        path = universe / f"XAUUSD_{timeframe}.parquet"
+        path.write_bytes(b"canonical-bars")
+        os.utime(path, (friday.timestamp(), friday.timestamp()))
+    monkeypatch.setattr(shadow_cycle, "BASE", tmp_path)
+    assert shadow_cycle._fresh_authoritative_scalp_bars(sunday) is True
+
+
+def test_closed_weekend_never_accepts_empty_or_non_authoritative_bars(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    universe = tmp_path / "data" / "universe"
+    universe.mkdir(parents=True)
+    sunday = datetime(2026, 9, 27, 12, 0, tzinfo=UTC)
+    (universe / "XAUUSD_scalp_source.json").write_text(json.dumps({
+        "promotion_authority": False, "source_server": "Other-Demo",
+    }))
+    for timeframe in ("M1", "M5", "M15"):
+        (universe / f"XAUUSD_{timeframe}.parquet").write_bytes(b"canonical-bars")
+    monkeypatch.setattr(shadow_cycle, "BASE", tmp_path)
+    assert shadow_cycle._fresh_authoritative_scalp_bars(sunday) is False
 
 
 def test_nonzero_step_result_fails_loud(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
