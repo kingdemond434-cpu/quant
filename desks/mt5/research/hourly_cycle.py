@@ -824,7 +824,7 @@ CORE_LEGS: frozenset[str] = frozenset({
     # `OWN_CLOCK_LEGS`, which `in_plan` checks first, so `MT5-StateVector` is its only clock.
     "regime_monitor", "state_vector", "heal_clocks", "wiring_audit", "promoter",
     "forward_reconcile", "clock_liveness", "certificate_clock_law",
-    "forward_calibration", "desk_self_heal", "tier5_acceptance",
+    "forward_calibration", "desk_self_heal", "tier5_acceptance", "mission_control",
     "closed_loop", "acceptance", "candidate_conservation", "pit_canaries",
     "mutation_yield", "credit_assignment", "publish_survivors", "publish_dashboard",
     # CANON PUBLICATION IS CORE. `MT5-Gauntlet` is the judge's own hourly task, so a sweep can
@@ -1013,7 +1013,7 @@ LEG_DEPARTMENT: dict[str, str] = {
                      # own lineage: meta.
                      "attribution_census",
                      "runtime_attestation", "self_repair", "desk_self_heal",
-                     "tier5_acceptance"), "meta"),
+                     "tier5_acceptance", "mission_control"), "meta"),
     # japan: the Japan research division (the principal's 47-section mandate, hourly)
     **dict.fromkeys(("japan_department",), "japan"),
     # mathlab: the AI mathematics research civilization -- twenty-eight mathematical traditions
@@ -1708,6 +1708,7 @@ LEG_BUDGET_SEC: dict[str, int] = {
     "forward_calibration": 180,
     "desk_self_heal": 240,
     "tier5_acceptance": 180,
+    "mission_control": 180,
     # The producer census relights at most six dark producers at 240s each and re-measures after
     # every repair; the cap sits above 6*240 so a pass is never cut inside a repair it has
     # already started, which would leave a producer half-run and the census judging the stub.
@@ -4824,6 +4825,10 @@ def main() -> None:
         "input_identity", "libs/data/input_identity.py"))
     scap = _costed("session_capital", lambda: _producer(
         "session_capital", "research/session_capital.py"))
+    # ONE HUMAN INTERFACE OVER THE INSTITUTION. Read-only: it aggregates canonical artifacts and
+    # the knowledge graph, and has no capital, gate, promotion, risk or order authority.
+    msc = _costed("mission_control", lambda: _producer(
+        "mission_control", "research/mission_control.py"))
     # THE FINAL RESEARCH DASHBOARD (Tier-5 mandate 162), here for the same reason `publish_state`
     # is: it JOINS the artifacts this pass wrote, so the dashboard is the hour that just ran and
     # not the one before it. It reports and never gates.
@@ -4904,6 +4909,7 @@ def main() -> None:
                     "external_federation": xfd, "archaeology": arch, "sares": srs,
                     "certificate_truth": ctt, "forward_calibration": fcal,
                     "desk_self_heal": dsh, "tier5_acceptance": t5a,
+                    "mission_control": msc,
                     "runtime_attestation": rta,
                     "self_repair": slf,
                     "loop_liveness": llv, "clock_liveness": clk,
