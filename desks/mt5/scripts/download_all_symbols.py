@@ -1,4 +1,4 @@
-"""Download bars for ALL visible tradable MT5 symbols at EVERY timeframe, and build
+"""Download bars for ALL broker-enabled MT5 symbols at EVERY timeframe, and build
 universe.json. Runs on Windows where MetaTrader5 is installed. Then SCP to VPS.
 
 Was H1-only, and not by choice -- see the TIMEFRAME_DEPTH block below.
@@ -7,6 +7,7 @@ import json
 import os
 import sys
 import time
+from datetime import UTC, datetime
 from pathlib import Path
 
 import MetaTrader5 as mt5
@@ -31,6 +32,7 @@ OUT_DIR = desk_root() / "data" / "universe"
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 
 UNIVERSE_OUT = OUT_DIR / "universe.json"
+VERDICTS_OUT = desk_root() / "data" / "bar_coverage_verdicts.json"
 
 
 # ONE LAYOUT. The desk keeps bars as `data/universe/<SYM>_<TF>.parquet` -- that is where
@@ -49,12 +51,18 @@ info = mt5.terminal_info()
 print(f"Terminal: {info.name}, connected={info.connected}")
 
 syms = mt5.symbols_get()
-tradable = [s for s in syms if s.visible and s.trade_mode > 0]
+# `visible` is a TERMINAL UI state, not a broker-universe property.  Filtering on it left a
+# hidden-but-tradable pair (measured: EURCAD M15) permanently absent even though every hourly
+# pass claimed to cover the full broker.  Select every enabled instrument below; MT5 will make
+# it visible before the request.  A failed select/request is recorded as a cell verdict rather
+# than silently shrinking the denominator.
+tradable = [s for s in syms if s.trade_mode > 0]
 print(f"Tradable symbols: {len(tradable)}")
 
 # Build universe.json + download bars at every eligible timeframe
 universe = {}
 failed = []
+cell_verdicts = {}
 # EVERY TIMEFRAME IS ELIGIBLE, AND `existing` IS KEYED BY (SYMBOL, TIMEFRAME).
 #
 # It used to be keyed by SYMBOL alone, computed from `*_H1.parquet`. So the moment a symbol had
@@ -91,6 +99,10 @@ for i, (sym_info, tf) in enumerate(jobs):
     if period is None:
         print(f"  [{i+1}/{len(jobs)}] {name:25s} {tf:4s} NO SUCH TIMEFRAME IN MT5")
         failed.append(f"{name}_{tf}")
+        cell_verdicts[f"{name}_{tf}"] = {
+            "verdict": "NO_SUCH_TIMEFRAME", "at": datetime.now(UTC).isoformat(timespec="seconds"),
+            "bars": 0, "why": f"this terminal has no TIMEFRAME_{tf} constant",
+        }
         continue
     point = sym_info.point
     digits = sym_info.digits
@@ -101,12 +113,18 @@ for i, (sym_info, tf) in enumerate(jobs):
     category = path.split("/")[0] if "/" in path else "Root"
     spread_price = spread_pts * point
 
-    mt5.symbol_select(name, True)
+    selected = bool(mt5.symbol_select(name, True))
     rates = mt5.copy_rates_from_pos(name, period, 0, TIMEFRAME_DEPTH[tf])
 
     if rates is None or len(rates) == 0:
         print(f"  [{i+1}/{len(jobs)}] {name:25s} {tf:4s} NO DATA")
         failed.append(f"{name}_{tf}")
+        cell_verdicts[f"{name}_{tf}"] = {
+            "verdict": "BROKER_SERVES_NOTHING",
+            "at": datetime.now(UTC).isoformat(timespec="seconds"), "bars": 0,
+            "why": (f"broker-enabled symbol; symbol_select={selected}; {tf} request returned "
+                    f"no bars (last_error {mt5.last_error()})"),
+        }
         continue
 
     df = pd.DataFrame(rates)
@@ -120,6 +138,12 @@ for i, (sym_info, tf) in enumerate(jobs):
 
     pq_path = PARQUET_DIR / f"{name}_{tf}.parquet"
     df.to_parquet(pq_path, engine="pyarrow")
+    # A prior negative verdict must not survive after the chart has been filled.
+    cell_verdicts[f"{name}_{tf}"] = {
+        "verdict": "FILLED", "at": datetime.now(UTC).isoformat(timespec="seconds"),
+        "bars": len(df), "span_start": str(df.index[0]), "span_end": str(df.index[-1]),
+        "why": "bulk broker-universe collector selected the symbol and wrote the chart",
+    }
 
     # THE REGISTRY ROW IS PER SYMBOL, NOT PER SERIES. point/digits/spread/contract_size are
     # properties of the instrument and identical at every timeframe, so the first series to
@@ -205,6 +229,30 @@ if UNIVERSE_OUT.exists():
 _merged = merge(_prior, universe, source="download_all_symbols")
 UNIVERSE_OUT.write_text(json.dumps(_merged, indent=2), encoding="utf-8")
 print(f"universe.json: {len(universe)} row(s) this run merged into {len(_merged)} total")
+
+# SAME VERDICT LEDGER AS `fill_bar_gaps.py`.  Preserve rows from the bounded gap filler and
+# replace only cells this full-universe pass actually measured.  This closes the conservation
+# hole where a failed request appeared only in stdout and vanished when the process exited.
+_verdict_doc = {}
+if VERDICTS_OUT.exists():
+    try:
+        _verdict_doc = json.loads(VERDICTS_OUT.read_text(encoding="utf-8-sig"))
+    except (OSError, ValueError):
+        _verdict_doc = {}
+_cells = _verdict_doc.get("cells") if isinstance(_verdict_doc, dict) else {}
+if not isinstance(_cells, dict):
+    _cells = {}
+_cells.update(cell_verdicts)
+_verdict_doc = {
+    "at": datetime.now(UTC).isoformat(timespec="seconds"),
+    "host": os.environ.get("COMPUTERNAME") or "unknown",
+    "rule": ("one durable row per broker chart measured by either full-universe collection or "
+             "bounded gap filling; a missing chart is never silently dropped"),
+    "cells": _cells,
+}
+_tmp = VERDICTS_OUT.with_suffix(VERDICTS_OUT.suffix + ".tmp")
+_tmp.write_text(json.dumps(_verdict_doc, indent=1), encoding="utf-8")
+os.replace(_tmp, VERDICTS_OUT)
 
 # Summary
 cats = {}

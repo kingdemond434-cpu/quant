@@ -133,6 +133,16 @@ def test_an_axis_a_row_declares_becomes_a_node_and_an_edge(desk) -> None:
     assert report["by_edge_type"][kg.ON_AXIS] >= 2
 
 
+def test_source_mechanism_phrase_is_retained_after_canonical_collapse(desk) -> None:
+    store, _c, _report = _build()
+    node = store["nodes"]["mechanism:carry_rollover"]
+    assert "carry" in node["attrs"]["source_aliases"]
+    lead_nodes = [n for n in store["nodes"].values() if n["type"] == "lead"]
+    assert any("carry" in aliases
+               for n in lead_nodes
+               for aliases in n["attrs"].get("mechanism_aliases", {}).values())
+
+
 def test_became_is_resolved_from_the_compilers_own_parent_hash(desk) -> None:
     _cells(desk, [_cell("c1", _paper_cell_key()),
                   _cell("c2", "a-hash-no-lead-carries", fate="FAILED")])

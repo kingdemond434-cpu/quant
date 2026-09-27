@@ -968,7 +968,9 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "regime_hierarchy", "representation_discovery",
                      "event_surprise", "cross_asset_graph", "transmission_engine"), "macro"),
     # execution: the execution research command
-    **dict.fromkeys(("execution_twin", "entry_timing", "cost_to_edge", "exit_study",
+    **dict.fromkeys(("execution_twin", "why_not_report", "state_replay_audit",
+                     "excursions", "exit_accounts",
+                     "entry_timing", "cost_to_edge", "exit_study",
                      "execution_resolver", "netting_report", "execution_alpha",
                      "latency_lab", "feed_clock_lab", "impact_lab", "digital_twin",
                      "net_edge", "cost_truth"),
@@ -4453,6 +4455,16 @@ def main() -> None:
     # nothing new, which is the same one-hour lag wearing a different explanation.
 
     et = _costed("execution_twin", execution_twin)
+    # ONE DECISION SURFACE + ONE TRADE PATH, EVERY HOUR.  These are materialized views over the
+    # canonical ledgers, not second truth stores: why-not makes every refusal queryable, while
+    # excursions/exit_accounts turn completed paths into MFE/MAE and counterfactual exit cells.
+    wyn = _costed("why_not_report", lambda: _producer(
+        "why_not_report", "research/why_not_report.py"))
+    srp = _costed("state_replay_audit", lambda: _producer(
+        "state_replay_audit", "research/state_replay_audit.py"))
+    exc = _costed("excursions", lambda: _producer("excursions", "research/excursions.py"))
+    exa = _costed("exit_accounts", lambda: _producer(
+        "exit_accounts", "research/exit_accounts.py"))
     # THE MARKET DIGITAL TWIN (LAWS 5m): a posterior over latent simulator worlds calibrated
     # per hunt-universe instrument by ABC-SMC on the desk's own bars and ticks, posterior
     # predictive checks with a published calibration score, pre-registered effect sizes for
@@ -4926,7 +4938,9 @@ def main() -> None:
                     "probation": prb, "standing_questions": sqs, "exposure_decomposition": exd,
                     "auto_legs": auto,
                     "sweep": sw, "compile": cc,
-                    "execution_twin": et, "financing_lab": fin, "digital_twin": dtw,
+                    "execution_twin": et, "why_not_report": wyn, "state_replay_audit": srp,
+                    "excursions": exc, "exit_accounts": exa,
+                    "financing_lab": fin, "digital_twin": dtw,
                     "causal_graph": cg, "alpha_rl": arl,
                     "research_exchange_score": rxs, "lake_promote": lkp,
                     "orthogonality": orth,

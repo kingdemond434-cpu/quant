@@ -128,3 +128,18 @@ def test_an_empty_timeframe_selection_refuses_rather_than_downloading_nothing() 
     code = _code(_DL)
     assert "refusing to download nothing quietly" in code, (
         "an unrecognised MT5_TIMEFRAMES value silently downloads nothing and exits 0")
+
+
+def test_hidden_but_broker_enabled_symbols_are_not_dropped() -> None:
+    """Terminal visibility is mutable UI state, never the research-universe denominator."""
+    code = _code(_DL)
+    assert "s.visible and s.trade_mode" not in code
+    assert "s.trade_mode > 0" in code and "symbol_select(name, True)" in code
+
+
+def test_every_failed_chart_leaves_a_durable_verdict() -> None:
+    """A stdout-only NO DATA line is a silently lost cell after the process exits."""
+    code = _code(_DL)
+    assert "bar_coverage_verdicts.json" in code
+    assert "BROKER_SERVES_NOTHING" in code and "NO_SUCH_TIMEFRAME" in code
+    assert "_cells.update(cell_verdicts)" in code

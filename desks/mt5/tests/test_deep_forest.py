@@ -480,6 +480,21 @@ def test_the_grounds_file_is_a_world_with_a_regions_index_and_every_ground_is_ro
     assert not thin, f"regions without both story and dataset/macro ground: {thin}"
 
 
+def test_high_value_source_ecologies_are_first_class_not_hidden_in_practitioner() -> None:
+    kinds = {str(g.get("kind")) for g in _SRC["grounds"]}
+    required = {
+        "platform_native_strategy", "verified_leaderboard", "repo_archaeology",
+        "external_failure", "broker_execution_rules", "exchange_rulebook",
+        "options_volatility", "futures_term_structure", "benchmark_flows", "patent",
+        "job_posting", "fund_disclosure", "regulatory_filing", "enforcement_court",
+        "vendor_product", "physical_commodity", "shipping_supply_chain",
+        "weather_geospatial", "digital_activity", "incident_postmortem", "dead_web",
+        "negative_knowledge", "genealogy", "local_market_mechanics", "crowding_decay",
+        "distant_domain", "synthetic_market", "research_process",
+    }
+    assert required <= kinds, sorted(required - kinds)
+
+
 def test_every_ground_in_the_world_file_resolves_offline_and_no_region_is_credited_for_labels(
         monkeypatch, tmp_path) -> None:
     """NO REGION GETS CREDIT FOR COVERAGE, ONLY FOR CONVERSION: run the WHOLE real grounds file

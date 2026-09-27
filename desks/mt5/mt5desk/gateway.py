@@ -824,6 +824,39 @@ def _state_vector_id() -> str:
 
 
 DECISIONS = BASE / "data" / "decision_ledger.jsonl"
+_PROCESS_INSTANCE_ID = f"{os.getpid()}:{datetime.now(UTC).isoformat(timespec='seconds')}"
+_SLEEVE_ID_CACHE: tuple[float, dict[str, str]] = (-1.0, {})
+
+
+def _strategy_state_identity(sleeve: object, symbol: object) -> str:
+    """Exact content identity for restart replay, from the canonical promoted sleeve file."""
+    global _SLEEVE_ID_CACHE
+    try:
+        mtime = SLEEVES_FILE.stat().st_mtime
+        if mtime != _SLEEVE_ID_CACHE[0]:
+            from libs.ops.production_contract import strategy_state_identity
+            doc = json.loads(SLEEVES_FILE.read_text("utf-8"))
+            rows = doc.get("sleeves") if isinstance(doc, dict) else []
+            dynamic = {"status", "risk_frac", "risk_frac_source", "admission",
+                       "forward_verdict", "shadow_exp", "shadow_n", "shadow_days",
+                       "admit_streak", "admit_scan", "restored_at", "restore_reason",
+                       "promoted_at", "principal_override", "artifact"}
+            ids: dict[str, str] = {}
+            for spec in rows if isinstance(rows, list) else []:
+                if not isinstance(spec, dict) or not spec.get("name"):
+                    continue
+                params = {k: v for k, v in spec.items()
+                          if k not in dynamic | {"name", "symbol", "timeframe", "family"}}
+                version = str((spec.get("artifact") or {}).get("version_hash")
+                              if isinstance(spec.get("artifact"), dict) else "") or _release_id()
+                ids[str(spec["name"])] = strategy_state_identity(
+                    mechanism=str(spec.get("family") or ""), parameters=params,
+                    symbol=str(spec.get("symbol") or ""),
+                    timeframe=str(spec.get("timeframe") or "H1"), version=version)
+            _SLEEVE_ID_CACHE = (mtime, ids)
+        return _SLEEVE_ID_CACHE[1].get(str(sleeve or ""), "")
+    except Exception:
+        return ""
 
 
 def _release_id() -> str:
@@ -854,7 +887,7 @@ def _record_decision(**row) -> None:
     raises -- on the money path a ledger fault must cost a row, and a row is cheaper than an
     order.
     """
-    from libs.research.decision_ledger import write_decision
+    from libs.research.decision_ledger import process_quality_verdict, write_decision
 
     row["time"] = now()
     row.setdefault("state_vector_id", _state_vector_id())
@@ -868,6 +901,39 @@ def _record_decision(**row) -> None:
     row.setdefault("exit_rule", "fixed_tp")
     row.setdefault("veto_reason", "" if row.get("taken") else str(row.get("reason") or ""))
     row.setdefault("portfolio_context", _decision_portfolio_context(row.get("sleeve")))
+    row.setdefault("state_identity", _strategy_state_identity(row.get("sleeve"),
+                                                               row.get("symbol")))
+    row.setdefault("process_instance_id", _PROCESS_INSTANCE_ID)
+    # STRUCTURED WHY-NOT.  The free-text reason remains intact, but every refusal now has a
+    # stable first blocker and an actual/required record.  A caller with several simultaneous
+    # failures may pass all of them; the gateway's sequential path naturally has one first gate.
+    if not row.get("taken"):
+        gate = str(row.get("first_blocking_gate") or row.get("reason") or "unclassified")
+        row.setdefault("first_blocking_gate", gate)
+        row.setdefault("failed_gates", [{"gate": gate,
+                                          "actual": row.get("detail", "refused"),
+                                          "required": "gate passes"}])
+    else:
+        row.setdefault("first_blocking_gate", "")
+        row.setdefault("failed_gates", [])
+    row.setdefault("suppressions", {
+        "repeat": bool(row.get("repeat_suppressed", False)),
+        "portfolio": bool(row.get("portfolio_suppressed", False)),
+        "risk": str(row.get("reason") or "") == "margin_guard",
+        "execution": str(row.get("reason") or "") in {
+            "broker_rejected", "entry_inside_freeze_band", "shadow_not_armed",
+            "release_identity_refused"},
+    })
+    row.setdefault("process_quality", process_quality_verdict(
+        {
+            "decision_timestamped": bool(row.get("time")),
+            "strategy_identified": bool(row.get("sleeve")),
+            "symbol_identified": bool(row.get("symbol")),
+            "release_identified": bool(row.get("release_id")),
+            "state_captured": bool(row.get("state_vector_id")),
+            "reason_recorded": bool(row.get("reason")),
+        }, evidence={"release_id": row.get("release_id"),
+                     "state_vector_id": row.get("state_vector_id")}))
     # THE ADDRESS THE DECISION SHARES WITH ITS INTENT (2026-09-08). A placed leg passes the id
     # `_record_intent` stamped; a veto or a refusal derives the same formula from its own row, so
     # every decision row has one and a placed one equals its intent's. Costs a field, never a row.

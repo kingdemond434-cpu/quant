@@ -484,6 +484,19 @@ def ingest_lead(store: dict[str, Any], lead: ls.Lead) -> tuple[str, bool, int]:
                     axes=dict(lead.axes), asset_classes=list(lead.asset_classes),
                     direction=ls.direction_of(lead.claim_text))
     attrs = node["attrs"]
+    # CANONICAL MECHANISM ALIAS MEMORY.  Collapse multilingual/public vocabulary onto the
+    # canonical mechanism id for dedupe, but retain the exact source token that taught it to us.
+    # This prevents "黄金 breakout" and "gold range break" becoming two mechanisms without
+    # erasing the phrases future crawlers need to find the same idea in its native habitat.
+    alias_memory = attrs.setdefault("mechanism_aliases", {})
+    for source_token in lead.mechanism_ids:
+        mid = _mech_id(source_token)
+        if not mid:
+            continue
+        aliases = alias_memory.setdefault(mid, [])
+        phrase = str(source_token).strip()
+        if phrase and phrase not in aliases and len(aliases) < MAX_MENTIONS:
+            aliases.append(phrase)
     kinds = attrs.setdefault("kinds", [])
     if lead.kind not in kinds:
         kinds.append(lead.kind)
@@ -503,7 +516,11 @@ def ingest_lead(store: dict[str, Any], lead: ls.Lead) -> tuple[str, bool, int]:
     add_edge(store, source_id, node_id, PRODUCED, kind=lead.kind)
 
     for mid in _mechanism_ids_of(lead):
-        add_node(store, mid, NODE_MECHANISM, mid.split(":", 1)[1])
+        mech_node = add_node(store, mid, NODE_MECHANISM, mid.split(":", 1)[1])
+        known = mech_node["attrs"].setdefault("source_aliases", [])
+        for phrase in alias_memory.get(mid, []):
+            if phrase not in known and len(known) < MAX_MENTIONS:
+                known.append(phrase)
         add_edge(store, node_id, mid, CLAIMS)
     for symbol in lead.instruments:
         iid = f"{NODE_INSTRUMENT}:{symbol.upper()}"
