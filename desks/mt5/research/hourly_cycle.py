@@ -899,6 +899,7 @@ DEPARTMENTS: tuple[str, ...] = ("japan", "regions", "data", "intel", "discovery"
 LEG_DEPARTMENT: dict[str, str] = {
     # data: bars, tapes, lakes, sources -- the inputs every other department reads
     **dict.fromkeys(("refresh_bars", "tape_features", "lake_promote", "universe_integrity",
+                     "dukascopy_backfill",
                      "source_routes", "source_fixer", "asia_collector", "asia_parser",
                      # walking inside a registered ground's own door is collection, like the
                      # collector above it: it fetches documents and files them as claims
@@ -4458,6 +4459,12 @@ def main() -> None:
     # rebuild, a stale one is named by asset class (`scripts/check_universe_integrity.py`).
     uin = _costed("universe_integrity",
                   lambda: _producer("universe_integrity", "scripts/check_universe_integrity.py"))
+    # LONG-HISTORY DEPTH, BOUNDED AND RESUMABLE. Eight complete symbol-days per data-department
+    # pass compounds the public bid/ask archive without turning the hourly cycle into a multi-hour
+    # download. This source may inform structure and spread regimes; Fusion-native evidence remains
+    # the only venue-cost authority (enforced again in the producer's report).
+    dkb = _costed("dukascopy_backfill", lambda: _producer(
+        "dukascopy_backfill", "research/dukascopy_backfill.py", "--symbol-days", "8"))
     srt = _costed("source_routes", source_routes)
     spa = _costed("strategy_paths", strategy_paths)
     wse = _costed("weak_signals", weak_signal_ensembles)
