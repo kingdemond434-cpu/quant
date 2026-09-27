@@ -59,6 +59,7 @@ def test_non_github_surface_reaches_version_registry_and_compiler_handoff(
     monkeypatch.setattr(runner, "PROCESSED", tmp_path / "processed")
     monkeypatch.setattr(runner, "DONATIONS", tmp_path / "donations")
     monkeypatch.setattr(runner, "_record_registry", lambda row: True)
+    monkeypatch.setattr(runner, "_register_surface", lambda row: True)
     state, report = tmp_path / "state.json", tmp_path / "report.json"
     got = runner.run(manifest=SPEC, state_path=state, inbox=inbox, report=report)
     assert got["counts"]["new_versions"] == 1
@@ -80,6 +81,7 @@ def test_restart_deduplicates_content_version(
     monkeypatch.setattr(runner, "PROCESSED", tmp_path / "processed")
     monkeypatch.setattr(runner, "DONATIONS", tmp_path / "donations")
     monkeypatch.setattr(runner, "_record_registry", lambda row: True)
+    monkeypatch.setattr(runner, "_register_surface", lambda row: True)
     state, report = tmp_path / "state.json", tmp_path / "report.json"
     assert runner.run(manifest=SPEC, state_path=state, inbox=inbox, report=report)["counts"][
         "new_versions"] == 1

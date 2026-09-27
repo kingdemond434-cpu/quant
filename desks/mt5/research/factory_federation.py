@@ -120,6 +120,23 @@ def _record_registry(record: dict[str, Any]) -> bool:
         return False
 
 
+def _register_surface(surface: F.Surface) -> bool:
+    """Put the factory surface into the canonical source frontier, never a private queue."""
+    try:
+        from research import source_frontier
+        return source_frontier.register_source(
+            f"factory:{surface.key}", url=surface.source_uri, kind=surface.surface_type,
+            language=surface.language, country="global", asset_classes=[],
+            discovered_from="docs/research/factory_surfaces_v1.json",
+            discovered_via="factory_federation",
+            status="blocked" if F.access_blocker(surface) else "active",
+            licence_note=json.dumps(dict(surface.rights), sort_keys=True),
+            meta={"factory_id": surface.factory_id, "surface_id": surface.surface_id,
+                  "worker": surface.worker, "evaluation_lane": surface.evaluation_lane})
+    except Exception:
+        return False
+
+
 def _components(processed: list[dict[str, Any]]) -> list[dict[str, Any]]:
     out: list[dict[str, Any]] = []
     for row in processed:
@@ -174,6 +191,7 @@ def run(*, apply: bool = True, budget_s: float = 120.0,
     new_versions: list[dict[str, Any]] = []
     donations: list[dict[str, Any]] = []
     rejected: list[dict[str, str]] = []
+    registered_sources = 0
 
     for surface in surfaces:
         prev = dict(state_rows.get(surface.key) or {})
@@ -194,6 +212,8 @@ def run(*, apply: bool = True, budget_s: float = 120.0,
             "counts_by_stage": dict(prev.get("counts_by_stage") or {}),
             "resource_costs": dict(prev.get("resource_costs") or {}),
         }
+        if apply:
+            registered_sources += int(_register_surface(surface))
 
     for path in sorted(inbox.glob("*.json")) if inbox.exists() else []:
         if time.monotonic() - t0 >= budget_s:
@@ -269,6 +289,7 @@ def run(*, apply: bool = True, budget_s: float = 120.0,
             if _record_registry({"input_version_id": plan["experiment_id"], **plan}):
                 plan["registry_ack"] = True
     counts = {"factories": len({s.factory_id for s in surfaces}), "surfaces": len(surfaces),
+              "new_source_registry_rows": registered_sources,
               "versions": len(versions), "new_versions": len(new_versions),
               "donated_cells": len(donations), "synthesis_plans": len(syntheses),
               "blocked_surfaces": sum(bool(r["unresolved_blockers"]) for r in state_rows.values())}
