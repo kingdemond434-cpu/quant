@@ -330,7 +330,9 @@ def manifest_rows(path: Path | None = None) -> list[dict[str, str]]:
 #: `required` box tasks: a research task that misses an hour costs an hour of research.
 REQUIRED_LANES: frozenset[str] = frozenset({"money"})
 #: Tasks that are required whatever their lane, because the control plane itself rides on them.
-REQUIRED_TASKS: frozenset[str] = frozenset({"MT5-ClockFixer", "MT5-Gateway", "MT5-AdoptRelease"})
+REQUIRED_TASKS: frozenset[str] = frozenset(
+    {"MT5-ClockFixer", "MT5-GatewayResident", "MT5-AdoptRelease"}
+)
 
 
 def manifest_task_specs(path: Path | None = None) -> list[ComponentSpec]:
@@ -653,6 +655,22 @@ def explicit_specs() -> list[ComponentSpec]:
             resource_budget={"budget_s": 720},
             schedule="MT5-ClockFixer", artifact_class="fifteen_minute",
             notes="the reconciler; the observe pass also runs as hourly leg control_plane"),
+        ComponentSpec(
+            component_id="actuator:clock_reenrol",
+            kind="actuator", host="box",
+            code_paths=("desks/mt5/research/clock_reenrol.py",),
+            inputs=("desks/mt5/data/sleeve_registry.json",
+                    "desks/mt5/reports/shadow/shadow_state.json"),
+            outputs=("desks/mt5/reports/CLOCK_REENROL.json",),
+            consumers=("desks/mt5/research/clock_liveness.py",
+                       "desks/mt5/research/shadow_forward.py"),
+            cadence_s=900, timeout_s=240, progress_metric="advanced",
+            expected_artifact_schema="desks/mt5/reports/CLOCK_REENROL.json",
+            owner="forward", restart_action="invoke:clock_liveness",
+            criticality="required", resource_budget={"budget_s": 240},
+            schedule="invoked:clock_liveness", artifact_class="fifteen_minute",
+            notes=("not an independent timer: clock_liveness invokes it only for identities "
+                   "proved frozen, and proves repair by the clock watermark advancing")),
     ]
 
 
@@ -1074,11 +1092,11 @@ _DYN_COUNTRY = re.compile(r"research\.countries\.\{code\}\.(\w+)")
 def dynamic_reach_roots(root: Path | None = None) -> dict[str, str]:
     """rel -> the clocked file that imports it BY PATTERN, for edges a static walk cannot see.
 
-    `forest_runner` is on eleven hourly legs and imports every country pack and data plane as
+    `forest_runner` is on eleven hourly legs and imports every available country pack and data
+    plane as
     `importlib.import_module(f"research.countries.{code}.pack")` (and `.data_plane`), and a
-    region package's `<pkg>.mandate`. An f-string is invisible to `_import_stems`, so the ten
-    official data planes read as executables no clock reaches -- which is how `countries/za/
-    data_plane.py` sat in the unclocked census while the Africa forest ran it every hour.
+    region package's `<pkg>.mandate`. An f-string is invisible to `_import_stems`, so a country
+    module imported only by pattern would otherwise read as code no clock reaches.
 
     THE EDGE IS DERIVED FROM THE SAME TWO SOURCES THE RUNNER USES, never declared: the leaf
     names come from forest_runner's own source, and the country codes and region packages come

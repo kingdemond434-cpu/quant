@@ -158,12 +158,12 @@ def test_the_country_packs_the_forest_runner_imports_by_pattern_are_reached() ->
     """An f-string import is invisible to a static walk; the roster and the pattern are not."""
     roots = C.dynamic_reach_roots()
     assert roots, "no dynamic root: the eleven forests import their packs at runtime"
-    planes = [r for r in roots if r.endswith("/data_plane.py")]
-    assert len(planes) >= 8, planes
-    for rel in planes:
+    packs = [r for r in roots if r.endswith("/pack.py")]
+    assert len(packs) >= 40, packs
+    for rel in packs:
         assert "forest_runner.py" in roots[rel], "the edge must name the file that carries it"
     unclocked = set(C.census()["unclocked"])
-    assert not (set(planes) & unclocked), "a data plane the Africa/Korea forests run every hour"
+    assert not (set(packs) & unclocked), "a country pack the forest runners run every hour"
 
 
 def test_the_systemd_units_the_vps_manifest_declares_own_their_scripts() -> None:

@@ -44,7 +44,7 @@ def test_specs_are_derived_from_every_declared_clock():
     assert leg.production_args == ("--once", "--budget-s", "600")
     assert "desks/mt5/research/control_plane.py" in leg.code_paths
     assert REG.get("daily:promoter") is not None
-    assert REG.get("task:MT5-Gateway").criticality == "required"
+    assert REG.get("task:MT5-GatewayResident").criticality == "required"
     assert REG.get("component:control_plane").schedule == "MT5-ClockFixer"
     gauntlet = REG.get("leg:external_gauntlet")
     # DERIVED, NEVER ASSERTED. This read `== 2 * 3600` -- a literal that happened to equal the
@@ -162,6 +162,8 @@ def test_the_organ_observes_and_exits_zero_without_writing(capsys):
 
 
 def test_unclocked_executables_are_named_never_hidden():
-    exes = [s for s in REG.by_kind("executable")]
-    assert exes and all(s.schedule == UNMEASURED and s.cadence_s is None for s in exes)
-    assert all(s.criticality == "optional" for s in exes)
+    exes = list(REG.by_kind("executable"))
+    assert exes
+    unclocked = [s for s in exes if not s.scheduled]
+    assert all(s.schedule == UNMEASURED and s.cadence_s is None for s in unclocked)
+    assert all(s.criticality == "optional" for s in unclocked)

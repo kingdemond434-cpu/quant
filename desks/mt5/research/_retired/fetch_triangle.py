@@ -37,7 +37,8 @@ def fetch_range(sym: str, tf, start, end, tries: int = 4) -> pd.DataFrame | None
 
 def main() -> None:
     if mt5.terminal_info() is None:
-        if not mt5.initialize(path=TERMINAL):
+        from mt5_session import attach_or_initialize
+        if not attach_or_initialize(mt5, path=TERMINAL):
             print(f"initialize failed: {_explain(mt5.last_error())}")
             return
     print(f"terminal: {mt5.terminal_info().name} | account {mt5.account_info().login}")

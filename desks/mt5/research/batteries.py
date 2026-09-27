@@ -221,13 +221,13 @@ ORGANS: tuple[Entry, ...] = (
     _e("desks/mt5/research/local_converter.py", "mined rows -> candidates, no seat, no network"),
     _e("desks/mt5/research/index_discovery.py", "index-driven discovery: addresses, not crawls"),
     _e("desks/mt5/research/asia_transmission.py", "the Asian production-chain transmission graph"),
-    _e("desks/mt5/research/africa_interaction.py", "African state as an exogenous sensor"),
     _e("desks/mt5/research/middle_east_interaction.py", "six mechanism families, two triples"),
     _e("desks/mt5/research/south_america_interaction.py", "local state as a SENSOR, not a trade"),
     _e("desks/mt5/research/countries/kr/miners.py", "the Korea miner registry: twelve agents"),
-    _e("desks/mt5/research/countries/kr/nowcast.py", "the Korean trade nowcasting factory"),
-    _e("desks/mt5/research/japan/miners.py", "the Japan miner registry and its context"),
-    _e("desks/mt5/research/japan/dashboard.py", "the Japan department's dashboard (section 43)"),
+    # Africa and Japan now run through the canonical country-pack/forest machinery.
+    # Korea's miners own its nowcast and candidate lattice.  Keeping the superseded
+    # one-off paths here would create duplicate work and makes the battery claim it
+    # can execute files that no longer exist.
     _e("desks/mt5/moat/moat_lifecycle.py", "the moat grows without clogging the box"),
     _e("desks/mt5/scripts/fxblue_digest.py", "compact the FX Blue harvest into one artifact"),
     _e("desks/mt5/scripts/fxblue_mechanism_summary.py", "that corpus as MECHANISM structure"),
@@ -242,7 +242,6 @@ ORGANS: tuple[Entry, ...] = (
     _e("desks/mt5/research/trend_core.py", "the trend core the gate studies were built on"),
     _e("desks/mt5/research/counterexample_agent.py", "the standing counterexample hunt"),
     _e("desks/mt5/research/validate_fusion.py", "the Fusion cost audit and re-validation"),
-    _e("desks/mt5/research/countries/kr/lattice.py", "the KR candidate lattice, never a product"),
     _e("desks/mt5/research/gold_hour_sweep.py", "re-earn the gold entry hours, never inherit them",
        "--apply"),
     _e("scripts/check_forward_clock.py", "the forward clock must move forward; repair it"),
