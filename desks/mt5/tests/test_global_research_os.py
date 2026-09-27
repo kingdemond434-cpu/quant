@@ -64,6 +64,9 @@ def test_global_os_conserves_every_discovered_pack_under_a_tiny_budget(tmp_path:
     assert doc["packs_total"] == doc["packs_run"] + doc["conservation"]["deferred_to_cursor"]
     assert report.exists() and cursor.exists()
     assert json.loads(report.read_text("utf-8"))["next_index"] == doc["next_index"]
+    assert doc["conservation"]["miner_identity_holds"] is True
+    assert doc["conservation"]["declared_miners"] == doc["conservation"][
+        "miners_with_disposition"]
 
 
 def test_repository_has_a_real_global_country_surface() -> None:

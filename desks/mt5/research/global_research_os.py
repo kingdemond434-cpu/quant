@@ -156,14 +156,25 @@ def run(*, budget_s: float = DEFAULT_BUDGET_S, dry_run: bool = False,
             miners = result.get("miners") or []
             adapters = sum(1 for m in miners if m.get("implementation") == "DECLARED_SPEC_ADAPTER")
             failed = sum(1 for m in miners if m.get("outcome") == CL.FAILED)
-            rows.append({"country": code, "name": pack.name, "outcome": "ok" if not failed else "degraded",
+            rows.append({"country": code, "name": pack.name,
+                         "outcome": "ok" if not failed else "degraded",
                          "seconds": result.get("seconds"), "discoveries": result.get("domestic"),
                          "miners": len(miners), "failed_miners": failed,
                          "native_miners": max(0, len(result.get("custom_miners") or []) - adapters),
-                         "spec_adapters": adapters, "unmeasured": len(result.get("unmeasured") or []),
+                         "spec_adapters": adapters,
+                         "unmeasured": len(result.get("unmeasured") or []),
                          "miner_failures": [{"miner": m.get("miner"), "why": m.get("why")}
                                             for m in miners if m.get("outcome") == CL.FAILED],
-                         "coverage": coverage.get("state"), "layers_mapped": coverage.get("layers_mapped"),
+                         # EVERY DECLARED MINER GETS A DISPOSITION. Counts alone concealed the
+                         # difference between a native miner, an adapter, an empty measurement
+                         # and a silent omission. This compact ledger is the country/language
+                         # proof consumed by the conversion and Tier-5 audits.
+                         "miner_dispositions": [
+                             {k: m.get(k) for k in ("miner", "implementation", "outcome", "why",
+                                                   "domestic", "transmission", "unmeasured")}
+                             for m in miners],
+                         "coverage": coverage.get("state"),
+                         "layers_mapped": coverage.get("layers_mapped"),
                          "validation": problems, "extra_problem": extra_problem,
                          "custom_entries": list(pack.custom_miners),
                          "axis_proposals": result.get("axis_proposals") or [],
@@ -187,10 +198,15 @@ def run(*, budget_s: float = DEFAULT_BUDGET_S, dry_run: bool = False,
         query_seen.add(key)
         unique_queries.append(row)
     full = len(cycle_rows) == len(codes) and next_index == 0
+    miner_rows = [m for row in cycle_rows for m in (row.get("miner_dispositions") or [])]
+    miner_outcomes: dict[str, int] = {}
+    for miner in miner_rows:
+        outcome = str(miner.get("outcome") or "UNMEASURED")
+        miner_outcomes[outcome] = miner_outcomes.get(outcome, 0) + 1
     doc = {
         "at": _now(), "outcome": "ok", "packs_total": len(codes),
         "packs_run": len(cycle_rows), "packs_run_this_pass": len(rows),
-        "next_index": next_index, "completed_full_rotation": len(rows) == len(codes),
+        "next_index": next_index, "completed_full_rotation": full,
         "seconds": round(time.monotonic() - started, 3), "budget_s": float(budget_s),
         "discoveries": sum(int(r.get("discoveries") or 0) for r in cycle_rows),
         "discoveries_this_pass": sum(int(r.get("discoveries") or 0) for r in rows),
@@ -201,12 +217,17 @@ def run(*, budget_s: float = DEFAULT_BUDGET_S, dry_run: bool = False,
         "conservation": {"discovered_packs": len(codes), "run": len(cycle_rows),
                          "deferred_to_cursor": max(0, len(codes) - len(cycle_rows)),
                          "identity_holds": len(codes) == len(cycle_rows)
-                         + max(0, len(codes) - len(cycle_rows))},
+                         + max(0, len(codes) - len(cycle_rows)),
+                         "declared_miners": sum(int(r.get("miners") or 0)
+                                                for r in cycle_rows),
+                         "miners_with_disposition": len(miner_rows),
+                         "miner_identity_holds": sum(int(r.get("miners") or 0)
+                                                     for r in cycle_rows) == len(miner_rows),
+                         "miner_outcomes": dict(sorted(miner_outcomes.items()))},
         "rule": ("every pack is run, explicitly refused, or retained at the durable cursor; "
                  "declarative adapters mint hypothesis cards only; evidence and certificates "
                  "remain the universal gauntlet's authority")}
     _atomic(report, doc)
-    doc["completed_full_rotation"] = full
     _atomic(cursor, {"at": doc["at"], "next_index": next_index, "packs": len(codes),
                      "cycle_packs": len(cycle_rows)})
     return doc
@@ -224,10 +245,8 @@ def singleton(path: Path = LOCK):
             handle.write(b"0")
             handle.flush()
     except (OSError, PermissionError):
-        try:
+        with contextlib.suppress(NameError, OSError):
             handle.close()
-        except (NameError, OSError):
-            pass
         yield False
         return
     try:

@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-09-23",
+ "updated": "2026-09-27",
  "source": "the principal's two Tier-5 blueprints, 2026-09-22: the COMPLETE TIER-5 AUTONOMOUS QUANT INSTITUTION BLUEPRINT (I-CII) and the FINAL MAXIMUM-AGGRESSIVE TIER-5 QUANT RESEARCH CIVILIZATION (1-170)",
  "rule": "every non-MISSING row cites a file that exists; every EXISTS+WIRED+LIVE row names a clock this repo knows and an artifact it writes. Verified by scripts/check_tier5_audit.py at every law-gate run; docs/research/TIER5_AUDIT.md is derived from this file with --render.",
  "expected_counts": {
@@ -204,8 +204,8 @@
     "desks/mt5/research/cross_asset_graph.py",
     "desks/mt5/research/world_causal_graph.py"
    ],
-   "why": "the code exists (desks/mt5/research/cross_asset_graph.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
-   "status": "DORMANT",
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:cross_asset_graph",
    "artifact": "desks/mt5/reports/CROSS_ASSET_GRAPH.json"
   },
   {
@@ -1029,9 +1029,9 @@
     "desks/mt5/research/transmission_engine.py",
     "desks/mt5/research/asia_transmission.py"
    ],
-   "why": "the code exists (desks/mt5/research/transmission_engine.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
-   "status": "DORMANT",
-   "artifact": "desks/mt5/reports/ASIA_TRANSMISSION.json"
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:transmission_engine",
+   "artifact": "desks/mt5/reports/TRANSMISSION_GRAPH.json"
   },
   {
    "source": "BLUEPRINT I-CII",
@@ -1389,9 +1389,9 @@
     "desks/mt5/research/macro_intelligence.py",
     "desks/mt5/research/fetch_fred.py"
    ],
-   "gap": "on a clock and it DECLARES desks/mt5/reports/MACRO_INTELLIGENCE.json, which is ABSENT on this tree: the leg has not produced its report here, so the section is UNMEASURED rather than delivered",
-   "status": "PARTIAL",
-   "clock": "hourly_cycle:macro_intelligence"
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:macro_intelligence",
+   "artifact": "desks/mt5/reports/MACRO_INTELLIGENCE.json"
   },
   {
    "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
@@ -1401,9 +1401,9 @@
     "desks/mt5/research/macro_intelligence.py",
     "desks/mt5/research/pit_audit.py"
    ],
-   "gap": "on a clock and it DECLARES desks/mt5/reports/MACRO_INTELLIGENCE.json, which is ABSENT on this tree: the leg has not produced its report here, so the section is UNMEASURED rather than delivered",
-   "status": "PARTIAL",
-   "clock": "hourly_cycle:macro_intelligence"
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:macro_intelligence",
+   "artifact": "desks/mt5/reports/MACRO_INTELLIGENCE.json"
   },
   {
    "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
@@ -1425,9 +1425,9 @@
     "desks/mt5/research/macro_intelligence.py",
     "desks/mt5/research/cross_asset_graph.py"
    ],
-   "gap": "on a clock and it DECLARES desks/mt5/reports/MACRO_INTELLIGENCE.json, which is ABSENT on this tree: the leg has not produced its report here, so the section is UNMEASURED rather than delivered",
-   "status": "PARTIAL",
-   "clock": "hourly_cycle:macro_intelligence"
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:macro_intelligence",
+   "artifact": "desks/mt5/reports/MACRO_INTELLIGENCE.json"
   },
   {
    "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
@@ -1691,8 +1691,8 @@
     "desks/mt5/research/cross_asset_graph.py",
     "desks/mt5/research/world_causal_graph.py"
    ],
-   "why": "the code exists (desks/mt5/research/cross_asset_graph.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
-   "status": "DORMANT",
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:cross_asset_graph",
    "artifact": "desks/mt5/reports/CROSS_ASSET_GRAPH.json"
   },
   {
@@ -1950,9 +1950,9 @@
     "desks/mt5/research/region_department.py",
     "desks/mt5/research/transmission_engine.py"
    ],
-   "gap": "on a clock; this audit could not name a report of its own -- the organ's hour lands in the registry or a shared state file, so there is no per-organ artifact to read it back from (LAWS III.16)",
-   "status": "PARTIAL",
-   "clock": "hourly_cycle:japan_department"
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:transmission_engine",
+   "artifact": "desks/mt5/reports/TRANSMISSION_GRAPH.json"
   },
   {
    "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
@@ -1962,9 +1962,9 @@
     "desks/mt5/research/transmission_engine.py",
     "desks/mt5/research/asia_transmission.py"
    ],
-   "why": "the code exists (desks/mt5/research/transmission_engine.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
-   "status": "DORMANT",
-   "artifact": "desks/mt5/reports/ASIA_TRANSMISSION.json"
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:transmission_engine",
+   "artifact": "desks/mt5/reports/TRANSMISSION_GRAPH.json"
   },
   {
    "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
@@ -2560,8 +2560,9 @@
    "files": [
     "desks/mt5/research/desk_self_heal.py"
    ],
-   "why": "the code exists (desks/mt5/research/desk_self_heal.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
-   "status": "DORMANT"
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:desk_self_heal",
+   "artifact": "desks/mt5/reports/DESK_SELF_HEAL.json"
   },
   {
    "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
@@ -2861,8 +2862,9 @@
     "desks/mt5/research/forward_calibration.py",
     "desks/mt5/research/book_reality.py"
    ],
-   "why": "the code exists (desks/mt5/research/forward_calibration.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
-   "status": "DORMANT"
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:forward_calibration",
+   "artifact": "desks/mt5/reports/FORWARD_CALIBRATION.json"
   },
   {
    "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",

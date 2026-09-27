@@ -2914,3 +2914,44 @@ CORRECT in both directions at once: it cuts a JPY cross from 7.41% to 1.13% and 
 gold's" -- byte-identical on this desk until now, and only one of them is a position size.
 
 FENCED by `scripts/check_risk_units.py` over `desks/mt5/mt5desk/risk_units.py`.
+
+## L1.68 EVERY USEFUL RESEARCH INPUT REACHES A TESTABLE-CELL DISPOSITION
+
+**THE CONSERVATION LAW.** Every useful country pack, regional forest, institutional or
+high-return reconstruction, paper, repository, forum, video, public strategy, dataset, macro
+release, physical-economy observation, broker/tick record, graveyard failure, AI-scientist
+output and external research system enters one canonical chain:
+
+`INPUT -> CLAIM -> MECHANISM -> RULE -> ORTHOGONAL DESCENDANTS -> GAUNTLET CELLS`.
+
+For every source family, at every measured pass:
+
+`inputs = testable + explicitly_unresolved + valid_refusals`, with `silently_lost = 0`.
+
+An unresolved input is not a parking place. It carries its blocker, owner, first-seen time,
+age, repair action, next attempt and reopening condition, stays at the front of resumable work,
+and remains debt until repaired or validly refused. A refusal is valid only at an already sealed
+universe or lane boundary and names the policy change that would reopen it. Missing data,
+falsifier, family, instrument, language, access label or converter capacity is work, not a
+refusal. An absent measurement is UNMEASURED, never zero or passing.
+
+**BREADTH, NOT PARAMETER SPAM.** A named mechanism is expanded over economically meaningful
+asset, horizon, session/calendar, regime, direction, representation and cross-asset/execution
+dimensions. Exact and economic-exposure duplicates are removed before expensive tests, and the
+remaining descendants pay their effective multiplicity charge. The objective is maximum
+structurally distinct falsifiable descendants and independent forward contribution, never raw
+row count.
+
+**ONE DOOR.** Every source uses the same canonical AlphaCell contract, multiplicity ledger,
+cheap falsification, universal gauntlet and prospective forward-evidence path. No source, model,
+country or prestige label receives an easier gate. The system publishes disposition coverage,
+gauntlet-ready cells per useful mechanism, orthogonal cells per input, forward survivors per
+novel cell, and prospective/live delta-E[log W] per research compute. Any metric whose causal
+join is unavailable stays UNMEASURED with an owner.
+
+The standing frontier question is: **what have we learned anywhere that has not yet become a
+falsifiable experiment?** A non-empty answer is conversion debt and must be worked, not narrated.
+
+OPERATIVE in `desks/mt5/research/conversion_maximiser.py`, the canonical compiler/explosion
+chain and the hourly gauntlet; audited in `CONVERSION_MAXIMISER.json` by the per-source identity
+and zero-silent-loss fields.

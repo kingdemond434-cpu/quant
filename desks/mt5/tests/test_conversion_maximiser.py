@@ -151,12 +151,23 @@ def test_every_planted_blocker_class_leaves_with_a_disposition(desk) -> None:
     assert out["conversion_rate"]["silent_drops"] == 0, (
         "a row was examined and dropped -- silence is the one disposition the mandate forbids")
     assert out["conversion_rate"]["disposition_rate"] == 1.0
+    invariant = out["conversion_rate"]["conversion_invariant"]
+    assert invariant["identity_holds"] and invariant["silently_lost"] == 0
+    assert all(row["identity_holds"] and row["disposition_coverage"] == 1.0
+               for row in out["conversion_rate"]["per_source"].values())
+    for axis in ("country", "language", "mechanism", "asset_family"):
+        assert out["conversion_rate"]["per_dimension"][axis]
+        assert all(row["disposition_rate"] == 1.0
+                   for row in out["conversion_rate"]["per_dimension"][axis].values())
 
     # Every row that was NOT converted must name its blocker AND the organ that owns it.
     for entry in out["still_blocked_rows"] + out["refusals"]:
         assert entry["reason"], entry
         assert entry["owner"] and entry["owner"] != "unassigned", entry
         assert entry["detail"], entry
+        assert entry["first_seen"] and entry["age_days"] is not None, entry
+        assert entry["repair_action"] and entry["next_attempt"], entry
+        assert entry["reopening_condition"], entry
 
     # The three repairable classes are actually repaired, not merely re-described.
     repaired = {r["reason"] for r in out["repairs"]}

@@ -774,10 +774,15 @@ def _allocator_mode_for_the_hour(art: Path | None = None, now: datetime | None =
                                  sleeves: Path | None = None) -> str:
     """`heavy` when the admission scan is missing, stale, or never priced a rostered sleeve;
     else the hourly `normal`."""
+    # An explicitly supplied artifact is an isolated measurement unless its matching roster is
+    # also supplied.  Joining a temporary/test artifact to the live roster makes the verdict
+    # depend on whatever happens to be deployed on this machine.  The production call supplies
+    # neither, so it still checks both canonical artifacts.
+    isolated_artifact = art is not None and sleeves is None
     age = _admission_scan_age_s(art, now)
     if age is None or age > ADMISSION_SCAN_MAX_AGE_S:
         return "heavy"
-    missing = _rostered_but_unpriced(art, sleeves)
+    missing = [] if isolated_artifact else _rostered_but_unpriced(art, sleeves)
     if missing:
         print(f"  pf_allocator: heavy -- {len(missing)} rostered sleeve(s) absent from the "
               f"carried scan's universe: {missing[:6]}", flush=True)
@@ -819,6 +824,7 @@ CORE_LEGS: frozenset[str] = frozenset({
     # `OWN_CLOCK_LEGS`, which `in_plan` checks first, so `MT5-StateVector` is its only clock.
     "regime_monitor", "state_vector", "heal_clocks", "wiring_audit", "promoter",
     "forward_reconcile", "clock_liveness", "certificate_clock_law",
+    "forward_calibration", "desk_self_heal", "tier5_acceptance",
     "closed_loop", "acceptance", "candidate_conservation", "pit_canaries",
     "mutation_yield", "credit_assignment", "publish_survivors", "publish_dashboard",
     # CANON PUBLICATION IS CORE. `MT5-Gauntlet` is the judge's own hourly task, so a sweep can
@@ -960,7 +966,7 @@ LEG_DEPARTMENT: dict[str, str] = {
                      # Tier-1 B3/B4: the per-asset world model and the learned representation
                      # lane are both about what the market IS, before anything predicts it.
                      "regime_hierarchy", "representation_discovery",
-                     "event_surprise"), "macro"),
+                     "event_surprise", "cross_asset_graph", "transmission_engine"), "macro"),
     # execution: the execution research command
     **dict.fromkeys(("execution_twin", "entry_timing", "cost_to_edge", "exit_study",
                      "execution_resolver", "netting_report", "execution_alpha",
@@ -973,7 +979,8 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "forward_slot_ranker", "forward_exploitation", "shadow_discovery",
                      "missed_trade_archaeologist", "portfolio_bounty",
                      "drawdown_alpha_miner", "trade_autopsy", "counterfactual_attribution",
-                     "clock_liveness", "allocator_liveness", "allocator_trigger"),
+                     "clock_liveness", "allocator_liveness", "allocator_trigger",
+                     "forward_calibration"),
                     "forward"),
     # meta: the machine that runs the machine (the heavy part of it)
     **dict.fromkeys(("issue_board", "publish_state", "model_league", "ml_layer_meta",
@@ -1005,7 +1012,8 @@ LEG_DEPARTMENT: dict[str, str] = {
                      # region, stamped at the registry doors. The machine measuring its
                      # own lineage: meta.
                      "attribution_census",
-                     "runtime_attestation", "self_repair"), "meta"),
+                     "runtime_attestation", "self_repair", "desk_self_heal",
+                     "tier5_acceptance"), "meta"),
     # japan: the Japan research division (the principal's 47-section mandate, hourly)
     **dict.fromkeys(("japan_department",), "japan"),
     # mathlab: the AI mathematics research civilization -- twenty-eight mathematical traditions
@@ -1693,6 +1701,13 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # plus its ratchet; the cap sits above its own budget for the reason `enrol_clocks` was
     # raised -- a cap below an organ's budget truncates it at the same prefix every hour.
     "conversion_maximiser": 1_000,
+    # The graph owns a 900 s bounded sweep. The calibration and acceptance organs are artifact
+    # readers; their caps are only protection against a damaged file or a wedged task query.
+    "cross_asset_graph": 1_000,
+    "transmission_engine": 1_000,
+    "forward_calibration": 180,
+    "desk_self_heal": 240,
+    "tier5_acceptance": 180,
     # The producer census relights at most six dark producers at 240s each and re-measures after
     # every repair; the cap sits above 6*240 so a pass is never cut inside a repair it has
     # already started, which would leave a producer half-run and the census judging the stub.
@@ -1785,10 +1800,8 @@ def _leg_floor_s(name: str) -> int:
     """
     floor = int(LEG_BUDGET_FLOOR_SEC.get(name, 0))
     if name == "external_gauntlet":
-        try:
+        with suppress(KeyError, TypeError, ValueError):
             floor = max(floor, int(float(os.environ["GAUNTLET_FRESH_BUDGET_SEC"])))
-        except (KeyError, TypeError, ValueError):
-            pass
     return floor
 
 
@@ -3865,6 +3878,13 @@ def main() -> None:
     # UNMEASURED while the pure-Python fallback carries the run. Writes MODEL_SEARCH.json.
     mds = _costed("model_search", lambda: _producer("model_search", "research/model_search.py",
                                                     "--once", "--budget-s", "600"))
+    # THE DYNAMIC CROSS-ASSET INFORMATION GRAPH. It existed but had no clock, so its lead/lag
+    # and event-propagation cells could never replenish themselves. It is a bounded macro leg;
+    # every proposal still enters the same compiler and ten-gate authority.
+    cag = _costed("cross_asset_graph", lambda: _producer(
+        "cross_asset_graph", "research/cross_asset_graph.py", "--budget-s", "900"))
+    txg = _costed("transmission_engine", lambda: _producer(
+        "transmission_engine", "research/transmission_engine.py", "--budget-s", "900"))
     # THE GLOBAL NATIVE-MARKET RESEARCH OS (regions): every country lab at equal priority with
     # measured adjustments, the transmission engine, the compiler; one pass per hour.
     gro = _costed("global_research_os", lambda: _producer("global_research_os",
@@ -3890,6 +3910,19 @@ def main() -> None:
     # act the coordinator runs on the box. scripts/check_certificate_truth.py fails on residue.
     ctt = _costed("certificate_truth", lambda: _producer(
         "certificate_truth", "research/certificate_truth.py", "--once", "--budget-s", "120"))
+    # FORWARD-LANE REALITY CHECK: continuously measure how often this exact admission rule would
+    # pass null clocks. It reports only and never tightens a gate or grants authority.
+    fcal = _costed("forward_calibration", lambda: _producer(
+        "forward_calibration", "research/forward_calibration.py", "--apply"))
+    # SAFE SELF-HEAL: re-run only the existing producer tasks named by the evidence audit.
+    # Promotion, capital, gates, deadman state and orders are structurally outside its actuator.
+    dsh = _costed("desk_self_heal", lambda: _producer(
+        "desk_self_heal", "research/run_desk_self_heal.py", "--apply"))
+    # DOCTRINE -> RUNTIME ACCEPTANCE. The static fence proves the ledger tells no repository lie;
+    # this host proof makes every LIVE row show CURRENT, STALE or MISSING each core pass.
+    t5a = _costed("tier5_acceptance", lambda: _producer(
+        "tier5_acceptance", "scripts/check_tier5_audit.py", "--runtime-out",
+        "desks/mt5/reports/TIER5_ACCEPTANCE.json"))
     # THE RUNTIME ATTESTATION (a GitHub reviewer, 2026-09-23): "GitHub code is not current VPS
     # reality ... comments in the code describe measured runs, but that is not the same as seeing
     # runtime state." Correct, and uncloseable by committing `desks/mt5/reports/**` (~50 MB the
@@ -4463,7 +4496,7 @@ def main() -> None:
     # pass compounds the public bid/ask archive without turning the hourly cycle into a multi-hour
     # download. This source may inform structure and spread regimes; Fusion-native evidence remains
     # the only venue-cost authority (enforced again in the producer's report).
-    dkb = _costed("dukascopy_backfill", lambda: _producer(
+    _costed("dukascopy_backfill", lambda: _producer(
         "dukascopy_backfill", "research/dukascopy_backfill.py", "--symbol-days", "8"))
     srt = _costed("source_routes", source_routes)
     spa = _costed("strategy_paths", strategy_paths)
@@ -4866,9 +4899,12 @@ def main() -> None:
                     "data_scout": dsc2, "japan_department": jpd, "global_research_os": gro,
                     "feature_compiler": fcp, "data_acquisition_scientist": daq,
                     "math_lab": mlb, "expression_factory": xpf, "physics_lab": phl,
-                    "coevolution": cev, "model_search": mds,
+                    "coevolution": cev, "model_search": mds, "cross_asset_graph": cag,
+                    "transmission_engine": txg,
                     "external_federation": xfd, "archaeology": arch, "sares": srs,
-                    "certificate_truth": ctt, "runtime_attestation": rta,
+                    "certificate_truth": ctt, "forward_calibration": fcal,
+                    "desk_self_heal": dsh, "tier5_acceptance": t5a,
+                    "runtime_attestation": rta,
                     "self_repair": slf,
                     "loop_liveness": llv, "clock_liveness": clk,
                     "fence_battery": fbt, "organ_battery": obt,

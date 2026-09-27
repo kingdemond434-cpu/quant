@@ -1378,6 +1378,29 @@ def _acquisition_tasks(rows: Sequence[Mapping[str, Any]], seat_dir: Path | None 
     return str(path)
 
 
+def _disposition(row: Mapping[str, Any], cid: str, age: float | None,
+                 reason_name: str, detail_text: str, owner_name: str, *,
+                 permanent: bool, actions_taken: Sequence[str] = ()) -> dict[str, Any]:
+    """Return the complete, reopenable disposition contract for one research input."""
+    first_seen = str(row.get("created_at") or row.get("discovered_at") or
+                     row.get("timestamp") or UNMEASURED)
+    if permanent:
+        next_attempt = "NONE_WHILE_POLICY_HOLDS"
+        reopening = ("the executable-universe or research-lane mandate changes and the row is "
+                     "re-admitted through the canonical AlphaCell door")
+    else:
+        next_attempt = "next hourly conversion_maximiser pass (carry-first)"
+        reopening = ("the named owner supplies the missing field/data and the same "
+                     "content-hashed row recompiles")
+    return {"id": cid, "reason": reason_name, "blocker": reason_name,
+            "detail": detail_text[:400], "owner": owner_name,
+            "first_seen": first_seen, "age_days": age,
+            "repair_action": _ATTACK.get(
+                reason_name, "repair the producing organ and recompile the same row"),
+            "next_attempt": next_attempt, "reopening_condition": reopening,
+            "actions_taken": list(actions_taken)}
+
+
 def run(*, budget: Budget, conn: sqlite3.Connection, max_rows: int, dry_run: bool,
         universe_dir: Path | None = None, seat_dir: Path | None = None,
         carry_path: Path | None = None, out_path: Path | None = None,
@@ -1413,6 +1436,8 @@ def run(*, budget: Budget, conn: sqlite3.Connection, max_rows: int, dry_run: boo
 
     histogram: dict[str, int] = {}
     per_source: dict[str, dict[str, int]] = {}
+    per_dimension: dict[str, dict[str, dict[str, int]]] = {
+        key: {} for key in ("country", "language", "mechanism", "asset_family")}
     per_class: dict[str, dict[str, Any]] = {}
     banned_families = live_banned_families()
     repaired: list[dict[str, Any]] = []
@@ -1428,6 +1453,20 @@ def run(*, budget: Budget, conn: sqlite3.Connection, max_rows: int, dry_run: boo
     def _class(name: str) -> dict[str, Any]:
         return per_class.setdefault(name, {"seen": 0, "repaired": 0, "refused": 0,
                                            "still_blocked": 0, "ages_days": []})
+
+    def _dimension_rows(row: Mapping[str, Any]) -> list[dict[str, int]]:
+        values = {
+            "country": str(row.get("country") or row.get("region") or "UNSTATED"),
+            "language": str(row.get("language") or row.get("lang") or "UNSTATED"),
+            "mechanism": str(row.get("mechanism_class") or row.get("family") or "UNSTATED"),
+            "asset_family": str(row.get("asset_class") or "UNSTATED"),
+        }
+        out: list[dict[str, int]] = []
+        for axis, value in values.items():
+            out.append(per_dimension[axis].setdefault(
+                value, {"examined": 0, "repaired": 0, "refused": 0, "still_blocked": 0,
+                        "studied": 0}))
+        return out
 
     leftover: list[str] = []
     # THE PASS DRAINS UNTIL A BOUND, NOT UNTIL ONE POOL RUNS OUT (2026-09-23). A wave that ended
@@ -1474,8 +1513,11 @@ def run(*, budget: Budget, conn: sqlite3.Connection, max_rows: int, dry_run: boo
             handled.add(cid)
             origin = str(row.get("origin") or row.get("generator") or "unknown")
             stat = per_source.setdefault(origin, {"examined": 0, "repaired": 0, "refused": 0,
-                                                  "still_blocked": 0})
+                                                  "still_blocked": 0, "studied": 0})
             stat["examined"] += 1
+            dimension_rows = _dimension_rows(row)
+            for dimension_row in dimension_rows:
+                dimension_row["examined"] += 1
             reason, obj = classify(row)
             histogram[reason] = histogram.get(reason, 0) + 1
             age = _age_days(row)
@@ -1484,11 +1526,15 @@ def run(*, budget: Budget, conn: sqlite3.Connection, max_rows: int, dry_run: boo
             if age is not None:
                 cls["ages_days"].append(age)
             wanted_symbols.append(str(row.get("symbol") or ""))
+
             if reason == "OFF_UNIVERSE":
                 detail = getattr(obj, "detail", "") or DEFECT_OWNER["OFF_UNIVERSE"]
-                refusals.append({"id": cid, "reason": "OFF_UNIVERSE", "detail": detail,
-                                 "owner": DEFECT_OWNER["OFF_UNIVERSE"]})
+                refusals.append(_disposition(
+                    row, cid, age, "OFF_UNIVERSE", detail,
+                    DEFECT_OWNER["OFF_UNIVERSE"], permanent=True))
                 stat["refused"] += 1
+                for dimension_row in dimension_rows:
+                    dimension_row["refused"] += 1
                 cls["refused"] += 1
                 if not dry_run:
                     _park(conn, cid, RETIRED, f"OFF_UNIVERSE: {detail}")
@@ -1506,14 +1552,17 @@ def run(*, budget: Budget, conn: sqlite3.Connection, max_rows: int, dry_run: boo
                     detail = note or getattr(obj, "detail", "") or reason2
                     if detail.startswith("EVENT_LANE"):
                         reason2, owner = "EVENT_LANE", DEFECT_OWNER["EVENT_LANE"]
-                    entry = {"id": cid, "reason": reason2, "detail": detail[:400], "owner": owner,
-                             "actions_taken": actions, "age_days": age}
+                    entry = _disposition(
+                        row, cid, age, reason2, detail, owner,
+                        permanent=reason2 in REFUSAL_CLASSES, actions_taken=actions)
                     if reason2 in REFUSAL_CLASSES:
                         # THE ONLY ADMISSIBLE PERMANENT REFUSALS (principal's addendum 2026-09-23):
                         # ground the desk is forbidden to hunt, and an instrument the venue does not
                         # quote for this lane. Everything else is work, not a verdict.
                         refusals.append(entry)
                         stat["refused"] += 1
+                        for dimension_row in dimension_rows:
+                            dimension_row["refused"] += 1
                         cls["refused"] += 1
                         if not dry_run:
                             _park(conn, cid, RETIRED, f"{reason2}: {detail}"[:400])
@@ -1524,6 +1573,8 @@ def run(*, budget: Budget, conn: sqlite3.Connection, max_rows: int, dry_run: boo
                     # instead of quietly becoming "blocked".
                     parked.append(entry)
                     stat["still_blocked"] += 1
+                    for dimension_row in dimension_rows:
+                        dimension_row["still_blocked"] += 1
                     cls["still_blocked"] += 1
                     if reason2 in ("PROSE_ONLY", "NO_INSTRUMENT"):
                         naming.append({"id": cid,
@@ -1548,9 +1599,13 @@ def run(*, budget: Budget, conn: sqlite3.Connection, max_rows: int, dry_run: boo
                 # complete and stays --
                 # mining is unrestricted -- but its family is refused at both live doors, so a
                 # gate-second spent on it buys an outcome the desk has already forbidden.
-                studied.append({"id": cid, "family": spec.family, "reason": reason,
-                                "detail": STUDY_REASON.format(family=spec.family)})
+                studied.append({**_disposition(
+                    row, cid, age, "STUDY_ONLY", STUDY_REASON.format(family=spec.family),
+                    "research governance / live-family boundary", permanent=True),
+                    "family": spec.family, "source_reason": reason})
                 stat["studied"] = stat.get("studied", 0) + 1
+                for dimension_row in dimension_rows:
+                    dimension_row["studied"] += 1
                 cls["studied"] = int(cls.get("studied") or 0) + 1
                 if not dry_run:
                     _park(conn, cid, STUDY, STUDY_REASON.format(family=spec.family))
@@ -1560,6 +1615,8 @@ def run(*, budget: Budget, conn: sqlite3.Connection, max_rows: int, dry_run: boo
                              "symbol": spec.symbols[0] if spec.symbols else "",
                              "grid_cell_before": str(row.get("grid_cell") or ""), "age_days": age})
             stat["repaired"] += 1
+            for dimension_row in dimension_rows:
+                dimension_row["repaired"] += 1
             cls["repaired"] += 1
             if dry_run:
                 continue
@@ -1582,12 +1639,18 @@ def run(*, budget: Budget, conn: sqlite3.Connection, max_rows: int, dry_run: boo
                                      required_data_json=json.dumps(list(spec.data_snapshot.datasets)),
                                      family=spec.family or str(row.get("family") or ""))
             except (sqlite3.Error, ValueError) as exc:                       # pragma: no cover
-                parked.append({"id": cid, "reason": "ENQUEUE_FAILED",
-                               "detail": f"{type(exc).__name__}: {exc}",
-                               "owner": "libs/moat/registry.py enqueue_candidate"})
+                parked.append(_disposition(
+                    row, cid, age, "ENQUEUE_FAILED", f"{type(exc).__name__}: {exc}",
+                    "libs/moat/registry.py enqueue_candidate", permanent=False,
+                    actions_taken=actions))
                 repaired.pop()
                 stat["repaired"] -= 1
+                stat["still_blocked"] += 1
+                for dimension_row in dimension_rows:
+                    dimension_row["repaired"] -= 1
+                    dimension_row["still_blocked"] += 1
                 cls["repaired"] -= 1
+                cls["still_blocked"] += 1
 
     # EFFECTIVE TRIALS, not raw count: re-enqueued work pays the multiple-testing bill it owes,
     # and 500 mutations of one rule are not 500 independent looks at the tape.
@@ -1637,6 +1700,7 @@ def run(*, budget: Budget, conn: sqlite3.Connection, max_rows: int, dry_run: boo
         "carry_rule": "no queues: this pass's leftover is the FIRST work of the next pass, and "
                       "the oldest waiting row's age is published every pass",
         "per_source": per_source,
+        "per_dimension": per_dimension,
         "naming_requests": {"rows": len(naming), "path": naming_path,
                             "owner": DEFECT_OWNER["PROSE_ONLY"]},
         "acquisition_tasks": {"rows": len(acquisitions), "path": acq_path,
@@ -1784,6 +1848,40 @@ def main(argv: list[str] | None = None) -> int:
     }
     doc["largest_blocker"] = largest_blocker(doc)
     doc["conversion_rate"] = _conversion_rates(doc)
+    spent_h = max(float(doc.get("spent_s") or 0.0) / 3600.0, 1e-9)
+    mechanisms = sum(1 for stat in (doc.get("conversion_rate", {}).get("per_dimension", {})
+                                    .get("mechanism", {}).values())
+                     if int(stat.get("examined") or 0) > 0)
+    doc["useful_conversion_yield"] = {
+        "novel_gauntlet_ready_cells": int(doc.get("new_cells") or 0),
+        "source_mechanisms_examined": mechanisms,
+        "cells_per_mechanism": (round(int(doc.get("new_cells") or 0) / mechanisms, 4)
+                                if mechanisms else None),
+        "effective_breadth_added_per_compute_hour": round(
+            float((doc.get("breadth_delta") or {}).get("added_effective_cells") or 0.0)
+            / spent_h, 4),
+        "orthogonal_conversion_yield": (round(
+            float((doc.get("breadth_delta") or {}).get("added_effective_cells") or 0.0)
+            / int(doc.get("examined") or 0), 6) if int(doc.get("examined") or 0) else None),
+        "forward_conversion_yield": {
+            "status": UNMEASURED,
+            "why": ("this organ stops at the canonical gauntlet door; forward_calibration owns "
+                    "the content-hash join from novel cells to prospective trades"),
+            "owner": "research/forward_calibration.py",
+        },
+        "research_conversion_value": {
+            "status": UNMEASURED,
+            "metric": "forward/live delta_E_log_W per research compute-hour",
+            "why": ("no prospective portfolio contribution is attributable inside this pass; "
+                    "absence is not reported as zero"),
+            "owner": "research_roi + forward_calibration",
+        },
+        "descendant_consumer": "hourly_cycle:card_explosion -> descendants -> gauntlet",
+        "descendant_axes": ["asset", "horizon", "session", "regime", "direction",
+                            "representation", "cross_asset_or_execution"],
+        "dedupe_boundary": ("content hash + economic grid cell before expensive testing; "
+                            "effective_trials_charged carries the multiplicity bill"),
+    }
     if not a.dry_run:
         _atomic_write(a.out or OUT, doc)
         with contextlib.suppress(Exception):
@@ -1819,11 +1917,28 @@ def main(argv: list[str] | None = None) -> int:
 def _conversion_rates(doc: Mapping[str, Any]) -> dict[str, Any]:
     """Conversion rate per stage and per source -- the measurement the mandate asks for."""
     examined = int(doc.get("examined") or 0)
-    per_source = {
-        name: {**stat,
-               "conversion_rate": (round(stat["repaired"] / stat["examined"], 4)
-                                   if stat.get("examined") else None)}
-        for name, stat in (doc.get("per_source") or {}).items()}
+
+    def measured(stat: Mapping[str, Any]) -> dict[str, Any]:
+        inputs = int(stat.get("examined") or 0)
+        testable = int(stat.get("repaired") or 0)
+        unresolved = int(stat.get("still_blocked") or 0)
+        valid_refusals = int(stat.get("refused") or 0) + int(stat.get("studied") or 0)
+        disposed = testable + unresolved + valid_refusals
+        return {**stat, "inputs": inputs, "testable": testable,
+                "explicitly_unresolved": unresolved, "valid_refusals": valid_refusals,
+                "conversion_rate": round(testable / inputs, 4) if inputs else None,
+                "disposition_coverage": round(disposed / inputs, 4) if inputs else None,
+                "silently_lost": inputs - disposed,
+                "identity_holds": inputs == disposed}
+
+    per_source = {name: measured(stat)
+                  for name, stat in (doc.get("per_source") or {}).items()}
+    per_dimension = {
+        axis: {
+            name: {**measured(stat),
+                   "disposition_rate": measured(stat)["disposition_coverage"]}
+            for name, stat in values.items()}
+        for axis, values in (doc.get("per_dimension") or {}).items()}
     stages = {
         "classified": examined,
         "repaired": int(doc.get("repaired") or 0),
@@ -1834,10 +1949,19 @@ def _conversion_rates(doc: Mapping[str, Any]) -> dict[str, Any]:
     }
     disposed = (stages["repaired"] + stages["refused_with_reason"]
                 + stages["still_blocked_with_owner"] + stages["routed_to_study"])
-    return {"per_stage": stages, "per_source": per_source,
+    invariant = {
+        "equation": "inputs = testable + explicitly_unresolved + valid_refusals",
+        "inputs": examined, "testable": stages["repaired"],
+        "explicitly_unresolved": stages["still_blocked_with_owner"],
+        "valid_refusals": stages["refused_with_reason"] + stages["routed_to_study"],
+        "silently_lost": examined - disposed, "identity_holds": examined == disposed,
+        "acceptance": "100% disposition coverage and zero silently lost",
+    }
+    return {"per_stage": stages, "per_source": per_source, "per_dimension": per_dimension,
             "disposition_rate": round(disposed / examined, 4) if examined else None,
             "conversion_rate": round(stages["repaired"] / examined, 4) if examined else None,
             "silent_drops": examined - disposed,
+            "conversion_invariant": invariant,
             "rule": "every examined row leaves with a disposition; silent_drops must be 0"}
 
 
