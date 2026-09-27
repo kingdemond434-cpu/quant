@@ -1,0 +1,998 @@
+{
+ "source": "firm_mining",
+ "cluster": "systematic_macro",
+ "mined_at": "2026-09-27T02:00:00+00:00",
+ "discoveries": [
+  {
+   "kind": "hypothesis",
+   "family": "multi_speed_trend",
+   "params": {
+    "speeds": [
+     21,
+     63,
+     252
+    ],
+    "hold_days": 21,
+    "min_agreement": 0.6
+   },
+   "symbols": [
+    "XAUUSD",
+    "XAGUSD",
+    "XCUUSD",
+    "XTIUSD",
+    "XBRUSD",
+    "XNGUSD",
+    "WHEAT",
+    "CORN",
+    "SOYBEAN",
+    "SUGAR",
+    "US500",
+    "GER40",
+    "UK100",
+    "JPN225",
+    "AUS200",
+    "UST10Y",
+    "UKGILT",
+    "EURUSD",
+    "GBPUSD",
+    "AUDUSD",
+    "USDJPY",
+    "USDCAD",
+    "USDCHF",
+    "NZDUSD"
+   ],
+   "mechanism": "AQR canonical managed-futures replica: equal-weighted 1-, 3- and 12-month time-series momentum, each position vol-scaled, rebalanced monthly, across FX/metals/energy/softs/indices/bonds. 21/63/252 trading days are the paper's 1/3/12 months. min_agreement 0.6 = at least 2 of 3 speeds agree (the family's vote proxy for the equal-weight sum).",
+   "firm": "AQR (Hurst, Ooi, Pedersen)",
+   "evidence": "DOCUMENTED",
+   "source_url": "https://www.chesler.us/resources/academia/A_Century_of_Evidence_on_Trend_Following.pdf",
+   "source_title": "A Century of Evidence on Trend-Following Investing (Hurst, Ooi, Pedersen), AQR",
+   "quote": "we construct an equal-weighted combination of 1-month, 3-month, and 12-month time series momentum strategies for 59 markets",
+   "horizon": "1-12 months",
+   "asset_classes": [
+    "FX",
+    "metals",
+    "energy",
+    "softs",
+    "indices",
+    "bonds"
+   ],
+   "source": "firm_mining",
+   "cluster": "systematic_macro",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "multi_speed_trend",
+   "params": {
+    "speeds": [
+     252
+    ],
+    "hold_days": 21,
+    "min_agreement": 1.0,
+    "vol_window": 60
+   },
+   "symbols": [
+    "XAUUSD",
+    "XAGUSD",
+    "XCUUSD",
+    "XTIUSD",
+    "XBRUSD",
+    "XNGUSD",
+    "WHEAT",
+    "CORN",
+    "SOYBEAN",
+    "SUGAR",
+    "US500",
+    "GER40",
+    "UK100",
+    "JPN225",
+    "AUS200",
+    "UST10Y",
+    "UKGILT",
+    "EURUSD",
+    "GBPUSD",
+    "AUDUSD",
+    "USDJPY",
+    "USDCAD",
+    "USDCHF",
+    "NZDUSD"
+   ],
+   "mechanism": "Pure 12-month TSMOM: long if trailing 12m excess return >0 else short, sized to constant ex-ante vol, one-month hold. Paper's vol estimator is EWMA of squared daily returns with centre of mass 60 days (vol_window 60 is the closest rolling analogue). Trend persists ~1 year then partially reverses, so do NOT extend lookback beyond 12m.",
+   "firm": "AQR (Moskowitz, Ooi, Pedersen)",
+   "evidence": "DOCUMENTED",
+   "source_url": "https://w4.stern.nyu.edu/facdir/lpederse/papers/TimeSeriesMomentum.pdf",
+   "source_title": "Time Series Momentum (Moskowitz, Ooi, Pedersen), JFE",
+   "quote": "This time series momentum or ‘‘trend’’ effect persists for about a year and then partially reverses over longer horizons.",
+   "horizon": "1 month hold, 12 month signal",
+   "asset_classes": [
+    "FX",
+    "metals",
+    "energy",
+    "softs",
+    "indices",
+    "bonds"
+   ],
+   "source": "firm_mining",
+   "cluster": "systematic_macro",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "multi_speed_trend",
+   "params": {
+    "speeds": [
+     21,
+     252
+    ],
+    "hold_days": 21,
+    "min_agreement": 0.5,
+    "crisis_only": true
+   },
+   "symbols": [
+    "US500",
+    "US30",
+    "NAS100",
+    "GER40",
+    "UK100",
+    "JPN225",
+    "EUSTX50"
+   ],
+   "mechanism": "Momentum turning points: classify each month by sign of 12m (slow) and 1m (fast) trailing return into Bull/Correction/Bear/Rebound. When slow and fast disagree (Correction/Rebound) the trend inference is unreliable and an intermediate speed dominates; crisis_only restricts entries to disagreement months, the paper's high-information state.",
+   "firm": "Duke/Man-affiliated (Goulding, Harvey, Mazzoleni)",
+   "evidence": "DOCUMENTED",
+   "source_url": "https://people.duke.edu/~charvey/Research/Published_Papers/P158_Momentum_turning_points.pdf",
+   "source_title": "Momentum Turning Points (Goulding, Harvey, Mazzoleni), JFE",
+   "quote": "When slow and fast momentum disagree, we call it a “Correction” state if slow momentum indicates a long position",
+   "horizon": "monthly",
+   "asset_classes": [
+    "indices"
+   ],
+   "source": "firm_mining",
+   "cluster": "systematic_macro",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "multi_speed_trend",
+   "params": {
+    "speeds": [
+     10,
+     21
+    ],
+    "hold_days": 5,
+    "min_agreement": 1.0
+   },
+   "symbols": [
+    "US500",
+    "NAS100",
+    "GER40",
+    "JPN225",
+    "EUSTX50",
+    "UK100",
+    "HK50"
+   ],
+   "mechanism": "Crisis-alpha speed: Man AHL finds convexity and worst-quintile S&P performance rise as trend speed increases (slow trend cannot flip short within a 1-3 month review window, e.g. Q1 2020). Fast trend on equity indices is the defensive leg; expect lower after-cost Sharpe, positive skew.",
+   "firm": "Man AHL",
+   "evidence": "DOCUMENTED",
+   "source_url": "https://www.man.com/insights/need-for-speed-trend-following",
+   "source_title": "The Need for Speed in Trend-Following Strategies, Man Group",
+   "quote": "Performance during equity weakness is still best with faster trading",
+   "horizon": "1-4 weeks",
+   "asset_classes": [
+    "indices"
+   ],
+   "source": "firm_mining",
+   "cluster": "systematic_macro",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "multi_speed_trend",
+   "params": {
+    "speeds": [
+     21,
+     63,
+     252
+    ],
+    "hold_days": 21,
+    "min_agreement": 0.6
+   },
+   "symbols": [
+    "UST10Y",
+    "UST05Y",
+    "UKGILT"
+   ],
+   "mechanism": "Bond crisis alpha: trend on government bonds made money both in the 1960-mid-1980s bond bear market and the post-1985 bull; payoff is best in the worst bond AND worst equity environments ('bond smile'). Apply the 1/3/12m blend to UST10Y/UST05Y/UKGILT CFDs.",
+   "firm": "Man AHL (Hamill, Rattray, Van Hemert)",
+   "evidence": "DOCUMENTED",
+   "source_url": "https://www.man.com/insights/trend-following-equity-and-bond-crisis-alpha",
+   "source_title": "Trend Following: Equity and Bond Crisis Alpha (Hamill, Rattray, Van Hemert), Man Group",
+   "quote": "Strategy performance is best in the worst equity and worst bond environments",
+   "horizon": "1-12 months",
+   "asset_classes": [
+    "bonds"
+   ],
+   "source": "firm_mining",
+   "cluster": "systematic_macro",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "multi_speed_trend",
+   "params": {
+    "speeds": [
+     252
+    ],
+    "hold_days": 21,
+    "min_agreement": 1.0
+   },
+   "symbols": [
+    "USDMXN",
+    "USDZAR",
+    "USDTRY",
+    "USDBRL",
+    "USDINR",
+    "USDKRW",
+    "USDIDR",
+    "USDTHB",
+    "USDPLN",
+    "USDHUF",
+    "USDCZK",
+    "USDILS",
+    "USDCNH",
+    "USDSGD"
+   ],
+   "mechanism": "Out-of-sample trend: AQR's Trends Everywhere tests 12-month TSMOM on 82 new instruments incl. emerging-market currencies; alternative assets delivered a higher gross Sharpe (1.34) than traditional (1.17). Man's market-mix work likewise finds EM currency pairs among diversifying 'esoteric' markets. Apply to Fusion EM FX (costs/swap will be the binding constraint).",
+   "firm": "AQR (Babu, Levine, Ooi, Pedersen, Stamelos)",
+   "evidence": "DOCUMENTED",
+   "source_url": "https://www.aqr.com/-/media/AQR/Documents/Insights/Journal-Article/AQR-Trends-Everywhere_JOIM.pdf?sc_lang=en",
+   "source_title": "Trends Everywhere (Babu, Levine, Ooi, Pedersen, Stamelos), JOIM",
+   "quote": "the strategy delivers an even higher Sharpe ratio of 1.34 for the alternative assets",
+   "horizon": "12 month signal, monthly rebalance",
+   "asset_classes": [
+    "FX"
+   ],
+   "source": "firm_mining",
+   "cluster": "systematic_macro",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "multi_speed_trend",
+   "params": {
+    "speeds": [
+     21,
+     63,
+     252
+    ],
+    "hold_days": 21,
+    "min_agreement": 0.6
+   },
+   "symbols": [
+    "WHEAT",
+    "CORN",
+    "SOYBEAN",
+    "SUGAR",
+    "SUGARRAW",
+    "COFARA",
+    "COFROB",
+    "USCOCOA",
+    "UKCOCOA",
+    "COTTON",
+    "OJ",
+    "XCUUSD",
+    "XALUSD",
+    "XNIUSD",
+    "XZNUSD",
+    "XPBUSD"
+   ],
+   "mechanism": "Winton/Man/Transtrend all report that universe choice (esoteric and smaller commodity markets, iron ore, palm oil, cocoa) drives more of trend return dispersion than the trading rule. Extend the 1/3/12 blend to every softs and base-metal CFD rather than the liquid core only.",
+   "firm": "Transtrend",
+   "evidence": "REPORTED",
+   "source_url": "https://www.transtrend.com/en/insights/how-to-profit-from-trends/",
+   "source_title": "Transtrend: How to profit from trends?",
+   "quote": "The choice of the investment universe may be a more decisive factor for individual programs' returns than the choice of the trading systems used.",
+   "horizon": "1-12 months",
+   "asset_classes": [
+    "softs",
+    "metals"
+   ],
+   "source": "firm_mining",
+   "cluster": "systematic_macro",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "carry",
+   "params": {
+    "require_quiet": true
+   },
+   "symbols": [
+    "AUDJPY",
+    "NZDJPY",
+    "MXNJPY",
+    "ZARJPY",
+    "USDJPY",
+    "USDMXN",
+    "USDZAR",
+    "USDTRY",
+    "EURTRY",
+    "USDBRL",
+    "USDINR",
+    "USDIDR",
+    "AUDCHF",
+    "NZDCHF",
+    "CADJPY",
+    "NOKJPY",
+    "SEKJPY"
+   ],
+   "mechanism": "Currency carry = interest-rate differential (expected return if spot unchanged). KMPV find carry predicts returns in every asset class (SR 0.6-0.9 each; 1.5 diversified) but all carry books lose together in global recessions/liquidity crises -- hence keep the family's quiet-market gate. Fusion swap differential is the desk's model-free carry measure.",
+   "firm": "AQR (Koijen, Moskowitz, Pedersen, Vrugt)",
+   "evidence": "DOCUMENTED",
+   "source_url": "https://w4.stern.nyu.edu/facdir/lpederse/papers/Carry.pdf",
+   "source_title": "Carry (Koijen, Moskowitz, Pedersen, Vrugt), JFE",
+   "quote": "a carry trade within each asset class earns an annualized Sharpe ratio between 0.6 to 0.9",
+   "horizon": "1 month",
+   "asset_classes": [
+    "FX"
+   ],
+   "source": "firm_mining",
+   "cluster": "systematic_macro",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "carry",
+   "params": {
+    "require_quiet": true
+   },
+   "symbols": [
+    "XTIUSD",
+    "XBRUSD",
+    "XNGUSD",
+    "WHEAT",
+    "CORN",
+    "SOYBEAN",
+    "SUGAR",
+    "SUGARRAW",
+    "COFARA",
+    "COFROB",
+    "USCOCOA",
+    "UKCOCOA",
+    "COTTON",
+    "OJ",
+    "XAUUSD",
+    "XAGUSD",
+    "XCUUSD"
+   ],
+   "mechanism": "Commodity carry = slope of futures curve (backwardated markets favoured). On CFDs the broker's long/short swap embeds the roll, so a positive-swap side is a proxy for backwardation (mapping SPECULATED; the commodity result is DOCUMENTED: equal-risk commodity index 7.9% vs 1.5% in backwardation vs contango).",
+   "firm": "AQR (Levine, Ooi, Richardson, Sasseville)",
+   "evidence": "DOCUMENTED",
+   "source_url": "https://www.nber.org/system/files/working_papers/w22793/w22793.pdf",
+   "source_title": "Commodities for the Long Run (Levine, Ooi, Richardson, Sasseville), NBER/FAJ",
+   "quote": "commodity indices, such as the equal risk-weighted one, earn 7.9 % versus 1.5% in periods of backwardation versus contango",
+   "horizon": "1-3 months",
+   "asset_classes": [
+    "energy",
+    "softs",
+    "metals"
+   ],
+   "source": "firm_mining",
+   "cluster": "systematic_macro",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "cot_positioning",
+   "params": {
+    "lookback_weeks": 156,
+    "extreme_pct": 0.9
+   },
+   "symbols": [
+    "AUDUSD",
+    "NZDUSD",
+    "USDMXN",
+    "USDJPY",
+    "USDCAD",
+    "GBPUSD",
+    "EURUSD",
+    "USDCHF"
+   ],
+   "mechanism": "Carry-crash risk: speculators hold net long positions in high-carry currencies; those positions raise crash (negative skew) risk and unwind abruptly. Fade multi-year extreme CFTC speculative positioning in carry currencies (AUD, NZD, MXN long; JPY/CHF short).",
+   "firm": "AQR/Pedersen (Brunnermeier, Nagel, Pedersen)",
+   "evidence": "DOCUMENTED",
+   "source_url": "http://docs.lhpedersen.com/CarryTradesCurrencyCrashes.pdf",
+   "source_title": "Carry Trades and Currency Crashes (Brunnermeier, Nagel, Pedersen), NBER Macro Annual",
+   "quote": "speculators’ positions increase crash risk",
+   "horizon": "weeks-months",
+   "asset_classes": [
+    "FX"
+   ],
+   "source": "firm_mining",
+   "cluster": "systematic_macro",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "cross_sectional",
+   "params": {
+    "mode": "momentum",
+    "horizon": 6048,
+    "top_frac": 0.2,
+    "ttl_bars": 504,
+    "peer_symbols": [
+     "XAUUSD",
+     "XAGUSD",
+     "XPTUSD",
+     "XPDUSD",
+     "XCUUSD",
+     "XALUSD",
+     "XNIUSD",
+     "XZNUSD",
+     "XPBUSD",
+     "XTIUSD",
+     "XBRUSD",
+     "XNGUSD",
+     "WHEAT",
+     "CORN",
+     "SOYBEAN",
+     "SUGAR",
+     "SUGARRAW",
+     "COFARA",
+     "COFROB",
+     "USCOCOA",
+     "UKCOCOA",
+     "COTTON",
+     "OJ"
+    ]
+   },
+   "symbols": [
+    "XAUUSD",
+    "XAGUSD",
+    "XPTUSD",
+    "XPDUSD",
+    "XCUUSD",
+    "XALUSD",
+    "XNIUSD",
+    "XZNUSD",
+    "XPBUSD",
+    "XTIUSD",
+    "XBRUSD",
+    "XNGUSD",
+    "WHEAT",
+    "CORN",
+    "SOYBEAN",
+    "SUGAR",
+    "SUGARRAW",
+    "COFARA",
+    "COFROB",
+    "USCOCOA",
+    "UKCOCOA",
+    "COTTON",
+    "OJ"
+   ],
+   "mechanism": "Cross-sectional momentum within commodities (VME): rank instruments on past 12-month return (paper skips the most recent month; this family cannot skip -- see gap), long the top quintile, short the bottom, monthly. 6048 = 252 days x 24 H1 bars; ttl 504 = one month.",
+   "firm": "AQR (Asness, Moskowitz, Pedersen)",
+   "evidence": "DOCUMENTED",
+   "source_url": "https://pages.stern.nyu.edu/~lpederse/papers/ValMomEverywhere.pdf",
+   "source_title": "Value and Momentum Everywhere (Asness, Moskowitz, Pedersen), JF",
+   "quote": "the return over the past 12 months skipping the most recent month",
+   "horizon": "12m signal, 1m hold",
+   "asset_classes": [
+    "metals",
+    "energy",
+    "softs"
+   ],
+   "source": "firm_mining",
+   "cluster": "systematic_macro",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "cross_sectional",
+   "params": {
+    "mode": "momentum",
+    "horizon": 6048,
+    "top_frac": 0.2,
+    "ttl_bars": 504,
+    "peer_symbols": [
+     "EURUSD",
+     "GBPUSD",
+     "AUDUSD",
+     "NZDUSD",
+     "USDJPY",
+     "USDCAD",
+     "USDCHF",
+     "USDNOK",
+     "USDSEK",
+     "USDSGD",
+     "USDMXN",
+     "USDZAR",
+     "USDPLN"
+    ]
+   },
+   "symbols": [
+    "EURUSD",
+    "GBPUSD",
+    "AUDUSD",
+    "NZDUSD",
+    "USDJPY",
+    "USDCAD",
+    "USDCHF",
+    "USDNOK",
+    "USDSEK",
+    "USDSGD",
+    "USDMXN",
+    "USDZAR",
+    "USDPLN"
+   ],
+   "mechanism": "Cross-sectional 12-month momentum across currencies (VME currencies leg). Note quote-convention: USDxxx instruments rank on their own tradable return, which is valid for an instrument-level panel.",
+   "firm": "AQR (Asness, Moskowitz, Pedersen)",
+   "evidence": "DOCUMENTED",
+   "source_url": "https://pages.stern.nyu.edu/~lpederse/papers/ValMomEverywhere.pdf",
+   "source_title": "Value and Momentum Everywhere (Asness, Moskowitz, Pedersen), JF",
+   "quote": "We skip the most recent month, which is standard in the momentum literature, to avoid the 1-month reversal in stock returns",
+   "horizon": "12m signal, 1m hold",
+   "asset_classes": [
+    "FX"
+   ],
+   "source": "firm_mining",
+   "cluster": "systematic_macro",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "cross_sectional",
+   "params": {
+    "mode": "momentum",
+    "horizon": 6048,
+    "top_frac": 0.2,
+    "ttl_bars": 504,
+    "peer_symbols": [
+     "US500",
+     "US30",
+     "NAS100",
+     "US2000",
+     "GER40",
+     "UK100",
+     "FRA40",
+     "EUSTX50",
+     "JPN225",
+     "HK50",
+     "AUS200",
+     "NETH25",
+     "E35",
+     "CA60",
+     "CHINAH"
+    ]
+   },
+   "symbols": [
+    "US500",
+    "US30",
+    "NAS100",
+    "US2000",
+    "GER40",
+    "UK100",
+    "FRA40",
+    "EUSTX50",
+    "JPN225",
+    "HK50",
+    "AUS200",
+    "NETH25",
+    "E35",
+    "CA60",
+    "CHINAH"
+   ],
+   "mechanism": "Cross-sectional momentum across country equity index CFDs (VME country-index leg): long past-12m winners, short losers, monthly rebalance.",
+   "firm": "AQR (Asness, Moskowitz, Pedersen)",
+   "evidence": "DOCUMENTED",
+   "source_url": "https://pages.stern.nyu.edu/~lpederse/papers/ValMomEverywhere.pdf",
+   "source_title": "Value and Momentum Everywhere (Asness, Moskowitz, Pedersen), JF",
+   "quote": "A combination of value and momentum—one of the themes in this paper—obtains nearly identical pricing results",
+   "horizon": "12m signal, 1m hold",
+   "asset_classes": [
+    "indices"
+   ],
+   "source": "firm_mining",
+   "cluster": "systematic_macro",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "style_premia",
+   "params": {
+    "style": "defensive"
+   },
+   "symbols": [
+    "US500",
+    "US30",
+    "NAS100",
+    "US2000",
+    "GER40",
+    "UK100",
+    "FRA40",
+    "EUSTX50",
+    "JPN225",
+    "HK50",
+    "AUS200",
+    "NETH25",
+    "E35",
+    "CA60",
+    "CHINAH"
+   ],
+   "mechanism": "Betting-against-beta applied to country equity indices: BAB computes index betas vs a GDP-weighted world portfolio; low-beta indices (levered) beat high-beta. BAB returns are low when funding constraints tighten (TED spread up), so pair with a funding-stress read.",
+   "firm": "AQR (Frazzini, Pedersen)",
+   "evidence": "REPORTED",
+   "source_url": "https://pages.stern.nyu.edu/~lpederse/papers/BettingAgainstBeta.pdf",
+   "source_title": "Betting Against Beta (Frazzini, Pedersen), JFE",
+   "quote": "When funding constraints tighten, the return of the BAB factor is low",
+   "horizon": "1 month",
+   "asset_classes": [
+    "indices"
+   ],
+   "source": "firm_mining",
+   "cluster": "systematic_macro",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "style_premia",
+   "params": {
+    "style": "trend",
+    "speeds": [
+     504,
+     1512,
+     6048
+    ]
+   },
+   "symbols": [
+    "XAUUSD",
+    "XAGUSD",
+    "XCUUSD",
+    "XTIUSD",
+    "XBRUSD",
+    "XNGUSD",
+    "WHEAT",
+    "CORN",
+    "SOYBEAN",
+    "SUGAR",
+    "US500",
+    "GER40",
+    "UK100",
+    "JPN225",
+    "AUS200",
+    "UST10Y",
+    "UKGILT",
+    "EURUSD",
+    "GBPUSD",
+    "AUDUSD",
+    "USDJPY",
+    "USDCAD",
+    "USDCHF",
+    "NZDUSD"
+   ],
+   "mechanism": "The style_premia trend score with speeds set to AQR's 1/3/12 months in H1 bars (21/63/252 days x 24) instead of the family's intraday default (24,120,480 bars = 1/5/20 days), which Winton shows to be the decayed speed. Daily decision, vol-normalised, clipped at +-3.",
+   "firm": "AQR / Winton",
+   "evidence": "DOCUMENTED",
+   "source_url": "https://www.trendfollowing.com/whitepaper/d.pdf",
+   "source_title": "Historical Performance of Trend Following, Winton Capital working paper",
+   "quote": "we see a significant decline in the performance of the fastest strategies even before transaction costs are accounted for",
+   "horizon": "1-12 months",
+   "asset_classes": [
+    "FX",
+    "metals",
+    "energy",
+    "softs",
+    "indices",
+    "bonds"
+   ],
+   "source": "firm_mining",
+   "cluster": "systematic_macro",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "style_premia",
+   "params": {
+    "style": "trend",
+    "combo": "trend_x_defensive"
+   },
+   "symbols": [
+    "US500",
+    "US30",
+    "NAS100",
+    "US2000",
+    "GER40",
+    "UK100",
+    "FRA40",
+    "EUSTX50",
+    "JPN225",
+    "HK50",
+    "AUS200",
+    "NETH25",
+    "E35",
+    "CA60",
+    "CHINAH"
+   ],
+   "mechanism": "Man AHL crisis-proofing: time-series momentum and quality/defensive are the two dynamic strategies positive before costs that also paid in all eight equity drawdowns, with negligible mutual correlation. Test the existing trend_x_defensive combo on index CFDs as the crisis sleeve.",
+   "firm": "Man AHL (Harvey, Hoyle, Rattray, Sargaison, Taylor, Van Hemert)",
+   "evidence": "DOCUMENTED",
+   "source_url": "https://people.duke.edu/~charvey/Research/Published_Papers/P140_The_best_of.pdf",
+   "source_title": "The Best of Strategies for the Worst of Times: Can Portfolios Be Crisis Proofed? (Man AHL/Duke), JPM",
+   "quote": "Time-series momentum strategies add to winning positions (ride winners) and reduce losing positions (cut losers)",
+   "horizon": "1-12 months",
+   "asset_classes": [
+    "indices"
+   ],
+   "source": "firm_mining",
+   "cluster": "systematic_macro",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "style_premia",
+   "params": {
+    "style": "carry",
+    "combo": "carry_x_momentum"
+   },
+   "symbols": [
+    "EURUSD",
+    "GBPUSD",
+    "AUDUSD",
+    "NZDUSD",
+    "USDJPY",
+    "USDCAD",
+    "USDCHF",
+    "USDNOK",
+    "USDSEK",
+    "EURJPY",
+    "GBPJPY",
+    "AUDJPY",
+    "USDMXN",
+    "USDZAR",
+    "USDTRY",
+    "USDBRL",
+    "USDINR",
+    "USDKRW"
+   ],
+   "mechanism": "Man's FX work: carry (interest differential) information improves returns and adding 12-month FX trend raises the Sharpe; AQR shows carry and momentum both positive with low correlation. Test the 50/50 carry x momentum combo on G10 and liquid EM FX.",
+   "firm": "Man Group (Castro, Hamill, Harber, Harvey, Van Hemert)",
+   "evidence": "DOCUMENTED",
+   "source_url": "https://people.duke.edu/~charvey/Research/Published_Papers/P175_The_best_strategies.pdf",
+   "source_title": "The Best Strategies for FX Hedging (Castro, Hamill, Harber, Harvey, Van Hemert; Man Group), JPM",
+   "quote": "incorporating additional factors—such as trend (12-month FX return), value (deviation from purchasing power parity), and carry",
+   "horizon": "1 month",
+   "asset_classes": [
+    "FX"
+   ],
+   "source": "firm_mining",
+   "cluster": "systematic_macro",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "style_premia",
+   "params": {
+    "style": "carry",
+    "combo": "carry_calm_vol"
+   },
+   "symbols": [
+    "AUDJPY",
+    "NZDJPY",
+    "MXNJPY",
+    "ZARJPY",
+    "USDMXN",
+    "USDZAR",
+    "USDTRY"
+   ],
+   "mechanism": "Carry is harvested in calm and crashes when global risk (VIX) spikes: a VIX rise coincides with speculator unwinds and carry losses. Condition carry on low realised vol (the desk's calm-vol combo is the price-only proxy of the VIX gate).",
+   "firm": "AQR/Pedersen (Brunnermeier, Nagel, Pedersen)",
+   "evidence": "DOCUMENTED",
+   "source_url": "http://docs.lhpedersen.com/CarryTradesCurrencyCrashes.pdf",
+   "source_title": "Carry Trades and Currency Crashes (Brunnermeier, Nagel, Pedersen), NBER Macro Annual",
+   "quote": "a higher level of VIX predicts higher returns for invest- ment currencies and lower returns for funding currencies",
+   "horizon": "weeks-months",
+   "asset_classes": [
+    "FX"
+   ],
+   "source": "firm_mining",
+   "cluster": "systematic_macro",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "drawdown_conditional",
+   "params": {
+    "lookback": 6048,
+    "dd_pct": 0.1,
+    "ttl_bars": 504
+   },
+   "symbols": [
+    "US500",
+    "NAS100",
+    "GER40"
+   ],
+   "mechanism": "AQR tests 196 buy-the-dip variants on the S&P 500 since 1965 and finds no robust alpha vs buy-and-hold; trend (SG Trend) alpha 4.7% vs BTD 0.3%. Registered as a FALSIFICATION test: dip-buying after a 10% drawdown from the 12m high on index CFDs is expected to FAIL the gauntlet -- a pass would contradict AQR.",
+   "firm": "AQR Portfolio Solutions Group",
+   "evidence": "DOCUMENTED",
+   "source_url": "https://www.aqr.com/-/media/AQR/Documents/Alternative-Thinking/AQR-Alternative-Thinking---Hold-the-Dip.pdf?sc_lang=en",
+   "source_title": "AQR Alternative Thinking 2025 Issue 4: Hold the Dip",
+   "quote": "history shows it’s better to align with momentum than to buy the dip, by following the trend",
+   "horizon": "1 month",
+   "asset_classes": [
+    "indices"
+   ],
+   "source": "firm_mining",
+   "cluster": "systematic_macro",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "relative_value",
+   "params": {
+    "lookback": 6048,
+    "entry_z": 2.0,
+    "exit_z": 0.5,
+    "ttl_bars": 504,
+    "peer_symbol": "XCUUSD"
+   },
+   "symbols": [
+    "XAUUSD"
+   ],
+   "mechanism": "In equity bear markets AQR's trend book ends up long gold against cyclical commodities and short carry currencies. Gold-vs-copper spread dislocations: tested here as the single-leg residual fade (relative_value) -- the mechanism predicts the spread TRENDS in crises, so a fade failing in drawdowns is informative.",
+   "firm": "AQR Portfolio Solutions Group",
+   "evidence": "SPECULATED",
+   "source_url": "https://images.aqr.com/-/media/AQR/Documents/Insights/White-Papers/AQR-Tail-Risk-Hedging-Contrasting-Put-and-Trend-Strategies.pdf",
+   "source_title": "Tail Risk Hedging: Contrasting Put and Trend Strategies, AQR",
+   "quote": "anti-carry currencies, and buying gold against more cyclical commodities",
+   "horizon": "1 month",
+   "asset_classes": [
+    "metals"
+   ],
+   "source": "firm_mining",
+   "cluster": "systematic_macro",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "correlation_regime",
+   "params": {
+    "lookback": 1440,
+    "break_z": -2.0,
+    "ttl_bars": 240,
+    "peer_symbol": "UST10Y"
+   },
+   "symbols": [
+    "US500",
+    "GER40"
+   ],
+   "mechanism": "Man: the post-2000 negative stock-bond correlation is a historical rarity, so bonds are an unreliable crisis hedge; Man's Regimes model uses the 3-year stock-bond correlation as a state variable. Trade the breakdown of the equity-bond correlation regime.",
+   "firm": "Man AHL",
+   "evidence": "REPORTED",
+   "source_url": "https://people.duke.edu/~charvey/Research/Published_Papers/P140_The_best_of.pdf",
+   "source_title": "The Best of Strategies for the Worst of Times: Can Portfolios Be Crisis Proofed? (Man AHL/Duke), JPM",
+   "quote": "the post-2000 negative bond– equity correlation is a historical rarity",
+   "horizon": "weeks",
+   "asset_classes": [
+    "indices",
+    "bonds"
+   ],
+   "source": "firm_mining",
+   "cluster": "systematic_macro",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "vol_mean_reversion",
+   "params": {
+    "lookback": 480
+   },
+   "symbols": [
+    "US500",
+    "NAS100",
+    "GER40",
+    "JPN225"
+   ],
+   "mechanism": "Man vol-targeting: risk assets show a leverage effect (negative return-vol relation), so vol-scaling adds momentum; the flip side is that post-spike vol mean-reverts. Registered to measure whether index vol compression precedes expansion on MT5 CFDs.",
+   "firm": "Man AHL (Harvey et al.)",
+   "evidence": "SPECULATED",
+   "source_url": "https://people.duke.edu/~charvey/Research/Published_Papers/P135_The_impact_of.pdf",
+   "source_title": "The Impact of Volatility Targeting (Harvey, Hoyle, Korgaonkar, Rattray, Sargaison, Van Hemert), JPM",
+   "quote": "volatility scaling effectively introduces some momentum into strategies",
+   "horizon": "days-weeks",
+   "asset_classes": [
+    "indices"
+   ],
+   "source": "firm_mining",
+   "cluster": "systematic_macro",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "turn_of_month",
+   "params": {
+    "days_before": 1,
+    "days_after": 1,
+    "side_bias": -1
+   },
+   "symbols": [
+    "US500"
+   ],
+   "mechanism": "Pension 60/40 rebalancing: calendar rebalancers sell equities at month-end after equities outperform; the paper finds calendar predictability strong at month-end, absent otherwise. This unconditional short-bias version is a weak proxy -- the real signal is conditional on month-to-date equity-vs-bond outperformance (see capability gap).",
+   "firm": "Man-affiliated (Harvey, Mazzoleni, Melone)",
+   "evidence": "DOCUMENTED",
+   "source_url": "https://www.nber.org/system/files/working_papers/w33554/w33554.pdf",
+   "source_title": "The Unintended Consequences of Rebalancing (Harvey, Mazzoleni, Melone), NBER WP 33554",
+   "quote": "Calendar predictability is strong at month-end but absent at other times",
+   "horizon": "1 day",
+   "asset_classes": [
+    "indices"
+   ],
+   "source": "firm_mining",
+   "cluster": "systematic_macro",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "regime_transition",
+   "params": {
+    "side_mode": "expansion"
+   },
+   "symbols": [
+    "US500",
+    "XAUUSD",
+    "UST10Y",
+    "EURUSD"
+   ],
+   "mechanism": "Breaking bad trends: turning points (fast and slow momentum disagree) destroy monthly trend P&L; more turning points per year explain the 2009-2019 CTA drought. Test whether the desk's hazard-based regime-exit signal captures the rebound/correction breaks that GHM show are forecastable.",
+   "firm": "Duke/Man-affiliated (Goulding, Harvey, Mazzoleni)",
+   "evidence": "REPORTED",
+   "source_url": "https://people.duke.edu/~charvey/Research/Published_Papers/P167_Breaking_bad_trends.pdf",
+   "source_title": "Breaking Bad Trends (Goulding, Harvey, Mazzoleni), FAJ",
+   "quote": "a turning point for an asset as a month in which its slow (longer lookback horizon) and fast (shorter lookback horizon) momentum signals differ",
+   "horizon": "monthly",
+   "asset_classes": [
+    "indices",
+    "metals",
+    "bonds",
+    "FX"
+   ],
+   "source": "firm_mining",
+   "cluster": "systematic_macro",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "htf_anchor_trend",
+   "params": {
+    "anchor_mult": 24,
+    "anchor_n": 50
+   },
+   "symbols": [
+    "XAUUSD",
+    "XTIUSD",
+    "US500",
+    "EURUSD",
+    "USDJPY",
+    "UST10Y"
+   ],
+   "mechanism": "Winton medium EWMA-crossover system (~6-week turnover, positions scaled by inverse 20-day EWMA vol) had the best 30-year Sharpe (1.12) of fast/medium/slow; anchor the entry on the daily (24 x H1) 50-period trend to stay in the medium speed band.",
+   "firm": "Winton Capital",
+   "evidence": "DOCUMENTED",
+   "source_url": "https://www.trendfollowing.com/whitepaper/d.pdf",
+   "source_title": "Historical Performance of Trend Following, Winton Capital working paper",
+   "quote": "The Sharpe ratios (SR) are 0.87, 1.12, and 0.81 for the fast, medium, and slow strategies respectively",
+   "horizon": "weeks-months",
+   "asset_classes": [
+    "FX",
+    "metals",
+    "energy",
+    "indices",
+    "bonds"
+   ],
+   "source": "firm_mining",
+   "cluster": "systematic_macro",
+   "mined_at": "2026-09-27"
+  }
+ ]
+}
