@@ -16,9 +16,11 @@ gates -- deflated_sharpe, expected_value -- is a predictor with too little edge 
 which is exactly Brown's cloud cover. Those are the members. Cells that failed validity are not:
 a leak combined with a leak is a leak.
 
-THE WEIGHTS ARE RIDGE-SHRUNK TOWARD EQUAL. With a few hundred trades per member and dozens of
-members, unconstrained weights would fit the training block and nothing else. The shrinkage
-constant is the same n/(n+k) idiom as everywhere else, on the member's own training trade count.
+THE WEIGHTS USE JELINEK-MERCER SHRINKAGE. With a few hundred trades per member and dozens of
+members, unconstrained weights would fit the training block and nothing else. Each member's
+rare-state estimate is interpolated with the pooled training prior by n/(n+k), then L1-normalised.
+The module also exposes a maximum-entropy normalisation for preregistered challenger recipes;
+neither method is allowed to see a later block.
 
 PROPOSES ONLY. The compiled ensemble is donated as an EXACT_RECIPE candidate for the `ensemble`
 family with its members and frozen weights as params. The gauntlet judges it as one cell.
@@ -206,15 +208,54 @@ def _member_returns(d: pd.DataFrame, sigs, hold: int) -> pd.Series:
     return out
 
 
-def _fit_shrunk_weights(train: pd.DataFrame, keep: list[int]) -> np.ndarray:
-    """Fit once on the preregistered training block; later bars never alter the recipe."""
-    raw = []
+def _maximum_entropy_weights(scores: np.ndarray, temperature: float = 1.0) -> np.ndarray:
+    """Signed maximum-entropy allocation over fixed training scores.
+
+    The absolute allocation is the entropy-regularised optimum (softmax); direction remains the
+    sign of the training estimate.  This is a representation primitive, not a performance claim.
+    """
+    values = np.asarray(scores, dtype=float)
+    if values.size == 0 or not np.any(np.isfinite(values)):
+        return np.zeros_like(values)
+    scale = max(float(temperature), 1e-12)
+    finite = np.nan_to_num(values)
+    active = finite != 0.0
+    if not np.any(active):
+        return np.zeros_like(values)
+    logits = np.abs(finite[active]) / scale
+    logits -= float(np.max(logits))
+    active_mass = np.exp(logits)
+    active_mass /= float(active_mass.sum()) or 1.0
+    mass = np.zeros_like(finite)
+    mass[active] = active_mass
+    return np.sign(finite) * mass
+
+
+def _fit_shrunk_weights(train: pd.DataFrame, keep: list[int], *,
+                        method: str = "jelinek_mercer") -> np.ndarray:
+    """Fit once on the preregistered block; later bars never alter the rare-state prior."""
+    means: list[float] = []
+    counts: list[int] = []
+    pooled_active: list[float] = []
     for k in keep:
         col = train[k]
         active = col[col != 0.0]
-        mu = float(active.mean()) if active.size else 0.0
-        raw.append((active.size / (active.size + K_WEIGHT)) * mu)
-    weights = np.asarray(raw, dtype=float)
+        means.append(float(active.mean()) if active.size else 0.0)
+        counts.append(int(active.size))
+        pooled_active.extend(float(x) for x in active.to_numpy())
+    prior = float(np.mean(pooled_active)) if pooled_active else 0.0
+    scores = np.asarray([
+        (n / (n + K_WEIGHT)) * mu + (K_WEIGHT / (n + K_WEIGHT)) * prior
+        for mu, n in zip(means, counts, strict=True)
+    ], dtype=float)
+    if method == "maximum_entropy":
+        # A robust training-only scale makes temperature comparable across instruments.
+        nz = np.abs(scores[np.nonzero(scores)])
+        temperature = float(np.median(nz)) if nz.size else 1.0
+        return _maximum_entropy_weights(scores, temperature)
+    if method != "jelinek_mercer":
+        raise ValueError(f"unknown weight method: {method}")
+    weights = scores
     if not np.any(weights != 0.0):
         return weights
     return weights / (np.abs(weights).sum() or 1.0)

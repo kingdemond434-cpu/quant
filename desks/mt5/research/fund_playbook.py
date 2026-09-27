@@ -94,6 +94,10 @@ MEDALLION_METHOD_OWNERS = {
     "nonlinear_representation_search": (
         "desks/mt5/research/representation_discovery.py",
     ),
+    "rare_state_smoothing_and_maximum_entropy": (
+        "desks/mt5/research/weak_signal_compiler.py",
+        "desks/mt5/research/representation_discovery.py",
+    ),
     "point_in_time_clean_history": (
         "libs/data/quality.py",
         "libs/data/pit_certificate.py",
@@ -107,6 +111,47 @@ MEDALLION_METHOD_OWNERS = {
     "portfolio_kelly_on_combined_forecasts": (
         "libs/portfolio/kelly_surface.py",
         "libs/portfolio/posterior_growth.py",
+    ),
+    "independent_bets_and_breadth_conditioned_heat": (
+        "desks/mt5/research/independence_intake.py",
+        "libs/portfolio/posterior_growth.py",
+    ),
+    "joint_intraday_cost_aware_sizing": (
+        "libs/portfolio/optimize.py",
+        "desks/mt5/research/cost_truth.py",
+    ),
+    "cross_source_data_quality": (
+        "libs/data/quality.py",
+        "desks/mt5/research/fetch_dukascopy.py",
+        "desks/mt5/research/pit_audit.py",
+    ),
+    "session_handoffs_and_ten_segment_week": (
+        "desks/mt5/research/actor_pressure.py",
+        "desks/mt5/research/axis_proposer.py",
+    ),
+    "opening_gap_fade_and_stress_reversal": (
+        "desks/mt5/research/institutional_cards.py",
+        "desks/mt5/research/tail_alpha_search.py",
+    ),
+    "cluster_residuals_with_correlation_regime_guard": (
+        "desks/mt5/research/factor_residual_engine.py",
+        "desks/mt5/research/cross_asset_graph.py",
+    ),
+    "m5_intraday_research_lane": (
+        "desks/mt5/research/chart_allocator.py",
+        "desks/mt5/research/counterfactual_timeframes.py",
+    ),
+    "weekday_weekend_effects_with_stability_falsifiers": (
+        "desks/mt5/research/axis_proposer.py",
+        "desks/mt5/research/falsifier_run.py",
+    ),
+    "report_only_crowding_monitor": (
+        "desks/mt5/research/crowding_miner.py",
+        "libs/research/crowding_hazard.py",
+    ),
+    "graduated_nonintuitive_signal_admission": (
+        "desks/mt5/research/fast_admission.py",
+        "libs/research/marginal_admission.py",
     ),
 }
 
