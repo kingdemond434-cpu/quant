@@ -1,0 +1,27 @@
+[
+ {
+  "source": "deep_forest",
+  "kind": "dataset",
+  "title": "入札カレンダー : 財務省",
+  "url": "https://www.mof.go.jp/jgbs/auction/calendar/index.htm",
+  "published": "2026-09-25T05:02:36+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "ja",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f6ab091d7e98c1b46b6b",
+  "host": "www.mof.go.jp",
+  "ground": "財務省 国債入札結果",
+  "region": "jp",
+  "cluster": "jp",
+  "dataset_class": "auction_fixing",
+  "available_time": "2026-09-25T05:02:36+00:00",
+  "ingested_time": "2026-09-25T05:02:36+00:00",
+  "source_hash": "f6ab091d7e98c1b46b6b",
+  "claims": [],
+  "n_claims": 0
+ }
+]

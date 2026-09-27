@@ -1,0 +1,1988 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Dhaka Stock Exchange \u2014 Bangladesh&#x27;s Capital Market",
+  "url": "https://www.dse.com.bd/",
+  "published": "2026-09-27T00:12:27+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.dse.com.bd/api/media/file/Untitled%20design.png?prefix=payloadcms-media%2Fa61ead720e573971",
+   "https://www.dse.com.bd/api/media/file/newdesign.webp?prefix=payloadcms-media%2F97bad3176fb333ab",
+   "https://www.dse.com.bd/api/media/file/image.webp?prefix=payloadcms-media%2F6532ea7f462a9723",
+   "https://www.dse.com.bd/api/media/file/image12.webp?prefix=payloadcms-media%2F25e325f7e9955029",
+   "https://www.dse.com.bd/api/media/file/IMG_3324.webp?prefix=payloadcms-media%2F249f91c3bf3cc33f",
+   "https://www.dse.com.bd/api/media/file/SME.webp?prefix=payloadcms-media%2Fb2148dea1189f0a2",
+   "https://www.dse.com.bd/api/media/file/ATB.webp?prefix=payloadcms-media%2F4db47a1cb02e06ab",
+   "https://www.dse.com.bd/api/media/file/Initial%20public%20offering%20(IPO).webp?prefix=payloadcms-media%2Ffd50077d93db3fa5",
+   "https://www.dse.com.bd/api/media/file/OTC%20Market.webp?prefix=payloadcms-media%2F16c4fc489b881f09",
+   "https://www.dse.com.bd/api/media/file/DSE%20Training%20Academy%20(DTA).webp?prefix=payloadcms-media%2F136436397fde4e67",
+   "https://www.dse.com.bd/api/media/file/Sustainability.webp?prefix=payloadcms-media%2F405e9628103f0535",
+   "https://www.dse.com.bd/api/media/file/ternary_logo.png?prefix=payloadcms-media%2F39b430b926dcec81",
+   "https://www.dse.com.bd/api/media/file/download%20(1).jpg?prefix=payloadcms-media%2Fbc553ce396049d4e",
+   "https://www.dse.com.bd/api/media/file/WEB%20BANNER%20of%20AD%20(1)_page-0001%20(1).jpg?prefix=payloadcms-media%2F5d8c0a44add4ab83",
+   "https://www.dse.com.bd/api/media/file/dse-card-A-dark.png?prefix=payloadcms-media%2Fa9a9c62ccf028111",
+   "https://www.dse.com.bd/api/announcementDocuments/file/updated-panel-of-auditors-listed-securities.pdf?prefix=pdf%2Fannouncement-documents%2F",
+   "https://www.dse.com.bd/api/announcementDocuments/file/updated-panel-of-auditors-trec-holders.pdf?prefix=pdf%2Fannouncement-documents%2F",
+   "https://www.dse.com.bd/api/announcementDocuments/file/warning-online-fraud.pdf?prefix=pdf%2Fannouncement-documents%2F",
+   "https://www.dse.com.bd/api/announcementDocuments/file/dse-tower-tia-942-certificate.pdf?prefix=pdf%2Fannouncement-documents%2F",
+   "https://www.dse.com.bd/api/announcementDocuments/file/bb-bsec-mou-bond-market.pdf?prefix=pdf%2Fannouncement-documents%2F",
+   "https://www.dse.com.bd/api/announcementDocuments/file/free-educational-programme-women-investors.pdf?prefix=pdf%2Fannouncement-documents%2F",
+   "https://www.dse.com.bd/api/announcementDocuments/file/investor-risk-awareness-notice.pdf?prefix=pdf%2Fannouncement-documents%2F",
+   "https://www.dse.com.bd/api/announcementDocuments/file/Request%20for%20circulaiton%20of%20notice%20at%20the%20DSE%20web%20banner.pdf?prefix=pdf%2Fannouncement-documents%2F",
+   "https://www.dse.com.bd/downloads"
+  ],
+  "n_endpoints": 24,
+  "vault_sha": "a4c54eb67f2ba9fc7c94",
+  "host": "www.dse.com.bd",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "stevehopwoodforex.com - Index page",
+  "url": "http://www.stevehopwoodforex.com/",
+  "published": "2026-09-27T00:12:27+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en-gb",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f8d5c9cdc3a302f0973e",
+  "host": "www.stevehopwoodforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Programa de Cashback y Reembolsos - RoboForex",
+  "url": "https://roboforex.com/es/clients/services/rebate/",
+  "published": "2026-09-27T00:12:30+00:00",
+  "symbols": [
+   "AUDUSD",
+   "EURUSD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "es",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790170960",
+   "https://my.roboforex.com/es/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "f7634bceebb05019056c",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Full Swap-free - RoboForex",
+  "url": "https://roboforex.com/es/promo/full-swap-free/",
+  "published": "2026-09-27T00:12:32+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "session"
+  ],
+  "confidence": 0.55,
+  "lang": "es",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790170960",
+   "https://my.roboforex.com/es/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "a7f92bb842e3a136e971",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Servidor VPS gratuito para operar - RoboForex",
+  "url": "https://roboforex.com/es/clients/services/forex-vps/",
+  "published": "2026-09-27T00:12:34+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "session"
+  ],
+  "confidence": 0.55,
+  "lang": "es",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790170960",
+   "https://my.roboforex.com/es/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "4bf703c279addea27861",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Cliente VIP - niveles y beneficios del programa - RoboForex",
+  "url": "https://roboforex.com/es/clients/services/vip-client/",
+  "published": "2026-09-27T00:12:36+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction"
+  ],
+  "confidence": 0.55,
+  "lang": "es",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790170960",
+   "https://my.roboforex.com/es/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "e46f86d74eb8a1bdbf29",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Se\u00f1ales Forex gratuitas y an\u00e1lisis de mercado para MT4 y MT5 - Acuity - RoboForex",
+  "url": "https://roboforex.com/es/beginners/analytics/acuity/",
+  "published": "2026-09-27T00:12:38+00:00",
+  "symbols": [
+   "XAUUSD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "es",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790170960",
+   "https://my.roboforex.com/es/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "0cbf964083c05b9c14d2",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Trading - Calculadora de ganancias y p\u00e9rdidas - RoboForex",
+  "url": "https://roboforex.com/es/beginners/start/profit-and-loss-calculator/",
+  "published": "2026-09-27T00:12:40+00:00",
+  "symbols": [
+   "AUDCAD",
+   "AUDCHF",
+   "AUDJPY",
+   "AUDNZD",
+   "AUDUSD",
+   "CADCHF",
+   "CADJPY",
+   "CHFJPY",
+   "EURAUD",
+   "EURCAD",
+   "EURCHF",
+   "EURGBP",
+   "EURJPY",
+   "EURNZD",
+   "EURUSD",
+   "GBPAUD",
+   "GBPCAD",
+   "GBPCHF",
+   "GBPJPY",
+   "GBPNZD",
+   "GBPUSD",
+   "NZDCAD",
+   "NZDCHF",
+   "NZDJPY"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "es",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790170960",
+   "https://my.roboforex.com/es/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "e4da52bb37342286bd07",
+  "host": "roboforex.com",
+  "claims": [
+   {
+    "claim": "El monto requerido se calcula as\u00ed: Margen = (Lotes \u00d7 Tama\u00f1o del contrato \u00d7 Precio de entrada) \u00f7 Apalancamiento Si el capital de su cuenta cae por debajo del nivel de margen requerido, las posiciones abiertas pueden quedar sujetas a una llamada de margen o a un cierre autom\u00e1tico.",
+    "lang": "es",
+    "quantities": [
+     "cierre"
+    ],
+    "direction": [
+     "entrada",
+     "cae"
+    ],
+    "horizon": [
+     "cierre"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XTIUSD",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "AUDUSD",
+      "USDCAD",
+      "USDCHF",
+      "NZDUSD",
+      "EURJPY",
+      "GBPJPY",
+      "AUDJPY",
+      "EURGBP",
+      "USDMXN",
+      "Tesla",
+      "NVIDIA"
+     ],
+     "mentioned": [
+      "xauusd",
+      "xagusd",
+      "wti",
+      "eurusd",
+      "gbpusd",
+      "usdjpy",
+      "audusd",
+      "usdcad",
+      "usdchf",
+      "nzdusd",
+      "eurjpy",
+      "gbpjpy",
+      "audjpy",
+      "eurgbp",
+      "usdmxn",
+      "tsla",
+      "nvda"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "212919403882"
+   },
+   {
+    "claim": "Ganancia / P\u00e9rdida (Precio de cierre \u2212 Precio de entrada) \u00d7 Lotes \u00d7 Tama\u00f1o del contrato El resultado es positivo para una Compra cuando el precio sube;",
+    "lang": "es",
+    "quantities": [
+     "cierre"
+    ],
+    "direction": [
+     "entrada",
+     "compra"
+    ],
+    "horizon": [
+     "cierre"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XTIUSD",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "AUDUSD",
+      "USDCAD",
+      "USDCHF",
+      "NZDUSD",
+      "EURJPY",
+      "GBPJPY",
+      "AUDJPY",
+      "EURGBP",
+      "USDMXN",
+      "Tesla",
+      "NVIDIA"
+     ],
+     "mentioned": [
+      "xauusd",
+      "xagusd",
+      "wti",
+      "eurusd",
+      "gbpusd",
+      "usdjpy",
+      "audusd",
+      "usdcad",
+      "usdchf",
+      "nzdusd",
+      "eurjpy",
+      "gbpjpy",
+      "audjpy",
+      "eurgbp",
+      "usdmxn",
+      "tsla",
+      "nvda"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "fe20eb01d55d"
+   },
+   {
+    "claim": "Comisi\u00f3n Lotes \u00d7 Tama\u00f1o del contrato \u00d7 Precio de entrada \u00d7 2 \u00d7 (Tasa de comisi\u00f3n \u00f7 1,000,000) El factor 2 cubre tanto la apertura como el cierre de la posici\u00f3n.",
+    "lang": "es",
+    "quantities": [
+     "tasa",
+     "apertura",
+     "cierre",
+     "factor"
+    ],
+    "direction": [
+     "entrada"
+    ],
+    "horizon": [
+     "apertura",
+     "cierre"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XTIUSD",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "AUDUSD",
+      "USDCAD",
+      "USDCHF",
+      "NZDUSD",
+      "EURJPY",
+      "GBPJPY",
+      "AUDJPY",
+      "EURGBP",
+      "USDMXN",
+      "Tesla",
+      "NVIDIA"
+     ],
+     "mentioned": [
+      "xauusd",
+      "xagusd",
+      "wti",
+      "eurusd",
+      "gbpusd",
+      "usdjpy",
+      "audusd",
+      "usdcad",
+      "usdchf",
+      "nzdusd",
+      "eurjpy",
+      "gbpjpy",
+      "audjpy",
+      "eurgbp",
+      "usdmxn",
+      "tsla",
+      "nvda"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "da4eb2ebb92c"
+   }
+  ],
+  "n_claims": 3
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Calculadora de Trading: spread, pips, margen, apalancamiento, beneficio - RoboForex",
+  "url": "https://roboforex.com/es/beginners/start/forex-calculator/",
+  "published": "2026-09-27T00:12:42+00:00",
+  "symbols": [
+   "ADAUSD",
+   "AUDCAD",
+   "AUDCHF",
+   "AUDJPY",
+   "AUDNZD",
+   "AUDUSD",
+   "BTCUSD",
+   "CADCHF",
+   "CADJPY",
+   "CHFJPY",
+   "ETHUSD",
+   "EURAUD",
+   "EURCAD",
+   "EURCHF",
+   "EURGBP",
+   "EURJPY",
+   "EURNZD",
+   "EURUSD",
+   "GBPAUD",
+   "GBPCAD",
+   "GBPCHF",
+   "GBPJPY",
+   "GBPNZD",
+   "GBPUSD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction"
+  ],
+  "confidence": 0.75,
+  "lang": "es",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790170960",
+   "https://my.roboforex.com/es/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "a31396bffc39f44e70a7",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Chevron Corporation stocks CFD (CVX) | Pro | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-stan/CVX/",
+  "published": "2026-09-27T00:12:42+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790170960",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "aa1997e52c7d432b2ce9",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Newmont Mining Corporation stocks CFD (NEM) | Pro | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-stan/NEM/",
+  "published": "2026-09-27T00:12:44+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790170960",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "36132d63f75b05cabe0b",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "JPMorgan Chase &amp; Co. stocks CFD (JPM) | Pro | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-stan/JPM/",
+  "published": "2026-09-27T00:12:46+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790170960",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "f63eb1d3073b51eb2d3d",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Bank of America Corporation stocks CFD (BAC) | Pro | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-stan/BAC/",
+  "published": "2026-09-27T00:12:48+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790170960",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "d3240edc68289c1812aa",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "eBay Inc. stocks CFD (EBAY) | Pro | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-stan/EBAY/",
+  "published": "2026-09-27T00:12:50+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790170960",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "04e2404a7747e93e59fe",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Meta Platforms Inc stocks CFD (META) | Pro | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-stan/META/",
+  "published": "2026-09-27T00:12:52+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790170960",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "531a632bc581e182f8bb",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Australian Dollar vs Canadian Dollar (AUDCAD.p) | Pro | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-stan/AUDCAD.p/",
+  "published": "2026-09-27T00:12:54+00:00",
+  "symbols": [
+   "AUDCAD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790170960",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "dedec44cfa2eb1789c70",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u884c\u4e1a\u8fdb\u51fa\u8bb0\u5f55\u6570\u636e\u83b7\u53d6-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/datasources/cn_stock_industry_change",
+  "published": "2026-09-27T00:12:56+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b3dd5d68ade12fc189b9",
+  "host": "bigquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Two per cent inflation target",
+  "url": "https://www.ecb.europa.eu/mopo/strategy/pricestab/html/index.hu.html",
+  "published": "2026-09-27T00:12:57+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "inventory",
+   "orderflow",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.95,
+  "lang": "hu",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.hu.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "8c49f94206fc4ab0b095",
+  "host": "www.ecb.europa.eu",
+  "claims": [
+   {
+    "claim": "When the economy is operating close to the lower bound on nominal interest rates, it requires especially forceful or persistent monetary policy action to prevent negative deviations from the inflation target from becoming entrenched.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "lower",
+     "negative"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD"
+     ],
+     "channels": [
+      "ecb: policy: ECB -> EUR"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b6f9232745a5"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Two per cent inflation target",
+  "url": "https://www.ecb.europa.eu/mopo/strategy/pricestab/html/index.it.html",
+  "published": "2026-09-27T00:12:59+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "basis",
+   "gap",
+   "inventory",
+   "orderflow",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.75,
+  "lang": "it",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.it.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "2aa189b3899a125811e2",
+  "host": "www.ecb.europa.eu",
+  "claims": [
+   {
+    "claim": "When the economy is operating close to the lower bound on nominal interest rates, it requires especially forceful or persistent monetary policy action to prevent negative deviations from the inflation target from becoming entrenched.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "lower",
+     "negative"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD"
+     ],
+     "channels": [
+      "bce: policy: ECB -> EUR"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b6f9232745a5"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Two per cent inflation target",
+  "url": "https://www.ecb.europa.eu/mopo/strategy/pricestab/html/index.lt.html",
+  "published": "2026-09-27T00:13:01+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "basis",
+   "orderflow",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.95,
+  "lang": "lt",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.lt.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "c5b96042300b862bc126",
+  "host": "www.ecb.europa.eu",
+  "claims": [
+   {
+    "claim": "When the economy is operating close to the lower bound on nominal interest rates, it requires especially forceful or persistent monetary policy action to prevent negative deviations from the inflation target from becoming entrenched.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "lower",
+     "negative"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD"
+     ],
+     "channels": [
+      "ecb: policy: ECB -> EUR"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b6f9232745a5"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Two per cent inflation target",
+  "url": "https://www.ecb.europa.eu/mopo/strategy/pricestab/html/index.lv.html",
+  "published": "2026-09-27T00:13:03+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "orderflow",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.95,
+  "lang": "lv",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.lv.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "07a53f55ff5b05b62dfa",
+  "host": "www.ecb.europa.eu",
+  "claims": [
+   {
+    "claim": "When the economy is operating close to the lower bound on nominal interest rates, it requires especially forceful or persistent monetary policy action to prevent negative deviations from the inflation target from becoming entrenched.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "lower",
+     "negative"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD"
+     ],
+     "channels": [
+      "ecb: policy: ECB -> EUR"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b6f9232745a5"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Two per cent inflation target",
+  "url": "https://www.ecb.europa.eu/mopo/strategy/pricestab/html/index.mt.html",
+  "published": "2026-09-27T00:13:05+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "inventory",
+   "orderflow",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.95,
+  "lang": "mt",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.mt.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "b44a041d4b47f38324ea",
+  "host": "www.ecb.europa.eu",
+  "claims": [
+   {
+    "claim": "When the economy is operating close to the lower bound on nominal interest rates, it requires especially forceful or persistent monetary policy action to prevent negative deviations from the inflation target from becoming entrenched.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "lower",
+     "negative"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD"
+     ],
+     "channels": [
+      "ecb: policy: ECB -> EUR"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b6f9232745a5"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Two per cent inflation target",
+  "url": "https://www.ecb.europa.eu/mopo/strategy/pricestab/html/index.nl.html",
+  "published": "2026-09-27T00:13:07+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "inventory",
+   "orderflow",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.95,
+  "lang": "nl",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.nl.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "78c487d42a17c25d01f9",
+  "host": "www.ecb.europa.eu",
+  "claims": [
+   {
+    "claim": "When the economy is operating close to the lower bound on nominal interest rates, it requires especially forceful or persistent monetary policy action to prevent negative deviations from the inflation target from becoming entrenched.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "lower",
+     "negative"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD"
+     ],
+     "channels": [
+      "ecb: policy: ECB -> EUR"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b6f9232745a5"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Two per cent inflation target",
+  "url": "https://www.ecb.europa.eu/mopo/strategy/pricestab/html/index.pl.html",
+  "published": "2026-09-27T00:13:09+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "basis",
+   "gap",
+   "inventory",
+   "orderflow",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.95,
+  "lang": "pl",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.pl.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "ffaf869f0e21ee71943c",
+  "host": "www.ecb.europa.eu",
+  "claims": [
+   {
+    "claim": "When the economy is operating close to the lower bound on nominal interest rates, it requires especially forceful or persistent monetary policy action to prevent negative deviations from the inflation target from becoming entrenched.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "lower",
+     "negative"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD"
+     ],
+     "channels": [
+      "ecb: policy: ECB -> EUR"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b6f9232745a5"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Industry Filings: Designated Contract Markets (DCM) Filing | CFTC",
+  "url": "https://www.cftc.gov/IndustryOversight/IndustryFilings/TradingOrganizations/59605",
+  "published": "2026-09-27T00:13:09+00:00",
+  "symbols": [],
+  "timeframes": [
+   "M1",
+   "WEEKLY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "9bd092317b8411fcfb4c",
+  "host": "www.cftc.gov",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Industry Filings: Designated Contract Markets (DCM) Filing | CFTC",
+  "url": "https://www.cftc.gov/IndustryOversight/IndustryFilings/TradingOrganizations/44472",
+  "published": "2026-09-27T00:13:11+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "89c11d6ea31d86df3d61",
+  "host": "www.cftc.gov",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Industry Filings: Designated Contract Markets (DCM) Filing | CFTC",
+  "url": "https://www.cftc.gov/IndustryOversight/IndustryFilings/TradingOrganizations/58807",
+  "published": "2026-09-27T00:13:13+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ccfe290de6746f0e6ae2",
+  "host": "www.cftc.gov",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Industry Filings: Designated Contract Markets (DCM) Filing | CFTC",
+  "url": "https://www.cftc.gov/IndustryOversight/IndustryFilings/TradingOrganizations/58712",
+  "published": "2026-09-27T00:13:15+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d639c8d818eb1413bb3f",
+  "host": "www.cftc.gov",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Industry Filings: Designated Contract Markets (DCM) Filing | CFTC",
+  "url": "https://www.cftc.gov/IndustryOversight/IndustryFilings/TradingOrganizations/58152",
+  "published": "2026-09-27T00:13:17+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "6eaa3d2b373b2484b230",
+  "host": "www.cftc.gov",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Industry Filings: Designated Contract Markets (DCM) Filing | CFTC",
+  "url": "https://www.cftc.gov/IndustryOversight/IndustryFilings/TradingOrganizations/46990",
+  "published": "2026-09-27T00:13:19+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "695ab91e264aec13984c",
+  "host": "www.cftc.gov",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Industry Filings: Designated Contract Markets (DCM) Filing | CFTC",
+  "url": "https://www.cftc.gov/IndustryOversight/IndustryFilings/TradingOrganizations/51073",
+  "published": "2026-09-27T00:13:21+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c5513c903522c92be2de",
+  "host": "www.cftc.gov",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Forex Tester Software Inc. - About Us",
+  "url": "https://forextester.com/about/",
+  "published": "2026-09-27T00:13:22+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1M"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b8f3ae1f945c7da6a59d",
+  "host": "forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u0421rypto Backtesting Platform - Test your BTC &amp; ETH Trading Strategy",
+  "url": "https://forextester.com/en/crypto-backtesting-software/",
+  "published": "2026-09-27T00:13:25+00:00",
+  "symbols": [
+   "BTCUSD",
+   "ETHUSD"
+  ],
+  "timeframes": [
+   "1M",
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "breakout",
+   "positioning",
+   "seasonality"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ddbd226ad89ddfd79954",
+  "host": "forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Futures Backtesting Software | CME Tick Data | Forex Tester Online",
+  "url": "https://forextester.com/en/futures-backtesting-software/",
+  "published": "2026-09-27T00:13:27+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1M",
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "carry",
+   "gap",
+   "orderflow",
+   "positioning",
+   "seasonality"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f5a8da44599bd88688bf",
+  "host": "forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Best Trading Simulator - Practice in Realistic Environment",
+  "url": "https://forextester.com/trading-simulator/",
+  "published": "2026-09-27T00:13:29+00:00",
+  "symbols": [
+   "AUDUSD",
+   "EURUSD",
+   "GBPUSD",
+   "US30",
+   "USDJPY",
+   "XAUUSD"
+  ],
+  "timeframes": [
+   "1M",
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "breakout",
+   "positioning",
+   "seasonality"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "5851a82f81b362f6fa2c",
+  "host": "forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Forex Tester Online Features | FTO - Forex Tester Online",
+  "url": "https://forextester.com/features/?utm_source=Blog_FT_site&utm_medium=referral&utm_campaign=Blog_FT_site_FeaturesHeaderEN&gc=Blog_FT_site_FeaturesHeaderEN",
+  "published": "2026-09-27T00:13:31+00:00",
+  "symbols": [
+   "AUDUSD",
+   "EURUSD",
+   "GBPUSD",
+   "US30",
+   "USDJPY",
+   "XAUUSD"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "breakout",
+   "correlation",
+   "gap",
+   "momentum",
+   "orderflow"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "9c68ebb49f3363351f25",
+  "host": "forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Forex Tester Software Inc. - About Us",
+  "url": "https://forextester.com/about/?utm_source=Blog_FT_site&utm_medium=referral&utm_campaign=Blog_FT_site_AboutUsHeaderEN&gc=Blog_FT_site_AboutUSHeaderEN",
+  "published": "2026-09-27T00:13:34+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1M"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f21a3fe581e30054e38d",
+  "host": "forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Pass Prop Firm Challenges with Forex Tester Online Simulator",
+  "url": "https://forextester.com/pass-prop-firm-challenge/?utm_source=Blog_FT_site&utm_medium=referral&utm_campaign=Blog_FT_site_Header_PropEN",
+  "published": "2026-09-27T00:13:35+00:00",
+  "symbols": [
+   "USDTRY"
+  ],
+  "timeframes": [
+   "1M",
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "positioning",
+   "seasonality"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "99127cc0d7fa52a61651",
+  "host": "forextester.com",
+  "claims": [
+   {
+    "claim": "Benefits Risk-Free Environment No real capital risk Customizable Conditions Match your prop firm's rules Unlimited Practice Train as long as you need Detailed Analytics Track and analyze your trading data How it works Prop Challenge Step 1 Choose Your Parameters Select account size, profit target, daily/total drawdown, and minimum days.",
+    "lang": "en",
+    "quantities": [
+     "drawdown"
+    ],
+    "direction": [
+     "long"
+    ],
+    "horizon": [
+     "daily",
+     "days"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDTRY"
+     ],
+     "mentioned": [
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "17a50dc909bf"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u4e1c\u65b9\u8d22\u5bcc\u7f51,\u5916\u6c47\u9891\u9053,\u5916\u6c47",
+  "url": "http://forex.eastmoney.com/",
+  "published": "2026-09-27T00:13:38+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage",
+   "breakout",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "9acdfbfceb45ef58f08c",
+  "host": "forex.eastmoney.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u4e1c\u65b9\u8d22\u5bcc\u7f51,\u5916\u6c47\u9891\u9053,\u5916\u6c47",
+  "url": "http://forex.eastmoney.com",
+  "published": "2026-09-27T00:13:39+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage",
+   "breakout",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3518e07da226e1f5b83b",
+  "host": "forex.eastmoney.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u5916\u6c47\u805a\u7126 _ \u4e1c\u65b9\u8d22\u5bcc\u7f51",
+  "url": "http://forex.eastmoney.com/news/cwhxw.html",
+  "published": "2026-09-27T00:13:42+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "breakout",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "83bdb03c057e34b1e1c3",
+  "host": "forex.eastmoney.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u5916\u6c47\u8bc4\u8bba _ \u4e1c\u65b9\u8d22\u5bcc\u7f51",
+  "url": "http://forex.eastmoney.com/news/cwhpl.html",
+  "published": "2026-09-27T00:13:44+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "breakout",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "93eb227cf408b4f470cd",
+  "host": "forex.eastmoney.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u592e\u884c\u52a8\u6001 _ \u4e1c\u65b9\u8d22\u5bcc\u7f51",
+  "url": "http://forex.eastmoney.com/news/cyhdt.html",
+  "published": "2026-09-27T00:13:47+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "breakout",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "be22f4f12f1184a4b205",
+  "host": "forex.eastmoney.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u4e1c\u65b9\u8d22\u5bcc\u7f51,\u5916\u6c47\u9891\u9053,\u5916\u6c47",
+  "url": "http://forex.eastmoney.com/USD.html",
+  "published": "2026-09-27T00:13:49+00:00",
+  "symbols": [
+   "USDJPY",
+   "BTCUSD",
+   "EURUSD",
+   "USDCNH"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "breakout",
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "79698709a782a10dc81e",
+  "host": "forex.eastmoney.com",
+  "claims": [
+   {
+    "claim": "69 \u7f8e\u5143\u5151\u65e5\u5143\u65e5\u5185\u8dcc1.",
+    "lang": "zh",
+    "quantities": [
+     "\u65e5\u5185",
+     "\u7f8e\u5143",
+     "\u65e5\u5143"
+    ],
+    "direction": [
+     "\u8dcc"
+    ],
+    "horizon": [
+     "\u65e5\u5185"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDJPY"
+     ],
+     "mentioned": [
+      "\u65e5\u5143"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "e0b649503b13"
+   },
+   {
+    "claim": "7852\uff0c\u4e0b\u8c0311\u70b9 \u6bd4\u7279\u5e01\u7a81\u783475000\u7f8e\u5143\uff0c\u65e5\u5185\u6da8\u8d853%\uff0c\u521b5\u670828\u65e5\u4ee5\u6765.",
+    "lang": "zh",
+    "quantities": [
+     "\u7a81\u7834",
+     "\u65e5\u5185",
+     "\u7f8e\u5143"
+    ],
+    "direction": [
+     "\u6da8"
+    ],
+    "horizon": [
+     "\u65e5\u5185",
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [
+      "BTCUSD"
+     ],
+     "mentioned": [
+      "\u6bd4\u7279\u5e01"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "fc26fd35e196"
+   },
+   {
+    "claim": "3% \u4eba\u6c11\u5e01\u5151\u7f8e\u5143\u4e2d\u95f4\u4ef7\u8c03\u53475\u4e2a\u57fa\u70b9 \u6b27\u5143\u5151\u7f8e\u5143\u65e5\u5185\u6da8\u5e45\u8fbe0.",
+    "lang": "zh",
+    "quantities": [
+     "\u65e5\u5185",
+     "\u7f8e\u5143",
+     "\u6b27\u5143"
+    ],
+    "direction": [
+     "\u6da8"
+    ],
+    "horizon": [
+     "\u65e5\u5185"
+    ],
+    "instruments": {
+     "analogues": [
+      "EURUSD",
+      "USDCNH"
+     ],
+     "mentioned": [
+      "\u6b27\u5143",
+      "\u4eba\u6c11\u5e01"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [
+      "\u4e2d\u95f4\u4ef7: policy: PBoC fixing -> CNH"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "b3fd710f96cf"
+   }
+  ],
+  "n_claims": 3
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u4e1c\u65b9\u8d22\u5bcc\u7f51,\u5916\u6c47\u9891\u9053,\u5916\u6c47",
+  "url": "http://forex.eastmoney.com/CNY.html",
+  "published": "2026-09-27T00:13:51+00:00",
+  "symbols": [
+   "USDCNH"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "night_session",
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "49da34152c8fb6603293",
+  "host": "forex.eastmoney.com",
+  "claims": [
+   {
+    "claim": "7817\uff0c\u4e0b\u8c039\u70b9 \u4eba\u6c11\u5e01\u5151\u7f8e\u5143\u4e2d\u95f4\u4ef7\u8c03\u53475\u4e2a\u57fa\u70b9 \u5728\u5cb8\u4eba\u6c11\u5e01\u5151\u7f8e\u5143\u6536\u76d8 \u8f83\u4e0a\u4e00\u4ea4\u6613\u65e5\u8dcc15\u70b9 \u4eba\u6c11\u5e01\u5bf9\u7f8e\u5143\u6c47\u7387\u521b\u4e09\u5e74\u534a\u65b0\u9ad8 \u63a5\u4e0b\u6765\u600e\u4e48\u8d70\uff1f",
+    "lang": "zh",
+    "quantities": [
+     "\u6536\u76d8",
+     "\u7f8e\u5143",
+     "\u6c47\u7387"
+    ],
+    "direction": [
+     "\u8dcc"
+    ],
+    "horizon": [
+     "\u4ea4\u6613\u65e5"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDCNH"
+     ],
+     "mentioned": [
+      "\u4eba\u6c11\u5e01"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [
+      "\u4e2d\u95f4\u4ef7: policy: PBoC fixing -> CNH"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "689d485a9162"
+   },
+   {
+    "claim": "\u79bb\u5cb8\u4eba\u6c11\u5e01\u8f83\u5468\u56db\u7ebd\u7ea6\u5c3e\u76d8\u6da847\u70b9 \u4eba\u6c11\u5e01\u5151\u7f8e\u5143\u4e2d\u95f4\u4ef7\u62a56.",
+    "lang": "zh",
+    "quantities": [
+     "\u7f8e\u5143"
+    ],
+    "direction": [
+     "\u6da8"
+    ],
+    "horizon": [
+     "\u5c3e\u76d8",
+     "\u5468"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDCNH"
+     ],
+     "mentioned": [
+      "\u79bb\u5cb8\u4eba\u6c11\u5e01"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [
+      "\u4e2d\u95f4\u4ef7: policy: PBoC fixing -> CNH"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "240b6e0e083c"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Economics Data APIs | Indicators, Rates &amp; Calendars | FMP",
+  "url": "https://site.financialmodelingprep.com/datasets/economics",
+  "published": "2026-09-27T00:13:51+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://site.financialmodelingprep.com/datasets/economics",
+   "https://site.financialmodelingprep.com/es/datasets/economics",
+   "https://site.financialmodelingprep.com/de/datasets/economics",
+   "https://site.financialmodelingprep.com/fr/datasets/economics",
+   "https://site.financialmodelingprep.com/pt/datasets/economics",
+   "https://site.financialmodelingprep.com/ru/datasets/economics",
+   "https://site.financialmodelingprep.com/it/datasets/economics",
+   "https://site.financialmodelingprep.com/datasets/market-data-real-time",
+   "https://site.financialmodelingprep.com/datasets/market-data-historic",
+   "https://site.financialmodelingprep.com/datasets/fundamental-financial-statements",
+   "https://site.financialmodelingprep.com/datasets/indexes",
+   "https://site.financialmodelingprep.com/datasets/company-profile",
+   "https://site.financialmodelingprep.com/datasets/analyst-estimates-targets",
+   "https://site.financialmodelingprep.com/datasets/earnings-call-transcripts",
+   "https://site.financialmodelingprep.com/datasets/search-directory",
+   "https://site.financialmodelingprep.com/datasets/market-news",
+   "https://site.financialmodelingprep.com/datasets/calendars",
+   "https://site.financialmodelingprep.com/datasets/form-13f",
+   "https://site.financialmodelingprep.com/datasets/advanced",
+   "https://site.financialmodelingprep.com/datasets/crypto",
+   "https://site.financialmodelingprep.com/datasets/forex",
+   "https://site.financialmodelingprep.com/datasets/commodity",
+   "https://site.financialmodelingprep.com/datasets/ownership-senate-insider",
+   "https://site.financialmodelingprep.com/datasets/esg",
+   "https://site.financialmodelingprep.com/datasets/etf-mutual-funds",
+   "https://site.financialmodelingprep.com/datasets/analyst-ratings-tipranks",
+   "https://site.financialmodelingprep.com/datasets/bulk-data"
+  ],
+  "n_endpoints": 27,
+  "vault_sha": "66581bbc03bdb82c78e0",
+  "host": "site.financialmodelingprep.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Advanced Market Metrics APIs | Performance &amp; Valuations | FMP",
+  "url": "https://site.financialmodelingprep.com/datasets/advanced",
+  "published": "2026-09-27T00:13:53+00:00",
+  "symbols": [],
+  "timeframes": [
+   "INTRADAY"
+  ],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://site.financialmodelingprep.com/datasets/advanced",
+   "https://site.financialmodelingprep.com/es/datasets/advanced",
+   "https://site.financialmodelingprep.com/de/datasets/advanced",
+   "https://site.financialmodelingprep.com/fr/datasets/advanced",
+   "https://site.financialmodelingprep.com/pt/datasets/advanced",
+   "https://site.financialmodelingprep.com/ru/datasets/advanced",
+   "https://site.financialmodelingprep.com/it/datasets/advanced",
+   "https://site.financialmodelingprep.com/datasets/market-data-real-time",
+   "https://site.financialmodelingprep.com/datasets/market-data-historic",
+   "https://site.financialmodelingprep.com/datasets/fundamental-financial-statements",
+   "https://site.financialmodelingprep.com/datasets/indexes",
+   "https://site.financialmodelingprep.com/datasets/economics",
+   "https://site.financialmodelingprep.com/datasets/company-profile",
+   "https://site.financialmodelingprep.com/datasets/analyst-estimates-targets",
+   "https://site.financialmodelingprep.com/datasets/earnings-call-transcripts",
+   "https://site.financialmodelingprep.com/datasets/search-directory",
+   "https://site.financialmodelingprep.com/datasets/market-news",
+   "https://site.financialmodelingprep.com/datasets/calendars",
+   "https://site.financialmodelingprep.com/datasets/form-13f",
+   "https://site.financialmodelingprep.com/datasets/crypto",
+   "https://site.financialmodelingprep.com/datasets/forex",
+   "https://site.financialmodelingprep.com/datasets/commodity",
+   "https://site.financialmodelingprep.com/datasets/ownership-senate-insider",
+   "https://site.financialmodelingprep.com/datasets/esg",
+   "https://site.financialmodelingprep.com/datasets/etf-mutual-funds",
+   "https://site.financialmodelingprep.com/datasets/analyst-ratings-tipranks",
+   "https://site.financialmodelingprep.com/datasets/bulk-data"
+  ],
+  "n_endpoints": 27,
+  "vault_sha": "a732105914aa3fad23a8",
+  "host": "site.financialmodelingprep.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Free Stock Market API and Financial Statements API | FMP",
+  "url": "https://site.financialmodelingprep.com/developer/docs",
+  "published": "2026-09-27T00:13:58+00:00",
+  "symbols": [
+   "BTCUSD",
+   "EURUSD",
+   "XAUUSD",
+   "NAS100",
+   "US500",
+   "US30"
+  ],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "basis",
+   "orderflow",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://site.financialmodelingprep.com/datasets/market-data-real-time",
+   "https://site.financialmodelingprep.com/datasets/market-data-historic",
+   "https://site.financialmodelingprep.com/datasets/fundamental-financial-statements",
+   "https://site.financialmodelingprep.com/datasets/indexes",
+   "https://site.financialmodelingprep.com/datasets/economics",
+   "https://site.financialmodelingprep.com/datasets/company-profile",
+   "https://site.financialmodelingprep.com/datasets/analyst-estimates-targets",
+   "https://site.financialmodelingprep.com/datasets/earnings-call-transcripts",
+   "https://site.financialmodelingprep.com/datasets/search-directory",
+   "https://site.financialmodelingprep.com/datasets/market-news",
+   "https://site.financialmodelingprep.com/datasets/calendars",
+   "https://site.financialmodelingprep.com/datasets/form-13f",
+   "https://site.financialmodelingprep.com/datasets/advanced",
+   "https://site.financialmodelingprep.com/datasets/crypto",
+   "https://site.financialmodelingprep.com/datasets/forex",
+   "https://site.financialmodelingprep.com/datasets/commodity",
+   "https://site.financialmodelingprep.com/datasets/ownership-senate-insider",
+   "https://site.financialmodelingprep.com/datasets/esg",
+   "https://site.financialmodelingprep.com/datasets/etf-mutual-funds"
+  ],
+  "n_endpoints": 19,
+  "vault_sha": "981e9bfe90e3dcdd11c3",
+  "host": "site.financialmodelingprep.com",
+  "claims": [
+   {
+    "claim": "This API provides granular price information, helping users track short-term price movements and trading volume within each minute.",
+    "lang": "en",
+    "quantities": [
+     "volume"
+    ],
+    "direction": [
+     "short"
+    ],
+    "horizon": [
+     "minute"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "NAS100",
+      "US500",
+      "US30",
+      "EURUSD",
+      "BTCUSD"
+     ],
+     "mentioned": [
+      "gold",
+      "nasdaq",
+      "s&p 500",
+      "dow jones",
+      "eurusd",
+      "btcusd"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDJPY"
+     ],
+     "channels": [
+      "cot report: positioning: CFTC -> FX and gold"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "6bd2b8660d1e"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Actively Trading List API | Financial Modeling Prep",
+  "url": "https://site.financialmodelingprep.com/developer/docs/stable/actively-trading-list",
+  "published": "2026-09-27T00:14:00+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://site.financialmodelingprep.com/datasets/market-data-real-time",
+   "https://site.financialmodelingprep.com/datasets/market-data-historic",
+   "https://site.financialmodelingprep.com/datasets/fundamental-financial-statements",
+   "https://site.financialmodelingprep.com/datasets/indexes",
+   "https://site.financialmodelingprep.com/datasets/economics",
+   "https://site.financialmodelingprep.com/datasets/company-profile",
+   "https://site.financialmodelingprep.com/datasets/analyst-estimates-targets",
+   "https://site.financialmodelingprep.com/datasets/earnings-call-transcripts",
+   "https://site.financialmodelingprep.com/datasets/search-directory",
+   "https://site.financialmodelingprep.com/datasets/market-news",
+   "https://site.financialmodelingprep.com/datasets/calendars",
+   "https://site.financialmodelingprep.com/datasets/form-13f",
+   "https://site.financialmodelingprep.com/datasets/advanced",
+   "https://site.financialmodelingprep.com/datasets/crypto",
+   "https://site.financialmodelingprep.com/datasets/forex",
+   "https://site.financialmodelingprep.com/datasets/commodity",
+   "https://site.financialmodelingprep.com/datasets/ownership-senate-insider",
+   "https://site.financialmodelingprep.com/datasets/esg",
+   "https://site.financialmodelingprep.com/datasets/etf-mutual-funds",
+   "https://site.financialmodelingprep.com/datasets/analyst-ratings-tipranks"
+  ],
+  "n_endpoints": 20,
+  "vault_sha": "dcc28db98f74b22d8288",
+  "host": "site.financialmodelingprep.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Economics Indicators API | Financial Modeling Prep",
+  "url": "https://site.financialmodelingprep.com/developer/docs/stable/economics-indicators",
+  "published": "2026-09-27T00:14:04+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://site.financialmodelingprep.com/datasets/market-data-real-time",
+   "https://site.financialmodelingprep.com/datasets/market-data-historic",
+   "https://site.financialmodelingprep.com/datasets/fundamental-financial-statements",
+   "https://site.financialmodelingprep.com/datasets/indexes",
+   "https://site.financialmodelingprep.com/datasets/economics",
+   "https://site.financialmodelingprep.com/datasets/company-profile",
+   "https://site.financialmodelingprep.com/datasets/analyst-estimates-targets",
+   "https://site.financialmodelingprep.com/datasets/earnings-call-transcripts",
+   "https://site.financialmodelingprep.com/datasets/search-directory",
+   "https://site.financialmodelingprep.com/datasets/market-news",
+   "https://site.financialmodelingprep.com/datasets/calendars",
+   "https://site.financialmodelingprep.com/datasets/form-13f",
+   "https://site.financialmodelingprep.com/datasets/advanced",
+   "https://site.financialmodelingprep.com/datasets/crypto",
+   "https://site.financialmodelingprep.com/datasets/forex",
+   "https://site.financialmodelingprep.com/datasets/commodity",
+   "https://site.financialmodelingprep.com/datasets/ownership-senate-insider",
+   "https://site.financialmodelingprep.com/datasets/esg",
+   "https://site.financialmodelingprep.com/datasets/etf-mutual-funds",
+   "https://site.financialmodelingprep.com/datasets/analyst-ratings-tipranks"
+  ],
+  "n_endpoints": 20,
+  "vault_sha": "8f91f548318845fdb4b7",
+  "host": "site.financialmodelingprep.com",
+  "claims": [],
+  "n_claims": 0
+ }
+]

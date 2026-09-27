@@ -1,0 +1,1799 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Market Week Ahead: Non-Farm Payrolls Forecast Tests the Fed",
+  "url": "https://roboforex.com/blog/analysis/market-week-ahead-august-31-september-4-non-farm-payrolls-forecast/",
+  "published": "2026-09-26T09:13:22+00:00",
+  "symbols": [
+   "XAUUSD",
+   "XTIUSD",
+   "US500",
+   "USDX",
+   "EURUSD",
+   "AUDUSD",
+   "USDCAD",
+   "USDTRY",
+   "UST10Y",
+   "Tesla"
+  ],
+  "timeframes": [
+   "H4"
+  ],
+  "patterns": [
+   "basis",
+   "breakout",
+   "carry",
+   "flow",
+   "gap",
+   "momentum",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "2e7734c9c702a1b6d987",
+  "host": "roboforex.com",
+  "claims": [
+   {
+    "claim": "After the weak Non-Farm Payrolls print of the previous month, any further sign of cooling would strengthen expectations of a near-term Fed rate cut.",
+    "lang": "en",
+    "quantities": [
+     "rate",
+     "cut"
+    ],
+    "direction": [
+     "strengthen"
+    ],
+    "horizon": [
+     "month"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XTIUSD",
+      "US500",
+      "USDX",
+      "EURUSD",
+      "AUDUSD",
+      "USDCAD",
+      "USDTRY",
+      "UST10Y",
+      "Tesla"
+     ],
+     "mentioned": [
+      "gold",
+      "brent",
+      "s&p 500",
+      "dollar index",
+      "eur/usd",
+      "aud/usd",
+      "usd/cad",
+      "try",
+      "treasuries",
+      "tesla",
+      "iron ore"
+     ],
+     "transfer_only": [
+      "iron ore->metals/energy"
+     ],
+     "indirect": [
+      "GBPUSD",
+      "USDJPY"
+     ],
+     "channels": [
+      "the fed: policy: Fed -> dollar and US equities",
+      "ecb: policy: ECB -> EUR",
+      "bank of england: policy: BoE -> GBP",
+      "bank of japan: policy: BoJ / MoF intervention -> JPY",
+      "rba: policy: RBA -> AUD",
+      "bank of canada: policy: BoC -> CAD"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b71361421d97"
+   },
+   {
+    "claim": "Price holds below the middle Bollinger band, MACD is gradually recovering while staying close to neutral, and the stochastic turns down after an attempt higher.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "higher"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XTIUSD",
+      "US500",
+      "USDX",
+      "EURUSD",
+      "AUDUSD",
+      "USDCAD",
+      "USDTRY",
+      "UST10Y",
+      "Tesla"
+     ],
+     "mentioned": [
+      "gold",
+      "brent",
+      "s&p 500",
+      "dollar index",
+      "eur/usd",
+      "aud/usd",
+      "usd/cad",
+      "try",
+      "treasuries",
+      "tesla",
+      "iron ore"
+     ],
+     "transfer_only": [
+      "iron ore->metals/energy"
+     ],
+     "indirect": [
+      "GBPUSD",
+      "USDJPY"
+     ],
+     "channels": [
+      "the fed: policy: Fed -> dollar and US equities",
+      "ecb: policy: ECB -> EUR",
+      "bank of england: policy: BoE -> GBP",
+      "bank of japan: policy: BoJ / MoF intervention -> JPY",
+      "rba: policy: RBA -> AUD",
+      "bank of canada: policy: BoC -> CAD"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b88411002202"
+   },
+   {
+    "claim": "aud/usd forecast eur/usd forecast market week ahead s&p 500 forecast usd/cad forecast Further reading Education 24 min Index Trading Explained: What a Stock Market Index Is and How to Trade It A trading index is an index of the average price of a certain set of instruments, such as stocks of different companies, united in one group.",
+    "lang": "en",
+    "quantities": [
+     "stocks"
+    ],
+    "direction": [
+     "forecast"
+    ],
+    "horizon": [
+     "week"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "EURUSD",
+      "AUDUSD",
+      "USDCAD"
+     ],
+     "mentioned": [
+      "s&p 500",
+      "eur/usd",
+      "aud/usd",
+      "usd/cad"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "dd23129d6531"
+   }
+  ],
+  "n_claims": 3
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "LLY Stock Forecast After Eli Lilly Launches Foundayo in the UK",
+  "url": "https://roboforex.com/blog/analysis/lly-stock-forecast-foundayo-uk-launch/",
+  "published": "2026-09-26T09:13:23+00:00",
+  "symbols": [
+   "USDTRY",
+   "Tesla"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "breakout",
+   "carry",
+   "flow",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "2702133388445b675d99",
+  "host": "roboforex.com",
+  "claims": [
+   {
+    "claim": "At the same time the Stochastic indicator sits close to overbought territory, so further gains are likely to come with local pullbacks along the way.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "gains"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDTRY",
+      "Tesla"
+     ],
+     "mentioned": [
+      "try",
+      "tesla"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "US500",
+      "GBPUSD",
+      "USDJPY"
+     ],
+     "channels": [
+      "the fed: policy: Fed -> dollar and US equities",
+      "bank of england: policy: BoE -> GBP",
+      "bank of japan: policy: BoJ / MoF intervention -> JPY"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "0bcb20b55367"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Market Week Ahead: Core PCE Tests Fed Rate Bets",
+  "url": "https://roboforex.com/blog/analysis/market-week-ahead-august-24-28-core-pce/",
+  "published": "2026-09-26T09:13:25+00:00",
+  "symbols": [
+   "USDCAD",
+   "US500",
+   "CA60",
+   "AUS200",
+   "EURUSD",
+   "USDJPY",
+   "AUDUSD",
+   "USDTRY",
+   "UST10Y",
+   "Tesla"
+  ],
+  "timeframes": [
+   "H4"
+  ],
+  "patterns": [
+   "basis",
+   "breakout",
+   "carry",
+   "flow",
+   "gap",
+   "momentum",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f74204b8d18c680bbe31",
+  "host": "roboforex.com",
+  "claims": [
+   {
+    "claim": "Market Reaction GDP above forecast would support the Canadian dollar and open the way for USD/CAD to extend its decline.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "forecast"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDCAD"
+     ],
+     "mentioned": [
+      "usd/cad"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "26badabd6ec0"
+   },
+   {
+    "claim": "A large downward NFP revision on the same day would add its own dollar-negative pressure across the board.",
+    "lang": "en",
+    "quantities": [
+     "nfp"
+    ],
+    "direction": [
+     "negative"
+    ],
+    "horizon": [
+     "day"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "CA60",
+      "AUS200",
+      "EURUSD",
+      "USDJPY",
+      "AUDUSD",
+      "USDCAD",
+      "USDTRY",
+      "UST10Y",
+      "Tesla"
+     ],
+     "mentioned": [
+      "s&p 500",
+      "tsx",
+      "asx 200",
+      "eur/usd",
+      "usd/jpy",
+      "aud/usd",
+      "usd/cad",
+      "try",
+      "treasuries",
+      "tesla"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "GBPUSD"
+     ],
+     "channels": [
+      "the fed: policy: Fed -> dollar and US equities",
+      "bank of england: policy: BoE -> GBP",
+      "bank of japan: policy: BoJ / MoF intervention -> JPY",
+      "rba: policy: RBA -> AUD",
+      "bank of canada: policy: BoC -> CAD"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "a288c14dd2b6"
+   },
+   {
+    "claim": "aud/usd forecast eur/usd forecast market week ahead usd/cad forecast usd/jpy forecast Further reading Education 24 min Index Trading Explained: What a Stock Market Index Is and How to Trade It A trading index is an index of the average price of a certain set of instruments, such as stocks of different companies, united in one group.",
+    "lang": "en",
+    "quantities": [
+     "stocks"
+    ],
+    "direction": [
+     "forecast"
+    ],
+    "horizon": [
+     "week"
+    ],
+    "instruments": {
+     "analogues": [
+      "EURUSD",
+      "USDJPY",
+      "AUDUSD",
+      "USDCAD"
+     ],
+     "mentioned": [
+      "eur/usd",
+      "usd/jpy",
+      "aud/usd",
+      "usd/cad"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "83ef11ba624b"
+   }
+  ],
+  "n_claims": 3
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Meta Lawsuit Stock Forecast: META Trade Idea Toward 440 USD",
+  "url": "https://roboforex.com/blog/analysis/meta-lawsuit-stock-forecast-trade-idea/",
+  "published": "2026-09-26T09:13:29+00:00",
+  "symbols": [
+   "NAS100",
+   "USDTRY",
+   "Tesla"
+  ],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "breakout",
+   "carry",
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "196f3e5a7d20792571fe",
+  "host": "roboforex.com",
+  "claims": [
+   {
+    "claim": "Bayer shares dropped 14% in one session, and the company's market value shrank by more than 14 billion USD.",
+    "lang": "en",
+    "quantities": [
+     "session"
+    ],
+    "direction": [
+     "dropped"
+    ],
+    "horizon": [
+     "session"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "USDTRY",
+      "Tesla"
+     ],
+     "mentioned": [
+      "nasdaq",
+      "try",
+      "tesla"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "US500",
+      "GBPUSD",
+      "USDJPY"
+     ],
+     "channels": [
+      "the fed: policy: Fed -> dollar and US equities",
+      "bank of england: policy: BoE -> GBP",
+      "bank of japan: policy: BoJ / MoF intervention -> JPY"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "6b0358f10fcd"
+   },
+   {
+    "claim": "Open Account Analyst Ratings for META Stock As of August 2026, Barchart analyst ratings for Meta Platforms Inc show a consensus in favour of active buying: 47 out of 55 tracked analysts rate META as a Buy and 8 as a Hold.",
+    "lang": "en",
+    "quantities": [
+     "open",
+     "rate"
+    ],
+    "direction": [
+     "buy"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "USDTRY",
+      "Tesla"
+     ],
+     "mentioned": [
+      "nasdaq",
+      "try",
+      "tesla"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "US500",
+      "GBPUSD",
+      "USDJPY"
+     ],
+     "channels": [
+      "the fed: policy: Fed -> dollar and US equities",
+      "bank of england: policy: BoE -> GBP",
+      "bank of japan: policy: BoJ / MoF intervention -> JPY"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "158596f22635"
+   },
+   {
+    "claim": "Traders who want to act on this setup can open a short position in META at market around 560 USD with a Stop Loss at 602 USD, risking no more than 3% of the account.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "short"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "USDTRY",
+      "Tesla"
+     ],
+     "mentioned": [
+      "nasdaq",
+      "try",
+      "tesla"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "US500",
+      "GBPUSD",
+      "USDJPY"
+     ],
+     "channels": [
+      "the fed: policy: Fed -> dollar and US equities",
+      "bank of england: policy: BoE -> GBP",
+      "bank of japan: policy: BoJ / MoF intervention -> JPY"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "dfba2f017e51"
+   }
+  ],
+  "n_claims": 3
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "FOMC Meeting Minutes and UK CPI: Week Ahead Aug 17-21",
+  "url": "https://roboforex.com/blog/analysis/fomc-meeting-minutes-uk-cpi-market-week-ahead-august-2026/",
+  "published": "2026-09-26T09:13:30+00:00",
+  "symbols": [
+   "EURUSD",
+   "GBPUSD",
+   "USDJPY",
+   "AUDUSD",
+   "USDTRY",
+   "Tesla"
+  ],
+  "timeframes": [
+   "H4"
+  ],
+  "patterns": [
+   "basis",
+   "breakout",
+   "carry",
+   "flow",
+   "gap",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d16bcc988a24e3777f7e",
+  "host": "roboforex.com",
+  "claims": [
+   {
+    "claim": "MACD has turned higher again, while Stochastic has moved close to overbought territory, which makes resistance at 1.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "higher"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "AUDUSD",
+      "USDTRY",
+      "Tesla"
+     ],
+     "mentioned": [
+      "eur/usd",
+      "pound",
+      "yen",
+      "aud/usd",
+      "try",
+      "tesla"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "US500"
+     ],
+     "channels": [
+      "fomc: policy: Fed -> dollar and US equities",
+      "bank of england: policy: BoE -> GBP",
+      "bank of japan: policy: BoJ / MoF intervention -> JPY"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "4ab34b11ac4c"
+   },
+   {
+    "claim": "GDP, trade figures and CPI arrive across the week and together determine whether the yen can hold its post-intervention gains on macro data alone.",
+    "lang": "en",
+    "quantities": [
+     "cpi",
+     "intervention"
+    ],
+    "direction": [
+     "gains"
+    ],
+    "horizon": [
+     "week"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDJPY"
+     ],
+     "mentioned": [
+      "yen"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "e6b16f033f22"
+   },
+   {
+    "claim": "aud/usd forecast eur/usd forecast gbp/usd forecast market week ahead Further reading Education 24 min Index Trading Explained: What a Stock Market Index Is and How to Trade It A trading index is an index of the average price of a certain set of instruments, such as stocks of different companies, united in one group.",
+    "lang": "en",
+    "quantities": [
+     "stocks"
+    ],
+    "direction": [
+     "forecast"
+    ],
+    "horizon": [
+     "week"
+    ],
+    "instruments": {
+     "analogues": [
+      "EURUSD",
+      "GBPUSD",
+      "AUDUSD"
+     ],
+     "mentioned": [
+      "eur/usd",
+      "gbp/usd",
+      "aud/usd"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "f1332ae77202"
+   }
+  ],
+  "n_claims": 3
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Gold Fed Rate Hike Bets: XAUUSD Forecast and a 4,772 USD Target",
+  "url": "https://roboforex.com/blog/analysis/gold-fed-rate-hike-bets-xauusd-forecast/",
+  "published": "2026-09-26T09:13:32+00:00",
+  "symbols": [
+   "XAUUSD",
+   "USDTRY",
+   "Tesla",
+   "USDX",
+   "UST10Y"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "breakout",
+   "carry",
+   "flow",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "37a18ace3352a6a45e8b",
+  "host": "roboforex.com",
+  "claims": [
+   {
+    "claim": "Gold Fed Rate Hike Bets: XAUUSD Forecast and a 4,772 USD Target Analysis Education ipo analysis ipo 2021 financial reports forex trading medium-term trading strategy tesla inc Try Free Demo Main \u00b7 Analysis \u00b7 Gold Fed Rate Hike Bets: XAUUSD Forecast and a 4,772 USD Target Gold Fed Rate Hike Bets: XAUUSD Forecast and a 4,772 USD Target 23 minutes for reading Published: 13.",
+    "lang": "en",
+    "quantities": [
+     "rate",
+     "hike"
+    ],
+    "direction": [
+     "forecast"
+    ],
+    "horizon": [
+     "minutes"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "USDTRY",
+      "Tesla"
+     ],
+     "mentioned": [
+      "gold",
+      "try",
+      "tesla"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "3736cc33eada"
+   },
+   {
+    "claim": "The implied odds of a September rate increase have dropped to around 40%, from roughly two thirds at the start of the month.",
+    "lang": "en",
+    "quantities": [
+     "rate"
+    ],
+    "direction": [
+     "increase",
+     "dropped"
+    ],
+    "horizon": [
+     "month"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "USDX",
+      "USDTRY",
+      "UST10Y",
+      "Tesla"
+     ],
+     "mentioned": [
+      "gold",
+      "dollar index",
+      "try",
+      "10-year treasury",
+      "tesla"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "US500",
+      "GBPUSD",
+      "USDJPY",
+      "XTIUSD",
+      "XBRUSD",
+      "USDCAD",
+      "USDNOK"
+     ],
+     "channels": [
+      "the fed: policy: Fed -> dollar and US equities",
+      "bank of england: policy: BoE -> GBP",
+      "bank of japan: policy: BoJ / MoF intervention -> JPY",
+      "strait of hormuz: energy flow: OPEC / inventories / chokepoints -> oil, CAD, NOK"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "5ccf038c527a"
+   },
+   {
+    "claim": "6 points of rate increase priced out of the September meeting inside one week More than 430 USD recovered by the gold price from its June low over the same stretch Fed funds futures and the CME FedWatch tool, 7 to 12 August 2026.",
+    "lang": "en",
+    "quantities": [
+     "rate",
+     "futures"
+    ],
+    "direction": [
+     "increase"
+    ],
+    "horizon": [
+     "week"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "gold"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "US500"
+     ],
+     "channels": [
+      "fed funds: policy: Fed -> dollar and US equities"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "17cfe4e99705"
+   },
+   {
+    "claim": "Roughly fifteen points of rate increase came out of the September meeting across the two releases, the dollar index fell to a two-week low, and the yield on the 10-year Treasury note came off.",
+    "lang": "en",
+    "quantities": [
+     "rate",
+     "yield"
+    ],
+    "direction": [
+     "increase",
+     "fell"
+    ],
+    "horizon": [
+     "week"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDX",
+      "UST10Y"
+     ],
+     "mentioned": [
+      "dollar index",
+      "10-year treasury"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "9e9b5db89c9f"
+   },
+   {
+    "claim": "The entry is 4,300 USD , the top of the two-day range gold held right after the breakout, because the rally is stretched.",
+    "lang": "en",
+    "quantities": [
+     "range",
+     "breakout"
+    ],
+    "direction": [
+     "rally"
+    ],
+    "horizon": [
+     "day"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "gold"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "74b6ab829a45"
+   }
+  ],
+  "n_claims": 5
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Contacts - RoboForex Blog",
+  "url": "https://roboforex.com/blog/contacts/",
+  "published": "2026-09-26T09:13:33+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "74582cf713262f92e7bc",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Monetary policy, strategy and implementation",
+  "url": "https://www.ecb.europa.eu/pub/economic-research/research_agenda/monetary_policy/html/index.es.html",
+  "published": "2026-09-26T09:13:34+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "gap",
+   "inventory",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "es",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.es.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "bf51636a88777d50fc18",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Monetary policy, strategy and implementation",
+  "url": "https://www.ecb.europa.eu/pub/economic-research/research_agenda/monetary_policy/html/index.fr.html",
+  "published": "2026-09-26T09:13:36+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "gap",
+   "inventory",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "fr",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.fr.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "f1f069c2312209d26203",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Working papers",
+  "url": "https://www.ecb.europa.eu/pub/research/working-papers/html/index.en.html",
+  "published": "2026-09-26T09:13:38+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "basis",
+   "gap",
+   "inventory",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.en.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "9dd34569b8d618ec130b",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "ECB wage tracker at 2.7% in H1 2027, pointing to a modest uptick in negotiated wage growth",
+  "url": "https://www.ecb.europa.eu//press/pr/date/2026/html/ecb.pr260916~7bc58ebef4.en.html",
+  "published": "2026-09-26T09:13:40+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [
+   "H1",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "gap",
+   "inventory",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.en.html",
+   "https://data.ecb.europa.eu/data/datasets/EWT/EWT.Q.U2.N.WT.INWS._T.4F0.GY?chart_props=W3sibm9kZUlkIjoiMzg5ODMwMyIsInByb3BlcnRpZXMiOlt7ImNvbG9ySGV4IjoiIiwiY29sb3JUeXBlIjoiIiwiY2hhcnRUeXBlIjoibGluZWNoYXJ0IiwibGluZVN0eWxlIjoiU29saWQiLCJsaW5lV2lkdGgiOiIxLjUiLCJheGlzUG9zaXRpb24iOiJsZWZ0Iiwib2JzZXJ2YXRpb25WYWx1ZSI6ZmFsc2UsImRhdGVzIjpbXSwiaXNUZGF0YSI6ZmFsc2UsIm1vZGlmaWVkVW5pdFR5cGUiOiIiLCJ5ZWFyIjoib25lIiwic3RhcnREYXRlIjoiMjAyNS0xMi0zMSIsImVuZERhdGUiOiIyMDI2LTEyLTMxIiwic2V0RGF0ZSI6dHJ1ZSwic2hvd1RhYmxlRGF0YSI6ZmFsc2UsImNoYW5nZU1vZGUiOmZhbHNlLCJzaG93TWVudVN0eWxlQ2hhcnQiOmZhbHNlLCJkaXNwbGF5TW9iaWxlQ2hhcnQiOnRydWUsInNjcmVlblNpemUiOiJtYXgiLCJzY3JlZW5XaWR0aCI6MjQzOSwic2hvd1RkYXRhIjpmYWxzZSwidHJhbnNmb3JtZWRGcmVxdWVuY3kiOiJub25lIiwidHJhbnNmb3JtZWRVbml0Ijoibm9uZSIsImZyZXF1ZW5jeSI6Im5vbmUiLCJ1bml0Ijoibm9uZSIsIm1vZGlmaWVkIjoiZmFsc2UiLCJzZXJpZXNLZXkiOiJxdWFydGVybHkiLCJzaG93dGFibGVTdGF0ZUJlZm9yZU1heFNjcmVlbiI6ZmFsc2UsImlzZGF0YWNvbXBhcmlzb24iOmZhbHNlLCJzZXJpZXNGcmVxdWVuY3kiOiJxdWFydGVybHkiLCJpbnRpYWxTZXJpZXNGcmVxdWVuY3kiOiJxdWFydGVybHkiLCJtZXRhZGF0YURlY2ltYWwiOiIiLCJpc1RhYmxlU29ydGVkIjpmYWxzZSwiaXNZZWFybHlUZGF0YSI6ZmFsc2UsInJlc3BvbnNlRGF0YUVuZERhdGUiOiIyMDI2LTEyLTMxIiwiaXNpbml0aWFsQ2hhcnREYXRhIjp0cnVlLCJpc0RhdGVzRnJvbURhdGVQaWNrZXIiOnRydWUsImRhdGVQaWNrZXJFbmREYXRlIjoiIiwiaXNEYXRlUGlja2VyRW5kRGF0ZSI6ZmFsc2UsInNlcmllc2tleVNldCI6IiIsImRhdGFzZXRJZCI6IjQxMyIsImlzQ2FsbGJhY2siOmZhbHNlLCJpc1NsaWRlclRkYXRhIjp0cnVlLCJpc1NsaWRlckRhdGEiOnRydWUsImlzSW5pdGlhbENoYXJ0RGF0YUZyb21HcmFwaCI6dHJ1ZSwiY2hhcnRTZXJpZXNLZXkiOiJFV1QuUS5VMi5OLldULklOV1MuX1QuNEYwLkdZIiwidHlwZU9mIjoiIn1dfV0%3D",
+   "https://data.ecb.europa.eu/data/datasets/EWT/EWT.A.U2.N.WT.COVR._T.4F0._Z",
+   "https://data.ecb.europa.eu/data/datasets/EWT/EWT.Q.U2.N.WT.INWS._T.4F0.GY",
+   "https://data.ecb.europa.eu/data/datasets/EWT/EWT.Q.U2.N.WT.INWR._T.4F0.GY",
+   "https://data.ecb.europa.eu/data/datasets/EWT/EWT.A.U2.N.WT.INWR._T.4F0.GY",
+   "https://data.ecb.europa.eu/data/datasets/EWT/EWT.Q.U2.N.WT.INWX._T.4F0.GY",
+   "https://data.ecb.europa.eu/data/datasets/EWT/EWT.A.U2.N.WT.INWX._T.4F0.GY",
+   "https://data.ecb.europa.eu/data/datasets/EWT/EWT.Q.U2.N.WT.COVR._T.4F0._Z",
+   "https://data.ecb.europa.eu/data/datasets/EWT",
+   "https://data.ecb.europa.eu/data/datasets/EWT/EWT.M.U2.N.WT.COVR._T.4F0._Z",
+   "https://data.ecb.europa.eu/data/datasets/EWT/EWT.M.U2.N.WT.INWS._T.4F0.GY",
+   "https://data.ecb.europa.eu/data/datasets/EWT/EWT.M.U2.N.WT.INWR._T.4F0.GY",
+   "https://data.ecb.europa.eu/data/datasets/EWT/EWT.M.U2.N.WT.INWX._T.4F0.GY"
+  ],
+  "n_endpoints": 14,
+  "vault_sha": "86a6e04289abe29de257",
+  "host": "www.ecb.europa.eu",
+  "claims": [
+   {
+    "claim": "Fixed-term employee Short-term employee Trainee Cost-free secondee FAQs Search Menu ANYTIME PAST MONTH PAST YEAR Search Options Image Preview Sort by ANYTIME PAST MONTH PAST YEAR Suggestions Home Media Explainers Research & Publications Statistics Monetary Policy The \u20acuro Payments & Markets Careers Suggestions Sort by Relevance Date PRESS RELEASE ECB wage tracker at 2.",
+    "lang": "en",
+    "quantities": [
+     "options"
+    ],
+    "direction": [
+     "short"
+    ],
+    "horizon": [
+     "month"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD"
+     ],
+     "channels": [
+      "ecb: policy: ECB -> EUR"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "87f1f43c8872"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "A new age of capital: growth, sovereignty and AI",
+  "url": "https://www.ecb.europa.eu//press/key/date/2026/html/ecb.sp260914_2~a3f0efbee4.en.html",
+  "published": "2026-09-26T09:13:42+00:00",
+  "symbols": [
+   "TARGET",
+   "XNIUSD",
+   "USDTRY"
+  ],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "auction",
+   "basis",
+   "carry",
+   "flow",
+   "gap",
+   "inventory",
+   "orderflow",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.en.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "3d2e017b0f79b3ab86db",
+  "host": "www.ecb.europa.eu",
+  "claims": [
+   {
+    "claim": "The big US hyperscalers issued more than USD 100 billion in bonds last year, most of it long-dated, [ 11 ] and they now account for close to a tenth of new euro bond issuance by non-financial companies.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "long"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "XNIUSD",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "nickel",
+      "try",
+      "pp"
+     ],
+     "transfer_only": [
+      "pp->energy"
+     ],
+     "indirect": [
+      "EURUSD"
+     ],
+     "channels": [
+      "ecb: policy: ECB -> EUR"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "4f357a09f8c7"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "The future of euro cash: trusted today, designed for tomorrow",
+  "url": "https://www.ecb.europa.eu//press/key/date/2026/html/ecb.sp260914_1~91d3436449.en.html",
+  "published": "2026-09-26T09:13:44+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "carry",
+   "gap",
+   "inventory",
+   "orderflow",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.en.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "168be30d3ff404a73611",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Interview with Ouest-France",
+  "url": "https://www.ecb.europa.eu//press/inter/date/2026/html/ecb.in260912~3cc706f4d6.en.html",
+  "published": "2026-09-26T09:13:46+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "basis",
+   "gap",
+   "inventory",
+   "orderflow",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.en.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "224d9e751c9630cc9c23",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Great Britain Pound vs US Dollar (GBPUSD.p) | ProCent | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-cent/GBPUSD.p/",
+  "published": "2026-09-26T09:13:47+00:00",
+  "symbols": [
+   "GBPUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790170960",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "10a90145fb22fb878ec1",
+  "host": "th.roboforex.com",
+  "claims": [
+   {
+    "claim": "00001 \u0e40\u0e27\u0e25\u0e32\u0e02\u0e2d\u0e07\u0e0a\u0e48\u0e27\u0e07\u0e0b\u0e37\u0e49\u0e2d\u0e02\u0e32\u0e22 00:05 - 23:55 Term currency USD 3-days swap Wednesday \u0e01\u0e32\u0e23\u0e08\u0e48\u0e32\u0e22 19.",
+    "lang": "th",
+    "quantities": [
+     "swap"
+    ],
+    "direction": [
+     "\u0e0b\u0e37\u0e49\u0e2d",
+     "\u0e02\u0e32\u0e22"
+    ],
+    "horizon": [
+     "days"
+    ],
+    "instruments": {
+     "analogues": [
+      "GBPUSD"
+     ],
+     "mentioned": [
+      "pound"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "15ad27297d9f"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "New Zealand Dollar vs Canadian Dollar (NZDCAD.p) | ProCent | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-cent/NZDCAD.p/",
+  "published": "2026-09-26T09:13:49+00:00",
+  "symbols": [
+   "NZDCAD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790170960",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "6faca91a1988018a4a73",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "New Zealand Dollar vs Swiss Franc (NZDCHF.p) | ProCent | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-cent/NZDCHF.p/",
+  "published": "2026-09-26T09:13:50+00:00",
+  "symbols": [
+   "NZDCHF"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790170960",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "53691cc457645cc6a291",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "New Zealand Dollar vs Japanese Yen (NZDJPY.p) | ProCent | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-cent/NZDJPY.p/",
+  "published": "2026-09-26T09:13:53+00:00",
+  "symbols": [
+   "NZDJPY",
+   "USDJPY"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790170960",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "f021dffbedb6de7814a5",
+  "host": "th.roboforex.com",
+  "claims": [
+   {
+    "claim": "001 \u0e40\u0e27\u0e25\u0e32\u0e02\u0e2d\u0e07\u0e0a\u0e48\u0e27\u0e07\u0e0b\u0e37\u0e49\u0e2d\u0e02\u0e32\u0e22 00:05 - 23:55 Term currency JPY 3-days swap Wednesday \u0e01\u0e32\u0e23\u0e08\u0e48\u0e32\u0e22 17.",
+    "lang": "th",
+    "quantities": [
+     "swap"
+    ],
+    "direction": [
+     "\u0e0b\u0e37\u0e49\u0e2d",
+     "\u0e02\u0e32\u0e22"
+    ],
+    "horizon": [
+     "days"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDJPY"
+     ],
+     "mentioned": [
+      "yen"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "8b57badf1110"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "New Zealand Dollar vs US Dollar (NZDUSD.p) | ProCent | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-cent/NZDUSD.p/",
+  "published": "2026-09-26T09:13:55+00:00",
+  "symbols": [
+   "NZDUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790170960",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "b2263b0100148341d53e",
+  "host": "th.roboforex.com",
+  "claims": [
+   {
+    "claim": "00001 \u0e40\u0e27\u0e25\u0e32\u0e02\u0e2d\u0e07\u0e0a\u0e48\u0e27\u0e07\u0e0b\u0e37\u0e49\u0e2d\u0e02\u0e32\u0e22 00:05 - 23:55 Term currency USD 3-days swap Wednesday \u0e01\u0e32\u0e23\u0e08\u0e48\u0e32\u0e22 16.",
+    "lang": "th",
+    "quantities": [
+     "swap"
+    ],
+    "direction": [
+     "\u0e0b\u0e37\u0e49\u0e2d",
+     "\u0e02\u0e32\u0e22"
+    ],
+    "horizon": [
+     "days"
+    ],
+    "instruments": {
+     "analogues": [
+      "NZDUSD"
+     ],
+     "mentioned": [
+      "nzdusd"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "ede34e1ec425"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "US Dollar vs Canadian Dollar (USDCAD.p) | ProCent | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-cent/USDCAD.p/",
+  "published": "2026-09-26T09:13:57+00:00",
+  "symbols": [
+   "USDCAD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790170960",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "2cf610fdf009ce12dd31",
+  "host": "th.roboforex.com",
+  "claims": [
+   {
+    "claim": "00001 \u0e40\u0e27\u0e25\u0e32\u0e02\u0e2d\u0e07\u0e0a\u0e48\u0e27\u0e07\u0e0b\u0e37\u0e49\u0e2d\u0e02\u0e32\u0e22 00:05 - 23:55 Term currency CAD 3-days swap Wednesday \u0e01\u0e32\u0e23\u0e08\u0e48\u0e32\u0e22 14.",
+    "lang": "th",
+    "quantities": [
+     "swap"
+    ],
+    "direction": [
+     "\u0e0b\u0e37\u0e49\u0e2d",
+     "\u0e02\u0e32\u0e22"
+    ],
+    "horizon": [
+     "days"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDCAD"
+     ],
+     "mentioned": [
+      "usdcad"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "a283a412e078"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "US Dollar vs Swiss Franc (USDCHF.p) | ProCent | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-cent/USDCHF.p/",
+  "published": "2026-09-26T09:13:59+00:00",
+  "symbols": [
+   "USDCHF"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790170960",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "55884618ea882c44a8c2",
+  "host": "th.roboforex.com",
+  "claims": [
+   {
+    "claim": "00001 \u0e40\u0e27\u0e25\u0e32\u0e02\u0e2d\u0e07\u0e0a\u0e48\u0e27\u0e07\u0e0b\u0e37\u0e49\u0e2d\u0e02\u0e32\u0e22 00:05 - 23:55 Term currency CHF 3-days swap Wednesday \u0e01\u0e32\u0e23\u0e08\u0e48\u0e32\u0e22 21.",
+    "lang": "th",
+    "quantities": [
+     "swap"
+    ],
+    "direction": [
+     "\u0e0b\u0e37\u0e49\u0e2d",
+     "\u0e02\u0e32\u0e22"
+    ],
+    "horizon": [
+     "days"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDCHF"
+     ],
+     "mentioned": [
+      "usdchf"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "0c198b027c31"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Overview | Forex REST API - Massive",
+  "url": "https://polygon.io/docs/rest/forex/tickers/ticker-overview",
+  "published": "2026-09-26T09:14:01+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "68942cfdd8f69418365c",
+  "host": "polygon.io",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Currency Conversion | Forex REST API - Massive",
+  "url": "https://polygon.io/docs/rest/forex/currency-conversion",
+  "published": "2026-09-26T09:14:02+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "9d3cf8bc7aa567208d39",
+  "host": "polygon.io",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u7528\u6237\u5206\u4eab\u6570\u636e-\u80a1\u7968\u6570\u636e-\u91cf\u5316\u4ea4\u6613\u6570\u636e\u83b7\u53d6-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/categories/-\u7528\u6237\u5206\u4eab\u6570\u636e-\u80a1\u7968\u6570\u636e",
+  "published": "2026-09-26T09:14:18+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.55,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "1f987e1a94c5cd877b72",
+  "host": "bigquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u7528\u6237\u5206\u4eab\u6570\u636e-\u6e2f\u80a1\u6570\u636e-\u91cf\u5316\u4ea4\u6613\u6570\u636e\u83b7\u53d6-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/categories/-\u7528\u6237\u5206\u4eab\u6570\u636e-\u6e2f\u80a1\u6570\u636e",
+  "published": "2026-09-26T09:14:19+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.55,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e813504d51ace56753f8",
+  "host": "bigquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u7528\u6237\u5206\u4eab\u6570\u636e-\u5b8f\u89c2\u6570\u636e-\u91cf\u5316\u4ea4\u6613\u6570\u636e\u83b7\u53d6-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/categories/-\u7528\u6237\u5206\u4eab\u6570\u636e-\u5b8f\u89c2\u6570\u636e",
+  "published": "2026-09-26T09:14:23+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "75f03239f7a5a48c41d8",
+  "host": "bigquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/datasources/abnr_lsl_2",
+  "published": "2026-09-26T09:14:26+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "90c81a552816971f8276",
+  "host": "bigquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/datasources/aaaa",
+  "published": "2026-09-26T09:14:27+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e572d6bb0684d7a781d7",
+  "host": "bigquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/datasources/abnretd_lsl_1",
+  "published": "2026-09-26T09:14:30+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e0922221f8aed71b4328",
+  "host": "bigquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/datasources/aichi_f67_20250713",
+  "published": "2026-09-26T09:14:31+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "4dc1eb6ea1377565cbbe",
+  "host": "bigquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Custom Bars (OHLC) | Forex REST API - Massive",
+  "url": "https://polygon.io/docs/forex/get_v2_aggs_ticker__forexticker__range__multiplier___timespan___from___to",
+  "published": "2026-09-26T09:14:33+00:00",
+  "symbols": [
+   "EURUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "4cc1114481ef30fefb88",
+  "host": "polygon.io",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Overview | Forex REST API - Massive",
+  "url": "https://polygon.io/docs/forex/getting-started",
+  "published": "2026-09-26T09:14:37+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "momentum",
+   "night_session",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "235dfc1d855b89aaa7a7",
+  "host": "polygon.io",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Custom Bars (OHLC) | Forex REST API - Massive",
+  "url": "https://polygon.io/docs/rest/forex/aggregates/custom-bars",
+  "published": "2026-09-26T09:14:39+00:00",
+  "symbols": [
+   "EURUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a5386a1b82791f8a6caa",
+  "host": "polygon.io",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Daily Market Summary (OHLC) | Forex REST API - Massive",
+  "url": "https://polygon.io/docs/rest/forex/aggregates/daily-market-summary",
+  "published": "2026-09-26T09:14:41+00:00",
+  "symbols": [
+   "GBPCAD"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "4cb6f6712ad28e6d71e6",
+  "host": "polygon.io",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Previous Day Bar (OHLC) | Forex REST API - Massive",
+  "url": "https://polygon.io/docs/rest/forex/aggregates/previous-day-bar",
+  "published": "2026-09-26T09:14:43+00:00",
+  "symbols": [
+   "EURUSD"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a3a3a122cf6af826a22c",
+  "host": "polygon.io",
+  "claims": [],
+  "n_claims": 0
+ }
+]

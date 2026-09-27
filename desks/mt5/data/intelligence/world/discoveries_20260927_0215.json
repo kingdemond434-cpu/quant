@@ -1,0 +1,2178 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Dhaka Stock Exchange \u2014 Bangladesh&#x27;s Capital Market",
+  "url": "https://www.dse.com.bd/",
+  "published": "2026-09-27T02:13:35+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.dse.com.bd/api/media/file/Untitled%20design.png?prefix=payloadcms-media%2Fa61ead720e573971",
+   "https://www.dse.com.bd/api/media/file/newdesign.webp?prefix=payloadcms-media%2F97bad3176fb333ab",
+   "https://www.dse.com.bd/api/media/file/image.webp?prefix=payloadcms-media%2F6532ea7f462a9723",
+   "https://www.dse.com.bd/api/media/file/image12.webp?prefix=payloadcms-media%2F25e325f7e9955029",
+   "https://www.dse.com.bd/api/media/file/IMG_3324.webp?prefix=payloadcms-media%2F249f91c3bf3cc33f",
+   "https://www.dse.com.bd/api/media/file/SME.webp?prefix=payloadcms-media%2Fb2148dea1189f0a2",
+   "https://www.dse.com.bd/api/media/file/ATB.webp?prefix=payloadcms-media%2F4db47a1cb02e06ab",
+   "https://www.dse.com.bd/api/media/file/Initial%20public%20offering%20(IPO).webp?prefix=payloadcms-media%2Ffd50077d93db3fa5",
+   "https://www.dse.com.bd/api/media/file/OTC%20Market.webp?prefix=payloadcms-media%2F16c4fc489b881f09",
+   "https://www.dse.com.bd/api/media/file/DSE%20Training%20Academy%20(DTA).webp?prefix=payloadcms-media%2F136436397fde4e67",
+   "https://www.dse.com.bd/api/media/file/Sustainability.webp?prefix=payloadcms-media%2F405e9628103f0535",
+   "https://www.dse.com.bd/api/media/file/download%20(1).jpg?prefix=payloadcms-media%2Fbc553ce396049d4e",
+   "https://www.dse.com.bd/api/media/file/WEB%20BANNER%20of%20AD%20(1)_page-0001%20(1).jpg?prefix=payloadcms-media%2F5d8c0a44add4ab83",
+   "https://www.dse.com.bd/api/media/file/dse-card-A-dark.png?prefix=payloadcms-media%2Fa9a9c62ccf028111",
+   "https://www.dse.com.bd/api/media/file/ternary_logo.png?prefix=payloadcms-media%2F39b430b926dcec81",
+   "https://www.dse.com.bd/api/announcementDocuments/file/updated-panel-of-auditors-listed-securities.pdf?prefix=pdf%2Fannouncement-documents%2F",
+   "https://www.dse.com.bd/api/announcementDocuments/file/updated-panel-of-auditors-trec-holders.pdf?prefix=pdf%2Fannouncement-documents%2F",
+   "https://www.dse.com.bd/api/announcementDocuments/file/warning-online-fraud.pdf?prefix=pdf%2Fannouncement-documents%2F",
+   "https://www.dse.com.bd/api/announcementDocuments/file/dse-tower-tia-942-certificate.pdf?prefix=pdf%2Fannouncement-documents%2F",
+   "https://www.dse.com.bd/api/announcementDocuments/file/bb-bsec-mou-bond-market.pdf?prefix=pdf%2Fannouncement-documents%2F",
+   "https://www.dse.com.bd/api/announcementDocuments/file/free-educational-programme-women-investors.pdf?prefix=pdf%2Fannouncement-documents%2F",
+   "https://www.dse.com.bd/api/announcementDocuments/file/investor-risk-awareness-notice.pdf?prefix=pdf%2Fannouncement-documents%2F",
+   "https://www.dse.com.bd/api/announcementDocuments/file/Request%20for%20circulaiton%20of%20notice%20at%20the%20DSE%20web%20banner.pdf?prefix=pdf%2Fannouncement-documents%2F",
+   "https://www.dse.com.bd/downloads"
+  ],
+  "n_endpoints": 24,
+  "vault_sha": "994611f276b450c80b20",
+  "host": "www.dse.com.bd",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Fidelidad de socios - RoboForex",
+  "url": "https://roboforex.com/es/promo/loyalty-program/",
+  "published": "2026-09-27T02:13:36+00:00",
+  "symbols": [
+   "BTCUSD",
+   "EURUSD",
+   "XAUUSD"
+  ],
+  "timeframes": [
+   "1M"
+  ],
+  "patterns": [
+   "auction"
+  ],
+  "confidence": 0.95,
+  "lang": "es",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790170960",
+   "https://my.roboforex.com/es/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "78e1fde6e51353649c3f",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Programa CopyFX Partner: cobre por los inversores que atraiga - RoboForex",
+  "url": "https://roboforex.com/es/partner-program/copy-trading-partner-program/",
+  "published": "2026-09-27T02:13:38+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction"
+  ],
+  "confidence": 0.55,
+  "lang": "es",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790170960",
+   "https://my.roboforex.com/es/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "b0e11ec8851ce2e9a7f3",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Proveedor de servicios de trading en r\u00e1pida expansi\u00f3n - RoboForex",
+  "url": "https://roboforex.com/es/about/company/about/",
+  "published": "2026-09-27T02:13:40+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "mean_reversion",
+   "orderflow",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "es",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790170960",
+   "https://roboforex.com/es/forex-trading/terminals/download/",
+   "https://my.roboforex.com/es/help/download-center/"
+  ],
+  "n_endpoints": 3,
+  "vault_sha": "85591ab7a9382a318b92",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Seguridad de Fondos de los Clientes - RoboForex",
+  "url": "https://roboforex.com/es/about/company/security/",
+  "published": "2026-09-27T02:13:42+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "es",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790170960",
+   "https://my.roboforex.com/es/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "e623ce96cced6e576a70",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Noticias - RoboForex",
+  "url": "https://roboforex.com/es/about/company/news/",
+  "published": "2026-09-27T02:13:43+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction"
+  ],
+  "confidence": 0.55,
+  "lang": "es",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790170960",
+   "https://my.roboforex.com/es/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "5e710c93ba42342da1cc",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Premios de la empresa - RoboForex",
+  "url": "https://roboforex.com/es/about/activity/awards/",
+  "published": "2026-09-27T02:13:45+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "es",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790170960",
+   "https://my.roboforex.com/es/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "18f448de4962114be721",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Regulaci\u00f3n RoboForex - RoboForex",
+  "url": "https://roboforex.com/es/about/company/regulation/",
+  "published": "2026-09-27T02:13:48+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "mean_reversion",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "es",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790170960",
+   "https://my.roboforex.com/es/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "3b4f497d4f948c8fcaa8",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Euro vs Australian Dollar (EURAUD.p) | Pro | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-stan/EURAUD.p/",
+  "published": "2026-09-27T02:13:48+00:00",
+  "symbols": [
+   "EURAUD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790170960",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "e282792bef250096487c",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Euro vs Canadian Dollar (EURCAD.p) | Pro | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-stan/EURCAD.p/",
+  "published": "2026-09-27T02:13:50+00:00",
+  "symbols": [
+   "EURCAD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790170960",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "7b74b7debecb31cf5320",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Euro vs Swiss Franc (EURCHF.p) | Pro | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-stan/EURCHF.p/",
+  "published": "2026-09-27T02:13:52+00:00",
+  "symbols": [
+   "EURCHF"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790170960",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "f0a3e2dbf7d0b257fb96",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Euro vs Great Britain Pound (EURGBP.p) | Pro | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-stan/EURGBP.p/",
+  "published": "2026-09-27T02:13:54+00:00",
+  "symbols": [
+   "EURGBP",
+   "GBPUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790170960",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "f3cc27a19025b9cd0ccb",
+  "host": "th.roboforex.com",
+  "claims": [
+   {
+    "claim": "00001 \u0e40\u0e27\u0e25\u0e32\u0e02\u0e2d\u0e07\u0e0a\u0e48\u0e27\u0e07\u0e0b\u0e37\u0e49\u0e2d\u0e02\u0e32\u0e22 00:05 - 23:55 Term currency GBP 3-days swap Wednesday \u0e01\u0e32\u0e23\u0e08\u0e48\u0e32\u0e22 26.",
+    "lang": "th",
+    "quantities": [
+     "swap"
+    ],
+    "direction": [
+     "\u0e0b\u0e37\u0e49\u0e2d",
+     "\u0e02\u0e32\u0e22"
+    ],
+    "horizon": [
+     "days"
+    ],
+    "instruments": {
+     "analogues": [
+      "GBPUSD",
+      "EURGBP"
+     ],
+     "mentioned": [
+      "pound",
+      "eurgbp"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "af8e76ec44c0"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Euro vs Japanese Yen (EURJPY.p) | Pro | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-stan/EURJPY.p/",
+  "published": "2026-09-27T02:13:56+00:00",
+  "symbols": [
+   "EURJPY",
+   "USDJPY"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790170960",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "c0681c124fde775949e0",
+  "host": "th.roboforex.com",
+  "claims": [
+   {
+    "claim": "001 \u0e40\u0e27\u0e25\u0e32\u0e02\u0e2d\u0e07\u0e0a\u0e48\u0e27\u0e07\u0e0b\u0e37\u0e49\u0e2d\u0e02\u0e32\u0e22 00:05 - 23:55 Term currency JPY 3-days swap Wednesday \u0e01\u0e32\u0e23\u0e08\u0e48\u0e32\u0e22 14.",
+    "lang": "th",
+    "quantities": [
+     "swap"
+    ],
+    "direction": [
+     "\u0e0b\u0e37\u0e49\u0e2d",
+     "\u0e02\u0e32\u0e22"
+    ],
+    "horizon": [
+     "days"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDJPY",
+      "EURJPY"
+     ],
+     "mentioned": [
+      "yen",
+      "eurjpy"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "66c5801231df"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Euro vs New Zealand Dollar (EURNZD.p) | Pro | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-stan/EURNZD.p/",
+  "published": "2026-09-27T02:13:58+00:00",
+  "symbols": [
+   "EURNZD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790170960",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "b9413c89e63147bb4f2d",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Euro vs US Dollar (EURUSD.p) | Pro | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-stan/EURUSD.p/",
+  "published": "2026-09-27T02:14:00+00:00",
+  "symbols": [
+   "EURUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790170960",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "d52de63a419b3afe95a5",
+  "host": "th.roboforex.com",
+  "claims": [
+   {
+    "claim": "00001 \u0e40\u0e27\u0e25\u0e32\u0e02\u0e2d\u0e07\u0e0a\u0e48\u0e27\u0e07\u0e0b\u0e37\u0e49\u0e2d\u0e02\u0e32\u0e22 00:05 - 23:55 Term currency USD 3-days swap Wednesday \u0e01\u0e32\u0e23\u0e08\u0e48\u0e32\u0e22 19.",
+    "lang": "th",
+    "quantities": [
+     "swap"
+    ],
+    "direction": [
+     "\u0e0b\u0e37\u0e49\u0e2d",
+     "\u0e02\u0e32\u0e22"
+    ],
+    "horizon": [
+     "days"
+    ],
+    "instruments": {
+     "analogues": [
+      "EURUSD"
+     ],
+     "mentioned": [
+      "eurusd"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "15ad27297d9f"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Statistical Notice 2026/08 - Changes to the criteria for monthly form BT reporting | Bank of England \u2013 the UK&#39;s central bank",
+  "url": "https://www.bankofengland.co.uk/statistics/notice/2026/statistical-notice-2026-08",
+  "published": "2026-09-27T02:14:01+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "2343b3f3f67ac71a698d",
+  "host": "www.bankofengland.co.uk",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Minutes of the Securities Lending Committee meeting \u2013 March 2026 | Bank of England \u2013 the UK&#39;s central bank",
+  "url": "https://www.bankofengland.co.uk/minutes/2026/march/minutes-of-the-securities-lending-committee-meeting-march-2026",
+  "published": "2026-09-27T02:14:03+00:00",
+  "symbols": [
+   "XAUUSD",
+   "GBPUSD"
+  ],
+  "timeframes": [
+   "INTRADAY"
+  ],
+  "patterns": [
+   "orderflow",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "4ab95bb4cea0e2201803",
+  "host": "www.bankofengland.co.uk",
+  "claims": [
+   {
+    "claim": "Banks continue to explore use-cases in tokenised assets for intraday liquidity, instant settlement, margin call coverage and collateral mobility.",
+    "lang": "en",
+    "quantities": [
+     "liquidity"
+    ],
+    "direction": [
+     "continue"
+    ],
+    "horizon": [
+     "intraday"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "GBPUSD"
+     ],
+     "mentioned": [
+      "gold",
+      "pound"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDNOK"
+     ],
+     "channels": [
+      "bank of england: policy: BoE -> GBP",
+      "norges bank: policy/flow: Norges Bank and the oil fund -> NOK"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "32b80fce581e"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Announcement of the publication of the Governor&#39;s interview transcript | Bank of England \u2013 the UK&#39;s central bank",
+  "url": "https://www.bankofengland.co.uk/news/2026/september/statement-announcing-governors-interview",
+  "published": "2026-09-27T02:14:05+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a7149346206fe1933028",
+  "host": "www.bankofengland.co.uk",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Foreign Currency Reserves 2026 \u2013 Market Notice 22 September 2026 | Bank of England \u2013 the UK&#39;s central bank",
+  "url": "https://www.bankofengland.co.uk/markets/market-notices/2026/september/foreign-currency-reserves-2026-market-notice-22-september-2026",
+  "published": "2026-09-27T02:14:07+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "0d5a7a38fd5b8f712baa",
+  "host": "www.bankofengland.co.uk",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Bank of England announces new office space in Leeds | Bank of England \u2013 the UK&#39;s central bank",
+  "url": "https://www.bankofengland.co.uk/news/2026/september/bank-of-england-announces-new-office-space-in-leeds",
+  "published": "2026-09-27T02:14:09+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f793dd0b96bf0c48468b",
+  "host": "www.bankofengland.co.uk",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Foreign Currency Reserves 2026 \u2013 Market Notice 21 September 2026 | Bank of England \u2013 the UK&#39;s central bank",
+  "url": "https://www.bankofengland.co.uk/markets/market-notices/2026/september/foreign-currency-reserves-2026-market-notice-21-september-2026",
+  "published": "2026-09-27T02:14:11+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a8b988f9b9a4d2da5f7c",
+  "host": "www.bankofengland.co.uk",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Minutes of the Transaction and Post-trade Reporting Harmonisation Taskforce - July 2026 | Bank of England \u2013 the UK&#39;s central bank",
+  "url": "https://www.bankofengland.co.uk/minutes/2026/july/minutes-of-the-transaction-and-post-trade-reporting-harmonisation-taskforce-july-2026",
+  "published": "2026-09-27T02:14:13+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "61492857e6d92408fcbf",
+  "host": "www.bankofengland.co.uk",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Our retail payments strategy",
+  "url": "https://www.ecb.europa.eu/paym/retail/retail_payments_strategy/html/index.da.html",
+  "published": "2026-09-27T02:14:13+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "basis",
+   "flow",
+   "inventory",
+   "orderflow",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.95,
+  "lang": "da",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.da.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "f68addd2292ba7f96f39",
+  "host": "www.ecb.europa.eu",
+  "claims": [
+   {
+    "claim": "The Eurosystem is open to any market initiative that is working to meet five key objectives: pan-European reach and customer experience, convenience and low cost, safety and efficiency, European brand and governance, and global acceptance (in the long run).",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "long"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD",
+      "USDMXN"
+     ],
+     "channels": [
+      "ecb: policy: ECB -> EUR",
+      "remittances: policy/flow: Banxico, remittances -> MXN"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "5686469fb4d4"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Our retail payments strategy",
+  "url": "https://www.ecb.europa.eu/paym/retail/retail_payments_strategy/html/index.de.html",
+  "published": "2026-09-27T02:14:16+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "flow",
+   "gap",
+   "inventory",
+   "orderflow",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.95,
+  "lang": "de",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.de.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "d785ef64ed21c9805318",
+  "host": "www.ecb.europa.eu",
+  "claims": [
+   {
+    "claim": "The Eurosystem is open to any market initiative that is working to meet five key objectives: pan-European reach and customer experience, convenience and low cost, safety and efficiency, European brand and governance, and global acceptance (in the long run).",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "long"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD",
+      "USDMXN"
+     ],
+     "channels": [
+      "ezb: policy: ECB -> EUR",
+      "remittances: policy/flow: Banxico, remittances -> MXN"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "5686469fb4d4"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Our retail payments strategy",
+  "url": "https://www.ecb.europa.eu/paym/retail/retail_payments_strategy/html/index.el.html",
+  "published": "2026-09-27T02:14:18+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "flow",
+   "orderflow",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.95,
+  "lang": "el",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.el.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "6e5ca5e933422a5ac170",
+  "host": "www.ecb.europa.eu",
+  "claims": [
+   {
+    "claim": "The Eurosystem is open to any market initiative that is working to meet five key objectives: pan-European reach and customer experience, convenience and low cost, safety and efficiency, European brand and governance, and global acceptance (in the long run).",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "long"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD",
+      "USDMXN"
+     ],
+     "channels": [
+      "ecb: policy: ECB -> EUR",
+      "remittances: policy/flow: Banxico, remittances -> MXN"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "5686469fb4d4"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Our retail payments strategy",
+  "url": "https://www.ecb.europa.eu/paym/retail/retail_payments_strategy/html/index.es.html",
+  "published": "2026-09-27T02:14:19+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "basis",
+   "flow",
+   "gap",
+   "inventory",
+   "orderflow",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.95,
+  "lang": "es",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.es.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "7ac41d6730715b5a3b58",
+  "host": "www.ecb.europa.eu",
+  "claims": [
+   {
+    "claim": "The Eurosystem is open to any market initiative that is working to meet five key objectives: pan-European reach and customer experience, convenience and low cost, safety and efficiency, European brand and governance, and global acceptance (in the long run).",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "long"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD",
+      "USDMXN"
+     ],
+     "channels": [
+      "bce: policy: ECB -> EUR",
+      "remittances: policy/flow: Banxico, remittances -> MXN"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "5686469fb4d4"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Our retail payments strategy",
+  "url": "https://www.ecb.europa.eu/paym/retail/retail_payments_strategy/html/index.et.html",
+  "published": "2026-09-27T02:14:21+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "basis",
+   "flow",
+   "orderflow",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.95,
+  "lang": "et",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.et.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "89d1aa516e7c41cedc91",
+  "host": "www.ecb.europa.eu",
+  "claims": [
+   {
+    "claim": "The Eurosystem is open to any market initiative that is working to meet five key objectives: pan-European reach and customer experience, convenience and low cost, safety and efficiency, European brand and governance, and global acceptance (in the long run).",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "long"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [
+      "kes"
+     ],
+     "transfer_only": [
+      "kes->fx (KES not quoted)"
+     ],
+     "indirect": [
+      "EURUSD",
+      "USDMXN"
+     ],
+     "channels": [
+      "ecb: policy: ECB -> EUR",
+      "remittances: policy/flow: Banxico, remittances -> MXN"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "5686469fb4d4"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Our retail payments strategy",
+  "url": "https://www.ecb.europa.eu/paym/retail/retail_payments_strategy/html/index.fi.html",
+  "published": "2026-09-27T02:14:23+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "basis",
+   "flow",
+   "inventory",
+   "orderflow",
+   "policy",
+   "positioning",
+   "seasonality"
+  ],
+  "confidence": 0.95,
+  "lang": "fi",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.fi.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "ef7086c7e537a0dc8f2b",
+  "host": "www.ecb.europa.eu",
+  "claims": [
+   {
+    "claim": "The Eurosystem is open to any market initiative that is working to meet five key objectives: pan-European reach and customer experience, convenience and low cost, safety and efficiency, European brand and governance, and global acceptance (in the long run).",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "long"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [
+      "tase"
+     ],
+     "transfer_only": [
+      "tase->indices (TASE)"
+     ],
+     "indirect": [
+      "EURUSD",
+      "USDMXN"
+     ],
+     "channels": [
+      "ecb: policy: ECB -> EUR",
+      "remittances: policy/flow: Banxico, remittances -> MXN"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "5686469fb4d4"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Our retail payments strategy",
+  "url": "https://www.ecb.europa.eu/paym/retail/retail_payments_strategy/html/index.fr.html",
+  "published": "2026-09-27T02:14:26+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "flow",
+   "gap",
+   "inventory",
+   "orderflow",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.95,
+  "lang": "fr",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.fr.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "7d055eb439bd2405357b",
+  "host": "www.ecb.europa.eu",
+  "claims": [
+   {
+    "claim": "The Eurosystem is open to any market initiative that is working to meet five key objectives: pan-European reach and customer experience, convenience and low cost, safety and efficiency, European brand and governance, and global acceptance (in the long run).",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "long"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD",
+      "USDMXN"
+     ],
+     "channels": [
+      "bce: policy: ECB -> EUR",
+      "remittances: policy/flow: Banxico, remittances -> MXN"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "5686469fb4d4"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Industry Filings: Designated Contract Markets (DCM) Filing | CFTC",
+  "url": "https://www.cftc.gov/IndustryOversight/IndustryFilings/TradingOrganizations/76",
+  "published": "2026-09-27T02:14:26+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "4f967045d44453ffd07a",
+  "host": "www.cftc.gov",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Industry Filings: Designated Contract Markets (DCM) Filing | CFTC",
+  "url": "https://www.cftc.gov/IndustryOversight/IndustryFilings/TradingOrganizations/43304",
+  "published": "2026-09-27T02:14:28+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "16444ac6d2038755af0a",
+  "host": "www.cftc.gov",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Industry Filings: Designated Contract Markets (DCM) Filing | CFTC",
+  "url": "https://www.cftc.gov/IndustryOversight/IndustryFilings/TradingOrganizations/42993",
+  "published": "2026-09-27T02:14:30+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "75528dcd53f4d00fc282",
+  "host": "www.cftc.gov",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Industry Filings: Designated Contract Markets (DCM) Filing | CFTC",
+  "url": "https://www.cftc.gov/IndustryOversight/IndustryFilings/TradingOrganizations/81",
+  "published": "2026-09-27T02:14:32+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "0b44b1d592d209ebe624",
+  "host": "www.cftc.gov",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Industry Filings: Designated Contract Markets (DCM) Filing | CFTC",
+  "url": "https://www.cftc.gov/IndustryOversight/IndustryFilings/TradingOrganizations/35346",
+  "published": "2026-09-27T02:14:34+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "35a65a1bf281b4f5d619",
+  "host": "www.cftc.gov",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Industry Filings: Designated Contract Markets (DCM) Filing | CFTC",
+  "url": "https://www.cftc.gov/IndustryOversight/IndustryFilings/TradingOrganizations/40643",
+  "published": "2026-09-27T02:14:36+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c5f56a8ebcbce9f9f72c",
+  "host": "www.cftc.gov",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Industry Filings: Designated Contract Markets (DCM) Filing | CFTC",
+  "url": "https://www.cftc.gov/IndustryOversight/IndustryFilings/TradingOrganizations/23038",
+  "published": "2026-09-27T02:14:38+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "27450bed5bdffc168df2",
+  "host": "www.cftc.gov",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Forex Tester Blog - Your Guide to Mastering Market Simulations",
+  "url": "https://forextester.com/blog/th/",
+  "published": "2026-09-27T02:14:39+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "th",
+  "endpoints": [
+   "https://desktop.forextester.com/download?utm_source=Blog_FT_site&amp;utm_medium=referral&amp;utm_campaign=Blog_FooterDownloadTH&amp;gc=Blog_FooterDownloadTH"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "0694c0a00c302dac55ae",
+  "host": "forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Forex Tester Blog - Your Guide to Mastering Market Simulations",
+  "url": "https://forextester.com/blog/vi/",
+  "published": "2026-09-27T02:14:41+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "vi",
+  "endpoints": [
+   "https://desktop.forextester.com/download?utm_source=Blog_FT_site&amp;utm_medium=referral&amp;utm_campaign=Blog_FooterDownloadVI&amp;gc=Blog_FooterDownloadVI"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "c7f3aa427983bf8f3857",
+  "host": "forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Forex Tester Blog - Your Guide to Mastering Market Simulations",
+  "url": "https://forextester.com/blog/pl/",
+  "published": "2026-09-27T02:14:43+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "pl-PL",
+  "endpoints": [
+   "https://desktop.forextester.com/download?utm_source=Blog_FT_site&amp;utm_medium=referral&amp;utm_campaign=Blog_FooterDownloadPL&amp;gc=Blog_FooterDownloadPL"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "4af86237669a480ffe43",
+  "host": "forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Forex Tester Blog - Your Guide to Mastering Market Simulations",
+  "url": "https://forextester.com/blog/tr/",
+  "published": "2026-09-27T02:14:45+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "tr-TR",
+  "endpoints": [
+   "https://desktop.forextester.com/download?utm_source=Blog_FT_site&amp;utm_medium=referral&amp;utm_campaign=Blog_FooterDownloadTR&amp;gc=Blog_FooterDownloadTR"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "88ad185af99724fcf125",
+  "host": "forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Forex Tester Blog - Your Guide to Mastering Market Simulations",
+  "url": "https://forextester.com/blog/nl/",
+  "published": "2026-09-27T02:14:47+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "nl-NL",
+  "endpoints": [
+   "https://desktop.forextester.com/download?utm_source=Blog_FT_site&amp;utm_medium=referral&amp;utm_campaign=Blog_FooterDownloadNL&amp;gc=Blog_FooterDownloadNL"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "f717cf9bffa215df8030",
+  "host": "forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Forex Tester Blog - Your Guide to Mastering Market Simulations",
+  "url": "https://forextester.com/blog/ro/",
+  "published": "2026-09-27T02:14:49+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "ro-RO",
+  "endpoints": [
+   "https://desktop.forextester.com/download?utm_source=Blog_FT_site&amp;utm_medium=referral&amp;utm_campaign=Blog_FooterDownloadRO&amp;gc=Blog_FooterDownloadRO"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "47e6006468649df0a24d",
+  "host": "forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Forex Tester Blog - Your Guide to Mastering Market Simulations",
+  "url": "https://forextester.com/blog/kr/",
+  "published": "2026-09-27T02:14:51+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "ko-KR",
+  "endpoints": [
+   "https://desktop.forextester.com/download?utm_source=Blog_FT_site&amp;utm_medium=referral&amp;utm_campaign=Blog_FooterDownloadKR&amp;gc=Blog_FooterDownloadKR"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "c5775d1ae1f6419c2e20",
+  "host": "forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u5168\u7403\u7ecf\u6d4e\u65e5\u5386_\u4e1c\u65b9\u8d22\u5bcc\u7f51",
+  "url": "http://forex.eastmoney.com/FC.html",
+  "published": "2026-09-27T02:14:54+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "inventory",
+   "momentum",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "019a24a32d6c83318b2c",
+  "host": "forex.eastmoney.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u5916\u6c47\u5bfc\u8bfb _ \u4e1c\u65b9\u8d22\u5bcc\u7f51",
+  "url": "https://forex.eastmoney.com/a/cwhdd.html",
+  "published": "2026-09-27T02:14:55+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "breakout",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c98aca2f134999b62f10",
+  "host": "forex.eastmoney.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u5916\u6c47\u5bfc\u8bfb _ \u4e1c\u65b9\u8d22\u5bcc\u7f51",
+  "url": "http://forex.eastmoney.com/a/cwhdd.html",
+  "published": "2026-09-27T02:14:58+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "breakout",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "2c9aae2546dadd70cb62",
+  "host": "forex.eastmoney.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u4e1c\u65b9\u8d22\u5bcc\u7f51,\u5916\u6c47\u9891\u9053,\u5916\u6c47",
+  "url": "https://forex.eastmoney.com/USD.html",
+  "published": "2026-09-27T02:14:59+00:00",
+  "symbols": [
+   "USDJPY",
+   "BTCUSD",
+   "EURUSD",
+   "USDCNH"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "breakout",
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b29218412f7100bf49a2",
+  "host": "forex.eastmoney.com",
+  "claims": [
+   {
+    "claim": "69 \u7f8e\u5143\u5151\u65e5\u5143\u65e5\u5185\u8dcc1.",
+    "lang": "zh",
+    "quantities": [
+     "\u65e5\u5185",
+     "\u7f8e\u5143",
+     "\u65e5\u5143"
+    ],
+    "direction": [
+     "\u8dcc"
+    ],
+    "horizon": [
+     "\u65e5\u5185"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDJPY"
+     ],
+     "mentioned": [
+      "\u65e5\u5143"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "e0b649503b13"
+   },
+   {
+    "claim": "7852\uff0c\u4e0b\u8c0311\u70b9 \u6bd4\u7279\u5e01\u7a81\u783475000\u7f8e\u5143\uff0c\u65e5\u5185\u6da8\u8d853%\uff0c\u521b5\u670828\u65e5\u4ee5\u6765.",
+    "lang": "zh",
+    "quantities": [
+     "\u7a81\u7834",
+     "\u65e5\u5185",
+     "\u7f8e\u5143"
+    ],
+    "direction": [
+     "\u6da8"
+    ],
+    "horizon": [
+     "\u65e5\u5185",
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [
+      "BTCUSD"
+     ],
+     "mentioned": [
+      "\u6bd4\u7279\u5e01"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "fc26fd35e196"
+   },
+   {
+    "claim": "3% \u4eba\u6c11\u5e01\u5151\u7f8e\u5143\u4e2d\u95f4\u4ef7\u8c03\u53475\u4e2a\u57fa\u70b9 \u6b27\u5143\u5151\u7f8e\u5143\u65e5\u5185\u6da8\u5e45\u8fbe0.",
+    "lang": "zh",
+    "quantities": [
+     "\u65e5\u5185",
+     "\u7f8e\u5143",
+     "\u6b27\u5143"
+    ],
+    "direction": [
+     "\u6da8"
+    ],
+    "horizon": [
+     "\u65e5\u5185"
+    ],
+    "instruments": {
+     "analogues": [
+      "EURUSD",
+      "USDCNH"
+     ],
+     "mentioned": [
+      "\u6b27\u5143",
+      "\u4eba\u6c11\u5e01"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [
+      "\u4e2d\u95f4\u4ef7: policy: PBoC fixing -> CNH"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "b3fd710f96cf"
+   }
+  ],
+  "n_claims": 3
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u4e1c\u65b9\u8d22\u5bcc\u7f51,\u5916\u6c47\u9891\u9053,\u5916\u6c47",
+  "url": "https://forex.eastmoney.com/CNY.html",
+  "published": "2026-09-27T02:15:01+00:00",
+  "symbols": [
+   "USDCNH"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "night_session",
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "132a86911a4096dba8af",
+  "host": "forex.eastmoney.com",
+  "claims": [
+   {
+    "claim": "7817\uff0c\u4e0b\u8c039\u70b9 \u4eba\u6c11\u5e01\u5151\u7f8e\u5143\u4e2d\u95f4\u4ef7\u8c03\u53475\u4e2a\u57fa\u70b9 \u5728\u5cb8\u4eba\u6c11\u5e01\u5151\u7f8e\u5143\u6536\u76d8 \u8f83\u4e0a\u4e00\u4ea4\u6613\u65e5\u8dcc15\u70b9 \u4eba\u6c11\u5e01\u5bf9\u7f8e\u5143\u6c47\u7387\u521b\u4e09\u5e74\u534a\u65b0\u9ad8 \u63a5\u4e0b\u6765\u600e\u4e48\u8d70\uff1f",
+    "lang": "zh",
+    "quantities": [
+     "\u6536\u76d8",
+     "\u7f8e\u5143",
+     "\u6c47\u7387"
+    ],
+    "direction": [
+     "\u8dcc"
+    ],
+    "horizon": [
+     "\u4ea4\u6613\u65e5"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDCNH"
+     ],
+     "mentioned": [
+      "\u4eba\u6c11\u5e01"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [
+      "\u4e2d\u95f4\u4ef7: policy: PBoC fixing -> CNH"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "689d485a9162"
+   },
+   {
+    "claim": "\u79bb\u5cb8\u4eba\u6c11\u5e01\u8f83\u5468\u56db\u7ebd\u7ea6\u5c3e\u76d8\u6da847\u70b9 \u4eba\u6c11\u5e01\u5151\u7f8e\u5143\u4e2d\u95f4\u4ef7\u62a56.",
+    "lang": "zh",
+    "quantities": [
+     "\u7f8e\u5143"
+    ],
+    "direction": [
+     "\u6da8"
+    ],
+    "horizon": [
+     "\u5c3e\u76d8",
+     "\u5468"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDCNH"
+     ],
+     "mentioned": [
+      "\u79bb\u5cb8\u4eba\u6c11\u5e01"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [
+      "\u4e2d\u95f4\u4ef7: policy: PBoC fixing -> CNH"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "240b6e0e083c"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u4e1c\u65b9\u8d22\u5bcc\u7f51,\u5916\u6c47\u9891\u9053,\u5916\u6c47",
+  "url": "https://forex.eastmoney.com/EUR.html",
+  "published": "2026-09-27T02:15:03+00:00",
+  "symbols": [
+   "HK50",
+   "US500",
+   "EURUSD",
+   "GBPUSD",
+   "USDJPY",
+   "AUDUSD",
+   "USDCAD",
+   "USDCHF",
+   "NZDUSD",
+   "USDCNH",
+   "EURJPY"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "dd01af5548fadbd1d21f",
+  "host": "forex.eastmoney.com",
+  "claims": [
+   {
+    "claim": "\ufeff \u4e1c\u65b9\u8d22\u5bcc\u7f51,\u5916\u6c47\u9891\u9053,\u5916\u6c47 \u8d22\u7ecf \u7126\u70b9 \u80a1\u7968 \u65b0\u80a1 \u671f\u6307 \u671f\u6743 \u884c\u60c5 \u6570\u636e \u5168\u7403 \u7f8e\u80a1 \u6e2f\u80a1 \u671f\u8d27 \u5916\u6c47 \u94f6\u884c \u57fa\u91d1 \u7406\u8d22 \u503a\u5238 \u76f4\u64ad \u80a1\u5427 \u57fa\u91d1\u5427 \u535a\u5ba2 \u8d22\u5bcc\u53f7 \u641c\u7d22 \u884c\u60c5\u4e2d\u5fc3 \u6570\u636e\u4e2d\u5fc3 \u624b\u673a\u7ad9 \u5ba2\u6237\u7aef \u5916\u6c47\u9891\u9053 \u5916\u6c47\u8981\u95fb \u5916\u6c47\u8bc4\u8bba \u592e\u884c\u52a8\u6001 \u5916\u6c47\u884c\u60c5 \u4eba\u6c11\u5e01\u4e2d\u95f4\u4ef7 \u5916\u6c47\u5427 \u5e01\u79cd \u7f8e\u5143 \u4eba\u6c11\u5e01 \u6b27\u5143 \u82f1\u9551 \u65e5\u5143 \u6fb3\u5143 \u52a0\u5143 \u745e\u90ce \u7ebd\u5143 \u6570\u636e \u4e3b\u8981\u56fd\u5bb6\u5229\u7387 \u5168\u7403\u7ecf\u6d4e\u6570\u636e \u5168\u7403\u7ecf\u6d4e\u65e5\u5386 \u5168\u7403\u65f6\u95f4\uff1a \u5317\u4eac 08\u670814\u65e5 09:48:35 \u4f26\u6566 08\u670814\u65e5 02:48:35 \u7ebd\u7ea6 08\u670813\u65e5 21:48:35 \u6089\u5c3c 08\u670814\u65e5 11:48:35 \u4e1c\u65b9\u8d22\u5bcc\u7f51 > \u5916\u6c47\u9891\u9053 > \u6b27\u5143\u4e13\u533a \u6b27\u5143\u8d44\u8baf \u66f4\u591a \u6b27\u5143\u5151\u7f8e\u5143\u65e5\u5185\u6da8\u5e45\u8fbe0.",
+    "lang": "zh",
+    "quantities": [
+     "\u5229\u7387",
+     "\u65e5\u5185",
+     "\u5916\u6c47",
+     "\u7f8e\u5143"
+    ],
+    "direction": [
+     "\u6da8"
+    ],
+    "horizon": [
+     "\u65e5\u5185",
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [
+      "HK50",
+      "US500",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "AUDUSD",
+      "USDCAD",
+      "USDCHF",
+      "NZDUSD",
+      "USDCNH"
+     ],
+     "mentioned": [
+      "\u6e2f\u80a1",
+      "\u7f8e\u80a1",
+      "\u6b27\u5143",
+      "\u82f1\u9551",
+      "\u65e5\u5143",
+      "\u6fb3\u5143",
+      "\u52a0\u5143",
+      "\u745e\u90ce",
+      "\u7ebd\u5143",
+      "\u4eba\u6c11\u5e01"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [
+      "\u4e2d\u95f4\u4ef7: policy: PBoC fixing -> CNH"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "b1a8f1d99a6e"
+   },
+   {
+    "claim": "\u7f8e\u5143\u5151\u591a\u6570G10\u8d27\u5e01\u8d70\u5f3a\uff0c\u6b27\u5143\u8dcc\u81f3\u4e00\u4e2a\u6708\u4f4e\u70b9 \u6b27\u76df\u5b98\u5458\u8b66\u544a\u6b27\u76df\u7ecf\u6d4e\u6216\u5c06\u9762\u4e34\u201c\u6ede\u80c0\u201d \u6b27\u5143\u5151\u7f8e\u5143\u8dcc\u81f31.",
+    "lang": "zh",
+    "quantities": [
+     "\u7f8e\u5143",
+     "\u6b27\u5143"
+    ],
+    "direction": [
+     "\u8d70\u5f3a",
+     "\u8dcc"
+    ],
+    "horizon": [
+     "\u4e00\u4e2a\u6708",
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [
+      "EURUSD"
+     ],
+     "mentioned": [
+      "\u6b27\u5143"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "160eb2fa281a"
+   },
+   {
+    "claim": "1500 \u5237\u65b08\u6708\u521d\u4ee5\u6765\u65b0\u4f4e \u6b27\u5143\u5151\u7f8e\u5143\u65e5\u5185\u6da8\u5e45\u6269\u5927\u81f30.",
+    "lang": "zh",
+    "quantities": [
+     "\u65e5\u5185",
+     "\u7f8e\u5143",
+     "\u6b27\u5143"
+    ],
+    "direction": [
+     "\u6269\u5927",
+     "\u6da8"
+    ],
+    "horizon": [
+     "\u65e5\u5185",
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [
+      "EURUSD"
+     ],
+     "mentioned": [
+      "\u6b27\u5143"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "b7d32d77a381"
+   },
+   {
+    "claim": "18 \u4e3a7\u6708\u521d\u4ee5\u6765\u9996\u6b21 \u6b27\u5143\u5151\u65e5\u5143EUR/JPY\u6da8\u81f3173.",
+    "lang": "zh",
+    "quantities": [
+     "\u6b27\u5143",
+     "\u65e5\u5143"
+    ],
+    "direction": [
+     "\u6da8"
+    ],
+    "horizon": [
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [
+      "EURUSD",
+      "USDJPY",
+      "EURJPY"
+     ],
+     "mentioned": [
+      "\u6b27\u5143",
+      "\u65e5\u5143",
+      "eur/jpy"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "18d9efd2bd74"
+   },
+   {
+    "claim": "9 \u521b\u4e0b\u903e\u4e00\u5e74\u65b0\u9ad8 \u6b27\u5143\u5151\u7f8e\u5143\u65e5\u5185\u8dcc\u5e45\u8fbe0.",
+    "lang": "zh",
+    "quantities": [
+     "\u65e5\u5185",
+     "\u7f8e\u5143",
+     "\u6b27\u5143"
+    ],
+    "direction": [
+     "\u8dcc"
+    ],
+    "horizon": [
+     "\u65e5\u5185"
+    ],
+    "instruments": {
+     "analogues": [
+      "EURUSD"
+     ],
+     "mentioned": [
+      "\u6b27\u5143"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "d9d5558e22cf"
+   },
+   {
+    "claim": "1653 \u6b27\u5143\u5151\u7f8e\u5143\u521b\u4e00\u5468\u591a\u4ee5\u6765\u6700\u5927\u8dcc\u5e45 \u7f8e\u5143\u5f3a\u52bf\u62b5\u6d88\u4e86.",
+    "lang": "zh",
+    "quantities": [
+     "\u7f8e\u5143",
+     "\u6b27\u5143"
+    ],
+    "direction": [
+     "\u8dcc"
+    ],
+    "horizon": [
+     "\u4e00\u5468",
+     "\u5468"
+    ],
+    "instruments": {
+     "analogues": [
+      "EURUSD"
+     ],
+     "mentioned": [
+      "\u6b27\u5143"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "9a15a634bded"
+   },
+   {
+    "claim": "24 \u6b27\u5143\u5151\u7f8e\u5143\u65e5\u5185\u6da8\u8d850.",
+    "lang": "zh",
+    "quantities": [
+     "\u65e5\u5185",
+     "\u7f8e\u5143",
+     "\u6b27\u5143"
+    ],
+    "direction": [
+     "\u6da8"
+    ],
+    "horizon": [
+     "\u65e5\u5185"
+    ],
+    "instruments": {
+     "analogues": [
+      "EURUSD"
+     ],
+     "mentioned": [
+      "\u6b27\u5143"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "a6635f2959d8"
+   }
+  ],
+  "n_claims": 7
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u4e1c\u65b9\u8d22\u5bcc\u7f51,\u5916\u6c47\u9891\u9053,\u5916\u6c47",
+  "url": "https://forex.eastmoney.com/GBP.html",
+  "published": "2026-09-27T02:15:05+00:00",
+  "symbols": [
+   "GBPUSD",
+   "EURUSD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "breakout",
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "9c5e18a7ddaac47f2046",
+  "host": "forex.eastmoney.com",
+  "claims": [
+   {
+    "claim": "\u82f1\u9551\u5151\u7f8e\u5143\u5728\u82f1\u56fd\u592e\u884c\u516c\u5e03\u51b3\u5b9a\u540e\u7ef4\u6301\u6da8\u52bf \u3010\u73af\u7403\u8d22\u7ecf\u3011\u82f1\u56fd3\u6708\u5e73\u5747\u623f\u4ef7\u73af\u6bd4\u4e0b\u8dcc0.",
+    "lang": "zh",
+    "quantities": [
+     "\u7f8e\u5143",
+     "\u82f1\u9551",
+     "\u592e\u884c"
+    ],
+    "direction": [
+     "\u4e0b\u8dcc",
+     "\u6da8"
+    ],
+    "horizon": [
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [
+      "GBPUSD"
+     ],
+     "mentioned": [
+      "\u82f1\u9551"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [
+      "\u82f1\u56fd\u592e\u884c: policy: BoE -> GBP"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "1207d8dd8ea3"
+   },
+   {
+    "claim": "3394 \u82f1\u9551/\u7f8e\u5143\u521b\u4e0b4\u6708\u4efd\u4ee5\u6765\u6700\u5927\u8dcc\u5e45 \u8dcc1.",
+    "lang": "zh",
+    "quantities": [
+     "\u7f8e\u5143",
+     "\u82f1\u9551"
+    ],
+    "direction": [
+     "\u8dcc"
+    ],
+    "horizon": [
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [
+      "GBPUSD"
+     ],
+     "mentioned": [
+      "\u82f1\u9551"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "4059dba080ed"
+   },
+   {
+    "claim": "\u82f1\u9551\u5151\u7f8e\u5143\u65e5\u5185\u8dcc\u8d851% \u82f1\u9551\u5151\u7f8e\u5143GBP/USD\u7ad9\u4e0a1.",
+    "lang": "zh",
+    "quantities": [
+     "\u65e5\u5185",
+     "\u7f8e\u5143",
+     "\u82f1\u9551"
+    ],
+    "direction": [
+     "\u8dcc"
+    ],
+    "horizon": [
+     "\u65e5\u5185"
+    ],
+    "instruments": {
+     "analogues": [
+      "GBPUSD"
+     ],
+     "mentioned": [
+      "\u82f1\u9551"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "683a9f635600"
+   },
+   {
+    "claim": "36 \u4e3a2022\u5e742\u6708\u4ee5\u6765\u9996\u6b21 \u6b27\u5143\u5151\u82f1\u9551\u8dcc\u81f34\u67083\u65e5\u4ee5\u6765\u6700\u4f4e \u82f1\u9551\u5151\u7f8e\u5143\u4e0a\u6da80.",
+    "lang": "zh",
+    "quantities": [
+     "\u7f8e\u5143",
+     "\u6b27\u5143",
+     "\u82f1\u9551"
+    ],
+    "direction": [
+     "\u4e0a\u6da8",
+     "\u6da8"
+    ],
+    "horizon": [
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [
+      "EURUSD",
+      "GBPUSD"
+     ],
+     "mentioned": [
+      "\u6b27\u5143",
+      "\u82f1\u9551"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "e6155240a3f4"
+   },
+   {
+    "claim": "54% \u6b27\u5143\u5151\u7f8e\u5143\u65e5\u5185\u8dcc1.",
+    "lang": "zh",
+    "quantities": [
+     "\u65e5\u5185",
+     "\u7f8e\u5143",
+     "\u6b27\u5143"
+    ],
+    "direction": [
+     "\u8dcc"
+    ],
+    "horizon": [
+     "\u65e5\u5185"
+    ],
+    "instruments": {
+     "analogues": [
+      "EURUSD"
+     ],
+     "mentioned": [
+      "\u6b27\u5143"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "0634f28279db"
+   }
+  ],
+  "n_claims": 5
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Historical screener &#x2013; back test with point in time data | Quant Investing",
+  "url": "http://www.quant-investing.com/glossary/historical-screener-back-test-with-point-in-time-data/",
+  "published": "2026-09-27T02:15:06+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "60b1e02128c4bc3b300c",
+  "host": "www.quant-investing.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Children out of school, primary, male | Data",
+  "url": "https://data.worldbank.org/indicator/SE.PRM.UNER.MA",
+  "published": "2026-09-27T02:15:10+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [
+   "https://api.uis.unesco.org/api/public/documentation/",
+   "https://api.worldbank.org/v2/en/indicator/SE.PRM.UNER.MA?downloadformat=csv"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "ffadadeca061cf633d42",
+  "host": "data.worldbank.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Government expenditure on education, total (% of government expenditure) | Data",
+  "url": "https://data.worldbank.org/indicator/SE.XPD.TOTL.GB.ZS",
+  "published": "2026-09-27T02:15:14+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [
+   "https://api.uis.unesco.org/api/public/documentation/",
+   "https://api.worldbank.org/v2/en/indicator/SE.XPD.TOTL.GB.ZS?downloadformat=csv"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "451b62026d7d1d160c1f",
+  "host": "data.worldbank.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Government expenditure per student, secondary (% of GDP per capita) | Data",
+  "url": "https://data.worldbank.org/indicator/SE.XPD.SECO.PC.ZS",
+  "published": "2026-09-27T02:15:29+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [
+   "https://api.worldbank.org/v2/en/indicator/SE.XPD.SECO.PC.ZS?downloadformat=csv"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "a0807efa22cd36227d33",
+  "host": "data.worldbank.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algorithm - Encyclopedia of Mathematics",
+  "url": "https://encyclopediaofmath.org/wiki/Algorithm",
+  "published": "2026-09-27T02:15:30+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "35eabac5d21dfca0c3b4",
+  "host": "encyclopediaofmath.org",
+  "claims": [],
+  "n_claims": 0
+ }
+]

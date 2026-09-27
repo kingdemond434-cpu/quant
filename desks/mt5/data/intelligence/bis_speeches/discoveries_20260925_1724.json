@@ -1,0 +1,12 @@
+[
+ {
+  "source": "bis_speeches",
+  "kind": "fetch_error",
+  "title": "502 Server Error: Bad Gateway for url: https://www.bis.org/doclist/cbspeeches.rss",
+  "url": "",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-25T17:31:27+00:00",
+  "needs_selector_work": true
+ }
+]

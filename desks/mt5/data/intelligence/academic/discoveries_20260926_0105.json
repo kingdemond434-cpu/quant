@@ -1,0 +1,28 @@
+[
+  {
+    "source": "arxiv",
+    "type": "academic_paper",
+    "title": "Disc-mediated angular momentum transport resolves the mass-gain problem in rotating binaries",
+    "summary": "A large fraction of stars interact with a close companion during their lifetime, in which the transfer of mass and angular momentum shapes their evolution and final fate. Standard rotationally limited",
+    "url": "https://arxiv.org/abs/2609.30230v1",
+    "published": "2026-09-24T17:51:40Z",
+    "trading_terms": [
+      "momentum"
+    ],
+    "symbols": [],
+    "confidence": 0.1
+  },
+  {
+    "source": "arxiv",
+    "type": "academic_paper",
+    "title": "Upper critical dimension for dirty Weyl semimetal-to-metal quantum phase transitions",
+    "summary": "Weyl or Dirac fermions with the iconic linear energy-momentum relation and average density of states (ADOS) $\u03c1(E) \\sim |E|^{d-1}$ at energy $E$ in $d$ spatial dimensions, constitute a unique setup to ",
+    "url": "https://arxiv.org/abs/2609.30265v1",
+    "published": "2026-09-24T17:59:43Z",
+    "trading_terms": [
+      "momentum"
+    ],
+    "symbols": [],
+    "confidence": 0.1
+  }
+]

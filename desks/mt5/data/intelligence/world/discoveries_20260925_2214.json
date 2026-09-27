@@ -1,0 +1,2759 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Apple Inc. stocks CFD (AAPL) | ECN | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/AAPL/",
+  "published": "2026-09-25T22:12:53+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790170960",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "9fd005d8f979a2bdad96",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Amazon.com, Inc. stocks CFD (AMZN) | ECN | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/AMZN/",
+  "published": "2026-09-25T22:12:55+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790170960",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "b010e9d9202a8265b598",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "United Parcel Service, Inc. stocks CFD (UPS) | ECN | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/UPS/",
+  "published": "2026-09-25T22:12:57+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790170960",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "b73281f5af4719b8fd00",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Netflix, Inc. stocks CFD (NFLX) | ECN | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/NFLX/",
+  "published": "2026-09-25T22:12:58+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790170960",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "23717b00bf0a2481b52d",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Berkshire Hathaway Inc. stocks CFD (BRK.B) | ECN | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/BRK.B/",
+  "published": "2026-09-25T22:13:01+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790170960",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "bb9f1ae9753710554d53",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "McDonald&#039;s Corporation stocks CFD (MCD) | ECN | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/MCD/",
+  "published": "2026-09-25T22:13:03+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790170960",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "fe8a6220418dff2c3951",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Prudential Financial, Inc. stocks CFD (PRU) | ECN | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/PRU/",
+  "published": "2026-09-25T22:13:05+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790170960",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "29b5c06c03995933e219",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Access to and acceptance of cash",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/acceptance-cash/html/index.sk.html",
+  "published": "2026-09-25T22:13:05+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "inventory",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "sk",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.sk.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "c59c57a24b3ea59a940b",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Access to and acceptance of cash",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/acceptance-cash/html/index.sl.html",
+  "published": "2026-09-25T22:13:07+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "sl",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.sl.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "061523f73fa85bdf6891",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Tillg\u00e5ng till och godtagande av kontanter",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/acceptance-cash/html/index.sv.html",
+  "published": "2026-09-25T22:13:10+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "gap",
+   "inventory",
+   "mean_reversion",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "sv",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.sv.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "3ed8fe0ad3e61920f85c",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u0427\u0435\u0441\u0442\u043e \u0437\u0430\u0434\u0430\u0432\u0430\u043d\u0438 \u0432\u044a\u043f\u0440\u043e\u0441\u0438 \u0437\u0430 \u043f\u0430\u0440\u0438\u0442\u0435",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/faqs/html/index.bg.html",
+  "published": "2026-09-25T22:13:12+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "bg",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.bg.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "3c35522545fec589a6e0",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Nej\u010dast\u011bj\u0161\u00ed dotazy t\u00fdkaj\u00edc\u00ed se hotovosti",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/faqs/html/index.cs.html",
+  "published": "2026-09-25T22:13:13+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "inventory",
+   "orderflow"
+  ],
+  "confidence": 0.75,
+  "lang": "cs",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.cs.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "82f4508b6931feca9f91",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Ofte stillede sp\u00f8rgsm\u00e5l om kontanter",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/faqs/html/index.da.html",
+  "published": "2026-09-25T22:13:16+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "inventory",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "da",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.da.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "7593e165b63568f70ae2",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "H\u00e4ufig gestellte Fragen zum Bargeld",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/faqs/html/index.de.html",
+  "published": "2026-09-25T22:13:17+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [
+   "T\u00c4GLICH"
+  ],
+  "patterns": [
+   "gap",
+   "inventory",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "de",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.de.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "69efad1c4f05db320943",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Australian Dollar vs Swiss Franc (AUDCHF) | ProCent | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-cent/AUDCHF/",
+  "published": "2026-09-25T22:13:30+00:00",
+  "symbols": [
+   "AUDCHF"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790170960",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "da57cf84de8d59205c8c",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Australian Dollar vs Japanese Yen (AUDJPY) | ProCent | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-cent/AUDJPY/",
+  "published": "2026-09-25T22:13:32+00:00",
+  "symbols": [
+   "AUDJPY",
+   "USDJPY"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790170960",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "81c93cca5595dcc1a847",
+  "host": "th.roboforex.com",
+  "claims": [
+   {
+    "claim": "001 \u0e40\u0e27\u0e25\u0e32\u0e02\u0e2d\u0e07\u0e0a\u0e48\u0e27\u0e07\u0e0b\u0e37\u0e49\u0e2d\u0e02\u0e32\u0e22 00:05 - 23:55 Term currency JPY 3-days swap Wednesday \u0e01\u0e32\u0e23\u0e08\u0e48\u0e32\u0e22 9.",
+    "lang": "th",
+    "quantities": [
+     "swap"
+    ],
+    "direction": [
+     "\u0e0b\u0e37\u0e49\u0e2d",
+     "\u0e02\u0e32\u0e22"
+    ],
+    "horizon": [
+     "days"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDJPY",
+      "AUDJPY"
+     ],
+     "mentioned": [
+      "yen",
+      "audjpy"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "fb3bd21d7eea"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Australian Dollar vs New Zealand Dollar (AUDNZD) | ProCent | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-cent/AUDNZD/",
+  "published": "2026-09-25T22:13:34+00:00",
+  "symbols": [
+   "AUDNZD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790170960",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "cd9021dfef336f0d58db",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Australian Dollar vs US Dollar (AUDUSD) | ProCent | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-cent/AUDUSD/",
+  "published": "2026-09-25T22:13:36+00:00",
+  "symbols": [
+   "AUDUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790170960",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "8259185706f70984518f",
+  "host": "th.roboforex.com",
+  "claims": [
+   {
+    "claim": "00001 \u0e40\u0e27\u0e25\u0e32\u0e02\u0e2d\u0e07\u0e0a\u0e48\u0e27\u0e07\u0e0b\u0e37\u0e49\u0e2d\u0e02\u0e32\u0e22 00:05 - 23:55 Term currency USD 3-days swap Wednesday \u0e01\u0e32\u0e23\u0e08\u0e48\u0e32\u0e22 12.",
+    "lang": "th",
+    "quantities": [
+     "swap"
+    ],
+    "direction": [
+     "\u0e0b\u0e37\u0e49\u0e2d",
+     "\u0e02\u0e32\u0e22"
+    ],
+    "horizon": [
+     "days"
+    ],
+    "instruments": {
+     "analogues": [
+      "AUDUSD"
+     ],
+     "mentioned": [
+      "audusd"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "2a2e47313267"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Canadian Dollar vs Swiss Franc (CADCHF) | ProCent | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-cent/CADCHF/",
+  "published": "2026-09-25T22:13:38+00:00",
+  "symbols": [
+   "CADCHF"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790170960",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "e563a85d3206e2051548",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Canadian Dollar vs Japanese Yen (CADJPY) | ProCent | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-cent/CADJPY/",
+  "published": "2026-09-25T22:13:40+00:00",
+  "symbols": [
+   "CADJPY",
+   "USDJPY"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790170960",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "12b23b7786d8b65d9ccc",
+  "host": "th.roboforex.com",
+  "claims": [
+   {
+    "claim": "001 \u0e40\u0e27\u0e25\u0e32\u0e02\u0e2d\u0e07\u0e0a\u0e48\u0e27\u0e07\u0e0b\u0e37\u0e49\u0e2d\u0e02\u0e32\u0e22 00:05 - 23:55 Term currency JPY 3-days swap Wednesday \u0e01\u0e32\u0e23\u0e08\u0e48\u0e32\u0e22 17.",
+    "lang": "th",
+    "quantities": [
+     "swap"
+    ],
+    "direction": [
+     "\u0e0b\u0e37\u0e49\u0e2d",
+     "\u0e02\u0e32\u0e22"
+    ],
+    "horizon": [
+     "days"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDJPY"
+     ],
+     "mentioned": [
+      "yen"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "8b57badf1110"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Swiss Franc vs Japanese Yen (CHFJPY) | ProCent | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-cent/CHFJPY/",
+  "published": "2026-09-25T22:13:42+00:00",
+  "symbols": [
+   "CHFJPY",
+   "USDJPY"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790170960",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "fa910c90884b22af4611",
+  "host": "th.roboforex.com",
+  "claims": [
+   {
+    "claim": "001 \u0e40\u0e27\u0e25\u0e32\u0e02\u0e2d\u0e07\u0e0a\u0e48\u0e27\u0e07\u0e0b\u0e37\u0e49\u0e2d\u0e02\u0e32\u0e22 00:05 - 23:55 Term currency JPY 3-days swap Wednesday \u0e01\u0e32\u0e23\u0e08\u0e48\u0e32\u0e22 12.",
+    "lang": "th",
+    "quantities": [
+     "swap"
+    ],
+    "direction": [
+     "\u0e0b\u0e37\u0e49\u0e2d",
+     "\u0e02\u0e32\u0e22"
+    ],
+    "horizon": [
+     "days"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDJPY"
+     ],
+     "mentioned": [
+      "yen"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "d7892a45c056"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "ABCD Pattern Trading: What is it And How to Draw it :: Dukascopy Bank SA",
+  "url": "https://www.dukascopy.com/swiss/english/marketwatch/articles/abcd-pattern-trading-what-is-it-and-how-to-draw-it/",
+  "published": "2026-09-25T22:13:43+00:00",
+  "symbols": [
+   "XAUUSD",
+   "XAGUSD",
+   "XTIUSD",
+   "US30",
+   "EURUSD",
+   "GBPUSD",
+   "USDJPY",
+   "USDCAD",
+   "USDTRY",
+   "BTCUSD"
+  ],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "carry",
+   "correlation",
+   "flow",
+   "night_session",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://www.dukascopy.com/downloads/bank/",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt5/dukascopy5setup.exe",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt4/dukascopy4setup.exe",
+   "https://www.dukascopy.com/swiss/english/forex/api/jforex-api/",
+   "https://www.dukascopy.com/swiss/english/forex/api/fix-api/",
+   "https://www.dukascopy.com/downloads/bank/jforex/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt5/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt4/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/binary/?lang=en"
+  ],
+  "n_endpoints": 9,
+  "vault_sha": "a0eb7980e0230bc2269d",
+  "host": "www.dukascopy.com",
+  "claims": [
+   {
+    "claim": "Learn more JP EU Open accounts Articles Data tools for webmasters Online news Online news for webmasters Articles Smart Money Concept ICT Trading Long Position vs.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "long"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XTIUSD",
+      "US30",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "USDCAD",
+      "USDTRY",
+      "BTCUSD"
+     ],
+     "mentioned": [
+      "gold",
+      "silver",
+      "crude",
+      "dow",
+      "eur/usd",
+      "pound",
+      "usd/jpy",
+      "usd/cad",
+      "try",
+      "bitcoin"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDTHB"
+     ],
+     "channels": [
+      "bot : policy: BoT -> THB"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "527617f59160"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Top 15 Most Successful FOREX Traders in the World :: Dukascopy Bank SA",
+  "url": "https://www.dukascopy.com/swiss/english/marketwatch/articles/top-10-most-successful-forex-traders-in-the-world/",
+  "published": "2026-09-25T22:13:46+00:00",
+  "symbols": [
+   "XAUUSD",
+   "XAGUSD",
+   "XTIUSD",
+   "US30",
+   "EURUSD",
+   "GBPUSD",
+   "USDJPY",
+   "USDCAD",
+   "NZDUSD",
+   "USDTRY",
+   "BTCUSD",
+   "SOYBEAN"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "auction",
+   "carry",
+   "correlation",
+   "flow",
+   "momentum",
+   "night_session",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://www.dukascopy.com/downloads/bank/",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt5/dukascopy5setup.exe",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt4/dukascopy4setup.exe",
+   "https://www.dukascopy.com/swiss/english/forex/api/jforex-api/",
+   "https://www.dukascopy.com/swiss/english/forex/api/fix-api/",
+   "https://www.dukascopy.com/downloads/bank/jforex/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt5/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt4/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/binary/?lang=en"
+  ],
+  "n_endpoints": 9,
+  "vault_sha": "e31aed6339305491c385",
+  "host": "www.dukascopy.com",
+  "claims": [
+   {
+    "claim": "Learn more JP EU Open accounts Articles Data tools for webmasters Online news Online news for webmasters Articles Smart Money Concept ICT Trading Long Position vs.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "long"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XTIUSD",
+      "US30",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "USDCAD",
+      "NZDUSD",
+      "USDTRY",
+      "BTCUSD",
+      "SOYBEAN"
+     ],
+     "mentioned": [
+      "gold",
+      "silver",
+      "crude",
+      "dow",
+      "eur/usd",
+      "pound",
+      "usd/jpy",
+      "usd/cad",
+      "kiwi",
+      "try",
+      "bitcoin",
+      "soybean"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDTHB"
+     ],
+     "channels": [
+      "bank of england: policy: BoE -> GBP",
+      "bot : policy: BoT -> THB"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "527617f59160"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Top Trading Strategies in Forex | Dukascopy Bank SA",
+  "url": "https://www.dukascopy.com/swiss/english/marketwatch/articles/top-trading-strategies-in-forex/",
+  "published": "2026-09-25T22:13:48+00:00",
+  "symbols": [
+   "XAUUSD",
+   "XAGUSD",
+   "XTIUSD",
+   "US30",
+   "EURUSD",
+   "GBPUSD",
+   "USDJPY",
+   "USDCAD",
+   "EURGBP",
+   "USDTRY",
+   "BTCUSD"
+  ],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "breakout",
+   "carry",
+   "correlation",
+   "flow",
+   "mean_reversion",
+   "momentum",
+   "night_session",
+   "orderflow",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://www.dukascopy.com/downloads/bank/",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt5/dukascopy5setup.exe",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt4/dukascopy4setup.exe",
+   "https://www.dukascopy.com/swiss/english/forex/api/jforex-api/",
+   "https://www.dukascopy.com/swiss/english/forex/api/fix-api/",
+   "https://www.dukascopy.com/downloads/bank/jforex/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt5/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt4/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/binary/?lang=en"
+  ],
+  "n_endpoints": 9,
+  "vault_sha": "857b92e60976e51f9e7c",
+  "host": "www.dukascopy.com",
+  "claims": [
+   {
+    "claim": "Learn more JP EU Open accounts Articles Data tools for webmasters Online news Online news for webmasters Articles Smart Money Concept ICT Trading Long Position vs.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "long"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XTIUSD",
+      "US30",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "USDCAD",
+      "EURGBP",
+      "USDTRY",
+      "BTCUSD"
+     ],
+     "mentioned": [
+      "gold",
+      "silver",
+      "crude",
+      "dow",
+      "eur/usd",
+      "pound",
+      "usd/jpy",
+      "usd/cad",
+      "eur/gbp",
+      "try",
+      "bitcoin"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDTHB"
+     ],
+     "channels": [
+      "bot : policy: BoT -> THB"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "527617f59160"
+   },
+   {
+    "claim": "0900 Enter a long position with a stop-loss just below the breakout point Set a profit target based on the range's width or previous significant price levels Day Trading: Seizing Opportunities in Real-Time Day trading involves executing multiple trades within a single trading day, with positions typically not held overnight.",
+    "lang": "en",
+    "quantities": [
+     "breakout",
+     "range"
+    ],
+    "direction": [
+     "long"
+    ],
+    "horizon": [
+     "day",
+     "overnight"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XTIUSD",
+      "US30",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "USDCAD",
+      "EURGBP",
+      "USDTRY",
+      "BTCUSD"
+     ],
+     "mentioned": [
+      "gold",
+      "silver",
+      "crude",
+      "dow",
+      "eur/usd",
+      "pound",
+      "usd/jpy",
+      "usd/cad",
+      "eur/gbp",
+      "try",
+      "bitcoin"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDTHB"
+     ],
+     "channels": [
+      "bot : policy: BoT -> THB"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "e4dff1e0959b"
+   },
+   {
+    "claim": "Trade with Swiss precision Open live account Try a Demo ACTUAL ARTICLES Thu, 27 Jul 2023 12:18:41 GMT Demystifying the Relative Strength Index (RSI) Indicator Navigating the complexities of financial markets requires a thorough understanding of various trading tools, and one such tool that has gained significant popularity is the Relative Strength Index (RSI).",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "gained"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDTRY"
+     ],
+     "mentioned": [
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "e0d8751c8975"
+   }
+  ],
+  "n_claims": 3
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Demystifying the Relative Strength Index (RSI) Indicator :: Dukascopy Bank SA",
+  "url": "https://www.dukascopy.com/swiss/english/marketwatch/articles/demystifying-the-relative-strength-index-(rsi)-indicator/",
+  "published": "2026-09-25T22:13:50+00:00",
+  "symbols": [
+   "XAUUSD",
+   "XAGUSD",
+   "XTIUSD",
+   "US30",
+   "EURUSD",
+   "GBPUSD",
+   "USDJPY",
+   "USDCAD",
+   "GBPJPY",
+   "USDTRY",
+   "BTCUSD"
+  ],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "auction",
+   "carry",
+   "correlation",
+   "flow",
+   "momentum",
+   "night_session",
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://www.dukascopy.com/downloads/bank/",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt5/dukascopy5setup.exe",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt4/dukascopy4setup.exe",
+   "https://www.dukascopy.com/swiss/english/forex/api/jforex-api/",
+   "https://www.dukascopy.com/swiss/english/forex/api/fix-api/",
+   "https://www.dukascopy.com/downloads/bank/jforex/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt5/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt4/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/binary/?lang=en"
+  ],
+  "n_endpoints": 9,
+  "vault_sha": "37e70c6a28b7486bb8de",
+  "host": "www.dukascopy.com",
+  "claims": [
+   {
+    "claim": "Learn more JP EU Open accounts Articles Data tools for webmasters Online news Online news for webmasters Articles Smart Money Concept ICT Trading Long Position vs.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "long"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XTIUSD",
+      "US30",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "USDCAD",
+      "GBPJPY",
+      "USDTRY",
+      "BTCUSD"
+     ],
+     "mentioned": [
+      "gold",
+      "silver",
+      "crude",
+      "dow",
+      "eur/usd",
+      "pound",
+      "usd/jpy",
+      "usd/cad",
+      "gbp/jpy",
+      "try",
+      "bitcoin"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDTHB"
+     ],
+     "channels": [
+      "bot : policy: BoT -> THB"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "527617f59160"
+   },
+   {
+    "claim": "For example, if the daily RSI indicates a long-term bullish trend, but the 15-minute RSI shows a short-term oversold condition, it might be an opportune moment to enter a long position.",
+    "lang": "en",
+    "quantities": [
+     "trend"
+    ],
+    "direction": [
+     "long",
+     "bullish"
+    ],
+    "horizon": [
+     "daily",
+     "minute"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XTIUSD",
+      "US30",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "USDCAD",
+      "GBPJPY",
+      "USDTRY",
+      "BTCUSD"
+     ],
+     "mentioned": [
+      "gold",
+      "silver",
+      "crude",
+      "dow",
+      "eur/usd",
+      "pound",
+      "usd/jpy",
+      "usd/cad",
+      "gbp/jpy",
+      "try",
+      "bitcoin"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDTHB"
+     ],
+     "channels": [
+      "bot : policy: BoT -> THB"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "8ef509af86af"
+   },
+   {
+    "claim": "In this example, when the 5-minute RSI shows oversold conditions while the 1-hour RSI shows overbought conditions, you anticipate a short-term bounce followed by a potential reversal due to the conflicting signals.",
+    "lang": "en",
+    "quantities": [
+     "reversal"
+    ],
+    "direction": [
+     "short",
+     "bounce"
+    ],
+    "horizon": [
+     "minute",
+     "hour"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XTIUSD",
+      "US30",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "USDCAD",
+      "GBPJPY",
+      "USDTRY",
+      "BTCUSD"
+     ],
+     "mentioned": [
+      "gold",
+      "silver",
+      "crude",
+      "dow",
+      "eur/usd",
+      "pound",
+      "usd/jpy",
+      "usd/cad",
+      "gbp/jpy",
+      "try",
+      "bitcoin"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDTHB"
+     ],
+     "channels": [
+      "bot : policy: BoT -> THB"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "bd359ccfa7ce"
+   }
+  ],
+  "n_claims": 3
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Stochastic Oscillator Strategy: Trader's Guide :: Dukascopy Bank SA",
+  "url": "https://www.dukascopy.com/swiss/english/marketwatch/articles/stochastic-oscillator-strategy-traders-guide/",
+  "published": "2026-09-25T22:13:51+00:00",
+  "symbols": [
+   "XAUUSD",
+   "XAGUSD",
+   "XTIUSD",
+   "US30",
+   "EURUSD",
+   "GBPUSD",
+   "USDJPY",
+   "USDCAD",
+   "GBPJPY",
+   "USDTRY",
+   "BTCUSD"
+  ],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "breakout",
+   "carry",
+   "correlation",
+   "flow",
+   "momentum",
+   "night_session",
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://www.dukascopy.com/downloads/bank/",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt5/dukascopy5setup.exe",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt4/dukascopy4setup.exe",
+   "https://www.dukascopy.com/swiss/english/forex/api/jforex-api/",
+   "https://www.dukascopy.com/swiss/english/forex/api/fix-api/",
+   "https://www.dukascopy.com/downloads/bank/jforex/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt5/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt4/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/binary/?lang=en"
+  ],
+  "n_endpoints": 9,
+  "vault_sha": "f343b8887602ba301620",
+  "host": "www.dukascopy.com",
+  "claims": [
+   {
+    "claim": "Learn more JP EU Open accounts Articles Data tools for webmasters Online news Online news for webmasters Articles Smart Money Concept ICT Trading Long Position vs.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "long"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XTIUSD",
+      "US30",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "USDCAD",
+      "GBPJPY",
+      "USDTRY",
+      "BTCUSD"
+     ],
+     "mentioned": [
+      "gold",
+      "silver",
+      "crude",
+      "dow",
+      "eur/usd",
+      "pound",
+      "usd/jpy",
+      "usd/cad",
+      "gbp/jpy",
+      "try",
+      "bitcoin"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDTHB"
+     ],
+     "channels": [
+      "bot : policy: BoT -> THB"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "527617f59160"
+   },
+   {
+    "claim": "Traders pay close attention to oversold conditions as they may present buying opportunities or signals to close out existing short positions.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "short"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XTIUSD",
+      "US30",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "USDCAD",
+      "GBPJPY",
+      "USDTRY",
+      "BTCUSD"
+     ],
+     "mentioned": [
+      "gold",
+      "silver",
+      "crude",
+      "dow",
+      "eur/usd",
+      "pound",
+      "usd/jpy",
+      "usd/cad",
+      "gbp/jpy",
+      "try",
+      "bitcoin"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDTHB"
+     ],
+     "channels": [
+      "bot : policy: BoT -> THB"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "bcc617190fa0"
+   },
+   {
+    "claim": "For instance, a trader might use the weekly Stochastic to determine the long-term trend's direction and then use a shorter-term Stochastic on the daily or hourly chart to pinpoint entry and exit points within that trend.",
+    "lang": "en",
+    "quantities": [
+     "trend"
+    ],
+    "direction": [
+     "long"
+    ],
+    "horizon": [
+     "weekly",
+     "daily"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XTIUSD",
+      "US30",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "USDCAD",
+      "GBPJPY",
+      "USDTRY",
+      "BTCUSD"
+     ],
+     "mentioned": [
+      "gold",
+      "silver",
+      "crude",
+      "dow",
+      "eur/usd",
+      "pound",
+      "usd/jpy",
+      "usd/cad",
+      "gbp/jpy",
+      "try",
+      "bitcoin"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDTHB"
+     ],
+     "channels": [
+      "bot : policy: BoT -> THB"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "f8b3afde87d8"
+   },
+   {
+    "claim": "Bearish Divergence Scenario: You're trading crude oil futures on a 4-hour chart, and you observe that the Stochastic Oscillator is forming lower highs while the oil price is making higher highs.",
+    "lang": "en",
+    "quantities": [
+     "futures"
+    ],
+    "direction": [
+     "bearish",
+     "lower"
+    ],
+    "horizon": [
+     "hour"
+    ],
+    "instruments": {
+     "analogues": [
+      "XTIUSD"
+     ],
+     "mentioned": [
+      "crude"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "fe2323e8cc1a"
+   },
+   {
+    "claim": "Action: You check the 50-day and 200-day moving averages and observe that the stock's price is above both averages, indicating a bullish trend.",
+    "lang": "en",
+    "quantities": [
+     "trend"
+    ],
+    "direction": [
+     "bullish"
+    ],
+    "horizon": [
+     "day"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XTIUSD",
+      "US30",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "USDCAD",
+      "GBPJPY",
+      "USDTRY",
+      "BTCUSD"
+     ],
+     "mentioned": [
+      "gold",
+      "silver",
+      "crude",
+      "dow",
+      "eur/usd",
+      "pound",
+      "usd/jpy",
+      "usd/cad",
+      "gbp/jpy",
+      "try",
+      "bitcoin"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDTHB"
+     ],
+     "channels": [
+      "bot : policy: BoT -> THB"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "2cdb85b7c980"
+   }
+  ],
+  "n_claims": 5
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "What is Forex Trading and How Does It Work? - Introduction to Forex Trading | Dukascopy Bank SA",
+  "url": "https://www.dukascopy.com/swiss/english/marketwatch/articles/what-is-forex-trading/",
+  "published": "2026-09-25T22:13:54+00:00",
+  "symbols": [
+   "XAUUSD",
+   "XAGUSD",
+   "XTIUSD",
+   "US30",
+   "EURUSD",
+   "GBPUSD",
+   "USDJPY",
+   "USDCAD",
+   "EURJPY",
+   "GBPJPY",
+   "EURGBP",
+   "USDTRY",
+   "USDPLN",
+   "BTCUSD"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "breakout",
+   "carry",
+   "correlation",
+   "flow",
+   "momentum",
+   "night_session",
+   "orderflow",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://www.dukascopy.com/downloads/bank/",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt5/dukascopy5setup.exe",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt4/dukascopy4setup.exe",
+   "https://www.dukascopy.com/swiss/english/forex/api/jforex-api/",
+   "https://www.dukascopy.com/swiss/english/forex/api/fix-api/",
+   "https://www.dukascopy.com/downloads/bank/jforex/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt5/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt4/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/binary/?lang=en"
+  ],
+  "n_endpoints": 9,
+  "vault_sha": "0a73372838b507376935",
+  "host": "www.dukascopy.com",
+  "claims": [
+   {
+    "claim": "Learn more JP EU Open accounts Articles Data tools for webmasters Online news Online news for webmasters Articles Smart Money Concept ICT Trading Long Position vs.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "long"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XTIUSD",
+      "US30",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "USDCAD",
+      "EURJPY",
+      "GBPJPY",
+      "EURGBP",
+      "USDTRY",
+      "USDPLN",
+      "BTCUSD"
+     ],
+     "mentioned": [
+      "gold",
+      "silver",
+      "crude",
+      "dow",
+      "eur/usd",
+      "pound",
+      "usd/jpy",
+      "usd/cad",
+      "eur/jpy",
+      "gbp/jpy",
+      "eur/gbp",
+      "try",
+      "eur/pln",
+      "bitcoin"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDTHB"
+     ],
+     "channels": [
+      "bot : policy: BoT -> THB"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "527617f59160"
+   },
+   {
+    "claim": "It is an order placed with a broker to automatically sell or close a position when the market price reaches a specified level, known as the stop-loss price.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "sell"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XTIUSD",
+      "US30",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "USDCAD",
+      "EURJPY",
+      "GBPJPY",
+      "EURGBP",
+      "USDTRY",
+      "USDPLN",
+      "BTCUSD"
+     ],
+     "mentioned": [
+      "gold",
+      "silver",
+      "crude",
+      "dow",
+      "eur/usd",
+      "pound",
+      "usd/jpy",
+      "usd/cad",
+      "eur/jpy",
+      "gbp/jpy",
+      "eur/gbp",
+      "try",
+      "eur/pln",
+      "bitcoin"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDTHB"
+     ],
+     "channels": [
+      "bot : policy: BoT -> THB"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "d6825c942092"
+   },
+   {
+    "claim": "Example of Breakout Trading Imagine you're observing the EUR/JPY currency pair on an hourly chart, and you notice that the price has been consolidating within a narrow range between 130.",
+    "lang": "en",
+    "quantities": [
+     "breakout",
+     "range"
+    ],
+    "direction": [
+     "narrow"
+    ],
+    "horizon": [
+     "hourly"
+    ],
+    "instruments": {
+     "analogues": [
+      "EURJPY"
+     ],
+     "mentioned": [
+      "eur/jpy"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "d151790016cd"
+   }
+  ],
+  "n_claims": 3
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Forex Carry Trade - What is it and How does it Impact the Market?",
+  "url": "https://www.dukascopy.com/swiss/english/marketwatch/articles/forex-carry-trade/",
+  "published": "2026-09-25T22:13:56+00:00",
+  "symbols": [
+   "XAUUSD",
+   "XAGUSD",
+   "XTIUSD",
+   "US30",
+   "EURUSD",
+   "GBPUSD",
+   "USDJPY",
+   "AUDUSD",
+   "USDCAD",
+   "AUDJPY",
+   "USDTRY",
+   "BTCUSD"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "auction",
+   "carry",
+   "correlation",
+   "flow",
+   "gap",
+   "night_session",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://www.dukascopy.com/downloads/bank/",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt5/dukascopy5setup.exe",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt4/dukascopy4setup.exe",
+   "https://www.dukascopy.com/swiss/english/forex/api/jforex-api/",
+   "https://www.dukascopy.com/swiss/english/forex/api/fix-api/",
+   "https://www.dukascopy.com/downloads/bank/jforex/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt5/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt4/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/binary/?lang=en"
+  ],
+  "n_endpoints": 9,
+  "vault_sha": "6ce8dbc9a6ae1d8ce9aa",
+  "host": "www.dukascopy.com",
+  "claims": [
+   {
+    "claim": "Learn more JP EU Open accounts Articles Data tools for webmasters Online news Online news for webmasters Articles Smart Money Concept ICT Trading Long Position vs.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "long"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XTIUSD",
+      "US30",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "AUDUSD",
+      "USDCAD",
+      "AUDJPY",
+      "USDTRY",
+      "BTCUSD"
+     ],
+     "mentioned": [
+      "gold",
+      "silver",
+      "crude",
+      "dow",
+      "eur/usd",
+      "pound",
+      "usd/jpy",
+      "aussie",
+      "usd/cad",
+      "aud/jpy",
+      "try",
+      "bitcoin"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "US500",
+      "USDTHB"
+     ],
+     "channels": [
+      "federal reserve: policy: Fed -> dollar and US equities",
+      "bank of japan: policy: BoJ / MoF intervention -> JPY",
+      "bot : policy: BoT -> THB"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "527617f59160"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Mathematics for the analysis of algorithms : Greene, Daniel H., 1955- : Free Download, Borrow, and Streaming : Internet Archive",
+  "url": "https://archive.org/details/mathematicsforan0000gree",
+  "published": "2026-09-25T22:13:57+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "inventory"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://archive.org/download/mathematicsforan0000gree/mathematicsforan0000gree_archive_marc.xml"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "b8313fd2f89aae21ee1d",
+  "host": "archive.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Algorithms in C : Sedgewick, Robert, 1946- : Free Download, Borrow, and Streaming : Internet Archive",
+  "url": "https://archive.org/details/algorithmsinc00sedg",
+  "published": "2026-09-25T22:14:02+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://archive.org/download/algorithmsinc00sedg/algorithmsinc00sedg_archive_marc.xml"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "6fe1eb6c5e3614ddcd63",
+  "host": "archive.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "The design and analysis of computer algorithms : Aho, Alfred V : Free Download, Borrow, and Streaming : Internet Archive",
+  "url": "https://archive.org/details/designanalysisof00ahoarich",
+  "published": "2026-09-25T22:14:06+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://archive.org/download/designanalysisof00ahoarich/designanalysisof00ahoarich_archive_marc.xml"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "5af5a47648ee991c7fd8",
+  "host": "archive.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Audio help, tips, and techniques",
+  "url": "https://archive.org/help/audio.php?identifier=adventofalgorith0000berl&ht=30&wd=500&url=https%3A%2F%2Farchive.org%2Fembed%2Fadventofalgorith0000berl",
+  "published": "2026-09-25T22:14:06+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "dfc6569178fd556c4438",
+  "host": "archive.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Audio help, tips, and techniques",
+  "url": "https://archive.org/help/audio.php?identifier=adventofalgorith0000berl&ht=30&wd=500&url=https%3A%2F%2Farchive.org%2Fembed%2Fadventofalgorith0000berl%3Fautoplay%3D1",
+  "published": "2026-09-25T22:14:08+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "add62dedd4da4b7bc3a0",
+  "host": "archive.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Audio help, tips, and techniques",
+  "url": "https://archive.org/help/audio.php?identifier=adventofalgorith0000berl&ht=300&wd=500&url=https%3A%2F%2Farchive.org%2Fembed%2Fadventofalgorith0000berl%3Fplaylist%3D1",
+  "published": "2026-09-25T22:14:10+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "30e63650b9377d233812",
+  "host": "archive.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Audio help, tips, and techniques",
+  "url": "https://archive.org/help/audio.php?identifier=adventofalgorith0000berl&ht=300&wd=500&url=https%3A%2F%2Farchive.org%2Fembed%2Fadventofalgorith0000berl%3Fplaylist%3D1%26list_height%3D150",
+  "published": "2026-09-25T22:14:12+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "12a2a6bb74a4987b0ef5",
+  "host": "archive.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "DSE Complete Trading Playbook | PDF | Market Trend | Prices",
+  "url": "https://www.scribd.com/document/1072296203/DSE-Complete-Trading-Playbook",
+  "published": "2026-09-25T22:14:13+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "418f626f8f0e968a707f",
+  "host": "www.scribd.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u7f8e\u5143/\u65e5\u5143\u8fde\u7eed\u7b2c\u4e09\u4e2a\u4ea4\u6613\u65e5\u7a81\u7834160\u5173\u53e3 _ \u4e1c\u65b9\u8d22\u5bcc\u7f51",
+  "url": "https://finance.eastmoney.com/a/202609013861452144.html",
+  "published": "2026-09-25T22:14:14+00:00",
+  "symbols": [
+   "USDJPY"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "breakout",
+   "flow",
+   "positioning"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "8f39daa0eba7192001ce",
+  "host": "finance.eastmoney.com",
+  "claims": [
+   {
+    "claim": "\u4e1c\u65b9\u8d22\u5bccChoice\u6570\u636e \u5c0f \u4e2d \u5927 \u4e1c\u65b9\u8d22\u5bccAPP \u65b9\u4fbf\uff0c\u5feb\u6377 \u624b\u673a\u67e5\u770b\u8d22\u7ecf\u5feb\u8baf \u4e13\u4e1a\uff0c\u4e30\u5bcc \u4e00\u624b\u638c\u63e1\u5e02\u573a\u8109\u640f \u624b\u673a\u4e0a\u9605\u8bfb\u6587\u7ae0 \u63d0\u793a\uff1a \u5fae\u4fe1\u626b\u4e00\u626b \u5206\u4eab\u5230\u60a8\u7684 \u670b\u53cb\u5708 \u7f8e\u5143/\u65e5\u5143\u8fde\u7eed\u7b2c\u4e09\u4e2a\u4ea4\u6613\u65e5\u7a81\u7834160\u5173\u53e3\uff0c\u6700\u65b0\u4e0a\u6da80.",
+    "lang": "zh",
+    "quantities": [
+     "\u7a81\u7834",
+     "\u7f8e\u5143",
+     "\u65e5\u5143"
+    ],
+    "direction": [
+     "\u4e0a\u6da8",
+     "\u6da8"
+    ],
+    "horizon": [
+     "\u4ea4\u6613\u65e5"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDJPY"
+     ],
+     "mentioned": [
+      "\u65e5\u5143"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "349a98a237c4"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u6bd4\u7279\u5e01\u7a81\u783475000\u7f8e\u5143\uff0c\u65e5\u5185\u6da8\u8d853%\uff0c\u521b5\u670828\u65e5\u4ee5\u6765\u65b0\u9ad8 _ \u4e1c\u65b9\u8d22\u5bcc\u7f51",
+  "url": "https://finance.eastmoney.com/a/202608213849139534.html",
+  "published": "2026-09-25T22:14:16+00:00",
+  "symbols": [
+   "XAUUSD",
+   "HK50",
+   "US500",
+   "BTCUSD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "breakout",
+   "flow",
+   "positioning"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "026671e1bae37fe1b3c5",
+  "host": "finance.eastmoney.com",
+  "claims": [
+   {
+    "claim": "\u6bd4\u7279\u5e01\u7a81\u783475000\u7f8e\u5143\uff0c\u65e5\u5185\u6da8\u8d853%\uff0c\u521b5\u670828\u65e5\u4ee5\u6765\u65b0\u9ad8 _ \u4e1c\u65b9\u8d22\u5bcc\u7f51 \u8d22\u7ecf \u7126\u70b9 \u80a1\u7968 \u65b0\u80a1 \u671f\u6307 \u671f\u6743 \u884c\u60c5 \u6570\u636e \u5168\u7403 \u7f8e\u80a1 \u6e2f\u80a1 \u671f\u8d27 \u5916\u6c47 \u94f6\u884c \u57fa\u91d1 \u7406\u8d22 \u503a\u5238 \u76f4\u64ad \u80a1\u5427 \u57fa\u91d1\u5427 \u535a\u5ba2 \u8d22\u5bcc\u53f7 \u641c\u7d22 \u884c\u60c5\u4e2d\u5fc3 \u6307\u6570 \u671f\u6307 \u671f\u6743 \u4e2a\u80a1 \u677f\u5757 \u6392\u884c \u65b0\u80a1 \u57fa\u91d1 \u6e2f\u80a1 \u7f8e\u80a1 \u671f\u8d27 \u5916\u6c47 \u9ec4\u91d1 \u81ea\u9009\u80a1 \u81ea\u9009\u57fa\u91d1 \u6570\u636e\u4e2d\u5fc3 \u8d44\u91d1\u6d41\u5411 \u4e3b\u529b\u6392\u540d \u677f\u5757\u8d44\u91d1 \u4e2a\u80a1\u7814\u62a5 \u65b0\u80a1\u7533\u8d2d \u8f6c\u503a\u7533\u8d2d \u5317\u4ea4\u6240\u7533\u8d2d AH\u80a1\u6bd4\u4ef7 \u5e74\u62a5\u5927\u5168 \u878d\u8d44\u878d\u5238 \u9f99\u864e\u699c \u9650\u552e\u89e3\u7981 IPO\u5ba1\u6838 \u5927\u5b97\u4ea4\u6613 \u4f30\u503c\u5206\u6790 \u9996\u9875 > \u8d22\u7ecf\u9891\u9053 > \u6b63\u6587 \u6bd4\u7279\u5e01\u7a81\u783475000\u7f8e\u5143\uff0c\u65e5\u5185\u6da8\u8d853%\uff0c\u521b5\u670828\u65e5\u4ee5\u6765\u65b0\u9ad8 2026\u5e7408\u670821\u65e5 09:36 \u6765\u6e90\uff1a",
+    "lang": "zh",
+    "quantities": [
+     "\u7a81\u7834",
+     "\u8d44\u91d1\u6d41",
+     "\u4e3b\u529b",
+     "\u65e5\u5185"
+    ],
+    "direction": [
+     "\u6da8"
+    ],
+    "horizon": [
+     "\u65e5\u5185",
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "HK50",
+      "US500",
+      "BTCUSD"
+     ],
+     "mentioned": [
+      "\u9ec4\u91d1",
+      "\u6e2f\u80a1",
+      "\u7f8e\u80a1",
+      "\u6bd4\u7279\u5e01",
+      "\u8f6c\u503a"
+     ],
+     "transfer_only": [
+      "\u8f6c\u503a->cn-equities-only"
+     ],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "d1d4397c7ca7"
+   },
+   {
+    "claim": "\u8d22\u8054\u793e \u5c0f \u4e2d \u5927 \u4e1c\u65b9\u8d22\u5bccAPP \u65b9\u4fbf\uff0c\u5feb\u6377 \u624b\u673a\u67e5\u770b\u8d22\u7ecf\u5feb\u8baf \u4e13\u4e1a\uff0c\u4e30\u5bcc \u4e00\u624b\u638c\u63e1\u5e02\u573a\u8109\u640f \u624b\u673a\u4e0a\u9605\u8bfb\u6587\u7ae0 \u63d0\u793a\uff1a \u5fae\u4fe1\u626b\u4e00\u626b \u5206\u4eab\u5230\u60a8\u7684 \u670b\u53cb\u5708 \u6bd4\u7279\u5e01\u7a81\u783475000\u7f8e\u5143\uff0c\u65e5\u5185\u6da8\u8d853%\uff0c\u521b5\u670828\u65e5\u4ee5\u6765\u65b0\u9ad8\u3002",
+    "lang": "zh",
+    "quantities": [
+     "\u7a81\u7834",
+     "\u65e5\u5185",
+     "\u7f8e\u5143"
+    ],
+    "direction": [
+     "\u6da8"
+    ],
+    "horizon": [
+     "\u65e5\u5185",
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [
+      "BTCUSD"
+     ],
+     "mentioned": [
+      "\u6bd4\u7279\u5e01"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "58547cf92a05"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u5728\u5cb8\u4eba\u6c11\u5e01\u5151\u7f8e\u5143\u6536\u76d8 \u8f83\u4e0a\u4e00\u4ea4\u6613\u65e5\u8dcc15\u70b9 _ \u4e1c\u65b9\u8d22\u5bcc\u7f51",
+  "url": "https://finance.eastmoney.com/a/202608113837900086.html",
+  "published": "2026-09-25T22:14:18+00:00",
+  "symbols": [
+   "XAUUSD",
+   "HK50",
+   "US500",
+   "USDCNH"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "positioning"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "67e712a73d8aa0d1a605",
+  "host": "finance.eastmoney.com",
+  "claims": [
+   {
+    "claim": "\u5728\u5cb8\u4eba\u6c11\u5e01\u5151\u7f8e\u5143\u6536\u76d8 \u8f83\u4e0a\u4e00\u4ea4\u6613\u65e5\u8dcc15\u70b9 _ \u4e1c\u65b9\u8d22\u5bcc\u7f51 \u8d22\u7ecf \u7126\u70b9 \u80a1\u7968 \u65b0\u80a1 \u671f\u6307 \u671f\u6743 \u884c\u60c5 \u6570\u636e \u5168\u7403 \u7f8e\u80a1 \u6e2f\u80a1 \u671f\u8d27 \u5916\u6c47 \u94f6\u884c \u57fa\u91d1 \u7406\u8d22 \u503a\u5238 \u76f4\u64ad \u80a1\u5427 \u57fa\u91d1\u5427 \u535a\u5ba2 \u8d22\u5bcc\u53f7 \u641c\u7d22 \u884c\u60c5\u4e2d\u5fc3 \u6307\u6570 \u671f\u6307 \u671f\u6743 \u4e2a\u80a1 \u677f\u5757 \u6392\u884c \u65b0\u80a1 \u57fa\u91d1 \u6e2f\u80a1 \u7f8e\u80a1 \u671f\u8d27 \u5916\u6c47 \u9ec4\u91d1 \u81ea\u9009\u80a1 \u81ea\u9009\u57fa\u91d1 \u6570\u636e\u4e2d\u5fc3 \u8d44\u91d1\u6d41\u5411 \u4e3b\u529b\u6392\u540d \u677f\u5757\u8d44\u91d1 \u4e2a\u80a1\u7814\u62a5 \u65b0\u80a1\u7533\u8d2d \u8f6c\u503a\u7533\u8d2d \u5317\u4ea4\u6240\u7533\u8d2d AH\u80a1\u6bd4\u4ef7 \u5e74\u62a5\u5927\u5168 \u878d\u8d44\u878d\u5238 \u9f99\u864e\u699c \u9650\u552e\u89e3\u7981 IPO\u5ba1\u6838 \u5927\u5b97\u4ea4\u6613 \u4f30\u503c\u5206\u6790 \u9996\u9875 > \u8d22\u7ecf\u9891\u9053 > \u6b63\u6587 \u5728\u5cb8\u4eba\u6c11\u5e01\u5151\u7f8e\u5143\u6536\u76d8 \u8f83\u4e0a\u4e00\u4ea4\u6613\u65e5\u8dcc15\u70b9 2026\u5e7408\u670811\u65e5 16:32 \u6765\u6e90\uff1a",
+    "lang": "zh",
+    "quantities": [
+     "\u6536\u76d8",
+     "\u8d44\u91d1\u6d41",
+     "\u4e3b\u529b",
+     "\u9ec4\u91d1"
+    ],
+    "direction": [
+     "\u8dcc"
+    ],
+    "horizon": [
+     "\u4ea4\u6613\u65e5",
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "HK50",
+      "US500",
+      "USDCNH"
+     ],
+     "mentioned": [
+      "\u9ec4\u91d1",
+      "\u6e2f\u80a1",
+      "\u7f8e\u80a1",
+      "\u4eba\u6c11\u5e01",
+      "\u8f6c\u503a"
+     ],
+     "transfer_only": [
+      "\u8f6c\u503a->cn-equities-only"
+     ],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "b9507614790d"
+   },
+   {
+    "claim": "7457\uff0c\u8f83\u4e0a\u4e00\u4ea4\u6613\u65e5\u5b98\u65b9\u6536\u76d8\u4ef7\u8dcc15\u70b9\u3002",
+    "lang": "zh",
+    "quantities": [
+     "\u6536\u76d8"
+    ],
+    "direction": [
+     "\u8dcc"
+    ],
+    "horizon": [
+     "\u4ea4\u6613\u65e5"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "HK50",
+      "US500",
+      "USDCNH"
+     ],
+     "mentioned": [
+      "\u9ec4\u91d1",
+      "\u6e2f\u80a1",
+      "\u7f8e\u80a1",
+      "\u4eba\u6c11\u5e01",
+      "\u8f6c\u503a"
+     ],
+     "transfer_only": [
+      "\u8f6c\u503a->cn-equities-only"
+     ],
+     "indirect": [
+      "CHINAH"
+     ],
+     "channels": [
+      "\u6e2f\u80a1\u901a: flow: Stock Connect -> HK indices and CNH"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "2eb489c940a3"
+   },
+   {
+    "claim": "\uff08\u6587\u7ae0\u6765\u6e90\uff1a\u7b2c\u4e00\u8d22\u7ecf\uff09 \u6587\u7ae0\u6765\u6e90\uff1a\u7b2c\u4e00\u8d22\u7ecf \u8d23\u4efb\u7f16\u8f91\uff1a10 \u539f\u6807\u9898\uff1a\u5728\u5cb8\u4eba\u6c11\u5e01\u5151\u7f8e\u5143\u6536\u76d8\uff0c\u8f83\u4e0a\u4e00\u4ea4\u6613\u65e5\u8dcc15\u70b9 \u90d1\u91cd\u58f0\u660e\uff1a \u4e1c\u65b9\u8d22\u5bcc\u53d1\u5e03\u6b64\u5185\u5bb9\u65e8\u5728\u4f20\u64ad\u66f4\u591a\u4fe1\u606f\uff0c\u4e0e\u672c\u7ad9\u7acb\u573a\u65e0\u5173\uff0c\u4e0d\u6784\u6210\u6295\u8d44\u5efa\u8bae\u3002",
+    "lang": "zh",
+    "quantities": [
+     "\u6536\u76d8",
+     "\u7f8e\u5143"
+    ],
+    "direction": [
+     "\u8dcc"
+    ],
+    "horizon": [
+     "\u4ea4\u6613\u65e5"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDCNH"
+     ],
+     "mentioned": [
+      "\u4eba\u6c11\u5e01"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "ab7bd4188f9e"
+   }
+  ],
+  "n_claims": 3
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u5728\u5cb8\u4eba\u6c11\u5e01\u5151\u7f8e\u5143\u6536\u76d8\u62a56.7995\uff0c\u8f83\u4e0a\u4e00\u4ea4\u6613\u65e5\u4e0a\u6da857\u70b9 _ \u4e1c\u65b9\u8d22\u5bcc\u7f51",
+  "url": "https://finance.eastmoney.com/a/202606253783100912.html",
+  "published": "2026-09-25T22:14:20+00:00",
+  "symbols": [
+   "XAUUSD",
+   "HK50",
+   "US500",
+   "USDCNH"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "positioning"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c01997c52416119e2c01",
+  "host": "finance.eastmoney.com",
+  "claims": [
+   {
+    "claim": "7995\uff0c\u8f83\u4e0a\u4e00\u4ea4\u6613\u65e5\u4e0a\u6da857\u70b9 _ \u4e1c\u65b9\u8d22\u5bcc\u7f51 \u8d22\u7ecf \u7126\u70b9 \u80a1\u7968 \u65b0\u80a1 \u671f\u6307 \u671f\u6743 \u884c\u60c5 \u6570\u636e \u5168\u7403 \u7f8e\u80a1 \u6e2f\u80a1 \u671f\u8d27 \u5916\u6c47 \u94f6\u884c \u57fa\u91d1 \u7406\u8d22 \u503a\u5238 \u76f4\u64ad \u80a1\u5427 \u57fa\u91d1\u5427 \u535a\u5ba2 \u8d22\u5bcc\u53f7 \u641c\u7d22 \u884c\u60c5\u4e2d\u5fc3 \u6307\u6570 \u671f\u6307 \u671f\u6743 \u4e2a\u80a1 \u677f\u5757 \u6392\u884c \u65b0\u80a1 \u57fa\u91d1 \u6e2f\u80a1 \u7f8e\u80a1 \u671f\u8d27 \u5916\u6c47 \u9ec4\u91d1 \u81ea\u9009\u80a1 \u81ea\u9009\u57fa\u91d1 \u6570\u636e\u4e2d\u5fc3 \u8d44\u91d1\u6d41\u5411 \u4e3b\u529b\u6392\u540d \u677f\u5757\u8d44\u91d1 \u4e2a\u80a1\u7814\u62a5 \u65b0\u80a1\u7533\u8d2d \u8f6c\u503a\u7533\u8d2d \u5317\u4ea4\u6240\u7533\u8d2d AH\u80a1\u6bd4\u4ef7 \u5e74\u62a5\u5927\u5168 \u878d\u8d44\u878d\u5238 \u9f99\u864e\u699c \u9650\u552e\u89e3\u7981 IPO\u5ba1\u6838 \u5927\u5b97\u4ea4\u6613 \u4f30\u503c\u5206\u6790 \u9996\u9875 > \u8d22\u7ecf\u9891\u9053 > \u6b63\u6587 \u5728\u5cb8\u4eba\u6c11\u5e01\u5151\u7f8e\u5143\u6536\u76d8\u62a56.",
+    "lang": "zh",
+    "quantities": [
+     "\u6536\u76d8",
+     "\u8d44\u91d1\u6d41",
+     "\u4e3b\u529b",
+     "\u9ec4\u91d1"
+    ],
+    "direction": [
+     "\u4e0a\u6da8",
+     "\u6da8"
+    ],
+    "horizon": [
+     "\u4ea4\u6613\u65e5"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "HK50",
+      "US500",
+      "USDCNH"
+     ],
+     "mentioned": [
+      "\u9ec4\u91d1",
+      "\u6e2f\u80a1",
+      "\u7f8e\u80a1",
+      "\u4eba\u6c11\u5e01",
+      "\u8f6c\u503a"
+     ],
+     "transfer_only": [
+      "\u8f6c\u503a->cn-equities-only"
+     ],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "3b4e6510a24f"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u5728\u5cb8\u4eba\u6c11\u5e01\u5151\u7f8e\u5143\u6536\u76d8\u62a56.7763\uff0c\u8f83\u4e0a\u4e00\u4ea4\u6613\u65e5\u4e0b\u8dcc140\u70b9 _ \u4e1c\u65b9\u8d22\u5bcc\u7f51",
+  "url": "https://finance.eastmoney.com/a/202606223778056515.html",
+  "published": "2026-09-25T22:14:22+00:00",
+  "symbols": [
+   "XAUUSD",
+   "HK50",
+   "US500",
+   "USDCNH"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "positioning"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "efecae83d48fe172f743",
+  "host": "finance.eastmoney.com",
+  "claims": [
+   {
+    "claim": "7763\uff0c\u8f83\u4e0a\u4e00\u4ea4\u6613\u65e5\u4e0b\u8dcc140\u70b9 _ \u4e1c\u65b9\u8d22\u5bcc\u7f51 \u8d22\u7ecf \u7126\u70b9 \u80a1\u7968 \u65b0\u80a1 \u671f\u6307 \u671f\u6743 \u884c\u60c5 \u6570\u636e \u5168\u7403 \u7f8e\u80a1 \u6e2f\u80a1 \u671f\u8d27 \u5916\u6c47 \u94f6\u884c \u57fa\u91d1 \u7406\u8d22 \u503a\u5238 \u76f4\u64ad \u80a1\u5427 \u57fa\u91d1\u5427 \u535a\u5ba2 \u8d22\u5bcc\u53f7 \u641c\u7d22 \u884c\u60c5\u4e2d\u5fc3 \u6307\u6570 \u671f\u6307 \u671f\u6743 \u4e2a\u80a1 \u677f\u5757 \u6392\u884c \u65b0\u80a1 \u57fa\u91d1 \u6e2f\u80a1 \u7f8e\u80a1 \u671f\u8d27 \u5916\u6c47 \u9ec4\u91d1 \u81ea\u9009\u80a1 \u81ea\u9009\u57fa\u91d1 \u6570\u636e\u4e2d\u5fc3 \u8d44\u91d1\u6d41\u5411 \u4e3b\u529b\u6392\u540d \u677f\u5757\u8d44\u91d1 \u4e2a\u80a1\u7814\u62a5 \u65b0\u80a1\u7533\u8d2d \u8f6c\u503a\u7533\u8d2d \u5317\u4ea4\u6240\u7533\u8d2d AH\u80a1\u6bd4\u4ef7 \u5e74\u62a5\u5927\u5168 \u878d\u8d44\u878d\u5238 \u9f99\u864e\u699c \u9650\u552e\u89e3\u7981 IPO\u5ba1\u6838 \u5927\u5b97\u4ea4\u6613 \u4f30\u503c\u5206\u6790 \u9996\u9875 > \u8d22\u7ecf\u9891\u9053 > \u6b63\u6587 \u5728\u5cb8\u4eba\u6c11\u5e01\u5151\u7f8e\u5143\u6536\u76d8\u62a56.",
+    "lang": "zh",
+    "quantities": [
+     "\u6536\u76d8",
+     "\u8d44\u91d1\u6d41",
+     "\u4e3b\u529b",
+     "\u9ec4\u91d1"
+    ],
+    "direction": [
+     "\u4e0b\u8dcc",
+     "\u8dcc"
+    ],
+    "horizon": [
+     "\u4ea4\u6613\u65e5"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "HK50",
+      "US500",
+      "USDCNH"
+     ],
+     "mentioned": [
+      "\u9ec4\u91d1",
+      "\u6e2f\u80a1",
+      "\u7f8e\u80a1",
+      "\u4eba\u6c11\u5e01",
+      "\u8f6c\u503a"
+     ],
+     "transfer_only": [
+      "\u8f6c\u503a->cn-equities-only"
+     ],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "7865276452cf"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "https://finance.eastmoney.com/a/202504213382900665.html",
+  "url": "https://finance.eastmoney.com/a/202504213382900665.html",
+  "published": "2026-09-25T22:14:24+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "684cefe600debe454c91",
+  "host": "finance.eastmoney.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u7f8e\u5143\u5151\u52a0\u5143\u7a81\u78341.40 \u4e3a\u53bb\u5e7412\u6708\u4ee5\u6765\u9996\u6b21 _ \u4e1c\u65b9\u8d22\u5bcc\u7f51",
+  "url": "https://finance.eastmoney.com/a/202606113768604988.html",
+  "published": "2026-09-25T22:14:26+00:00",
+  "symbols": [
+   "XAUUSD",
+   "HK50",
+   "US500",
+   "USDCAD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "breakout",
+   "flow",
+   "positioning"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "fe93723c524499e7a6ff",
+  "host": "finance.eastmoney.com",
+  "claims": [
+   {
+    "claim": "40\uff0c\u4e3a\u53bb\u5e7412\u6708\u4ee5\u6765\u9996\u6b21\uff0c\u65e5\u5185\u6da80.",
+    "lang": "zh",
+    "quantities": [
+     "\u65e5\u5185"
+    ],
+    "direction": [
+     "\u6da8"
+    ],
+    "horizon": [
+     "\u65e5\u5185",
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "HK50",
+      "US500",
+      "USDCAD"
+     ],
+     "mentioned": [
+      "\u9ec4\u91d1",
+      "\u6e2f\u80a1",
+      "\u7f8e\u80a1",
+      "\u52a0\u5143",
+      "\u8f6c\u503a"
+     ],
+     "transfer_only": [
+      "\u8f6c\u503a->cn-equities-only"
+     ],
+     "indirect": [
+      "CHINAH",
+      "USDCNH"
+     ],
+     "channels": [
+      "\u6e2f\u80a1\u901a: flow: Stock Connect -> HK indices and CNH"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "fb0cd8f217c2"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u6570\u636e\u5e73\u53f0-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/home",
+  "published": "2026-09-25T22:14:28+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b665fa99e77a1000100c",
+  "host": "bigquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u901a\u7528\u6570\u636e-\u91cf\u5316\u4ea4\u6613\u6570\u636e\u83b7\u53d6-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/categories/-\u901a\u7528\u6570\u636e",
+  "published": "2026-09-25T22:14:30+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "202ffab8280b4a67f965",
+  "host": "bigquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u80a1\u7968\u6570\u636e-\u91cf\u5316\u4ea4\u6613\u6570\u636e\u83b7\u53d6-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/categories/-\u80a1\u7968\u6570\u636e",
+  "published": "2026-09-25T22:14:32+00:00",
+  "symbols": [
+   "JPN225"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "night_session",
+   "positioning"
+  ],
+  "confidence": 0.95,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3ca061d4321817357ad6",
+  "host": "bigquant.com",
+  "claims": [
+   {
+    "claim": "577401+08:00 \u4f5c\u8005\uff1abigquantdatabuilder1 \u80a1\u7968\u672a\u590d\u6743\u65e5\u884c\u60c5(cn_stock_real_bar1d) \u6570\u636e\u63cf\u8ff0\uff1a\u8be5\u8868\u63d0\u4f9b\u4e86\u80a1\u7968\u5e02\u573a\u7684\u672a\u590d\u6743\u65e5\u884c\u60c5\u6570\u636e\uff0c\u5305\u62ec\u80a1\u7968\u7684\u5f00\u9ad8\u4f4e\u6536\u3001\u6210\u4ea4\u91cf\u3001\u6210\u4ea4\u7b14\u6570\u3001\u6210\u4ea4\u91d1\u989d\u3001\u6da8\u8dcc\u5e45\u3001\u6362\u624b\u7387\u3001\u6da8/\u8dcc\u505c\u4ef7\u7b49\u5173\u952e\u6307\u6807\u3002",
+    "lang": "zh",
+    "quantities": [
+     "\u6210\u4ea4\u91cf"
+    ],
+    "direction": [
+     "\u6da8",
+     "\u8dcc"
+    ],
+    "horizon": [
+     "bar"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [
+      "\u8dcc\u505c"
+     ],
+     "transfer_only": [
+      "\u8dcc\u505c->cn-equities-only"
+     ],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "aa2dfe534e09"
+   },
+   {
+    "claim": "\u5305\u62ec\uff1a\u5f53\u65e5\u80a1\u7968\u7684\u505c\u590d\u724c\u72b6\u6001\u3001\u590d\u6743\u540e\u7684\u524d\u6536\u76d8\u4ef7\u3001\u6da8\u8dcc\u505c\u4ef7\u3001\u590d\u6743\u56e0\u5b50\uff0c\uff08*\uff09ST\u72b6\u6001\u3001\u662f\u5426\u9664\u6743\u9664\u606f\u3001\u662f\u5426\u5904\u4e8e\u9000\u5e02\u6574\u7406\u671f\u3001\u4ef7\u683c\u6863\u4f4d\u3001\u662f\u5426\u4e3a\u878d\u8d44\u6807\u7684\u3001\u662f\u5426\u4e3a\u878d\u5238\u6807\u7684\u3001\u662f\u5426\u4e3a\u56de\u8f6c\u4ea4\u6613\u3001\u6d41\u901a\u80a1\u672c\u7b49\u6570\u636e\u3002",
+    "lang": "zh",
+    "quantities": [
+     "\u6536\u76d8"
+    ],
+    "direction": [
+     "\u6da8",
+     "\u8dcc"
+    ],
+    "horizon": [
+     "\u5f53\u65e5"
+    ],
+    "instruments": {
+     "analogues": [
+      "JPN225"
+     ],
+     "mentioned": [
+      "\u65e5\u80a1",
+      "\u8dcc\u505c"
+     ],
+     "transfer_only": [
+      "\u8dcc\u505c->cn-equities-only"
+     ],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "5e811da1c8da"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u80a1\u7968\u6570\u636e-\u80a1\u7968\u884c\u60c5-\u91cf\u5316\u4ea4\u6613\u6570\u636e\u83b7\u53d6-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/categories/-\u80a1\u7968\u6570\u636e-\u80a1\u7968\u884c\u60c5",
+  "published": "2026-09-25T22:14:33+00:00",
+  "symbols": [
+   "JPN225"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "night_session",
+   "positioning"
+  ],
+  "confidence": 0.95,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ab6a75f0d6663d0e950a",
+  "host": "bigquant.com",
+  "claims": [
+   {
+    "claim": "577401+08:00 \u4f5c\u8005\uff1abigquantdatabuilder1 \u80a1\u7968\u672a\u590d\u6743\u65e5\u884c\u60c5(cn_stock_real_bar1d) \u6570\u636e\u63cf\u8ff0\uff1a\u8be5\u8868\u63d0\u4f9b\u4e86\u80a1\u7968\u5e02\u573a\u7684\u672a\u590d\u6743\u65e5\u884c\u60c5\u6570\u636e\uff0c\u5305\u62ec\u80a1\u7968\u7684\u5f00\u9ad8\u4f4e\u6536\u3001\u6210\u4ea4\u91cf\u3001\u6210\u4ea4\u7b14\u6570\u3001\u6210\u4ea4\u91d1\u989d\u3001\u6da8\u8dcc\u5e45\u3001\u6362\u624b\u7387\u3001\u6da8/\u8dcc\u505c\u4ef7\u7b49\u5173\u952e\u6307\u6807\u3002",
+    "lang": "zh",
+    "quantities": [
+     "\u6210\u4ea4\u91cf"
+    ],
+    "direction": [
+     "\u6da8",
+     "\u8dcc"
+    ],
+    "horizon": [
+     "bar"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [
+      "\u8dcc\u505c"
+     ],
+     "transfer_only": [
+      "\u8dcc\u505c->cn-equities-only"
+     ],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "aa2dfe534e09"
+   },
+   {
+    "claim": "\u5305\u62ec\uff1a\u5f53\u65e5\u80a1\u7968\u7684\u505c\u590d\u724c\u72b6\u6001\u3001\u590d\u6743\u540e\u7684\u524d\u6536\u76d8\u4ef7\u3001\u6da8\u8dcc\u505c\u4ef7\u3001\u590d\u6743\u56e0\u5b50\uff0c\uff08*\uff09ST\u72b6\u6001\u3001\u662f\u5426\u9664\u6743\u9664\u606f\u3001\u662f\u5426\u5904\u4e8e\u9000\u5e02\u6574\u7406\u671f\u3001\u4ef7\u683c\u6863\u4f4d\u3001\u662f\u5426\u4e3a\u878d\u8d44\u6807\u7684\u3001\u662f\u5426\u4e3a\u878d\u5238\u6807\u7684\u3001\u662f\u5426\u4e3a\u56de\u8f6c\u4ea4\u6613\u3001\u6d41\u901a\u80a1\u672c\u7b49\u6570\u636e\u3002",
+    "lang": "zh",
+    "quantities": [
+     "\u6536\u76d8"
+    ],
+    "direction": [
+     "\u6da8",
+     "\u8dcc"
+    ],
+    "horizon": [
+     "\u5f53\u65e5"
+    ],
+    "instruments": {
+     "analogues": [
+      "JPN225"
+     ],
+     "mentioned": [
+      "\u65e5\u80a1",
+      "\u8dcc\u505c"
+     ],
+     "transfer_only": [
+      "\u8dcc\u505c->cn-equities-only"
+     ],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "5e811da1c8da"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u80a1\u7968\u6570\u636e-\u5206\u949f\u884c\u60c5-\u91cf\u5316\u4ea4\u6613\u6570\u636e\u83b7\u53d6-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/categories/-\u80a1\u7968\u6570\u636e-\u5206\u949f\u884c\u60c5",
+  "published": "2026-09-25T22:14:36+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e327553d48eacd46a0a3",
+  "host": "bigquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u80a1\u7968\u6570\u636e-\u80a1\u7968\u4fe1\u606f-\u91cf\u5316\u4ea4\u6613\u6570\u636e\u83b7\u53d6-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/categories/-\u80a1\u7968\u6570\u636e-\u80a1\u7968\u4fe1\u606f",
+  "published": "2026-09-25T22:14:38+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a6969736cb3c82f6c753",
+  "host": "bigquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u8d22\u52a1\u6570\u636e-\u91cf\u5316\u4ea4\u6613\u6570\u636e\u83b7\u53d6-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/categories/-\u8d22\u52a1\u6570\u636e",
+  "published": "2026-09-25T22:14:40+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.55,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f2ef8efadb48aa810ab0",
+  "host": "bigquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Gross savings (% of GDP) | Data",
+  "url": "https://data.worldbank.org/indicator/NY.GNS.ICTR.ZS",
+  "published": "2026-09-25T22:14:42+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [
+   "https://api.worldbank.org/v2/en/indicator/NY.GNS.ICTR.ZS?downloadformat=csv"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "89feff31f74d13d9d8c6",
+  "host": "data.worldbank.org",
+  "claims": [],
+  "n_claims": 0
+ }
+]

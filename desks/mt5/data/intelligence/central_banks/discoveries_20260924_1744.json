@@ -1,0 +1,19 @@
+[
+  {
+    "source": "central_bank",
+    "bank": "ECB",
+    "currency": "EUR",
+    "feed": "https://www.ecb.europa.eu/rss/press.html",
+    "published_utc": "2026-09-24T12:00:00+00:00",
+    "title": "ECB Executive Board member Isabel Schnabel to resign to take senior role at IMF",
+    "link": "https://www.ecb.europa.eu//press/pr/date/2026/html/ecb.pr260924~bea1dd9824.en.html",
+    "policy_signals": [],
+    "instruments": [
+      "EURUSD",
+      "EURJPY",
+      "EURGBP",
+      "EURAUD",
+      "EURCHF"
+    ]
+  }
+]

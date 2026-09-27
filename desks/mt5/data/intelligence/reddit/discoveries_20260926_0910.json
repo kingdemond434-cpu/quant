@@ -1,0 +1,61 @@
+[
+  {
+    "source": "reddit",
+    "subreddit": "ForexTrading",
+    "title": "I got a Sell Entry on XAUUSD (GOLD) using a Continuation Entry",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "ForexTrading",
+    "title": "Je recherche des strat\u00e9gies Forex ou XAUUSD pour un bot de trading",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "ForexTrading",
+    "title": "How will the gold market open in the US next Monday, given that the official closing price on Friday was 4382?",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "ForexTrading",
+    "title": "Forex trading",
+    "url": "",
+    "symbols": [
+      "BTCUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "ForexTrading",
+    "title": "USDJPY today: bounce building, bigger trend still mixed",
+    "url": "",
+    "symbols": [
+      "USDJPY"
+    ],
+    "patterns": [
+      "support",
+      "resistance",
+      "trend"
+    ],
+    "confidence": 0.3
+  }
+]

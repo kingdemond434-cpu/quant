@@ -1,0 +1,2152 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u0627\u0644\u0641\u0627 \u0628\u064a\u062a\u0627 | \u0647\u0644 \u0623\u0635\u0628\u062d\u062a \u0627\u0644\u062e\u0648\u0627\u0631\u0632\u0645\u064a\u0627\u062a \u0627\u0644\u0644\u0627\u0639\u0628 \u0627\u0644\u062e\u0641\u064a \u0641\u064a \u062a\u0627\u0633\u064a\u061f",
+  "url": "https://alphabeta.argaam.com/article/detail/112019",
+  "published": "2026-09-26T03:13:27+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d72c710a4069c66d024b",
+  "host": "alphabeta.argaam.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u0627\u0644\u0641\u0627 \u0628\u064a\u062a\u0627 | \u062a\u0627\u0633\u064a \u0648\u0645\u062d\u0641\u0632\u0627\u062a \u0644\u0627\u0633\u062a\u0639\u0627\u062f\u0629 \u0627\u0644\u062b\u0642\u0629",
+  "url": "https://alphabeta.argaam.com/article/detail/111981",
+  "published": "2026-09-26T03:13:29+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "792ccdf9fc13874879ae",
+  "host": "alphabeta.argaam.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u0627\u0644\u0641\u0627 \u0628\u064a\u062a\u0627 | \u0625\u0633\u062a\u0631\u0627\u062a\u064a\u062c\u064a\u0627\u062a \u0627\u0644\u0630\u0647\u0628 \u0648\u0628\u064a\u062a\u0643\u0648\u064a\u0646 \u0648\u0627\u0644\u062f\u0648\u0644\u0627\u0631 \u0644\u0639\u0627\u0645 2025",
+  "url": "https://alphabeta.argaam.com/article/detail/110873",
+  "published": "2026-09-26T03:13:30+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "momentum",
+   "orderflow",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "526f8ca29d6407acffd6",
+  "host": "alphabeta.argaam.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "All articles with the tag: r stockstrader trading platform - RoboForex Blog",
+  "url": "https://roboforex.com/blog/tag/r-stockstrader-trading-platform/",
+  "published": "2026-09-26T03:13:36+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f5c6fe490a1c548968c3",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Your First MQL5 Expert Advisor: Ready-Made Code | RoboForex Blog",
+  "url": "https://roboforex.com/blog/education/first-mql5-expert-advisor/",
+  "published": "2026-09-26T03:13:39+00:00",
+  "symbols": [
+   "EURUSD",
+   "GBPUSD"
+  ],
+  "timeframes": [
+   "H1"
+  ],
+  "patterns": [
+   "basis",
+   "breakout",
+   "carry",
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "520b8432816fa4c00121",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Market Week Ahead: US CPI Forecast After the ECB Decision",
+  "url": "https://roboforex.com/blog/analysis/market-week-ahead-september-7-11-us-cpi-forecast/",
+  "published": "2026-09-26T03:13:40+00:00",
+  "symbols": [
+   "XCUUSD",
+   "GER40",
+   "UK100",
+   "EURUSD",
+   "GBPUSD",
+   "AUDUSD",
+   "USDTRY",
+   "UST10Y",
+   "UKGILT",
+   "Tesla"
+  ],
+  "timeframes": [
+   "H4"
+  ],
+  "patterns": [
+   "basis",
+   "breakout",
+   "carry",
+   "flow",
+   "gap",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e3089a092da352b47425",
+  "host": "roboforex.com",
+  "claims": [
+   {
+    "claim": "This week hands the market two answers instead: the ECB decides on Thursday, and the US CPI forecast arrives on Friday as the last major number before the Fed meets in September.",
+    "lang": "en",
+    "quantities": [
+     "cpi"
+    ],
+    "direction": [
+     "forecast"
+    ],
+    "horizon": [
+     "week"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "US500",
+      "EURUSD"
+     ],
+     "channels": [
+      "the fed: policy: Fed -> dollar and US equities",
+      "ecb: policy: ECB -> EUR"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "659a43f9c4ee"
+   },
+   {
+    "claim": "A 25 basis point rise on both the deposit rate and the key rate is close to fully priced, which moves the whole question onto the comments from Christine Lagarde and the updated staff assessments of the Eurozone economy.",
+    "lang": "en",
+    "quantities": [
+     "basis",
+     "rate",
+     "close"
+    ],
+    "direction": [
+     "rise"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD"
+     ],
+     "channels": [
+      "lagarde: policy: ECB -> EUR"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "ef0b3cd5344d"
+   },
+   {
+    "claim": "It arrives in the same session as US inflation, so volatility on the currency market could rise noticeably.",
+    "lang": "en",
+    "quantities": [
+     "session",
+     "volatility"
+    ],
+    "direction": [
+     "rise"
+    ],
+    "horizon": [
+     "session"
+    ],
+    "instruments": {
+     "analogues": [
+      "XCUUSD",
+      "GER40",
+      "UK100",
+      "EURUSD",
+      "GBPUSD",
+      "AUDUSD",
+      "USDTRY",
+      "UST10Y",
+      "UKGILT",
+      "Tesla"
+     ],
+     "mentioned": [
+      "copper",
+      "dax",
+      "ftse 100",
+      "eur/usd",
+      "pound",
+      "aud/usd",
+      "try",
+      "treasuries",
+      "gilts",
+      "tesla",
+      "iron ore"
+     ],
+     "transfer_only": [
+      "iron ore->metals/energy"
+     ],
+     "indirect": [
+      "USDX",
+      "US500",
+      "USDJPY"
+     ],
+     "channels": [
+      "the fed: policy: Fed -> dollar and US equities",
+      "ecb: policy: ECB -> EUR",
+      "bank of england: policy: BoE -> GBP",
+      "bank of japan: policy: BoJ / MoF intervention -> JPY"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b461974ee50d"
+   },
+   {
+    "claim": "aud/usd forecast eur/usd forecast gbp/usd forecast market week ahead us 500 forecast Further reading Education 24 min Index Trading Explained: What a Stock Market Index Is and How to Trade It A trading index is an index of the average price of a certain set of instruments, such as stocks of different companies, united in one group.",
+    "lang": "en",
+    "quantities": [
+     "stocks"
+    ],
+    "direction": [
+     "forecast"
+    ],
+    "horizon": [
+     "week"
+    ],
+    "instruments": {
+     "analogues": [
+      "EURUSD",
+      "GBPUSD",
+      "AUDUSD"
+     ],
+     "mentioned": [
+      "eur/usd",
+      "gbp/usd",
+      "aud/usd"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "7475ffc784aa"
+   }
+  ],
+  "n_claims": 4
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Market Week Ahead: Non-Farm Payrolls Forecast Tests the Fed",
+  "url": "https://roboforex.com/blog/analysis/market-week-ahead-august-31-september-4-non-farm-payrolls-forecast/",
+  "published": "2026-09-26T03:13:42+00:00",
+  "symbols": [
+   "XAUUSD",
+   "XTIUSD",
+   "US500",
+   "USDX",
+   "EURUSD",
+   "AUDUSD",
+   "USDCAD",
+   "USDTRY",
+   "UST10Y",
+   "Tesla"
+  ],
+  "timeframes": [
+   "H4"
+  ],
+  "patterns": [
+   "basis",
+   "breakout",
+   "carry",
+   "flow",
+   "gap",
+   "momentum",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d25a87d1c6189f2909f4",
+  "host": "roboforex.com",
+  "claims": [
+   {
+    "claim": "After the weak Non-Farm Payrolls print of the previous month, any further sign of cooling would strengthen expectations of a near-term Fed rate cut.",
+    "lang": "en",
+    "quantities": [
+     "rate",
+     "cut"
+    ],
+    "direction": [
+     "strengthen"
+    ],
+    "horizon": [
+     "month"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XTIUSD",
+      "US500",
+      "USDX",
+      "EURUSD",
+      "AUDUSD",
+      "USDCAD",
+      "USDTRY",
+      "UST10Y",
+      "Tesla"
+     ],
+     "mentioned": [
+      "gold",
+      "brent",
+      "s&p 500",
+      "dollar index",
+      "eur/usd",
+      "aud/usd",
+      "usd/cad",
+      "try",
+      "treasuries",
+      "tesla",
+      "iron ore"
+     ],
+     "transfer_only": [
+      "iron ore->metals/energy"
+     ],
+     "indirect": [
+      "GBPUSD",
+      "USDJPY"
+     ],
+     "channels": [
+      "the fed: policy: Fed -> dollar and US equities",
+      "ecb: policy: ECB -> EUR",
+      "bank of england: policy: BoE -> GBP",
+      "bank of japan: policy: BoJ / MoF intervention -> JPY",
+      "rba: policy: RBA -> AUD",
+      "bank of canada: policy: BoC -> CAD"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b71361421d97"
+   },
+   {
+    "claim": "Price holds below the middle Bollinger band, MACD is gradually recovering while staying close to neutral, and the stochastic turns down after an attempt higher.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "higher"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XTIUSD",
+      "US500",
+      "USDX",
+      "EURUSD",
+      "AUDUSD",
+      "USDCAD",
+      "USDTRY",
+      "UST10Y",
+      "Tesla"
+     ],
+     "mentioned": [
+      "gold",
+      "brent",
+      "s&p 500",
+      "dollar index",
+      "eur/usd",
+      "aud/usd",
+      "usd/cad",
+      "try",
+      "treasuries",
+      "tesla",
+      "iron ore"
+     ],
+     "transfer_only": [
+      "iron ore->metals/energy"
+     ],
+     "indirect": [
+      "GBPUSD",
+      "USDJPY"
+     ],
+     "channels": [
+      "the fed: policy: Fed -> dollar and US equities",
+      "ecb: policy: ECB -> EUR",
+      "bank of england: policy: BoE -> GBP",
+      "bank of japan: policy: BoJ / MoF intervention -> JPY",
+      "rba: policy: RBA -> AUD",
+      "bank of canada: policy: BoC -> CAD"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b88411002202"
+   },
+   {
+    "claim": "aud/usd forecast eur/usd forecast market week ahead s&p 500 forecast usd/cad forecast Further reading Education 24 min Index Trading Explained: What a Stock Market Index Is and How to Trade It A trading index is an index of the average price of a certain set of instruments, such as stocks of different companies, united in one group.",
+    "lang": "en",
+    "quantities": [
+     "stocks"
+    ],
+    "direction": [
+     "forecast"
+    ],
+    "horizon": [
+     "week"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "EURUSD",
+      "AUDUSD",
+      "USDCAD"
+     ],
+     "mentioned": [
+      "s&p 500",
+      "eur/usd",
+      "aud/usd",
+      "usd/cad"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "dd23129d6531"
+   }
+  ],
+  "n_claims": 3
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "LLY Stock Forecast After Eli Lilly Launches Foundayo in the UK",
+  "url": "https://roboforex.com/blog/analysis/lly-stock-forecast-foundayo-uk-launch/",
+  "published": "2026-09-26T03:13:44+00:00",
+  "symbols": [
+   "USDTRY",
+   "Tesla"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "breakout",
+   "carry",
+   "flow",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e42a237f369666721b22",
+  "host": "roboforex.com",
+  "claims": [
+   {
+    "claim": "At the same time the Stochastic indicator sits close to overbought territory, so further gains are likely to come with local pullbacks along the way.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "gains"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDTRY",
+      "Tesla"
+     ],
+     "mentioned": [
+      "try",
+      "tesla"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "US500",
+      "GBPUSD",
+      "USDJPY"
+     ],
+     "channels": [
+      "the fed: policy: Fed -> dollar and US equities",
+      "bank of england: policy: BoE -> GBP",
+      "bank of japan: policy: BoJ / MoF intervention -> JPY"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "0bcb20b55367"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Market Week Ahead: Core PCE Tests Fed Rate Bets",
+  "url": "https://roboforex.com/blog/analysis/market-week-ahead-august-24-28-core-pce/",
+  "published": "2026-09-26T03:13:46+00:00",
+  "symbols": [
+   "USDCAD",
+   "US500",
+   "CA60",
+   "AUS200",
+   "EURUSD",
+   "USDJPY",
+   "AUDUSD",
+   "USDTRY",
+   "UST10Y",
+   "Tesla"
+  ],
+  "timeframes": [
+   "H4"
+  ],
+  "patterns": [
+   "basis",
+   "breakout",
+   "carry",
+   "flow",
+   "gap",
+   "momentum",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "17d00a87ee6cb8b91020",
+  "host": "roboforex.com",
+  "claims": [
+   {
+    "claim": "Market Reaction GDP above forecast would support the Canadian dollar and open the way for USD/CAD to extend its decline.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "forecast"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDCAD"
+     ],
+     "mentioned": [
+      "usd/cad"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "26badabd6ec0"
+   },
+   {
+    "claim": "A large downward NFP revision on the same day would add its own dollar-negative pressure across the board.",
+    "lang": "en",
+    "quantities": [
+     "nfp"
+    ],
+    "direction": [
+     "negative"
+    ],
+    "horizon": [
+     "day"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "CA60",
+      "AUS200",
+      "EURUSD",
+      "USDJPY",
+      "AUDUSD",
+      "USDCAD",
+      "USDTRY",
+      "UST10Y",
+      "Tesla"
+     ],
+     "mentioned": [
+      "s&p 500",
+      "tsx",
+      "asx 200",
+      "eur/usd",
+      "usd/jpy",
+      "aud/usd",
+      "usd/cad",
+      "try",
+      "treasuries",
+      "tesla"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "GBPUSD"
+     ],
+     "channels": [
+      "the fed: policy: Fed -> dollar and US equities",
+      "bank of england: policy: BoE -> GBP",
+      "bank of japan: policy: BoJ / MoF intervention -> JPY",
+      "rba: policy: RBA -> AUD",
+      "bank of canada: policy: BoC -> CAD"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "a288c14dd2b6"
+   },
+   {
+    "claim": "aud/usd forecast eur/usd forecast market week ahead usd/cad forecast usd/jpy forecast Further reading Education 24 min Index Trading Explained: What a Stock Market Index Is and How to Trade It A trading index is an index of the average price of a certain set of instruments, such as stocks of different companies, united in one group.",
+    "lang": "en",
+    "quantities": [
+     "stocks"
+    ],
+    "direction": [
+     "forecast"
+    ],
+    "horizon": [
+     "week"
+    ],
+    "instruments": {
+     "analogues": [
+      "EURUSD",
+      "USDJPY",
+      "AUDUSD",
+      "USDCAD"
+     ],
+     "mentioned": [
+      "eur/usd",
+      "usd/jpy",
+      "aud/usd",
+      "usd/cad"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "83ef11ba624b"
+   }
+  ],
+  "n_claims": 3
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Meta Lawsuit Stock Forecast: META Trade Idea Toward 440 USD",
+  "url": "https://roboforex.com/blog/analysis/meta-lawsuit-stock-forecast-trade-idea/",
+  "published": "2026-09-26T03:13:48+00:00",
+  "symbols": [
+   "NAS100",
+   "USDTRY",
+   "Tesla"
+  ],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "breakout",
+   "carry",
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "28d105468258dc6d3ff5",
+  "host": "roboforex.com",
+  "claims": [
+   {
+    "claim": "Bayer shares dropped 14% in one session, and the company's market value shrank by more than 14 billion USD.",
+    "lang": "en",
+    "quantities": [
+     "session"
+    ],
+    "direction": [
+     "dropped"
+    ],
+    "horizon": [
+     "session"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "USDTRY",
+      "Tesla"
+     ],
+     "mentioned": [
+      "nasdaq",
+      "try",
+      "tesla"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "US500",
+      "GBPUSD",
+      "USDJPY"
+     ],
+     "channels": [
+      "the fed: policy: Fed -> dollar and US equities",
+      "bank of england: policy: BoE -> GBP",
+      "bank of japan: policy: BoJ / MoF intervention -> JPY"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "6b0358f10fcd"
+   },
+   {
+    "claim": "Open Account Analyst Ratings for META Stock As of August 2026, Barchart analyst ratings for Meta Platforms Inc show a consensus in favour of active buying: 47 out of 55 tracked analysts rate META as a Buy and 8 as a Hold.",
+    "lang": "en",
+    "quantities": [
+     "open",
+     "rate"
+    ],
+    "direction": [
+     "buy"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "USDTRY",
+      "Tesla"
+     ],
+     "mentioned": [
+      "nasdaq",
+      "try",
+      "tesla"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "US500",
+      "GBPUSD",
+      "USDJPY"
+     ],
+     "channels": [
+      "the fed: policy: Fed -> dollar and US equities",
+      "bank of england: policy: BoE -> GBP",
+      "bank of japan: policy: BoJ / MoF intervention -> JPY"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "158596f22635"
+   },
+   {
+    "claim": "Traders who want to act on this setup can open a short position in META at market around 560 USD with a Stop Loss at 602 USD, risking no more than 3% of the account.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "short"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "USDTRY",
+      "Tesla"
+     ],
+     "mentioned": [
+      "nasdaq",
+      "try",
+      "tesla"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "US500",
+      "GBPUSD",
+      "USDJPY"
+     ],
+     "channels": [
+      "the fed: policy: Fed -> dollar and US equities",
+      "bank of england: policy: BoE -> GBP",
+      "bank of japan: policy: BoJ / MoF intervention -> JPY"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "dfba2f017e51"
+   }
+  ],
+  "n_claims": 3
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Strategia",
+  "url": "https://www.ecb.europa.eu/ecb/orga/tasks/stability/strategy/html/index.pl.html",
+  "published": "2026-09-26T03:13:49+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "gap",
+   "inventory",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "pl",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.pl.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "664f1f882e2dc276342f",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Estrat\u00e9gia",
+  "url": "https://www.ecb.europa.eu/ecb/orga/tasks/stability/strategy/html/index.pt.html",
+  "published": "2026-09-26T03:13:51+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "inventory",
+   "momentum",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "pt",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.pt.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "8f1a1c94de108d6024fd",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Strategie",
+  "url": "https://www.ecb.europa.eu/ecb/orga/tasks/stability/strategy/html/index.ro.html",
+  "published": "2026-09-26T03:13:53+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "inventory",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "ro",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.ro.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "83319934dc4e94ef86e4",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Strat\u00e9gia",
+  "url": "https://www.ecb.europa.eu/ecb/orga/tasks/stability/strategy/html/index.sk.html",
+  "published": "2026-09-26T03:13:55+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "inventory",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "sk",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.sk.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "9e35470c9d75f0946de3",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Strategija",
+  "url": "https://www.ecb.europa.eu/ecb/orga/tasks/stability/strategy/html/index.sl.html",
+  "published": "2026-09-26T03:13:57+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "sl",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.sl.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "9cfbad446c51d6118a51",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Strategi f\u00f6r makrotillsyn",
+  "url": "https://www.ecb.europa.eu/ecb/orga/tasks/stability/strategy/html/index.sv.html",
+  "published": "2026-09-26T03:13:59+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "gap",
+   "inventory",
+   "mean_reversion",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "sv",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.sv.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "9ad9a30598a58a7a05c0",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Monetary policy, strategy and implementation",
+  "url": "https://www.ecb.europa.eu/pub/economic-research/research_agenda/monetary_policy/html/index.bg.html",
+  "published": "2026-09-26T03:14:01+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "bg",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.bg.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "1b88ce94d2dbeea2e4a1",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Dogecoin vs US Dollar (DOGEUSD) | ProCent | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-cent/DOGEUSD/",
+  "published": "2026-09-26T03:14:02+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790170960",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "3ab222bc8ceaba4910ec",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Australian Dollar vs Canadian Dollar (AUDCAD.p) | ProCent | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-cent/AUDCAD.p/",
+  "published": "2026-09-26T03:14:04+00:00",
+  "symbols": [
+   "AUDCAD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790170960",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "adcf77cd66243859c062",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Australian Dollar vs Swiss Franc (AUDCHF.p) | ProCent | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-cent/AUDCHF.p/",
+  "published": "2026-09-26T03:14:06+00:00",
+  "symbols": [
+   "AUDCHF"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790170960",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "f9f3b6f5fca7ac4d7030",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Australian Dollar vs Japanese Yen (AUDJPY.p) | ProCent | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-cent/AUDJPY.p/",
+  "published": "2026-09-26T03:14:08+00:00",
+  "symbols": [
+   "AUDJPY",
+   "USDJPY"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790170960",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "7b64a62a61d4edda709f",
+  "host": "th.roboforex.com",
+  "claims": [
+   {
+    "claim": "001 \u0e40\u0e27\u0e25\u0e32\u0e02\u0e2d\u0e07\u0e0a\u0e48\u0e27\u0e07\u0e0b\u0e37\u0e49\u0e2d\u0e02\u0e32\u0e22 00:05 - 23:55 Term currency JPY 3-days swap Wednesday \u0e01\u0e32\u0e23\u0e08\u0e48\u0e32\u0e22 16.",
+    "lang": "th",
+    "quantities": [
+     "swap"
+    ],
+    "direction": [
+     "\u0e0b\u0e37\u0e49\u0e2d",
+     "\u0e02\u0e32\u0e22"
+    ],
+    "horizon": [
+     "days"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDJPY",
+      "AUDJPY"
+     ],
+     "mentioned": [
+      "yen",
+      "audjpy"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "18e2643cee68"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Australian Dollar vs US Dollar (AUDUSD.p) | ProCent | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-cent/AUDUSD.p/",
+  "published": "2026-09-26T03:14:10+00:00",
+  "symbols": [
+   "AUDUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790170960",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "f9155c303659c0b0d145",
+  "host": "th.roboforex.com",
+  "claims": [
+   {
+    "claim": "00001 \u0e40\u0e27\u0e25\u0e32\u0e02\u0e2d\u0e07\u0e0a\u0e48\u0e27\u0e07\u0e0b\u0e37\u0e49\u0e2d\u0e02\u0e32\u0e22 00:05 - 23:55 Term currency USD 3-days swap Wednesday \u0e01\u0e32\u0e23\u0e08\u0e48\u0e32\u0e22 19.",
+    "lang": "th",
+    "quantities": [
+     "swap"
+    ],
+    "direction": [
+     "\u0e0b\u0e37\u0e49\u0e2d",
+     "\u0e02\u0e32\u0e22"
+    ],
+    "horizon": [
+     "days"
+    ],
+    "instruments": {
+     "analogues": [
+      "AUDUSD"
+     ],
+     "mentioned": [
+      "audusd"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "15ad27297d9f"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Australian Dollar vs New Zealand Dollar (AUDNZD.p) | ProCent | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-cent/AUDNZD.p/",
+  "published": "2026-09-26T03:14:11+00:00",
+  "symbols": [
+   "AUDNZD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790170960",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "7953fba8776e273a9b06",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Canadian Dollar vs Swiss Franc (CADCHF.p) | ProCent | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-cent/CADCHF.p/",
+  "published": "2026-09-26T03:14:14+00:00",
+  "symbols": [
+   "CADCHF"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790170960",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "a42a1547162b60bb493f",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Forex/CFD Trading Platform | Online Currency Trading Platform | Dukascopy Bank SA",
+  "url": "https://www.dukascopy.com/swiss/english/forex/dealstation/?c4",
+  "published": "2026-09-26T03:14:15+00:00",
+  "symbols": [
+   "EURUSD",
+   "GBPUSD",
+   "USDJPY",
+   "USDTRY"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "flow",
+   "night_session",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://download.terminal.free/cdn/web/metaquotes.software.corp/mt5/MetaTrader5.pkg.zip",
+   "https://www.dukascopy.com/downloads/bank/",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt5/dukascopy5setup.exe",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt4/dukascopy4setup.exe",
+   "https://www.dukascopy.com/swiss/english/forex/api/jforex-api/",
+   "https://www.dukascopy.com/swiss/english/forex/api/fix-api/",
+   "https://www.dukascopy.com/swiss/english/forex/api/fix_api/",
+   "https://www.dukascopy.com/downloads/bank/jforex/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt5/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt4/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/binary/?lang=en",
+   "https://download.terminal.free/cdn/web/metaquotes.software.corp/mt4/MetaTrader4.dmg",
+   "https://download.terminal.free/cdn/mobile/mt4/ios?hl=en",
+   "https://download.terminal.free/cdn/mobile/mt4/android?hl=en"
+  ],
+  "n_endpoints": 14,
+  "vault_sha": "14ff435d99e37aeb612d",
+  "host": "www.dukascopy.com",
+  "claims": [
+   {
+    "claim": "Open a Live account : Once you have gained some confidence, open a Live account at Dukascopy Bank and start trading.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "gained"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "eur/usd",
+      "gbp/usd",
+      "usd/jpy",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "36a3bd4fe5d1"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Forex/CFD Trading Platform | Online Currency Trading Platform | Dukascopy Bank SA",
+  "url": "https://www.dukascopy.com/swiss/english/forex/dealstation/?c3",
+  "published": "2026-09-26T03:14:17+00:00",
+  "symbols": [
+   "EURUSD",
+   "GBPUSD",
+   "USDJPY",
+   "USDTRY"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "flow",
+   "night_session",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://download.terminal.free/cdn/web/metaquotes.software.corp/mt5/MetaTrader5.pkg.zip",
+   "https://www.dukascopy.com/downloads/bank/",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt5/dukascopy5setup.exe",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt4/dukascopy4setup.exe",
+   "https://www.dukascopy.com/swiss/english/forex/api/jforex-api/",
+   "https://www.dukascopy.com/swiss/english/forex/api/fix-api/",
+   "https://www.dukascopy.com/swiss/english/forex/api/fix_api/",
+   "https://www.dukascopy.com/downloads/bank/jforex/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt5/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt4/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/binary/?lang=en",
+   "https://download.terminal.free/cdn/web/metaquotes.software.corp/mt4/MetaTrader4.dmg",
+   "https://download.terminal.free/cdn/mobile/mt4/ios?hl=en",
+   "https://download.terminal.free/cdn/mobile/mt4/android?hl=en"
+  ],
+  "n_endpoints": 14,
+  "vault_sha": "1d52db470c1216122b19",
+  "host": "www.dukascopy.com",
+  "claims": [
+   {
+    "claim": "Open a Live account : Once you have gained some confidence, open a Live account at Dukascopy Bank and start trading.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "gained"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "eur/usd",
+      "gbp/usd",
+      "usd/jpy",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "36a3bd4fe5d1"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Forex/CFD Trading Platform | Online Currency Trading Platform | Dukascopy Bank SA",
+  "url": "https://www.dukascopy.com/swiss/english/forex/dealstation/?c8",
+  "published": "2026-09-26T03:14:19+00:00",
+  "symbols": [
+   "EURUSD",
+   "GBPUSD",
+   "USDJPY",
+   "USDTRY"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "flow",
+   "night_session",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://download.terminal.free/cdn/web/metaquotes.software.corp/mt5/MetaTrader5.pkg.zip",
+   "https://www.dukascopy.com/downloads/bank/",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt5/dukascopy5setup.exe",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt4/dukascopy4setup.exe",
+   "https://www.dukascopy.com/swiss/english/forex/api/jforex-api/",
+   "https://www.dukascopy.com/swiss/english/forex/api/fix-api/",
+   "https://www.dukascopy.com/swiss/english/forex/api/fix_api/",
+   "https://www.dukascopy.com/downloads/bank/jforex/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt5/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt4/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/binary/?lang=en",
+   "https://download.terminal.free/cdn/web/metaquotes.software.corp/mt4/MetaTrader4.dmg",
+   "https://download.terminal.free/cdn/mobile/mt4/ios?hl=en",
+   "https://download.terminal.free/cdn/mobile/mt4/android?hl=en"
+  ],
+  "n_endpoints": 14,
+  "vault_sha": "cdad7037e9c40d9c31e0",
+  "host": "www.dukascopy.com",
+  "claims": [
+   {
+    "claim": "Open a Live account : Once you have gained some confidence, open a Live account at Dukascopy Bank and start trading.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "gained"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "eur/usd",
+      "gbp/usd",
+      "usd/jpy",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "36a3bd4fe5d1"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "General Features :: Dukascopy Europe",
+  "url": "https://www.dukascopy.com/europe/english/forex/forex_trading_accounts/link/",
+  "published": "2026-09-26T03:14:20+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "gap",
+   "night_session",
+   "orderflow"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.dukascopy.com/downloads/eu/",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt4/dukascopy4setup.exe",
+   "https://download.mql5.com/cdn/web/dukascopy.bank.sa/mt5/dukascopy5setup.exe",
+   "https://www.dukascopy.com/europe/english/forex/api/fix-api/",
+   "https://www.dukascopy.com/europe/english/forex/api/jforex-api/",
+   "https://www.dukascopy.com/swiss/english/forex/api/fix_api/",
+   "https://www.dukascopy.com/downloads/eu/jforex/?lang=en",
+   "https://www.dukascopy.com/downloads/eu/mt5/?lang=en",
+   "https://www.dukascopy.com/downloads/eu/mt4/?lang=en"
+  ],
+  "n_endpoints": 9,
+  "vault_sha": "f2952e3cdbef0dc8be78",
+  "host": "www.dukascopy.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Overnight Policy :: Dukascopy Bank SA",
+  "url": "https://www.dukascopy.com/swiss/english/forex/forex_trading_accounts/overnight/",
+  "published": "2026-09-26T03:14:22+00:00",
+  "symbols": [
+   "USDTRY"
+  ],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "basis",
+   "carry",
+   "flow",
+   "night_session",
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://www.dukascopy.com/downloads/bank/",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt5/dukascopy5setup.exe",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt4/dukascopy4setup.exe",
+   "https://www.dukascopy.com/swiss/english/forex/api/jforex-api/",
+   "https://www.dukascopy.com/swiss/english/forex/api/fix-api/",
+   "https://www.dukascopy.com/swiss/english/forex/api/fix_api/",
+   "https://www.dukascopy.com/downloads/bank/jforex/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt5/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt4/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/binary/?lang=en"
+  ],
+  "n_endpoints": 10,
+  "vault_sha": "d5537dd6ee890cbec27d",
+  "host": "www.dukascopy.com",
+  "claims": [
+   {
+    "claim": "Dukascopy Bank applies different rollover rates to ensure that higher trading turnover for a client results in better overnight conditions.",
+    "lang": "en",
+    "quantities": [
+     "rollover"
+    ],
+    "direction": [
+     "higher"
+    ],
+    "horizon": [
+     "overnight"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDTRY"
+     ],
+     "mentioned": [
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "ea8ac1796a1b"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "trading_ProductsIntroduce_details",
+  "url": "http://en.sge.com.cn/eng_trading_ProductsIntroduce_Margindetails?pro_id=943346687737339904",
+  "published": "2026-09-26T03:14:37+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "night_session"
+  ],
+  "confidence": 0.75,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "fe520d7d1b04bb2f6d86",
+  "host": "en.sge.com.cn",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "trading_ProductsIntroduce_details",
+  "url": "http://en.sge.com.cn/eng_trading_ProductsIntroduce_Margindetails?pro_id=943347856956338176",
+  "published": "2026-09-26T03:14:40+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "night_session"
+  ],
+  "confidence": 0.75,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "8a96d9a8880cd8796801",
+  "host": "en.sge.com.cn",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "trading_ProductsIntroduce_details",
+  "url": "http://en.sge.com.cn/eng_trading_ProductsIntroduce_Margindetails?pro_id=943348581253472256",
+  "published": "2026-09-26T03:14:42+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "night_session"
+  ],
+  "confidence": 0.75,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e2e99edb7c1e3af6ad8d",
+  "host": "en.sge.com.cn",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "trading_ProductsIntroduce_details",
+  "url": "http://en.sge.com.cn/eng_trading_ProductsIntroduce_Margindetails?pro_id=943349389830234112",
+  "published": "2026-09-26T03:14:46+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "night_session"
+  ],
+  "confidence": 0.75,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "4b86c004af97271f62cc",
+  "host": "en.sge.com.cn",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "trading_ProductsIntroduce_details",
+  "url": "http://en.sge.com.cn/eng_trading_ProductsIntroduce_Margindetails?pro_id=943350053095288832",
+  "published": "2026-09-26T03:14:49+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "night_session"
+  ],
+  "confidence": 0.75,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "9966bd17b94930088735",
+  "host": "en.sge.com.cn",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "trading_ProductsIntroduce_details",
+  "url": "http://en.sge.com.cn/eng_trading_ProductsIntroduce_MargindetailsTwo?pro_id=182905442215137280",
+  "published": "2026-09-26T03:14:52+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d7a6cff62aa503565957",
+  "host": "en.sge.com.cn",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "rules_Trading",
+  "url": "http://en.sge.com.cn/eng_rules_Trading/10002483",
+  "published": "2026-09-26T03:14:54+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "63fb9681bbe4962d7f4b",
+  "host": "en.sge.com.cn",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Off-Exchange Trading API | Quiver API | Quiver Quantitative",
+  "url": "https://api.quiverquant.com/datasets/off-exchange-trading",
+  "published": "2026-09-26T03:14:55+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://api.quiverquant.com/static/css/datasetInfo.css?v=1.2",
+   "https://api.quiverquant.com/datasets/congress-trades",
+   "https://api.quiverquant.com/datasets/congress-stock-holdings",
+   "https://api.quiverquant.com/datasets/insider-trades",
+   "https://api.quiverquant.com/datasets/politician-net-worth",
+   "https://api.quiverquant.com/datasets/government-contracts",
+   "https://api.quiverquant.com/datasets/corporate-lobbying",
+   "https://api.quiverquant.com/datasets/revolving-door",
+   "https://api.quiverquant.com/datasets/corporate-donors",
+   "https://api.quiverquant.com/datasets/corporate-patents",
+   "https://api.quiverquant.com/datasets/hedge-fund-activity",
+   "https://api.quiverquant.com/datasets/executive-compensation",
+   "https://api.quiverquant.com/datasets/etf-holdings",
+   "https://api.quiverquant.com/datasets/top-shareholders",
+   "https://api.quiverquant.com/datasets/off-exchange-trading",
+   "https://api.quiverquant.com/datasets/trump-stock-trades",
+   "https://api.quiverquant.com/datasets/app-ratings",
+   "https://api.quiverquant.com/datasets/quiver-news",
+   "https://api.quiverquant.com/datasets/daily-equity-prices"
+  ],
+  "n_endpoints": 19,
+  "vault_sha": "6b4f2f04e40c7917b719",
+  "host": "api.quiverquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Donald Trump Stock Trades API | Quiver API | Quiver Quantitative",
+  "url": "https://api.quiverquant.com/datasets/trump-stock-trades",
+  "published": "2026-09-26T03:14:57+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://api.quiverquant.com/static/css/datasetInfo.css?v=1.2",
+   "https://api.quiverquant.com/datasets/congress-trades",
+   "https://api.quiverquant.com/datasets/congress-stock-holdings",
+   "https://api.quiverquant.com/datasets/insider-trades",
+   "https://api.quiverquant.com/datasets/politician-net-worth",
+   "https://api.quiverquant.com/datasets/government-contracts",
+   "https://api.quiverquant.com/datasets/corporate-lobbying",
+   "https://api.quiverquant.com/datasets/revolving-door",
+   "https://api.quiverquant.com/datasets/corporate-donors",
+   "https://api.quiverquant.com/datasets/corporate-patents",
+   "https://api.quiverquant.com/datasets/hedge-fund-activity",
+   "https://api.quiverquant.com/datasets/executive-compensation",
+   "https://api.quiverquant.com/datasets/etf-holdings",
+   "https://api.quiverquant.com/datasets/top-shareholders",
+   "https://api.quiverquant.com/datasets/off-exchange-trading",
+   "https://api.quiverquant.com/datasets/trump-stock-trades",
+   "https://api.quiverquant.com/datasets/app-ratings",
+   "https://api.quiverquant.com/datasets/quiver-news",
+   "https://api.quiverquant.com/datasets/daily-equity-prices"
+  ],
+  "n_endpoints": 19,
+  "vault_sha": "bdc4cf5c96aafedac3ef",
+  "host": "api.quiverquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "App Ratings API | Quiver API | Quiver Quantitative",
+  "url": "https://api.quiverquant.com/datasets/app-ratings",
+  "published": "2026-09-26T03:14:59+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://api.quiverquant.com/static/css/datasetInfo.css?v=1.2",
+   "https://api.quiverquant.com/datasets/congress-trades",
+   "https://api.quiverquant.com/datasets/congress-stock-holdings",
+   "https://api.quiverquant.com/datasets/insider-trades",
+   "https://api.quiverquant.com/datasets/politician-net-worth",
+   "https://api.quiverquant.com/datasets/government-contracts",
+   "https://api.quiverquant.com/datasets/corporate-lobbying",
+   "https://api.quiverquant.com/datasets/revolving-door",
+   "https://api.quiverquant.com/datasets/corporate-donors",
+   "https://api.quiverquant.com/datasets/corporate-patents",
+   "https://api.quiverquant.com/datasets/hedge-fund-activity",
+   "https://api.quiverquant.com/datasets/executive-compensation",
+   "https://api.quiverquant.com/datasets/etf-holdings",
+   "https://api.quiverquant.com/datasets/top-shareholders",
+   "https://api.quiverquant.com/datasets/off-exchange-trading",
+   "https://api.quiverquant.com/datasets/trump-stock-trades",
+   "https://api.quiverquant.com/datasets/app-ratings",
+   "https://api.quiverquant.com/datasets/quiver-news",
+   "https://api.quiverquant.com/datasets/daily-equity-prices"
+  ],
+  "n_endpoints": 19,
+  "vault_sha": "14ef68003cbc42214d6b",
+  "host": "api.quiverquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Quiver News API | Quiver API | Quiver Quantitative",
+  "url": "https://api.quiverquant.com/datasets/quiver-news",
+  "published": "2026-09-26T03:15:01+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://api.quiverquant.com/static/css/datasetInfo.css?v=1.2",
+   "https://api.quiverquant.com/datasets/congress-trades",
+   "https://api.quiverquant.com/datasets/congress-stock-holdings",
+   "https://api.quiverquant.com/datasets/insider-trades",
+   "https://api.quiverquant.com/datasets/politician-net-worth",
+   "https://api.quiverquant.com/datasets/government-contracts",
+   "https://api.quiverquant.com/datasets/corporate-lobbying",
+   "https://api.quiverquant.com/datasets/revolving-door",
+   "https://api.quiverquant.com/datasets/corporate-donors",
+   "https://api.quiverquant.com/datasets/corporate-patents",
+   "https://api.quiverquant.com/datasets/hedge-fund-activity",
+   "https://api.quiverquant.com/datasets/executive-compensation",
+   "https://api.quiverquant.com/datasets/etf-holdings",
+   "https://api.quiverquant.com/datasets/top-shareholders",
+   "https://api.quiverquant.com/datasets/off-exchange-trading",
+   "https://api.quiverquant.com/datasets/trump-stock-trades",
+   "https://api.quiverquant.com/datasets/app-ratings",
+   "https://api.quiverquant.com/datasets/quiver-news",
+   "https://api.quiverquant.com/datasets/daily-equity-prices"
+  ],
+  "n_endpoints": 19,
+  "vault_sha": "96b87999d411467ae562",
+  "host": "api.quiverquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u5b8f\u89c2\u884c\u4e1a-\u9ec4\u91d1-\u91cf\u5316\u4ea4\u6613\u6570\u636e\u83b7\u53d6-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/categories/-\u5b8f\u89c2\u884c\u4e1a-\u9ec4\u91d1",
+  "published": "2026-09-26T03:15:02+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "08e299643c4c60437994",
+  "host": "bigquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u91cf\u5316\u56e0\u5b50-\u91cf\u5316\u4ea4\u6613\u6570\u636e\u83b7\u53d6-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/categories/-\u91cf\u5316\u56e0\u5b50",
+  "published": "2026-09-26T03:15:06+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "flow",
+   "mean_reversion",
+   "momentum",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "9ce98c7a290cf32ee68f",
+  "host": "bigquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u91cf\u5316\u56e0\u5b50-\u80a1\u7968\u56e0\u5b50-\u91cf\u5316\u4ea4\u6613\u6570\u636e\u83b7\u53d6-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/categories/-\u91cf\u5316\u56e0\u5b50-\u80a1\u7968\u56e0\u5b50",
+  "published": "2026-09-26T03:15:07+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "flow",
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "aaf02656416123e5cc38",
+  "host": "bigquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u91cf\u5316\u56e0\u5b50-\u7814\u62a5\u56e0\u5b50-\u91cf\u5316\u4ea4\u6613\u6570\u636e\u83b7\u53d6-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/categories/-\u91cf\u5316\u56e0\u5b50-\u7814\u62a5\u56e0\u5b50",
+  "published": "2026-09-26T03:15:09+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "6278e7513479188e3bd9",
+  "host": "bigquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u53e6\u7c7b\u6570\u636e-\u91cf\u5316\u4ea4\u6613\u6570\u636e\u83b7\u53d6-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/categories/-\u53e6\u7c7b\u6570\u636e",
+  "published": "2026-09-26T03:15:11+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f41a637e4f9e667c3a4f",
+  "host": "bigquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u53e6\u7c7b\u6570\u636e-\u65b0\u95fb\u8206\u60c5-\u91cf\u5316\u4ea4\u6613\u6570\u636e\u83b7\u53d6-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/categories/-\u53e6\u7c7b\u6570\u636e-\u65b0\u95fb\u8206\u60c5",
+  "published": "2026-09-26T03:15:13+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "717fb2b763dfd2c5b971",
+  "host": "bigquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u53e6\u7c7b\u6570\u636e-\u80a1\u5427\u6570\u636e-\u91cf\u5316\u4ea4\u6613\u6570\u636e\u83b7\u53d6-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/categories/-\u53e6\u7c7b\u6570\u636e-\u80a1\u5427\u6570\u636e",
+  "published": "2026-09-26T03:15:18+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "cce950134585dec57b65",
+  "host": "bigquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Artigos sobre algotrading, Estat\u00edstica e an\u00e1lise | MetaTrader",
+  "url": "https://www.metatrader.com/pt/algotrading/statistics",
+  "published": "2026-09-26T03:15:20+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage",
+   "auction",
+   "correlation",
+   "flow",
+   "mean_reversion",
+   "momentum",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "pt",
+  "endpoints": [
+   "https://www.metatrader.com/manifest.json",
+   "https://download.terminal.free/cdn/web/metaquotes.ltd/mt5/MetaTrader5.pkg.zip?utm_source=www.metatrader.com&amp;utm_campaign=download.mt5.macos",
+   "https://www.metatrader.com/pt/download",
+   "https://download.terminal.free/cdn/web/metaquotes.ltd/mt5/mt5setup.exe?utm_source=www.metatrader.com&amp;utm_campaign=download",
+   "https://download.terminal.free/cdn/mobile/mt5/ios?hl=pt&amp;utm_source=www.metatrader.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/mobile/mt5/android?hl=pt&amp;utm_source=www.metatrader.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/mobile/mt5/android/app-gallery?hl=pt&amp;utm_source=www.metatrader.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/web/metaquotes.software.corp/mt5/metatrader5.apk?utm_source=www.metatrader.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/mobile/mql5.channels/ios",
+   "https://download.terminal.free/cdn/mobile/mql5.channels/android",
+   "https://download.terminal.free/cdn/mobile/mql5.channels/android/app-gallery",
+   "https://download.terminal.free/cdn/web/metaquotes.software.corp/mql5channels/mql5channels.apk",
+   "https://www.tradays.com/en/download",
+   "https://download.terminal.free/cdn/mobile/tradays/ios",
+   "https://download.terminal.free/cdn/mobile/tradays/android",
+   "https://download.terminal.free/cdn/mobile/tradays/android/app-gallery",
+   "https://download.terminal.free/cdn/web/metaquotes.software.corp/tradays/tradays.apk"
+  ],
+  "n_endpoints": 17,
+  "vault_sha": "3c139ca21dd5e36d978f",
+  "host": "www.metatrader.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u7d71\u8a08\u3068\u5206\u6790\u306b\u95a2\u3059\u308b\u30a2\u30eb\u30b4\u30ea\u30ba\u30e0\u53d6\u5f15\u306e\u8a18\u4e8b | MetaTrader",
+  "url": "https://www.metatrader.com/ja/algotrading/statistics",
+  "published": "2026-09-26T03:15:21+00:00",
+  "symbols": [],
+  "timeframes": [
+   "\u65e5\u8db3",
+   "\u6642\u9593\u8db3",
+   "\u9031\u8db3"
+  ],
+  "patterns": [
+   "arbitrage",
+   "correlation",
+   "orderflow",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "ja",
+  "endpoints": [
+   "https://www.metatrader.com/manifest.json",
+   "https://download.terminal.free/cdn/web/metaquotes.ltd/mt5/MetaTrader5.pkg.zip?utm_source=www.metatrader.com&amp;utm_campaign=download.mt5.macos",
+   "https://www.metatrader.com/ja/download",
+   "https://download.terminal.free/cdn/web/metaquotes.ltd/mt5/mt5setup.exe?utm_source=www.metatrader.com&amp;utm_campaign=download",
+   "https://download.terminal.free/cdn/mobile/mt5/ios?hl=ja&amp;utm_source=www.metatrader.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/mobile/mt5/android?hl=ja&amp;utm_source=www.metatrader.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/mobile/mt5/android/app-gallery?hl=ja&amp;utm_source=www.metatrader.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/web/metaquotes.software.corp/mt5/metatrader5.apk?utm_source=www.metatrader.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/mobile/mql5.channels/ios",
+   "https://download.terminal.free/cdn/mobile/mql5.channels/android",
+   "https://download.terminal.free/cdn/mobile/mql5.channels/android/app-gallery",
+   "https://download.terminal.free/cdn/web/metaquotes.software.corp/mql5channels/mql5channels.apk",
+   "https://www.tradays.com/en/download",
+   "https://download.terminal.free/cdn/mobile/tradays/ios",
+   "https://download.terminal.free/cdn/mobile/tradays/android",
+   "https://download.terminal.free/cdn/mobile/tradays/android/app-gallery",
+   "https://download.terminal.free/cdn/web/metaquotes.software.corp/tradays/tradays.apk"
+  ],
+  "n_endpoints": 17,
+  "vault_sha": "b816bb96d61efe206ba4",
+  "host": "www.metatrader.com",
+  "claims": [],
+  "n_claims": 0
+ }
+]

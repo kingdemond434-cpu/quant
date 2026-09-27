@@ -1,0 +1,480 @@
+[
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "Does anyone know what are main selling lvls in xauusd ?",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "Forex to Future? What do I need to know?",
+    "url": "",
+    "symbols": [
+      "NAS100",
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "XAUUSD SETUP FRIDAY...",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "CHFJPY: SHORT",
+    "url": "",
+    "symbols": [
+      "USDJPY",
+      "CHFJPY"
+    ],
+    "patterns": [
+      "trend"
+    ],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "Xauusd",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "GBPJPY: Short",
+    "url": "",
+    "symbols": [
+      "GBPJPY"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "Holding XAUUSD overnight for the first time \u2014 now it\u2019s just testing my patience \ud83d\ude02",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "XAUUSD: Short",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [
+      "MACD",
+      "swing",
+      "momentum"
+    ],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "Holding EUR/USD shorts",
+    "url": "",
+    "symbols": [
+      "DXY"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "Trading forex (currency pairs) based on fundamentals only?",
+    "url": "",
+    "symbols": [
+      "DXY"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "XAUUSD SETUP",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [
+      "support",
+      "resistance",
+      "EMA",
+      "liquidity",
+      "trend"
+    ],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "Why did the markets just move so much without news?",
+    "url": "",
+    "symbols": [
+      "GBPJPY"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "6 US inflation mornings on gold 5m: first 15 minute ranges from $11.61 to $67.77",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "Beginner Trader",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "WTI CRUDE OIL SHORT all Chartscreens @ Tradingview Analysis",
+    "url": "",
+    "symbols": [
+      "USOIL"
+    ],
+    "patterns": [
+      "swing"
+    ],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "Day 12 | $100K FTMO Challenge",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "What happened here?",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "silverbugs",
+    "title": "SD Bullion grab bag score!",
+    "url": "",
+    "symbols": [
+      "XAGUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "silverbugs",
+    "title": "Gardener finds 40 pounds of Viking silver in his backyard",
+    "url": "",
+    "symbols": [
+      "XAGUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "silverbugs",
+    "title": "Saved from refinery",
+    "url": "",
+    "symbols": [
+      "XAGUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "silverbugs",
+    "title": "Show and tell time :)",
+    "url": "",
+    "symbols": [
+      "XAGUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "silverbugs",
+    "title": "First poured silver",
+    "url": "",
+    "symbols": [
+      "XAGUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "silverbugs",
+    "title": "Mercury dimes under sport",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [
+      "SMA"
+    ],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "silverbugs",
+    "title": "The Birth of Stacking: Vintage Private Sector Silver",
+    "url": "",
+    "symbols": [
+      "XAGUSD"
+    ],
+    "patterns": [
+      "SMA"
+    ],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "silverbugs",
+    "title": "Amark ingots",
+    "url": "",
+    "symbols": [
+      "XAGUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "silverbugs",
+    "title": "Such an odd coin to counterfeit. Make sure your checking everything!",
+    "url": "",
+    "symbols": [
+      "XAGUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "silverbugs",
+    "title": "My Sterling Collection part of the stack",
+    "url": "",
+    "symbols": [
+      "XAGUSD"
+    ],
+    "patterns": [
+      "SMA"
+    ],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "silverbugs",
+    "title": "My 100th Oz of Silver!",
+    "url": "",
+    "symbols": [
+      "XAGUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "silverbugs",
+    "title": "First win, found bought a sterling silver George Washington plate for $50",
+    "url": "",
+    "symbols": [
+      "XAGUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "silverbugs",
+    "title": "Unmarked Silver from Costco",
+    "url": "",
+    "symbols": [
+      "XAGUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "silverbugs",
+    "title": "Picked these up for $40.... 38g total weight sterling silver shot glasses",
+    "url": "",
+    "symbols": [
+      "XAGUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "silverbugs",
+    "title": "Cheesy looking pens claim they're silver",
+    "url": "",
+    "symbols": [
+      "XAGUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "silverbugs",
+    "title": "My \u201cdealers design choice\u201d secondary market order. Kinda bummed but it\u2019s still silver! Og and I don\u2019t care how much you hate gb\u2019s and I don\u2019t want to hear more about \u201cscam, don\u2019t buy them, waste of mo",
+    "url": "",
+    "symbols": [
+      "XAGUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "silverbugs",
+    "title": "Silver bits from silver dave?",
+    "url": "",
+    "symbols": [
+      "XAGUSD",
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "silverbugs",
+    "title": "1981 u.s. assay silver trade unit",
+    "url": "",
+    "symbols": [
+      "XAGUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "silverbugs",
+    "title": "Amateur archaeologist finds Germany\u2019s biggest hoard of ancient Roman silver coins",
+    "url": "",
+    "symbols": [
+      "XAGUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "ForexTrading",
+    "title": "I got a Sell Entry on XAUUSD (GOLD) using a Continuation Entry",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "ForexTrading",
+    "title": "Je recherche des strat\u00e9gies Forex ou XAUUSD pour un bot de trading",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "ForexTrading",
+    "title": "How will the gold market open in the US next Monday, given that the official closing price on Friday was 4382?",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "ForexTrading",
+    "title": "Forex trading",
+    "url": "",
+    "symbols": [
+      "BTCUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "ForexTrading",
+    "title": "USDJPY today: bounce building, bigger trend still mixed",
+    "url": "",
+    "symbols": [
+      "USDJPY"
+    ],
+    "patterns": [
+      "support",
+      "resistance",
+      "trend"
+    ],
+    "confidence": 0.3
+  }
+]
