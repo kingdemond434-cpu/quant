@@ -122,6 +122,9 @@ def run(*, budget_s: float = DEFAULT_BUDGET_S, dry_run: bool = False,
     codes = pack_codes()
     old = _read(cursor)
     start = int(old.get("next_index") or 0) % max(1, len(codes))
+    previous = _read(report) if start else {}
+    cycle_rows = list(previous.get("countries") or []) if start else []
+    cycle_queries = list(previous.get("native_query_queue") or []) if start else []
     order = codes[start:] + codes[:start]
     conn = None if dry_run else R.connect()
     series = SeriesLoader()
@@ -169,23 +172,43 @@ def run(*, budget_s: float = DEFAULT_BUDGET_S, dry_run: bool = False,
     finally:
         if conn is not None:
             conn.close()
+    by_country = {str(row.get("country")): row for row in cycle_rows if row.get("country")}
+    by_country.update({str(row.get("country")): row for row in rows if row.get("country")})
+    cycle_rows = [by_country[code] for code in codes if code in by_country]
+    cycle_queries = [*cycle_queries, *native_queue]
+    # Query identity, not title/order: repeated bounded passes must not inflate native breadth.
+    query_seen: set[tuple[str, str, str, str]] = set()
+    unique_queries: list[dict[str, Any]] = []
+    for row in cycle_queries:
+        key = (str(row.get("country")), str(row.get("layer")), str(row.get("domain")),
+               str(row.get("query")))
+        if key in query_seen:
+            continue
+        query_seen.add(key)
+        unique_queries.append(row)
+    full = len(cycle_rows) == len(codes) and next_index == 0
     doc = {
-        "at": _now(), "outcome": "ok", "packs_total": len(codes), "packs_run": len(rows),
+        "at": _now(), "outcome": "ok", "packs_total": len(codes),
+        "packs_run": len(cycle_rows), "packs_run_this_pass": len(rows),
         "next_index": next_index, "completed_full_rotation": len(rows) == len(codes),
         "seconds": round(time.monotonic() - started, 3), "budget_s": float(budget_s),
-        "discoveries": sum(int(r.get("discoveries") or 0) for r in rows),
-        "failed_miners": sum(int(r.get("failed_miners") or 0) for r in rows),
-        "spec_adapters": sum(int(r.get("spec_adapters") or 0) for r in rows),
-        "native_query_queue": native_queue[:5000], "native_queries": len(native_queue),
-        "countries": rows,
-        "conservation": {"discovered_packs": len(codes), "run": len(rows),
-                         "deferred_to_cursor": max(0, len(codes) - len(rows)),
-                         "identity_holds": len(codes) == len(rows) + max(0, len(codes) - len(rows))},
+        "discoveries": sum(int(r.get("discoveries") or 0) for r in cycle_rows),
+        "discoveries_this_pass": sum(int(r.get("discoveries") or 0) for r in rows),
+        "failed_miners": sum(int(r.get("failed_miners") or 0) for r in cycle_rows),
+        "spec_adapters": sum(int(r.get("spec_adapters") or 0) for r in cycle_rows),
+        "native_query_queue": unique_queries[:5000], "native_queries": len(unique_queries),
+        "native_queries_this_pass": len(native_queue), "countries": cycle_rows,
+        "conservation": {"discovered_packs": len(codes), "run": len(cycle_rows),
+                         "deferred_to_cursor": max(0, len(codes) - len(cycle_rows)),
+                         "identity_holds": len(codes) == len(cycle_rows)
+                         + max(0, len(codes) - len(cycle_rows))},
         "rule": ("every pack is run, explicitly refused, or retained at the durable cursor; "
                  "declarative adapters mint hypothesis cards only; evidence and certificates "
                  "remain the universal gauntlet's authority")}
     _atomic(report, doc)
-    _atomic(cursor, {"at": doc["at"], "next_index": next_index, "packs": len(codes)})
+    doc["completed_full_rotation"] = full
+    _atomic(cursor, {"at": doc["at"], "next_index": next_index, "packs": len(codes),
+                     "cycle_packs": len(cycle_rows)})
     return doc
 
 
