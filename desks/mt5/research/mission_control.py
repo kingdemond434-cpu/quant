@@ -33,6 +33,20 @@ INPUTS: dict[str, tuple[Path, float]] = {
     "tier5": (REPORTS / "TIER5_ACCEPTANCE.json", 26.0),
 }
 
+BRACKET22_DISPOSITION: tuple[dict[str, str], ...] = (
+    {"claim": "one chief-of-staff interface over a persistent AI firm",
+     "disposition": "IMPLEMENTED", "canonical": "research/mission_control.py"},
+    {"claim": "persistent corporate brain linking research and outcomes",
+     "disposition": "DEDUPLICATED", "canonical": "research/knowledge_graph.py"},
+    {"claim": "independent red-team researcher attacks each thesis",
+     "disposition": "DEDUPLICATED", "canonical": "research/adversary.py + mathlab/institution.py"},
+    {"claim": "asynchronous 24/7 specialist research",
+     "disposition": "DEDUPLICATED", "canonical": "hourly_cycle.py + box_tasks.manifest"},
+    {"claim": "reported cost/productivity and trading performance",
+     "disposition": "REFUSED_AS_EVIDENCE",
+     "canonical": "unaudited claims create no AlphaCell and grant no capital"},
+)
+
 
 def _read(path: Path) -> dict[str, Any] | None:
     try:
@@ -155,6 +169,12 @@ def build(*, now: datetime | None = None,
         "question_contract": ["what happened overnight", "what is blocked",
                               "which researchers are productive", "what is under-researched",
                               "what do we know about <term>"],
+        "external_system_disposition": {
+            "system": "Bracket22",
+            "source_status": "USER_PROVIDED_SECONDARY_SUMMARY_UNVERIFIED",
+            "claims": list(BRACKET22_DISPOSITION),
+            "silent_drops": 0,
+        },
         "boundary": ("no promotion, sizing, allocation, risk-limit, gate, arming or order "
                      "authority; every answer cites canonical state"),
     }

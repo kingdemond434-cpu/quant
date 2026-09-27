@@ -39,6 +39,10 @@ def test_snapshot_is_one_read_only_truthful_interface(tmp_path: Path) -> None:
     assert snap["since_previous_snapshot"]["knowledge_nodes"] == 2
     assert snap["since_previous_snapshot"]["new_gauntlet_cells"] == 3
     assert snap["blocked"][0]["status"] == "NO_DATA"
+    disposition = snap["external_system_disposition"]
+    assert disposition["silent_drops"] == 0
+    assert {row["disposition"] for row in disposition["claims"]} == {
+        "IMPLEMENTED", "DEDUPLICATED", "REFUSED_AS_EVIDENCE"}
     assert mc.answer("what happened overnight", snap)["answer"] == snap["overnight"]
     assert mc.answer("which researchers are productive", snap)["answer"][0]["source_id"] == "x"
 
