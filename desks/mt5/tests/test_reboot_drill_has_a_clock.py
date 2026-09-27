@@ -90,6 +90,14 @@ def test_the_drill_handles_multiple_mt5_terminals_without_array_subtraction() ->
     assert "(Get-Date) - $terms.StartTime" not in src
 
 
+def test_weekend_market_closure_is_not_misreported_as_a_dead_account_feed() -> None:
+    src = DRILL.read_text("utf-8")
+    assert "$marketClosed" in src
+    assert "[DayOfWeek]::Saturday" in src and "[DayOfWeek]::Sunday" in src
+    assert "$age -gt 900 -and -not $marketClosed" in src
+    assert "freshness fence paused" in src
+
+
 def test_the_board_grades_a_missing_or_stale_drill_record_stalled(tmp_path: Path) -> None:
     keys = {i.key for i in issue_board.stale_producers(tmp_path)}
     assert "missing:reboot_drill" in keys

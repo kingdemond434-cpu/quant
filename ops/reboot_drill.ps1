@@ -38,8 +38,17 @@ foreach ($r in $required) {
 try {
   $d = Get-Content C:\opt\quant\web\desk_state.json -Raw | ConvertFrom-Json
   $age = [double]$d.account.source_age_seconds
-  if ($age -gt 900) { $fail += "account source $([math]::Round($age))s stale -- terminal is up but not feeding" }
-  "ACCOUNT SOURCE: $([math]::Round($age))s old (venue " + $d.account.venue + ", equity " + $d.account.equity + ")"
+  $utc = (Get-Date).ToUniversalTime()
+  # A quote-derived account snapshot cannot advance while Fusion's FX/metals market is closed.
+  # Treat the weekend as CLOSED, not STALE; the freshness fence resumes before the Sunday open.
+  $marketClosed = (($utc.DayOfWeek -eq [DayOfWeek]::Friday -and $utc.Hour -ge 22) -or
+                   $utc.DayOfWeek -eq [DayOfWeek]::Saturday -or
+                   ($utc.DayOfWeek -eq [DayOfWeek]::Sunday -and $utc.Hour -lt 21))
+  if ($age -gt 900 -and -not $marketClosed) {
+    $fail += "account source $([math]::Round($age))s stale -- terminal is up but not feeding"
+  }
+  $freshness = if ($marketClosed) { "market closed; freshness fence paused" } else { "market open" }
+  "ACCOUNT SOURCE: $([math]::Round($age))s old ($freshness; venue " + $d.account.venue + ", equity " + $d.account.equity + ")"
 } catch { $fail += "desk_state account unreadable"; "ACCOUNT SOURCE: unreadable" }
 
 if ($fail.Count -eq 0) { "`nREBOOT DRILL: PASS -- terminal, tasks and account read all recovered" }
