@@ -4,12 +4,16 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import sys
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
 DESK = Path(__file__).resolve().parents[1]
 ROOT = DESK.parents[1]
+for _path in (str(ROOT), str(DESK), str(DESK / "research")):
+    if _path not in sys.path:
+        sys.path.insert(0, _path)
 
 from libs.moat import registry  # noqa: E402
 from libs.research import diversity_archive as QD  # noqa: E402

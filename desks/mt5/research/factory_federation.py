@@ -11,6 +11,7 @@ import argparse
 import contextlib
 import json
 import os
+import sys
 import time
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -18,6 +19,9 @@ from typing import Any
 
 DESK = Path(__file__).resolve().parents[1]
 ROOT = DESK.parents[1]
+for _path in (str(ROOT), str(DESK), str(DESK / "research")):
+    if _path not in sys.path:
+        sys.path.insert(0, _path)
 
 from libs.research import factory_federation as F  # noqa: E402
 from libs.research.lead_schema import EVALUATION_LANES  # noqa: E402
