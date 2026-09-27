@@ -211,3 +211,25 @@ def test_nonzero_step_result_fails_loud(tmp_path: Path, monkeypatch: pytest.Monk
 
     assert rc == 1
     assert health["errors"]["qquant_shadow"] == "RuntimeError: returned non-zero status 1"
+
+
+def test_gold_certificate_versions_are_one_live_exposure() -> None:
+    assert shadow_cycle._canonical_live_exposure("gold_asia_v2") == "gold_asia"
+    assert shadow_cycle._canonical_live_exposure("gold_asia_v14") == "gold_asia"
+    assert shadow_cycle._canonical_live_exposure("gold_london_am_v3") == "gold_london_am"
+    assert shadow_cycle._canonical_live_exposure("gold_afternoon_v4") == "gold_afternoon"
+    assert shadow_cycle._canonical_live_exposure("other_alpha_v2") == "other_alpha_v2"
+
+
+def test_zero_trade_diagnostics_separate_new_quiet_and_blocked_clocks() -> None:
+    now = datetime(2026, 9, 27, 12, 0, tzinfo=UTC)
+    rows = [
+        {"n": 0, "status": "ACTIVE", "enrolled_at": "2026-09-26T12:00:00+00:00"},
+        {"n": 0, "status": "ACTIVE", "forward_start": "2026-09-01T12:00:00+00:00"},
+        {"n": 0, "status": "BLOCKED_NO_BARS", "forward_start": "2026-09-05T12:00:00+00:00"},
+        {"n": 3, "status": "ACTIVE", "forward_start": "2026-09-01T12:00:00+00:00"},
+    ]
+    got = shadow_cycle._zero_trade_diagnostics(rows, now)
+    assert got["count"] == 3
+    assert got["by_status"] == {"ACTIVE": 2, "BLOCKED_NO_BARS": 1}
+    assert got["mature_14d_without_trade"] == 2

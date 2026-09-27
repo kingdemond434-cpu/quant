@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import traceback
 from datetime import UTC, datetime
 from pathlib import Path
@@ -251,6 +252,54 @@ def _terminal_status(value: object) -> bool:
     ))
 
 
+def _canonical_live_exposure(name: object) -> str:
+    """The executable exposure behind a promoted row.
+
+    Gold ``_v2/_v3/_v4`` rows are certificate lineages behind ONE window.  The gateway already
+    strips the suffix before pricing and places only the three parent brackets, but the health
+    report used to publish every lineage as an independent live sleeve.  That made a three-leg
+    book read as nine legs precisely where operators inspect concentration.  Only the explicit
+    gold-window aliases are folded; versions of any other strategy remain distinct.
+    """
+    text = str(name or "")
+    if re.fullmatch(r"gold_(?:asia|london_am|afternoon)_v\d+", text):
+        return re.sub(r"_v\d+$", "", text)
+    return text
+
+
+def _zero_trade_diagnostics(rows: list[dict], now: datetime) -> dict[str, object]:
+    """Explain zero-trade clocks without pretending a quiet hypothesis is a broken clock."""
+    by_status: dict[str, int] = {}
+    ages: list[float] = []
+    mature = 0
+    for row in rows:
+        if int(row.get("n", 0) or 0) > 0:
+            continue
+        status = str(row.get("status") or "ACTIVE").upper()
+        by_status[status] = by_status.get(status, 0) + 1
+        raw = row.get("forward_start") or row.get("enrolled_at")
+        try:
+            stamp = datetime.fromisoformat(str(raw).replace("Z", "+00:00"))
+            stamp = stamp if stamp.tzinfo else stamp.replace(tzinfo=UTC)
+            age = max(0.0, (now - stamp.astimezone(UTC)).total_seconds() / 86400.0)
+        except (TypeError, ValueError):
+            continue
+        ages.append(age)
+        if age >= 14.0:
+            mature += 1
+    return {
+        "count": sum(by_status.values()),
+        "by_status": dict(sorted(by_status.items())),
+        "age_measured": len(ages),
+        "median_age_days": (round(sorted(ages)[len(ages) // 2], 3) if ages else None),
+        "mature_14d_without_trade": mature,
+        "rule": ("zero trades is not automatically a plumbing failure: blocked statuses name a "
+                 "repair, while an ACTIVE clock older than 14 days is a low-frequency/selection "
+                 "finding routed to forward exploitation; no synthetic or backdated trade is "
+                 "ever created"),
+    }
+
+
 def run() -> tuple[dict, int]:
     import external_shadow
     import promoter
@@ -388,6 +437,11 @@ def run() -> tuple[dict, int]:
     sleeves_doc = _read(BASE / "data" / "sleeves.json")
     live_sleeves = [s.get("name") for s in (sleeves_doc.get("sleeves") or [])
                     if isinstance(s, dict) and s.get("status") == "LIVE"]
+    _live_aliases: dict[str, list[str]] = {}
+    for _name in live_sleeves:
+        _live_aliases.setdefault(_canonical_live_exposure(_name), []).append(str(_name))
+    _live_exposures = sorted(_live_aliases)
+    _zero_trade = _zero_trade_diagnostics(active_rows, datetime.now(UTC))
     health = {
         "updated_at": datetime.now(UTC).isoformat(timespec="seconds"),
         "configured_sleeves": len(active_rows),
@@ -421,12 +475,19 @@ def run() -> tuple[dict, int]:
         "sleeves_with_forward_trades": sum(
             int(row.get("n", 0) or 0) > 0 for row in active_rows
         ),
+        "zero_trade_clocks": _zero_trade,
         "evidence_blocked_sleeves": blocked,
         "missing_sleeves": missing,
         "errors": errors,
         "seconds": round((datetime.now(UTC) - started).total_seconds(), 3),
         "gateway_armed": bool(gw.get("armed", False)),
-        "promoted_live_sleeves": live_sleeves,
+        # Executable exposures are the headline. Raw certificate rows remain alongside them for
+        # lineage audit, so folding aliases can never erase evidence or hide which certificate
+        # granted the parent window.
+        "promoted_live_sleeves": _live_exposures,
+        "promoted_live_certificate_rows": live_sleeves,
+        "live_exposure_aliases": {k: v for k, v in sorted(_live_aliases.items())
+                                  if len(v) > 1 or v[0] != k},
     }
     # AN ENROLMENT GAP IS A CENSUS, NOT A CRASH (fixed 2026-09-13, WS-005).
     #
