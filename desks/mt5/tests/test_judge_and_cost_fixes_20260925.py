@@ -125,21 +125,17 @@ def test_an_empty_lifetime_is_unmeasured_not_small() -> None:
     assert et.lifetime_charge([], {})["status"] == "UNMEASURED"
 
 
-def test_an_authorised_act_may_raise_the_wall_and_an_unauthorised_pass_may_not(
-        tmp_path: Path) -> None:
+def test_the_wall_never_rises_even_when_authorised(tmp_path: Path) -> None:
+    """Principal 2026-09-27: "fixed bars never rising ... whether its any number"."""
     from research import effective_trials as et
     spec = tmp_path / "gate_spec.yaml"
     spec.write_text(_SPEC, encoding="utf-8")
-    res = et.apply_to_spec(3200, variance=0.014863, path=spec)
-    assert res["status"] == "REFUSED_UNAUTHORISED"
-    assert et.spec_fixed_trial_count(spec) == 109
-    res = et.apply_to_spec(3200, variance=0.014863, path=spec, authorised=True)
-    assert res["status"] == "APPLIED"
-    assert et.spec_fixed_trial_count(spec) == 3200
-    text = spec.read_text("utf-8")
-    assert "effective_campaign_trials(3200)" in text
-    # Fail-closed never points at a softer wall than the one in force.
-    assert "fail_closed_to: \"fixed_campaign_trials(3200)" in text
+    for authorised in (False, True):
+        res = et.apply_to_spec(3200, variance=0.014863, path=spec, authorised=authorised)
+        assert res["status"] == "REFUSED_NEVER_RISES"
+        assert res["charged"] == 3200 and res["standing"] == 109
+        assert et.spec_fixed_trial_count(spec) == 109
+    assert "effective_campaign_trials(3200)" not in spec.read_text("utf-8")
 
 
 def test_the_build_proposes_the_lifetime_charge(tmp_path: Path) -> None:

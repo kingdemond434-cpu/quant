@@ -310,10 +310,14 @@ def apply_to_spec(charged: int, *, variance: float, path: Path | None = None,
     if m is None:
         return {"status": UNMEASURED, "why": "fixed_trial_count not found in spec"}
     standing = int(m.group(2))
-    # EITHER DIRECTION, BUT ONLY BY A DELIBERATE ACT. Until 2026-09-25 this refused every RAISE
-    # outright, so the charge could only ever fall -- and it fell to 109 against a lifetime of
-    # ~3,200 effective judged cells. A hurdle that can move down and never up is not a fixed bar,
-    # it is a ratchet towards the loose side. The unauthorised pass still writes nothing.
+    # THE BAR NEVER RISES (principal, 2026-09-27: "i want fixed bars never rising ... whether
+    # its any number"). A measured charge above the standing one is PUBLISHED, never written --
+    # not even by an authorised call. Only a deliberate decision may lower it.
+    if charged > standing:
+        return {"status": "REFUSED_NEVER_RISES", "standing": standing, "charged": charged,
+                "variance": variance,
+                "why": "the bar is fixed and never rises (principal 2026-09-27); this pass "
+                       f"measured {charged} against the standing {standing} and published it"}
     if charged == standing:
         return {"status": "UNCHANGED", "standing": standing, "charged": charged,
                 "why": "the measured charge equals the standing one; the bar stands"}
