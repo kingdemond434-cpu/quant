@@ -193,12 +193,20 @@ def run(*, budget_s: float = DEFAULT_BUDGET_S, dry_run: bool = False,
 def singleton(path: Path = LOCK):
     """A real OS lock: overlapping hourly/manual passes cannot double-spend trial budget."""
     path.parent.mkdir(parents=True, exist_ok=True)
-    handle = path.open("a+b")
-    handle.seek(0)
-    if handle.read(1) == b"":
+    try:
+        handle = path.open("a+b")
         handle.seek(0)
-        handle.write(b"0")
-        handle.flush()
+        if handle.read(1) == b"":
+            handle.seek(0)
+            handle.write(b"0")
+            handle.flush()
+    except (OSError, PermissionError):
+        try:
+            handle.close()
+        except (NameError, OSError):
+            pass
+        yield False
+        return
     try:
         if os.name == "nt":
             import msvcrt
