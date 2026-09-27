@@ -675,16 +675,27 @@ if (-not $permitAccepted) {
     $dirty = @(Invoke-Git $dirtyArgs |
                Where-Object { "$_" -match '\S' })
 }
-# The adoption script may be bootstrapped from the verified target specifically to recover a
-# broken delivery lane.  It is not an unknown local code edit when its bytes already equal that
-# target; without this exception the repair script rejects itself before it can repair anything.
-$bootstrapScript = "desks/mt5/scripts/Adopt-Release.ps1"
-if ($dirty -contains $bootstrapScript) {
-    & git -C $RepoRoot diff --quiet $target -- $bootstrapScript
-    if ($LASTEXITCODE -eq 0) {
-        $dirty = @($dirty | Where-Object { $_ -ne $bootstrapScript })
-        Write-Host "  verified bootstrap delivery script equals target; it does not block adoption"
+# A PREVIOUS ADOPTION MAY HAVE WRITTEN THE TARGET BYTES AND DIED BEFORE ITS RECORD COMMIT.
+# Measured 2026-09-27: repeated index.lock failures left 100 code paths dirty against HEAD, but
+# many were the exact additions/modifications/deletions already present in FETCH_HEAD. Calling
+# those "unknown local code" wedges the adopter forever: every retry refuses the recovery state
+# created by the previous retry. Compare every dirty code path to the immutable fetched target.
+# Exact matches are already-adopted work and are safe to continue from; a single byte that differs
+# remains dirty and is still refused below. This generalises the former one-file bootstrap escape
+# without weakening the protection for Claude/Codex/operator work.
+if ($dirty.Count -gt 0) {
+    $stillDirty = New-Object System.Collections.Generic.List[string]
+    $alreadyTarget = 0
+    foreach ($raw in $dirty) {
+        $rel = "$raw".Trim().Trim('"')
+        & git -C $RepoRoot diff --quiet --no-ext-diff $target -- $rel
+        if ($LASTEXITCODE -eq 0) { $alreadyTarget++ }
+        else { [void]$stillDirty.Add($rel) }
     }
+    if ($alreadyTarget -gt 0) {
+        Write-Host ("  {0} dirty path(s) already equal the fetched target; resuming their interrupted adoption" -f $alreadyTarget)
+    }
+    $dirty = @($stillDirty)
 }
 if ($dirty.Count -gt 0) {
     $dirtyPaths = @($dirty | ForEach-Object { "$_".Trim().Trim('"') })
