@@ -62,7 +62,9 @@ def test_the_manifest_declares_the_drill_with_its_cadence() -> None:
     assert len(rows) == 1, rows
     (row,) = rows
     assert 'trigger="daily' in row and 'runs="ops/reboot_drill.ps1"' in row
-    assert 'installer="desks/mt5/scripts/Install-QuantWindows.ps1"' in row
+    # The complete installer declares it, while the idempotent absent-task registrar is the
+    # canonical repair owner recorded in the manifest.
+    assert 'installer="desks/mt5/scripts/register_absent_box_tasks.ps1"' in row
 
 
 def test_the_drill_records_its_verdict_where_the_board_reads() -> None:
