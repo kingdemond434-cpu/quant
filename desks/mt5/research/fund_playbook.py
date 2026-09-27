@@ -130,10 +130,16 @@ PUBLIC_METHOD_OWNERS = {
     "Citadel_Millennium|marginal_growth_allocation_risk_budgets": (
         "libs/research/marginal_admission.py", "libs/portfolio/posterior_growth.py"),
     "public_data|dukascopy_and_venue_tick_truth": (
-        "desks/mt5/research/fetch_dukascopy.py", "desks/mt5/research/cost_truth.py"),
+        "desks/mt5/research/fetch_dukascopy.py",
+        "desks/mt5/research/dukascopy_backfill.py",
+        "desks/mt5/research/cost_truth.py"),
     "volatility_risk_premium|vol_curve_as_state": (
         "desks/mt5/research/curve_strategy_screen.py",
         "desks/mt5/research/tail_alpha_search.py"),
+    "event_news_surprise|actual_minus_consensus_and_reaction": (
+        "desks/mt5/research/event_surprise.py",
+        "desks/mt5/research/event_response_atlas.py",
+        "desks/mt5/research/news_event_stream.py"),
     "term_structure_roll|curves_and_swap_proxies": (
         "desks/mt5/research/fetch_futures_curves.py",
         "desks/mt5/research/curve_strategy_screen.py"),
