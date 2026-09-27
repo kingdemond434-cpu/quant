@@ -283,7 +283,7 @@ def test_the_roster_names_every_seed_every_adapter_and_every_cell(tmp_path: Path
     from desks.mt5.research import sandboxes as CELLS
     assert {CELLS.system_id(c) for c in CELLS.CELLS} <= ids
     assert len(ids) == len(doc["systems"]), "one row per system, never a duplicate"
-    assert doc["counts"]["seeds"] == 123
+    assert doc["counts"]["seeds"] == 128
 
 
 def test_every_roster_row_carries_the_columns_the_question_asked_for(tmp_path: Path) -> None:

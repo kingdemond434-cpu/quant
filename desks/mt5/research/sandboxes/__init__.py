@@ -28,7 +28,8 @@ from libs.research.external_federation import ExternalResearchPacket
 
 #: Cell id -> module name (relative to this package). Order is the runner's default order.
 CELLS: tuple[str, ...] = ("path_signature_lab", "conformal_calibration", "coevolution_cell",
-                          "edgar_transmission", "rl_execution_challenger")
+                          "edgar_transmission", "rl_execution_challenger",
+                          "agent_research_challenger", "gold_public_mechanisms")
 
 
 @dataclass(frozen=True)

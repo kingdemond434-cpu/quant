@@ -115,7 +115,8 @@ def test_department_plans_partition_the_heavy_legs():
 
 def test_auto_legs_under_department_plans_run_only_in_rest(monkeypatch, tmp_path):
     ran: list[str] = []
-    monkeypatch.setattr(hc, "_auto_leg", lambda e: ran.append(e["organ"]) or {"exit_code": 0})
+    monkeypatch.setattr(hc, "_auto_leg",
+                        lambda e, _name=None: ran.append(e["organ"]) or {"exit_code": 0})
     monkeypatch.setattr(hc, "_costed", lambda name, fn: fn())
     f = tmp_path / "auto_legs.json"
     f.write_text(json.dumps({"legs": [
