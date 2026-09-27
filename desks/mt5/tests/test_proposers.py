@@ -204,6 +204,33 @@ def test_no_card_targets_a_crypto_exchange_universe():
             assert banned not in text, f"card touches a forbidden venue: {c['claim'][:60]}"
 
 
+def test_medallion_claims_are_evidence_records_not_reputation_shortcuts():
+    ids = set()
+    for c in fund_playbook.MEDALLION_CARDS:
+        assert c["claim_id"] not in ids
+        ids.add(c["claim_id"])
+        assert c["canonical_source_id"] and c["claim_state"] and c["currentness"]
+        assert c["disposition"] in {
+            "IMPLEMENTED", "GENERATING", "BLOCKED_ON_DATA", "NON_TRANSFERABLE_TO_MT5",
+            "RESEARCH_ONLY",
+        }
+        assert len(c["falsifier"]) > 20
+        assert c["currentness"] != "CURRENTLY_CONFIRMED", (
+            "historical public evidence must not be silently relabelled as Medallion's current book")
+
+
+def test_medallion_translation_obeys_the_single_name_equity_mandate():
+    banned = {"Apple", "Microsoft", "Amazon", "Nvidia", "Alphabet-A", "Meta", "Tesla",
+              "JPMorganChase", "ExxonMobil", "Berkshire"}
+    assert not any(banned & set(c.get("symbols") or []) for c in fund_playbook.MEDALLION_CARDS)
+
+
+def test_every_medallion_frontier_law_reuses_a_real_canonical_owner():
+    assert len(fund_playbook.MEDALLION_FRONTIER_LAWS) == 6
+    for rel in fund_playbook.MEDALLION_FRONTIER_LAWS.values():
+        assert (fund_playbook.ROOT / rel).is_file(), rel
+
+
 # ------------------------------------------------------------------------------------------
 # Registration
 # ------------------------------------------------------------------------------------------

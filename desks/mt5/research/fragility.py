@@ -122,7 +122,8 @@ def main() -> int:
         # `from_symbol` is the only correct constructor: the hand-rolled form wrote gold's
         # spread in dollars-per-OUNCE into a per-LOT field and omitted quote_per_account, so
         # the commission was undercharged 184x on USDJPY and 8.2x on CADJPY (2026-08-27).
-        return Costs.from_symbol(meta.get(sym, {}), commission_per_lot=3.50)
+        from libs.portfolio.fusion_cost import costs_for_symbol
+        return costs_for_symbol(meta.get(sym, {}))
 
     def daily_r(sym: str, hunt: str, row: dict) -> pd.Series:
         key = (sym, hunt, row["fam"], row["side"], row["win"], row["state"])

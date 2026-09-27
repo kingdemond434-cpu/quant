@@ -43,6 +43,7 @@ fc = pytest.importorskip("libs.portfolio.fusion_cost")
 #: `external_gauntlet.costs_for` is absent on purpose: it already passes no override and takes
 #: `Costs.from_symbol`'s default, which is the same measured constant.
 MONEY_PATH = ("research/shadow_forward.py", "research/qquant_gates.py")
+RESEARCH_PATH = ("research/fragility.py", "research/mech_split.py", "research/placebo_test.py")
 
 #: The shape the fix removed. A round-turn figure in a field the engine charges per side.
 ROUND_TURN_LITERAL = 3.50
@@ -121,3 +122,24 @@ def test_the_published_brochure_rate_is_kept_beside_the_measured_one():
     """Both numbers stay visible so the gap between the brochure and the ledger is auditable."""
     assert fc.COMMISSION_PUBLISHED_USD_PER_SIDE > fc.COMMISSION_PER_LOT_PER_SIDE
     assert fc.COMMISSION_PER_LOT_PER_SIDE > 0, "a zero commission is not a Zero account"
+
+
+def test_canonical_symbol_costs_use_instrument_metadata_and_do_not_stress_commission():
+    meta = {"tick_size": 0.01, "contract_size": 100.0, "tick_value": 1.0,
+            "median_spread_pts": 5.0, "swap_long": -2.0, "swap_short": 1.0}
+    raw = fc.costs_for_symbol(meta)
+    stressed = fc.costs_for_symbol(meta, spread_stress=3.0)
+    assert raw.commission_per_lot == stressed.commission_per_lot == fc.COMMISSION_PER_LOT_PER_SIDE
+    assert stressed.spread_per_lot == pytest.approx(raw.spread_per_lot * 3.0)
+    assert raw.swap_per_lot_per_night > 0
+
+
+@pytest.mark.parametrize("rel", RESEARCH_PATH)
+def test_named_research_consumers_use_the_canonical_symbol_cost_helper(rel):
+    text = (_DESK / rel).read_text(encoding="utf-8")
+    assert "costs_for_symbol" in text
+    tree = ast.parse(text)
+    offenders = [node.lineno for node in ast.walk(tree) if isinstance(node, ast.Call)
+                 for kw in node.keywords if kw.arg == "commission_per_lot"
+                 and float(_constant_scale(kw.value) or 0.0) >= ROUND_TURN_LITERAL]
+    assert not offenders

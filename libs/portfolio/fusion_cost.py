@@ -134,6 +134,26 @@ COST_REGIMES: dict[str, float] = {"WIDE": 2.0, "RAW": 0.2, "ZERO": 0.0}
 #: The realistic regime. NOT `ZERO` -- see the header.
 DEFAULT_REGIME = "RAW"
 
+
+def costs_for_symbol(meta: dict[str, Any], *, regime: str = DEFAULT_REGIME,
+                     spread_stress: float = 1.0, spread_pts: float | None = None):
+    """Canonical Fusion Zero cost object for one instrument.
+
+    The universe supplies that instrument's contract, tick, conversion, spread and swap fields;
+    the account ledger supplies the per-side commission.  Stress widens only the variable spread,
+    never the contractual commission.
+    """
+    if regime not in COST_REGIMES:
+        raise ValueError(f"unknown Fusion cost regime {regime!r}; expected {sorted(COST_REGIMES)}")
+    from mt5desk.engine import Costs
+
+    return Costs.from_symbol(
+        meta,
+        mult=COST_REGIMES[regime] * float(spread_stress),
+        commission_per_lot=COMMISSION_PER_LOT_PER_SIDE,
+        spread_pts=spread_pts,
+    )
+
 #: `Costs.from_symbol` ends on `max(spread * mult, 0.05)`, so THE `ZERO` REGIME IS NOT A
 #: ZERO-SPREAD BOUND: at mult=0.0 the spread term floors here rather than vanishing. On a raw
 #: account that is arguably the right behaviour -- a residual is exactly what a raw account has --
