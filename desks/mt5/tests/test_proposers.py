@@ -231,6 +231,13 @@ def test_every_medallion_frontier_law_reuses_a_real_canonical_owner():
         assert (fund_playbook.ROOT / rel).is_file(), rel
 
 
+def test_every_public_medallion_method_reuses_real_canonical_organs():
+    assert len(fund_playbook.MEDALLION_METHOD_OWNERS) >= 8
+    for rels in fund_playbook.MEDALLION_METHOD_OWNERS.values():
+        for rel in rels:
+            assert (fund_playbook.ROOT / rel).is_file(), rel
+
+
 # ------------------------------------------------------------------------------------------
 # Registration
 # ------------------------------------------------------------------------------------------

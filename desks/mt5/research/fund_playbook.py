@@ -71,6 +71,44 @@ MEDALLION_FRONTIER_LAWS = {
     "missing_dimension_meta_research": "desks/mt5/research/unknown_unknowns.py",
 }
 
+# Publicly reported METHOD classes map to canonical owners.  This is deliberately a wiring map,
+# not a claim that the desk owns Renaissance's private implementation or signals.
+MEDALLION_METHOD_OWNERS = {
+    "many_weak_signals_one_frozen_model": (
+        "desks/mt5/research/weak_signal_compiler.py",
+        "desks/mt5/mt5desk/family_ensemble.py",
+    ),
+    "latent_regimes_and_online_state_probabilities": (
+        "libs/regime/hmm.py",
+        "desks/mt5/research/regime_router.py",
+    ),
+    "factor_neutral_residual_reversion": (
+        "desks/mt5/research/factor_residual_engine.py",
+        "desks/mt5/research/cross_asset_graph.py",
+    ),
+    "forced_flow_and_calendar_effects": (
+        "desks/mt5/research/actor_atlas.py",
+        "desks/mt5/research/actor_pressure.py",
+    ),
+    "nonlinear_representation_search": (
+        "desks/mt5/research/representation_discovery.py",
+    ),
+    "point_in_time_clean_history": (
+        "libs/data/quality.py",
+        "libs/data/pit_certificate.py",
+        "desks/mt5/research/pit_audit.py",
+    ),
+    "cost_impact_and_capacity_gating": (
+        "desks/mt5/research/cost_truth.py",
+        "desks/mt5/research/capacity.py",
+        "libs/execution/digital_twin.py",
+    ),
+    "portfolio_kelly_on_combined_forecasts": (
+        "libs/portfolio/kelly_surface.py",
+        "libs/portfolio/posterior_growth.py",
+    ),
+}
+
 
 def _m(claim_id: str, grade: str, claim: str, *, state: str, currentness: str,
        source: str, source_id: str, disposition: str, falsifier: str, **kwargs: object) -> dict:
@@ -354,6 +392,7 @@ def run() -> dict:
         "scope": "publicly defensible Renaissance/Medallion evidence; never proprietary claims",
         "claims": MEDALLION_CARDS,
         "frontier_laws": MEDALLION_FRONTIER_LAWS,
+        "method_owners": MEDALLION_METHOD_OWNERS,
         "promotion_authority": False,
         "canonical_route": "fund_playbook -> miner_candidate_compiler -> canonical gauntlet",
     }
@@ -370,8 +409,11 @@ def run() -> dict:
         "blocked_descendants": len(blocked),
         "informational_or_owned": sum(not c.get("family") for c in MEDALLION_CARDS),
         "frontier_laws": MEDALLION_FRONTIER_LAWS,
+        "method_owners": MEDALLION_METHOD_OWNERS,
         "unowned_frontier_laws": [name for name, rel in MEDALLION_FRONTIER_LAWS.items()
                                   if not (ROOT / rel).exists()],
+        "unowned_methods": [name for name, rels in MEDALLION_METHOD_OWNERS.items()
+                            if any(not (ROOT / rel).exists() for rel in rels)],
         "terminal_state": "CURRENT_PUBLIC_FRONTIER_EXHAUSTED_NEVER_DONE_FOREVER",
         "rule": "source pedigree changes the prior and provenance, never a gate or capital authority",
     }
