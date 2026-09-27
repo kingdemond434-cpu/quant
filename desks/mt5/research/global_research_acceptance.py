@@ -29,8 +29,22 @@ def audit(*, root: Path = ROOT, manifest: Path = MANIFEST, report: Path = REPORT
           now: datetime | None = None) -> dict[str, Any]:
     instant = now or datetime.now(tz=UTC)
     spec = json.loads(manifest.read_text("utf-8"))
+    requirements = list(spec["requirements"])
+    loaded_addenda: list[str] = []
+    for rel in spec.get("addenda") or []:
+        addendum_path = root / str(rel)
+        if not addendum_path.exists():
+            # The missing addendum is itself evidence debt.  Add a synthetic requirement so the
+            # report cannot silently shrink its denominator when a referenced spec disappears.
+            requirements.append({"id": f"MISSING:{rel}", "title": "missing acceptance addendum",
+                                 "priority": "P0", "implementation": [str(rel)], "tests": [],
+                                 "consumers": [], "runtime": []})
+            continue
+        addendum = json.loads(addendum_path.read_text("utf-8"))
+        requirements.extend(addendum.get("requirements") or [])
+        loaded_addenda.append(str(rel))
     rows: list[dict[str, Any]] = []
-    for req in spec["requirements"]:
+    for req in requirements:
         checks: dict[str, Any] = {}
         missing: list[str] = []
         for kind in ("implementation", "tests", "consumers"):
@@ -59,6 +73,7 @@ def audit(*, root: Path = ROOT, manifest: Path = MANIFEST, report: Path = REPORT
     counts = {status: sum(r["status"] == status for r in rows)
               for status in ("CURRENT_VERIFIED", "PARTIAL")}
     doc = {"specification": spec["specification"], "at": instant.isoformat(),
+           "addenda": loaded_addenda,
            "requirements": len(rows), "counts": counts,
            "all_current_verified": counts["PARTIAL"] == 0,
            "rows": rows, "unresolved": [r["id"] for r in rows if r["status"] != "CURRENT_VERIFIED"],

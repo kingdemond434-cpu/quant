@@ -20,9 +20,10 @@ def test_archive_preserves_distinct_niches_and_failures() -> None:
 def test_niche_champion_uses_evidence_then_value_without_deleting_history() -> None:
     base = {"source": "physical", "family": "inventory", "chart": "D1",
             "behavior": "reversal", "asset_class": "energy"}
-    archive = QD.update({}, [{"experiment_id": "old", **base, "verdict": "FAILED"}])
+    archive = QD.update({}, [{"experiment_id": "old", **base, "status": "FORWARD",
+                              "forward_r": 0.1, "delta_elogw": 0.01}])
     archive = QD.update(archive, [{"experiment_id": "new", **base, "status": "FORWARD",
-                                   "forward_r": 0.2}])
+                                   "forward_r": 0.2, "delta_elogw": 0.02}])
     assert archive["counts"]["items"] == 2
     niche = next(iter(archive["niches"].values()))
     assert niche["champion"] == "new" and set(niche["members"]) == {"old", "new"}
