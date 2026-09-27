@@ -90,7 +90,10 @@ def test_partial_extra_or_failed_gate_sets_never_admit() -> None:
     stages = _stages()
     assert all_ten_pass(stages)
     assert not all_ten_pass({k: v for k, v in stages.items() if k != "pbo"})
-    assert not all_ten_pass({**stages, "harsher_overlay": {"passed": True}})
+    # Supplementary gates are additive: every original gate remains mandatory and an extra gate
+    # must pass, but a passed eleventh measurement cannot invalidate the original ten.
+    assert all_ten_pass({**stages, "harsher_overlay": {"passed": True}})
+    assert not all_ten_pass({**stages, "harsher_overlay": {"passed": False}})
     stages["pbo"] = {"passed": False}
     assert not all_ten_pass(stages)
 

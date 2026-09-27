@@ -439,7 +439,8 @@ $StatePrefixes = @("desks/mt5/data/", "desks/mt5/reports/", "desks/mt5/logs/", "
 $StateFiles = @("desks/mt5/gateway_state.json", "desks/mt5/regime_state.json",
                 "desks/mt5/sync_marker.json", "desks/mt5/portfolio_projection.json",
                 "desks/mt5/hunt11.json", "desks/mt5/mech_battery.json",
-                "desks/mt5/mech_split.json", "desks/mt5/swap_exposure.json")
+                "desks/mt5/mech_split.json", "desks/mt5/swap_exposure.json",
+                "desks/mt5/docs/TRADE_PATH_REPORT.md")
 
 function Test-StatePath {
     param([string] $Rel)
