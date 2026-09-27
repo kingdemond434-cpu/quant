@@ -303,7 +303,11 @@ def strip_identity_keys(family: str, params: dict[str, Any]) -> dict[str, Any]:
 #:
 #: One definition, because a filter and its exception list drifting apart is exactly this bug.
 IDENTITY_KEYS = frozenset({"peer_symbol", "factor_symbols", "input_symbol",
-                           "input_source", "timeframe",
+                           "input_source", "timeframe", "session",
+                           # `session` selects WHEN the certified cell runs.  It is carried in
+                           # certificate envelopes and sleeve identities, but no registered
+                           # family accepts it as a keyword.  Passing it through made otherwise
+                           # valid E8 cells fail with `unexpected keyword argument 'session'`.
                            # The fill surface's vintage: it identifies WHICH map selected the
                            # cell's windows and is not an argument any family accepts.
                            "surface_generated_at"})
