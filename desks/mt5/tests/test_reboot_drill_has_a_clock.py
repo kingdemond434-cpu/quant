@@ -79,6 +79,15 @@ def test_the_drill_records_its_verdict_where_the_board_reads() -> None:
     assert "Enable-ScheduledTask" in src
 
 
+def test_the_drill_handles_multiple_mt5_terminals_without_array_subtraction() -> None:
+    """Fusion and E8 run separate terminal64 processes; the drill must select one uptime."""
+    src = DRILL.read_text("utf-8")
+    assert "$terms = @(Get-Process terminal64" in src
+    assert "$term = $terms | Sort-Object StartTime | Select-Object -First 1" in src
+    assert "terminal_count = $terms.Count" in src
+    assert "(Get-Date) - $terms.StartTime" not in src
+
+
 def test_the_board_grades_a_missing_or_stale_drill_record_stalled(tmp_path: Path) -> None:
     keys = {i.key for i in issue_board.stale_producers(tmp_path)}
     assert "missing:reboot_drill" in keys

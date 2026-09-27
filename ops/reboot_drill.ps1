@@ -10,8 +10,13 @@
 #                                           removed by the next PASS (the board's alarm contract)
 $root = Split-Path -Parent $PSScriptRoot
 $fail = @()
-$term = Get-Process terminal64 -ErrorAction SilentlyContinue
-if ($term) { "TERMINAL: running (pid " + $term.Id + ", up " + [math]::Round(((Get-Date) - $term.StartTime).TotalMinutes) + "m)" }
+$terms = @(Get-Process terminal64 -ErrorAction SilentlyContinue)
+# Multiple MT5 terminals are intentional on the trading box (Fusion plus E8).  PowerShell
+# projects `.StartTime` to an array when more than one process exists, so subtracting it from a
+# scalar date aborts the drill before it can write its verdict.  Use the oldest process for the
+# uptime witness and retain the total count in the durable record.
+$term = $terms | Sort-Object StartTime | Select-Object -First 1
+if ($term) { "TERMINAL: running (" + $terms.Count + " process(es); oldest pid " + $term.Id + ", up " + [math]::Round(((Get-Date) - $term.StartTime).TotalMinutes) + "m)" }
 else { $fail += "terminal64 NOT running"; "TERMINAL: NOT RUNNING" }
 
 $required = @('MT5-TerminalBoot','MT5-Gateway','MT5-Gauntlet','MT5-Shadow','MT5-Hourly',
@@ -48,7 +53,7 @@ $alarm = Join-Path $root "data\REBOOT_DRILL_ALARM.txt"
 try {
   New-Item -ItemType Directory -Force -Path (Split-Path -Parent $drillJson) | Out-Null
   @{ checked_at = $stamp; verdict = $verdict; failures = @($fail); required = @($required)
-     terminal_running = [bool]$term } | ConvertTo-Json -Depth 4 | Set-Content -Path $drillJson -Encoding UTF8
+     terminal_running = [bool]$term; terminal_count = $terms.Count } | ConvertTo-Json -Depth 4 | Set-Content -Path $drillJson -Encoding UTF8
   if ($fail.Count -eq 0) {
     Remove-Item -Path $alarm -ErrorAction SilentlyContinue
   } else {
