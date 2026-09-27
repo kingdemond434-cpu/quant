@@ -66,6 +66,10 @@ OUT = DESK / "reports" / "PRODUCER_YIELD.json"
 #: the roster a second time is how two organs come to disagree about who exists.
 CENSUS = DESK / "reports" / "PRODUCTIVITY_CENSUS.json"
 REGISTRY_DB = ROOT / "data" / "alpha_registry.sqlite"
+# Row-level conservation is measured by the compiler fence.  This joins the producer scoreboard
+# to that evidence so a producer cannot satisfy "owes cells" by writing 10,000 prose rows and an
+# exemption: every evidence-bearing row must itself produce a valid cell or remain visible debt.
+ROW_CONVERSION = DESK / "reports" / "ROW_CONVERSION.json"
 
 #: Declared exemptions and named blockers, SHARED with `scripts/check_productivity_census.py` so
 #: an organ declares itself once. A row is either a BLOCKER (`why` >= 20 chars + `owner`) or an
@@ -427,6 +431,12 @@ def yield_audit(window_hours: float = YIELD_WINDOW_HOURS) -> dict[str, Any]:
     per = win["per"]
     br = _breadth(win["cells"])
     marginal = br.get("marginal") or {}
+    row_doc = _read(ROW_CONVERSION, default={})
+    row_rows = row_doc.get("per_producer") if isinstance(row_doc, dict) else []
+    row_by_producer = {
+        str(r.get("producer") or "").strip().lower(): r
+        for r in (row_rows if isinstance(row_rows, list) else []) if isinstance(r, dict)
+    }
 
     rows: list[dict[str, Any]] = []
     owing: list[dict[str, Any]] = []
@@ -470,6 +480,13 @@ def yield_audit(window_hours: float = YIELD_WINDOW_HOURS) -> dict[str, Any]:
         decl = declared.get(key)
         if decl:
             row["declared"] = decl
+        row_contract = row_by_producer.get(key)
+        if row_contract:
+            row["convertible_rows"] = int(row_contract.get("convertible_rows") or 0)
+            row["converted_rows"] = int(row_contract.get("converted_rows") or 0)
+            row["convertible_conversion_rate"] = row_contract.get(
+                "convertible_conversion_rate")
+            row["convertible_rows_owed"] = int(row_contract.get("owes_convertible_rows") or 0)
         # OWING: it spent real compute and the judge saw NOTHING from it in the window, and it
         # has not said why. Not "low" -- zero. Low is a budget question and is never a failure
         # here, because cutting the tail of the search distribution is the one reduction in
@@ -503,6 +520,12 @@ def yield_audit(window_hours: float = YIELD_WINDOW_HOURS) -> dict[str, Any]:
     reason = str(rat.get("regression_reason") or "").strip()
 
     failures: list[str] = []
+    row_debt = [r for r in rows if int(r.get("convertible_rows_owed") or 0) > 0]
+    if row_debt:
+        failures.append(
+            f"{len(row_debt)} producer(s) have convertible source rows that emitted no valid "
+            "AlphaCell; declarations and prose volume do not excuse row loss. Owing: "
+            + ", ".join(f"{r['producer']}={r['convertible_rows_owed']}" for r in row_debt[:12]))
     if isinstance(owing_max, (int, float)) and len(owing) > owing_max:
         failures.append(
             f"{len(owing)} producer(s) owe cells against a ratchet of {owing_max:g}: the count "
@@ -534,6 +557,14 @@ def yield_audit(window_hours: float = YIELD_WINDOW_HOURS) -> dict[str, Any]:
                 "it. Ratchets fall only; nothing here caps a producer."),
         "window_hours": window_hours,
         "registry": {"available": win.get("available"), "why": win.get("why")},
+        "row_conversion": {
+            "path": _rel(ROW_CONVERSION),
+            "available": bool(row_by_producer),
+            "generated_utc": row_doc.get("generated_utc") if isinstance(row_doc, dict) else None,
+            "producers_with_convertible_debt": len(row_debt),
+            "rule": ("every convertible input row emits at least one valid AlphaCell; a named "
+                     "non-alpha refusal remains honest and is not manufactured into a strategy"),
+        },
         "census_at": census.get("at"),
         "breadth": {k: v for k, v in br.items() if k != "marginal"},
         "n_producers": len(rows),

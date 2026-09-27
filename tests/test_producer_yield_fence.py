@@ -45,6 +45,7 @@ def desk(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     monkeypatch.setattr(fence, "BLOCKERS", tmp_path / "blockers.json")
     monkeypatch.setattr(fence, "RATCHET", tmp_path / "ratchet.json")
     monkeypatch.setattr(fence, "REGISTRY_DB", tmp_path / "reg.sqlite")
+    monkeypatch.setattr(fence, "ROW_CONVERSION", tmp_path / "row_conversion.json")
     return tmp_path
 
 
@@ -154,3 +155,26 @@ def test_a_rising_owing_count_and_a_collapsed_throughput_both_fail(desk: Path) -
         "owing_max": 0, "cells_to_judge_per_hour_best": 1000.0,
         "regression_reason": "the universe rebuild is rewriting every parquet"}), encoding="utf-8")
     assert len(fence.yield_audit(window_hours=24.0)["failures"]) == 1
+
+
+def test_a_declaration_cannot_hide_convertible_rows_that_produced_no_cell(desk: Path) -> None:
+    _census(desk, [{"producer": "barren", "key": "barren", "compute_hours": 0.4,
+                    "compute_hours_ledger": 0.4, "compute_hours_registry": 0.0}])
+    _registry(desk / "reg.sqlite", [{"created_at": "2999-01-01T00:00:00+00:00",
+                                     "generator": "other", "grid_cell": "g",
+                                     "family": "carry", "symbol": "eurusd",
+                                     "horizon": "4h", "status": "judged"}])
+    (desk / "blockers.json").write_text(json.dumps({"barren": {
+        "exempt": True, "produces": "research prose", "consumer": "compiler"}}),
+        encoding="utf-8")
+    (desk / "row_conversion.json").write_text(json.dumps({"per_producer": [{
+        "producer": "barren", "convertible_rows": 7, "converted_rows": 0,
+        "convertible_conversion_rate": 0.0, "owes_convertible_rows": 7}]}),
+        encoding="utf-8")
+
+    doc = fence.yield_audit(window_hours=24.0)
+
+    assert doc["row_conversion"]["producers_with_convertible_debt"] == 1
+    assert any("convertible source rows" in failure for failure in doc["failures"])
+    row = next(r for r in doc["producers"] if r["producer"] == "barren")
+    assert row["convertible_rows_owed"] == 7

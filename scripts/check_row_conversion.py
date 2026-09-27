@@ -38,7 +38,7 @@ import glob
 import json
 import os
 import sys
-from collections import Counter
+from collections import Counter, defaultdict
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -60,6 +60,32 @@ TERMINAL_CELL = ("EXACT_RECIPE", "STRUCTURED_COT", "STRUCTURED_EVENT", "STRUCTUR
 TERMINAL_REFUSAL = ("OPERATIONAL_ROW", "EMPTY_CAPTURE")
 #: NOT terminal. Work, waiting to be done, and the number that must ratchet DOWN.
 BACKLOG = ("NEEDS_SYMBOL_EXTRACTION", "NEEDS_EXACT_RULE_EXTRACTION")
+
+# A candidate is not yield merely because a compiler returned a dictionary.  These are the
+# fields the downstream gauntlet needs to reproduce and judge a real strategy cell.  An empty
+# params mapping is valid: it means the registered family's defaults were the complete tested
+# parameterisation.  Missing params is not valid and must never be silently treated the same.
+REQUIRED_CELL_FIELDS = ("symbol", "family", "params", "mechanism_status", "mechanism_note")
+
+
+def _valid_cell(row: Any) -> tuple[bool, str]:
+    """Return whether *row* is a real, reproducible AlphaCell and the exact defect if not."""
+    if not isinstance(row, dict):
+        return False, "candidate is not an object"
+    missing = [key for key in REQUIRED_CELL_FIELDS if key not in row]
+    if missing:
+        return False, "missing " + ",".join(missing)
+    if not str(row.get("symbol") or "").strip():
+        return False, "blank symbol"
+    if not str(row.get("family") or "").strip():
+        return False, "blank family"
+    if not isinstance(row.get("params"), dict):
+        return False, "params is not a mapping"
+    if str(row.get("mechanism_status") or "").upper() != "NAMED":
+        return False, "mechanism is not NAMED"
+    if len(str(row.get("mechanism_note") or "").strip()) < 12:
+        return False, "mechanism note is absent or too thin to falsify"
+    return True, ""
 
 
 def _rows_of(path: str) -> list[dict[str, Any]]:
@@ -102,24 +128,81 @@ def audit(limit: int | None = None) -> dict[str, Any]:
     disp: Counter = Counter()
     shapes: Counter = Counter()
     cells = 0
+    valid_cells = 0
+    invalid_cells = 0
+    invalid_reasons: Counter = Counter()
     rows = 0
+    per_producer: dict[str, Counter[str]] = defaultdict(Counter)
     for f in files:
         seat = os.path.basename(os.path.dirname(f))
         for r in _rows_of(f):
             rows += 1
+            producer = str(r.get("producer") or r.get("generator") or seat).strip() or seat
+            p = per_producer[producer]
+            p["rows"] += 1
             try:
                 c, d = compile_row(seat, r, universe)
             except Exception as exc:                       # a crash is a disposition too
                 c, d = [], f"ERROR:{type(exc).__name__}"
             disp[d] += 1
             cells += len(c)
+            good = 0
+            for candidate in c:
+                ok, why = _valid_cell(candidate)
+                if ok:
+                    good += 1
+                else:
+                    invalid_cells += 1
+                    invalid_reasons[why] += 1
+            valid_cells += good
+            p["candidates"] += len(c)
+            p["valid_cells"] += good
+            p["invalid_cells"] += len(c) - good
+            if d in TERMINAL_REFUSAL or d == "BANNED_FAMILY":
+                p["valid_refusals"] += 1
+            else:
+                # Every evidence-bearing row is convertible.  It is converted only when at
+                # least one fully specified AlphaCell exists; a disposition label alone cannot
+                # manufacture yield.
+                p["convertible_rows"] += 1
+                if good:
+                    p["converted_rows"] += 1
             if d in BACKLOG:
+                p["backlog"] += 1
                 shapes[(seat, str(r.get("kind") or r.get("type") or ""), d)] += 1
 
     n_cell = sum(v for k, v in disp.items() if k in TERMINAL_CELL)
-    n_ref = sum(v for k, v in disp.items() if k in TERMINAL_REFUSAL)
+    n_ref = sum(v for k, v in disp.items() if k in TERMINAL_REFUSAL or k == "BANNED_FAMILY")
     n_back = sum(v for k, v in disp.items() if k in BACKLOG)
     n_other = rows - n_cell - n_ref - n_back
+
+    producer_rows: list[dict[str, Any]] = []
+    for producer, counts in sorted(per_producer.items()):
+        convertible = int(counts["convertible_rows"])
+        converted = int(counts["converted_rows"])
+        producer_rows.append({
+            "producer": producer,
+            **{key: int(counts[key]) for key in (
+                "rows", "convertible_rows", "converted_rows", "candidates", "valid_cells",
+                "invalid_cells", "valid_refusals", "backlog")},
+            "convertible_conversion_rate": round(converted / convertible, 6)
+            if convertible else 1.0,
+            "owes_convertible_rows": convertible - converted,
+        })
+
+    convertible_rows = sum(r["convertible_rows"] for r in producer_rows)
+    converted_rows = sum(r["converted_rows"] for r in producer_rows)
+    failures: list[str] = []
+    if n_back:
+        failures.append(f"{n_back} convertible row(s) remain in extraction backlog")
+    if n_other:
+        failures.append(f"{n_other} row(s) have an unknown/crashed disposition")
+    if invalid_cells:
+        failures.append(f"{invalid_cells} emitted candidate(s) are not valid AlphaCells")
+    if converted_rows != convertible_rows:
+        failures.append(
+            f"only {converted_rows}/{convertible_rows} convertible row(s) emitted at least one "
+            "valid AlphaCell")
 
     worklist = [{"seat": s, "kind": k, "disposition": d, "rows": n,
                  "remedy": ("write a structured converter for this (seat, kind): the rows carry "
@@ -137,6 +220,9 @@ def audit(limit: int | None = None) -> dict[str, Any]:
         "n_files": len(files),
         "n_rows": rows,
         "n_candidates": cells,
+        "n_valid_candidates": valid_cells,
+        "n_invalid_candidates": invalid_cells,
+        "invalid_candidate_reasons": dict(invalid_reasons.most_common()),
         "census": dict(disp.most_common()),
         "summary": {
             "terminal_cells": n_cell,
@@ -145,7 +231,14 @@ def audit(limit: int | None = None) -> dict[str, Any]:
             "unclassified_disposition": n_other,
             "terminal_share": round((n_cell + n_ref) / max(rows, 1), 4),
             "backlog_share": round(n_back / max(rows, 1), 4),
+            "convertible_rows": convertible_rows,
+            "converted_rows": converted_rows,
+            "convertible_conversion_rate": round(
+                converted_rows / max(convertible_rows, 1), 6),
+            "silent_loss": convertible_rows - converted_rows,
         },
+        "failures": failures,
+        "per_producer": producer_rows,
         "what_the_refusals_are": {
             "EMPTY_CAPTURE": ("no text, no instrument, no structure: the crawler captured a LINK "
                               "and not a page. A COLLECTOR defect, and no extraction can ever "
@@ -177,7 +270,9 @@ def main(argv: list[str] | None = None) -> int:
     for w in doc["worklist"][:12]:
         print(f"    {w['rows']:7}  {w['seat']:22} {str(w['kind'])[:16]:16} {w['disposition']}")
     print(f"  -> {OUT}")
-    return 0
+    for failure in doc["failures"]:
+        print(f"  FAIL  {failure}")
+    return 1 if doc["failures"] else 0
 
 
 if __name__ == "__main__":
