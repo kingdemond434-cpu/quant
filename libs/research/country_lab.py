@@ -967,11 +967,18 @@ class Bars:
 
 @dataclass(frozen=True)
 class DataSeries:
-    """One dated macro/positioning series. `dates` is datetime64[D]; `values` is float."""
+    """One macro/positioning series with separate observation and tradable-availability clocks.
+
+    `dates` is the observation period (normally datetime64[D]). `available_at` is the earliest
+    UTC instant the value may enter a decision. Unknown publication time is represented
+    conservatively by the next UTC day and `availability_known=False`, never by start-of-day.
+    """
 
     name: str
     dates: np.ndarray
     values: np.ndarray
+    available_at: np.ndarray | None = None
+    availability_known: bool = False
 
     def __len__(self) -> int:
         return int(self.values.size)
@@ -1783,7 +1790,14 @@ def align_daily(series: DataSeries, bars: Bars, horizon: int = 1) -> tuple[np.nd
     idx = np.searchsorted(sd, uniq, side="right") - 1
     ok = (idx >= 0) & np.isfinite(sf[np.clip(idx, 0, sf.size - 1)])
     daily[ok] = sf[np.clip(idx, 0, sf.size - 1)][ok]
-    pos = np.searchsorted(uniq, np.asarray(series.dates, dtype="datetime64[D]"))
+    observed = np.asarray(series.dates, dtype="datetime64[D]")
+    available = (np.asarray(series.available_at, dtype="datetime64[ns]")
+                 if series.available_at is not None else
+                 (observed + np.timedelta64(1, "D")).astype("datetime64[ns]"))
+    # A value joins the first complete UTC day whose close is not earlier than its availability.
+    # This blocks a 13:30 release from a pre-release decision and treats unknown time as next-day.
+    effective_days = available.astype("datetime64[D]")
+    pos = np.searchsorted(uniq, effective_days)
     valid = (pos < uniq.size) & (pos >= 0)
     pos = np.clip(pos, 0, max(0, uniq.size - 1))
     good = valid & np.isfinite(daily[pos]) & np.isfinite(series.values)

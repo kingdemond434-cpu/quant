@@ -5,6 +5,8 @@ import json
 import sys
 from pathlib import Path
 
+import numpy as np
+
 DESK = Path(__file__).resolve().parents[1]
 ROOT = DESK.parents[1]
 for path in (str(DESK), str(DESK / "research"), str(ROOT)):
@@ -83,3 +85,44 @@ def test_global_os_refuses_an_overlapping_pass(tmp_path: Path) -> None:
         assert first is True
         with mod.singleton(lock) as second:
             assert second is False
+
+
+def test_series_loader_preserves_intraday_availability_and_delays_unknown_time() -> None:
+    mod = _global_os()
+    loader = object.__new__(mod.SeriesLoader)
+
+    class _Index:
+        tz = None
+        values = np.asarray(["2026-09-01T00:00:00", "2026-09-02T13:30:00"],
+                            dtype="datetime64[ns]")
+
+    class _Row:
+        index = _Index()
+
+        @staticmethod
+        def to_numpy(dtype: str):
+            return np.asarray([1.0, 2.0], dtype=dtype)
+
+    loader.rows = {loader._key("macro"): _Row()}
+    series = loader("macro")
+    assert series is not None
+    assert np.array_equal(series.available_at, np.asarray([
+        "2026-09-02T00:00:00.000000000",
+        "2026-09-02T13:30:00.000000000",
+    ], dtype="datetime64[ns]"))
+    assert series.availability_known is True
+
+
+def test_daily_alignment_uses_availability_not_observation_date() -> None:
+    times = np.asarray(["2026-09-01T23:00", "2026-09-02T23:00", "2026-09-03T23:00",
+                        "2026-09-04T23:00"], dtype="datetime64[ns]")
+    bars = CL.Bars("EURUSD", "D1", times, np.asarray([1.0, 2.0, 4.0, 8.0]))
+    # Observed on Sep 1 but not released until Sep 3: it must align to Sep 3, not Sep 1.
+    series = CL.DataSeries("macro", np.asarray(["2026-09-01"], dtype="datetime64[D]"),
+                           np.asarray([7.0]),
+                           available_at=np.asarray(["2026-09-03T13:30"],
+                                                   dtype="datetime64[ns]"),
+                           availability_known=True)
+    x, y = CL.align_daily(series, bars, horizon=1)
+    assert x.tolist() == [7.0]
+    assert np.allclose(y, [np.log(2.0)])

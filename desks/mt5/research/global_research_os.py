@@ -20,6 +20,8 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+import numpy as np
+
 BASE = Path(__file__).resolve().parents[1]
 ROOT = BASE.parents[1]
 for _path in (str(BASE), str(BASE / "research"), str(ROOT)):
@@ -28,11 +30,13 @@ for _path in (str(BASE), str(BASE / "research"), str(ROOT)):
 
 from libs.moat import registry as R  # noqa: E402
 from libs.research import country_lab as CL  # noqa: E402
+from libs.research import durable_query_queue as DQ  # noqa: E402
 
 PACK_ROOT = BASE / "research" / "countries"
 REPORT = BASE / "reports" / "GLOBAL_RESEARCH_OS.json"
 CURSOR = BASE / "data" / "global_research_cursor.json"
 LOCK = BASE / "data" / ".global_research_os.lock"
+QUERY_QUEUE = BASE / "data" / "global_native_query_queue.json"
 DEFAULT_BUDGET_S = 3000.0
 MIN_PACK_BUDGET_S = 32.0
 # These are conversion-door packs, not CountryPack research specifications. Japan has its own
@@ -109,8 +113,16 @@ class SeriesLoader:
             idx = row.index
             dates = idx.tz_convert("UTC").tz_localize(None).values if getattr(idx, "tz", None) \
                 is not None else idx.values
-            return CL.DataSeries(name=text, dates=dates.astype("datetime64[D]"),
-                                 values=row.to_numpy(dtype="float64"))
+            exact = dates.astype("datetime64[ns]")
+            # A date-only observation has UNKNOWN release time.  Treat it as available from the
+            # next UTC day, never midnight at the start of its observation day.  Exact intraday
+            # stamps retain nanosecond precision.  `align_daily` enforces this availability array.
+            days = exact.astype("datetime64[D]")
+            midnight = days.astype("datetime64[ns]")
+            available = np.where(exact == midnight, midnight + np.timedelta64(1, "D"), exact)
+            return CL.DataSeries(name=text, dates=days, values=row.to_numpy(dtype="float64"),
+                                 available_at=available,
+                                 availability_known=bool(np.any(exact != midnight)))
         except Exception:
             return None
 
@@ -203,6 +215,11 @@ def run(*, budget_s: float = DEFAULT_BUDGET_S, dry_run: bool = False,
     for miner in miner_rows:
         outcome = str(miner.get("outcome") or "UNMEASURED")
         miner_outcomes[outcome] = miner_outcomes.get(outcome, 0) + 1
+    queue_stats = {"added": 0, "total": 0}
+    queue_reconciliation: dict[str, Any] = {"balanced": True, "total_ids": 0, "states": {}}
+    if not dry_run:
+        queue_stats = DQ.enqueue(QUERY_QUEUE, unique_queries)
+        queue_reconciliation = DQ.reconcile(QUERY_QUEUE)
     doc = {
         "at": _now(), "outcome": "ok", "packs_total": len(codes),
         "packs_run": len(cycle_rows), "packs_run_this_pass": len(rows),
@@ -212,7 +229,12 @@ def run(*, budget_s: float = DEFAULT_BUDGET_S, dry_run: bool = False,
         "discoveries_this_pass": sum(int(r.get("discoveries") or 0) for r in rows),
         "failed_miners": sum(int(r.get("failed_miners") or 0) for r in cycle_rows),
         "spec_adapters": sum(int(r.get("spec_adapters") or 0) for r in cycle_rows),
+        # A bounded DISPLAY only. Every id was persisted above before this preview was made.
         "native_query_queue": unique_queries[:5000], "native_queries": len(unique_queries),
+        "native_query_display_truncated": len(unique_queries) > 5000,
+        "native_query_durable_queue": str(QUERY_QUEUE),
+        "native_query_enqueue": queue_stats,
+        "native_query_reconciliation": queue_reconciliation,
         "native_queries_this_pass": len(native_queue), "countries": cycle_rows,
         "conservation": {"discovered_packs": len(codes), "run": len(cycle_rows),
                          "deferred_to_cursor": max(0, len(codes) - len(cycle_rows)),
@@ -230,6 +252,18 @@ def run(*, budget_s: float = DEFAULT_BUDGET_S, dry_run: bool = False,
     _atomic(report, doc)
     _atomic(cursor, {"at": doc["at"], "next_index": next_index, "packs": len(codes),
                      "cycle_packs": len(cycle_rows)})
+    if not dry_run:
+        # The versioned baseline is audited as the closing leg of the producer itself.  This is
+        # evidence separation, not a second scheduler: implementation, tests, consumer and fresh
+        # runtime output must all exist before any R01-R30 row reads CURRENT_VERIFIED.
+        try:
+            import global_research_acceptance as acceptance
+            doc["baseline_acceptance"] = acceptance.audit()
+            _atomic(report, doc)
+        except Exception as exc:
+            doc["baseline_acceptance"] = {"status": "UNMEASURED",
+                                           "why": f"{type(exc).__name__}: {exc}"}
+            _atomic(report, doc)
     return doc
 
 
