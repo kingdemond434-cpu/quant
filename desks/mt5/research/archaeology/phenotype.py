@@ -148,7 +148,10 @@ def fingerprint(row: Mapping[str, Any], bars: Any = None, *, events: Any = None)
             "win_rate": float(np.mean(pnl > 0)) if pnl.size else None,
             "payoff": (float(pnl[pnl > 0].mean() / -pnl[pnl < 0].mean())
                        if np.any(pnl > 0) and np.any(pnl < 0) else None),
-            "convexity": (float(np.percentile(pnl, 90) + np.percentile(pnl, 10))
+            # Signed tail asymmetry: a short-vol path has a deep lower tail relative to its
+            # ordinary upper tail.  A raw sum is scale-dependent and missed 36 wins / 4 losses.
+            "convexity": (float(np.percentile(pnl, 10) /
+                                max(abs(float(np.percentile(pnl, 90))), 1e-12))
                           if pnl.size >= 5 else None),
             "directionality": (float(np.mean([x for x in c["sides"] if x is not None]))
                                if any(x is not None for x in c["sides"]) else None),
