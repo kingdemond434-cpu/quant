@@ -3508,7 +3508,7 @@ def main() -> None:
     # PRODUCED/BECAME/JUDGED/DUPLICATES/CONTRADICTS/DERIVES_FROM edges; unconverted leads named.
     kng = _costed("knowledge_graph", lambda: _producer("knowledge_graph",
                                                         "research/knowledge_graph.py",
-                                                        "--max-rows", "5000"))
+                                                        "--max-rows", "750"))
     # THE EVIDENCE ROUTER (LAWS 5e): every source walks DISCOVER -> CAPTURE METADATA ->
     # LEGAL/ACCESS -> EVIDENCE -> RESEARCH and lands three INDEPENDENT labels plus a quarantine
     # flag. Legality is a surgical router beside the research system, never a brake on it: an
@@ -3597,7 +3597,7 @@ def main() -> None:
     # Discovery department, prediction layer.
     cvm = _costed("conversion_maximiser", lambda: _producer(
         "conversion_maximiser", "research/conversion_maximiser.py", "--once",
-        "--budget-s", "900"))
+        "--budget-s", "900", "--max-rows", "5000"))
     rdb = _costed("research_debt", lambda: _producer("research_debt",
                                                       "research/research_debt.py"))
     # THE INGESTION-EXPLOITATION CONTRACT (LAWS 5c, principal 2026-09-17). Every ingested unit --
@@ -3974,17 +3974,12 @@ def main() -> None:
     # the desk cannot buy, each latent fused from at least two sensors or named UNMEASURED.
     shi = _costed("shadow_institutional", lambda: _producer("shadow_institutional",
                                                              "research/shadow_institutional.py",
-                                                             "--once", "--budget-s", "900"))
-    # THE LATENT ACTORS: who else is in this tape, fitted from causal daily footprints, with
-    # the unknown components kept as unknowns rather than labelled.
-    lat = _costed("latent_actors", lambda: _producer("latent_actors",
-                                                      "research/latent_actors.py",
-                                                      "--once", "--budget-s", "600"))
-    # THE LATENCY LAB: what this desk can actually reach in time, measured end to end. It
-    # ROUTES research and never sizes capital (growth governance).
-    lab = _costed("latency_lab", lambda: _producer("latency_lab",
-                                                    "research/latency_lab.py",
-                                                    "--once", "--budget-s", "600"))
+                                                             "--budget-s", "900"))
+    # These former names pointed at files that never existed. Their work is canonical below in
+    # actor_pressure and feed_clock_lab; keep an explicit disposition without running duplicate
+    # producers or reporting permanent false failures.
+    lat = {"status": "DEDUPLICATED", "canonical": "actor_pressure"}
+    lab = {"status": "DEDUPLICATED", "canonical": "feed_clock_lab"}
     # THE FEED/CLOCK/PROPAGATION OBSERVATORY (LAWS 5m): feed health per instrument stamped into
     # data/feed_health.json (an INPUT for entry timing, never a cap), the causally admissible
     # propagation graph, and the timing-corruption test on every LIVE/STANDBY sleeve.

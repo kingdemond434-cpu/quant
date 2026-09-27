@@ -88,11 +88,47 @@ def build() -> dict[str, Any]:
     now = datetime.now(tz=UTC)
     rows = _clocks()
     live = [r for r in rows if str(r.get("status", "")).upper() == "ACTIVE"]
+    # TRADE CONSERVATION.  `n == 0` is a measured zero; an absent/non-numeric `n` is an
+    # unmeasured clock and must stay visibly different.  Mission Control consumes these exact
+    # fields instead of guessing that ACTIVE means a trade exists.  The state writers update
+    # `n` from the immutable per-cell shadow ledgers, so this is the one count every lane agrees
+    # on and no trade is reconstructed from prose or expectancy moments.
+    count_known = [r for r in rows
+                   if isinstance(r.get("n"), (int, float)) and not isinstance(r.get("n"), bool)]
+    count_unknown = [str(r.get("key") or "") for r in rows if r not in count_known]
+    with_trades = [r for r in count_known if int(r.get("n") or 0) > 0]
+    active_with_trades = [r for r in live
+                          if isinstance(r.get("n"), (int, float))
+                          and not isinstance(r.get("n"), bool)
+                          and int(r.get("n") or 0) > 0]
+    reported_trades = sum(max(0, int(r.get("n") or 0)) for r in count_known)
+    lane_counts = {
+        "n_clocks": len(rows), "n_active": len(live),
+        "n_with_trades": len(with_trades),
+        "n_active_with_trades": len(active_with_trades),
+        "n_trade_count_measured": len(count_known),
+        "n_trade_count_unmeasured": len(count_unknown),
+        "n_zero_trade": len(count_known) - len(with_trades),
+        "forward_trades_reported": reported_trades,
+    }
+    tracking = {
+        "status": "COMPLETE" if not count_unknown else "UNMEASURED",
+        "clock_rows": len(rows),
+        "clock_rows_with_measured_trade_count": len(count_known),
+        "clock_rows_missing_trade_count": count_unknown[:100],
+        "n_missing": len(count_unknown),
+        "forward_trades_reported": reported_trades,
+        "basis": ("each canonical shadow-state row's n, written from its forward ledger; "
+                  "zero is measured and missing is never coerced to zero"),
+    }
     ns = [int(r.get("n") or 0) for r in live if (r.get("n") or 0) >= 2]
     exps = [float(r.get("exp_r")) for r in live
             if isinstance(r.get("exp_r"), (int, float))]
     if len(ns) < 5 or len(exps) < 5:
         return {"at": now.isoformat(timespec="seconds"), "status": "UNMEASURED",
+                "lane": {**lane_counts, "n_eligible": 0, "n_passing": 0,
+                         "observed_pass_rate": None},
+                "trade_tracking": tracking,
                 "why": (f"only {len(ns)} clock(s) carry a trade count and {len(exps)} an "
                         f"expectancy -- too few to estimate the lane's own R dispersion. "
                         f"UNMEASURED is the answer, not a default false-admission rate.")}
@@ -147,9 +183,9 @@ def build() -> dict[str, Any]:
         "at": now.isoformat(timespec="seconds"),
         "rule": {"min_days": MIN_DAYS, "min_trades": MIN_TRADES,
                  "min_expectancy_r": MIN_EXPECTANCY_R},
-        "lane": {"n_clocks": len(rows), "n_active": len(live),
-                 "n_eligible": len(eligible), "n_passing": len(passing),
+        "lane": {**lane_counts, "n_eligible": len(eligible), "n_passing": len(passing),
                  "observed_pass_rate": None if observed is None else round(observed, 4)},
+        "trade_tracking": tracking,
         "dispersion": {"per_clock_expectancy_sd": round(sd, 5),
                        "median_trades": med_n,
                        "implied_per_trade_sd": round(per_trade_sd, 5)},

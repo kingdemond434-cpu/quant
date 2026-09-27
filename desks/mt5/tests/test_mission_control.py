@@ -34,7 +34,8 @@ def test_snapshot_is_one_read_only_truthful_interface(tmp_path: Path) -> None:
             "n": 823, "survivors": {"a": {}, "b": {}},
         }), 2.5),
         "forward": (_write(tmp_path / "forward.json", {
-            "lane": {"n_clocks": 577, "n_active": 576, "n_eligible": 0},
+            "lane": {"n_clocks": 577, "n_active": 576, "n_eligible": 0,
+                     "n_with_trades": 33},
         }), 2.5),
         "breadth": (_write(tmp_path / "breadth.json", {
             "effective": {"effective_breadth": 2.483},
@@ -51,7 +52,7 @@ def test_snapshot_is_one_read_only_truthful_interface(tmp_path: Path) -> None:
     assert snap["counters"]["forward_clocks"] == 577
     assert snap["counters"]["forward_active"] == 576
     assert snap["counters"]["forward_eligible"] == 0
-    assert snap["counters"]["forward_with_evidence"] is None
+    assert snap["counters"]["forward_with_evidence"] == 33
     assert snap["counters"]["effective_breadth"] == 2.483
     assert snap["blocked"][0]["status"] == "NO_DATA"
     disposition = snap["external_system_disposition"]

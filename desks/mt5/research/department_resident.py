@@ -42,6 +42,12 @@ MIN_CYCLE_S = int(os.environ.get("DEPT_MIN_CYCLE_S", "600"))              # neve
 PAUSE_S = int(os.environ.get("DEPT_PAUSE_S", "30"))
 MIN_FREE_MB = float(os.environ.get("DEPT_MIN_FREE_MB", "4096"))
 RECYCLE_PASSES = int(os.environ.get("DEPT_RECYCLE_PASSES", "48"))
+# A department child still has a hard timeout.  Plan strictly inside it so every admitted
+# oldest-first tranche can checkpoint and publish instead of losing the same tail every pass.
+PASS_BUDGET_FILL = min(
+    0.95,
+    max(0.50, float(os.environ.get("DEPT_PASS_BUDGET_FILL", "0.82"))),
+)
 BELOW_NORMAL_PRIORITY_CLASS = 0x00004000
 
 
@@ -123,6 +129,16 @@ def run_pass(dept: str, timeout_s: int = PASS_TIMEOUT_S) -> dict:
     """One department pass as a child under HOURLY_PLAN=dept:<name>, BELOW_NORMAL priority."""
     env = dict(os.environ)
     env["HOURLY_PLAN"] = f"dept:{dept}"
+    # leg_rotation otherwise treats departments as unbounded, which is false: this child is
+    # killed at timeout_s. Deferred work leads the immediately following resident pass.
+    safe_budget = max(1, int(timeout_s * PASS_BUDGET_FILL))
+    try:
+        inherited_budget = float(env.get("HOURLY_BUDGET_S", "0") or 0)
+    except ValueError:
+        inherited_budget = 0.0
+    # Preserve a stricter caller budget, but never inherit one that reaches past our kill clock.
+    env["HOURLY_BUDGET_S"] = str(int(min(inherited_budget, safe_budget))
+                                 if inherited_budget > 0 else safe_budget)
     kwargs: dict = {}
     if sys.platform == "win32":
         kwargs["creationflags"] = BELOW_NORMAL_PRIORITY_CLASS

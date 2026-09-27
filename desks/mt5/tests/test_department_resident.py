@@ -28,11 +28,17 @@ def test_singleton_lock_is_exclusive(monkeypatch, tmp_path):
 
 def test_one_pass_runs_the_cycle_under_the_department_plan(monkeypatch, tmp_path):
     fake = tmp_path / "cycle.py"
-    fake.write_text("import os, sys\nprint(os.environ.get('HOURLY_PLAN'))\n"
-                    "sys.exit(0 if os.environ.get('HOURLY_PLAN') == 'dept:intel' else 3)\n",
-                    encoding="utf-8")
+    fake.write_text(
+        "import os, sys\n"
+        "ok = os.environ.get('HOURLY_PLAN') == 'dept:intel'\n"
+        "ok = ok and int(os.environ.get('HOURLY_BUDGET_S', 0)) == 49\n"
+        "sys.exit(0 if ok else 3)\n",
+        encoding="utf-8",
+    )
     monkeypatch.setattr(dr, "CYCLE", fake)
     monkeypatch.setattr(dr, "DESK", tmp_path)
+    monkeypatch.setattr(dr, "PASS_BUDGET_FILL", 0.82)
+    monkeypatch.delenv("HOURLY_BUDGET_S", raising=False)
     res = dr.run_pass("intel", timeout_s=60)
     assert res["status"] == "ok" and res["rc"] == 0
     res2 = dr.run_pass("macro", timeout_s=60)
