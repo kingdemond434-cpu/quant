@@ -41,7 +41,15 @@ def _time(v: Any) -> datetime | None:
 
 
 def _first(row: Mapping[str, Any], *keys: str) -> Any:
-    return next((row[k] for k in keys if k in row and row[k] not in (None, "")), None)
+    # Older consumers pass either `_first(row, "a", "b")` or `_first(row, ("a", "b"))`.
+    # Accept both; this tiny adapter is load-bearing for every SARES trade column.
+    flat: list[str] = []
+    for key in keys:
+        if isinstance(key, (tuple, list)):
+            flat.extend(str(x) for x in key)
+        else:
+            flat.append(str(key))
+    return next((row[k] for k in flat if k in row and row[k] not in (None, "")), None)
 
 
 def _pick(row: Mapping[str, Any], *keys: str) -> float | None:
@@ -177,6 +185,37 @@ def fingerprint_population(rows: Sequence[Mapping[str, Any]], bars: Any = None,
 
 
 def _clusters(phis: Sequence[Mapping[str, Any]], k: int | None = None) -> list[dict[str, Any]]:
+    """Trade clusters for SARES, or interpretable phenotype archetypes.
+
+    SARES passes raw trades and expects lists of integer positions belonging to one concurrent
+    same-symbol/side campaign.  The archaeology civilization passes fingerprints and expects
+    named archetype dictionaries.  The shapes are deliberately distinguishable.
+    """
+    if phis and any("open_time" in x or "opened_at" in x or "entry_time" in x for x in phis):
+        parsed = []
+        for i, trade in enumerate(phis):
+            opened = _time(_first(trade, "open_time", "opened_at", "entry_time", "time"))
+            closed = _time(_first(trade, *_CLOSE_KEYS))
+            parsed.append((i, opened, closed, str(trade.get("symbol") or ""), _side(trade)))
+        groups: list[list[int]] = []
+        used: set[int] = set()
+        for i, opened, closed, symbol, side in parsed:
+            if i in used:
+                continue
+            cluster = [i]
+            end = closed
+            for j, oj, cj, sj, dj in parsed[i + 1:]:
+                if oj is None or opened is None or sj != symbol or dj != side:
+                    continue
+                # Same campaign when the next order opens while the current basket remains open,
+                # or within one hour when public records use a common basket close timestamp.
+                if (end is not None and oj <= end) or abs((oj-opened).total_seconds()) <= 3600:
+                    cluster.append(j)
+                    if cj is not None and (end is None or cj > end):
+                        end = cj
+            used.update(cluster)
+            groups.append(cluster)
+        return groups  # type: ignore[return-value]
     """Deterministic, interpretable archetypes; no unstable random labels."""
     groups: dict[str, list[Mapping[str, Any]]] = defaultdict(list)
     for p in phis:
@@ -245,4 +284,3 @@ def survivorship(rows: Sequence[Mapping[str, Any]], *, phis: Sequence[Mapping[st
     return {"status": "measured", "n_snapshots": len(dates),
             "horizons": {f"{a}->{b}": {"base": len(base), "survived": len(survived),
                                          "rate": len(survived) / max(1, len(base))}}}
-
