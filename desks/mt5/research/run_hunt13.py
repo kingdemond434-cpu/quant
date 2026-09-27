@@ -41,7 +41,8 @@ from research.run_hunt12 import day_states  # noqa: E402
 #: Fusion Zero's published contract, USD per lot PER SIDE ($4.50 round turn). Mirrors
 #: `libs.portfolio.fusion_cost.COMMISSION_PER_LOT_PER_SIDE`. The 3.50 this replaced was a
 #: ROUND-TURN figure sitting in a PER-SIDE field, billing $7.00 a round trip against $4.50.
-FUSION_COMMISSION_PER_SIDE = 2.25
+from research.cell_costs import commission_per_side  # noqa: E402
+FUSION_COMMISSION_PER_SIDE = commission_per_side()
 
 BASE = Path(__file__).resolve().parent.parent
 UNI = BASE / "data" / "universe"

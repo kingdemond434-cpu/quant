@@ -19,7 +19,7 @@ if str(BASE) not in sys.path:
     sys.path.insert(0, str(BASE))
 
 from mt5desk.engine import (  # noqa: E402
-    ROLLOVER_HOUR_UTC,
+    ROLLOVER_HOUR_BROKER,
     TRIPLE_SWAP_WEEKDAY,
     Costs,
     rollovers_between,
@@ -32,24 +32,30 @@ def test_financing_is_charged_at_an_instant_not_pro_rata():
     This is the whole reason `(t1 - t0).days` is the wrong implementation: it gets both of these
     backwards, and it is the version that looks obviously correct.
     """
-    short_but_crosses = rollovers_between(pd.Timestamp("2026-09-14 20:00"),
-                                          pd.Timestamp("2026-09-14 22:00"))
-    long_but_inside = rollovers_between(pd.Timestamp("2026-09-14 22:00"),
-                                        pd.Timestamp("2026-09-15 18:00"))
+    # The rollover is 00:00 on the bar labels' own (broker) clock -- see ROLLOVER_HOUR_BROKER.
+    short_but_crosses = rollovers_between(pd.Timestamp("2026-09-14 23:00"),
+                                          pd.Timestamp("2026-09-15 01:00"))
+    long_but_inside = rollovers_between(pd.Timestamp("2026-09-15 01:00"),
+                                        pd.Timestamp("2026-09-15 23:00"))
     assert short_but_crosses == 1.0
     assert long_but_inside == 0.0
 
 
 def test_wednesday_rollover_carries_three_nights():
-    """43% of a week's financing lands on one instant, and a family that holds pays it weekly."""
+    """3/7 of a week's financing lands on one instant, and a family that holds pays it weekly.
+
+    The Wednesday NIGHT is charged at the midnight that ends it (00:00 Thursday, broker clock).
+    """
     wed = pd.Timestamp("2026-09-16")
     assert wed.weekday() == TRIPLE_SWAP_WEEKDAY
-    crossing = rollovers_between(wed + pd.Timedelta(hours=ROLLOVER_HOUR_UTC - 1),
-                                 wed + pd.Timedelta(hours=ROLLOVER_HOUR_UTC + 1))
+    thu_midnight = wed + pd.Timedelta(days=1, hours=ROLLOVER_HOUR_BROKER)
+    crossing = rollovers_between(thu_midnight - pd.Timedelta(hours=1),
+                                 thu_midnight + pd.Timedelta(hours=1))
     assert crossing == 3.0
-    # A full week is seven rollovers with Wednesday counting three: 6 + 3 = 9, not 7.
+    # A full week is five charged nights, Monday to Friday, Wednesday's counting three: 7.
+    # (The Saturday and Sunday nights are what the triple pays for; charging them too was 9.)
     assert rollovers_between(pd.Timestamp("2026-09-14 10:00"),
-                             pd.Timestamp("2026-09-21 10:00")) == 9.0
+                             pd.Timestamp("2026-09-21 10:00")) == 7.0
 
 
 def test_intraday_holds_owe_nothing():

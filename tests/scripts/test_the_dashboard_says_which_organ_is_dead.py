@@ -204,5 +204,15 @@ def test_the_organ_block_reaches_the_published_payload(bzs, tmp_path, monkeypatc
         "gateway_state.json": timedelta(days=23),
     })
     monkeypatch.setattr(bzs, "_mt5_snapshot", lambda: {})
+
+    # THE BUILDER READS THE WALL CLOCK; the fixture's ages are relative to NOW. Without freezing
+    # it this test went red the day after it was written: by 2026-09-10 the "2h old" shadow file
+    # was a day old and read DEAD too. Frozen, it tests the carrying, not the calendar.
+    class _Frozen(datetime):
+        @classmethod
+        def now(cls, tz=None):  # type: ignore[no-untyped-def,override]
+            return NOW if tz is not None else NOW.replace(tzinfo=None)
+
+    monkeypatch.setattr(bzs, "datetime", _Frozen)
     organs = bzs.build()["organs"]
     assert organs["worst"] == "DEAD" and organs["down"] == ["gateway_state.json"]

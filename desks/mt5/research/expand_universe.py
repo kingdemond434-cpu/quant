@@ -113,6 +113,20 @@ _WANT = {"M1": 200_000, "M5": 120_000, "M15": 60_000, "M30": 40_000,
          "H1": 60_000, "H4": 20_000, "D1": 5_000}
 
 
+
+def _swap_unit_fields(info) -> dict:
+    """`swap_mode` and `swap_rollover3days` off a SymbolInfo, only when the terminal carries them."""
+    out: dict = {}
+    for key in ("swap_mode", "swap_rollover3days"):
+        val = getattr(info, key, None)
+        if val is None:
+            continue
+        try:
+            out[key] = int(val)
+        except (TypeError, ValueError):
+            continue
+    return out
+
 def _want_bars(tf: str) -> int:
     return _WANT.get(str(tf).upper(), 40_000)
 
@@ -416,6 +430,11 @@ def main() -> int:
                 "spread_pts_at_collection": float(getattr(info, "spread", 0) or 0),
                 "swap_long": float(getattr(info, "swap_long", 0) or 0),
                 "swap_short": float(getattr(info, "swap_short", 0) or 0),
+                # THE UNIT OF THE TWO NUMBERS ABOVE, and the night that carries three. Without
+                # `swap_mode` a share CFD's "-7.31" (annual PERCENT, mode 5) was priced as POINTS,
+                # and without `swap_rollover3days` every symbol tripled on Wednesday although 150
+                # of them triple on Friday. `engine.swap_terms_from_meta` reads both.
+                **_swap_unit_fields(info),
                 **cost_fields_from_symbol_info(info),
                 "volume_min": float(getattr(info, "volume_min", 0.01) or 0.01),
                 "volume_step": float(getattr(info, "volume_step", 0.01) or 0.01),

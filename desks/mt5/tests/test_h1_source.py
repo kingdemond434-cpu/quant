@@ -87,7 +87,15 @@ def test_mt5_tick_age_cannot_become_a_broker_timezone_offset() -> None:
         def symbol_info_tick(_symbol):
             return StaleTick()
 
-    assert H.broker_utc_offset_hours(MT5()) == 0.0
+    # The offset is the venue's New-York-close rule (+3 US summer, +2 otherwise), whatever the
+    # tick says: a stale quote still cannot move it. It was pinned to 0.0 here, which asserted
+    # the defect -- MT5 times are server wall clock, three hours ahead of UTC in summer.
+    assert H.broker_utc_offset_hours(MT5()) in (2.0, 3.0)
+    from datetime import UTC, datetime
+    assert H._ny_close_offset_hours(datetime(2026, 9, 25, tzinfo=UTC)) == 3
+    assert H._ny_close_offset_hours(datetime(2026, 11, 2, tzinfo=UTC)) == 2
+    assert H._ny_close_offset_hours(datetime(2026, 3, 8, tzinfo=UTC)) == 3
+    assert H._ny_close_offset_hours(datetime(2026, 3, 7, tzinfo=UTC)) == 2
 
 
 def test_the_cache_alone_can_serve_shadow(monkeypatch, tmp_path):

@@ -43,6 +43,10 @@ def tree(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> ModuleType:
     monkeypatch.setattr(mod, "_CRED_HOME", tmp_path / "no-home-creds.json")
     monkeypatch.setattr(mod, "_SEATS", {
         "seat": ("ops/seat_prompt.txt", "ops/run_seat.sh", "seat_*.log", 36.0)})
+    # The fixture seat must be in the shared organ table too, exactly as a real seat is: a seat
+    # whose glob max_audit.ORGANS does not carry is reported as TABLE DRIFT (a blocker), which is
+    # a different diagnosis from the ones these tests pin.
+    monkeypatch.setitem(mod._MIN_BYTES, "seat_*.log", 1000)
     monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
     monkeypatch.delenv("CLAUDE_CODE_OAUTH_TOKEN", raising=False)
     return mod

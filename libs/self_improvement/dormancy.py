@@ -148,9 +148,13 @@ def _external_importers(rel: str) -> list[str]:
     dotted = pkg.replace("/", ".") + "." + mod
     pattern = rf"(import\s+{re.escape(dotted)}|from\s+{re.escape(dotted)}\s+import|"
     pattern += rf"from\s+{re.escape(pkg.replace('/', '.'))}\s+import\s+[^\n]*\b{re.escape(mod)}\b)"
-    hits = _grep(pattern, "scripts", "libs", "app", "api", "tests")
+    # desks/ IS SEARCHED TOO: the MT5 desk (gateway, engine, cycles, research organs) is the
+    # largest importer of libs/, and leaving it out read modules the gateway imports every pass
+    # (libs/portfolio/fusion_cost.py among them) as dormant.
+    hits = _grep(pattern, "scripts", "libs", "app", "api", "tests", "desks")
     # Its own package and its own tests do not make it reachable from the running desk.
-    return [h for h in hits if not h.startswith(pkg) and not h.startswith("tests/")]
+    return [h for h in hits if not h.startswith(pkg) and not h.startswith("tests/")
+            and "/tests/" not in h]
 
 
 def _scheduled(rel: str) -> bool:
@@ -160,8 +164,15 @@ def _scheduled(rel: str) -> bool:
         p = _ROOT / src
         if p.exists() and name in p.read_text("utf-8", errors="ignore"):
             return True
-    # A unit or shell runner that names it also counts as scheduling.
-    return bool(_grep(re.escape(name), "ops"))
+    # A unit or shell runner that names it also counts as scheduling -- the VPS's ops/ and the
+    # trading box's task manifest, installers and the two desk cycles alike.
+    if _grep(re.escape(name), "ops", "desks/mt5/ops"):
+        return True
+    for src in ("desks/mt5/research/hourly_cycle.py", "desks/mt5/research/daily_cycle.py"):
+        p = _ROOT / src
+        if p.exists() and name in p.read_text("utf-8", errors="ignore"):
+            return True
+    return False
 
 
 def _invoked_by_a_script(rel: str) -> bool:

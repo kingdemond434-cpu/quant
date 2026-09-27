@@ -15,7 +15,7 @@ from mt5desk import decision_core as core  # noqa: E402
 from mt5desk import live_policy as lp  # noqa: E402
 
 FX = {"name": "chfnok_carry_asia", "symbol": "CHFNOK", "family": "carry", "status": "LIVE"}
-GOLD = {"name": "gold_asia_v2", "symbol": "XAUUSD", "family": "session_range_breakout",
+GOLD = {"name": "gold_asia_breakout", "symbol": "XAUUSD", "family": "session_range_breakout",
         "status": "LIVE"}
 GOLD_M15 = {"name": "xau_m15_anti_breakout", "symbol": "XAUUSD", "timeframe": "M15",
             "family": "anti_donchian_breakout", "status": "LIVE"}
@@ -72,7 +72,7 @@ def test_the_gateway_door_drops_refused_rows_and_names_them(tmp_path) -> None:
                                          {**GOLD, "name": "standby", "status": "STANDBY"}]}),
                  encoding="utf-8")
     kept, notes = core.load_sleeves_verbose(f)
-    assert [r["name"] for r in kept] == ["gold_asia_v2"]
+    assert [r["name"] for r in kept] == ["gold_asia_breakout"]
     assert len(notes) == 2 and any("chfnok" in n.lower() for n in notes)
     assert core.load_sleeves(f) == kept
     assert core.load_sleeves(tmp_path / "absent.json") == []
@@ -104,5 +104,5 @@ def test_a_row_the_policy_refuses_cannot_survive_a_promoter_write(monkeypatch, t
     promoter.save_sleeves([dict(FX), dict(GOLD)])
     written = json.loads(out.read_text(encoding="utf-8"))["sleeves"]
     live = [r for r in written if r["status"] == "LIVE"]
-    assert [r["name"] for r in live] == ["gold_asia_v2"]
+    assert [r["name"] for r in live] == ["gold_asia_breakout"]
     assert [r["status"] for r in written if r["name"] == FX["name"]] == ["RETIRED"]

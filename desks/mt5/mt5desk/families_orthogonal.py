@@ -1822,12 +1822,15 @@ FAMILY_TIMEFRAMES: dict[str, tuple[tuple[str, ...], str]] = {
         "another chart it is no longer the thing it reproduces, and the ablation it exists to "
         "settle would be answered about a different strategy"),
     "style_premia": (
-        ("H1",),
+        ("H1", "D1"),
         "AQR's six styles are defined on daily-to-annual horizons, and this implementation spells "
-        "them as HOURLY BAR COUNTS INLINE rather than as parameters -- a 48-bar vol, a 252-bar "
-        "momentum, 500/1000-bar value and beta windows. They cannot be re-expressed from outside "
-        "the family, so on M1 '252' would mean four hours and on D1 a year; declared H1 rather "
-        "than run somewhere those numbers are silently a different claim"),
+        "them as BAR COUNTS INLINE rather than as parameters -- a 48-bar vol, a 252-bar "
+        "momentum skipping 21, 500/1000-bar value and beta windows. They cannot be re-expressed "
+        "from outside the family, so on M1 '252' would mean four hours. D1 IS ADMITTED BESIDE H1 "
+        "(2026-09-25) because on a daily chart those literals ARE the published definitions -- "
+        "12-1 momentum is 252 days skipping 21, value a multi-year mean -- so the D1 cell is the "
+        "textbook claim and the H1 cell the desk's intraday re-reading of it; two named cells, "
+        "never one relabelled. Every other chart would silently be a different claim"),
     # ---- bounded BELOW: the INFORMATION does not arrive that fast.
     "macro_conditional": (
         ("H1", "H4", "D1"),

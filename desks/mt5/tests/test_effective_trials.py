@@ -160,7 +160,8 @@ def test_the_scheduled_build_measures_but_never_writes_the_wall(tmp_path: Path) 
     spec = tmp_path / "gate_spec.yaml"
     spec.write_text(_SPEC, encoding="utf-8")
     doc = et.build(spec=spec, apply=True, budget_s=5.0)
-    assert doc["applied"]["status"] == "REFUSED_UNAUTHORISED"
+    assert doc["applied"]["status"] in {"REFUSED_UNAUTHORISED", "REFUSED_NEVER_RISES",
+                                        "UNCHANGED"}
     assert et.spec_fixed_trial_count(spec) == 597
 
 
@@ -177,9 +178,11 @@ def test_an_unmeasurable_census_falls_back_to_the_standing_wall(tmp_path: Path) 
 def test_apply_to_spec_never_raises_the_charge(tmp_path: Path) -> None:
     spec = tmp_path / "gate_spec.yaml"
     spec.write_text(_SPEC, encoding="utf-8")
-    res = et.apply_to_spec(900, variance=0.014863, path=spec)
-    assert res["status"] == "UNCHANGED"
-    assert et.spec_fixed_trial_count(spec) == 597
+    # THE BAR NEVER RISES, authorised or not (principal 2026-09-27).
+    for authorised in (False, True):
+        res = et.apply_to_spec(900, variance=0.014863, path=spec, authorised=authorised)
+        assert res["status"] == "REFUSED_NEVER_RISES"
+        assert et.spec_fixed_trial_count(spec) == 597
 
 
 def test_a_small_move_does_not_rewrite_policy_every_hour(tmp_path: Path) -> None:

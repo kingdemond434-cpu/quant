@@ -701,6 +701,27 @@ def promoted_lot(equity: float, live_n: int, dist_usd: float | None = None,
     return float(min(max(lot, min_lot(), venue_min_lot(symbol, info)), 5.0))
 
 
+#: The venue's order-comment bound, including the two-character `DW` tag. The gateway truncates
+#: every comment to this (`gateway.order_comment`), so a ledger row recovered from a deal comment
+#: carries at most COMMENT_MAX - 2 characters of the sleeve's name.
+COMMENT_MAX = 29
+
+
+def ledger_sleeve_matches(row_sleeve: object, name: str) -> bool:
+    """Whether a ledger row's `sleeve` field names the sleeve `name`.
+
+    THE LEDGER STORES THE NAME THE BROKER GAVE BACK, which is the order comment truncated to
+    COMMENT_MAX. `xau_m5_anti_breakout_overlap` comes back as `xau_m5_anti_breakout_overla`,
+    so an exact comparison counted ZERO closed trades for every long-named sleeve (measured
+    2026-09-25 on the live ledger): the size ramp never left its first step and the decay
+    monitor never saw the sleeve trade. Exact match, or the name's own truncation, and nothing
+    looser -- a prefix of a DIFFERENT sleeve's name is not this sleeve.
+    """
+    if not isinstance(row_sleeve, str) or not row_sleeve:
+        return False
+    return row_sleeve == name or row_sleeve == f"DW{name}"[:COMMENT_MAX][2:]
+
+
 def sleeve_live_n(name: str, ledger: Path) -> int:
     """Closed-trade count for a sleeve from the live ledger at `ledger`."""
     if not ledger.exists():
@@ -711,7 +732,7 @@ def sleeve_live_n(name: str, ledger: Path) -> int:
             if not line.strip():
                 continue
             try:
-                if json.loads(line).get("sleeve") == name:
+                if ledger_sleeve_matches(json.loads(line).get("sleeve"), name):
                     n += 1
             except Exception:
                 continue
@@ -1825,6 +1846,46 @@ def entry_is_legal(price: float, side: str, bid: float, ask: float,
         return False, (f"sell_stop {price:.2f} is {gap:.2f} below bid {bid:.2f}; "
                        f"broker needs {band:.2f}. NOT AVAILABLE today.")
     return True, ""
+
+
+def broker_offset_hours(at_utc: datetime | None = None) -> int:
+    """Hours the venue's server clock runs AHEAD of true UTC at `at_utc` (now when None).
+
+    Fusion runs the New-York-close convention: UTC+3 while the US is on daylight time, UTC+2
+    otherwise, so the server's 00:00 is always 17:00 New York. Measured on the box
+    (`h1_source.broker_utc_offset_hours` docstring): a tick stamped 04:29 at 01:29 UTC in
+    September, i.e. +3 in summer.
+
+    WHY A TABLE AND NOT THE TICK. Every MT5 time (bars, ticks, deals, positions, `time_setup`)
+    is the server's WALL CLOCK encoded as if it were a UTC epoch. Deriving the offset from
+    `tick.time - now` cannot tell a +3 offset from a tick three hours stale, and it is exactly
+    the tick's staleness the gateway needs the offset to measure. The US rule is deterministic,
+    so it is computed (second Sunday of March to first Sunday of November, as
+    `calendar_us.us_eastern_offset`), and it switches on the right weekend without anyone
+    remembering to edit a constant.
+    """
+    now = datetime.now(tz=UTC) if at_utc is None else at_utc
+    d = now.date()
+    mar = d.replace(month=3, day=1)
+    start = mar + timedelta(days=(6 - mar.weekday()) % 7 + 7)
+    nov = d.replace(month=11, day=1)
+    end = nov + timedelta(days=(6 - nov.weekday()) % 7)
+    return 3 if start <= d < end else 2
+
+
+def server_now(at_utc: datetime | None = None) -> datetime:
+    """The venue's server wall clock, labelled UTC the way MT5 labels every time it returns.
+
+    THE ONE CLOCK TO COMPARE MT5 TIMES AGAINST. A position's `time`, an order's `time_setup`,
+    a bar label and a TTL computed from a bar label are all server wall time stamped UTC;
+    comparing any of them with `datetime.now(UTC)` is wrong by the offset (3h in summer). That
+    mix made the stop manager ask for bars ending three hours before entry (so it never managed
+    a position younger than ~3h), held every time exit ~3h past its certified bar, kept summer
+    asia brackets alive until 13:00 server instead of 10:00, and let a tick 3.5h stale read as
+    fresh. Every such comparison now goes through this.
+    """
+    now = datetime.now(tz=UTC) if at_utc is None else at_utc
+    return now + timedelta(hours=broker_offset_hours(now))
 
 
 def bracket_deadline(sleeve: str, window: str | None = None,

@@ -33,6 +33,7 @@ sys.path.insert(0, str(BASE / "research"))
 
 from mt5desk import families  # noqa: E402
 from mt5desk.engine import Costs, run_backtest  # noqa: E402
+from research.cell_costs import commission_per_side  # noqa: E402
 
 GAMMA = 0.5772156649015329
 EULER_E = np.e
@@ -122,7 +123,7 @@ def main() -> int:
         # `from_symbol` is the only correct constructor: the hand-rolled form wrote gold's
         # spread in dollars-per-OUNCE into a per-LOT field and omitted quote_per_account, so
         # the commission was undercharged 184x on USDJPY and 8.2x on CADJPY (2026-08-27).
-        return Costs.from_symbol(meta.get(sym, {}), commission_per_lot=3.50)
+        return Costs.from_symbol(meta.get(sym, {}), commission_per_lot=commission_per_side())
 
     def daily_r(sym: str, hunt: str, row: dict) -> pd.Series:
         key = (sym, hunt, row["fam"], row["side"], row["win"], row["state"])

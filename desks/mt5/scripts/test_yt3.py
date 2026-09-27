@@ -1,8 +1,12 @@
 import subprocess, textwrap
 
 code = textwrap.dedent("""\
-import os, json
-os.environ["YOUTUBE_API_KEY"] = "AIzaSyAIudkX3epD1dJZKNPMIr5x6J_9ayTGBoc"
+import os, json, sys
+sys.path.insert(0, "/home/quant/quant-platform/desks/mt5/side_channels")
+from youtube_miner import API_KEY  # env YOUTUBE_API_KEY or data/secrets/youtube.json
+if not API_KEY:
+    raise SystemExit("no YOUTUBE_API_KEY in env or data/secrets/youtube.json")
+os.environ["YOUTUBE_API_KEY"] = API_KEY
 import requests
 url = "https://www.googleapis.com/youtube/v3/search"
 params = {

@@ -32,4 +32,6 @@ def test_live_fusion_profile_keeps_spread_units_and_round_trip() -> None:
         "live_contract": 100.0,
     }})
     assert costs.spread_per_lot == 32.0
-    assert costs.per_oz_roundtrip() == 36.5
+    # 32 spread + 2 x EUR 2.00 per side: the MEASURED Fusion commission (libs/portfolio/fusion_cost),
+    # not the 2.25 this pinned before the constants were unified on 2026-09-25.
+    assert costs.per_oz_roundtrip() == 36.0

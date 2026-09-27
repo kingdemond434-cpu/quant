@@ -191,6 +191,10 @@ def test_a_family_clock_promotes_as_family_market_or_names_its_executor_gap(desk
             "params": {}, "side": "LONG"},
     }
     monkeypatch.setattr(promoter, "clock_identities", lambda: ids)
+    # Every clock here stands on a certificate in today's authority set: a lapsed certificate is
+    # held rather than promoted (`certificate_lapsed`), and this test is about the executor.
+    monkeypatch.setattr(promoter, "authorized_specs", lambda base: {
+        (v["symbol"], v["selector"], None, v["family"], False) for v in ids.values()})
     desk.shadow({k: dict(_GOOD) for k in ids})
     promoter.main()
     rows = {s["name"]: s for s in desk.sleeves()}

@@ -3,8 +3,9 @@ import numpy as np
 from mt5desk import families
 from mt5desk.data import load_gold
 from mt5desk.engine import Costs, run_backtest
+from research.cell_costs import commission_per_side  # noqa: E402
 
-costs = Costs(spread_per_lot=0.48, commission_per_lot=3.50, contract_oz=100.0)
+costs = Costs(spread_per_lot=0.48, commission_per_lot=commission_per_side(), contract_oz=100.0)
 h1 = families._h1(load_gold().h1)
 
 WINDOWS = [

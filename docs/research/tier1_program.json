@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-09-23",
+ "updated": "2026-09-25",
  "source": "Two external blueprints pasted by the principal 2026-09-08 (65 + ~55 items) and five acceptance properties; statuses from six repository sweeps with file:line evidence, checked by scripts/check_tier1_program.py.",
  "heat_policy": "20% portfolio heat is the ceiling AND the floor of the book; never reduced. Tier-1 means more independent positive-Elog bets inside the same heat.",
  "phases": {
@@ -5438,7 +5438,7 @@
    "item": "The Korea structured data plane (KRX, Customs 10-day trade, BOK ECOS with vintages, OpenDART as sector sensors) and the trade nowcasting factory",
    "domain": "K",
    "phase": "K",
-   "status": "LANDED",
+   "status": "PARTIAL",
    "gate": "none",
    "evidence": [
     "desks/mt5/research/countries/kr/data_plane.py:1173 run() -- the four official lanes (KRX, Customs 10-day trade, BOK ECOS with vintages, OpenDART)",
@@ -5452,14 +5452,15 @@
    "consumer": "the twelve KR agents (ctx.data_plane); the transmission seeds in countries/kr/pack.py",
    "landed": [
     "VERIFIED 2026-09-23: the row was STALE -- the builder was not cut off. data_plane.py is 1,223 lines carrying all four lanes and a vintage store, nowcast.py is 690, and KR_DATA_PLANE.json on this box was written today"
-   ]
+   ],
+   "gap": "AUDITED 2026-09-25 against git: LANDED -> PARTIAL. Only countries/kr/miners.py (the trade_nowcaster miner row) is in the repository. The data plane (countries/kr/data_plane.py, the four official lanes and vintage store), the nowcasting factory (countries/kr/nowcast.py) and the agent wiring (countries/kr/agents.py) are absent, so KR_DATA_PLANE.json has no producer here. The 2026-09-23 'VERIFIED' notes were read on the box's working tree; these files were never committed to any branch (git log --all shows no history), so they do not exist in THIS REPOSITORY, which is what LANDED certifies."
   },
   {
    "id": "K2",
    "item": "The Korea research civilization agents (twelve), native query territories, the candidate lattice with EVIG, the five moat stores, the KR x JP x CN interaction miner, delayed source credit",
    "domain": "K",
    "phase": "K",
-   "status": "LANDED",
+   "status": "PARTIAL",
    "gate": "none",
    "evidence": [
     "desks/mt5/research/countries/kr/agents.py:2341 AGENTS -- the twelve, each with its own native query territory",
@@ -5476,14 +5477,15 @@
     "VERIFIED 2026-09-23: agents.py 2,408 lines, lattice.py 742, moat.py 972 -- the builder finished and the row was stale",
     "ONE REAL DEFECT FOUND AND FIXED: interaction_miner and credit_survivors ran on the lab's clock but moat.build -- the function that WRITES the five stores -- ran nowhere, so the department's own artifact never existed. moat_stores is now the sixteenth miner (16/16 resolve, MINERS | MISSING == NAMES holds) and data/countries/kr/moat.json now exists at 13,976 bytes with all five stores (data, semantic, failure, source, interaction) populated.",
     "THE CLASS, NOT THE INSTANCE: a sweep of all 71 country packages found three more writers with no clock -- ae, il and sa each hold a data_plane.py with run() and a REPORT path and held NO miners.py, which is the only file global_research_os reads to find a country's own miners. All three are now clocked through countries/_data_plane_miner.py and AE_DATA_PLANE.json, IL_DATA_PLANE.json and SA_DATA_PLANE.json exist for the first time."
-   ]
+   ],
+   "gap": "AUDITED 2026-09-25 against git: LANDED -> PARTIAL. countries/kr/miners.py and countries/_data_plane_miner.py are in the repository; the twelve agents (countries/kr/agents.py), the EVIG lattice (countries/kr/lattice.py) and the five moat stores (countries/kr/moat.py) are absent, so the moat.json artifact has no producer here. The 2026-09-23 'VERIFIED' notes were read on the box's working tree; these files were never committed to any branch (git log --all shows no history), so they do not exist in THIS REPOSITORY, which is what LANDED certifies."
   },
   {
    "id": "U1",
    "item": "The ingestion-exploitation contract and checker (every ingested unit gets a disposition; stranded units become discoveries; the ratchet floor) and the macro intelligence fusion (posteriors, nowcasts, news lane, two-sided suggestions through the router contract)",
    "domain": "U",
    "phase": "U",
-   "status": "LANDED",
+   "status": "PARTIAL",
    "gate": "none",
    "evidence": [
     "desks/mt5/research/ingestion_ledger.py:1058 (the disposition per ingested unit)",
@@ -5498,7 +5500,7 @@
    "scheduled_by": "hourly_cycle:ingestion_ledger, hourly_cycle:ingestion_exploitation, hourly_cycle:macro_intelligence",
    "artifact": "desks/mt5/reports/INGESTION_EXPLOITATION.json; desks/mt5/reports/MACRO_INTELLIGENCE.json",
    "consumer": "the law gate (scripts/run_law_gate.py:170); the daily research OS; pf_allocator through the router contract",
-   "gap": "VERIFIED 2026-09-23: the builder that was cut off finished. Both legs exist and run (ingestion_ledger in the data department, ingestion_exploitation as a core leg every pass, macro_intelligence in macro), the checker is the 170th line of the law gate's fence list, and the macro fusion's suggestions are two-sided by construction rather than by assertion.",
+   "gap": "AUDITED 2026-09-25 against git: LANDED -> PARTIAL. The ingestion-exploitation half is in the repository (ingestion_ledger.py, scripts/check_ingestion_exploitation.py on the law gate). The macro-intelligence half is absent: research/macro_intelligence.py is not committed (the hourly_cycle leg names a script the producer will report missing), and so is tests/test_ingestion_exploitation.py. The 2026-09-23 'VERIFIED' notes were read on the box's working tree; these files were never committed to any branch (git log --all shows no history), so they do not exist in THIS REPOSITORY, which is what LANDED certifies. Prior gap text: VERIFIED 2026-09-23: the builder that was cut off finished. Both legs exist and run (ingestion_ledger in the data department, ingestion_exploitation as a core leg every pass, macro_intelligence in macro), the checker is the 170th line of the law gate's fence list, and the macro fusion's suggestions are two-sided by construction rather than by assertion.",
    "next_step": "",
    "landed": [
     "verified wired: both legs, the law-gate checker and the two-sided router contract"
@@ -5560,7 +5562,7 @@
    "item": "News as a first-class event stream: the fast router (source, timestamp, event ontology, entities, novelty, surprise, affected markets, fast posterior update) and the deep lane (causal interpretation, analogues, transmission, positioning, scenario tree), the liquidity and portfolio shock models, the allocator re-solve hook, the execution scientist, and the event-conditioned sleeve families validated beforehand",
    "domain": "N",
    "phase": "N",
-   "status": "LANDED",
+   "status": "PARTIAL",
    "gate": "none",
    "evidence": [
     "desks/mt5/research/news_event_stream.py:374 collect_items and the fast router (source tier, classification, entities, novelty, surprise, affected set, precision-weighted posterior nudge)",
@@ -5575,14 +5577,15 @@
    "landed": [
     "VERIFIED 2026-09-23: the row was STALE. news_event_stream.py is 925 lines carrying both lanes, the liquidity and portfolio shock models, the allocator re-solve hook and the execution scientist, on an hourly leg with a layer and a report; event_sleeves is its own leg",
     "nothing in it sizes, caps or vetoes, and the nudge table is two-sided by construction so the world state cannot ratchet towards fear"
-   ]
+   ],
+   "gap": "AUDITED 2026-09-25 against git: LANDED -> PARTIAL. The fast router, deep lane, shock/liquidity models and execution recommendations are committed (news_event_stream.py). The event-conditioned sleeve families (research/event_sleeves.py) are absent, so the event_sleeves leg has no producer. The 2026-09-23 'VERIFIED' notes were read on the box's working tree; these files were never committed to any branch (git log --all shows no history), so they do not exist in THIS REPOSITORY, which is what LANDED certifies."
   },
   {
    "id": "S1",
    "item": "The free shadow-institutional stack: public proxy ensembles for private capabilities, free crypto L2 / Deribit options as risk sensors for MT5 instruments, the latency laboratory (edge after latency, auto-reject below the desk's latency), retail positioning ecology, latent actor inference with UNKNOWN_ACTOR classes, synthetic proprietary datasets by archiving with vintages, the disagreement dataset, the capability gap map",
    "domain": "S",
    "phase": "S",
-   "status": "LANDED",
+   "status": "PARTIAL",
    "gate": "none",
    "evidence": [
     "desks/mt5/research/shadow_institutional.py:366 the public proxy sensors per latent; :787 fuse -- the proxy ENSEMBLE with lead-lag weights",
@@ -5596,7 +5599,8 @@
    "consumer": "the world model (latent axes written through store_latent); the compiler (record_discoveries into libs/moat/registry)",
    "landed": [
     "VERIFIED 2026-09-23: the row was STALE. shadow_institutional.py is 1,365 lines and latency_lab.py 620; the proxy ensembles, the risk sensors, the latency laboratory, the disagreement dataset, the vintage archive and the gap map all exist, each on an hourly leg with a layer and a report"
-   ]
+   ],
+   "gap": "AUDITED 2026-09-25 against git: LANDED -> PARTIAL. shadow_institutional.py (proxy sensors, fused ensemble, disagreement, vault manifest) is committed and on its leg. research/latency_lab.py (edge_after_latency, the latency verdict) and research/latent_actors.py are absent, so LATENCY_LAB.json has no producer here. The 2026-09-23 'VERIFIED' notes were read on the box's working tree; these files were never committed to any branch (git log --all shows no history), so they do not exist in THIS REPOSITORY, which is what LANDED certifies."
   },
   {
    "id": "W21",
@@ -5732,7 +5736,7 @@
    "id": "U18",
    "domain": "U",
    "phase": "U",
-   "status": "LANDED",
+   "status": "PARTIAL",
    "gate": "none",
    "item": "MAXIMUM MULTILINGUAL UNDERSTANDING (principal, 2026-09-17, permanent): a 101-language / 41-script identifier with no model download and no network call, code-switch segmentation, romanisation detection, per-script normalisation, 437 finance-slang terms in 39 languages canonicalised onto the desk's own mechanism vocabulary, cross-locale numbers and calendars, and NATIVE SEMANTIC SEARCH -- native-script queries built from local terminology per language per source layer (official, institutional, academic, practitioner, retail_ecology, app_ecosystem, media, archive, physical_economy, source_graph), never one English phrase translated once. Nothing is dropped for being unreadable: what polyglot cannot read becomes a seat task, and what the seat answers is ingested BESIDE the verbatim original. A language or layer with no native vocabulary is named UNMEASURED rather than filled with a translation, and fringe/contradictory/low-confidence material is preserved as evidence (crowding and narrative are features), never filtered.",
    "evidence": [
@@ -5744,7 +5748,7 @@
    "scheduled_by": "desks/mt5/research/hourly_cycle.py leg `understanding_seat` (intel department, information layer)",
    "artifact": "desks/mt5/reports/UNDERSTANDING.json",
    "consumer": "the LLM seats via data/intelligence/understanding_seat/tasks_*.json; the registry claims table and research_memory kind=understanding; the source scouts via the two gap lists (languages_without_terminology, query_layers_unmeasured); understanding_coverage() for the dashboards",
-   "gap": "LANDED 2026-09-17 and MEASURED on the box the same day: 5,962 documents, 3,352 understood natively (56.2%), 2,610 pending of which 1,097 are labels too short to translate, 300 seat tasks written, gap list bg/cy/et/ga/ha/hr/mk/mt/sq. understood_via_seat is 0 until a seat answers -- the loop's second half is wired and has not yet been exercised by a real seat."
+   "gap": "AUDITED 2026-09-25 against git: LANDED -> PARTIAL. research/understanding_seat.py is committed but imports libs.research.polyglot at module level, and libs/research/polyglot.py (the 101-language identifier, slang canon and native query builder) is absent, as are its tests (tests/research/test_polyglot.py, desks/mt5/tests/test_understanding_seat.py). The understanding_seat leg therefore cannot import in this tree. The 2026-09-23 'VERIFIED' notes were read on the box's working tree; these files were never committed to any branch (git log --all shows no history), so they do not exist in THIS REPOSITORY, which is what LANDED certifies. Prior gap text: LANDED 2026-09-17 and MEASURED on the box the same day: 5,962 documents, 3,352 understood natively (56.2%), 2,610 pending of which 1,097 are labels too short to translate, 300 seat tasks written, gap list bg/cy/et/ga/ha/hr/mk/mt/sq. understood_via_seat is 0 until a seat answers -- the loop's second half is wired and has not yet been exercised by a real seat."
   },
   {
    "id": "U19",
@@ -5782,7 +5786,7 @@
    "id": "N2",
    "domain": "N",
    "phase": "N",
-   "status": "LANDED",
+   "status": "PARTIAL",
    "gate": "none",
    "item": "News as a first-class event stream: a fast deterministic router (source ladder, classification, entities, novelty, surprise, affected markets) nudging a world-state vector with uncertainty and lodging an allocator re-solve REQUEST; a slower deep lane (transmission edges, analogues, cross-country, positioning, scenario tree) recorded as research_memory `event_deep` plus a discovery per implied mechanism",
    "evidence": [
@@ -5795,13 +5799,13 @@
    "scheduled_by": "hourly_cycle:news_event_stream",
    "artifact": "desks/mt5/reports/NEWS_EVENT_STREAM.json, desks/mt5/data/world_state.json, desks/mt5/data/allocator_resolve_request.json, desks/mt5/data/events/events.jsonl",
    "consumer": "desks/mt5/research/event_sleeves.py (world_state -> p_alpha_positive_now); the allocator MAY read the resolve request and the shock model",
-   "gap": "The 60 s --resident loop has NO box task row yet, so hourly --once is the only clock and intra-hour repricing is UNMEASURED. pf_allocator does not yet consume allocator_resolve_request.json: the request is lodged and nothing is obliged to read it. The moat collectors' normalised store does not exist on this box, so the fast lane reads news_captures.jsonl and the intelligence seats only."
+   "gap": "AUDITED 2026-09-25 against git: LANDED -> PARTIAL. news_event_stream.py and libs/research/event_ontology.py are committed and on the hourly leg. The cited tests (tests/research/test_event_ontology.py, desks/mt5/tests/test_news_event_stream.py) and the named consumer (research/event_sleeves.py) are absent from the repository. The 2026-09-23 'VERIFIED' notes were read on the box's working tree; these files were never committed to any branch (git log --all shows no history), so they do not exist in THIS REPOSITORY, which is what LANDED certifies. Prior gap text: The 60 s --resident loop has NO box task row yet, so hourly --once is the only clock and intra-hour repricing is UNMEASURED. pf_allocator does not yet consume allocator_resolve_request.json: the request is lodged and nothing is obliged to read it. The moat collectors' normalised store does not exist on this box, so the fast lane reads news_captures.jsonl and the intelligence seats only."
   },
   {
    "id": "N3",
    "domain": "N",
    "phase": "N",
-   "status": "LANDED",
+   "status": "MISSING",
    "gate": "none",
    "item": "Event-conditioned sleeve families validated BEFORE the event: eight family cards, a hosting decision per card against the live family registry, discoveries recorded once, and p_alpha_positive_now published under the regime_router convention",
    "evidence": [
@@ -5814,7 +5818,7 @@
    "scheduled_by": "hourly_cycle:event_sleeves",
    "artifact": "desks/mt5/data/event_sleeve_posteriors.json, desks/mt5/reports/EVENT_SLEEVES.json, desks/mt5/data/program_candidates.jsonl",
    "consumer": "desks/mt5/research/pf_allocator.py and research/promoter.py read the router convention; miner_candidate_compiler reads the donated discoveries",
-   "gap": "family_event_reaction carries no `event_kind` argument and family_inputs.resolve hands it the WHOLE calendar for the symbol, so every hosted cell is the UNCONDITIONAL expression of its card (condition_expressible=false on each hosting row). Closing it needs an event_kind argument on the family and a kind-aware _event_index. The cross-sectional dispersion card has no registered family that ranks a universe, so it goes to program_candidates.jsonl with the gap named, never to the docket."
+   "gap": "AUDITED 2026-09-25 against git: LANDED -> MISSING. research/event_sleeves.py and desks/mt5/tests/test_event_sleeves.py are absent from the repository; the hourly_cycle leg names a producer that does not exist here. Only the conventions it would follow (regime_router.py, layers.py) are committed. The 2026-09-23 'VERIFIED' notes were read on the box's working tree; these files were never committed to any branch (git log --all shows no history), so they do not exist in THIS REPOSITORY, which is what LANDED certifies. Prior gap text: family_event_reaction carries no `event_kind` argument and family_inputs.resolve hands it the WHOLE calendar for the symbol, so every hosted cell is the UNCONDITIONAL expression of its card (condition_expressible=false on each hosting row). Closing it needs an event_kind argument on the family and a kind-aware _event_index. The cross-sectional dispersion card has no registered family that ranks a universe, so it goes to program_candidates.jsonl with the gap named, never to the docket."
   },
   {
    "id": "M25",
@@ -5827,8 +5831,8 @@
     "desks/mt5/research/ingestion_ledger.py:1",
     "scripts/check_ingestion_exploitation.py:1",
     "desks/mt5/tests/test_ingestion_ledger.py:1",
-    "tests/test_ingestion_exploitation.py:1",
-    "MEASURED 2026-09-17 on this tree: 1,571 units over 10 kinds, exploitation share 0.6680 over the known population, 35 stranded data re-ingested with no downstream consumer (the ratchet is set there, not at 0), 0 refused, 0 quarantined"
+    "MEASURED 2026-09-17 on this tree: 1,571 units over 10 kinds, exploitation share 0.6680 over the known population, 35 stranded data re-ingested with no downstream consumer (the ratchet is set there, not at 0), 0 refused, 0 quarantined",
+    "AUDITED 2026-09-25 against git: the fence-semantics test (tests/test_ingestion_exploitation) is NOT in the repository; the ledger itself is pinned by desks/mt5/tests/test_ingestion_ledger."
    ],
    "scheduled_by": "hourly_cycle:ingestion_ledger (data department) and hourly_cycle:ingestion_exploitation (core, meta department); the gate also runs in scripts/run_law_gate.py state fences",
    "artifact": "desks/mt5/reports/INGESTION_EXPLOITATION.json, desks/mt5/data/ingestion_ledger.jsonl, desks/mt5/data/ingestion_floor.json, desks/mt5/reports/DATA_UTILIZATION_AUDIT.json",
@@ -5843,7 +5847,7 @@
    "id": "M26",
    "domain": "M",
    "phase": "M",
-   "status": "LANDED",
+   "status": "MISSING",
    "gate": "none",
    "item": "Macro intelligence fusion, 24/7: every macro-relevant ingested unit fused into a stated-model regime posterior per axis (vol, usd, risk, rates, liquidity, growth, inflation), nowcasts and next central-bank decisions, a news lane ranked by concepts x instruments x recency with the response atlas's measured reactions attached, and TWO-SIDED decision suggestions the allocator MAY consume through the regime_router contract -- never written into sleeves.json or any allocator file",
    "evidence": [
@@ -5854,7 +5858,7 @@
    "scheduled_by": "hourly_cycle:macro_intelligence (macro department)",
    "artifact": "desks/mt5/reports/MACRO_INTELLIGENCE.json, desks/mt5/data/macro_intelligence.json",
    "consumer": "desks/mt5/research/pf_allocator.py MAY read the suggestions; desks/mt5/research/ingestion_ledger.py joins `consumed_units` to award EXPLOITED_MACRO and WORLD_MODEL_INPUT",
-   "gap": "fred.json carries 0 series on this box (7 fetch failures), so the liquidity and inflation axes sit at their priors and say UNMEASURED; the claims table is empty, so the news lane is UNMEASURED rather than quiet; no series prices a central bank's next decision, so every market-implied expectation is UNMEASURED; no country plane (kr_*, jp_*) has landed.",
+   "gap": "AUDITED 2026-09-25 against git: LANDED -> MISSING. research/macro_intelligence.py and desks/mt5/tests/test_macro_intelligence.py are absent from the repository; the macro_intelligence leg in hourly_cycle names a producer that does not exist here, so MACRO_INTELLIGENCE.json has none. The 2026-09-23 'VERIFIED' notes were read on the box's working tree; these files were never committed to any branch (git log --all shows no history), so they do not exist in THIS REPOSITORY, which is what LANDED certifies. Prior gap text: fred.json carries 0 series on this box (7 fetch failures), so the liquidity and inflation axes sit at their priors and say UNMEASURED; the claims table is empty, so the news lane is UNMEASURED rather than quiet; no series prices a central bank's next decision, so every market-implied expectation is UNMEASURED; no country plane (kr_*, jp_*) has landed.",
    "next_step": "repair the FRED fetch so the liquidity/inflation axes measure; feed the collectors' claims so the news lane measures; add a short-rate series so the next-decision expectation stops being UNMEASURED",
    "landed": [
     "macro intelligence fusion 2026-09-17"
@@ -5968,8 +5972,8 @@
     "desks/mt5/research/residual_hunt.py",
     "desks/mt5/tests/test_residual_hunt.py",
     "desks/mt5/research/miner_candidate_compiler.py",
-    "libs/research/polyglot.py",
-    "libs/moat/registry.py"
+    "libs/moat/registry.py",
+    "AUDITED 2026-09-25 against git: the optional native-language seed module (libs.research.polyglot) is NOT in the repository; residual_hunt imports it lazily and runs without it."
    ],
    "scheduled_by": "hourly_cycle:residual_hunt (intel department resident)",
    "artifact": "desks/mt5/reports/RESIDUAL_HUNT.json",
@@ -8756,7 +8760,7 @@
     "desks/mt5/research/pack_cells.py:207 -- the 75 country packs already declare EXECUTABLE_INSTRUMENTS and REGION_COMMAND; a country with no pack is UNMAPPED, which is a published reason and never a guessed currency pair",
     "desks/mt5/research/pack_cells.py:370 -- jurisdiction_index inverts the packs' OWN JURISDICTIONS tuples and two-letter directory names into code -> pack; nothing is typed, so a code absent from it is covered by no pack and that is the only honest ground for writing one",
     "desks/mt5/research/pack_cells.py:483 -- resolve_ground, the ladder: country_pack, then the ccTLD of the hosts the ground's own held documents came from, then the MT5 symbols named verbatim in that text (routed through universe_policy so a single-name equity is never minted as a hypothesis); a ground it cannot resolve carries the hosts it saw and a next_job with an owner",
-    "desks/mt5/research/countries/jp/pack.py:1 -- JAPAN, the one jurisdiction the ladder proved had documents (asia:estat_jp_customs 6, asia:boj_timeseries 1) and no pack; EXECUTABLE_INSTRUMENTS is DERIVED at import from the broker's universe registry (the JPY pairs) and desks/mt5/research/japan/mandate.py:714's own actor map, 21 instruments, never typed",
+    "desks/mt5/research/countries/jp/pack.py:1 -- JAPAN, the one jurisdiction the ladder proved had documents (asia:estat_jp_customs 6, asia:boj_timeseries 1) and no pack; EXECUTABLE_INSTRUMENTS is DERIVED at import from the broker's universe registry (the JPY pairs). AUDITED 2026-09-25 against git: the Japan department's actor map it also reads (module research.japan.mandate) is NOT in the repository, so in this tree only the registry half contributes instruments.",
     "desks/mt5/research/pack_cells.py:169 -- JUDGED_SQL counts a cell judged in any of the three registers a verdict can land in (trials_ledger.candidate_id, research_candidates.judged_at, terminal_gate); counting only the first reported zero for a structural reason and looked like a slow clock",
     "desks/mt5/research/pack_cells.py:177 -- judged_registers measures why the end of the chain is open: 3,368 gauntlet verdicts sit in data/hypotheses/gate_verdict_ledger.jsonl and the registry's sync_cursor holds no 'gate_verdicts' key, so libs/moat/registry.py:1485 sync_from_desk has poured none in since the 2026-09-17 restore; and the sampled verdict rows carry graph_id=None, so its candidate edge would fall back to the cell NAME and join to no cand_<hex>",
     "desks/mt5/research/pack_cells.py:740 -- drain_reachability reads source_drain's own chain state (never edits it) and publishes, per bucket, whether its repair path reaches it, grouped by the text that defeated the desk's reader with the sources attached, so the next reader is a named job",

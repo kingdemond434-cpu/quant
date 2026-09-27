@@ -8509,12 +8509,37 @@ def check_unwired_modules(defects) -> None:
                     # register the module AND its parent packages, matching the AST roll-up
                     for i in range(2, len(parts) + 1):
                         imported.add(".".join(parts[:i]))
-    for area in ("scripts", "libs", "ops"):
+    # A LEG THAT RUNS A libs FILE BY PATH IS A CALLER TOO. The desk's cycles run organs as
+    # subprocesses -- `_producer("input_identity", "libs/data/input_identity.py")` -- and box
+    # tasks name scripts in manifests, so neither leaves an import edge. Only scheduler surfaces
+    # count: `_producer(...)` calls in desk code, and the desk's task manifests and shells.
+    desk_root = ROOT / "desks"
+    if desk_root.is_dir():
+        for f in desk_root.rglob("*"):
+            if "__pycache__" in f.parts or "tests" in f.parts or not f.is_file():
+                continue
+            if f.suffix == ".py":
+                pat = r"_producer\(\s*[^)]*?[\"'](libs/[A-Za-z0-9_/]+)\.py[\"']"
+            elif f.suffix in (".manifest", ".ps1", ".sh"):
+                pat = r"(libs/[A-Za-z0-9_/]+)\.py"
+            else:
+                continue
+            with contextlib.suppress(OSError):
+                for hit in re.findall(pat, f.read_text("utf-8", errors="ignore"), re.S):
+                    parts = hit.split("/")
+                    for i in range(2, len(parts) + 1):
+                        imported.add(".".join(parts[:i]))
+    # THE DESK TREE IMPORTS libs TOO, AND IS WHERE MOST OF IT LIVES NOW. The MT5 desk under
+    # desks/ (gateway, hourly cycle, promoter, research organs) is the largest caller of libs/,
+    # and a walker that scanned only scripts/libs/ops reported 286 of the library's modules as
+    # orphans -- the crying-wolf failure named below, reached by a scope that predates the desk.
+    # Tests stay excluded (desks/**/tests included): a test is not wiring.
+    for area in ("scripts", "libs", "ops", "desks"):
         base = ROOT / area
         if not base.exists():
             continue
         for p in base.rglob("*.py"):
-            if "__pycache__" in p.parts:
+            if "__pycache__" in p.parts or "tests" in p.parts:
                 continue
             try:
                 tree = ast.parse(p.read_text("utf-8", errors="ignore"))
@@ -8608,8 +8633,13 @@ def check_unwired_modules(defects) -> None:
     # searching a blob that includes the file being judged makes every script look invoked. The
     # candidate's own text is excluded from its own haystack -- the same self-discard bug that
     # inverted the orphan check above, in a different costume.
+    # The desk's own schedulers invoke scripts too: the hourly/daily cycles run them as legs and
+    # the box task manifest and installers name them. Leaving those out called scripts the cycle
+    # runs every hour "invoked by nothing".
     invoker_files = [
-        f for pat in ("ops/*", "scripts/*.py", ".github/workflows/*", "docs/*.md")
+        f for pat in ("ops/*", "scripts/*.py", ".github/workflows/*", "docs/*.md",
+                      "desks/mt5/research/hourly_cycle.py", "desks/mt5/research/daily_cycle.py",
+                      "desks/mt5/ops/*", "desks/mt5/scripts/*.ps1", "desks/mt5/scripts/*.sh")
         for f in ROOT.glob(pat) if f.is_file()
     ]
     # Scripts that cannot run on this platform at all. `run_autodiscovery.py` imports MetaTrader5,

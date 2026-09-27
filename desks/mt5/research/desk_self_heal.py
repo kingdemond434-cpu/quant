@@ -272,8 +272,13 @@ def check_disk_headroom(root: Path, now: datetime) -> Finding:
     remedy exists. Naming it is the whole job: the noon lane's report is what a person reads.
     """
     try:
-        import shutil
-        free_gb = shutil.disk_usage(str(root)).free / (1024 ** 3)
+        try:
+            from volume_headroom import free_gb as _free_gb  # type: ignore[import-not-found,unused-ignore]
+        except ImportError:                               # pragma: no cover - packaged import
+            from research.volume_headroom import (  # type: ignore[import-not-found,unused-ignore]
+                free_gb as _free_gb,
+            )
+        free_gb = _free_gb(root)
     except OSError as exc:
         return Finding("disk", True,
                        f"UNMEASURED — could not stat the volume at {root} ({exc}). "
