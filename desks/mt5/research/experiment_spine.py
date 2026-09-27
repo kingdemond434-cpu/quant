@@ -78,6 +78,7 @@ from libs.research.experiment_spec import (  # noqa: E402
     compile_row,
     enqueue,
 )
+from research import research_diversity_archive as diversity_archive  # noqa: E402
 
 REPORTS = DESK / "reports"
 OUT = REPORTS / "EXPERIMENT_SPINE.json"
@@ -853,6 +854,11 @@ def run(*, budget_s: float = BUDGET_S, dry_run: bool = False,
             "priors", reserve=5.0) else {"status": UNMEASURED,
                                          "why": "budget spent before the prior update"}
         fun = funnel(conn=conn, window_days=window_days, credit=credit)
+        # Preserve the whole frontier by research descriptor, including failures and blockers.
+        # This archive has no admission authority; it prevents a global score from erasing a
+        # sparse but structurally distinct line of inquiry before future evidence can revisit it.
+        diversity = diversity_archive.run(
+            dry_run=dry_run, rows=graph.experiments(limit=100000, conn=conn))
     finally:
         conn.close()
 
@@ -863,6 +869,7 @@ def run(*, budget_s: float = BUDGET_S, dry_run: bool = False,
         "graph": {"refresh": refreshed, "census": census, "never_tried_frontier": frontier},
         "credit": credit,
         "priors": prior_out,
+        "diversity_archive": diversity,
         "funnel": fun,
         "consumers": {
             "priors": "desks/mt5/research/meta_controller.py (proposal ranking); any search "
@@ -872,6 +879,8 @@ def run(*, budget_s: float = BUDGET_S, dry_run: bool = False,
                       "research_roi.py and the federation's source ROI join on them",
             "funnel": "desks/mt5/reports/RESEARCH_FUNNEL.json -- the research dashboard and the "
                       "Tier-1 acceptance properties",
+            "diversity_archive": "the frontier, meta-controller and humans: descriptor niches "
+                                 "are retained without gaining certificate authority",
         },
         "mandate": ("RD-Agent closure items 1, 4, 5, 11, 16, 20 (principal 2026-09-22): one "
                     "canonical experiment object, priors updated by every completed experiment, "
