@@ -16,8 +16,10 @@ from typing import Any
 import numpy as np
 
 UNMEASURED = "UNMEASURED"
-_TRADE_KEYS = ("trades", "deals", "history", "positions")
+# Public API used by SARES: timestamp key aliases for one trade.
+_TRADE_KEYS = ("open_time", "opened_at", "entry_time", "time")
 _CLOSE_KEYS = ("close_time", "closed_at", "exit_time", "time_close")
+_CONTAINER_KEYS = ("trades", "deals", "history", "positions")
 
 
 def _num(v: Any) -> float | None:
@@ -64,7 +66,7 @@ def _stats(row: Mapping[str, Any]) -> Mapping[str, Any]:
 def _split(row: Mapping[str, Any]) -> tuple[dict[str, Any], list[dict[str, Any]]]:
     head = dict(row)
     trades: list[dict[str, Any]] = []
-    for key in _TRADE_KEYS:
+    for key in _CONTAINER_KEYS:
         raw = head.pop(key, None)
         if isinstance(raw, Sequence) and not isinstance(raw, (str, bytes)):
             trades = [dict(x) for x in raw if isinstance(x, Mapping)]
