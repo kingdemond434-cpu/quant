@@ -2577,8 +2577,13 @@ def _family_call_params(s: dict, family: str, bars: object) -> tuple[dict | None
     caller refuses the row by name. An empty dict is a valid answer -- a price-only family needs
     nothing beyond bars -- and is not a gap.
     """
-    params = dict(s.get("params") or {})
-    if not params:
+    # An explicit empty mapping is the COMPLETE default parameterisation for a price-only
+    # family.  Absence/None means the registry lost the parameters and must reconstruct them;
+    # treating both shapes as falsy made valid `{}` rows enter certificate recovery and refuse.
+    raw_params = s.get("params")
+    has_explicit_params = "params" in s and isinstance(raw_params, dict)
+    params = dict(raw_params or {})
+    if not has_explicit_params:
         recovered, why = _params_from_certificate(s)
         if recovered is None:
             return None, why
