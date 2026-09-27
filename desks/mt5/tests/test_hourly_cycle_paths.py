@@ -238,6 +238,12 @@ def test_the_launcher_loops_forever() -> None:
     assert "research\\hourly_cycle.py" in LAUNCHER_CODE
 
 
+def test_unknown_unknowns_are_persisted_not_only_printed() -> None:
+    body = SRC.split("def exogenous_search()", 1)[1].split("\ndef ", 1)[0]
+    assert '"research/unknown_unknowns.py", "--apply"' in body, (
+        "the hourly unknown-unknown scan is dry-run and its downstream queue stays empty")
+
+
 def test_the_period_is_measured_from_the_hour_not_from_the_end_of_the_pass() -> None:
     """THE DEFECT THE DEEPENING WORK EXPOSED. `timeout /t 3540` counts from the moment the cycle
     RETURNS, so the real period is (pass duration + 59 min). A pass that now drains the deepening

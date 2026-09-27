@@ -22,6 +22,7 @@ records would be removed within a week.
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 from datetime import UTC, datetime
@@ -30,6 +31,7 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[2]
 PATH = ROOT / "desks" / "mt5" / "data" / "events.jsonl"
+ACK_PATH = ROOT / "desks" / "mt5" / "data" / "event_acknowledgements.jsonl"
 TAIL_BYTES = 4 * 1024 * 1024
 
 #: The vocabulary. A name outside it is still written (with `unknown_kind: true`) so a new
@@ -76,8 +78,19 @@ LEG_EVENT = {
 
 
 def emit(kind: str, path: Path | None = None, **fields: Any) -> dict[str, Any] | None:
-    """Append one event. Returns the row, or None if it could not be written (already printed)."""
-    row = {"at": datetime.now(tz=UTC).isoformat(timespec="seconds"), "kind": str(kind), **fields}
+    """Append one typed event while retaining the original lightweight API."""
+    at = datetime.now(tz=UTC).isoformat(timespec="seconds")
+    producer = str(fields.pop("producer", fields.get("leg") or "unknown"))
+    allowed = fields.pop("allowed_consumers", ("*",))
+    base = {"at": at, "kind": str(kind), "producer": producer,
+            "schema_version": str(fields.pop("schema_version", "1")),
+            "topic": str(fields.pop("topic", str(kind).lower())),
+            "evidence_grade": str(fields.pop("evidence_grade", "OPERATIONAL_EVENT")),
+            "priority": int(fields.pop("priority", 0)),
+            "allowed_consumers": list(allowed), **fields}
+    raw = json.dumps(base, sort_keys=True, default=str, separators=(",", ":")).encode()
+    artifact_id = str(base.pop("artifact_id", "") or hashlib.sha256(raw).hexdigest()[:24])
+    row = {**base, "artifact_id": artifact_id, "ack_state": "UNACKNOWLEDGED"}
     if kind not in KINDS:
         row["unknown_kind"] = True
     p = path or PATH
@@ -89,6 +102,39 @@ def emit(kind: str, path: Path | None = None, **fields: Any) -> dict[str, Any] |
     except OSError as exc:
         print(f"events: {kind} NOT written ({type(exc).__name__}: {exc})", flush=True)
         return None
+
+
+def acknowledge(artifact_id: str, consumer: str, *, status: str = "CONSUMED",
+                path: Path | None = None) -> dict[str, Any] | None:
+    """Append a consumer acknowledgement without mutating the source event."""
+    if not artifact_id or not consumer:
+        raise ValueError("artifact_id and consumer are required")
+    row = {"at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
+           "artifact_id": artifact_id, "consumer": consumer, "status": status}
+    p = path or ACK_PATH
+    try:
+        p.parent.mkdir(parents=True, exist_ok=True)
+        with p.open("a", encoding="utf-8") as fh:
+            fh.write(json.dumps(row, default=str, separators=(",", ":")) + "\n")
+        return row
+    except OSError as exc:
+        print(f"events: acknowledgement NOT written ({type(exc).__name__}: {exc})", flush=True)
+        return None
+
+
+def unacknowledged(*, consumer: str, events_path: Path | None = None,
+                   ack_path: Path | None = None) -> list[dict[str, Any]]:
+    """Return events this allowed consumer has not acknowledged."""
+    event_rows = _tail_rows(events_path or PATH)
+    ack_rows = _tail_rows(ack_path or ACK_PATH)
+    seen = {str(row.get("artifact_id")) for row in ack_rows
+            if row.get("consumer") == consumer}
+    out: list[dict[str, Any]] = []
+    for row in event_rows:
+        allowed = tuple(row.get("allowed_consumers") or ("*",))
+        if str(row.get("artifact_id")) not in seen and ("*" in allowed or consumer in allowed):
+            out.append(row)
+    return out
 
 
 def leg_events(leg: str, outcome: str, path: Path | None = None, **fields: Any) -> list[str]:

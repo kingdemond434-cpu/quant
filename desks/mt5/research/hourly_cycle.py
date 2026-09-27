@@ -2284,7 +2284,11 @@ def exogenous_search() -> dict:
     A LANE THAT FINDS NOTHING STILL PAYS. "We looked across this budget and there was nothing"
     is a real answer and belongs in `negative_knowledge`; silence does not.
     """
-    return _producer("exogenous_search", "research/unknown_unknowns.py")
+    # `unknown_unknowns.main` is deliberately dry without --apply. Running it bare produced a
+    # convincing console count and discarded every question, starving residual_queue,
+    # counterfactual_attribution, research_tree and meta_controller. The queue is append-only;
+    # downstream semantic dedupe prevents repeated observations paying the gauntlet twice.
+    return _producer("exogenous_search", "research/unknown_unknowns.py", "--apply")
 
 
 def stop_reverse_census() -> dict:
