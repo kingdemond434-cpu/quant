@@ -562,6 +562,9 @@ class CountryPack:
     domains: tuple[DomainRow, ...] = ()
     miner_domains: Mapping[str, tuple[str, ...]] = field(default_factory=dict)
     custom_miners: tuple[str, ...] = ()
+    # Lossless declarations behind ``custom_miners``. Newer country packs describe a miner as
+    # data while older packs store only the dotted entry.
+    custom_miner_specs: tuple[Mapping[str, Any], ...] = ()
     transmission_edges_seed: tuple[TransmissionSeed, ...] = ()
     mission: str = ""
     notes: str = ""
@@ -580,8 +583,14 @@ class CountryPack:
             notes.append(f"DROPPED region_command: {self.region_command!r} is this pack's own "
                          f"grouping; the framework files it under {command!r}")
         put(self, "region_command", command)
+        raw_custom = tuple(self.custom_miners or ())
+        specs = [dict(row) for row in raw_custom if isinstance(row, Mapping)]
+        entries = [str(row.get("entry") or "") if isinstance(row, Mapping) else str(row)
+                   for row in raw_custom]
+        put(self, "custom_miner_specs", tuple(specs))
+        put(self, "custom_miners", tuple(entry for entry in entries if entry))
         for name in ("executable_instruments", "positioning_sources", "native_languages",
-                     "source_classes", "institutional_flow_sources", "custom_miners"):
+                     "source_classes", "institutional_flow_sources"):
             put(self, name, _str_tuple(getattr(self, name)))
         cb = _coerce_row(CentralBank, self.central_bank, "central_bank", notes)
         put(self, "central_bank", cb if cb is not None else CentralBank(name=""))
@@ -596,8 +605,11 @@ class CountryPack:
             put(self, name, tuple(rows))
         put(self, "terminology", {str(k): _str_tuple(v)
                                   for k, v in dict(self.terminology or {}).items()})
-        put(self, "miner_domains", {str(k): _str_tuple(v)
-                                    for k, v in dict(self.miner_domains or {}).items()})
+        domains = {str(k): _str_tuple(v) for k, v in dict(self.miner_domains or {}).items()}
+        for spec in specs:
+            if spec.get("name"):
+                domains.setdefault(str(spec["name"]), _str_tuple(spec.get("domain_ids")))
+        put(self, "miner_domains", domains)
         put(self, "series", {str(k): str(v) for k, v in dict(self.series or {}).items()})
         put(self, "absent_layers", {_tok(k): str(v)
                                     for k, v in dict(self.absent_layers or {}).items()})
@@ -2835,6 +2847,61 @@ def miner_budgets(names: Sequence[str], pool_s: float, yields: Sequence[Mapping[
     return out
 
 
+def _declared_spec_adapter(spec: Mapping[str, Any]
+                           ) -> Callable[[CountryPack, LabCtx], dict[str, Any]]:
+    """Compile an unwired declaration into honest, gauntlet-bound mechanism cards.
+
+    It never pretends to be the missing latent-state model or event study. It preserves the
+    declared domain, inputs and negative controls as hypothesis-only discoveries. A native
+    implementation replaces it automatically as soon as the dotted entry resolves.
+    """
+    frozen = dict(spec)
+
+    def run(pack: CountryPack, ctx: LabCtx) -> dict[str, Any]:
+        name = str(frozen.get("name") or ctx.miner.removeprefix("custom:") or "declared")
+        wanted = set(_str_tuple(frozen.get("domain_ids")))
+        domains = [row for row in pack.domains if not wanted or row.id in wanted]
+        if not domains:
+            ctx.note(name, f"declared domains {sorted(wanted)} do not resolve in the pack")
+            return {"outcome": UNMEASURED, "discoveries": 0,
+                    "implementation": "DECLARED_SPEC_ADAPTER", "why": "no declared domain"}
+        made = 0
+        for domain in domains:
+            assets = [s for s in domain.instruments if s in pack.executable_instruments]
+            if not assets:
+                assets = list(pack.executable_instruments[:4])
+            if not assets:
+                ctx.note(name, f"{domain.id} has no executable instrument")
+                continue
+            controls = "; ".join(domain.controls) or "the matched non-event/non-state sample"
+            datasets = [d.name for d in pack.datasets
+                        if not d.assets or any(a in assets for a in d.assets)]
+            did, created = ctx.record(
+                mechanism=f"{pack.code}_{_tok(name)}_{_tok(domain.id)}",
+                source_id=f"declared_spec:{_tok(name)}:{_tok(domain.id)}",
+                source_type="declared_spec", actor=pack.name,
+                constraint="; ".join(domain.conditions) or domain.title,
+                economic_rationale=(f"{domain.title}. {domain.notes}".strip()),
+                assets=assets,
+                horizons=["intraday" if str(frozen.get("kind")) in
+                          {"event", "calendar", "microstructure"} else "multi_day"],
+                sessions=["all"], regimes=["conditional"],
+                required_data=(datasets or list(domain.objects)
+                               or ["the pack's point-in-time inputs"]),
+                pit_requirements=["publication/availability timestamp for every input"],
+                novelty=0.55, confidence=0.25, falsifier=controls,
+                payload={"domain": domain.id, "miner_spec": frozen,
+                         "implementation": "DECLARED_SPEC_ADAPTER",
+                         "status": "HYPOTHESIS_ONLY_NOT_MEASURED"})
+            made += int(created or did != "dry-run")
+        return {"outcome": OK if made or ctx.dry_run else UNMEASURED,
+                "discoveries": made, "implementation": "DECLARED_SPEC_ADAPTER",
+                "domains": sorted(wanted),
+                "why": "" if made or ctx.dry_run else "all cards already existed"}
+
+    return run
+
+
 def load_custom_miners(pack: CountryPack) -> tuple[dict[str, Callable[[CountryPack, LabCtx],
                                                                      dict[str, Any]]], list[str]]:
     """The pack's `module:function` entries, resolved. An entry that does not resolve is NAMED
@@ -2842,6 +2909,7 @@ def load_custom_miners(pack: CountryPack) -> tuple[dict[str, Callable[[CountryPa
     believes it is mining and is not."""
     out: dict[str, Callable[[CountryPack, LabCtx], dict[str, Any]]] = {}
     problems: list[str] = []
+    specs_by_entry = {str(row.get("entry") or ""): row for row in pack.custom_miner_specs}
     for entry in pack.custom_miners:
         mod_name, _, fn_name = str(entry).partition(":")
         if not mod_name or not fn_name:
@@ -2850,12 +2918,25 @@ def load_custom_miners(pack: CountryPack) -> tuple[dict[str, Callable[[CountryPa
         try:
             mod = importlib.import_module(mod_name)
         except Exception as exc:
-            problems.append(f"custom miner {entry!r}: import failed "
-                            f"({type(exc).__name__}: {exc})")
+            spec = specs_by_entry.get(str(entry))
+            if spec is not None:
+                out[f"custom:{fn_name}"] = _declared_spec_adapter(spec)
+                problems.append(f"custom miner {entry!r}: native implementation absent; "
+                                "DECLARED_SPEC_ADAPTER is active and emits hypothesis-only "
+                                "cards, never measured evidence")
+            else:
+                problems.append(f"custom miner {entry!r}: import failed "
+                                f"({type(exc).__name__}: {exc})")
             continue
         fn = getattr(mod, fn_name, None)
         if not callable(fn):
-            problems.append(f"custom miner {entry!r}: {fn_name} is absent or not callable")
+            spec = specs_by_entry.get(str(entry))
+            if spec is not None:
+                out[f"custom:{fn_name}"] = _declared_spec_adapter(spec)
+                problems.append(f"custom miner {entry!r}: native function absent; "
+                                "DECLARED_SPEC_ADAPTER is active")
+            else:
+                problems.append(f"custom miner {entry!r}: {fn_name} is absent or not callable")
             continue
         out[f"custom:{fn_name}"] = fn
     return out, problems
