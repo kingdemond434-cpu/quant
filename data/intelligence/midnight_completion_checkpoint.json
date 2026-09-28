@@ -15,7 +15,7 @@
    "status": "DONE"
   },
   "certificate_yield_fence": {
-   "finished_at": "2026-09-28T07:28:27.640067+00:00",
+   "finished_at": "2026-09-28T13:41:18.944986+00:00",
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
@@ -33,7 +33,7 @@
    "status": "DONE"
   },
   "forward_clock_fence": {
-   "finished_at": "2026-09-28T07:28:36.219257+00:00",
+   "finished_at": "2026-09-28T13:41:45.618416+00:00",
    "passes_completed": 1,
    "returncode": 1,
    "status": "DONE"
@@ -63,28 +63,23 @@
    "status": "FAILED"
   },
   "mechanism_independence": {
-   "finished_at": "2026-09-28T07:28:10.982336+00:00",
+   "finished_at": "2026-09-28T13:40:31.262848+00:00",
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
   },
   "same_day_fence": {
-   "finished_at": "2026-09-28T07:28:18.436482+00:00",
+   "finished_at": "2026-09-28T13:40:58.997482+00:00",
    "passes_completed": 1,
    "returncode": 1,
    "status": "DONE"
   },
   "zero_capital_shadow_forward": {
-   "command": [
-    "systemctl",
-    "--user",
-    "start",
-    "shadow-forward.service"
-   ],
-   "passes_completed": 0,
-   "started_at": "2026-09-28T12:35:34.472449+00:00",
-   "status": "RUNNING"
+   "finished_at": "2026-09-28T13:40:07.204424+00:00",
+   "passes_completed": 1,
+   "returncode": 0,
+   "status": "DONE"
   }
  },
- "updated_at": "2026-09-28T12:35:34.472449+00:00"
+ "updated_at": "2026-09-28T13:41:45.618416+00:00"
 }

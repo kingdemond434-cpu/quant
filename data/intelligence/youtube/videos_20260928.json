@@ -107,5 +107,55 @@
   "start_verified": false,
   "end_verified": false,
   "unresolved_reason": "ACCESS_LIMIT"
+ },
+ {
+  "channel_id": "UCa8rgzIMKFx2uJHVsf0oqjg",
+  "channel": "IQCapital",
+  "video_id": "l5hiauzND-Q",
+  "published": "2026-09-28T12:42:24Z",
+  "title": "Never Do THIS If You Want to Learn Trading the Right Way!",
+  "description": "Never Do This If You Want to Learn Trading the Right Way!",
+  "links": [],
+  "transcript": null,
+  "transcript_status": "UNAVAILABLE",
+  "start_verified": false,
+  "end_verified": false,
+  "unresolved_reason": "ACCESS_LIMIT"
+ },
+ {
+  "channel_id": "UC7NJLsf6IonOy8QI8gt5BeA",
+  "channel": "Trading with DaviddTech",
+  "video_id": "QZcA8eyOQwg",
+  "published": "2026-09-28T13:00:17Z",
+  "title": "I Tried to Double $100 With an AI Trading Bot in 22 hours .. Here's What Happened",
+  "description": "\ud83d\udc49\ud83c\udffb Learn AI trading bots and algorithmic trading with us:\nhttps://www.skool.com/daviddtech/about\n\nI gave my Claude AI trading bot $100 and one challenge: double the account in 22 hours.\n\nCould an AI trading bot discover its own strategies, test them and trade real money successfully?\n\nInstead of asking Claude to predict the entire market, I gave it one specific task: predict whether the next 15-minute candle would finish higher or lower.\n\nBut there was a problem. Winning trades paid less than losing trades cost. Once fees were included, a 50% win rate would lose money.\n\nSo before risking the $100, I gave Claude two hours to research and backtest strategies using TradingKit. It tested over 1,600 strategies across more than 34,000 variants, narrowed them down through validation and selected five for live trading.\n\nThen we hit another obstacle: the broker\u2019s up-or-down product had no API available for this setup. Claude built a Chrome extension to automate the trades through my browser.\n\nYou\u2019ll see the complete setup, the prompts, the strategy dashboard, the first painful loss, the final trade and the account\u2019s results. Did the AI trading bot actually double my money, or was this another experiment that looked better in a backtest?\n\n## In this video, you\u2019ll discover:\n\n\u2705 The $100 AI trading bot challenge and its 22-hour target  \n\u2705 How the 15-minute up-or-down trading contracts work  \n\u2705 Why a 50% win rate loses money with this payout structure  \n\u2705 How payouts and fees change the win rate needed to break even  \n\u2705 How to connect Claude to TradingKit for strategy backtesting  \n\u2705 The prompt used to give Claude a two-hour research challenge  \n\u2705 How Claude tested over 1,600 strategies and 34,000 variants  \n\u2705 How testing on unseen historical data helps check for overfitting  \n\u2705 How Claude selected five strategies for the live experiment  \n\u2705 How position sizing changes the account\u2019s risk  \n\u2705 How Claude built the Jarvis Chrome extension for browser-based trading  \n\u2705 The first loss",
+  "links": [
+   "https://www.skool.com/daviddtech/about",
+   "https://instagram.com/DaviddTech"
+  ],
+  "transcript": null,
+  "transcript_status": "UNAVAILABLE",
+  "start_verified": false,
+  "end_verified": false,
+  "unresolved_reason": "ACCESS_LIMIT"
+ },
+ {
+  "channel_id": "UCzk-gkLLlb0s5BnJv9XQKeQ",
+  "channel": "IQ Capital TV ",
+  "video_id": "Ai6D3_EWYUQ",
+  "published": "2026-09-28T13:00:31Z",
+  "title": "NEW YORK SESSION LIVE | IQ Capital TV | With Bikotrading | MONDAY 9/28/26",
+  "description": "Welcome to IQ Capital Live!\nReal markets with real setups, real risk management, real results!\n\n\ud83d\ude80 Get funded with the #1 Prop Firm - start with just $9 for Crypto & for Futures \ud83d\udc49 https://www.iqcapital.io/?aff=STREAM\n\n\ud83d\udc49 Join Our Official Discord Community: https://discord.com/invite/iqcapital\n\nVisit and follow us on our social media accounts:\n\nX (Twitter): https://x.com/IQCapital_io\nInstagram: https://www.instagram.com/iqcapitalofficial\n\n\ud83d\udccc Risk Disclaimer:\nIQ Capital provides educational and informational content only and does not offer financial, investment, or trading advice. IQ Capital operates as a proprietary trading firm; traders do not invest their own capital. Trading occurs in simulated evaluation environments or proprietary funded accounts under defined rules and risk limits. Trading leveraged instruments involves substantial risk and may result in the loss of all allocated capital. No strategy, rule set, or evaluation guarantees profitability. Past performance, payouts, and testimonials are not indicative of future results. Examples may reflect hypothetical or simulated performance. Traders act at their own discretion and are solely responsible for trading decisions, risk management, and legal, tax, and regulatory compliance. IQ Capital assumes no liability for losses arising from the use of its content or services.",
+  "links": [
+   "https://www.iqcapital.io/?aff=STREAM",
+   "https://discord.com/invite/iqcapital",
+   "https://x.com/IQCapital_io",
+   "https://www.instagram.com/iqcapitalofficial"
+  ],
+  "transcript": null,
+  "transcript_status": "UNAVAILABLE",
+  "start_verified": false,
+  "end_verified": false,
+  "unresolved_reason": "ACCESS_LIMIT"
  }
 ]
