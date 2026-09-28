@@ -21,8 +21,11 @@ rem ============================================================================
 set "PYTHONPATH=C:\opt\quant\desks\mt5;C:\opt\quant"
 set "LOG=C:\opt\quant\desks\mt5\logs\MT5-Universe.log"
 set "PYARGS="
-set "PYTHON=C:\opt\quant\.venv\Scripts\python.exe"
-if not exist "%PYTHON%" set "PYTHON=C:\Program Files\Python314\python.exe"
+rem The trading box's production interpreter is first. The repository venv can be a launcher
+rem into a retired Python during migrations; measured 2026-09-28 it left cmd.exe alive with no
+rem Python child and no log output while the direct 3.14 interpreter connected to Fusion.
+set "PYTHON=C:\Program Files\Python314\python.exe"
+if not exist "%PYTHON%" set "PYTHON=C:\opt\quant\.venv\Scripts\python.exe"
 if not exist "%PYTHON%" set "PYTHON=py"& set "PYARGS=-3"
 
 echo(>>"%LOG%"
