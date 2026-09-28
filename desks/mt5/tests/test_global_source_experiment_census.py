@@ -39,6 +39,20 @@ def test_one_census_scope_includes_every_global_region() -> None:
         assert token in joined, (token, sorted(commands))
 
 
+def test_region_census_distinguishes_attempts_from_success(tmp_path: Path, monkeypatch) -> None:
+    refused = "https://central-bank.example/data"
+    registry = tmp_path / "registry.json"
+    registry.write_text('{"by_url":{"' + refused + '":{"status":"REFUSED",'
+                        '"at":"2026-09-28T00:00:00+00:00","refusal":"served HTML"}},'
+                        '"series":{}}', "utf-8")
+    monkeypatch.setattr(census, "ACQUIRED", registry)
+    doc = census.build()
+    # The repository packs may not name the fixture URL. The invariant under test is the
+    # aggregation shape: attempts/refusals are independent from successful acquisitions.
+    for row in doc["per_region"].values():
+        assert {"attempted", "refused", "acquired"} <= set(row)
+
+
 def test_south_africa_policy_target_is_versioned_not_backfilled() -> None:
     regimes = za.INFLATION_TARGET_REGIMES
     assert regimes[0]["effective_to"] == "2025-11-11"

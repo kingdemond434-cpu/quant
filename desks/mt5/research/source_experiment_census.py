@@ -158,6 +158,8 @@ def build() -> dict[str, Any]:
         group = [row for row in rows if row["region"] == region]
         per_region[region] = {
             "sources": len(group),
+            "attempted": sum(bool(row.get("last_attempt")) for row in group),
+            "refused": sum(bool(row.get("acquisition_refusals")) for row in group),
             "acquired": sum(row["parser_result"] == "PARSED" for row in group),
             "features": sum(len(row["feature_ids"]) for row in group),
             "experiments": sum(len(row["experiment_ids"]) for row in group),
