@@ -993,12 +993,14 @@ class _Terminal:
     TIMEFRAME_H1 = 16385
     TRADE_ACTION_PENDING, TRADE_ACTION_DEAL = 5, 1
     ORDER_TYPE_BUY, ORDER_TYPE_SELL, ORDER_TYPE_BUY_STOP, ORDER_TYPE_SELL_STOP = 0, 1, 4, 5
+    POSITION_TYPE_BUY, POSITION_TYPE_SELL = 0, 1
     ORDER_FILLING_RETURN, ORDER_TIME_GTC, ORDER_TIME_SPECIFIED = 2, 0, 1
     SYMBOL_EXPIRATION_SPECIFIED = 4
 
     def __init__(self, rows: list[dict], bid: float, ask: float) -> None:
         self.rows, self.bid, self.ask = rows, bid, ask
         self.pending: list[SimpleNamespace] = []
+        self.positions: list[SimpleNamespace] = []
         self.sent: list[dict] = []
 
     def terminal_info(self):
@@ -1020,7 +1022,7 @@ class _Terminal:
         return SimpleNamespace(equity=10_000.0, margin_free=9_000.0, login=1, server="demo")
 
     def positions_get(self, symbol=None):
-        return []
+        return list(self.positions)
 
     def symbol_info(self, symbol):
         return SimpleNamespace(trade_tick_size=0.01, trade_stops_level=20, point=0.01,
@@ -1163,6 +1165,24 @@ def test_a_second_pass_in_one_day_recovers_the_bracket_the_terminal_holds_and_se
     assert recovered["recovered"] is True and recovered["date"] == _DAY
     assert recovered["spec"]["buy_stop"]["price"] == placed["spec"]["buy_stop"]["price"]
     assert f"recovered [gold_asia] bracket for {_DAY}" in ns["_logs"]
+
+
+def test_fusion_suppresses_the_same_opposing_gold_leg_as_e8(tmp_path, monkeypatch) -> None:
+    rows = _gold_rows()
+    mt5 = _Terminal(rows, *_quote(rows))
+    # Any readable open long XAU exposure makes a new sell-stop a self-hedge.  The position is
+    # deliberately manual (magic 0), proving the rule reads economic exposure rather than a
+    # fragile comment convention.
+    mt5.positions = [SimpleNamespace(symbol="XAUUSD", type=mt5.POSITION_TYPE_BUY,
+                                     volume=0.01, magic=0, comment="manual", ticket=77,
+                                     price_open=2000.0, sl=1900.0, tp=2200.0,
+                                     time=int(_WHEN.timestamp()))]
+    ns = _main_ns(tmp_path, monkeypatch, mt5, paused=False, state={"armed": True})
+
+    ns["main"]()
+
+    assert [r["type"] for r in mt5.sent] == [mt5.ORDER_TYPE_BUY_STOP]
+    assert any(d.get("reason") == "self_hedge_prevented" for d in ns["_decisions"])
 
 
 def test_the_pause_file_readers_look_under_data_and_main_consults_gateway_paused(

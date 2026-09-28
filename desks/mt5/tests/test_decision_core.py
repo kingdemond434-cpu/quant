@@ -630,6 +630,14 @@ def test_roster_folds_gold_evidence_versions_into_one_live_window() -> None:
     assert all("no duplicate live bracket or heat charge" in note for note in notes)
 
 
+def test_gold_book_direction_is_shared_by_both_venue_adapters() -> None:
+    assert dc.book_direction([]) == 0
+    assert dc.book_direction([{"side": "buy"}, {"side": "BUY"}]) == 1
+    assert dc.book_direction([{"side": "sell"}]) == -1
+    assert dc.book_direction([{"side": "buy"}, {"side": "sell"}]) == 0
+    assert dc.book_direction([{"side": "unknown"}]) is None
+
+
 def test_hibernated_maps_gold_windows_and_promoted_tags() -> None:
     sleeves = [{"name": "gold_asia"}, {"name": "CADJPY.asia"}, {"name": "gold_afternoon"}]
     state = {"sleeves": {"XAUUSD|asia": {"flag": "hibernate"},

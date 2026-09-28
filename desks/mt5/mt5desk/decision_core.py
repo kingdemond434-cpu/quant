@@ -158,6 +158,11 @@ GOLD_WINDOWS = [
     ("afternoon", 17, (14, 17)),
 ]
 
+#: The bracket leg that would trade against an already directional gold book.  Shared by the
+#: Fusion and E8 venue adapters so one strategy cannot hedge itself on one account while the
+#: other correctly suppresses the redundant leg.
+OPPOSING_LEG = {1: "sell_stop", -1: "buy_stop"}
+
 #: EUR put at risk by the venue's smallest tradeable position on gold. Below the equity where
 #: this equals Q_OPT, the FLOOR sets the risk and the policy does not -- deliberately kept, so a
 #: small account can trade and compound up rather than being locked out, but never silently.
@@ -1652,6 +1657,27 @@ def roster(retired_gold: dict, promoted: list[dict]) -> tuple[list[dict], list[s
                         "risk_frac": s.get("risk_frac"),
                         "lot": "auto_ramp", "status": "LIVE"})
     return sleeves, notes
+
+
+def book_direction(positions: list[dict]) -> int | None:
+    """Direction shared by all readable gold positions: +1 buy, -1 sell, 0 flat/two-sided.
+
+    ``None`` is deliberately distinct from flat: an unreadable side cannot grant permission to
+    place either leg.  Venue adapters translate their native position rows to the tiny
+    ``{"side": "buy"|"sell"}`` contract before calling this function.
+    """
+    sides: set[int] = set()
+    for p in positions:
+        side = str(p.get("side") or p.get("Side") or "").strip().lower()
+        if side == "buy":
+            sides.add(1)
+        elif side == "sell":
+            sides.add(-1)
+        else:
+            return None
+    if len(sides) != 1:
+        return 0
+    return sides.pop()
 
 
 def hibernated(sleeves: list[dict], regime_state: dict) -> set[str]:

@@ -54,7 +54,9 @@ from mt5desk.decision_core import (  # noqa: E402
     CLOSE_HOUR,
     GOLD_WINDOWS,
     MIN_RATCHET_IMPROVEMENT_R,
+    OPPOSING_LEG,
     atr_last,
+    book_direction,
     bracket_from_bars,
     h1_frame,
 )
@@ -157,37 +159,6 @@ def gold_positions(rows: list[dict], instrument_id: int) -> list[dict]:
     """The venue's open XAU positions, with no guess from comments or local state."""
     return [p for p in rows
             if int(p.get("tradableInstrumentId") or 0) == int(instrument_id)]
-
-
-def book_direction(positions: list[dict]) -> int | None:
-    """Which way the open XAU book leans: +1 all long, -1 all short, 0 flat or already two-sided.
-
-    `None` means a row's SIDE COULD NOT BE READ, which is not the same as flat and must never be
-    treated as one -- the caller falls back to deferring the whole bracket there, exactly as this
-    module did before the directional rule existed.
-
-    Only `side` is consulted, never `qty`. The question a bracket leg asks is "would this fill
-    AGAINST what the desk already holds", and that is answered by direction alone; reading a size
-    field the venue may or may not populate would add a way for the check to silently evaluate to
-    zero. `e8_executor` records the row shape this venue actually returns
-    ({id, tradableInstrumentId, routeId, side, qty, avgPrice}) and the cost of guessing at it.
-    """
-    sides = set()
-    for p in positions:
-        sd = str(p.get("side") or p.get("Side") or "").strip().lower()
-        if sd == "buy":
-            sides.add(1)
-        elif sd == "sell":
-            sides.add(-1)
-        else:
-            return None
-    if len(sides) != 1:
-        return 0                      # nothing open, or both directions already held
-    return sides.pop()
-
-
-#: The bracket leg that would trade AGAINST a book leaning this way. Keyed by `book_direction`.
-OPPOSING_LEG = {1: "sell_stop", -1: "buy_stop"}
 
 
 def _window_for_position(state: dict, position_id: int) -> tuple[str, dict] | None:

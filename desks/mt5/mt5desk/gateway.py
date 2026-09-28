@@ -222,6 +222,9 @@ from mt5desk.decision_core import (
     MIN_LOT_RISK_EUR as MIN_LOT_RISK_EUR,
 )
 from mt5desk.decision_core import (
+    OPPOSING_LEG as OPPOSING_LEG,
+)
+from mt5desk.decision_core import (
     RETCODE_MEANING as RETCODE_MEANING,
 )
 from mt5desk.decision_core import (
@@ -232,6 +235,9 @@ from mt5desk.decision_core import (
 )
 from mt5desk.decision_core import (
     bracket_spec as bracket_spec,
+)
+from mt5desk.decision_core import (
+    book_direction as book_direction,
 )
 from mt5desk.decision_core import (
     day_range as day_range,
@@ -1124,9 +1130,13 @@ def _record_intent(**row) -> str | None:
 
 
 def place_bracket(st: dict, spec: dict, sleeve: str, symbol: str, lot: float,
-                  sleeve_row: dict | None = None) -> dict:
-    """Send both legs of a bracket exactly as before; `sleeve_row` (the roster row, optional) is
-    read only to carry the sleeve's certificate and registry id onto the intent row."""
+                  sleeve_row: dict | None = None, blocked_side: str | None = None) -> dict:
+    """Send the bracket legs that agree with the current book.
+
+    ``blocked_side`` is the shared gold self-hedge rule: once XAU is directional, the leg that
+    would reverse it is recorded but not sent.  With no open direction it is ``None`` and this
+    remains the ordinary two-sided bracket.
+    """
     if _DESK_STALE is not None:
         log(f"[{sleeve}] refused: desk stale ({_DESK_STALE['verdict']}), no new risk")
         return {"ok": False, "stage": "desk_stale", "why": _DESK_STALE["why"]}
@@ -1150,6 +1160,15 @@ def place_bracket(st: dict, spec: dict, sleeve: str, symbol: str, lot: float,
 
     for side in ("buy_stop", "sell_stop"):
         s = spec[side]
+        if side == blocked_side:
+            why_blocked = "opposing gold leg suppressed; same strategy never pays to hedge itself"
+            log(f"NOT SENT [{sleeve}] {side}: {why_blocked}")
+            sent.append({"side": side, "retcode": None, "blocked": True,
+                         "comment": why_blocked})
+            _record_decision(sleeve=sleeve, symbol=symbol, side=side, lot=lot,
+                             price=s.get("price"), sl=s.get("sl"), tp=s.get("tp"),
+                             taken=False, reason="self_hedge_prevented", detail=why_blocked)
+            continue
         # STOPS_LEVEL ZERO MEANS NO MINIMUM DISTANCE, NOT "ANY PRICE IS LEGAL" (fixed 2026-09-14).
         #
         # This was guarded `and _lvl > 0`, and Fusion reports trade_stops_level 0 on every symbol
@@ -4280,7 +4299,19 @@ def main() -> None:
                     log(f"release-refusal record failed (non-fatal) [{s['name']}]: "
                         f"{type(exc).__name__}: {exc}")
                 continue
-            res = place_bracket(st, spec, s["name"], s["symbol"], lot, sleeve_row=s)
+            _gold_rows: list[dict] = []
+            if s["symbol"] == GOLD_SYMBOL:
+                for _pos in mt5.positions_get(symbol=GOLD_SYMBOL) or []:
+                    _typ = int(getattr(_pos, "type", -1))
+                    _gold_rows.append({"side": ("buy" if _typ == mt5.POSITION_TYPE_BUY else
+                                                 "sell" if _typ == mt5.POSITION_TYPE_SELL else
+                                                 None)})
+            _direction = book_direction(_gold_rows) if s["symbol"] == GOLD_SYMBOL else 0
+            if _direction is None:
+                log(f"[{s['name']}] bracket NOT placed: an open gold position side is unreadable")
+                continue
+            res = place_bracket(st, spec, s["name"], s["symbol"], lot, sleeve_row=s,
+                                blocked_side=OPPOSING_LEG.get(_direction))
             # THE LOT IS RECORDED WITH THE BRACKET (2026-09-09). Without it, the next pass had
             # to RE-SIZE an order the venue was already holding in order to charge heat for it --
             # a different number at a different equity, so the cap priced a trade the book does
