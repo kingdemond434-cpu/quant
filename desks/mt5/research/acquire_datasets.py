@@ -34,6 +34,7 @@ import sys
 import urllib.error
 import urllib.parse
 import urllib.request
+from collections import defaultdict, deque
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -47,6 +48,7 @@ if str(_ROOT) not in sys.path:
 
 from libs.data.pit_certificate import certify  # noqa: E402
 from libs.data.pit_certificate import write as write_certificate  # noqa: E402
+from libs.research import country_lab as country_lab  # noqa: E402
 
 WORLD = DESK / "data" / "intelligence" / "world"
 STORE = DESK / "data" / "acquired"
@@ -63,6 +65,7 @@ MAX_BYTES = 60 * 1024 * 1024          #: real statistical archives are tens of M
 MAX_PER_RUN = 40                      #: bounded so one run cannot saturate the box's disk or hour
 MIN_ROWS = 200                        #: below this a series cannot support a rolling rank
 REFRESH_AFTER_S = 3600                #: an hourly owner must revisit changing public series
+REFUSED_RETRY_S = 24 * 3600           #: bad pages yield their seat to the rest of the world
 
 #: Column names that are plausibly a DATE. Checked in order; the first that parses wins.
 _DATE_COLS = ("date", "DATE", "Date", "time", "TIME", "Time", "timestamp", "TIMESTAMP",
@@ -271,7 +274,9 @@ def _endpoints(limit: int, *, now: datetime | None = None) -> list[tuple[str, st
                     at = datetime.fromisoformat(str((meta or {}).get("at") or ""))
                     if at.tzinfo is None:
                         at = at.replace(tzinfo=UTC)
-                    if (now - at.astimezone(UTC)).total_seconds() < REFRESH_AFTER_S:
+                    retry_s = (REFRESH_AFTER_S if str((meta or {}).get("status") or "SUCCESS")
+                               == "SUCCESS" else REFUSED_RETRY_S)
+                    if (now - at.astimezone(UTC)).total_seconds() < retry_s:
                         fresh.add(str(url))
                 except (TypeError, ValueError):
                     continue
@@ -288,6 +293,41 @@ def _endpoints(limit: int, *, now: datetime | None = None) -> list[tuple[str, st
         out.append((u, urllib.parse.urlparse(u).netloc or "seed"))
         if len(out) >= limit:
             return out
+    # EVERY COUNTRY PACK, FAIRLY BY REGION. Declaring sources in 170+ native-market packs while
+    # the acquirer reads only crawler output is declaration theatre: none of those sources can
+    # ever reach a parser. Interleave regions so alphabetical country order cannot spend every
+    # hourly seat on one continent; recent-attempt suppression advances the frontier next hour.
+    buckets: dict[str, deque[tuple[str, str]]] = defaultdict(deque)
+    packs = DESK / "research" / "countries"
+    for pack_py in sorted(packs.glob("*/pack.py")):
+        code = pack_py.parent.name
+        if code.startswith("_") or code in {"global", "institutional", "jp"}:
+            continue
+        pack = country_lab.resolve_pack(code)
+        if pack is None:
+            continue
+        region = str(pack.region_command or "UNMEASURED")
+        urls: list[str] = []
+        for dataset in pack.datasets:
+            urls.extend(str(value) for value in (dataset.how_to_fetch, dataset.source)
+                        if str(value).startswith(("http://", "https://")))
+        for source in country_lab.source_rows(pack):
+            if not source.absent_reason:
+                urls.extend(str(value) for value in source.roots
+                            if str(value).startswith(("http://", "https://")))
+        for url in urls:
+            if url in seen or url in fresh or _KEYED.search(url):
+                continue
+            seen.add(url)
+            buckets[region].append((url, urllib.parse.urlparse(url).netloc or code))
+    active = deque(sorted(region for region, rows in buckets.items() if rows))
+    while active and len(out) < limit:
+        region = active.popleft()
+        out.append(buckets[region].popleft())
+        if buckets[region]:
+            active.append(region)
+    if len(out) >= limit:
+        return out
     for f in sorted(glob.glob(str(WORLD / "discoveries_*.json")), reverse=True):
         try:
             rows = json.loads(Path(f).read_text("utf-8"))
@@ -324,25 +364,32 @@ def acquire(limit: int = MAX_PER_RUN) -> dict[str, Any]:
 
     for url, host in _endpoints(limit):
         tried += 1
+        attempt_at = datetime.now(UTC).isoformat(timespec="seconds")
+
+        def _refuse_url(why: str) -> None:
+            _refuse(why)
+            reg["by_url"][url] = {"host": host, "series": [], "at": attempt_at,
+                                  "status": "REFUSED", "refusal": why}
+
         raw, ctype = _fetch(url)
         if raw is None:
-            _refuse("served HTML, not data" if ctype == "html" else "unreachable")
+            _refuse_url("served HTML, not data" if ctype == "html" else "unreachable")
             continue
         if len(raw) > MAX_BYTES:
-            _refuse("larger than the per-file cap")
+            _refuse_url("larger than the per-file cap")
             continue
         df = _parse(raw, url)
         if df is None or df.empty:
-            _refuse("unparseable as a supported workbook, archive, delimited file or JSON")
+            _refuse_url("unparseable as a supported workbook, archive, delimited file or JSON")
             continue
         dated = _dated(df)
         if dated is None:
-            _refuse("no usable date column -- refused rather than stamped with now")
+            _refuse_url("no usable date column -- refused rather than stamped with now")
             continue
         stem = re.sub(r"[^A-Za-z0-9]+", "_", f"{host}_{Path(url).stem}").strip("_")[:40]
         series = _numeric_series(dated, stem)
         if not series:
-            _refuse("no numeric column with enough history")
+            _refuse_url("no numeric column with enough history")
             continue
 
         for name, s in series.items():
@@ -387,7 +434,8 @@ def acquire(limit: int = MAX_PER_RUN) -> dict[str, Any]:
             }
             new_series.append(name)
         reg["by_url"][url] = {"host": host, "series": list(series),
-                              "at": datetime.now(UTC).isoformat(timespec="seconds")}
+                              "at": datetime.now(UTC).isoformat(timespec="seconds"),
+                              "status": "SUCCESS", "refusal": None}
         kept += 1
 
     reg["updated_at"] = datetime.now(UTC).isoformat(timespec="seconds")

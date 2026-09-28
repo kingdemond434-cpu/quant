@@ -54,3 +54,27 @@ def test_acquired_endpoints_are_refreshed_after_one_hour(
     registry.write_text(json.dumps({"by_url": {
         seed: {"at": (now - timedelta(minutes=30)).isoformat()}}}), "utf-8")
     assert seed not in [url for url, _host in acquisition._endpoints(40, now=now)]
+
+
+def test_refused_endpoint_yields_its_seat_for_a_day(tmp_path: Path, monkeypatch) -> None:
+    now = datetime(2026, 9, 28, 8, tzinfo=UTC)
+    refused = acquisition._SEED_ENDPOINTS[0]
+    registry = tmp_path / "registry.json"
+    registry.write_text(json.dumps({"by_url": {
+        refused: {"at": (now - timedelta(hours=2)).isoformat(), "status": "REFUSED"}}}),
+        "utf-8")
+    monkeypatch.setattr(acquisition, "REGISTRY", registry)
+    monkeypatch.setattr(acquisition, "WORLD", tmp_path / "world")
+    assert refused not in [url for url, _host in acquisition._endpoints(40, now=now)]
+
+
+def test_country_pack_frontier_is_region_balanced(monkeypatch, tmp_path: Path) -> None:
+    monkeypatch.setattr(acquisition, "_SEED_ENDPOINTS", ())
+    monkeypatch.setattr(acquisition, "REGISTRY", tmp_path / "missing.json")
+    monkeypatch.setattr(acquisition, "WORLD", tmp_path / "world")
+    endpoints = acquisition._endpoints(40, now=datetime(2026, 9, 28, tzinfo=UTC))
+    hosts = {host for _url, host in endpoints}
+    # This does not encode a fixed source list. It proves the first bounded pass is not captured
+    # by one country/continent and reaches globally distinct public institutions.
+    assert len(endpoints) == 40
+    assert len(hosts) >= 8

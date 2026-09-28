@@ -72,16 +72,22 @@ def build() -> dict[str, Any]:
                       urls: list[str], information: list[str], coverage: str = "",
                       publication_lag_days: float | None = None, revisions: str = "",
                       pit_feasible: bool | None = None) -> None:
-        matched_urls = [url for url in urls if url in by_url]
+        attempted_urls = [url for url in urls if url in by_url]
+        matched_urls = [url for url in attempted_urls
+                        if str((by_url.get(url) or {}).get("status") or "SUCCESS") == "SUCCESS"]
         features = sorted(name for name, meta in series.items()
                           if str(meta.get("url") or "") in matched_urls)
         exp = experiments.get(source_id, [])
         evaluated = [e for e in exp if e.get("verdict") or e.get("verdict_at")]
+        last_attempt = max((str(by_url[url].get("at") or "") for url in attempted_urls),
+                           default="")
         last_fetch = max((str(by_url[url].get("at") or "") for url in matched_urls), default="")
         if not urls:
             blocker, owner = "NO_MACHINE_ENDPOINT", "source_frontier"
-        elif not matched_urls:
+        elif not attempted_urls:
             blocker, owner = "NOT_ACQUIRED", ACQUISITION_OWNER
+        elif not matched_urls:
+            blocker, owner = "ACQUISITION_REFUSED", "source_frontier"
         elif not features:
             blocker, owner = "NO_USABLE_FEATURE", "feature_compiler"
         elif not exp:
@@ -94,6 +100,10 @@ def build() -> dict[str, Any]:
             "region": region, "country": code, "source_id": source_id, "source": source,
             "information_families": information, "urls": urls,
             "acquisition_owner": ACQUISITION_OWNER, "last_successful_fetch": last_fetch or None,
+            "last_attempt": last_attempt or None,
+            "acquisition_refusals": sorted({str((by_url.get(url) or {}).get("refusal") or "")
+                                             for url in attempted_urls
+                                             if (by_url.get(url) or {}).get("refusal")}),
             "coverage": coverage or "UNMEASURED",
             "publication_lag_days": publication_lag_days,
             "revisions": revisions or "UNMEASURED", "pit_feasible": pit_feasible,
