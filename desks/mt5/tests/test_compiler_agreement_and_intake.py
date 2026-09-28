@@ -89,6 +89,20 @@ def test_cursor_preserves_an_append_but_restarts_a_replacement(
         "replacement"]
 
 
+def test_unfinished_file_cannot_age_out_of_the_intake_window(
+        roots, tmp_path, monkeypatch) -> None:
+    path = roots / "large.jsonl"
+    path.write_text("\n".join(json.dumps({"title": f"row-{i}"}) for i in range(3)) + "\n",
+                    "utf-8")
+    monkeypatch.setattr(mcc, "CURSOR", tmp_path / "cursor.json")
+    monkeypatch.setattr(mcc, "MAX_ROWS_PER_PASS", 2)
+    first_now = mcc.datetime.now(tz=mcc.UTC)
+    assert [r["title"] for _, r in mcc.recent_rows(first_now)] == ["row-0", "row-1"]
+    mcc._save_cursor()
+    much_later = first_now + mcc.timedelta(days=mcc.WINDOW_DAYS + 10)
+    assert [r["title"] for _, r in mcc.recent_rows(much_later)] == ["row-2"]
+
+
 def test_seats_that_donated_nothing_are_named() -> None:
     seats = mcc.seat_summary({"deepseek": {"rows": 3, "candidates": 1, "deepening": 2}})
     dark = [s for s, st in seats.items() if not st["rows"]]

@@ -235,7 +235,7 @@ MAX_ROWS_PER_PASS = _max_rows_per_pass()
 _LAST_INTAKE: dict = {"deferred_files": 0, "files_seen": 0, "bound_hit": False,
                       "cursor_start": None, "cursor_next": None,
                       "cursor_row_offset": 0, "cursor_file_size": 0,
-                      "cursor_prefix_sha256": None}
+                      "cursor_prefix_sha256": None, "cycle_cutoff_utc": None}
 
 
 def _prefix_sha256(path: Path, size: int) -> str:
@@ -256,15 +256,21 @@ def _prefix_sha256(path: Path, size: int) -> str:
     return digest.hexdigest()
 
 
-def _cursor_start(paths: list[Path]) -> tuple[int, int]:
+def _cursor_start(paths: list[Path]) -> tuple[int, int, datetime | None]:
     """Resume at a content-bound row inside the last partially consumed file."""
     try:
         saved = json.loads(CURSOR.read_text(encoding="utf-8"))
         prior = str(saved.get("next_path") or "")
     except (OSError, ValueError):
-        return 0, 0
+        return 0, 0, None
     if not prior:
-        return 0, 0
+        return 0, 0, None
+    try:
+        cycle_cutoff = datetime.fromisoformat(str(saved.get("cycle_cutoff_utc")))
+        cycle_cutoff = (cycle_cutoff.replace(tzinfo=UTC) if cycle_cutoff.tzinfo is None
+                        else cycle_cutoff.astimezone(UTC))
+    except (TypeError, ValueError):
+        cycle_cutoff = None
     for i, path in enumerate(paths):
         if str(path) == prior:
             offset = max(0, int(saved.get("row_offset") or 0))
@@ -275,8 +281,8 @@ def _cursor_start(paths: list[Path]) -> tuple[int, int]:
                                     _prefix_sha256(path, prior_size) == prior_hash)
             except OSError:
                 unchanged_prefix = False
-            return i, offset if unchanged_prefix else 0
-    return 0, 0
+            return i, offset if unchanged_prefix else 0, cycle_cutoff
+    return 0, 0, None
 
 
 def _save_cursor() -> None:
@@ -290,6 +296,7 @@ def _save_cursor() -> None:
         "row_offset": int(_LAST_INTAKE.get("cursor_row_offset") or 0),
         "file_size": int(_LAST_INTAKE.get("cursor_file_size") or 0),
         "prefix_sha256": _LAST_INTAKE.get("cursor_prefix_sha256"),
+        "cycle_cutoff_utc": _LAST_INTAKE.get("cycle_cutoff_utc"),
         "rule": "resume the bounded compiler pass; never restart the corpus at newest row zero",
     }, indent=1) + "\n", encoding="utf-8")
 
@@ -368,13 +375,13 @@ def recent_rows(now: datetime) -> list[tuple[str, dict]]:
     NEWEST FIRST, so if `MAX_ROWS_PER_PASS` binds it is the oldest discoveries that wait for the
     next pass rather than an arbitrary slice, and the shortfall is reported rather than hidden.
     """
-    cutoff = now - timedelta(days=WINDOW_DAYS)
+    current_cutoff = now - timedelta(days=WINDOW_DAYS)
     found: list[tuple[str, dict]] = []
     seen: set[str] = set()
     _LAST_INTAKE.update({"deferred_files": 0, "files_seen": 0, "bound_hit": False,
                          "cursor_start": None, "cursor_next": None,
                          "cursor_row_offset": 0, "cursor_file_size": 0,
-                         "cursor_prefix_sha256": None})
+                         "cursor_prefix_sha256": None, "cycle_cutoff_utc": None})
     all_paths: list[Path] = []
     for root in INTEL_ROOTS:
         if not root.exists():
@@ -383,7 +390,9 @@ def recent_rows(now: datetime) -> list[tuple[str, dict]]:
                                  if p.is_file() and p.suffix.lower() in {".json", ".jsonl"}
                                  and not _is_operational_state(p.relative_to(root))),
                                 key=lambda p: p.stat().st_mtime, reverse=True))
-    start, start_row = _cursor_start(all_paths)
+    start, start_row, saved_cutoff = _cursor_start(all_paths)
+    cutoff = saved_cutoff or current_cutoff
+    _LAST_INTAKE["cycle_cutoff_utc"] = cutoff.isoformat(timespec="seconds")
     if all_paths:
         all_paths = [*all_paths[start:], *all_paths[:start]]
         _LAST_INTAKE["cursor_start"] = str(all_paths[0])
@@ -428,6 +437,9 @@ def recent_rows(now: datetime) -> list[tuple[str, dict]]:
                                  "cursor_file_size": next_path.stat().st_size,
                                  "cursor_prefix_sha256": _prefix_sha256(
                                      next_path, next_path.stat().st_size)})
+    # The frozen cycle is fully drained. The next pass starts a new recency window; an item can
+    # never age out while waiting behind the memory bound, but old completed cycles do not replay.
+    _LAST_INTAKE["cycle_cutoff_utc"] = current_cutoff.isoformat(timespec="seconds")
     return found
 
 
