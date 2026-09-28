@@ -57,6 +57,32 @@ def _pos(**kw: Any) -> dict[str, Any]:
     return base | kw
 
 
+def test_management_only_never_opens_the_retired_fx_book(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    """The E8 account mirrors the Fusion gold book; this lane only protects old positions."""
+    from prop import e8_guard
+
+    class Decision:
+        flatten = False
+        may_open = True
+        verdict = type("Verdict", (), {"value": "OK"})()
+        why = "ok"
+
+        def as_dict(self) -> dict[str, Any]:
+            return {"equity": 100_000.0, "room_to_daily_floor": 2_500.0}
+
+    class Venue:
+        def account(self) -> dict[str, float]:
+            return {"equity": 100_000.0}
+
+    monkeypatch.setattr(e8_guard, "assess", lambda equity, now=None: Decision())
+    monkeypatch.setattr(e8_executor, "manage_breakeven", lambda venue, armed: [])
+    doc = e8_executor.run(Venue(), armed=True, entry_enabled=False)
+    assert doc["status"] == "MANAGEMENT_ONLY"
+    assert doc["n_sent"] == 0
+    assert doc["sleeves"] == []
+
+
 @pytest.fixture(autouse=True)
 def _isolated_basis(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Never let a test touch the real e8_stop_basis.json on the trading box."""

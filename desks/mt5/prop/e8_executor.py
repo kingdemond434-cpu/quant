@@ -682,7 +682,8 @@ def manage_breakeven(venue: Any, *, armed: bool = False) -> list[dict[str, Any]]
     return rows
 
 
-def run(venue: Any, *, armed: bool = False, now: datetime | None = None) -> dict[str, Any]:
+def run(venue: Any, *, armed: bool = False, now: datetime | None = None,
+        entry_enabled: bool = False) -> dict[str, Any]:
     from prop import e8_guard
 
     now = now or datetime.now(UTC)
@@ -713,6 +714,18 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None) -> dict
         doc["why"] = decision.why
         if decision.flatten and armed:
             doc["flattened"] = venue.close_all()
+        return doc
+
+    # The principal replaced this certificate-selected FX lane with the same three gold
+    # windows traded on Fusion (2026-09-16).  Keep this process alive for the account guard,
+    # flattening and protection of positions opened before that decision, but make new FX
+    # authority explicit.  A scheduler accidentally invoking the legacy executor must not
+    # silently repopulate the old book.
+    if not entry_enabled:
+        doc["status"] = "MANAGEMENT_ONLY"
+        doc["why"] = "new entries belong to E8-Gold; legacy certified FX book is retired"
+        doc["n_considered"] = 0
+        doc["n_sent" if armed else "n_would_send"] = 0
         return doc
 
     try:
@@ -1042,12 +1055,14 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--armed", action="store_true",
                     help="actually send orders (default is shadow: everything but create_order)")
+    ap.add_argument("--manage-only", action="store_true",
+                    help="retained for explicit scheduler readability; management-only is now the default")
     args = ap.parse_args(argv)
     from prop.tradelocker_venue import TradeLockerVenue
 
     armed = bool(args.armed or ARMED_MARKER.exists())
     venue = TradeLockerVenue().connect()
-    doc = run(venue, armed=armed)
+    doc = run(venue, armed=armed, entry_enabled=False)
     doc["armed_by"] = ("--armed" if args.armed else
                        f"{ARMED_MARKER.name} present" if ARMED_MARKER.exists() else "not armed")
     OUT.parent.mkdir(parents=True, exist_ok=True)
