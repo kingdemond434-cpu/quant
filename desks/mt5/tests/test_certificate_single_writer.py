@@ -50,6 +50,7 @@ def test_universe_job_fills_missing_ladder_instead_of_rewalking_it() -> None:
     assert "24 * 3600" in downloader
     assert "def _all_cells_accounted_for(" in downloader
     assert "no Fusion request is due" in downloader
+    assert downloader.index("if _accounted:") < downloader.index("import MetaTrader5 as mt5")
     assert '"M1": 200_000' in downloader
     assert '"M5": 120_000' in downloader
     assert '"M15": 80_000' in downloader

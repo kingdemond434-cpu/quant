@@ -11,28 +11,10 @@ import atexit
 from datetime import UTC, datetime
 from pathlib import Path
 
-import MetaTrader5 as mt5
-import pandas as pd
-import pyarrow.parquet as pq
-
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from mt5desk.config import desk_root, terminal_path
 from mt5desk.universe_registry import TIMEFRAMES as CANONICAL_TIMEFRAMES
 from mt5desk.universe_registry import cost_fields_from_symbol_info, merge
-from research.expand_universe import _pull_bars
-from research.job_lock import exclusive_job
-from research.mt5_session import attach_or_initialize
-
-# The canonical gauntlet samples Fusion-native costs while this collector walks the complete
-# broker chart ladder.  Both opening the terminal at once interrupted the 2026-09-28 rebuild at
-# 122/1,743 series.  Reuse the desk's existing crash-reclaiming lease rather than adding another
-# lock dialect.  A losing hourly trigger exits cleanly and retries; it must never corrupt or
-# strand the other owner's evidence pass.
-_terminal_lane = exclusive_job("fusion_terminal_research_lane", need_mb=0)
-if not _terminal_lane.__enter__():
-    print("download_all_symbols: DEFERRED -- Fusion research terminal lane is busy")
-    raise SystemExit(0)
-atexit.register(lambda: _terminal_lane.__exit__(None, None, None))
 
 # PATHS COME FROM `desk_root()`, NEVER A USERNAME (LAWS §1 anti-hardcode; the helper's own
 # docstring records that twenty-one files hardcoded `C:\\Users\\dell\\...`, "which meant the desk
@@ -109,6 +91,25 @@ if _accounted:
     print(f"Universe current: {_physical_count} physical chart(s), {_refused_count} fresh explicit "
           "venue refusal(s); no Fusion request is due")
     raise SystemExit(0)
+
+# Heavy imports and Fusion ownership happen ONLY when a cell is genuinely due. MetaTrader5 can
+# block while resolving IPC and Arrow/NumPy reserve substantial commit; importing either before
+# the current-ledger fast path made a no-op hourly task consume resources and sometimes hang.
+import MetaTrader5 as mt5  # noqa: E402
+import pandas as pd  # noqa: E402
+import pyarrow.parquet as pq  # noqa: E402
+
+from research.expand_universe import _pull_bars  # noqa: E402
+from research.job_lock import exclusive_job  # noqa: E402
+from research.mt5_session import attach_or_initialize  # noqa: E402
+
+# The canonical gauntlet samples Fusion-native costs while this collector walks the complete
+# broker chart ladder. Both opening the terminal at once interrupted the 2026-09-28 rebuild.
+_terminal_lane = exclusive_job("fusion_terminal_research_lane", need_mb=0)
+if not _terminal_lane.__enter__():
+    print("download_all_symbols: DEFERRED -- Fusion research terminal lane is busy")
+    raise SystemExit(0)
+atexit.register(lambda: _terminal_lane.__exit__(None, None, None))
 
 if not attach_or_initialize(mt5, path=terminal_path(), timeout=30_000):
     print(f"UNMEASURED: authenticated Fusion terminal is unavailable ({mt5.last_error()}); "
