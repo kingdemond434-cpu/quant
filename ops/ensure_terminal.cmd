@@ -23,7 +23,7 @@ rem Heal duplicates of THIS EXACT Fusion executable.  Other brokers are not touc
 rem oldest preserves the logged-in interactive instance; stopping newer duplicates does not close
 rem broker-side positions, and removes the Python IPC ambiguity that produced -10005 timeouts.
 powershell -NoProfile -NonInteractive -Command ^
-  "$p=@(Get-Process terminal64 -ErrorAction SilentlyContinue ^| Where-Object { $_.Path -eq $env:EXE } ^| Sort-Object StartTime); if($p.Count -gt 1){$p ^| Select-Object -Skip 1 ^| Stop-Process -Force -ErrorAction Stop}; if($p.Count -gt 0){exit 0}else{exit 1}" 2>>"%LOG%"
+  "$p=@(Get-CimInstance Win32_Process -Filter 'Name=''terminal64.exe''' ^| Where-Object { $_.ExecutablePath -eq $env:EXE } ^| Sort-Object CreationDate); if($p.Count -gt 1){$p ^| Select-Object -Skip 1 ^| ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction Stop }}; if($p.Count -gt 0){exit 0}else{exit 1}" 2>>"%LOG%"
 if not errorlevel 1 (
     echo %DATE% %TIME% exactly one Fusion terminal ensured>>"%LOG%"
     exit /b 0
