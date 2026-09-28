@@ -19,10 +19,13 @@ rem ============================================================================
 set "EXE=C:\Program Files\Fusion Markets MetaTrader 5\terminal64.exe"
 set "LOG=C:\opt\quant\desks\mt5\logs\MT5-TerminalBoot.log"
 
-rem tasklist is the check the launcher never made.
-tasklist /FI "IMAGENAME eq terminal64.exe" 2>nul | find /I "terminal64.exe" >nul
+rem Heal duplicates of THIS EXACT Fusion executable.  Other brokers are not touched.  Keeping the
+rem oldest preserves the logged-in interactive instance; stopping newer duplicates does not close
+rem broker-side positions, and removes the Python IPC ambiguity that produced -10005 timeouts.
+powershell -NoProfile -NonInteractive -Command ^
+  "$p=@(Get-Process terminal64 -ErrorAction SilentlyContinue ^| Where-Object { $_.Path -eq $env:EXE } ^| Sort-Object StartTime); if($p.Count -gt 1){$p ^| Select-Object -Skip 1 ^| Stop-Process -Force -ErrorAction Stop}; if($p.Count -gt 0){exit 0}else{exit 1}" 2>>"%LOG%"
 if not errorlevel 1 (
-    echo %DATE% %TIME% terminal already running; not launching a second>>"%LOG%"
+    echo %DATE% %TIME% exactly one Fusion terminal ensured>>"%LOG%"
     exit /b 0
 )
 

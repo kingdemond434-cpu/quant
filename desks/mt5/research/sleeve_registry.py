@@ -39,6 +39,7 @@ import inspect
 import json
 import os
 import tempfile
+import time
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -59,6 +60,13 @@ IDENTITY_FIELDS = ("family", "symbol", "direction", "timeframe", "selector", "co
 #: frozen under an older schema are not pre-registrations of the new quantity and must not be
 #: silently re-blessed; `scripts/migrate_identity_venue.py` archives them and starts a NEW window.
 IDENTITY_SCHEMA = "venue-2026-08-26"
+
+# Windows refuses an otherwise-valid atomic replace while a dashboard/pull process has the
+# destination open without FILE_SHARE_DELETE.  That lock is transient; treating it as a
+# permanent registry failure repeatedly strands clocks at IDENTITY_BROKEN.  Keep the atomic
+# write, but wait through the reader's short critical section.  Other OSErrors still fail loud.
+_REPLACE_ATTEMPTS = 40
+_REPLACE_DELAY_S = 0.05
 
 
 class RegistryUnreadable(RuntimeError):
@@ -110,6 +118,20 @@ def _read(path: Path) -> dict[str, Any]:
     return value
 
 
+def _replace_with_retry(src: str | os.PathLike[str], dst: str | os.PathLike[str], *,
+                        attempts: int = _REPLACE_ATTEMPTS,
+                        delay_s: float = _REPLACE_DELAY_S) -> None:
+    """Atomically replace ``dst``, retrying only transient Windows sharing violations."""
+    for attempt in range(max(1, attempts)):
+        try:
+            os.replace(src, dst)
+            return
+        except PermissionError:
+            if attempt + 1 >= max(1, attempts):
+                raise
+            time.sleep(delay_s)
+
+
 def _write(reg: dict[str, Any]) -> None:
     """Atomic replace -- a half-written registry is exactly the input `_read` must never see.
 
@@ -123,7 +145,7 @@ def _write(reg: dict[str, Any]) -> None:
     try:
         with os.fdopen(fd, "w", encoding="utf-8") as fh:
             json.dump(reg, fh, indent=1, default=str)
-        os.replace(tmp, REGISTRY)
+        _replace_with_retry(tmp, REGISTRY)
     finally:
         Path(tmp).unlink(missing_ok=True)
 

@@ -120,7 +120,7 @@ def backfill_behaviour(registry_path: Path, *, apply: bool) -> int:
         reg["updated_at"] = datetime.now(tz=UTC).isoformat(timespec="seconds")
         tmp = registry_path.with_suffix(".json.tmp")
         tmp.write_text(json.dumps(reg, indent=1), "utf-8")
-        tmp.replace(registry_path)
+        reg._replace_with_retry(tmp, registry_path)
     return changed
 
 

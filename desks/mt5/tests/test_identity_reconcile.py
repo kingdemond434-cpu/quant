@@ -124,3 +124,22 @@ def test_an_unknown_key_is_not_invented(reg) -> None:
     """`mark()` creates rows on demand; reconcile must never mint a LIVE sleeve from nothing."""
     assert reg.reconcile("NOSUCH.asia", dict(FROZEN), replayed=True) is None
     assert "NOSUCH.asia" not in json.loads(reg.REGISTRY.read_text(encoding="utf-8"))["sleeves"]
+
+
+def test_registry_write_retries_a_transient_windows_reader_lock(reg, monkeypatch) -> None:
+    """A short FILE_SHARE_DELETE denial must delay a write, not strand the clock forever."""
+    real_replace = reg.os.replace
+    calls = {"n": 0}
+
+    def flaky_replace(src, dst):
+        calls["n"] += 1
+        if calls["n"] < 3:
+            raise PermissionError("simulated Windows sharing violation")
+        return real_replace(src, dst)
+
+    monkeypatch.setattr(reg.os, "replace", flaky_replace)
+    monkeypatch.setattr(reg.time, "sleep", lambda _seconds: None)
+
+    assert reg.reconcile("CADJPY.asia", dict(FROZEN), replayed=True)
+    assert calls["n"] == 3
+    assert _row(reg)["status"] == "LIVE"
