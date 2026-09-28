@@ -483,7 +483,10 @@ if (Test-Path $universeCmd) {
             }
             $universeAction = New-ScheduledTaskAction -Execute "cmd.exe" `
                 -Argument ("/d /c {0}" -f $universeCmd) -WorkingDirectory $RepoRoot
-            $universeTrigger = New-ScheduledTaskTrigger -Once -At (Get-Date).Date `
+            # Offset the collector from the top-of-hour gauntlet. The shared research-terminal
+            # lease is the hard safety boundary; this offset avoids wasting either hourly trigger
+            # on a predictable collision during normal incremental operation.
+            $universeTrigger = New-ScheduledTaskTrigger -Once -At ((Get-Date).Date.AddMinutes(30)) `
                 -RepetitionInterval (New-TimeSpan -Hours 1) `
                 -RepetitionDuration (New-TimeSpan -Days 3650)
             $universeSettings = New-ScheduledTaskSettingsSet `

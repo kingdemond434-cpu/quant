@@ -3684,15 +3684,22 @@ def _cli_main() -> int:
     # each process was individually non-duplicated but the pair spawned independent worker pools;
     # the live task then failed with 0x800705AF (insufficient system resources).  A five-minute
     # trigger makes deferral cheap; overlapping two authorities is never useful.
-    with exclusive_job("certification_lane", need_mb=_need) as lane:
-        if not lane:
-            print("external_gauntlet: DEFERRED -- another canonical certifier owns the lane")
+    # The judge reads local bars, but its cost-truth legs also attach to Fusion.  The full chart
+    # collector needs that same terminal and was interrupted when the two hourly triggers landed
+    # together.  Serialize only these research owners; the live gateway remains independent.
+    with exclusive_job("fusion_terminal_research_lane", need_mb=0) as terminal_lane:
+        if not terminal_lane:
+            print("external_gauntlet: DEFERRED -- broker chart collection owns Fusion research lane")
             return 0
-        with exclusive_job(_job, need_mb=0) as acquired:
-            if not acquired:
+        with exclusive_job("certification_lane", need_mb=_need) as lane:
+            if not lane:
+                print("external_gauntlet: DEFERRED -- another canonical certifier owns the lane")
                 return 0
-            main()
-            return 0
+            with exclusive_job(_job, need_mb=0) as acquired:
+                if not acquired:
+                    return 0
+                main()
+                return 0
 
 
 if __name__ == "__main__":

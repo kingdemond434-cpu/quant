@@ -39,8 +39,16 @@ def test_universe_job_fills_missing_ladder_instead_of_rewalking_it() -> None:
     assert "C:\\Program Files\\Python314\\python.exe" in wrapper
     assert '"%PYTHON%" %PYARGS% -W ignore' in wrapper
     downloader = _text("scripts/download_all_symbols.py")
+    assert 'exclusive_job("fusion_terminal_research_lane"' in downloader
     assert '"M1": 200_000' in downloader
     assert '"M5": 120_000' in downloader
     assert '"M15": 80_000' in downloader
     assert '"M30": 60_000' in downloader
     assert '"H4": 30_000' in downloader
+
+
+def test_gauntlet_and_universe_share_the_fusion_research_lane() -> None:
+    gauntlet = _text("scripts/external_gauntlet.py")
+    assert 'exclusive_job("fusion_terminal_research_lane"' in gauntlet
+    installer = _text("scripts/Install-QuantWindows.ps1")
+    assert "(Get-Date).Date.AddMinutes(30)" in installer

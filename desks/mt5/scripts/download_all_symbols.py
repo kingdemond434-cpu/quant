@@ -7,6 +7,7 @@ import json
 import os
 import sys
 import time
+import atexit
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -16,6 +17,18 @@ import pandas as pd
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from mt5desk.config import desk_root
 from mt5desk.universe_registry import cost_fields_from_symbol_info, merge
+from research.job_lock import exclusive_job
+
+# The canonical gauntlet samples Fusion-native costs while this collector walks the complete
+# broker chart ladder.  Both opening the terminal at once interrupted the 2026-09-28 rebuild at
+# 122/1,743 series.  Reuse the desk's existing crash-reclaiming lease rather than adding another
+# lock dialect.  A losing hourly trigger exits cleanly and retries; it must never corrupt or
+# strand the other owner's evidence pass.
+_terminal_lane = exclusive_job("fusion_terminal_research_lane", need_mb=0)
+if not _terminal_lane.__enter__():
+    print("download_all_symbols: DEFERRED -- Fusion research terminal lane is busy")
+    raise SystemExit(0)
+atexit.register(lambda: _terminal_lane.__exit__(None, None, None))
 
 # PATHS COME FROM `desk_root()`, NEVER A USERNAME (LAWS §1 anti-hardcode; the helper's own
 # docstring records that twenty-one files hardcoded `C:\\Users\\dell\\...`, "which meant the desk
