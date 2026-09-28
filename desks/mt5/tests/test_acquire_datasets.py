@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import json
 import sys
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pandas as pd
@@ -35,3 +37,20 @@ def test_legacy_eia_workbook_is_parsed_and_excel_dates_are_real_dates() -> None:
 def test_markup_never_falls_through_to_delimited_parser() -> None:
     assert acquisition._parse(b"<html><table><tr><td>2026-01-01</td></tr></table></html>",
                               "https://example.test/data.xls") is None
+
+
+def test_acquired_endpoints_are_refreshed_after_one_hour(
+    tmp_path: Path, monkeypatch,
+) -> None:
+    now = datetime(2026, 9, 28, 8, tzinfo=UTC)
+    seed = acquisition._SEED_ENDPOINTS[0]
+    registry = tmp_path / "registry.json"
+    registry.write_text(json.dumps({"by_url": {
+        seed: {"at": (now - timedelta(hours=2)).isoformat()}}}), "utf-8")
+    monkeypatch.setattr(acquisition, "REGISTRY", registry)
+    monkeypatch.setattr(acquisition, "WORLD", tmp_path / "world")
+    assert seed in [url for url, _host in acquisition._endpoints(40, now=now)]
+
+    registry.write_text(json.dumps({"by_url": {
+        seed: {"at": (now - timedelta(minutes=30)).isoformat()}}}), "utf-8")
+    assert seed not in [url for url, _host in acquisition._endpoints(40, now=now)]

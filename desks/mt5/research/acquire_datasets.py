@@ -62,6 +62,7 @@ FETCH_TIMEOUT_S = 25
 MAX_BYTES = 60 * 1024 * 1024          #: real statistical archives are tens of MB
 MAX_PER_RUN = 40                      #: bounded so one run cannot saturate the box's disk or hour
 MIN_ROWS = 200                        #: below this a series cannot support a rolling rank
+REFRESH_AFTER_S = 3600                #: an hourly owner must revisit changing public series
 
 #: Column names that are plausibly a DATE. Checked in order; the first that parses wins.
 _DATE_COLS = ("date", "DATE", "Date", "time", "TIME", "Time", "timestamp", "TIMESTAMP",
@@ -253,20 +254,35 @@ def _numeric_series(df: pd.DataFrame, stem: str) -> dict[str, pd.Series]:
     return out
 
 
-def _endpoints(limit: int) -> list[tuple[str, str]]:
-    """(url, host) from the newest crawl files, deduped against what is already acquired."""
-    known: set[str] = set()
+def _endpoints(limit: int, *, now: datetime | None = None) -> list[tuple[str, str]]:
+    """(url, host) from seeds/crawls, excluding only URLs refreshed within this hour.
+
+    The former implementation excluded every URL that had *ever* been acquired.  A successful
+    first fetch therefore disabled updates forever and made an hourly acquisition clock a one-shot
+    initializer.  Durable identity prevents duplicate series; recency must decide refetching.
+    """
+    fresh: set[str] = set()
+    now = now or datetime.now(UTC)
     if REGISTRY.exists():
         try:
-            known = set(json.loads(REGISTRY.read_text("utf-8")).get("by_url") or {})
+            previous = json.loads(REGISTRY.read_text("utf-8")).get("by_url") or {}
+            for url, meta in previous.items():
+                try:
+                    at = datetime.fromisoformat(str((meta or {}).get("at") or ""))
+                    if at.tzinfo is None:
+                        at = at.replace(tzinfo=UTC)
+                    if (now - at.astimezone(UTC)).total_seconds() < REFRESH_AFTER_S:
+                        fresh.add(str(url))
+                except (TypeError, ValueError):
+                    continue
         except (OSError, ValueError):
-            known = set()
+            fresh = set()
     seen: set[str] = set()
     out: list[tuple[str, str]] = []
     # Seeds first: they are known to be dated, keyless and relevant, so a run never spends its
     # whole budget on discovered pages that turn out to be markup.
     for u in _SEED_ENDPOINTS:
-        if u in known or u in seen:
+        if u in fresh or u in seen:
             continue
         seen.add(u)
         out.append((u, urllib.parse.urlparse(u).netloc or "seed"))
@@ -279,7 +295,7 @@ def _endpoints(limit: int) -> list[tuple[str, str]]:
             continue
         for r in rows:
             for u in (r.get("endpoints") or []):
-                if u in seen or u in known or _KEYED.search(u):
+                if u in seen or u in fresh or _KEYED.search(u):
                     continue
                 seen.add(u)
                 out.append((u, str(r.get("host") or "")))
