@@ -1026,7 +1026,8 @@ LEG_DEPARTMENT: dict[str, str] = {
     # regions: the global native-market research OS over every country lab, plus the four
     # GLOBAL-LAYER forests (web, academic+code, physical data, market data) -- layers of the
     # world that would be mined seventeen times over if each region hunted them itself.
-    **dict.fromkeys(("global_research_os", *GLOBAL_FOREST_LEGS), "regions"),
+    **dict.fromkeys(("global_research_os", "acquire_datasets", "source_experiment_census",
+                     *GLOBAL_FOREST_LEGS), "regions"),
     # the forest federation: one department per regional civilization, each its own resident
     **{f"forest_{_fid}": _fid for _fid in FOREST_DEPARTMENTS},
     # the read-only join behind the 24/7 dashboard: it measures nothing new, it only puts what
@@ -1559,6 +1560,10 @@ def _producer(name: str, script: str,
 #: must consume its backlog first so that truncation still makes progress. `shadow_forward` gets
 #: the budget to finish; the gauntlet already does the other (never-judged cells sort first).
 LEG_BUDGET_SEC: dict[str, int] = {
+    # Up to forty public endpoints with a 25-second transport timeout. The acquirer is bounded
+    # itself; the parent cap must sit above that bound so it writes registry/report instead of
+    # being killed after fetching data but before publishing ownership and refusals.
+    "acquire_datasets": 1_100,
     # The causal invariance organ stops itself at --budget-s 600 and writes; the cap sits above.
     "causal_invariance": 700,
     # THE CONTROL PLANE'S OBSERVE PASS walks ~1,100 components, every watermark, every lease and
@@ -3897,6 +3902,12 @@ def main() -> None:
     gro = _costed("global_research_os", lambda: _producer("global_research_os",
                                                            "research/global_research_os.py",
                                                            "--once", "--budget-s", "3000"))
+    # ACQUISITION IS THE OWNED MOVE BETWEEN DECLARATION AND CENSUS. This script existed and the
+    # census named it as owner, but no named cycle leg invoked it; production's registry therefore
+    # stayed frozen at 2026-09-24 while every regional pack kept declaring sources. Run it after
+    # the OS declares today's needs and before the census measures source-to-experiment closure.
+    acq = _costed("acquire_datasets", lambda: _producer(
+        "acquire_datasets", "research/acquire_datasets.py"))
     # GLOBAL SOURCE-TO-EXPERIMENT CONSERVATION.  All regions use the same measured chain:
     # declaration -> fetch owner -> parser -> feature -> experiment -> evaluator outcome.  This
     # runs after the country OS so newly declared regional sources enter the census in the same
@@ -4919,6 +4930,7 @@ def main() -> None:
                     "replication_civilization": rpc,
                     "science_controller": scc,
                     "data_scout": dsc2, "japan_department": jpd, "global_research_os": gro,
+                    "acquire_datasets": acq,
                     "source_experiment_census": sxc,
                     "feature_compiler": fcp, "data_acquisition_scientist": daq,
                     "math_lab": mlb, "expression_factory": xpf, "physics_lab": phl,

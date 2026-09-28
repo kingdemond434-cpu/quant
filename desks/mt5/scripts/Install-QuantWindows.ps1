@@ -363,10 +363,8 @@ $tasks = @(
 #                     logon; ops/box-repair.ps1 documents the fix (schtasks /Change /RU <user>
 #                     /IT, elevated). Registering it from this table would create a task that
 #                     reports success and never produces a terminal, which is worse than absent.
-#   MT5-Universe      names no script in this checkout. Registering a guess would satisfy the
-#                     reboot drill's name check while running nothing -- the exact "capability
-#                     that is code, not a capability" failure the desk keeps paying for.
-# Both are reported by the drill as MISSING, which is the honest state until each is resolved.
+# MT5-Universe is registered in a dedicated interactive block below. It uses a repository-root
+# .cmd wrapper and MT5 IPC, so neither the Python table runner nor SYSTEM is a valid owner.
 
 # TWO ROOTS, EXACTLY AS `hourly_cycle._producer` RESOLVES THEM. The research organs live under
 # `desks/mt5/...`, but the publication and maintenance scripts live at the REPOSITORY root --
@@ -467,6 +465,46 @@ foreach ($t in $tasks) {
     } catch {
         Write-Host ("  [FAIL] {0,-14} {1}" -f $t.Name, $_.Exception.Message)
     }
+}
+
+# FULL BROKER BAR LADDER, IN THE INTERACTIVE TERMINAL SESSION. The wrapper downloads every
+# missing M1/M5/M15/M30/H1/H4/D1 chart and repairs the registry even after a partial pass.
+# Measured 2026-09-28: the old hand-installed task reported success at 10:00 while its log had
+# not moved since 2026-09-22; it ran outside the MT5 desktop, after a disk-resize race had removed
+# 1,731 files. A task that cannot see the terminal cannot restore the evidence it promises.
+$universeCmd = Join-Path $RepoRoot "ops\run_universe.cmd"
+if (Test-Path $universeCmd) {
+    if ($WhatIfOnly) {
+        Write-Host "  [DRY ] MT5-Universe full seven-chart interactive collector"
+    } else {
+        try {
+            if (-not $InteractiveUser -or $InteractiveUser -eq "SYSTEM") {
+                throw "MT5-Universe requires the MT5 interactive desktop owner; pass -InteractiveUser"
+            }
+            $universeAction = New-ScheduledTaskAction -Execute "cmd.exe" `
+                -Argument ("/d /c {0}" -f $universeCmd) -WorkingDirectory $RepoRoot
+            $universeTrigger = New-ScheduledTaskTrigger -Once -At (Get-Date).Date `
+                -RepetitionInterval (New-TimeSpan -Hours 1) `
+                -RepetitionDuration (New-TimeSpan -Days 3650)
+            $universeSettings = New-ScheduledTaskSettingsSet `
+                -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable `
+                -RestartCount 3 -RestartInterval (New-TimeSpan -Minutes 1) `
+                -ExecutionTimeLimit (New-TimeSpan -Hours 4) -MultipleInstances IgnoreNew
+            $universePrincipal = New-ScheduledTaskPrincipal -UserId $InteractiveUser `
+                -LogonType Interactive -RunLevel Highest
+            Unregister-ScheduledTask -TaskName "MT5-Universe" `
+                -Confirm:$false -ErrorAction SilentlyContinue
+            Register-ScheduledTask -TaskName "MT5-Universe" -Action $universeAction `
+                -Trigger $universeTrigger -Settings $universeSettings `
+                -Description "Fill every missing broker chart and repair the universe registry." `
+                -Principal $universePrincipal | Out-Null
+            Write-Host "  [OK  ] MT5-Universe registered"
+        } catch {
+            Write-Host ("  [FAIL] MT5-Universe {0}" -f $_.Exception.Message)
+        }
+    }
+} else {
+    Write-Host "  [FAIL] MT5-Universe wrapper missing: $universeCmd"
 }
 
 # The research supervisor is a persistent queue/experiment worker, not a one-shot task. A short

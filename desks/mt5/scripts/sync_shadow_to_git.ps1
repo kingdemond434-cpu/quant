@@ -232,36 +232,23 @@ function Merge-FetchHead {
 
 
 
-# SHED REFETCHABLE BYTES BEFORE GIT NEEDS THEM. Measured 2026-09-07: the box hit 0 free and git
-# died as "cannot write loose object file: No space left on device", then `git stash` could not
-# save the worktree either -- so the machine could not pull the fix for the thing that was wrong
-# with it. A full disk does not present as a disk problem; it presents as git, parquet and the
-# tape all failing in unrelated-looking ways.
+# THE PUBLISHER MAY NOT DELETE RESEARCH INPUTS. On 2026-09-28 `Get-PSDrive C` returned a
+# transient 0-byte reading while the volume was being enlarged. This function believed it and
+# deleted 1,731 bar files even though the resized volume then exposed 903+ GB free. The hourly
+# universe task was also unable to see the interactive MT5 terminal, so 823 forward clocks were
+# left with seven charts between them. "Refetchable" is not the same as "safe to delete": bars
+# are the evidence surface while refetch is only a future possibility.
 #
-# The bar lake is the largest thing on this box that costs nothing to lose: 250 symbols x 21
-# charts, re-downloaded from the terminal already running, in minutes. The tick tape is larger
-# and is NEVER touched -- a tick nobody recorded cannot be re-obtained at any price -- and
-# universe.json stays, because only *.parquet is shed.
+# Disk reclamation belongs to `reclaim_disk.py`, which measures derived caches, duplicate rows
+# and protected data explicitly. A Git publisher has one authority: publish. If disk is below
+# its floor it records the blocker and lets the next pass retry; it never changes the data plane.
 function Free-DiskForGit {
     param([string]$RepoRoot, [double]$FloorGB = 1.5)
     $free = (Get-PSDrive C).Free / 1GB
     if ($free -ge $FloorGB) { return }
-    $lake = Join-Path $RepoRoot "desks\mt5\data\universe"
-    if (-not (Test-Path $lake)) {
-        Write-SyncLog "DISK: only $([math]::Round($free,2))GB free and no bar lake to shed -- git may fail"
-        return
-    }
-    $files = @(Get-ChildItem -Path $lake -Filter *.parquet -File -ErrorAction SilentlyContinue)
-    if ($files.Count -eq 0) {
-        Write-SyncLog "DISK: only $([math]::Round($free,2))GB free and the bar lake is already shed -- git may fail"
-        return
-    }
-    $gb = [math]::Round((($files | Measure-Object -Property Length -Sum).Sum) / 1GB, 2)
-    $files | Remove-Item -Force -ErrorAction SilentlyContinue
-    $after = [math]::Round((Get-PSDrive C).Free / 1GB, 2)
-    Write-SyncLog ("DISK: $([math]::Round($free,2))GB free (floor ${FloorGB}GB) -- shed " +
-                   "$($files.Count) bar file(s), ${gb}GB reclaimed, ${after}GB free now. " +
-                   "Refetch: python desks\mt5\scripts\download_remaining.py")
+    Write-SyncLog ("DISK BLOCKER: $([math]::Round($free,2))GB free (floor ${FloorGB}GB). " +
+                   "Publisher left every bar/tick/evidence file untouched; reclaim_disk owns " +
+                   "measured cleanup and this pass may fail/retry.")
 }
 
 # THE PULL, AND IT RUNS BEFORE EVERY EARLY EXIT. See Sync-Pull's caller near the top of the run.

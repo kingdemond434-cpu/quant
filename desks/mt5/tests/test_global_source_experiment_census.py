@@ -49,6 +49,15 @@ def test_south_africa_policy_target_is_versioned_not_backfilled() -> None:
 
 def test_hourly_cycle_runs_global_census_after_country_os() -> None:
     source = (DESK / "research" / "hourly_cycle.py").read_text("utf-8")
-    assert source.index('gro = _costed("global_research_os"') < source.index(
-        'sxc = _costed("source_experiment_census"')
+    os_at = source.index('gro = _costed("global_research_os"')
+    acquire_at = source.index('acq = _costed("acquire_datasets"')
+    census_at = source.index('sxc = _costed("source_experiment_census"')
+    assert os_at < acquire_at < census_at
+    assert '"acquire_datasets": acq' in source
     assert '"source_experiment_census": sxc' in source
+
+
+def test_global_source_chain_has_one_resident_owner_and_enough_time_to_publish() -> None:
+    source = (DESK / "research" / "hourly_cycle.py").read_text("utf-8")
+    assert '"global_research_os", "acquire_datasets", "source_experiment_census"' in source
+    assert '"acquire_datasets": 1_100' in source
