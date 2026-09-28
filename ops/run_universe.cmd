@@ -35,7 +35,9 @@ rem download_all_symbols is missing-series incremental: after the first fill it 
 rem new symbols/timeframes. expand_universe re-downloaded every existing series before reaching
 rem H4, so an hourly execution limit could leave H4 permanently at zero while repeatedly paying
 rem for M1..H1. Existing files are refreshed by refresh_tail in the hourly research cycle.
-"%PYTHON%" %PYARGS% -W ignore "C:\opt\quant\desks\mt5\scripts\download_all_symbols.py" >>"%LOG%" 2>&1
+rem Unbuffered output is operational evidence: a four-hour recovery must expose its current cell
+rem while it runs, not publish thousands of verdict lines only after the process exits.
+"%PYTHON%" %PYARGS% -u -W ignore "C:\opt\quant\desks\mt5\scripts\download_all_symbols.py" >>"%LOG%" 2>&1
 set RC1=%ERRORLEVEL%
 echo download_all_symbols rc=%RC1%>>"%LOG%"
 
