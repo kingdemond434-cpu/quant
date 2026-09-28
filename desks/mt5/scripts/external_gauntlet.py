@@ -405,18 +405,28 @@ def _frame_rows(frame) -> int:
 
 
 def _bars_for(sym: str, timeframe: str = "H1"):
-    """`<SYM>_<TF>.parquet` normalised to ITS OWN bar clock, or None when the chart is absent."""
+    """Replay bars on their native clock, from parquet or the promotion-authority terminal.
+
+    The trading box intentionally does not duplicate every broker chart into this checkout.
+    Refusing those charts made the gauntlet report zero eligible cells while shadow could replay
+    the same rules from Fusion.  The terminal fallback is deliberately strict: only a native
+    source carrying promotion authority is accepted, and research hosts without MT5 still fail
+    closed.
+    """
     key = (str(sym), str(timeframe).upper())
     if key in _FRAME_CACHE:
         _FRAME_CACHE.move_to_end(key)
         return _FRAME_CACHE[key]
     pq = UNI / f"{key[0]}_{key[1]}.parquet"
     if not pq.exists():
-        return None
-    # `families._h1` no longer FORCES an hourly clock: it normalises a frame that already is a
-    # chart and hands it back on that chart (it used to resample an M15 parquet of 100,000 bars
-    # into 25,001 H1 bars, silently). Same call, byte-identical H1 result, M5 stays M5.
-    frame = families._h1(pd.read_parquet(pq))
+        frame = _live_frame(key[0], key[1])
+        if frame is None:
+            return None
+    else:
+        # `families._h1` no longer FORCES an hourly clock: it normalises a frame that already is a
+        # chart and hands it back on that chart (it used to resample an M15 parquet of 100,000 bars
+        # into 25,001 H1 bars, silently). Same call, byte-identical H1 result, M5 stays M5.
+        frame = families._h1(pd.read_parquet(pq))
     if not isinstance(frame.index, pd.DatetimeIndex) or len(frame) == 0:
         return None
     _FRAME_CACHE[key] = frame
@@ -646,6 +656,25 @@ def canonical_symbol(sym: str, meta: dict) -> str:
     return folded.get(sym.upper(), sym)
 
 
+def _live_frame(sym: str, timeframe: str = "H1"):
+    """Return verified Fusion-native bars, or None; never substitute an untrusted proxy."""
+    if os.name != "nt":
+        return None
+    try:
+        from research.h1_source import fetch_h1
+        bars = fetch_h1(str(sym), datetime(2018, 1, 1, tzinfo=UTC),
+                        prefer="MT5", prefer_promotion_authority=True,
+                        timeframe=str(timeframe).upper())
+        if bars is None or bars.n <= 0 or not bars.promotion_authority:
+            return None
+        frame = families._h1(bars.df)
+        if not isinstance(frame.index, pd.DatetimeIndex) or len(frame) == 0:
+            return None
+        return frame
+    except Exception:
+        return None
+
+
 def _live_h1_available(sym: str) -> bool:
     """True only when the traded Fusion terminal can supply replayable H1 bars.
 
@@ -655,15 +684,7 @@ def _live_h1_available(sym: str) -> bool:
     absent.  A successful broker-native read is equivalent replay evidence; failures remain a
     closed gate.  Non-Windows research hosts never claim this route.
     """
-    if os.name != "nt":
-        return False
-    try:
-        from research.h1_source import fetch_h1
-        bars = fetch_h1(str(sym), datetime(2018, 1, 1, tzinfo=UTC),
-                        prefer="MT5", prefer_promotion_authority=True, timeframe="H1")
-        return bool(bars is not None and bars.n > 0 and bars.promotion_authority)
-    except Exception:
-        return False
+    return _live_frame(sym, "H1") is not None
 
 
 def symbol_is_tradeable(sym: str, meta: dict) -> tuple[bool, str]:
@@ -738,7 +759,7 @@ def partition_at_economic_prior(specs: list[dict],
                 # spends the other nine gates and then fails to build with "parquet missing" --
                 # a message about the wrong file, at the wrong stage, after the compute is spent.
                 _tf = timeframe_of(spec.get("params"), str(spec.get("family") or ""))
-                if _tf != "H1" and not (UNI / f"{canon}_{_tf}.parquet").exists():
+                if _tf != "H1" and _bars_for(canon, _tf) is None:
                     ok, why = False, (f"symbol {canon!r} has no {canon}_{_tf}.parquet; the chart "
                                       f"this cell was hunted on is not on this box")
             if not ok:

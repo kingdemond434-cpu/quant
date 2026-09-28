@@ -10,6 +10,7 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
+import pandas as pd
 import pytest
 
 _DESK = Path(__file__).resolve().parents[1]
@@ -24,6 +25,7 @@ META = {"EURUSD": {"contract_size": 1e5}, "AFG": {"contract_size": 1e5}}
 
 def test_missing_host_data_cannot_revoke_existing_certificate(tmp_path, monkeypatch):
     monkeypatch.setattr(eg, "UNI", tmp_path)
+    monkeypatch.setattr(eg, "_live_h1_available", lambda _sym: False)
     assert eg.symbol_is_tradeable("EURUSD", META)[0] is False
     assert eg.certificate_retirement_reason("EURUSD", META) is None
     assert eg.certificate_retirement_reason("EURUSD", {}) is None
@@ -39,6 +41,8 @@ def bars(tmp_path, monkeypatch):
     """A universe directory holding EURUSD bars and nothing else."""
     (tmp_path / "EURUSD_H1.parquet").write_bytes(b"")
     monkeypatch.setattr(eg, "UNI", tmp_path)
+    monkeypatch.setattr(eg, "_live_h1_available", lambda _sym: False)
+    monkeypatch.setattr(eg, "_live_frame", lambda _sym, _tf: None)
     return tmp_path
 
 
@@ -67,6 +71,24 @@ def test_broker_native_h1_is_replayable_without_a_duplicate_parquet(bars, monkey
     monkeypatch.setattr(eg, "_live_h1_available", lambda sym: sym == "AFG")
     ok, why = eg.symbol_is_tradeable("AFG", META)
     assert ok and why == ""
+
+
+def test_bar_loader_uses_verified_native_chart_when_parquet_is_absent(bars, monkeypatch) -> None:
+    sentinel = pd.DataFrame({"close": [1.0]}, index=pd.DatetimeIndex(["2026-01-01"], tz="UTC"))
+    monkeypatch.setattr(eg, "_live_frame", lambda sym, tf: sentinel if (sym, tf) == ("AFG", "M5") else None)
+    eg._FRAME_CACHE.clear()
+    assert eg._bars_for("AFG", "M5") is sentinel
+    eg._FRAME_CACHE.clear()
+
+
+def test_non_h1_gate_accepts_verified_native_chart(bars, monkeypatch) -> None:
+    monkeypatch.setattr(eg, "_live_h1_available", lambda sym: sym == "AFG")
+    monkeypatch.setattr(eg, "_bars_for", lambda sym, tf: object() if (sym, tf) == ("AFG", "M5") else None)
+    spec = _spec("AFG")
+    spec["params"] = {"timeframe": "M5"}
+    eligible, rejected = eg.partition_at_economic_prior([spec], META)
+    assert [s["sym"] for s in eligible] == ["AFG"]
+    assert rejected == []
 
 
 def test_untradeable_specs_are_partitioned_out_before_any_other_gate(bars) -> None:
