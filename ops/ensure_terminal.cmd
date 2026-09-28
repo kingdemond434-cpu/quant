@@ -16,19 +16,9 @@ rem
 rem An "ensure" that is not idempotent is not an ensure, it is a spawner.
 rem ===================================================================================
 
-set "EXE=C:\Program Files\Fusion Markets MetaTrader 5\terminal64.exe"
-set "LOG=C:\opt\quant\desks\mt5\logs\MT5-TerminalBoot.log"
-
-rem Heal duplicates of THIS EXACT Fusion executable.  Other brokers are not touched.  Keeping the
-rem oldest preserves the logged-in interactive instance; stopping newer duplicates does not close
-rem broker-side positions, and removes the Python IPC ambiguity that produced -10005 timeouts.
-powershell -NoProfile -NonInteractive -Command ^
-  "$p=@(Get-CimInstance Win32_Process -Filter 'Name=''terminal64.exe''' ^| Where-Object { $_.ExecutablePath -eq $env:EXE } ^| Sort-Object CreationDate); if($p.Count -gt 1){$p ^| Select-Object -Skip 1 ^| ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction Stop }}; if($p.Count -gt 0){exit 0}else{exit 1}" 2>>"%LOG%"
-if not errorlevel 1 (
-    echo %DATE% %TIME% exactly one Fusion terminal ensured>>"%LOG%"
-    exit /b 0
-)
-
-echo %DATE% %TIME% no terminal running; launching one>>"%LOG%"
-start "" "%EXE%"
-exit /b 0
+rem Keep PowerShell in its own file.  Escaped pipes in the old multiline `-Command` reached
+rem PowerShell as literal `^|`, failed to parse, and the fallback launched another terminal every
+rem ten minutes.  The script fails closed if duplicate cleanup fails; it never answers an error by
+rem spawning one more process.
+powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "C:\opt\quant\ops\ensure_terminal.ps1"
+exit /b %ERRORLEVEL%
