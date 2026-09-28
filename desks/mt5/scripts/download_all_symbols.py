@@ -119,8 +119,37 @@ if UNIVERSE_OUT.exists():
         print(f"  WARN: prior universe.json unreadable ({exc}); rebuilding from Parquet metadata")
         _prior = {}
 
-jobs = [(s, tf) for s in tradable for tf in TIMEFRAMES if (s.name, tf) not in existing]
+_verdict_doc = {}
+if VERDICTS_OUT.exists():
+    try:
+        _verdict_doc = json.loads(VERDICTS_OUT.read_text(encoding="utf-8-sig"))
+    except (OSError, ValueError):
+        _verdict_doc = {}
+_prior_cells = _verdict_doc.get("cells") if isinstance(_verdict_doc, dict) else {}
+if not isinstance(_prior_cells, dict):
+    _prior_cells = {}
+
+
+def _recent_no_data(symbol: str, timeframe: str) -> bool:
+    """Do not re-spend the whole hour on a venue refusal measured less than a day ago."""
+    row = _prior_cells.get(f"{symbol}_{timeframe}") or {}
+    if row.get("verdict") != "BROKER_SERVES_NOTHING":
+        return False
+    try:
+        stamp = datetime.fromisoformat(str(row.get("at") or "").replace("Z", "+00:00"))
+        if stamp.tzinfo is None:
+            stamp = stamp.replace(tzinfo=UTC)
+    except ValueError:
+        return False
+    return (datetime.now(UTC) - stamp).total_seconds() < 24 * 3600
+
+
+jobs = [(s, tf) for s in tradable for tf in TIMEFRAMES
+        if (s.name, tf) not in existing and not _recent_no_data(s.name, tf)]
+deferred_no_data = sum(1 for s in tradable for tf in TIMEFRAMES
+                       if (s.name, tf) not in existing and _recent_no_data(s.name, tf))
 print(f"To download: {len(jobs)} series over timeframes {', '.join(TIMEFRAMES)}")
+print(f"Fresh broker no-data verdicts deferred until daily retry: {deferred_no_data}")
 
 _warmed_symbols: set[str] = set()
 _hydration_retried: set[str] = set()
@@ -284,12 +313,6 @@ print(f"universe.json: {len(universe)} row(s) this run merged into {len(_merged)
 # SAME VERDICT LEDGER AS `fill_bar_gaps.py`.  Preserve rows from the bounded gap filler and
 # replace only cells this full-universe pass actually measured.  This closes the conservation
 # hole where a failed request appeared only in stdout and vanished when the process exited.
-_verdict_doc = {}
-if VERDICTS_OUT.exists():
-    try:
-        _verdict_doc = json.loads(VERDICTS_OUT.read_text(encoding="utf-8-sig"))
-    except (OSError, ValueError):
-        _verdict_doc = {}
 _cells = _verdict_doc.get("cells") if isinstance(_verdict_doc, dict) else {}
 if not isinstance(_cells, dict):
     _cells = {}
