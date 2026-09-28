@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 import os
+import subprocess
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -16,6 +17,8 @@ ROOT = Path(__file__).resolve().parents[3]
 MANIFEST = ROOT / "docs" / "research" / "global_research_maximum_v1.json"
 REPORT = ROOT / "desks" / "mt5" / "reports" / "GLOBAL_RESEARCH_ACCEPTANCE.json"
 MAX_RUNTIME_AGE_H = 26.0
+FAIL_STATUSES = {"FAILED", "FAIL", "ERROR", "DEGRADED", "BROKEN", "STALE"}
+PASS_STATUSES = {"OK", "PASS", "PASSED", "SUCCESS", "HEALTHY", "COMPLETE", "COMPLETED"}
 
 
 def _atomic(path: Path, doc: dict[str, Any]) -> None:
@@ -25,9 +28,81 @@ def _atomic(path: Path, doc: dict[str, Any]) -> None:
     os.replace(tmp, path)
 
 
+def _release_id(root: Path) -> str:
+    named = os.environ.get("QUANT_RELEASE_ID", "").strip()
+    if named:
+        return named
+    try:
+        return subprocess.check_output(
+            ["git", "rev-parse", "HEAD"], cwd=root, text=True,
+            stderr=subprocess.DEVNULL, timeout=5).strip()
+    except (OSError, subprocess.SubprocessError):
+        return "UNMEASURED"
+
+
+def _runtime_document(path: Path) -> dict[str, Any] | None:
+    """Read a JSON proof or the last valid receipt in a JSONL ledger."""
+    try:
+        if path.suffix.casefold() == ".jsonl":
+            for line in reversed(path.read_text("utf-8-sig").splitlines()):
+                if line.strip():
+                    doc = json.loads(line)
+                    return doc if isinstance(doc, dict) else None
+            return None
+        doc = json.loads(path.read_text("utf-8-sig"))
+        return doc if isinstance(doc, dict) else None
+    except (OSError, ValueError):
+        return None
+
+
+def _runtime_proof(path: Path, *, instant: datetime, release: str) -> tuple[dict[str, Any], list[str]]:
+    """Verify behavior, not mtime. Missing claims remain evidence debt, never implicit success."""
+    rel = str(path)
+    doc = _runtime_document(path)
+    if doc is None:
+        return {"path": rel, "status": "INVALID"}, ["invalid_json"]
+    reasons: list[str] = []
+    status = str(doc.get("status") or doc.get("verdict") or "").upper()
+    if status in FAIL_STATUSES:
+        reasons.append(f"failed_status:{status}")
+    successful = status in PASS_STATUSES or doc.get("ok") is True or doc.get("success") is True
+    completed = doc.get("completed_work", doc.get("completed", doc.get("work_completed")))
+    if completed is not None:
+        try:
+            successful = successful and float(completed) > 0
+        except (TypeError, ValueError):
+            reasons.append("invalid_completed_work")
+    if not successful:
+        reasons.append("no_success_receipt")
+    tests_passed = doc.get("tests_passed")
+    if tests_passed is not True:
+        reasons.append("tests_not_attested")
+    claimed_release = str(doc.get("release") or doc.get("commit") or
+                          doc.get("git_commit") or doc.get("code_commit") or "")
+    if not claimed_release:
+        reasons.append("release_unbound")
+    elif release != "UNMEASURED" and not release.startswith(claimed_release) and not claimed_release.startswith(release):
+        reasons.append(f"wrong_release:{claimed_release}")
+    stamp_raw = (doc.get("completed_at") or doc.get("at") or doc.get("updated_utc") or
+                 doc.get("generated_at") or doc.get("swept_at"))
+    try:
+        stamp = datetime.fromisoformat(str(stamp_raw).replace("Z", "+00:00"))
+        stamp = stamp.replace(tzinfo=UTC) if stamp.tzinfo is None else stamp.astimezone(UTC)
+        age_h = max(0.0, (instant - stamp).total_seconds() / 3600.0)
+        if age_h > MAX_RUNTIME_AGE_H:
+            reasons.append("stale_content")
+    except (TypeError, ValueError):
+        age_h = None
+        reasons.append("missing_internal_timestamp")
+    return {"path": rel, "status": "VERIFIED" if not reasons else "INVALID",
+            "age_h": None if age_h is None else round(age_h, 3),
+            "claimed_release": claimed_release or None, "proof_errors": reasons}, reasons
+
+
 def audit(*, root: Path = ROOT, manifest: Path = MANIFEST, report: Path = REPORT,
           now: datetime | None = None) -> dict[str, Any]:
     instant = now or datetime.now(tz=UTC)
+    release = _release_id(root)
     spec = json.loads(manifest.read_text("utf-8"))
     requirements = list(spec["requirements"])
     loaded_addenda: list[str] = []
@@ -49,23 +124,26 @@ def audit(*, root: Path = ROOT, manifest: Path = MANIFEST, report: Path = REPORT
         missing: list[str] = []
         for kind in ("implementation", "tests", "consumers"):
             values = list(req.get(kind) or [])
+            if not values:
+                missing.append(f"{kind}:UNDECLARED")
             absent = [p for p in values if not (root / p).exists()]
             checks[kind] = {"declared": len(values), "present": len(values) - len(absent),
                             "missing": absent}
             missing.extend(f"{kind}:{p}" for p in absent)
         runtime_rows: list[dict[str, Any]] = []
-        for rel in req.get("runtime") or []:
+        runtime_values = list(req.get("runtime") or [])
+        if not runtime_values:
+            missing.append("runtime:UNDECLARED")
+        for rel in runtime_values:
             path = root / rel
             if not path.exists():
                 runtime_rows.append({"path": rel, "status": "ABSENT"})
                 missing.append(f"runtime:{rel}")
                 continue
-            stamp = datetime.fromtimestamp(path.stat().st_mtime, tz=UTC)
-            age_h = max(0.0, (instant - stamp).total_seconds() / 3600.0)
-            status = "FRESH" if age_h <= MAX_RUNTIME_AGE_H else "STALE"
-            runtime_rows.append({"path": rel, "status": status, "age_h": round(age_h, 3)})
-            if status != "FRESH":
-                missing.append(f"runtime_stale:{rel}")
+            proof, errors = _runtime_proof(path, instant=instant, release=release)
+            proof["path"] = rel
+            runtime_rows.append(proof)
+            missing.extend(f"runtime:{rel}:{reason}" for reason in errors)
         checks["runtime"] = runtime_rows
         rows.append({"id": req["id"], "title": req["title"], "priority": req["priority"],
                      "status": "CURRENT_VERIFIED" if not missing else "PARTIAL",
@@ -73,6 +151,7 @@ def audit(*, root: Path = ROOT, manifest: Path = MANIFEST, report: Path = REPORT
     counts = {status: sum(r["status"] == status for r in rows)
               for status in ("CURRENT_VERIFIED", "PARTIAL")}
     doc = {"specification": spec["specification"], "at": instant.isoformat(),
+           "release": release,
            "addenda": loaded_addenda,
            "requirements": len(rows), "counts": counts,
            "all_current_verified": counts["PARTIAL"] == 0,

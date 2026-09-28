@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import pathlib
 import sys
 from datetime import UTC, datetime, timedelta
@@ -31,6 +32,7 @@ DEEPEN = BASE / "data" / "hypotheses" / "miner_deepening_queue.json"
 DEEPEN_WORKED = BASE / "data" / "hypotheses" / "deepening_worked.jsonl"
 DEEPENED = BASE / "data" / "hypotheses" / "deepened_candidates.json"
 CURSOR = BASE / "data" / "hypotheses" / "miner_compiler_cursor.json"
+FACTORY_RECEIPTS = BASE / "data" / "factory_federation" / "evaluator_receipts"
 WINDOW_DAYS = 7
 #: The LLM seats' source names as they appear on their donated rows (`libs/ops/deepseek_cycle.py`
 #: `_donate`, `scripts/kimi_hunter.py` `_donate`). Reported as one block in the compiled artifact
@@ -231,22 +233,50 @@ MAX_ROWS_PER_PASS = _max_rows_per_pass()
 #: What the last intake pass left unread when the bound bound (2026-09-08). The shortfall used
 #: to be a printed line and nothing else -- research opportunity cost that no artifact carried.
 _LAST_INTAKE: dict = {"deferred_files": 0, "files_seen": 0, "bound_hit": False,
-                      "cursor_start": None, "cursor_next": None}
+                      "cursor_start": None, "cursor_next": None,
+                      "cursor_row_offset": 0, "cursor_file_size": 0,
+                      "cursor_prefix_sha256": None}
 
 
-def _cursor_start(paths: list[Path]) -> int:
-    """Resume after the last fully consumed file; a changing corpus never resets the frontier."""
+def _prefix_sha256(path: Path, size: int) -> str:
+    """Hash exactly the bytes whose row offset was checkpointed.
+
+    Appends preserve the prefix and therefore the cursor. Replacements or truncations do not,
+    so they restart at row zero rather than silently skipping a different file's rows.
+    """
+    digest = hashlib.sha256()
+    remaining = max(0, int(size))
+    with path.open("rb") as handle:
+        while remaining:
+            chunk = handle.read(min(1024 * 1024, remaining))
+            if not chunk:
+                break
+            digest.update(chunk)
+            remaining -= len(chunk)
+    return digest.hexdigest()
+
+
+def _cursor_start(paths: list[Path]) -> tuple[int, int]:
+    """Resume at a content-bound row inside the last partially consumed file."""
     try:
         saved = json.loads(CURSOR.read_text(encoding="utf-8"))
         prior = str(saved.get("next_path") or "")
     except (OSError, ValueError):
-        return 0
+        return 0, 0
     if not prior:
-        return 0
+        return 0, 0
     for i, path in enumerate(paths):
         if str(path) == prior:
-            return i
-    return 0
+            offset = max(0, int(saved.get("row_offset") or 0))
+            prior_size = max(0, int(saved.get("file_size") or 0))
+            prior_hash = str(saved.get("prefix_sha256") or "")
+            try:
+                unchanged_prefix = (path.stat().st_size >= prior_size and prior_hash and
+                                    _prefix_sha256(path, prior_size) == prior_hash)
+            except OSError:
+                unchanged_prefix = False
+            return i, offset if unchanged_prefix else 0
+    return 0, 0
 
 
 def _save_cursor() -> None:
@@ -257,6 +287,9 @@ def _save_cursor() -> None:
     CURSOR.write_text(json.dumps({
         "updated_utc": datetime.now(UTC).isoformat(timespec="seconds"),
         "next_path": nxt,
+        "row_offset": int(_LAST_INTAKE.get("cursor_row_offset") or 0),
+        "file_size": int(_LAST_INTAKE.get("cursor_file_size") or 0),
+        "prefix_sha256": _LAST_INTAKE.get("cursor_prefix_sha256"),
         "rule": "resume the bounded compiler pass; never restart the corpus at newest row zero",
     }, indent=1) + "\n", encoding="utf-8")
 
@@ -339,7 +372,9 @@ def recent_rows(now: datetime) -> list[tuple[str, dict]]:
     found: list[tuple[str, dict]] = []
     seen: set[str] = set()
     _LAST_INTAKE.update({"deferred_files": 0, "files_seen": 0, "bound_hit": False,
-                         "cursor_start": None, "cursor_next": None})
+                         "cursor_start": None, "cursor_next": None,
+                         "cursor_row_offset": 0, "cursor_file_size": 0,
+                         "cursor_prefix_sha256": None})
     all_paths: list[Path] = []
     for root in INTEL_ROOTS:
         if not root.exists():
@@ -348,7 +383,7 @@ def recent_rows(now: datetime) -> list[tuple[str, dict]]:
                                  if p.is_file() and p.suffix.lower() in {".json", ".jsonl"}
                                  and not _is_operational_state(p.relative_to(root))),
                                 key=lambda p: p.stat().st_mtime, reverse=True))
-    start = _cursor_start(all_paths)
+    start, start_row = _cursor_start(all_paths)
     if all_paths:
         all_paths = [*all_paths[start:], *all_paths[:start]]
         _LAST_INTAKE["cursor_start"] = str(all_paths[0])
@@ -359,7 +394,10 @@ def recent_rows(now: datetime) -> list[tuple[str, dict]]:
         except OSError:
             continue
         _LAST_INTAKE["files_seen"] = i + 1
-        for row in _iter_file_rows(path):
+        row_start = start_row if i == 0 else 0
+        for row_index, row in enumerate(_iter_file_rows(path)):
+            if row_index < row_start:
+                continue
             payload = json.dumps(row, sort_keys=True, default=str, separators=(",", ":"))
             digest = hashlib.sha256(payload.encode()).hexdigest()
             if digest in seen:
@@ -371,8 +409,12 @@ def recent_rows(now: datetime) -> list[tuple[str, dict]]:
                 # THE SHORTFALL IS RECORDED, NOT ONLY PRINTED: the files this pass never opened
                 # are research the desk chose not to do this hour, and the compiled artifact
                 # carries that count (`intake.deferred_files`).
+                file_size = path.stat().st_size
                 _LAST_INTAKE.update({"deferred_files": len(all_paths) - i,
-                                     "bound_hit": True, "cursor_next": str(path)})
+                                     "bound_hit": True, "cursor_next": str(path),
+                                     "cursor_row_offset": row_index + 1,
+                                     "cursor_file_size": file_size,
+                                     "cursor_prefix_sha256": _prefix_sha256(path, file_size)})
                 print(f"compiler: MAX_ROWS_PER_PASS ({MAX_ROWS_PER_PASS:,}) reached; "
                       f"{len(all_paths) - i} file(s) wait for the next pass. This is a "
                       f"memory bound being hit, not a judgement. The bound is DERIVED from free "
@@ -381,7 +423,11 @@ def recent_rows(now: datetime) -> list[tuple[str, dict]]:
                       f"must checkpoint and resume, not raise a constant.")
                 return found
         if all_paths:
-            _LAST_INTAKE["cursor_next"] = str(all_paths[(i + 1) % len(all_paths)])
+            next_path = all_paths[(i + 1) % len(all_paths)]
+            _LAST_INTAKE.update({"cursor_next": str(next_path), "cursor_row_offset": 0,
+                                 "cursor_file_size": next_path.stat().st_size,
+                                 "cursor_prefix_sha256": _prefix_sha256(
+                                     next_path, next_path.stat().st_size)})
     return found
 
 
@@ -1294,6 +1340,7 @@ def main() -> int:
     deepening: dict[str, dict] = {}
     per_source: dict[str, dict[str, object]] = {}
     source_candidates: dict[str, set[str]] = {}
+    factory_receipts: list[dict[str, object]] = []
     terminal_deepening, recovered_deepening = _deepening_state()
     untestable = structurally_untestable_families()
     if untestable:
@@ -1390,6 +1437,19 @@ def main() -> int:
             if key not in deepening:
                 deepening[key] = compact
                 stats["deepening"] = int(stats["deepening"]) + 1
+        input_version_id = str(row.get("input_version_id") or
+                               (row.get("provenance") or {}).get("input_version_id") or "")
+        candidate_id = str(row.get("candidate_id") or "")
+        if source.startswith("factory:") and input_version_id and candidate_id:
+            factory_receipts.append({
+                "input_version_id": input_version_id, "candidate_id": candidate_id,
+                "evaluator_id": "miner_candidate_compiler",
+                "status": "RECEIVED",
+                "received_at": now.isoformat(timespec="seconds"),
+                "route": ("CANONICAL_DOCKET" if row_reached_docket else
+                          "VALID_REFUSAL" if refusal else "DEEPENING"),
+                "disposition": disposition,
+            })
     # AFTER the intake loop, never inside it: 4aaede35 placed this loop between the candidate
     # loop and the `if not produced` block, which moved the deepening of non-producing rows
     # into the per-candidate loop -- every prose row that compiled to nothing was dropped
@@ -1632,6 +1692,15 @@ def main() -> int:
         "tasks": list(deepening.values()),
         "consumer": "hourly/daily research brains must recover a falsifiable rule or reject",
     }, indent=1, default=str), "utf-8")
+    # Consumer-owned receipts are emitted only after both canonical output artifacts are durable.
+    # The factory producer reconciles these on its next pass; it may never assert its own ACK.
+    if factory_receipts:
+        FACTORY_RECEIPTS.mkdir(parents=True, exist_ok=True)
+        for receipt in factory_receipts:
+            target = FACTORY_RECEIPTS / f"{receipt['input_version_id']}.json"
+            tmp = target.with_suffix(".json.tmp")
+            tmp.write_text(json.dumps(receipt, indent=1) + "\n", "utf-8")
+            os.replace(tmp, target)
     _save_cursor()
     print(f"miner compiler: {sum(int(v['rows']) for v in per_source.values())} row(s) accounted; "
           f"{len(candidates)} executable candidate(s); {len(deepening)} exact-rule task(s)")

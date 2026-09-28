@@ -38,3 +38,40 @@ def test_acceptance_never_calls_module_existence_complete(tmp_path: Path) -> Non
     assert any(x.startswith("tests:") for x in result["rows"][0]["missing_evidence"])
     assert any(x.startswith("consumer") for x in result["rows"][0]["missing_evidence"])
     assert any(x.startswith("runtime") for x in result["rows"][0]["missing_evidence"])
+
+
+def test_fresh_failed_or_wrong_release_runtime_is_not_verified(
+        tmp_path: Path, monkeypatch) -> None:
+    root = tmp_path / "root"
+    root.mkdir()
+    manifest = tmp_path / "manifest.json"
+    manifest.write_text(json.dumps({"specification": "x", "completion_rule": "strict",
+                                    "frontier_rule": "open", "requirements": [{
+        "id": "R01", "title": "x", "priority": "P0",
+        "implementation": ["impl.py"], "tests": ["test_impl.py"],
+        "consumers": ["consumer.py"], "runtime": ["runtime.json"]}]}), "utf-8")
+    for rel in ("impl.py", "test_impl.py", "consumer.py"):
+        (root / rel).write_text("assert False\n" if rel.startswith("test") else "", "utf-8")
+    (root / "runtime.json").write_text(json.dumps({
+        "status": "FAILED", "completed_work": 0, "tests_passed": False,
+        "commit": "wrong-sha", "completed_at": "2026-09-27T00:00:00+00:00"}), "utf-8")
+    monkeypatch.setattr(A, "_release_id", lambda _root: "right-sha")
+    got = A.audit(root=root, manifest=manifest, report=tmp_path / "out.json",
+                  now=datetime(2026, 9, 27, 1, tzinfo=UTC))
+    assert got["all_current_verified"] is False
+    errors = got["rows"][0]["checks"]["runtime"][0]["proof_errors"]
+    assert any(x.startswith("failed_status") for x in errors)
+    assert any(x.startswith("wrong_release") for x in errors)
+
+
+def test_undeclared_evidence_cannot_pass(tmp_path: Path) -> None:
+    root = tmp_path / "root"
+    root.mkdir()
+    manifest = tmp_path / "manifest.json"
+    manifest.write_text(json.dumps({"specification": "x", "completion_rule": "strict",
+                                    "frontier_rule": "open", "requirements": [{
+        "id": "R01", "title": "x", "priority": "P0"}]}), "utf-8")
+    got = A.audit(root=root, manifest=manifest, report=tmp_path / "out.json",
+                  now=datetime(2026, 9, 27, tzinfo=UTC))
+    assert got["rows"][0]["status"] == "PARTIAL"
+    assert "runtime:UNDECLARED" in got["rows"][0]["missing_evidence"]

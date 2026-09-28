@@ -29,12 +29,6 @@ def _first(*values: Any, default: str = "UNCLASSIFIED") -> str:
 def evidence_state(row: Mapping[str, Any]) -> str:
     status = str(row.get("status") or "").upper()
     verdict = str(row.get("verdict") or "").upper()
-    if status == "LIVE":
-        return "LIVE_SUPPORTED"
-    if status in {"FORWARD", "SHADOW"} or row.get("forward_r") not in (None, "", 0, 0.0):
-        return "FORWARD_SUPPORTED"
-    if verdict in {"SURVIVED", "CERTIFIED", "ELIGIBLE", "PASS"}:
-        return "CERTIFIED"
     if verdict in {"FAILED", "REJECTED", "FAIL"}:
         return "FAILED"
     blockers = " ".join(str(x).upper() for x in row.get("blockers") or
@@ -43,6 +37,25 @@ def evidence_state(row: Mapping[str, Any]) -> str:
         return "ACCESS_BLOCKED"
     if blockers:
         return "DATA_BLOCKED"
+    # Enrollment is lifecycle state, not evidence.  Support requires an explicit measured sample
+    # and a positive result; otherwise SHADOW/FORWARD/LIVE merely says where observation occurs.
+    forward_n = int(row.get("forward_trades") or row.get("n_forward") or
+                    row.get("n_trades") or 0)
+    forward_r = row.get("forward_r")
+    measured_forward = forward_n > 0 or forward_r not in (None, "")
+    try:
+        forward_positive = forward_r in (None, "") or float(forward_r) > 0.0
+    except (TypeError, ValueError):
+        measured_forward = False
+        forward_positive = False
+    if status == "LIVE" and bool(row.get("live_supported")) and measured_forward and forward_positive:
+        return "LIVE_SUPPORTED"
+    if status in {"FORWARD", "SHADOW", "LIVE"} and measured_forward and forward_positive:
+        return "FORWARD_SUPPORTED"
+    if verdict in {"SURVIVED", "CERTIFIED", "ELIGIBLE", "PASS"}:
+        return "CERTIFIED"
+    if status in {"FORWARD", "SHADOW", "LIVE"} or measured_forward:
+        return "TESTED" if measured_forward else "UNTESTED"
     if verdict and verdict != "UNJUDGED":
         return "TESTED"
     return "UNTESTED"

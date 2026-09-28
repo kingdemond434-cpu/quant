@@ -65,8 +65,9 @@ def test_non_github_surface_reaches_version_registry_and_compiler_handoff(
     assert got["counts"]["new_versions"] == 1
     assert got["counts"]["donated_cells"] == 1
     row = got["new_versions"][0]
-    assert row["consumer_ack"] == {"registry_intake": True, "evaluator_handoff": True,
+    assert row["consumer_ack"] == {"registry_intake": True, "evaluator_handoff": False,
                                     "eventual_disposition": False}
+    assert row["delivery"]["submitted"] is True
     assert row["input_version_id"] and row["content_hash"]
     assert next((tmp_path / "donations").glob("discoveries_*.json"))
 
@@ -96,3 +97,30 @@ def test_cross_factory_synthesis_is_ablation_complete_and_has_no_authority() -> 
     assert [r["name"] for r in got["ablation_plan"]] == ["baseline", "only_a", "only_b",
                                                                   "combined"]
     assert "research proposal only" in got["authority"]
+
+
+def test_only_consumer_owned_receipt_acknowledges_evaluator_handoff(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    runner = _runner()
+    inbox = tmp_path / "inbox"
+    inbox.mkdir()
+    (inbox / "one.json").write_text(json.dumps({
+        "factory_id": "numerai", "surface_id": "docs_data", "content": "x",
+        "family": "trend_ma_cross", "symbols": ["EURUSD"],
+        "mechanism": "forced flow persists", "falsifier": "no PIT OOS edge"}), "utf-8")
+    monkeypatch.setattr(runner, "PROCESSED", tmp_path / "processed")
+    monkeypatch.setattr(runner, "DONATIONS", tmp_path / "donations")
+    monkeypatch.setattr(runner, "RECEIPTS", tmp_path / "receipts")
+    monkeypatch.setattr(runner, "_record_registry", lambda row: True)
+    monkeypatch.setattr(runner, "_register_surface", lambda row: True)
+    state, report = tmp_path / "state.json", tmp_path / "report.json"
+    first = runner.run(manifest=SPEC, state_path=state, inbox=inbox, report=report)
+    row = first["new_versions"][0]
+    assert row["consumer_ack"]["evaluator_handoff"] is False
+    runner.RECEIPTS.mkdir()
+    (runner.RECEIPTS / "ack.json").write_text(json.dumps({
+        "input_version_id": row["input_version_id"], "candidate_id": row["candidate_id"],
+        "evaluator_id": "canonical-compiler", "status": "RECEIVED"}), "utf-8")
+    runner.run(manifest=SPEC, state_path=state, inbox=inbox, report=report)
+    saved = json.loads(state.read_text("utf-8"))["versions"][row["input_version_id"]]
+    assert saved["consumer_ack"]["evaluator_handoff"] is True

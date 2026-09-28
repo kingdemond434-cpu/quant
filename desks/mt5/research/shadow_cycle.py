@@ -272,11 +272,29 @@ def _zero_trade_diagnostics(rows: list[dict], now: datetime) -> dict[str, object
     by_status: dict[str, int] = {}
     ages: list[float] = []
     mature = 0
+    natural = 0
+    suppressed: list[str] = []
+    fresh_attempts = 0
     for row in rows:
         if int(row.get("n", 0) or 0) > 0:
             continue
         status = str(row.get("status") or "ACTIVE").upper()
         by_status[status] = by_status.get(status, 0) + 1
+        attempted = row.get("last_attempt_at")
+        try:
+            attempt = datetime.fromisoformat(str(attempted).replace("Z", "+00:00"))
+            attempt = attempt if attempt.tzinfo else attempt.replace(tzinfo=UTC)
+            attempt_fresh = (now - attempt.astimezone(UTC)).total_seconds() <= 3 * 3600
+        except (TypeError, ValueError):
+            attempt_fresh = False
+        fresh_attempts += int(attempt_fresh)
+        has_bars = bool(str(row.get("bar_source") or "").strip())
+        has_error = bool(str(row.get("last_error") or "").strip())
+        if status == "ACTIVE" and attempt_fresh and has_bars and not has_error:
+            natural += 1
+        else:
+            suppressed.append(str(row.get("sleeve") or row.get("key") or
+                                  row.get("name") or "UNKNOWN"))
         raw = row.get("forward_start") or row.get("enrolled_at")
         try:
             stamp = datetime.fromisoformat(str(raw).replace("Z", "+00:00"))
@@ -293,8 +311,13 @@ def _zero_trade_diagnostics(rows: list[dict], now: datetime) -> dict[str, object
         "age_measured": len(ages),
         "median_age_days": (round(sorted(ages)[len(ages) // 2], 3) if ages else None),
         "mature_14d_without_trade": mature,
+        "fresh_attempts": fresh_attempts,
+        "naturally_inactive": natural,
+        "suppressed_or_unproven": len(suppressed),
+        "suppressed_examples": suppressed[:40],
         "rule": ("zero trades is not automatically a plumbing failure: blocked statuses name a "
-                 "repair, while an ACTIVE clock older than 14 days is a low-frequency/selection "
+                 "repair; only ACTIVE + fresh attempt + valid bar source + no current error is "
+                 "natural inactivity. An ACTIVE clock older than 14 days is a low-frequency/selection "
                  "finding routed to forward exploitation; no synthetic or backdated trade is "
                  "ever created"),
     }
@@ -424,7 +447,9 @@ def run() -> tuple[dict, int]:
     # isolating a failure is that the other rows keep accruing, and a failure that stops halting
     # the book while also stopping being VISIBLE is a worse trade than the crash it replaced.
     blocked = sum(row.get("status") in {"NO_DATA", "WAITING_FOR_FORWARD_BARS", "STALE_SOURCE",
-                                         "BLOCKED_UNIVERSAL_GATES", "BLOCKED_SLEEVE_ERROR"}
+                                         "BLOCKED_UNIVERSAL_GATES", "BLOCKED_SLEEVE_ERROR",
+                                         "BLOCKED_NO_BARS", "BLOCKED_INPUTS_UNAVAILABLE",
+                                         "REFUSED_BY_UNIVERSE_POLICY"}
                   for row in active_rows)
     # LIVE-ARM STATE, SURFACED HERE ON PURPOSE. `armed` lives in data/gateway_state.json,
     # box-local and gitignored -- no other brain (Hetzner, a future session, anyone without
@@ -476,7 +501,8 @@ def run() -> tuple[dict, int]:
             int(row.get("n", 0) or 0) > 0 for row in active_rows
         ),
         "zero_trade_clocks": _zero_trade,
-        "evidence_blocked_sleeves": blocked,
+        "evidence_blocked_sleeves": max(
+            blocked, int(_zero_trade.get("suppressed_or_unproven", 0) or 0)),
         "missing_sleeves": missing,
         "errors": errors,
         "seconds": round((datetime.now(UTC) - started).total_seconds(), 3),
@@ -516,7 +542,7 @@ def run() -> tuple[dict, int]:
         health["status"] = "FAILED"
     elif missing:
         health["status"] = "ENROLMENT_GAP"
-    elif blocked:
+    elif blocked or int(_zero_trade.get("suppressed_or_unproven", 0) or 0):
         health["status"] = "EVIDENCE_BLOCKED"
     else:
         health["status"] = "OPERATING"

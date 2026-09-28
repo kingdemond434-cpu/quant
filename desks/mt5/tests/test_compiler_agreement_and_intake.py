@@ -54,6 +54,41 @@ def test_the_intake_bound_records_how_many_files_it_left_unread(roots, monkeypat
     assert mcc._LAST_INTAKE["bound_hit"] is False and mcc._LAST_INTAKE["deferred_files"] == 0
 
 
+def test_cursor_drains_an_oversized_file_without_replaying_its_prefix(
+        roots, tmp_path, monkeypatch) -> None:
+    path = roots / "large.jsonl"
+    path.write_text("\n".join(json.dumps({"title": f"row-{i}", "symbol": "EURUSD"})
+                               for i in range(5)) + "\n", "utf-8")
+    monkeypatch.setattr(mcc, "CURSOR", tmp_path / "cursor.json")
+    monkeypatch.setattr(mcc, "MAX_ROWS_PER_PASS", 2)
+    batches = []
+    for _ in range(3):
+        batches.append([row["title"] for _, row in
+                        mcc.recent_rows(mcc.datetime.now(tz=mcc.UTC))])
+        mcc._save_cursor()
+    assert batches == [["row-0", "row-1"], ["row-2", "row-3"], ["row-4"]]
+
+
+def test_cursor_preserves_an_append_but_restarts_a_replacement(
+        roots, tmp_path, monkeypatch) -> None:
+    path = roots / "large.jsonl"
+    path.write_text("\n".join(json.dumps({"title": f"row-{i}"}) for i in range(3)) + "\n",
+                    "utf-8")
+    monkeypatch.setattr(mcc, "CURSOR", tmp_path / "cursor.json")
+    monkeypatch.setattr(mcc, "MAX_ROWS_PER_PASS", 2)
+    assert [r["title"] for _, r in mcc.recent_rows(mcc.datetime.now(tz=mcc.UTC))] == [
+        "row-0", "row-1"]
+    mcc._save_cursor()
+    with path.open("a", encoding="utf-8") as handle:
+        handle.write(json.dumps({"title": "row-3"}) + "\n")
+    assert [r["title"] for _, r in mcc.recent_rows(mcc.datetime.now(tz=mcc.UTC))] == [
+        "row-2", "row-3"]
+    mcc._save_cursor()
+    path.write_text(json.dumps({"title": "replacement"}) + "\n", "utf-8")
+    assert [r["title"] for _, r in mcc.recent_rows(mcc.datetime.now(tz=mcc.UTC))] == [
+        "replacement"]
+
+
 def test_seats_that_donated_nothing_are_named() -> None:
     seats = mcc.seat_summary({"deepseek": {"rows": 3, "candidates": 1, "deepening": 2}})
     dark = [s for s, st in seats.items() if not st["rows"]]

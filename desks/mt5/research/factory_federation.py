@@ -33,6 +33,7 @@ PROCESSED = BASE / "processed"
 STATE = BASE / "state.json"
 DONATIONS = DESK / "data" / "intelligence" / "factory_federation"
 REPORT = DESK / "reports" / "FACTORY_FEDERATION.json"
+RECEIPTS = BASE / "evaluator_receipts"
 
 
 def _now() -> str:
@@ -89,7 +90,9 @@ def _candidate(doc: dict[str, Any], surface: F.Surface, vid: str) -> dict[str, A
     falsifier = str(doc.get("falsifier") or "").strip()
     if not mechanism or not falsifier:
         return None
+    candidate_id = F.content_hash(f"factory-candidate:{vid}".encode())[:24]
     return {
+        "candidate_id": candidate_id, "input_version_id": vid,
         "kind": "hypothesis", "family": str(family),
         "symbols": sorted({str(s).upper() for s in symbols}),
         "text": str(doc.get("rule") or doc.get("claim") or mechanism),
@@ -154,11 +157,12 @@ def _components(processed: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return out
 
 
-def _syntheses(rows: list[dict[str, Any]], limit: int = 24) -> list[dict[str, Any]]:
+def _syntheses(rows: list[dict[str, Any]], *, seen_ids: set[str] | None = None,
+               limit: int = 24) -> list[dict[str, Any]]:
     """Type-compatible pairs only; every plan includes baseline, singletons and combination."""
     comps = _components(rows)
     out: list[dict[str, Any]] = []
-    seen: set[str] = set()
+    seen: set[str] = set(seen_ids or ())
     for i, left in enumerate(comps):
         for right in comps[i + 1:]:
             if left["factory_id"] == right["factory_id"] or left["lane"] != right["lane"]:
@@ -188,10 +192,36 @@ def run(*, apply: bool = True, budget_s: float = 120.0,
     old = _read(state_path, {})
     state_rows = dict(old.get("surfaces") or {})
     versions = dict(old.get("versions") or {})
+    synthesis_seen = set(old.get("synthesis_seen") or [])
     new_versions: list[dict[str, Any]] = []
     donations: list[dict[str, Any]] = []
     rejected: list[dict[str, str]] = []
     registered_sources = 0
+    pending_moves: list[tuple[Path, Path]] = []
+    seen_files: set[str] = set()
+    disposed_files: set[str] = set()
+    unresolved_files: set[str] = set()
+
+    # Only the evaluator can acknowledge the handoff. Producer-side queueing is never an ACK.
+    if RECEIPTS.exists():
+        for receipt_path in sorted(RECEIPTS.glob("*.json")):
+            receipt = _read(receipt_path, None)
+            if not isinstance(receipt, dict):
+                continue
+            vid = str(receipt.get("input_version_id") or "")
+            record = versions.get(vid)
+            if not isinstance(record, dict):
+                continue
+            status = str(receipt.get("status") or "").upper()
+            evaluator_id = str(receipt.get("evaluator_id") or "")
+            expected = str(record.get("candidate_id") or "")
+            if (status in {"RECEIVED", "ACCEPTED", "EVALUATED"} and evaluator_id and
+                    str(receipt.get("candidate_id") or "") == expected):
+                record.setdefault("consumer_ack", {})["evaluator_handoff"] = True
+                record.setdefault("delivery", {})["consumer_acknowledged"] = True
+                record["evaluator_receipt"] = receipt
+                if status == "EVALUATED" and receipt.get("verdict"):
+                    record["consumer_ack"]["eventual_disposition"] = True
 
     for surface in surfaces:
         prev = dict(state_rows.get(surface.key) or {})
@@ -218,22 +248,25 @@ def run(*, apply: bool = True, budget_s: float = 120.0,
     for path in sorted(inbox.glob("*.json")) if inbox.exists() else []:
         if time.monotonic() - t0 >= budget_s:
             break
+        seen_files.add(path.name)
         doc = _read(path, None)
         if not isinstance(doc, dict):
             rejected.append({"file": path.name, "why": "UNREADABLE_JSON"})
+            unresolved_files.add(path.name)
             continue
         key = f"{doc.get('factory_id')}:{doc.get('surface_id')}"
         surface = by_key.get(key)
         if surface is None:
             rejected.append({"file": path.name, "why": "UNREGISTERED_SURFACE"})
+            unresolved_files.add(path.name)
             continue
         digest = F.content_hash(_artifact_bytes(doc))
         vid = F.version_id(surface, digest)
         if vid in versions:
             if apply:
                 PROCESSED.mkdir(parents=True, exist_ok=True)
-                with contextlib.suppress(OSError):
-                    os.replace(path, PROCESSED / path.name)
+                pending_moves.append((path, PROCESSED / path.name))
+                disposed_files.add(path.name)
             continue
         doc["content_hash"] = digest
         disposition = _disposition(doc, surface)
@@ -263,12 +296,14 @@ def run(*, apply: bool = True, budget_s: float = 120.0,
             "unresolved_blockers": [blocker] if blocker else [],
             "last_success": _now(), "components": doc.get("components") or
                                                        doc.get("mechanisms") or [],
+            "candidate_id": candidate.get("candidate_id") if candidate else None,
+            "delivery": {"prepared": candidate is not None, "persisted": False,
+                         "submitted": False, "consumer_acknowledged": False},
         }
         if apply:
             record["consumer_ack"]["registry_intake"] = _record_registry(record)
         if candidate is not None:
             donations.append(candidate)
-            record["consumer_ack"]["evaluator_handoff"] = True
         versions[vid] = record
         new_versions.append(record)
         state_rows[key]["last_success"] = record["last_success"]
@@ -276,18 +311,25 @@ def run(*, apply: bool = True, budget_s: float = 120.0,
         state_rows[key]["unresolved_blockers"] = record["unresolved_blockers"]
         if apply:
             PROCESSED.mkdir(parents=True, exist_ok=True)
-            with contextlib.suppress(OSError):
-                os.replace(path, PROCESSED / path.name)
+            pending_moves.append((path, PROCESSED / path.name))
+            disposed_files.add(path.name)
 
     recent = list(versions.values())[-500:]
-    syntheses = _syntheses(recent)
+    syntheses = _syntheses(recent, seen_ids=synthesis_seen)
     if apply and donations:
         DONATIONS.mkdir(parents=True, exist_ok=True)
-        _atomic(DONATIONS / f"discoveries_{int(time.time())}.json", donations)
+        for candidate in donations:
+            donation_path = DONATIONS / f"discoveries_{candidate['input_version_id']}.json"
+            _atomic(donation_path, [candidate])
+            record = versions[candidate["input_version_id"]]
+            record["delivery"].update({"persisted": True, "submitted": True,
+                                       "outbox_path": str(donation_path)})
+            record["produced_experiment_ids"] = [candidate["candidate_id"]]
     if apply:
         for plan in syntheses:
             if _record_registry({"input_version_id": plan["experiment_id"], **plan}):
                 plan["registry_ack"] = True
+                synthesis_seen.add(plan["experiment_id"])
     counts = {"factories": len({s.factory_id for s in surfaces}), "surfaces": len(surfaces),
               "new_source_registry_rows": registered_sources,
               "versions": len(versions), "new_versions": len(new_versions),
@@ -298,10 +340,28 @@ def run(*, apply: bool = True, budget_s: float = 120.0,
            "syntheses": syntheses, "rejected": rejected,
            "evaluation_lanes": list(EVALUATION_LANES),
            "authority": "research only; no certificate, allocation, promotion or order authority",
-           "conservation": {"inbox_seen": len(new_versions) + len(rejected),
-                            "disposed": len(new_versions) + len(rejected), "silent_loss": 0}}
+           "conservation": {
+               "inbox_files_seen": len(seen_files),
+               "seen_file_ids": sorted(seen_files),
+               "new_version_ids": sorted(r["input_version_id"] for r in new_versions),
+               "rejected_files": sorted(r["file"] for r in rejected),
+               "durably_disposed_file_ids": sorted(disposed_files),
+               "unresolved_file_ids": sorted(unresolved_files),
+               "pending_files": sorted(p.name for p in inbox.glob("*.json"))
+                                if inbox.exists() else [],
+               "silent_loss_file_ids": sorted(seen_files - disposed_files - unresolved_files),
+               "silent_loss": len(seen_files - disposed_files - unresolved_files),
+               "rule": "independently reconcile observed file IDs to durable state or blocker"
+           }}
     if apply:
-        _atomic(state_path, {"at": doc["at"], "surfaces": state_rows, "versions": versions})
+        # Transactional outbox order: durable candidates + state first, inbox move last. A crash
+        # before state replays the same deterministic outbox ID; a crash after state sees the
+        # known version and completes only the idempotent move.
+        _atomic(state_path, {"at": doc["at"], "surfaces": state_rows, "versions": versions,
+                             "synthesis_seen": sorted(synthesis_seen)})
+        for source, destination in pending_moves:
+            with contextlib.suppress(OSError):
+                os.replace(source, destination)
         _atomic(report, doc)
     return doc
 

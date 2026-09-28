@@ -34,3 +34,14 @@ def test_blocked_is_an_evidence_state_not_silent_loss() -> None:
                           "family": "event", "blockers": ["ACCESS_RIGHTS_UNKNOWN"]}])
     assert got["counts"]["blocked_preserved"] == 1
     assert got["items"]["x"]["descriptor"]["evidence_state"] == "ACCESS_BLOCKED"
+
+
+def test_enrollment_is_not_evidence_and_failure_overrides_lifecycle() -> None:
+    assert QD.evidence_state({"status": "SHADOW"}) == "UNTESTED"
+    assert QD.evidence_state({"status": "FORWARD", "forward_r": -1.0,
+                              "verdict": "FAILED"}) == "FAILED"
+    assert QD.evidence_state({"status": "LIVE", "verdict": "FAILED"}) == "FAILED"
+    assert QD.evidence_state({"status": "LIVE", "forward_r": 0.2,
+                              "n_forward": 5}) == "FORWARD_SUPPORTED"
+    assert QD.evidence_state({"status": "LIVE", "forward_r": 0.2,
+                              "n_forward": 5, "live_supported": True}) == "LIVE_SUPPORTED"

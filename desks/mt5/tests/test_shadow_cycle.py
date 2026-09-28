@@ -224,7 +224,8 @@ def test_gold_certificate_versions_are_one_live_exposure() -> None:
 def test_zero_trade_diagnostics_separate_new_quiet_and_blocked_clocks() -> None:
     now = datetime(2026, 9, 27, 12, 0, tzinfo=UTC)
     rows = [
-        {"n": 0, "status": "ACTIVE", "enrolled_at": "2026-09-26T12:00:00+00:00"},
+        {"n": 0, "status": "ACTIVE", "enrolled_at": "2026-09-26T12:00:00+00:00",
+         "last_attempt_at": "2026-09-27T11:00:00+00:00", "bar_source": "MT5:Fusion"},
         {"n": 0, "status": "ACTIVE", "forward_start": "2026-09-01T12:00:00+00:00"},
         {"n": 0, "status": "BLOCKED_NO_BARS", "forward_start": "2026-09-05T12:00:00+00:00"},
         {"n": 3, "status": "ACTIVE", "forward_start": "2026-09-01T12:00:00+00:00"},
@@ -233,3 +234,5 @@ def test_zero_trade_diagnostics_separate_new_quiet_and_blocked_clocks() -> None:
     assert got["count"] == 3
     assert got["by_status"] == {"ACTIVE": 2, "BLOCKED_NO_BARS": 1}
     assert got["mature_14d_without_trade"] == 2
+    assert got["naturally_inactive"] == 1
+    assert got["suppressed_or_unproven"] == 2
