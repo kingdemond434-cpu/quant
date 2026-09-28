@@ -40,6 +40,8 @@ def test_universe_job_fills_missing_ladder_instead_of_rewalking_it() -> None:
     assert '"%PYTHON%" %PYARGS% -W ignore' in wrapper
     downloader = _text("scripts/download_all_symbols.py")
     assert 'exclusive_job("fusion_terminal_research_lane"' in downloader
+    assert "from research.expand_universe import _pull_bars" in downloader
+    assert "_hydration_retried" in downloader
     assert '"M1": 200_000' in downloader
     assert '"M5": 120_000' in downloader
     assert '"M15": 80_000' in downloader

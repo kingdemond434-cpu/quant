@@ -17,6 +17,7 @@ import pandas as pd
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from mt5desk.config import desk_root
 from mt5desk.universe_registry import cost_fields_from_symbol_info, merge
+from research.expand_universe import _pull_bars
 from research.job_lock import exclusive_job
 
 # The canonical gauntlet samples Fusion-native costs while this collector walks the complete
@@ -106,6 +107,10 @@ print(f"Already downloaded: {len(existing)} (symbol, timeframe) series "
 jobs = [(s, tf) for s in tradable for tf in TIMEFRAMES if (s.name, tf) not in existing]
 print(f"To download: {len(jobs)} series over timeframes {', '.join(TIMEFRAMES)}")
 
+_warmed_symbols: set[str] = set()
+_hydration_retried: set[str] = set()
+_history_start = datetime(2015, 1, 1, tzinfo=UTC)
+
 for i, (sym_info, tf) in enumerate(jobs):
     name = sym_info.name
     period = getattr(mt5, f"TIMEFRAME_{tf}", None)
@@ -127,7 +132,22 @@ for i, (sym_info, tf) in enumerate(jobs):
     spread_price = spread_pts * point
 
     selected = bool(mt5.symbol_select(name, True))
-    rates = mt5.copy_rates_from_pos(name, period, 0, TIMEFRAME_DEPTH[tf])
+    # Selecting a hidden broker symbol starts an asynchronous terminal history subscription.
+    # Asking in the same instruction frequently returns an empty first read and used to stamp
+    # every chart on that instrument BROKER_SERVES_NOTHING. Warm once per symbol, then reuse the
+    # canonical chunked puller (position request to hydrate, range fallback, older chunks). If
+    # the first cell is still empty, one bounded retry gives the subscription time to settle;
+    # subsequent charts reuse the already-warm symbol and never pay another delay.
+    if selected and name not in _warmed_symbols:
+        time.sleep(1.0)
+        _warmed_symbols.add(name)
+    rates = _pull_bars(mt5, name, period, TIMEFRAME_DEPTH[tf], _history_start,
+                       datetime.now(UTC))
+    if (rates is None or len(rates) == 0) and selected and name not in _hydration_retried:
+        time.sleep(2.0)
+        _hydration_retried.add(name)
+        rates = _pull_bars(mt5, name, period, TIMEFRAME_DEPTH[tf], _history_start,
+                           datetime.now(UTC))
 
     if rates is None or len(rates) == 0:
         print(f"  [{i+1}/{len(jobs)}] {name:25s} {tf:4s} NO DATA")
@@ -148,6 +168,7 @@ for i, (sym_info, tf) in enumerate(jobs):
     # the shadow/forward chain -- a 197-symbol universe that was effectively 24 symbols.
     df["time"] = pd.to_datetime(df["time"], unit="s", utc=True)
     df.set_index("time", inplace=True)
+    df.sort_index(inplace=True)
 
     pq_path = PARQUET_DIR / f"{name}_{tf}.parquet"
     df.to_parquet(pq_path, engine="pyarrow")
