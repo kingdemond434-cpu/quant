@@ -17,6 +17,7 @@ import pyarrow.parquet as pq
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from mt5desk.config import desk_root, terminal_path
+from mt5desk.universe_registry import TIMEFRAMES as CANONICAL_TIMEFRAMES
 from mt5desk.universe_registry import cost_fields_from_symbol_info, merge
 from research.expand_universe import _pull_bars
 from research.job_lock import exclusive_job
@@ -59,6 +60,55 @@ VERDICTS_OUT = desk_root() / "data" / "bar_coverage_verdicts.json"
 # the terminal, so a file named without one cannot be kept current.
 PARQUET_DIR = OUT_DIR
 PARQUET_DIR.mkdir(parents=True, exist_ok=True)
+
+
+def _fresh(row: dict, seconds: int) -> bool:
+    try:
+        stamp = datetime.fromisoformat(str(row.get("at") or "").replace("Z", "+00:00"))
+        if stamp.tzinfo is None:
+            stamp = stamp.replace(tzinfo=UTC)
+    except (TypeError, ValueError):
+        return False
+    return (datetime.now(UTC) - stamp).total_seconds() < seconds
+
+
+def _all_cells_accounted_for() -> tuple[bool, int, int]:
+    """Fast path: physical chart or still-fresh explicit venue refusal for every registry cell."""
+    try:
+        registry = json.loads(UNIVERSE_OUT.read_text("utf-8-sig"))
+        verdict_doc = json.loads(VERDICTS_OUT.read_text("utf-8-sig"))
+    except (OSError, ValueError):
+        return False, 0, 0
+    if not isinstance(registry, dict) or not isinstance(verdict_doc, dict):
+        return False, 0, 0
+    cells = verdict_doc.get("cells") or {}
+    if not isinstance(cells, dict):
+        return False, 0, 0
+    wanted = [x.strip().upper() for x in os.environ.get(
+        "MT5_TIMEFRAMES", ",".join(CANONICAL_TIMEFRAMES)).split(",") if x.strip()]
+    physical = refused = 0
+    for symbol in registry:
+        wildcard = cells.get(f"{symbol}_*") or {}
+        for tf in wanted:
+            if (PARQUET_DIR / f"{symbol}_{tf}.parquet").exists():
+                physical += 1
+                continue
+            row = cells.get(f"{symbol}_{tf}") or {}
+            if (row.get("verdict") == "BROKER_SERVES_NOTHING" and _fresh(row, 24 * 3600)):
+                refused += 1
+                continue
+            if (wildcard.get("verdict") == "NOT_OFFERED" and _fresh(wildcard, 7 * 24 * 3600)):
+                refused += 1
+                continue
+            return False, physical, refused
+    return True, physical, refused
+
+
+_accounted, _physical_count, _refused_count = _all_cells_accounted_for()
+if _accounted:
+    print(f"Universe current: {_physical_count} physical chart(s), {_refused_count} fresh explicit "
+          "venue refusal(s); no Fusion request is due")
+    raise SystemExit(0)
 
 if not attach_or_initialize(mt5, path=terminal_path(), timeout=30_000):
     print(f"UNMEASURED: authenticated Fusion terminal is unavailable ({mt5.last_error()}); "
