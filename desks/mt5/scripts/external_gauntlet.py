@@ -3604,11 +3604,20 @@ def _cli_main() -> int:
     # anything less lets it in on a false statement, anything more refuses it for room it will
     # not use. (`exclusive_job` still corrects the ask upward by the p75 of recorded peaks.)
     _need = 300 if _REPRO is not None else int(MEMORY_BUDGET_MB)
-    with exclusive_job(_job, need_mb=_need) as acquired:
-        if not acquired:
-            return 75
-        main()
-        return 0
+    # BOTH CERTIFIERS SHARE ONE HEAVY LANE.  The Windows scheduler can legitimately launch the
+    # legacy qquant battery while this resumable judge is building a docket.  Before this lease,
+    # each process was individually non-duplicated but the pair spawned independent worker pools;
+    # the live task then failed with 0x800705AF (insufficient system resources).  A five-minute
+    # trigger makes deferral cheap; overlapping two authorities is never useful.
+    with exclusive_job("certification_lane", need_mb=_need) as lane:
+        if not lane:
+            print("external_gauntlet: DEFERRED -- another canonical certifier owns the lane")
+            return 0
+        with exclusive_job(_job, need_mb=0) as acquired:
+            if not acquired:
+                return 0
+            main()
+            return 0
 
 
 if __name__ == "__main__":
