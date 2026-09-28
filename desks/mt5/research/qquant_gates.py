@@ -567,16 +567,5 @@ def main() -> int:
     return 0
 
 
-def _cli_main() -> int:
-    """Run the legacy battery without colliding with the resumable canonical judge."""
-    from research.job_lock import exclusive_job
-
-    with exclusive_job("certification_lane", need_mb=0) as acquired:
-        if not acquired:
-            print("qquant_gates: DEFERRED -- another canonical certifier owns the lane", flush=True)
-            return 0
-        return main()
-
-
 if __name__ == "__main__":
-    sys.exit(_cli_main())
+    sys.exit(main())

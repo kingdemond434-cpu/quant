@@ -623,13 +623,15 @@ if (Test-Path $riskUnitsFence) {
 # the 22:00 UTC gateway/shadow_forward/promoter cycle has written the day's shadow state, so the
 # certification run sees the freshest evidence rather than racing it.
 $qquantGates = Join-Path $DeskRoot "research\qquant_gates.py"
+$qquantLauncher = Join-Path $DeskRoot "research\certifier_launcher.py"
 if (Test-Path $qquantGates) {
     if ($WhatIfOnly) {
         Write-Host "  [DRY ] MT5-QQuantGatesCertify daily original 10-gate certification run"
     } else {
         try {
             $qgLog = Join-Path $logDir "MT5-QQuantGatesCertify.log"
-            $qgCmd = "/d /s /c `"`"$Python`" $pyArgs`"$qquantGates`" >> `"$qgLog`" 2>&1`""
+            $qgEntrypoint = if (Test-Path $qquantLauncher) { $qquantLauncher } else { $qquantGates }
+            $qgCmd = "/d /s /c `"`"$Python`" $pyArgs`"$qgEntrypoint`" >> `"$qgLog`" 2>&1`""
             $qgAction = New-ScheduledTaskAction -Execute "cmd.exe" -Argument $qgCmd `
                 -WorkingDirectory $DeskRoot
             $qgTrigger = New-ScheduledTaskTrigger -Daily -At "23:00"
