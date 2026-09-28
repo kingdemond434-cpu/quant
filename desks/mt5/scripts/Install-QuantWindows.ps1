@@ -54,6 +54,7 @@ param(
     [string] $DeskRoot,
     [string] $Python,
     [string] $AurumRoot,
+    [string] $InteractiveUser,
     [switch] $WhatIfOnly
 )
 
@@ -92,6 +93,15 @@ if (-not $Python) {
     }
 }
 $pyArgs = if ($Python -eq "py") { "-3 " } else { "" }
+
+if (-not $InteractiveUser) {
+    $terminalTask = Get-ScheduledTask -TaskName "MT5-TerminalBoot" -ErrorAction SilentlyContinue
+    if ($terminalTask -and $terminalTask.Principal.UserId) {
+        $InteractiveUser = $terminalTask.Principal.UserId
+    } else {
+        $InteractiveUser = $env:USERNAME
+    }
+}
 
 Write-Host ""
 Write-Host ("=" * 74)
@@ -436,8 +446,20 @@ foreach ($t in $tasks) {
         # session).  The terminal gateway is deliberately installed separately
         # above because the MetaTrader IPC endpoint really is session-bound;
         # nothing in this table is allowed to inherit that limitation.
-        $principal = New-ScheduledTaskPrincipal -UserId "SYSTEM" `
-            -LogonType ServiceAccount -RunLevel Highest
+        # MetaTrader's Python IPC endpoint belongs to the interactive desktop session.  Running
+        # the gateway or shadow replay as SYSTEM returns -10004/-10005 even while terminal64 is
+        # healthy, which turns every certificate into a false no-bars clock.  All other jobs stay
+        # headless under SYSTEM.  The terminal task is the canonical source of the desktop owner.
+        if ($t.Name -in @("MT5-Gateway", "MT5-GatewayResident", "MT5-Shadow")) {
+            if (-not $InteractiveUser -or $InteractiveUser -eq "SYSTEM") {
+                throw "$($t.Name) requires the MT5 interactive desktop owner; pass -InteractiveUser"
+            }
+            $principal = New-ScheduledTaskPrincipal -UserId $InteractiveUser `
+                -LogonType Interactive -RunLevel Highest
+        } else {
+            $principal = New-ScheduledTaskPrincipal -UserId "SYSTEM" `
+                -LogonType ServiceAccount -RunLevel Highest
+        }
         Register-ScheduledTask -TaskName $t.Name -Action $action `
             -Trigger (& $t.Trigger) -Settings $settings `
             -Description $t.Desc -Principal $principal | Out-Null
