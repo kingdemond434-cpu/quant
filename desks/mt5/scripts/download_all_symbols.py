@@ -15,10 +15,11 @@ import MetaTrader5 as mt5
 import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from mt5desk.config import desk_root
+from mt5desk.config import desk_root, terminal_path
 from mt5desk.universe_registry import cost_fields_from_symbol_info, merge
 from research.expand_universe import _pull_bars
 from research.job_lock import exclusive_job
+from research.mt5_session import attach_or_initialize
 
 # The canonical gauntlet samples Fusion-native costs while this collector walks the complete
 # broker chart ladder.  Both opening the terminal at once interrupted the 2026-09-28 rebuild at
@@ -58,10 +59,15 @@ VERDICTS_OUT = desk_root() / "data" / "bar_coverage_verdicts.json"
 PARQUET_DIR = OUT_DIR
 PARQUET_DIR.mkdir(parents=True, exist_ok=True)
 
-mt5.shutdown()
-time.sleep(1)
-mt5.initialize()
+if not attach_or_initialize(mt5, path=terminal_path(), timeout=30_000):
+    print(f"UNMEASURED: authenticated Fusion terminal is unavailable ({mt5.last_error()}); "
+          "no broker chart was relabelled as missing")
+    raise SystemExit(2)
 info = mt5.terminal_info()
+if info is None:
+    print(f"UNMEASURED: Fusion attach returned no terminal info ({mt5.last_error()}); "
+          "no broker chart was relabelled as missing")
+    raise SystemExit(2)
 print(f"Terminal: {info.name}, connected={info.connected}")
 
 syms = mt5.symbols_get()
