@@ -507,6 +507,7 @@ def _accepts_timeframe(fn) -> bool:
 def fetch_h1(sym: str, start: datetime,
              prefer: str | None = None,
              prefer_promotion_authority: bool = False,
+             require_coverage: bool = False,
              timeframe: str = "H1") -> Bars | None:
     """First source that returns usable bars, in quality order.
 
@@ -546,6 +547,13 @@ def fetch_h1(sym: str, start: datetime,
         except Exception:
             continue
         if b is not None and b.n > 0:
+            # A non-empty source can still be unusable for a forward clock. Previously the first
+            # stale MT5 reply stopped the chain, the caller rejected it for incomplete coverage,
+            # and a fresher Fusion cache was never tried. One terminal incident consequently
+            # marked the entire 821-clock book BLOCKED_NO_BARS in the same second. Historical
+            # callers keep the old first-nonempty behavior; forward/certification callers opt in.
+            if require_coverage and not b.covers(start)[0]:
+                continue
             if not prefer_promotion_authority or b.promotion_authority:
                 return b
             if best_proxy is None:

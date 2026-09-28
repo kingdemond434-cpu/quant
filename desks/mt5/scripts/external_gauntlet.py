@@ -670,6 +670,7 @@ def _live_frame(sym: str, timeframe: str = "H1"):
         from research.h1_source import fetch_h1
         bars = fetch_h1(str(sym), datetime(2018, 1, 1, tzinfo=UTC),
                         prefer="MT5", prefer_promotion_authority=True,
+                        require_coverage=True,
                         timeframe=str(timeframe).upper())
         if bars is None or bars.n <= 0 or not bars.promotion_authority:
             return None

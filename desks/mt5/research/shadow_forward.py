@@ -480,7 +480,7 @@ def fetch_h1(sym: str, timeframe: str = "H1"):
     from research.h1_source import fetch_h1 as _fetch
     start = max(SHADOW_START - timedelta(days=FETCH_DAYS),
                 datetime(2018, 1, 1, tzinfo=UTC))
-    bars = _fetch(sym, start, timeframe=str(timeframe).upper())
+    bars = _fetch(sym, start, require_coverage=True, timeframe=str(timeframe).upper())
     if bars is None:
         slog(f"{sym} [{timeframe}]: NO DATA from any source. That is an absence of bars, not "
              f"an empty market, and no verdict may be drawn from it.")

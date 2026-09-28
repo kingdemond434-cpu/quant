@@ -158,6 +158,27 @@ def test_a_raising_source_does_not_take_the_chain_with_it(monkeypatch, tmp_path)
     assert H.fetch_h1("XAUUSD", NOW - timedelta(days=5)) is not None
 
 
+def test_coverage_required_skips_stale_terminal_and_uses_fresh_cache(monkeypatch, tmp_path):
+    """A stale but non-empty first source must not hide a usable later source from shadow."""
+    stale = bars(n=500, end=NOW - timedelta(days=4), source="MT5:stale")
+    monkeypatch.setattr(H, "from_mt5", lambda s, t: stale)
+    frame(n=500).to_parquet(tmp_path / "XAUUSD_H1.parquet")
+    monkeypatch.setattr(H, "UNI", tmp_path)
+    monkeypatch.setattr(H, "EXTRA_SOURCES", [])
+    chosen = H.fetch_h1("XAUUSD", NOW - timedelta(days=5), require_coverage=True)
+    assert chosen is not None and chosen.source.startswith("CACHE")
+
+
+def test_historical_fetch_keeps_first_nonempty_source_without_coverage_requirement(
+    monkeypatch, tmp_path,
+):
+    stale = bars(n=500, end=NOW - timedelta(days=4), source="MT5:stale")
+    monkeypatch.setattr(H, "from_mt5", lambda s, t: stale)
+    frame(n=500).to_parquet(tmp_path / "XAUUSD_H1.parquet")
+    monkeypatch.setattr(H, "UNI", tmp_path)
+    assert H.fetch_h1("XAUUSD", NOW - timedelta(days=5)).source == "MT5:stale"
+
+
 # ------------------------------------------ absence of bars is not absence of signals
 
 def test_a_source_ending_before_the_window_does_not_cover_it():
