@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-09-28T01:52:06.697619+00:00",
+  "generated_at": "2026-09-28T03:46:52.077760+00:00",
   "scope": "MT5_FUSION_ONLY",
   "execution_authority": false,
   "universe": {
     "metadata_entities": 251,
     "h1_bar_files": 304,
-    "metadata_mtime": "2026-09-28T01:43:05.688997+00:00",
+    "metadata_mtime": "2026-09-28T03:44:10.575882+00:00",
     "newest_h1_mtime": "2026-09-10T22:28:41.305028+00:00"
   },
   "conversion": {
@@ -33,7 +33,7 @@
   },
   "capability_reuse": {
     "artifact": "data/intelligence/mt5_capability_reuse.json",
-    "generated_at": "2026-09-28T01:52:06.256109+00:00",
+    "generated_at": "2026-09-28T03:46:51.550355+00:00",
     "counts": {
       "DISPOSED_BLOCKED": 5,
       "DISPOSED_SUPERSEDED": 9,
