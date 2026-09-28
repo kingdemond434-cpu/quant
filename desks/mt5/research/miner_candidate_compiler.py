@@ -28,6 +28,9 @@ UNIVERSE = BASE / "data" / "universe"
 INTEL_ROOTS = (BASE / "data" / "intelligence", ROOT / "data" / "intelligence")
 OUT = BASE / "data" / "hypotheses" / "miner_candidates.json"
 DEEPEN = BASE / "data" / "hypotheses" / "miner_deepening_queue.json"
+DEEPEN_WORKED = BASE / "data" / "hypotheses" / "deepening_worked.jsonl"
+DEEPENED = BASE / "data" / "hypotheses" / "deepened_candidates.json"
+CURSOR = BASE / "data" / "hypotheses" / "miner_compiler_cursor.json"
 WINDOW_DAYS = 7
 #: The LLM seats' source names as they appear on their donated rows (`libs/ops/deepseek_cycle.py`
 #: `_donate`, `scripts/kimi_hunter.py` `_donate`). Reported as one block in the compiled artifact
@@ -36,11 +39,81 @@ WINDOW_DAYS = 7
 SEAT_SOURCES = frozenset({"deepseek", "kimi_k3_deep_forest"})
 
 
+def _deepening_task_id(source: str, row: dict) -> str:
+    """Use the deepening worker's durable row identity exactly."""
+    title = str(row.get("title") or row.get("description") or "")[:300]
+    url = row.get("url") or row.get("link") or ""
+    return hashlib.sha256(f"{source}|{url}|{title}".encode()).hexdigest()[:16]
+
+
+def _deepening_state() -> tuple[dict[str, str], dict[str, list[dict]]]:
+    """Return terminal decisions and recovered cells keyed by the original row.
+
+    Deepening is part of conversion, not a parallel graveyard.  Before this join, a row that
+    had already been recovered or validly refused stayed in the compiler's debt forever.  Seat
+    outages remain open: lack of a model is not evidence that a source row is non-convertible.
+    """
+    terminal: dict[str, str] = {}
+    try:
+        with DEEPEN_WORKED.open("r", encoding="utf-8", errors="replace") as fh:
+            for line in fh:
+                try:
+                    item = json.loads(line)
+                except (TypeError, ValueError):
+                    continue
+                tid = str(item.get("id") or "")
+                disposition = str(item.get("disposition") or "")
+                if not tid or not disposition:
+                    continue
+                if (disposition.startswith("BLOCKED_SEAT_UNAVAILABLE:")
+                        or disposition.startswith("REJECTED: seat error:")):
+                    continue
+                terminal[tid] = disposition
+    except OSError:
+        pass
+
+    recovered: dict[str, list[dict]] = {}
+    doc = _read(DEEPENED) or {}
+    rows = doc.get("candidates") if isinstance(doc, dict) else []
+    for candidate in rows if isinstance(rows, list) else []:
+        if not isinstance(candidate, dict):
+            continue
+        source = str(candidate.get("source") or "").removeprefix("miner:")
+        original = {
+            "title": candidate.get("source_title") or "",
+            "url": candidate.get("source_url") or "",
+        }
+        recovered.setdefault(_deepening_task_id(source, original), []).append(candidate)
+    return terminal, recovered
+
+
 def _read(path: Path):
     try:
         return json.loads(path.read_text("utf-8"))
     except (OSError, ValueError):
         return None
+
+
+def _iter_file_rows(path: Path):
+    """Yield every evidence row from JSON or JSONL without silently excluding either format.
+
+    JSONL is streamed one row at a time.  Large JSON documents retain the established parser,
+    because their wrapper keys carry source structure that line parsing would destroy.
+    """
+    if path.suffix.lower() == ".jsonl":
+        try:
+            with path.open("r", encoding="utf-8", errors="replace") as fh:
+                for line in fh:
+                    try:
+                        row = json.loads(line)
+                    except (TypeError, ValueError):
+                        continue
+                    if isinstance(row, dict):
+                        yield row
+        except OSError:
+            return
+        return
+    yield from _rows(_read(path))
 
 
 def known_symbols() -> set[str]:
@@ -93,7 +166,11 @@ MAX_ROWS_FLOOR = 1_000_000
 #: its content hash and its source string; 2 KB each is several times what they actually take, and
 #: erring high is the right direction for a bound whose failure mode is an OOM on a box that also
 #: runs the gateway.
-BYTES_PER_ROW = 2048
+# One input can expand across four sessions and several charts, then coexist in the candidate,
+# source-agreement and deepening indexes.  The old 2 KiB estimate priced only the source dict;
+# measured result was two OS kills even after the million-row floor was removed.  Charge the
+# expanded working set, not the serialized input row.
+BYTES_PER_ROW = 32768
 
 #: Share of FREE physical memory the intake may claim. A quarter leaves the gauntlet, the gateway
 #: and the recorders the rest of it -- this organ is not the most important thing running.
@@ -140,15 +217,48 @@ def _max_rows_per_pass() -> int:
             free = kb * 1024
         except Exception:
             return MAX_ROWS_FLOOR
-    allowed = int(free * FREE_MEMORY_SHARE / BYTES_PER_ROW)
-    return max(MAX_ROWS_FLOOR, allowed)
+    # Measured memory is authority.  The former max(..., 1_000_000) made the "floor" override
+    # the machine: on a 16 GB research box with ~4 GB free it admitted a million Python dicts,
+    # the process was killed before writing an artifact, and the next hour restarted at row zero.
+    # The historical figure is now only the fallback when memory is UNMEASURED.  When memory is
+    # measured, take exactly the declared share; the durable file cursor below completes the rest
+    # on subsequent passes instead of pretending one process can hold the whole corpus.
+    return max(1, int(free * FREE_MEMORY_SHARE / BYTES_PER_ROW))
 
 
 MAX_ROWS_PER_PASS = _max_rows_per_pass()
 
 #: What the last intake pass left unread when the bound bound (2026-09-08). The shortfall used
 #: to be a printed line and nothing else -- research opportunity cost that no artifact carried.
-_LAST_INTAKE: dict = {"deferred_files": 0, "files_seen": 0, "bound_hit": False}
+_LAST_INTAKE: dict = {"deferred_files": 0, "files_seen": 0, "bound_hit": False,
+                      "cursor_start": None, "cursor_next": None}
+
+
+def _cursor_start(paths: list[Path]) -> int:
+    """Resume after the last fully consumed file; a changing corpus never resets the frontier."""
+    try:
+        saved = json.loads(CURSOR.read_text(encoding="utf-8"))
+        prior = str(saved.get("next_path") or "")
+    except (OSError, ValueError):
+        return 0
+    if not prior:
+        return 0
+    for i, path in enumerate(paths):
+        if str(path) == prior:
+            return i
+    return 0
+
+
+def _save_cursor() -> None:
+    nxt = _LAST_INTAKE.get("cursor_next")
+    if not nxt:
+        return
+    CURSOR.parent.mkdir(parents=True, exist_ok=True)
+    CURSOR.write_text(json.dumps({
+        "updated_utc": datetime.now(UTC).isoformat(timespec="seconds"),
+        "next_path": nxt,
+        "rule": "resume the bounded compiler pass; never restart the corpus at newest row zero",
+    }, indent=1) + "\n", encoding="utf-8")
 
 #: Artifacts under the intelligence roots that are a miner's OWN BOOKKEEPING, not evidence:
 #: cursors, coverage registries, denylists, run checkpoints, population counts. They are matched
@@ -228,15 +338,20 @@ def recent_rows(now: datetime) -> list[tuple[str, dict]]:
     cutoff = now - timedelta(days=WINDOW_DAYS)
     found: list[tuple[str, dict]] = []
     seen: set[str] = set()
-    _LAST_INTAKE.update({"deferred_files": 0, "files_seen": 0, "bound_hit": False})
+    _LAST_INTAKE.update({"deferred_files": 0, "files_seen": 0, "bound_hit": False,
+                         "cursor_start": None, "cursor_next": None})
     all_paths: list[Path] = []
     for root in INTEL_ROOTS:
         if not root.exists():
             continue
-        all_paths.extend(sorted((p for p in root.rglob("*.json")
-                                 if p.is_file()
+        all_paths.extend(sorted((p for p in root.rglob("*")
+                                 if p.is_file() and p.suffix.lower() in {".json", ".jsonl"}
                                  and not _is_operational_state(p.relative_to(root))),
                                 key=lambda p: p.stat().st_mtime, reverse=True))
+    start = _cursor_start(all_paths)
+    if all_paths:
+        all_paths = [*all_paths[start:], *all_paths[:start]]
+        _LAST_INTAKE["cursor_start"] = str(all_paths[0])
     for i, path in enumerate(all_paths):
         try:
             if datetime.fromtimestamp(path.stat().st_mtime, tz=UTC) < cutoff:
@@ -244,7 +359,7 @@ def recent_rows(now: datetime) -> list[tuple[str, dict]]:
         except OSError:
             continue
         _LAST_INTAKE["files_seen"] = i + 1
-        for row in _rows(_read(path)):
+        for row in _iter_file_rows(path):
             payload = json.dumps(row, sort_keys=True, default=str, separators=(",", ":"))
             digest = hashlib.sha256(payload.encode()).hexdigest()
             if digest in seen:
@@ -256,16 +371,17 @@ def recent_rows(now: datetime) -> list[tuple[str, dict]]:
                 # THE SHORTFALL IS RECORDED, NOT ONLY PRINTED: the files this pass never opened
                 # are research the desk chose not to do this hour, and the compiled artifact
                 # carries that count (`intake.deferred_files`).
-                _LAST_INTAKE.update({"deferred_files": len(all_paths) - (i + 1),
-                                     "bound_hit": True})
+                _LAST_INTAKE.update({"deferred_files": len(all_paths) - i,
+                                     "bound_hit": True, "cursor_next": str(path)})
                 print(f"compiler: MAX_ROWS_PER_PASS ({MAX_ROWS_PER_PASS:,}) reached; "
-                      f"{len(all_paths) - (i + 1)} file(s) wait for the next pass. This is a "
+                      f"{len(all_paths) - i} file(s) wait for the next pass. This is a "
                       f"memory bound being hit, not a judgement. The bound is DERIVED from free "
                       f"physical memory at import ({FREE_MEMORY_SHARE:.0%} of it at "
-                      f"{BYTES_PER_ROW}B per row, floored at {MAX_ROWS_FLOOR:,}), so hitting it "
-                      f"means this box genuinely has no room -- shorten WINDOW_DAYS or free "
-                      f"memory rather than raising a constant.")
+                      f"{BYTES_PER_ROW}B per expanded input row); hitting it means this pass "
+                      f"must checkpoint and resume, not raise a constant.")
                 return found
+        if all_paths:
+            _LAST_INTAKE["cursor_next"] = str(all_paths[(i + 1) % len(all_paths)])
     return found
 
 
@@ -1141,7 +1257,7 @@ def structurally_untestable_families() -> dict[str, str]:
             for fam, (n, unm) in per_fam.items() if n >= 5 and unm == n}
 
 
-def seat_summary(per_source: dict[str, dict[str, int]]) -> dict[str, dict[str, int]]:
+def seat_summary(per_source: dict[str, dict[str, object]]) -> dict[str, dict[str, object]]:
     """Per-seat conversion for the compiled artifact: rows seen, candidates, deepening tasks.
 
     A seat absent from `per_source` is reported with zeros rather than omitted: "the seat donated
@@ -1176,8 +1292,9 @@ def main() -> int:
     universe = known_symbols()
     candidates: dict[str, dict] = {}
     deepening: dict[str, dict] = {}
-    per_source: dict[str, dict[str, int]] = {}
+    per_source: dict[str, dict[str, object]] = {}
     source_candidates: dict[str, set[str]] = {}
+    terminal_deepening, recovered_deepening = _deepening_state()
     untestable = structurally_untestable_families()
     if untestable:
         print("families routed to DEEPENING (measured untestable at current parameters): "
@@ -1190,11 +1307,49 @@ def main() -> int:
     # trial allocator can order on it.
     sources_by_identity: dict[str, set[str]] = {}
     for source, row in recent_rows(now):
+        task_identity = _deepening_task_id(source, row)
         produced, disposition = compile_row(source, row, universe)
+        recovered_for_row = recovered_deepening.get(task_identity, [])
+        if not produced and recovered_for_row:
+            produced = [dict(candidate) for candidate in recovered_for_row]
+            disposition = "RECOVERED_BY_DEEPENING"
         produced = expand_axes(produced)
-        stats = per_source.setdefault(source, {"rows": 0, "candidates": 0, "deepening": 0})
-        stats["rows"] += 1
+        stats = per_source.setdefault(source, {
+            "rows": 0, "candidates": 0, "deepening": 0, "convertible_rows": 0,
+            "converted_rows": 0, "valid_refusals": 0, "invalid_cells": 0,
+            "unresolved_rows": 0, "deepening_recovered": 0,
+            "deepening_terminal_refusals": 0})
+        stats["rows"] = int(stats["rows"]) + 1
+        deepening_disposition = terminal_deepening.get(task_identity, "")
+        terminal_refusal = (not produced and bool(deepening_disposition)
+                            and not deepening_disposition.startswith("ERROR:"))
+        refusal = (disposition in {"OPERATIONAL_ROW", "EMPTY_CAPTURE", "BANNED_FAMILY"}
+                   or terminal_refusal)
+        if refusal:
+            stats["valid_refusals"] = int(stats["valid_refusals"]) + 1
+            if terminal_refusal:
+                stats["deepening_terminal_refusals"] = (
+                    int(stats["deepening_terminal_refusals"]) + 1)
+        elif produced:
+            # Convertible means the row contains (or deepening recovered) a complete rule. A
+            # prose lead that still needs extraction is UNRESOLVED, not a failed conversion and
+            # not a strategy. This keeps the 100% cell conversion invariant meaningful without
+            # forging rules from titles to make a denominator green.
+            stats["convertible_rows"] = int(stats["convertible_rows"]) + 1
+        else:
+            stats["unresolved_rows"] = int(stats["unresolved_rows"]) + 1
+        if recovered_for_row:
+            stats["deepening_recovered"] = int(stats["deepening_recovered"]) + 1
+        row_reached_docket = False
         for candidate in produced:
+            valid = (bool(str(candidate.get("symbol") or "").strip())
+                     and bool(str(candidate.get("family") or "").strip())
+                     and isinstance(candidate.get("params"), dict)
+                     and str(candidate.get("mechanism_status") or "").upper() == "NAMED"
+                     and len(str(candidate.get("mechanism_note") or "").strip()) >= 12)
+            if not valid:
+                stats["invalid_cells"] = int(stats["invalid_cells"]) + 1
+                continue
             identity = json.dumps({k: candidate[k] for k in ("symbol", "family", "params")},
                                   sort_keys=True, default=str)
             fam = str(candidate.get("family") or "")
@@ -1202,8 +1357,9 @@ def main() -> int:
                 if identity not in deepening:
                     deepening[identity] = {**candidate,
                                            "deepening_reason": untestable[fam]}
-                    stats["deepening"] += 1
+                    stats["deepening"] = int(stats["deepening"]) + 1
                 continue
+            row_reached_docket = True
             sources_by_identity.setdefault(identity, set()).add(source)
             if identity not in candidates:
                 candidates[identity] = candidate
@@ -1214,8 +1370,10 @@ def main() -> int:
             seen = source_candidates.setdefault(source, set())
             if identity not in seen:
                 seen.add(identity)
-                stats["candidates"] += 1
-        if not produced:
+                stats["candidates"] = int(stats["candidates"]) + 1
+        if produced and row_reached_docket:
+            stats["converted_rows"] = int(stats["converted_rows"]) + 1
+        if not produced and not terminal_refusal:
             compact = {
                 "source": source,
                 "disposition": disposition,
@@ -1231,7 +1389,7 @@ def main() -> int:
             # the seat census it had queued work it had actually discarded.
             if key not in deepening:
                 deepening[key] = compact
-                stats["deepening"] += 1
+                stats["deepening"] = int(stats["deepening"]) + 1
     # AFTER the intake loop, never inside it: 4aaede35 placed this loop between the candidate
     # loop and the `if not produced` block, which moved the deepening of non-producing rows
     # into the per-candidate loop -- every prose row that compiled to nothing was dropped
@@ -1242,6 +1400,12 @@ def main() -> int:
         if len(srcs) > 1:
             candidate["agreeing_sources"] = srcs
 
+    for stats in per_source.values():
+        convertible = int(stats["convertible_rows"])
+        converted = int(stats["converted_rows"])
+        stats["owes_convertible_rows"] = convertible - converted
+        stats["convertible_conversion_rate"] = (
+            round(converted / convertible, 6) if convertible else 1.0)
     seats = seat_summary(per_source)
     seats_dark = [s for s, st in seats.items() if not st["rows"]]
     for s, st in seats.items():
@@ -1412,6 +1576,18 @@ def main() -> int:
                                     -(c.get("net_edge") or 0.0), str(c.get("symbol") or "")))
 
     OUT.parent.mkdir(parents=True, exist_ok=True)
+    convertible_total = sum(int(v["convertible_rows"]) for v in per_source.values())
+    converted_total = sum(int(v["converted_rows"]) for v in per_source.values())
+    invalid_total = sum(int(v["invalid_cells"]) for v in per_source.values())
+    recovered_total = sum(int(v["deepening_recovered"]) for v in per_source.values())
+    terminal_refusal_total = sum(
+        int(v["deepening_terminal_refusals"]) for v in per_source.values())
+    unresolved_total = sum(int(v["unresolved_rows"]) for v in per_source.values())
+    rows_total = sum(int(v["rows"]) for v in per_source.values())
+    refusal_total = sum(int(v["valid_refusals"]) for v in per_source.values())
+    disposition_total = converted_total + refusal_total
+    producer_debt = [s for s, v in sorted(per_source.items())
+                     if int(v["owes_convertible_rows"]) > 0]
     OUT.write_text(json.dumps({
         "compiled_at": now.isoformat(timespec="seconds"),
         "hypotheses": ordered,
@@ -1423,9 +1599,31 @@ def main() -> int:
         "disagreement": disagreement,
         "intake": {"max_rows_per_pass": MAX_ROWS_PER_PASS, **_LAST_INTAKE},
         "graph": graph_note,
-        "rows_accounted": sum(v["rows"] for v in per_source.values()),
+        "rows_accounted": rows_total,
         "executable_candidates": len(candidates),
         "deepening_tasks": len(deepening),
+        "conversion_contract": {
+            "convertible_rows": convertible_total,
+            "converted_rows": converted_total,
+            "convertible_conversion_rate": round(
+                converted_total / convertible_total, 6) if convertible_total else 1.0,
+            "silent_loss": convertible_total - converted_total,
+            "conversion_debt": convertible_total - converted_total,
+            "invalid_cells": invalid_total,
+            "deepening_recovered_rows": recovered_total,
+            "deepening_terminal_refusals": terminal_refusal_total,
+            "unresolved_rows": unresolved_total,
+            "disposition_debt": unresolved_total,
+            "terminally_disposed_rows": disposition_total,
+            "disposition_coverage": round(disposition_total / rows_total, 6)
+            if rows_total else 1.0,
+            "producers_with_debt": producer_debt,
+            "complete": (converted_total == convertible_total and invalid_total == 0
+                         and unresolved_total == 0 and not _LAST_INTAKE.get("bound_hit")),
+            "rule": ("100% of genuinely convertible rows emit a valid executable AlphaCell; "
+                     "100% of all rows must ultimately become a cell or named refusal; pending "
+                     "deepening stays UNRESOLVED and is never forged into strategy yield"),
+        },
         "rule": "exact recipe or structured causal data only; no prose-to-family guessing",
     }, indent=1, default=str), "utf-8")
     _lineage(OUT)
@@ -1434,7 +1632,8 @@ def main() -> int:
         "tasks": list(deepening.values()),
         "consumer": "hourly/daily research brains must recover a falsifiable rule or reject",
     }, indent=1, default=str), "utf-8")
-    print(f"miner compiler: {sum(v['rows'] for v in per_source.values())} row(s) accounted; "
+    _save_cursor()
+    print(f"miner compiler: {sum(int(v['rows']) for v in per_source.values())} row(s) accounted; "
           f"{len(candidates)} executable candidate(s); {len(deepening)} exact-rule task(s)")
     return 0
 

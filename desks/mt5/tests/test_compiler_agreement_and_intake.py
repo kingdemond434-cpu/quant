@@ -47,7 +47,8 @@ def test_the_intake_bound_records_how_many_files_it_left_unread(roots, monkeypat
     rows = mcc.recent_rows(mcc.datetime.now(tz=mcc.UTC))
     assert len(rows) == 1
     assert mcc._LAST_INTAKE["bound_hit"] is True
-    assert mcc._LAST_INTAKE["deferred_files"] == 3, "three files were never opened this pass"
+    assert mcc._LAST_INTAKE["deferred_files"] == 4, (
+        "the partially consumed file must be revisited alongside the three never opened")
     monkeypatch.setattr(mcc, "MAX_ROWS_PER_PASS", 1_000_000)
     mcc.recent_rows(mcc.datetime.now(tz=mcc.UTC))
     assert mcc._LAST_INTAKE["bound_hit"] is False and mcc._LAST_INTAKE["deferred_files"] == 0
@@ -93,8 +94,12 @@ def _run_main(tmp_path, monkeypatch, rows_by_source: dict[str, list[dict]]) -> d
     monkeypatch.setattr(mcc, "INTEL_ROOTS", (root,))
     monkeypatch.setattr(mcc, "OUT", tmp_path / "out.json")
     monkeypatch.setattr(mcc, "DEEPEN", tmp_path / "deepen.json")
+    monkeypatch.setattr(mcc, "DEEPEN_WORKED", tmp_path / "deepening_worked.jsonl")
+    monkeypatch.setattr(mcc, "DEEPENED", tmp_path / "deepened.json")
+    monkeypatch.setattr(mcc, "CURSOR", tmp_path / "cursor.json")
     monkeypatch.setattr(mcc, "known_symbols", lambda: set(UNI))
     monkeypatch.setattr(mcc, "structurally_untestable_families", dict)
+    monkeypatch.setattr(mcc, "expand_axes", lambda rows: rows)
     monkeypatch.setattr(hg, "Graph", _GraphStub)
     monkeypatch.setattr(hg, "record_candidates", lambda *a, **k: 0)
     assert mcc.main() == 0
@@ -112,7 +117,52 @@ def test_a_prose_row_that_compiles_to_nothing_is_still_deepened(tmp_path, monkey
          "title": "structured"}]})
     assert res["out"]["executable_candidates"] == 1
     assert res["out"]["deepening_tasks"] == 1 and len(res["deepen"]["tasks"]) == 1
-    assert res["out"]["per_source"]["reddit"] == {"rows": 2, "candidates": 1, "deepening": 1}
+    assert res["out"]["per_source"]["reddit"] == {
+        "rows": 2, "candidates": 1, "deepening": 1, "convertible_rows": 1,
+        "converted_rows": 1, "valid_refusals": 0, "invalid_cells": 0,
+        "unresolved_rows": 1, "deepening_recovered": 0,
+        "deepening_terminal_refusals": 0, "owes_convertible_rows": 0,
+        "convertible_conversion_rate": 1.0}
+
+
+def test_deepening_recovery_rejoins_the_canonical_docket(tmp_path, monkeypatch) -> None:
+    row = {"title": "vague EURUSD idea", "url": "https://example.test/idea",
+           "text": "EURUSD something happens sometimes"}
+    tid = mcc._deepening_task_id("reddit", row)
+    recovered = {"symbol": "EURUSD", "family": "overnight_gap_decay", "params": {},
+                 "source": "miner:reddit", "source_url": row["url"],
+                 "source_title": row["title"], "mechanism_status": "NAMED",
+                 "mechanism_note": "forced overnight inventory is reversed after the open"}
+    (tmp_path / "deepened.json").write_text(
+        json.dumps({"candidates": [recovered]}), encoding="utf-8")
+    (tmp_path / "deepening_worked.jsonl").write_text(
+        json.dumps({"id": tid, "disposition": "RECOVERED_STRUCTURED"}) + "\n",
+        encoding="utf-8")
+    res = _run_main(tmp_path, monkeypatch, {"reddit": [row]})
+    contract = res["out"]["conversion_contract"]
+    assert res["out"]["executable_candidates"] == 1
+    assert res["out"]["deepening_tasks"] == 0
+    assert contract["converted_rows"] == 1
+    assert contract["deepening_recovered_rows"] == 1
+    assert contract["silent_loss"] == 0
+
+
+def test_terminal_deepening_refusal_is_disposition_not_permanent_debt(
+        tmp_path, monkeypatch) -> None:
+    row = {"title": "broker homepage", "url": "https://example.test/about",
+           "text": "about our company and account types"}
+    tid = mcc._deepening_task_id("amarkets", row)
+    (tmp_path / "deepening_worked.jsonl").write_text(json.dumps({
+        "id": tid,
+        "disposition": "REFUSED_NOT_CONVERTIBLE: no market claim; remedy: none",
+    }) + "\n", encoding="utf-8")
+    res = _run_main(tmp_path, monkeypatch, {"amarkets": [row]})
+    stats = res["out"]["per_source"]["amarkets"]
+    assert stats["valid_refusals"] == 1
+    assert stats["deepening_terminal_refusals"] == 1
+    assert stats["convertible_rows"] == 0
+    assert stats["owes_convertible_rows"] == 0
+    assert res["out"]["deepening_tasks"] == 0
 
 
 def test_two_engines_naming_one_symbol_under_different_families_is_contested(

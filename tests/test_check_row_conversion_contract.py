@@ -21,6 +21,7 @@ def _desk(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, rows: list[dict]) -> 
     (universe / "universe.json").write_text(json.dumps(["EURUSD"]), encoding="utf-8")
     monkeypatch.setattr(gate, "ROOT", tmp_path)
     monkeypatch.setattr(gate, "DESK", desk)
+    monkeypatch.setattr(gate, "COMPILER_REPORT", desk / "data" / "hypotheses" / "missing.json")
     return desk
 
 
@@ -49,6 +50,7 @@ def test_every_convertible_row_with_a_real_cell_is_full_conversion(
 
     assert doc["summary"]["convertible_conversion_rate"] == 1.0
     assert doc["summary"]["silent_loss"] == 0
+    assert doc["summary"]["conversion_debt"] == 0
     assert doc["failures"] == []
     assert doc["per_producer"][0]["converted_rows"] == 2
 
@@ -85,3 +87,31 @@ def test_backlog_is_not_yield_but_non_evidence_is_an_honest_refusal(
     assert doc["summary"]["terminal_refusals"] == 1
     assert doc["per_producer"][0]["valid_refusals"] == 1
     assert doc["failures"]
+
+
+def test_canonical_compiler_contract_is_consumed_without_recompiling_corpus(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    desk = _desk(tmp_path, monkeypatch, [])
+    report = desk / "data" / "hypotheses" / "miner_candidates.json"
+    report.parent.mkdir(parents=True, exist_ok=True)
+    report.write_text(json.dumps({
+        "compiled_at": "2026-09-28T00:00:00+00:00", "rows_accounted": 4,
+        "executable_candidates": 2,
+        "intake": {"files_seen": 3, "bound_hit": False, "deferred_files": 0},
+        "per_source": {"p": {"rows": 4, "candidates": 2, "deepening": 1,
+                                     "convertible_rows": 3, "converted_rows": 2,
+                                     "valid_refusals": 1, "invalid_cells": 0,
+                                     "owes_convertible_rows": 1,
+                                     "convertible_conversion_rate": 0.666667}},
+        "conversion_contract": {"convertible_rows": 3, "converted_rows": 2,
+                                "convertible_conversion_rate": 0.666667,
+                                "silent_loss": 1, "invalid_cells": 0,
+                                "complete": False},
+    }), encoding="utf-8")
+    monkeypatch.setattr(gate, "COMPILER_REPORT", report)
+
+    doc = gate.audit()
+
+    assert doc["summary"]["silent_loss"] == 1
+    assert doc["per_producer"][0]["owes_convertible_rows"] == 1
+    assert any("emitted no valid" in failure for failure in doc["failures"])
