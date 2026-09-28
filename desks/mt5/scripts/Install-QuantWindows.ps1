@@ -450,7 +450,7 @@ foreach ($t in $tasks) {
         # the gateway or shadow replay as SYSTEM returns -10004/-10005 even while terminal64 is
         # healthy, which turns every certificate into a false no-bars clock.  All other jobs stay
         # headless under SYSTEM.  The terminal task is the canonical source of the desktop owner.
-        if ($t.Name -in @("MT5-Gateway", "MT5-GatewayResident", "MT5-Shadow")) {
+        if ($t.Name -in @("MT5-Gateway", "MT5-GatewayResident", "MT5-Shadow", "MT5-Gauntlet")) {
             if (-not $InteractiveUser -or $InteractiveUser -eq "SYSTEM") {
                 throw "$($t.Name) requires the MT5 interactive desktop owner; pass -InteractiveUser"
             }

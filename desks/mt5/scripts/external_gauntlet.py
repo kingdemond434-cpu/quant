@@ -682,6 +682,9 @@ def _live_frame(sym: str, timeframe: str = "H1"):
         return None
 
 
+_LIVE_H1_AVAILABLE: dict[str, bool] = {}
+
+
 def _live_h1_available(sym: str) -> bool:
     """True only when the traded Fusion terminal can supply replayable H1 bars.
 
@@ -691,7 +694,10 @@ def _live_h1_available(sym: str) -> bool:
     absent.  A successful broker-native read is equivalent replay evidence; failures remain a
     closed gate.  Non-Windows research hosts never claim this route.
     """
-    return _live_frame(sym, "H1") is not None
+    key = str(sym)
+    if key not in _LIVE_H1_AVAILABLE:
+        _LIVE_H1_AVAILABLE[key] = _live_frame(key, "H1") is not None
+    return _LIVE_H1_AVAILABLE[key]
 
 
 def symbol_is_tradeable(sym: str, meta: dict) -> tuple[bool, str]:

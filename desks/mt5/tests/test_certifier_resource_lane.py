@@ -30,3 +30,9 @@ def test_qquant_lease_is_taken_before_heavy_target_import() -> None:
     assert "subprocess.run" in launcher
     assert "OPENBLAS_NUM_THREADS" in launcher
     assert 'exclusive_job("certification_lane"' not in qquant
+
+
+def test_gauntlet_checks_broker_h1_availability_once_per_symbol() -> None:
+    external = (DESK / "scripts" / "external_gauntlet.py").read_text("utf-8")
+    assert "_LIVE_H1_AVAILABLE: dict[str, bool]" in external
+    assert "if key not in _LIVE_H1_AVAILABLE:" in external
