@@ -2647,6 +2647,65 @@ def _repro_active() -> bool:
     return _REPRO is not None
 
 
+def iter_json_array(path: Path, chunk_chars: int = 1 << 20):
+    """Yield a top-level JSON array without materialising its million-row docket.
+
+    `external_survivors.json` exceeded 1.5m rows on the live desk. `json.loads(read_text())`
+    held the source text, the whole decoded list and two filtered copies at once, then died with
+    MemoryError before gate one. This incremental decoder preserves every row and the exact
+    ordering; callers make two bounded passes when they need a census before filtering.
+    """
+    decoder = json.JSONDecoder()
+    with Path(path).open("r", encoding="utf-8") as handle:
+        buf = ""
+        pos = 0
+        eof = False
+
+        def refill() -> bool:
+            nonlocal buf, pos, eof
+            if pos:
+                buf = buf[pos:]
+                pos = 0
+            more = handle.read(chunk_chars)
+            if not more:
+                eof = True
+                return False
+            buf += more
+            return True
+
+        refill()
+        while True:
+            while pos < len(buf) and buf[pos].isspace():
+                pos += 1
+            if pos < len(buf):
+                break
+            if not refill():
+                raise ValueError(f"{path} is empty; expected a JSON array")
+        if buf[pos] != "[":
+            raise ValueError(f"{path} is not a top-level JSON array")
+        pos += 1
+        while True:
+            while True:
+                while pos < len(buf) and (buf[pos].isspace() or buf[pos] == ","):
+                    pos += 1
+                if pos < len(buf) or eof:
+                    break
+                refill()
+            if pos < len(buf) and buf[pos] == "]":
+                return
+            if eof and pos >= len(buf):
+                raise ValueError(f"{path} ended before the JSON array closed")
+            try:
+                value, end = decoder.raw_decode(buf, pos)
+            except json.JSONDecodeError:
+                if eof:
+                    raise
+                refill()
+                continue
+            pos = end
+            yield value
+
+
 def main():
     meta = json.loads((UNI / "universe.json").read_text("utf-8"))
 
@@ -2655,14 +2714,23 @@ def main():
     if not surv_file.exists():
         print("No external survivors found")
         return
-    survivors = json.loads(surv_file.read_text("utf-8"))
-    print(f"Loaded {len(survivors)} external survivors")
+    total = stamped_n = unstamped_n = 0
+    unstamped_sample: list[str] = []
+    for h in iter_json_array(surv_file):
+        total += 1
+        if isinstance(h, dict) and is_stamped(h):
+            stamped_n += 1
+        elif isinstance(h, dict):
+            unstamped_n += 1
+            if len(unstamped_sample) < 5:
+                unstamped_sample.append(str(h.get("family") or h.get("title"))[:40])
+    print(f"Loaded {total} external survivors by streaming census")
     _ack_docket(surv_file)
     # EMPTY INPUT IS A HALT, NOT A SWEEP (2026-08-26, measured). The hourly merge briefly wrote
     # a 0-row input; this gauntlet then ran "normally" on nothing and rewrote the AUTHORITY file
     # to n=0 -- wiping 21 certificates with exit code 0. Zero candidates means there is nothing
     # to judge, and a judge with an empty docket must not touch the records of past verdicts.
-    if not survivors:
+    if not total:
         print("HALT: 0 candidates in the input -- nothing to judge. Refusing to write any "
               "report or touch UNIVERSAL_SURVIVORS.json; an empty docket does not revoke past "
               "verdicts.")
@@ -2684,16 +2752,14 @@ def main():
     # are judged and the gap is named loudly, and from the first stamped donation onward every
     # unstamped row is refused. The rule can only get stricter, never looser, and the desk never
     # goes dark to enforce it.
-    stamped = [h for h in survivors if isinstance(h, dict) and is_stamped(h)]
-    unstamped = [h for h in survivors if isinstance(h, dict) and not is_stamped(h)]
-    if unstamped and stamped:
-        print(f"REFUSED {len(unstamped)} unstamped candidate(s) of {len(survivors)}: no "
+    stamped_only = bool(unstamped_n and stamped_n)
+    if stamped_only:
+        print(f"REFUSED {unstamped_n} unstamped candidate(s) of {total}: no "
               f"available_time / ingested_time / source_version / payload_hash. Re-donate "
               f"through proposer_common.donate. First: "
-              f"{[str(h.get('family') or h.get('title'))[:40] for h in unstamped[:5]]}")
-        survivors = stamped
-    elif unstamped:
-        print(f"PIT GAP: all {len(unstamped)} candidates are unstamped, so the refusal is "
+              f"{unstamped_sample}")
+    elif unstamped_n:
+        print(f"PIT GAP: all {unstamped_n} candidates are unstamped, so the refusal is "
               f"DEFERRED this pass -- judging them rather than halting certification. The "
               f"exclusion switches on with the first stamped donation and only tightens after.")
 
@@ -2702,7 +2768,9 @@ def main():
     # here: two rows differing only by chart are two cells, and folding them would hand one
     # verdict to both.
     cells = {}
-    for h in survivors:
+    for h in iter_json_array(surv_file):
+        if not isinstance(h, dict) or (stamped_only and not is_stamped(h)):
+            continue
         sym = h.get("symbol")
         fam = h.get("family")
         params = dict(h.get("params") or {})
