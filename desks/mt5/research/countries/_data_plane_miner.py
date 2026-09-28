@@ -12,8 +12,10 @@ A writer with no clock is not a Korea problem. This module is the shared adapter
 any pack added later) reach the country lab through the same door the fifteen generic miners use,
 and each country's `miners.py` is four lines rather than a copy of this one.
 
-NO NETWORK BY DEFAULT: `no_fetch=True`, exactly as each data plane's own CLI defaults. A dry-run
-context measures and writes nothing. A lane that cannot measure is reported by name, never hidden.
+NO NETWORK HERE BY DESIGN: ``acquire_datasets`` is the single hourly network owner and these
+country lanes consume its durable registry.  ``no_fetch=True`` is therefore an explicit ownership
+boundary, published by every result, not an accidental reason for stale data. A dry-run context
+measures and writes nothing. A lane that cannot measure is reported by name, never hidden.
 """
 from __future__ import annotations
 
@@ -52,6 +54,8 @@ def data_plane_miner(code: str, run: Callable[..., dict[str, Any]],
                       for u in (row.get("unmeasured") or [])]
         return {"agent": "data_plane", "region": code, "discoveries": [], "n_discoveries": 0,
                 "unmeasured": unmeasured,
+                "acquisition_owner": doc.get("acquisition_owner"),
+                "no_fetch_is_owned": bool(doc.get("no_fetch_is_owned")),
                 "why": (f"{len(lanes)} lane(s), {stored} series stored, "
                         f"{vintages} vintage(s)"
                         + (" (dry run: nothing written)" if dry

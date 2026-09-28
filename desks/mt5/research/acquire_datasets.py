@@ -141,9 +141,37 @@ def _fetch(url: str) -> tuple[bytes | None, str]:
 
 
 def _parse(raw: bytes, url: str) -> pd.DataFrame | None:
-    """CSV or JSON into a frame, or None. Never guesses a format it did not detect."""
+    """A detected tabular format into a frame, or ``None``.
+
+    Legacy government workbooks are a first-class input.  In particular the seeded EIA WTI
+    endpoint is BIFF8 ``.xls``; sending those bytes through the delimited-text reader produced a
+    plausible one-column frame and silently stranded the energy lane.  The repository already
+    has a dependency-free, structurally validating BIFF8 reader, so use that rather than adding
+    another parser or requiring ``xlrd`` on production.
+    """
     head = raw[:4096].lstrip()
     try:
+        if raw.startswith(b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1"):
+            from libs.data.xls_reader import read_xls
+
+            sheets = read_xls(raw)
+            grids = [sheet.rows() for sheet in sheets]
+            grids = [rows for rows in grids if rows]
+            if not grids:
+                return None
+            # Statistical publishers normally put notes in small tabs and observations in the
+            # largest.  Selecting by populated cells is deterministic and prevents a cover sheet
+            # from becoming the dataset merely because it is tab zero.
+            rows = max(grids, key=lambda values: sum(len(r) for r in values))
+            header_i = next((i for i, row in enumerate(rows)
+                             if sum(v not in (None, "") for v in row) >= 2), None)
+            if header_i is None:
+                return None
+            width = max(len(row) for row in rows[header_i:])
+            header = [str(v).strip() if v not in (None, "") else f"column_{i}"
+                      for i, v in enumerate(rows[header_i] + [None] * width)][:width]
+            body = [(row + [None] * width)[:width] for row in rows[header_i + 1:]]
+            return pd.DataFrame(body, columns=header)
         if head.startswith((b"{", b"[")):
             obj = json.loads(raw.decode("utf-8", errors="replace"))
             if isinstance(obj, dict):
@@ -190,7 +218,17 @@ def _dated(df: pd.DataFrame) -> pd.DataFrame | None:
         if col not in df.columns:
             continue
         try:
-            idx = pd.to_datetime(df[col], utc=True, errors="coerce")
+            raw = df[col]
+            numeric = pd.to_numeric(raw, errors="coerce")
+            plausible_excel = numeric.between(20_000, 80_000).sum() >= MIN_ROWS
+            if plausible_excel:
+                # Excel's 1900 date system, including its historical leap-year compatibility
+                # offset.  Numeric values must never be handed to ``to_datetime`` unqualified:
+                # pandas otherwise reads them as nanoseconds after 1970.
+                idx = pd.to_datetime(numeric, unit="D", origin="1899-12-30",
+                                     utc=True, errors="coerce")
+            else:
+                idx = pd.to_datetime(raw, utc=True, errors="coerce")
         except Exception:
             continue
         if idx.notna().sum() < MIN_ROWS:
@@ -279,7 +317,7 @@ def acquire(limit: int = MAX_PER_RUN) -> dict[str, Any]:
             continue
         df = _parse(raw, url)
         if df is None or df.empty:
-            _refuse("unparseable as CSV or JSON")
+            _refuse("unparseable as a supported workbook, archive, delimited file or JSON")
             continue
         dated = _dated(df)
         if dated is None:

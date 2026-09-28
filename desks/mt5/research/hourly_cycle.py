@@ -3897,6 +3897,12 @@ def main() -> None:
     gro = _costed("global_research_os", lambda: _producer("global_research_os",
                                                            "research/global_research_os.py",
                                                            "--once", "--budget-s", "3000"))
+    # GLOBAL SOURCE-TO-EXPERIMENT CONSERVATION.  All regions use the same measured chain:
+    # declaration -> fetch owner -> parser -> feature -> experiment -> evaluator outcome.  This
+    # runs after the country OS so newly declared regional sources enter the census in the same
+    # pass; missing links remain named debt and can never be counted as ingestion.
+    sxc = _costed("source_experiment_census", lambda: _producer(
+        "source_experiment_census", "research/source_experiment_census.py"))
     # THE ARCHAEOLOGY CIVILIZATION: twenty families of public trading history a pass, every
     # source paid by measured survivors (LAWS 5g). Nothing is fetched that the access
     # classifier has not cleared; the population file is append-only forever.
@@ -4913,6 +4919,7 @@ def main() -> None:
                     "replication_civilization": rpc,
                     "science_controller": scc,
                     "data_scout": dsc2, "japan_department": jpd, "global_research_os": gro,
+                    "source_experiment_census": sxc,
                     "feature_compiler": fcp, "data_acquisition_scientist": daq,
                     "math_lab": mlb, "expression_factory": xpf, "physics_lab": phl,
                     "coevolution": cev, "model_search": mds, "cross_asset_graph": cag,
