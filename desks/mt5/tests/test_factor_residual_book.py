@@ -178,3 +178,25 @@ def test_factor_basket_never_runs_with_a_silently_missing_leg(monkeypatch) -> No
         "XAUUSD", "cross_asset_residual", {"factor_symbols": ["USDX", "UST10Y"]}, None)
     assert got is None
     assert "UST10Y" in why and "all 2 named factors" in why
+
+
+def test_factor_basket_can_use_complete_broker_native_fallback(monkeypatch) -> None:
+    from types import SimpleNamespace
+
+    import pandas as pd
+
+    from mt5desk import family_inputs
+    from research import h1_source, orthogonal_sweep
+
+    idx = pd.date_range("2026-08-16", periods=10, freq="h", tz="UTC")
+    frame = pd.DataFrame({"close": range(10)}, index=idx)
+    monkeypatch.setattr(orthogonal_sweep, "_bars", lambda _sym, _tf: None)
+    monkeypatch.setattr(h1_source, "fetch_h1",
+                        lambda *a, **k: SimpleNamespace(df=frame, n=len(frame),
+                                                        promotion_authority=True))
+    monkeypatch.setattr(family_inputs.os, "name", "nt")
+    family_inputs._RUNTIME_BAR_CACHE.clear()
+    got, why = family_inputs.resolve(
+        "XAUUSD", "cross_asset_residual", {"factor_symbols": ["USDX", "UST10Y"]}, frame)
+    assert why == "ok"
+    assert got is not None and len(got["factors"]) == 2
