@@ -107,3 +107,20 @@ def test_e8_uses_the_same_profit_ratchet_as_the_fusion_gold_book() -> None:
     decision = g.trail_decision(pos, window, bars, current_stop=90.0)
     assert decision is not None and decision.moves
     assert decision.new_stop > 90.0 and decision.protected_r_after > decision.protected_r_before
+
+
+def test_e8_gold_ratchet_accounts_for_its_own_round_trip_cost() -> None:
+    idx = pd.date_range("2026-09-16", periods=100, freq="h", tz="UTC")
+    close = np.full(len(idx), 100.0)
+    bars = pd.DataFrame({"open": close, "high": close + 5.0, "low": close - 5.0,
+                         "close": close}, index=idx)
+    bars.loc[idx[-4]:, "high"] = [107.0, 108.0, 109.0, 109.0]
+    pos = {"id": 9, "side": "buy", "avgPrice": 100.0,
+           "openDate": int(idx[-4].timestamp() * 1000)}
+    window = {"orders": {"buy_stop": {"price": 100.0, "sl": 90.0}}}
+    free = g.trail_decision(pos, window, bars, current_stop=90.0)
+    costed = g.trail_decision(
+        pos, window, bars, current_stop=90.0, cost_per_unit=0.5, spread=0.2)
+    assert free is not None and costed is not None
+    assert costed.new_stop > free.new_stop
+    assert costed.breakeven_floor

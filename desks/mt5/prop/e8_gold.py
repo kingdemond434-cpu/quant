@@ -168,7 +168,8 @@ def _window_for_position(state: dict, position_id: int) -> tuple[str, dict] | No
     return None
 
 
-def trail_decision(position: dict, window: dict, bars: Any, current_stop: float
+def trail_decision(position: dict, window: dict, bars: Any, current_stop: float,
+                   *, cost_per_unit: float = 0.0, spread: float = 0.0
                    ) -> _pm.RatchetDecision | None:
     """The same H1 stop ratchet the Fusion gold gateway runs, pure for tests.
 
@@ -197,7 +198,8 @@ def trail_decision(position: dict, window: dict, bars: Any, current_stop: float
         highs=[float(x) for x in since["high"]],
         lows=[float(x) for x in since["low"]], side=side)
     return _pm.ratchet(entry=entry, current_stop=float(current_stop), stop_distance=dist,
-                       extreme=extreme, atr=atr, side=side, bars_since_extreme=stalled)
+                       extreme=extreme, atr=atr, side=side, bars_since_extreme=stalled,
+                       cost_per_unit=float(cost_per_unit), spread=max(0.0, float(spread)))
 
 
 # ------------------------------------------------------------------ the pass
@@ -221,7 +223,7 @@ def _record(row: dict[str, Any]) -> None:
 def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
     """One pass. `venue` is a connected TradeLockerVenue; `mt5` the MetaTrader5 module (bars
     and the server clock, read exactly as the gateway reads them)."""
-    from prop.e8_executor import _quantise, lot_for_risk
+    from prop.e8_executor import E8_ROUND_TRIP_PER_PRICE_UNIT, _quantise, lot_for_risk
 
     now = datetime.now(tz=UTC)
     doc: dict[str, Any] = {"at": now.isoformat(timespec="seconds"), "armed": bool(armed),
@@ -394,7 +396,10 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
         if mapped is None or not (current_stop > 0):
             continue
         name, w = mapped
-        decision = trail_decision(p, w, df, current_stop)
+        decision = trail_decision(
+            p, w, df, current_stop,
+            cost_per_unit=E8_ROUND_TRIP_PER_PRICE_UNIT,
+            spread=max(0.0, float(ask) - float(bid)))
         if decision is None or not decision.moves \
                 or decision.improvement_r < MIN_RATCHET_IMPROVEMENT_R:
             continue

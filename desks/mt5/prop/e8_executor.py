@@ -497,7 +497,8 @@ def _pos_field(p: dict[str, Any], *names: str) -> float | None:
     return None
 
 
-def manage_breakeven(venue: Any, *, armed: bool = False) -> list[dict[str, Any]]:
+def manage_breakeven(venue: Any, *, armed: bool = False,
+                     exclude_symbols: set[str] | None = None) -> list[dict[str, Any]]:
     """Move every E8 stop to costed break-even once it has earned it. SHADOW unless armed.
 
     THE GAP THIS CLOSES. The principal's order of 2026-09-24 is that the gold sleeves "must carry
@@ -540,6 +541,7 @@ def manage_breakeven(venue: Any, *, armed: bool = False) -> list[dict[str, Any]]
         basis = {}
 
     _iid_to_sym = {int(v): k for k, v in getattr(venue, "_by_key", {}).items()}
+    excluded = {str(s).upper() for s in (exclude_symbols or set())}
     rows: list[dict[str, Any]] = []
     live_ids: set[str] = set()
 
@@ -570,6 +572,15 @@ def manage_breakeven(venue: Any, *, armed: bool = False) -> list[dict[str, Any]]
         key = str(pid)
         live_ids.add(key)
         symbol = _iid_to_sym.get(int(iid)) or str(iid)
+        # XAUUSD has one authoritative owner: prop/e8_gold.py.  That lane reads the same H1
+        # bars and runs the same chandelier + costed break-even ratchet as Fusion's canonical
+        # gold gateway.  Letting this generic legacy-position manager touch gold as well created
+        # two independent stop writers at different cadences; whichever ran last won.  Excluding
+        # it here preserves management for legacy FX while making the gold book single-writer.
+        if symbol.upper() in excluded:
+            rows.append({"id": key, "symbol": symbol, "action": "DELEGATED",
+                         "why": "the canonical E8 gold lane owns this position"})
+            continue
         side: int = 1 if str(p.get("side") or "").lower() == "buy" else -1
         entry = _pos_field(p, "avgPrice", "openPrice", "price", "entryPrice")
         stop = _pos_field(p, "stopLoss", "stopLossPrice", "sl")
@@ -703,7 +714,8 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None,
     # one case where it is skipped is a flatten, where the positions are about to cease existing.
     if not decision.flatten:
         try:
-            doc["breakeven"] = manage_breakeven(venue, armed=armed)
+            doc["breakeven"] = manage_breakeven(
+                venue, armed=armed, exclude_symbols={"XAUUSD"})
         except Exception as exc:                    # broad on purpose: never take the pass down
             # Management must never take the lane down: a pass that cannot ratchet a stop still
             # has to reach the guard and the ledger. Mirrors gateway.py's own management guard.

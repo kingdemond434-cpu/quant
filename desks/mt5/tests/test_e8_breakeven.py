@@ -76,11 +76,19 @@ def test_management_only_never_opens_the_retired_fx_book(
             return {"equity": 100_000.0}
 
     monkeypatch.setattr(e8_guard, "assess", lambda equity, now=None: Decision())
-    monkeypatch.setattr(e8_executor, "manage_breakeven", lambda venue, armed: [])
+    seen: dict[str, object] = {}
+
+    def _manage(venue: object, *, armed: bool,
+                exclude_symbols: set[str] | None = None) -> list[dict]:
+        seen["excluded"] = exclude_symbols
+        return []
+
+    monkeypatch.setattr(e8_executor, "manage_breakeven", _manage)
     doc = e8_executor.run(Venue(), armed=True, entry_enabled=False)
     assert doc["status"] == "MANAGEMENT_ONLY"
     assert doc["n_sent"] == 0
     assert doc["sleeves"] == []
+    assert seen["excluded"] == {"XAUUSD"}, "only E8-Gold may manage the canonical gold book"
 
 
 @pytest.fixture(autouse=True)
@@ -233,3 +241,12 @@ def test_a_venue_that_raises_on_quote_skips_that_position_without_taking_the_pas
         [_pos()], bid=0.0, ask=0.0)
     out = e8_executor.manage_breakeven(rows, armed=True)
     assert out[0]["action"] == "SKIP"
+
+
+def test_dedicated_gold_owner_prevents_two_stop_writers() -> None:
+    venue = FakeVenue([_pos()], bid=4310.0, ask=4310.2)
+    rows = e8_executor.manage_breakeven(
+        venue, armed=True, exclude_symbols={"xauusd"})
+    assert rows == [{"id": "7", "symbol": "XAUUSD", "action": "DELEGATED",
+                     "why": "the canonical E8 gold lane owns this position"}]
+    assert venue.modified == []
