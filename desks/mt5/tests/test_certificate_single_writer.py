@@ -44,6 +44,8 @@ def test_universe_job_fills_missing_ladder_instead_of_rewalking_it() -> None:
     assert "_hydration_retried" in downloader
     assert "attach_or_initialize(mt5, path=terminal_path(), timeout=30_000)" in downloader
     assert "mt5.shutdown()\ntime.sleep(1)\nmt5.initialize()" not in downloader
+    assert "pq.ParquetFile(pq_path).metadata" in downloader
+    assert "pd.read_parquet(pq_path)" not in downloader
     assert '"M1": 200_000' in downloader
     assert '"M5": 120_000' in downloader
     assert '"M15": 80_000' in downloader

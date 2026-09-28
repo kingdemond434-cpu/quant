@@ -13,6 +13,7 @@ from pathlib import Path
 
 import MetaTrader5 as mt5
 import pandas as pd
+import pyarrow.parquet as pq
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from mt5desk.config import desk_root, terminal_path
@@ -109,6 +110,14 @@ existing = {(f.stem.rpartition("_")[0], f.stem.rpartition("_")[2])
             for f in PARQUET_DIR.glob("*.parquet") if "_" in f.stem}
 print(f"Already downloaded: {len(existing)} (symbol, timeframe) series "
       f"across {len({s for s, _ in existing})} symbols")
+
+_prior = {}
+if UNIVERSE_OUT.exists():
+    try:
+        _prior = json.loads(UNIVERSE_OUT.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        print(f"  WARN: prior universe.json unreadable ({exc}); rebuilding from Parquet metadata")
+        _prior = {}
 
 jobs = [(s, tf) for s in tradable for tf in TIMEFRAMES if (s.name, tf) not in existing]
 print(f"To download: {len(jobs)} series over timeframes {', '.join(TIMEFRAMES)}")
@@ -228,14 +237,23 @@ for sym_name, sym_tf in sorted(existing):
     sym_info_list = [s for s in tradable if s.name == sym_name]
     if not sym_info_list:
         continue
-    df_tmp = pd.read_parquet(pq_path)
     si = sym_info_list[0]
     path = si.path.replace("\\", "/")
     cat = path.split("/")[0] if "/" in path else "Root"
     row = universe.setdefault(sym_name, {})
+    # Rebuilding the registry used to materialise all 285 complete DataFrames after the broker
+    # sweep. Arrow retains allocation pools, so the pass exhausted Windows commit and died even
+    # though it needed only three scalars. Row count is Parquet metadata; existing span stamps
+    # are authoritative for unchanged files. A missing historical stamp stays explicit instead
+    # of spending gigabytes to rediscover it.
+    meta = pq.ParquetFile(pq_path).metadata
+    prior_series = (((_prior.get(sym_name) or {}).get("series") or {}).get(sym_tf) or {})
+    first_bar = prior_series.get("first_bar")
+    last_bar = prior_series.get("last_bar")
     row.setdefault("series", {})[sym_tf] = {
-        "bars": len(df_tmp), "first_bar": str(df_tmp.index[0]),
-        "last_bar": str(df_tmp.index[-1]),
+        "bars": int(meta.num_rows),
+        "first_bar": first_bar if first_bar is not None else "UNMEASURED",
+        "last_bar": last_bar if last_bar is not None else "UNMEASURED",
     }
     row |= {
         "point": si.point, "digits": si.digits, "tick_size": si.point,
@@ -259,13 +277,6 @@ mt5.shutdown()
 #      field set over the others, and this script is named in its docstring as one of the three;
 #      the merge it prescribes was never adopted here. A producer that does not know a field must
 #      not be able to delete it.
-_prior = {}
-if UNIVERSE_OUT.exists():
-    try:
-        _prior = json.loads(UNIVERSE_OUT.read_text(encoding="utf-8"))
-    except (OSError, ValueError) as exc:
-        print(f"  WARN: prior universe.json unreadable ({exc}); writing this run's rows alone")
-        _prior = {}
 _merged = merge(_prior, universe, source="download_all_symbols")
 UNIVERSE_OUT.write_text(json.dumps(_merged, indent=2), encoding="utf-8")
 print(f"universe.json: {len(universe)} row(s) this run merged into {len(_merged)} total")
