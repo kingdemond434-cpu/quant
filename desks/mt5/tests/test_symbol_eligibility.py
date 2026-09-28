@@ -63,6 +63,12 @@ def test_a_registered_symbol_with_no_bars_is_not(bars) -> None:
     assert not ok and "no AFG_H1.parquet" in why
 
 
+def test_broker_native_h1_is_replayable_without_a_duplicate_parquet(bars, monkeypatch) -> None:
+    monkeypatch.setattr(eg, "_live_h1_available", lambda sym: sym == "AFG")
+    ok, why = eg.symbol_is_tradeable("AFG", META)
+    assert ok and why == ""
+
+
 def test_untradeable_specs_are_partitioned_out_before_any_other_gate(bars) -> None:
     eligible, rejected = eg.partition_at_economic_prior(
         [_spec("EURUSD"), _spec("AFG"), _spec("NOSUCH")], META)

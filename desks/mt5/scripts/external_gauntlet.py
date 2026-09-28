@@ -646,6 +646,26 @@ def canonical_symbol(sym: str, meta: dict) -> str:
     return folded.get(sym.upper(), sym)
 
 
+def _live_h1_available(sym: str) -> bool:
+    """True only when the traded Fusion terminal can supply replayable H1 bars.
+
+    The trading box intentionally keeps part of the universe in MT5 rather than duplicating
+    every H1 frame under this checkout.  Shadow uses the shared source chain and was replaying
+    those bars while gate zero rejected the same symbols solely because a local parquet was
+    absent.  A successful broker-native read is equivalent replay evidence; failures remain a
+    closed gate.  Non-Windows research hosts never claim this route.
+    """
+    if os.name != "nt":
+        return False
+    try:
+        from research.h1_source import fetch_h1
+        bars = fetch_h1(str(sym), datetime(2018, 1, 1, tzinfo=UTC),
+                        prefer="MT5", prefer_promotion_authority=True, timeframe="H1")
+        return bool(bars is not None and bars.n > 0 and bars.promotion_authority)
+    except Exception:
+        return False
+
+
 def symbol_is_tradeable(sym: str, meta: dict) -> tuple[bool, str]:
     """Can this desk ever place an order on `sym`, and hold bars to run a forward clock on it?
 
@@ -664,7 +684,7 @@ def symbol_is_tradeable(sym: str, meta: dict) -> tuple[bool, str]:
     sym = canonical_symbol(sym, meta)
     if sym not in meta:
         return False, f"symbol {sym!r} is absent from the universe registry"
-    if not (UNI / f"{sym}_H1.parquet").exists():
+    if not (UNI / f"{sym}_H1.parquet").exists() and not _live_h1_available(sym):
         return False, f"symbol {sym!r} has no {sym}_H1.parquet; no clock can replay it"
     row = meta.get(sym)
     if isinstance(row, dict) and row.get("tradeable") is False:
