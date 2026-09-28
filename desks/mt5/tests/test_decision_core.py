@@ -613,6 +613,23 @@ def test_roster_drops_a_retired_gold_window_and_says_why() -> None:
                      "GOLD gold_afternoon: RETIRED (no reason recorded); not emitted this pass"]
 
 
+def test_roster_folds_gold_evidence_versions_into_one_live_window() -> None:
+    promoted = [
+        {"name": "gold_asia_v2", "symbol": "XAUUSD", "window": "asia"},
+        {"name": "gold_asia_v14", "symbol": "XAUUSD", "window": "asia"},
+        {"name": "gold_london_am_v3", "symbol": "XAUUSD", "window": "london_am"},
+        {"name": "gold_afternoon_v4", "symbol": "XAUUSD", "window": "afternoon"},
+    ]
+
+    sleeves, notes = dc.roster({}, promoted)
+
+    assert [s["name"] for s in sleeves] == [
+        "gold_asia", "gold_london_am", "gold_afternoon"]
+    assert len(notes) == 4
+    assert all("evidence alias folded" in note for note in notes)
+    assert all("no duplicate live bracket or heat charge" in note for note in notes)
+
+
 def test_hibernated_maps_gold_windows_and_promoted_tags() -> None:
     sleeves = [{"name": "gold_asia"}, {"name": "CADJPY.asia"}, {"name": "gold_afternoon"}]
     state = {"sleeves": {"XAUUSD|asia": {"flag": "hibernate"},

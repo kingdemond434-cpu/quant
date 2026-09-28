@@ -249,7 +249,16 @@ from mt5desk.decision_core import (
     live_heat_ceiling as live_heat_ceiling,
 )
 from mt5desk.decision_core import (
+    load_sleeves_verbose as load_sleeves_verbose,
+)
+from mt5desk.decision_core import (
     min_lot_risk_eur as min_lot_risk_eur,
+)
+from mt5desk.decision_core import (
+    stamp_feed_health as stamp_feed_health,
+)
+from mt5desk.decision_core import (
+    stamp_market_constraints as stamp_market_constraints,
 )
 from mt5desk.gateway_config_fallback import (
     HEAT_HARD_CEILING as HEAT_HARD_CEILING,

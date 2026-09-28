@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import json
 import math
+import re
 import sys
 import time
 from dataclasses import dataclass
@@ -1579,7 +1580,22 @@ def roster(retired_gold: dict, promoted: list[dict]) -> tuple[list[dict], list[s
         sleeves.append({"name": name, "symbol": "XAUUSD",
                         "window": label, "sig_hour": sig_hour, "rng": rng,
                         "lot": "auto", "status": "LIVE"})
+    # FORWARD-CLOCK VERSIONS ARE EVIDENCE IDENTITIES, NOT EXTRA LIVE BETS.  The promoter keeps
+    # `gold_asia_v2/v3/v4` (and the corresponding London/afternoon rows) separately because each
+    # certificate and prospective clock must remain auditable.  Economically, however, every
+    # version maps to the same session range, the same signal hour and the same XAUUSD bracket.
+    # Appending them here stacked identical pending orders, charged the heat budget repeatedly
+    # and could make the venue margin guard reject the canonical window.  Keep those rows in the
+    # evidence ledgers, but fold them at the one boundary that grants live execution authority.
+    _gold_alias = re.compile(r"^gold_(asia|london_am|afternoon)_v\d+$", re.IGNORECASE)
     for s in promoted:
+        _alias = _gold_alias.fullmatch(str(s.get("name") or ""))
+        if _alias:
+            canonical = f"gold_{_alias.group(1).lower()}"
+            notes.append(
+                f"GOLD {s.get('name')}: evidence alias folded into {canonical}; "
+                "no duplicate live bracket or heat charge")
+            continue
         # GENERIC FAMILY SLEEVES (GAP 124, 2026-08-25): hunt-certified sleeves the promoter
         # admitted with exec="family_market" bypass the window whitelist -- their semantics
         # come from the certified family's own replay code, not from session brackets. They
