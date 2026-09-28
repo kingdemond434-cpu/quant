@@ -20,6 +20,10 @@ rem ============================================================================
 
 set "PYTHONPATH=C:\opt\quant\desks\mt5;C:\opt\quant"
 set "LOG=C:\opt\quant\desks\mt5\logs\MT5-Universe.log"
+set "PYARGS="
+set "PYTHON=C:\opt\quant\.venv\Scripts\python.exe"
+if not exist "%PYTHON%" set "PYTHON=C:\Program Files\Python314\python.exe"
+if not exist "%PYTHON%" set "PYTHON=py"& set "PYARGS=-3"
 
 echo(>>"%LOG%"
 echo ==== run_universe %DATE% %TIME% ====>>"%LOG%"
@@ -28,14 +32,14 @@ rem download_all_symbols is missing-series incremental: after the first fill it 
 rem new symbols/timeframes. expand_universe re-downloaded every existing series before reaching
 rem H4, so an hourly execution limit could leave H4 permanently at zero while repeatedly paying
 rem for M1..H1. Existing files are refreshed by refresh_tail in the hourly research cycle.
-py -3 -W ignore "C:\opt\quant\desks\mt5\scripts\download_all_symbols.py" >>"%LOG%" 2>&1
+"%PYTHON%" %PYARGS% -W ignore "C:\opt\quant\desks\mt5\scripts\download_all_symbols.py" >>"%LOG%" 2>&1
 set RC1=%ERRORLEVEL%
 echo download_all_symbols rc=%RC1%>>"%LOG%"
 
 rem THE REGISTRY REPAIR RUNS WHETHER OR NOT THE EXPANDER SUCCEEDED. It is the step that
 rem reconciles the registry with what is actually on disk, so a partial expansion is exactly
 rem when it is most worth running; chaining it behind `&&` meant it had never run at all.
-py -3 "C:\opt\quant\scripts\repair_universe_registry.py" >>"%LOG%" 2>&1
+"%PYTHON%" %PYARGS% "C:\opt\quant\scripts\repair_universe_registry.py" >>"%LOG%" 2>&1
 set RC2=%ERRORLEVEL%
 echo repair_universe_registry rc=%RC2%>>"%LOG%"
 

@@ -36,6 +36,8 @@ def test_universe_job_fills_missing_ladder_instead_of_rewalking_it() -> None:
     wrapper = (DESK.parents[1] / "ops" / "run_universe.cmd").read_text("utf-8")
     assert "scripts\\download_all_symbols.py" in wrapper
     assert "research\\expand_universe.py" not in wrapper
+    assert "C:\\Program Files\\Python314\\python.exe" in wrapper
+    assert '"%PYTHON%" %PYARGS% -W ignore' in wrapper
     downloader = _text("scripts/download_all_symbols.py")
     assert '"M1": 200_000' in downloader
     assert '"M5": 120_000' in downloader
