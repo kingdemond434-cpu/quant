@@ -523,8 +523,14 @@ def build_cell(sym: str, family: str, params: dict, meta: dict,
         # them was repaired.
         elif family in {"cross_asset_residual", "pca_residual"}:
             factor_symbols = call_params.pop("factor_symbols", [])
-            call_params["factors"] = [d for d in (inputs._bars(str(s), timeframe)
-                                                  for s in factor_symbols) if d is not None]
+            loaded = [(str(s), inputs._bars(str(s), timeframe)) for s in factor_symbols]
+            if not loaded or any(d is None for _s, d in loaded):
+                # A partial basket is a different model.  Accepting USDX while silently dropping
+                # the named UST10Y leg minted clocks that looked ACTIVE but had never produced a
+                # signal even historically.  Fail the build instead of testing/certifying a
+                # strategy whose identity differs from the candidate.
+                return None
+            call_params["factors"] = [d for _s, d in loaded]
         elif family in {"liquidity_regime", "orderflow_imbalance"}:
             call_params.pop("input_source", None)
             spread, flow = inputs._tape_series(sym, h1.index, timeframe)

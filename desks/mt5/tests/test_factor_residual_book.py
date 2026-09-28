@@ -140,7 +140,7 @@ def test_a_book_row_is_charged_as_a_trial_and_never_donated(tmp_path, monkeypatc
     from mt5desk import family_inputs
     got, why = family_inputs.resolve("EURUSD", "cross_asset_residual",
                                      {"factor_symbols": [eng.BOOK_DRIVER]}, None)
-    assert got is None and "no factor bars" in why, (
+    assert got is None and "factor bars" in why, (
         "if this ever resolves, a book row could be donated and this rule can be revisited")
 
     rows = [{"cell": "EURUSD.book_residual", "drivers": [eng.BOOK_DRIVER], "clears_cost": True,
@@ -164,3 +164,17 @@ def test_a_book_row_is_charged_as_a_trial_and_never_donated(tmp_path, monkeypatc
         "a book row that clears the bar is PUBLISHED even though it is not donated")
     absent = eng._book_report([], None, "no book here")
     assert absent["status"] == "UNMEASURED" and absent["why"] == "no book here"
+
+
+def test_factor_basket_never_runs_with_a_silently_missing_leg(monkeypatch) -> None:
+    """A two-leg certificate is not the same model after one unavailable leg is dropped."""
+    from mt5desk import family_inputs
+    from research import orthogonal_sweep
+
+    marker = object()
+    monkeypatch.setattr(orthogonal_sweep, "_bars",
+                        lambda sym, _tf: marker if sym == "USDX" else None)
+    got, why = family_inputs.resolve(
+        "XAUUSD", "cross_asset_residual", {"factor_symbols": ["USDX", "UST10Y"]}, None)
+    assert got is None
+    assert "UST10Y" in why and "all 2 named factors" in why

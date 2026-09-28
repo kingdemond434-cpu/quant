@@ -191,9 +191,14 @@ def resolve(sym: str, family: str, params: dict[str, Any],
         # parquets were all present. Same input contract, same branch.
         if family in {"cross_asset_residual", "pca_residual"}:
             names = call.get("factor_symbols") or []
-            factors = [d for d in (inputs._bars(str(s), tf) for s in names) if d is not None]
-            if not factors:
-                return None, f"no factor bars available of {len(names)} named"
+            if not names:
+                return None, "no factor symbols named on the candidate"
+            loaded = [(str(s), inputs._bars(str(s), tf)) for s in names]
+            missing = [s for s, d in loaded if d is None]
+            if missing:
+                return None, (f"factor bars unavailable for {missing}; all {len(names)} named "
+                              "factors are required to preserve the certified model")
+            factors = [d for _s, d in loaded]
             extra["factors"] = factors
             return extra, "ok"
 
