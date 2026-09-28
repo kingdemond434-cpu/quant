@@ -140,10 +140,32 @@ def certified_sleeves() -> list[tuple[str, str, dict]]:
     except Exception as exc:
         slog(f"certified_sleeves FAILED ({type(exc).__name__}: {exc}); "
              f"running grandfathered sleeves only this pass")
-    return _one_clock_per_identity(rows)
+    return _one_clock_per_identity(rows, frozen_params=_frozen_clock_params())
 
 
-def _one_clock_per_identity(rows: list[tuple]) -> list[tuple]:
+def _frozen_clock_params() -> dict[str, dict]:
+    """Return the exact params already frozen for each clock key.
+
+    A duplicate certificate can spell a behaviourally irrelevant default two ways.  Once a
+    clock has started, the frozen spelling is the stable owner: selecting a different alias on
+    a later pass creates a false params drift even though ``sleeve_key`` proves the executable
+    strategy is unchanged.  Unreadable state is an empty answer, never guessed state.
+    """
+    try:
+        doc = json.loads((BASE / "data" / "sleeve_registry.json").read_text("utf-8"))
+    except (OSError, ValueError):
+        return {}
+    out: dict[str, dict] = {}
+    for key, row in (doc.get("sleeves") or {}).items():
+        ident = row.get("identity") if isinstance(row, dict) else None
+        params = ident.get("params") if isinstance(ident, dict) else None
+        if isinstance(params, dict):
+            out[str(key)] = dict(params)
+    return out
+
+
+def _one_clock_per_identity(rows: list[tuple], *,
+                            frozen_params: dict[str, dict] | None = None) -> list[tuple]:
     """Collapse certified rows that the engine cannot tell apart into ONE sleeve.
 
     TWO ROWS THAT SHARE A `sleeve_key` ARE ONE STRATEGY, and keeping both does not give the desk
@@ -168,7 +190,8 @@ def _one_clock_per_identity(rows: list[tuple]) -> list[tuple]:
     invented yet, and five of the seven certificate families have never had a live sleeve for
     their collisions to have surfaced at all.
 
-    THE MORE EXPLICIT ROW WINS, and the choice is only about STABILITY, never about meaning:
+    AN ALREADY-FROZEN ROW WINS; otherwise the more explicit row wins. The choice is only about
+    STABILITY, never about meaning:
     rows that collide are already behaviourally identical (the key drops exactly those params
     that do not change what runs). Picking deterministically is the whole point -- an arbitrary
     winner that varies by pass is how the identity flip-flopped in the first place.
@@ -185,14 +208,23 @@ def _one_clock_per_identity(rows: list[tuple]) -> list[tuple]:
             best[key] = row
             continue
         cur_params, prior_params = dict(row[2] or {}), dict(prior[2] or {})
-        rank = (len(cur_params), json.dumps(cur_params, sort_keys=True, default=str))
-        prank = (len(prior_params), json.dumps(prior_params, sort_keys=True, default=str))
-        keep, drop = (row, prior) if rank > prank else (prior, row)
+        frozen = (frozen_params or {}).get(key)
+        if frozen == cur_params and frozen != prior_params:
+            keep, drop = row, prior
+            rule = "the already-frozen spelling"
+        elif frozen == prior_params and frozen != cur_params:
+            keep, drop = prior, row
+            rule = "the already-frozen spelling"
+        else:
+            rank = (len(cur_params), json.dumps(cur_params, sort_keys=True, default=str))
+            prank = (len(prior_params), json.dumps(prior_params, sort_keys=True, default=str))
+            keep, drop = (row, prior) if rank > prank else (prior, row)
+            rule = "the more explicit spelling"
         best[key] = keep
         dropped = json.dumps(dict(drop[2] or {}), sort_keys=True, default=str)
         kept = json.dumps(dict(keep[2] or {}), sort_keys=True, default=str)
         slog(f"ONE-CLOCK: certified rows {dropped} and {kept} both key to `{key}` -- the same "
-             f"strategy written twice. Enrolling the more explicit one; two owners of one clock "
+             f"strategy written twice. Enrolling {rule}; two owners of one clock "
              f"is what freezes it at IDENTITY_BROKEN (L1.102)")
     if len(best) != len(rows):
         slog(f"ONE-CLOCK: {len(rows)} certified row(s) -> {len(best)} distinct clock "

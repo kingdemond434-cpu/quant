@@ -287,6 +287,17 @@ def test_the_collapse_is_stable_across_passes() -> None:
         "canon happens to yield it in")
 
 
+def test_an_existing_clock_keeps_its_frozen_alias_when_duplicate_certificates_collide() -> None:
+    """Writing out a default later must not manufacture params drift on an active clock."""
+    sf = _sf()
+    old = ("CHFNOK", "asia", {"input_symbol": "CHFNOK"}, "carry", "LONG", "", (), True)
+    explicit = ("CHFNOK", "asia", {"input_symbol": "CHFNOK", "timeframe": "H1"},
+                "carry", "LONG", "", (), True)
+    key = sf.sleeve_key(*old[:2], old[2], old[3], "LONG")
+    out = sf._one_clock_per_identity([old, explicit], frozen_params={key: old[2]})
+    assert out == [old]
+
+
 def test_distinct_strategies_are_never_collapsed() -> None:
     """THE OTHER HALF, and the one that matters more: rr=1.5 and rr=2.5 are two strategies and
     each owes its own forward evidence. A dedupe that merged them would silently delete a
