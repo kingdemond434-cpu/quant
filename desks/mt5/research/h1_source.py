@@ -317,6 +317,15 @@ def from_mt5(sym: str, start: datetime, timeframe: str = "H1") -> Bars | None:
                     continue
             account = mt5.account_info()
             server = str(getattr(account, "server", "unknown"))
+            # `copy_rates_range` returns None for perfectly valid Fusion instruments that are
+            # not currently selected in Market Watch.  That is a terminal subscription state,
+            # not missing history.  Select the named instrument explicitly before reading bars;
+            # this grants no order authority and mirrors the universe collector's contract.
+            info = mt5.symbol_info(sym)
+            if info is None:
+                continue
+            if not bool(getattr(info, "visible", False)) and not mt5.symbol_select(sym, True):
+                continue
             rates = mt5.copy_rates_range(sym, tf_code, start,
                                          datetime.now(UTC))
             if rates is None or len(rates) < 100:

@@ -56,6 +56,14 @@ def test_the_module_does_not_import_MetaTrader5_at_module_level():
     assert "import MetaTrader5" not in head
 
 
+def test_mt5_source_selects_the_instrument_before_requesting_bars() -> None:
+    src = (_DESK / "research" / "h1_source.py").read_text(encoding="utf-8")
+    fn = src[src.index("def from_mt5"):src.index("def from_cache")]
+    assert "mt5.symbol_info(sym)" in fn
+    assert "mt5.symbol_select(sym, True)" in fn
+    assert fn.index("mt5.symbol_select(sym, True)") < fn.index("mt5.copy_rates_range")
+
+
 def test_shadow_forward_no_longer_imports_MetaTrader5_directly():
     """THE COUPLING IS AT MODULE SCOPE, AND SO IS THE ASSERTION.
 
