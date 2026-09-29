@@ -221,13 +221,17 @@ def family_carry(
     rng = (d["high"] - d["low"]).rolling(atr_n).mean()
     med = rng.rolling(atr_n * 5).median()
     signals: list[Signal] = []
+    _a_rng = rng.to_numpy()
+    _a_med = med.to_numpy()
+    _a_atr = atr.to_numpy()
+    _a_d_close = d["close"].to_numpy()
     for i in range(atr_n * 5, len(d) - 1):
-        if require_quiet and not (rng.iloc[i] < med.iloc[i]):
+        if require_quiet and not (_a_rng[i] < _a_med[i]):
             continue
-        a = float(atr.iloc[i])
+        a = float(_a_atr[i])
         if not np.isfinite(a) or a <= 0:
             continue
-        px = float(d["close"].iloc[i])
+        px = float(_a_d_close[i])
         stop = px - side * stop_atr * a
         signals.append(Signal(time=d.index[i], side=side, stop=stop,
                               target=px + side * stop_atr * a * rr,
@@ -273,18 +277,22 @@ def family_relative_value(
     atr = _atr(d, atr_n).reindex(joined.index).ffill()
 
     signals: list[Signal] = []
+    _a_z = z.to_numpy()
+    _a_atr = atr.to_numpy()
+    _a_joined_close = joined["close"].to_numpy()
+    _a_sd = sd.to_numpy()
     for i in range(lookback, len(joined) - 1):
-        zi = float(z.iloc[i])
+        zi = float(_a_z[i])
         if not np.isfinite(zi) or abs(zi) < entry_z:
             continue
-        av = float(atr.iloc[i])
+        av = float(_a_atr[i])
         if not np.isfinite(av) or av <= 0:
             continue
         side = -1 if zi > 0 else 1      # rich -> short this leg; cheap -> long it
-        px = float(joined["close"].iloc[i])
+        px = float(_a_joined_close[i])
         signals.append(Signal(time=joined.index[i], side=side,
                               stop=px - side * stop_atr * av,
-                              target=px + side * abs(zi - exit_z) * sd.iloc[i] * px,
+                              target=px + side * abs(zi - exit_z) * _a_sd[i] * px,
                               ttl_bars=ttl_bars, tag="relative_value",
                               trigger=None, wait_bars=1))
     return signals
@@ -316,19 +324,24 @@ def family_vol_transition(
     v_slow = ret.rolling(slow).std(ddof=1)
     atr = _atr(d, atr_n)
     signals: list[Signal] = []
+    _a_v_fast = v_fast.to_numpy()
+    _a_v_slow = v_slow.to_numpy()
+    _a_atr = atr.to_numpy()
+    _a_d_close = d["close"].to_numpy()
+    _a_ret = ret.to_numpy()
     for i in range(slow + 1, len(d) - 1):
-        prev = float(v_fast.iloc[i - 1] / v_slow.iloc[i - 1]) if v_slow.iloc[i - 1] else np.nan
-        now = float(v_fast.iloc[i] / v_slow.iloc[i]) if v_slow.iloc[i] else np.nan
+        prev = float(_a_v_fast[i - 1] / _a_v_slow[i - 1]) if _a_v_slow[i - 1] else np.nan
+        now = float(_a_v_fast[i] / _a_v_slow[i]) if _a_v_slow[i] else np.nan
         if not (np.isfinite(prev) and np.isfinite(now)):
             continue
         if not (prev < ratio_in <= now):
             continue                   # only the CROSSING, not the state
-        a = float(atr.iloc[i])
+        a = float(_a_atr[i])
         if not np.isfinite(a) or a <= 0:
             continue
-        px = float(d["close"].iloc[i])
+        px = float(_a_d_close[i])
         # Direction from the impulse that caused the expansion, not from a level.
-        side = 1 if float(ret.iloc[i]) >= 0 else -1
+        side = 1 if float(_a_ret[i]) >= 0 else -1
         signals.append(Signal(time=d.index[i], side=side, stop=px - side * stop_atr * a,
                               target=px + side * stop_atr * a * rr, ttl_bars=ttl_bars,
                               tag="vol_transition", trigger=None, wait_bars=1))
@@ -367,18 +380,22 @@ def family_liquidity_regime(
     atr = _atr(d, atr_n)
     ret = d["close"].astype(float).pct_change()
     signals: list[Signal] = []
+    _a_z = z.to_numpy()
+    _a_ret = ret.to_numpy()
+    _a_atr = atr.to_numpy()
+    _a_d_close = d["close"].to_numpy()
     for i in range(lookback, len(d) - 1):
-        zi = float(z.iloc[i]) if np.isfinite(z.iloc[i]) else np.nan
+        zi = float(_a_z[i]) if np.isfinite(_a_z[i]) else np.nan
         if not np.isfinite(zi) or zi < widen_z:
             continue
-        move = float(ret.iloc[i])
+        move = float(_a_ret[i])
         if not np.isfinite(move) or move == 0:
             continue
-        a = float(atr.iloc[i])
+        a = float(_a_atr[i])
         if not np.isfinite(a) or a <= 0:
             continue
         side = -1 if move > 0 else 1    # fade the move made into the thin book
-        px = float(d["close"].iloc[i])
+        px = float(_a_d_close[i])
         signals.append(Signal(time=d.index[i], side=side, stop=px - side * stop_atr * a,
                               target=px + side * stop_atr * a * rr, ttl_bars=ttl_bars,
                               tag="liquidity_regime", trigger=None, wait_bars=1))
@@ -700,15 +717,17 @@ def family_turn_of_month(
     month_start_day = idx_naive.to_period("M").to_timestamp()
     days_to_end = (month_end_day - idx_naive.normalize()).days.to_numpy()
     days_from_start = (idx_naive.normalize() - month_start_day).days.to_numpy()
+    _a_atr = atr.to_numpy()
+    _a_d_close = d["close"].to_numpy()
     for i in range(atr_n, len(d) - 1):
         # "within `days_before` of a month end" OR "within `days_after` of a month start" --
         # the same turn-of-month window the original scan approximated.
         if not (days_to_end[i] <= days_before or days_from_start[i] <= days_after):
             continue
-        a = float(atr.iloc[i])
+        a = float(_a_atr[i])
         if not np.isfinite(a) or a <= 0:
             continue
-        px = float(d["close"].iloc[i])
+        px = float(_a_d_close[i])
         signals.append(Signal(time=d.index[i], side=side_bias,
                               stop=px - side_bias * stop_atr * a,
                               target=px + side_bias * stop_atr * a * rr,
@@ -741,14 +760,17 @@ def family_calendar_month(
     # wait_bars=0`, so those are sixty resting orders at sixty different prices. Requiring the
     # minute too makes it the day's FIRST bar on every chart. H1, H4 and D1 bars are all stamped
     # at minute 0, so no existing cell changes by a single signal.
+    _a_atr = atr.to_numpy()
+    _a_d_close = d["close"].to_numpy()
+    _ts_d = list(d.index)
     for i in range(max(atr_n, 1), len(d) - 1):
-        ts = d.index[i]
+        ts = _ts_d[i]
         if ts.month != active_month or ts.hour != 0 or ts.minute != 0:
             continue
-        a = float(atr.iloc[i])
+        a = float(_a_atr[i])
         if not np.isfinite(a) or a <= 0:
             continue
-        px = float(d["close"].iloc[i])
+        px = float(_a_d_close[i])
         signals.append(Signal(time=ts, side=side_bias,
                               stop=px - side_bias * stop_atr * a,
                               target=px + side_bias * stop_atr * a * rr,
@@ -777,17 +799,21 @@ def family_overnight_gap_decay(
     signals: list[Signal] = []
     day = pd.Series(d.index.date, index=d.index)
     first_bar = day != day.shift(1)
+    _a_first_bar = first_bar.to_numpy()
+    _a_atr = atr.to_numpy()
+    _a_d_open = d["open"].to_numpy()
+    _a_d_close = d["close"].to_numpy()
     for i in range(atr_n, len(d) - 1):
-        if not bool(first_bar.iloc[i]):
+        if not bool(_a_first_bar[i]):
             continue
-        a = float(atr.iloc[i])
+        a = float(_a_atr[i])
         if not np.isfinite(a) or a <= 0:
             continue
-        gap = float(d["open"].iloc[i]) - float(d["close"].iloc[i - 1])
+        gap = float(_a_d_open[i]) - float(_a_d_close[i - 1])
         if abs(gap) < gap_atr * a:
             continue
         side = -1 if gap > 0 else 1     # fade it back toward the prior close
-        px = float(d["open"].iloc[i])
+        px = float(_a_d_open[i])
         signals.append(Signal(time=d.index[i], side=side, stop=px - side * stop_atr * a,
                               target=px + side * abs(gap) * rr, ttl_bars=ttl_bars,
                               tag="overnight_gap_decay", trigger=None, wait_bars=1))
@@ -819,15 +845,19 @@ def family_vol_mean_reversion(
     z = (rv - mu) / sd
     atr = _atr(d, atr_n)
     signals: list[Signal] = []
+    _a_z = z.to_numpy()
+    _a_atr = atr.to_numpy()
+    _a_d_close = d["close"].to_numpy()
+    _a_ret = ret.to_numpy()
     for i in range(lookback + 1, len(d) - 1):
-        zi = float(z.iloc[i]) if np.isfinite(z.iloc[i]) else np.nan
+        zi = float(_a_z[i]) if np.isfinite(_a_z[i]) else np.nan
         if not np.isfinite(zi) or zi > z_in:
             continue
-        a = float(atr.iloc[i])
+        a = float(_a_atr[i])
         if not np.isfinite(a) or a <= 0:
             continue
-        px = float(d["close"].iloc[i])
-        side = 1 if float(ret.iloc[i]) >= 0 else -1
+        px = float(_a_d_close[i])
+        side = 1 if float(_a_ret[i]) >= 0 else -1
         signals.append(Signal(time=d.index[i], side=side, stop=px - side * stop_atr * a,
                               target=px + side * stop_atr * a * rr, ttl_bars=ttl_bars,
                               tag="vol_mean_reversion", trigger=None, wait_bars=1))
@@ -866,15 +896,19 @@ def family_correlation_regime(
     z = (corr - mu) / sd
     atr = _atr(d, atr_n).reindex(j.index).ffill()
     signals: list[Signal] = []
+    _a_z = z.to_numpy()
+    _a_atr = atr.to_numpy()
+    _a_j_close = j["close"].to_numpy()
+    _a_ra = ra.to_numpy()
     for i in range(lookback * 2, len(j) - 1):
-        zi = float(z.iloc[i]) if np.isfinite(z.iloc[i]) else np.nan
+        zi = float(_a_z[i]) if np.isfinite(_a_z[i]) else np.nan
         if not np.isfinite(zi) or zi > break_z:
             continue
-        a = float(atr.iloc[i])
+        a = float(_a_atr[i])
         if not np.isfinite(a) or a <= 0:
             continue
-        px = float(j["close"].iloc[i])
-        side = 1 if float(ra.iloc[i]) >= 0 else -1
+        px = float(_a_j_close[i])
+        side = 1 if float(_a_ra[i]) >= 0 else -1
         signals.append(Signal(time=j.index[i], side=side, stop=px - side * stop_atr * a,
                               target=px + side * stop_atr * a * rr, ttl_bars=ttl_bars,
                               tag="correlation_regime", trigger=None, wait_bars=1))
@@ -908,15 +942,18 @@ def family_orderflow_imbalance(
     z = (f - mu) / sd
     atr = _atr(d, atr_n)
     signals: list[Signal] = []
+    _a_z = z.to_numpy()
+    _a_atr = atr.to_numpy()
+    _a_d_close = d["close"].to_numpy()
     for i in range(lookback, len(d) - 1):
-        zi = float(z.iloc[i]) if np.isfinite(z.iloc[i]) else np.nan
+        zi = float(_a_z[i]) if np.isfinite(_a_z[i]) else np.nan
         if not np.isfinite(zi) or abs(zi) < z_in:
             continue
-        a = float(atr.iloc[i])
+        a = float(_a_atr[i])
         if not np.isfinite(a) or a <= 0:
             continue
         side = 1 if zi > 0 else -1
-        px = float(d["close"].iloc[i])
+        px = float(_a_d_close[i])
         signals.append(Signal(time=d.index[i], side=side, stop=px - side * stop_atr * a,
                               target=px + side * stop_atr * a * rr, ttl_bars=ttl_bars,
                               tag="orderflow_imbalance", trigger=None, wait_bars=1))
@@ -994,18 +1031,22 @@ def family_cross_asset_residual(
     atr = _atr(d, atr_n).reindex(cum.index).ffill()
     hours = {int(h) for h in active_hours} if active_hours else None
     signals: list[Signal] = []
+    _a_z = z.to_numpy()
+    _a_atr = atr.to_numpy()
+    _a_frame_y = frame["y"].to_numpy()
+    _ts_cum = list(cum.index)
     for i in range(bwin + lookback, len(cum) - 1):
-        zi = float(z.iloc[i]) if np.isfinite(z.iloc[i]) else np.nan
+        zi = float(_a_z[i]) if np.isfinite(_a_z[i]) else np.nan
         if not np.isfinite(zi) or abs(zi) < entry_z:
             continue
-        ts = cum.index[i]
+        ts = _ts_cum[i]
         if hours is not None and int(ts.hour) not in hours:
             continue
-        a = float(atr.iloc[i])
+        a = float(_a_atr[i])
         if not np.isfinite(a) or a <= 0:
             continue
         side = (-1 if zi > 0 else 1) if side_mode == "revert" else (1 if zi > 0 else -1)
-        px = float(frame["y"].iloc[i])
+        px = float(_a_frame_y[i])
         signals.append(Signal(time=ts, side=side, stop=px - side * stop_atr * a,
                               target=px + side * stop_atr * a * rr, ttl_bars=ttl_bars,
                               tag=f"cross_asset_residual:{side_mode}", trigger=None, wait_bars=1))
@@ -1044,15 +1085,18 @@ def family_macro_conditional(
     m = macro.reindex(d.index).ffill()
     atr = _atr(d, atr_n)
     signals: list[Signal] = []
+    _a_m = m.to_numpy()
+    _a_atr = atr.to_numpy()
+    _a_d_close = d["close"].to_numpy()
     for i in range(atr_n, len(d) - 1):
-        mv = float(m.iloc[i]) if np.isfinite(m.iloc[i]) else np.nan
+        mv = float(_a_m[i]) if np.isfinite(_a_m[i]) else np.nan
         if not np.isfinite(mv):
             continue
         side = side_in_high if mv >= regime_high else -side_in_high
-        a = float(atr.iloc[i])
+        a = float(_a_atr[i])
         if not np.isfinite(a) or a <= 0:
             continue
-        px = float(d["close"].iloc[i])
+        px = float(_a_d_close[i])
         signals.append(Signal(time=d.index[i], side=side, stop=px - side * stop_atr * a,
                               target=px + side * stop_atr * a * rr, ttl_bars=ttl_bars,
                               tag="macro_conditional", trigger=None, wait_bars=1))
@@ -1125,19 +1169,22 @@ def family_drawdown_conditional(
     atr = _atr(d, atr_n)
     signals: list[Signal] = []
     armed = True
+    _a_dd = dd.to_numpy()
+    _a_atr = atr.to_numpy()
+    _a_close = close.to_numpy()
     for i in range(lookback, len(d) - 1):
-        v = float(dd.iloc[i])
+        v = float(_a_dd[i])
         if not np.isfinite(v):
             continue
         if v > -dd_pct * 0.5:
             armed = True                # re-arm once recovered, so one selloff = one entry
         if v > -dd_pct or not armed:
             continue
-        a = float(atr.iloc[i])
+        a = float(_a_atr[i])
         if not np.isfinite(a) or a <= 0:
             continue
         armed = False
-        px = float(close.iloc[i])
+        px = float(_a_close[i])
         signals.append(Signal(time=d.index[i], side=1, stop=px - stop_atr * a,
                               target=px + stop_atr * a * rr, ttl_bars=ttl_bars,
                               tag="drawdown_conditional", trigger=None, wait_bars=1))
@@ -1375,15 +1422,18 @@ def family_pca_residual(
     z = (cum - rm) / rsd
 
     signals: list[Signal] = []
+    _a_z = z.to_numpy()
+    _a_atr = atr.to_numpy()
+    _a_close = close.to_numpy()
     for i in range(window, n_obs - 1):
-        zi = float(z.iloc[i]) if np.isfinite(z.iloc[i]) else np.nan
+        zi = float(_a_z[i]) if np.isfinite(_a_z[i]) else np.nan
         if not np.isfinite(zi) or abs(zi) < entry_z:
             continue
-        a = float(atr.iloc[i])
+        a = float(_a_atr[i])
         if not np.isfinite(a) or a <= 0:
             continue
         side = -1 if zi > 0 else 1               # fade the unexplained extreme
-        px = float(close.iloc[i])
+        px = float(_a_close[i])
         signals.append(Signal(time=mat.index[i], side=side, stop=px - side * stop_atr * a,
                               target=px + side * stop_atr * a * rr, ttl_bars=ttl_bars,
                               tag="pca_residual", trigger=None, wait_bars=1))
@@ -2072,17 +2122,23 @@ def family_execution_state(
     signals: list[Signal] = []
     last = -10 ** 9
     idx = d.index
+    _a_in_window = in_window.to_numpy()
+    _a_atr = atr.to_numpy()
+    _a_ret = ret.to_numpy()
+    _a_sp_rank = sp_rank.to_numpy()
+    _a_ac_rank = ac_rank.to_numpy()
+    _a_close = close.to_numpy()
     for i in range(atr_n, len(idx) - 1):
-        if i - last < hold_bars or not bool(in_window.iloc[i]):
+        if i - last < hold_bars or not bool(_a_in_window[i]):
             continue
-        a = float(atr.iloc[i])
-        mv = float(ret.iloc[i])
+        a = float(_a_atr[i])
+        mv = float(_a_ret[i])
         if not (np.isfinite(a) and a > 0 and np.isfinite(mv)) or abs(mv) < min_move_atr * a:
             continue
-        sr = float(sp_rank.iloc[i])
+        sr = float(_a_sp_rank[i])
         if not np.isfinite(sr):
             continue
-        ar = float(ac_rank.iloc[i]) if has_vol else np.nan
+        ar = float(_a_ac_rank[i]) if has_vol else np.nan
         if follow:
             # The venue's cheap-deep window AND this bar's own book agreeing with it.
             if sr > spread_pct or (has_vol and (not np.isfinite(ar) or ar < activity_pct)):
@@ -2092,7 +2148,7 @@ def family_execution_state(
                                                       or ar > 1.0 - activity_pct)):
                 continue
         side = (1 if mv > 0 else -1) if follow else (-1 if mv > 0 else 1)
-        px = float(close.iloc[i])
+        px = float(_a_close[i])
         signals.append(Signal(time=idx[i], side=side, stop=px - side * stop_atr * a,
                               target=px + side * stop_atr * a * rr, ttl_bars=int(hold_bars),
                               tag=f"execution_state:{mode}", trigger=None, wait_bars=1))
