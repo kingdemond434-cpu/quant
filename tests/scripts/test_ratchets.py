@@ -184,9 +184,8 @@ def _mine(state: str, days: Any) -> dict[str, Any]:
 
 def test_disk_headroom_is_the_share_of_lead_time_remaining() -> None:
     """R0331: preparedness, expressed against the lead time the only real fix actually needs."""
-    from scripts.check_ratchets import _disk_headroom
-
     from libs.ops.disk import WARN_DAYS
+    from scripts.check_ratchets import _disk_headroom
     assert _disk_headroom(_mine("URGENT", 3.0)) == pytest.approx(3.0 / WARN_DAYS)
     assert _disk_headroom(_mine("OK", WARN_DAYS)) == pytest.approx(1.0)
 

@@ -28,7 +28,6 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 import scripts.run_ict_strategy as R  # noqa: E402
-
 from libs.ict.strategy import ICTParams, schedule  # noqa: E402
 
 
