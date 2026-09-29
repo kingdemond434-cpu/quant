@@ -127,8 +127,17 @@ _CHUNK_ELEMS = 4_000_000
 
 
 def _argmax_f(*, sharpe_ann: float, kelly_lev: float, barrier: float, absorbing: bool,
-              sharpe_sd: float, seed: int, horizon: int = _HORIZON) -> tuple[float, float]:
+              sharpe_sd: float, seed: int, horizon: int = _HORIZON,
+              objective: str = "terminal",
+              absorb_out: dict[float, float] | None = None) -> tuple[float, float]:
     """Grid-search f by E[log W_T] under COMMON RANDOM NUMBERS across the whole grid.
+
+    `objective` picks how a path is scored (R0576). "terminal" (the default, and the arm every
+    published number comes from) banks an absorbed path at log(barrier). "growth_rate" scores the
+    time-average growth rate log(W_T)/T and gives an absorbed path a growth rate of ZERO forever
+    -- R0576's proposed fix, kept so its refutation stays reproducible: log(barrier) < 0, so the
+    zero is the MORE generous score and f* does not fall. Anything else is refused by name.
+    `absorb_out`, when given, receives P(absorb) per grid f (absorbing arm only).
 
     One set of shocks is drawn per cell and every f is evaluated on it. That is not only ~60x
     cheaper than re-drawing per grid point, it is the correct estimator for this question: the
@@ -140,9 +149,13 @@ def _argmax_f(*, sharpe_ann: float, kelly_lev: float, barrier: float, absorbing:
     still shared across the grid exactly as they were when the whole horizon fit in one array.
     Chunking changes the memory footprint, never the estimator.
     """
+    if objective not in ("terminal", "growth_rate"):
+        raise ValueError(f"unknown objective {objective!r}: expected 'terminal' or 'growth_rate'")
+    growth_rate = objective == "growth_rate"
     rng = np.random.default_rng(seed)
     chunk = max(1, min(_N_PATHS, _CHUNK_ELEMS // max(1, horizon)))
     acc = np.zeros(len(_F_GRID), dtype="float64")
+    absorbed_n = np.zeros(len(_F_GRID), dtype="float64")
     done = 0
     while done < _N_PATHS:
         n = min(chunk, _N_PATHS - done)
@@ -167,8 +180,16 @@ def _argmax_f(*, sharpe_ann: float, kelly_lev: float, barrier: float, absorbing:
                 # scored at `barrier`, never at its underflowed value. gamma_boundary, the only
                 # half of this study that bears on sizing, is built solely from this arm.
                 eq = np.cumprod(steps, axis=1)
-                terminal = np.where((eq <= barrier).any(axis=1), barrier, eq[:, -1])
-                acc[i] += float(np.sum(np.log(terminal)))
+                hit = (eq <= barrier).any(axis=1)
+                absorbed_n[i] += float(np.sum(hit))
+                if growth_rate:
+                    # R0576: an absorbed path earns a growth rate of zero forever; a survivor
+                    # earns its time-average log growth.
+                    rate = np.where(hit, 0.0, np.log(np.maximum(eq[:, -1], 1e-300)) / horizon)
+                    acc[i] += float(np.sum(rate))
+                else:
+                    terminal = np.where(hit, barrier, eq[:, -1])
+                    acc[i] += float(np.sum(np.log(terminal)))
             else:
                 # THE ARM THAT UNDERFLOWED, AND THE HORIZON SWEEP IS WHAT REACHED IT. With no
                 # barrier to absorb it, a path just keeps compounding down: at f=3.0 and S=2.3 the
@@ -183,9 +204,12 @@ def _argmax_f(*, sharpe_ann: float, kelly_lev: float, barrier: float, absorbing:
                 # Summing logs is mathematically identical and cannot underflow, and it needs no
                 # cumulative array because nothing here asks WHEN the path crossed anything --
                 # only where it ended.
-                acc[i] += float(np.sum(np.log(steps)))
+                acc[i] += float(np.sum(np.log(steps))) / (horizon if growth_rate else 1)
         done += n
 
+    if absorb_out is not None:
+        for i, f in enumerate(_F_GRID):
+            absorb_out[float(f)] = float(absorbed_n[i] / _N_PATHS)
     g_all = acc / _N_PATHS
     j = int(np.argmax(g_all))
     return float(_F_GRID[j]), float(g_all[j])
