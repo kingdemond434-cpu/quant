@@ -659,3 +659,13 @@ def test_the_scalp_executor_sends_the_slice_the_cap_admitted_and_sizes_nothing()
     assert 'plan = s.get("pending_order")' in sender
     assert "no pre-cap resolution this pass" in sender
     assert 'per, side, price = float(plan["per"])' in sender
+
+
+@pytest.fixture(autouse=True)
+def _legacy_floors(monkeypatch: pytest.MonkeyPatch) -> None:
+    """These pin the PRE-2026-09-29 floors, which remain the documented revert path
+    (data/ALLOCATOR_SOVEREIGN.json {"enabled": false}). Sovereign behaviour is pinned in
+    test_allocator_sovereignty.py."""
+    import mt5desk.decision_core as _dc
+    monkeypatch.setattr(_dc, "ALLOCATOR_SOVEREIGN", False)
+    monkeypatch.setattr(_dc, "ALLOCATOR_SOVEREIGN_FILE", _dc._DESK / "data" / "__absent__.json")

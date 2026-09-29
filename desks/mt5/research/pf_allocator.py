@@ -3505,7 +3505,10 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
                 except Exception as _exc:
                     _env_margin = _env_free
                     _mu_why = f"{_mu_why}; counterfactual envelope failed ({type(_exc).__name__})"
-            _armed_margin = (BASE / "data" / "MARGIN_CLAUSE_ENABLED").exists()
+            # ARMED BY DEFAULT (principal, 2026-09-29: "put broker margin/survival constraints
+            # above aggressiveness preferences"). The broker's margin feasibility now binds the
+            # envelope whenever it is measured; `data/MARGIN_CLAUSE_DISABLED` is the revert.
+            _armed_margin = not (BASE / "data" / "MARGIN_CLAUSE_DISABLED").exists()
             survival = _env_margin if (_armed_margin and _mu) else _env_free
             _c_free = _env_free.get("operative_ceiling")
             _c_marg = _env_margin.get("operative_ceiling")
@@ -3522,7 +3525,7 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
                               else "SLACK -- the clause does not bind; arming costs nothing"
                               if float(_c_marg) >= float(_c_free)
                               else "BINDS LOWER -- arming would shrink the book; principal's call"),
-                "arm_with": "create desks/mt5/data/MARGIN_CLAUSE_ENABLED",
+                "disarm_with": "create desks/mt5/data/MARGIN_CLAUSE_DISABLED",
                 "why_gated": ("this is the one term in the wave that can bind the envelope BELOW "
                               "today's ceiling, and a risk reduction by fiat is exactly what the "
                               "standing order forbids -- so it is measured, published and fed "

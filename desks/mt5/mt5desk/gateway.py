@@ -249,6 +249,18 @@ from mt5desk.decision_core import (
     gold_book_lot as gold_book_lot,
 )
 from mt5desk.decision_core import (
+    ALLOCATOR_SOVEREIGN as ALLOCATOR_SOVEREIGN,
+)
+from mt5desk.decision_core import (
+    ALLOCATOR_SOVEREIGN_FILE as ALLOCATOR_SOVEREIGN_FILE,
+)
+from mt5desk.decision_core import (
+    allocator_sovereign as allocator_sovereign,
+)
+from mt5desk.decision_core import (
+    implementable_lot as implementable_lot,
+)
+from mt5desk.decision_core import (
     heat_budget as heat_budget,
 )
 from mt5desk.decision_core import (

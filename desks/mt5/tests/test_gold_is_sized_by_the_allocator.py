@@ -14,6 +14,8 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
+import pytest
+
 _DESK = Path(__file__).resolve().parents[1]
 for _p in (str(_DESK), str(_DESK.parent.parent)):
     if _p not in sys.path:
@@ -161,3 +163,13 @@ def test_the_gateway_bills_gold_through_the_same_sizer_and_not_behind_from_book(
     assert 'lot=gold_lot(equity))' not in block, \
         "the old policy-only charge is back; it cannot see the allocator's larger lot"
     assert '_s["q_charge_basis"]' in block, "the charge must say which term set it"
+
+
+@pytest.fixture(autouse=True)
+def _legacy_floors(monkeypatch: pytest.MonkeyPatch) -> None:
+    """These pin the PRE-2026-09-29 floors, which remain the documented revert path
+    (data/ALLOCATOR_SOVEREIGN.json {"enabled": false}). Sovereign behaviour is pinned in
+    test_allocator_sovereignty.py."""
+    import mt5desk.decision_core as _dc
+    monkeypatch.setattr(_dc, "ALLOCATOR_SOVEREIGN", False)
+    monkeypatch.setattr(_dc, "ALLOCATOR_SOVEREIGN_FILE", _dc._DESK / "data" / "__absent__.json")
