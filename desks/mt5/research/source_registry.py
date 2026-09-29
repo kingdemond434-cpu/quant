@@ -863,17 +863,15 @@ def _summary(registry: dict[str, Any], report: dict[str, Any], wrote: bool) -> l
         f"  top roi: {top['source_id'] if top else 'NONE MEASURED'} "
         f"roi={top['intel_roi'] if top else None} share={top['share'] if top else None}",
         f"  languages: {len(report['by_language'])} on file; gaps "
-        f"{', '.join(gaps) if gaps else 'none of the 13 tracked'}",
+        f"{', '.join(gaps) if gaps else 'none of the 13 tracked'}; cube reached/listed "
+        + " ".join(f"{a}={report['discovery_cube']['reached'][a]}/"
+                   f"{report['discovery_cube']['listed'][a]}" for a in CUBE_AXES),
         f"  exploration floor {EXPLORATION_SHARE:.0%} over <{THIN_LEADS}-lead sources and "
         f"unseen-rich grounds; {un['n_sources_no_roi']} source(s) carry no measured roi",
-        "  discovery cube reached/listed: " + "  ".join(
-            f"{a}={report['discovery_cube']['reached'][a]}/{report['discovery_cube']['listed'][a]}"
-            for a in CUBE_AXES),
-        "  quality measured share: " + "  ".join(
-            f"{k}={v}" for k, v in report["quality_coverage"].items()),
         f"  UNMEASURED: {un['n_sources_without_a_ground']} without a ground, "
         f"{un['n_sources_without_a_cost']} without a cost, "
-        f"{un['n_sources_unscheduled']} unscheduled",
+        f"{un['n_sources_unscheduled']} unscheduled; quality measured share "
+        + " ".join(f"{k}={v}" for k, v in report["quality_coverage"].items()),
         f"  {'wrote' if wrote else 'DRY RUN, wrote nothing:'} {REGISTRY}  {REPORT}",
     ]
 
