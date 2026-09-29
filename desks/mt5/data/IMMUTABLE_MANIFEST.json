@@ -1,11 +1,11 @@
 {
- "signed_utc": "2026-09-29T21:41:38.956161+00:00",
+ "signed_utc": "2026-09-29T21:51:03.243053+00:00",
  "signed_by": "principal",
  "files": {
-  "desks/mt5/scripts/external_gauntlet.py": "a024937660fc4e79",
+  "desks/mt5/scripts/external_gauntlet.py": "f53d1e2ace1c1461",
   "desks/mt5/research/universal_gate.py": "1d71abe1ef8692e1",
   "desks/mt5/research/multiplicity.py": "fc91833570cd8ded",
-  "desks/mt5/research/gate_policy.py": "174ab3eb197d52e0",
+  "desks/mt5/research/gate_policy.py": "51d7264b099a8173",
   "desks/mt5/research/heat_policy.py": "b31c396980f9971e",
   "desks/mt5/research/promoter.py": "52d6f4b4598a1064",
   "desks/mt5/mt5desk/gateway_config_fallback.py": "0ce1dd51f98b6c23",

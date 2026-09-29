@@ -110,6 +110,7 @@ ATTESTATION = {
     "cpcv_mean_oos_sharpe_min_exclusive": 0.0,
     "lockbox_oos_sharpe_min": 0.0,
     "lockbox_basis": "reserved_final_calendar_fraction_carved_before_program_matrix",
+    "lifetime_trial_floor": "max(campaign charge, per-family lifetime trials in EXPERIMENT_LEDGER)",
     "expected_value_min_exclusive": 0.0,
 }
 

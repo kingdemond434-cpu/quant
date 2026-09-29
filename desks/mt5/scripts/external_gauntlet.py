@@ -2302,6 +2302,27 @@ def registry_cost_basis(sym: str, meta: dict) -> dict:
     return {"measured": True, "why": "spread, commission conversion and swap from the registry"}
 
 
+def charged_lifetime_trials(campaign: int, family: str, lifetime: dict,
+                            raw_cells: int) -> tuple[int, str]:
+    """The trial charge for one cell: max(campaign charge, the family's lifetime trials).
+
+    ADAPTIVE MULTIPLICITY (principal, 2026-09-29: "every trial ever attempted contributes to
+    selection-bias accounting"). The campaign charge alone is a constant, blind to the tens of
+    thousands of configurations the desk has searched; the experiment ledger (judged cells in the
+    hypothesis graph plus every proposer's tests_run) counts them per family. A tightening only:
+    the result is never below the campaign charge. An unreadable ledger fails closed to the raw
+    burden of this sweep (cells x the spec's multiplier), never to the campaign charge alone.
+    """
+    from research.gate_policy import TRIALS_MULTIPLIER
+    if not isinstance(lifetime, dict) or lifetime.get("status") != "MEASURED":
+        raw = max(2, math.ceil(max(0, raw_cells) * float(TRIALS_MULTIPLIER)))
+        return max(int(campaign), raw), f"lifetime ledger UNMEASURED: raw sweep burden {raw}"
+    fam_n = (lifetime.get("family_trials") or {}).get(family)
+    if not isinstance(fam_n, int) or fam_n <= 0:
+        return int(campaign), f"family {family or '?'} absent from the lifetime ledger"
+    return max(int(campaign), fam_n), f"lifetime family trials {fam_n}"
+
+
 def run_gauntlet(cells: list, hunt_name: str, meta: dict) -> dict:
     """Run full 10-gate gauntlet on a list of cells."""
     print(f"\n=== GAUNTLET: {hunt_name} ({len(cells)} cells) ===")
@@ -2485,6 +2506,9 @@ def run_gauntlet(cells: list, hunt_name: str, meta: dict) -> dict:
     if _lock_cut is not None:
         daily_x3 = [None if x is None else x[x.index < _lock_cut] for x in daily_x3]
 
+    # THE LIFETIME LEDGER, read once per sweep (V21 made authoritative by policy v3).
+    _lifetime = lifetime_trial_report(c.get("family") for c in cells)
+
     # Per-cell verdicts
     verdicts = []
     for _idx, (orig_i, ds) in enumerate(valid):
@@ -2499,12 +2523,16 @@ def run_gauntlet(cells: list, hunt_name: str, meta: dict) -> dict:
             "in_sample_screen": {"passed": bool(sr > 0.0), "sharpe": round(float(sr), 4)},
         }
 
-        # Deflated Sharpe
-        dsr = deflated_sharpe_ratio(arr, n_trials=n_trials,
+        # Deflated Sharpe, charged the LARGER of the campaign charge and the family's lifetime
+        # trial count (policy v3): every trial the desk ever ran in this mechanism raises the bar.
+        _n_cell, _n_basis = charged_lifetime_trials(n_trials, str(c.get("family") or ""),
+                                                    _lifetime, matrix.shape[1])
+        dsr = deflated_sharpe_ratio(arr, n_trials=_n_cell,
                                     variance_of_sharpes=sh_var, threshold=DSR_THRESHOLD)
         stages["deflated_sharpe"] = {
             "passed": bool(dsr.passed), "dsr": round(float(dsr.dsr), 4),
-            "sr0": round(float(dsr.sr0_threshold), 4), "n_trials": n_trials,
+            "sr0": round(float(dsr.sr0_threshold), 4), "n_trials": _n_cell,
+            "campaign_trials": n_trials, "lifetime_basis": _n_basis,
             "variance_of_sharpes": round(sh_var, 6),
             "variance_basis": _var_basis,
             "variance_measured_this_sweep": round(sh_var_measured, 6),
