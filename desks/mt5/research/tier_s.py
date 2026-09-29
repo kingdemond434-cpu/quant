@@ -1652,11 +1652,40 @@ def organ_failure_memory() -> dict[str, Any]:
                      "selector": parts[2] if len(parts) > 2 else "?",
                      "passed": r.get("passed"), "terminal_gate": r.get("terminal_gate"),
                      "cell": cell})
+    # FAILURES AFTER THE GAUNTLET (layer 13): a forward clock whose own record turned against
+    # it, and a live window whose fills lost, are failures of the same kind the gates record --
+    # usually the more expensive kind -- so they enter the memory beside the gate verdicts
+    nm = names()
+    n_fwd = n_live = 0
+    for k, fw in shadow_rows().items():
+        n = int(fw.get("n") or 0)
+        if n < 20 or fw.get("exp_r") is None or float(fw["exp_r"]) > 0:
+            continue
+        t = nm.triple(k)
+        if not t:
+            continue
+        rows.append({"family": t[1], "mechanism": _mechanism(t[1]),
+                     "asset_class": _asset_class(t[0]), "selector": t[2], "passed": False,
+                     "terminal_gate": "forward", "cell": f"forward:{k}"})
+        n_fwd += 1
+    live_r: dict[str, list[float]] = defaultdict(list)
+    for r in live_rows():
+        if r.get("r_multiple") is not None:
+            live_r[r["_key"]].append(float(r["r_multiple"]))
+    for k, rs in live_r.items():
+        if len(rs) >= 10 and sum(rs) < 0:
+            t = nm.triple(k)
+            if t:
+                rows.append({"family": t[1], "mechanism": _mechanism(t[1]),
+                             "asset_class": _asset_class(t[0]), "selector": t[2],
+                             "passed": False, "terminal_gate": "live", "cell": f"live:{k}"})
+                n_live += 1
     mem = failure_memory.compress(rows)
     _write(STATE / "failure_memory.json", {"generated_utc": NOW.isoformat(),
                                             "theorems": mem["theorems"], "rules": mem["rules"]})
     return {**{k: v for k, v in mem.items() if k not in ("theorems", "rules")},
             "theorems": mem["theorems"][:40], "rules": mem["rules"][:20],
+            "forward_failures": n_fwd, "live_failures": n_live,
             "metric": {"theorems": len(mem["theorems"]),
                        "rows_per_statement": mem["compression"]["rows_per_statement"],
                        "coverage_share": mem["compression"]["coverage_share"]}}

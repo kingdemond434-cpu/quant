@@ -256,14 +256,14 @@
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/FAILURE_MEMORY.json",
-   "status": "PARTIAL",
+   "status": "DONE",
    "contract": {
     "gain": "FDR_REDUCTION",
     "metric": "metric.theorems",
     "better": "up",
     "organ": "failure_memory"
    },
-   "remaining": "forward and live failures (retired and decayed sleeves) as failure rows"
+   "remaining": ""
   },
   {
    "id": "S14",
@@ -701,14 +701,14 @@
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/FRONTIER.json",
-   "status": "PARTIAL",
+   "status": "DONE",
    "contract": {
     "gain": "INFO_PER_COMPUTE",
     "metric": "metric.coverage",
     "better": "up",
     "organ": "frontier"
    },
-   "remaining": "frontier grounds priced into cycle_pricing"
+   "remaining": ""
   },
   {
    "id": "S37",
@@ -727,7 +727,7 @@
     "better": "up",
     "organ": "epistemic"
    },
-   "remaining": "more quantities (DSR, PBO, costs, weights) and 'not enough evidence' raised as a review challenge"
+   "remaining": "DSR, PBO and cost-model quantities in the census beside forward edges and the immune score"
   },
   {
    "id": "S38",
