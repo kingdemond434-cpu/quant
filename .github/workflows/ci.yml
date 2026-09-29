@@ -54,6 +54,11 @@ jobs:
       - name: Lint (ruff)
         run: ruff check .
 
+      # desks/mt5 is excluded from the root ruff config (its style debt is large), but a name that
+      # does not exist is not style: it is a NameError waiting on a code path. Held at zero here.
+      - name: Lint desks/mt5 (bug class only)
+        run: ruff check desks/mt5 --isolated --target-version py311 --select E9,F63,F7,F82
+
       - name: Types (mypy --strict)
         run: mypy
 

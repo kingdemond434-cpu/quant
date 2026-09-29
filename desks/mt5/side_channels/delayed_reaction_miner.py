@@ -18,7 +18,7 @@ Builds an INFORMATION HALF-LIFE MODEL.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
