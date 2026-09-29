@@ -492,24 +492,44 @@ def main(argv: list[str] | None = None) -> int:
     armed = bool(args.armed or ARMED_MARKER.exists())
     try:
         import MetaTrader5 as mt5
-        if not mt5.initialize():
+        from mt5desk.config import terminal_path
+        from research.mt5_session import attach_or_initialize
+        if not attach_or_initialize(mt5, path=terminal_path(), timeout=15000):
             log(f"MT5 initialize failed: {mt5.last_error()}")
+            _failed_pass("MT5_UNAVAILABLE", armed=armed)
             return 1
     except Exception as exc:
         log(f"MetaTrader5 unavailable ({type(exc).__name__}: {exc})")
+        _failed_pass("MT5_UNAVAILABLE", armed=armed)
         return 1
     try:
         from prop.tradelocker_venue import TradeLockerVenue, load_credentials
         venue = TradeLockerVenue(creds=load_credentials()).connect()
     except Exception as exc:
         log(f"venue unavailable ({type(exc).__name__}: {exc})")
+        _failed_pass("VENUE_UNAVAILABLE", armed=armed)
+        mt5.shutdown()
         return 1
-    doc = run(venue, mt5, armed=armed)
+    try:
+        doc = run(venue, mt5, armed=armed)
+    finally:
+        mt5.shutdown()
     log(f"e8 gold: {'ARMED' if armed else 'SHADOW'} hour={doc.get('hour')} "
         f"equity={doc.get('equity')} placed={len(doc.get('placed') or [])} "
         f"actions={len(doc.get('actions') or [])} skipped={len(doc.get('skipped') or [])} "
         f"status={doc.get('status')}")
     return 0
+
+
+def _failed_pass(status: str, *, armed: bool) -> None:
+    """Publish connection failure without altering durable window/order state."""
+    OUT.parent.mkdir(parents=True, exist_ok=True)
+    temporary = OUT.with_suffix(".tmp")
+    temporary.write_text(json.dumps({"at": datetime.now(UTC).isoformat(),
+                                     "status": status, "armed": armed,
+                                     "placed": [], "actions": [], "skipped": [],
+                                     "why": "connection failed; no placement evaluated"}), "utf-8")
+    temporary.replace(OUT)
 
 
 if __name__ == "__main__":

@@ -30,6 +30,41 @@ def _bars(hours: int = 120) -> pd.DataFrame:
     return df
 
 
+def test_failed_connection_replaces_stale_ok_report_but_keeps_window_state(tmp_path, monkeypatch):
+    import json
+
+    out = tmp_path / "E8_GOLD.json"
+    state = tmp_path / "state.json"
+    out.write_text('{"status":"OK"}', "utf-8")
+    state.write_text('{"windows":{"asia":{"position_id":123}}}', "utf-8")
+    before = state.read_bytes()
+    monkeypatch.setattr(g, "OUT", out)
+    monkeypatch.setattr(g, "STATE", state)
+    g._failed_pass("MT5_UNAVAILABLE", armed=True)
+    assert json.loads(out.read_text("utf-8"))["status"] == "MT5_UNAVAILABLE"
+    assert state.read_bytes() == before
+
+
+def test_main_uses_configured_terminal_and_never_runs_on_failed_attach(tmp_path, monkeypatch):
+    from types import SimpleNamespace
+
+    from mt5desk import config
+
+    from research import mt5_session
+
+    calls = []
+    fake = SimpleNamespace(last_error=lambda: (-10005, "timeout"))
+    monkeypatch.setitem(sys.modules, "MetaTrader5", fake)
+    monkeypatch.setattr(config, "terminal_path", lambda: "canonical/terminal64.exe")
+    monkeypatch.setattr(mt5_session, "attach_or_initialize",
+                        lambda api, **kw: calls.append((api, kw)) or False)
+    monkeypatch.setattr(g, "OUT", tmp_path / "report.json")
+    monkeypatch.setattr(g, "LOG", tmp_path / "log")
+    monkeypatch.setattr(g, "ARMED_MARKER", tmp_path / "unarmed")
+    assert g.main([]) == 1
+    assert calls == [(fake, {"path": "canonical/terminal64.exe", "timeout": 15000})]
+
+
 def test_a_window_is_planned_once_at_or_after_its_signal_hour_before_the_cancel_hour() -> None:
     df = _bars()
     # 07:30 server: the Asia window (signal hour 7, range 00-07) is due; london_am (13) is not.
