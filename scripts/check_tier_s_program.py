@@ -1,0 +1,154 @@
+#!/usr/bin/env python3
+"""THE TIER S PROGRAMME CANNOT CLAIM WHAT THE REPOSITORY DOES NOT HOLD -- AND NO LAYER SHIPS
+WITHOUT A CONTRACT.
+
+`docs/research/tier_s_program.json` lists the 46 layers of the Tier S research institution. The
+blueprint is CLOSED (principal, 2026-09-29): no new categories, and a subsystem is admitted only
+with a MEASURABLE CONTRACT naming the gain it must show -- more independent-alpha discovery, more
+falsification power, more information per compute, a lower false-discovery rate, better
+live/backtest calibration, better execution capture, lower operational risk, or measurable
+research productivity. This fence is that admission rule, enforced at every law-gate run:
+
+  * status is LIVE_RESEARCH (the only status: every layer runs);
+  * every cited file exists; the clock is one the repository knows (the same clock vocabulary
+    as check_tier5_audit.py); the artifact is named;
+  * the contract parses (`libs.tiers.contracts.problems`) and its `organ` is a Tier S organ
+    (`desks/mt5/research/tier_s.py`) or `report:<FILE>` whose writer is itself a known leg;
+  * a layer whose money-path consumer needs the principal's word says so in `authority_pending`.
+
+`--render` writes docs/research/TIER_S_PROGRAM.md (the gap map; derived, never hand-edited),
+and with `--with-verdicts` joins this host's latest hourly verdicts from
+desks/mt5/reports/tier_s/CONTRACTS.json (the committed render carries none: a verdict is the box's).
+"""
+from __future__ import annotations
+
+import argparse
+import json
+import re
+import sys
+from collections import Counter
+from pathlib import Path
+from typing import Any
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
+sys.path.insert(0, str(ROOT / "scripts"))
+
+from check_tier5_audit import clock_known, clocks  # noqa: E402
+
+from libs.tiers import contracts  # noqa: E402
+
+LEDGER = ROOT / "docs" / "research" / "tier_s_program.json"
+RENDERED = ROOT / "docs" / "research" / "TIER_S_PROGRAM.md"
+VERDICTS = ROOT / "desks" / "mt5" / "reports" / "tier_s" / "CONTRACTS.json"
+ORGAN_SRC = ROOT / "desks" / "mt5" / "research" / "tier_s.py"
+STATUSES = ("LIVE_RESEARCH",)
+N_LAYERS = 46
+
+
+def organs(root: Path) -> set[str]:
+    p = root / "desks" / "mt5" / "research" / "tier_s.py"
+    if not p.exists():
+        return set()
+    src = p.read_text("utf-8", errors="replace")
+    return set(re.findall(r'\("([a-z_]+)", organ_\w+\)', src)) | set(
+        re.findall(r'reports\["([a-z_]+)"\] = _run', src))
+
+
+def check(ledger: dict[str, Any], root: Path) -> tuple[list[str], Counter[str]]:
+    problems: list[str] = []
+    known = clocks(root)
+    names = organs(root)
+    counts: Counter[str] = Counter()
+    layers = ledger.get("layers") or []
+    ids = [str(r.get("id")) for r in layers]
+    if len(layers) != N_LAYERS or len(set(ids)) != N_LAYERS:
+        problems.append(f"expected {N_LAYERS} distinct layers, found {len(set(ids))}")
+    for r in layers:
+        lid = str(r.get("id"))
+        st = str(r.get("status"))
+        counts[st] += 1
+        if st not in STATUSES:
+            problems.append(f"{lid}: status {st!r} not in {STATUSES}")
+        files = r.get("files") or []
+        if not files:
+            problems.append(f"{lid}: cites no file")
+        for f in files:
+            if not (root / f).exists():
+                problems.append(f"{lid}: cited file missing: {f}")
+        if not clock_known(str(r.get("clock") or ""), known):
+            problems.append(f"{lid}: clock {r.get('clock')!r} is not one the repo knows")
+        if not r.get("artifact"):
+            problems.append(f"{lid}: no artifact")
+        raw = r.get("contract")
+        problems.extend(f"{lid}: {p}" for p in contracts.problems(raw))
+        organ = str((raw or {}).get("organ") or "")
+        if organ.startswith("report:"):
+            if not str(r.get("clock") or "").startswith("hourly_cycle:"):
+                problems.append(f"{lid}: a report: organ must name the hourly leg that writes it")
+        elif organ not in names:
+            problems.append(f"{lid}: organ {organ!r} is not a tier_s organ")
+    return problems, counts
+
+
+def render(ledger: dict[str, Any], verdicts: dict[str, Any]) -> str:
+    v = verdicts.get("layers") or {}
+    lines = ["# Tier S research institution: the 46-layer gap map", "",
+             "Derived from `docs/research/tier_s_program.json` by "
+             "`python scripts/check_tier_s_program.py --render`. Never edit by hand.", "",
+             f"**Admission rule.** {ledger.get('admission_rule', '')}", "",
+             "Every layer runs hourly (leg `tier_s` unless named). The verdict column is the "
+             "contract's latest hourly verdict when rendered with `--with-verdicts` on the box; `-` "
+             "means not joined. Live verdicts: `desks/mt5/reports/tier_s/CONTRACTS.json`.", "",
+             "| id | layer | gain | metric | verdict | latest | money-path authority awaiting "
+             "the principal |", "|---|---|---|---|---|---|---|"]
+    for r in ledger.get("layers") or []:
+        c = r.get("contract") or {}
+        lv = v.get(r["id"]) or {}
+        latest = lv.get("latest")
+        lines.append(
+            f"| {r['id']} | {r['title']} | {c.get('gain')} | `{c.get('organ')}.{c.get('metric')}`"
+            f" ({c.get('better')}) | {lv.get('verdict', '-')} | "
+            f"{'-' if latest is None else round(float(latest), 4)} | "
+            f"{r.get('authority_pending') or ''} |")
+    lines += ["", "## What each layer is built from", ""]
+    for r in ledger.get("layers") or []:
+        lines.append(f"- **{r['id']}** {r['title']}: " + ", ".join(
+            f"`{f}`" for f in r.get("files") or []) + f"; clock `{r['clock']}`; artifact "
+            f"`{r['artifact']}`")
+    return "\n".join(lines) + "\n"
+
+
+def main(argv: list[str] | None = None) -> int:
+    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap.add_argument("--ledger", type=Path, default=LEDGER)
+    ap.add_argument("--root", type=Path, default=ROOT)
+    ap.add_argument("--render", action="store_true")
+    ap.add_argument("--out", type=Path, default=RENDERED)
+    ap.add_argument("--with-verdicts", action="store_true",
+                    help="join this host's latest hourly contract verdicts into the render")
+    a = ap.parse_args(argv)
+    try:
+        ledger = json.loads(a.ledger.read_text("utf-8"))
+    except (OSError, ValueError) as exc:
+        print(f"tier S programme unreadable: {exc}")
+        return 2
+    problems, counts = check(ledger, a.root)
+    print(f"tier S programme: {sum(counts.values())} layers; "
+          + "; ".join(f"{k} {n}" for k, n in sorted(counts.items())))
+    for p in problems:
+        print(f"  LIE: {p}")
+    if a.render:
+        verdicts: dict[str, Any] = {}
+        if a.with_verdicts:
+            try:
+                verdicts = json.loads(VERDICTS.read_text("utf-8"))
+            except (OSError, ValueError):
+                verdicts = {}
+        a.out.write_text(render(ledger, verdicts), "utf-8")
+        print(f"rendered {a.out}")
+    return 1 if problems else 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

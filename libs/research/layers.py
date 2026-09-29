@@ -523,6 +523,17 @@ LEG_LAYER: dict[str, str] = {
     # nothing, which is exactly what `meta` covers.
     "desk_dashboard_state": "meta",
     "session_capital": "portfolio",
+    # Tier S institution: the machine judging and improving its own research machinery
+    "tier_s": "meta", "adversary_evolution": "prediction", "frontier_map": "information",
+    "market_ecology": "information", "research_diversity_archive": "information",
+    "execution_science": "execution",
+    # legs that ran with no layer (test_every_scheduled_leg_has_a_layer was red on the base)
+    "acquire_datasets": "information", "source_experiment_census": "information",
+    "dukascopy_backfill": "information", "cross_asset_graph": "information",
+    "transmission_engine": "information", "forward_calibration": "prediction",
+    "certificate_clock_law": "meta", "desk_self_heal": "meta", "mission_control": "meta",
+    "tier5_acceptance": "meta", "state_replay_audit": "meta", "why_not_report": "meta",
+    "excursions": "exit", "exit_accounts": "exit",
 }
 
 _LEG_RE = re.compile(r'_costed\("([^"]+)"')

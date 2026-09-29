@@ -948,6 +948,8 @@ LEG_DEPARTMENT: dict[str, str] = {
     # validate: the adversarial evidence lab
     **dict.fromkeys(("external_gauntlet", "backtest", "falsifier_run", "adversaries",
                      "stop_reverse", "orthogonality", "blind_reviewer", "synthetic_regimes",
+                     "adversary_evolution", "frontier_map", "market_ecology",
+                     "research_diversity_archive", "execution_science",
                      "evaluator_lab", "lead_replication", "science_controller",
                      "replication_civilization", "certificate_truth", "model_search",
                      "loop_liveness", "counterexample_agent", "judging_throughput",
@@ -1015,7 +1017,7 @@ LEG_DEPARTMENT: dict[str, str] = {
                      # own lineage: meta.
                      "attribution_census",
                      "runtime_attestation", "self_repair", "desk_self_heal",
-                     "tier5_acceptance", "mission_control"), "meta"),
+                     "tier5_acceptance", "mission_control", "tier_s"), "meta"),
     # japan: the Japan research division (the principal's 47-section mandate, hourly)
     **dict.fromkeys(("japan_department",), "japan"),
     # mathlab: the AI mathematics research civilization -- twenty-eight mathematical traditions
@@ -1566,6 +1568,9 @@ LEG_BUDGET_SEC: dict[str, int] = {
     "acquire_datasets": 1_100,
     # The causal invariance organ stops itself at --budget-s 600 and writes; the cap sits above.
     "causal_invariance": 700,
+    # 26 organs, ~35 s measured in the cloud checkout; the cap leaves room for the box's
+    # larger ledgers (the gate verdict ledger and hypothesis graph are read in full).
+    "tier_s": 900,
     # THE CONTROL PLANE'S OBSERVE PASS walks ~1,100 components, every watermark, every lease and
     # every mandatory edge. Its own budget is 600 s (it stops itself), so the cycle's cap sits
     # above that: a cap BELOW an organ's own budget is the truncated-job defect that cost this
@@ -1963,6 +1968,49 @@ def orthogonality() -> dict:
     silently shrank the book would be a growth cut with no missed-growth ledger line behind it.
     """
     return _producer("orthogonality", "research/orthogonality.py", "--apply")
+
+
+def tier_s() -> dict:
+    """`tier_s`: the Tier S research institution, one organ per layer (libs/tiers).
+
+    Runs every kernel of the 46-layer programme on the desk's own artifacts: the truth kernel's
+    hash-chained journal and evidence seal, the firewall audit, the sealed planted-trap benchmark
+    (immune score / power), the Red Queen, test invention, online FDR, topology, QD, genomes,
+    theory, prediction accounting, the researcher market, failure memory, the formal protocol
+    model check, chaos drills on copies, replay, the bitemporal audit, the world-edge and
+    cross-science labs, the shadow opportunity exchange, the frontier estimator, the review panel,
+    the epistemic census, the subsystem contracts, the self-model and the twin. RESEARCH-SIDE
+    ONLY: it writes reports/tier_s/*, data/tier_s/* and hypothesis rows under
+    data/intelligence/tier_s/ for the compiler; nothing it writes is read by sizing, admission,
+    certificates or order flow.
+    """
+    return _producer("tier_s", "research/tier_s.py")
+
+
+def adversary_evolution() -> dict:
+    """`adversary_evolution`: F17's evolving adversary population, persisted each hour."""
+    return _producer("adversary_evolution", "research/adversary_evolution.py", "--apply")
+
+
+def execution_science() -> dict:
+    """`execution_science`: F22 signal-vs-execution attribution (report only)."""
+    return _producer("execution_science", "research/execution_science.py", "--apply")
+
+
+def frontier_map() -> dict:
+    """`frontier_map`: F9's one map of where the desk has and has not looked (report only)."""
+    return _producer("frontier_map", "research/frontier_map.py", "--apply")
+
+
+def market_ecology() -> dict:
+    """`market_ecology`: F15 participant model and edge-decay estimates (report only)."""
+    return _producer("market_ecology", "research/market_ecology.py", "--apply")
+
+
+def research_diversity_archive() -> dict:
+    """`research_diversity_archive`: the research-wide QD archive from experiment evidence."""
+    return _producer("research_diversity_archive", "research/research_diversity_archive.py",
+                     "--once")
 
 
 def lake_promote() -> dict:
@@ -4504,6 +4552,12 @@ def main() -> None:
     rxs = _costed("research_exchange_score", research_exchange_score)
     lkp = _costed("lake_promote", lake_promote)
     orth = _costed("orthogonality", orthogonality)
+    tiers = _costed("tier_s", tier_s)
+    advx = _costed("adversary_evolution", adversary_evolution)
+    exsci = _costed("execution_science", execution_science)
+    fmap = _costed("frontier_map", frontier_map)
+    meco = _costed("market_ecology", market_ecology)
+    rdar = _costed("research_diversity_archive", research_diversity_archive)
     sess = _costed("session_allocation", session_allocation)
     sxp = _costed("session_chart_expansion", session_chart_expansion)
     stf = _costed("stamp_freshness", stamp_freshness)
@@ -4968,6 +5022,9 @@ def main() -> None:
                     "causal_graph": cg, "alpha_rl": arl,
                     "research_exchange_score": rxs, "lake_promote": lkp,
                     "orthogonality": orth,
+                    "tier_s": tiers, "adversary_evolution": advx,
+                    "execution_science": exsci, "frontier_map": fmap,
+                    "market_ecology": meco, "research_diversity_archive": rdar,
                     "session_allocation": sess,
                     "session_chart_expansion": sxp,
                     "stamp_freshness": stf,
