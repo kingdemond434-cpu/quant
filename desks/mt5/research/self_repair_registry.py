@@ -126,12 +126,18 @@ CLASSES: tuple[DefectClass, ...] = (
         "queue_ordered_on_unmeasured",
         "a queue is ordered by a field nothing measured, so the order is noise",
         "the research queue's priority field, repeatedly unmeasured",
-        "scripts/check_research_queue.py",
+        # THE DETECTOR IS THE ORGAN THAT WRITES THE ARTIFACT (2026-09-29). This row named
+        # scripts/check_research_queue.py for both detector and fence, and that script writes the
+        # queue itself and never QUEUE_CENSUS.json: the census is queue_census.py's (hourly leg
+        # queue_census) and the fence that reads it is check_no_queues.py (law gate). A row whose
+        # detector cannot produce its artifact grades MANUAL for ever -- the claim_consistency
+        # typo of 2026-09-23 again.
+        "desks/mt5/research/queue_census.py",
         "run_once:leg:queue_census",
-        "scripts/check_research_queue.py",
+        "scripts/check_no_queues.py",
         "desks/mt5/reports/QUEUE_CENSUS.json",
         counts=("unmeasured", "rows", "n"),
-        notes=""),
+        notes="detector = hourly leg queue_census; fence = law gate check_no_queues"),
     DefectClass(
         "one_word_two_measurements",
         "two organs use one word for two different measurements",
@@ -196,7 +202,9 @@ CLASSES: tuple[DefectClass, ...] = (
         "source_stops_at_bytes",
         "a source is collected and never reaches cells the judge can read",
         "495 of 503 grounds hold no position in the chain (birth fence, 2026-09-23)",
-        "scripts/check_source_drain.py",
+        # The artifact's writer is research/source_drain.py (hourly leg source_drain);
+        # scripts/check_source_drain.py only READS SOURCE_DRAIN.json (fixed 2026-09-29).
+        "desks/mt5/research/source_drain.py",
         "run_once:leg:ingestion_ledger",
         "scripts/check_birth_obligations.py",
         "desks/mt5/reports/SOURCE_DRAIN.json",
@@ -206,7 +214,9 @@ CLASSES: tuple[DefectClass, ...] = (
         "family_never_reaches_judge",
         "a family accumulates cells that no judge ever reads",
         "0 of 79 families showed a judge reach on the build box, 2026-09-23",
-        "scripts/check_judge_coverage.py",
+        # The artifact's writer is research/judge_coverage.py (hourly leg judge_coverage);
+        # scripts/check_judge_coverage.py only READS JUDGE_COVERAGE.json (fixed 2026-09-29).
+        "desks/mt5/research/judge_coverage.py",
         "run_once:leg:judge_coverage",
         "scripts/check_judge_coverage.py",
         "desks/mt5/reports/JUDGE_COVERAGE.json",
