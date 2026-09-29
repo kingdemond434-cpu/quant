@@ -71,8 +71,11 @@ def test_the_gate_list_itself_can_never_be_edited_through_this_door() -> None:
     assert not is_exact_policy({**ATTESTATION, "gates": list(reversed(ATTESTATION["gates"]))})
 
 
-def test_the_live_survivor_ledger_is_admitted() -> None:
-    """The end-to-end property: the desk's actual certificates reach the door."""
+def test_a_pre_v3_survivor_ledger_must_be_re_certified() -> None:
+    """Policy v3 (2026-09-29) replaced the restated walk-forward lockbox with a reserved one, so
+    a ledger attested under an earlier version is REFUSED until its survivors pass again. The
+    exception list above exists for LOOSENINGS of the trial basis only; a harder gate is a
+    re-certification, never a list entry."""
     import json
 
     path = _DESK / "reports" / "UNIVERSAL_SURVIVORS.json"
@@ -82,5 +85,8 @@ def test_the_live_survivor_ledger_is_admitted() -> None:
     policy = doc.get("gate_policy")
     if not isinstance(policy, dict):
         return
-    assert is_exact_policy(policy), (
-        "the live survivor ledger's attestation is refused; no certificate can enrol a clock")
+    if policy.get("version") == ATTESTATION["version"]:
+        assert is_exact_policy(policy), "a ledger minted under the current policy must enrol"
+    else:
+        assert not is_exact_policy(policy), (
+            "a pre-v3 ledger is admitted; its lockbox restated walk-forward and it must re-pass")
