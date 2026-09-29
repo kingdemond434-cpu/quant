@@ -31,6 +31,4 @@ IOSchedulingClass=idle
 # the host is resized and would quietly waste the new RAM -- a constant is correct for exactly one
 # machine, and this desk has now been moved and resized inside a fortnight.
 Slice=quant-heavy.slice
-
-[Install]
-WantedBy=default.target
+# No [Install]: timer-driven (quant-nightly-catchup.timer), enabled THROUGH the timer.

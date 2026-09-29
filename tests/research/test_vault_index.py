@@ -39,7 +39,10 @@ def test_THE_REAL_VAULT_INDEXES(idx: VaultIndex) -> None:
 
 
 @pytest.mark.parametrize(("query", "expect_path"), [
-    ("coverage floor ratchet never lowered", "CONSTITUTION"),
+    # The operative home of this law moved to docs/LAWS.md in the 2026-08-25 consolidation
+    # (CONSTITUTION.md is a bannered annex now), in that document's own words: "Coverage floors
+    # ratchet UP only ... (L1.50)".
+    ("coverage floors ratchet up only", "LAWS"),
     ("reduce only flatten close leg", "GAP_REGISTER"),
     ("pre-registration kill criteria liquidation", "PREREGISTRATION"),
 ])

@@ -8588,12 +8588,16 @@ def check_unwired_modules(defects) -> None:
                     # register the module AND its parent packages, matching the AST roll-up
                     for i in range(2, len(parts) + 1):
                         imported.add(".".join(parts[:i]))
-    for area in ("scripts", "libs", "ops"):
+    # `desks` IS A CALLER SURFACE TOO (2026-09-29): the MT5 desk's organs under desks/mt5/ import
+    # libs/ directly, and leaving them out reported ~90 libs modules the trading desk actually
+    # uses as orphans. Its tests/ trees are excluded for the same reason tests/ is: a test
+    # importing a module proves it works, not that anything uses it.
+    for area in ("scripts", "libs", "ops", "desks"):
         base = ROOT / area
         if not base.exists():
             continue
         for p in base.rglob("*.py"):
-            if "__pycache__" in p.parts:
+            if "__pycache__" in p.parts or (area == "desks" and "tests" in p.parts):
                 continue
             try:
                 tree = ast.parse(p.read_text("utf-8", errors="ignore"))
@@ -8669,15 +8673,23 @@ def check_unwired_modules(defects) -> None:
     # script). Research one-shots stay unaudited on purpose: not every script needs a caller, and
     # a check that said otherwise would produce 69 defects nobody could act on.
     sole_importer: dict[str, str] = {}
+    # Walked ONCE, not once per module: the per-module rglob was O(modules x files) in directory
+    # walks alone. The MT5 desk (minus its tests) counts as an importer for the reason above.
+    script_files = list(ROOT.joinpath("scripts").glob("*.py"))
+    other_files = [
+        f for f in (*(ROOT / "libs").rglob("*.py"),
+                    *(p for p in (ROOT / "desks").rglob("*.py") if "tests" not in p.parts))
+        if "__pycache__" not in f.parts
+    ]
     for mod in modules:
         importers = [
             str(f.relative_to(ROOT))
-            for f in ROOT.joinpath("scripts").glob("*.py")
+            for f in script_files
             if mod in _imports_of(f)
         ]
         others = [
-            f for f in (ROOT / "libs").rglob("*.py")
-            if "__pycache__" not in f.parts and mod in _imports_of(f)
+            f for f in other_files
+            if mod in _imports_of(f)
             and ".".join(f.relative_to(ROOT).with_suffix("").parts) != mod
         ]
         if len(importers) == 1 and not others:
@@ -8691,6 +8703,11 @@ def check_unwired_modules(defects) -> None:
         f for pat in ("ops/*", "scripts/*.py", ".github/workflows/*", "docs/*.md")
         for f in ROOT.glob(pat) if f.is_file()
     ]
+    # The MT5 desk's cycle is a scheduler too: desks/mt5/research/hourly_cycle.py runs scripts as
+    # legs (`_producer("research_api_status", "scripts/research_api_status.py")`) and
+    # batteries.py lists more. Its tests are not invokers.
+    invoker_files += [p for p in (ROOT / "desks").rglob("*.py")
+                      if "tests" not in p.parts and "__pycache__" not in p.parts]
     # Scripts that cannot run on this platform at all. `run_autodiscovery.py` imports MetaTrader5,
     # a Windows-only broker bridge already carried in the optional-dependency allowlist -- wiring
     # it into a Linux cadence would schedule a guaranteed ImportError every cycle, which is noise
