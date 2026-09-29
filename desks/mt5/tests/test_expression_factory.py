@@ -309,7 +309,13 @@ def test_end_to_end_pass_on_synthetic_bars_writes_the_artifact_and_queues_with_p
         assert lineage["parent_genome"] and "mutation_chain" in lineage
         assert lineage["mutation_chain"][-1] in {*XF.MOVES, "transfer", "transfer_state",
                                                  "qd_state", "invent"}
-        assert lineage["operator_credits"] and lineage["trial_family"]
+        # Every operator in the cell's expression carries its credit. A bare terminal (crossover
+        # can yield e.g. `close`) has no operator to credit, so its map is empty by construction;
+        # that case was hidden while the read above was truncated at 500 rows.
+        expr = str(json.loads(r.get("params_json") or "{}").get("expr") or "")
+        assert lineage["operator_credits"] or "(" not in expr, (expr, lineage)
+        assert all(op in expr for op in lineage["operator_credits"]), (expr, lineage)
+        assert lineage["trial_family"]
         assert r["family"] == "formula" and r["status"] == "queued"
         assert r["department"] == "mathlab" and r["trial_family"]
         assert json.loads(r["params_json"])["expr"]
