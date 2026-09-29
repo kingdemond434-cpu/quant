@@ -225,10 +225,10 @@ TASK name="MT5-Healers" trigger="every 1 hour, at :48" runs="ops/run_healers.cmd
 TASK name="MT5-GoldHourSweep" trigger="UNDECLARED" runs="ops/run_gold_hour_sweep.cmd" installer="NONE" lane="research"
 # ops/organ_contract.py names it; not installed on the box 2026-09-16.
 TASK name="MT5-CertHygiene" trigger="UNDECLARED" runs="UNKNOWN" installer="NONE" lane="research"
-# desks/mt5/scripts/Install-QuantWindows.ps1 registers it; not installed on the box 2026-09-16.
-TASK name="MT5-CycleMidnight" trigger="hourly 00:00-11:00" runs="desks/mt5/scripts/Run-DeskCycle.ps1 -Lane midnight" installer="desks/mt5/scripts/register_absent_box_tasks.ps1" lane="research"
-# desks/mt5/scripts/Install-QuantWindows.ps1 registers it; not installed on the box 2026-09-16.
-TASK name="MT5-CycleNoon" trigger="hourly 12:00-23:00" runs="desks/mt5/scripts/Run-DeskCycle.ps1 -Lane noon" installer="desks/mt5/scripts/register_absent_box_tasks.ps1" lane="research"
+# CRO cycle, Codex lane (docs/cro/CRO_CYCLE.md). Fires hourly; the launcher opens the lane 00:00-10:59 Europe/Dublin.
+TASK name="MT5-CycleMidnight" trigger="hourly; window 00:00-10:59 Europe/Dublin" runs="desks/mt5/scripts/Run-DeskCycle.ps1 -Lane midnight" installer="desks/mt5/scripts/install_cro_cycle_tasks.ps1" lane="research"
+# CRO cycle, Claude lane (docs/cro/CRO_CYCLE.md). Fires hourly; the launcher opens the lane 12:00-22:59 Europe/Dublin.
+TASK name="MT5-CycleNoon" trigger="hourly; window 12:00-22:59 Europe/Dublin" runs="desks/mt5/scripts/Run-DeskCycle.ps1 -Lane noon" installer="desks/mt5/scripts/install_cro_cycle_tasks.ps1" lane="research"
 # scripts/check_scheduled_tasks.py names it; not installed on the box 2026-09-16.
 TASK name="MT5-DashMirror" trigger="UNDECLARED" runs="UNKNOWN" installer="NONE" lane="ops"
 # desks/mt5/scripts/Install-QuantWindows.ps1 registers it; not installed on the box 2026-09-16.
