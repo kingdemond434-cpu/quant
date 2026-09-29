@@ -422,19 +422,21 @@
    "title": "Evolving research grammars: primitives learned from winners, dead operators retired",
    "files": [
     "libs/tiers/evolution.py",
-    "desks/mt5/research/tier_s.py"
+    "desks/mt5/research/tier_s.py",
+    "libs/tiers/grammar_bias.py",
+    "libs/research/alpha_grammar.py"
    ],
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/GRAMMAR.json",
-   "status": "PARTIAL",
+   "status": "DONE",
    "contract": {
     "gain": "PRODUCTIVITY",
     "metric": "metric.n_primitives",
     "better": "up",
     "organ": "grammar"
    },
-   "remaining": "alpha_evolution reading data/tier_s/grammar.json operator weights"
+   "remaining": ""
   },
   {
    "id": "S23",
@@ -848,19 +850,21 @@
    "title": "Abstraction discovery: library learning over winning genomes",
    "files": [
     "libs/tiers/evolution.py",
-    "desks/mt5/research/tier_s.py"
+    "desks/mt5/research/tier_s.py",
+    "libs/tiers/grammar_bias.py",
+    "libs/research/alpha_grammar.py"
    ],
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/GRAMMAR.json",
-   "status": "PARTIAL",
+   "status": "DONE",
    "contract": {
     "gain": "PRODUCTIVITY",
     "metric": "metric.n_primitives",
     "better": "up",
     "organ": "grammar"
    },
-   "remaining": "expression_factory reading the learned primitives as terminals"
+   "remaining": ""
   },
   {
    "id": "S45",

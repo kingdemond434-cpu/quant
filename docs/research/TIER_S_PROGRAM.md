@@ -29,7 +29,7 @@ Every layer runs hourly (leg `tier_s` unless named). The verdict column is the c
 | S19 | Non-LLM intelligence: information, spectral, Kalman, queueing, ecology, network, MCMC labs | PARTIAL | ALPHA_DISCOVERY | `world_science.metric.hypotheses` (up) | - | - | a SAT/constraint lab and a Gaussian-process lab beside the eight running traditions |
 | S20 | Peer review panels: typed challenges with resolvers | DONE | FALSIFICATION | `review.metric.resolved_share` (up) | - | - |  |
 | S21 | Auto-invented tests: proposed on one suite, confirmed on another | PARTIAL | FALSIFICATION | `test_invention.metric.candidate_gates` (up) | - | - | a labelled real suite from certificates x forward outcome and a gate redundancy matrix |
-| S22 | Evolving research grammars: primitives learned from winners, dead operators retired | PARTIAL | PRODUCTIVITY | `grammar.metric.n_primitives` (up) | - | - | alpha_evolution reading data/tier_s/grammar.json operator weights |
+| S22 | Evolving research grammars: primitives learned from winners, dead operators retired | DONE | PRODUCTIVITY | `grammar.metric.n_primitives` (up) | - | - |  |
 | S23 | Execution science: signal alpha separated from execution drag | DONE | EXECUTION_CAPTURE | `report:EXECUTION_SCIENCE.json.attribution.median_drag_as_share_of_signal_alpha` (down) | - | - |  |
 | S24 | No-trade as a first-class action in the exchange | DONE | EXECUTION_CAPTURE | `exchange.metric.defer_share` (up) | - | - |  |
 | S25 | Opportunity exchange: bids cleared by robust E[log W] (shadow) | BLOCKED_ON_USER | ALPHA_DISCOVERY | `exchange.metric.expected_log_growth` (up) | - | - | the exchange's book steering the allocator (hookup 4): waits for PR #53 to run live cleanly, and live allocator edits are refused by the permission rule |
@@ -51,7 +51,7 @@ Every layer runs hourly (leg `tier_s` unless named). The verdict column is the c
 | S41 | Global state replay: ledgers re-derived from streams | DONE | OPERATIONAL_RISK | `replay.metric.reconstructible_share` (up) | - | - |  |
 | S42 | Continual recovery experiments: chaos campaigns and corruption drills on copies | BLOCKED_ON_BOX | OPERATIONAL_RISK | `chaos.metric.drills_failing` (down) | - | - | recovery experiments against a sandbox gateway with a faulty MT5 double; never the live terminal |
 | S43 | Mechanisms from other sciences | PARTIAL | ALPHA_DISCOVERY | `world_science.metric.hypotheses` (up) | - | - | operations-research and motif labs on the row stream |
-| S44 | Abstraction discovery: library learning over winning genomes | PARTIAL | PRODUCTIVITY | `grammar.metric.n_primitives` (up) | - | - | expression_factory reading the learned primitives as terminals |
+| S44 | Abstraction discovery: library learning over winning genomes | DONE | PRODUCTIVITY | `grammar.metric.n_primitives` (up) | - | - |  |
 | S45 | Scientific memory compression: failure theorems with provenance | DONE | PRODUCTIVITY | `failure_memory.metric.rows_per_statement` (up) | - | - |  |
 | S46 | Human-machine separation of powers: amendments ratified by the principal only | DONE | OPERATIONAL_RISK | `truth_kernel.metric.constitution_violation` (down) | - | - |  |
 
@@ -78,7 +78,7 @@ Every layer runs hourly (leg `tier_s` unless named). The verdict column is the c
 - **S19** Non-LLM intelligence: information, spectral, Kalman, queueing, ecology, network, MCMC labs: `libs/tiers/cross_science.py`, `desks/mt5/research/tier_s.py`; clock `hourly_cycle:tier_s`; artifact `desks/mt5/reports/tier_s/WORLD_SCIENCE.json`
 - **S20** Peer review panels: typed challenges with resolvers: `libs/tiers/review_panel.py`, `desks/mt5/research/tier_s.py`; clock `hourly_cycle:tier_s`; artifact `desks/mt5/reports/tier_s/REVIEW.json`
 - **S21** Auto-invented tests: proposed on one suite, confirmed on another: `libs/tiers/test_invention.py`, `desks/mt5/research/tier_s.py`; clock `hourly_cycle:tier_s`; artifact `desks/mt5/reports/tier_s/TEST_INVENTION.json`
-- **S22** Evolving research grammars: primitives learned from winners, dead operators retired: `libs/tiers/evolution.py`, `desks/mt5/research/tier_s.py`; clock `hourly_cycle:tier_s`; artifact `desks/mt5/reports/tier_s/GRAMMAR.json`
+- **S22** Evolving research grammars: primitives learned from winners, dead operators retired: `libs/tiers/evolution.py`, `desks/mt5/research/tier_s.py`, `libs/tiers/grammar_bias.py`, `libs/research/alpha_grammar.py`; clock `hourly_cycle:tier_s`; artifact `desks/mt5/reports/tier_s/GRAMMAR.json`
 - **S23** Execution science: signal alpha separated from execution drag: `desks/mt5/research/execution_science.py`; clock `hourly_cycle:execution_science`; artifact `desks/mt5/reports/EXECUTION_SCIENCE.json`
 - **S24** No-trade as a first-class action in the exchange: `libs/tiers/opportunity_exchange.py`, `desks/mt5/research/tier_s.py`; clock `hourly_cycle:tier_s`; artifact `desks/mt5/reports/tier_s/EXCHANGE.json`
 - **S25** Opportunity exchange: bids cleared by robust E[log W] (shadow): `libs/tiers/opportunity_exchange.py`, `desks/mt5/research/tier_s.py`; clock `hourly_cycle:tier_s`; artifact `desks/mt5/reports/tier_s/EXCHANGE.json`
@@ -100,6 +100,6 @@ Every layer runs hourly (leg `tier_s` unless named). The verdict column is the c
 - **S41** Global state replay: ledgers re-derived from streams: `libs/tiers/replay.py`, `desks/mt5/research/tier_s.py`; clock `hourly_cycle:tier_s`; artifact `desks/mt5/reports/tier_s/REPLAY.json`
 - **S42** Continual recovery experiments: chaos campaigns and corruption drills on copies: `libs/tiers/chaos.py`, `desks/mt5/research/tier_s.py`; clock `hourly_cycle:tier_s`; artifact `desks/mt5/reports/tier_s/CHAOS.json`
 - **S43** Mechanisms from other sciences: `libs/tiers/cross_science.py`, `desks/mt5/research/market_ecology.py`, `desks/mt5/research/tier_s.py`; clock `hourly_cycle:tier_s`; artifact `desks/mt5/reports/tier_s/WORLD_SCIENCE.json`
-- **S44** Abstraction discovery: library learning over winning genomes: `libs/tiers/evolution.py`, `desks/mt5/research/tier_s.py`; clock `hourly_cycle:tier_s`; artifact `desks/mt5/reports/tier_s/GRAMMAR.json`
+- **S44** Abstraction discovery: library learning over winning genomes: `libs/tiers/evolution.py`, `desks/mt5/research/tier_s.py`, `libs/tiers/grammar_bias.py`, `libs/research/alpha_grammar.py`; clock `hourly_cycle:tier_s`; artifact `desks/mt5/reports/tier_s/GRAMMAR.json`
 - **S45** Scientific memory compression: failure theorems with provenance: `libs/tiers/failure_memory.py`, `desks/mt5/research/tier_s.py`; clock `hourly_cycle:tier_s`; artifact `desks/mt5/reports/tier_s/FAILURE_MEMORY.json`
 - **S46** Human-machine separation of powers: amendments ratified by the principal only: `libs/tiers/truth_kernel.py`, `libs/tiers/firewall.py`, `desks/mt5/research/tier_s.py`; clock `hourly_cycle:tier_s`; artifact `desks/mt5/reports/tier_s/TRUTH_KERNEL.json`

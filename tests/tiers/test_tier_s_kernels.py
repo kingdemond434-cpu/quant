@@ -353,6 +353,9 @@ def test_grammar_round_trip_and_learned_bias(tmp_path) -> None:
 
     e = ["zscore", ["sub", "close", "open"], 20]
     assert ag.from_str(ag.to_str(e)) == e
+    e = next(x for x in (ag.random_expr(_np.random.default_rng(s), 3) for s in range(50))
+             if isinstance(x, list))
+    assert ag.from_str(ag.to_str(e)) == e
     # no weights: the draw is the uniform one, identical for the same seed
     a = ag.random_expr(_np.random.default_rng(3), 3)
     b = ag.random_expr(_np.random.default_rng(3), 3, op_weights=None, primitives=None)
