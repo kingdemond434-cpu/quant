@@ -869,6 +869,11 @@ CORE_LEGS: frozenset[str] = frozenset({
     # THE INGESTION-EXPLOITATION GATE (LAWS 5c): an artifact read and two ratchets, every pass.
     # The LEDGER it reads is heavy and stays in the data department; the gate is not.
     "ingestion_exploitation",
+    # THE LIVE-TRUTH ORGANS (Tier-1 audit #6/#17/#18/#19/#20, 2026-09-29): readers of artifacts
+    # the desk already writes, each a few seconds. The calibration posterior runs before the
+    # tracker, which reads it.
+    "live_calibration_posterior", "constrained_book", "experimental_budget",
+    "ops_redundancy", "forward_evidence_tracker",
 })
 
 
@@ -4823,6 +4828,26 @@ def main() -> None:
         "opportunity_forecast", "research/opportunity_forecast.py"))
     erl = _costed("edge_reliability", lambda: _producer(
         "edge_reliability", "research/edge_reliability.py"))
+    # LIVE TRUTH, CLOSED INTO RESEARCH CREDIT AND KEPT AS A SERIES (Tier-1 audit, 2026-09-29):
+    #   live_calibration_posterior  kappa = realised / claimed Sharpe per producer, Bayesian;
+    #                               bandit.calibration_credit reads it (research budget, live)
+    #   constrained_book            every risk clause as a hard constraint in the E[log W]
+    #                               solve, as a SHADOW (constrained_elog.FEEDS_LIVE = False)
+    #   experimental_budget         the principal's override sleeves in their own ledger/budget
+    #   ops_redundancy              journal replay, off-box restore drill, terminal health,
+    #                               independent price cross-check, duplicate-position count
+    #   forward_evidence_tracker    survival / degradation / calibration / breadth / cost /
+    #                               capacity / hit rate as an append-only hourly series
+    lcp = _costed("live_calibration_posterior", lambda: _producer(
+        "live_calibration_posterior", "research/live_calibration_posterior.py"))
+    cbk = _costed("constrained_book", lambda: _producer(
+        "constrained_book", "research/constrained_book.py"))
+    xbg = _costed("experimental_budget", lambda: _producer(
+        "experimental_budget", "research/experimental_budget.py"))
+    opr = _costed("ops_redundancy", lambda: _producer(
+        "ops_redundancy", "research/ops_redundancy.py"))
+    fet = _costed("forward_evidence_tracker", lambda: _producer(
+        "forward_evidence_tracker", "research/forward_evidence_tracker.py"))
     # THE ARENA AND THE CLOCK'S CAPITAL (Tier-1 AP5 and P18; 2026-09-09). The arena records a
     # verdict per research arm against the leader -- the count AP5 measures -- and retires
     # nothing; session_capital reports which four-hour bands of the day the book's heat never
@@ -5016,6 +5041,9 @@ def main() -> None:
                     "quantbench": qbn, "evidence_chain": evc, "clock_ledger": ckl,
                     "shortfall_model": shm, "counterfactual_timeframes": ctf, "meta_rnd": mrd,
                     "edge_reliability": erl, "arena": ar, "session_capital": scap,
+                    "live_calibration_posterior": lcp, "constrained_book": cbk,
+                    "experimental_budget": xbg, "ops_redundancy": opr,
+                    "forward_evidence_tracker": fet,
                     "prosecutor": pc, "scaling_laws": slw,
                     "dead_architecture": dac, "producer_census": prdc,
                     "productivity_census": prodc, "input_identity": iid,
