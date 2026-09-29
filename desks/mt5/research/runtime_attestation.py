@@ -57,6 +57,7 @@ import json
 import os
 import platform
 import socket
+import sys
 import time
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -65,6 +66,12 @@ from typing import Any
 
 DESK = Path(__file__).resolve().parents[1]
 ROOT = DESK.parents[1]
+# RUN AS A SCRIPT, `desks` IS NOT IMPORTABLE WITHOUT THIS (2026-09-29). The hourly leg runs this
+# file by path with cwd desks/mt5, so sys.path[0] is desks/mt5/research and `organ_rows`'s
+# `from desks.mt5.ops.components import registry` raised ModuleNotFoundError on every pass unless
+# the host happened to export PYTHONPATH -- and the committed attestation sat at 2026-09-23.
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
 #: The one string for "this tree does not know" (L1.28a). Never a zero, never an empty cell.
 UNMEASURED = "UNMEASURED"
@@ -202,9 +209,21 @@ def host_identity(paths: Paths) -> dict[str, Any]:
     sha, branch = _git_sha(paths.root)
     now = _now()
     try:
-        gw_age = now - paths.gateway.stat().st_mtime
+        gw_age: float | None = now - paths.gateway.stat().st_mtime
     except OSError:
         gw_age = None
+    # A CHECKOUT RESETS st_mtime, AND gateway_state.json IS TRACKED (2026-09-29). A fresh clone
+    # therefore read as `trading_host` for three hours, on a machine with no terminal at all. The
+    # file's own stamps are the gateway's, so the role is judged by the OLDER of the two ages when
+    # the file carries any: a checkout can make the file look new, never its contents.
+    gw_doc = _read_json(paths.gateway) or {}
+    stamps: list[float] = []
+    for key in ("last_reconcile", "placement_pass", "updated_at", "at", "ts"):
+        with contextlib.suppress(KeyError, TypeError, ValueError):
+            stamps.append(datetime.fromisoformat(str(gw_doc[key]).replace("Z", "+00:00"))
+                          .timestamp())
+    if gw_age is not None and stamps:
+        gw_age = max(gw_age, now - max(stamps))
     rel = _read_json(paths.release) or {}
     if gw_age is None:
         role, why = "non_trading_host", "no gateway_state.json on this host"

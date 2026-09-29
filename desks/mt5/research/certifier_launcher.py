@@ -18,20 +18,27 @@ BASE = Path(__file__).resolve().parent.parent
 if str(BASE) not in sys.path:
     sys.path.insert(0, str(BASE))
 
+#: A launcher owns no artifact of its own: its proof of running is the battery it launches, which
+#: writes reports/QQUANT_GATES.json. Declared so the component registry and the runtime
+#: attestation can hold this organ's row against the file that actually moves when it runs.
+ARTIFACT = BASE / "reports" / "QQUANT_GATES.json"
+
 from research.job_lock import exclusive_job  # noqa: E402
 
 
 def main(argv: list[str] | None = None) -> int:
     args = list(sys.argv[1:] if argv is None else argv)
     env = os.environ.copy()
-    for name in ("OPENBLAS_NUM_THREADS", "OMP_NUM_THREADS", "MKL_NUM_THREADS", "NUMEXPR_NUM_THREADS"):
+    for name in ("OPENBLAS_NUM_THREADS", "OMP_NUM_THREADS", "MKL_NUM_THREADS",
+                 "NUMEXPR_NUM_THREADS"):
         env[name] = "1"
 
     with exclusive_job("certification_lane", need_mb=0) as acquired:
         if not acquired:
             print("qquant_gates: DEFERRED -- another canonical certifier owns the lane", flush=True)
             return 0
-        command = [sys.executable, "-u", "-W", "ignore", str(BASE / "research" / "qquant_gates.py"), *args]
+        command = [sys.executable, "-u", "-W", "ignore",
+                   str(BASE / "research" / "qquant_gates.py"), *args]
         return subprocess.run(command, cwd=BASE, env=env, check=False).returncode
 
 

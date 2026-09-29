@@ -80,6 +80,8 @@ CLOCK_STORES = ("reports/shadow/shadow_state.json",
                 "reports/shadow/precert_shadow_state.json")
 #: The append-only history. A row leaves the live store only by arriving here first.
 LEDGER = "data/retired_clocks.jsonl"
+#: That ledger in the production desk: this organ's artifact, as the component registry reads it.
+ARTIFACT = DESK / LEDGER
 #: The tombstone container written back into the clock store: a key that was retired is not the
 #: same answer as a key that never existed, and a reader in the file must be able to tell them
 #: apart without opening the ledger.
