@@ -176,7 +176,7 @@ def read_tape(path: Path, *, max_rows: int = MAX_TAPE_ROWS) -> dict[str, np.ndar
         try:
             import pandas as pd
             recv = pd.to_datetime(frame["recv_utc"], utc=True, errors="coerce")
-            rm = recv.astype("int64").to_numpy(dtype=float) / 1e6
+            rm = recv.dt.as_unit("ns").astype("int64").to_numpy(dtype=float) / 1e6
             rm[recv.isna().to_numpy()] = np.nan
             out["recv_ms"] = rm[ok]
         except Exception:
@@ -292,7 +292,7 @@ def observe_instrument(symbol: str, tape: Mapping[str, np.ndarray], bars: Any, n
     if bars is not None and "close" in getattr(bars, "columns", ()):
         try:
             tail = bars.tail(REF_BARS)
-            ends = tail.index.astype("int64").to_numpy(dtype=float) / 1e6 + 3_600_000.0
+            ends = tail.index.as_unit("ns").asi8.astype(float) / 1e6 + 3_600_000.0
             ref_t, ref_mid = minute_mids(tape["full"] if tape.get("full") is not None else tape)
             ref = fo.reference_consistency(ends, tail["close"].to_numpy(dtype=float),
                                            ref_t, ref_mid,
@@ -338,8 +338,8 @@ def _forward_returns(bars: Any, horizon: int) -> tuple[np.ndarray, np.ndarray] |
     close = bars["close"].to_numpy(dtype=float)
     step = 0.0
     if len(bars.index) > 1:
-        step = float(np.median(np.diff(bars.index.astype("int64").to_numpy(dtype=float)))) / 1e6
-    ends = bars.index.astype("int64").to_numpy(dtype=float) / 1e6 + step
+        step = float(np.median(np.diff(bars.index.as_unit("ns").asi8.astype(float)))) / 1e6
+    ends = bars.index.as_unit("ns").asi8.astype(float) / 1e6 + step
     fwd = close[horizon:] / close[:-horizon] - 1.0
     return ends[:-horizon], fwd
 
