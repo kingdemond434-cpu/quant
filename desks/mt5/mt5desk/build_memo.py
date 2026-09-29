@@ -70,11 +70,11 @@ class Memo:
                  copier: Callable[[Any], Any] = copy.deepcopy) -> None:
         self.entries = entries
         self.copier = copier
-        self._d: OrderedDict[tuple, Any] = OrderedDict()
+        self._d: OrderedDict[tuple[Any, ...], Any] = OrderedDict()
         self.hits = 0
         self.misses = 0
 
-    def get_or_compute(self, key: tuple, compute: Callable[[], Any]) -> Any:
+    def get_or_compute(self, key: tuple[Any, ...], compute: Callable[[], Any]) -> Any:
         if key in self._d:
             self._d.move_to_end(key)
             self.hits += 1

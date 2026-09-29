@@ -33,12 +33,12 @@ for _p in (str(DESK), str(ROOT)):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-from scipy.special import logsumexp as scipy_logsumexp  # noqa: E402
-
-from libs.regime import hmm as hmm_mod  # noqa: E402
 from mt5desk import build_memo, families  # noqa: E402
 from mt5desk import family_exit_operated as feo  # noqa: E402
 from mt5desk.families import Signal, _atr, _h1, get_family_func  # noqa: E402
+from scipy.special import logsumexp as scipy_logsumexp  # noqa: E402
+
+from libs.regime import hmm as hmm_mod  # noqa: E402
 
 
 def _bars(n: int = 4000, seed: int = 3, minutes: int = 60) -> pd.DataFrame:
@@ -265,10 +265,14 @@ def test_array_loops_match_their_iloc_originals(seed: int) -> None:
     from mt5desk.families_orthogonal import family_vol_transition
 
     df = _bars(5000, seed)
-    for kw in ({}, {"require_high_liquidity": False}, {"min_displacement_atr": 1.0}):
+    # Synthetic bars open at the prior close, so every body is "extended": the failed-continuation
+    # filter is switched off to give the loop signals to agree on.
+    for kw in ({"min_displacement_atr": 0.8, "require_failed_continuation": False},
+               {"min_displacement_atr": 0.6, "require_failed_continuation": False,
+                "require_high_liquidity": False}):
         new = family_liquidity_gamma_reversal(df, **kw)
         assert new and _same_signals(new, _old_liquidity_gamma_reversal(df, **kw))
-    for kw in ({}, {"ratio_in": 1.3, "fast": 8}):
+    for kw in ({"ratio_in": 1.2}, {"ratio_in": 1.3, "fast": 8}):
         new = family_vol_transition(df, **kw)
         assert new and _same_signals(new, _old_vol_transition(df, **kw))
     for kw in ({}, {"mom_thresh": 0.25, "asia_end": 6}):

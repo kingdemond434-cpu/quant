@@ -8,10 +8,12 @@ dependency for a 2-3 state market regime.
 
 from __future__ import annotations
 
+from typing import Any
+
 import numpy as np
 
 
-def logsumexp(a: np.ndarray, axis: int = 0, keepdims: bool = False) -> np.ndarray:
+def logsumexp(a: np.ndarray, axis: int = 0, keepdims: bool = False) -> Any:
     """`scipy.special.logsumexp` for a real float64 array, BIT-IDENTICAL, without its dispatch.
 
     WHY THIS EXISTS (measured 2026-09-29, `desks/mt5/tests/test_judging_speed_equivalence.py`).
