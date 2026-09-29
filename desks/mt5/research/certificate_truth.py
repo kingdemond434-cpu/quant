@@ -1527,9 +1527,12 @@ def apply(paths: Paths, doc: dict[str, Any] | None = None,
     # earn. Banned-family rows are unaffected: a ban is a decision, not a measurement.
     # LAWS 7: the canon must also be LIVE (fresh within its writer's lease, rows present) before
     # anything is retired on its word -- the 837-row incident read a 46.7h-stale canon.
-    from libs.ops.reference_freshness import require_live_reference
-    ref = require_live_reference(paths.seal, actor="certificate_truth.apply",
-                                 action="retire unbacked rows", min_rows=1)
+    # The lease is the seal's registered one, so a relocated desk (tests, a probe worktree) is
+    # judged by the same clock as the real file rather than read as lease-less.
+    from libs.ops.reference_freshness import DERIVED_LEASES, require_live_reference
+    ref = require_live_reference(
+        paths.seal, actor="certificate_truth.apply", action="retire unbacked rows", min_rows=1,
+        lease_s=DERIVED_LEASES["desks/mt5/data/UNIVERSAL_SURVIVORS.canon.json"][0])
     lane_settled = (lane_status == "EXACT" and int(doc["canon"].get("n") or 0) > 0
                     and int(doc["canon"].get("restorable_n") or 0) == 0 and ref.live)
     if not lane_settled:
