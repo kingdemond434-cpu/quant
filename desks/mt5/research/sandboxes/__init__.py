@@ -30,7 +30,8 @@ from libs.research.external_federation import ExternalResearchPacket
 CELLS: tuple[str, ...] = ("path_signature_lab", "conformal_calibration", "coevolution_cell",
                           "edgar_transmission", "rl_execution_challenger",
                           "agent_research_challenger", "gold_public_mechanisms",
-                          "chan_structure_lab", "quantrade_challenger")
+                          "chan_structure_lab", "quantrade_challenger",
+                          "prediction_market_donor")
 
 
 @dataclass(frozen=True)
