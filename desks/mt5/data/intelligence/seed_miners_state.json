@@ -1,5 +1,5 @@
 {
-"forextsd_offset": 6600,
+"forextsd_offset": 6900,
 "gh_stars": {
 "Meridiansz/MT5-Popular-Charts-Dashboard": 0,
 "ZovraT/MT5-volume-profile-indicator": 2,
@@ -58,6 +58,6 @@
 "collective2": "2026-09-26T05:25:08+00:00",
 "forexpeacearmy": "2026-09-26T05:25:11+00:00"
 },
-"darwinex_cdx_offset": 3600,
+"darwinex_cdx_offset": 3900,
 "propfirm_cursor": 30
 }
