@@ -93,7 +93,10 @@ MAX_PARSE_BYTES = 8_000_000
 
 #: The size the JSON is held under by construction. When rows would push past it, summaries are
 #: dropped from the tail and the count of trimmed rows is published -- never a silent truncation.
-MAX_JSON_BYTES = 400_000
+#: 800 KB since 2026-09-29: the registry now reads each organ's own artifact declaration and the
+#: law gate's record for its fences, so the attested set went from ~370 organs to ~800. Rows are
+#: scalars and hashes only, so the bound still holds by construction; it scales with the roster.
+MAX_JSON_BYTES = 800_000
 
 #: How much of the event log one pass reads (its tail). The log is append-only and the last run of
 #: each organ is near its end; reading it whole would grow without bound.
@@ -431,6 +434,9 @@ def organ_rows(paths: Paths, budget_s: float) -> tuple[list[dict[str, Any]], dic
         rows.append({
             "organ": spec.component_id,
             "kind": spec.kind,
+            # The file(s) that ARE the organ, so a reader -- and the birth fence -- can find the
+            # row for `run_desk_self_heal.py` when its clock names it `leg:desk_self_heal`.
+            "code": [p for p in spec.code_paths if p != "desks/mt5/research/hourly_cycle.py"],
             "clock": spec.schedule if spec.scheduled else UNMEASURED,
             "cadence_s": spec.cadence_s,
             "max_silence_s": spec.max_silence_s,
@@ -478,13 +484,18 @@ def _trim(doc: dict[str, Any]) -> dict[str, Any]:
     exactly the kind of evidence this organ exists to replace.
     """
     trimmed = 0
+    mark = {"_": f"{UNMEASURED} (trimmed to hold the file under {MAX_JSON_BYTES // 1000} KB)"}
+    # A TRIMMED ROW IS NOT A VICTIM AGAIN (2026-09-29). The replacement summary is itself a
+    # non-empty dict, so `r.get("summary")` kept selecting the row it had just trimmed: whenever
+    # the document could not be brought under the cap, this loop never ended. It surfaced the day
+    # the registry began declaring each organ's own artifact and the attested set doubled.
     while len(json.dumps(doc, default=str)) > MAX_JSON_BYTES:
         victim = next((r for r in reversed(doc["organs"])
-                       if r["state"] == "LIVE" and r.get("summary")), None)
+                       if r["state"] == "LIVE" and r.get("summary")
+                       and r["summary"] != mark), None)
         if victim is None:
             break
-        victim["summary"] = {"_": f"{UNMEASURED} (trimmed to hold the file under "
-                                  f"{MAX_JSON_BYTES // 1000} KB)"}
+        victim["summary"] = dict(mark)
         trimmed += 1
     doc["scope"]["summaries_trimmed"] = trimmed
     return doc

@@ -898,6 +898,13 @@ def law_gate_specs(root: Path | None = None) -> list[ComponentSpec]:
             cadence_s=3600, timeout_s=600, progress_metric="gate_runs",
             owner="law_gate", restart_action="scripts/run_law_gate.py",
             criticality="optional", resource_budget={"budget_s": 600},
+            # THE GATE'S RECORD IS THE FENCE'S ARTIFACT, exactly as BATTERY_<NAME>.json is a
+            # rostered organ's: run_law_gate writes every fence's verdict and the time it ran
+            # into data/law_gate.json, and plumbing_watchdog reads it as the record that the
+            # battery ran. Until 2026-09-29 a fence declared no output at all, so none of the
+            # law gate's fences could hold a row in the runtime attestation.
+            outputs=("data/law_gate.json",),
+            consumers=("desks/mt5/research/plumbing_watchdog.py",),
             schedule="run_law_gate.py", artifact_class="hourly",
             notes="fence listed in scripts/run_law_gate.py (_LAW_FENCES/_STATE_FENCES)"))
     return out
@@ -1192,6 +1199,140 @@ def reach_specs(reg: Registry, root: Path | None = None,
 
 
 # ------------------------------------------------------------------------------ the registry
+#: The module-level names an organ binds its OWN artifact to, in the order they are trusted. `OUT`
+#: before `REPORT`, because several organs bind REPORT to an artifact they READ (canon_publication
+#: reads UNIVERSAL_SURVIVORS as REPORT and writes CANON_PUBLICATION as OUT; the exemption fence
+#: reads MODULE_RENT_RESEARCH as REPORT and writes ARTIFACT).
+_OWN_ARTIFACT_NAMES: tuple[str, ...] = ("OUT", "_OUT", "OUT_JSON", "ARTIFACT", "REPORT",
+                                        "_REPORT", "REPORT_PATH")
+_OWN_ARTIFACT_SUFFIX: tuple[str, ...] = (".json", ".jsonl")
+
+
+def _path_expr(node: ast.AST, here: Path, env: dict[str, Path]) -> Path | None:
+    """Evaluate the Path expressions organs bind their artifacts with, WITHOUT importing them:
+    `Path(__file__).resolve().parents[k]`, `.parent`, a name bound earlier in the module, and `/`
+    joins of those with string literals. Anything else is unresolvable and returns None."""
+    if isinstance(node, ast.Constant) and isinstance(node.value, str):
+        return Path(node.value)
+    if isinstance(node, ast.Name):
+        return env.get(node.id)
+    if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Div):
+        left, right = _path_expr(node.left, here, env), _path_expr(node.right, here, env)
+        if left is None or right is None or right.is_absolute():
+            return None
+        return left / right
+    if isinstance(node, ast.Call):
+        f = node.func
+        if isinstance(f, ast.Name) and f.id == "Path" and len(node.args) == 1 \
+                and isinstance(node.args[0], ast.Name) and node.args[0].id == "__file__":
+            return here
+        if isinstance(f, ast.Attribute) and f.attr in ("resolve", "absolute") and not node.args:
+            return _path_expr(f.value, here, env)
+        return None
+    if isinstance(node, ast.Attribute) and node.attr == "parent":
+        base = _path_expr(node.value, here, env)
+        return None if base is None else base.parent
+    if isinstance(node, ast.Subscript) and isinstance(node.value, ast.Attribute) \
+            and node.value.attr == "parents" and isinstance(node.slice, ast.Constant) \
+            and isinstance(node.slice.value, int):
+        base = _path_expr(node.value.value, here, env)
+        if base is None or node.slice.value >= len(base.parents):
+            return None
+        return base.parents[node.slice.value]
+    return None
+
+
+def own_artifact(rel: str, root: Path | None = None) -> tuple[str, ...]:
+    """The artifact an organ declares for itself as a module-level constant, repo-relative.
+
+    WHY THIS EXISTS (2026-09-29). A component's `outputs` came only from the Tier-1 ledger (legs)
+    and the battery rosters, so an organ that joined a clock and bound its artifact in its own
+    source -- `OUT = DESK / "reports" / "X.json"` -- still read "declares no output artifact" and
+    was left out of the runtime attestation. 43 executables arrived that way in six days and the
+    birth fence named every one. The declaration was already written; it was never read. This
+    reads it, parsed and never imported, so it means the same in CI, a fresh clone and on the box.
+    An unresolvable expression declares nothing rather than guessing.
+    """
+    base = (root or ROOT).resolve()
+    path = base / rel
+    try:
+        tree = ast.parse(_read_text(path))
+    except (SyntaxError, ValueError):
+        return ()
+    env: dict[str, Path] = {}
+    bound: dict[str, Path] = {}
+    for node in tree.body:
+        if isinstance(node, ast.Assign) and len(node.targets) == 1 \
+                and isinstance(node.targets[0], ast.Name):
+            name, value = node.targets[0].id, node.value
+        elif isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name) \
+                and node.value is not None:
+            name, value = node.target.id, node.value
+        else:
+            continue
+        got = _path_expr(value, path, env)
+        if got is None:
+            continue
+        env[name] = got
+        if name in _OWN_ARTIFACT_NAMES and got.is_absolute() \
+                and got.suffix in _OWN_ARTIFACT_SUFFIX:
+            bound.setdefault(name, got)
+    for name in _OWN_ARTIFACT_NAMES:
+        got = bound.get(name)
+        if got is None:
+            continue
+        try:
+            return (got.resolve().relative_to(base).as_posix(),)
+        except ValueError:
+            continue
+    return ()
+
+
+def _declare_own_artifacts(reg: Registry, root: Path | None = None) -> None:
+    """Give every spec that declares no output the artifact its own code binds, if it binds one.
+
+    Only the file that IS the organ is read: a leg's producer (never hourly_cycle.py, which every
+    leg names), or the single code path of a reached or discovered executable."""
+    from dataclasses import replace
+    for s in reg.all():
+        if s.outputs:
+            continue
+        own = [p for p in s.code_paths if p != "desks/mt5/research/hourly_cycle.py"]
+        if len(own) != 1 or not own[0].endswith(".py"):
+            continue
+        outs = own_artifact(own[0], root)
+        if outs:
+            reg.add(replace(s, outputs=outs,
+                            expected_artifact_schema=(s.expected_artifact_schema
+                                                      if s.expected_artifact_schema != UNMEASURED
+                                                      else outs[0])), replace=True)
+    # A REACHED organ THAT BINDS NO ARTIFACT OF ITS OWN runs when its reacher runs -- a launcher,
+    # a fetch helper, a library with a demo `__main__` -- so the proof that it ran is the
+    # reacher's artifact, exactly as a rostered organ's proof is its battery's BATTERY_<NAME>.json.
+    # Chains (a helper reached by a reached organ) resolve over a few rounds; a reacher that
+    # declares nothing either leaves the organ declaring nothing, never a guess.
+    for _ in range(4):
+        by_code: dict[str, tuple[str, ...]] = {}
+        for s in reg.all():
+            if s.outputs:
+                for p in s.code_paths:
+                    if p != "desks/mt5/research/hourly_cycle.py":
+                        by_code.setdefault(p, s.outputs)
+        changed = False
+        for s in reg.all():
+            if s.outputs or s.kind not in ("library", "executable"):
+                continue
+            prefix, _, via = s.schedule.partition(":")
+            if prefix not in ("import", "invoked") or via not in by_code:
+                continue
+            reg.add(replace(s, outputs=by_code[via],
+                            notes=f"{s.notes}; artifact inherited from its reacher {via}"),
+                    replace=True)
+            changed = True
+        if not changed:
+            break
+
+
 def build_registry(root: Path | None = None) -> Registry:
     reg = Registry()
     for group in (explicit_specs(), resident_specs(), hourly_leg_specs(), daily_step_specs(),
@@ -1202,6 +1343,7 @@ def build_registry(root: Path | None = None) -> Registry:
             reg.add(s, replace=True)
     reg.add_all(reach_specs(reg, root, dynamic_reach_roots(root)), replace=True)
     reg.add_all(discovered_specs(reg.claimed_paths(), root), replace=True)
+    _declare_own_artifacts(reg, root)
     # The reach walk just parsed every python file it had not seen before; write what it learned
     # so the next build -- including the census's own second pass -- does not repeat the work.
     stems_cache_flush()

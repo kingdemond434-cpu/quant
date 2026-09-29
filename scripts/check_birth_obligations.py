@@ -147,9 +147,31 @@ def _executables(root: Path) -> tuple[set[str], set[str], str]:
     if not attested.strip():
         return objects, set(), (f"{UNMEASURED}: docs/research/runtime_state.json is absent, so "
                                 f"no executable can be shown to have a row in it")
+    registry_clocked = _registry_clocked(root)
     ok = {rel for rel in objects
-          if (Path(rel).stem in clocks or rel in clocks) and Path(rel).stem in attested}
+          if (Path(rel).stem in clocks or rel in clocks or rel in registry_clocked)
+          and (Path(rel).stem in attested or f'"{rel}"' in attested)}
     return objects, ok, f"{len(ok)}/{len(objects)} executables carry a clock and an attested row"
+
+
+def _registry_clocked(root: Path) -> set[str]:
+    """Every file the component registry puts on a clock -- the fence that OWNS this half.
+
+    WHY NOT ONLY THE GREP ABOVE (2026-09-29). CLOCK_DECLARATIONS is six files; the registry reads
+    every clock the desk has -- the two standing batteries, the VPS crontab and systemd units, the
+    law gate, the git hooks, and the organs a clocked organ imports or invokes. So an organ rostered
+    on a battery, or a launcher its supervisor runs, read "no clock" here while
+    `check_component_registry.py` (this axis's own fence) counted it clocked: 14 of the 43
+    executables this fence named on 2026-09-29 were that disagreement, not a missing clock. The
+    grep stays; the registry's verdict is added to it. An unbuildable registry adds nothing.
+    """
+    try:
+        if str(root) not in sys.path:
+            sys.path.insert(0, str(root))
+        from desks.mt5.ops.components import registry
+        return {p for s in registry(root).all() if s.scheduled for p in s.code_paths}
+    except Exception:                                   # pragma: no cover - import guard
+        return set()
 
 
 def _sources(root: Path) -> tuple[set[str], set[str], str]:
