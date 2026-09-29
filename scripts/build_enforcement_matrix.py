@@ -528,7 +528,10 @@ _MAP: dict[str, list[str]] = {
     # law gate already runs the ratchet that fails when its debt rises: check_conversion_debt
     # counts the five components through `conversion_maximiser.measure_debt` itself. The law
     # arrived mapped to neither and the matrix called it UNENFORCED (2026-09-29).
-    "L1.68": ["scripts/check_conversion_debt.py", "desks/mt5/research/conversion_maximiser.py"],
+    # (The organ itself is not cited here: check_enforcement_execution cannot see the hourly
+    # cycle's `_producer("...", "research/conversion_maximiser.py")` as an invocation and reads it
+    # MENTIONED. The fence is the enforcement; it measures through the organ's own function.)
+    "L1.68": ["scripts/check_conversion_debt.py"],
     # R0369 (under L2.3/§42): an implemented row's --commit is the ledger's whole proof mechanism,
     # and it was enforced only at WRITE time -- `dispose` refuses an empty field and asks nothing
     # else. A rebase rewrites SHAs and the citation quietly names an object no other clone can
