@@ -6,6 +6,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
@@ -109,3 +110,34 @@ def test_no_modifiers_is_the_identity() -> None:
     sigs = [_sig(b, 5)]
     assert cm.apply(sigs, b, {}) == sigs
     assert cm.apply(sigs, b, {"representation": "price_only", "cost_aware": True}) == sigs
+
+
+def test_family_call_applies_the_same_modifiers_the_gauntlet_does():
+    """The forward clock and the live executor call `family_call.signals`; a cell the gauntlet
+    certified with a variant key must clock the same signals; a call without one is unchanged.
+    """
+    from dataclasses import dataclass
+
+    from mt5desk import family_call as fc
+
+    @dataclass(frozen=True)
+    class _S:
+        time: object
+        side: int
+        stop: float
+        target: float
+        trigger: object = None
+
+    idx = pd.date_range("2026-01-01", periods=5, freq="h")
+    bars = pd.DataFrame({"close": [1.0, 2.0, 3.0, 4.0, 5.0]}, index=idx)
+
+    def fam(b, lookback=3):
+        return [_S(idx[1], 1, 0.5, 3.0)]
+
+    plain = fc.signals(fam, bars, side=1, params={"lookback": 3})
+    assert plain == [_S(idx[1], 1, 0.5, 3.0)]
+    flipped = fc.signals(fam, bars, side=1, params={"lookback": 3, "side_mode": "revert"})
+    assert flipped == cm.apply(plain, bars, {"side_mode": "revert"})
+    assert flipped[0].side == -1
+    with pytest.raises(ValueError, match="NOT_RUN_MODIFIER"):
+        fc.signals(fam, bars, side=1, params={"regime": "risk_off"})
