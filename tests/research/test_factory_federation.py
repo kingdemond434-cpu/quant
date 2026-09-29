@@ -124,3 +124,25 @@ def test_only_consumer_owned_receipt_acknowledges_evaluator_handoff(
     runner.run(manifest=SPEC, state_path=state, inbox=inbox, report=report)
     saved = json.loads(state.read_text("utf-8"))["versions"][row["input_version_id"]]
     assert saved["consumer_ack"]["evaluator_handoff"] is True
+
+
+def test_receipt_without_compiled_candidate_cannot_acknowledge_empty_identity(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    runner = _runner()
+    inbox = tmp_path / "inbox"
+    inbox.mkdir()
+    receipts = tmp_path / "receipts"
+    receipts.mkdir()
+    state, report = tmp_path / "state.json", tmp_path / "report.json"
+    state.write_text(json.dumps({"versions": {"v": {
+        "candidate_id": "", "consumer_ack": {"evaluator_handoff": False},
+        "delivery": {"consumer_acknowledged": False}}}}), "utf-8")
+    (receipts / "empty.json").write_text(json.dumps({
+        "input_version_id": "v", "evaluator_id": "canonical-compiler",
+        "status": "EVALUATED", "verdict": "PASS"}), "utf-8")
+    monkeypatch.setattr(runner, "RECEIPTS", receipts)
+    monkeypatch.setattr(runner, "_register_surface", lambda row: True)
+    runner.run(manifest=SPEC, state_path=state, inbox=inbox, report=report)
+    saved = json.loads(state.read_text("utf-8"))["versions"]["v"]
+    assert saved["consumer_ack"]["evaluator_handoff"] is False
+    assert saved["delivery"]["consumer_acknowledged"] is False

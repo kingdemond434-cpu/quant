@@ -215,7 +215,7 @@ def run(*, apply: bool = True, budget_s: float = 120.0,
             status = str(receipt.get("status") or "").upper()
             evaluator_id = str(receipt.get("evaluator_id") or "")
             expected = str(record.get("candidate_id") or "")
-            if (status in {"RECEIVED", "ACCEPTED", "EVALUATED"} and evaluator_id and
+            if (expected and status in {"RECEIVED", "ACCEPTED", "EVALUATED"} and evaluator_id and
                     str(receipt.get("candidate_id") or "") == expected):
                 record.setdefault("consumer_ack", {})["evaluator_handoff"] = True
                 record.setdefault("delivery", {})["consumer_acknowledged"] = True
