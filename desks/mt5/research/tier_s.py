@@ -857,24 +857,45 @@ def _emit_orthogonal(steer: Mapping[str, Mapping[str, float]],
 
 
 def organ_qd() -> dict[str, Any]:
-    arch = evolution.Archive(("mechanism", "asset_class", "selector", "timeframe", "direction"))
+    # THE BEHAVIOUR SPACE IS THE DESK'S OWN (axis_registry.axis_cell: asset class, instrument,
+    # chart, session, horizon, mechanism, information source, economic actor, regime, execution
+    # style) plus direction and complexity -- the niches an elite can occupy are the ones the
+    # research programme already names, not a private five-axis grid
+    try:
+        import axis_registry
+        axis_cell = axis_registry.axis_cell
+    except Exception:
+        axis_cell = None
+    axes = ("mechanism", "asset_class", "session", "chart", "horizon", "information_source",
+            "economic_actor", "regime", "execution_style", "direction", "complexity")
+    arch = evolution.Archive(axes)
     shadow = shadow_rows()
     for key, row in survivors().items():
         if not isinstance(row, dict):
             continue
         spec = _spec(row)
         sym, fam = str(spec.get("symbol") or row.get("sym") or ""), str(spec.get("family") or "")
+        params = spec.get("params") or row.get("params") or {}
         q = float(((row.get("gates") or {}).get("expected_value") or {}).get("ev") or 0.0)
         fw = shadow.get(f"{sym}.{spec.get('selector')}") or {}
         if fw.get("exp_r") is not None:
             q = 0.5 * q + 0.5 * float(fw["exp_r"])
-        arch.add(str(key), {"mechanism": _mechanism(fam), "asset_class": _asset_class(sym),
-                            "selector": spec.get("selector") or "?", "timeframe":
-                            spec.get("timeframe") or "H1", "direction":
-                            spec.get("direction") or "?", "family": fam, "symbol": sym}, q)
+        if axis_cell is not None:
+            ax = dict(axis_cell(sym, fam, params if isinstance(params, dict) else {},
+                                timeframe=spec.get("timeframe"),
+                                session=spec.get("selector") or spec.get("session")))
+        else:
+            ax = {"mechanism": _mechanism(fam), "asset_class": _asset_class(sym),
+                  "session": str(spec.get("selector") or "?")}
+        n_par = len(params) if isinstance(params, dict) else 0
+        ax.update({"direction": str(spec.get("side") or spec.get("direction") or "?"),
+                   "complexity": "simple" if n_par <= 3 else "moderate" if n_par <= 8
+                   else "complex", "family": fam, "symbol": sym})
+        arch.add(str(key), {k: ax.get(k, "?") for k in (*axes, "family", "symbol")}, q)
     cov = arch.coverage()
-    empty = arch.marginal_empty([("mechanism", "asset_class"), ("mechanism", "selector")],
-                                top=400)
+    empty = arch.marginal_empty([("mechanism", "asset_class"), ("mechanism", "session"),
+                                 ("mechanism", "horizon"), ("information_source", "asset_class"),
+                                 ("economic_actor", "session")], top=400)
     # empty (mechanism, asset class) niches -> registered families of that mechanism on symbols
     # of that class that are eligible for hypotheses
     vocab = _family_vocab()
@@ -887,16 +908,34 @@ def organ_qd() -> dict[str, Any]:
     for s in syms:
         if _may_hypothesise(s):
             by_cls[_asset_class(s)].append(s)
+    try:
+        import axis_registry
+        cls3 = {f: axis_registry.classify_family(f) for f in vocab}
+        actor = dict(getattr(axis_registry, "MECHANISM_ACTOR", {}))
+    except Exception:
+        cls3, actor = {}, {}
+    all_syms = [s for v in by_cls.values() for s in v]
     rows = []
     for e in empty:
-        m, c = e.get("mechanism"), e.get("asset_class")
-        if not m or not c:
-            continue
-        for f in by_mech.get(str(m), [])[:2]:
-            for s in by_cls.get(str(c), [])[:3]:
-                rows.append({"kind": "hypothesis", "family": f, "symbols": [s],
-                             "text": f"tier_s MAP-Elites: niche ({m}, {c}) holds no elite; "
-                                     f"{f} on {s} is the probe", "niche": e})
+        # families that can occupy the niche: by mechanism, information source or actor
+        fams = [f for f in vocab
+                if ("mechanism" not in e or _mechanism(f) == e["mechanism"])
+                and ("information_source" not in e or (cls3.get(f) or ("", "", ""))[1]
+                     == e["information_source"])
+                and ("economic_actor" not in e or actor.get((cls3.get(f) or ("",))[0])
+                     == e["economic_actor"])]
+        pool = by_cls.get(str(e["asset_class"]), []) if "asset_class" in e else all_syms
+        extra = {"session": e["session"]} if e.get("session") not in (None, "all", "?") \
+            else {}
+        label = ", ".join(f"{k}={v}" for k, v in e.items())
+        for f in fams[:2]:
+            for s in pool[:3]:
+                r: dict[str, Any] = {"kind": "hypothesis", "family": f, "symbols": [s],
+                                     "text": f"tier_s MAP-Elites: niche ({label}) holds no "
+                                             f"elite; {f} on {s} is the probe", "niche": e}
+                if extra:
+                    r["params"] = extra
+                rows.append(r)
     emitted = _emit("qd_niches", rows)
     return {"coverage": cov, "empty_projections": empty[:40], "weak": arch.weak(10),
             "emitted": emitted,

@@ -126,7 +126,7 @@
     "better": "up",
     "organ": "qd"
    },
-   "remaining": "archive keyed on all axis_registry axes plus complexity, capacity and correlation cluster"
+   "remaining": "capacity and correlation-cluster axes (the ten axis_registry axes, direction and complexity are live)"
   },
   {
    "id": "S07",
