@@ -102,7 +102,9 @@ NODES: tuple[Node, ...] = (
                 "desks/mt5/data/hypothesis_graph.jsonl")),
     Node("factor_residual_engine", "desks/mt5/research/factor_residual_engine.py",
          writes=("desks/mt5/data/intelligence/", "desks/mt5/reports/factor_residual.json"),
-         reads=("desks/mt5/data/universe/",)),
+         # SPREAD_PROVENANCE.json is the cost-basis fence (`_cost_basis`): a residual proposal
+         # whose spread was re-measured wider is re-costed before it is donated.
+         reads=("desks/mt5/data/universe/", "desks/mt5/reports/SPREAD_PROVENANCE.json")),
     Node("plumbing_miner", "desks/mt5/research/plumbing_miner.py",
          writes=("desks/mt5/data/intelligence/", "desks/mt5/reports/plumbing_miner.json"),
          reads=("desks/mt5/data/universe/",)),
@@ -128,7 +130,13 @@ NODES: tuple[Node, ...] = (
                 # to the liquidity_regime and orderflow_imbalance families. The edge was real
                 # and undeclared, so the graph could not see that a starved tape starves two
                 # families of the gauntlet.
-                "desks/mt5/data/tape/ticks/"),
+                "desks/mt5/data/tape/ticks/",
+                # THE DOCKET. `merge_hypotheses` documents it as the gauntlet's one hypothesis
+                # input and external_gauntlet.py reads `HYP / "external_survivors.json"`; the
+                # graph declared the compiler's candidates and not this, so every organ that
+                # writes the docket (requeue_unrunnable, session_chart_expansion) read as
+                # reaching nothing.
+                "desks/mt5/data/hypotheses/external_survivors.json"),
          authority=("certificate",)),
     Node("scalp_gauntlet", "desks/mt5/scripts/scalp_gauntlet.py",
          # the scalp lane's ten-gate verdicts and certificates; external_gauntlet merges the
@@ -229,7 +237,11 @@ NODES: tuple[Node, ...] = (
                  "desks/mt5/data/capital_modifier_ledger.jsonl"),
          reads=("desks/mt5/data/state_vector.json", "desks/mt5/reports/STATE_ADMISSION.json",
                 "backups/moat/shadow_ledgers/", "desks/mt5/data/universe/",
-                "desks/mt5/reports/hunt12_partial.json", "desks/mt5/data/rail_calibration.json"),
+                "desks/mt5/reports/hunt12_partial.json", "desks/mt5/data/rail_calibration.json",
+                # `_capacity_ceiling` hands CAPACITY.json's ceiling to the solve as capacity_max
+                # when (and only when) it is MEASURED; `_capacity_growth` republishes the per-
+                # sleeve curve and sizes nothing. Declared, not changed.
+                "desks/mt5/reports/CAPACITY.json"),
          authority=("sizing",),
          freshness_s={"desks/mt5/data/state_vector.json": 2 * 3600,
                       "desks/mt5/reports/STATE_ADMISSION.json": 3 * 24 * 3600},
@@ -670,16 +682,21 @@ NODES: tuple[Node, ...] = (
     Node("microstructure_census", "libs/research/microstructure_census.py",
          writes=("desks/mt5/reports/MICROSTRUCTURE.json",),
          reads=("desks/mt5/data/universe/universe.json", "desks/mt5/data/tape/")),
+    # entry_timing's inputs are its own CANON_REL / SURFACE_REL / UNIVERSE_REL constants; the
+    # SPREAD_PROVENANCE read declared here before was never in its source.
     Node("entry_timing", "desks/mt5/research/entry_timing.py",
          writes=("desks/mt5/reports/ENTRY_TIMING.json",),
-         reads=("desks/mt5/reports/SPREAD_PROVENANCE.json",
+         reads=("desks/mt5/data/UNIVERSAL_SURVIVORS.canon.json",
                 "desks/mt5/data/universe/universe.json")),
-    Node("spread_provenance", "desks/mt5/research/spread_provenance.py",
+    # The hourly leg `spread_provenance` runs scripts/repair_universe_spreads.py (report-only);
+    # there has never been a research/spread_provenance.py.
+    Node("spread_provenance", "desks/mt5/scripts/repair_universe_spreads.py",
          writes=("desks/mt5/reports/SPREAD_PROVENANCE.json",),
-         reads=("desks/mt5/data/universe/universe.json",)),
-    Node("tape_features", "desks/mt5/research/tape_features.py",
-         writes=("desks/mt5/reports/TAPE_RECORDER.json",),
-         reads=("desks/mt5/data/tape/",)),
+         reads=("desks/mt5/data/universe/universe.json", "desks/mt5/data/universe/")),
+    # (A second `tape_features` node pointing at a non-existent research/tape_features.py and
+    # claiming TAPE_RECORDER.json stood here. The leg runs recorders/tape_features.py, declared
+    # above, and TAPE_RECORDER.json is tick_recorder's. The duplicate name also shadowed the real
+    # node in `_decision_paths`, which is why tick_recorder read as reaching nothing.)
     Node("futures_lead_lag", "desks/mt5/research/futures_lead_lag.py",
          writes=("desks/mt5/reports/FUTURES_LEAD_LAG.json", "desks/mt5/reports/BAR_CLOCK.json"),
          reads=("desks/mt5/data/universe/",)),
@@ -694,7 +711,9 @@ NODES: tuple[Node, ...] = (
          writes=("desks/mt5/reports/edges_macro_fusion_sweep.json",),
          reads=("desks/mt5/data/universe/universe.json", "desks/mt5/data/universe/")),
     Node("queue_cycle", "libs/ops/queue_cycle.py",
-         writes=("desks/mt5/reports/QUEUE.json",),
+         # the journal is read AND written here: wiring_campaign / coverage_governor enqueue
+         # into it on every pass before the census folds it
+         writes=("desks/mt5/reports/QUEUE.json", "desks/mt5/data/task_queue.jsonl"),
          reads=("desks/mt5/data/task_queue.jsonl",)),
     Node("wiring_audit", "libs/ops/wiring_audit.py",
          writes=("desks/mt5/reports/WIRING_AUDIT.json",)),
@@ -736,7 +755,13 @@ NODES: tuple[Node, ...] = (
     Node("forecast_contract", "desks/mt5/research/forecast_contract.py",
          writes=("desks/mt5/reports/FORECAST_CONTRACT.json",)),
     Node("issue_board", "desks/mt5/research/issue_board.py",
-         writes=("desks/mt5/reports/ISSUE_BOARD.json",)),
+         writes=("desks/mt5/reports/ISSUE_BOARD.json",),
+         # its SOURCES table: each report is read for staleness and its open items
+         reads=("desks/mt5/reports/OPPORTUNITY_GAP.json",
+                "desks/mt5/reports/FORECAST_CONTRACT.json",
+                "desks/mt5/reports/EXPERIMENT_DESIGN.json",
+                "desks/mt5/reports/EDGE_CONFIDENCE.json", "desks/mt5/reports/CAPACITY.json",
+                "desks/mt5/reports/TIMEFRAME_COVERAGE.json")),
     Node("layer_census", "libs/research/layers.py",
          writes=("desks/mt5/reports/layer_census.json",)),
     Node("ml_layer", "desks/mt5/research/ml_layer.py",
@@ -786,7 +811,11 @@ NODES: tuple[Node, ...] = (
     Node("asia_collector", "desks/mt5/research/asia_collector.py",
          writes=("desks/mt5/reports/ASIA_COLLECTOR.json",)),
     Node("asia_plane", "desks/mt5/research/asia_plane.py",
-         writes=("desks/mt5/reports/ASIA_PLANE.json",)),
+         # SEAT = data/intelligence/asia: the plane donates to the compiler's intake, and
+         # `_have_data` counts the SGE benchmark as in hand from fetch_sge_premium's parquet
+         writes=("desks/mt5/reports/ASIA_PLANE.json", "desks/mt5/data/intelligence/"),
+         reads=("desks/mt5/data/lake/sge_daily.parquet",
+                "desks/mt5/data/universe/universe.json")),
     Node("cost_to_edge", "desks/mt5/research/cost_to_edge.py",
          writes=("desks/mt5/reports/COST_TO_EDGE.json",)),
     # Prices every arm of one decision (veto, sizing, execution, exit, missed trade); the rent
@@ -821,9 +850,13 @@ NODES: tuple[Node, ...] = (
          writes=("desks/mt5/reports/factor_residual.json",)),
     Node("session_allocation", "desks/mt5/research/session_allocator.py",
          writes=("desks/mt5/reports/SESSION_ALLOCATION.json",)),
+    # SESSION_ALLOCATION.json is session_allocation's output and this module's INPUT
+    # (SESSION_REPORT); what it writes is OUT and the gauntlet docket (DOCKET).
     Node("session_chart_expansion", "desks/mt5/research/session_chart_equivalents.py",
-         writes=("desks/mt5/reports/SESSION_ALLOCATION.json",
-                 "desks/mt5/reports/SESSION_CHART_EXPANSION.json")),
+         writes=("desks/mt5/reports/SESSION_CHART_EXPANSION.json",
+                 "desks/mt5/data/hypotheses/external_survivors.json"),
+         reads=("desks/mt5/reports/SESSION_ALLOCATION.json",
+                "desks/mt5/reports/UNIVERSAL_SURVIVORS.json", "desks/mt5/data/universe/")),
     Node("sge_premium", "desks/mt5/research/fetch_sge_premium.py",
          writes=("desks/mt5/data/lake/sge_daily.parquet",)),
     Node("source_routes", "scripts/check_source_routes.py",
@@ -840,6 +873,13 @@ NODES: tuple[Node, ...] = (
          writes=("desks/mt5/reports/SWAP_REJUDGE.json",)),
     Node("weak_signals", "desks/mt5/research/weak_signal_compiler.py",
          writes=("desks/mt5/reports/weak_signal_compiler.json",)),
+    # The two cycle records `completion` joins onto this graph. Both were read by a node and
+    # written by none, so the fence that asks "did the leg produce anything" had no declared
+    # producer for its own inputs.
+    Node("compute_ledger", "libs/ops/compute_ledger.py",
+         writes=("desks/mt5/data/compute_ledger.jsonl",)),
+    Node("hourly_cycle", "desks/mt5/research/hourly_cycle.py",
+         writes=("desks/mt5/data/sync_marker.json",)),
 )
 
 #: Artifacts a person is expected to read. Being the ONLY reader of a node's output makes that
@@ -914,6 +954,40 @@ HUMAN_READ = frozenset({
     # conditions capital, and listing them here is the claim that they do not.
     "desks/mt5/reports/EFFECTIVE_BREADTH.json", "desks/mt5/reports/DRAWDOWN_ALPHA.json",
     "desks/mt5/reports/SURVIVOR_NEIGHBOURHOOD.json",
+    # READ BY A DASHBOARD, A SCORECARD OR A FENCE, AND BY NO ORGAN THAT DECIDES (grepped
+    # 2026-09-29). build_zentech_state renders ISSUE_BOARD / WIRING_AUDIT / burn_in; issue_board
+    # folds its SOURCES table into ISSUE_BOARD; tier1_scorecard reads LAKE_PROMOTION /
+    # SESSION_CHART_EXPANSION / TIMEFRAME_COVERAGE; check_absolute_ceiling measures the P-rows
+    # off EXPERIMENT_* / FORECAST_CONTRACT / ML_LAYER / REBALANCE_TRIGGER / RESEARCH_ORG;
+    # check_ground_conversion and south_america_interaction cite ASIA_PLANE; research_dashboard
+    # and budget_market (no clock) read scaling_laws; scout_roster reads world_crawl's mtime only.
+    "desks/mt5/reports/ISSUE_BOARD.json", "desks/mt5/reports/WIRING_AUDIT.json",
+    "desks/mt5/reports/burn_in.json", "desks/mt5/reports/LAKE_PROMOTION.json",
+    "desks/mt5/reports/SESSION_CHART_EXPANSION.json", "desks/mt5/reports/TIMEFRAME_COVERAGE.json",
+    "desks/mt5/reports/EXPERIMENT_DESIGN.json", "desks/mt5/reports/EXPERIMENT_CACHE.json",
+    "desks/mt5/reports/FORECAST_CONTRACT.json", "desks/mt5/reports/ML_LAYER.json",
+    "desks/mt5/reports/REBALANCE_TRIGGER.json", "desks/mt5/reports/RESEARCH_ORG.json",
+    "desks/mt5/reports/ASIA_PLANE.json", "desks/mt5/reports/scaling_laws.json",
+    "desks/mt5/reports/world_crawl.json",
+    # NO CODE READER AT ALL (grepped by filename and by constant, 2026-09-29). A person is the
+    # only consumer, which makes each producer ADVISORY BY CONSTRUCTION and its rent line
+    # NOT_BINDING -- the retire signal, stated rather than hidden. Listed here so the graph says
+    # so; the day one of these gains a consumer, the consumer is declared and the row leaves.
+    "desks/mt5/reports/MICROSTRUCTURE.json", "desks/mt5/reports/ENTRY_TIMING.json",
+    "desks/mt5/reports/FUTURES_LEAD_LAG.json", "desks/mt5/reports/TIME_JOINS.json",
+    "desks/mt5/reports/COST_CONSTRUCTION.json", "desks/mt5/reports/edges_macro_fusion_sweep.json",
+    "desks/mt5/reports/COMPLETION.json", "desks/mt5/reports/TAPE_ARCHIVE.json",
+    "desks/mt5/reports/ARM_VERDICTS.json", "data/brain_ab.json",
+    "desks/mt5/reports/execution_resolver.json", "desks/mt5/reports/exit_study.json",
+    "desks/mt5/reports/layer_census.json", "desks/mt5/reports/opportunity_cost.json",
+    "desks/mt5/reports/opportunity_forecast.json", "desks/mt5/reports/DISK_RECLAIM.json",
+    "desks/mt5/reports/REQUEUED_UNRUNNABLE.json", "desks/mt5/reports/acceptance_properties.json",
+    "desks/mt5/data/input_identity.json", "desks/mt5/reports/prosecutor_census.json",
+    "desks/mt5/reports/SOURCE_ROUTES.json", "desks/mt5/reports/STAMP_FRESHNESS.json",
+    "desks/mt5/reports/STOP_REVERSE_CENSUS.json", "desks/mt5/reports/STRATEGY_PATHS.json",
+    # kimi_hunter and meta_architect both APPEND to it and neither reads it back: a gitignored
+    # audit trail (CLAUDE.md, "seat output goes through data/intelligence/<seat>/").
+    "data/suggestion_ledger.jsonl",
 })
 
 #: Consumers outside this graph that are known to read an artifact -- the crawler reads the
@@ -983,6 +1057,59 @@ EXTERNAL_READERS = {
     "desks/mt5/data/intelligence/anomaly_factory/": "miner_candidate_compiler intake glob",
     "desks/mt5/data/intelligence/survivor_distiller/": "miner_candidate_compiler intake glob",
     "desks/mt5/data/features/": "feature_store (content-addressed cache)",
+    # CODE READERS OUTSIDE THE GRAPH, each found by grepping the artifact's filename and the
+    # reader's own constant (2026-09-29). None of these is a graph node, so the edge lives here.
+    "desks/mt5/reports/hunt12.json": ("qquant_gates (the original ten-gate certifier, launched by "
+                                      "certifier_launcher) re-judges hunt12's cells; the "
+                                      "supervisor's fragility leg and run_hunt14 read its "
+                                      "survivors"),
+    "desks/mt5/reports/BAR_CLOCK.json": ("libs/research/bar_clock.to_bar_time -- the measured "
+                                         "offset that converts UTC stamps to bar time for "
+                                         "mt5desk.family_event_reaction, family_forced_flow and "
+                                         "event_response_atlas; absent means the join is dropped"),
+    "desks/mt5/reports/FUSION_COST.json": "cost_truth and net_edge_spine (commission term)",
+    "desks/mt5/reports/COST_TO_EDGE.json": "cost_truth and net_edge_spine (spread_r / swap_r)",
+    "desks/mt5/reports/SWAP_REJUDGE.json": "financing_lab (the live book's swap stress)",
+    "desks/mt5/reports/QUEUE.json": "queue_census (carry_artifact for the task queue's depth/age)",
+    "desks/mt5/data/task_queue.jsonl": ("hourly_cycle._claim_one (recertify_canon claims "
+                                        "`recertify` tasks) and clock_certificate (submits "
+                                        "breached cells)"),
+    "desks/mt5/reports/EDGE_CONFIDENCE.json": "residual_map (calibration holes aim the search)",
+    "desks/mt5/reports/edge_reliability.json": "residual_map (calibration holes aim the search)",
+    "desks/mt5/reports/FILL_ATTRIBUTION.json": ("residual_map and residual_queue (execution "
+                                                "residual)"),
+    "desks/mt5/reports/OPPORTUNITY_GAP.json": ("residual_queue (Q11, the one queue of the "
+                                               "unexplained)"),
+    "desks/mt5/data/hypotheses/moat_candidates.json": ("merge_hypotheses -> "
+                                                       "external_survivors.json, the gauntlet's "
+                                                       "docket"),
+    "desks/mt5/reports/ALPHA_RL.json": ("merge_hypotheses._family_value (G4: per-family learned "
+                                        "value orders the docket)"),
+    "desks/mt5/reports/session_capital.json": ("portfolio_bounty (missing session shapes become "
+                                               "MissingPayoffRequest rows)"),
+    "desks/mt5/reports/ORTHOGONALITY.json": ("meta_controller, portfolio_bounty, "
+                                             "scientist_tournament"),
+    "desks/mt5/reports/UNKNOWN_UNKNOWNS.json": "meta_controller, research_tree, implementer",
+    "desks/mt5/reports/FALSIFIER_VERDICTS.json": "destroyer_pool and meta_rnd",
+    "desks/mt5/reports/ASIA_COLLECTOR.json": ("source_fixer (every source the collector could not "
+                                              "read gets a named repair attempt)"),
+    "desks/mt5/reports/dead_architecture.json": ("desks/mt5/research/module_rent "
+                                                 "(output_reaches_nobody), frontier_ceo, "
+                                                 "self_repair_registry"),
+    "desks/mt5/data/forward_reconcile.json": ("certificate_truth (cross-checks certified clocks "
+                                              "against the lane), live_system_state, "
+                                              "evidence_watchtower"),
+    "desks/mt5/data/strategy_paths.json": ("scripts/run_opportunity_books.py (VPS research cycle, "
+                                           "ops/run_research_cycle.sh)"),
+    "docs/research/tier1_program.json": ("scripts/check_tier1_program.py (the ledger's gate), "
+                                         "libs/ops/write_or_explain, build_allocator, "
+                                         "desks/mt5/ops/components, check_closed_loop"),
+    "desks/mt5/data/compute_ledger.jsonl": ("mt5desk/desk_staleness (the gateway's staleness "
+                                            "disarm reads its mtime as a research heartbeat), "
+                                            "duty_cycle, engine_registry, meta_controller, "
+                                            "loop_liveness"),
+    "desks/mt5/data/sync_marker.json": ("side_channels/push_to_vps (the marker MT5Sync pushes to "
+                                        "the VPS), burn_in, live_system_state, tier1_scorecard"),
     "desks/mt5/data/effective_breadth.jsonl": ("alpha_breadth (its own append-only series; a "
                                                "breadth number with no history cannot say whether "
                                                "the desk is widening or only adding names)"),
