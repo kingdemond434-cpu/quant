@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import json
 import sys
+import tempfile
 from pathlib import Path
 
 import numpy as np
@@ -250,7 +251,22 @@ def test_both_organs_are_checked_for_PRODUCTION_not_exit_code() -> None:
     """The desk's own scar: a panel exited clean, wrote nothing, and marked its duty done. An
     exit code proves a process ended, never that it produced."""
     src = Path("scripts/run_cadence.py").read_text("utf-8")
-    assert 'not Path("data/gauntlet_calibration.json").exists()' in src
+    # The calibration leg now asks a STRONGER question than existence: a failed run writes a
+    # BLOCKED record to the artifact's own path (so the blocker is an artifact, not a log line),
+    # and `.exists()` would read that blocker as production. `_calibration_measured` is the
+    # production check; it must refuse an absent file, an unreadable one and the BLOCKED record.
+    assert "not _calibration_measured()" in src
+    import scripts.run_cadence as RC
+    assert RC._CALIBRATION == Path("data/gauntlet_calibration.json")
+    with tempfile.TemporaryDirectory() as d:
+        p = Path(d) / "gauntlet_calibration.json"
+        assert RC._calibration_measured(p) is False                # absent
+        p.write_text("{not json", "utf-8")
+        assert RC._calibration_measured(p) is False                # unreadable
+        p.write_text(json.dumps({"status": "BLOCKED", "rows": []}), "utf-8")
+        assert RC._calibration_measured(p) is False                # the blocker, not a floor
+        p.write_text(json.dumps({"status": "MEASURED", "rows": [1]}), "utf-8")
+        assert RC._calibration_measured(p) is True
     assert 'not Path("data/ancestors.json").exists()' in src
 
 
