@@ -127,6 +127,11 @@ FLAG_RULES: dict[str, tuple[str, str]] = {
     "fill_artefact": ("feed_latency", "half"),
     "fragile_to_missing_data": ("missing_releases", "half"),
     "trend_break_sensitive": ("instant_trend_break", "half"),
+    "clock_artefact": ("session_shift", "half"),
+    "starves_in_calm": ("variance_break", "half"),
+    "path_specific": ("block_bootstrap", "sign"),
+    "dies_in_crisis": ("crisis_ladder", "sign"),
+    "broker_cost_fragile": ("broker_widening", "sign"),
 }
 
 
@@ -408,6 +413,81 @@ def _s_missing(bars: pd.DataFrame, sym: str, seed: int, name: str) -> World:
     return World(out, out, applied=dropped)
 
 
+def _s_session_shift(bars: pd.DataFrame, sym: str, seed: int, name: str) -> World:
+    """The clock the family reads moves one hour (a DST switch the code missed, a broker that
+    changed its server offset). The prices are unchanged; only the timestamps the signal sees
+    slide, so a session edge that is really an hour-of-day artefact moves with them."""
+    if len(bars) < MIN_BARS:
+        return World(bars, bars, why=f"{len(bars)} bars < {MIN_BARS}")
+    shifted = bars.copy()
+    shifted.index = pd.DatetimeIndex(bars.index) + pd.Timedelta(hours=1)
+    return World(shifted, shifted, applied=len(bars))
+
+
+def _s_variance_break(bars: pd.DataFrame, sym: str, seed: int, name: str) -> World:
+    """After one random bar the tape's volatility HALVES and stays there -- the calm regime that
+    starves a breakout book, the mirror of vol_doubling."""
+    n = len(bars)
+    if n < MIN_BARS:
+        return World(bars, bars, why=f"{n} bars < {MIN_BARS}")
+    b = int(_rng(seed, "variance_break", name).integers(120, n - 60))
+    r = _logret(bars)
+    mu = float(np.mean(r[b:]))
+    r[b:] = mu + 0.5 * (r[b:] - mu)
+    out = _from_returns(bars, r)
+    return World(out, out, applied=n - b)
+
+
+def _s_block_bootstrap(bars: pd.DataFrame, sym: str, seed: int, name: str) -> World:
+    """The tape's own returns re-drawn in 24-bar blocks: same marginal distribution and short
+    memory, a different HISTORY. An edge that exists only on the one path that happened dies."""
+    n = len(bars)
+    if n < MIN_BARS:
+        return World(bars, bars, why=f"{n} bars < {MIN_BARS}")
+    rng = _rng(seed, "block_bootstrap", name)
+    r = _logret(bars)
+    out_r = np.empty_like(r)
+    out_r[0] = r[0]
+    i = 1
+    while i < n:
+        s0 = int(rng.integers(1, max(2, n - 24)))
+        k = min(24, n - i)
+        out_r[i:i + k] = r[s0:s0 + k]
+        i += k
+    out = _from_returns(bars, out_r)
+    return World(out, out, applied=n - 1)
+
+
+def _s_crisis_ladder(bars: pd.DataFrame, sym: str, seed: int, name: str) -> World:
+    """Three escalating shocks a week apart (1%, 2%, 4% against the instrument's dollar leg),
+    each with the spread x3, x5, x8 for a day -- a crisis that gets worse, not a single jolt."""
+    n = len(bars)
+    if n < MIN_BARS + 400:
+        return World(bars, bars, why=f"{n} bars < {MIN_BARS + 400}")
+    rng = _rng(seed, "crisis_ladder", name)
+    i0 = int(rng.integers(200, n - 400))
+    r = _logret(bars)
+    rungs = ((0, 0.01, 3.0), (120, 0.02, 5.0), (240, 0.04, 8.0))
+    for off, move, _k in rungs:
+        r[i0 + off:i0 + off + 4] += math.log1p(_usd_sign(sym) * move) / 4.0
+    out = _from_returns(bars, r)
+    for off, _move, k in rungs:
+        _scale_col(out, "spread", i0 + off, min(n, i0 + off + 24), k)
+    return World(out, out, cost_mult=3.0, applied=3 * 4)
+
+
+def _s_broker_widening(bars: pd.DataFrame, sym: str, seed: int, name: str) -> World:
+    """The broker's parameters move against the book: spread x2 everywhere and x6 in the first
+    and last hour of every session day, the pattern a rollover or a thin-book widening prints."""
+    out = bars.copy()
+    _scale_col(out, "spread", 0, len(out), 2.0)
+    idx = pd.DatetimeIndex(out.index)
+    edge = np.flatnonzero(np.isin(idx.hour.to_numpy(), (0, 23)))
+    for p in edge:
+        _scale_col(out, "spread", int(p), int(p) + 1, 3.0)
+    return World(out, out, cost_mult=2.5, applied=len(out))
+
+
 #: Name -> (what it does, the transform). Order is the order they run and the order they print.
 SCENARIOS: dict[str, tuple[str, Any]] = {
     "usd_shock_liquidity_crash": (
@@ -436,6 +516,16 @@ SCENARIOS: dict[str, tuple[str, Any]] = {
     "partial_fills": ("30% of entries fill at half size -- R scaled, never dropped",
                       _s_partial_fills),
     "missing_releases": ("10% of bars removed in blocks of six", _s_missing),
+    "session_shift": ("every timestamp the signal reads moved +1h, prices unchanged (a missed "
+                      "DST switch or a broker offset change)", _s_session_shift),
+    "variance_break": ("volatility halves after one random bar and stays halved",
+                       _s_variance_break),
+    "block_bootstrap": ("the tape's own returns re-drawn in 24-bar blocks: a different history "
+                        "with the same distribution", _s_block_bootstrap),
+    "crisis_ladder": ("three escalating dollar shocks a week apart (1%, 2%, 4%) with the spread "
+                      "x3/x5/x8 for a day each, round trip charged x3", _s_crisis_ladder),
+    "broker_widening": ("spread x2 everywhere and x6 at the day's first and last hour, round "
+                        "trip charged x2.5", _s_broker_widening),
 }
 
 

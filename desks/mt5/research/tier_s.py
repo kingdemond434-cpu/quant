@@ -333,9 +333,34 @@ def _family_vocab() -> list[str]:
         return []
 
 
+_FAILMEM: dict[str, Any] | None = None
+
+
+def _explored(row: Mapping[str, Any]) -> int:
+    """How many judged cells the failure memory already holds in this row's neighbourhood."""
+    global _FAILMEM
+    if _FAILMEM is None:
+        _FAILMEM = _read(STATE / "failure_memory.json") or {}
+    if not _FAILMEM or not row.get("family") or not row.get("symbols"):
+        return 0
+    sym = str(row["symbols"][0])
+    params = row.get("params") or {}
+    desc = {"mechanism": _mechanism(str(row["family"])), "asset_class": _asset_class(sym),
+            "selector": str(params.get("session") or "?")}
+    try:
+        return int(failure_memory.neighbourhood(desc, _FAILMEM)["explored"])
+    except Exception:
+        return 0
+
+
 def _emit(kind: str, rows: list[dict[str, Any]]) -> dict[str, Any]:
-    """Write hypothesis rows where the compiler reads (data/intelligence/**)."""
-    rows = [r for r in rows if r.get("symbols")][:MAX_EMIT_PER_KIND]
+    """Write hypothesis rows where the compiler reads (data/intelligence/**).
+
+    ORDER, NEVER A FILTER: rows in regions the failure memory has already mapped as dead go
+    LAST, so the cap spends itself on unexplored ground first. Nothing is dropped for having a
+    failed neighbour -- a theorem about a region is a prior, not a verdict on a new cell."""
+    rows = [r for r in rows if r.get("symbols")]
+    rows = sorted(rows, key=_explored)[:MAX_EMIT_PER_KIND]
     if not rows:
         return {"kind": kind, "emitted": 0}
     stamp = NOW.strftime("%Y%m%dT%H")
@@ -394,10 +419,23 @@ def _returns_panel(max_symbols: int = 28, bars: int = 3000) -> tuple[dict[str, n
 # organs
 # ------------------------------------------------------------------------------------------------
 
+def _family_code_hash(fam: str) -> str | None:
+    """sha256 of the family's signal function source: the program that compiled the hypothesis."""
+    try:
+        import inspect
+
+        from mt5desk.families import FAMILY_REGISTRY  # type: ignore[import-not-found]
+        fn = (FAMILY_REGISTRY.get(fam) or {}).get("func")
+        return truth_kernel.sha256(inspect.getsource(fn))[:16] if fn else None
+    except Exception:
+        return None
+
+
 def organ_truth_kernel() -> dict[str, Any]:
     j = truth_kernel.Journal(STATE / "truth_journal.jsonl").load()
     surv = survivors()
     nm = names()
+    reg = {nm.key(k): v for k, v in registry().items() if isinstance(v, dict)}
 
     def cert_of(sleeve: Any) -> str | None:
         return (cert_by_sleeve.get(str(sleeve)) or cert_by_sleeve.get(nm.key(sleeve))
@@ -410,9 +448,19 @@ def organ_truth_kernel() -> dict[str, Any]:
             continue
         spec = _spec(row)
         sym, fam = str(spec.get("symbol") or row.get("sym") or ""), str(spec.get("family") or "")
+        at0 = str(row.get("gated_at") or NOW.isoformat())
+        idn = (reg.get(nm.key(key)) or {}).get("identity") or {}
+        raw = j.put("raw_data", {"symbol": sym, "timeframe": spec.get("timeframe") or "H1",
+                                 "venue": idn.get("data_venue") or "MT5:FusionMarkets",
+                                 "cost_hash": idn.get("cost_hash"),
+                                 "bars": f"data/universe/{sym}_{spec.get('timeframe') or 'H1'}"
+                                         ".parquet"}, at=at0)
+        code = j.put("transformation", {"family": fam, "code_hash": idn.get("code_hash")
+                                        or _family_code_hash(fam),
+                                        "params": row.get("params") or spec.get("params")},
+                     at=at0)
         hyp = j.put("hypothesis", {"cell": row.get("cell") or key, "symbol": sym, "family": fam,
-                                   "selector": spec.get("selector")},
-                    at=str(row.get("gated_at") or NOW.isoformat()))
+                                   "selector": spec.get("selector")}, [raw.id, code.id], at=at0)
         exp = j.put("experiment", {"gates": row.get("gates") or {}, "days": row.get("days"),
                                    "hunt": row.get("hunt")}, [hyp.id],
                     at=str(row.get("gated_at") or NOW.isoformat()))
@@ -1311,6 +1359,8 @@ def organ_review(topo: Mapping[str, Any] | None, fdr_rows: Mapping[str, Any] | N
                 rep_by[k] = "AGREE" if str(v).upper() in ("AGREE", "REPLICATED", "PASS",
                                                            "MATCH") else str(v)
     fills: Counter[str] = Counter(r["_group"] for r in live_rows())
+    worlds_by = {str(r.get("key")): r for r in (_read(STATE / "worlds_by_certificate.json")
+                                                or {}).get("rows") or []}
     cands: dict[str, dict[str, Any]] = {}
     for key, row in survivors().items():
         if not isinstance(row, dict):
@@ -1334,6 +1384,10 @@ def organ_review(topo: Mapping[str, Any] | None, fdr_rows: Mapping[str, Any] | N
         # generation means every certificate that gauntlet issued is open to that attack, and
         # the panel records it against each until the leak closes
         leaks = (((rq or {}).get("real_gauntlet") or {}).get("leaks") or [])
+        wf = worlds_by.get(str(key))
+        if wf is not None:
+            ev["stress"] = {"worlds_measured": wf.get("worlds_measured"),
+                            "flags": wf.get("flags") or [], "exp_x5": wf.get("exp_x5")}
         ev["red_queen"] = None if rq is None else {
             "attacks": len((rq.get("real_gauntlet") or {}).get("rows") or []) or
             rq.get("generation"), "killed": bool(leaks),
@@ -1389,6 +1443,20 @@ def _leg_of(producer: str, legs: Iterable[str]) -> str | None:
         if hit:
             return hit[0]
     return "tier_s" if producer.startswith("tier_s") and "tier_s" in legs else None
+
+
+def _producer_of_cell() -> dict[str, str]:
+    """gate-ledger cell -> the producer that bore it (through graph_id -> hypothesis graph)."""
+    node: dict[str, str] = {}
+    for r in _jsonl(HGRAPH, 400_000):
+        if r.get("id"):
+            node[str(r["id"])] = _producer(r.get("source"))
+    out: dict[str, str] = {}
+    for r in _jsonl(GATE_LEDGER):
+        c = str(r.get("cell") or "")
+        if c:
+            out[c] = node.get(str(r.get("graph_id") or "")) or _producer(r.get("source"))
+    return out
 
 
 def organ_market() -> dict[str, Any]:
@@ -1661,6 +1729,13 @@ def organ_replay() -> dict[str, Any]:
                       key=lambda r: str(r.get("_key"))),
         replay.Stream("legs", _jsonl(EVENTS), "at", key=lambda r: str(r.get("leg"))),
         replay.Stream("allocations", _jsonl(FORECAST_LOG), "t", key=lambda r: "book"),
+        replay.Stream("verdicts", _jsonl(GATE_LEDGER), "at", key=lambda r: str(r.get("cell"))),
+        replay.Stream("hypotheses", _jsonl(HGRAPH, 400_000), "at",
+                      key=lambda r: str(r.get("id"))),
+        replay.Stream("compute", _jsonl(COMPUTE, 200_000), "at",
+                      key=lambda r: str(r.get("run"))),
+        replay.Stream("exchange", _jsonl(STATE / "exchange_book_log.jsonl", 50_000), "t",
+                      key=lambda r: "book"),
     ]
     live = {"certificates": {str(k) for k in survivors()},
             "sleeves": {str(k) for k in registry()}}
@@ -1772,6 +1847,49 @@ def organ_world_and_science() -> dict[str, Any]:
             "metric": {"stable_edges": census.get("STABLE", 0), "hypotheses": len(rows)}}
 
 
+def organ_worlds() -> dict[str, Any]:
+    """Layer 16, joined per certificate: which stress worlds each certificate has been through
+    (synthetic_regimes' sixteen worlds, the digital twin's replays) and which it has NOT. A
+    certificate no world has touched is named -- an untested edge is not a robust one -- and the
+    flags it earned are carried to the review panel as the evidence of a named failure mode."""
+    sr = _read(REPORTS / "SYNTHETIC_REGIMES.json") or {}
+    results = sr.get("results") or [] if isinstance(sr, dict) else []
+    worlds = [w.get("name") for w in sr.get("scenarios") or []] if isinstance(sr, dict) else []
+    by_sf: dict[str, dict[str, Any]] = {}
+    for r in results:
+        if isinstance(r, dict):
+            by_sf[f"{r.get('symbol')}.{r.get('family')}"] = r
+    twin_doc = _read(REPORTS / "DIGITAL_TWIN.json") or {}
+    twin_keys = {str(k) for k in (twin_doc.get("sleeves") or twin_doc.get("results") or {})} \
+        if isinstance(twin_doc, dict) else set()
+    rows, untested = [], []
+    for key, row in survivors().items():
+        if not isinstance(row, dict):
+            continue
+        spec = _spec(row)
+        sf = f"{spec.get('symbol')}.{spec.get('family')}"
+        hit = by_sf.get(sf)
+        measured = [k for k, v in ((hit or {}).get("scenarios") or {}).items()
+                    if isinstance(v, dict) and v.get("status") == "MEASURED"]
+        rec = {"key": str(key), "worlds_measured": len(measured), "of": len(worlds),
+               "flags": (hit or {}).get("flags") or [], "verdict": (hit or {}).get("verdict"),
+               "twin": str(key) in twin_keys,
+               "exp_x5": (((hit or {}).get("scenarios") or {}).get("spread_x5") or {})
+               .get("expectancy")}
+        rows.append(rec)
+        if not measured:
+            untested.append(str(key))
+    _write(STATE / "worlds_by_certificate.json", {"generated_utc": NOW.isoformat(),
+                                                   "rows": rows})
+    n = len(rows)
+    flagged = sum(1 for r in rows if r["flags"])
+    return {"worlds": worlds, "n_certificates": n, "untested": untested[:60],
+            "flagged": flagged,
+            "metric": {"stress_tested_share": (n - len(untested)) / n if n else None,
+                       "flagged_share": flagged / n if n else None,
+                       "worlds": len(worlds)}}
+
+
 def _posterior_bids() -> tuple[list[opportunity_exchange.Bid], dict[str, float]]:
     shadow = shadow_rows()
     hon = _state("honesty").get("factories") or {}
@@ -1790,6 +1908,13 @@ def _posterior_bids() -> tuple[list[opportunity_exchange.Bid], dict[str, float]]
     for k, v in live_book.items():
         by_group[nm.group(k)] += v
     per_group = Counter(nm.group(k) for k, r in survivors().items() if isinstance(r, dict))
+    # measured execution drag per (symbol, family), like-for-like variant (execution_science)
+    drag_of: dict[tuple[str, str], float] = {}
+    es = _read(REPORTS / "EXECUTION_SCIENCE.json") or {}
+    for c in es.get("cells") or [] if isinstance(es, dict) else []:
+        if isinstance(c, dict) and c.get("like_for_like") and c.get("execution_drag") is not None:
+            k2 = (str(c.get("symbol")), str(c.get("family")))
+            drag_of[k2] = min(drag_of.get(k2, 1e9), float(c["execution_drag"]))
     bids = []
     for key, row in survivors().items():
         if not isinstance(row, dict):
@@ -1804,11 +1929,20 @@ def _posterior_bids() -> tuple[list[opportunity_exchange.Bid], dict[str, float]]
         mu = prior_mu if n == 0 else (prior_mu * 10 + float(fw.get("exp_r") or 0.0) * n) / (
             10 + n)
         sd = 1.0 / math.sqrt(10 + n)
+        fam = str(spec.get("family") or "")
+        drag = drag_of.get((str(spec.get("symbol")), fam))
+        # sigma: the forward clock's own dispersion of R when it has one (cum_r and max drawdown
+        # bound it from below), else 1R per trade, the unit the edge is quoted in
+        sig_r = 1.0
+        if n >= 5 and fw.get("max_dd_r") is not None:
+            sig_r = max(0.5, abs(float(fw["max_dd_r"])) / math.sqrt(n))
         bids.append(opportunity_exchange.Bid(
-            key=str(key), mu=mu * 0.01, mu_sd=sd * 0.01, sigma=0.01, friction=0.0,
+            key=str(key), mu=mu * 0.01, mu_sd=sd * 0.01, sigma=sig_r * 0.01,
+            friction=float(drag) if drag is not None else 0.0,
             capacity=0.05, current=by_group.get(nm.group(key), 0.0)
             / max(1, per_group.get(nm.group(key), 1)),
-            mechanism=_mechanism(str(spec.get("family") or "")), evidence_arriving=True))
+            mechanism=_mechanism(fam),
+            evidence_arriving=str(fw.get("status") or "ACTIVE").upper() == "ACTIVE"))
     return bids, live_book
 
 
@@ -1823,6 +1957,10 @@ def organ_exchange() -> dict[str, Any]:
     cmp["live_book_names"] = len(live)
     _write(STATE / "exchange_book.json", {"generated_utc": NOW.isoformat(), "book": res["book"],
                                           "actions": res["action_counts"]})
+    # the book as it stood each hour: the twin scores the challenger on the book it HELD that
+    # day, never on today's book replayed over the past
+    with (STATE / "exchange_book_log.jsonl").open("a", encoding="utf-8") as fh:
+        fh.write(json.dumps({"t": NOW.isoformat(), "book": res["book"]}) + "\n")
     _register_challenger("allocator", "opportunity_exchange", {"k": res["k"]}, None)
     n = sum(res["action_counts"].values())
     return {**{k: v for k, v in res.items() if k != "actions"},
@@ -1877,6 +2015,7 @@ def organ_predictions() -> dict[str, Any]:
     live_by: dict[str, list[float]] = defaultdict(list)
     for k, v in outcomes.items():
         live_by[k].extend(x for _t, x in v)
+    prod = _producer_of_cell()
     for key, row in survivors().items():
         if not isinstance(row, dict):
             continue
@@ -1885,7 +2024,8 @@ def organ_predictions() -> dict[str, Any]:
         ev = float(((row.get("gates") or {}).get("expected_value") or {}).get("ev") or 0.0)
         lk = list(live_by.get(f"{spec.get('symbol')}.{spec.get('selector')}") or [])
         claims.append(prediction_accounting.Claim(
-            factory=str(row.get("hunt") or "unknown"), key=str(key), claimed_edge=ev,
+            factory=prod.get(str(row.get("cell") or "")) or _producer(row.get("hunt")),
+            key=str(key), claimed_edge=ev,
             forward_edge=float(fw["exp_r"]) if fw.get("exp_r") is not None else None,
             forward_n=int(fw.get("n") or 0),
             live_edge=(sum(lk) / len(lk)) if lk else None, live_n=len(lk)))
@@ -1929,15 +2069,22 @@ def organ_twin(sealed_now: Mapping[str, Any]) -> dict[str, Any]:
             with contextlib.suppress(TypeError, ValueError):
                 grp[nm.group(k)] += float(v)
         live_book_by_day[str(r.get("t"))[:10]] = dict(grp)
-    ex_book: dict[str, float] = defaultdict(float)
-    for k, v in (ex.get("book") or {}).items():
-        ex_book[nm.group(k)] += float(v)
+    ex_book_by_day: dict[str, dict[str, float]] = {}
+    for r in _jsonl(STATE / "exchange_book_log.jsonl", 50_000):
+        grp2: dict[str, float] = defaultdict(float)
+        for k, v in (r.get("book") or {}).items():
+            with contextlib.suppress(TypeError, ValueError):
+                grp2[nm.group(k)] += float(v)
+        ex_book_by_day[str(r.get("t"))[:10]] = dict(grp2)
+    _ = ex
     for c in st.get("challengers") or []:
         ch = twin.Challenger(c["component"], c["name"], c["registered_at"], c["genome_hash"])
         pairs = []
         if c["component"] == "allocator":
-            book = ex_book
             for day, pnl in sorted(daily.items()):
+                book = ex_book_by_day.get(day)
+                if book is None:
+                    continue       # the challenger held no book that day: no pair, no verdict
                 lb = live_book_by_day.get(day) or {}
                 inc = sum(float(lb.get(k, 0.0)) * v for k, v in pnl.items())
                 cha = sum(float(book.get(k, 0.0)) * v for k, v in pnl.items())
@@ -2159,6 +2306,7 @@ def main(argv: list[str] | None = None) -> int:
         ("failure_memory", organ_failure_memory), ("formal", organ_formal),
         ("chaos", organ_chaos), ("replay", organ_replay), ("data_os", organ_data_os),
         ("world_science", organ_world_and_science), ("exchange", organ_exchange),
+        ("worlds", organ_worlds),
     ]
     for name, fn in plan:
         if want(name):
