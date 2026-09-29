@@ -339,3 +339,31 @@ def test_a_layer_without_a_contract_is_refused() -> None:
     ledger["layers"][0] = {k: v for k, v in ledger["layers"][0].items() if k != "contract"}
     problems, _ = chk.check(ledger, ROOT)
     assert any("contract" in p for p in problems)
+
+
+def test_grammar_round_trip_and_learned_bias(tmp_path) -> None:
+    import json as _json
+    from datetime import UTC as _UTC
+    from datetime import datetime as _dt
+
+    import numpy as _np
+
+    from libs.research import alpha_grammar as ag
+    from libs.tiers import grammar_bias
+
+    e = ["zscore", ["sub", "close", "open"], 20]
+    assert ag.from_str(ag.to_str(e)) == e
+    # no weights: the draw is the uniform one, identical for the same seed
+    a = ag.random_expr(_np.random.default_rng(3), 3)
+    b = ag.random_expr(_np.random.default_rng(3), 3, op_weights=None, primitives=None)
+    assert a == b
+    p = tmp_path / "grammar.json"
+    p.write_text(_json.dumps({"generated_utc": _dt.now(_UTC).isoformat(),
+                              "operator_weights": {"add": 3.0, "sub": 0.05},
+                              "primitives": [{"expression": ag.to_str(e)}]}))
+    got = grammar_bias.bias(p)
+    assert got["op_weights"]["add"] == 3.0 and got["primitives"] == [e]
+    # a retired operator is drawn less, never never
+    rng = _np.random.default_rng(0)
+    picks = [ag._pick(rng, ("add", "sub"), got["op_weights"]) for _ in range(4000)]
+    assert 0 < picks.count("sub") < picks.count("add")

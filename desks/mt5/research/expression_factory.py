@@ -81,6 +81,16 @@ for _p in (str(_DESK), str(_DESK / "research"), str(_ROOT)):
 
 from libs.research import alpha_dsl as dsl  # noqa: E402
 from libs.research import alpha_grammar as ag  # noqa: E402
+
+
+def _bias() -> dict:
+    """The learned grammar (Tier S layers 22/44): operator weights and recurring primitives from
+    judged formulas, or {} (the uniform draw) when absent or stale."""
+    try:
+        from libs.tiers.grammar_bias import bias
+        return bias()
+    except Exception:
+        return {}
 from libs.research import trial_ledger as tl  # noqa: E402
 
 try:
@@ -1669,7 +1679,7 @@ class Factory:
         """Replace one bar terminal with a bound external of a compatible kind, if any."""
         ext = [t for t in terms if t in ag.EXTERNAL_TERMINALS]
         if not ext:
-            return ag.mutate(expr, self.rng, terminals=terms)
+            return ag.mutate(expr, self.rng, terminals=terms, **_bias())
         leaves = [p for p in ag._paths(expr) if isinstance(ag._get(expr, p), str)]
         self.rng.shuffle(leaves)
         for p in leaves:
@@ -1693,7 +1703,7 @@ class Factory:
         if seeded is not None:
             return Cell(seeded, sym, int(self.rng.choice(HORIZONS)), "none", "invention", "",
                         "proposer_seat", self.lake.worlds[sym].asset_class, ["invent"])
-        expr = ag.random_expr(self.rng, max_depth=3, terminals=terms)
+        expr = ag.random_expr(self.rng, max_depth=3, terminals=terms, **_bias())
         return Cell(expr, sym, int(self.rng.choice(HORIZONS)), "none", "invention", "",
                     "random", self.lake.worlds[sym].asset_class, ["invent"])
 
