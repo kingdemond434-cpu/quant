@@ -182,9 +182,13 @@ def run(now: datetime | None = None) -> dict:
         signal = all_signals[choice.family].copy()
         signal[~families._session_mask(df.index, choice.session)] = 0
         signal[df.index < SHADOW_START] = 0
+        # EXECUTABLE REPLAY (2026-09-29). The forward clock is what promotes a sleeve to live
+        # money, so it must replay what `scalp_exec` can trade: last closed bar's ATR, bracket
+        # live from the fill bar. The study arm credited the lane with +0.04..+0.09R per trade
+        # it could never capture; see `scalp_reverse_engineering.simulate`.
         records = core.simulate(
             df, families._cfg(choice, "bounded_structural"), signal_override=signal,
-            detailed=True,
+            detailed=True, executable=True,
         )
         assert isinstance(records, list)
         ledger = SHADOW / f"ledger_{name}.json"
