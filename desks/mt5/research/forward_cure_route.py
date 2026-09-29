@@ -48,6 +48,10 @@ from pathlib import Path
 BASE = Path(__file__).resolve().parents[3]
 DESK = BASE / "desks" / "mt5"
 REPORTS = DESK / "reports"
+#: The roster this organ writes (`_write(reports / "FORWARD_CURE_ROSTER.json")`, under the
+#: production reports directory). Declared here so the component registry reads it as this
+#: organ's artifact and the runtime attestation can hold its row.
+OUT = REPORTS / "FORWARD_CURE_ROSTER.json"
 
 #: The gate spec's own split. Read from the spec where it can be, so this file cannot drift from
 #: the policy; the literals are the fallback and are byte-identical to `gate_spec.yaml` today.

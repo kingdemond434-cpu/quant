@@ -172,6 +172,7 @@ LEG_LAYER: dict[str, str] = {
     "feature_compiler": "information",
     "data_acquisition_scientist": "information",
     "universe_integrity": "information",
+    "synthetic_usdx": "information",
     # Formulaic alpha generation is a predictor search; the closed-loop attestation is meta.
     "alpha_evolution": "prediction",
     "closed_loop": "meta",

@@ -5,6 +5,7 @@ Was H1-only, and not by choice -- see the TIMEFRAME_DEPTH block below.
 """
 import json
 import os
+import re
 import sys
 import time
 import atexit
@@ -44,6 +45,33 @@ PARQUET_DIR = OUT_DIR
 PARQUET_DIR.mkdir(parents=True, exist_ok=True)
 
 
+#: MetaTrader5's own IPC failures (-10001 send, -10002 receive, -10003 init, -10004 no connection,
+#: -10005 timeout). They say the TERMINAL LINK was down, never that the broker has no chart.
+#: Measured 2026-09-29: 1,437 of 1,439 BROKER_SERVES_NOTHING rows carried `(-10004, 'No IPC
+#: connection')`, all re-stamped in one outage at 10:00 UTC. Each read as a fresh venue refusal,
+#: so the hourly pass skipped every missing chart for a day, and the next outage restamped them.
+#: 296 of the 602 FX charts were absent while the terminal served the same bars live.
+TERMINAL_ERROR_MAX = -10000
+
+
+def _is_terminal_error(err: object) -> bool:
+    """True for an MT5 IPC failure code, given `mt5.last_error()` or a verdict's `why` text."""
+    code = err[0] if isinstance(err, tuple) and err else None
+    if code is None:
+        m = re.search(r"last_error \((-?\d+)", str(err or ""))
+        code = int(m.group(1)) if m else None
+    try:
+        return code is not None and int(code) <= TERMINAL_ERROR_MAX
+    except (TypeError, ValueError):
+        return False
+
+
+def _is_refusal(row: dict) -> bool:
+    """A BROKER_SERVES_NOTHING verdict the broker actually gave, not a dropped terminal link."""
+    return (row.get("verdict") == "BROKER_SERVES_NOTHING"
+            and not _is_terminal_error(row.get("why")))
+
+
 def _fresh(row: dict, seconds: int) -> bool:
     try:
         stamp = datetime.fromisoformat(str(row.get("at") or "").replace("Z", "+00:00"))
@@ -76,7 +104,7 @@ def _all_cells_accounted_for() -> tuple[bool, int, int]:
                 physical += 1
                 continue
             row = cells.get(f"{symbol}_{tf}") or {}
-            if (row.get("verdict") == "BROKER_SERVES_NOTHING" and _fresh(row, 24 * 3600)):
+            if _is_refusal(row) and _fresh(row, 24 * 3600):
                 refused += 1
                 continue
             if (wildcard.get("verdict") == "NOT_OFFERED" and _fresh(wildcard, 7 * 24 * 3600)):
@@ -184,7 +212,7 @@ if not isinstance(_prior_cells, dict):
 def _recent_no_data(symbol: str, timeframe: str) -> bool:
     """Do not re-spend the whole hour on a venue refusal measured less than a day ago."""
     row = _prior_cells.get(f"{symbol}_{timeframe}") or {}
-    if row.get("verdict") != "BROKER_SERVES_NOTHING":
+    if not _is_refusal(row):
         return False
     try:
         stamp = datetime.fromisoformat(str(row.get("at") or "").replace("Z", "+00:00"))
@@ -245,13 +273,27 @@ for i, (sym_info, tf) in enumerate(jobs):
                            datetime.now(UTC))
 
     if rates is None or len(rates) == 0:
+        _err = mt5.last_error()
+        if _is_terminal_error(_err):
+            # THE LINK IS DOWN, NOT THE CHART. Recorded as such (never a refusal, so the next
+            # hourly pass asks again) and the pass stops: every remaining request would fail the
+            # same way and, before this, was stamped as a venue refusal one by one.
+            print(f"  [{i+1}/{len(jobs)}] {name:25s} {tf:4s} TERMINAL UNAVAILABLE {_err}: "
+                  f"stopping; {len(jobs) - i - 1} chart(s) left for the next pass")
+            failed.append(f"{name}_{tf}")
+            cell_verdicts[f"{name}_{tf}"] = {
+                "verdict": "TERMINAL_UNAVAILABLE",
+                "at": datetime.now(UTC).isoformat(timespec="seconds"), "bars": 0,
+                "why": f"terminal IPC failure, not a broker answer (last_error {_err})",
+            }
+            break
         print(f"  [{i+1}/{len(jobs)}] {name:25s} {tf:4s} NO DATA")
         failed.append(f"{name}_{tf}")
         cell_verdicts[f"{name}_{tf}"] = {
             "verdict": "BROKER_SERVES_NOTHING",
             "at": datetime.now(UTC).isoformat(timespec="seconds"), "bars": 0,
             "why": (f"broker-enabled symbol; symbol_select={selected}; {tf} request returned "
-                    f"no bars (last_error {mt5.last_error()})"),
+                    f"no bars (last_error {_err})"),
         }
         continue
 

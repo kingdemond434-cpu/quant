@@ -41,6 +41,11 @@ rem while it runs, not publish thousands of verdict lines only after the process
 set RC1=%ERRORLEVEL%
 echo download_all_symbols rc=%RC1%>>"%LOG%"
 
+rem USDX IS BUILT, NOT DOWNLOADED: Fusion does not quote the dollar index the miners and packs
+rem name as a factor. synthetic_usdx writes it from the six ICE legs once all six are on disk;
+rem its exit code never fails the pass (a missing leg is reported, not an error).
+"%PYTHON%" %PYARGS% -u -W ignore "C:\opt\quant\desks\mt5\research\synthetic_usdx.py" >>"%LOG%" 2>&1
+
 rem THE REGISTRY REPAIR RUNS WHETHER OR NOT THE EXPANDER SUCCEEDED. It is the step that
 rem reconciles the registry with what is actually on disk, so a partial expansion is exactly
 rem when it is most worth running; chaining it behind `&&` meant it had never run at all.

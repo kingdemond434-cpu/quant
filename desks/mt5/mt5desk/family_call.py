@@ -113,12 +113,21 @@ def signals(fn: Any, bars: Any, *, side: int, params: dict[str, Any] | None = No
     """
     kwargs = dict(params or {})
     session = kwargs.pop("session", None)
+    # THE MINERS' VARIANT KEYS ARE APPLIED, NOT PASSED -- the same rule the gauntlet applies in
+    # `build_cell`, so a certified cell and its clock trade the same signals. `split` moves only a
+    # key the family's signature would have rejected, so every call that works today is unchanged.
+    from mt5desk import cell_modifiers
+    kwargs, mods = cell_modifiers.split(fn, kwargs)
+    refused = cell_modifiers.refusal(mods)
+    if refused:
+        raise ValueError(f"NOT_RUN_MODIFIER: {refused}")
     short = int(side) < 0
     try:
         out = list(fn(bars, side=-1, **kwargs) if short else fn(bars, **kwargs))
     except TypeError:
         out = list(fn(bars, side=-1 if short else 1, **kwargs))
-    return session_filter(out, session)
+    out = session_filter(out, session)
+    return cell_modifiers.apply(out, bars, mods) if mods else out
 
 
 def hunt16_signals(fn: Any, bars: Any, side: int) -> list:

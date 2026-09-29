@@ -169,7 +169,7 @@ def test_merge_blockers_are_read_from_one_native_merge_probe() -> None:
     code = _code()
     start = code.index("function Merge-FetchHead")
     body = code[start:code.index("\n}", start)]
-    assert "merge --no-commit --no-ff FETCH_HEAD" in body
+    assert "-c merge.autoStash=false merge --no-commit --no-ff FETCH_HEAD" in body
     assert "local changes to the following files would be overwritten" in body
     assert "untracked working tree files would be overwritten" in body
     assert "$probeRc" in body and "$blockers" in body and "$untracked" in body

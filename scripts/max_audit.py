@@ -4303,6 +4303,77 @@ _TERMINAL_ARTIFACTS = {
         "on a clock. It changes only by principal revision of the plan, same as the other DOCTRINE "
         "rows in docs/research/ARTIFACT_GOVERNANCE.md, where this classification is also recorded "
         "in the human-readable table.",
+    # DERIVED RENDERINGS (classified 2026-09-29, 12 of the 21 docs artifacts the birth-property
+    # fence named). Each page says DERIVED in its own header and is rewritten whole by the organ
+    # named beside it; its freshness is that organ's clock, governed where the organ is (the
+    # component registry, the runtime attestation). It holds no inventory of its own.
+    "docs/research/CLOCK_LIVENESS.md":
+        "DERIVED RENDERING, rewritten whole by desks/mt5/research/clock_liveness.py (hourly leg clock_liveness). Nothing in it is authored; its "
+        "staleness is its producer's, which the component registry and runtime attestation "
+        "govern.",
+    "docs/research/COST_TRUTH.md":
+        "DERIVED RENDERING, rewritten whole by desks/mt5/research/cost_truth.py (hourly leg cost_truth). Nothing in it is authored; its "
+        "staleness is its producer's, which the component registry and runtime attestation "
+        "govern.",
+    "docs/research/IMPLEMENTATION.md":
+        "DERIVED RENDERING, rewritten whole by desks/mt5/research/implementer.py from reports/IMPLEMENTER.json. Nothing in it is authored; its "
+        "staleness is its producer's, which the component registry and runtime attestation "
+        "govern.",
+    "docs/research/LOOP_LIVENESS.md":
+        "DERIVED RENDERING, rewritten whole by desks/mt5/research/loop_liveness.py. Nothing in it is authored; its "
+        "staleness is its producer's, which the component registry and runtime attestation "
+        "govern.",
+    "docs/research/PLUMBING_ALERTS.md":
+        "DERIVED RENDERING, rewritten whole by desks/mt5/research/plumbing_watchdog.py, every pass. Nothing in it is authored; its "
+        "staleness is its producer's, which the component registry and runtime attestation "
+        "govern.",
+    "docs/research/PLUMBING_INVARIANTS.md":
+        "DERIVED RENDERING, rewritten whole by scripts/check_plumbing_invariants.py --render (a law-gate fence). Nothing in it is authored; its "
+        "staleness is its producer's, which the component registry and runtime attestation "
+        "govern.",
+    "docs/research/PRODUCTIVITY_CENSUS.md":
+        "DERIVED RENDERING, rewritten whole by desks/mt5/research/productivity_census.py. Nothing in it is authored; its "
+        "staleness is its producer's, which the component registry and runtime attestation "
+        "govern.",
+    "docs/research/RESEARCH_DASHBOARD.md":
+        "DERIVED RENDERING, rewritten whole by desks/mt5/research/research_dashboard.py (hourly leg research_dashboard). Nothing in it is authored; its "
+        "staleness is its producer's, which the component registry and runtime attestation "
+        "govern.",
+    "docs/research/RUNTIME_STATE.md":
+        "DERIVED RENDERING, rewritten whole by desks/mt5/research/runtime_attestation.py (hourly leg runtime_attestation). Nothing in it is authored; its "
+        "staleness is its producer's, which the component registry and runtime attestation "
+        "govern.",
+    "docs/research/SANDBOX_ROSTER.md":
+        "DERIVED RENDERING, rewritten whole by desks/mt5/research/sandbox_roster.py. Nothing in it is authored; its "
+        "staleness is its producer's, which the component registry and runtime attestation "
+        "govern.",
+    "docs/research/SELF_REPAIR.md":
+        "DERIVED RENDERING, rewritten whole by desks/mt5/research/self_repair_registry.py (hourly leg self_repair). Nothing in it is authored; its "
+        "staleness is its producer's, which the component registry and runtime attestation "
+        "govern.",
+    "docs/research/TIER5_AUDIT.md":
+        "DERIVED RENDERING, rewritten whole by scripts/check_tier5_audit.py from docs/research/tier5_audit.json. Nothing in it is authored; its "
+        "staleness is its producer's, which the component registry and runtime attestation "
+        "govern.",
+    # DATED RESEARCH WRITE-UPS (2026-09-29): forensic records of one investigation each.
+    "docs/research/GOLD_LOSS_RECHECK_20260929.md":
+        "FORENSIC WRITE-UP, dated: a read-only recheck of the gold losses and exits on "
+        "2026-09-29. It records what was measured that day; it accumulates no inventory and a "
+        "re-work clock would re-date a finding nobody had found wrong.",
+    "docs/research/RENTECH_TEARDOWN.md":
+        "FORENSIC WRITE-UP, dated 2026-09-24, public sources only: what the job specs and the "
+        "public record support. It is the record of one reading, not a queue: a mechanism it "
+        "names reaches the gauntlet through the miner's ordinary door (the firm_mining donation "
+        "of 2026-09-27 covers the Renaissance cluster), never through this page.",
+    "docs/research/READING_LIST.md":
+        "A PROTOCOL LIBRARY: literature to READ by hand because the miner cannot convert prose "
+        "that names no registered family. It is a list of inputs, not measurements; an item "
+        "read becomes a mined row through the ordinary door.",
+    "docs/research/firm_mining/":
+        "DIRECTORY CLASS, the 2026-09-27 five-cluster firm mining. Its findings were DONATED as "
+        "rows to desks/mt5/data/intelligence/firm_mining/discoveries_*.json, which the "
+        "candidate compiler reads (CLAUDE.md: seat output goes through data/intelligence/); "
+        "the markdown is the narrative record of that donation, not inventory awaiting one.",
 }
 
 

@@ -175,7 +175,9 @@ function Merge-FetchHead {
     $prev = $ErrorActionPreference
     $ErrorActionPreference = "Continue"
     try {
-        $probe = @(& git -C $RepoRoot merge --no-commit --no-ff FETCH_HEAD 2>&1 |
+        # The trading checkout may enable merge.autoStash globally. A preflight must never
+        # snapshot the multi-gigabyte runtime tree: it only needs Git's native overlap check.
+        $probe = @(& git -C $RepoRoot -c merge.autoStash=false merge --no-commit --no-ff FETCH_HEAD 2>&1 |
                    ForEach-Object { "$_" })
         $probeRc = $LASTEXITCODE
     } finally {

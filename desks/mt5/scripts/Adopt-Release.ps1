@@ -687,11 +687,24 @@ if (-not $permitAccepted) {
 if ($dirty.Count -gt 0) {
     $stillDirty = New-Object System.Collections.Generic.List[string]
     $alreadyTarget = 0
-    foreach ($raw in $dirty) {
-        $rel = "$raw".Trim().Trim('"')
-        & git -C $RepoRoot diff --quiet --no-ext-diff $target -- $rel
-        if ($LASTEXITCODE -eq 0) { $alreadyTarget++ }
-        else { [void]$stillDirty.Add($rel) }
+    # Do not launch one `git diff` per path. On the large live index each invocation refreshes
+    # the tree, so a resumable adoption with hundreds of already-landed files took hours. Ask
+    # Git for the paths that still differ in bounded batches, then classify in memory.
+    $normalisedDirty = @($dirty | ForEach-Object { "$_".Trim().Trim('"') })
+    $batchSize = 100
+    for ($start = 0; $start -lt $normalisedDirty.Count; $start += $batchSize) {
+        $end = [Math]::Min($start + $batchSize - 1, $normalisedDirty.Count - 1)
+        $batch = @($normalisedDirty[$start..$end])
+        $args = @("diff", "--name-only", "--no-ext-diff", $target, "--") + $batch
+        $different = @{}
+        Invoke-Git $args | ForEach-Object {
+            $name = "$_".Trim().Trim('"')
+            if ($name) { $different[$name] = $true }
+        }
+        foreach ($rel in $batch) {
+            if ($different.ContainsKey($rel)) { [void]$stillDirty.Add($rel) }
+            else { $alreadyTarget++ }
+        }
     }
     if ($alreadyTarget -gt 0) {
         Write-Host ("  {0} dirty path(s) already equal the fetched target; resuming their interrupted adoption" -f $alreadyTarget)
