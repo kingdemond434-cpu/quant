@@ -107,6 +107,16 @@ def _atr(df: pd.DataFrame) -> np.ndarray:
     return tr.ewm(alpha=1 / 14, min_periods=14).mean().to_numpy(float)
 
 
+def measured_spreads(df: pd.DataFrame) -> np.ndarray:
+    """Missing costs are unmeasured, never a free-spread backtest."""
+    if "spread" not in df:
+        raise ValueError("recorded broker spread column is missing")
+    values = pd.to_numeric(df["spread"], errors="coerce").to_numpy(float)
+    if not np.isfinite(values).all() or (values < 0).any():
+        raise ValueError("recorded broker spreads contain invalid measurements")
+    return values * 0.01
+
+
 def simulate(
     df: pd.DataFrame,
     cfg: Config,
@@ -122,8 +132,7 @@ def simulate(
     if len(sig) != len(df) or len(atr) != len(df):
         raise ValueError("signal and ATR arrays must align exactly with bars")
     opn, high, low, close = (df[c].to_numpy(float) for c in ("open", "high", "low", "close"))
-    point = 0.01
-    spreads = df.get("spread", pd.Series(0.0, index=df.index)).to_numpy(float) * point
+    spreads = (np.zeros(len(df)) if cost == "frictionless" else measured_spreads(df))
     out: list[dict] = []
     i, n = max(40, cfg.lookback + 3), len(df) - 1
     event_indices = np.flatnonzero(sig != 0)
@@ -217,6 +226,11 @@ def run() -> dict:
             report["timeframes"][tf] = {"status": "UNMEASURED", "reason": "missing broker bars"}
             continue
         df = pd.read_parquet(path).sort_index()
+        try:
+            measured_spreads(df)
+        except ValueError as exc:
+            report["timeframes"][tf] = {"status": "UNMEASURED", "reason": str(exc)}
+            continue
         cut = int(len(df) * 0.60)
         train, test = df.iloc[:cut], df.iloc[cut:]
         configs = _configs(tf)

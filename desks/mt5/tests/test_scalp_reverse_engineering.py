@@ -23,6 +23,19 @@ def test_invalid_risk_geometry_is_refused() -> None:
         scalp.risk_sized_units(100.0, 99.0, 1.25)
 
 
+@pytest.mark.parametrize("values", [None, [float("nan")], [-1], [float("inf")], ["bad"]])
+def test_missing_or_invalid_spreads_are_never_free(values):
+    frame = pd.DataFrame({"close": [100]})
+    if values is not None:
+        frame["spread"] = values
+    with pytest.raises(ValueError):
+        scalp.measured_spreads(frame)
+
+
+def test_measured_zero_spread_is_distinct_from_missing():
+    assert scalp.measured_spreads(pd.DataFrame({"spread": [0, 20]})).tolist() == [0, 0.2]
+
+
 def test_same_bar_stop_and_target_is_scored_stop_first(monkeypatch: pytest.MonkeyPatch) -> None:
     idx = pd.date_range("2026-01-01", periods=70, freq="min", tz="UTC")
     df = pd.DataFrame({
