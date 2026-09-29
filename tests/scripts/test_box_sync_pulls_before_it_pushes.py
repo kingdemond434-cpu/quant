@@ -106,11 +106,13 @@ def test_a_failed_fetch_does_not_abort_the_sync() -> None:
     """
     body = _sync_pull_body()
     fail = body.index("fetch failed rc=")
-    assert "return" in body[fail:fail + 200], (
+    terminal_fail = body.index("if ($rc -ne 0)", fail)
+    terminal_block = body[terminal_fail:body.index("\n    }", terminal_fail)]
+    assert "return" in terminal_block, (
         "a failed fetch no longer returns -- if it exits or throws, one unreachable minute of "
         "network costs the box its commit AND its push, which is strictly worse than the bug "
         "this pull was added to fix")
-    assert "exit" not in body[fail:fail + 200], (
+    assert "exit" not in terminal_block, (
         "the fetch-failure path exits; delivery is best-effort, publication is not")
 
 
@@ -153,3 +155,20 @@ def test_dirty_files_are_parked_and_restored_never_discarded() -> None:
     code = _code()
     assert "Copy-Item" in code and "$parked" in code
     assert "stash" not in code, "R0423: never stash in a shared tree"
+
+
+def test_merge_blockers_are_found_with_one_dirty_set_not_one_git_per_path() -> None:
+    """Large discovery fetches must not monopolise the global Git-writer mutex.
+
+    The old loop ran ``git status`` separately for every incoming path. A 38k-path fetch could
+    therefore consume the Windows task's entire ten-minute allowance while holding the mutex,
+    preventing the canonical release adopter from ever starting. Tracked blockers are exactly
+    the intersection of incoming paths and paths dirty relative to HEAD, so one Git call plus an
+    in-memory set is equivalent. Untracked blockers remain covered by the merge probe below it.
+    """
+    code = _code()
+    start = code.index("function Merge-FetchHead")
+    body = code[start:code.index("\n}", start)]
+    assert "diff --name-only --no-ext-diff HEAD" in body
+    assert "$dirtySet" in body and ".ContainsKey($rel)" in body
+    assert "status --porcelain -- $rel" not in body

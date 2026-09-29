@@ -140,9 +140,17 @@ function Merge-FetchHead {
     param([string]$RepoRoot, [string]$Branch)
     $blockers = @()
     $incoming = @(& git -C $RepoRoot diff --name-only HEAD FETCH_HEAD) | Where-Object { $_ }
+    # One status subprocess per incoming path made this section O(paths) in Git startups. A
+    # discovery-heavy fetch can contain tens of thousands of paths, so the sync held the global
+    # writer mutex until its ten-minute task limit and starved the release adopter. Compute the
+    # tracked dirty set once and intersect in memory. Untracked merge blockers are deliberately
+    # handled by the merge probe below because they are absent from `git diff HEAD`.
+    $dirtyTracked = @(& git -C $RepoRoot diff --name-only --no-ext-diff HEAD) |
+        Where-Object { $_ }
+    $dirtySet = @{}
+    foreach ($rel in $dirtyTracked) { $dirtySet[$rel] = $true }
     foreach ($rel in $incoming) {
-        $st = @(& git -C $RepoRoot status --porcelain -- $rel) | Where-Object { $_ }
-        if ($st) { $blockers += $rel }
+        if ($dirtySet.ContainsKey($rel)) { $blockers += $rel }
     }
     $parked = @{}
     foreach ($rel in $blockers) {
