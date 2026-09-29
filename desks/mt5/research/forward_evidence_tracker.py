@@ -217,10 +217,10 @@ DIMENSIONS: dict[str, Callable[[datetime], dict[str, Any]]] = {
     "research_hit_rate": lambda _n: hit_rate()}
 
 
-def _history(path: Path = HISTORY) -> list[dict[str, Any]]:
+def _history(path: Path | None = None) -> list[dict[str, Any]]:
     out: list[dict[str, Any]] = []
     try:
-        lines = path.read_text("utf-8", errors="replace").splitlines()
+        lines = (path or HISTORY).read_text("utf-8", errors="replace").splitlines()
     except OSError:
         return out
     for ln in lines:
