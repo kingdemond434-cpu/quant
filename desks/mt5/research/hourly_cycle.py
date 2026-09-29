@@ -905,7 +905,7 @@ DEPARTMENTS: tuple[str, ...] = ("japan", "regions", "data", "intel", "discovery"
 LEG_DEPARTMENT: dict[str, str] = {
     # data: bars, tapes, lakes, sources -- the inputs every other department reads
     **dict.fromkeys(("refresh_bars", "tape_features", "lake_promote", "universe_integrity",
-                     "dukascopy_backfill",
+                     "dukascopy_backfill", "synthetic_usdx",
                      "source_routes", "source_fixer", "asia_collector", "asia_parser",
                      # walking inside a registered ground's own door is collection, like the
                      # collector above it: it fetches documents and files them as claims
@@ -4521,6 +4521,11 @@ def main() -> None:
     # rebuild, a stale one is named by asset class (`scripts/check_universe_integrity.py`).
     uin = _costed("universe_integrity",
                   lambda: _producer("universe_integrity", "scripts/check_universe_integrity.py"))
+    # USDX IS BUILT, NOT DOWNLOADED: Fusion does not quote the dollar index the miners and packs
+    # name as a factor (36 clocks sat BLOCKED_INPUTS_UNAVAILABLE on it, 2026-09-29). Rebuilt each
+    # hour from the six ICE legs so it never lags them; a factor only, never a tradeable symbol.
+    usx = _costed("synthetic_usdx",
+                  lambda: _producer("synthetic_usdx", "research/synthetic_usdx.py"))
     # LONG-HISTORY DEPTH, BOUNDED AND RESUMABLE. Eight complete symbol-days per data-department
     # pass compounds the public bid/ask archive without turning the hourly cycle into a multi-hour
     # download. This source may inform structure and spread regimes; Fusion-native evidence remains
@@ -4975,6 +4980,7 @@ def main() -> None:
                     "asia_parser": apr,
                     "source_fixer": sfx,
                     "universe_integrity": uin,
+                    "synthetic_usdx": usx,
                     "source_routes": srt,
                     "strategy_paths": spa,
                     "weak_signals": wse,
