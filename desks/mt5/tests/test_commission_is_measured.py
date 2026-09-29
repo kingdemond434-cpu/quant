@@ -43,7 +43,14 @@ fc = pytest.importorskip("libs.portfolio.fusion_cost")
 #: `external_gauntlet.costs_for` is absent on purpose: it already passes no override and takes
 #: `Costs.from_symbol`'s default, which is the same measured constant.
 MONEY_PATH = ("research/shadow_forward.py", "research/qquant_gates.py")
-RESEARCH_PATH = ("research/fragility.py", "mech_split.py", "research/placebo_test.py")
+RESEARCH_PATH = (
+    "research/fragility.py",
+    "mech_split.py",
+    "research/placebo_test.py",
+    "run_hunt11.py",
+    "research/audit_breakout.py",
+    "side_channels/combined.py",
+)
 
 #: The shape the fix removed. A round-turn figure in a field the engine charges per side.
 ROUND_TURN_LITERAL = 3.50
