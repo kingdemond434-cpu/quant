@@ -56,6 +56,9 @@ def test_the_line_is_the_gauntlets_stress_multiple():
     assert rus.FILLS_IMPLAUSIBLE_ABOVE_BARS == fc.IMPLAUSIBLE_ABOVE_BAR == 3.0
 
 
+# Every run below names `source="h1"`: these tests pin the fills-vs-BAR comparison and patch
+# `measured_spread`, while `run()`'s default became the broker M1 tape (DEFAULT_SOURCE = "tape")
+# after they were written. Left on the default, the patched probe was never consulted.
 def _registry(tmp_path: Path, monkeypatch, rows: dict) -> None:
     """Point the repair at a throwaway registry. `run(write=False)` never touches it either."""
     reg = tmp_path / "universe.json"
@@ -72,7 +75,7 @@ def test_a_plausible_fills_value_is_still_never_touched(tmp_path, monkeypatch):
     """Inside 3x the original rule stands. XAUUSD carries fills 14.5 against bars of 16."""
     monkeypatch.setattr(rus, "measured_spread", lambda sym: (16.0, "ok", {"n_priced": 5000}))
     _registry(tmp_path, monkeypatch, {"XAUUSD": _fills(14.5)})
-    rep = rus.run(apply=False, write=False)
+    rep = rus.run(apply=False, write=False, source="h1")
     assert rep["kept_realized_fills"] == ["XAUUSD"]
     assert rep["n_fills_overridden"] == 0
 
@@ -81,7 +84,7 @@ def test_an_implausible_fills_value_is_overruled_and_named(tmp_path, monkeypatch
     """NZDJPY: 147.0 against a bar median of 15.0."""
     monkeypatch.setattr(rus, "measured_spread", lambda sym: (15.0, "ok", {"n_priced": 53886}))
     _registry(tmp_path, monkeypatch, {"NZDJPY": _fills(147.0)})
-    rep = rus.run(apply=False, write=False)
+    rep = rus.run(apply=False, write=False, source="h1")
     assert rep["n_fills_overridden"] == 1
     row = rep["fills_overridden"][0]
     assert row["symbol"] == "NZDJPY" and row["old"] == 147.0 and row["new"] == 15.0
@@ -95,7 +98,7 @@ def test_the_override_still_reports_as_cheaper(tmp_path, monkeypatch):
     reach a reviewer through the same gate as any other cheapening repair."""
     monkeypatch.setattr(rus, "measured_spread", lambda sym: (15.0, "ok", {"n_priced": 53886}))
     _registry(tmp_path, monkeypatch, {"NZDJPY": _fills(147.0)})
-    rep = rus.run(apply=False, write=False)
+    rep = rus.run(apply=False, write=False, source="h1")
     assert rep["n_made_cheaper"] == 1
     assert [c["symbol"] for c in rep["made_cheaper"]] == ["NZDJPY"]
 
@@ -105,7 +108,7 @@ def test_the_override_has_its_own_list_and_does_not_pollute_suspect(tmp_path, mo
     would make both counts mean neither."""
     monkeypatch.setattr(rus, "measured_spread", lambda sym: (15.0, "ok", {"n_priced": 53886}))
     _registry(tmp_path, monkeypatch, {"NZDJPY": _fills(147.0)})
-    rep = rus.run(apply=False, write=False)
+    rep = rus.run(apply=False, write=False, source="h1")
     assert rep["n_suspect"] == 0, "a 9.8x override was counted as a >50x move"
     assert rep["n_fills_overridden"] == 1
 
@@ -114,7 +117,7 @@ def test_a_fills_row_whose_bars_are_unmeasurable_is_left_alone(tmp_path, monkeyp
     """No bars, no comparison, no override. GBPCHF is in this state on a research checkout."""
     monkeypatch.setattr(rus, "measured_spread", lambda sym: (None, "no local H1 bars", {}))
     _registry(tmp_path, monkeypatch, {"GBPCHF": _fills(165.0)})
-    rep = rus.run(apply=False, write=False)
+    rep = rus.run(apply=False, write=False, source="h1")
     assert rep["n_fills_overridden"] == 0
     assert rep["kept_realized_fills"] == ["GBPCHF"]
 
@@ -125,5 +128,5 @@ def test_report_mode_writes_no_registry(tmp_path, monkeypatch):
     monkeypatch.setattr(rus, "measured_spread", lambda sym: (15.0, "ok", {"n_priced": 100}))
     _registry(tmp_path, monkeypatch, {"X": _fills(147.0)})
     before = (tmp_path / "universe.json").read_text(encoding="utf-8")
-    rus.run(apply=False, write=False)
+    rus.run(apply=False, write=False, source="h1")
     assert (tmp_path / "universe.json").read_text(encoding="utf-8") == before
