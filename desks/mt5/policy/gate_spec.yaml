@@ -2,7 +2,7 @@
 # Single source of truth for gate definitions, thresholds, and classifications
 # Used to generate: gate_policy.py, documentation, tests, and validation code
 
-version: "mt5-original-universal-10-v2-calibrated-inputs"
+version: "mt5-original-universal-10-v3-reserved-lockbox"
 description: "MT5 universal gate gauntlet — 10 gates, 2 classifications (VALIDITY vs POWER)"
 
 # Gate classifications per promotion protocol:
@@ -127,34 +127,32 @@ gates:
 
   - name: lockbox
     classification: validity
-    # DESCRIPTION CORRECTED 2026-09-01 to match what the code measures. Both validators compute
-    # this gate as `wf_oos >= 0.0` -- the SAME walk-forward out-of-sample Sharpe that gate 7
-    # (walk_forward) already uses -- and qquant_gates has always said so in its own header:
-    # "9 lockbox - wf OOS Sharpe >= 0 (holdout proxy)". The previous wording claimed a "genuine
-    # untouched holdout", which is a materially stronger thing: a segment no grid search, no
-    # parameter choice and no result inspection has ever seen. This gate is not that, so gate 9
-    # is not independent of gate 7 and the ten gates are nine plus a restatement.
+    # A TRUE RESERVED LOCKBOX (principal, 2026-09-29: "make the true lockbox the only
+    # certification path and re-certify every survivor"). Until v3 both validators computed this
+    # gate as `wf_oos >= 0.0` -- the walk-forward gate's own OOS Sharpe read twice -- and 58/58
+    # authority certificates carried lockbox_sharpe == wf oos_sharpe exactly, so ten gates were
+    # nine plus a restatement.
     #
-    # THE BAR IS NOT MOVED HERE, deliberately: standing principal direction is that the ten
-    # gates stay fixed and never become harsher, and a true lockbox would be strictly harder to
-    # pass. Only the claim is corrected -- a spec that overstates what it verifies makes every
-    # certificate issued under it look stronger than the evidence behind it, which is the
-    # failure this desk calls a claim it cannot cash (L1.49).
+    # v3: the final `holdout_fraction` of the campaign calendar (the UNION of every cell's dates,
+    # one cut for the whole sweep) is carved off BEFORE the program matrix is built. Gates 2-8
+    # and 10 see only the development window; PBO and SPA never see the held-out rows; this gate
+    # reads the held-out rows and nothing else. A cell with fewer than `min_holdout_bars` held-out
+    # observations FAILS -- no held-out evidence is not permission.
     #
-    # `holdout_fraction: 0.20` below is retained as the DESIGN INTENT for a real lockbox, and is
-    # currently unread by either validator. Implementing it is a principal decision, not a
-    # maintenance fix, because it would retroactively raise the bar on the existing book.
-    description: "Walk-forward OOS Sharpe > 0 (holdout PROXY, not an untouched segment; shares
-      its statistic with the walk_forward gate — see the note above)"
-    threshold: "lockbox_sharpe > 0.0"
+    # The version bump above is what re-certifies the book: `gate_policy.is_exact_policy` is an
+    # exact attestation match, so every v2 certificate stops conferring authority and each
+    # survivor must pass this path again to regain it.
+    description: "Sharpe >= 0 on the reserved final 20% of the campaign calendar, carved before
+      the program matrix and read by no other gate"
+    threshold: "lockbox_sharpe >= 0.0 on held-out rows only"
     metric: "holdout_sharpe"
     params:
       holdout_fraction: 0.20
-      min_holdout_bars: 60
-      min_train_bars: 100
+      min_holdout_bars: 40
+      min_train_bars: 60
     fail_closed: true
     cure_by_forward: false
-    note: "INDEPENDENT from walk_forward — uses chronological holdout, not purged splits"
+    note: "INDEPENDENT from walk_forward — chronological reserved holdout, carved first"
 
   - name: expected_value
     classification: power
@@ -192,7 +190,7 @@ promotion:
 
 # Attestation (must match exactly for certificate validity)
 attestation:
-  version: "mt5-original-universal-10-v2-calibrated-inputs"
+  version: "mt5-original-universal-10-v3-reserved-lockbox"
   gates: ["economic_prior", "in_sample_screen", "deflated_sharpe", "pbo", "reality_check_spa", "cpcv", "walk_forward", "stress_costs", "lockbox", "expected_value"]
   trials_multiplier: 7.0
   dsr_threshold: 0.95
