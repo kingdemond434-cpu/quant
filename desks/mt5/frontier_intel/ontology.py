@@ -91,7 +91,9 @@ CAPABILITIES: tuple[Capability, ...] = (
                "never recomputing an identical feature matrix, replay or world sample"),
     Capability("STORAGE", "compute", "desks/mt5/data/universe/",
                "holding enough history, at enough resolution, to ask a question twice"),
-    Capability("RESEARCH_PRODUCTIVITY", "compute", "desks/mt5/reports/RESEARCH_PRODUCTIVITY.json",
+    # An owner is the MODULE that does the thing. These two named the report each module writes,
+    # and `reports/*` is gitignored, so on any fresh tree the capability read as owned-by-nothing.
+    Capability("RESEARCH_PRODUCTIVITY", "compute", "desks/mt5/research/research_productivity.py",
                "idea to out-of-sample result latency -- the metric compute buys"),
     # ------------------------------------------------------------------ forecast
     Capability("FORECASTING", "forecast", "desks/mt5/research/shadow_forward.py",
@@ -124,7 +126,7 @@ CAPABILITIES: tuple[Capability, ...] = (
                "allocating so the book grows, not so each sleeve looks good alone"),
     Capability("ELOG", "capital", "libs/portfolio/robust_elog.py",
                "maximising expected log wealth rather than a ratio"),
-    Capability("BREADTH", "capital", "desks/mt5/reports/EFFECTIVE_BREADTH.json",
+    Capability("BREADTH", "capital", "desks/mt5/research/alpha_breadth.py",
                "counting BETS rather than labels: independent sources of return"),
     Capability("FACTOR_RISK", "capital", "desks/mt5/macro/factors.py",
                "knowing what the book is actually exposed to underneath its names"),
