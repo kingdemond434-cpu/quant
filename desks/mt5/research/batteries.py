@@ -208,6 +208,16 @@ ORGANS: tuple[Entry, ...] = (
     _e("scripts/score_panel.py", "score each advisory provider by validated hit-rate"),
     _e("scripts/stageb_capacity.py", "how many forward clocks SHOULD run at once"),
     _e("scripts/compare_book_growth.py", "which book grows fastest: sleeves, replacements, union"),
+    # THE TWO PROP-ARENA PRICERS LANDED UNCLOCKED (measured 2026-09-29: the census's 3 unclocked
+    # were these two plus the deliberate arm-and-pass tool). Both are report builders that give
+    # no sleeve any capital. `prop_barrier` prices the E8 Pro account actually bought
+    # (desks/mt5/reports/PROP_BARRIER.json); its default 20,000 paths per cell measured ~34 min
+    # on the build box (2,000 paths: 204 s), past MAX_SLICE_S, so the battery runs 1,000 paths
+    # (~100 s; standard error ~0.01 on a p_pass near 0.9) and the artifact records `n_paths`.
+    # `optimise_prop_settings` is the two-barrier frontier `mt5desk/account_profile` cites (35 ms).
+    _e("desks/mt5/research/prop_barrier.py", "the E8 Pro barrier: P(pass) and days by size",
+       "--paths", "1000"),
+    _e("scripts/optimise_prop_settings.py", "the prop frontier: fastest size at P(pass)>=90%"),
     _e("scripts/run_factory_status.py", "the factory's information-advantage panel"),
     _e("scripts/run_restore_drill.py", "prove the forward evidence can actually come back"),
     _e("scripts/probe_language_moat.py", "R0594 -- is the language really the moat"),
