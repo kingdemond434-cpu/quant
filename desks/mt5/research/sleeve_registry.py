@@ -309,7 +309,7 @@ def freeze(key: str, ident: dict[str, Any], *, forward_start: str | None = None,
     try:
         from family_policy import refuse_if_banned  # type: ignore[import-not-found]
     except ImportError:                                   # pragma: no cover - packaged import
-        from research.family_policy import refuse_if_banned
+        from desks.mt5.research.family_policy import refuse_if_banned
     refuse_if_banned(ident.get("family"), what="clock", key=key)
     # STAMPED AT BIRTH, NEVER BACKFILLED (2026-09-23, the principal). A clock that is born
     # without the canonical identity can only be joined by a later sweep that re-parses its key,

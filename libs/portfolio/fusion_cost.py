@@ -69,7 +69,10 @@ import sys
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any, cast
+
+if TYPE_CHECKING:
+    from desks.mt5.mt5desk.engine import Costs as EngineCosts
 
 _ROOT = Path(__file__).resolve().parents[2]
 if str(_ROOT) not in sys.path:
@@ -136,7 +139,7 @@ DEFAULT_REGIME = "RAW"
 
 
 def costs_for_symbol(meta: dict[str, Any], *, regime: str = DEFAULT_REGIME,
-                     spread_stress: float = 1.0, spread_pts: float | None = None):
+                     spread_stress: float = 1.0, spread_pts: float | None = None) -> EngineCosts:
     """Canonical Fusion Zero cost object for one instrument.
 
     The universe supplies that instrument's contract, tick, conversion, spread and swap fields;
@@ -147,12 +150,12 @@ def costs_for_symbol(meta: dict[str, Any], *, regime: str = DEFAULT_REGIME,
         raise ValueError(f"unknown Fusion cost regime {regime!r}; expected {sorted(COST_REGIMES)}")
     from mt5desk.engine import Costs
 
-    return Costs.from_symbol(
+    return cast("EngineCosts", Costs.from_symbol(
         meta,
         mult=COST_REGIMES[regime] * float(spread_stress),
         commission_per_lot=COMMISSION_PER_LOT_PER_SIDE,
         spread_pts=spread_pts,
-    )
+    ))
 
 #: `Costs.from_symbol` ends on `max(spread * mult, 0.05)`, so THE `ZERO` REGIME IS NOT A
 #: ZERO-SPREAD BOUND: at mult=0.0 the spread term floors here rather than vanishing. On a raw

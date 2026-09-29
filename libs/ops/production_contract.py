@@ -116,17 +116,20 @@ def state_replay_parity(continuous: Sequence[Mapping[str, object]],
     left, right = _after(continuous), _after(resumed)
     keys = sorted(set(left) | set(right))
     mismatches: list[dict[str, object]] = []
+    bad_keys: set[tuple[str, str]] = set()
     for key in keys:
         a, b = left.get(key), right.get(key)
         if a is None or b is None:
+            bad_keys.add(key)
             mismatches.append({"key": key, "field": "row", "continuous": a is not None,
                                "resumed": b is not None})
             continue
         for field in fields:
             if _canonical(a.get(field)) != _canonical(b.get(field)):
+                bad_keys.add(key)
                 mismatches.append({"key": key, "field": field,
                                    "continuous": a.get(field), "resumed": b.get(field)})
-    bad_rows = len({tuple(m["key"]) for m in mismatches})
+    bad_rows = len(bad_keys)
     return {"status": "PASS" if not mismatches else "FAIL", "boundary": boundary,
             "post_boundary_rows": len(keys), "mismatches": mismatches,
             "parity": 1.0 if not keys else 1.0 - bad_rows / len(keys)}
