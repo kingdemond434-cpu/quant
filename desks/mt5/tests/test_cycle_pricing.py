@@ -68,6 +68,10 @@ def test_a_winner_gets_more_and_the_loser_keeps_its_scout_floor(
     assert legs["leg9"]["factor"] >= cp.FLOOR
     assert legs["leg9"]["planned_s"] >= cp.SCOUT_MIN_S
     assert legs["leg9"]["planned_s"] >= int(legs["leg9"]["base_s"] * cp.FLOOR)
+    # NEVER REDUCE MINING (standing order 2026-09-29): the floor is 1.0, so no leg loses seconds.
+    assert cp.FLOOR >= 1.0
+    for name, v in legs.items():
+        assert v["factor"] >= 1.0 and v["planned_s"] >= v["base_s"], f"{name} was cut"
     # Unpriced legs sit at the median, not at zero and not at the bottom.
     for name in ("leg3", "leg5"):
         assert legs[name]["priced_by"] == ["unpriced:median"]

@@ -20,10 +20,11 @@ principal's never-reduce-aggressiveness order). Three properties hold by constru
 pinned by tests:
 
   1. WINNERS GET MORE. A leg the board prices above the median is multiplied UP, to `CEIL`.
-  2. EVERY LEG KEEPS A SCOUT FLOOR. No leg is ever cut below `FLOOR` x its base, and no leg is
-     ever cut below `SCOUT_MIN_S` seconds. A leg priced last still runs; it must, because the
-     price is an estimate made from the desk's own past and the desk has been wrong about which
-     leg was worthless before (L1.25: failure to discover is never evidence there is nothing).
+  2. NO LEG IS EVER CUT. `FLOOR` is 1.0: every leg keeps at least its whole base budget, and
+     never less than `SCOUT_MIN_S` seconds. Pricing only adds capacity and reorders. A leg
+     priced last still runs whole; it must, because the price is an estimate made from the
+     desk's own past and the desk has been wrong about which leg was worthless before
+     (L1.25: failure to discover is never evidence there is nothing).
   3. NEVER A GLOBAL REDUCTION. After clipping, the whole plan is rescaled so the TOTAL seconds
      allocated is never less than the total the legs would have had unpriced. The controller
      moves compute BETWEEN legs; it never quietly hands the hour back.
@@ -74,10 +75,13 @@ POLICY = DESK / "data" / "compute_policy.json"
 LEDGER = DESK / "data" / "compute_ledger.jsonl"
 OUT = R / "CYCLE_PRICING.json"
 
-#: THE SCOUT FLOOR AND THE WINNER'S CEILING. `FLOOR` is the fraction of its base budget the
-#: lowest-priced leg still gets; `CEIL` the multiple the best-priced leg may reach. Both are
-#: bounds on the RATIO, so the plan is a reallocation and not a resize.
-FLOOR, CEIL = 0.60, 2.00
+#: THE FLOOR AND THE WINNER'S CEILING. `FLOOR` is the fraction of its base budget the
+#: lowest-priced leg still gets; `CEIL` the multiple the best-priced leg may reach.
+#: FLOOR IS 1.0 AND PINNED (principal's standing order, 2026-09-29: "NEVER reduce info gathering,
+#: raw cell mining or research generation"). Until 2026-09-29 it was 0.60, so a miner priced
+#: last lost 40% of its hour. Pricing may only ADD capacity: a winner is lengthened toward CEIL,
+#: a loser keeps its whole base and is merely run later in the hour (`order`).
+FLOOR, CEIL = 1.00, 2.00
 #: No leg is cut below this many seconds whatever the ratio says: below about a minute a
 #: subprocess leg spends its whole budget starting an interpreter and reading its inputs, so a
 #: smaller number is not a smaller budget, it is a guaranteed timeout with nothing written.
@@ -350,10 +354,9 @@ def build_plan(bases: dict[str, int] | None = None) -> dict[str, Any]:
             v["score"] = round(median, 6)
             v["priced_by"] = ["unpriced:median"]
 
-    # THE FACTOR: a rank score in [0,1] mapped onto [FLOOR, CEIL]. Two-sided by construction --
-    # the top of the range is a 2x increase, the bottom a 0.6x scout floor, and the midpoint is
-    # exactly 1.0x only when FLOOR and CEIL are symmetric about it, which they are not, so the
-    # map is anchored at the median instead: median score -> 1.0x.
+    # THE FACTOR: a rank score in [0,1] mapped onto [FLOOR, CEIL], anchored at the median
+    # (median score -> 1.0x). With FLOOR = 1.0 the below-median branch is the identity: a
+    # low price delays a leg in the order, it never shortens it.
     for v in legs.values():
         s = float(v["score"])
         f = (1.0 + (s - median) / max(1e-9, 1.0 - median) * (CEIL - 1.0)) if s >= median else \
