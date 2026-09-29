@@ -293,7 +293,7 @@ def proc_start(pid: int) -> float | None:
         return None
     # POSIX-ONLY: reached only after /proc/stat parsed, which cannot happen on
     # Windows. float() makes the Any from sysconf explicit rather than leaked.
-    ticks = float(os.sysconf("SC_CLK_TCK"))  # type: ignore[attr-defined]
+    ticks = float(os.sysconf("SC_CLK_TCK"))  # type: ignore[attr-defined,unused-ignore]
     return float(btime) + starttime / ticks
 
 
