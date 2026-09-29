@@ -474,6 +474,7 @@ function Test-StatePath {
 # Skipping them is not a gap in coverage: it is the same corpus arriving by the one route that
 # was built for it. Nothing is hidden -- the count is printed, and it is in ADOPTION_STATE.json.
 $ShippedPrefixes = @("data/intelligence/", "desks/mt5/data/intelligence/")
+$ShippedPathspecs = @("data/intelligence/**", "desks/mt5/data/intelligence/**")
 
 function Test-ShippedByOwnOrgan {
     param([string] $Rel)
@@ -697,6 +698,28 @@ if ($dirty.Count -gt 0) {
     }
     $dirty = @($stillDirty)
 }
+
+function Get-NonShippedDiff {
+    param([string] $From, [string] $To, [string] $Mode)
+    # Keep the discovery corpus out of PowerShell altogether.  Merely enumerating and then
+    # classifying ~38k paths three times kept the release mutex for nearly an hour on 2026-09-29,
+    # even though the per-path loop correctly skipped every one.  Git's exclude pathspec performs
+    # the same ownership split in-process and returns only paths this adopter can act on.
+    $args = @("-c", "core.quotePath=false", "diff", "--$Mode", $From, $To, "--", ".")
+    foreach ($pathspec in $ShippedPathspecs) { $args += ":(exclude)$pathspec" }
+    return @(Invoke-Git $args | ForEach-Object { "$_" } | Where-Object { $_ -match '\S' })
+}
+
+function Get-ShippedDiffCount {
+    param([string] $From, [string] $To)
+    # `--shortstat` preserves the exact audit count without shipping tens of thousands of path
+    # strings through the PowerShell pipeline.  The detailed corpus remains visible to the organ
+    # that owns and lands it (MT5-IntelShip).
+    $args = @("diff", "--shortstat", $From, $To, "--") + $ShippedPathspecs
+    $summary = "$(Invoke-Git $args -AllowFail)"
+    if ($LASTEXITCODE -ne 0 -or $summary -notmatch '(\d+) files? changed') { return 0 }
+    return [int]$Matches[1]
+}
 if ($dirty.Count -gt 0) {
     $dirtyPaths = @($dirty | ForEach-Object { "$_".Trim().Trim('"') })
     # A release must never spend its lock window indexing the desk's evidence lake.  The
@@ -723,8 +746,7 @@ if ($dirty.Count -gt 0) {
 # NUL-delimited stream arrives as one opaque string and the parse depends on NUL
 # surviving the marshalling. NTFS forbids control characters in filenames, so on
 # this box one record per line is exactly safe.
-$records = @(Invoke-Git @("-c", "core.quotePath=false", "diff", "--name-status", "HEAD", $target) |
-             ForEach-Object { "$_" } | Where-Object { $_ -match '\S' })
+$records = @(Get-NonShippedDiff -From "HEAD" -To $target -Mode "name-status")
 
 # WHAT THIS BOX HAS WRITTEN SINCE IT DIVERGED. Measured against the merge base, AFTER step 1,
 # so the state that was still uncommitted a moment ago counts as the box's. A state path in
@@ -754,7 +776,8 @@ function Test-KeptByBox {
     return $boxTouched.ContainsKey($Rel)
 }
 
-$written = 0; $added = 0; $removed = 0; $untracked = 0; $shipped = 0
+$written = 0; $added = 0; $removed = 0; $untracked = 0
+$shipped = Get-ShippedDiffCount -From "HEAD" -To $target
 $kept      = New-Object System.Collections.ArrayList
 $unremoved = New-Object System.Collections.ArrayList
 $staged    = New-Object System.Collections.ArrayList
@@ -986,10 +1009,9 @@ if ($pending.Count -gt 0) {
 #
 # Nothing is hidden: state paths that still differ are counted and named below, and the code
 # drift that would genuinely block a seal is reported exactly as before.
-$allDiff = @(Invoke-Git @("-c", "core.quotePath=false", "diff", "--name-only", "HEAD", $target) |
-             ForEach-Object { "$_" } | Where-Object { $_ -match '\S' })
-$shippedDrift = @($allDiff | Where-Object { Test-ShippedByOwnOrgan $_ })
-$stateDrift = @($allDiff | Where-Object { (Test-StatePath $_) -and -not (Test-ShippedByOwnOrgan $_) })
+$allDiff = @(Get-NonShippedDiff -From "HEAD" -To $target -Mode "name-only")
+$shippedDriftCount = Get-ShippedDiffCount -From "HEAD" -To $target
+$stateDrift = @($allDiff | Where-Object { Test-StatePath $_ })
 $drift      = @($allDiff | Where-Object { -not (Test-StatePath $_) })
 
 # ---- 4a. THE REPAIR PASS: A LOST LOCK RACE IS NOT A REASON TO REFUSE ------------------------
@@ -1020,8 +1042,7 @@ while ($drift.Count -gt 0 -and $repairPasses -lt 2) {
     $residual = @{}
     foreach ($d in $drift) { $residual[$d] = $true }
     $fixed = New-Object System.Collections.ArrayList
-    foreach ($rec in @(Invoke-Git @("-c", "core.quotePath=false", "diff", "--name-status", "HEAD", $target) |
-                       ForEach-Object { "$_" } | Where-Object { $_ -match '\S' })) {
+    foreach ($rec in @(Get-NonShippedDiff -From "HEAD" -To $target -Mode "name-status")) {
         $cols = $rec -split "`t"
         if ($cols[0] -match '^[RC]') {
             $ops = @(@{ Kind = "D"; Path = $cols[1] }, @{ Kind = "A"; Path = $cols[2] })
@@ -1066,10 +1087,9 @@ while ($drift.Count -gt 0 -and $repairPasses -lt 2) {
              $target.Substring(0, 12), $repairPasses)) | Out-Null
         Write-Host ("    committed {0} path(s) on the repair pass" -f $pendingRepair.Count)
     }
-    $allDiff = @(Invoke-Git @("-c", "core.quotePath=false", "diff", "--name-only", "HEAD", $target) |
-                 ForEach-Object { "$_" } | Where-Object { $_ -match '\S' })
-    $shippedDrift = @($allDiff | Where-Object { Test-ShippedByOwnOrgan $_ })
-    $stateDrift = @($allDiff | Where-Object { (Test-StatePath $_) -and -not (Test-ShippedByOwnOrgan $_) })
+    $allDiff = @(Get-NonShippedDiff -From "HEAD" -To $target -Mode "name-only")
+    $shippedDriftCount = Get-ShippedDiffCount -From "HEAD" -To $target
+    $stateDrift = @($allDiff | Where-Object { Test-StatePath $_ })
     $drift      = @($allDiff | Where-Object { -not (Test-StatePath $_) })
     if ($fixed.Count -eq 0) {
         # Nothing moved. Another identical pass cannot move it either, and the refusal below is
@@ -1078,8 +1098,8 @@ while ($drift.Count -gt 0 -and $repairPasses -lt 2) {
         break
     }
 }
-if ($shippedDrift.Count -gt 0) {
-    Write-Host ("  {0} discovery path(s) differ and are MT5-IntelShip's to land, not this script's" -f $shippedDrift.Count)
+if ($shippedDriftCount -gt 0) {
+    Write-Host ("  {0} discovery path(s) differ and are MT5-IntelShip's to land, not this script's" -f $shippedDriftCount)
 }
 if ($stateDrift.Count -gt 0) {
     Write-Host ("  {0} state path(s) differ and are NOT blocking: the box's organs own them and " -f $stateDrift.Count)
@@ -1105,7 +1125,7 @@ $adoptionState = [ordered]@{
         written = $written; added = $added; removed = $removed; untracked = $untracked
         shipped_elsewhere = $shipped; kept_state = $kept.Count; repair_passes = $repairPasses
         code_drift = $drift.Count; state_drift = $stateDrift.Count
-        discovery_drift = $shippedDrift.Count; unwritable = $unremoved.Count
+        discovery_drift = $shippedDriftCount; unwritable = $unremoved.Count
     }
     code_drift    = @($drift)
     unwritable    = @($unremoved)

@@ -101,6 +101,16 @@ def test_the_discovery_corpus_is_left_to_the_organ_that_ships_it() -> None:
     assert shipped_at < src.index("Get-WorktreeBytes", loop)
     # And it must say so: a skipped corpus that is not counted is a silent gap.
     assert "MT5-IntelShip" in src
+    # The large corpus must be excluded by Git before PowerShell enumerates the actionable diff.
+    # Skipping it inside the loop is logically correct but still held the release mutex for almost
+    # an hour when the branch contained ~38k discovery paths.
+    assert "function Get-NonShippedDiff" in src
+    assert '":(exclude)$pathspec"' in src
+    records = src.index('$records = @(Get-NonShippedDiff')
+    assert records < loop
+    verify = src.index('$allDiff = @(Get-NonShippedDiff')
+    assert verify > loop
+    assert "function Get-ShippedDiffCount" in src and '"--shortstat"' in src
 
 
 def test_the_skip_names_the_organ_that_actually_delivers_those_paths() -> None:
@@ -218,7 +228,8 @@ def test_a_lost_lock_race_gets_a_repair_pass_before_the_adoption_refuses() -> No
     refuse = src.index("REFUSING to record the merge: {0} CODE path(s)")
     assert repair < refuse
     tail = src[repair:refuse]
-    assert 'diff", "--name-only", "HEAD", $target' in tail, "the repair never re-measures"
+    assert 'Get-NonShippedDiff -From "HEAD" -To $target -Mode "name-only"' in tail, (
+        "the repair never re-measures")
     assert "nothing could be re-landed" in tail, "a repair that cannot move anything must stop"
 
 
@@ -293,6 +304,15 @@ def test_a_refusal_publishes_every_remaining_path_as_an_artifact(tmp_path: Path)
     target.unlink()
     target.mkdir()
     (target / "keep").write_text("in the way", encoding="utf-8")
+
+    # A directory in place of a tracked code file is necessarily dirty before adoption.  Exercise
+    # the script's explicit one-shot recovery route; otherwise the normal dirty-code fence quite
+    # correctly refuses before the write/repair/report path this test is intended to verify.
+    permit = {
+        "target": _git(box, "rev-parse", "FETCH_HEAD").strip(),
+        "expires_at": "2999-01-01T00:00:00Z",
+    }
+    _write(box, "desks/mt5/data/RELEASE_BOOTSTRAP_ONCE.json", json.dumps(permit))
 
     r = _run_adopt(box)
     assert r.returncode == 1, r.stdout
