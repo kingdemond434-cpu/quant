@@ -15,7 +15,7 @@
    "status": "DONE"
   },
   "certificate_yield_fence": {
-   "finished_at": "2026-09-28T21:26:49.750068+00:00",
+   "finished_at": "2026-09-29T04:09:55.266907+00:00",
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
@@ -33,19 +33,16 @@
    "status": "DONE"
   },
   "forward_clock_fence": {
-   "finished_at": "2026-09-28T21:27:05.051958+00:00",
+   "finished_at": "2026-09-29T04:10:08.087220+00:00",
    "passes_completed": 1,
    "returncode": 1,
    "status": "DONE"
   },
   "forward_clock_reconciliation": {
-   "command": [
-    "/home/quant/quant-platform/.venv/bin/python",
-    "scripts/check_forward_clock.py"
-   ],
-   "passes_completed": 0,
-   "started_at": "2026-09-29T03:16:45.025106+00:00",
-   "status": "RUNNING"
+   "finished_at": "2026-09-29T04:08:30.130455+00:00",
+   "passes_completed": 1,
+   "returncode": 1,
+   "status": "FAILED"
   },
   "forward_identity_reconciliation": {
    "finished_at": "2026-09-29T03:16:37.097414+00:00",
@@ -54,7 +51,7 @@
    "status": "DONE"
   },
   "forward_lane_heal": {
-   "finished_at": "2026-09-28T21:25:19.105006+00:00",
+   "finished_at": "2026-09-29T04:08:47.820037+00:00",
    "passes_completed": 1,
    "returncode": 1,
    "status": "FAILED"
@@ -66,23 +63,23 @@
    "status": "FAILED"
   },
   "mechanism_independence": {
-   "finished_at": "2026-09-28T21:26:20.342507+00:00",
+   "finished_at": "2026-09-29T04:09:28.268999+00:00",
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
   },
   "same_day_fence": {
-   "finished_at": "2026-09-28T21:26:36.570569+00:00",
+   "finished_at": "2026-09-29T04:09:40.939619+00:00",
    "passes_completed": 1,
    "returncode": 1,
    "status": "DONE"
   },
   "zero_capital_shadow_forward": {
-   "finished_at": "2026-09-28T21:25:56.310503+00:00",
+   "finished_at": "2026-09-29T04:09:11.774771+00:00",
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
   }
  },
- "updated_at": "2026-09-29T03:16:45.025106+00:00"
+ "updated_at": "2026-09-29T04:10:08.087220+00:00"
 }
