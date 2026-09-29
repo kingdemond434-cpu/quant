@@ -1,3 +1,5 @@
+import pytest
+
 from libs.research import diversity_archive as QD
 
 
@@ -45,3 +47,25 @@ def test_enrollment_is_not_evidence_and_failure_overrides_lifecycle() -> None:
                               "n_forward": 5}) == "FORWARD_SUPPORTED"
     assert QD.evidence_state({"status": "LIVE", "forward_r": 0.2,
                               "n_forward": 5, "live_supported": True}) == "LIVE_SUPPORTED"
+
+
+@pytest.mark.parametrize("result", [None, "", "nan", "inf", True, -1, 0])
+def test_trade_count_does_not_invent_positive_forward_evidence(result) -> None:
+    row = {"status": "LIVE", "n_forward": 5, "forward_r": result,
+           "live_supported": True}
+    assert QD.evidence_state(row) not in {"LIVE_SUPPORTED", "FORWARD_SUPPORTED"}
+
+
+@pytest.mark.parametrize("count", [None, "bad", "inf", -1, 0, True, 0.5])
+def test_positive_result_requires_a_valid_measured_sample(count) -> None:
+    assert QD.evidence_state({"status": "SHADOW", "forward_r": 1,
+                              "forward_trades": count}) != "FORWARD_SUPPORTED"
+
+
+def test_changed_verdict_removes_old_niche_without_erasing_history() -> None:
+    row = {"experiment_id": "a", "family": "trend", "verdict": "CERTIFIED"}
+    archive = QD.update({}, [row])
+    archive = QD.update(archive, [{**row, "verdict": "FAILED"}])
+    assert archive["counts"]["occupied_niches"] == 1
+    assert next(iter(archive["niches"].values()))["descriptor"]["evidence_state"] == "FAILED"
+    assert archive["items"]["a"]["history"][0]["verdict"] == "CERTIFIED"

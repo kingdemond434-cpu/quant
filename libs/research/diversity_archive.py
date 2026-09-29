@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 from collections.abc import Mapping, Sequence
 from typing import Any
 
@@ -39,16 +40,26 @@ def evidence_state(row: Mapping[str, Any]) -> str:
         return "DATA_BLOCKED"
     # Enrollment is lifecycle state, not evidence.  Support requires an explicit measured sample
     # and a positive result; otherwise SHADOW/FORWARD/LIVE merely says where observation occurs.
-    forward_n = int(row.get("forward_trades") or row.get("n_forward") or
-                    row.get("n_trades") or 0)
-    forward_r = row.get("forward_r")
-    measured_forward = forward_n > 0 or forward_r not in (None, "")
     try:
-        forward_positive = forward_r in (None, "") or float(forward_r) > 0.0
+        raw_n = row.get("forward_trades", row.get("n_forward", row.get("n_trades")))
+        count = float(raw_n)
+        forward_n = (int(count) if not isinstance(raw_n, bool) and math.isfinite(count)
+                     and count.is_integer() and count > 0 else 0)
+    except (TypeError, ValueError, OverflowError):
+        forward_n = 0
+    forward_r = row.get("forward_r")
+    measured_forward = forward_n > 0
+    try:
+        if forward_r is None:
+            raise ValueError("forward result is unmeasured")
+        result = float(forward_r)
+        forward_positive = (not isinstance(forward_r, bool) and math.isfinite(result)
+                            and result > 0.0)
     except (TypeError, ValueError):
         measured_forward = False
         forward_positive = False
-    if status == "LIVE" and bool(row.get("live_supported")) and measured_forward and forward_positive:
+    if (status == "LIVE" and row.get("live_supported") is True
+            and measured_forward and forward_positive):
         return "LIVE_SUPPORTED"
     if status in {"FORWARD", "SHADOW", "LIVE"} and measured_forward and forward_positive:
         return "FORWARD_SUPPORTED"
@@ -105,7 +116,7 @@ def update(archive: Mapping[str, Any] | None, rows: Sequence[Mapping[str, Any]])
         iid = item_id(row)
         desc = descriptor(row)
         key = niche_key(desc)
-        record = {"item_id": iid, "descriptor": desc, "quality": list(quality(row)),
+        record: dict[str, Any] = {"item_id": iid, "descriptor": desc, "quality": list(quality(row)),
                   "source": _first(row.get("source"), row.get("generator"), row.get("origin")),
                   "lineage": row.get("lineage") or row.get("parent_lineages") or [],
                   "blockers": row.get("blockers") or row.get("unresolved_blockers") or [],
@@ -128,6 +139,19 @@ def update(archive: Mapping[str, Any] | None, rows: Sequence[Mapping[str, Any]])
         if champion is None or tuple(record["quality"]) > tuple(items[champion]["quality"]):
             niche["champion"] = iid
         niches[key] = niche
+    # Rebuild derived membership from current items. An updated verdict must not leave the
+    # same candidate championing its old CERTIFIED/FORWARD niche indefinitely.
+    niches = {}
+    for iid, record in items.items():
+        key = niche_key(record["descriptor"])
+        niche = niches.setdefault(key, {"descriptor": record["descriptor"],
+                                       "members": [], "champion": iid})
+        niche["members"].append(iid)
+        champion = niche["champion"]
+        if tuple(record["quality"]) > tuple(items[champion]["quality"]):
+            niche["champion"] = iid
+    for niche in niches.values():
+        niche["members"].sort()
     failed = sum(r["descriptor"]["evidence_state"] == "FAILED" for r in items.values())
     blocked = sum(r["descriptor"]["evidence_state"].endswith("BLOCKED") for r in items.values())
     return {"schema": 1, "dimensions": list(DIMENSIONS), "items": items, "niches": niches,

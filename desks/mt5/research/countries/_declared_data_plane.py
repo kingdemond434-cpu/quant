@@ -59,7 +59,11 @@ def run(*, code: str, budget_s: float = 300.0, no_fetch: bool = True,
             matched_urls = [u for u in urls if u in by_url]
             matched_series = sorted({name for name, meta in series.items()
                                      if str(meta.get("url") or "") in matched_urls})
-            last = max((str(by_url[u].get("at") or "") for u in matched_urls), default="")
+            successful_urls = [u for u in matched_urls
+                               if by_url[u].get("status") == "SUCCESS"]
+            last = max((str(by_url[u].get("at") or "") for u in successful_urls), default="")
+            usable_series = [name for name in matched_series
+                             if series[name].get("pit_authority") is True]
             blocking = []
             if not urls:
                 blocking.append({"what": f"{code}:{dataset.name}", "verdict": "UNMEASURED",
@@ -68,20 +72,41 @@ def run(*, code: str, budget_s: float = 300.0, no_fetch: bool = True,
             elif not matched_urls:
                 blocking.append({"what": f"{code}:{dataset.name}", "verdict": "UNMEASURED",
                                  "why": f"not yet acquired by {ACQUISITION_OWNER}"})
+            else:
+                for url in matched_urls:
+                    if url not in successful_urls:
+                        blocking.append({"what": url, "verdict": "UNMEASURED",
+                                         "why": by_url[url].get("refusal") or
+                                         "latest acquisition did not succeed"})
+                if not matched_series:
+                    blocking.append({"what": f"{code}:{dataset.name}", "verdict": "UNMEASURED",
+                                     "why": "no persisted series in acquisition registry"})
+                for name in matched_series:
+                    if name not in usable_series:
+                        blocking.append({"what": name, "verdict": "UNMEASURED",
+                                         "why": "PIT authority absent or invalid",
+                                         "details": series[name].get("pit_blocking") or []})
             lanes.append({
                 "dataset": dataset.name, "source": dataset.source,
                 "urls": urls, "acquisition_owner": ACQUISITION_OWNER,
                 "fetch_requested_here": not no_fetch,
                 "last_successful_fetch": last or None,
+                "last_attempt": max((str(by_url[u].get("at") or "")
+                                     for u in matched_urls), default="") or None,
+                "attempted_endpoints": len(matched_urls),
+                "successful_endpoints": len(successful_urls),
                 "coverage": dataset.coverage, "frequency": dataset.frequency,
                 "publication_lag_days": dataset.publication_lag_days,
                 "revisions": dataset.revisions, "pit_feasible": dataset.pit_feasible,
                 "stored": len(matched_series), "vintages": len(matched_series),
-                "feature_ids": matched_series, "unmeasured": blocking,
+                "pit_usable": len(usable_series),
+                "stored_feature_ids": matched_series,
+                "feature_ids": usable_series, "unmeasured": blocking,
             })
     doc = {"at": now, "country": code, "acquisition_owner": ACQUISITION_OWNER,
            "no_fetch_is_owned": True, "lanes": lanes,
            "declared": len(lanes), "acquired": sum(bool(r.get("stored")) for r in lanes),
+           "pit_usable": sum(bool(r.get("pit_usable")) for r in lanes),
            "unresolved": sum(bool(r.get("unmeasured")) for r in lanes),
            "rule": "declared coverage, acquired data and usable features are separate states"}
     target = report_default or report_path(code)

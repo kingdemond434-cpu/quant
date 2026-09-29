@@ -5,6 +5,8 @@ import sys
 from datetime import UTC, datetime
 from pathlib import Path
 
+import pytest
+
 DESK = Path(__file__).resolve().parents[1]
 ROOT = DESK.parents[1]
 for p in (str(ROOT), str(DESK / "research")):
@@ -75,3 +77,34 @@ def test_undeclared_evidence_cannot_pass(tmp_path: Path) -> None:
                   now=datetime(2026, 9, 27, tzinfo=UTC))
     assert got["rows"][0]["status"] == "PARTIAL"
     assert "runtime:UNDECLARED" in got["rows"][0]["missing_evidence"]
+
+
+@pytest.mark.parametrize("changes,error", [
+    ({"completed_work": None}, "completed_work_unmeasured"),
+    ({"completed_work": True}, "invalid_completed_work"),
+    ({"completed_work": "nan"}, "invalid_completed_work"),
+    ({"completed_work": "inf"}, "invalid_completed_work"),
+    ({"completed_work": 0}, "invalid_completed_work"),
+    ({"commit": "5"}, "invalid_release_identity"),
+    ({"completed_at": "2027-09-27T00:00:00Z"}, "future_internal_timestamp"),
+])
+def test_runtime_proof_rejects_false_completion(tmp_path, changes, error) -> None:
+    doc = {"status": "OK", "tests_passed": True, "completed_work": 3,
+           "commit": "5" * 40, "completed_at": "2026-09-27T00:00:00Z"}
+    doc.update(changes)
+    path = tmp_path / "receipt.json"
+    path.write_text(json.dumps(doc), "utf-8")
+    proof, errors = A._runtime_proof(path, instant=datetime(2026, 9, 27, tzinfo=UTC),
+                                     release="5" * 40)
+    assert proof["status"] == "INVALID"
+    assert error in errors
+
+
+def test_runtime_proof_accepts_matching_measured_receipt(tmp_path) -> None:
+    path = tmp_path / "receipt.json"
+    path.write_text(json.dumps({"status": "OK", "tests_passed": True,
+                               "completed_work": 3, "commit": "a" * 40,
+                               "completed_at": "2026-09-27T00:00:00Z"}), "utf-8")
+    _, errors = A._runtime_proof(path, instant=datetime(2026, 9, 27, tzinfo=UTC),
+                                 release="a" * 40)
+    assert errors == []

@@ -7,7 +7,9 @@ CURRENT_VERIFIED; everything else remains PARTIAL with exact missing evidence.
 from __future__ import annotations
 
 import json
+import math
 import os
+import re
 import subprocess
 from datetime import UTC, datetime
 from pathlib import Path
@@ -17,6 +19,7 @@ ROOT = Path(__file__).resolve().parents[3]
 MANIFEST = ROOT / "docs" / "research" / "global_research_maximum_v1.json"
 REPORT = ROOT / "desks" / "mt5" / "reports" / "GLOBAL_RESEARCH_ACCEPTANCE.json"
 MAX_RUNTIME_AGE_H = 26.0
+MAX_FUTURE_SKEW_S = 300
 FAIL_STATUSES = {"FAILED", "FAIL", "ERROR", "DEGRADED", "BROKEN", "STALE"}
 PASS_STATUSES = {"OK", "PASS", "PASSED", "SUCCESS", "HEALTHY", "COMPLETE", "COMPLETED"}
 
@@ -55,7 +58,8 @@ def _runtime_document(path: Path) -> dict[str, Any] | None:
         return None
 
 
-def _runtime_proof(path: Path, *, instant: datetime, release: str) -> tuple[dict[str, Any], list[str]]:
+def _runtime_proof(path: Path, *, instant: datetime,
+                   release: str) -> tuple[dict[str, Any], list[str]]:
     """Verify behavior, not mtime. Missing claims remain evidence debt, never implicit success."""
     rel = str(path)
     doc = _runtime_document(path)
@@ -67,9 +71,13 @@ def _runtime_proof(path: Path, *, instant: datetime, release: str) -> tuple[dict
         reasons.append(f"failed_status:{status}")
     successful = status in PASS_STATUSES or doc.get("ok") is True or doc.get("success") is True
     completed = doc.get("completed_work", doc.get("completed", doc.get("work_completed")))
-    if completed is not None:
+    if completed is None:
+        reasons.append("completed_work_unmeasured")
+    else:
         try:
-            successful = successful and float(completed) > 0
+            count = float(completed)
+            if isinstance(completed, bool) or not math.isfinite(count) or count <= 0:
+                reasons.append("invalid_completed_work")
         except (TypeError, ValueError):
             reasons.append("invalid_completed_work")
     if not successful:
@@ -81,14 +89,20 @@ def _runtime_proof(path: Path, *, instant: datetime, release: str) -> tuple[dict
                           doc.get("git_commit") or doc.get("code_commit") or "")
     if not claimed_release:
         reasons.append("release_unbound")
-    elif release != "UNMEASURED" and not release.startswith(claimed_release) and not claimed_release.startswith(release):
+    elif not re.fullmatch(r"[0-9a-fA-F]{40}|[0-9a-fA-F]{64}", claimed_release):
+        reasons.append("invalid_release_identity")
+    if release == "UNMEASURED":
+        reasons.append("current_release_unmeasured")
+    elif claimed_release.lower() != release.lower():
         reasons.append(f"wrong_release:{claimed_release}")
     stamp_raw = (doc.get("completed_at") or doc.get("at") or doc.get("updated_utc") or
                  doc.get("generated_at") or doc.get("swept_at"))
     try:
         stamp = datetime.fromisoformat(str(stamp_raw).replace("Z", "+00:00"))
         stamp = stamp.replace(tzinfo=UTC) if stamp.tzinfo is None else stamp.astimezone(UTC)
-        age_h = max(0.0, (instant - stamp).total_seconds() / 3600.0)
+        age_h = (instant - stamp).total_seconds() / 3600.0
+        if age_h < -MAX_FUTURE_SKEW_S / 3600.0:
+            reasons.append("future_internal_timestamp")
         if age_h > MAX_RUNTIME_AGE_H:
             reasons.append("stale_content")
     except (TypeError, ValueError):
