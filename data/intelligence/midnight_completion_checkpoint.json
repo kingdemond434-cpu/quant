@@ -9,7 +9,7 @@
    "status": "FAILED"
   },
   "certificate_projection": {
-   "finished_at": "2026-09-28T21:08:31.905051+00:00",
+   "finished_at": "2026-09-29T02:47:20.488192+00:00",
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
@@ -21,16 +21,13 @@
    "status": "DONE"
   },
   "external_queue_projection": {
-   "command": [
-    "/home/quant/quant-platform/.venv/bin/python",
-    "scripts/promote_external_to_queue.py"
-   ],
-   "passes_completed": 0,
-   "started_at": "2026-09-29T01:08:36.133689+00:00",
-   "status": "RUNNING"
+   "finished_at": "2026-09-29T02:46:12.218571+00:00",
+   "passes_completed": 1,
+   "returncode": 124,
+   "status": "FAILED"
   },
   "external_queue_reconciliation": {
-   "finished_at": "2026-09-28T21:08:06.037650+00:00",
+   "finished_at": "2026-09-29T02:47:04.481293+00:00",
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
@@ -60,10 +57,15 @@
    "status": "FAILED"
   },
   "fusion_state_pull": {
-   "finished_at": "2026-09-28T21:23:58.891695+00:00",
-   "passes_completed": 1,
-   "returncode": 124,
-   "status": "FAILED"
+   "command": [
+    "systemctl",
+    "--user",
+    "start",
+    "quant-desk-pull.service"
+   ],
+   "passes_completed": 0,
+   "started_at": "2026-09-29T02:47:30.514945+00:00",
+   "status": "RUNNING"
   },
   "mechanism_independence": {
    "finished_at": "2026-09-28T21:26:20.342507+00:00",
@@ -84,5 +86,5 @@
    "status": "DONE"
   }
  },
- "updated_at": "2026-09-29T01:08:36.133689+00:00"
+ "updated_at": "2026-09-29T02:47:30.514945+00:00"
 }
