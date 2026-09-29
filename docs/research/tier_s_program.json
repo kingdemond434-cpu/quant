@@ -510,7 +510,7 @@
    "title": "Digital twin: registered-after-only paired evaluation, one-op rollback",
    "files": [
     "libs/tiers/twin.py",
-    "scripts/tier_s_rollback.py",
+    "libs/tiers/rollback.py",
     "desks/mt5/research/tier_s.py"
    ],
    "extends": [],

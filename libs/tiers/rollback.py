@@ -1,28 +1,21 @@
-#!/usr/bin/env python3
 """ONE-OPERATION ROLLBACK for the Tier S digital twin (layer 28).
 
-    python scripts/tier_s_rollback.py                  # print the plan: current -> previous seal
-    python scripts/tier_s_rollback.py --to <sha>       # print the plan to a named sealed release
-    python scripts/tier_s_rollback.py --to <sha> --apply
-
-`--apply` makes ONE commit on the current branch whose tree equals `<sha>`'s tree for every CODE
-path (state paths, as `libs.ops.release.is_state_path` defines them, are left as the box has them,
-because the box's state is the box's). It never rewrites history, never force-pushes and never
-pushes at all: MT5-AdoptRelease adopts the commit once a human pushes it. Dry run is the default.
+`plan()` names the current code and the previous sealed release (LIVE_MANIFEST `code` SHAs) and
+the CODE paths between them; state paths (`libs.ops.release.is_state_path`) are left as the box
+has them, because the box's state is the box's. `apply()` makes ONE commit on the current branch
+whose code equals the target's. It never rewrites history and never pushes: MT5-AdoptRelease
+adopts the commit once a human pushes it. The hourly `tier_s` organ publishes the plan; the
+command is `python desks/mt5/research/tier_s.py --rollback-to <sha> --apply-rollback`.
 """
 from __future__ import annotations
 
-import argparse
 import json
 import subprocess
-import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT))
+from libs.ops.release import is_state_path
 
-from libs.ops.release import is_state_path  # noqa: E402
-
+ROOT = Path(__file__).resolve().parents[2]
 MANIFEST = ROOT / "desks" / "mt5" / "data" / "LIVE_MANIFEST.jsonl"
 
 
@@ -78,25 +71,3 @@ def apply(p: dict[str, object]) -> str:
     _git("commit", "-m", f"tier_s rollback: code to sealed release {target[:12]}",
          "--", *code)
     return _git("rev-parse", "HEAD")
-
-
-def main(argv: list[str] | None = None) -> int:
-    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--to", default=None)
-    ap.add_argument("--apply", action="store_true")
-    a = ap.parse_args(argv)
-    p = plan(a.to)
-    print(json.dumps({k: (v if k != "code_paths" else len(v))  # type: ignore[arg-type]
-                      for k, v in p.items()}, indent=1))
-    if not p.get("available"):
-        return 1
-    if a.apply:
-        if not p.get("sealed"):
-            print("refusing: the target is not a sealed release in LIVE_MANIFEST")
-            return 1
-        print(f"rolled back in one commit: {apply(p)}")
-    return 0
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())

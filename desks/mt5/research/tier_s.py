@@ -1438,7 +1438,24 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--only", default="", help="comma-separated organ names")
     ap.add_argument("--dry-run", action="store_true", help="probation: run the fast organs only")
+    ap.add_argument("--rollback-to", default=None,
+                    help="print the one-commit rollback plan to this sealed release")
+    ap.add_argument("--apply-rollback", action="store_true",
+                    help="with --rollback-to: make that one commit (never pushes)")
     a = ap.parse_args(argv)
+    if a.rollback_to:
+        from libs.tiers import rollback
+        plan = rollback.plan(a.rollback_to)
+        print(json.dumps({k: (len(v) if isinstance(v, list) else v) for k, v in plan.items()},
+                         indent=1))
+        if not plan.get("available"):
+            return 1
+        if a.apply_rollback:
+            if not plan.get("sealed"):
+                print("refusing: the target is not a sealed release in LIVE_MANIFEST")
+                return 1
+            print(f"rolled back in one commit: {rollback.apply(plan)}")
+        return 0
     only = {x.strip() for x in a.only.split(",") if x.strip()}
     if a.dry_run:
         only = only or {"formal", "firewall", "epistemic"}

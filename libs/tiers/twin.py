@@ -79,6 +79,7 @@ def rollback_plan(releases: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
         return {"available": False, "why": f"{len(sealed)} sealed release(s) known"}
     cur, prev = sealed[-1], sealed[-2]
     return {"available": True, "current": cur.get("sha"), "target": prev.get("sha"),
-            "command": f"python scripts/tier_s_rollback.py --to {prev.get('sha')} --apply",
+            "command": (f"python desks/mt5/research/tier_s.py --rollback-to {prev.get('sha')} "
+                               "--apply-rollback"),
             "effect": "one revert commit on the box branch; MT5-AdoptRelease adopts it within "
                       "the hour"}
