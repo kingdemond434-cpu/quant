@@ -792,7 +792,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
               languages=("ar", "en"),
               licence="app-store terms forbid bulk machine extraction of listings and reviews",
               access_label="ACCESS_UNCLEAR", credibility="UNKNOWN", predictive_state="UNTESTED",
-              machine_use_allowed=True, evidence_weight=0.3,
+              machine_use_allowed=False, evidence_weight=0.3,
               queries=("تطبيق تداول الراجحي", "تحديث تطبيق التداول", "مدى تحديث", "أعطال التطبيق"),
               notes="REGISTERED AND NEVER SCRAPED. The layer is real -- app release notes and "
                     "outage reports date payment-rail changes that show up in the POS series -- "
@@ -846,7 +846,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
               licence="LICENSED; redistribution and machine extraction are forbidden by the "
                       "vendors' terms",
               access_label="LICENSED", credibility="RELIABLE", predictive_state="UNTESTED",
-              machine_use_allowed=True,
+              machine_use_allowed=False,
               refused_reason="the desk holds no subscription and the terms forbid extraction; the "
                              "row exists so the 60-day JODI lag is a MEASURED gap rather than an "
                              "unnoticed one",
@@ -877,7 +877,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
                      "decided about, not sources it forgot)",),
               languages=("ar", "en"), licence="n/a",
               access_label="ACCESS_UNCLEAR", credibility="UNKNOWN", predictive_state="UNTESTED",
-              machine_use_allowed=True, evidence_weight=0.0,
+              machine_use_allowed=False, evidence_weight=0.0,
               refused_reason="crypto-exchange venues, feeds and order books are refused under the "
                              "MT5 universe mandate (2026-08-18); paywalled vendor terminals are "
                              "refused as redistribution; single-name Saudi equities are refused as "
