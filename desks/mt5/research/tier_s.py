@@ -1384,6 +1384,16 @@ def organ_review(topo: Mapping[str, Any] | None, fdr_rows: Mapping[str, Any] | N
         # generation means every certificate that gauntlet issued is open to that attack, and
         # the panel records it against each until the leak closes
         leaks = (((rq or {}).get("real_gauntlet") or {}).get("leaks") or [])
+        n_fw = int(fw.get("n") or 0)
+        if n_fw and fw.get("forward_t") not in (None, 0) and fw.get("exp_r") is not None:
+            mu_f = float(fw["exp_r"])
+            se_f = abs(mu_f / float(fw["forward_t"]))
+            q = epistemic.Quantity(f"forward_edge:{key}", mu_f, mu_f - 1.96 * se_f,
+                                   mu_f + 1.96 * se_f, n=n_fw, source="shadow")
+        else:
+            q = epistemic.Quantity(f"forward_edge:{key}", None, n=n_fw, source="shadow")
+        ev["epistemic"] = {"decision": str(epistemic.decide(q, 0.0)),
+                           "label": str(epistemic.classify(q, 0.0)), "n": n_fw}
         wf = worlds_by.get(str(key))
         if wf is not None:
             ev["stress"] = {"worlds_measured": wf.get("worlds_measured"),
@@ -1570,11 +1580,19 @@ def organ_market() -> dict[str, Any]:
             sp = f"{_mechanism(str(row.get('family') or ''))}|{_asset_class(str(row.get('sym')))}"
             sight.append((pr, sp))
     ind = researcher_market.independent_discoveries(sight, {n: r.cohort for n, r in rs.items()})
+    # THE FRONTIER PRICES THE GROUND (layer 36): a producer whose ground the species estimator
+    # says still hides many unseen mechanisms is worth more compute than its record alone says.
+    # Last hour's FRONTIER report (the organ runs after this one); absent -> factor 1.
+    fr = (_read(OUT_DIR / "FRONTIER.json") or {}).get("grounds") or {}
+    unseen = {str(g): float(v.get("unseen") or 0.0) for g, v in fr.items() if isinstance(v, dict)}
+    tot_unseen = sum(unseen.values())
     leg_prices: dict[str, float] = {}
     for name, a in res["allocations"].items():
         lg = leg_of.get(name)
+        f = 1.0 + (unseen.get(name, 0.0) / tot_unseen if tot_unseen > 0 else 0.0)
+        a["frontier_factor"] = round(f, 4)
         if lg:
-            leg_prices[lg] = max(leg_prices.get(lg, 0.0), float(a["price"]))
+            leg_prices[lg] = max(leg_prices.get(lg, 0.0), float(a["price"]) * f)
     table = {n: {"epistemology": r.epistemology, "leg": leg_of.get(n), "births": r.candidates,
                  "p_novel": round(r.mean("novel"), 4), "p_pass_full": round(r.mean("full"), 4),
                  "p_forward": round(r.mean("forward"), 4),
@@ -1599,7 +1617,7 @@ def organ_market() -> dict[str, Any]:
 def organ_frontier(topo_hist: list[dict[str, Any]] | None = None) -> dict[str, Any]:
     sightings = []
     for r in _jsonl(HGRAPH, 200_000):
-        ground = str(r.get("source") or "?").split(":")[0]
+        ground = _producer(r.get("source"))
         species = f"{_mechanism(str(r.get('family') or ''))}|{r.get('family')}"
         sightings.append((ground, species))
     comp: dict[str, float] = defaultdict(float)

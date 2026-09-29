@@ -167,6 +167,18 @@ def adversarial(cid: str, ev: Evidence) -> list[Challenge]:
     return []
 
 
+def epistemologist(cid: str, ev: Evidence) -> list[Challenge]:
+    """The uncertainty engine's answer, raised in the panel (layer 37): a forward edge whose
+    interval still straddles zero has not been decided by its evidence -- 'not enough evidence'
+    is a finding the panel must carry, never a silent pass."""
+    if _g(ev, "epistemic", "decision") == "INSUFFICIENT_EVIDENCE":
+        return [Challenge(cid, "epistemologist", "UNDECIDED",
+                          f"forward edge undecided on {_g(ev, 'epistemic', 'n') or 0} trades "
+                          f"(label {_g(ev, 'epistemic', 'label') or '?'})", "MEDIUM",
+                          "forward_n_40")]
+    return []
+
+
 #: reviewer -> (function, the evidence keys it is allowed to see)
 PANEL: dict[str, tuple[Callable[[str, Evidence], list[Challenge]], tuple[str, ...]]] = {
     "statistician": (statistician, ("gates", "online_fdr")),
@@ -177,6 +189,7 @@ PANEL: dict[str, tuple[Callable[[str, Evidence], list[Challenge]], tuple[str, ..
     "causal": (causal, ("mechanism",)),
     "reproducibility": (reproducibility, ("replication",)),
     "adversarial": (adversarial, ("red_queen",)),
+    "epistemologist": (epistemologist, ("epistemic",)),
 }
 
 
