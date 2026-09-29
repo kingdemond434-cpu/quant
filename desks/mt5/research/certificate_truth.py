@@ -1525,8 +1525,13 @@ def apply(paths: Paths, doc: dict[str, Any] | None = None,
     # other state retires nothing and says so -- absence of evidence is not evidence of absence
     # (L1.28a), and it is certainly not grounds to destroy a clock that took forward weeks to
     # earn. Banned-family rows are unaffected: a ban is a decision, not a measurement.
+    # LAWS 7: the canon must also be LIVE (fresh within its writer's lease, rows present) before
+    # anything is retired on its word -- the 837-row incident read a 46.7h-stale canon.
+    from libs.ops.reference_freshness import require_live_reference
+    ref = require_live_reference(paths.seal, actor="certificate_truth.apply",
+                                 action="retire unbacked rows", min_rows=1)
     lane_settled = (lane_status == "EXACT" and int(doc["canon"].get("n") or 0) > 0
-                    and int(doc["canon"].get("restorable_n") or 0) == 0)
+                    and int(doc["canon"].get("restorable_n") or 0) == 0 and ref.live)
     if not lane_settled:
         doc = {**doc, "retirement_withheld": {
             "reason": ("the canonical lane is not settled (status "
@@ -1580,6 +1585,8 @@ def apply(paths: Paths, doc: dict[str, Any] | None = None,
             row = ledger["claims"].get(d["key"])
             if not isinstance(row, dict):
                 continue
+            if d["kind"] != "BANNED_CLAIM" and not lane_settled:
+                continue                    # an unsettled canon retires no claim (L1.28a)
             reason = BAN_REASON if d["kind"] == "BANNED_CLAIM" else HISTORY_REASON
             note("SURVIVORS_LEDGER", d["key"], row.get("status"), "RETIRED", reason)
             row.update({"status": "RETIRED", "retire_reason": reason, "retired_at": stamp,

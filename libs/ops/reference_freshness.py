@@ -667,17 +667,26 @@ class DestructivePath:
 #: note, so the history of what once removed on an absence stays readable.
 DESTRUCTIVE_PATHS: tuple[DestructivePath, ...] = (
     DestructivePath(
+        path_id="forward_cure_route.accumulate",
+        module="desks/mt5/research/forward_cure_route.py",
+        function="accumulate",
+        removes="queued forward-cure rows popped from the route's own accumulator",
+        reference="the gauntlet verdict on the same key in this pass",
+        status="positive",
+        note="POSITIVE EVIDENCE ONLY: a row leaves on a later verdict that certifies it or fails "
+             "its validity; an unjudged row stays ('silence retires nothing').",
+    ),
+    DestructivePath(
         path_id="certificate_truth.apply",
         module="desks/mt5/research/certificate_truth.py",
         function="apply",
         removes="rows in every derived certificate store (survivor ledger, sleeve registry, "
                 "shadow/lane states, sleeves.json, forward_reconcile)",
         reference="desks/mt5/data/UNIVERSAL_SURVIVORS.canon.json",
-        status="unguarded",
-        note="THE PROVING INSTANCE: 837 rows retired against an empty 46.7h-stale canon. Owned "
-             "by another builder this session (restoring the rows); the guard call lands there, "
-             "not here. Guard usage: require_live_reference(canon, actor='certificate_truth."
-             "apply', action='retire unbacked rows', min_rows=1, strict=False).",
+        status="guarded",
+        note="THE PROVING INSTANCE: 837 rows retired against an empty 46.7h-stale canon. Guarded "
+             "2026-09-29: require_live_reference(seal) at the top of apply() folds `live` into "
+             "lane_settled, so a stale or empty canon retires no unbacked row.",
     ),
     DestructivePath(
         path_id="certificate_truth.ledger_claims",
@@ -685,11 +694,11 @@ DESTRUCTIVE_PATHS: tuple[DestructivePath, ...] = (
         function="apply",
         removes="SURVIVORS_LEDGER.json claims flipped to status=RETIRED (CLAIM_NOT_IN_CANON)",
         reference="desks/mt5/data/UNIVERSAL_SURVIVORS.canon.json",
-        status="unguarded",
-        note="The ledger branch is NOT behind the `lane_settled` gate that protects the clock "
-             "rows two blocks below, so an unsettled or empty canon still retires ledger claims. "
-             "Same file and same owner as certificate_truth.apply above; one guard at the top of "
-             "apply() closes both. Reported, not edited, to avoid racing that builder.",
+        status="guarded",
+        guard_site="apply",
+        note="Was outside the `lane_settled` gate, so an unsettled or empty canon still retired "
+             "ledger claims. Guarded 2026-09-29: non-banned claims now retire only when the lane "
+             "is settled AND the canon is live (the require_live_reference call in apply()).",
     ),
     DestructivePath(
         path_id="certificate_truth.clock_rows",
