@@ -34,7 +34,7 @@ class _FakeProc:
     """Minimal psutil.Process stand-in: a name, an age, and a CPU/IO tape it plays back."""
 
     def __init__(self, pid: int, name: str, age_s: float, tape: list[tuple[float, int]],
-                 cmd: str = "git merge") -> None:
+                 cmd: str = "git merge", parent_alive: bool | None = None) -> None:
         self.pid = pid
         self._name = name
         self.info = {"pid": pid, "name": name,
@@ -42,6 +42,7 @@ class _FakeProc:
         self._tape = tape
         self._n = 0
         self.killed = False
+        self._parent_alive = parent_alive
 
     def _tick(self) -> tuple[float, int]:
         row = self._tape[min(self._n, len(self._tape) - 1)]
@@ -66,6 +67,18 @@ class _FakeProc:
 
     def parents(self) -> list[Any]:
         return []
+
+    def parent(self) -> Any:
+        if self._parent_alive is None:
+            raise NotImplementedError
+        if not self._parent_alive:
+            return None
+
+        class _Parent:
+            @staticmethod
+            def is_running() -> bool:
+                return True
+        return _Parent()
 
     def kill(self) -> None:
         self.killed = True
@@ -116,6 +129,27 @@ def test_a_slow_writer_is_spared(monkeypatch: pytest.MonkeyPatch, _no_sleep: Any
     rep = gwl.hung_writers(sleep=_no_sleep)
     assert rep["hung"] == []
     assert any(r["pid"] == 202 and "slow, not stopped" in r["why"] for r in rep["spared"])
+
+
+def test_an_orphaned_stdin_index_pack_is_reaped_even_if_it_burns_cpu(
+        monkeypatch: pytest.MonkeyPatch, _no_sleep: Any) -> None:
+    """A fetch child with no parent cannot publish a ref; CPU movement cannot make it useful."""
+    orphan = _FakeProc(207, "git.exe", 2 * 3600, [(5.0, 1000), (8.0, 4000)],
+                       cmd="git index-pack --stdin --fix-thin", parent_alive=False)
+    _install(monkeypatch, [orphan])
+    rep = gwl.hung_writers(sleep=_no_sleep)
+    assert [r["pid"] for r in rep["hung"]] == [207]
+    assert "has no parent in either sample" in rep["hung"][0]["why"]
+
+
+def test_a_live_parent_keeps_an_active_stdin_index_pack_safe(
+        monkeypatch: pytest.MonkeyPatch, _no_sleep: Any) -> None:
+    child = _FakeProc(208, "git.exe", 2 * 3600, [(5.0, 1000), (8.0, 4000)],
+                      cmd="git index-pack --stdin --fix-thin", parent_alive=True)
+    _install(monkeypatch, [child])
+    rep = gwl.hung_writers(sleep=_no_sleep)
+    assert rep["hung"] == []
+    assert any(r["pid"] == 208 and "slow, not stopped" in r["why"] for r in rep["spared"])
 
 
 def test_a_writer_inside_its_own_window_is_never_a_candidate(

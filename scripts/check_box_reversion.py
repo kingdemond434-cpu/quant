@@ -38,6 +38,7 @@ Exit: 2 when CODE changes are at risk; 0 when the tree carries none.
 from __future__ import annotations
 
 import argparse
+import contextlib
 import json
 import subprocess
 import sys
@@ -55,6 +56,7 @@ from libs.ops.release import is_state_path  # noqa: E402
 _PASSING = frozenset({"CLEAN"})
 #: The minute past the hour at which `MT5-AdoptRelease` lands the branch's tree in place.
 ADOPT_MINUTE = 12
+OUT = _ROOT / "desks" / "mt5" / "reports" / "BOX_REVERSION.json"
 
 
 def _git(*args: str, root: Path | None = None) -> tuple[int, str]:
@@ -146,6 +148,39 @@ def build_report(*, root: Path | None = None) -> dict[str, Any]:
     return rep
 
 
+def publish(rep: dict[str, Any], *, out: Path = OUT) -> dict[str, Any]:
+    """Persist the fence and a monotone best-at-risk count.
+
+    A regression must not redefine its own baseline upward, and an unmeasured run must not move
+    it at all.  This contract was still tested after the writer disappeared from the production
+    module; restoring it makes the runtime artifact and the fence agree again.
+    """
+    previous: dict[str, Any] = {}
+    with contextlib.suppress(OSError, ValueError, TypeError):
+        previous = json.loads(out.read_text(encoding="utf-8"))
+    prior_best = previous.get("best_at_risk")
+    measured = rep.get("status") != "UNMEASURED"
+    current = len(rep.get("uncommitted") or []) + len(rep.get("unpushed") or [])
+    if measured:
+        best = current if prior_best is None else min(int(prior_best), current)
+        rep["best_at_risk"] = best
+        rep["ratchet_ok"] = current <= best
+        rep["ratchet_why"] = (
+            f"current at-risk code count {current} is at the best measured level {best}"
+            if rep["ratchet_ok"] else
+            f"REGRESSION: current at-risk code count {current} exceeds best measured {best}")
+    else:
+        rep["best_at_risk"] = int(prior_best) if prior_best is not None else None
+        rep["ratchet_ok"] = None
+        rep["ratchet_why"] = "UNMEASURED: the monotone baseline is unchanged"
+    try:
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(json.dumps(rep, indent=1, default=str), encoding="utf-8")
+    except OSError as exc:
+        rep["publish_error"] = f"{type(exc).__name__}: {exc}"
+    return rep
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=(__doc__ or "").split("\n")[0])
     ap.add_argument("--json", action="store_true")
@@ -154,7 +189,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--root", type=Path, default=None)
     ap.add_argument("--report-only", action="store_true")
     a = ap.parse_args(argv)
-    rep = build_report(root=a.root)
+    rep = publish(build_report(root=a.root))
     if a.json:
         print(json.dumps(rep, indent=1, default=str))
     else:

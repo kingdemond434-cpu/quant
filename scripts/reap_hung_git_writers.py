@@ -41,7 +41,8 @@ sampling window. Slow writers move. Stopped ones do not.
        reported as a stuck writer at 3.9 days old on this very box;
     2. older than --min-age-s (default 1800 s), which is past every legitimate writer's OWN
        timeout: the adoption waits 540 s for the mutex and the shadow sync's limit is 600 s;
-    3. zero CPU delta AND zero I/O delta across --sample-s;
+3. zero CPU delta AND zero I/O delta across --sample-s; OR a stdin-only Git helper whose parent
+   is absent in both samples (its result has no consumer and cannot update a ref);
     4. never this process and never one of its own ancestors.
 
 Everything examined is written to the artifact, INCLUDING what was spared and why, because

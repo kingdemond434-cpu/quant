@@ -487,9 +487,9 @@ def run_git(repo: Path | str, args: Sequence[str], *, timeout: float = 300.0,
 #      and matching it once reported a healthy 3.9-day-old service as a stuck writer);
 #   2. it is older than `HUNG_MIN_AGE_S`, which is past every legitimate writer's OWN timeout
 #      (the adoption waits 540 s, the shadow sync 600 s), so a slow writer is never a candidate;
-#   3. it moved NO CPU and NO I/O across a sampling window -- this is the proof, and it is the
-#      one thing an age threshold alone cannot give. A `git gc` on this repository is slow and
-#      burns CPU the whole time; it will never be reaped by this;
+#   3. it moved NO CPU and NO I/O across a sampling window, OR it is a stdin-only Git helper whose
+#      parent is absent in both samples -- there is then nobody left to consume its result or
+#      update the ref. A `git gc` is neither case; it will never be reaped merely for being slow;
 #   4. it is not this process, and not one of this process's own ancestors.
 #
 # Everything examined is reported, including what was SPARED and why, because "nothing was hung"
@@ -540,6 +540,13 @@ _AMBIGUOUS_NAMES = frozenset({"sh.exe", "sh", "bash.exe", "bash"})
 _HELPER_CMD_MARKERS = ("credential-manager", "credential-helper", "git-remote-http",
                        "git credential")
 
+#: A stdin-driven child cannot complete its transaction after the parent that owns the pipe and
+#: ref update has disappeared.  Measured 2026-09-29: ``git index-pack --stdin`` survived its
+#: fetch-pack parent for more than 90 minutes, kept consuming a little CPU, and therefore evaded
+#: the zero-movement reaper while every release fetch queued behind it.  This is narrower than a
+#: generic "orphan" rule: only Git protocols whose result has no consumer without the parent.
+_ORPHANABLE_STDIN_MARKERS = ("index-pack --stdin", "update-index --stdin")
+
 
 def _is_writer(name: str, cmd: str) -> bool:
     """Is this process a git writer or one of git's own helper frames?
@@ -589,6 +596,14 @@ def _writer_sample(psutil_mod: Any) -> dict[int, dict[str, Any]]:
                 read_b, write_b = int(counters.read_bytes), int(counters.write_bytes)
             except Exception:  # not every platform exposes per-process I/O
                 read_b = write_b = -1
+            parent_alive: bool | None = None
+            try:
+                parent = proc.parent()
+                parent_alive = parent is not None and bool(parent.is_running())
+            except Exception:
+                # Older psutil builds and test doubles may not expose parent state. Unknown is
+                # never treated as gone; the ordinary CPU/I/O proof remains in force.
+                parent_alive = None
             out[int(proc.info["pid"])] = {
                 "pid": int(proc.info["pid"]),
                 "name": proc.info["name"],
@@ -597,6 +612,7 @@ def _writer_sample(psutil_mod: Any) -> dict[int, dict[str, Any]]:
                 "read_b": read_b,
                 "write_b": write_b,
                 "cmd": cmdline[:200],
+                "parent_alive": parent_alive,
             }
         except Exception:  # a process that exits mid-iteration is not an error
             continue
@@ -648,6 +664,16 @@ def hung_writers(*, min_age_s: float = HUNG_MIN_AGE_S, sample_s: float = HUNG_SA
             d_io = ((int(after["read_b"]) - int(before["read_b"]))
                     + (int(after["write_b"]) - int(before["write_b"])))
         row = {**after, "d_cpu_s": round(d_cpu, 4), "d_io_b": d_io}
+        cmd = str(after.get("cmd") or "").lower()
+        orphan_protocol = any(marker in cmd for marker in _ORPHANABLE_STDIN_MARKERS)
+        if (orphan_protocol and before.get("parent_alive") is False
+                and after.get("parent_alive") is False):
+            rec["hung"].append({
+                **row, "why": (f"{float(after['age_s']) / 3600.0:.2f}h-old stdin Git helper "
+                                "has no parent in either sample; no process can consume its pack "
+                                "or update the ref, so any remaining CPU is orphan cleanup, not a "
+                                "live writer transaction.")})
+            continue
         if d_cpu > 0.0 or d_io > 0:
             rec["spared"].append({
                 **row, "why": f"moved {d_cpu:.3f}s of CPU and {d_io}B of I/O in {sample_s:.0f}s: "
