@@ -164,7 +164,12 @@ def test_autopsy_lessons_and_attribution() -> None:
     assert win["counterfactual"]["excess_over_forward_expectancy"] == round(37.68 / 35.1 - 0.2, 4)
     loss = ta.autopsy(_deal(deal=2, pl_quote=-50.0), None, None)
     assert loss["lesson"] == "loss_beyond_stop"
-    costly = ta.autopsy(_deal(deal=3, pl_quote=-1.0, commission=-0.8), None, None)
+    # `autopsy` tests the scratch band (|r_net| < SCRATCH_R = 0.1) BEFORE cost dominance, so the
+    # old fixture (-1.0 on 35.1 risk = -0.03R) is a scratch, not a costly loss. Pin both: a
+    # sub-threshold loss is a scratch, and a real loss mostly made of costs is cost_dominated.
+    tiny = ta.autopsy(_deal(deal=3, pl_quote=-1.0, commission=-0.8), None, None)
+    assert tiny["lesson"] == "scratch"
+    costly = ta.autopsy(_deal(deal=3, pl_quote=-5.0, commission=-3.0), None, None)
     assert costly["lesson"] == "cost_dominated"
     unrec = ta.autopsy(_deal(deal=4, r_unreconstructible=True, risk_quote=0.0), None, None)
     assert unrec["lesson"] == "unreconstructible" and unrec["attribution"]["cost_r"] == "UNMEASURED"
