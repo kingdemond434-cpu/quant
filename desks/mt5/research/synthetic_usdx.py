@@ -31,6 +31,8 @@ import pandas as pd
 BASE = Path(__file__).resolve().parents[1]
 UNIVERSE = BASE / "data" / "universe"
 TIMEFRAMES = ("M1", "M5", "M15", "M30", "H1", "H4", "D1")
+#: The artifact this organ is attested by: the H1 series every factor consumer reads first.
+ARTIFACT = UNIVERSE / "USDX_H1.parquet"
 CONSTANT = 50.14348112
 WEIGHTS = {"EURUSD": -0.576, "USDJPY": 0.136, "GBPUSD": -0.119, "USDCAD": 0.091,
            "USDSEK": 0.042, "USDCHF": 0.036}
