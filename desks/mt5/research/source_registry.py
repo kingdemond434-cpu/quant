@@ -313,6 +313,8 @@ def seed() -> tuple[dict[str, dict[str, Any]], dict[str, Any]]:
                          arm_source="deep_forest", fetch_clock=CLOCK_DEEP_FOREST,
                          aliases=[str(g.get("name")), _slug(g.get("name"))])
         rows[sid]["weight"] = g.get("weight")
+        # THE DATA CLASS AXIS of the discovery cube, as the ground itself declares it.
+        rows[sid]["data_class"] = str(g.get("dataset_class") or g.get("kind") or "") or None
     heads: dict[str, list[str]] = {}
     for sid, r in rows.items():
         head = str(r["name"]).split()[0] if str(r["name"]).split() else ""
@@ -397,6 +399,16 @@ def _blank() -> dict[str, Any]:
             "n_certificates": 0, "first_seen": None, "last_seen": None}
 
 
+def _q(c: dict[str, Any]) -> dict[str, Any]:
+    """The per-source quality accumulators (Tier-1 #10 closed-loop discovery). Kept beside the
+    counts, never merged into the registry row: they are raw material for `quality()`."""
+    q = c.get("_quality")
+    if not isinstance(q, dict):
+        q = {"lineage": 0, "url_versions": {}, "claims": set(), "families": set()}
+        c["_quality"] = q
+    return q
+
+
 def _touch(c: dict[str, Any], at: Any) -> None:
     at = str(at or "")[:32]
     if at:
@@ -467,11 +479,26 @@ def census(rows: dict[str, dict[str, Any]]) -> tuple[dict[str, dict[str, Any]], 
         c = get(r.get("repo"))
         c["n_leads"] += 1
         _touch(c, r.get("at"))
+        q = _q(c)
+        # LINEAGE: a lead that names where it came from AND which version of it (url + commit).
+        q["lineage"] += 1 if (r.get("url") and r.get("commit")) else 0
+        # REVISION: the same url fetched again with different content is a revised source.
+        url = str(r.get("url") or "")
+        if url:
+            h = hashlib.sha256(str(r.get("mechanism") or "").encode("utf-8")).hexdigest()[:16]
+            fetch = str(r.get("commit") or r.get("at") or "")[:19]
+            q["url_versions"].setdefault(url, {}).setdefault(fetch, set()).add(h)
+        if r.get("mechanism"):
+            q["claims"].add(hashlib.sha256(str(r["mechanism"]).encode("utf-8")).hexdigest()[:16])
     for r in _iter_jsonl(GRAPH):                              # SCIENTIST leads and fates
         c = get(r.get("source"))
         c["n_leads"] += 1
         _touch(c, r.get("at"))
         c["n_certified"] += 1 if str(r.get("fate")).upper() == "CERTIFIED" else 0
+        q = _q(c)
+        q["lineage"] += 1 if (r.get("parent") or r.get("seed_key")) else 0
+        if r.get("family"):
+            q["families"].add(str(r["family"]))
     docket = _read_json(DOCKET, []) or []                     # COMPILED candidates
     if isinstance(docket, dict):
         docket = docket.get("rows") or docket.get("items") or []
@@ -549,6 +576,112 @@ def score(rows: dict[str, dict[str, Any]], counts: dict[str, dict[str, Any]],
              "number would be the shrunk prior divided by the declared price, and price is not "
              "evidence -- the exploration floor funds this source instead"
              if cost else "UNMEASURED: this kind/route carries no declared cost"))
+
+
+#: The six axes of the worldwide discovery cube (principal, 2026-09-29): jurisdiction x language x
+#: institution x data class x mechanism x transmission path.
+CUBE_AXES: tuple[str, ...] = ("jurisdiction", "language", "institution", "data_class",
+                              "mechanism", "transmission_path")
+QUALITY_SCHEMA = "source_quality/1"
+
+
+def _um(why: str) -> dict[str, str]:
+    return {"verdict": "UNMEASURED", "why": why}
+
+
+def _hours_between(a: Any, b: Any) -> float | None:
+    try:
+        ta = datetime.fromisoformat(str(a).replace("Z", "+00:00"))
+        tb = datetime.fromisoformat(str(b).replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    ta = ta if ta.tzinfo else ta.replace(tzinfo=UTC)
+    tb = tb if tb.tzinfo else tb.replace(tzinfo=UTC)
+    return (tb - ta).total_seconds() / 3600.0
+
+
+def quality(rows: dict[str, dict[str, Any]], counts: dict[str, dict[str, Any]],
+            now: datetime | None = None) -> dict[str, Any]:
+    """Per-source FRESHNESS, COVERAGE, CADENCE, ACCESS, LINEAGE, REVISION and INFORMATION VALUE,
+    each measured from the ledgers this organ already walks or UNMEASURED with its reason --
+    never a zero, never a guess (L1.28a). Attaches `source_quality` to every row and returns the
+    desk-level cube: how many distinct values each axis actually reaches, so breadth is a count
+    of places the desk has LOOKED and produced leads, not of grounds it has merely listed."""
+    now = now or datetime.now(tz=UTC)
+    try:
+        from libs.research import mechanism_genome as mg
+    except Exception:                                          # pragma: no cover
+        mg = None                                              # type: ignore[assignment]
+    cube: dict[str, set[str]] = {a: set() for a in CUBE_AXES}
+    listed: dict[str, set[str]] = {a: set() for a in CUBE_AXES}
+    for sid, row in rows.items():
+        c = counts.get(sid) or {}
+        q = c.get("_quality") if isinstance(c.get("_quality"), dict) else None
+        n = int(row.get("n_leads") or 0)
+        last, first = row.get("last_seen"), row.get("first_seen")
+        age = _hours_between(last, now.isoformat()) if last else None
+        span = _hours_between(first, last) if first and last else None
+        fams = sorted(q["families"]) if q else []
+        trans = sorted({str(mg.from_family(f, {}).as_dict().get("transmission"))
+                        for f in fams} - {"UNDECLARED", "None"}) if (mg and fams) else []
+        axes = {
+            "jurisdiction": row.get("region") or None,
+            "language": row.get("language") or None,
+            "institution": row.get("kind") or None,
+            "data_class": row.get("data_class") or None,
+            "mechanism": fams or None,
+            "transmission_path": trans or None,
+        }
+        for a, v in axes.items():
+            vals = v if isinstance(v, list) else ([v] if v else [])
+            for x in vals:
+                listed[a].add(str(x))
+                if n > 0:
+                    cube[a].add(str(x))
+        urls = (q or {}).get("url_versions") or {}
+        # A url fetched at two or more distinct times is REFETCHED; it is REVISED when the claim
+        # set recorded off it differs between those fetches. One fetch says nothing either way.
+        refetched = [u for u, by_fetch in urls.items() if len(by_fetch) >= 2]
+        revised = [u for u in refetched
+                   if len({frozenset(s) for s in urls[u].values()}) > 1]
+        licence = str(row.get("licence_note") or "")
+        rep = row.get("reputation") or {}
+        p_ind = rep.get("p_independent_survivor") if isinstance(rep, dict) else None
+        row["source_quality"] = {
+            "schema": QUALITY_SCHEMA,
+            "freshness_h": (round(age, 2) if age is not None else
+                            _um("no lead from this source has a timestamp in any ledger")),
+            "cadence_h": (round(span / (n - 1), 3) if (span is not None and n >= 2) else
+                          _um(f"{n} lead(s): a cadence needs two dated leads")),
+            "declared_clock": row.get("fetch_clock"),
+            "coverage": {a: (v if v else _um(f"no {a} recorded for this source"))
+                         for a, v in axes.items()},
+            "access": ("UNDECLARED" if licence.startswith("UNDECLARED") else "DECLARED"),
+            "access_note": licence[:160],
+            "lineage_share": (round(q["lineage"] / n, 4) if (q and n) else
+                              _um("no lead to trace")),
+            "revision_rate": (round(len(revised) / len(refetched), 4)
+                              if refetched else _um(f"{len(urls)} url(s) on file, none fetched "
+                                                    "twice: revision behaviour needs a refetch")),
+            "n_distinct_claims": len(q["claims"]) if q else 0,
+            "information_value": (row.get("intel_roi") if row.get("intel_roi") is not None else
+                                  (p_ind if isinstance(p_ind, dict) else
+                                   _um(str(row.get("roi_basis") or "no leads")))),
+        }
+    return {
+        "schema": QUALITY_SCHEMA,
+        "axes": list(CUBE_AXES),
+        "reached": {a: len(v) for a, v in cube.items()},
+        "listed": {a: len(v) for a, v in listed.items()},
+        "reach_ratio": {a: (round(len(cube[a]) / len(listed[a]), 4) if listed[a] else None)
+                        for a in CUBE_AXES},
+        "unreached_sample": {a: sorted(listed[a] - cube[a])[:20] for a in CUBE_AXES},
+        "rule": ("an axis value is REACHED only when a source carrying it has produced at least "
+                 "one lead; a listed ground that never produced anything is breadth on paper"),
+        "revision_note": ("revision_rate is the share of a source's REFETCHED urls whose recorded "
+                          "claim set changed between fetches -- measured on the provenance "
+                          "ledger's claim text, which is the only per-url content the desk keeps"),
+    }
 
 
 def has_evidence(rows: dict[str, dict[str, Any]]) -> bool:
@@ -655,6 +788,11 @@ def build() -> tuple[dict[str, Any], dict[str, Any]]:
     unseen, unseen_basis = _unseen_by_source(lambda k: _resolve(k, rows, idx))
     score(rows, counts, unseen)
     rows = merge(_read_json(REGISTRY, {}) or {}, rows)
+    cube = quality(rows, counts)
+    q_fields = ("freshness_h", "cadence_h", "lineage_share", "revision_rate", "information_value")
+    q_cov = {f: round(sum(1 for r in rows.values()
+                          if not isinstance((r.get("source_quality") or {}).get(f), dict))
+                      / max(1, len(rows)), 4) for f in q_fields}
     sh = shares(rows)
     by_kind: dict[str, int] = {}
     for sid, r in rows.items():
@@ -698,6 +836,10 @@ def build() -> tuple[dict[str, Any], dict[str, Any]]:
                             "`dElogW_per_lead` is realised R per lead -- the desk measures R, not "
                             "dE[logW], and says so rather than renaming one as the other"),
         "judged": meta["judged"], "seed": seed_meta,
+        # CLOSED-LOOP WORLDWIDE DISCOVERY (Tier-1 #10, 2026-09-29): the cube's reach, and how
+        # much of each per-source quality field is actually measured. Both may only rise.
+        "discovery_cube": cube,
+        "quality_coverage": q_cov,
         "artifacts": {"registry": str(REGISTRY), "report": str(REPORT)}, "rule": rule,
     }
     return {"at": now, "n_sources": len(rows), "sources": rows, "rule": rule}, report
@@ -724,6 +866,11 @@ def _summary(registry: dict[str, Any], report: dict[str, Any], wrote: bool) -> l
         f"{', '.join(gaps) if gaps else 'none of the 13 tracked'}",
         f"  exploration floor {EXPLORATION_SHARE:.0%} over <{THIN_LEADS}-lead sources and "
         f"unseen-rich grounds; {un['n_sources_no_roi']} source(s) carry no measured roi",
+        "  discovery cube reached/listed: " + "  ".join(
+            f"{a}={report['discovery_cube']['reached'][a]}/{report['discovery_cube']['listed'][a]}"
+            for a in CUBE_AXES),
+        "  quality measured share: " + "  ".join(
+            f"{k}={v}" for k, v in report["quality_coverage"].items()),
         f"  UNMEASURED: {un['n_sources_without_a_ground']} without a ground, "
         f"{un['n_sources_without_a_cost']} without a cost, "
         f"{un['n_sources_unscheduled']} unscheduled",
