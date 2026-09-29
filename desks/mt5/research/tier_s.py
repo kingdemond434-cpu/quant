@@ -49,6 +49,8 @@ for _p in (str(ROOT), str(DESK), str(DESK / "research")):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
+import contextlib
+
 from libs.tiers import (  # noqa: E402
     bitemporal,
     chaos,
@@ -345,7 +347,7 @@ def organ_truth_kernel() -> dict[str, Any]:
     ratifs = _jsonl(RATIFICATIONS)
     const = truth_kernel.constitution_status(sealed, live, ratifs)
     prev_seal = _state("evidence_seal")
-    seal = truth_kernel.seal_ledgers([p for p in PROTECTED], prev_seal, DESK)
+    seal = truth_kernel.seal_ledgers(list(PROTECTED), prev_seal, DESK)
     hist = list(prev_seal.get("violations_history") or [])
     if seal["violations"]:
         hist.append({"at": NOW.isoformat(), "violations": seal["violations"]})
@@ -647,7 +649,7 @@ def organ_genomes() -> dict[str, Any]:
         fams = [f for f in op_family.get(str(g.get("operator_set")), []) if f in vocab]
         if not fams or not syms:
             continue
-        k = max(1, int(round(float(g.get("exploration", 0.3)) * 10)))
+        k = max(1, round(float(g.get("exploration", 0.3)) * 10))
         picks = rng.choice(len(syms), size=min(k, len(syms)), replace=False)
         for i in picks:
             f = fams[int(rng.integers(len(fams)))]
@@ -670,33 +672,111 @@ def organ_genomes() -> dict[str, Any]:
             "metric": {"best_fitness": best, "diversity": evolution.diversity(nxt)}}
 
 
-def organ_grammar() -> dict[str, Any]:
+def _expr_str(expr: Any) -> str:
+    try:
+        from libs.research.alpha_grammar import to_str
+        return to_str(expr) if isinstance(expr, (list, tuple)) else str(expr or "")
+    except Exception:
+        return str(expr or "")
+
+
+def _cell_of(sym: Any, family: Any, params: Any) -> str:
+    try:
+        from research.frontier_identity import cell_id
+        return str(cell_id({"sym": sym, "family": family, "params": dict(params or {})}))
+    except Exception:
+        return ""
+
+
+def _gate_passed() -> dict[str, bool]:
+    """cell -> passed (latest verdict wins), from the gauntlet's own ledger."""
+    out: dict[str, bool] = {}
+    for r in _jsonl(GATE_LEDGER):
+        c = str(r.get("cell") or "")
+        if c:
+            out[c] = bool(r.get("passed"))
+    return out
+
+
+def _formula_programs() -> tuple[list[tuple[str, bool]], list[str], int]:
+    """Every formula the generators proposed, labelled by what the gauntlet made of it.
+
+    alpha_evolution writes `discoveries` with the formula as a prefix list in `params.expr`
+    (daily files plus gzipped jsonl rollups). A program counts toward operator yield only once
+    the gauntlet has judged its exact cell; survivors also come from the canon rows that carry
+    an expression. Returns (judged programs, surviving expressions, proposed count)."""
+    import gzip
     root = DESK / "data" / "intelligence" / "alpha_evolution"
-    progs: list[tuple[str, bool]] = []
-    survivors_expr: list[str] = []
+    judged = _gate_passed()
+    rows: list[dict[str, Any]] = []
     if root.exists():
-        for p in sorted(root.glob("*.json"))[-200:]:
+        for p in sorted(root.glob("*.json"))[-400:]:
             d = _read(p)
-            rows = (d or {}).get("rows") or (d or {}).get("candidates") or [] \
-                if isinstance(d, dict) else (d if isinstance(d, list) else [])
-            for r in rows:
-                if not isinstance(r, dict):
-                    continue
-                e = str(r.get("expression") or r.get("expr") or "")
-                if not e:
-                    continue
-                ok = bool(r.get("survived") or r.get("passed") or r.get("fate") == "SURVIVED")
-                progs.append((e, ok))
-                if ok:
-                    survivors_expr.append(e)
+            if isinstance(d, dict):
+                rows.extend(r for r in d.get("discoveries") or [] if isinstance(r, dict))
+        for p in sorted(root.glob("*.jsonl.gz"))[-60:]:
+            try:
+                with gzip.open(p, "rt", encoding="utf-8") as fh:
+                    for line in fh:
+                        try:
+                            r = json.loads(line)
+                        except ValueError:
+                            continue
+                        if isinstance(r, dict):
+                            rows.extend(x for x in (r.get("discoveries") or [r])
+                                        if isinstance(x, dict))
+            except (OSError, EOFError):
+                continue
+    progs: list[tuple[str, bool]] = []
+    surv: list[str] = []
+    seen: set[str] = set()
+    for r in rows:
+        params = r.get("params") or {}
+        expr = params.get("expr") if isinstance(params, dict) else None
+        if expr is None:
+            continue
+        e = _expr_str(expr)
+        cell = _cell_of(r.get("symbol") or r.get("sym"), r.get("family") or "formula", params)
+        if not e or cell in seen:
+            continue
+        seen.add(cell)
+        if cell in judged:
+            progs.append((e, judged[cell]))
+            if judged[cell]:
+                surv.append(e)
+    for row in survivors().values():
+        if not isinstance(row, dict):
+            continue
+        for src in (row.get("params"), (row.get("shadow_spec") or {}).get("params")):
+            if isinstance(src, dict) and src.get("expr") is not None:
+                surv.append(_expr_str(src["expr"]))
+    ef = _read(REPORTS / "EXPRESSION_FACTORY.json") or {}
+    for r in ef.get("survivors") or [] if isinstance(ef, dict) else []:
+        if isinstance(r, dict):
+            e = r.get("expr") or r.get("expression") or (r.get("params") or {}).get("expr")
+            if e is not None:
+                surv.append(_expr_str(e))
+    return progs, surv, len(seen)
+
+
+def organ_grammar() -> dict[str, Any]:
+    """Operator yield and learned abstractions (layers 22 and 44) from judged formulas.
+
+    The primitives are written to data/tier_s/grammar.json, which expression_factory reads as
+    extra terminals: the learned vocabulary is used, not only reported."""
+    progs, survivors_expr, proposed = _formula_programs()
     oy = evolution.operator_yield(progs) if progs else {"operators": {}, "retired": []}
     ab = evolution.abstractions(survivors_expr) if survivors_expr else {"primitives": [],
                                                                         "n_primitives": 0}
     _save_state("grammar", {"operator_weights": {k: v["weight"] for k, v in
                                                  (oy.get("operators") or {}).items()},
-                            "primitives": ab.get("primitives")})
-    return {"n_programs": len(progs), "operator_yield": oy, "abstractions": ab,
+                            "retired": oy.get("retired") or [],
+                            "primitives": ab.get("primitives"),
+                            "generated_utc": NOW.isoformat()})
+    return {"n_proposed": proposed, "n_programs": len(progs),
+            "n_survivor_exprs": len(survivors_expr), "operator_yield": oy, "abstractions": ab,
             "metric": {"n_primitives": ab.get("n_primitives"),
+                       "judged_programs": len(progs),
                        "retired_operators": len(oy.get("retired") or [])}}
 
 
@@ -769,7 +849,8 @@ def organ_review(topo: Mapping[str, Any] | None, fdr_rows: Mapping[str, Any] | N
     uniq = ((topo or {}).get("rank") or {}).get("uniqueness") or {}
     over = {r["test_id"]: r for r in (fdr_rows or {}).get("certified") or []}
     rep_doc = _read(REPORTS / "REPLICATION.json") or {}
-    rep_rows = rep_doc.get("rows") or rep_doc.get("results") or [] if isinstance(rep_doc,
+    # REPLICATION.json (replication_civilization) keeps its rows under "verdicts", keyed "key"
+    rep_rows = (rep_doc.get("verdicts") or rep_doc.get("rows") or []) if isinstance(rep_doc,
                                                                                  dict) else []
     rep_by = {}
     for r in rep_rows if isinstance(rep_rows, list) else []:
@@ -822,7 +903,7 @@ def organ_market() -> dict[str, Any]:
 
     hon = _state("honesty").get("factories") or {}
     shadow = shadow_rows()
-    for key, row in survivors().items():
+    for _key, row in survivors().items():
         if not isinstance(row, dict):
             continue
         r = R(str(row.get("hunt") or "unknown"))
@@ -956,10 +1037,8 @@ KNOB_EVIDENCE: dict[str, tuple[str, ...]] = {
 def _protocol_conformance() -> dict[str, Any]:
     src = ""
     for p in (DESK / "mt5desk" / "gateway.py", DESK / "mt5desk" / "decision_core.py"):
-        try:
+        with contextlib.suppress(OSError):
             src += p.read_text("utf-8", errors="replace")
-        except OSError:
-            pass
     if not src:
         return {"status": "UNMEASURED"}
     rows = {k: [pat for pat in pats if pat in src] for k, pats in KNOB_EVIDENCE.items()}
