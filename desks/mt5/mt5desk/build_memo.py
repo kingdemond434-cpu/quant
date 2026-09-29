@@ -96,4 +96,20 @@ def copy_signals(sigs: Any) -> Any:
     (floats, ints, str, Timestamp), so a shallow copy per signal is a full copy of the value."""
     if sigs is None:
         return None
-    return [copy.copy(s) for s in sigs]
+    return [_copy_one(s) for s in sigs]
+
+
+def _copy_one(s: Any) -> Any:
+    """`copy.copy(s)` for a plain (non-slots) dataclass instance, without `__reduce_ex__`.
+
+    `copy.copy` on a dataclass rebuilds it as `cls.__new__(cls)` plus the instance dict, which is
+    exactly this; going through the reduce protocol cost ~8 us a signal, and a wrapped base family
+    can hand thousands of signals to every exit variant. Anything without a plain `__dict__`
+    takes the generic path.
+    """
+    state = getattr(s, "__dict__", None)
+    if state is None or type(s).__reduce_ex__ is not object.__reduce_ex__:
+        return copy.copy(s)
+    new = object.__new__(type(s))
+    new.__dict__.update(state)
+    return new

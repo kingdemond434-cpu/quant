@@ -15,6 +15,8 @@ the change -- on synthetic random-walk bars:
     box one list of Timestamps instead of one Timestamp per bar.
   * the build memos (`mt5desk.build_memo`) -- `exit_operated` against its un-memoised original,
     cold and warm, and the frame fingerprint against a one-byte change.
+  * `engine.rollovers_between` (counted, no longer walked night by night) and `run_backtest`
+    with financing charged, against the walked original.
   * `build_cell` + `daily_series` end to end, cold memo against warm memo.
 """
 from __future__ import annotations
@@ -403,3 +405,57 @@ def test_build_cell_and_daily_series_cold_equals_warm(monkeypatch) -> None:
         pd.testing.assert_series_equal(a1, b1, check_exact=True)
         pd.testing.assert_series_equal(a3, b3, check_exact=True)
     assert any(len(a1) for a1, _ in cold)
+
+
+# ------------------------------------------------------------------------------ engine
+def _old_rollovers_between(t0, t1) -> float:
+    """Verbatim pre-change body of `engine.rollovers_between` (one Timestamp step per night)."""
+    if t0 is None or t1 is None:
+        return 0.0
+    a, b = pd.Timestamp(t0), pd.Timestamp(t1)
+    if a.tzinfo is not None:
+        a = a.tz_convert("UTC").tz_localize(None)
+    if b.tzinfo is not None:
+        b = b.tz_convert("UTC").tz_localize(None)
+    if not (b > a):
+        return 0.0
+    nights = 0.0
+    cur = a.normalize() + pd.Timedelta(hours=21)
+    if cur <= a:
+        cur = cur + pd.Timedelta(days=1)
+    while cur <= b:
+        nights += 3.0 if cur.weekday() == 2 else 1.0
+        cur = cur + pd.Timedelta(days=1)
+    return nights
+
+
+def test_rollover_count_equals_the_walked_count() -> None:
+    from mt5desk.engine import rollovers_between
+
+    rng = np.random.default_rng(0)
+    assert rollovers_between(None, pd.Timestamp("2020-01-01")) == 0.0
+    for tz in ("UTC", None, "Europe/Athens"):
+        base = pd.Timestamp("2020-01-01", tz=tz)
+        for _ in range(3000):
+            a = base + pd.Timedelta(minutes=int(rng.integers(0, 60 * 24 * 800)))
+            span = int(rng.choice([1, 3, 30, 400]))
+            b = a + pd.Timedelta(minutes=int(rng.integers(-100, 60 * 24 * span)))
+            if rng.random() < 0.1:       # land exactly on a rollover instant, either end
+                b = b.normalize() + pd.Timedelta(hours=21)
+            if rng.random() < 0.1:
+                a = a.normalize() + pd.Timedelta(hours=21)
+            want, got = _old_rollovers_between(a, b), rollovers_between(a, b)
+            assert got == want and type(got) is type(want), (a, b)
+
+
+def test_backtest_with_financing_matches_the_walked_rollovers(monkeypatch) -> None:
+    from mt5desk import engine
+
+    df = _bars(4000, 9)
+    sigs = families.family_trend_ma_cross(df, ttl_bars=200)
+    costs = engine.Costs(swap_per_lot_per_night=-7.5)
+    new = engine.run_backtest(df, sigs, costs)
+    monkeypatch.setattr(engine, "rollovers_between", _old_rollovers_between)
+    old = engine.run_backtest(df, sigs, costs)
+    assert new.trades and len(new.trades) == len(old.trades)
+    assert [vars(t) for t in new.trades] == [vars(t) for t in old.trades]
