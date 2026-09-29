@@ -3964,6 +3964,14 @@ _TERMINAL_ARTIFACTS = {
     "docs/DESK_CYCLE_PROMPT.md":
         "A TEMPLATE, not a finding: the standing prompt a cycle is launched with. It owes no "
         "cadence for the same reason a protocol library does -- it accumulates no inventory.",
+    "docs/cro/CRO_CYCLE.md":
+        "A TEMPLATE, not a finding: the procedure both CRO lanes execute (Run-DeskCycle.ps1). "
+        "Same class as DESK_CYCLE_PROMPT -- it changes when the procedure changes.",
+    "docs/cro/QUANT_CONSTITUTION.md":
+        "STANDING LAW supplied by the principal, subordinate to ops/principal_doctrine.txt. It "
+        "accumulates no inventory, so a re-work clock would schedule edits to law nobody found wrong.",
+    "docs/cro/QUANT_REFERENCE.md":
+        "A REFERENCE MANUAL consulted on demand by the CRO lanes. Procedure, not measurement.",
     "docs/LIVE_BRANCH_RECONCILIATION_2026-09-05.md":
         "A DATED MEASUREMENT, stamped in its own filename, recording the branch state at "
         "2026-09-05. Its content is true of that instant and of no other, so a re-work clock "

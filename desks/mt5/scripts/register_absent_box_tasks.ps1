@@ -26,19 +26,9 @@ $ps = (Get-Command powershell.exe).Source
 $base = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries `
     -StartWhenAvailable -MultipleInstances IgnoreNew -ExecutionTimeLimit (New-TimeSpan -Hours 10)
 
-# --- the two desk-cycle lanes: -Once with a repetition, the shape PS 5.1 accepts (the -Daily
-# parameter set rejects -RepetitionInterval, which is why both lanes were silently absent).
-$noonA = New-ScheduledTaskAction -Execute $ps -WorkingDirectory $RepoRoot -Argument `
-    ('-NoProfile -NonInteractive -ExecutionPolicy Bypass -File "{0}\scripts\Run-DeskCycle.ps1" -Lane noon' -f $DeskRoot)
-$noonT = New-ScheduledTaskTrigger -Once -At ([datetime]::Today.AddHours(12)) `
-    -RepetitionInterval (New-TimeSpan -Hours 1) -RepetitionDuration (New-TimeSpan -Hours 11)
-Reg "MT5-CycleNoon" $noonA $noonT $base "Daily wiring pass (noon lane): schedule the unwired, repair staleness and failing tasks."
-
-$midA = New-ScheduledTaskAction -Execute $ps -WorkingDirectory $RepoRoot -Argument `
-    ('-NoProfile -NonInteractive -ExecutionPolicy Bypass -File "{0}\scripts\Run-DeskCycle.ps1" -Lane midnight' -f $DeskRoot)
-$midT = New-ScheduledTaskTrigger -Once -At ([datetime]::Today) `
-    -RepetitionInterval (New-TimeSpan -Hours 1) -RepetitionDuration (New-TimeSpan -Hours 11)
-Reg "MT5-CycleMidnight" $midA $midT $base "Daily wiring pass (midnight lane): schedule the unwired, repair staleness and failing tasks."
+# --- the two CRO cycle lanes: one owner of their registration (daily trigger with hourly
+# repetition, S4U as the CLI-login account, Dublin window gated in the launcher).
+& (Join-Path $DeskRoot 'scripts\install_cro_cycle_tasks.ps1') -NoStart
 
 # --- the post-reboot drill, read-only apart from re-enabling a task Windows left Disabled.
 $drillA = New-ScheduledTaskAction -Execute $ps -WorkingDirectory $RepoRoot -Argument `

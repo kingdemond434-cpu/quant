@@ -4,8 +4,21 @@
 
 .DESCRIPTION
     Two autonomous passes run twelve hours apart against this repository and the live box. BOTH
-    RUN THE COMPLETE PROMPT (`docs/DESK_CYCLE_PROMPT.md`); the lane selects a time slot and a
-    checkpoint file, nothing else.
+    RUN THE SAME PROCEDURE, `docs/cro/CRO_CYCLE.md`, under `docs/cro/QUANT_CONSTITUTION.md`, with
+    `docs/cro/QUANT_REFERENCE.md` consulted on demand; the lane selects a time slot and a
+    checkpoint file, nothing else. `docs/DESK_CYCLE_PROMPT.md` stays as the box-mechanics annex.
+
+    THE CLOCK IS EUROPE/DUBLIN, NOT THE BOX'S. The principal asked for 12:00 Irish time, and a
+    Windows trigger fires on the box's local clock, which is a different zone and changes DST on
+    its own rules. So the scheduler fires the launcher every hour and the launcher decides, on
+    the Dublin clock, whether its lane's window is open: NOON 12:00-22:59, MIDNIGHT 00:00-10:59.
+    A firing outside the window costs one clock read and exits 0.
+
+    ONE CONTROLLER AT A TIME. The pass claims the canonical controller lease
+    (`libs/ops/controller_continuity.py`, via `scripts/controller_checkpoint.py`) before the agent
+    starts and releases it after. A lane that overruns into the other's window holds the lease, so
+    the other lane is refused and retries on the next hourly firing rather than editing the same
+    repository at the same time.
 
     A split scope would mean half the work stops the day one agent's CLI is missing or its
     credential expires -- and the half that stopped is invisible, because the other half keeps
@@ -55,7 +68,10 @@ $ErrorActionPreference = "Stop"
 
 $DeskRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 $RepoRoot = (Resolve-Path (Join-Path $DeskRoot "..\..")).Path
-$Prompt   = Join-Path $RepoRoot "docs\DESK_CYCLE_PROMPT.md"
+$Prompt   = Join-Path $RepoRoot "docs\cro\CRO_CYCLE.md"
+$Constitution = Join-Path $RepoRoot "docs\cro\QUANT_CONSTITUTION.md"
+$Reference    = Join-Path $RepoRoot "docs\cro\QUANT_REFERENCE.md"
+$Ledger   = Join-Path $DeskRoot "data\cro_cycle_ledger.jsonl"
 $LogDir   = Join-Path $DeskRoot "logs"
 $Log      = Join-Path $LogDir ("cycle_{0}.log" -f $Lane)
 New-Item -ItemType Directory -Force -Path $LogDir | Out-Null
@@ -78,7 +94,24 @@ function Write-Cycle([string] $Message) {
 # nothing starts fresh. That is what makes it continue "right after it is back" rather than at
 # the next daily slot -- the recovery window is an hour, not a day.
 $StateFile = Join-Path $DeskRoot ("data\cycle_state_{0}.json" -f $Lane)
-$Today = (Get-Date).ToString("yyyy-MM-dd")
+$OtherLane = if ($Lane -eq "noon") { "midnight" } else { "noon" }
+$OtherStateFile = Join-Path $DeskRoot ("data\cycle_state_{0}.json" -f $OtherLane)
+
+# "GMT Standard Time" is the Windows id for Europe/Dublin (and London): GMT in winter, IST in
+# summer. The lane's date and window are both read on that clock.
+$DublinZone = [System.TimeZoneInfo]::FindSystemTimeZoneById("GMT Standard Time")
+$DublinNow  = [System.TimeZoneInfo]::ConvertTimeFromUtc((Get-Date).ToUniversalTime(), $DublinZone)
+$Today = $DublinNow.ToString("yyyy-MM-dd")
+$WindowStart = if ($Lane -eq "noon") { 12 } else { 0 }
+$WindowEnd   = $WindowStart + 11            # exclusive; one clear hour before the other lane
+if ($DublinNow.Hour -lt $WindowStart -or $DublinNow.Hour -ge $WindowEnd) {
+    if (-not $WhatIfOnly) {
+        # Not logged: twenty-four firings a day would bury the lines that matter.
+        exit 0
+    }
+    Write-Host ("[{0}] outside window: Dublin {1:HH:mm}, lane runs {2:00}:00-{3:00}:59 -- dry run continues" -f
+                $Lane, $DublinNow, $WindowStart, ($WindowEnd - 1))
+}
 
 function Get-CycleState {
     if (-not (Test-Path -LiteralPath $StateFile)) { return $null }
@@ -97,7 +130,7 @@ function Test-ProcessAlive([int] $ProcessId) {
     return [bool](Get-Process -Id $ProcessId -ErrorAction SilentlyContinue)
 }
 
-Write-Cycle "cycle start"
+Write-Cycle ("cycle start (Dublin {0:yyyy-MM-dd HH:mm})" -f $DublinNow)
 Write-Cycle "repo $RepoRoot"
 
 $state = Get-CycleState
@@ -123,18 +156,10 @@ if ($state -and $state.date -eq $Today) {
     }
 }
 
-Set-CycleState @{
-    lane = $Lane; date = $Today; status = "RUNNING"
-    pid = $PID; started_at = (Get-Date -Format "o")
-    completed = $done
-    resumed = $(if ($resuming) { [int]$state.resumed + 1 } else { 0 })
-    why = "written by Run-DeskCycle.ps1; the agent appends to completed[] as it finishes stages"
-}
-
-if (-not (Test-Path -LiteralPath $Prompt)) {
+if (-not (Test-Path -LiteralPath $Prompt) -or -not (Test-Path -LiteralPath $Constitution)) {
     # The prompt IS the pass. Running an agent against this repository with no instructions is
     # strictly worse than not running one, so this is fatal rather than a warning.
-    Write-Cycle "FATAL: prompt not found at $Prompt -- refusing to run an agent with no brief"
+    Write-Cycle "FATAL: CRO_CYCLE.md or QUANT_CONSTITUTION.md missing under docs\cro -- refusing to run an agent with no brief"
     exit 2
 }
 
@@ -142,7 +167,20 @@ if (-not $AgentCommand) {
     $AgentCommand = if ($Lane -eq "noon") { "claude" } else { "codex" }
 }
 
+# A scheduled task's PATH is the machine PATH, not the shell PATH of whoever installed the CLI,
+# so the per-user install locations are tried explicitly before giving up.
 $resolved = Get-Command $AgentCommand -ErrorAction SilentlyContinue
+if (-not $resolved) {
+    $candidates = @(
+        (Join-Path $env:USERPROFILE ".local\bin\$AgentCommand.exe"),
+        (Join-Path $env:APPDATA "npm\$AgentCommand.cmd"),
+        "C:\Users\Administrator\.local\bin\$AgentCommand.exe",
+        "C:\Users\Administrator\AppData\Roaming\npm\$AgentCommand.cmd"
+    )
+    foreach ($c in $candidates) {
+        if ($c -and (Test-Path -LiteralPath $c)) { $resolved = Get-Command $c; break }
+    }
+}
 if (-not $resolved) {
     Write-Cycle "FATAL: agent command '$AgentCommand' is not on PATH for this task's account."
     Write-Cycle "  A scheduled task runs as a specific user; a CLI installed for a different"
@@ -156,6 +194,33 @@ if (-not $resolved) {
 }
 Write-Cycle "agent $($resolved.Source)"
 
+# HEADLESS, WITH SCOPED PERMISSIONS. Piping a brief into a bare `claude` or `codex` opens the
+# interactive UI, which has no console under Task Scheduler and dies before reading a word -- the
+# lane would "run" every day and do nothing. Each CLI gets its non-interactive entry point, and
+# neither gets a blanket permission bypass: file edits and the named command families only, with
+# history rewrites and the deadman rail refused by the CLI itself, not just by the brief.
+$agentName = [System.IO.Path]::GetFileNameWithoutExtension($resolved.Source).ToLowerInvariant()
+$agentArgs = @()
+if ($agentName -eq "claude") {
+    $agentArgs = @(
+        "-p", "--output-format", "text",
+        "--permission-mode", "acceptEdits",
+        "--allowedTools",
+        "Read", "Edit", "Write", "Glob", "Grep",
+        "Bash(git status:*)", "Bash(git log:*)", "Bash(git diff:*)", "Bash(git show:*)",
+        "Bash(git fetch:*)", "Bash(git worktree:*)", "Bash(git add:*)", "Bash(git commit:*)",
+        "Bash(git rebase:*)", "Bash(git push origin:*)", "Bash(git rev-parse:*)",
+        "Bash(python:*)", "Bash(py:*)", "Bash(pytest:*)",
+        "--disallowedTools",
+        "Bash(git push --force:*)", "Bash(git push -f:*)", "Bash(git reset --hard:*)",
+        "Bash(git stash:*)", "Bash(git commit -a:*)", "Edit(scripts/run_deadman_switch.py)",
+        "Write(scripts/run_deadman_switch.py)", "Read(data/secrets/**)"
+    )
+} elseif ($agentName -eq "codex") {
+    # --full-auto is Codex's sandboxed unattended mode (workspace-write, no approval prompts).
+    $agentArgs = @("exec", "--full-auto", "-")
+}
+
 $resumeNote = if ($resuming) {
 @"
 
@@ -168,31 +233,125 @@ stages need, which is how a pass ends up always beginning and never finishing.
 "@
 } else { "" }
 
-$brief = @"
-You are the $($Lane.ToUpper()) lane of the desk cycle.
+$ReleaseFile = Join-Path $DeskRoot "data\RELEASE.json"
+function Get-Identity {
+    $head = (& git -C $RepoRoot rev-parse HEAD 2>$null | Out-String).Trim()
+    $branch = (& git -C $RepoRoot rev-parse --abbrev-ref HEAD 2>$null | Out-String).Trim()
+    $rel = $null
+    if (Test-Path -LiteralPath $ReleaseFile) {
+        try { $rel = Get-Content -LiteralPath $ReleaseFile -Raw | ConvertFrom-Json } catch { $rel = $null }
+    }
+    return @{ head = $head; branch = $branch; release = $rel }
+}
 
-Read docs/DESK_CYCLE_PROMPT.md in full and execute ALL OF IT. Both lanes run the same
-complete pass; the lane name selects a time slot and a checkpoint file, nothing else.
+function Add-LedgerRow([hashtable] $Row) {
+    $dir = Split-Path $Ledger -Parent
+    if (-not (Test-Path -LiteralPath $dir)) { New-Item -ItemType Directory -Force -Path $dir | Out-Null }
+    Add-Content -LiteralPath $Ledger -Value ($Row | ConvertTo-Json -Depth 8 -Compress) -Encoding UTF8
+}
+
+# ---- THE LEASE: ONE CONTROLLER MUTATES THE INSTITUTION AT A TIME -----------------------------
+$Controller = "{0}-{1}" -f $agentName, $Lane
+$Python = Join-Path $RepoRoot ".venv\Scripts\python.exe"
+if (-not (Test-Path -LiteralPath $Python)) { $Python = (Get-Command python -ErrorAction SilentlyContinue).Source }
+$LeaseEpoch = 0
+if (-not $WhatIfOnly) {
+    # Eleven hours: longer than the ten-hour time limit, so a live pass never loses its own lease,
+    # and short enough that a killed pass frees the institution before the other lane's window.
+    $prevEap = $ErrorActionPreference; $ErrorActionPreference = "Continue"
+    Push-Location $RepoRoot
+    $claimJson = (& $Python scripts\controller_checkpoint.py claim --controller $Controller --ttl-seconds 39600 2>&1 | Out-String)
+    Pop-Location
+    $ErrorActionPreference = $prevEap
+    try { $lease = $claimJson | ConvertFrom-Json } catch { $lease = $null }
+    if (-not $lease -or $lease.status -ne "LEASED") {
+        $why = if ($lease) { "{0} held by {1} until {2}" -f $lease.status, $lease.controller, $lease.expires_at } else { $claimJson.Trim() }
+        Write-Cycle "lease NOT acquired ($why) -- refusing a second controller; the next hourly firing retries"
+        # Non-zero so a lane that never gets the lease is visible in the task history.
+        exit 5
+    }
+    $LeaseEpoch = [int]$lease.epoch
+    $env:QUANT_CONTROLLER = $Controller
+    $env:QUANT_CONTROLLER_EPOCH = "$LeaseEpoch"
+    $env:QUANT_CONTROLLER_TOKEN = $lease.fencing_token      # never logged
+}
+
+$brief = @"
+You are the $($Lane.ToUpper()) lane of the CRO cycle, run headless by the box scheduler
+($agentName). Both lanes execute the SAME procedure on ONE canonical institution.
+
+LOAD ORDER (do not spend the pass re-summarizing these):
+  1. docs/cro/CRO_CYCLE.md          -- READ FIRST. This is the procedure you execute.
+  2. docs/cro/QUANT_CONSTITUTION.md -- governing law for every step.
+  3. docs/cro/QUANT_REFERENCE.md    -- ON DEMAND ONLY: open just the section for the subsystem
+                                       that is failing, binding, due a deep audit or being changed.
+  Higher sealed policy still wins: ops/principal_doctrine.txt and docs/LAWS.md.
+  Box mechanics (tasks, gateway, release, paths) are in docs/DESK_CYCLE_PROMPT.md -- consult it
+  on demand, as you would the reference.
 
 Repository root: $RepoRoot
+Dublin time now: $($DublinNow.ToString("yyyy-MM-dd HH:mm"))
+Controller lease: '$Controller' epoch $LeaseEpoch, claimed by the launcher (QUANT_CONTROLLER_*
+  are set in your environment). After each material closure run
+  python scripts/controller_checkpoint.py checkpoint --note "<item id: disposition>"
 $resumeNote
-CHECKPOINT, AND IT IS PART OF THE WORK. This file is your resume point:
+STEP 2 INPUT -- THE OTHER LANE'S LAST PASS. Verify its material work independently; never trust
+its report. Its checkpoint (work_items[] carries commits, tests and release identity):
+
+    $OtherStateFile
+
+The shared history of every pass is $Ledger (one JSON row per start and end).
+
+ISOLATION. Other sessions may be editing the live checkout at $RepoRoot. Never edit code there
+directly and never git stash / commit -a. Make code changes in a worktree
+(git worktree add ..\quant-cro-$Lane -B cro/$Lane-$Today origin/<box branch>), test there, rebase
+on origin/<box branch> and push to that branch. MT5-AdoptRelease adopts origin into the live tree
+hourly and records the release in desks/mt5/data/RELEASE.json: that is the canonical release path.
+Remove the worktree when done.
+
+AUTHORITY. Do not change validated live trading logic, live certificate/registry state, arming or
+allocation unless an existing authorization record covers it; otherwise disposition the item as
+BLOCKED_BY_EXACT_EXTERNAL_CONSTRAINT naming the exact approval needed. Never touch
+scripts/run_deadman_switch.py. Never stop or pause research workers.
+
+CHECKPOINT, AND IT IS PART OF THE WORK. This file is your resume point and the next lane's input:
 
     $StateFile
 
-After finishing each numbered stage of your lane, append that stage's name to `completed` and
-rewrite the file, keeping `status` as "RUNNING". A pass that does all the work and checkpoints
-none of it is a pass that starts from stage one tomorrow. Leave `status` alone at the end -- the
-launcher marks DONE only when the agent exits cleanly, so a crash correctly reads as unfinished.
+Keep `status` as "RUNNING". After each CRO_CYCLE step append its name (e.g. "STEP 3 CENSUS") to
+`completed`. For each material item append to `work_items` an object with: id, title, binding
+constraint, disposition (one of the five in CRO_CYCLE step 8), commit, tests, independent_check,
+release_sha (RELEASE.json after adoption, or "PENDING_ADOPTION"), consumption_proof,
+remaining_gap, reopen_trigger, next_action. Also set `binding_constraint` and `report` (the
+eleven-line COMPACT REPORT). The launcher marks DONE only on a clean exit.
 
-The laws in section I are absolute. Report what you MEASURED, not what you changed. Every repair
-ships with a fixer. Refusals are output, not silence: a pass that reports only what it did, and
-not what it declined, is reporting half its work.
+THIS IS AN ACTION CYCLE, NOT A REPORTING CYCLE.
 "@
 
 if ($WhatIfOnly) {
-    Write-Cycle "DRY RUN -- would run: $($resolved.Source) (prompt on stdin, $($brief.Length) chars)"
+    Write-Cycle ("DRY RUN -- would run: {0} {1} (brief on stdin, {2} chars)" -f
+                 $resolved.Source, ($agentArgs -join " "), $brief.Length)
+    Write-Host $brief
     exit 0
+}
+
+Set-CycleState @{
+    lane = $Lane; date = $Today; status = "RUNNING"
+    pid = $PID; started_at = (Get-Date -Format "o")
+    completed = $done
+    work_items = $(if ($resuming -and $state.work_items) { @($state.work_items) } else { @() })
+    resumed = $(if ($resuming) { [int]$state.resumed + 1 } else { 0 })
+    controller = $Controller; lease_epoch = $LeaseEpoch
+    why = "written by Run-DeskCycle.ps1; the agent appends to completed[] and work_items[]"
+}
+
+$startIdentity = Get-Identity
+Add-LedgerRow @{
+    event = "start"; lane = $Lane; agent = $agentName; date = $Today
+    at = (Get-Date).ToUniversalTime().ToString("o"); pid = $PID
+    controller = $Controller; lease_epoch = $LeaseEpoch; resumed = $resuming
+    head = $startIdentity.head; branch = $startIdentity.branch
+    release_code_sha = $(if ($startIdentity.release) { $startIdentity.release.code_sha } else { $null })
 }
 
 $started = Get-Date
@@ -206,14 +365,16 @@ try {
     # progress written to stderr would kill the pass. Exit code is the truth.
     $prev = $ErrorActionPreference
     $ErrorActionPreference = "Continue"
+    Push-Location $RepoRoot
     try {
-        $brief | & $resolved.Source 2>&1 | ForEach-Object {
+        $brief | & $resolved.Source @agentArgs 2>&1 | ForEach-Object {
             $text = "$_"
             Write-Host $text
             Add-Content -LiteralPath $Log -Value $text
         }
         $code = $LASTEXITCODE
     } finally {
+        Pop-Location
         $ErrorActionPreference = $prev
     }
 } catch {
@@ -223,17 +384,29 @@ try {
 
 $mins = [math]::Round(((Get-Date) - $started).TotalMinutes, 1)
 
+# STEP 9, MEASURED BY THE LAUNCHER TOO: research must still be dispatching after the pass. The
+# agent's word for it is not evidence; the supervisor task's state is.
+$sup = Get-ScheduledTask -TaskName "MT5-ResearchSupervisor" -ErrorAction SilentlyContinue
+$supState = if ($sup) { "$($sup.State)" } else { "ABSENT" }
+Write-Cycle "research supervisor after pass: $supState"
+
 # DONE ONLY ON A CLEAN EXIT. Any other ending -- non-zero, killed by the time limit, box down --
 # leaves the checkpoint RUNNING, which is exactly what makes the next hourly firing resume rather
 # than start over. Marking DONE on a bad exit would silently convert an interrupted pass into a
 # finished one, and the stages it never reached would wait a full day.
 $final = Get-CycleState
 $completed = if ($final) { @($final.completed) } else { $done }
+$items = if ($final -and $final.work_items) { @($final.work_items) } else { @() }
+$binding = if ($final) { $final.binding_constraint } else { $null }
+$report = if ($final) { $final.report } else { $null }
 if ($code -eq 0) {
     Set-CycleState @{
         lane = $Lane; date = $Today; status = "DONE"; pid = $PID
         started_at = $started.ToString("o"); finished_at = (Get-Date -Format "o")
-        completed = $completed; minutes = $mins
+        completed = $completed; minutes = $mins; work_items = $items
+        binding_constraint = $binding; report = $report
+        controller = $Controller; lease_epoch = $LeaseEpoch
+        research_supervisor = $supState
         resumed = $(if ($final) { $final.resumed } else { 0 })
     }
     Write-Cycle ("marked DONE for {0} ({1} stage(s) recorded)" -f $Today, $completed.Count)
@@ -241,12 +414,36 @@ if ($code -eq 0) {
     Set-CycleState @{
         lane = $Lane; date = $Today; status = "RUNNING"; pid = 0
         started_at = $started.ToString("o"); last_exit = $code
-        completed = $completed
+        completed = $completed; work_items = $items
+        binding_constraint = $binding; report = $report
+        controller = $Controller; lease_epoch = $LeaseEpoch
         resumed = $(if ($final) { $final.resumed } else { 0 })
         why = "left RUNNING on a non-clean exit so the next hourly firing resumes it"
     }
     Write-Cycle ("left RESUMABLE: rc={0}, {1} stage(s) complete" -f $code, $completed.Count)
 }
+
+$endIdentity = Get-Identity
+Add-LedgerRow @{
+    event = "end"; lane = $Lane; agent = $agentName; date = $Today
+    at = (Get-Date).ToUniversalTime().ToString("o"); rc = $code; minutes = $mins
+    controller = $Controller; lease_epoch = $LeaseEpoch
+    head = $endIdentity.head; branch = $endIdentity.branch
+    release_code_sha = $(if ($endIdentity.release) { $endIdentity.release.code_sha } else { $null })
+    completed = $completed; work_items = $items; binding_constraint = $binding
+    research_supervisor = $supState
+}
+
+# Release the lease whatever the outcome, so the other lane is never locked out by a finished
+# pass. A failed release is logged; the lease still expires on its own at the eleven-hour TTL.
+$prevEap = $ErrorActionPreference; $ErrorActionPreference = "Continue"
+Push-Location $RepoRoot
+$rel = (& $Python scripts\controller_checkpoint.py checkpoint --note ("{0} pass end rc={1}" -f $Lane, $code) 2>&1 | Out-String)
+$rel = (& $Python scripts\controller_checkpoint.py release 2>&1 | Out-String)
+Pop-Location
+$ErrorActionPreference = $prevEap
+Write-Cycle ("lease released: {0}" -f ($(if ($rel -match '"RELEASED"') { "yes" } else { "NO -- expires at TTL" })))
+
 Write-Cycle ("cycle end rc={0} after {1} min" -f $code, $mins)
 # The agent's exit code is this task's exit code. A pass that ended badly must be visible in the
 # task history, which is the only place anyone looks when the desk goes quiet.

@@ -283,51 +283,11 @@ $tasks = @(
                      -RepetitionInterval (New-TimeSpan -Minutes 5) `
                      -RepetitionDuration (New-TimeSpan -Days 3650) }
        Desc = "MT5 ruin rail in DRY-RUN: evaluates every rail every 5 minutes and stamps what it would do; arms nothing." },
-    # ---- THE DAILY CYCLE, TWO LANES TWELVE HOURS APART --------------------------------------
-    # Both execute docs\DESK_CYCLE_PROMPT.md; the lane decides which half they own. The split is
-    # what stops two agents editing the same files twelve hours apart and calling it progress:
-    # NOON owns conversion and research throughput, MIDNIGHT owns wiring, cadence and repair.
-    #
-    # DAILY AT A FIXED HOUR, not a repetition interval like every other task here. These are long
-    # passes whose value is in being ONE considered sweep rather than a poll, and a repetition
-    # trigger would stack a second agent on top of a first that had not finished.
-    #
-    # The launcher exits NON-ZERO when its CLI is absent, deliberately -- so a box without the
-    # agent installed shows a failing task rather than a green one that does nothing. That is the
-    # MT5-ShadowSync defect (exit 0 while publishing nothing for 33 hours) refused by design.
-    # HOURLY REPETITION ON TOP OF THE DAILY START, which is what makes an interrupted pass resume
-    # "right after it is back" instead of at the next daily slot. The launcher keeps a checkpoint:
-    # a firing that finds today's lane DONE costs one file read and exits, one that finds it
-    # RUNNING with a dead process resumes it with the finished stages named, one that finds
-    # nothing starts fresh. So the recovery window after a time-limit kill or a reboot is an hour,
-    # not a day -- and a healthy box pays eleven cheap no-ops for that.
-    @{ Name = "MT5-CycleNoon"
-       Kind = "ps1"
-       Script = "scripts\\Run-DeskCycle.ps1"
-       Args = "-Lane noon"
-       # -Once, NOT -Daily. PowerShell 5.1's `-Daily` parameter set does NOT accept
-       # -RepetitionInterval/-RepetitionDuration, so this registration failed with "Parameter set
-       # cannot be resolved using the specified named parameters" -- and BOTH cycle lanes were
-       # silently absent from the box for as long as the installer has existed. `-Once` at a
-       # dated 12:00 with a repetition is the supported shape and fires on the same clock: the
-       # trigger repeats every hour for eleven hours, every day, from that instant on.
-       Trigger = { New-ScheduledTaskTrigger -Once -At ([datetime]::Today.AddHours(12)) `
-                     -RepetitionInterval (New-TimeSpan -Hours 1) `
-                     -RepetitionDuration (New-TimeSpan -Hours 11) }
-       # ELEVEN HOURS, not twelve: the repetition must stop before the OTHER lane's daily start,
-       # or noon would still be waking up while midnight begins and the lane split -- the whole
-       # reason two agents can share this repository -- would be gone.
-       TimeLimit = (New-TimeSpan -Hours 10)
-       Desc = "Daily conversion pass: force the funnel, clock every certificate, chase miner yield." },
-    @{ Name = "MT5-CycleMidnight"
-       Kind = "ps1"
-       Script = "scripts\\Run-DeskCycle.ps1"
-       Args = "-Lane midnight"
-       Trigger = { New-ScheduledTaskTrigger -Once -At ([datetime]::Today) `
-                     -RepetitionInterval (New-TimeSpan -Hours 1) `
-                     -RepetitionDuration (New-TimeSpan -Hours 11) }
-       TimeLimit = (New-TimeSpan -Hours 10)
-       Desc = "Daily wiring pass: schedule the unwired, repair staleness and failing tasks." },
+    # ---- THE CRO CYCLE LANES (MT5-CycleNoon / MT5-CycleMidnight) ARE NOT IN THIS TABLE --------
+    # They run as the account that holds the claude/codex logins (S4U), not SYSTEM, and fire
+    # hourly all day with the Europe/Dublin window decided by Run-DeskCycle.ps1. Both facts are
+    # outside this table's shape, so scripts\install_cro_cycle_tasks.ps1 owns them and is called
+    # after the table below. (The -Once/11-hour shape that stood here fired on registration day only.)
     # THE ONE REAL DRILL, ON A CLOCK (2026-09-08). ops\reboot_drill.ps1 has always been the box's
     # post-reboot check -- terminal64 running, the eleven required tasks present and enabled, the
     # account read fresh -- and it was scheduled NOWHERE: grep for reboot_drill found only source
@@ -465,6 +425,17 @@ foreach ($t in $tasks) {
     } catch {
         Write-Host ("  [FAIL] {0,-14} {1}" -f $t.Name, $_.Exception.Message)
     }
+}
+
+# THE CRO CYCLE LANES, delegated so there is one registration of them (see the table comment).
+$croInstaller = Join-Path $DeskRoot "scripts\install_cro_cycle_tasks.ps1"
+if ($WhatIfOnly) {
+    Write-Host "  [DRY ] MT5-CycleNoon / MT5-CycleMidnight via install_cro_cycle_tasks.ps1"
+} elseif (Test-Path $croInstaller) {
+    try { & $croInstaller -NoStart | ForEach-Object { Write-Host "  [OK  ] $_" } }
+    catch { Write-Host ("  [FAIL] CRO cycle lanes {0}" -f $_.Exception.Message) }
+} else {
+    Write-Host "  [FAIL] CRO cycle installer missing: $croInstaller"
 }
 
 # FULL BROKER BAR LADDER, IN THE INTERACTIVE TERMINAL SESSION. The wrapper downloads every
