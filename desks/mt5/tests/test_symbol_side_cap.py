@@ -12,11 +12,15 @@ import sys
 from pathlib import Path
 from types import SimpleNamespace
 
+import pytest
+
 _DESK = Path(__file__).resolve().parents[1]
 for p in (str(_DESK), str(_DESK / "research")):
     if p not in sys.path:
         sys.path.insert(0, p)
 
+# The gateway imports MetaTrader5, which only installs on Windows; CI runs these on the box.
+pytest.importorskip("MetaTrader5")
 from mt5desk import gateway  # noqa: E402
 
 
