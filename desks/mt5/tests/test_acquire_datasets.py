@@ -8,6 +8,7 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pandas as pd
+import pytest
 from tests.data.xls_builder import build_xls, cell_number, cell_sst
 
 DESK = Path(__file__).resolve().parents[1]
@@ -22,8 +23,9 @@ def test_legacy_eia_workbook_is_parsed_and_excel_dates_are_real_dates() -> None:
     for row in range(1, 206):
         records += cell_number(row, 0, 43_000.0 + row)
         records += cell_number(row, 1, 70.0 + row / 100.0)
-    raw = build_xls([("Data 1", records), ("Notes", cell_sst(0, 0, 2))],
-                    ["Date", "WTI spot", "notes"])
+    raw = build_xls(
+        [("Data 1", records), ("Notes", cell_sst(0, 0, 2))], ["Date", "WTI spot", "notes"]
+    )
 
     frame = acquisition._parse(raw, "https://www.eia.gov/example.xls")
     assert frame is not None
@@ -35,24 +37,32 @@ def test_legacy_eia_workbook_is_parsed_and_excel_dates_are_real_dates() -> None:
 
 
 def test_markup_never_falls_through_to_delimited_parser() -> None:
-    assert acquisition._parse(b"<html><table><tr><td>2026-01-01</td></tr></table></html>",
-                              "https://example.test/data.xls") is None
+    assert (
+        acquisition._parse(
+            b"<html><table><tr><td>2026-01-01</td></tr></table></html>",
+            "https://example.test/data.xls",
+        )
+        is None
+    )
 
 
 def test_acquired_endpoints_are_refreshed_after_one_hour(
-    tmp_path: Path, monkeypatch,
+    tmp_path: Path,
+    monkeypatch,
 ) -> None:
     now = datetime(2026, 9, 28, 8, tzinfo=UTC)
     seed = acquisition._SEED_ENDPOINTS[0]
     registry = tmp_path / "registry.json"
-    registry.write_text(json.dumps({"by_url": {
-        seed: {"at": (now - timedelta(hours=2)).isoformat()}}}), "utf-8")
+    registry.write_text(
+        json.dumps({"by_url": {seed: {"at": (now - timedelta(hours=2)).isoformat()}}}), "utf-8"
+    )
     monkeypatch.setattr(acquisition, "REGISTRY", registry)
     monkeypatch.setattr(acquisition, "WORLD", tmp_path / "world")
     assert seed in [url for url, _host in acquisition._endpoints(40, now=now)]
 
-    registry.write_text(json.dumps({"by_url": {
-        seed: {"at": (now - timedelta(minutes=30)).isoformat()}}}), "utf-8")
+    registry.write_text(
+        json.dumps({"by_url": {seed: {"at": (now - timedelta(minutes=30)).isoformat()}}}), "utf-8"
+    )
     assert seed not in [url for url, _host in acquisition._endpoints(40, now=now)]
 
 
@@ -60,9 +70,16 @@ def test_refused_endpoint_yields_its_seat_for_a_day(tmp_path: Path, monkeypatch)
     now = datetime(2026, 9, 28, 8, tzinfo=UTC)
     refused = acquisition._SEED_ENDPOINTS[0]
     registry = tmp_path / "registry.json"
-    registry.write_text(json.dumps({"by_url": {
-        refused: {"at": (now - timedelta(hours=2)).isoformat(), "status": "REFUSED"}}}),
-        "utf-8")
+    registry.write_text(
+        json.dumps(
+            {
+                "by_url": {
+                    refused: {"at": (now - timedelta(hours=2)).isoformat(), "status": "REFUSED"}
+                }
+            }
+        ),
+        "utf-8",
+    )
     monkeypatch.setattr(acquisition, "REGISTRY", registry)
     monkeypatch.setattr(acquisition, "WORLD", tmp_path / "world")
     assert refused not in [url for url, _host in acquisition._endpoints(40, now=now)]
@@ -78,3 +95,50 @@ def test_country_pack_frontier_is_region_balanced(monkeypatch, tmp_path: Path) -
     # by one country/continent and reaches globally distinct public institutions.
     assert len(endpoints) == 40
     assert len(hosts) >= 8
+
+
+@pytest.mark.parametrize("all_fail", [True, False])
+def test_persistence_failure_never_claims_success(tmp_path, monkeypatch, all_fail):
+    monkeypatch.setattr(acquisition, "STORE", tmp_path)
+    monkeypatch.setattr(acquisition, "REGISTRY", tmp_path / "registry.json")
+    monkeypatch.setattr(acquisition, "REPORT", tmp_path / "report.json")
+    monkeypatch.setattr(
+        acquisition, "_endpoints", lambda limit: [("https://example.test/data", "example.test")]
+    )
+    monkeypatch.setattr(acquisition, "_fetch", lambda url: (b"data", "csv"))
+    frame = pd.DataFrame({"value": [1.0, 2.0]}, index=pd.date_range("2020-01-01", periods=2))
+    monkeypatch.setattr(acquisition, "_parse", lambda raw, url: frame)
+    monkeypatch.setattr(acquisition, "_dated", lambda df: df)
+    monkeypatch.setattr(
+        acquisition, "_numeric_series", lambda df, stem: {"bad": frame.value, "good": frame.value}
+    )
+
+    def persist(self, path, **kwargs):
+        if all_fail or path.stem == "bad":
+            raise OSError("disk unavailable")
+
+    def no_certificate(*args, **kwargs):
+        raise ValueError("no publication timing")
+
+    monkeypatch.setattr(pd.DataFrame, "to_parquet", persist)
+    monkeypatch.setattr(acquisition, "certify", no_certificate)
+    report = acquisition.acquire()
+    registry = json.loads(acquisition.REGISTRY.read_text())
+    endpoint = registry["by_url"]["https://example.test/data"]
+    assert endpoint["status"] == ("REFUSED" if all_fail else "PARTIAL")
+    assert endpoint["series"] == ([] if all_fail else ["good"])
+    assert report["datasets_kept"] == (0 if all_fail else 1)
+    assert report["new_series"] == endpoint["series"]
+
+
+@pytest.mark.parametrize("authority", [False, None, "false", "true", 1])
+def test_nonboolean_authority_never_reaches_primitives(tmp_path, monkeypatch, authority):
+    registry = tmp_path / "registry.json"
+    registry.write_text(
+        json.dumps({"series": {"x": {"path": "unused", "pit_authority": authority}}})
+    )
+    monkeypatch.setattr(acquisition, "REGISTRY", registry)
+    reads = []
+    monkeypatch.setattr(pd, "read_parquet", lambda path: reads.append(path))
+    assert acquisition.acquired_series() == {}
+    assert reads == []

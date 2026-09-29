@@ -392,12 +392,15 @@ def acquire(limit: int = MAX_PER_RUN) -> dict[str, Any]:
             _refuse_url("no numeric column with enough history")
             continue
 
+        persisted: list[str] = []
+        failed_series: list[str] = []
         for name, s in series.items():
             path = STORE / f"{name}.parquet"
             try:
                 s.rename("value").to_frame().to_parquet(path)
             except Exception:
                 _refuse("could not persist")
+                failed_series.append(name)
                 continue
             # EVERY ACQUIRED SERIES IS CERTIFIED, at the only moment the desk holds both the
             # frame and what the acquirer knows about it. `authority: false` is not a refusal to
@@ -433,10 +436,14 @@ def acquire(limit: int = MAX_PER_RUN) -> dict[str, Any]:
                 "pit_blocking": blocking,
             }
             new_series.append(name)
-        reg["by_url"][url] = {"host": host, "series": list(series),
+            persisted.append(name)
+        reg["by_url"][url] = {"host": host, "series": persisted,
+                              "failed_series": failed_series,
                               "at": datetime.now(UTC).isoformat(timespec="seconds"),
-                              "status": "SUCCESS", "refusal": None}
-        kept += 1
+                              "status": ("PARTIAL" if failed_series else "SUCCESS")
+                              if persisted else "REFUSED",
+                              "refusal": "could not persist" if failed_series else None}
+        kept += int(bool(persisted))
 
     reg["updated_at"] = datetime.now(UTC).isoformat(timespec="seconds")
     REGISTRY.write_text(json.dumps(reg, indent=1, default=str), encoding="utf-8")
@@ -477,7 +484,7 @@ def acquired_series(index: pd.Index | None = None, *,
         # can be built from. Series acquired before certification existed carry no flag and are
         # therefore withheld until the next acquisition run certifies them -- which is the
         # fail-closed direction, and the reason the registry keeps `pit_blocking` per series.
-        if require_authority and not meta.get("pit_authority"):
+        if require_authority and meta.get("pit_authority") is not True:
             continue
         try:
             df = pd.read_parquet(meta["path"])
