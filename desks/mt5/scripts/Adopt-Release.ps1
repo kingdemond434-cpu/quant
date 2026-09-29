@@ -761,8 +761,7 @@ $boxAdded = @{}
 $mergeBase = (Invoke-Git @("merge-base", "HEAD", $target) -AllowFail | ForEach-Object { "$_" } |
               Where-Object { $_ -match '\S' } | Select-Object -First 1)
 if ($mergeBase) {
-    foreach ($rec in @(Invoke-Git @("-c", "core.quotePath=false", "diff", "--name-status", "$mergeBase", "HEAD") |
-                       ForEach-Object { "$_" } | Where-Object { $_ -match '\S' })) {
+    foreach ($rec in @(Get-NonShippedDiff -From $mergeBase -To "HEAD" -Mode "name-status")) {
         $cols = $rec -split "`t"
         $p = $cols[-1]
         $boxTouched[$p] = $true

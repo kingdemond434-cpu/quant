@@ -108,6 +108,7 @@ def test_the_discovery_corpus_is_left_to_the_organ_that_ships_it() -> None:
     assert '":(exclude)$pathspec"' in src
     records = src.index('$records = @(Get-NonShippedDiff')
     assert records < loop
+    assert 'Get-NonShippedDiff -From $mergeBase -To "HEAD" -Mode "name-status"' in src
     verify = src.index('$allDiff = @(Get-NonShippedDiff')
     assert verify > loop
     assert "function Get-ShippedDiffCount" in src and '"--shortstat"' in src
