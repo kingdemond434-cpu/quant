@@ -1,0 +1,28 @@
+[
+  {
+    "source": "arxiv",
+    "type": "academic_paper",
+    "title": "RICE-Alpha: Reliability-Informed Correction with Event Graphs for LLM-Agent Stock Forecasting",
+    "summary": "Equity-relevant news evolves through temporally dependent corporate events, making historical information useful only when event continuity, information availability, and transition reliability are mo",
+    "url": "https://arxiv.org/abs/2609.34004v1",
+    "published": "2026-09-27T23:03:31Z",
+    "trading_terms": [
+      "alpha"
+    ],
+    "symbols": [],
+    "confidence": 0.1
+  },
+  {
+    "source": "arxiv",
+    "type": "academic_paper",
+    "title": "RICE-Alpha: Reliability-Informed Correction with Event Graphs for LLM-Agent Stock Forecasting",
+    "summary": "Equity-relevant news evolves through temporally dependent corporate events, making historical information useful only when event continuity, information availability, and transition reliability are mo",
+    "url": "https://arxiv.org/abs/2609.34004v1",
+    "published": "2026-09-27T23:03:31Z",
+    "trading_terms": [
+      "alpha"
+    ],
+    "symbols": [],
+    "confidence": 0.1
+  }
+]

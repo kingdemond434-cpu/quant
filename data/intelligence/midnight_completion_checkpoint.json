@@ -39,13 +39,16 @@
    "status": "DONE"
   },
   "forward_clock_reconciliation": {
-   "finished_at": "2026-09-28T21:24:46.606684+00:00",
-   "passes_completed": 1,
-   "returncode": 1,
-   "status": "FAILED"
+   "command": [
+    "/home/quant/quant-platform/.venv/bin/python",
+    "scripts/check_forward_clock.py"
+   ],
+   "passes_completed": 0,
+   "started_at": "2026-09-29T03:16:45.025106+00:00",
+   "status": "RUNNING"
   },
   "forward_identity_reconciliation": {
-   "finished_at": "2026-09-28T21:24:24.250560+00:00",
+   "finished_at": "2026-09-29T03:16:37.097414+00:00",
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
@@ -57,15 +60,10 @@
    "status": "FAILED"
   },
   "fusion_state_pull": {
-   "command": [
-    "systemctl",
-    "--user",
-    "start",
-    "quant-desk-pull.service"
-   ],
-   "passes_completed": 0,
-   "started_at": "2026-09-29T02:47:30.514945+00:00",
-   "status": "RUNNING"
+   "finished_at": "2026-09-29T03:16:05.463929+00:00",
+   "passes_completed": 1,
+   "returncode": 124,
+   "status": "FAILED"
   },
   "mechanism_independence": {
    "finished_at": "2026-09-28T21:26:20.342507+00:00",
@@ -86,5 +84,5 @@
    "status": "DONE"
   }
  },
- "updated_at": "2026-09-29T02:47:30.514945+00:00"
+ "updated_at": "2026-09-29T03:16:45.025106+00:00"
 }
