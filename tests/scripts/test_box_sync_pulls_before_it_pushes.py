@@ -157,21 +157,21 @@ def test_dirty_files_are_parked_and_restored_never_discarded() -> None:
     assert "stash" not in code, "R0423: never stash in a shared tree"
 
 
-def test_merge_blockers_are_found_in_bounded_path_batches_not_one_git_per_path() -> None:
+def test_merge_blockers_are_read_from_one_native_merge_probe() -> None:
     """Large discovery fetches must not monopolise the global Git-writer mutex.
 
     The old loop ran ``git status`` separately for every incoming path. A 38k-path fetch could
     therefore consume the Windows task's entire ten-minute allowance while holding the mutex,
-    preventing the canonical release adopter from ever starting. A whole-tree dirty scan was also
-    too expensive on the multi-million-path box. Tracked blockers are exactly the intersection of
-    incoming paths and paths dirty relative to HEAD, so bounded pathspec batches plus an in-memory
-    set preserve the result without either failure mode. The merge probe covers untracked paths.
+    preventing the canonical release adopter from ever starting. Whole-tree and bounded-path dirty
+    scans also failed on the multi-million-path box. Git's own merge preflight already identifies
+    tracked and untracked blockers in one index-native operation, so both lists must come from it.
     """
     code = _code()
     start = code.index("function Merge-FetchHead")
     body = code[start:code.index("\n}", start)]
-    assert '$chunkSize = 128' in body
-    assert '"HEAD", "--"' in body
-    assert "$gitArgs" in body and "& git @gitArgs" in body
-    assert "$dirtySet" in body and ".ContainsKey($rel)" in body
+    assert "merge --no-commit --no-ff FETCH_HEAD" in body
+    assert "local changes to the following files would be overwritten" in body
+    assert "untracked working tree files would be overwritten" in body
+    assert "$probeRc" in body and "$blockers" in body and "$untracked" in body
     assert "status --porcelain -- $rel" not in body
+    assert "diff --name-only --no-ext-diff HEAD" not in body

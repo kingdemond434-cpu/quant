@@ -138,37 +138,11 @@ if (-not $gotLock) {
 # Returns $true on a clean merge, $false on conflict (caller decides whether that is fatal).
 function Merge-FetchHead {
     param([string]$RepoRoot, [string]$Branch)
-    $blockers = @()
-    $incoming = @(& git -C $RepoRoot diff --name-only HEAD FETCH_HEAD) | Where-Object { $_ }
-    # One status subprocess per incoming path made this section O(paths) in Git startups. A
-    # whole-tree `git diff HEAD` fixed the process explosion but still stat-ed millions of tracked
-    # research artifacts on the box: measured 2026-09-29, five incoming code paths spent more
-    # than four minutes waiting on an unrelated 1,488-dirty-path tree. Ask Git only about incoming
-    # paths, in bounded batches so neither process count nor the Windows command line can explode.
-    # Untracked merge blockers remain handled by the merge probe below.
-    $dirtySet = @{}
-    $chunkSize = 128
-    for ($offset = 0; $offset -lt $incoming.Count; $offset += $chunkSize) {
-        $last = [Math]::Min($offset + $chunkSize - 1, $incoming.Count - 1)
-        $chunk = @($incoming[$offset..$last])
-        $gitArgs = @("-C", $RepoRoot, "diff", "--name-only", "--no-ext-diff", "HEAD", "--") +
-            $chunk
-        $dirtyTracked = @(& git @gitArgs) | Where-Object { $_ }
-        foreach ($rel in $dirtyTracked) { $dirtySet[$rel] = $true }
-    }
-    foreach ($rel in $incoming) {
-        if ($dirtySet.ContainsKey($rel)) { $blockers += $rel }
-    }
-    $parked = @{}
-    foreach ($rel in $blockers) {
-        $full = Join-Path $RepoRoot ($rel -replace "/", "\")
-        if (Test-Path $full) {
-            $tmp = [System.IO.Path]::GetTempFileName()
-            Copy-Item -LiteralPath $full -Destination $tmp -Force
-            $parked[$rel] = $tmp
-            Git-In-Repo @("checkout", "--", $rel) | Out-Null
-        }
-    }
+    # Let Git's native unpack-tree preflight name the actual blockers. This is the only bounded
+    # method on the multi-million-path box: per-incoming-path status exploded subprocess count;
+    # a whole-tree diff took more than four minutes; even 128-path batches timed out when an
+    # incoming discovery commit named tens of thousands of artifacts. The merge preflight already
+    # computes exactly the two lists we need, using Git's index-native implementation.
     # UNTRACKED FILES BLOCK A MERGE TOO, AND PARKING TRACKED ONES DOES NOTHING FOR THEM.
     #
     # git raises TWO separate refusals and this only ever handled the first:
@@ -199,17 +173,46 @@ function Merge-FetchHead {
     try {
         $probe = @(& git -C $RepoRoot merge --no-commit --no-ff FETCH_HEAD 2>&1 |
                    ForEach-Object { "$_" })
+        $probeRc = $LASTEXITCODE
     } finally {
         $ErrorActionPreference = $prev
     }
     Git-In-Repo @("merge", "--abort") | Out-Null
+    $blockers = @()
     $untracked = @()
-    $inList = $false
+    $list = ""
     foreach ($line in $probe) {
         $s = "$line"
-        if ($s -match "untracked working tree files would be overwritten") { $inList = $true; continue }
-        if ($inList) {
-            if ($s -match "^\s+(\S.*)$") { $untracked += $Matches[1].Trim() } else { $inList = $false }
+        if ($s -match "local changes to the following files would be overwritten") {
+            $list = "tracked"
+            continue
+        }
+        if ($s -match "untracked working tree files would be overwritten") {
+            $list = "untracked"
+            continue
+        }
+        if ($list) {
+            if ($s -match "^\s+(\S.*)$") {
+                if ($list -eq "tracked") { $blockers += $Matches[1].Trim() }
+                else { $untracked += $Matches[1].Trim() }
+            } else {
+                $list = ""
+            }
+        }
+    }
+    if ($probeRc -ne 0 -and -not $blockers.Count -and -not $untracked.Count) {
+        Write-SyncLog "merge probe found a genuine conflict, not a dirty-tree blocker"
+        return $false
+    }
+
+    $parked = @{}
+    foreach ($rel in $blockers) {
+        $full = Join-Path $RepoRoot ($rel -replace "/", "\")
+        if (Test-Path $full -PathType Leaf) {
+            $tmp = [System.IO.Path]::GetTempFileName()
+            Copy-Item -LiteralPath $full -Destination $tmp -Force
+            $parked[$rel] = $tmp
+            Git-In-Repo @("checkout", "--", $rel) | Out-Null
         }
     }
     foreach ($rel in $untracked) {
