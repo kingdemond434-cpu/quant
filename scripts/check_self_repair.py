@@ -33,6 +33,32 @@ for _p in (str(ROOT / "desks" / "mt5" / "research"), str(ROOT)):
 FLOOR = ROOT / "docs" / "research" / "self_repair_floor.json"
 
 
+def _trading_host(base: Path) -> bool:
+    """Is the live gateway writing here? By the file's age AND its own stamps: gateway_state.json
+    is tracked, so a checkout resets its mtime and a fresh clone read as the trading host."""
+    import time as _t
+    from datetime import datetime
+    path = base / "desks" / "mt5" / "data" / "gateway_state.json"
+    try:
+        age = _t.time() - path.stat().st_mtime
+    except OSError:
+        return False
+    try:
+        doc = json.loads(path.read_text(encoding="utf-8-sig"))
+    except (OSError, ValueError):
+        doc = {}
+    stamps: list[float] = []
+    for key in ("last_reconcile", "placement_pass", "updated_at", "at", "ts"):
+        try:
+            stamps.append(datetime.fromisoformat(
+                str(doc[key]).replace("Z", "+00:00")).timestamp())
+        except (KeyError, TypeError, ValueError):
+            continue
+    if stamps:
+        age = max(age, _t.time() - max(stamps))
+    return age < 3 * 3600
+
+
 def measure(root: Path | None = None, *, require: bool = False) -> dict[str, Any]:
     import self_repair_registry as reg  # type: ignore[import-not-found]
 
@@ -43,18 +69,32 @@ def measure(root: Path | None = None, *, require: bool = False) -> dict[str, Any
     # artifact there is a fact about the machine, not about the class -- and a fence that is red
     # on the day it is built gets switched off (L1.43). `--require-state` arms the half that the
     # box's own law gate runs, which is where silence IS the defect.
-    try:
-        gw = (base / "desks" / "mt5" / "data" / "gateway_state.json").stat().st_mtime
-        import time as _t
-        trading = (_t.time() - gw) < 3 * 3600
-    except OSError:
-        trading = False
+    trading = _trading_host(base)
     floor_path = base / "docs" / "research" / "self_repair_floor.json"
     try:
         floor = json.loads(floor_path.read_text(encoding="utf-8-sig"))
     except (OSError, ValueError):
         floor = {}
     was = floor.get("manual") if isinstance(floor, dict) else None
+
+    # NEVER PRODUCED HERE IS HOST STATE, AND THE PORTABLE HALF CANNOT SEE HOST STATE (2026-09-29).
+    # The law gate runs this fence in a detached worktree of HEAD, where every detector artifact
+    # is gitignored and therefore absent: all twelve classes read "never appeared on this host"
+    # and the manual count read 12 against a floor of 0 on every run, on every machine, whatever
+    # the detectors had done. A class with NO DETECTOR IN THE TREE is structural and still counts
+    # everywhere; a class whose detector exists but has not produced HERE counts where this host
+    # is meant to run it -- the trading host, or `--require-state` (the state battery) -- exactly
+    # as detector silence already did.
+    host_state_manual = [r["key"] for r in doc["rows"]
+                         if r["bucket"] == "MANUAL" and r["detector_present"]]
+    if not (trading or require) and host_state_manual:
+        for r in doc["rows"]:
+            if r["key"] in host_state_manual:
+                r["bucket"] = reg.UNMEASURED
+                r["why"] += " -- host state, judged by the state battery (--require-state)"
+        doc["census"] = {b: sum(1 for r in doc["rows"] if r["bucket"] == b) for b in reg.BUCKETS}
+        doc["manual"] = doc["census"]["MANUAL"]
+    doc["host_state_unmeasured"] = host_state_manual if not (trading or require) else []
 
     failures: list[str] = []
     for r in doc["rows"]:

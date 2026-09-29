@@ -485,6 +485,11 @@ _STATE_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     # quietly become a photograph of the past -- which is worse than no file, because it still
     # reads as current runtime state to anyone on GitHub.
     ("check_runtime_attestation.py", ("--require-state",)),
+    # the live half of THE SELF-REPAIR FENCE: a class whose detector exists but whose artifact has
+    # never appeared, or has gone silent past its window, is judged where the detectors run. The
+    # law half above runs in a detached worktree where every detector artifact is gitignored, so
+    # it can only judge the structural half (a detector, a repair, a fence in the tree).
+    ("check_self_repair.py", ("--require-state",)),
     # the live half of REGIONAL PARITY (LAWS 5n): on the box the registry IS open and the forest
     # reports DO exist, so "no resident", "no discovery in the trailing window" and "no candidate
     # in the lattice" are measured absences and the law calls each one a defect. It still caps no
