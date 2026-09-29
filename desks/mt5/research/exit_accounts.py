@@ -176,7 +176,8 @@ def _trade(r: object, sleeve: str, basis: str) -> dict | None:
     if not et or not np.isfinite(rm) or not np.isfinite(entry) or entry <= 0:
         return None
     return {"sleeve": sleeve, "basis": basis, "entry_time": str(et), "exit_time": str(xt or ""),
-            "side": _side(r.get("side", 1), basis), "entry": entry, "r_multiple": rm,
+            "side": _side(_first(r, "entry_side", "side"), basis),
+            "entry": entry, "r_multiple": rm,
             "reason": _reason_bucket(r.get("reason")), "reason_raw": r.get("reason")}
 
 

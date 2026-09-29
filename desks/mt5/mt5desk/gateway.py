@@ -1908,7 +1908,8 @@ def _position_entry(pid) -> dict:
     records every other fill.
     """
     out = {"entry_price": 0.0, "sl": 0.0, "tp": 0.0, "comment": "",
-           "entry_order": None, "entry_deal": None, "position_id": pid}
+           "entry_order": None, "entry_deal": None, "position_id": pid,
+           "entry_time": None, "entry_side": None}
     if not pid:
         return out
     try:
@@ -1923,6 +1924,12 @@ def _position_entry(pid) -> dict:
                 out["entry_price"] = float(getattr(x, "price", 0.0) or 0.0)
                 out["entry_order"] = getattr(x, "order", None)
                 out["entry_deal"] = getattr(x, "ticket", None)
+                out["entry_side"] = getattr(x, "type", None)
+                stamp = float(getattr(x, "time_msc", 0) or 0) / 1000.0
+                if stamp <= 0:
+                    stamp = float(getattr(x, "time", 0) or 0)
+                if stamp > 0:
+                    out["entry_time"] = datetime.fromtimestamp(stamp, tz=UTC).isoformat()
                 break
     except Exception as exc:
         log(f"position {pid}: context unreadable ({type(exc).__name__}); R left unmeasured")
@@ -1972,7 +1979,7 @@ def record_trades(st: dict, sleeves: list[dict]) -> None:
         return
     written = 0
     for d in deals:
-        if d.entry != mt5.DEAL_ENTRY_OUT:
+        if d.entry not in (mt5.DEAL_ENTRY_OUT, getattr(mt5, "DEAL_ENTRY_OUT_BY", 3)):
             continue
         if getattr(d, "ticket", None) in seen_deals:
             continue
@@ -2036,6 +2043,12 @@ def record_trades(st: dict, sleeves: list[dict]) -> None:
                                        tick_size=float(getattr(sym_info, "trade_tick_size",
                                                                0.0) or 0.0))
         rec = {"time": now(), "sleeve": sleeve, "symbol": d.symbol,
+               # Preserve the legacy close-deal side, but expose the actual position side
+               # separately: a closing BUY belongs to a SHORT position.
+               "entry_side": ctx["entry_side"], "entry_time": ctx["entry_time"],
+               "exit_time": (datetime.fromtimestamp(float(d.time), tz=UTC).isoformat()
+                             if getattr(d, "time", 0) else None),
+               "timestamp_basis": "broker_deal_epoch",
                "side": d.type, "pl_quote": round(pl_quote, 2),
                "r_multiple": round(r, 4), "volume": d.volume,
                "commission": d.commission, "swap": d.swap, "deal": d.ticket,
@@ -2286,12 +2299,13 @@ def _net_routes(symbols: set[str]) -> None:
 
 
 def _closing_fill(ticket: int) -> tuple[float, float] | None:
-    """(lots closed, volume-weighted close price) from the position's DEAL_ENTRY_OUT deals, or
+    """(lots closed, volume-weighted close price) from OUT/OUT_BY deals, or
     None while the terminal has not recorded one. Read-only history, the same call
     `_position_entry` makes; never raises past its caller's guard."""
     lots = notional = 0.0
     for x in (mt5.history_deals_get(position=ticket) or ()):
-        if getattr(x, "entry", None) == mt5.DEAL_ENTRY_OUT:
+        if getattr(x, "entry", None) in (mt5.DEAL_ENTRY_OUT,
+                                        getattr(mt5, "DEAL_ENTRY_OUT_BY", 3)):
             v = float(getattr(x, "volume", 0.0) or 0.0)
             lots += v
             notional += v * float(getattr(x, "price", 0.0) or 0.0)

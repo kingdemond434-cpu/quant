@@ -223,6 +223,13 @@ def test_exit_accounts_reads_both_ledger_dialects():
     assert live["side"] == -1 and live["exit_time"] == _stamp(5) and live["reason"] == "other"
 
 
+def test_exit_accounts_uses_opening_side_not_opposite_close_deal():
+    row = ea._trade({"entry_time": _stamp(1), "exit_time": _stamp(5),
+                     "entry_price": 2000, "r_multiple": -1,
+                     "side": 0, "entry_side": 1}, "gold_asia", "live")
+    assert row["side"] == -1
+
+
 # --------------------------------------------------------------------------- counterfactuals
 def _trend_bars(n: int = 400, drift: float = 0.05, seed: int = 0) -> pd.DataFrame:
     rng = np.random.default_rng(seed)
