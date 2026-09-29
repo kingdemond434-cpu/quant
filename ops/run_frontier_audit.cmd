@@ -90,5 +90,9 @@ rem THE STRUCTURAL VERIFIER (F26), beside the bench. The bench asks whether a de
 rem desk survived has returned; this asks whether a property that must NEVER hold has
 rem started holding. Different questions, and a desk needs both.
 "%PY%" -u "desks\mt5\research\formal_invariants.py" --apply >>"%LOG%" 2>&1
+rem THE INDEPENDENT VERIFIER (item 15, 2026-09-29). A second implementation, importing no desk
+rem code, rebuilds every promoted certificate from its frozen spec and is compared trade by
+rem trade with the original. Daily, not hourly: it reloads every certified chart's bars.
+"%PY%" -u "desks\mt5\research\independent_verifier.py" --apply --budget-s 1200 >>"%LOG%" 2>&1
 "%PY%" -u "desks\mt5\research\quantbench.py" --apply >>"%LOG%" 2>&1
 exit /b 0
