@@ -34,6 +34,7 @@ class Atom(TypedDict):
     symbols: tuple[str, ...]
     mechanism: str
     falsifier: str
+    sources: tuple[str, ...]
 
 SOURCES = {
     "polymarket_data": "SII-WANGZJ/Polymarket_data@188eee28f09ba83d79c125bfb367f72ac93962c4",
@@ -104,41 +105,49 @@ ATOMS: tuple[Atom, ...] = (
     {"id": "event_probability_revision", "family": "momentum_volgate",
      "symbols": ("XAUUSD", "US500", "NAS100", "EURUSD", "USDJPY", "XTIUSD"),
      "mechanism": "an event probability may update before the related CFD fully reprices",
-     "falsifier": "PIT probability revisions add no net OOS value beyond asset and macro returns"},
+     "falsifier": "PIT probability revisions add no net OOS value beyond asset and macro returns",
+     "sources": ("polymarket_data", "prediction_market_backtesting")},
     {"id": "event_entropy_transition", "family": "vol_transition",
      "symbols": ("XAUUSD", "US500", "NAS100", "USDJPY", "XTIUSD"),
      "mechanism": "rapid resolution or expansion of event uncertainty changes hedging demand",
-     "falsifier": "entropy changes do not improve OOS volatility or breakout forecasts"},
+     "falsifier": "entropy changes do not improve OOS volatility or breakout forecasts",
+     "sources": ("prediction_market_backtesting", "cloddsbot")},
     {"id": "cross_venue_probability_dispersion", "family": "vol_transition",
      "symbols": ("XAUUSD", "US500", "NAS100", "EURUSD", "USDJPY"),
      "mechanism": "venue disagreement measures unresolved information rather than direction",
-     "falsifier": "dispersion has no stable incremental OOS relation to realised volatility"},
+     "falsifier": "dispersion has no stable incremental OOS relation to realised volatility",
+     "sources": ("polymarket_data", "prediction_market_toolkits")},
     {"id": "prior_quality_participant_flow", "family": "momentum_volgate",
      "symbols": ("XAUUSD", "US500", "NAS100", "XTIUSD"),
      "mechanism": (
          "independent participants with previously measured calibration may reveal "
          "information arrival"
      ),
-     "falsifier": "strictly prior participant scores add no OOS value over aggregate probability"},
+     "falsifier": "strictly prior participant scores add no OOS value over aggregate probability",
+     "sources": ("polymarket_data", "polybot")},
     {"id": "weather_ensemble_revision", "family": "momentum_volgate",
      "symbols": ("XNGUSD", "XTIUSD", "XBRUSD", "CORN", "WHEAT", "SUGAR"),
      "mechanism": "calibrated forecast revisions change expected demand, supply and crop stress",
-     "falsifier": "PIT weather revisions add no net OOS value after seasonality and reports"},
+     "falsifier": "PIT weather revisions add no net OOS value after seasonality and reports",
+     "sources": ("polyweather",)},
     {"id": "weather_model_dispersion", "family": "vol_transition",
      "symbols": ("XNGUSD", "XTIUSD", "XBRUSD", "CORN", "WHEAT", "SUGAR"),
      "mechanism": "forecast disagreement measures physical-state uncertainty and repricing risk",
-     "falsifier": "calibrated ensemble dispersion does not improve OOS volatility forecasts"},
+     "falsifier": "calibrated ensemble dispersion does not improve OOS volatility forecasts",
+     "sources": ("polyweather",)},
     {"id": "reference_book_imbalance", "family": "momentum_volgate",
      "symbols": ("XAUUSD", "US500", "NAS100", "XTIUSD"),
      "mechanism": "price discovery on the reference futures book can lead its MT5 CFD",
-     "falsifier": "synchronised reference imbalance adds no net OOS value after latency and costs"},
+     "falsifier": "synchronised reference imbalance adds no net OOS value after latency and costs",
+     "sources": ("polymarket_data", "polymarket_lp_tool", "prediction_market_toolkits")},
     {"id": "feed_disagreement_state", "family": "spread_state",
      "symbols": ("XAUUSD", "US500", "NAS100", "EURUSD", "USDJPY", "XTIUSD"),
      "mechanism": (
          "authoritative-versus-stream disagreement marks degraded information and "
          "execution conditions"
      ),
-     "falsifier": "feed disagreement does not separate spread, slippage or forecast error OOS"},
+     "falsifier": "feed disagreement does not separate spread, slippage or forecast error OOS",
+     "sources": ("polymarket_lp_tool", "polymarket_mcp_server")},
 )
 
 
@@ -154,40 +163,50 @@ def run(bundle: A.ResearchBundle, ctx: CellContext) -> ExternalResearchPacket:
                 candidates.append(A.candidate(
                     str(atom["family"]), [str(symbol)],
                     f"{atom['id']}: {atom['mechanism']}; falsifier: {atom['falsifier']}",
-                    horizon=timeframe, source=";".join(SOURCES.values()), evidence={
+                    horizon=timeframe,
+                    source=";".join(SOURCES[source] for source in atom["sources"]), evidence={
                         "source_claim_is_prior_only": True,
                         "required_external_axis": atom["id"],
                         "point_in_time_required": True,
-                        "source_pins": SOURCES,
+                        "source_pins": {source: SOURCES[source] for source in atom["sources"]},
                         "venue_execution_authority": False,
                     }))
     methods = (
         {"kind": "EVENT_REPLAY_CONTRACT", "fields": ["source_time", "received_time",
-          "processed_time", "sequence", "raw_hash", "normalised_hash", "consumer_ack"]},
+          "processed_time", "sequence", "raw_hash", "normalised_hash", "consumer_ack"],
+         "sources": [SOURCES["prediction_market_backtesting"]]},
         {"kind": "PROBABILITY_CALIBRATION", "scores": ["Brier", "log_loss", "ECE"],
-         "references": ["base_rate", "BetaBinary"], "raw_votes_are_probability": False},
+         "references": ["base_rate", "BetaBinary"], "raw_votes_are_probability": False,
+         "sources": [SOURCES["prediction_market_backtesting"], SOURCES["cloddsbot"]]},
         {"kind": "PUBLIC_PARTICIPANT_FINGERPRINT", "features": ["holding_time", "session",
           "entry_geometry", "clustering", "scaling", "side_asymmetry", "event_latency"],
-         "rule": "quality is estimated on strictly prior resolved observations"},
+         "rule": "quality is estimated on strictly prior resolved observations",
+         "sources": [SOURCES["polybot"]]},
         {"kind": "STREAM_RECONCILIATION", "fast": "stream", "authority": "source API or broker",
          "guards": ["idempotency", "quote-shock filter", "stability confirmation",
-                    "max chase", "post-fill cooldown"]},
+                    "max chase", "post-fill cooldown"],
+         "sources": [SOURCES["polymarket_lp_tool"]]},
         {"kind": "EXECUTION_FAILURE_ARCHETYPES", "tests": [
           "risk gate blocks but order continues", "wrong symbol/outcome mapping",
           "heartbeat healthy but stream consumes nothing", "reader starvation",
-          "wrong dependency object reaches consumer"]},
+          "wrong dependency object reaches consumer"],
+         "sources": [SOURCES["polymarket_mcp_server"]]},
         {"kind": "TYPED_AGENT_GRAPH_ABLATION", "baseline": "existing desk contracts",
          "challenger": "schema validation, durable graph state and trace evals",
-         "admit_only_if": "measured reliability improves without parallel authority"},
+         "admit_only_if": "measured reliability improves without parallel authority",
+         "sources": [SOURCES["pydantic_ai"]]},
         {"kind": "SOURCE_FRONTIER_DELTA_SCAN", "seed": SOURCES["awesome_prediction_market_tools"],
-         "rule": "new entries become source dispositions, never evidence by listing"},
+         "rule": "new entries become source dispositions, never evidence by listing",
+         "sources": [SOURCES["awesome_prediction_market_tools"]]},
     )
     datasets = ({"kind": "REFERENCE_SENSOR_SCHEMA", "source": SOURCES["polymarket_data"],
                  "fields": ["event_id", "source_time", "received_time", "probability",
                             "volume", "maker_taker", "participant_id", "resolution"],
                  "capital_authority": False},)
-    mechanisms = tuple({"kind": "MECHANISM_ATOM", **atom, "source_pins": SOURCES}
-                       for atom in ATOMS)
+    mechanisms = tuple({
+        "kind": "MECHANISM_ATOM", **atom,
+        "source_pins": {source: SOURCES[source] for source in atom["sources"]},
+    } for atom in ATOMS)
     return A.packet(SYSTEM, bundle, trials=0, candidates=candidates, datasets=datasets,
                     mechanisms=mechanisms, research_methods=methods,
                     note=(

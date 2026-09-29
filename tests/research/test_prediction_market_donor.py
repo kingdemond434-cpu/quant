@@ -13,6 +13,18 @@ def test_every_named_source_is_pinned_and_covered() -> None:
     assert len(P.SOURCES) == 10
     assert all("@" in source and len(source.rsplit("@", 1)[1]) == 40
                for source in P.SOURCES.values())
+    atom_sources = {source for atom in P.ATOMS for source in atom["sources"]}
+    method_sources = {
+        pin.split("@", 1)[0]
+        for method in P.run(
+            A.synthetic_bundle(symbols=("XAUUSD",), timeframe="H1"),
+            CellContext(desk=None),  # type: ignore[arg-type]
+        ).research_methods
+        for pin in method.get("sources", [])
+    }
+    assert atom_sources | {
+        name for name, pin in P.SOURCES.items() if pin.split("@", 1)[0] in method_sources
+    } == set(P.SOURCES)
 
 
 def test_probability_features_are_bounded_and_honest() -> None:
