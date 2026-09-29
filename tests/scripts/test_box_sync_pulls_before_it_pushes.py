@@ -175,3 +175,16 @@ def test_merge_blockers_are_read_from_one_native_merge_probe() -> None:
     assert "$probeRc" in body and "$blockers" in body and "$untracked" in body
     assert "status --porcelain -- $rel" not in body
     assert "diff --name-only --no-ext-diff HEAD" not in body
+
+
+def test_sync_log_does_not_contaminate_boolean_function_results() -> None:
+    """PowerShell returns every success-stream object a function emits.
+
+    A log line emitted with Write-Output plus ``$false`` becomes a truthy array, causing the caller
+    to report a refused merge as successful. Task output belongs on the host stream instead.
+    """
+    code = _code()
+    start = code.index("function Write-SyncLog")
+    body = code[start:code.index("\n}", start)]
+    assert "Write-Host $line" in body
+    assert "Write-Output $line" not in body

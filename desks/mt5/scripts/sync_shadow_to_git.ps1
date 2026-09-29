@@ -25,7 +25,11 @@ $log = Join-Path $DeskRoot "logs\sync_shadow_to_git.log"
 
 function Write-SyncLog($msg) {
     $line = "{0} {1}" -f (Get-Date -Format "o"), $msg
-    Write-Output $line
+    # Write-Output becomes a function return value in PowerShell. Merge-FetchHead returns a
+    # boolean, so a diagnostic line plus `$false` became a truthy two-item array and callers logged
+    # "merged" after a refusal. Host output remains visible to Task Scheduler without contaminating
+    # any function's result channel.
+    Write-Host $line
     try {
         New-Item -ItemType Directory -Force -Path (Split-Path $log) | Out-Null
         Add-Content -Path $log -Value $line -Encoding utf8
@@ -201,7 +205,9 @@ function Merge-FetchHead {
         }
     }
     if ($probeRc -ne 0 -and -not $blockers.Count -and -not $untracked.Count) {
-        Write-SyncLog "merge probe found a genuine conflict, not a dirty-tree blocker"
+        $probeSummary = (($probe | Select-Object -First 8) -join " | ")
+        Write-SyncLog ("merge probe found a genuine conflict or Git refusal, not a parsed " +
+                       "dirty-tree blocker: " + $probeSummary)
         return $false
     }
 
