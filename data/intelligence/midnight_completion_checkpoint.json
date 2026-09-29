@@ -3,10 +3,15 @@
  "schema_version": 1,
  "stages": {
   "canonical_external_pipeline": {
-   "finished_at": "2026-09-29T16:50:29.449731+00:00",
-   "passes_completed": 1,
-   "returncode": 1,
-   "status": "FAILED"
+   "command": [
+    "systemctl",
+    "--user",
+    "start",
+    "quant-external-pipeline.service"
+   ],
+   "passes_completed": 0,
+   "started_at": "2026-09-29T18:54:37.989775+00:00",
+   "status": "RUNNING"
   },
   "certificate_projection": {
    "finished_at": "2026-09-29T16:51:56.670047+00:00",
@@ -81,5 +86,5 @@
    "status": "DONE"
   }
  },
- "updated_at": "2026-09-29T18:00:05.432608+00:00"
+ "updated_at": "2026-09-29T18:54:37.989775+00:00"
 }
