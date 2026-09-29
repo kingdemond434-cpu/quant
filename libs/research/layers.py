@@ -93,6 +93,8 @@ LEG_LAYER: dict[str, str] = {
     # WHICH HOURS the desk has an edge in is a TIMING question, not a sizing one -- this leg
     # measures and allocates nothing, and stacking it on pf_allocator would shrink twice.
     "session_allocation": "timing",
+    # Which CHART the hunt reads is research-effort allocation, never capital: the meta layer.
+    "chart_allocation": "meta",
     # Generating a mechanism's other-session and other-chart equivalents is asking WHEN it works,
     # which is a timing question even though the output is a research candidate.
     "session_chart_expansion": "timing",
@@ -242,6 +244,8 @@ LEG_LAYER: dict[str, str] = {
     # features themselves from ingested series -- also information, and for the same reason
     # `unused_information` is: it decides what inputs exist, not what they imply.
     "world_model": "prediction", "residual_hunt": "information",
+    # Per-axis posteriors of what the market IS (vol, liquidity, jumps ...), not a return claim.
+    "market_posteriors": "information",
     # C9. `residual_gate` measures what a candidate adds to the book the desk ALREADY holds, and
     # that is a statement about the portfolio, not about the market: it is the same layer as the
     # allocator's own evidence work, one rung above a prediction.

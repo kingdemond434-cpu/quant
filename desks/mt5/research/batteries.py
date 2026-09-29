@@ -127,6 +127,9 @@ FENCES: tuple[Entry, ...] = (
     _e("scripts/check_shell_hygiene.py", "the ops launchers stay POSIX-clean"),
     _e("scripts/check_swap_reliability.py", "R0595 -- an upgrade is gauntleted on capability"),
     _e("scripts/check_tier5_audit.py", "the audit cannot claim what the repository lacks"),
+    # The Tier-1 programme ledger's twin of the line above had no clock at all (Tier-5 audit
+    # CI/169, 2026-09-29): read-only, ~0.5 s, and a failing verdict is named in BATTERY_FENCES.
+    _e("scripts/check_tier1_program.py", "the Tier-1 ledger cannot claim what the tree lacks"),
     _e("scripts/check_unmeasurable_claims.py", "every 'cannot measure' is re-litigated"),
     _e("scripts/audit_mt5_capability_reuse.py", "every shared library organ mapped to this desk"),
     _e("scripts/monitor_data_decay.py", "the decay of what the desk already ingested"),

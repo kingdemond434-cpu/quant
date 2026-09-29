@@ -17,8 +17,9 @@ TWO LINES DIFFER FROM THE COMMITTED FILE, both forced by the move: this header, 
 now names `reports/MARKET_POSTERIORS.json` instead of `reports/WORLD_MODEL.json`. Leaving a dark
 organ pointed at a scheduled organ's artifact would mean whichever ran last won, silently.
 
-IT IS STILL DARK, and that is not this session's decision to reverse: wiring it needs a layer, a
-department and a consumer, which is a judgement about what the desk should spend an hour on.
+WIRED 2026-09-29 (Tier-5 audit XCI/107): the `market_posteriors` hourly leg runs it with
+`--apply` in the macro department, information layer, beside the world model it was split from.
+It still sizes, trades and promotes nothing.
 """
 
 from __future__ import annotations
