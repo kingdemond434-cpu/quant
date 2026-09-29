@@ -273,6 +273,25 @@ def _evig_prices() -> tuple[dict[str, float], str]:
         return {}, f"evig_acquisition unavailable ({type(exc).__name__}: {exc})"
 
 
+def _researcher_prices(max_age_h: float = 6.0) -> dict[str, float]:
+    """The Tier S researcher market's per-leg prices (layer 8), or an empty map.
+
+    `tier_s.organ_market` prices every PRODUCER that bore a judged hypothesis -- its P(novel),
+    P(pass), P(forward holds), false-discovery history and measured CPU -- and folds those
+    prices onto the legs that run them. A stale or absent file says nothing, which the blend
+    below reads as "no opinion", never as a zero."""
+    p = Path(__file__).resolve().parents[1] / "data" / "tier_s" / "researcher_prices.json"
+    doc = _read(p)
+    try:
+        at = datetime.fromisoformat(str(doc.get("generated_utc")))
+        if (datetime.now(UTC) - at).total_seconds() > max_age_h * 3600:
+            return {}
+    except (TypeError, ValueError):
+        return {}
+    lp = doc.get("leg_prices") or {}
+    return {str(k): float(v) for k, v in lp.items() if isinstance(v, (int, float))}
+
+
 def build_plan(bases: dict[str, int] | None = None) -> dict[str, Any]:
     """The hour's plan: a price, a factor and a planned budget for every leg with a base."""
     if bases is None:
@@ -298,8 +317,9 @@ def build_plan(bases: dict[str, int] | None = None) -> dict[str, Any]:
     # weaker claim than log-wealth per day and a stronger one than a tier prior.
     evig, evig_why = _evig_prices()
     e01 = _rank01(evig)
+    r01 = _rank01(_researcher_prices())
     W = {"meta_controller": 0.45, "research_bandit": 0.25, "evig_acquisition": 0.20,
-         "compute_policy": 0.10}
+         "researcher_market": 0.15, "compute_policy": 0.10}
     legs: dict[str, dict[str, Any]] = {}
     for leg, base in sorted(bases.items()):
         parts: list[tuple[str, float, float]] = []
@@ -309,6 +329,8 @@ def build_plan(bases: dict[str, int] | None = None) -> dict[str, Any]:
             parts.append(("research_bandit", W["research_bandit"], b01[leg]))
         if leg in e01:
             parts.append(("evig_acquisition", W["evig_acquisition"], e01[leg]))
+        if leg in r01:
+            parts.append(("researcher_market", W["researcher_market"], r01[leg]))
         if leg in p01:
             parts.append(("compute_policy", W["compute_policy"], p01[leg]))
         if parts:

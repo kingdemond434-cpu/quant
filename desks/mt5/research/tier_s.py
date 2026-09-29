@@ -29,6 +29,7 @@ researcher market can price this organ like any other.
 from __future__ import annotations
 
 import argparse
+import contextlib
 import json
 import math
 import os
@@ -48,8 +49,6 @@ ROOT = DESK.parents[1]
 for _p in (str(ROOT), str(DESK), str(DESK / "research")):
     if _p not in sys.path:
         sys.path.insert(0, _p)
-
-import contextlib
 
 from libs.tiers import (  # noqa: E402
     bitemporal,
@@ -183,6 +182,124 @@ def _spec(row: Mapping[str, Any]) -> dict[str, Any]:
     return s if isinstance(s, dict) else {}
 
 
+SLEEVES_JSON = DESK / "data" / "sleeves.json"
+SELECTORS = ("london_am", "london_pm", "afternoon", "overlap", "asia", "london", "ny", "all")
+
+
+class Names:
+    """One sleeve, five spellings. The survivors key ("external.XAUUSD.session_range_breakout"),
+    the registry key ("EURZAR.overnight_gap_decay.asia"), the allocator's book name
+    ("EURZAR_overnight_gap_decay_asia", "gold_asia"), the gateway's sleeve name
+    ("audcad_discovered_asia_p_7c99...") and the shadow key ("XAUUSD.asia") all name the same
+    thing, and every join across them used to miss. `key()` resolves any of them to
+    SYM.family.selector (family "*" when the name carries none) and `group()` to SYM.selector,
+    the grain the shadow clocks and the gold windows keep."""
+
+    def __init__(self) -> None:
+        self.alias: dict[str, tuple[str, str, str]] = {}
+        self._families: list[str] = []
+        try:
+            from mt5desk.families import FAMILY_REGISTRY  # type: ignore[import-not-found]
+            self._families = sorted(FAMILY_REGISTRY, key=len, reverse=True)
+        except Exception:
+            self._families = []
+        for k, v in registry().items():
+            if isinstance(v, dict):
+                idn = v.get("identity") or {}
+                self._add(str(k), idn.get("symbol"), idn.get("family"), idn.get("selector"))
+        for k, row in survivors().items():
+            if isinstance(row, dict):
+                s = _spec(row)
+                self._add(str(k), s.get("symbol"), s.get("family"), s.get("selector"))
+        sj = _read(SLEEVES_JSON)
+        rows = sj.get("sleeves") if isinstance(sj, dict) else sj
+        for r in rows if isinstance(rows, list) else []:
+            if isinstance(r, dict) and r.get("name"):
+                parsed = self._parse(str(r["name"]))
+                self._add(str(r["name"]), r.get("symbol") or parsed[0],
+                          r.get("family") or parsed[1],
+                          r.get("session") if r.get("session") not in (None, "all") else
+                          parsed[2])
+        # the ticket -> sleeve map: the live ledger's own `sleeve` field is often the close
+        # comment ("[tp 4360.71]"), so a fill is joined through the order that opened it
+        self.by_ticket: dict[str, str] = {}
+        for r in _jsonl(ORDER_INTENTS, 200_000):
+            t = str(r.get("ticket") or "")
+            if t and t != "0" and r.get("sleeve"):
+                self.by_ticket[t] = str(r["sleeve"])
+
+    def _add(self, name: str, sym: Any, fam: Any, sel: Any) -> None:
+        sym, fam, sel = str(sym or ""), str(fam or "*"), str(sel or "*")
+        if not sym:
+            return
+        t = (sym, fam, sel)
+        for a in (name, f"{sym}.{fam}.{sel}", f"{sym}_{fam}_{sel}"):
+            self.alias.setdefault(a, t)
+
+    def _parse(self, name: str) -> tuple[str, str, str]:
+        low = name.lower()
+        if low.startswith("gold_") or low.startswith("xau_"):
+            sym = "XAUUSD"
+        else:
+            head = name.replace(".", "_").split("_")[0]
+            sym = head.upper() if head.isalpha() and len(head) in (6, 7) else ""
+        fam = next((f for f in self._families if f in low), "*")
+        sel = next((s for s in SELECTORS if f"_{s}" in f"_{low}".replace(".", "_")), "*")
+        if low.startswith("gold_"):
+            sel = next((s for s in SELECTORS if low[5:].startswith(s)), sel)
+        return sym, fam, sel
+
+    def triple(self, name: Any) -> tuple[str, str, str] | None:
+        n = str(name or "")
+        if not n or n.startswith("["):
+            return None
+        t = self.alias.get(n)
+        if t is None:
+            p = self._parse(n)
+            t = p if p[0] else None
+            if t is not None:
+                self.alias[n] = t
+        return t
+
+    def key(self, name: Any) -> str:
+        t = self.triple(name)
+        return ".".join(t) if t else str(name or "")
+
+    def group(self, name: Any) -> str:
+        t = self.triple(name)
+        return f"{t[0]}.{t[2]}" if t else str(name or "")
+
+    def fill_sleeve(self, row: Mapping[str, Any]) -> str:
+        """The sleeve a live-ledger row belongs to: through its opening ticket first."""
+        for k in ("entry_order", "position_id", "order"):
+            s = self.by_ticket.get(str(row.get(k) or ""))
+            if s:
+                return s
+        s = str(row.get("sleeve") or "")
+        return "" if s.startswith("[") else s
+
+
+_NAMES: Names | None = None
+
+
+def names() -> Names:
+    global _NAMES
+    if _NAMES is None:
+        _NAMES = Names()
+    return _NAMES
+
+
+def live_rows() -> list[dict[str, Any]]:
+    """Live-ledger closing deals with `_key` (SYM.family.selector) resolved through the ticket."""
+    nm = names()
+    out = []
+    for r in _jsonl(LIVE_LEDGER):
+        s = nm.fill_sleeve(r)
+        if s:
+            out.append({**r, "_sleeve": s, "_key": nm.key(s), "_group": nm.group(s)})
+    return out
+
+
 def _asset_class(sym: str) -> str:
     try:
         import universe_policy
@@ -280,8 +397,13 @@ def _returns_panel(max_symbols: int = 28, bars: int = 3000) -> tuple[dict[str, n
 def organ_truth_kernel() -> dict[str, Any]:
     j = truth_kernel.Journal(STATE / "truth_journal.jsonl").load()
     surv = survivors()
+    nm = names()
+
+    def cert_of(sleeve: Any) -> str | None:
+        return (cert_by_sleeve.get(str(sleeve)) or cert_by_sleeve.get(nm.key(sleeve))
+                or cert_by_sleeve.get(nm.group(sleeve)))
     cert_by_sleeve: dict[str, str] = {}
-    added = Counter()
+    added: Counter[str] = Counter()
     before = len(j.nodes())
     for key, row in surv.items():
         if not isinstance(row, dict):
@@ -297,13 +419,13 @@ def organ_truth_kernel() -> dict[str, Any]:
         cert = j.put("certificate", {"key": key, "gated_at": row.get("gated_at")}, [exp.id],
                      at=str(row.get("gated_at") or NOW.isoformat()))
         for k in (f"{sym}.{spec.get('selector')}", f"{sym}.{fam}.{spec.get('selector')}",
-                  str(key)):
-            cert_by_sleeve[k] = cert.id
+                  str(key), nm.key(key), nm.group(key)):
+            cert_by_sleeve.setdefault(k, cert.id)
     alloc_rows = [r for r in _jsonl(FORECAST_LOG, 50_000) if isinstance(r.get("book"), dict)]
     alloc_ids: list[tuple[str, str]] = []
     for r in alloc_rows[-500:]:
         book = r.get("book") or {}
-        parents = sorted({cert_by_sleeve[k] for k in book if k in cert_by_sleeve})
+        parents = sorted({c for c in (cert_of(k) for k in book) if c})
         a = j.put("allocation", {"t": r.get("t"), "book": book, "total_heat": r.get("total_heat"),
                                  "certified": r.get("certified")}, parents,
                   at=str(r.get("t") or NOW.isoformat()))
@@ -322,20 +444,23 @@ def organ_truth_kernel() -> dict[str, Any]:
     order_by_ticket: dict[str, str] = {}
     for r in _jsonl(ORDER_INTENTS, 100_000):
         t = str(r.get("time") or "")
-        parents = [p for p in (alloc_before(t), cert_by_sleeve.get(str(r.get("sleeve"))))
-                   if p]
+        parents = [p for p in (alloc_before(t), cert_of(r.get("sleeve"))) if p]
         o = j.put("order", {k: r.get(k) for k in ("sleeve", "symbol", "side", "lot", "intended",
                                                   "sl", "tp", "ticket", "retcode", "time")},
                   parents, at=t or NOW.isoformat())
         if r.get("ticket"):
             order_by_ticket[str(r.get("ticket"))] = o.id
-    for r in _jsonl(LIVE_LEDGER, 100_000):
+    for r in live_rows():
         t = str(r.get("time") or "")
-        op = order_by_ticket.get(str(r.get("order")))
-        parents = [op] if op else [p for p in (alloc_before(t),
-                                               cert_by_sleeve.get(str(r.get("sleeve")))) if p]
-        j.put("fill", {k: r.get(k) for k in ("sleeve", "symbol", "side", "volume", "fill_price",
-                                             "deal", "order", "pl_quote", "time")},
+        # a closing deal's `order` is the CLOSE ticket; the intent was journalled under the
+        # ticket that OPENED the position, which the ledger carries as entry_order/position_id
+        op = next((order_by_ticket[str(r.get(k))] for k in ("entry_order", "position_id",
+                                                              "order")
+                   if str(r.get(k) or "") in order_by_ticket), None)
+        parents = [op] if op else [p for p in (alloc_before(t), cert_of(r["_sleeve"])) if p]
+        j.put("fill", {**{k: r.get(k) for k in ("symbol", "side", "volume", "fill_price",
+                                                "deal", "order", "entry_order", "pl_quote",
+                                                "time")}, "sleeve": r["_sleeve"]},
               parents, at=t or NOW.isoformat())
     for n in j.nodes():
         added[n.kind] += 1
@@ -344,8 +469,9 @@ def organ_truth_kernel() -> dict[str, Any]:
     # the constitution and the evidence seal
     sealed = truth_kernel.constitution_doc()
     live = _read(CONSTITUTION) or sealed
-    ratifs = _jsonl(RATIFICATIONS)
+    ratifs, rejected = _verified_ratifications(_jsonl(RATIFICATIONS))
     const = truth_kernel.constitution_status(sealed, live, ratifs)
+    const["ratifications_rejected"] = rejected
     prev_seal = _state("evidence_seal")
     seal = truth_kernel.seal_ledgers(list(PROTECTED), prev_seal, DESK)
     hist = list(prev_seal.get("violations_history") or [])
@@ -359,6 +485,42 @@ def organ_truth_kernel() -> dict[str, Any]:
                        "journal_ok": 1.0 if ver.get("ok") else 0.0,
                        "rewrites": sum(1 for v in seal["violations"] if v["kind"] == "REWRITTEN"),
                        "constitution_violation": 1.0 if const["status"] == "VIOLATION" else 0.0}}
+
+
+AGENT_MARKERS = ("co-authored-by: claude", "claude-session:", "codex", "noreply@anthropic",
+                 "generated with [claude")
+
+
+def _verified_ratifications(rows: list[dict[str, Any]]) -> tuple[list[dict[str, Any]],
+                                                                  list[dict[str, Any]]]:
+    """Only ratifications a HUMAN committed count. The kernel accepts any row whose `by` starts
+    with "principal"; any agent can type that. So each row's hash is traced to the commit that
+    added it (`git log -S`), and a row added by a commit carrying an agent's author or trailer
+    is refused and named. No git on the host = nothing verifies = nothing is ratified."""
+    import subprocess
+    ok, bad = [], []
+    for r in rows:
+        h = str(r.get("hash") or "")
+        if not h:
+            continue
+        try:
+            out = subprocess.run(
+                ["git", "log", "--format=%an <%ae>%n%B%n--END--", "-S", h, "--",
+                 str(RATIFICATIONS.relative_to(ROOT))], cwd=str(ROOT), capture_output=True,
+                text=True, timeout=30, check=False).stdout
+        except Exception as exc:
+            bad.append({"hash": h, "why": f"git unavailable ({type(exc).__name__})"})
+            continue
+        commits = [c for c in out.split("--END--") if c.strip()]
+        if not commits:
+            bad.append({"hash": h, "why": "no commit added this ratification"})
+            continue
+        adding = commits[-1].lower()
+        if any(m in adding for m in AGENT_MARKERS):
+            bad.append({"hash": h, "why": "added by a commit carrying an agent's identity"})
+            continue
+        ok.append(r)
+    return ok, bad
 
 
 def organ_firewall() -> dict[str, Any]:
@@ -428,37 +590,122 @@ def organ_test_invention() -> dict[str, Any]:
                        "registry": len(reg)}}
 
 
+def _trap_series(kind: str, seed: int, subtlety: float, n: int = 400
+                 ) -> tuple[list[float], list[float]]:
+    """(signal, forward return) per bar for one planted case: what a docket cell can carry."""
+    from libs.tiers import traps
+    case, _truth = traps.generate(kind, seed, n + 2, subtlety)
+    px = np.asarray(case.prices, dtype=float)
+    sig, fwd = [], []
+    for t in range(1, min(len(px) - 1, n + 1)):
+        sig.append(float(case.signal_fn(px, t)))
+        fwd.append(float(px[t + 1] / px[t] - 1.0))
+    return sig, fwd
+
+
+def _real_gauntlet_attack(attackers: list[dict[str, Any]], gen: int) -> dict[str, Any]:
+    """The elite attacks and two genuine planted signals, as ONE docket through the desk's real
+    ten-gate certifier (the same route adversary.py drives its canaries through). An attack the
+    real gauntlet admits is a blind spot of the gates that certify capital; a genuine signal it
+    rejects is lost power. Nothing here writes a certificate: the docket is named for the attack
+    and its verdicts are read back and discarded."""
+    try:
+        import adversary
+        gate, blocked = adversary.real_gate()
+    except Exception as exc:
+        return {"status": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"}
+    if gate is None:
+        return {"status": "UNMEASURED", "why": blocked}
+    cells, truth = [], {}
+    plan = [(str(a.get("kind")), float(a.get("subtlety") or 0.0)) for a in attackers[:6]]
+    plan += [("true_signal", 0.0), ("true_weak_signal", 0.0)]
+    for k, (kind, sub) in enumerate(plan):
+        # the cell name carries no hint of the kind: the certifier judges it blind
+        name = f"rq{gen}_" + truth_kernel.sha256(f"{gen}:{k}:{kind}:{sub}")[:10]
+        try:
+            sig, fwd = _trap_series(kind, gen * 101 + k, sub)
+            cells.append(adversary.docket_cell(name, sig, fwd))
+            truth[name] = kind
+        except Exception:
+            continue
+    if len(cells) < 2:
+        return {"status": "UNMEASURED", "why": "fewer than two attack cells could be built"}
+    try:
+        out = gate._gauntlet.run_gauntlet(cells, "red-queen-attack", adversary.CANARY_META)
+    except Exception as exc:
+        return {"status": "UNMEASURED", "why": f"run_gauntlet: {type(exc).__name__}: {exc}"}
+    rows = []
+    for v in out.get("verdicts") or []:
+        name = str(v.get("family", "")).removeprefix("canary_")
+        if name not in truth:
+            continue
+        failed = [g for g, st in (v.get("stages") or {}).items() if not st.get("passed")]
+        rows.append({"cell": name, "kind": truth[name], "genuine": truth[name].startswith("true"),
+                     "passed": bool(v.get("passed")), "unmeasured": bool(v.get("unmeasured")),
+                     "failed_gates": failed})
+    traps_ = [r for r in rows if not r["genuine"] and not r["unmeasured"]]
+    real = [r for r in rows if r["genuine"] and not r["unmeasured"]]
+    leaks = [r for r in traps_ if r["passed"]]
+    return {"status": "MEASURED", "rows": rows, "leaks": leaks,
+            "attack_success": len(leaks) / len(traps_) if traps_ else None,
+            "genuine_power": sum(r["passed"] for r in real) / len(real) if real else None}
+
+
 def organ_red_queen() -> dict[str, Any]:
     st = _state("red_queen")
     attackers = red_queen.from_state(st)
     sealed = list(meta_benchmark.Suite(per_kind=4, base_seed=5150, n=1200).cases())
     gen = int(st.get("generation", 0)) + 1
     res = red_queen.generation(attackers, _incumbent_validator(), sealed, seed=gen)
+    real = _real_gauntlet_attack([e["attack"] for e in res["elite_attacks"]], gen)
     hist = list(st.get("success_history") or [])
-    hist.append({"gen": gen, "at": NOW.isoformat(), "attack_success": res["attack_success"]})
+    hist.append({"gen": gen, "at": NOW.isoformat(), "attack_success": res["attack_success"],
+                 "real_attack_success": real.get("attack_success"),
+                 "real_genuine_power": real.get("genuine_power")})
     _save_state("red_queen", {"generation": gen, "attackers": res["next_attackers"],
                               "success_history": hist[-500:],
-                              "challenger": res["challenger"]})
+                              "challenger": res["challenger"],
+                              "real_leaks": (real.get("leaks") or [])[:20]})
     if res["challenger"]:
         _register_challenger("validator", f"red_queen_gen{gen}", res["challenger"],
                              res["best_defender"])
     return {"generation": gen, **{k: v for k, v in res.items() if k != "next_attackers"},
+            "real_gauntlet": real,
             "metric": {"attack_success": res["attack_success"],
-                       "defender_balanced": res["best_defender"]["balanced"]}}
+                       "defender_balanced": res["best_defender"]["balanced"],
+                       "real_attack_success": real.get("attack_success"),
+                       "real_genuine_power": real.get("genuine_power")}}
 
 
 def organ_online_fdr() -> dict[str, Any]:
     tests: list[online_fdr.Test] = []
     surv = survivors()
     tests.extend(online_fdr.tests_from_survivors(surv))
-    seen = {t.test_id for t in tests}
-    n_gate = 0
+    # a survivor is keyed "<hunt>.<cell>" but the gate ledger by the bare cell: both spellings
+    # go into `seen`, or the same trial is charged twice
+    seen = {t.test_id for t in tests} | {str(r.get("cell")) for r in surv.values()
+                                         if isinstance(r, dict) and r.get("cell")}
+    n_gate = n_graph = 0
+    graph_ids: set[str] = set()
     for r in _jsonl(GATE_LEDGER):
         cell = str(r.get("cell") or "")
+        if r.get("graph_id"):
+            graph_ids.add(str(r["graph_id"]))
         if not cell or cell in seen or r.get("passed"):
             continue
+        seen.add(cell)
         n_gate += 1
         tests.append(online_fdr.Test(test_id=cell, at=str(r.get("at") or ""), p=1.0,
+                                     family=str(r.get("family") or "")))
+    # hypotheses the graph records as FAILED upstream of the gauntlet (screens, dedup, cheap
+    # falsifiers) were tests too: each spent a look at the data. Charged once, at p=1.
+    for r in _jsonl(HGRAPH, 400_000):
+        nid = str(r.get("id") or "")
+        if r.get("fate") != "FAILED" or not nid or nid in graph_ids or nid in seen:
+            continue
+        seen.add(nid)
+        n_graph += 1
+        tests.append(online_fdr.Test(test_id=nid, at=str(r.get("at") or ""), p=1.0,
                                      family=str(r.get("family") or "")))
     res = online_fdr.replay(tests)
     rows = res.pop("rows")
@@ -466,7 +713,7 @@ def organ_online_fdr() -> dict[str, Any]:
     _write(OUT_DIR / "ONLINE_FDR_ROWS.json", {"generated_utc": NOW.isoformat(),
                                               "over_budget": over[:500],
                                               "certified": [r for r in rows if r["certified"]]})
-    return {**res, "failed_tests_charged": n_gate,
+    return {**res, "failed_tests_charged": n_gate, "upstream_failures_charged": n_graph,
             "note": "failed trials enter at p=1: they spend lifetime budget without earning it",
             "metric": {"over_budget_share": res["over_budget_share"],
                        "lord_discoveries": res["lord_discoveries"]}}
@@ -489,22 +736,23 @@ def _sleeve_descriptors() -> tuple[list[str], list[dict[str, Any]]]:
 
 
 def organ_topology() -> dict[str, Any]:
-    names, descs = _sleeve_descriptors()
+    sleeve_names, descs = _sleeve_descriptors()
     # live daily R per sleeve where the ledger has fills
     daily: dict[str, dict[str, float]] = defaultdict(dict)
-    for r in _jsonl(LIVE_LEDGER):
-        s, t = str(r.get("sleeve") or ""), str(r.get("time") or "")[:10]
+    for r in live_rows():
+        s, t = r["_group"], str(r.get("time") or "")[:10]
         if s and t:
             daily[s][t] = daily[s].get(t, 0.0) + float(r.get("pl_quote") or 0.0)
     pnl = None
-    pnl_names = [n for n in names if n in daily]
+    # live P&L is kept per SYMBOL.window (the grain a fill can be traced to), one column each
+    pnl_names = sorted({g for g in (names().group(n) for n in sleeve_names) if g in daily})
     if len(pnl_names) >= 2:
         days = sorted({d for n in pnl_names for d in daily[n]})
         pnl = np.array([[daily[n].get(d, 0.0) for n in pnl_names] for d in days])
-    rank = topology.rank_report(None, names, descs)
+    rank = topology.rank_report(None, sleeve_names, descs)
     if pnl is not None and pnl.shape[0] >= 10:
         rank["live_pnl"] = topology.rank_report(pnl, pnl_names, None)
-    steer = topology.steering(descs, rank.get("uniqueness"), names,
+    steer = topology.steering(descs, rank.get("uniqueness"), sleeve_names,
                               ("mechanism", "asset_class", "selector", "timeframe"))
     # ancestry novelty over the hypothesis graph (parent -> child)
     nodes: dict[str, dict[str, Any]] = {}
@@ -520,12 +768,13 @@ def organ_topology() -> dict[str, Any]:
     eff = topology.effective_discoveries(nov)
     st = _state("topology")
     hist = list(st.get("rank_history") or [])
-    hist.append({"at": NOW.isoformat(), "combined": rank.get("combined"), "n": len(names)})
+    hist.append({"at": NOW.isoformat(), "combined": rank.get("combined"),
+                 "n": len(sleeve_names)})
     _save_state("topology", {"rank_history": hist[-2000:]})
     # orthogonal directions -> hypotheses: the least-occupied mechanisms on new symbols
     emitted = _emit_orthogonal(steer, descs)
     return {"rank": rank, "steering": steer, "ancestry": eff, "emitted": emitted,
-            "metric": {"effective_rank": rank.get("combined"), "n_sleeves": len(names),
+            "metric": {"effective_rank": rank.get("combined"), "n_sleeves": len(sleeve_names),
                        "effective_discoveries": eff.get("effective")}}
 
 
@@ -607,27 +856,78 @@ def organ_qd() -> dict[str, Any]:
                        "filled": cov.get("filled")}}
 
 
-def organ_genomes() -> dict[str, Any]:
-    """Researcher genomes: each emits hypotheses; fitness is what the gauntlet made of them."""
-    st = _state("genomes")
-    rng = np.random.default_rng(int(st.get("generation", 0)) + 17)
-    pop: list[dict[str, Any]] = list(st.get("population") or [])
-    emitted_cells: dict[str, list[str]] = dict(st.get("emitted") or {})
-    verdicts: dict[str, bool] = {}
+def _gate_by_symfam() -> dict[str, list[tuple[str, bool]]]:
+    """SYMBOL.family -> [(at, passed)] in ledger order: the grain a genome proposes at."""
+    out: dict[str, list[tuple[str, bool]]] = defaultdict(list)
     for r in _jsonl(GATE_LEDGER):
-        c = str(r.get("cell") or "")
-        if c:
-            verdicts[c] = bool(r.get("passed")) or verdicts.get(c, False)
+        sym, fam = str(r.get("sym") or ""), str(r.get("family") or "")
+        if sym and fam:
+            out[f"{sym}.{fam}"].append((str(r.get("at") or ""), bool(r.get("passed"))))
+    return out
+
+
+def _gauntlet_s_per_verdict() -> float:
+    """Measured CPU seconds the desk spends per gate verdict (compile + sweep + gauntlet legs)."""
+    cpu = 0.0
+    for row in _jsonl(COMPUTE, 200_000):
+        if str(row.get("run") or "") in ("compile_candidates", "sweep", "external_gauntlet",
+                                          "search", "deepen"):
+            s = row.get("cpu_s") or row.get("wall_s")
+            if isinstance(s, (int, float)):
+                cpu += float(s)
+    n = sum(1 for _ in _jsonl(GATE_LEDGER))
+    return cpu / n if cpu > 0 and n else 30.0
+
+
+def organ_genomes() -> dict[str, Any]:
+    """Researcher genomes: each emits EXACT recipes; fitness is what the gauntlet made of them.
+
+    Every gene reaches the row: operator_set and feature_language pick the families, horizon
+    the chart, data_policy the asset classes, source where the (symbol, family) pair comes
+    from, novelty which pairs are preferred, complexity_cap how many parameters leave their
+    defaults, exploration how many rows, falsify_order the gate the row asks to be judged on
+    first. Fitness uses the gate ledger AFTER the emission only, with measured compute per
+    verdict, duplicates (pairs the ledger had already judged) and false discoveries (pairs that
+    passed and later failed) as penalties."""
+    st = _state("genomes")
+    gen = int(st.get("generation", 0))
+    rng = np.random.default_rng(gen + 17)
+    pop = [evolution.complete(g, rng) for g in st.get("population") or []]
+    emitted: dict[str, list[list[str]]] = {k: [list(x) if isinstance(x, list) else [x, ""]
+                                              for x in v]
+                                          for k, v in (st.get("emitted") or {}).items()}
+    by_sf = _gate_by_symfam()
+    s_per = _gauntlet_s_per_verdict()
+    fwd = shadow_rows()
     scored: list[tuple[dict[str, Any], float]] = []
+    fit_rows = []
     for g in pop:
         gid = evolution.genome_id(g)
-        cells = emitted_cells.get(gid, [])
-        judged = [c for c in cells if c in verdicts]
-        passed = sum(1 for c in judged if verdicts[c])
-        stats = {"validated_independent": passed, "compute_s": max(1.0, 30.0 * len(judged)),
+        judged = passed = dup = false_d = 0
+        degr = 0.0
+        for cell, at in emitted.get(gid, []):
+            hist = by_sf.get(cell, [])
+            before = [p for t, p in hist if at and t < at]
+            after = [p for t, p in hist if not at or t >= at]
+            if not after:
+                continue
+            judged += 1
+            dup += int(bool(before))
+            if any(after):
+                passed += 1
+                first = after.index(True)
+                false_d += int(not all(after[first:]))
+                sym = cell.split(".")[0]
+                fw = [v for k, v in fwd.items() if k.startswith(f"{sym}.")]
+                if fw and all(float(v.get("exp_r") or 0) <= 0 for v in fw if v.get("n")):
+                    degr += 1.0 / len(fw)
+        stats = {"validated_independent": passed - false_d, "compute_s": max(1.0, s_per * judged),
                  "complexity": float(g.get("complexity_cap", 4.0)),
-                 "false_discoveries": 0.0, "duplicates": 0.0}
-        scored.append((g, evolution.fitness(stats) if judged else 0.0))
+                 "false_discoveries": float(false_d), "duplicates": float(dup) / max(1, judged),
+                 "live_degradation": degr, "mining_pressure": float(judged) / 100.0}
+        f = evolution.fitness(stats) if judged else 0.0
+        scored.append((g, f))
+        fit_rows.append({"genome": gid, "fitness": f, **stats, "judged": judged})
     nxt = evolution.step(scored, rng, size=12)
     vocab = _family_vocab()
     op_family = {"momentum": ["momentum_volgate", "trend_ma_cross", "asia_momentum",
@@ -640,36 +940,97 @@ def organ_genomes() -> dict[str, Any]:
                               "volatility_squeeze"],
                  "vol_regime": ["volatility_squeeze", "momentum_volgate"],
                  "lead_lag": ["london_close_momentum"], "mixed": vocab}
+    policy_classes = {"bars_only": None, "bars+macro": {"FX", "FOREX", "INDEX", "BOND"},
+                      "bars+cot": {"METAL", "METALS", "ENERGY", "SOFT", "COMMODITY", "FX",
+                                   "FOREX"},
+                      "bars+events": {"FX", "FOREX", "INDEX", "INDICES"},
+                      "cross_asset": None}
+    try:
+        import axis_registry
+        info_of = {f: str(axis_registry.classify_family(f)[1]) for f in vocab}
+    except Exception:
+        info_of = {}
+    try:
+        from mt5desk.families import FAMILY_REGISTRY  # type: ignore[import-not-found]
+    except Exception:
+        FAMILY_REGISTRY = {}
     syms = sorted(p.name[: -len("_H1.parquet")] for p in UNIVERSE.glob("*_H1.parquet")) if \
         UNIVERSE.exists() else []
     syms = [s for s in syms if _may_hypothesise(s)]
+    cls = {s: _asset_class(s) for s in syms}
+    held = {(str((v.get("identity") or {}).get("symbol")), str((v.get("identity") or {})
+                                                            .get("family")))
+            for v in registry().values() if isinstance(v, dict)}
+    judged_pairs = set(by_sf)
+    surv_pairs = [(str(_spec(r).get("symbol")), str(_spec(r).get("family")))
+                  for r in survivors().values() if isinstance(r, dict)]
+    graph_pairs = [(str(r.get("symbol")), str(r.get("family"))) for r in _jsonl(HGRAPH, 60_000)
+                   if r.get("fate") == "BORN" and r.get("symbol") and r.get("family")]
     rows = []
     for g in nxt:
         gid = evolution.genome_id(g)
         fams = [f for f in op_family.get(str(g.get("operator_set")), []) if f in vocab]
-        if not fams or not syms:
+        lang = str(g.get("feature_language") or "any")
+        if lang != "any" and info_of:
+            fams = [f for f in fams if info_of.get(f) == lang] or fams
+        allowed = policy_classes.get(str(g.get("data_policy")))
+        pool = [s for s in syms if allowed is None or cls[s].upper() in allowed] or syms
+        if not fams or not pool:
             continue
         k = max(1, round(float(g.get("exploration", 0.3)) * 10))
-        picks = rng.choice(len(syms), size=min(k, len(syms)), replace=False)
-        for i in picks:
-            f = fams[int(rng.integers(len(fams)))]
-            s = syms[int(i)]
-            rows.append({"kind": "hypothesis", "family": f, "symbols": [s], "genome": gid,
-                         "text": f"tier_s researcher genome {gid} ({g.get('operator_set')}, "
-                                 f"{g.get('data_policy')}, {g.get('horizon')}) proposes {f} "
-                                 f"on {s}"})
-            emitted_cells.setdefault(gid, []).append(f"{s}.{f}")
-    emitted = _emit("genomes", rows)
-    _save_state("genomes", {"generation": int(st.get("generation", 0)) + 1,
-                            "population": nxt,
-                            "emitted": {k: v[-400:] for k, v in emitted_cells.items()}})
+        src = str(g.get("source") or "own")
+        if src == "hypothesis_graph":
+            cand = [(s, f) for s, f in graph_pairs if s in pool and f in vocab]
+        elif src == "survivor_neighbourhood":
+            cand = [(s2, f) for s, f in surv_pairs for s2 in pool
+                    if f in vocab and cls.get(s2) == cls.get(s) and s2 != s]
+        elif src == "failure_gap":
+            cand = [(s, f) for s in pool for f in fams if f"{s}.{f}" not in judged_pairs]
+        else:
+            cand = [(s, f) for s in pool for f in fams]
+        if str(g.get("novelty")) == "species":
+            cand = [c for c in cand if c not in held] or cand
+        elif str(g.get("novelty")) == "exposure":
+            occ = Counter(cls.get(s, "?") for s, _f in held)
+            cand.sort(key=lambda c: occ.get(cls.get(c[0], "?"), 0))
+        if not cand:
+            continue
+        idx = rng.choice(len(cand), size=min(k, len(cand)), replace=False)
+        for i in idx:
+            s, f = cand[int(i)]
+            spec = FAMILY_REGISTRY.get(f) or {}
+            params = dict(spec.get("defaults") or {})
+            grid = [(pk, pv) for pk, pv in (spec.get("param_grid") or {}).items() if pv]
+            for pk, pv in grid[: max(0, int(float(g.get("complexity_cap", 4.0)) // 2))]:
+                params[pk] = pv[int(rng.integers(len(pv)))]
+            # the chart is an identity key the gauntlet reads; H1 is spelled by its absence, and
+            # the desk holds no H4/D1 bars, so those horizons lengthen the hold instead
+            hz = str(g.get("horizon") or "H1")
+            if hz == "M15":
+                params["timeframe"] = "M15"
+            elif hz in ("H4", "D1") and "ttl_bars" in params:
+                params["ttl_bars"] = int(params["ttl_bars"]) * (4 if hz == "H4" else 24)
+            row: dict[str, Any] = {
+                "kind": "hypothesis", "family": f, "symbols": [s], "genome": gid,
+                "falsify_first": g.get("falsify_order"),
+                "text": f"tier_s researcher genome {gid} ({g.get('operator_set')}, "
+                        f"{g.get('data_policy')}, {lang}, {src}, {g.get('horizon')}) proposes "
+                        f"{f} on {s}"}
+            if spec:
+                row["params"] = params     # an EXACT recipe: the compiler builds it as written
+            rows.append(row)
+            emitted.setdefault(gid, []).append([f"{s}.{f}", NOW.isoformat()])
+    out = _emit("genomes", rows)
+    _save_state("genomes", {"generation": gen + 1, "population": nxt,
+                            "emitted": {k: v[-400:] for k, v in emitted.items()},
+                            "fitness": fit_rows})
     best = max((f for _g, f in scored), default=0.0)
-    return {"generation": int(st.get("generation", 0)) + 1, "population": len(nxt),
+    return {"generation": gen + 1, "population": len(nxt),
             "diversity": evolution.diversity(nxt), "best_fitness": best,
-            "emitted": emitted,
-            "note": "fitness = gauntlet survivors among the genome's own emitted cells per "
-                    "compute; cells join on SYMBOL.family prefix",
-            "metric": {"best_fitness": best, "diversity": evolution.diversity(nxt)}}
+            "fitness_rows": sorted(fit_rows, key=lambda r: -r["fitness"])[:12],
+            "cpu_s_per_verdict": s_per, "emitted": out,
+            "metric": {"best_fitness": best, "diversity": evolution.diversity(nxt),
+                       "judged_emissions": sum(r["judged"] for r in fit_rows)}}
 
 
 def _expr_str(expr: Any) -> str:
@@ -780,41 +1141,82 @@ def organ_grammar() -> dict[str, Any]:
                        "retired_operators": len(oy.get("retired") or [])}}
 
 
+_MECH_CACHE: dict[str, theory.Mechanism] = {}
+
+
+def mechanism_for(fam: str) -> theory.Mechanism:
+    """A family's causal mechanism, compiled from what the desk already declares about it.
+
+    axis_registry.FAMILY_TABLE gives the mechanism class, information source and execution
+    style; MECHANISM_ACTOR names who is forced or informed; alpha_schema.EVENTS gives payer,
+    transmission and a falsifier for the event mechanisms; the family's own defaults give the
+    condition and horizon. Every slot is filled from a declaration, and a slot with no source
+    stays empty, so `complete_share` measures what the desk has actually written down."""
+    if fam in _MECH_CACHE:
+        return _MECH_CACHE[fam]
+    mech, info, style = "UNKNOWN", "", ""
+    actor = ""
+    try:
+        import axis_registry
+        mech, info, style = (str(x) for x in axis_registry.classify_family(fam))
+        actor = str(getattr(axis_registry, "MECHANISM_ACTOR", {}).get(mech) or "")
+    except Exception:
+        pass
+    ev: Mapping[str, Any] = {}
+    try:
+        from libs.research import alpha_schema
+        ev = alpha_schema.EVENTS.get(mech) or {}
+    except Exception:
+        ev = {}
+    defaults: Mapping[str, Any] = {}
+    try:
+        from mt5desk.families import FAMILY_REGISTRY  # type: ignore[import-not-found]
+        defaults = (FAMILY_REGISTRY.get(fam) or {}).get("defaults") or {}
+    except Exception:
+        defaults = {}
+    cond = ", ".join(f"{k}={v}" for k, v in defaults.items()
+                     if ("filter" in k or k in ("session", "range_start", "signal_at"))
+                     and v not in (None, "all", "none", "off", False))
+    hold = defaults.get("ttl_bars") or defaults.get("max_hold") or defaults.get("hold")
+    raw: dict[str, Any] = {
+        "cause": " -- ".join(x for x in (actor.replace("_", " "), str(ev.get("payer") or ""))
+                             if x),
+        "observable": f"{info} ({', '.join(k for k in defaults if k.endswith('_n'))})"
+                      if info else "",
+        "transmission": str(ev.get("mechanism") or (mech.replace("_", " ") if mech != "UNKNOWN"
+                                                     else "")),
+        "condition": cond or "any session the gauntlet admits (session axis expanded)",
+        "trade": f"{style} execution, rr {defaults.get('rr')}" if style and defaults.get("rr")
+                 else style,
+        "horizon": f"{hold} bars" if hold else "",
+        "falsifier": str(ev.get("falsifier") or (
+            f"mean R after the desk's own costs <= 0 on the lockbox, or the effect is equal in "
+            f"a session where no {actor.replace('_', ' ') or mech} is active" if mech != "UNKNOWN"
+            else "")),
+        "family": fam, "mechanism_class": mech}
+    m = theory.compile_mechanism(raw, family=fam)
+    _MECH_CACHE[fam] = m
+    return m
+
+
 def organ_theory() -> dict[str, Any]:
+    """Theory graph (layer 17): evidence per mechanism from backtest, forward and live, and
+    COMPOSITION -- a supported or contested theory is composed with a condition mechanism
+    (session window, volatility state, trend state) and the composite is emitted as an exact
+    recipe, so the graph proposes the next experiment instead of only scoring the last one."""
     g = theory.TheoryGraph()
     shadow = shadow_rows()
-    try:
-        import mechanism_ontology as mo  # type: ignore[import-not-found]
-    except Exception:
-        mo = None
-    mech_cache: dict[str, theory.Mechanism] = {}
-
-    def mech_for(fam: str) -> theory.Mechanism:
-        if fam in mech_cache:
-            return mech_cache[fam]
-        raw: dict[str, Any] = {"mechanism": _mechanism(fam), "family": fam}
-        if mo is not None:
-            for name in ("describe", "ontology_for", "lookup"):
-                fn = getattr(mo, name, None)
-                if callable(fn):
-                    try:
-                        got = fn(fam)
-                        if isinstance(got, dict):
-                            raw.update(got)
-                        break
-                    except Exception:
-                        continue
-        m = theory.compile_mechanism(raw, family=fam)
-        mech_cache[fam] = m
-        return m
-
     n_back = 0
+    by_fam_sym: dict[str, Counter[str]] = defaultdict(Counter)
     for r in _jsonl(GATE_LEDGER):
         fam = str(r.get("family") or "")
         if not fam:
             continue
-        g.theory(mech_for(fam)).add(experiment=str(r.get("cell")), supports=bool(r.get("passed")),
-                                    source="backtest", context=str(r.get("sym") or ""))
+        g.theory(mechanism_for(fam)).add(experiment=str(r.get("cell")),
+                                         supports=bool(r.get("passed")), source="backtest",
+                                         context=str(r.get("sym") or ""))
+        if r.get("passed"):
+            by_fam_sym[fam][str(r.get("sym") or "")] += 1
         n_back += 1
     for key, row in survivors().items():
         if not isinstance(row, dict):
@@ -825,22 +1227,70 @@ def organ_theory() -> dict[str, Any]:
             continue
         fw = shadow.get(f"{spec.get('symbol')}.{spec.get('selector')}") or {}
         if fw.get("n") and int(fw["n"]) >= 5 and fw.get("exp_r") is not None:
-            g.theory(mech_for(fam)).add(experiment=f"forward:{key}",
-                                        supports=float(fw["exp_r"]) > 0, source="forward",
-                                        context=str(spec.get("symbol")))
+            g.theory(mechanism_for(fam)).add(experiment=f"forward:{key}",
+                                             supports=float(fw["exp_r"]) > 0, source="forward",
+                                             context=str(spec.get("symbol")))
+        by_fam_sym[fam][str(spec.get("symbol") or "")] += 1
+    rep_doc = _read(REPORTS / "REPLICATION.json") or {}
+    for r in (rep_doc.get("verdicts") or []) if isinstance(rep_doc, dict) else []:
+        if isinstance(r, dict) and r.get("family"):
+            g.theory(mechanism_for(str(r["family"]))).add(
+                experiment=f"replication:{r.get('key')}", source="replication",
+                supports=str(r.get("verdict") or "").upper() in ("REPLICATED", "AGREE"),
+                context=str(r.get("symbol") or ""))
     live_by: dict[str, float] = defaultdict(float)
-    for r in _jsonl(LIVE_LEDGER):
-        live_by[str(r.get("sleeve") or "")] += float(r.get("pl_quote") or 0.0)
+    for r in live_rows():
+        live_by[r["_group"]] += float(r.get("pl_quote") or 0.0)
+    done: set[tuple[str, str]] = set()
     for k, v in registry().items():
         fam = str(((v or {}).get("identity") or {}).get("family") or "")
-        if fam and k in live_by:
-            g.theory(mech_for(fam)).add(experiment=f"live:{k}", supports=live_by[k] > 0,
-                                        source="live", context=k)
-    rep = g.report()
-    return {**rep, "backtest_rows": n_back,
+        grp = names().group(k)
+        if fam and grp in live_by and (fam, grp) not in done:
+            done.add((fam, grp))
+            g.theory(mechanism_for(fam)).add(experiment=f"live:{grp}", supports=live_by[grp] > 0,
+                                             source="live", context=grp)
+    rep = g.report(top=80)
+    # composition: theory x condition -> exact recipes
+    try:
+        from mt5desk.families import FAMILY_REGISTRY  # type: ignore[import-not-found]
+    except Exception:
+        FAMILY_REGISTRY = {}
+    conditions: list[tuple[str, dict[str, Any]]] = [
+        (f"session={x}", {"session": x}) for x in ("asia", "london", "ny")]
+    conditions += [("vol_filter=high", {"vol_filter": "high"}),
+                   ("vol_filter=low", {"vol_filter": "low"}),
+                   ("trend_filter=aligned", {"trend_filter": "aligned"})]
+    rows: list[dict[str, Any]] = []
+    composed = 0
+    for t in rep["theories"]:
+        if t["status"] not in ("SUPPORTED", "CONTESTED") or not t.get("family"):
+            continue
+        fam = str(t["family"])
+        spec = FAMILY_REGISTRY.get(fam) or {}
+        base = dict(spec.get("defaults") or {})
+        if not spec:
+            continue
+        syms = [s for s, _n in by_fam_sym[fam].most_common(4) if s and _may_hypothesise(s)]
+        for label, extra in conditions:
+            if any(k != "session" and k not in base for k in extra):
+                continue
+            cm = theory.compile_mechanism({"condition": label, "falsifier":
+                                           f"the effect is no larger under {label} than without"},
+                                          family=fam)
+            comp = theory.compose(mechanism_for(fam), condition=cm)
+            composed += 1
+            for sym in syms:
+                rows.append({"kind": "hypothesis", "family": fam, "symbols": [sym],
+                             "params": {**base, **extra}, "theory": t["id"],
+                             "composed": comp.mid, "falsifier": comp.falsifier,
+                             "text": f"tier_s theory composition: {fam} ({t['status']}, "
+                                     f"confidence {t['confidence']}) under {label} on {sym}"})
+    emitted = _emit("theory_compositions", rows)
+    return {**rep, "backtest_rows": n_back, "composed": composed, "emitted": emitted,
             "metric": {"n_theories": rep["n_theories"], "complete_share":
                        rep["complete_share"], "refuted": rep["by_status"].get("REFUTED", 0),
-                       "supported": rep["by_status"].get("SUPPORTED", 0)}}
+                       "supported": rep["by_status"].get("SUPPORTED", 0),
+                       "composed": composed}}
 
 
 def organ_review(topo: Mapping[str, Any] | None, fdr_rows: Mapping[str, Any] | None,
@@ -860,7 +1310,7 @@ def organ_review(topo: Mapping[str, Any] | None, fdr_rows: Mapping[str, Any] | N
             if k:
                 rep_by[k] = "AGREE" if str(v).upper() in ("AGREE", "REPLICATED", "PASS",
                                                            "MATCH") else str(v)
-    fills: Counter[str] = Counter(str(r.get("sleeve") or "") for r in _jsonl(LIVE_LEDGER))
+    fills: Counter[str] = Counter(r["_group"] for r in live_rows())
     cands: dict[str, dict[str, Any]] = {}
     for key, row in survivors().items():
         if not isinstance(row, dict):
@@ -871,9 +1321,8 @@ def organ_review(topo: Mapping[str, Any] | None, fdr_rows: Mapping[str, Any] | N
         sleeve_keys = [k for k in uniq if str(k).startswith(f"{sym}.{fam}")]
         ev: dict[str, Any] = {"gates": row.get("gates") or {}, "days": row.get("days"),
                               "forward": {"n": fw.get("n"), "mean_r": fw.get("exp_r")},
-                              "execution": {"matched_fills": fills.get(f"{sym}.{fam}.{sel}", 0)
-                                            + fills.get(str(key), 0)},
-                              "mechanism": {"falsifier": ""}}
+                              "execution": {"matched_fills": fills.get(f"{sym}.{sel}", 0)},
+                              "mechanism": {"falsifier": mechanism_for(str(fam or "")).falsifier}}
         if sleeve_keys:
             ev["topology"] = {"uniqueness": uniq[sleeve_keys[0]]}
         if str(key) in over:
@@ -881,8 +1330,14 @@ def organ_review(topo: Mapping[str, Any] | None, fdr_rows: Mapping[str, Any] | N
         cell = str(row.get("cell") or key)
         if cell in rep_by:
             ev["replication"] = {"verdict": rep_by[cell]}
-        ev["red_queen"] = None if rq is None else {"attacks": rq.get("generation"),
-                                                   "killed": False}
+        # the real-gauntlet attack is program-level: a trap kind the certifier admitted this
+        # generation means every certificate that gauntlet issued is open to that attack, and
+        # the panel records it against each until the leak closes
+        leaks = (((rq or {}).get("real_gauntlet") or {}).get("leaks") or [])
+        ev["red_queen"] = None if rq is None else {
+            "attacks": len((rq.get("real_gauntlet") or {}).get("rows") or []) or
+            rq.get("generation"), "killed": bool(leaks),
+            "killed_by": ", ".join(sorted({str(x["kind"]) for x in leaks})) or None}
         cands[str(key)] = ev
     rep = review_panel.panel_report(cands)
     rows = rep.pop("rows")
@@ -892,66 +1347,185 @@ def organ_review(topo: Mapping[str, Any] | None, fdr_rows: Mapping[str, Any] | N
                               "failed": rep["verdicts"].get("FAILED", 0)}}
 
 
+#: epistemology of a producer, read off the tokens of its hypothesis-graph `source`. Cohorts are
+#: epistemologies: two cohorts that reach one mechanism by different routes are independent.
+EPISTEMOLOGY = (("fund_playbook", "institutional_playbook"), ("deep_forest", "practitioner_story"),
+                ("youtube", "practitioner_story"), ("forexfactory", "practitioner_story"),
+                ("video", "practitioner_story"), ("chatgpt", "llm_reasoning"),
+                ("kimi", "llm_reasoning"), ("deepseek", "llm_reasoning"),
+                ("world_lab", "structural_model"), ("cross_science", "structural_model"),
+                ("macro_state", "structural_model"), ("factor_residual", "structural_model"),
+                ("alpha_evolution", "evolutionary_search"), ("genomes", "evolutionary_search"),
+                ("moat_factory", "evolutionary_search"), ("standing_questions",
+                                                          "first_principles"),
+                ("anomalies", "anomaly_detection"), ("search_paradigm", "anomaly_detection"),
+                ("cot", "flow_positioning"), ("broker_swaps", "flow_positioning"),
+                ("plumbing", "flow_positioning"), ("calendar", "event_study"),
+                ("event_response", "event_study"), ("qd_niches", "quality_diversity"),
+                ("orthogonal", "quality_diversity"), ("axis_registry", "quality_diversity"),
+                ("external", "external_literature"), ("discovery_compiler",
+                                                      "empirical_mining"))
+
+
+def _producer(source: Any) -> str:
+    parts = [p for p in str(source or "").split(":") if p]
+    if not parts:
+        return "unattributed"
+    return ":".join(parts[:2]) if parts[0] in ("miner", "tier_s", "fund_playbook") else parts[0]
+
+
+def _epistemology(producer: str) -> str:
+    low = producer.lower()
+    return next((e for tok, e in EPISTEMOLOGY if tok in low), "empirical_mining")
+
+
+def _leg_of(producer: str, legs: Iterable[str]) -> str | None:
+    toks = [t for t in producer.replace("-", "_").split(":") if t not in ("miner", "tier_s")]
+    legs = set(legs)
+    for t in reversed(toks):
+        if t in legs:
+            return t
+        hit = sorted(lg for lg in legs if t and (t in lg or lg in t))
+        if hit:
+            return hit[0]
+    return "tier_s" if producer.startswith("tier_s") and "tier_s" in legs else None
+
+
 def organ_market() -> dict[str, Any]:
-    """Researchers = factories (hunts / intelligence seats). Their record from the ledgers."""
+    """Researchers = the PRODUCERS that bore the hypotheses the gauntlet judged.
+
+    A gate verdict's `graph_id` names the hypothesis-graph node, whose `source` names the
+    producer that bore it; that is the researcher. Its record: candidates born (hypothesis
+    graph), P(novel) (births on a (symbol, family) pair nobody had judged or certified), P(pass
+    full) (gate verdicts), P(forward holds) (its certificates' forward clocks), historical false
+    discovery rate (cells that passed and later failed), honesty (prediction accounting) and
+    measured CPU (the compute ledger, through the leg that runs the producer; producers with no
+    leg of their own split the unattributed pool by their share of births). The prices are
+    written per researcher AND per leg: cycle_pricing reads the leg prices as a price source,
+    so this market steers compute. It never touches capital."""
     rs: dict[str, researcher_market.Researcher] = {}
 
     def R(name: str) -> researcher_market.Researcher:
         if name not in rs:
-            rs[name] = researcher_market.Researcher(name=name, cohort=name.split(":")[0])
+            ep = _epistemology(name)
+            rs[name] = researcher_market.Researcher(name=name, cohort=ep, epistemology=ep)
         return rs[name]
 
-    hon = _state("honesty").get("factories") or {}
+    births: Counter[str] = Counter()
+    novel: Counter[str] = Counter()
+    producer_of_node: dict[str, str] = {}
+    first_seen: dict[str, datetime] = {}
+    judged_pairs = set(_gate_by_symfam())
+    held = {f"{_spec(r).get('symbol')}.{_spec(r).get('family')}" for r in survivors().values()
+            if isinstance(r, dict)}
+    for r in _jsonl(HGRAPH, 400_000):
+        pr = _producer(r.get("source"))
+        nid = str(r.get("id") or "")
+        if nid:
+            producer_of_node[nid] = pr
+        births[pr] += 1
+        pair = f"{r.get('symbol')}.{r.get('family')}"
+        novel[pr] += int(pair not in judged_pairs and pair not in held)
+        t = replay.parse_t(r.get("at"))
+        if t:
+            first_seen[pr] = min(first_seen.get(pr, t), t)
+    for pr, n in births.items():
+        rr = R(pr)
+        rr.candidates = n
+        rr.trials["novel"], rr.successes["novel"] = n, novel[pr]
+    producer_of_cell: dict[str, str] = {}
+    hist_by_cell: dict[str, list[bool]] = defaultdict(list)
+    for row in _jsonl(GATE_LEDGER):
+        pr = producer_of_node.get(str(row.get("graph_id") or "")) or _producer(
+            row.get("source") or row.get("hunt"))
+        cell = str(row.get("cell") or "")
+        producer_of_cell[cell] = pr
+        hist_by_cell[cell].append(bool(row.get("passed")))
+        rr = R(pr)
+        rr.trials["cheap"] = rr.trials.get("cheap", 0) + 1
+        rr.trials["full"] = rr.trials.get("full", 0) + 1
+        if row.get("passed"):
+            rr.successes["full"] = rr.successes.get("full", 0) + 1
+        if row.get("passed") or str(row.get("terminal_gate") or "") not in ("", "cost",
+                                                                             "costs", "spread"):
+            rr.successes["cheap"] = rr.successes.get("cheap", 0) + 1
+    fdr: dict[str, list[int]] = defaultdict(lambda: [0, 0])
+    for cell, h in hist_by_cell.items():
+        if True in h:
+            k = h.index(True)
+            fdr[producer_of_cell[cell]][0] += 1
+            fdr[producer_of_cell[cell]][1] += int(not all(h[k:]))
     shadow = shadow_rows()
     for _key, row in survivors().items():
         if not isinstance(row, dict):
             continue
-        r = R(str(row.get("hunt") or "unknown"))
-        r.successes["full"] = r.successes.get("full", 0) + 1
+        pr = producer_of_cell.get(str(row.get("cell") or "")) or _producer(row.get("hunt"))
         spec = _spec(row)
         fw = shadow.get(f"{spec.get('symbol')}.{spec.get('selector')}") or {}
         if fw.get("n") and int(fw["n"]) >= 5:
-            r.trials["forward"] = r.trials.get("forward", 0) + 1
-            r.successes["forward"] = r.successes.get("forward", 0) + int(
+            rr = R(pr)
+            rr.trials["forward"] = rr.trials.get("forward", 0) + 1
+            rr.successes["forward"] = rr.successes.get("forward", 0) + int(
                 float(fw.get("exp_r") or 0) > 0)
-    judged: Counter[str] = Counter()
-    for row in _jsonl(GATE_LEDGER):
-        judged[str(row.get("hunt") or row.get("source") or "unknown")] += 1
-    for name, n in judged.items():
-        r = R(name)
-        r.trials["full"] = max(n, r.successes.get("full", 0))
-        r.candidates += n
     cpu: Counter[str] = Counter()
-    first: dict[str, datetime] = {}
     for row in _jsonl(COMPUTE, 200_000):
         name = str(row.get("run") or "")
-        s = row.get("cpu_s") or row.get("wall_s") or row.get("seconds")
-        if name and isinstance(s, (int, float)):
-            cpu[name] += float(s)
-            t = replay.parse_t(row.get("at"))
-            if t:
-                first[name] = min(first.get(name, t), t)
-    for name in list(rs):
-        r = rs[name]
-        r.cost["cpu_s"] = float(cpu.get(name, 0.0)) or 3600.0
-        r.hours = max(1.0, (NOW - first[name]).total_seconds() / 3600.0) if name in first \
-            else 24.0
+        sec = row.get("cpu_s") or row.get("wall_s") or row.get("seconds")
+        if name and isinstance(sec, (int, float)):
+            cpu[name] += float(sec)
+    leg_of = {name: _leg_of(name, cpu) for name in rs}
+    claimed = {lg for lg in leg_of.values() if lg}
+    pool = sum(v for k, v in cpu.items() if k not in claimed and k in (
+        "mine", "deepen", "compile_candidates", "search", "sweep", "world_crawler",
+        "deep_forest", "market_intel"))
+    unlegged = sum(rs[n].candidates for n, lg in leg_of.items() if not lg) or 1
+    hon = _state("honesty").get("factories") or {}
+    for name, rr in rs.items():
+        lg = leg_of[name]
+        share = [x for x, y in leg_of.items() if y == lg] if lg else []
+        rr.cost["cpu_s"] = (cpu[lg] / max(1, len(share))) if lg else pool * rr.candidates / \
+            unlegged
+        rr.cost["cpu_s"] = rr.cost["cpu_s"] or 60.0
+        rr.hours = max(1.0, (NOW - first_seen[name]).total_seconds() / 3600.0) \
+            if name in first_seen else 24.0
         h = hon.get(name)
         if isinstance(h, dict) and h.get("honesty") is not None:
-            r.honesty = float(h["honesty"])
+            rr.honesty = float(h["honesty"])
+        p, f = fdr.get(name, [0, 0])
+        rr.mean_novelty = max(0.05, 1.0 - (f / p if p else 0.0))
     res = researcher_market.allocate(list(rs.values()), headroom_s=1800.0, seed=NOW.hour)
+    # independent discovery: a mechanism x asset-class species that PASSED for >= 2 cohorts
     sight = []
-    for r in _jsonl(HGRAPH, 60_000):
-        sight.append((str(r.get("source") or "").split(":")[0], str(r.get("family") or "")))
-    ind = researcher_market.independent_discoveries(sight, {})
-    _write(STATE / "researcher_prices.json", {"generated_utc": NOW.isoformat(),
-                                               "prices": {k: v["price"] for k, v in
-                                                          res["allocations"].items()},
-                                               "budgets": {k: v["budget_s"] for k, v in
-                                                           res["allocations"].items()}})
-    return {**res, "independent_discoveries": ind,
+    for row in _jsonl(GATE_LEDGER):
+        if row.get("passed"):
+            pr = producer_of_cell.get(str(row.get("cell") or ""), "unattributed")
+            sp = f"{_mechanism(str(row.get('family') or ''))}|{_asset_class(str(row.get('sym')))}"
+            sight.append((pr, sp))
+    ind = researcher_market.independent_discoveries(sight, {n: r.cohort for n, r in rs.items()})
+    leg_prices: dict[str, float] = {}
+    for name, a in res["allocations"].items():
+        lg = leg_of.get(name)
+        if lg:
+            leg_prices[lg] = max(leg_prices.get(lg, 0.0), float(a["price"]))
+    table = {n: {"epistemology": r.epistemology, "leg": leg_of.get(n), "births": r.candidates,
+                 "p_novel": round(r.mean("novel"), 4), "p_pass_full": round(r.mean("full"), 4),
+                 "p_forward": round(r.mean("forward"), 4),
+                 "historical_fdr": round(fdr[n][1] / fdr[n][0], 4) if fdr.get(n, [0])[0]
+                 else None, "cpu_s": round(r.cost.get("cpu_s", 0.0), 1),
+                 "validated_per_cpu_h": round(3600.0 * r.successes.get("full", 0)
+                                              / max(1.0, r.cost.get("cpu_s", 1.0)), 6),
+                 "honesty": r.honesty} for n, r in rs.items()}
+    _write(STATE / "researcher_prices.json", {
+        "generated_utc": NOW.isoformat(),
+        "prices": {k: v["price"] for k, v in res["allocations"].items()},
+        "budgets": {k: v["budget_s"] for k, v in res["allocations"].items()},
+        "leg_prices": leg_prices, "researchers": table,
+        "consumer": "research/cycle_pricing.py (compute only; never capital)"})
+    return {**{k: v for k, v in res.items() if k != "allocations"},
+            "researchers": dict(sorted(table.items(), key=lambda kv: -kv[1]["births"])[:40]),
+            "independent_discoveries": ind, "priced_legs": len(leg_prices),
             "metric": {"n_researchers": len(rs), "independently_discovered":
-                       ind["independently_discovered"]}}
+                       ind["independently_discovered"], "priced_legs": len(leg_prices)}}
 
 
 def organ_frontier(topo_hist: list[dict[str, Any]] | None = None) -> dict[str, Any]:
@@ -1205,6 +1779,17 @@ def _posterior_bids() -> tuple[list[opportunity_exchange.Bid], dict[str, float]]
     alloc = _first(PF_ALLOCATION)
     if isinstance(alloc, dict) and isinstance(alloc.get("book"), dict):
         live_book = {str(k): float(v) for k, v in alloc["book"].items()}
+    if not live_book:
+        last = _jsonl(FORECAST_LOG, 5_000)
+        if last and isinstance(last[-1].get("book"), dict):
+            live_book = {str(k): float(v) for k, v in last[-1]["book"].items()}
+    # the allocator's book is spelled per book name; a certificate is spelled per survivor key.
+    # Both resolve to SYMBOL.window, and a window's heat is shared by the certificates in it
+    nm = names()
+    by_group: dict[str, float] = defaultdict(float)
+    for k, v in live_book.items():
+        by_group[nm.group(k)] += v
+    per_group = Counter(nm.group(k) for k, r in survivors().items() if isinstance(r, dict))
     bids = []
     for key, row in survivors().items():
         if not isinstance(row, dict):
@@ -1221,7 +1806,8 @@ def _posterior_bids() -> tuple[list[opportunity_exchange.Bid], dict[str, float]]
         sd = 1.0 / math.sqrt(10 + n)
         bids.append(opportunity_exchange.Bid(
             key=str(key), mu=mu * 0.01, mu_sd=sd * 0.01, sigma=0.01, friction=0.0,
-            capacity=0.05, current=float(live_book.get(str(key), 0.0)),
+            capacity=0.05, current=by_group.get(nm.group(key), 0.0)
+            / max(1, per_group.get(nm.group(key), 1)),
             mechanism=_mechanism(str(spec.get("family") or "")), evidence_arriving=True))
     return bids, live_book
 
@@ -1232,7 +1818,9 @@ def organ_exchange() -> dict[str, Any]:
         return {"status": "UNMEASURED", "why": "no certificates on this host",
                 "metric": {"defer_share": None}}
     res = opportunity_exchange.clear(bids)
-    cmp = opportunity_exchange.compare(res["book"], live, {b.key: b.mu for b in bids})
+    live_as_bids = {b.key: b.current for b in bids}
+    cmp = opportunity_exchange.compare(res["book"], live_as_bids, {b.key: b.mu for b in bids})
+    cmp["live_book_names"] = len(live)
     _write(STATE / "exchange_book.json", {"generated_utc": NOW.isoformat(), "book": res["book"],
                                           "actions": res["action_counts"]})
     _register_challenger("allocator", "opportunity_exchange", {"k": res["k"]}, None)
@@ -1250,10 +1838,17 @@ def organ_predictions() -> dict[str, Any]:
     # register this hour's forecast for every LIVE sleeve BEFORE its next outcome
     horizon = (NOW + timedelta(days=2)).isoformat()
     made = 0
+    # forecasts are made at the grain outcomes can be traced to (SYMBOL.window): the live
+    # ledger's fills resolve to that through the ticket that opened them
+    groups: set[str] = set()
     for k, v in registry().items():
         if not isinstance(v, dict) or v.get("status") != "LIVE":
             continue
         idn = v.get("identity") or {}
+        k = names().group(k)
+        if k in groups:
+            continue
+        groups.add(k)
         fw = shadow.get(f"{idn.get('symbol')}.{idn.get('selector')}") or {}
         n = int(fw.get("n") or 0)
         mu = float(fw.get("exp_r") or 0.0)
@@ -1268,8 +1863,8 @@ def organ_predictions() -> dict[str, Any]:
             continue
     outcomes: dict[str, list[tuple[str, float]]] = defaultdict(list)
     traded: list[tuple[str, str]] = []
-    for r in _jsonl(LIVE_LEDGER):
-        k = str(r.get("sleeve") or "")
+    for r in live_rows():
+        k = r["_group"]
         rm = r.get("r_multiple")
         if k and rm is not None and float(rm) != 0.0:
             outcomes[k].append((str(r.get("time")), float(rm)))
@@ -1288,8 +1883,7 @@ def organ_predictions() -> dict[str, Any]:
         spec = _spec(row)
         fw = shadow.get(f"{spec.get('symbol')}.{spec.get('selector')}") or {}
         ev = float(((row.get("gates") or {}).get("expected_value") or {}).get("ev") or 0.0)
-        lk = [x for s, xs in live_by.items() if s.startswith(f"{spec.get('symbol')}.")
-              for x in xs]
+        lk = list(live_by.get(f"{spec.get('symbol')}.{spec.get('selector')}") or [])
         claims.append(prediction_accounting.Claim(
             factory=str(row.get("hunt") or "unknown"), key=str(key), claimed_edge=ev,
             forward_edge=float(fw["exp_r"]) if fw.get("exp_r") is not None else None,
@@ -1322,17 +1916,27 @@ def organ_twin(sealed_now: Mapping[str, Any]) -> dict[str, Any]:
     st = _state("challengers")
     out = []
     ex = _read(STATE / "exchange_book.json") or {}
+    nm = names()
     daily: dict[str, dict[str, float]] = defaultdict(dict)
-    for r in _jsonl(LIVE_LEDGER):
-        daily[str(r.get("time"))[:10]][str(r.get("sleeve"))] = daily[str(r.get("time"))[:10]]\
-            .get(str(r.get("sleeve")), 0.0) + float(r.get("r_multiple") or 0.0)
+    for r in live_rows():
+        d = str(r.get("time"))[:10]
+        daily[d][r["_group"]] = daily[d].get(r["_group"], 0.0) + float(r.get("r_multiple") or 0.0)
     live_hist = _jsonl(FORECAST_LOG, 50_000)
-    live_book_by_day = {str(r.get("t"))[:10]: r.get("book") or {} for r in live_hist}
+    live_book_by_day: dict[str, dict[str, float]] = {}
+    for r in live_hist:
+        grp: dict[str, float] = defaultdict(float)
+        for k, v in (r.get("book") or {}).items():
+            with contextlib.suppress(TypeError, ValueError):
+                grp[nm.group(k)] += float(v)
+        live_book_by_day[str(r.get("t"))[:10]] = dict(grp)
+    ex_book: dict[str, float] = defaultdict(float)
+    for k, v in (ex.get("book") or {}).items():
+        ex_book[nm.group(k)] += float(v)
     for c in st.get("challengers") or []:
         ch = twin.Challenger(c["component"], c["name"], c["registered_at"], c["genome_hash"])
         pairs = []
         if c["component"] == "allocator":
-            book = ex.get("book") or {}
+            book = ex_book
             for day, pnl in sorted(daily.items()):
                 lb = live_book_by_day.get(day) or {}
                 inc = sum(float(lb.get(k, 0.0)) * v for k, v in pnl.items())
@@ -1524,16 +2128,16 @@ def main(argv: list[str] | None = None) -> int:
     a = ap.parse_args(argv)
     if a.rollback_to:
         from libs.tiers import rollback
-        plan = rollback.plan(a.rollback_to)
-        print(json.dumps({k: (len(v) if isinstance(v, list) else v) for k, v in plan.items()},
+        rb_plan = rollback.plan(a.rollback_to)
+        print(json.dumps({k: (len(v) if isinstance(v, list) else v) for k, v in rb_plan.items()},
                          indent=1))
-        if not plan.get("available"):
+        if not rb_plan.get("available"):
             return 1
         if a.apply_rollback:
-            if not plan.get("sealed"):
+            if not rb_plan.get("sealed"):
                 print("refusing: the target is not a sealed release in LIVE_MANIFEST")
                 return 1
-            print(f"rolled back in one commit: {rollback.apply(plan)}")
+            print(f"rolled back in one commit: {rollback.apply(rb_plan)}")
         return 0
     only = {x.strip() for x in a.only.split(",") if x.strip()}
     if a.dry_run:

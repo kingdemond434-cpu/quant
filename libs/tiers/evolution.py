@@ -55,7 +55,20 @@ RESEARCHER_GENES: tuple[Gene, ...] = (
     Gene("mutation_rate", lo=0.02, hi=0.5),
     Gene("exploration", lo=0.05, hi=0.8),
     Gene("complexity_cap", lo=2.0, hi=12.0),
+    # what the researcher may LOOK AT (the family's information source, axis_registry's word)
+    Gene("feature_language", ("price_only", "seasonality", "positioning", "cross_asset",
+                              "microstructure", "any")),
+    # where its ideas come from: its own operator draw, the hypothesis graph's unjudged births,
+    # the neighbourhood of what already survived, or the region failures have NOT yet mapped
+    Gene("source", ("own", "hypothesis_graph", "survivor_neighbourhood", "failure_gap")),
 )
+
+
+def complete(g: Genome, rng: np.random.Generator,
+             genes: Sequence[Gene] = RESEARCHER_GENES) -> Genome:
+    """A genome from an older gene set, with every gene it lacks drawn fresh."""
+    fresh = random_genome(rng, genes)
+    return {**fresh, **{k: v for k, v in g.items() if k in fresh}}
 
 
 def genome_id(g: Genome) -> str:
