@@ -36,7 +36,7 @@ HYP = DATA / "hypotheses"
 sys.path.insert(0, str(BASE))
 sys.path.insert(0, str(BASE / "desks" / "mt5"))
 
-from mt5desk import families  # noqa: E402
+from mt5desk import cell_modifiers, families  # noqa: E402
 from mt5desk.engine import Costs, run_backtest  # noqa: E402
 from mt5desk.universe_registry import TIMEFRAME_MINUTES as _TF_MINUTES  # noqa: E402
 from research.frontier_identity import cell_id, economic_prior  # noqa: E402
@@ -449,6 +449,17 @@ def _frame_for(sym: str, family: str, params: dict | None = None):
     return _bars_for(sym, timeframe_of(params, family))
 
 
+#: Why the last `build_cell` call returned None, when it knows. The sweep prints and records this
+#: instead of "parquet missing or build failed", which named the wrong cause for every one of them.
+LAST_BUILD_FAILURE: str | None = None
+
+
+def _build_failed(why: str) -> None:
+    global LAST_BUILD_FAILURE
+    LAST_BUILD_FAILURE = why
+    return None
+
+
 def build_cell(sym: str, family: str, params: dict, meta: dict,
                h1_override: pd.DataFrame | None = None):
     """Build a Cell from external survivor spec.
@@ -465,6 +476,8 @@ def build_cell(sym: str, family: str, params: dict, meta: dict,
     family -- the desk's only certificates outside session_range_breakout, against a
     largest_family_share of 0.87 -- never started a forward clock at all.
     """
+    global LAST_BUILD_FAILURE
+    LAST_BUILD_FAILURE = None
     timeframe = timeframe_of(params, family)
     if h1_override is not None:
         # NEVER silently resample: `_frame_for` exists to keep an M5-native hypothesis off an H1
@@ -486,7 +499,7 @@ def build_cell(sym: str, family: str, params: dict, meta: dict,
     else:
         h1 = _frame_for(sym, family, params)
     if h1 is None:
-        return None
+        return _build_failed(f"no {timeframe} bars for {sym}")
     # THE GAUNTLET MUST REACH EVERY FAMILY, not just the breakout module. Looking only in
     # `families` meant the 14 orthogonal generators were unreachable from the one door that grants
     # certificates -- so a carry or positioning edge could be written, tested by hand, and still
@@ -499,7 +512,8 @@ def build_cell(sym: str, family: str, params: dict, meta: dict,
         except ImportError:
             fn = None
     if fn is None:
-        return None
+        return _build_failed(f"no implementation of family {family!r} in families or "
+                             "families_orthogonal")
     # Reconstruct runtime-only data from the serializable candidate identity. Previously the
     # orthogonal sweep persisted `{}` for every peer/tape/macro/COT family, and discovered
     # cross-asset features were rebuilt without `extra`; both paths therefore produced zero
@@ -529,7 +543,9 @@ def build_cell(sym: str, family: str, params: dict, meta: dict,
                 # the named UST10Y leg minted clocks that looked ACTIVE but had never produced a
                 # signal even historically.  Fail the build instead of testing/certifying a
                 # strategy whose identity differs from the candidate.
-                return None
+                missing = [s for s, d in loaded if d is None] or ["factor_symbols (none named)"]
+                return _build_failed(f"factor basket incomplete: no {timeframe} bars for "
+                                     f"{', '.join(missing)}")
             call_params["factors"] = [d for _s, d in loaded]
         elif family in {"liquidity_regime", "orderflow_imbalance"}:
             call_params.pop("input_source", None)
@@ -574,7 +590,7 @@ def build_cell(sym: str, family: str, params: dict, meta: dict,
                 call_params["extra"] = resolve_inputs(sym, h1.index, all_symbols)
     except Exception as exc:
         print(f"  INPUT-FAIL {sym}.{family}: {type(exc).__name__}: {exc}")
-        return None
+        return _build_failed(f"input load failed: {type(exc).__name__}: {str(exc)[:200]}")
 
     # `timeframe` NAMES THE CHART TO LOAD, it is not a family argument -- the same rule
     # `family_inputs.strip_identity_keys` applies to `peer_symbol` and `factor_symbols`. Leaving
@@ -586,17 +602,26 @@ def build_cell(sym: str, family: str, params: dict, meta: dict,
     # forward clock and the live executor apply in `family_call.signals`, applied here to the
     # replay, so a cell certified inside a session is judged inside it.
     _session = call_params.pop("session", None)
+    # THE MINERS' VARIANT KEYS ARE APPLIED, NOT PASSED (`mt5desk.cell_modifiers`): a `regime`,
+    # `side_mode` or `entry_timing` handed to a family that does not take it raised TypeError, and
+    # 8,939 of 8,941 fresh cells in one sweep died below as "parquet missing or build failed".
+    # What cannot be applied honestly is refused BY NAME here, before any compute is spent.
+    call_params, _mods = cell_modifiers.split(fn, call_params)
+    _refused = cell_modifiers.refusal(_mods)
+    if _refused:
+        return _build_failed(f"NOT_RUN_MODIFIER: {_refused}")
     side = 1  # both sides tested externally; use LONG default
     try:
         sigs = fn(h1, side=side, **call_params)
     except TypeError:
         try:
             sigs = fn(h1, **call_params)
-        except Exception:
-            return None
+        except Exception as exc:
+            return _build_failed(f"{family} raised {type(exc).__name__}: {str(exc)[:200]}")
     if _session is not None:
         from mt5desk.family_call import session_filter
         sigs = session_filter(list(sigs or []), _session)
+    sigs = cell_modifiers.apply(list(sigs or []), h1, _mods)
     # CHARGE THE HOUR THIS CELL FILLS IN. `universe.json` carries ONE median spread per symbol,
     # collapsed at ingest, so every gate has been dividing by a number that averages away the hour
     # structure -- and the families that fill in thin books are exactly the ones that lose by it.
@@ -3116,9 +3141,13 @@ def main():
             built_fresh += 1
             _stage0["unjudged_no_series_before_build"] += 1
         else:
-            print(f"  SKIP {key}: parquet missing or build failed")
-            blocked_build.append({**spec, "downstream_status": "NOT_RUN_BUILD_FAILED",
-                                  "why": "signal construction returned no executable cell"})
+            _why = LAST_BUILD_FAILURE or "parquet missing or build failed"
+            print(f"  SKIP {key}: {_why}")
+            blocked_build.append({**spec, "downstream_status": (
+                                      "NOT_RUN_MODIFIER" if _why.startswith("NOT_RUN_MODIFIER")
+                                      else "NOT_RUN_BUILD_FAILED"),
+                                  "why": LAST_BUILD_FAILURE
+                                  or "signal construction returned no executable cell"})
     if cache_hits:
         print(f"Cell cache: {cache_hits}/{len(eligible_specs)} loaded (same data-day), "
               f"{len(eligible_specs) - cache_hits} to compute")
