@@ -22,7 +22,9 @@ basket is a different index, and a missing leg means no file rather than a wrong
 """
 from __future__ import annotations
 
+import json
 import sys
+from datetime import UTC, datetime
 from pathlib import Path
 
 import numpy as np
@@ -31,8 +33,8 @@ import pandas as pd
 BASE = Path(__file__).resolve().parents[1]
 UNIVERSE = BASE / "data" / "universe"
 TIMEFRAMES = ("M1", "M5", "M15", "M30", "H1", "H4", "D1")
-#: The artifact this organ is attested by: the H1 series every factor consumer reads first.
-ARTIFACT = UNIVERSE / "USDX_H1.parquet"
+#: What each pass built or refused, per timeframe -- the organ's attested artifact.
+OUT = BASE / "reports" / "SYNTHETIC_USDX.json"
 CONSTANT = 50.14348112
 WEIGHTS = {"EURUSD": -0.576, "USDJPY": 0.136, "GBPUSD": -0.119, "USDCAD": 0.091,
            "USDSEK": 0.042, "USDCHF": 0.036}
@@ -76,15 +78,22 @@ def build(tf: str, root: Path = UNIVERSE) -> pd.DataFrame | None:
     return frame
 
 
-def main(root: Path = UNIVERSE) -> int:
+def main(root: Path = UNIVERSE, out: Path = OUT) -> int:
+    series: dict[str, dict[str, object]] = {}
     for tf in TIMEFRAMES:
         frame = build(tf, root)
         if frame is None:
             missing = [s for s in WEIGHTS if not (root / f"{s}_{tf}.parquet").exists()]
             print(f"USDX {tf}: not built -- missing leg(s) {missing or 'none (empty join)'}")
+            series[tf] = {"built": False, "missing_legs": missing}
             continue
         frame.to_parquet(root / f"USDX_{tf}.parquet")
         print(f"USDX {tf}: {len(frame)} bars {frame.index.min()} -> {frame.index.max()}")
+        series[tf] = {"built": True, "bars": len(frame), "last_bar": str(frame.index.max())}
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(json.dumps({"generated_at": datetime.now(UTC).isoformat(timespec="seconds"),
+                               "formula": "ICE USDX over six Fusion legs", "weights": WEIGHTS,
+                               "series": series}, indent=1), "utf-8")
     return 0
 
 
