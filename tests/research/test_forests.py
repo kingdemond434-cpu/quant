@@ -69,18 +69,28 @@ def test_task_names_are_composed_camel_case_and_resident_tasks_tell_the_truth() 
 
 def test_the_manifest_and_the_clock_fixer_declare_every_own_resident() -> None:
     manifest = (ROOT / "desks" / "mt5" / "ops" / "box_tasks.manifest").read_text("utf-8")
-    fixer = (ROOT / "desks" / "mt5" / "research" / "clock_fixer.py").read_text("utf-8")
+    # The fixer's resident map is DERIVED now (clock_fixer._load_residents, from
+    # desks/mt5/ops/components.residents()) rather than written as a literal in its source, so
+    # the residents are read from the loaded module, not grepped out of its text.
+    import importlib.util
+    spec = importlib.util.spec_from_file_location(
+        "_forest_clock_fixer", ROOT / "desks" / "mt5" / "research" / "clock_fixer.py")
+    assert spec is not None and spec.loader is not None
+    fixer = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(fixer)
     for fid in F.OWN_RESIDENT:
         task = F.FOREST_TASKS[fid]
         assert f'name="{task}"' in manifest, f"{task} has no manifest line: unwired is a defect"
-        assert f'"dept_{fid}"' in fixer, f"dept_{fid} is not a resident the clock fixer heals"
-        assert task in fixer
+        assert f"dept_{fid}" in fixer.RESIDENTS, (
+            f"dept_{fid} is not a resident the clock fixer heals")
+        assert fixer.RESIDENTS[f"dept_{fid}"][0] == task
 
 
 def test_absent_packs_are_unmeasured_by_name_never_a_silent_zero() -> None:
-    rows = F.unmeasured_packs("north_america")
-    assert rows == [], "north_america declares no pack, so nothing is missing -- it has none"
-    assert F.forest("north_america").packs == ()
+    # north_america gained its us/ca country packs; japan is the forest that declares none.
+    rows = F.unmeasured_packs("japan")
+    assert rows == [], "japan declares no pack, so nothing is missing -- it has none"
+    assert F.forest("japan").packs == ()
     paths = F.pack_paths("korea")
     assert set(paths) == {"kr"} and paths["kr"].name == "pack.py"
     missing = F.unmeasured_packs("russia_cis")

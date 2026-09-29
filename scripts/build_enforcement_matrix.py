@@ -512,6 +512,11 @@ _MAP: dict[str, list[str]] = {
     # is refused as paperwork (L1.28a). run_capital_plan is a regression site -- it now imports
     # CAPITAL_LEVELS + split_wallet_npe from the comparator, and the AST test that pins the
     # deleted constant turns red if the fork returns.
+    # L1.65 / L1.66 (R0643): both laws had live fences and appeared ZERO times here, in the
+    # constitution and in the scheduler manifest, so the matrix could not see them. Mapped
+    # 2026-09-29 to the fence and the library each fence measures through.
+    "L1.65": ["scripts/check_data_recoverability.py", "libs/research/recoverability.py"],
+    "L1.66": ["scripts/check_frozen_values.py", "libs/ops/value_staleness.py"],
     # L1.67: every sizing function on the MT5 money path priced a stop as `dist * CONTRACT_OZ *
     # FX_EUR` -- gold's contract size times a frozen EUR/USD rate, 92.00 -- for whatever symbol
     # the sleeve named. The venue's own tick economics say 0.86 EUR per price unit per lot on
