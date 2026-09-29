@@ -102,9 +102,13 @@ jobs:
       # the source. A money-path file absent from the report FAILS the floor unless excused by
       # name in the script's allowlist; the gateway is in the report at ~0.6% (import prelude
       # only) and is floored there.
+      # PARALLEL, NOT PRUNED (2026-09-29). Serially this step alone reached the job's 30-minute
+      # cap. Every test still runs; xdist spreads files across the runner's cores (loadfile keeps
+      # a file's tests, and their module fixtures, on one worker) and pytest-cov combines the
+      # per-worker coverage before the floor below reads it.
       - name: MT5 desk suite (branch coverage on the money path)
         run: >-
-          pytest desks/mt5/tests -q -p no:randomly --timeout=600
+          pytest desks/mt5/tests -q -p no:randomly --timeout=600 -n auto --dist loadfile
           --cov=desks/mt5/mt5desk --cov=desks/mt5/research --cov-branch
           --cov-report=term:skip-covered --cov-report=json:mt5cov.json
 
