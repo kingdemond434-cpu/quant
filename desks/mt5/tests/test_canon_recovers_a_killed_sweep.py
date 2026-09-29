@@ -107,7 +107,9 @@ def test_the_docket_normalisation_is_the_sealed_judge_s_normalisation() -> None:
     """The cell id is a digest over the params, and the judge folds a row-level chart INTO them
     before taking it. Getting this wrong is silent: nothing matches and every cell reads as
     `params_unrecoverable`, which is a wrong answer wearing a measurement's clothes."""
-    blk = GAUNTLET[GAUNTLET.index("    cells = {}\n    for h in survivors:"):]
+    # The judge now STREAMS the docket (`iter_json_array(surv_file)`) instead of loading it
+    # whole into `survivors`; the per-row normalisation below is what this test pins.
+    blk = GAUNTLET[GAUNTLET.index("    cells = {}\n    for h in iter_json_array(surv_file):"):]
     blk = blk[:blk.index("    # REPRODUCTION RESTRICTS THE DOCKET")]
     for line in ('sym = h.get("symbol")', 'fam = h.get("family")',
                  'params = dict(h.get("params") or {})',

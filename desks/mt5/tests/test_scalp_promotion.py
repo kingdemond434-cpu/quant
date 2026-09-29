@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import ast
 import json
+import os
 import sys
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -51,6 +52,22 @@ _CAND = {"status": "PROMOTION_CANDIDATE", "timeframe": "M15",
          "promotion_authority": True}
 
 
+def _open_live_policy(tmp_path: Path, monkeypatch, *symbols: str, unban_m15: bool = False
+                      ) -> None:
+    """Admit this file's fixture symbols through `mt5desk/live_policy.py` (bcbec41f, principal
+    2026-09-17: the live account is XAUUSD-only, M15 banned desk-wide). Without it the
+    promoter's write door RETIRES every fixture row before the promotion mechanics under test
+    are ever read. The policy itself is pinned by test_live_policy.py and
+    test_plumbing_watchdog.py."""
+    from mt5desk import live_policy
+    doc: dict = {"live_symbols": list(symbols), "by": "test fixture"}
+    if unban_m15:
+        doc["banned_timeframes"] = {"*": [], **{sym: [] for sym in symbols}}
+    pol = tmp_path / "live_sleeve_policy.json"
+    pol.write_text(json.dumps(doc), encoding="utf-8")
+    monkeypatch.setattr(live_policy, "POLICY_FILE", pol)
+
+
 @pytest.fixture
 def desk(tmp_path, monkeypatch):
     shadow_dir = tmp_path / "reports" / "shadow"
@@ -59,6 +76,7 @@ def desk(tmp_path, monkeypatch):
     (tmp_path / "logs").mkdir()
     monkeypatch.setattr(promoter, "SHADOW_DIR", shadow_dir)
     monkeypatch.setattr(promoter, "SLEEVES_FILE", tmp_path / "data" / "sleeves.json")
+    _open_live_policy(tmp_path, monkeypatch, "XAUUSD", unban_m15=True)
     monkeypatch.setattr(promoter, "LEDGER", tmp_path / "data" / "live_ledger.jsonl")
     monkeypatch.setattr(promoter, "LOG", tmp_path / "logs" / "promoter.log")
     monkeypatch.setattr(promoter, "GOLD_RETIRED_FILE", tmp_path / "data" / "GOLD_RETIRED.json")
@@ -310,8 +328,12 @@ def _exec(names: tuple[str, ...], ns: dict) -> dict:
     scalp lane's pure steps live there since the 2026-09-05 split); the caller's fakes win."""
     seed = {k: v for k, v in vars(_dc).items() if not k.startswith("__")}
     seed["_core"] = _dc
+    seed["os"] = os                  # MIN_STOP_SPREAD_MULT reads its env override
     seed.update(ns)
-    keep = [n for n in _GW_TREE.body if isinstance(n, ast.FunctionDef) and n.name in names]
+    keep = [n for n in _GW_TREE.body
+            if (isinstance(n, ast.FunctionDef) and n.name in names)
+            or (isinstance(n, ast.Assign) and any(isinstance(t, ast.Name) and t.id in names
+                                                  for t in n.targets))]
     exec(compile(ast.Module(body=keep, type_ignores=[]), "<gw>", "exec"), seed)
     return seed
 
@@ -372,6 +394,9 @@ def _ns(tmp_path: Path, mt5: SimpleNamespace, *, armed_file: bool) -> dict:
           # The release-identity verdict `main()` sets once per pass; these tests exercise the
           # executor on a box whose code matches its seal.
           "NEW_RISK_OK": True,
+          # A refused order is journalled to data/refused_orders.jsonl on the box; here it
+          # lands in the book list so no test writes the desk's real journal.
+          "journal_refusal": lambda *a, **k: book.append(("refusal", *a)),
           "_logs": logs, "_intents": intents, "_book": book}
     # `_sleeve_identity` rides along: the scalp send site spreads it onto the intent row so a
     # fill is attributable above the sleeve's name. It is pure over the sleeve dict, and left out
@@ -389,7 +414,17 @@ def _ns(tmp_path: Path, mt5: SimpleNamespace, *, armed_file: bool) -> dict:
     return _exec(("run_scalp_sleeves", "manage_scalp_baskets", "resolve_scalp_order",
                   "scalp_open_basket_q", "close_sleeve_positions",
                   "_retarget_sleeve_positions", "_sleeve_positions", "_sleeve_identity",
-                  "unarmed_why"), ns)
+                  "unarmed_why",
+                  # The send site now tags through `order_comment` (bounded by COMMENT_MAX) and
+                  # floors the plan's stop to the spread (`floor_stop_to_spread`, bounded by
+                  # MIN_STOP_SPREAD_MULT); both are module-level in the gateway and were missing
+                  # from this slice -- the third time, same symptom as above.
+                  "order_comment", "COMMENT_MAX", "floor_stop_to_spread",
+                  "MIN_STOP_SPREAD_MULT",
+                  # ...and caps same-side exposure per symbol before pricing the lot.
+                  "same_side_count", "MAX_SAME_SIDE_PER_SYMBOL",
+                  # ...and reads `last_error` through `_send_error` when a send comes back empty.
+                  "_send_error"), ns)
 
 
 def _run_scalp(ns: dict, st: dict, sleeves: list[dict], equity: float) -> None:

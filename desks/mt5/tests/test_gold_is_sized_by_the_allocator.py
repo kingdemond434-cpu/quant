@@ -147,7 +147,7 @@ def test_the_gateway_bills_gold_through_the_same_sizer_and_not_behind_from_book(
     branch must be tested BEFORE `from_book`, or a gold row the allocator holds never reaches it.
     """
     src = (_DESK / "mt5desk" / "gateway.py").read_text("utf-8")
-    block = src.split("from_book = _book is not None", 1)[1] \
+    block = src.split("from_book = _key is not None", 1)[1] \
                .split("sleeves, heat_note = cap_by_heat(sleeves", 1)[0]
     # THE LANE BRANCH IS TESTED BEFORE `from_book`, and that ordering is the whole point: a gold
     # row the allocator's book holds must reach the sizer, not be diverted into the fraction
