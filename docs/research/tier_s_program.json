@@ -2,8 +2,10 @@
  "doc": "Tier S research institution programme (46 layers). Data; scripts/check_tier_s_program.py is its gate and renders docs/research/TIER_S_PROGRAM.md.",
  "admission_rule": "A subsystem ships only with a measurable contract (gain in: ALPHA_DISCOVERY, FALSIFICATION, INFO_PER_COMPUTE, FDR_REDUCTION, CALIBRATION, EXECUTION_CAPTURE, OPERATIONAL_RISK, PRODUCTIVITY). Evaluated hourly by tier_s.contracts: ADMITTED, REJECTED or UNMEASURED. Blueprint CLOSED 2026-09-29: no new categories.",
  "statuses": {
-  "LIVE_RESEARCH": "runs hourly, writes its artifact, research-side authority only",
-  "authority_pending": "the money-path consumer named needs the principal's go in words"
+  "DONE": "runs hourly, writes its artifact, and meets the principal's wording on the research side",
+  "PARTIAL": "runs hourly; `remaining` names what the wording asks that it does not yet do",
+  "BLOCKED_ON_USER": "research side runs; the money-path consumer is refused by this environment's permission rule",
+  "BLOCKED_ON_BOX": "needs the trading box (a sandbox or state only it holds)"
  },
  "layers": [
   {
@@ -18,14 +20,15 @@
    ],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/TRUTH_KERNEL.json",
-   "status": "LIVE_RESEARCH",
+   "status": "BLOCKED_ON_USER",
    "contract": {
     "gain": "OPERATIONAL_RISK",
     "metric": "metric.journal_ok",
     "better": "up",
     "organ": "truth_kernel",
     "bar": 1.0
-   }
+   },
+   "remaining": "binding the constitution's values into the gauntlet and promoter: this environment's permission rule refuses edits to live promotion code; research side (raw data -> code -> hypothesis -> certificate -> allocation -> order -> fill journal, human-only ratification, rails) is done"
   },
   {
    "id": "S02",
@@ -37,13 +40,14 @@
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/DATA_OS.json",
-   "status": "LIVE_RESEARCH",
+   "status": "PARTIAL",
    "contract": {
     "gain": "CALIBRATION",
     "metric": "metric.pit_share",
     "better": "up",
     "organ": "data_os"
-   }
+   },
+   "remaining": "one per-source record joining ingestion_ledger, data_registry and vintage; acquisition gain scored on gate yield instead of pit_share"
   },
   {
    "id": "S03",
@@ -57,13 +61,14 @@
    ],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/WORLD_SCIENCE.json",
-   "status": "LIVE_RESEARCH",
+   "status": "PARTIAL",
    "contract": {
     "gain": "ALPHA_DISCOVERY",
     "metric": "metric.hypotheses",
     "better": "up",
     "organ": "world_science"
-   }
+   },
+   "remaining": "classify the world_causal_graph / cross_asset_graph edge list (macro drivers included) and emit the residual itself as the feature"
   },
   {
    "id": "S04",
@@ -75,13 +80,14 @@
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/MARKET.json",
-   "status": "LIVE_RESEARCH",
+   "status": "PARTIAL",
    "contract": {
     "gain": "PRODUCTIVITY",
     "metric": "metric.n_researchers",
     "better": "up",
     "organ": "market"
-   }
+   },
+   "remaining": "enforced blinding: a firewall role that forbids one cohort's seat reading another's data/intelligence output"
   },
   {
    "id": "S05",
@@ -93,13 +99,14 @@
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/GENOMES.json",
-   "status": "LIVE_RESEARCH",
+   "status": "PARTIAL",
    "contract": {
     "gain": "PRODUCTIVITY",
     "metric": "metric.diversity",
     "better": "up",
     "organ": "genomes"
-   }
+   },
+   "remaining": "evolve portfolio, execution, regime-detector and scheduler programs, not only strategy genomes"
   },
   {
    "id": "S06",
@@ -112,13 +119,14 @@
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/QD.json",
-   "status": "LIVE_RESEARCH",
+   "status": "PARTIAL",
    "contract": {
     "gain": "ALPHA_DISCOVERY",
     "metric": "metric.qd_score",
     "better": "up",
     "organ": "qd"
-   }
+   },
+   "remaining": "archive keyed on all axis_registry axes plus complexity, capacity and correlation cluster"
   },
   {
    "id": "S07",
@@ -130,13 +138,14 @@
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/GENOMES.json",
-   "status": "LIVE_RESEARCH",
+   "status": "DONE",
    "contract": {
     "gain": "INFO_PER_COMPUTE",
     "metric": "metric.best_fitness",
     "better": "up",
     "organ": "genomes"
-   }
+   },
+   "remaining": ""
   },
   {
    "id": "S08",
@@ -148,13 +157,14 @@
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/MARKET.json",
-   "status": "LIVE_RESEARCH",
+   "status": "DONE",
    "contract": {
     "gain": "INFO_PER_COMPUTE",
     "metric": "metric.independently_discovered",
     "better": "up",
     "organ": "market"
-   }
+   },
+   "remaining": ""
   },
   {
    "id": "S09",
@@ -167,13 +177,14 @@
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/RED_QUEEN.json",
-   "status": "LIVE_RESEARCH",
+   "status": "PARTIAL",
    "contract": {
     "gain": "FALSIFICATION",
     "metric": "metric.defender_balanced",
     "better": "up",
     "organ": "red_queen"
-   }
+   },
+   "remaining": "attacks attributed per researcher; attack kinds for hidden factor exposure, overlapping strategies and false causality"
   },
   {
    "id": "S10",
@@ -186,7 +197,7 @@
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/IMMUNE.json",
-   "status": "LIVE_RESEARCH",
+   "status": "BLOCKED_ON_USER",
    "contract": {
     "gain": "FALSIFICATION",
     "metric": "metric.immune_score",
@@ -194,7 +205,7 @@
     "organ": "immune",
     "bar": 0.9
    },
-   "authority_pending": "the promoter honouring data/tier_s/PROMOTION_FREEZE.json (admission)"
+   "remaining": "the promoter honouring PROMOTION_FREEZE: refused by this environment's permission rule (Modify Shared Resources)"
   },
   {
    "id": "S11",
@@ -206,14 +217,14 @@
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/ONLINE_FDR.json",
-   "status": "LIVE_RESEARCH",
+   "status": "BLOCKED_ON_USER",
    "contract": {
     "gain": "FDR_REDUCTION",
     "metric": "metric.over_budget_share",
     "better": "down",
     "organ": "online_fdr"
    },
-   "authority_pending": "online-FDR wealth gating admission"
+   "remaining": "online-FDR wealth gating admission: refused by the same permission rule; the lifetime stream (survivors, gate failures, upstream FAILED fates) runs hourly"
   },
   {
    "id": "S12",
@@ -225,13 +236,14 @@
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/FIREWALL.json",
-   "status": "LIVE_RESEARCH",
+   "status": "PARTIAL",
    "contract": {
     "gain": "OPERATIONAL_RISK",
     "metric": "metric.violations",
     "better": "down",
     "organ": "firewall"
-   }
+   },
+   "remaining": "developer->evaluator and lockbox-accepts-frozen-candidates roles; runtime may() checks are money-path"
   },
   {
    "id": "S13",
@@ -244,13 +256,14 @@
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/FAILURE_MEMORY.json",
-   "status": "LIVE_RESEARCH",
+   "status": "PARTIAL",
    "contract": {
     "gain": "FDR_REDUCTION",
     "metric": "metric.theorems",
     "better": "up",
     "organ": "failure_memory"
-   }
+   },
+   "remaining": "forward and live failures (retired and decayed sleeves) as failure rows"
   },
   {
    "id": "S14",
@@ -262,13 +275,14 @@
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/TOPOLOGY.json",
-   "status": "LIVE_RESEARCH",
+   "status": "DONE",
    "contract": {
     "gain": "ALPHA_DISCOVERY",
     "metric": "metric.effective_discoveries",
     "better": "up",
     "organ": "topology"
-   }
+   },
+   "remaining": ""
   },
   {
    "id": "S15",
@@ -280,31 +294,33 @@
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/TOPOLOGY.json",
-   "status": "LIVE_RESEARCH",
+   "status": "PARTIAL",
    "contract": {
     "gain": "ALPHA_DISCOVERY",
     "metric": "metric.effective_rank",
     "better": "up",
     "organ": "topology"
-   }
+   },
+   "remaining": "trade-overlap and exposure simulations beside the descriptor and live-P&L ranks"
   },
   {
    "id": "S16",
-   "title": "Counterfactual world lab: edges tested for stability across states",
+   "title": "Counterfactual world lab: sixteen stress worlds joined per certificate",
    "files": [
-    "libs/tiers/world_edges.py",
+    "desks/mt5/research/synthetic_regimes.py",
     "desks/mt5/research/tier_s.py"
    ],
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/WORLD_SCIENCE.json",
-   "status": "LIVE_RESEARCH",
+   "status": "PARTIAL",
    "contract": {
     "gain": "FALSIFICATION",
-    "metric": "metric.stable_edges",
+    "metric": "stress_tested_share",
     "better": "up",
-    "organ": "world_science"
-   }
+    "organ": "worlds"
+   },
+   "remaining": "a per-bar swap/rollover stress world; the other sixteen worlds run hourly on the box"
   },
   {
    "id": "S17",
@@ -316,13 +332,14 @@
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/THEORY.json",
-   "status": "LIVE_RESEARCH",
+   "status": "DONE",
    "contract": {
     "gain": "PRODUCTIVITY",
     "metric": "metric.complete_share",
     "better": "up",
     "organ": "theory"
-   }
+   },
+   "remaining": ""
   },
   {
    "id": "S18",
@@ -334,13 +351,14 @@
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/THEORY.json",
-   "status": "LIVE_RESEARCH",
+   "status": "PARTIAL",
    "contract": {
     "gain": "CALIBRATION",
     "metric": "metric.supported",
     "better": "up",
     "organ": "theory"
-   }
+   },
+   "remaining": "jurisdiction and regime as evidence context; the graph persisted between passes"
   },
   {
    "id": "S19",
@@ -352,13 +370,14 @@
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/WORLD_SCIENCE.json",
-   "status": "LIVE_RESEARCH",
+   "status": "PARTIAL",
    "contract": {
     "gain": "ALPHA_DISCOVERY",
     "metric": "metric.hypotheses",
     "better": "up",
     "organ": "world_science"
-   }
+   },
+   "remaining": "a SAT/constraint lab and a Gaussian-process lab beside the eight running traditions"
   },
   {
    "id": "S20",
@@ -370,13 +389,14 @@
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/REVIEW.json",
-   "status": "LIVE_RESEARCH",
+   "status": "DONE",
    "contract": {
     "gain": "FALSIFICATION",
     "metric": "metric.resolved_share",
     "better": "up",
     "organ": "review"
-   }
+   },
+   "remaining": ""
   },
   {
    "id": "S21",
@@ -388,13 +408,14 @@
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/TEST_INVENTION.json",
-   "status": "LIVE_RESEARCH",
+   "status": "PARTIAL",
    "contract": {
     "gain": "FALSIFICATION",
     "metric": "metric.candidate_gates",
     "better": "up",
     "organ": "test_invention"
-   }
+   },
+   "remaining": "a labelled real suite from certificates x forward outcome and a gate redundancy matrix"
   },
   {
    "id": "S22",
@@ -406,13 +427,14 @@
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/GRAMMAR.json",
-   "status": "LIVE_RESEARCH",
+   "status": "PARTIAL",
    "contract": {
     "gain": "PRODUCTIVITY",
     "metric": "metric.n_primitives",
     "better": "up",
     "organ": "grammar"
-   }
+   },
+   "remaining": "alpha_evolution reading data/tier_s/grammar.json operator weights"
   },
   {
    "id": "S23",
@@ -423,13 +445,14 @@
    "extends": [],
    "clock": "hourly_cycle:execution_science",
    "artifact": "desks/mt5/reports/EXECUTION_SCIENCE.json",
-   "status": "LIVE_RESEARCH",
+   "status": "DONE",
    "contract": {
     "gain": "EXECUTION_CAPTURE",
     "metric": "attribution.median_drag_as_share_of_signal_alpha",
     "better": "down",
     "organ": "report:EXECUTION_SCIENCE.json"
-   }
+   },
+   "remaining": ""
   },
   {
    "id": "S24",
@@ -441,13 +464,14 @@
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/EXCHANGE.json",
-   "status": "LIVE_RESEARCH",
+   "status": "DONE",
    "contract": {
     "gain": "EXECUTION_CAPTURE",
     "metric": "metric.defer_share",
     "better": "up",
     "organ": "exchange"
-   }
+   },
+   "remaining": ""
   },
   {
    "id": "S25",
@@ -459,14 +483,14 @@
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/EXCHANGE.json",
-   "status": "LIVE_RESEARCH",
+   "status": "BLOCKED_ON_USER",
    "contract": {
     "gain": "ALPHA_DISCOVERY",
     "metric": "metric.expected_log_growth",
     "better": "up",
     "organ": "exchange"
    },
-   "authority_pending": "the exchange's book replacing or steering the allocator (sizing)"
+   "remaining": "the exchange's book steering the allocator (hookup 4): waits for PR #53 to run live cleanly, and live allocator edits are refused by the permission rule"
   },
   {
    "id": "S26",
@@ -478,13 +502,14 @@
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/PREDICTIONS.json",
-   "status": "LIVE_RESEARCH",
+   "status": "PARTIAL",
    "contract": {
     "gain": "CALIBRATION",
     "metric": "metric.accounted_share",
     "better": "up",
     "organ": "predictions"
-   }
+   },
+   "remaining": "MAE/MFE, hold and slippage forecasts scored beside R"
   },
   {
    "id": "S27",
@@ -497,13 +522,14 @@
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/PREDICTIONS.json",
-   "status": "LIVE_RESEARCH",
+   "status": "DONE",
    "contract": {
     "gain": "CALIBRATION",
     "metric": "metric.overconfidence",
     "better": "down",
     "organ": "predictions"
-   }
+   },
+   "remaining": ""
   },
   {
    "id": "S28",
@@ -516,13 +542,14 @@
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/TWIN.json",
-   "status": "LIVE_RESEARCH",
+   "status": "DONE",
    "contract": {
     "gain": "PRODUCTIVITY",
     "metric": "metric.challengers",
     "better": "up",
     "organ": "twin"
-   }
+   },
+   "remaining": ""
   },
   {
    "id": "S29",
@@ -534,13 +561,14 @@
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/SELF_MODEL.json",
-   "status": "LIVE_RESEARCH",
+   "status": "PARTIAL",
    "contract": {
     "gain": "PRODUCTIVITY",
     "metric": "metric.regressed",
     "better": "down",
     "organ": "self_model"
-   }
+   },
+   "remaining": "inventory rows for gate backlog, compute timeouts and allocator binding constraints"
   },
   {
    "id": "S30",
@@ -553,14 +581,14 @@
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/TWIN.json",
-   "status": "LIVE_RESEARCH",
+   "status": "BLOCKED_ON_USER",
    "contract": {
     "gain": "PRODUCTIVITY",
     "metric": "metric.adopted",
     "better": "up",
     "organ": "twin"
    },
-   "authority_pending": "adoption of money-path challengers (always PROPOSE, never automatic)"
+   "remaining": "adopting money-path challengers: refused by the permission rule; research challengers adopt automatically"
   },
   {
    "id": "S31",
@@ -573,14 +601,15 @@
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/FORMAL.json",
-   "status": "LIVE_RESEARCH",
+   "status": "PARTIAL",
    "contract": {
     "gain": "OPERATIONAL_RISK",
     "metric": "metric.protocol_proven",
     "better": "up",
     "organ": "formal",
     "bar": 1.0
-   }
+   },
+   "remaining": "drive decision_core with the model checker's counterexample traces"
   },
   {
    "id": "S32",
@@ -592,13 +621,14 @@
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/REVIEW.json",
-   "status": "LIVE_RESEARCH",
+   "status": "PARTIAL",
    "contract": {
     "gain": "FALSIFICATION",
     "metric": "metric.challenged",
     "better": "up",
     "organ": "review"
-   }
+   },
+   "remaining": "firewall flag for evaluators sharing a reward artifact with the thing they judge"
   },
   {
    "id": "S33",
@@ -611,13 +641,14 @@
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/RED_QUEEN.json",
-   "status": "LIVE_RESEARCH",
+   "status": "PARTIAL",
    "contract": {
     "gain": "FALSIFICATION",
     "metric": "metric.defender_balanced",
     "better": "up",
     "organ": "red_queen"
-   }
+   },
+   "remaining": "scheduling and search-policy challengers beside validator genomes"
   },
   {
    "id": "S34",
@@ -629,13 +660,14 @@
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/IMMUNE.json",
-   "status": "LIVE_RESEARCH",
+   "status": "PARTIAL",
    "contract": {
     "gain": "FALSIFICATION",
     "metric": "metric.balanced",
     "better": "up",
     "organ": "immune"
-   }
+   },
+   "remaining": "per-kind suite >= 100 and a real-episode suite"
   },
   {
    "id": "S35",
@@ -647,13 +679,14 @@
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/DATA_OS.json",
-   "status": "LIVE_RESEARCH",
+   "status": "PARTIAL",
    "contract": {
     "gain": "INFO_PER_COMPUTE",
     "metric": "metric.calibrated_rankers",
     "better": "up",
     "organ": "data_os"
-   }
+   },
+   "remaining": "resolve each ranker on its own metric; normalised gain"
   },
   {
    "id": "S36",
@@ -666,13 +699,14 @@
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/FRONTIER.json",
-   "status": "LIVE_RESEARCH",
+   "status": "PARTIAL",
    "contract": {
     "gain": "INFO_PER_COMPUTE",
     "metric": "metric.coverage",
     "better": "up",
     "organ": "frontier"
-   }
+   },
+   "remaining": "frontier grounds priced into cycle_pricing"
   },
   {
    "id": "S37",
@@ -684,13 +718,14 @@
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/EPISTEMIC.json",
-   "status": "LIVE_RESEARCH",
+   "status": "PARTIAL",
    "contract": {
     "gain": "CALIBRATION",
     "metric": "metric.decidable_share",
     "better": "up",
     "organ": "epistemic"
-   }
+   },
+   "remaining": "more quantities (DSR, PBO, costs, weights) and 'not enough evidence' raised as a review challenge"
   },
   {
    "id": "S38",
@@ -701,14 +736,14 @@
    "extends": [],
    "clock": "hourly_cycle:replication_civilization",
    "artifact": "desks/mt5/reports/REPLICATION.json",
-   "status": "LIVE_RESEARCH",
+   "status": "BLOCKED_ON_USER",
    "contract": {
     "gain": "FALSIFICATION",
     "metric": "counts.REPLICATED",
     "better": "up",
     "organ": "report:REPLICATION.json"
    },
-   "authority_pending": "a MISMATCH blocking promotion (admission)"
+   "remaining": "a MISMATCH blocking promotion: refused by the permission rule; rebuild verdicts feed the review panel hourly"
   },
   {
    "id": "S39",
@@ -720,14 +755,15 @@
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/FORMAL.json",
-   "status": "LIVE_RESEARCH",
+   "status": "PARTIAL",
    "contract": {
     "gain": "OPERATIONAL_RISK",
     "metric": "metric.knobs_evidenced",
     "better": "up",
     "organ": "formal",
     "bar": 1.0
-   }
+   },
+   "remaining": "world-search over architecture failure worlds beyond knob ablations"
   },
   {
    "id": "S40",
@@ -739,13 +775,14 @@
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/MARKET.json",
-   "status": "LIVE_RESEARCH",
+   "status": "DONE",
    "contract": {
     "gain": "INFO_PER_COMPUTE",
     "metric": "metric.independently_discovered",
     "better": "up",
     "organ": "market"
-   }
+   },
+   "remaining": ""
   },
   {
    "id": "S41",
@@ -757,14 +794,15 @@
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/REPLAY.json",
-   "status": "LIVE_RESEARCH",
+   "status": "DONE",
    "contract": {
     "gain": "OPERATIONAL_RISK",
     "metric": "metric.reconstructible_share",
     "better": "up",
     "organ": "replay",
     "bar": 1.0
-   }
+   },
+   "remaining": ""
   },
   {
    "id": "S42",
@@ -776,13 +814,14 @@
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/CHAOS.json",
-   "status": "LIVE_RESEARCH",
+   "status": "BLOCKED_ON_BOX",
    "contract": {
     "gain": "OPERATIONAL_RISK",
     "metric": "metric.drills_failing",
     "better": "down",
     "organ": "chaos"
-   }
+   },
+   "remaining": "recovery experiments against a sandbox gateway with a faulty MT5 double; never the live terminal"
   },
   {
    "id": "S43",
@@ -795,13 +834,14 @@
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/WORLD_SCIENCE.json",
-   "status": "LIVE_RESEARCH",
+   "status": "PARTIAL",
    "contract": {
     "gain": "ALPHA_DISCOVERY",
     "metric": "metric.hypotheses",
     "better": "up",
     "organ": "world_science"
-   }
+   },
+   "remaining": "operations-research and motif labs on the row stream"
   },
   {
    "id": "S44",
@@ -813,13 +853,14 @@
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/GRAMMAR.json",
-   "status": "LIVE_RESEARCH",
+   "status": "PARTIAL",
    "contract": {
     "gain": "PRODUCTIVITY",
     "metric": "metric.n_primitives",
     "better": "up",
     "organ": "grammar"
-   }
+   },
+   "remaining": "expression_factory reading the learned primitives as terminals"
   },
   {
    "id": "S45",
@@ -831,13 +872,14 @@
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/FAILURE_MEMORY.json",
-   "status": "LIVE_RESEARCH",
+   "status": "DONE",
    "contract": {
     "gain": "PRODUCTIVITY",
     "metric": "metric.rows_per_statement",
     "better": "up",
     "organ": "failure_memory"
-   }
+   },
+   "remaining": ""
   },
   {
    "id": "S46",
@@ -850,13 +892,14 @@
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/TRUTH_KERNEL.json",
-   "status": "LIVE_RESEARCH",
+   "status": "DONE",
    "contract": {
     "gain": "OPERATIONAL_RISK",
     "metric": "metric.constitution_violation",
     "better": "down",
     "organ": "truth_kernel"
-   }
+   },
+   "remaining": ""
   }
  ]
 }

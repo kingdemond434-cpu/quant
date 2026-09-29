@@ -9,12 +9,13 @@ falsification power, more information per compute, a lower false-discovery rate,
 live/backtest calibration, better execution capture, lower operational risk, or measurable
 research productivity. This fence is that admission rule, enforced at every law-gate run:
 
-  * status is LIVE_RESEARCH (the only status: every layer runs);
+  * status is DONE, PARTIAL, BLOCKED_ON_USER or BLOCKED_ON_BOX, and every status but DONE names
+    what is left in `remaining` -- a layer cannot read as finished while its wording is not met;
   * every cited file exists; the clock is one the repository knows (the same clock vocabulary
     as check_tier5_audit.py); the artifact is named;
   * the contract parses (`libs.tiers.contracts.problems`) and its `organ` is a Tier S organ
     (`desks/mt5/research/tier_s.py`) or `report:<FILE>` whose writer is itself a known leg;
-  * a layer whose money-path consumer needs the principal's word says so in `authority_pending`.
+  * a DONE layer carries an empty `remaining`: "done, except" is PARTIAL.
 
 `--render` writes docs/research/TIER_S_PROGRAM.md (the gap map; derived, never hand-edited),
 and with `--with-verdicts` joins this host's latest hourly verdicts from
@@ -42,7 +43,7 @@ LEDGER = ROOT / "docs" / "research" / "tier_s_program.json"
 RENDERED = ROOT / "docs" / "research" / "TIER_S_PROGRAM.md"
 VERDICTS = ROOT / "desks" / "mt5" / "reports" / "tier_s" / "CONTRACTS.json"
 ORGAN_SRC = ROOT / "desks" / "mt5" / "research" / "tier_s.py"
-STATUSES = ("LIVE_RESEARCH",)
+STATUSES = ("DONE", "PARTIAL", "BLOCKED_ON_USER", "BLOCKED_ON_BOX")
 N_LAYERS = 46
 
 
@@ -70,6 +71,11 @@ def check(ledger: dict[str, Any], root: Path) -> tuple[list[str], Counter[str]]:
         counts[st] += 1
         if st not in STATUSES:
             problems.append(f"{lid}: status {st!r} not in {STATUSES}")
+        rem = str(r.get("remaining") or "").strip()
+        if st == "DONE" and rem:
+            problems.append(f"{lid}: DONE but `remaining` names unfinished work")
+        if st != "DONE" and not rem:
+            problems.append(f"{lid}: {st} without saying what remains")
         files = r.get("files") or []
         if not files:
             problems.append(f"{lid}: cites no file")
@@ -100,17 +106,17 @@ def render(ledger: dict[str, Any], verdicts: dict[str, Any]) -> str:
              "Every layer runs hourly (leg `tier_s` unless named). The verdict column is the "
              "contract's latest hourly verdict when rendered with `--with-verdicts` on the box; `-` "
              "means not joined. Live verdicts: `desks/mt5/reports/tier_s/CONTRACTS.json`.", "",
-             "| id | layer | gain | metric | verdict | latest | money-path authority awaiting "
-             "the principal |", "|---|---|---|---|---|---|---|"]
+             "| id | layer | status | gain | metric | verdict | latest | what remains |",
+             "|---|---|---|---|---|---|---|---|"]
     for r in ledger.get("layers") or []:
         c = r.get("contract") or {}
         lv = v.get(r["id"]) or {}
         latest = lv.get("latest")
         lines.append(
-            f"| {r['id']} | {r['title']} | {c.get('gain')} | `{c.get('organ')}.{c.get('metric')}`"
-            f" ({c.get('better')}) | {lv.get('verdict', '-')} | "
-            f"{'-' if latest is None else round(float(latest), 4)} | "
-            f"{r.get('authority_pending') or ''} |")
+            f"| {r['id']} | {r['title']} | {r.get('status')} | {c.get('gain')} | "
+            f"`{c.get('organ')}.{c.get('metric')}` ({c.get('better')}) | "
+            f"{lv.get('verdict', '-')} | {'-' if latest is None else round(float(latest), 4)} | "
+            f"{r.get('remaining') or ''} |")
     lines += ["", "## What each layer is built from", ""]
     for r in ledger.get("layers") or []:
         lines.append(f"- **{r['id']}** {r['title']}: " + ", ".join(

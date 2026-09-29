@@ -6,54 +6,54 @@ Derived from `docs/research/tier_s_program.json` by `python scripts/check_tier_s
 
 Every layer runs hourly (leg `tier_s` unless named). The verdict column is the contract's latest hourly verdict when rendered with `--with-verdicts` on the box; `-` means not joined. Live verdicts: `desks/mt5/reports/tier_s/CONTRACTS.json`.
 
-| id | layer | gain | metric | verdict | latest | money-path authority awaiting the principal |
-|---|---|---|---|---|---|---|
-| S01 | Truth kernel: content-addressed journal, constitution, evidence seal | OPERATIONAL_RISK | `truth_kernel.metric.journal_ok` (up) | - | - |  |
-| S02 | World data OS: bitemporal store and point-in-time audit | CALIBRATION | `data_os.metric.pit_share` (up) | - | - |  |
-| S03 | World model: causal edges classified stable/decaying/false; broken edges become hypotheses | ALPHA_DISCOVERY | `world_science.metric.hypotheses` (up) | - | - |  |
-| S04 | Researcher civilization: heterogeneous cohorts priced by independent discoveries | PRODUCTIVITY | `market.metric.n_researchers` (up) | - | - |  |
-| S05 | AlphaEvolve for alpha: genome evolution with operator yield | PRODUCTIVITY | `genomes.metric.diversity` (up) | - | - |  |
-| S06 | MAP-Elites quality-diversity archive | ALPHA_DISCOVERY | `qd.metric.qd_score` (up) | - | - |  |
-| S07 | Evolving researcher genomes (fitness = validated independent info per compute) | INFO_PER_COMPUTE | `genomes.metric.best_fitness` (up) | - | - |  |
-| S08 | Researcher market: Thompson sampling + MILP compute allocation, floors never cut | INFO_PER_COMPUTE | `market.metric.independently_discovered` (up) | - | - |  |
-| S09 | Red Queen: attackers and validator defenders co-evolve | FALSIFICATION | `red_queen.metric.defender_balanced` (up) | - | - |  |
-| S10 | Planted traps: immune score with FREEZE verdict | FALSIFICATION | `immune.metric.immune_score` (up) | - | - | the promoter honouring data/tier_s/PROMOTION_FREEZE.json (admission) |
-| S11 | Online FDR: LORD++ and e-LOND over the lifetime trial stream | FDR_REDUCTION | `online_fdr.metric.over_budget_share` (down) | - | - | online-FDR wealth gating admission |
-| S12 | Epistemic firewall: per-role static audit with ratchet | OPERATIONAL_RISK | `firewall.metric.violations` (down) | - | - |  |
-| S13 | Negative-knowledge graph: typed failure causes and failure theorems | FDR_REDUCTION | `failure_memory.metric.theorems` (up) | - | - |  |
-| S14 | Ancestry graph: novelty against ancestors and exact repeats | ALPHA_DISCOVERY | `topology.metric.effective_discoveries` (up) | - | - |  |
-| S15 | Effective independent alpha rank (linear, rank, tail, drawdown, ancestry) | ALPHA_DISCOVERY | `topology.metric.effective_rank` (up) | - | - |  |
-| S16 | Counterfactual world lab: edges tested for stability across states | FALSIFICATION | `world_science.metric.stable_edges` (up) | - | - |  |
-| S17 | Alpha theory compiler: seven-slot mechanisms | PRODUCTIVITY | `theory.metric.complete_share` (up) | - | - |  |
-| S18 | Theory-evidence graph: Beta posteriors weighted live 3 / forward 2 / backtest 1 | CALIBRATION | `theory.metric.supported` (up) | - | - |  |
-| S19 | Non-LLM intelligence: information, spectral, Kalman, queueing, ecology, network, MCMC labs | ALPHA_DISCOVERY | `world_science.metric.hypotheses` (up) | - | - |  |
-| S20 | Peer review panels: typed challenges with resolvers | FALSIFICATION | `review.metric.resolved_share` (up) | - | - |  |
-| S21 | Auto-invented tests: proposed on one suite, confirmed on another | FALSIFICATION | `test_invention.metric.candidate_gates` (up) | - | - |  |
-| S22 | Evolving research grammars: primitives learned from winners, dead operators retired | PRODUCTIVITY | `grammar.metric.n_primitives` (up) | - | - |  |
-| S23 | Execution science: signal alpha separated from execution drag | EXECUTION_CAPTURE | `report:EXECUTION_SCIENCE.json.attribution.median_drag_as_share_of_signal_alpha` (down) | - | - |  |
-| S24 | No-trade as a first-class action in the exchange | EXECUTION_CAPTURE | `exchange.metric.defer_share` (up) | - | - |  |
-| S25 | Opportunity exchange: bids cleared by robust E[log W] (shadow) | ALPHA_DISCOVERY | `exchange.metric.expected_log_growth` (up) | - | - | the exchange's book replacing or steering the allocator (sizing) |
-| S26 | Live prediction accounting: CRPS, PIT, coverage, honesty shrinkage | CALIBRATION | `predictions.metric.accounted_share` (up) | - | - |  |
-| S27 | Live reality outranks backtests: overconfidence measured on live outcomes | CALIBRATION | `predictions.metric.overconfidence` (down) | - | - |  |
-| S28 | Digital twin: registered-after-only paired evaluation, one-op rollback | PRODUCTIVITY | `twin.metric.challengers` (up) | - | - |  |
-| S29 | Self-model: deficiency ranking and sealed scorecard regression | PRODUCTIVITY | `self_model.metric.regressed` (down) | - | - |  |
-| S30 | Architecture evolution: challengers adopted on sealed evidence | PRODUCTIVITY | `twin.metric.adopted` (up) | - | - | adoption of money-path challengers (always PROPOSE, never automatic) |
-| S31 | Formal verification of the money path: BFS model check of the order protocol | OPERATIONAL_RISK | `formal.metric.protocol_proven` (up) | - | - |  |
-| S32 | Independent evaluator civilization: evaluators challenged by the panel | FALSIFICATION | `review.metric.challenged` (up) | - | - |  |
-| S33 | Architecture evolution above strategy evolution: validator genomes compete | FALSIFICATION | `red_queen.metric.defender_balanced` (up) | - | - |  |
-| S34 | Immutable meta-benchmark suite: sealed hash of generator, seeds and prices | FALSIFICATION | `immune.metric.balanced` (up) | - | - |  |
-| S35 | Active information acquisition: acquisition predictions calibrated on arrival | INFO_PER_COMPUTE | `data_os.metric.calibrated_rankers` (up) | - | - |  |
-| S36 | Research-search frontier estimator: Chao1, Good-Turing, yield exponent | INFO_PER_COMPUTE | `frontier.metric.coverage` (up) | - | - |  |
-| S37 | Epistemic uncertainty engine: known .. unknowable, 'not enough evidence to decide' | CALIBRATION | `epistemic.metric.decidable_share` (up) | - | - |  |
-| S38 | Cross-engine replication: independent rebuild from the written spec | FALSIFICATION | `report:REPLICATION.json.counts.REPLICATED` (up) | - | - | a MISMATCH blocking promotion (admission) |
-| S39 | Architecture-level counterfactual failure search: protocol knob ablations | OPERATIONAL_RISK | `formal.metric.knobs_evidenced` (up) | - | - |  |
-| S40 | Compute OS: researcher prices published for cycle pricing | INFO_PER_COMPUTE | `market.metric.independently_discovered` (up) | - | - |  |
-| S41 | Global state replay: ledgers re-derived from streams | OPERATIONAL_RISK | `replay.metric.reconstructible_share` (up) | - | - |  |
-| S42 | Continual recovery experiments: chaos campaigns and corruption drills on copies | OPERATIONAL_RISK | `chaos.metric.drills_failing` (down) | - | - |  |
-| S43 | Mechanisms from other sciences | ALPHA_DISCOVERY | `world_science.metric.hypotheses` (up) | - | - |  |
-| S44 | Abstraction discovery: library learning over winning genomes | PRODUCTIVITY | `grammar.metric.n_primitives` (up) | - | - |  |
-| S45 | Scientific memory compression: failure theorems with provenance | PRODUCTIVITY | `failure_memory.metric.rows_per_statement` (up) | - | - |  |
-| S46 | Human-machine separation of powers: amendments ratified by the principal only | OPERATIONAL_RISK | `truth_kernel.metric.constitution_violation` (down) | - | - |  |
+| id | layer | status | gain | metric | verdict | latest | what remains |
+|---|---|---|---|---|---|---|---|
+| S01 | Truth kernel: content-addressed journal, constitution, evidence seal | BLOCKED_ON_USER | OPERATIONAL_RISK | `truth_kernel.metric.journal_ok` (up) | - | - | binding the constitution's values into the gauntlet and promoter: this environment's permission rule refuses edits to live promotion code; research side (raw data -> code -> hypothesis -> certificate -> allocation -> order -> fill journal, human-only ratification, rails) is done |
+| S02 | World data OS: bitemporal store and point-in-time audit | PARTIAL | CALIBRATION | `data_os.metric.pit_share` (up) | - | - | one per-source record joining ingestion_ledger, data_registry and vintage; acquisition gain scored on gate yield instead of pit_share |
+| S03 | World model: causal edges classified stable/decaying/false; broken edges become hypotheses | PARTIAL | ALPHA_DISCOVERY | `world_science.metric.hypotheses` (up) | - | - | classify the world_causal_graph / cross_asset_graph edge list (macro drivers included) and emit the residual itself as the feature |
+| S04 | Researcher civilization: heterogeneous cohorts priced by independent discoveries | PARTIAL | PRODUCTIVITY | `market.metric.n_researchers` (up) | - | - | enforced blinding: a firewall role that forbids one cohort's seat reading another's data/intelligence output |
+| S05 | AlphaEvolve for alpha: genome evolution with operator yield | PARTIAL | PRODUCTIVITY | `genomes.metric.diversity` (up) | - | - | evolve portfolio, execution, regime-detector and scheduler programs, not only strategy genomes |
+| S06 | MAP-Elites quality-diversity archive | PARTIAL | ALPHA_DISCOVERY | `qd.metric.qd_score` (up) | - | - | archive keyed on all axis_registry axes plus complexity, capacity and correlation cluster |
+| S07 | Evolving researcher genomes (fitness = validated independent info per compute) | DONE | INFO_PER_COMPUTE | `genomes.metric.best_fitness` (up) | - | - |  |
+| S08 | Researcher market: Thompson sampling + MILP compute allocation, floors never cut | DONE | INFO_PER_COMPUTE | `market.metric.independently_discovered` (up) | - | - |  |
+| S09 | Red Queen: attackers and validator defenders co-evolve | PARTIAL | FALSIFICATION | `red_queen.metric.defender_balanced` (up) | - | - | attacks attributed per researcher; attack kinds for hidden factor exposure, overlapping strategies and false causality |
+| S10 | Planted traps: immune score with FREEZE verdict | BLOCKED_ON_USER | FALSIFICATION | `immune.metric.immune_score` (up) | - | - | the promoter honouring PROMOTION_FREEZE: refused by this environment's permission rule (Modify Shared Resources) |
+| S11 | Online FDR: LORD++ and e-LOND over the lifetime trial stream | BLOCKED_ON_USER | FDR_REDUCTION | `online_fdr.metric.over_budget_share` (down) | - | - | online-FDR wealth gating admission: refused by the same permission rule; the lifetime stream (survivors, gate failures, upstream FAILED fates) runs hourly |
+| S12 | Epistemic firewall: per-role static audit with ratchet | PARTIAL | OPERATIONAL_RISK | `firewall.metric.violations` (down) | - | - | developer->evaluator and lockbox-accepts-frozen-candidates roles; runtime may() checks are money-path |
+| S13 | Negative-knowledge graph: typed failure causes and failure theorems | PARTIAL | FDR_REDUCTION | `failure_memory.metric.theorems` (up) | - | - | forward and live failures (retired and decayed sleeves) as failure rows |
+| S14 | Ancestry graph: novelty against ancestors and exact repeats | DONE | ALPHA_DISCOVERY | `topology.metric.effective_discoveries` (up) | - | - |  |
+| S15 | Effective independent alpha rank (linear, rank, tail, drawdown, ancestry) | PARTIAL | ALPHA_DISCOVERY | `topology.metric.effective_rank` (up) | - | - | trade-overlap and exposure simulations beside the descriptor and live-P&L ranks |
+| S16 | Counterfactual world lab: sixteen stress worlds joined per certificate | PARTIAL | FALSIFICATION | `worlds.stress_tested_share` (up) | - | - | a per-bar swap/rollover stress world; the other sixteen worlds run hourly on the box |
+| S17 | Alpha theory compiler: seven-slot mechanisms | DONE | PRODUCTIVITY | `theory.metric.complete_share` (up) | - | - |  |
+| S18 | Theory-evidence graph: Beta posteriors weighted live 3 / forward 2 / backtest 1 | PARTIAL | CALIBRATION | `theory.metric.supported` (up) | - | - | jurisdiction and regime as evidence context; the graph persisted between passes |
+| S19 | Non-LLM intelligence: information, spectral, Kalman, queueing, ecology, network, MCMC labs | PARTIAL | ALPHA_DISCOVERY | `world_science.metric.hypotheses` (up) | - | - | a SAT/constraint lab and a Gaussian-process lab beside the eight running traditions |
+| S20 | Peer review panels: typed challenges with resolvers | DONE | FALSIFICATION | `review.metric.resolved_share` (up) | - | - |  |
+| S21 | Auto-invented tests: proposed on one suite, confirmed on another | PARTIAL | FALSIFICATION | `test_invention.metric.candidate_gates` (up) | - | - | a labelled real suite from certificates x forward outcome and a gate redundancy matrix |
+| S22 | Evolving research grammars: primitives learned from winners, dead operators retired | PARTIAL | PRODUCTIVITY | `grammar.metric.n_primitives` (up) | - | - | alpha_evolution reading data/tier_s/grammar.json operator weights |
+| S23 | Execution science: signal alpha separated from execution drag | DONE | EXECUTION_CAPTURE | `report:EXECUTION_SCIENCE.json.attribution.median_drag_as_share_of_signal_alpha` (down) | - | - |  |
+| S24 | No-trade as a first-class action in the exchange | DONE | EXECUTION_CAPTURE | `exchange.metric.defer_share` (up) | - | - |  |
+| S25 | Opportunity exchange: bids cleared by robust E[log W] (shadow) | BLOCKED_ON_USER | ALPHA_DISCOVERY | `exchange.metric.expected_log_growth` (up) | - | - | the exchange's book steering the allocator (hookup 4): waits for PR #53 to run live cleanly, and live allocator edits are refused by the permission rule |
+| S26 | Live prediction accounting: CRPS, PIT, coverage, honesty shrinkage | PARTIAL | CALIBRATION | `predictions.metric.accounted_share` (up) | - | - | MAE/MFE, hold and slippage forecasts scored beside R |
+| S27 | Live reality outranks backtests: overconfidence measured on live outcomes | DONE | CALIBRATION | `predictions.metric.overconfidence` (down) | - | - |  |
+| S28 | Digital twin: registered-after-only paired evaluation, one-op rollback | DONE | PRODUCTIVITY | `twin.metric.challengers` (up) | - | - |  |
+| S29 | Self-model: deficiency ranking and sealed scorecard regression | PARTIAL | PRODUCTIVITY | `self_model.metric.regressed` (down) | - | - | inventory rows for gate backlog, compute timeouts and allocator binding constraints |
+| S30 | Architecture evolution: challengers adopted on sealed evidence | BLOCKED_ON_USER | PRODUCTIVITY | `twin.metric.adopted` (up) | - | - | adopting money-path challengers: refused by the permission rule; research challengers adopt automatically |
+| S31 | Formal verification of the money path: BFS model check of the order protocol | PARTIAL | OPERATIONAL_RISK | `formal.metric.protocol_proven` (up) | - | - | drive decision_core with the model checker's counterexample traces |
+| S32 | Independent evaluator civilization: evaluators challenged by the panel | PARTIAL | FALSIFICATION | `review.metric.challenged` (up) | - | - | firewall flag for evaluators sharing a reward artifact with the thing they judge |
+| S33 | Architecture evolution above strategy evolution: validator genomes compete | PARTIAL | FALSIFICATION | `red_queen.metric.defender_balanced` (up) | - | - | scheduling and search-policy challengers beside validator genomes |
+| S34 | Immutable meta-benchmark suite: sealed hash of generator, seeds and prices | PARTIAL | FALSIFICATION | `immune.metric.balanced` (up) | - | - | per-kind suite >= 100 and a real-episode suite |
+| S35 | Active information acquisition: acquisition predictions calibrated on arrival | PARTIAL | INFO_PER_COMPUTE | `data_os.metric.calibrated_rankers` (up) | - | - | resolve each ranker on its own metric; normalised gain |
+| S36 | Research-search frontier estimator: Chao1, Good-Turing, yield exponent | PARTIAL | INFO_PER_COMPUTE | `frontier.metric.coverage` (up) | - | - | frontier grounds priced into cycle_pricing |
+| S37 | Epistemic uncertainty engine: known .. unknowable, 'not enough evidence to decide' | PARTIAL | CALIBRATION | `epistemic.metric.decidable_share` (up) | - | - | more quantities (DSR, PBO, costs, weights) and 'not enough evidence' raised as a review challenge |
+| S38 | Cross-engine replication: independent rebuild from the written spec | BLOCKED_ON_USER | FALSIFICATION | `report:REPLICATION.json.counts.REPLICATED` (up) | - | - | a MISMATCH blocking promotion: refused by the permission rule; rebuild verdicts feed the review panel hourly |
+| S39 | Architecture-level counterfactual failure search: protocol knob ablations | PARTIAL | OPERATIONAL_RISK | `formal.metric.knobs_evidenced` (up) | - | - | world-search over architecture failure worlds beyond knob ablations |
+| S40 | Compute OS: researcher prices published for cycle pricing | DONE | INFO_PER_COMPUTE | `market.metric.independently_discovered` (up) | - | - |  |
+| S41 | Global state replay: ledgers re-derived from streams | DONE | OPERATIONAL_RISK | `replay.metric.reconstructible_share` (up) | - | - |  |
+| S42 | Continual recovery experiments: chaos campaigns and corruption drills on copies | BLOCKED_ON_BOX | OPERATIONAL_RISK | `chaos.metric.drills_failing` (down) | - | - | recovery experiments against a sandbox gateway with a faulty MT5 double; never the live terminal |
+| S43 | Mechanisms from other sciences | PARTIAL | ALPHA_DISCOVERY | `world_science.metric.hypotheses` (up) | - | - | operations-research and motif labs on the row stream |
+| S44 | Abstraction discovery: library learning over winning genomes | PARTIAL | PRODUCTIVITY | `grammar.metric.n_primitives` (up) | - | - | expression_factory reading the learned primitives as terminals |
+| S45 | Scientific memory compression: failure theorems with provenance | DONE | PRODUCTIVITY | `failure_memory.metric.rows_per_statement` (up) | - | - |  |
+| S46 | Human-machine separation of powers: amendments ratified by the principal only | DONE | OPERATIONAL_RISK | `truth_kernel.metric.constitution_violation` (down) | - | - |  |
 
 ## What each layer is built from
 
@@ -72,7 +72,7 @@ Every layer runs hourly (leg `tier_s` unless named). The verdict column is the c
 - **S13** Negative-knowledge graph: typed failure causes and failure theorems: `libs/tiers/failure_memory.py`, `desks/mt5/research/negative_knowledge.py`, `desks/mt5/research/tier_s.py`; clock `hourly_cycle:tier_s`; artifact `desks/mt5/reports/tier_s/FAILURE_MEMORY.json`
 - **S14** Ancestry graph: novelty against ancestors and exact repeats: `libs/tiers/topology.py`, `desks/mt5/research/tier_s.py`; clock `hourly_cycle:tier_s`; artifact `desks/mt5/reports/tier_s/TOPOLOGY.json`
 - **S15** Effective independent alpha rank (linear, rank, tail, drawdown, ancestry): `libs/tiers/topology.py`, `desks/mt5/research/tier_s.py`; clock `hourly_cycle:tier_s`; artifact `desks/mt5/reports/tier_s/TOPOLOGY.json`
-- **S16** Counterfactual world lab: edges tested for stability across states: `libs/tiers/world_edges.py`, `desks/mt5/research/tier_s.py`; clock `hourly_cycle:tier_s`; artifact `desks/mt5/reports/tier_s/WORLD_SCIENCE.json`
+- **S16** Counterfactual world lab: sixteen stress worlds joined per certificate: `desks/mt5/research/synthetic_regimes.py`, `desks/mt5/research/tier_s.py`; clock `hourly_cycle:tier_s`; artifact `desks/mt5/reports/tier_s/WORLD_SCIENCE.json`
 - **S17** Alpha theory compiler: seven-slot mechanisms: `libs/tiers/theory.py`, `desks/mt5/research/tier_s.py`; clock `hourly_cycle:tier_s`; artifact `desks/mt5/reports/tier_s/THEORY.json`
 - **S18** Theory-evidence graph: Beta posteriors weighted live 3 / forward 2 / backtest 1: `libs/tiers/theory.py`, `desks/mt5/research/tier_s.py`; clock `hourly_cycle:tier_s`; artifact `desks/mt5/reports/tier_s/THEORY.json`
 - **S19** Non-LLM intelligence: information, spectral, Kalman, queueing, ecology, network, MCMC labs: `libs/tiers/cross_science.py`, `desks/mt5/research/tier_s.py`; clock `hourly_cycle:tier_s`; artifact `desks/mt5/reports/tier_s/WORLD_SCIENCE.json`
