@@ -320,6 +320,25 @@ def test_an_unmeasured_canon_retires_only_banned_rows(desk: Path):
     assert "external.EURCHF.discovered.p=1" not in _r(paths.canon)["survivors"]
 
 
+def test_a_stale_canon_retires_no_unbacked_clock_and_no_claim(desk: Path):
+    """LAWS 7: an EXACT canon older than its writer's lease is not live, so apply() stands down
+    on every unbacked clock and every non-banned ledger claim; banned rows still leave."""
+    import os
+    paths = CT.Paths.at(desk)
+    old = paths.seal.stat().st_mtime - 3 * 24 * 3600
+    os.utime(paths.seal, (old, old))
+    ledger_before = {k: v.get("status") for k, v in _r(paths.ledger)["claims"].items()}
+    out = CT.apply(paths, now="2026-09-22T12:00:00+00:00")
+    assert out["lane_status"] == "EXACT"
+    reg = _r(paths.registry)["sleeves"]
+    assert reg["CHFNOK.carry.asia#input_symbol=CHFNOK"]["status"] == "LIVE"
+    assert reg["EURCHF.discovered.asia#band=[0.9, 1.0]_feature=ru_24"]["status"] == "RETIRED"
+    retired = [k for k, v in _r(paths.ledger)["claims"].items()
+               if v.get("status") == "RETIRED" and ledger_before.get(k) != "RETIRED"]
+    assert all(r["retire_reason"] == CT.BAN_REASON
+               for k, r in _r(paths.ledger)["claims"].items() if k in retired)
+
+
 def test_an_empty_canon_is_unmeasured_and_never_the_ground_for_retiring_a_clock(desk: Path):
     """The principal, 2026-09-23: "an empty canon is UNMEASURED, not 'nothing is certified', and
     it must never be the authority that retires a fresh certificate."
