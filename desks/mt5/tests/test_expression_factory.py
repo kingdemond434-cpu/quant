@@ -299,7 +299,9 @@ def test_end_to_end_pass_on_synthetic_bars_writes_the_artifact_and_queues_with_p
     assert camp["QUEUED"] + doc["registry"]["blocked"] == (
         doc["cells"]["survivors"] + doc["cells"]["deferred_to_judge"]
         + doc["cells"]["blocked_survivors"])
-    rows = R.candidates(origin=None, limit=500)
+    # The read must cover every queued row: since the factory queues deferred cells too (LAWS 7
+    # above) a pass queues several hundred, and a fixed limit=500 truncated the read below QUEUED.
+    rows = R.candidates(origin=None, limit=max(500, 2 * int(camp["QUEUED"]) + 100))
     mine = [r for r in rows if r.get("generator") == XF.SOURCE]
     assert len(mine) == camp["QUEUED"]
     for r in mine:

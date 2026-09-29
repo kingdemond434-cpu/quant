@@ -524,6 +524,16 @@ NOT_SOURCED_HERE = {
                 "636,056 triples over 86 hypothesis-lane FX pairs, so the miner charges 150 "
                 "trials where a sweep pairing every symbol with every other pair would be an "
                 "uncharged search four thousand times larger",
+    "exit_operated": "an OPERATOR over an existing cell: its (base_family, base_params, "
+                     "expansion_mult, exit_on_anchor_flip) identity is named by "
+                     "research/htf_anchor_proposer, which measures the operator per (chart, base "
+                     "family) and charges its own grid. Called blind here it has no base cell and "
+                     "returns [] on every symbol, which would be filed as a data gap",
+    "exogenous_conditioner": "its series, column and transform are named by research/pack_cells "
+                             "from a data pack's own published frame and its available_time "
+                             "clock; a sweep enumerating them over bars would be inventing which "
+                             "pack series conditions which instrument. Called blind it has no "
+                             "source and returns [] on every symbol",
 }
 
 
@@ -741,6 +751,11 @@ def sweep() -> dict:
             "event_reaction": {"events": events},
             # The venue's own fill surface: the one family whose ENTRY is an execution state.
             "execution_state": {"surface": _surface_for(sym)},
+            # WIRED TO ITS OWN INPUT. The forced-flow calendar is RULE-GENERATED inside the family
+            # (`calendar_windows`) from the bars' own span, so the sweep hands it nothing and it
+            # still fires; declared here so "needs an input" and "is wired" agree. Left without
+            # `symbol` exactly as it ran before -- every event of the kind is used.
+            "forced_flow": {},
         }
         # Runtime objects cannot be JSON identities. Persist exact provenance needed to rebuild
         # the same candidate in the universal gauntlet; an empty params object previously made
