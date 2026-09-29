@@ -38,7 +38,9 @@ DESK = Path(__file__).resolve().parent.parent
 #: the same defect -- right only by coincidence and only for one symbol. Composition at the bar:
 #: 31 outside test files (the research scripts and side channels), 20 inside files named test_*,
 #: most of the latter being `scripts/test_bt*.py`, which are scratch backtests rather than tests.
-MAX_LITERAL_SITES = 51
+#: Lowered to 44 on 2026-09-29: seven sites were removed since the bar was set and it was never
+#: tightened; measured on a clean checkout.
+MAX_LITERAL_SITES = 44
 
 #: A literal spread in a keyword argument. `spread_per_lot=self.spread_per_lot * mult` (the
 #: `stressed()` method) and `spread_per_lot=max(spread * mult, 0.05)` (the constructor itself)

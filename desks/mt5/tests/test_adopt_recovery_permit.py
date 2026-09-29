@@ -1,5 +1,5 @@
+import re
 from pathlib import Path
-
 
 SCRIPT = (Path(__file__).resolve().parents[1] / "scripts" / "Adopt-Release.ps1").read_text(
     encoding="utf-8")
@@ -45,7 +45,13 @@ def test_root_level_runtime_state_is_state_in_adopter_and_sealer() -> None:
         "desks/mt5/swap_exposure.json",
         "desks/mt5/docs/TRADE_PATH_REPORT.md",
     )
+    # The SEALER no longer classifies paths at all (2026-09-24): its dirty check is
+    # `git diff ... -- $releaseCodePaths`, the release's CODE ROOTS only, so it never sees a
+    # runtime artifact unless one lives under a code root. Pin that none of these does.
+    assert "git diff --name-only --no-ext-diff HEAD -- $releaseCodePaths" in SEAL_SCRIPT
+    roots_src = SEAL_SCRIPT[SEAL_SCRIPT.index("$releaseCodePaths = @("):]
+    roots = re.findall(r'"([^"]+)"', roots_src[:roots_src.index(")")])
+    assert "desks/mt5/mt5desk" in roots
     for rel in exact:
         assert f'"{rel}"' in SCRIPT
-        assert f'"{rel}"' in SEAL_SCRIPT
-    assert "$isState = $stateFiles -contains $p" in SEAL_SCRIPT
+        assert not any(rel == r or rel.startswith(r + "/") for r in roots), rel

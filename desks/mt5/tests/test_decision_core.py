@@ -554,8 +554,11 @@ def test_the_slide_is_a_tolerance_and_the_ceiling_is_absolute() -> None:
 def test_load_sleeves_keeps_live_rows_only_and_never_raises(tmp_path) -> None:
     p = tmp_path / "sleeves.json"
     assert dc.load_sleeves(p) == []
-    p.write_text(json.dumps({"sleeves": [{"name": "a", "status": "LIVE"},
-                                         {"name": "b", "status": "RETIRED"}]}), "utf-8")
+    # The rows carry an admitted symbol: since bcbec41f `load_sleeves` also applies the live
+    # policy (XAUUSD-only), and a row with no symbol is refused by it (test_live_policy.py).
+    p.write_text(json.dumps({"sleeves": [{"name": "a", "symbol": "XAUUSD", "status": "LIVE"},
+                                         {"name": "b", "symbol": "XAUUSD",
+                                          "status": "RETIRED"}]}), "utf-8")
     assert [s["name"] for s in dc.load_sleeves(p)] == ["a"]
     p.write_text("{ nope", "utf-8")
     assert dc.load_sleeves(p) == []

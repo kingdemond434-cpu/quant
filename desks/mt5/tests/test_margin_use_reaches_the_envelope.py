@@ -120,7 +120,15 @@ def test_the_allocator_measures_the_margin_and_refuses_to_feed_it() -> None:
     flips to `margin_use=_mu` only on the principal's explicit yes."""
     src = inspect.getsource(pa.run)
     assert "margin_use=None," in src, "the envelope must not be fed the clause"
-    assert "margin_use=_mu," not in src, "the clause is principal-gated and was fed anyway"
+    # P13 (2026-09-13): the margin-fed envelope is now COMPUTED as a counterfactual so the
+    # principal decides against a number, but it is FED only when the principal's arming file
+    # exists -- and that file is not in the tree. The refusal moved from "never computed" to
+    # "computed, published, not fed"; pin the gate rather than the absence of the call.
+    assert "_armed_margin = (BASE / \"data\" / \"MARGIN_CLAUSE_ENABLED\").exists()" in src
+    assert "survival = _env_margin if (_armed_margin and _mu) else _env_free" in src, (
+        "the clause is principal-gated and was fed anyway")
+    assert not (_DESK / "data" / "MARGIN_CLAUSE_ENABLED").exists(), (
+        "the arming file is the principal's act; no commit may carry it")
     assert "_acc_margin, _acc_equity, _acc_why = account_margin()" in src
     assert "margin_use_from(_acc_margin, _acc_equity, _free_total, _mu_heats)" in src, (
         "the map must still be BUILT from the DEPLOYED heat, so the principal can read it")
