@@ -523,6 +523,12 @@ _MAP: dict[str, list[str]] = {
     # control (the pre-fix gateway must read CONSTANT-ON-SIZING-PATH) is committed as a test.
     "L1.67": ["scripts/check_risk_units.py", "desks/mt5/mt5desk/risk_units.py",
               "desks/mt5/mt5desk/gateway.py"],
+    # L1.68 (every useful input reaches a testable-cell disposition, silently_lost = 0) names its
+    # own operative organ -- conversion_maximiser, audited in CONVERSION_MAXIMISER.json -- and the
+    # law gate already runs the ratchet that fails when its debt rises: check_conversion_debt
+    # counts the five components through `conversion_maximiser.measure_debt` itself. The law
+    # arrived mapped to neither and the matrix called it UNENFORCED (2026-09-29).
+    "L1.68": ["scripts/check_conversion_debt.py", "desks/mt5/research/conversion_maximiser.py"],
     # R0369 (under L2.3/§42): an implemented row's --commit is the ledger's whole proof mechanism,
     # and it was enforced only at WRITE time -- `dispose` refuses an empty field and asks nothing
     # else. A rebase rewrites SHAs and the citation quietly names an object no other clone can
