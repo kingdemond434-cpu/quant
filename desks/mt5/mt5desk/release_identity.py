@@ -95,6 +95,10 @@ NON_CODE: frozenset[str] = frozenset({
 #: the SHA check loses nothing.
 STATE_PREFIXES: tuple[str, ...] = (
     "desks/mt5/data/", "desks/mt5/reports/", "desks/mt5/logs/",
+    # Organ-written state under a package directory (release.py added these 2026-09-16; this
+    # mirror missed them, so a box state commit under either counted as code drift here and
+    # the gateway refused new risk on it).
+    "desks/mt5/frontier_intel/data/", "desks/mt5/side_channels/data/",
     "data/", "reports/", "logs/", "web/", "docs/",
 )
 
