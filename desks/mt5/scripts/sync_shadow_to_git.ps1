@@ -141,14 +141,21 @@ function Merge-FetchHead {
     $blockers = @()
     $incoming = @(& git -C $RepoRoot diff --name-only HEAD FETCH_HEAD) | Where-Object { $_ }
     # One status subprocess per incoming path made this section O(paths) in Git startups. A
-    # discovery-heavy fetch can contain tens of thousands of paths, so the sync held the global
-    # writer mutex until its ten-minute task limit and starved the release adopter. Compute the
-    # tracked dirty set once and intersect in memory. Untracked merge blockers are deliberately
-    # handled by the merge probe below because they are absent from `git diff HEAD`.
-    $dirtyTracked = @(& git -C $RepoRoot diff --name-only --no-ext-diff HEAD) |
-        Where-Object { $_ }
+    # whole-tree `git diff HEAD` fixed the process explosion but still stat-ed millions of tracked
+    # research artifacts on the box: measured 2026-09-29, five incoming code paths spent more
+    # than four minutes waiting on an unrelated 1,488-dirty-path tree. Ask Git only about incoming
+    # paths, in bounded batches so neither process count nor the Windows command line can explode.
+    # Untracked merge blockers remain handled by the merge probe below.
     $dirtySet = @{}
-    foreach ($rel in $dirtyTracked) { $dirtySet[$rel] = $true }
+    $chunkSize = 128
+    for ($offset = 0; $offset -lt $incoming.Count; $offset += $chunkSize) {
+        $last = [Math]::Min($offset + $chunkSize - 1, $incoming.Count - 1)
+        $chunk = @($incoming[$offset..$last])
+        $gitArgs = @("-C", $RepoRoot, "diff", "--name-only", "--no-ext-diff", "HEAD", "--") +
+            $chunk
+        $dirtyTracked = @(& git @gitArgs) | Where-Object { $_ }
+        foreach ($rel in $dirtyTracked) { $dirtySet[$rel] = $true }
+    }
     foreach ($rel in $incoming) {
         if ($dirtySet.ContainsKey($rel)) { $blockers += $rel }
     }
