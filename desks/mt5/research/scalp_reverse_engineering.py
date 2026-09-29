@@ -22,12 +22,21 @@ ROOT = Path(__file__).resolve().parents[3]
 DESK = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
+from libs.portfolio.fusion_cost import commission_roundtrip_price  # noqa: E402
 from libs.validation.dsr import probabilistic_sharpe_ratio  # noqa: E402
 
 DATA = DESK / "data" / "universe"
 OUT = DESK / "reports" / "scalp_reverse_engineering.json"
 VERSION = "public-scalp-reconstruction-2026-08-23-b"
-FUSION_COMMISSION_PRICE = 0.045  # $4.50 round turn / 100 oz XAUUSD contract
+
+
+def fusion_commission_price() -> float:
+    """Canonical measured Fusion commission converted through current XAUUSD metadata."""
+    registry = json.loads((DATA / "universe.json").read_text("utf-8"))
+    meta = registry.get("XAUUSD")
+    if not isinstance(meta, dict):
+        raise ValueError("XAUUSD metadata is missing from the universe registry")
+    return commission_roundtrip_price(meta)
 
 
 @dataclass(frozen=True)
@@ -133,6 +142,7 @@ def simulate(
         raise ValueError("signal and ATR arrays must align exactly with bars")
     opn, high, low, close = (df[c].to_numpy(float) for c in ("open", "high", "low", "close"))
     spreads = (np.zeros(len(df)) if cost == "frictionless" else measured_spreads(df))
+    commission_price = 0.0 if cost == "frictionless" else fusion_commission_price()
     out: list[dict] = []
     i, n = max(40, cfg.lookback + 3), len(df) - 1
     event_indices = np.flatnonzero(sig != 0)
@@ -155,7 +165,7 @@ def simulate(
             entries = [(first, risk_sized_units(first, stop, 0.25))]
         cost_r = 0.0
         if cost != "frictionless":
-            cost_r += entries[0][1] * (spreads[i] + FUSION_COMMISSION_PRICE)
+            cost_r += entries[0][1] * (spreads[i] + commission_price)
         exit_price, j = float(close[i]), i
         for j in range(i + 1, min(n, i + cfg.max_hold) + 1):
             total_units = sum(u for _, u in entries)
@@ -174,7 +184,7 @@ def simulate(
                     units = risk_sized_units(p, stop, 0.25)
                     entries.append((p, units))
                     if cost != "frictionless":
-                        cost_r += units * (spreads[j] + FUSION_COMMISSION_PRICE)
+                        cost_r += units * (spreads[j] + commission_price)
             exit_price = float(close[j])
         pnl_r = sum(u * direction * (exit_price - p) for p, u in entries) - cost_r
         out.append({
@@ -215,7 +225,8 @@ def _configs(timeframe: str) -> list[Config]:
 def run() -> dict:
     report: dict = {
         "version": VERSION, "evidence": "broker_native_bar_spread_plus_fusion_zero_commission",
-        "fusion_cost": "$4.50/lot round turn plus each bar's recorded broker spread",
+        "fusion_cost": ("measured account-currency commission converted through current XAUUSD "
+                        "tick metadata, plus each bar's recorded broker spread"),
         "selection": "first 60% chronological; report/promote on untouched last 40%",
         "same_bar_policy": "stop_first", "timeframes": {},
     }

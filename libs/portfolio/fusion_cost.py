@@ -138,6 +138,22 @@ COST_REGIMES: dict[str, float] = {"WIDE": 2.0, "RAW": 0.2, "ZERO": 0.0}
 DEFAULT_REGIME = "RAW"
 
 
+def commission_roundtrip_price(meta: dict[str, Any]) -> float:
+    """Measured round-trip commission expressed in the symbol's price units.
+
+    ``COMMISSION_PER_LOT_PER_SIDE`` is charged in account currency.  ``tick_value`` tells us how
+    much account currency one tick is worth for one lot, so ``tick_size / tick_value`` converts
+    one unit of account currency into a price move.  Refuse incomplete metadata rather than
+    silently treating account currency as quote currency; that was the historical JPY/gold unit
+    bug this module exists to prevent.
+    """
+    tick_size = float(meta.get("tick_size", 0.0) or 0.0)
+    tick_value = float(meta.get("tick_value", 0.0) or 0.0)
+    if tick_size <= 0.0 or tick_value <= 0.0:
+        raise ValueError("positive tick_size and tick_value are required to price commission")
+    return 2.0 * COMMISSION_PER_LOT_PER_SIDE * tick_size / tick_value
+
+
 def costs_for_symbol(meta: dict[str, Any], *, regime: str = DEFAULT_REGIME,
                      spread_stress: float = 1.0, spread_pts: float | None = None) -> EngineCosts:
     """Canonical Fusion Zero cost object for one instrument.

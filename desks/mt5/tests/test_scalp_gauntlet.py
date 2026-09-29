@@ -43,11 +43,14 @@ from desks.mt5.research import scalp_family_expansion as fam  # noqa: E402
 from desks.mt5.research import scalp_reverse_engineering as core  # noqa: E402
 from desks.mt5.research import scalp_shadow  # noqa: E402
 from gate_policy import ATTESTATION, GATES, all_ten_pass, charged_trial_count  # noqa: E402
-
 from mt5desk import scalp_exec as sx  # noqa: E402
 from mt5desk import scalp_families as sf  # noqa: E402
 from mt5desk.engine import Costs, Signal, run_backtest  # noqa: E402
-from libs.portfolio.fusion_cost import COMMISSION_PER_LOT_PER_SIDE  # noqa: E402
+
+from libs.portfolio.fusion_cost import (  # noqa: E402
+    COMMISSION_PER_LOT_PER_SIDE,
+    commission_roundtrip_price,
+)
 
 SPREAD_PTS = 14.5
 #: An XAUUSD registry row in the live shape (contract 100 oz, tick 0.01, EUR-account tick value).
@@ -76,9 +79,19 @@ def _ten(passed: bool = True) -> dict[str, dict[str, Any]]:
 
 
 def _matched_costs() -> Costs:
-    """The engine's cost per unit equals `simulate`'s spread*point + FUSION_COMMISSION_PRICE."""
-    return Costs(spread_per_lot=SPREAD_PTS * 0.01 * 100.0, commission_per_lot=2.25,
-                 contract_oz=100.0, quote_per_account=1.0)
+    """The engine and standalone scalp replay use the same account-currency conversion."""
+    meta = META["XAUUSD"]
+    return Costs.from_symbol(meta, mult=1.0,
+                             commission_per_lot=COMMISSION_PER_LOT_PER_SIDE)
+
+
+def test_scalp_replay_uses_canonical_account_currency_commission(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(core, "DATA", _DESK / "data" / "universe")
+    actual = core.fusion_commission_price()
+    meta = json.loads((_DESK / "data" / "universe" / "universe.json").read_text("utf-8"))["XAUUSD"]
+    assert actual == pytest.approx(commission_roundtrip_price(meta))
+    assert actual != pytest.approx(0.045)  # the retired USD/100 oz hard-code
 
 
 @pytest.fixture
