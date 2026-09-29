@@ -217,3 +217,10 @@ def test_the_agents_run_headless_without_a_blanket_permission_bypass() -> None:
     assert '"-p"' in src and '"exec", "--full-auto"' in src
     assert "dangerously" not in src
     assert '"Bash(git push --force:*)"' in src
+
+
+def test_a_fresh_pass_starts_only_at_the_slot_later_firings_only_resume() -> None:
+    """Once a day at 12:00 (Claude) / 00:00 (Codex) Dublin; the hourly firings only resume."""
+    src = LAUNCHER.read_text("utf-8")
+    assert "$DublinNow.Hour -ne $WindowStart" in src
+    assert "$unfinishedToday" in src

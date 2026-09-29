@@ -130,6 +130,16 @@ function Test-ProcessAlive([int] $ProcessId) {
     return [bool](Get-Process -Id $ProcessId -ErrorAction SilentlyContinue)
 }
 
+# ONCE A DAY, AT THE SLOT (principal, 2026-09-29: "run once only at 12 pm noon"). A FRESH pass
+# starts only in the lane's first hour -- 12:xx Dublin for Claude, 00:xx for Codex. The later
+# hourly firings exist solely to RESUME a pass that today's slot started and something cut off;
+# with no unfinished pass for today they exit 0 on one file read and write nothing.
+$pre = Get-CycleState
+$unfinishedToday = $pre -and $pre.date -eq $Today -and $pre.status -eq "RUNNING"
+if (-not $WhatIfOnly -and -not $unfinishedToday -and $DublinNow.Hour -ne $WindowStart) {
+    exit 0
+}
+
 Write-Cycle ("cycle start (Dublin {0:yyyy-MM-dd HH:mm})" -f $DublinNow)
 Write-Cycle "repo $RepoRoot"
 
