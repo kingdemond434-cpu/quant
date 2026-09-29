@@ -937,7 +937,6 @@ LEG_DEPARTMENT: dict[str, str] = {
                     "intel"),
     # discovery: the candidate pipeline, in order, plus the evolutionary generators
     **dict.fromkeys(("search", "sweep", "breadth_sweep", "compile_candidates", "merge_docket",
-                     "chart_allocation",
                      "deepen", "alpha_evolution", "alpha_rl", "ml_layer", "ensemble_optimizer",
                      "requeue_unrunnable", "queue_cycle", "queue_compact", "miner_conversion",
                      "recertify_canon", "session_chart_expansion", "experiment_design",
@@ -962,7 +961,7 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "exposure_decomposition", "event_response_atlas", "causal_lab",
                      "event_graph_lab",
                      "world_lab", "macro_department", "news_event_stream",
-                     "event_sleeves", "macro_intelligence", "world_model", "market_posteriors",
+                     "event_sleeves", "macro_intelligence", "world_model",
                      "market_constitution", "dislocation_lab", "macro_state_engine",
                      # Tier-1 B3/B4: the per-asset world model and the learned representation
                      # lane are both about what the market IS, before anything predicts it.
@@ -3446,12 +3445,6 @@ def main() -> None:
     # CAPITAL -- it publishes epsilon so `residual_hunt` can hunt what it cannot explain.
     wmd = _costed("world_model", lambda: _producer("world_model", "research/world_model.py",
                                                     "--once", "--budget-s", "1200"))
-    # F3, THE NINE-AXIS POSTERIORS, DARK SINCE IT WAS MOVED OFF `world_model.py` (2026-09-17).
-    # Two estimators per axis with the disagreement kept per axis; it publishes distributions
-    # (reports/MARKET_POSTERIORS.json) and sizes, trades and promotes nothing. A few seconds of
-    # bar reads, so it rides beside the world model it was split from.
-    mpo = _costed("market_posteriors", lambda: _producer(
-        "market_posteriors", "research/market_posteriors.py", "--apply"))
     # THE CANONICAL RESEARCH REGISTRY (principal 2026-09-17: one registry, its research chain
     # populated by the organs that do the work): the bridge leg lands the desk's record --
     # candidates, trials, runs, cards+events, memories, workers -- and publishes the counts,
@@ -4512,12 +4505,6 @@ def main() -> None:
     lkp = _costed("lake_promote", lake_promote)
     orth = _costed("orthogonality", orthogonality)
     sess = _costed("session_allocation", session_allocation)
-    # WHICH CHART THE HUNT READS: `edge_search` already draws its chart from
-    # `chart_allocator.pick`, but the allocation itself (reports/CHART_ALLOCATION.json) was only
-    # ever published by hand. It reads the docket and the parquet listing -- seconds -- and
-    # allocates research effort only; no sleeve is resized.
-    cha = _costed("chart_allocation", lambda: _producer(
-        "chart_allocation", "research/chart_allocator.py"))
     sxp = _costed("session_chart_expansion", session_chart_expansion)
     stf = _costed("stamp_freshness", stamp_freshness)
     fat = _costed("fill_attribution", fill_attribution)
@@ -4916,8 +4903,7 @@ def main() -> None:
                     "source_registry": srg, "event_response_atlas": era, "world_lab": wlb,
                     "news_event_stream": nes, "event_sleeves": evs,
                     "causal_lab": clb, "event_graph_lab": egl,
-                    "world_model": wmd, "market_posteriors": mpo,
-                    "residual_hunt": rhu, "residual_gate": rsg,
+                    "world_model": wmd, "residual_hunt": rhu, "residual_gate": rsg,
                     "representation_forge": rfg,
                     "registry_sync": rsy, "axis_proposer": axp,
                     "program_alpha_lane": pal, "trajectory_evolution": tev,
@@ -4982,7 +4968,7 @@ def main() -> None:
                     "causal_graph": cg, "alpha_rl": arl,
                     "research_exchange_score": rxs, "lake_promote": lkp,
                     "orthogonality": orth,
-                    "session_allocation": sess, "chart_allocation": cha,
+                    "session_allocation": sess,
                     "session_chart_expansion": sxp,
                     "stamp_freshness": stf,
                     "fill_attribution": fat,

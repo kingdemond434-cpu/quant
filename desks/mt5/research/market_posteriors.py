@@ -17,9 +17,9 @@ TWO LINES DIFFER FROM THE COMMITTED FILE, both forced by the move: this header, 
 now names `reports/MARKET_POSTERIORS.json` instead of `reports/WORLD_MODEL.json`. Leaving a dark
 organ pointed at a scheduled organ's artifact would mean whichever ran last won, silently.
 
-WIRED 2026-09-29 (Tier-5 audit XCI/107): the `market_posteriors` hourly leg runs it with
-`--apply` in the macro department, information layer, beside the world model it was split from.
-It still sizes, trades and promotes nothing.
+WIRED 2026-09-29 (Tier-5 audit XCI/107): `ops/run_frontier_audit.cmd` (MT5-FrontierAudit,
+daily) runs it with `--apply` right after the world model it was split from -- off the hourly
+research chain, so it costs no miner a minute. It still sizes, trades and promotes nothing.
 """
 
 from __future__ import annotations

@@ -48,8 +48,8 @@ one confidence scalar. It was EXISTS-DARK: no leg, no layer, no test, and U3 did
 is now `desks/mt5/research/market_posteriors.py`, verbatim, writing `reports/MARKET_POSTERIORS.
 json` instead of this organ's artifact -- two organs cannot own one module name or one artifact,
 and a dark organ pointed at a scheduled organ's artifact means whichever ran last wins, silently.
-Nothing of it was deleted, and since 2026-09-29 it runs as its own `market_posteriors` hourly
-leg. The two models answer different questions and the axes
+Nothing of it was deleted, and since 2026-09-29 it runs on MT5-FrontierAudit right after this
+organ. The two models answer different questions and the axes
 it estimates are exactly the kind of input this one should eventually read.
 
 UNMEASURED IS A VERDICT (L1.28a). A symbol with too few bars, an axis whose stamps do not parse,

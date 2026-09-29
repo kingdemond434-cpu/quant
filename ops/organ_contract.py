@@ -353,6 +353,13 @@ CONTRACTS: dict[str, tuple[str, int, str]] = {
         "whether the desk's strategy LAYERS are separable -- the share of fitness variance each "
         "axis pair carries in its interaction alone, and what the joint genome scores against "
         "the fixed recipe out of sample"),
+    # Tier-5 audit XCI/107 and XCIV (2026-09-29): both were built and ran on no clock.
+    "MT5-FrontierAudit (market posteriors)": (
+        "desks/mt5/reports/MARKET_POSTERIORS.json", 1560,
+        "F3: nine market axes as posteriors, two estimators each, disagreement kept per axis"),
+    "MT5-FrontierAudit (chart allocation)": (
+        "desks/mt5/reports/CHART_ALLOCATION.json", 1560,
+        "research effort per chart, inverse to the docket share each chart already holds"),
 }
 
 

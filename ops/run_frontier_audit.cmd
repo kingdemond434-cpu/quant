@@ -30,6 +30,14 @@ cd /d C:\opt\quant
 "%PY%" -u "desks\mt5\research\orthogonality.py" --apply >>"%LOG%" 2>&1
 "%PY%" -u "desks\mt5\research\unknown_unknowns.py" --apply >>"%LOG%" 2>&1
 "%PY%" -u "desks\mt5\research\world_model.py" --apply >>"%LOG%" 2>&1
+rem TWO MEASUREMENTS THAT WERE DARK (Tier-5 audit XCI/107 and XCIV, 2026-09-29).
+rem market_posteriors is F3, the nine-axis posteriors split off world_model on 2026-09-17;
+rem chart_allocator publishes the per-chart hunting weights edge_search already draws from.
+rem Both read artifacts and bars for seconds, write one report each, and size, trade and
+rem promote nothing. They run HERE, off the hourly research chain, so wiring them takes no
+rem minute from any miner, crawler or generator.
+"%PY%" -u "desks\mt5\research\market_posteriors.py" --apply >>"%LOG%" 2>&1
+"%PY%" -u "desks\mt5\research\chart_allocator.py" >>"%LOG%" 2>&1
 "%PY%" -u "desks\mt5\research\representation_discovery.py" --apply >>"%LOG%" 2>&1
 "%PY%" -u "desks\mt5\research\joint_evolution.py" --apply >>"%LOG%" 2>&1
 "%PY%" -u "desks\mt5\research\negative_knowledge.py" --apply >>"%LOG%" 2>&1
