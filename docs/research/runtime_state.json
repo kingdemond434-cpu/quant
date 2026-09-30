@@ -23,11 +23,11 @@
   }
  },
  "census": {
-  "LIVE": 91,
+  "LIVE": 90,
   "STALE": 46,
   "MISSING": 47,
   "NEVER": 719,
-  "UNMEASURED": 33
+  "UNMEASURED": 34
  },
  "scope": {
   "attested": 936,
@@ -52,8 +52,11 @@
     ]
    },
    {
-    "at": "2026-09-30T20:04:04+00:00",
+    "at": "2026-09-30T20:20:44+00:00",
     "host": "vm",
+    "machine_id": "0d0af05ee8fd4dc29275718f2ce4dff1",
+    "on_attesting_host": false,
+    "identity": "UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm",
     "organs": [
      "leg:session_variant_remap"
     ]
@@ -23736,8 +23739,8 @@
    "clock": "hourly_cycle:session_variant_remap",
    "cadence_s": 3600,
    "max_silence_s": 7200,
-   "state": "LIVE",
-   "why": "artifact 0.0h old, inside its cadence",
+   "state": "UNMEASURED",
+   "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): its state on the attesting host is unmeasured (read LIVE here)",
    "last_run_at": "UNMEASURED",
    "last_run_outcome": "UNMEASURED",
    "last_run_source": "UNMEASURED",
@@ -23745,12 +23748,15 @@
    "artifact_declared": "desks/mt5/reports/SESSION_VARIANT_REMAP.json",
    "artifact_resolved_by": "declared",
    "artifact_declared_n": 1,
-   "artifact_age_s": 64,
+   "artifact_age_s": 152,
    "artifact_bytes": 12718,
    "artifact_sha256": "77382b6b203dc358acebb7f3c05509dcaac58eb3138f441a117d043b248178fc",
    "summary": {},
    "progress_metric": "leg_completions",
-   "consumer": "UNMEASURED"
+   "consumer": "UNMEASURED",
+   "measured_on": "vm",
+   "measured_on_machine_id": "0d0af05ee8fd4dc29275718f2ce4dff1",
+   "measured_at": "2026-09-30T20:20:44+00:00"
   }
  ],
  "ratchet": {

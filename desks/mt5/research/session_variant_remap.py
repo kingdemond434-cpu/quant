@@ -373,6 +373,12 @@ def run(*, budget_s: float = 240.0, donate_rows: bool = True, docket: Path = DOC
         out: Path = REPORT, canon: Path | None = None,
         ledger: Path | None = None) -> dict[str, Any]:
     started = time.monotonic()
+    # An unreadable universe.json makes every class key miss the cache, so every variant reads
+    # UNMEASURED. That result stands (UNMEASURED is never DEAD, never 0); the cause is warned and
+    # published so it is never mistaken for a cache that was simply never measured.
+    unreadable = ff.universe_unreadable()
+    if unreadable:
+        ff.warn_universe_unreadable(unreadable)
     cache = ff.load_cache(cache_path)
     guard = ff.load_guard(canon, ledger)
     variants, idents, census = scan(docket, guard=guard)
@@ -386,6 +392,7 @@ def run(*, budget_s: float = 240.0, donate_rows: bool = True, docket: Path = DOC
            else {"available": True, "dry_run": True,
                  "planned": sum(1 for r in rows if r.get("replacement"))})
     doc = report(variants, rows, census, cls, don, guard)
+    doc["universe_unreadable"] = unreadable or None
     doc["elapsed_s"] = round(time.monotonic() - started, 2)
     out.parent.mkdir(parents=True, exist_ok=True)
     fd, tmp = tempfile.mkstemp(dir=str(out.parent), suffix=".tmp")

@@ -383,3 +383,44 @@ def test_leg_keeps_certified_and_filter_only_variants_out_of_the_sidecar(
     assert doc["dead_but_server_window_fires"] == 0
     marks = [json.loads(x) for x in (tmp_path / "DEAD.jsonl").read_text().splitlines()]
     assert all(m["session"] != "asia" for m in marks)
+
+
+def test_unreadable_universe_is_warned_and_published_and_stays_unmeasured(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+        caplog: pytest.LogCaptureFixture) -> None:
+    """The audit of #145: an unreadable universe.json makes every class key miss the cache. The
+    variants stay UNMEASURED (never DEAD, never 0) and the cause is warned and published."""
+    import logging
+
+    import research.universe_policy as up
+    import session_variant_remap as svr
+    fam = "london_close_momentum"
+    cache_path = tmp_path / "firing.json"
+    # Measured under the real registry's class for EURUSD...
+    ff.save_cache(_cache({ff.key(fam, {}, SYM): {**_rec({16: 100}, {"london": 100, "ny": 100}),
+                                            "host": ff._host(), "measured_at": 1e12}}),
+                  cache_path)
+    assert ff.universe_unreadable() == ""
+    # ...then the registry becomes unreadable.
+    broken = tmp_path / "universe.json"
+    broken.write_text("{not json", encoding="utf-8")
+    monkeypatch.setattr(up, "UNIVERSE", broken)
+    monkeypatch.setattr(ff, "_CLASS_CACHE", {})
+    monkeypatch.setattr(ff, "_WARNED", set())
+    monkeypatch.setattr(ff, "measure", lambda *a, **k: {"status": ff.UNMEASURED, "n": 0})
+    assert "unreadable" in ff.universe_unreadable()
+    docket = tmp_path / "external_survivors.json"
+    docket.write_text(json.dumps([{"genome_id": f"g{s}", "symbol": SYM, "family": fam,
+                                   "params": {"session": s}} for s in ("asia", "london", "ny")]),
+                      encoding="utf-8")
+    with caplog.at_level(logging.WARNING, logger=ff.__name__):
+        doc = svr.run(budget_s=5.0, donate_rows=False, docket=docket, cache_path=cache_path,
+                      sidecar=tmp_path / "DEAD.jsonl", out=tmp_path / "REMAP.json",
+                      canon=tmp_path / "no_canon.json", ledger=tmp_path / "no_ledger.jsonl")
+    assert doc["universe_unreadable"] and str(broken) in doc["universe_unreadable"]
+    assert json.loads((tmp_path / "REMAP.json").read_text())["universe_unreadable"]
+    assert doc["unmeasured"] == 3 and doc["dead_found"] == 0 and doc["live"] == 0
+    assert doc["dead_share_of_measured"] == ff.UNMEASURED
+    assert any("broker registry unreadable" in r.getMessage() for r in caplog.records)
+    # Nothing is cached off the broken read: the class returns the moment the file does.
+    assert ff._CLASS_CACHE == {}

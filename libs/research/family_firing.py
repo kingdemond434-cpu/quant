@@ -56,6 +56,7 @@ from __future__ import annotations
 import contextlib
 import inspect
 import json
+import logging
 import os
 import re
 import sys
@@ -278,21 +279,64 @@ def _modifier_keys() -> frozenset[str]:
 
 
 _CLASS_CACHE: dict[str, str] = {}
+_LOG = logging.getLogger(__name__)
+_WARNED: set[str] = set()
+
+
+def universe_unreadable() -> str:
+    """"" when the broker registry (`universe_policy.UNIVERSE`) reads with symbol rows; otherwise
+    WHY it does not.
+
+    THE AUDIT OF #145 (2026-09-30): the cache key carries the asset class, so an unreadable
+    universe.json makes EVERY class read "", every key miss the cache, and every variant read
+    UNMEASURED -- correct (UNMEASURED is never DEAD) but silent, indistinguishable from a cache
+    that was simply never measured. This names the cause so the leg's artifact can carry it."""
+    try:
+        _ensure_path()
+        import research.universe_policy as up  # type: ignore[import-not-found]
+        path = Path(up.UNIVERSE)
+        if up._registry():
+            return ""
+    except Exception as exc:
+        return f"universe_policy unreachable ({type(exc).__name__}: {exc})"
+    if not path.exists():
+        return f"{path} is missing"
+    try:
+        json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        return f"{path} is unreadable ({type(exc).__name__})"
+    return f"{path} holds no symbol rows"
+
+
+def warn_universe_unreadable(reason: str) -> None:
+    """Log the unreadable-registry cause once per reason per process."""
+    if reason and reason not in _WARNED:
+        _WARNED.add(reason)
+        _LOG.warning("family_firing: broker registry unreadable -- %s; every asset-class key "
+                     "misses the cache and every session variant reads %s until it is fixed",
+                     reason, UNMEASURED)
 
 
 def asset_class(symbol: str | None) -> str:
     """The symbol's asset class from the broker registry (`universe_policy.asset_class_of`);
-    "" when unknown or unreachable."""
+    "" when unknown or unreachable. An unreadable registry is WARNED, and its "" is not cached,
+    so the class returns the moment the file does."""
     sym = str(symbol or "").strip().upper()
     if not sym:
         return ""
     if sym not in _CLASS_CACHE:
         try:
             _ensure_path()
-            from research.universe_policy import asset_class_of  # type: ignore[import-not-found]
-            _CLASS_CACHE[sym] = str(asset_class_of(sym) or "")
+            from research.universe_policy import asset_class_of
+            cls = str(asset_class_of(sym) or "")
         except Exception:
-            _CLASS_CACHE[sym] = ""
+            cls = ""
+        if not cls:
+            reason = universe_unreadable()
+            if reason:
+                warn_universe_unreadable(reason)
+                return ""
+        _CLASS_CACHE[sym] = cls
     return _CLASS_CACHE[sym]
 
 
