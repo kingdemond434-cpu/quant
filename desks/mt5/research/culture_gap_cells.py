@@ -460,7 +460,9 @@ def run(budget_s: float = 240.0, *, dry_run: bool = False, year: int | None = No
             "participant_structure": rec.get("participant_structure"),
             "source_id": rec.get("source_id"), "source_verified": src.get("verified",
                                                                            CC.UNMEASURED),
-            "cells_total": len(cells), "cells_minted_total": len(done),
+            "cells_total": len(cells),
+            # minted keys of the CURRENT cell list: a key from a superseded recipe is history
+            "cells_minted_total": len(done & {cell_key(rec["id"], c) for c in cells}),
             "emitted_this_pass": res["emitted"], "created_this_pass": res["created"],
             "complete": res["next"] >= len(cells) and len(cells) > 0,
             "variants": note.get("variants"), "dropped_variants": note.get("dropped_variants"),
