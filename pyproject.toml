@@ -81,8 +81,8 @@ crosscheck = [
 # Battle-tested statistics for cointegration/stationarity (stat-arb cards) and GARCH volatility.
 # Optional: libs/research/stationarity import-guards these; hand-rolling ADF/GARCH is banned.
 stats = [
-    "statsmodels>=0.14",
-    "arch>=6.3",
+    "statsmodels>=0.14,<1",
+    "arch>=6.3,<8",
 ]
 
 [tool.hatch.build.targets.wheel]

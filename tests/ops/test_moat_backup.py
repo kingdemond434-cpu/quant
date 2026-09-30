@@ -49,7 +49,12 @@ def test_backup_replicates_verifies_and_drills(tmp_path):
     for name in _STORES:
         assert rep["stores"][name]["status"] == "REPLICATED", f"{name} not replicated"
     # The replica actually restores: open it and read the row back.
-    con = sqlite3.connect(str(tmp_path / "backups/moat/sor_research"))
+    # sor_research left the covered class on 2026-08-26 (moved to _NOT_COVERED bulk at 637MB, see
+    # run_moat_backup._STORES); alpha_registry is the covered sqlite store now, so it is drilled.
+    assert "sor_research" not in _STORES
+    sqlite_stores = [n for n, (_, kind) in _STORES.items() if kind == "sqlite"]
+    assert sqlite_stores, "no covered sqlite store left to drill"
+    con = sqlite3.connect(str(tmp_path / "backups/moat" / sqlite_stores[0]))
     assert con.execute("SELECT id FROM findings").fetchone()[0] == "F1"
     con.close()
 
