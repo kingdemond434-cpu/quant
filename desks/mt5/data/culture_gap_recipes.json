@@ -1905,7 +1905,8 @@
    ],
    "source_id": "boc_policy_rate_schedule",
    "mechanism": "every Bank of Canada policy-rate announcement lands at 09:45 ET; displacement built into that hour reverses once the release is priced",
-   "note": "the cell fires in that hour every weekday; announcement days are 8 of ~250, so the gauntlet decides whether the hour carries anything on the other days"
+   "note": "fires ONLY on the Bank's fixed announcement dates (desks/mt5/data/calendars/boc_policy_rate.json), in the hour containing 09:45 Toronto time on each date",
+   "calendar": "boc_policy_rate"
   },
   {
    "id": "ca_tsx_session_to_close",

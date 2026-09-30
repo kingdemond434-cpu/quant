@@ -211,9 +211,10 @@ def spread_costs(sym: str, rows: dict[str, dict[str, Any]], bars_dir: Path | Non
                  ) -> tuple[float | None, float | None, str]:
     """(median spread cost, snapshot spread cost) as fractions of notional, and how measured.
 
-    With the desk's own H1 close: points x tick size / price. Without bars, for a pair whose
-    BASE is USD: points x tick value / (contract size x USD-in-account), the USD factor read off
-    EURUSD's own tick value -- price-free and exact for that shape. Anything else: UNMEASURED."""
+    With the desk's own H1 close: points x tick size / price. Without bars, for an FX pair:
+    points x tick value / (contract size x the base currency in the account currency) -- the USD
+    factor read off EURUSD's own tick value, a non-USD base through its USD pair's close. Anything
+    else: UNMEASURED."""
     r = rows.get(sym.upper()) or {}
     med, snap = r.get("median_spread_pts"), r.get("spread_pts_at_collection")
     ts, tv, cs = r.get("tick_size"), r.get("tick_value"), r.get("contract_size")
@@ -223,13 +224,26 @@ def spread_costs(sym: str, rows: dict[str, dict[str, Any]], bars_dir: Path | Non
         return ((float(med) * f if med is not None else None),
                 (float(snap) * f if snap is not None else None), "bars: pts x tick_size / close")
     eu = rows.get("EURUSD") or {}
-    if (sym.upper().startswith("USD") and len(sym) == 6 and tv and cs and eu.get("tick_value")
-            and eu.get("tick_size") and eu.get("contract_size")):
+    base = sym.upper()[:3] if len(sym) == 6 and sym.isalpha() else ""
+    if base and tv and cs and eu.get("tick_value") and eu.get("tick_size") and eu.get(
+            "contract_size"):
         usd_acct = float(eu["tick_value"]) / (float(eu["tick_size"]) * float(eu["contract_size"]))
-        g = float(tv) / (float(cs) * usd_acct)
-        return ((float(med) * g if med is not None else None),
-                (float(snap) * g if snap is not None else None),
-                "terms: pts x tick_value / (contract_size x USD-in-account)")
+        base_acct: float | None = None
+        how = ""
+        if base == "USD":
+            base_acct, how = usd_acct, "USD-in-account"
+        else:
+            direct, inverse = _last_close(f"{base}USD", bars_dir), _last_close(
+                f"USD{base}", bars_dir)
+            if direct:
+                base_acct, how = direct * usd_acct, f"{base}USD close x USD-in-account"
+            elif inverse:
+                base_acct, how = usd_acct / inverse, f"USD-in-account / USD{base} close"
+        if base_acct:
+            g = float(tv) / (float(cs) * base_acct)
+            return ((float(med) * g if med is not None else None),
+                    (float(snap) * g if snap is not None else None),
+                    f"terms: pts x tick_value / (contract_size x {how})")
     return None, None, CC.UNMEASURED
 
 
@@ -453,6 +467,8 @@ def cells_for(rec: dict[str, Any], year: int, universe_syms: set[str], *,
         extra = [{"source": rec["pack"], "signal": s} for s in sigs]
     out: list[dict[str, Any]] = []
     fixed = dict(rec.get("fixed") or {})
+    note["cells_per_symbol"] = (len(kept) * len(extra) * len(_grid(rec))
+                                * len(rec.get("charts") or ["H1"]))
     for v in kept:
         for sym in syms:
             for ex in extra:
@@ -692,7 +708,7 @@ def run(budget_s: float = 240.0, *, dry_run: bool = False, year: int | None = No
     order = sorted(recs, key=lambda r: (_ORDER.get(recipe_gap_state(r, states), 9), r["id"]))
     for rec in order:
         cells, note = cells_for(rec, yr, uni, rows=rows, modes=modes)
-        n_cells_each = len(cells) // max(1, len({c["symbol"] for c in cells}))
+        n_cells_each = int(note.get("cells_per_symbol") or 0)
         for gt in note.get("gated") or []:
             gated.append({"recipe": rec["id"], "cells_not_minted": n_cells_each, **gt})
         for c in cells:
