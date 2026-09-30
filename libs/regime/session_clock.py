@@ -58,6 +58,16 @@ def server_to_utc(index: Any) -> pd.DatetimeIndex:
     return local.tz_convert("UTC")
 
 
+def utc_offset_h(at: Any = None) -> int:
+    """The venue stamp's offset from UTC, in hours, at the UTC instant `at` (default now): 3 while
+    New York is on daylight time, 2 otherwise. A constant is right for half the year only."""
+    ts = pd.Timestamp.now(tz="UTC") if at is None else pd.Timestamp(at)
+    ts = ts.tz_localize("UTC") if ts.tzinfo is None else ts.tz_convert("UTC")
+    local = ts.tz_convert(SERVER_TZ)
+    stamp = local.tz_localize(None) + pd.Timedelta(hours=SERVER_SHIFT_H)
+    return round((stamp - ts.tz_localize(None)) / pd.Timedelta(hours=1))
+
+
 def utc_hours(index: Any) -> np.ndarray:
     """The true UTC hour of each broker-stamped time."""
     return np.asarray(server_to_utc(index).hour, dtype=np.int16)

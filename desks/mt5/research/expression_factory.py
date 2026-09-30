@@ -675,6 +675,19 @@ class Cell:
                 "representation": self.representation(), "descriptor": self.descriptor()}
 
 
+#: When session states moved to true UTC. A registry row last written before it was judged on the
+#: broker stamp clock; `retract_wrong_clock` re-parks it.
+CLOCK_FIX_AT = "2026-10-01T00:00:00+00:00"
+WRONG_CLOCK_REASON = ("WRONG_CLOCK: session state judged on the broker's stamp hour, not UTC "
+                      "(fixed 2026-09-30); the corrected cell is re-tested under its @utc1 key")
+
+
+def _wrong_clock_cell(cell: dict[str, Any]) -> bool:
+    """A session-state cell recorded before its key carried the UTC clock version."""
+    return str(cell.get("state") or "").startswith("session:") \
+        and "@utc1" not in str(cell.get("key") or "")
+
+
 def executable_by_formula_family(expr: Expr, state: str) -> str | None:
     """Why `family_formula` could NOT run this cell as written, or None when it can."""
     if state != "none":
@@ -988,7 +1001,8 @@ def tier2(cell: Cell, world: World, t1: Tier1, evaluate: Any, rng: np.random.Gen
     out.stability = (held / len(neigh)) if neigh else None
     # 2. session and regime splits of the OOS trades
     oos_entries = t1.entries[t1.n_is:]
-    hours = world.hours[oos_entries]
+    # SESSIONS is a UTC table: split on the true UTC hour, never the broker stamp (2-3 h ahead).
+    hours = (world.utc_hours if world.utc_hours is not None else world.hours)[oos_entries]
     regs = world.vol_regime[oos_entries]
     splits: dict[str, float] = {}
     for name, (lo, hi) in SESSIONS.items():
@@ -1401,6 +1415,57 @@ class Factory:
         for name, e in ag.CANON.items():
             self._parent(f"canon:{name}", e, "canon")
         return census
+
+    def retract_wrong_clock(self) -> dict[str, Any]:
+        """Withdraw what was found on a session state under the broker's stamp clock.
+
+        Before 2026-09-30 a `session:*` state was judged on the stamp hour, so its QD-archive
+        niche and its registry discovery describe hours nobody proposed. The archive entry is
+        dropped (the corrected cell must win its niche on the right clock, not inherit a score),
+        and the registry row is re-parked BLOCKED with the reason named. Idempotent: only rows
+        last written before CLOCK_FIX_AT are touched, so a corrected cell re-recorded onto the
+        same discovery keeps its own disposition.
+        """
+        out: dict[str, Any] = {"archive": 0, "registry": 0}
+        for desc in [d for d, e in self.archive.items()
+                     if _wrong_clock_cell((e or {}).get("cell") or {})]:
+            del self.archive[desc]
+            out["archive"] += 1
+        if self.dry_run:
+            return out
+        try:
+            from libs.moat import registry as reg
+            conn = self.registry.connect() if self.registry is not None else reg.connect()
+        except Exception as exc:
+            out["error"] = f"registry unavailable: {type(exc).__name__}"
+            return out
+        try:
+            rows = conn.execute(
+                "SELECT discovery_id, payload_json FROM discoveries WHERE generator=? "
+                "AND source_type='expression_cell' AND sessions_json LIKE '%session:%' "
+                "AND updated_at < ? AND COALESCE(blocked_reason, '') NOT LIKE 'WRONG_CLOCK%'",
+                (SOURCE, CLOCK_FIX_AT)).fetchall()
+            for did, payload in rows:
+                try:
+                    cell = (json.loads(payload or "{}") or {}).get("cell") or {}
+                except ValueError:
+                    cell = {}
+                if not _wrong_clock_cell(cell):
+                    continue
+                conn.execute("UPDATE discoveries SET state='BLOCKED', blocked_reason=?, "
+                             "updated_at=? WHERE discovery_id=?",
+                             (WRONG_CLOCK_REASON, now_iso(), did))
+                out["registry"] += 1
+            conn.commit()
+        except Exception as exc:
+            out["error"] = f"registry retraction: {type(exc).__name__}: {exc}"[:200]
+        finally:
+            if self.registry is None:
+                conn.close()
+        if out["archive"] or out["registry"]:
+            self.say(f"clock retraction: {out['archive']} archive niche(s), {out['registry']} "
+                     "registry discovery(ies) found on the broker stamp clock withdrawn")
+        return out
 
     def harvest(self) -> dict[str, Any]:
         """The graveyard and the parked candidates FIRST: dead and waiting formula cells."""
@@ -1939,6 +2004,7 @@ class Factory:
         report["fields"] = self.lake.catalogue.census()
         report["parents_census"] = self.load_parents()
         report["harvest"] = self.harvest()
+        report["clock_retraction"] = self.retract_wrong_clock()
         loaded = self.load_worlds(symbols, max_symbols)
         report["worlds"] = {"symbols": loaded, "basket": self.state.get("basket", ""),
                             "bindings": {s: {t: f.name for t, f in w.bindings.items()}

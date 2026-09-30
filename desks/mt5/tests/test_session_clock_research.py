@@ -43,3 +43,55 @@ def test_a_corrected_session_cell_is_not_skipped_as_already_tested(monkeypatch) 
     plain = SimpleNamespace(symbol="EURUSD", hold=8, state="none", expr=None)
     assert key(sess) == "EURUSD|8|session:london@utc1|E"
     assert key(plain) == "EURUSD|8|none|E"      # unchanged: nothing else is re-tested
+
+
+def test_the_oos_session_split_reads_the_utc_hour() -> None:
+    import expression_factory as ef
+    src = Path(ef.__file__).read_text("utf-8")
+    assert "hours = world.hours[oos_entries]" not in src
+    assert "world.utc_hours if world.utc_hours is not None else world.hours)[oos_entries]" in src
+
+
+def test_wrong_clock_cells_are_recognised_by_their_unversioned_key() -> None:
+    import expression_factory as ef
+    old = {"state": "session:london", "key": "EURUSD|4|session:london|x"}
+    new = {"state": "session:london", "key": "EURUSD|4|session:london@utc1|x"}
+    assert ef._wrong_clock_cell(old) is True
+    assert ef._wrong_clock_cell(new) is False
+    assert ef._wrong_clock_cell({"state": "regime:high", "key": "E|4|regime:high|x"}) is False
+
+
+def test_the_retraction_drops_archive_niches_and_re_parks_registry_rows(tmp_path) -> None:
+    import json
+    import sqlite3
+
+    import expression_factory as ef
+
+    db = sqlite3.connect(tmp_path / "r.sqlite")
+    db.execute("CREATE TABLE discoveries (discovery_id TEXT, generator TEXT, source_type TEXT, "
+               "sessions_json TEXT, payload_json TEXT, state TEXT, blocked_reason TEXT, "
+               "updated_at TEXT)")
+    old = {"cell": {"state": "session:ny", "key": "E|4|session:ny|x"}}
+    new = {"cell": {"state": "session:ny", "key": "E|4|session:ny@utc1|x"}}
+    rows = [("d1", old, "2026-09-20T00:00:00+00:00"), ("d2", new, "2026-09-20T00:00:00+00:00"),
+            ("d3", old, "2026-10-02T00:00:00+00:00")]
+    for did, payload, at in rows:
+        db.execute("INSERT INTO discoveries VALUES (?,?,?,?,?,?,?,?)",
+                   (did, ef.SOURCE, "expression_cell", '["session:ny"]', json.dumps(payload),
+                    "BLOCKED", "NO_EXECUTOR: state filter", at))
+    db.commit()
+
+    class _Reg:
+        @staticmethod
+        def connect() -> sqlite3.Connection:
+            return db
+
+    fac = ef.Factory.__new__(ef.Factory)
+    fac.archive = {"a": {"cell": old["cell"]}, "b": {"cell": new["cell"]}}
+    fac.dry_run, fac.registry, fac.log = False, _Reg(), []
+    out = fac.retract_wrong_clock()
+    assert out == {"archive": 1, "registry": 1} and set(fac.archive) == {"b"}
+    got = dict(db.execute("SELECT discovery_id, blocked_reason FROM discoveries").fetchall())
+    assert got["d1"].startswith("WRONG_CLOCK") and got["d2"].startswith("NO_EXECUTOR")
+    assert got["d3"].startswith("NO_EXECUTOR")          # rewritten after the fix: left alone
+    assert fac.retract_wrong_clock()["registry"] == 0   # idempotent
