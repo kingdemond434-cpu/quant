@@ -131,3 +131,80 @@ def test_a_value_kept_on_the_evidence_is_a_solved_constant(monkeypatch) -> None:
     monkeypatch.setattr(sgd, "derive_min_stop_spread_mult", lambda deals, **k: dict(kept))
     monkeypatch.setattr(sgd, "derive_entry_drift_tol_frac", lambda deals, **k: dict(ok))
     assert sgd.derive()["status"] == "OK"
+
+
+# ------------------------------------------------ the robustness gate: two-sided, derived N
+
+def _linear_gap(root: float):
+    """A stand-in solve whose candidate-vs-today gap is (edge - root) per day."""
+    def fn(deals, edge_override=None, grid=None, against=None, **_k):
+        return {"gap_vs_today": {"delta_elog_per_day": float(edge_override) - root}}
+    return fn
+
+
+def test_days_needed_is_two_ses_of_a_day_inside_the_distance_to_break_even() -> None:
+    assert sgd.days_needed(1.0, 0.5) == 16          # (2 * 1.0 / 0.5)^2
+    assert sgd.days_needed(1.2, 0.1) == 576
+    assert sgd.days_needed(1.0, 0.0) >= 10 ** 6       # a decision on the knife-edge never adopts
+
+
+def test_the_break_even_edge_is_found_on_the_nearer_side() -> None:
+    e_star, dist = sgd.break_even_edge(_linear_gap(0.1), [], 0.2, 0.25, 0.05)
+    assert e_star == pytest.approx(0.1, abs=0.01) and dist == pytest.approx(0.1, abs=0.01)
+    e_star, dist = sgd.break_even_edge(_linear_gap(-5.0), [], 0.2, 0.25, 0.05)
+    assert e_star is None and dist == sgd.EDGE_SEARCH_R
+
+
+def _moved(cand: float, less: bool, live_days: int, measured: int, of: int,
+           live_holds: bool = True) -> dict:
+    return {"status": "OK", "derived": cand, "today": 0.25, "less_aggressive_than_today": less,
+            "gap_vs_today": {"value": cand, "holds": live_holds},
+            "inputs": {"rr": 1.5, "coverage": {"measured": measured, "of": of, "unit": "sym"},
+                       "edge": {"posterior_r": 0.3, "live_days": live_days,
+                                "live_day_mean_sd": None}}}
+
+
+def test_the_gate_opens_the_same_way_for_a_more_aggressive_move() -> None:
+    # Rule 2: a move UP is held to the same three tests, and adopted when they pass.
+    fn = _linear_gap(-0.7)                            # break-even 1R away -> few days needed
+    res = _moved(0.5, less=False, live_days=40, measured=10, of=16)
+    g = sgd.robustness_gate(fn, [], res, {"gap_vs_today": {"holds": True}})
+    assert g["adopt"] is True and g["adopt_value"] == 0.5
+    assert g["direction"] == "more_aggressive"
+    assert g["a_live_days"]["days_needed"] <= 40
+
+
+def test_thin_live_evidence_publishes_the_value_and_keeps_todays() -> None:
+    fn = _linear_gap(0.2)                             # break-even 0.1R from the live edge
+    res = _moved(0.05, less=True, live_days=1, measured=3, of=16)
+    g = sgd.robustness_gate(fn, [], res, {"gap_vs_today": {"holds": False}})
+    assert g["adopt"] is False and g["adopt_value"] == 0.25
+    assert g["direction"] == "less_aggressive"
+    assert g["a_live_days"]["days_needed"] > 1
+    assert "(a)" in g["reason"] and "(b)" in g["reason"] and "(c)" in g["reason"]
+    assert "evidence-pending" in g["reason"]
+
+
+def test_each_test_alone_blocks_adoption() -> None:
+    fn = _linear_gap(-0.7)
+    ok_prior = {"gap_vs_today": {"holds": True}}
+    assert not sgd.robustness_gate(fn, [], _moved(0.5, False, 40, 7, 16), ok_prior)["adopt"]
+    assert not sgd.robustness_gate(fn, [], _moved(0.5, False, 40, 10, 16),
+                                   {"gap_vs_today": {"holds": False}})["adopt"]
+    assert not sgd.robustness_gate(fn, [], _moved(0.5, False, 40, 10, 16, live_holds=False),
+                                   ok_prior)["adopt"]
+    assert not sgd.robustness_gate(fn, [], _moved(0.5, False, 0, 10, 16), ok_prior)["adopt"]
+
+
+def test_no_move_has_nothing_to_adopt() -> None:
+    g = sgd.robustness_gate(_linear_gap(0.0), [], {"status": "TODAY_OPTIMAL_WITHIN_NOISE",
+                                                   "today": 3.0, "why": "flat"}, {})
+    assert g == {"adopt": False, "adopt_value": 3.0, "reason": "no move to adopt: flat"}
+
+
+def test_the_solve_reports_the_paired_gap_of_a_named_value() -> None:
+    act = _active()
+    noise = np.random.default_rng(2).normal(0.0, 0.5, act.shape)
+    res = sgd._solve((1.0, 2.0, 3.0), lambda v: noise + 0.3 - 0.2 * abs(v - 2.0),
+                     act, 0.005, 3.0, "lower", against=1.0)
+    assert res["gap_vs_today"]["value"] == 1.0 and res["gap_vs_today"]["se"] > 0

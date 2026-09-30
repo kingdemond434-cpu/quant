@@ -52,12 +52,20 @@ m the same way); and the family drift delay is a single measurement from one ses
 
 An absent input is UNMEASURED, never a default: the report names what it needs.
 
+PUBLISHED IS NOT ADOPTED. Each constant carries `adopt` / `adopt_value` from `robustness_gate`,
+and the money path runs `adopt_value`: the derived number replaces today's only when (a) the
+lane's live trades span the N distinct days `days_needed` derives from the distance to the
+break-even edge, (b) the measurement covers at least half the lane's symbols, and (c) the gain
+holds on BOTH the certificate-only and the live-adjusted edge. The gate is two-sided: a move
+toward MORE aggressive passes through the same three tests (GROWTH_GOVERNANCE Rules 1 and 2).
+
     python desks/mt5/research/stop_geometry_derivation.py   # writes the report below
     -> desks/mt5/reports/STOP_GEOMETRY_DERIVATION.json
 """
 from __future__ import annotations
 
 import argparse
+import functools
 import json
 import math
 import sys
@@ -154,13 +162,18 @@ def _tick_size(symbol: str) -> float | None:
     return float(v) if isinstance(v, (int, float)) and v > 0 else None
 
 
-def _bars(symbol: str, tf: str) -> Any:
+@functools.lru_cache(maxsize=64)
+def _read_parquet(path: Path) -> Any:
     import pandas as pd
-    path = BARS / f"{symbol}_{tf}.parquet"
     try:
         return pd.read_parquet(path)
     except Exception:
         return None
+
+
+def _bars(symbol: str, tf: str) -> Any:
+    """Keyed on the full path, so a test that repoints BARS never reads a cached frame."""
+    return _read_parquet(BARS / f"{symbol}_{tf}.parquet")
 
 
 def _atr(df: Any, n: int) -> np.ndarray:
@@ -219,7 +232,8 @@ def _path_logw(daily: np.ndarray, f: float) -> np.ndarray:
 
 
 def _solve(grid: tuple[float, ...], r_of: Any, active: np.ndarray, f: float,
-           today: float, more_aggressive_is: str) -> dict[str, Any]:
+           today: float, more_aggressive_is: str,
+           against: float | None = None) -> dict[str, Any]:
     """Grid solve: maximise E[log W] subject to P(death) <= EPS_DEATH.
 
     Ties (within TIE_SE paired SEs of the best) go to aggression, as in kelly_survival. When
@@ -256,7 +270,18 @@ def _solve(grid: tuple[float, ...], r_of: Any, active: np.ndarray, f: float,
     moved = not (t_row and t_row["tied_with_best"])
     v = pick["value"] if moved else today
     less = (v > today) if more_aggressive_is == "lower" else (v < today)
+    # THE GAP A MOVE RESTS ON: the named value (default: the one chosen) against today's, paired
+    # path by path. `holds` only when it is ahead by more than TIE_SE of its own SE.
+    cand = v if against is None else against
+    gap: dict[str, Any] | None = None
+    if cand in lw and today in lw:
+        d = lw[cand] - lw[today]
+        se = float(d.std(ddof=1) / math.sqrt(len(d))) if len(d) > 1 else 0.0
+        gap = {"value": cand, "delta_elog_per_day": round(float(d.mean()), 9),
+               "se": round(se, 9),
+               "holds": bool(abs(cand - today) > 1e-12 and float(d.mean()) > TIE_SE * se)}
     return {"status": "OK" if moved else "TODAY_OPTIMAL_WITHIN_NOISE",
+            "gap_vs_today": gap,
             "derived": v, "today": today,
             "tie_rule_value": pick["value"],
             "why": (f"E[log W] is maximised at {pick['value']:g} and today's {today:g} is "
@@ -303,11 +328,19 @@ def _sleeve_of(d: dict[str, Any], names: set[str]) -> bool:
 
 def _posterior_edge(prior: float, sleeve_names: set[str],
                     deals: list[dict[str, Any]]) -> tuple[float, dict[str, Any]]:
-    live = [r for d in deals if _sleeve_of(d, sleeve_names)
+    rows = [(str(d.get("time") or "")[:10], r) for d in deals if _sleeve_of(d, sleeve_names)
             and str(d.get("account_kind") or "live") == "live"
             for r in [ledger_r(d)] if r is not None]
+    live = [r for _, r in rows]
+    by_day: dict[str, list[float]] = {}
+    for day, r in rows:
+        by_day.setdefault(day, []).append(r)
+    day_means = [float(np.mean(v)) for v in by_day.values()]
     mean, w = posterior_shift(prior, live)
     return mean, {"prior_r": round(prior, 5), "live_n": len(live),
+                  "live_days": len(by_day),
+                  "live_day_mean_sd": (round(float(np.std(day_means, ddof=1)), 5)
+                                       if len(day_means) > 1 else None),
                   "live_mean_r": round(float(np.mean(live)), 5) if live else None,
                   "live_weight": round(w, 4), "posterior_r": round(mean, 5)}
 
@@ -318,7 +351,10 @@ def _activity(rng: np.random.Generator, rate: float, slots: int) -> np.ndarray:
 
 
 def derive_min_stop_spread_mult(deals: list[dict[str, Any]], seed: int = 0,
-                                prior_only: bool = False) -> dict[str, Any]:
+                                prior_only: bool = False,
+                                edge_override: float | None = None,
+                                grid: tuple[float, ...] | None = None,
+                                against: float | None = None) -> dict[str, Any]:
     lane = [s for s in _sleeves() if s.get("exec") == "scalp_market"]
     # Geometry from every scalp sleeve (a STANDBY row is promoted with no human act, so its bars
     # are the lane's too); edge, rate and risk from the LIVE rows the book actually carries.
@@ -348,6 +384,8 @@ def derive_min_stop_spread_mult(deals: list[dict[str, Any]], seed: int = 0,
                 for s in scalps) / n_sh
     names = {str(s.get("name")) for s in _sleeves() if s.get("exec") == "scalp_market"}
     e, post = _posterior_edge(prior, names, [] if prior_only else deals)
+    if edge_override is not None:
+        e = edge_override
     days = sum(float(s.get("shadow_days") or 0) for s in scalps)
     rate = n_sh / days if days > 0 else float("nan")
     if not (rate > 0):
@@ -368,7 +406,7 @@ def derive_min_stop_spread_mult(deals: list[dict[str, Any]], seed: int = 0,
         x_eff = np.maximum(x0, m)
         return trade_r(x_eff, np.full(shape, rr), edge_price, w0, u_w)
 
-    res = _solve(M_GRID, r_of, active, f, TODAY_MIN_STOP_SPREAD_MULT, "lower")
+    res = _solve(grid or M_GRID, r_of, active, f, TODAY_MIN_STOP_SPREAD_MULT, "lower", against)
     n_bind = int((active & (x0 < max(M_GRID))).sum())
     res["binding_trades_simulated"] = n_bind
     if n_bind < MIN_SAMPLES and res.get("status") == "OK":
@@ -388,13 +426,18 @@ def derive_min_stop_spread_mult(deals: list[dict[str, Any]], seed: int = 0,
         "widening_quantiles": {q: round(float(np.quantile(w_all, q)), 3)
                                for q in (0.5, 0.9, 0.99, 0.999)},
         "edge": post, "trades_per_day": round(rate, 4), "risk_frac": f, "rr": rr,
+        "coverage": {"measured": len(lane) - len(need), "of": len(lane),
+                     "unit": "scalp sleeves whose bars carry a spread"},
         "needs_but_missing": need,
     }
     return res
 
 
 def derive_entry_drift_tol_frac(deals: list[dict[str, Any]], seed: int = 1,
-                                prior_only: bool = False) -> dict[str, Any]:
+                                prior_only: bool = False,
+                                edge_override: float | None = None,
+                                grid: tuple[float, ...] | None = None,
+                                against: float | None = None) -> dict[str, Any]:
     fams = [s for s in _sleeves() if s.get("exec") == "family_market"
             and s.get("status") == "LIVE"]
     if not fams:
@@ -414,6 +457,8 @@ def derive_entry_drift_tol_frac(deals: list[dict[str, Any]], seed: int = 1,
     prior = float(np.median(evs))
     e, post = _posterior_edge(prior, {str(s.get("name")) for s in fams},
                               [] if prior_only else deals)
+    if edge_override is not None:
+        e = edge_override
     syms = sorted({str(s.get("symbol")) for s in fams})
     drifts, xs, ws, used, need = [], [], [], [], []
     for sym in syms:
@@ -491,7 +536,8 @@ def derive_entry_drift_tol_frac(deals: list[dict[str, Any]], seed: int = 1,
     def r_of(tau: float) -> np.ndarray:
         return np.where(np.abs(a) <= tau, r_vb, r_re)
 
-    res = _solve(TAU_GRID, r_of, active, f, TODAY_ENTRY_DRIFT_TOL_FRAC, "higher")
+    res = _solve(grid or TAU_GRID, r_of, active, f, TODAY_ENTRY_DRIFT_TOL_FRAC, "higher",
+                 against)
     res["inputs"] = {
         "family_symbols_used": used, "n_drift_samples": int(n_d),
         "abs_drift_quantiles": {q: round(float(np.quantile(np.abs(d_all), q)), 4)
@@ -502,9 +548,130 @@ def derive_entry_drift_tol_frac(deals: list[dict[str, Any]], seed: int = 1,
         "edge": post, "certificates_with_ev": len(evs), "trades_per_day": round(rate, 4),
         "rate_basis": f"{n_trades} sleeve-days over {span} ledger day(s)",
         "risk_frac": f, "rr": rr, "delay_m15_bars": FAMILY_DELAY_M15_BARS,
+        "coverage": {"measured": len(used), "of": len(syms),
+                     "unit": "LIVE family symbols with H1+M15 bars for entry drift"},
         "needs_but_missing": need,
     }
     return res
+
+
+#: How far past the prior and live edges the break-even search looks, in R per trade, and the
+#: bisection steps within it. A break-even edge farther than this from the live one is reported
+#: as "beyond", and the day count is sized to this distance (a floor on what is needed).
+EDGE_SEARCH_R = 1.0
+BISECT_STEPS = 8
+
+
+def _gap_at(fn: Any, deals: list[dict[str, Any]], edge: float, today: float,
+            cand: float) -> float:
+    r = fn(deals, edge_override=edge, grid=tuple(sorted({today, cand})), against=cand)
+    g = r.get("gap_vs_today") or {}
+    return float(g.get("delta_elog_per_day") or 0.0)
+
+
+def break_even_edge(fn: Any, deals: list[dict[str, Any]], edge: float, today: float,
+                    cand: float) -> tuple[float | None, float]:
+    """The per-trade edge at which the candidate and today's value tie on E[log W].
+
+    Returns (e*, distance from the live edge); e* is None when no sign change lies within
+    EDGE_SEARCH_R of the live edge, and the distance is then EDGE_SEARCH_R."""
+    g0 = _gap_at(fn, deals, edge, today, cand)
+    for k in (0.125, 0.25, 0.5, 1.0):
+        # Both sides at each radius, and the nearer root wins: the gap need not be monotone in
+        # the edge (far below zero every value dies and the two tie again).
+        roots = []
+        for sgn in (-1.0, 1.0):
+            e1 = edge + sgn * k * EDGE_SEARCH_R
+            if (_gap_at(fn, deals, e1, today, cand) > 0) == (g0 > 0):
+                continue
+            lo, hi = edge, e1
+            for _ in range(BISECT_STEPS):
+                mid = 0.5 * (lo + hi)
+                if (_gap_at(fn, deals, mid, today, cand) > 0) == (g0 > 0):
+                    lo = mid
+                else:
+                    hi = mid
+            roots.append(0.5 * (lo + hi))
+        if roots:
+            e_star = min(roots, key=lambda x: abs(x - edge))
+            return e_star, abs(e_star - edge)
+    return None, EDGE_SEARCH_R
+
+
+def days_needed(sigma_day: float, delta_edge: float) -> int:
+    """Distinct live days before the live edge is known to within the distance that would flip
+    the decision: TIE_SE standard errors of a per-day mean R inside delta_edge.
+
+        N = ceil((TIE_SE * sigma_day / delta_edge)^2)
+
+    Days, not trades: one session's trades share one market and are not independent draws."""
+    if not (delta_edge > 0 and math.isfinite(sigma_day)):
+        return 10 ** 6
+    return max(1, math.ceil((TIE_SE * sigma_day / delta_edge) ** 2))
+
+
+def bet_sigma(edge_r: float, rr: float) -> float:
+    """SD of one R outcome of a +rr/-1 bracket whose mean is edge_r: the per-day dispersion
+    floor when the ledger has too few days to measure one."""
+    p = min(max((1.0 + edge_r) / (1.0 + rr), 1e-6), 1.0 - 1e-6)
+    return (1.0 + rr) * math.sqrt(p * (1.0 - p))
+
+
+def robustness_gate(fn: Any, deals: list[dict[str, Any]], res: dict[str, Any],
+                    prior_res: dict[str, Any]) -> dict[str, Any]:
+    """May the derived value replace today's? Two-sided (GROWTH_GOVERNANCE Rules 1 and 2): the
+    same three tests stand between the report and the money path whichever way the value moves.
+
+      (a) the lane's live trades span at least N distinct days, N from `days_needed` at the
+          distance between the live edge and the break-even edge where the two values tie;
+      (b) the measurement covers at least half the lane's symbols/sleeves;
+      (c) the E[log W] gap in the candidate's favour holds (> TIE_SE paired SEs) on BOTH the
+          certificate/forward edge alone and the live-adjusted edge.
+
+    Until all three pass, `adopt` is False and today's value is the one to run."""
+    today = res.get("today")
+    if res.get("status") != "OK":
+        return {"adopt": False, "adopt_value": today,
+                "reason": f"no move to adopt: {res.get('why') or res.get('status')}"}
+    cand = float(res["derived"])
+    inp = res.get("inputs") or {}
+    edge = inp.get("edge") or {}
+    e_live = float(edge.get("posterior_r") or 0.0)
+    rr = float(inp.get("rr") or 1.5)
+    measured_sd = edge.get("live_day_mean_sd")
+    sigma = max(bet_sigma(e_live, rr),
+                float(measured_sd) if isinstance(measured_sd, (int, float)) else 0.0)
+    e_star, dist = break_even_edge(fn, deals, e_live, float(today or 0.0), cand)
+    need_days = days_needed(sigma, dist)
+    have_days = int(edge.get("live_days") or 0)
+    a = {"pass": have_days >= need_days, "live_days": have_days, "days_needed": need_days,
+         "break_even_edge_r": round(e_star, 5) if e_star is not None else
+         f"beyond +/-{EDGE_SEARCH_R:g}R of the live edge",
+         "edge_distance_r": round(dist, 5), "sigma_day_r": round(sigma, 5),
+         "sigma_basis": ("max(bet SD at the live edge, measured per-day SD)"
+                         if isinstance(measured_sd, (int, float)) else
+                         "bet SD at the live edge (fewer than 2 live days to measure one)")}
+    cov = inp.get("coverage") or {}
+    n_m, n_of = int(cov.get("measured") or 0), int(cov.get("of") or 0)
+    b = {"pass": n_of > 0 and 2 * n_m >= n_of, "measured": n_m, "of": n_of,
+         "unit": cov.get("unit")}
+    g_live = res.get("gap_vs_today") or {}
+    g_prior = prior_res.get("gap_vs_today") or {}
+    c = {"pass": bool(g_live.get("holds")) and bool(g_prior.get("holds")),
+         "live_adjusted": g_live, "certificate_only": g_prior}
+    adopt = a["pass"] and b["pass"] and c["pass"]
+    fails = [f"(a) {have_days} live day(s) of {need_days} needed" if not a["pass"] else "",
+             f"(b) measured on {n_m} of {n_of} ({cov.get('unit')})" if not b["pass"] else "",
+             "(c) the gap does not hold on the certificate-only edge" if not g_prior.get("holds")
+             else ("(c) the gap does not hold on the live-adjusted edge"
+                   if not g_live.get("holds") else "")]
+    return {"adopt": adopt, "adopt_value": cand if adopt else today,
+            "direction": ("less_aggressive" if res.get("less_aggressive_than_today")
+                          else "more_aggressive"),
+            "reason": ("all three robustness tests pass" if adopt else
+                       "evidence-pending, today's value holds: "
+                       + "; ".join(x for x in fails if x)),
+            "a_live_days": a, "b_coverage": b, "c_gap_on_both_edges": c}
 
 
 def derive() -> dict[str, Any]:
@@ -529,11 +696,19 @@ def derive() -> dict[str, Any]:
     # reader should know how few trades that was (`inputs.edge.live_n`).
     for k, fn in (("MIN_STOP_SPREAD_MULT", derive_min_stop_spread_mult),
                   ("ENTRY_DRIFT_TOL_FRAC", derive_entry_drift_tol_frac)):
-        alt = fn(deals, prior_only=True)
+        main_derived = doc[k].get("derived")
+        alt = fn(deals, prior_only=True,
+                 against=float(main_derived) if isinstance(main_derived, (int, float)) else None)
         doc[k]["prior_only"] = {"status": alt.get("status"), "derived": alt.get("derived"),
                                 "why": alt.get("why"),
+                                "gap_vs_today_of_the_live_derived": alt.get("gap_vs_today"),
                                 "edge_r": ((alt.get("inputs") or {}).get("edge") or {})
                                 .get("posterior_r")}
+        # THE ROBUSTNESS GATE: what the money path may run. The derived value is PUBLISHED
+        # either way; it replaces today's only when this says adopt.
+        doc[k]["robustness"] = robustness_gate(fn, deals, doc[k], alt)
+        doc[k]["adopt"] = doc[k]["robustness"]["adopt"]
+        doc[k]["adopt_value"] = doc[k]["robustness"]["adopt_value"]
     states = [doc[k].get("status", "") for k in ("MIN_STOP_SPREAD_MULT", "ENTRY_DRIFT_TOL_FRAC")]
     # SOLVED covers "today's value is optimal within noise": the solve ran and answered.
     solved = {"OK", "TODAY_OPTIMAL_WITHIN_NOISE"}
@@ -554,7 +729,8 @@ def main(argv: list[str] | None = None) -> int:
     for k in ("MIN_STOP_SPREAD_MULT", "ENTRY_DRIFT_TOL_FRAC"):
         r = doc[k]
         print(f"{k}: {r.get('status')} derived={r.get('derived')} today={r.get('today')} "
-              f"less_aggressive={r.get('less_aggressive_than_today')}")
+              f"less_aggressive={r.get('less_aggressive_than_today')} adopt={r.get('adopt')} "
+              f"({(r.get('robustness') or {}).get('reason')})")
     return 0
 
 
