@@ -287,8 +287,12 @@ def test_nothing_is_minted_before_the_series_exists(tmp_path: Path) -> None:
     assert json.loads(p["roster"].read_text("utf-8"))["sources"]
     disc = list(p["intel"].glob("discoveries_paidsub_*.json"))
     rows = json.loads(disc[0].read_text("utf-8"))
-    assert rows and all(r["endpoints"] and r["dataset_id"].startswith("psub_") for r in rows)
-    assert all(lib[r["dataset_id"][5:]]["auth"] == "none" for r in rows)
+    assert rows and all(r["endpoints"] for r in rows)
+    # substitutes carry psub_, the paid side's public samples psamp_ (their correlation input)
+    assert all(r["dataset_id"].startswith(("psub_", "psamp_")) for r in rows)
+    assert any(r["dataset_id"].startswith("psamp_") for r in rows)
+    assert all(lib[r["dataset_id"][5:]]["auth"] == "none" for r in rows
+               if r["dataset_id"].startswith("psub_"))
 
 
 def test_materialise_stamps_available_time_after_the_period(tmp_path: Path) -> None:
