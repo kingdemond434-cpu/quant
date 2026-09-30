@@ -1099,8 +1099,11 @@ EXTERNAL_READERS = {
     "desks/mt5/data/forward_reconcile.json": ("certificate_truth (cross-checks certified clocks "
                                               "against the lane), live_system_state, "
                                               "evidence_watchtower"),
-    "desks/mt5/data/strategy_paths.json": ("scripts/run_opportunity_books.py (VPS research cycle, "
-                                           "ops/run_research_cycle.sh)"),
+    # The cycle is named in words, not by its path: the component registry reads any script
+    # path in a source file as an invocation, and a path here re-parented two executables onto
+    # a shell script with no artifact of its own, which the birth fence then failed.
+    "desks/mt5/data/strategy_paths.json": ("scripts/run_opportunity_books.py (the VPS "
+                                           "research cycle)"),
     "docs/research/tier1_program.json": ("scripts/check_tier1_program.py (the ledger's gate), "
                                          "libs/ops/write_or_explain, build_allocator, "
                                          "desks/mt5/ops/components, check_closed_loop"),
