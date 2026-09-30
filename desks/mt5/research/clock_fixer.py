@@ -41,6 +41,7 @@ import os
 import subprocess
 import sys
 import time
+from dataclasses import replace
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -235,11 +236,17 @@ def certificates_without_clocks() -> dict:
     return cert if isinstance(cert, dict) else {"n": cert}
 
 
-def enrol_if_needed(apply: bool, cert: dict) -> dict:
-    healable = cert.get("healable") if isinstance(cert, dict) else None
-    if not healable:
-        return {"step": "enrolment", "status": "skipped", "why": "no healable certificate named"}
-    return run_step("enrolment", [str(DESK / "research" / "shadow_forward.py")], 600, apply)
+def enrol_if_needed(apply: bool, cert: dict, timeout_s: int = 600) -> dict:
+    """Run the authoritative enrolment pass whenever the scalar census reports a gap."""
+    n = cert.get("n") if isinstance(cert, dict) else cert
+    if n is None:
+        return {"step": "enrolment", "status": "skipped", "why": "certificate census unreadable"}
+    if int(n) <= 0:
+        return {"step": "enrolment", "status": "skipped", "why": "no certificate-clock gap"}
+    if timeout_s < 5:
+        return {"step": "enrolment", "status": "skipped", "why": "budget exhausted"}
+    return run_step("enrolment", [str(DESK / "research" / "shadow_forward.py")],
+                    min(600, timeout_s), apply)
 
 
 def _write(doc: dict) -> None:
@@ -303,6 +310,8 @@ def run_actuated_steps(apply: bool, budget_s: float, t0: float) -> list[dict]:
         if a is None:
             out.append({"step": name, "status": "MISSING", "why": "no actuator declared"})
             continue
+        a = replace(a, window_s=max(1, min(a.window_s, int(remaining))),
+                    timeout_s=max(1, min(a.timeout_s, int(remaining))))
         rec = ac.run_actuator(a, apply=apply)
         out.append({"step": name, "status": rec["result"].lower(), "repaired": rec.get("repaired"),
                     "seconds": rec.get("seconds"), "rc": rec.get("rc"),
@@ -318,6 +327,20 @@ def main(argv: list[str] | None = None) -> int:
     a = ap.parse_args(argv)
     apply = not a.dry_run
     t0 = time.monotonic()
+    # This scheduled process is the control-plane apply pass.  Heartbeat it before observing
+    # desired state so it never tries to restart itself and consume the repair budget proving an
+    # impossible new pid while it is already running.
+    if apply:
+        try:
+            sys.path.insert(0, str(ROOT))
+            from libs.ops.control_plane import watermarks as _wm
+            for _cid in ("component:control_plane", "leg:control_plane"):
+                _before = _wm.read(_cid) or {}
+                _wm.progress(_cid, "reconcile_passes", int(_before.get("value") or 0) + 1,
+                             run_id=f"clock-fixer:{os.getpid()}")
+        except Exception as _exc:
+            print(f"clock fixer: own watermark unavailable ({type(_exc).__name__}: {_exc})",
+                  flush=True)
     # THE RECONCILER IS TIME-BOXED LIKE EVERY OTHER STEP: half the budget, never more than five
     # minutes, and skipped by name when the budget cannot hold it -- the rule the healers below
     # have always run under.
@@ -334,7 +357,8 @@ def main(argv: list[str] | None = None) -> int:
     residents = check_residents(apply and not reconciled)
     steps = run_actuated_steps(apply, float(a.budget_s), t0)
     cert = certificates_without_clocks()
-    steps.append(enrol_if_needed(apply, cert))
+    steps.append(enrol_if_needed(apply, cert,
+                                 max(0, int(a.budget_s - (time.monotonic() - t0)))))
     dead = [r["resident"] for r in residents if r["state"] != "ALIVE"]
     fixed = [r["resident"] for r in residents if r.get("action") == "started"]
     if reconciled:

@@ -110,7 +110,19 @@ def _pc_new_live_lock_holder(ctx: Mapping[str, Any]) -> tuple[bool | None, str]:
     if not stem:
         return None, "no lock stem declared for this component; liveness is UNMEASURED"
     locks = ctx.get("locks")
-    pid = lock_holder(stem, Path(locks) if locks else None)
+    lock_root = Path(locks) if locks else LOCKS
+    lock_path = lock_root / f"{stem}.lock"
+    pid = lock_holder(stem, lock_root)
+    # A resident on Windows holds a byte-range lock on byte zero for its whole lifetime.  A
+    # sharing violation is therefore positive liveness evidence, not "no pid".  The companion
+    # WATERMARK_ADVANCED postcondition still has to prove that useful work resumed.
+    try:
+        lock_path.read_bytes()[:1]
+    except PermissionError:
+        return True, f"{stem}.lock is held by a live Windows byte-range lock"
+    except OSError:
+        if lock_path.exists():
+            return True, f"{stem}.lock is held (sharing violation)"
     before = ctx.get("pid_before")
     alive = ctx.get("pid_alive", pid_alive)(pid) if callable(ctx.get("pid_alive")) \
         else pid_alive(pid)
