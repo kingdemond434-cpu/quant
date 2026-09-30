@@ -98,6 +98,36 @@ def test_occupancy_names_the_empty_clusters_and_keeps_unclassified_separate() ->
     # UNCLASSIFIED is NOT distributed over the real clusters -- it is its own count.
     assert ac.UNCLASSIFIED not in o["occupied"]
     assert "crisis_drawdown" in o["empty"]
+
+
+def test_occupancy_is_reported_of_the_original_fifteen_and_of_seventeen(monkeypatch) -> None:
+    """Ruling 2026-09-30: the two appended clusters are dated, counted two ways, never targeted,
+    and cannot move the original fifteen's occupancy or meet the band by relabelling."""
+    added = [c.key for c in ac.CLUSTERS if c.added is not None]
+    assert added == ["cross_sectional_equity", "quantamental"]
+    assert all(c.added == "2026-09-30" for c in ac.CLUSTERS if c.key in added)
+    assert len(ac.ORIGINAL_CLUSTER_KEYS) == 15 and not set(added) & ac.ORIGINAL_CLUSTER_KEYS
+    o = ac.occupancy(["session_liquidity", "mean_reversion", "cross_sectional_equity",
+                      "quantamental", "quantamental"])
+    assert (o["occupied_of_15_original"], o["occupied_of_17"]) == (2, 4)
+    # a book in seven originals plus both appended clusters is 9 of 17 but NOT in the band
+    seven = sorted(ac.ORIGINAL_CLUSTER_KEYS)[:7]
+    o = ac.occupancy([*seven, *added])
+    assert (o["occupied_of_15_original"], o["occupied_of_17"]) == (7, 9)
+    assert o["meets_target"] is False
+
+    # EFFECTIVE_BREADTH: both counts, the tracked target is the original fifteen's empty set,
+    # and the headline stays the P&L-based k_eff
+    monkeypatch.setattr(ab, "_ledger_rows", lambda: ["USDJPY_asia", "EURGBP_mean_reversion"])
+    monkeypatch.setattr(ab, "CANON", Path("/nonexistent/canon.json"))
+    view = ab.cluster_view()
+    assert not set(added) & set(view["empty_in_both"])
+    assert view["empty_in_both_added"] == added
+    assert len(view["empty_in_both"]) == 15 - len(
+        [k for k in view["occupied_either"] if k in ac.ORIGINAL_CLUSTER_KEYS])
+    src = Path(ab.__file__).read_text("utf-8")
+    assert '"occupied_of_15_original": len(' in src and '"occupied_of_17": len(' in src
+    assert '"effective": head' in src
     # Every empty cluster arrives with the payer a hunter would go and find.
     assert {d["cluster"] for d in o["empty_detail"]} == set(o["empty"])
     assert all(d["payer"] for d in o["empty_detail"])

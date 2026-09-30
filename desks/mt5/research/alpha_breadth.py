@@ -79,6 +79,7 @@ for p in (str(BASE), str(BASE / "research"), str(ROOT)):
 
 from libs.research.alpha_clusters import (  # noqa: E402
     CLUSTERS,
+    ORIGINAL_CLUSTER_KEYS,
     UNCLASSIFIED,
     classify_family,
     classify_sleeve,
@@ -399,10 +400,15 @@ def cluster_view() -> dict[str, Any]:
     traded = occupancy(traded_labels.values())
     certified = occupancy(certified_labels.values())
     union = sorted(set(traded["occupied"]) | set(certified["occupied"]))
-    empty_both = [c.key for c in CLUSTERS if c.key not in union]
+    # THE TRACKED TARGET STAYS THE ORIGINAL FIFTEEN'S EMPTY SET (ruling 2026-09-30). The two
+    # clusters appended that day are reported, never targeted, so the queue and every reader of
+    # `empty_in_both` (docket_keff, the mandate check, the forcer) see the same agenda as before.
+    empty_both = [c.key for c in CLUSTERS if c.key not in union and c.added is None]
+    empty_added = [c.key for c in CLUSTERS if c.key not in union and c.added is not None]
     return {"traded": traded, "certified": certified,
             "traded_labels": traded_labels, "certified_labels": certified_labels,
-            "occupied_either": union, "empty_in_both": empty_both}
+            "occupied_either": union, "empty_in_both": empty_both,
+            "empty_in_both_added": empty_added}
 
 
 def _tasks(empty: list[str], head: dict[str, Any], clusters: dict[str, Any]) -> list[dict]:
@@ -421,7 +427,8 @@ def _tasks(empty: list[str], head: dict[str, Any], clusters: dict[str, Any]) -> 
             "description": (
                 f"The book holds {nominal} nominal sleeves at an effective breadth of "
                 f"{k_eff if k_eff is not None else 'UNMEASURED'} "
-                f"({clusters['traded']['n_occupied']} of 15 declared phenomena occupied). "
+                f"({clusters['traded']['occupied_of_15_original']} of the principal's 15 "
+                "phenomena occupied). "
                 f"{c.title} is EMPTY. Who pays: {c.payer} What to hunt: {c.hunt} "
                 "Because k_eff = n/(1+(n-1)rho) is concave in n, the FIRST sleeve of an "
                 "unoccupied phenomenon buys more breadth than the next five inside an occupied "
@@ -515,6 +522,13 @@ def run(write_queue: bool = True) -> dict[str, Any]:
         "exposure_by_instrument": {k: round(float(v), 3) for k, v in sorted(exposure.items())},
         "clusters": {
             "declared": len(CLUSTERS),
+            "declared_original": len(ORIGINAL_CLUSTER_KEYS),
+            # LABEL occupancy, two ways (ruling 2026-09-30). Never the headline: the headline is
+            # `effective.effective_breadth`, P&L-based k_eff.
+            "occupied_of_15_original": len([k for k in clusters["occupied_either"]
+                                            if k in ORIGINAL_CLUSTER_KEYS]),
+            "occupied_of_17": len(clusters["occupied_either"]),
+            "empty_in_both_added": clusters["empty_in_both_added"],
             "occupied_traded": clusters["traded"]["occupied"],
             "occupied_certified": clusters["certified"]["occupied"],
             "occupied_either": clusters["occupied_either"],
@@ -526,8 +540,10 @@ def run(write_queue: bool = True) -> dict[str, Any]:
             "largest_cluster_share_traded": round(
                 float(clusters["traded"]["largest_cluster_share"]), 4),
             "target_band": [8, 15],
-            "meets_target": bool(len(clusters["occupied_either"]) >= 8),
-            "empty_detail": clusters["traded"]["empty_detail"],
+            "meets_target": bool(len([k for k in clusters["occupied_either"]
+                                      if k in ORIGINAL_CLUSTER_KEYS]) >= 8),
+            "empty_detail": [r for r in clusters["traded"]["empty_detail"]
+                             if r["cluster"] in ORIGINAL_CLUSTER_KEYS],
         },
         "sleeve_clusters": clusters["traded_labels"],
         "instruction": [t["title"] for t in tasks],
@@ -561,6 +577,7 @@ def _append_history(doc: dict[str, Any]) -> None:
         "effective_breadth": doc["effective"]["effective_breadth"],
         "binding_reading": doc["effective"]["binding_reading"],
         "n_clusters_occupied": len(doc["clusters"]["occupied_either"]),
+        "occupied_of_15_original": doc["clusters"]["occupied_of_15_original"],
         "n_clusters_empty": len(doc["clusters"]["empty_in_both"]),
         "n_eff_time": (doc.get("timestamp_overlap") or {}).get("n_eff"),
     }

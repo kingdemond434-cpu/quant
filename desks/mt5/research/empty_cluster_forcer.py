@@ -229,6 +229,10 @@ def plan() -> dict[str, Any]:
                  "remedies: ATTACKED (the gates or the mechanism), REACHABLE-BUT-UNMINTED (a "
                  "wiring gap, closed here), or UNREACHABLE (a missing family module, named)."),
         "n_empty": len(empty),
+        # passed through from EFFECTIVE_BREADTH (ruling 2026-09-30): the target is the original
+        # fifteen's empty set; the two appended clusters are counted, never forced
+        "occupied_of_15_original": clusters.get("occupied_of_15_original"),
+        "occupied_of_17": clusters.get("occupied_of_17"),
         "census": dict(census),
         "cells_per_cluster": CELLS_PER_CLUSTER,
         "n_cells_minted": len(cells),

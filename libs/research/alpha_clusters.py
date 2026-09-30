@@ -40,6 +40,7 @@ from typing import Any
 
 __all__ = [
     "CLUSTERS",
+    "ORIGINAL_CLUSTER_KEYS",
     "FAMILY_CLUSTER",
     "SESSION_SELECTORS",
     "TARGET_MAX",
@@ -72,6 +73,10 @@ class AlphaCluster:
     payer: str
     #: What a hunter would go and look for. Concrete enough to become a research task.
     hunt: str
+    #: None for the principal's original fifteen; the date for a cluster appended later. Anything
+    #: dated is reported beside the original fifteen, never folded into their occupancy count,
+    #: and is never an empty-cluster research target (the coordinator's ruling, 2026-09-30).
+    added: str | None = None
 
 
 #: THE PRINCIPAL'S FIFTEEN, in his order (reordering a declared list makes diffs lie about what
@@ -176,14 +181,21 @@ CLUSTERS: tuple[AlphaCluster, ...] = (
         "demander who pushes one share away from its industry peers for a few days.",
         "Rank shares within their equity peer class or sector book (semis) on price "
         "characteristics, with the industry move demeaned out -- never against a currency or "
-        "an index, which are proxy legs and conditioners, not peers."),
+        "an index, which are proxy legs and conditioners, not peers.",
+        added="2026-09-30"),
     AlphaCluster(
         "quantamental", "Fundamental (quantamental) mispricing",
         "The extrapolator who overprices glamour and junk against what the firm has DISCLOSED, "
         "and the lottery-seeking holder who pays for it.",
         "Point-in-time SEC fundamentals (value, quality, earnings yield), stamped at acceptance, "
-        "ranked within the equity class -- delisted issuers included in the ranking history."),
+        "ranked within the equity class -- delisted issuers included in the ranking history.",
+        added="2026-09-30"),
 )
+
+#: The principal's fifteen. The TRACKED TARGET is their empty set: a relabel that moves a family
+#: into an appended cluster must never read as a newly occupied original, and an appended cluster
+#: that is empty is not a research target. Headline breadth is P&L-based k_eff, never this count.
+ORIGINAL_CLUSTER_KEYS: frozenset[str] = frozenset(c.key for c in CLUSTERS if c.added is None)
 
 #: key -> cluster, built once. A tuple keeps the declared order; this makes lookup cheap.
 _BY_KEY: dict[str, AlphaCluster] = {c.key: c for c in CLUSTERS}
@@ -407,6 +419,7 @@ def occupancy(labels: Iterable[str], weights: Mapping[str, float] | None = None)
         counts[key] = counts.get(key, 0) + 1
     occupied = [c.key for c in CLUSTERS if counts.get(c.key, 0) > 0]
     empty = [c.key for c in CLUSTERS if counts.get(c.key, 0) == 0]
+    occupied_original = [k for k in occupied if k in ORIGINAL_CLUSTER_KEYS]
     n_sleeves = sum(counts.values())
     largest = max((counts.get(c.key, 0) for c in CLUSTERS), default=0)
     w = {k: float(v) for k, v in (weights or {}).items()}
@@ -414,6 +427,10 @@ def occupancy(labels: Iterable[str], weights: Mapping[str, float] | None = None)
         "n_clusters_declared": len(CLUSTERS),
         "n_occupied": len(occupied),
         "n_empty": len(empty),
+        # Occupancy two ways (ruling 2026-09-30): the principal's fifteen, and all declared. A
+        # LABEL count, reported beside P&L-based k_eff and never as the headline.
+        "occupied_of_15_original": len(occupied_original),
+        "occupied_of_17": len(occupied),
         "n_sleeves": n_sleeves,
         "n_unclassified": counts.get(UNCLASSIFIED, 0),
         "counts": {k: v for k, v in counts.items() if v > 0},
@@ -422,7 +439,8 @@ def occupancy(labels: Iterable[str], weights: Mapping[str, float] | None = None)
         "weights": w,
         "largest_cluster_share": (largest / n_sleeves) if n_sleeves else 0.0,
         "target_band": [TARGET_MIN, TARGET_MAX],
-        "meets_target": TARGET_MIN <= len(occupied) <= TARGET_MAX,
+        # judged on the original fifteen, so the two appended labels cannot meet it by relabelling
+        "meets_target": TARGET_MIN <= len(occupied_original) <= TARGET_MAX,
         "empty_detail": [
             {"cluster": c.key, "title": c.title, "payer": c.payer, "hunt": c.hunt}
             for c in CLUSTERS if counts.get(c.key, 0) == 0
