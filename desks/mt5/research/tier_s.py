@@ -73,6 +73,7 @@ from libs.tiers import (  # noqa: E402
     test_invention,
     theory,
     topology,
+    traps,
     truth_kernel,
     twin,
     world_edges,
@@ -597,28 +598,176 @@ def _incumbent_validator() -> meta_benchmark.ValidatorConfig:
     return meta_benchmark.ValidatorConfig()
 
 
+#: THE SEALED META-BENCHMARK, IN THOUSANDS. 17 kinds x 150 cases. The reference validator scores
+#: all of them every hour (seconds); the PRODUCTION certifier judges a rotating blind slice of the
+#: same-shaped suite (400 draws a case, the docket's length) and keeps each verdict until the
+#: certifier's own code changes, so the whole suite is re-judged within a day of any gate edit.
+IMMUNE_PER_KIND = 150
+PROD_SUITE = meta_benchmark.Suite(per_kind=IMMUNE_PER_KIND, n=420, base_seed=20260930)
+PROD_DOCKET = 64               # cells per run_gauntlet call: PBO/SPA are docket-level gates
+PROD_BUDGET_S = 240.0          # production judging seconds per hour
+#: the docket's round-trip cost as a fraction of its unit price (1-pip spread on a 1.0 price)
+DOCKET_COST_FRAC = 1e-4
+
+
+def _case_series(case: Any, n: int = 400) -> tuple[list[float], list[float]]:
+    """(signal, forward return) per bar for one case, returns scaled so the case's own
+    edge-to-cost ratio holds against the docket's fixed cost model."""
+    px = np.asarray(case.prices, dtype=float)
+    k = DOCKET_COST_FRAC / max(1e-9, float(case.cost_per_trade))
+    sig, fwd = [], []
+    for t in range(1, min(len(px) - 1, n + 1)):
+        sig.append(float(case.signal_fn(px, t)))
+        fwd.append(float(px[t + 1] / px[t] - 1.0) * k)
+    return sig, fwd
+
+
+def _gauntlet_code_hash(gate: Any) -> str:
+    import inspect
+    try:
+        return truth_kernel.sha256(Path(inspect.getfile(gate._gauntlet)).read_text("utf-8"))[:16]
+    except Exception:
+        return "unknown"
+
+
+def _suite_index(suite: meta_benchmark.Suite) -> list[tuple[str, int]]:
+    """(kind, seed) for every case, WITHOUT generating one (the seed rule is Suite.cases')."""
+    return [(kind, suite.base_seed + 1000 * k_i + j) for k_i, kind in enumerate(traps.ALL_KINDS)
+            for j in range(suite.per_kind)]
+
+
+def production_immune(budget_s: float = PROD_BUDGET_S) -> dict[str, Any]:
+    """The sealed suite judged BLIND by the desk's real ten-gate certifier.
+
+    Blind means: a cell's name is a hash of its case, dockets mix kinds in a hash order, and the
+    certifier is handed nothing but the bars and the stamped signals -- the same route the poison
+    canaries take (`adversary.docket_cell`, `run_gauntlet`). Late-information kinds are stamped at
+    the honest bar of what they read (`traps.LATE_INFORMATION_KINDS`); kinds the certifier is
+    never shown (`traps.INEXPRESSIBLE_TO_GAUNTLET`) are counted apart. Nothing here writes a
+    certificate: the docket is named for the suite and its verdicts are read back."""
+    try:
+        import adversary
+        gate, blocked = adversary.real_gate()
+    except Exception as exc:
+        return {"status": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"}
+    if gate is None:
+        return {"status": "UNMEASURED", "why": blocked}
+    code = _gauntlet_code_hash(gate)
+    st = _state("immune_prod")
+    verdicts: dict[str, dict[str, Any]] = {k: v for k, v in (st.get("verdicts") or {}).items()
+                                           if v.get("code") == code}
+    idx = [(k, sd) for k, sd in _suite_index(PROD_SUITE)
+           if k not in traps.INEXPRESSIBLE_TO_GAUNTLET]
+    todo = sorted((truth_kernel.sha256(f"{k}|{sd}|{code}"), k, sd) for k, sd in idx
+                  if f"{k}|{sd}" not in verdicts)
+    t0 = time.perf_counter()
+    judged_now = 0
+    import io
+    while todo and time.perf_counter() - t0 < budget_s:
+        batch, todo = todo[:PROD_DOCKET], todo[PROD_DOCKET:]
+        cells, truth = [], {}
+        for h, kind, seed in batch:
+            name = "im" + h[:12]
+            try:
+                case, _t = traps.generate(kind, seed, PROD_SUITE.n)
+                sig, fwd = _case_series(case)
+                cells.append(adversary.docket_cell(
+                    name, sig, fwd,
+                    stamp_offset=1 if kind in traps.LATE_INFORMATION_KINDS else 0))
+                truth[name] = (kind, seed)
+            except Exception:
+                continue
+        if len(cells) < 2:
+            break
+        try:
+            with contextlib.redirect_stdout(io.StringIO()):
+                out = gate._gauntlet.run_gauntlet(cells, "immune-sealed-suite",
+                                                  adversary.CANARY_META)
+        except Exception as exc:
+            return {"status": "UNMEASURED", "why": f"run_gauntlet: {type(exc).__name__}: {exc}"}
+        for v in out.get("verdicts") or []:
+            name = str(v.get("family", "")).removeprefix("canary_")
+            if name in truth:
+                kind, seed = truth[name]
+                verdicts[f"{kind}|{seed}"] = {
+                    "kind": kind, "passed": bool(v.get("passed")),
+                    "unmeasured": bool(v.get("unmeasured")), "code": code,
+                    "failed": [g for g, s in (v.get("stages") or {}).items()
+                               if not s.get("passed")][:3]}
+                judged_now += 1
+    _save_state("immune_prod", {"verdicts": verdicts, "code": code, "at": NOW.isoformat()})
+    per: dict[str, dict[str, int]] = {}
+    for v in verdicts.values():
+        if v["unmeasured"]:
+            continue
+        d = per.setdefault(v["kind"], {"n": 0, "accepted": 0})
+        d["n"] += 1
+        d["accepted"] += int(v["passed"])
+    tr = [d for k, d in per.items() if k in traps.TRAP_KINDS]
+    gen = [d for k, d in per.items() if k in traps.TRUE_KINDS]
+    n_tr, n_gen = sum(d["n"] for d in tr), sum(d["n"] for d in gen)
+    immune = 1.0 - sum(d["accepted"] for d in tr) / n_tr if n_tr else None
+    power = sum(d["accepted"] for d in gen) / n_gen if n_gen else None
+    return {"status": "MEASURED", "gauntlet_code": code, "judged_now": judged_now,
+            "judged_total": len(verdicts), "expressible_cases": len(idx),
+            "coverage": round(len(verdicts) / len(idx), 4) if idx else None,
+            "inexpressible_kinds": sorted(traps.INEXPRESSIBLE_TO_GAUNTLET),
+            "immune_score": immune, "power": power,
+            "per_kind": {k: {**d, "accept_rate": round(d["accepted"] / d["n"], 4)}
+                         for k, d in sorted(per.items())},
+            "traps_let_through": {k: d["accepted"] for k, d in per.items()
+                                  if k in traps.TRAP_KINDS and d["accepted"]}}
+
+
+#: the production score replaces the reference validator's in the verdict once this many traps
+#: have been judged by the real certifier on its current code
+PROD_MIN_TRAPS = 200
+
+
 def organ_immune() -> dict[str, Any]:
-    suite = meta_benchmark.Suite(per_kind=12)
+    suite = meta_benchmark.Suite(per_kind=IMMUNE_PER_KIND)
     cfg = _incumbent_validator()
     seal = suite.seal()
     res = meta_benchmark.score(meta_benchmark.reference_validator(cfg), suite)
+    prod = production_immune()
+    n_prod_traps = sum(d["n"] for k, d in (prod.get("per_kind") or {}).items()
+                       if k in traps.TRAP_KINDS)
+    use_prod = prod.get("status") == "MEASURED" and n_prod_traps >= PROD_MIN_TRAPS
+    judged = ({"immune_score": prod["immune_score"], "power": prod["power"]} if use_prod
+              else res)
+    judge = f"production:{prod.get('gauntlet_code')}" if use_prod else "reference_validator"
     st = _state("immune")
     hist = list(st.get("history") or [])
     const = _read(CONSTITUTION) or truth_kernel.constitution_doc()
     floor = float(((const.get("rules") or {}).get("immune.min_trap_rejection") or {})
                   .get("value", 0.9))
-    verdict = meta_benchmark.immune_verdict(res, hist, floor=floor, seal=seal)
-    hist.append({"at": NOW.isoformat(), "seal": seal, "immune_score": res["immune_score"],
-                 "power": res["power"]})
+    hseal = f"{seal}|{judge}"
+    verdict = meta_benchmark.immune_verdict(judged, hist, floor=floor, seal=hseal)
+    hist.append({"at": NOW.isoformat(), "seal": hseal, "immune_score": judged["immune_score"],
+                 "power": judged["power"], "reference_immune": res["immune_score"],
+                 "production_immune": prod.get("immune_score")})
     _save_state("immune", {"history": hist[-500:]})
     _write(STATE / "PROMOTION_FREEZE.json", {
         "verdict": verdict["verdict"], "why": verdict.get("why"), "at": NOW.isoformat(),
+        "judge": judge,
         "consumer": "NONE YET -- the promoter reading this is a money-path change awaiting the "
-                    "principal's word", "immune_score": res["immune_score"], "seal": seal})
-    return {"score": res, "seal": seal, "verdict": verdict, "floor": floor,
-            "validator": cfg.genome(),
-            "metric": {"immune_score": res["immune_score"], "power": res["power"],
-                       "balanced": res["balanced"]}}
+                    "principal's word", "immune_score": judged["immune_score"], "seal": hseal})
+    # A JUDGE THAT REJECTS EVERYTHING IS PERFECTLY IMMUNE. Its immunity is then uninformative,
+    # and its zero power is lost discovery -- the missed-growth side of the same gate.
+    n_gen = sum(d["n"] for k, d in (prod.get("per_kind") or {}).items() if k in traps.TRUE_KINDS)
+    power_alarm = None
+    if prod.get("power") is not None and n_gen >= 100 and float(prod["power"]) < 0.05:
+        power_alarm = (f"the production certifier accepted {prod['power']:.1%} of {n_gen} genuine "
+                       "positive controls (incl. an AR(0.25) edge): its immunity is uninformative "
+                       "and it is rejecting real edges")
+    return {"score": res, "production": prod, "judge": judge, "seal": seal, "verdict": verdict,
+            "power_alarm": power_alarm,
+            "floor": floor, "validator": cfg.genome(),
+            "metric": {"immune_score": judged["immune_score"], "power": judged["power"],
+                       "balanced": res["balanced"],
+                       "production_immune": prod.get("immune_score"),
+                       "production_power": prod.get("power"),
+                       "production_coverage": prod.get("coverage")}}
 
 
 def organ_test_invention() -> dict[str, Any]:
@@ -632,23 +781,33 @@ def organ_test_invention() -> dict[str, Any]:
         reg.setdefault(k, {**g, "first_seen": NOW.isoformat(), "confirmations": 0})
         reg[k]["confirmations"] = int(reg[k].get("confirmations", 0)) + 1
         reg[k]["last_seen"] = NOW.isoformat()
+    # WHAT FOOLED THE REAL GATES. The production certifier's own blind verdicts on the sealed
+    # suite (`production_immune`): every trap it let through, beside the genuine controls, split
+    # by seed parity into proposal and confirmation sets, so an invented check must stop a trap
+    # the real gates missed on cases it never saw while costing no real edge.
+    prod = _state("immune_prod").get("verdicts") or {}
+    fooled = [(v["kind"], int(k.split("|")[1])) for k, v in prod.items()
+              if v.get("passed") and v.get("kind") in traps.TRAP_KINDS]
+    genuine = [(v["kind"], int(k.split("|")[1])) for k, v in prod.items()
+               if v.get("kind") in traps.TRUE_KINDS][:300]
+    real: dict[str, Any] = {"fooling_cases": len(fooled)}
+    if fooled:
+        cases = [traps.generate(kd, sd, PROD_SUITE.n) for kd, sd in fooled[:300] + genuine]
+        prop = [c for i, c in enumerate(cases) if i % 2 == 0]
+        conf = [c for i, c in enumerate(cases) if i % 2 == 1]
+        real = {**real, **test_invention.invent_from(inc, prop, conf)}
+        for g in real.get("candidate_gates") or []:
+            k = json.dumps(g["check"])
+            reg.setdefault(k, {**g, "first_seen": NOW.isoformat(), "confirmations": 0,
+                               "source": "fooled_production_certifier"})
+            reg[k]["confirmations"] = int(reg[k].get("confirmations", 0)) + 1
+            reg[k]["last_seen"] = NOW.isoformat()
     _save_state("candidate_gates", {"gates": list(reg.values())})
-    return {**out, "registry_size": len(reg),
-            "metric": {"candidate_gates": len(out["candidate_gates"]),
-                       "registry": len(reg)}}
-
-
-def _trap_series(kind: str, seed: int, subtlety: float, n: int = 400
-                 ) -> tuple[list[float], list[float]]:
-    """(signal, forward return) per bar for one planted case: what a docket cell can carry."""
-    from libs.tiers import traps
-    case, _truth = traps.generate(kind, seed, n + 2, subtlety)
-    px = np.asarray(case.prices, dtype=float)
-    sig, fwd = [], []
-    for t in range(1, min(len(px) - 1, n + 1)):
-        sig.append(float(case.signal_fn(px, t)))
-        fwd.append(float(px[t + 1] / px[t] - 1.0))
-    return sig, fwd
+    return {**out, "from_production": real, "registry_size": len(reg),
+            "metric": {"candidate_gates": len(out["candidate_gates"])
+                       + len(real.get("candidate_gates") or []),
+                       "registry": len(reg),
+                       "production_fooling_cases": len(fooled)}}
 
 
 def _real_gauntlet_attack(attackers: list[dict[str, Any]], gen: int) -> dict[str, Any]:
@@ -667,19 +826,29 @@ def _real_gauntlet_attack(attackers: list[dict[str, Any]], gen: int) -> dict[str
     cells, truth = [], {}
     plan = [(str(a.get("kind")), float(a.get("subtlety") or 0.0)) for a in attackers[:6]]
     plan += [("true_signal", 0.0), ("true_weak_signal", 0.0)]
+    inexpressible = []
     for k, (kind, sub) in enumerate(plan):
+        if kind in traps.INEXPRESSIBLE_TO_GAUNTLET:
+            inexpressible.append(kind)       # the certifier is never shown what this trap fakes
+            continue
         # the cell name carries no hint of the kind: the certifier judges it blind
         name = f"rq{gen}_" + truth_kernel.sha256(f"{gen}:{k}:{kind}:{sub}")[:10]
         try:
-            sig, fwd = _trap_series(kind, gen * 101 + k, sub)
-            cells.append(adversary.docket_cell(name, sig, fwd))
+            case, _t = traps.generate(kind, gen * 101 + k, 402, sub)
+            sig, fwd = _case_series(case)
+            # a late-information attack is stamped where its information exists; stamped a bar
+            # early it would be a real predictor in the docket and no engine could reject it
+            cells.append(adversary.docket_cell(
+                name, sig, fwd, stamp_offset=1 if kind in traps.LATE_INFORMATION_KINDS else 0))
             truth[name] = kind
         except Exception:
             continue
     if len(cells) < 2:
         return {"status": "UNMEASURED", "why": "fewer than two attack cells could be built"}
     try:
-        out = gate._gauntlet.run_gauntlet(cells, "red-queen-attack", adversary.CANARY_META)
+        import io
+        with contextlib.redirect_stdout(io.StringIO()):
+            out = gate._gauntlet.run_gauntlet(cells, "red-queen-attack", adversary.CANARY_META)
     except Exception as exc:
         return {"status": "UNMEASURED", "why": f"run_gauntlet: {type(exc).__name__}: {exc}"}
     rows = []
@@ -694,7 +863,7 @@ def _real_gauntlet_attack(attackers: list[dict[str, Any]], gen: int) -> dict[str
     traps_ = [r for r in rows if not r["genuine"] and not r["unmeasured"]]
     real = [r for r in rows if r["genuine"] and not r["unmeasured"]]
     leaks = [r for r in traps_ if r["passed"]]
-    return {"status": "MEASURED", "rows": rows, "leaks": leaks,
+    return {"status": "MEASURED", "rows": rows, "leaks": leaks, "inexpressible": inexpressible,
             "attack_success": len(leaks) / len(traps_) if traps_ else None,
             "genuine_power": sum(r["passed"] for r in real) / len(real) if real else None}
 
@@ -2327,33 +2496,65 @@ def organ_twin(sealed_now: Mapping[str, Any]) -> dict[str, Any]:
         res = twin.evaluate(ch, pairs)
         adoption = self_model.adoption(c, res["verdict"], res["money_path"],
                                        bool(sealed_now.get("blocked")))
-        if adoption == "ADOPTED" and c["component"] == "validator" and isinstance(
-                c.get("genome"), dict):
-            ad = _state("adopted")
-            ad["validator"] = c["genome"]
-            ad["validator_adopted_at"] = NOW.isoformat()
-            _save_state("adopted", ad)
+        if c["component"] == "validator":
+            adoption = "PENDING"       # decided below, on the sealed suite and nowhere else
         out.append({"name": c["name"], "component": c["component"], **res,
                     "adoption": adoption})
-    # validator challengers are judged on the SEALED suite, not on pairs
+    # VALIDATOR CHALLENGERS ARE RE-SCORED ON THE SEALED SUITE. Until 2026-09-30 the challenger's
+    # score was the one it earned on its own TRAINING suite (the Red Queen's, seed 5150), compared
+    # with the incumbent's sealed score -- a challenger graded on the exam it studied. Now both
+    # are scored by the same reference validator on the same sealed suite, and the score is
+    # cached per genome hash and suite seal so each genome is examined once.
+    sealed = meta_benchmark.Suite(per_kind=IMMUNE_PER_KIND)
+    seal = sealed.seal()
+    cache = _state("sealed_scores")
+    scores = {k: v for k, v in (cache.get("scores") or {}).items() if v.get("seal") == seal}
+
+    def _sealed_balanced(genome: Any, gh: str) -> float | None:
+        if gh in scores:
+            return scores[gh]["balanced"]
+        try:
+            g = dict(genome or {})
+            g["extra"] = tuple(tuple(x) for x in g.get("extra") or [])
+            r = meta_benchmark.score(meta_benchmark.reference_validator(
+                meta_benchmark.ValidatorConfig(**g)), sealed)
+        except Exception:
+            return None
+        scores[gh] = {"seal": seal, "balanced": r["balanced"], "immune": r["immune_score"],
+                      "power": r["power"]}
+        return r["balanced"]
+
+    inc = _incumbent_validator()
+    inc_bal = _sealed_balanced(inc.genome(), "incumbent:" + truth_kernel.sha256(
+        truth_kernel.canon(inc.genome()))[:16])
+    fresh = 0
     for row in out:
         if row["component"] != "validator":
             continue
         c = next(x for x in st.get("challengers") or [] if x["name"] == row["name"])
-        fit = c.get("fitness") or {}
-        imm = _state("immune").get("history") or [{}]
-        inc_bal = ((imm[-1].get("immune_score") or 0) + (imm[-1].get("power") or 0)) / 2
-        if isinstance(fit, dict) and fit.get("balanced") is not None:
-            better = float(fit["balanced"]) > inc_bal + 0.01
-            row["sealed_balanced"] = fit["balanced"]
-            row["incumbent_balanced"] = inc_bal
-            if better and not sealed_now.get("blocked"):
-                row["adoption"] = "ADOPTED"
-                ad = _state("adopted")
-                ad["validator"] = c.get("genome")
-                ad["validator_adopted_at"] = NOW.isoformat()
-                ad["validator_from"] = c["name"]
-                _save_state("adopted", ad)
+        gh = str(c.get("genome_hash"))
+        if gh not in scores and fresh >= 4:
+            row["adoption"] = "PENDING_SEALED_SCORE"     # examined on a later hour
+            continue
+        fresh += int(gh not in scores)
+        bal = _sealed_balanced(c.get("genome"), gh)
+        row["sealed_balanced"] = bal
+        row["incumbent_balanced"] = inc_bal
+        row["judged_on"] = f"sealed:{seal[:12]}"
+        if bal is None or inc_bal is None:
+            continue
+        if float(bal) > float(inc_bal) + 0.01 and not sealed_now.get("blocked"):
+            row["adoption"] = "ADOPTED"
+            ad = _state("adopted")
+            ad["validator"] = c.get("genome")
+            ad["validator_adopted_at"] = NOW.isoformat()
+            ad["validator_from"] = c["name"]
+            ad["validator_sealed_balanced"] = bal
+            _save_state("adopted", ad)
+            inc_bal = float(bal)
+        else:
+            row["adoption"] = "REJECTED_ON_SEALED"
+    _save_state("sealed_scores", {"scores": scores})
     rb = twin.rollback_plan(_release_history())
     return {"challengers": out[-30:], "rollback": rb,
             "metric": {"challengers": len(out),

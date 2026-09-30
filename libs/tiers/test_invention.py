@@ -48,8 +48,18 @@ def propose(cases: Sequence[tuple[Case, Truth]], features: Sequence[str] = FEATU
 
 def invent(incumbent: mb.ValidatorConfig, proposal: mb.Suite, confirmation: mb.Suite, *,
            max_power_loss: float = 0.0, top: int = 3) -> dict[str, Any]:
-    prop_cases = list(proposal.cases())
-    conf_cases = list(confirmation.cases())
+    return invent_from(incumbent, list(proposal.cases()), list(confirmation.cases()),
+                       max_power_loss=max_power_loss, top=top)
+
+
+def invent_from(incumbent: mb.ValidatorConfig, prop_cases: list[tuple[Case, Truth]],
+                conf_cases: list[tuple[Case, Truth]], *, max_power_loss: float = 0.0,
+                top: int = 3) -> dict[str, Any]:
+    """The same proposal/confirmation discipline over explicit case lists -- e.g. the cases that
+    actually FOOLED the production certifier, beside the genuine controls it must keep."""
+    if not prop_cases or not conf_cases:
+        return {"baseline": None, "n_tried": 0, "n_promising": 0, "candidate_gates": [],
+                "why": "no cases to learn from"}
     base_p = mb.score(mb.reference_validator(incumbent), cases=prop_cases)
     base_c = mb.score(mb.reference_validator(incumbent), cases=conf_cases)
     tried: list[dict[str, Any]] = []

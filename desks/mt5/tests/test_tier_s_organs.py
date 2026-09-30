@@ -229,3 +229,96 @@ def test_every_new_hourly_leg_has_a_contract() -> None:
     ledger["leg_contracts"] = [r for r in ledger["leg_contracts"] if r["leg"] != "frontier_map"]
     problems, _ = chk.check(ledger, chk.ROOT)
     assert any("frontier_map" in p for p in problems)
+
+
+# ------------------------------------------------------------------ self-grading, batch 3
+def test_every_kind_generates_and_new_placebos_behave() -> None:
+    from libs.tiers import traps
+    for kind in traps.ALL_KINDS:
+        case, truth = traps.generate(kind, 11, 300)
+        assert truth.genuine == (kind in traps.TRUE_KINDS)
+        assert len(case.prices) == 301
+        assert np.isfinite(case.signal_fn(case.prices, 100))
+    assert {"information_delay", "timestamp_scramble", "sign_reversal", "spread_perturbation",
+            "label_randomization"} <= set(traps.TRAP_KINDS)
+    assert "true_strong_signal" in traps.TRUE_KINDS
+    assert traps.LATE_INFORMATION_KINDS.issubset(traps.TRAP_KINDS)
+    assert traps.INEXPRESSIBLE_TO_GAUNTLET.issubset(traps.TRAP_KINDS)
+
+
+def test_label_randomization_is_causal() -> None:
+    """The overfit trap must fool by FITTING, not by leaking: changing the future cannot move
+    today's position."""
+    from libs.tiers import traps
+    case, _t = traps.generate("label_randomization", 3, 400)
+    px = case.prices.copy()
+    before = [case.signal_fn(px, t) for t in range(10, 200)]
+    px[201:] *= 1.5
+    assert [case.signal_fn(px, t) for t in range(10, 200)] == before
+
+
+def test_production_immune_is_blind_and_honestly_stamped(monkeypatch: Any,
+                                                        tmp_path: Path) -> None:
+    import adversary
+
+    from libs.tiers import traps
+    seen: list[dict[str, Any]] = []
+
+    class G:
+        @staticmethod
+        def run_gauntlet(cells: list[dict[str, Any]], _n: str, _m: Any) -> dict[str, Any]:
+            seen.extend(cells)
+            return {"verdicts": [{"family": c["family"], "passed": False, "stages": {}}
+                                 for c in cells]}
+
+    stamps: dict[str, int] = {}
+
+    def cell(name: str, sig: Any, fwd: Any, stamp_offset: int = 0, **_k: Any) -> dict:
+        stamps[name] = stamp_offset
+        return {"family": f"canary_{name}"}
+
+    monkeypatch.setattr(adversary, "real_gate", lambda: (SimpleNamespace(_gauntlet=G), None))
+    monkeypatch.setattr(adversary, "docket_cell", cell)
+    monkeypatch.setattr(ts, "STATE", tmp_path)
+    monkeypatch.setattr(ts, "PROD_SUITE", ts.meta_benchmark.Suite(per_kind=2, n=120))
+    out = ts.production_immune(budget_s=60)
+    expressible = [k for k in traps.ALL_KINDS if k not in traps.INEXPRESSIBLE_TO_GAUNTLET]
+    assert out["judged_total"] == 2 * len(expressible)
+    assert out["immune_score"] == 1.0 and out["power"] == 0.0
+    for c in seen:                      # the certifier is told nothing about the kind
+        assert not any(k in c["family"] for k in traps.ALL_KINDS)
+    state = json.loads((tmp_path / "immune_prod.json").read_text("utf-8"))
+    by_name = {"im" + ts.truth_kernel.sha256(f"{v['kind']}|{k.split('|')[1]}|"
+                                            f"{state['code']}")[:12]: v["kind"]
+               for k, v in state["verdicts"].items()}
+    for name, kind in by_name.items():
+        assert stamps[name] == (1 if kind in traps.LATE_INFORMATION_KINDS else 0), kind
+    # verdicts are kept until the certifier's code changes: a second hour judges nothing new
+    assert ts.production_immune(budget_s=60)["judged_now"] == 0
+
+
+def test_case_series_keeps_the_edge_to_cost_ratio() -> None:
+    from libs.tiers import traps
+    cheap, _ = traps.generate("true_signal", 5, 200)
+    dear, _ = traps.generate("cost_fake", 5, 200)
+    _s, f1 = ts._case_series(cheap)
+    _s, f2 = ts._case_series(dear)
+    assert np.std(f2) < np.std(f1) / 10, "a sub-cost edge is shrunk against the docket's cost"
+
+
+def test_red_queen_generation_evolves_and_scores() -> None:
+    from libs.tiers import meta_benchmark as mb
+    from libs.tiers import red_queen
+    sealed = list(mb.Suite(per_kind=2, base_seed=5150, n=400).cases())
+    res = red_queen.generation([], mb.ValidatorConfig(), sealed, seed=1, pop=4, defenders=2,
+                               attack_seeds=1)
+    assert len(res["next_attackers"]) == 4
+    assert 0.0 <= res["attack_success"] <= 1.0
+    assert res["best_defender"]["balanced"] is not None
+
+
+def test_invent_from_needs_cases() -> None:
+    from libs.tiers import meta_benchmark as mb
+    from libs.tiers import test_invention
+    out = test_invention.invent_from(mb.ValidatorConfig(), [], [])
+    assert out["candidate_gates"] == [] and out["n_tried"] == 0

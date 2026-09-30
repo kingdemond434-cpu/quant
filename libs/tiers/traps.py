@@ -35,9 +35,29 @@ F = npt.NDArray[np.float64]
 
 TRAP_KINDS: tuple[str, ...] = ("leakage", "timezone_shift", "selection", "survivorship",
                                "impossible_fills", "cost_fake", "regime_break",
-                               "duplicate_factor", "stale_price")
-TRUE_KINDS: tuple[str, ...] = ("true_signal", "true_weak_signal")
+                               "duplicate_factor", "stale_price",
+                               # 2026-09-30, the verifier's missing placebos:
+                               "information_delay", "timestamp_scramble", "sign_reversal",
+                               "spread_perturbation", "label_randomization")
+#: POSITIVE CONTROLS: genuine edges a validator must ACCEPT, so a gate that rejects everything
+#: scores zero power instead of a perfect immune score.
+TRUE_KINDS: tuple[str, ...] = ("true_signal", "true_weak_signal", "true_seasonal",
+                               "true_strong_signal")
 ALL_KINDS: tuple[str, ...] = TRAP_KINDS + TRUE_KINDS
+
+#: HOW A KIND REACHES THE PRODUCTION GAUNTLET. The ten-gate certifier sees a cell as a signal
+#: stamped on a bar and the return that follows -- nothing else. So:
+#:   * a kind whose signal READS information from after its bar is docketed at the honest stamp
+#:     of that information (`adversary.docket_cell(stamp_offset=1)`): stamped on bar t with bar
+#:     t+1's information, the leak would be a real predictor in the docket's world and no engine
+#:     could ever reject it -- the caller would have cheated before the harness saw it;
+#:   * a kind whose trap lives in fills, the universe, a factor series or stale quotes carries
+#:     nothing the certifier is shown, so it is INEXPRESSIBLE there and is scored by the
+#:     reference validator only -- counted apart, never as a production pass or fail.
+LATE_INFORMATION_KINDS: frozenset[str] = frozenset(
+    {"leakage", "timezone_shift", "information_delay", "timestamp_scramble"})
+INEXPRESSIBLE_TO_GAUNTLET: frozenset[str] = frozenset(
+    {"survivorship", "impossible_fills", "duplicate_factor", "stale_price"})
 
 
 @dataclass
@@ -111,8 +131,19 @@ def generate(kind: str, seed: int, n: int = 1500, subtlety: float = 0.0) -> tupl
     cost = 0.0002
     signal_fn: Callable[[F, int], float] = _ar_signal_fn(1)
 
-    if kind in ("true_signal", "true_weak_signal"):
-        phi = 0.12 if kind == "true_signal" else 0.07
+    if kind == "true_seasonal":
+        # a genuine hour-of-day drift: +mu on one stamp-hour in 24, noise elsewhere
+        r = rng.normal(0, sigma, size=n)
+        hour = int(rng.integers(24))
+        r[np.arange(n) % 24 == hour] += 0.35 * sigma
+        prices = _mk_prices(rng, r)
+
+        def signal_fn(px: F, t: int, _h: int = hour) -> float:
+            return 1.0 if t % 24 == _h else 0.0
+    elif kind in ("true_signal", "true_weak_signal", "true_strong_signal"):
+        # the strong control exists to CALIBRATE a judge: an AR(0.25) edge any sound certifier
+        # must accept even on a short sample, so zero power there is a defect, not caution
+        phi = {"true_signal": 0.12, "true_weak_signal": 0.07, "true_strong_signal": 0.25}[kind]
         e = rng.normal(0, sigma, size=n)
         r = np.zeros(n)
         for t in range(1, n):
@@ -199,6 +230,72 @@ def generate(kind: str, seed: int, n: int = 1500, subtlety: float = 0.0) -> tupl
             if t < 1:
                 return 0.0
             return -float(np.sign(np.log(px[t] / px[t - 1])))
+    elif kind == "information_delay":
+        # a series published with a delay, read as if known on time: the signal uses bar
+        # t + d's close, d in 1..3, on a pure-noise path
+        prices = _mk_prices(rng, rng.normal(0, sigma, size=n))
+        delay = rng.integers(1, 4, size=n + 2)
+
+        def signal_fn(px: F, t: int, _d: npt.NDArray[np.int64] = delay,
+                      _m: npt.NDArray[np.bool_] = leak_mask) -> float:
+            d = int(_d[t]) if t < len(_d) else 1
+            if t < 1 or t + d >= len(px):
+                return 0.0
+            if t < len(_m) and not _m[t]:
+                return float(np.sign(np.log(px[t] / px[t - 1])))
+            return float(np.sign(np.log(px[t + d] / px[t])))
+    elif kind == "timestamp_scramble":
+        # bars shuffled within blocks of four: "the previous bar" is sometimes a later one
+        prices = _mk_prices(rng, rng.normal(0, sigma, size=n))
+        perm = np.arange(n + 2)
+        for b in range(0, n + 2, 4):
+            blk = perm[b:b + 4].copy()
+            if rng.random() < (1.0 - 0.8 * s_):
+                rng.shuffle(blk)
+            perm[b:b + 4] = blk
+
+        def signal_fn(px: F, t: int, _p: npt.NDArray[np.int64] = perm) -> float:
+            k = int(_p[t]) if t < len(_p) else t
+            if k < 1 or k + 1 >= len(px) or t + 1 >= len(px):
+                return 0.0
+            return float(np.sign(np.log(px[k + 1] / px[k])))
+    elif kind == "sign_reversal":
+        # momentum that pays in the first half and costs in the second: the edge flipped sign
+        e = rng.normal(0, sigma, size=n)
+        r = np.zeros(n)
+        flip = int(n * (0.5 + 0.35 * s_))
+        for t in range(1, n):
+            r[t] = (0.2 if t < flip else -0.2) * r[t - 1] + e[t]
+        prices = _mk_prices(rng, r)
+    elif kind == "spread_perturbation":
+        # a REAL weak edge that does not survive a realistic spread: gross positive, net negative
+        e = rng.normal(0, sigma, size=n)
+        r = np.zeros(n)
+        for t in range(1, n):
+            r[t] = 0.07 * r[t - 1] + e[t]
+        prices = _mk_prices(rng, r)
+        cost = 0.0015 * (1.0 - s_) + 0.0006 * s_
+    elif kind == "label_randomization":
+        # A LOOKUP TABLE FITTED TO THE LABELS. The position for each pattern of the last six
+        # return signs (64 patterns) is the sign that pattern's NEXT return had on the first 60%
+        # of a pure-noise path. Every input is causal -- only past signs are read -- so nothing
+        # leaks; all of its in-sample edge is the fit, and out of sample it is a coin.
+        rets = rng.normal(0, sigma, size=n)
+        prices = _mk_prices(rng, rets)
+        cut = int(n * (0.6 + 0.3 * s_))
+        bits = (rets > 0).astype(int)
+        table = np.zeros(64)
+        for t in range(6, cut - 1):
+            code = int("".join(str(b) for b in bits[t - 5: t + 1]), 2)
+            table[code] += rets[t + 1]
+        table = np.sign(table)
+
+        def signal_fn(px: F, t: int, _tb: F = table) -> float:
+            if t < 7:
+                return 0.0
+            r_ = np.diff(np.log(px[t - 6: t + 1]))
+            code = int("".join("1" if x > 0 else "0" for x in r_), 2)
+            return float(_tb[code])
     else:
         raise ValueError(f"unknown kind {kind!r}")
 
