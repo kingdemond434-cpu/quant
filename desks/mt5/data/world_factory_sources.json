@@ -1,0 +1,1533 @@
+{
+ "note": "THE WORLD FACTORY ROSTER (research/world_factory.py). Every organ that turns the world -- news, macro, datasets, media, forests, LLM seats, screens -- into hypotheses and cells, with its clock, its seat directories, its registry generator names, its artifact counter, its declared regions/languages and its licence. The regional forests are NOT listed here: they are expanded from libs/research/forests.FORESTS and their coverage is measured against deep_forest_sources.json. `media_units` are the miners the `world_media_miners` leg orchestrates on the box, least-recently-run first. Add a source by adding a row; never hard-code one.",
+ "expand_forests": true,
+ "required_regions": [
+  "us",
+  "gb",
+  "de",
+  "fr",
+  "ch",
+  "cn",
+  "hk",
+  "jp",
+  "kr",
+  "tw",
+  "in",
+  "sg",
+  "id",
+  "au",
+  "ru",
+  "tr",
+  "sa",
+  "ae",
+  "il",
+  "eg",
+  "za",
+  "ng",
+  "ke",
+  "br",
+  "mx",
+  "ar",
+  "cl"
+ ],
+ "sources": [
+  {
+   "id": "news_event_stream",
+   "kind": "news",
+   "family": "news_event",
+   "organ": "desks/mt5/research/news_event_stream.py",
+   "clock": {
+    "type": "hourly_cycle",
+    "legs": [
+     "news_event_stream"
+    ]
+   },
+   "seats": [],
+   "generators": [
+    "news_event_stream"
+   ],
+   "compiler_sources": [
+    "news_event_stream"
+   ],
+   "fetch_legs": [],
+   "artifact": "desks/mt5/reports/NEWS_EVENT_STREAM.json",
+   "items_keys": [
+    "items_seen",
+    "items_new"
+   ],
+   "regions": [
+    "global"
+   ],
+   "languages": [
+    "en",
+    "zh",
+    "ko"
+   ],
+   "source_types": [
+    "news",
+    "central_bank",
+    "calendar"
+   ],
+   "licence": "derived: reads other organs' captures; inherits their licences"
+  },
+  {
+   "id": "news_desk",
+   "kind": "news",
+   "family": "news_event",
+   "organ": "desks/mt5/research/news_desk.py",
+   "clock": {
+    "type": "box_task",
+    "name": "MT5-NewsDesk",
+    "every": "5 min",
+    "note": "reads data/news_schedule.json, which only a LICENSED calendar may fill and which starts empty"
+   },
+   "seats": [],
+   "generators": [],
+   "compiler_sources": [],
+   "fetch_legs": [],
+   "artifact": "desks/mt5/data/news_captures.jsonl",
+   "items_keys": [],
+   "regions": [
+    "us",
+    "ea",
+    "gb",
+    "jp"
+   ],
+   "languages": [
+    "en"
+   ],
+   "source_types": [
+    "calendar"
+   ],
+   "licence": "requires a licensed calendar feed (none configured)"
+  },
+  {
+   "id": "event_surprise",
+   "kind": "event",
+   "family": "news_event",
+   "organ": "desks/mt5/research/event_surprise.py",
+   "clock": {
+    "type": "hourly_cycle",
+    "legs": [
+     "event_surprise"
+    ]
+   },
+   "seats": [
+    "event_surprise"
+   ],
+   "generators": [
+    "event_surprise"
+   ],
+   "compiler_sources": [
+    "event_surprise"
+   ],
+   "fetch_legs": [],
+   "artifact": "desks/mt5/reports/EVENT_SURPRISE.json",
+   "items_keys": [
+    "n_events",
+    "n_pairs"
+   ],
+   "regions": [
+    "us",
+    "ea",
+    "gb",
+    "jp",
+    "ca",
+    "au"
+   ],
+   "languages": [
+    "en"
+   ],
+   "source_types": [
+    "calendar",
+    "earnings"
+   ],
+   "licence": "derived from the desk's own calendar vintages and bars"
+  },
+  {
+   "id": "event_response_atlas",
+   "kind": "event",
+   "family": "news_event",
+   "organ": "desks/mt5/research/event_response_atlas.py",
+   "clock": {
+    "type": "hourly_cycle",
+    "legs": [
+     "event_response_atlas"
+    ]
+   },
+   "seats": [
+    "event_response_atlas"
+   ],
+   "generators": [
+    "event_response_atlas"
+   ],
+   "compiler_sources": [
+    "event_response_atlas"
+   ],
+   "fetch_legs": [],
+   "artifact": "desks/mt5/reports/EVENT_RESPONSE_ATLAS.json",
+   "items_keys": [
+    "n_events"
+   ],
+   "regions": [
+    "global"
+   ],
+   "languages": [
+    "en"
+   ],
+   "source_types": [
+    "calendar"
+   ],
+   "licence": "derived from the desk's own event log and bars"
+  },
+  {
+   "id": "event_graph_lab",
+   "kind": "event",
+   "family": "news_event",
+   "organ": "desks/mt5/research/event_graph_lab.py",
+   "clock": {
+    "type": "hourly_cycle",
+    "legs": [
+     "event_graph_lab"
+    ]
+   },
+   "seats": [
+    "event_graph"
+   ],
+   "generators": [
+    "event_graph"
+   ],
+   "compiler_sources": [
+    "event_graph"
+   ],
+   "fetch_legs": [],
+   "artifact": "desks/mt5/reports/EVENT_GRAPH.json",
+   "items_keys": [
+    "n_events",
+    "events"
+   ],
+   "regions": [
+    "global"
+   ],
+   "languages": [],
+   "source_types": [
+    "event_graph"
+   ],
+   "licence": "derived"
+  },
+  {
+   "id": "fred_macro",
+   "kind": "macro",
+   "family": "macro",
+   "organ": "scripts/collect_fred_macro.py",
+   "clock": {
+    "type": "hourly_cycle",
+    "legs": [
+     "fred_macro"
+    ]
+   },
+   "seats": [],
+   "generators": [],
+   "compiler_sources": [],
+   "fetch_legs": [],
+   "artifact": null,
+   "items_keys": [],
+   "regions": [
+    "us"
+   ],
+   "languages": [
+    "en"
+   ],
+   "source_types": [
+    "macro_series"
+   ],
+   "licence": "FRED: public domain US-government series and third-party series under their owners' terms (keyless fredgraph.csv)"
+  },
+  {
+   "id": "macro_state_engine",
+   "kind": "macro",
+   "family": "macro",
+   "organ": "desks/mt5/research/macro_state_engine.py",
+   "clock": {
+    "type": "hourly_cycle",
+    "legs": [
+     "macro_state_engine"
+    ]
+   },
+   "seats": [
+    "macro_state_engine"
+   ],
+   "generators": [
+    "macro_state_engine"
+   ],
+   "compiler_sources": [
+    "macro_state_engine"
+   ],
+   "fetch_legs": [],
+   "artifact": "desks/mt5/reports/MACRO_STATE_ENGINE.json",
+   "items_keys": [
+    "counts.tests_run",
+    "n_states"
+   ],
+   "regions": [
+    "us",
+    "ea",
+    "gb",
+    "jp",
+    "cn"
+   ],
+   "languages": [
+    "en"
+   ],
+   "source_types": [
+    "macro_series"
+   ],
+   "licence": "derived from FRED/ECB/BIS series"
+  },
+  {
+   "id": "macro_intelligence",
+   "kind": "macro",
+   "family": "macro",
+   "organ": "desks/mt5/research/macro_intelligence.py",
+   "clock": {
+    "type": "hourly_cycle",
+    "legs": [
+     "macro_intelligence"
+    ]
+   },
+   "seats": [],
+   "generators": [],
+   "compiler_sources": [],
+   "fetch_legs": [],
+   "artifact": "desks/mt5/reports/MACRO_INTELLIGENCE.json",
+   "items_keys": [
+    "n_signals",
+    "signals"
+   ],
+   "regions": [
+    "global"
+   ],
+   "languages": [],
+   "source_types": [
+    "macro_series"
+   ],
+   "licence": "derived"
+  },
+  {
+   "id": "macro_department",
+   "kind": "macro",
+   "family": "macro",
+   "organ": "desks/mt5/research/macro_region/intelligence.py",
+   "clock": {
+    "type": "hourly_cycle",
+    "legs": [
+     "macro_department"
+    ]
+   },
+   "seats": [],
+   "generators": [
+    "macro_department"
+   ],
+   "compiler_sources": [
+    "macro_department"
+   ],
+   "fetch_legs": [],
+   "artifact": null,
+   "items_keys": [],
+   "regions": [
+    "global"
+   ],
+   "languages": [
+    "en",
+    "de",
+    "fr",
+    "it",
+    "es",
+    "pt",
+    "ja",
+    "zh"
+   ],
+   "source_types": [
+    "central_bank",
+    "statistics"
+   ],
+   "licence": "public-sector publication (government/central-bank/statistics office); open for automated retrieval under its site terms"
+  },
+  {
+   "id": "macro_desk",
+   "kind": "macro",
+   "family": "macro",
+   "organ": "desks/mt5/research/macro_desk.py",
+   "clock": {
+    "type": "supervisor",
+    "name": "research_supervisor.macro_desk",
+    "note": "perpetual; writes data/macro_state.json and data/cross_asset_anchors.pkl -- a conditioner, not a donor"
+   },
+   "seats": [],
+   "generators": [],
+   "compiler_sources": [],
+   "fetch_legs": [],
+   "artifact": "desks/mt5/data/macro_state.json",
+   "items_keys": [
+    "series",
+    "n_series"
+   ],
+   "regions": [
+    "us",
+    "ea",
+    "jp"
+   ],
+   "languages": [
+    "en"
+   ],
+   "source_types": [
+    "macro_series"
+   ],
+   "licence": "FRED/ALFRED keyless public series"
+  },
+  {
+   "id": "cross_asset_graph",
+   "kind": "macro",
+   "family": "macro",
+   "organ": "desks/mt5/research/cross_asset_graph.py",
+   "clock": {
+    "type": "hourly_cycle",
+    "legs": [
+     "cross_asset_graph"
+    ]
+   },
+   "seats": [
+    "cross_asset_graph"
+   ],
+   "generators": [
+    "cross_asset_graph"
+   ],
+   "compiler_sources": [
+    "cross_asset_graph"
+   ],
+   "fetch_legs": [],
+   "artifact": "desks/mt5/reports/cross_asset_graph.json",
+   "items_keys": [
+    "n_edges",
+    "edges"
+   ],
+   "regions": [
+    "global"
+   ],
+   "languages": [],
+   "source_types": [
+    "cross_asset"
+   ],
+   "licence": "derived from the broker's own bars"
+  },
+  {
+   "id": "world_lab",
+   "kind": "macro",
+   "family": "macro",
+   "organ": "desks/mt5/research/world_lab.py",
+   "clock": {
+    "type": "hourly_cycle",
+    "legs": [
+     "world_lab"
+    ]
+   },
+   "seats": [
+    "world_lab"
+   ],
+   "generators": [
+    "world_lab"
+   ],
+   "compiler_sources": [
+    "world_lab"
+   ],
+   "fetch_legs": [],
+   "artifact": "desks/mt5/reports/WORLD_LAB.json",
+   "items_keys": [
+    "scenarios"
+   ],
+   "regions": [
+    "global"
+   ],
+   "languages": [],
+   "source_types": [
+    "scenario"
+   ],
+   "licence": "derived"
+  },
+  {
+   "id": "acquire_datasets",
+   "kind": "dataset",
+   "family": "datasets",
+   "organ": "desks/mt5/research/acquire_datasets.py",
+   "clock": {
+    "type": "hourly_cycle",
+    "legs": [
+     "acquire_datasets"
+    ]
+   },
+   "seats": [
+    "world"
+   ],
+   "generators": [
+    "acquire_datasets"
+   ],
+   "compiler_sources": [
+    "acquire_datasets"
+   ],
+   "fetch_legs": [],
+   "artifact": "desks/mt5/reports/dataset_acquisition.json",
+   "items_keys": [
+    "fetched",
+    "endpoints",
+    "n_endpoints"
+   ],
+   "regions": [
+    "global"
+   ],
+   "languages": [],
+   "source_types": [
+    "dataset"
+   ],
+   "licence": "public-sector publication (government/central-bank/statistics office); open for automated retrieval under its site terms"
+  },
+  {
+   "id": "world_dataset_hunter",
+   "kind": "dataset",
+   "family": "datasets",
+   "organ": "desks/mt5/research/world_dataset_hunter.py",
+   "clock": {
+    "type": "hourly_cycle",
+    "legs": [
+     "world_dataset_hunter"
+    ],
+    "note": "branch claude/world-dataset-hunter (PR #92), NOT merged to live"
+   },
+   "seats": [
+    "world_macro_proposer"
+   ],
+   "generators": [
+    "world_macro_proposer"
+   ],
+   "compiler_sources": [
+    "world_macro_proposer"
+   ],
+   "fetch_legs": [],
+   "artifact": "desks/mt5/reports/DATASET_HUNT.json",
+   "items_keys": [
+    "datasets_fetched",
+    "fetched"
+   ],
+   "regions": [
+    "global"
+   ],
+   "languages": [],
+   "source_types": [
+    "dataset"
+   ],
+   "licence": "DBnomics/IMF/OECD/BIS/ECB/Eurostat/World Bank open-data terms"
+  },
+  {
+   "id": "pack_cells",
+   "kind": "dataset",
+   "family": "country_packs",
+   "organ": "desks/mt5/research/pack_cells.py",
+   "clock": {
+    "type": "hourly_cycle",
+    "legs": [
+     "pack_cells"
+    ]
+   },
+   "seats": [
+    "moat_factory"
+   ],
+   "generators": [
+    "moat_factory"
+   ],
+   "compiler_sources": [
+    "moat_factory"
+   ],
+   "fetch_legs": [],
+   "artifact": "desks/mt5/reports/PACK_CELLS.json",
+   "items_keys": [
+    "world.discoveries_this_pass",
+    "cells"
+   ],
+   "regions": [
+    "global"
+   ],
+   "languages": [],
+   "source_types": [
+    "country_pack"
+   ],
+   "licence": "per pack root (desks/mt5/research/countries/<cc>/pack.py)"
+  },
+  {
+   "id": "coverage_drain",
+   "kind": "dataset",
+   "family": "country_packs",
+   "organ": "desks/mt5/research/coverage_drain.py",
+   "clock": {
+    "type": "hourly_cycle",
+    "legs": [
+     "coverage_drain"
+    ]
+   },
+   "seats": [],
+   "generators": [],
+   "compiler_sources": [],
+   "fetch_legs": [],
+   "artifact": "desks/mt5/reports/COVERAGE_DRAIN.json",
+   "items_keys": [
+    "n_roots",
+    "roots"
+   ],
+   "regions": [
+    "global"
+   ],
+   "languages": [],
+   "source_types": [
+    "country_pack"
+   ],
+   "licence": "derived"
+  },
+  {
+   "id": "world_crawler",
+   "kind": "world",
+   "family": "world_crawl",
+   "organ": "desks/mt5/side_channels/world_crawler.py",
+   "clock": {
+    "type": "hourly_cycle",
+    "legs": [
+     "world_crawler"
+    ]
+   },
+   "seats": [
+    "world"
+   ],
+   "generators": [
+    "world_crawler",
+    "world"
+   ],
+   "compiler_sources": [
+    "world_crawler",
+    "world"
+   ],
+   "fetch_legs": [],
+   "artifact": "desks/mt5/reports/world_crawl.json",
+   "items_keys": [
+    "fetched",
+    "planned"
+   ],
+   "regions": [
+    "global"
+   ],
+   "languages": [],
+   "source_types": [
+    "open_web"
+   ],
+   "licence": "publisher's public web terms; automated fetch at hourly politeness, headline/claim extraction only, no redistribution; robots.txt honoured"
+  },
+  {
+   "id": "deep_forest",
+   "kind": "world",
+   "family": "world_crawl",
+   "organ": "desks/mt5/research/deep_forest_miner.py",
+   "clock": {
+    "type": "hourly_cycle",
+    "legs": [
+     "deep_forest"
+    ]
+   },
+   "seats": [
+    "world"
+   ],
+   "generators": [
+    "deep_forest"
+   ],
+   "compiler_sources": [
+    "deep_forest"
+   ],
+   "fetch_legs": [
+    "deep_forest",
+    "deep_forest_miner"
+   ],
+   "artifact": "desks/mt5/reports/DEEP_FOREST.json",
+   "items_keys": [
+    "counts.pages",
+    "grounds_worked"
+   ],
+   "regions": [
+    "global"
+   ],
+   "languages": [],
+   "source_types": [
+    "forum",
+    "column",
+    "dataset",
+    "video",
+    "academic"
+   ],
+   "licence": "per ground in deep_forest_sources.json"
+  },
+  {
+   "id": "moat_collectors",
+   "kind": "world",
+   "family": "world_crawl",
+   "organ": "desks/mt5/research/moat_collectors.py",
+   "clock": {
+    "type": "hourly_cycle",
+    "legs": [
+     "moat_collectors"
+    ]
+   },
+   "seats": [],
+   "generators": [],
+   "compiler_sources": [],
+   "fetch_legs": [],
+   "artifact": "desks/mt5/reports/MOAT_COLLECTORS.json",
+   "items_keys": [
+    "captures_new",
+    "sources_visited"
+   ],
+   "regions": [
+    "global"
+   ],
+   "languages": [],
+   "source_types": [
+    "capture"
+   ],
+   "licence": "immutable capture of declared documents; robots honoured"
+  },
+  {
+   "id": "regional_survivor_hunters",
+   "kind": "world",
+   "family": "track_records",
+   "organ": "desks/mt5/side_channels/regional_survivor_hunters.py",
+   "clock": {
+    "type": "hourly_cycle",
+    "legs": [
+     "world_media_miners"
+    ],
+    "unit": "seed_miners",
+    "note": "runs inside the seed-miner sweep"
+   },
+   "seats": [
+    "regional_survivors"
+   ],
+   "generators": [
+    "regional_survivors"
+   ],
+   "compiler_sources": [
+    "regional_survivors"
+   ],
+   "fetch_legs": [
+    "regional_survivor_hunters"
+   ],
+   "artifact": null,
+   "items_keys": [],
+   "regions": [
+    "cn",
+    "jp",
+    "br",
+    "za",
+    "ng",
+    "ke",
+    "ru",
+    "id"
+   ],
+   "languages": [],
+   "source_types": [
+    "copy_trading"
+   ],
+   "licence": "publisher's public web terms; automated fetch at hourly politeness, headline/claim extraction only, no redistribution"
+  },
+  {
+   "id": "kimi_seat",
+   "kind": "seat",
+   "family": "llm_seats",
+   "organ": "scripts/kimi_hunter.py",
+   "clock": {
+    "type": "hourly_cycle",
+    "legs": [
+     "kimi_hunt"
+    ]
+   },
+   "seats": [
+    "kimi"
+   ],
+   "generators": [
+    "kimi_k3_deep_forest"
+   ],
+   "compiler_sources": [
+    "kimi_k3_deep_forest"
+   ],
+   "fetch_legs": [],
+   "artifact": null,
+   "items_keys": [],
+   "regions": [
+    "global"
+   ],
+   "languages": [],
+   "source_types": [
+    "llm_seat"
+   ],
+   "licence": "model provider API terms (credential on the box)"
+  },
+  {
+   "id": "deepseek_seat",
+   "kind": "seat",
+   "family": "llm_seats",
+   "organ": "libs/ops/deepseek_cycle.py",
+   "clock": {
+    "type": "vps_timer",
+    "name": "quant-deepseek.timer",
+    "note": "VPS only; the VPS branch is an orphan since 2026-09-11, so its donations do not reach the box"
+   },
+   "seats": [
+    "deepseek"
+   ],
+   "generators": [
+    "deepseek"
+   ],
+   "compiler_sources": [
+    "deepseek"
+   ],
+   "fetch_legs": [],
+   "artifact": null,
+   "items_keys": [],
+   "regions": [
+    "global"
+   ],
+   "languages": [],
+   "source_types": [
+    "llm_seat"
+   ],
+   "licence": "model provider API terms"
+  },
+  {
+   "id": "understanding_seat",
+   "kind": "seat",
+   "family": "llm_seats",
+   "organ": "desks/mt5/research/understanding_seat.py",
+   "clock": {
+    "type": "hourly_cycle",
+    "legs": [
+     "understanding_seat"
+    ]
+   },
+   "seats": [
+    "understanding_seat"
+   ],
+   "generators": [
+    "understanding_seat"
+   ],
+   "compiler_sources": [
+    "understanding_seat"
+   ],
+   "fetch_legs": [],
+   "artifact": "desks/mt5/reports/UNDERSTANDING.json",
+   "items_keys": [
+    "n_understood",
+    "rows"
+   ],
+   "regions": [
+    "global"
+   ],
+   "languages": [],
+   "source_types": [
+    "llm_seat"
+   ],
+   "licence": "derived"
+  },
+  {
+   "id": "proposer_seat",
+   "kind": "seat",
+   "family": "llm_seats",
+   "organ": "libs/research/proposer_seat.py",
+   "clock": {
+    "type": "hourly_cycle",
+    "legs": [
+     "proposer_seat"
+    ]
+   },
+   "seats": [],
+   "generators": [
+    "proposer_seat"
+   ],
+   "compiler_sources": [
+    "proposer_seat"
+   ],
+   "fetch_legs": [],
+   "artifact": "desks/mt5/reports/PROPOSER_SEAT.json",
+   "items_keys": [
+    "n_proposals",
+    "proposals"
+   ],
+   "regions": [
+    "global"
+   ],
+   "languages": [],
+   "source_types": [
+    "llm_seat"
+   ],
+   "licence": "model provider API terms"
+  },
+  {
+   "id": "mass_screen",
+   "kind": "screen",
+   "family": "screens",
+   "organ": "desks/mt5/research/mass_screen.py",
+   "clock": {
+    "type": "hourly_cycle",
+    "legs": [
+     "mass_screen"
+    ],
+    "note": "branch claude/mass-hypothesis-screen (PR #93), NOT merged to live"
+   },
+   "seats": [],
+   "generators": [
+    "mass_screen"
+   ],
+   "compiler_sources": [],
+   "fetch_legs": [],
+   "artifact": "desks/mt5/reports/MASS_SCREEN.json",
+   "items_keys": [
+    "trials",
+    "n_trials"
+   ],
+   "regions": [
+    "global"
+   ],
+   "languages": [],
+   "source_types": [
+    "screen"
+   ],
+   "licence": "derived"
+  },
+  {
+   "id": "miner_candidate_compiler",
+   "kind": "compiler",
+   "family": "compiler",
+   "organ": "desks/mt5/research/miner_candidate_compiler.py",
+   "clock": {
+    "type": "hourly_cycle",
+    "legs": [
+     "compile_candidates"
+    ]
+   },
+   "seats": [],
+   "generators": [],
+   "compiler_sources": [],
+   "fetch_legs": [],
+   "artifact": "desks/mt5/data/hypotheses/miner_candidates.json",
+   "items_keys": [
+    "rows_accounted",
+    "executable_candidates"
+   ],
+   "regions": [
+    "global"
+   ],
+   "languages": [],
+   "source_types": [
+    "compiler"
+   ],
+   "licence": "derived"
+  }
+ ],
+ "media_units": [
+  {
+   "name": "central_bank",
+   "module": "central_bank_miner",
+   "callable": "run_and_save",
+   "organ": "desks/mt5/side_channels/central_bank_miner.py",
+   "seats": [
+    "central_banks"
+   ],
+   "kind": "macro",
+   "regions": [
+    "us",
+    "ea",
+    "gb",
+    "jp",
+    "ca",
+    "institutional"
+   ],
+   "languages": [
+    "en"
+   ],
+   "source_types": [
+    "central_bank_press"
+   ],
+   "licence": "public-sector publication (government/central-bank/statistics office); open for automated retrieval under its site terms",
+   "timeout_s": 180
+  },
+  {
+   "name": "forexfactory",
+   "module": "forexfactory_miner",
+   "callable": "run_and_save",
+   "organ": "desks/mt5/side_channels/forexfactory_miner.py",
+   "seats": [
+    "forexfactory"
+   ],
+   "kind": "news",
+   "regions": [
+    "global"
+   ],
+   "languages": [
+    "en"
+   ],
+   "source_types": [
+    "calendar"
+   ],
+   "licence": "ForexFactory public weekly calendar feed (faireconomy.media JSON); site terms",
+   "timeout_s": 180
+  },
+  {
+   "name": "investing",
+   "module": "investing_miner",
+   "callable": "run_and_save",
+   "organ": "desks/mt5/side_channels/investing_miner.py",
+   "seats": [
+    "investing"
+   ],
+   "kind": "news",
+   "regions": [
+    "global"
+   ],
+   "languages": [
+    "en"
+   ],
+   "source_types": [
+    "calendar",
+    "news"
+   ],
+   "licence": "publisher's public web terms; automated fetch at hourly politeness, headline/claim extraction only, no redistribution",
+   "timeout_s": 180
+  },
+  {
+   "name": "earnings",
+   "module": "earnings_miner",
+   "callable": "run_and_save",
+   "organ": "desks/mt5/side_channels/earnings_miner.py",
+   "seats": [
+    "earnings"
+   ],
+   "kind": "news",
+   "regions": [
+    "us"
+   ],
+   "languages": [
+    "en"
+   ],
+   "source_types": [
+    "earnings"
+   ],
+   "licence": "publisher's public web terms; automated fetch at hourly politeness, headline/claim extraction only, no redistribution",
+   "timeout_s": 180
+  },
+  {
+   "name": "sec_edgar",
+   "module": "sec_edgar_miner",
+   "callable": "run_and_save",
+   "organ": "desks/mt5/side_channels/sec_edgar_miner.py",
+   "seats": [
+    "sec_edgar"
+   ],
+   "kind": "news",
+   "regions": [
+    "us"
+   ],
+   "languages": [
+    "en"
+   ],
+   "source_types": [
+    "regulatory_filing"
+   ],
+   "licence": "SEC EDGAR: US-government public data; fair-access policy (declared UA, <=10 req/s)",
+   "timeout_s": 180
+  },
+  {
+   "name": "cot",
+   "module": "cot_miner",
+   "callable": "run_and_save",
+   "organ": "desks/mt5/side_channels/cot_miner.py",
+   "seats": [
+    "cot"
+   ],
+   "kind": "macro",
+   "regions": [
+    "us"
+   ],
+   "languages": [
+    "en"
+   ],
+   "source_types": [
+    "positioning"
+   ],
+   "licence": "CFTC: US-government public data",
+   "timeout_s": 180
+  },
+  {
+   "name": "aaii",
+   "module": "aaii_sentiment_miner",
+   "callable": "run_and_save",
+   "organ": "desks/mt5/side_channels/aaii_sentiment_miner.py",
+   "seats": [
+    "aaii"
+   ],
+   "kind": "macro",
+   "regions": [
+    "us"
+   ],
+   "languages": [
+    "en"
+   ],
+   "source_types": [
+    "sentiment"
+   ],
+   "licence": "publisher's public web terms; automated fetch at hourly politeness, headline/claim extraction only, no redistribution",
+   "timeout_s": 180
+  },
+  {
+   "name": "fear_greed",
+   "module": "cnn_fear_greed_miner",
+   "callable": "run_and_save",
+   "organ": "desks/mt5/side_channels/cnn_fear_greed_miner.py",
+   "seats": [
+    "fear_greed"
+   ],
+   "kind": "macro",
+   "regions": [
+    "us"
+   ],
+   "languages": [
+    "en"
+   ],
+   "source_types": [
+    "sentiment"
+   ],
+   "licence": "publisher's public web terms; automated fetch at hourly politeness, headline/claim extraction only, no redistribution",
+   "timeout_s": 180
+  },
+  {
+   "name": "google_trends",
+   "module": "google_trends_miner",
+   "callable": "run_and_save",
+   "organ": "desks/mt5/side_channels/google_trends_miner.py",
+   "seats": [
+    "google_trends"
+   ],
+   "kind": "media",
+   "regions": [
+    "global"
+   ],
+   "languages": [
+    "en"
+   ],
+   "source_types": [
+    "search_attention"
+   ],
+   "licence": "Google Trends public explore endpoint; Google terms",
+   "timeout_s": 180
+  },
+  {
+   "name": "weather",
+   "module": "weather_miner",
+   "callable": "run_and_save",
+   "organ": "desks/mt5/side_channels/weather_miner.py",
+   "seats": [
+    "weather"
+   ],
+   "kind": "macro",
+   "regions": [
+    "us",
+    "global"
+   ],
+   "languages": [
+    "en"
+   ],
+   "source_types": [
+    "weather"
+   ],
+   "licence": "Open-Meteo (CC BY 4.0) and NOAA/USDM (US-government public data)",
+   "timeout_s": 180
+  },
+  {
+   "name": "shipping",
+   "module": "shipping_miner",
+   "callable": "run_and_save",
+   "organ": "desks/mt5/side_channels/shipping_miner.py",
+   "seats": [
+    "shipping"
+   ],
+   "kind": "macro",
+   "regions": [
+    "global"
+   ],
+   "languages": [
+    "en"
+   ],
+   "source_types": [
+    "shipping"
+   ],
+   "licence": "publisher's public web terms; automated fetch at hourly politeness, headline/claim extraction only, no redistribution",
+   "timeout_s": 180
+  },
+  {
+   "name": "correlations",
+   "module": "correlation_miner",
+   "callable": "run_and_save",
+   "organ": "desks/mt5/side_channels/correlation_miner.py",
+   "seats": [
+    "correlations"
+   ],
+   "kind": "macro",
+   "regions": [
+    "global"
+   ],
+   "languages": [
+    "en"
+   ],
+   "source_types": [
+    "cross_asset"
+   ],
+   "licence": "derived from the desk's own bars",
+   "timeout_s": 180
+  },
+  {
+   "name": "seasonality",
+   "module": "seasonality_miner",
+   "callable": "run_and_save",
+   "organ": "desks/mt5/side_channels/seasonality_miner.py",
+   "seats": [
+    "seasonality"
+   ],
+   "kind": "macro",
+   "regions": [
+    "global"
+   ],
+   "languages": [
+    "en"
+   ],
+   "source_types": [
+    "seasonality"
+   ],
+   "licence": "derived from the desk's own bars",
+   "timeout_s": 180
+  },
+  {
+   "name": "china",
+   "module": "china_miner",
+   "callable": "run_and_save",
+   "organ": "desks/mt5/side_channels/china_miner.py",
+   "seats": [
+    "china"
+   ],
+   "kind": "media",
+   "regions": [
+    "cn"
+   ],
+   "languages": [
+    "zh"
+   ],
+   "source_types": [
+    "forum",
+    "column"
+   ],
+   "licence": "publisher's public web terms; automated fetch at hourly politeness, headline/claim extraction only, no redistribution",
+   "timeout_s": 180
+  },
+  {
+   "name": "korea",
+   "module": "korea_miner",
+   "callable": "run_and_save",
+   "organ": "desks/mt5/side_channels/korea_miner.py",
+   "seats": [
+    "korea"
+   ],
+   "kind": "media",
+   "regions": [
+    "kr"
+   ],
+   "languages": [
+    "ko"
+   ],
+   "source_types": [
+    "column",
+    "forum"
+   ],
+   "licence": "publisher's public web terms; automated fetch at hourly politeness, headline/claim extraction only, no redistribution",
+   "timeout_s": 180
+  },
+  {
+   "name": "reddit",
+   "module": "reddit_miner",
+   "callable": "run_and_save",
+   "organ": "desks/mt5/side_channels/reddit_miner.py",
+   "seats": [
+    "reddit"
+   ],
+   "kind": "media",
+   "regions": [
+    "global"
+   ],
+   "languages": [
+    "en"
+   ],
+   "source_types": [
+    "social"
+   ],
+   "licence": "Reddit public JSON; Reddit data API terms",
+   "timeout_s": 180
+  },
+  {
+   "name": "youtube",
+   "module": "youtube_miner",
+   "callable": "run_and_save",
+   "organ": "desks/mt5/side_channels/youtube_miner.py",
+   "seats": [
+    "youtube"
+   ],
+   "kind": "media",
+   "regions": [
+    "global"
+   ],
+   "languages": [
+    "en"
+   ],
+   "source_types": [
+    "video"
+   ],
+   "licence": "YouTube public pages; captions only via the keyless mirror route (robots honoured)",
+   "timeout_s": 180
+  },
+  {
+   "name": "github",
+   "module": "github_miner",
+   "callable": "run_and_save",
+   "organ": "desks/mt5/side_channels/github_miner.py",
+   "seats": [
+    "github"
+   ],
+   "kind": "media",
+   "regions": [
+    "global"
+   ],
+   "languages": [
+    "en"
+   ],
+   "source_types": [
+    "code"
+   ],
+   "licence": "GitHub public search API; repo licences recorded per repo",
+   "timeout_s": 180
+  },
+  {
+   "name": "mql5_codebase",
+   "module": "mql5_codebase",
+   "callable": "run_and_save",
+   "organ": "desks/mt5/side_channels/mql5_codebase.py",
+   "seats": [
+    "mql5"
+   ],
+   "kind": "media",
+   "regions": [
+    "global"
+   ],
+   "languages": [
+    "en",
+    "ru",
+    "zh"
+   ],
+   "source_types": [
+    "code"
+   ],
+   "licence": "publisher's public web terms; automated fetch at hourly politeness, headline/claim extraction only, no redistribution",
+   "timeout_s": 180
+  },
+  {
+   "name": "mql5_articles",
+   "module": "mql5_articles",
+   "callable": "run_and_save",
+   "organ": "desks/mt5/side_channels/mql5_articles.py",
+   "seats": [
+    "mql5"
+   ],
+   "kind": "media",
+   "regions": [
+    "global"
+   ],
+   "languages": [
+    "en",
+    "ru",
+    "zh"
+   ],
+   "source_types": [
+    "research"
+   ],
+   "licence": "publisher's public web terms; automated fetch at hourly politeness, headline/claim extraction only, no redistribution",
+   "timeout_s": 180
+  },
+  {
+   "name": "mql5_signals",
+   "module": "mql5_signals",
+   "callable": "run_and_save",
+   "organ": "desks/mt5/side_channels/mql5_signals.py",
+   "seats": [
+    "mql5"
+   ],
+   "kind": "media",
+   "regions": [
+    "global"
+   ],
+   "languages": [
+    "en",
+    "ru"
+   ],
+   "source_types": [
+    "track_record"
+   ],
+   "licence": "publisher's public web terms; automated fetch at hourly politeness, headline/claim extraction only, no redistribution",
+   "timeout_s": 180
+  },
+  {
+   "name": "mql5_forum",
+   "module": "mql5_forum",
+   "callable": "run_and_save",
+   "organ": "desks/mt5/side_channels/mql5_forum.py",
+   "seats": [
+    "mql5"
+   ],
+   "kind": "media",
+   "regions": [
+    "global"
+   ],
+   "languages": [
+    "en",
+    "ru"
+   ],
+   "source_types": [
+    "forum"
+   ],
+   "licence": "publisher's public web terms; automated fetch at hourly politeness, headline/claim extraction only, no redistribution",
+   "timeout_s": 180
+  },
+  {
+   "name": "tradingview",
+   "module": "tradingview_miner",
+   "callable": "run_and_save",
+   "organ": "desks/mt5/side_channels/tradingview_miner.py",
+   "seats": [
+    "tradingview"
+   ],
+   "kind": "media",
+   "regions": [
+    "global"
+   ],
+   "languages": [
+    "en"
+   ],
+   "source_types": [
+    "scripts"
+   ],
+   "licence": "publisher's public web terms; automated fetch at hourly politeness, headline/claim extraction only, no redistribution",
+   "timeout_s": 180
+  },
+  {
+   "name": "quantconnect",
+   "module": "quantconnect_miner",
+   "callable": "run_and_save",
+   "organ": "desks/mt5/side_channels/quantconnect_miner.py",
+   "seats": [
+    "quantconnect"
+   ],
+   "kind": "media",
+   "regions": [
+    "global"
+   ],
+   "languages": [
+    "en"
+   ],
+   "source_types": [
+    "code"
+   ],
+   "licence": "publisher's public web terms; automated fetch at hourly politeness, headline/claim extraction only, no redistribution",
+   "timeout_s": 180
+  },
+  {
+   "name": "academic",
+   "module": "academic_miner",
+   "callable": "run_and_save",
+   "organ": "desks/mt5/side_channels/academic_miner.py",
+   "seats": [
+    "academic"
+   ],
+   "kind": "media",
+   "regions": [
+    "global"
+   ],
+   "languages": [
+    "en"
+   ],
+   "source_types": [
+    "academic"
+   ],
+   "licence": "arXiv/SSRN metadata; arXiv API terms",
+   "timeout_s": 180
+  },
+  {
+   "name": "seed_miners",
+   "module": "seed_miners",
+   "callable": "run_and_save",
+   "organ": "desks/mt5/side_channels/seed_miners.py",
+   "seats": [
+    "global_frontier",
+    "regional_survivors",
+    "mql5_survivors",
+    "mql5_signals",
+    "myfxbook_outlook",
+    "darwinex",
+    "tradingview_scripts",
+    "fxblue",
+    "collective2",
+    "quantconnect",
+    "forexpeacearmy",
+    "ff_calendar_vintage",
+    "forextsd_cdx",
+    "quant_se",
+    "arxiv_qfin",
+    "bis_speeches",
+    "broker_swaps",
+    "github_topics",
+    "propfirm_boards"
+   ],
+   "kind": "media",
+   "regions": [
+    "global",
+    "cn",
+    "jp",
+    "kr",
+    "br",
+    "za",
+    "ng",
+    "ru"
+   ],
+   "languages": [
+    "en",
+    "zh",
+    "ja",
+    "ko",
+    "pt",
+    "ru"
+   ],
+   "source_types": [
+    "track_record",
+    "forum",
+    "calendar",
+    "central_bank_press"
+   ],
+   "licence": "publisher's public web terms; automated fetch at hourly politeness, headline/claim extraction only, no redistribution; per-source robots re-probe in seed_miners",
+   "timeout_s": 900
+  }
+ ]
+}

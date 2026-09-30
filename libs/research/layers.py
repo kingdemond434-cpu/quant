@@ -49,6 +49,7 @@ LEG_LAYER: dict[str, str] = {
     # skeleton, which mechanism name, which territory -- before any claim about returns is made.
     # That is information, not prediction: neither one scores anything.
     "proposer_seat": "information", "kimi_hunt": "information",
+    "world_media_miners": "information", "world_factory": "meta",
     "deep_forest": "information", "market_intel": "information", "record_tape": "information",
     "archive_tape": "information", "refresh_bars": "information",
     "timeframe_coverage": "information", "frontier": "information",
