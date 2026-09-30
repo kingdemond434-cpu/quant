@@ -10491,6 +10491,31 @@
    "consumer": "UNMEASURED"
   },
   {
+   "organ": "executable:desks/mt5/research/learned_miners.py",
+   "kind": "executable",
+   "code": [
+    "desks/mt5/research/learned_miners.py"
+   ],
+   "clock": "invoked:desks/mt5/research/daily_cycle.py",
+   "cadence_s": null,
+   "max_silence_s": null,
+   "state": "NEVER",
+   "why": "no artifact and no run record on this host",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/GNN_ATTENTION_ALLOCATION_INTEL.json",
+   "artifact_declared": "desks/mt5/reports/GNN_ATTENTION_ALLOCATION_INTEL.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "UNMEASURED",
+   "consumer": "UNMEASURED"
+  },
+  {
    "organ": "executable:desks/mt5/research/opportunity_curve.py",
    "kind": "executable",
    "code": [
