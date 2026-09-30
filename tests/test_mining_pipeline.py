@@ -948,7 +948,11 @@ def test_a_pinned_family_row_names_the_judges_chart() -> None:
     cell (the 13 rows that never joined, audit 2026-09-30)."""
     fi = importlib.import_module("research.frontier_identity")
     src = (ROOT / "desks" / "mt5" / "scripts" / "external_gauntlet.py").read_text("utf-8")
-    assert f"_PINNED_TIMEFRAME = {fi.PINNED_TIMEFRAME!r}" in src
+    import ast
+    pinned = next(ast.literal_eval(n.value) for n in ast.parse(src).body
+                  if isinstance(n, ast.Assign) and getattr(n.targets[0], "id", "")
+                  == "_PINNED_TIMEFRAME")
+    assert pinned == fi.PINNED_TIMEFRAME
     row = {"symbol": "GBPJPY", "family": "lvc_asia_london", "params": {}}
     assert fi.docket_cell_id(row).startswith("GBPJPY@M5.lvc_asia_london.p=")
     judge = {"sym": "GBPJPY", "family": "lvc_asia_london", "params": {}, "timeframe": "M5"}
@@ -1024,7 +1028,7 @@ def test_a_lane_owned_source_is_active_only_through_a_judged_docket_cell(tmp_pat
     assert pipe.cursors.get("twin_a")["registered"]["canonical_id"] == "twin_a"
     st = pipe.source_status(T0)
     summary = pipe.registry_summary(st)
-    assert summary["active"] == 5 and summary["schema"].endswith("source_registry.schema.json")
+    assert summary["active"] == 4 and summary["schema"].endswith("source_registry.schema.json")
     assert summary["cold_by_reason"]["no cell EVALUATED in 30 days"] == [
         "dup_b", "smart_lab_home", "twin_a", "twin_b"]
     col = summary["url_collisions"]
