@@ -207,6 +207,11 @@ def _gw_ns(tmp_path: Path) -> dict:
                 "timedelta": timedelta, "log": logs.append, "_logs": logs,
                 "now": lambda: "2026-09-04T07:05:00+00:00", "_state_vector_id": lambda: "sv1",
                 "_release_id": lambda: "rel1",
+                # The row's restart-replay identity and process id (production contract): the
+                # identity is read from the live sleeves.json, so it is stubbed here like the
+                # release id -- the ledger writer is measured, not the promoted roster.
+                "_strategy_state_identity": lambda sleeve, symbol: f"sid:{sleeve}",
+                "_PROCESS_INSTANCE_ID": "pid:test",
                 "DECISIONS": tmp_path / "decision_ledger.jsonl", "BASE": tmp_path,
                 # The row now carries the book it was decided inside; `allocator_book` is the
                 # gateway's own three-file read, stubbed here so the ledger writer is measured

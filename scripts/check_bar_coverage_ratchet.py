@@ -211,6 +211,21 @@ def _write(path: Path, payload: Any) -> None:
     os.replace(tmp, path)
 
 
+#: R0237: the exit code is `fence_exit` over a DECLARED pass set, never "fail on one named status,
+#: pass on everything else" -- that sent any unforeseen or misspelled status down `else 0`. The
+#: set is exactly the statuses this fence already exited 0 on (behaviour unchanged for every
+#: status it can emit); what changes is that a status nobody declared now fails closed.
+_PASSING = frozenset({"OK", "SEALED"})
+
+
+def _exit(status: object) -> int:
+    root = str(Path(__file__).resolve().parents[1])
+    if root not in sys.path:
+        sys.path.insert(0, root)
+    from libs.ops.fence_exit import fence_exit
+    return fence_exit(status, _PASSING, fail=1)
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=str(__doc__ or "").split("\n")[0])
     ap.add_argument("--init", action="store_true", help="seal this host's first mark")
@@ -246,7 +261,7 @@ def main(argv: list[str] | None = None) -> int:
     if a.json:
         print(json.dumps({**now, "verdict": got["verdict"], "failures": got["failures"],
                           "raised": got["raised"]}, indent=1))
-        return 1 if got["verdict"] == "FAIL" else 0
+        return _exit(got["verdict"])
     print(f"bar coverage ratchet on {now['host']}: {got['verdict']}")
     print(f"  {now['n_instruments']} instrument(s); {now['n_cells_held']}/"
           f"{now['n_cells_possible']} cell(s); {now['n_full_ladder']} hold the full ladder")
@@ -263,7 +278,7 @@ def main(argv: list[str] | None = None) -> int:
         print(f"  FAIL    {line}")
     if got["why"]:
         print(f"  {got['why']}")
-    return 1 if got["verdict"] == "FAIL" else 0
+    return _exit(got["verdict"])
 
 
 if __name__ == "__main__":

@@ -128,9 +128,13 @@ def load_rows(shadow: Path = SHADOW) -> dict[str, dict[str, Any]]:
     return rows
 
 
-def build(now: datetime | None = None, shadow: Path = SHADOW,
-          decay_path: Path = DECAY) -> dict[str, Any]:
+def build(now: datetime | None = None, shadow: Path | None = None,
+          decay_path: Path | None = None) -> dict[str, Any]:
+    # Resolved at CALL time: a default bound at definition froze the module paths, so a caller
+    # (or test) repointing SHADOW/DECAY still read the box's real shadow state.
     now = now or datetime.now(tz=UTC)
+    shadow = SHADOW if shadow is None else shadow
+    decay_path = DECAY if decay_path is None else decay_path
     rows = load_rows(shadow)
     decay = _read(decay_path)
     verdicts = decay.get("verdicts") if isinstance(decay.get("verdicts"), dict) else {}

@@ -20,6 +20,7 @@ import pytest
 
 _DOCTRINE = Path("ops/principal_doctrine.txt")
 _CONST = Path("docs/CONSTITUTION.md")
+_LAWS = Path("docs/LAWS.md")
 
 
 def _norm(p: Path) -> str:
@@ -28,7 +29,10 @@ def _norm(p: Path) -> str:
 
 @pytest.fixture(scope="module")
 def doctrine() -> str:
-    return _norm(_DOCTRINE)
+    """The text an organ actually RECEIVES. Since the 2026-08-25 consolidation that is the sealed
+    doctrine + docs/LAWS.md (ops/brain_env.sh cats both; libs/ops/lawful.py reads the same pair),
+    and the duty text -- L1.56 included -- moved out of the doctrine into LAWS.md."""
+    return _norm(_DOCTRINE) + " " + _norm(_LAWS)
 
 
 @pytest.fixture(scope="module")
@@ -39,15 +43,19 @@ def const() -> str:
 def test_THE_DOCTRINE_CARRIES_IT_BECAUSE_THAT_IS_THE_TEXT_ORGANS_ACTUALLY_READ(doctrine) -> None:
     """The constitution is a document an organ may or may not open. The doctrine is injected into
     every model call, so a law that exists only in the constitution binds nobody at runtime."""
-    assert "BUILD-DEFERRAL IS A DEFECT" in doctrine
+    assert "docs/LAWS.md" in _norm(_DOCTRINE), "the doctrine must still declare LAWS.md operative"
+    assert "build-deferral is a defect" in doctrine.lower()
+    assert "**L1.56** build-deferral is a defect" in doctrine
 
 
 def test_THE_TWO_RULES_ARE_KEPT_APART(doctrine, const) -> None:
     """`wire it on arrival` and `do not build it` are OPPOSITE instructions. The excuse works only
     by collapsing them, so both texts must state the distinction explicitly."""
-    for text in (doctrine, const):
-        assert "WIRE IT ON ARRIVAL" in text
-        assert "BLOAT IS UNWIRED CAPABILITY, NOT CAPABILITY" in text
+    assert "WIRE IT ON ARRIVAL" in const
+    assert "BLOAT IS UNWIRED CAPABILITY, NOT CAPABILITY" in const
+    # LAWS.md's compact form of the same distinction (2026-08-25 consolidation).
+    assert "built AND wired in the same change" in doctrine
+    assert "bloat is unwired capability, not capability" in doctrine
 
 
 def test_A_REPEATED_REQUEST_IS_TREATED_AS_A_DESK_DEFECT(doctrine, const) -> None:
@@ -59,7 +67,7 @@ def test_A_REPEATED_REQUEST_IS_TREATED_AS_A_DESK_DEFECT(doctrine, const) -> None
 
 def test_THE_TIEBREAK_IS_STATED_AS_AN_IMPERATIVE(doctrine, const) -> None:
     """A principle without a tiebreak loses every close call to the cautious reading."""
-    assert "BUILD, and wire it" in doctrine
+    assert "if a build is net-positive it is built AND wired in the same change" in doctrine
     assert "between building and explaining why not: BUILD, and wire it" in const
 
 

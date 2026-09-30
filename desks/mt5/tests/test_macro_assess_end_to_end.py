@@ -275,11 +275,20 @@ def test_the_coverage_map_names_its_blind_spots() -> None:
     """A named blind spot is a purchasing decision; an unnamed one is a silent failure."""
     cov = coverage()
     assert cov["domains_total"] == len(DOMAINS)
-    assert cov["coverage_fraction"] < 0.4, "the desk sees a narrow slice and must say so"
-    blind = set(cov["domains_blind"])
+    # `default_sources` grew from six central-bank/statistics feeds to 28 first-party feeds
+    # (OPEC, USTR, IMO, S&P indices, SEC EDGAR, UN News ...), so the six domains this test once
+    # listed as blind are now covered BY A NAMED SOURCE. What stays pinned is the contract: the
+    # fraction is exactly covered/total, every domain is either covered by a named feed or listed
+    # blind, and the market-data domains no RSS feed can reach are named blind, not dropped.
+    covered, blind = set(cov["domains_covered"]), set(cov["domains_blind"])
+    assert covered | blind == set(DOMAINS) and not covered & blind
+    assert cov["coverage_fraction"] == round(len(covered) / len(DOMAINS), 3) < 1.0
+    assert {"rates_futures_repricing", "volatility_options_repricing"} <= blind, (
+        "the desk sees no futures or options repricing feed and must say so")
+    by_domain = {d for s in cov["sources"] for d in s["domains"]}
     for expected in ("opec_decisions", "shipping_chokepoints", "equity_earnings_guidance",
                      "trade_policy_tariffs", "conflict_escalation", "index_reconstitution"):
-        assert expected in blind
+        assert expected in blind or expected in by_domain
 
 
 def test_the_licensed_gaps_are_named_with_their_consequence() -> None:

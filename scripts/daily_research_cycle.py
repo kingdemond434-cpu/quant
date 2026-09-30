@@ -59,7 +59,9 @@ _STEPS = [
     # This is a ceiling reached only when the gate is wedged, so the
     # rise costs nothing on a healthy day and buys a NAMED failure on a bad one. The ordering is
     # asserted by tests/ops/test_ci_gate_timeouts.py against run_ci.STEP_BUDGET_TOTAL_S.
-    ("ci_gate",           "scripts/run_ci.py",             9600),
+    # 9900s (2026-09-30): run_ci gained the `lint desks/mt5 (bugs)` step (300s), taking its
+    # inner sum to exactly 9600 -- a tie, which the outer kill wins. 300s of headroom restored.
+    ("ci_gate",           "scripts/run_ci.py",             9900),
     ("fred_macro",        "scripts/collect_fred_macro.py",   120),  # free US-macro (key-gated)
     ("walcl_clock",       "scripts/derive_walcl_clock.py",    60),  # R0031 forward clock, reads
     #                      the fred archive the previous step just refreshed (phase = cadence)

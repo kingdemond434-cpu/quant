@@ -64,6 +64,20 @@ def _cap(name: str, status: str, detail: str, **extra: Any) -> dict[str, Any]:
     return {"capability": name, "status": status, "detail": detail, **extra}
 
 
+def _absent(*rels: str) -> list[str]:
+    """The subset of `rels` this box cannot read at all.
+
+    THE CLASS THIS NAMES (R0228, and the second instance found by generalising it). `_read`
+    collapses "the artifact is missing" and "the artifact says zero" into the same None, and every
+    caller then spends it through `or {}`. A capability that does so can still report a confident
+    substantive verdict -- "registry holds 0 ... the binding constraint is validated alphas" --
+    when what actually happened is that nothing on disk was read. Missing-reads-as-zero is the
+    silent-zero class, and the honest verdict for it is NO-INPUT, which this organ already has as a
+    first-class status. Callers making a claim ABOUT the data must name what they could not read.
+    """
+    return [r for r in rels if not (_ROOT / r).exists()]
+
+
 def _meta_learning() -> dict[str, Any]:
     """Regime -> alpha affinity. Needs regime labels + per-alpha return series."""
     try:
@@ -84,7 +98,21 @@ def _meta_learning() -> dict[str, Any]:
         return _cap("meta_learning", "NO-INPUT",
                     "needs a per-alpha return series (web/cashcarry_shadow.json returns[]); "
                     "0 validated alphas means there is genuinely little to learn affinity over")
-    regime = _read("web/regime.json") or {}
+    # web/regime.json has never existed; the regime engine writes web/regime_engine.json (R0228).
+    # `_read` swallows OSError and returns None, so the phantom path degraded silently into
+    # `label = "unlabelled"` for every observation -- the affinity study would have run on one
+    # constant class and still reported ACTIVE. A missing input that reads as a valid default is
+    # the silent-zero class, and it is why this reads the real artifact by name rather than a
+    # plausible one. (The row credited this with mislabelling every observation on a 4-hourly
+    # cron; it did not -- the series gate above has always returned NO-INPUT first, so the bug
+    # was LATENT, waiting for the first real return series. Fixed on that ground, not the
+    # asserted one.)
+    if _absent("web/regime_engine.json"):
+        return _cap("meta_learning", "NO-INPUT",
+                    "regime labels unreadable (web/regime_engine.json absent) -- affinity over a "
+                    "single synthesised label is not a measurement, and 'unlabelled' would have "
+                    "read as a regime rather than as a missing input")
+    regime = _read("web/regime_engine.json") or {}
     label = str(regime.get("regime") or regime.get("state") or "unlabelled")
     # One regime label per observation: with a single current label this is a degenerate but HONEST
     # run -- it records the affinity of the only regime the desk can name today.
@@ -143,18 +171,34 @@ def _research_priority() -> dict[str, Any]:
     brief = _read("data/executive_kpis.json") or {}
     # Decay pressure per mechanism family, from the desk's own family-kill record when present.
     decay = {}
+    source = ""
     fams = brief.get("family_survival") if isinstance(brief, dict) else None
     if isinstance(fams, dict):
         for fam, st in fams.items():
             if isinstance(st, dict) and isinstance(st.get("rate"), (int, float)):
                 decay[str(fam)] = max(0.0, 1.0 - float(st["rate"]))
+        if decay:
+            source = "executive_kpis.family_survival"
     if not decay:
-        # Fall back to the DESK_BRIEF family kills, which are always present in the repo.
-        decay = {"price_only": 1.0, "attention_social": 1.0, "trader_behavioural": 1.0,
-                 "funding_positioning": 0.5, "onchain_flow": 0.8, "regional_premium": 0.9}
+        # R0095/E-13: the real family-kill record is the mechanism board (refreshed daily by
+        # mechanism_board.py). Verdict -> decay pressure: a killed family is dead ground (1.0),
+        # untested is unknown-leaning-dead (0.8), alive earns continued attention (0.5).
+        board = _read("data/mechanism_board.json") or {}
+        verdicts = board.get("verdicts") if isinstance(board, dict) else None
+        if isinstance(verdicts, dict) and verdicts:
+            vmap = {"FAMILY KILL": 1.0, "UNTESTED": 0.8, "ALIVE": 0.5}
+            decay = {str(f): vmap.get(str(v).upper(), 0.8) for f, v in verdicts.items()}
+            kills = sum(1 for v in verdicts.values() if str(v).upper() == "FAMILY KILL")
+            source = f"mechanism_board verdicts ({kills} family kills of {len(verdicts)})"
+    if not decay:
+        # The old fallback ranked HARDCODED constants while reporting ACTIVE -- a search-steering
+        # organ navigating by fiction. A ranking of constants carries zero information; refuse it.
+        return _cap("research_priority", "NO-INPUT",
+                    "DATA-FREE: no measured family-kill record (executive_kpis.family_survival "
+                    "and mechanism_board.json both absent/empty); refusing to rank constants")
     ranked = ResearchPriorityEngine().prioritize(decaying_by_category=decay)
     return _cap("research_priority", "ACTIVE",
-                f"ranked {len(ranked)} research categories by decay pressure",
+                f"ranked {len(ranked)} families by decay pressure from {source}",
                 top=[{"category": p.category, "score": round(p.priority_score, 3),
                       "reason": p.reason} for p in ranked[:5]])
 
@@ -178,7 +222,19 @@ def _health_monitor() -> dict[str, Any]:
         import libs.self_improvement.health_monitor  # noqa: F401
     except ImportError as e:
         return _cap("health_monitor", "ERROR", f"import failed: {e}")
-    cards = _read("data/alpha_registry.json") or _read("web/alpha_lifecycle.json")
+    # `data/alpha_registry.json` was the SECOND phantom of the R0228 class, found by generalising
+    # it: nothing in scripts/ or libs/ has ever written that path -- the only repo reference was
+    # this read. Its removal costs nothing, because `web/alpha_lifecycle.json` is the artifact
+    # scripts/alpha_lifecycle.py actually produces.
+    reg = "web/alpha_lifecycle.json"
+    if missing := _absent(reg):
+        # "registry holds 0" is a claim about the DESK; "no registry on disk" is a claim about
+        # this BOX, and reporting the first when only the second is true is how a phantom read
+        # gets laundered into a finding about the alpha pipeline.
+        return _cap("health_monitor", "NO-INPUT",
+                    f"alpha registry not readable here ({', '.join(missing)}) -- this is an "
+                    "artifact-absence, NOT a measurement that the desk holds 0 validated alphas")
+    cards = _read(reg)
     n = len(cards.get("alphas", [])) if isinstance(cards, dict) else 0
     if not n:
         return _cap("health_monitor", "NO-INPUT",
@@ -205,7 +261,10 @@ def _subprocess_cap(name: str, script: str, timeout_s: float = 240.0,
     except subprocess.TimeoutExpired:
         return _cap(name, "ERROR", f"{script} exceeded {timeout_s:.0f}s")
     tail = (p.stdout or p.stderr or "").strip().splitlines()
-    return _cap(name, "ACTIVE" if p.returncode == 0 else "NO-INPUT",
+    # R0095: a nonzero exit is a CRASH, not an absent input. Labelling it NO-INPUT hid the
+    # label factory's daily ValueError for weeks -- NO-INPUT is reserved for capabilities
+    # that ran and honestly reported nothing to consume.
+    return _cap(name, "ACTIVE" if p.returncode == 0 else "ERROR",
                 f"{script} exit={p.returncode}: {tail[-1][:180] if tail else 'no output'}")
 
 

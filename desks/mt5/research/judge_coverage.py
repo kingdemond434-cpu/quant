@@ -689,7 +689,11 @@ def family_value(path: Path | None = None) -> tuple[dict[str, float], float]:
             if fam and v > best.get(fam, 0.0):
                 best[fam] = v
     vals = sorted(best.values())
-    median = vals[len(vals) // 2] if vals else 0.0
+    # An ABSENT or empty NET_EDGE is UNMEASURED, not a measured zero (L1.28a). Returning 0.0 here
+    # multiplied every family's ev to 0, so the ranking fell back to alphabetical order and the
+    # prior, breadth and bar-cost terms it publishes stopped steering anything. Unit value keeps
+    # every family at par on the value axis and lets the measured terms order them.
+    median = vals[len(vals) // 2] if vals else 1.0
     return best, median
 
 

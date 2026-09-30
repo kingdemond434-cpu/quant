@@ -351,12 +351,23 @@ def test_a_pack_is_credited_only_with_what_it_declares() -> None:
     assert FENCE.jurisdictions_of("us")[0] == ("us",)
 
 
-def test_country_coverage_is_reported_and_never_fails_the_gate(tmp_path: Path) -> None:
+def test_country_coverage_is_reported_and_never_fails_the_gate(tmp_path: Path,
+                                                             monkeypatch) -> None:
+    # SAID HERE ON PURPOSE, as this test asked: by 2026-09-29 every country the forests name is
+    # answered by a pack or a package, so the live roster no longer carries an unanswered one.
+    # The property under test is that an unanswered country is REPORTED and never fails the
+    # gate, so one is planted -- a country no pack or package answers -- rather than waiting for
+    # the roster to grow a hole.
+    import dataclasses
+    forests = dict(F.FORESTS)
+    fid = next(k for k, f in forests.items() if f.kind == "regional" and not f.package)
+    forests[fid] = dataclasses.replace(forests[fid], countries=(*forests[fid].countries, "zz"))
+    monkeypatch.setattr(F, "FORESTS", forests)
     out = tmp_path / "p.json"
     rc = FENCE.main(["--out", str(out)])
     doc = json.loads(out.read_text(encoding="utf-8"))
-    assert doc["country_coverage"]["unanswered"], \
-        "this desk has unanswered countries today; if it ever has none, say so here on purpose"
+    assert "zz" in doc["country_coverage"]["unanswered"], \
+        "a country no pack answers must be reported as UNANSWERED"
     assert rc == 0, "an unanswered country is WORK, not a breach -- the fence reports it"
     assert doc["fence"]["countries_unanswered"] == doc["country_coverage"]["unanswered"]
 

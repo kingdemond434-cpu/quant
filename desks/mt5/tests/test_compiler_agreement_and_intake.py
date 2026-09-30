@@ -151,6 +151,12 @@ def _run_main(tmp_path, monkeypatch, rows_by_source: dict[str, list[dict]]) -> d
     monkeypatch.setattr(mcc, "expand_axes", lambda rows: rows)
     monkeypatch.setattr(hg, "Graph", _GraphStub)
     monkeypatch.setattr(hg, "record_candidates", lambda *a, **k: 0)
+    # No seat donates in this tree, so `main` sees every seat dark and asks the repair actuator
+    # for a gap-wirer run: that spawned a real `systemctl --user start` and stamped the repo's
+    # data/gap_wirer_last_fired. The leaked Popen then surfaced as a ResourceWarning in whichever
+    # test the collector ran in. The request is recorded, never executed, here.
+    import libs.ops.repair_invoke as ri
+    monkeypatch.setattr(ri, "request_repair", lambda reason, **kw: False)
     assert mcc.main() == 0
     return {"out": json.loads((tmp_path / "out.json").read_text("utf-8")),
             "deepen": json.loads((tmp_path / "deepen.json").read_text("utf-8"))}

@@ -308,15 +308,21 @@ def rollovers_between(t0: pd.Timestamp, t1: pd.Timestamp) -> float:
         b = b.tz_convert("UTC").tz_localize(None)
     if not (b > a):
         return 0.0
-    nights = 0.0
-    # The first rollover instant at or after the entry.
+    # The first rollover instant strictly after the entry.
     cur = a.normalize() + pd.Timedelta(hours=ROLLOVER_HOUR_UTC)
     if cur <= a:
         cur = cur + pd.Timedelta(days=1)
-    while cur <= b:
-        nights += 3.0 if cur.weekday() == TRIPLE_SWAP_WEEKDAY else 1.0
-        cur = cur + pd.Timedelta(days=1)
-    return nights
+    if cur > b:
+        return 0.0
+    # COUNTED, NOT WALKED. The rollover instants are cur, cur+1d, ..., the last one <= b: that is
+    # `k` of them, and each is one night plus two more when it falls on the triple-swap weekday.
+    # This was a Python loop of Timestamp additions, one per night per trade, and on the sealed
+    # gauntlet's build path it cost more than the bar loop it sits under; the count below is the
+    # same integer (so the same float), with no loop.
+    k = int((b - cur) // pd.Timedelta(days=1)) + 1
+    first_triple = (TRIPLE_SWAP_WEEKDAY - cur.weekday()) % 7
+    triples = 0 if first_triple >= k else 1 + (k - 1 - first_triple) // 7
+    return float(k + 2 * triples)
 
 
 def run_backtest(
@@ -537,16 +543,18 @@ def run_backtest(
         # FINANCING, PER NIGHT ACTUALLY CROSSED. Zero for every intraday sleeve, which is why
         # this changes nothing for the scalp lane and is decisive for the overnight one. It is
         # charged on the whole stack (`units`), the same size the spread is charged on.
+        # Each bar's Timestamp is boxed ONCE per trade and shared by the financing count and the
+        # trade record (it was boxed twice each); a Timestamp is immutable, so sharing it is free.
+        entry_ts = pd.Timestamp(idx[fill_bar])
+        exit_ts = pd.Timestamp(idx[min(fill_bar + bars_held - 1, len(idx) - 1)])
         if costs.swap_per_lot_per_night:
-            nights = rollovers_between(pd.Timestamp(idx[fill_bar]),
-                                       pd.Timestamp(idx[min(fill_bar + bars_held - 1,
-                                                            len(idx) - 1)]))
+            nights = rollovers_between(entry_ts, exit_ts)
             if nights:
                 r -= (costs.financing(nights) / costs.contract_oz) * units / stop_dist
         trades.append(
             Trade(
-                entry_time=pd.Timestamp(idx[fill_bar]),
-                exit_time=pd.Timestamp(idx[min(fill_bar + bars_held - 1, len(idx) - 1)]),
+                entry_time=entry_ts,
+                exit_time=exit_ts,
                 side=side, entry=entry, exit=exit_price,
                 stop=sig.stop, target=sig.target,
                 bars_held=bars_held, r_multiple=float(r), reason=reason,

@@ -21,7 +21,8 @@ def test_external_gauntlet_is_the_only_pipeline_certificate_writer() -> None:
     for relative in (
         "research/universal_gate.py",
         "scripts/full_pipeline.py",
-        "scripts/full_pipeline_v2.py",
+        # retired to scripts/_retired/ in 7401f769 (2026-09-27); still must never write it
+        "scripts/_retired/full_pipeline_v2.py",
     ):
         assert authority not in _text(relative), relative
 

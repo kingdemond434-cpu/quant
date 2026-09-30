@@ -162,12 +162,20 @@ def anchors() -> None:
     if ANCHORS_F.exists():
         try:
             prev = pd.read_pickle(ANCHORS_F)
-            prev = prev[~prev.index.isin(df.index)]
         except Exception as e:
             log(f"anchors: prior pickle unreadable, replacing ({e!r})")
-    if prev is not None and not prev.empty:
-        df = pd.concat([prev, df]).sort_index()
-        df = df[~df.index.duplicated(keep="last")]
+    if isinstance(prev, pd.DataFrame) and not prev.empty:
+        # MERGE PER CELL, NEVER PER ROW. This used to drop every prior ROW whose date the new
+        # fetch also carried and then append the new rows -- so a pass on which one FRED series
+        # failed (the keyless endpoint is flaky) replaced that series' whole history with NaN
+        # on every date another series did return. DGS10 comes back from 1962, so a single
+        # failed T10YIE fetch erased T10YIE entirely: measured on the committed pickle
+        # 2026-09-29, DGS10 16,157 values and T10YIE ZERO, which makes REAL_YIELD_10Y empty and
+        # every macro-gold family emit nothing. A fresh value wins; a missing one never erases.
+        missing = [c for c in prev.columns if c not in cols]
+        if missing:
+            log(f"anchors: not fetched this pass, prior history kept: {', '.join(missing)}")
+        df = df.combine_first(prev).sort_index()
     df.to_pickle(ANCHORS_F)
     log(f"anchors saved {df.shape[0]} daily rows x {df.shape[1]} cols "
         f"(last {df.index[-1].date()})")

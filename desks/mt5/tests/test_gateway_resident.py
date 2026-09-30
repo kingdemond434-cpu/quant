@@ -24,7 +24,13 @@ for p in (str(_DESK), str(_DESK / "research")):
 import gateway_resident as gr  # noqa: E402
 
 
-def test_the_loop_wrapper_is_the_research_one_never_the_desk_root_copy() -> None:
+def test_the_loop_wrapper_is_the_research_one_never_the_desk_root_copy(monkeypatch) -> None:
+    # The resident orders sys.path AT IMPORT (research first). Other tests in the same process
+    # insert desks/mt5 at the front afterwards, so re-run that import-time ordering on a private
+    # copy of sys.path rather than measure whatever order the suite happened to leave behind.
+    import importlib
+    monkeypatch.setattr(sys, "path", list(sys.path))
+    importlib.reload(gr)
     path = gr.loop_module_path().replace("\\", "/")
     assert path.endswith("desks/mt5/research/run_gateway_loop.py"), path
     # And the legacy copy at the desk root delegates rather than carrying its own lock rule.

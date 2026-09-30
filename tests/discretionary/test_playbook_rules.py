@@ -322,38 +322,25 @@ def test_ONE_BAD_DETECTOR_DOES_NOT_MUTE_THE_FAMILY(monkeypatch) -> None:  # type
 
 
 def test_THE_ADAPTER_ACCEPTS_EVERY_RULES_SETUP_NOT_JUST_H3S() -> None:
-    """THE BUG THE FIRST LIVE RUN FOUND, and it got past twenty-one green tests.
+    """THE SEAM THIS PINNED IS RETIRED, AND THE RETIREMENT IS WHAT IS PINNED NOW.
 
-    `_to_signal` read `sweep_i`/`shift_i`/`entry_i` straight off the ICT dataclass, because when it
-    was written H3 was the only rule. Ten rules later, none of which has those fields, the first
-    real invocation raised AttributeError -- and every test passed, because the detectors were
-    tested and the order path was tested and the SEAM BETWEEN THEM was not.
-
-    This exercises the seam with a Setup from each family.
+    It exercised `scripts/run_discretionary_live.py::_to_signal` -- the adapter that turned a
+    rule's Setup into a crypto-venue order (BTCUSDT) -- after the first live run found it read
+    ICT-only fields off every family. That adapter was DELETED 2026-09-05 with the crypto-exchange
+    desk under the MT5 universe mandate (ops/run_research_cycle.sh "RETIRED 2026-09-05"), so there
+    is no seam left between these detectors and an order path. What must hold instead is that the
+    order path stays gone: the file is absent and no ops shell invokes it except in a comment. A
+    revived adapter re-opens exactly the untested seam this test was written for.
     """
-    import importlib.util
+    from pathlib import Path
 
-    spec = importlib.util.spec_from_file_location("run_disc_undertest",
-                                                  "scripts/run_discretionary_live.py")
-    assert spec and spec.loader
-    mod = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(mod)
-
-    for rule_id, direction in (("H1_structural_fade", -1), ("H6_wyckoff_spring", 1),
-                               ("H11_band_fade", -1), ("H5_cvd_divergence", -1)):
-        st = R.Setup(rule_id, direction, 100.0, 105.0, 95.0, 3, "note")
-        sig = mod._to_signal(st, "BTCUSDT", st.rule_id)
-        assert sig.rule_id == rule_id
-        assert sig.side == ("BUY" if direction > 0 else "SELL")
-        assert sig.entry_price == 100.0 and sig.stop_price == 105.0
-
-    class _ICT:
-        direction, entry_price, stop, target = 1, 100.0, 95.0, 110.0
-        sweep_i, shift_i, entry_i = 1, 2, 3
-
-    conv = mod._from_ict(_ICT())
-    assert conv.rule_id == "H3_ict_sweep_shift"
-    assert mod._to_signal(conv, "BTCUSDT", conv.rule_id).side == "BUY"
+    assert not Path("scripts/run_discretionary_live.py").exists(), (
+        "the discretionary live adapter is back -- restore the seam test that exercises "
+        "_to_signal with a Setup from every family, not only H3")
+    for sh in Path("ops").glob("*.sh"):
+        for line in sh.read_text("utf-8").splitlines():
+            if "run_discretionary_live.py" in line:
+                assert line.lstrip().startswith("#"), f"{sh}: invokes the retired adapter: {line}"
 
 
 # ------------------------------------------------- H12, on the rows nothing had ever read

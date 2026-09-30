@@ -346,10 +346,17 @@ def test_routing_actually_routes():
 
 
 def test_routing_reaches_more_than_the_global_ranking():
-    """The measured claim, asserted rather than remembered: routing is why reach is not 25."""
+    """The measured claim, asserted rather than remembered: routing is why reach is not 25.
+
+    The margin was `> 2x` while the budget was 12,000 chars and the global ranking kept ~25
+    lessons. BUDGET_CHARS has since been raised to fit the whole corpus (130k on 2026-09-06, 190k
+    on 2026-09-15), so the global ranking now keeps most of it and no routing can double it --
+    measured 2026-09-29: 347 kept globally, 386 reached routed. What routing must still buy is
+    STRICTLY MORE reach than one global ranking, or it is complexity for nothing.
+    """
     _, dropped = dm.corpus()
     globally_kept = len(dm.load()) - len(dropped)
-    assert len(dm.reach()["reached"]) > globally_kept * 2, (
+    assert len(dm.reach()["reached"]) > globally_kept, (
         "routed reach is no better than the single global corpus, so the routing is costing "
         "complexity and buying nothing")
 

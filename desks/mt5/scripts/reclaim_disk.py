@@ -347,6 +347,10 @@ def main(argv: list[str] | None = None) -> int:
     # rather than finished. The bar lake is the largest refetchable thing on the box (the tape is
     # larger and is never touched), so it goes first and its result is printed immediately.
     bars_shed = 0
+    # Filled by the emergency shed below, merged into `plan` once it exists: the shed runs
+    # BEFORE `plan` is built, and writing to it there raised UnboundLocalError in exactly the
+    # low-disk emergency the shed is for.
+    early: dict = {}
     # THE HOURLY SWEEP NOW RELIEVES A LOW DISK ON ITS OWN. `hourly_cycle` runs this with --apply
     # and no --shed-bars, so for as long as the flag was the only route the box could sit at its
     # download floor indefinitely and no scheduled thing would ever take a byte back. A cleanup
@@ -367,7 +371,7 @@ def main(argv: list[str] | None = None) -> int:
             if caches:
                 for c in caches:
                     shutil.rmtree(c, ignore_errors=True)
-                plan["mt5_cache_shed_gb"] = _gb(cache_bytes)
+                early["mt5_cache_shed_gb"] = _gb(cache_bytes)
                 print(f"AUTO-SHED        : MetaTrader history cache {_gb(cache_bytes)} GB in "
                       f"{len(caches)} terminal(s) -- the terminal refills what it needs",
                       flush=True)
@@ -377,7 +381,7 @@ def main(argv: list[str] | None = None) -> int:
                     pass
             n, freed, tfs = shed_bars_to_target(int(AUTO_SHED_TARGET_GB * (1024 ** 3)), True)
             bars_shed += n
-            plan["auto_shed"] = {"files": n, "gb": _gb(freed), "charts": tfs,
+            early["auto_shed"] = {"files": n, "gb": _gb(freed), "charts": tfs,
                                  "trigger_gb": AUTO_SHED_BELOW_GB,
                                  "target_gb": AUTO_SHED_TARGET_GB}
             print(f"AUTO-SHED        : {_gb(free_now)} GB free (below {AUTO_SHED_BELOW_GB} GB) "
@@ -418,6 +422,7 @@ def main(argv: list[str] | None = None) -> int:
         "per_miner": per_miner,
         "applied": apply,
     }
+    plan.update(early)
 
     if apply:
         removed = 0

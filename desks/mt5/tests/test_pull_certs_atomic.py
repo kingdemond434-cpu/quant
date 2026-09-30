@@ -9,7 +9,9 @@ import pytest
 
 @pytest.mark.parametrize("failure", ["exit", "timeout", "invalid", "scalar", "success"])
 def test_certificate_publication_is_atomic(tmp_path, monkeypatch, failure):
-    path = Path(__file__).resolve().parents[1] / "scripts" / "pull_certs.py"
+    # Retired to scripts/_retired/ in 7401f769 (2026-09-27). The property still binds the file:
+    # a revived pull must never truncate the live certificate it replaces.
+    path = Path(__file__).resolve().parents[1] / "scripts" / "_retired" / "pull_certs.py"
     spec = importlib.util.spec_from_file_location("certificate_pull_test", path)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)

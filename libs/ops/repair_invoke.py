@@ -91,6 +91,16 @@ def request_repair(reason: str, *, cooldown_s: float = COOLDOWN_S) -> bool:
         STAMP.write_text(json.dumps(now), "utf-8")
     print(f"repair-invoke: STARTING gap-wirer ({reason})")
     with contextlib.suppress(OSError, subprocess.SubprocessError):
-        subprocess.Popen(["systemctl", "--user", "start", "--no-block", _UNIT])
+        proc = subprocess.Popen(["systemctl", "--user", "start", "--no-block", _UNIT])
+        # REAP IT. `--no-block` returns as soon as the job is queued, so waiting costs well under
+        # a second -- but the handle used to be dropped on the floor, and a Popen collected while
+        # its child is still running leaves a zombie and raises ResourceWarning from
+        # `Popen.__del__`. Under pytest's `filterwarnings = error` that surfaced as
+        # PytestUnraisableExceptionWarning on whichever test happened to be running at GC time
+        # (test_compiler_reads_everything, whose all-seats-dark path calls this).
+        wait = getattr(proc, "wait", None)
+        if callable(wait):
+            with contextlib.suppress(OSError, subprocess.SubprocessError):
+                wait(timeout=30)
         return True
     return False

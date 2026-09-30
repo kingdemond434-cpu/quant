@@ -231,13 +231,19 @@ def test_fence_flags_a_mispriced_live_sleeve(fence, monkeypatch):
         "cost_fields": {"spread_per_lot": 808.0}}}}
     # Replay 400 fills at hour 1, each recording a 2,028-pt spread on its own bar.
     monkeypatch.setattr(fence, "fill_bars", lambda *a, **k: ([1] * 400, [2028.0] * 400))
-    findings, unresolved = fence.scan_sleeves(surface, sleeves)
+    # THE RULER WAS REPOINTED (bcbec41f, 2026-09-23): the reference is the broker's own quote
+    # from reports/COST_TRUTH.json on the sessions the sleeve fills in, and the H1 stamp is kept
+    # beside it as the old ruler. Hour 1 is the asia session; the broker quotes 2,028 there.
+    quotes = {"USDZAR": {"buckets": {"asia": {"p50": 2028.0, "n": 400}}, "rollover": None}}
+    findings, unresolved = fence.scan_sleeves(surface, sleeves, quotes)
     assert not unresolved
     assert len(findings) == 1
     f = findings[0]
     assert f["ratio"] == pytest.approx(2.51, abs=0.01)
     assert f["direction"] == "UNDERCHARGED"
-    assert f["fill_bar_p50_pts"] == 2028.0
+    assert f["quoted_pts"] == 2028.0
+    assert f["quoted_basis"] == "quoted, this sleeve's own fill sessions"
+    assert f["h1_stamp_p50_pts"] == 2028.0
     assert f["surface_hour_p50_pts"] == 1496.0, (
         "the unconditional hour cell is published beside the fill-bar truth so the SELECTION "
         "effect stays visible -- 1496 reads as 1.85x and would have been silent")
@@ -251,11 +257,18 @@ def test_fence_refuses_a_sleeve_it_cannot_price_rather_than_passing_it(fence, mo
         "status": "LIVE",
         "identity": {"symbol": "USDZAR", "family": "overnight_gap_decay", "params": {}},
         "cost_fields": {"spread_per_lot": 808.0}}}}
-    # Too few PRICED fill bars: the tape says nothing, so no verdict may be issued.
+    # No broker quote for the symbol: since the 2026-09-23 repoint (bcbec41f) the quote is the
+    # ruler, so its absence is the refusal -- no verdict, never an implicit pass.
     monkeypatch.setattr(fence, "fill_bars", lambda *a, **k: ([1] * 400, [2028.0] * 3))
     findings, unresolved = fence.scan_sleeves(surface, sleeves)
     assert not findings
-    assert len(unresolved) == 1 and "too few priced fill bars" in unresolved[0]["why"]
+    assert len(unresolved) == 1 and "no broker quote" in unresolved[0]["why"]
+    # Too few PRICED fill bars still say nothing: the old H1 ruler is published as None rather
+    # than as a median of three bars.
+    quotes = {"USDZAR": {"buckets": {"asia": {"p50": 2028.0, "n": 50}}, "rollover": None}}
+    findings, unresolved = fence.scan_sleeves(surface, sleeves, quotes)
+    assert not unresolved and len(findings) == 1
+    assert findings[0]["h1_stamp_p50_pts"] is None and findings[0]["n_priced_fills"] == 3
 
     # And an unreachable tape is a refusal, never an implicit pass.
     monkeypatch.setattr(fence, "fill_bars", lambda *a, **k: None)

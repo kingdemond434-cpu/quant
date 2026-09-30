@@ -119,11 +119,12 @@ _OPTIONAL_BY_DESIGN = {
     "backtrader",       # cross-engine extra
     "vectorbt",         # cross-engine extra
     "streamlit",        # dashboard, not importable from any library path
-    # plotting only. scripts/run_intraday_rotation.py:276-281 imports it INSIDE _plots(), behind
-    # try/except ImportError, and on absence writes doc["plots"] = "matplotlib absent -- data
-    # tables in JSON only" and returns. The JSON tables -- the actual research output -- are
-    # unaffected, so this is a cosmetic degradation, never a silent one.
-    "matplotlib",
+    # (matplotlib removed: its one importer, scripts/run_intraday_rotation.py, no longer exists,
+    # and the test below requires a stale allowlist entry to be deleted rather than carried.)
+    # headless-browser rendering. libs/data/render_fetch.render_available() imports it behind
+    # try/except ImportError and reports "playwright not importable" as the reason no render is
+    # spent; the plain-HTTP fetch path is unaffected, so absence degrades loudly, never silently.
+    "playwright",
     "hypothesis", "pytest", "_pytest",   # test-only, declared in the dev extra
 }
 
@@ -141,6 +142,14 @@ def _third_party_imports() -> dict[str, list[str]]:
     # sys.path -- it is a LOCAL module, and reading it as an undeclared package would be a false
     # accusation that trains the reader to ignore this test.
     roots |= {p.stem for p in Path("scripts").rglob("*.py")}
+    # THE MT5 DESK IS LOCAL TOO. Root organs import desk modules by bare name after putting a desk
+    # directory on sys.path (`from certificate_truth import ...` with desks/mt5/research inserted,
+    # `from mt5desk import ...`, `from coverage import registry` = desks/mt5/blueprint/coverage.py),
+    # and `desks/` carries no __init__.py, so the package rule above never saw them. Reading them as
+    # undeclared third-party packages is the same false accusation the sibling rule exists to stop.
+    roots.add("desks")
+    roots |= {p.stem for p in Path("desks").rglob("*.py")}
+    roots |= {p.parent.name for p in Path("desks").rglob("*.py")}
     out: dict[str, list[str]] = {}
     for f in [*Path("libs").rglob("*.py"), *Path("scripts").rglob("*.py"),
               *Path("app").rglob("*.py")]:

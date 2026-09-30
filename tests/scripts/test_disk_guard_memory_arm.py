@@ -230,6 +230,14 @@ def test_alert_splits_producer_pressure_from_resident_pressure(tmproot, tmp_path
 def test_tmpfs_used_mb_distinguishes_not_a_tmpfs_from_empty(monkeypatch):
     """None (not a tmpfs -- no hidden RAM here) must never render as 0.0 (a tmpfs that is
     empty). Folding them would make the alert claim resident pressure on any normal host."""
-    assert disk_guard.tmpfs_used_mb() is not None, "/tmp is a tmpfs on this box"
-    monkeypatch.setattr(disk_guard.Path, "read_text", lambda *a, **k: "/dev/sda1 /tmp ext4 rw 0 0")
+    # HERMETIC: whether THIS host's /tmp is a tmpfs is a fact about the host (true on the VPS,
+    # false in CI and most containers), so the mount table is served rather than read.
+    tmp = str(disk_guard.TMP_DIR)
+    monkeypatch.setattr(disk_guard.Path, "read_text",
+                        lambda *a, **k: f"tmpfs {tmp} tmpfs rw,nosuid 0 0")
+    monkeypatch.setattr(disk_guard.shutil, "disk_usage",
+                        lambda _p: disk_guard.shutil._ntuple_diskusage(100, 0, 100))
+    assert disk_guard.tmpfs_used_mb() == 0.0, "an EMPTY tmpfs is 0.0, a real reading"
+    monkeypatch.setattr(disk_guard.Path, "read_text",
+                        lambda *a, **k: f"/dev/sda1 {tmp} ext4 rw 0 0")
     assert disk_guard.tmpfs_used_mb() is None

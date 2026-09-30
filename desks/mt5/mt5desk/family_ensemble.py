@@ -87,14 +87,16 @@ def family_ensemble(
     last = -10 ** 9
     idx = d.index
     v = vote.to_numpy()
+    _a_atr = atr.to_numpy()
+    _a_close = close.to_numpy()
     for i in range(len(idx) - 1):
         if abs(v[i]) < threshold or i - last < hold_bars:
             continue
-        a = float(atr.iloc[i])
+        a = float(_a_atr[i])
         if not np.isfinite(a) or a <= 0:
             continue
         side = 1 if v[i] > 0 else -1
-        px = float(close.iloc[i])
+        px = float(_a_close[i])
         signals.append(Signal(time=idx[i], side=side, stop=px - side * stop_atr * a,
                               target=px + side * stop_atr * a * rr, ttl_bars=int(hold_bars),
                               tag="ensemble", trigger=None, wait_bars=1))

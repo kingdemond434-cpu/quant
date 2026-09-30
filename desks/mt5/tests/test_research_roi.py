@@ -165,7 +165,14 @@ def test_every_region_keeps_a_scout_however_bad_its_roi(rig) -> None:
 def test_an_unmeasured_region_takes_the_declared_default_not_a_zero(rig) -> None:
     forest = rr.run(budget_s=30, dry_run=True)["reallocation"]["forest"]
     row = forest["forests"]["latam"]
-    assert row["workers"] == rr.DEFAULT_WORKERS and row["budget_s"] == rr.DEFAULT_BUDGET_S
+    # `parity_overlay` (LAWS 5n, 2026-09-19) folds regional coverage debt in AFTER
+    # `forest_allocation` as a BONUS ONLY, and records what it started from. The default is the
+    # pre-overlay allocation; the overlay may only raise it.
+    before = row.get("parity") or {}
+    workers0 = before.get("workers_before", row["workers"])
+    budget0 = before.get("budget_before_s", row["budget_s"])
+    assert workers0 == rr.DEFAULT_WORKERS and budget0 == rr.DEFAULT_BUDGET_S
+    assert row["workers"] >= workers0 and row["budget_s"] >= budget0
     assert "UNMEASURED" in row["why"]
 
 
@@ -199,10 +206,12 @@ def test_the_scout_floor_binds_when_the_arithmetic_would_round_to_zero(
 def test_the_forest_contract_is_exactly_the_shape_the_runner_expects(rig) -> None:
     rr.run(budget_s=30)
     doc = json.loads(rr.FOREST_OUT.read_text(encoding="utf-8"))
-    assert set(doc) == {"at", "rule", "forests"}
+    # `parity` (desk-level and per row) is the LAWS 5n overlay added 2026-09-19; the runner
+    # (`libs/research/forests.py`) reads `forests[fid].workers/budget_s` with .get and ignores it.
+    assert set(doc) == {"at", "rule", "forests", "parity"}
     for name, row in doc["forests"].items():
         assert name in rr.REGIONS
-        assert set(row) == {"workers", "budget_s", "scout_floor", "roi", "why"}
+        assert set(row) - {"parity"} == {"workers", "budget_s", "scout_floor", "roi", "why"}
         assert isinstance(row["workers"], int) and isinstance(row["budget_s"], int)
 
 
