@@ -71,6 +71,7 @@ import glob
 import hashlib
 import html
 import json
+import logging
 import os
 import re
 import sqlite3
@@ -114,9 +115,20 @@ REPORT = DESK / "reports" / "PAID_SUBSTITUTE_COVERAGE.json"
 REPORT_MD = DESK / "reports" / "PAID_SUBSTITUTE_COVERAGE.md"
 WORLD_STATE = DESK / "reports" / "WORLD_STATE_INPUTS.json"
 
-#: Where the Asia thread's paid-substitute table may be. Read only; never written. The first
-#: existing match wins; an absent table is UNMEASURED in the report, never an empty class.
+_LOG = logging.getLogger(GENERATOR)
+
+#: Where the Asia thread's paid-substitute tables may be. Read only; never written. EVERY
+#: existing match is read and the rows are UNIONED (dedup by dataset id, stronger evidence wins,
+#: both sources recorded); an absent table is UNMEASURED in the report, never an empty class.
 ASIA_TABLE_ENV = "PAID_SUBSTITUTE_ASIA_TABLE"
+#: The Asia thread's export of its terms-blocked sources and their lawful substitutes
+#: (desks/mt5/research/alt_proxies.py --write-rosters). Read EXPLICITLY, never left to a glob's
+#: sort order: before this constant the first table a glob found won and this one was never read.
+#: Absent, its counts are UNMEASURED and the absence is logged -- never zero coverage.
+PAID_SUBSTITUTE_ASIA_TABLE = DESK / "data" / "paid_data_substitutes_asia_blocked.json"
+#: A paid set the Asia thread found no lawful substitute for (its row names no free series and
+#: its status is BLOCKED_*). Not coverage, not UNMATCHED: a searched-and-refused verdict.
+BLOCKED_NO_SUBSTITUTE = "BLOCKED_NO_SUBSTITUTE"
 ASIA_TABLE_GLOBS: tuple[str, ...] = (
     "/mnt/project-files/reports/paid_data_substitutes_*.md",
     str(DESK / "reports" / "paid_data_substitutes_*.md"),
@@ -334,15 +346,35 @@ def catalogue_floor(path: Path | None = None) -> int:
 
 
 # ----------------------------------------------------------------------- Asia's table
-def find_asia_table(globs: Iterable[str] | None = None) -> Path | None:
+def find_asia_tables(
+    globs: Iterable[str] | None = None, explicit: Iterable[Path | str] = ()
+) -> list[Path]:
+    """EVERY Asia table on this host: the explicit paths first, then the env override, then each
+    glob's matches -- de-duplicated by resolved path. Reading only the first match is what left
+    the blocked-source export unread."""
     env = os.environ.get(ASIA_TABLE_ENV, "").strip()
-    cands = [env] if env else []
+    cands: list[str] = [str(e) for e in explicit if str(e)]
+    if env:
+        cands.append(env)
     for g in globs if globs is not None else ASIA_TABLE_GLOBS:
         cands.extend(sorted(glob.glob(g), reverse=True))
+    out: list[Path] = []
+    seen: set[str] = set()
     for c in cands:
-        if c and Path(c).is_file():
-            return Path(c)
-    return None
+        p = Path(c)
+        if not p.is_file():
+            continue
+        k = str(p.resolve())
+        if k not in seen:
+            seen.add(k)
+            out.append(p)
+    return out
+
+
+def find_asia_table(globs: Iterable[str] | None = None) -> Path | None:
+    """The first Asia table found (kept for callers that want one); `run` reads them all."""
+    found = find_asia_tables(globs)
+    return found[0] if found else None
 
 
 #: Words in an Asia-table row -> class, most specific first (checked on the paid column first).
@@ -398,6 +430,7 @@ def parse_asia_table(path: Path) -> dict[str, Any]:
         out["error"] = f"{type(exc).__name__}"
         return out
     rows: list[dict[str, str]] = []
+    doc: Any = None
     if path.suffix == ".json":
         try:
             doc = json.loads(text)
@@ -446,12 +479,34 @@ def parse_asia_table(path: Path) -> dict[str, Any]:
         classes.add(c)
         out["rows"] += 1
         paid = re.sub(r"[*`]", "", col(r, "paid", "vendor"))
-        free = re.sub(r"[*`]", "", col(r, "free", "substitut", "replica", "alternative"))
+        # "free" only: the JSON export's `unsubstituted_because` also says "substitut".
+        free = re.sub(
+            r"[*`]",
+            "",
+            r.get("free", "")
+            if "free" in r
+            else col(r, "free", "substitut", "replica", "alternative"),
+        ).strip()
         region = col(r, "region", "market", "country") or "global"
+        did = asia_dataset_id(paid)
+        status_txt = str(r.get("status") or "").strip()
+        blocked = not free and status_txt.upper().startswith("BLOCKED")
         if paid:
             out["entries"].append(
                 {
-                    "id": f"paid:asia:{_slug(c, 24)}:{_slug(paid)}",
+                    "id": (
+                        f"paid:asia:{did}"
+                        if _BRACKET_ID.search(paid)
+                        else f"paid:asia:{_slug(c, 24)}:{_slug(paid)}"
+                    ),
+                    "dataset_id": did,
+                    "asia_status": status_txt or None,
+                    "substitute_status": BLOCKED_NO_SUBSTITUTE if blocked else None,
+                    "named_substitutes": _BRACKET_ID.findall(free),
+                    "terms": str(r.get("terms") or "") or None,
+                    "blocked_because": str(r.get("blocked_because") or "") or None,
+                    "unsubstituted_because": str(r.get("unsubstituted_because") or "") or None,
+                    "evidence": str(r.get("evidence") or "") or None,
                     "vendor": paid.split("(")[0].strip()[:80],
                     "dataset": paid[:160],
                     "class": c,
@@ -469,8 +524,89 @@ def parse_asia_table(path: Path) -> dict[str, Any]:
             out["substitutes"].append(
                 {"class": c, "region": region, "name": free[:200], "owner": "asia"}
             )
+    if path.suffix == ".json" and isinstance(doc, dict):
+        out["library_rows"] = [
+            dict(s) for s in (doc.get("library_rows") or []) if isinstance(s, dict) and s.get("id")
+        ]
     out["classes"] = sorted(classes)
     return out
+
+
+#: The Asia export names each dataset in brackets: "NPCI UPI monthly volumes [in_npci_upi]".
+_BRACKET_ID = re.compile(r"\[([a-z0-9_]+)\]")
+
+
+def asia_dataset_id(paid: str) -> str:
+    """The dataset id a row is deduplicated on: the export's own bracketed id, else a slug."""
+    m = _BRACKET_ID.search(str(paid))
+    return m.group(1) if m else _slug(str(paid))
+
+
+def evidence_rank(e: Mapping[str, Any]) -> tuple[int, int, int, int]:
+    """How strong a row's evidence is, compared field by field: a cited evidence URL, a named
+    substitute, a settled terms verdict (refused/confirmed beat to_confirm), then the length of
+    the stated reasons. The stronger row wins a dedup conflict; both sources are recorded."""
+    terms = str(e.get("terms") or "").lower()
+    return (
+        1 if "http" in str(e.get("evidence") or "") else 0,
+        1 if e.get("named_substitutes") or e.get("free_named") else 0,
+        1 if terms in ("refused", "confirmed") else 0,
+        len(str(e.get("blocked_because") or "")) + len(str(e.get("unsubstituted_because") or "")),
+    )
+
+
+_CONFLICT_FIELDS = ("asia_status", "substitute_status", "named_substitutes", "terms", "region")
+
+
+def union_asia_tables(parsed: Iterable[Mapping[str, Any]]) -> dict[str, Any]:
+    """The union of every Asia table's rows, de-duplicated by dataset id. When two tables carry
+    the same dataset, the stronger evidence (`evidence_rank`) is kept, every table that carried
+    it is recorded in `asia_sources`, and a differing field is recorded under `asia_conflict`."""
+    kept: dict[str, dict[str, Any]] = {}
+    conflicts = 0
+    subs: list[dict[str, Any]] = []
+    lib: dict[str, dict[str, Any]] = {}
+    classes: set[str] = set()
+    rows = 0
+    for t in parsed:
+        src = Path(str(t.get("path") or "")).name
+        rows += int(t.get("rows") or 0)
+        classes |= set(t.get("classes") or [])
+        subs.extend(t.get("substitutes") or [])
+        for s in t.get("library_rows") or []:
+            lib.setdefault(str(s["id"]), dict(s))
+        for e in t.get("entries") or []:
+            e = dict(e)
+            did = str(e.get("dataset_id") or e.get("id"))
+            e["asia_sources"] = [src]
+            prev = kept.get(did)
+            if prev is None:
+                kept[did] = e
+                continue
+            diff = {
+                k: [prev.get(k), e.get(k)]
+                for k in _CONFLICT_FIELDS
+                if (prev.get(k) or None) != (e.get(k) or None)
+            }
+            winner, loser = (e, prev) if evidence_rank(e) > evidence_rank(prev) else (prev, e)
+            winner["asia_sources"] = sorted(set(prev["asia_sources"]) | {src})
+            if diff:
+                conflicts += 1
+                winner["asia_conflict"] = {
+                    "kept": winner["asia_sources"][0] if winner is prev else src,
+                    "over": loser["asia_sources"][0],
+                    "fields": diff,
+                }
+            kept[did] = winner
+    return {
+        "rows": rows,
+        "entries": list(kept.values()),
+        "substitutes": subs,
+        "library_rows": list(lib.values()),
+        "classes": sorted(classes),
+        "deduplicated": rows - len(kept) if rows >= len(kept) else 0,
+        "conflicts": conflicts,
+    }
 
 
 # ----------------------------------------------------------------- catalogue crawler
@@ -725,8 +861,10 @@ _BLOCS: dict[str, str] = {
 
 def region_score(paid: str, sub: str) -> float:
     p, s = str(paid or "global"), str(sub or "global")
-    if p.lower() in ("", "unstated"):
+    if p.lower() in ("", "unstated", "global"):
         p = "global"
+    if s.lower() == "global":  # the Asia export writes GLOBAL
+        s = "global"
     if p == s:
         return 1.0
     if s == "global":
@@ -1103,6 +1241,60 @@ def library_candidates(
                     "substitute_id": s["id"],
                     "dataset_id": dataset_id(s),
                     "kind": "library",
+                    "coverage": cov["score"],
+                    "components": cov["components"],
+                    "unmeasured": cov["unmeasured"],
+                    "correlation": correlation(p, s, lake=lake, acquired=acquired),
+                    "same_series": same_series(p, s),
+                    "sample_status": public_sample(p)["status"],
+                    "usable": ok,
+                    "usable_reason": why,
+                    "machine_route": str(s.get("endpoint") or "").startswith("http"),
+                }
+            )
+    return out
+
+
+def asia_named_candidates(
+    catalogue: list[dict[str, Any]],
+    asia_library: list[dict[str, Any]],
+    *,
+    environ: Mapping[str, str] | None = None,
+    now: datetime | None = None,
+    lake: Path | None = None,
+    acquired: Mapping[str, Any] | None = None,
+) -> list[dict[str, Any]]:
+    """(paid, free) pairs the Asia thread NAMED: a blocked paid row and each lawful substitute its
+    export lists. The class component is the Asia table's assertion (recorded as `class_basis`);
+    region, frequency, history and latency are scored as for any pair, and the correlation is
+    measured or UNMEASURED exactly as for a library pair -- so a named substitute is MATCHED at
+    most, never COVERED, until its correlation to the paid release is measured. These rows are
+    scored, never enrolled or re-fetched here: alt_proxies fetches every Asia substitute itself."""
+    by_sid: dict[str, dict[str, Any]] = {}
+    for s in asia_library:
+        sid = str(s.get("id") or "")
+        by_sid[sid] = s
+        by_sid.setdefault(sid.removeprefix("asia_"), s)
+    out: list[dict[str, Any]] = []
+    for p in catalogue:
+        for name in p.get("named_substitutes") or []:
+            hit = by_sid.get(str(name))
+            if hit is None:
+                continue
+            s = hit
+            asserted = {**s, "classes": sorted({*(s.get("classes") or []), str(p.get("class"))})}
+            cov = coverage(p, asserted, now=now)
+            ok, why = usable(s, environ)
+            out.append(
+                {
+                    "paid_id": p["id"],
+                    "class": p.get("class"),
+                    "paid_region": p.get("region"),
+                    "owner": p.get("owner"),
+                    "substitute_id": s["id"],
+                    "dataset_id": dataset_id(s),
+                    "kind": "asia_named",
+                    "class_basis": "asia_table_assertion",
                     "coverage": cov["score"],
                     "components": cov["components"],
                     "unmeasured": cov["unmeasured"],
@@ -1743,7 +1935,13 @@ def write_world_state(rows: list[dict[str, Any]], now: datetime, path: Path | No
 # -------------------------------------------------------------------------------- report
 #: A paid set's coverage status, best first. Only COVERED counts toward covered_share (D19: "a
 #: substitute whose strength is unmeasured counts as uncovered").
-PAID_STATUSES = ("COVERED", "MATCHED_UNVERIFIED", "CONTRADICTED", "UNMATCHED")
+PAID_STATUSES = (
+    "COVERED",
+    "MATCHED_UNVERIFIED",
+    "CONTRADICTED",
+    "UNMATCHED",
+    BLOCKED_NO_SUBSTITUTE,
+)
 
 
 def paid_status(
@@ -1760,8 +1958,18 @@ def paid_status(
         v = [c for c in cs if verification(c) == "VERIFIED" and c.get("usable")]
         u = [c for c in cs if verification(c) == "MATCHED_UNVERIFIED"]
         r = [c for c in cs if verification(c) == "REJECTED"]
+        # A measured VERIFIED substitute outranks the Asia verdict; nothing weaker does -- a
+        # metadata match to a source the Asia thread found no LAWFUL substitute for is not one.
         status = (
-            "COVERED" if v else "MATCHED_UNVERIFIED" if u else "CONTRADICTED" if r else "UNMATCHED"
+            "COVERED"
+            if v
+            else BLOCKED_NO_SUBSTITUTE
+            if e.get("substitute_status") == BLOCKED_NO_SUBSTITUTE
+            else "MATCHED_UNVERIFIED"
+            if u
+            else "CONTRADICTED"
+            if r
+            else "UNMATCHED"
         )
         out[e["id"]] = {
             "status": status,
@@ -1857,6 +2065,7 @@ def summarise(
                 "covered": 0,
                 "matched_unverified": 0,
                 "contradicted": 0,
+                "blocked_no_substitute": 0,
                 "enrolled_substitutes": set(),
                 "best_coverage": None,
                 "best_correlation": UNMEASURED,
@@ -1892,6 +2101,8 @@ def summarise(
                 g["matched_unverified"] += 1
             elif st == "CONTRADICTED":
                 g["contradicted"] += 1
+            elif st == BLOCKED_NO_SUBSTITUTE:
+                g["blocked_no_substitute"] += 1
             if b is not None and isinstance(b.get("coverage"), (int, float)):
                 g["best_coverage"] = max(g["best_coverage"] or 0.0, b["coverage"])
                 if isinstance(b.get("correlation"), (int, float)):
@@ -1953,11 +2164,17 @@ def render_md(doc: Mapping[str, Any]) -> str:
         f"pairs + {h['discovered_candidates']} found by the forest); scored "
         f"**{h['candidates_scored']}**; enrolled substitutes **{h['enrolled']}**.",
         "",
-        f"Asia table: `{doc['asia']['status']}`.",
+        f"Asia tables: `{doc['asia']['status']}`. Blocked-source export: "
+        f"`{doc['asia']['blocked_table']['status']}`. "
+        f"**{BLOCKED_NO_SUBSTITUTE}: {h['blocked_no_substitute']}** "
+        f"({', '.join(h['blocked_no_substitute_ids']) or 'none'}). Asia-named lawful substitutes: "
+        f"{h['asia_named_substitutes']} over {h['asia_named_pairs']} pairs "
+        f"({h['asia_named_matched_unverified']} matched-unverified, "
+        f"{h['asia_named_verified']} verified).",
         "",
-        "| class | region | owner | paid sets | covered | matched unverified | best coverage "
-        "| correlation | enrolled | cells fed |",
-        "|---|---|---|---:|---:|---:|---:|---|---:|---|",
+        "| class | region | owner | paid sets | covered | matched unverified "
+        "| blocked, no substitute | best coverage | correlation | enrolled | cells fed |",
+        "|---|---|---|---:|---:|---:|---:|---:|---|---:|---|",
     ]
     for r in doc["by_class_region"]:
         ms = r["match_strength"]
@@ -1969,7 +2186,8 @@ def render_md(doc: Mapping[str, Any]) -> str:
         )
         lines.append(
             f"| {r['class']} | {r['region']} | {r['owner']} | {r['paid_sets']} | {r['covered']} | "
-            f"{r['matched_unverified']} | {ms['coverage']} | {ms['correlation']} | {r['n_enrolled']} "
+            f"{r['matched_unverified']} | {r['blocked_no_substitute']} | {ms['coverage']} | "
+            f"{ms['correlation']} | {r['n_enrolled']} "
             f"| {cf_s} |"
         )
     lines += [
@@ -2015,6 +2233,7 @@ def run(
         "report": REPORT,
         "report_md": REPORT_MD,
         "world_state": WORLD_STATE,
+        "asia_table": PAID_SUBSTITUTE_ASIA_TABLE,
         **dict(paths or {}),
     }
     t0 = time.monotonic()
@@ -2031,23 +2250,43 @@ def run(
             write=not dry_run,
         )
     )
-    asia_path = find_asia_table(asia_globs)
-    asia: dict[str, Any] = (
-        parse_asia_table(asia_path)
-        if asia_path
-        else {
-            "status": f"{UNMEASURED}: the Asia table is not on this host",
-            "searched": [
-                os.environ.get(ASIA_TABLE_ENV, "") or "(env unset)",
-                *(asia_globs if asia_globs is not None else ASIA_TABLE_GLOBS),
-            ],
-            "entries": [],
-            "substitutes": [],
-            "classes": [],
+    blocked_table = Path(p["asia_table"])
+    asia_paths = find_asia_tables(asia_globs, explicit=[blocked_table])
+    parsed = [parse_asia_table(ap) for ap in asia_paths]
+    asia: dict[str, Any] = union_asia_tables(parsed)
+    asia["tables"] = [
+        {
+            "path": t["path"],
+            "rows": t["rows"],
+            **({"error": t["error"]} if t.get("error") else {}),
         }
-    )
-    if asia_path:
-        asia["status"] = f"READ {asia_path.name}: {asia['rows']} rows"
+        for t in parsed
+    ]
+    asia["blocked_table"] = {"path": str(blocked_table)}
+    if blocked_table.is_file():
+        bt = next((t for t in parsed if Path(t["path"]).resolve() == blocked_table.resolve()), {})
+        asia["blocked_table"]["status"] = f"READ {blocked_table.name}: {bt.get('rows', 0)} rows"
+    else:
+        asia["blocked_table"]["status"] = (
+            f"{UNMEASURED}: {blocked_table.name} is not on this host (ships with the Asia branch)"
+        )
+        _LOG.warning(
+            "paid_substitute_engine: Asia blocked-source table absent at %s -- its counts are "
+            "UNMEASURED, not zero",
+            blocked_table,
+        )
+    if asia_paths:
+        asia["status"] = (
+            f"READ {len(asia_paths)} table(s): {asia['rows']} rows, "
+            f"{len(asia['entries'])} datasets after dedup ({asia['conflicts']} conflicts)"
+        )
+    else:
+        asia["status"] = f"{UNMEASURED}: no Asia table is on this host"
+        asia["searched"] = [
+            str(blocked_table),
+            os.environ.get(ASIA_TABLE_ENV, "") or "(env unset)",
+            *(asia_globs if asia_globs is not None else ASIA_TABLE_GLOBS),
+        ]
     asia["owned_classes"] = sorted(set(ASIA_CLASSES.values()))
     catalogue = load_catalogue(
         catalogue_dir=p["catalogue"],
@@ -2062,8 +2301,16 @@ def run(
         catalogue, library, environ=environ, now=now, lake=p["lake"], acquired=acquired
     )
     disc_c = discovered_candidates(catalogue, intel_dir=p["intel"])
+    named_c = asia_named_candidates(
+        catalogue,
+        asia.get("library_rows") or [],
+        environ=environ,
+        now=now,
+        lake=p["lake"],
+        acquired=acquired,
+    )
     grounds = search_targets(catalogue, classes)
-    cands = lib_c + disc_c
+    cands = lib_c + disc_c + named_c
     matched = {c["substitute_id"] for c in lib_c if is_match(c)}
     ready_ids = sorted({c["substitute_id"] for c in lib_c if enrolable(c)})
     lib_by_id = {s["id"]: s for s in library}
@@ -2237,6 +2484,7 @@ def run(
             "search_targets": len(grounds),
             "library_candidates": len(lib_c),
             "discovered_candidates": len(disc_c),
+            "asia_named_candidates": len(named_c),
             "candidates_scored": n_scored,
             "enrolled": len(enrolled),
             "ready_awaiting_acquisition": len(ready) - len(enrolled),
@@ -2251,6 +2499,24 @@ def run(
             "matched_unverified": st_n.get("MATCHED_UNVERIFIED", 0),
             "contradicted": st_n.get("CONTRADICTED", 0),
             "unmatched": st_n.get("UNMATCHED", 0),
+            # UNMEASURED (never 0) while the Asia blocked-source export is not on this host.
+            "blocked_no_substitute": st_n.get(BLOCKED_NO_SUBSTITUTE, 0)
+            if blocked_table.is_file()
+            else UNMEASURED,
+            "blocked_no_substitute_ids": sorted(
+                str(e.get("dataset_id") or e["id"])
+                for e in catalogue
+                if (status.get(e["id"]) or {}).get("status") == BLOCKED_NO_SUBSTITUTE
+            ),
+            "asia_tables_read": len(asia_paths),
+            "asia_rows": asia["rows"],
+            "asia_datasets": len(asia["entries"]),
+            "asia_named_substitutes": len({c["substitute_id"] for c in named_c}),
+            "asia_named_pairs": len(named_c),
+            "asia_named_matched_unverified": sum(
+                1 for c in named_c if verification(c) == "MATCHED_UNVERIFIED"
+            ),
+            "asia_named_verified": sum(1 for c in named_c if verification(c) == "VERIFIED"),
             "paid_status": {k: st_n.get(k, 0) for k in PAID_STATUSES},
             "public_samples": dict(Counter(public_sample(e)["status"] for e in catalogue)),
             "paid_with_match": paid_with_match,
@@ -2289,7 +2555,7 @@ def run(
             "total": sum(v.get("direct", 0) + v.get("indirect", 0) for v in fed.values()),
         },
         "catalogue_crawl": crawl,
-        "asia": {k: v for k, v in asia.items() if k != "entries"},
+        "asia": {k: v for k, v in asia.items() if k not in ("entries", "library_rows")},
         "by_class_region": rows,
         "rule": (
             "coverage = weighted mean of the MEASURED components among class .35, region .25, "

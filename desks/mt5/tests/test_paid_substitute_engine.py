@@ -194,7 +194,8 @@ def _paths(tmp: Path) -> dict[str, Path]:
             "forest": tmp / "forest" / "paid_substitutes.json", "intel": tmp / "intel",
             "lake": tmp / "lake", "acquired": tmp / "acquired.json",
             "report": tmp / "reports" / "PAID.json", "report_md": tmp / "reports" / "PAID.md",
-            "world_state": tmp / "reports" / "WORLD_STATE_INPUTS.json"}
+            "world_state": tmp / "reports" / "WORLD_STATE_INPUTS.json",
+            "asia_table": tmp / "absent" / "paid_data_substitutes_asia_blocked.json"}
 
 
 class _Door:
@@ -344,6 +345,129 @@ def test_absent_asia_table_is_unmeasured_not_empty(tmp_path: Path) -> None:
     doc = pse.run(now=NOW, fetch=False, dry_run=True, paths=_paths(tmp_path), environ={},
                   asia_globs=[str(tmp_path / "nope_*.md")])
     assert doc["asia"]["status"].startswith(pse.UNMEASURED)
+
+
+# ------------------------------------------------ the Asia blocked-source export (#131/#148)
+#: Three rows of desks/mt5/data/paid_data_substitutes_asia_blocked.json, VERBATIM: the two the
+#: Asia thread found no lawful substitute for (NPCI, BETI) and one it substituted (Cielo -> BCB).
+ASIA_BLOCKED = {
+    "note": "Asia gap thread: lawful substitutes for sources the terms gate blocks.",
+    "rows": [
+        {"class": "card", "paid": "Cielo ICVA retail card sales (Brazil) [br_cielo_icva]",
+         "free": "BCB monthly retail payments (Pix, cards, boletos), Brazil [br_bcb_payments]",
+         "region": "BR", "measure": "icva_deflated_yoy", "frequency": "monthly",
+         "status": "BLOCKED+SUBSTITUTE:br_bcb_payments", "terms": "refused",
+         "blocked_because": "Cielo terms: copying, reproduction or any other use of content is "
+                            "forbidden; content only by the means made available",
+         "unsubstituted_because": "",
+         "evidence": "br_bcb_payments: https://dadosabertos.bcb.gov.br/dataset/"
+                     "estatisticas-meios-pagamentos"},
+        {"class": "card", "paid": "NPCI UPI monthly volumes and value (India) [in_npci_upi]",
+         "free": "", "region": "IN", "measure": "upi_value_cr", "frequency": "monthly",
+         "status": "BLOCKED_ON_TERMS:refused", "terms": "refused",
+         "blocked_because": "npci.org.in robots.txt disallows automated agents on the statistics "
+                            "path and the disclaimer page",
+         "unsubstituted_because": "RBI payment-system indicators carry '(c) Reserve Bank of India. "
+                                  "All Rights Reserved' and no reuse grant",
+         "evidence": ""},
+        {"class": "card",
+         "paid": "BankservAfrica/PayInc economic transactions index (South Africa) [za_beti]",
+         "free": "", "region": "ZA", "measure": "beti_mom", "frequency": "monthly",
+         "status": "BLOCKED_ON_TERMS:to_confirm", "terms": "to_confirm",
+         "blocked_because": "PayInc site is a JS app; no terms page or robots.txt could be read",
+         "unsubstituted_because": "SARB disclaimer: IP 'cannot be used without written "
+                                  "permission'",
+         "evidence": ""},
+    ],
+    "library_rows": [
+        {"id": "asia_br_bcb_payments",
+         "name": "BCB monthly retail payments (Pix, cards, boletos), Brazil",
+         "url": "https://dadosabertos.bcb.gov.br/dataset/estatisticas-meios-pagamentos",
+         "endpoint": "https://olinda.bcb.gov.br/olinda/servico/MPV_DadosAbertos/versao/v1/odata/"
+                     "MeiosdePagamentosMensalDA?$format=json&$top=10000",
+         "classes": ["card_consumer"], "region": "BR", "frequency": "monthly", "auth": "none",
+         "auth_env": "", "languages": ["pt"], "instruments": ["USDBRL"], "terms": "confirmed",
+         "substitutes_for_blocked": ["br_cielo_icva"]},
+    ],
+}
+
+
+def _blocked_table(tmp: Path) -> Path:
+    f = tmp / "asia" / "paid_data_substitutes_asia_blocked.json"
+    f.parent.mkdir(parents=True, exist_ok=True)
+    f.write_text(json.dumps(ASIA_BLOCKED), "utf-8")
+    return f
+
+
+def test_the_blocked_export_is_read_explicitly_beside_every_other_table(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.delenv(pse.ASIA_TABLE_ENV, raising=False)
+    assert pse.PAID_SUBSTITUTE_ASIA_TABLE.name == "paid_data_substitutes_asia_blocked.json"
+    md = tmp_path / "paid_data_substitutes_2026-09-30.md"
+    md.write_text(ASIA_MD, "utf-8")
+    p = {**_paths(tmp_path), "asia_table": _blocked_table(tmp_path)}
+    # The markdown table is the FIRST glob match; before the fix it was the only table read.
+    doc = pse.run(now=NOW, fetch=False, dry_run=True, paths=p, environ={}, asia_globs=[str(md)])
+    h = doc["headline"]
+    assert h["asia_tables_read"] == 2
+    assert h["asia_rows"] == 3 + 3
+    st = doc["paid_status"]
+    assert st["paid:asia:in_npci_upi"]["status"] == pse.BLOCKED_NO_SUBSTITUTE
+    assert st["paid:asia:za_beti"]["status"] == pse.BLOCKED_NO_SUBSTITUTE
+    assert h["blocked_no_substitute"] == 2
+    assert h["blocked_no_substitute_ids"] == ["in_npci_upi", "za_beti"]
+    assert h["paid_status"][pse.BLOCKED_NO_SUBSTITUTE] == 2
+    # The named lawful substitute is a MATCH, never coverage: its correlation is unmeasured.
+    assert st["paid:asia:br_cielo_icva"]["status"] == "MATCHED_UNVERIFIED"
+    assert h["asia_named_pairs"] == 1 and h["asia_named_matched_unverified"] == 1
+    assert h["asia_named_verified"] == 0 and h["paid_sources_substituted"] == 0
+    rows = {(r["class"], r["region"]): r for r in doc["by_class_region"]}
+    assert rows[("card_consumer", "IN")]["blocked_no_substitute"] == 1
+    assert rows[("card_consumer", "IN")]["covered"] == 0
+    md_out = Path(p["report_md"]).read_text("utf-8")
+    assert "BLOCKED_NO_SUBSTITUTE: 2" in md_out and "in_npci_upi, za_beti" in md_out
+
+
+def test_a_measured_verified_substitute_outranks_the_blocked_verdict() -> None:
+    entry = {"id": "paid:asia:x", "class": "card_consumer", "region": "IN",
+             "substitute_status": pse.BLOCKED_NO_SUBSTITUTE}
+    match = {"paid_id": "paid:asia:x", "dataset_id": "psub_y", "usable": True, "coverage": 0.9,
+             "components": {"class": 1.0, "region": 1.0}}
+    assert pse.paid_status([entry], [{**match, "correlation": pse.UNMEASURED}])[
+        "paid:asia:x"]["status"] == pse.BLOCKED_NO_SUBSTITUTE
+    assert pse.paid_status([entry], [{**match, "correlation": 0.8}])[
+        "paid:asia:x"]["status"] == "COVERED"
+
+
+def test_union_dedups_by_dataset_id_keeps_stronger_evidence_records_both(tmp_path: Path) -> None:
+    strong = _blocked_table(tmp_path)
+    weak_doc = {"rows": [{**ASIA_BLOCKED["rows"][0], "free": "", "evidence": "",
+                          "status": "BLOCKED_ON_TERMS:to_confirm", "terms": "to_confirm"}]}
+    weak = tmp_path / "paid_data_substitutes_other.json"
+    weak.write_text(json.dumps(weak_doc), "utf-8")
+    for order in ((weak, strong), (strong, weak)):
+        u = pse.union_asia_tables(pse.parse_asia_table(t) for t in order)
+        cielo = [e for e in u["entries"] if e["dataset_id"] == "br_cielo_icva"]
+        assert len(cielo) == 1
+        e = cielo[0]
+        assert e["asia_status"] == "BLOCKED+SUBSTITUTE:br_bcb_payments"
+        assert e["named_substitutes"] == ["br_bcb_payments"]
+        assert e["asia_sources"] == sorted([strong.name, weak.name])
+        assert e["asia_conflict"]["over"] == weak.name
+        assert u["conflicts"] == 1 and u["deduplicated"] == 1
+
+
+def test_absent_blocked_export_is_logged_and_unmeasured_never_zero(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
+    monkeypatch.delenv(pse.ASIA_TABLE_ENV, raising=False)
+    with caplog.at_level("WARNING"):
+        doc = pse.run(now=NOW, fetch=False, dry_run=True, paths=_paths(tmp_path), environ={},
+                      asia_globs=[])
+    assert doc["headline"]["blocked_no_substitute"] == pse.UNMEASURED
+    assert doc["asia"]["blocked_table"]["status"].startswith(pse.UNMEASURED)
+    assert "UNMEASURED, not zero" in caplog.text
 
 
 # ---------------------------------------------------------------------------- crawler
