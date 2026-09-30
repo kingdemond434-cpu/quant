@@ -78,7 +78,7 @@ def test_a_refresh_never_drops_a_symbol_it_did_not_fetch(fetch_universe, tmp_pat
                        "median_spread_pts": 99.0}
     (tmp_path / "universe.json").write_text(json.dumps(prior), encoding="utf-8")
 
-    fetch_universe.main()
+    fetch_universe.main([])
 
     after = json.loads((tmp_path / "universe.json").read_text("utf-8"))
     assert len(after) >= len(prior), (
@@ -96,7 +96,7 @@ def test_an_unreadable_registry_refuses_rather_than_rebuilding(fetch_universe, t
     """A read race must not become a blank slate -- the failure mode expand_universe already
     names, arriving here through a different producer."""
     (tmp_path / "universe.json").write_text('{"EURUSD": {"contract', encoding="utf-8")
-    fetch_universe.main()
+    fetch_universe.main([])
     assert (tmp_path / "universe.json").read_text("utf-8") == '{"EURUSD": {"contract', (
         "an unreadable registry was overwritten from the seed list")
 

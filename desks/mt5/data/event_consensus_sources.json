@@ -1,0 +1,48 @@
+{
+  "doc": "Registered grounds for research/event_surprise.py: pages that publish a macro release's consensus and/or actual. Every row is fetched if it names an http(s) url and a declared field map (LAWS 5e). Licence/access text is a redistribution label, never a brake. No credential is ever sent; a key/paid row has only its open surface read.",
+  "updated": "2026-09-30",
+  "sources": [
+    {
+      "id": "ff_calendar_thisweek",
+      "name": "Forex Factory weekly calendar feed (this week)",
+      "url": "https://nfs.faireconomy.media/ff_calendar_thisweek.json",
+      "access": "public",
+      "machine_use_allowed": true,
+      "licence": "public JSON feed of the Forex Factory calendar; numbers are read and tested, the feed itself is not redistributed",
+      "refetch_s": 21600,
+      "fields": {"release_keys": ["country", "title"], "date": "date", "actual": "actual",
+                 "consensus": "forecast", "provides": "consensus"}
+    },
+    {
+      "id": "ff_calendar_nextweek",
+      "name": "Forex Factory weekly calendar feed (next week)",
+      "url": "https://nfs.faireconomy.media/ff_calendar_nextweek.json",
+      "access": "public",
+      "machine_use_allowed": true,
+      "licence": "public JSON feed of the Forex Factory calendar; numbers are read and tested, the feed itself is not redistributed",
+      "refetch_s": 43200,
+      "fields": {"release_keys": ["country", "title"], "date": "date", "actual": "actual",
+                 "consensus": "forecast", "provides": "consensus"}
+    },
+    {
+      "id": "tradingeconomics_calendar",
+      "name": "Trading Economics economic calendar API",
+      "url": "https://api.tradingeconomics.com/calendar?f=json",
+      "access": "key",
+      "machine_use_allowed": true,
+      "licence": "commercial API; the open surface is read with no credential, and a 401/403 is recorded as exactly that; redistribution withheld",
+      "refetch_s": 43200,
+      "fields": {"release_keys": ["Country", "Event"], "date": "Date", "actual": "Actual",
+                 "consensus": "Forecast", "provides": "both"}
+    },
+    {
+      "id": "bloomberg_eco_survey",
+      "name": "Bloomberg ECO economist survey medians",
+      "url": "",
+      "access": "paid",
+      "machine_use_allowed": true,
+      "licence": "terminal-licensed survey; registered so the route's cost has a name; no public address, so nothing is reached for",
+      "fields": {}
+    }
+  ]
+}

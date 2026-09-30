@@ -142,6 +142,32 @@ CADENCE: tuple[tuple[str, str, int, str], ...] = (
      "research/coverage_tensor.py"),
     ("productivity_census", "desks/mt5/reports/PRODUCTIVITY_CENSUS.json", 3600,
      "research/productivity_census.py"),
+    # THE TWO ORGANS THAT ANSWER "WHO EARNED ANYTHING" AND "WHO SPENT THE SEAT" (2026-09-24).
+    #
+    # `certificate_provenance` was WRITTEN, TESTED AND NEVER RUN. Its own docstring states the
+    # gap it closes -- "the desk held 174 ten-gate certificates and could not name the producer
+    # that earned a single one" -- and the artifact it writes did not exist on either box. Run by
+    # hand on the trading box it finished in 89.5s and named all 174 (111 ATTRIBUTED, 63
+    # FIRST_CLAIM, coverage 1.0), measuring that 19 of 548 producers have ever earned one. That
+    # is the desk's own capital-allocation question, answered in a minute and a half, by code
+    # that had been sitting complete and unscheduled. UNWIRED IS A DEFECT (III.16): the module
+    # was not missing, its clock was.
+    #
+    # WHY IT MUST NOT BE READ FROM `attribution_census` INSTEAD, which IS on this table already.
+    # That organ reports certificates coverage 1.0 too -- through the `symbol|family -> candidate`
+    # fallback for all 58 it then knew, which `certificate_provenance` refuses BY NAME because
+    # 105-437 candidates share each (symbol, family) pair across six or more producers. The two
+    # numbers look identical and only one is an attribution; a wrong producer name misdirects
+    # compute exactly as confidently as a right one (L1.28a).
+    ("certificate_provenance", "desks/mt5/reports/PRODUCER_CONVERSION.json", 3600,
+     "research/certificate_provenance.py"),
+    # `llm_budget_census` publishes the other half: one account's daily REQUEST allowance is the
+    # rate at which mechanisms with no registered family can reach the gauntlet at all, and until
+    # this organ existed the desk quoted its own COMPLETION count as that allowance -- 458 against
+    # a true 1,000 -- in four docstrings. It also names which organ drained it, which is what
+    # turns "the seat errored" into "this leg spent the audit lane's budget at 01:42".
+    ("llm_budget_census", "desks/mt5/reports/LLM_BUDGET_CENSUS.json", 3600,
+     "research/llm_budget_census.py"),
 )
 
 #: Alarm files any detector on this tree may raise. Presence IS the issue; the file's first line

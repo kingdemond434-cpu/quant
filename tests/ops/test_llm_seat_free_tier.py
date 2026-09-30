@@ -31,6 +31,29 @@ def _listing(monkeypatch, ids: list[str]) -> None:
                         lambda url, key, *, timeout: ({"data": [{"id": i} for i in ids]}, None))
 
 
+@pytest.fixture(autouse=True)
+def _isolate_from_the_live_box(monkeypatch, tmp_path):
+    """Point the two STATE files at an empty tmp dir for every test in this file.
+
+    WHY THIS IS AUTOUSE AND NOT PER-TEST (added 2026-09-24, after it went red on the box that
+    trades). `free_daily_max()` reads `data/llm_free_ceiling.json` and `calls_today()` reads
+    `data/llm_spend.jsonl`. Neither was monkeypatched here, so three tests were silently asserting
+    against whatever the TRADING BOX had done that day: on 2026-09-24 it had taken a 429 at 789
+    calls, so `free_daily_max()` returned min(900, 789) and
+    `test_the_daily_ceiling_is_configurable_and_never_zero` failed `789 == 900`, while
+    `test_the_dollar_cap_cannot_silence_a_free_run` got "budget exhausted" instead of its mocked
+    reply because the real ledger already held the day's calls.
+
+    THAT IS THE WORST KIND OF RED. The suite's colour tracked the time of day: green on a quiet
+    build box, red on a busy trading box, with no code change between them -- so a genuine
+    regression here would have been indistinguishable from "the miners had a productive morning",
+    and the standing advice would become "ignore those three". A test that reads live state is
+    not testing the code (L1.37).
+    """
+    monkeypatch.setattr(llm_seat, "FREE_CEILING", tmp_path / "llm_free_ceiling.json")
+    monkeypatch.setattr(llm_seat, "SPEND_LEDGER", tmp_path / "llm_spend.jsonl")
+
+
 def test_free_tier_is_on_by_default(monkeypatch) -> None:
     """The safe state is the automatic one: spending requires an explicit opt-out."""
     monkeypatch.delenv("QUANT_FREE_TIER", raising=False)
