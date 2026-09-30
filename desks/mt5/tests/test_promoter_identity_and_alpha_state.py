@@ -289,7 +289,10 @@ def test_a_retirement_is_ledgered_with_the_promoters_own_reason(desk) -> None:
     obs = desk.observations()
     assert [o["door"] for o in obs] == ["PROMOTED", "RETIRED"]
     r = obs[1]
-    assert r["outcome"] == "LEDGERED" and r["from"] == "LIVE"
+    # retired FROM the status the promotion wrote: LIVE with a measured admission, STANDBY
+    # (capital-eligible, zero heat) without one -- marginal admission decides, not this test
+    assert r["outcome"] == "LEDGERED" and r["from"] == obs[0]["to"]
+    assert r["from"] in ("LIVE", "STANDBY")
     assert r["ledger_state_before"] == "DISCOVERED" and r["ledger_state_after"] == "RETIRED"
     assert r["reason"].startswith("roll20 exp") and r["evidence"]["forward_observations"] == "12"
     # the ledger file is real, loadable, and carries the reason, not the generic note

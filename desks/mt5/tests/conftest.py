@@ -67,7 +67,7 @@ def fresh_tier_s_door(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Iterat
                         root / "docs" / "research" / "tier_s_ratifications.jsonl")
     required = dict(pa.REQUIRED)
     for key, (path, stamp, writer) in pa.REQUIRED.items():
-        for attr, new in paths.items():
+        for new in paths.values():
             if path.name == new.name:
                 required[key] = (new, stamp, writer)
     monkeypatch.setattr(pa, "REQUIRED", required)
