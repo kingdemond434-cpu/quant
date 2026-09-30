@@ -328,3 +328,8 @@ def test_walled_sources_are_routed_to_the_forest_with_their_evidence(tmp_path, m
     assert got["lake:keyed"]["region"] == "jp" and "UNCONFIGURED" in got["lake:keyed"]["why"]
     assert "429" in got["intel:google_trends"]["why"]
     assert all(r["cluster"] == "dataset_substitutes" for r in got.values())
+
+
+def test_history_folding_stops_inside_the_cycle_cap() -> None:
+    assert AP.fold_deadline({"QUANT_LEG_BUDGET_S": "600"}, now=0.0) == 0.6 * 600 - 60
+    assert AP.fold_deadline({}, now=10.0) == 10.0 + AP.FOLD_BUDGET_S
