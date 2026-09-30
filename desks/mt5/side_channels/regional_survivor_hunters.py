@@ -429,6 +429,7 @@ def records_to_rows(source: str, recs: list[dict], region: str, grade: str,
 
 # ----------------------------------------------------------------------- generic HTML shapes
 _TAG = re.compile(r"<[^>]+>")
+_HREF = re.compile(r"""href=["']([^"']+)["']""")
 
 
 def _cell_text(fragment: str) -> str:
@@ -499,7 +500,7 @@ def parse_tables(source: str, html: str, base_url: str, region: str) -> list[dic
                 continue
             if not stats and pcts:
                 stats["return_pct"] = pcts[0]
-            href = re.search(r'href="([^"]+)"', cells[name_i])
+            href = _HREF.search(cells[name_i])
             url = urljoin(base_url, _html.unescape(href.group(1))) if href else ""
             out.append(row(source, "track_record", texts[name_i], url, region=region,
                            stats=stats, nearby_pcts=pcts[:6], parser="table"))
@@ -542,7 +543,7 @@ def parse_repeated_cards(source: str, html: str, base_url: str, region: str,
                      if (v := stat_near(text, c)) is not None}
             if not stats and pcts:
                 stats["return_pct"] = pcts[0]
-            href = re.search(r'href="([^"]+)"', block)
+            href = _HREF.search(block)
             url = urljoin(base_url, _html.unescape(href.group(1))) if href else ""
             cards.append(row(source, "track_record", name, url, region=region, stats=stats,
                              nearby_pcts=pcts, parser=f"cards:{cls[:40]}",
