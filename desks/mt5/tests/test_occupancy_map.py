@@ -146,7 +146,7 @@ def test_orthogonality_scores_a_twin_below_an_independent_instrument() -> None:
 def _map_doc(tmp: Path, *, at: datetime = NOW) -> Path:
     doc = {"at": at.isoformat(),
            "targets": [{"key": _key("carry", "GBPUSD"), "occupancy_priority": 1.0}],
-           "orthogonality": {"par": 0.5, "cells": {"carry|EURUSD": {"score": 0.9},
+           "orthogonality": {"par": 0.5, "cells": {"carry|UST10Y": {"score": 0.9},
                                                    "carry|USDMXN": {"score": 0.1}}}}
     p = tmp / "OCCUPANCY_MAP.json"
     p.write_text(json.dumps(doc), "utf-8")
@@ -154,7 +154,8 @@ def _map_doc(tmp: Path, *, at: datetime = NOW) -> Path:
 
 
 def test_stamp_reads_the_map_and_an_absent_or_stale_map_stamps_nothing(tmp_path: Path) -> None:
-    rows = [{"family": "carry", "symbol": "GBPUSD"}, {"family": "carry", "symbol": "EURUSD"},
+    # GBPUSD sits in the target cell (carry | forex | H1 | all | sub_4h); UST10Y is on bonds.
+    rows = [{"family": "carry", "symbol": "GBPUSD"}, {"family": "carry", "symbol": "UST10Y"},
             {"family": "carry", "symbol": "USDMXN"}, {"family": "carry", "symbol": "NONE"}]
     doc, _ = om.load(_map_doc(tmp_path), now=NOW)
     out = om.stamp(rows, doc)
@@ -195,17 +196,17 @@ def test_order_docket_reads_the_map_publishes_the_score_and_ships_every_row(
     monkeypatch.setattr(jc, "UNRUNNABLE_BANK", tmp_path / "unrunnable.json")
     monkeypatch.setattr(jc, "keff_stamp", lambda rows: {"status": "UNMEASURED", "why": "test"})
     rows = [{"family": "carry", "symbol": s, "params": {"i": i}, "first_seen": SEEN}
-            for i, s in enumerate(["USDMXN", "EURUSD", "GBPUSD"] * 3)]
+            for i, s in enumerate(["USDMXN", "UST10Y", "GBPUSD"] * 3)]
     ordered, doc = jc.order_docket([dict(r) for r in rows], publish=False, now=NOW)
     assert len(ordered) == len(rows), "reorder only: nothing dropped"
     assert all(not any(k in r for k in ("_occ", "_orth", "_cell", "_keff")) for r in ordered)
     by_sym = {r["symbol"]: r.get("orthogonality") for r in ordered}
-    assert by_sym["EURUSD"] == 0.9 and by_sym["USDMXN"] == 0.1 and by_sym["GBPUSD"] is None
+    assert by_sym["UST10Y"] == 0.9 and by_sym["USDMXN"] == 0.1 and by_sym["GBPUSD"] is None
     occ = doc["occupancy_order"]
     assert occ["status"] == "MEASURED"
     assert occ["head"]["shipped"]["rows"] == occ["head"]["legacy"]["rows"]
     syms = [r["symbol"] for r in ordered]
-    assert syms.index("GBPUSD") < syms.index("EURUSD") < syms.index("USDMXN"), \
+    assert syms.index("GBPUSD") < syms.index("UST10Y") < syms.index("USDMXN"), \
         "target cell first, then the orthogonal candidate, the book's twin last"
 
 
