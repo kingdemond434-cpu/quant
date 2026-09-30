@@ -2162,6 +2162,12 @@ def apply_allocator_evidence(ev: list[SleeveEvidence], evidence_doc: dict[str, A
         "forward_posterior": post_why, "marginal_breadth": breadth_why, "factor_tier": tier_why,
         "tier_s": ts_why, "n_tier_s_tilted": sum(
             1 for e in ev if abs(float(ts_terms.get(e.name, 1.0)) - 1.0) >= 1e-9),
+        # THE EXCHANGE'S ZEROS, NAMED: a zero mean alone did not keep a sleeve out of the book
+        # (the floor fill, the held book and the baselines funded it again), so `run` binds these
+        # names to fraction 0 in every path and refills their heat (`exchange_zero`).
+        "tier_s_zeroed": sorted(
+            e.name for e in ev
+            if e.name in ts_terms and float(ts_terms[e.name]) <= TIER_S_ZERO_EPS),
         # DECLARED, so a reader (and `research/allocator_liveness.py`) can see whether the pass
         # conditioned on the net-of-cost spine at all, rather than inferring it from silence.
         "net_of_cost": (
@@ -3032,6 +3038,109 @@ def zeroed_live(ev: list[SleeveEvidence], funded: dict[str, float],
     return out
 
 
+#: A Tier S factor at or below this is the exchange's ZERO (ZERO / EXIT / DEFER): the sleeve's
+#: fraction, not only its mean, goes to nothing in the published book.
+TIER_S_ZERO_EPS = 1e-6
+
+
+def exchange_zero_bounds(bounds: Mapping[str, float],
+                         zeroed: frozenset[str]) -> dict[str, float]:
+    """Per-sleeve heat bounds with every exchange-zeroed sleeve bound at 0.0, so no solve funds it.
+
+    Set EXPLICITLY for every zeroed name, present in `bounds` or not: `optimise` reads a name the
+    bounds omit as unbounded (`max_per_sleeve.get(k, inf)`)."""
+    out = {str(k): float(v) for k, v in bounds.items()}
+    out.update(dict.fromkeys(zeroed, 0.0))
+    return out
+
+
+def exchange_zero(book: Mapping[str, float], zeroed: frozenset[str], *,
+                  bounds: Mapping[str, float] | None = None,
+                  eligible: Sequence[str] = ()) -> tuple[dict[str, float], dict[str, Any]]:
+    """The book with every exchange-zeroed sleeve at fraction 0 and its heat REFILLED elsewhere.
+
+    WHY THIS EXISTS (2026-09-30). The Tier S tilt zeroes a sleeve's posterior MEAN, and that was
+    all it did: the solve, the floor fill (which relaxes the very bounds that kept it out), the
+    held book, the explore lend and the baseline books the gateway falls back to could each fund
+    the sleeve again. A ZERO that reaches the venue as a fraction is not a zero.
+
+    THE HEAT IS MOVED, NEVER CUT (GROWTH_GOVERNANCE Rules 1 and 2; the heat law). The freed heat
+    goes to the book's other funded sleeves pro rata to what they already hold, water-filled
+    under `bounds`; when every bound is full the remainder is spread pro rata past them, which is
+    the floor fill's own last rung (the resolved heat is held, the bounds yield). A book that
+    holds nothing but zeroed sleeves is refilled equally across `eligible` (the priced, unzeroed
+    universe). Only when there is no other sleeve at all is the book returned UNCHANGED and
+    marked UNREFILLABLE: the heat law outranks the exchange, and total heat never drops here.
+    The returned total equals the input total to rounding.
+    """
+    b = {str(k): float(v) for k, v in book.items() if float(v) > 0.0}
+    freed = float(sum(v for k, v in b.items() if k in zeroed))
+    meta: dict[str, Any] = {"zeroed": sorted(k for k in b if k in zeroed),
+                            "freed_heat": round(freed, 8), "spilled_past_bounds": 0.0}
+    if freed <= 0.0:
+        return dict(book), {**meta, "status": "NOTHING_HELD"}
+    rest = {k: v for k, v in b.items() if k not in zeroed}
+    if rest:
+        weights, basis = dict(rest), "pro rata to the book's other funded sleeves"
+    else:
+        pool = [str(k) for k in eligible if str(k) not in zeroed]
+        if not pool:
+            return dict(book), {**meta, "status": "UNREFILLABLE",
+                                "why": ("no other sleeve to carry the heat: the heat law "
+                                        "outranks the exchange, the book stands as solved")}
+        rest = dict.fromkeys(pool, 0.0)
+        weights, basis = dict.fromkeys(pool, 1.0), "equally across the priced unzeroed universe"
+    out = dict(rest)
+    left = freed
+    for _ in range(len(out) + 1):
+        room = {k: (float(bounds.get(k, math.inf)) if bounds is not None else math.inf) - out[k]
+                for k in out}
+        open_ = [k for k in out if room[k] > 1e-12]
+        if left <= 1e-12 or not open_:
+            break
+        wsum = float(sum(weights[k] for k in open_))
+        give = {k: min(room[k], left * weights[k] / wsum) for k in open_}
+        for k, g in give.items():
+            out[k] += g
+        left -= float(sum(give.values()))
+    if left > 1e-12:
+        wsum = float(sum(weights.values()))
+        for k in out:
+            out[k] += left * weights[k] / wsum
+        meta["spilled_past_bounds"] = round(left, 8)
+    return out, {**meta, "status": "REFILLED", "basis": basis,
+                 "refilled": {k: round(out[k] - rest[k], 8) for k in out
+                              if out[k] - rest[k] > 1e-12}}
+
+
+def zero_contested_books(proof: dict[str, Any], zeroed: frozenset[str], *,
+                         eligible: Sequence[str] = ()) -> dict[str, Any]:
+    """Every book in the proof's `books` (the baselines and challengers the certificate carries,
+    which the gateway sizes from when the dynamic proof is stale or a challenger won the state)
+    with the exchange's zeros at 0 and their heat refilled inside that same book, in place.
+
+    The contest's SCORES were taken before this, on the books as the bench built them: the
+    ordering of the rivals is the contest's, only the weights a fallback deploys carry the zero.
+    Each book keeps its total heat (`exchange_zero`)."""
+    books = proof.get("books")
+    if not zeroed or not isinstance(books, dict):
+        return {"status": "NONE", "books_changed": []}
+    changed: list[str] = []
+    for name, b in list(books.items()):
+        if not isinstance(b, Mapping):
+            continue
+        new, meta = exchange_zero({str(k): float(v) for k, v in b.items()}, zeroed,
+                                  eligible=eligible)
+        if meta.get("status") == "REFILLED":
+            books[name] = {k: float(v) for k, v in new.items() if float(v) > 0.0}
+            changed.append(str(name))
+    proof["exchange_zero"] = {"zeroed": sorted(zeroed), "books_changed": changed,
+                              "rule": ("exchange-zeroed sleeves at 0 in every contested book, "
+                                       "heat refilled pro rata within the book; scores are the "
+                                       "contest's own")}
+    return {"status": "APPLIED" if changed else "NONE", "books_changed": changed}
+
+
 def kelly_fraction(ev: list[SleeveEvidence], cfg: WorldConfig, *,
                    deployed: float, bounds: dict[str, float],
                    seed: int = 0) -> dict[str, Any]:
@@ -3324,6 +3433,17 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
     _log(f"  research evidence: {evidence_meta['n_posterior_tilted']} forward-posterior, "
          f"{evidence_meta['n_breadth_tilted']} marginal-breadth, "
          f"{evidence_meta['n_tier_tilted']} factor-tier ({_res_why})")
+    # AN EXCHANGE ZERO IS A ZERO FRACTION, NOT ONLY A ZERO MEAN. Every solve below is bounded at
+    # 0.0 for these names (`_psb`), and the published book, the certificate's baseline books and
+    # the fallback are passed through `exchange_zero` at the end, so no path funds them again;
+    # their heat is refilled across the other sleeves and the total is the heat law's.
+    ts_zero = frozenset(str(n) for n in evidence_meta.get("tier_s_zeroed") or ())
+    if ts_zero:
+        _log(f"tier S exchange ZERO: {len(ts_zero)} sleeve(s) bound to fraction 0 in every path "
+             f"({', '.join(sorted(ts_zero)[:6])})")
+
+    def _psb(dd_: dict[str, float], total_heat_: float) -> dict[str, float]:
+        return exchange_zero_bounds(per_sleeve_bounds(dd_, total_heat_), ts_zero)
 
     cfg = WorldConfig(seed=seed, regime_labels=labels, regime_probs=probs,
                       # The fast clock buys its speed here and nowhere else: a smaller world
@@ -3362,7 +3482,7 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
     # bound here is the MEASUREMENT bound (`CURVE_SAMPLE_MAX`) -- how far the desk is willing to
     # simulate -- and nothing is deployed at a heat the curve and the survival surface have not
     # both justified further down.
-    bounds = per_sleeve_bounds(dd, HEAT_TARGET)
+    bounds = _psb(dd, HEAT_TARGET)
     free = optimise(ev, hard_cap=CURVE_SAMPLE_MAX, target=None, cfg=cfg, worlds=worlds,
                     max_per_sleeve=bounds)
     _log(f"free optimum H*={free.total_heat:.2%} ann={free.annual_growth_pct:.1f}% "
@@ -3382,7 +3502,7 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
 
     # 2. THE CURVE, then the law.
     curve = growth_curve(ev, worlds, bounds, cfg,
-                         bounds_at=lambda _h: per_sleeve_bounds(dd, _h)) if heavy else {}
+                         bounds_at=lambda _h: _psb(dd, _h)) if heavy else {}
     if not curve and OUT.exists():
         try:                                    # a fast pass inherits the last heavy curve
             prev = json.loads(OUT.read_text("utf-8")).get("heat", {}).get("curve") or []
@@ -3584,7 +3704,7 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
                                 note="catastrophe guard: no heat")
     else:
         ub = {k: min(v, verdict.total_heat) for k, v in
-              per_sleeve_bounds(dd, verdict.total_heat).items()}
+              _psb(dd, verdict.total_heat).items()}
         try:
             book = optimise(ev, hard_cap=max(CURVE_SAMPLE_MAX, verdict.total_heat),
                             target=verdict.total_heat, cfg=cfg,
@@ -3699,7 +3819,7 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
             _pbook = _pg_solve(ev, h_prev=_pg_prev, paths=_pg_paths_,
                                floor=float(verdict.total_heat),
                                ceiling=_post_ceiling,
-                               caps=per_sleeve_bounds(dd, _post_ceiling),
+                               caps=_psb(dd, _post_ceiling),
                                turnover_cost=TURNOVER_COST_R)
             _cmp = _pg_compare(_pbook, funded, _pg_paths_, h_prev=_pg_prev,
                                turnover_cost=TURNOVER_COST_R, seed=seed)
@@ -3884,7 +4004,7 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
     # slice of the book to ambiguous candidates, and the book the contest certifies must be the
     # book that is published.
     admission: dict[str, Any]
-    adm_bounds = per_sleeve_bounds(dd, max(book.total_heat, HEAT_TARGET))
+    adm_bounds = _psb(dd, max(book.total_heat, HEAT_TARGET))
     prev_admission: dict[str, Any] = {}
     try:
         _prev_art = json.loads(OUT.read_text("utf-8")).get("admission")
@@ -3986,10 +4106,47 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
             explore["applied_why"] = ("nothing left to lend: every drawn candidate is funded by "
                                       "the main solve on its own, or no book is held")
         admission["explore"] = explore
+    # THE EXCHANGE'S ZEROS BIND ON THE PUBLISHED BOOK, whatever path produced it: the floor fill
+    # relaxes bounds, a NO CHANGE hold republishes the previous book and the explore lend adds
+    # candidates, and any of the three can carry a zeroed sleeve. Its heat is refilled across
+    # the other funded sleeves (bounded first, then past the bounds as the floor fill does), so
+    # the total the heat law resolved is unchanged; the book is re-scored on the same worlds.
+    exchange_zero_meta: dict[str, Any] = {"zeroed": sorted(ts_zero), "status": "NONE"}
+    if ts_zero and funded:
+        _ez_book, _ez = exchange_zero(funded, ts_zero, bounds=adm_bounds,
+                                      eligible=[e.name for e in ev])
+        exchange_zero_meta = {**_ez, "zeroed_by_exchange": sorted(ts_zero)}
+        if _ez.get("status") == "REFILLED":
+            _ez_sc = score_book(ev, _ez_book, cfg=cfg, worlds=worlds)
+            _ez_ok = math.isfinite(float(_ez_sc["mean_log_growth"]))
+            book = AllocationResult(
+                heat={k: v for k, v in _ez_book.items() if v > 1e-6},
+                total_heat=float(sum(_ez_book.values())),
+                robust_score=float(_ez_sc["robust_score"]) if _ez_ok else book.robust_score,
+                mean_log_growth=(float(_ez_sc["mean_log_growth"]) if _ez_ok
+                                 else book.mean_log_growth),
+                cvar_log_growth=(float(_ez_sc["cvar_log_growth"]) if _ez_ok
+                                 else book.cvar_log_growth),
+                annual_growth_pct=(float(_ez_sc["annual_growth_pct"]) if _ez_ok
+                                   else book.annual_growth_pct),
+                prob_annual_loss=(float(_ez_sc["prob_annual_loss"]) if _ez_ok
+                                  else book.prob_annual_loss),
+                marginal={k: v for k, v in book.marginal.items() if k not in ts_zero},
+                iterations=book.iterations, converged=book.converged,
+                note=(f"{book.note}; tier S exchange zero: {len(_ez['zeroed'])} sleeve(s) "
+                      f"at 0, {_ez['freed_heat']:.4%} refilled").strip("; "))
+            funded = {k: round(v, 6) for k, v in book.heat.items() if v > 1e-5}
+            exchange_zero_meta["rescored_finite"] = _ez_ok
+            _log(f"tier S exchange zero: {', '.join(_ez['zeroed'])} -> 0; "
+                 f"{_ez['freed_heat']:.4%} heat refilled {_ez.get('basis')}"
+                 + (f" ({_ez['spilled_past_bounds']:.4%} past bounds)"
+                    if _ez.get("spilled_past_bounds") else ""))
+        elif _ez.get("status") == "UNREFILLABLE":
+            _log(f"tier S exchange zero NOT applied: {_ez.get('why')}")
     # SLEEVES THIS SOLVE ZEROED, NAMED so the answer can actually BE zero. Without this list the
     # gateway cannot see a zeroed sleeve at all and falls back to the 3% base fraction: see
     # `zeroed_live` for the trace. Not a retirement -- the row and the clock stand.
-    zeroed = zeroed_live(ev, funded, extra=prev_book)
+    zeroed = zeroed_live(ev, funded, extra={**prev_book, **dict.fromkeys(ts_zero, 0.0)})
     if zeroed:
         _log(f"zeroed but NOT retired: {len(zeroed)} rostered sleeve(s) earn 0% this pass "
              f"({', '.join(sorted(zeroed)[:6])})")
@@ -4010,6 +4167,11 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
         # away at exactly the moment it would decide which allocator to trust.
         proof = contest(ev, funded, current_book(), cfg=cfg, worlds=worlds,
                         now_buckets=kept_dims, root=ROOT)
+        # The baselines are built over the whole priced universe, so equal weight, inverse vol
+        # and the challenger bench all fund an exchange-zeroed sleeve -- and the gateway sizes
+        # from those books whenever the dynamic proof is stale or a challenger won the state.
+        exchange_zero_meta["contested_books"] = zero_contested_books(
+            proof, ts_zero, eligible=[e.name for e in ev])
         certify(proof, root=ROOT, book=funded)
         # THE FLOOR'S FALLBACK: the best baseline at the same total heat, carried on the
         # artifact so a failed or stale proof changes who allocates the floor, never whether.
@@ -4091,7 +4253,7 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
             _h = np.array([float(funded.get(n, 0.0)) for n in _names], dtype="float64")
             _d = _derivs(worlds.r, _h, names=_names)
             _step = _best_next(_d, delta=0.001,
-                               cap=per_sleeve_bounds(dd, max(book.total_heat, HEAT_TARGET)),
+                               cap=_psb(dd, max(book.total_heat, HEAT_TARGET)),
                                held=funded)
             growth_derivs = {
                 "status": _d.get("status"), "why": _d.get("why"),
@@ -4308,6 +4470,8 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
         # which carries them into the sizing book AT ZERO so the gateway can size them at zero
         # instead of falling back to the 3% base fraction. Nothing here is retired.
         "book_zeroed": zeroed,
+        # THE EXCHANGE'S ZEROS, AND WHERE THEIR HEAT WENT (see `exchange_zero`).
+        "exchange_zero": exchange_zero_meta,
         # THE COMPOSITION SOLVED INSIDE THE CURRENT STATE, beside what the global book earns
         # there. `consumed` is False: the gateway sizes from `book` and reads `heat.state` only
         # to choose whose certificate applies. Published so the delta is a measurement.
