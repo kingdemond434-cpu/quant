@@ -707,7 +707,9 @@ if ($dirty.Count -gt 0) {
         }
         $fields = ($tree[0] -split '\s+')
         $targetBlob = if ($fields.Count -ge 3) { $fields[2] } else { "" }
-        $worktreeBlob = ("$(Invoke-Git @("hash-object", "--no-filters", "--", $rel) -AllowFail)").Trim()
+        # Apply the path's configured clean filter so a canonical LF blob and its ordinary
+        # Windows CRLF checkout compare equal, exactly as Git would stage them.
+        $worktreeBlob = ("$(Invoke-Git @("hash-object", "--path=$rel", "--", $rel) -AllowFail)").Trim()
         if ($LASTEXITCODE -eq 0 -and $targetBlob -and $worktreeBlob -eq $targetBlob) {
             $alreadyTarget++
         } else {
