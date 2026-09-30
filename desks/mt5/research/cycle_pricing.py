@@ -79,6 +79,8 @@ OUT = R / "CYCLE_PRICING.json"
 #: lowest-priced leg still gets; `CEIL` the multiple the best-priced leg may reach. Both are
 #: bounds on the RATIO, so the plan is a reallocation and not a resize.
 FLOOR, CEIL = 1.00, 2.00
+#: alpha rank's two-sided band: the bottom quartile loses any boost, the top quartile earns one
+ALPHA_VETO = 0.25
 #: THE PRICE ALLOCATES SPARE COMPUTE ONLY (2026-09-29, Tier-1 #10). The floor was 0.60: a leg the
 #: board priced last lost 40% of its seconds to fund the winners, which is throttling a miner on an
 #: estimate. It is now par, and what a winner gets ABOVE par comes out of the MEASURED spare
@@ -284,6 +286,39 @@ def _evig_prices() -> tuple[dict[str, float], str]:
         return {}, f"evig_acquisition unavailable ({type(exc).__name__}: {exc})"
 
 
+def _researcher_prices(max_age_h: float = 6.0) -> dict[str, float]:
+    """The Tier S researcher market's per-leg prices (layer 8), or an empty map.
+
+    `tier_s.organ_market` prices every PRODUCER that bore a judged hypothesis -- its P(novel),
+    P(pass), P(forward holds), false-discovery history and measured CPU -- and folds those
+    prices onto the legs that run them. A stale or absent file says nothing, which the blend
+    below reads as "no opinion", never as a zero. A market whose contract is REJECTED has lost
+    its authority (`libs.tiers.authority`) and is read the same way: no opinion."""
+    try:
+        from libs.tiers import authority
+        if authority.suspended("market"):
+            return {}
+    except ImportError:
+        pass
+    p = Path(__file__).resolve().parents[1] / "data" / "tier_s" / "researcher_prices.json"
+    doc = _read(p)
+    try:
+        at = datetime.fromisoformat(str(doc.get("generated_utc")))
+        if (datetime.now(UTC) - at).total_seconds() > max_age_h * 3600:
+            return {}
+    except (TypeError, ValueError):
+        return {}
+    lp = doc.get("leg_prices") or {}
+    try:
+        from libs.tiers.control_arm import in_control
+    except ImportError:                                  # pragma: no cover - import guard
+        def in_control(unit: str, salt: str, share: float = 0.2) -> bool:
+            return False
+    # the market's HELD-OUT legs are never repriced by it: they are what it is judged against
+    return {str(k): float(v) for k, v in lp.items() if isinstance(v, (int, float))
+            and not in_control(str(k), "market")}
+
+
 def _factory_prices() -> tuple[dict[str, float], str]:
     """{leg: yield score} from the factory contracts (Tier-1 #11), or {} and why. The score is
     the mean percentile of a producer's measured per-compute-hour yields -- unique cells,
@@ -292,6 +327,16 @@ def _factory_prices() -> tuple[dict[str, float], str]:
     try:
         from factory_contracts import leg_yield  # type: ignore[import-not-found]
         return leg_yield()
+    except Exception as exc:
+        return {}, f"factory_contracts unavailable ({type(exc).__name__}: {exc})"
+
+
+def _alpha_rank_prices() -> tuple[dict[str, float], str]:
+    """{leg: marginal effective independent alpha rank per compute hour} -- the north star
+    (`alpha_rank.py` -> `factory_contracts.leg_alpha_rank`). Read, never written here."""
+    try:
+        from factory_contracts import leg_alpha_rank  # type: ignore[import-not-found]
+        return leg_alpha_rank()
     except Exception as exc:
         return {}, f"factory_contracts unavailable ({type(exc).__name__}: {exc})"
 
@@ -380,8 +425,17 @@ def build_plan(bases: dict[str, int] | None = None) -> dict[str, Any]:
     # per-hour yield is a stronger claim than a tier prior and weaker than log-wealth per day.
     fac, fac_why = _factory_prices()
     f01 = _rank01(fac)
-    W = {"meta_controller": 0.40, "research_bandit": 0.20, "evig_acquisition": 0.15,
-         "factory_contracts": 0.15, "compute_policy": 0.10}
+    # THE TIER S RESEARCHER MARKET (layer 8): per-producer value, ancestry-discounted, folded
+    # onto legs; its held-out control legs are never repriced by it
+    r01 = _rank01(_researcher_prices())
+    # THE NORTH STAR GETS ITS OWN WEIGHT (2026-09-30). Effective independent alpha rank per
+    # compute hour was one quarter of the factory's percentile mean; it is the metric the
+    # principal named, so it prices legs directly, second only to log-wealth per day.
+    ar, ar_why = _alpha_rank_prices()
+    a01 = _rank01(ar)
+    W = {"meta_controller": 0.40, "alpha_rank": 0.25, "research_bandit": 0.20,
+         "evig_acquisition": 0.15, "factory_contracts": 0.15, "researcher_market": 0.15,
+         "compute_policy": 0.10}
     legs: dict[str, dict[str, Any]] = {}
     for leg, base in sorted(bases.items()):
         parts: list[tuple[str, float, float]] = []
@@ -391,8 +445,12 @@ def build_plan(bases: dict[str, int] | None = None) -> dict[str, Any]:
             parts.append(("research_bandit", W["research_bandit"], b01[leg]))
         if leg in e01:
             parts.append(("evig_acquisition", W["evig_acquisition"], e01[leg]))
+        if leg in a01:
+            parts.append(("alpha_rank", W["alpha_rank"], a01[leg]))
         if leg in f01:
             parts.append(("factory_contracts", W["factory_contracts"], f01[leg]))
+        if leg in r01:
+            parts.append(("researcher_market", W["researcher_market"], r01[leg]))
         if leg in p01:
             parts.append(("compute_policy", W["compute_policy"], p01[leg]))
         if parts:
@@ -412,15 +470,32 @@ def build_plan(bases: dict[str, int] | None = None) -> dict[str, Any]:
             v["score"] = round(median, 6)
             v["priced_by"] = ["unpriced:median"]
 
-    # THE FACTOR: a rank score in [0,1] mapped onto [FLOOR, CEIL]. Two-sided by construction --
-    # the top of the range is a 2x increase, the bottom a 0.6x scout floor, and the midpoint is
-    # exactly 1.0x only when FLOOR and CEIL are symmetric about it, which they are not, so the
-    # map is anchored at the median instead: median score -> 1.0x.
+    # THE FACTOR: a rank score in [0,1] mapped onto [FLOOR, CEIL], anchored at the median
+    # (median score -> 1.0x). With FLOOR = 1.0 the below-median branch is the identity: a
+    # low price delays a leg in the order, it never shortens it.
     for v in legs.values():
         s = float(v["score"])
         f = (1.0 + (s - median) / max(1e-9, 1.0 - median) * (CEIL - 1.0)) if s >= median else \
             (FLOOR + (s / max(1e-9, median)) * (1.0 - FLOOR))
         v["price_factor"] = round(max(FLOOR, min(CEIL, f)), 4)
+    # THE NORTH STAR HAS TWO-SIDED AUTHORITY (verifier 2026-09-30: as one weighted source it could
+    # never shorten anything). Inside the principal's 1.0x floor -- no leg is ever cut below its
+    # base, and research generation is never reduced -- alpha rank now binds in BOTH directions:
+    # a leg in its bottom quartile of independent alpha per compute hour gets NO boost however
+    # the other sources price it (its above-base ask is withdrawn and the spare goes to others),
+    # and a leg in its top quartile gets at least the boost its alpha rank alone earns.
+    for leg, v in legs.items():
+        if leg not in a01:
+            continue
+        a = float(a01[leg])
+        if a < ALPHA_VETO and v["price_factor"] > 1.0:
+            v["alpha_rank_bound"] = f"capped at 1.0x from {v['price_factor']}"
+            v["price_factor"] = 1.0
+        elif a > 1.0 - ALPHA_VETO:
+            own = round(1.0 + (a - (1.0 - ALPHA_VETO)) / ALPHA_VETO * (CEIL - 1.0), 4)
+            if own > v["price_factor"]:
+                v["alpha_rank_bound"] = f"raised to {own}x from {v['price_factor']}"
+                v["price_factor"] = min(CEIL, own)
 
     # THE EXTRA COMES OUT OF MEASURED SPARE, PER DEPARTMENT CLOCK. Every leg keeps its base; a
     # leg priced above par ASKS for base x (price_factor - 1) more, and the asks inside one
@@ -462,7 +537,8 @@ def build_plan(bases: dict[str, int] | None = None) -> dict[str, Any]:
                     "research_bandit": bool(bandit), "compute_policy": bool(policy),
                     "compute_policy_applied": policy_applied,
                     "evig_acquisition": bool(evig), "evig_why": evig_why,
-                    "factory_contracts": bool(fac), "factory_why": fac_why},
+                    "factory_contracts": bool(fac), "factory_why": fac_why,
+                    "alpha_rank": bool(ar), "alpha_rank_why": ar_why},
         "spare": spare,
         "spare_granted_s": sum(int(v["extra_s"]) for v in legs.values()),
         "department_grant_ratio": {d: round(r, 4) for d, r in sorted(grant_ratio.items())},

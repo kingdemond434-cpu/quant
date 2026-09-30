@@ -44,7 +44,25 @@ SLEEVES = ROOT / "desks" / "mt5" / "data" / "sleeves.json"
 #: Fields any organ demoting for cause is expected to leave behind. If none carries text, the
 #: demotion recorded nothing and this fixer treats it as an accident rather than a decision.
 REASON_FIELDS = ("retire_reason", "status_reason", "reason", "why", "demoted_reason",
-                 "retired_reason", "gate_reason")
+                 "retired_reason", "gate_reason", "demote_reason")
+
+
+def _admission_reason(row: dict) -> str:
+    """The promoter's own STANDBY verdict, carried on the row's `admission` block.
+
+    THE FIXER WAS UNDOING THE PROMOTER EVERY HOUR (measured 2026-09-30). `promoter.py` records a
+    capital demotion as `demote_reason` plus `admission: {"status": "STANDBY", "why": ...}` --
+    neither of which this fixer read. So every row the allocator zeroed read as "demoted with no
+    reason", was lifted back to LIVE at :48, and traded until the next promoter pass demoted it
+    again. `xauusd_macro_conditional_asia_p_5fa26e22` did exactly that: STANDBY at 0% heat, yet it
+    placed live 0.01-lot orders on 2026-09-25 and 2026-09-30 inside those restored windows.
+    """
+    adm = row.get("admission")
+    if isinstance(adm, dict) and str(adm.get("status") or "").upper() == "STANDBY":
+        why = adm.get("why")
+        if isinstance(why, str) and why.strip():
+            return why.strip()
+    return ""
 
 #: Statuses this fixer will lift back to LIVE. STANDBY is the promoter's holding state; KILL,
 #: RETIRED and QUARANTINED are verdicts and are never touched here whatever they do or do not
@@ -57,7 +75,7 @@ def _reason(row: dict) -> str:
         v = row.get(f)
         if isinstance(v, str) and v.strip():
             return v.strip()
-    return ""
+    return _admission_reason(row)
 
 
 def heal(apply: bool) -> int:

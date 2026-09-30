@@ -388,7 +388,7 @@ def _lane_filtered(candidates: list[dict]) -> tuple[list[dict], list[dict]]:
             ok.append(c)
             continue
         try:
-            allowed = bool(may_hypothesise(sym))
+            allowed = bool(may_hypothesise(sym, c.get("family")))
         except Exception:
             allowed = True          # an unreadable verdict is not a refusal
         if allowed:
@@ -459,6 +459,28 @@ def _preregister(source: str, candidates: list[dict]) -> dict[str, Any]:
     return out
 
 
+def _blinded(source: str, candidates: list[dict]) -> tuple[list[dict], dict[str, Any]]:
+    """TIER S LAYER 4 AT THE WRITE DOOR. A proposer's output that carries the desk's held-out,
+    lockbox, forward or gate OUTCOMES is evidence the proposer read them: the fields are stripped
+    before the row is stamped (so the payload hash covers the blind row), and the pass is counted
+    in data/tier_s/blinding_runtime.jsonl, where organ_market withholds the seat's passes from
+    the independent-discovery count. A row is never refused for it -- mining is not reduced."""
+    try:
+        import sys
+        root = str(_DESK.parents[1])
+        if root not in sys.path:
+            sys.path.insert(0, root)
+        from libs.tiers.blinding import RuntimeCounter
+    except Exception as exc:
+        return candidates, {"status": f"UNMEASURED: {type(exc).__name__}"}
+    counter = RuntimeCounter("output")
+    clean = [counter.filter(source, c) if isinstance(c, dict) else c for c in candidates]
+    rep = counter.report()
+    if rep["violations"]:
+        counter.publish(INTEL.parent, "tier_s/blinding_runtime.jsonl")
+    return clean, {k: rep[k] for k in ("rows", "violations", "fields_stripped")}
+
+
 def donate(source: str, candidates: list[dict], tests_run: int) -> Path | None:
     """Write the discovery contract. A control run must NEVER call this.
 
@@ -473,6 +495,8 @@ def donate(source: str, candidates: list[dict], tests_run: int) -> Path | None:
                      "refused_wrong_lane": 0, "refusals": [], "lane_refusals": []}
     if not candidates:
         return None
+    candidates, blinded = _blinded(source, candidates)
+    LAST_DONATION["blinded"] = blinded
     candidates, lane_refused = _lane_filtered(candidates)
     LAST_DONATION["refused_wrong_lane"] = len(lane_refused)
     LAST_DONATION["lane_refusals"] = lane_refused[:20]
@@ -501,6 +525,7 @@ def donate(source: str, candidates: list[dict], tests_run: int) -> Path | None:
                                 "counts": {"donated": len(candidates),
                                            "refused_unstamped": len(refused),
                                            "refused_wrong_lane": len(lane_refused),
+                                           "blinded_rows": int(blinded.get("violations") or 0),
                                            "preregistered": prereg["preregistered"],
                                            "prereg_failed": prereg["failed"]},
                                 "prereg": prereg,

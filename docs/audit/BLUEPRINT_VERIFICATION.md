@@ -1,7 +1,7 @@
 # Blueprint verification matrix
 
 Independent check of every blueprint the principal gave on 2026-09-29, verified against the code rather than the builders' ledgers.
-**Re-scored 2026-09-30 ~10:40Z under the principal's strict definition of DONE**, against the live branch `claude/llm-auto-upgrade-verify-gcjac3` at `6c8a71a4` (after #69).
+**Re-scored 2026-09-30 ~10:40Z under the principal's strict definition of DONE**, against the live branch `claude/llm-auto-upgrade-verify-gcjac3` at `6c8a71a4` (after #69). The Tier S and hardening sections (B1, B2, C) were last re-verified at ~12:05Z against LIVE `02057ffa` and PR #55 at `a0de5855`; each of their rows carries two mark sets, LIVE and "#55 as if merged".
 The earlier scoring (4 criteria, at `adaba442`) is in git history and summarised in the re-verification log.
 
 ## Verdict rules (strict, principal 2026-09-30)
@@ -24,7 +24,7 @@ The earlier scoring (4 criteria, at `adaba442`) is in git history and summarised
 - **EXCLUDED**: multi-venue or second-broker work, which the principal excluded.
 - **TIME-BOUND**: only elapsed time can deliver it; the accumulating machinery is scored on the seven.
 
-**Red CI on LIVE fails C for every row.** CI run 36701520415 on `6c8a71a4` failed: the LAW GATE reports an immutable-evaluator breach (`external_gauntlet.py` hashes to `cccb6ff6…` on LIVE against `baa3071c…` in the 09-29 signed manifest, changed by 7379cbf), and the MT5 desk suite fails. Until LIVE is green, no row can be DONE.
+**C on LIVE.** Two seals disagree on LIVE. `check_immutable_evaluator.py` passes (0 of 18), but the quantbench QB-002 corpus (`desks/mt5/data/quantbench/corpus.jsonl`, pinned 09-28 in 0ba716ab) was never re-pinned after the manifest re-signs (adaba442, 3167eb6f), so `test_quantbench` fails. `external_gauntlet.py` genuinely changed (0f483139, 7379cbf7, e7eace79). `allocator_proof.py` and `state_admission.py` differ only by line endings: their CRLF hashes equal the pins, so QB-002 fails on every LF checkout, CI included. No CI run on LIVE has completed green since the strict re-score began, so C fails on every row.
 
 ## Headline (strict)
 
@@ -34,8 +34,8 @@ The earlier scoring (4 criteria, at `adaba442`) is in git history and summarised
 | Audit: 20 implementation items + pipeline chain | 21 | 0 | 20 | 0 | 0 | 0 | 1 |
 | Tier S: 15-layer table + sections 1–15 | 30 | 0 | 30 | 0 | 0 | 0 | 0 |
 | Tier S: sections 16–30 + final loop | 16 | 0 | 16 | 0 | 0 | 0 | 0 |
-| 16 hardening + depth priorities + admission rule | 28 | 0 | 25 | 0 | 2 | 0 | 1 |
-| **Total** | **138** | **0** | **118** | **10** | **5** | **1** | **4** |
+| 16 hardening + depth priorities + admission rule | 28 | 0 | 15 | 12 | 1 | 0 | 0 |
+| **Total** | **138** | **0** | **108** | **22** | **4** | **1** | **3** |
 
 **Bottom line: 0 of 138 rows meet the strict definition.** The previous two DONEs fell:
 
@@ -45,8 +45,8 @@ The earlier scoring (4 criteria, at `adaba442`) is in git history and summarised
 
 What stops rows reaching DONE, in order of how many rows each blocks:
 
-1. **Red CI on LIVE** (every row): re-sign the evaluator for 7379cbf or revert it, and fix the MT5 desk suite.
-2. **Nothing Tier S is on LIVE** (46 rows): PR #55 is 21 ahead and 172 behind, and merging alone reaches I, T and D only. Its only money-path authority is a withhold-only promotion door; the exchange, execution capture, constitution values and FREEZE reach no sizing or allocator code.
+1. **Red CI on LIVE** (every row): re-pin the QB-002 corpus to the signed manifest with line-ending-normalised hashes, and fix the five failing MT5 desk test files.
+2. **Nothing Tier S is on LIVE** (46 rows plus 10 H/ADM rows): PR #55 (at `25e14650`; it conflicts with LIVE in the two runtime_state files) would still reach 0 DONE, because it adds two seal breaches (`promoter.py`, `rails.py`) and no Tier S artifact exists anywhere. Its only money-path authority is a withhold-only promotion door; the exchange, execution capture, constitution values and FREEZE reach no sizing or allocator code.
 3. **#52 true lockbox and #53 allocator sovereignty are unmerged** (10 rows MISSING branch-only, several more PARTIAL). LIVE still sets gate 9 to the walk-forward OOS Sharpe and floors zero allocations to the venue minimum.
 4. **Committed state contradicts the rules**: 40 LIVE sleeves, 24 of them banned `discovered`, 31 admission UNMEASURED, 40/40 no cost basis, 58/58 lockbox == WF OOS in `UNIVERSAL_SURVIVORS.json`, 474 certificate-truth divergences, and `certificate_truth --apply` has never run.
 5. **Organs are wired but have no authority**: cost surfaces, constrained book (`FEEDS_LIVE=False`), placebo audit, identity chain, experimental budget, replication; `research_budget.json` is `authoritative:false`.
@@ -61,6 +61,72 @@ What stops rows reaching DONE, in order of how many rows each blocks:
 
 
 ## Re-verification log
+
+### 2026-09-30 12:55Z: Tier S batch 7 (PR #55 at `25e14650`, LIVE at `69da0158`)
+
+The builder merged live, fixed the gateway drill import and the allocator clamp, made the door fail closed on missing, stale or malformed files, added a live-sleeve review, and built S02, S04, S09, S13, S16, S21, S23, S28, S31 and S33. Strict result: **still 0 of 138**, and every section count is unchanged (B1 30 PARTIAL, B2 16 PARTIAL, C 15 PARTIAL / 12 branch-only / 1 MISSING on LIVE).
+
+Verified: 304 of 306 Tier S tests pass (the 2 failures are pandas-3-only; all pass on the pinned 2.3.3). The gateway drill passes. Tilts below 0.5 now reach the allocator. `block()` withholds on absent, stale or malformed input. The ledger reads 43 BUILT / 1 PARTIAL / 2 BLOCKED with 0 DONE claimed. The new builds' call sites are real. #55 gains A on L2, L7, T2, T4, T9 and T21, I on T16 and T28, and T on L15 and T23.
+
+Claims that failed:
+
+- **"No conflicts."** #55 conflicts with LIVE `69da0158` in `docs/research/RUNTIME_STATE.md` and `runtime_state.json`; the clean merge was onto an older LIVE.
+- **"Only rails.py left."** Both `promoter.py` and `rails.py` are still unsigned; CI's law-gate log prints only the first breach.
+- **"Door reviews live sleeves."** `live_door.json` still has no reader.
+- **Import-error fail-open.** `promoter.tier_s_block` (promoter.py:1581) still ends `except Exception: return None`.
+
+New findings:
+
+- **LIVE's seal is split** (see "C on LIVE" above). This corrects the batch-6 entry, which called LIVE's seal clean; the drift was already present at `02057ffa`. It also corrects the batch-6 relay, which guessed #88 or #89 moved the files: no commit since 3167eb6f touches them.
+- **Five LIVE test files fail** (`test_scalp_promotion`, `test_event_surprise`, `test_macro_regime`, `test_certificate_single_writer`, `test_universe_producers_merge`), moving T to ✗ on H2, H5, DP1, DP7, DP9 and DP11.
+- **Post-merge risk:** with the door failing closed on stale input and `tier_s` a rotated leg capped at 1,500 s, every new LIVE row is withheld until the first box pass and after any 6-hour gap.
+- **No box artifact** exists anywhere. The committed cloud run (5527887b, `docs/research/tier_s_runs/`) says `counts_toward_done: false`, so R fails on every row.
+
+### 2026-09-30 12:05Z: Tier S batch 6 (PR #55 at `a0de5855`, LIVE at `02057ffa`)
+
+The builder fixed the control-arm leak, sent exchange ZERO/EXIT/DEFER to the allocator as a 0 tilt, made alpha_rank bind both ways, added box-evidence digests, made the ledger checker refuse a DONE the box has not attested, stopped organ ERROR counting as attestation, added a review of rows already LIVE, and moved layers back from DONE. Strict result:
+
+| Section | On LIVE | If #55 merged as-is |
+|---|---|---|
+| B1 (30) | 0 DONE, 30 PARTIAL | 0 DONE, 30 PARTIAL |
+| B2 (16) | 0 DONE, 16 PARTIAL | 0 DONE, 16 PARTIAL (best: T27 at 6/7) |
+| C (28) | 0 DONE, 15 PARTIAL, 12 MISSING (branch-only), 1 MISSING | 0 DONE, 24 PARTIAL, 2 MISSING (branch-only), 2 MISSING |
+
+Verified: the ledger no longer grades itself (it now reads 0 DONE / 33 BUILT / 11 PARTIAL / 2 BLOCKED and rejects any unattested DONE); the control arm reads exactly 1.0; an exact exchange 0 reaches the allocator.
+
+Still failing:
+
+- **Seal.** LIVE is now clean (gauntlet re-signed, 3167eb6f). #55 still changes `promoter.py` and `rails.py` unsigned, so merging it turns a green law gate red with 2 breaches.
+- **Merge conflict.** #55 no longer merges cleanly: `judge_coverage.py` conflicts with LIVE #77.
+- **No artifacts.** No Tier S output or `box_evidence.json` exists on any ref or the box, so every row fails R and no layer can be attested.
+- **Door still fails open one level up.** A raising check now withholds, but `promoter.tier_s_block` still returns None on an import error, and a stale or absent verdict file withholds nothing.
+- **Live-row review is inert.** It writes `live_door.json`, which nothing reads.
+- **The new gateway fault drill (S42) fails its own test** in a clean worktree (child process cannot import `libs`); the two gateway defects it found are unfixed.
+- **Tilts between 0 and 0.5 are still floored to 0.5**; only an exact 0 escapes.
+
+LIVE since `846ce9de`: #84, #86 and the seal re-sign landed (DP7 and DP9 move to PARTIAL; DP11 moves from TIME-BOUND to PARTIAL because #84 found forward ledgers frozen for 7 days). No fresh `research_budget.json`, breadth or judging artifact was committed. #52 and #53 remain unmerged.
+
+### 2026-09-30 11:40Z: Tier S batch 5 (PR #55 at `ed496c64`, LIVE at `846ce9de`)
+
+The builder reported 42/46 layers DONE, with the promotion door, exchange tilt, authoritative research budget, alpha_rank leg budgets and k_eff judge ordering in place. Re-scored under the strict seven criteria:
+
+| Section | On LIVE | If #55 merged as-is |
+|---|---|---|
+| B1 (30) | 0 DONE, 30 PARTIAL | 0 DONE, 30 PARTIAL |
+| B2 (16) | 0 DONE, 16 PARTIAL | 0 DONE, 16 PARTIAL (best: T27 at 6/7) |
+| C (28) | 0 DONE, 12 PARTIAL, 13 MISSING (branch-only), 2 MISSING, 1 TIME-BOUND | 0 DONE, 22 PARTIAL, 3 MISSING (branch-only), 2 MISSING, 1 TIME-BOUND |
+
+Why no row reaches 7/7 even with #55 merged:
+
+- **Seal (C).** #55 edits `promoter.py` and `rails.py`, both sealed judge files, without re-signing. Merging turns LIVE's one evaluator breach (`external_gauntlet.py`) into three.
+- **Artifacts (R).** No Tier S artifact exists on any ref or the box: `reports/tier_s/*` is gitignored, the leg has never run on the box, and the 416 s run was measured in the cloud checkout.
+- **Self-graded ledger.** "42/46 DONE" uses the ledger's own research-side definition, and `check_tier_s_program.py` checks the ledger against itself.
+- **Budget.** The committed `research_budget.json` is still `authoritative:false` (09-23); no applied reading exists.
+- **Door fails open.** `promoter.tier_s_block` catches every exception and returns None, so an import or firewall error silently removes all six withholds; it never touches rows already LIVE.
+- **Control-arm leak.** In `allocator_tilts.build` the held-out sleeve measured 0.923 because renormalisation and capture apply to it.
+- **Still pending on the desktop, on no ref:** the rails/promoter re-sign, the constitution-driven gauntlet, S12 firewall checks and FREEZE-to-allocator.
+
+LIVE moved 32 commits since `6c8a71a4` (CRO docs, tests, release signing) with no change to a scored organ. A new committed box reading, `TIER1_BREADTH_REVIEW.json`, shows k_eff 2.526 and judging at 5,266/day against 8,303/day created, with a 1.40M backlog still growing.
 
 ### 2026-09-30 10:40Z: strict re-score of all 138 rows at `6c8a71a4`
 
@@ -425,174 +491,231 @@ Counts: DONE 0 / PARTIAL 20 / MISSING 0 / EXCLUDED 0 / TIME-BOUND 1 (21 rows: I1
 
 ## B1 — Tier S 15-layer table (L) and sections 1–15 (T)
 
-Checked against LIVE = `origin/claude/llm-auto-upgrade-verify-gcjac3` @ `6c8a71a4`. TIERS = `origin/claude/tier-s-institution` @ `ab404034` (PR #55: 21 ahead, 172 behind, unmerged).
+Checked 2026-09-30 ~13:30Z. LIVE = `origin/claude/llm-auto-upgrade-verify-gcjac3` @ `69da0158` (origin has since moved to `7b69c6ff`, +1 scalp test file, no Tier S). TIERS = `origin/claude/tier-s-institution` @ `25e14650` (PR #55, draft; GitHub's PR head is already `b3620bb5` = +2 commits: door-input-missing fails the leg loudly, test import fix — not scored, changes no mark).
 
-**Facts behind every row:**
-- None of `libs/tiers/*`, `desks/mt5/research/tier_s.py`, `docs/research/tier_s_*.json`, `scripts/check_tier_s_program.py`, `tests/tiers/*` or `test_tier_s_organs.py` is on LIVE. LIVE `hourly_cycle.py` has no `tier_s` leg, and LIVE `promoter.py` has no `tier_s_block`.
-- So every row fails D (deployed) for its Tier S part.
-- The ✓ marks below are for the LIVE analogue named in Evidence. They cover only part of each row's wording.
+**Facts (measured, not taken from the builder):**
+- **Merge: claim "no conflicts" is STALE.** `ae7f6263` merged LIVE @ f54f0155 clean, but LIVE has moved 13 commits since. `git merge-tree` onto `69da0158` (and onto `7b69c6ff`, and PR head `b3620bb5` onto `7b69c6ff`) CONFLICTS in `docs/research/RUNTIME_STATE.md` and `docs/research/runtime_state.json` (derived attestation docs — trivial, but GitHub reports `mergeable_state: dirty`). 83 ahead / 13 behind.
+- **Seal: claim "only rails.py left" is FALSE.** `check_immutable_evaluator.py`:
+  - TIERS `25e14650`: **2 breaches** — `promoter.py` (52d6f4b4→1041a40e) and `rails.py` (e832bd4c→e01e6027). `external_gauntlet.py` breach is gone (inherited LIVE re-sign).
+  - Merge tree (LIVE 69da0158 + TIERS, built and checked): **same 2 breaches**.
+  - LIVE `69da0158`: OK, 0 breaches; `check_immutable_rails`: seal HELD. (TIERS: rails "seal BROKEN".)
+  - PR #55 CI run 36714627280 (`quality`): **FAILED** on the law gate. Its log prints only the first breach line (rails.py), which is likely why the builder saw one; the promoter breach is real.
+- **QB-002 drift on LIVE confirmed.** Corpus `desks/mt5/data/quantbench/corpus.jsonl` QB-002 pins 4 sha256s; on LIVE 69da0158 three differ: `external_gauntlet.py` (expects 17f8a409…, is e8389c82…), `allocator_proof.py` (bb2cb3a5… vs 09f8f0b9…), `state_admission.py` (ae7a8aec… vs 1fc3e487…). `promoter.py` matches on LIVE; on TIERS it also drifts (4/4). The evaluator seal and the quantbench corpus disagree — C ✗ on LIVE regardless of Tier S.
+- **Tests (TIERS worktree, `-p no:cacheprovider`):** 16 tier_s_* files + test_cycle_pricing + tests/tiers + test_research_budget + test_bandit_authority_and_freeze = **306 tests: 304 pass, 2 FAIL** under this container's pandas 3.0.6: `test_tier_s_closure_agent_worlds::{test_both_families_…, test_a_sleeve_is_measured_…}` — `synthetic_regimes._scale_col` writes into a read-only CoW array (`ValueError: output array is read-only`). Re-run under the pinned `pandas==2.3.3` (pyproject `<3`, CI installs 2.3.3): **9/9 pass**. So T ✓ at the pin; the S16 code breaks on pandas 3.
+- **Gateway drill fix: VERIFIED.** `test_tier_s_gateway_drill` passes (2/2); child gets repo root on PYTHONPATH (2c8f80c4).
+- **Allocator clamp fix: VERIFIED.** `pf_allocator.py:2123`: when `sf < TILT_LO` the tilt is `clamp(other factors)·sf`, so 0<sf<0.5 is applied under the floor; test in test_tier_s_organs passes.
+- **Door fail-closed: VERIFIED inside `block()`, FAILS OPEN one level up.** Missing/stale(>6h)/malformed `door_verdicts.json` etc. → `DoorReadError` → `DOOR_ERROR` withhold (7de6ccca). But `promoter.tier_s_block` (promoter.py:1575-1582) still `except Exception: return None` — an import error drops every check. Side effect: after merge, until the box runs the `tier_s` leg, every new LIVE row is withheld as DOOR_ERROR (absent verdicts).
+- **`live_door.json` has NO consumer.** Only writer `promotion_authority.review_live` and `sync_shadow_to_git.ps1:387` mention it; the cloud copy literally says `"consumer": "… desktop batch: promoter.py is sealed"`.
+- **Artifacts:** no `desks/mt5/data/tier_s/*` (incl. `box_evidence.json`) on either ref. 5527887b committed a cloud pass under `docs/research/tier_s_runs/2026-09-30_cloud/` (TIER_S, allocator_tilts, box_evidence, door_verdicts, live_door, 30 organs incl. IMMUNE, ONLINE_FDR_ROWS, TOPOLOGY; no ALPHA_RANK). Its `box_evidence.json` says `host: vm`, `counts_toward_done: false`. Cloud outputs ⇒ R ✗ strict (partial at most) on every row.
+- **LIVE carries no Tier S code:** no `libs/tiers/*`, no `tier_s.py`, no `tier_s` leg in `hourly_cycle.py`. LIVE marks unchanged from v3.
+- **Checker:** `check_tier_s_program.py` rc 0 — **BUILT 43 / PARTIAL 1 (S12) / BLOCKED_ON_USER 2 (S01, S30)**, 0 DONE. Claim matches.
+- **Batch-7 builds spot-checked (real call sites on #55):** S02 `run_edges_macro_fusion_sweep.pit_conditioned` reads `BitemporalStore.latest_known`; S13 `breadth_sweep.order_by_failure_memory`; S04 runtime blinding strips outcome fields in `miner_candidate_compiler`/`proposer_common`/`deepseek_cycle`; S09/S21 `prejudge_screen` tags cells in `run_external_backtest` and `merge_hypotheses` demotes flagged rows within family (reorder only, nothing removed); S33 `gauntlet_arena`; S23 `execution_science` report; S28 `shadow_desk`/`rollback`; S31 `check_formal_claim` fence in law gate; S16 closure/agent worlds.
 
-**Box evidence:**
-- LIVE commits no Tier S report and almost no `desks/mt5/reports/*`: only 20 files, none of them from these organs.
-- The committed `docs/research/runtime_state.json` (02:52Z) comes from a non-trading cloud host. It shows `alpha_rank`, `factory_contracts`, `placebo_audit`, `axis_registry`, `alpha_evolution` and `identity_chain` as NEVER there. No box run can be evidenced from the repo.
-- R therefore gets ✓ only where a committed artifact exists. It gets ✗ where the only claim is a box artifact that cannot be seen.
+Marks order: I W A T R D C. "#55" = as if merged (runtime_state conflict assumed resolved; D hypothetical). T ✓ on #55 is at the pinned pandas 2.3.3.
 
-**TIERS ledger claim:**
-- `tier_s_program.json` has 46 rows. S01–S15 map one-to-one to T1–T15.
-- For T1–T15 the ledger claims DONE for S07, S08, S10, S11, S13 and S14. S01 is BLOCKED_ON_USER. The rest are PARTIAL.
-- Its DONE means "runs hourly + writes artifact + research-side wording". That is weaker than strict DONE: no deploy, no money-path authority, no box artifact.
-
-**TIERS authority that does exist:**
-- `promoter.tier_s_block` (promoter.py:1569) calls `promotion_authority.block`. It withholds a new LIVE row on a replication MISMATCH, online FDR over budget, or a production-judged immune DROP, and it runs `firewall.may`.
-- `cycle_pricing` reads `researcher_prices.json` at weight 0.15.
-- Tier S hypothesis rows reach `miner_candidate_compiler`.
-- Everything else is report or shadow. The door only withholds, and the certifier has zero power while the DSR variance stays at the constant 0.014863 (batch 3).
-
-**Merge caveat:** TIERS is 172 commits behind. `hourly_cycle.py`, `promoter.py` and `cycle_pricing.py` all diverged, so a merge needs conflict resolution plus one box run before any row can reach R/C.
-
-Legend: I Implemented, W Wired, A Authoritative, T Tested, R Artifact, D Deployed, C Consistent (each judged on LIVE).
-
-| ID | Item | Verdict | I W A T R D C | Evidence (LIVE vs TIERS: file, caller, test, artifact) | What is missing for strict DONE | Owner |
+| ID | Item | Verdict | Marks | Evidence on #55 | Still missing | Owner |
 |---|---|---|---|---|---|---|
-| L1 | Truth Kernel: immutable constitution controls everything | PARTIAL | ✗ ✓ ✓ ✓ ✗ ✗ ✗ | **LIVE:** `ops/principal_doctrine.txt` + `check_constitution_core.py` (law gate); `libs/research/immutable_rails.py` fences proposals (test_immutable_rails); `certificate_truth` hourly + fence. **TIERS:** `truth_kernel.py` + `tier_s_constitution.json`, read only by tier_s (S01 BLOCKED_ON_USER). | See T1. No gate reads the constitution's numbers. `check_certificate_truth` is softened to SNAPSHOT off-box (474 divergences). | Tier S build |
-| L2 | World Data OS: PIT/bitemporal + provenance + reliability | PARTIAL | ✗ ✓ ✗ ✓ ✗ ✗ ✗ | **LIVE:** `libs/research/data_registry.py` (test), `acquire_datasets` hourly (test), `pit_audit.py` (not a leg). **TIERS:** `bitemporal.py`, organ_data_os (audit only). | See T2. No bitemporal store is used by any data path. | Tier S build |
-| L3 | World Model: causal/economic knowledge graph | PARTIAL | ✓ ✓ ✗ ✓ ✓ ✓ ✗ | **LIVE:** `world_causal_graph.py` (hourly `_producer`, tests ×2), committed `data/world_causal_graph.json` (generated 2026-09-08, 0 admitted edges); `cross_asset_graph` hourly. **TIERS:** `world_edges.py` + `world_macro.py`. | Rates/credit/flows/positioning nodes are only on TIERS, and flows are UNMEASURED. It decides nothing. Committed artifact is 3 weeks stale with 0 admitted edges. | Tier S build |
-| L4 | Researcher Civilization: hundreds of heterogeneous processes | PARTIAL | ✗ ✓ ✗ ✓ ✗ ✗ ✗ | **LIVE:** ~40 producers; `live_calibration_posterior` hourly (per-producer κ, test) feeds bandit priors. **TIERS:** epistemology labels in organ_market. | See T4. No new epistemologies and no enforced blinding. | Tier S build |
-| L5 | Hypothesis Ecology: competing/evolving mechanism populations | PARTIAL | ✗ ✓ ✗ ✓ ✗ ✗ ✗ | **LIVE:** `libs/research/hypothesis_graph.py` (tests), `alpha_evolution` hourly (bandit budget), `alpha_lineage` hourly (test). **TIERS:** QD/genomes/theory emit compiler rows. | Populations are picks over a fixed family vocabulary. No evolving mechanisms, no authority. | Tier S build |
-| L6 | Research-Program Evolution | PARTIAL | ✗ ✗ ✗ ✗ ✗ ✗ ✗ | **LIVE:** `research_evolution.py` (test) via meta_rnd. **TIERS:** 10-gene genome (S05 PARTIAL, S07 claimed DONE). | See T5/T7. Programs, schedulers and pipelines are not evolved. PR-only. | Tier S build |
-| L7 | Adversarial Science: researchers vs destroyers co-evolve | PARTIAL | ✓ ✓ ✗ ✗ ✗ ✓ ✗ | **LIVE:** `adversary_evolution.py --apply` in `run_frontier_audit.cmd:100` (daily MT5-FrontierAudit), no test. **TIERS:** `red_queen.py` on the production gauntlet (batch 3). | See T9. Not per-researcher, no test on LIVE, no authority. | Tier S build |
-| L8 | Universal Validation: anti-selection/anti-leakage | PARTIAL | ✓ ✓ ✓ ✓ ✗ ✓ ✗ | **LIVE:** universal gate/`external_gauntlet` decides certificates; `effective_trials` hourly (test). **#52** (lockbox, lifetime trials) unmerged. **TIERS:** online FDR + immune + replication on the promoter door. | DSR variance is still the constant 0.014863 (zero power). Lockbox Sharpe equals WF OOS. Online FDR and immune are TIERS-only. | Both threads |
-| L9 | Alpha Topology: true independent dimensions | PARTIAL | ✓ ✓ ✓ ✓ ✗ ✓ ✗ | **LIVE:** `alpha_rank.py` + `libs/research/independence_graph.py` (8 channels, test_independence_graph), hourly leg; ALPHA_RANK → `factory_contracts` → `cycle_pricing` (weight 0.15, compute). **TIERS:** `topology.rank_report`. | See T15. No committed or evidenced ALPHA_RANK.json; runtime_state says NEVER. The DP5 breadth reading is a week old. Compute-only authority. | Tier S build |
-| L10 | Portfolio Intelligence: posterior E[log W] | PARTIAL | ✓ ✓ ✓ ✓ ✗ ✓ ✗ | **LIVE:** `pf_allocator` (money path, gateway deploys fractions); `constrained_book` hourly but `FEEDS_LIVE=False`. **TIERS:** opportunity_exchange is shadow (S25 BLOCKED_ON_USER). | Min-lot/gold floors override a zero allocation (#53 unmerged). UNMEASURED admission keeps capital. The exchange does not steer the allocator. | Other slices |
-| L11 | Execution Intelligence: learned implementation optimum | PARTIAL | ✓ ✓ ✗ ✗ ✗ ✓ ✗ | **LIVE:** `execution_science.py --apply` in `run_frontier_audit.cmd:65` (daily; the old matrix said unscheduled), no test. **TIERS:** schedules it hourly (S23 claimed DONE). | Report only. Nothing is learned into execution, `cost_surfaces` is unconsumed, and there are 0 matched fills. | Other slices |
-| L12 | Live Reality Engine: backtest reconciled to reality | PARTIAL | ✓ ✓ ✗ ✓ ✓ ✓ ✗ | **LIVE:** `forward_reconcile` (test, committed `data/forward_reconcile.json`), `fill_attribution` hourly. **TIERS:** prediction_accounting (accounted_share 0). | Not authoritative over sizing or promotion. Live evidence n is tiny. | Other slices |
-| L13 | Meta-Science: which methods create edge | PARTIAL | ✓ ✓ ✓ ✗ ✗ ✓ ✗ | **LIVE:** `factory_contracts` (per-producer yield → cycle_pricing, compute), `credit_assignment` → bandit; no tests for either. **TIERS:** organ_market P(pass)/FDR/validated_per_cpu_h. | Per-method attribution is crude, untested and unevidenced. `research_budget.json` is `authoritative:false`. | Tier S build |
-| L14 | Architecture Evolution: system proposes self-improvements | PARTIAL | ✗ ✓ ✗ ✓ ✗ ✗ ✗ | **LIVE:** `implementer` + `research_evolution` (test), fenced by immutable_rails. **TIERS:** twin/self_model; research challengers adopt, money path is PROPOSE only (S30 BLOCKED_ON_USER). | Money-path challengers are never adopted. Twin and self_model are PR-only. | Other slices |
-| L15 | Operational Kernel: reproducible, redundant, deterministic | PARTIAL | ✓ ✓ ✗ ✓ ✗ ✓ ✗ | **LIVE:** `state_replay_audit` hourly (test), `ops_redundancy` hourly, `dr_drill` daily (no test). **TIERS:** replay/chaos (S42 BLOCKED_ON_BOX). | No standby or failover, backups unencrypted, chaos never kills processes. Report only. | Other slices |
-| T1 | Truth Kernel: agents cannot change PIT/trials/cost/lockbox/cert/capital/provenance/repro rules; content-addressed raw→fill; reconstruct any trade | PARTIAL | ✗ ✓ ✓ ✓ ✗ ✗ ✗ | **LIVE:** `check_constitution_core.py` (law gate), `immutable_rails` (test), `identity_chain` + `libs/research/trade_identity.py` hourly (tests; report, fills not stamped), `state_replay_audit` hourly. **TIERS:** `truth_kernel.py` Journal/seal, tier_s.py:434; constitution read by no gate (S01 BLOCKED_ON_USER); tests in tests/tiers. | Merge #55, then: bind the constitution's values in gauntlet/promoter/allocator; stamp lineage inline at order time (2.8% reconstructible); add size/order rationale; stop ratification relying on git-author heuristics. | Tier S build |
-| T2 | World Data OS: bitemporal, per-datapoint provenance/revisions/latency/licence/reliability; acquisition by info-gain per € | PARTIAL | ✗ ✓ ✗ ✓ ✗ ✗ ✗ | **LIVE:** `data_registry` (test), `acquire_datasets` hourly (test), `pit_audit.py` not a leg. **TIERS:** `bitemporal.py` BitemporalStore (used by no data path), organ_data_os audits 3 JSONLs (pit_share 0.0); test bitemporal_as_of (S02 PARTIAL). | Merging is not enough. A real bitemporal store must sit on the data path, with a per-datapoint provenance/licence store, the acquisition ranking fed to `acquire_datasets`, and real € costs. | Tier S build |
-| T3 | World model: rates→FX→…→flows graphs, regional; stable/state-dependent/decaying/false; hypotheses from broken edges | PARTIAL | ✓ ✓ ✗ ✓ ✓ ✓ ✗ | **LIVE:** `world_causal_graph.py` hourly, 2 tests, committed json (2026-09-08, 90 nodes, 0 admitted); `cross_asset_graph` hourly. **TIERS:** `world_edges.py` classify + `world_macro.py` daily macro/CFTC nodes; broken edges emit `cross_asset_residual` rows (S03 PARTIAL). | Classify LIVE's own world_causal_graph edges. Flows dataset and regional graphs are missing. Nothing decides on it. Needs a fresh box artifact with admitted edges. | Tier S build |
-| T4 | Researcher civilization with ~25 epistemologies incl. non-LLM; some blind to others | PARTIAL | ✗ ✓ ✗ ✓ ✗ ✗ ✗ | **LIVE:** existing producers + `live_calibration_posterior` (test) → bandit. **TIERS:** organ_market labels producers by name; independent_discoveries = 0 (S04 PARTIAL). | New researcher types. **Enforced blinding** (a firewall role that stops cohorts reading each other). A measured independent-discovery count > 0. | Tier S build |
-| T5 | AlphaEvolve-for-alpha: LLM + evaluators evolving code, grammars, portfolio/regime/execution/scheduler programs; fitness = validated independent alpha per compute | PARTIAL | ✓ ✓ ✗ ✗ ✗ ✓ ✗ | **LIVE:** `alpha_evolution` hourly (formula evolution, bandit budget, no dedicated test; its evolved recipe reaches the docket). **TIERS:** `evolution.py` step/fitness, organ_genomes, grammar read by `expression_factory.py:90` via grammar_bias (S05 PARTIAL). | No LLM-in-loop program evolution. Portfolio, regime, execution, model-architecture and scheduler programs are not evolved. Fitness is not validated alpha per compute on LIVE. | Tier S build |
-| T6 | MAP-Elites over 12 descriptor axes | PARTIAL | ✓ ✓ ✗ ✗ ✗ ✓ ✗ | **LIVE:** `research_diversity_archive.py` + `libs/research/diversity_archive.py`, reached hourly via `experiment_spine` (hourly_cycle:3809); `axis_registry` hourly (test). No archive test. **TIERS:** evolution.Archive, organ_qd on 12 axes (batch 2, not re-audited), probes to the compiler (S06 PARTIAL: capacity and corr-cluster axes missing). | Capacity and corr-cluster axes. A research program per cell. The archive steers nothing with authority. Test and box artifact on LIVE. | Tier S build |
-| T7 | Evolve researcher genomes; fitness = validated independent info / compute with penalties | PARTIAL | ✗ ✗ ✗ ✗ ✗ ✗ ✗ | **LIVE:** none (research_evolution tunes research params, not researcher genomes). **TIERS:** RESEARCHER_GENES (10), `falsify_order` now used (tier_s.py:1120), organ tests; ledger S07 **claims DONE** but best_fitness was 0 on the cloud run. | Merge. Add prompt-architecture and model-family genes. Tighten fitness attribution (credits any later verdict). Evidence a box run with fitness > 0. | Tier S build |
-| T8 | Researcher market: posteriors, bandits/Bayesian allocation, deteriorating lose compute | PARTIAL | ✓ ✓ ✓ ✓ ✗ ✓ ✗ | **LIVE:** `cycle_pricing` (test, FLOOR 1.00) applies budgets from `factory_contracts` (0.15) + bandit (`libs/research/bandit.py`, tests); `research_budget.json` authoritative:false. **TIERS:** `researcher_market.allocate` (Thompson + MILP) → `researcher_prices.json`, read by cycle_pricing at 0.15 (S08 claimed DONE); MILP per-researcher budgets unused. | Merge. Use the per-researcher MILP budgets, not only the per-leg max price. Add € cost and a portfolio-contribution term. Replace the heuristic P(cheap). Needs a box artifact. | Tier S build |
-| T9 | Red Queen per-researcher adversary (15 attack kinds), counter-agent, co-evolve | PARTIAL | ✓ ✓ ✗ ✗ ✗ ✓ ✗ | **LIVE:** `adversary_evolution.py` daily in FrontierAudit (one run_gauntlet per generation), no test, no consumer with authority. **TIERS:** `red_queen.py` now attacks the production `run_gauntlet` (batch 3), tier_s.py:702 (S09 PARTIAL). | Attacks attributed per researcher. Hidden-factor, overlap, false-causality and corporate-action attack kinds. A winning defender changes the real gates. Tests. | Tier S build |
-| T10 | Planted traps (blind), immune score, FREEZE production when traps accepted | PARTIAL | ✓ ✓ ✗ ✓ ✗ ✓ ✗ | **LIVE:** `placebo_audit.py` hourly (hourly_cycle:4581, test_placebo_audit), report, no consumer. **TIERS:** `traps.py` 17 kinds × 150 on the production certifier; `promoter.tier_s_block` honours a production immune DROP (S10 claimed DONE). Toy FREEZE has no authority. | Merge #55. Inject traps blind into the live research stream (needs a promoter trap registry). The certifier rejects 600/600 genuine controls (power 0), so immune = 1.0 is vacuous until the DSR variance is measured. | Tier S build |
-| T11 | Adaptive multiplicity: lifetime genealogy + online FDR / sequential / e-values | PARTIAL | ✗ ✓ ✓ ✓ ✗ ✗ ✗ | **LIVE:** `effective_trials` hourly (test; read by external_gauntlet) with the DSR constant; no online FDR or e-values. **TIERS:** `online_fdr.py` LORD++/e-LOND; over budget blocks at `promoter.tier_s_block` (S11 claimed DONE); lifetime trials only in #52. | Merge #55 and #52. Use real survivor p-values (proxies today). Add an anytime-valid sequential test on forward evidence. Evidence the 24% over-budget share on the box. | Tier S build (+ #52) |
-| T12 | Epistemic firewall, physically isolated roles | PARTIAL | ✗ ✓ ✓ ✓ ✗ ✗ ✗ | **LIVE:** `moneypath_precommit_guard.py` (pre-commit), `check_immutable_evaluator` wall (test), IMMUTABLE_MANIFEST. Policy and hooks, not role isolation. **TIERS:** `firewall.py` AST audit + ratchet; `may()` is called only by `promotion_authority` (S12 PARTIAL). | No process, OS or permission isolation. Developer→evaluator and lockbox-accepts-frozen-only are not enforced. Ratchet breach is not in the law gate. 1 violation on the run. | Tier S build |
-| T13 | Negative knowledge: typed causes, graph, retrieval for new candidates, "explored N times" → move on | PARTIAL | ✓ ✓ ✓ ✗ ✗ ✓ ✗ | **LIVE:** `negative_knowledge.py --apply` (trained P(survive) model) daily in `run_frontier_audit.cmd:53`, read by `gauntlet_backpressure`, `graveyard_resurrection`, `scout_roster`; no test found. **TIERS:** `failure_memory.py` 15 causes/theorems (S13 claimed DONE, 0 theorems on the run); retrieval steers only tier_s's own rows. | Typed causes beyond the terminal gate. A graph, not equivalence classes. Other generators read failure memory. Tests and a box artifact on LIVE. | Tier S build |
-| T14 | Ancestry graph: code/feature/hypothesis/data ancestry + P&L/tail similarity; derived not counted fresh | PARTIAL | ✓ ✓ ✗ ✓ ✗ ✓ ✗ | **LIVE:** `libs/research/hypothesis_graph.py` (tests), `lineage_dag.py`, `alpha_lineage` hourly (test); `independence_graph` has a feature-ancestry channel. **TIERS:** multi-parent lineage (batch 4), `topology.effective_discoveries` (S14 claimed DONE), ancestry novelty prices compute. | Code and data ancestry. P&L/tail similarity in novelty. Effective discoveries must discount counts, gates or budgets on LIVE (reported only). | Tier S build |
-| T15 | Effective Independent Alpha Rank (PnL, eigen, nonlinear, tail, DD, ancestry, exposure, overlap, mechanism, regime); scheduler searches orthogonal | PARTIAL (closest to DONE) | ✓ ✓ ✓ ✓ ✗ ✓ ✗ | **LIVE:** `alpha_rank.py` + `independence_graph.py` (8 channels incl. tail, factor exposure, feature ancestry, timestamp overlap, mechanism, execution, regime; test_independence_graph) hourly leg; ALPHA_RANK per producer → `factory_contracts` → `cycle_pricing` (0.15, compute). **TIERS:** `topology.rank_report` (descriptor headline 8.44), `_emit_orthogonal` rows (S15 PARTIAL). | Evidence one box ALPHA_RANK.json: none committed, runtime_state NEVER, DP5's 2.06 is a week old. Orthogonal search only through a 0.15 compute weight. Drawdown-coincidence channel. Reconcile the two rank organs (LIVE alpha_rank vs TIERS topology). | Tier S build |
+| L1 | Truth Kernel | PARTIAL | LIVE: ✗✓✓✓✗✗✗ / #55: ✓✓✓✓✗✓✗ | truth_kernel, constitution; door withholds loosened constitution, fail-closed in block | S01 blocked (gauntlet ignores constitution); promoter wrapper fails open; 2 seal breaches; box R | Tier S build |
+| L2 | World Data OS | PARTIAL | LIVE: ✗✓✗✓✗✗✗ / #55: ✓✓✓✓✗✓✗ | **A new:** macro-fusion sweep conditions signals via `BitemporalStore.latest_known` (S02) | One sweep only; no provenance/reliability on the main data path; box R | Tier S build |
+| L3 | World Model | PARTIAL | LIVE: ✓✓✗✓✓✓✗ / #55: ✓✓✗✓✓✓✗ | world_edges → compiler rows | Hypothesis generation only; stale graph; no flows/regional | Tier S build |
+| L4 | Researcher Civilization | PARTIAL | LIVE: ✗✓✗✓✗✗✗ / #55: ✓✓✓✓✗✓✗ | researcher_prices → cycle_pricing; runtime blinding now strips outcomes (S04) | No new non-LLM processes; box R | Tier S build |
+| L5 | Hypothesis Ecology | PARTIAL | LIVE: ✗✓✗✓✗✗✗ / #55: ✓✓✗✓✗✓✗ | QD/genomes/theory rows to intelligence/tier_s | Populations decide nothing | Tier S build |
+| L6 | Research-Program Evolution | PARTIAL | LIVE: ✗✗✗✗✗✗✗ / #55: ✓✓✗✓✗✓✗ | program_evolution in tier_s leg | Challengers report only | Tier S build |
+| L7 | Adversarial Science | PARTIAL | LIVE: ✓✓✗✗✗✓✗ / #55: ✓✓✓✓✗✓✗ | **A new:** adopted defenders flag cells in run_external_backtest; merge_hypotheses demotes them in-family; S33 genomes judged on real gauntlet verdicts | Reorder-only (no gate changes); box R | Tier S build |
+| L8 | Universal Validation | PARTIAL | LIVE: ✓✓✓✓✗✓✗ / #55: ✓✓✓✓✗✓✗ | block() fails closed on missing/stale/malformed inputs | promoter.py:1581 fails open; live_door no consumer; seal; #52 | Both threads |
+| L9 | Alpha Topology | PARTIAL | LIVE: ✓✓✓✓✗✓✗ / #55: ✓✓✓✓✗✓✗ | alpha_rank two-sided in cycle_pricing; docket_keff | No ALPHA_RANK artifact even from cloud; two rank organs | Tier S build |
+| L10 | Portfolio Intelligence | PARTIAL | LIVE: ✓✓✓✓✗✓✗ / #55: ✓✓✓✓✗✓✗ | **Clamp fixed:** sf<0.5 applied under floor (pf_allocator:2123) | allocator_tilts only from cloud; ex×cap not renormalised; FREEZE→allocator unrouted; #53 | Other slices |
+| L11 | Execution Intelligence | PARTIAL | LIVE: ✓✓✗✗✗✓✗ / #55: ✓✓✓✓✗✓✗ | S23 report splits signal alpha / execution drag | 0 matched fills → inert; not learned | Other slices |
+| L12 | Live Reality Engine | PARTIAL | LIVE: ✓✓✗✓✓✓✗ / #55: ✓✓✓✓✓✓✗ | THEORY_REFUTED withholds; review_live → live_door.json; forward_reconcile.json on LIVE | live_door reaches no retirement | Other slices |
+| L13 | Meta-Science | PARTIAL | LIVE: ✓✓✓✗✗✓✗ / #55: ✓✓✓✓✗✓✗ | research_bandit leg publish() | Committed research_budget.json still authoritative:false | Tier S build |
+| L14 | Architecture Evolution | PARTIAL | LIVE: ✗✓✗✓✗✗✗ / #55: ✓✓✗✓✗✓✗ | twin, self_model, shadow_desk sandbox, rollback tested (S28) | S30 blocked; propose-only | Other slices |
+| L15 | Operational Kernel | PARTIAL | LIVE: ✓✓✗✓✗✓✗ / #55: ✓✓✗✓✗✓✗ | **T restored:** gateway drill test passes; drill in organ_chaos | Report only; no standby/failover | Other slices |
+| T1 | Truth Kernel spec | PARTIAL | LIVE: ✗✓✓✓✗✗✗ / #55: ✓✓✓✓✗✓✗ | journal, seal, constitution withhold | S01; no order-time lineage | Tier S build |
+| T2 | World Data OS spec | PARTIAL | LIVE: ✗✓✗✓✗✗✗ / #55: ✓✓✓✓✗✓✗ | PIT reads in macro sweep | Not on acquire_datasets; no € costs | Tier S build |
+| T3 | World model graphs | PARTIAL | LIVE: ✓✓✗✓✓✓✗ / #55: ✓✓✗✓✓✓✗ | world_edges classification | No flows/regional; decides nothing | Tier S build |
+| T4 | Researcher civilization + blinding | PARTIAL | LIVE: ✗✓✗✓✗✗✗ / #55: ✓✓✓✓✗✓✗ | **A new:** runtime blinding strips held-out/lockbox fields, ledger blinding_runtime.jsonl | No independent-discovery evidence | Tier S build |
+| T5 | AlphaEvolve-for-alpha | PARTIAL | LIVE: ✓✓✗✗✗✓✗ / #55: ✓✓✗✓✗✓✗ | evolution, program_evolution | No LLM-in-loop code evolution | Tier S build |
+| T6 | MAP-Elites 12 axes | PARTIAL | LIVE: ✓✓✗✗✗✓✗ / #55: ✓✓✗✓✗✓✗ | qd_axes | Steers nothing | Tier S build |
+| T7 | Researcher genomes | PARTIAL | LIVE: ✗✗✗✗✗✗✗ / #55: ✓✓✗✓✗✓✗ | RESEARCHER_GENES | Steers tier_s rows only | Tier S build |
+| T8 | Researcher market | PARTIAL | LIVE: ✓✓✓✓✗✓✗ / #55: ✓✓✓✓✗✓✗ | prices 0.15 + bandit 0.20 → cycle_pricing | FLOOR 1.0: nothing loses compute below base | Tier S build |
+| T9 | Red Queen per researcher | PARTIAL | LIVE: ✓✓✗✗✗✓✗ / #55: ✓✓✓✓✗✓✗ | **A new:** prejudge_screen demotion; gauntlet_arena | Demote-only, never at the sealed gate | Tier S build |
+| T10 | Planted traps / FREEZE | PARTIAL | LIVE: ✓✓✗✓✗✓✗ / #55: ✓✓✓✓✗✓✗ | _freeze in fail-closed block; review_live | FREEZE not in allocator; live review unconsumed | Tier S build |
+| T11 | Adaptive multiplicity | PARTIAL | LIVE: ✗✓✓✓✗✗✗ / #55: ✓✓✓✓✗✓✗ | online_fdr withholds over_budget | #52 unmerged; proxy p-values | Tier S (+#52) |
+| T12 | Epistemic firewall | PARTIAL | LIVE: ✗✓✓✓✗✗✗ / #55: ✓✓✗✓✗✓✗ | firewall.may in door reads | S12 PARTIAL: no runtime may() at the gates; wrapper fails open | Tier S build |
+| T13 | Negative knowledge | PARTIAL | LIVE: ✓✓✓✗✗✓✗ / #55: ✓✓✓✓✗✓✗ | **breadth_sweep now reads failure_memory** (S13) | Other generators still don't; reorder only | Tier S build |
+| T14 | Ancestry graph | PARTIAL | LIVE: ✓✓✗✓✗✓✗ / #55: ✓✓✓✓✗✓✗ | effective_discoveries → alpha_rank | No code/data ancestry | Tier S build |
+| T15 | Effective Independent Alpha Rank | PARTIAL | LIVE: ✓✓✓✓✗✓✗ / #55: ✓✓✓✓✗✓✗ | alpha_rank two-sided; docket_keff | Box ALPHA_RANK; seal; CI green | Tier S build |
 
-**Counts:** DONE 0 / PARTIAL 30 / MISSING 0 / EXCLUDED 0 / TIME-BOUND 0 (30 rows)
+Counts LIVE: DONE 0 / PARTIAL 30 / MISSING-branch 0 / MISSING 0 / EXCLUDED 0 / TIME-BOUND 0.
+Counts #55 if merged: DONE 0 / PARTIAL 30 / MISSING-branch 0 / MISSING 0 / EXCLUDED 0 / TIME-BOUND 0. All 30 fail R (cloud-only) and C (2 seal breaches, law-gate CI red, merge dirty). Movement vs v3: A gained on L2, L7, T2, T4, T9; T regained on L15.
 
-### Top gaps
-- **#55 is unmerged and 172 commits behind LIVE.** No Tier S code, test, ledger or promoter door exists on LIVE, so every row fails D. The merge conflicts in `hourly_cycle.py`, `promoter.py` and `cycle_pricing.py`.
-- **Merging would not reach strict DONE for any row.**
-  - TIERS' only money-path authority is a withhold-only promotion door (FDR, replication, immune).
-  - Constitution values, the exchange, execution capture and FREEZE-from-toy reach no sizing or allocator code.
-  - The certifier has zero power (DSR constant 0.014863), so the door never sees a genuine candidate.
-- **No box artifact is evidenced for any Tier S organ or its LIVE analogues.** `alpha_rank`, `placebo_audit`, `factory_contracts` and `identity_chain` read NEVER in runtime_state. R needs one adopted box run committed or published.
-- **The ledger's six research-side DONEs for T1–T15 (S07, S08, S10, S11, S13, S14) fail the strict test.** They are not deployed, and T7 fitness 0, T13 0 theorems and T4 0 independent discoveries show the organs are not yet producing.
-- **Scope still short on LIVE and TIERS alike:**
-  - no enforced blinding (T4);
-  - no bitemporal store on the data path (T2);
-  - no flows or regional world graphs (T3);
-  - no OS-level role isolation (T12);
-  - no inline trade lineage (T1);
-  - traps not blind in the live stream (T10).
-- **Several LIVE analogues lack tests or authority:**
-  - `adversary_evolution`, `negative_knowledge`, `alpha_evolution`, `factory_contracts` and `research_diversity_archive` have no tests;
-  - `placebo_audit` and `execution_science` are report-only.
-  - Wiring `alpha_rank` (T15/L9) to a box artifact and a stronger scheduler weight is the cheapest path to a first strict DONE.
+### Remaining gaps
+1. Re-sign BOTH `promoter.py` and `rails.py` (not just rails) and, in the same signed edit, make `promoter.tier_s_block` fail closed on import error — CI `quality` is red on the law gate.
+2. Resolve the `RUNTIME_STATE.md` / `runtime_state.json` conflicts (#55 dirty against LIVE 69da0158/7b69c6ff).
+3. Merge, then one box run of the `tier_s` leg with the sync committing `desks/mt5/data/tier_s/box_evidence.json` from vmi3571445; cloud outputs don't count. Until then the fail-closed door withholds every new LIVE row as DOOR_ERROR.
+4. Give `live_door.json` a consumer (promoter retirement), route FREEZE into allocator tilts, S01 constitution → gauntlet, S12 runtime firewall at the gates.
+5. Fix `synthetic_regimes._scale_col` for pandas 3 CoW (2 S16 tests fail on 3.0.6), or keep the `<3` pin enforced everywhere.
+6. Reconcile QB-002: LIVE's quantbench corpus pins stale hashes for external_gauntlet, allocator_proof, state_admission (and promoter after merge) while the evaluator seal passes.
+7. Produce an ALPHA_RANK artifact (absent even from the cloud run); drop FLOOR 1.0 so legs/researchers can lose compute; re-normalise ex×cap.
+8. Execution intelligence stays inert until matched fills > 0.
 
 ## B2 — Tier S sections 16–30 (T) and final loop
 
-LIVE = origin/claude/llm-auto-upgrade-verify-gcjac3 @ 6c8a71a4. TIERS = origin/claude/tier-s-institution @ ab404034 (PR #55, unmerged; merge-base adaba442).
-Marks are for LIVE, in order: I Implemented, W Wired, A Authoritative, T Tested, R Artifact, D Deployed, C Consistent. A mark is ✓ only when the criterion holds for the item as asked. If only a fragment holds on LIVE, the mark is ✗ and the Evidence cell says which fragment.
+LIVE = claude/llm-auto-upgrade-verify-gcjac3 @ 69da0158. TIERS = claude/tier-s-institution @ 25e14650 (PR #55, draft, unmerged; 83 ahead / 13 behind LIVE).
+Marks: I W A T R D C, in that order. "#55" is scored as if #55 were merged unchanged, with the conflicts resolved.
+Baseline: B2_v3 (TIERS @ a0de5855 / LIVE @ 02057ffa). New since then: 20 TIERS commits (27ee1360 … 25e14650), the batch-7 builds.
+Note: the PR head has since moved to b3620bb5 (2 more commits, including "a door input missing past two hours fails the leg loudly"). **They are not scored here.** CI on b3620bb5: `quality` **failure**, `mt5-money-path` queued.
 
-Facts that apply to every row:
-- LIVE has **no** `libs/tiers/*`, `desks/mt5/research/tier_s.py`, `tests/tiers`, `test_tier_s_organs.py` or `check_tier_s_program.py`. All of them exist only on TIERS.
-- The TIERS `tier_s` leg has never run on a box. `reports/**` is gitignored, so there is no committed Tier S artifact.
-- Batch 3 found that the production certifier has zero power: the DSR variance is the constant 0.014863. So any Tier S door that withholds promotion only ever withholds.
+### Facts (checked at these refs)
+- **LIVE still has no Tier S code.** LIVE has no `libs/tiers`, no `tier_s` leg and no Tier S tests. Its 13 new commits are cross-sectional breadth and fetch fencing. **Correction to v3:** LIVE's `execution_science.py` has no scheduler reference (grep across .py/.ps1/.sh/.json finds none), so T23's LIVE W mark is now ✗.
+- **Merge: conflicts.** `git merge-tree 69da0158 25e14650` conflicts in `docs/research/runtime_state.json` and `RUNTIME_STATE.md`. Both are derived files. The `judge_coverage.py` conflict from v3 is gone.
+- **Seal: still 2 breaches, at the ref and on the trial-merged tree.** `check_immutable_evaluator.py` flags `promoter.py` (52d6f4b4… → 1041a40e…) and `rails.py` (e832bd4c… → e01e6027…). The stale external_gauntlet breach from v3 is gone. LIVE alone is OK. So **C ✗ on every row.**
+- **Tests pass under the production pandas pin, and 2 fail under pandas 3.** Tier S desk tests, `test_cycle_pricing*` and `tests/tiers`: 272 tests.
+  - **All pass under pandas 2.3.3**, the pin in pyproject/requirements-vps (run in a scratch venv).
+  - Under this container's pandas 3.0.6, 2 fail: `test_tier_s_closure_agent_worlds` (×2). The cause is `synthetic_regimes._scale_col` writing in place into `np.asarray(df[col])`, which is read-only under copy-on-write. The world then reads UNMEASURED; it fails safe, but it is fragile.
+  - The S42 gateway drill now passes with PYTHONPATH unset (v3 defect fixed, 2c8f80c4).
+- **Ledger:** `check_tier_s_program.py` prints "BUILT 43; PARTIAL 1; BLOCKED_ON_USER 2" and exits 0. It claims no DONE. `check_formal_claim.py` exits 0.
+- **Still no box artifact.**
+  - The `docs/research/tier_s_runs/2026-09-30_cloud/` bundle (5527887b) says itself that it is not box evidence (host `vm`, `counts_toward_done: false`).
+  - It was also produced **before** the batch-7 builds. Its `TEST_INVENTION.json` still says "adoption … only by principal ratification", and `WORLDS.json` has 0 worlds measured.
+  - `sync_shadow_to_git.ps1` now lists `data/tier_s/box_evidence.json` and `live_door.json`, but only on the branch. Every R is ✗.
+- **"Allocator applies a Tier S factor below 0.5": VERIFIED.**
+  - `pf_allocator.apply_allocator_evidence`: if `sf < TILT_LO`, then tilt = clip(other factors) × sf, which is 0 for sf = 0.
+  - Unchanged: the tilt zeroes the sleeve's **mean**, not its weight.
+  - Also unchanged: `allocator_proof.contest` still builds equal_weight / inverse_vol / risk_parity over **every** name, and `gateway.book_from_allocation` falls back to that `book_fallback`. So an exchange zero is still re-funded on stale or failing proof passes.
+- **"Door fails closed": TRUE inside `block()`, but the promoter still fails open.**
+  - `promotion_authority._required` now turns an absent, stale (>6 h), torn or non-object verdict file into `DOOR_ERROR` (withhold), and so does a damaged constitution or ratifications file.
+  - But `promoter.tier_s_block` (promoter.py:1575–1582) still does `except Exception: return None` ("An unimportable module withholds nothing"), so an import or path fault still fails open.
+  - **New risk if merged:** `tier_s` is still a rotated "meta" leg (cap 1,500 s). The first adoption, before any tier_s pass, or any 6 h gap, now withholds **every** new LIVE row as DOOR_ERROR. This is billed as a rail, but it is a growth block that no evidence backs.
+- **"Door reviews live sleeves": still a report only.** `git grep live_door` finds a writer (`promotion_authority.LIVE_DOOR`) and the sync script, and no reader. It has no authority over a LIVE row.
+- **Unchanged:** FREEZE reaches no sizing code. The DSR variance is still the constant 0.014863 (`effective_trials.py:309`). The honesty channel (T27) still has no test naming it. `theory.compose` is still untested.
 
-| ID | Item | Verdict | I W A T R D C | Evidence (LIVE vs TIERS) | What is missing for strict DONE | Owner |
+| ID | Item | Verdict | Marks | Evidence on #55 | Still missing | Owner |
 |---|---|---|---|---|---|---|
-| T16 | Counterfactual World Lab | PARTIAL | ✗ ✓ ✗ ✓ ✗ ✗ ✗ | **LIVE:** `synthetic_regimes.py` (11 worlds, hourly leg hourly_cycle:3352), `libs/research/counterfactual_world.py` (leg :4667) and `digital_twin.py` ABC-SMC (leg :4522). Tests: test_synthetic_regimes, test_counterfactual_world. No committed artifact. No promotion, sizing or admission code reads them (only digital_twin, layers and path_refs reference synthetic_regimes). **TIERS:** adds 5 worlds (16 in all) and `tier_s.organ_worlds`, which joins them per certificate for the review panel. That is still report-only. | Swap, market-closure and correlation-break worlds. An agent-based market. Causal counterfactuals joined to survivors. A consumer that turns a break flag into a task or a block. A committed artifact. Merging alone does not fix this. | Tier S build |
-| T17 | Alpha Theory Compiler | PARTIAL | ✗ ✗ ✗ ✗ ✗ ✗ ✗ | **LIVE:** nothing. **TIERS:** `libs/tiers/theory.py` (7 slots, compile_mechanism, compose). `tier_s.organ_theory` emits recipes to `data/intelligence/tier_s/`, which `miner_candidate_compiler` reads. That is a real consumer, but only on TIERS. | Merge #55. Compose execution mechanism C. Require complete theories. Add tests for compile and compose. Replace family-table templates with real causal slots. Produce a box artifact. | Tier S build |
-| T18 | Theory↔Evidence graph | PARTIAL | ✗ ✗ ✗ ✗ ✗ ✗ ✗ | **LIVE:** nothing. **TIERS:** `theory.TheoryGraph` (Beta posterior weighted live 3 / forward 2 / backtest 1, competing explanations, statuses) with test_theory_posterior_weights_live_over_backtest. Its only consumer is composition. | Merge #55. Add jurisdiction and regime dimensions. Make status gate something real (research priority or promotion). Produce a box artifact. | Tier S build |
-| T19 | Heterogeneous non-LLM intelligence | PARTIAL | ✗ ✓ ✗ ✓ ✗ ✗ ✗ | **LIVE:** the mathlab department (engines.py: SINDy, ABC, sympy-guarded formal maths, JAX-guarded differentiable; hourly legs via FOREST_DEPARTMENTS / expression_factory :3892), causal_discovery.py, alpha_evolution (leg :3187). Tests: test_mathlab_* and test_expression_factory. No committed `data/mathlab` artifact. Output is research input only. **TIERS:** `cross_science.py` (Kalman, spectral, TE, LV, recurrence, centrality, MCMC), which drains through expression_factory as `cross_science:<lab>`. No test. | A SAT/SMT solver or theorem prover. Guaranteed sympy/JAX on the box. A cross_science test. A committed artifact. A measured survivor contribution that decides budget. | Tier S build |
-| T20 | AI peer review panels | PARTIAL | ✗ ✗ ✗ ✗ ✗ ✗ ✗ | **LIVE:** only `blind_reviewer.py` (a separate organ: hourly :3342, veto in the promoter), not an 8-reviewer panel. **TIERS:** `review_panel.py` (8 rule-based reviewers, typed challenges). The `matched_fills_10` resolver is fixed (batch 2). `organ_review` writes REVIEW_PANEL_ROWS.json. No promoter or gate reads it. No tests. | Merge #55. Make the reviewers independently instantiated, not fixed if-rules. Make challenges trigger experiments. Make a panel verdict gate promotion. Add tests. Produce an artifact. | Tier S build |
-| T21 | Auto-invent new tests | PARTIAL | ✗ ✗ ✗ ✗ ✗ ✗ ✗ | **LIVE:** nothing. **TIERS:** `test_invention.invent_from` learns from traps that fooled the production certifier (batch 3). Ratification is through `truth_kernel.constitution_status`. `tier_s_ratifications.jsonl` is empty. No test. | Merge #55. Mine real live-vs-backtest failures, redundant gates and predictable losses. Ratify and enact at least one gate. Add a test. Produce an artifact. The zero-power certifier (DSR constant) undermines the benchmark. | Tier S build |
-| T22 | Auto-invent research grammars | PARTIAL | ✗ ✓ ✗ ✓ ✗ ✗ ✗ | **LIVE:** fixed DSLs (`libs/research/alpha_grammar.py`, `mathlab/grammar.py`) used by the hourly expression_factory and alpha_evolution legs. Nothing on LIVE learns a grammar. **TIERS:** organ_grammar writes `data/tier_s/grammar.json`, and `grammar_bias.bias()` is read by expression_factory:90, alpha_evolution and alpha_grammar (batch 2 fix). That consumer is real but TIERS-only. | Merge #55. Evolve new representation classes (state machines, event sequences, panel/cross-sectional operators). Add a grammar-organ test. Produce a box artifact. | Tier S build |
-| T23 | Execution as autonomous science | PARTIAL | ✗ ✓ ✗ ✗ ✗ ✗ ✗ | **LIVE:** `execution_science.py` separates frictionless from costed runs. Its caller is `ops/run_frontier_audit.cmd:65` (the MT5-FrontierAudit box task; installer and fail-loud exit from #64). It is not an hourly leg. LIVE also has latency, impact and feed-clock labs (hourly). There is no execution_science test and no committed artifact. pf_allocator does not read it. **TIERS:** hourly leg with --apply. Its drag feeds only the shadow-exchange friction. | pf_allocator must optimise expected capture. Add slicing, spread prediction, adverse selection and urgency. Recalibrate on live fills (matched_fills = 0). Add a test. Produce an artifact. Merging alone does not fix this. | Tier S build |
-| T24 | No-trade first-class | PARTIAL | ✗ ✓ ✓ ✓ ✓ ✗ ✗ | **LIVE:** `pf_allocator.no_trade` (:1537) and its binding (:1627) are on the money path (PF_ALLOCATOR_ARMED), with test_no_trade_binds and `pf_forecast_log.jsonl` committed. But only the zero/hold part exists, and #53 is not on LIVE, so min-lot and gold floors still override a zero allocation (CS3). **TIERS:** `opportunity_exchange.ACTIONS` has all 7 actions, in shadow only. | Merge #53. Add DEFER and ALT_EXPRESSION to the live allocator. Put opportunity cost in the edge test. Test the action universe. | Tier S build (#55) / Institutional (#53) |
-| T25 | Opportunity Exchange | PARTIAL | ✗ ✗ ✗ ✗ ✗ ✗ ✗ | **LIVE:** nothing. The authoritative allocator is pf_allocator, which knows no exchange. **TIERS:** `opportunity_exchange.clear` via organ_exchange writes `exchange_book.json` and registers an allocator challenger. Nothing outside tier_s reads it. Bids are hollow (flat capacity 0.05, identity correlation, tail/decay/liquidity unset). | Merge #55. Make pf_allocator clear the exchange. Give bids real inputs. Add a clearing test beyond heat. Produce an artifact. Merging alone does not fix this. | Tier S build |
-| T26 | Live prediction-accounting | PARTIAL | ✗ ✓ ✗ ✓ ✗ ✗ ✗ | **LIVE:** `forecast_contract.py` belief register (Brier/MAE/CRPS; hourly leg :4574), test_forecast_contract_and_league. Its only readers are the issue board and the ceiling check, so it has no authority. No committed forecast-contract artifact (`data/forecast_log.json` is a different organ). **TIERS:** `prediction_accounting.py` (CRPS, PIT, coverage, pre-outcome lock; tested). organ_predictions logs one forecast per LIVE group from the tier_s posterior. | Fill exp_hold, slippage, MAE/MFE, vol, factor exposure and correlation. Forecasts per model. Calibration must drive researcher fitness or sizing. Produce an artifact. | Tier S build |
-| T27 | Live reality outranks backtests | PARTIAL | ✗ ✓ ✓ ✓ ✓ ✗ ✗ | **LIVE:** `pf_allocator._posterior_mu` ranks live over forward over backtest, is authoritative, and writes `pf_forecast_log.jsonl`. That is the "outranks" half. The "penalise exaggerating factories" half is absent on LIVE. **TIERS:** `prediction_accounting.honesty` goes to organ_market, then researcher_prices, then `cycle_pricing:320` (0.15 weight, floor 1.00 after batch 2) and exchange bids (shadow). | Merge #55. Route the factory honesty penalty into admission and pf_allocator priors for new discoveries. The live sample is tiny (the time-bound part), but the missing wiring is work, not time. | Tier S build |
-| T28 | Digital twin (shadow desk) and rollback | PARTIAL | ✗ ✗ ✗ ✗ ✗ ✗ ✗ | **LIVE:** `digital_twin.py` is an ABC world simulator, not a shadow desk. `scripts/rollback_guard.py` has checkpoint/evaluate/revert, but no scheduled caller was found (git_snapshot only mentions it). **TIERS:** `twin.evaluate` (paired after registration; tested), organ_twin, and `rollback.py` plus `tier_s --rollback-to`. It is untested, needs a human push, and LIVE_MANIFEST has 1 SHA, so it returns available=False. | Run a shadow copy of the desk on new code versions against production data. Controlled promotion from it. A tested one-op rollback with ≥2 sealed SHAs. Produce an artifact. Merging alone does not fix this. | Tier S build |
-| T29 | Self-model | PARTIAL | ✗ ✗ ✗ ✗ ✗ ✗ ✗ | **LIVE:** nothing equivalent (implementer reads CEO_DOCKET only). **TIERS:** `self_model.inventory/rank` writes SELF_MODEL_DOCKET.json, and `implementer._self_model_rows` feeds intake (batch 2 fix). Test: test_self_model_ranks_deficiencies. | Merge #55. Cover data gaps, weak disciplines, compute/capital bottlenecks and validation queues. Measure p_fix and cost, not hand constants. Produce a box artifact. | Tier S build |
-| T30 | Architecture evolution | PARTIAL | ✗ ✗ ✗ ✗ ✗ ✗ ✗ | **LIVE:** nothing. **TIERS:** self_model SEALED_METRICS/regression. Red Queen validator challengers are re-scored on the sealed suite before adoption (batch 3). The truth_kernel constitution needs ratification (tested). The adopted config is not used by the real gauntlet. | Merge #55. Propose DBs, agents, libs, sources, search algorithms and refactors. A BLOCKED regression must stop release adoption (Adopt-And-Seal). Produce an artifact. | Tier S build |
-| LOOP | Closed research→capital loop inside a Truth Kernel | PARTIAL | ✗ ✓ ✗ ✗ ✗ ✗ ✗ | **LIVE:** many nodes run hourly (world, mathlab, forecast_contract, cycle_pricing, promoter and the pf_allocator money path). Missing on LIVE: lockbox (#52), exchange, researcher market, theory, self-model and truth kernel. `check_certificate_truth` still has 474 unmigrated divergences (CS4). **TIERS:** adds the market→cycle_pricing link, the hypothesis→compiler link and the `promoter.tier_s_block` door (withhold-only; fails open). | Merge #52, #53 and #55. The exchange and execution capture must be read by pf_allocator. The Truth Kernel must gate the money path. Fix the DSR constant so the loop can pass anything. Produce box artifacts for every node. | Tier S build / Institutional (#52) |
+| T16 | Counterfactual World Lab | PARTIAL | LIVE: ✗✓✗✓✗✗✗ / #55: ✓✓✗✓✗✓✗ | `closure_worlds.py` (3 closure worlds) and `agent_worlds.py` (ecologies) are built into `synthetic_regimes` (a scheduled leg). `organ_worlds` joins them per certificate into `worlds_by_certificate.json`. Tests pass on pandas 2.3.3. **I gained.** | The flags (`dies_on_market_closure`, `halt_fragile`, …) reach `ev["stress"]["flags"]`, but `review_panel` reads only `stress.exp_x5`, so no break flag acts (A ✗). Fails under pandas 3 (read-only array). No artifact; C. | Tier S build |
+| T17 | Alpha Theory Compiler | PARTIAL | LIVE: ✗✗✗✗✗✗✗ / #55: ✓✓✗✓✗✓✗ | Unchanged. | `compose` untested; no authority; no artifact; C. | Tier S build |
+| T18 | Theory↔Evidence graph | PARTIAL | LIVE: ✗✗✗✗✗✗✗ / #55: ✓✓✓✓✗✓✗ | `THEORY_REFUTED` withholds a new LIVE row. `block()` now also withholds on absent or stale door inputs. | The promoter wrapper still fails open. `live_door.json` has no reader. The stale-input withhold rides a rotated leg (growth-block risk). No artifact. C. | Tier S build |
+| T19 | Heterogeneous non-LLM intelligence | PARTIAL | LIVE: ✗✓✗✓✗✗✗ / #55: ✗✓✗✓✗✓✗ | Unchanged. | No solver or prover; no authority; no artifact; C. | Tier S build |
+| T20 | AI peer review panels | PARTIAL | LIVE: ✗✗✗✗✗✗✗ / #55: ✓✓✓✓✗✓✗ | `REVIEW_PANEL_FAILED` withholds a new row, and the panel file must now be fresh. | Fixed if-rule reviewers; world flags go unread; the promoter wrapper fails open; the live-row review has no consumer; no artifact; C. | Tier S build |
+| T21 | Auto-invent new tests | PARTIAL | LIVE: ✗✗✗✗✗✗✗ / #55: ✓✓✓✓✗✓✗ | `_ratify_invented`: a gate that survives the sealed suite (seed 5150) is appended to `test_ratifications.jsonl` and adopted into `PREJUDGE_RULES.json`. `run_external_backtest.prejudge_verdict` tags candidates, and `merge_hypotheses` demotes flagged rows within their family. Consumers verified by grep. **I and A gained** (A is research-ordering authority only). | No ratified rule on any ref (the cloud run predates this code). Demotion only reorders, and removes nothing. DSR constant; no artifact; C. | Tier S build |
+| T22 | Auto-invent research grammars | PARTIAL | LIVE: ✗✓✗✓✗✗✗ / #55: ✗✓✗✓✗✓✗ | Unchanged. | No new representation class; no budget authority; no artifact; C. | Tier S build |
+| T23 | Execution as autonomous science | PARTIAL | LIVE: ✗✗✗✗✗✗✗ / #55: ✗✓✓✓✗✓✗ | `execution_science` is its own leg on the branch and writes `EXECUTION_SCIENCE.json` every run (UNMEASURED with its reason). `split_fills` separates signal alpha from drag. Like-for-like drag reaches the exchange bids in `tier_s.py:3334`, and capture reaches pf_allocator. `test_tier_s_execution_science` passes. **T gained.** LIVE W corrected to ✗ (unscheduled there). | `split_fills` is a "hook", so live fills do not recalibrate; matched_fills = 0; no slicing, urgency or adverse-selection model; no artifact; C. | Tier S build |
+| T24 | No-trade first-class | PARTIAL | LIVE: ✗✓✓✓✓✗✗ / #55: ✗✓✓✓✓✓✗ | A factor in (0, 0.5) is now applied below the floor (verified). ZERO gives tilt 0. | The zero is still a zero mean, not a zero weight, and the `book_fallback` baselines (over every name) re-fund it. #53 unmerged; C. | Tier S build / Institutional (#53) |
+| T25 | Opportunity Exchange | PARTIAL | LIVE: ✗✗✗✗✗✗✗ / #55: ✓✓✓✓✗✓✗ | The chain holds, now with execution drag in the bids. The control arm is still exactly 1.0. | The ZERO→book leak through the fallback. Neutral if the rotated leg misses 6 h. FREEZE does not reach it. No box artifact; C. | Tier S build |
+| T26 | Live prediction-accounting | PARTIAL | LIVE: ✗✓✗✓✗✗✗ / #55: ✗✓✓✓✗✓✗ | Unchanged. | No vol, factor or correlation forecasts, and none per model; no artifact; C. | Tier S build |
+| T27 | Live reality outranks backtests | PARTIAL | LIVE: ✗✓✓✓✓✗✗ / #55: ✓✓✓✓✓✓✗ | Unchanged. | No test names the honesty channel; no reach into admission for new discoveries. C: 2 seal breaches if merged. | Tier S build |
+| T28 | Digital twin (shadow desk) and rollback | PARTIAL | LIVE: ✗✗✗✗✗✗✗ / #55: ✓✓✗✓✗✓✗ | `shadow_desk.py` replays the candidate code and config challengers beside the sealed release in a sandbox (terminal touches refused), written to `reports/TWIN.json`. `tests/tiers/test_rollback.py` tests the one-commit rollback on a throwaway repo. **I gained.** | Nothing reads the TWIN verdicts: they gate no adoption, and only a `twin` bool reaches `worlds_by_certificate`. Rollback is still a human `--apply-rollback`, and Adopt-And-Seal has no regression stop. No artifact; C. | Tier S build |
+| T29 | Self-model | PARTIAL | LIVE: ✗✗✗✗✗✗✗ / #55: ✓✓✗✓✗✓✗ | The gateway drill test is now green in a clean env (child import fixed). | No authority; hand-set p_fix and cost; no artifact; C. | Tier S build |
+| T30 | Architecture evolution | PARTIAL | LIVE: ✗✗✗✗✗✗✗ / #55: ✗✓✗✓✗✓✗ | Unchanged. The ledger still says BLOCKED_ON_USER. The Adopt-And-Seal diff is release signing only. | Money-path adoption refused; no regression stop; no artifact. | Tier S build |
+| LOOP | Closed research→capital loop inside a Truth Kernel | PARTIAL | LIVE: ✗✓✗✗✗✗✗ / #55: ✗✓✗✗✗✓✗ | Adds, since v3: an allocator factor below 0.5, stale door inputs that withhold, ratified tests that reorder the docket, execution drag in the bids, and the shadow desk. | The promoter wrapper fails open. FREEZE does not reach the allocator. The fallback re-funds exchange zeros. `live_door.json` and `TWIN.json` have no reader. DSR constant. #52/#53 unmerged. No end-to-end loop test. No box artifact. promoter/rails unsigned. Merge conflicts (runtime_state). CI red on the newer head. | Tier S build / Institutional |
 
-Counts: DONE 0 / PARTIAL 16 / MISSING 0 / EXCLUDED 0 / TIME-BOUND 0 (16 rows). T27 has a time-bound component (live sample size), but it also has missing wiring, so it is scored PARTIAL.
+Counts on LIVE: DONE 0 / PARTIAL 16 / MISSING (branch-only) 0 / MISSING 0 / EXCLUDED 0 / TIME-BOUND 0 (16 rows).
+Counts if #55 merged: DONE 0 / PARTIAL 16 (16 rows).
+- **Marks gained (#55):** T16 I, T21 I+A, T23 T, T28 I.
+- **Mark lost (LIVE):** T23 W, a correction.
+- **Best rows:** T27 is still best at 6/7. T18, T20, T21 and T25 are at 5/7.
+- **No row can reach DONE:** R and C fail on every row.
 
-### Top gaps
-- **Nothing Tier S is on LIVE.** `libs/tiers`, `tier_s.py` and their tests are PR #55 only. For 8 of 16 rows (T17, T18, T20, T21, T25, T28-shadow, T29, T30) LIVE has zero of the seven criteria. Merging #55 moves them to I, T and D, not to DONE.
-- **No authority even after the merge.** pf_allocator does not clear the Opportunity Exchange or read execution capture (T23, T25, LOOP). The factory honesty penalty only reaches compute pricing (T27). The review panel, theory status and invented tests gate nothing (T18, T20, T21).
-- **Zero artifacts.** The tier_s leg never ran on a box and `reports/**` is gitignored. LIVE's related organs (synthetic_regimes, execution_science, forecast_contract, mathlab) also have no committed output. Every row fails R except the pf_allocator rows (T24, T27).
-- **The certifier has zero power** (DSR variance constant 0.014863). Every withholding door (tier_s_block, invented tests, Red Queen) is untestable against genuine edges until CS1/I3 is fixed.
-- **#53 is not on LIVE**, so the live no-trade path is overridden by the min-lot and gold floors (T24).
-- **Scope holes that need new work, not a merge:** no shadow desk (T28), no SAT/SMT (T19), no agent-based or swap/closure worlds (T16), no evolving representation classes (T22), and architecture evolution is limited to validator configs (T30).
+### Remaining gaps
+1. **Seal:** re-sign `promoter.py` and `rails.py` (2 breaches on the trial merge). Resolve the `runtime_state.json`/`RUNTIME_STATE.md` conflict. Make CI green: `quality` fails on the PR's current head, b3620bb5.
+2. **Zero box artifacts:** every R is ✗ until #55 is on LIVE, the box adopts it, a tier_s pass runs there, and `box_evidence.json` from `vmi3571445` is committed. The cloud bundle predates batch 7 and does not count.
+3. **Promoter fail-open:** `tier_s_block`'s `except Exception: return None` still discards the door's new fail-closed behaviour on any import or path error (sealed edit plus re-sign).
+4. **Door stale-input withhold vs the rotated leg:** once merged, every new LIVE row is withheld until the first tier_s pass on the box, and again after any 6 h gap in the rotated, 1,500 s-capped leg. Either make `tier_s` a non-rotated leg, or measure that rail's missed growth before adoption.
+5. **Exchange zero ≠ zero weight:** drop zero-tilted sleeves from `ev` and the baselines, or pass them through `book_zeroed`. The fallback still re-funds them.
+6. **Unread outputs:** `live_door.json` (no reader), `TWIN.json` shadow verdicts (gate nothing), and closure/agent world flags (the review panel reads only `exp_x5`).
+7. **pandas-3 fragility:** `synthetic_regimes._scale_col` writes into a read-only array. It passes under the 2.3.3 pin, but the new worlds would go UNMEASURED on any pandas-3 host.
+8. **Still uncashed:** FREEZE → allocator; the DSR constant 0.014863; live-fill recalibration (`split_fills` is a hook, matched_fills = 0); automatic rollback / regression stop; #52/#53; tests for `theory.compose` and the honesty channel.
 
 ## C — 16 hardening items (H), depth priorities (DP), admission rule (ADM)
 
-Checked 2026-09-30 against LIVE `origin/claude/llm-auto-upgrade-verify-gcjac3` @ `6c8a71a4`. Marks: I=Implemented, W=Wired, A=Authoritative, T=Tested, R=aRtifact (fresh, committed/box), D=Deployed on LIVE, C=Consistent (CI/law gate not failing, not self-graded).
+Re-scored 2026-09-30 ~12:30Z. LIVE = `claude/llm-auto-upgrade-verify-gcjac3` @ `69da0158` (was `02057ffa`, 15 commits). #55 = `claude/tier-s-institution` @ `25e14650`. A newer #55 head, `b3620bb5`, exists and was not scored.
+Marks are in the order I W A T R D C. "#55" means scored as if #55 were merged into LIVE as-is. R counts a committed artifact from any host. A cloud artifact is marked R✓(cloud), which is not box evidence.
 
-Shared facts:
-- **Tier S (`libs/tiers/*`, `desks/mt5/research/tier_s.py`) is not on LIVE.** `origin/claude/tier-s-institution` is 21 commits ahead and unmerged (PR #55). Every H mark that rests on #55 fails I, W, T, R and D on LIVE.
-- **CI on LIVE is red.** At 6c8a71a4, run 36701520415 failed both the `quality` job's "LAW GATE" step and the `mt5-money-path` job's "MT5 desk suite" step, and every later step was skipped. So C is ✗ for every row. The previous push (7379cbf) was cancelled.
-- The #52 lockbox and #53 allocator-sovereignty branches are not merged (5 and 3 commits ahead). `origin/master` does not contain LIVE: 22 LIVE commits are missing from it.
-- **Committed artifacts are stale.** `RESEARCH_DASHBOARD.md` was generated 09-22. `effective_breadth.jsonl` was last read 09-16 (2.057). `merge_report.json` is from 09-23. `research_budget.json` is from 09-23 and says `authoritative:false`: "no price moved a leg's seconds". `reports/*` are gitignored, so there is no committed REPLICATION, FRONTIER_MAP, CYCLE_PRICING or JUDGING_RATE.
+**LIVE changes since 02057ffa** (29 files, +3142/−1366):
+- #85 adds cross-sectional class books. The hourly leg `cross_sectional_breadth` seeds class-book cells into `proposer_common.donate` and writes `reports/CROSS_SECTIONAL_BREADTH.json`, which is not committed. Share CFDs may now mint hypotheses in six class-book families (the amended two-lane order).
+- `7117aa51` makes clock recovery prove and finish its repairs. `clock_fixer.enrol_if_needed` now runs enrolment on any gap in the scalar census, the control-plane apply pass heartbeats itself, and actuator windows are clipped to the remaining budget.
+- `8dc29efa` fences scheduled fetches from detached git maintenance (`Adopt-Release.ps1`, `intel_ship_adopt.ps1`).
+- #95 is a docs matrix. `runtime_state.json` was re-attested.
+- **No new committed artifact for any C row.** There is no research_budget, breadth, judging, forward-census or drill reading. #52 and #53 are still unmerged.
+- Touches: DP5 and DP10 (#85 adds breadth sources, not a measurement), DP11 and H12 (clock recovery), DP1 (wiring). No verdict moves.
 
-| ID | Item | Verdict | I W A T R D C | Evidence (LIVE file:line, caller, test, artifact) | What is missing for strict DONE | Owner |
+**Seal. LIVE is now internally INCONSISTENT: two seals disagree.**
+- `scripts/check_immutable_evaluator.py` on LIVE 69da0158 reports **OK, 0/18**. `IMMUTABLE_MANIFEST.json` pins the gauntlet at `e8389c82`, from the human re-sign `3167eb6f`.
+- `desks/mt5/tests/test_quantbench.py::test_no_historical_defect_has_returned` **FAILS locally on LIVE**, reproducing the #95 CI job. Its QB-002 corpus row (`data/quantbench/corpus.jsonl`, written in `0ba716ab` on 09-28) is a second, hand-kept sha256 list, and nobody updated it when the manifest was re-signed (`adaba442` 09-29, `3167eb6f` 09-30).
+- **No commit in `3167eb6f..69da0158` touches any of the three files.** The drift predates both LIVE heads, so v3's "C clean on LIVE" was already wrong at 02057ffa.
+- Per file:
+  - `external_gauntlet.py`: a real content drift. The pin `17f8a409` matches no LF or CRLF blob in the last 40 revisions. The file moved in `0f483139` (09-29), `7379cbf7` and `e7eace79` (09-30, all Codex), and the second two were human-reviewed in `3167eb6f`. The corpus was never re-pinned.
+  - `allocator_proof.py` and `state_admission.py`: **line-ending only**. Their CRLF hashes equal the pins exactly (`bb2cb3a5`, `ae7a8aec`). The pins were computed on a Windows (CRLF) checkout, so QB-002 fails on every LF checkout, CI included, and would pass on the box. The probe is platform-dependent.
+  - `promoter.py`: matches its pin.
+- Result: C ✗ on LIVE for every row whose C depends on the tree being self-consistent, which is all of them. Fix: re-pin QB-002 from the manifest (or have the probe read it) and hash normalised line endings.
+- On #55 @ 25e14650, `check_immutable_evaluator.py` reports **2/18 breaches**: `promoter.py` (`52d6f4b4`→`1041a40e`) and `rails.py` (`e832bd4c`→`e01e6027`). The gauntlet breach is gone because #55 merged LIVE. QB-002 fails on #55 too.
+- The merge-tree of LIVE with 25e14650 no longer conflicts in `judge_coverage.py`. It conflicts only in `docs/research/RUNTIME_STATE.md` and `runtime_state.json`, both derived.
+
+**CI.**
+- The LIVE run on 69da0158 (36714241201) is **queued**.
+- Run 36710180868 on 02057ffa completed **cancelled**. v3 recorded it as in progress.
+- There is still no completed green run on LIVE: UNMEASURED.
+- The #55 run on 25e14650 (36714360579) was cancelled.
+
+**Other failing tests on LIVE**, run locally at 69da0158. All 5 files reproduce the failure:
+- `test_scalp_promotion` (4 tests: go-live, the forward clock as certificate, the retired scalp sleeve, STANDBY→LIVE on two readings). Bears on DP11 and DP7, so T is ✗.
+- `test_event_surprise::test_the_registered_grounds_file…`, because `event_consensus_sources.json` is absent. Bears on H5 and AC3.
+- `test_macro_regime::test_load_history_adds_real_yield`. Bears on H5 and AC3 (data truth).
+- `test_certificate_single_writer::test_external_gauntlet_recovers_only_exact_gate_archive_rows`. Bears on H2 and DP3 (the sealed judge's archive recovery).
+- `test_universe_producers_merge` (2 tests: a refresh drops symbols, an unreadable registry rebuilds). Bears on DP1 and AC3.
+- Also `test_quantbench`, which bears on H2, H4 and DP9.
+- Unrelated PR #67 (`05357b2d`) carries UNMEASURED-skip ports for event_surprise and macro_regime. They are not on LIVE.
+
+**#55 since a0de5855** (merged LIVE twice):
+- The door withholds on an absent or stale verdict (`7de6ccca`) and fails closed on damaged input (`27ee1360`). `promoter.tier_s_block` still returns None on an import failure (`except Exception: return None`).
+- The gateway drill test now passes (`2c8f80c4`).
+- S02, S13 and S31 got consumers (`fa1a3e70`): bitemporal PIT reads in the macro sweep, failure memory ordering `breadth_sweep`, and a `check_formal_claim.py --require-state` law-gate fence. It reads UNMEASURED here, 0/6 invariants gateway-backed, rc 0 without state. MODEL_ONLY passes.
+- S33 genomes compete on the real gauntlet's verdicts (`bfda4521`).
+- S04, S09 and S21 act on real paths (`a7f6b520`): blinding, a prejudge screen, Red Queen and test ratification.
+- The box sync now publishes box_evidence and live_door (`6ea40135`).
+- **One cloud run was committed** (`docs/research/tier_s_runs/2026-09-30_cloud/`, 30 organ JSONs). Its own ABOUT says "NOT box evidence", host `vm`, `counts_toward_done:false`.
+- The ledger reads 43 BUILT / 1 PARTIAL / 2 BLOCKED_ON_USER / 0 DONE, and the checker passes.
+
+| ID | Item | Verdict | Marks | Evidence | Still missing | Owner |
 |---|---|---|---|---|---|---|
-| H1 | Formal verification of money path | PARTIAL | ✗ ✗ ✗ ✗ ✗ ✗ ✗ | `libs/tiers/formal.py`, `conformance.py`, `tests/tiers/test_money_path_specs.py`: all on #55 only. None on LIVE. | Merge #55. Proofs must cover the real gateway, recovery and state-machine code, not an abstract model. A failed proof must block release. Needs a committed proof artifact and green CI. | Tier S |
-| H2 | Independent evaluator civilization | PARTIAL | ✓ ✓ ✗ ✓ ✗ ✓ ✗ | LIVE `scripts/check_immutable_evaluator.py` runs in `run_law_gate.py:162` and is tested (`tests/scripts/test_check_immutable_evaluator_wall.py`). `firewall.may()` and `review_panel` exist on #55 only. | The runtime firewall (`may()` in promoter) is not on LIVE. There are no separate reward signals, hidden data or a distinct stack. The law gate that runs it is failing. | Tier S |
-| H3 | Architecture evolution, sealed suites | PARTIAL | ✗ ✗ ✗ ✗ ✗ ✗ ✗ | `libs/tiers/twin.py` and `organ_twin` are on #55 only. The sealed-suite re-score landed only in #55 batch 3. | Not on LIVE. Only a toy `ValidatorConfig` evolves. Adoption does not change the real gauntlet, scheduler, solver or execution. | Tier S |
-| H4 | Immutable meta-benchmark, thousands of cases | PARTIAL | ✗ ✗ ✗ ✗ ✗ ✗ ✗ | `meta_benchmark.py` and `traps.py` (2,550 sealed cases after batch 3) are on #55 only. The certifier had 0.0 power on 600 genuine controls. | Not on LIVE. Not a release gate. FREEZE is unconsumed on LIVE. No real historical or software-fault episodes. DSR variance is the constant 0.014863 (`effective_trials.py:309`). | Tier S |
-| H5 | Active information acquisition (EVOI) | PARTIAL | ✓ ✓ ✗ ✓ ✗ ✓ ✗ | LIVE hourly legs: `data_acquisition_scientist` (`hourly_cycle.py:3864`), `value_of_data` (`:3356`) and `evig_acquisition` (`:3298`). Tests: `test_data_acquisition_scientist.py`, `test_value_of_data.py`, `tests/libs/test_evig_manufacture.py`. | Output is advisory: nothing buys or acquires data on its value. No pricing of timestamps, depth or history quality. No committed fresh artifact. The #55 calibration loop is unmerged. | Tier S |
-| H6 | Research-search frontier estimator | PARTIAL | ✓ ✓ ✗ ✓ ✗ ✓ ✗ | LIVE `research/frontier_map.py:61` writes `reports/FRONTIER_MAP.json` (gitignored) on the daily FrontierAudit task, with 5 tests referencing it. The Chao1/Good-Turing `frontier.py` is on #55 only. | No consumer, so no budget reads it. No committed artifact. Species are coarse labels. | Tier S |
-| H7 | Epistemic uncertainty engine, 5 levels | PARTIAL | ✗ ✗ ✗ ✗ ✗ ✗ ✗ | `libs/tiers/epistemic.py` and `EPISTEMIC.json` are on #55 only. | Not on LIVE. Labels have no consumer. It covers about 60 certificates, not every key quantity. | Tier S |
-| H8 | Cross-engine independent replication | PARTIAL | ✓ ✓ ✗ ✓ ✗ ✓ ✗ | LIVE `research/replication_civilization.py` is an hourly leg (`hourly_cycle.py:3845`) with `test_replication_civilization.py`. It writes `reports/REPLICATION.json` and `data/replication_civilization/quarantine.json`. `replication_verdict` has no reader except `libs/moat/registry.py:153` (schema) and `build_zentech_state.py:1133` (display). | A MISMATCH does not block promotion on LIVE; `promoter.tier_s_block` is #55 only. It is not a second engine or stack. No committed REPLICATION artifact. | Tier S |
-| H9 | Counterfactual failure search, architecture level | PARTIAL | ✗ ✗ ✗ ✗ ✗ ✗ ✗ | `formal.ablations()`, Red Queen and traps are on #55 only. | Not on LIVE. No automated search over worlds where the factory, allocator or world model gives false confidence, where agents correlate, or where selection bias creeps in. | Tier S |
-| H10 | Compute OS (CPU/GPU/RAM/net/tokens) | PARTIAL | ✓ ✓ ✗ ✓ ✗ ✓ ✗ | LIVE `hourly_cycle.py:499` calls `cycle_pricing.applied_budget`. Leg ordering is at `:1247`. The pricing leg is at `:4760`. Test: `test_cycle_pricing.py`. `FLOOR, CEIL = 1.00, 2.00` (`cycle_pricing.py:81`). | `research_budget.json` records that no price moved a leg's seconds, so it has had no effect in practice. Only CPU seconds are priced: no GPU, RAM, storage, network or LLM tokens. `CYCLE_PRICING.json` is not committed. | Tier S |
-| H11 | Global state replay at any second | PARTIAL | ✗ ✗ ✗ ✗ ✗ ✗ ✗ | `libs/tiers/replay.py` is on #55 only. It compares key sets. | Not on LIVE. No market, model-version or budget state. Fill reconstructibility is 0.028. | Tier S |
-| H12 | Continual recovery / chaos experiments | PARTIAL | ✓ ✓ ✗ ✓ ✗ ✓ ✗ | LIVE `scripts/run_restore_drill.py` is on `ops/quant-restore-drill.timer` (Sun 06:25). There is also `desks/mt5/scripts/dr_drill.py` and `test_control_plane_chaos.py`. `chaos.py` is on #55 only. | No real-process kills, MT5 disconnects, feed delays or VPS-loss drills. No test covers `run_restore_drill` or `dr_drill`. No standby or failover. Backups are unencrypted. No committed drill artifact. | Tier S |
-| H13 | Mechanism discovery from non-finance fields | PARTIAL | ✗ ✗ ✗ ✗ ✗ ✗ ✗ | `libs/tiers/cross_science.py` is on #55 only. Its drain through `expression_factory` as `cross_science:<lab>` is also #55-only. | Not on LIVE. No box evidence of any conversion. | Tier S |
-| H14 | Automated abstraction discovery | PARTIAL | ✗ ✗ ✗ ✗ ✗ ✗ ✗ | `evolution.abstractions` and `grammar_bias` are on #55 only. The `expression_factory.py:90` reader is on #55 as well. | Not on LIVE. 0 primitives learned in the run. No committed `grammar.json`. | Tier S |
-| H15 | Scientific memory compression | PARTIAL | ✓ ✓ ✗ ✓ ✗ ✓ ✗ | LIVE `scripts/negative_knowledge.py` runs in daily_cycle and writes `docs/research/negative_knowledge.md` (last touched in bulk commit 09-28). 9 tests reference it. `failure_memory.py` is on #55 only. | No theorem, equivalence-class or mechanism-map layer on LIVE. Researchers do not consume it as authority. No freshness proof for the artifact. | Tier S |
-| H16 | Human–machine separation of powers | PARTIAL | ✗ ✗ ✗ ✗ ✗ ✗ ✗ | `truth_kernel.py` and `tier_s_constitution.json` are on #55 only. LIVE has only `ops/principal_doctrine.txt` plus `check_constitution_core.py`, which are outside this item's build. | Not on LIVE. Money-path code does not read the constitution. Ratification is spoofable by omitting trailers. The ratification ledger is empty. | Tier S |
-| ADM | Subsystem admission rule (8 gains) | PARTIAL | ✗ ✗ ✗ ✗ ✗ ✗ ✗ | `libs/tiers/contracts.py`, `control_arm.py`, `check_tier_s_program.py` and `AUTHORITY.json` are on #55 only. LIVE `run_law_gate.py:153` runs `check_tier5_audit.py`, which checks the ledger, not admission. | Not on LIVE. A REJECTED verdict only suspends steering on #55; nothing is disabled or removed. No committed admission verdicts. The rule does not apply to LIVE organs. | Tier S |
-| DP1 | Finish/wire everything | PARTIAL | ✓ ✓ ✗ ✓ ✓ ✓ ✗ | LIVE `docs/research/tier5_audit.json` (updated 09-29): 216 EXISTS+WIRED+LIVE, 52 PARTIAL, 3 REFUSED, 1 DUPLICATIVE. `check_tier5_audit.py` runs in the law gate (`run_law_gate.py:153`), with `tests/scripts/test_check_tier5_audit.py`. | 52 PARTIAL remain, and "LIVE" means scheduled, not authoritative. The ledger is self-graded; the 0-DORMANT result was mostly a relabel. `run_scientist_tournament.cmd` ends `exit /b 0`. The law gate is red. | Institutional |
-| DP2 | Remove dormant/partial components | MISSING | ✗ ✗ ✗ ✗ ✗ ✗ ✗ | Nothing on LIVE removes components. 52 PARTIAL and 1 DUPLICATIVE remain in `tier5_audit.json`. | A removal or retirement pass with a ledger of what was deleted. | Institutional / Tier S |
-| DP3 | Repair the validation defects | PARTIAL | ✗ ✗ ✗ ✗ ✗ ✗ ✗ | LIVE still has the variance constant 0.014863 (`effective_trials.py:309`, `gate_policy.py:84`). The #52 reserved lockbox, lifetime trials and fail-closed costs are unmerged. | Merge #52 (resolve its `IMMUTABLE_MANIFEST.json` conflict with #53). Measure the DSR variance. Migrate the 58 lockbox==wf_oos certificates. Get CI green. | Institutional |
-| DP4 | Clear the judging backlog | PARTIAL | ✓ ✓ ✓ ✓ ✗ ✓ ✗ | LIVE `judging_throughput` leg (`hourly_cycle.py:4290`) sizes workers from measured cores. Tests: `test_judging_rate.py`, `test_judging_throughput.py`, `test_judging_speed_equivalence.py`. `merge_report.json` (09-23) shows 57,538 docket, about 55,811 unjudged. The dashboard (09-22) shows 0 verdicts/day against 1,028 cells/day created. | No committed `JUDGING_RATE.json` or box reading showing judging ≥ creation. No measured drain; the backlog is growing. Commit 7379cbf ("maximize gauntlet throughput") was not verified by CI. | Institutional |
-| DP5 | Measure actual independent breadth | PARTIAL (was DONE) | ✓ ✓ ✓ ✓ ✗ ✓ ✗ | LIVE `libs/research/independence_graph.py`, `alpha_rank` leg (`hourly_cycle.py:4930`) and `research_dashboard` leg (`:4946`), with `tests/research/test_independence_graph.py`. Output feeds `factory_contracts`, which feeds `cycle_pricing`. | Artifact is stale: the last `effective_breadth.jsonl` reading is 09-16 (2.057) and the dashboard is 09-22 (2.057 of 58). A fresh committed reading is needed. CI is red. | Institutional |
-| DP6 | Research-budget allocation sovereign | PARTIAL | ✓ ✓ ✗ ✓ ✗ ✓ ✗ | LIVE `hourly_cycle.py:499` (`cycle_pricing.applied_budget`) and `:509` (`research_budget.budget_s`), with `test_cycle_pricing.py`. | `research_budget.json` says `authoritative:false`: "no leg has asked the bandit… no price moved a leg's seconds". It covers hourly legs only; residents and tasks are excluded. meta_controller input is up to a day old. | Institutional |
-| DP7 | Allocator sovereign | PARTIAL | ✗ ✗ ✗ ✗ ✗ ✗ ✗ | `origin/claude/audit-p0-allocator-sovereignty` (#53) is unmerged. LIVE min-lot and gold floors still override a zero allocation. | Merge #53, remove the file-based off-switch, get green CI and show a box pass sized by the allocator. | Institutional |
-| DP8 | Cost truth mandatory | PARTIAL | ✗ ✗ ✗ ✗ ✗ ✗ ✗ | #52 fail-closed costs and #53 `test_live_rows_need_a_cost_basis.py` are unmerged. On LIVE, 40/40 LIVE sleeves have no cost basis. | Merge both, migrate `sleeves.json`, get green CI. | Institutional |
-| DP9 | CI permanently green | MISSING | ✗ ✗ ✗ ✗ ✗ ✗ ✗ | LIVE 6c8a71a4 CI run 36701520415 failed LAW GATE and the MT5 desk suite. Earlier runs on LIVE are failure or cancelled. | One green run on LIVE, then kept green. Required checks on the branch. | Institutional |
-| DP10 | Recursive research competition | PARTIAL | ✓ ✓ ✗ ✗ ✗ ✓ ✗ | LIVE `ops/run_scientist_tournament.cmd` runs `scientist_tournament.py --apply` daily (no installer) and swallows failures with `exit /b 0`. No test references `scientist_tournament`. The researcher market is on #55 only. | Winners gain no authority beyond compute share. No tests, no committed artifact, 0 independent discoveries. | Tier S |
-| DP11 | Accumulate untouched forward/live evidence | TIME-BOUND (machinery runs) | ✓ ✓ ✓ ✓ ✗ ✓ ✗ | LIVE `enrol_clocks` leg (`hourly_cycle.py:4393`) with `test_enrolment_ceiling.py` and `test_enrolment_drops_are_named.py`. `data/forward_clock_floor.json`. Dashboard: forward 26, live 40. | Only time. Also needed: a fresh committed forward/live snapshot (dashboard is 09-22) and green CI. | Institutional |
+| H1 | Formal verification of money path | MISSING (branch-only) | LIVE: ✗✗✗✗✗✗✗ / #55: ✓✓✓✓R✓(cloud)✓✗ | #55: `check_formal_claim.py --require-state` is in the law gate and fails on VIOLATED, a regression or (on the box) UNMEASURED. MODEL_ONLY passes, and today the gateway backs 0/6. The drill test is green. The cloud `FORMAL.json` is committed. | A VERIFIED claim, meaning the gateway backs every invariant. The drill's 2 send-path defects must be fixed. Box FORMAL.json. The seal (2 breaches). | Tier S |
+| H2 | Independent evaluator civilization | PARTIAL | LIVE: ✓✓✓✗✗✓✗ / #55: ✓✓✓✗R✓(cloud)✓✗ | LIVE: the manifest seal is 0/18, but QB-002 disagrees (C ✗). `test_certificate_single_writer` (gauntlet archive recovery) and `test_quantbench` fail (T ✗). #55: absent or stale verdicts now withhold. | Reconcile the two seals. The promoter import path still fails open. No separate stack. | Tier S |
+| H3 | Architecture evolution, sealed suites | MISSING (branch-only) | LIVE: ✗✗✗✗✗✗✗ / #55: ✓✓✗✓R✓(cloud)✓✗ | #55 S33: genomes are judged against the real gauntlet's verdicts (`gauntlet_arena.py`). Adoption is still not applied to the gauntlet. | Adoption must change the real gauntlet, scheduler or execution. | Tier S |
+| H4 | Immutable meta-benchmark, thousands of cases | MISSING (branch-only) | LIVE: ✗✗✗✗✗✗✗ / #55: ✓✓✓✗R✓(cloud)✓✗ | Unchanged. The quantbench corpus's own sealed-file case (QB-002) is stale on both refs, so the benchmark fails its own tree. | Re-pin QB-002. A release gate. A committed immune score from the box. | Tier S |
+| H5 | Active information acquisition (EVOI) | PARTIAL | LIVE: ✓✓✗✗✗✓✗ / #55: ✓✓✗✗R✓(cloud)✓✗ | T ✗ on LIVE: `test_event_surprise` fails (missing `event_consensus_sources.json`) and so does `test_macro_regime` real yield. | A value-driven data buy. Green data tests. | Tier S |
+| H6 | Research-search frontier estimator | PARTIAL | LIVE: ✓✓✗✓✗✓✗ / #55: ✓✓✓✓R✓(cloud)✓✗ | Unchanged. A cloud `FRONTIER.json` exists on #55. | Floored at 1.0. No box artifact. | Tier S |
+| H7 | Epistemic uncertainty engine, 5 levels | MISSING (branch-only) | LIVE: ✗✗✗✗✗✗✗ / #55: ✓✓✗✓R✓(cloud)✓✗ | A cloud `EPISTEMIC.json` exists. It still has no acting reader. | A consumer that refuses on "not enough evidence". | Tier S |
+| H8 | Cross-engine independent replication | PARTIAL | LIVE: ✓✓✗✓✗✓✗ / #55: ✓✓✓✓R✓(cloud)✓✗ | #55 has a cloud `live_door.json`, and the box sync now publishes it. The promoter still does not read it. | A second engine. A reader for `live_door.json`. | Tier S |
+| H9 | Counterfactual failure search, architecture level | MISSING (branch-only) | LIVE: ✗✗✗✗✗✗✗ / #55: ✓✓✗✓R✓(cloud)✓✗ | Unchanged. Report-only. | A search that changes the factory or allocator. | Tier S |
+| H10 | Compute OS | PARTIAL | LIVE: ✓✓✗✓✗✓✗ / #55: ✓✓✓✓✗✓✗ | Unchanged. | CPU seconds only. No leg is cut below base. No authoritative budget. | Tier S |
+| H11 | Global state replay at any second | MISSING (branch-only) | LIVE: ✗✗✗✗✗✗✗ / #55: ✓✓✗✓R✓(cloud)✓✗ | A cloud `REPLAY.json` exists. It has no reader. | Market, model and budget state. A consumer. | Tier S |
+| H12 | Continual recovery / chaos experiments | PARTIAL | LIVE: ✓✓✗✓✗✓✗ / #55: ✓✓✗✓R✓(cloud)✓✗ | LIVE `7117aa51`: the clock fixer finishes enrolment on any census gap and heartbeats the control plane. A new chaos test was added (`test_control_plane_chaos`). #55: the drill test is green now (T ✓). A cloud `CHAOS.json` exists. | No real kill, disconnect or VPS-loss drill. The drill gates nothing. No box artifact. | Tier S |
+| H13 | Mechanism discovery from non-finance fields | MISSING (branch-only) | LIVE: ✗✗✗✗✗✗✗ / #55: ✓✓✓✓R✓(cloud)✓✗ | Unchanged. | A judged or certified conversion on the box. | Tier S |
+| H14 | Automated abstraction discovery | MISSING (branch-only) | LIVE: ✗✗✗✗✗✗✗ / #55: ✓✓✓✓R✓(cloud)✓✗ | A cloud `GRAMMAR.json` exists. `data/tier_s/grammar.json`, the path `grammar_bias` reads, still exists on no ref. | Grammar at the consumed path. Learned primitives > 0. | Tier S |
+| H15 | Scientific memory compression | PARTIAL | LIVE: ✓✓✗✓✗✓✗ / #55: ✓✓✗✓✗✓✗ | #55: failure memory now orders `breadth_sweep` (an ordering, not authority). | Researchers do not consume it as authority. | Tier S |
+| H16 | Human–machine separation of powers | MISSING (branch-only) | LIVE: ✗✗✗✗✗✗✗ / #55: ✓✓✓✓R✓(cloud)✓✗ | Unchanged. promoter and rails are still unsigned on #55. | S01 is BLOCKED_ON_USER. Re-sign promoter and rails. | Tier S |
+| ADM | Subsystem admission rule (8 gains) | MISSING (branch-only) | LIVE: ✗✗✗✗✗✗✗ / #55: ✓✓✓✓R✓(cloud)✓✗ | The ledger reads 43 BUILT / 1 PARTIAL / 2 BLOCKED and the checker passes. The cloud `CONTRACTS.json` exists. | Nothing is removed. No box attestation. | Tier S |
+| DP1 | Finish/wire everything | PARTIAL | LIVE: ✓✓✗✗✓✓✗ / #55: ✓✓✓✗✓✓✗ | T ✗: `test_universe_producers_merge` fails (a refresh drops symbols it did not fetch, and an unreadable registry rebuilds). The rest is unchanged. | 43 BUILT with no attestation. Green tests and CI. | Institutional |
+| DP2 | Remove dormant/partial components | MISSING | LIVE: ✗✗✗✗✗✗✗ / #55: ✗✗✗✗✗✗✗ | Nothing is deleted on either ref. | A retirement pass with a deletion ledger. | Institutional / Tier S |
+| DP3 | Repair the validation defects | MISSING (branch-only) | LIVE: ✗✗✗✗✗✗✗ / #55: ✗✗✗✗✗✗✗ | 0.014863 is still live. #52 is unmerged. `test_certificate_single_writer` (gauntlet archive) fails. | Merge #52 and migrate the lockbox certificates. | Institutional |
+| DP4 | Clear the judging backlog | PARTIAL | LIVE: ✓✓✓✓✓✓✗ / #55: ✓✓✓✓✓✓✗ | Unchanged. #85 adds more donations (class-book cells), which adds load. The judge_coverage conflict with #55 is resolved. | A post-#77 box reading with judged ≥ created. A clean seal. Green CI. | Institutional |
+| DP5 | Measure actual independent breadth | PARTIAL | LIVE: ✓✓✓✓✓✓✗ / #55: ✓✓✓✓✓✓✗ | #85 adds class-book clusters to `alpha_clusters` and `mechanism_census`, which is more breadth sources. `CROSS_SECTIONAL_BREADTH.json` is not committed. `effective_breadth.jsonl` still ends 09-16. | Append the reading. A clean seal. Green CI. | Institutional |
+| DP6 | Research-budget allocation sovereign | PARTIAL | LIVE: ✓✓✗✓✗✓✗ / #55: ✓✓✓✓✗✓✗ | Unchanged. `research_budget.json` is from 09-23 with `authoritative:false`. | An applied box reading with `authoritative:true`. | Institutional |
+| DP7 | Allocator sovereign | PARTIAL | LIVE: ✓✓✓✗✗✓✗ / #55: ✓✓✓✗✗✓✗ | T ✗: 4 `test_scalp_promotion` tests fail (go-live, STANDBY→LIVE). #55 `2c8f80c4`: the allocator applies a Tier S factor below 0.5. #53 is unmerged. | Merge #53. Green promotion tests. A box pass. | Institutional |
+| DP8 | Cost truth mandatory | MISSING (branch-only) | LIVE: ✗✗✗✗✗✗✗ / #55: ✗✗✗✗✗✗✗ | Unchanged. | Merge #52 and #53, migrate `sleeves.json`. | Institutional |
+| DP9 | CI permanently green | PARTIAL | LIVE: ✓✓✓✗✗✓✗ / #55: ✗ (MISSING) | LIVE: the 02057ffa run was cancelled and the 69da0158 run is queued. 6 test files fail locally (quantbench, scalp_promotion, event_surprise, macro_regime, certificate_single_writer, universe_producers_merge). QB-002 contradicts the manifest. #55 merged: 2 manifest breaches plus QB-002. | Re-pin QB-002 (and normalise line endings). Fix the 5 failing files. One completed green run. Re-sign promoter and rails. | Institutional |
+| DP10 | Recursive research competition | PARTIAL | LIVE: ✓✓✗✗✗✓✗ / #55: ✓✓✗✓R✓(cloud)✓✗ | Unchanged. A cloud `QD.json` and `GENOMES.json` exist. | Winners gain only compute. 0 independent discoveries. | Tier S |
+| DP11 | Accumulate untouched forward/live evidence | PARTIAL | LIVE: ✓✓✓✗✗✓✗ / #55: ✓✓✓✗✗✓✗ | LIVE `7117aa51`: clock recovery now runs enrolment on any census gap. T ✗: `test_scalp_promotion::test_the_forward_clock_is_the_scalp_lanes_certificate` fails. The local run logs ENROL-GAP for 6 certified keys with `shadow_spec.params` = None. There is no post-#84 box census. | A box census with `n_silent` 0 and ledgers advancing. Green scalp tests. Then time. | Institutional |
+| AC3 | PIT, survivorship-safe, revision-aware, provenance-hashed data | MISSING (branch-only) | LIVE: ✗✗✗✗✗✗✗ / #55: ✓✓✗✗R✓(cloud)✓✗ | #55 S02: bitemporal PIT reads now feed the macro sweep (a real research path). On LIVE the data tests `event_surprise`, `macro_regime` and `universe_producers_merge` fail, so T ✗ on the merged tree. | The audit must gate certificate data. Green data tests. | TS |
+| AC13 | Research methods compete experimentally | MISSING (branch-only) | LIVE: ✗✗✗✗✗✗✗ / #55: ✓✓✗✓R✓(cloud)✓✗ | #55 S33: genomes now compete on the real gauntlet's verdicts. Adoption does not take over judging. | Winning methods must take over real judging. | TS |
 
-Counts: DONE 0 / PARTIAL 25 / MISSING 2 / EXCLUDED 0 / TIME-BOUND 1 (28 rows)
+Counts on LIVE: DONE 0 / PARTIAL 15 / MISSING (branch-only) 12 / MISSING 1 / EXCLUDED 0 / TIME-BOUND 0 (28 rows). **No verdict changed.** Marks moved downward: T went ✗ on H2, H5, DP1, DP7, DP9 and DP11 (failing tests on LIVE). C stays ✗ everywhere, now for a stated reason (QB-002 vs manifest).
+Counts if #55 merged: DONE 0 / PARTIAL 24 / MISSING (branch-only) 2 (DP3, DP8) / MISSING 2 (DP2, DP9) / EXCLUDED 0 / TIME-BOUND 0. No verdict changed. R is ✓ only as a cloud artifact on many H rows, not box evidence. The merge now conflicts only in the derived RUNTIME_STATE files.
 
 ### Top gaps
-- **Nothing is DONE under strict rules.** CI on LIVE 6c8a71a4 fails the LAW GATE and the MT5 desk suite, so criterion 7 fails for every row.
-- **Tier S (PR #55) is unmerged.** That leaves 10 of the 16 H rows (H1, H3, H4, H7, H9, H11, H13, H14, H16, ADM) and the admission rule with nothing on LIVE.
-- **DP5 falls from DONE to PARTIAL.** The breadth artifact is stale: the last reading is 09-16 and the dashboard is 09-22.
-- **Budget is not sovereign.** `research_budget.json` is `authoritative:false` and records that no price moved any leg's seconds, which undercuts H10 and DP6.
-- **The judging backlog is not being drained.** About 55,811 of 57,538 cells are unjudged, and the last dashboard shows 0 verdicts/day against about 1,028 created/day. No committed `JUDGING_RATE`.
-- **#52 and #53 are unmerged** (DP3, DP7, DP8). The DSR variance constant is still on LIVE. `master` does not contain LIVE (no release promotion). There is no standby or failover, and backups are unencrypted (H12).
+1. **Two seals disagree on LIVE.** Re-pin QB-002 in `data/quantbench/corpus.jsonl` to the signed manifest, or have the probe read `IMMUTABLE_MANIFEST.json`. Hash with normalised line endings: the allocator_proof and state_admission "drift" is CRLF vs LF only.
+2. **5 more failing test files on LIVE** (scalp_promotion ×4, event_surprise, macro_regime, certificate_single_writer, universe_producers_merge ×2). PR #67 has skip-ports for two of them.
+3. **No completed green CI on LIVE.** 02057ffa was cancelled and 69da0158 is queued.
+4. **Re-sign promoter.py and rails.py** before #55 merges, otherwise the manifest goes 0 → 2 breaches.
+5. **Box evidence is still absent.** #55 committed a cloud run that is not box evidence. Nothing on any ref comes from vmi3571445 for Tier S, forward census, judging or budget.
+6. #52 and #53 are unmerged (DP3, DP7, DP8). The promoter's Tier S import path still fails open.
