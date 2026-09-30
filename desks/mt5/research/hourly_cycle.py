@@ -842,6 +842,12 @@ CORE_LEGS: frozenset[str] = frozenset({
     # #9/#11): artifact readers, seconds each, on the core clock with the census they join.
     "alpha_rank", "factory_contracts",
     "cycle_pricing", "causal_invariance",
+    # The bandit's shares, re-derived hourly before the legs that spend them (Tier S).
+    "research_bandit",
+    # THE TIER S DOOR'S WRITER, EVERY HOUR (2026-09-30): the promotion door fails closed on a
+    # verdict older than 6h, so this leg is on the core clock and exempt from rotation
+    # (libs/ops/leg_rotation.ALWAYS_RUN). ~10 min measured end to end under its 1,500 s cap.
+    "tier_s",
     # THE CLOSED-LOOP ORGANS (Tier-1 B14-B25): all cheap readers of artifacts that already exist,
     # so they belong on the core clock rather than the heavy one. `actor_pressure` and
     # `counterfactual_timeframes` read bars and stop themselves at their own budget.
@@ -877,6 +883,9 @@ CORE_LEGS: frozenset[str] = frozenset({
     # tracker, which reads it.
     "live_calibration_posterior", "constrained_book", "experimental_budget",
     "ops_redundancy", "forward_evidence_tracker",
+    # THE GOLD BOOK'S SIZE INSIDE SURVIVAL (principal 2026-09-30): the gateway and the E8 lane
+    # read reports/KELLY_SURVIVAL.json with a two-hour expiry, so it has to be refreshed hourly.
+    "kelly_survival",
 })
 
 
@@ -959,11 +968,14 @@ LEG_DEPARTMENT: dict[str, str] = {
     # validate: the adversarial evidence lab
     **dict.fromkeys(("external_gauntlet", "backtest", "falsifier_run", "adversaries",
                      "stop_reverse", "orthogonality", "blind_reviewer", "synthetic_regimes",
+                     "adversary_evolution", "frontier_map", "market_ecology",
+                     "research_diversity_archive", "execution_science",
                      "evaluator_lab", "lead_replication", "science_controller",
                      "replication_civilization", "certificate_truth", "model_search",
                      "loop_liveness", "counterexample_agent", "judging_throughput",
                      "duty_cycle", "forward_enrolment", "residual_gate",
-                     "fast_admission", "canon_publication", "placebo_audit", "judging_burndown"),
+                     "fast_admission", "canon_publication", "placebo_audit", "judging_burndown",
+                     "committees"),
                     "validate"),
     # macro: the cross-asset / macro brain
     **dict.fromkeys(("fred_macro", "futures_lead_lag", "causal_graph", "residual_factors",
@@ -1003,7 +1015,7 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "research_latency",
                      "alpha_replenishment", "research_dashboard",
                      "research_roi", "experiment_spine", "implementer",
-                     "research_debt", "paradigm_router", "meta_controller",
+                     "research_debt", "paradigm_router", "meta_controller", "research_bandit",
                      "ingestion_exploitation", "coverage_tensor", "research_evolution",
                      "compute_economics", "control_plane", "attribution_reconcile",
                      "fence_battery", "organ_battery", "research_artifacts", "engine_registry",
@@ -1029,7 +1041,7 @@ LEG_DEPARTMENT: dict[str, str] = {
                      # own lineage: meta.
                      "attribution_census",
                      "runtime_attestation", "self_repair", "desk_self_heal",
-                     "tier5_acceptance", "mission_control"), "meta"),
+                     "tier5_acceptance", "mission_control", "tier_s"), "meta"),
     # japan: the Japan research division (the principal's 47-section mandate, hourly)
     **dict.fromkeys(("japan_department",), "japan"),
     # mathlab: the AI mathematics research civilization -- twenty-eight mathematical traditions
@@ -1595,11 +1607,17 @@ LEG_BUDGET_SEC: dict[str, int] = {
     "acquire_datasets": 1_100,
     # The causal invariance organ stops itself at --budget-s 600 and writes; the cap sits above.
     "causal_invariance": 700,
+    # 28 organs, 416 s measured end to end in the cloud checkout on 2026-09-30 (immune 160 s,
+    # twin 64 s, world_science 58 s); the cap leaves room for the box's larger ledgers (the
+    # gate verdict ledger and hypothesis graph are read in full).
+    "tier_s": 1_500,
     # THE CONTROL PLANE'S OBSERVE PASS walks ~1,100 components, every watermark, every lease and
     # every mandatory edge. Its own budget is 600 s (it stops itself), so the cycle's cap sits
     # above that: a cap BELOW an organ's own budget is the truncated-job defect that cost this
     # desk eighty-four forward clocks.
     "control_plane": 660,
+    # The committees stop themselves at --budget-s 600 (experiments included); the cap sits above.
+    "committees": 720,
     "probation": 1_800,   # a pass is 40 organs; at 720 s it was cut at ~12 min every hour
     "enrol_clocks": 2_700,
     # Both stop themselves at --budget-s 300 and write their artifact; the caps sit above their
@@ -2058,6 +2076,52 @@ def orthogonality() -> dict:
     silently shrank the book would be a growth cut with no missed-growth ledger line behind it.
     """
     return _producer("orthogonality", "research/orthogonality.py", "--apply")
+
+
+def tier_s() -> dict:
+    """`tier_s`: the Tier S research institution, one organ per layer (libs/tiers).
+
+    Runs every kernel of the 46-layer programme on the desk's own artifacts: the truth kernel's
+    hash-chained journal and evidence seal, the firewall audit, the sealed planted-trap benchmark
+    (immune score / power), the Red Queen, test invention, online FDR, topology, QD, genomes,
+    theory, prediction accounting, the researcher market, failure memory, the formal protocol
+    model check, chaos drills on copies, replay, the bitemporal audit, the world-edge and
+    cross-science labs, the shadow opportunity exchange, the frontier estimator, the review panel,
+    the epistemic census, the subsystem contracts, the self-model and the twin. It writes
+    reports/tier_s/*, data/tier_s/* and hypothesis rows under data/intelligence/tier_s/ for the
+    compiler. Two of its outputs reach money (2026-09-30): the promoter's door
+    (`libs/tiers/promotion_authority`) withholds on a constitution violation, an unreplicated or
+    FDR-rejected claim and FREEZE; and data/tier_s/allocator_tilts.json tilts `pf_allocator`'s
+    posterior means heat-neutrally (`allocator_evidence.tier_s_factors`). Nothing else it writes
+    is read by sizing, certificates or order flow.
+    """
+    return _producer("tier_s", "research/tier_s.py")
+
+
+def adversary_evolution() -> dict:
+    """`adversary_evolution`: F17's evolving adversary population, persisted each hour."""
+    return _producer("adversary_evolution", "research/adversary_evolution.py", "--apply")
+
+
+def execution_science() -> dict:
+    """`execution_science`: F22 signal-vs-execution attribution (report only)."""
+    return _producer("execution_science", "research/execution_science.py", "--apply")
+
+
+def frontier_map() -> dict:
+    """`frontier_map`: F9's one map of where the desk has and has not looked (report only)."""
+    return _producer("frontier_map", "research/frontier_map.py", "--apply")
+
+
+def market_ecology() -> dict:
+    """`market_ecology`: F15 participant model and edge-decay estimates (report only)."""
+    return _producer("market_ecology", "research/market_ecology.py", "--apply")
+
+
+def research_diversity_archive() -> dict:
+    """`research_diversity_archive`: the research-wide QD archive from experiment evidence."""
+    return _producer("research_diversity_archive", "research/research_diversity_archive.py",
+                     "--once")
 
 
 def lake_promote() -> dict:
@@ -3283,6 +3347,15 @@ def main() -> None:
     # THE BANDIT HAS AUTHORITY HERE (2026-09-16): the seconds this leg spends are its base
     # budget scaled by the bandit's share of the arms it serves (research_budget), recorded in
     # reports/RESEARCH_BUDGET.json so the attestation reads an obeyed price, not a printed one.
+    # THE SHARES THOSE BUDGETS READ, RE-DERIVED EVERY HOUR (Tier S, 2026-09-30). The bandit ran
+    # only inside the daily chain, through `research_bandit.run()`, which never publishes
+    # reports/RESEARCH_BANDIT.json (the path `research_budget` and `cycle_pricing` read) and
+    # never stamps authority -- only `main()` does both. So the budgets below read no shares,
+    # ran at base, and data/research_budget.json said `authoritative: false` from 2026-09-23 on.
+    # This leg runs `main()` before any leg spends: fresh shares this hour, and the authority
+    # stamp read back from the legs that obeyed the previous hour's.
+    rbd = _costed("research_bandit", lambda: _producer("research_bandit",
+                                                       "research/research_bandit.py"))
     _aev_s, _aev_rec = _bandit_budget("alpha_evolution", 240)
     aev = _costed("alpha_evolution", lambda: _producer("alpha_evolution",
                                                         "research/alpha_evolution.py",
@@ -4657,6 +4730,12 @@ def main() -> None:
     rxs = _costed("research_exchange_score", research_exchange_score)
     lkp = _costed("lake_promote", lake_promote)
     orth = _costed("orthogonality", orthogonality)
+    tiers = _costed("tier_s", tier_s)
+    advx = _costed("adversary_evolution", adversary_evolution)
+    exsci = _costed("execution_science", execution_science)
+    fmap = _costed("frontier_map", frontier_map)
+    meco = _costed("market_ecology", market_ecology)
+    rdar = _costed("research_diversity_archive", research_diversity_archive)
     sess = _costed("session_allocation", session_allocation)
     sxp = _costed("session_chart_expansion", session_chart_expansion)
     stf = _costed("stamp_freshness", stamp_freshness)
@@ -4808,6 +4887,13 @@ def main() -> None:
     # UNMEASURED and every factory runs exactly as it does today.
     prs = _costed("proposer_seat", lambda: _producer(
         "proposer_seat", "libs/research/proposer_seat.py", "--once", "--budget-s", "300"))
+    # THE TWO ADVERSARIAL COMMITTEES (2026-09-25 brief, landed 2026-09-30). Seat roles argue
+    # competing explanations; the deterministic judge picks the cheapest separating falsifiers
+    # and runs them on the gauntlet's own cell. Contracts and kills are defect reports: nothing
+    # is certified, promoted, sized or vetoed. Metered, settled against the graph, and
+    # self-scrapping when its kills stop paying for its calls. Dark seat -> UNMEASURED.
+    cmt = _costed("committees", lambda: _producer(
+        "committees", "research/committees.py", "--once", "--budget-s", "600"))
     # KIMI'S ONLY CLOCK WAS A VPS TIMER (measured 2026-09-23). `quant-kimi-hunter.timer` fires
     # hourly on the VPS; the box that holds the credentials ran it never, so
     # `data/intelligence/kimi` was 240 hours stale on the trading box while deepseek -- whose
@@ -5009,6 +5095,12 @@ def main() -> None:
         "live_calibration_posterior", "research/live_calibration_posterior.py"))
     cbk = _costed("constrained_book", lambda: _producer(
         "constrained_book", "research/constrained_book.py"))
+    # MAXIMUM AGGRESSION INSIDE SURVIVAL (principal 2026-09-30): per gold window, the Fusion lot
+    # and the E8 risk fraction with the highest ruin-counted growth (Fusion) or fastest pass (E8)
+    # whose P(death) stays under EPS_STOP. Read by prop/e8_gold.py; absent or stale -> today's
+    # sizing, unchanged.
+    kls = _costed("kelly_survival", lambda: _producer(
+        "kelly_survival", "research/kelly_survival.py"))
     xbg = _costed("experimental_budget", lambda: _producer(
         "experimental_budget", "research/experimental_budget.py"))
     opr = _costed("ops_redundancy", lambda: _producer(
@@ -5170,6 +5262,9 @@ def main() -> None:
                     "causal_graph": cg, "alpha_rl": arl,
                     "research_exchange_score": rxs, "lake_promote": lkp,
                     "orthogonality": orth,
+                    "tier_s": tiers, "adversary_evolution": advx,
+                    "execution_science": exsci, "frontier_map": fmap,
+                    "market_ecology": meco, "research_diversity_archive": rdar,
                     "session_allocation": sess,
                     "session_chart_expansion": sxp,
                     "stamp_freshness": stf,
@@ -5205,7 +5300,7 @@ def main() -> None:
                     "ensemble_optimizer": eo, "frontier_unknowns": uk,
                     "frontier_ontology": fo, "exit_study": xs,
                     "graveyard_model": gm, "world_crawler": wc,
-                    "proposer_seat": prs, "kimi_hunt": kh,
+                    "proposer_seat": prs, "committees": cmt, "kimi_hunt": kh,
                     "release_identity": ri, "burn_in": bi, "layer_census": lc,
                     "control_plane": cp, "plumbing_watchdog": pwd_,
                     "bottleneck_attack": bka, "desk_dashboard_state": dds,
@@ -5221,6 +5316,7 @@ def main() -> None:
                     "shortfall_model": shm, "counterfactual_timeframes": ctf, "meta_rnd": mrd,
                     "edge_reliability": erl, "arena": ar, "session_capital": scap,
                     "live_calibration_posterior": lcp, "constrained_book": cbk,
+                    "kelly_survival": kls,
                     "experimental_budget": xbg, "ops_redundancy": opr,
                     "forward_evidence_tracker": fet,
                     "prosecutor": pc, "scaling_laws": slw,
@@ -5238,7 +5334,7 @@ def main() -> None:
                     "falsifier_run": fz, "merge_docket": mh,
                     "backtest": bt,
                     "wiring_audit": wa, "brain_ab": ab, "alpha_breadth": cm,
-                    "alpha_evolution": aev, "closed_loop": clp,
+                    "alpha_evolution": aev, "research_bandit": rbd, "closed_loop": clp,
                     "alpha_periodic_table": pt, "queue_cycle": qcy,
                     "microstructure_census": mx, "entry_timing": ety,
                     "spread_provenance": sp, "tape_features": tf,

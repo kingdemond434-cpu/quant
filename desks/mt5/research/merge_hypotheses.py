@@ -236,6 +236,34 @@ SOURCES = (
     # (scripts/requeue_named_mechanisms.py). Merged when freshly rebuilt; hourly runs skip it
     # as stale once consumed -- a map extension re-opens gate 1, never any later gate.
     ("requeue_named.json", "hypotheses"),
+    # THE NOVEL-MECHANISM LANE, WHICH TERMINATED ONE CONNECTOR SHORT OF THIS TUPLE (2026-09-24).
+    #
+    # A mechanism with no registered family function cannot reach the judge through any other
+    # door. The compiler's deterministic vocabulary refuses it by name -- NEEDS_EXACT_RULE_
+    # EXTRACTION -- and `deepening_worker` then spends a model call recovering the rule from the
+    # row's own text, re-running the recovery through `compile_row` so no guard is bypassed. That
+    # is the ONLY path by which the Chinese, Japanese, Korean and Russian forests, the
+    # championship records, the world crawler and the arXiv feed can contribute a mechanism the
+    # desk did not already know.
+    #
+    # ITS OUTPUT WAS READ BY NOBODY. `deepened_candidates.json` was written every pass, consumed
+    # only by `portfolio_gap` for gap ANALYSIS and counted by `convert_swarm` for a log line.
+    # `libs/ops/capability_graph.py` asserted the edge in as many words -- "deepened_candidates
+    # -> external_gauntlet via compiler merge", and a comment calling it "a real path" -- but no
+    # merge implemented it, and this tuple is the merge. Measured on the trading box the day it
+    # was found: 83 mechanisms recovered in the worker's lifetime, 30 of them in the preceding
+    # 24 hours, every one of them bought with the scarcest budget the desk owns (one account,
+    # 1,000 model requests a day, exhausted by 01:42 UTC) -- and not one had ever reached the
+    # docket, so not one had ever been judged. Work earned and dropped one line short.
+    #
+    # NOTHING IS RELAXED BY ADMITTING THEM. These rows come out of `compile_row`, the same
+    # function that produces `miner_candidates.json`'s hypotheses, so they are contract-identical
+    # by construction; they face the identical ten gates, the same family routing, the same
+    # untradeable-symbol filter and the same family-less drop as every other row here. The
+    # `producer` stamp finally makes the lane attributable, so `certificate_provenance` can say
+    # whether a recovered mechanism has ever earned a certificate -- a question that could not
+    # previously be ASKED, because no certificate could descend from a row that never arrived.
+    ("deepened_candidates.json", "candidates"),
 )
 
 
@@ -799,6 +827,27 @@ def main() -> int:
               f"least-judged-family order")
         if judged:
             rows_out = breadth_order(rows_out, judged)
+    # TIER S PRE-JUDGE SCREEN (layers 9 and 21): a row the adopted Red Queen defenders or the
+    # machine-ratified invented tests FLAGGED (run_external_backtest tags it) moves behind the
+    # clean rows of its OWN family, in that family's own slots. The family-balanced prefix the
+    # allocator just built is unchanged, no row leaves the docket, and nothing is billed because
+    # nothing is withheld. A screen fault costs the demotion, never a row.
+    prejudge: dict[str, Any] = {"status": "UNAVAILABLE"}
+    try:
+        import sys as _sys
+        _root = str(BASE.parents[1])
+        if _root not in _sys.path:
+            _sys.path.insert(0, _root)
+        from libs.tiers import prejudge_screen as _pj
+        rows_out, prejudge = _pj.demote_flagged(
+            rows_out, _pj.load_verdicts(HYP / _pj.VERDICTS.name))
+        prejudge["status"] = "APPLIED"
+        if prejudge["flagged"]:
+            print(f"   prejudge screen: {prejudge['flagged']} flagged row(s) demoted within "
+                  f"their family ({prejudge['moved']} position(s) changed, 0 removed)")
+    except Exception as exc:
+        prejudge = {"status": f"FAILED: {type(exc).__name__}: {exc}"}
+        print(f"   prejudge screen unavailable ({type(exc).__name__}: {exc}); order unchanged")
     TARGET.parent.mkdir(parents=True, exist_ok=True)
     # NEVER SHRINK THE DOCKET TO NOTHING. The freshness contract makes every source STALE_SKIPPED
     # on any run where producers have not written yet, and this merge then emitted an EMPTY file
@@ -865,6 +914,7 @@ def main() -> int:
                                       "families_starved", "unjudged_total",
                                       "capacity_measured")} if coverage else {},
                         "report": "desks/mt5/reports/JUDGE_COVERAGE.json"},
+        "prejudge": prejudge,
         "note": ("no threshold applied here (L1.60) -- every candidate of a family that CAN "
                  "reach live capital reaches the ten-gate gauntlet, which is the only arbiter; "
                  "a live-banned family is routed to the study bank, never judged and never "

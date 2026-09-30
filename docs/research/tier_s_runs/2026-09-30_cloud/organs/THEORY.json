@@ -1,0 +1,295 @@
+{
+ "n_theories": 3,
+ "by_status": {
+  "SUPPORTED": 1,
+  "CONTESTED": 2
+ },
+ "complete_share": 0.3333333333333333,
+ "theories": [
+  {
+   "id": "m5be0f28bad58aa17",
+   "family": "session_range_breakout",
+   "confidence": 0.8444,
+   "sd": 0.0534,
+   "n_evidence": 20,
+   "support_weight": 37.0,
+   "contra_weight": 6.0,
+   "status": "SUPPORTED",
+   "complete": true,
+   "missing": [],
+   "competitors": [],
+   "contradictions": [
+    {
+     "experiment": "live:XAUUSD.asia",
+     "supports": false,
+     "source": "live",
+     "weight": 3.0,
+     "context": "XAUUSD.asia",
+     "jurisdiction": "US",
+     "regime": "vol_low"
+    },
+    {
+     "experiment": "live:EURUSD.asia",
+     "supports": false,
+     "source": "live",
+     "weight": 3.0,
+     "context": "EURUSD.asia",
+     "jurisdiction": "EU+US",
+     "regime": "vol_low"
+    }
+   ],
+   "context": {
+    "by_jurisdiction": {
+     "AU+US": {
+      "confidence": 0.8,
+      "sd": 0.1633,
+      "n_evidence": 1,
+      "status": "CONTESTED"
+     },
+     "CA+JP": {
+      "confidence": 0.9,
+      "sd": 0.0905,
+      "n_evidence": 4,
+      "status": "SUPPORTED"
+     },
+     "EU+JP": {
+      "confidence": 0.9,
+      "sd": 0.0905,
+      "n_evidence": 4,
+      "status": "SUPPORTED"
+     },
+     "EU+US": {
+      "confidence": 0.2,
+      "sd": 0.1633,
+      "n_evidence": 1,
+      "status": "CONTESTED"
+     },
+     "JP+US": {
+      "confidence": 0.9,
+      "sd": 0.0905,
+      "n_evidence": 4,
+      "status": "SUPPORTED"
+     },
+     "US": {
+      "confidence": 0.7333,
+      "sd": 0.1106,
+      "n_evidence": 6,
+      "status": "SUPPORTED"
+     }
+    },
+    "by_regime": {
+     "vol_high": {
+      "confidence": 0.9615,
+      "sd": 0.037,
+      "n_evidence": 12,
+      "status": "SUPPORTED"
+     },
+     "vol_low": {
+      "confidence": 0.6667,
+      "sd": 0.1005,
+      "n_evidence": 8,
+      "status": "CONTESTED"
+     }
+    },
+    "context_dependent": [
+     "regime"
+    ]
+   }
+  },
+  {
+   "id": "mb8cb9b7278908ac9",
+   "family": "discovered",
+   "confidence": 0.3043,
+   "sd": 0.0939,
+   "n_evidence": 7,
+   "support_weight": 6.0,
+   "contra_weight": 15.0,
+   "status": "CONTESTED",
+   "complete": false,
+   "missing": [
+    "transmission",
+    "horizon",
+    "falsifier"
+   ],
+   "competitors": [],
+   "contradictions": [
+    {
+     "experiment": "live:EURCHF.asia",
+     "supports": false,
+     "source": "live",
+     "weight": 3.0,
+     "context": "EURCHF.asia",
+     "jurisdiction": "CH+EU",
+     "regime": "vol_high"
+    },
+    {
+     "experiment": "live:EURGBP.asia",
+     "supports": false,
+     "source": "live",
+     "weight": 3.0,
+     "context": "EURGBP.asia",
+     "jurisdiction": "EU+GB",
+     "regime": "vol_low"
+    },
+    {
+     "experiment": "live:AUDCAD.asia",
+     "supports": false,
+     "source": "live",
+     "weight": 3.0,
+     "context": "AUDCAD.asia",
+     "jurisdiction": "AU+CA",
+     "regime": "vol_low"
+    },
+    {
+     "experiment": "live:AUDNZD.asia",
+     "supports": false,
+     "source": "live",
+     "weight": 3.0,
+     "context": "AUDNZD.asia",
+     "jurisdiction": "AU+NZ",
+     "regime": "vol_high"
+    },
+    {
+     "experiment": "live:EURUSD.asia",
+     "supports": false,
+     "source": "live",
+     "weight": 3.0,
+     "context": "EURUSD.asia",
+     "jurisdiction": "EU+US",
+     "regime": "vol_low"
+    }
+   ],
+   "context": {
+    "by_jurisdiction": {
+     "AU+CA": {
+      "confidence": 0.2,
+      "sd": 0.1633,
+      "n_evidence": 1,
+      "status": "CONTESTED"
+     },
+     "AU+NZ": {
+      "confidence": 0.2,
+      "sd": 0.1633,
+      "n_evidence": 1,
+      "status": "CONTESTED"
+     },
+     "AU+US": {
+      "confidence": 0.8,
+      "sd": 0.1633,
+      "n_evidence": 1,
+      "status": "CONTESTED"
+     },
+     "CH+EU": {
+      "confidence": 0.2,
+      "sd": 0.1633,
+      "n_evidence": 1,
+      "status": "CONTESTED"
+     },
+     "CH+US": {
+      "confidence": 0.8,
+      "sd": 0.1633,
+      "n_evidence": 1,
+      "status": "CONTESTED"
+     },
+     "EU+GB": {
+      "confidence": 0.2,
+      "sd": 0.1633,
+      "n_evidence": 1,
+      "status": "CONTESTED"
+     },
+     "EU+US": {
+      "confidence": 0.2,
+      "sd": 0.1633,
+      "n_evidence": 1,
+      "status": "CONTESTED"
+     }
+    },
+    "by_regime": {
+     "vol_high": {
+      "confidence": 0.125,
+      "sd": 0.1102,
+      "n_evidence": 2,
+      "status": "REFUTED"
+     },
+     "vol_low": {
+      "confidence": 0.4118,
+      "sd": 0.116,
+      "n_evidence": 5,
+      "status": "CONTESTED"
+     }
+    },
+    "context_dependent": []
+   }
+  },
+  {
+   "id": "m7a27266edf0469be",
+   "family": "carry",
+   "confidence": 0.2,
+   "sd": 0.1633,
+   "n_evidence": 1,
+   "support_weight": 0.0,
+   "contra_weight": 3.0,
+   "status": "CONTESTED",
+   "complete": false,
+   "missing": [
+    "horizon"
+   ],
+   "competitors": [],
+   "contradictions": [
+    {
+     "experiment": "live:CHFNOK.asia",
+     "supports": false,
+     "source": "live",
+     "weight": 3.0,
+     "context": "CHFNOK.asia",
+     "jurisdiction": "CH+NO",
+     "regime": "UNMEASURED"
+    }
+   ],
+   "context": {
+    "by_jurisdiction": {
+     "CH+NO": {
+      "confidence": 0.2,
+      "sd": 0.1633,
+      "n_evidence": 1,
+      "status": "CONTESTED"
+     }
+    },
+    "by_regime": {
+     "UNMEASURED": {
+      "confidence": 0.2,
+      "sd": 0.1633,
+      "n_evidence": 1,
+      "status": "CONTESTED"
+     }
+    },
+    "context_dependent": []
+   }
+  }
+ ],
+ "backtest_rows": 0,
+ "composed": 6,
+ "emitted": {
+  "kind": "theory_compositions",
+  "emitted": 24
+ },
+ "persisted": {
+  "path": "/home/claude/quant/desks/mt5/data/tier_s/theory_graph.json",
+  "passes": 2,
+  "carried": 0,
+  "evidence": 28,
+  "theories": 3
+ },
+ "context_dependent": 1,
+ "metric": {
+  "n_theories": 3,
+  "complete_share": 0.3333333333333333,
+  "refuted": 0,
+  "supported": 1,
+  "composed": 6,
+  "context_dependent": 1,
+  "carried_evidence": 0
+ },
+ "generated_utc": "2026-09-30T11:47:29.089020+00:00",
+ "seconds": 0.148
+}

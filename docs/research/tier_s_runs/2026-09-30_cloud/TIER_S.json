@@ -1,0 +1,301 @@
+{
+ "generated_utc": "2026-09-30T11:47:29.089020+00:00",
+ "organs": [
+  "chaos",
+  "contracts",
+  "data_os",
+  "door",
+  "epistemic",
+  "exchange",
+  "failure_memory",
+  "firewall",
+  "formal",
+  "frontier",
+  "genomes",
+  "grammar",
+  "immune",
+  "market",
+  "online_fdr",
+  "predictions",
+  "qd",
+  "red_queen",
+  "replay",
+  "review",
+  "self_model",
+  "test_invention",
+  "theory",
+  "topology",
+  "truth_kernel",
+  "twin",
+  "world_science",
+  "worlds"
+ ],
+ "seconds": {
+  "truth_kernel": 0.143,
+  "firewall": 12.419,
+  "immune": 174.919,
+  "red_queen": 9.84,
+  "test_invention": 34.568,
+  "online_fdr": 3.482,
+  "topology": 7.42,
+  "qd": 0.48,
+  "genomes": 6.596,
+  "grammar": 0.02,
+  "theory": 0.148,
+  "predictions": 2.348,
+  "market": 15.649,
+  "failure_memory": 0.026,
+  "formal": 33.255,
+  "chaos": 13.642,
+  "replay": 4.178,
+  "data_os": 1.567,
+  "world_science": 274.029,
+  "exchange": 0.094,
+  "worlds": 0.008,
+  "frontier": 2.64,
+  "review": 3.708,
+  "door": 0.071,
+  "epistemic": 0.555,
+  "contracts": 0.007,
+  "self_model": 0.46,
+  "twin": 5.014
+ },
+ "total_seconds": 607.29,
+ "errors": {},
+ "metrics": {
+  "truth_kernel": {
+   "fill_reconstructible_share": 0.027777777777777776,
+   "journal_ok": 1.0,
+   "rewrites": 0,
+   "constitution_violation": 0.0
+  },
+  "firewall": {
+   "violations": 2,
+   "breach": 0.0
+  },
+  "immune": {
+   "immune_score": 1.0,
+   "power": 0.0,
+   "balanced": 0.8409523809523809,
+   "real_immune": 0.8976190476190476,
+   "real_power": 0.7,
+   "real_balanced": 0.7988095238095239,
+   "production_immune": 1.0,
+   "production_power": 0.0,
+   "production_coverage": 1.0
+  },
+  "red_queen": {
+   "attack_success": 0.6667,
+   "defender_balanced": 0.8215042372881356,
+   "attributed_researchers": 0,
+   "real_attack_success": 0.0,
+   "real_genuine_power": 0.0,
+   "scheduler_heldout_lift": 0.027139,
+   "search_policy_heldout_lift": 0.01387
+  },
+  "test_invention": {
+   "candidate_gates": 2,
+   "registry": 2,
+   "production_fooling_cases": 0,
+   "real_suite_labelled": 17,
+   "certificate_precision": 1.0,
+   "redundant_gates": 8
+  },
+  "online_fdr": {
+   "over_budget_share": 0.2413793103448276,
+   "lord_discoveries": 44
+  },
+  "topology": {
+   "effective_rank": 8.4418,
+   "n_sleeves": 319,
+   "effective_discoveries": 3447.0,
+   "effective_rank_simulated": 4.5938,
+   "trade_overlap_rank": 11.7922,
+   "exposure_sim_rank": 2.0096
+  },
+  "qd": {
+   "niche_share": 2.8935185185185186e-05,
+   "qd_score": 5.1368,
+   "filled": 20,
+   "corr_clusters": 11,
+   "capacity_measured_elites": 17,
+   "cluster_measured_elites": 17
+  },
+  "genomes": {
+   "best_fitness": 0.0,
+   "diversity": 0.7924,
+   "judged_emissions": 0,
+   "program_kinds_measured": 4,
+   "program_diversity": {
+    "portfolio": 0.48,
+    "execution": 0.5422,
+    "regime": 0.6833,
+    "scheduler": 0.6889
+   },
+   "program_heldout_lift": {
+    "portfolio": -2.3528,
+    "execution": 0.03967,
+    "regime": -0.04749,
+    "scheduler": 0.027139
+   }
+  },
+  "grammar": {
+   "n_primitives": 0,
+   "judged_programs": 0,
+   "retired_operators": 0
+  },
+  "theory": {
+   "n_theories": 3,
+   "complete_share": 0.3333333333333333,
+   "refuted": 0,
+   "supported": 1,
+   "composed": 6,
+   "context_dependent": 1,
+   "carried_evidence": 0
+  },
+  "predictions": {
+   "crps": null,
+   "coverage90": null,
+   "accounted_share": 0.0,
+   "overconfidence": null,
+   "quantities_scored": 4,
+   "mae_r_crps": 0.6394214016768793,
+   "mfe_r_crps": 1.8659174128187288,
+   "hold_h_crps": 0.4792475277769799,
+   "slip_r_crps": 0.02044892801993306
+  },
+  "market": {
+   "n_researchers": 40,
+   "independently_discovered": 0,
+   "priced_legs": 3,
+   "blinding_violations": 6,
+   "blinding_breach": 0.0
+  },
+  "failure_memory": {
+   "theorems": 0,
+   "rows_per_statement": null,
+   "coverage_share": 0.0
+  },
+  "formal": {
+   "protocol_proven": 1.0,
+   "knobs_evidenced": 0.3333333333333333,
+   "worlds_searched": 92,
+   "failure_worlds": 7,
+   "traces_driven": 29,
+   "core_blocked_share": 0.4444444444444444,
+   "core_gaps": 4
+  },
+  "chaos": {
+   "breaches": 0,
+   "drills_failing": 0,
+   "processes_killed": 5,
+   "gateway_faults_measured": 8,
+   "gateway_breaches": 2
+  },
+  "replay": {
+   "reconstructible_share": 1.0
+  },
+  "data_os": {
+   "pit_share": 0.0,
+   "calibrated_rankers": 0,
+   "sources": 15,
+   "sources_fully_joined": 0,
+   "gate_yield": null
+  },
+  "world_science": {
+   "stable_edges": 0,
+   "hypotheses": 83,
+   "macro_kinds_measured": 4,
+   "listed_edges_measured": 4,
+   "listed_edges_contradicted": 4,
+   "or_motif_hits": 7,
+   "macro_live_edges": 0
+  },
+  "exchange": {
+   "expected_log_growth": 0.0029043374298275506,
+   "defer_share": 0.0
+  },
+  "worlds": {
+   "stress_tested_share": 0.0,
+   "flagged_share": 0.0,
+   "worlds": 0,
+   "swap_world_measured_share": 0.0
+  },
+  "frontier": {
+   "unseen": 0.0,
+   "coverage": 1.0,
+   "new_per_100": 0.0,
+   "yield_b": 0.0277
+  },
+  "review": {
+   "resolved_share": 0.22676579925650558,
+   "challenged": 34,
+   "failed": 24,
+   "shared_reward_flags": 0,
+   "self_judged": 0,
+   "evaluator_reward_reads": 0
+  },
+  "door": {
+   "door_rows": 58,
+   "door_withheld": 0,
+   "live_withheld": 0
+  },
+  "epistemic": {
+   "decidable_share": 0.03333333333333333,
+   "decidable_share_all": 0.4426229508196721,
+   "decidable_dsr_excess": 0.8448275862068966,
+   "decidable_pbo": 0.0,
+   "decidable_cost_x3": 0.9655172413793104,
+   "decidable_cost_model": 0.39436619718309857
+  },
+  "contracts": null,
+  "self_model": {
+   "top_expected_improvement": 1.28,
+   "regressed": 0
+  },
+  "twin": {
+   "challengers": 5,
+   "adopted": 0
+  }
+ },
+ "contracts": {
+  "ADMITTED": 4,
+  "UNMEASURED": 42
+ },
+ "largest_deficiency": {
+  "area": "calibration.accounting",
+  "gap": 1.0,
+  "gain": "CALIBRATION",
+  "p_fix": 0.8,
+  "cost": 0.5,
+  "why": "trades with no forecast registered before them",
+  "expected_improvement": 1.28
+ },
+ "immune_verdict": {
+  "verdict": "OK",
+  "immune_score": 1.0,
+  "best": null
+ },
+ "emitted": {
+  "topology": {
+   "kind": "orthogonal",
+   "emitted": 150
+  },
+  "qd": {
+   "kind": "qd_niches",
+   "emitted": 150
+  },
+  "genomes": {
+   "kind": "genomes",
+   "emitted": 41
+  },
+  "theory": {
+   "kind": "theory_compositions",
+   "emitted": 24
+  },
+  "world_science": {
+   "kind": "cross_science",
+   "emitted": 25
+  }
+ }
+}

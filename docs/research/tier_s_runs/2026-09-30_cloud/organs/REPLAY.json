@@ -1,0 +1,110 @@
+{
+ "components": {
+  "certificates": {
+   "live": 58,
+   "replayed": 58,
+   "missing": [],
+   "n_missing": 0,
+   "extra": 0,
+   "reconstructible": true
+  },
+  "sleeves": {
+   "live": 319,
+   "replayed": 319,
+   "missing": [],
+   "n_missing": 0,
+   "extra": 0,
+   "reconstructible": true
+  }
+ },
+ "reconstructible_share": 1.0,
+ "stats": {
+  "fills": {
+   "records_used": 151,
+   "undated": 0,
+   "after_t": 0,
+   "keys": 64
+  },
+  "orders": {
+   "records_used": 39,
+   "undated": 0,
+   "after_t": 0,
+   "keys": 4
+  },
+  "decisions": {
+   "records_used": 282,
+   "undated": 0,
+   "after_t": 0,
+   "keys": 6
+  },
+  "certificates": {
+   "records_used": 58,
+   "undated": 0,
+   "after_t": 0,
+   "keys": 58
+  },
+  "sleeves": {
+   "records_used": 319,
+   "undated": 0,
+   "after_t": 0,
+   "keys": 319
+  },
+  "legs": {
+   "records_used": 487,
+   "undated": 0,
+   "after_t": 0,
+   "keys": 89
+  },
+  "allocations": {
+   "records_used": 300,
+   "undated": 0,
+   "after_t": 0,
+   "keys": 1
+  },
+  "verdicts": {
+   "records_used": 0,
+   "undated": 0,
+   "after_t": 0,
+   "keys": 0
+  },
+  "hypotheses": {
+   "records_used": 108189,
+   "undated": 0,
+   "after_t": 0,
+   "keys": 78345
+  },
+  "compute": {
+   "records_used": 273,
+   "undated": 0,
+   "after_t": 0,
+   "keys": 66
+  },
+  "exchange": {
+   "records_used": 1,
+   "undated": 0,
+   "after_t": 0,
+   "keys": 1
+  }
+ },
+ "sample_past": {
+  "at": "2026-09-23T11:47:29.089020+00:00",
+  "sizes": {
+   "fills": 64,
+   "orders": 4,
+   "decisions": 6,
+   "certificates": 58,
+   "sleeves": 319,
+   "legs": 89,
+   "allocations": 1,
+   "verdicts": 0,
+   "hypotheses": 43732,
+   "compute": 65,
+   "exchange": 0
+  }
+ },
+ "metric": {
+  "reconstructible_share": 1.0
+ },
+ "generated_utc": "2026-09-30T11:47:29.089020+00:00",
+ "seconds": 4.178
+}

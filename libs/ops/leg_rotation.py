@@ -111,6 +111,12 @@ COST_SAMPLES: int = 5
 ALWAYS_RUN: frozenset[str] = frozenset({
     "record_tape", "promoter", "forward_reconcile", "heal_clocks",
     "smoke_release", "health", "publish_state",
+    # THE PROMOTION DOOR'S WRITER (2026-09-30). The door fails closed on a missing or stale
+    # (> 6h) verdict, so a deferred `tier_s` pass withholds every new LIVE row: it is on the
+    # money path now, and it runs every hour.
+    "tier_s",
+    # ... and the writer of the door's fourth input, reports/REPLICATION.json (heavy plan).
+    "replication_civilization",
 })
 
 
