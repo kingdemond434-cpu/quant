@@ -50,6 +50,11 @@ WHAT ONE PASS DOES (leg `paid_substitute_engine`, hourly):
      nothing is parked in the registry (no-queues law, 2026-09-23): every cell is `queued`.
   5. REPORT. `reports/PAID_SUBSTITUTE_COVERAGE.json` + `.md`: per class and region -- paid sets,
      sets with a matched substitute, match strength, enrolled substitutes, the cells they fed.
+     A separate Trading Economics section scores every TE field (`data/tradingeconomics_free_
+     substitutes.json`, a committed copy with provenance) against each free source its row
+     names. Every source passes the terms fence first (`terms_fence`: not `confirmed` reads
+     BLOCKED_ON_TERMS); a field reaches MATCHED_UNVERIFIED at most until its correlation to TE's
+     own release is measured, and TE never enters covered_share.
 
 FREE AND LAWFUL ONLY: key-less sources, or free keys whose environment variable NAME is present on
 the box (the value is never read). No login-walled page, no paid tier, nothing against a
@@ -129,6 +134,24 @@ PAID_SUBSTITUTE_ASIA_TABLE = DESK / "data" / "paid_data_substitutes_asia_blocked
 #: A paid set the Asia thread found no lawful substitute for (its row names no free series and
 #: its status is BLOCKED_*). Not coverage, not UNMATCHED: a searched-and-refused verdict.
 BLOCKED_NO_SUBSTITUTE = "BLOCKED_NO_SUBSTITUTE"
+#: Trading Economics (a paid API; no key is added) mapped field by field to the free sources that
+#: replace it. A committed copy of the mining thread's map, provenance recorded in the file.
+#: Absent, its counts are UNMEASURED -- never zero coverage.
+TE_CATALOGUE = DESK / "data" / "tradingeconomics_free_substitutes.json"
+#: The terms fence's verdict word. A substitute whose terms are not `confirmed` reads
+#: `BLOCKED_ON_TERMS:<verdict>` (the Asia export's own status vocabulary) and is never admitted:
+#: an absent or unknown verdict is `to_confirm` -- the gate fails closed.
+BLOCKED_ON_TERMS = "BLOCKED_ON_TERMS"
+TERMS_VERDICTS: tuple[str, ...] = ("confirmed", "refused", "to_confirm")
+#: A TE field's status, best first. COVERED needs a MEASURED correlation to TE's own release,
+#: which no row has yet; until then a field reaches MATCHED_UNVERIFIED at most.
+TE_STATUSES: tuple[str, ...] = (
+    "COVERED",
+    "MATCHED_UNVERIFIED",
+    BLOCKED_ON_TERMS,
+    "CONTRADICTED",
+    "UNMATCHED",
+)
 ASIA_TABLE_GLOBS: tuple[str, ...] = (
     "/mnt/project-files/reports/paid_data_substitutes_*.md",
     str(DESK / "reports" / "paid_data_substitutes_*.md"),
@@ -1309,6 +1332,167 @@ def asia_named_candidates(
     return out
 
 
+# ------------------------------------------------------------------- Trading Economics
+def terms_verdict(sub: Mapping[str, Any]) -> str:
+    """The terms fence: `confirmed`, `refused` or `to_confirm`. Anything else -- absent, empty, a
+    word the fence does not know -- is `to_confirm`, so an unconfirmed source is never admitted."""
+    t = str(sub.get("terms") or "").strip().lower()
+    return t if t in TERMS_VERDICTS else "to_confirm"
+
+
+def terms_fence(sub: Mapping[str, Any]) -> str | None:
+    """None when the substitute's terms are confirmed, else `BLOCKED_ON_TERMS:<verdict>`."""
+    v = terms_verdict(sub)
+    return None if v == "confirmed" else f"{BLOCKED_ON_TERMS}:{v}"
+
+
+def load_te_catalogue(path: Path | None = None) -> dict[str, Any] | None:
+    doc = _read_json(path or TE_CATALOGUE)
+    return doc if isinstance(doc, dict) and isinstance(doc.get("substitutes"), list) else None
+
+
+def te_pair_status(c: Mapping[str, Any]) -> str:
+    """One (TE field, free substitute) pair. The terms fence first: an unconfirmed source is
+    BLOCKED_ON_TERMS whatever its metadata says. Then the metadata match, then the correlation:
+    COVERED only on a MEASURED correlation >= MIN_CORRELATION from a usable source, CONTRADICTED
+    on a measured one below it, and MATCHED_UNVERIFIED while it is UNMEASURED."""
+    if c.get("terms_status"):
+        return BLOCKED_ON_TERMS
+    if not is_match(c):
+        return "UNMATCHED"
+    corr = c.get("correlation")
+    if isinstance(corr, (int, float)):
+        if corr >= MIN_CORRELATION:
+            return "COVERED" if c.get("usable") else "MATCHED_UNVERIFIED"
+        return "CONTRADICTED"
+    return "MATCHED_UNVERIFIED"
+
+
+def te_section(
+    path: Path | None,
+    library: list[dict[str, Any]],
+    *,
+    environ: Mapping[str, str] | None = None,
+    now: datetime | None = None,
+    lake: Path | None = None,
+    acquired: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Every Trading Economics field scored against each free source its row NAMES.
+
+    The paid side is the TE field (class and region from the file's `desk_scoring`); a named
+    source is the library row when the library carries it (its class is then the library's own,
+    so a mismatch shows), else the file's inline spec (class asserted by the map, recorded as
+    `class_basis`). TE publishes no public sample on disk, so every correlation is UNMEASURED and
+    no field can be COVERED; every source passes the terms fence before it can be admitted."""
+    path = path or TE_CATALOGUE
+    doc = load_te_catalogue(path)
+    counts_unmeasured = dict.fromkeys(TE_STATUSES, UNMEASURED)
+    if doc is None:
+        _LOG.warning("paid_substitute_engine: TE catalogue absent at %s -- UNMEASURED", path)
+        return {
+            "status": f"{UNMEASURED}: {Path(path).name} is not on this host",
+            "path": str(path),
+            "fields": UNMEASURED,
+            "pairs": UNMEASURED,
+            "field_status": counts_unmeasured,
+            "rows": [],
+        }
+    fields = ((doc.get("desk_scoring") or {}).get("fields")) or {}
+    lib_by_id = {str(s["id"]): s for s in library}
+    rows: list[dict[str, Any]] = []
+    pairs: list[dict[str, Any]] = []
+    for r in doc["substitutes"]:
+        if not isinstance(r, dict) or not r.get("te_field"):
+            continue
+        name = str(r["te_field"])
+        spec = fields.get(name) or {}
+        paid = {
+            "id": f"paid:te:{_slug(name)}",
+            "class": spec.get("class") or "UNSTATED",
+            "region": spec.get("region") or "global",
+            "frequency": "UNSTATED",
+            "history_years": UNMEASURED,
+            "public_sample": None,
+        }
+        field_pairs: list[dict[str, Any]] = []
+        for named in spec.get("substitutes") or []:
+            lid = str(named.get("library_id") or "")
+            if lid:
+                base = lib_by_id.get(lid)
+                if base is None:
+                    field_pairs.append(
+                        {
+                            "substitute_id": lid,
+                            "status": "UNMATCHED",
+                            "reason": "named library id is not in paid_substitute_library.json",
+                        }
+                    )
+                    continue
+                sub = {**base, "terms": named.get("terms", base.get("terms"))}
+                basis = "library"
+            else:
+                sub = {**named}
+                sub["classes"] = sorted({*(sub.get("classes") or []), str(paid["class"])})
+                basis = "te_map_assertion"
+            if not sub.get("id"):
+                continue
+            cov = coverage(paid, sub, now=now)
+            ok, why = usable(sub, environ)
+            c: dict[str, Any] = {
+                "paid_id": paid["id"],
+                "substitute_id": sub["id"],
+                "dataset_id": dataset_id(sub),
+                "class_basis": basis,
+                "coverage": cov["score"],
+                "components": cov["components"],
+                "unmeasured": cov["unmeasured"],
+                "correlation": correlation(paid, sub, lake=lake, acquired=acquired),
+                "usable": ok,
+                "usable_reason": why,
+                "terms": terms_verdict(sub),
+                "terms_status": terms_fence(sub),
+            }
+            c["metadata_match"] = is_match(c)
+            c["status"] = te_pair_status(c)
+            field_pairs.append(c)
+        pairs += field_pairs
+        best = next(
+            (s for s in TE_STATUSES if any(p.get("status") == s for p in field_pairs)),
+            "UNMATCHED",
+        )
+        rows.append(
+            {
+                "te_field": name,
+                "paid_id": paid["id"],
+                "class": paid["class"],
+                "region": paid["region"],
+                "free_source_named": str(r.get("free_source") or ""),
+                "status": best,
+                "substitutes": field_pairs,
+            }
+        )
+    fs = Counter(r["status"] for r in rows)
+    ps = Counter(str(p.get("status")) for p in pairs)
+    return {
+        "status": f"READ {Path(path).name}: {len(rows)} fields, {len(pairs)} named pairs",
+        "path": str(path),
+        "provenance": doc.get("provenance"),
+        "verification": doc.get("verification"),
+        "coverage_claim": doc.get("coverage_claim"),
+        "fields": len(rows),
+        "pairs": len(pairs),
+        "field_status": {k: fs.get(k, 0) for k in TE_STATUSES},
+        "pair_status": {k: ps.get(k, 0) for k in TE_STATUSES},
+        "pairs_metadata_match": sum(1 for p in pairs if p.get("metadata_match")),
+        "pairs_blocked_on_terms": ps.get(BLOCKED_ON_TERMS, 0),
+        "pairs_terms": dict(Counter(str(p.get("terms")) for p in pairs if p.get("terms"))),
+        "correlation_measured_pairs": sum(
+            1 for p in pairs if isinstance(p.get("correlation"), (int, float))
+        ),
+        "rows": rows,
+    }
+
+
 def discovered_candidates(
     catalogue: list[dict[str, Any]], *, intel_dir: Path | None = None, limit_files: int = 400
 ) -> list[dict[str, Any]]:
@@ -2190,6 +2374,28 @@ def render_md(doc: Mapping[str, Any]) -> str:
             f"{ms['correlation']} | {r['n_enrolled']} "
             f"| {cf_s} |"
         )
+    te = doc.get("trading_economics") or {}
+    lines += ["", "## Trading Economics (paid API; no key) -> free substitutes", ""]
+    lines.append(
+        f"`{te.get('status', UNMEASURED)}`. Fields **{h.get('te_fields', UNMEASURED)}**: "
+        f"covered {h.get('te_covered', UNMEASURED)}, matched-unverified "
+        f"{h.get('te_matched_unverified', UNMEASURED)}, **{BLOCKED_ON_TERMS} "
+        f"{h.get('te_blocked_on_terms', UNMEASURED)}**. Named pairs {h.get('te_pairs', UNMEASURED)}"
+        f" ({h.get('te_pairs_metadata_match', UNMEASURED)} match on metadata, "
+        f"{h.get('te_pairs_blocked_on_terms', UNMEASURED)} blocked on terms). A field is COVERED "
+        "only on a MEASURED correlation to TE's own release; none is measured."
+    )
+    if te.get("rows"):
+        lines += ["", "| TE field | class | region | status | named substitutes (pair status) |"]
+        lines.append("|---|---|---|---|---|")
+        for r in te["rows"]:
+            subs = ", ".join(
+                f"{x.get('substitute_id')} ({x.get('terms_status') or x.get('status')})"
+                for x in r["substitutes"]
+            )
+            lines.append(
+                f"| {r['te_field']} | {r['class']} | {r['region']} | {r['status']} | {subs} |"
+            )
     lines += [
         "",
         "Correlation is UNMEASURED wherever the paid side has no public sample on disk -- "
@@ -2234,6 +2440,7 @@ def run(
         "report_md": REPORT_MD,
         "world_state": WORLD_STATE,
         "asia_table": PAID_SUBSTITUTE_ASIA_TABLE,
+        "te_catalogue": TE_CATALOGUE,
         **dict(paths or {}),
     }
     t0 = time.monotonic()
@@ -2310,6 +2517,14 @@ def run(
         acquired=acquired,
     )
     grounds = search_targets(catalogue, classes)
+    te = te_section(
+        Path(p["te_catalogue"]),
+        library,
+        environ=environ,
+        now=now,
+        lake=p["lake"],
+        acquired=acquired,
+    )
     cands = lib_c + disc_c + named_c
     matched = {c["substitute_id"] for c in lib_c if is_match(c)}
     ready_ids = sorted({c["substitute_id"] for c in lib_c if enrolable(c)})
@@ -2518,6 +2733,16 @@ def run(
             ),
             "asia_named_verified": sum(1 for c in named_c if verification(c) == "VERIFIED"),
             "paid_status": {k: st_n.get(k, 0) for k in PAID_STATUSES},
+            # Trading Economics, field by field; a separate section, never folded into
+            # covered_share. UNMEASURED (never 0) while its catalogue is not on this host.
+            "te_fields": te["fields"],
+            "te_pairs": te["pairs"],
+            "te_field_status": te["field_status"],
+            "te_covered": te["field_status"]["COVERED"],
+            "te_matched_unverified": te["field_status"]["MATCHED_UNVERIFIED"],
+            "te_blocked_on_terms": te["field_status"][BLOCKED_ON_TERMS],
+            "te_pairs_metadata_match": te.get("pairs_metadata_match", UNMEASURED),
+            "te_pairs_blocked_on_terms": te.get("pairs_blocked_on_terms", UNMEASURED),
             "public_samples": dict(Counter(public_sample(e)["status"] for e in catalogue)),
             "paid_with_match": paid_with_match,
             "class_match_share": round(paid_with_match / len(catalogue), 4)
@@ -2556,6 +2781,7 @@ def run(
         },
         "catalogue_crawl": crawl,
         "asia": {k: v for k, v in asia.items() if k not in ("entries", "library_rows")},
+        "trading_economics": te,
         "by_class_region": rows,
         "rule": (
             "coverage = weighted mean of the MEASURED components among class .35, region .25, "

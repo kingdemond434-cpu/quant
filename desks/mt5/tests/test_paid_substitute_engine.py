@@ -633,3 +633,132 @@ def test_the_fence_is_a_state_fence_on_the_law_gate() -> None:
     r = subprocess.run([sys.executable, str(_ROOT / "scripts" / "check_paid_substitute_coverage.py"),
                         "--root", str(_ROOT)], capture_output=True, text=True, timeout=120)
     assert r.returncode in (0, 1) and "paid_substitute fence" in r.stdout
+
+
+# ------------------------------------------------------ Trading Economics -> free substitutes
+def _te_doc(terms: str | None) -> dict:
+    """A two-field TE map in the committed file's shape: one library-backed source, one inline."""
+    named: dict = {"library_id": "dbnomics"}
+    inline: dict = {"id": "te_nasdaq_econ_calendar", "name": "Nasdaq economic calendar JSON",
+                    "classes": ["consensus_estimates"], "region": "US", "frequency": "daily",
+                    "endpoint": "https://api.nasdaq.com/api/calendar/economicevents?date=D",
+                    "auth": "none", "auth_env": "", "history_start": None, "latency_days": None}
+    if terms is not None:
+        named["terms"] = terms
+        inline["terms"] = terms
+    return {
+        "verification": "UNVERIFIED",
+        "substitutes": [{"te_field": "calendar actual (all countries)", "free_source": "DBnomics"},
+                        {"te_field": "consensus (US)", "free_source": "Nasdaq calendar JSON"}],
+        "desk_scoring": {"fields": {
+            "calendar actual (all countries)": {"class": "macro", "region": "global",
+                                                "substitutes": [named]},
+            "consensus (US)": {"class": "consensus_estimates", "region": "US",
+                               "substitutes": [inline]}}},
+    }
+
+
+def _te_file(tmp: Path, terms: str | None) -> Path:
+    f = tmp / "te.json"
+    f.write_text(json.dumps(_te_doc(terms)), "utf-8")
+    return f
+
+
+def test_committed_te_catalogue_is_the_supplied_map_with_provenance() -> None:
+    doc = json.loads(pse.TE_CATALOGUE.read_text("utf-8"))
+    prov = doc["provenance"]
+    assert re.fullmatch(r"[0-9a-f]{64}", prov["supplied_sha256"])
+    assert set(prov["verbatim_keys"]) | set(prov["desk_keys"]) == set(doc)
+    assert doc["verification"].startswith("UNVERIFIED")
+    fields = doc["desk_scoring"]["fields"]
+    # every TE row is scored, and every source it names starts unconfirmed (the gate fails closed)
+    assert {r["te_field"] for r in doc["substitutes"]} == set(fields)
+    lib = {s["id"] for s in pse.load_library()}
+    for spec in fields.values():
+        assert spec["substitutes"]
+        for s in spec["substitutes"]:
+            assert s["terms"] == "to_confirm"
+            assert s.get("library_id", "") in lib or s.get("id", "").startswith("te_")
+            assert not pse.banned(str(s.get("endpoint") or ""))
+
+
+def test_terms_fence_fails_closed() -> None:
+    assert pse.terms_fence({"terms": "confirmed"}) is None
+    assert pse.terms_fence({"terms": "refused"}) == "BLOCKED_ON_TERMS:refused"
+    for t in (None, "", "to_confirm", "ok", "CONFIRMED-ish"):
+        assert pse.terms_fence({"terms": t}) == "BLOCKED_ON_TERMS:to_confirm"
+
+
+def test_unconfirmed_te_substitutes_read_blocked_on_terms_never_admitted(tmp_path: Path) -> None:
+    te = pse.te_section(_te_file(tmp_path, None), pse.load_library(), environ={}, now=NOW,
+                        lake=tmp_path / "lake")
+    assert te["fields"] == 2 and te["pairs"] == 2
+    assert te["field_status"][pse.BLOCKED_ON_TERMS] == 2
+    assert te["field_status"]["MATCHED_UNVERIFIED"] == 0 and te["field_status"]["COVERED"] == 0
+    for r in te["rows"]:
+        for p in r["substitutes"]:
+            assert p["status"] == pse.BLOCKED_ON_TERMS
+            assert p["terms_status"] == "BLOCKED_ON_TERMS:to_confirm"
+            assert p["metadata_match"] is True     # blocked on terms, not on metadata
+
+
+def test_confirmed_te_substitute_reaches_matched_unverified_at_most(tmp_path: Path) -> None:
+    te = pse.te_section(_te_file(tmp_path, "confirmed"), pse.load_library(), environ={}, now=NOW,
+                        lake=tmp_path / "lake")
+    assert te["field_status"]["MATCHED_UNVERIFIED"] == 2
+    assert te["field_status"]["COVERED"] == 0
+    assert te["correlation_measured_pairs"] == 0
+    for r in te["rows"]:
+        for p in r["substitutes"]:
+            assert p["correlation"] == pse.UNMEASURED and p["coverage"] != 0
+    # a library-backed source is scored on the LIBRARY's class, an inline one on the map's
+    basis = {p["substitute_id"]: p["class_basis"] for r in te["rows"] for p in r["substitutes"]}
+    assert basis == {"dbnomics": "library", "te_nasdaq_econ_calendar": "te_map_assertion"}
+
+
+def test_te_covered_needs_a_measured_correlation_from_a_usable_source() -> None:
+    base = {"terms_status": None, "usable": True, "coverage": 0.9,
+            "components": {"class": 1.0, "region": 1.0}}
+    assert pse.te_pair_status({**base, "correlation": pse.UNMEASURED}) == "MATCHED_UNVERIFIED"
+    assert pse.te_pair_status({**base, "correlation": 0.8}) == "COVERED"
+    assert pse.te_pair_status({**base, "correlation": 0.8, "usable": False}) == (
+        "MATCHED_UNVERIFIED")
+    assert pse.te_pair_status({**base, "correlation": 0.1}) == "CONTRADICTED"
+    assert pse.te_pair_status({**base, "correlation": 0.8,
+                               "terms_status": "BLOCKED_ON_TERMS:refused"}) == pse.BLOCKED_ON_TERMS
+    assert pse.te_pair_status({**base, "components": {"class": 0.0, "region": 1.0}}) == "UNMATCHED"
+
+
+def test_te_counts_surface_in_the_coverage_report(tmp_path: Path) -> None:
+    p = {**_paths(tmp_path), "te_catalogue": _te_file(tmp_path, None)}
+    doc = pse.run(now=NOW, fetch=False, dry_run=True, paths=p, environ={}, asia_globs=[])
+    h = doc["headline"]
+    assert h["te_fields"] == 2 and h["te_pairs"] == 2
+    assert h["te_blocked_on_terms"] == 2 and h["te_covered"] == 0
+    assert h["te_matched_unverified"] == 0
+    assert doc["trading_economics"]["rows"]
+    # TE never enters the catalogue's covered_share
+    assert not any(k.startswith("paid:te:") for k in doc["paid_status"])
+    on_disk = json.loads(Path(p["report"]).read_text("utf-8"))
+    assert on_disk["headline"]["te_blocked_on_terms"] == 2
+    md = Path(p["report_md"]).read_text("utf-8")
+    assert "## Trading Economics" in md and "BLOCKED_ON_TERMS 2" in md
+    assert "BLOCKED_ON_TERMS:to_confirm" in md
+
+
+def test_absent_te_catalogue_is_unmeasured_not_zero(tmp_path: Path) -> None:
+    p = {**_paths(tmp_path), "te_catalogue": tmp_path / "absent" / "te.json"}
+    doc = pse.run(now=NOW, fetch=False, dry_run=True, paths=p, environ={}, asia_globs=[])
+    h = doc["headline"]
+    assert h["te_fields"] == pse.UNMEASURED and h["te_blocked_on_terms"] == pse.UNMEASURED
+    assert doc["trading_economics"]["status"].startswith(pse.UNMEASURED)
+
+
+def test_committed_te_catalogue_scores_every_field(tmp_path: Path) -> None:
+    te = pse.te_section(pse.TE_CATALOGUE, pse.load_library(), environ={}, now=NOW,
+                        lake=tmp_path / "lake")
+    doc = json.loads(pse.TE_CATALOGUE.read_text("utf-8"))
+    assert te["fields"] == len(doc["substitutes"]) > 0
+    assert all(r["substitutes"] for r in te["rows"])
+    assert te["field_status"]["COVERED"] == 0
+    assert te["field_status"][pse.BLOCKED_ON_TERMS] == te["fields"]
