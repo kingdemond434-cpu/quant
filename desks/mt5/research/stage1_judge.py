@@ -152,7 +152,8 @@ UNMEASURED = "UNMEASURED"
 #: lockbox is never read, stage 1 never drops or parks a cell, and the trial charge is the full
 #: union of screened cells (`trial_charge`; the sealed DSR charges it through
 #: patches/union_lifetime_trials/, restated as `stage1_record.dsr_charge`), pinned by a test.
-#: `ordering_bias_warning` flags a ranked cell that has waited >= 24h for the sealed judge. An unknown value falls back to pre_wf.
+#: `ordering_bias_warning` flags a ranked cell that has waited >= 24h for the sealed judge.
+#: An unknown value falls back to pre_wf.
 WINDOWS = ("pre_wf", "pre_lockbox")
 DEFAULT_WINDOW = "pre_wf"
 WINDOW = os.environ.get("STAGE1_WINDOW", DEFAULT_WINDOW)
