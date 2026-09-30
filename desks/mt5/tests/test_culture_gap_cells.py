@@ -106,12 +106,25 @@ def test_a_conditioner_without_its_pack_series_is_unmeasured(tmp_path: Path,
     assert cells == [] and str(note["unmeasured"]).startswith(CC.UNMEASURED)
 
 
+def _isolate_door(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    """Point the donation door (intake dir, pre-registration ledger, registry backup) at tmp."""
+    import proposer_common as PC
+
+    from libs.moat import registry as R
+    from libs.research import preregistration as PR
+    intel = tmp_path / "intel"
+    monkeypatch.setattr(PC, "INTEL", intel)
+    monkeypatch.setattr(PR, "LEDGER", tmp_path / "prereg.jsonl")
+    monkeypatch.setattr(R, "BACKUP", tmp_path / "no_backup")
+    monkeypatch.setattr(G, "SERIES_DIR", tmp_path / "series")
+    return intel
+
+
 def test_cells_reach_the_registry_with_declared_culture_once(tmp_path: Path,
                                                              monkeypatch: pytest.MonkeyPatch
                                                              ) -> None:
     from libs.moat import registry as R
-    monkeypatch.setattr(R, "BACKUP", tmp_path / "no_backup")
-    monkeypatch.setattr(G, "SERIES_DIR", tmp_path / "series")
+    _isolate_door(tmp_path, monkeypatch)
     recs = [r for r in _REC if r["id"] in ("cn_pboc_fix", "jp_tax_calendar_jpn225")]
     rp = tmp_path / "recipes.json"
     rp.write_text(json.dumps({"recipes": recs}), encoding="utf-8")
@@ -130,9 +143,11 @@ def test_cells_reach_the_registry_with_declared_culture_once(tmp_path: Path,
         conn = R.connect()
         rows = conn.execute("select family, symbol, params_json, source_culture, "
                             "participant_structure, culture_derivation, origin "
-                            "from research_candidates").fetchall()
+                            "from research_candidates where origin = ?",
+                            (G.ORIGIN,)).fetchall()
         conn.close()
-        assert len(rows) == n
+        assert len(rows) == n                                         # the lineage rows
+        assert doc["donation"]["donated"] == n == doc["donation"]["tests_run"]
         for r in rows:
             assert r["origin"] == G.ORIGIN and r["family"] != "discovered"
             how = json.loads(r["culture_derivation"])
@@ -145,6 +160,54 @@ def test_cells_reach_the_registry_with_declared_culture_once(tmp_path: Path,
         assert again["totals"]["emitted_this_pass"] == 0                # never searched twice
     finally:
         R.set_path(None)
+
+
+def test_recipe_to_donation_to_compiler_to_a_docket_row_with_all_four_fields(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """END TO END (2026-09-30): the registry door alone is never judged, so a gap cell must
+    reach the COMPILER's intake. Recipe -> `run` donates through proposer_common.donate into
+    data/intelligence/culture_gap/ -> the compiler reads that file with its own reader and
+    compiles each row EXACT_RECIPE -> the docket candidate carries all four culture fields,
+    the two the recipe knows as declared and the other two inferred by the one rule."""
+    from research import miner_candidate_compiler as MC
+
+    from libs.moat import registry as R
+    intel = _isolate_door(tmp_path, monkeypatch)
+    recs = [r for r in _REC if r["id"] == "cn_pboc_fix"]
+    rp = tmp_path / "recipes.json"
+    rp.write_text(json.dumps({"recipes": recs}), encoding="utf-8")
+    R.set_path(tmp_path / "alpha_registry.sqlite")
+    try:
+        doc = G.run(60, year=2026, recipes_path=rp, summary=tmp_path / "absent.json",
+                    cursor_path=tmp_path / "cursor.json")
+    finally:
+        R.set_path(None)
+    n = doc["totals"]["emitted_this_pass"]
+    assert n > 0 and doc["donation"]["donated"] == n
+    files = sorted((intel / G.SEAT).glob("discoveries_*.json"))
+    assert len(files) == 1
+    contract = json.loads(files[0].read_text(encoding="utf-8"))
+    assert contract["tests_run"] == n                          # every trial charged
+    universe = {s for r in recs for s in r["symbols"]}
+    docket: list[dict] = []
+    for row in MC._iter_file_rows(files[0]):
+        assert row["available_time"] and row["payload_hash"]   # the PIT door stamped it
+        produced, disposition = MC.compile_row(str(row["source"]), row, universe)
+        assert disposition == "EXACT_RECIPE"
+        docket.extend(MC.expand_axes(produced))
+    assert len(docket) == n            # one fixed hour is never re-sliced by the session axis
+    for cand in docket:
+        assert cand["family"] == "fx_fixing_reversal" != "discovered"
+        assert cand["params"]["session"] == "all"
+        assert cand["mechanism_status"] == "NAMED" and len(cand["mechanism_note"]) >= 12
+        for f in CC.FIELDS:
+            assert cand[f] and cand[f] != CC.UNMEASURED, f
+        how = cand[CC.DERIVATION_FIELD]
+        assert cand["source_culture"] == "CN/zh"
+        assert how["source_culture"] == how["participant_structure"] == CC.DECLARED
+        assert how["failure_mode_hypothesis"] != CC.DECLARED     # inferred, not laundered
+        assert CC.is_source_derived(how)
+    assert {c["params"]["fix_hour"] for c in docket} == {3, 4}
 
 
 def test_no_summary_is_unmeasured_and_reorders_nothing(tmp_path: Path) -> None:

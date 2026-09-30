@@ -91,6 +91,12 @@ SUMMARY = DESK / "reports" / "CELL_CULTURE.json"
 CURSOR = DESK / "reports" / "culture_gap_cells_cursor.json"
 OUT = DESK / "reports" / "CULTURE_GAP_CELLS.json"
 SERIES_DIR = DESK / "data" / "lake" / "series"
+#: The intake seat: `proposer_common.donate` writes data/intelligence/<SEAT>/discoveries_*.json,
+#: which `miner_candidate_compiler` reads every pass and brings to the docket. The registry door
+#: alone is not judged (measured 2026-09-30: the gauntlet does not read the registry, its only
+#: exit is ~60 score-ranked claims an hour against 300k+ candidates, and conversion_maximiser
+#: skips a cell that carries a falsifier), so every minted cell is ALSO donated here.
+SEAT = "culture_gap"
 
 #: A broker-hour variant exact on less of the year than this is published, not minted: the one
 #: or two weeks when the local and New York DST calendars disagree are not a season.
@@ -360,8 +366,63 @@ def _rationale(rec: dict[str, Any], cell: dict[str, Any], src: dict[str, Any]) -
             + (f" {rec['note']}." if rec.get("note") else ""))
 
 
+def donation_row(rec: dict[str, Any], cell: dict[str, Any], src: dict[str, Any]) -> dict[str, Any]:
+    """One intake row for `proposer_common.donate`: an EXACT RECIPE the compiler admits as
+    written (family + params dict + symbol + a registered family).
+
+    The chart is written as `timeframe` (H1 carries none, the desk's convention) and the session
+    is pinned to `all`: the cell already names its broker hour, so the compiler's session axis
+    (asia/london/ny) would only re-slice one fixed hour into filters that either keep it or empty
+    it -- trials charged for nothing. Both are identity keys the families never see.
+
+    CULTURE: only the two fields the recipe KNOWS ride as declared (`source_culture`,
+    `participant_structure`); the failure mode and crowding prior are left for the compiler's
+    `cell_culture.carry` to infer by the one rule, so the docket's `culture_derivation` says
+    `inferred:*` for them and not a laundered `declared`."""
+    params = dict(cell["params"])
+    if cell["chart"] != "H1":
+        params["timeframe"] = cell["chart"]
+    params["session"] = "all"
+    return {"source": SEAT, "kind": "culture_gap_recipe", "symbol": cell["symbol"],
+            "family": rec["family"], "params": params,
+            "mechanism": _rationale(rec, cell, src),
+            "title": f"culture gap {rec['id']}: {rec['family']} on {cell['symbol']} "
+                     f"{cell['chart']}",
+            "url": src.get("url") or "",
+            "source_culture": rec.get("source_culture"),
+            "participant_structure": rec.get("participant_structure"),
+            "recipe_id": rec["id"], "source_id": rec.get("source_id"),
+            "gap": dict(rec.get("gap") or {}),
+            "falsifier": (f"{rec['family']} on {cell['symbol']} {cell['chart']} with "
+                          f"{json.dumps(cell['params'], sort_keys=True)} shows no out-of-sample "
+                          f"edge after costs, or its losses coincide with the Western version's"),
+            "evidence": {"clock": "libs/regime/session_clock.py",
+                         "variant_share": round(float(cell.get("share") or 0.0), 4),
+                         "source_verified": src.get("verified", CC.UNMEASURED)}}
+
+
+def donate_cells(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    """Donate this pass's minted cells to the compiler's intake. `tests_run` is the number of
+    cells donated: each is one (instrument x variant x grid point x chart) trial the census is
+    charged for. Returns the door's own counts; never raises (the registry row already holds
+    the cell, and an unreadable door must leave the cells to be re-donated, not lost)."""
+    if not rows:
+        return {"donated": 0, "path": None}
+    try:
+        import proposer_common as PC
+        path = PC.donate(SEAT, rows, tests_run=len(rows))
+        counts = PC.donation_counts()
+        return {"donated": int(counts.get("donated") or 0), "path": str(path) if path else None,
+                "refused_unstamped": int(counts.get("refused_unstamped") or 0),
+                "refused_wrong_lane": int(counts.get("refused_wrong_lane") or 0),
+                "tests_run": len(rows)}
+    except Exception as exc:
+        return {"donated": 0, "path": None, "error": f"{type(exc).__name__}: {str(exc)[:120]}"}
+
+
 def emit(rec: dict[str, Any], cells: list[dict[str, Any]], start: int, deadline: float,
-         src: dict[str, Any], *, dry_run: bool, done: set[str]) -> dict[str, Any]:
+         src: dict[str, Any], *, dry_run: bool, done: set[str],
+         donations: list[tuple[str, dict[str, Any]]] | None = None) -> dict[str, Any]:
     made = created = 0
     errors: list[str] = []
     did = ""
@@ -413,6 +474,8 @@ def emit(rec: dict[str, Any], cells: list[dict[str, Any]], start: int, deadline:
                 url=src_row.get("url"), **fields)
             created += int(bool(was_new))
             done.add(key)
+            if donations is not None:
+                donations.append((key, donation_row(rec, c, src_row)))
         except Exception as exc:
             errors.append(f"{c['symbol']}/{c['chart']}: {type(exc).__name__}: {str(exc)[:60]}")
             if len(errors) >= 5:
@@ -436,6 +499,8 @@ def run(budget_s: float = 240.0, *, dry_run: bool = False, year: int | None = No
     if not isinstance(cursor, dict):
         cursor = {}
     per: list[dict[str, Any]] = []
+    donations: list[tuple[str, dict[str, Any]]] = []
+    dones: dict[str, set[str]] = {}
     order = sorted(recs, key=lambda r: (_ORDER.get(recipe_gap_state(r, states), 9), r["id"]))
     for rec in order:
         cells, note = cells_for(rec, yr, uni)
@@ -446,9 +511,11 @@ def run(budget_s: float = 240.0, *, dry_run: bool = False, year: int | None = No
         done = set(st.get("done") or [])
         start = int(st.get("next") or 0) if st.get("fingerprint") == fp else 0
         src = src_rows.get(str(rec.get("source_id")), {})
-        res = emit(rec, cells, start, deadline, src, dry_run=dry_run, done=done)
+        res = emit(rec, cells, start, deadline, src, dry_run=dry_run, done=done,
+                   donations=donations)
+        dones[rec["id"]] = done
         if not dry_run:
-            cursor[rec["id"]] = {"fingerprint": fp, "next": res["next"], "done": sorted(done),
+            cursor[rec["id"]] = {"fingerprint": fp, "next": res["next"], "done": done,
                                  "updated_at": _now()}
         g = rec.get("gap") or {}
         per.append({
@@ -462,14 +529,28 @@ def run(budget_s: float = 240.0, *, dry_run: bool = False, year: int | None = No
                                                                            CC.UNMEASURED),
             "cells_total": len(cells),
             # minted keys of the CURRENT cell list: a key from a superseded recipe is history
-            "cells_minted_total": len(done & {cell_key(rec["id"], c) for c in cells}),
+            "cells_minted_total": 0, "_keys": [cell_key(rec["id"], c) for c in cells],
             "emitted_this_pass": res["emitted"], "created_this_pass": res["created"],
             "complete": res["next"] >= len(cells) and len(cells) > 0,
             "variants": note.get("variants"), "dropped_variants": note.get("dropped_variants"),
             "refused": note.get("refused"), "unmeasured": note.get("unmeasured"),
             "errors": res.get("errors")})
+    donation: dict[str, Any] = {"donated": 0, "path": None}
     if not dry_run:
+        donation = donate_cells([row for _k, row in donations])
+        if donations and not donation.get("path"):
+            # THE DOOR DID NOT TAKE THEM: the cells are un-marked so the next pass mints and
+            # donates them again (the registry dedups the lineage row by content hash).
+            undone = {k for k, _row in donations}
+            for rid, d in dones.items():
+                d -= undone
+                cursor[rid]["next"] = 0
+        for rid, d in dones.items():
+            if rid in cursor:
+                cursor[rid]["done"] = sorted(d)
         _write(cursor_path, cursor)
+    for r in per:
+        r["cells_minted_total"] = len(dones.get(r["id"], set()) & set(r.pop("_keys")))
     gaps: dict[str, dict[str, Any]] = {}
     for r in per:
         agg = gaps.setdefault(r["gap"], {"gap_state": r["gap_state"], "recipes": [],
@@ -492,8 +573,12 @@ def run(budget_s: float = 240.0, *, dry_run: bool = False, year: int | None = No
                    "emitted_this_pass": sum(r["emitted_this_pass"] for r in per),
                    "created_this_pass": sum(r["created_this_pass"] for r in per),
                    "unmeasured_recipes": [r["id"] for r in per if r["unmeasured"]]},
+        "donation": {"seat": SEAT, **donation},
         "gaps": gaps, "recipes": per,
-        "consumers": {"libs/moat/registry.py research_candidates":
+        "consumers": {f"desks/mt5/data/intelligence/{SEAT}/discoveries_*.json":
+                      "miner_candidate_compiler compiles them (EXACT_RECIPE) into the docket "
+                      "the gauntlet judges",
+                      "libs/moat/registry.py research_candidates":
                       "moat_candidate_compiler prices and leases them to the sealed gauntlet",
                       "desks/mt5/research/cell_culture_index.py":
                       "counts them per gap on its next pass (source-derived culture)"},
@@ -504,7 +589,9 @@ def render(doc: dict[str, Any]) -> str:
     t = doc["totals"]
     return (f"culture_gap_cells: {t['recipes']} recipes, {t['cells_total']} cells defined, "
             f"{t['emitted_this_pass']} emitted this pass ({t['created_this_pass']} new), "
-            f"{len(t['unmeasured_recipes'])} UNMEASURED recipe(s); {doc['wall_s']}s")
+            f"{len(t['unmeasured_recipes'])} UNMEASURED recipe(s); "
+            f"{doc['donation'].get('donated', 0)} donated to data/intelligence/{SEAT}/; "
+            f"{doc['wall_s']}s")
 
 
 def main(argv: list[str] | None = None) -> int:
