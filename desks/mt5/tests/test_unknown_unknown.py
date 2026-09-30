@@ -170,8 +170,8 @@ def test_the_screen_and_the_family_agree_on_the_trades(sandbox) -> None:
     c = next(c for c in res["candidates"] if c["cond"]["op"] == "gt")
     params = UU.params_of(c)
     sigs = UG.family_uu_rule(df, **params)
-    days = MR.entry_days(pd.DatetimeIndex([s.time for s in sigs]))
-    fam_days = np.unique(days)
+    pos = P.df.index.get_indexer(pd.DatetimeIndex([s.time for s in sigs]))
+    fam_days = np.unique(MR.entry_days(P.df.index)[pos])
     assert set(c["days"].tolist()) <= set(fam_days.tolist())
     np.testing.assert_array_equal(fam_days[: len(c["days"])], np.sort(c["days"]))
 
