@@ -1050,6 +1050,12 @@ LEG_DEPARTMENT: dict[str, str] = {
     # world that would be mined seventeen times over if each region hunted them itself.
     **dict.fromkeys(("global_research_os", "acquire_datasets", "source_experiment_census",
                      *GLOBAL_FOREST_LEGS), "regions"),
+    # the free stack (2026-09-30): app rankings, CN forums, JP IR, JP patents, trends, congress,
+    # CoinPaprika (crypto CFDs only), Reddit/Telegram, AKShare/TuShare/BaoStock, catalogues --
+    # a global layer, like the forests above; its proposer mints their direct/indirect cells.
+    "free_stack_hunt": "regions", "free_stack_proposer": "regions",
+    # the factory's own throughput benchmark sits with the factory it measures
+    "factory_throughput": "mathlab",
     # the forest federation: one department per regional civilization, each its own resident
     **{f"forest_{_fid}": _fid for _fid in FOREST_DEPARTMENTS},
     # the read-only join behind the 24/7 dashboard: it measures nothing new, it only puts what
@@ -1810,6 +1816,13 @@ LEG_BUDGET_SEC: dict[str, int] = {
     "clock_liveness": 420,
     # The expression factory stops itself at --budget-s 600 and writes; the cap sits above it.
     "expression_factory": 720,
+    # THE FREE-STACK HUNTER stops itself at --budget-s 600 and persists its cursor after every
+    # source, so a cut pass still advanced; the cap sits above so the yield artifact is written.
+    "free_stack_hunt": 720,
+    # Its proposer mints a 1,500-row ring slice; the registry write is the long part.
+    "free_stack_proposer": 900,
+    # A reader of the factory's report and journal tail; seconds.
+    "factory_throughput": 180,
     # The closed co-evolution stops itself at --budget-s 900 (breeding, then the islands) and
     # writes COEVOLUTION.json; the cap sits above it so it is never cut at the same prefix.
     "coevolution": 1_020,
@@ -4066,6 +4079,11 @@ def main() -> None:
     xpf = _costed("expression_factory", lambda: _producer("expression_factory",
                                                            "research/expression_factory.py",
                                                            "--once", "--budget-s", "600"))
+    # ITS BENCHMARK (2026-09-30): candidates per hour against EasyQuant's 32/h, the factory's
+    # stage profile, and the idea-to-verdict latency from its campaign journal. Writes
+    # reports/FACTORY_THROUGHPUT.json.
+    fxt = _costed("factory_throughput", lambda: _producer(
+        "factory_throughput", "research/factory_throughput.py", "--once"))
     # THE PHYSICS LAB (2026-09-22), the mathlab department's institution: two independent
     # civilizations (disjoint seeds) of the nineteen physics traditions plus a rotating slice of
     # the mathematical ones over LOCKBOXED panels; every object becomes a hypothesis card with a
@@ -4112,6 +4130,18 @@ def main() -> None:
     # the OS declares today's needs and before the census measures source-to-experiment closure.
     acq = _costed("acquire_datasets", lambda: _producer(
         "acquire_datasets", "research/acquire_datasets.py"))
+    # THE FREE STACK (2026-09-30, asia gap rows 14-17, 20): every free alt source the gap report
+    # measured MISSING, point-in-time, cursor-based, one yield row per source in
+    # reports/FREE_STACK_YIELD.json; series land in data/lake/series/fs_<id>, catalogue finds
+    # in the world dataset hunter's queue and data_scout/data_prospector's catalogue, and the
+    # allocation state in reports/ALT_REGIME_STATE.json.
+    fsh = _costed("free_stack_hunt", lambda: _producer(
+        "free_stack_hunt", "research/free_stack_hunter.py", "--once", "--budget-s", "600"))
+    # ITS CONSUMER: DIRECT (exogenous_conditioner, alt_series_momentum) and INDIRECT
+    # (alt_conditioned) cells on every mapped hypothesis-lane instrument, a ring slice per pass,
+    # donated to the one gauntlet with every minted cell charged. Writes FREE_STACK_PROPOSER.json.
+    fsp = _costed("free_stack_proposer", lambda: _producer(
+        "free_stack_proposer", "research/free_stack_proposer.py", "--once"))
     # GLOBAL SOURCE-TO-EXPERIMENT CONSERVATION.  All regions use the same measured chain:
     # declaration -> fetch owner -> parser -> feature -> experiment -> evaluator outcome.  This
     # runs after the country OS so newly declared regional sources enter the census in the same
@@ -5199,7 +5229,8 @@ def main() -> None:
                     "replication_civilization": rpc,
                     "science_controller": scc,
                     "data_scout": dsc2, "japan_department": jpd, "global_research_os": gro,
-                    "acquire_datasets": acq,
+                    "acquire_datasets": acq, "free_stack_hunt": fsh,
+                    "free_stack_proposer": fsp, "factory_throughput": fxt,
                     "source_experiment_census": sxc,
                     "feature_compiler": fcp, "data_acquisition_scientist": daq,
                     "math_lab": mlb, "expression_factory": xpf, "physics_lab": phl,

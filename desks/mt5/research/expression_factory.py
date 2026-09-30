@@ -1034,6 +1034,24 @@ class Parent:
     axes: dict[str, list[str]] = field(default_factory=dict)
     transferred: bool = False
     chain: list[str] = field(default_factory=list)
+    #: The terms of V(a) that are pure functions of `expr`, cached against the expr OBJECT they
+    #: were computed from. MEASURED 2026-09-30 (cProfile, 180 s dry pass, 4-core box):
+    #: `pick_parent` re-derived family_key / describe / complexity for EVERY parent on EVERY
+    #: draw -- 203,256 calls, 43 s of 180 (24% of the pass) spent on bookkeeping that cannot
+    #: change while the parent's tree does not. Same numbers, computed once.
+    _static: tuple[str, float, float, str] | None = field(default=None, repr=False,
+                                                          compare=False)
+    _static_of: Any = field(default=None, repr=False, compare=False)
+
+    def static_terms(self) -> tuple[str, float, float, str]:
+        """(trial family key, compute cost, data cost, mechanism head) for this parent's tree."""
+        if self._static is None or self._static_of is not self.expr:
+            fam = dsl.family_key(self.expr)
+            compute = 1.0 + ag.complexity(self.expr) / 10.0
+            data = 1.0 + len(ag.terminals_in(self.expr) & set(ag.EXTERNAL_TERMINALS))
+            head = Cell(self.expr, "", HORIZONS[0]).mechanism().split("/")[0]
+            self._static, self._static_of = (fam, compute, data, head), self.expr
+        return self._static
 
     def value(self, families: FamilyTrials, archive_n: int) -> float:
         """V(a) = P(survive|D) x E[dG|survive] x Novelty x Orthogonality x InformationGain /
@@ -1043,9 +1061,8 @@ class Parent:
         novelty = 1.0 / (1.0 + archive_n)
         orth = float(np.mean(self.orth)) if self.orth else 0.5
         info = 1.0 / math.sqrt(1.0 + self.evaluated)
-        compute = 1.0 + ag.complexity(self.expr) / 10.0
-        data = 1.0 + len(ag.terminals_in(self.expr) & set(ag.EXTERNAL_TERMINALS))
-        trial = 1.0 + math.log1p(families.pass_count(self.expr))
+        fam, compute, data, _head = self.static_terms()
+        trial = 1.0 + math.log1p(families.pass_charges.get(fam, 0))
         delay = 1.0
         return p_surv * max(e_gain, 1e-6) * novelty * max(orth, 0.05) * info / (
             compute + data + trial + delay)
@@ -1328,6 +1345,11 @@ class Factory:
         #: cross-science cells drained this pass, per `cross_science:<lab>` generator
         self.xsci_cells: dict[str, int] = {}
         self._partner_pid = ""          #: the crossover partner of the move being applied
+        #: symbol -> (frames object, available terminals); see `terminals`
+        self._terminal_cache: dict[str, tuple[Any, tuple[str, ...]]] = {}
+        #: Wall seconds per pipeline stage this pass -- the factory's own throughput profile,
+        #: published as `stage_seconds` and read by `research/factory_throughput.py`.
+        self.stage_s: dict[str, float] = {}
 
     # ---- bookkeeping
     def say(self, msg: str) -> None:
@@ -1336,6 +1358,9 @@ class Factory:
 
     def elapsed(self) -> float:
         return time.monotonic() - self.started
+
+    def _clock(self, stage: str, t0: float) -> None:
+        self.stage_s[stage] = self.stage_s.get(stage, 0.0) + (time.monotonic() - t0)
 
     def out_of_budget(self, stage: str | None = None) -> bool:
         if self.cells_done >= self.caps.max_cells:
@@ -1474,7 +1499,7 @@ class Factory:
         if not cell.asset_class:
             cell.asset_class = world.asset_class
         try:
-            compiled = dsl.compile_expr(cell.expr, terminals=ag.available_terminals(world.frames))
+            compiled = dsl.compile_expr(cell.expr, terminals=self.terminals(cell.symbol))
         except dsl.CompileError as exc:
             self._reject("tier0", "syntax/type/units")
             return {"tier": 0, "why": f"compile: {exc}"}
@@ -1499,17 +1524,22 @@ class Factory:
             parent.axes.setdefault("holds", []).append(str(cell.hold))
             parent.axes.setdefault("states", []).append(cell.state)
             parent.axes.setdefault("windows", []).extend(map(str, dsl.windows_in(cell.expr)))
+        _t = time.monotonic()
         try:
             value = self.evaluate(cell.expr, cell.symbol)
         except Exception as exc:
+            self._clock("evaluate", _t)
             self._reject("tier0", f"evaluation raised {type(exc).__name__}")
             self.campaign.fail(cell.key, f"evaluation raised {type(exc).__name__}")
             return {"tier": 0, "why": f"evaluation raised {type(exc).__name__}: {exc}"}
         # THE CHEAP LAYER: finite, non-constant, turnover, minimal IC, orthogonality vs the
         # symbol's archive -- in that order of cost, and nothing dearer runs on a failure.
+        self._clock("evaluate", _t)
+        _t = time.monotonic()
         z = _zscore(value)
         twins = self.twins.setdefault(cell.symbol, [])
         failed, cheap = cheap_screens(value, z, world, cell.hold, twins)
+        self._clock("cheap_layer", _t)
         rho_max = float(cheap.get("rho_max", 0.0))
         if failed is not None:
             rejected = self.counts["cheap"]["rejected"]
@@ -1523,7 +1553,9 @@ class Factory:
         self.campaign.advance(cell.key, "SCREENED", cheap=cheap)
         self.credits.screened(cell.expr, cell.generator, cell.asset_class)
         self.counts["tier1"]["evaluated"] += 1
+        _t = time.monotonic()
         t1 = tier1(cell, world, value, self.rng)
+        self._clock("tier1_backtest_oos", _t)
         if parent is not None:
             parent.recent.append(int(t1.passed))
             parent.recent = parent.recent[-EXHAUST_TAIL:]
@@ -1550,8 +1582,10 @@ class Factory:
         if len(twins) < self.caps.twin_k:
             twins.append((cell.key, z.astype(np.float32)))
         self.counts["tier2"]["evaluated"] += 1
+        _t = time.monotonic()
         t2 = tier2(cell, world, t1, lambda e: self.evaluate(e, cell.symbol), self.rng,
                    self.families)
+        self._clock("tier2_stability", _t)
         desc = cell.descriptor()
         score = t1.t_oos * (1.0 - rho_max)
         prev = self.archive.get(desc)
@@ -1643,7 +1677,7 @@ class Factory:
         syms = list(self.lake.worlds)
         sym = syms[int(rng.integers(len(syms)))]
         world = self.lake.worlds[sym]
-        terms = ag.available_terminals(world.frames)
+        terms = self.terminals(sym)
         hold = int(rng.choice(HORIZONS))
         state = "none"
         if qd_target and ("session" in qd_target or "regime" in qd_target):
@@ -1733,7 +1767,7 @@ class Factory:
             return xs
         syms = list(self.lake.worlds)
         sym = syms[int(self.rng.integers(len(syms)))]
-        terms = ag.available_terminals(self.lake.worlds[sym].frames)
+        terms = self.terminals(sym)
         # THE PROPOSER SEAT, OPTIONAL AND JUDGED THE SAME (2026-09-23). A parked skeleton is
         # drained here and becomes an ORDINARY invention cell -- same screens, same nulls, same
         # tier ladder, same trial charge. Its only difference is the `generator` string, which
@@ -1817,15 +1851,38 @@ class Factory:
         return None
 
     def pick_parent(self, pool: list[Parent]) -> Parent:
-        """V(a)-weighted draw among the pool, empty QD cells favoured through novelty."""
-        weights = np.array([max(1e-12, p.value(self.families, self._archive_n(p)))
+        """V(a)-weighted draw among the pool, empty QD cells favoured through novelty.
+
+        The archive count is taken ONCE per distinct mechanism head in the pool rather than once
+        per parent -- the same prefix count, read off the archive as it stands at this draw."""
+        t0 = time.monotonic()
+        heads = {p.static_terms()[3] for p in pool}
+        n_by_head = {d: sum(1 for k in self.archive if k.startswith(d)) for d in heads}
+        weights = np.array([max(1e-12, p.value(self.families, n_by_head[p.static_terms()[3]]))
                             for p in pool])
         weights = weights / weights.sum()
+        self.stage_s["pick_parent"] = self.stage_s.get("pick_parent", 0.0) + \
+            (time.monotonic() - t0)
         return pool[int(self.rng.choice(len(pool), p=weights))]
 
     def _archive_n(self, parent: Parent) -> int:
-        d = Cell(parent.expr, "", HORIZONS[0]).mechanism().split("/")[0]
+        d = parent.static_terms()[3]
         return sum(1 for k in self.archive if k.startswith(d))
+
+    def terminals(self, sym: str) -> tuple[str, ...]:
+        """`ag.available_terminals` for one loaded world, computed once per frames object.
+
+        MEASURED 2026-09-30: 7,636 calls and 27 s of a 180 s pass, each one re-scanning every
+        frame column with `notna().any()` although a world's frames are fixed once loaded. The
+        cache is keyed on the frames OBJECT, so a reloaded world is re-read, never served stale.
+        """
+        world = self.lake.worlds[sym]
+        hit = self._terminal_cache.get(sym)
+        if hit is not None and hit[0] is world.frames:
+            return hit[1]
+        terms = ag.available_terminals(world.frames)
+        self._terminal_cache[sym] = (world.frames, terms)
+        return terms
 
     def empty_qd_targets(self, klass: str | None = None) -> list[str]:
         """Archive cells (mechanism x horizon x asset class x representation) never filled
@@ -2000,6 +2057,17 @@ class Factory:
                            "deferred_to_judge": len(self.counts["deferred"]),
                            "blocked_survivors": len(self.counts["blocked"]),
                            "cap_reached": self.cells_done >= self.caps.max_cells}
+        secs = max(float(report["seconds"]), 1e-9)
+        timed = sum(self.stage_s.values())
+        report["stage_seconds"] = {**{k: round(v, 2) for k, v in sorted(self.stage_s.items())},
+                                   "untimed_other": round(max(0.0, secs - timed), 2)}
+        report["throughput"] = {
+            "cells_evaluated_per_hour": round(self.counts["tier0"]["evaluated"] / secs * 3600),
+            "cells_backtested_oos_per_hour": round(self.counts["tier1"]["evaluated"] / secs
+                                                   * 3600),
+            "cells_to_judge_per_hour": round((len(self.counts["deferred"])
+                                              + len(self.counts["survivors"])) / secs * 3600),
+            "basis": "this pass's counts over its own wall seconds"}
         report["families"] = self.families.summary()
         report["N_effective_charged"] = report["families"]["n_effective_this_pass"]
         parents = {pid: p.as_dict() for pid, p in self.parents.items()}

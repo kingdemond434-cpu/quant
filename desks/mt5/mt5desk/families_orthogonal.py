@@ -2263,6 +2263,24 @@ FAMILY_INPUTS["exogenous_conditioner"] = (
     "a data pack's own published series, on its own available_time clock",
     "data/lake/series/<pack_id>.parquet")
 
+# THE FREE-STACK FAMILIES (2026-09-30): the DIRECT (series momentum) and INDIRECT (a price-only
+# base family gated by the series' regime) uses of every alt series `free_stack_hunter` publishes
+# under data/lake/series/fs_<id>.parquet. Both load their own series from `source`/`signal` on
+# the recipe, so the sealed gauntlet's `fn(h1, **params)` call rebuilds them unchanged.
+from mt5desk.family_alt_series import (  # noqa: E402
+    family_alt_conditioned,
+    family_alt_series_momentum,
+)
+
+ORTHOGONAL_FAMILIES["alt_series_momentum"] = family_alt_series_momentum
+FAMILY_INPUTS["alt_series_momentum"] = (
+    "an alt series' own change, on its own available_time clock",
+    "data/lake/series/fs_<source>.parquet")
+ORTHOGONAL_FAMILIES["alt_conditioned"] = family_alt_conditioned
+FAMILY_INPUTS["alt_conditioned"] = (
+    "a price-only base family's bars plus an alt series' regime on its available_time clock",
+    "data/universe/*_H1.parquet + data/lake/series/fs_<source>.parquet")
+
 # CROSS-SECTIONAL CLASS BOOKS, ONE LEG PER CELL (2026-09-30). The desk read k_eff 2.53 on 453
 # nominal sleeves with 6 of 15 alpha clusters empty, and `cross_sectional_fx` had never held a
 # certificate: `family_cross_sectional` takes its peers as an argument and the sealed gauntlet's
