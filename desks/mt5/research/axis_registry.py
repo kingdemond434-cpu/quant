@@ -176,6 +176,11 @@ _FAMILY_GROUPS: dict[str, str] = {
                                                      " cross_sectional_class_low_vol",
     "relative_value_dislocation microstructure limit": "triangle",
     "cross_market_lead cross_asset market": "gold_dxy_shock lead_lag lead_lag_class_catchup",
+    # The Alpha Capture substitute (2026-09-30): a dated public view ABOUT the instrument drifts
+    # because holders under-react (trend_persistence's payer); another market's view leads the
+    # instrument because the slow venue reprices late (cross_market_lead's payer).
+    "trend_persistence event market": "analyst_revision_drift",
+    "cross_market_lead event market": "analyst_cross_market_lead",
     # The class books of 2026-09-30 (`mt5desk.families_cross_sectional`): each leg is ranked
     # against its own peer class on the same date.
     "trend_persistence cross_asset market": "cross_sectional_class_momentum",

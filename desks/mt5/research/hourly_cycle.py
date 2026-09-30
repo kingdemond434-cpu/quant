@@ -985,7 +985,9 @@ LEG_DEPARTMENT: dict[str, str] = {
                      # Tier-1 B3/B4: the per-asset world model and the learned representation
                      # lane are both about what the market IS, before anything predicts it.
                      "regime_hierarchy", "representation_discovery",
-                     "event_surprise", "cross_asset_graph", "transmission_engine"), "macro"),
+                     "event_surprise", "cross_asset_graph", "transmission_engine",
+                     # the Alpha Capture substitute: public analyst views -> PIT events
+                     "alpha_capture"), "macro"),
     # execution: the execution research command
     **dict.fromkeys(("execution_twin", "why_not_report", "state_replay_audit",
                      "excursions", "exit_accounts",
@@ -1714,6 +1716,8 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # cell is measured at most once a day), so the cap only has to sit above its own budget.
     "cross_sectional_breadth": 1_000,
     "event_surprise": 400,
+    # Stops itself at --budget-s 300 (60% of it collecting); the cap sits above it.
+    "alpha_capture": 420,
     "counterexample_agent": 700,
     "search_paradigm_census": 700,
     "replication_civilization": 1_000,
@@ -3581,6 +3585,13 @@ def main() -> None:
     # lawful-pages-only and degrades to UNMEASURED rather than inventing a consensus.
     esur = _costed("event_surprise", lambda: _producer(
         "event_surprise", "research/event_surprise.py", "--once", "--budget-s", "300"))
+    # THE ALPHA CAPTURE SUBSTITUTE (2026-09-30): Yahoo upgrades, SEC 8-K guidance, eastmoney,
+    # Naver and TDnet views stored at first_seen_at, tracked at +1/+5/+21 trading days against a
+    # placebo of shifted dates, and emitted as analyst_revision_drift / cross-market lead cells,
+    # the `analyst_views` axis and the allocation-intel report. Each source keeps its own cadence
+    # inside the organ, so an hourly leg fetches only what is due.
+    acap = _costed("alpha_capture", lambda: _producer(
+        "alpha_capture", "research/alpha_capture.py", "--once", "--budget-s", "300"))
     # THE ADVERSARY THAT ATTACKS A HYPOTHESIS BEFORE A TRIAL IS SPENT ON IT (W6): placebo
     # symbol, placebo date, sign flip, neighbouring parameter, excluded window. It records
     # evidence on the registry row and changes no status: the sealed gauntlet and the
@@ -5161,7 +5172,7 @@ def main() -> None:
                     "engine_registry": engr,
                     "counterfactual_attribution": cfat,
                     "trend_core": tcor, "cross_sectional_breadth": xsb,
-                    "event_surprise": esur,
+                    "event_surprise": esur, "alpha_capture": acap,
                     "counterexample_agent": cexa,
                     "search_paradigm_census": spc,
                     "source_registry": srg, "event_response_atlas": era, "world_lab": wlb,
