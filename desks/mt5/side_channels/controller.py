@@ -18,6 +18,11 @@ import uuid
 
 import numpy as np
 
+try:
+    from hypothesis_schema import HypothesisCard
+except ImportError:  # imported as the side_channels package
+    from .hypothesis_schema import HypothesisCard
+
 
 # Import all miners (lazy loaded)
 MINER_REGISTRY = {
@@ -621,13 +626,14 @@ class HourlyController:
         edge = min(card.economics.expected_edge_bps_per_trade / 10, 1.0)  # 10bps = 1.0
         novelty = 1.0 - card.novelty.similarity
         ortho = card.economics.orthogonality_score
-        portfolio_gap = portfolio_gap.assess(card)
+        from survivor_acquisition.intelligence import portfolio_gap as _gap_model
+        gap = _gap_model.assess(card)
         capacity = min(card.economics.expected_capacity_lots / 100, 1.0)
         evidence = {"primary_public": 1.0, "secondary_public": 0.8, 
                     "code_derived": 0.9, "practitioner_claim": 0.6}.get(
                         card.origin.evidence_tier.value, 0.5)
         
-        return edge * novelty * ortho * portfolio_gap * capacity * evidence
+        return edge * novelty * ortho * gap * capacity * evidence
     
     def _phase_cheap_falsify(self) -> dict:
         """Phase 8: Basic economics, timing/leakage, costs, minimum sample, placebo."""

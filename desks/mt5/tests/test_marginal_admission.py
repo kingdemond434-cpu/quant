@@ -314,6 +314,18 @@ def test_zeroing_a_book_of_nothing_is_still_a_refusal_to_allocate() -> None:
 
 
 # ------------------------------------------------ promotion slow, demotion immediate, both named
+def _open_live_policy(tmp_path: Path, monkeypatch, *symbols: str) -> None:
+    """Admit this file's fixture symbols through `mt5desk/live_policy.py` (bcbec41f, principal
+    2026-09-17: the live account is XAUUSD-only). Without it the promoter's write door RETIRES
+    every CADJPY/EURUSD row before the admission logic under test is ever read. The policy
+    itself is pinned by test_live_policy.py; this file tests dE[log W] admission."""
+    from mt5desk import live_policy
+    pol = tmp_path / "live_sleeve_policy.json"
+    pol.write_text(json.dumps({"live_symbols": list(symbols), "by": "test fixture"}),
+                   encoding="utf-8")
+    monkeypatch.setattr(live_policy, "POLICY_FILE", pol)
+
+
 @pytest.fixture
 def desk(tmp_path, monkeypatch):
     """A promoter pointed entirely at tmp_path, with the allocator's answer under test control."""
@@ -334,6 +346,7 @@ def desk(tmp_path, monkeypatch):
     monkeypatch.setattr(promoter, "regrade_failures", lambda now=None: {})
     monkeypatch.setattr(promoter, "load_ledger", lambda *a, **k: [])
     monkeypatch.setattr(promoter, "authorized_specs", lambda base=None: set())
+    _open_live_policy(tmp_path, monkeypatch, "CADJPY", "EURUSD")
 
     class Desk:
         def shadow(self, blob: dict) -> None:

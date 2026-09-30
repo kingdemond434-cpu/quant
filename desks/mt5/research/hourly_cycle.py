@@ -1357,7 +1357,25 @@ def _costed(name: str, fn):
                      "priced_by": ",".join(_row.get("priced_by") or [])}
     except Exception:
         _meta = {}
-    run = open_run(name, kind="hourly_cycle", **_meta) if open_run else None
+    # THE ACCOUNTING ITSELF MAY FAIL, AND IT STILL NEVER FAILS THE LEG (the docstring's first
+    # promise). An unwritable ledger raised straight out of `open_run`/`close_run` here, taking
+    # the leg -- and, via `main`, the rest of the pass -- with it; `test_hourly_outcomes` pinned
+    # the promise and was red. Now a ledger error is printed LOUDLY and the leg runs uncosted.
+    run = None
+    if open_run:
+        try:
+            run = open_run(name, kind="hourly_cycle", **_meta)
+        except Exception as exc:
+            print(f"{name} compute ledger open FAILED: {type(exc).__name__}: {exc}", flush=True)
+
+    def _close(outcome: str, **kw: object) -> None:
+        if not (close_run and run is not None):
+            return
+        try:
+            close_run(run, outcome=outcome, **kw)
+        except Exception as exc:
+            print(f"{name} compute ledger close FAILED: {type(exc).__name__}: {exc}",
+                  flush=True)
     # THE WRITE-OR-EXPLAIN CONTRACT (2026-09-23). Stat the leg's DECLARED artifact before and
     # after, at the one boundary every leg passes through, so the check covers every leg at once
     # instead of organ by organ. See `libs/ops/write_or_explain.py` for the eight silent failures
@@ -1375,13 +1393,11 @@ def _costed(name: str, fn):
         # (`deepen`, the searches) already catches it at the call and reports the code itself,
         # so the only SystemExit that reaches here is someone stopping the pass. Merged
         # 2026-09-08 on this branch's rule, which test_hourly_cycle_legs_are_callable pins.
-        if close_run and run is not None:
-            close_run(run, outcome="interrupted")
+        _close("interrupted")
         raise
     except BaseException as exc:
         detail = f"{type(exc).__name__}: {exc}"
-        if close_run and run is not None:
-            close_run(run, outcome=detail[:200])
+        _close(detail[:200])
         print(f"  LEG FAILED {name}: {detail}", flush=True)
         _emit_leg(name, detail[:200])
         _woe_after(name, _woe, None, raised=detail, wall_s=time.monotonic() - _woe_t0)
@@ -1425,8 +1441,7 @@ def _costed(name: str, fn):
             _code = out["exit_code"]
             outcome = (f"verdict_exit={_code}" if _code in VERDICT_EXITS.get(name, ())
                        else f"exit_code={_code}")
-    if close_run and run is not None:
-        close_run(run, outcome=outcome, outputs=_leg_artifacts(name))
+    _close(outcome, outputs=_leg_artifacts(name))
     _emit_leg(name, outcome)
     _advance_watermark(name, outcome)
     _woe_after(name, _woe, out, wall_s=time.monotonic() - _woe_t0,

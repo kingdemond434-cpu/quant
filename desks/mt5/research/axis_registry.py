@@ -149,7 +149,8 @@ MECHANISM_ACTOR = {
 #: from this table maps to UNKNOWN and is counted, never silently bucketed.
 _FAMILY_GROUPS: dict[str, str] = {
     "trend_persistence price_only market": "anti_three_bar_momentum h4_momentum momentum_volgate"
-                                           " multi_speed_trend trend_ma_cross",
+                                           " multi_speed_trend trend_ma_cross"
+                                           " htf_anchor_trend",
     "trend_persistence price_only stop": "adx_channel_hybrid",
     "trend_persistence price_only limit": "pullback_entry",
     "session_handover price_only market": "asia_momentum clock_transition monday_gap"
@@ -193,7 +194,13 @@ _FAMILY_GROUPS: dict[str, str] = {
     # family and dominates the docket; `generic`/`formula`/`ensemble`/`joint_genome` are spec
     # constructors. All map to UNKNOWN so the count is visible rather than assumed away.
     f"{UNKNOWN} price_only market": "discovered",
-    f"{UNKNOWN} price_only {UNKNOWN}": "ensemble formula generic joint_genome",
+    f"{UNKNOWN} price_only {UNKNOWN}": "ensemble formula generic joint_genome exit_operated",
+    # Registered 2026-09-23/24 in `families_orthogonal`. `exit_operated` is an OPERATOR over any
+    # base family's entries, so its mechanism and style are its base's and no single row names
+    # them. `exogenous_conditioner` bets on a data pack's own published series (a market-order
+    # entry, `trigger=None`); each cell names its series, not a payer, so the mechanism is UNKNOWN
+    # and counted rather than guessed.
+    f"{UNKNOWN} macro market": "exogenous_conditioner",
 }
 FAMILY_TABLE: dict[str, tuple[str, str, str]] = {}
 for _key, _fams in _FAMILY_GROUPS.items():

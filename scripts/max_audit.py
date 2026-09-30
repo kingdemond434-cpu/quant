@@ -3947,6 +3947,13 @@ _TERMINAL_ARTIFACTS = {
         "its own: staleness here is staleness of the source, which is governed where the source "
         "is. Claimed as a directory class because the vault takes a new file for every lesson "
         "the desk ever records.",
+    # AUDIT COMPLETION LEDGERS (2026-09-29). One per external audit: which item landed where,
+    # and what is blocked on whom. Claimed as a directory class because each audit adds one.
+    "docs/audit/":
+        "AUDIT COMPLETION LEDGERS: an item-by-item record of where each audit item landed (PR, "
+        "clock, artifact) and what blocks the rest. It is a dated record, not a live measurement: "
+        "each item's live state is owned by the organ and fence it names, so the ledger owes no "
+        "cadence of its own and is amended by the session that closes an item.",
     # OPERATIONAL RUNBOOKS. These describe how to act on a box, not what the desk has measured,
     # so they accumulate no inventory and owe no cadence -- but "no law" is recorded here as a
     # DECISION rather than left as an omission.

@@ -76,6 +76,8 @@ _PY = venv_python(_ROOT)
 # on the next -- the two numbers live in different files and nothing else relates them.
 _STEPS = [
     ("lint (ruff)", [_PY, "-m", "ruff", "check", "scripts", "libs", "tests"], 300),
+    ("lint desks/mt5 (bugs)", [_PY, "-m", "ruff", "check", "desks/mt5", "--isolated",
+                               "--target-version", "py311", "--select", "E9,F63,F7,F82"], 300),
     # COLLECTION IS ITS OWN GATE, AND IT RUNS BEFORE THE EXPENSIVE ONE (2026-08-13). Measured at
     # 8 SECONDS against the full-suite step's 7200s budget, which is the whole argument: a
     # collection break is the cheapest failure in the repo to detect and was being detected last,
