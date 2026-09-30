@@ -971,7 +971,7 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "replication_civilization", "certificate_truth", "model_search",
                      "loop_liveness", "counterexample_agent", "judging_throughput",
                      "duty_cycle", "forward_enrolment", "residual_gate",
-                     "fast_admission", "canon_publication", "placebo_audit"),
+                     "fast_admission", "canon_publication", "placebo_audit", "judging_burndown"),
                     "validate"),
     # macro: the cross-asset / macro brain
     **dict.fromkeys(("fred_macro", "futures_lead_lag", "causal_graph", "residual_factors",
@@ -1664,6 +1664,11 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # gate 0 11.7). The cap is the usual order of magnitude above the measurement, so a bank that
     # has doubled still finishes rather than being killed at the same prefix every hour.
     "fast_admission": 300,
+    # THE BURN-DOWN streams the gate ledger once and the docket's `first_seen` stamps once, with
+    # no JSON decode of the docket. Measured locally 2026-09-30: 57,538 docket rows in well under
+    # a second; the trading box's million-row docket and ledger scale that linearly. The cap is
+    # an order of magnitude above, so a doubled docket is never truncated at the same prefix.
+    "judging_burndown": 600,
     # STATE ADMISSION reads the shadow ledgers and the live ledger and judges six dimensions; the
     # daily cycle measured it at 2.1 s. The cap is here so it HAS an entry rather than inheriting
     # SEARCH_BUDGET_SEC by accident, and it is set well above the measurement so a box with more
@@ -4507,6 +4512,12 @@ def main() -> None:
     # promotion authority.
     cpub = _costed("canon_publication", lambda: _producer(
         "canon_publication", "research/canon_publication.py"))
+    # THE BURN-DOWN (principal 2026-09-30: "the backlog burned down faster than creation"). After
+    # the judge, so this hour's first rulings are counted this hour: cells whose FIRST real
+    # verdict landed in the window against docket rows first seen in it, the backlog from
+    # JUDGE_COVERAGE, and the warmer's backlog-first share. Read-only; it throttles nothing.
+    jbd = _costed("judging_burndown", lambda: _producer(
+        "judging_burndown", "research/judging_burndown.py"))
     # EVERY CERTIFICATE GETS ITS CLOCK THE MOMENT IT EXISTS, with no quota and no waiting queue
     # (principal 2026-09-23: forward evidence is never rationed; forward clocks gather evidence
     # and deploy no capital, so the only thing a slot cap bought was a slower desk). AFTER the
@@ -5288,7 +5299,7 @@ def main() -> None:
                     "judging_throughput": jth, "duty_cycle": dcy, "forward_enrolment": fen,
                     "certificate_clock_law": ccl,
                     "external_gauntlet": gt, "fast_admission": fa,
-                    "canon_publication": cpub,
+                    "canon_publication": cpub, "judging_burndown": jbd,
                     "falsifier_run": fz, "merge_docket": mh,
                     "backtest": bt,
                     "wiring_audit": wa, "brain_ab": ab, "alpha_breadth": cm,
