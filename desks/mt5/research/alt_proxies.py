@@ -1933,36 +1933,138 @@ TERMS: dict[str, tuple[str, str]] = {
     "kr_exports_early": ("confirmed", "KOGL public-sector open licence"),
     "us_tsa_throughput": ("confirmed", "US federal work, public domain"),
     "us_census_marts_ex_autos": ("confirmed", "US Census documented public API, public domain"),
-    "jp_jnto_arrivals": ("to_confirm", "JNTO site terms not read; not a documented API"),
+    "jp_jnto_arrivals": ("refused", "JNTO site policy: unauthorised duplication or transmission of "
+                         "published works (incl. databases) is copyright infringement"),
     "jp_tokyo_cpi": ("confirmed", "e-Stat documented API, Government of Japan statistics"),
     "cn_firms_industrial": ("confirmed", "NASA open data, documented API"),
     "imf_portwatch_ports": ("confirmed", "IMF PortWatch public statistics, documented ArcGIS API"),
     "imf_portwatch_chokepoints": ("confirmed", "IMF PortWatch public statistics, documented "
                                   "ArcGIS API"),
     "in_gold_imports": ("confirmed", "Government of India press releases (PIB), public"),
-    "cn_sge_premium": ("to_confirm", "Shanghai Gold Exchange terms not read"),
+    "cn_sge_premium": ("to_confirm", "SGE site shows only 'All Right Reserved'; no terms or "
+                       "licence page found, no robots.txt"),
     "gdelt_events_country": ("confirmed", "GDELT: unrestricted use with citation"),
     "wiki_asia_attention": ("confirmed", "Wikimedia pageviews API, CC0"),
     "us_oi_card_spend": ("confirmed", "OI README: 'Anyone is welcome to use this data'"),
     "kr_bok_card_spend": ("confirmed", "BOK ECOS documented Open API"),
     "jp_meti_retail": ("confirmed", "Government of Japan Standard Terms of Use (CC BY compatible)"),
-    "cn_nbs_retail": ("to_confirm", "no stated open licence on stats.gov.cn release pages"),
-    "cn_holiday_spend": ("to_confirm", "MCT pages carry no open licence; UnionPay is private"),
-    "in_npci_upi": ("to_confirm", "NPCI is a private company; no open licence stated"),
-    "tr_bkm_card": ("to_confirm", "BKM is a private association; no open licence stated"),
-    "br_cielo_icva": ("to_confirm", "Cielo is a private acquirer; no open licence stated"),
-    "mx_antad_sss": ("to_confirm", "ANTAD is a private association; no open licence stated"),
-    "za_beti": ("to_confirm", "BankservAfrica/PayInc is private; no open licence stated"),
+    "cn_nbs_retail": ("confirmed", "NBS terms of service: users may download and use NBS "
+                      "statistics; reuse welcomed with attribution; no robots.txt"),
+    "cn_holiday_spend": ("refused", "MCT disclaimer: no reprint, link or other copying without "
+                         "written authorisation from the MCT Information Centre"),
+    "in_npci_upi": ("refused", "npci.org.in robots.txt disallows automated agents on the "
+                    "statistics path and the disclaimer page"),
+    "tr_bkm_card": ("refused", "BKM legal notice: no copying or reproduction without prior "
+                    "written permission; no commercial use"),
+    "br_cielo_icva": ("refused", "Cielo terms: copying, reproduction or any other use of content "
+                      "is forbidden; content only by the means made available"),
+    "mx_antad_sss": ("refused", "ANTAD terms: copy only for personal use; electronic "
+                     "reproduction, publication or distribution prohibited"),
+    "za_beti": ("to_confirm", "PayInc site is a JS app; no terms page or robots.txt could be "
+                "read"),
     "us_oi_google_mobility": ("confirmed", "OI README: 'Anyone is welcome to use this data'"),
     "kr_kobis_box_office": ("confirmed", "KOBIS documented Open API (Korean Film Council)"),
     "kr_seoul_subway": ("confirmed", "Seoul Open Data Plaza, KOGL type 1"),
-    "cn_maoyan_box_office": ("to_confirm", "Maoyan dashboard: private, terms not read"),
-    "cn_baidu_migration": ("to_confirm", "Baidu Huiyan map: private, terms not read"),
-    "kr_busan_port": ("to_confirm", "Busan Port Authority board: licence not stated"),
+    "cn_maoyan_box_office": ("refused", "piaofang.maoyan.com robots.txt disallows automated agents "
+                             "on the dashboard-ajax endpoint"),
+    "cn_baidu_migration": ("to_confirm", "Baidu terms (baidu.com/duty) blocked by robots.txt, so "
+                           "unread; huiyan has no robots.txt"),
+    "kr_busan_port": ("to_confirm", "BPA copyright policy / KOGL mark not found; robots.txt "
+                      "only names Yeti and Googlebot"),
     "sg_port_throughput": ("confirmed", "SingStat Table Builder API, Singapore Open Data Licence"),
-    "cn_mot_port_weekly": ("to_confirm", "no stated open licence on mot.gov.cn bulletins"),
+    "cn_mot_port_weekly": ("to_confirm", "MOT disclaimer bars commercial verbatim reprint but "
+                           "grants no reuse licence; no robots.txt"),
 }
 TERMS_VALUES = ("confirmed", "to_confirm", "refused")
+
+#: Evidence for the terms decisions reviewed on 2026-09-30 (the 13 former `to_confirm` sources).
+#: terms_quote is verbatim from terms_url as fetched that day, or says the page could not be read.
+#: robots is what robots.txt said for the source's host and path. See
+#: /mnt/project-files/reports/asia_source_terms_2026-09-30.md.
+_CHK = "2026-09-30"
+TERMS_EVIDENCE: dict[str, dict[str, str]] = {
+    "cn_maoyan_box_office": {
+        "terms_url": "https://piaofang.maoyan.com/i/rules/privacy-agreement?pid=64",
+        "terms_quote": "(not readable: the page and the data endpoint are robots.txt-disallowed)",
+        "robots": "disallowed: robots check refused /robots.txt, /i/rules/ and /dashboard-ajax",
+        "checked_at": _CHK},
+    "cn_baidu_migration": {
+        "terms_url": "https://www.baidu.com/duty/",
+        "terms_quote": "(not readable: baidu.com/duty is robots.txt-disallowed; huiyan footer "
+                       "links only '使用百度前必读')",
+        "robots": "huiyan.baidu.com/robots.txt 404 (no rules); historycurve.jsonp fetched",
+        "checked_at": _CHK},
+    "jp_jnto_arrivals": {
+        "terms_url": "https://www.jnto.go.jp/site-info/site-policy.html",
+        "terms_quote": ("掲載著作物をJNTOをはじめとする権利者に無断で"
+                        "転⽤、複製、送信、放送、配布、貸与、翻訳、変造する事は"
+                        "著作権侵害となり、法的に罰せられることがあります。"),
+        "robots": "www.jnto.go.jp/robots.txt 404 (no rules)",
+        "checked_at": _CHK},
+    "cn_sge_premium": {
+        "terms_url": "https://www.sge.com.cn/",
+        "terms_quote": "Copyright 2016 上海黄金交易所 All Right Reserved (no terms page found)",
+        "robots": "www.sge.com.cn/robots.txt 404 (no rules)",
+        "checked_at": _CHK},
+    "cn_nbs_retail": {
+        "terms_url": "https://www.stats.gov.cn/wzgl/202302/t20230217_1912857.html",
+        "terms_quote": "用户可以在本网站下载和使用国家统计局发布的统计数据 / "
+                       "欢迎转载或引用本网所载内容，但以下内容除外",  # noqa: RUF001
+        "robots": "www.stats.gov.cn/robots.txt 404 (no rules); terms name no crawler clause",
+        "checked_at": _CHK},
+    "cn_holiday_spend": {
+        "terms_url": "https://www.mct.gov.cn/dbdh/mzsm/201902/t20190202_837199.html",
+        "terms_quote": ("任何单位和个人未经文化和旅游部信息中心书面授权"
+                        "不得转载、链接、转贴或以其他方式复制发表。"),
+        "robots": "www.mct.gov.cn/robots.txt 404 (no rules)",
+        "checked_at": _CHK},
+    "in_npci_upi": {
+        "terms_url": "https://www.npci.org.in/disclaimer",
+        "terms_quote": "(not readable: the disclaimer page is robots.txt-disallowed)",
+        "robots": "disallowed: robots check refused /robots.txt, /disclaimer and "
+                  "/what-we-do/upi/product-statistics",
+        "checked_at": _CHK},
+    "tr_bkm_card": {
+        "terms_url": "https://bkm.com.tr/bkm/yasal-uyari/",
+        "terms_quote": ("Burada mevcut olan bilgiler BKM'nin önceden "
+                        "yazılı izni alınmaksızın kısmen "  # noqa: RUF001
+                        "veya tamamen kopya edilemez, "
+                        "dağıtılamaz, kiralanamaz, çoğaltılamaz"),  # noqa: RUF001
+        "robots": "allowed: 'User-agent: * Disallow: /wp-admin/' only",
+        "checked_at": _CHK},
+    "br_cielo_icva": {
+        "terms_url": "https://www.cielo.com.br/termos-condicoes-de-uso/",
+        "terms_quote": "todo o Conteúdo é de propriedade exclusiva da CIELO [...] sendo vedada sua "
+                       "cópia, reprodução, ou qualquer outro tipo de utilização",
+        "robots": ("allowed for /icva/ (blocks /admin, /login, /busca/, /search/ and named "
+                   "SEO bots)"),
+        "checked_at": _CHK},
+    "mx_antad_sss": {
+        "terms_url": "https://antad.net/admin/wp-content/uploads/2024/10/"
+                     "terminos-y-condiciones-de-uso.pdf",
+        "terms_quote": ("El usuario sólo podrá imprimir y/o copiar cualquier información "
+                        "contenida o publicada en el sitio web www.antad.net exclusivamente "
+                        "para uso personal"),
+        "robots": "allowed: 'User-agent: * Disallow: /wp-admin/' and an ftp tmp folder only",
+        "checked_at": _CHK},
+    "za_beti": {
+        "terms_url": "https://www.payinc.co.za/",
+        "terms_quote": "(not readable: JS-only site, no terms link in served HTML)",
+        "robots": "not readable: robots.txt URL returned the JS shell, not a robots file",
+        "checked_at": _CHK},
+    "kr_busan_port": {
+        "terms_url": "https://www.busanpa.com/",
+        "terms_quote": "(not found: no 저작권정책 or 공공누리 mark in served HTML; board URL 404)",
+        "robots": "rules only for Yeti and Googlebot (Disallow /iam/, /cms/, /board/download.*); "
+                  "none for other agents",
+        "checked_at": _CHK},
+    "cn_mot_port_weekly": {
+        "terms_url": "https://www.mot.gov.cn/wangzhangongneng/202512/t20251216_4181727.html",
+        "terms_quote": ("任何媒体、互联网站和商业机构不得利用本网站发布的内容"
+                        "进行商业性的原版原式地转载"),
+        "robots": "www.mot.gov.cn/robots.txt 404 (no rules)",
+        "checked_at": _CHK},
+}
 
 SOURCES = tuple(replace(s, terms=TERMS.get(s.id, ("to_confirm", ""))[0])
                 for s in (*SOURCES, *SUBSTITUTE_SOURCES))

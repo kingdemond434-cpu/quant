@@ -336,7 +336,17 @@ def test_every_source_has_an_explicit_terms_entry() -> None:
     for s in A.SOURCES:
         assert s.terms in A.TERMS_VALUES and s.terms == A.TERMS[s.id][0], s.id
     for sid in ("cn_maoyan_box_office", "cn_baidu_migration"):
-        assert A.BY_ID[sid].terms == "to_confirm"
+        assert A.BY_ID[sid].terms != "confirmed"
+    assert A.BY_ID["cn_maoyan_box_office"].terms == "refused"
+
+
+def test_reviewed_terms_carry_evidence() -> None:
+    assert set(A.TERMS_EVIDENCE) <= set(A.TERMS)
+    for sid, ev in A.TERMS_EVIDENCE.items():
+        assert ev["terms_url"].startswith("https://") and ev["terms_quote"], sid
+        assert ev["robots"] and ev["checked_at"] == "2026-09-30", sid
+    reviewed = {sid for sid in A.TERMS_EVIDENCE if A.TERMS[sid][0] == "confirmed"}
+    assert reviewed == {"cn_nbs_retail"}
 
 
 def test_a_to_confirm_source_is_never_fetched(tmp_path: Path) -> None:
