@@ -67,6 +67,7 @@ from libs.tiers import (  # noqa: E402
     firewall,
     formal,
     frontier,
+    gauntlet_arena,
     graph_edges,
     meta_benchmark,
     online_fdr,
@@ -973,6 +974,43 @@ def _real_gauntlet_attack(attackers: list[dict[str, Any]], gen: int) -> dict[str
             "genuine_power": sum(r["passed"] for r in real) / len(real) if real else None}
 
 
+#: sealed cases (with a real-gauntlet verdict) the validator genomes compete on: the whole
+#: judged set for adoption in the twin, a stratified subset for the Red Queen's defender search
+ARENA_CASES = 1200
+RQ_ARENA_CASES = 400
+#: fresh genomes the twin examines on the real arena per hour (the rest wait for the next hour)
+ARENA_FRESH_PER_HOUR = 3
+
+
+def _real_arena(limit: int | None = ARENA_CASES
+                ) -> tuple[list[gauntlet_arena.Judged], dict[str, Any]]:
+    """The sealed suite's cases the REAL gauntlet has judged on its current code (the verdicts
+    `production_immune` keeps), regenerated for the genomes to be scored on. The gauntlet is
+    reached read-only through `adversary.real_gate`; nothing here edits or re-runs it."""
+    try:
+        import adversary
+        gate, blocked = adversary.real_gate()
+    except Exception as exc:
+        return [], {"status": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"}
+    if gate is None:
+        return [], {"status": "UNMEASURED", "why": blocked}
+    code = _gauntlet_code_hash(gate)
+    dec = gauntlet_arena.real_decisions(_state("immune_prod").get("verdicts") or {}, code)
+    cases = gauntlet_arena.judged_cases(dec, PROD_SUITE.n, limit=limit)
+    key = truth_kernel.sha256("|".join(f"{c.kind}:{c.seed}:{int(c.real_passed)}"
+                                       for c in cases))[:16]
+    return cases, {"status": "MEASURED" if cases else "UNMEASURED", "code": code,
+                   "n": len(cases), "key": key,
+                   "why": None if cases else "no real-gauntlet verdict on the current code yet"}
+
+
+def _arena_fitness(cases: list[gauntlet_arena.Judged]
+                   ) -> Callable[[meta_benchmark.ValidatorConfig], dict[str, Any]]:
+    def fit(cfg: meta_benchmark.ValidatorConfig) -> dict[str, Any]:
+        return gauntlet_arena.arena_score(meta_benchmark.reference_validator(cfg), cases)
+    return fit
+
+
 def organ_red_queen() -> dict[str, Any]:
     st = _state("red_queen")
     attackers = red_queen.from_state(st)
@@ -983,8 +1021,16 @@ def organ_red_queen() -> dict[str, Any]:
     profiles = {str(k): v for k, v in ((prices.get("researchers") if isinstance(prices, dict)
                                         else None) or {}).items()
                 if isinstance(v, dict) and v.get("judged")}
+    # S33: THE DEFENDERS COMPETE ON THE REAL GAUNTLET'S VERDICTS when enough exist; the reference
+    # validator's own score ranks them only while the real arena is UNMEASURED, and says so.
+    arena_cases, arena_status = _real_arena(RQ_ARENA_CASES)
+    n_arena_traps = sum(1 for c in arena_cases if not c.genuine)
+    use_real = n_arena_traps >= gauntlet_arena.MIN_TRAPS // 2 and \
+        len(arena_cases) - n_arena_traps >= gauntlet_arena.MIN_GENUINE
     res = red_queen.generation(attackers, _incumbent_validator(), sealed, seed=gen,
-                               researchers=profiles or None)
+                               researchers=profiles or None,
+                               real_fitness=_arena_fitness(arena_cases) if use_real else None)
+    res["real_arena"] = {**arena_status, "used": use_real, "traps": n_arena_traps}
     real = _real_gauntlet_attack([e["attack"] for e in res["elite_attacks"]], gen)
     hist = list(st.get("success_history") or [])
     hist.append({"gen": gen, "at": NOW.isoformat(), "attack_success": res["attack_success"],
@@ -3450,75 +3496,111 @@ def organ_twin(sealed_now: Mapping[str, Any]) -> dict[str, Any]:
         adoption = self_model.adoption(c, res["verdict"], res["money_path"],
                                        bool(sealed_now.get("blocked")))
         if c["component"] == "validator":
-            adoption = "PENDING"       # decided below, on the sealed suite and nowhere else
+            adoption = "PENDING"       # decided below, on the REAL gauntlet's verdicts only
         out.append({"name": c["name"], "component": c["component"], **res,
                     "adoption": adoption})
-    # VALIDATOR CHALLENGERS ARE RE-SCORED ON THE SEALED SUITE. Until 2026-09-30 the challenger's
-    # score was the one it earned on its own TRAINING suite (the Red Queen's, seed 5150), compared
-    # with the incumbent's sealed score -- a challenger graded on the exam it studied. Now both
-    # are scored by the same reference validator on the same sealed suite, and the score is
-    # cached per genome hash and suite seal so each genome is examined once.
-    sealed = meta_benchmark.Suite(per_kind=IMMUNE_PER_KIND)
-    seal = sealed.seal()
-    cache = _state("sealed_scores")
-    scores = {k: v for k, v in (cache.get("scores") or {}).items() if v.get("seal") == seal}
-
-    def _sealed_balanced(genome: Any, gh: str) -> float | None:
-        if gh in scores:
-            return scores[gh]["balanced"]
-        try:
-            g = dict(genome or {})
-            g["extra"] = tuple(tuple(x) for x in g.get("extra") or [])
-            r = meta_benchmark.score(meta_benchmark.reference_validator(
-                meta_benchmark.ValidatorConfig(**g)), sealed)
-        except Exception:
-            return None
-        scores[gh] = {"seal": seal, "balanced": r["balanced"], "immune": r["immune_score"],
-                      "power": r["power"]}
-        return r["balanced"]
-
-    inc = _incumbent_validator()
-    inc_bal = _sealed_balanced(inc.genome(), "incumbent:" + truth_kernel.sha256(
-        truth_kernel.canon(inc.genome()))[:16])
-    fresh = 0
-    for row in out:
-        if row["component"] != "validator":
-            continue
-        c = next(x for x in st.get("challengers") or [] if x["name"] == row["name"])
-        gh = str(c.get("genome_hash"))
-        if gh not in scores and fresh >= 4:
-            row["adoption"] = "PENDING_SEALED_SCORE"     # examined on a later hour
-            continue
-        fresh += int(gh not in scores)
-        bal = _sealed_balanced(c.get("genome"), gh)
-        row["sealed_balanced"] = bal
-        row["incumbent_balanced"] = inc_bal
-        row["judged_on"] = f"sealed:{seal[:12]}"
-        if bal is None or inc_bal is None:
-            continue
-        if float(bal) > float(inc_bal) + 0.01 and authority.suspended("twin"):
-            row["adoption"] = "PENDING_AUTHORITY"   # the twin's contract is REJECTED
-        elif float(bal) > float(inc_bal) + 0.01 and not sealed_now.get("blocked"):
-            row["adoption"] = "ADOPTED"
-            ad = _state("adopted")
-            ad["validator"] = c.get("genome")
-            ad["validator_adopted_at"] = NOW.isoformat()
-            ad["validator_from"] = c["name"]
-            ad["validator_sealed_balanced"] = bal
-            _save_state("adopted", ad)
-            inc_bal = float(bal)
-        else:
-            row["adoption"] = "REJECTED_ON_SEALED"
-    _save_state("sealed_scores", {"scores": scores})
+    arena = _judge_validators(out, st.get("challengers") or [],
+                              bool(sealed_now.get("blocked")))
     rb = twin.rollback_plan(_release_history())
     runs = shadow.get("runs") or []
     return {"challengers": out[-30:], "rollback": rb, "shadow_desk": shadow,
+            "validator_arena": arena,
             "metric": {"challengers": len(out),
                        "adopted": sum(1 for r in out if r["adoption"] == "ADOPTED"),
                        "shadow_runs_measured": sum(1 for r in runs
                                                    if r.get("status") == "MEASURED"),
                        "shadow_terminal_touches": sum(int(r.get("terminal_touches") or 0)
                                                       for r in runs)}}
+
+
+def _genome_cfg(genome: Any) -> meta_benchmark.ValidatorConfig:
+    g = dict(genome or {})
+    g["extra"] = tuple(tuple(x) for x in g.get("extra") or [])
+    return meta_benchmark.ValidatorConfig(**g)
+
+
+def _judge_validators(out: list[dict[str, Any]], challengers: list[dict[str, Any]],
+                      blocked: bool) -> dict[str, Any]:
+    """S33: VALIDATOR CHALLENGERS ARE JUDGED BY THE REAL GAUNTLET'S VERDICTS.
+
+    History, so the rule is not undone. Until 2026-09-30 a challenger was scored on its own Red
+    Queen training suite; then, for one day, by the reference validator on the sealed suite --
+    still a model graded by the same model, with the desk's real ten-gate certifier absent. Now
+    every genome (the incumbent's included) is scored by `gauntlet_arena.arena_score` on the
+    sealed cases the REAL gauntlet judged blind (`production_immune`, its current code only),
+    and adopted only on `gauntlet_arena.judge`'s ADOPT: never worse than the incumbent when laid
+    over the real gates, and better by the margin either there or where it disagrees with the
+    gauntlet. Scores are cached per (genome, real-verdict set). An adoption is research state
+    (`tier_s/adopted.json`); the sealed files are fingerprinted around the write."""
+    rows = [r for r in out if r["component"] == "validator"]
+    if not rows:
+        return {"status": "IDLE", "why": "no validator challenger registered"}
+    cases, status = _real_arena(ARENA_CASES)
+    if status.get("status") != "MEASURED":
+        for row in rows:
+            row["adoption"] = "PENDING_REAL_VERDICT"
+            row["judged_on"] = "UNMEASURED: " + str(status.get("why"))
+        return status
+    key = f"{status['code']}:{status['key']}"
+    cache = _state("arena_scores")
+    scores = {k: v for k, v in (cache.get("scores") or {}).items() if v.get("arena") == key}
+
+    def _score(genome: Any, gh: str) -> dict[str, Any] | None:
+        if gh not in scores:
+            try:
+                sc = gauntlet_arena.arena_score(
+                    meta_benchmark.reference_validator(_genome_cfg(genome)), cases)
+            except Exception:
+                return None
+            scores[gh] = {"arena": key, "score": sc}
+        got: dict[str, Any] = scores[gh]["score"]
+        return got
+
+    inc = _incumbent_validator()
+    inc_sc = _score(inc.genome(), "incumbent:" + truth_kernel.sha256(
+        truth_kernel.canon(inc.genome()))[:16])
+    by_name = {str(c.get("name")): c for c in challengers}
+    fresh = 0
+    for row in rows:
+        c = by_name.get(str(row["name"])) or {}
+        gh = str(c.get("genome_hash"))
+        if gh not in scores and fresh >= ARENA_FRESH_PER_HOUR:
+            row["adoption"] = "PENDING_REAL_VERDICT"          # examined on a later hour
+            continue
+        fresh += int(gh not in scores)
+        sc = _score(c.get("genome"), gh)
+        row["judged_on"] = f"real_gauntlet:{status['code']}"
+        if sc is None or inc_sc is None:
+            row["adoption"] = "PENDING_REAL_VERDICT"
+            continue
+        verdict = gauntlet_arena.judge(sc, inc_sc)
+        row["real_arena"] = {"verdict": verdict, "joint": sc.get("joint"),
+                             "vs_gauntlet": sc.get("vs_gauntlet"),
+                             "incumbent_joint": inc_sc.get("joint")}
+        if verdict["verdict"] == "UNMEASURED":
+            row["adoption"] = "PENDING_REAL_VERDICT"
+        elif verdict["verdict"] == "ADOPT" and authority.suspended("twin"):
+            row["adoption"] = "PENDING_AUTHORITY"          # the twin's contract is REJECTED
+        elif verdict["verdict"] == "ADOPT" and blocked:
+            row["adoption"] = "BLOCKED_BY_SEALED_REGRESSION"
+        elif verdict["verdict"] == "ADOPT":
+            before = gauntlet_arena.sealed_fingerprint()
+            ad = _state("adopted")
+            ad["validator"] = c.get("genome")
+            ad["validator_adopted_at"] = NOW.isoformat()
+            ad["validator_from"] = row["name"]
+            ad["validator_judged_on"] = row["judged_on"]
+            ad["validator_real_arena"] = verdict
+            _save_state("adopted", ad)
+            unchanged = gauntlet_arena.sealed_fingerprint() == before
+            row["adoption"] = "ADOPTED" if unchanged else "ADOPTED_SEALED_FILES_MOVED"
+            row["sealed_files_unchanged"] = unchanged
+            inc_sc = sc
+        else:
+            row["adoption"] = "REJECTED_BY_REAL_GAUNTLET"
+    _save_state("arena_scores", {"scores": scores})
+    return {**status, "incumbent": inc_sc,
+            "adopted": [r["name"] for r in rows if r["adoption"] == "ADOPTED"]}
 
 
 def _release_history() -> list[dict[str, Any]]:
