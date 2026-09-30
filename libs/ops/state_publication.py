@@ -36,9 +36,11 @@ What it does is make the stall impossible to miss:
 """
 from __future__ import annotations
 
+import contextlib
 import json
 import re
 import subprocess
+from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -190,15 +192,106 @@ def measure_flow(root: Path = ROOT, *, now: datetime | None = None,
     return doc
 
 
+# ------------------------------------------------------------------------ the out-of-band page
+#: THE VERDICT CANNOT RIDE THE WIRE IT REPORTS ON (2026-09-30). BOX_STATE_FLOW.json and the
+#: STATE_FLOW_STALLED event reach anyone off the box only through the very push that is stalled,
+#: so a STALLED verdict would sit on the box's disk until the stall ended by itself. These two
+#: verdicts are therefore also paged through the desk's existing sender,
+#: `libs.ops.alert_channels.send_all` (the armed channels in data/secrets/alert_channels.json,
+#: every attempt in data/alert_delivery.jsonl) -- a different route that needs no git.
+ALERT_VERDICTS = ("STALLED", "SOURCE_STALE")
+#: Box-local dedup state (desks/mt5/logs/ is gitignored): one page per verdict change, and a
+#: reminder every REPAGE_H hours while the verdict stands.
+ALERT_STATE_REL = "desks/mt5/logs/state_flow_alert.json"
+REPAGE_H = 6.0
+
+Sender = Callable[[str, str], dict[str, Any]]
+
+
+def _default_sender(root: Path) -> Sender:
+    def send(title: str, body: str) -> dict[str, Any]:
+        from libs.ops import alert_channels
+        # The sender reads its own config where it always has; anchored on the repo root so the
+        # leg's working directory cannot make an armed box look unarmed. Nothing here reads or
+        # records a channel's credentials.
+        return alert_channels.send_all(
+            title, body, config=root / "data/secrets/alert_channels.json",
+            ledger=root / "data/alert_delivery.jsonl")
+    return send
+
+
+def page_flow(root: Path, doc: dict[str, Any], *, now: datetime | None = None,
+              sender: Sender | None = None, repage_h: float = REPAGE_H) -> dict[str, Any]:
+    """Page STALLED / SOURCE_STALE off the box, deduplicated. Returns what it did. Never raises.
+
+    Sends on a change INTO an alert verdict, again every `repage_h` hours while it stands, and
+    once on recovery to FLOWING. UNMEASURED neither pages nor clears: absence is not recovery.
+    """
+    now = now or datetime.now(UTC)
+    verdict = str(doc.get("verdict") or "UNMEASURED")
+    path = root / ALERT_STATE_REL
+    try:
+        prev = json.loads(path.read_text("utf-8"))
+        prev = prev if isinstance(prev, dict) else {}
+    except (OSError, ValueError):
+        prev = {}
+    prev_verdict = prev.get("verdict")
+    last = None
+    with contextlib.suppress(TypeError, ValueError):
+        last = datetime.fromisoformat(str(prev.get("paged_at")))
+    if verdict in ALERT_VERDICTS:
+        if prev_verdict != verdict:
+            reason = "verdict changed"
+        elif last is None or (now - last).total_seconds() / 3600 >= repage_h:
+            reason = f"still {verdict} after {repage_h:g}h"
+        else:
+            return {"sent": False, "reason": f"deduplicated: {verdict} paged at {last.isoformat()}"}
+        title = f"BOX STATE {verdict}"
+    elif verdict == "FLOWING" and prev_verdict in ALERT_VERDICTS:
+        reason, title = f"recovered from {prev_verdict}", "BOX STATE FLOWING again"
+    else:
+        return {"sent": False, "reason": f"{verdict}: nothing to page"}
+    log = doc.get("sync_log") if isinstance(doc.get("sync_log"), dict) else {}
+    body = "\n".join(str(x) for x in (
+        doc.get("why") or verdict,
+        f"origin box-state age: {doc.get('published_age_h')}h; local state age: "
+        f"{doc.get('local_state_age_h')}h; unpushed commits: "
+        f"{doc.get('local_commits_not_on_origin')}",
+        f"sync log last refusal: {log.get('last_refusal_line')}" if log else "",
+        f"measured {doc.get('measured_at')} ({FLOW_REL})") if x)
+    try:
+        res = (sender or _default_sender(root))(title, body)
+    except Exception as exc:  # the pager must never take down the leg
+        res = {"armed": None, "delivered": 0, "error": f"{type(exc).__name__}: {exc}"}
+    out = {"sent": True, "reason": reason, "title": title,
+           "armed": res.get("armed"), "delivered": res.get("delivered")}
+    if res.get("error"):
+        out["error"] = res["error"]
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps({"verdict": verdict, "paged_at": now.isoformat(
+            timespec="seconds"), **{k: out.get(k) for k in ("reason", "armed", "delivered")}},
+            indent=2), "utf-8")
+    except OSError as exc:
+        out["state_write_error"] = f"{type(exc).__name__}: {exc}"
+    return out
+
+
 def publish_flow(root: Path = ROOT, *, doc: dict[str, Any] | None = None,
-                 events_path: Path | None = None) -> dict[str, Any]:
-    """Measure, write BOX_STATE_FLOW.json, and emit STATE_FLOW_STALLED when it is. Never raises."""
+                 events_path: Path | None = None,
+                 sender: Sender | None = None) -> dict[str, Any]:
+    """Measure, page it off the box if it is STALLED/SOURCE_STALE (deduplicated), write
+    BOX_STATE_FLOW.json, and emit STATE_FLOW_STALLED when it is. Never raises."""
     try:
         doc = doc or measure_flow(root)
     except Exception as exc:  # a meter must not take down the leg it rides
         doc = {"schema": "box_state_flow/1", "verdict": "UNMEASURED",
                "why": f"{type(exc).__name__}: {exc}",
                "measured_at": datetime.now(UTC).isoformat(timespec="seconds")}
+    try:
+        doc["page"] = page_flow(root, doc, sender=sender)
+    except Exception as exc:
+        doc["page"] = {"sent": False, "error": f"{type(exc).__name__}: {exc}"}
     out = root / FLOW_REL
     try:
         out.parent.mkdir(parents=True, exist_ok=True)

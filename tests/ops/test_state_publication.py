@@ -157,3 +157,82 @@ def test_publish_state_runs_the_digest_and_the_meter() -> None:
     body = src[src.index("def publish_state"):src.index("def _tape_main")]
     assert body.index("_gate_verdict_digest()") < body.index("subprocess.run(")
     assert "_state_flow()" in body
+
+
+# ------------------------------------------------------------------ the out-of-band page
+def _flow(verdict: str) -> dict:
+    return {"verdict": verdict, "why": f"{verdict} because", "published_age_h": 40.0,
+            "local_state_age_h": 0.2, "local_commits_not_on_origin": 7,
+            "sync_log": {"readable": True, "last_refusal_line": "push rejected"},
+            "measured_at": "2026-09-30T12:00:00+00:00"}
+
+
+def test_a_stall_is_paged_off_the_box_once_per_change_and_every_six_hours(
+        tmp_path: Path) -> None:
+    sent: list[tuple[str, str]] = []
+
+    def sender(title: str, body: str) -> dict:
+        sent.append((title, body))
+        return {"armed": 1, "delivered": 1, "results": []}
+
+    t0 = datetime(2026, 9, 30, 12, tzinfo=UTC)
+    first = sp.page_flow(tmp_path, _flow("STALLED"), now=t0, sender=sender)
+    assert first["sent"] and first["delivered"] == 1
+    assert sent[0][0] == "BOX STATE STALLED" and "push rejected" in sent[0][1]
+    assert not sp.page_flow(tmp_path, _flow("STALLED"), now=t0 + timedelta(hours=1),
+                            sender=sender)["sent"]
+    assert sp.page_flow(tmp_path, _flow("STALLED"), now=t0 + timedelta(hours=6),
+                        sender=sender)["sent"]
+    # a change of alert verdict pages at once; UNMEASURED neither pages nor clears
+    assert sp.page_flow(tmp_path, _flow("SOURCE_STALE"), now=t0 + timedelta(hours=6.5),
+                        sender=sender)["sent"]
+    assert not sp.page_flow(tmp_path, _flow("UNMEASURED"), now=t0 + timedelta(hours=7),
+                            sender=sender)["sent"]
+    assert not sp.page_flow(tmp_path, _flow("SOURCE_STALE"), now=t0 + timedelta(hours=8),
+                            sender=sender)["sent"]
+    # recovery is paged once, then silence
+    assert sp.page_flow(tmp_path, _flow("FLOWING"), now=t0 + timedelta(hours=9),
+                        sender=sender)["title"] == "BOX STATE FLOWING again"
+    assert not sp.page_flow(tmp_path, _flow("FLOWING"), now=t0 + timedelta(hours=10),
+                            sender=sender)["sent"]
+    assert [t for t, _ in sent] == ["BOX STATE STALLED", "BOX STATE STALLED",
+                                    "BOX STATE SOURCE_STALE", "BOX STATE FLOWING again"]
+
+
+def test_publish_flow_pages_through_the_sender_and_records_it(tmp_path: Path) -> None:
+    calls: list[str] = []
+
+    def sender(title: str, body: str) -> dict:
+        calls.append(title)
+        return {"armed": 0, "delivered": 0, "results": []}
+
+    sp.publish_flow(tmp_path, doc=_flow("STALLED"), events_path=tmp_path / "ev.jsonl",
+                    sender=sender)
+    assert calls == ["BOX STATE STALLED"]
+    written = json.loads((tmp_path / sp.FLOW_REL).read_text("utf-8"))
+    assert written["page"]["sent"] and written["page"]["armed"] == 0
+
+
+def test_a_sender_that_raises_never_breaks_the_meter(tmp_path: Path) -> None:
+    def sender(title: str, body: str) -> dict:
+        raise OSError("network down")
+
+    doc = sp.publish_flow(tmp_path, doc=_flow("SOURCE_STALE"),
+                          events_path=tmp_path / "ev.jsonl", sender=sender)
+    assert doc["page"]["delivered"] == 0 and "OSError" in doc["page"]["error"]
+    assert (tmp_path / sp.FLOW_REL).exists()
+
+
+def test_the_default_sender_is_the_desks_alert_path_anchored_on_the_root(
+        tmp_path: Path, monkeypatch) -> None:
+    from libs.ops import alert_channels
+    seen: dict = {}
+
+    def fake_send_all(title, body, *, config, ledger, canary=False):
+        seen.update(config=config, ledger=ledger)
+        return {"armed": 0, "delivered": 0, "results": []}
+
+    monkeypatch.setattr(alert_channels, "send_all", fake_send_all)
+    assert sp.page_flow(tmp_path, _flow("STALLED"))["sent"]
+    assert seen["config"] == tmp_path / "data/secrets/alert_channels.json"
+    assert seen["ledger"] == tmp_path / "data/alert_delivery.jsonl"
