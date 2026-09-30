@@ -397,3 +397,41 @@ def test_both_organs_are_hourly_legs_with_a_budget_and_a_layer(leg):
     from research import hourly_cycle as hc
     assert leg in hc.LEG_BUDGET_SEC
     assert leg in LEG_LAYER
+
+
+# ------------------------------------------------------------------ culture provenance ---
+KEYS = ("source_culture", "participant_structure", "failure_mode_hypothesis")
+STRUCTURES = {"retail_heavy", "institutional", "tax_driven", "policy_driven",
+              "settlement_constrained", "physical_flow", "broker_specific", "mixed",
+              "UNMEASURED"}
+
+
+def test_every_specialist_cell_carries_culture_provenance():
+    from research import specialist_cell as sc
+    cells = sc.plan({"fx": ["USDJPY"], "indices": ["JPN225", "US500"],
+                     "softs": ["COFROB", "CORN"], "metals": ["XAUUSD"]})
+    assert cells
+    for c in cells:
+        assert all(c.get(k) for k in KEYS), c
+        assert c["participant_structure"] in STRUCTURES
+    tags = {c["source_culture"] for c in cells}
+    assert {"JP", "VN", "US", "GLOBAL"} <= tags
+
+
+def test_donated_rows_carry_culture_provenance(tmp_path, monkeypatch):
+    from research import proposer_common as pc
+    from research import residual_search as rs
+    from research import specialist_cell as sc
+    monkeypatch.setattr(sc, "STATE", tmp_path / "state.json")
+    monkeypatch.setattr(sc, "_meta", lambda: {})
+    monkeypatch.setattr(sc, "measure", lambda s, f, p, m: {"built": True, "signal_days": 99,
+                                                            "trade_days_lb": 99})
+    got: list[list[dict]] = []
+    monkeypatch.setattr(pc, "donate", lambda src, rows, n: got.append(rows) or tmp_path / "d")
+    monkeypatch.setattr(pc, "donation_counts", lambda: {"donated": len(got[-1])})
+    sc.seed(budget_s=60, symbols_by_class={"indices": ["JPN225"]})
+    assert got and all(all(r.get(k) for k in KEYS) for r in got[0])
+    cultures = {r["source_culture"] for r in got[0]}
+    assert "JP" in cultures and cultures <= {"JP", "GLOBAL"}, cultures
+    assert all(rs.CULTURE.get(k) for k in KEYS)
+    assert rs.CULTURE["source_culture"] == "GLOBAL"

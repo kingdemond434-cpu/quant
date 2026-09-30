@@ -111,6 +111,11 @@ SEED_FLOOR = 66
 FALLBACK_H = 0.01
 LAMBDAS = (0.0, 0.5, 1.0, 1.5)
 MIN_GATE_N = 20
+#: Culture provenance of a residual child: region-agnostic by construction.
+CULTURE = {"source_culture": "GLOBAL", "participant_structure": "UNMEASURED",
+           "failure_mode_hypothesis": ("UNMEASURED: the structure is the desk's own book's "
+                                       "residual, not a culture's mechanism, so no culture's "
+                                       "failure timing is claimed")}
 
 
 def _now() -> str:
@@ -532,6 +537,10 @@ def emit(kids: list[dict[str, Any]], *, dry_run: bool, budget_s: float) -> dict[
              "parent_bucket_mean_residual_r": c["parent_bucket_mean_residual_r"],
              "control_arm": "the un-filtered parent cell, already certified"})
             for c in cands]
+        for row in rows:
+            # CULTURE PROVENANCE (principal, 2026-09-30): the structure is the desk's OWN book's
+            # residual, so it belongs to no culture; region-agnostic, and nothing is guessed.
+            row.update(CULTURE)
         path = pc.donate(SOURCE, rows, len(measured) or len(rows))
         got = pc.donation_counts()
         donation = {"status": "DONATED" if path else "REFUSED_AT_DOOR",

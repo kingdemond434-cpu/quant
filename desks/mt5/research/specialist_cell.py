@@ -75,6 +75,8 @@ UNMEASURED = "UNMEASURED"
 #: books use, because a partial last day is trimmed and the cost model can refuse an entry.
 FIRE_FLOOR = 60
 SEED_FLOOR = 66
+#: The principal's culture-provenance keys, exactly as named (2026-09-30).
+CULTURE_KEYS = ("source_culture", "participant_structure", "failure_mode_hypothesis")
 
 
 def _now() -> str:
@@ -269,6 +271,77 @@ SPECIALISTS: dict[str, tuple[Callable[[str], list[tuple[str, str, list[dict[str,
 }
 
 
+# ------------------------------------------------------------------- culture provenance ---
+#: The principal's order of 2026-09-30: every cell carries `source_culture`,
+#: `participant_structure` and `failure_mode_hypothesis`. A specialist mechanism is anchored to
+#: the venue, fix or crop whose participants create it, so the tag is that jurisdiction's, stated
+#: here once; a mechanism with no single home is GLOBAL, and nothing is guessed.
+WESTERN_STANDARD = ("this is the standard Western version of the mechanism; no culture-specific "
+                    "failure timing is claimed for it")
+VENUE_CULTURE: dict[str, str] = {
+    "US500": "US", "US30": "US", "NAS100": "US", "US2000": "US", "CA60": "CA", "GER40": "DE",
+    "FRA40": "FR", "EUSTX50": "EU", "E35": "ES", "NETH25": "NL", "UK100": "GB",
+    "JPN225": "JP", "HK50": "HK", "CHINAH": "CN", "AUS200": "AU",
+}
+CROP_CULTURE: dict[str, str] = {
+    "CORN": "US", "SOYBEAN": "US", "WHEAT": "US", "COTTON": "US", "OJ": "US",
+    "COFARA": "BR", "COFROB": "VN", "SUGAR": "BR", "SUGARRAW": "BR",
+    "USCOCOA": "CI", "UKCOCOA": "CI",
+}
+_WESTERN = frozenset({"US", "CA", "GB", "DE", "FR", "EU", "ES", "NL", "AU"})
+_MECH_CULTURE: dict[str, tuple[str, str]] = {
+    "wmr_fix_reversal": ("GB", "institutional"),
+    "fix_forced_flow": ("GLOBAL", "settlement_constrained"),
+    "carry_risk_off": ("GLOBAL", "institutional"),
+    "cb_meeting_drift": ("GLOBAL", "policy_driven"),
+    "gold_real_yield": ("US", "institutional"),
+    "gold_silver_ratio": ("GLOBAL", "mixed"),
+    "metals_fix": ("GB", "institutional"),
+    "eia_inventory": ("US", "physical_flow"),
+    "month_end_forced_flow": ("GLOBAL", "institutional"),
+    "wasde": ("US", "policy_driven"),
+}
+
+
+def culture(mechanism: str, symbol: str) -> dict[str, str]:
+    """`source_culture`, `participant_structure`, `failure_mode_hypothesis` for one cell."""
+    sym = symbol.upper()
+    if mechanism in ("overnight_gap", "open_drive", "month_end_rebalance"):
+        tag = VENUE_CULTURE.get(sym, "UNMEASURED")
+        part = "mixed" if mechanism == "overnight_gap" else "institutional"
+        why = (WESTERN_STANDARD if tag in _WESTERN else
+               f"the flow is the {tag} cash session's own participants on its own holiday, "
+               "settlement and policy calendar, so it should fail when that calendar or that "
+               "market's domestic flow shifts rather than with the US session"
+               if tag != "UNMEASURED" else "UNMEASURED: the venue of this index is not declared")
+        return {"source_culture": tag, "participant_structure": part,
+                "failure_mode_hypothesis": why}
+    if mechanism == "weather_window":
+        tag = CROP_CULTURE.get(sym, "UNMEASURED")
+        why = (WESTERN_STANDARD if tag in _WESTERN else
+               f"the premium is set by the {tag} crop's own weather and its local producers' "
+               "hedging and export policy, so it should fail when that country's harvest or "
+               "policy calendar moves, independently of Western demand"
+               if tag != "UNMEASURED" else "UNMEASURED: the producing country is not declared")
+        return {"source_culture": tag, "participant_structure": "physical_flow",
+                "failure_mode_hypothesis": why}
+    tag, part = _MECH_CULTURE.get(mechanism, ("UNMEASURED", "UNMEASURED"))
+    if mechanism == "fix_forced_flow":
+        why = ("the calendar joins the London WMR fix and the Tokyo TTM; the TTM leg is Japanese "
+               "corporates settling invoices at their bank's 09:55 rate, which concentrates on "
+               "gotobi days and month-end and so fails on the Japanese settlement calendar, not "
+               "on London benchmark reform")
+    elif tag == "GLOBAL":
+        why = ("region-agnostic: the payer is a global class of participant, so no single "
+               "culture's failure timing is claimed")
+    elif tag == "UNMEASURED":
+        why = "UNMEASURED"
+    else:
+        why = WESTERN_STANDARD
+    return {"source_culture": tag, "participant_structure": part,
+            "failure_mode_hypothesis": why}
+
+
 def plan(symbols_by_class: dict[str, list[str]] | None = None) -> list[dict[str, Any]]:
     """Every (class, mechanism, symbol, family, params) the catalogue names, lane-filtered."""
     from research import universe_policy as up
@@ -282,7 +355,7 @@ def plan(symbols_by_class: dict[str, list[str]] | None = None) -> list[dict[str,
                 for params in grid:
                     out.append({"klass": klass, "mechanism": mech, "symbol": sym,
                                 "family": fam, "params": params,
-                                "prior": priors.get(mech, "")})
+                                "prior": priors.get(mech, ""), **culture(mech, sym)})
     return out
 
 
@@ -422,6 +495,8 @@ def seed(*, budget_s: float = 900.0, dry_run: bool = False,
              "asset_class_desk": c["klass"], "specialist_mechanism": c["mechanism"],
              "built_by": "external_gauntlet.build_cell (sealed), measured on its own output"})
             for c in cands]
+        for row, c in zip(out_rows, cands, strict=True):
+            row.update({k: c[k] for k in CULTURE_KEYS})
         path = pc.donate(SOURCE, out_rows, len(measured_now) or len(out_rows))
         counts = pc.donation_counts()
         donation = {"status": "DONATED" if path else "REFUSED_AT_DOOR",
@@ -481,6 +556,16 @@ def _certificates() -> dict[str, Any]:
             "certified_by_mechanism": dict(hit), "certified_total": int(sum(hit.values()))}
 
 
+def _culture_census() -> dict[str, Any]:
+    try:
+        cells = plan()
+    except Exception as exc:
+        return {"status": UNMEASURED, "why": f"{type(exc).__name__}: {exc}"}
+    return {"status": "MEASURED",
+            "source_culture": dict(Counter(c["source_culture"] for c in cells)),
+            "participant_structure": dict(Counter(c["participant_structure"] for c in cells))}
+
+
 def report(seeded: dict[str, Any]) -> dict[str, Any]:
     new_families = {}
     try:
@@ -499,6 +584,7 @@ def report(seeded: dict[str, Any]) -> dict[str, Any]:
                  "measured cell is charged to the trial census. Additive: no other miner is "
                  "capped, reordered or slowed"),
         "catalogue": {k: sorted(v[1]) for k, v in SPECIALISTS.items()},
+        "culture_of_catalogue": _culture_census(),
         "new_families": new_families,
         "seeding": seeded,
         "certificates": _certificates(),
