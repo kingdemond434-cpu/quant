@@ -880,6 +880,7 @@ def main(argv: list[str] | None = None) -> int:
               + (f": {names}" if names else " -- every registry organ already has a row"))
         return 0
     doc = attest(paths, budget_s=float(a.budget_s))
+    rat: dict[str, Any] | None = None
     if desk_stamp(doc) is False:
         # A NON-DESK ATTESTATION SETS NO FLOOR. The ratchet is the best a desk host has ever
         # achieved; a cloud container's census (every box-only organ NEVER or MISSING) is not
@@ -913,10 +914,13 @@ def main(argv: list[str] | None = None) -> int:
               f"{doc['scope']['attested']} organ(s): LIVE {c['LIVE']}, STALE {c['STALE']}, "
               f"MISSING {c['MISSING']}, NEVER {c['NEVER']}, {UNMEASURED} {c[UNMEASURED]}; "
               f"{doc['scope']['wall_s']}s -> {paths.out_json.name} + {paths.out_md.name}")
-        f = rat["floor"]
-        print(f"   ratchet floor for {doc['attests_to_host']}: STALE {f['STALE']}, "
-              f"MISSING {f['MISSING']}, NEVER {f['NEVER']}"
-              + (f" (lowered: {', '.join(rat['lowered'])})" if rat["lowered"] else ""))
+        if rat is None:
+            print(f"   ratchet: {doc['ratchet']['why']}")
+        else:
+            f = rat["floor"]
+            print(f"   ratchet floor for {doc['attests_to_host']}: STALE {f['STALE']}, "
+                  f"MISSING {f['MISSING']}, NEVER {f['NEVER']}"
+                  + (f" (lowered: {', '.join(rat['lowered'])})" if rat["lowered"] else ""))
     return 0
 
 
