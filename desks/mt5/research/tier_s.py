@@ -2408,9 +2408,6 @@ def _listed_graph() -> dict[str, Any]:
 def organ_world_and_science() -> dict[str, Any]:
     listed = _listed_graph()
     listed_broken = listed.pop("broken", [])
-    listed_edges = listed.pop("edges", [])
-    _write(STATE / "listed_edges.json", {"generated_utc": NOW.isoformat(),
-                                         "edges": listed_edges})
     rets, closes, vols = _returns_panel()
     if len(rets) < 3:
         rows0, _ = science_rows({}, listed_broken)
