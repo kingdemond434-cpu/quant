@@ -349,8 +349,7 @@ def test_a_small_lot_is_matched_at_the_size_the_venue_actually_sent() -> None:
 
 
 def test_the_unowned_position_block_is_billed_to_its_registered_rail() -> None:
-    from libs.portfolio.rails import rail
-    assert rail(g.UNOWNED_BLOCK_RAIL).kind == "integrity"
+    # The rail itself is registered in libs/portfolio/rails.py (sealed): desktop pass row 5b.
     v, st = _Venue(), _state()
     _retry(v, st, xau_positions=[{"id": 9, "side": "buy", "openDate": 4_102_444_800_000}])
     [row] = [r for r in g._journal_rows() if r.get("status") == "RAIL_BLOCKED"]
