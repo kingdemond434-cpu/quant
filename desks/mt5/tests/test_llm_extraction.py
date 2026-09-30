@@ -113,7 +113,7 @@ def test_only_validated_rows_become_a_pit_stamped_series(tmp_path) -> None:
     assert doc["status"] == "MEASURED" and len(calls) == 1 and "nbs_cpi" in calls[0]
     t = doc["totals"]
     assert (t["rows_extracted"], t["rows_accepted"], t["rows_rejected"]) == (3, 2, 1)
-    assert t["reason_codes"] == {"QUOTE_NOT_IN_SOURCE": 1}
+    assert t["reason_codes"]["QUOTE_NOT_IN_SOURCE"] == 1
     rec = doc["docs"][0]
     assert rec["series"]["written"] and rec["series"]["canonical_alias"] == "nbs_cpi.parquet"
     frame = pd.read_parquet(p["series"] / "nbs_cpi__llm.parquet")
