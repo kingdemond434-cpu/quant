@@ -1448,6 +1448,14 @@ def main() -> int:
     source_candidates: dict[str, set[str]] = {}
     factory_receipts: list[dict[str, object]] = []
     terminal_deepening, recovered_deepening = _deepening_state()
+    # THE BUILD-FAILURE BANK (Defect 4): a compiled candidate that is not a buildable spec was
+    # `continue`d past with only a tally. Each one is now recorded with WHICH field it lacked,
+    # and the hourly leg `build_failure_bank` ranks the causes into fix work. Guarded.
+    try:
+        from research.build_failure_bank import Bank as _Bank
+        bank = _Bank("miner_candidate_compiler")
+    except Exception:                                  # pragma: no cover - host-dependent
+        bank = None
     untestable = structurally_untestable_families()
     if untestable:
         print("families routed to DEEPENING (measured untestable at current parameters): "
@@ -1512,13 +1520,23 @@ def main() -> int:
             stats["deepening_recovered"] = int(stats["deepening_recovered"]) + 1
         row_reached_docket = False
         for candidate in produced:
-            valid = (bool(str(candidate.get("symbol") or "").strip())
-                     and bool(str(candidate.get("family") or "").strip())
-                     and isinstance(candidate.get("params"), dict)
-                     and str(candidate.get("mechanism_status") or "").upper() == "NAMED"
-                     and len(str(candidate.get("mechanism_note") or "").strip()) >= 12)
+            lacking = [name for name, ok in (
+                ("symbol", bool(str(candidate.get("symbol") or "").strip())),
+                ("family", bool(str(candidate.get("family") or "").strip())),
+                ("params", isinstance(candidate.get("params"), dict)),
+                ("mechanism_status=NAMED",
+                 str(candidate.get("mechanism_status") or "").upper() == "NAMED"),
+                ("mechanism_note>=12ch",
+                 len(str(candidate.get("mechanism_note") or "").strip()) >= 12)) if not ok]
+            valid = not lacking
+            if bank is not None:
+                bank.attempt()
             if not valid:
                 stats["invalid_cells"] = int(stats["invalid_cells"]) + 1
+                if bank is not None:
+                    bank.record("SPEC_INVALID", "lacks " + ", ".join(lacking),
+                                source=source, symbol=candidate.get("symbol"),
+                                family=candidate.get("family"))
                 continue
             identity = json.dumps({k: candidate[k] for k in ("symbol", "family", "params")},
                                   sort_keys=True, default=str)
@@ -1828,6 +1846,8 @@ def main() -> int:
             tmp.write_text(json.dumps(receipt, indent=1) + "\n", "utf-8")
             os.replace(tmp, target)
     _save_cursor()
+    if bank is not None:
+        bank.flush()
     print(f"miner compiler: {sum(int(v['rows']) for v in per_source.values())} row(s) accounted; "
           f"{len(candidates)} executable candidate(s); {len(deepening)} exact-rule task(s)")
     return 0

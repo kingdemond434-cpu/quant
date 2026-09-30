@@ -971,6 +971,8 @@ def _area_files(root: Path | None = None) -> dict[str, Path]:
 #: tracking machine-rewritten files made both hosts unpullable.
 _STEMS_CACHE_FILE = ROOT / "desks" / "mt5" / "data" / "import_stems_cache.json"
 _STEMS_CACHE: dict[str, list[str]] = {}
+#: (root, reached file) -> every file that reaches it, in walk order (see `reach_specs`).
+_REACHERS: dict[tuple[str, str], list[str]] = {}
 _STEMS_STATE: dict[str, bool] = {"loaded": False, "dirty": False}
 #: Entries are ~60 bytes each and the tree holds ~1,500 files; the bound is here so a long-lived
 #: box cannot accumulate a cache of every version of every file it ever held.
@@ -1163,6 +1165,15 @@ def reach_specs(reg: Registry, root: Path | None = None,
         if rel not in claimed and rel not in reached:
             reached[rel] = ("library", via)
             frontier.append(rel)
+    # THE WALK IS DETERMINISTIC AND EVERY REACHER IS KEPT (2026-09-30). `_import_stems` returns
+    # a SET, so its iteration order followed PYTHONHASHSEED and the FIRST reacher of a file --
+    # the one whose artifact it inherits -- changed from run to run. Measured: two attestation
+    # runs on one tree named `retire_untradeable.py` as reached by `formal_invariants.py` (which
+    # writes FORMAL_INVARIANTS.json) and then by `reference_freshness.py` (which writes nothing),
+    # so the organ dropped out of runtime_state.json and the birth-obligation fence went red on a
+    # tree nobody had touched. The walk now pops in sorted order and every reacher is recorded, so
+    # the artifact inheritance below can take the first reacher that actually declares one.
+    frontier.sort(reverse=True)
     while frontier:
         rel = frontier.pop()
         if rel in walked:
@@ -1171,16 +1182,22 @@ def reach_specs(reg: Registry, root: Path | None = None,
         text = _read_text(base / rel)
         if not text:
             continue
+        found: list[tuple[str, str]] = []
         if rel.endswith(".py"):
-            for stem in _import_stems(text):
-                for target in by_stem.get(stem, ()):
-                    if target != rel and target not in claimed and target not in reached:
-                        reached[target] = ("library", rel)
-                        frontier.append(target)
-        for target in scripts_named_in(text, base):
-            if target != rel and target not in claimed and target not in reached:
-                reached[target] = ("executable", rel)
+            for stem in sorted(_import_stems(text)):
+                for target in sorted(by_stem.get(stem, ())):
+                    found.append((target, "library"))
+        found.extend((target, "executable") for target in scripts_named_in(text, base))
+        for target, kind in found:
+            if target == rel or target in claimed:
+                continue
+            _REACHERS.setdefault((str(base), target), [])
+            if rel not in _REACHERS[(str(base), target)]:
+                _REACHERS[(str(base), target)].append(rel)
+            if target not in reached:
+                reached[target] = (kind, rel)
                 frontier.append(target)
+        frontier.sort(reverse=True)
     out: list[ComponentSpec] = []
     for rel, (kind, via) in sorted(reached.items()):
         if rel not in exes:
@@ -1323,8 +1340,16 @@ def _declare_own_artifacts(reg: Registry, root: Path | None = None) -> None:
             if s.outputs or s.kind not in ("library", "executable"):
                 continue
             prefix, _, via = s.schedule.partition(":")
-            if prefix not in ("import", "invoked") or via not in by_code:
+            if prefix not in ("import", "invoked"):
                 continue
+            if via not in by_code:
+                # ANY REACHER THAT DECLARES AN ARTIFACT, in a fixed order: the first reacher is
+                # an accident of walk order, and it may be a helper that writes nothing.
+                alts = [r for r in _REACHERS.get((str(root or ROOT), s.code_paths[0]), [])
+                        if r in by_code] if s.code_paths else []
+                if not alts:
+                    continue
+                via = alts[0]
             reg.add(replace(s, outputs=by_code[via],
                             notes=f"{s.notes}; artifact inherited from its reacher {via}"),
                     replace=True)

@@ -853,6 +853,11 @@ CORE_LEGS: frozenset[str] = frozenset({
     # `counterfactual_timeframes` read bars and stop themselves at their own budget.
     "source_evig", "source_drain", "pack_cells", "ground_depth", "timeframe_fanout",
     "fill_recorder", "cost_surfaces",
+    # THE REBUILT 25-SEP LANES (2026-09-30): four artifact readers, seconds each. The bank ranks
+    # why cells never BUILT, the pathology report classifies the live book's bad fills, the
+    # contracts leg reads every leg's declared experiment against its own report, and the health
+    # board rolls every organ into one verdict. It runs last so it reads this pass.
+    "build_failure_bank", "trade_pathology", "experiment_contracts", "health_board",
     "actor_pressure", "destroyer_pool", "quantbench",
     "evidence_chain", "identity_chain",
     "clock_ledger", "shortfall_model", "counterfactual_timeframes", "meta_rnd",
@@ -992,7 +997,7 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "entry_timing", "cost_to_edge", "exit_study",
                      "execution_resolver", "netting_report", "execution_alpha",
                      "latency_lab", "feed_clock_lab", "impact_lab", "digital_twin",
-                     "net_edge", "cost_truth", "cost_surfaces"),
+                     "net_edge", "cost_truth", "cost_surfaces", "trade_pathology"),
                     "execution"),
     # forward: forward evidence, promotion and the allocator
     **dict.fromkeys(("enrol_clocks", "state_admission", "pf_allocator",
@@ -1036,6 +1041,9 @@ LEG_DEPARTMENT: dict[str, str] = {
                      # region, stamped at the registry doors. The machine measuring its
                      # own lineage: meta.
                      "attribution_census",
+                     # WHY CELLS NEVER BUILT, WHAT EACH LEG CLAIMS, AND ONE HEALTH VERDICT: the
+                     # machine measuring its own build path, experiments and organs: meta.
+                     "build_failure_bank", "experiment_contracts", "health_board",
                      "runtime_attestation", "self_repair", "desk_self_heal",
                      "tier5_acceptance", "mission_control", "tier_s"), "meta"),
     # japan: the Japan research division (the principal's 47-section mandate, hourly)
@@ -1777,6 +1785,12 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # here); the contracts join three JSON artifacts. Both caps are generous and never bind.
     "alpha_rank": 240,
     "factory_contracts": 120,
+    # The four rebuilt readers each read a handful of JSON/JSONL files (measured well under a
+    # second on the build box); the caps only guard a damaged file.
+    "build_failure_bank": 120,
+    "trade_pathology": 120,
+    "experiment_contracts": 240,
+    "health_board": 180,
     # The sandbox runner stops itself at --budget-s 900 (each system inside its ROI share) and
     # writes SANDBOX_RUNNER.json; the cap sits above it so it is never cut at the same prefix.
     "sandbox_runner": 1_000,
@@ -5030,6 +5044,22 @@ def main() -> None:
         "meta_rnd", "research/meta_rnd.py", "--once", "--budget-s", "180"))
     ac = _costed("acceptance", lambda: _producer(
         "acceptance", "scripts/check_acceptance_properties.py"))
+    # THE REBUILT 25-SEP LANES (2026-09-30), after every leg whose output they read:
+    #   build_failure_bank    compile_candidates, run_external_backtest and the sealed gauntlet's
+    #                         report -> why cells never BUILT, ranked into fix work
+    #   trade_pathology       the ledgers fill_recorder joined -> the live book's bad fills by class
+    #   experiment_contracts  every leg's declared hypothesis/metric/falsifier/budget/owner, read
+    #                         against its own report (the fence half runs in the law gate)
+    #   health_board          runtime attestation + events + acceptance + stall_watch + the three
+    #                         readers above -> one verdict per organ; UNMEASURED is never GREEN
+    bfb = _costed("build_failure_bank", lambda: _producer(
+        "build_failure_bank", "research/build_failure_bank.py", "--once"))
+    tpa = _costed("trade_pathology", lambda: _producer(
+        "trade_pathology", "research/trade_pathology.py", "--once"))
+    exc_ = _costed("experiment_contracts", lambda: _producer(
+        "experiment_contracts", "scripts/check_experiment_contracts.py", "--report"))
+    hbd = _costed("health_board", lambda: _producer(
+        "health_board", "research/health_board.py", "--once"))
     # THE ORGAN CENSUS (2026-09-25). Three external reviews asked one closing question -- does
     # every claimed department run, on real data, into the canonical pipeline, with its compute
     # following its survivor yield -- and the desk could not answer it, because its three
@@ -5275,6 +5305,8 @@ def main() -> None:
                     "control_plane": cp, "plumbing_watchdog": pwd_,
                     "bottleneck_attack": bka, "desk_dashboard_state": dds,
                     "opportunity_cost": oc, "acceptance": ac, "opportunity_forecast": ofc,
+                    "build_failure_bank": bfb, "trade_pathology": tpa,
+                    "experiment_contracts": exc_, "health_board": hbd,
                     "preregistration": prg, "organ_census": ogc,
                     "cycle_pricing": cyp, "causal_invariance": civ,
                     "source_evig": sev, "source_drain": sdr, "pack_cells": pkc,
