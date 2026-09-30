@@ -944,7 +944,8 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "session_structure"),
                     "intel"),
     # discovery: the candidate pipeline, in order, plus the evolutionary generators
-    **dict.fromkeys(("search", "sweep", "breadth_sweep", "compile_candidates", "merge_docket",
+    **dict.fromkeys(("search", "sweep", "breadth_sweep", "mass_screen", "compile_candidates",
+                     "merge_docket",
                      "deepen", "alpha_evolution", "alpha_rl", "ml_layer", "ensemble_optimizer",
                      "requeue_unrunnable", "queue_cycle", "queue_compact", "miner_conversion",
                      "recertify_canon", "session_chart_expansion", "experiment_design",
@@ -1612,6 +1613,9 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # truncates it at the same prefix every hour. `judging_throughput` must also finish BEFORE
     # the gauntlet leg it sizes, which is the other reason it is cheap by design.
     "judging_throughput": 400,
+    # THE MASS SCREEN stops starting symbols at its own --budget-s (MASS_SCREEN_BUDGET_S) and
+    # always writes its artifact; the cap sits above it for the reason `enrol_clocks` was raised.
+    "mass_screen": 1_080,
     # DUTY CYCLE stops itself at --budget-s 400 and writes; the cap sits above it. Most of that
     # budget is one `schtasks /query /v` over every task on the box, which is how it finds the
     # clocks that have stopped firing -- the defect that left the judge idle for 22 of 24 hours.
@@ -2559,6 +2563,22 @@ def breadth_sweep() -> dict:
     return _producer("breadth_sweep", "research/breadth_sweep.py", "--apply")
 
 
+#: The mass screen's own stopping point: it stops STARTING symbols once this is spent and always
+#: writes MASS_SCREEN.json; `LEG_BUDGET_SEC["mass_screen"]` sits above it so the cycle never kills
+#: it mid-write. Its workers are derived inside the organ from MEASURED free cores (psutil).
+MASS_SCREEN_BUDGET_S = 900
+
+
+def mass_screen() -> dict:
+    """`mass_screen`: generate and cheaply screen rule cells in bulk (grammar x symbol x horizon x
+    threshold x side) on the TRAINING window only, charge every screened cell to
+    MASS_SCREEN_TRIALS.jsonl, and forward the BH-FDR, 3x-cost-stressed, day-deduplicated survivors
+    through the registry door into the judge's docket. Artifact: reports/MASS_SCREEN.json."""
+    return _producer("mass_screen", "research/mass_screen.py", "--once",
+                     "--budget-s", "900")  # == MASS_SCREEN_BUDGET_S, literal so the
+    # component registry can read the production args statically (pinned by test_mass_screen)
+
+
 def search() -> dict:
     """`edge_search`: the family-free hypothesis search. NOT SCHEDULED ANYWHERE BEFORE THIS.
 
@@ -3367,6 +3387,10 @@ def main() -> None:
     m = _costed("mine", mine)
     se = _costed("search", search)
     bs = _costed("breadth_sweep", breadth_sweep)
+    # THE MASS SCREEN (2026-09-30): millions of rule cells a day screened on the training window
+    # only, every one charged as a trial, and only the FDR survivors forwarded to the judge. It
+    # runs BEFORE `merge_docket` so the survivors it enqueues reach the docket the same pass.
+    msc = _costed("mass_screen", mass_screen)
     ccv = _costed("candidate_conservation", candidate_conservation)
     pcn = _costed("pit_canaries", pit_canaries)
     myd = _costed("mutation_yield", mutation_yield)
@@ -5087,7 +5111,8 @@ def main() -> None:
                     "health": h, "tape": t, "state_vector": s, "daily": d,
                     "regime_monitor": rg,
                     "deepening": dp, "heal_clocks": hc, "mine": m,
-                    "search": se, "breadth_sweep": bs, "candidate_conservation": ccv,
+                    "search": se, "breadth_sweep": bs, "mass_screen": msc,
+                    "candidate_conservation": ccv,
                     "pit_canaries": pcn, "mutation_yield": myd, "credit_assignment": cra,
                     "release_authority": rla, "regime_hierarchy": rgh, "residual_map": rsm,
                     "failure_prior": fpr, "scientist_standings": sst, "frontier_ceo": fce,
