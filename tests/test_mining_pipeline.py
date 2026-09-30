@@ -953,6 +953,10 @@ def test_a_lane_owned_source_is_active_only_through_a_judged_docket_cell(tmp_pat
     assert st["twin_a"]["status"] == st["twin_b"]["status"] == "COLD"      # a tie credits nobody
     att = pipe._attribution
     assert att["credited_by"] == {"seat": 1, "url": 1}
+    asia = MS.producer_of("miner:asia:rbnz_series", MS._scout_seats())
+    assert att["by_producer"][asia] == {"judged": 1, "credited": 1}
+    assert st["rbnz_series"]["producers"] == {asia: 1}
+    assert MS.producer_of("miner:world:x", {"world": "world_crawler"}) == "world_crawler"
     assert att["unattributed_judged_rows"] == 3
     assert att["unattributed_top_producers"] == {"miner:world_crawler": 1,
                                                  "miner:discovery_compiler": 1,
@@ -976,3 +980,29 @@ def test_the_live_roster_is_one_registry() -> None:
     schema = json.loads((ROOT / "libs" / "mining" / "source_registry.schema.json")
                         .read_text("utf-8"))
     assert schema["schema"] == "source_registry/1"
+
+
+def test_archive_captures_config_urls_and_named_seats_on_the_same_site(tmp_path: Path) -> None:
+    """An archive capture is judged as the page it archived; the pipeline's own rows are keyed
+    by the URLs in their fetcher config; a seat named as a registry id credits it only when the
+    row's URL is on that source's own site."""
+    row = {"id": "mql5_forum_en", "fetcher": "html_listing", "config": {"listing": [
+        {"url": "https://www.mql5.com/en/forum/page{page}",
+         "page1": "https://www.mql5.com/en/forum"}]}}
+    src = acq.normalise_row(row, origin="t")
+    assert src is not None and "mql5.com/en/forum" in src.url_keys
+    darwinex = acq.Source(id="darwinex", fetcher="owned", url_key="api.darwinex.com",
+                          url_keys=["api.darwinex.com"])
+    pipe = _pipe(tmp_path, sources=[src, darwinex])
+    idx, seats = pipe._url_index(), pipe._seat_index()
+    assert pipe.attribute_url("https://web.archive.org/web/2019/https://www.mql5.com/en/forum/9",
+                              idx) == "mql5_forum_en"
+    assert pipe.attribute_url("https://www.mql5.com/en/code/1", idx) == ""
+    boj = {"boj.or.jp": [("boj.or.jp/en/statistics/index.htm", "boj_stats")]}
+    # an index page scopes its directory
+    assert pipe.attribute_url("http://www.boj.or.jp/en/statistics/set/x.pdf", boj) == "boj_stats"
+    dx = "https://web.archive.org/web/20191210165044/https://www.darwinex.com/darwin/AJG.4.21"
+    assert pipe.attribute_source({"source": "miner:darwinex", "source_url": dx}, idx, seats) \
+        == ("darwinex", "seat+site")
+    assert pipe.attribute_source({"source": "miner:darwinex", "source_url":
+                                  "https://youtube.com/watch?v=1"}, idx, seats) == ("", "")

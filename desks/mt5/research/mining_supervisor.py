@@ -35,6 +35,7 @@ import contextlib
 import hashlib
 import json
 import os
+import re
 import statistics
 import sys
 import time
@@ -91,6 +92,41 @@ except Exception:                                          # tests and a bare ch
 COND_MIN_OBS = max(60, int(_FAMILY_MIN_OBS))
 #: The committed input for the cost and risk models: every page's latest PIT vintage, split
 #: into cost facts and prop-rule limits (extractor.COST_FACTS / RULE_FACTS). Never minted as cells.
+#: An archive capture: web.archive.org/web/<timestamp>[flags]/<original url>.
+_WAYBACK = re.compile(r"^(?:https?://)?(?:www\.)?web\.archive\.org/web/\d+[a-z_]*/(.+)$", re.I)
+def _scout_seats() -> dict[str, str]:
+    """seat -> producing scout, from research/scout_roster.py `seats=` (the one declared map)."""
+    try:
+        from research.scout_roster import SCOUTS
+    except Exception:
+        return {}
+    return {str(seat): str(sc["name"]) for sc in SCOUTS for seat in sc.get("seats") or ()}
+
+
+def producer_of(source: Any, organ_of: Mapping[str, str]) -> str:
+    """The organ that produced a docket row: its seat (`miner:<seat>[:<id>]`, or the row's own
+    producer prefix) through the scout map, else `unmapped:<seat>` -- named, never guessed."""
+    raw = str(source or "")
+    seat = raw.removeprefix("miner:").split(":", 1)[0] if raw.startswith("miner:") else \
+        raw.split(":", 1)[0]
+    return organ_of.get(seat, f"unmapped:{seat or '?'}")
+
+
+_INDEX_PAGE = re.compile(r"/(?:index|default)\.(?:html?|php|aspx?)$", re.I)
+_SECOND_LEVEL = frozenset({"co", "com", "gov", "org", "ac", "or", "ne", "go", "net", "edu"})
+
+
+def _site(url: Any) -> str:
+    """The registrable domain (example.co.jp, darwinex.com), archive captures unwrapped."""
+    raw = str(url or "")
+    m = _WAYBACK.match(raw)
+    labels = acq.canonical_url(m.group(1) if m else raw).partition("/")[0].split(".")
+    if len(labels) < 2:
+        return ""
+    n = 3 if len(labels) >= 3 and labels[-2] in _SECOND_LEVEL and len(labels[-1]) == 2 else 2
+    return ".".join(labels[-n:])
+
+
 #: THE CONTRACT another lane registers a source against (roster row) and reads back (registry row).
 REGISTRY_SCHEMA = _ROOT / "libs" / "mining" / "source_registry.schema.json"
 MECHANICS_FACTS = _DESK / "data" / "mechanics_facts.json"
@@ -825,8 +861,8 @@ class Pipeline:
     def _url_index(self) -> dict[str, list[tuple[str, str]]]:
         idx: dict[str, list[tuple[str, str]]] = {}
         for s in self.roster:
-            if s.url_key:
-                idx.setdefault(s.url_key.partition("/")[0], []).append((s.url_key, s.id))
+            for k in s.url_keys or ([s.url_key] if s.url_key else []):
+                idx.setdefault(k.partition("/")[0], []).append((k, s.id))
         return idx
 
     def _seat_index(self) -> dict[str, str]:
@@ -842,20 +878,30 @@ class Pipeline:
     def attribute_url(url: Any, idx: Mapping[str, list[tuple[str, str]]]) -> str:
         """The ONE registry source whose URL is this URL or its longest proper path prefix.
 
-        A host-only registry URL matches only itself (never every page on the host), and a tie
-        at the winning length is ambiguous and credits nobody: a wrong credit is worse than none.
+        A web.archive.org capture is judged as the page it archived. A host-only registry URL is
+        a SITE-level source: it takes a page on its host only when it is the host's sole registry
+        row (on a shared host it would be a wildcard). A tie at the winning length is ambiguous
+        and credits nobody: a wrong credit is worse than none.
         """
-        key = acq.canonical_url(url)
+        raw = str(url or "")
+        m = _WAYBACK.match(raw)
+        key = acq.canonical_url(m.group(1) if m else raw)
         if not key:
             return ""
         host = key.partition("/")[0]
+        rows = idx.get(host) or []
         best: list[str] = []
         best_len = -1
-        for rk, sid in idx.get(host) or []:
+        page = key.split("?", 1)[0]
+        for rk, sid in rows:
+            # a listing's query is not its scope, nor is its index page: /x/index.htm scopes /x
+            rp = _INDEX_PAGE.sub("", rk.split("?", 1)[0])
             if rk == key:
                 hit = len(rk) + 1                         # exact beats any prefix
-            elif "/" in rk and "?" not in rk and key.startswith(rk + "/"):
-                hit = len(rk)
+            elif "/" in rp and (page == rp or page.startswith(rp + "/")):
+                hit = len(rp)
+            elif "/" not in rk and len(rows) == 1:        # the host's only row, site-level
+                hit = 0
             else:
                 continue
             if hit > best_len:
@@ -866,12 +912,21 @@ class Pipeline:
 
     def attribute_source(self, row: Mapping[str, Any], idx: Mapping[str, list[tuple[str, str]]],
                          seats: Mapping[str, str]) -> tuple[str, str]:
-        """(source id, how): the declared seat first, then the row's own URL."""
-        sid = seats.get(str(row.get("source") or ""), "")
+        """(source id, how): the declared seat, then the row's own URL, then -- only with BOTH
+        signals -- a seat named exactly as a registry id whose URL is on the same site."""
+        seat = str(row.get("source") or "")
+        sid = seats.get(seat, "")
         if sid:
             return sid, "seat"
-        sid = self.attribute_url(row.get("source_url") or row.get("url"), idx)
-        return (sid, "url") if sid else ("", "")
+        url = row.get("source_url") or row.get("url")
+        sid = self.attribute_url(url, idx)
+        if sid:
+            return sid, "url"
+        named = self.by_id.get(seat.removeprefix("miner:"))
+        if named is not None and _site(url) and _site(url) in {
+                _site(k) for k in named.url_keys or [named.url_key]}:
+            return named.id, "seat+site"
+        return "", ""
 
     def attributed_evaluations(self, now: datetime | None = None) -> dict[str, Any]:
         """Per registry source: docket cells EVALUATED within ACTIVE_WINDOW.
@@ -889,7 +944,10 @@ class Pipeline:
             rows = rows.get("rows") or rows.get("items") or []
         judged = self.cells.judged_since(t - ACTIVE_WINDOW)
         idx, seats = self._url_index(), self._seat_index()
+        organ_of = _scout_seats()
         by: dict[str, set[str]] = {}
+        producers: dict[str, dict[str, int]] = {}
+        funnel: dict[str, dict[str, int]] = {}
         how: dict[str, int] = {}
         unattributed: dict[str, int] = {}
         for r in rows if isinstance(rows, list) else []:
@@ -902,6 +960,13 @@ class Pipeline:
             if cid not in judged:
                 continue
             sid, via = self.attribute_source(r, idx, seats)
+            organ = producer_of(r.get("source"), organ_of)
+            f = funnel.setdefault(organ, {"judged": 0, "credited": 0})
+            f["judged"] += 1
+            f["credited"] += int(bool(sid))
+            if sid:
+                pr = producers.setdefault(sid, {})
+                pr[organ] = pr.get(organ, 0) + 1
             if not sid:
                 p = str(r.get("source") or "?").split(":")
                 k = ":".join(p[:2])
@@ -910,7 +975,11 @@ class Pipeline:
             by.setdefault(sid, set()).add(cid)
             how[via] = how.get(via, 0) + 1
         top = dict(sorted(unattributed.items(), key=lambda kv: -kv[1])[:25])
+        self._producers = producers
         return {"by_source": {k: len(v) for k, v in by.items()}, "credited_by": how,
+                # the producing ORGAN's funnel (scout_roster seats), beside the source credit:
+                # a source is judged ACTIVE per source; ROI per organ reads this
+                "by_producer": dict(sorted(funnel.items())),
                 "unattributed_judged_rows": sum(unattributed.values()),
                 "unattributed_top_producers": top,
                 "basis": f"{self.docket.name} x judged_cells ({len(judged)} judged in window)"}
@@ -1037,6 +1106,7 @@ class Pipeline:
                          "consumer": s.consumer,
                          "evaluated_cells_30d": n, "priority": s.priority,
                          "evaluated_via": {"mining": n_mine, "docket": n_docket},
+                         "producers": dict(getattr(self, "_producers", {}).get(s.id, {})),
                          "origin": s.origin, "url_key": s.url_key, "aliases": list(s.aliases),
                          "shares_page": list(s.shares_page),
                          "last_outcome": r.get("outcome") or "NEVER_RUN",
