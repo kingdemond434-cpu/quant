@@ -17,9 +17,9 @@ WHAT IT CHANGES (research side only -- nothing here sizes, admits, certifies or 
                                       removes, throttles or re-orders a miner.
   * data/tier_s/truth_journal.jsonl   the content-addressed lineage (append-only, hash-chained)
   * data/tier_s/*.json                organ state (Red Queen populations, genomes, ledgers)
-  * data/tier_s/PROMOTION_FREEZE.json the immune system's verdict. PUBLISHED, NOT CONSUMED: the
-                                      promoter reading it is a money-path change that waits for the
-                                      principal's word.
+  * data/tier_s/PROMOTION_FREEZE.json the immune system's verdict. CONSUMED by the promoter's
+                                      Tier S door (libs/tiers/promotion_authority.py): a DROP judged
+                                      by the production certifier withholds new live rows.
 
 Each kernel runs isolated (one failure never stops the rest) and records its seconds, so the
 researcher market can price this organ like any other.
@@ -750,8 +750,9 @@ def organ_immune() -> dict[str, Any]:
     _write(STATE / "PROMOTION_FREEZE.json", {
         "verdict": verdict["verdict"], "why": verdict.get("why"), "at": NOW.isoformat(),
         "judge": judge,
-        "consumer": "NONE YET -- the promoter reading this is a money-path change awaiting the "
-                    "principal's word", "immune_score": judged["immune_score"], "seal": hseal})
+        "consumer": "research/promoter.py tier_s_block (libs/tiers/promotion_authority.py): a "
+                    "production-judged DROP withholds new live rows",
+        "immune_score": judged["immune_score"], "seal": hseal})
     # A JUDGE THAT REJECTS EVERYTHING IS PERFECTLY IMMUNE. Its immunity is then uninformative,
     # and its zero power is lost discovery -- the missed-growth side of the same gate.
     n_gen = sum(d["n"] for k, d in (prod.get("per_kind") or {}).items() if k in traps.TRUE_KINDS)
@@ -1984,30 +1985,24 @@ def organ_formal() -> dict[str, Any]:
                        "knobs_evidenced": conformance.get("evidenced_share")}}
 
 
-#: protocol knob -> source patterns in the gateway that evidence the real code implements it.
-#: Static evidence, not proof; a knob with no evidence is an OBLIGATION the report names.
-KNOB_EVIDENCE: dict[str, tuple[str, ...]] = {
-    "persist_before_send": ("order_intents", "intent_id", "_journal"),
-    "reconcile_on_restart": ("positions_get", "orders_get", "reconcile"),
-    "idempotent_client_id": ("magic", "comment", "client_id", "intent_id"),
-    "recheck_alloc_at_send": ("allocator gave this sleeve no heat", "book_zeroed", "zeroed"),
-    "check_cert_at_send": ("load_sleeves", "live_policy", "admit"),
-    "clamp_data_to_clock": ("closed bar", "bar_closed", "iloc[-2]", "last closed"),
-}
-
-
 def _protocol_conformance() -> dict[str, Any]:
-    src = ""
-    for p in (DESK / "mt5desk" / "gateway.py", DESK / "mt5desk" / "decision_core.py"):
-        with contextlib.suppress(OSError):
-            src += p.read_text("utf-8", errors="replace")
-    if not src:
-        return {"status": "UNMEASURED"}
-    rows = {k: [pat for pat in pats if pat in src] for k, pats in KNOB_EVIDENCE.items()}
-    ev = sum(1 for v in rows.values() if v)
-    return {"evidence": rows, "evidenced": ev, "of": len(rows),
-            "evidenced_share": ev / len(rows),
-            "obligations": [k for k, v in rows.items() if not v]}
+    """The proved protocol's knobs judged on the REAL gateway's syntax tree, send site by send
+    site (`libs/tiers/conformance.py`) -- never a keyword grep, which comments could satisfy."""
+    from libs.tiers import conformance
+    paths = [p for p in (DESK / "mt5desk" / "gateway.py", DESK / "mt5desk" / "scalp_exec.py")
+             if p.exists()]
+    if not paths:
+        return {"status": "UNMEASURED", "why": "no gateway source on this host"}
+    per = conformance.check_paths(paths)
+    knobs: dict[str, bool] = {}
+    for doc in per.values():
+        for k, v in (doc.get("knobs") or {}).items():
+            if v is not None:
+                knobs[k] = knobs.get(k, True) and bool(v)
+    ok = sum(1 for v in knobs.values() if v)
+    return {"method": "ast", "files": per, "knobs": knobs, "evidenced": ok, "of": len(knobs),
+            "evidenced_share": ok / len(knobs) if knobs else None,
+            "obligations": sorted(k for k, v in knobs.items() if not v)}
 
 
 def organ_chaos() -> dict[str, Any]:

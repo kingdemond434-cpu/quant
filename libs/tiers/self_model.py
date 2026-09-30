@@ -70,6 +70,16 @@ def inventory(reports: Mapping[str, Mapping[str, Any]]) -> list[dict[str, Any]]:
     powr = _get(reports.get("immune"), "score", "power")
     add("validation.power", None if powr is None else 1.0 - float(powr), "ALPHA_DISCOVERY",
         "genuine planted signals rejected by the validator", p_fix=0.5)
+    # THE PRODUCTION CERTIFIER'S OWN POWER on the sealed suite's genuine controls -- the lost-
+    # discovery side of the real gates, which a perfect immune score can hide (power_alarm)
+    ppow = _get(reports.get("immune"), "production", "power")
+    add("validation.production_power", None if ppow is None else 1.0 - float(ppow),
+        "ALPHA_DISCOVERY", "genuine positive controls the PRODUCTION certifier rejects "
+        f"({_get(reports.get('immune'), 'power_alarm') or 'no alarm'})", p_fix=0.5)
+    conf = _get(reports.get("formal"), "conformance", "evidenced_share")
+    add("ops.protocol_conformance", None if conf is None else 1.0 - float(conf),
+        "OPERATIONAL_RISK", "gateway send sites that break the model-checked order protocol: "
+        f"{_get(reports.get('formal'), 'conformance', 'obligations')}", p_fix=0.6)
     rq = _get(reports.get("red_queen"), "attack_success")
     add("validation.red_queen", rq, "FALSIFICATION",
         f"evolved attacks fool the defender; blind spots "

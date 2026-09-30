@@ -376,3 +376,37 @@ def test_firewall_may_guards_the_promoter_role() -> None:
     with pytest.raises(firewall.FirewallError):
         firewall.may("promoter", "read", "desks/mt5/data/intelligence/kimi/x.json")
     firewall.may("promoter", "read", "desks/mt5/reports/REPLICATION.json")
+
+
+def test_conformance_reads_code_not_words() -> None:
+    from libs.tiers import conformance
+    good = '''
+def place(mt5, s):
+    record_intent(s)
+    heat = allocator_heat(s)
+    live = load_sleeves()
+    req = {"action": mt5.TRADE_ACTION_PENDING, "magic": 1, "comment": "x"}
+    mt5.order_send(req)
+
+def main(mt5):
+    mt5.positions_get()
+    df = frame.iloc[:-1]
+'''
+    bad = '''
+# record_intent before send, allocator heat re-checked, reconcile positions_get on restart
+def place(mt5, s):
+    mt5.order_send({"action": mt5.TRADE_ACTION_DEAL, "magic": 1})
+    record_intent(s)
+'''
+    g = conformance.check_source(good)
+    assert all(g["knobs"].values()), g
+    b = conformance.check_source(bad)
+    assert b["knobs"]["persist_before_send"] is False, "a journal AFTER the send is not before it"
+    assert b["knobs"]["idempotent_client_id"] is False
+    assert b["knobs"]["reconcile_on_restart"] is False, "a comment is not a call"
+    closing = conformance.check_source('''
+def close(mt5, p):
+    record_intent(p)
+    mt5.order_send({"action": 1, "position": p, "magic": 1, "comment": "c"})
+''')
+    assert closing["knobs"]["recheck_alloc_at_send"] is True, "a close need not re-ask"
