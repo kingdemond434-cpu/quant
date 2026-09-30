@@ -277,3 +277,40 @@ def test_a_door_input_missing_past_its_grace_is_a_loud_defect(monkeypatch: Any,
     pa.DOOR_VERDICTS.write_text(json.dumps({"generated_utc": now, "rows": {}}), "utf-8")
     healed = ts._door_input_health()
     assert healed["all_ok"] and healed["defects"] == [] and store["door_inputs"]["bad_since"] == {}
+
+
+def test_freeze_tilts_heat_toward_out_of_sample_evidence_heat_neutrally() -> None:
+    from libs.tiers import allocator_tilts as at
+    book = {"a": 0.1, "b": 0.1}
+    calm = at.build(book, {}, {}, {}, freeze=False, oos_n_by_group={"a": 200, "b": 0})
+    assert calm["a"]["freeze_factor"] == calm["b"]["freeze_factor"] == 1.0
+    fz = at.build(book, {}, {}, {}, freeze=True, oos_n_by_group={"a": 200, "b": 0})
+    assert fz["a"]["freeze_factor"] > 1.0 > fz["b"]["freeze_factor"]
+    assert fz["a"]["tilt"] > 1.0 > fz["b"]["tilt"]
+    mean = (fz["a"]["freeze_factor"] + fz["b"]["freeze_factor"]) / 2
+    assert abs(mean - 1.0) < 1e-6, "the book's total heat is untouched"
+    held = at.build(book, {}, {}, {}, held_out=lambda k: k == "b", freeze=True,
+                    oos_n_by_group={"a": 200, "b": 0})
+    assert held["b"]["freeze_factor"] == 1.0 and held["b"]["tilt"] == 1.0, "control is pinned"
+
+
+def test_the_exchange_organ_passes_the_immune_freeze_to_the_tilts(monkeypatch: Any,
+                                                                   tmp_path: Path) -> None:
+    import sys as _sys
+    _research = str(Path(__file__).resolve().parents[1] / "research")
+    if _research not in _sys.path:
+        _sys.path.insert(0, _research)
+    import tier_s as ts  # type: ignore[import-not-found]
+
+    from libs.tiers import authority
+    from libs.tiers import promotion_authority as pa
+    monkeypatch.setattr(authority, "suspended", lambda organ, *a, **k: False)
+    monkeypatch.setattr(ts, "ALLOCATOR_TILTS", tmp_path / "tilts.json")
+    monkeypatch.setattr(ts, "shadow_rows", lambda: {})
+    monkeypatch.setattr(ts, "live_rows", lambda: [])
+    monkeypatch.setattr(pa, "_freeze", lambda: "IMMUNE_FREEZE: test")
+    out = ts._allocator_tilts({}, {"a.EURUSD.x": 0.1, "b.GBPUSD.y": 0.1})
+    assert out["freeze"] is True
+    assert json.loads((tmp_path / "tilts.json").read_text("utf-8"))["freeze"] is True
+    monkeypatch.setattr(pa, "_freeze", lambda: None)
+    assert ts._allocator_tilts({}, {"a.EURUSD.x": 0.1})["freeze"] is False
