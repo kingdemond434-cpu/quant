@@ -26,11 +26,11 @@
   "LIVE": 90,
   "STALE": 46,
   "MISSING": 47,
-  "NEVER": 721,
+  "NEVER": 724,
   "UNMEASURED": 34
  },
  "scope": {
-  "attested": 938,
+  "attested": 941,
   "excluded": 427,
   "excluded_reason": "component declares no output artifact -- nothing to hash; the registry's own completeness is check_component_registry.py",
   "registry_components": 1357,
@@ -72,10 +72,22 @@
     ]
    },
    {
-    "at": "2026-09-30T20:44:27+00:00",
+    "at": "2026-09-30T20:46:33+00:00",
+    "host": "vm",
+    "machine_id": "0d0af05ee8fd4dc29275718f2ce4dff1",
+    "on_attesting_host": false,
+    "identity": "UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm",
+    "organs": [
+     "leg:box_state_freshness",
+     "leg:desk_health"
+    ]
+   },
+   {
+    "at": "2026-09-30T20:59:50+00:00",
     "host": "vm",
     "on_attesting_host": true,
     "organs": [
+     "executable:desks/mt5/research/fetch_universe.py",
      "leg:silent_organs"
     ]
    }
@@ -23832,6 +23844,89 @@
    "measured_at": "2026-09-30T20:33:19+00:00"
   },
   {
+   "organ": "leg:box_state_freshness",
+   "kind": "leg",
+   "code": [
+    "scripts/check_box_state_freshness.py"
+   ],
+   "clock": "hourly_cycle:box_state_freshness",
+   "cadence_s": 3600,
+   "max_silence_s": 7200,
+   "state": "NEVER",
+   "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): no artifact and no run record here, and the attesting host has never attested it",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/BOX_STATE_FRESHNESS.json",
+   "artifact_declared": "desks/mt5/reports/BOX_STATE_FRESHNESS.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "leg_completions",
+   "consumer": "UNMEASURED",
+   "measured_on": "vm",
+   "measured_on_machine_id": "0d0af05ee8fd4dc29275718f2ce4dff1",
+   "measured_at": "2026-09-30T20:46:33+00:00"
+  },
+  {
+   "organ": "leg:desk_health",
+   "kind": "leg",
+   "code": [
+    "desks/mt5/scripts/check_desk_health.py"
+   ],
+   "clock": "hourly_cycle:desk_health",
+   "cadence_s": 3600,
+   "max_silence_s": 7200,
+   "state": "NEVER",
+   "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): no artifact and no run record here, and the attesting host has never attested it",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/DESK_HEALTH.json",
+   "artifact_declared": "desks/mt5/reports/DESK_HEALTH.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "leg_completions",
+   "consumer": "UNMEASURED",
+   "measured_on": "vm",
+   "measured_on_machine_id": "0d0af05ee8fd4dc29275718f2ce4dff1",
+   "measured_at": "2026-09-30T20:46:33+00:00"
+  },
+  {
+   "organ": "executable:desks/mt5/research/fetch_universe.py",
+   "kind": "executable",
+   "code": [
+    "desks/mt5/research/fetch_universe.py"
+   ],
+   "clock": "invoked:desks/mt5/research/h1_source.py",
+   "cadence_s": null,
+   "max_silence_s": null,
+   "state": "NEVER",
+   "why": "no artifact and no run record on this host",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/data/universe/venue_history_depth.json",
+   "artifact_declared": "desks/mt5/data/universe/venue_history_depth.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "UNMEASURED",
+   "consumer": "UNMEASURED",
+   "measured_on": "vm",
+   "measured_at": "2026-09-30T20:59:50+00:00"
+  },
+  {
    "organ": "leg:silent_organs",
    "kind": "leg",
    "code": [
@@ -23856,7 +23951,7 @@
    "progress_metric": "leg_completions",
    "consumer": "UNMEASURED",
    "measured_on": "vm",
-   "measured_at": "2026-09-30T20:44:27+00:00"
+   "measured_at": "2026-09-30T20:59:50+00:00"
   }
  ],
  "ratchet": {
