@@ -192,6 +192,10 @@ ANCHORS_F = BASE / "data" / "cross_asset_anchors.pkl"
 MAX_FFILL_DAYS = 5
 
 
+#: The two inputs of the derived real yield: nominal 10y minus the 10y breakeven.
+REAL_YIELD_INPUTS: tuple[str, str] = ("DGS10", "T10YIE")
+
+
 def load_history(path: Path = ANCHORS_F) -> "Any":
     """Daily macro series with a real 10y yield attached, or None if absent.
 
@@ -216,8 +220,12 @@ def load_history(path: Path = ANCHORS_F) -> "Any":
     Gaps are forward-filled at most `MAX_FFILL_DAYS` days. An unlimited ffill
     is how a series that stopped publishing in March silently conditions
     December's trades on March's world.
+
+    When the real yield CANNOT be derived (an input column absent, or present with no
+    observation) the column is NOT attached and `df.attrs["unmeasured"]["REAL_YIELD_10Y"]`
+    says why -- an all-NaN column would read as present and be empty to every consumer.
     """
-    import pandas as pd                                       # noqa: PLC0415
+    import pandas as pd                                      # noqa: PLC0415
 
     if not Path(path).exists():
         return None
@@ -229,10 +237,24 @@ def load_history(path: Path = ANCHORS_F) -> "Any":
         return None
 
     df = df.sort_index()
-    if "DGS10" in df.columns and "T10YIE" in df.columns:
-        real = df["DGS10"] - df["T10YIE"]
-        df = df.assign(REAL_YIELD_10Y=real)
-    return df.ffill(limit=MAX_FFILL_DAYS)
+    unmeasured: dict[str, str] = {}
+    missing = [c for c in REAL_YIELD_INPUTS if c not in df.columns]
+    if missing:
+        unmeasured["REAL_YIELD_10Y"] = f"UNMEASURED: input column(s) absent: {missing}"
+    else:
+        real = (df["DGS10"] - df["T10YIE"]).dropna()
+        if real.empty:
+            # An input column that exists but holds no observation (T10YIE all-NaN in the pickle
+            # measured 2026-09-30) used to attach an all-NaN REAL_YIELD_10Y: a column that reads
+            # as "attached" to `in df.columns` and is empty to every consumer. Absence is not a
+            # clean read (L1.28a), so the column is withheld and the reason is carried instead.
+            empty = [c for c in REAL_YIELD_INPUTS if df[c].dropna().empty] or ["no common date"]
+            unmeasured["REAL_YIELD_10Y"] = f"UNMEASURED: no observation to derive from: {empty}"
+        else:
+            df = df.assign(REAL_YIELD_10Y=df["DGS10"] - df["T10YIE"])
+    out = df.ffill(limit=MAX_FFILL_DAYS)
+    out.attrs["unmeasured"] = unmeasured
+    return out
 
 
 __all__ = ["MacroRegime", "load", "load_history", "is_fresh",

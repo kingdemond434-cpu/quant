@@ -130,6 +130,14 @@ NON_CODE: frozenset[str] = frozenset({
     "desks/mt5/data/order_intents.jsonl",
     "desks/mt5/data/live_ledger.jsonl",
     "desks/mt5/reports/attribution_chain.json",
+    # The gate verdict digest and the state-flow meter (2026-09-30), written by the hourly
+    # publish_state leg and published on the same wire. Reports about the code, never inputs to it.
+    "desks/mt5/reports/GATE_VERDICT_DIGEST.json",
+    "desks/mt5/reports/BOX_STATE_FLOW.json",
+    # The Tier S box attestation and live door, published since 2026-09-30 and never declared
+    # here (test_every_path_the_box_publishes_is_declared_non_code was red on the live branch).
+    "desks/mt5/data/tier_s/box_evidence.json",
+    "desks/mt5/data/tier_s/live_door.json",
 })
 
 SEAL_RULE = ("a running SHA is accepted iff it equals code_sha, or `git diff --name-only "
