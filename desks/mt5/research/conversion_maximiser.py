@@ -2004,7 +2004,8 @@ def run(*, budget: Budget, conn: sqlite3.Connection, max_rows: int, dry_run: boo
 
     # EFFECTIVE TRIALS, not raw count: re-enqueued work pays the multiple-testing bill it owes,
     # and 500 mutations of one rule are not 500 independent looks at the tape.
-    charge = _charge_trials(repaired, conn, dry_run=dry_run)
+    charge = _charge_trials(repaired, conn, dry_run=dry_run, budget=budget,
+                            reserve=min(15.0, reserve / 3.0))
     naming_path = "" if dry_run else _naming_requests(naming, seat_dir)
     acq_path = "" if dry_run else _acquisition_tasks(acquisitions, seat_dir)
 
@@ -2147,26 +2148,58 @@ def _breadth_delta(before: Mapping[str, Any], after: Mapping[str, Any]) -> dict[
             "nominal_cells_after": after.get("nominal_cells")}
 
 
+#: Seconds one family's similarity census may cost at its sampling ceiling
+#: (`trial_ledger.MAX_MEMBERS`): measured 36 s for one 25,000-row family on the build container
+#: 2026-09-30. A family is priced by its participation ratio only while this much is left.
+CHARGE_FAMILY_S = 45.0
+
+
 def _charge_trials(repaired: Sequence[Mapping[str, Any]], conn: sqlite3.Connection, *,
-                   dry_run: bool) -> dict[str, Any]:
+                   dry_run: bool, budget: Budget | None = None,
+                   reserve: float = 0.0) -> dict[str, Any]:
+    """EVERY REPAIRED ROW IS CHARGED, and the charge never costs the pass its artifact.
+
+    Priced per family exactly as `trial_ledger.census` prices it (the participation ratio of
+    each family's similarity matrix, families independent, summed). The matrix is up to 2,500
+    square per family, so on the box a pass that repaired rows in twenty families spent many
+    minutes here AFTER its budget was gone -- one of the reasons it never wrote. So each family
+    is priced while the budget allows, and a family the budget cannot reach is charged its RAW
+    count: an upper bound on its effective count, so the bill can only be too high, never too
+    low, and no gate is loosened by a short pass. The split is published.
+    """
     if not repaired:
         return {"n_raw": 0, "n_effective": 0.0,
                 "basis": "libs.research.trial_ledger.effective_count_of_records "
                          "(participation ratio)"}
     try:
-        from libs.research.trial_ledger import effective_count_of_records
-        n_eff = float(effective_count_of_records(repaired))
+        from libs.research.trial_ledger import family_census, trial_from_record
+        groups: dict[str, list[Any]] = {}
+        for i, rec in enumerate(repaired):
+            t = trial_from_record(rec, index=i)
+            groups.setdefault(t.group, []).append(t)
+        n_eff = 0.0
+        priced = raw_charged = 0
+        for _g, members in sorted(groups.items(), key=lambda kv: -len(kv[1])):
+            if budget is None or budget.ok("charge_trials",
+                                           reserve=reserve + CHARGE_FAMILY_S):
+                n_eff += float(family_census(members).n_effective)
+                priced += 1
+            else:
+                n_eff += float(len(members))
+                raw_charged += 1
     except Exception as exc:                                             # pragma: no cover
-        return {"n_raw": len(repaired), "n_effective": None,
-                "status": UNMEASURED, "why": f"{type(exc).__name__}: {exc}"}
+        return {"n_raw": len(repaired), "n_effective": float(len(repaired)),
+                "status": UNMEASURED, "why": f"{type(exc).__name__}: {exc}; charged raw"}
     out = {"n_raw": len(repaired), "n_effective": round(n_eff, 3),
            "inflation": round(len(repaired) / n_eff, 4) if n_eff > 0 else None,
-           "basis": "libs.research.trial_ledger.effective_count_of_records "
-                    "(participation ratio over the repaired batch)"}
+           "families_priced": priced, "families_charged_raw": raw_charged,
+           "basis": "libs.research.trial_ledger family_census per family (participation ratio), "
+                    "summed; a family the pass budget could not price is charged its raw count "
+                    "(an upper bound -- the bill is never short)"}
     if not dry_run:
         with contextlib.suppress(Exception):
             R.metric("conversion_maximiser.effective_trials_charged", n_eff,
-                     {"n_raw": len(repaired)}, conn=conn)
+                     {"n_raw": len(repaired), "families_charged_raw": raw_charged}, conn=conn)
     return out
 
 

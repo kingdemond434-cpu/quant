@@ -29,6 +29,12 @@ THE STAGES, AND WHERE EACH NUMBER COMES FROM (all read, nothing written but the 
                                                               UNEXPLAINED -- the drop to fix
     clock        certificates on a forward clock, accruing    reports/FORWARD_ENROLMENT.json
 
+LATENCY (CRO duty D5, "idea-to-certificate latency UNMEASURED"): p50 / p90 / max hours and the
+counts, over the last seven days, for idea -> cell, donation -> docket, docket -> first verdict,
+PASS -> certificate and certificate -> forward clock -- each from two stamps an organ already
+writes, named in its `basis`. A step no organ stamps is listed under `unstamped_steps` as
+UNMEASURED; a stamped step nothing crossed is NO_EVENTS_IN_WINDOW, never a latency of zero.
+
 WHAT IT NEVER DOES. It moves no gate, judges nothing, writes no certificate and no clock. The
 thresholds are sealed (`external_gauntlet.py`, `gate_policy.py`); this measures where the rows
 that clear them are lost afterwards, and where rows that could never clear them spent the judge.
@@ -443,6 +449,117 @@ def near_miss_stage(paths: Paths) -> dict[str, Any]:
                      "the cure thresholds -- no gate moves"}
 
 
+# ------------------------------------------------------------- D5: the latency of each step
+def _hours(a: Any, b: Any) -> float | None:
+    ta, tb = _parse_ts(a), _parse_ts(b)
+    if ta is None or tb is None:
+        return None
+    return (tb - ta).total_seconds() / 3600.0
+
+
+def distribution(values: Iterable[float | None], *, basis: str) -> dict[str, Any]:
+    """p50 / p90 / max in hours, with the counts behind them. No samples is NOT zero latency."""
+    vals = sorted(v for v in values if v is not None)
+    neg = sum(1 for v in vals if v < 0)
+    vals = [v for v in vals if v >= 0]
+    if not vals:
+        return {"status": "NO_EVENTS_IN_WINDOW", "n": 0, "negative_excluded": neg,
+                "basis": basis,
+                "why": "the stage is stamped but nothing crossed it in the window -- a count of "
+                       "zero events, never a latency of zero"}
+
+    def q(p: float) -> float:
+        i = min(len(vals) - 1, max(0, round(p * (len(vals) - 1))))
+        return round(vals[i], 3)
+
+    return {"status": "MEASURED", "n": len(vals), "p50_h": q(0.5), "p90_h": q(0.9),
+            "max_h": round(vals[-1], 3), "negative_excluded": neg, "basis": basis}
+
+
+def _sql_pairs(conn: sqlite3.Connection | None, sql: str, args: tuple[Any, ...],
+               basis: str) -> dict[str, Any]:
+    if conn is None:
+        return {"status": UNMEASURED, "why": "the registry could not be opened", "basis": basis}
+    try:
+        rows = conn.execute(sql, args).fetchall()
+    except sqlite3.Error as exc:
+        return {"status": UNMEASURED, "why": f"{type(exc).__name__}: {exc}", "basis": basis}
+    return distribution((_hours(a, b) for a, b in rows), basis=basis)
+
+
+def latency_stage(conn: sqlite3.Connection | None, stream: Mapping[str, Any], paths: Paths,
+                  now: datetime) -> dict[str, Any]:
+    """CRO duty D5: how long each step of the funnel takes, from stamps the organs already
+    write. Every stage names its two stamps; a step no organ stamps is UNMEASURED by name."""
+    cut = (now - timedelta(days=WINDOW_DAYS)).isoformat()
+    out: dict[str, Any] = {"window_days": WINDOW_DAYS, "unit": "hours"}
+    out["idea_to_cell"] = _sql_pairs(
+        conn,
+        "SELECT d.created_at, MIN(c.created_at) FROM discoveries d "
+        "JOIN research_candidates c ON c.discovery_id = d.discovery_id "
+        "WHERE d.created_at >= ? GROUP BY d.discovery_id", (cut,),
+        "discoveries.created_at -> the first research_candidates.created_at minted from it "
+        "(discovery_id), for discoveries in the window")
+    out["donation_to_docket"] = _sql_pairs(
+        conn,
+        "SELECT a.created_at, p.created_at FROM provenance p "
+        "JOIN research_candidates a ON a.id = p.from_id "
+        "WHERE p.relation = 'conversion_repair' AND p.created_at >= ?", (cut,),
+        "a donated/untestable row's created_at -> the provenance edge `conversion_repair` "
+        "that put its repaired cell on the queue (conversion_maximiser)")
+    out["docket_to_first_verdict"] = _sql_pairs(
+        conn,
+        "SELECT created_at, judged_at FROM research_candidates "
+        "WHERE judged_at IS NOT NULL AND judged_at >= ?", (cut,),
+        "research_candidates.created_at (on the queue) -> judged_at (the verdict's `at`, synced "
+        "from the judge's ledger by libs/moat/registry)")
+    if stream.get("status") == "MEASURED":
+        canon: dict[str, Any] = {}
+        for p in (paths.seal, paths.report):
+            doc = _read(p)
+            surv = doc.get("survivors") if isinstance(doc, Mapping) else None
+            if isinstance(surv, Mapping):
+                canon.update({str(k): v for k, v in surv.items() if isinstance(v, Mapping)})
+        pairs = []
+        for cell, (cls, _sub, _fam, _sym, at) in stream["latest"].items():
+            row = canon.get(f"external.{cell}")
+            if cls == "PASS" and row is not None and at >= cut:
+                pairs.append(_hours(at, row.get("gated_at")))
+        out["pass_to_certificate"] = distribution(
+            pairs, basis="the ledger row that turned the cell PASS (`at`) -> the canon row's "
+                         "`gated_at`; gated_at is re-stamped when a later sweep re-passes the "
+                         "cell, so this is an upper bound; a certificate sealed before its "
+                         "ledger row is excluded and counted as negative_excluded")
+    else:
+        out["pass_to_certificate"] = {"status": UNMEASURED,
+                                      "why": "no verdict ledger read this pass"}
+    enrol = _read(paths.enrolment)
+    certs = enrol.get("certificates") if isinstance(enrol, Mapping) else None
+    if isinstance(certs, list):
+        out["certificate_to_clock"] = distribution(
+            (float(c["latency_h"]) for c in certs
+             if isinstance(c, Mapping) and isinstance(c.get("latency_h"), (int, float))),
+            basis="FORWARD_ENROLMENT.json certificates[].latency_h: certified_at (the canon's "
+                  "gated_at) -> the clock's first stamp, per certificate on a clock")
+        out["certificate_to_clock"]["unstamped"] = sum(
+            1 for c in certs if isinstance(c, Mapping)
+            and not isinstance(c.get("latency_h"), (int, float)))
+    else:
+        out["certificate_to_clock"] = {"status": UNMEASURED,
+                                       "why": f"{paths.enrolment.name} absent or carries no "
+                                              "per-certificate rows"}
+    out["unstamped_steps"] = {
+        "idea_to_docket_file": (
+            f"{UNMEASURED}: the judge's docket file (data/hypotheses/external_survivors.json) "
+            "stamps each row `first_seen`, but it is ~440 MB on the box and is not streamed by "
+            "an hourly leg; the registry queue (`docket_to_first_verdict`) is measured instead"),
+        "first_verdict_of_a_cell_never_synced": (
+            f"{UNMEASURED}: a ledger verdict whose cell the registry never synced has no "
+            "`judged_at`, so its queue wait is invisible here"),
+    }
+    return out
+
+
 # ------------------------------------------------------------------------------- the pass
 def build(paths: Paths, conn: sqlite3.Connection | None, *, budget_s: float,
           now: datetime | None = None, banned: Iterable[str] | None = None) -> dict[str, Any]:
@@ -456,6 +573,7 @@ def build(paths: Paths, conn: sqlite3.Connection | None, *, budget_s: float,
     verdicts = verdict_stage(stream)
     certs = certificate_stage(stream, paths, banned)
     clocks = clock_stage(paths, t)
+    latency = latency_stage(conn, stream, paths, t)
     maxi = _read(paths.maximiser)
     debt = ((maxi.get("debt_after") or maxi.get("debt_before") or {})
             if isinstance(maxi, Mapping) else {})
@@ -480,6 +598,7 @@ def build(paths: Paths, conn: sqlite3.Connection | None, *, budget_s: float,
             "budget_s": budget_s, "spent_s": round(time.monotonic() - t0, 2),
             "funnel": funnel, "registry": reg, "verdicts": verdicts,
             "certificates": certs, "clocks": clocks, "near_miss": near_miss_stage(paths),
+            "latency": latency,
             "rule": "every row lost between two stages is counted with a named reason and an "
                     "owner; an unreadable stage is UNMEASURED, never zero; no gate moves"}
 
@@ -501,12 +620,12 @@ def main(argv: list[str] | None = None) -> int:
     try:
         from libs.moat import registry as R
         conn = R.connect()
-        stop = time.monotonic() + budget * 0.25
+        stop = time.monotonic() + budget * 0.4
 
         def _past_share() -> int:
             return 1 if time.monotonic() > stop else 0
 
-        # The registry's GROUP BYs may take a quarter of the pass; past that they are
+        # The registry's reads may take 40% of the pass; past that they are
         # interrupted and the stage reads UNMEASURED with the reason, never a kill.
         conn.set_progress_handler(_past_share, 20_000)
     except Exception:

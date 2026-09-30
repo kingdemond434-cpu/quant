@@ -160,3 +160,55 @@ def test_the_leg_is_wired_on_the_hourly_clock() -> None:
     assert "conversion_funnel" in hc.LEG_BUDGET_SEC
     from libs.research.layers import LEG_LAYER
     assert "conversion_funnel" in LEG_LAYER
+
+
+# --------------------------------------------------------------- D5: latency of each step
+def test_distribution_reports_p50_p90_max_and_counts() -> None:
+    d = cf.distribution([1.0, 2.0, 3.0, 4.0, 10.0, None, -1.0], basis="b")
+    assert d["status"] == "MEASURED" and d["n"] == 5 and d["negative_excluded"] == 1
+    assert d["p50_h"] == 3.0 and d["p90_h"] == 10.0 and d["max_h"] == 10.0
+
+
+def test_no_events_is_never_a_latency_of_zero() -> None:
+    d = cf.distribution([], basis="b")
+    assert d["status"] == "NO_EVENTS_IN_WINDOW" and d["n"] == 0 and "p50_h" not in d
+
+
+def test_every_step_is_measured_from_its_own_stamps(desk, tmp_path) -> None:
+    desk.enrolment.write_text(json.dumps({
+        "at": NOW.isoformat(), "n_certificates": 2, "n_enrolled": 1,
+        "certificates": [{"key": "a", "latency_h": 0.5}, {"key": "b", "latency_h": "UNMEASURED"}]}),
+        encoding="utf-8")
+    seal = json.loads(desk.seal.read_text(encoding="utf-8"))
+    seal["survivors"]["external.GBPUSD.carry.p=b"] = {
+        "gated_at": (NOW - timedelta(days=2) + timedelta(hours=3)).isoformat()}
+    desk.seal.write_text(json.dumps(seal), encoding="utf-8")
+    R.set_path(tmp_path / "reg.sqlite")
+    try:
+        conn = R.connect()
+        disc = (NOW - timedelta(hours=10)).isoformat()
+        conn.execute("INSERT INTO discoveries(discovery_id, created_at, state) "
+                     "VALUES('d1', ?, 'COMPILED')", (disc,))
+        R.enqueue_candidate(family="carry", symbol="EURUSD", params={"i": 1}, origin="T",
+                            mechanism="m", status="queued", candidate_id="c1", conn=conn)
+        conn.execute("UPDATE research_candidates SET discovery_id='d1', created_at=?, "
+                     "judged_at=? WHERE id='c1'",
+                     ((NOW - timedelta(hours=8)).isoformat(),
+                      (NOW - timedelta(hours=2)).isoformat()))
+        conn.commit()
+        lat = cf.build(desk, conn, budget_s=30, now=NOW, banned=set())["latency"]
+        conn.close()
+    finally:
+        R.set_path(None)
+    assert lat["idea_to_cell"]["p50_h"] == 2.0
+    assert lat["docket_to_first_verdict"]["p50_h"] == 6.0
+    assert lat["donation_to_docket"]["status"] == "NO_EVENTS_IN_WINDOW"
+    assert lat["pass_to_certificate"]["n"] == 1 and lat["pass_to_certificate"]["p50_h"] == 3.0
+    assert lat["certificate_to_clock"]["n"] == 1 and lat["certificate_to_clock"]["unstamped"] == 1
+    assert all(str(v).startswith(cf.UNMEASURED) for v in lat["unstamped_steps"].values())
+
+
+def test_latency_without_a_registry_is_unmeasured(desk) -> None:
+    lat = cf.build(desk, None, budget_s=30, now=NOW, banned=set())["latency"]
+    for step in ("idea_to_cell", "donation_to_docket", "docket_to_first_verdict"):
+        assert lat[step]["status"] == cf.UNMEASURED
