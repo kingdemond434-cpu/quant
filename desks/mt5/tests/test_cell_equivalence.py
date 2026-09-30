@@ -96,3 +96,59 @@ def test_groups_account_for_every_input_exactly_once() -> None:
     assert sorted(members) == sorted(id(sp) for sp in specs)
     sizes = sorted(len(v) for v in gr.values())
     assert sizes == [1, 1, 3], "three spellings of one rule, one real variant, one unknown family"
+
+
+# ------------------------------------------- the cached SERIES, through the sealed judge's own path
+def _sealed_series(spec: dict, bars: pd.DataFrame, cache: Path,
+                   monkeypatch: pytest.MonkeyPatch) -> tuple[str, pd.Series, pd.Series]:
+    """Build `spec` exactly as the SEALED pre-warm does (`external_gauntlet._warm_one`: its own
+    frame, data day, cache key, `build_cell`, both cost arms, `cache_save`) and load it back the
+    way the sealed sweep's loop does (`cache_load`)."""
+    monkeypatch.setattr(G, "CACHE_DIR", cache)
+    G._FRAME_CACHE.clear()
+    G._FRAME_CACHE[("EURUSD", "H1")] = G.families._h1(bars)
+    out = G._warm_one(spec, {})
+    assert out["status"] == "WARMED", out
+    got = G.cache_load(out["ckey"])
+    assert got is not None
+    return out["ckey"], got[0], got[1]
+
+
+def _identical(a: pd.Series, b: pd.Series) -> bool:
+    return (a.index.equals(b.index)
+            and np.array_equal(a.to_numpy(float), b.to_numpy(float), equal_nan=True))
+
+
+@pytest.mark.parametrize("family", FAMILIES)
+def test_twins_cache_bit_identical_series_under_the_sealed_build(
+        family: str, bars: pd.DataFrame, tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    """THE PROOF THE BUILD CAN BE SHARED: both spellings, built by the sealed judge's own warm
+    path, cache the SAME 1x and 3x daily series, byte for byte, under DIFFERENT keys. And the
+    warmer's fan-out copy of the leader's file, loaded by the sealed `cache_load` under the
+    follower's key, is that same series -- so the follower is judged on exactly what the judge
+    would have built for it."""
+    import warm_gauntlet_cache as W
+
+    spelled = {**_defaulted(family), "timeframe": "H1", "representation": "price_only",
+               "regime": "unconditional", "entry_timing": "instant", "side_mode": "follow",
+               "execution_style": "market"}
+    fn_names = set(inspect.signature(E.family_fn(family)).parameters)
+    spelled = {k: v for k, v in spelled.items() if k not in fn_names or k in _defaulted(family)}
+    leader = {"sym": "EURUSD", "family": family, "params": {}}
+    twin = {"sym": "EURUSD", "family": family, "params": spelled}
+    assert E.equivalence_key("EURUSD", family, {}, "H1") == \
+        E.equivalence_key("EURUSD", family, spelled, "H1")
+    k1, a1, a3 = _sealed_series(leader, bars, tmp_path / "c1", monkeypatch)
+    k2, b1, b3 = _sealed_series(twin, bars, tmp_path / "c2", monkeypatch)
+    assert k1 != k2, "each spelling keeps its own cache key and its own verdict"
+    assert _identical(a1, b1) and _identical(a3, b3)
+    # The warmer's fan-out: the twin's key served from the leader's file.
+    fan = tmp_path / "fan"
+    fan.mkdir()
+    (fan / f"{k1}.npz").write_bytes((tmp_path / "c1" / f"{k1}.npz").read_bytes())
+    monkeypatch.setattr(G, "CACHE_DIR", fan)
+    assert W.fan_out(G, k1, [k2]) == 1
+    served = G.cache_load(k2)
+    assert served is not None
+    assert _identical(served[0], b1) and _identical(served[1], b3)
