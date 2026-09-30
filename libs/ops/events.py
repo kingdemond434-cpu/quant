@@ -66,6 +66,9 @@ KINDS = (
     # Stage 1's backlog has not cleared for 24h (net change >= 0 on every run): the screen's
     # window now biases WHICH cells the sealed judge reaches, not just when. Carries the window.
     "STAGE1_ORDERING_BIAS",
+    # The box's state is fresh on the box and stale on origin: delivery is broken, the desk is not
+    # idle (libs/ops/state_publication.py). Written by publish_state; read by stall_watch.
+    "STATE_FLOW_STALLED",
 )
 
 #: Legs whose completion IS a domain transition. Every other leg emits only LEG_DONE.
