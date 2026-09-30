@@ -104,8 +104,15 @@ def test_one_fill_cancels_the_other_leg_and_the_position_is_recorded() -> None:
 
 def test_an_unfilled_pair_is_cancelled_after_the_ttl_and_at_the_end_of_day() -> None:
     both = {11, 12}
-    assert g.manage_actions(_state(7.1), 7.1 + BRACKET_TTL_HOURS - 0.1, both, {}, set()) == []
-    acts = g.manage_actions(_state(7.1), 7.1 + BRACKET_TTL_HOURS, both, {}, set())
+    # Asia's session ends at 13:00 server (london_am's signal hour), before the flat TTL.
+    assert g.manage_actions(_state(7.1), 12.9, both, {}, set()) == []
+    acts = g.manage_actions(_state(7.1), 13.0, both, {}, set())
+    assert sorted(a["order_id"] for a in acts) == [11, 12]
+    assert {a["act"] for a in acts} == {"ttl_cancel"}
+    # A window the table does not know still falls back to the flat TTL.
+    odd = {"windows": {"odd": _state(7.1)["windows"]["asia"]}}
+    assert g.manage_actions(odd, 7.1 + BRACKET_TTL_HOURS - 0.1, both, {}, set()) == []
+    acts = g.manage_actions(odd, 7.1 + BRACKET_TTL_HOURS, both, {}, set())
     assert sorted(a["order_id"] for a in acts) == [11, 12]
     assert {a["act"] for a in acts} == {"ttl_cancel"}
     acts = g.manage_actions(_state(CANCEL_HOUR - 1.0), CANCEL_HOUR, both, {}, set())
@@ -170,3 +177,22 @@ def test_terminal_dependent_e8_tasks_run_in_the_interactive_desktop() -> None:
     assert "-RequiresDesktop" in gold
     spreads = installer[installer.index('Set-E8Task -Name "E8-Spreads"'):]
     assert "-RequiresDesktop" in spreads
+
+
+def test_a_late_pass_never_places_a_window_whose_session_has_ended() -> None:
+    """2026-09-21/23/24 on E8: windows placed hours late off stale ranges (-950 USD in one
+    second on 09-24). Due inside its session, refused once the next window's hour arrives."""
+    df = _bars()
+    assert [d["window"] for d in g.plan(df, 12.9, {"windows": {}})] == ["asia"]
+    assert "asia" not in [d["window"] for d in g.plan(df, 13.0, {"windows": {}})]
+    # 20:29 server, the 09-21 catch-up pass: nothing at all.
+    assert g.plan(df, 20.49, {"windows": {}}) == []
+
+
+def test_a_london_am_leg_dies_when_the_afternoon_session_opens() -> None:
+    """The 09-24 overlap: london_am's resting leg must be gone before afternoon places."""
+    st = {"windows": {"london_am": {"placed_hour": 13.1, "position_id": None,
+                                    "orders": {"sell_stop": {"id": 21, "price": 4250.93}}}}}
+    assert g.manage_actions(st, 16.9, {21}, {}, set()) == []
+    acts = g.manage_actions(st, 17.0, {21}, {}, set())
+    assert [(a["act"], a["order_id"]) for a in acts] == [("ttl_cancel", 21)]

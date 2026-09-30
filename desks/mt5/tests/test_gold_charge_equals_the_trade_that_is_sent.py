@@ -437,8 +437,18 @@ def test_the_cancel_hour_is_part_of_the_resolution_not_of_the_send():
     pend = _resolve(45.0, hour=float(dc.CANCEL_HOUR) + 0.5)
     assert not pend["ok"] and pend["stage"] == "past_cancel_hour"
     assert "taken back by this same pass" in pend["why"]
-    # And it is still resolvable an hour before the backstop, or the guard has eaten the session.
-    assert _resolve(45.0, hour=float(dc.CANCEL_HOUR) - 1.0)["ok"]
+    # And it is still resolvable inside its own session, or the guard has eaten the session.
+    assert _resolve(45.0, hour=16.9)["ok"]
+
+
+def test_a_late_pass_does_not_resolve_a_bracket_whose_session_has_ended():
+    """2026-09-25 on Fusion: asia and london_am brackets went out after 17:00 server off stale
+    ranges and both whipsawed (-122.90 EUR). london_am's session ends when the afternoon opens, so
+    a pass at 17:00 or later no longer resolves it -- and the cap never prices it."""
+    pend = _resolve(45.0, hour=17.0)
+    assert not pend["ok"] and pend["stage"] == "session_ended"
+    assert "stale range" in pend["why"]
+    assert not _resolve(45.0, hour=float(dc.CANCEL_HOUR) - 1.0)["ok"]
 
 
 def test_a_sleeve_the_cap_did_not_price_cannot_be_placed_later_in_the_same_pass():
