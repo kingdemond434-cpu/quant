@@ -289,6 +289,12 @@ def sustained_rate(ledger: Path | None = None, *, now: datetime | None = None) -
     t = now or datetime.now(tz=UTC)
     cuts = {"24h": t.timestamp() - 24 * 3600.0, "7d": t.timestamp() - 168 * 3600.0}
     counts = {"24h": 0, "7d": 0}
+    # THE SAME WINDOW'S UNKNOWN ROWS, counted beside it (2026-09-30). The ledger holds only the
+    # verdicts `run_gauntlet` emitted -- judged cells and its unmeasured branch, never a NOT_RUN
+    # row -- so UNKNOWN / rows here is the share of cells that REACHED the judge and got no
+    # ruling. That is what the 7-day "43%" was; it is published here so it is never again set
+    # against a per-sweep figure computed over a different denominator (see `unknown_breakdown`).
+    unknown = {"24h": 0, "7d": 0}
     try:
         with (ledger or GATE_LEDGER).open("r", encoding="utf-8", errors="replace") as fh:
             for line in fh:
@@ -306,14 +312,25 @@ def sustained_rate(ledger: Path | None = None, *, now: datetime | None = None) -
                 at = _ts(row.get("at"))
                 if at is None:
                     continue
+                _unk = (row.get("passed") is not True
+                        and str(row.get("terminal_gate") or "") in ("", "UNKNOWN"))
                 for w, cut in cuts.items():
                     if at.timestamp() >= cut:
                         counts[w] += 1
+                        unknown[w] += int(_unk)
     except OSError:
         return {"status": "UNMEASURED", "why": "gate ledger unreadable"}
     return {"status": "MEASURED", "counts": counts,
             "per_hour_24h": round(counts["24h"] / 24.0, 3),
-            "per_hour_7d": round(counts["7d"] / 168.0, 3)}
+            "per_hour_7d": round(counts["7d"] / 168.0, 3),
+            "unknown_counts": unknown,
+            # None, never 0.0, on an empty window: no verdicts is UNMEASURED (L1.28a).
+            "unknown_share_24h": (round(unknown["24h"] / counts["24h"], 6)
+                                  if counts["24h"] else None),
+            "unknown_share_7d": (round(unknown["7d"] / counts["7d"], 6)
+                                 if counts["7d"] else None),
+            # The drain rate above counts an UNKNOWN as judged; this is the rate of RULINGS.
+            "named_per_hour_24h": round((counts["24h"] - unknown["24h"]) / 24.0, 3)}
 
 
 def drain(backlog_now: int, per_hour: float | None, *, prior_backlog: int | None,
@@ -579,6 +596,11 @@ def learn_priors(ledger: Path | None = None, *, since: str = "",
 GATES_REPORT = REPORTS / "universal_gates_external.json"
 
 
+#: What `unknown_share` is divided by. A share read under another basis is not comparable, so
+#: the ratchet treats a basis change as a first reading (UNMEASURED) rather than a rise or a fall.
+UNKNOWN_SHARE_BASIS = "judged_verdicts"
+
+
 def unknown_breakdown(path: Path | None = None) -> dict[str, Any]:
     """WHAT `terminal_gate: UNKNOWN` ACTUALLY IS -- measured, not assumed.
 
@@ -628,13 +650,29 @@ def unknown_breakdown(path: Path | None = None) -> dict[str, Any]:
         r = str(row.get("reason") or "unnamed")
         by_reason[r] = by_reason.get(r, 0) + 1
     total = len(verdicts)
+    # THE DENOMINATOR IS THE CELLS THAT REACHED THE JUDGE (2026-09-30). This divided by EVERY row
+    # in the report, and the report also carries the cells the sweep never built -- NOT_RUN_*
+    # (data missing, build failed, modifier refused, budget deferred, gate-1 prior rejections),
+    # `passed: null`, none of which ever reached the gates. Measured on the box's noon sweep:
+    # 20,247 of 29,466 rows were NOT_RUN, so the published 9.55% UNKNOWN (2,814 cells) was really
+    # >=30.5% of the ~9,219 cells actually judged -- and it FELL whenever more cells failed to
+    # build, which is the ratchet rewarding the wrong thing. The gate ledger has only ever held
+    # `run_gauntlet`'s own verdicts, so its 7-day 43% (53,460 of 124,342) was the right basis all
+    # along; this now uses the same one, and publishes the old ratio beside it by name.
+    judged = sum(1 for v in verdicts if isinstance(v, dict) and (
+        v.get("unmeasured") or (v.get("passed") is not None and not str(
+            v.get("downstream_status") or "").startswith(NOT_JUDGED_PREFIX))))
     out.update({
         "by_reason": by_reason,
         "named_cells": len(named),
         "status": "OK",
         "verdicts": total,
+        "judged_verdicts": judged,
+        "not_run_rows": total - judged,
         "unknown_total": n_unmeasured,
-        "unknown_share": round(n_unmeasured / max(total, 1), 6),
+        "unknown_share": (round(n_unmeasured / judged, 6) if judged else None),
+        "unknown_share_basis": UNKNOWN_SHARE_BASIS,
+        "unknown_share_of_all_rows": round(n_unmeasured / max(total, 1), 6),
         "causes": {
             "never_fires_days_0": {
                 "cells": sum(never.values()),
@@ -750,10 +788,36 @@ def name_unknowns(path: Path | None = None) -> dict[str, dict[str, Any]]:
         if not cell:
             continue
         sym = str(v.get("sym") or "")
+        fam = str(v.get("family") or "")
         days = int(v.get("days") or 0)
         why = str((((v.get("stages") or {}).get("observations")) or {}).get("why") or "")
-        bars = _bar_bytes(sym)
-        if days == 0 and bars == 0:
+        # THE CELL'S OWN CHART, not H1: an M15 cell with no M15 file read as "bars present" off
+        # its H1 sibling and was parked as a spec that never fires.
+        tf = _tf_of(v)
+        _head = cell.split(".", 1)[0]
+        if "@" in _head and _head.rsplit("@", 1)[1].upper() in _BAR_COST:
+            tf = _head.rsplit("@", 1)[1].upper()          # `cell_id` writes `<sym>@<TF>.`
+        bars = _bar_bytes(sym, tf)
+        # WHAT THE WRITER SAYS, WHEN IT SAYS IT (patch unknown_verdict_named): the judge names the
+        # cause it saw -- an exception while building the series, a history the lockbox carve
+        # consumed, signals that never became trades -- and that beats any inference made here.
+        declared = str(v.get("unknown_reason") or "")
+        params = v.get("params") if isinstance(v.get("params"), dict) else None
+        need = REQUIRED_INPUT_KEY.get(fam)
+        if declared == "series_exception":
+            reason, route = "series_exception", (
+                "the backtest raised while building this cell's daily series: a code defect, "
+                f"re-admitted after {BUILD_FAILED_RETRY_DAYS:.0f} days like a build failure")
+        elif params is not None and need and not params.get(need):
+            reason, route = "missing_identity_input", (
+                f"{fam} trades against a second instrument and this cell names no {need}, so it "
+                "built with no input and fired nowhere. Its twin with the input named is minted "
+                "by discovery_compiler.complete_inputs; this one is kept, never deleted")
+        elif declared == "lockbox_consumed_history":
+            reason, route = "lockbox_consumed_history", (
+                "the cell fires, but its chart's history begins after the campaign lockbox cut, "
+                "so the carve left under 60 development days: re-admitted as history grows")
+        elif days == 0 and bars == 0:
             reason, route = "missing_bars", ("no H1 bar file for this symbol: the conversion "
                                              "organ's bar supply (research/local_converter.py) "
                                              "owns it")
@@ -766,8 +830,18 @@ def name_unknowns(path: Path | None = None) -> dict[str, dict[str, Any]]:
             reason, route = "too_rare", (f"fires on {days} days, under the 60 CPCV needs: a fact "
                                          "about the search, re-admitted when the history grows")
         out[cell] = {"reason": reason, "route": route, "sym": sym, "family": v.get("family"),
-                     "days": days, "bar_bytes": bars, "why": why[:200]}
+                     "tf": tf, "days": days, "bar_bytes": bars, "why": why[:200],
+                     **({"detail": declared} if declared else {})}
     return out
+
+
+#: The key that names a peer/driver/factor family's second instrument. Mirrors
+#: `discovery_compiler.PEER_KEY_BY_FAMILY` + `FACTOR_FAMILIES` (a test pins the two together).
+REQUIRED_INPUT_KEY: dict[str, str] = {"relative_value": "peer_symbol",
+                                      "correlation_regime": "peer_symbol",
+                                      "lead_lag": "driver_symbol",
+                                      "cross_asset_residual": "factor_symbols",
+                                      "pca_residual": "factor_symbols"}
 
 
 def unrunnable_bank(path: Path | None = None) -> dict[str, dict[str, Any]]:
@@ -803,7 +877,7 @@ def readmit_due(row: dict[str, Any], *, now: datetime | None = None) -> bool:
     bars = _bar_bytes(str(row.get("sym") or ""), str(row.get("tf") or "H1"))
     if parked_bytes <= 0:
         return bars > 0
-    if row.get("reason") == "build_failed":
+    if row.get("reason") in ("build_failed", "series_exception"):
         _at = _ts(row.get("parked_at"))
         _t = now or datetime.now(tz=UTC)
         if _at is not None and (_t.timestamp() - _at.timestamp()) / 86400.0 \
@@ -1437,7 +1511,13 @@ def build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = N
     # THE PREVIOUS READING'S UNKNOWN SHARE, so the fence can ratchet it: this quantity is a
     # SHARE and not a count, because a count rises with throughput and throughput rising is the
     # desk working. The share falls only when fewer never-firing specs reach the judge.
-    prior_unknown_share = prior.get("unknown_share") if isinstance(prior, dict) else None
+    # A PRIOR READ ON ANOTHER DENOMINATOR IS NO BASELINE: the move from all-rows to judged-only
+    # lifts the share several-fold with nothing changing on the desk, and ratcheting across it
+    # would fail the fence for a unit conversion. It re-enters as a first reading instead.
+    prior_unknown_share = (prior.get("unknown_share")
+                           if isinstance(prior, dict)
+                           and prior.get("unknown_share_basis") == UNKNOWN_SHARE_BASIS
+                           else None)
     # THE OPPORTUNITY COST, which is the number that makes this ROI rather than bookkeeping.
     # `value_at_risk` is the expected value sitting unjudged right now; `value_deferred` is the
     # part of it this hour cannot reach; `value_forgone_per_hour` is that deferred value spread
@@ -1511,7 +1591,16 @@ def build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = N
         # verdicts that return no gate at all. Driven DOWN by the compiler that stops minting
         # never-firing specs, never by judging less.
         "unknown_share": unknown.get("unknown_share"),
+        "unknown_share_basis": unknown.get("unknown_share_basis"),
+        "unknown_share_of_all_rows": unknown.get("unknown_share_of_all_rows"),
         "unknown_total": unknown.get("unknown_total"),
+        "judged_verdicts": unknown.get("judged_verdicts"),
+        # The same class over the ledger's rolling windows -- the figure a git reading quotes.
+        "unknown_share_24h": rate.get("unknown_share_24h"),
+        "unknown_share_7d": rate.get("unknown_share_7d"),
+        "unknown_counts_window": rate.get("unknown_counts"),
+        "named_verdicts_per_hour_24h": rate.get("named_per_hour_24h"),
+        "unknown_by_reason": unknown.get("by_reason"),
         "prior_unknown_share": prior_unknown_share,
         "never_fires_cells": ((unknown.get("causes") or {}).get("never_fires_days_0")
                               or {}).get("cells"),
@@ -1757,6 +1846,7 @@ def write(doc: dict[str, Any], *, report: Path | None = None,
                      for f, r in fams.items()},
         "unjudged_total": (doc.get("totals") or {}).get("unjudged_total"),
         "unknown_share": (doc.get("totals") or {}).get("unknown_share"),
+        "unknown_share_basis": (doc.get("totals") or {}).get("unknown_share_basis"),
         "prewarm_fail_share": (doc.get("totals") or {}).get("prewarm_fail_share"),
         "drain_status": (doc.get("totals") or {}).get("drain_status"),
         "priors_cursor": (doc.get("priors_learned") or {}).get("cursor") or "",
@@ -1777,8 +1867,10 @@ def render(doc: dict[str, Any]) -> list[str]:
              f"unjudged {t.get('unjudged_total')} on capacity {t.get('capacity_measured')}"]
     if t.get("unknown_share") is not None:
         _u = doc.get("unknown_reasons") or {}
-        lines.append(f"  UNKNOWN {t.get('unknown_total')} of {_u.get('verdicts')} verdicts "
-                     f"({float(t.get('unknown_share') or 0):.1%}), of which "
+        _w = t.get("unknown_share_7d")
+        lines.append(f"  UNKNOWN {t.get('unknown_total')} of {_u.get('judged_verdicts')} judged "
+                     f"({float(t.get('unknown_share') or 0):.1%}; "
+                     f"{'n/a' if _w is None else f'{float(_w):.1%}'} over 7d), of which "
                      f"{t.get('never_fires_cells')} never fired at all; parked "
                      f"{(doc.get('unrunnable') or {}).get('parked_this_pass')}")
     lines.append(f"  value at risk {t.get('value_at_risk'):.3e} of which "

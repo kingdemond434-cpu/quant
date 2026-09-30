@@ -732,6 +732,79 @@ def _with_family(child: dict[str, Any], ctx: TM.Context) -> dict[str, Any]:
     return child
 
 
+#: THE FAMILIES WHOSE IDENTITY NAMES A SECOND INSTRUMENT, and the key that names it.
+#:
+#: WHY (measured 2026-09-30 on the docket committed 2026-09-29, 57,538 rows). `_with_family` hands
+#: a transformed child a family from its mechanism's pool, but a family that trades THIS
+#: instrument against ANOTHER one cannot be built from a symbol alone -- and nothing here named
+#: the other one. 1,952 of 2,291 `relative_value` and 2,052 of 2,302 `correlation_regime` rows
+#: carried no `peer_symbol`, 748 of 1,062 `lead_lag` rows no `driver_symbol`, and 2,060 of 2,888
+#: `cross_asset_residual` and 1,640 of 1,867 `pca_residual` rows no `factor_symbols` -- 8,450
+#: rows, ~99% of them from this compiler. The judge rebuilt the peer families with `peer=None`,
+#: the family returned [] and the cell ended UNKNOWN as "never fires"; the residual families died
+#: as "factor basket incomplete (none named)". On a 1,200-row sample the peerless pair alone were
+#: 21% of every UNKNOWN verdict. The mechanism was never asked -- its input was never written down.
+#:
+#: The other instrument is chosen STRUCTURALLY, by the sweep's own selectors
+#: (`orthogonal_sweep._peer_symbol` / `_factor_symbols`: shared currency leg, then asset class,
+#: then longest history -- the symbol string and the registry only, so there is nothing to leak),
+#: from the hypothesis-lane instruments that hold bars ON THE CHILD'S OWN CHART, because a peer
+#: on another clock silently reduces an inner join to the coarser stamps. A child that already
+#: names its instrument is left exactly as written, and a child for which no instrument can be
+#: found is left as it was: completion only ever adds the input, it never refuses a cell.
+PEER_KEY_BY_FAMILY: dict[str, str] = {"relative_value": "peer_symbol",
+                                      "correlation_regime": "peer_symbol",
+                                      "lead_lag": "driver_symbol"}
+FACTOR_FAMILIES = frozenset({"cross_asset_residual", "pca_residual"})
+
+
+def _universe_meta() -> dict[str, Any]:
+    doc = _read_json(UNIVERSE / "universe.json")
+    return doc if isinstance(doc, dict) else {}
+
+
+def complete_inputs(child: dict[str, Any], ctx: TM.Context,
+                    meta: Mapping[str, Any] | None = None) -> dict[str, Any]:
+    """Name the second instrument a peer/driver/factor family needs, when the child names none."""
+    fam = str(child.get("family") or "")
+    key = PEER_KEY_BY_FAMILY.get(fam)
+    params = dict(child.get("params") or {})
+    if key is None and fam not in FACTOR_FAMILIES:
+        return child
+    if (key and params.get(key)) or (fam in FACTOR_FAMILIES and params.get("factor_symbols")):
+        return child
+    sym = str(child.get("symbol") or "")
+    chart = str(child.get("chart") or params.get("timeframe") or "H1").upper()
+    pool = sorted({s for syms in ctx.instruments.values() for s in syms
+                   if str(s).upper() != sym.upper() and ctx.hypothesis_lane(s)
+                   and ctx.has_bars(s, chart)})
+    if not pool:
+        return child
+    try:
+        from research.orthogonal_sweep import _factor_symbols, _peer_symbol
+    except Exception:
+        return child
+    info = dict(meta) if meta is not None else _universe_meta()
+    added: str | None = None
+    if key:
+        peer = _peer_symbol(sym, [sym, *pool], info)
+        if peer:
+            params[key] = peer
+            added = key
+    else:
+        basket = [s for s in _factor_symbols(pool, info) if s != sym]
+        if basket:
+            params["factor_symbols"] = basket
+            added = "factor_symbols"
+    if not added:
+        return child
+    out = dict(child)
+    out["params"] = params
+    out["input_completed"] = added
+    out["content_hash"] = _hash_of(out)
+    return out
+
+
 def donate(rows: list[dict[str, Any]], tests_run: int) -> str | None:
     """The docket's door. Indirected through this module so a test can monkeypatch ONE name, and
     called ONCE per run -- `proposer_common.donate` names its file by the minute, so two calls in
@@ -776,7 +849,8 @@ def _dispose(child: dict[str, Any], ctx: TM.Context, *, coverage: Mapping[str, i
 def _expand_one(disc: Mapping[str, Any], ctx: TM.Context, *, coverage: dict[str, int],
                 hashes: set[str], redundant: set[str], conn: Any, dry_run: bool,
                 donations: list[dict[str, Any]], blocked: dict[str, int],
-                by_miner: dict[str, dict[str, int]]) -> dict[str, Any]:
+                by_miner: dict[str, dict[str, int]],
+                meta: Mapping[str, Any] | None = None) -> dict[str, Any]:
     """One discovery, all the way: interpret, expand, gate, compile, queue.
 
     Every member of the closure leaves here with a disposition, or this function is broken -- and
@@ -806,8 +880,9 @@ def _expand_one(disc: Mapping[str, Any], ctx: TM.Context, *, coverage: dict[str,
 
     compiled = 0
     for raw in capped:
-        child = _with_family({**raw, "mechanism_id": mechanism_id,
-                              "economic_actor": parent.get("economic_actor")}, ctx)
+        child = complete_inputs(_with_family({**raw, "mechanism_id": mechanism_id,
+                                              "economic_actor": parent.get("economic_actor")},
+                                             ctx), ctx, meta)
         ok, why = _dispose(child, ctx, coverage=coverage, hashes=hashes, redundant=redundant,
                            conn=conn)
         slot = by_miner.setdefault(str(child.get("miner") or "?"),
@@ -893,6 +968,7 @@ def run(*, dry_run: bool = False, budget_s: int = BUDGET_S,
         donations: list[dict[str, Any]] = []
         blocked: dict[str, int] = {}
         by_miner: dict[str, dict[str, int]] = {}
+        meta = _universe_meta()        # read once per run for `complete_inputs`
 
         for disc in discoveries:
             if time.monotonic() > deadline:
@@ -904,7 +980,7 @@ def run(*, dry_run: bool = False, budget_s: int = BUDGET_S,
                 break
             got = _expand_one(disc, ctx, coverage=coverage, hashes=hashes, redundant=redundant,
                               conn=conn, dry_run=dry_run, donations=donations, blocked=blocked,
-                              by_miner=by_miner)
+                              by_miner=by_miner, meta=meta)
             report["interpreted"] += 1
             report["expanded"] += 1
             report["compiled"] += got["compiled"]
