@@ -26,7 +26,7 @@
   "LIVE": 123,
   "STALE": 0,
   "MISSING": 47,
-  "NEVER": 678,
+  "NEVER": 681,
   "UNMEASURED": 29
  },
  "scope": {
@@ -16159,6 +16159,31 @@
    "consumer": "desks/mt5/mt5desk/gateway.py release gate; scripts/check_closed_loop.py; desks/m"
   },
   {
+   "organ": "leg:mass_screen",
+   "kind": "leg",
+   "code": [
+    "desks/mt5/research/mass_screen.py"
+   ],
+   "clock": "hourly_cycle:mass_screen",
+   "cadence_s": 3600,
+   "max_silence_s": 7200,
+   "state": "NEVER",
+   "why": "no artifact and no run record on this host",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/MASS_SCREEN.json",
+   "artifact_declared": "desks/mt5/reports/MASS_SCREEN.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "leg_completions",
+   "consumer": "libs/moat/registry.py enqueue_candidate -> libs/moat/docket_feed.py -> desks/mt5"
+  },
+  {
    "organ": "leg:math_lab",
    "kind": "leg",
    "code": [
@@ -16974,6 +16999,31 @@
    "last_run_source": "UNMEASURED",
    "artifact": "desks/mt5/reports/PRODUCER_CENSUS.json",
    "artifact_declared": "desks/mt5/reports/PRODUCER_CENSUS.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "leg_completions",
+   "consumer": "UNMEASURED"
+  },
+  {
+   "organ": "leg:producer_swarm",
+   "kind": "leg",
+   "code": [
+    "desks/mt5/research/producer_swarm.py"
+   ],
+   "clock": "hourly_cycle:producer_swarm",
+   "cadence_s": 3600,
+   "max_silence_s": 7200,
+   "state": "NEVER",
+   "why": "no artifact and no run record on this host",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/PRODUCER_SWARM.json",
+   "artifact_declared": "desks/mt5/reports/PRODUCER_SWARM.json",
    "artifact_resolved_by": "absent",
    "artifact_declared_n": 1,
    "artifact_age_s": null,
@@ -18649,6 +18699,31 @@
    "last_run_source": "UNMEASURED",
    "artifact": "desks/mt5/reports/UNIVERSE_INTEGRITY.json",
    "artifact_declared": "desks/mt5/reports/UNIVERSE_INTEGRITY.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "leg_completions",
+   "consumer": "UNMEASURED"
+  },
+  {
+   "organ": "leg:unknown_unknown",
+   "kind": "leg",
+   "code": [
+    "desks/mt5/research/unknown_unknown.py"
+   ],
+   "clock": "hourly_cycle:unknown_unknown",
+   "cadence_s": 3600,
+   "max_silence_s": 7200,
+   "state": "NEVER",
+   "why": "no artifact and no run record on this host",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/UNKNOWN_UNKNOWN.json",
+   "artifact_declared": "desks/mt5/reports/UNKNOWN_UNKNOWN.json",
    "artifact_resolved_by": "absent",
    "artifact_declared_n": 1,
    "artifact_age_s": null,
@@ -22243,6 +22318,6 @@
   "NEVER": 675,
   "at": "2026-09-30T11:20:18+00:00",
   "git_sha": "UNMEASURED",
-  "attested": 874
+  "attested": 877
  }
 }

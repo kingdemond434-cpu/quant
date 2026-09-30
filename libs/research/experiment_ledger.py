@@ -109,6 +109,17 @@ def _mass_screen_counts(path: Path | None = None) -> tuple[int, dict[str, int]]:
     return total, by_fam
 
 
+#: THE UNKNOWN-UNKNOWN MINER'S TRIAL LEDGER (desks/mt5/research/unknown_unknown.py), same row
+#: shape: every expression-rule cell it screens is a trial of its grammar family `uu_<grammar>`,
+#: charged on the FULL screened width, the GP population and the novel-but-rejected included.
+UNKNOWN_UNKNOWN_TRIALS = DESK / "data" / "UNKNOWN_UNKNOWN_TRIALS.jsonl"
+
+
+def _unknown_unknown_counts(path: Path | None = None) -> tuple[int, dict[str, int]]:
+    """(cells screened, per family) from the unknown-unknown ledger; dry runs skipped."""
+    return _mass_screen_counts(path or UNKNOWN_UNKNOWN_TRIALS)
+
+
 def _prereg_counts() -> int:
     try:
         from libs.research.preregistration import cards
@@ -124,16 +135,21 @@ def lifetime(write: bool = True) -> dict[str, Any]:
     for fam, k in m_fam.items():
         p_fam[fam] = p_fam.get(fam, 0) + k
     p_total += m_total
+    u_total, u_fam = _unknown_unknown_counts()
+    for fam, k in u_fam.items():
+        p_fam[fam] = p_fam.get(fam, 0) + k
+    p_total += u_total
     prereg = _prereg_counts()
     fams = sorted(set(g_fam) | set(p_fam))
     by_fam = {f: int(g_fam.get(f, 0) + p_fam.get(f, 0)) for f in fams}
     doc = {"generated_utc": datetime.now(tz=UTC).isoformat(),
            "lifetime_trials": int(g_total + p_total),
            "judged_cells": g_total, "screened_cells": p_total, "preregistered_cards": prereg,
-           "mass_screen_cells": m_total,
+           "mass_screen_cells": m_total, "unknown_unknown_cells": u_total,
            "by_family": dict(sorted(by_fam.items(), key=lambda kv: -kv[1])),
            "rule": ("lifetime = judged (hypothesis graph) + screened (every proposer's "
-                    "tests_run, plus every mass-screen cell in MASS_SCREEN_TRIALS.jsonl); "
+                    "tests_run, plus every mass-screen cell in MASS_SCREEN_TRIALS.jsonl and every "
+                    "unknown-unknown cell in UNKNOWN_UNKNOWN_TRIALS.jsonl); "
                     "consumers may only deflate MORE with it, never less")}
     if write:
         OUT.parent.mkdir(parents=True, exist_ok=True)

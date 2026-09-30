@@ -881,6 +881,9 @@ The hash is not the body. `desks/mt5/reports/**` is ~50 MB the box rewrites hour
 | `leg:breadth_sweep` | `hourly_cycle:breadth_sweep` | UNMEASURED UNMEASURED | `desks/mt5/reports/BREADTH_SWEEP.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:empty_cluster_forcer` | `hourly_cycle:empty_cluster_forcer` | UNMEASURED UNMEASURED | `desks/mt5/reports/EMPTY_CLUSTER_FORCER.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:producer_breadth` | `hourly_cycle:producer_breadth` | UNMEASURED UNMEASURED | `desks/mt5/reports/PRODUCER_BREADTH.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
+| `leg:mass_screen` | `hourly_cycle:mass_screen` | UNMEASURED UNMEASURED | `desks/mt5/reports/MASS_SCREEN.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
+| `leg:producer_swarm` | `hourly_cycle:producer_swarm` | UNMEASURED UNMEASURED | `desks/mt5/reports/PRODUCER_SWARM.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
+| `leg:unknown_unknown` | `hourly_cycle:unknown_unknown` | UNMEASURED UNMEASURED | `desks/mt5/reports/UNKNOWN_UNKNOWN.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 
 ## UNMEASURED (29)
 

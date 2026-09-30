@@ -204,7 +204,11 @@ _FAMILY_GROUPS: dict[str, str] = {
     # constructors. All map to UNKNOWN so the count is visible rather than assumed away.
     # `mass_screen_thresh` / `_cond` are statistical finds of the mass screen (2026-09-30): a
     # feature-threshold rule names no payer, so the mechanism is UNKNOWN and counted, not guessed.
-    f"{UNKNOWN} price_only market": "discovered mass_screen_cond mass_screen_thresh",
+    f"{UNKNOWN} price_only market": "discovered mass_screen_cond mass_screen_thresh"
+                                    " uu_unary uu_binary uu_cond uu_gp",
+    # The unknown-unknown grammars (`mt5desk.uu_grammar`, 2026-09-30): expressions nobody named,
+    # so no payer is named either -- UNKNOWN and counted. `uu_cross` names a cross-asset leaf.
+    f"{UNKNOWN} cross_asset market": "uu_cross",
     f"{UNKNOWN} price_only {UNKNOWN}": "ensemble formula generic joint_genome exit_operated",
     # Registered 2026-09-23/24 in `families_orthogonal`. `exit_operated` is an OPERATOR over any
     # base family's entries, so its mechanism and style are its base's and no single row names

@@ -944,7 +944,8 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "session_structure"),
                     "intel"),
     # discovery: the candidate pipeline, in order, plus the evolutionary generators
-    **dict.fromkeys(("search", "sweep", "breadth_sweep", "mass_screen", "compile_candidates",
+    **dict.fromkeys(("search", "sweep", "breadth_sweep", "mass_screen", "producer_swarm",
+                     "unknown_unknown", "compile_candidates",
                      "merge_docket",
                      "deepen", "alpha_evolution", "alpha_rl", "ml_layer", "ensemble_optimizer",
                      "requeue_unrunnable", "queue_cycle", "queue_compact", "miner_conversion",
@@ -1616,6 +1617,13 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # THE MASS SCREEN stops starting symbols at its own --budget-s (MASS_SCREEN_BUDGET_S) and
     # always writes its artifact; the cap sits above it for the reason `enrol_clocks` was raised.
     "mass_screen": 1_080,
+    # THE UNKNOWN-UNKNOWN MINER stops starting symbols at its own --budget-s 900 and always
+    # writes; the cap sits above it (the mass screen's contract, and its reason).
+    "unknown_unknown": 1_080,
+    # THE PRODUCER SWARM builds its roster (seconds), reads the docket once for dedup (~76 MB
+    # measured 2026-09-30) and writes at most `hourly_cell_ceiling` (2,000) rows through the
+    # registry in 1,000-row chunks; measured 3.6 s for a dry pass of 8,060 producers here.
+    "producer_swarm": 600,
     # DUTY CYCLE stops itself at --budget-s 400 and writes; the cap sits above it. Most of that
     # budget is one `schtasks /query /v` over every task on the box, which is how it finds the
     # clocks that have stopped firing -- the defect that left the judge idle for 22 of 24 hours.
@@ -2579,6 +2587,30 @@ def mass_screen() -> dict:
     # component registry can read the production args statically (pinned by test_mass_screen)
 
 
+#: The unknown-unknown miner's own stopping point (same contract as the mass screen's).
+UNKNOWN_UNKNOWN_BUDGET_S = 900
+
+
+def unknown_unknown() -> dict:
+    """`unknown_unknown`: open-ended search over expressions nobody named (typed grammar over
+    price/volume/calendar/cross-asset primitives, enumerated, conditioned and evolved), screened
+    by the mass screen's own cheap screen on the TRAINING window, BH-FDR over the FULL screened
+    width (charged to UNKNOWN_UNKNOWN_TRIALS.jsonl), novelty-scored against the named features,
+    and only novel survivors donated as `uu_<grammar>` cells the sealed gauntlet rebuilds.
+    Artifact: reports/UNKNOWN_UNKNOWN.json."""
+    return _producer("unknown_unknown", "research/unknown_unknown.py", "--once",
+                     "--budget-s", "900")  # == UNKNOWN_UNKNOWN_BUDGET_S, literal (see above)
+
+
+def producer_swarm() -> dict:
+    """`producer_swarm`: thousands of individual producers, one per (family x asset class x
+    chart x session x transform) from data/producer_swarm_registry.json, each minting only cells
+    the sealed gauntlet can build, least-judged first, never a judged or docketed duplicate; the
+    producers aimed at the holes PRODUCER_BREADTH.json names go first, then a cursor lap that
+    visits the whole roster every day. Artifact: reports/PRODUCER_SWARM.json."""
+    return _producer("producer_swarm", "research/producer_swarm.py", "--once")
+
+
 def search() -> dict:
     """`edge_search`: the family-free hypothesis search. NOT SCHEDULED ANYWHERE BEFORE THIS.
 
@@ -3391,6 +3423,11 @@ def main() -> None:
     # only, every one charged as a trial, and only the FDR survivors forwarded to the judge. It
     # runs BEFORE `merge_docket` so the survivors it enqueues reach the docket the same pass.
     msc = _costed("mass_screen", mass_screen)
+    # THE PRODUCER SWARM and UNKNOWN-UNKNOWN MINING (principal 2026-09-30: "all individual
+    # producers, tons thousands of them ... breadth and unknown unknown minings all"). Both write
+    # through the registry door, so they run BEFORE `merge_docket` for the same reason as above.
+    psw = _costed("producer_swarm", producer_swarm)
+    uuk = _costed("unknown_unknown", unknown_unknown)
     ccv = _costed("candidate_conservation", candidate_conservation)
     pcn = _costed("pit_canaries", pit_canaries)
     myd = _costed("mutation_yield", mutation_yield)
@@ -5112,6 +5149,7 @@ def main() -> None:
                     "regime_monitor": rg,
                     "deepening": dp, "heal_clocks": hc, "mine": m,
                     "search": se, "breadth_sweep": bs, "mass_screen": msc,
+                    "producer_swarm": psw, "unknown_unknown": uuk,
                     "candidate_conservation": ccv,
                     "pit_canaries": pcn, "mutation_yield": myd, "credit_assignment": cra,
                     "release_authority": rla, "regime_hierarchy": rgh, "residual_map": rsm,

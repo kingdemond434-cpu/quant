@@ -176,6 +176,23 @@ def family_verdict(family: str) -> tuple[str, str]:
     return BUILDABLE, "the gauntlet resolves the family and supplies every data input it reads"
 
 
+def symbol_required(family: str) -> bool:
+    """True when the family builds NOTHING unless the cell itself carries `symbol`.
+
+    MEASURED 2026-09-30: `family_cross_sectional_class_momentum` on EURUSD returns 0 signals at
+    its default `symbol=""` and 729 with `symbol="EURUSD"`. The sealed `build_cell` supplies
+    `symbol` to exactly one family (`carry`), so for the class books -- which load their own peer
+    panel keyed by nothing but that parameter -- a cell that does not carry it is judged on an
+    empty signal list: the fallback, not the mechanism. `breadth_sweep` minted such cells at the
+    families' defaults on every lane symbol. The set is `universe_policy.CROSS_SECTIONAL_FAMILIES`
+    (the families that read their class from `symbol`), pinned by a test that builds each."""
+    try:
+        from research.universe_policy import CROSS_SECTIONAL_FAMILIES
+    except Exception:
+        return False
+    return str(family) in CROSS_SECTIONAL_FAMILIES
+
+
 @lru_cache(maxsize=256)
 def _required(family: str) -> tuple[str, ...]:
     try:
@@ -200,6 +217,8 @@ def cell_verdict(family: str, params: dict[str, Any] | None = None,
     if refused:
         return TIMEFRAME_REFUSED, refused
     missing = [r for r in _required(str(family)) if r not in p]
+    if symbol_required(str(family)) and not p.get("symbol"):
+        missing.append("symbol")
     if missing:
         return MISSING_PARAMS, f"{family} requires {missing} and the cell does not carry them"
     return BUILDABLE, why

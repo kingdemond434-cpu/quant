@@ -1,0 +1,48 @@
+{
+ "version": 1,
+ "rule": "THE PRODUCER SWARM's axes. One producer is instantiated per (family x asset class x chart x session x transform) this file admits and the sealed gauntlet can build; research/producer_swarm.py reads it and hard-codes none of it. Adding a class, chart, session or transform here adds producers on the next hourly pass. Families are DERIVED (every family the sealed gauntlet builds from a cell's own params, research/gauntlet_buildability) minus the exclusions named below with their reason, so a family registered tomorrow gets its producers tomorrow.",
+ "families": {
+  "source": "gauntlet_buildable_at_defaults",
+  "exclude": {
+   "generic": "a constructor that builds a family from a spec, not a family",
+   "formula": "a constructor that builds a family from a spec, not a family",
+   "ensemble": "a constructor over member cells, not a family",
+   "joint_genome": "a genome constructor that takes **kwargs: a transform key would reach it unapplied",
+   "exit_operated": "an operator over a base family's entries; at its defaults it names no base",
+   "exogenous_conditioner": "reads a named data pack's series; at its defaults it names none",
+   "cross_sectional": "takes its peers as an argument the sealed build_cell never supplies"
+  }
+ },
+ "asset_classes": {
+  "fx": ["forex", "forex majors", "forex crosses", "fx", "fx_major", "fx_cross"],
+  "fx_exotic": ["forex exotics", "fx_exotic"],
+  "metals": ["commodities", "metals", "metal", "precious metals"],
+  "energy": ["energy"],
+  "softs": ["soft commodity", "soft commodities", "softs", "soft"],
+  "indices": ["indices", "index"],
+  "bonds": ["bonds", "bond"],
+  "crypto": ["crypto", "cryptocurrency"],
+  "equity": ["equities", "equity", "stocks", "shares"]
+ },
+ "charts": ["M1", "M5", "M15", "M30", "H1", "H4", "D1"],
+ "sessions": ["all", "asia", "london", "ny"],
+ "session_free_charts": ["D1"],
+ "transforms": {
+  "base": {},
+  "high_vol": {"regime": "high_vol"},
+  "low_vol": {"regime": "low_vol"},
+  "month_end": {"regime": "month_end"},
+  "delayed": {"entry_timing": "delayed"}
+ },
+ "param_variants": {
+  "rule": "after every lane symbol holds the family's own defaults, a producer walks one-axis moves: each numeric default whose name matches `scale` (and none of `never`) times each factor in `scales`, one parameter at a time",
+  "scales": [0.5, 2.0],
+  "scale": ["lookback", "window", "period", "ttl", "atr_n", "fast", "slow", "rr", "bars", "hold", "len", "span", "_n", "_d", "mult", "atr", "z"],
+  "never": ["hour", "minute", "weekday", "dow", "month", "side", "mode", "session", "timeframe", "clock", "decision", "quantile", "stale", "min_", "max_stale"]
+ },
+ "min_quota_per_visit": 1,
+ "hourly_cell_ceiling": 2000,
+ "hole_visit_share": 0.25,
+ "visit_lap_hours": 24,
+ "sizing_note": "every visit mints at least min_quota_per_visit; the hour's hourly_cell_ceiling is shared evenly across the visits, and quota x visits never exceeds it so one hour never hands the registry (and, through docket_feed, the judge's docket) more than 2,000 new cells: the docket is a JSON file the sealed gauntlet loads whole. The lap is ceil(N / 24) producers an hour, so every producer is visited at least once a UTC day while N <= 24 x ceiling; beyond that the lap lengthens and PRODUCER_SWARM.json says by how much."
+}

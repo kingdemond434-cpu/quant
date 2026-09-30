@@ -367,10 +367,17 @@ def cells(only: str | None = None) -> list[dict]:
         if only and fam != only:
             continue
         spec = {"why": f"every family, {why}"}
+        try:
+            from research.gauntlet_buildability import symbol_required
+            needs_symbol = symbol_required(fam)
+        except Exception:
+            needs_symbol = False
         for sym in syms:
             for tf in _charts_for(sym) or ["H1"]:
                 for sess in _sessions_for(tf):
-                    p: dict = {}
+                    # A class book reads its peer class from `symbol`, which the sealed
+                    # build_cell never supplies: the cell carries its own, or builds nothing.
+                    p: dict = {"symbol": sym} if needs_symbol else {}
                     if tf != "H1":
                         p["timeframe"] = tf
                     if sess != "all":

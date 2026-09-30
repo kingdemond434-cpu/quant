@@ -191,6 +191,11 @@ LEG_LAYER: dict[str, str] = {
     # The mass screen generates and screens rule cells by the million and forwards the FDR
     # survivors to the judge -- a predictor search at scale: prediction.
     "mass_screen": "prediction",
+    # The producer swarm mints breadth cells for every buildable family on every class, chart,
+    # session and transform, and the unknown-unknown miner searches expressions nobody named:
+    # both are predictor searches.
+    "producer_swarm": "prediction",
+    "unknown_unknown": "prediction",
     # Whether the allocator's book reaches the sleeves it funds is a measurement of the desk's
     # own wiring, like `wiring_audit`: meta.
     "allocator_join": "meta",

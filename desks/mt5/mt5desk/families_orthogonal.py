@@ -2298,3 +2298,23 @@ for _xs_name in CROSS_SECTIONAL_FAMILIES:
         "or daily chart the decision hour does not exist, and below the hour the class panel "
         "(read at H1) would be joined to a finer clock than it carries")
 del _xs_name
+
+# THE UNKNOWN-UNKNOWN GRAMMARS (2026-09-30). `research/unknown_unknown.py` enumerates and evolves
+# expressions over bar primitives nobody named (`mt5desk.uu_grammar`), screens them cheaply,
+# controls FDR over the FULL screened width and donates only novel survivors; this is the
+# constructor the sealed gauntlet rebuilds each one with. Five names, one executable rule, so the
+# multiplicity ledger charges each grammar its own width. A cross-asset leaf is loaded by the
+# family itself from the bar store, so `build_cell`'s ordinary `fn(h1, **params)` call suffices.
+# Every argument that defines the rule is required: a default-parameter sweep sets them aside.
+from mt5desk.uu_grammar import UU_FAMILIES  # noqa: E402
+
+ORTHOGONAL_FAMILIES.update(UU_FAMILIES)
+for _uu_name in UU_FAMILIES:
+    FAMILY_INPUTS[_uu_name] = ("price, volume and calendar only (uu_cross: the named reference "
+                               "symbol's bars too)", "data/universe/*_H1.parquet")
+    FAMILY_TIMEFRAMES[_uu_name] = (
+        ("H1",),
+        "the expression's windows are counted in H1 bars and a cross-asset leaf is read from the "
+        "reference's H1 store; on another chart every window would change meaning and the "
+        "reference would be joined to a clock it does not carry")
+del _uu_name
