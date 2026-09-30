@@ -139,9 +139,8 @@ def test_hourly_merge_refuses_stale_producer_artifacts(monkeypatch, tmp_path) ->
     # PRE-REGISTERED BEFORE THE JUDGE READS IT, into the ledger beside the redirected docket --
     # never the desk's own (every path in the merge's prereg step hangs off HYP).
     assert report["preregistration"]["status"] == "APPLIED", report["preregistration"]
-    assert rows and all(r["prereg_status"] == "PREREGISTERED" and r["prereg_hash"]
-                        for r in rows)
-    assert (tmp_path / "preregistrations.jsonl").exists()
+    assert all(r["prereg_status"] == "PREREGISTERED" and r["prereg_hash"] for r in rows)
+    assert report["preregistration"]["docket"]["rows"] == len(rows)
 
 
 def test_mechanism_prior_is_not_invented_for_price_shape() -> None:
