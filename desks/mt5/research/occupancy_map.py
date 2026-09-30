@@ -657,11 +657,7 @@ def build(*, now: datetime | None = None, docket: list[dict[str, Any]] | None = 
     at = now or datetime.now(tz=UTC)
     note: dict[str, str] = {}
     if docket is None:
-        docket = []
-        for path in (DOCKET, STUDY_BANK):
-            doc = _read(path)
-            note[path.name] = "READ" if isinstance(doc, list) else "ABSENT"
-            docket.extend(r for r in (doc or []) if isinstance(r, dict))
+        docket, note = load_docket()
     canon = _read(CANON) if canon is None else canon
     sleeves = _read(SLEEVES) if sleeves is None else sleeves
     cells = collect(docket=docket, ledger=ledger, canon=canon, shadow=shadow, sleeves=sleeves,
@@ -700,6 +696,37 @@ def build(*, now: datetime | None = None, docket: list[dict[str, Any]] | None = 
                              "_occ + _orth beside _keff inside each family stream"),
             "generation": "data/intelligence/occupancy_map/ (compiler intake), EMPTY targets"},
     }
+
+
+def load_docket() -> tuple[list[dict[str, Any]], dict[str, str]]:
+    """(docket rows, input note) from the external docket and the study bank -- read ONCE per
+    leg and shared with culture_orthogonality, so the 70 MB docket is parsed a single time."""
+    rows: list[dict[str, Any]] = []
+    note: dict[str, str] = {}
+    for path in (DOCKET, STUDY_BANK):
+        doc = _read(path)
+        note[path.name] = "READ" if isinstance(doc, list) else "ABSENT"
+        rows.extend(r for r in (doc or []) if isinstance(r, dict))
+    return rows, note
+
+
+def culture_pass(docket: list[dict[str, Any]], *, dry_run: bool = False) -> dict[str, Any]:
+    """research/culture_orthogonality.py, run INSIDE this leg (no new leg): the cross-culture
+    same-mechanism pair test over the survivors, published to CULTURE_ORTHOGONALITY.json. A
+    failure is reported in this map's artifact, never raised into the occupancy pass."""
+    try:
+        try:
+            from research import culture_orthogonality as co
+        except ImportError:                                   # pragma: no cover - as a script
+            import culture_orthogonality as co  # type: ignore[import-not-found,no-redef]
+        cdoc = co.run(docket=docket, dry_run=dry_run)
+    except Exception as exc:
+        return {"status": "ERROR", "why": f"{type(exc).__name__}: {str(exc)[:200]}"}
+    return {"status": cdoc.get("status"), "why": cdoc.get("why"),
+            "pair_counts": cdoc.get("pair_counts"), "k_eff_survivors": cdoc.get("k_eff_survivors"),
+            "merge_groups": len(cdoc.get("merge_groups") or []),
+            "report": "desks/mt5/reports/CULTURE_ORTHOGONALITY.json",
+            "summary": co.summary(cdoc)}
 
 
 # ------------------------------------------------------------------------------ the consumer
@@ -790,7 +817,11 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--dry-run", action="store_true", help="measure, write nothing")
     ap.add_argument("--max-proposals", type=int, default=MAX_PROPOSALS)
     a = ap.parse_args(argv)
-    doc = build()
+    docket, note = load_docket()
+    doc = build(docket=docket)
+    doc["inputs"].update(note)
+    doc["culture_orthogonality"] = culture_pass(docket, dry_run=a.dry_run)
+    print(f"  {doc['culture_orthogonality'].get('summary') or doc['culture_orthogonality']}")
     props = proposals(doc["targets"], limit=min(int(a.max_proposals), MAX_PROPOSALS))
     doc["proposals"] = {"donated": len(props), "cells": [p["occupancy_cell"] for p in props]}
     t = doc["totals"]

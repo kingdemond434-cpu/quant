@@ -1960,6 +1960,52 @@ def apply_decay_posterior(ev: list[SleeveEvidence], haz: dict[str, float],
                      "the blanket, so this can only relieve today's haircut")}
 
 
+def apply_culture_labels(ev: list[SleeveEvidence], doc: Any = None
+                         ) -> tuple[dict[str, str], dict[str, Any]]:
+    """Cross-culture orthogonality -> the MECHANISM CAP's families and the structured correlation's
+    mechanisms (research/culture_orthogonality.py, reports/CULTURE_ORTHOGONALITY.json).
+
+    TWO-SIDED, both directions measured on the survivors' own live + forward returns:
+      * a SAME_EDGE merge group (a JP and a CN survivor that lose on the same days) becomes ONE
+        family and ONE mechanism -- two names of one edge share one cap and read as one bet;
+      * a survivor whose every measured cross-culture pair DIVERGES gets `<family>@<culture>` --
+        a proven-orthogonal culture is not capped together with the edge it is independent of.
+
+    HEAT-NEUTRAL BY CONSTRUCTION: it renames, and nothing else. The resolved heat, the 20% floor,
+    the floor fill and every per-sleeve bound are computed exactly as before; the cap only decides
+    how the SAME total is composed, and the optimiser re-spends whatever a cap frees. A stale or
+    absent artifact relabels nothing (L1.28a). Returns ({sleeve: cap family}, meta); `ev` is
+    updated in place with the relabelled mechanisms.
+    """
+    family_of = {e.name: e.family for e in ev}
+    try:
+        from research import culture_orthogonality as co
+    except Exception as exc:                                          # pragma: no cover
+        return family_of, {"status": "UNMEASURED", "why": f"import: {type(exc).__name__}",
+                           "relabelled": {}}
+    why = "culture artifact supplied by caller"
+    if doc is None:
+        doc, why = co.load()
+    if not isinstance(doc, dict):
+        return family_of, {"status": "UNMEASURED", "why": why, "relabelled": {}}
+    from dataclasses import replace as _replace
+    labels = co.allocator_labels(doc, [(e.name, e.symbol, e.family, _selector_of(e)) for e in ev])
+    for i, e in enumerate(ev):
+        lab = labels.get(e.name)
+        if not lab:
+            continue
+        family_of[e.name] = lab["family"]
+        ev[i] = _replace(e, mechanism=lab["mechanism"])
+    return family_of, {
+        "status": str(doc.get("status") or "UNMEASURED"), "why": why,
+        "merged": sum(1 for v in labels.values() if v["why"] == "SAME_EDGE"),
+        "split": sum(1 for v in labels.values() if v["why"] == "DIVERGE"),
+        "relabelled": {k: {"family": v["family"], "why": v["why"]}
+                       for k, v in sorted(labels.items())},
+        "rule": ("merge group -> one cap family and one mechanism; all-DIVERGE survivor -> "
+                 "<family>@<culture>; labels only, total heat and the floor untouched")}
+
+
 def apply_hazard_shrink(ev: list[SleeveEvidence], haz: dict[str, float]) -> dict[str, Any]:
     """Shrink each sleeve's posterior mean by (1 - hazard) BEFORE any retirement threshold.
 
@@ -3300,6 +3346,12 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
                          # count is the forward day count. `join_forward` never sees these
                          # names -- they are not in `forward` -- so nothing else supplies it.
                          forward_only_days={n: len(sr) for n, sr in scalp.items()})
+    # CROSS-CULTURE ORTHOGONALITY: merge groups share one cap family and one mechanism, proven-
+    # divergent cultures get their own. Labels only -- heat-neutral (see apply_culture_labels).
+    culture_family, culture_meta = apply_culture_labels(ev)
+    if culture_meta.get("relabelled"):
+        _log(f"culture labels: {culture_meta['merged']} merged, {culture_meta['split']} split "
+             f"({culture_meta['why']})")
     dd = worst_dd_r(daily)
     # THE MACRO TILTS THIS PASS APPLIES, MEASURED ONCE FOR THE ARTIFACT. `_posterior_mu` is the
     # only place the contrast is formed; asking it with `diag` returns exactly the tilts the
@@ -3700,7 +3752,7 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
     fam_share: dict[str, float] = {}
     fill_note: dict[str, Any] = {"needed": False}
     ub: dict[str, float] = {}
-    family_of = {e.name: e.family for e in ev}
+    family_of = {e.name: culture_family.get(e.name, e.family) for e in ev}
     if verdict.total_heat <= 0:
         book = AllocationResult(heat={}, total_heat=0.0, robust_score=0.0, mean_log_growth=0.0,
                                 cvar_log_growth=0.0, annual_growth_pct=0.0, prob_annual_loss=0.0,
@@ -4546,6 +4598,7 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
         # lineage x ROI, which were shifted by measured financing, and why the rest were
         # neutral. `financing_lab` and `research_roi` are its producers.
         "allocator_evidence": evidence_meta,
+        "culture_labels": culture_meta,
         "no_trade": nt,
         "opportunity": opp,
         # `probabilities` is the FORWARD mix the worlds were drawn from; `transition` carries the
