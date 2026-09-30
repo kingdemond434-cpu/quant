@@ -424,3 +424,23 @@ def test_unreadable_universe_is_warned_and_published_and_stays_unmeasured(
     assert any("broker registry unreadable" in r.getMessage() for r in caplog.records)
     # Nothing is cached off the broken read: the class returns the moment the file does.
     assert ff._CLASS_CACHE == {}
+
+
+def test_issue_board_reads_universe_unreadable_as_blind(tmp_path: Path) -> None:
+    """The audit of #145: `universe_unreadable` needs a reader. A non-null reason in
+    SESSION_VARIANT_REMAP.json is a BLIND issue on the board; null or an absent artifact adds
+    none here (absence belongs to the CADENCE row, which grades it missing, never clean)."""
+    import issue_board as ib
+    assert any(name == "session_variant_remap" for name, *_ in ib.CADENCE)
+    rep = tmp_path / "desks/mt5/reports/SESSION_VARIANT_REMAP.json"
+    assert ib.session_variant_issues(tmp_path) == []
+    rep.parent.mkdir(parents=True)
+    rep.write_text(json.dumps({"generated_at": "t", "universe_unreadable": None}), "utf-8")
+    assert ib.session_variant_issues(tmp_path) == []
+    rep.write_text(json.dumps({"generated_at": "t",
+                               "universe_unreadable": "/x/universe.json is unreadable"}), "utf-8")
+    issues = ib.session_variant_issues(tmp_path)
+    assert [(i.key, i.severity, i.auto) for i in issues] == [("universe:unreadable", "BLIND",
+                                                               False)]
+    assert "/x/universe.json is unreadable" in issues[0].detail
+    assert "universe:unreadable" in {i.key for i in ib.collect(tmp_path)}

@@ -293,7 +293,7 @@ def universe_unreadable() -> str:
     that was simply never measured. This names the cause so the leg's artifact can carry it."""
     try:
         _ensure_path()
-        import research.universe_policy as up  # type: ignore[import-not-found]
+        import research.universe_policy as up  # type: ignore[import-not-found, unused-ignore]
         path = Path(up.UNIVERSE)
         if up._registry():
             return ""
@@ -327,8 +327,8 @@ def asset_class(symbol: str | None) -> str:
     if sym not in _CLASS_CACHE:
         try:
             _ensure_path()
-            from research.universe_policy import asset_class_of
-            cls = str(asset_class_of(sym) or "")
+            import research.universe_policy as up  # type: ignore[import-not-found, unused-ignore]
+            cls = str(up.asset_class_of(sym) or "")
         except Exception:
             cls = ""
         if not cls:
