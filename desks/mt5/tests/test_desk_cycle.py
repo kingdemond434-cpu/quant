@@ -241,6 +241,12 @@ def test_every_pass_runs_the_tier1_breadth_review() -> None:
     assert "GET PAST TECHNICAL BLOCKS ALONE" in cycle_text
     assert "is NOT a technical error" in cycle_text
     assert "NEVER ASK THE PRINCIPAL" in cycle_text
+    assert "NEVER JUST NOTICE" in cycle_text
+    for needle in ("is MISSED", "measured ceiling", "a fix commit", "an after-metric",
+                   "the previous pass left unclosed FIRST"):
+        assert needle in cycle_text, needle
+    assert "`gaps_named_not_closed` = 0" in step
+    assert "`gaps_named` and `gaps_closed` in the cycle ledger row" in step
     for n, duty in enumerate((
         "Read desktop over git", "Tier verdict", "Judging throughput to maximum",
         "Permanent backlog guard", "Same-day certificate and clock",
