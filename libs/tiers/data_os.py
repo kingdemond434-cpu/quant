@@ -380,6 +380,61 @@ PUBLICATION_LAGS: dict[str, dict[str, Any]] = {
     "gdelt": {"lag_s": 3600, "valid": "event time",
               "basis": "15-minute update cadence; one bar is conservative",
               "knowledge_column": "published_time", "readers": ("gdelt",)},
+    # ---- THE CERTIFICATE PATH'S OWN INPUTS (2026-09-30). `edge_search.resolve_inputs` feeds
+    # every `discovered` cell with an `ext_` feature, in the gauntlet (`build_cell`) and on the
+    # forward/live path (`family_inputs.resolve`). These four were read there with no
+    # declaration anywhere; each now says when its value is known. `assumed` marks a lag that is
+    # a conservative assumption rather than a documented release schedule: FLAGGED, never
+    # dropped, and listed by `assumed_lags()` so the census names it. The two KNOWLEDGE-STAMPED
+    # sources (valid time == knowledge time, stamped on receipt) name no `readers`: a join on
+    # their own stamp IS the knowledge-time join, so the lint would only name correct code.
+    "macro_state": {"lag_s": 0, "valid": "the snapshot's `updated` stamp",
+                    "basis": "assumed, conservative: a snapshot is known when it was written, so "
+                             "it is admissible ONLY from its own `updated` stamp forward and never "
+                             "broadcast onto earlier bars",
+                    "assumed": True, "knowledge_column": "updated",
+                    "readers": ("macro_state.json",)},
+    "contract_terms": {"lag_s": 0, "valid": "observation time",
+                       "basis": "recorded by mt5desk.tape.record_contract_terms at `observed_at`: "
+                                "the stamp IS when the desk knew it",
+                       "knowledge_column": "observed_at", "readers": ()},
+    "tick_tape": {"lag_s": 0, "valid": "tick time",
+                  "basis": "the venue's own ticks, stamped on receipt (`ts`); a resampled hour is "
+                           "labelled at its open and read by families on closed bars",
+                  "knowledge_column": "ts", "readers": ()},
+    "microstructure_surface": {
+        "lag_s": 0, "valid": "the surface report's build time",
+        "basis": "assumed, conservative: a per-symbol spread/activity surface summarised from the "
+                 "tape up to its build time; conditioning earlier bars on it reads a summary that "
+                 "includes later ticks -- a cost-shape input, flagged until it is rebuilt "
+                 "per-bar",
+        "assumed": True, "readers": ()},
+    "event_calendar": {"lag_s": 0, "valid": "scheduled event time",
+                       "basis": "assumed, conservative: a calendar is published ahead of the "
+                                "event, so the schedule is known before it; a DAY-precision "
+                                "`event_date` anchors the reaction window at 00:00 and is the "
+                                "flagged risk",
+                       "assumed": True, "knowledge_column": "event_date",
+                       "readers": ("ff_calendar_vintage",)},
+}
+
+#: FRED SERIES WHOSE CADENCE IS NOT DAILY. `fred_macro`'s 27h lag is declared for the daily
+#: market series; a weekly or monthly series read through the same lake would inherit a lag that
+#: is weeks too short. Each is declared here, keyed by FRED id; `fred_lag` reads it and falls back
+#: to the source lag only for a series declared daily. Every entry is `assumed` (conservative
+#: bound over the release calendar, not a vintage read) and flagged by `assumed_lags()`.
+FRED_SERIES_LAGS: dict[str, dict[str, Any]] = {
+    "WALCL": {"lag_s": 2 * 86400, "valid": "Wednesday level (H.4.1)",
+              "basis": "assumed, conservative: H.4.1 prints Thursday 16:30 ET for Wednesday",
+              "assumed": True},
+    "PCOPPUSDM": {"lag_s": 60 * 86400, "valid": "first day of the reference month",
+                  "basis": "assumed, conservative: IMF primary commodity prices, monthly, "
+                           "stamped at month START and released the following month",
+                  "assumed": True},
+    "IR3TIB01JPM156N": {"lag_s": 75 * 86400, "valid": "first day of the reference month",
+                        "basis": "assumed, conservative: OECD MEI monthly, month-start stamp, "
+                                 "released one to two months later",
+                        "assumed": True},
 }
 
 
@@ -412,6 +467,173 @@ def knowledge_time(source: str, valid_time: datetime) -> datetime:
         raise KeyError(f"source {source!r} has no declared publication lag (data_os."
                        "PUBLICATION_LAGS) and no knowledge-time column")
     return valid_time + timedelta(seconds=float(lag["lag_s"]))
+
+
+def lag_of(source: str, series_id: str | None = None) -> timedelta:
+    """The declared lag as a timedelta; a FRED series with its own cadence entry wins over the
+    source's. KeyError for an undeclared source, exactly like `knowledge_time`."""
+    if series_id is not None and series_id in FRED_SERIES_LAGS:
+        return timedelta(seconds=float(FRED_SERIES_LAGS[series_id]["lag_s"]))
+    lag = declared_lag(source)
+    if lag is None:
+        raise KeyError(f"source {source!r} has no declared publication lag")
+    return timedelta(seconds=float(lag["lag_s"]))
+
+
+def known_series(series: Any, source: str, series_id: str | None = None) -> Any:
+    """A valid-dated pandas Series RE-INDEXED ON KNOWLEDGE TIME (valid + declared lag), so any
+    causal alignment after it (`reindex(..., method="ffill")`, `searchsorted`, `merge_asof`) can
+    only hand a bar a value that was already published. The index keeps its tz convention: the
+    shift is a pure offset, so a caller's clock-matching is untouched."""
+    import pandas as pd
+
+    delta = pd.Timedelta(lag_of(source, series_id))
+    out = series.copy()
+    out.index = out.index + delta
+    return out
+
+
+def known_as_of(series: Any, source: str, as_of: datetime,
+                series_id: str | None = None) -> Any:
+    """The rows of a valid-dated Series that were KNOWABLE at `as_of` (knowledge time <= as_of),
+    still on their valid-time index. For a reader whose join is deliberately contemporaneous
+    (an ex-post exposure regression pairs day-t returns with day-t factor moves) but whose run
+    must never see a print published after the moment it describes."""
+    import pandas as pd
+
+    ts = pd.Timestamp(as_of)
+    idx = series.index
+    if getattr(idx, "tz", None) is None:
+        ts = ts.tz_convert("UTC").tz_localize(None) if ts.tzinfo is not None else ts
+    elif ts.tzinfo is None:
+        ts = ts.tz_localize("UTC")
+    return series[idx + pd.Timedelta(lag_of(source, series_id)) <= ts]
+
+
+def assumed_lags() -> dict[str, str]:
+    """Every declared lag that is a conservative ASSUMPTION rather than a documented schedule:
+    flagged by name, so a census can say which PIT reads rest on a guess."""
+    out = {s: str(e.get("basis") or "") for s, e in PUBLICATION_LAGS.items() if e.get("assumed")}
+    out.update({f"fred:{k}": str(e.get("basis") or "") for k, e in FRED_SERIES_LAGS.items()
+                if e.get("assumed")})
+    return dict(sorted(out.items()))
+
+
+# ------------------------------------------------------------ the certificate path's inputs
+#: WHAT A CERTIFICATE CONDITIONS ON, PER FAMILY, AND WHERE IT IS READ. The gauntlet's
+#: `build_cell` (sealed, `desks/mt5/scripts/external_gauntlet.py`) and the forward/live
+#: `mt5desk.family_inputs.resolve` hand each family its external inputs through exactly these
+#: providers. `scripts/check_known_by_date.py` fails when a provider called on the certificate
+#: path is not declared here, when a declared source has no publication lag, or when a provider's
+#: own source carries nothing that applies one. `price_only` families read the broker's own bars
+#: (`mt5_h1_universe`: known at bar close) and need no entry.
+CERTIFICATE_INPUTS: dict[str, dict[str, Any]] = {
+    "_macro_series": {"module": "desks/mt5/research/orthogonal_sweep.py",
+                      "families": ("macro_conditional",), "sources": ("fred_macro",),
+                      "route": "orthogonal_sweep.MACRO_PUBLICATION_LAG_D shift before the ffill"},
+    "_cot_frame": {"module": "desks/mt5/research/orthogonal_sweep.py",
+                   "families": ("cot_positioning",), "sources": ("cot_fx", "cot"),
+                   "route": "orthogonal_sweep.COT_RELEASE_LAG_DAYS past the W-FRI label"},
+    "_event_index": {"module": "desks/mt5/research/orthogonal_sweep.py",
+                     "families": ("event_reaction",), "sources": ("event_calendar",),
+                     "route": "scheduled event time (knowledge column `event_date`)"},
+    "_tape_series": {"module": "desks/mt5/research/orthogonal_sweep.py",
+                     "families": ("liquidity_regime", "orderflow_imbalance"),
+                     "sources": ("tick_tape",), "route": "tick stamps are knowledge stamps"},
+    "_surface_for": {"module": "desks/mt5/research/orthogonal_sweep.py",
+                     "families": ("execution_state",), "sources": ("microstructure_surface",),
+                     "route": "the surface report as built; flagged `assumed`"},
+    "_bars": {"module": "desks/mt5/research/orthogonal_sweep.py",
+              "families": ("relative_value", "correlation_regime", "cross_asset_residual",
+                           "pca_residual"),
+              "sources": ("mt5_h1_universe",), "route": "closed broker bars"},
+    "resolve_inputs": {"module": "desks/mt5/research/edge_search.py",
+                       "families": ("discovered",),
+                       "sources": ("mt5_h1_universe", "tick_tape", "contract_terms",
+                                   "macro_state", "cot_fx", "cot"),
+                       "route": "edge_search.resolve_inputs: COT re-indexed through "
+                                "data_os.known_series; macro_state admitted from its `updated` "
+                                "stamp only; tape and swap terms on their receipt stamps"},
+}
+
+
+#: READERS THAT JOIN NOTHING TO A BAR, AND WHY THAT IS SAFE -- DECLARED, NEVER INFERRED.
+#: `scripts/check_known_by_date.py` names every module that carries a source's reader token. One
+#: that joins by date must route through a lag (or it is an offender); one that does not join
+#: and carries no lag token either is listed here with its basis, so the census accounts for
+#: EVERY reader: routed in code, declared here, or named as undeclared. `assumed` marks a basis
+#: that is a judgement about the read rather than a lag applied in code; it is flagged.
+#: route vocabulary: `live_read` (the newest value at read time: presence in the file at the
+#: moment of reading IS the knowledge time), `via_provider` (reads the source only through a
+#: provider that applies the lag), `mention` (names a path or id; reads no values).
+READER_ROUTES: dict[str, dict[str, Any]] = {
+    "desks/mt5/mt5desk/macro_view.py": {
+        "route": "live_read", "sources": ("fred_macro",), "assumed": True,
+        "basis": "assumed, conservative: live sizing reads the newest print in fred_macro.json "
+                 "at gateway time and ranks it against trailing prints only; a print present "
+                 "in the file when read has been published. A replay of it at a past time "
+                 "would need data_os.known_as_of and is flagged here for that reason"},
+    "desks/mt5/research/counterfactual_attribution.py": {
+        "route": "live_read", "sources": ("macro_state",),
+        "basis": "reads the macro_state snapshot's current z per series with its own "
+                 "last_date/updated stamp carried as `last_at` on the row"},
+    "desks/mt5/research/tier1_scorecard.py": {
+        "route": "live_read", "sources": ("macro_state",),
+        "basis": "counts series in the current snapshot for a coverage score; no bar join"},
+    "desks/mt5/research/breadth_sweep.py": {
+        "route": "via_provider", "sources": ("cot_fx", "fred_macro"),
+        "basis": "reads COT and FRED only through orthogonal_sweep._cot_frame/_macro_series, "
+                 "which apply COT_RELEASE_LAG_DAYS and MACRO_PUBLICATION_LAG_D"},
+    "desks/mt5/research/asia_collector.py": {
+        "route": "mention", "sources": ("sge_benchmark",),
+        "basis": "names the source id in its CLI usage; the collector writes, never joins"},
+    "desks/mt5/research/asia_transmission.py": {
+        "route": "mention", "sources": ("sge_benchmark",),
+        "basis": "names sge_benchmark as a not-yet-collected proxy; reads no values"},
+    "desks/mt5/research/research_gap_map.py": {
+        "route": "mention", "sources": ("cot_fx", "macro_state"),
+        "basis": "maps families to data paths to test existence; reads no values"},
+    "desks/mt5/research/south_america_interaction.py": {
+        "route": "mention", "sources": ("cot",),
+        "basis": "lists axes/cot.json as a leg's evidence path; existence only"},
+    "libs/research/data_registry.py": {
+        "route": "mention", "sources": ("cot_fx",), "basis": "moat prose naming the cache"},
+    "libs/research/layers.py": {
+        "route": "mention", "sources": ("fred_macro",),
+        "basis": "maps the fred_macro leg name to a strategy layer"},
+    "libs/research/measurement.py": {
+        "route": "mention", "sources": ("cot_fx",),
+        "basis": "declares data/cot/*.parquet as a measurement's data_source label"},
+}
+
+
+#: sources that ARE the broker's bars: known at bar close, which every family already respects by
+#: acting on closed bars -- a provider reading only these applies no lag in its own body
+BAR_SOURCES: frozenset[str] = frozenset({"mt5_h1_universe", "xauusd_scalp_bars"})
+
+
+def certificate_input_lags(family: str, params: Mapping[str, Any] | None = None
+                           ) -> dict[str, Any]:
+    """The declared lag of every source a certificate of `family` conditions on -- the
+    annotation a certificate carries so its inputs' knowledge times are on the record. A
+    `discovered` cell with no `ext_` feature reads only its own bars. A family no provider
+    declares is price-only: its bars, known at close."""
+    fam = str(family or "")
+    feature = str((params or {}).get("feature") or "")
+    providers = [k for k, v in CERTIFICATE_INPUTS.items() if fam in v["families"]]
+    if fam == "discovered" and "ext_" not in feature:
+        providers = []
+    sources = sorted({s for k in providers for s in CERTIFICATE_INPUTS[k]["sources"]}
+                     or {"mt5_h1_universe"})
+    lags: dict[str, Any] = {}
+    for s in sources:
+        lag = declared_lag(s)
+        lags[s] = ({"status": UNMEASURED, "why": "no declared publication lag"} if lag is None
+                   else {"lag_s": float(lag["lag_s"]), "basis": str(lag.get("basis") or ""),
+                         "assumed": bool(lag.get("assumed"))})
+    return {"family": fam, "providers": providers, "sources": lags,
+            "declared": all("lag_s" in v for v in lags.values()),
+            "assumed": sorted(s for s, v in lags.items() if v.get("assumed"))}
 
 
 def store_from_series(series: Any, *, source: str, entity: str, attribute: str) -> Any:
