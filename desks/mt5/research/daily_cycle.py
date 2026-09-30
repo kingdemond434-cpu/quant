@@ -666,7 +666,7 @@ STEPS = (("research_gap_map", _research_gap_map),
          ("wiring_ceo", _wiring_ceo), ("probation", _probation),
          ("module_rent_research", _module_rent_research), ("build_allocator", _build_allocator),
          ("simplifier", _simplifier), ("capacity_watch", _capacity_watch),
-         ("export_aurum", _export_aurum), ("unknown_census", _unknown_census),
+         ("unknown_census", _unknown_census), ("export_aurum", _export_aurum),
          ("daily_research_os", _daily_research_os))
 
 def main(argv: list[str] | None = None) -> int:
