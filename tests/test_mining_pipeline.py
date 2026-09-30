@@ -576,7 +576,8 @@ def test_every_source_declares_uses_and_useless_is_cold(tmp_path: Path) -> None:
                        uses=["allocation_intel"])]
     st = _pipe(tmp_path, sources=srcs).source_status(T0)
     assert st["useless"]["status"] == "COLD" and st["useless"]["cold_reason"] == "serves no use"
-    assert st["alloc"]["status"] == "COLD" and "allocation_intel only" in st["alloc"]["cold_reason"]
+    assert st["alloc"]["status"] == "COLD"
+    assert st["alloc"]["cold_reason"] == "no cell EVALUATED in 30 days"
 
 
 def test_regime_stated_in_text_becomes_an_indirect_cell(tmp_path: Path) -> None:
@@ -769,3 +770,51 @@ def test_digest_is_written_even_when_acquire_raises(tmp_path: Path) -> None:
     d = json.loads((tmp_path / "mining_digest.json").read_text("utf-8"))
     assert d["generated_at"] == iso(T0 + timedelta(hours=1))
     assert d["metrics"]["publish"] == "FAILED before metrics"
+
+
+def test_mechanics_feed_becomes_conditioner_series_and_cells(tmp_path: Path) -> None:
+    src = acq.Source(id="broker_specs", fetcher="page_snapshot", kind="mechanics",
+                     uses=["allocation_intel"], config={"targets": ["XAUUSD"]})
+    pipe = _pipe(tmp_path, sources=[src])
+    uri = "https://broker/xauusd-spec"
+    for i in range(MS.COND_MIN_OBS - 1):
+        _put(pipe, "broker_specs", uri, f"Swap long -{6 + i * 0.1:.1f}, swap short 1.1. "
+             "Commission $4.5 per lot.", kind="mechanics", now=T0 + timedelta(days=i))
+        pipe.process(now=T0 + timedelta(days=i))
+    rep = pipe.conditioners(now=T0 + timedelta(days=40))
+    sid = MS.Pipeline.series_id("broker_specs", uri)
+    st = json.loads(pipe.cells.kv_get("conditioners", "{}"))[sid]
+    assert rep["cells_minted"] == 0 and st["status"].startswith("UNMEASURED")
+    last = T0 + timedelta(days=MS.COND_MIN_OBS - 1)
+    _put(pipe, "broker_specs", uri, "Swap long -9.9, swap short 1.1. Commission $4.5 per lot.",
+         kind="mechanics", now=last)
+    pipe.process(now=last)
+    rep = pipe.conditioners(now=last)
+    lines = (tmp_path / "lake" / "series" / f"{sid}.csv").read_text("utf-8").splitlines()
+    assert lines[0].startswith("available_time,vintage_id,source_id")
+    assert len(lines) == 1 + MS.COND_MIN_OBS
+    times = [ln.split(",")[0] for ln in lines[1:]]
+    assert times == sorted(times) and times[-1] == iso(last)
+    st = json.loads(pipe.cells.kv_get("conditioners", "{}"))[sid]
+    assert st["status"] == "MINTING" and st["varying"] == ["swap_long"]
+    cells = [c for c in pipe.cells.all_cells() if c.use == "allocation_intel"]
+    assert rep["cells_minted"] == len(cells) == len(MS.COND_TRANSFORMS)
+    assert {c.spec["family"] for c in cells} == {"exogenous_conditioner"}
+    assert {c.spec["params"]["source"] for c in cells} == {sid}
+    assert all(c.status == "QUEUED" and c.preregistration_id for c in cells)
+    assert pipe.conditioners(now=last)["cells_minted"] == 0          # minted once
+
+
+def test_digest_carries_the_whole_rejection_ledger(tmp_path: Path) -> None:
+    pipe = _pipe(tmp_path)
+    for i in range(5):
+        pipe.ledger.reject(f"mc_{i}", "DUPLICATE_MECHANISM" if i % 2 else "COST_EXCEEDS_EDGE",
+                           "dedup" if i % 2 else "gauntlet", source_id="codebase",
+                           kill_class="" if i % 2 else "confident_kill", now=T0)
+    pipe.run_pass(60, fetch=False, now=T0)
+    d = json.loads((tmp_path / "mining_digest.json").read_text("utf-8"))["rejection_ledger"]
+    raw = (tmp_path / "mining" / "rejections.jsonl").read_bytes()
+    import hashlib
+    assert d["rows"] == 5 and d["sha256"] == hashlib.sha256(raw).hexdigest()
+    assert d["by"]["reason"] == {"COST_EXCEEDS_EDGE": 3, "DUPLICATE_MECHANISM": 2}
+    assert d["by"]["kill_class"] == {"confident_kill": 3}

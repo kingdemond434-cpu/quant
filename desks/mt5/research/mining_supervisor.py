@@ -66,6 +66,17 @@ REPORT = REPORTS / "MINING_METRICS.json"
 DIGEST = _DESK / "data" / "mining_digest.json"
 DIGEST_REJECTIONS = 300
 DIGEST_CHAINS = 300
+
+#: THE MECHANICS FEED'S CONSUMER. Every broker/prop page's numeric facts become a point-in-time
+#: series in the lake directory the `exogenous_conditioner` family reads (its SERIES_DIR), one
+#: row per real vintage stamped with the vintage's own `available_for_decision_at`. Once a series
+#: holds the family's minimum observations, each changing column mints conditioner cells on the
+#: source's target instruments, judged by the one gauntlet like every other cell.
+try:
+    from mt5desk.family_exogenous_conditioner import MIN_OBSERVATIONS as COND_MIN_OBS
+except Exception:                                          # tests and a bare checkout
+    COND_MIN_OBS = 30
+COND_TRANSFORMS: tuple[str, ...] = ("level_z", "delta")
 UNI = _DESK / "data" / "universe"
 HYP = _DESK / "data" / "hypotheses"
 GATE_LEDGER = HYP / "gate_verdict_ledger.jsonl"
@@ -199,8 +210,10 @@ class Pipeline:
     def __init__(self, data_dir: Path = DATA, reports_dir: Path = REPORTS, *,
                  roster: list[acq.Source] | None = None, hooks: Hooks | None = None,
                  gate_ledger: Path = GATE_LEDGER, root: Path = _ROOT,
-                 digest: Path | None = None) -> None:
+                 digest: Path | None = None, lake: Path | None = None) -> None:
         self.data = Path(data_dir)
+        # beside data_dir: desks/mt5/data/mining -> desks/mt5/data/lake/series (the family's own)
+        self.lake = Path(lake) if lake is not None else self.data.parent / "lake" / "series"
         # beside data_dir: desks/mt5/data/mining -> desks/mt5/data/mining_digest.json (DIGEST)
         self.digest = Path(digest) if digest is not None else self.data.parent / DIGEST.name
         self.reports = Path(reports_dir)
@@ -475,6 +488,114 @@ class Pipeline:
         with self.feed.open("a", encoding="utf-8") as fh:
             fh.write(json.dumps(row, ensure_ascii=False, default=str) + "\n")
 
+    def feed_rows(self) -> list[dict[str, Any]]:
+        rows: list[dict[str, Any]] = []
+        try:
+            with self.feed.open(encoding="utf-8") as fh:
+                for line in fh:
+                    try:
+                        r = json.loads(line)
+                    except ValueError:
+                        continue
+                    if isinstance(r, dict):
+                        rows.append(r)
+        except OSError:
+            pass
+        return rows
+
+    @staticmethod
+    def series_id(source_id: str, source_uri: str) -> str:
+        return (f"mining_{source_id}_"
+                f"{hashlib.sha256(source_uri.encode()).hexdigest()[:8]}")
+
+    def conditioners(self, now: datetime | None = None) -> dict[str, Any]:
+        """Mechanics feed -> lake series -> exogenous_conditioner cells. Returns a per-series
+        report for the digest; a series below the family's minimum says so, never a zero."""
+        groups: dict[str, list[dict[str, Any]]] = {}
+        for r in self.feed_rows():
+            key = self.series_id(str(r.get("source_id")), str(r.get("source_uri")))
+            groups.setdefault(key, []).append(r)
+        report: dict[str, Any] = {}
+        minted = 0
+        for sid, rows in sorted(groups.items()):
+            rows.sort(key=lambda r: str(r.get("available_for_decision_at") or ""))
+            cols = sorted({k for r in rows for k, v in (r.get("facts") or {}).items()
+                           if isinstance(v, (int, float))})
+            self._write_series(sid, rows, cols)
+            varying = [c for c in cols
+                       if len({(r.get("facts") or {}).get(c) for r in rows}) > 1]
+            entry: dict[str, Any] = {"source_id": rows[-1].get("source_id"),
+                                     "source_uri": rows[-1].get("source_uri"),
+                                     "vintages": len(rows), "columns": cols,
+                                     "varying": varying, "cells_minted": 0}
+            if len(rows) < COND_MIN_OBS:
+                entry["status"] = (f"UNMEASURED: {len(rows)} vintages < {COND_MIN_OBS} the "
+                                   "conditioner family needs")
+            elif not varying:
+                entry["status"] = "no column has changed across vintages: nothing to condition on"
+            else:
+                entry["status"] = "MINTING"
+                entry["cells_minted"] = self._mint_conditioner_cells(sid, rows[-1], varying,
+                                                                     now=now)
+                minted += entry["cells_minted"]
+            report[sid] = entry
+        self.cells.kv_set("conditioners", json.dumps(report, default=str))
+        return {"series": len(report), "cells_minted": minted}
+
+    def _write_series(self, sid: str, rows: list[dict[str, Any]], cols: list[str]) -> None:
+        import csv
+        import io
+        buf = io.StringIO()
+        w = csv.writer(buf, lineterminator="\n")
+        w.writerow(["available_time", "vintage_id", "source_id", *cols])
+        for r in rows:
+            f = r.get("facts") or {}
+            w.writerow([r.get("available_for_decision_at"), r.get("record_id"),
+                        r.get("source_id"),
+                        *[(float(f[c]) if isinstance(f.get(c), (int, float)) else "")
+                          for c in cols]])
+        self.lake.mkdir(parents=True, exist_ok=True)
+        dest = self.lake / f"{sid}.csv"
+        tmp = dest.with_suffix(".tmp")
+        tmp.write_text(buf.getvalue(), "utf-8")
+        with contextlib.suppress(OSError):
+            os.chmod(dest, 0o644)
+        os.replace(tmp, dest)
+
+    def _mint_conditioner_cells(self, sid: str, last: Mapping[str, Any], cols: list[str], *,
+                                now: datetime | None = None) -> int:
+        rec = self.store.get(str(last.get("record_id") or ""))
+        if rec is None:
+            return 0
+        src = self.by_id.get(str(rec["source_id"]))
+        targets = [str(t).upper() for t in ((src.config.get("targets") if src else None)
+                                            or compiler.DEFAULT_TRANSFER)]
+        if self.hooks.universe is not None:
+            targets = [t for t in targets if t in self.hooks.universe]
+        ex = extractor.Extraction(language=str(rec.get("original_language") or ""),
+                                  mechanism_family="broker_mechanics")
+        made_n, parent = 0, ""
+        for col in cols:
+            for tr in COND_TRANSFORMS:
+                for sym in targets:
+                    key = f"cond:{sid}:{col}:{tr}:{sym}"
+                    if self.cells.kv_get(key, ""):
+                        continue                          # minted on an earlier pass
+                    spec = compiler.CompiledSpec(
+                        sym=sym, family="exogenous_conditioner",
+                        params={"source": sid, "signal": col, "transform": tr},
+                        timeframe="H1", subtype=f"mechanics:{col}", published=False,
+                        transferred=True,
+                        required_data=[f"bars:{sym}:H1", f"series:{sid}"])
+                    rule = {"claim": f"{rec['source_id']} {col} ({tr}) conditions {sym}"}
+                    n, cid = self._spec_cell(rec, ex, rule, spec, "broker_mechanics",
+                                             parent=parent, use="allocation_intel", now=now,
+                                             family_subtype=f"mechanics:{sid}")
+                    made_n += n
+                    parent = parent or cid
+                    self.cells.kv_set(key, cid or "duplicate")
+        return made_n
+
     def retry_blocked_data(self, now: datetime | None = None) -> int:
         n = 0
         for cell in self.cells.by_status("BLOCKED_DATA", limit=20_000):
@@ -633,13 +754,13 @@ class Pipeline:
                 continue
             n = int(receipts.get(s.id, 0))
             r = runs.get(s.id) or {}
-            cell_use = bool({"direct_cells", "indirect_cells"} & set(s.uses))
+            # Every use mints cells now: allocation_intel's facts become exogenous_conditioner
+            # cells (see `conditioners`), so each use can carry a receipt.
+            cell_use = bool(set(compiler.USES) & set(s.uses))
             out[s.id] = {"status": "ACTIVE" if n >= 1 and cell_use else "COLD",
                          "uses": list(s.uses),
                          "cold_reason": ("" if n >= 1 and cell_use else
-                                         "serves no use" if not s.uses else
-                                         "allocation_intel only: no cell can carry a receipt"
-                                         if not cell_use else
+                                         "serves no use" if not cell_use else
                                          "no cell EVALUATED in 30 days"),
                          "consumer": s.consumer,
                          "evaluated_cells_30d": n, "priority": s.priority,
@@ -845,6 +966,36 @@ class Pipeline:
                         "terminal_gate": r["terminal_gate"], "reason": r["reason"] or None})
         return out
 
+    def ledger_digest(self) -> dict[str, Any]:
+        """THE WHOLE REJECTION LEDGER, COMMITTED AS A DIGEST: every row counted by day, stage,
+        reason, source and kill class, plus the row count and the SHA-256 of the file's bytes,
+        so the box-only ledger can be checked against it row for row. The latest rows ride
+        beside it in `rejections_latest`."""
+        by: dict[str, dict[str, int]] = {"day": {}, "stage": {}, "reason": {}, "source": {},
+                                         "kill_class": {}, "day_reason": {}}
+        n = 0
+        for r in self.ledger.rows():
+            n += 1
+            day = str(r.get("at") or "")[:10]
+            for k, v in (("day", day), ("stage", r.get("stage")), ("reason", r.get("reason")),
+                         ("source", r.get("source_id") or "?"),
+                         ("kill_class", r.get("kill_class") or ""),
+                         ("day_reason", f"{day}|{r.get('reason')}")):
+                if k == "kill_class" and not v:
+                    continue
+                by[k][str(v)] = by[k].get(str(v), 0) + 1
+        sha = hashlib.sha256()
+        size = 0
+        try:
+            with self.ledger.path.open("rb") as fh:
+                for chunk in iter(lambda: fh.read(1 << 20), b""):
+                    sha.update(chunk)
+                    size += len(chunk)
+        except OSError:
+            pass
+        return {"rows": n, "bytes": size, "sha256": sha.hexdigest() if size else None,
+                "path": "desks/mt5/data/mining/rejections.jsonl (box-only)", "by": by}
+
     def write_digest(self, m: Mapping[str, Any], now: datetime) -> None:
         """The committed digest (DIGEST): bounded, scalars and short rows only."""
         try:
@@ -852,6 +1003,14 @@ class Pipeline:
             chains = self.chains(now)
         except Exception as exc:                          # the digest still lands, saying why
             rej, chains = [], [{"error": f"{type(exc).__name__}: {exc}"[:300]}]
+        try:
+            ledger_digest = self.ledger_digest()
+        except Exception as exc:
+            ledger_digest = {"error": f"{type(exc).__name__}: {exc}"[:300]}
+        try:
+            conds = json.loads(self.cells.kv_get("conditioners", "{}") or "{}")
+        except ValueError:
+            conds = {}
         doc = {"schema": "mining_digest/1", "generated_at": iso(now),
                "metrics": {k: v for k, v in m.items() if k not in ("trace", "last_pass",
                                                                    "sources")},
@@ -859,6 +1018,8 @@ class Pipeline:
                                                         "last_outcome", "evaluated_cells_30d")}
                            for sid, v in (m.get("sources") or {}).items()},
                "trace": m.get("trace"),
+               "rejection_ledger": ledger_digest,
+               "conditioner_series": conds,
                "chains": chains,
                "rejections_latest": rej}
         self.digest.parent.mkdir(parents=True, exist_ok=True)
@@ -882,13 +1043,15 @@ class Pipeline:
                                         "detail": r.detail})
             except Exception as exc:                      # the rest of the pass still runs
                 rep.errors.append(f"acquire: {type(exc).__name__}: {exc}"[:300])
-        for step in ("process", "retry", "donate", "join", "handoff"):
+        for step in ("process", "conditioners", "retry", "donate", "join", "handoff"):
             if time.monotonic() - t0 > budget_s * 0.95:
                 rep.errors.append(f"budget exhausted before {step}")
                 break
             try:
                 if step == "process":
                     rep.records_processed, rep.cells_created = self.process(now=now)
+                elif step == "conditioners":
+                    rep.cells_created += int(self.conditioners(now=now)["cells_minted"])
                 elif step == "retry":
                     self.retry_blocked_data(now=now)
                 elif step == "donate":
