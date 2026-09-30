@@ -361,6 +361,15 @@ desks/mt5/data/deep_forest_seen.json
 !desks/mt5/data/order_intents.jsonl
 !desks/mt5/data/live_ledger.jsonl
 !desks/mt5/reports/attribution_chain.json
+# THE TIER S MEASUREMENT REPORTS (2026-09-30), published by sync_shadow_to_git.ps1's $relPaths:
+# the null lab, the lag lane (known-by-date census + PIT lag census), the occupancy map and its
+# culture-orthogonality pairs, and the research/live identity. `**/reports/*` hid all six.
+!desks/mt5/reports/NULL_LAB.json
+!desks/mt5/reports/KNOWN_BY_DATE.json
+!desks/mt5/reports/PIT_LAG_CENSUS.json
+!desks/mt5/reports/OCCUPANCY_MAP.json
+!desks/mt5/reports/CULTURE_ORTHOGONALITY.json
+!desks/mt5/reports/RESEARCH_LIVE_IDENTITY.json
 
 # CONSOLE LOGS ARE NEVER TRACKED (2026-09-06). Seventeen of them were, and they are append-only
 # files that RUNNING hunt processes hold open. Every merge on the trading box therefore tried to

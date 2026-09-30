@@ -389,7 +389,19 @@ $relPaths = @(
     # and CONTRACTS (all gitignored or box-local where written). A Tier S layer is DONE only on
     # this file as committed from the trading box (scripts/check_tier_s_program.py).
     "desks/mt5/data/tier_s/box_evidence.json",
-    "desks/mt5/data/tier_s/live_door.json"
+    "desks/mt5/data/tier_s/live_door.json",
+    # THE TIER S MEASUREMENT REPORTS (2026-09-30). The independent audit found no committed
+    # artifact for the null lab, the lag lane or the occupancy map: `**/reports/*` is ignored, so
+    # every one of them existed only on the host that wrote it. NULL_LAB (hourly leg null_lab),
+    # KNOWN_BY_DATE + PIT_LAG_CENSUS (leg pit_canaries), OCCUPANCY_MAP + CULTURE_ORTHOGONALITY
+    # (leg occupancy_map), RESEARCH_LIVE_IDENTITY (leg research_live_identity). Outputs of the
+    # running code, each negated in .gitignore and declared NON_CODE in both seal lists.
+    "desks/mt5/reports/NULL_LAB.json",
+    "desks/mt5/reports/KNOWN_BY_DATE.json",
+    "desks/mt5/reports/PIT_LAG_CENSUS.json",
+    "desks/mt5/reports/OCCUPANCY_MAP.json",
+    "desks/mt5/reports/CULTURE_ORTHOGONALITY.json",
+    "desks/mt5/reports/RESEARCH_LIVE_IDENTITY.json"
 )
 $existing = @()
 foreach ($rel in $relPaths) {

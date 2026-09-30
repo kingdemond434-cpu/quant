@@ -137,6 +137,14 @@ NON_CODE: frozenset[str] = frozenset({
     # without being declared here, which test_release_seal names as refusing new risk.
     "desks/mt5/data/tier_s/box_evidence.json",
     "desks/mt5/data/tier_s/live_door.json",
+    # The Tier S measurement reports the same sync publishes (2026-09-30): null lab, the lag
+    # lane's two reports, the occupancy map and its culture pairs, the research/live identity.
+    "desks/mt5/reports/NULL_LAB.json",
+    "desks/mt5/reports/KNOWN_BY_DATE.json",
+    "desks/mt5/reports/PIT_LAG_CENSUS.json",
+    "desks/mt5/reports/OCCUPANCY_MAP.json",
+    "desks/mt5/reports/CULTURE_ORTHOGONALITY.json",
+    "desks/mt5/reports/RESEARCH_LIVE_IDENTITY.json",
 })
 
 SEAL_RULE = ("a running SHA is accepted iff it equals code_sha, or `git diff --name-only "
