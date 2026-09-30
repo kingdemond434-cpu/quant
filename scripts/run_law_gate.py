@@ -582,6 +582,14 @@ _STATE_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     # touches the tree: committing on a builder's behalf, with four builders live, would be a
     # worse failure than the one it reports. State, because it measures a working tree.
     ("check_box_reversion.py", ("--require-git",)),
+    # THE ORDER PROTOCOL IS CALLED VERIFIED ONLY WHEN THE GATEWAY BACKS IT (Tier S S31). Reads the
+    # formal organ's FORMAL.json -- the model check, the AST conformance of the real send sites,
+    # the counterexamples driven through the real decision core -- and fails on a model VIOLATION,
+    # on fewer implementation-backed invariants than the best ever recorded, and on an absent or
+    # stale report. A proven model the gateway does not fully implement passes as MODEL_ONLY with
+    # the missing knobs named: the honest state, never the word "verified". It touches no money
+    # path and forces no change to one. State, because FORMAL.json is written by the box's tier_s.
+    ("check_formal_claim.py", ("--require-state",)),
 )
 
 

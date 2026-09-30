@@ -2120,10 +2120,13 @@ def apply_allocator_evidence(ev: list[SleeveEvidence], evidence_doc: dict[str, A
         nf = float(row.get("net_of_cost_factor", 1.0))
         sf = float(ts_terms.get(e.name, 1.0))
         tilt = float(min(TILT_HI, max(TILT_LO, lf * rf * pf * bf * tf * nf * sf)))
-        if sf <= 0.0:
-            # The exchange cleared this sleeve to NOTHING (ZERO / EXIT / DEFER): the tilt is a
-            # zero, not the 0.5 floor, and the heat it frees is the heat law's to refill.
-            tilt = 0.0
+        if sf < TILT_LO:
+            # The exchange scaled this sleeve BELOW the shared floor, down to NOTHING for a
+            # ZERO / EXIT / DEFER: its own factor is applied under the floor, not raised to it
+            # (audit 2026-09-30: 0 < sf < 0.5 was lifted to 0.5). The Tier S tilt is heat-neutral,
+            # so the heat it frees is the heat law's to refill.
+            tilt = float(max(0.0, min(TILT_HI, max(TILT_LO, lf * rf * pf * bf * tf * nf))
+                                  * sf))
         shift = 0.0
         fin = row.get("financing_cost_r_per_day")
         if fin is not None and row.get("financing_charged_in_replay") is False:

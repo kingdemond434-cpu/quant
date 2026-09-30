@@ -54,10 +54,13 @@ def test_door_reads_fresh_verdicts_and_respects_suspension(monkeypatch: Any,
     monkeypatch.setattr(authority, "suspended", lambda organ, *a, **k: False)
     row = {"review_failed": ["execution:X"], "family": "f",
            "theory": {"status": "REFUTED", "n_oos": 12, "confidence": 0.1}}
-    assert pa._panel_and_theory("EURUSD.x") is None, "absent file withholds nothing"
+    import pytest
+    with pytest.raises(pa.DoorReadError):
+        pa._panel_and_theory("EURUSD.x")                 # absent: the door cannot vouch
     dv.write_text(json.dumps({"generated_utc": "2020-01-01T00:00:00+00:00",
                               "rows": {"ext.EURUSD.x": row}}), "utf-8")
-    assert pa._panel_and_theory("EURUSD.x") is None, "a stale file withholds nothing"
+    with pytest.raises(pa.DoorReadError):
+        pa._panel_and_theory("EURUSD.x")                 # stale: the verifier stopped
     dv.write_text(json.dumps({"generated_utc": datetime.now(UTC).isoformat(),
                               "rows": {"ext.EURUSD.x": row}}), "utf-8")
     assert (pa._panel_and_theory("EURUSD.x") or "").startswith("REVIEW_PANEL_FAILED")
@@ -198,3 +201,103 @@ def test_an_unloadable_door_withholds_rather_than_waves_through(monkeypatch: Any
     monkeypatch.delattr(_tiers, "promotion_authority", raising=False)
     why = promoter.tier_s_block("any.cert")
     assert why and why.startswith("DOOR_ERROR"), why
+
+
+def _door_sandbox(monkeypatch: Any, tmp_path: Path) -> Any:
+    from libs.tiers import authority
+    from libs.tiers import promotion_authority as pa
+    monkeypatch.setattr(pa, "ROOT", tmp_path)
+    for attr in ("REPLICATION", "FDR_ROWS", "FREEZE", "LEDGER", "DOOR_VERDICTS",
+                 "CONSTITUTION"):
+        monkeypatch.setattr(pa, attr, tmp_path / f"{attr}.json")
+    monkeypatch.setattr(pa, "RATIFICATIONS", tmp_path / "RATIFICATIONS.jsonl")
+    monkeypatch.setattr(pa.firewall, "may", lambda *a, **k: True)
+    monkeypatch.setattr(authority, "suspended", lambda organ, *a, **k: False)
+    return pa
+
+
+def test_every_door_input_fails_closed_when_damaged(monkeypatch: Any, tmp_path: Path) -> None:
+    """Absent withholds nothing; a PRESENT input that is torn, not JSON, not an object, or holds
+    the wrong shape withholds with DOOR_ERROR -- on every one of the door's inputs."""
+    from libs.tiers import truth_kernel
+    pa = _door_sandbox(monkeypatch, tmp_path)
+    now = datetime.now(UTC).isoformat()
+    fresh = {"REPLICATION": {"at": now}, "FDR_ROWS": {"generated_utc": now},
+             "FREEZE": {"at": now, "verdict": "OK"},
+             "DOOR_VERDICTS": {"generated_utc": now, "rows": {}}}
+    for attr in fresh:
+        assert (pa.block("EURUSD.x") or "").startswith("DOOR_ERROR"), f"{attr} absent"
+        getattr(pa, attr).write_text(json.dumps(fresh[attr]), "utf-8")
+    assert pa.block("EURUSD.x") is None, "every required verdict fresh, none against it"
+    for attr in fresh:
+        getattr(pa, attr).write_text(json.dumps({**fresh[attr], "at": "2020-01-01T00:00:00",
+                                                 "generated_utc": "2020-01-01T00:00:00"}),
+                                     "utf-8")
+        assert (pa.block("EURUSD.x") or "").startswith("DOOR_ERROR"), f"{attr} stale"
+        getattr(pa, attr).write_text(json.dumps(fresh[attr]), "utf-8")
+    damaged = {
+        "REPLICATION": ["{torn", "[1, 2]", json.dumps({"verdicts": {"a": 1}})],
+        "FDR_ROWS": ["{torn", json.dumps({"generated_utc": now, "certified": {"a": 1}})],
+        "FREEZE": ["not json", "3"],
+        "DOOR_VERDICTS": ["{", json.dumps({"generated_utc": now, "rows": [1]})],
+        "CONSTITUTION": ["{", json.dumps({"rules": [1]})],
+    }
+    for attr, bodies in damaged.items():
+        for body in bodies:
+            getattr(pa, attr).write_text(body, "utf-8")
+            why = pa.block("EURUSD.x") or ""
+            assert why.startswith("DOOR_ERROR"), (attr, body, why)
+        if attr in fresh:
+            getattr(pa, attr).write_text(json.dumps(fresh[attr]), "utf-8")
+        else:
+            getattr(pa, attr).unlink()
+    assert pa.block("EURUSD.x") is None
+    pa.CONSTITUTION.write_text(json.dumps(truth_kernel.constitution_doc()), "utf-8")
+    pa.RATIFICATIONS.write_text("{torn\n", "utf-8")
+    loosened = truth_kernel.constitution_doc()
+    loosened["rules"]["cert.dsr_threshold"]["value"] = 0.5
+    pa.CONSTITUTION.write_text(json.dumps(loosened), "utf-8")
+    assert (pa.block("EURUSD.x") or "").startswith("DOOR_ERROR"), "damaged ratifications"
+
+
+def test_a_suspension_lookup_that_raises_withholds(monkeypatch: Any, tmp_path: Path) -> None:
+    from libs.tiers import authority
+    pa = _door_sandbox(monkeypatch, tmp_path)
+
+    def boom(*a: Any, **k: Any) -> bool:
+        raise OSError("authority table locked")
+
+    monkeypatch.setattr(authority, "suspended", boom)
+    assert (pa.block("EURUSD.x") or "").startswith("DOOR_ERROR")
+
+
+def test_a_door_input_missing_past_its_grace_is_a_loud_defect(monkeypatch: Any,
+                                                              tmp_path: Path) -> None:
+    import sys as _sys
+    from datetime import timedelta
+    _research = str(Path(__file__).resolve().parents[1] / "research")
+    if _research not in _sys.path:
+        _sys.path.insert(0, _research)
+    import tier_s as ts  # type: ignore[import-not-found]
+
+    pa = _door_sandbox(monkeypatch, tmp_path)
+    for key, (_path, stamp, writer) in list(pa.REQUIRED.items()):
+        monkeypatch.setitem(pa.REQUIRED, key, (getattr(pa, {
+            "replication": "REPLICATION", "online_fdr": "FDR_ROWS", "immune": "FREEZE",
+            "door": "DOOR_VERDICTS"}[key]), stamp, writer))
+    store: dict[str, Any] = {}
+    monkeypatch.setattr(ts, "_state", lambda n: dict(store.get(n) or {}))
+    monkeypatch.setattr(ts, "_save_state", lambda n, d: store.__setitem__(n, dict(d)))
+    t0 = ts.NOW
+    first = ts._door_input_health()
+    assert not first["all_ok"] and first["defects"] == [], "inside the grace: tracked, quiet"
+    monkeypatch.setattr(ts, "NOW", t0 + timedelta(hours=2.5))
+    later = ts._door_input_health()
+    assert len(later["defects"]) == 4 and all("DEFECT door input" in d for d in later["defects"])
+    now = datetime.now(UTC).isoformat()
+    pa.REPLICATION.write_text(json.dumps({"at": now}), "utf-8")
+    pa.FDR_ROWS.write_text(json.dumps({"generated_utc": now}), "utf-8")
+    pa.FREEZE.write_text(json.dumps({"at": now, "verdict": "OK"}), "utf-8")
+    pa.DOOR_VERDICTS.write_text(json.dumps({"generated_utc": now, "rows": {}}), "utf-8")
+    healed = ts._door_input_health()
+    assert healed["all_ok"] and healed["defects"] == [] and store["door_inputs"]["bad_since"] == {}

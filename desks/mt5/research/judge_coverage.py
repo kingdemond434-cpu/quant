@@ -1519,11 +1519,11 @@ def build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = N
             "neither judged nor passed, because nobody looked is not a failure"),
         "unknown_reasons": unknown,
         "unrunnable": unrunnable,
+        "keff_order": _keff_summary(keff),
+        "_keff_detail": keff,
         # THE BARS THE JUDGE ASKED FOR AND DID NOT HAVE, per symbol and chart: the demand the
         # bar refresh reads (research/refresh_bars.py) so a missing chart is fetched, not waited on.
         "bars_wanted": dict(sorted(bars_wanted.items(), key=lambda kv: -kv[1])),
-        "keff_order": _keff_summary(keff),
-        "_keff_detail": keff,
         "value_ranking": ranking,
         "value_rule": ("remainder after every family's floor goes down expected value per "
                        "judge-second: p_optimistic (upper credible bound of the desk's own Beta "

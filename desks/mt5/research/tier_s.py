@@ -51,10 +51,12 @@ for _p in (str(ROOT), str(DESK), str(DESK / "research")):
         sys.path.insert(0, _p)
 
 from libs.tiers import (  # noqa: E402
+    agent_worlds,
     allocator_tilts,
     authority,
     bitemporal,
     chaos,
+    closure_worlds,
     contracts,
     control_arm,
     cross_science,
@@ -65,6 +67,7 @@ from libs.tiers import (  # noqa: E402
     firewall,
     formal,
     frontier,
+    gauntlet_arena,
     graph_edges,
     meta_benchmark,
     online_fdr,
@@ -883,19 +886,120 @@ def organ_test_invention() -> dict[str, Any]:
                  "failed": v.get("failed") or [], "truncated": len(v.get("failed") or []) >= 3}
                 for v in prod.values() if isinstance(v, dict) and not v.get("unmeasured")]
     matrix = test_invention.redundancy_matrix(vectors)
+    # MACHINE RATIFICATION: proposed on one suite, confirmed on another, surviving the sealed
+    # trap suite -> ratified, recorded with its evidence, and RUN on every backtested candidate
+    ratif = _ratify_invented(reg)
     _save_state("candidate_gates", {"gates": list(reg.values())})
     return {**out, "from_production": real, "registry_size": len(reg),
+            "ratification": ratif,
             "real_suite": {**{k: v for k, v in suite.items() if k != "rows"}, **real_suite},
             "redundancy": matrix,
             "metric": {"candidate_gates": len(out["candidate_gates"])
                        + len(real.get("candidate_gates") or [])
                        + len(real_suite.get("candidate_gates") or []),
                        "registry": len(reg),
+                       "ratified_tests": ratif.get("ratified_total"),
+                       "ratified_now": ratif.get("ratified_now"),
                        "production_fooling_cases": len(fooled),
                        "real_suite_labelled": suite["n_labelled"],
                        "certificate_precision": suite["precision"],
                        "redundant_gates": len(matrix.get("subsumed") or [])
                        if matrix.get("status") == "MEASURED" else None}}
+
+
+#: the machine's ratifications of invented tests (append-only, one row per ratified check). NOT
+#: docs/research/tier_s_ratifications.jsonl: that ledger is the principal's ratification of
+#: CONSTITUTION hashes, verified as human-committed, and a machine row there would be refused.
+TEST_RATIFICATIONS_NAME = "test_ratifications.jsonl"
+
+
+def _test_ratifications() -> Path:
+    return STATE / TEST_RATIFICATIONS_NAME
+
+
+def _prejudge_rules_path() -> Path:
+    """desks/mt5/data/tier_s/PREJUDGE_RULES.json (libs/tiers/prejudge_screen.RULES)."""
+    from libs.tiers import prejudge_screen as pj
+    return STATE / pj.RULES.name
+#: sealed-suite checks per pass, and how long a check that failed it waits before a re-check
+MAX_RATIFY_PER_PASS = 3
+RATIFY_RETRY_H = 24
+#: the sealed trap suite ratification is judged on: neither the proposal (31337) nor the
+#: confirmation (424242) suite
+RATIFY_SUITE = meta_benchmark.Suite(per_kind=4, base_seed=5150, n=1200)
+
+
+def _ratify_invented(reg: dict[str, dict[str, Any]]) -> dict[str, Any]:
+    """Layer 21's automatic path. Every CANDIDATE_GATE in the registry whose feature a
+    candidate's backtest yields is checked against the sealed trap suite; one that survives is
+    RATIFIED BY THE MACHINE (principal: no approvals needed): a row with its evidence is appended
+    to test_ratifications.jsonl and the check is adopted into the pre-judge screen, where
+    run_external_backtest runs it on every candidate it tests. Registry rows carry their
+    disposition (`ratification`) so a refusal is named, never silent."""
+    from libs.tiers import prejudge_screen as pj
+    if authority.suspended("test_invention"):
+        return {"status": "SUSPENDED", "ratified_now": 0, "ratified_total": None}
+    done = {json.dumps(r.get("check")) for r in _jsonl(_test_ratifications())
+            if isinstance(r.get("check"), list)}
+    doc = pj.load_rules(_prejudge_rules_path())
+    sealed: list[Any] | None = None
+    seal: str | None = None
+    ratified: list[dict[str, Any]] = []
+    failed: list[dict[str, Any]] = []
+    checked = 0
+    restored = 0
+    for key, g in sorted(reg.items()):
+        if key in done:
+            g["ratification"] = "RATIFIED"
+            # a ratified check always runs: a lost rules file is re-filled from the ledger
+            doc, ok = pj.adopt(doc, {"id": pj.rule_id("test_invention", g["check"]),
+                                     "source": "test_invention", "check": list(g["check"]),
+                                     "adopted_at": NOW.isoformat(),
+                                     "ratified_by": test_invention.RATIFIED_BY,
+                                     "evidence": f"see {TEST_RATIFICATIONS_NAME}"})
+            restored += int(ok)
+            continue
+        why = test_invention.ratifiable(g, pj.SCREEN_FEATURES)
+        if why:
+            g["ratification"] = f"NOT_RATIFIABLE: {why}"
+            continue
+        last = replay.parse_t(g.get("sealed_checked_at"))
+        if last and NOW - last < timedelta(hours=RATIFY_RETRY_H):
+            continue
+        if checked >= MAX_RATIFY_PER_PASS:
+            g["ratification"] = "QUEUED"
+            continue
+        checked += 1
+        if sealed is None:
+            sealed = list(RATIFY_SUITE.cases())
+        surv = pj.sealed_survival(_incumbent_validator(), g["check"], sealed)
+        g["sealed_checked_at"] = NOW.isoformat()
+        g["sealed"] = surv
+        if not surv["survives"]:
+            g["ratification"] = "FAILED_SEALED_SUITE"
+            failed.append({"check": g["check"], **surv})
+            continue
+        seal = seal or RATIFY_SUITE.seal()
+        rid = pj.rule_id("test_invention", g["check"])
+        row = test_invention.ratification_row(g, surv, at=NOW.isoformat(), seal=seal, rule=rid)
+        _test_ratifications().parent.mkdir(parents=True, exist_ok=True)
+        with _test_ratifications().open("a", encoding="utf-8") as fh:
+            fh.write(json.dumps(row, default=str) + "\n")
+        doc, _ok = pj.adopt(doc, {"id": rid, "source": "test_invention",
+                                  "check": list(g["check"]), "adopted_at": NOW.isoformat(),
+                                  "ratified_by": test_invention.RATIFIED_BY,
+                                  "evidence": row["evidence"]})
+        g["ratification"] = "RATIFIED"
+        done.add(key)
+        ratified.append(row)
+    if ratified or restored:
+        pj.save_rules(doc, _prejudge_rules_path())
+    return {"status": "MEASURED", "ratified_now": len(ratified), "ratified_total": len(done),
+            "restored_to_screen": restored,
+            "sealed_checked": checked, "failed_sealed": failed, "new": ratified,
+            "ledger": str(_test_ratifications()), "rules_file": str(_prejudge_rules_path()),
+            "not_ratifiable": sum(1 for g in reg.values()
+                                  if str(g.get("ratification", "")).startswith("NOT_"))}
 
 
 def _real_gauntlet_attack(attackers: list[dict[str, Any]], gen: int) -> dict[str, Any]:
@@ -971,6 +1075,109 @@ def _real_gauntlet_attack(attackers: list[dict[str, Any]], gen: int) -> dict[str
             "genuine_power": sum(r["passed"] for r in real) / len(real) if real else None}
 
 
+#: a kind whose defender could not be found is re-attempted after this many generations (hours)
+DEFENDER_RETRY_GENS = 24
+#: defender searches per generation (each costs a few seconds)
+MAX_DEFENDER_ATTEMPTS = 2
+
+
+def _adopt_defenders(res: Mapping[str, Any], real: Mapping[str, Any], gen: int,
+                     sealed: list[Any]) -> dict[str, Any]:
+    """Layer 9's consequence. The kinds that fooled the certifier this generation -- the
+    production ten-gate certifier's leaks first, then the reference validator's blind spots --
+    each get `red_queen.defender_rule`; an ADOPTABLE rule (proposed, confirmed, and its
+    challenger survived the sealed trap suite) is written into the pre-judge screen
+    (libs/tiers/prejudge_screen.RULES), which run_external_backtest applies to every candidate
+    it backtests and merge_hypotheses turns into docket order. Never a sealed file."""
+    from libs.tiers import prejudge_screen as pj
+    if authority.suspended("red_queen"):
+        return {"status": "SUSPENDED", "adopted_now": 0, "adopted_total": None}
+    subt = {str(e["attack"].get("kind")): float(e["attack"].get("subtlety") or 0.5)
+            for e in res.get("elite_attacks") or [] if isinstance(e.get("attack"), dict)}
+    fooled: dict[str, dict[str, Any]] = {}
+    for r in real.get("leaks") or []:
+        fooled.setdefault(str(r.get("kind")), {"certifier": "production_gauntlet"})
+    for k, fit in (res.get("blind_spots") or {}).items():
+        fooled.setdefault(str(k), {"certifier": "reference_validator",
+                                   "attack_success": fit})
+    st = _state("red_queen_defenders")
+    attempts = {str(k): int(v) for k, v in (st.get("attempts") or {}).items()}
+    doc = pj.load_rules(_prejudge_rules_path())
+    have = {str(r.get("kind")) for r in doc.get("rules") or []
+            if isinstance(r, dict) and r.get("source") == "red_queen"}
+    queue = sorted((k for k in fooled if k not in have
+                    and gen - attempts.get(k, -10**9) >= DEFENDER_RETRY_GENS),
+                   key=lambda k: (fooled[k]["certifier"] != "production_gauntlet", k))
+    tried: list[dict[str, Any]] = []
+    added = 0
+    for k in queue[:MAX_DEFENDER_ATTEMPTS]:
+        attempts[k] = gen
+        try:
+            out = red_queen.defender_rule(k, _incumbent_validator(), sealed, seed=gen,
+                                          subtlety=subt.get(k, 0.5))
+        except Exception as exc:
+            tried.append({"kind": k, "status": "ERROR", "why": f"{type(exc).__name__}: {exc}"})
+            continue
+        out = {**out, **fooled[k]}
+        tried.append(out)
+        if out["status"] == "ADOPTABLE":
+            doc, ok = pj.adopt(doc, {
+                "id": pj.rule_id("red_queen", out["check"], k), "source": "red_queen",
+                "kind": k, "check": out["check"], "certifier": fooled[k]["certifier"],
+                "adopted_at": NOW.isoformat(), "generation": gen,
+                "adoption": "the challenger (incumbent validator + this rule) survived the "
+                            "sealed trap suite", "evidence": out})
+            added += int(ok)
+    if added:
+        pj.save_rules(doc, _prejudge_rules_path())
+    _save_state("red_queen_defenders", {"attempts": attempts, "at": NOW.isoformat()})
+    total = sum(1 for r in doc.get("rules") or [] if isinstance(r, dict)
+                and r.get("source") == "red_queen" and r.get("status") == "ADOPTED")
+    return {"status": "MEASURED", "fooled_kinds": fooled, "attempted": tried,
+            "adopted_now": added, "adopted_total": total,
+            "waiting_retry": sorted(k for k in fooled if k not in have and k not in queue),
+            "rules_file": str(_prejudge_rules_path()),
+            "consumer": "side_channels/run_external_backtest.py tags; "
+                        "research/merge_hypotheses.py demotes flagged rows within family"}
+
+
+#: sealed cases (with a real-gauntlet verdict) the validator genomes compete on: the whole
+#: judged set for adoption in the twin, a stratified subset for the Red Queen's defender search
+ARENA_CASES = 1200
+RQ_ARENA_CASES = 400
+#: fresh genomes the twin examines on the real arena per hour (the rest wait for the next hour)
+ARENA_FRESH_PER_HOUR = 3
+
+
+def _real_arena(limit: int | None = ARENA_CASES
+                ) -> tuple[list[gauntlet_arena.Judged], dict[str, Any]]:
+    """The sealed suite's cases the REAL gauntlet has judged on its current code (the verdicts
+    `production_immune` keeps), regenerated for the genomes to be scored on. The gauntlet is
+    reached read-only through `adversary.real_gate`; nothing here edits or re-runs it."""
+    try:
+        import adversary
+        gate, blocked = adversary.real_gate()
+    except Exception as exc:
+        return [], {"status": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"}
+    if gate is None:
+        return [], {"status": "UNMEASURED", "why": blocked}
+    code = _gauntlet_code_hash(gate)
+    dec = gauntlet_arena.real_decisions(_state("immune_prod").get("verdicts") or {}, code)
+    cases = gauntlet_arena.judged_cases(dec, PROD_SUITE.n, limit=limit)
+    key = truth_kernel.sha256("|".join(f"{c.kind}:{c.seed}:{int(c.real_passed)}"
+                                       for c in cases))[:16]
+    return cases, {"status": "MEASURED" if cases else "UNMEASURED", "code": code,
+                   "n": len(cases), "key": key,
+                   "why": None if cases else "no real-gauntlet verdict on the current code yet"}
+
+
+def _arena_fitness(cases: list[gauntlet_arena.Judged]
+                   ) -> Callable[[meta_benchmark.ValidatorConfig], dict[str, Any]]:
+    def fit(cfg: meta_benchmark.ValidatorConfig) -> dict[str, Any]:
+        return gauntlet_arena.arena_score(meta_benchmark.reference_validator(cfg), cases)
+    return fit
+
+
 def organ_red_queen() -> dict[str, Any]:
     st = _state("red_queen")
     attackers = red_queen.from_state(st)
@@ -981,9 +1188,20 @@ def organ_red_queen() -> dict[str, Any]:
     profiles = {str(k): v for k, v in ((prices.get("researchers") if isinstance(prices, dict)
                                         else None) or {}).items()
                 if isinstance(v, dict) and v.get("judged")}
+    # S33: THE DEFENDERS COMPETE ON THE REAL GAUNTLET'S VERDICTS when enough exist; the reference
+    # validator's own score ranks them only while the real arena is UNMEASURED, and says so.
+    arena_cases, arena_status = _real_arena(RQ_ARENA_CASES)
+    n_arena_traps = sum(1 for c in arena_cases if not c.genuine)
+    use_real = n_arena_traps >= gauntlet_arena.MIN_TRAPS // 2 and \
+        len(arena_cases) - n_arena_traps >= gauntlet_arena.MIN_GENUINE
     res = red_queen.generation(attackers, _incumbent_validator(), sealed, seed=gen,
-                               researchers=profiles or None)
+                               researchers=profiles or None,
+                               real_fitness=_arena_fitness(arena_cases) if use_real else None)
+    res["real_arena"] = {**arena_status, "used": use_real, "traps": n_arena_traps}
     real = _real_gauntlet_attack([e["attack"] for e in res["elite_attacks"]], gen)
+    # THE FINDING GETS A CONSEQUENCE: a kind that fooled the certifier earns a defender rule in
+    # the research-side pre-judge screen, once its challenger survives the sealed trap suite
+    defenders = _adopt_defenders(res, real, gen, sealed)
     hist = list(st.get("success_history") or [])
     hist.append({"gen": gen, "at": NOW.isoformat(), "attack_success": res["attack_success"],
                  "real_attack_success": real.get("attack_success"),
@@ -1058,6 +1276,7 @@ def organ_red_queen() -> dict[str, Any]:
         arch = {"status": "ERROR", "error": f"{type(exc).__name__}: {exc}"}
     return {"generation": gen, **{k: v for k, v in res.items() if k != "next_attackers"},
             "real_gauntlet": real, "architecture_challengers": arch,
+            "defender_adoption": defenders,
             "attribution": ("MEASURED" if profiles else
                             "UNMEASURED: no researcher_prices.json with judged counts yet; "
                             "attacks charged their trap's own trials and left unattributed"),
@@ -1066,6 +1285,8 @@ def organ_red_queen() -> dict[str, Any]:
                        "attributed_researchers": len(profiles),
                        "real_attack_success": real.get("attack_success"),
                        "real_genuine_power": real.get("genuine_power"),
+                       "defender_rules_adopted": defenders.get("adopted_total"),
+                       "defender_rules_adopted_now": defenders.get("adopted_now"),
                        "scheduler_heldout_lift": (arch.get("scheduler") or {})
                        .get("heldout_lift"),
                        "search_policy_heldout_lift": (arch.get("search_policy") or {})
@@ -2350,8 +2571,13 @@ def organ_market() -> dict[str, Any]:
     # ENFORCED BLINDING: one firewall role per seat (registered for firewall.may), audited
     # statically with its own ratchet; cohort pairs that can read each other are not independent
     blind = _blinding_audit()
+    # AND AT RUNTIME: a seat whose own output carried held-out / lockbox / forward outcomes in
+    # the last day (libs/tiers/blinding.py doors) saw the answer, so its cohort is blind to
+    # nothing and its passes are withheld from the independent count too
+    rt = _runtime_blinding()
+    pairs = [*(blind.get("contaminated_pairs") or ()), *rt["contaminated_pairs"]]
     ind = researcher_market.independent_discoveries(
-        sight, {n: r.cohort for n, r in rs.items()}, blind.get("contaminated_pairs") or ())
+        sight, {n: r.cohort for n, r in rs.items()}, pairs)
     # THE FRONTIER PRICES THE GROUND (layer 36): a producer whose ground the species estimator
     # says still hides many unseen mechanisms is worth more compute than its record alone says.
     # Last hour's FRONTIER report (the organ runs after this one); absent -> factor 1.
@@ -2397,11 +2623,34 @@ def organ_market() -> dict[str, Any]:
     return {**{k: v for k, v in res.items() if k != "allocations"},
             "researchers": dict(sorted(table.items(), key=lambda kv: -kv[1]["births"])[:40]),
             "independent_discoveries": ind, "priced_legs": len(leg_prices), "control_arm": arm,
-            "blinding": blind,
+            "blinding": blind, "runtime_blinding": rt,
             "metric": {"n_researchers": len(rs), "independently_discovered":
                        ind["independently_discovered"], "priced_legs": len(leg_prices),
                        "blinding_violations": blind.get("n_violations"),
+                       "blinding_runtime_violations": rt["violations"],
+                       "blinding_runtime_output_violators": len(rt["output_violators"]),
                        "blinding_breach": blind.get("breach")}}
+
+
+#: the runtime window the market reads: a seat that stops carrying outcomes is re-admitted a day
+#: later, one that keeps doing it stays out
+BLINDING_WINDOW_H = 24
+
+
+def _runtime_blinding() -> dict[str, Any]:
+    """Layer 4 at runtime: the doors' counters (libs/tiers/blinding.RuntimeCounter), summed over
+    the last BLINDING_WINDOW_H hours, and the cohort pairs they contaminate."""
+    from libs.tiers import blinding
+    rows = _jsonl(STATE / "blinding_runtime.jsonl", 50_000)
+    summ = blinding.runtime_summary(rows, NOW - timedelta(hours=BLINDING_WINDOW_H))
+    pairs = blinding.runtime_contaminated(summ["output_violators"],
+                                          lambda s: _epistemology(f"miner:{s}"))
+    return {**summ, "window_h": BLINDING_WINDOW_H,
+            "status": "MEASURED" if rows else "UNMEASURED: no door has written the ledger yet",
+            "contaminated_pairs": sorted(sorted(p) for p in pairs),
+            "doors": ["libs/ops/deepseek_cycle.cold_context (context)",
+                      "research/proposer_common.donate (output)",
+                      "research/miner_candidate_compiler.recent_rows (compiler_read)"]}
 
 
 def _blinding_audit() -> dict[str, Any]:
@@ -2537,6 +2786,29 @@ def organ_formal() -> dict[str, Any]:
                        "core_blocked_share": driven.get("blocked_share"),
                        "core_gaps": (len(driven["core_gaps"]) if "core_gaps" in driven
                                      else None)}}
+
+
+FORMAL_REPORT = OUT_DIR / "FORMAL.json"
+
+
+def organ_formal_claim() -> dict[str, Any]:
+    """S31's CONSUMER: what the desk may say about its order protocol, read back from the
+    FORMAL.json the formal organ published (`libs/tiers/formal.claim`). The model check proves the
+    model; the word VERIFIED needs every invariant's knobs present at the real send sites and no
+    counterexample admitted by the real decision core. The best count of implementation-backed
+    invariants is a ratchet: `scripts/check_formal_claim.py` fails the law gate on a VIOLATED
+    model or a regression, and `self_model` ranks the gap as a deficiency."""
+    st = _state("formal_claim")
+    best = st.get("best_implemented")
+    c = formal.claim(_read(FORMAL_REPORT), now=NOW,
+                     best_implemented=int(best) if best is not None else None)
+    if c["claim"] != "UNMEASURED":
+        _save_state("formal_claim", {"best_implemented": c["best_implemented"],
+                                     "claim": c["claim"], "at": NOW.isoformat()})
+    return {**c, "source": FORMAL_REPORT.as_posix(),
+            "metric": {"protocol_verified": 1.0 if c["claim"] == "VERIFIED" else 0.0,
+                       "implemented_invariants": c["implemented"],
+                       "verified_share": c.get("verified_share")}}
 
 
 def _protocol_conformance() -> dict[str, Any]:
@@ -2685,7 +2957,14 @@ def organ_data_os() -> dict[str, Any]:
     moved = data_os.retarget(landed, metric_now)
     n_landed = bitemporal.resolve(landed, acquired, metric_now, NOW.isoformat())
     _save_state("acquisition", {"predictions": [p.to_dict() for p in landed + own][-3000:]})
+    # THE STORE ON A DATA PATH: the macro-conditioned research sweep reads its conditioning state
+    # through `BitemporalStore.latest_known` and publishes what the same-date join would have
+    # admitted before the print was knowable (run_edges_macro_fusion_sweep.py, hourly leg).
+    sweep = _read(REPORTS / "edges_macro_fusion_sweep.json")
+    pit_reads = (sweep.get("pit") if isinstance(sweep, dict) else None) or {
+        "status": data_os.UNMEASURED, "why": "edges_macro_fusion_sweep.json absent or pre-PIT"}
     return {"pit_audits": audits, "sources": sources, "gate_yield": yields,
+            "pit_reads": pit_reads,
             "acquisition": {"scored_on": {"rankers": "own_metric", "landed": "gate_yield"},
                             "open": len(ranking), "registered_now": made,
                             "resolved_now": n_res, "calibration": cal, "top": ranking[:25],
@@ -2916,7 +3195,8 @@ def _macro_world(symbols: list[str]) -> dict[str, Any]:
 
 def organ_worlds() -> dict[str, Any]:
     """Layer 16, joined per certificate: which stress worlds each certificate has been through
-    (synthetic_regimes' sixteen worlds, the digital twin's replays) and which it has NOT. A
+    (synthetic_regimes' worlds -- the closure and agent-based families included -- and the
+    shadow desk's replays) and which it has NOT. A
     certificate no world has touched is named -- an untested edge is not a robust one -- and the
     flags it earned are carried to the review panel as the evidence of a named failure mode."""
     sr = _read(REPORTS / "SYNTHETIC_REGIMES.json") or {}
@@ -2929,6 +3209,9 @@ def organ_worlds() -> dict[str, Any]:
     twin_doc = _read(REPORTS / "DIGITAL_TWIN.json") or {}
     twin_keys = {str(k) for k in (twin_doc.get("sleeves") or twin_doc.get("results") or {})} \
         if isinstance(twin_doc, dict) else set()
+    shadow_doc = _read(TWIN_REPORT) or {}          # the shadow desk's replayed sleeves
+    if isinstance(shadow_doc, dict):
+        twin_keys |= {str(k) for k in shadow_doc.get("sleeves_replayed") or []}
     rows, untested = [], []
     for key, row in survivors().items():
         if not isinstance(row, dict):
@@ -2943,7 +3226,11 @@ def organ_worlds() -> dict[str, Any]:
                "twin": str(key) in twin_keys,
                "exp_x5": (((hit or {}).get("scenarios") or {}).get("spread_x5") or {})
                .get("expectancy"),
-               "swap_world": _swap_world_of(hit, worlds)}
+               "swap_world": _swap_world_of(hit, worlds),
+               "closure_worlds": {w: _named_world_of(hit, worlds, w)
+                                  for w in closure_worlds.NAMES},
+               "agent_worlds": {w: _named_world_of(hit, worlds, w)
+                                for w in agent_worlds.NAMES}}
         rows.append(rec)
         if not measured:
             untested.append(str(key))
@@ -2953,16 +3240,61 @@ def organ_worlds() -> dict[str, Any]:
     flagged = sum(1 for r in rows if r["flags"])
     swap_states = Counter(str(r["swap_world"]["status"]) for r in rows)
     swap_dead = sum(1 for r in rows if "dies_on_swap_rollover" in (r["flags"] or []))
+    closure = _world_family_summary(rows, worlds, "closure_worlds", closure_worlds.NAMES,
+                                    CLOSURE_FLAGS)
+    agents = _world_family_summary(rows, worlds, "agent_worlds", agent_worlds.NAMES,
+                                   AGENT_FLAGS)
     return {"worlds": worlds, "n_certificates": n, "untested": untested[:60],
             "flagged": flagged,
             "swap_world": {"name": swap_world.NAME, "what": swap_world.WHAT,
                            "in_synthetic_regimes": swap_world.NAME in worlds,
                            "by_status": dict(swap_states), "dies_on_swap_rollover": swap_dead},
+            "closure_worlds": closure, "agent_worlds": agents,
             "metric": {"stress_tested_share": (n - len(untested)) / n if n else None,
                        "flagged_share": flagged / n if n else None,
                        "worlds": len(worlds),
                        "swap_world_measured_share": swap_states.get("MEASURED", 0) / n
-                       if n else None}}
+                       if n else None,
+                       "closure_world_measured_share": closure["measured_share"],
+                       "agent_world_measured_share": agents["measured_share"]}}
+
+
+#: the named failure modes each world family can earn (synthetic_regimes.FLAG_RULES)
+CLOSURE_FLAGS: tuple[str, ...] = ("dies_on_market_closure", "needs_the_closed_session",
+                                  "halt_fragile")
+AGENT_FLAGS: tuple[str, ...] = ("dies_in_herding_market", "dies_in_value_market",
+                                "dies_when_liquidity_withdraws")
+
+
+def _named_world_of(hit: Mapping[str, Any] | None, worlds: list[Any],
+                    name: str) -> dict[str, Any]:
+    """This certificate's reading in one named synthetic world, or why there is none."""
+    if name not in worlds:
+        return {"status": "UNMEASURED", "why": f"SYNTHETIC_REGIMES.json predates {name} "
+                "(its next pass on the box carries it)"}
+    if not hit:
+        return {"status": "UNMEASURED", "why": "no synthetic-regime row for this certificate"}
+    row = (hit.get("scenarios") or {}).get(name) or {}
+    if row.get("status") != "MEASURED":
+        return {"status": "UNMEASURED", "why": row.get("why") or "scenario absent from the row"}
+    return {"status": "MEASURED", "expectancy": row.get("expectancy"),
+            "delta_expectancy": row.get("delta_expectancy"), "applied": row.get("applied")}
+
+
+def _world_family_summary(rows: list[dict[str, Any]], worlds: list[Any], key: str,
+                          names: Iterable[str], flags: Iterable[str]) -> dict[str, Any]:
+    """Per world family: which of its worlds the synthetic organ carries, each world's status
+    counts across certificates, the certificates measured in at least one of them, and how many
+    earned each of the family's named failure modes."""
+    names, flags = list(names), list(flags)
+    n = len(rows)
+    by_world = {w: dict(Counter(str(r[key][w]["status"]) for r in rows)) for w in names}
+    touched = sum(1 for r in rows if any(v.get("status") == "MEASURED"
+                                         for v in r[key].values()))
+    return {"names": names, "in_synthetic_regimes": [w for w in names if w in worlds],
+            "by_world": by_world, "certificates_measured": touched,
+            "flags": {f: sum(1 for r in rows if f in (r["flags"] or [])) for f in flags},
+            "measured_share": touched / n if n else None}
 
 
 def _swap_world_of(hit: Mapping[str, Any] | None, worlds: list[Any]) -> dict[str, Any]:
@@ -3262,7 +3594,105 @@ def _register_challenger(component: str, name: str, genome: Any,
     _save_state("challengers", {"challengers": list(rows.values())[-200:]})
 
 
+#: the shadow desk's hourly load: the code candidate plus this many config challengers
+SHADOW_MAX_CONFIG = 2
+TWIN_REPORT = REPORTS / "TWIN.json"
+
+
+def _git_out(*args: str) -> str | None:
+    import subprocess
+    try:
+        return subprocess.run(["git", *args], cwd=ROOT, check=True, capture_output=True,
+                              text=True, timeout=60).stdout.strip() or None
+    except (subprocess.SubprocessError, OSError):
+        return None
+
+
+def _shadow_sleeves() -> list[dict[str, Any]]:
+    """The LIVE sleeves the shadow desk replays, as `synthetic_regimes.load_sleeves` resolves
+    them (parameters from the certificate when the sleeve row carries none)."""
+    import dataclasses
+    try:
+        import synthetic_regimes as sr
+        sl, _gaps = sr.load_sleeves()
+    except Exception:
+        return []
+    return sorted((dataclasses.asdict(s) for s in sl if s.lane == "live"),
+                  key=lambda r: str(r["name"]))
+
+
+def _shadow_candidate_ref() -> str | None:
+    """The code MT5-AdoptRelease would land next: the tracked branch's origin head when the
+    clone has one, else HEAD."""
+    branch = _git_out("rev-parse", "--abbrev-ref", "HEAD")
+    for ref in ((f"origin/{branch}",) if branch and branch != "HEAD" else ()) + ("HEAD",):
+        sha = _git_out("rev-parse", "--verify", f"{ref}^{{commit}}")
+        if sha:
+            return sha
+    return None
+
+
+def organ_shadow_desk() -> dict[str, Any]:
+    """Layer 28's shadow desk: the candidate code (and up to `SHADOW_MAX_CONFIG` config
+    challengers) replayed beside the sealed live release on one snapshot of the live inputs, in
+    a sandbox (`libs/tiers/shadow_desk.py`). Paired output -> reports/TWIN.json."""
+    hist = _release_history()
+    inc_ref = hist[-1]["sha"] if hist else None
+    inc = _git_out("rev-parse", "--verify", f"{inc_ref}^{{commit}}") if inc_ref else None
+    doc: dict[str, Any] = {"generated_utc": NOW.isoformat(), "incumbent": inc_ref, "runs": [],
+                           "rule": "only days after a challenger's registration count; the "
+                                   "sandbox never reaches the live terminal"}
+    if inc is None:
+        doc.update(status="UNMEASURED", why=("no sealed release in LIVE_MANIFEST/RELEASE.json"
+                                             if not inc_ref else
+                                             f"sealed release {inc_ref} is not in this clone"))
+        _write(TWIN_REPORT, doc)
+        return doc
+    sleeves = _shadow_sleeves()
+    cand = _shadow_candidate_ref() or inc
+    todo: list[tuple[str, str, str, dict[str, Any]]] = []
+    if cand != inc and not authority.suspended("twin"):
+        _register_challenger("code", f"code_{cand[:12]}", {"sha": cand}, None)
+    rows = {r["name"]: r for r in _state("challengers").get("challengers") or []}
+    code_name = f"code_{cand[:12]}"
+    todo.append(("code", code_name if code_name in rows else "self_consistency", cand, {}))
+    cfgs = [r for r in rows.values() if r.get("component") == "config"][-SHADOW_MAX_CONFIG:]
+    for r in cfgs:
+        g = r.get("genome") if isinstance(r.get("genome"), dict) else {}
+        todo.append(("config", str(r["name"]), str(g.get("sha") or inc),
+                     dict(g.get("config") or {})))
+    verdicts: dict[str, Any] = {}
+    for component, name, ref, config in todo:
+        row = rows.get(name)
+        ch = twin.Challenger(component, name, str(row["registered_at"]) if row else
+                             NOW.isoformat(), str(row["genome_hash"]) if row else "self")
+        rep = twin.shadow(ch, ref, inc, sleeves, config=config)
+        rep["name"], rep["component"] = name, component
+        doc["runs"].append(rep)
+        if row:
+            verdicts[name] = rep["verdict"]
+    doc["status"] = ("MEASURED" if any(r.get("status") == "MEASURED" for r in doc["runs"])
+                     else "UNMEASURED")
+    doc["sleeves_replayed"] = sorted({s["name"] for r in doc["runs"]
+                                      for s in r.get("sleeves") or []
+                                      if s.get("status") == "MEASURED"})
+    _write(TWIN_REPORT, doc)
+    return {"status": doc["status"], "incumbent": inc, "candidate": cand,
+            "verdicts": verdicts, "runs": [
+                {"name": r["name"], "status": r.get("status"), "why": r.get("why"),
+                 "n_measured": r.get("n_measured"), "pairs": len(r.get("pairs") or []),
+                 "decision_agreement": r.get("decision_agreement"),
+                 "terminal_touches": len((r.get("sandbox") or {}).get("terminal_touches")
+                                         or []),
+                 "verdict": (r.get("verdict") or {}).get("verdict")} for r in doc["runs"]]}
+
+
 def organ_twin(sealed_now: Mapping[str, Any]) -> dict[str, Any]:
+    try:
+        shadow = organ_shadow_desk()
+    except Exception as exc:                       # the shadow desk never costs the twin
+        shadow = {"status": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}",
+                  "verdicts": {}}
     st = _state("challengers")
     out = []
     ex = _read(STATE / "exchange_book.json") or {}
@@ -3299,74 +3729,117 @@ def organ_twin(sealed_now: Mapping[str, Any]) -> dict[str, Any]:
                 inc = sum(float(lb.get(k, 0.0)) * v for k, v in pnl.items())
                 cha = sum(float(book.get(k, 0.0)) * v for k, v in pnl.items())
                 pairs.append((f"{day}T23:59:59+00:00", inc, cha))
-        res = twin.evaluate(ch, pairs)
+        shadow_res = (shadow.get("verdicts") or {}).get(c["name"])
+        res = shadow_res if c["component"] in ("code", "config") and shadow_res \
+            else twin.evaluate(ch, pairs)
         adoption = self_model.adoption(c, res["verdict"], res["money_path"],
                                        bool(sealed_now.get("blocked")))
         if c["component"] == "validator":
-            adoption = "PENDING"       # decided below, on the sealed suite and nowhere else
+            adoption = "PENDING"       # decided below, on the REAL gauntlet's verdicts only
         out.append({"name": c["name"], "component": c["component"], **res,
                     "adoption": adoption})
-    # VALIDATOR CHALLENGERS ARE RE-SCORED ON THE SEALED SUITE. Until 2026-09-30 the challenger's
-    # score was the one it earned on its own TRAINING suite (the Red Queen's, seed 5150), compared
-    # with the incumbent's sealed score -- a challenger graded on the exam it studied. Now both
-    # are scored by the same reference validator on the same sealed suite, and the score is
-    # cached per genome hash and suite seal so each genome is examined once.
-    sealed = meta_benchmark.Suite(per_kind=IMMUNE_PER_KIND)
-    seal = sealed.seal()
-    cache = _state("sealed_scores")
-    scores = {k: v for k, v in (cache.get("scores") or {}).items() if v.get("seal") == seal}
+    arena = _judge_validators(out, st.get("challengers") or [],
+                              bool(sealed_now.get("blocked")))
+    rb = twin.rollback_plan(_release_history())
+    runs = shadow.get("runs") or []
+    return {"challengers": out[-30:], "rollback": rb, "shadow_desk": shadow,
+            "validator_arena": arena,
+            "metric": {"challengers": len(out),
+                       "adopted": sum(1 for r in out if r["adoption"] == "ADOPTED"),
+                       "shadow_runs_measured": sum(1 for r in runs
+                                                   if r.get("status") == "MEASURED"),
+                       "shadow_terminal_touches": sum(int(r.get("terminal_touches") or 0)
+                                                      for r in runs)}}
 
-    def _sealed_balanced(genome: Any, gh: str) -> float | None:
-        if gh in scores:
-            return scores[gh]["balanced"]
-        try:
-            g = dict(genome or {})
-            g["extra"] = tuple(tuple(x) for x in g.get("extra") or [])
-            r = meta_benchmark.score(meta_benchmark.reference_validator(
-                meta_benchmark.ValidatorConfig(**g)), sealed)
-        except Exception:
-            return None
-        scores[gh] = {"seal": seal, "balanced": r["balanced"], "immune": r["immune_score"],
-                      "power": r["power"]}
-        return r["balanced"]
+
+def _genome_cfg(genome: Any) -> meta_benchmark.ValidatorConfig:
+    g = dict(genome or {})
+    g["extra"] = tuple(tuple(x) for x in g.get("extra") or [])
+    return meta_benchmark.ValidatorConfig(**g)
+
+
+def _judge_validators(out: list[dict[str, Any]], challengers: list[dict[str, Any]],
+                      blocked: bool) -> dict[str, Any]:
+    """S33: VALIDATOR CHALLENGERS ARE JUDGED BY THE REAL GAUNTLET'S VERDICTS.
+
+    History, so the rule is not undone. Until 2026-09-30 a challenger was scored on its own Red
+    Queen training suite; then, for one day, by the reference validator on the sealed suite --
+    still a model graded by the same model, with the desk's real ten-gate certifier absent. Now
+    every genome (the incumbent's included) is scored by `gauntlet_arena.arena_score` on the
+    sealed cases the REAL gauntlet judged blind (`production_immune`, its current code only),
+    and adopted only on `gauntlet_arena.judge`'s ADOPT: never worse than the incumbent when laid
+    over the real gates, and better by the margin either there or where it disagrees with the
+    gauntlet. Scores are cached per (genome, real-verdict set). An adoption is research state
+    (`tier_s/adopted.json`); the sealed files are fingerprinted around the write."""
+    rows = [r for r in out if r["component"] == "validator"]
+    if not rows:
+        return {"status": "IDLE", "why": "no validator challenger registered"}
+    cases, status = _real_arena(ARENA_CASES)
+    if status.get("status") != "MEASURED":
+        for row in rows:
+            row["adoption"] = "PENDING_REAL_VERDICT"
+            row["judged_on"] = "UNMEASURED: " + str(status.get("why"))
+        return status
+    key = f"{status['code']}:{status['key']}"
+    cache = _state("arena_scores")
+    scores = {k: v for k, v in (cache.get("scores") or {}).items() if v.get("arena") == key}
+
+    def _score(genome: Any, gh: str) -> dict[str, Any] | None:
+        if gh not in scores:
+            try:
+                sc = gauntlet_arena.arena_score(
+                    meta_benchmark.reference_validator(_genome_cfg(genome)), cases)
+            except Exception:
+                return None
+            scores[gh] = {"arena": key, "score": sc}
+        got: dict[str, Any] = scores[gh]["score"]
+        return got
 
     inc = _incumbent_validator()
-    inc_bal = _sealed_balanced(inc.genome(), "incumbent:" + truth_kernel.sha256(
+    inc_sc = _score(inc.genome(), "incumbent:" + truth_kernel.sha256(
         truth_kernel.canon(inc.genome()))[:16])
+    by_name = {str(c.get("name")): c for c in challengers}
     fresh = 0
-    for row in out:
-        if row["component"] != "validator":
-            continue
-        c = next(x for x in st.get("challengers") or [] if x["name"] == row["name"])
+    for row in rows:
+        c = by_name.get(str(row["name"])) or {}
         gh = str(c.get("genome_hash"))
-        if gh not in scores and fresh >= 4:
-            row["adoption"] = "PENDING_SEALED_SCORE"     # examined on a later hour
+        if gh not in scores and fresh >= ARENA_FRESH_PER_HOUR:
+            row["adoption"] = "PENDING_REAL_VERDICT"          # examined on a later hour
             continue
         fresh += int(gh not in scores)
-        bal = _sealed_balanced(c.get("genome"), gh)
-        row["sealed_balanced"] = bal
-        row["incumbent_balanced"] = inc_bal
-        row["judged_on"] = f"sealed:{seal[:12]}"
-        if bal is None or inc_bal is None:
+        sc = _score(c.get("genome"), gh)
+        row["judged_on"] = f"real_gauntlet:{status['code']}"
+        if sc is None or inc_sc is None:
+            row["adoption"] = "PENDING_REAL_VERDICT"
             continue
-        if float(bal) > float(inc_bal) + 0.01 and authority.suspended("twin"):
-            row["adoption"] = "PENDING_AUTHORITY"   # the twin's contract is REJECTED
-        elif float(bal) > float(inc_bal) + 0.01 and not sealed_now.get("blocked"):
-            row["adoption"] = "ADOPTED"
+        verdict = gauntlet_arena.judge(sc, inc_sc)
+        row["real_arena"] = {"verdict": verdict, "joint": sc.get("joint"),
+                             "vs_gauntlet": sc.get("vs_gauntlet"),
+                             "incumbent_joint": inc_sc.get("joint")}
+        if verdict["verdict"] == "UNMEASURED":
+            row["adoption"] = "PENDING_REAL_VERDICT"
+        elif verdict["verdict"] == "ADOPT" and authority.suspended("twin"):
+            row["adoption"] = "PENDING_AUTHORITY"          # the twin's contract is REJECTED
+        elif verdict["verdict"] == "ADOPT" and blocked:
+            row["adoption"] = "BLOCKED_BY_SEALED_REGRESSION"
+        elif verdict["verdict"] == "ADOPT":
+            before = gauntlet_arena.sealed_fingerprint()
             ad = _state("adopted")
             ad["validator"] = c.get("genome")
             ad["validator_adopted_at"] = NOW.isoformat()
-            ad["validator_from"] = c["name"]
-            ad["validator_sealed_balanced"] = bal
+            ad["validator_from"] = row["name"]
+            ad["validator_judged_on"] = row["judged_on"]
+            ad["validator_real_arena"] = verdict
             _save_state("adopted", ad)
-            inc_bal = float(bal)
+            unchanged = gauntlet_arena.sealed_fingerprint() == before
+            row["adoption"] = "ADOPTED" if unchanged else "ADOPTED_SEALED_FILES_MOVED"
+            row["sealed_files_unchanged"] = unchanged
+            inc_sc = sc
         else:
-            row["adoption"] = "REJECTED_ON_SEALED"
-    _save_state("sealed_scores", {"scores": scores})
-    rb = twin.rollback_plan(_release_history())
-    return {"challengers": out[-30:], "rollback": rb,
-            "metric": {"challengers": len(out),
-                       "adopted": sum(1 for r in out if r["adoption"] == "ADOPTED")}}
+            row["adoption"] = "REJECTED_BY_REAL_GAUNTLET"
+    _save_state("arena_scores", {"scores": scores})
+    return {**status, "incumbent": inc_sc,
+            "adopted": [r["name"] for r in rows if r["adoption"] == "ADOPTED"]}
 
 
 def _release_history() -> list[dict[str, Any]]:
@@ -3704,6 +4177,40 @@ def _run(name: str, fn: Callable[[], dict[str, Any]], timings: dict[str, float],
     return out
 
 
+#: a door input missing this long is a LOUD defect: every promotion is withheld meanwhile
+DOOR_INPUT_GRACE_H = 2.0
+
+
+def _door_input_health() -> dict[str, Any]:
+    """The four verdict files the promotion door requires (fail closed), read as the door reads
+    them. One missing or stale withholds EVERY new live row, so each is tracked from the first
+    pass it was bad; past DOOR_INPUT_GRACE_H it is a DEFECT, printed and published, naming the
+    writer that is not delivering."""
+    from libs.tiers import promotion_authority
+    st = _state("door_inputs")
+    since = {str(k): str(v) for k, v in (st.get("bad_since") or {}).items()}
+    rows = promotion_authority.door_inputs()
+    defects: list[str] = []
+    for key, row in rows.items():
+        if row["ok"]:
+            since.pop(key, None)
+            continue
+        first = since.setdefault(key, NOW.isoformat())
+        try:
+            hours = (NOW - datetime.fromisoformat(first)).total_seconds() / 3600
+        except ValueError:
+            hours = 0.0
+        row["bad_for_h"] = round(hours, 2)
+        if hours >= DOOR_INPUT_GRACE_H:
+            defects.append(f"DEFECT door input {key} bad for {hours:.1f}h -- {row['why']} "
+                           f"(writer: {row['writer']}); every promotion is withheld meanwhile")
+    _save_state("door_inputs", {"bad_since": since, "at": NOW.isoformat()})
+    for d in defects:
+        print(d, file=sys.stderr, flush=True)
+    return {"inputs": rows, "all_ok": all(r["ok"] for r in rows.values()),
+            "grace_h": DOOR_INPUT_GRACE_H, "defects": defects}
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--only", default="", help="comma-separated organ names")
@@ -3744,7 +4251,8 @@ def main(argv: list[str] | None = None) -> int:
         ("grammar", organ_grammar), ("theory", organ_theory),
         ("predictions", organ_predictions), ("market", organ_market),
         ("failure_memory", organ_failure_memory), ("formal", organ_formal),
-        ("chaos", organ_chaos), ("replay", organ_replay), ("data_os", organ_data_os),
+        ("formal_claim", organ_formal_claim), ("chaos", organ_chaos),
+        ("replay", organ_replay), ("data_os", organ_data_os),
         ("world_science", organ_world_and_science), ("exchange", organ_exchange),
         ("worlds", organ_worlds),
     ]
@@ -3784,6 +4292,7 @@ def main(argv: list[str] | None = None) -> int:
                "emitted": {k: (v or {}).get("emitted") for k, v in reports.items()
                            if isinstance(v, dict) and v.get("emitted")}}
     if not only:
+        summary["door_inputs"] = _door_input_health()
         _write(SUMMARY, summary)
         # A layer is DONE only on the trading box's own evidence (libs/tiers/box_evidence).
         try:
@@ -3791,9 +4300,16 @@ def main(argv: list[str] | None = None) -> int:
             box_evidence.attest()
         except Exception as exc:                    # pragma: no cover - host dependent
             errors["box_evidence"] = f"{type(exc).__name__}: {exc}"
+    door_defects = list((summary.get("door_inputs") or {}).get("defects") or [])
     print(json.dumps({"total_seconds": summary["total_seconds"],
-                      "errors": list(summary["errors"])}), flush=True)
-    return 1 if errors and len(errors) == len(timings) else 0
+                      "errors": list(summary["errors"]),
+                      "door_input_defects": door_defects}), flush=True)
+    if errors and len(errors) == len(timings):
+        return 1
+    # A DOOR INPUT MISSING PAST ITS GRACE FAILS THE LEG, so the hourly report carries the defect
+    # (exit code and stderr tail) instead of a quiet line in a JSON file: meanwhile every
+    # promotion is withheld.
+    return 3 if door_defects else 0
 
 
 if __name__ == "__main__":

@@ -35,7 +35,7 @@ evolver, never adopted directly.
 from __future__ import annotations
 
 import hashlib
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import fields, replace
 from typing import Any
 
@@ -231,9 +231,17 @@ def attribute(scored: Sequence[tuple[Attack, float]],
 def generation(attackers: Sequence[Attack], defender: mb.ValidatorConfig,
                sealed: list[tuple[Case, Truth]], *, seed: int, pop: int = 10,
                defenders: int = 5, attack_seeds: int = 3,
-               researchers: Mapping[str, Mapping[str, Any]] | None = None) -> dict[str, Any]:
+               researchers: Mapping[str, Mapping[str, Any]] | None = None,
+               real_fitness: Callable[[mb.ValidatorConfig], Mapping[str, Any]] | None = None
+               ) -> dict[str, Any]:
     """`researchers`: name -> {"judged", "passed"} (the market's table). Absent -> every attack
-    is UNATTRIBUTED and charged its trap's own trials, as before."""
+    is UNATTRIBUTED and charged its trap's own trials, as before.
+
+    `real_fitness`: when given (`libs/tiers/gauntlet_arena`, over the sealed cases the REAL
+    gauntlet has judged), the defenders compete on it instead of on the reference validator's
+    own score: a mutant replaces the incumbent only if, laid over the real gates, it decides at
+    least as well and beats it on the arena objective (joint balanced, then net right-where-it-
+    disagrees with the gauntlet). The report names which judge ranked them."""
     rng = np.random.default_rng(seed)
     names = sorted(researchers or {})
     pool = [dict(a) for a in attackers] or [random_attack(rng, names) for _ in range(pop)]
@@ -263,10 +271,16 @@ def generation(attackers: Sequence[Attack], defender: mb.ValidatorConfig,
         elite_cases.extend(attack_cases(a, seeds[:1], profiles=researchers))
     inc_fit = defender_fitness(defender, sealed, elite_cases)
     best_cfg, best_fit = defender, inc_fit
+    real_inc = dict(real_fitness(defender)) if real_fitness is not None else None
+    best_real = real_inc
     for _ in range(defenders):
         cand = mutate_defender(defender, rng)
         f = defender_fitness(cand, sealed, elite_cases)
-        if f["balanced"] > best_fit["balanced"] + 1e-9:
+        if real_fitness is not None and best_real is not None:
+            rf = dict(real_fitness(cand))
+            if _real_key(rf) > _real_key(best_real):
+                best_cfg, best_fit, best_real = cand, f, rf
+        elif f["balanced"] > best_fit["balanced"] + 1e-9:
             best_cfg, best_fit = cand, f
     blind: dict[str, float] = {}
     by_kind: dict[str, list[float]] = {}
@@ -282,7 +296,73 @@ def generation(attackers: Sequence[Attack], defender: mb.ValidatorConfig,
             "new_kinds": {k: round(float(np.mean(by_kind[k])), 4) if k in by_kind else None
                           for k in NEW_KINDS},
             "incumbent_defender": inc_fit, "best_defender": best_fit,
+            "defender_judge": "real_gauntlet" if real_fitness is not None
+            else "reference_validator",
+            "incumbent_real": real_inc, "best_real": best_real,
             "challenger": best_cfg.genome() if best_cfg is not defender else None}
+
+
+#: the validator that accepts everything: a screen rule must separate a kind from genuine edges
+#: ON ITS OWN, because in the pre-judge screen it stands in front of no other check
+NULL_VALIDATOR = mb.ValidatorConfig(lookahead_on=False, fills_on=False, dsr_on=False,
+                                    wf_on=False, factor_on=False, survivorship_on=False,
+                                    stale_on=False)
+
+
+def defender_rule(kind: str, incumbent: mb.ValidatorConfig,
+                  sealed: list[tuple[Case, Truth]], *, seed: int, subtlety: float = 0.5,
+                  per: int = 4, n: int = 1200, features: Sequence[str] | None = None
+                  ) -> dict[str, Any]:
+    """THE RED QUEEN'S FINDING GIVEN A CONSEQUENCE (layer 9). `kind` fooled the certifier; find
+    the defender rule that stops it:
+
+      1. PROPOSE a check over the screenable features on `per` cases of the kind (at the
+         subtlety that fooled) beside the genuine positive controls, against a validator that
+         accepts everything -- so the rule separates the kind from real edges by itself;
+      2. CONFIRM it on fresh seeds of both (`test_invention.invent_from`);
+      3. the CHALLENGER (the incumbent validator + the rule) must SURVIVE THE SEALED TRAP SUITE:
+         no genuine edge the incumbent accepts is lost and no trap it rejects gets through.
+
+    Only a rule that clears all three is returned ADOPTABLE; the caller writes it into the
+    pre-judge screen. Every other outcome is returned with its reason."""
+    from libs.tiers import prejudge_screen, test_invention
+    feats = tuple(features or prejudge_screen.SCREEN_FEATURES)
+
+    def cases(base: int) -> list[tuple[Case, Truth]]:
+        out = [generate(kind, base + i, n, subtlety) for i in range(per)]
+        out += [traps.generate(k, base + 97 + i, n) for k in traps.TRUE_KINDS
+                for i in range(max(1, per // 2))]
+        return out
+
+    inv = test_invention.invent_from(NULL_VALIDATOR, cases(seed * 1009 + 17),
+                                     cases(seed * 1009 + 50_021), top=1, features=feats)
+    gates = inv.get("candidate_gates") or []
+    base = {"kind": kind, "subtlety": round(float(subtlety), 3), "n_tried": inv.get("n_tried"),
+            "n_promising": inv.get("n_promising")}
+    if not gates:
+        return {**base, "status": "NO_CONFIRMED_CHECK",
+                "why": "no screenable check separated the kind from genuine edges on both "
+                       "the proposal and the confirmation seeds"}
+    g = gates[0]
+    surv = prejudge_screen.sealed_survival(incumbent, g["check"], sealed)
+    out = {**base, "check": list(g["check"]),
+           "proposal": {"d_immune": g["d_immune"], "d_power": g["d_power"]},
+           "confirmation": {"d_immune": g["confirm_d_immune"],
+                            "d_power": g["confirm_d_power"]},
+           "sealed": surv}
+    if not surv["survives"]:
+        return {**out, "status": "FAILED_SEALED_SUITE",
+                "why": "the challenger lost power or immunity on the sealed trap suite"}
+    return {**out, "status": "ADOPTABLE"}
+
+
+def _real_key(f: Mapping[str, Any]) -> tuple[float, float]:
+    """The arena objective, lexicographic: joint balanced with the real gates, then the net share
+    of disagreements with the real gauntlet that the genome got right."""
+    joint = (f.get("joint") or {}).get("balanced")
+    n = max(1, int(f.get("n") or 0))
+    net = float((f.get("vs_gauntlet") or {}).get("net") or 0) / n
+    return (round(float(joint), 9) if joint is not None else -1.0, net)
 
 
 def from_state(state: Mapping[str, Any]) -> list[Attack]:

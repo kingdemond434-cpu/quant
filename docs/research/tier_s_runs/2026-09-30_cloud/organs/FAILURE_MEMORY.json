@@ -1,0 +1,24 @@
+{
+ "n_rows": 5,
+ "n_classes": 1,
+ "cause_totals": {
+  "LIVE_DECAY": 5
+ },
+ "compression": {
+  "statements": 0,
+  "rows_covered": 0,
+  "rows_per_statement": null,
+  "coverage_share": 0.0
+ },
+ "theorems": [],
+ "rules": [],
+ "forward_failures": 5,
+ "live_failures": 0,
+ "metric": {
+  "theorems": 0,
+  "rows_per_statement": null,
+  "coverage_share": 0.0
+ },
+ "generated_utc": "2026-09-30T11:47:29.089020+00:00",
+ "seconds": 0.026
+}

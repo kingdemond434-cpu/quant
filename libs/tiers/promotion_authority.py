@@ -19,9 +19,14 @@ check that raises withholds too (`DOOR_ERROR`, fail closed):
                          (`libs/tiers/door_evidence`, `data/tier_s/door_verdicts.json`);
   IMMUNE_FREEZE          the production certifier got EASIER TO FOOL on the sealed suite -- a
                          freeze judged by the real certifier (`judge` production:*) whose reason
-                         is a DROP. A freeze from the reference validator, from an absolute
-                         floor, or from a stale file (> MAX_AGE_H) withholds nothing: a toy's
-                         verdict gets no authority over capital.
+                         is a DROP. A freeze from the reference validator or from an absolute
+                         floor withholds nothing: a toy's verdict gets no authority over capital.
+
+FAIL CLOSED (audit 2026-09-30). The door's four hourly verdict files (replication, online FDR,
+the immune verdict, the panel/theory verdicts) must be PRESENT and FRESH (<= MAX_AGE_H): absent,
+stale, torn or malformed withholds as `DOOR_ERROR`, as does any check that raises. Silence from
+a verifier is never read as its approval. An organ whose contracts are all REJECTED is suspended
+and is not required.
 
 BILLED LIKE EVERY RAIL (growth governance Rule 1): the rail `tier_s_evidence_block` in
 `libs/portfolio/rails.py` is measured by `missed_growth.measure_tier_s_block` from the ledger
@@ -57,12 +62,39 @@ MAX_AGE_H = 6.0
 MISMATCH = frozenset({"MISMATCH", "DISAGREE", "FAIL", "FAILED", "NOT_REPLICATED"})
 
 
+class DoorReadError(RuntimeError):
+    """A door input that EXISTS but cannot be read, parsed or understood. `block` turns it into
+    a `DOOR_ERROR` withhold: absence is a verdict (nothing to withhold on), damage is not."""
+
+
 def _read(p: Path) -> Any:
+    """The parsed file, or None when it does not exist. Anything else -- a permission error, a
+    torn write, invalid JSON, a document that is not a JSON object -- raises DoorReadError, so
+    the door fails CLOSED on a damaged input instead of reading it as 'nothing to withhold'."""
     firewall.may("promoter", "read", str(p.relative_to(ROOT)).replace("\\", "/"))
     try:
-        return json.loads(p.read_text("utf-8"))
-    except (OSError, ValueError):
+        doc = json.loads(p.read_text("utf-8"))
+    except FileNotFoundError:
         return None
+    except (OSError, ValueError) as exc:
+        raise DoorReadError(f"{p.name} unreadable: {type(exc).__name__}: {exc}") from exc
+    if not isinstance(doc, dict):
+        raise DoorReadError(f"{p.name} is a {type(doc).__name__}, not a JSON object")
+    return doc
+
+
+def _required(p: Path, key: str = "generated_utc") -> dict[str, Any]:
+    """A verdict file the door NEEDS: present, readable and fresh (<= MAX_AGE_H). Absent or stale
+    raises DoorReadError -- a verifier that stopped reporting cannot vouch for a certificate, so
+    the door withholds (billed, like every door verdict) instead of reading silence as a pass
+    (audit 2026-09-30). Suspended organs are exempt: their checks return before reading."""
+    doc = _read(p)
+    if doc is None:
+        raise DoorReadError(f"{p.name} absent: its hourly verifier has not reported")
+    if not _fresh(doc, key):
+        raise DoorReadError(f"{p.name} stale or undated (> {MAX_AGE_H:g}h): its hourly "
+                            "verifier has stopped reporting")
+    return dict(doc)
 
 
 def _fresh(doc: Any, key: str = "generated_utc") -> bool:
@@ -80,9 +112,11 @@ def _match(cert: str, name: str) -> bool:
 
 
 def _replication(name: str) -> str | None:
-    doc = _read(REPLICATION)
+    doc = _required(REPLICATION, "at")
     rows = (doc.get("verdicts") or doc.get("rows") or []) if isinstance(doc, dict) else []
-    for r in rows if isinstance(rows, list) else []:
+    if not isinstance(rows, list):
+        raise DoorReadError(f"{REPLICATION.name} verdicts are a {type(rows).__name__}")
+    for r in rows:
         if not isinstance(r, dict):
             continue
         cert = str(r.get("cell") or r.get("key") or "")
@@ -95,10 +129,11 @@ def _replication(name: str) -> str | None:
 def _fdr(name: str) -> str | None:
     if authority.suspended("online_fdr"):      # its contract is REJECTED: no authority here
         return None
-    doc = _read(FDR_ROWS)
-    if not isinstance(doc, dict) or not _fresh(doc):
-        return None
-    for r in doc.get("certified") or []:
+    doc = _required(FDR_ROWS)
+    certified = doc.get("certified") or []
+    if not isinstance(certified, list):
+        raise DoorReadError(f"{FDR_ROWS.name} certified rows are a {type(certified).__name__}")
+    for r in certified:
         if isinstance(r, dict) and r.get("over_budget") and _match(str(r.get("test_id")), name):
             return (f"ONLINE_FDR_OVER_BUDGET: {r.get('test_id')} was admitted after the lifetime "
                     f"online-FDR budget was spent (p={r.get('p')}, "
@@ -109,9 +144,7 @@ def _fdr(name: str) -> str | None:
 def _freeze() -> str | None:
     if authority.suspended("immune"):
         return None
-    doc = _read(FREEZE)
-    if not isinstance(doc, dict) or not _fresh(doc, "at"):
-        return None
+    doc = _required(FREEZE, "at")
     if str(doc.get("verdict")) != "FREEZE" or not str(doc.get("judge") or "").startswith(
             "production:"):
         return None
@@ -135,16 +168,21 @@ def _constitution(name: str) -> str | None:
         return None
     from libs.tiers import truth_kernel
     live = _read(CONSTITUTION)
-    if not isinstance(live, dict) or not isinstance(live.get("rules"), dict):
+    if live is None:
         return None                     # no live file: the sealed default is in force
+    if not isinstance(live.get("rules"), dict):
+        raise DoorReadError(f"{CONSTITUTION.name} carries no rules object")
     firewall.may("promoter", "read", str(RATIFICATIONS.relative_to(ROOT)))
     ratifs: list[dict[str, Any]] = []
     try:
         for line in RATIFICATIONS.read_text("utf-8").splitlines():
             if line.strip():
                 ratifs.append(json.loads(line))
-    except (OSError, ValueError):
+    except FileNotFoundError:
         pass
+    except (OSError, ValueError) as exc:
+        raise DoorReadError(f"{RATIFICATIONS.name} unreadable: {type(exc).__name__}: {exc}"
+                            ) from exc
     st = truth_kernel.constitution_status(truth_kernel.constitution_doc(), live, ratifs)
     if st.get("status") != "VIOLATION":
         return None
@@ -158,10 +196,13 @@ def _panel_and_theory(name: str) -> str | None:
     sample (`libs/tiers/door_evidence`). A stale verdict file withholds nothing, and each half
     loses its authority while its organ is suspended."""
     from libs.tiers import door_evidence
-    doc = _read(DOOR_VERDICTS)
-    if not isinstance(doc, dict) or not _fresh(doc):
+    if authority.suspended("review") and authority.suspended("theory"):
         return None
-    for cert, row in (doc.get("rows") or {}).items():
+    doc = _required(DOOR_VERDICTS)
+    rows = doc.get("rows") or {}
+    if not isinstance(rows, dict):
+        raise DoorReadError(f"{DOOR_VERDICTS.name} rows are a {type(rows).__name__}")
+    for cert, row in rows.items():
         if not isinstance(row, dict) or not _match(str(cert), name):
             continue
         if authority.suspended("review"):
@@ -197,6 +238,30 @@ def block(name: str) -> str | None:
         if why:
             return why
     return None
+
+
+#: the four hourly verdict files the door REQUIRES present and fresh (fail closed), with their
+#: stamp key and the leg that writes each
+REQUIRED: dict[str, tuple[Path, str, str]] = {
+    "replication": (REPLICATION, "at", "hourly leg replication_civilization"),
+    "online_fdr": (FDR_ROWS, "generated_utc", "tier_s organ online_fdr"),
+    "immune": (FREEZE, "at", "tier_s organ immune"),
+    "door": (DOOR_VERDICTS, "generated_utc", "tier_s organ door"),
+}
+
+
+def door_inputs() -> dict[str, dict[str, Any]]:
+    """{input: {ok, why, writer}} for the door's four required verdict files, read exactly as
+    `block` reads them. A missing or stale one withholds EVERY promotion, so its health is
+    published every hour (the `tier_s` summary's `door_inputs`)."""
+    out: dict[str, dict[str, Any]] = {}
+    for key, (path, stamp, writer) in REQUIRED.items():
+        try:
+            _required(path, stamp)
+            out[key] = {"ok": True, "why": "present and fresh", "writer": writer}
+        except Exception as exc:
+            out[key] = {"ok": False, "why": str(exc), "writer": writer}
+    return out
 
 
 LIVE_DOOR = DESK / "data" / "tier_s" / "live_door.json"
