@@ -362,6 +362,21 @@ def acquire(limit: int = MAX_PER_RUN) -> dict[str, Any]:
     def _refuse(why: str) -> None:
         refusals[why] = refusals.get(why, 0) + 1
 
+    # FEEDS THE MINED REPOS USE, which need a shape and a first-print vintage the generic parser
+    # cannot supply (`libs/data/repo_mined_feeds.py`). Same registry, same certificate, same
+    # `ext_<name>` vocabulary; a feed that fails is refused by name like any endpoint.
+    try:
+        from libs.data import repo_mined_feeds as _rmf
+        mined = _rmf.absorb(reg, STORE, fetch=_fetch, parse=_parse, certify=certify,
+                            write_certificate=write_certificate)
+        tried += mined["tried"]
+        kept += mined["kept"]
+        new_series.extend(mined["new_series"])
+        for why, n in mined["refusals"].items():
+            refusals[why] = refusals.get(why, 0) + n
+    except Exception as exc:                                                # noqa: BLE001
+        _refuse(f"repo-mined feeds failed: {type(exc).__name__}")
+
     for url, host in _endpoints(limit):
         tried += 1
         attempt_at = datetime.now(UTC).isoformat(timespec="seconds")
