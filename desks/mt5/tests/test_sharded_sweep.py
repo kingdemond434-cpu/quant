@@ -69,7 +69,7 @@ def _docket() -> list[dict[str, Any]]:
             for _v in range(2):
                 seed += 1
                 days = int(rng.choice([45, 320, 480, 600]))
-                drift = float(rng.choice([0.0, -0.05, 0.02, 0.28], p=[0.45, 0.25, 0.2, 0.1]))
+                drift = float(rng.choice([0.0, -0.05, 0.02, 0.5], p=[0.45, 0.25, 0.2, 0.1]))
                 rows.append({"symbol": sym, "family": f,
                              "params": {"seed": seed, "drift": drift, "days": days}})
     rows.append({"symbol": "NOTLISTED", "family": "carry",
