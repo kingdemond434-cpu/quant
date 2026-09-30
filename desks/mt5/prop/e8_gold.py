@@ -96,6 +96,12 @@ LEG_MATCH_TOL = 0.05
 #: hours earlier than the stamp of the order it created; anything older is some other order.
 LEG_MATCH_WINDOW_MS = 10 * 60 * 1000
 XAU_OZ_PER_LOT = 100.0  # fallback for a leg journalled before risk_usd was kept on it
+#: With no own order to measure the venue clock against, the send-time bound widens to this: a
+#: box clock that runs fast must not hide a send that landed. The other fields (instrument, qty,
+#: side, level, not a journal id) still have to agree, and a fill older than this still cannot.
+UNMEASURED_SKEW_MS = 24 * 3600 * 1000
+#: The growth-governance rail the unowned-position block is billed under (libs/portfolio/rails).
+UNOWNED_BLOCK_RAIL = "e8_unowned_position_block"
 # Terminal reconnection (2026-09-30: ~70 min of "No IPC connection" in one day). Each attempt
 # drops the dead IPC handle and re-attaches; the waits are seconds inside a 5-minute pass.
 MT5_RETRY_WAITS_S = (0.0, 2.0, 5.0, 15.0, 30.0)
@@ -218,6 +224,23 @@ def _iso_ms(at: Any) -> int:
         return int(datetime.fromisoformat(str(at)).timestamp() * 1000)
     except (TypeError, ValueError):
         return 2**62
+
+
+def venue_clock_skew_ms(journal: list[dict], rows: list[dict]) -> int | None:
+    """How far the venue's order stamps run ahead of this box's clock, in ms, measured on the
+    lane's OWN sends: each SENT journal row's box time against the venue's stamp on that order.
+    The median, so one late-acknowledged send cannot move it. None when no own order is visible.
+
+    WHY (audit 2026-09-30): the send-time bound compared the box clock with the venue's stamp,
+    so a box running 15 minutes fast refused a send that had landed and sent it again. Measured
+    this way the offset carries the box's skew AND whatever epoch the venue stamps in.
+    """
+    stamp = {int(o["id"]): ms for o in rows if o.get("id") is not None
+             and (ms := _order_ms(o)) is not None}
+    diffs = sorted(stamp[int(r["order_id"])] - _iso_ms(r.get("at")) for r in journal
+                   if r.get("status") == "SENT" and r.get("order_id") is not None
+                   and int(r["order_id"]) in stamp and _iso_ms(r.get("at")) < 2**62)
+    return diffs[len(diffs) // 2] if diffs else None
 
 
 def matching_resting_order(orders: list[dict], side: str, price: float, known_ids: set[int],
@@ -864,7 +887,13 @@ def _retry_failed_legs(venue: Any, state: dict, doc: dict, *, hour: float, now: 
              for leg in (w.get("orders") or {}).values() if leg.get("id") is not None}
     # Every id the intents journal says this lane sent -- yesterday's legs included, which have
     # left the state at the rollover but still sit in the venue's two-day history.
-    known |= set(own_entry_orders(_journal_rows(), state))
+    journal = _journal_rows()
+    known |= set(own_entry_orders(journal, state))
+    skew = venue_clock_skew_ms(journal, [*open_orders, *hist_rows])
+    try:
+        venue_min = float(venue.min_lot(SYMBOL))
+    except Exception:
+        venue_min = 0.0
     for dec in retry_decisions(state, hour, float(bid), float(ask), filled, blocked):
         name, side, leg = dec["window"], dec["side"], dec["leg"]
         w = state["windows"][name]
@@ -881,12 +910,17 @@ def _retry_failed_legs(venue: Any, state: dict, doc: dict, *, hour: float, now: 
             continue
         levels = {k: leg[k] for k in ("price", "sl", "tp", "lot")}
         done = [o for o in hist_rows if str(o.get("status") or "").lower() == "filled"]
+        # The send time on the VENUE's clock, and the size the venue actually sends (the adapter
+        # floors every lot at the venue minimum), so neither a skewed box nor a small lot can
+        # hide a send that landed.
+        sent_at = _iso_ms(leg.get("first_at"))
+        since = sent_at + skew if skew is not None else sent_at - UNMEASURED_SKEW_MS
         oid = None
         for book in (open_orders, done):
             oid = oid or matching_resting_order(book, side, float(leg["price"]), known,
-                                                lot=float(leg["lot"]),
+                                                lot=max(float(leg["lot"]), venue_min),
                                                 instrument_id=int(instrument_id),
-                                                since_ms=_iso_ms(leg.get("first_at")))
+                                                since_ms=since)
         if oid is None and position_since_failure(xau_positions, side, leg.get("first_at"),
                                                   state, filled):
             why = ("a position on this side opened after the failed send and no window owns it: "
@@ -900,9 +934,15 @@ def _retry_failed_legs(venue: Any, state: dict, doc: dict, *, hour: float, now: 
             w["failed"].pop(side, None)
             w.setdefault("abandoned", {})[side] = {**leg, "why": why}
             doc["actions"].append({**act, "act": "leg_abandon", "why": why,
+                                   "rail": UNOWNED_BLOCK_RAIL,
                                    "missed_growth_risk_usd": round(float(missed), 2)})
-            log(f"[{name}] {side} dropped leg abandoned: {why}; MISSED GROWTH: the leg's "
-                f"{float(missed):.0f} USD of certified risk is not deployed")
+            _record({"at": now.isoformat(timespec="seconds"), "window": name, "side": side,
+                     **levels, "status": "RAIL_BLOCKED", "rail": UNOWNED_BLOCK_RAIL,
+                     "missed_growth_risk_usd": round(float(missed), 2),
+                     "retry_of": leg.get("first_at")})
+            log(f"[{name}] {side} dropped leg abandoned: {why}; MISSED GROWTH "
+                f"({UNOWNED_BLOCK_RAIL}): the leg's {float(missed):.0f} USD of certified risk "
+                "is not deployed")
             continue
         row = {"at": now.isoformat(timespec="seconds"), "window": name, "side": side,
                **levels, "armed": True, "retry_of": leg.get("first_at")}

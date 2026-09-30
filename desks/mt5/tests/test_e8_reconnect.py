@@ -186,8 +186,13 @@ def test_an_unreadable_send_time_adopts_nothing() -> None:
 # ----------------------------------------------------------------- the pass itself
 
 class _Venue:
-    def __init__(self, book: list[dict] | None = None, fail: bool = False) -> None:
+    def __init__(self, book: list[dict] | None = None, fail: bool = False,
+                 min_lot: float = 0.01) -> None:
         self.book, self.fail, self.sent = list(book or []), fail, []
+        self._min = min_lot
+
+    def min_lot(self, _s: str) -> float:
+        return self._min
 
     def quote(self, _s: str) -> tuple[float, float]:
         return 4320.0, 4320.3
@@ -292,3 +297,61 @@ def test_a_position_that_predates_the_failure_or_is_ours_does_not_block() -> Non
     st = _state()
     assert g.position_since_failure(ours, "buy_stop", LEG["first_at"], st, {11: 9}) is False
     assert g.position_since_failure(ours, "sell_stop", LEG["first_at"], st, {}) is False
+
+
+# ----------------------------------------------------------------- third audit (2026-09-30)
+MIN = 60_000
+
+
+def _journal(*rows: dict) -> None:
+    import json
+    g.INTENTS.write_text("".join(json.dumps(r) + "\n" for r in rows), "utf-8")
+
+
+def test_the_venue_clock_is_measured_on_the_lanes_own_sends() -> None:
+    journal = [{"status": "SENT", "order_id": 11, "at": "2026-09-28T06:00:00+00:00"},
+               {"status": "SENT", "order_id": 12, "at": "2026-09-28T06:05:00+00:00"},
+               {"status": "REJECTED", "at": "2026-09-28T06:06:00+00:00"}]
+    rows = [{"id": 11, "createdDate": g._iso_ms("2026-09-28T05:45:00+00:00")},
+            {"id": 12, "createdDate": g._iso_ms("2026-09-28T05:50:00+00:00")}]
+    assert g.venue_clock_skew_ms(journal, rows) == -15 * MIN      # the box runs 15 min fast
+    assert g.venue_clock_skew_ms(journal, []) is None
+
+
+def test_a_box_running_fifteen_minutes_fast_still_finds_the_send_that_landed() -> None:
+    """The audit's skew probe: the landed send is stamped 15 minutes before the box's clock said
+    it was sent. Measured against the lane's own earlier send, it is adopted, never doubled."""
+    _journal({"status": "SENT", "order_id": 11, "at": "2026-09-28T06:00:00+00:00"})
+    own = _order(11, "sell", 4300.0, createdDate=g._iso_ms("2026-09-28T05:45:00+00:00"))
+    landed = _order(78, "buy", 4340.0, createdDate=SENT_MS - 15 * MIN + 2_000)
+    v, st = _Venue(book=[own, landed]), _state()
+    _retry(v, st)
+    assert v.sent == [] and st["windows"]["asia"]["orders"]["buy_stop"]["id"] == 78
+
+
+def test_with_no_own_send_to_measure_the_bound_widens_but_still_refuses_old_fills() -> None:
+    landed = _order(78, "buy", 4340.0, createdDate=SENT_MS - 15 * MIN)
+    v, st = _Venue(book=[landed]), _state()
+    _retry(v, st)
+    assert v.sent == [] and st["windows"]["asia"]["orders"]["buy_stop"]["id"] == 78
+    stale = _order(79, "buy", 4340.0, createdDate=SENT_MS - 40 * 60 * MIN)
+    v, st = _Venue(book=[stale]), _state()
+    _retry(v, st)
+    assert len(v.sent) == 1 and st["windows"]["asia"]["orders"]["buy_stop"]["id"] == 901
+
+
+def test_a_small_lot_is_matched_at_the_size_the_venue_actually_sent() -> None:
+    """The adapter floors every lot at the venue minimum, so a 0.005 leg rests as 0.01."""
+    v, st = _Venue(book=[_order(78, "buy", 4340.0, qty=0.01)], min_lot=0.01), _state()
+    st["windows"]["asia"]["failed"]["buy_stop"]["lot"] = 0.005
+    _retry(v, st)
+    assert v.sent == [] and st["windows"]["asia"]["orders"]["buy_stop"]["id"] == 78
+
+
+def test_the_unowned_position_block_is_billed_to_its_registered_rail() -> None:
+    from libs.portfolio.rails import rail
+    assert rail(g.UNOWNED_BLOCK_RAIL).kind == "integrity"
+    v, st = _Venue(), _state()
+    _retry(v, st, xau_positions=[{"id": 9, "side": "buy", "openDate": 4_102_444_800_000}])
+    [row] = [r for r in g._journal_rows() if r.get("status") == "RAIL_BLOCKED"]
+    assert row["rail"] == g.UNOWNED_BLOCK_RAIL and row["missed_growth_risk_usd"] == 1000.0

@@ -159,6 +159,12 @@ RAILS: tuple[Rail, ...] = (
     Rail("tier_s_evidence_block", "veto",
          "promoter.tier_s_block <- libs.tiers.promotion_authority.block",
          "measure_tier_s_block"),
+    # E8 GOLD'S DUPLICATE GUARD (2026-09-30). A dropped bracket leg is not re-sent while an
+    # unowned position on its side, opened since the failed send, may BE that send. If it is not,
+    # the leg's certified risk goes undeployed: each block is journalled RAIL_BLOCKED with its
+    # missed_growth_risk_usd in data/e8_gold_intents.jsonl, and the rail is billed like a veto.
+    Rail("e8_unowned_position_block", "integrity",
+         "prop.e8_gold._retry_failed_legs <- position_since_failure", "measure_veto"),
 )
 
 _CACHE: dict[str, Any] = {"mtime": None, "doc": {}}
