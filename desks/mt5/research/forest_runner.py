@@ -89,6 +89,11 @@ MAX_LEDGER_ROWS = 4000
 #: Discoveries pulled from the registry to SEED the dedup view, so a mechanism another forest
 #: already recorded is recognised as a duplicate rather than minted twice.
 VIEW_SEED_ROWS = 1500
+#: The share of the whole pass the practitioner role may spend MINING its forest's grounds.
+#: Measured 2026-09-30: every forest leg logged ~40-48k s of wall a day while opening no socket
+#: at all -- the other ten roles finish in seconds and the pass then idles to its end. Those
+#: seconds now go to the fetches the deep-forest miner could never reach alone.
+MINE_SHARE_OF_PASS = 0.8
 #: A dependent role (data agents, candidate compilers) waits at most this share of its own budget
 #: for the role that feeds it, then reports what it got. It never blocks the pass.
 DEPENDENCY_WAIT_SHARE = 0.6
@@ -259,6 +264,9 @@ class Run:
     forest: str
     allocation: F.Allocation
     dry_run: bool = False
+    #: Mine this forest's own deep-forest grounds in the practitioner role (the scheduled legs
+    #: pass `--mine-grounds`; tests and ad-hoc runs do not, so they open no socket).
+    mine_grounds: bool = False
     started: float = field(default_factory=time.monotonic)
     view: dc.RegistryView = field(default_factory=dc.RegistryView)
     lock: threading.Lock = field(default_factory=threading.Lock)
@@ -676,7 +684,10 @@ def _region_claims(run: Run, limit: int = MAX_PER_ROLE * 4) -> list[dict[str, An
     want_r = {str(c).lower() for c in (*run.spec.grounds, *run.spec.countries)}
     want_l = {str(x).lower() for x in run.spec.languages}
     out: list[dict[str, Any]] = []
-    for row in _jsonl_tail(CLAIMS_JSONL):
+    # NEWEST FIRST. The tail is read oldest-first and cut at `limit`, so the claims this very
+    # pass mined (appended last) were the ones never carried forward; the dedup chain makes a
+    # re-read of an old claim an edge, so reading new-to-old loses nothing.
+    for row in reversed(_jsonl_tail(CLAIMS_JSONL)):
         region = str(row.get("region") or "").lower()
         lang = str(row.get("language") or row.get("lang") or "").lower()
         if region in want_r or (lang and lang in want_l):
@@ -686,6 +697,48 @@ def _region_claims(run: Run, limit: int = MAX_PER_ROLE * 4) -> list[dict[str, An
     return out
 
 
+def _mine_grounds(run: Run, res: RoleResult, budget_s: float) -> None:
+    """FETCH this forest's registered grounds through `deep_forest_miner` -- the organ that owns
+    the fetch -- with the seconds this pass would otherwise spend idle.
+
+    The miner works the forest's grounds least-recently-attempted first, concurrently with per-
+    host politeness, checkpoints every ground into the SHARED frontier / claims ledger / vector
+    counts, queues the claims as story_mechanism tasks for the deepening worker, and publishes
+    ALT_DATA_YIELD.json. The claims it appends are then carried into the registry by this role
+    below (newest first). Its budget is never below the role's own slice and never past the
+    pass's end; a failure is this role's note, never the pass's.
+    """
+    names = [str(g.get("name")) for g in _grounds(run) if g.get("name")]
+    if not names:
+        res.note("ground_mining", f"{UNMEASURED}: no deep-forest ground carries region "
+                                  f"{sorted(run.spec.grounds)}; nothing to fetch")
+        return
+    pass_s = float(run.allocation.budget_s)
+    mine_s = max(float(budget_s), pass_s * MINE_SHARE_OF_PASS - run.elapsed())
+    mine_s = min(mine_s, pass_s * 0.9 - run.elapsed())
+    if mine_s < 20.0:
+        res.note("ground_mining", f"{UNMEASURED}: {mine_s:.0f}s left in the pass, below one fetch")
+        return
+    try:
+        try:                          # one module object, whichever root imported it first
+            from research import deep_forest_miner as dfm
+        except ImportError:
+            import deep_forest_miner as dfm  # type: ignore[no-redef]
+        doc = dfm.run(budget_s=mine_s, fetch=True, only=names, write=True,
+                      report_path=REPORTS / f"DEEP_FOREST_{run.forest}.json",
+                      leg=f"forest_{run.forest}")
+    except Exception as exc:
+        res.note("ground_mining", f"{UNMEASURED}: deep_forest_miner failed "
+                                  f"{type(exc).__name__}: {str(exc)[:160]}")
+        return
+    res.detail["ground_mining"] = {
+        "budget_s": round(mine_s, 1), "grounds": len(names),
+        "scheduled": doc.get("grounds_scheduled"), "worked": doc.get("grounds_worked"),
+        "productive": doc.get("productive"), "claims_new": doc.get("claims_new"),
+        "datasets_new": doc.get("datasets_new"), "tasks_queued": doc.get("tasks_queued"),
+        "network": doc.get("network"), "fetch": doc.get("fetch_stats")}
+
+
 def role_practitioner(run: Run, res: RoleResult, budget_s: float) -> None:
     """Traders, forums, broker research and public communities -- the deep forest's own ground.
 
@@ -693,6 +746,8 @@ def role_practitioner(run: Run, res: RoleResult, budget_s: float) -> None:
     fringe or contradictory material is a CROWDING measurement rather than noise. Nothing is
     dropped here for being unreliable; reliability rides on the row.
     """
+    if run.mine_grounds and not run.dry_run:
+        _mine_grounds(run, res, budget_s)
     deadline = time.monotonic() + budget_s
     conn = run.conn()
     try:
@@ -1324,7 +1379,7 @@ def _heartbeat(run: Run, status: str, note: str = "") -> None:
 
 def run_pass(forest_id: str, *, budget_s: float | None = None, workers: int | None = None,
              dry_run: bool = False, allocation: F.Allocation | None = None,
-             roles: Iterable[str] | None = None) -> dict[str, Any]:
+             roles: Iterable[str] | None = None, mine_grounds: bool = False) -> dict[str, Any]:
     """One full pass of one forest: all eleven roles, in parallel, each isolated.
 
     A ROLE THAT RAISES COSTS THE OTHER TEN NOTHING. Every role body is wrapped here, its failure
@@ -1338,7 +1393,8 @@ def run_pass(forest_id: str, *, budget_s: float | None = None, workers: int | No
         alloc = F.Allocation(**{**alloc.__dict__, "budget_s": int(max(1.0, budget_s))})
     if workers is not None:
         alloc = F.Allocation(**{**alloc.__dict__, "workers": max(1, int(workers))})
-    run = Run(forest=spec.id, allocation=alloc, dry_run=bool(dry_run))
+    run = Run(forest=spec.id, allocation=alloc, dry_run=bool(dry_run),
+              mine_grounds=bool(mine_grounds))
     seeded = _seed_view(run)
     _heartbeat(run, "running", f"pass start ({alloc.workers} worker(s))")
     plan = [(r, s) for r, s in F.role_plan(spec.id, alloc)
@@ -1413,6 +1469,7 @@ def _report(run: Run, seeded: int, plan: Sequence[tuple[str, float]]) -> dict[st
         "techniques": run.techniques[:24],
         "unmeasured": unmeasured,
         "unmeasured_packs": F.unmeasured_packs(spec.id),
+        "ground_mining": bool(run.mine_grounds and not run.dry_run),
         "boundary": ("this organ opens no socket: every fetch belongs to the organ that owns it, "
                      "every registered ground is MINED with its terms/robots note carried as a "
                      "routing label (LAWS 5e, 2026-09-23), the only refusals are the five acts "
@@ -1459,6 +1516,8 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--dry-run", action="store_true", help="measure and write nothing")
     ap.add_argument("--role", action="append", help="run only these roles (repeatable)")
     ap.add_argument("--list", action="store_true", help="print the federation and exit")
+    ap.add_argument("--mine-grounds", action="store_true",
+                    help="fetch this forest's deep-forest grounds in the practitioner role")
     a = ap.parse_args(argv)
     if a.list or not a.forest:
         print(json.dumps(F.census(), indent=1, ensure_ascii=False))
@@ -1468,7 +1527,7 @@ def main(argv: list[str] | None = None) -> int:
         print(f"unknown forest {fid!r}; known: {sorted(F.FORESTS)}")
         return 2
     doc = run_pass(fid, budget_s=a.budget_s, workers=a.workers, dry_run=a.dry_run,
-                   roles=a.role or None)
+                   roles=a.role or None, mine_grounds=a.mine_grounds)
     for line in summary(doc):
         print(line, flush=True)
     if not a.once:

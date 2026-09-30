@@ -12,7 +12,9 @@ VPS pass too, where the terminal is absent and the honest return code is 2.
 """
 
 import json
+import os
 import sys
+import time
 from pathlib import Path
 
 try:
@@ -72,6 +74,57 @@ DERIVED_MANIFEST = OUT / "derived_series.json"
 #: sum. Anything the source lacks is simply not carried, never invented.
 BAR_AGG: dict[str, str] = {"open": "first", "high": "max", "low": "min", "close": "last",
                            "tick_volume": "sum", "spread": "mean", "real_volume": "sum"}
+
+
+def _atomic_parquet(frame: pd.DataFrame, destination: Path) -> None:
+    """Publish one complete parquet or leave the previous complete file in place.
+
+    Forward readers run while this refresher runs.  Writing directly over the destination lets a
+    reader observe a half-written footer and incorrectly retire a valid certificate as
+    ``BLOCKED_NO_BARS``.  The temporary file lives beside the destination so ``os.replace`` is an
+    atomic rename on the same NTFS volume.  Antivirus/indexers can briefly hold the old file on
+    Windows, hence the bounded retry; failure preserves the old valid file.
+    """
+    temporary = destination.with_name(f".{destination.name}.{os.getpid()}.refreshing")
+    try:
+        frame.to_parquet(temporary)
+        for attempt in range(8):
+            try:
+                os.replace(temporary, destination)
+                return
+            except PermissionError:
+                if attempt == 7:
+                    raise
+                time.sleep(0.125 * (attempt + 1))
+    finally:
+        temporary.unlink(missing_ok=True)
+
+
+def _forward_priority() -> set[str]:
+    """Symbols whose forward clocks are blocked or identity-broken, for repair-first refresh."""
+    state_path = desk_root() / "reports" / "shadow" / "shadow_state.json"
+    try:
+        state = json.loads(state_path.read_text("utf-8"))
+    except (OSError, ValueError):
+        return set()
+    priority: set[str] = set()
+    for key, row in state.items():
+        if not isinstance(row, dict):
+            continue
+        status = str(row.get("status") or "")
+        if status not in {"BLOCKED_NO_BARS", "IDENTITY_BROKEN"}:
+            continue
+        # Clock ids begin SYMBOL.family..., while chart qualifiers live later after ``@``.
+        symbol = str(key).split(".", 1)[0].split("@", 1)[0].strip()
+        if symbol:
+            priority.add(symbol)
+    return priority
+
+
+def refresh_order(paths: list[Path]) -> list[Path]:
+    """Repair evidence-blocked symbols first, then retain deterministic full-lake coverage."""
+    priority = _forward_priority()
+    return sorted(paths, key=lambda p: (p.stem.rpartition("_")[0] not in priority, p.name))
 
 
 def _mt5_timeframe(tf: str) -> int | None:
@@ -145,7 +198,7 @@ def derive_series(sym: str, tf: str = "D1") -> str:
     out = resample_bars(bars, tf)
     if out.empty:
         return f"source-too-short({len(bars)} {src_tf} bars)"
-    out.to_parquet(OUT / f"{sym}_{tf}.parquet")
+    _atomic_parquet(out, OUT / f"{sym}_{tf}.parquet")
     return f"{len(out)} bars (last {out.index.max().date()}) from {src.name}"
 
 
@@ -287,7 +340,7 @@ def refresh_symbol(sym: str, tf: str = "H1") -> str:
     combined = pd.concat([old, new])
     combined = combined[~combined.index.duplicated(keep="last")].sort_index()
     added = len(combined) - len(old)
-    combined.to_parquet(pq)
+    _atomic_parquet(combined, pq)
     return f"+{added} bars (last {combined.index.max()}){hole}"
 
 
@@ -334,7 +387,10 @@ def main() -> int:
     # this desk does not recognise is REPORTED, never skipped in silence.
     results = []
     broker_info: dict[str, dict] = {}
-    for pq in sorted(OUT.glob("*.parquet")):
+    priority = _forward_priority()
+    if priority:
+        print(f"Repair-first refresh: {len(priority)} forward-blocked symbol(s)")
+    for pq in refresh_order(list(OUT.glob("*.parquet"))):
         sym, _, tf = pq.stem.rpartition("_")
         if not sym:
             results.append(f"{pq.stem:16s} unparseable-name")
