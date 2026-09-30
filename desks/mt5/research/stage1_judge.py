@@ -531,7 +531,16 @@ def evaluate_engine(spec: dict[str, Any]) -> dict[str, Any]:
         mean, t, p = _stats(vals)
         end_ts = pd.Timestamp(end, tz="UTC")
         prefix = [s for s in sigs if pd.Timestamp(s.time) < end_ts]
-        costs3 = G.costs_for(sym, meta, mult=G.COST_SCENARIO)
+        # A STRESS THAT STRESSES (audit 2026-09-30): a zero-spread symbol's 3x arm charges 3x a
+        # measured basis (cost-truth quote + round-turn commission), never 3x zero; no basis ->
+        # the stress fails closed. `research/stress_cost_floor` is shared with the sealed patch.
+        from research.stress_cost_floor import stress_costs_for
+        costs3, s_how = stress_costs_for(sym, meta, G.COST_SCENARIO)
+        out["stress_basis"] = s_how.get("basis") or s_how.get("status")
+        if costs3 is None:
+            out.update(verdict="EVALUATED", p=p, t=t, mean_r=mean, mean_r_x3=None,
+                       stress_unmeasured=True)
+            return out
         ds3 = G.daily_series(obj["df"], prefix, costs3) if prefix else None
         if ds3 is not None and len(ds3):
             v3 = ds3.to_numpy(float)[_dates(ds3.index) < np.datetime64(end, "D")]
@@ -689,6 +698,11 @@ def evaluate_vector(spec: dict[str, Any]) -> dict[str, Any] | None:
     return out
 
 
+def _zero_spread(sym: str) -> bool:
+    from research.stress_cost_floor import is_zero_spread
+    return is_zero_spread((_W.get("meta") or {}).get(sym) or {})
+
+
 def _evaluate(spec: dict[str, Any]) -> dict[str, Any]:
     """One cell, never raising. `cost_s` is the cell's CPU time in this process -- core-seconds,
     which a busy host cannot inflate the way it inflates wall time -- and `wall_s` its wall."""
@@ -696,7 +710,9 @@ def _evaluate(spec: dict[str, Any]) -> dict[str, Any]:
     c0 = time.process_time()
     try:
         res = None
-        if str(spec["family"]).startswith("mass_screen_"):
+        if str(spec["family"]).startswith("mass_screen_") and not _zero_spread(spec["sym"]):
+            # the grammar's prepared 3x arm multiplies a zero spread too; zero-spread symbols
+            # take the engine path, whose stress arm has a measured basis
             res = evaluate_vector(spec)
         if res is None:
             res = evaluate_engine(spec)
@@ -1090,6 +1106,8 @@ def finalise(results: list[dict[str, Any]], q: float = FDR_Q) -> dict[str, Any]:
         sig = cut > 0 and float(r["p"]) <= cut and float(r.get("mean_r") or 0) > 0
         if not sig:
             r.update(verdict=REC.REJECT, reason="R_BH_NOT_SIGNIFICANT")
+        elif r.get("stress_unmeasured"):
+            r.update(verdict=REC.REJECT, reason="R_COST_STRESS_UNMEASURED")
         elif float(r.get("mean_r_x3") or 0.0) <= 0.0:
             r.update(verdict=REC.REJECT, reason="R_COST_STRESS_X3")
         else:

@@ -480,6 +480,47 @@ def test_a_planted_edge_is_ranked_and_screened_at_the_documented_rate(window: st
         assert rates[6.0]["top_decile_rate"] >= 0.80
 
 
+def test_zero_spread_stress_is_monotone_and_fails_closed_without_a_basis() -> None:
+    """Fusion Zero quotes 0 points on 14 FX majors, so 3x a zero spread stressed nothing. The
+    shared floor makes the 3x arm charge 3x a measured basis (quote + round-turn commission):
+    strictly costlier than 1x on a real cell; no basis -> None, and stage 1 rejects the stress."""
+    import external_gauntlet as G
+
+    from research import stress_cost_floor as F
+    meta = json.loads((G.UNI / "universe.json").read_text())
+    zero = sorted(k for k, v in meta.items() if isinstance(v, dict) and "median_spread_pts" in v
+                  and float(v.get("median_spread_pts") or 0) == 0.0)
+    assert "EURUSD" in zero
+    c1 = G.costs_for("EURUSD", meta)
+    c3, how = F.stress_costs_for("EURUSD", meta, 3.0)
+    c6, _ = F.stress_costs_for("EURUSD", meta, 6.0)
+    assert how["status"] == "MEASURED" and how["basis_pts"] > 0
+    assert c1.spread_per_lot < c3.spread_per_lot < c6.spread_per_lot
+    assert c3.commission_per_lot == c1.commission_per_lot          # commission never stressed
+    # the sealed arithmetic it replaces: 3x of zero == 1x (no stress at all)
+    assert G.costs_for("EURUSD", meta, mult=3.0).spread_per_lot == c1.spread_per_lot
+    # a symbol with a spread is unchanged
+    nz = next(k for k, v in meta.items() if isinstance(v, dict)
+              and float(v.get("median_spread_pts") or 0) > 0 and v.get("tick_size"))
+    a, _ = F.stress_costs_for(nz, meta, 3.0)
+    assert a.spread_per_lot == G.costs_for(nz, meta, mult=3.0).spread_per_lot
+    # nothing measured: fail closed
+    bare = {"X": {"median_spread_pts": 0.0, "tick_size": 1e-5, "contract_size": 1e5}}
+    none, why = F.stress_costs_for("X", bare, 3.0, quotes={})
+    assert none is None and why["status"] == "UNMEASURED"
+    rows = [{"cid": "u", "verdict": "EVALUATED", "p": 1e-12, "mean_r": 0.3, "mean_r_x3": None,
+             "stress_unmeasured": True}]
+    S.finalise(rows)
+    assert rows[0]["reason"] == "R_COST_STRESS_UNMEASURED"
+    # on a real EURUSD cell the stressed series is strictly worse than 1x
+    row = next(r for r in _real_rows(10) if r["symbol"] == "EURUSD"
+               and "conditioner" not in r["params"])
+    obj = G.build_cell(row["symbol"], row["family"], row["params"], meta)
+    m1 = G.daily_series(obj["df"], obj["sigs"], c1).mean()
+    m3 = G.daily_series(obj["df"], obj["sigs"], c3).mean()
+    assert m3 < m1
+
+
 def test_the_vectorised_path_agrees_with_the_engine_path() -> None:
     import external_gauntlet as G
     from mass_screen import TRAIN_FRAC
