@@ -51,6 +51,7 @@ def world_state_z(series: pd.Series, z_obs: int) -> pd.Series:
 def family_world_macro_state(
     df: pd.DataFrame,
     *,
+    side: int | None = None,
     series_key: str = "",
     z_obs: int = 24,
     z_lo: float = 1.0,
@@ -61,6 +62,10 @@ def family_world_macro_state(
     stop_atr: float = 2.0,
     rr: float = 1.5,
 ) -> list[Signal]:
+    # THE RECIPE'S `direction` IS THE SIDE. `side` is accepted and deliberately unused: the
+    # sealed gauntlet always passes side=1 and the forward clock passes side=-1 for a short cell,
+    # so honouring it would make the two callers build different trades from one identity.
+    del side
     flip = DIRECTIONS.get(str(direction))
     if not series_key or flip is None or float(z_hi) <= float(z_lo):
         return []
