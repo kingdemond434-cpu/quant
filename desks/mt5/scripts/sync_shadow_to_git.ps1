@@ -378,6 +378,11 @@ $relPaths = @(
     "desks/mt5/data/order_intents.jsonl",
     "desks/mt5/data/live_ledger.jsonl",
     "desks/mt5/reports/attribution_chain.json",
+    # THE PLACEMENT-INTERLOCK VERDICT (2026-09-30). scripts/check_placement_interlock.py writes it
+    # on the law-gate clock: whether any sleeve has been refused in a run with no placement since.
+    # The halt of 2026-09-07..24 was recorded in the decision ledger 1,200 times and read by no
+    # one; this is its verdict, carried to every reader of the branch. Box-written state.
+    "desks/mt5/data/placement_interlock.json",
     # THE TIER S BOX ATTESTATION (2026-09-30). Every tier_s pass writes it: per layer, whether
     # its artifact is fresh on THIS host and its contract not REJECTED, plus digests of TIER_S,
     # ALPHA_RANK, ONLINE_FDR_ROWS, IMMUNE, allocator_tilts, research_budget, the door verdicts

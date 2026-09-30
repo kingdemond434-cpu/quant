@@ -44,12 +44,32 @@ IT CAPS NOTHING AND GATES NO CAPITAL. It never touches a sleeve, a lot, a thresh
 floor; it fails a check when the desk has stopped placing and has not said so. If anything it
 exists to make the book trade MORE, by ending halts in minutes rather than days.
 
-NOT-APPLICABLE IS NOT UNMEASURED (L1.43). A host with no decision ledger and no gateway state
-never places orders -- CI, a fresh clone, the VPS -- and passes saying so. A host that HAS a
-gateway and produces no readable ledger is UNMEASURED and FAILS (L1.28a, WS-005), because "no
-evidence" is precisely what the outage looked like.
+APPLICABILITY IS DECIDED BY LIVE EVIDENCE, NEVER BY A FILE EXISTING (audit of PR #130). The
+decision ledger, the gateway state and the identity verdict are all TRACKED in git, so every
+checkout -- the cloud, the VPS, CI -- has them, carrying whatever rows the box last published.
+Keyed to existence, the fence read 09-07..09-11 rows on the VPS as a current halt and held the
+VPS law gate red for good. So:
 
-Artifact: `desks/mt5/reports/PLACEMENT_INTERLOCK.json`, an entry in `data/alert_ledger.json`
+  * no ledger and no gateway state: NOT_APPLICABLE, passes saying so (L1.43).
+  * a ledger whose newest row is older than `LEDGER_LIVE_HOURS`: UNMEASURED, and reported as
+    UNMEASURED -- `ok` is None, not True, because it is not a clean pass, but it does not fail
+    the gate either: stale rows are no evidence of a halt NOW, and a gate red on every machine
+    that was never going to trade gets switched off. Nothing is written to the committed report.
+  * a live ledger (or a gateway state whose `last_reconcile` is live) with no readable rows:
+    UNMEASURED and FAILS (L1.28a, WS-005), because "no evidence" is what the outage looked like.
+
+A RUN AGES OUT. A refusal run whose last row is older than `RUN_MAX_AGE_HOURS`, or whose sleeve
+the sleeve registry names with a status other than LIVE, is history -- reported as a note, never
+a current halt -- or a retired sleeve would hold the fence red forever.
+
+A STALE IDENTITY IS LOUD. On a host whose ledger is live, an identity verdict older than
+`IDENTITY_MAX_AGE_HOURS` (or missing, or unstamped) FAILS as IDENTITY_STALE: a gateway that has
+stopped writing its verdict is the dead-gateway case breach (b) exists for, so it may never
+read as silence.
+
+Artifact: `desks/mt5/data/placement_interlock.json` -- committed (not gitignored), carried to the
+branch by `desks/mt5/scripts/sync_shadow_to_git.ps1` (declared in `release.NON_CODE`), and
+written only on a host where the fence is applicable -- an entry in `data/alert_ledger.json`
 so the condition has a lifecycle rather than only a count, and a PLACEMENT_HALTED /
 PLACEMENT_CLEAR row on the desk's event log (`desks/mt5/data/events.jsonl`). Registered in
 `scripts/run_law_gate.py` `_STATE_FENCES`, so the box's law-gate rotation runs it on a clock
@@ -70,17 +90,30 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parent.parent
 DESK = ROOT / "desks" / "mt5"
-OUT = DESK / "reports" / "PLACEMENT_INTERLOCK.json"
+#: Committed (NOT under the gitignored `**/reports/*`), a box-written state path the box's
+#: 15-minute sync publishes; origin never hand-edits it, and an off-box run never writes it.
+OUT_REL = "desks/mt5/data/placement_interlock.json"
+OUT = ROOT / Path(*OUT_REL.split("/"))
 
 LEDGER_REL = "desks/mt5/data/decision_ledger.jsonl"
 IDENTITY_REL = "desks/mt5/data/release_identity.json"
 GATEWAY_STATE_REL = "desks/mt5/data/gateway_state.json"
+#: READ ONLY -- to learn whether a sleeve with a refusal run is still LIVE. Never written here.
+SLEEVE_REGISTRY_REL = "desks/mt5/data/" + "sleeves" + ".json"
 
 #: Consecutive same-reason refusals for one sleeve that count as a halt rather than a hiccup.
 #: The gateway writes one row per pass per sleeve, and a pass is a minute.
 TRAILING_REFUSALS_MAX = 30
 #: ...or the same run measured in time, for a gateway whose pass interval is longer.
 TRAILING_HOURS_MAX = 1.0
+#: The ledger counts as LIVE evidence only if its newest row is at most this old. Older rows are
+#: what a checkout that only carries the box's last published copy holds: no evidence of now.
+LEDGER_LIVE_HOURS = 24.0
+#: A refusal run whose last row is older than this is history, not a current halt.
+RUN_MAX_AGE_HOURS = 24.0
+#: The gateway rewrites its identity verdict every pass (a minute); three hours of silence is a
+#: gateway that has stopped, which is the case breach (b) exists for.
+IDENTITY_MAX_AGE_HOURS = TRAILING_HOURS_MAX * 3
 
 #: Reasons that are the VENUE's answer rather than the desk's own refusal. A broker rejection or
 #: a freeze-band skip is the market saying no to one order; it is not the desk declining to
@@ -199,6 +232,44 @@ def _read_json(path: Path) -> dict[str, Any] | None:
     return doc if isinstance(doc, dict) else None
 
 
+def _age_h(stamp: datetime | None, now: datetime) -> float | None:
+    return (now - stamp).total_seconds() / 3600.0 if stamp else None
+
+
+def sleeve_status(base: Path) -> dict[str, str]:
+    """name -> status from the sleeve registry, READ ONLY. An absent or unreadable registry is an
+    empty map: a sleeve the registry does not name (the gold windows) is judged by age alone."""
+    doc = _read_json(base / Path(*SLEEVE_REGISTRY_REL.split("/")))
+    rows = (doc or {}).get("sleeves")
+    out: dict[str, str] = {}
+    if isinstance(rows, list):
+        for row in rows:
+            if isinstance(row, dict) and row.get("name"):
+                out[str(row["name"])] = str(row.get("status") or "")
+    return out
+
+
+def _gateway_live(gateway_state: Path, now: datetime) -> bool:
+    """A gateway state whose `last_reconcile` is inside the live window: this host runs one."""
+    doc = _read_json(gateway_state) or {}
+    age = _age_h(_parse_iso(doc.get("last_reconcile")), now)
+    return age is not None and age <= LEDGER_LIVE_HOURS
+
+
+def _no_evidence(doc: dict[str, Any], problem: str, *, live: bool) -> dict[str, Any]:
+    """No readable rows. On a host with a live gateway that FAILS; elsewhere it is UNMEASURED
+    and reported so, neither a pass nor a halt."""
+    doc["verdict"] = UNMEASURED
+    if live:
+        doc.update(ok=False, applicable=True)
+        doc["problems"].append(problem)
+    else:
+        doc.update(ok=None, applicable=False)
+        doc["notes"].append(problem + " -- and no live gateway evidence here, so UNMEASURED "
+                            "on this host (not a pass, not a halt)")
+    return doc
+
+
 def scan(root: Path | None = None, *, now: datetime | None = None) -> dict[str, Any]:
     base = Path(root or ROOT)
     t_now = now or _now()
@@ -209,50 +280,85 @@ def scan(root: Path | None = None, *, now: datetime | None = None) -> dict[str, 
     doc: dict[str, Any] = {
         "generated": t_now.isoformat(timespec="seconds"), "root": str(base),
         "thresholds": {"trailing_refusals_max": TRAILING_REFUSALS_MAX,
-                       "trailing_hours_max": TRAILING_HOURS_MAX},
+                       "trailing_hours_max": TRAILING_HOURS_MAX,
+                       "ledger_live_hours": LEDGER_LIVE_HOURS,
+                       "run_max_age_hours": RUN_MAX_AGE_HOURS,
+                       "identity_max_age_hours": IDENTITY_MAX_AGE_HOURS},
         "problems": [], "notes": [], "runs": {}, "ok": True, "verdict": "OK",
+        "applicable": True,
     }
 
     # NOT APPLICABLE: a host that never places orders has nothing to be silent about.
     if not ledger.exists() and not gateway_state.exists():
-        doc["verdict"] = "NOT_APPLICABLE"
+        doc.update(verdict="NOT_APPLICABLE", applicable=False)
         doc["notes"].append(
             "no decision ledger and no gateway state here -- this host does not place orders, "
             "so there is no placement halt it could be hiding")
         return doc
 
+    gw_live = _gateway_live(gateway_state, t_now)
     if not ledger.exists():
-        doc.update(ok=False, verdict="UNMEASURED")
-        doc["problems"].append(
+        return _no_evidence(doc, (
             f"this host has {GATEWAY_STATE_REL} but no {LEDGER_REL}: a gateway that places "
-            "orders and records no decisions is exactly what a silent halt looks like")
-        return doc
+            "orders and records no decisions is exactly what a silent halt looks like"),
+            live=gw_live)
 
     rows, problem = read_ledger(ledger)
     if problem:
-        doc.update(ok=False, verdict="UNMEASURED")
-        doc["problems"].append(problem)
-        return doc
+        return _no_evidence(doc, problem, live=gw_live)
     if not rows:
-        doc.update(ok=False, verdict="UNMEASURED")
-        doc["problems"].append(f"{LEDGER_REL} holds no readable decision rows")
+        return _no_evidence(doc, f"{LEDGER_REL} holds no readable decision rows", live=gw_live)
+
+    # (1) IS THE LEDGER LIVE? Existence proves nothing: the file is tracked in git.
+    stamps = [t for t in (_row_time(r) for r in rows) if t is not None]
+    newest = max(stamps) if stamps else None
+    ledger_age = _age_h(newest, t_now)
+    doc["ledger_newest_at"] = newest.isoformat(timespec="seconds") if newest else UNMEASURED
+    doc["ledger_age_h"] = round(ledger_age, 3) if ledger_age is not None else UNMEASURED
+    doc["rows_scanned"] = len(rows)
+    if ledger_age is None or ledger_age > LEDGER_LIVE_HOURS:
+        doc.update(ok=None, applicable=False, verdict=UNMEASURED)
+        doc["notes"].append(
+            f"{LEDGER_REL}'s newest row is {doc['ledger_newest_at']}"
+            + (f" ({ledger_age:.1f}h old)" if ledger_age is not None else "")
+            + f", past the {LEDGER_LIVE_HOURS:.0f}h live window: this is a published copy, not "
+              "a live ledger, so whether a sleeve is halted NOW is UNMEASURED on this host")
         return doc
 
     runs = trailing_runs(rows, t_now)
     doc["runs"] = runs
-    doc["rows_scanned"] = len(rows)
+    registry = sleeve_status(base)
 
+    halted = False
     for sleeve, run in sorted(runs.items()):
         long_by_count = run["count"] >= TRAILING_REFUSALS_MAX
         span = run.get("span_h")
         long_by_time = isinstance(span, (int, float)) and span >= TRAILING_HOURS_MAX
+        # (2) A RUN AGES OUT: by the age of its last row, or by its sleeve leaving LIVE.
+        age = run.get("age_h")
+        status = registry.get(sleeve)
+        if age is None or age > RUN_MAX_AGE_HOURS:
+            run["current"] = False
+            run["not_current_because"] = (
+                f"last row {run['last_at']} is older than {RUN_MAX_AGE_HOURS:.0f}h")
+        elif status is not None and status != "LIVE":
+            run["current"] = False
+            run["not_current_because"] = f"sleeve is {status or 'unstatused'}, not LIVE"
+        else:
+            run["current"] = True
         if not (long_by_count or long_by_time):
+            continue
+        if not run["current"]:
+            doc["notes"].append(
+                f"{sleeve}: {run['count']}x '{run['reason']}' is history, not a current halt "
+                f"({run['not_current_because']})")
             continue
         if run["venue_reason"]:
             doc["notes"].append(
                 f"{sleeve}: {run['count']} consecutive '{run['reason']}' rows -- the VENUE's "
                 "answer, not the desk declining to trade; reported, not breached")
             continue
+        halted = True
         doc["ok"] = False
         doc["problems"].append(
             f"{sleeve} has been refused {run['count']} times in a row on '{run['reason']}' "
@@ -262,25 +368,46 @@ def scan(root: Path | None = None, *, now: datetime | None = None) -> dict[str, 
               "and until this fence existed it was not")
 
     # (b) The verdict itself, for the case where the gateway stops writing rows entirely.
+    # (3) The ledger is live on this host, so a missing or stale verdict is LOUD, never silence.
+    identity_stale = False
     ident = _read_json(identity)
     if ident is None:
-        doc["notes"].append(f"{IDENTITY_REL} unreadable; the ledger half of this fence still ran")
+        identity_stale = True
+        doc["ok"] = False
+        doc["identity"] = {"verdict": UNMEASURED}
+        doc["problems"].append(
+            f"{IDENTITY_REL} is missing or unreadable on a host whose decision ledger is live: "
+            "the rail that decides whether new risk may open cannot be read, so a halt it "
+            "imposes would be invisible")
     else:
         doc["identity"] = {
             "verdict": ident.get("verdict"), "allows_new_risk": ident.get("allows_new_risk"),
             "at": ident.get("at"), "reason": str(ident.get("reason") or "")[:400],
         }
-        stamp = _parse_iso(ident.get("at"))
-        age_h = (t_now - stamp).total_seconds() / 3600.0 if stamp else None
+        age_h = _age_h(_parse_iso(ident.get("at")), t_now)
         doc["identity"]["age_h"] = round(age_h, 3) if age_h is not None else UNMEASURED
-        if ident.get("allows_new_risk") is False and (age_h is None
-                                                      or age_h <= TRAILING_HOURS_MAX * 3):
+        if age_h is None or age_h > IDENTITY_MAX_AGE_HOURS:
+            identity_stale = True
+            doc["ok"] = False
+            doc["problems"].append(
+                f"{IDENTITY_REL} is "
+                + (f"{age_h:.1f}h old" if age_h is not None else "unstamped")
+                + f" (limit {IDENTITY_MAX_AGE_HOURS:.0f}h) while the decision ledger is live: "
+                  "the gateway has stopped writing its release verdict -- the dead-gateway case "
+                  f"-- and its last word was allows_new_risk={ident.get('allows_new_risk')}")
+        elif ident.get("allows_new_risk") is False:
+            halted = True
             doc["ok"] = False
             doc["problems"].append(
                 "the release identity currently refuses new risk "
                 f"({ident.get('verdict')}): {str(ident.get('reason') or '')[:220]}")
 
-    doc["verdict"] = "OK" if doc["ok"] else "HALTED"
+    if halted:
+        doc["verdict"] = "HALTED"
+    elif identity_stale:
+        doc["verdict"] = "IDENTITY_STALE"
+    else:
+        doc["verdict"] = "OK"
     return doc
 
 
@@ -295,6 +422,9 @@ def record_alert(doc: dict[str, Any], root: Path | None = None) -> str | None:
         return None
     try:
         ledger = AlertLedger(base / "data" / "alert_ledger.json")
+        if doc.get("ok") is None:
+            # UNMEASURED here: neither evidence that a halt ended nor that one is live.
+            return None
         if doc.get("ok") or doc.get("verdict") == "NOT_APPLICABLE":
             alert = ledger.alerts.get(ALERT_ID)
             if alert is not None and alert.open:
@@ -318,7 +448,7 @@ def record_event(doc: dict[str, Any], root: Path | None = None) -> str | None:
     PLACEMENT_CLEAR is written on a clean pass on a host that places orders, so the absence of a
     halt is itself recorded rather than inferred from an absence of rows. A host that never
     places (NOT_APPLICABLE) writes nothing. The writer never raises."""
-    if doc.get("verdict") == "NOT_APPLICABLE":
+    if doc.get("verdict") == "NOT_APPLICABLE" or doc.get("ok") is None:
         return None
     base = Path(root or ROOT)
     try:
@@ -357,12 +487,15 @@ def main(argv: list[str] | None = None) -> int:
 
     doc = scan()
     if not args.no_write:
-        write_artifact(doc)
+        # Only a host where the fence is applicable writes the committed report: an off-box
+        # checkout must never dirty a box-state path with a verdict about stale copies.
+        if doc.get("applicable"):
+            write_artifact(doc)
         doc["alert"] = record_alert(doc)
         doc["event"] = record_event(doc)
     if args.json:
         print(json.dumps(doc, indent=2, default=str))
-        return 0 if doc["ok"] else 2
+        return 2 if doc["ok"] is False else 0
 
     print(f"placement interlock: {doc.get('verdict')}; "
           f"{len(doc.get('runs') or {})} sleeve(s) with a trailing refusal run")
@@ -372,8 +505,12 @@ def main(argv: list[str] | None = None) -> int:
         print(f"  note: {note}")
     for problem in doc["problems"]:
         print(f"  FAIL: {problem}")
+    if doc["ok"] is None:
+        print("check_placement_interlock: UNMEASURED -- no live placement evidence on this host "
+              "(not a clean pass; nothing here to halt)")
+        return 0
     if doc["ok"]:
-        print("check_placement_interlock: OK -- no sleeve is silently halted")
+        print(f"check_placement_interlock: {doc.get('verdict')} -- no sleeve is silently halted")
         return 0
     print("check_placement_interlock: FAILED -- the desk has stopped placing and did not say so")
     return 2

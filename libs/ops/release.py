@@ -130,6 +130,9 @@ NON_CODE: frozenset[str] = frozenset({
     "desks/mt5/data/order_intents.jsonl",
     "desks/mt5/data/live_ledger.jsonl",
     "desks/mt5/reports/attribution_chain.json",
+    # The placement-interlock fence's verdict (scripts/check_placement_interlock.py), published
+    # by the same sync so a halt is readable off the box. An output, never an input.
+    "desks/mt5/data/placement_interlock.json",
 })
 
 SEAL_RULE = ("a running SHA is accepted iff it equals code_sha, or `git diff --name-only "

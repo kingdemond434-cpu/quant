@@ -63,6 +63,10 @@ def _rows(n: int, *, sleeve: str, reason: str, start: datetime,
 def box(tmp_path: Path) -> Path:
     """A host that places orders: it has a gateway state, so silence is measurable."""
     _write(tmp_path, GATEWAY_STATE, json.dumps({"armed": True, "last_reconcile": NOW.isoformat()}))
+    # The gateway rewrites its identity verdict every pass; a live box has a fresh one.
+    _write(tmp_path, IDENTITY, json.dumps({
+        "verdict": "NEW_RISK_OK", "allows_new_risk": True, "ok": True,
+        "at": (NOW - timedelta(minutes=1)).isoformat()}))
     return tmp_path
 
 
@@ -198,9 +202,12 @@ def test_the_fence_never_caps_or_gates_capital() -> None:
     never be the thing that makes it trade less. Nothing here may write a sleeve, a lot or a
     threshold."""
     src = (ROOT / "scripts" / "check_placement_interlock.py").read_text("utf-8")
-    for forbidden in ("sleeves.json", "risk_frac", "heat_floor", "gate_spec",
-                      "UNIVERSAL_SURVIVORS"):
+    for forbidden in ("risk_frac", "heat_floor", "gate_spec", "UNIVERSAL_SURVIVORS"):
         assert forbidden not in src, f"the halt fence must not touch {forbidden}"
+    # The sleeve registry is READ (to age out a retired sleeve's run), never written: the one
+    # file write in the fence is its own report.
+    assert src.count(".write_text(") == 1 and "def write_artifact" in src
+    assert "json.dump(" not in src and "open(" not in src
 
 
 def test_thresholds_are_small_enough_to_catch_the_day_it_happens() -> None:
@@ -233,3 +240,135 @@ def test_a_halt_is_written_to_the_event_log(box: Path, tmp_path: Path,
         1, sleeve="gold_london_am", reason="placed", start=NOW, taken=True)) + "\n")
     assert fence.record_event(fence.scan(box, now=NOW), ROOT) == "PLACEMENT_CLEAR"
     assert fence.record_event(fence.scan(tmp_path / "nowhere", now=NOW), ROOT) is None
+
+
+# ----------------------------------------------- 5. audit of PR #130: the four defects, pinned
+def _stale_published_copy(root: Path) -> None:
+    """What every off-box checkout holds: the box's last PUBLISHED rows, days old."""
+    _write(root, GATEWAY_STATE, json.dumps({
+        "armed": True, "last_reconcile": "2026-09-11T14:45:00+00:00"}))
+    _write(root, LEDGER, "\n".join(_rows(
+        600, sleeve="gold_london_am", reason="release_identity_refused",
+        start=datetime(2026, 9, 7, 7, 35, tzinfo=UTC))) + "\n")
+    _write(root, IDENTITY, json.dumps({
+        "verdict": "REFUSED", "allows_new_risk": False, "at": "2026-09-11T14:44:00+00:00"}))
+
+
+def test_stale_published_rows_off_the_box_are_unmeasured_not_halted(tmp_path: Path) -> None:
+    """AUDIT 1. The ledger and gateway state are TRACKED, so every checkout has them. The VPS
+    read the box's last published rows (09-07..09-11) as a current halt and its law gate went
+    red for good. A ledger whose newest row is past the live window is UNMEASURED -- reported
+    so, `ok` None rather than True (not a clean pass), and never HALTED."""
+    _stale_published_copy(tmp_path)
+
+    doc = fence.scan(tmp_path, now=NOW)
+
+    assert doc["verdict"] == "UNMEASURED", doc
+    assert doc["ok"] is None and doc["applicable"] is False
+    assert doc["problems"] == []
+    assert any("live window" in n for n in doc["notes"]), doc["notes"]
+    assert fence.record_event(doc, ROOT) is None
+    assert fence.record_alert(doc, tmp_path) is None
+
+
+def test_stale_rows_off_the_box_pass_the_gate_and_write_no_committed_report(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+        capsys: pytest.CaptureFixture[str]) -> None:
+    """AUDIT 1 through main(): exit 0 so the VPS law gate is not held red, the output says
+    UNMEASURED rather than OK, and the box-state report path is not written off the box."""
+    _stale_published_copy(tmp_path)
+    out = tmp_path / "report.json"
+    monkeypatch.setattr(fence, "ROOT", tmp_path)
+    monkeypatch.setattr(fence, "OUT", out)
+
+    assert fence.main([]) == 0
+    printed = capsys.readouterr().out
+    assert "UNMEASURED" in printed and "HALTED" not in printed
+    assert not out.exists()
+
+
+def test_a_refusal_run_ages_out(box: Path) -> None:
+    """AUDIT 2. `age_h` was computed and never read, so a sleeve that stopped trading stayed
+    HALTED forever. A run whose last row is older than RUN_MAX_AGE_HOURS is history."""
+    rows = _rows(120, sleeve="gold_afternoon", reason="release_identity_refused",
+                 start=NOW - timedelta(hours=fence.RUN_MAX_AGE_HOURS + 4))
+    rows += _rows(1, sleeve="gold_asia", reason="placed", start=NOW - timedelta(minutes=3),
+                  taken=True)
+    _write(box, LEDGER, "\n".join(rows) + "\n")
+
+    doc = fence.scan(box, now=NOW)
+
+    assert doc["ok"] is True and doc["verdict"] == "OK", doc["problems"]
+    run = doc["runs"]["gold_afternoon"]
+    assert run["current"] is False and "older than" in run["not_current_because"]
+    assert any("gold_afternoon" in n and "history" in n for n in doc["notes"])
+
+
+def test_a_retired_sleeves_run_is_not_a_current_halt(box: Path) -> None:
+    """AUDIT 2. A sleeve the registry no longer holds LIVE is not being refused -- it is not
+    being asked. Its run is reported, never breached on; a LIVE sleeve's identical run is."""
+    _write(box, fence.SLEEVE_REGISTRY_REL, json.dumps({"sleeves": [
+        {"name": "xau_retired", "status": "STANDBY"},
+        {"name": "xau_live", "status": "LIVE"}]}))
+    rows = _rows(60, sleeve="xau_retired", reason="some_veto", start=NOW - timedelta(hours=1))
+    rows += _rows(60, sleeve="xau_live", reason="some_veto", start=NOW - timedelta(hours=1))
+    _write(box, LEDGER, "\n".join(rows) + "\n")
+
+    doc = fence.scan(box, now=NOW)
+
+    assert doc["verdict"] == "HALTED"
+    assert doc["runs"]["xau_retired"]["current"] is False
+    assert not any("xau_retired" in p for p in doc["problems"]), doc["problems"]
+    assert any("xau_live" in p for p in doc["problems"])
+
+
+def test_a_stale_identity_on_a_live_box_is_loud(box: Path) -> None:
+    """AUDIT 3. The identity check went silent once the file was >3h old -- exactly the
+    dead-gateway case it exists for. With live ledger evidence, a stale verdict FAILS."""
+    _write(box, LEDGER, "\n".join(_rows(
+        1, sleeve="gold_asia", reason="placed", start=NOW - timedelta(minutes=2),
+        taken=True)) + "\n")
+    _write(box, IDENTITY, json.dumps({
+        "verdict": "REFUSED", "allows_new_risk": False,
+        "at": (NOW - timedelta(hours=fence.IDENTITY_MAX_AGE_HOURS + 5)).isoformat()}))
+
+    doc = fence.scan(box, now=NOW)
+
+    assert doc["ok"] is False and doc["verdict"] == "IDENTITY_STALE", doc
+    assert any("stopped writing" in p for p in doc["problems"]), doc["problems"]
+
+
+@pytest.mark.parametrize("identity", [None, {"verdict": "NEW_RISK_OK", "allows_new_risk": True}])
+def test_a_missing_or_unstamped_identity_on_a_live_box_is_loud(
+        box: Path, identity: dict[str, object] | None) -> None:
+    """AUDIT 3. No verdict, or one with no timestamp, on a host placing orders is not silence."""
+    path = box / Path(*IDENTITY.split("/"))
+    if identity is None:
+        path.unlink()
+    else:
+        path.write_text(json.dumps(identity), "utf-8")
+    _write(box, LEDGER, "\n".join(_rows(
+        1, sleeve="gold_asia", reason="placed", start=NOW - timedelta(minutes=2),
+        taken=True)) + "\n")
+
+    doc = fence.scan(box, now=NOW)
+
+    assert doc["ok"] is False and doc["verdict"] == "IDENTITY_STALE", doc
+
+
+def test_the_report_is_published_on_a_committed_box_state_path() -> None:
+    """AUDIT 4. The report sat under the gitignored `**/reports/*`, so it could never reach the
+    branch. It now lives on a box-state path that is not ignored, that the box's sync lists in
+    $relPaths, and that the seal declares NON_CODE (so publishing it never refuses new risk)."""
+    import subprocess
+
+    from libs.ops import release
+    rel = fence.OUT_REL
+    assert ROOT / Path(*rel.split("/")) == fence.OUT
+    ignored = subprocess.run(["git", "check-ignore", "-q", rel], cwd=ROOT, check=False)
+    assert ignored.returncode == 1, f"{rel} is gitignored -- the report could never be committed"
+    assert release.is_state_path(rel), "a box-written report belongs on a box-state path"
+    assert rel in release.NON_CODE
+    sync = (ROOT / "desks" / "mt5" / "scripts" / "sync_shadow_to_git.ps1").read_text("utf-8")
+    block = sync.split("$relPaths = @(", 1)[1].split("\n)", 1)[0]
+    assert f'"{rel}"' in block, "the box's sync does not publish the report"
