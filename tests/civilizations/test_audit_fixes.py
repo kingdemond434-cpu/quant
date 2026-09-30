@@ -239,3 +239,47 @@ def test_knowledge_graph_reads_the_ten_non_alpha_outcome_ledgers(tmp_path: Path)
     assert leads and leads[0].source_id == "civ:qc_forum" and leads[0].url_or_ref == "https://q/x"
     # a test that redirects the roots never reads the desk's live ledgers
     assert all(p.parent != kg.CIV_OUTCOMES for p in kg.intake_paths(roots=[tmp_path]))
+
+
+def test_git_mirror_stores_text_only_under_a_permissive_licence(tmp_path: Path) -> None:
+    import subprocess
+    import time as _t
+
+    from libs.civilizations import fetchers as F
+    from libs.mining import acquirer as acq
+
+    def git(*a: str, cwd: Path) -> None:
+        subprocess.run(["git", *a], cwd=cwd, check=True, capture_output=True,
+                       env={"GIT_AUTHOR_NAME": "t", "GIT_AUTHOR_EMAIL": "t@t",
+                            "GIT_COMMITTER_NAME": "t", "GIT_COMMITTER_EMAIL": "t@t",
+                            "PATH": __import__("os").environ.get("PATH", ""),
+                            "HOME": str(cwd)})
+
+    bodies: dict[str, tuple[str, dict[str, Any]]] = {}
+    for name, lic in (("mit", MIT), ("gpl", GPL), ("none", None)):
+        repo = tmp_path / name
+        repo.mkdir()
+        (repo / "alpha.py").write_text(CODE)
+        (repo / "prices.json").write_text('{"close": [1, 2, 3]}')
+        if lic:
+            (repo / "LICENSE").write_text(lic)
+        git("init", "-q", cwd=repo)
+        git("add", "-A", cwd=repo)
+        git("commit", "-q", "-m", "seed", cwd=repo)
+        src = acq.normalise_row({"id": f"m_{name}", "kind": "code", "fetcher": "git_mirror",
+                                 "cadence_minutes": 60, "uses": ["direct_cells"],
+                                 "config": {"repo": f"file://{repo}", "paths": ["*"]}},
+                                origin="t")
+        assert src is not None
+        ctx = acq.FetchContext(http_get=lambda u, h: acq.HttpResult(None, "", "x"),
+                               deadline=_t.monotonic() + 60, root=tmp_path / "root")
+        items = [i for i in F.fetch_git_mirror(src, {}, ctx) if i.uri]
+        assert [i.title for i in items] == ["alpha.py"]           # the data file never read
+        bodies[name] = (items[0].body, dict(items[0].meta or {}))
+    assert CODE in bodies["mit"][0] and bodies["mit"][1]["licence"] == "MIT"
+    for name in ("gpl", "none"):
+        body, meta = bodies[name]
+        assert "return ts_rank" not in body and meta["metadata_only"] is True, name
+    assert bodies["none"][1]["licence"] == "NONE"
+    notices = list((tmp_path / "root" / F.NOTICES).glob("*.txt"))
+    assert len(notices) == 2                                        # MIT and GPL texts kept
