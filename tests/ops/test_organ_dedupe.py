@@ -66,8 +66,20 @@ def test_every_family_is_deduplicated() -> None:
     assert {"dept", "moat", "gateway", "control"} <= families
     assert c.TASK_CANONICAL["MT5-ClockFixer"] == "component:control_plane"
     assert c.TASK_CANONICAL["MT5-Hourly"] == "resident:dept_discovery"
-    # the canonical control-plane organ now owns the script its task runs
-    assert "desks/mt5/research/clock_fixer.py" in organs["component:control_plane"].code_paths
+    # the canonical control-plane organ's entrypoint is the script its task runs, with args it takes
+    cp = organs["component:control_plane"]
+    assert cp.code_paths[0] == "desks/mt5/research/clock_fixer.py"
+    assert "--once" not in cp.production_args
+
+
+def test_the_scheduler_renders_the_same_manifest_rows() -> None:
+    from libs.ops.control_plane import scheduler_gen
+    c = _components()
+    desired = scheduler_gen.desired_rows(c.build_registry())
+    have = scheduler_gen.manifest_rows()
+    for task, cid in c.TASK_CANONICAL.items():
+        assert desired[task]["component_id"] == cid
+        assert desired[task]["runs"] in {r.get("runs") for r in have[task]}
 
 
 def test_edges_name_the_canonical_organ_not_the_task() -> None:
