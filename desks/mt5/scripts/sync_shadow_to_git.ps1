@@ -378,6 +378,11 @@ $relPaths = @(
     "desks/mt5/data/order_intents.jsonl",
     "desks/mt5/data/live_ledger.jsonl",
     "desks/mt5/reports/attribution_chain.json",
+    # THE MARKOUT ITSELF (2026-09-30). The daily markout leg writes markout.json beside
+    # attribution_chain.json, but only the chain crossed the wire, so the VPS's desk state read
+    # `execution.matched_fills` off the 2026-09-08 stub committed before the ledger carried any
+    # entry-order key -- "matched_fills 0" for three weeks while the join on the box had moved.
+    "desks/mt5/reports/markout.json",
     # THE TIER S BOX ATTESTATION (2026-09-30). Every tier_s pass writes it: per layer, whether
     # its artifact is fresh on THIS host and its contract not REJECTED, plus digests of TIER_S,
     # ALPHA_RANK, ONLINE_FDR_ROWS, IMMUNE, allocator_tilts, research_budget, the door verdicts

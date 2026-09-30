@@ -130,6 +130,9 @@ NON_CODE: frozenset[str] = frozenset({
     "desks/mt5/data/order_intents.jsonl",
     "desks/mt5/data/live_ledger.jsonl",
     "desks/mt5/reports/attribution_chain.json",
+    # The markout the same leg writes beside the chain (2026-09-30): the VPS's desk state reads
+    # `matched_fills` from it, and without publication it read a 2026-09-08 stub forever.
+    "desks/mt5/reports/markout.json",
 })
 
 SEAL_RULE = ("a running SHA is accepted iff it equals code_sha, or `git diff --name-only "
