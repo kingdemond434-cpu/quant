@@ -973,6 +973,7 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "loop_liveness", "counterexample_agent", "judging_throughput",
                      "duty_cycle", "forward_enrolment", "residual_gate",
                      "fast_admission", "canon_publication", "placebo_audit", "judging_burndown",
+                     "stage1_judge",
                      "committees"),
                     "validate"),
     # macro: the cross-asset / macro brain
@@ -1676,6 +1677,9 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # a second; the trading box's million-row docket and ledger scale that linearly. The cap is
     # an order of magnitude above, so a doubled docket is never truncated at the same prefix.
     "judging_burndown": 600,
+    # THE TWO-STAGE JUDGE'S FIRST STAGE stops starting batches at its own --budget-s 600 and always
+    # writes JUDGING_TWO_STAGE.json; the cap sits above it so the cycle never kills it mid-write.
+    "stage1_judge": 780,
     # STATE ADMISSION reads the shadow ledgers and the live ledger and judges six dimensions; the
     # daily cycle measured it at 2.1 s. The cap is here so it HAS an entry rather than inheriting
     # SEARCH_BUDGET_SEC by accident, and it is set well above the measurement so a box with more
@@ -4488,6 +4492,17 @@ def main() -> None:
     # the environment `_producer` hands the gauntlet subprocess. The plan is floored at what the
     # sealed file would pick unaided, so this can never throttle the judge, and the live terminal
     # always wins (it stands down to that floor, never below it).
+    # THE TWO-STAGE JUDGE, STAGE 1 (principal 2026-09-30: "we need judging like 100-500k a day").
+    # A charged, formal first ruling on EVERY never-judged docket cell from its training window
+    # only (before the sealed walk-forward test region and the lockbox), BH at q=0.05 over the
+    # run and the 3x spread stress; every evaluated cell is a trial in STAGE1_TRIALS.jsonl.
+    # Survivors go to `data/hypotheses/priority_stage1.json`, which the warmer reads to put them
+    # at the front of what the judge rules on, behind v4 re-mint and evicted re-judges. AFTER the
+    # docket merge so it sees this hour's cells, and BEFORE `judging_throughput`, which embeds its
+    # summary. Workers from psutil-measured idle cores and free memory. Artifact:
+    # reports/JUDGING_TWO_STAGE.json.
+    s1j = _costed("stage1_judge", lambda: _producer(
+        "stage1_judge", "research/stage1_judge.py", "--once", "--budget-s", "600"))
     jth = _costed("judging_throughput", lambda: _producer(
         "judging_throughput", "research/judging_throughput.py", "--once", "--budget-s", "300"))
     try:
@@ -5334,7 +5349,7 @@ def main() -> None:
                     "judging_throughput": jth, "duty_cycle": dcy, "forward_enrolment": fen,
                     "certificate_clock_law": ccl,
                     "external_gauntlet": gt, "fast_admission": fa,
-                    "canon_publication": cpub, "judging_burndown": jbd,
+                    "canon_publication": cpub, "judging_burndown": jbd, "stage1_judge": s1j,
                     "falsifier_run": fz, "merge_docket": mh,
                     "backtest": bt,
                     "wiring_audit": wa, "brain_ab": ab, "alpha_breadth": cm,
